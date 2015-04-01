@@ -1,0 +1,18 @@
+Fixes to Pixie SDK
+===============================
+
+Made the following changes in utilities.c:
+2747: S32 **DT4Data = (U16 **)LMA->par3;
+-to-> S32 **DT4Data = (S32 **)LMA->par3;
+2868: S32 **DT4Data = (U16 **)LMA->par3;
+-to-> S32 **DT4Data = (S32 **)LMA->par3;
+
+Compile with -fpermissive
+Link with -ldl
+
+In .pro file:
+	DEFINES += "XIA_LINUX"
+	DEFINES += "PLX_LINUX"
+
+Run dos2unix on PXIcode.var and PXIcode.lst in the DSP directory to remove carriage return
+

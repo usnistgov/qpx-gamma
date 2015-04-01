@@ -1,0 +1,83 @@
+﻿<?xml version="1.0"?>
+<Detectors>
+    <Detector>
+        <Name>Sophia</Name>
+        <Type>HPGe</Type>
+        <Calibration Type="Energy" EnergyUnits="keV">
+            <CalibrationCreationDate>2014-12-11T12:29:17.556280</CalibrationCreationDate>
+            <Equation Model="Polynomial">
+                <Coefficients>-0.505959 0.250237 1.05746e-08 0 0 0</Coefficients>
+            </Equation>
+        </Calibration>
+        <Optimization>
+            <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
+            <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
+            <Setting key="2" name="ENERGY_RISETIME" value="10.880000"/>
+            <Setting key="3" name="ENERGY_FLATTOP" value="1.066667"/>
+            <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
+            <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
+            <Setting key="6" name="TRIGGER_THRESHOLD" value="70.000000"/>
+            <Setting key="7" name="VGAIN" value="4.449439"/>
+            <Setting key="8" name="VOFFSET" value="0.240021"/>
+            <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
+            <Setting key="10" name="TRACE_DELAY" value="1.000000"/>
+            <Setting key="11" name="PSA_START" value="0.000000"/>
+            <Setting key="12" name="PSA_END" value="0.000000"/>
+            <Setting key="13" name="EMIN" value="0.000000"/>
+            <Setting key="14" name="BINFACTOR" value="1.000000"/>
+            <Setting key="15" name="TAU" value="57.000000"/>
+            <Setting key="16" name="BLCUT" value="15.000000"/>
+            <Setting key="17" name="XDT" value="2.040000"/>
+            <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
+            <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
+            <Setting key="20" name="INTEGRATOR" value="0.000000"/>
+            <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
+            <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
+            <Setting key="23" name="GATE_DELAY" value="0.013333"/>
+            <Setting key="24" name="COINC_DELAY" value="2346.666667"/>
+            <Setting key="25" name="BLAVG" value="65534.000000"/>
+            <Setting key="41" name="PSM_TEMP_AVG_LEN" value="1.000000"/>
+            <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
+        </Optimization>
+    </Detector>
+    <Detector>
+        <Name>Daphne</Name>
+        <Type>HPGe</Type>
+        <Calibration Type="Energy" EnergyUnits="keV">
+            <CalibrationCreationDate>2014-12-11T12:29:17.556280</CalibrationCreationDate>
+            <Equation Model="Polynomial">
+                <Coefficients>-0.422413 0.249778 7.32964e-09 0 0 0</Coefficients>
+            </Equation>
+        </Calibration>
+        <Optimization>
+            <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
+            <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
+            <Setting key="2" name="ENERGY_RISETIME" value="10.880000"/>
+            <Setting key="3" name="ENERGY_FLATTOP" value="1.066667"/>
+            <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
+            <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
+            <Setting key="6" name="TRIGGER_THRESHOLD" value="50.000000"/>
+            <Setting key="7" name="VGAIN" value="4.204368"/>
+            <Setting key="8" name="VOFFSET" value="0.210037"/>
+            <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
+            <Setting key="10" name="TRACE_DELAY" value="1.000000"/>
+            <Setting key="11" name="PSA_START" value="0.000000"/>
+            <Setting key="12" name="PSA_END" value="0.000000"/>
+            <Setting key="13" name="EMIN" value="0.000000"/>
+            <Setting key="14" name="BINFACTOR" value="1.000000"/>
+            <Setting key="15" name="TAU" value="60.000000"/>
+            <Setting key="16" name="BLCUT" value="15.000000"/>
+            <Setting key="17" name="XDT" value="2.040000"/>
+            <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
+            <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
+            <Setting key="20" name="INTEGRATOR" value="0.000000"/>
+            <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
+            <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
+            <Setting key="23" name="GATE_DELAY" value="0.013333"/>
+            <Setting key="24" name="COINC_DELAY" value="2346.666667"/>
+            <Setting key="25" name="BLAVG" value="65534.000000"/>
+            <Setting key="41" name="PSM_TEMP_AVG_LEN" value="1.000000"/>
+            <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
+        </Optimization>
+    </Detector>
+</Detectors>

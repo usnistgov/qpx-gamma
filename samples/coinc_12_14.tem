@@ -1,0 +1,25 @@
+﻿<?xml version="1.0"?>
+<SpectrumTemplates>
+    <PixieSpectrumTemplate type="2D">
+        <Name>coinc12</Name>
+        <Appearance>4278190080</Appearance>
+        <Visible>1</Visible>
+        <Resolution>12</Resolution>
+        <MatchPattern>0 0 0 0</MatchPattern>
+        <AddPattern>1 1 0 0</AddPattern>
+        <GenericAttributes>
+            <Setting name="buffered" value="1.000000" unit="T/F" writable="1" description="Buffered output for efficient plotting (more memory)"/>
+        </GenericAttributes>
+    </PixieSpectrumTemplate>
+    <PixieSpectrumTemplate type="2D">
+        <Name>coinc14</Name>
+        <Appearance>4278190080</Appearance>
+        <Visible>0</Visible>
+        <Resolution>14</Resolution>
+        <MatchPattern>0 0 0 0</MatchPattern>
+        <AddPattern>1 1 0 0</AddPattern>
+        <GenericAttributes>
+            <Setting name="buffered" value="1.000000" unit="T/F" writable="1" description="Buffered output for efficient plotting (more memory)"/>
+        </GenericAttributes>
+    </PixieSpectrumTemplate>
+</SpectrumTemplates>

@@ -1,0 +1,26 @@
+Major features/overhauls:
+-buffer 2d only when visible
+-multiple modules
+-lock file (one instance per system)
+-pause run
+-spectra warping
+-command line tool
+
+pixiecpp:
+-detector provides highest resolution calibration
+-all timestamps with timezone**
+-save as 2012 revision of N42
+-reset P4 timers before each run
+-fix cnf loading (dll?)
+-save/load matrices
+
+gui:
+-ask for simulation parameters***
+-more run parameters
+      *delay / prompt
+      *save after complete
+      *name sample
+-save/load in thread
+
+
+

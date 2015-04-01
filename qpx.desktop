@@ -1,0 +1,8 @@
+[Desktop Entry]
+Exec=qpx
+Icon=qpx
+Type=Application
+Terminal=false
+Name=Qpx Gamma
+GenericName=Gamma Spectrum Acquisition for Pixie-4
+Categories=Qt;Science;Physics;Chemistry;Education;

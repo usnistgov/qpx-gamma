@@ -1,0 +1,49 @@
+How to install PLX driver module in Linux
+==================================================================
+To use Pixie-4 in Linux, you need to compile the PLX driver for
+your specific kernel. The instructions provided by PLX are rather
+cryptic. Given our my stumbles in this, I have drafted this guide.
+
+
+1. Download PLX SDK from PLX website
+
+2. Build the driver for PLX9054
+   a) might want to start with the debug build in case of problems getting it to work
+      	    ~/PlxSdk/Driver$ sudo ./builddriver 9054 d
+   b) build final version of driver
+      	    ~/PlxSdk/Driver$ sudo ./builddriver 9054 cleanall
+      	    ~/PlxSdk/Driver$ sudo ./builddriver 9054
+
+3. Test loading of PLX driver with the included Plx_load script.
+   If debug version was used, some additional information will be printed that can be seen with dmesg
+      	    ~/PlxSdk/Bin$ sudo ./Plx_load 9054 d
+
+4. In case of problem allocating memory resources ("Kernel VA: ERROR - Unable to map space to Kernel VA"),
+   there might be conflict with an already installed device. In this case, try the following:
+   a) Make sure a PLX device is visible via PCI bridge by running lspci
+   b) See if the needed addresses are already claimed by a different driver by running cat /proc/iomem.
+      If so, take note of the kernel module name used and blacklist it by adding "blacklist net2272"
+      into /etc/modprobe.d/blacklist.conf
+   c) try loading the PLX driver again
+
+5. Once you have the driver working, you can use the production build.
+   To make the loading of the driver automatic, you can do the following:
+   a) copy the built .ko file (Plx9054.ko) to somwhere in the vicinity of
+      /lib/modules/3.13.0-xx-generic/kernel/drivers/, in this case I put
+      it in /lib/modules/3.13.0-xx-generic/kernel/drivers/iio/dac/
+   b) run "sudo echo 'Plx9054' >> /etc/modules" to add it to the list of modules to be loaded
+      and then "sudo depmod" to update module dependencies. The module should now load on startup.
+   c) To create device nodes you still need part of the custom PLX script. Start with:
+      	 #!/bin/sh
+      	 bServiceDriver=0
+      	 path=/dev/plx
+      	 name=Plx9054
+      	 module=Plx9054
+      and append to this the end of the Plx_load script supplied in PLX SDK, starting with the line 205:
+      	  # Verify driver loaded
+      Call this file load-plx9054, place it in /etc/init.d making sure you set permissions.
+   d) run "update-rc.d load-plx9054 defaults" to enable the script.
+   e) reboot and test if the driver has loaded properly:
+      i) lsmod | grep Plx9054 should give you a valid line
+      ii) cat /proc/iomem | grep Plx9054 should give you a few lines
+      iii) ls /dev/plx* should give you a number of device nodes

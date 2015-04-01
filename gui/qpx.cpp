@@ -1,0 +1,244 @@
+/*******************************************************************************
+ *
+ * This software was developed at the National Institute of Standards and
+ * Technology (NIST) by employees of the Federal Government in the course
+ * of their official duties. Pursuant to title 17 Section 105 of the
+ * United States Code, this software is not subject to copyright protection
+ * and is in the public domain. NIST assumes no responsibility whatsoever for
+ * its use by other parties, and makes no guarantees, expressed or implied,
+ * about its quality, reliability, or any other characteristic.
+ *
+ * This software can be redistributed and/or modified freely provided that
+ * any derivative works bear some notice that they are derived from it, and
+ * any modified versions bear some notice that they have been modified.
+ *
+ * Description:
+ *      qpx - main application window
+ *
+ * Author(s):
+ *      Martin Shetty (NIST)
+ *
+ ******************************************************************************/
+
+#include <utility>
+#include <numeric>
+#include <cstdint>
+#include <boost/format.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
+
+#include "qpx.h"
+#include "ui_qpx.h"
+#include "custom_timer.h"
+
+#include "form_list_daq.h"
+#include "form_mca_daq.h"
+#include "form_pixie_settings.h"
+#include "form_oscilloscope.h"
+#include "form_optimization.h"
+
+
+#include "ui_about.h"
+#include "qt_util.h"
+
+qpx::qpx(QWidget *parent) :
+  QMainWindow(parent),
+  ui(new Ui::qpx),
+  settings_("NIST-MML", "qpx"),
+  my_emitter_(),
+  qpx_stream_(),
+  detectors_("Detectors"),
+  text_buffer_(qpx_stream_, my_emitter_),
+  runner_thread_()
+{
+  qRegisterMetaType<QList<QVector<double>>>("QList<QVector<double>>");
+  qRegisterMetaType<Pixie::ListData>("Pixie::ListData");
+  qRegisterMetaType<Pixie::Calibration>("Pixie::Calibration");
+  qRegisterMetaType<Pixie::LiveStatus>("Pixie::LiveStatus");
+
+  CustomLogger::initLogger(&qpx_stream_, "qpx_%N.log");
+  ui->setupUi(this);
+  connect(&my_emitter_, SIGNAL(writeLine(QString)), this, SLOT(add_log_text(QString)));
+
+  loadSettings();
+
+  connect(ui->qpxTabs, SIGNAL(tabCloseRequested(int)), this, SLOT(tabCloseRequested(int)));
+  ui->statusBar->showMessage("Offline");
+
+  main_tab_ = new FormStart(runner_thread_, settings_, detectors_);
+  ui->qpxTabs->addTab(main_tab_, "Settings");
+  connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
+  connect(this, SIGNAL(toggle_push(bool,Pixie::LiveStatus)), main_tab_, SLOT(toggle_push(bool,Pixie::LiveStatus)));
+  ui->qpxTabs->setCurrentWidget(main_tab_);
+
+  //on_pushAbout_clicked();
+  PL_INFO << "Hello! Welcome to Multi-NAA at neutron guide D at NCNR. Please click boot to boot :)";
+
+#ifdef QPX_DBG_
+  ui->pushOpenOptimize->setEnabled(true);
+#endif
+
+}
+
+qpx::~qpx()
+{
+  delete ui;
+}
+
+void qpx::closeEvent(QCloseEvent *event) {
+  if (runner_thread_.isRunning()) {
+    int reply = QMessageBox::warning(this, "Ongoing data acquisition operations",
+                                     "Terminate?",
+                                     QMessageBox::Yes|QMessageBox::Cancel);
+    if (reply == QMessageBox::Yes) {
+      runner_thread_.terminate();
+      runner_thread_.wait();
+    } else {
+      event->ignore();
+      return;
+    }
+  }
+
+
+  for (int i = ui->qpxTabs->count() - 1; i >= 0; --i) {
+    if (ui->qpxTabs->widget(i) != main_tab_) {
+    ui->qpxTabs->setCurrentIndex(i);
+    if (!ui->qpxTabs->widget(i)->close()) {
+      event->ignore();
+      return;
+    } else {
+      ui->qpxTabs->removeTab(i);
+    }
+    }
+  }
+
+  main_tab_->exit();
+  main_tab_->close();
+
+  saveSettings();
+  event->accept();
+}
+
+void qpx::tabCloseRequested(int index) {
+  ui->qpxTabs->setCurrentIndex(index);
+  if (ui->qpxTabs->widget(index)->close())
+    ui->qpxTabs->removeTab(index);
+}
+
+void qpx::on_OutputDirFind_clicked()
+{
+  QString dirName = QFileDialog::getExistingDirectory(this, "Open Directory", data_directory_,
+                                                      QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+  if (!dirName.isEmpty()) {
+    data_directory_ = QDir(dirName).absolutePath();
+    saveSettings();
+  }
+}
+
+void qpx::add_log_text(QString line) {
+  ui->qpxLogBox->append(line);
+}
+
+void qpx::loadSettings() {
+  settings_.beginGroup("Program");
+  QRect myrect = settings_.value("position",QRect(20,20,1234,650)).toRect();
+  setGeometry(myrect);
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_.endGroup();
+
+  detectors_.read_xml(data_directory_.toStdString() + "/default_detectors.det");
+}
+
+void qpx::saveSettings() {
+  settings_.beginGroup("Program");
+  settings_.setValue("position", this->geometry());
+  settings_.setValue("save_directory", data_directory_);
+  settings_.endGroup();
+
+  detectors_.write_xml(data_directory_.toStdString() + "/default_detectors.det");
+}
+
+void qpx::updateStatusText(QString text) {
+  ui->statusBar->showMessage(text);
+}
+
+void qpx::toggleIO(bool enable) {
+  Pixie::LiveStatus live = Pixie::Wrapper::getInstance().settings().live();
+
+  if (enable && (live == Pixie::LiveStatus::online))
+    ui->statusBar->showMessage("Online");
+  else if (enable && (live == Pixie::LiveStatus::offline))
+    ui->statusBar->showMessage("Offline");
+
+  emit toggle_push(enable, live);
+}
+
+void qpx::on_splitter_splitterMoved(int pos, int index)
+{
+  ui->qpxLogBox->verticalScrollBar()->setValue(ui->qpxLogBox->verticalScrollBar()->maximum());
+}
+
+void qpx::on_pushAbout_clicked()
+{
+  QDialog* about = new QDialog(0,0);
+
+  Ui_Dialog aboutUi;
+  aboutUi.setupUi(about);
+  about->setWindowTitle("About qpx");
+
+  about->exec();
+}
+
+void qpx::detectors_updated() {
+
+  //emit signal to settings widget
+}
+
+void qpx::calibrate(FormCalibration* formCalib) {
+  if (ui->qpxTabs->indexOf(formCalib) == -1) {
+    ui->qpxTabs->addTab(formCalib, "Calibration");
+    connect(formCalib, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
+  }
+  ui->qpxTabs->setCurrentWidget(formCalib);
+}
+
+void qpx::on_pushOpenSpectra_clicked()
+{
+  FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, settings_, detectors_);
+  ui->qpxTabs->addTab(newSpectraForm, "Spectra");
+  connect(newSpectraForm, SIGNAL(requestCalibration(FormCalibration*)), this, SLOT(calibrate(FormCalibration*)));
+
+  connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
+  connect(this, SIGNAL(toggle_push(bool,Pixie::LiveStatus)), newSpectraForm, SLOT(toggle_push(bool,Pixie::LiveStatus)));
+
+  ui->qpxTabs->setCurrentWidget(newSpectraForm);
+  toggleIO(true);
+}
+
+void qpx::on_pushOpenList_clicked()
+{
+  FormListDaq *newListForm = new FormListDaq(runner_thread_, settings_);
+  ui->qpxTabs->addTab(newListForm, "List mode");
+
+  connect(newListForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
+  connect(newListForm, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
+  connect(this, SIGNAL(toggle_push(bool,Pixie::LiveStatus)), newListForm, SLOT(toggle_push(bool,Pixie::LiveStatus)));
+
+  ui->qpxTabs->setCurrentWidget(newListForm);
+  toggleIO(true);
+}
+
+void qpx::on_pushOpenOptimize_clicked()
+{
+  //limit only one of these?
+  FormOptimization *newOpt = new FormOptimization(runner_thread_, settings_, detectors_);
+  ui->qpxTabs->addTab(newOpt, "Optimization");
+
+  connect(newOpt, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
+
+  connect(newOpt, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
+  connect(this, SIGNAL(toggle_push(bool,Pixie::LiveStatus)), newOpt, SLOT(toggle_push(bool,Pixie::LiveStatus)));
+
+  ui->qpxTabs->setCurrentWidget(newOpt);
+  toggleIO(true);
+}

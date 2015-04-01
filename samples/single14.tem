@@ -1,0 +1,27 @@
+﻿<?xml version="1.0"?>
+<SpectrumTemplates>
+    <PixieSpectrumTemplate type="1D">
+        <Name>chan0</Name>
+        <Appearance>1964052458</Appearance>
+        <Visible>1</Visible>
+        <Resolution>14</Resolution>
+        <MatchPattern>1 0 0 0</MatchPattern>
+        <AddPattern>1 0 0 0</AddPattern>
+    </PixieSpectrumTemplate>
+    <PixieSpectrumTemplate type="1D">
+        <Name>chan0_anti</Name>
+        <Appearance>2150078169</Appearance>
+        <Visible>0</Visible>
+        <Resolution>14</Resolution>
+        <MatchPattern>1 -1 0 0</MatchPattern>
+        <AddPattern>1 0 0 0</AddPattern>
+    </PixieSpectrumTemplate>
+    <PixieSpectrumTemplate type="1D">
+        <Name>chan0_co</Name>
+        <Appearance>2503253112</Appearance>
+        <Visible>0</Visible>
+        <Resolution>14</Resolution>
+        <MatchPattern>1 1 0 0</MatchPattern>
+        <AddPattern>1 0 0 0</AddPattern>
+    </PixieSpectrumTemplate>
+</SpectrumTemplates>
