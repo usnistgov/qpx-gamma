@@ -144,8 +144,8 @@ void FormMcaDaq::toggle_push(bool enable, Pixie::LiveStatus live) {
   ui->boxMcaSecs->setEnabled(enable && offline);
   ui->pushMcaSimulate->setEnabled(enable && offline);
 
-  ui->pushMcaClear->setEnabled(enable && offline && nonempty);
-  ui->pushMcaSave->setEnabled(enable && offline && nonempty);
+  ui->pushMcaClear->setEnabled(enable && nonempty);
+  ui->pushMcaSave->setEnabled(enable && nonempty);
 }
 
 void FormMcaDaq::on_pushTimeNow_clicked()

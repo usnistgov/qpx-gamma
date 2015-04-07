@@ -34,7 +34,6 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Pixie::Dete
   ui->setupUi(this);
   default_detectors_.resize(4);
 
-  loadSettings();
   connect(&runner_thread_, SIGNAL(settingsUpdated()), this, SLOT(refresh()));
 
   //PixieSettings
@@ -42,6 +41,8 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Pixie::Dete
   ui->boxCoincWait->blockSignals(true);
   for (int i=1; i < 7; i++)
     ui->comboFilterSamples->addItem(QIcon(), QString::number(pow(2,i)), i);
+
+  loadSettings();
 
   ui->viewChanSettings->setModel(&channel_settings_model_);
   ui->viewChanSettings->setItemDelegate(&settings_delegate_);

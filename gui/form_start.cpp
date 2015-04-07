@@ -21,9 +21,9 @@
  ******************************************************************************/
 
 #include "gui/form_start.h"
-#include "ui_form_start.h"
 #include "form_bootup.h"
 #include "form_oscilloscope.h"
+#include <QBoxLayout>
 
 FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixie::Detector> &detectors, QWidget *parent) :
   QWidget(parent),
