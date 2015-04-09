@@ -29,5 +29,5 @@ Linux:
 * to make global, follow it up with 'sudo make install'
 
 For questions, contact:
-Martin Shetty (martin.shetty@nist.gov)
-Dagistan Sahin (dagistan.sahin@nist.gov)
+   Martin Shetty (martin.shetty@nist.gov)
+   Dagistan Sahin (dagistan.sahin@nist.gov)
