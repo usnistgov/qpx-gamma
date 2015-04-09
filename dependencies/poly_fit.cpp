@@ -23,6 +23,16 @@
 #include "poly_fit.h"
 
 #include <gsl/gsl_multifit.h>
+#include "fityk.h"
+#include "custom_logger.h"
+
+Peak::Peak(double c, double h, double f, std::vector<double> &x) {
+  center = c;
+  height = h;
+  hwhm = f;
+  for (auto &q : x)
+    plot.push_back(floor( height * exp(-log(2.0)*(pow(((q-center)/hwhm),2))) ));
+}
 
 void UtilXY::find_peaks(int min_width) {
   peaks_.clear();
@@ -89,6 +99,63 @@ bool poly_fit(std::vector<double> xx, std::vector<double> yy, std::vector<double
   return true;
 }
 
+/*void UtilXY::find_peaks2(int max) {
+  height_.clear();
+  hwhm_.clear();
+  center_.clear();
+
+  fityk::Fityk *f = new fityk::Fityk;
+  //f->redir_messages(g_custom_logger::get());
+  for (int i = 0; i < x_.size(); ++i) {
+      f->add_point(x_[i], y_[i], 1);
+  }
+  for (int i = 0; i < max; ++i) {
+    f->execute("guess Gaussian");
+    f->execute("fit");
+  }
+
+  std::vector<fityk::Func*> allfuncs = f->all_functions();
+  for (auto &q : allfuncs) {
+    center_.push_back(q->get_param_value("center"));
+    hwhm_.push_back(q->get_param_value("hwhm"));
+    height_.push_back(q->get_param_value("height"));
+
+    //delete?
+  }
+
+  delete f;
+}*/
+
+bool poly_fit2(std::vector<double> xx, std::vector<double> yy, std::vector<double>& coefs)
+{
+  int n = xx.size();
+  int k = coefs.size();
+
+  if (!k || (xx.size() != yy.size()))
+    return false;
+
+  fityk::Fityk *f = new fityk::Fityk;
+  //f->redir_messages(g_custom_logger::get());
+  for (int i = 0; i < n; ++i) {
+      f->add_point(xx[i], yy[i], 1);
+  }
+  std::string param = "a0=0", expr = "a0";
+  for (int i = 1; i < k; ++i) {
+    std::string coefn = std::to_string(i);
+    param += ", a" + coefn + "=0";
+    expr += " + a" + coefn + "*x^" + coefn;
+  }
+  std::string definition = "define MyPoly(" + param + ") = " + expr;
+  PL_INFO << "Fitting data to: " << definition;
+  f->execute(definition);
+  f->execute("guess MyPoly");
+  f->execute("fit");
+  coefs = f->all_parameters();
+  delete f;
+
+  return true;
+}
+
 
 bool poly_fit_w(std::vector<double> xx, std::vector<double> yy, std::vector<double> err,
               std::vector<double>& coefs)
@@ -137,6 +204,50 @@ bool poly_fit_w(std::vector<double> xx, std::vector<double> yy, std::vector<doub
   gsl_matrix_free (cov);
 
   return true;
+}
+
+void PeakFitter::run() {
+  peaks.clear();
+  sum.clear();
+
+  QMutexLocker locker(&mutex_);
+  std::vector<double> xx = x.toStdVector(),
+                      yy = y.toStdVector(),
+                      sigma(x.size(), 1);
+
+  sum.resize(x.size());
+
+  fityk::Fityk *f = new fityk::Fityk;
+  f->load_data(0, xx, yy, sigma);
+
+  int n = 0;
+  double width_sum = 0.0;
+  while ((stop.load() != 1) && (n < max_)){
+    f->execute("guess Gaussian");
+    //f->execute("fit");
+    fityk::Func* lastfn = f->all_functions().back();
+    Peak pk(lastfn->get_param_value("center"),
+            lastfn->get_param_value("height"),
+            lastfn->get_param_value("hwhm"),
+            xx);
+
+    PL_INFO << "new peak at " << pk.center << " h=" << pk.height << " hwhm=" << pk.hwhm;
+
+    if (n == 0) {
+      width_sum += pk.hwhm;
+      peaks.push_back(pk);
+    } else if ((pk.hwhm * n / width_sum) < max_ratio_) {
+      width_sum += pk.hwhm;
+      peaks.push_back(pk);
+    } else
+      PL_INFO << "rejected";
+
+    n++;
+  }
+
+  emit newPeak(new QVector<Peak>(peaks), new QVector<double>(sum));
+
+  delete f;
 }
 
 

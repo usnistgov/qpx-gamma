@@ -32,7 +32,7 @@
 #include <array>
 #include <bitset>
 #include <boost/date_time.hpp>
-#include "settings.h"
+#include "px_settings.h"
 #include "custom_logger.h"
 
 namespace Pixie {

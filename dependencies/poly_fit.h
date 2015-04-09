@@ -24,11 +24,25 @@
 #define POLY_FIT_H
 
 #include <vector>
+#include <QThread>
+#include <QMutex>
+#include <QVector>
+
+struct Peak {
+  Peak() {}
+  Peak(double, double, double, std::vector<double> &x);
+
+  double height, hwhm, center;
+  QVector<double> plot;
+};
 
 bool poly_fit_w(std::vector<double> x, std::vector<double> y,
                   std::vector<double> err, std::vector<double>& coefs);
 
 bool poly_fit(std::vector<double> x, std::vector<double> y,
+                std::vector<double>& coefs);
+
+bool poly_fit2(std::vector<double> x, std::vector<double> y,
                 std::vector<double>& coefs);
 
 class UtilXY {
@@ -41,9 +55,50 @@ public:
     {*this = UtilXY(x, y);}
 
   void find_peaks(int min_width);
+  //void find_peaks2(int max);
 
   std::vector<double> x_, y_;
   std::vector<int> peaks_;
+
+  std::vector<Peak> peaks;
+
+  std::vector<double> sum;
+};
+
+class PeakFitter : public QThread
+{
+  Q_OBJECT
+public:
+  explicit PeakFitter(QObject *parent = 0) : QThread(parent) { stop.store(0); }
+  ~PeakFitter() {}
+
+  void startFit(QVector<double> &xx, QVector<double> &yy, int max, double max_ratio) {
+    if (!isRunning()) {
+      QMutexLocker locker(&mutex_);
+      stop.store(0);
+      x = xx; y = yy; max_= max; max_ratio_ = max_ratio;
+      start(NormalPriority);
+    }
+  }
+
+  void stopFit() { stop.store(1); }
+
+signals:
+  void newPeak(QVector<Peak>*, QVector<double>*);
+
+protected:
+  void run();
+
+private:
+  QMutex mutex_;
+  int max_;
+
+  QAtomicInt stop;
+  QVector<double> x, y, sum;
+
+  double max_ratio_;
+  QVector<Peak> peaks;
+
 };
 
 #endif

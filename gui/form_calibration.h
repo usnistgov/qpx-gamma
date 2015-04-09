@@ -32,6 +32,7 @@
 #include "widget_plot1d.h"
 #include <QItemSelection>
 #include "spectra_set.h"
+#include "poly_fit.h"
 
 namespace Ui {
 class FormCalibration;
@@ -78,6 +79,14 @@ private slots:
 
   void update_plot();
 
+  void on_pushFit2_clicked();
+
+  void on_pushFindGauss_clicked();
+
+  void newPeak(QVector<Peak>*, QVector<double>*);
+
+  void on_pushStopFit_clicked();
+
 protected:
   void closeEvent(QCloseEvent*);
 
@@ -101,6 +110,11 @@ private:
   TableMarkers marker_table_;
   QItemSelectionModel selection_model_;
   QpxSpecialDelegate  special_delegate_;
+
+  QVector<Peak> peaks_;
+  QVector<double> fit_sum_;
+
+  PeakFitter fitter_;
 
   Pixie::Calibration old_calibration_, new_calibration_;
 
