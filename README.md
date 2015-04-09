@@ -1,7 +1,7 @@
 # qpx-gamma
 
 Data acquisition system for multi-detector gamma spectroscopy with Pixie-4.
-Developed at NIST. We claim no responsibility and endorse no specific product...
+Developed at NIST. No warranty and no endorsement of specific product. Please read license and disclaimer.
 
 Main features:
 * simultaneous building of multiple MCA spectra
@@ -19,7 +19,7 @@ To thoroughly enjoy it you need:
 To compile you need:
 * boost libraries (5.7)
 * Qt libraries (5.3)
-* gsl libraries (for Windows get them precompiled from https://azylstra.net/blog/post/building-gsl-on-windows)
+* gsl libraries
 
 Linux:
 * make sure PLX driver is working (read PLX_DRIVER_INSTALL)
@@ -28,7 +28,6 @@ Linux:
   - to run './qpx'
 * to make global, follow it up with 'sudo make install'
 
-Windows:
-* go into qpx.pro and update library directories
-* compiles successfully, but could not link
-* get Qt5 to work with Visual Studio...
+For questions, contact:
+Martin Shetty (martin.shetty@nist.gov)
+Dagistan Sahin (dagistan.sahin@nist.gov)
