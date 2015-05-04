@@ -82,12 +82,12 @@ std::unique_ptr<EntryList> Spectrum2D::_get_spectrum(std::initializer_list<Pair>
   if (list.size() != 2) {
     min0 = min1 = 0;
     max0 = max1 = resolution_;
+  } else {
+    Pair range0 = *list.begin(), range1 = *(list.begin()+1);
+    min0 = range0.first; max0 = range0.second;
+    min1 = range1.first; max1 = range1.second;
   }
 
-  Pair range0 = *list.begin(), range1 = *list.end();
-  min0 = range0.first; max0 = range0.second;
-  min1 = range1.first; max1 = range1.second;
-      
   std::unique_ptr<std::list<Entry>> result(new std::list<Entry>);
   CustomTimer makelist(true);
 
@@ -122,7 +122,8 @@ std::unique_ptr<EntryList> Spectrum2D::_get_spectrum(std::initializer_list<Pair>
       boost::this_thread::sleep_for(boost::chrono::seconds{1});
     temp_spectrum_.clear(); //assumption about client
   }
-  PL_DBG << "Making list for " << name_ << " took " << makelist.ms() << "ms";
+  PL_DBG << "Making list for " << name_ << " took " << makelist.ms() << "ms filled with "
+         << result->size() << " elements";
   return result;
 }
 
