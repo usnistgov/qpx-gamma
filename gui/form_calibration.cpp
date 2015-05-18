@@ -33,8 +33,8 @@ FormCalibration::FormCalibration(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  qRegisterMetaType<Peak>("Peak");
-  qRegisterMetaType<QVector<Peak>>("QVector<Peak>");
+  qRegisterMetaType<Gaussian>("Gaussian");
+  qRegisterMetaType<QVector<Gaussian>>("QVector<Gaussian>");
 
   //file formats, should be in detector db widget
   std::vector<std::string> spectypes = Pixie::Spectrum::Factory::getInstance().types();
@@ -78,7 +78,7 @@ FormCalibration::FormCalibration(QWidget *parent) :
   connect(ui->isotopes, SIGNAL(energiesSelected()), this, SLOT(isotope_energies_chosen()));
   connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
 
-  connect(&fitter_, SIGNAL(newPeak(QVector<Peak>*, QVector<double>*)), this, SLOT(newPeak(QVector<Peak>*, QVector<double>*)));
+  connect(&fitter_, SIGNAL(newPeak(QVector<Gaussian>*, QVector<double>*)), this, SLOT(newPeak(QVector<Gaussian>*, QVector<double>*)));
 }
 
 FormCalibration::~FormCalibration()
@@ -190,7 +190,7 @@ void FormCalibration::update_plot() {
     if (fit_sum_.size())
       ui->plot1D->addGraph(x_chan, fit_sum_, Qt::darkCyan, 0);
     for (auto &q : peaks_)
-      ui->plot1D->addGraph(x_chan, q.plot, Qt::cyan, 0);
+      ui->plot1D->addGraph(x_chan, QVector<double>::fromStdVector(q.evaluate_array(x_chan.toStdVector())), Qt::cyan, 0);
     ui->plot1D->setLabels("channel", "counts");
     ui->plot1D->update_plot();
   }
@@ -474,7 +474,7 @@ void FormCalibration::on_pushFindGauss_clicked()
   fitter_.startFit(x_chan, y, ui->spinPeaks->value(), ui->doubleSpinWidthMax->value());
 }
 
-void FormCalibration::newPeak(QVector<Peak> *pk, QVector<double> *sm) {
+void FormCalibration::newPeak(QVector<Gaussian> *pk, QVector<double> *sm) {
   peaks_ = *pk;
   fit_sum_ = *sm;
   delete sm; delete pk;

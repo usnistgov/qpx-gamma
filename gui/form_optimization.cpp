@@ -24,7 +24,8 @@
 #include "ui_form_optimization.h"
 #include "spectrum1D.h"
 #include "custom_logger.h"
-#include "poly_fit.h"
+#include "fityk.h"
+
 
 FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XMLableDB<Pixie::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
@@ -60,8 +61,8 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   optimizing_.visible = true;
   optimizing_.appearance = QColor(Qt::red).rgba();
 
-  moving.themes["light"] = QPen(Qt::darkBlue, 2);
-  moving.themes["dark"] = QPen(Qt::blue, 2);
+  moving_.themes["light"] = QPen(Qt::darkBlue, 2);
+  moving_.themes["dark"] = QPen(Qt::blue, 2);
 
   a.themes["light"] = QPen(Qt::darkBlue, 1);
   a.themes["dark"] = QPen(Qt::blue, 1);
@@ -72,13 +73,13 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   translu.setAlpha(64);
   b.themes["dark"] = QPen(translu, 1);
 
-  refm.themes["light"] = QPen(Qt::darkGreen, 1);
-  refm.themes["dark"] = QPen(Qt::green, 1);
-  refm.visible = true;
+  marker_ref_.themes["light"] = QPen(Qt::darkGreen, 1);
+  marker_ref_.themes["dark"] = QPen(Qt::green, 1);
+  marker_ref_.visible = true;
 
-  optm.themes["light"] = QPen(Qt::darkMagenta, 1);
-  optm.themes["dark"] = QPen(Qt::magenta, 1);
-  optm.visible = true;
+  marker_opt_.themes["light"] = QPen(Qt::darkMagenta, 1);
+  marker_opt_.themes["dark"] = QPen(Qt::magenta, 1);
+  marker_opt_.visible = true;
 
   connect(&plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
 
@@ -175,7 +176,8 @@ void FormOptimization::do_run()
   y_ref.resize(pow(2,bits), 0.0);
   y_opt.resize(pow(2,bits), 0.0);
 
-  runner_thread_.do_run(spectra_, interruptor_, Pixie::RunType::compressed, ui->spinSampleSecs->value(), true);
+  minTimer = new CustomTimer(true);
+  runner_thread_.do_run(spectra_, interruptor_, Pixie::RunType::compressed, ui->spinSampleMax->value(), true);
 }
 
 void FormOptimization::run_completed() {
@@ -184,8 +186,11 @@ void FormOptimization::run_completed() {
   spectra_.clear();
   spectra_.terminate();
   plot_thread_.wait();
-  markers_ref.clear();
-  markers_opt.clear();
+  marker_ref_.visible = false;
+  marker_opt_.visible = false;
+  gauss_ref_.refined_.height_ = 0;
+  gauss_opt_.refined_.height_ = 0;
+  //replot_markers();
 
   y_ref.clear();
   y_opt.clear();
@@ -193,9 +198,6 @@ void FormOptimization::run_completed() {
   if (current_pass > 0) {
     current_pass--;
     PL_INFO << "Passes remaining " << current_pass;
-
-    optpk = opt_peak;
-    refpk = ref_peak;
 
     emit post_proc();
   } else {
@@ -215,10 +217,10 @@ void FormOptimization::do_post_processing() {
                                       Pixie::LiveStatus::online);
   QThread::sleep(2);
   double new_gain = old_gain;
-  if (optpk < refpk) {
+  if (gauss_opt_.refined_.center_ < gauss_ref_.refined_.center_) {
     PL_INFO << "increasing gain";
     new_gain += ui->doubleSpinDeltaV->value();
-  } else if (optpk > refpk) {
+  } else if (gauss_opt_.refined_.center_ > gauss_ref_.refined_.center_) {
     PL_INFO << "decreasing gain";
     new_gain -= ui->doubleSpinDeltaV->value();
   } else {
@@ -245,37 +247,21 @@ void FormOptimization::do_post_processing() {
 bool FormOptimization::find_peaks() {
   PL_INFO << "find peaks called";
 
+  int xmin = moving_.position - ui->spinPeakWindow->value();
+  int xmax = moving_.position + ui->spinPeakWindow->value();
 
-  UtilXY xyref(x, y_ref);
-  xyref.find_peaks(ui->spinPeakThreshold->value());
-  markers_ref = xyref.peaks_;
+  if (xmin < 0) xmin = 0;
+  if (xmax >= x.size()) xmax = x.size() - 1;
 
-  UtilXY xyopt(x, y_opt);
-  xyopt.find_peaks(ui->spinPeakThreshold->value());
-  markers_opt = xyopt.peaks_;
-  replot_markers();
+  if (moving_.visible) {
+    gauss_ref_ = Peak(x, y_ref, xmin, xmax);
+    gauss_opt_ = Peak(x, y_opt, xmin, xmax);
 
-  if (!moving.visible)
+    replot_markers();
+
+    return true;
+  } else
     return false;
-
-  int ref_in_range = 0, opt_in_range = 0;
-  for (auto &q: markers_ref)
-    if ((q < (moving.position + ui->spinPeakWindow->value())) &&
-        (q > (moving.position - ui->spinPeakWindow->value())))
-    {
-      ref_in_range++;
-      ref_peak = q;
-    }
-
-  for (auto &q: markers_opt)
-    if ((q < (moving.position + ui->spinPeakWindow->value())) &&
-        (q > (moving.position - ui->spinPeakWindow->value())))
-    {
-      opt_in_range++;
-      opt_peak = q;
-    }
-
-  return ((ref_in_range == 1) && (opt_in_range == 1));
 }
 
 void FormOptimization::update_plots() {
@@ -283,11 +269,14 @@ void FormOptimization::update_plots() {
   PL_INFO << "update plots called";
 
   double maxx = max_x;
+  bool have_data = false;
 
   if (ui->plot->isVisible()) {
     this->setCursor(Qt::WaitCursor);
 
     ui->plot->clearGraphs();
+    have_data = true;
+
     for (auto &q: spectra_.by_type("1D")) {
       if (q->total_count()) {
 
@@ -316,9 +305,18 @@ void FormOptimization::update_plots() {
 
         if (maxx < res)
           maxx = res;
-      }
+      } else
+        have_data = false;
     }
     ui->plot->setLabels("channel", "count");
+
+    if (gauss_ref_.refined_.height_) {
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_fullfit_), Qt::cyan, 0);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.baseline_.evaluate_array(gauss_ref_.x_)), Qt::cyan, 0);
+    }
+
+    if (gauss_opt_.refined_.height_)
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_fullfit_), Qt::magenta, 0);
 
     if (max_x != maxx) {
       ui->plot->reset_scales();
@@ -330,8 +328,9 @@ void FormOptimization::update_plots() {
     ui->plot->setTitle(QString::fromStdString(new_label));
   }
 
-  if (running && find_peaks()) {
+  if (running && have_data && (minTimer->s() > ui->spinSampleMin->value()) && find_peaks()) {
     PL_INFO << "Singular peaks found within range. Moving along...";
+    delete minTimer;
     interruptor_.store(true);
     running = false;
   }
@@ -340,8 +339,8 @@ void FormOptimization::update_plots() {
 }
 
 void FormOptimization::addMovingMarker(double x) {
-  moving.position = x;
-  moving.visible = true;
+  moving_.position = x;
+  moving_.visible = true;
   a.position = x - ui->spinPeakWindow->value();
   a.visible = true;
   b.position = x + ui->spinPeakWindow->value();
@@ -353,7 +352,7 @@ void FormOptimization::addMovingMarker(double x) {
 }
 
 void FormOptimization::removeMovingMarker(double x) {
-  moving.visible = false;
+  moving_.visible = false;
   a.visible = false;
   b.visible = false;
   //  ui->pushAdd->setEnabled(false);
@@ -366,14 +365,16 @@ void FormOptimization::replot_markers() {
 
   //markers.push_back(moving);
 
-  for (auto &q : markers_ref) {
-    refm.position = q;
-    markers.push_back(refm);
+  if (gauss_ref_.refined_.height_) {
+    marker_ref_.position = gauss_ref_.refined_.center_;
+    marker_ref_.visible = true;
+    markers.push_back(marker_ref_);
   }
 
-  for (auto &q : markers_opt) {
-    optm.position = q;
-    markers.push_back(optm);
+  if (gauss_opt_.refined_.height_) {
+    marker_opt_.position = gauss_opt_.refined_.center_;
+    marker_opt_.visible = true;
+    markers.push_back(marker_opt_);
   }
 
   ui->plot->set_markers(markers);

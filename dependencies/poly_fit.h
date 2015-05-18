@@ -28,12 +28,46 @@
 #include <QMutex>
 #include <QVector>
 
-struct Peak {
-  Peak() {}
-  Peak(double, double, double, std::vector<double> &x);
+class Polynomial {
+public:
+  Polynomial() : degree_(-1), xoffset_(0.0) {}
+  Polynomial(std::vector<double> coeffs, double xoff = 0);
 
-  double height, hwhm, center;
-  QVector<double> plot;
+  double evaluate(double x);
+  friend std::ostream &operator<<(std::ostream &out, Polynomial d);
+  std::vector<double> evaluate_array(std::vector<double> x);
+  
+private:
+  std::vector<double> coeffs_;
+  int degree_;
+  double xoffset_;
+};
+
+class Gaussian {
+public:
+  Gaussian() : height_(0), hwhm_(0), center_(0) {}
+  Gaussian(double center, double height, double hwhm) : height_(height), hwhm_(hwhm), center_(center) {}
+
+  double evaluate(double x);
+  friend std::ostream &operator<<(std::ostream &out, Gaussian d);
+  std::vector<double> evaluate_array(std::vector<double> x);
+  
+  double height_, hwhm_, center_;
+};
+
+
+class Peak {
+public:
+  Peak() {}
+  Peak(std::vector<double> &x, std::vector<double> &y, int min, int max);
+
+  Gaussian find_g(std::vector<double> &x, std::vector<double> &y);
+  Polynomial find_p(std::vector<double> &x, std::vector<double> &y, double center);
+  void fill0_linear(int buffer, int sample);
+      
+  std::vector<double> x_, y_, diff_y_, filled_y_, y_nobase_, y_fullfit_;
+  Gaussian rough_, refined_;
+  Polynomial baseline_;
 };
 
 bool poly_fit_w(std::vector<double> x, std::vector<double> y,
@@ -44,6 +78,7 @@ bool poly_fit(std::vector<double> x, std::vector<double> y,
 
 bool poly_fit2(std::vector<double> x, std::vector<double> y,
                 std::vector<double>& coefs);
+
 
 class UtilXY {
 public:
@@ -84,7 +119,7 @@ public:
   void stopFit() { stop.store(1); }
 
 signals:
-  void newPeak(QVector<Peak>*, QVector<double>*);
+  void newPeak(QVector<Gaussian>*, QVector<double>*);
 
 protected:
   void run();
@@ -97,7 +132,7 @@ private:
   QVector<double> x, y, sum;
 
   double max_ratio_;
-  QVector<Peak> peaks;
+  QVector<Gaussian> peaks;
 
 };
 

@@ -29,6 +29,7 @@
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
 #include "widget_plot1d.h"
+#include "poly_fit.h"
 
 namespace Ui {
 class FormOptimization;
@@ -90,11 +91,12 @@ private:
 
   bool running;
 
-  Marker moving, refm, optm, a, b;
+  Marker moving_, marker_ref_, marker_opt_, a ,b;
   int bits, current_pass;
-  int ref_peak, opt_peak, refpk, optpk;
 
-  std::vector<int> markers_ref, markers_opt; //channel
+  Peak gauss_ref_, gauss_opt_;
+
+  CustomTimer* minTimer;
 
 };
 

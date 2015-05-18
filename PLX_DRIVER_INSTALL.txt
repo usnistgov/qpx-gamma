@@ -2,7 +2,7 @@ How to install PLX driver module in Linux
 ==================================================================
 To use Pixie-4 in Linux, you need to compile the PLX driver for
 your specific kernel. The instructions provided by PLX are rather
-cryptic. Given our my stumbles in this, I have drafted this guide.
+cryptic. Given our stumbles in this, I have drafted this guide.
 
 
 1. Download PLX SDK from PLX website
@@ -28,7 +28,7 @@ cryptic. Given our my stumbles in this, I have drafted this guide.
 
 5. Once you have the driver working, you can use the production build.
    To make the loading of the driver automatic, you can do the following:
-   a) copy the built .ko file (Plx9054.ko) to somwhere in the vicinity of
+   a) copy the built .ko file (Plx9054.ko) to somewhere in the vicinity of
       /lib/modules/3.13.0-xx-generic/kernel/drivers/, in this case I put
       it in /lib/modules/3.13.0-xx-generic/kernel/drivers/iio/dac/
    b) run "sudo echo 'Plx9054' >> /etc/modules" to add it to the list of modules to be loaded
@@ -47,3 +47,12 @@ cryptic. Given our my stumbles in this, I have drafted this guide.
       i) lsmod | grep Plx9054 should give you a valid line
       ii) cat /proc/iomem | grep Plx9054 should give you a few lines
       iii) ls /dev/plx* should give you a number of device nodes
+
+For example, we could have such a script:
+sudo PlxSdk/Driver/builddriver 9054
+sudo cp PlxSdk/Driver/Plx9054/Plx9054.ko /lib/modules/3.13.0-xx-generic/kernel/drivers/iio/dac/
+sudo echo 'Plx9054' >> /etc/modules
+sudo depmod
+***copy script file
+update-rc.d load-plx9054 defaults
+

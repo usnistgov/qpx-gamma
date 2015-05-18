@@ -83,7 +83,7 @@ private slots:
 
   void on_pushFindGauss_clicked();
 
-  void newPeak(QVector<Peak>*, QVector<double>*);
+  void newPeak(QVector<Gaussian>*, QVector<double>*);
 
   void on_pushStopFit_clicked();
 
@@ -111,7 +111,7 @@ private:
   QItemSelectionModel selection_model_;
   QpxSpecialDelegate  special_delegate_;
 
-  QVector<Peak> peaks_;
+  QVector<Gaussian> peaks_;
   QVector<double> fit_sum_;
 
   PeakFitter fitter_;
