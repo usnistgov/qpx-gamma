@@ -11,7 +11,7 @@ public:
   bool interpret(std::string command, std::vector<std::string> &tokens);
   
 private:
-  bool boot();
+  bool boot(std::vector<std::string> &tokens);
   bool load_simulation(std::vector<std::string> &tokens);
   bool templates(std::vector<std::string> &tokens);
   bool run_simulation(std::vector<std::string> &tokens);

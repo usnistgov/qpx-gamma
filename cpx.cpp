@@ -62,21 +62,25 @@ int main(int argc, char *argv[])
         int parnr = boost::lexical_cast<int>(tokens[i].substr(1,std::string::npos));
         if (parnr && (argc >= (parnr+2)))
           params.push_back(std::string(argv[parnr+1]));
-        else
-          params.push_back("0");
+        else {
+          PL_ERR << "<cpx> command line option not provided for token " << tokens[i];
+          return 1;
+        }
       } else
         params.push_back(tokens[i]);
     }
 
-    if (!interpreter.interpret(command, params))
-          return 1;
+    if (!interpreter.interpret(command, params)) {
+      PL_ERR << "<cpx> command failed";
+      return 1;
+    }
   }
 
 }
 
 bool Cpx::interpret(std::string command, std::vector<std::string> &tokens) {
   if (command == "boot")
-    return boot();
+    return boot(tokens);
   else if (command == "simulation")
     return load_simulation(tokens);
   else if (command == "templates")
@@ -185,16 +189,21 @@ bool Cpx::save_qpx(std::vector<std::string> &tokens) {
   return true;
 }
 
-bool Cpx::boot() {
+bool Cpx::boot(std::vector<std::string> &tokens) {
+  if (tokens.size() < 1) {
+    PL_ERR << "<cpx> expected syntax: boot /home/user/qpxdata";
+    return false;
+  }
+  std::string data_dir(tokens[0]);
   //defaults
   std::vector<std::string> boot_files_(7);
-  boot_files_[0] = "/opt/XIA/Firmware/FippiP500.bin";
-  boot_files_[1] = "/opt/XIA/Firmware/syspixie_revC.bin";
-  boot_files_[2] = "/opt/XIA/Firmware/pixie.bin";
-  boot_files_[3] = "/opt/XIA/DSP/PXIcode.bin";
-  boot_files_[4] = "/opt/XIA/Configuration/HPGe.set";
-  boot_files_[5] = "/opt/XIA/DSP/PXIcode.var";
-  boot_files_[6] = "/opt/XIA/DSP/PXIcode.lst";
+  boot_files_[0] = data_dir + "/XIA/Firmware/FippiP500.bin";
+  boot_files_[1] = data_dir + "/XIA/Firmware/syspixie_revC.bin";
+  boot_files_[2] = data_dir + "/XIA/Firmware/pixie.bin";
+  boot_files_[3] = data_dir + "/XIA/DSP/PXIcode.bin";
+  boot_files_[4] = data_dir + "/XIA/Configuration/HPGe.set";
+  boot_files_[5] = data_dir + "/XIA/DSP/PXIcode.var";
+  boot_files_[6] = data_dir + "/XIA/DSP/PXIcode.lst";
   std::vector<uint8_t> boot_slots_(1);
   boot_slots_[0] = 2;
   std::vector<std::string> default_detectors_(4);
@@ -205,7 +214,7 @@ bool Cpx::boot() {
 
   //defaults
   XMLableDB<Pixie::Detector> detectors_("Detectors");
-  detectors_.read_xml("/home/liudas/qpxdata/default_detectors.det");
+  detectors_.read_xml(data_dir + "/default_detectors.det");
   if (detectors_.empty()) {
     PL_ERR << "<cpx> bad detector db";
     return false;
