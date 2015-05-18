@@ -1,0 +1,13 @@
+Makefile*
+install
+PIXIEmsg*
+debug/*
+release/*
+qpx
+qpxd
+*.desktop
+*.user
+*.log
+/ui_*.h
+.*
+!.gitignore

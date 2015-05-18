@@ -147,8 +147,23 @@ bool Spectrum2D::_write_file(std::string dir, std::string format) const {
   if (format == "m") {
       write_m(dir + "/" + name_ + ".m");
       return true;
+  } else if (format == "esc") {
+      write_esc(dir + "/" + name_ + ".esc");
+      return true;
+  } else if (format == "spn") {
+      write_spn(dir + "/" + name_ + ".spn");
+      return true;
   } else
       return false;
+}
+
+bool Spectrum2D::_read_file(std::string name, std::string format) {
+  if (format == "esc")
+    return read_esc(name);
+  else if (format == "spn")
+    return read_spn(name);
+  else
+    return false;
 }
 
 void Spectrum2D::write_m(std::string name) const {
@@ -168,6 +183,119 @@ void Spectrum2D::write_m(std::string name) const {
          << "imagesc(log(coinc));" << std::endl
          << "colormap(hot);" << std::endl;
   myfile.close();
+}
+
+void Spectrum2D::write_esc(std::string name) const {
+  std::ofstream myfile(name, std::ios::out | std::ios::binary);
+
+  float one;
+  for (int i=0; i<2048; ++i) {
+    for (int j=0; j<2048; ++j) {
+      one = 0.0;
+      std::pair<uint16_t,uint16_t> point(i, j);
+      if (spectrum_.count(point))
+        one = spectrum_.at(point);
+
+      myfile.write((char*)&one, sizeof(float));
+
+    }
+  }
+  myfile.close();
+}
+
+void Spectrum2D::write_spn(std::string name) const {
+  std::ofstream myfile(name, std::ios::out | std::ios::binary);
+
+  uint32_t one;
+  for (int i=0; i<8192; ++i) {
+    for (int j=0; j<8192; ++j) {
+      one = 0;
+      std::pair<uint16_t,uint16_t> point(i, j);
+      if (spectrum_.count(point))
+        one = static_cast<uint32_t>(spectrum_.at(point));
+
+      myfile.write((char*)&one, sizeof(uint32_t));
+
+    }
+  }
+  myfile.close();
+}
+
+
+
+bool Spectrum2D:: read_esc(std::string name) {
+  //radware escl8r file
+  std::ifstream myfile(name, std::ios::in | std::ios::binary);
+
+  spectrum_.clear();
+  count_ = 0;
+//  max_chan_ = 0;
+//  uint16_t max_i =0;
+
+  float one;
+  for (int i=0; i<2048; ++i) {
+    // actually, i<2055, more junk there, not sure what it is
+    for (int j=0; j<2048; ++j) {
+      myfile.read ((char*)&one, sizeof(float));
+      count_ += one;
+      if (one > 0)
+        spectrum_[std::pair<uint16_t, uint16_t>(i,j)] = one;
+    }
+  }
+  bits_ = 11;
+  shift_by_ = 5;
+
+  detectors_.resize(kNumChans);
+  detectors_[0].name_ = "default";
+  detectors_[0].energy_calibrations_.add(Calibration(bits_));
+  detectors_[1].name_ = "default";
+  detectors_[1].energy_calibrations_.add(Calibration(bits_));
+  
+  init_from_file(name);
+}
+
+bool Spectrum2D:: read_spn(std::string name) {
+  //radware escl8r file
+  std::ifstream myfile(name, std::ios::in | std::ios::binary);
+
+  spectrum_.clear();
+  count_ = 0;
+//  max_chan_ = 0;
+//  uint16_t max_i =0;
+
+  uint32_t one;
+  for (int i=0; i<8192; ++i) {
+    for (int j=0; j<8192; ++j) {
+      myfile.read ((char*)&one, sizeof(uint32_t));
+      count_ += one;
+      if (one > 0)
+        spectrum_[std::pair<uint16_t, uint16_t>(i,j)] = one;
+    }
+  }
+  bits_ = 13;
+  shift_by_ = 3;
+
+  detectors_.resize(kNumChans);
+  detectors_[0].name_ = "default";
+  detectors_[0].energy_calibrations_.add(Calibration(bits_));
+  detectors_[1].name_ = "default";
+  detectors_[1].energy_calibrations_.add(Calibration(bits_));
+  
+  init_from_file(name);
+}
+
+
+void Spectrum2D::init_from_file(std::string filename) { 
+  match_pattern_.resize(kNumChans, 0);
+  add_pattern_.resize(kNumChans, 0);
+  add_pattern_[0] = 1;
+  add_pattern_[1] = 1;
+  name_ = boost::filesystem::path(filename).filename().string();
+  std::replace( name_.begin(), name_.end(), '.', '_');
+  visible_ = true;
+  appearance_ = 4278190335;  //randomize?
+  initialize();
+  recalc_energies();
 }
 
 
