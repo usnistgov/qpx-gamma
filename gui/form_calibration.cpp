@@ -77,8 +77,6 @@ FormCalibration::FormCalibration(QWidget *parent) :
 
   connect(ui->isotopes, SIGNAL(energiesSelected()), this, SLOT(isotope_energies_chosen()));
   connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
-
-  connect(&fitter_, SIGNAL(newPeak(QVector<Gaussian>*, QVector<double>*)), this, SLOT(newPeak(QVector<Gaussian>*, QVector<double>*)));
 }
 
 FormCalibration::~FormCalibration()
@@ -146,7 +144,6 @@ void FormCalibration::setSpectrum(Pixie::SpectraSet *newset, QString name) {
     return;
 
   peaks_.clear();
-  fit_sum_.clear();
   Pixie::Spectrum::Spectrum *spectrum;
   if ((spectrum = spectra_->by_name(name.toStdString())) &&
       (spectrum->resolution())) {
@@ -186,10 +183,8 @@ void FormCalibration::update_plot() {
     }
     ui->plot1D->clearGraphs();
     ui->plot1D->addGraph(x_chan, y, QColor::fromRgba(spectrum->appearance()), 0);
-    if (fit_sum_.size())
-      ui->plot1D->addGraph(x_chan, fit_sum_, Qt::darkCyan, 0);
     for (auto &q : peaks_)
-      ui->plot1D->addGraph(x_chan, QVector<double>::fromStdVector(q.evaluate_array(x_chan.toStdVector())), Qt::cyan, 0);
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_), Qt::cyan, 0);
     ui->plot1D->setLabels("channel", "counts");
     ui->plot1D->update_plot();
   }
@@ -264,12 +259,10 @@ void FormCalibration::toggle_push() {
   else
     ui->pushClear->setEnabled(true);
 
-  if (static_cast<int>(my_markers_.size()) >= ui->spinTerms->value()) {
+  if (static_cast<int>(my_markers_.size()) >= 2) {
     ui->pushFit->setEnabled(true);
-    ui->pushFit2->setEnabled(true);
   } else {
     ui->pushFit->setEnabled(false);
-    ui->pushFit2->setEnabled(false);
   }
 
   if (detectors_->has_a(detector_) && detectors_->get(detector_).energy_calibrations_.has_a(old_calibration_))
@@ -331,7 +324,7 @@ void FormCalibration::on_pushMarkerRemove_clicked()
 
 void FormCalibration::on_pushFit_clicked()
 {  
-  std::vector<double> x, y, coefs(ui->spinTerms->value());
+  std::vector<double> x, y, coefs(ui->spinTerms->value()+1);
   x.resize(my_markers_.size());
   y.resize(my_markers_.size());
   int i = 0;
@@ -340,36 +333,11 @@ void FormCalibration::on_pushFit_clicked()
     y[i] = q.second;
     i++;
   }
-  if (poly_fit(x, y, coefs)) {
-    new_calibration_.coefficients_ = coefs;
-    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
-    new_calibration_.units_ = "keV";
-    new_calibration_.model_ = 1;
-    PL_INFO << "Calibration coefficients = " << new_calibration_.coef_to_string();
-    toggle_radio();
-  }
-  else
-    PL_INFO << "Calibration failed";
 
-  selection_model_.reset();
-  marker_table_.update();
-  toggle_push();
-  replot_markers();
-}
+  Polynomial p = Polynomial(x, y, ui->spinTerms->value());
 
-void FormCalibration::on_pushFit2_clicked()
-{
-  std::vector<double> x, y, coefs(ui->spinTerms->value());
-  x.resize(my_markers_.size());
-  y.resize(my_markers_.size());
-  int i = 0;
-  for (auto &q : my_markers_) {
-    x[i] = q.first;
-    y[i] = q.second;
-    i++;
-  }
-  if (poly_fit2(x, y, coefs)) {
-    new_calibration_.coefficients_ = coefs;
+  if (p.degree_) {
+    new_calibration_.coefficients_ = p.coeffs_;
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "keV";
     new_calibration_.model_ = 1;
@@ -460,28 +428,14 @@ void FormCalibration::on_pushFindPeaks_clicked()
 {
   my_markers_.clear();
   UtilXY xy(x_chan.toStdVector(), y.toStdVector());
-  xy.find_peaks(ui->spinMinPeakWidth->value());
-  for (auto &q : xy.peaks_)
-    my_markers_[q] = old_calibration_.transform(q);
+  xy.find_peaks(ui->spinMinPeakWidth->value(), ui->spinMaxPeakWidth->value());
+  peaks_ = xy.peaks_;
+  for (auto &q : peaks_) {
+    double chan = q.refined_.center_;
+    my_markers_[chan] = old_calibration_.transform(chan);
+  }
   marker_table_.update();
   toggle_push();
-  replot_markers();
-}
-
-void FormCalibration::on_pushFindGauss_clicked()
-{
-  fitter_.startFit(x_chan, y, ui->spinPeaks->value(), ui->doubleSpinWidthMax->value());
-}
-
-void FormCalibration::newPeak(QVector<Gaussian> *pk, QVector<double> *sm) {
-  peaks_ = *pk;
-  fit_sum_ = *sm;
-  delete sm; delete pk;
-
   update_plot();
-}
-
-void FormCalibration::on_pushStopFit_clicked()
-{
-  fitter_.stopFit();
+  replot_markers();
 }

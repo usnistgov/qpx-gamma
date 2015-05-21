@@ -79,13 +79,6 @@ private slots:
 
   void update_plot();
 
-  void on_pushFit2_clicked();
-
-  void on_pushFindGauss_clicked();
-
-  void newPeak(QVector<Gaussian>*, QVector<double>*);
-
-  void on_pushStopFit_clicked();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -111,10 +104,7 @@ private:
   QItemSelectionModel selection_model_;
   QpxSpecialDelegate  special_delegate_;
 
-  QVector<Gaussian> peaks_;
-  QVector<double> fit_sum_;
-
-  PeakFitter fitter_;
+  std::vector<Peak> peaks_;
 
   Pixie::Calibration old_calibration_, new_calibration_;
 

@@ -301,7 +301,7 @@
              <item>
               <widget class="QLabel" name="label_4">
                <property name="text">
-                <string>Min peak width</string>
+                <string>Width [min, max]</string>
                </property>
               </widget>
              </item>
@@ -326,7 +326,20 @@
                 <number>999</number>
                </property>
                <property name="value">
-                <number>15</number>
+                <number>6</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="spinMaxPeakWidth">
+               <property name="minimum">
+                <number>10</number>
+               </property>
+               <property name="maximum">
+                <number>999</number>
+               </property>
+               <property name="value">
+                <number>90</number>
                </property>
               </widget>
              </item>
@@ -384,16 +397,6 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="pushFit2">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>Ft2</string>
-           </property>
-          </widget>
-         </item>
-         <item>
           <widget class="QLabel" name="label">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -408,6 +411,9 @@
          </item>
          <item>
           <widget class="QSpinBox" name="spinTerms">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
            <property name="sizePolicy">
             <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -415,10 +421,13 @@
             </sizepolicy>
            </property>
            <property name="minimum">
-            <number>3</number>
+            <number>2</number>
            </property>
            <property name="maximum">
             <number>10</number>
+           </property>
+           <property name="value">
+            <number>2</number>
            </property>
           </widget>
          </item>
@@ -446,82 +455,6 @@
           </widget>
          </item>
         </layout>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="groupBox">
-         <property name="title">
-          <string>Gaussian search with rejection</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_2">
-          <item row="0" column="0">
-           <layout class="QHBoxLayout" name="horizontalLayout_10">
-            <item>
-             <widget class="QPushButton" name="pushFindGauss">
-              <property name="text">
-               <string>Begin search</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_8">
-              <item>
-               <widget class="QLabel" name="label_2">
-                <property name="text">
-                 <string>Max peaks</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QSpinBox" name="spinPeaks">
-                <property name="minimum">
-                 <number>1</number>
-                </property>
-                <property name="maximum">
-                 <number>500</number>
-                </property>
-                <property name="value">
-                 <number>150</number>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </item>
-          <item row="1" column="0">
-           <layout class="QHBoxLayout" name="horizontalLayout_11">
-            <item>
-             <widget class="QPushButton" name="pushStopFit">
-              <property name="text">
-               <string>Stop search</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_7">
-              <item>
-               <widget class="QLabel" name="label_5">
-                <property name="text">
-                 <string>FWHM max ratio</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QDoubleSpinBox" name="doubleSpinWidthMax">
-                <property name="minimum">
-                 <double>0.010000000000000</double>
-                </property>
-                <property name="value">
-                 <double>4.000000000000000</double>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </widget>
        </item>
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout">

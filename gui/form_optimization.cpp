@@ -362,7 +362,6 @@ void FormOptimization::update_plots() {
     int jj = peaks_.size() - 1;
     ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[jj].x_), QVector<double>::fromStdVector(peaks_[jj].y_), Qt::lightGray, 0);
     ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[jj].x_), QVector<double>::fromStdVector(peaks_[jj].rough_.evaluate_array(peaks_[jj].x_)), Qt::lightGray, 0);
-    ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[jj].x_), QVector<double>::fromStdVector(peaks_[jj].diff_y_), Qt::lightGray, 0);
 
     ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[jj].x_), QVector<double>::fromStdVector(peaks_[jj].filled_y_), Qt::gray, 0);
     ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[jj].x_), QVector<double>::fromStdVector(peaks_[jj].y_nobase_), Qt::gray, 0);
