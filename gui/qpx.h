@@ -61,6 +61,8 @@ private:
   ThreadRunner                  runner_thread_;
 
   FormStart* main_tab_;
+  bool gui_enabled_;
+  Pixie::LiveStatus px_status_;
 
   //helper functions
   void saveSettings();
@@ -68,6 +70,8 @@ private:
 
 signals:
   void toggle_push(bool, Pixie::LiveStatus);
+  void settings_changed();
+  void update_dets();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -88,12 +92,16 @@ private slots:
 
   void calibrate(FormCalibration*);
   void detectors_updated();
+  void update_settings();
 
   void on_pushAbout_clicked();
 
   void on_pushOpenSpectra_clicked();
   void on_pushOpenList_clicked();
   void on_pushOpenOptimize_clicked();
+  void on_pushOpenGainMatch_clicked();
+
+  bool hasTab(QString);
 };
 
 #endif // qpx_H

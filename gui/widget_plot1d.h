@@ -52,6 +52,7 @@ public:
   void reset_scales();
   void set_markers(const std::list<Marker>& markers);
   void set_block(Marker, Marker);
+  void setLogScale(bool);
 
   void clearGraphs();
   void addGraph(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness);
@@ -82,6 +83,8 @@ private:
 
   std::list<Marker> my_markers_;
   std::vector<Marker> rect;
+
+  double minx, maxx;
 
   QMenu menuScaleType;
   QMenu menuPlotStyle;

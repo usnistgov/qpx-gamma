@@ -167,8 +167,10 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
   if (role == Qt::EditRole)
     if (row)
       my_settings_.set_chan(row - 1, value.toDouble(), Pixie::Channel(col - 1));
-    else if (value.canConvert<Pixie::Detector>())
+    else if (value.canConvert<Pixie::Detector>()) {
       my_settings_.set_detector(Pixie::Channel(col - 1), qvariant_cast<Pixie::Detector>(value));
+      emit detectors_changed();
+    }
 
   return true;
 }

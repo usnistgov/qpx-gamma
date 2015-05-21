@@ -45,6 +45,7 @@ public:
   void update_plot();
 
   void replot_markers();
+  void reset_content();
 
 public slots:
   void set_markers2d(double x, double y);
@@ -74,8 +75,6 @@ private:
   Pixie::SpectraSet *mySpectra;
 
   Marker moving, markx, marky;
-
-  double min_x, max_x;
 };
 
 #endif // WIDGET_PLOT1D_H

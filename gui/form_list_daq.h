@@ -97,6 +97,8 @@ private:
   QItemSelectionModel list_selection_model_;
   QpxSpecialDelegate  list_delegate_;
 
+  bool my_run_;
+
   void displayTraces();
 
   void loadSettings();

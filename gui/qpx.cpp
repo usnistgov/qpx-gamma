@@ -36,7 +36,7 @@
 #include "form_pixie_settings.h"
 #include "form_oscilloscope.h"
 #include "form_optimization.h"
-
+#include "form_gain_match.h"
 
 #include "ui_about.h"
 #include "qt_util.h"
@@ -69,13 +69,20 @@ qpx::qpx(QWidget *parent) :
   ui->qpxTabs->addTab(main_tab_, "Settings");
   connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Pixie::LiveStatus)), main_tab_, SLOT(toggle_push(bool,Pixie::LiveStatus)));
+  connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(settings_updated()));
+  connect(this, SIGNAL(update_dets()), main_tab_, SLOT(detectors_updated()));
   ui->qpxTabs->setCurrentWidget(main_tab_);
+
+  gui_enabled_ = true;
+  px_status_ = Pixie::LiveStatus::dead;
 
   //on_pushAbout_clicked();
   PL_INFO << "Hello! Welcome to Multi-NAA at neutron guide D at NCNR. Please click boot to boot :)";
 
+//for now available only in debug mode
 #ifdef QPX_DBG_
   ui->pushOpenOptimize->setEnabled(true);
+  ui->pushOpenGainMatch->setEnabled(true);
 #endif
 
 }
@@ -163,14 +170,17 @@ void qpx::updateStatusText(QString text) {
 }
 
 void qpx::toggleIO(bool enable) {
-  Pixie::LiveStatus live = Pixie::Wrapper::getInstance().settings().live();
+  px_status_ = Pixie::Wrapper::getInstance().settings().live();
+  gui_enabled_ = enable;
 
-  if (enable && (live == Pixie::LiveStatus::online))
+  if (enable && (px_status_ == Pixie::LiveStatus::online))
     ui->statusBar->showMessage("Online");
-  else if (enable && (live == Pixie::LiveStatus::offline))
+  else if (enable && (px_status_ == Pixie::LiveStatus::offline))
     ui->statusBar->showMessage("Offline");
+  else
+    ui->statusBar->showMessage("Busy");
 
-  emit toggle_push(enable, live);
+  emit toggle_push(enable, px_status_);
 }
 
 void qpx::on_splitter_splitterMoved(int pos, int index)
@@ -190,8 +200,11 @@ void qpx::on_pushAbout_clicked()
 }
 
 void qpx::detectors_updated() {
+  emit update_dets();
+}
 
-  //emit signal to settings widget
+void qpx::update_settings() {
+  emit settings_changed();
 }
 
 void qpx::calibrate(FormCalibration* formCalib) {
@@ -212,7 +225,7 @@ void qpx::on_pushOpenSpectra_clicked()
   connect(this, SIGNAL(toggle_push(bool,Pixie::LiveStatus)), newSpectraForm, SLOT(toggle_push(bool,Pixie::LiveStatus)));
 
   ui->qpxTabs->setCurrentWidget(newSpectraForm);
-  toggleIO(true);
+  emit toggle_push(gui_enabled_, px_status_);
 }
 
 void qpx::on_pushOpenList_clicked()
@@ -225,20 +238,49 @@ void qpx::on_pushOpenList_clicked()
   connect(this, SIGNAL(toggle_push(bool,Pixie::LiveStatus)), newListForm, SLOT(toggle_push(bool,Pixie::LiveStatus)));
 
   ui->qpxTabs->setCurrentWidget(newListForm);
-  toggleIO(true);
+  emit toggle_push(gui_enabled_, px_status_);
 }
 
 void qpx::on_pushOpenOptimize_clicked()
 {
-  //limit only one of these?
+  //limit only one of these
+  if (hasTab("Optimization"))
+    return;
+
   FormOptimization *newOpt = new FormOptimization(runner_thread_, settings_, detectors_);
   ui->qpxTabs->addTab(newOpt, "Optimization");
 
   connect(newOpt, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
+  connect(newOpt, SIGNAL(settings_changed()), this, SLOT(update_settings()));
 
   connect(newOpt, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Pixie::LiveStatus)), newOpt, SLOT(toggle_push(bool,Pixie::LiveStatus)));
 
   ui->qpxTabs->setCurrentWidget(newOpt);
-  toggleIO(true);
+  emit toggle_push(gui_enabled_, px_status_);
+}
+
+void qpx::on_pushOpenGainMatch_clicked()
+{
+  //limit only one of these
+  if (hasTab("Gain matching"))
+    return;
+
+  FormGainMatch *newGain = new FormGainMatch(runner_thread_, settings_, detectors_);
+  ui->qpxTabs->addTab(newGain, "Gain matching");
+
+  connect(newGain, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
+
+  connect(newGain, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
+  connect(this, SIGNAL(toggle_push(bool,Pixie::LiveStatus)), newGain, SLOT(toggle_push(bool,Pixie::LiveStatus)));
+
+  ui->qpxTabs->setCurrentWidget(newGain);
+  emit toggle_push(gui_enabled_, px_status_);
+}
+
+bool qpx::hasTab(QString tofind) {
+  for (int i = 0; i < ui->qpxTabs->count(); ++i)
+    if (ui->qpxTabs->tabText(i) == tofind)
+      return true;
+  return false;
 }

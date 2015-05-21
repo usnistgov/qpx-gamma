@@ -52,6 +52,7 @@ public:
 
 public slots:
   void refresh();
+  void update();
 
 signals:
   void toggleIO(bool);
@@ -69,6 +70,7 @@ private slots:
   void on_buttonCompBLC_clicked();
 
   void updateDetDB();
+  void updateDetChoices();
   void toggle_push(bool enable, Pixie::LiveStatus live);
 
 private:

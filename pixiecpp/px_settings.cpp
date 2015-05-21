@@ -22,7 +22,7 @@
  *
  ******************************************************************************/
 
-#include "settings.h"
+#include "px_settings.h"
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include "common_xia.h"

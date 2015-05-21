@@ -26,9 +26,11 @@
 #include <QWidget>
 #include <QSettings>
 #include "spectra_set.h"
+#include "spectrum1D.h"
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
 #include "widget_plot1d.h"
+#include "poly_fit.h"
 
 namespace Ui {
 class FormOptimization;
@@ -47,16 +49,16 @@ signals:
   void restart_run();
   void post_proc();
   void optimization_approved();
+  void settings_changed();
 
 protected:
   void closeEvent(QCloseEvent*);
 
 private slots:
-  void on_pushTakeOne_clicked();
   void update_plots();
   void run_completed();
 
-  void on_pushMatchGain_clicked();
+  void on_pushStart_clicked();
   void addMovingMarker(double);
   void removeMovingMarker(double);
   void replot_markers();
@@ -72,30 +74,38 @@ private slots:
   void on_pushSaveOpti_clicked();
 
 private:
+  void loadSettings();
+  void saveSettings();
+
+
   Ui::FormOptimization *ui;
 
   Pixie::Wrapper&      pixie_;
-  Pixie::SpectraSet    spectra_;
-  Pixie::Spectrum::Template reference_, optimizing_;
+  Pixie::SpectraSet current_spectra_;
+  Pixie::Spectrum::Template        optimizing_;
 
-  ThreadRunner         &runner_thread_;
+  ThreadRunner         &opt_runner_thread_;
   XMLableDB<Pixie::Detector> &detectors_;
   QSettings &settings_;
 
-  ThreadPlotSignal     plot_thread_;
+  ThreadPlotSignal     opt_plot_thread_;
   boost::atomic<bool>  interruptor_;
 
-  std::vector<double> x, y_ref, y_opt;
-  double max_x;
+  std::vector<double> x, y_opt;
+  std::vector<std::vector<double>> spectra_y_;
+  std::vector<uint32_t> spectra_app_;
 
-  bool running;
+  double val_min, val_max, val_d, val_current;
 
-  Marker moving, refm, optm, a, b;
-  int bits, current_pass;
-  int ref_peak, opt_peak, refpk, optpk;
+  bool my_run_;
 
-  std::vector<int> markers_ref, markers_opt; //channel
+  Marker moving_, a, b;
+  int bits;
 
+  std::string current_setting_;
+  std::vector<Peak> peaks_;
+  std::vector<double> setting_values_;
+  std::vector<double> setting_fwhm_;
 };
 
 #endif // FORM_OPTIMIZATION_H

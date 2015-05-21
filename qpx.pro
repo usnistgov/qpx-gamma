@@ -63,7 +63,7 @@ unix {
                -lboost_system -lboost_date_time -lboost_thread -lboost_log \
                -lboost_program_options -lboost_filesystem \
                -lboost_log_setup -lboost_timer \
-	       -lgsl -lgslcblas
+               -lgsl -lgslcblas -llua5.2 -lz
 
 	target.path = /usr/local/bin/
 	icon.path = /usr/share/icons/
@@ -97,6 +97,8 @@ INCLUDEPATH += pixiecpp gui \
                dependencies/tinyxml2 \
                dependencies/qcustomplot \
                dependencies/qtcolorpicker \
+               dependencies/fityk \
+               /usr/include/lua5.2
 
 SOURCES += $$files(dependencies/*.cpp) \
            $$files(dependencies/XIA/*.c) \
@@ -105,6 +107,9 @@ SOURCES += $$files(dependencies/*.cpp) \
            $$files(dependencies/qtcolorpicker/*.cpp) \
            $$files(dependencies/tinyxml2/*.cpp) \
            $$files(dependencies/xylib/*.cpp) \
+           $$files(dependencies/fityk/*.cpp) \
+           $$files(dependencies/fityk/swig/*.cpp) \
+           $$files(dependencies/fityk/cmpfit/*.c) \
            $$files(pixiecpp/*.cpp) \
            $$files(gui/*.cpp)
 
@@ -116,6 +121,7 @@ HEADERS  += $$files(dependencies/*.h) \
             $$files(dependencies/qtcolorpicker/*.h) \
             $$files(dependencies/tinyxml2/*.h) \
             $$files(dependencies/xylib/*.h) \
+            $$files(dependencies/fityk/*.cpp) \
             $$files(pixiecpp/*.h) \
             $$files(gui/*.h)
 
