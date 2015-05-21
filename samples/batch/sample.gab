@@ -1,0 +1,4 @@
+boot /home/mns16/qpxdata/
+templates batch.tem
+run_mca 60
+save_qpx $1

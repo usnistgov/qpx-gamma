@@ -39,7 +39,8 @@ public:
   static Template get_template() {
     Template new_temp;
     new_temp.type = "2D";
-    new_temp.output_types = {"m"};
+    new_temp.output_types = {"m", "esc", "spn"};
+    new_temp.input_types = {"esc", "spn"};
     new_temp.description = "Matrix-type coincidence spectrum for two detectors";
 
     Setting buf;
@@ -58,6 +59,8 @@ protected:
   typedef std::map<std::pair<uint16_t,uint16_t>, uint64_t> SpectrumMap2D;
   
   bool initialize() override;
+  void init_from_file(std::string filename);
+
   std::string my_type() const override {return "2D";}
 
   uint64_t _get_count(std::initializer_list<uint16_t> list ) const;
@@ -68,12 +71,18 @@ protected:
 
   //save/load
   bool _write_file(std::string, std::string) const override;
+  bool _read_file(std::string, std::string) override;
   
   std::string _channels_to_xml() const override;
   uint16_t _channels_from_xml(const std::string&) override;
   
   //export to matlab script
   void write_m(std::string) const;
+  void write_esc(std::string) const;
+  void write_spn(std::string) const;
+
+  bool read_esc(std::string);
+  bool read_spn(std::string);
 
   //indexes of the two chosen channels
   std::vector<int8_t> pattern_;

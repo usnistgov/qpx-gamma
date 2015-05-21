@@ -5,6 +5,8 @@ debug/*
 release/*
 qpx
 qpxd
+cpx
+cpxd
 *.desktop
 *.user
 *.log
