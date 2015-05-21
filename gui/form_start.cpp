@@ -57,6 +57,7 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixie:
   connect(formPixieSettings, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
   connect(this, SIGNAL(refresh()), formPixieSettings, SLOT(update()));
   connect(this, SIGNAL(toggle_push_(bool,Pixie::LiveStatus)), formPixieSettings, SLOT(toggle_push(bool,Pixie::LiveStatus)));
+  connect(this, SIGNAL(update_dets()), formPixieSettings, SLOT(updateDetDB()));
 
   QHBoxLayout *lo = new QHBoxLayout();
   lo->addLayout(vl);
@@ -113,4 +114,8 @@ void FormStart::boot_complete(bool success, bool online) {
 
 void FormStart::settings_updated() {
   emit refresh();
+}
+
+void FormStart::detectors_updated() {
+  emit update_dets();
 }

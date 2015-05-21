@@ -51,6 +51,8 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Pixie::Dete
   settings_delegate_.eat_detectors(detectors_);
   channel_settings_model_.update();
   ui->viewChanSettings->show();
+
+  connect(&channel_settings_model_, SIGNAL(detectors_changed()), this, SLOT(updateDetChoices()));
 }
 
 void FormPixieSettings::update() {
@@ -111,11 +113,6 @@ void FormPixieSettings::loadSettings() {
 }
 
 void FormPixieSettings::saveSettings() {
-  std::vector<Pixie::Detector> dets = pixie_.settings().get_detectors();
-  default_detectors_.clear();
-  for (auto &q : dets)
-    default_detectors_.push_back(q.name_);
-
   settings_.beginGroup("Pixie");
   settings_.setValue("filter_samples", ui->comboFilterSamples->currentData().toInt());
   settings_.setValue("coinc_wait", ui->boxCoincWait->value());
@@ -124,6 +121,13 @@ void FormPixieSettings::saveSettings() {
   settings_.setValue("detector_2", QString::fromStdString(default_detectors_[2]));
   settings_.setValue("detector_3", QString::fromStdString(default_detectors_[3]));
   settings_.endGroup();
+}
+
+void FormPixieSettings::updateDetChoices() {
+  std::vector<Pixie::Detector> dets = pixie_.settings().get_detectors();
+  default_detectors_.clear();
+  for (auto &q : dets)
+    default_detectors_.push_back(q.name_);
 }
 
 void FormPixieSettings::updateDetDB() {

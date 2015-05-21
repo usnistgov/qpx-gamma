@@ -71,6 +71,7 @@ private:
 signals:
   void toggle_push(bool, Pixie::LiveStatus);
   void settings_changed();
+  void update_dets();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -99,6 +100,8 @@ private slots:
   void on_pushOpenList_clicked();
   void on_pushOpenOptimize_clicked();
   void on_pushOpenGainMatch_clicked();
+
+  bool hasTab(QString);
 };
 
 #endif // qpx_H

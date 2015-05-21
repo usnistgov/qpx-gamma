@@ -49,6 +49,7 @@ signals:
   void statusText(QString);
   void toggle_push_(bool, Pixie::LiveStatus);
   void refresh();
+  void update_dets();
 
 private slots:
   void toggle_push(bool, Pixie::LiveStatus);
@@ -56,6 +57,7 @@ private slots:
   void updateStatusText(QString);
   void boot_complete(bool, bool);
   void settings_updated();
+  void detectors_updated();
 
 protected:
   void closeEvent(QCloseEvent*);

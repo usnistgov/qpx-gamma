@@ -70,6 +70,7 @@ qpx::qpx(QWidget *parent) :
   connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Pixie::LiveStatus)), main_tab_, SLOT(toggle_push(bool,Pixie::LiveStatus)));
   connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(settings_updated()));
+  connect(this, SIGNAL(update_dets()), main_tab_, SLOT(detectors_updated()));
   ui->qpxTabs->setCurrentWidget(main_tab_);
 
   gui_enabled_ = true;
@@ -199,15 +200,11 @@ void qpx::on_pushAbout_clicked()
 }
 
 void qpx::detectors_updated() {
-  //detectors_.write_xml(data_directory_.toStdString() + "/default_detectors.det");
-  //emit settings_changed();
-  //emit signal to settings widget
+  emit update_dets();
 }
 
 void qpx::update_settings() {
-  //detectors_.write_xml(data_directory_.toStdString() + "/default_detectors.det");
   emit settings_changed();
-  //emit signal to settings widget
 }
 
 void qpx::calibrate(FormCalibration* formCalib) {
@@ -246,7 +243,10 @@ void qpx::on_pushOpenList_clicked()
 
 void qpx::on_pushOpenOptimize_clicked()
 {
-  //limit only one of these?
+  //limit only one of these
+  if (hasTab("Optimization"))
+    return;
+
   FormOptimization *newOpt = new FormOptimization(runner_thread_, settings_, detectors_);
   ui->qpxTabs->addTab(newOpt, "Optimization");
 
@@ -262,7 +262,10 @@ void qpx::on_pushOpenOptimize_clicked()
 
 void qpx::on_pushOpenGainMatch_clicked()
 {
-  //limit only one of these?
+  //limit only one of these
+  if (hasTab("Gain matching"))
+    return;
+
   FormGainMatch *newGain = new FormGainMatch(runner_thread_, settings_, detectors_);
   ui->qpxTabs->addTab(newGain, "Gain matching");
 
@@ -273,4 +276,11 @@ void qpx::on_pushOpenGainMatch_clicked()
 
   ui->qpxTabs->setCurrentWidget(newGain);
   emit toggle_push(gui_enabled_, px_status_);
+}
+
+bool qpx::hasTab(QString tofind) {
+  for (int i = 0; i < ui->qpxTabs->count(); ++i)
+    if (ui->qpxTabs->tabText(i) == tofind)
+      return true;
+  return false;
 }

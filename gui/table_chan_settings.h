@@ -49,6 +49,7 @@ public:
     void update();
 
 signals:
+    void detectors_changed();
 
 public slots:
 
