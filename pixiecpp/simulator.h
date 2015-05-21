@@ -35,12 +35,13 @@ namespace Pixie {
 
 class Simulator {
  public:
-  Simulator(): resolution_(0), shift_by_(0), gen(std::time(0)) {}
+  Simulator(): resolution_(0), shift_by_(0), gen(std::time(0)), valid_(false) {}
   Simulator(SpectraSet* all_spectra, std::array<int,2> chans,
             int source_res, int dest_res);
 
   Hit   getHit();
   StatsUpdate getBlock(double duration);
+  bool valid() {return valid_;}
 
   uint64_t OCR;
   Settings settings;
@@ -55,6 +56,7 @@ class Simulator {
   uint16_t shift_by_;
   uint64_t resolution_;
   PreciseFloat count_;
+  bool valid_;
 
 };
 

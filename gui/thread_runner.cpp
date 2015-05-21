@@ -180,7 +180,8 @@ void ThreadRunner::run()
     intermediate->read_xml(file_.toStdString(), true);
     Pixie::Simulator mySource = Pixie::Simulator(intermediate, fake_chans_, source_res_, dest_res_);
     delete intermediate;
-    Pixie::Wrapper::getInstance().getFakeMca(mySource, *spectra_, timeout_, *interruptor_);
+    if (mySource.valid())
+      Pixie::Wrapper::getInstance().getFakeMca(mySource, *spectra_, timeout_, *interruptor_);
     emit runComplete();
   } else if (action_ == kBoot) {
     Pixie::Wrapper &myPixie = Pixie::Wrapper::getInstance();

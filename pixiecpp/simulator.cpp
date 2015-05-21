@@ -97,6 +97,7 @@ Simulator::Simulator(SpectraSet* all_spectra, std::array<int,2> chans,
     refined_dist_ = boost::random::discrete_distribution<>(distri_granular);
     //Not physically accurate, of course
   }
+  valid_ = true;
 }
 
 Hit Simulator::getHit() {
