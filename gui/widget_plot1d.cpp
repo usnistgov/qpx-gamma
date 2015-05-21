@@ -39,6 +39,7 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   ui->mcaPlot->yAxis->axisRect()->setRangeZoom(Qt::Horizontal);
   connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*)));
 
+  minx = 0; maxx=0;
 
   plotStyle = 1;
   menuPlotStyle.addAction("Scatter");
@@ -78,18 +79,21 @@ void WidgetPlot1D::setTitle(QString title) {
 
 void WidgetPlot1D::on_pushResetScales_clicked()
 {
-  reset_scales();
+  ui->mcaPlot->rescaleAxes();
+  ui->mcaPlot->replot();
 }
 
 void WidgetPlot1D::reset_scales()
 {
-  ui->mcaPlot->rescaleAxes();
-  ui->mcaPlot->replot();
+  minx = maxx = 0;
+//  ui->mcaPlot->rescaleAxes();
+//  ui->mcaPlot->replot();
 }
 
 void WidgetPlot1D::clearGraphs()
 {
   ui->mcaPlot->clearGraphs();
+  //minx = maxx = 0;
   //ui->mcaPlot->replot();
 }
 
@@ -127,6 +131,19 @@ void WidgetPlot1D::plotStyleChosen(QAction* choice) {
   this->setCursor(Qt::ArrowCursor);
 }
 
+void WidgetPlot1D::setLogScale(bool log) {
+  QString action_txt;
+  if (log)
+    action_txt = "Logarithmic";
+  else
+    action_txt = "Linear";
+  for (auto &q : menuScaleType.actions()) {
+    if (q->text() == action_txt) {
+      scaleTypeChosen(q);
+    }
+  }
+}
+
 void WidgetPlot1D::scaleTypeChosen(QAction* choice) {
   this->setCursor(Qt::WaitCursor);
   for (auto &q : menuScaleType.actions())
@@ -144,6 +161,9 @@ void WidgetPlot1D::scaleTypeChosen(QAction* choice) {
 }
 
 void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness) {
+  if (x.empty() || y.empty())
+    return;
+
   ui->mcaPlot->addGraph();
   int g = ui->mcaPlot->graphCount() - 1;
   ui->mcaPlot->graph(g)->addData(x, y);
@@ -158,6 +178,17 @@ void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, 
     ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 1));
     ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsNone);
   }
+  ui->mcaPlot->yAxis->rescale();
+
+  if (x[0] < minx) {
+    minx = x[0];
+    ui->mcaPlot->xAxis->rescale();
+  }
+  if (x[x.size() - 1] > maxx) {
+    maxx = x[x.size() - 1];
+    ui->mcaPlot->xAxis->rescale();
+  }
+
 }
 
 void WidgetPlot1D::setLabels(QString x, QString y) {
@@ -166,9 +197,7 @@ void WidgetPlot1D::setLabels(QString x, QString y) {
 }
 
 void WidgetPlot1D::update_plot() {
-
   ui->mcaPlot->yAxis->rescale();
-
   ui->mcaPlot->replot();
 }
 

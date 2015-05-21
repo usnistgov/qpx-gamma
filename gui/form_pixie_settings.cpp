@@ -53,12 +53,16 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Pixie::Dete
   ui->viewChanSettings->show();
 }
 
-void FormPixieSettings::refresh() {
+void FormPixieSettings::update() {
   ui->boxCoincWait->setValue(pixie_.settings().get_mod("ACTUAL_COINCIDENCE_WAIT"));
   ui->comboFilterSamples->setCurrentText(QString::number(pow(2,pixie_.settings().get_mod("FILTER_RANGE"))));
   channel_settings_model_.update();
   ui->viewChanSettings->resizeColumnsToContents();
   ui->viewChanSettings->horizontalHeader()->setStretchLastSection(true);
+}
+
+void FormPixieSettings::refresh() {
+  update();
   emit toggleIO(true);
 }
 
@@ -92,7 +96,7 @@ void FormPixieSettings::toggle_push(bool enable, Pixie::LiveStatus live) {
   else
     ui->viewChanSettings->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-  ui->pushOptimizeAll->setEnabled(online || offline);
+  ui->pushOptimizeAll->setEnabled(enable && (online || offline));
 }
 
 void FormPixieSettings::loadSettings() {

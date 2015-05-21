@@ -16,49 +16,48 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *     Optimization UI
+ *     Gain matching UI
  *
  ******************************************************************************/
 
-#ifndef FORM_OPTIMIZATION_H
-#define FORM_OPTIMIZATION_H
+#ifndef FORM_GAIN_MATCH_H
+#define FORM_GAIN_MATCH_H
 
 #include <QWidget>
 #include <QSettings>
 #include "spectra_set.h"
-#include "spectrum1D.h"
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
 #include "widget_plot1d.h"
 #include "poly_fit.h"
 
 namespace Ui {
-class FormOptimization;
+class FormGainMatch;
 }
 
-class FormOptimization : public QWidget
+class FormGainMatch : public QWidget
 {
   Q_OBJECT
 
 public:
-  explicit FormOptimization(ThreadRunner&, QSettings&, XMLableDB<Pixie::Detector>&, QWidget *parent = 0);
-  ~FormOptimization();
+  explicit FormGainMatch(ThreadRunner&, QSettings&, XMLableDB<Pixie::Detector>&, QWidget *parent = 0);
+  ~FormGainMatch();
 
 signals:
   void toggleIO(bool);
   void restart_run();
   void post_proc();
   void optimization_approved();
-  void settings_changed();
 
 protected:
   void closeEvent(QCloseEvent*);
 
 private slots:
+  void on_pushTakeOne_clicked();
   void update_plots();
   void run_completed();
 
-  void on_pushStart_clicked();
+  void on_pushMatchGain_clicked();
   void addMovingMarker(double);
   void removeMovingMarker(double);
   void replot_markers();
@@ -74,38 +73,32 @@ private slots:
   void on_pushSaveOpti_clicked();
 
 private:
-  void loadSettings();
-  void saveSettings();
-
-
-  Ui::FormOptimization *ui;
+  Ui::FormGainMatch *ui;
 
   Pixie::Wrapper&      pixie_;
-  Pixie::SpectraSet current_spectra_;
-  Pixie::Spectrum::Template        optimizing_;
+  Pixie::SpectraSet    spectra_;
+  Pixie::Spectrum::Template reference_, optimizing_;
 
-  ThreadRunner         &opt_runner_thread_;
+  ThreadRunner         &runner_thread_;
   XMLableDB<Pixie::Detector> &detectors_;
   QSettings &settings_;
 
-  ThreadPlotSignal     opt_plot_thread_;
+  ThreadPlotSignal     plot_thread_;
   boost::atomic<bool>  interruptor_;
 
-  std::vector<double> x, y_opt;
-  std::vector<std::vector<double>> spectra_y_;
-  std::vector<uint32_t> spectra_app_;
+  std::vector<double> x, y_ref, y_opt;
 
-  double val_min, val_max, val_d, val_current;
-
+  bool running;
   bool my_run_;
 
-  Marker moving_, a, b;
-  int bits;
 
-  std::string current_setting_;
-  std::vector<Peak> peaks_;
-  std::vector<double> setting_values_;
-  std::vector<double> setting_fwhm_;
+  Marker moving_, marker_ref_, marker_opt_, a ,b;
+  int bits, current_pass;
+
+  Peak gauss_ref_, gauss_opt_;
+
+  CustomTimer* minTimer;
+
 };
 
 #endif // FORM_OPTIMIZATION_H

@@ -37,6 +37,7 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixi
   runner_thread_(thread),
   plot_thread_(spectra_),
   detectors_(detectors),
+  my_run_(false),
   ui(new Ui::FormMcaDaq)
 {
   ui->setupUi(this);
@@ -64,7 +65,6 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixi
   connect(ui->Plot1d, SIGNAL(marker_set(double)), ui->Plot2d, SLOT(set_marker(double)));
   connect(ui->Plot1d, SIGNAL(requestCalibration(QString)), this, SLOT(reqCalib(QString)));
   connect(&plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
-
   plot_thread_.start();
 }
 
@@ -73,7 +73,7 @@ FormMcaDaq::~FormMcaDaq()
 }
 
 void FormMcaDaq::closeEvent(QCloseEvent *event) {
-  if (runner_thread_.isRunning()) {
+  if (my_run_ && runner_thread_.isRunning()) {
     int reply = QMessageBox::warning(this, "Ongoing data acquisition",
                                      "Terminate?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
@@ -156,6 +156,8 @@ void FormMcaDaq::on_pushTimeNow_clicked()
 void FormMcaDaq::clearGraphs() //rename this
 {
   spectra_.clear();
+  updateSpectraUI();
+  ui->Plot1d->reset_content();
   ui->Plot2d->reset(); //is this necessary?
 
   spectra_.activate();
@@ -211,6 +213,8 @@ void FormMcaDaq::on_pushMcaStart_clicked()
   updateSpectraUI();
   spectra_.activate();
 
+  my_run_ = true;
+  ui->Plot1d->reset_content();
   runner_thread_.do_run(spectra_, interruptor_, Pixie::RunType::compressed, ui->boxMcaMins->value() * 60 + ui->boxMcaSecs->value(), ui->checkDoubleBuffer->isChecked());
 }
 
@@ -244,8 +248,10 @@ void FormMcaDaq::on_pushMcaSimulate_clicked()
   spectra_.activate();
 
   ui->pushMcaStop->setEnabled(true);
+  my_run_ = true;
 
   //hardcoded precision and channels
+  ui->Plot1d->reset_content();
   runner_thread_.do_fake(spectra_, interruptor_, fileName, {0,1}, 14, 12, ui->boxMcaMins->value() * 60 + ui->boxMcaSecs->value());
 }
 
@@ -322,8 +328,7 @@ void FormMcaDaq::on_pushMcaClear_clicked()
                                    "Clear all spectra?",
                                    QMessageBox::Yes|QMessageBox::No);
   if (reply == QMessageBox::Yes) {
-    spectra_.clear();
-    updateSpectraUI();
+    clearGraphs();
     ui->pushMcaSave->setEnabled(false);
     ui->pushMcaClear->setEnabled(false);
     //spectra_.activate();
@@ -344,14 +349,13 @@ void FormMcaDaq::on_pushMcaStop_clicked()
 }
 
 void FormMcaDaq::run_completed() {
-
-  PL_INFO << "FormMcaDaq received signal for run completed";
-  this->setCursor(Qt::WaitCursor);
-  ui->Plot1d->update_plot();
-  ui->Plot2d->update_plot();
-  ui->pushMcaStop->setEnabled(false);
-  emit toggleIO(true);
-  this->setCursor(Qt::ArrowCursor);
+  if (my_run_) {
+    PL_INFO << "FormMcaDaq received signal for run completed";
+    update_plots();
+    ui->pushMcaStop->setEnabled(false);
+    emit toggleIO(true);
+    my_run_ = false;
+  }
 }
 
 void FormMcaDaq::on_pushEditSpectra_clicked()

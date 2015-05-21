@@ -149,6 +149,11 @@ void FormPlot1D::on_comboResolution_currentIndexChanged(int index)
   mySpectra->activate();
 }
 
+void FormPlot1D::reset_content() {
+  ui->mcaPlot->clearGraphs();
+  ui->mcaPlot->reset_scales();
+}
+
 void FormPlot1D::update_plot() {
 
   this->setCursor(Qt::WaitCursor);
@@ -157,7 +162,6 @@ void FormPlot1D::update_plot() {
   //bool new_data = mySpectra->new_data();
 
   ui->mcaPlot->clearGraphs();
-  double minx = 0, maxx = 0;
   for (auto &q: mySpectra->spectra(1, ui->comboResolution->currentData().toInt())) {
     if (q && q->visible() && q->resolution()) {
       uint32_t res = q->resolution();
@@ -176,22 +180,12 @@ void FormPlot1D::update_plot() {
       std::vector<double> energies = q->energies(0);
 
       ui->mcaPlot->addGraph(QVector<double>::fromStdVector(energies), y, QColor::fromRgba(app), 1);
-
-      if (energies[0] < minx)
-        minx = energies[0];
-      if (energies[res-1] > maxx)
-        maxx = energies[res-1];
       }
     }
   }
   ui->mcaPlot->setLabels("keV", "count");
 
-  if ((min_x != minx) || (max_x != maxx)) {
-    ui->mcaPlot->reset_scales();
-    min_x = minx;
-    max_x = maxx;
-  } else
-    ui->mcaPlot->update_plot();
+  ui->mcaPlot->update_plot();
 
   std::string new_label = boost::algorithm::trim_copy(mySpectra->status());
   ui->mcaPlot->setTitle(QString::fromStdString(new_label));

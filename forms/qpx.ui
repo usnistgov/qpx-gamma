@@ -110,6 +110,16 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="pushOpenGainMatch">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Gain matching</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="pushOpenOptimize">
         <property name="enabled">
          <bool>false</bool>

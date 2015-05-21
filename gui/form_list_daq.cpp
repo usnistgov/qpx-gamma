@@ -32,6 +32,7 @@ FormListDaq::FormListDaq(ThreadRunner &thread, QSettings &settings, QWidget *par
   list_data_(nullptr),
   interruptor_(false),
   list_data_model_(),
+  my_run_(false),
   list_selection_model_(&list_data_model_)
 {
   ui->setupUi(this);
@@ -87,7 +88,7 @@ FormListDaq::~FormListDaq()
 }
 
 void FormListDaq::closeEvent(QCloseEvent *event) {
-  if (runner_thread_.isRunning()) {
+  if (my_run_ && runner_thread_.isRunning()) {
     int reply = QMessageBox::warning(this, "Ongoing data acquisition",
                                      "Terminate?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
@@ -162,6 +163,7 @@ void FormListDaq::on_pushListStart_clicked()
 
   emit toggleIO(false);
   ui->pushListStop->setEnabled(true);
+  my_run_ = true;
 
   runner_thread_.do_list(interruptor_, Pixie::RunType(runtype), ui->boxListMins->value() * 60 + ui->boxListSecs->value(), ui->checkDoubleBufferList->isChecked());
 }
@@ -174,16 +176,19 @@ void FormListDaq::on_pushListStop_clicked()
 }
 
 void FormListDaq::list_completed(Pixie::ListData* newEvents) {
-  if (list_data_ != nullptr)
-    delete list_data_;
-  list_data_ = newEvents;
-  list_data_model_.eat_list(list_data_);
-  list_data_model_.update();
-  list_selection_model_.reset();
-  displayTraces();
+  if (my_run_) {
+    if (list_data_ != nullptr)
+      delete list_data_;
+    list_data_ = newEvents;
+    list_data_model_.eat_list(list_data_);
+    list_data_model_.update();
+    list_selection_model_.reset();
+    displayTraces();
 
-  ui->pushListStop->setEnabled(false);
-  emit toggleIO(true);
+    ui->pushListStop->setEnabled(false);
+    emit toggleIO(true);
+    my_run_ = false;
+  }
 }
 
 void FormListDaq::list_selection_changed(QItemSelection, QItemSelection) {

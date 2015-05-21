@@ -167,7 +167,6 @@ void FormCalibration::setSpectrum(Pixie::SpectraSet *newset, QString name) {
   }
 
   update_plot();
-  ui->plot1D->reset_scales();
 }
 
 void FormCalibration::update_plot() {

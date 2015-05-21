@@ -52,6 +52,7 @@ public:
 
 public slots:
   void refresh();
+  void update();
 
 signals:
   void toggleIO(bool);

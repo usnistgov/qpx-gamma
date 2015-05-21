@@ -87,6 +87,7 @@ private:
   boost::atomic<bool>             interruptor_;
 
   FormCalibration* my_calib_;
+  bool my_run_;
 
   void loadSettings();
   void saveSettings();

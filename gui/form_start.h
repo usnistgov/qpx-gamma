@@ -48,12 +48,14 @@ signals:
   void toggleIO(bool);
   void statusText(QString);
   void toggle_push_(bool, Pixie::LiveStatus);
+  void refresh();
 
 private slots:
   void toggle_push(bool, Pixie::LiveStatus);
   void toggleIO_(bool);
   void updateStatusText(QString);
   void boot_complete(bool, bool);
+  void settings_updated();
 
 protected:
   void closeEvent(QCloseEvent*);
