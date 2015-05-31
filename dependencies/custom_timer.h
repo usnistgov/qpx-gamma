@@ -39,7 +39,7 @@ public:
   double us () {return elapsed().wall / usecs;};
   double ns() {return elapsed().wall;};
   bool timeout() {
-    return ((elapsed().wall / CustomTimer::secs) > timeout_limit);
+    return (s() > static_cast<double>(timeout_limit));
   };
 
   std::string done() {

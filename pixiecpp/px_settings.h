@@ -28,6 +28,7 @@
 #include "detector.h"
 #include "generic_setting.h"  //make full use of this!!!
 #include "tinyxml2.h"
+#include "madc32.h"
 
 namespace Pixie {
 
@@ -43,6 +44,7 @@ class Settings {
   friend class Pixie::Wrapper;
   
 public:
+
   Settings();
   Settings(const Settings& other);      //sets state to history if copied
   Settings(tinyxml2::XMLElement* root); //create from xml node
@@ -112,18 +114,29 @@ public:
   void get_chan_all(Channel channel = Channel::current,
                     Module  module  = Module::current);
   void get_chan_stats(Module  module  = Module::current);
+
+  void set_threshold(uint32_t nt);
+
+  struct usb_device *dev;
+  xxusb_device_type xxusbDev[32];
+  struct usb_dev_handle *udev;       // Device Handle
+  int DevFound;
+
   
 protected:
   void initialize(); //populate metadata
   bool boot();       //only wrapper can use this
   void from_xml(tinyxml2::XMLElement*);
-  
+
+  void reset();
+
   int         num_chans_;
   LiveStatus  live_;
   Module      current_module_;
   Channel     current_channel_;
 
-  std::vector<std::string> boot_files_;
+  uint32_t threshold_;
+
   std::vector<double> system_parameter_values_;
   std::vector<double> module_parameter_values_;
   std::vector<double> channel_parameter_values_;
@@ -136,21 +149,17 @@ protected:
 
   //////////for internal use only///////////
   //carry out task
-  bool write_sys(const char*);
-  bool write_mod(const char*, uint8_t);
-  bool write_chan(const char*, uint8_t, uint8_t);
-  bool read_sys(const char*);
-  bool read_mod(const char*, uint8_t);
-  bool read_chan(const char*, uint8_t, uint8_t);
-  
+  bool write_sys(int);
+  bool write_mod(int, uint8_t);
+  bool write_chan(int, uint8_t, uint8_t);
+  bool read_sys(int);
+  bool read_mod(int, uint8_t);
+  bool read_chan(int, uint8_t, uint8_t);
+
   //find index
-  uint16_t i_sys(const char*) const;
-  uint16_t i_mod(const char*) const;
-  uint16_t i_chan(const char*) const;
-  
-  //print error
-  void set_err(int32_t);
-  void boot_err(int32_t);
+  int16_t i_sys(std::string) const;
+  int16_t i_mod(std::string) const;
+  int16_t i_chan(std::string) const;
 };
 
 }

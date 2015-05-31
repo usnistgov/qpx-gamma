@@ -35,6 +35,7 @@ struct Setting : public XMLable {
 
   
   std::string name, unit, description;
+  uint16_t address;
   double value;
   bool writable;
 
@@ -52,6 +53,7 @@ struct Setting : public XMLable {
     if (value != other.value) return false;
     if (writable != other.writable) return false;
     if (description != other.description) return false;
+    if (address != other.address) return false;
     return true;
   }
   
@@ -66,6 +68,8 @@ struct Setting : public XMLable {
       writable = (std::string(element->Attribute("writable")) == "1");
     if (element->Attribute("description"))
       description = std::string(element->Attribute("description"));
+    if (element->Attribute("address"))
+      value = boost::lexical_cast<uint16_t>(element->Attribute("address"));
   }
 
   void to_xml(tinyxml2::XMLPrinter& printer) const { 
@@ -75,6 +79,7 @@ struct Setting : public XMLable {
     printer.PushAttribute("unit", unit.c_str());
     printer.PushAttribute("writable", std::to_string(static_cast<int>(writable)).c_str());
     printer.PushAttribute("description", description.c_str());
+    printer.PushAttribute("address", std::to_string(address).c_str());
     printer.CloseElement();
   }
 

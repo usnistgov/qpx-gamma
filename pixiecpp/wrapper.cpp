@@ -188,61 +188,61 @@ ListData* Wrapper::getList(RunType type, uint64_t timeout,
 void Wrapper::control_set_DAC(uint8_t module) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   PL_INFO << "Pixie Control: set DAC";
-  control_err(Pixie_Acquire_Data(0x0000, NULL, NULL, module));
+  //control_err(Pixie_Acquire_Data(0x0000, NULL, NULL, module));
 }
 
 void Wrapper::control_connect(uint8_t module) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   PL_INFO << "Pixie Control: connect";
-  control_err(Pixie_Acquire_Data(0x0001, NULL, NULL, module));
+  //control_err(Pixie_Acquire_Data(0x0001, NULL, NULL, module));
 }
   
 void Wrapper::control_disconnect(uint8_t module) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   PL_INFO << "Pixie Control: disconnect";
-  control_err(Pixie_Acquire_Data(0x0002, NULL, NULL, module));
+  //control_err(Pixie_Acquire_Data(0x0002, NULL, NULL, module));
 }
 
 void Wrapper::control_program_Fippi(uint8_t module) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   PL_INFO << "Pixie Control: program Fippi";
-  control_err(Pixie_Acquire_Data(0x0005, NULL, NULL, module));
+  //control_err(Pixie_Acquire_Data(0x0005, NULL, NULL, module));
 }
 
 void Wrapper::control_measure_baselines(uint8_t module) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   PL_INFO << "Pixie Control: measure baselines";
-  control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, module));
+  //control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, module));
 }
 
 void Wrapper::control_test_EM_write(uint8_t module) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   PL_INFO << "Pixie Control: test EM write";
-  control_err(Pixie_Acquire_Data(0x0016, NULL, NULL, module));
+  //control_err(Pixie_Acquire_Data(0x0016, NULL, NULL, module));
 }
 
 void Wrapper::control_test_HM_write(uint8_t module) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   PL_INFO << "Pixie Control: test HM write";
-  control_err(Pixie_Acquire_Data(0x001A, NULL, NULL, module));
+  //control_err(Pixie_Acquire_Data(0x001A, NULL, NULL, module));
 }
 
 void Wrapper::control_compute_BLcut() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   PL_INFO << "Pixie Control: compute BLcut";
-  control_err(Pixie_Acquire_Data(0x0080, NULL, NULL, 0));
+  //control_err(Pixie_Acquire_Data(0x0080, NULL, NULL, 0));
 }
 
 void Wrapper::control_find_tau() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   PL_INFO << "Pixie Control: find tau";
-  control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, 0));
+  //control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, 0));
 }
                 
 void Wrapper::control_adjust_offsets() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   PL_INFO << "Pixie Control: adjust offsets";
-  control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, 0));
+  //control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, 0));
 }
 
 
@@ -253,7 +253,8 @@ uint32_t* Wrapper::control_collect_ADC(uint8_t module) {
   PL_INFO << "Pixie Control: get ADC (oscilloscope) traces";
   ///why is NUMBER_OF_CHANNELS used? Same for multi-module?
   uint32_t* adc_data = new uint32_t[NUMBER_OF_CHANNELS * max_buf_len];
-  int32_t retval = Pixie_Acquire_Data(0x0084, (U32*)adc_data, NULL, module);
+  int32_t retval = -1;
+  //Pixie_Acquire_Data(0x0084, (U32*)adc_data, NULL, module);
   if (retval < 0) {
     control_err(retval);
     return NULL;
@@ -285,189 +286,79 @@ void Wrapper::control_err(int32_t err_val) {
 
 
 bool Wrapper::start_run(RunType type) {
-  uint16_t runtype = (static_cast<uint16_t>(type) | 0x1000);
-  int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
-  int32_t ret = Pixie_Acquire_Data(runtype, NULL, 0, cur_mod);
-  switch (ret) {
-    case 0x10:
-      return true;
-    case -0x11:
-      PL_ERR << "Start run failed: Invalid Pixie module number";
-      return false;
-    case -0x12:
-      PL_ERR << "Start run failed. Try rebooting";
-      return false;
-    default:
-      PL_ERR << "Start run failed. Unknown error";
-      return false;
-  }
-};
+  //getInstance().my_settings_.reset();
+  xxusb_register_write(getInstance().my_settings_.udev, XXUSB_ACTION_REGISTER, XXUSB_ACTION_START);
+  return true;
+}
 
-bool Wrapper::resume_run(RunType type) {
+bool Wrapper::resume_run(RunType type) { //no different from start
   uint16_t runtype = (static_cast<uint16_t>(type) | 0x2000);
   int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
-  int32_t ret = Pixie_Acquire_Data(runtype, NULL, 0, cur_mod);
-  switch (ret) {
-    case 0x20:
-      return true;
-    case -0x21:
-      PL_ERR << "Resume run failed: Invalid Pixie module number";
-      return false;
-    case -0x22:
-      PL_ERR << "Resume run failed. Try rebooting";
-      return false;
-    default:
-      PL_ERR << "Start run failed. Unknown error";
-      return false;
-  }
-};
+  xxusb_register_write(getInstance().my_settings_.udev, XXUSB_ACTION_REGISTER, XXUSB_ACTION_START);
+  return true;
+}
 
 bool Wrapper::stop_run(RunType type) {
   uint16_t runtype = (static_cast<uint16_t>(type) | 0x3000);
   int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
-  int32_t ret = Pixie_Acquire_Data(runtype, NULL, 0, cur_mod);
-  switch (ret) {
-    case 0x30:
-      return true;
-    case -0x31:
-      PL_ERR << "Resume run failed: Invalid Pixie module number";
-      return false;
-    case -0x32:
-      PL_ERR << "Resume run failed. Try rebooting";
-      return false;
-    default:
-      PL_ERR << "Start run failed. Unknown error";
-      return false;
-  }
-};
+  xxusb_register_write(getInstance().my_settings_.udev, XXUSB_ACTION_REGISTER, 0);
+
+  // Draining data / read from fifo until Time out error and discard all data
+  long Data_Array[list_mem_len32];
+  int ret = xxusb_bulk_read(getInstance().my_settings_.udev, Data_Array, 26624, 2000);
+  while(ret > 0)
+    ret = xxusb_bulk_read(getInstance().my_settings_.udev, Data_Array, 26624, 2000);
+  return true;
+}
 
 
 uint32_t Wrapper::poll_run(RunType type) {
   uint16_t runtype = (static_cast<uint16_t>(type) | 0x4000);
   int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
-  return Pixie_Acquire_Data(runtype, NULL, 0, cur_mod);
-};
+  return 0;
+}
 
 uint32_t Wrapper::poll_run_dbl() {
   int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
-  return Pixie_Acquire_Data(0x40FF, NULL, 0, cur_mod);
-};
+  std::bitset<32> set;
+  set[14] = 1;
+  return set.to_ulong();
+}
 
 
 bool Wrapper::read_EM(uint32_t* data) {
-  int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
-  PL_DBG << "Current module " << cur_mod;
-  S32 retval = Pixie_Acquire_Data(0x9003, (U32*)data, NULL, cur_mod);
-  switch (retval) {
-    case -0x93:
-      PL_ERR << "Failure to read list mode section of external memory. Reboot recommended.";
-      return false;
-    case -0x95:
-      PL_ERR << "Invalid external memory I/O request. Check run type.";
-      return false;
-    case 0x90:
-      return true;
-    case 0x0:
-      return true; //undocumented by XIA, returns this rather than 0x90 upon success
-    default:
-      PL_ERR << "Unexpected error " << std::hex << retval;
-      return false;
+  //int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
+  long Data_Array[list_mem_len32];
+  for (int i=0; i<list_mem_len32; i++)
+    Data_Array[i]=0x12345678;
+
+  int ret = xxusb_bulk_read(getInstance().my_settings_.udev, Data_Array, list_mem_len16, 200);
+  if(ret > 0) {
+    int i;
+    for (i=0; i< ret/4; i++)
+        data[i] = Data_Array[i];
+    return true;
   }
-};
+  PL_INFO << "no data retrieved (error?)";
+  return true;
+}
 
 bool Wrapper::write_EM(uint32_t* data) {
   int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
-  return (Pixie_Acquire_Data(0x9004, (U32*)data, NULL, cur_mod) == 0x90);
+//  return (Pixie_Acquire_Data(0x9004, (U32*)data, NULL, cur_mod) == 0x90);
+  return true;
 };
 
 
 uint16_t Wrapper::i_dsp(char* setting_name) {
-  return Find_Xact_Match((S8*)setting_name, DSP_Parameter_Names, N_DSP_PAR);
+  return 0;
+  //Find_Xact_Match((S8*)setting_name, DSP_Parameter_Names, N_DSP_PAR);
 };
 
 //this function taken from XIA's code and modified, original comments remain
 bool Wrapper::read_EM_dbl(uint32_t* data) {
-  U16 i, j, MCSRA;
-  U16 DblBufCSR;
-  U32 Aoffset[2], WordCountPP[2];
-  U32 WordCount, NumWordsToRead, CSR;
-  U32 dsp_word[2];
-  U32 WCRs[PRESET_MAX_MODULES], CSRs[PRESET_MAX_MODULES];
-
-  char modcsra_str[] = "MODCSRA";
-  char dblbufcsr_str[] = "DBLBUFCSR";
-  Pixie_IODM(0, (U16)DATA_MEMORY_ADDRESS + i_dsp(modcsra_str), MOD_READ, 1, dsp_word);
-  MCSRA = (U16)dsp_word[0];
-  Pixie_IODM(0, (U16)DATA_MEMORY_ADDRESS + i_dsp(dblbufcsr_str), MOD_READ, 1, dsp_word);
-  DblBufCSR = (U16)dsp_word[0];
-
-  Aoffset[0] = 0;
-  Aoffset[1] = LM_DBLBUF_BLOCK_LENGTH;
-			
-  for(i=0; i<Number_Modules; i++)
-  {
-    // read the CSR
-    Pixie_ReadCSR((U8)i, &CSR);
-    CSRs[i] = CSR;
-
-    // A read of Pixie's word count register 
-    // This also indicates to the DSP that a readout has begun 
-    Pixie_RdWrdCnt((U8)i, &WordCount);
-    WCRs[i] = WordCount;
-  }	// CSR for loop
-
-  // Read out list mode data module by module 
-  for(i=0; i<Number_Modules; i++)
-  {
-
-    // The number of 16-bit words to read is in EMwords or EMwords2
-    char emwords_str[] = "EMWORDS";
-    char emwords2_str[] = "EMWORDS2";
-    Pixie_IODM((U8)i, (U16)DATA_MEMORY_ADDRESS + i_dsp(emwords_str), MOD_READ, 2, dsp_word);
-    WordCountPP[0] = dsp_word[0] * 65536 + dsp_word[1];
-    Pixie_IODM((U8)i, (U16)DATA_MEMORY_ADDRESS + i_dsp(emwords2_str), MOD_READ, 2, dsp_word);
-    WordCountPP[1] = dsp_word[0] * 65536 + dsp_word[1];
-
-    if(TstBit(CSR_128K_FIRST, (U16)CSRs[i]) == 1) 
-      j=0;			
-    else		// block at 128K+64K was first
-      j=1;
-		
-    if  (TstBit(CSR_DATAREADY, (U16)CSRs[i]) == 0 )		
-      // function called after a readout that cleared WCR => run stopped => read other block
-    {
-      j=1-j;			
-      PL_INFO << "(read_EM_dbl): Module " << i <<
-          ": Both memory blocks full (block " << 1-j << " older). Run paused (or finished).";
-      Pixie_Print_MSG(ErrMSG);
-    }
-
-    if (WordCountPP[j] >0)
-    {
-      // Check if it is an odd or even number 
-      if(fmod(WordCountPP[j], 2.0) == 0.0)
-        NumWordsToRead = WordCountPP[j] / 2;
-      else
-        NumWordsToRead = WordCountPP[j] / 2 + 1;
-
-      if(NumWordsToRead > LIST_MEMORY_LENGTH)
-      {
-        PL_ERR << "(read_EM_dbl): invalid word count " << NumWordsToRead;
-        Pixie_Print_MSG(ErrMSG);
-        return false;
-      }
-		
-      // Read out the list mode data 
-      Pixie_IOEM((U8)i, LIST_MEMORY_ADDRESS+Aoffset[j], MOD_READ, NumWordsToRead, (U32*)data);
-    }
-  }	// readout for loop
-  
-  // A second read of Pixie's word count register to clear the DBUF_1FULL bit
-  // indicating to the DSP that the read is complete
-  for(i=0; i<Number_Modules; i++)
-    Pixie_RdWrdCnt((U8)i, &WordCount);
-  return true;
-};
+  return read_EM(data);
+}
 
 bool Wrapper::clear_EM() {
   std::vector<uint32_t> my_data(list_mem_len32, 0);
@@ -695,8 +586,6 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
   if (!pxi.clear_EM())
     return;
 
-  pxi.my_settings_.set_mod("DBLBUFCSR",   static_cast<double>(1));
-  pxi.my_settings_.set_mod("MODULE_CSRA", static_cast<double>(0));
   
   //start of run pixie status update
   //mainly for spectra to have calibration
@@ -704,9 +593,10 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
   fetched_spill->run = new RunInfo;
   fetched_spill->stats = new StatsUpdate;
 
-  pxi.my_settings_.get_all_settings();
+  //pxi.my_settings_.get_all_settings();
   fetched_spill->run->p4_state = pxi.my_settings_;
 
+  pxi.my_settings_.reset();
   session_start_time = boost::posix_time::microsec_clock::local_time();
   
   if(!start_run(type)) {
@@ -718,8 +608,8 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
 
   total_timer.resume();
 
-  pxi.my_settings_.get_chan_stats();
-  pxi.my_settings_.get_mod_stats();
+  //pxi.my_settings_.get_chan_stats();
+  //pxi.my_settings_.get_mod_stats();
   fetched_spill->stats->eat_stats(pxi.my_settings_);
   fetched_spill->stats->lab_time = session_start_time;
   spill_queue->enqueue(fetched_spill);
@@ -729,15 +619,14 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
     PL_INFO << "  RUNNING Elapsed: " << total_timer.done()
             << "  ETA: " << total_timer.ETA();
 
-    csr = std::bitset<32>(poll_run_dbl());
-    while ((!csr[14]) && (!timeout)) {
+    do {
       wait_ms(poll_interval);
       csr = std::bitset<32>(poll_run_dbl());
       timeout = (total_timer.timeout() || interruptor->load());
-    };
+    } while ((!csr[14]) && (!timeout));
     block_time = boost::posix_time::microsec_clock::local_time();
-    pxi.my_settings_.get_mod_stats();
-    pxi.my_settings_.get_chan_stats();
+    //pxi.my_settings_.get_mod_stats();
+    //pxi.my_settings_.get_chan_stats();
 
     fetched_spill = new Spill;
     fetched_spill->data.resize(list_mem_len32, 0);
@@ -755,7 +644,7 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
   }
 
   stop_run(type);
-  pxi.my_settings_.get_all_settings();
+  //pxi.my_settings_.get_all_settings();
 
   fetched_spill = new Spill;
   fetched_spill->run = new RunInfo;
@@ -784,75 +673,62 @@ void Wrapper::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQue
     if (spill->data.size() > 0) {
       cycles++;
       uint16_t* buff16 = (uint16_t*) spill->data.data();
-      uint32_t idx = 0, buf_end, spill_events = 0;
+      uint32_t* buff32 = spill->data.data();
+
+      uint32_t idx = 0, buf_end, spill_events = 0, ctr = 0;
 
       while (true) {
-        uint16_t buf_ndata  = buff16[idx++];
-        uint32_t buf_end = idx + buf_ndata - 1;
+        std::bitset<32> entry (buff32[idx++]);
 
-        if (   (buf_ndata == 0)
-               || (buf_ndata > max_buf_len)
-               || (buf_end   > list_mem_len16))
+        if ((entry.to_ulong() == 0x12345678) || (entry.to_ulong() == 0)) {
+          //PL_INFO << "beyond buffer";
           break;
+        } else if (entry[30] && !entry[31]) {
+          //PL_INFO << "header";
+          entry[12] = 0;
+          entry[13] = 0;
+          entry[14] = 0;
+          entry[15] = 0;
 
-        uint16_t buf_module = buff16[idx++];
-        uint16_t buf_format = buff16[idx++];
-        uint16_t buf_timehi = buff16[idx++];
-        uint16_t buf_timemi = buff16[idx++];
-        uint16_t buf_timelo = buff16[idx++];
-        uint16_t task_a = (buf_format & 0x0F00);
-        uint16_t task_b = (buf_format & 0x000F);
+          uint32_t nwords = entry.to_ulong();
+          nwords = nwords >> 16;
 
-        while ((task_a == 0x0100) && (idx < buf_end)) {
+          //PL_INFO << "Should have " << nwords;
 
-          std::bitset<16> pattern (buff16[idx++]);
+        } else if (entry[30] && entry[31]) {
+          //PL_INFO << "end";
+          //break;
+        } else if (entry[31] && !entry[30]) {
+          //PL_INFO << "invalid";
+          //break;
+        } else {
 
-          Hit one_hit;
-          one_hit.run_type  = buf_format;
-          one_hit.module    = buf_module;
-          one_hit.buf_time_hi = buf_timehi;
-          one_hit.buf_time_mi = buf_timemi;
-          one_hit.buf_time_lo = buf_timelo;
-          one_hit.evt_time_hi = buff16[idx++];
-          one_hit.evt_time_lo = buff16[idx++];
-          one_hit.pattern = pattern;
-          
-          for (int i=0; i < 4; i++) {
-            if (pattern[i]) {
-              if (task_b == 0x0000) {
-                uint16_t trace_len         = buff16[idx++] - 9;
-                one_hit.chan_trig_time[i] = buff16[idx++];
-                one_hit.energy[i]         = buff16[idx++];
-                one_hit.XIA_PSA[i]        = buff16[idx++];
-                one_hit.user_PSA[i]       = buff16[idx++];
-                idx += 3;
-                one_hit.chan_real_time[i] = buff16[idx++];
-                one_hit.trace[i] = std::vector<uint16_t>
-                    (buff16 + idx, buff16 + idx + trace_len);
-                idx += trace_len;
-              } else if (task_b == 0x0001) {
-                idx++;
-                one_hit.chan_trig_time[i] = buff16[idx++];
-                one_hit.energy[i]         = buff16[idx++];
-                one_hit.XIA_PSA[i]        = buff16[idx++];
-                one_hit.user_PSA[i]       = buff16[idx++];
-                idx += 3;
-                one_hit.chan_real_time[i] = buff16[idx++];
-              } else if (task_b == 0x0002) {
-                one_hit.chan_trig_time[i] = buff16[idx++];
-                one_hit.energy[i]         = buff16[idx++];
-                one_hit.XIA_PSA[i]        = buff16[idx++];
-                one_hit.user_PSA[i]       = buff16[idx++];
-              } else if (task_b == 0x0003) {
-                one_hit.chan_trig_time[i] = buff16[idx++];
-                one_hit.energy[i]         = buff16[idx++];
-              }
-            }
+          if (entry[14]) {
+            //PL_WARN << "ADC overflow. Discarding event";
+          } else {
+            ctr++;
+            std::bitset<8> chan_pat;
+            chan_pat[4] = entry[20];
+            chan_pat[3] = entry[19];
+            chan_pat[2] = entry[18];
+            chan_pat[1] = entry[17];
+            chan_pat[0] = entry[16];
+            uint16_t chan_nr = chan_pat.to_ulong();
+
+            entry[14] = 0;
+            entry[15] = 0;
+            uint32_t nrg = entry.to_ulong() >> 17;
+            //PL_INFO << "chan = " << chan_nr << " nrg = " << nrg;
+
+            Hit one_hit;
+            one_hit.pattern[chan_nr] = 1;
+            one_hit.energy[chan_nr] = nrg;
+            spill->hits.push_back(one_hit);
+            spill_events++;
           }
-          spill->hits.push_back(one_hit);
-          spill_events++;
         };
       }
+      //PL_INFO << "found events " << ctr;
       all_events += spill_events;
     }
     if (spill->run != nullptr) {

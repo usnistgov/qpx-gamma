@@ -33,13 +33,14 @@
 #include <bitset>
 #include "detector.h"
 #include "custom_logger.h"
+#include "daq_types.h"
 
 class QpxPattern
 {
 public:
 
-    explicit QpxPattern(QVector<int16_t> pattern = QVector<int16_t>({0,0,0,0}), bool tristate = false);
-    explicit QpxPattern(std::bitset<16> pattern, bool tristate = false);
+    explicit QpxPattern(QVector<int16_t> pattern = QVector<int16_t>(), bool tristate = false);
+    explicit QpxPattern(std::bitset<Pixie::kNumChans> pattern, bool tristate = false);
 
     void paint(QPainter *painter, const QRect &rect,
                const QPalette &palette, bool enabled = true) const;

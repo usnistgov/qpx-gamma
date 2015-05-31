@@ -54,6 +54,16 @@
       <item row="2" column="0">
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
+         <widget class="QSpinBox" name="spinThresh">
+          <property name="maximum">
+           <number>999999</number>
+          </property>
+          <property name="value">
+           <number>50</number>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QLabel" name="label_26">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -94,7 +104,7 @@
           </property>
           <property name="maximumSize">
            <size>
-            <width>40</width>
+            <width>100</width>
             <height>16777215</height>
            </size>
           </property>
@@ -102,10 +112,10 @@
            <number>0</number>
           </property>
           <property name="maximum">
-           <number>16</number>
+           <number>50</number>
           </property>
           <property name="value">
-           <number>2</number>
+           <number>0</number>
           </property>
          </widget>
         </item>

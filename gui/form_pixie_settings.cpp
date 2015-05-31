@@ -32,7 +32,7 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Pixie::Dete
   ui(new Ui::FormPixieSettings)
 {
   ui->setupUi(this);
-  default_detectors_.resize(4);
+  default_detectors_.resize(Pixie::kNumChans);
 
   connect(&runner_thread_, SIGNAL(settingsUpdated()), this, SLOT(refresh()));
 
@@ -71,7 +71,7 @@ void FormPixieSettings::refresh() {
 void FormPixieSettings::apply_settings() {
   pixie_.settings().set_mod("FILTER_RANGE", ui->comboFilterSamples->currentData().toDouble());
   pixie_.settings().set_mod("ACTUAL_COINCIDENCE_WAIT", ui->boxCoincWait->value());
-  for (int i =0; i < 4; i++)
+  for (int i =0; i < Pixie::kNumChans; i++)
     pixie_.settings().set_detector(Pixie::Channel(i), detectors_.get(Pixie::Detector(default_detectors_[i])));
 }
 

@@ -1,0 +1,86 @@
+#define XXUSB_WIENER_VENDOR_ID	0x16DC   /* Wiener, Plein & Baus */
+#define XXUSB_VMUSB_PRODUCT_ID	0x000B	 /* VM-USB */
+#define XXUSB_CCUSB_PRODUCT_ID	0x0001	 /* CC-USB */
+//#define XXUSB_ENDPOINT_OUT	2  /* Endpoint 2 Out*/
+#define XXUSB_ENDPOINT_IN    0x86  /* Endpoint 6 In */
+
+#define XXUSB_STACK_SLOT0         0x02
+#define XXUSB_STACK_SLOT1         0x03
+#define XXUSB_STACK_SLOT2         0x12
+#define XXUSB_STACK_SLOT3         0x13
+#define XXUSB_STACK_SLOT4         0x22
+#define XXUSB_STACK_SLOT5         0x23
+#define XXUSB_STACK_SLOT6         0x32
+#define XXUSB_STACK_SLOT7         0x33
+
+#ifdef XXUSB_ACTION_REGISTER
+#undef XXUSB_ACTION_REGISTER
+#endif
+#define XXUSB_ACTION_REGISTER     0x04  //xxusb_register_???? access only
+
+//#define XXUSB_FIRMWARE_REGISTER   0x00
+#ifdef XXUSB_GLOBAL_REGISTER
+#undef XXUSB_GLOBAL_REGISTER
+#endif
+#define XXUSB_GLOBAL_REGISTER     0x04
+
+#define XXUSB_DAQ_REGISTER        0x08
+#define XXUSB_LED_REGISTER        0x0C
+#define XXUSB_DEV_REGISTER        0x10
+#define XXUSB_DGGA_REGISTER       0x14
+#define XXUSB_DGGB_REGISTER       0x18
+#define XXUSB_SCLRA_REGISTER      0x1C
+#define XXUSB_SCLRB_REGISTER      0x20
+#define XXUSB_MASK_REGISTER       0x24
+#define XXUSB_ISV12_REGISTER      0x28
+#define XXUSB_ISV34_REGISTER      0x2C
+#define XXUSB_ISV56_REGISTER      0x30
+#define XXUSB_ISV78_REGISTER      0x34
+#define XXUSB_DGGEXT_REGISTER     0x38
+#define XXUSB_USB_BULK_REGISTER   0x3C
+// These two are undocumented but have to be set to 0x0000 to make it work
+#define XXUSB_ISV_HIGH_1_REGISTER 0x40
+#define XXUSB_ISV_HIGH_2_REGISTER 0x44
+
+#define XXUSB_STACK_MARK        0x2000
+#define XXUSB_STACK_INTERNAL    0x1000
+#define XXUSB_STACK_READ        0x0100
+#define XXUSB_STACK_NOAUTO      0x0400
+#define XXUSB_STACK_MBLT        0x0800
+#define XXUSB_STACK_16BIT       0x0001
+
+#define XXUSB_DEV_SCLRA_RESET      0x00080000
+#define XXUSB_DEV_SCLRA_ENABLE     0x00040000
+#define XXUSB_DEV_SCLRA_CODE_MASK  0x00030000
+#define XXUSB_DEV_SCLRA_CODE_SHIFT 16
+#define XXUSB_DEV_SCLRB_RESET      0x00800000
+#define XXUSB_DEV_SCLRB_ENABLE     0x00400000
+#define XXUSB_DEV_SCLRB_CODE_MASK  0x00300000
+#define XXUSB_DEV_SCLRB_CODE_SHIFT 20
+
+#define XXUSB_DEV_SCLR_CODE_DISABLE      0x0
+#define XXUSB_DEV_SCLR_CODE_NIM1         0x1
+#define XXUSB_DEV_SCLR_CODE_NIM2         0x2
+#define XXUSB_DEV_SCLRA_CODE_EVENT       0x3
+#define XXUSB_DEV_SCLRB_CODE_EVENT_TRIG  0x3
+
+#define XXUSB_ACTION_START      0x0001
+#define XXUSB_ACTION_CLEAR      0x0004
+#define XXUSB_ACTION_SYSRES     0x0008
+
+#define XXUSB_GLOBAL_MASK       0x01ff
+#define XXUSB_GLOBAL_13K        0x0000
+#define XXUSB_GLOBAL_8K         0x0001
+#define XXUSB_GLOBAL_4K         0x0002
+#define XXUSB_GLOBAL_2K         0x0003
+#define XXUSB_GLOBAL_1K         0x0004
+#define XXUSB_GLOBAL_512        0x0005
+#define XXUSB_GLOBAL_256        0x0006
+#define XXUSB_GLOBAL_128        0x0007
+#define XXUSB_GLOBAL_64         0x0008
+#define XXUSB_GLOBAL_1          0x0009
+#define XXUSB_GLOBAL_SPREAD     0x0010
+#define XXUSB_GLOBAL_MIX        0x0020
+#define XXUSB_GLOBAL_SEP        0x0040
+#define XXUSB_GLOBAL_ALIGN      0x0080
+#define XXUSB_GLOBAL_WORD_HD    0x0100

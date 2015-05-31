@@ -66,6 +66,8 @@ void FormBootup::on_bootButton_clicked() {
     emit statusText("Booting...");
     PL_INFO << "Booting pixie...";
     int myslot = ui->moduleSlotBox->value();
+    uint32_t thresh = ui->spinThresh->value();
+    pixie_.settings().set_threshold(thresh);
     std::vector<uint8_t> myslots = {static_cast<uint8_t>(myslot)}; //one and only module for now;
 
     runner_thread_.do_boot(ui->cwCheck->isChecked(),

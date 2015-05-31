@@ -40,7 +40,7 @@ namespace Pixie {
 
   //these will have to be redone for multiple modules
   const uint32_t max_buf_len  = 8192; //get this from module
-  const uint32_t list_mem_len32 = 16 * max_buf_len;
+  const uint32_t list_mem_len32 = 13312;
   const uint32_t list_mem_len16 = 2 * list_mem_len32;
 
   enum class RunType : uint16_t {traces = 0x100, full = 0x101, psa_only = 0x102, compressed = 0x103};

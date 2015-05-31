@@ -58,11 +58,12 @@ unix {
        DEFINES += "XIA_LINUX"
        DEFINES += "PLX_LINUX"
        QMAKE_CC = g++
-       LIBS += dependencies/PLX/PlxApi.a -lm -ldl -DBOOST_LOG_DYN_LINK \
+       LIBS += -lm -ldl -DBOOST_LOG_DYN_LINK \
                -lboost_system -lboost_date_time -lboost_thread -lboost_log \
                -lboost_program_options -lboost_filesystem \
                -lboost_log_setup -lboost_timer \
-               -lgsl -lgslcblas -llua5.2 -lz
+               -lgsl -lgslcblas -llua5.2 -lz \
+               -lxx_usb -lusb
 
 	target.path = /usr/local/bin/
 	icon.path = /usr/share/icons/
@@ -89,9 +90,7 @@ win32 {
 
 INCLUDEPATH += pixiecpp gui \
                dependencies \
-               dependencies/PLX \
-               dependencies/XIA \
-               dependencies/LED \
+               dependencies/vme \
                dependencies/xylib \
                dependencies/tinyxml2 \
                dependencies/qcustomplot \
@@ -100,8 +99,7 @@ INCLUDEPATH += pixiecpp gui \
                /usr/include/lua5.2
 
 SOURCES += $$files(dependencies/*.cpp) \
-           $$files(dependencies/XIA/*.c) \
-           $$files(dependencies/LED/*.cpp) \
+           $$files(dependencies/vme/*.c) \
            $$files(dependencies/qcustomplot/*.cpp) \
            $$files(dependencies/qtcolorpicker/*.cpp) \
            $$files(dependencies/tinyxml2/*.cpp) \
@@ -113,9 +111,7 @@ SOURCES += $$files(dependencies/*.cpp) \
            $$files(gui/*.cpp)
 
 HEADERS  += $$files(dependencies/*.h) \
-            $$files(dependencies/XIA/*.h) \
-            $$files(dependencies/PLX/*.h) \
-            $$files(dependencies/LED/*.h) \
+            $$files(dependencies/vme/*.h) \
             $$files(dependencies/qcustomplot/*.h) \
             $$files(dependencies/qtcolorpicker/*.h) \
             $$files(dependencies/tinyxml2/*.h) \

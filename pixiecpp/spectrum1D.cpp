@@ -78,7 +78,7 @@ void Spectrum1D::addHit(const Hit& newHit, int chan) {
 
 void Spectrum1D::addHit(const Hit& newHit) {
   for (int i = 0; i < kNumChans; i++)
-    if ((add_pattern_[i]) && (newHit.pattern[i+8]))
+    if ((add_pattern_[i]) && (newHit.pattern[i]))
       this->addHit(newHit, i);
 }
 

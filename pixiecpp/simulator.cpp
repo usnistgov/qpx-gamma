@@ -111,9 +111,9 @@ Hit Simulator::getHit() {
     uint32_t en2 = newpoint % resolution_;
 
     if (en1)
-      newHit.pattern[channels_[0]+8] = 1;
+      newHit.pattern[channels_[0]] = 1;
     if (en2)
-      newHit.pattern[channels_[1]+8] = 1;
+      newHit.pattern[channels_[1]] = 1;
 
     en1 = en1 << shift_by_;
     en2 = en2 << shift_by_;

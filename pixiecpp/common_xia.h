@@ -23,14 +23,19 @@
 #ifndef PIXIE_COMMON
 #define PIXIE_COMMON
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include "PlxTypes.h"
-#include "Plx.h"
-#include "globals.h"
-#include "sharedfiles.h"
-#include "utilities.h"
+#include "madc32.h"
+#include <stdint.h>
+
+const int PRESET_MAX_MODULES = 10;
+const int NUMBER_OF_CHANNELS = 32;
+
+typedef char S8;
+typedef uint8_t U8;
+typedef int16_t S16;
+typedef uint16_t U16;
+typedef int32_t S32;
+typedef uint32_t U32;
+typedef int64_t S64;
+typedef uint64_t U64;
 
 #endif

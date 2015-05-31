@@ -30,32 +30,22 @@
 
 namespace Pixie {
 
-Settings::Settings() {
-  num_chans_ = 4;  //This might need to be changed
-  boot_files_.resize(7);
+const int N_SYSTEM_PAR = 1;
+const int N_MODULE_PAR = 1;
+const int N_CHANNEL_PAR = 1;
+
+Settings::Settings() : dev(nullptr), udev(nullptr) {
+  DevFound = 0;
+
+  num_chans_ = 32;  //This might need to be changed
+
   system_parameter_values_.resize(N_SYSTEM_PAR, 0.0);
   module_parameter_values_.resize(PRESET_MAX_MODULES*N_MODULE_PAR, 0.0);
-  channel_parameter_values_.resize(PRESET_MAX_MODULES*N_CHANNEL_PAR*NUMBER_OF_CHANNELS, 0.0);
+  channel_parameter_values_.resize(PRESET_MAX_MODULES*N_CHANNEL_PAR*num_chans_, 0.0);
 
   sys_set_meta_.resize(N_SYSTEM_PAR);
-  for (int i=0; i < 4; i++)
-    sys_set_meta_[i].writable = true;
-  for (int i=6; i < N_SYSTEM_PAR; i++)
-    sys_set_meta_[i].writable = true;
-
   mod_set_meta_.resize(N_MODULE_PAR);
-  for (int i=1; i < 7; i++)
-    mod_set_meta_[i].writable = true;
-  for (int i=8; i < 16; i++)
-    mod_set_meta_[i].writable = true;
-  for (int i=30; i < 34; i++)
-    mod_set_meta_[i].writable = true;
-
   chan_set_meta_.resize(N_CHANNEL_PAR);
-  for (int i = 0; i < 25; i++)
-    chan_set_meta_[i].writable = true;
-  chan_set_meta_[41].writable = true;
-  chan_set_meta_[42].writable = true; 
   
   current_module_ = Module::none;
   current_channel_ = Channel::none;
@@ -67,19 +57,18 @@ Settings::Settings() {
 }
 
 Settings::Settings(const Settings& other):
-    live_(LiveStatus::history), //this is why we have this function, deactivate if copied
-    num_chans_(other.num_chans_), detectors_(other.detectors_),
-    current_module_(other.current_module_), current_channel_(other.current_channel_),
-    boot_files_(other.boot_files_),
-    system_parameter_values_(other.system_parameter_values_),
-    module_parameter_values_(other.module_parameter_values_),
-    channel_parameter_values_(other.channel_parameter_values_),
-    sys_set_meta_(other.sys_set_meta_),
-    mod_set_meta_(other.mod_set_meta_),
-    chan_set_meta_(other.chan_set_meta_) {}
+  live_(LiveStatus::history), //this is why we have this function, deactivate if copied
+  num_chans_(other.num_chans_), detectors_(other.detectors_),
+  current_module_(other.current_module_), current_channel_(other.current_channel_),
+  system_parameter_values_(other.system_parameter_values_),
+  module_parameter_values_(other.module_parameter_values_),
+  channel_parameter_values_(other.channel_parameter_values_),
+  sys_set_meta_(other.sys_set_meta_),
+  mod_set_meta_(other.mod_set_meta_),
+  chan_set_meta_(other.chan_set_meta_) {}
 
 Settings::Settings(tinyxml2::XMLElement* root):
-    Settings()
+  Settings()
 {
   from_xml(root);
 }
@@ -88,54 +77,88 @@ bool Settings::boot() {
   if (live_ == LiveStatus::history)
     return false;
 
-  S32 retval;
-  int offline = get_sys("OFFLINE_ANALYSIS");
-
-  bool valid_files = true;
-  for (int i=0; i < 7; i++) {
-    memcpy(Boot_File_Name_List[i], (S8*)boot_files_[i].c_str(), boot_files_[i].size()); //+0?
-    bool ex = boost::filesystem::exists(boot_files_[i]);
-    if (!ex) {
-      PL_ERR << "Boot file " << boot_files_[i] << " not found";
-      valid_files = false;
+  if ((DevFound=xxusb_devices_find(xxusbDev))>0)
+  {
+    for (int i=0; i < DevFound; i++)
+    {
+      dev = xxusbDev[i].usbdev;
+      PL_INFO << "[" << (i+1) << "]"
+              << " ProductID=" << dev->descriptor.idProduct
+              << " Serial=" << xxusbDev[i].SerialString;
     }
+    udev = xxusb_device_open(dev);
+    if (udev)
+      if (dev->descriptor.idProduct==XXUSB_CCUSB_PRODUCT_ID)
+        PL_WARN << "Wrong device: CC-USB Found with Serial Number " << xxusbDev[0].SerialString;
+      else if (dev->descriptor.idProduct==XXUSB_VMUSB_PRODUCT_ID)
+        PL_INFO << "VM-USB Found with Serial Number " << xxusbDev[0].SerialString;
   }
 
-  if (!valid_files) {
-    PL_ERR << "Problem with boot files. Boot aborting.";
+  // Make sure VM_USB opened OK
+  if (!udev) {
+    PL_WARN << "Failedto Open VM_USB";
     return false;
   }
 
-  if (!offline) {
-    int max = get_sys("NUMBER_MODULES");
-    if (!max) {
-      PL_ERR << "No valid module slots. Boot aborting.";
-      return false;
-    } else {
-      PL_DBG << "Number of modules to boot: " << max;
-      read_sys("SLOT_WAVE");
-      for (int i=0; i < max; i++)
-        PL_DBG << " module " << i << " in slot "
-               << system_parameter_values_[i_sys("SLOT_WAVE") + i];
-    }
-  }
+  // configure VM-USB
+  PL_INFO << "set_vm_usb";
+  set_vm_usb(udev);
+  PL_INFO << "set_vm_usb finished";
 
-  set_sys("AUTO_PROCESSLMDATA", 0);  //do not write XIA datafile
+  // configure MADC-32
+  PL_INFO << "Threshold will be " << threshold_;
+  set_madc(udev, threshold_);
 
-  retval = Pixie_Boot_System(0x1F);
-  //bad files do not result in boot error!!
-  if (retval >= 0) {
-    if (offline)
-      live_ = LiveStatus::offline;
-    else 
-      live_ = LiveStatus::online;
-    initialize();
-    return true;
-  } else {
-    boot_err(retval);
-    return false;
-  }
+  // write stacks IRQ=0 and Slot=0 for external trigger
+  set_stack(udev, 0, 0xcd, 0);
+  // configure MSCF-16
+  //  shaper_configure(udev);
+
+#ifdef SCALER_MODE
+  set_scaler(udev);
+#endif
+
+  // print all settings
+  print_xxusb(udev);
+  print_madc(udev);
+  // reset and enable VM-USB scaler
+  //  long Data;
+  //  VME_register_read(udev, XXUSB_DEV_REGISTER, &Data);
+  //  VME_register_write(udev, XXUSB_DEV_REGISTER, ((Data & ~XXUSB_DEV_SCLRA_RESET) | \
+  XXUSB_DEV_SCLRA_ENABLE));
+
+#ifdef SCALER_MODE
+  VME_write_32(udev, 0xd, SCLR_ADDR(SIS3820_KEY_OPERATION_ENABLE),
+               SIS3820_KEY_OPERATION_ENABLE);
+#endif
+
+  // set DGG 1 to create ADC gate, I1 -> O1 delay:0, gate 0x400 = 12us
+  int ret = VME_DGG(udev,0,1,0,0x0,0x100,0,0);
+
+  VME_write_16(udev, AM_MADC, MADC_ADDR(MADC_FIFO_RESET), 0);
+  VME_write_16(udev, AM_MADC, MADC_ADDR(MADC_READ_RESET), 0);
+
+  live_ = LiveStatus::online;
+  initialize();
+  return true;
 }
+
+void Settings::reset() {
+  //set_vm_usb(udev);
+  //set_madc(udev, threshold_);
+
+  VME_write_16(udev, AM_MADC, MADC_ADDR(MADC_MULTIEVENT), MADC_MULTIEVENT_LIMIT);
+  VME_write_16(udev, AM_MADC, MADC_ADDR(MADC_MULTIEVENT), MADC_MULTIEVENT_ON);
+  VME_write_16(udev, AM_MADC, MADC_ADDR(MADC_ADC_RES), MADC_ADC_RES_4K_HI);
+  VME_write_16(udev, AM_MADC, MADC_ADDR(MADC_IN_RANGE), MADC_IN_RANGE_4V);
+
+  set_stack(udev, 0, 0xcd, 0);
+  print_xxusb(udev);
+  print_madc(udev);
+  //VME_write_16(udev, AM_MADC, MADC_ADDR(MADC_FIFO_RESET), 0);
+  //VME_write_16(udev, AM_MADC, MADC_ADDR(MADC_READ_RESET), 0);
+}
+
 
 Module Settings::current_module() const {
   return current_module_;
@@ -186,9 +209,9 @@ void Settings::save_optimization(Channel chan) {
   //current module only
 
   for (int i = start; i < stop; i++) {
-    detectors_[i].setting_names_.resize(43);
-    detectors_[i].setting_values_.resize(43);
-    for (int j = 0; j < 43; j++) {
+    detectors_[i].setting_names_.resize(N_CHANNEL_PAR);
+    detectors_[i].setting_values_.resize(N_CHANNEL_PAR);
+    for (int j = 0; j < N_CHANNEL_PAR; j++) {
       if (chan_set_meta_[j].writable) {
         detectors_[i].setting_names_[j] = chan_set_meta_[j].name;
         detectors_[i].setting_values_[j] = get_chan(j, Channel(i), Module::current);
@@ -214,7 +237,7 @@ void Settings::load_optimization(Channel chan) {
       PL_INFO << "Optimizing channel " << i << " settings for " << detectors_[i].name_;
       for (std::size_t j = 0; j < detectors_[i].setting_values_.size(); j++) {
         if (chan_set_meta_[j].writable)
-          set_chan(j, detectors_[i].setting_values_[j], Channel(i), Module::current);
+          set_chan(detectors_[i].setting_names_[j], detectors_[i].setting_values_[j], Channel(i), Module::current);
       }
     }
   }
@@ -225,7 +248,7 @@ uint8_t Settings::chan_param_num() const
   if (live_ == LiveStatus::dead)
     return 0;
   else
-    return 43; //hardcoded for pixie-4
+    return N_CHANNEL_PAR;
 }
 
 ////////////////////////////////////////
@@ -240,6 +263,9 @@ void Settings::get_all_settings() {
   }
 };
 
+void Settings::set_threshold(uint32_t nt) {
+  threshold_ = nt;
+}
 
 /////System Settings//////
 //////////////////////////
@@ -251,34 +277,27 @@ void Settings::set_sys(const std::string& setting, double val) {
   PL_DBG << "Setting " << setting << " to " << val << " for system";
 
   //check bounds
-  system_parameter_values_[i_sys(setting.c_str())] = val;
-  write_sys(setting.c_str());
+  int ret = i_sys(setting);
+  if (ret >= 0) {
+    system_parameter_values_[ret] = val;
+    write_sys(ret);
+  }
 }
 
 void Settings::set_slots(const std::vector<uint8_t>& slots) {
-  if (live_ == LiveStatus::history)
-    return;
-
-  int total = 0;
-  std::size_t max = N_SYSTEM_PAR - i_sys("SLOT_WAVE");
-  for (std::size_t i=0; i < max; i++) {
-    if ((i < slots.size()) && (slots[i])) {
-      system_parameter_values_[i_sys("SLOT_WAVE") + i] = static_cast<double>(slots[i]);
-      total++;
-    } else
-      system_parameter_values_[i_sys("SLOT_WAVE") + i] = 0; 
-  }
-
-  set_sys("NUMBER_MODULES", total);
-  write_sys("SLOT_WAVE");
 }
 
 double Settings::get_sys(const std::string& setting) {
   PL_TRC << "Getting " << setting << " for system";
 
   //check bounds
-  read_sys(setting.c_str());
-  return system_parameter_values_[i_sys(setting.c_str())];
+  int ret = i_sys(setting);
+  if (ret >= 0) {
+    if (live_ != LiveStatus::history)
+      read_sys(ret);
+    return system_parameter_values_[ret];
+  } else
+    return 0;
 }
 
 void Settings::get_sys_all() {
@@ -286,17 +305,11 @@ void Settings::get_sys_all() {
     return;
 
   PL_TRC << "Getting all system settings";
-  read_sys("ALL_SYSTEM_PARAMETERS");
+  for (int i=0; i < N_SYSTEM_PAR; ++i)
+    read_sys(i);
 }
 
 void Settings::set_boot_files(std::vector<std::string>& files) {
-  if (live_ == LiveStatus::history)
-    return;
-  
-  if (files.size() != 7)
-    PL_WARN << "Bad boot file array provided";
-  else
-    boot_files_ = files;
 }
 
 
@@ -308,31 +321,37 @@ void Settings::set_mod(const std::string& setting, double val, Module mod) {
     return;
 
   switch (mod) {
-    case Module::current:
-      mod = current_module_;
-    default:
-      int module = static_cast<int>(mod);
-      if (module > -1) {
-        PL_INFO << "Setting " << setting << " to " << val << " for module " << module;
-        module_parameter_values_[module * N_MODULE_PAR + i_mod(setting.c_str())] = val;
-        write_mod(setting.c_str(), module);
+  case Module::current:
+    mod = current_module_;
+  default:
+    int module = static_cast<int>(mod);
+    if (module > -1) {
+      PL_INFO << "Setting " << setting << " to " << val << " for module " << module;
+      int ret = i_mod(setting);
+      if (ret >= 0) {
+        module_parameter_values_[module * N_MODULE_PAR + ret] = val;
+        write_mod(ret, module);
       }
+    }
   }
 }
 
 double Settings::get_mod(const std::string& setting,
                          Module mod) const {
   switch (mod) {
-    case Module::current:
-      mod = current_module_;
-    default:
-      int module = static_cast<int>(mod);
-      if (module > -1) {
-        PL_TRC << "Getting " << setting << " for module " << module;
-        return module_parameter_values_[module * N_MODULE_PAR + i_mod(setting.c_str())];
+  case Module::current:
+    mod = current_module_;
+  default:
+    int module = static_cast<int>(mod);
+    if (module > -1) {
+      PL_TRC << "Getting " << setting << " for module " << module;
+      int ret = i_mod(setting);
+      if (ret >= 0) {
+        return module_parameter_values_[module * N_MODULE_PAR + ret];
       }
-      else
-        return -1;
+    }
+    else
+      return -1;
   }
 }
 
@@ -340,18 +359,19 @@ double Settings::get_mod(const std::string& setting,
                          Module mod,
                          LiveStatus force) {
   switch (mod) {
-    case Module::current:
-      mod = current_module_;
-    default:
-      int module = static_cast<int>(mod);
-      if (module > -1) {
-        PL_TRC << "Getting " << setting << " for module " << module;
-        if ((force == LiveStatus::online) && (live_ == force))
-          read_mod(setting.c_str(), module);
-        return module_parameter_values_[module * N_MODULE_PAR + i_mod(setting.c_str())];
-      }
-      else
-        return -1;
+  case Module::current:
+    mod = current_module_;
+  default:
+    int module = static_cast<int>(mod);
+    int ret = i_mod(setting);
+    if ((module > -1)  && (ret > -1)) {
+      PL_TRC << "Getting " << setting << " for module " << module;
+      if ((force == LiveStatus::online) && (live_ == force))
+        read_mod(ret, module);
+      return module_parameter_values_[module * N_MODULE_PAR + ret];
+    }
+    else
+      return -1;
   }
 }
 
@@ -360,18 +380,18 @@ void Settings::get_mod_all(Module mod) {
     return;
   
   switch (mod) {
-    case Module::all: {
-      /*loop through all*/
-      break;
+  case Module::all: {
+    /*loop through all*/
+    break;
+  }
+  case Module::current:
+    mod = current_module_;
+  default:
+    int module = static_cast<int>(mod);
+    if (module > -1) {
+      PL_TRC << "Getting all parameters for module " << module;
+      //read_mod("ALL_MODULE_PARAMETERS", module);
     }
-    case Module::current:
-      mod = current_module_;
-    default:
-      int module = static_cast<int>(mod);
-      if (module > -1) {
-        PL_TRC << "Getting all parameters for module " << module;
-        read_mod("ALL_MODULE_PARAMETERS", module);
-      }
   }
 }
 
@@ -380,18 +400,18 @@ void Settings::get_mod_stats(Module mod) {
     return;
   
   switch (mod) {
-    case Module::all: {
-      /*loop through all*/
-      break;
+  case Module::all: {
+    /*loop through all*/
+    break;
+  }
+  case Module::current:
+    mod = current_module_;
+  default:
+    int module = static_cast<int>(mod);
+    if (module > -1) {
+      PL_DBG << "Getting run statistics for module " << module;
+      //read_mod("MODULE_RUN_STATISTICS", module);
     }
-    case Module::current:
-      mod = current_module_;
-    default:
-      int module = static_cast<int>(mod);
-      if (module > -1) {
-        PL_DBG << "Getting run statistics for module " << module;
-        read_mod("MODULE_RUN_STATISTICS", module);
-      }
   }
 }
 
@@ -400,7 +420,7 @@ void Settings::get_mod_stats(Module mod) {
 ////////////////////////////
 
 void Settings::set_chan(const std::string& setting, double val,
-                             Channel channel, Module module) {
+                        Channel channel, Module module) {
   if (live_ == LiveStatus::history)
     return;
   
@@ -411,23 +431,22 @@ void Settings::set_chan(const std::string& setting, double val,
 
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
+  int ret = i_chan(setting);
   
   PL_DBG << "Setting " << setting << " to " << val
          << " for module " << mod << " chan "<< chan;
 
-  if ((mod > -1) && (chan > -1)) { 
-    channel_parameter_values_[i_chan(setting.c_str()) + mod * N_CHANNEL_PAR *
-                           NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR] = val;
-    write_chan(setting.c_str(), mod, chan);
+  if ((mod > -1) && (chan > -1) && (ret > -1)) {
+    channel_parameter_values_[ret + mod * N_CHANNEL_PAR *
+        NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR] = val;
+    write_chan(ret, mod, chan);
   }
 }
 
 void Settings::set_chan(uint8_t setting, double val,
-                             Channel channel, Module module) {
+                        Channel channel, Module module) {
   if (live_ == LiveStatus::history)
     return;
-  
-  S8* setting_name = Channel_Parameter_Names[setting];
   
   if (module == Module::current)
     module = current_module_;
@@ -437,19 +456,17 @@ void Settings::set_chan(uint8_t setting, double val,
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
   
-  PL_DBG << "Setting " << setting_name << " to " << val
+  PL_DBG << "Setting " << chan_set_meta_[setting].name << " to " << val
          << " for module " << mod << " chan "<< chan;
 
-  if ((mod > -1) && (chan > -1)) { 
+  if ((mod > -1) && (chan > -1)) {
     channel_parameter_values_[setting + mod * N_CHANNEL_PAR *
-                           NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR] = val;
-    write_chan((char*)setting_name, mod, chan);
+        NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR] = val;
+    write_chan(setting, mod, chan);
   }
 }
 
 double Settings::get_chan(uint8_t setting, Channel channel, Module module) const {
-  S8* setting_name = Channel_Parameter_Names[setting];
-
   if (module == Module::current)
     module = current_module_;
   if (channel == Channel::current)
@@ -458,20 +475,18 @@ double Settings::get_chan(uint8_t setting, Channel channel, Module module) const
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
-  PL_TRC << "Getting " << setting_name
+  PL_TRC << "Getting " << chan_set_meta_[setting].name
          << " for module " << mod << " channel " << chan;
 
   if ((mod > -1) && (chan > -1)) {
     return channel_parameter_values_[setting + mod * N_CHANNEL_PAR *
-                                  NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR];
+        NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR];
   } else
     return -1;
 }
 
 double Settings::get_chan(uint8_t setting, Channel channel,
-                               Module module, LiveStatus force) {
-  S8* setting_name = Channel_Parameter_Names[setting];
-
+                          Module module, LiveStatus force) {
   if (module == Module::current)
     module = current_module_;
   if (channel == Channel::current)
@@ -480,14 +495,14 @@ double Settings::get_chan(uint8_t setting, Channel channel,
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
-  PL_TRC << "Getting " << setting_name
+  PL_TRC << "Getting " << chan_set_meta_[setting].name
          << " for module " << mod << " channel " << chan;
   
   if ((mod > -1) && (chan > -1)) {
     if ((force == LiveStatus::online) && (live_ == force))
-      read_chan((char*)setting_name, mod, chan);
+      read_chan(setting, mod, chan);
     return channel_parameter_values_[setting + mod * N_CHANNEL_PAR *
-                                  NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR];
+        NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR];
   } else
     return -1;
 }
@@ -501,12 +516,13 @@ double Settings::get_chan(const std::string& setting,
 
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
+  int ret = i_chan(setting);
 
   PL_TRC << "Getting " << setting << " for module " << mod << " channel " << chan;
 
-  if ((mod > -1) && (chan > -1)) {
-    return channel_parameter_values_[i_chan(setting.c_str()) + mod * N_CHANNEL_PAR *
-                                  NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR];
+  if ((mod > -1) && (chan > -1) && (ret > -1)) {
+    return channel_parameter_values_[ret + mod * N_CHANNEL_PAR *
+        NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR];
   } else
     return -1;
 }
@@ -521,14 +537,15 @@ double Settings::get_chan(const std::string& setting,
 
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
+  int ret = i_chan(setting);
   
   PL_TRC << "Getting " << setting << " for module " << mod << " channel " << chan;
 
-  if ((mod > -1) && (chan > -1)) {
+  if ((mod > -1) && (chan > -1) && (ret > -1)) {
     if ((force == LiveStatus::online) && (live_ == force))
-      read_chan(setting.c_str(), mod, chan);
-    return channel_parameter_values_[i_chan(setting.c_str()) + mod * N_CHANNEL_PAR *
-                                  NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR];
+      read_chan(ret, mod, chan);
+    return channel_parameter_values_[ret + mod * N_CHANNEL_PAR *
+        NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR];
   } else
     return -1;
 }
@@ -546,9 +563,9 @@ void Settings::get_chan_all(Channel channel, Module module) {
   int chan = static_cast<int>(channel);
 
   PL_TRC << "Getting all parameters for module " << mod << " channel " << chan;
-  
-  if ((mod > -1) && (chan > -1))
-    read_chan("ALL_CHANNEL_PARAMETERS", mod, chan);
+
+  for (int i=0; i < N_CHANNEL_PAR; ++i)
+    read_chan(i, mod, chan);
 }
 
 void Settings::get_chan_stats(Module module) {
@@ -559,210 +576,97 @@ void Settings::get_chan_stats(Module module) {
     module = current_module_;
 
   int mod = static_cast<int>(module);
-  
+
   PL_TRC << "Getting channel run statistics for module " << mod;
 
-  if (mod > -1)
-    read_chan("CHANNEL_RUN_STATISTICS", mod, 0);
+  for (int i=0; i < NUMBER_OF_CHANNELS; ++i)
+    get_chan_all(Channel(i), module);
 }
 
-uint16_t Settings::i_sys(const char* setting) const {
-  return Find_Xact_Match((S8*)setting, System_Parameter_Names, N_SYSTEM_PAR);
+int16_t Settings::i_sys(std::string setting) const {
+  uint16_t ret = -1;
+  for (int i=0; i < N_SYSTEM_PAR; ++i)
+    if (sys_set_meta_[i].name == setting)
+      ret = i;
+  return ret;
 }
 
-uint16_t Settings::i_mod(const char* setting) const {
-  return Find_Xact_Match((S8*)setting, Module_Parameter_Names, N_MODULE_PAR);
+int16_t Settings::i_mod(std::string setting) const {
+  uint16_t ret = -1;
+  for (int i=0; i < N_MODULE_PAR; ++i)
+    if (mod_set_meta_[i].name == setting)
+      ret = i;
+  return ret;
 }
 
-uint16_t Settings::i_chan(const char* setting) const {
-  return Find_Xact_Match((S8*)setting, Channel_Parameter_Names, N_CHANNEL_PAR);
+int16_t Settings::i_chan(std::string setting) const {
+  uint16_t ret = -1;
+  for (int i=0; i < N_CHANNEL_PAR; ++i)
+    if (chan_set_meta_[i].name == setting)
+      ret = i;
+  return ret;
 }
 
-bool Settings::write_sys(const char* setting) {
-  S8 sysstr[8] = "SYSTEM\0";
-  S32 ret = Pixie_User_Par_IO(system_parameter_values_.data(),
-                              (S8*) setting, sysstr, MOD_WRITE, 0, 0);
-  set_err(ret);
-  if (ret == 0)
-    return true;
-  return false;
+
+bool Settings::write_sys(int) {
+  return true;
 }
 
-bool Settings::read_sys(const char* setting) {
-  S8 sysstr[8] = "SYSTEM\0";
-  S32 ret = Pixie_User_Par_IO(system_parameter_values_.data(),
-                              (S8*) setting, sysstr, MOD_READ, 0, 0);
-  set_err(ret);
-  if (ret == 0)
-    return true;
-  return false;
+bool Settings::write_mod(int, uint8_t) {
+  return true;
 }
 
-bool Settings::write_mod(const char* setting, uint8_t mod) {
-  S32 ret = -42;
-  S8 modstr[8] = "MODULE\0";
+bool Settings::write_chan(int idx, uint8_t mod, uint8_t chan) {
+  PL_INFO << "write chan";
   if (live_ == LiveStatus::online)
-    ret = Pixie_User_Par_IO(module_parameter_values_.data(),
-                            (S8*) setting, modstr, MOD_WRITE, mod, 0);
-  set_err(ret);
-  return (ret == 0);
+      VME_write_16(udev, AM_MADC, MADC_ADDR(chan_set_meta_[idx].address | (chan << 1)),
+                   channel_parameter_values_[idx + mod * N_CHANNEL_PAR *
+                           NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR]);
+  return true;
 }
 
-bool Settings::read_mod(const char* setting, uint8_t mod) {
-  S32 ret = -42;
-  S8 modstr[8] = "MODULE\0";
-  if (live_ == LiveStatus::online)
-    ret = Pixie_User_Par_IO(module_parameter_values_.data(),
-                            (S8*) setting, modstr, MOD_READ, mod, 0);
-  set_err(ret);
-  return (ret == 0);
+bool Settings::read_sys(int) {
+  return true;
 }
 
-bool Settings::write_chan(const char* setting, uint8_t mod, uint8_t chan) {
-  S32 ret = -42;
-  S8 chnstr[9] = "CHANNEL\0";
-  if (live_ == LiveStatus::online)
-    ret = Pixie_User_Par_IO(channel_parameter_values_.data(),
-                            (S8*) setting, chnstr, MOD_WRITE, mod, chan);
-  set_err(ret);
-  return (ret == 0);
+bool Settings::read_mod(int, uint8_t) {
+  return true;
 }
 
-bool Settings::read_chan(const char* setting, uint8_t mod, uint8_t chan) {
-  S32 ret = -42;
-  S8 chnstr[9] = "CHANNEL\0";
-  if (live_ == LiveStatus::online)
-    ret = Pixie_User_Par_IO(channel_parameter_values_.data(),
-                            (S8*) setting, chnstr, MOD_READ, mod, chan);
-  set_err(ret);
-  return (ret == 0);
-}
+bool Settings::read_chan(int idx, uint8_t mod, uint8_t chan) {
+  PL_DBG << "read chn try";
 
-void Settings::set_err(int32_t err_val) {
-  switch (err_val) {
-    case 0:
-      break;
-    case -1:
-      PL_ERR << "Set/get parameter failed: Null pointer for User_Par_Values";
-      break;
-    case -2:
-      PL_ERR << "Set/get parameter failed: Invalid user parameter name";
-      break;
-    case -3:
-      PL_ERR << "Set/get parameter failed: Invalid user parameter type";
-      break;
-    case -4:
-      PL_ERR << "Set/get parameter failed: Invalid I/O direction";
-      break;
-    case -5:
-      PL_ERR << "Set/get parameter failed: Invalid module number";
-      break;
-    case -6:
-      PL_ERR << "Set/get parameter failed: Invalid channel number";
-      break;
-    case -42:
-      PL_ERR << "Set/get parameter failed: Pixie not online";
-      break;
-    default:
-      PL_ERR << "Set/get parameter failed: Unknown error " << err_val;
+  long data = 0;
+  if (live_ == LiveStatus::online) {
+    PL_DBG << "read chn do";
+    VME_read_16(udev, AM_MADC, MADC_ADDR(chan_set_meta_[idx].address | (chan << 1)), &data);
   }
+
+  channel_parameter_values_[idx + mod * N_CHANNEL_PAR *
+            NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR] = data;
+  return true;
 }
 
-void Settings::boot_err(int32_t err_val) {
-  switch (err_val) {
-    case 0:
-      break;
-    case -1:
-      PL_ERR << "Boot failed: unable to scan crate slots. Check PXI slot map.";
-      break;
-    case -2:
-      PL_ERR << "Boot failed: unable to read communication FPGA (rev. B). Check comFPGA file.";
-      break;
-    case -3:
-      PL_ERR << "Boot failed: unable to read communication FPGA (rev. C). Check comFPGA file.";
-      break;
-    case -4:
-      PL_ERR << "Boot failed: unable to read signal processing FPGA config. Check SPFPGA file.";
-      break;
-    case -5:
-      PL_ERR << "Boot failed: unable to read DSP executable code. Check DSP code file.";
-      break;
-    case -6:
-      PL_ERR << "Boot failed: unable to read DSP parameter values. Check DSP parameter file.";
-      break;
-    case -7:
-      PL_ERR << "Boot failed: unable to initialize DSP parameter names. Check DSP .var file.";
-      break;
-    case -8:
-      PL_ERR << "Boot failed: failed to boot all modules in the system. Check Pixie modules.";
-      break;
-    default:
-      PL_ERR << "Boot failed, undefined error " << err_val;
-  }
-}
 
 void Settings::initialize() {
-  for (int i=0; i < N_SYSTEM_PAR; i++)
-    if (System_Parameter_Names[i] != nullptr)
-      sys_set_meta_[i].name = std::string((char*)System_Parameter_Names[i]);
+  sys_set_meta_[0].name = "sys1";
 
-  for (int i=0; i < N_MODULE_PAR; i++)
-    if (Module_Parameter_Names[i] != nullptr)
-      mod_set_meta_[i].name = std::string((char*)Module_Parameter_Names[i]);
-  
-  for (int i=0; i < N_CHANNEL_PAR; i++)
-    if (Channel_Parameter_Names[i] != nullptr)
-      chan_set_meta_[i].name = std::string((char*)Channel_Parameter_Names[i]);
+  mod_set_meta_[0].name = "mod1";
 
-  mod_set_meta_[i_mod("ACTUAL_COINCIDENCE_WAIT")].unit = "ns";
-  mod_set_meta_[i_mod("MIN_COINCIDENCE_WAIT")].unit = "ticks";
-  mod_set_meta_[i_mod("RUN_TIME")].unit = "s";
-  mod_set_meta_[i_mod("EVENT_RATE")].unit = "cps";
-  mod_set_meta_[i_mod("TOTAL_TIME")].unit = "s";
-  
-  chan_set_meta_[i_chan("CHANNEL_CSRA")].unit = "binary";
-  chan_set_meta_[i_chan("CHANNEL_CSRB")].unit = "binary";
-  chan_set_meta_[i_chan("CHANNEL_CSRC")].unit = "binary";
-
-  chan_set_meta_[i_chan("INPUT_COUNT_RATE")].unit = "cps";
-  chan_set_meta_[i_chan("OUTPUT_COUNT_RATE")].unit = "cps";
-  chan_set_meta_[i_chan("GATE_RATE")].unit = "cps";
-  chan_set_meta_[i_chan("CURRENT_ICR")].unit = "cps";
-
-  chan_set_meta_[i_chan("LIVE_TIME")].unit = "s";
-  chan_set_meta_[i_chan("FTDT")].unit = "s";
-  chan_set_meta_[i_chan("SFDT")].unit = "s";
-  chan_set_meta_[i_chan("GDT")].unit = "s";
-
-  //microseconds
-  chan_set_meta_[i_chan("ENERGY_RISETIME")].unit = "\u03BCs";
-  chan_set_meta_[i_chan("ENERGY_FLATTOP")].unit = "\u03BCs";
-  chan_set_meta_[i_chan("TRIGGER_RISETIME")].unit = "\u03BCs";
-  chan_set_meta_[i_chan("TRIGGER_FLATTOP")].unit = "\u03BCs";
-  chan_set_meta_[i_chan("TRACE_LENGTH")].unit = "\u03BCs";
-  chan_set_meta_[i_chan("TRACE_DELAY")].unit = "\u03BCs";
-  chan_set_meta_[i_chan("COINC_DELAY")].unit = "\u03BCs";
-  chan_set_meta_[i_chan("PSA_START")].unit = "\u03BCs";
-  chan_set_meta_[i_chan("PSA_END")].unit = "\u03BCs";
-  chan_set_meta_[i_chan("TAU")].unit = "\u03BCs";
-  chan_set_meta_[i_chan("GATE_WINDOW")].unit = "\u03BCs";
-  chan_set_meta_[i_chan("GATE_DELAY")].unit = "\u03BCs";
-
-  chan_set_meta_[i_chan("PSM_TEMP_AVG")].unit = "\u00B0C"; //degrees C
-  chan_set_meta_[i_chan("VGAIN")].unit = "V/V";
-  chan_set_meta_[i_chan("VOFFSET")].unit = "V";
-  chan_set_meta_[i_chan("CURRENT_OORF")].unit = "%";
-
+  chan_set_meta_[0].name = "threshold";
+  chan_set_meta_[0].unit = "channels";
+  chan_set_meta_[0].writable = true;  //move this to ctor
+  chan_set_meta_[0].address = MADC_THRESH_CH0;
 }
 
 void Settings::to_xml(tinyxml2::XMLPrinter& printer) {
   printer.OpenElement("PixieSettings");
   printer.OpenElement("System");
   for (int i=0; i < N_SYSTEM_PAR; i++) {
-    if (!std::string((char*)System_Parameter_Names[i]).empty()) {  //use metadata structure!!!!
+    if (!sys_set_meta_[i].name.empty()) {  //use metadata structure!!!!
       printer.OpenElement("Setting");
       printer.PushAttribute("key", std::to_string(i).c_str());
-      printer.PushAttribute("name", std::string((char*)System_Parameter_Names[i]).c_str()); //not here?
+      printer.PushAttribute("name", sys_set_meta_[i].name.c_str()); //not here?
       printer.PushAttribute("value", std::to_string(system_parameter_values_[i]).c_str());
       printer.CloseElement();
     }
@@ -772,10 +676,10 @@ void Settings::to_xml(tinyxml2::XMLPrinter& printer) {
     printer.OpenElement("Module");
     printer.PushAttribute("number", std::to_string(i).c_str());
     for (int j=0; j < N_MODULE_PAR; j++) {
-      if (!std::string((char*)Module_Parameter_Names[j]).empty()) {
+      if (!mod_set_meta_[j].name.empty()) {
         printer.OpenElement("Setting");
         printer.PushAttribute("key", std::to_string(j).c_str());
-        printer.PushAttribute("name", std::string((char*)Module_Parameter_Names[j]).c_str());
+        printer.PushAttribute("name", mod_set_meta_[j].name.c_str());
         printer.PushAttribute("value", std::to_string(module_parameter_values_[j]).c_str());
         printer.CloseElement();
       }
@@ -785,10 +689,10 @@ void Settings::to_xml(tinyxml2::XMLPrinter& printer) {
       printer.PushAttribute("number", std::to_string(j).c_str());
       detectors_[j].to_xml(printer);
       for (int k=0; k < N_CHANNEL_PAR; k++) {
-        if (!std::string((char*)Channel_Parameter_Names[k]).empty()) {
+        if (!chan_set_meta_[k].name.empty()) {
           printer.OpenElement("Setting");
           printer.PushAttribute("key", std::to_string(k).c_str());
-          printer.PushAttribute("name", std::string((char*)Channel_Parameter_Names[k]).c_str());
+          printer.PushAttribute("name", chan_set_meta_[k].name.c_str());
           printer.PushAttribute("value",
                                 std::to_string(get_chan(k,Channel(j))).c_str());
           printer.CloseElement();
@@ -837,7 +741,7 @@ void Settings::from_xml(tinyxml2::XMLElement* root) {
               double thisVal = boost::lexical_cast<double>(ChanElement->Attribute("value"));
               std::string thisName = std::string(ChanElement->Attribute("name"));
               channel_parameter_values_[thisModule * N_CHANNEL_PAR * NUMBER_OF_CHANNELS
-                                     + thisChan * N_CHANNEL_PAR + thisKey] = thisVal;
+                  + thisChan * N_CHANNEL_PAR + thisKey] = thisVal;
               chan_set_meta_[thisKey].name = thisName;
             }
             ChanElement = dynamic_cast<tinyxml2::XMLElement*>(ChanElement->NextSibling());
