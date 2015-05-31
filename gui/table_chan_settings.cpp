@@ -35,7 +35,7 @@ int TableChanSettings::rowCount(const QModelIndex & /*parent*/) const
 
 int TableChanSettings::columnCount(const QModelIndex & /*parent*/) const
 {
-  return 6;
+  return Pixie::kNumChans + 2;
 }
 
 QVariant TableChanSettings::data(const QModelIndex &index, int role) const
@@ -48,31 +48,28 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
     if (row == 0) {
       if (col == 0)
         return "<===detector===>";
-      else if (col < 5)
+      else if (col <= Pixie::kNumChans)
         return QString::fromStdString(my_settings_.get_detector(Pixie::Channel(col-1)).name_);
     } else {
-      switch (col) {
-      case 0:
+      if (col == 0)
         return QString::fromStdString(chan_meta_[row-1].name);
-      case 1:
-      case 2:
-      case 3:
-      case 4:
+      else if (col <= Pixie::kNumChans)
+      {
         if (chan_meta_[row-1].unit == "binary")
           return QString::number(static_cast<uint32_t>(my_settings_.get_chan(row - 1, Pixie::Channel(col-1))), 16).toUpper();
         else
           return QVariant::fromValue(my_settings_.get_chan(row - 1, Pixie::Channel(col-1)));
-      case 5:
-        return QString::fromStdString(chan_meta_[row-1].unit);
       }
+      else
+        return QString::fromStdString(chan_meta_[row-1].unit);
     }
   }
   else if (role == Qt::ForegroundRole) {
     if (row == 0) {
-      QVector<QColor> palette {Qt::black, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta};
-      QBrush brush(palette[col]);
+      QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta};
+      QBrush brush(palette[col % palette.size()]);
       return brush;
-    } else if ((col > 0) && (col < 5) && ((!chan_meta_[row-1].writable)
+    } else if ((col > 0) && (col <= Pixie::kNumChans) && ((!chan_meta_[row-1].writable)
                                           || (chan_meta_[row-1].unit == "binary"))) {
       QBrush brush(Qt::darkGray);
       return brush;
@@ -88,7 +85,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       boldfont.setPointSize(10);
       return boldfont;
     }
-    else if (col == 5) {
+    else if (col == Pixie::kNumChans + 1) {
       QFont italicfont;
       italicfont.setItalic(true);
       italicfont.setPointSize(10);
@@ -108,18 +105,12 @@ QVariant TableChanSettings::headerData(int section, Qt::Orientation orientation,
   if (role == Qt::DisplayRole)
   {
     if (orientation == Qt::Horizontal) {
-      switch (section)
-      {
-      case 0:
+      if (section == 0)
         return QString("Setting name");
-      case 1:
-      case 2:
-      case 3:
-      case 4:
+      else if (section <= Pixie::kNumChans)
         return (QString("chan ") + QString::number(section-1));
-      case 5:
+      else
         return "Units";
-      }
     } else if (orientation == Qt::Vertical) {
       if (section)
         return QString::number(section-1);
@@ -149,7 +140,7 @@ Qt::ItemFlags TableChanSettings::flags(const QModelIndex &index) const
   int row = index.row();
   int col = index.column();
 
-  if ((col > 0) && (col < 5))
+  if ((col > 0) && (col <= Pixie::kNumChans))
     if (row == 0)
       return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
     else if ((chan_meta_[row-1].writable) &&

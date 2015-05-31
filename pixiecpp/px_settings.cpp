@@ -31,7 +31,8 @@
 namespace Pixie {
 
 Settings::Settings() {
-  num_chans_ = 4;  //This might need to be changed
+  num_chans_ = NUMBER_OF_CHANNELS;  //This might need to be changed
+
   boot_files_.resize(7);
   system_parameter_values_.resize(N_SYSTEM_PAR, 0.0);
   module_parameter_values_.resize(PRESET_MAX_MODULES*N_MODULE_PAR, 0.0);

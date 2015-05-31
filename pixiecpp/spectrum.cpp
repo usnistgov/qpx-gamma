@@ -88,8 +88,8 @@ void Spectrum::addSpill(const Spill& one_spill) {
 bool Spectrum::validateHit(const Hit& newHit) const {
   bool addit = true;
   for (int i = 0; i < kNumChans; i++)
-    if (((match_pattern_[i] == 1) && (!newHit.pattern[i+8])) ||
-        ((match_pattern_[i] == -1) && (newHit.pattern[i+8])))
+    if (((match_pattern_[i] == 1) && (!newHit.pattern[i])) ||
+        ((match_pattern_[i] == -1) && (newHit.pattern[i])))
       addit = false;
   return addit;
 }

@@ -223,9 +223,9 @@ void FormOptimization::do_run()
   bits = ui->spinBits->value();
 
   optimizing_.bits = bits;
-  optimizing_.add_pattern.resize(4,0);
+  optimizing_.add_pattern.resize(Pixie::kNumChans,0);
   optimizing_.add_pattern[ui->spinOptChan->value()] = 1;
-  optimizing_.match_pattern.resize(4,0);
+  optimizing_.match_pattern.resize(Pixie::kNumChans,0);
   optimizing_.match_pattern[ui->spinOptChan->value()] = 1;
   optimizing_.appearance = generateColor().rgba();
 

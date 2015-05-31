@@ -815,9 +815,10 @@ void Wrapper::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQue
           one_hit.buf_time_lo = buf_timelo;
           one_hit.evt_time_hi = buff16[idx++];
           one_hit.evt_time_lo = buff16[idx++];
-          one_hit.pattern = pattern;
+          for (int i=0; i < NUMBER_OF_CHANNELS; ++i)
+            one_hit.pattern[i] = pattern[i+8];
           
-          for (int i=0; i < 4; i++) {
+          for (int i=0; i < NUMBER_OF_CHANNELS; i++) {
             if (pattern[i]) {
               if (task_b == 0x0000) {
                 uint16_t trace_len         = buff16[idx++] - 9;

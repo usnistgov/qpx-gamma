@@ -51,7 +51,7 @@ struct Hit{
            evt_time_lo;
 
   //unique to event
-  std::bitset<16> pattern;
+  std::bitset<Pixie::kNumChans> pattern;
 
   //per channel
   std::vector<uint16_t> energy,
@@ -182,7 +182,8 @@ struct RunInfo {
   double time_scale_factor() const {
     if (time_stop.is_not_a_date_time() ||
         time_start.is_not_a_date_time() ||
-        (p4_state.get_mod("TOTAL_TIME") == 0.0))
+        (p4_state.get_mod("TOTAL_TIME") == 0.0) ||
+        (p4_state.get_mod("TOTAL_TIME") == -1))
       return 1.0;
     else 
       return (time_stop - time_start).total_microseconds() /

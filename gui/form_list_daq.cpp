@@ -218,7 +218,7 @@ void FormListDaq::on_boxChan3_clicked()
 TableListData::TableListData(QObject *parent)
   :QAbstractTableModel(parent), time_factor_(1.0)
 {
-  calibrations_.resize(4);
+  calibrations_.resize(Pixie::kNumChans);
 }
 
 int TableListData::rowCount(const QModelIndex & /*parent*/) const
@@ -294,7 +294,7 @@ void TableListData::eat_list(Pixie::ListData* stuff) {
   mystuff = stuff;
   if (stuff != nullptr) {
     time_factor_ = stuff->run.time_scale_factor();
-    for (int i =0; i < 4; i++) {
+    for (int i =0; i < Pixie::kNumChans; i++) {
       Pixie::Detector thisdet = mystuff->run.p4_state.get_detector(Pixie::Channel(i));
       int hi_res = 0;
       for (auto &q : thisdet.energy_calibrations_.my_data_) {

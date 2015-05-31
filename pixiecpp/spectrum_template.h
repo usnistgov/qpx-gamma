@@ -30,6 +30,7 @@
 #include "tinyxml2.h"
 #include "generic_setting.h"
 #include "xmlable.h"
+#include "daq_types.h"
 
 namespace Pixie {
 namespace Spectrum {
@@ -37,7 +38,7 @@ namespace Spectrum {
 class Template : public XMLable {
  public:
   Template(): //default appearance is blue in RGBA
-  max_chans(4), type("invalid"), name_("noname"), bits(14), appearance(4278190335), visible(false)
+  max_chans(kNumChans), type("invalid"), name_("noname"), bits(14), appearance(4278190335), visible(false)
   {match_pattern.resize(max_chans,0); add_pattern.resize(max_chans,0);}
   std::string xml_element_name() const override {return "PixieSpectrumTemplate";}
   Template(std::string name) : Template() {name_ = name;}

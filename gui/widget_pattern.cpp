@@ -31,6 +31,8 @@
 
 QpxPattern::QpxPattern(QVector<int16_t> pattern, bool tristate)
 {
+  if (pattern.empty())
+    pattern.resize(Pixie::kNumChans);
   pattern_ = pattern;
   tristate_ = tristate;
 
@@ -39,15 +41,15 @@ QpxPattern::QpxPattern(QVector<int16_t> pattern, bool tristate)
   PaintingScaleFactor = 20;
 }
 
-QpxPattern::QpxPattern(std::bitset<16> pattern, bool tristate) {
+QpxPattern::QpxPattern(std::bitset<Pixie::kNumChans> pattern, bool tristate) {
     tristate_ = tristate;
 
-    pattern_.resize(4);
+    pattern_.resize(Pixie::kNumChans);
 
     int sum = 0;
-    for (int i=0; i < 4; i++) {
-        sum+=pattern[i+8];
-        if (pattern[i+8])
+    for (int i=0; i < Pixie::kNumChans; i++) {
+        sum+=pattern[i];
+        if (pattern[i])
             pattern_[i] = 1;
         else
             pattern_[i] = 0;

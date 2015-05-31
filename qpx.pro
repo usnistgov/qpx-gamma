@@ -91,7 +91,6 @@ INCLUDEPATH += pixiecpp gui \
                dependencies \
                dependencies/PLX \
                dependencies/XIA \
-               dependencies/LED \
                dependencies/xylib \
                dependencies/tinyxml2 \
                dependencies/qcustomplot \
@@ -101,7 +100,6 @@ INCLUDEPATH += pixiecpp gui \
 
 SOURCES += $$files(dependencies/*.cpp) \
            $$files(dependencies/XIA/*.c) \
-           $$files(dependencies/LED/*.cpp) \
            $$files(dependencies/qcustomplot/*.cpp) \
            $$files(dependencies/qtcolorpicker/*.cpp) \
            $$files(dependencies/tinyxml2/*.cpp) \
@@ -115,7 +113,6 @@ SOURCES += $$files(dependencies/*.cpp) \
 HEADERS  += $$files(dependencies/*.h) \
             $$files(dependencies/XIA/*.h) \
             $$files(dependencies/PLX/*.h) \
-            $$files(dependencies/LED/*.h) \
             $$files(dependencies/qcustomplot/*.h) \
             $$files(dependencies/qtcolorpicker/*.h) \
             $$files(dependencies/tinyxml2/*.h) \
