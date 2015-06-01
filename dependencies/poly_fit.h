@@ -24,9 +24,7 @@
 #define POLY_FIT_H
 
 #include <vector>
-#include <QThread>
-#include <QMutex>
-#include <QVector>
+#include <iostream>
 
 class Polynomial {
 public:
@@ -46,6 +44,7 @@ public:
 class Gaussian {
 public:
   Gaussian() : height_(0), hwhm_(0), center_(0) {}
+  Gaussian(const std::vector<double> &x, const std::vector<double> &y);
   Gaussian(double center, double height, double hwhm) : height_(height), hwhm_(hwhm), center_(center) {}
 
   double evaluate(double x);
@@ -59,22 +58,20 @@ public:
 class Peak {
 public:
   Peak() {}
-  Peak(std::vector<double> &x, std::vector<double> &y, int min, int max);
+  Peak(const std::vector<double> &x, const std::vector<double> &y, int min, int max);
 
-  std::vector<double> x_, y_, diff_y_, filled_y_, y_nobase_, y_fullfit_;
+  std::vector<double> x_, y_, filled_y_, y_nobase_, y_fullfit_;
   Gaussian rough_, refined_;
-  Polynomial baseline_;
 
 private:
-  Gaussian find_g(std::vector<double> &x, std::vector<double> &y);
-  Polynomial find_p(std::vector<double> &x, std::vector<double> &y, double center);
-  void fill0_linear(int buffer, int sample);  
+  //  Polynomial find_p(std::vector<double> x, std::vector<double> y, double center);
+  //  void fill0_linear(int buffer);  
 };
 
 class UtilXY {
 public:
   UtilXY();
-  UtilXY(std::vector<double> x, std::vector<double> y):
+  UtilXY(const std::vector<double> &x, const std::vector<double> &y):
     x_(x), y_(y) {}
 
   void setXY(std::vector<double> x, std::vector<double> y)

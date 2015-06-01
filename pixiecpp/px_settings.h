@@ -72,6 +72,8 @@ public:
 
   /////SETTINGS/////
   void get_all_settings();
+
+  void reset_counters_next_run();
   
   //system
   void set_sys(const std::string&, double);

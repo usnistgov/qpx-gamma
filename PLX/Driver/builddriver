@@ -1,0 +1,147 @@
+#-----------------------------------------------------------------------------
+#
+#      File         :  builddriver
+#      Abstract     :  Builds a specific PLX driver
+#
+#-----------------------------------------------------------------------------
+
+
+# Remove comment to display script commands as it runs
+#set -x
+
+
+
+#=============================================================================
+# Modify the "export" statement below to set to the location
+# of the PLX Linux installation path.  Some examples are:
+#
+#      export PLX_SDK_DIR=/usr/src/PlxSdk
+#      export PLX_SDK_DIR=/home/$USER/PlxSdk
+#=============================================================================
+if [ "${PLX_SDK_DIR}1" = "1" ]; then
+
+    # Attempt to auto-find PLX directory
+    PLX_DIR=PlxSdk
+    CWD=`pwd`
+
+    while [ `pwd` != "/" ]; do
+        if [ -d $PLX_DIR ]; then
+            export PLX_SDK_DIR=`pwd`/$PLX_DIR
+            break
+        fi
+        cd ..
+    done
+
+    # Return to original directory
+    cd $CWD
+
+    if [ "${PLX_SDK_DIR}1" = "1" ]; then
+        # Add environment variable
+        export PLX_SDK_DIR=$HOME/PLX_DIR
+
+        echo
+        echo "  Note:"
+        echo
+        echo "      The required environment variable, PLX_SDK_DIR, is not defined"
+        echo "      in the environment.  The default value (\"$PLX_SDK_DIR\")"
+        echo "      will be used instead.  Please update your environment to override"
+        echo "      the default, or modify this script accordingly.  To set an"
+        echo "      environment variable, use the \"export\" command as follows:"
+        echo
+        echo "         export PLX_SDK_DIR=<root of PLX installation>"
+        echo
+    fi
+else
+    # Make sure the variable is in the environment, not just a shell variable
+    export PLX_SDK_DIR=${PLX_SDK_DIR}
+fi
+
+
+# Store parameters
+Param2=$2
+Param3=$3
+Param4=$4
+
+# Check for debug version
+if [ "$2" = "d" ]; then
+    # Add PLX_DEBUG environment variable
+    export PLX_DEBUG=1
+    Param2=
+else
+    # Make sure PLX_DEBUG is not in environment
+    unset PLX_DEBUG
+fi
+
+
+# Check for clean option
+if [ "$2" = "c" ]; then Param2=clean;    fi
+if [ "$2" = "a" ]; then Param2=cleanall; fi
+if [ "$3" = "c" ]; then Param3=clean;    fi
+if [ "$3" = "a" ]; then Param3=cleanall; fi
+
+
+# Check for verbose option
+if [ "$2" = "v" ]; then Param2=V=1; fi
+if [ "$3" = "v" ]; then Param3=V=1; fi
+if [ "$4" = "v" ]; then Param4=V=1; fi
+
+
+# Set default chip type
+PLX_CHIP=$1
+
+
+# Verify command-line
+case "$1" in
+    8000n) PLX_CHIP=8000_NT  ;;
+    8000d) PLX_CHIP=8000_DMA ;;
+    6000n) PLX_CHIP=6000_NT  ;;
+
+    9050)  ;;
+    9030)  ;;
+    9080)  ;;
+    9054)  ;;
+    9056)  ;;
+    9656)  ;;
+    8311)  ;;
+    Svc)   ;;
+
+    *)
+    echo
+    echo "PLX Linux module build script"
+    echo "PLX Technology, Inc."
+    echo
+    echo "  Usage: builddriver {Driver} [DebugOption] [CleanOption]"
+    echo
+    echo "     Driver      = 8000n      : PLX 8000 NT-mode driver"
+    echo "                   8000d      : PLX 8000 DMA Controller driver"
+    echo "                   9050       : PLX 9050/9052 driver"
+    echo "                   9030       : PLX 9030 driver"
+    echo "                   9080       : PLX 9080 driver"
+    echo "                   9054       : PLX 9054 driver"
+    echo "                   9056       : PLX 9056 driver"
+    echo "                   9656       : PLX 9656 driver"
+    echo "                   8311       : PLX 8311 driver"
+    echo "                   6000n      : PLX 6254/6540/6466 NT-mode driver"
+    echo "                   Svc        : PLX PCI/PCIe Service driver"
+    echo
+    echo "     DebugOption = <none>     : Build Release build of module"
+    echo "                   'd'        : Build Debug build of module"
+    echo
+    echo "     CleanOption = <none>     : Build the driver"
+    echo "                   'clean'    : Remove intermediate build files"
+    echo "                   'cleanall' : Remove all build files"
+    echo
+    echo "  E.g.: builddriver 9054 d      - Build 9054 module debug version"
+    echo "        builddriver Svc         - Build PlxSvc service module release version"
+    echo "        builddriver 8000n clean - Remove intermediate build files of 8000-NT module"
+    echo
+    exit
+    ;;
+esac
+
+# Set PLX chip in environment
+export PLX_CHIP=$PLX_CHIP
+
+
+# Build the driver
+make $Param2 $Param3 $Param4 $5 $6 $7

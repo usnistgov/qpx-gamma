@@ -47,17 +47,24 @@ class WidgetPlot1D : public QWidget
 public:
   explicit WidgetPlot1D(QWidget *parent = 0);
   ~WidgetPlot1D();
-
-  void update_plot();
-  void reset_scales();
-  void set_markers(const std::list<Marker>& markers);
-  void set_block(Marker, Marker);
-  void setLogScale(bool);
-
   void clearGraphs();
-  void addGraph(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness);
+  void clearExtras();
+
+  void redraw();
+  void reset_scales();
+  void rescale();
+  void replot_markers();
+
+  void setLogScale(bool);
   void setLabels(QString x, QString y);
   void setTitle(QString title);
+
+  void set_markers(const std::list<Marker>& markers);
+  void set_block(Marker, Marker);
+  void set_cursors(const std::list<Marker>& cursors);
+
+  void addGraph(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness);
+  void setYBounds(const std::map<double, double> &minima, const std::map<double, double> &maxima);
 
 signals:
 
@@ -66,6 +73,9 @@ signals:
 
 private slots:
   void plot_mouse_clicked(double x, double y, QMouseEvent *event);
+  void plot_mouse_press(QMouseEvent*);
+  void plot_mouse_release(QMouseEvent*);
+  void plot_rezoom();
 
   void on_pushResetScales_clicked();
   void scaleTypeChosen(QAction*);
@@ -73,18 +83,24 @@ private slots:
 
   void on_pushNight_clicked();
 
-  void replot_markers();
-
-
 private:
+  void connectPlot();
   void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
+  void calc_y_bounds(double lower, double upper);
 
   Ui::WidgetPlot1D *ui;
 
   std::list<Marker> my_markers_;
+  std::list<Marker> my_cursors_;
   std::vector<Marker> rect;
 
+  int force_rezoom_;
   double minx, maxx;
+  double miny, maxy;
+
+  double minx_zoom, maxx_zoom;
+
+  std::map<double, double> minima_, maxima_;
 
   QMenu menuScaleType;
   QMenu menuPlotStyle;

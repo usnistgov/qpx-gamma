@@ -64,6 +64,7 @@ private slots:
   void replot_markers();
 
   bool find_peaks();
+  void resultChosen();
 
   void on_pushStop_clicked();
   void do_post_processing();

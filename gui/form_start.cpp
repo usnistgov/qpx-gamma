@@ -101,6 +101,7 @@ void FormStart::toggle_push(bool enable, Pixie::LiveStatus live) {
 
 void FormStart::boot_complete(bool success, bool online) {
   if (success) {
+    this->setCursor(Qt::WaitCursor);
     QThread::sleep(1);
     formPixieSettings->apply_settings();
     if (online) {
@@ -109,6 +110,7 @@ void FormStart::boot_complete(bool success, bool online) {
       runner_thread_.do_oscil();
     }
     runner_thread_.do_refresh_settings();
+    this->setCursor(Qt::ArrowCursor);
   }
 }
 

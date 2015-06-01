@@ -58,7 +58,7 @@ unix {
        DEFINES += "XIA_LINUX"
        DEFINES += "PLX_LINUX"
        QMAKE_CC = g++
-       LIBS += dependencies/PLX/PlxApi.a -lm -ldl -DBOOST_LOG_DYN_LINK \
+       LIBS +=  PLX/Library/PlxApi.a -lm -ldl -DBOOST_LOG_DYN_LINK \
                -lboost_system -lboost_date_time -lboost_thread -lboost_log \
                -lboost_program_options -lboost_filesystem \
                -lboost_log_setup -lboost_timer \
@@ -71,8 +71,8 @@ unix {
 	LIBPATH += /usr/local/lib
 		
 	QMAKE_CFLAGS   += -fpermissive
-	QMAKE_CXXFLAGS_RELEASE -= -O2
-	QMAKE_CXXFLAGS_RELEASE += -O3
+	QMAKE_CXXFLAGS_RELEASE -= -O2 -std=c++0x
+	QMAKE_CXXFLAGS_RELEASE += -O3 -std=c++11
    }
 	 
 win32 {
@@ -88,8 +88,8 @@ win32 {
 
 
 INCLUDEPATH += pixiecpp gui \
+               PLX/Include \
                dependencies \
-               dependencies/PLX \
                dependencies/XIA \
                dependencies/xylib \
                dependencies/tinyxml2 \
@@ -112,12 +112,12 @@ SOURCES += $$files(dependencies/*.cpp) \
 
 HEADERS  += $$files(dependencies/*.h) \
             $$files(dependencies/XIA/*.h) \
-            $$files(dependencies/PLX/*.h) \
             $$files(dependencies/qcustomplot/*.h) \
             $$files(dependencies/qtcolorpicker/*.h) \
             $$files(dependencies/tinyxml2/*.h) \
             $$files(dependencies/xylib/*.h) \
             $$files(dependencies/fityk/*.cpp) \
+            $$files(PLX/Include/*.h) \
             $$files(pixiecpp/*.h) \
             $$files(gui/*.h)
 

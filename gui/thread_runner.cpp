@@ -25,7 +25,8 @@
 #include "custom_logger.h"
 
 ThreadRunner::ThreadRunner(QObject *parent) :
-  QThread(parent)
+  QThread(parent),
+  terminating_(false)
 {
   spectra_ = nullptr;
   interruptor_ = nullptr;
@@ -47,12 +48,19 @@ void ThreadRunner::terminate() {
   PL_INFO << "runner thread termination requested";
   if (interruptor_)
     interruptor_->store(true);
+  terminating_.store(true);
   wait();
 }
+
+bool ThreadRunner::terminating() {
+  return terminating_.load();
+}
+
 
 void ThreadRunner::do_list(boost::atomic<bool> &interruptor, Pixie::RunType type, uint64_t timeout, bool dblbuf)
 {
   if (!isRunning()) {
+    terminating_.store(false);
     QMutexLocker locker(&mutex_);
     interruptor_ = &interruptor;
     run_type_ = type;
@@ -68,6 +76,7 @@ void ThreadRunner::do_list(boost::atomic<bool> &interruptor, Pixie::RunType type
 void ThreadRunner::do_run(Pixie::SpectraSet &spectra, boost::atomic<bool> &interruptor, Pixie::RunType type, uint64_t timeout, bool dblbuf)
 {
   if (!isRunning()) {
+    terminating_.store(false);
     QMutexLocker locker(&mutex_);
     spectra_ = &spectra;
     interruptor_ = &interruptor;
@@ -82,6 +91,7 @@ void ThreadRunner::do_run(Pixie::SpectraSet &spectra, boost::atomic<bool> &inter
 
 void ThreadRunner::do_fake(Pixie::SpectraSet &spectra, boost::atomic<bool> &interruptor, QString file, std::array<int,2> chans, int source_res, int dest_res, int timeout) {
   if (!isRunning()) {
+    terminating_.store(false);
     QMutexLocker locker(&mutex_);
     spectra_ = &spectra;
     interruptor_ = &interruptor;
@@ -98,6 +108,7 @@ void ThreadRunner::do_fake(Pixie::SpectraSet &spectra, boost::atomic<bool> &inte
 
 void ThreadRunner::do_boot(bool boot_keepcw, std::vector<std::string> boot_files, std::vector<uint8_t> boot_slots) {
   if (!isRunning()) {
+    terminating_.store(false);
     boot_keepcw_ = boot_keepcw;
     boot_files_ = boot_files;
     boot_slots_ = boot_slots;
@@ -109,6 +120,7 @@ void ThreadRunner::do_boot(bool boot_keepcw, std::vector<std::string> boot_files
 
 void ThreadRunner::do_offsets() {
   if (!isRunning()) {
+    terminating_.store(false);
     action_ = kOffsets;
     start(HighPriority);
   } else
@@ -117,6 +129,7 @@ void ThreadRunner::do_offsets() {
 
 void ThreadRunner::do_baselines() {
   if (!isRunning()) {
+    terminating_.store(false);
     action_ = kBaselines;
     start(HighPriority);
   } else
@@ -125,6 +138,7 @@ void ThreadRunner::do_baselines() {
 
 void ThreadRunner::do_optimize() {
   if (!isRunning()) {
+    terminating_.store(false);
     action_ = kOptimize;
     start(HighPriority);
   } else
@@ -134,6 +148,7 @@ void ThreadRunner::do_optimize() {
 void ThreadRunner::do_oscil() {
   if (!isRunning()) {
     action_ = kOscil;
+    terminating_.store(false);
     start(HighPriority);
   } else
     PL_WARN << "Cannot do_oscil. Runner busy.";
@@ -141,6 +156,7 @@ void ThreadRunner::do_oscil() {
 
 void ThreadRunner::do_refresh_settings() {
   if (!isRunning()) {
+    terminating_.store(false);
     action_ = kSettingsRefresh;
     start(HighPriority);
   } else
@@ -149,6 +165,7 @@ void ThreadRunner::do_refresh_settings() {
 
 void ThreadRunner::do_tau() {
   if (!isRunning()) {
+    terminating_.store(false);
     action_ = kTau;
     start(HighPriority);
   } else
@@ -157,6 +174,7 @@ void ThreadRunner::do_tau() {
 
 void ThreadRunner::do_BLcut() {
   if (!isRunning()) {
+    terminating_.store(false);
     action_ = kBLcut;
     start(HighPriority);
   } else
@@ -168,10 +186,12 @@ void ThreadRunner::run()
 {
   if (action_ == kMCA) {
     interruptor_->store(false);
+    Pixie::Wrapper::getInstance().settings().reset_counters_next_run();
     Pixie::Wrapper::getInstance().getMca(run_type_, timeout_, *spectra_, *interruptor_, dblbuf_);
     emit runComplete();
   } else if (action_ == kList) {
     interruptor_->store(false);
+    Pixie::Wrapper::getInstance().settings().reset_counters_next_run();
     Pixie::ListData *newListRun = Pixie::Wrapper::getInstance().getList(run_type_, timeout_, *interruptor_, dblbuf_);
     emit listComplete(newListRun);
   } else if (action_ == kSimulate) {

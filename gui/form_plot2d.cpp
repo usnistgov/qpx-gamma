@@ -40,6 +40,7 @@ FormPlot2D::FormPlot2D(QWidget *parent) :
   ext_marker = 0;
   marker_x = 0;
   marker_y = 0;
+  zoom_2d = 100;
   current_gradient_ = "Hot";
   current_scale_type_ = "Logarithmic";
 
@@ -298,6 +299,14 @@ void FormPlot2D::on_pushResetScales_clicked()
   ui->coincPlot->rescaleAxes();
   ui->coincPlot->replot();
   this->setCursor(Qt::ArrowCursor);
+}
+
+void FormPlot2D::reset_content() {
+    colorMap->clearData();
+    marker_x = 0;
+    marker_y = 0;
+    ext_marker = 0;
+    replot_markers();
 }
 
 

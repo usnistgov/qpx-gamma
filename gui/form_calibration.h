@@ -55,8 +55,10 @@ signals:
   void calibrationComplete();
   void detectorsChanged();
 
-private slots:
+public slots:
+  void update_plot();
 
+private slots:
   void addMovingMarker(double);
   void removeMovingMarker(double);
   void on_pushAdd_clicked();
@@ -76,9 +78,6 @@ private slots:
   void on_pushFromDB_clicked();
 
   void on_pushFindPeaks_clicked();
-
-  void update_plot();
-
 
 protected:
   void closeEvent(QCloseEvent*);

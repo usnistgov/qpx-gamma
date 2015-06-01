@@ -242,6 +242,15 @@ void Settings::get_all_settings() {
 };
 
 
+void Settings::reset_counters_next_run() { //for current module only
+  if (live_ == LiveStatus::history)
+    return;
+
+  set_mod("SYNCH_WAIT", 1, Module::current);
+  set_mod("IN_SYNCH", 0, Module::current);
+}
+
+
 /////System Settings//////
 //////////////////////////
 

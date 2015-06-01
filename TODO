@@ -4,13 +4,11 @@ Major features/overhauls:
 -lock file (one instance per system)
 -pause run
 -spectra warping
--command line tool
 
 pixiecpp:
 -detector provides highest resolution calibration
 -all timestamps with timezone**
 -save as 2012 revision of N42
--reset P4 timers before each run
 -fix cnf loading (dll?)
 -save/load matrices
 

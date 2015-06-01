@@ -1,0 +1,36 @@
+PLX driver installer for Linux
+===============================================================================
+
+Introduction:
+To use Pixie-4 in Linux, you need to compile the PLX driver for your specific
+kernel. Every time you update your kernel, you will need to rebuild the driver.
+You will also need to make the system load it every time you boot up. To ease
+the process, we have created the following script.
+
+To install PLX driver for linux:
+(1) Run "sudo ./install.sh"
+(2) Reboot
+(3) Run "./test.sh" to see if it loads correctly (optional)
+
+Troubleshooting:
+The script first attempts to build the debug version of the driver.
+If the driver failes to load, please look at its debug output.
+
+The following issue was encountered:
+"Kernel VA: ERROR - Unable to map space to Kernel VA"
+There might be a conflict with an already installed device.
+In this case, try the following:
+   a) Make sure a PLX device is visible via PCI bridge
+      by running "lspci"
+   b) See if the needed addresses are already claimed by a different
+      driver by running "cat /proc/iomem"
+      If so, take note of the kernel module name used and blacklist it
+      by adding "blacklist net2272" into /etc/modprobe.d/blacklist.conf
+   c) try loading the PLX driver again
+
+
+History:
+The script was written at NIST 
+to simplify updating the driver after kernel
+updates. Tested on Ubuntu Xeon system. The load-plx9054 script was written 
+on the basis of the Plx_load code provided by PLX.

@@ -1,0 +1,82 @@
+#!/bin/sh
+
+bServiceDriver=0
+path=/dev/plx
+name=Plx9054
+module=Plx9054
+
+echo PLX driver installation: $module
+
+# Load module
+#if $InsMod $drvPath/$module.ko 2>/dev/null; then
+#    echo "Ok ($module.ko)"
+#else
+#    echo ERROR: Load error or no supported devices found
+#    echo
+#    exit
+#fi
+
+# Verify driver loaded
+echo -n "  Verify load......... "
+drv_Name=`lsmod | awk "\\$1==\"$module\" {print \\$1}"`
+if [ "$drv_Name" = "" ]; then
+    echo ERROR: \'$module\' not detected
+    echo
+    exit
+fi
+echo Ok
+
+# Get the major number
+echo -n "  Get major number.... "
+major=`cat /proc/devices | awk "\\$2==\"$name\" {print \\$1}"`
+
+# Check if valid
+if [ "$major" = "" ]; then
+    echo ERROR: Module major number not detected
+    echo
+    exit
+fi
+
+# Display Major ID
+echo "Ok (MajorID = $major)"
+
+# Create the device node path
+echo -n "  Create node path.... "
+if [ -d $path ]; then
+    echo "Ok ($path already exists)"
+else
+    mkdir $path
+    chmod 0777 $path
+    echo "Ok ($path)"
+fi
+
+# Create the device nodes
+echo -n "  Create nodes........ "
+rm -f $path/$name*
+mknod $path/$name c $major 255
+
+# Create additional nodes for non-service driver
+if [ "$bServiceDriver" = "0" ]; then
+    mknod ${path}/$name-0  c $major 0
+    mknod ${path}/$name-1  c $major 1
+    mknod ${path}/$name-2  c $major 2
+    mknod ${path}/$name-3  c $major 3
+    mknod ${path}/$name-4  c $major 4
+    mknod ${path}/$name-5  c $major 5
+    mknod ${path}/$name-6  c $major 6
+    mknod ${path}/$name-7  c $major 7
+    mknod ${path}/$name-8  c $major 8
+    mknod ${path}/$name-9  c $major 9
+    mknod ${path}/$name-10 c $major 10
+    mknod ${path}/$name-11 c $major 11
+    mknod ${path}/$name-12 c $major 12
+    mknod ${path}/$name-13 c $major 13
+    mknod ${path}/$name-14 c $major 14
+    mknod ${path}/$name-15 c $major 15
+    mknod ${path}/$name-16 c $major 16
+fi
+
+chmod 777 $path/*
+echo "Ok ($path/$name)"
+echo
+
