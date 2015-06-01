@@ -158,7 +158,7 @@ void FormMcaDaq::clearGraphs() //rename this
   spectra_.clear();
   updateSpectraUI();
   ui->Plot1d->reset_content();
-  ui->Plot2d->reset(); //is this necessary?
+  ui->Plot2d->reset_content(); //is this necessary?
 
   spectra_.activate();
 }
@@ -211,7 +211,7 @@ void FormMcaDaq::on_pushMcaStart_clicked()
   clearGraphs();
   spectra_.set_spectra(spectra_templates_);
   updateSpectraUI();
-  spectra_.activate();
+//  spectra_.activate();
 
   my_run_ = true;
   ui->Plot1d->reset_content();
@@ -245,7 +245,7 @@ void FormMcaDaq::on_pushMcaSimulate_clicked()
   clearGraphs();
   spectra_.set_spectra(spectra_templates_);
   updateSpectraUI();
-  spectra_.activate();
+//  spectra_.activate();
 
   ui->pushMcaStop->setEnabled(true);
   my_run_ = true;

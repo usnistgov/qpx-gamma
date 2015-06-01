@@ -54,14 +54,14 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   moving_.themes["light"] = QPen(Qt::darkBlue, 2);
   moving_.themes["dark"] = QPen(Qt::blue, 2);
 
-  a.themes["light"] = QPen(Qt::darkBlue, 1);
-  a.themes["dark"] = QPen(Qt::blue, 1);
+  a.themes["light"] = QPen(Qt::darkBlue, 2);
+  a.themes["dark"] = QPen(Qt::blue, 2);
 
   QColor translu(Qt::blue);
   translu.setAlpha(32);
-  b.themes["light"] = QPen(translu, 1);
+  b.themes["light"] = QPen(translu, 2);
   translu.setAlpha(64);
-  b.themes["dark"] = QPen(translu, 1);
+  b.themes["dark"] = QPen(translu, 2);
 
   ui->plot2->setLogScale(false);
   ui->plot2->setTitle("Peak analysis");
@@ -83,9 +83,10 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem("Setting value", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
   ui->tableResults->setSelectionBehavior(QAbstractItemView::SelectRows);
-  ui->tableResults->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  ui->tableResults->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->tableResults->horizontalHeader()->setStretchLastSection(true);
   ui->tableResults->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+  connect(ui->tableResults, SIGNAL(itemSelectionChanged()), this, SLOT(resultChosen()));
 
   connect(&opt_plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
 
@@ -131,13 +132,15 @@ FormOptimization::~FormOptimization()
   delete ui;
 }
 
-
 void FormOptimization::closeEvent(QCloseEvent *event) {
   if (my_run_ && opt_runner_thread_.isRunning()) {
     int reply = QMessageBox::warning(this, "Ongoing data acquisition",
                                      "Terminate?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
     if (reply == QMessageBox::Yes) {
+      val_current += val_max;
+      QThread::sleep(2);
+
       opt_runner_thread_.terminate();
       opt_runner_thread_.wait();
     } else {
@@ -150,16 +153,18 @@ void FormOptimization::closeEvent(QCloseEvent *event) {
     int reply = QMessageBox::warning(this, "Optimization data still open",
                                      "Discard?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
-    if (reply != QMessageBox::Yes) {
+    if (reply == QMessageBox::Yes)
+      current_spectra_.clear();
+    else {
       event->ignore();
       return;
     }
   }
-
   current_spectra_.terminate();
   opt_plot_thread_.wait();
-  saveSettings();
 
+
+  saveSettings();
   event->accept();
 }
 
@@ -202,7 +207,7 @@ void FormOptimization::on_pushStart_clicked()
   ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
 
   ui->plot3->setLabels(QString::fromStdString(current_setting_), "FWHM");
-  ui->plot3->setTitle(QString::fromStdString("FWHM vs. "+ current_setting_));
+  ui->plot3->setTitle(QString::fromStdString("FWHM vs. " + current_setting_));
 
   do_run();
 }
@@ -248,7 +253,6 @@ void FormOptimization::do_run()
   QThread::sleep(1);
   pixie_.settings().get_all_settings();
   double got = pixie_.settings().get_chan(current_setting_, Pixie::Channel(ui->spinOptChan->value()));
-  PL_INFO << "got=" << got;
   setting_values_.push_back(got);
   setting_fwhm_.push_back(0);
   emit settings_changed();
@@ -259,30 +263,27 @@ void FormOptimization::do_run()
 
 void FormOptimization::run_completed() {
   if (my_run_) {
-    PL_INFO << "run completed called";
 
     y_opt.clear();
 
-    if (val_current < val_max) {
+    if ((val_current < val_max)  && !opt_runner_thread_.terminating()) {
+      PL_INFO << "[Optimization] Completed test " << val_current << " < " << val_max;
       val_current += val_d;
       emit restart_run();
     } else
+      ui->pushStop->setEnabled(false);
+      emit toggleIO(true);
+      my_run_ = false;
       emit post_proc();
   }
 }
 
 void FormOptimization::do_post_processing() {
-  PL_INFO << "do post proc called";
 
-  ui->pushStop->setEnabled(false);
-  emit toggleIO(true);
-  my_run_ = false;
-  return;
 
 }
 
 bool FormOptimization::find_peaks() {
-  PL_INFO << "find peaks called";
 
   int xmin = moving_.position - ui->spinPeakWindow->value();
   int xmax = moving_.position + ui->spinPeakWindow->value();
@@ -301,6 +302,7 @@ bool FormOptimization::find_peaks() {
 }
 
 void FormOptimization::update_plots() {
+  std::map<double, double> minima, maxima;
 
   for (auto &q: current_spectra_.by_type("1D")) {
     if (q->total_count()) {
@@ -312,8 +314,15 @@ void FormOptimization::update_plots() {
           std::move(q->get_spectrum({{0, res}}));
 
       y_opt.resize(res, 0);
+      int xx = 0;
       for (auto it : *spectrum_data) {
-        y_opt[it.first[0]] = it.second;
+        double yy = it.second;
+        y_opt[it.first[0]] = yy;
+        if (!minima.count(xx) || (minima[xx] > yy))
+          minima[xx] = yy;
+        if (!maxima.count(xx) || (maxima[xx] < yy))
+          maxima[xx] = yy;
+        ++xx;
       }
 
       find_peaks();
@@ -335,49 +344,32 @@ void FormOptimization::update_plots() {
   }
 
   if (ui->plot->isVisible()) {
-    PL_INFO << "update plots called";
     this->setCursor(Qt::WaitCursor);
 
     ui->plot->clearGraphs();
-
     std::string new_label = boost::algorithm::trim_copy(current_spectra_.status());
     ui->plot->setTitle(QString::fromStdString(new_label));
 
     for (int i=0; i < spectra_y_.size(); ++i) {
       QColor this_color = QColor::fromRgba(spectra_app_[i]);
-      int thick = 2;
       if (i + 1 == peaks_.size()) {
-        thick = 3;
         this_color.setAlpha(255);
 //        ui->plot->addGraph(QVector<double>::fromStdVector(peaks_[ii].x_), QVector<double>::fromStdVector(peaks_[ii].y_fullfit_), this_color, 0);
       }
 
       ui->plot->addGraph(QVector<double>::fromStdVector(x),
                          QVector<double>::fromStdVector(spectra_y_[i]),
-                         this_color, thick);
+                         this_color, 1);
+
     }
-    replot_markers();
-
-    ui->plot2->clearGraphs();
-    int jj = peaks_.size() - 1;
-    ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[jj].x_), QVector<double>::fromStdVector(peaks_[jj].y_), Qt::lightGray, 0);
-    ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[jj].x_), QVector<double>::fromStdVector(peaks_[jj].rough_.evaluate_array(peaks_[jj].x_)), Qt::lightGray, 0);
-
-    ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[jj].x_), QVector<double>::fromStdVector(peaks_[jj].filled_y_), Qt::gray, 0);
-    ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[jj].x_), QVector<double>::fromStdVector(peaks_[jj].y_nobase_), Qt::gray, 0);
-    ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[jj].x_), QVector<double>::fromStdVector(peaks_[jj].baseline_.evaluate_array(peaks_[jj].x_)), Qt::gray, 0);
-
-    ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[jj].x_), QVector<double>::fromStdVector(peaks_[jj].y_fullfit_), Qt::black, 0);
-    ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[jj].x_), QVector<double>::fromStdVector(peaks_[jj].refined_.evaluate_array(peaks_[jj].x_)), Qt::red, 0);
-    ui->plot2->update_plot();
-
-    ui->plot3->clearGraphs();
-    ui->plot3->addGraph(QVector<double>::fromStdVector(setting_values_), QVector<double>::fromStdVector(setting_fwhm_), Qt::darkMagenta, 0);
-    ui->plot3->update_plot();
+    ui->plot->setYBounds(minima, maxima);
+    ui->plot->replot_markers();
+    ui->plot->redraw();
 
     this->setCursor(Qt::ArrowCursor);
-
   }
+
+  resultChosen();
 }
 
 void FormOptimization::addMovingMarker(double x) {
@@ -387,9 +379,6 @@ void FormOptimization::addMovingMarker(double x) {
   a.visible = true;
   b.position = x + ui->spinPeakWindow->value() / 2;
   b.visible = true;
-  //  ui->pushAdd->setEnabled(true);
-  //  PL_INFO << "Marker at " << moving.position << " originally caliblated to " << old_calibration_.transform(moving.position)
-  //          << ", new calibration = " << new_calibration_.transform(moving.position);
   replot_markers();
 }
 
@@ -397,31 +386,14 @@ void FormOptimization::removeMovingMarker(double x) {
   moving_.visible = false;
   a.visible = false;
   b.visible = false;
-  //  ui->pushAdd->setEnabled(false);
   replot_markers();
 }
 
 
 void FormOptimization::replot_markers() {
-  //std::list<Marker> markers;
-
-  //markers.push_back(moving);
-  /*
-  if (gauss_ref_.refined_.height_) {
-    marker_ref_.position = gauss_ref_.refined_.center_;
-    marker_ref_.visible = true;
-    markers.push_back(marker_ref_);
-  }
-
-  if (gauss_opt_.refined_.height_) {
-    marker_opt_.position = gauss_opt_.refined_.center_;
-    marker_opt_.visible = true;
-    markers.push_back(marker_opt_);
-  }*/
-
-  //ui->plot->set_markers(markers);
   ui->plot->set_block(a,b);
-  ui->plot->update_plot();
+  ui->plot->replot_markers();
+  ui->plot->redraw();
 }
 
 
@@ -437,4 +409,36 @@ void FormOptimization::on_pushSaveOpti_clicked()
     }
   }
   emit optimization_approved();
+}
+
+void FormOptimization::resultChosen() {
+  this->setCursor(Qt::WaitCursor);
+
+  ui->plot2->clearGraphs();
+  ui->plot3->clearGraphs();
+
+  ui->plot3->addGraph(QVector<double>::fromStdVector(setting_values_), QVector<double>::fromStdVector(setting_fwhm_), Qt::darkMagenta, 0);
+
+  for (auto &q : ui->tableResults->selectedRanges()) {
+    if (q.rowCount() > 0)
+      for (int j = q.topRow(); j <= q.bottomRow(); j++) {
+
+        Marker cursor = moving_;
+        cursor.visible = true;
+        cursor.position = setting_values_[j];
+        ui->plot3->set_cursors(std::list<Marker>({cursor}));
+
+        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_), Qt::black, 2);
+        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_fullfit_), Qt::magenta, 0);
+        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].filled_y_), Qt::red, 0);
+      }
+  }
+
+  ui->plot2->rescale();
+  ui->plot3->rescale();
+
+  ui->plot2->redraw();
+  ui->plot3->redraw();
+
+  this->setCursor(Qt::ArrowCursor);
 }

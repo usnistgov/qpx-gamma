@@ -64,6 +64,7 @@ public:
     void do_tau();
     void do_BLcut();
     void terminate();
+    bool terminating();
 
 signals:
     void runComplete();
@@ -81,6 +82,7 @@ private:
 
     Pixie::SpectraSet* spectra_;
     boost::atomic<bool>* interruptor_;
+    boost::atomic<bool> terminating_;
 
     //boot variables
     std::vector<std::string> boot_files_;
@@ -103,7 +105,6 @@ private:
     QString file_;
     int source_res_, dest_res_;
     std::array<int,2> fake_chans_;
-
 };
 
 #endif

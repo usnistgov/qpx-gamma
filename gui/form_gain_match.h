@@ -53,7 +53,6 @@ protected:
   void closeEvent(QCloseEvent*);
 
 private slots:
-  void on_pushTakeOne_clicked();
   void update_plots();
   void run_completed();
 
@@ -73,27 +72,28 @@ private slots:
   void on_pushSaveOpti_clicked();
 
 private:
+  void loadSettings();
+  void saveSettings();
+
   Ui::FormGainMatch *ui;
 
   Pixie::Wrapper&      pixie_;
-  Pixie::SpectraSet    spectra_;
+  Pixie::SpectraSet    gm_spectra_;
   Pixie::Spectrum::Template reference_, optimizing_;
 
-  ThreadRunner         &runner_thread_;
+  ThreadRunner         &gm_runner_thread_;
   XMLableDB<Pixie::Detector> &detectors_;
   QSettings &settings_;
 
-  ThreadPlotSignal     plot_thread_;
-  boost::atomic<bool>  interruptor_;
+  ThreadPlotSignal     gm_plot_thread_;
+  boost::atomic<bool>  gm_interruptor_;
 
   std::vector<double> x, y_ref, y_opt;
 
-  bool running;
   bool my_run_;
 
-
   Marker moving_, marker_ref_, marker_opt_, a ,b;
-  int bits, current_pass;
+  int bits, current_pass, max_passes;
 
   Peak gauss_ref_, gauss_opt_;
 

@@ -132,7 +132,6 @@ void FormCalibration::clear() {
   ui->plot1D->reset_scales();
   ui->pushFromDB->setEnabled(false);
   update_plot();
-  replot_markers();
 }
 
 
@@ -163,12 +162,17 @@ void FormCalibration::setSpectrum(Pixie::SpectraSet *newset, QString name) {
     }
   }
 
+  ui->plot1D->reset_scales();
+  ui->plot1D->redraw();
+
   update_plot();
 }
 
 void FormCalibration::update_plot() {
   if (!spectra_)
     return;
+
+  std::map<double, double> minima, maxima;
 
   Pixie::Spectrum::Spectrum *spectrum;
   if (!(spectrum = spectra_->by_name(current_spectrum_.toStdString()))) {
@@ -177,17 +181,33 @@ void FormCalibration::update_plot() {
   if (spectrum->resolution()) {
     x_chan.resize(spectrum->resolution());
     y.resize(spectrum->resolution());
-    for (std::size_t i = 0; i < spectrum->resolution(); i++) {
-      x_chan[i] = i;
-      y[i] = spectrum->get_count({static_cast<uint16_t>(i)});
+
+    std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
+        std::move(spectrum->get_spectrum({{0, y.size()}}));
+
+    int i = 0;
+    for (auto it : *spectrum_data) {
+      double yy = it.second;
+      double xx = static_cast<double>(i);
+      x_chan[i] = xx;
+      y[i] = yy;
+      if (!minima.count(xx) || (minima[xx] > yy))
+        minima[xx] = yy;
+      if (!maxima.count(xx) || (maxima[xx] < yy))
+        maxima[xx] = yy;
+      ++i;
     }
+
     ui->plot1D->clearGraphs();
-    ui->plot1D->addGraph(x_chan, y, QColor::fromRgba(spectrum->appearance()), 0);
-    for (auto &q : peaks_)
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_), Qt::cyan, 0);
+    ui->plot1D->addGraph(x_chan, y, QColor::fromRgba(spectrum->appearance()), 1);
+    for (auto &q : peaks_) {
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.filled_y_), Qt::blue, 1);
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_), Qt::darkYellow, 1);
+    }
     ui->plot1D->setLabels("channel", "counts");
-    ui->plot1D->update_plot();
   }
+  ui->plot1D->setYBounds(minima, maxima);
+  replot_markers();
 }
 
 void FormCalibration::addMovingMarker(double x) {
@@ -226,6 +246,8 @@ void FormCalibration::replot_markers() {
   }
 
   ui->plot1D->set_markers(markers);
+  ui->plot1D->replot_markers();
+  ui->plot1D->redraw();
 }
 
 void FormCalibration::on_pushAdd_clicked()
@@ -319,7 +341,10 @@ void FormCalibration::on_pushMarkerRemove_clicked()
   selection_model_.reset();
   marker_table_.update();
   toggle_push();
-  replot_markers();
+  for (auto &q : peaks_)
+    if (q.refined_.center_ == chan)
+      q = Peak();
+  update_plot();
 }
 
 void FormCalibration::on_pushFit_clicked()
@@ -350,16 +375,16 @@ void FormCalibration::on_pushFit_clicked()
   selection_model_.reset();
   marker_table_.update();
   toggle_push();
-  replot_markers();
 }
 
 void FormCalibration::on_pushClear_clicked()
 {
+  peaks_.clear();
   my_markers_.clear();
   selection_model_.reset();
   marker_table_.update();
   toggle_push();
-  replot_markers();
+  update_plot();
 }
 
 void FormCalibration::on_pushPushEnergy_clicked()
@@ -437,5 +462,4 @@ void FormCalibration::on_pushFindPeaks_clicked()
   marker_table_.update();
   toggle_push();
   update_plot();
-  replot_markers();
 }

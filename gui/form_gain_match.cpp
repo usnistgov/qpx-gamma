@@ -30,19 +30,19 @@
 FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableDB<Pixie::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormGainMatch),
-  runner_thread_(thread),
+  gm_runner_thread_(thread),
   settings_(settings),
   detectors_(detectors),
-  spectra_(),
-  interruptor_(false),
-  plot_thread_(spectra_),
+  gm_spectra_(),
+  gm_interruptor_(false),
+  gm_plot_thread_(gm_spectra_),
   my_run_(false),
   pixie_(Pixie::Wrapper::getInstance())
 {
   ui->setupUi(this);
 
-  //loadSettings();
-  connect(&runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
+  loadSettings();
+  connect(&gm_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
 
   if (Pixie::Spectrum::Template *temp = Pixie::Spectrum::Factory::getInstance().create_template("1D")) {
     reference_   = *temp;
@@ -51,7 +51,6 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
   }
 
   current_pass = 0;
-  running = false;
 
   reference_.name_ = "Reference";
   reference_.visible = true;
@@ -81,14 +80,14 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
   marker_opt_.themes["dark"] = QPen(Qt::magenta, 1);
   marker_opt_.visible = true;
 
-  connect(&plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
+  connect(&gm_plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
 
   connect(ui->plot, SIGNAL(clickedLeft(double)), this, SLOT(addMovingMarker(double)));
   connect(ui->plot, SIGNAL(clickedRight(double)), this, SLOT(removeMovingMarker(double)));
   connect(this, SIGNAL(restart_run()), this, SLOT(do_run()));
   connect(this, SIGNAL(post_proc()), this, SLOT(do_post_processing()));
 
-  plot_thread_.start();
+  gm_plot_thread_.start();
 }
 
 FormGainMatch::~FormGainMatch()
@@ -96,36 +95,61 @@ FormGainMatch::~FormGainMatch()
   delete ui;
 }
 
+void FormGainMatch::loadSettings() {
+  settings_.beginGroup("GainMatching");
+  ui->spinBits->setValue(settings_.value("bits", 14).toInt());
+  ui->spinRefChan->setValue(settings_.value("reference_channel", 0).toInt());
+  ui->spinOptChan->setValue(settings_.value("optimized_channel", 1).toInt());
+  ui->spinSampleMin->setValue(settings_.value("minimum_sample", 180).toInt());
+  ui->spinSampleMax->setValue(settings_.value("maximum_sample", 1050).toInt());
+  ui->spinMaxPasses->setValue(settings_.value("maximum_passes", 30).toInt());
+  ui->spinPeakWindow->setValue(settings_.value("peak_window", 180).toInt());
+  ui->doubleSpinDeltaV->setValue(settings_.value("delta_V", 0.000300).toDouble());
+  settings_.endGroup();
+}
+
+void FormGainMatch::saveSettings() {
+  settings_.beginGroup("GainMatching");
+  settings_.setValue("bits", ui->spinBits->value());
+  settings_.setValue("reference_channel", ui->spinRefChan->value());
+  settings_.setValue("optimized_channel", ui->spinOptChan->value());
+  settings_.setValue("minimum_sample", ui->spinSampleMin->value());
+  settings_.setValue("maximum_sample", ui->spinSampleMax->value());
+  settings_.setValue("maximum_passes", ui->spinMaxPasses->value());
+  settings_.setValue("peak_window", ui->spinPeakWindow->value());
+  settings_.setValue("delta_V", ui->doubleSpinDeltaV->value());
+  settings_.endGroup();
+}
 
 void FormGainMatch::closeEvent(QCloseEvent *event) {
-  if (my_run_ && runner_thread_.isRunning()) {
+  if (my_run_ && gm_runner_thread_.isRunning()) {
     int reply = QMessageBox::warning(this, "Ongoing data acquisition",
                                      "Terminate?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
     if (reply == QMessageBox::Yes) {
-      runner_thread_.terminate();
-      runner_thread_.wait();
+      gm_runner_thread_.terminate();
+      gm_runner_thread_.wait();
     } else {
       event->ignore();
       return;
     }
   }
 
-  if (!spectra_.empty()) {
-    int reply = QMessageBox::warning(this, "Optimization data still open",
+  if (!gm_spectra_.empty()) {
+    int reply = QMessageBox::warning(this, "Gain matching data still open",
                                      "Discard?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
     if (reply == QMessageBox::Yes) {
-      spectra_.clear();
+      gm_spectra_.clear();
     } else {
       event->ignore();
       return;
     }
   }
 
-  spectra_.terminate();
-  plot_thread_.wait();
-  //  saveSettings();
+  gm_spectra_.terminate();
+  gm_plot_thread_.wait();
+  saveSettings();
 
   event->accept();
 }
@@ -133,13 +157,12 @@ void FormGainMatch::closeEvent(QCloseEvent *event) {
 void FormGainMatch::toggle_push(bool enable, Pixie::LiveStatus live) {
   bool online = (live == Pixie::LiveStatus::online);
   ui->pushMatchGain->setEnabled(enable && online);
-  ui->pushTakeOne->setEnabled(enable && online);
-}
 
-void FormGainMatch::on_pushTakeOne_clicked()
-{
-  do_run();
-  current_pass = 0;
+  ui->spinRefChan->setEnabled(enable && online);
+  ui->spinOptChan->setEnabled(enable && online);
+  ui->spinBits->setEnabled(enable && online);
+  ui->spinSampleMax->setEnabled(enable && online);
+  ui->spinMaxPasses->setEnabled(enable && online);
 }
 
 void FormGainMatch::do_run()
@@ -148,11 +171,9 @@ void FormGainMatch::do_run()
   emit toggleIO(false);
   my_run_ = true;
 
-  running = true;
-
   bits = ui->spinBits->value();
 
-  spectra_.clear();
+  gm_spectra_.clear();
   reference_.bits = bits;
   reference_.add_pattern.resize(Pixie::kNumChans,0);
   reference_.add_pattern[ui->spinRefChan->value()] = 1;
@@ -169,9 +190,9 @@ void FormGainMatch::do_run()
   db.add(reference_);
   db.add(optimizing_);
 
-  plot_thread_.start();
+  gm_plot_thread_.start();
 
-  spectra_.set_spectra(db);
+  gm_spectra_.set_spectra(db);
   ui->plot->clearGraphs();
 
   x.resize(pow(2,bits), 0.0);
@@ -179,16 +200,14 @@ void FormGainMatch::do_run()
   y_opt.resize(pow(2,bits), 0.0);
 
   minTimer = new CustomTimer(true);
-  runner_thread_.do_run(spectra_, interruptor_, Pixie::RunType::compressed, ui->spinSampleMax->value(), true);
+  gm_runner_thread_.do_run(gm_spectra_, gm_interruptor_, Pixie::RunType::compressed, ui->spinSampleMax->value(), true);
 }
 
 void FormGainMatch::run_completed() {
   if (my_run_) {
-    PL_INFO << "run completed called";
-
-    spectra_.clear();
-    spectra_.terminate();
-    plot_thread_.wait();
+    gm_spectra_.clear();
+    gm_spectra_.terminate();
+    gm_plot_thread_.wait();
     marker_ref_.visible = false;
     marker_opt_.visible = false;
     gauss_ref_.refined_.height_ = 0;
@@ -198,10 +217,9 @@ void FormGainMatch::run_completed() {
     y_ref.clear();
     y_opt.clear();
 
-    if (current_pass > 0) {
-      current_pass--;
-      PL_INFO << "Passes remaining " << current_pass;
-
+    if ((current_pass < max_passes)  && !gm_runner_thread_.terminating()){
+      PL_INFO << "[Gain matching] Passes remaining " << max_passes - current_pass;
+      current_pass++;
       emit post_proc();
     } else {
       ui->pushStop->setEnabled(false);
@@ -212,10 +230,7 @@ void FormGainMatch::run_completed() {
 }
 
 void FormGainMatch::do_post_processing() {
-  PL_INFO << "do post proc called";
-
   Pixie::Settings &settings = pixie_.settings();
-
   double old_gain = settings.get_chan("VGAIN",
                                       Pixie::Channel(ui->spinOptChan->value()),
                                       Pixie::Module::current,
@@ -223,13 +238,13 @@ void FormGainMatch::do_post_processing() {
   QThread::sleep(2);
   double new_gain = old_gain;
   if (gauss_opt_.refined_.center_ < gauss_ref_.refined_.center_) {
-    PL_INFO << "increasing gain";
+    PL_INFO << "[Gain matching] increasing gain";
     new_gain += ui->doubleSpinDeltaV->value();
   } else if (gauss_opt_.refined_.center_ > gauss_ref_.refined_.center_) {
-    PL_INFO << "decreasing gain";
+    PL_INFO << "[Gain matching] decreasing gain";
     new_gain -= ui->doubleSpinDeltaV->value();
   } else {
-    PL_INFO << "Gain matching complete ";
+    PL_INFO << "[Gain matching] gain matching complete ";
     ui->pushStop->setEnabled(false);
     emit toggleIO(true);
     return;
@@ -250,30 +265,28 @@ void FormGainMatch::do_post_processing() {
 }
 
 bool FormGainMatch::find_peaks() {
-  PL_INFO << "find peaks called";
-
-  int xmin = moving_.position - ui->spinPeakWindow->value();
-  int xmax = moving_.position + ui->spinPeakWindow->value();
-
-  if (xmin < 0) xmin = 0;
-  if (xmax >= x.size()) xmax = x.size() - 1;
-
   if (moving_.visible) {
+    int xmin = moving_.position - ui->spinPeakWindow->value() / 2;
+    int xmax = moving_.position + ui->spinPeakWindow->value() / 2;
+
+    if (xmin < 0) xmin = 0;
+    if (xmax >= x.size()) xmax = x.size() - 1;
+
     gauss_ref_ = Peak(x, y_ref, xmin, xmax);
     gauss_opt_ = Peak(x, y_opt, xmin, xmax);
 
-    replot_markers();
-
-    return true;
-  } else
-    return false;
+    if (gauss_ref_.refined_.height_ && gauss_opt_.refined_.height_)
+      return true;
+  }
+  return false;
 }
 
 void FormGainMatch::update_plots() {
 
-  PL_INFO << "update plots called";
+  std::map<double, double> minima, maxima;
 
   bool have_data = false;
+  bool have_peaks = false;
 
   if (ui->plot->isVisible()) {
     this->setCursor(Qt::WaitCursor);
@@ -281,27 +294,31 @@ void FormGainMatch::update_plots() {
     ui->plot->clearGraphs();
     have_data = true;
 
-    for (auto &q: spectra_.by_type("1D")) {
+    for (auto &q: gm_spectra_.by_type("1D")) {
       if (q->total_count()) {
 
-        //        PL_INFO << "count=" << q->total_count();
         uint32_t res = pow(2, bits);
         uint32_t app = q->appearance();
         std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
             std::move(q->get_spectrum({{0, res}}));
 
-        std::vector<double> y(res);
+        std::vector<double> y(res, 0.0);
+        int xx = 0;
         for (auto it : *spectrum_data) {
-          y[it.first[0]] = it.second;
+          double yy = it.second;
+          y[xx] = yy;
+          x[xx] = xx;
+          if (!minima.count(xx) || (minima[xx] > yy))
+            minima[xx] = yy;
+          if (!maxima.count(xx) || (maxima[xx] < yy))
+            maxima[xx] = yy;
+          ++xx;
         }
 
         if (q->name() == "Reference")
           y_ref = y;
         else
           y_opt = y;
-
-        for (std::size_t i=0; i < res; i++)
-          x[i] = i;
 
         ui->plot->addGraph(QVector<double>::fromStdVector(x),
                            QVector<double>::fromStdVector(y),
@@ -311,25 +328,31 @@ void FormGainMatch::update_plots() {
     }
     ui->plot->setLabels("channel", "count");
 
+    if (have_data)
+      have_peaks = find_peaks();
+
     if (gauss_ref_.refined_.height_) {
       ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_fullfit_), Qt::cyan, 0);
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.baseline_.evaluate_array(gauss_ref_.x_)), Qt::cyan, 0);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.filled_y_), Qt::cyan, 0);
     }
 
-    if (gauss_opt_.refined_.height_)
+    if (gauss_opt_.refined_.height_) {
       ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_fullfit_), Qt::magenta, 0);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.filled_y_), Qt::magenta, 0);
+    }
 
-    ui->plot->update_plot();
-
-    std::string new_label = boost::algorithm::trim_copy(spectra_.status());
+    std::string new_label = boost::algorithm::trim_copy(gm_spectra_.status());
     ui->plot->setTitle(QString::fromStdString(new_label));
   }
 
-  if (running && have_data && (minTimer->s() > ui->spinSampleMin->value()) && find_peaks()) {
-    PL_INFO << "Peaks found within range of each other. Moving along...";
+  ui->plot->setYBounds(minima, maxima);
+  ui->plot->replot_markers();
+  ui->plot->redraw();
+
+  if (have_data && (minTimer != nullptr) && (minTimer->s() > ui->spinSampleMin->value()) && have_peaks) {
     delete minTimer;
-    interruptor_.store(true);
-    running = false;
+    minTimer = nullptr;
+    gm_interruptor_.store(true);
   }
 
   this->setCursor(Qt::ArrowCursor);
@@ -342,9 +365,6 @@ void FormGainMatch::addMovingMarker(double x) {
   a.visible = true;
   b.position = x + ui->spinPeakWindow->value() / 2;
   b.visible = true;
-  //  ui->pushAdd->setEnabled(true);
-  //  PL_INFO << "Marker at " << moving.position << " originally caliblated to " << old_calibration_.transform(moving.position)
-  //          << ", new calibration = " << new_calibration_.transform(moving.position);
   replot_markers();
 }
 
@@ -352,15 +372,12 @@ void FormGainMatch::removeMovingMarker(double x) {
   moving_.visible = false;
   a.visible = false;
   b.visible = false;
-  //  ui->pushAdd->setEnabled(false);
   replot_markers();
 }
 
 
 void FormGainMatch::replot_markers() {
   std::list<Marker> markers;
-
-  //markers.push_back(moving);
 
   if (gauss_ref_.refined_.height_) {
     marker_ref_.position = gauss_ref_.refined_.center_;
@@ -376,20 +393,23 @@ void FormGainMatch::replot_markers() {
 
   ui->plot->set_markers(markers);
   ui->plot->set_block(a,b);
+  ui->plot->replot_markers();
+  ui->plot->redraw();
 }
 
 
 void FormGainMatch::on_pushMatchGain_clicked()
 {
-  current_pass = ui->spinMaxPasses->value();
+  current_pass = 0;
+  max_passes = ui->spinMaxPasses->value();
   do_run();
 }
 
 void FormGainMatch::on_pushStop_clicked()
 {
   PL_INFO << "Acquisition interrupted by user";
-  current_pass = 0;
-  interruptor_.store(true);
+  max_passes = 0;
+  gm_interruptor_.store(true);
 }
 
 void FormGainMatch::on_pushSaveOpti_clicked()

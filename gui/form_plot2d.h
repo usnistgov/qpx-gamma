@@ -43,9 +43,7 @@ public:
 
   void update_plot();
   void replot_markers();
-  void reset() {
-      colorMap->clearData();
-  }
+  void reset_content();
 
 public slots:
   void set_marker(double n);

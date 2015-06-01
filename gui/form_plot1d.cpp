@@ -30,10 +30,10 @@ FormPlot1D::FormPlot1D(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  moving.themes["light"] = QPen(Qt::darkRed, 2);
-  moving.themes["dark"] = QPen(Qt::red, 2);
+  moving.themes["light"] = QPen(Qt::darkGray, 2);
+  moving.themes["dark"] = QPen(Qt::white, 2);
 
-  markx.themes["light"] = QPen(Qt::darkCyan, 1);
+  markx.themes["light"] = QPen(Qt::darkRed, 1);
   markx.themes["dark"] = QPen(Qt::yellow, 1);
   marky = markx;
 
@@ -98,6 +98,8 @@ void FormPlot1D::replot_markers() {
   markers.push_back(marky);
 
   ui->mcaPlot->set_markers(markers);
+  ui->mcaPlot->replot_markers();
+  ui->mcaPlot->redraw();
 }
 
 void FormPlot1D::spectraLooksChanged() {
@@ -150,8 +152,15 @@ void FormPlot1D::on_comboResolution_currentIndexChanged(int index)
 }
 
 void FormPlot1D::reset_content() {
-  ui->mcaPlot->clearGraphs();
+  moving.visible = false;
+  markx.visible = false;
+  marky.visible = false;
   ui->mcaPlot->reset_scales();
+  ui->mcaPlot->clearGraphs();
+  ui->mcaPlot->clearExtras();
+  ui->mcaPlot->replot_markers();
+  ui->mcaPlot->rescale();
+  ui->mcaPlot->redraw();
 }
 
 void FormPlot1D::update_plot() {
@@ -160,10 +169,11 @@ void FormPlot1D::update_plot() {
   CustomTimer guiside(true);
 
   //bool new_data = mySpectra->new_data();
+  std::map<double, double> minima, maxima;
 
   ui->mcaPlot->clearGraphs();
   for (auto &q: mySpectra->spectra(1, ui->comboResolution->currentData().toInt())) {
-    if (q && q->visible() && q->resolution()) {
+    if (q && q->visible() && q->resolution() && q->total_count()) {
       uint32_t res = q->resolution();
       uint32_t app = q->appearance();
 
@@ -173,11 +183,19 @@ void FormPlot1D::update_plot() {
 
       std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
           std::move(q->get_spectrum({{0, y.size()}}));
-      for (auto it : *spectrum_data) {
-        y[it.first[0]] = it.second;
-      }
 
       std::vector<double> energies = q->energies(0);
+      int i = 0;
+      for (auto it : *spectrum_data) {
+        double xx = energies[i];
+        double yy = it.second;
+        y[it.first[0]] = yy;
+        if (!minima.count(xx) || (minima[energies[i]] > yy))
+          minima[xx] = yy;
+        if (!maxima.count(xx) || (maxima[energies[i]] < yy))
+          maxima[xx] = yy;
+        ++i;
+      }
 
       ui->mcaPlot->addGraph(QVector<double>::fromStdVector(energies), y, QColor::fromRgba(app), 1);
       }
@@ -185,7 +203,8 @@ void FormPlot1D::update_plot() {
   }
   ui->mcaPlot->setLabels("keV", "count");
 
-  ui->mcaPlot->update_plot();
+  ui->mcaPlot->setYBounds(minima, maxima);
+  replot_markers();
 
   std::string new_label = boost::algorithm::trim_copy(mySpectra->status());
   ui->mcaPlot->setTitle(QString::fromStdString(new_label));

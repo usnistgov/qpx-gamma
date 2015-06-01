@@ -80,10 +80,10 @@ qpx::qpx(QWidget *parent) :
   PL_INFO << "Hello! Welcome to Multi-NAA at neutron guide D at NCNR. Please click boot to boot :)";
 
 //for now available only in debug mode
-#ifdef QPX_DBG_
+//#ifdef QPX_DBG_
   ui->pushOpenOptimize->setEnabled(true);
   ui->pushOpenGainMatch->setEnabled(true);
-#endif
+//#endif
 
 }
 
@@ -98,6 +98,10 @@ void qpx::closeEvent(QCloseEvent *event) {
                                      "Terminate?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
     if (reply == QMessageBox::Yes) {
+      /*for (int i = ui->qpxTabs->count() - 1; i >= 0; --i)
+        if (ui->qpxTabs->widget(i) != main_tab_)
+          ui->qpxTabs->widget(i)->exit();*/
+
       runner_thread_.terminate();
       runner_thread_.wait();
     } else {
@@ -213,6 +217,7 @@ void qpx::calibrate(FormCalibration* formCalib) {
     connect(formCalib, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
   }
   ui->qpxTabs->setCurrentWidget(formCalib);
+  formCalib->update_plot();
 }
 
 void qpx::on_pushOpenSpectra_clicked()

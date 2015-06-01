@@ -188,23 +188,6 @@
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Channel</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QSpinBox" name="spinOptChan">
-       <property name="maximum">
-        <number>3</number>
-       </property>
-       <property name="value">
-        <number>0</number>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QLabel" name="label_8">
        <property name="text">
         <string>Resolution (bits)</string>
@@ -242,12 +225,36 @@
    <item row="1" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout_10">
      <item>
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Optimize setting </string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QComboBox" name="comboSetting">
        <property name="minimumSize">
         <size>
          <width>170</width>
          <height>0</height>
         </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Channel</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="spinOptChan">
+       <property name="maximum">
+        <number>3</number>
+       </property>
+       <property name="value">
+        <number>0</number>
        </property>
       </widget>
      </item>
@@ -280,7 +287,7 @@
      <item>
       <widget class="QLabel" name="label_10">
        <property name="text">
-        <string>step</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&amp;#916;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
       </widget>
      </item>
@@ -451,6 +458,12 @@
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>350</width>
+           <height>0</height>
+          </size>
          </property>
          <property name="maximumSize">
           <size>
