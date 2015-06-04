@@ -62,8 +62,6 @@ protected:
   void closeEvent(QCloseEvent*);
 
 private slots:
-  void on_comboFilterSamples_currentIndexChanged(int index);
-  void on_boxCoincWait_editingFinished();
   void on_pushSettingsRefresh_clicked();
   void on_pushOptimizeAll_clicked();
   void on_buttonCompTau_clicked();
@@ -72,6 +70,9 @@ private slots:
   void updateDetDB();
   void updateDetChoices();
   void toggle_push(bool enable, Pixie::LiveStatus live);
+
+  void push_settings();
+
 
 private:
   Ui::FormPixieSettings *ui;
@@ -84,8 +85,9 @@ private:
   ThreadRunner        &runner_thread_;
   QSettings &settings_;
 
-  TableChanSettings   channel_settings_model_;
-  QpxSpecialDelegate  settings_delegate_;
+  TreeSettings        tree_settings_model_;
+  QpxSpecialDelegate  tree_delegate_;
+
 };
 
 #endif // FORM_PIXIE_SETTINGS_H

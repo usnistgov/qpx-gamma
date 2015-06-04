@@ -32,7 +32,7 @@
 namespace Pixie {
 
 enum class NodeType : int {none = 0, setting = 1, stem = 2};
-enum class SettingType : int {boolean = 0, integer = 1, floating = 2, text = 3};
+enum class SettingType : int {boolean = 0, integer = 1, floating = 2, text = 3, detector = 4};
 
 struct Setting;
 
@@ -61,7 +61,7 @@ struct Setting : public XMLable {
   
   Setting() : writable(false), branches("setting_branches"), address(0), index(0),
       node_type(NodeType::none), setting_type(SettingType::boolean), 
-      value(0), value_int(0), minimum(0), maximum(0), step(0) {}
+      value(0), value_int(0), minimum(0), maximum(1), step(1) {}
   
   Setting(tinyxml2::XMLElement* element) : Setting() {this->from_xml(element);}
   
@@ -69,7 +69,13 @@ struct Setting : public XMLable {
 
   std::string xml_element_name() const {return "setting";}
 
-  bool shallow_equals(const Setting& other) const {return (name == other.name);}
+  bool shallow_equals(const Setting& other) const {
+    return ((name == other.name)
+            && (index == other.index)
+            && (node_type == other.node_type)
+            && (setting_type == other.setting_type));
+  }
+  
   bool operator!= (const Setting& other) const {return !operator==(other);}
   bool operator== (const Setting& other) const {
     if (name != other.name) return false;
@@ -125,6 +131,10 @@ struct Setting : public XMLable {
         setting_type = SettingType::text;
         if (element->Attribute("value"))
           value_text = std::string(element->Attribute("value"));
+      } else if (temp_str == "detector") {
+        setting_type = SettingType::detector;
+        if (element->Attribute("value"))
+          value_text = std::string(element->Attribute("value"));
       }
       if ((temp_str == "floating") || (temp_str == "integer")) {
         if (element->Attribute("minimum"))
@@ -169,6 +179,9 @@ struct Setting : public XMLable {
           printer.PushAttribute("value", std::to_string(value).c_str());
       } else if (setting_type == SettingType::text) {
           printer.PushAttribute("type", "text");
+          printer.PushAttribute("value", value_text.c_str());
+      } else if (setting_type == SettingType::detector) {
+          printer.PushAttribute("type", "detector");
           printer.PushAttribute("value", value_text.c_str());
       }
       if ((setting_type == SettingType::integer) ||

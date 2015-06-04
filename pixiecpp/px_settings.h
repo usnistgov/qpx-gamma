@@ -51,12 +51,6 @@ public:
 
   LiveStatus live() {return live_;}
 
-  //current module and channel
-  Module current_module() const;
-  void set_current_module(Module);   //!!!!rework in case of multiple modules
-  Channel current_channel() const;
-  void set_current_channel(Channel);
-
   //save
   void to_xml(tinyxml2::XMLPrinter&);
   
@@ -67,60 +61,24 @@ public:
   void save_optimization(Channel chan = Channel::all);  //specify module as well?
   void load_optimization(Channel chan = Channel::all);
 
-  //metadata for display and editing
-  std::vector<Setting> channel_meta() const {return chan_set_meta_;}
-
-  uint8_t chan_param_num () const;  //non-empty parameters
-
   /////SETTINGS/////
+  Setting pull_settings();
+  void push_settings(const Setting&);
+  
   void get_all_settings();
   
-  //system
-  void set_sys(const std::string&, double);
-  void set_slots(const std::vector<uint8_t>&);
-  double get_sys(const std::string&);
-  void get_sys_all();
-  void set_boot_files(std::vector<std::string>&);
-
-  //module
-  void set_mod(const std::string&, double, Module mod = Module::current);
-  double get_mod(const std::string&, Module mod = Module::current) const;
-  double get_mod(const std::string&, Module mod = Module::current,
-                 LiveStatus force = LiveStatus::offline);
-  void get_mod_all(Module mod = Module::current);
-  void get_mod_stats(Module mod = Module::current);
-
-  //channel
-  void set_chan(const std::string&, double val,
-                Channel channel = Channel::current,
-                Module  module  = Module::current);
-  void set_chan(uint8_t setting, double val,
-                Channel channel = Channel::current,
-                Module  module  = Module::current);                
-  double get_chan(const std::string&,
-                  Channel channel = Channel::current,
-                  Module  module = Module::current) const;
-  double get_chan(const std::string&,
-                  Channel channel = Channel::current,
-                  Module  module = Module::current,
-                  LiveStatus force = LiveStatus::offline);
-  double get_chan(uint8_t setting,
-                  Channel channel = Channel::current,
-                  Module  module = Module::current) const;
-  double get_chan(uint8_t setting,
-                  Channel channel = Channel::current,
-                  Module  module = Module::current,
-                  LiveStatus force = LiveStatus::offline);
-  void get_chan_all(Channel channel = Channel::current,
-                    Module  module  = Module::current);
-  void get_chan_stats(Module  module  = Module::current);
-
   void set_threshold(uint32_t nt);
 
   struct usb_device *dev;
   xxusb_device_type xxusbDev[32];
   struct usb_dev_handle *udev;       // Device Handle
   int DevFound;
+
+  bool read_setting_MADC(Setting &set);
+  bool read_settings_bulk();
+
+  bool write_setting_MADC(const Setting &set);
+  bool write_settings_bulk();
 
   
 protected:
@@ -137,29 +95,10 @@ protected:
 
   uint32_t threshold_;
 
-  std::vector<double> system_parameter_values_;
-  std::vector<double> module_parameter_values_;
-  std::vector<double> channel_parameter_values_;
-
-  std::vector<Setting> sys_set_meta_;
-  std::vector<Setting> mod_set_meta_;
-  std::vector<Setting> chan_set_meta_;
+  Setting settings_tree_;
 
   std::vector<Detector> detectors_;
 
-  //////////for internal use only///////////
-  //carry out task
-  bool write_sys(int);
-  bool write_mod(int, uint8_t);
-  bool write_chan(int, uint8_t, uint8_t);
-  bool read_sys(int);
-  bool read_mod(int, uint8_t);
-  bool read_chan(int, uint8_t, uint8_t);
-
-  //find index
-  int16_t i_sys(std::string) const;
-  int16_t i_mod(std::string) const;
-  int16_t i_chan(std::string) const;
 };
 
 }

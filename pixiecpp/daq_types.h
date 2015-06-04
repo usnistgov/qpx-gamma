@@ -110,6 +110,7 @@ struct StatsUpdate {
   }
 
   inline void eat_stats(Settings& source) {
+    /*
     for (int i=0; i < kNumChans; i++) {
       fast_peaks[i] = source.get_chan("FAST_PEAKS", Channel(i));
       live_time[i]  = source.get_chan("LIVE_TIME", Channel(i));
@@ -117,7 +118,7 @@ struct StatsUpdate {
       sfdt[i]       = source.get_chan("SFDT", Channel(i));
     }
     event_rate = source.get_mod("EVENT_RATE");
-    total_time = source.get_mod("TOTAL_TIME");
+    total_time = source.get_mod("TOTAL_TIME");*/
   }
 
   // difference across all variables
@@ -181,13 +182,13 @@ struct RunInfo {
   // to convert Pixie time to lab time
   double time_scale_factor() const {
     if (time_stop.is_not_a_date_time() ||
-        time_start.is_not_a_date_time() ||
+        time_start.is_not_a_date_time()) /* ||
         (p4_state.get_mod("TOTAL_TIME") == 0.0) ||
-        (p4_state.get_mod("TOTAL_TIME") == -1))
+        (p4_state.get_mod("TOTAL_TIME") == -1))*/
       return 1.0;
     else 
       return (time_stop - time_start).total_microseconds() /
-          (1000000 * p4_state.get_mod("TOTAL_TIME"));
+          (1000000 /* * p4_state.get_mod("TOTAL_TIME")*/);
   }
 };
 

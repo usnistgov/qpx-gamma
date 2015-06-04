@@ -26,32 +26,77 @@
 #define TABLE_CHAN_SETTINGS_H_
 
 #include <QAbstractTableModel>
+#include <QAbstractItemModel>
 #include <QFont>
 #include <QBrush>
 #include "wrapper.h"
 
-class TableChanSettings : public QAbstractTableModel
+class TreeItem
 {
-    Q_OBJECT
-private:
-    Pixie::Settings &my_settings_;
-    std::vector<Pixie::Setting> chan_meta_;
-
 public:
-    TableChanSettings(QObject *parent = 0): my_settings_(Pixie::Wrapper::getInstance().settings()) {}
-    int rowCount(const QModelIndex &parent = QModelIndex()) const;
-    int columnCount(const QModelIndex &parent = QModelIndex()) const;
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const;
-    Qt::ItemFlags flags(const QModelIndex & index) const;
-    bool setData(const QModelIndex & index, const QVariant & value, int role = Qt::EditRole);
+    explicit TreeItem(const Pixie::Setting &data, TreeItem *parent = 0);
+    ~TreeItem();
 
-    void update();
+    void eat_data(const Pixie::Setting &data);
+
+    TreeItem *child(int number);
+    int childCount() const;
+    int columnCount() const;
+    QVariant display_data(int column) const;
+    QVariant edit_data(int column) const;
+    bool is_editable(int column) const;
+//    bool insertChildren(int position, int count, int columns);
+    TreeItem *parent();
+//    bool removeChildren(int position, int count);
+    int childNumber() const;
+    bool setData(int column, const QVariant &value);
+    Pixie::Setting rebuild();
+
+private:
+    QVector<TreeItem*> childItems;
+    Pixie::Setting itemData;
+    TreeItem *parentItem;
+};
+
+
+class TreeSettings : public QAbstractItemModel
+{
+  Q_OBJECT
+
+private:
+  Pixie::Setting data_;
+  TreeItem *getItem(const QModelIndex &index) const;
+
+  TreeItem *rootItem;
+
+public:  
+  explicit TreeSettings(const Pixie::Setting &data, QObject *parent = 0);
+  ~TreeSettings();
+
+  QVariant data(const QModelIndex &index, int role) const Q_DECL_OVERRIDE;
+  Qt::ItemFlags flags(const QModelIndex &index) const Q_DECL_OVERRIDE;
+  QVariant headerData(int section, Qt::Orientation orientation,
+                      int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+  QModelIndex index(int row, int column,
+                    const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+  QModelIndex parent(const QModelIndex &index) const Q_DECL_OVERRIDE;
+  int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+  int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+
+  bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
+  bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
+
+//  bool insertRows(int position, int rows, const QModelIndex &parent = QModelIndex()) Q_DECL_OVERRIDE;
+//  bool removeRows(int position, int rows, const QModelIndex &parent = QModelIndex()) Q_DECL_OVERRIDE;
+
+  const Pixie::Setting & get_tree();
+
+
+  void update(const Pixie::Setting &data);
 
 signals:
-    void detectors_changed();
-
-public slots:
+  void detectors_changed();
+  void tree_changed();
 
 };
 

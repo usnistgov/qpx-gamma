@@ -55,6 +55,7 @@ qpx::qpx(QWidget *parent) :
   qRegisterMetaType<Pixie::ListData>("Pixie::ListData");
   qRegisterMetaType<Pixie::Calibration>("Pixie::Calibration");
   qRegisterMetaType<Pixie::LiveStatus>("Pixie::LiveStatus");
+  qRegisterMetaType<Pixie::Detector>("Pixie::Detector");
 
   CustomLogger::initLogger(&qpx_stream_, "qpx_%N.log");
   ui->setupUi(this);

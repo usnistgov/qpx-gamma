@@ -203,18 +203,18 @@ void ThreadRunner::run()
     emit runComplete();
   } else if (action_ == kBoot) {
     Pixie::Wrapper &myPixie = Pixie::Wrapper::getInstance();
-    myPixie.settings().set_boot_files(boot_files_);
+/*    myPixie.settings().set_boot_files(boot_files_);
     myPixie.settings().set_slots(boot_slots_);
     myPixie.settings().set_sys("OFFLINE_ANALYSIS", 0);
     myPixie.settings().set_sys("KEEP_CW", boot_keepcw_);
-    myPixie.settings().set_sys("MAX_NUMBER_MODULES", 7);  //should not be hardcoded
+    myPixie.settings().set_sys("MAX_NUMBER_MODULES", 7);  //should not be hardcoded*/
     bool success = myPixie.boot();
     if (myPixie.settings().live() == Pixie::LiveStatus::online) {
       PL_INFO << "Pixie online functions enabled.";
       emit bootComplete(true, true);
     } else {
       PL_INFO << "Attempting boot of offline functions";
-      myPixie.settings().set_sys("OFFLINE_ANALYSIS", 1);
+      //myPixie.settings().set_sys("OFFLINE_ANALYSIS", 1);
       success = myPixie.boot();
       if (success)
         PL_INFO << "Offline boot successful";

@@ -70,7 +70,7 @@ Simulator::Simulator(SpectraSet* all_spectra, std::array<int,2> chans,
   
   count_ = co->total_count();
 
-  time_factor = settings.get_mod("TOTAL_TIME") / lab_time;
+  //time_factor = settings.get_mod("TOTAL_TIME") / lab_time;
   OCR = static_cast<double>(count_) / lab_time;
 
   int adjust_bits = source_res - dest_res;
@@ -142,12 +142,12 @@ StatsUpdate Simulator::getBlock(double duration) {
   else
     fraction = duration / lab_time;
 
-  for (int i = 0; i<2; i++) {
+  /*  for (int i = 0; i<2; i++) {
     newBlock.fast_peaks[channels_[i]] = settings.get_chan("FAST_PEAKS", Channel(channels_[i])) * fraction;
     newBlock.live_time[channels_[i]]  = settings.get_chan("LIVE_TIME", Channel(channels_[i])) * fraction;
     newBlock.ftdt[channels_[i]]       = settings.get_chan("FTDT", Channel(channels_[i])) * fraction;
     newBlock.sfdt[channels_[i]]       = settings.get_chan("SFDT", Channel(channels_[i])) * fraction;
-  }
+    }*/
       
 
   return newBlock;

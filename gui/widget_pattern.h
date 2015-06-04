@@ -59,8 +59,6 @@ private:
 
 Q_DECLARE_METATYPE(QpxPattern)
 
-Q_DECLARE_METATYPE(Pixie::Detector)
-
 class QpxPatternEditor : public QWidget
 {
     Q_OBJECT

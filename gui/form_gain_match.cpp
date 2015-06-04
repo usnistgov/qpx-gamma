@@ -231,10 +231,10 @@ void FormGainMatch::run_completed() {
 
 void FormGainMatch::do_post_processing() {
   Pixie::Settings &settings = pixie_.settings();
-  double old_gain = settings.get_chan("VGAIN",
+  double old_gain = 1;/*settings.get_chan("VGAIN",
                                       Pixie::Channel(ui->spinOptChan->value()),
                                       Pixie::Module::current,
-                                      Pixie::LiveStatus::online);
+                                      Pixie::LiveStatus::online);*/
   QThread::sleep(2);
   double new_gain = old_gain;
   if (gauss_opt_.refined_.center_ < gauss_ref_.refined_.center_) {
@@ -249,12 +249,12 @@ void FormGainMatch::do_post_processing() {
     emit toggleIO(true);
     return;
   }
-  settings.set_chan("VGAIN",new_gain,Pixie::Channel(ui->spinOptChan->value()), Pixie::Module::current);
+  //settings.set_chan("VGAIN",new_gain,Pixie::Channel(ui->spinOptChan->value()), Pixie::Module::current);
   QThread::sleep(2);
-  new_gain = settings.get_chan("VGAIN",
+  /*new_gain = settings.get_chan("VGAIN",
                                Pixie::Channel(ui->spinOptChan->value()),
                                Pixie::Module::current,
-                               Pixie::LiveStatus::online);
+                               Pixie::LiveStatus::online);*/
 
 
   PL_INFO << "gain changed from " << std::fixed << std::setprecision(6)

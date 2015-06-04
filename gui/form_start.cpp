@@ -42,7 +42,8 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixie:
 
   QHBoxLayout *hl = new QHBoxLayout();
   hl->addWidget(formBootup);
-  hl->addStretch();
+  QSpacerItem *si = new QSpacerItem(200,20, QSizePolicy::Preferred, QSizePolicy::Preferred);
+  hl->addSpacerItem(si);
 
   FormOscilloscope *formOscilloscope = new FormOscilloscope(runner_thread_);
   connect(formOscilloscope, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
@@ -62,7 +63,7 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixie:
   QHBoxLayout *lo = new QHBoxLayout();
   lo->addLayout(vl);
   lo->addWidget(formPixieSettings);
-  lo->addStretch();
+//  lo->addStretch();
 
   this->setLayout(lo);
 }
