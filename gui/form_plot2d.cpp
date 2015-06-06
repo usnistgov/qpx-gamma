@@ -93,6 +93,8 @@ void FormPlot2D::setSpectra(Pixie::SpectraSet& new_set) {
   for (auto &q: mySpectra->spectra(2, -1))
     ui->comboChose2d->addItem(QString::fromStdString(q->name()));
 
+  zoom_2d = 0;
+  name_2d.clear();
   //replot?
 }
 
@@ -211,7 +213,7 @@ void FormPlot2D::update_plot() {
       colorMap->rescaleDataRange(true);
 
 
-      if (rescale2d) {
+      if (redraw2d) {
         int bits = some_spectrum->bits();
         QVector<Pixie::Detector> axes3d;
         for (std::size_t i=0; i < some_spectrum->add_pattern().size(); i++) {

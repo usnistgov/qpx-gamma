@@ -168,7 +168,6 @@ void FormPlot1D::update_plot() {
   this->setCursor(Qt::WaitCursor);
   CustomTimer guiside(true);
 
-  //bool new_data = mySpectra->new_data();
   std::map<double, double> minima, maxima;
 
   ui->mcaPlot->clearGraphs();

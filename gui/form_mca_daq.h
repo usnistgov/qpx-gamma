@@ -71,6 +71,10 @@ private slots:
   void toggle_push(bool, Pixie::LiveStatus);
   void calib_destroyed();
 
+  void on_pushEnable2d_clicked();
+
+  void on_pushForceRefresh_clicked();
+
 private:
   Ui::FormMcaDaq *ui;
   QSettings                  &settings_;

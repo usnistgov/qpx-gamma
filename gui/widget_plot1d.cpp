@@ -43,7 +43,7 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   miny = std::numeric_limits<double>::max();
   maxy = - std::numeric_limits<double>::max();
 
-  force_rezoom_ = 0;
+  force_rezoom_ = false;
 
   plotStyle = 1;
   menuPlotStyle.addAction("Scatter");
@@ -101,7 +101,7 @@ void WidgetPlot1D::clearExtras()
 }
 
 void WidgetPlot1D::rescale() {
-  force_rezoom_ = 1;
+  force_rezoom_ = true;
   plot_rezoom();
 }
 
@@ -192,9 +192,6 @@ void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, 
 }
 
 void WidgetPlot1D::plot_rezoom() {
-  if (force_rezoom_ == -1)
-    return;
-
   if (minima_.empty() || maxima_.empty()) {
     ui->mcaPlot->yAxis->rescale();
     return;
@@ -203,12 +200,12 @@ void WidgetPlot1D::plot_rezoom() {
   double upperc = ui->mcaPlot->xAxis->range().upper;
   double lowerc = ui->mcaPlot->xAxis->range().lower;
 
-  if ((force_rezoom_ == 0) && (lowerc == minx_zoom) && (upperc == maxx_zoom))
+  if (!force_rezoom_ && (lowerc == minx_zoom) && (upperc == maxx_zoom))
     return;
 
   minx_zoom = lowerc;
   maxx_zoom = upperc;
-  force_rezoom_ = 0;
+  force_rezoom_ = false;
 
   calc_y_bounds(lowerc, upperc);
 
@@ -379,21 +376,23 @@ void WidgetPlot1D::plot_mouse_clicked(double x, double y, QMouseEvent* event) {
 void WidgetPlot1D::plot_mouse_press(QMouseEvent*) {
   disconnect(ui->mcaPlot, 0, this, 0);
   connect(ui->mcaPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(plot_mouse_release(QMouseEvent*)));
-  force_rezoom_ = -1;
+  force_rezoom_ = false;
 }
 
 void WidgetPlot1D::plot_mouse_release(QMouseEvent*) {
   connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*)));
   connect(ui->mcaPlot, SIGNAL(beforeReplot()), this, SLOT(plot_rezoom()));
   connect(ui->mcaPlot, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(plot_mouse_press(QMouseEvent*)));
-  force_rezoom_ = 0;
+  force_rezoom_ = true;
   plot_rezoom();
   ui->mcaPlot->replot();
 }
 
 void WidgetPlot1D::on_pushResetScales_clicked()
 {
-  ui->mcaPlot->rescaleAxes();
+  ui->mcaPlot->xAxis->rescale();
+  force_rezoom_ = true;
+  plot_rezoom();
   ui->mcaPlot->replot();
 }
 

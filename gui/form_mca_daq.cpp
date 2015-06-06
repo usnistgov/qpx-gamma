@@ -58,13 +58,16 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixi
   }
   mca_load_formats_ = catFileTypes(filetypes);
 
-  //plots
+  //1d
   ui->Plot1d->setSpectra(spectra_);
-  ui->Plot2d->setSpectra(spectra_);
-  connect(ui->Plot2d, SIGNAL(markers_set(double,double)), ui->Plot1d, SLOT(set_markers2d(double,double)));
-  connect(ui->Plot1d, SIGNAL(marker_set(double)), ui->Plot2d, SLOT(set_marker(double)));
   connect(ui->Plot1d, SIGNAL(requestCalibration(QString)), this, SLOT(reqCalib(QString)));
   connect(&plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
+
+  //2d
+  ui->Plot2d->setSpectra(spectra_);
+  connect(ui->Plot1d, SIGNAL(marker_set(double)), ui->Plot2d, SLOT(set_marker(double)));
+  connect(ui->Plot2d, SIGNAL(markers_set(double,double)), ui->Plot1d, SLOT(set_markers2d(double,double)));
+
   plot_thread_.start();
 }
 
@@ -158,6 +161,7 @@ void FormMcaDaq::clearGraphs() //rename this
   spectra_.clear();
   updateSpectraUI();
   ui->Plot1d->reset_content();
+
   ui->Plot2d->reset_content(); //is this necessary?
 
   spectra_.activate();
@@ -173,6 +177,7 @@ void FormMcaDaq::update_plots() {
     this->setCursor(Qt::WaitCursor);
     ui->Plot2d->update_plot();
   }
+
   if (ui->Plot1d->isVisible()) {
     this->setCursor(Qt::WaitCursor);
     ui->Plot1d->update_plot();
@@ -382,4 +387,18 @@ void FormMcaDaq::calib_destroyed() {
 
 void FormMcaDaq::replot() {
   update_plots();
+}
+
+void FormMcaDaq::on_pushEnable2d_clicked()
+{
+  if (ui->pushEnable2d->isChecked()) {
+    ui->Plot2d->show();
+    update_plots();
+  } else
+    ui->Plot2d->hide();
+}
+
+void FormMcaDaq::on_pushForceRefresh_clicked()
+{
+    update_plots();
 }

@@ -94,7 +94,7 @@ private:
   std::list<Marker> my_cursors_;
   std::vector<Marker> rect;
 
-  int force_rezoom_;
+  bool force_rezoom_;
   double minx, maxx;
   double miny, maxy;
 
