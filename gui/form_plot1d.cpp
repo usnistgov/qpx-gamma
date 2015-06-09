@@ -42,6 +42,8 @@ FormPlot1D::FormPlot1D(QWidget *parent) :
 
   connect(ui->spectraWidget, SIGNAL(contextRequested()), this, SLOT(spectrumDetails()));
   connect(ui->spectraWidget, SIGNAL(stateChanged()), this, SLOT(spectraLooksChanged()));
+
+  bits = 0;
 }
 
 FormPlot1D::~FormPlot1D()
@@ -50,18 +52,26 @@ FormPlot1D::~FormPlot1D()
 }
 
 void FormPlot1D::addMovingMarker(double x) {
-  moving.position = x;
+  moving.channel = x;
   moving.visible = true;
+  if (calib_.units_ != "channels") {
+    moving.energy = x;
+    moving.calibrated = true;
+    //channel = root of energy eqn
+    moving.channel = 0;
+  } else
+    calibrate_markers();
+
   PL_INFO << "Marker at " << x;
   replot_markers();
-  emit marker_set(x);
+  emit marker_set(moving);
 }
 
 void FormPlot1D::removeMovingMarker(double x) {
   moving.visible = false;
   markx.visible = false;
   marky.visible = false;
-  emit marker_set(0);
+  emit marker_set(moving);
   replot_markers();
 }
 
@@ -76,18 +86,20 @@ void FormPlot1D::setSpectra(Pixie::SpectraSet& new_set) {
 
 }
 
-void FormPlot1D::set_markers2d(double x, double y) {
-  markx.position = x;
-  marky.position = y;
-  if (!x && !y)
-    removeMovingMarker(0);
-  else {
-    markx.position = x;
-    marky.position = y;
-    markx.visible = true;
-    marky.visible = true;
-    replot_markers();
-  }
+void FormPlot1D::set_markers2d(Marker x, Marker y) {
+  x.themes = markx.themes;
+  y.themes = marky.themes;
+  x.default_pen = markx.default_pen;
+  y.default_pen = marky.default_pen;
+
+  markx = x; marky = y;
+
+  calibrate_markers();
+
+  if (!x.visible && !y.visible)
+    moving.visible = false;
+
+  replot_markers();
 }
 
 void FormPlot1D::replot_markers() {
@@ -96,6 +108,10 @@ void FormPlot1D::replot_markers() {
   markers.push_back(moving);
   markers.push_back(markx);
   markers.push_back(marky);
+
+  /*for (auto &q : markers)
+    if (!q.calibrated && (calib_.units_ == "channels"))
+      q.energy = q.channel;*/
 
   ui->mcaPlot->set_markers(markers);
   ui->mcaPlot->replot_markers();
@@ -147,7 +163,8 @@ void FormPlot1D::spectrumDetailsClosed(bool changed) {
 
 void FormPlot1D::on_comboResolution_currentIndexChanged(int index)
 {
-  ui->spectraWidget->setQpxSpectra(*mySpectra, 1, ui->comboResolution->currentData().toInt());
+  bits = ui->comboResolution->currentData().toInt();
+  ui->spectraWidget->setQpxSpectra(*mySpectra, 1, bits);
   mySpectra->activate();
 }
 
@@ -170,20 +187,28 @@ void FormPlot1D::update_plot() {
 
   std::map<double, double> minima, maxima;
 
-  ui->mcaPlot->clearGraphs();
-  for (auto &q: mySpectra->spectra(1, ui->comboResolution->currentData().toInt())) {
-    if (q && q->visible() && q->resolution() && q->total_count()) {
-      uint32_t res = q->resolution();
-      uint32_t app = q->appearance();
+  calib_ = Pixie::Calibration();
 
-      if (res) {
+  ui->mcaPlot->clearGraphs();
+  for (auto &q: mySpectra->spectra(1, bits)) {
+    if (q && q->visible() && q->resolution() && q->total_count()) {
+      uint32_t app = q->appearance();
 
       QVector<double> y(q->resolution());
 
       std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
           std::move(q->get_spectrum({{0, y.size()}}));
-
       std::vector<double> energies = q->energies(0);
+
+      Pixie::Detector detector = q->get_detector(0);
+      Pixie::Calibration temp_calib;
+      if (detector.energy_calibrations_.has_a(Pixie::Calibration(bits)))
+        temp_calib = detector.energy_calibrations_.get(Pixie::Calibration(bits));
+      else
+        temp_calib = detector.highest_res_calib();
+      if (temp_calib.bits_)
+        calib_ = temp_calib;
+
       int i = 0;
       for (auto it : *spectrum_data) {
         double xx = energies[i];
@@ -197,10 +222,10 @@ void FormPlot1D::update_plot() {
       }
 
       ui->mcaPlot->addGraph(QVector<double>::fromStdVector(energies), y, QColor::fromRgba(app), 1);
-      }
+
     }
   }
-  ui->mcaPlot->setLabels("keV", "count");
+  ui->mcaPlot->setLabels(QString::fromStdString(calib_.units_), "count");
 
   ui->mcaPlot->setYBounds(minima, maxima);
   replot_markers();
@@ -228,4 +253,21 @@ void FormPlot1D::on_pushFullInfo_clicked()
 void FormPlot1D::on_pushCalibrate_clicked()
 {
   emit requestCalibration(ui->spectraWidget->selected());
+}
+
+void FormPlot1D::calibrate_markers() {
+  if (!markx.calibrated) {
+    markx.energy = calib_.transform(markx.channel, markx.bits);
+    markx.calibrated = (calib_.units_ != "channels");
+  }
+
+  if (!marky.calibrated) {
+    marky.energy = calib_.transform(marky.channel, marky.bits);
+    marky.calibrated = (calib_.units_ != "channels");
+  }
+
+  if (!moving.calibrated) {
+    moving.energy = calib_.transform(moving.channel, moving.bits);
+    moving.calibrated = (calib_.units_ != "channels");
+  }
 }

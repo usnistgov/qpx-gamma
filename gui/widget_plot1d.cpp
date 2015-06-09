@@ -36,7 +36,11 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   ui->mcaPlot->yAxis->axisRect()->setRangeDrag(Qt::Horizontal);
   ui->mcaPlot->setInteraction(QCP::iRangeZoom, true);
   ui->mcaPlot->yAxis->axisRect()->setRangeZoom(Qt::Horizontal);
-  connectPlot();
+
+  connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*)));
+  connect(ui->mcaPlot, SIGNAL(beforeReplot()), this, SLOT(plot_rezoom()));
+  connect(ui->mcaPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(plot_mouse_release(QMouseEvent*)));
+  connect(ui->mcaPlot, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(plot_mouse_press(QMouseEvent*)));
 
   minx = 0; maxx = 0;
   minx_zoom = 0; maxx_zoom = 0;
@@ -70,14 +74,6 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   connect(ui->toolScaleType, SIGNAL(triggered(QAction*)), this, SLOT(scaleTypeChosen(QAction*)));
 
   redraw();
-}
-
-void WidgetPlot1D::connectPlot()
-{
-  connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*)));
-  connect(ui->mcaPlot, SIGNAL(beforeReplot()), this, SLOT(plot_rezoom()));
-  connect(ui->mcaPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(plot_mouse_release(QMouseEvent*)));
-  connect(ui->mcaPlot, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(plot_mouse_press(QMouseEvent*)));
 }
 
 WidgetPlot1D::~WidgetPlot1D()
@@ -227,8 +223,8 @@ void WidgetPlot1D::calc_y_bounds(double lower, double upper) {
 
   maxy = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(maxy) - 50);
 
-  if ((maxy > 0.7) && (miny == 0))
-    miny = 0.7;
+  if ((maxy > 1) && (miny == 0))
+    miny = 1;
 }
 
 void WidgetPlot1D::setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2) {
@@ -275,8 +271,8 @@ void WidgetPlot1D::replot_markers() {
       double max = std::numeric_limits<double>::lowest();
       int total = ui->mcaPlot->graphCount();
       for (int i=0; i < total; i++) {
-        if ((ui->mcaPlot->graph(i)->data()->firstKey() <= q.position)
-            && (q.position <= ui->mcaPlot->graph(i)->data()->lastKey()))
+        if ((ui->mcaPlot->graph(i)->data()->firstKey() <= q.energy)
+            && (q.energy <= ui->mcaPlot->graph(i)->data()->lastKey()))
         {
           QPen thispen = ui->mcaPlot->graph(i)->pen();
           QColor thiscol = thispen.color();
@@ -289,7 +285,7 @@ void WidgetPlot1D::replot_markers() {
           crs->setStyle(QCPItemTracer::tsCircle);
           crs->setSize(4);
           crs->setGraph(ui->mcaPlot->graph(i));
-          crs->setGraphKey(q.position);
+          crs->setGraphKey(q.energy);
           crs->setInterpolating(true);
           crs->setPen(thispen);
           ui->mcaPlot->addItem(crs);
@@ -331,7 +327,7 @@ void WidgetPlot1D::replot_markers() {
       crs->setStyle(QCPItemTracer::tsCircle);
       crs->setSize(4);
       crs->setGraph(ui->mcaPlot->graph(i));
-      crs->setGraphKey(q.position);
+      crs->setGraphKey(q.energy);
       crs->setInterpolating(true);
       ui->mcaPlot->addItem(crs);
     }
@@ -344,9 +340,9 @@ void WidgetPlot1D::replot_markers() {
     calc_y_bounds(lowerc, upperc);
 
     QCPItemRect *cprect = new QCPItemRect(ui->mcaPlot);
-    double x1 = rect[0].position;
+    double x1 = rect[0].energy;
     double y1 = maxy;
-    double x2 = rect[1].position;
+    double x2 = rect[1].energy;
     double y2 = miny;
 
     cprect->topLeft->setCoords(x1, y1);

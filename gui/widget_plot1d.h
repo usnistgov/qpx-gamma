@@ -27,15 +27,6 @@
 #include <QWidget>
 #include "qsquarecustomplot.h"
 
-struct Marker {
-  double position;
-  QMap<QString, QPen> themes;
-  QPen default_pen;
-  bool visible;
-
-  Marker() : position(0), visible(false), default_pen(Qt::gray, 1, Qt::SolidLine) {}
-};
-
 namespace Ui {
 class WidgetPlot1D;
 }
@@ -84,7 +75,6 @@ private slots:
   void on_pushNight_clicked();
 
 private:
-  void connectPlot();
   void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
   void calc_y_bounds(double lower, double upper);
 

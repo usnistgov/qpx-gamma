@@ -62,7 +62,7 @@ unix {
                -lboost_system -lboost_date_time -lboost_thread -lboost_log \
                -lboost_program_options -lboost_filesystem \
                -lboost_log_setup -lboost_timer \
-               -lgsl -lgslcblas -llua -lz
+               -lgsl -lgslcblas -llua5.2 -lz
 
 	target.path = /usr/local/bin/
 	icon.path = /usr/share/icons/

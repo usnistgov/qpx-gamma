@@ -22,6 +22,7 @@
  ******************************************************************************/
 
 #include "qsquarecustomplot.h"
+#include "custom_logger.h"
 
 void QSquareCustomPlot::setAlwaysSquare(bool sq) {
   square = sq;
@@ -72,10 +73,10 @@ void QSquareCustomPlot::resizeEvent(QResizeEvent * event) {
 void QSquareCustomPlot::mouseMoveEvent(QMouseEvent *event)  {
   emit mouseMove(event);
   double co_x, co_y;
-  int x = 0, y = 0;
 
   co_x = xAxis->pixelToCoord(event->x());
   co_y = yAxis->pixelToCoord(event->y());
+  int x = co_x, y = co_y;
 
   QVariant details;
   QCPLayerable *clickedLayerable = layerableAt(event->pos(), true, &details);
@@ -88,13 +89,16 @@ void QSquareCustomPlot::mouseMoveEvent(QMouseEvent *event)  {
 }
 
 void QSquareCustomPlot::mouseReleaseEvent(QMouseEvent *event)  {
+    PL_INFO << "mouse released";
   emit mouseRelease(event);
   if ((mMousePressPos-event->pos()).manhattanLength() < 5) {
     double co_x, co_y;
-    double x = 0, y = 0;
 
     co_x = xAxis->pixelToCoord(event->x());
     co_y = yAxis->pixelToCoord(event->y());
+    int x = co_x, y = co_y;
+
+    PL_INFO << "Custom plot mouse released at coords: " << co_x << ", " << co_y;
 
     QVariant details;
     QCPLayerable *clickedLayerable = layerableAt(event->pos(), true, &details);
@@ -102,9 +106,7 @@ void QSquareCustomPlot::mouseReleaseEvent(QMouseEvent *event)  {
       int xx, yy;
       ap->data()->coordToCell(co_x, co_y, &xx, &yy);
       x = xx; y = yy;
-    } else { //if (QCPGraph *ap = qobject_cast<QCPGraph*>(clickedLayerable)) {
-      x = co_x;
-      y = co_y;
+      PL_INFO << "Corrected to cell : " << xx << ", " << yy << " will output " << x << ", " << y;
     }
 
     emit mouse_clicked(x, y, event);

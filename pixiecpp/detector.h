@@ -32,6 +32,8 @@
 
 namespace Pixie {
 
+enum class CalibrationModel : int {none = 0, polynomial = 1};
+
 class Calibration : public XMLable {
  public:
   Calibration();
@@ -53,12 +55,15 @@ class Calibration : public XMLable {
   }
   
   double transform(double) const;
+  double transform(double, uint16_t) const;
+  std::vector<double> transform(std::vector<double>) const;
   std::string coef_to_string() const;
   void coef_from_string(std::string);
 
   boost::posix_time::ptime calib_date_;
   std::string type_, units_;
-  uint16_t model_, bits_;
+  uint16_t bits_;
+  CalibrationModel model_;
   std::vector<double> coefficients_;
  private:
   double polynomial(double) const;
@@ -86,6 +91,7 @@ class Detector : public XMLable {
 
   void to_xml(tinyxml2::XMLPrinter&) const;
   void from_xml(tinyxml2::XMLElement*);
+  Calibration highest_res_calib();
   
   std::string name_, type_;
   XMLableDB<Calibration> energy_calibrations_;

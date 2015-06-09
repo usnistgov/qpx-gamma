@@ -211,11 +211,11 @@ void FormCalibration::update_plot() {
 }
 
 void FormCalibration::addMovingMarker(double x) {
-  moving.position = x;
+  moving.channel = moving.energy = x;
   moving.visible = true;
   ui->pushAdd->setEnabled(true);
-  PL_INFO << "Marker at " << moving.position << " originally caliblated to " << old_calibration_.transform(moving.position)
-          << ", new calibration = " << new_calibration_.transform(moving.position);
+  PL_INFO << "Marker at " << moving.channel << " originally caliblated to " << old_calibration_.transform(moving.channel)
+          << ", new calibration = " << new_calibration_.transform(moving.channel);
   replot_markers();
 }
 
@@ -233,7 +233,7 @@ void FormCalibration::replot_markers() {
 
   for (auto &q : my_markers_) {
     Marker m = list;
-    m.position = q.first;
+    m.channel = m.energy = q.first;
     markers.push_back(m);
   }
 
@@ -241,7 +241,7 @@ void FormCalibration::replot_markers() {
     QModelIndex chan_ix = marker_table_.index(selection_model_.selectedRows().front().row(), 0);
     double chan = marker_table_.data(chan_ix, Qt::DisplayRole).toDouble();
     Marker sm = selected;
-    sm.position = chan;
+    sm.channel = sm.energy = chan;
     markers.push_back(sm);
   }
 
@@ -252,7 +252,7 @@ void FormCalibration::replot_markers() {
 
 void FormCalibration::on_pushAdd_clicked()
 {
-  my_markers_[moving.position] = old_calibration_.transform(moving.position);
+  my_markers_[moving.channel] = old_calibration_.transform(moving.channel);
 
   ui->pushAdd->setEnabled(false);
   marker_table_.update();
@@ -365,7 +365,7 @@ void FormCalibration::on_pushFit_clicked()
     new_calibration_.coefficients_ = p.coeffs_;
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "keV";
-    new_calibration_.model_ = 1;
+    new_calibration_.model_ = Pixie::CalibrationModel::polynomial;
     PL_INFO << "Calibration coefficients = " << new_calibration_.coef_to_string();
     toggle_radio();
   }

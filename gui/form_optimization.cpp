@@ -285,8 +285,8 @@ void FormOptimization::do_post_processing() {
 
 bool FormOptimization::find_peaks() {
 
-  int xmin = moving_.position - ui->spinPeakWindow->value();
-  int xmax = moving_.position + ui->spinPeakWindow->value();
+  int xmin = moving_.channel - ui->spinPeakWindow->value() / 2;
+  int xmax = moving_.channel + ui->spinPeakWindow->value() / 2;
 
   if (xmin < 0) xmin = 0;
   if (xmax >= x.size()) xmax = x.size() - 1;
@@ -373,11 +373,11 @@ void FormOptimization::update_plots() {
 }
 
 void FormOptimization::addMovingMarker(double x) {
-  moving_.position = x;
+  moving_.channel = x;
   moving_.visible = true;
-  a.position = x - ui->spinPeakWindow->value() / 2;
+  a.channel = x - ui->spinPeakWindow->value() / 2;
   a.visible = true;
-  b.position = x + ui->spinPeakWindow->value() / 2;
+  b.channel = x + ui->spinPeakWindow->value() / 2;
   b.visible = true;
   replot_markers();
 }
@@ -425,7 +425,7 @@ void FormOptimization::resultChosen() {
 
         Marker cursor = moving_;
         cursor.visible = true;
-        cursor.position = setting_values_[j];
+        cursor.channel = setting_values_[j];
         ui->plot3->set_cursors(std::list<Marker>({cursor}));
 
         ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_), Qt::black, 2);

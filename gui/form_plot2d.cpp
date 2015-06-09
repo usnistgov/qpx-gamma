@@ -37,26 +37,32 @@ FormPlot2D::FormPlot2D(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  ext_marker = 0;
-  marker_x = 0;
-  marker_y = 0;
-  zoom_2d = 100;
-  current_gradient_ = "Hot";
-  current_scale_type_ = "Logarithmic";
-
-
+  //color theme setup
+  my_marker.themes["Grayscale"] = QPen(Qt::cyan, 1);
+  my_marker.themes["Hot"] = QPen(Qt::cyan, 1);
+  my_marker.themes["Cold"] = QPen(Qt::yellow, 1);
+  my_marker.themes["Night"] = QPen(Qt::red, 1);
+  my_marker.themes["Candy"] = QPen(Qt::red, 1);
+  my_marker.themes["Geography"] = QPen(Qt::yellow, 1);
+  my_marker.themes["Ion"] = QPen(Qt::magenta, 1);
+  my_marker.themes["Thermal"] = QPen(Qt::cyan, 1);
+  my_marker.themes["Polar"] = QPen(Qt::green, 1);
+  my_marker.themes["Spectrum"] = QPen(Qt::cyan, 1);
+  my_marker.themes["Jet"] = QPen(Qt::darkMagenta, 1);
+  my_marker.themes["Hues"] = QPen(Qt::black, 1);
   for (auto &q : gradients_)
-    gradientMenu.addAction(QString::fromStdString(q.first));
+    gradientMenu.addAction(q.first);
   for (auto &q : gradientMenu.actions()) {
     q->setCheckable(true);
-    if (q->text().toStdString() == current_gradient_)
+    if (q->text() == current_gradient_)
       q->setChecked(true);
   }
   ui->toolColors3d->setMenu(&gradientMenu);
   ui->toolColors3d->setPopupMode(QToolButton::InstantPopup);
   connect(ui->toolColors3d, SIGNAL(triggered(QAction*)), this, SLOT(gradientChosen(QAction*)));
+  current_gradient_ = "Hot";
 
-
+  //scale type setup
   scaleTypeMenu.addAction("Linear");
   scaleTypeMenu.addAction("Logarithmic");
   for (auto &q : scaleTypeMenu.actions()) {
@@ -67,8 +73,9 @@ FormPlot2D::FormPlot2D(QWidget *parent) :
   ui->toolScaleType->setMenu(&scaleTypeMenu);
   ui->toolScaleType->setPopupMode(QToolButton::InstantPopup);
   connect(ui->toolScaleType, SIGNAL(triggered(QAction*)), this, SLOT(scaleTypeChosen(QAction*)));
+  current_scale_type_ = "Logarithmic";
 
-
+  //colormap setup
   ui->coincPlot->setAlwaysSquare(true);
   colorMap = new QCPColorMap(ui->coincPlot->xAxis, ui->coincPlot->yAxis);
   colorMap->clearData();
@@ -77,13 +84,15 @@ FormPlot2D::FormPlot2D(QWidget *parent) :
   colorMap->setTightBoundary(true); //really?
   ui->coincPlot->axisRect()->setupFullAxesBox();
   ui->coincPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
-
   colorMap->setGradient(gradients_[current_gradient_]);
   colorMap->setDataScaleType(scale_types_[current_scale_type_]);
   colorMap->rescaleDataRange(true);
-
-  connect(ui->coincPlot, SIGNAL(mouse_upon(int,int)), this, SLOT(plot_2d_mouse_upon(int,int)));
+  connect(ui->coincPlot, SIGNAL(mouse_upon(double,double)), this, SLOT(plot_2d_mouse_upon(double,double)));
   connect(ui->coincPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*)), this, SLOT(plot_2d_mouse_clicked(double,double,QMouseEvent*)));
+  zoom_2d = ui->sliderZoom2d->value(); //from settings?
+
+  //scaling-related stuff
+  bits = 0;
 }
 
 void FormPlot2D::setSpectra(Pixie::SpectraSet& new_set) {
@@ -102,11 +111,6 @@ void FormPlot2D::setSpectra(Pixie::SpectraSet& new_set) {
 FormPlot2D::~FormPlot2D()
 {
   delete ui;
-}
-
-void FormPlot2D::on_sliderZoom2d_sliderReleased()
-{
-  mySpectra->activate();
 }
 
 void FormPlot2D::on_comboChose2d_activated(const QString &arg1)
@@ -129,52 +133,69 @@ void FormPlot2D::scaleTypeChosen(QAction* choice) {
 
 void FormPlot2D::gradientChosen(QAction* choice) {
   this->setCursor(Qt::WaitCursor);
-  current_gradient_ = choice->text().toStdString();
+  current_gradient_ = choice->text();
   for (auto &q : gradientMenu.actions())
     q->setChecked(false);
   choice->setChecked(true);
   colorMap->setGradient(gradients_[current_gradient_]);
-  ui->coincPlot->replot();
+  replot_markers();
   this->setCursor(Qt::ArrowCursor);
 }
 
 void FormPlot2D::replot_markers() {
   ui->coincPlot->clearItems();
 
-  if (ext_marker) {
-    make_marker(ext_marker, Qt::green, 3, Qt::Vertical);
-    make_marker(ext_marker, Qt::green, 3, Qt::Horizontal);
-
-    make_marker(ext_marker, Qt::black, 1, Qt::Vertical);
-    make_marker(ext_marker, Qt::black, 1, Qt::Horizontal);
-  }
-
-  if (marker_x || marker_y) {
-    make_marker(marker_x, Qt::green, 3, Qt::Vertical);
-    make_marker(marker_x, Qt::green, 3, Qt::Horizontal);
-    make_marker(marker_y, Qt::green, 3, Qt::Vertical);
-    make_marker(marker_y, Qt::green, 3, Qt::Horizontal);
-
-    make_marker(marker_x, Qt::black, 1, Qt::Vertical);
-    make_marker(marker_x, Qt::black, 1, Qt::Horizontal);
-    make_marker(marker_y, Qt::black, 1, Qt::Vertical);
-    make_marker(marker_y, Qt::black, 1, Qt::Horizontal);
-  }
+  make_marker(ext_marker);
+  make_marker(x_marker);
+  make_marker(y_marker);
 
   ui->coincPlot->replot();
 }
 
-void FormPlot2D::make_marker(double coord, QColor color, int thickness, Qt::Orientations orientation) {
-  QCPItemStraightLine *one_line = new QCPItemStraightLine(ui->coincPlot);
-  one_line->setPen(QPen(color, thickness));
-  if (orientation == Qt::Horizontal) {
-    one_line->point1->setCoords(0, coord);
-    one_line->point2->setCoords(1, coord);
-  } else if (orientation == Qt::Vertical) {
-    one_line->point1->setCoords(coord, 0);
-    one_line->point2->setCoords(coord, 1);
-  }
+void FormPlot2D::make_marker(Marker &marker) {
+  if (!marker.visible)
+    return;
+
+  QPen pen;
+  if (my_marker.themes.count(current_gradient_))
+    pen = QPen(my_marker.themes[current_gradient_]);
+  else
+    pen = QPen(my_marker.default_pen);
+
+  QCPItemStraightLine *one_line;
+
+  //horizontal
   ui->coincPlot->addItem(one_line);
+  if (marker.calibrated && (calib_y_.units_ != "channels")) {
+    one_line = new QCPItemStraightLine(ui->coincPlot);
+    one_line->setPen(pen);
+    one_line->point1->setCoords(0, marker.energy);
+    one_line->point2->setCoords(1, marker.energy);
+    ui->coincPlot->addItem(one_line);
+  }
+  else if (!marker.calibrated && (calib_y_.units_ == "channels")) {
+    one_line = new QCPItemStraightLine(ui->coincPlot);
+    one_line->setPen(pen);
+    one_line->point1->setCoords(0, marker.channel);
+    one_line->point2->setCoords(1, marker.channel);
+    ui->coincPlot->addItem(one_line);
+  }
+
+  //vertical
+  if (marker.calibrated && (calib_x_.units_ != "channels")) {
+    one_line = new QCPItemStraightLine(ui->coincPlot);
+    one_line->setPen(pen);
+    one_line->point1->setCoords(marker.energy, 0);
+    one_line->point2->setCoords(marker.energy, 1);
+    ui->coincPlot->addItem(one_line);
+  }
+  else if (!marker.calibrated && (calib_x_.units_ == "channels")) {
+    one_line = new QCPItemStraightLine(ui->coincPlot);
+    one_line->setPen(pen);
+    one_line->point1->setCoords(marker.channel, 0);
+    one_line->point2->setCoords(marker.channel, 1);
+    ui->coincPlot->addItem(one_line);
+  }
 }
 
 void FormPlot2D::update_plot() {
@@ -183,11 +204,9 @@ void FormPlot2D::update_plot() {
   CustomTimer guiside(true);
 
   bool new_data = mySpectra->new_data();
-
   bool rescale2d = ((zoom_2d != ui->sliderZoom2d->value()) || (name_2d != ui->comboChose2d->currentText()));
-  bool redraw2d = (new_data || rescale2d);
 
-  if (redraw2d) {
+  if (rescale2d || new_data) {
 
     Pixie::Spectrum::Spectrum* some_spectrum = mySpectra->by_name(ui->comboChose2d->currentText().toStdString());
     uint32_t adjrange;
@@ -200,11 +219,45 @@ void FormPlot2D::update_plot() {
         && (adjrange = static_cast<uint32_t>(some_spectrum->resolution() * (ui->sliderZoom2d->value() / 100.0)))
         )
     {
-
       if (rescale2d) {
         ui->coincPlot->clearGraphs();
         colorMap->data()->setSize(adjrange, adjrange);
+
+        int newbits = some_spectrum->bits();
+        if (bits != newbits) {
+          bits = newbits;
+          calibrate_markers();
+          PL_DBG << "new plot is " << bits << " bits";
+        }
+
+        Pixie::Detector detector_x_ = some_spectrum->get_detector(0);
+        colorMap->keyAxis()->setLabel(QString::fromStdString(detector_x_.name_) + " (" + QString::fromStdString(detector_x_.name_) + ")");
+        ui->labelCoDet1->setText(QString::fromStdString(detector_x_.name_) + "(" + QString::fromStdString(detector_x_.name_) + "):");
+        if (detector_x_.energy_calibrations_.has_a(Pixie::Calibration(bits)))
+          calib_x_ = detector_x_.energy_calibrations_.get(Pixie::Calibration(bits));
+        else
+          calib_x_ = detector_x_.highest_res_calib();
+
+        Pixie::Detector detector_y_ = some_spectrum->get_detector(1);
+        colorMap->valueAxis()->setLabel(QString::fromStdString(detector_y_.name_) + " (" + QString::fromStdString(calib_y_.units_) + ")");
+        ui->labelCoDet2->setText(QString::fromStdString(detector_y_.name_) + "(" + QString::fromStdString(calib_y_.units_) + "):");
+        if (detector_y_.energy_calibrations_.has_a(Pixie::Calibration(bits)))
+          calib_y_ = detector_y_.energy_calibrations_.get(Pixie::Calibration(bits));
+        else
+          calib_y_ = detector_y_.highest_res_calib();
+
+        PL_DBG << "calibrations for axes are " << calib_x_.bits_ << " & " << calib_y_.bits_ << " bits";
+
+        colorMap->data()->setRange(QCPRange(0, calib_x_.transform(adjrange - 1, bits)),
+                                   QCPRange(0, calib_y_.transform(adjrange - 1, bits)));
+
+        PL_INFO << "range maxes at " << calib_x_.transform(adjrange - 1, bits)<< ", " << calib_y_.transform(adjrange - 1, bits);
+
+        ui->coincPlot->rescaleAxes();
+        //ui->coincPlot->xAxis->setRange(colorMap->keyAxis()->range());
+        //ui->coincPlot->yAxis->setRange(colorMap->valueAxis()->range());
       }
+
       std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
           std::move(some_spectrum->get_spectrum({{0, adjrange}, {0, adjrange}}));
       for (auto it : *spectrum_data)
@@ -212,49 +265,17 @@ void FormPlot2D::update_plot() {
 
       colorMap->rescaleDataRange(true);
 
+      name_2d = ui->comboChose2d->currentText();
+      zoom_2d = ui->sliderZoom2d->value();
 
-      if (redraw2d) {
-        int bits = some_spectrum->bits();
-        QVector<Pixie::Detector> axes3d;
-        for (std::size_t i=0; i < some_spectrum->add_pattern().size(); i++) {
-          if (some_spectrum->add_pattern()[i] == 1) {
-            Pixie::Detector this_det = some_spectrum->get_detectors()[i];
-            axes3d.push_back(this_det);
-          }
-        }
-
-        QString det_units, det_name;
-        co_energies_x_ = some_spectrum->energies(0);
-        co_energies_y_ = some_spectrum->energies(1);
-
-        colorMap->data()->setRange(QCPRange(0, co_energies_x_[adjrange - 1]),
-            QCPRange(0, co_energies_y_[adjrange - 1]));
-
-        det_units = QString::fromStdString(axes3d[0].energy_calibrations_.get(Pixie::Calibration(bits)).units_);
-        det_name = QString::fromStdString(axes3d[0].name_);
-        colorMap->keyAxis()->setLabel(det_units + " (" + det_name + ")");
-        ui->labelCoDet1->setText(det_name + "(" + det_units + "):");
-
-        det_units = QString::fromStdString(axes3d[1].energy_calibrations_.get(Pixie::Calibration(bits)).units_);
-        det_name = QString::fromStdString(axes3d[1].name_);
-        colorMap->valueAxis()->setLabel(det_units + " (" + det_name + ")");
-        ui->labelCoDet2->setText(det_name + "(" + det_units + "):");
-
-        ui->coincPlot->rescaleAxes();
-        ui->coincPlot->xAxis->setRange(colorMap->keyAxis()->range());
-        ui->coincPlot->yAxis->setRange(colorMap->valueAxis()->range());
-
-        name_2d = ui->comboChose2d->currentText();
-        zoom_2d = ui->sliderZoom2d->value();
-
-        ui->coincPlot->updateGeometry();
-      }
+      ui->coincPlot->updateGeometry();
     } else {
       ui->coincPlot->clearGraphs();
       colorMap->clearData();
       colorMap->keyAxis()->setLabel("");
       colorMap->valueAxis()->setLabel("");
     }
+    replot_markers();
     ui->coincPlot->replot();
   }
 
@@ -262,35 +283,58 @@ void FormPlot2D::update_plot() {
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormPlot2D::plot_2d_mouse_upon(int x, int y) {
-  double xx = 0.0, yy = 0.0;
-
-  if (x < static_cast<int>(co_energies_x_.size()))
-    xx = co_energies_x_[x];
-  if (y < static_cast<int>(co_energies_y_.size()))
-    yy = co_energies_y_[y];
-
-  ui->labelCoEn0->setText(QString::number(xx));
-  ui->labelCoEn1->setText(QString::number(yy));
+void FormPlot2D::plot_2d_mouse_upon(double x, double y) {
+  ui->labelCoEn0->setText(QString::number(calib_x_.transform(x, bits)));
+  ui->labelCoEn1->setText(QString::number(calib_y_.transform(y, bits)));
 }
 
 void FormPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event) {
-  if (event->button() == Qt::RightButton) {
-    marker_x = 0; marker_y = 0; ext_marker = 0;
-  } else if ((x < co_energies_x_.size()) && (y < co_energies_y_.size())) {
-    marker_x = co_energies_x_[x];
-    marker_y = co_energies_y_[y];
-    PL_INFO << "Markers set at " << marker_x << ", " << marker_y;
-  }
-  emit markers_set(marker_x, marker_y);
+  PL_INFO << "2D markers requested at " << x << " & " << y;
+
+  x_marker.channel = x;
+  x_marker.bits = bits;
+  x_marker.calibrated = false;
+
+  y_marker.channel = y;
+  y_marker.bits = bits;
+  y_marker.calibrated = false;
+
+  calibrate_markers();
+
+  bool visible = (event->button() == Qt::LeftButton);
+  x_marker.visible = visible;
+  y_marker.visible = visible;
+  ext_marker.visible = ext_marker.visible & visible;
+
   replot_markers();
+
+  emit markers_set(x_marker, y_marker);
 }
 
-void FormPlot2D::set_marker(double n) {
+void FormPlot2D::calibrate_markers() {
+  if (!x_marker.calibrated) {
+    x_marker.energy = calib_x_.transform(x_marker.channel, x_marker.bits);
+    x_marker.calibrated = (calib_x_.units_ != "channels");
+  }
+
+  if (!y_marker.calibrated) {
+    y_marker.energy = calib_y_.transform(y_marker.channel, y_marker.bits);
+    y_marker.calibrated = (calib_y_.units_ != "channels");
+  }
+
+  if (!ext_marker.calibrated) {
+    ext_marker.energy = calib_x_.transform(ext_marker.channel, x_marker.bits);
+    ext_marker.calibrated = ((calib_x_.units_ != "channels") && (calib_y_.units_ != "channels"));
+  }
+}
+
+
+void FormPlot2D::set_marker(Marker n) {
   ext_marker = n;
-  if (!ext_marker) {
-    marker_x = 0;
-    marker_y = 0;
+  calibrate_markers();
+  if (!ext_marker.visible) {
+    x_marker.visible = false;
+    y_marker.visible = false;
   }
   replot_markers();
 }
@@ -305,9 +349,9 @@ void FormPlot2D::on_pushResetScales_clicked()
 
 void FormPlot2D::reset_content() {
     colorMap->clearData();
-    marker_x = 0;
-    marker_y = 0;
-    ext_marker = 0;
+    x_marker.visible = false;
+    y_marker.visible = false;
+    ext_marker.visible = false;
     replot_markers();
 }
 
@@ -360,4 +404,9 @@ void FormPlot2D::spectrumDetailsClosed(bool changed) {
   if (changed) {
     //replot?
   }
+}
+
+void FormPlot2D::on_sliderZoom2d_valueChanged(int value)
+{
+  mySpectra->activate();
 }

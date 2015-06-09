@@ -266,8 +266,8 @@ void FormGainMatch::do_post_processing() {
 
 bool FormGainMatch::find_peaks() {
   if (moving_.visible) {
-    int xmin = moving_.position - ui->spinPeakWindow->value() / 2;
-    int xmax = moving_.position + ui->spinPeakWindow->value() / 2;
+    int xmin = moving_.channel - ui->spinPeakWindow->value() / 2;
+    int xmax = moving_.channel + ui->spinPeakWindow->value() / 2;
 
     if (xmin < 0) xmin = 0;
     if (xmax >= x.size()) xmax = x.size() - 1;
@@ -359,11 +359,11 @@ void FormGainMatch::update_plots() {
 }
 
 void FormGainMatch::addMovingMarker(double x) {
-  moving_.position = x;
+  moving_.channel = x;
   moving_.visible = true;
-  a.position = x - ui->spinPeakWindow->value() / 2;
+  a.channel = x - ui->spinPeakWindow->value() / 2;
   a.visible = true;
-  b.position = x + ui->spinPeakWindow->value() / 2;
+  b.channel = x + ui->spinPeakWindow->value() / 2;
   b.visible = true;
   replot_markers();
 }
@@ -380,13 +380,13 @@ void FormGainMatch::replot_markers() {
   std::list<Marker> markers;
 
   if (gauss_ref_.refined_.height_) {
-    marker_ref_.position = gauss_ref_.refined_.center_;
+    marker_ref_.channel = gauss_ref_.refined_.center_;
     marker_ref_.visible = true;
     markers.push_back(marker_ref_);
   }
 
   if (gauss_opt_.refined_.height_) {
-    marker_opt_.position = gauss_opt_.refined_.center_;
+    marker_opt_.channel = gauss_opt_.refined_.center_;
     marker_opt_.visible = true;
     markers.push_back(marker_opt_);
   }

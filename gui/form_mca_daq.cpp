@@ -65,8 +65,8 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixi
 
   //2d
   ui->Plot2d->setSpectra(spectra_);
-  connect(ui->Plot1d, SIGNAL(marker_set(double)), ui->Plot2d, SLOT(set_marker(double)));
-  connect(ui->Plot2d, SIGNAL(markers_set(double,double)), ui->Plot1d, SLOT(set_markers2d(double,double)));
+  connect(ui->Plot1d, SIGNAL(marker_set(Marker)), ui->Plot2d, SLOT(set_marker(Marker)));
+  connect(ui->Plot2d, SIGNAL(markers_set(Marker,Marker)), ui->Plot1d, SLOT(set_markers2d(Marker,Marker)));
 
   plot_thread_.start();
 }
@@ -122,13 +122,17 @@ void FormMcaDaq::loadSettings() {
   settings_.beginGroup("Lab");
   ui->boxMcaMins->setValue(settings_.value("mca_mins", 5).toInt());
   ui->boxMcaSecs->setValue(settings_.value("mca_secs", 0).toInt());
+  ui->pushEnable2d->setChecked(settings_.value("2d_visible", true).toBool());
   settings_.endGroup();
+
+  on_pushEnable2d_clicked();
 }
 
 void FormMcaDaq::saveSettings() {
   settings_.beginGroup("Lab");
   settings_.setValue("mca_mins", ui->boxMcaMins->value());
   settings_.setValue("mca_secs", ui->boxMcaSecs->value());
+  settings_.setValue("2d_visible", ui->pushEnable2d->isChecked());
   settings_.endGroup();
 }
 

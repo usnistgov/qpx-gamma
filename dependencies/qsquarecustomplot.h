@@ -21,6 +21,34 @@
 
 #include "qcustomplot.h"
 #include <QWidget>
+#include "detector.h"
+
+struct Marker {
+  double energy, channel;
+  uint16_t bits;
+  QMap<QString, QPen> themes;
+  QPen default_pen;
+  bool visible;
+  bool calibrated;
+
+  Marker() : energy(0), channel(0), bits(0), visible(false), default_pen(Qt::gray, 1, Qt::SolidLine), calibrated(false) {}
+
+  void shift(uint16_t to_bits) {
+    if (bits > to_bits)
+      channel = static_cast<int>(channel) >> (bits - to_bits);
+    if (bits < to_bits)
+      channel = static_cast<int>(channel) << (to_bits - bits);
+    bits = to_bits;
+  }
+
+  void calibrate(Pixie::Detector det) {
+    if (det.energy_calibrations_.has_a(Pixie::Calibration(bits))) {
+      energy = det.energy_calibrations_.get(Pixie::Calibration(bits)).transform(channel);
+      calibrated = true;
+    } else
+      calibrated = false;
+  }
+};
 
 class QSquareCustomPlot : public QCustomPlot
 {
@@ -33,7 +61,7 @@ public:
   QSize sizeHint() const;
 
 signals:
-  void mouse_upon(int x, int y);
+  void mouse_upon(double x, double y);
   void mouse_clicked(double x, double y, QMouseEvent* e);
 
 protected:

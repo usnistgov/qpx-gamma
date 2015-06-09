@@ -46,19 +46,18 @@ public:
   void reset_content();
 
 public slots:
-  void set_marker(double n);
+  void set_marker(Marker n);
 
 signals:
-  void markers_set(double x, double y);
+  void markers_set(Marker x, Marker y);
 
 private slots:
-  void on_sliderZoom2d_sliderReleased();
   void gradientChosen(QAction*);
   void scaleTypeChosen(QAction*);
 
   void on_comboChose2d_activated(const QString &arg1);
 
-  void plot_2d_mouse_upon(int x, int y);
+  void plot_2d_mouse_upon(double x, double y);
   void plot_2d_mouse_clicked(double x, double y, QMouseEvent* event);
 
   void on_pushResetScales_clicked();
@@ -68,31 +67,37 @@ private slots:
   void on_pushDetails_clicked();
   void spectrumDetailsClosed(bool);
 
+  void on_sliderZoom2d_valueChanged(int value);
+
 private:
+
+  //gui stuff
   Ui::FormPlot2D *ui;
-
   Pixie::SpectraSet *mySpectra;
+  QCPColorMap *colorMap;
 
-  std::map<std::string, QCPColorGradient> gradients_;
-  std::string current_gradient_;
+  std::map<QString, QCPColorGradient> gradients_;
+  QMenu gradientMenu;
+  QString current_gradient_;
 
   std::map<std::string, QCPAxis::ScaleType> scale_types_;
+  QMenu scaleTypeMenu;
   std::string current_scale_type_;
 
-
-  //coincidence plot
-  QCPColorMap *colorMap;
-  std::vector<double> co_energies_x_;
-  std::vector<double> co_energies_y_;
-  double marker_x, marker_y, ext_marker;
-  QMenu gradientMenu;
-  QMenu scaleTypeMenu;
-
-  //prev
+  //plot identity
   QString name_2d;
   double zoom_2d;
 
-  void make_marker(double, QColor, int, Qt::Orientations);
+  //markers
+  Marker my_marker, //template(style)
+    ext_marker, x_marker, y_marker; //actual data
+
+  //scaling
+  int bits;
+  Pixie::Calibration calib_x_, calib_y_;
+
+  void calibrate_markers();
+  void make_marker(Marker&);
 };
 
 #endif // WIDGET_PLOT2D_H
