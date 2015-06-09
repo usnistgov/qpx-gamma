@@ -47,7 +47,7 @@ unix {
        DEFINES += "XIA_LINUX"
        DEFINES += "PLX_LINUX"
        QMAKE_CC = g++
-       LIBS += dependencies/PLX/PlxApi.a -lm -ldl -DBOOST_LOG_DYN_LINK \
+       LIBS +=  PLX/Library/PlxApi.a -lm -ldl -DBOOST_LOG_DYN_LINK \
                -lboost_system -lboost_date_time -lboost_thread -lboost_log \
                -lboost_program_options -lboost_filesystem \
                -lboost_log_setup -lboost_timer
@@ -62,8 +62,8 @@ unix {
    }
 	 
 INCLUDEPATH += pixiecpp \
+               PLX/Include \
                dependencies \
-               dependencies/PLX \
                dependencies/XIA \
                dependencies/xylib \
                dependencies/tinyxml2
@@ -79,7 +79,7 @@ SOURCES += cpx.cpp \
 HEADERS  += dependencies/custom_logger.h \
             dependencies/isotope.h \
             $$files(dependencies/XIA/*.h) \
-            $$files(dependencies/PLX/*.h) \
             $$files(dependencies/tinyxml2/*.h) \
             $$files(dependencies/xylib/*.h) \
+            $$files(PLX/Include/*.h) \
             $$files(pixiecpp/*.h)

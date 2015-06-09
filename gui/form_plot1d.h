@@ -68,6 +68,7 @@ private slots:
 
   void on_pushCalibrate_clicked();
 
+
 private:
 
   Ui::FormPlot1D *ui;

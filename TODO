@@ -6,11 +6,10 @@ Major features/overhauls:
 -spectra warping
 
 pixiecpp:
--detector provides highest resolution calibration
 -all timestamps with timezone**
 -save as 2012 revision of N42
 -fix cnf loading (dll?)
--save/load matrices
+-save/load matrices++
 
 gui:
 -ask for simulation parameters***

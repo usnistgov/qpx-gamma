@@ -34,6 +34,9 @@ struct Marker {
   Marker() : energy(0), channel(0), bits(0), visible(false), default_pen(Qt::gray, 1, Qt::SolidLine), calibrated(false) {}
 
   void shift(uint16_t to_bits) {
+    if (!to_bits || !bits)
+      return;
+
     if (bits > to_bits)
       channel = static_cast<int>(channel) >> (bits - to_bits);
     if (bits < to_bits)
@@ -62,7 +65,7 @@ public:
 
 signals:
   void mouse_upon(double x, double y);
-  void mouse_clicked(double x, double y, QMouseEvent* e);
+  void mouse_clicked(double x, double y, QMouseEvent* e, bool channels);
 
 protected:
   void mouseMoveEvent(QMouseEvent *event) Q_DECL_OVERRIDE;

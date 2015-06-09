@@ -53,18 +53,20 @@ FormPlot1D::~FormPlot1D()
 
 void FormPlot1D::addMovingMarker(double x) {
   moving.channel = x;
+  moving.bits = bits;
   moving.visible = true;
   if (calib_.units_ != "channels") {
     moving.energy = x;
     moving.calibrated = true;
     //channel = root of energy eqn
     moving.channel = 0;
-  } else
+    emit marker_set(moving);
+  } else {
+    moving.calibrated = false;
+    emit marker_set(moving);
     calibrate_markers();
-
-  PL_INFO << "Marker at " << x;
+  }
   replot_markers();
-  emit marker_set(moving);
 }
 
 void FormPlot1D::removeMovingMarker(double x) {
@@ -93,6 +95,8 @@ void FormPlot1D::set_markers2d(Marker x, Marker y) {
   y.default_pen = marky.default_pen;
 
   markx = x; marky = y;
+  markx.shift(bits);
+  marky.shift(bits);
 
   calibrate_markers();
 
@@ -108,10 +112,6 @@ void FormPlot1D::replot_markers() {
   markers.push_back(moving);
   markers.push_back(markx);
   markers.push_back(marky);
-
-  /*for (auto &q : markers)
-    if (!q.calibrated && (calib_.units_ == "channels"))
-      q.energy = q.channel;*/
 
   ui->mcaPlot->set_markers(markers);
   ui->mcaPlot->replot_markers();
@@ -163,10 +163,18 @@ void FormPlot1D::spectrumDetailsClosed(bool changed) {
 
 void FormPlot1D::on_comboResolution_currentIndexChanged(int index)
 {
-  bits = ui->comboResolution->currentData().toInt();
-  ui->spectraWidget->setQpxSpectra(*mySpectra, 1, bits);
+  int newbits = ui->comboResolution->currentData().toInt();
+  if (bits != newbits) {
+    ui->spectraWidget->setQpxSpectra(*mySpectra, 1, bits);
+    bits = newbits;
+    moving.shift(bits);
+    markx.shift(bits);
+    marky.shift(bits);
+  }
+
   mySpectra->activate();
 }
+
 
 void FormPlot1D::reset_content() {
   moving.visible = false;
@@ -225,9 +233,13 @@ void FormPlot1D::update_plot() {
 
     }
   }
-  ui->mcaPlot->setLabels(QString::fromStdString(calib_.units_), "count");
+  if (!calib_.bits_)
+    calib_.bits_ = bits;
 
+  ui->mcaPlot->setLabels(QString::fromStdString(calib_.units_), "count");
   ui->mcaPlot->setYBounds(minima, maxima);
+
+  calibrate_markers();
   replot_markers();
 
   std::string new_label = boost::algorithm::trim_copy(mySpectra->status());

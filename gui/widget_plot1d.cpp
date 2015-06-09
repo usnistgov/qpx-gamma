@@ -37,7 +37,7 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   ui->mcaPlot->setInteraction(QCP::iRangeZoom, true);
   ui->mcaPlot->yAxis->axisRect()->setRangeZoom(Qt::Horizontal);
 
-  connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*)));
+  connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*,bool)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*,bool)));
   connect(ui->mcaPlot, SIGNAL(beforeReplot()), this, SLOT(plot_rezoom()));
   connect(ui->mcaPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(plot_mouse_release(QMouseEvent*)));
   connect(ui->mcaPlot, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(plot_mouse_press(QMouseEvent*)));
@@ -90,7 +90,6 @@ void WidgetPlot1D::clearGraphs()
 
 void WidgetPlot1D::clearExtras()
 {
-  PL_DBG << "Clear extras clled";
   my_markers_.clear();
   my_cursors_.clear();
   rect.clear();
@@ -361,7 +360,7 @@ void WidgetPlot1D::replot_markers() {
 }
 
 
-void WidgetPlot1D::plot_mouse_clicked(double x, double y, QMouseEvent* event) {
+void WidgetPlot1D::plot_mouse_clicked(double x, double y, QMouseEvent* event, bool channels) {
   if (event->button() == Qt::RightButton) {
     emit clickedRight(x);
   } else {
@@ -376,7 +375,7 @@ void WidgetPlot1D::plot_mouse_press(QMouseEvent*) {
 }
 
 void WidgetPlot1D::plot_mouse_release(QMouseEvent*) {
-  connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*)));
+  connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*,bool)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*,bool)));
   connect(ui->mcaPlot, SIGNAL(beforeReplot()), this, SLOT(plot_rezoom()));
   connect(ui->mcaPlot, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(plot_mouse_press(QMouseEvent*)));
   force_rezoom_ = true;

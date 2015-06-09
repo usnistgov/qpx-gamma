@@ -51,11 +51,15 @@ double Calibration::transform(double chan) const {
 }
 
 double Calibration::transform(double chan, uint16_t bits) const {
+  if (!bits_ || !bits)
+    return chan;
+  
   if (bits > bits_)
     chan = chan / pow(2, bits - bits_);
   if (bits < bits_)
     chan = chan * pow(2, bits_ - bits);
-  return transform (chan);
+
+  return transform(chan);
 }
 
 std::vector<double> Calibration::transform(std::vector<double> chans) const {
@@ -186,11 +190,7 @@ void Detector::to_xml(tinyxml2::XMLPrinter& printer) const {
   printer.PushText(type_.c_str());
   printer.CloseElement();
 
-  if ((energy_calibrations_.size() == 1) &&
-      (energy_calibrations_.get(0).bits_ == 0))
-    energy_calibrations_.get(0).to_xml(printer);
-  else
-    energy_calibrations_.to_xml(printer);
+  energy_calibrations_.to_xml(printer);
 
   printer.OpenElement("Optimization"); 
   for (std::size_t j = 0; j < setting_values_.size(); j++) {
@@ -217,7 +217,7 @@ void Detector::from_xml(tinyxml2::XMLElement* root) {
     type_ = std::string(el->GetText());
 
   if (el = root->FirstChildElement(Calibration().xml_element_name().c_str())) {
-    Calibration newCali;
+    Calibration newCali;  //this branch for bckwds compatibility with n42 calib entries
     newCali.from_xml(el);
     energy_calibrations_.add(newCali);
   } else if (el = root->FirstChildElement(energy_calibrations_.xml_element_name().c_str())) {

@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
       PL_ERR << "<cpx> command failed";
       return 1;
     }
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
 
 }
@@ -91,6 +92,10 @@ bool Cpx::interpret(std::string command, std::vector<std::string> &tokens) {
     return run_mca(tokens);
   else if (command == "save_qpx")
     return save_qpx(tokens);
+  else if (command == "set_mod")
+    return set_mod(tokens);
+  else if (command == "set_chan")
+    return set_chan(tokens);
 }
 
 
@@ -189,6 +194,31 @@ bool Cpx::save_qpx(std::vector<std::string> &tokens) {
   return true;
 }
 
+bool Cpx::set_chan(std::vector<std::string> &tokens) {
+  if (tokens.size() < 3) {
+    PL_ERR << "<cpx> expected syntax: set_chan chan_number SETTING_NAME value";
+    return false;
+  }
+  int channum = boost::lexical_cast<int>(tokens[0]);
+  std::string setting_name(tokens[1]);
+  double value = boost::lexical_cast<double>(tokens[2]);
+
+  pixie_.settings().set_chan(setting_name, value, Pixie::Channel(channum));
+  return true;
+}
+
+bool Cpx::set_mod(std::vector<std::string> &tokens) {
+  if (tokens.size() < 2) {
+    PL_ERR << "<cpx> expected syntax: set_chan SETTING_NAME value";
+    return false;
+  }
+  std::string setting_name(tokens[0]);
+  double value = boost::lexical_cast<double>(tokens[1]);
+
+  pixie_.settings().set_mod(setting_name, value);
+  return true;
+}
+
 bool Cpx::boot(std::vector<std::string> &tokens) {
   if (tokens.size() < 1) {
     PL_ERR << "<cpx> expected syntax: boot /home/user/qpxdata";
@@ -239,7 +269,7 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
   }
 
   //apply settings
-  //thread sleep 1 sec
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   pixie_.settings().set_mod("FILTER_RANGE", 4);
   pixie_.settings().set_mod("ACTUAL_COINCIDENCE_WAIT", 0);
   for (int i =0; i < 4; i++)

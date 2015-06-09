@@ -17,6 +17,8 @@ private:
   bool run_simulation(std::vector<std::string> &tokens);
   bool run_mca(std::vector<std::string> &tokens);
   bool save_qpx(std::vector<std::string> &tokens);
+  bool set_mod(std::vector<std::string> &tokens);
+  bool set_chan(std::vector<std::string> &tokens);
 
   Pixie::SpectraSet   spectra_;
   Pixie::Simulator    source_;

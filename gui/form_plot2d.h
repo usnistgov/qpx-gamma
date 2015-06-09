@@ -45,6 +45,15 @@ public:
   void replot_markers();
   void reset_content();
 
+  void set_scale_type(QString);
+  void set_gradient(QString);
+  void set_zoom(double);
+  void set_show_legend(bool);
+  QString scale_type();
+  QString gradient();
+  double zoom();
+  bool show_legend();
+
 public slots:
   void set_marker(Marker n);
 
@@ -58,7 +67,7 @@ private slots:
   void on_comboChose2d_activated(const QString &arg1);
 
   void plot_2d_mouse_upon(double x, double y);
-  void plot_2d_mouse_clicked(double x, double y, QMouseEvent* event);
+  void plot_2d_mouse_clicked(double x, double y, QMouseEvent* event, bool channels);
 
   void on_pushResetScales_clicked();
 

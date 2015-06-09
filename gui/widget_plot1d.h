@@ -63,7 +63,7 @@ signals:
   void clickedRight(double);
 
 private slots:
-  void plot_mouse_clicked(double x, double y, QMouseEvent *event);
+  void plot_mouse_clicked(double x, double y, QMouseEvent *event, bool channels);
   void plot_mouse_press(QMouseEvent*);
   void plot_mouse_release(QMouseEvent*);
   void plot_rezoom();

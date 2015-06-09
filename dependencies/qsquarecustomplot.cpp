@@ -76,15 +76,16 @@ void QSquareCustomPlot::mouseMoveEvent(QMouseEvent *event)  {
 
   co_x = xAxis->pixelToCoord(event->x());
   co_y = yAxis->pixelToCoord(event->y());
-  int x = co_x, y = co_y;
 
   QVariant details;
   QCPLayerable *clickedLayerable = layerableAt(event->pos(), true, &details);
   if (QCPColorMap *ap = qobject_cast<QCPColorMap*>(clickedLayerable)) {
+    int x = co_x, y = co_y;
     ap->data()->coordToCell(co_x, co_y, &x, &y);
-  }
+    emit mouse_upon(x, y);
+  } else
+    emit mouse_upon(co_x, co_y);
 
-  emit mouse_upon(x, y);
   QCustomPlot::mouseMoveEvent(event);
 }
 
@@ -96,7 +97,6 @@ void QSquareCustomPlot::mouseReleaseEvent(QMouseEvent *event)  {
 
     co_x = xAxis->pixelToCoord(event->x());
     co_y = yAxis->pixelToCoord(event->y());
-    int x = co_x, y = co_y;
 
     PL_INFO << "Custom plot mouse released at coords: " << co_x << ", " << co_y;
 
@@ -105,11 +105,13 @@ void QSquareCustomPlot::mouseReleaseEvent(QMouseEvent *event)  {
     if (QCPColorMap *ap = qobject_cast<QCPColorMap*>(clickedLayerable)) {
       int xx, yy;
       ap->data()->coordToCell(co_x, co_y, &xx, &yy);
-      x = xx; y = yy;
-      PL_INFO << "Corrected to cell : " << xx << ", " << yy << " will output " << x << ", " << y;
-    }
-
-    emit mouse_clicked(x, y, event);
+      PL_INFO << "Corrected to cell : " << xx << ", " << yy;
+      emit mouse_clicked(xx, yy, event, true);
+    } else if (QCPAbstractItem *ai = qobject_cast<QCPAbstractItem*>(clickedLayerable)) {
+      PL_DBG << "clicked on abstractitem in plot";
+      emit mouse_clicked(co_x, co_y, event, false);
+    } else
+      emit mouse_clicked(co_x, co_y, event, false);
   }
   QCustomPlot::mouseReleaseEvent(event);
 }
