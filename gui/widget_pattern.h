@@ -54,7 +54,7 @@ private:
     QRectF outer, inner;
     QVector<int16_t> pattern_;
     bool tristate_;
-    int PaintingScaleFactor;
+    int size_;
 };
 
 Q_DECLARE_METATYPE(QpxPattern)

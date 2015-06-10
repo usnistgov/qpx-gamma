@@ -35,10 +35,10 @@ QpxPattern::QpxPattern(QVector<int16_t> pattern, bool tristate)
     pattern.resize(Pixie::kNumChans);
   pattern_ = pattern;
   tristate_ = tristate;
+  size_ = 25;
 
-  outer = QRectF(0.1, 0.1, 0.8, 0.8);
-  inner = QRectF(0.2, 0.2, 0.6, 0.6);
-  PaintingScaleFactor = 20;
+  outer = QRectF(2, 2, size_ - 4, size_ - 4);
+  inner = QRectF(4, 4, size_ - 8, size_ - 8);
 }
 
 QpxPattern::QpxPattern(std::bitset<Pixie::kNumChans> pattern, bool tristate) {
@@ -54,15 +54,15 @@ QpxPattern::QpxPattern(std::bitset<Pixie::kNumChans> pattern, bool tristate) {
         else
             pattern_[i] = 0;
     }
+    size_ = 25;
 
-    outer = QRectF(0.1, 0.1, 0.8, 0.8);
-    inner = QRectF(0.2, 0.2, 0.6, 0.6);
-    PaintingScaleFactor = 20;
+    outer = QRectF(2, 2, size_ - 4, size_ - 4);
+    inner = QRectF(4, 4, size_ - 8, size_ - 8);
 }
 
 QSize QpxPattern::sizeHint() const
 {
-    return PaintingScaleFactor * QSize(maxCount(), 1);
+    return QSize(maxCount() * size_, size_);
 }
 
 void QpxPattern::setFlag(int count) {
@@ -80,19 +80,21 @@ void QpxPattern::paint(QPainter *painter, const QRect &rect,
     painter->save();
 
     painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setRenderHint(QPainter::TextAntialiasing, true);
     painter->setPen(Qt::NoPen);
 
-    int yOffset = (rect.height() - PaintingScaleFactor) / 2;
+    int yOffset = (rect.height() - size_) / 2;
     painter->translate(rect.x(), rect.y() + yOffset);
-    painter->scale(PaintingScaleFactor, PaintingScaleFactor);
 
-    QColor on_color = tristate_ ? Qt::green : Qt::blue;
+    QColor on_color = tristate_ ? Qt::green : Qt::cyan;
     if (!enabled)
-        on_color = tristate_ ? Qt::darkGreen : Qt::darkBlue;
+        on_color = tristate_ ? Qt::darkGreen : Qt::darkCyan;
     QColor border = enabled ? Qt::black : Qt::darkGray;
     QColor off_color = enabled ? Qt::red : Qt::darkRed;
+    QColor text_color = enabled ? Qt::black : Qt::lightGray;
 
     for (int i = 0; i < maxCount(); ++i) {
+        painter->setPen(Qt::NoPen);
         painter->setBrush(border);
         painter->drawEllipse(outer);
 
@@ -104,7 +106,13 @@ void QpxPattern::paint(QPainter *painter, const QRect &rect,
             painter->setBrush(palette.background());
 
         painter->drawEllipse(inner);
-        painter->translate(1.0, 0.0);
+
+
+        painter->setPen(QPen(text_color, 1));
+        painter->setFont(QFont("Helvetica", 8, QFont::Bold));
+        painter->drawText(outer, Qt::AlignCenter, QString::number(i));
+
+        painter->translate(size_, 0.0);
     }
 
     painter->restore();

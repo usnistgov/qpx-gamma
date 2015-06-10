@@ -26,6 +26,7 @@
 
 #include <QWidget>
 #include "qsquarecustomplot.h"
+#include "marker.h"
 
 namespace Ui {
 class WidgetPlot1D;
@@ -56,6 +57,8 @@ public:
 
   void addGraph(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness);
   void setYBounds(const std::map<double, double> &minima, const std::map<double, double> &maxima);
+
+  void use_calibrated(bool);
 
 signals:
 
@@ -88,14 +91,16 @@ private:
   double minx, maxx;
   double miny, maxy;
 
+  bool use_calibrated_;
+
   double minx_zoom, maxx_zoom;
 
   std::map<double, double> minima_, maxima_;
 
   QMenu menuScaleType;
   QMenu menuPlotStyle;
-  int plotStyle;
   QString color_theme_;
+  int plotStyle;
 };
 
 #endif // WIDGET_PLOST1D_H

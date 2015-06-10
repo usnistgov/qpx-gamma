@@ -51,33 +51,6 @@ FormPlot1D::~FormPlot1D()
   delete ui;
 }
 
-void FormPlot1D::addMovingMarker(double x) {
-  moving.channel = x;
-  moving.bits = bits;
-  moving.visible = true;
-  if (calib_.units_ != "channels") {
-    moving.energy = x;
-    moving.calibrated = true;
-    //channel = root of energy eqn
-    moving.channel = 0;
-    emit marker_set(moving);
-  } else {
-    moving.calibrated = false;
-    emit marker_set(moving);
-    calibrate_markers();
-  }
-  replot_markers();
-}
-
-void FormPlot1D::removeMovingMarker(double x) {
-  moving.visible = false;
-  markx.visible = false;
-  marky.visible = false;
-  emit marker_set(moving);
-  replot_markers();
-}
-
-
 void FormPlot1D::setSpectra(Pixie::SpectraSet& new_set) {
   mySpectra = &new_set;
 
@@ -86,36 +59,6 @@ void FormPlot1D::setSpectra(Pixie::SpectraSet& new_set) {
   for (auto &q: resolutions)
     ui->comboResolution->addItem(QString::number(q) + " bit", QVariant(q));
 
-}
-
-void FormPlot1D::set_markers2d(Marker x, Marker y) {
-  x.themes = markx.themes;
-  y.themes = marky.themes;
-  x.default_pen = markx.default_pen;
-  y.default_pen = marky.default_pen;
-
-  markx = x; marky = y;
-  markx.shift(bits);
-  marky.shift(bits);
-
-  calibrate_markers();
-
-  if (!x.visible && !y.visible)
-    moving.visible = false;
-
-  replot_markers();
-}
-
-void FormPlot1D::replot_markers() {
-  std::list<Marker> markers;
-
-  markers.push_back(moving);
-  markers.push_back(markx);
-  markers.push_back(marky);
-
-  ui->mcaPlot->set_markers(markers);
-  ui->mcaPlot->replot_markers();
-  ui->mcaPlot->redraw();
 }
 
 void FormPlot1D::spectraLooksChanged() {
@@ -164,8 +107,8 @@ void FormPlot1D::spectrumDetailsClosed(bool changed) {
 void FormPlot1D::on_comboResolution_currentIndexChanged(int index)
 {
   int newbits = ui->comboResolution->currentData().toInt();
+  ui->spectraWidget->setQpxSpectra(*mySpectra, 1, newbits);
   if (bits != newbits) {
-    ui->spectraWidget->setQpxSpectra(*mySpectra, 1, bits);
     bits = newbits;
     moving.shift(bits);
     markx.shift(bits);
@@ -236,6 +179,7 @@ void FormPlot1D::update_plot() {
   if (!calib_.bits_)
     calib_.bits_ = bits;
 
+  ui->mcaPlot->use_calibrated(calib_.units_ != "channels");
   ui->mcaPlot->setLabels(QString::fromStdString(calib_.units_), "count");
   ui->mcaPlot->setYBounds(minima, maxima);
 
@@ -267,19 +211,76 @@ void FormPlot1D::on_pushCalibrate_clicked()
   emit requestCalibration(ui->spectraWidget->selected());
 }
 
+void FormPlot1D::addMovingMarker(double x) {
+  moving.channel = x;
+  moving.bits = bits;
+  moving.visible = true;
+  if (calib_.units_ != "channels") {
+    moving.energy = x;
+    moving.energy_valid = true;
+    moving.chan_valid = false;
+    emit marker_set(moving);
+  } else {
+    moving.chan_valid = true;
+    moving.energy_valid = false;
+    calibrate_markers();
+    emit marker_set(moving);
+  }
+  replot_markers();
+}
+
+void FormPlot1D::removeMovingMarker(double x) {
+  moving.visible = false;
+  markx.visible = false;
+  marky.visible = false;
+  emit marker_set(moving);
+  replot_markers();
+}
+
+void FormPlot1D::set_markers2d(Marker x, Marker y) {
+  x.themes = markx.themes;
+  y.themes = marky.themes;
+  x.default_pen = markx.default_pen;
+  y.default_pen = marky.default_pen;
+
+  markx = x; marky = y;
+  markx.shift(bits);
+  marky.shift(bits);
+
+  calibrate_markers();
+
+  if (!x.visible && !y.visible)
+    moving.visible = false;
+
+  replot_markers();
+}
+
+void FormPlot1D::replot_markers() {
+  std::list<Marker> markers;
+
+  markers.push_back(moving);
+  markers.push_back(markx);
+  markers.push_back(marky);
+
+  ui->mcaPlot->set_markers(markers);
+  ui->mcaPlot->replot_markers();
+  ui->mcaPlot->redraw();
+}
+
+
 void FormPlot1D::calibrate_markers() {
-  if (!markx.calibrated) {
+  if (!markx.energy_valid && markx.chan_valid) {
     markx.energy = calib_.transform(markx.channel, markx.bits);
-    markx.calibrated = (calib_.units_ != "channels");
+    markx.energy_valid = (calib_.units_ != "channels");
   }
 
-  if (!marky.calibrated) {
+  if (!marky.energy_valid && marky.chan_valid) {
     marky.energy = calib_.transform(marky.channel, marky.bits);
-    marky.calibrated = (calib_.units_ != "channels");
+    marky.energy_valid = (calib_.units_ != "channels");
   }
 
-  if (!moving.calibrated) {
+  if (!moving.energy_valid && moving.chan_valid) {
     moving.energy = calib_.transform(moving.channel, moving.bits);
-    moving.calibrated = (calib_.units_ != "channels");
+    moving.energy_valid = (calib_.units_ != "channels");
   }
 }

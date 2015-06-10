@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>508</width>
-    <height>478</height>
+    <height>518</height>
    </rect>
   </property>
   <property name="focusPolicy">
@@ -402,7 +402,7 @@
             <item>
              <widget class="QpxPatternEditor" name="patternMatch" native="true">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Minimum">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -435,7 +435,7 @@
             <item>
              <widget class="QpxPatternEditor" name="patternAdd" native="true">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Minimum">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>

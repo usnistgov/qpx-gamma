@@ -163,48 +163,41 @@ void FormPlot2D::make_marker(Marker &marker) {
 
   QCPItemStraightLine *one_line;
 
-  //horizontal
-  ui->coincPlot->addItem(one_line);
-  if (marker.calibrated && (calib_y_.units_ != "channels")) {
+  if (marker.energy_valid && (calib_y_.units_ != "channels")) {
     one_line = new QCPItemStraightLine(ui->coincPlot);
     one_line->setPen(pen);
     one_line->point1->setCoords(0, marker.energy);
     one_line->point2->setCoords(1, marker.energy);
     ui->coincPlot->addItem(one_line);
-  } else if (!marker.calibrated && (calib_y_.units_ == "channels")) {
-    one_line = new QCPItemStraightLine(ui->coincPlot);
-    one_line->setPen(pen);
-    one_line->point1->setCoords(0, marker.channel);
-    one_line->point2->setCoords(1, marker.channel);
-    ui->coincPlot->addItem(one_line);
-  } else if (!marker.calibrated && (calib_y_.units_ != "channels")) {
-    one_line = new QCPItemStraightLine(ui->coincPlot);
-    one_line->setPen(pen);
-    one_line->point1->setCoords(0, calib_y_.transform(marker.channel, marker.bits));
-    one_line->point2->setCoords(1, calib_y_.transform(marker.channel, marker.bits));
-    ui->coincPlot->addItem(one_line);
-  }
-
-  //vertical
-  if (marker.calibrated && (calib_x_.units_ != "channels")) {
     one_line = new QCPItemStraightLine(ui->coincPlot);
     one_line->setPen(pen);
     one_line->point1->setCoords(marker.energy, 0);
     one_line->point2->setCoords(marker.energy, 1);
     ui->coincPlot->addItem(one_line);
-  } else if (!marker.calibrated && (calib_x_.units_ == "channels")) {
+  } else if (marker.chan_valid && (calib_y_.units_ == "channels")) {
+    one_line = new QCPItemStraightLine(ui->coincPlot);
+    one_line->setPen(pen);
+    one_line->point1->setCoords(0, marker.channel);
+    one_line->point2->setCoords(1, marker.channel);
+    ui->coincPlot->addItem(one_line);
     one_line = new QCPItemStraightLine(ui->coincPlot);
     one_line->setPen(pen);
     one_line->point1->setCoords(marker.channel, 0);
     one_line->point2->setCoords(marker.channel, 1);
     ui->coincPlot->addItem(one_line);
-  } else if (!marker.calibrated && (calib_x_.units_ != "channels")) {
+  } else if (marker.chan_valid && (calib_y_.units_ != "channels")) {
+    one_line = new QCPItemStraightLine(ui->coincPlot);
+    one_line->setPen(pen);
+    one_line->point1->setCoords(0, calib_y_.transform(marker.channel, marker.bits));
+    one_line->point2->setCoords(1, calib_y_.transform(marker.channel, marker.bits));
+    ui->coincPlot->addItem(one_line);
     one_line = new QCPItemStraightLine(ui->coincPlot);
     one_line->setPen(pen);
     one_line->point1->setCoords(calib_x_.transform(marker.channel, marker.bits), 0);
     one_line->point2->setCoords(calib_x_.transform(marker.channel, marker.bits), 1);
     ui->coincPlot->addItem(one_line);
   }
+
 }
 
 void FormPlot2D::update_plot() {
@@ -247,8 +240,8 @@ void FormPlot2D::update_plot() {
           calib_x_ = detector_x_.energy_calibrations_.get(Pixie::Calibration(bits));
         else
           calib_x_ = detector_x_.highest_res_calib();
-        colorMap->keyAxis()->setLabel(QString::fromStdString(detector_x_.name_) + " (" + QString::fromStdString(calib_y_.units_) + ")");
-        ui->labelCoDet1->setText(QString::fromStdString(detector_x_.name_) + "(" + QString::fromStdString(calib_y_.units_) + "):");
+        colorMap->keyAxis()->setLabel(QString::fromStdString(detector_x_.name_) + " (" + QString::fromStdString(calib_x_.units_) + ")");
+        ui->labelCoDet1->setText(QString::fromStdString(detector_x_.name_) + "(" + QString::fromStdString(calib_x_.units_) + "):");
         if (!calib_x_.bits_)
           calib_x_.bits_ = bits;
 
@@ -292,7 +285,6 @@ void FormPlot2D::update_plot() {
     }
 
     replot_markers();
-    ui->coincPlot->replot();
   }
 
   PL_DBG << "2D plotting took " << guiside.ms() << " ms";
@@ -317,14 +309,18 @@ void FormPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event, b
   if (visible && channels) {
     x_marker.channel = x;
     y_marker.channel = y;
-    x_marker.calibrated = false;
-    y_marker.calibrated = false;
+    x_marker.chan_valid = true;
+    y_marker.chan_valid = true;
+    x_marker.energy_valid = false;
+    y_marker.energy_valid = false;
     calibrate_markers();
   } else if (visible && !channels){
     x_marker.energy = x;
     y_marker.energy = y;
-    x_marker.calibrated = true;
-    y_marker.calibrated = true;
+    x_marker.energy_valid = true;
+    y_marker.energy_valid = true;
+    x_marker.chan_valid = false;
+    y_marker.chan_valid = false;
   }
 
   ext_marker.visible = ext_marker.visible & visible;
@@ -335,23 +331,21 @@ void FormPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event, b
 }
 
 void FormPlot2D::calibrate_markers() {
-  if (!x_marker.calibrated) {
+  if (!x_marker.energy_valid && x_marker.chan_valid) {
     x_marker.energy = calib_x_.transform(x_marker.channel, x_marker.bits);
-    x_marker.calibrated = (calib_x_.units_ != "channels");
+    x_marker.energy_valid = (calib_x_.units_ != "channels");
   }
 
-  if (!y_marker.calibrated) {
+  if (!y_marker.energy_valid && y_marker.chan_valid) {
     y_marker.energy = calib_y_.transform(y_marker.channel, y_marker.bits);
-    y_marker.calibrated = (calib_y_.units_ != "channels");
+    y_marker.energy_valid = (calib_y_.units_ != "channels");
   }
-
-  ext_marker.shift(bits);
 }
 
 
 void FormPlot2D::set_marker(Marker n) {
   ext_marker = n;
-  calibrate_markers();
+  ext_marker.shift(bits);
   if (!ext_marker.visible) {
     x_marker.visible = false;
     y_marker.visible = false;

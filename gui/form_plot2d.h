@@ -26,6 +26,7 @@
 #include <spectra_set.h>
 #include "qsquarecustomplot.h"
 #include "qtcolorpicker.h"
+#include "marker.h"
 
 namespace Ui {
 class FormPlot2D;

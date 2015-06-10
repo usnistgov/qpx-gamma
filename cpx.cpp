@@ -70,13 +70,18 @@ int main(int argc, char *argv[])
         params.push_back(tokens[i]);
     }
 
+    if (command == "end") {
+      PL_INFO << "<cpx> exiting";
+      return 0;
+    }
+
     if (!interpreter.interpret(command, params)) {
       PL_ERR << "<cpx> command failed";
       return 1;
     }
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
-  }
 
+    boost::this_thread::sleep(boost::posix_time::seconds(2));
+  }
 }
 
 bool Cpx::interpret(std::string command, std::vector<std::string> &tokens) {

@@ -54,12 +54,17 @@ double Calibration::transform(double chan, uint16_t bits) const {
   if (!bits_ || !bits)
     return chan;
   
+//  PL_DBG << "will shift " << chan << " from " << bits << " to " << bits_;
+
   if (bits > bits_)
     chan = chan / pow(2, bits - bits_);
   if (bits < bits_)
     chan = chan * pow(2, bits_ - bits);
 
-  return transform(chan);
+  double re = transform(chan);
+//  PL_DBG << "chan " << chan << " -> energy " << re;
+
+  return re;
 }
 
 std::vector<double> Calibration::transform(std::vector<double> chans) const {

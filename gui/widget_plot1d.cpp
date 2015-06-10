@@ -49,6 +49,8 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
 
   force_rezoom_ = false;
 
+  use_calibrated_ = false;
+
   plotStyle = 1;
   menuPlotStyle.addAction("Scatter");
   menuPlotStyle.addAction("Lines");
@@ -86,6 +88,7 @@ void WidgetPlot1D::clearGraphs()
   ui->mcaPlot->clearGraphs();
   minima_.clear();
   maxima_.clear();
+  use_calibrated_ = false;
 }
 
 void WidgetPlot1D::clearExtras()
@@ -132,6 +135,11 @@ void WidgetPlot1D::setLogScale(bool log) {
       scaleTypeChosen(q);
     }
   }
+}
+
+void WidgetPlot1D::use_calibrated(bool uc) {
+  use_calibrated_ = uc;
+  replot_markers();
 }
 
 void WidgetPlot1D::set_markers(const std::list<Marker>& markers) {
@@ -267,11 +275,17 @@ void WidgetPlot1D::replot_markers() {
   for (auto &q : my_markers_) {
     QCPItemTracer *top_crs = nullptr;
     if (q.visible) {
+      double pos = 0;
+      if (use_calibrated_)
+        pos = q.energy;
+      else
+        pos = q.channel;
+
       double max = std::numeric_limits<double>::lowest();
       int total = ui->mcaPlot->graphCount();
       for (int i=0; i < total; i++) {
-        if ((ui->mcaPlot->graph(i)->data()->firstKey() <= q.energy)
-            && (q.energy <= ui->mcaPlot->graph(i)->data()->lastKey()))
+        if ((ui->mcaPlot->graph(i)->data()->firstKey() <= pos)
+            && (pos <= ui->mcaPlot->graph(i)->data()->lastKey()))
         {
           QPen thispen = ui->mcaPlot->graph(i)->pen();
           QColor thiscol = thispen.color();
@@ -284,7 +298,7 @@ void WidgetPlot1D::replot_markers() {
           crs->setStyle(QCPItemTracer::tsCircle);
           crs->setSize(4);
           crs->setGraph(ui->mcaPlot->graph(i));
-          crs->setGraphKey(q.energy);
+          crs->setGraphKey(pos);
           crs->setInterpolating(true);
           crs->setPen(thispen);
           ui->mcaPlot->addItem(crs);
@@ -314,6 +328,12 @@ void WidgetPlot1D::replot_markers() {
   }
 
   for (auto &q : my_cursors_) {
+    double pos = 0;
+    if (use_calibrated_)
+      pos = q.energy;
+    else
+      pos = q.channel;
+
     if (!q.visible)
       continue;
     int total = ui->mcaPlot->graphCount();
@@ -326,7 +346,7 @@ void WidgetPlot1D::replot_markers() {
       crs->setStyle(QCPItemTracer::tsCircle);
       crs->setSize(4);
       crs->setGraph(ui->mcaPlot->graph(i));
-      crs->setGraphKey(q.energy);
+      crs->setGraphKey(pos);
       crs->setInterpolating(true);
       ui->mcaPlot->addItem(crs);
     }
@@ -338,10 +358,20 @@ void WidgetPlot1D::replot_markers() {
 
     calc_y_bounds(lowerc, upperc);
 
+    double pos1 = 0, pos2 = 0;
+    if (use_calibrated_) {
+      pos1 = rect[0].energy;
+      pos2 = rect[1].energy;
+    } else {
+      pos1 = rect[0].channel;
+      pos1 = rect[1].channel;
+    }
+
+
     QCPItemRect *cprect = new QCPItemRect(ui->mcaPlot);
-    double x1 = rect[0].energy;
+    double x1 = pos1;
     double y1 = maxy;
-    double x2 = rect[1].energy;
+    double x2 = pos2;
     double y2 = miny;
 
     cprect->topLeft->setCoords(x1, y1);
