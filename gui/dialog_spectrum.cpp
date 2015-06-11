@@ -67,8 +67,10 @@ void dialog_spectrum::updateData() {
   ui->lineBits->setText(QString::number(static_cast<int>(my_spectrum_.bits())));
   ui->lineChannels->setText(QString::number(my_spectrum_.resolution()));
   ui->colPicker->setCurrentColor(QColor::fromRgba(my_spectrum_.appearance()));
-  ui->patternMatch->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(my_spectrum_.match_pattern()), true));
-  ui->patternAdd->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(my_spectrum_.add_pattern()), false));
+  ui->patternMatch->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(my_spectrum_.match_pattern()), 25, true, 16));
+  ui->patternAdd->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(my_spectrum_.add_pattern()), 25, false, 16));
+  ui->patternMatch->setMinimumSize(ui->patternMatch->sizeHint());
+  ui->patternAdd->setMinimumSize(ui->patternAdd->sizeHint());
 
   ui->lineLiveTime->setText(QString::fromStdString(to_simple_string(my_spectrum_.live_time())));
   ui->lineRealTime->setText(QString::fromStdString(to_simple_string(my_spectrum_.real_time())));

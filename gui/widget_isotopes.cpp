@@ -148,3 +148,16 @@ void WidgetIsotopes::on_pushRemove_clicked()
   isotopes_.replace(modified);
   isotopeChosen(QString::fromStdString(modified.name));
 }
+
+QString WidgetIsotopes::current_isotope() const {
+  if (ui->listIsotopes->currentItem() != nullptr)
+    return ui->listIsotopes->currentItem()->text();
+  else
+    return "";
+}
+
+void WidgetIsotopes::set_current_isotope(QString choice) {
+  for (int i = 0; i < ui->listIsotopes->count(); ++i)
+    if (ui->listIsotopes->item(i)->text() == choice)
+      ui->listIsotopes->setCurrentRow(i);
+}

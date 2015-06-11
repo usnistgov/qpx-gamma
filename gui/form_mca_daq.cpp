@@ -124,6 +124,11 @@ void FormMcaDaq::loadSettings() {
   ui->boxMcaSecs->setValue(settings_.value("mca_secs", 0).toInt());
   ui->pushEnable2d->setChecked(settings_.value("2d_visible", true).toBool());
 
+  settings_.beginGroup("McaPlot");
+  ui->Plot1d->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
+  ui->Plot1d->set_plot_style(settings_.value("plot_style", "Step").toString());
+  settings_.endGroup();
+
   settings_.beginGroup("MatrixPlot");
   ui->Plot2d->set_zoom(settings_.value("zoom", 50).toDouble());
   ui->Plot2d->set_gradient(settings_.value("gradient", "hot").toString());
@@ -141,6 +146,11 @@ void FormMcaDaq::saveSettings() {
   settings_.setValue("mca_mins", ui->boxMcaMins->value());
   settings_.setValue("mca_secs", ui->boxMcaSecs->value());
   settings_.setValue("2d_visible", ui->pushEnable2d->isChecked());
+
+  settings_.beginGroup("McaPlot");
+  settings_.setValue("scale_type", ui->Plot1d->scale_type());
+  settings_.setValue("plot_style", ui->Plot1d->plot_style());
+  settings_.endGroup();
 
   settings_.beginGroup("MatrixPlot");
   settings_.setValue("zoom", ui->Plot2d->zoom());
@@ -391,17 +401,16 @@ void FormMcaDaq::on_pushEditSpectra_clicked()
 
 void FormMcaDaq::reqCalib(QString name) {
   if (my_calib_ == nullptr) {
-    my_calib_ = new FormCalibration();
+    my_calib_ = new FormCalibration(settings_);
     connect(&plot_thread_, SIGNAL(plot_ready()), my_calib_, SLOT(update_plot()));
     connect(my_calib_, SIGNAL(destroyed()), this, SLOT(calib_destroyed()));
   }
-  my_calib_->setData(detectors_, settings_);
+  my_calib_->setData(detectors_);
   my_calib_->setSpectrum(&spectra_, name);
   emit requestCalibration(my_calib_);
 }
 
 void FormMcaDaq::calib_destroyed() {
-  PL_INFO << "calibration dstrd";
   my_calib_ = nullptr;
 }
 

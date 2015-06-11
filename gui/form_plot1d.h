@@ -47,6 +47,11 @@ public:
   void replot_markers();
   void reset_content();
 
+  void set_scale_type(QString);
+  void set_plot_style(QString);
+  QString scale_type();
+  QString plot_style();
+
 public slots:
   void set_markers2d(Marker x, Marker y);
 
@@ -68,6 +73,10 @@ private slots:
 
   void on_pushCalibrate_clicked();
 
+
+  void on_pushShowAll_clicked();
+
+  void on_pushHideAll_clicked();
 
 private:
 

@@ -29,6 +29,9 @@
 #include "widget_pattern.h"
 #include "detector.h"
 
+Q_DECLARE_METATYPE(Pixie::Detector)
+Q_DECLARE_METATYPE(Pixie::Setting)
+
 class QpxSpecialDelegate : public QStyledItemDelegate
 {
     Q_OBJECT

@@ -63,9 +63,9 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   translu.setAlpha(64);
   b.themes["dark"] = QPen(translu, 2);
 
-  ui->plot2->setLogScale(false);
+  ui->plot2->set_scale_type("Linear");
   ui->plot2->setTitle("Peak analysis");
-  ui->plot3->setLogScale(false);
+  ui->plot3->set_scale_type("Linear");
   ui->plot->setLabels("channel", "count");
   ui->plot2->setLabels("channel", "count");
 

@@ -215,7 +215,6 @@ void FormPlot2D::update_plot() {
 
     ui->pushDetails->setEnabled((some_spectrum != nullptr));
     zoom_2d = ui->sliderZoom2d->value();
-    PL_DBG << "setting new zoom";
 
     if ((some_spectrum != nullptr)
         && some_spectrum->total_count()
@@ -287,7 +286,7 @@ void FormPlot2D::update_plot() {
     replot_markers();
   }
 
-  PL_DBG << "2D plotting took " << guiside.ms() << " ms";
+  PL_DBG << "<Plot2D> plotting took " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
 }
 
@@ -297,7 +296,7 @@ void FormPlot2D::plot_2d_mouse_upon(double x, double y) {
 }
 
 void FormPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event, bool channels) {
-  //PL_INFO << "2D markers requested at " << x << " & " << y;
+  PL_INFO << "<Plot2D> markers at " << x << " & " << y;
 
   bool visible = (event->button() == Qt::LeftButton);
 
@@ -461,7 +460,6 @@ void FormPlot2D::set_zoom(double zm) {
 }
 
 double FormPlot2D::zoom() {
-  PL_DBG << "zoom = " << zoom_2d;
   return zoom_2d;
 }
 

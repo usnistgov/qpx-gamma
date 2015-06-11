@@ -62,18 +62,20 @@ void FormPlot1D::setSpectra(Pixie::SpectraSet& new_set) {
 }
 
 void FormPlot1D::spectraLooksChanged() {
-  ui->spectraWidget->update_looks();
   spectrumDetails();
   mySpectra->activate();
 }
 
 void FormPlot1D::spectrumDetails()
 {
+  ui->pushShowAll->setEnabled(ui->spectraWidget->available_count());
+  ui->pushHideAll->setEnabled(ui->spectraWidget->available_count());
+
   QString id = ui->spectraWidget->selected();
   Pixie::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(id.toStdString());
 
-  if (someSpectrum == nullptr) {
-    ui->labelSpectrumInfo->setText("Select spectrum above to see statistics");
+  if (id.isEmpty() || (someSpectrum == nullptr)) {
+    ui->labelSpectrumInfo->setText("Left-click on spectrum above to see statistics, right click to toggle visibility");
     ui->pushCalibrate->setEnabled(false);
     ui->pushFullInfo->setEnabled(false);
     return;
@@ -191,7 +193,7 @@ void FormPlot1D::update_plot() {
 
   spectrumDetails();
 
-  PL_DBG << "1D plotting took " << guiside.ms() << " ms";
+  PL_DBG << "<Plot1D> plotting took " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
 }
 
@@ -212,6 +214,7 @@ void FormPlot1D::on_pushCalibrate_clicked()
 }
 
 void FormPlot1D::addMovingMarker(double x) {
+  PL_INFO << "<Plot1D> marker at " << x;
   moving.channel = x;
   moving.bits = bits;
   moving.visible = true;
@@ -283,4 +286,30 @@ void FormPlot1D::calibrate_markers() {
     moving.energy = calib_.transform(moving.channel, moving.bits);
     moving.energy_valid = (calib_.units_ != "channels");
   }
+}
+
+void FormPlot1D::on_pushShowAll_clicked()
+{
+  ui->spectraWidget->show_all();
+}
+
+void FormPlot1D::on_pushHideAll_clicked()
+{
+  ui->spectraWidget->hide_all();
+}
+
+void FormPlot1D::set_scale_type(QString sct) {
+  ui->mcaPlot->set_scale_type(sct);
+}
+
+void FormPlot1D::set_plot_style(QString stl) {
+  ui->mcaPlot->set_plot_style(stl);
+}
+
+QString FormPlot1D::scale_type() {
+  return ui->mcaPlot->scale_type();
+}
+
+QString FormPlot1D::plot_style() {
+  return ui->mcaPlot->plot_style();
 }

@@ -50,7 +50,10 @@ public:
     QSize sizeHint() const Q_DECL_OVERRIDE;
     void setQpxSpectra(Pixie::SpectraSet &newset, int dim = 0, int res = 0);
     void update_looks();
+    int available_count();
     QString selected();
+    void show_all();
+    void hide_all();
 
 signals:
     void stateChanged();
