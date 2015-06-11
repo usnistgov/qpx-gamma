@@ -1,0 +1,57 @@
+﻿<?xml version="1.0"?>
+<Setting name="MADC-32" index="0" writable="false" address="0">
+    <setting_branches>
+        <Setting name="firmware version" index="0" writable="false" address="24590" type="integer" value="515" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+        <Setting name="threshold" index="0" writable="false" address="0">
+            <setting_branches>
+                <Setting name="threshold det 0" index="0" writable="true" address="16384" type="integer" value="200" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 1" index="0" writable="true" address="16386" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 2" index="0" writable="true" address="16388" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 3" index="0" writable="true" address="16390" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 4" index="0" writable="true" address="16392" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 5" index="0" writable="true" address="16394" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 6" index="0" writable="true" address="16396" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 7" index="0" writable="true" address="16398" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 8" index="0" writable="true" address="16400" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 9" index="0" writable="true" address="16402" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 10" index="0" writable="true" address="16404" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 11" index="0" writable="true" address="16406" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 12" index="0" writable="true" address="16408" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 13" index="0" writable="true" address="16410" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 14" index="0" writable="true" address="16412" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 15" index="0" writable="true" address="16414" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 16" index="0" writable="true" address="16416" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 17" index="0" writable="true" address="16418" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 18" index="0" writable="true" address="16420" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 19" index="0" writable="true" address="16422" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 20" index="0" writable="true" address="16424" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 21" index="0" writable="true" address="16426" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 22" index="0" writable="true" address="16428" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 23" index="0" writable="true" address="16430" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 24" index="0" writable="true" address="16432" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 25" index="0" writable="true" address="16434" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 26" index="0" writable="true" address="16436" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 27" index="0" writable="true" address="16438" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 28" index="0" writable="true" address="16440" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 29" index="0" writable="true" address="16442" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 30" index="0" writable="true" address="16444" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+                <Setting name="threshold det 31" index="0" writable="true" address="16446" type="integer" value="8191" minimum="0.000000" maximum="8191.000000" step="1.000000" unit="channels" description="8191 to disable"/>
+            </setting_branches>
+        </Setting>
+        <Setting name="irq threshold" index="0" writable="true" address="24600" type="integer" value="1" minimum="1.000000" maximum="8120.000000" step="1.000000" unit="32 bit words" description="IRQ emitted when FIFO exceeds this"/>
+        <Setting name="max data/transfer" index="0" writable="true" address="24602" type="integer" value="1" minimum="0.000000" maximum="2047.000000" step="1.000000" unit="32 bit words" description="max events before footer (mode 3), 0 for unlimited"/>
+        <Setting name="withdraw IRQ" index="0" writable="true" address="24604" type="boolean" value="true" description="withdraw IRQ when FIFO empty"/>
+        <Setting name="buffer length" index="0" writable="false" address="24624" type="integer" value="8124" minimum="0.000000" maximum="1.000000" step="1.000000" unit="words (!)" description="number of words in buffer, word size = data_len_format"/>
+        <Setting name="data length format" index="0" writable="true" address="24626" type="int_menu" value="2">
+            <menu_item item_value="0" item_text="8 bits"/>
+            <menu_item item_value="1" item_text="16 bits"/>
+            <menu_item item_value="2" item_text="32 bits"/>
+            <menu_item item_value="3" item_text="64 bits"/> description="word length: 0-&gt;8, 1-&gt;16, 2-&gt;32, 3-&gt;64"
+        </Setting>
+        <Setting name="multi event" index="0" writable="true" address="24630" type="integer" value="1" minimum="0.000000" maximum="3.000000" step="1.000000" description="0-&gt;no, 1-&gt;yes, 3-&gt;limited"/>
+        <Setting name="marking type" index="0" writable="true" address="24632" type="integer" value="0" minimum="0.000000" maximum="3.000000" step="1.000000" description="footer format: 0-&gt;event counter, 1-&gt;time stamp, 2-&gt;xtnded time stamp"/>
+        <Setting name="ADC resolution" index="0" writable="true" address="24642" type="integer" value="4" minimum="0.000000" maximum="4.000000" step="1.000000" description="0-&gt;2k, 1-&gt;4k, 2-&gt;4k hires, 3-&gt;8k, 4-&gt;8k hires"/>
+        <Setting name="skip out of range" index="0" writable="true" address="24604" type="boolean" value="true"/>
+        <Setting name="input range" index="0" writable="true" address="24672" type="integer" value="0" minimum="0.000000" maximum="2.000000" step="1.000000" description="0-&gt;4V, 1-&gt;10V, 2-&gt;8V"/>
+    </setting_branches>
+</Setting>

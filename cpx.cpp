@@ -70,12 +70,18 @@ int main(int argc, char *argv[])
         params.push_back(tokens[i]);
     }
 
+    if (command == "end") {
+      PL_INFO << "<cpx> exiting";
+      return 0;
+    }
+
     if (!interpreter.interpret(command, params)) {
       PL_ERR << "<cpx> command failed";
       return 1;
     }
-  }
 
+    boost::this_thread::sleep(boost::posix_time::seconds(2));
+  }
 }
 
 bool Cpx::interpret(std::string command, std::vector<std::string> &tokens) {
@@ -239,7 +245,7 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
   }
 
   //apply settings
-  //thread sleep 1 sec
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   pixie_.settings().set_mod("FILTER_RANGE", 4);
   pixie_.settings().set_mod("ACTUAL_COINCIDENCE_WAIT", 0);
   for (int i =0; i < 4; i++)

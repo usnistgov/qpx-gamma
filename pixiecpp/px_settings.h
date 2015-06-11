@@ -36,6 +36,10 @@ enum class LiveStatus : int {dead = 0, online = 1, offline = 2, history = 3};
 enum class Module     : int {all = -4, current = -3, none = -2, invalid = -1};
 enum class Channel    : int {all = -4, current = -3, none = -2, invalid = -1};
 
+const uint32_t max_buf_len  = 8192; //get this from module
+const uint32_t list_mem_len32 = 13312;
+const uint32_t list_mem_len16 = 2 * list_mem_len32;
+
 class Wrapper; //forward declared for friendship
 
 class Settings {
@@ -67,13 +71,6 @@ public:
   
   void get_all_settings();
   
-  void set_threshold(uint32_t nt);
-
-  struct usb_device *dev;
-  xxusb_device_type xxusbDev[32];
-  struct usb_dev_handle *udev;       // Device Handle
-  int DevFound;
-
   bool read_setting_MADC(Setting &set);
   bool read_settings_bulk();
 
@@ -90,14 +87,11 @@ protected:
 
   int         num_chans_;
   LiveStatus  live_;
-  Module      current_module_;
-  Channel     current_channel_;
-
-  uint32_t threshold_;
 
   Setting settings_tree_;
 
   std::vector<Detector> detectors_;
+  struct usb_dev_handle *udev;       // Device Handle
 
 };
 

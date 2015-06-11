@@ -94,6 +94,7 @@ public:
   //set and get detectors
   void set_detectors(const std::vector<Detector>& dets);
   std::vector<Detector> get_detectors() const;
+  Detector get_detector(uint16_t which = 0) const;
 
   //feed acquired data to spectrum
   void addSpill(const Spill&);

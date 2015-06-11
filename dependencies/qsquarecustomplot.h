@@ -33,8 +33,8 @@ public:
   QSize sizeHint() const;
 
 signals:
-  void mouse_upon(int x, int y);
-  void mouse_clicked(double x, double y, QMouseEvent* e);
+  void mouse_upon(double x, double y);
+  void mouse_clicked(double x, double y, QMouseEvent* e, bool channels);
 
 protected:
   void mouseMoveEvent(QMouseEvent *event) Q_DECL_OVERRIDE;

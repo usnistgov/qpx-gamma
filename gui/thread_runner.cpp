@@ -194,12 +194,7 @@ void ThreadRunner::run()
     emit listComplete(newListRun);
   } else if (action_ == kSimulate) {
     interruptor_->store(false);
-    Pixie::SpectraSet* intermediate = new Pixie::SpectraSet;
-    intermediate->read_xml(file_.toStdString(), true);
-    Pixie::Simulator mySource = Pixie::Simulator(intermediate, fake_chans_, source_res_, dest_res_);
-    delete intermediate;
-    if (mySource.valid())
-      Pixie::Wrapper::getInstance().getFakeMca(mySource, *spectra_, timeout_, *interruptor_);
+    Pixie::Wrapper::getInstance().getFakeMca(file_.toStdString(), *spectra_, timeout_, *interruptor_);
     emit runComplete();
   } else if (action_ == kBoot) {
     Pixie::Wrapper &myPixie = Pixie::Wrapper::getInstance();

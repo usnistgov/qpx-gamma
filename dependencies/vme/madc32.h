@@ -73,14 +73,3 @@ void set_stack(struct usb_dev_handle *udev, unsigned char irq,
 //**********************************************************************
 /*Configure the VM-USB module*/     
 void set_vm_usb(struct usb_dev_handle *udev);
-
-//**********************************************************************
-/*Configure the MADC-32 module*/
-//**********************************************************************
-void set_madc(struct usb_dev_handle *udev, long threshold);
-
-#ifdef SCALER_MODE
-//  Not needed for testing the MADC-32
-//**********************************************************************
-void set_scaler(struct usb_dev_handle *udev);
-#endif

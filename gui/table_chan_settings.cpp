@@ -187,6 +187,8 @@ QVariant TreeItem::display_data(int column) const
         return QVariant::fromValue(itemData.value_int);
     else if (itemData.setting_type == Pixie::SettingType::floating)
       return QVariant::fromValue(itemData.value);
+    else if (itemData.setting_type == Pixie::SettingType::int_menu)
+      return QVariant::fromValue(itemData.value_int);
     else if (itemData.setting_type == Pixie::SettingType::boolean)
       if (itemData.value_int)
         return "T";
@@ -281,7 +283,7 @@ bool TreeItem::setData(int column, const QVariant &value)
   if (column != 1)
     return false;
 
-  if ((itemData.setting_type == Pixie::SettingType::integer)
+  if (((itemData.setting_type == Pixie::SettingType::integer) || (itemData.setting_type == Pixie::SettingType::int_menu))
       && (value.type() == QVariant::Int))
     itemData.value_int = value.toInt();
   else if ((itemData.setting_type == Pixie::SettingType::boolean)
@@ -310,15 +312,21 @@ bool TreeItem::setData(int column, const QVariant &value)
 
 
 
-TreeSettings::TreeSettings(const Pixie::Setting &data, QObject *parent)
+TreeSettings::TreeSettings(QObject *parent)
   : QAbstractItemModel(parent)
 {
-  rootItem = new TreeItem(data);
+  rootItem = nullptr;
 }
 
 TreeSettings::~TreeSettings()
 {
   delete rootItem;
+}
+
+void TreeSettings::set_structure(const Pixie::Setting &data) {
+  if (rootItem != nullptr)
+    delete rootItem;
+  rootItem = new TreeItem(data);
 }
 
 int TreeSettings::columnCount(const QModelIndex & /* parent */) const
@@ -389,7 +397,7 @@ QVariant TreeSettings::headerData(int section, Qt::Orientation orientation,
     else if (section == 2)
       return "units";
     else if (section == 3)
-      return "description";
+      return "notes";
 
   return QVariant();
 }
@@ -450,7 +458,10 @@ int TreeSettings::rowCount(const QModelIndex &parent) const
 {
   TreeItem *parentItem = getItem(parent);
 
-  return parentItem->childCount();
+  if (parentItem != nullptr)
+    return parentItem->childCount();
+  else
+    return 0;
 }
 
 bool TreeSettings::setData(const QModelIndex &index, const QVariant &value, int role)

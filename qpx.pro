@@ -62,7 +62,7 @@ unix {
                -lboost_system -lboost_date_time -lboost_thread -lboost_log \
                -lboost_program_options -lboost_filesystem \
                -lboost_log_setup -lboost_timer \
-               -lgsl -lgslcblas -llua -lz \
+               -lgsl -lgslcblas -llua5.2 -lz \
                -lxx_usb -lusb
 
 	target.path = /usr/local/bin/
@@ -72,8 +72,8 @@ unix {
 	LIBPATH += /usr/local/lib
 		
 	QMAKE_CFLAGS   += -fpermissive
-	QMAKE_CXXFLAGS_RELEASE -= -O2
-	QMAKE_CXXFLAGS_RELEASE += -O3
+	QMAKE_CXXFLAGS_RELEASE -= -O2 -std=c++0x
+	QMAKE_CXXFLAGS_RELEASE += -O3 -std=c++11
    }
 	 
 win32 {

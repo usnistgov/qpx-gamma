@@ -31,7 +31,6 @@
 #include <QStyledItemDelegate>
 #include <vector>
 #include <bitset>
-#include "detector.h"
 #include "custom_logger.h"
 #include "daq_types.h"
 
@@ -39,14 +38,13 @@ class QpxPattern
 {
 public:
 
-    explicit QpxPattern(QVector<int16_t> pattern = QVector<int16_t>(), bool tristate = false);
-    explicit QpxPattern(std::bitset<Pixie::kNumChans> pattern, bool tristate = false);
+    explicit QpxPattern(QVector<int16_t> pattern = QVector<int16_t>(), double size = 25, bool tristate = false, int wrap = 0);
+    explicit QpxPattern(std::bitset<Pixie::kNumChans> pattern, double size = 25, bool tristate = false, int wrap = 0);
 
     void paint(QPainter *painter, const QRect &rect,
                const QPalette &palette, bool enabled = true) const;
     QSize sizeHint() const;
-    int checkFlag(int count) const { if (count < maxCount()) return pattern_[count]; else return -1; }
-    int maxCount() const { return pattern_.size(); }
+    int flagAtPosition(int x, int y);
     void setFlag(int count);
     QVector<int16_t> const& pattern() const {return pattern_;}
 
@@ -54,7 +52,8 @@ private:
     QRectF outer, inner;
     QVector<int16_t> pattern_;
     bool tristate_;
-    int PaintingScaleFactor;
+    double size_;
+    int wrap_, rows_;
 };
 
 Q_DECLARE_METATYPE(QpxPattern)
@@ -73,7 +72,6 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
 
 private:
-    int flagAtPosition(int x);
     QpxPattern myQpxPattern;
 };
 

@@ -84,7 +84,9 @@ private:
 
   ThreadRunner        &runner_thread_;
   QSettings &settings_;
+  QString data_directory_;
 
+  Pixie::Setting      dev_settings_;
   TreeSettings        tree_settings_model_;
   QpxSpecialDelegate  tree_delegate_;
 

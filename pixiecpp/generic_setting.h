@@ -25,6 +25,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 #include <boost/lexical_cast.hpp>
 #include "tinyxml2.h"
 #include "xmlable.h"
@@ -32,7 +33,7 @@
 namespace Pixie {
 
 enum class NodeType : int {none = 0, setting = 1, stem = 2};
-enum class SettingType : int {boolean = 0, integer = 1, floating = 2, text = 3, detector = 4};
+enum class SettingType : int {boolean = 0, integer = 1, floating = 2, text = 3, int_menu = 4, detector = 5};
 
 struct Setting;
 
@@ -53,6 +54,7 @@ struct Setting : public XMLable {
   double            value;
   double            minimum, maximum, step;
   std::string       unit;
+  std::map<int32_t, std::string> int_menu_items;
 
   //if type is stem
   XMLableDB<Setting> branches;
@@ -67,7 +69,7 @@ struct Setting : public XMLable {
   
   Setting(std::string nm) : Setting() {name = nm;}
 
-  std::string xml_element_name() const {return "setting";}
+  std::string xml_element_name() const {return "Setting";}
 
   bool shallow_equals(const Setting& other) const {
     return ((name == other.name)
@@ -92,6 +94,8 @@ struct Setting : public XMLable {
     if (writable != other.writable) return false;
     if (description != other.description) return false;
     if (address != other.address) return false;
+    if (branches != other.branches) return false;
+    if (int_menu_items != other.int_menu_items) return false;
     return true;
   }
   
@@ -100,10 +104,15 @@ struct Setting : public XMLable {
       name = std::string(element->Attribute("name"));
     if (element->Attribute("index"))
       value = boost::lexical_cast<uint32_t>(element->Attribute("index"));
-    if (element->Attribute("writable"))
-      writable = true;
+    if (element->Attribute("writable")) {
+      std::string rw = std::string(element->Attribute("writable"));
+      if (rw == "true")
+        writable = true;
+      else
+        writable = false;
+    }
     if (element->Attribute("address"))
-      value = boost::lexical_cast<uint16_t>(element->Attribute("address"));
+      address = boost::lexical_cast<uint16_t>(element->Attribute("address"));
     if (element->Attribute("description"))
       description = std::string(element->Attribute("description"));
 
@@ -135,6 +144,21 @@ struct Setting : public XMLable {
         setting_type = SettingType::detector;
         if (element->Attribute("value"))
           value_text = std::string(element->Attribute("value"));
+      } else if (temp_str == "int_menu") {
+        setting_type = SettingType::int_menu;
+        if (element->Attribute("value"))
+          value_int = boost::lexical_cast<int64_t>(element->Attribute("value"));
+        tinyxml2::XMLElement* menu_item = element->FirstChildElement("menu_item");
+        while (menu_item != nullptr) {
+          std::string setting_text = "no description";
+          int32_t setting_val = 0;
+          if (menu_item->Attribute("item_value"))
+            setting_val = boost::lexical_cast<int32_t>(menu_item->Attribute("item_value"));
+          if (menu_item->Attribute("item_text"))
+            setting_text = std::string(menu_item->Attribute("item_text"));
+          int_menu_items[setting_val] = setting_text;
+          menu_item = dynamic_cast<tinyxml2::XMLElement*>(menu_item->NextSibling());
+        }
       }
       if ((temp_str == "floating") || (temp_str == "integer")) {
         if (element->Attribute("minimum"))
@@ -147,6 +171,7 @@ struct Setting : public XMLable {
           unit = std::string(element->Attribute("unit"));
       }
     } else {
+      node_type = NodeType::stem;
       tinyxml2::XMLElement* stemData = element->FirstChildElement(branches.xml_element_name().c_str());
       if (stemData != NULL)
         branches.from_xml(stemData);
@@ -154,14 +179,14 @@ struct Setting : public XMLable {
   }
 
   void to_xml(tinyxml2::XMLPrinter& printer) const {
-    if (node_type == NodeType::none)
-      return;
     
     printer.OpenElement("Setting");
     printer.PushAttribute("name", name.c_str());
     printer.PushAttribute("index", std::to_string(index).c_str());
     if (writable)
-      printer.PushAttribute("writable", "");
+      printer.PushAttribute("writable", "true");
+    else
+      printer.PushAttribute("writable", "false");
     printer.PushAttribute("address", std::to_string(address).c_str());
 
     if (node_type == NodeType::setting) {
@@ -183,14 +208,24 @@ struct Setting : public XMLable {
       } else if (setting_type == SettingType::detector) {
           printer.PushAttribute("type", "detector");
           printer.PushAttribute("value", value_text.c_str());
+      }  else if (setting_type == SettingType::int_menu) {
+        printer.PushAttribute("type", "int_menu");
+        printer.PushAttribute("value", std::to_string(value_int).c_str());
+        for (auto &q : int_menu_items) {
+          printer.OpenElement("menu_item");
+          printer.PushAttribute("item_value", std::to_string(q.first).c_str());
+          printer.PushAttribute("item_text", q.second.c_str());
+          printer.CloseElement();
+        }
       }
       if ((setting_type == SettingType::integer) ||
           (setting_type == SettingType::floating)) {
         printer.PushAttribute("minimum", std::to_string(minimum).c_str());
         printer.PushAttribute("maximum", std::to_string(maximum).c_str());
         printer.PushAttribute("step", std::to_string(step).c_str());
-        printer.PushAttribute("unit", unit.c_str());
       }
+      if (unit.size())
+        printer.PushAttribute("unit", unit.c_str());
     }
 
     if (!description.empty())

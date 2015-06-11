@@ -82,6 +82,11 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
     } else if (set.setting_type == Pixie::SettingType::boolean) {
       QCheckBox *editor = new QCheckBox(parent);
       return editor;
+    } else if (set.setting_type == Pixie::SettingType::int_menu) {
+      QComboBox *editor = new QComboBox(parent);
+      for (auto &q : set.int_menu_items)
+        editor->addItem(QString::fromStdString(q.second), QVariant::fromValue(q.first));
+      return editor;
     }
   } else if (index.data(Qt::EditRole).type() == QVariant::Double) {
     QDoubleSpinBox *editor = new QDoubleSpinBox(parent);
@@ -96,11 +101,20 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
 void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &index ) const
 {
   if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
-    Pixie::Detector det = qvariant_cast<Pixie::Detector>(index.data(Qt::EditRole));
-    QString currentText = QString::fromStdString(det.name_);
-    int cbIndex = cb->findText(currentText);
-    if(cbIndex >= 0)
-      cb->setCurrentIndex(cbIndex);
+    if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
+      Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
+      if (set.int_menu_items.count(set.value_int)) {
+        int cbIndex = cb->findText(QString::fromStdString(set.int_menu_items[set.value_int]));
+        if(cbIndex >= 0)
+          cb->setCurrentIndex(cbIndex);
+      }
+    } else { // needs check
+      Pixie::Detector det = qvariant_cast<Pixie::Detector>(index.data(Qt::EditRole));
+      QString currentText = QString::fromStdString(det.name_);
+      int cbIndex = cb->findText(currentText);
+      if(cbIndex >= 0)
+        cb->setCurrentIndex(cbIndex);
+    }
   } else if (QDoubleSpinBox *sb = qobject_cast<QDoubleSpinBox *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
       Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
@@ -115,7 +129,7 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
       Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
       sb->setRange(static_cast<int64_t>(set.minimum), static_cast<int64_t>(set.maximum));
       sb->setSingleStep(static_cast<int64_t>(set.step));
-      sb->setValue(static_cast<int64_t>(set.value)); //value_int
+      sb->setValue(static_cast<int64_t>(set.value_int));
     } else
       sb->setValue(index.data(Qt::EditRole).toInt());
   } else if (QLineEdit *le = qobject_cast<QLineEdit *>(editor)) {

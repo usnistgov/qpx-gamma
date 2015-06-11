@@ -85,8 +85,11 @@ void DialogSpectrumTemplate::updateData() {
 
   ui->colPicker->setCurrentColor(QColor::fromRgba(myTemplate.appearance));
 
-  ui->patternMatch->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(myTemplate.match_pattern), true));
-  ui->patternAdd->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(myTemplate.add_pattern), false));
+  ui->patternMatch->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(myTemplate.match_pattern), 25, true, 16));
+  ui->patternAdd->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(myTemplate.add_pattern), 25, false, 16));
+
+  ui->patternMatch->setMinimumSize(ui->patternMatch->sizeHint());
+  ui->patternAdd->setMinimumSize(ui->patternAdd->sizeHint());
 
   QString descr = QString::fromStdString(myTemplate.description) + "\n";
   if (myTemplate.output_types.size()) {
@@ -218,9 +221,9 @@ QVariant TableSpectraTemplates::data(const QModelIndex &index, int role) const
     case 3:
       return QString::number(pow(2,templates_.get(row).bits));
     case 4:
-      return QVariant::fromValue(QpxPattern(QVector<int16_t>::fromStdVector(templates_.get(row).match_pattern), true));
+      return QVariant::fromValue(QpxPattern(QVector<int16_t>::fromStdVector(templates_.get(row).match_pattern), 20, true, 16));
     case 5:
-      return QVariant::fromValue(QpxPattern(QVector<int16_t>::fromStdVector(templates_.get(row).add_pattern), false));
+      return QVariant::fromValue(QpxPattern(QVector<int16_t>::fromStdVector(templates_.get(row).add_pattern), 20, false, 16));
     case 6:
       return QColor::fromRgba(templates_.get(row).appearance);
     case 7:
@@ -299,6 +302,7 @@ DialogSpectraTemplates::DialogSpectraTemplates(XMLableDB<Pixie::Spectrum::Templa
   ui->spectraSetupView->verticalHeader()->hide();
   ui->spectraSetupView->horizontalHeader()->setStretchLastSection(true);
   ui->spectraSetupView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+  ui->spectraSetupView->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->spectraSetupView->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->spectraSetupView->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->spectraSetupView->show();
@@ -308,6 +312,7 @@ DialogSpectraTemplates::DialogSpectraTemplates(XMLableDB<Pixie::Spectrum::Templa
 
   table_model_.update();
   ui->spectraSetupView->resizeColumnsToContents();
+  ui->spectraSetupView->resizeRowsToContents();
 }
 
 DialogSpectraTemplates::~DialogSpectraTemplates()
@@ -407,6 +412,7 @@ void DialogSpectraTemplates::on_pushDelete_clicked()
   table_model_.update();
   toggle_push();
 }
+
 
 void DialogSpectraTemplates::add_template(Pixie::Spectrum::Template newTemplate) {
   //notify if duplicate

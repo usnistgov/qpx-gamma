@@ -130,19 +130,20 @@ void QpxSpectraWidget::mouseReleaseEvent(QMouseEvent *event)
 {
   int flag = flagAt(event->x(), event->y());
 
-  if ((flag > -1) && (flag < my_spectra_.size())) {
-    if (event->button()==Qt::RightButton) {
-      my_spectra_[flag].selected = !my_spectra_[flag].selected;
-      all_spectra_->by_name(my_spectra_[flag].name.toStdString())->set_visible(my_spectra_[flag].selected);
-      update();
-      emit stateChanged();
-    } else if (event->button()==Qt::LeftButton) {
-      selected_ = flag;
-      update();
-      emit contextRequested();
-    }
+  if (event->button()==Qt::LeftButton) {
+    selected_ = flag;
+    update();
+    emit contextRequested();
+  }
+
+  if ((event->button()==Qt::RightButton) && (flag > -1) && (flag < my_spectra_.size())) {
+    my_spectra_[flag].selected = !my_spectra_[flag].selected;
+    all_spectra_->by_name(my_spectra_[flag].name.toStdString())->set_visible(my_spectra_[flag].selected);
+    update();
+    emit stateChanged();
   }
 }
+
 
 QString QpxSpectraWidget::selected() {
   if ((selected_ > -1) && (selected_ < my_spectra_.size()))
@@ -161,4 +162,28 @@ int QpxSpectraWidget::flagAt(int x, int y) {
   if ((phigh == height_total) && (pwide > width_last))
     return -1;
   return (phigh * max_wide) + pwide;
+}
+
+void QpxSpectraWidget::show_all() {
+  for (auto &q : my_spectra_)
+    if (!q.selected) {
+      all_spectra_->by_name(q.name.toStdString())->set_visible(true);
+      q.selected = true;
+    }
+  update();
+  emit stateChanged();
+}
+
+void QpxSpectraWidget::hide_all() {
+  for (auto &q : my_spectra_)
+    if (q.selected) {
+      all_spectra_->by_name(q.name.toStdString())->set_visible(false);
+      q.selected = false;
+    }
+  update();
+  emit stateChanged();
+}
+
+int QpxSpectraWidget::available_count() {
+  return my_spectra_.size();
 }

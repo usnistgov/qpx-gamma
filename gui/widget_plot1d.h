@@ -26,15 +26,7 @@
 
 #include <QWidget>
 #include "qsquarecustomplot.h"
-
-struct Marker {
-  double position;
-  QMap<QString, QPen> themes;
-  QPen default_pen;
-  bool visible;
-
-  Marker() : position(0), visible(false), default_pen(Qt::gray, 1, Qt::SolidLine) {}
-};
+#include "marker.h"
 
 namespace Ui {
 class WidgetPlot1D;
@@ -66,13 +58,15 @@ public:
   void addGraph(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness);
   void setYBounds(const std::map<double, double> &minima, const std::map<double, double> &maxima);
 
+  void use_calibrated(bool);
+
 signals:
 
   void clickedLeft(double);
   void clickedRight(double);
 
 private slots:
-  void plot_mouse_clicked(double x, double y, QMouseEvent *event);
+  void plot_mouse_clicked(double x, double y, QMouseEvent *event, bool channels);
   void plot_mouse_press(QMouseEvent*);
   void plot_mouse_release(QMouseEvent*);
   void plot_rezoom();
@@ -84,7 +78,6 @@ private slots:
   void on_pushNight_clicked();
 
 private:
-  void connectPlot();
   void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
   void calc_y_bounds(double lower, double upper);
 
@@ -94,9 +87,11 @@ private:
   std::list<Marker> my_cursors_;
   std::vector<Marker> rect;
 
-  int force_rezoom_;
+  bool force_rezoom_;
   double minx, maxx;
   double miny, maxy;
+
+  bool use_calibrated_;
 
   double minx_zoom, maxx_zoom;
 
@@ -104,8 +99,8 @@ private:
 
   QMenu menuScaleType;
   QMenu menuPlotStyle;
-  int plotStyle;
   QString color_theme_;
+  int plotStyle;
 };
 
 #endif // WIDGET_PLOST1D_H

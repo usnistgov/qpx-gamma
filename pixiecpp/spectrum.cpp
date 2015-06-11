@@ -168,6 +168,20 @@ std::vector<Detector> Spectrum::get_detectors() const {
   return detectors_;
 }
 
+Detector Spectrum::get_detector(uint16_t which) const {
+  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+  for (int i=0; i<detectors_.size(); ++i) {
+    if (add_pattern_[i] == 1) {
+      if (which == 0)
+        return detectors_[i];
+      else
+        which--;
+    }
+  }
+  return Detector();
+}
+
+
 void Spectrum::recalc_energies() {
   //private; no lock required
 
@@ -182,8 +196,6 @@ void Spectrum::recalc_energies() {
       Calibration this_calib;
       if (detectors_[phys_chan].energy_calibrations_.has_a(Calibration(bits_)))
         this_calib = detectors_[phys_chan].energy_calibrations_.get(Calibration(bits_));
-      else if (detectors_[phys_chan].energy_calibrations_.has_a(Calibration(0)))
-        this_calib = detectors_[phys_chan].energy_calibrations_.get(Calibration(0));
       for (uint32_t j=0; j<resolution_; j++)
         energies_[calib_chan][j] = this_calib.transform(j);
       calib_chan++;

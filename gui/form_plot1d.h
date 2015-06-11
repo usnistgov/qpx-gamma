@@ -48,10 +48,10 @@ public:
   void reset_content();
 
 public slots:
-  void set_markers2d(double x, double y);
+  void set_markers2d(Marker x, Marker y);
 
 signals:
-  void marker_set(double n);
+  void marker_set(Marker n);
   void requestCalibration(QString);
 
 private slots:
@@ -68,13 +68,23 @@ private slots:
 
   void on_pushCalibrate_clicked();
 
+
+  void on_pushShowAll_clicked();
+
+  void on_pushHideAll_clicked();
+
 private:
 
   Ui::FormPlot1D *ui;
 
+  int bits;
+  Pixie::Calibration calib_;
+
   Pixie::SpectraSet *mySpectra;
 
   Marker moving, markx, marky;
+
+  void calibrate_markers();
 };
 
 #endif // WIDGET_PLOT1D_H

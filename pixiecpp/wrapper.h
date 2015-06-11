@@ -38,11 +38,6 @@ namespace Pixie {
 
   const double poll_interval_default = 100; //in millisecs
 
-  //these will have to be redone for multiple modules
-  const uint32_t max_buf_len  = 8192; //get this from module
-  const uint32_t list_mem_len32 = 13312;
-  const uint32_t list_mem_len16 = 2 * list_mem_len32;
-
   enum class RunType : uint16_t {traces = 0x100, full = 0x101, psa_only = 0x102, compressed = 0x103};
 
 class Wrapper {
@@ -72,21 +67,15 @@ class Wrapper {
               SpectraSet &spectra, boost::atomic<bool> &interruptor,
               bool double_buffer);
   
-  void getFakeMca(Simulator &simulator, SpectraSet &spectra,
+  void getFakeMca(std::string source, SpectraSet &spectra,
                   uint64_t timeout, boost::atomic<bool> &interruptor);
 
   /////CONTROL TASKS/////
-  void control_set_DAC(uint8_t module);
-  void control_connect(uint8_t module);
-  void control_disconnect(uint8_t module);
-  void control_program_Fippi(uint8_t module);
   void control_measure_baselines(uint8_t module);
-  void control_test_EM_write(uint8_t module); 
-  void control_test_HM_write(uint8_t module); 
   void control_compute_BLcut();
   void control_find_tau();
   void control_adjust_offsets();
-  
+
  private:
   Settings  my_settings_;
   int poll_interval_ms_;  //allow this to change
@@ -105,7 +94,7 @@ class Wrapper {
                    SynchronizedQueue<Spill*>* spill_queue, boost::atomic<bool>* interruptor);
   void worker_run_dbl(RunType type, uint64_t timeout_limit,
                        SynchronizedQueue<Spill*>* spill_queue, boost::atomic<bool>* interruptor);
-  void worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queue,
+  void worker_fake(std::string source, SynchronizedQueue<Spill*>* data_queue,
                     uint64_t timeout_limit, boost::atomic<bool>* interruptor);
 
   //start and stop runs
@@ -130,6 +119,8 @@ class Wrapper {
   void timing_stats(CustomTimer&, CustomTimer&,
                            CustomTimer&, CustomTimer&,
                            CustomTimer&, uint32_t);
+
+  std::string itobin (uint32_t bin);
   
   inline static void wait_ms(int millisecs) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(millisecs));  

@@ -45,7 +45,7 @@ protected:
     void run() {
       while (spectra_->wait_ready()) {
         emit plot_ready();
-        QThread::sleep(1);
+        QThread::sleep(3);
       }
     }
 

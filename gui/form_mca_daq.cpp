@@ -58,13 +58,16 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixi
   }
   mca_load_formats_ = catFileTypes(filetypes);
 
-  //plots
+  //1d
   ui->Plot1d->setSpectra(spectra_);
-  ui->Plot2d->setSpectra(spectra_);
-  connect(ui->Plot2d, SIGNAL(markers_set(double,double)), ui->Plot1d, SLOT(set_markers2d(double,double)));
-  connect(ui->Plot1d, SIGNAL(marker_set(double)), ui->Plot2d, SLOT(set_marker(double)));
   connect(ui->Plot1d, SIGNAL(requestCalibration(QString)), this, SLOT(reqCalib(QString)));
   connect(&plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
+
+  //2d
+  ui->Plot2d->setSpectra(spectra_);
+  connect(ui->Plot1d, SIGNAL(marker_set(Marker)), ui->Plot2d, SLOT(set_marker(Marker)));
+  connect(ui->Plot2d, SIGNAL(markers_set(Marker,Marker)), ui->Plot1d, SLOT(set_markers2d(Marker,Marker)));
+
   plot_thread_.start();
 }
 
@@ -119,13 +122,33 @@ void FormMcaDaq::loadSettings() {
   settings_.beginGroup("Lab");
   ui->boxMcaMins->setValue(settings_.value("mca_mins", 5).toInt());
   ui->boxMcaSecs->setValue(settings_.value("mca_secs", 0).toInt());
+  ui->pushEnable2d->setChecked(settings_.value("2d_visible", true).toBool());
+
+  settings_.beginGroup("MatrixPlot");
+  ui->Plot2d->set_zoom(settings_.value("zoom", 50).toDouble());
+  ui->Plot2d->set_gradient(settings_.value("gradient", "hot").toString());
+  ui->Plot2d->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
+  ui->Plot2d->set_show_legend(settings_.value("show_legend", false).toBool());
   settings_.endGroup();
+
+  settings_.endGroup();
+
+  on_pushEnable2d_clicked();
 }
 
 void FormMcaDaq::saveSettings() {
   settings_.beginGroup("Lab");
   settings_.setValue("mca_mins", ui->boxMcaMins->value());
   settings_.setValue("mca_secs", ui->boxMcaSecs->value());
+  settings_.setValue("2d_visible", ui->pushEnable2d->isChecked());
+
+  settings_.beginGroup("MatrixPlot");
+  settings_.setValue("zoom", ui->Plot2d->zoom());
+  settings_.setValue("gradient", ui->Plot2d->gradient());
+  settings_.setValue("scale_type", ui->Plot2d->scale_type());
+  settings_.setValue("show_legend", ui->Plot2d->show_legend());
+  settings_.endGroup();
+
   settings_.endGroup();
 }
 
@@ -158,6 +181,7 @@ void FormMcaDaq::clearGraphs() //rename this
   spectra_.clear();
   updateSpectraUI();
   ui->Plot1d->reset_content();
+
   ui->Plot2d->reset_content(); //is this necessary?
 
   spectra_.activate();
@@ -173,6 +197,7 @@ void FormMcaDaq::update_plots() {
     this->setCursor(Qt::WaitCursor);
     ui->Plot2d->update_plot();
   }
+
   if (ui->Plot1d->isVisible()) {
     this->setCursor(Qt::WaitCursor);
     ui->Plot1d->update_plot();
@@ -382,4 +407,18 @@ void FormMcaDaq::calib_destroyed() {
 
 void FormMcaDaq::replot() {
   update_plots();
+}
+
+void FormMcaDaq::on_pushEnable2d_clicked()
+{
+  if (ui->pushEnable2d->isChecked()) {
+    ui->Plot2d->show();
+    update_plots();
+  } else
+    ui->Plot2d->hide();
+}
+
+void FormMcaDaq::on_pushForceRefresh_clicked()
+{
+    update_plots();
 }

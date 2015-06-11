@@ -1,6 +1,6 @@
 #!/bin/bash
-qmake cpx.pro
-make release
+#qmake cpx.pro
+#make release
 qmake qpx.pro
 make release
 SOURCEDIR=./samples/*

@@ -36,22 +36,29 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   ui->mcaPlot->yAxis->axisRect()->setRangeDrag(Qt::Horizontal);
   ui->mcaPlot->setInteraction(QCP::iRangeZoom, true);
   ui->mcaPlot->yAxis->axisRect()->setRangeZoom(Qt::Horizontal);
-  connectPlot();
+
+  connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*,bool)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*,bool)));
+  connect(ui->mcaPlot, SIGNAL(beforeReplot()), this, SLOT(plot_rezoom()));
+  connect(ui->mcaPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(plot_mouse_release(QMouseEvent*)));
+  connect(ui->mcaPlot, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(plot_mouse_press(QMouseEvent*)));
 
   minx = 0; maxx = 0;
   minx_zoom = 0; maxx_zoom = 0;
   miny = std::numeric_limits<double>::max();
   maxy = - std::numeric_limits<double>::max();
 
-  force_rezoom_ = 0;
+  force_rezoom_ = false;
+
+  use_calibrated_ = false;
 
   plotStyle = 1;
   menuPlotStyle.addAction("Scatter");
+  menuPlotStyle.addAction("Step");
   menuPlotStyle.addAction("Lines");
   menuPlotStyle.addAction("Fill");
   for (auto &q : menuPlotStyle.actions()) {
     q->setCheckable(true);
-    if (q->text() == "Lines")
+    if (q->text() == "Step")
       q->setChecked(true);
   }
   ui->toolPlotStyle->setMenu(&menuPlotStyle);
@@ -72,14 +79,6 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   redraw();
 }
 
-void WidgetPlot1D::connectPlot()
-{
-  connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*)));
-  connect(ui->mcaPlot, SIGNAL(beforeReplot()), this, SLOT(plot_rezoom()));
-  connect(ui->mcaPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(plot_mouse_release(QMouseEvent*)));
-  connect(ui->mcaPlot, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(plot_mouse_press(QMouseEvent*)));
-}
-
 WidgetPlot1D::~WidgetPlot1D()
 {
   delete ui;
@@ -90,18 +89,18 @@ void WidgetPlot1D::clearGraphs()
   ui->mcaPlot->clearGraphs();
   minima_.clear();
   maxima_.clear();
+  use_calibrated_ = false;
 }
 
 void WidgetPlot1D::clearExtras()
 {
-  PL_DBG << "Clear extras clled";
   my_markers_.clear();
   my_cursors_.clear();
   rect.clear();
 }
 
 void WidgetPlot1D::rescale() {
-  force_rezoom_ = 1;
+  force_rezoom_ = true;
   plot_rezoom();
 }
 
@@ -139,6 +138,11 @@ void WidgetPlot1D::setLogScale(bool log) {
   }
 }
 
+void WidgetPlot1D::use_calibrated(bool uc) {
+  use_calibrated_ = uc;
+  replot_markers();
+}
+
 void WidgetPlot1D::set_markers(const std::list<Marker>& markers) {
   my_markers_ = markers;
 }
@@ -171,10 +175,15 @@ void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, 
   thispen.setWidth(thickness);
   ui->mcaPlot->graph(g)->setPen(thispen);
 
-  if (plotStyle == 2)
+  if (plotStyle == 3) {
     ui->mcaPlot->graph(g)->setBrush(QBrush(color));
-  if (plotStyle) {
     ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsLine);
+    ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle::ssNone);
+  } else if (plotStyle == 2) {
+    ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsLine);
+    ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle::ssNone);
+  } else if (plotStyle == 1) {
+    ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsStepCenter);
     ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle::ssNone);
   } else {
     ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, thickness));
@@ -192,9 +201,6 @@ void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, 
 }
 
 void WidgetPlot1D::plot_rezoom() {
-  if (force_rezoom_ == -1)
-    return;
-
   if (minima_.empty() || maxima_.empty()) {
     ui->mcaPlot->yAxis->rescale();
     return;
@@ -203,12 +209,12 @@ void WidgetPlot1D::plot_rezoom() {
   double upperc = ui->mcaPlot->xAxis->range().upper;
   double lowerc = ui->mcaPlot->xAxis->range().lower;
 
-  if ((force_rezoom_ == 0) && (lowerc == minx_zoom) && (upperc == maxx_zoom))
+  if (!force_rezoom_ && (lowerc == minx_zoom) && (upperc == maxx_zoom))
     return;
 
   minx_zoom = lowerc;
   maxx_zoom = upperc;
-  force_rezoom_ = 0;
+  force_rezoom_ = false;
 
   calc_y_bounds(lowerc, upperc);
 
@@ -228,10 +234,10 @@ void WidgetPlot1D::calc_y_bounds(double lower, double upper) {
       maxy = it->second;
   }
 
-  maxy = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(maxy) - 50);
+  maxy = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(maxy) - 60);
 
-  if ((maxy > 0.7) && (miny == 0))
-    miny = 0.7;
+  if ((maxy > 1) && (miny == 0))
+    miny = 1;
 }
 
 void WidgetPlot1D::setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2) {
@@ -275,11 +281,17 @@ void WidgetPlot1D::replot_markers() {
   for (auto &q : my_markers_) {
     QCPItemTracer *top_crs = nullptr;
     if (q.visible) {
+      double pos = 0;
+      if (use_calibrated_)
+        pos = q.energy;
+      else
+        pos = q.channel;
+
       double max = std::numeric_limits<double>::lowest();
       int total = ui->mcaPlot->graphCount();
       for (int i=0; i < total; i++) {
-        if ((ui->mcaPlot->graph(i)->data()->firstKey() <= q.position)
-            && (q.position <= ui->mcaPlot->graph(i)->data()->lastKey()))
+        if ((ui->mcaPlot->graph(i)->data()->firstKey() <= pos)
+            && (pos <= ui->mcaPlot->graph(i)->data()->lastKey()))
         {
           QPen thispen = ui->mcaPlot->graph(i)->pen();
           QColor thiscol = thispen.color();
@@ -292,7 +304,7 @@ void WidgetPlot1D::replot_markers() {
           crs->setStyle(QCPItemTracer::tsCircle);
           crs->setSize(4);
           crs->setGraph(ui->mcaPlot->graph(i));
-          crs->setGraphKey(q.position);
+          crs->setGraphKey(pos);
           crs->setInterpolating(true);
           crs->setPen(thispen);
           ui->mcaPlot->addItem(crs);
@@ -307,21 +319,41 @@ void WidgetPlot1D::replot_markers() {
       }
     }
     if (top_crs != nullptr) {
+      QPen qpen;
+      if (q.themes.count(color_theme_))
+        qpen = q.themes[color_theme_];
+      else
+        qpen = q.default_pen;
       QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
       line->start->setParentAnchor(top_crs->position);
       line->start->setCoords(0, -27);
       line->end->setParentAnchor(top_crs->position);
       line->end->setCoords(0, -2);
       line->setHead(QCPLineEnding(QCPLineEnding::esSpikeArrow, 7, 7));
-      if (q.themes.count(color_theme_))
-        line->setPen(q.themes[color_theme_]);
-      else
-        line->setPen(q.default_pen);
+      line->setPen(qpen);
       ui->mcaPlot->addItem(line);
+
+      QCPItemText *markerText = new QCPItemText(ui->mcaPlot);
+      markerText->position->setParentAnchor(top_crs->position);
+      markerText->setPositionAlignment(Qt::AlignHCenter|Qt::AlignBottom);
+      markerText->position->setCoords(0, -30);
+      markerText->setText(QString::number(q.energy));
+      markerText->setTextAlignment(Qt::AlignLeft);
+      markerText->setFont(QFont("Helvetica", 9));
+      markerText->setPen(qpen);
+      markerText->setColor(qpen.color());
+      markerText->setPadding(QMargins(1, 1, 1, 1));
+      ui->mcaPlot->addItem(markerText);
     }
   }
 
   for (auto &q : my_cursors_) {
+    double pos = 0;
+    if (use_calibrated_)
+      pos = q.energy;
+    else
+      pos = q.channel;
+
     if (!q.visible)
       continue;
     int total = ui->mcaPlot->graphCount();
@@ -334,7 +366,7 @@ void WidgetPlot1D::replot_markers() {
       crs->setStyle(QCPItemTracer::tsCircle);
       crs->setSize(4);
       crs->setGraph(ui->mcaPlot->graph(i));
-      crs->setGraphKey(q.position);
+      crs->setGraphKey(pos);
       crs->setInterpolating(true);
       ui->mcaPlot->addItem(crs);
     }
@@ -346,10 +378,20 @@ void WidgetPlot1D::replot_markers() {
 
     calc_y_bounds(lowerc, upperc);
 
+    double pos1 = 0, pos2 = 0;
+    if (use_calibrated_) {
+      pos1 = rect[0].energy;
+      pos2 = rect[1].energy;
+    } else {
+      pos1 = rect[0].channel;
+      pos1 = rect[1].channel;
+    }
+
+
     QCPItemRect *cprect = new QCPItemRect(ui->mcaPlot);
-    double x1 = rect[0].position;
+    double x1 = pos1;
     double y1 = maxy;
-    double x2 = rect[1].position;
+    double x2 = pos2;
     double y2 = miny;
 
     cprect->topLeft->setCoords(x1, y1);
@@ -368,7 +410,7 @@ void WidgetPlot1D::replot_markers() {
 }
 
 
-void WidgetPlot1D::plot_mouse_clicked(double x, double y, QMouseEvent* event) {
+void WidgetPlot1D::plot_mouse_clicked(double x, double y, QMouseEvent* event, bool channels) {
   if (event->button() == Qt::RightButton) {
     emit clickedRight(x);
   } else {
@@ -379,21 +421,23 @@ void WidgetPlot1D::plot_mouse_clicked(double x, double y, QMouseEvent* event) {
 void WidgetPlot1D::plot_mouse_press(QMouseEvent*) {
   disconnect(ui->mcaPlot, 0, this, 0);
   connect(ui->mcaPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(plot_mouse_release(QMouseEvent*)));
-  force_rezoom_ = -1;
+  force_rezoom_ = false;
 }
 
 void WidgetPlot1D::plot_mouse_release(QMouseEvent*) {
-  connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*)));
+  connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*,bool)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*,bool)));
   connect(ui->mcaPlot, SIGNAL(beforeReplot()), this, SLOT(plot_rezoom()));
   connect(ui->mcaPlot, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(plot_mouse_press(QMouseEvent*)));
-  force_rezoom_ = 0;
+  force_rezoom_ = true;
   plot_rezoom();
   ui->mcaPlot->replot();
 }
 
 void WidgetPlot1D::on_pushResetScales_clicked()
 {
-  ui->mcaPlot->rescaleAxes();
+  ui->mcaPlot->xAxis->rescale();
+  force_rezoom_ = true;
+  plot_rezoom();
   ui->mcaPlot->replot();
 }
 
@@ -405,20 +449,26 @@ void WidgetPlot1D::plotStyleChosen(QAction* choice) {
   QString str = choice->text();
   if (str == "Scatter")
     plotStyle = 0;
-  else if (str == "Lines")
+  else if (str == "Step")
     plotStyle = 1;
-  else if (str == "Fill")
+  else if (str == "Lines")
     plotStyle = 2;
+  else if (str == "Fill")
+    plotStyle = 3;
   int total = ui->mcaPlot->graphCount();
   for (int i=0; i < total; i++) {
     QColor this_color = ui->mcaPlot->graph(i)->pen().color();
-    if (plotStyle == 2) {
+    if (plotStyle == 3) {
       ui->mcaPlot->graph(i)->setBrush(QBrush(this_color));
+      ui->mcaPlot->graph(i)->setLineStyle(QCPGraph::lsLine);
+      ui->mcaPlot->graph(i)->setScatterStyle(QCPScatterStyle::ssNone);
+    } else if (plotStyle == 2) {
+      ui->mcaPlot->graph(i)->setBrush(QBrush());
       ui->mcaPlot->graph(i)->setLineStyle(QCPGraph::lsLine);
       ui->mcaPlot->graph(i)->setScatterStyle(QCPScatterStyle::ssNone);
     } else if (plotStyle == 1) {
       ui->mcaPlot->graph(i)->setBrush(QBrush());
-      ui->mcaPlot->graph(i)->setLineStyle(QCPGraph::lsLine);
+      ui->mcaPlot->graph(i)->setLineStyle(QCPGraph::lsStepCenter);
       ui->mcaPlot->graph(i)->setScatterStyle(QCPScatterStyle::ssNone);
     } else {
       ui->mcaPlot->graph(i)->setBrush(QBrush());

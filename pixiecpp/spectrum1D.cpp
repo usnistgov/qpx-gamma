@@ -487,7 +487,7 @@ bool Spectrum1D::read_ava(std::string name) {
   if ((branch != nullptr) &&
       ((branch = branch->FirstChildElement("model")) != nullptr)) {
     if (std::string(branch->Attribute("type")) == "polynomial")
-      newcalib.model_ = 1;
+      newcalib.model_ = CalibrationModel::polynomial;
     std::vector<double> encalib;
     branch = branch->FirstChildElement("coefficient");
     while ((branch != nullptr) && (branch->Attribute("value")) != nullptr) {

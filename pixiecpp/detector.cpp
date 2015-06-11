@@ -35,8 +35,8 @@ namespace Pixie {
 Calibration::Calibration() {
   calib_date_ = boost::posix_time::microsec_clock::local_time();
   type_ = "Energy";
-  units_ = "";
-  model_ = 1;
+  units_ = "channels";
+  model_ = CalibrationModel::polynomial;
   bits_ = 0;
   coefficients_.resize(2);
   coefficients_[0] = 0.0;
@@ -44,12 +44,38 @@ Calibration::Calibration() {
 }
 
 double Calibration::transform(double chan) const {
-  if (model_ == 1)
+  if (bits_ && (model_ == CalibrationModel::polynomial))
     return polynomial(chan);
   else
     return chan;
 }
 
+double Calibration::transform(double chan, uint16_t bits) const {
+  if (!bits_ || !bits)
+    return chan;
+  
+//  PL_DBG << "will shift " << chan << " from " << bits << " to " << bits_;
+
+  if (bits > bits_)
+    chan = chan / pow(2, bits - bits_);
+  if (bits < bits_)
+    chan = chan * pow(2, bits_ - bits);
+
+  double re = transform(chan);
+//  PL_DBG << "chan " << chan << " -> energy " << re;
+
+  return re;
+}
+
+std::vector<double> Calibration::transform(std::vector<double> chans) const {
+  if (bits_ && (model_ == CalibrationModel::polynomial)) {
+    std::vector<double> results;
+    for (auto &q : chans)
+      results.push_back(polynomial(q));
+    return results;
+  } else
+    return chans;
+}
 
 double Calibration::polynomial(double chan) const {
   double temp = 0;
@@ -100,11 +126,11 @@ void Calibration::to_xml(tinyxml2::XMLPrinter& printer) const {
       
   printer.OpenElement("Equation");
   std::string  model_str = "undefined";
-  if (model_ == 1)
+  if (model_ == CalibrationModel::polynomial)
     model_str = "Polynomial";
   printer.PushAttribute("Model", model_str.c_str());
 
-  if (model_ && (coefficients_.size())){
+  if ((model_ != CalibrationModel::none) && (coefficients_.size())){
     printer.OpenElement("Coefficients");
     printer.PushText(coef_to_string().c_str());
     printer.CloseElement(); // Coeff
@@ -135,7 +161,7 @@ void Calibration::from_xml(tinyxml2::XMLElement* root) {
   if (EqnData != NULL) {
     std::string model_str = std::string(EqnData->Attribute("Model"));
     if (model_str == "Polynomial")
-      model_ = 1;
+      model_ = CalibrationModel::polynomial;
   }
 
   tinyxml2::XMLElement* CoefData = EqnData->FirstChildElement("Coefficients");
@@ -149,6 +175,13 @@ void Calibration::from_xml(tinyxml2::XMLElement* root) {
 // Detector ////////
 ////////////////////
 
+Calibration Detector::highest_res_calib() {
+  Calibration result;
+  for (int i=0; i<energy_calibrations_.size(); ++i)
+    if (energy_calibrations_.get(i).bits_ >= result.bits_)
+      result = energy_calibrations_.get(i);
+  return result;
+}
 
 void Detector::to_xml(tinyxml2::XMLPrinter& printer) const {
 
@@ -162,11 +195,7 @@ void Detector::to_xml(tinyxml2::XMLPrinter& printer) const {
   printer.PushText(type_.c_str());
   printer.CloseElement();
 
-  if ((energy_calibrations_.size() == 1) &&
-      (energy_calibrations_.get(0).bits_ == 0))
-    energy_calibrations_.get(0).to_xml(printer);
-  else
-    energy_calibrations_.to_xml(printer);
+  energy_calibrations_.to_xml(printer);
 
   printer.OpenElement("Optimization"); 
   for (std::size_t j = 0; j < setting_values_.size(); j++) {
@@ -193,7 +222,7 @@ void Detector::from_xml(tinyxml2::XMLElement* root) {
     type_ = std::string(el->GetText());
 
   if (el = root->FirstChildElement(Calibration().xml_element_name().c_str())) {
-    Calibration newCali;
+    Calibration newCali;  //this branch for bckwds compatibility with n42 calib entries
     newCali.from_xml(el);
     energy_calibrations_.add(newCali);
   } else if (el = root->FirstChildElement(energy_calibrations_.xml_element_name().c_str())) {

@@ -70,7 +70,7 @@ private:
   TreeItem *rootItem;
 
 public:  
-  explicit TreeSettings(const Pixie::Setting &data, QObject *parent = 0);
+  explicit TreeSettings(QObject *parent = 0);
   ~TreeSettings();
 
   QVariant data(const QModelIndex &index, int role) const Q_DECL_OVERRIDE;
@@ -91,8 +91,8 @@ public:
 
   const Pixie::Setting & get_tree();
 
-
   void update(const Pixie::Setting &data);
+  void set_structure(const Pixie::Setting &data);
 
 signals:
   void detectors_changed();

@@ -54,9 +54,6 @@ void FormBootup::toggle_push(bool enable, Pixie::LiveStatus live) {
   bool dead = (live == Pixie::LiveStatus::dead);
 
   ui->pushBootFiles->setEnabled(enable && dead);
-  ui->cwCheck->setEnabled(enable && dead);
-  ui->moduleSlotBox->setEnabled(enable && dead);
-
   ui->bootButton->setEnabled(enable);
 }
 
@@ -64,14 +61,10 @@ void FormBootup::on_bootButton_clicked() {
   if (pixie_.settings().live() == Pixie::LiveStatus::dead) {
     emit toggleIO(false);
     emit statusText("Booting...");
-    PL_INFO << "Booting pixie...";
-    int myslot = ui->moduleSlotBox->value();
-    uint32_t thresh = ui->spinThresh->value();
-    pixie_.settings().set_threshold(thresh);
-    std::vector<uint8_t> myslots = {static_cast<uint8_t>(myslot)}; //one and only module for now;
+    PL_INFO << "Booting...";
+    std::vector<uint8_t> myslots = {static_cast<uint8_t>(0)}; //one and only module for now;
 
-    runner_thread_.do_boot(ui->cwCheck->isChecked(),
-                           boot_files_, myslots);
+    runner_thread_.do_boot(true, boot_files_, myslots);
   } else {
     PL_INFO << "Shutting down";
     pixie_.die();
@@ -101,8 +94,6 @@ void FormBootup::updateBootFiles(std::vector<std::string> newfiles) {
 
 void FormBootup::saveSettings() {
   settings_.beginGroup("Pixie");
-  settings_.setValue("slot", ui->moduleSlotBox->value());
-  settings_.setValue("auto_cw", ui->cwCheck->isChecked());
   settings_.setValue("boot_file_0", QString::fromStdString(boot_files_[0]));
   settings_.setValue("boot_file_1", QString::fromStdString(boot_files_[1]));
   settings_.setValue("boot_file_2", QString::fromStdString(boot_files_[2]));
@@ -117,8 +108,6 @@ void FormBootup::loadSettings() {
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
 
   settings_.beginGroup("Pixie");
-  ui->moduleSlotBox->setValue(settings_.value("slot", 0).toInt());
-  ui->cwCheck->setChecked(settings_.value("auto_cw", 1).toBool());
   boot_files_.resize(7);
   boot_files_[0] = settings_.value("boot_file_0", data_directory_ + "/XIA/Firmware/FippiP500.bin").toString().toStdString();
   boot_files_[1] = settings_.value("boot_file_1", data_directory_ + "/XIA/Firmware/syspixie_revC.bin").toString().toStdString();

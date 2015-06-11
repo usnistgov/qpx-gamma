@@ -59,7 +59,7 @@ Hit Wrapper::getOscil() {
     for (int i = 0; i < 4; i++) {     ///preset to 4 channels. Hardcoded
       oscil_traces.trace[i].resize(max_buf_len);
       oscil_traces.trace[i] = std::vector<U16>(oscil_data + (i*max_buf_len),
-                                          oscil_data + ((i+1)*max_buf_len));
+                                               oscil_data + ((i+1)*max_buf_len));
     }
     delete[] oscil_data;
   }
@@ -78,8 +78,6 @@ void Wrapper::getMca(RunType type, uint64_t timeout, SpectraSet& spectra,
   PL_INFO << "Multithreaded MCA acquisition: type " << static_cast<int>(type)
           << " scheduled for " << timeout << " seconds";
 
-  //  my_settings_.set_mod("RUN_TYPE",    static_cast<double>(type));
-  //  my_settings_.set_mod("MAX_EVENTS",  static_cast<double>(0));
   
   SynchronizedQueue<Spill*> rawQueue;
   SynchronizedQueue<Spill*> parsedQueue;
@@ -109,20 +107,16 @@ void Wrapper::getMca(RunType type, uint64_t timeout, SpectraSet& spectra,
   builder.join();
 }
 
-void Wrapper::getFakeMca(Simulator& source, SpectraSet& spectra,
-                              uint64_t timeout, boost::atomic<bool>& interruptor) {
+void Wrapper::getFakeMca(std::string source, SpectraSet& spectra,
+                         uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   boost::unique_lock<boost::mutex> lock(mutex_);
   PL_INFO << "Multithreaded MCA faking scheduled for " << timeout << " seconds";
 
   SynchronizedQueue<Spill*> eventQueue;
 
-  std::vector<Detector> detectors = my_settings_.get_detectors();
-  for (std::size_t i = 0; i < detectors.size(); i++)
-    source.settings.set_detector(Channel(i), detectors[i]);
-  
   boost::thread builder(boost::bind(&Pixie::Wrapper::worker_MCA, this, &eventQueue, &spectra));
-  worker_fake(&source, &eventQueue, timeout, &interruptor);
+  worker_fake(source, &eventQueue, timeout, &interruptor);
   while (eventQueue.size() > 0)
     wait_ms(1000);
   wait_ms(500);
@@ -142,14 +136,11 @@ ListData* Wrapper::getList(RunType type, uint64_t timeout,
 
   Spill* one_spill;
   ListData* result = new ListData;
- 
+
   int         numChans_;
   PL_INFO << "Multithreaded list mode acquisition: type " << static_cast<int>(type)
           << " scheduled for " << timeout << " seconds";
 
-  //  my_settings_.set_mod("RUN_TYPE",    static_cast<double>(type));
-  //  my_settings_.set_mod("MAX_EVENTS",  static_cast<double>(0));
-  
   SynchronizedQueue<Spill*> rawQueue;
   SynchronizedQueue<Spill*> parsedQueue;
 
@@ -179,72 +170,10 @@ ListData* Wrapper::getList(RunType type, uint64_t timeout,
       delete one_spill->stats;
     delete one_spill;
   }
-        
+
   parsedQueue.stop();
   return result;
 }
-
-
-void Wrapper::control_set_DAC(uint8_t module) {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  PL_INFO << "Pixie Control: set DAC";
-  //control_err(Pixie_Acquire_Data(0x0000, NULL, NULL, module));
-}
-
-void Wrapper::control_connect(uint8_t module) {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  PL_INFO << "Pixie Control: connect";
-  //control_err(Pixie_Acquire_Data(0x0001, NULL, NULL, module));
-}
-  
-void Wrapper::control_disconnect(uint8_t module) {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  PL_INFO << "Pixie Control: disconnect";
-  //control_err(Pixie_Acquire_Data(0x0002, NULL, NULL, module));
-}
-
-void Wrapper::control_program_Fippi(uint8_t module) {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  PL_INFO << "Pixie Control: program Fippi";
-  //control_err(Pixie_Acquire_Data(0x0005, NULL, NULL, module));
-}
-
-void Wrapper::control_measure_baselines(uint8_t module) {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  PL_INFO << "Pixie Control: measure baselines";
-  //control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, module));
-}
-
-void Wrapper::control_test_EM_write(uint8_t module) {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  PL_INFO << "Pixie Control: test EM write";
-  //control_err(Pixie_Acquire_Data(0x0016, NULL, NULL, module));
-}
-
-void Wrapper::control_test_HM_write(uint8_t module) {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  PL_INFO << "Pixie Control: test HM write";
-  //control_err(Pixie_Acquire_Data(0x001A, NULL, NULL, module));
-}
-
-void Wrapper::control_compute_BLcut() {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  PL_INFO << "Pixie Control: compute BLcut";
-  //control_err(Pixie_Acquire_Data(0x0080, NULL, NULL, 0));
-}
-
-void Wrapper::control_find_tau() {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  PL_INFO << "Pixie Control: find tau";
-  //control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, 0));
-}
-                
-void Wrapper::control_adjust_offsets() {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  PL_INFO << "Pixie Control: adjust offsets";
-  //control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, 0));
-}
-
 
 //////STUFF BELOW SHOULD NOT BE USED DIRECTLY////////////
 //////ASSUME YOU KNOW WHAT YOU'RE DOING WITH THREADS/////
@@ -264,22 +193,22 @@ uint32_t* Wrapper::control_collect_ADC(uint8_t module) {
 
 void Wrapper::control_err(int32_t err_val) {
   switch (err_val) {
-    case 0:
-      break;
-    case -1:
-      PL_ERR << "Control command failed: Invalid Pixie modules number. Check ModNum";
-      break;
-    case -2:
-      PL_ERR << "Control command failed: Failure to adjust offsets. Reboot recommended";
-      break;
-    case -3:
-      PL_ERR << "Control command failed: Failure to acquire ADC traces. Reboot recommended";
-      break;
-    case -4:
-      PL_ERR << "Control command failed: Failure to start the control task run. Reboot recommended";
-      break;
-    default:
-      PL_ERR << "Control comman failed: Unknown error " << err_val;
+  case 0:
+    break;
+  case -1:
+    PL_ERR << "Control command failed: Invalid Pixie modules number. Check ModNum";
+    break;
+  case -2:
+    PL_ERR << "Control command failed: Failure to adjust offsets. Reboot recommended";
+    break;
+  case -3:
+    PL_ERR << "Control command failed: Failure to acquire ADC traces. Reboot recommended";
+    break;
+  case -4:
+    PL_ERR << "Control command failed: Failure to start the control task run. Reboot recommended";
+    break;
+  default:
+    PL_ERR << "Control comman failed: Unknown error " << err_val;
   }
 }
 
@@ -299,8 +228,6 @@ bool Wrapper::resume_run(RunType type) { //no different from start
 }
 
 bool Wrapper::stop_run(RunType type) {
-  uint16_t runtype = (static_cast<uint16_t>(type) | 0x3000);
-  int cur_mod = 0; // static_cast<int>(getInstance().my_settings_.current_module());
   xxusb_register_write(getInstance().my_settings_.udev, XXUSB_ACTION_REGISTER, 0);
 
   // Draining data / read from fifo until Time out error and discard all data
@@ -330,13 +257,14 @@ bool Wrapper::read_EM(uint32_t* data) {
   //int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
   long Data_Array[list_mem_len32];
   for (int i=0; i<list_mem_len32; i++)
-    Data_Array[i]=0x12345678;
+    Data_Array[i]= 0;
 
   int ret = xxusb_bulk_read(getInstance().my_settings_.udev, Data_Array, list_mem_len16, 200);
   if(ret > 0) {
     int i;
     for (i=0; i< ret/4; i++)
-        data[i] = Data_Array[i];
+      data[i] = Data_Array[i];
+    //VME_write_16(getInstance().my_settings_.udev, AM_MADC, MADC_ADDR(MADC_READ_RESET), 1);
     return true;
   }
   PL_INFO << "no data retrieved (error?)";
@@ -345,7 +273,7 @@ bool Wrapper::read_EM(uint32_t* data) {
 
 bool Wrapper::write_EM(uint32_t* data) {
   int cur_mod = 0; //static_cast<int>(getInstance().my_settings_.current_module());
-//  return (Pixie_Acquire_Data(0x9004, (U32*)data, NULL, cur_mod) == 0x90);
+  //  return (Pixie_Acquire_Data(0x9004, (U32*)data, NULL, cur_mod) == 0x90);
   return true;
 };
 
@@ -362,11 +290,11 @@ bool Wrapper::read_EM_dbl(uint32_t* data) {
 
 bool Wrapper::clear_EM() {
   std::vector<uint32_t> my_data(list_mem_len32, 0);
-    return (write_EM(my_data.data()) >= 0);
+  return (write_EM(my_data.data()) >= 0);
 };
 
 void Wrapper::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
-                   SpectraSet* spectra) {
+                         SpectraSet* spectra) {
 
   PL_INFO << "*Pixie Threads* Spectra builder initiated";
   Spill* one_spill;
@@ -376,33 +304,49 @@ void Wrapper::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
     if (one_spill->stats != nullptr)
       delete one_spill->stats;
     if (one_spill->run != nullptr)
-      delete one_spill->run;    
+      delete one_spill->run;
     delete one_spill;
   }
 }
 
-void Wrapper::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queue,
-                    uint64_t timeout_limit, boost::atomic<bool>* interruptor) {
+void Wrapper::worker_fake(std::string source, SynchronizedQueue<Spill*>* data_queue,
+                          uint64_t timeout_limit, boost::atomic<bool>* interruptor) {
 
   PL_INFO << "*Pixie Threads* Simulated event generator initiated";
 
   uint32_t secsperrun = 5;  ///calculate this based on ocr and buf size
   Spill* one_spill;
 
+  uint64_t lines = 0;
+  int ch;
+  FILE *DataFile =  fopen(source.c_str(),"r");
+  while(!feof(DataFile))
+  {
+    ch = fgetc(DataFile);
+    if (ch == '\n')
+    {
+      lines++;
+    }
+  }
+  uint32_t x;
+
+  rewind(DataFile);
+
+
+
   uint64_t spill_count = 0, event_count = 0;
   bool timeout = false;
   CustomTimer total_timer(timeout_limit);
   boost::posix_time::ptime session_start_time, block_time;
 
-  uint64_t   rate = source->OCR;
+  uint64_t   rate = 2000;
   StatsUpdate moving_stats,
-      one_run = source->getBlock(5.05);  ///bit more than secsperrun
+      one_run;  ///bit more than secsperrun
 
   //start of run pixie status update
   //mainly for spectra to have calibration
   one_spill = new Spill;
   one_spill->run = new RunInfo;
-  one_spill->run->p4_state = source->settings;
   session_start_time =  boost::posix_time::microsec_clock::local_time();
   moving_stats.lab_time = session_start_time;
   one_spill->stats = new StatsUpdate(moving_stats);
@@ -416,9 +360,17 @@ void Wrapper::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_que
             << "  ETA: " << total_timer.ETA();
 
     one_spill = new Spill;
-    
-    for (uint32_t i=0; i<(rate*secsperrun); i++)
-      one_spill->hits.push_back(source->getHit());
+
+    one_spill->data.resize(rate*secsperrun);
+    for (uint32_t i=0; i<(rate*secsperrun); i++) {
+      if (!lines) {
+        interruptor->store(true);
+        break;
+      }
+      fscanf(DataFile,"%x\n",&x);
+      one_spill->data[i] = x;
+      lines--;
+    }
 
     block_time =  boost::posix_time::microsec_clock::local_time();
 
@@ -440,7 +392,6 @@ void Wrapper::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_que
 
   one_spill = new Spill;
   one_spill->run = new RunInfo;
-  one_spill->run->p4_state = source->settings;
   one_spill->run->time_start = session_start_time;
   one_spill->run->time_stop = block_time;
   one_spill->run->total_events = event_count;
@@ -449,8 +400,8 @@ void Wrapper::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_que
 
 
 void Wrapper::worker_run(RunType type, uint64_t timeout_limit,
-                   SynchronizedQueue<Spill*>* spill_queue,
-                   boost::atomic<bool>* interruptor) {
+                         SynchronizedQueue<Spill*>* spill_queue,
+                         boost::atomic<bool>* interruptor) {
   
   PL_INFO << "*Pixie Threads* List runner initiated";
   Wrapper &pxi = getInstance();
@@ -569,8 +520,8 @@ void Wrapper::worker_run(RunType type, uint64_t timeout_limit,
 
 
 void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
-                   SynchronizedQueue<Spill*>* spill_queue,
-                   boost::atomic<bool>* interruptor) {
+                             SynchronizedQueue<Spill*>* spill_queue,
+                             boost::atomic<bool>* interruptor) {
   
   PL_INFO << "*Pixie Threads* Buffered list runner initiated";
   Wrapper &pxi = getInstance();
@@ -582,6 +533,9 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
   Spill* fetched_spill;
   CustomTimer total_timer(timeout_limit);
   boost::posix_time::ptime session_start_time, block_time;
+
+  CustomTimer *anouncement_timer = nullptr;
+  double secs_between_anouncements = 5;
   
   if (!pxi.clear_EM())
     return;
@@ -614,10 +568,16 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
   fetched_spill->stats->lab_time = session_start_time;
   spill_queue->enqueue(fetched_spill);
 
+  anouncement_timer = new CustomTimer(true);
+
   while (!timeout) {
     spill_count++;
-    PL_INFO << "  RUNNING Elapsed: " << total_timer.done()
-            << "  ETA: " << total_timer.ETA();
+    if (anouncement_timer->s() > secs_between_anouncements) {
+      PL_INFO << "  RUNNING Elapsed: " << total_timer.done()
+              << "  ETA: " << total_timer.ETA();
+      delete anouncement_timer;
+      anouncement_timer = new CustomTimer(true);
+    }
 
     do {
       wait_ms(poll_interval);
@@ -662,87 +622,120 @@ void Wrapper::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQue
 
   PL_INFO << "*Pixie Threads* Event parser initiated";
 
+  uint32_t header_m   = 0xff008000; // Header Mask
+  uint32_t header_c   = 0x40000000; // Header Compare
+
+  uint32_t footer_m   = 0xc0000000; // Footer Mask
+  uint32_t footer_c   = 0xc0000000; // Footer Compare
+
+  uint32_t evt_mask = 0xffe04000; // event header mask
+  uint32_t evt_c    = 0x04000000; // event compare
+  uint32_t ovrfl_c  = 0x04004000; // Overflow compare
+
+  uint32_t det_mask = 0x001f0000; // Detector Mask
+  uint32_t nrg_mask = 0x00001fff;
+
   Spill* spill;
- 
-  uint64_t all_events = 0, cycles = 0;
+
+  uint64_t total_events = 0, good_events = 0, cycles = 0, total_overflow = 0, total_footers = 0, total_headers = 0,
+      valid_spills = 0, bad_events = 0;
   CustomTimer parse_timer;
 
+  //setup output file
+  FILE *DataFile;
+  DataFile =  fopen("/home/marsh/qpxdata/vmecrap.dat","w");
+  
   while ((spill = in_queue->dequeue()) != NULL ) {
     parse_timer.resume();
     
     if (spill->data.size() > 0) {
       cycles++;
-      uint16_t* buff16 = (uint16_t*) spill->data.data();
-      uint32_t* buff32 = spill->data.data();
 
-      uint32_t idx = 0, buf_end, spill_events = 0, ctr = 0;
+      uint32_t spill_events = 0, spill_overflow = 0, spill_headers = 0, spill_footers = 0,
+          spill_bad_evts = 0, spill_good_events = 0;
 
-      while (true) {
-        std::bitset<32> entry (buff32[idx++]);
+      for (auto &entry : spill->data) {
+        spill_events++;
 
-        if ((entry.to_ulong() == 0x12345678) || (entry.to_ulong() == 0)) {
-          //PL_INFO << "beyond buffer";
-          break;
-        } else if (entry[30] && !entry[31]) {
-          //PL_INFO << "header";
-          entry[12] = 0;
-          entry[13] = 0;
-          entry[14] = 0;
-          entry[15] = 0;
+//        fprintf(DataFile,"0x%08X\n",entry);
 
-          uint32_t nwords = entry.to_ulong();
-          nwords = nwords >> 16;
+        
+        if ((entry == 0xffffffff) || (entry == 0)) {
+          //PL_INFO << "ignore";
+          spill_bad_evts++;
+        } else if ((entry & evt_mask) == ovrfl_c) {
+          spill_overflow++;
+          //PL_INFO << "overflow";
+          //} else if ((entry & 0xffff) > 7679) {
+          //PL_INFO << "supposedly too high?";
+        } else if ((entry & header_m) == header_c) {
+          uint32_t module = ((entry & 0x00ff0000) >> 16);
+          uint32_t format = ((entry & 0x00007000) >> 12);
+          uint32_t words = (entry & 0x00000fff);
+          spill_headers++;
+          /*PL_INFO << "header module=" << module
+                  << " format=" << format
+                  << " words=" << words;*/
 
-          //PL_INFO << "Should have " << nwords;
+          fprintf(DataFile, itobin(entry).c_str());
+          fprintf(DataFile, "\n");
 
-        } else if (entry[30] && entry[31]) {
-          //PL_INFO << "end";
-          //break;
-        } else if (entry[31] && !entry[30]) {
-          //PL_INFO << "invalid";
-          //break;
-        } else {
+        } else if ((entry & footer_m) == footer_c) {
+          uint32_t time = (entry & 0x7fffffff);
+          spill_footers++;
+          //PL_INFO << "footer time=" << time;
 
-          if (entry[14]) {
-            //PL_WARN << "ADC overflow. Discarding event";
-          } else {
-            ctr++;
-            std::bitset<8> chan_pat;
-            chan_pat[4] = entry[20];
-            chan_pat[3] = entry[19];
-            chan_pat[2] = entry[18];
-            chan_pat[1] = entry[17];
-            chan_pat[0] = entry[16];
-            uint16_t chan_nr = chan_pat.to_ulong();
+          fprintf(DataFile, itobin(entry).c_str());
+          fprintf(DataFile, "\n");
 
-            entry[14] = 0;
-            entry[15] = 0;
-            uint32_t nrg = entry.to_ulong() >> 17;
-            //PL_INFO << "chan = " << chan_nr << " nrg = " << nrg;
+        } else if ((entry & evt_mask) == evt_c) {
+          uint8_t chan_nr = (entry & det_mask) >> 16;
 
-            Hit one_hit;
-            one_hit.pattern[chan_nr] = 1;
-            one_hit.energy[chan_nr] = nrg;
-            spill->hits.push_back(one_hit);
-            spill_events++;
-          }
-        };
-      }
-      //PL_INFO << "found events " << ctr;
-      all_events += spill_events;
+          std::bitset<32> chan_pat;
+          chan_pat[chan_nr] = 1;
+          uint16_t nrg = (entry & nrg_mask) << 3;
+
+          Hit one_hit;
+          one_hit.pattern = chan_pat;
+          one_hit.energy[chan_nr] = nrg;
+          spill->hits.push_back(one_hit);
+          spill_good_events++;
+        }
+      };
+      total_overflow += spill_overflow;
+      total_headers += spill_headers;
+      total_footers += spill_footers;
+      good_events += spill_good_events;
+      bad_events += spill_bad_evts;
+      total_events += (spill_events - spill_bad_evts);
+
+      if (spill_events)
+        valid_spills++;
     }
     if (spill->run != nullptr) {
-      spill->run->total_events = all_events;
+      spill->run->total_events = good_events;
     }
     spill->data.clear();
     out_queue->enqueue(spill);
     parse_timer.stop();
   }
-
   if (cycles == 0)
     PL_DBG << "   Parse worker done. Buffer queue closed without events";
-  else
-    PL_DBG << "   Parse worker done. " << all_events << " events, with avg time/spill: " << parse_timer.us()/cycles << "us";
+  else {
+    if (!valid_spills)
+      valid_spills++;
+    if (!total_events)
+      total_events++;
+    
+    PL_DBG << "   Parse worker done. Avg time/spill: " << parse_timer.us()/valid_spills << "us over "
+           << valid_spills << " valid spills out of " << cycles << " total processed spills";
+    PL_DBG << "          good events:    " << good_events << "    per spill: "     << good_events / valid_spills << " " << static_cast<double>(good_events)/static_cast<double>(total_events)*100 << "%";
+    PL_DBG << "              headers:   " << total_headers << "    per spill: "  << total_headers / valid_spills << " " << static_cast<double>(total_headers)/static_cast<double>(total_events)*100 << "%";
+    PL_DBG << "            overflows: " << total_overflow << "    per spill: " << total_overflow / valid_spills << " " << static_cast<double>(total_overflow)/static_cast<double>(total_events)*100 << "%";
+    PL_DBG << "              footers:   " << total_footers << "    per spill: "  << total_footers / valid_spills << " " << static_cast<double>(total_footers)/static_cast<double>(total_events)*100 << "%";
+    PL_DBG << "             rejected:  " << bad_events << "    per spill: "     << bad_events / valid_spills;
+  }
+  fclose(DataFile);
 }
 
 void Wrapper::timing_stats(CustomTimer &total, CustomTimer &start, CustomTimer &run, CustomTimer &stop, CustomTimer &read, uint32_t count) {
@@ -767,5 +760,46 @@ void Wrapper::timing_stats(CustomTimer &total, CustomTimer &start, CustomTimer &
   PL_INFO << "avg readout: " << std::fixed << std::setprecision (prc)
           << read.s()/count << "s (" << read_p << "%)";
 }
+
+void Wrapper::control_measure_baselines(uint8_t module) {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  PL_INFO << "Pixie Control: measure baselines";
+  //control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, module));
+}
+
+void Wrapper::control_compute_BLcut() {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  PL_INFO << "Pixie Control: compute BLcut";
+  //control_err(Pixie_Acquire_Data(0x0080, NULL, NULL, 0));
+}
+
+void Wrapper::control_find_tau() {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  PL_INFO << "Pixie Control: find tau";
+  //control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, 0));
+}
+
+void Wrapper::control_adjust_offsets() {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  PL_INFO << "Pixie Control: adjust offsets";
+  //control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, 0));
+}
+
+std::string Wrapper::itobin (uint32_t bin)
+{
+  std::stringstream ss;
+  int k=0;
+  for (k = 31; k >= 0; --k) {
+    if (bin & 0x80000000)
+      ss << "1";
+    else
+      ss << "0";
+    bin <<= 1;
+    if (k == 16)
+      ss << " ";
+  }
+  return ss.str();
+}
+
 
 }

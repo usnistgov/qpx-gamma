@@ -22,6 +22,7 @@
 
 #include "gui/form_pixie_settings.h"
 #include "ui_form_pixie_settings.h"
+#include <QDir>
 
 FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Pixie::Detector>& detectors, QSettings& settings, QWidget *parent) :
   QWidget(parent),
@@ -29,7 +30,6 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Pixie::Dete
   detectors_(detectors),
   settings_(settings),
   pixie_(Pixie::Wrapper::getInstance()),
-  tree_settings_model_(pixie_.settings().pull_settings()),
   ui(new Ui::FormPixieSettings)
 {
   ui->setupUi(this);
@@ -38,6 +38,10 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Pixie::Dete
   connect(&runner_thread_, SIGNAL(settingsUpdated()), this, SLOT(refresh()));
 
   loadSettings();
+
+  dev_settings_ = pixie_.settings().pull_settings();
+
+  tree_settings_model_.set_structure(dev_settings_);
 
   ui->treeSettings->setModel(&tree_settings_model_);
   ui->treeSettings->setItemDelegate(&tree_delegate_);
@@ -49,11 +53,19 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Pixie::Dete
 }
 
 void FormPixieSettings::update() {
-  tree_settings_model_.update(Pixie::Wrapper::getInstance().settings().pull_settings());
+  dev_settings_ = pixie_.settings().pull_settings();
+  tree_settings_model_.update(dev_settings_);
+  PL_DBG << "pulled dev settings have " << dev_settings_.branches.size() << " branches";
+
+  ui->treeSettings->resizeColumnToContents(0);
 }
 
 void FormPixieSettings::push_settings() {
-  pixie_.settings().push_settings(tree_settings_model_.get_tree());
+  dev_settings_ = tree_settings_model_.get_tree();
+
+  PL_DBG << "from model dev settings have " << dev_settings_.branches.size() << " branches";
+
+  pixie_.settings().push_settings(dev_settings_);
   emit statusText("Refreshing settings_...");
   emit toggleIO(false);
   runner_thread_.do_refresh_settings();
@@ -91,6 +103,26 @@ void FormPixieSettings::toggle_push(bool enable, Pixie::LiveStatus live) {
 }
 
 void FormPixieSettings::loadSettings() {
+  settings_.beginGroup("Program");
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_.endGroup();
+
+  QString filename = data_directory_ + "/vme_settings.set";
+
+  FILE* myfile;
+  myfile = fopen (filename.toStdString().c_str(), "r");
+  if (myfile != nullptr) {
+    tinyxml2::XMLDocument docx;
+    docx.LoadFile(myfile);
+    tinyxml2::XMLElement* root = docx.FirstChildElement(Pixie::Setting().xml_element_name().c_str());
+    if (root != nullptr) {
+      dev_settings_ = Pixie::Setting(root);
+      pixie_.settings().push_settings(dev_settings_);
+      //tree_settings_model_.set_structure(newtree);
+    }
+    fclose(myfile);
+  }
+
   settings_.beginGroup("Pixie");
   default_detectors_[0] = settings_.value("detector_0", QString("N/A")).toString().toStdString();
   default_detectors_[1] = settings_.value("detector_1", QString("N/A")).toString().toStdString();
@@ -100,6 +132,19 @@ void FormPixieSettings::loadSettings() {
 }
 
 void FormPixieSettings::saveSettings() {
+  QString filename = data_directory_ + "/vme_settings.set";
+
+  PL_DBG << "dev settings have " << dev_settings_.branches.size() << " branches";
+
+  FILE* myfile;
+  myfile = fopen (filename.toStdString().c_str(), "w");
+  if (myfile != nullptr) {
+    tinyxml2::XMLPrinter printer(myfile);
+    printer.PushHeader(true, true);
+    dev_settings_.to_xml(printer);
+    fclose(myfile);
+  }
+
   settings_.beginGroup("Pixie");
   settings_.setValue("detector_0", QString::fromStdString(default_detectors_[0]));
   settings_.setValue("detector_1", QString::fromStdString(default_detectors_[1]));
