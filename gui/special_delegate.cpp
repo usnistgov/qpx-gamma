@@ -65,8 +65,10 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
   if (index.data(Qt::EditRole).canConvert<Pixie::Detector>()) {
     QComboBox *editor = new QComboBox(parent);
     editor->addItem(QString("none"));
-    for (int i=0; i < detectors_.size(); i++)
-      editor->addItem(QString::fromStdString(detectors_.get(i).name_));
+    for (int i=0; i < detectors_.size(); i++) {
+      QString name = QString::fromStdString(detectors_.get(i).name_);
+      editor->addItem(name, name);
+    }
     return editor;
   } else if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
     Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
@@ -108,7 +110,7 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
         if(cbIndex >= 0)
           cb->setCurrentIndex(cbIndex);
       }
-    } else { // needs check
+    } else if (index.data(Qt::EditRole).canConvert<Pixie::Detector>()) { // needs check
       Pixie::Detector det = qvariant_cast<Pixie::Detector>(index.data(Qt::EditRole));
       QString currentText = QString::fromStdString(det.name_);
       int cbIndex = cb->findText(currentText);
@@ -151,9 +153,18 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
 
 void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *model, const QModelIndex &index ) const
 {
-  if (QComboBox *cb = qobject_cast<QComboBox *>(editor))
-    model->setData(index, QVariant::fromValue(detectors_.get(cb->currentText().toStdString())), Qt::EditRole);
-  else if (QDoubleSpinBox *sb = qobject_cast<QDoubleSpinBox *>(editor))
+  if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
+    if (index.data(Qt::EditRole).canConvert<Pixie::Detector>())
+      model->setData(index, QVariant::fromValue(detectors_.get(cb->currentText().toStdString())), Qt::EditRole);
+    else if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
+      if (cb->currentData().type() == QMetaType::Int)
+        model->setData(index, QVariant::fromValue(cb->currentData().toInt()), Qt::EditRole);
+      else if (cb->currentData().type() == QMetaType::Double)
+        model->setData(index, QVariant::fromValue(cb->currentData().toDouble()), Qt::EditRole);
+      else if (cb->currentData().type() == QMetaType::QString)
+        model->setData(index, QVariant::fromValue(cb->currentData().toString()), Qt::EditRole);
+    }
+  } else if (QDoubleSpinBox *sb = qobject_cast<QDoubleSpinBox *>(editor))
     model->setData(index, QVariant::fromValue(sb->value()), Qt::EditRole);
   else if (QSpinBox *sb = qobject_cast<QSpinBox *>(editor))
     model->setData(index, QVariant::fromValue(sb->value()), Qt::EditRole);

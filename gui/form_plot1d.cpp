@@ -297,3 +297,19 @@ void FormPlot1D::on_pushHideAll_clicked()
 {
   ui->spectraWidget->hide_all();
 }
+
+void FormPlot1D::set_scale_type(QString sct) {
+  ui->mcaPlot->set_scale_type(sct);
+}
+
+void FormPlot1D::set_plot_style(QString stl) {
+  ui->mcaPlot->set_plot_style(stl);
+}
+
+QString FormPlot1D::scale_type() {
+  return ui->mcaPlot->scale_type();
+}
+
+QString FormPlot1D::plot_style() {
+  return ui->mcaPlot->plot_style();
+}

@@ -188,7 +188,7 @@ QVariant TreeItem::display_data(int column) const
     else if (itemData.setting_type == Pixie::SettingType::floating)
       return QVariant::fromValue(itemData.value);
     else if (itemData.setting_type == Pixie::SettingType::int_menu)
-      return QVariant::fromValue(itemData.value_int);
+      return QString::fromStdString(itemData.int_menu_items.at(itemData.value_int));
     else if (itemData.setting_type == Pixie::SettingType::boolean)
       if (itemData.value_int)
         return "T";
@@ -295,6 +295,9 @@ bool TreeItem::setData(int column, const QVariant &value)
   else if ((itemData.setting_type == Pixie::SettingType::text)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
+  else if ((itemData.setting_type == Pixie::SettingType::int_menu)
+      && (value.type() == QVariant::Int))
+    itemData.value_int = value.toInt();
   else
     return false;
 

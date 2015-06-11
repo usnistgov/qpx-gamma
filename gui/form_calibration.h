@@ -38,15 +38,17 @@ namespace Ui {
 class FormCalibration;
 }
 
+enum class CalibApplyTo : int {DetOnAllOpen = 0, DetOnCurrentSpec = 1, AllDetsOnCurrentSpec = 2, DetInDB = 3};
+
 class FormCalibration : public QWidget
 {
   Q_OBJECT
 
 public:
-  explicit FormCalibration(QWidget *parent = 0);
+  explicit FormCalibration(QSettings &settings, QWidget *parent = 0);
   ~FormCalibration();
 
-  void setData(XMLableDB<Pixie::Detector>& newDetDB, QSettings &sets);
+  void setData(XMLableDB<Pixie::Detector>& newDetDB);
   void setSpectrum(Pixie::SpectraSet *newset, QString spectrum);
 
   void clear();
@@ -84,6 +86,7 @@ protected:
 
 private:
   Ui::FormCalibration *ui;
+  QSettings &settings_;
 
   //from parent
   QString data_directory_, load_formats_;
@@ -107,6 +110,8 @@ private:
 
   Pixie::Calibration old_calibration_, new_calibration_;
 
+  void loadSettings();
+  void saveSettings();
 };
 
 #endif // FORM_CALIBRATION_H

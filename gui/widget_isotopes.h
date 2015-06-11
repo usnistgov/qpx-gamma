@@ -39,6 +39,8 @@ public:
   void setDir(QString filedir);
   ~WidgetIsotopes();
   std::vector<double> current_gammas() const;
+  QString current_isotope() const;
+  void set_current_isotope(QString);
 
 signals:
   void energiesSelected();

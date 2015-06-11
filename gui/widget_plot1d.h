@@ -47,9 +47,13 @@ public:
   void rescale();
   void replot_markers();
 
-  void setLogScale(bool);
   void setLabels(QString x, QString y);
   void setTitle(QString title);
+
+  void set_scale_type(QString);
+  void set_plot_style(QString);
+  QString scale_type();
+  QString plot_style();
 
   void set_markers(const std::list<Marker>& markers);
   void set_block(Marker, Marker);
@@ -80,6 +84,7 @@ private slots:
 private:
   void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
   void calc_y_bounds(double lower, double upper);
+  void set_graph_style(QCPGraph*, QString);
 
   Ui::WidgetPlot1D *ui;
 
@@ -100,7 +105,8 @@ private:
   QMenu menuScaleType;
   QMenu menuPlotStyle;
   QString color_theme_;
-  int plotStyle;
+  QString scale_type_;
+  QString plot_style_;
 };
 
 #endif // WIDGET_PLOST1D_H

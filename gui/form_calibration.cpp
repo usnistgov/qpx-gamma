@@ -25,13 +25,16 @@
 #include "poly_fit.h"
 #include "qt_util.h"
 
-FormCalibration::FormCalibration(QWidget *parent) :
+FormCalibration::FormCalibration(QSettings &settings, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormCalibration),
   marker_table_(my_markers_),
+  settings_(settings),
   selection_model_(&marker_table_)
 {
   ui->setupUi(this);
+
+  loadSettings();
 
   qRegisterMetaType<Gaussian>("Gaussian");
   qRegisterMetaType<QVector<Gaussian>>("QVector<Gaussian>");
@@ -46,16 +49,16 @@ FormCalibration::FormCalibration(QWidget *parent) :
     delete type_template;
   }
   load_formats_ = catFileTypes(filetypes);
-
+  ui->plot1D->use_calibrated(true);
 
   moving.themes["light"] = QPen(Qt::darkRed, 2);
   moving.themes["dark"] = QPen(Qt::red, 2);
 
-  list.themes["light"] = QPen(Qt::darkYellow, 1);
-  list.themes["dark"] = QPen(Qt::yellow, 1);
+  list.themes["light"] = QPen(Qt::darkGray, 1);
+  list.themes["dark"] = QPen(Qt::white, 1);
   list.visible = true;
 
-  selected.themes["light"] = QPen(Qt::darkYellow, 2);
+  selected.themes["light"] = QPen(Qt::black, 2);
   selected.themes["dark"] = QPen(Qt::yellow, 2);
   selected.visible = true;
 
@@ -99,19 +102,49 @@ void FormCalibration::closeEvent(QCloseEvent *event) {
   }
 
   spectra_.terminate();
-  plot_thread_.wait();
-  saveSettings();*/
+  plot_thread_.wait();*/
+  saveSettings();
   event->accept();
 }
 
-void FormCalibration::setData(XMLableDB<Pixie::Detector>& newDetDB, QSettings &sets) {
-  detectors_ = &newDetDB;
-
-  sets.beginGroup("Program");
-  data_directory_ = sets.value("save_directory", QDir::homePath() + "/qpxdata").toString();
-  sets.endGroup();
+void FormCalibration::loadSettings() {
+  settings_.beginGroup("Program");
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_.endGroup();
 
   ui->isotopes->setDir(data_directory_);
+
+  settings_.beginGroup("Calibration");
+  ui->spinMinPeakWidth->setValue(settings_.value("min_peak_width", 5).toInt());
+  ui->spinMaxPeakWidth->setValue(settings_.value("max_peak_width", 90).toInt());
+  ui->spinTerms->setValue(settings_.value("fit_function_terms", 2).toInt());
+  ui->isotopes->set_current_isotope(settings_.value("current_isotope", "Co-60").toString());
+
+  settings_.beginGroup("McaPlot");
+  ui->plot1D->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
+  ui->plot1D->set_plot_style(settings_.value("plot_style", "Step").toString());
+  settings_.endGroup();
+
+  settings_.endGroup();
+}
+
+void FormCalibration::saveSettings() {
+  settings_.beginGroup("Calibration");
+  settings_.setValue("min_peak_width", ui->spinMinPeakWidth->value());
+  settings_.setValue("max_peak_width", ui->spinMaxPeakWidth->value());
+  settings_.setValue("fit_function_terms", ui->spinTerms->value());
+  settings_.setValue("current_isotope", ui->isotopes->current_isotope());
+
+  settings_.beginGroup("McaPlot");
+  settings_.setValue("scale_type", ui->plot1D->scale_type());
+  settings_.setValue("plot_style", ui->plot1D->plot_style());
+  settings_.endGroup();
+
+  settings_.endGroup();
+}
+
+void FormCalibration::setData(XMLableDB<Pixie::Detector>& newDetDB) {
+  detectors_ = &newDetDB;
   ui->widgetDetectors->setData(*detectors_, data_directory_, load_formats_);
   toggle_radio();
 }
@@ -211,7 +244,10 @@ void FormCalibration::update_plot() {
 }
 
 void FormCalibration::addMovingMarker(double x) {
-  moving.channel = moving.energy = x;
+  moving.channel = x;
+  moving.chan_valid = true;
+  moving.energy = old_calibration_.transform(x);
+  moving.energy_valid = (moving.channel != moving.energy);
   moving.visible = true;
   ui->pushAdd->setEnabled(true);
   PL_INFO << "Marker at " << moving.channel << " originally caliblated to " << old_calibration_.transform(moving.channel)
@@ -233,15 +269,23 @@ void FormCalibration::replot_markers() {
 
   for (auto &q : my_markers_) {
     Marker m = list;
-    m.channel = m.energy = q.first;
+    m.channel = q.first;
+    m.energy = q.second;
+    m.chan_valid = true;
+    m.energy_valid = (q.first != q.second);
     markers.push_back(m);
   }
 
   if (!selection_model_.selectedIndexes().empty()) {
     QModelIndex chan_ix = marker_table_.index(selection_model_.selectedRows().front().row(), 0);
+    QModelIndex nrg_ix = marker_table_.index(selection_model_.selectedRows().front().row(), 1);
     double chan = marker_table_.data(chan_ix, Qt::DisplayRole).toDouble();
+    double nrg = marker_table_.data(nrg_ix, Qt::DisplayRole).toDouble();
     Marker sm = selected;
-    sm.channel = sm.energy = chan;
+    sm.channel = chan;
+    sm.energy = nrg;
+    sm.chan_valid = true;
+    sm.energy_valid = (sm.channel != sm.energy);
     markers.push_back(sm);
   }
 
@@ -294,25 +338,17 @@ void FormCalibration::toggle_push() {
 }
 
 void FormCalibration::toggle_radio() {
+  Polynomial thispoly(new_calibration_.coefficients_);
+  std::stringstream ss;
+  ss << thispoly;
+  ui->labelEquation->setText(QString::fromStdString(ss.str()));
+
   ui->pushApplyCalib->setEnabled(false);
-  ui->radioDetSpec->setEnabled(false);
-  ui->radioDetAll->setEnabled(false);
-  ui->radioSpecAll->setEnabled(false);
-  ui->radioDetDB->setEnabled(false);
+  ui->comboApplyTo->clear();
 
   if (!new_calibration_.shallow_equals(Pixie::Calibration()) && !detector_.shallow_equals(Pixie::Detector())) {
     ui->pushApplyCalib->setEnabled(true);
     Pixie::Spectrum::Spectrum* spectrum;
-    if (spectrum  = spectra_->by_name(current_spectrum_.toStdString())) {
-      ui->radioSpecAll->setText("all detectors on " + current_spectrum_);
-      ui->radioSpecAll->setEnabled(true);
-      for (auto &q : spectrum->get_detectors()) {
-        if (q.shallow_equals(detector_)) {
-          ui->radioDetSpec->setText(QString::fromStdString(detector_.name_) + " on " + current_spectrum_);
-          ui->radioDetSpec->setEnabled(true);
-        }
-      }
-    }
     bool others_have_det = false;
     for (auto &q : spectra_->spectra()) {
       if (q && (q->name() != current_spectrum_.toStdString())) {
@@ -321,14 +357,17 @@ void FormCalibration::toggle_radio() {
             others_have_det = true;
       }
     }
-    if (others_have_det) {
-      ui->radioDetAll->setText(QString::fromStdString(detector_.name_) + " on all open spectra");
-      ui->radioDetAll->setEnabled(true);
+    if (others_have_det)
+      ui->comboApplyTo->addItem(QString::fromStdString(detector_.name_) + " on all open spectra", QVariant::fromValue((int)CalibApplyTo::DetOnAllOpen));
+    if (spectrum  = spectra_->by_name(current_spectrum_.toStdString())) {
+      for (auto &q : spectrum->get_detectors()) {
+        if (q.shallow_equals(detector_))
+          ui->comboApplyTo->addItem(QString::fromStdString(detector_.name_) + " on " + current_spectrum_, QVariant::fromValue((int)CalibApplyTo::DetOnCurrentSpec));
+      }
+      ui->comboApplyTo->addItem("all detectors on " + current_spectrum_, QVariant::fromValue((int)CalibApplyTo::AllDetsOnCurrentSpec));
     }
-    if (detectors_ && detectors_->has_a(detector_)) {
-      ui->radioDetDB->setText(QString::fromStdString(detector_.name_) + " in detector database");
-      ui->radioDetDB->setEnabled(true);
-    }
+    if (detectors_ && detectors_->has_a(detector_))
+      ui->comboApplyTo->addItem(QString::fromStdString(detector_.name_) + " in detector database", QVariant::fromValue((int)CalibApplyTo::DetInDB));
   }
 
 }
@@ -398,6 +437,7 @@ void FormCalibration::on_pushPushEnergy_clicked()
   if (chan)
     my_markers_[chan] = energy;
   marker_table_.update();
+  replot_markers();
 }
 
 void FormCalibration::isotope_energies_chosen() {
@@ -406,9 +446,9 @@ void FormCalibration::isotope_energies_chosen() {
 
 void FormCalibration::on_pushApplyCalib_clicked()
 {
-  PL_INFO << "Apply calibration";
+  PL_INFO << "<Calibration> Applying calibration";
 
-  if (ui->radioDetDB->isChecked() && detectors_->has_a(detector_)) {
+  if ((ui->comboApplyTo->currentData() == (int)CalibApplyTo::DetInDB) && detectors_->has_a(detector_)) {
     Pixie::Detector modified = detectors_->get(detector_);
     if (modified.energy_calibrations_.has_a(new_calibration_))
       modified.energy_calibrations_.replace(new_calibration_);
@@ -421,12 +461,12 @@ void FormCalibration::on_pushApplyCalib_clicked()
       if (q == nullptr)
         continue;
       bool is_selected_spectrum = (q->name() == current_spectrum_.toStdString());
-      if (ui->radioDetAll->isChecked() || is_selected_spectrum) {
+      if ((ui->comboApplyTo->currentData() == (int)CalibApplyTo::DetOnAllOpen) || is_selected_spectrum) {
         std::vector<Pixie::Detector> detectors = q->get_detectors();
         for (auto &p : detectors) {
-          if ((is_selected_spectrum && ui->radioSpecAll->isChecked()) ||
-              (is_selected_spectrum && ui->radioDetSpec->isChecked() && p.shallow_equals(detector_)) ||
-              (ui->radioDetAll->isChecked() && p.shallow_equals(detector_))) {
+          if ((is_selected_spectrum && (ui->comboApplyTo->currentData() == (int)CalibApplyTo::AllDetsOnCurrentSpec)) ||
+              (is_selected_spectrum && (ui->comboApplyTo->currentData() == (int)CalibApplyTo::DetOnCurrentSpec) && p.shallow_equals(detector_)) ||
+              ((ui->comboApplyTo->currentData() == (int)CalibApplyTo::DetOnAllOpen) && p.shallow_equals(detector_))) {
             PL_INFO << "   applying new calibration for " << detector_.name_ << " on " << q->name();
             if (p.energy_calibrations_.has_a(new_calibration_))
               p.energy_calibrations_.replace(new_calibration_);

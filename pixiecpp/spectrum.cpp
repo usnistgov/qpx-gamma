@@ -135,8 +135,8 @@ void Spectrum::addRun(const RunInfo& run_info) {
   live_time_ = real_time_;
   for (int i = 0; i < kNumChans; i++) { //using shortest live time of all added channels
     double this_time_unscaled = 1;
-    /* = run_info.p4_state.get_chan("LIVE_TIME", Channel(i)) -
-      run_info.p4_state.get_chan("SFDT", Channel(i));*/
+        /*run_info.p4_state.get_chan("LIVE_TIME", Channel(i)) -
+        run_info.p4_state.get_chan("SFDT", Channel(i));*/
     if ((add_pattern_[i]) && (this_time_unscaled < live_time_.total_seconds()))
       live_time_ = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));
   }

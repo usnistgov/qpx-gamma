@@ -51,30 +51,26 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
 
   use_calibrated_ = false;
 
-  plotStyle = 1;
   menuPlotStyle.addAction("Scatter");
   menuPlotStyle.addAction("Step");
   menuPlotStyle.addAction("Lines");
   menuPlotStyle.addAction("Fill");
-  for (auto &q : menuPlotStyle.actions()) {
+  for (auto &q : menuPlotStyle.actions())
     q->setCheckable(true);
-    if (q->text() == "Step")
-      q->setChecked(true);
-  }
   ui->toolPlotStyle->setMenu(&menuPlotStyle);
   ui->toolPlotStyle->setPopupMode(QToolButton::InstantPopup);
   connect(ui->toolPlotStyle, SIGNAL(triggered(QAction*)), this, SLOT(plotStyleChosen(QAction*)));
+  set_plot_style("Lines");
+
   ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLogarithmic);
   menuScaleType.addAction("Linear");
   menuScaleType.addAction("Logarithmic");
-  for (auto &q : menuScaleType.actions()) {
+  for (auto &q : menuScaleType.actions())
     q->setCheckable(true);
-    if (q->text() == "Logarithmic")
-      q->setChecked(true);
-  }
   ui->toolScaleType->setMenu(&menuScaleType);
   ui->toolScaleType->setPopupMode(QToolButton::InstantPopup);
   connect(ui->toolScaleType, SIGNAL(triggered(QAction*)), this, SLOT(scaleTypeChosen(QAction*)));
+  set_scale_type("Logarithmic");
 
   redraw();
 }
@@ -125,19 +121,6 @@ void WidgetPlot1D::setLabels(QString x, QString y) {
   ui->mcaPlot->yAxis->setLabel(y);
 }
 
-void WidgetPlot1D::setLogScale(bool log) {
-  QString action_txt;
-  if (log)
-    action_txt = "Logarithmic";
-  else
-    action_txt = "Linear";
-  for (auto &q : menuScaleType.actions()) {
-    if (q->text() == action_txt) {
-      scaleTypeChosen(q);
-    }
-  }
-}
-
 void WidgetPlot1D::use_calibrated(bool uc) {
   use_calibrated_ = uc;
   replot_markers();
@@ -174,21 +157,7 @@ void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, 
   QPen thispen = QPen(color);
   thispen.setWidth(thickness);
   ui->mcaPlot->graph(g)->setPen(thispen);
-
-  if (plotStyle == 3) {
-    ui->mcaPlot->graph(g)->setBrush(QBrush(color));
-    ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsLine);
-    ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle::ssNone);
-  } else if (plotStyle == 2) {
-    ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsLine);
-    ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle::ssNone);
-  } else if (plotStyle == 1) {
-    ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsStepCenter);
-    ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle::ssNone);
-  } else {
-    ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, thickness));
-    ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsNone);
-  }
+  set_graph_style(ui->mcaPlot->graph(g), plot_style_);
 
   if (x[0] < minx) {
     minx = x[0];
@@ -442,56 +411,64 @@ void WidgetPlot1D::on_pushResetScales_clicked()
 }
 
 void WidgetPlot1D::plotStyleChosen(QAction* choice) {
+  set_plot_style(choice->text());
+}
+
+
+void WidgetPlot1D::scaleTypeChosen(QAction* choice) {
+  set_scale_type(choice->text());
+}
+
+void WidgetPlot1D::set_scale_type(QString sct) {
   this->setCursor(Qt::WaitCursor);
-  for (auto &q : menuPlotStyle.actions())
-    q->setChecked(false);
-  choice->setChecked(true);
-  QString str = choice->text();
-  if (str == "Scatter")
-    plotStyle = 0;
-  else if (str == "Step")
-    plotStyle = 1;
-  else if (str == "Lines")
-    plotStyle = 2;
-  else if (str == "Fill")
-    plotStyle = 3;
-  int total = ui->mcaPlot->graphCount();
-  for (int i=0; i < total; i++) {
-    QColor this_color = ui->mcaPlot->graph(i)->pen().color();
-    if (plotStyle == 3) {
-      ui->mcaPlot->graph(i)->setBrush(QBrush(this_color));
-      ui->mcaPlot->graph(i)->setLineStyle(QCPGraph::lsLine);
-      ui->mcaPlot->graph(i)->setScatterStyle(QCPScatterStyle::ssNone);
-    } else if (plotStyle == 2) {
-      ui->mcaPlot->graph(i)->setBrush(QBrush());
-      ui->mcaPlot->graph(i)->setLineStyle(QCPGraph::lsLine);
-      ui->mcaPlot->graph(i)->setScatterStyle(QCPScatterStyle::ssNone);
-    } else if (plotStyle == 1) {
-      ui->mcaPlot->graph(i)->setBrush(QBrush());
-      ui->mcaPlot->graph(i)->setLineStyle(QCPGraph::lsStepCenter);
-      ui->mcaPlot->graph(i)->setScatterStyle(QCPScatterStyle::ssNone);
-    } else {
-      ui->mcaPlot->graph(i)->setBrush(QBrush());
-      ui->mcaPlot->graph(i)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 1));
-      ui->mcaPlot->graph(i)->setLineStyle(QCPGraph::lsNone);
-    }
+  scale_type_ = sct;
+  for (auto &q : menuScaleType.actions())
+    q->setChecked(q->text() == sct);
+  if (scale_type_ == "Linear") {
+    ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLinear);
+  } else if (scale_type() == "Logarithmic") {
+    ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLogarithmic);
   }
   ui->mcaPlot->replot();
   this->setCursor(Qt::ArrowCursor);
 }
 
+QString WidgetPlot1D::scale_type() {
+  return scale_type_;
+}
 
-void WidgetPlot1D::scaleTypeChosen(QAction* choice) {
+void WidgetPlot1D::set_plot_style(QString stl) {
   this->setCursor(Qt::WaitCursor);
-  for (auto &q : menuScaleType.actions())
-    q->setChecked(false);
-  choice->setChecked(true);
-  QString str = choice->text();
-  if (str == "Linear") {
-    ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLinear);
-  } else if (str == "Logarithmic") {
-    ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLogarithmic);
-  }
+  plot_style_ = stl;
+  for (auto &q : menuPlotStyle.actions())
+    q->setChecked(q->text() == stl);
+  int total = ui->mcaPlot->graphCount();
+  for (int i=0; i < total; i++)
+    set_graph_style(ui->mcaPlot->graph(i), stl);
   ui->mcaPlot->replot();
   this->setCursor(Qt::ArrowCursor);
+}
+
+QString WidgetPlot1D::plot_style() {
+  return plot_style_;
+}
+
+void WidgetPlot1D::set_graph_style(QCPGraph* graph, QString style) {
+  if (style == "Fill") {
+    graph->setBrush(QBrush(graph->pen().color()));
+    graph->setLineStyle(QCPGraph::lsLine);
+    graph->setScatterStyle(QCPScatterStyle::ssNone);
+  } else if (style == "Lines") {
+    graph->setBrush(QBrush());
+    graph->setLineStyle(QCPGraph::lsLine);
+    graph->setScatterStyle(QCPScatterStyle::ssNone);
+  } else if (style == "Step") {
+    graph->setBrush(QBrush());
+    graph->setLineStyle(QCPGraph::lsStepCenter);
+    graph->setScatterStyle(QCPScatterStyle::ssNone);
+  } else /*if (stl == "Scatter") default */{
+    graph->setBrush(QBrush());
+    graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 1));
+    graph->setLineStyle(QCPGraph::lsNone);
+  }
 }
