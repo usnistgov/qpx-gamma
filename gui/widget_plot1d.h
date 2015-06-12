@@ -59,6 +59,7 @@ public:
   void set_block(Marker, Marker);
   void set_cursors(const std::list<Marker>& cursors);
 
+  void addPoints(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness);
   void addGraph(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness);
   void setYBounds(const std::map<double, double> &minima, const std::map<double, double> &maxima);
 

@@ -21,6 +21,7 @@
  ******************************************************************************/
 
 #include "form_calibration.h"
+#include "widget_detectors.h"
 #include "ui_form_calibration.h"
 #include "poly_fit.h"
 #include "qt_util.h"
@@ -51,6 +52,8 @@ FormCalibration::FormCalibration(QSettings &settings, QWidget *parent) :
   load_formats_ = catFileTypes(filetypes);
   ui->plot1D->use_calibrated(true);
 
+  ui->PlotCalib->set_scale_type("Linear");
+
   moving.themes["light"] = QPen(Qt::darkRed, 2);
   moving.themes["dark"] = QPen(Qt::red, 2);
 
@@ -79,7 +82,7 @@ FormCalibration::FormCalibration(QSettings &settings, QWidget *parent) :
   connect(ui->plot1D, SIGNAL(clickedRight(double)), this, SLOT(removeMovingMarker(double)));
 
   connect(ui->isotopes, SIGNAL(energiesSelected()), this, SLOT(isotope_energies_chosen()));
-  connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
+  //connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
 }
 
 FormCalibration::~FormCalibration()
@@ -103,6 +106,8 @@ void FormCalibration::closeEvent(QCloseEvent *event) {
 
   spectra_.terminate();
   plot_thread_.wait();*/
+  on_pushClear_clicked();
+
   saveSettings();
   event->accept();
 }
@@ -145,7 +150,7 @@ void FormCalibration::saveSettings() {
 
 void FormCalibration::setData(XMLableDB<Pixie::Detector>& newDetDB) {
   detectors_ = &newDetDB;
-  ui->widgetDetectors->setData(*detectors_, data_directory_, load_formats_);
+  //ui->widgetDetectors->setData(*detectors_, data_directory_, load_formats_);
   toggle_radio();
 }
 
@@ -199,6 +204,7 @@ void FormCalibration::setSpectrum(Pixie::SpectraSet *newset, QString name) {
   ui->plot1D->redraw();
 
   update_plot();
+  toggle_radio();
 }
 
 void FormCalibration::update_plot() {
@@ -265,8 +271,12 @@ void FormCalibration::removeMovingMarker(double x) {
 void FormCalibration::replot_markers() {
   std::list<Marker> markers;
 
-  markers.push_back(moving);
+  ui->PlotCalib->clearGraphs();
+  ui->plot1D->clearExtras();
 
+  QVector<double> xx, yy, ycab;
+
+  markers.push_back(moving);
   for (auto &q : my_markers_) {
     Marker m = list;
     m.channel = q.first;
@@ -274,7 +284,20 @@ void FormCalibration::replot_markers() {
     m.chan_valid = true;
     m.energy_valid = (q.first != q.second);
     markers.push_back(m);
+
+    xx.push_back(q.first);
+    yy.push_back(q.second);
   }
+
+  ui->PlotCalib->addPoints(xx, yy, Qt::darkBlue, 7);
+  if (new_calibration_.units_ != "channels") {
+    Polynomial thispoly(new_calibration_.coefficients_);
+    for (auto &q : xx)
+      ycab.push_back(thispoly.evaluate(q));
+    ui->PlotCalib->addGraph(xx, ycab, Qt::blue, 2);
+  }
+  ui->PlotCalib->rescale();
+  ui->PlotCalib->redraw();
 
   if (!selection_model_.selectedIndexes().empty()) {
     QModelIndex chan_ix = marker_table_.index(selection_model_.selectedRows().front().row(), 0);
@@ -338,10 +361,15 @@ void FormCalibration::toggle_push() {
 }
 
 void FormCalibration::toggle_radio() {
-  Polynomial thispoly(new_calibration_.coefficients_);
-  std::stringstream ss;
-  ss << thispoly;
-  ui->labelEquation->setText(QString::fromStdString(ss.str()));
+  QString calib_eqn = "E = ";
+  if (new_calibration_.coefficients_.size())
+    calib_eqn += QString::number(new_calibration_.coefficients_[0]);
+  for (int i=1; i < new_calibration_.coefficients_.size(); i++) {
+    calib_eqn += " + " + QString::number(new_calibration_.coefficients_[1]) + "x";
+    if (i > 1)
+      calib_eqn += "<sup>" + QString::number(i) + "</sup>";
+  }
+  ui->labelEquation->setText(calib_eqn);
 
   ui->pushApplyCalib->setEnabled(false);
   ui->comboApplyTo->clear();
@@ -400,7 +428,7 @@ void FormCalibration::on_pushFit_clicked()
 
   Polynomial p = Polynomial(x, y, ui->spinTerms->value());
 
-  if (p.degree_) {
+  if (p.coeffs_.size()) {
     new_calibration_.coefficients_ = p.coeffs_;
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "keV";
@@ -414,6 +442,7 @@ void FormCalibration::on_pushFit_clicked()
   selection_model_.reset();
   marker_table_.update();
   toggle_push();
+  replot_markers();
 }
 
 void FormCalibration::on_pushClear_clicked()
@@ -424,6 +453,7 @@ void FormCalibration::on_pushClear_clicked()
   marker_table_.update();
   toggle_push();
   update_plot();
+  ui->plot1D->clearExtras();
 }
 
 void FormCalibration::on_pushPushEnergy_clicked()
@@ -491,9 +521,12 @@ void FormCalibration::on_pushFromDB_clicked()
 
 void FormCalibration::on_pushFindPeaks_clicked()
 {
-  my_markers_.clear();
+  this->setCursor(Qt::WaitCursor);
+
+  on_pushClear_clicked();
+
   UtilXY xy(x_chan.toStdVector(), y.toStdVector());
-  xy.find_peaks(ui->spinMinPeakWidth->value(), ui->spinMaxPeakWidth->value());
+  xy.find_peaks(ui->spinMinPeakWidth->value(), ui->spinMaxPeakWidth->value(), ui->spinMovAvg->value());
   peaks_ = xy.peaks_;
   for (auto &q : peaks_) {
     double chan = q.refined_.center_;
@@ -502,4 +535,18 @@ void FormCalibration::on_pushFindPeaks_clicked()
   marker_table_.update();
   toggle_push();
   update_plot();
+
+  ui->plot1D->addGraph(x_chan, QVector<double>::fromStdVector(xy.y_avg_), Qt::gray, 1);
+  ui->plot1D->redraw();
+
+  this->setCursor(Qt::ArrowCursor);
+
+}
+
+void FormCalibration::on_pushDetDB_clicked()
+{
+  WidgetDetectors *det_widget = new WidgetDetectors(this);
+  det_widget->setData(*detectors_, data_directory_, load_formats_);
+  connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
+  det_widget->exec();
 }

@@ -3177,6 +3177,30 @@
 </isotope>
 
 <isotope>
+<name>Cs-137</name>
+<gammaConstant>55 137 0 0</gammaConstant>
+<halfLife>15804792</halfLife>
+<gammas>
+<gamma>
+<energy>661.657</energy>
+<abundance>0.851</abundance>
+</gamma>
+</gammas>
+</isotope>
+
+<isotope>
+<name>La-138</name>
+<gammaConstant>57 138 0 0</gammaConstant>
+<halfLife>99999999</halfLife>
+<gammas>
+<gamma>
+<energy>1435.8</energy>
+<abundance>0.656</abundance>
+</gamma>
+</gammas>
+</isotope>
+
+<isotope>
 <name>Ce-139</name>
 <gammaConstant>58 139 0 0</gammaConstant>
 <halfLife>198230.0</halfLife>
@@ -5263,7 +5287,7 @@
 </gamma>
 </gammas>
 </isotope>
-
+	
 <isotope>
 <name>U-239</name>
 <gammaConstant>92 239 0 0</gammaConstant>

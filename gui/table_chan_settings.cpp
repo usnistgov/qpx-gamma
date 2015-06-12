@@ -31,22 +31,8 @@ Q_DECLARE_METATYPE(Pixie::Setting)
 
 QVariant TableChanSettings::data(const QModelIndex &index, int role) const
 {
-  int row = index.row();
-  int col = index.column();
 
-  if (role == Qt::DisplayRole)
-  {
-    if (row == 0) {
-      if (col == 0)
-        return "<===detector===>";
-      else if (col <= Pixie::kNumChans)
-        return QString::fromStdString(my_settings_.get_detector(Pixie::Channel(col-1)).name_);
-    }
-  } else if (role == Qt::EditRole) {
-    if (col <= Pixie::kNumChans) {
-      if (row == 0)
-        return QVariant::fromValue(my_settings_.get_detector(Pixie::Channel(col-1)));
-    }
+
   } else if (role == Qt::ForegroundRole) {
     if (row == 0) {
       QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta};
@@ -61,12 +47,6 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       boldfont.setPointSize(10);
       return boldfont;
     }
-    else if (col == Pixie::kNumChans + 1) {
-      QFont italicfont;
-      italicfont.setItalic(true);
-      italicfont.setPointSize(10);
-      return italicfont;
-    }
     else {
       QFont regularfont;
       regularfont.setPointSize(10);
@@ -78,22 +58,6 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
 
 QVariant TableChanSettings::headerData(int section, Qt::Orientation orientation, int role) const
 {
-  if (role == Qt::DisplayRole)
-  {
-    if (orientation == Qt::Horizontal) {
-      if (section == 0)
-        return QString("Setting name");
-      else if (section <= Pixie::kNumChans)
-        return (QString("chan ") + QString::number(section-1));
-      else
-        return "Units";
-    } else if (orientation == Qt::Vertical) {
-      if (section)
-        return QString::number(section-1);
-      else
-        return "D";
-    }
-  }
   else if (role == Qt::FontRole) {
     QFont boldfont;
     boldfont.setPointSize(10);
@@ -101,20 +65,6 @@ QVariant TableChanSettings::headerData(int section, Qt::Orientation orientation,
     return boldfont;
   }
   return QVariant();
-}
-
-bool TableChanSettings::setData(const QModelIndex & index, const QVariant & value, int role)
-{
-  int row = index.row();
-  int col = index.column();
-
-  if (role == Qt::EditRole)
-    if (value.canConvert<Pixie::Detector>()) {
-      my_settings_.set_detector(Pixie::Channel(col - 1), qvariant_cast<Pixie::Detector>(value));
-      emit detectors_changed();
-    }
-
-  return true;
 }
 */
 
@@ -195,6 +145,8 @@ QVariant TreeItem::display_data(int column) const
       else
         return "F";
     else if (itemData.setting_type == Pixie::SettingType::text)
+      return QString::fromStdString(itemData.value_text);
+    else if (itemData.setting_type == Pixie::SettingType::detector)
       return QString::fromStdString(itemData.value_text);
     else
       return QVariant::fromValue(itemData.value);
@@ -298,15 +250,12 @@ bool TreeItem::setData(int column, const QVariant &value)
   else if ((itemData.setting_type == Pixie::SettingType::int_menu)
       && (value.type() == QVariant::Int))
     itemData.value_int = value.toInt();
+  else if ((itemData.setting_type == Pixie::SettingType::detector)
+      && (value.type() == QVariant::String))
+    itemData.value_text = value.toString().toStdString();
   else
     return false;
 
-/*    else if (value.canConvert<Pixie::Detector>()) {
-      my_settings_.set_detector(Pixie::Channel(col - 1), qvariant_cast<Pixie::Detector>(value));
-      emit detectors_changed();
-    }*/
-
-  //itemData[column] = value;
   return true;
 }
 

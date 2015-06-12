@@ -28,20 +28,26 @@
 
 namespace Pixie {
 
-Settings::Settings() : udev(nullptr) {
+Settings::Settings() :
+  udev(nullptr),
+  detector_db_("Detectors")
+{
   num_chans_ = 32;  //This might need to be changed
 
   live_ = LiveStatus::dead;
   detectors_.resize(num_chans_);
 
   settings_tree_.node_type = NodeType::stem;
-  settings_tree_.name = "MADC-32";
+  settings_tree_.name = "VmeSettings";
 }
 
 Settings::Settings(const Settings& other):
   live_(LiveStatus::history), //this is why we have this function, deactivate if copied
   num_chans_(other.num_chans_), detectors_(other.detectors_),
-  settings_tree_(other.settings_tree_) {}
+  settings_tree_(other.settings_tree_), detector_db_("Detectors")
+{
+  detector_db_ = other.detector_db_;
+}
 
 bool Settings::boot() {
   if (live_ == LiveStatus::history)
@@ -87,6 +93,7 @@ bool Settings::boot() {
 
   // configure MADC-32
   PL_INFO << "Configuring MADC-32";
+  live_ = LiveStatus::online;
   write_settings_bulk();
 
   // configure MSCF-16
@@ -96,9 +103,8 @@ bool Settings::boot() {
   PL_INFO << "Configuring VME DGG";
   int ret = VME_DGG(udev,0,1,0,0,1120,0,0);
 
-  //reset();
+   //reset();
 
-  live_ = LiveStatus::online;
   return true;
 }
 
@@ -129,31 +135,61 @@ void Settings::get_all_settings() {
 };
 
 bool Settings::read_settings_bulk(){
-  if ((live_ == LiveStatus::online) && (settings_tree_.name == "MADC-32")) {
-    Setting newstem = settings_tree_;
-    bool ret = read_setting_MADC(newstem);
-    if (ret)
-      settings_tree_ = newstem;
-    return true;
+  if (live_ != LiveStatus::online)
+    return true; //should be false?
+
+  for (int i=0; i < settings_tree_.branches.size(); ++i) {
+    Setting set = settings_tree_.branches.get(i);
+    PL_INFO << "reading "  << set.name;
+    if (set.name == "MADC-32") {
+      if (!read_setting_MADC(set))
+        return false;
+      PL_INFO << "success "  << set.name;
+    } else if (set.name == "Detectors") {
+      set.branches.clear();
+      set.value_int = detectors_.size();
+      for (int j=0; j < detectors_.size(); ++j) {
+        Setting det("Detector");
+        det.node_type = NodeType::setting;
+        det.setting_type = SettingType::detector;
+        det.index = j;
+        det.name = detectors_[j].name_;
+        set.branches.add(det);
+      }
+      PL_INFO << "success "  << set.name;
+    }
+    settings_tree_.branches.add(set);
   }
-  return false;
+  return true;
 }
 
 bool Settings::write_settings_bulk(){
-  if ((live_ == LiveStatus::online) && (settings_tree_.name == "MADC-32")) {
-    long Data;
-    VME_read_16(udev, AM_MADC, MADC_ADDR(MADC_FIRMWARE), &Data);
-    PL_INFO << "MADC-32 Firmware version = 0x" << std::hex << Data;
-    VME_write_16(udev, AM_MADC, MADC_ADDR(MADC_SOFT_RESET), 0);
-    
-    return write_setting_MADC(settings_tree_);
+  if (live_ != LiveStatus::online)
+    return true; //should be false
+
+  for (int i=0; i < settings_tree_.branches.size(); ++i) {
+    Setting set = settings_tree_.branches.get(i);
+    PL_INFO << "writing "  << set.name;
+    if (set.name == "MADC-32") {
+      VME_write_16(udev, AM_MADC, MADC_ADDR(MADC_SOFT_RESET), 0);
+      if (!write_setting_MADC(set))
+        return false;
+      PL_INFO << "success "  << set.name;
+    } else if (set.name == "Detectors") {
+      for (int j=0; j < set.branches.size(); ++j) {
+        if (!write_detector(set.branches.get(j)))
+          return false;
+      }
+      PL_INFO << "success "  << set.name;
+    }
   }
+  return true;
 }
 
 
 bool Settings::read_setting_MADC(Setting &set) {
   if (live_ != LiveStatus::online)
-    return true; //should be false
+    return true; //should be false?
   
   if (set.node_type == NodeType::stem) {
     //PL_DBG << "will traverse branches of " << set.name;
@@ -199,6 +235,41 @@ bool Settings::write_setting_MADC(const Setting &set) {
   return true;  
 }
 
+bool Settings::read_detector(Setting &set) {
+  if (live_ != LiveStatus::online)
+    return true; //should be false?
+
+  if ((set.setting_type != SettingType::detector) ||
+      (set.node_type != NodeType::setting))
+    return true; //should be false
+
+  if ((set.index < 0) || (set.index >= detectors_.size()))
+    return true; //should be false
+
+  set.value_text = detectors_[set.index].name_;
+  return true;
+}
+
+
+bool Settings::write_detector(const Setting &set) {
+  if (live_ != LiveStatus::online)
+    return true; //should be false
+
+  if ((set.setting_type != SettingType::detector) ||
+      (set.node_type != NodeType::setting))
+    return true; //should be false
+
+  if ((set.index < 0) || (set.index >= detectors_.size()))
+    return true; //should be false
+
+  if (detector_db_.has_a(Detector(set.value_text)))
+    detectors_[set.index] = detector_db_.get(Detector(set.value_text));
+  else
+    detectors_[set.index] = Detector(set.value_text);
+
+  return true;
+}
+
 void Settings::to_xml(tinyxml2::XMLPrinter& printer) {
   printer.OpenElement("PixieSettings");
   settings_tree_.to_xml(printer);
@@ -222,6 +293,11 @@ Settings::Settings(tinyxml2::XMLElement* root):
   Settings()
 {
   from_xml(root);
+}
+
+void Settings::set_detector_DB(XMLableDB<Detector> newdb) {
+  detector_db_ = newdb;
+  write_settings_bulk();
 }
 
 Detector Settings::get_detector(Channel ch) const {

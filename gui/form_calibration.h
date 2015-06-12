@@ -81,6 +81,8 @@ private slots:
 
   void on_pushFindPeaks_clicked();
 
+  void on_pushDetDB_clicked();
+
 protected:
   void closeEvent(QCloseEvent*);
 

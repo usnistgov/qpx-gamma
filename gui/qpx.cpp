@@ -159,6 +159,7 @@ void qpx::loadSettings() {
   settings_.endGroup();
 
   detectors_.read_xml(data_directory_.toStdString() + "/default_detectors.det");
+  Pixie::Wrapper::getInstance().settings().set_detector_DB(detectors_);
 }
 
 void qpx::saveSettings() {
@@ -167,6 +168,7 @@ void qpx::saveSettings() {
   settings_.setValue("save_directory", data_directory_);
   settings_.endGroup();
 
+  Pixie::Wrapper::getInstance().settings().get_all_settings();
   detectors_.write_xml(data_directory_.toStdString() + "/default_detectors.det");
 }
 
@@ -205,6 +207,7 @@ void qpx::on_pushAbout_clicked()
 }
 
 void qpx::detectors_updated() {
+  Pixie::Wrapper::getInstance().settings().set_detector_DB(detectors_);
   emit update_dets();
 }
 

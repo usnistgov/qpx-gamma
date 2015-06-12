@@ -62,6 +62,8 @@ public:
   std::vector<Detector> get_detectors() const {return detectors_;}
   Detector get_detector(Channel ch = Channel::current) const;
   void set_detector(Channel ch, const Detector& det);
+  void set_detector_DB(XMLableDB<Detector>);
+
   void save_optimization(Channel chan = Channel::all);  //specify module as well?
   void load_optimization(Channel chan = Channel::all);
 
@@ -70,13 +72,15 @@ public:
   void push_settings(const Setting&);
   
   void get_all_settings();
-  
-  bool read_setting_MADC(Setting &set);
+
+  bool write_settings_bulk();
   bool read_settings_bulk();
 
+  bool read_setting_MADC(Setting &set);
   bool write_setting_MADC(const Setting &set);
-  bool write_settings_bulk();
 
+  bool read_detector(Setting &set);
+  bool write_detector(const Setting &set);
   
 protected:
   void initialize(); //populate metadata
@@ -91,6 +95,8 @@ protected:
   Setting settings_tree_;
 
   std::vector<Detector> detectors_;
+  XMLableDB<Detector> detector_db_;
+
   struct usb_dev_handle *udev;       // Device Handle
 
 };

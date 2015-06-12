@@ -53,7 +53,7 @@ void AbstractRadiation::from_xml(tinyxml2::XMLElement* root) {
 
   el = root->FirstChildElement("abundance");
   if ((el != nullptr) && (str = std::string(el->GetText())).size())
-    abundance = boost::lexical_cast<double>(boost::algorithm::trim_copy(str));
+    abundance = boost::lexical_cast<double>(boost::algorithm::trim_copy(str));  
 }
 
 
@@ -84,24 +84,24 @@ void Isotope::to_xml(tinyxml2::XMLPrinter& printer) const {
 
 void Isotope::from_xml(tinyxml2::XMLElement* root) {
   tinyxml2::XMLElement* NameData = root->FirstChildElement("name");
-  if (NameData == NULL) return;
-  name = std::string(NameData->GetText());
+  if (NameData != nullptr)
+    name = std::string(NameData->GetText());
   
   tinyxml2::XMLElement* gConstData = root->FirstChildElement("gammaConstant");
-  if (gConstData == NULL) return;
-  gamma_constant = std::string(gConstData->GetText());
+  if (gConstData != nullptr)
+    gamma_constant = std::string(gConstData->GetText());
 
   tinyxml2::XMLElement* hlData = root->FirstChildElement("halfLife");
-  if (hlData == NULL) return;
-  half_life = boost::lexical_cast<double>(hlData->GetText());
+  if (hlData != nullptr)
+    half_life = boost::lexical_cast<double>(hlData->GetText());
 
   tinyxml2::XMLElement* gammaData = root->FirstChildElement(gammas.xml_element_name().c_str());
-  if (gammaData == NULL) return;
-  gammas.from_xml(gammaData);
+  if (gammaData != nullptr)
+    gammas.from_xml(gammaData);
 
   tinyxml2::XMLElement* betaData = root->FirstChildElement(beta.xml_element_name().c_str());
-  if (betaData == NULL) return;
-  beta.from_xml(betaData);
+  if (betaData != nullptr)
+    beta.from_xml(betaData);
 }
 
 }

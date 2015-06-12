@@ -57,11 +57,13 @@ public:
 
 class Peak {
 public:
-  Peak() {}
+  Peak() {err = 0;}
   Peak(const std::vector<double> &x, const std::vector<double> &y, int min, int max);
 
   std::vector<double> x_, y_, filled_y_, y_nobase_, y_fullfit_;
   Gaussian rough_, refined_;
+
+  int err;
 
 private:
   //  Polynomial find_p(std::vector<double> x, std::vector<double> y, double center);
@@ -77,10 +79,11 @@ public:
   void setXY(std::vector<double> x, std::vector<double> y)
     {*this = UtilXY(x, y);}
 
-  void find_peaks(int min_width, int max_width);
+  void mov_avg(uint16_t);
+  void find_peaks(int min_width, int max_width, uint16_t avg_window);
   //void find_peaks2(int max);
 
-  std::vector<double> x_, y_;
+  std::vector<double> x_, y_, y_avg_;
 
   std::vector<Peak> peaks_;
 };

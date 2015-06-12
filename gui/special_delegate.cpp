@@ -62,15 +62,7 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
                                           const QModelIndex &index) const
 
 {
-  if (index.data(Qt::EditRole).canConvert<Pixie::Detector>()) {
-    QComboBox *editor = new QComboBox(parent);
-    editor->addItem(QString("none"));
-    for (int i=0; i < detectors_.size(); i++) {
-      QString name = QString::fromStdString(detectors_.get(i).name_);
-      editor->addItem(name, name);
-    }
-    return editor;
-  } else if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
+  if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
     Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
     if (set.setting_type == Pixie::SettingType::floating) {
       QDoubleSpinBox *editor = new QDoubleSpinBox(parent);
@@ -80,6 +72,14 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
       return editor;
     } else if (set.setting_type == Pixie::SettingType::text) {
       QLineEdit *editor = new QLineEdit(parent);
+      return editor;
+    } else if (set.setting_type == Pixie::SettingType::detector) {
+      QComboBox *editor = new QComboBox(parent);
+      editor->addItem(QString("none"));
+      for (int i=0; i < detectors_.size(); i++) {
+        QString name = QString::fromStdString(detectors_.get(i).name_);
+        editor->addItem(name, name);
+      }
       return editor;
     } else if (set.setting_type == Pixie::SettingType::boolean) {
       QCheckBox *editor = new QCheckBox(parent);
@@ -105,17 +105,15 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
   if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
       Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
-      if (set.int_menu_items.count(set.value_int)) {
+      if (set.setting_type == Pixie::SettingType::detector) {
+        int cbIndex = cb->findText(QString::fromStdString(set.name));
+        if(cbIndex >= 0)
+          cb->setCurrentIndex(cbIndex);
+      } else if (set.int_menu_items.count(set.value_int)) {
         int cbIndex = cb->findText(QString::fromStdString(set.int_menu_items[set.value_int]));
         if(cbIndex >= 0)
           cb->setCurrentIndex(cbIndex);
       }
-    } else if (index.data(Qt::EditRole).canConvert<Pixie::Detector>()) { // needs check
-      Pixie::Detector det = qvariant_cast<Pixie::Detector>(index.data(Qt::EditRole));
-      QString currentText = QString::fromStdString(det.name_);
-      int cbIndex = cb->findText(currentText);
-      if(cbIndex >= 0)
-        cb->setCurrentIndex(cbIndex);
     }
   } else if (QDoubleSpinBox *sb = qobject_cast<QDoubleSpinBox *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
@@ -154,9 +152,7 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
 void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *model, const QModelIndex &index ) const
 {
   if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Pixie::Detector>())
-      model->setData(index, QVariant::fromValue(detectors_.get(cb->currentText().toStdString())), Qt::EditRole);
-    else if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
+    if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
       if (cb->currentData().type() == QMetaType::Int)
         model->setData(index, QVariant::fromValue(cb->currentData().toInt()), Qt::EditRole);
       else if (cb->currentData().type() == QMetaType::Double)

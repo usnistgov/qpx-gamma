@@ -103,7 +103,7 @@ struct Setting : public XMLable {
     if (element->Attribute("name"))
       name = std::string(element->Attribute("name"));
     if (element->Attribute("index"))
-      value = boost::lexical_cast<uint32_t>(element->Attribute("index"));
+      index = boost::lexical_cast<uint32_t>(element->Attribute("index"));
     if (element->Attribute("writable")) {
       std::string rw = std::string(element->Attribute("writable"));
       if (rw == "true")

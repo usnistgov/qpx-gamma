@@ -546,8 +546,7 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
   fetched_spill = new Spill;
   fetched_spill->run = new RunInfo;
   fetched_spill->stats = new StatsUpdate;
-
-  //pxi.my_settings_.get_all_settings();
+  pxi.my_settings_.get_all_settings();
   fetched_spill->run->p4_state = pxi.my_settings_;
 
   pxi.my_settings_.reset();
@@ -643,7 +642,7 @@ void Wrapper::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQue
 
   //setup output file
   FILE *DataFile;
-  DataFile =  fopen("/home/marsh/qpxdata/vmecrap.dat","w");
+  DataFile =  fopen("/home/shetty/qpxdata/vmecrap.dat","w");
   
   while ((spill = in_queue->dequeue()) != NULL ) {
     parse_timer.resume();

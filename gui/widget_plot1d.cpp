@@ -169,6 +169,31 @@ void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, 
   }
 }
 
+void WidgetPlot1D::addPoints(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness) {
+  if (x.empty() || y.empty() || (x.size() != y.size()))
+    return;
+
+  ui->mcaPlot->addGraph();
+  int g = ui->mcaPlot->graphCount() - 1;
+  ui->mcaPlot->graph(g)->addData(x, y);
+  QPen thispen = QPen(color);
+  thispen.setWidth(thickness);
+  ui->mcaPlot->graph(g)->setPen(thispen);
+  ui->mcaPlot->graph(g)->setBrush(QBrush());
+  ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDiamond, color, color, thickness));
+  ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsNone);
+
+  if (x[0] < minx) {
+    minx = x[0];
+    ui->mcaPlot->xAxis->rescale();
+  }
+  if (x[x.size() - 1] > maxx) {
+    maxx = x[x.size() - 1];
+    ui->mcaPlot->xAxis->rescale();
+  }
+}
+
+
 void WidgetPlot1D::plot_rezoom() {
   if (minima_.empty() || maxima_.empty()) {
     ui->mcaPlot->yAxis->rescale();
@@ -341,7 +366,7 @@ void WidgetPlot1D::replot_markers() {
     }
   }
 
-  if ((rect.size() == 2) && (rect[0].visible) && !maxima_.empty() && !minima_.empty()){
+   if ((rect.size() == 2) && (rect[0].visible) && !maxima_.empty() && !minima_.empty()){
     double upperc = maxima_.rbegin()->first;
     double lowerc = maxima_.begin()->first;
 
@@ -443,8 +468,10 @@ void WidgetPlot1D::set_plot_style(QString stl) {
   for (auto &q : menuPlotStyle.actions())
     q->setChecked(q->text() == stl);
   int total = ui->mcaPlot->graphCount();
-  for (int i=0; i < total; i++)
-    set_graph_style(ui->mcaPlot->graph(i), stl);
+  for (int i=0; i < total; i++) {
+    if (ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssDiamond)
+      set_graph_style(ui->mcaPlot->graph(i), stl);
+  }
   ui->mcaPlot->replot();
   this->setCursor(Qt::ArrowCursor);
 }
