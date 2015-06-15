@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-#include "gui/form_mca_daq.h"
+#include "form_mca_daq.h"
 #include "ui_form_mca_daq.h"
 #include "dialog_spectra_templates.h"
 #include "dialog_save_spectra.h"
@@ -221,8 +221,9 @@ void FormMcaDaq::update_plots() {
 
 void FormMcaDaq::on_pushMcaSave_clicked()
 {
+  this->setCursor(Qt::WaitCursor);
   DialogSaveSpectra* newDialog = new DialogSaveSpectra(spectra_, data_directory_);
-  connect(newDialog, SIGNAL(accepted()), this, SLOT(enableIObuttons())); //needs its own slot in case not saved
+  connect(newDialog, SIGNAL(accepted()), this, SLOT(update_plots())); //needs its own slot in case not saved
   newDialog->exec();
 }
 

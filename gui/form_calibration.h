@@ -63,23 +63,29 @@ public slots:
 private slots:
   void addMovingMarker(double);
   void removeMovingMarker(double);
-  void on_pushAdd_clicked();
   void replot_markers();
   void selection_changed(QItemSelection, QItemSelection);
   void toggle_push();
-  void on_pushMarkerRemove_clicked();
-  void on_pushFit_clicked();
-  void on_pushClear_clicked();
   void isotope_energies_chosen();
-  void on_pushPushEnergy_clicked();
   void on_pushApplyCalib_clicked();
 
   void toggle_radio();
   void detectorsUpdated() {emit detectorsChanged();}
 
+  void on_pushAdd_clicked();
+  void on_pushMarkerRemove_clicked();
+  void on_pushFit_clicked();
   void on_pushFromDB_clicked();
-
   void on_pushFindPeaks_clicked();
+  void on_pushDetDB_clicked();
+  void on_pushRefresh_clicked();
+  void on_pushAllmarkers_clicked();
+  void on_pushAllEnergies_clicked();
+  void on_checkShowMovAvg_clicked();
+  void on_checkShowPrelimPeaks_clicked();
+  void on_checkShowGaussians_clicked();
+  void on_checkShowBaselines_clicked();
+  void on_checkShowFilteredPeaks_clicked();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -96,6 +102,7 @@ private:
   //data from selected spectrum
   QString current_spectrum_;
   QVector<double> x_chan, y;
+  UtilXY spectrum_data_;
   Pixie::Detector detector_;
 
   //markers
@@ -112,6 +119,7 @@ private:
 
   void loadSettings();
   void saveSettings();
+  void plot_derivs(UtilXY&);
 };
 
 #endif // FORM_CALIBRATION_H

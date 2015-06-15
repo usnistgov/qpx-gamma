@@ -39,7 +39,7 @@
          <property name="maximumSize">
           <size>
            <width>100</width>
-           <height>16777215</height>
+           <height>25</height>
           </size>
          </property>
          <property name="text">
@@ -64,7 +64,7 @@
          <property name="maximumSize">
           <size>
            <width>120</width>
-           <height>16777215</height>
+           <height>25</height>
           </size>
          </property>
         </widget>
@@ -77,6 +77,12 @@
         <widget class="QPushButton" name="pushShowAll">
          <property name="enabled">
           <bool>false</bool>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>25</height>
+          </size>
          </property>
          <property name="text">
           <string>Show all</string>
@@ -93,6 +99,12 @@
         <widget class="QPushButton" name="pushHideAll">
          <property name="enabled">
           <bool>false</bool>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>25</height>
+          </size>
          </property>
          <property name="text">
           <string>Hide all</string>
@@ -176,6 +188,12 @@
          <property name="enabled">
           <bool>false</bool>
          </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>25</height>
+          </size>
+         </property>
          <property name="text">
           <string>Details</string>
          </property>
@@ -195,6 +213,12 @@
         <widget class="QPushButton" name="pushCalibrate">
          <property name="enabled">
           <bool>false</bool>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>25</height>
+          </size>
          </property>
          <property name="text">
           <string>Calibrate</string>

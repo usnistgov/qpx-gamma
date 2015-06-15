@@ -21,7 +21,10 @@
  ******************************************************************************/
 
 #include <QFileDialog>
-#include "gui/widget_isotopes.h"
+#include <QMessageBox>
+#include <QCloseEvent>
+#include <QInputDialog>
+#include "widget_isotopes.h"
 #include "ui_widget_isotopes.h"
 #include "qt_util.h"
 
@@ -30,20 +33,29 @@
 WidgetIsotopes::WidgetIsotopes(QWidget *parent) :
   QWidget(parent),
   ui(new Ui::WidgetIsotopes),
-  isotopes_("isotopes")
+  isotopes_("isotopes"),
+  table_gammas_(this),
+  selection_model_(&table_gammas_)
 {
   ui->setupUi(this);
 
-  ui->tableEnergies->setColumnCount(2);
-  ui->tableEnergies->setHorizontalHeaderItem(0, new QTableWidgetItem("Energy", QTableWidgetItem::Type));
-  ui->tableEnergies->setHorizontalHeaderItem(1, new QTableWidgetItem("Abundance", QTableWidgetItem::Type));
-  ui->tableEnergies->setSelectionBehavior(QAbstractItemView::SelectRows);
-  ui->tableEnergies->setSelectionMode(QAbstractItemView::ExtendedSelection);
-  ui->tableEnergies->horizontalHeader()->setStretchLastSection(true);
-  ui->tableEnergies->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+  modified_ = false;
+
+  ui->tableGammas->setModel(&table_gammas_);
+  ui->tableGammas->setSelectionModel(&selection_model_);
+  ui->tableGammas->setItemDelegate(&special_delegate_);
+  ui->tableGammas->verticalHeader()->hide();
+  ui->tableGammas->setSelectionBehavior(QAbstractItemView::SelectRows);
+  ui->tableGammas->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  ui->tableGammas->horizontalHeader()->setStretchLastSection(true);
+  ui->tableGammas->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+  ui->tableGammas->show();
+
+  connect(&selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
+          this, SLOT(selection_changed(QItemSelection,QItemSelection)));
 
   connect(ui->listIsotopes, SIGNAL(currentTextChanged(QString)), this, SLOT(isotopeChosen(QString)));
-  connect(ui->tableEnergies, SIGNAL(itemSelectionChanged()), this, SLOT(energiesChosen()));
+  connect(&table_gammas_, SIGNAL(energiesChanged()), this, SLOT(energies_changed()));
 }
 
 WidgetIsotopes::~WidgetIsotopes()
@@ -62,49 +74,32 @@ void WidgetIsotopes::setDir(QString filedir) {
       ui->listIsotopes->addItem(QString::fromStdString(isotopes_.get(i).name));
     }
   }
-}
 
-void WidgetIsotopes::on_pushOpen_clicked()
-{
-  QString fileName = QFileDialog::getOpenFileName(this, "Load isotopes", root_dir_, "Isotope database (*.xml)");
-  if (!validateFile(this, fileName, false))
-    return;
-
-  isotopes_.clear();
-  isotopes_.read_xml(fileName.toStdString());
-  ui->listIsotopes->clear();
-  for (int i=0; i < isotopes_.size(); i++) {
-    ui->listIsotopes->addItem(QString::fromStdString(isotopes_.get(i).name));
-  }
+  modified_ = false;
 }
 
 void WidgetIsotopes::isotopeChosen(QString choice) {
-  ui->tableEnergies->clear();
-  ui->tableEnergies->setHorizontalHeaderItem(0, new QTableWidgetItem("Energy", QTableWidgetItem::Type));
-  ui->tableEnergies->setHorizontalHeaderItem(1, new QTableWidgetItem("Abundance", QTableWidgetItem::Type));
+  ui->labelPeaks->setText("Energies");
+  ui->pushRemoveIsotope->setEnabled(false);
+  ui->pushAddGamma->setEnabled(false);
+  table_gammas_.clear();
   RadTypes::Isotope iso(choice.toStdString());
   if (isotopes_.has_a(iso)) {
+    ui->labelPeaks->setText(choice);
+    ui->pushRemoveIsotope->setEnabled(true);
     iso = isotopes_.get(iso);
-    ui->tableEnergies->setRowCount(iso.gammas.size());
-    int i = 0;
-    for (auto &q : iso.gammas.my_data_) {
-      QTableWidgetItem *en = new QTableWidgetItem(QString::number(q.energy));
-      en->setFlags(en->flags() ^ Qt::ItemIsEditable);
-      ui->tableEnergies->setItem(i,0, en);
-      QTableWidgetItem *abu = new QTableWidgetItem(QString::number(q.abundance));
-      abu->setFlags(abu->flags() ^ Qt::ItemIsEditable);
-      ui->tableEnergies->setItem(i,1, abu);
-      ++i;
-    }
+    table_gammas_.set_gammas(iso.gammas);
+    ui->pushAddGamma->setEnabled(true);
   }
+  selection_changed(QItemSelection(), QItemSelection());
 }
 
-void WidgetIsotopes::energiesChosen() {
+void WidgetIsotopes::selection_changed(QItemSelection, QItemSelection) {
   current_gammas_.clear();
-  for (auto &q : ui->tableEnergies->selectedRanges()) {
-    if (q.rowCount() > 0)
-      for (int j = q.topRow(); j <= q.bottomRow(); j++)
-        current_gammas_.push_back(ui->tableEnergies->item(j,0)->data(Qt::EditRole).toDouble());
+
+  foreach (QModelIndex idx, selection_model_.selectedRows()) {
+    QModelIndex nrg_ix = table_gammas_.index(idx.row(), 0);
+    current_gammas_.push_back(table_gammas_.data(nrg_ix, Qt::DisplayRole).toDouble());
   }
 
   ui->pushSum->setEnabled(false);
@@ -138,6 +133,8 @@ void WidgetIsotopes::on_pushSum_clicked()
   PL_INFO << "modifying " << modified.name << " to have " << modified.gammas.size() << " gammas";
   isotopes_.replace(modified);
   isotopeChosen(QString::fromStdString(modified.name));
+
+  modified_ = true;
 }
 
 void WidgetIsotopes::on_pushRemove_clicked()
@@ -147,6 +144,8 @@ void WidgetIsotopes::on_pushRemove_clicked()
     modified.gammas.remove_a(RadTypes::Gamma(q, 0.0));
   isotopes_.replace(modified);
   isotopeChosen(QString::fromStdString(modified.name));
+
+  modified_ = true;
 }
 
 QString WidgetIsotopes::current_isotope() const {
@@ -161,3 +160,191 @@ void WidgetIsotopes::set_current_isotope(QString choice) {
     if (ui->listIsotopes->item(i)->text() == choice)
       ui->listIsotopes->setCurrentRow(i);
 }
+
+bool WidgetIsotopes::save_close() {
+
+  if (modified_)
+  {
+    int reply = QMessageBox::warning(this, "Isotopes modified",
+                                     "Save?",
+                                     QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+    if (reply == QMessageBox::Yes) {
+      QString fileName = root_dir_ + "/isotopes.xml";
+      isotopes_.write_xml(fileName.toStdString());
+      modified_ = false;
+    } else if (reply == QMessageBox::Cancel) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+void WidgetIsotopes::on_pushAddGamma_clicked()
+{
+  RadTypes::Isotope modified = isotopes_.get(RadTypes::Isotope(current_isotope().toStdString()));
+  modified.gammas.add_a(RadTypes::Gamma(1, 0.0));
+  isotopes_.replace(modified);
+  isotopeChosen(QString::fromStdString(modified.name));
+  modified_ = true;
+}
+
+void WidgetIsotopes::on_pushRemoveIsotope_clicked()
+{
+  isotopes_.remove_a(RadTypes::Isotope(current_isotope().toStdString()));
+  ui->listIsotopes->clear();
+  for (int i=0; i < isotopes_.size(); i++) {
+    ui->listIsotopes->addItem(QString::fromStdString(isotopes_.get(i).name));
+  }
+  modified_ = true;
+  isotopeChosen("");
+}
+
+void WidgetIsotopes::on_pushAddIsotope_clicked()
+{
+  bool ok;
+  QString text = QInputDialog::getText(this, "New Isotope",
+                                       "Isotope name:", QLineEdit::Normal,
+                                       "", &ok);
+  if (ok && !text.isEmpty()) {
+    if (isotopes_.has_a(RadTypes::Isotope(text.toStdString())))
+      QMessageBox::warning(this, "Already exists", "Isotope " + text + " already exists", QMessageBox::Ok);
+    else {
+      isotopes_.add(RadTypes::Isotope(text.toStdString()));
+      ui->listIsotopes->clear();
+      for (int i=0; i < isotopes_.size(); i++) {
+        ui->listIsotopes->addItem(QString::fromStdString(isotopes_.get(i).name));
+      }
+      modified_ = true;
+      ui->listIsotopes->setCurrentRow(ui->listIsotopes->count() - 1);
+    }
+  }
+}
+
+void WidgetIsotopes::energies_changed() {
+  RadTypes::Isotope modified = isotopes_.get(RadTypes::Isotope(current_isotope().toStdString()));
+  modified.gammas = table_gammas_.get_gammas();
+  isotopes_.replace(modified);
+  modified_ = true;
+}
+
+void WidgetIsotopes::push_energies(std::vector<double> new_energies) {
+  RadTypes::Isotope modified = isotopes_.get(RadTypes::Isotope(current_isotope().toStdString()));
+  for (auto &q : new_energies)
+    modified.gammas.add(RadTypes::Gamma(q, 0));
+  isotopes_.replace(modified);
+  modified_ = true;
+  isotopeChosen(current_isotope());
+}
+
+
+
+
+
+
+
+TableGammas::TableGammas(QObject *parent) :
+  QAbstractTableModel(parent)
+{
+}
+
+int TableGammas::rowCount(const QModelIndex & /*parent*/) const
+{
+  return gammas_.size();
+}
+
+int TableGammas::columnCount(const QModelIndex & /*parent*/) const
+{
+  return 2;
+}
+
+QVariant TableGammas::data(const QModelIndex &index, int role) const
+{
+  int col = index.column();
+  int row = index.row();
+  if ((role == Qt::DisplayRole) || (role == Qt::EditRole))
+  {
+    switch (col) {
+    case 0:
+      return QVariant::fromValue(gammas_[row].energy);
+    case 1:
+      return QVariant::fromValue(gammas_[row].abundance);
+    }
+  }
+  return QVariant();
+}
+
+QVariant TableGammas::headerData(int section, Qt::Orientation orientation, int role) const
+{
+  if (role == Qt::DisplayRole)
+  {
+    if (orientation == Qt::Horizontal) {
+      switch (section)
+      {
+      case 0:
+        return QString("Energy");
+      case 1:
+        return QString("Intensity");
+      }
+    } else if (orientation == Qt::Vertical) {
+      return QString::number(section);
+    }
+  }
+  return QVariant();
+}
+
+bool byEnegery(RadTypes::Gamma i, RadTypes::Gamma j) { return i.energy > j.energy; }
+bool byIntensity(RadTypes::Gamma i, RadTypes::Gamma j) { return i.abundance > j.abundance; }
+
+
+void TableGammas::set_gammas(const XMLableDB<RadTypes::Gamma> &newgammas) {
+  gammas_.clear();
+  for (int i=0; i <newgammas.size(); ++i)
+    gammas_.push_back(newgammas.get(i));
+
+  if (gammas_.size())
+    std::sort(gammas_.begin(), gammas_.end(), byIntensity);
+
+  QModelIndex start_ix = createIndex( 0, 0 );
+  QModelIndex end_ix = createIndex( (rowCount() - 1), (columnCount() - 1) );
+  emit dataChanged( start_ix, end_ix );
+  emit layoutChanged();
+}
+
+XMLableDB<RadTypes::Gamma> TableGammas::get_gammas() {
+  XMLableDB<RadTypes::Gamma> gammas("gammas");
+  for (auto &q : gammas_)
+    gammas.add(q);
+  return gammas;
+}
+
+void TableGammas::clear() {
+  set_gammas(XMLableDB<RadTypes::Gamma>("gammas"));
+}
+
+Qt::ItemFlags TableGammas::flags(const QModelIndex &index) const
+{
+  return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | QAbstractTableModel::flags(index);
+}
+
+bool TableGammas::setData(const QModelIndex & index, const QVariant & value, int role)
+{
+  int row = index.row();
+  int col = index.column();
+  QModelIndex ix = createIndex(row, col);
+
+  if (role == Qt::EditRole) {
+    if (col == 0)
+      gammas_[row].energy = value.toDouble();
+    else if (col == 1)
+      gammas_[row].abundance = value.toDouble();
+  }
+
+  QModelIndex start_ix = createIndex( 0, 0 );
+  QModelIndex end_ix = createIndex( (rowCount() - 1), (columnCount() - 1) );
+  emit dataChanged( start_ix, end_ix );
+  emit layoutChanged();
+  emit energiesChanged();
+  return true;
+}
+

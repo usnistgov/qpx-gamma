@@ -1,95 +1,75 @@
 ﻿<?xml version="1.0"?>
 <SpectrumTemplates>
     <PixieSpectrumTemplate type="1D">
-        <Name>chan0</Name>
-        <Appearance>1964052458</Appearance>
+        <Name>Det1</Name>
+        <Appearance>2158889054</Appearance>
         <Visible>1</Visible>
-        <Resolution>12</Resolution>
-        <MatchPattern>1 0 0 0</MatchPattern>
-        <AddPattern>1 0 0 0</AddPattern>
+        <Resolution>13</Resolution>
+        <MatchPattern>1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</MatchPattern>
+        <AddPattern>1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</AddPattern>
     </PixieSpectrumTemplate>
     <PixieSpectrumTemplate type="1D">
-        <Name>chan1</Name>
-        <Appearance>2164195328</Appearance>
+        <Name>Dat2</Name>
+        <Appearance>2149491586</Appearance>
         <Visible>1</Visible>
-        <Resolution>12</Resolution>
-        <MatchPattern>0 1 0 0</MatchPattern>
-        <AddPattern>0 1 0 0</AddPattern>
+        <Resolution>13</Resolution>
+        <MatchPattern>0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</MatchPattern>
+        <AddPattern>0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</AddPattern>
     </PixieSpectrumTemplate>
     <PixieSpectrumTemplate type="1D">
-        <Name>chan0_anti</Name>
-        <Appearance>2150078169</Appearance>
-        <Visible>0</Visible>
-        <Resolution>12</Resolution>
-        <MatchPattern>1 -1 0 0</MatchPattern>
-        <AddPattern>1 0 0 0</AddPattern>
+        <Name>Det3</Name>
+        <Appearance>2154368969</Appearance>
+        <Visible>1</Visible>
+        <Resolution>13</Resolution>
+        <MatchPattern>0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</MatchPattern>
+        <AddPattern>0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</AddPattern>
     </PixieSpectrumTemplate>
     <PixieSpectrumTemplate type="1D">
-        <Name>chan1_anti</Name>
-        <Appearance>2263453729</Appearance>
-        <Visible>0</Visible>
-        <Resolution>12</Resolution>
-        <MatchPattern>-1 1 0 0</MatchPattern>
-        <AddPattern>0 1 0 0</AddPattern>
+        <Name>Det4</Name>
+        <Appearance>2158078221</Appearance>
+        <Visible>1</Visible>
+        <Resolution>13</Resolution>
+        <MatchPattern>0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</MatchPattern>
+        <AddPattern>0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</AddPattern>
     </PixieSpectrumTemplate>
     <PixieSpectrumTemplate type="1D">
-        <Name>chan0_co</Name>
-        <Appearance>2503253112</Appearance>
-        <Visible>0</Visible>
-        <Resolution>12</Resolution>
-        <MatchPattern>1 1 0 0</MatchPattern>
-        <AddPattern>1 0 0 0</AddPattern>
+        <Name>Det5</Name>
+        <Appearance>2160948740</Appearance>
+        <Visible>1</Visible>
+        <Resolution>13</Resolution>
+        <MatchPattern>0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</MatchPattern>
+        <AddPattern>0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</AddPattern>
     </PixieSpectrumTemplate>
     <PixieSpectrumTemplate type="1D">
-        <Name>chan1_co</Name>
-        <Appearance>2513380281</Appearance>
-        <Visible>0</Visible>
-        <Resolution>12</Resolution>
-        <MatchPattern>1 1 0 0</MatchPattern>
-        <AddPattern>0 1 0 0</AddPattern>
-    </PixieSpectrumTemplate>
-    <PixieSpectrumTemplate type="LFC1D">
-        <Name>chan0LFC</Name>
-        <Appearance>2160774956</Appearance>
+        <Name>Det6</Name>
+        <Appearance>2148897750</Appearance>
         <Visible>1</Visible>
-        <Resolution>12</Resolution>
-        <MatchPattern>1 0 0 0</MatchPattern>
-        <AddPattern>1 0 0 0</AddPattern>
-        <GenericAttributes>
-            <Setting name="time_sample" value="10.000000" unit="seconds" writable="1" description="minimum Δt before compensating"/>
-        </GenericAttributes>
+        <Resolution>13</Resolution>
+        <MatchPattern>0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</MatchPattern>
+        <AddPattern>0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</AddPattern>
     </PixieSpectrumTemplate>
-    <PixieSpectrumTemplate type="LFC1D">
-        <Name>chan1LFC</Name>
-        <Appearance>2148192731</Appearance>
+    <PixieSpectrumTemplate type="1D">
+        <Name>Det7</Name>
+        <Appearance>2150192563</Appearance>
         <Visible>1</Visible>
-        <Resolution>12</Resolution>
-        <MatchPattern>0 1 0 0</MatchPattern>
-        <AddPattern>0 1 0 0</AddPattern>
-        <GenericAttributes>
-            <Setting name="time_sample" value="40.000000" unit="seconds" writable="1" description="minimum Δt before compensating"/>
-        </GenericAttributes>
+        <Resolution>13</Resolution>
+        <MatchPattern>0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</MatchPattern>
+        <AddPattern>0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</AddPattern>
     </PixieSpectrumTemplate>
-    <PixieSpectrumTemplate type="2D">
-        <Name>coinc10</Name>
-        <Appearance>4278190080</Appearance>
+    <PixieSpectrumTemplate type="1D">
+        <Name>Det8</Name>
+        <Appearance>2155272211</Appearance>
         <Visible>1</Visible>
-        <Resolution>10</Resolution>
-        <MatchPattern>0 0 0 0</MatchPattern>
-        <AddPattern>1 1 0 0</AddPattern>
-        <GenericAttributes>
-            <Setting name="buffered" value="1.000000" unit="T/F" writable="1" description="Buffered output for efficient plotting (more memory)"/>
-        </GenericAttributes>
+        <Resolution>13</Resolution>
+        <MatchPattern>0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</MatchPattern>
+        <AddPattern>0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</AddPattern>
     </PixieSpectrumTemplate>
-    <PixieSpectrumTemplate type="2D">
-        <Name>coinc12</Name>
-        <Appearance>4278190080</Appearance>
-        <Visible>0</Visible>
-        <Resolution>12</Resolution>
-        <MatchPattern>0 0 0 0</MatchPattern>
-        <AddPattern>1 1 0 0</AddPattern>
-        <GenericAttributes>
-            <Setting name="buffered" value="1.000000" unit="T/F" writable="1" description="Buffered output for efficient plotting (more memory)"/>
-        </GenericAttributes>
+    <PixieSpectrumTemplate type="1D">
+        <Name>Det9</Name>
+        <Appearance>2161134124</Appearance>
+        <Visible>1</Visible>
+        <Resolution>13</Resolution>
+        <MatchPattern>0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</MatchPattern>
+        <AddPattern>0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</AddPattern>
     </PixieSpectrumTemplate>
 </SpectrumTemplates>

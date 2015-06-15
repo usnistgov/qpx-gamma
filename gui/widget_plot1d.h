@@ -49,16 +49,27 @@ public:
 
   void setLabels(QString x, QString y);
   void setTitle(QString title);
+  void setFloatingText(QString);
 
   void set_scale_type(QString);
   void set_plot_style(QString);
+  void set_marker_labels(bool);
   QString scale_type();
   QString plot_style();
+  bool marker_labels();
+
+  void showButtonMarkerLabels(bool);
+  void showButtonPlotStyle(bool);
+  void showButtonScaleType(bool);
+  void showButtonColorThemes(bool);
+  void showTitle(bool);
+  void setZoomable(bool);
 
   void set_markers(const std::list<Marker>& markers);
   void set_block(Marker, Marker);
   void set_cursors(const std::list<Marker>& cursors);
 
+  void addPoints(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness, QCPScatterStyle::ScatterShape);
   void addGraph(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness);
   void setYBounds(const std::map<double, double> &minima, const std::map<double, double> &maxima);
 
@@ -81,6 +92,8 @@ private slots:
 
   void on_pushNight_clicked();
 
+  void on_pushLabels_clicked();
+
 private:
   void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
   void calc_y_bounds(double lower, double upper);
@@ -97,6 +110,7 @@ private:
   double miny, maxy;
 
   bool use_calibrated_;
+  bool marker_labels_;
 
   double minx_zoom, maxx_zoom;
 
@@ -107,6 +121,8 @@ private:
   QString color_theme_;
   QString scale_type_;
   QString plot_style_;
+
+  QString floating_text_;
 };
 
 #endif // WIDGET_PLOST1D_H

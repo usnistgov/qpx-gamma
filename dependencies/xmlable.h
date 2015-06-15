@@ -112,16 +112,16 @@ public:
         q = t;
   }
  
-  void remove(T t) {  //using deep compare
+  void remove(const T &t) {  //using deep compare
     typename std::list<T>::iterator it = my_data_.begin();
     while (it != my_data_.end()) {
-      if (it == t)
+      if (*it == t)
         it = my_data_.erase(it);
       ++it;
     }
   }
 
-  void remove_a(T t) {  //using shallow compare
+  void remove_a(const T &t) {  //using shallow compare
     typename std::list<T>::iterator it = my_data_.begin();
     while (it != my_data_.end()) {
       if (it->shallow_equals(t))

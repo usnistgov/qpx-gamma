@@ -24,11 +24,18 @@
 
 #include <gsl/gsl_multifit.h>
 #include <sstream>
+#include <iomanip>
 #include "fityk.h"
 #include "custom_logger.h"
 
-Polynomial::Polynomial(std::vector<double> coeffs, double xoff) {
-  xoffset_ = xoff;
+std::string to_str_precision(double x, uint16_t n) {
+  std::ostringstream ss;
+  ss << std::fixed << std::setprecision(n) << x;
+  return ss.str();
+}
+
+Polynomial::Polynomial(std::vector<double> coeffs, double center) {
+  xoffset_ = center;
   coeffs_ = coeffs;
   int deg = -1;
   for (size_t i = 0; i < coeffs.size(); i++)
@@ -38,7 +45,9 @@ Polynomial::Polynomial(std::vector<double> coeffs, double xoff) {
 }
 
 Polynomial::Polynomial(std::vector<double> &x, std::vector<double> &y, uint16_t degree, double center) {
-  degree_ = 0; xoffset_ = center;
+  degree_ = -1;
+
+  xoffset_ = center;
   if (x.size() != y.size())
     return;
 
@@ -49,28 +58,48 @@ Polynomial::Polynomial(std::vector<double> &x, std::vector<double> &y, uint16_t 
     x_c.push_back(q - center);
 
   fityk::Fityk *f = new fityk::Fityk;
+  f->redir_messages(NULL);
+
   f->load_data(0, x_c, y, sigma);
-  degree_ = degree;
 
   std::string definition = "define MyPoly(a0=~0";
   std::vector<std::string> varnames(1, "0");
-  for (int i=1; i<=degree_; ++i) {
+  for (int i=1; i<=degree; ++i) {
     std::stringstream ss;
     ss << i;
     varnames.push_back(ss.str());
     definition += ",a" + ss.str() + "=~0";
   }
   definition += ") = a0";
-  for (int i=1; i<=degree_; ++i)
+  for (int i=1; i<=degree; ++i)
     definition += " + a" + varnames[i] + "*x^" + varnames[i];
   
+
+  bool success = true;
+
   f->execute(definition);
-  f->execute("guess MyPoly");
-  f->execute("fit");
-  fityk::Func* lastfn = f->all_functions().back();
-  coeffs_.resize(degree_+1);
-  for (int i=0; i<=degree_; ++i)
-    coeffs_[i] = lastfn->get_param_value("a" + varnames[i]);
+  try {
+    f->execute("guess MyPoly");
+  }
+  catch ( ... ) {
+    success = false;
+  }
+
+  try {
+    f->execute("fit");
+  }
+  catch ( ... ) {
+    success = false;
+  }
+
+  if (success) {
+    degree_ = degree;
+    fityk::Func* lastfn = f->all_functions().back();
+    coeffs_.resize(degree_+1);
+    for (int i=0; i<=degree_; ++i)
+      coeffs_[i] = lastfn->get_param_value("a" + varnames[i]);
+  }
+
   delete f;
 }
 
@@ -89,14 +118,59 @@ std::vector<double> Polynomial::evaluate_array(std::vector<double> x) {
   return y;
 }
 
-std::ostream &operator<<(std::ostream &out, Polynomial d) {
-  if (d.degree_ >=0 )
-    out << d.coeffs_[0];
-  for (int i=1; i <= d.degree_; i++)
-    out << " + " << d.coeffs_[i] << "x^" << i;
+std::string Polynomial::to_string() {
+  std::stringstream ss;
+  if (degree_ >=0 )
+    ss << coeffs_[0];
+  for (int i=1; i <= degree_; i++)
+    ss << " + " << coeffs_[i] << "x^" << i;
+  return ss.str();
 }
 
+std::string Polynomial::to_UTF8() {
+  std::vector<std::string> superscripts = {
+    "\u2070", "\u00B9", "\u00B2",
+    "\u00B3", "\u2074", "\u2075",
+    "\u2076", "\u2077", "\u2078",
+    "\u2079"
+  };
 
+  std::string calib_eqn;
+  if (degree_ >= 0)
+    calib_eqn += to_str_precision(coeffs_[0], 3);
+  for (uint16_t i=1; i <= degree_; i++) {
+    calib_eqn += std::string(" + ");
+    calib_eqn += to_str_precision(coeffs_[i], 3);
+    calib_eqn += std::string("x");
+    if ((i > 1) && (i < 10)) {
+      calib_eqn += superscripts[i];
+    } else if ((i>9) && (i<100)) {
+      calib_eqn += superscripts[i / 10];
+      calib_eqn += superscripts[i % 10];
+    } else if (i>99) {
+      calib_eqn += std::string("^");
+      calib_eqn += std::to_string(i);
+    }
+  }
+  return calib_eqn;
+}
+
+std::string Polynomial::to_markup() {
+  std::string calib_eqn;
+  if (degree_ >= 0)
+    calib_eqn += std::to_string(coeffs_[0]);
+  for (uint16_t i=1; i <= degree_; i++) {
+    calib_eqn += std::string(" + ");
+    calib_eqn += std::to_string(coeffs_[i]);
+    calib_eqn += std::string("x");
+    if (i > 1) {
+      calib_eqn += std::string("<sup>");
+      calib_eqn += std::to_string(i);
+      calib_eqn += std::string("</sup>");
+    }
+  }
+  return calib_eqn;
+}
 
 
 double Gaussian::evaluate(double x) {
@@ -115,109 +189,38 @@ std::vector<double> Gaussian::evaluate_array(std::vector<double> x) {
   return y;
 }
 
-std::ostream &operator<<(std::ostream &out, Gaussian d) {
-  out << "Gaussian center=" << d.center_ << " height="  << d.height_ << " hwhm=" << d.hwhm_;
+std::string Gaussian::to_string() {
+  std::stringstream ss;
+  ss << "Gaussian center=" << center_ << " height="  << height_ << " hwhm=" << hwhm_;
+  return ss.str();
 }
 
 
-Peak::Peak(const std::vector<double> &x,const std::vector<double> &y, int min, int max) {
+Peak::Peak(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline) {
   if (
-          (x.size() == y.size())
-          &&
-          (min > -1) && (min < x.size())
-          &&
-          (max > -1) && (max < x.size())
+      (x.size() == y.size())
+      &&
+      (y_baseline.size() == y.size())
       )
   {
-    for (int32_t i = min; i < (max+1); ++i) {
-      x_.push_back(x[i]);
-      y_.push_back(y[i]);
-    }
-    filled_y_.resize(x_.size());
-    y_nobase_.resize(x_.size());
+    x_ = x;
+    y_ = y;
+    y_baseline_ = y_baseline;
+    std::vector<double> nobase(x_.size());
+    
+    for (int32_t i = 0; i < static_cast<int32_t>(y_.size()); ++i)
+      nobase[i] = y_[i] - y_baseline_[i];
+    
+    gaussian_ = Gaussian(x_, nobase);
+
     y_fullfit_.resize(x_.size());
-
-    rough_ = Gaussian(x_, y_);
-    PL_DBG << "Preliminary peak " << rough_;
-
-    if ((rough_.center_ <= min)
-        || (rough_.height_ <= 0)
-        || (rough_.center_ > static_cast<double>(max))
-        || (rough_.hwhm_ <= 0)) {
-      PL_DBG << "Preliminary peak has unfeasable values";
-      return;
-    }
-    
-    for (size_t i = 0; i < y_.size(); ++i)
-      filled_y_[i] = y_[i] - rough_.evaluate(x_[i]);
-
-    int32_t buffer = 10;
-    int32_t center = static_cast<size_t>(floor(rough_.center_ - x_[0]));
-
-    int32_t first0 = static_cast<int32_t>(center);
-    int32_t last0 = static_cast<int32_t>(center);
-
-    for(int32_t i = center; i >= 0; i--)
-      if (filled_y_[i] <= 0.0)
-        first0 = i;
-
-    for(size_t i = center; i < y_.size(); i++)
-      if (filled_y_[i] <= 0.0)
-        last0 = i;
-
-    first0 -= buffer;
-    last0  += buffer;
-
-    PL_DBG << "Peak likely between " << first0 << " and " << last0;
-    
-    if ((first0 <= 0) || ((last0+1) >= y_.size())) {
-      PL_DBG << "Cannot discern baseline at least on one side of peak";
-      return;
-    }
-    
-    double avg_left=0, avg_right=0;
-
-    for (int32_t i = 0; i <= first0; i++)
-      avg_left+=y_[i];
-    for (int32_t i = last0; i < static_cast<int32_t>(y_.size()); i++)
-      avg_right+=y_[i];
-    
-    avg_left /= first0;
-    avg_right /= (y_.size() - last0);
-
-    PL_DBG << "left baseline = " << avg_left << ", right_baseline = " << avg_right;
-
-    if ((avg_left > rough_.height_) || (avg_right > rough_.height_)) {
-      PL_DBG << "Baseline above peak at least on one side";
-      return;
-    }
-    
-    double slope = (avg_right - avg_left) / (last0 - first0);
-    for (int32_t i = first0; i <= last0; i++)
-      filled_y_[i] = avg_left + ((i - first0) * slope);
-
-    
     for (int32_t i = 0; i < static_cast<int32_t>(y_.size()); ++i)
-      y_nobase_[i] = y_[i] - filled_y_[i];
-
-    
-    refined_ = Gaussian(x_, y_nobase_);
-    PL_DBG << "Refined peak " << rough_;
-
-    for (int32_t i = 0; i < static_cast<int32_t>(y_.size()); ++i)
-      y_fullfit_[i] = filled_y_[i] + refined_.evaluate(x_[i]);
-
-    double devi = rough_.center_ - refined_.center_;
-
-    PL_DBG << "Center of refined gaussian fit deviates from that of rough fit by " << devi  << " chan";
-
-    if (devi > (max-min))
-      refined_ = Gaussian();
+      y_fullfit_[i] = y_baseline_[i] + gaussian_.evaluate(x_[i]);
   }
 }
 
 Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
-    Gaussian() {
+  Gaussian() {
   std::vector<double> sigma;
   sigma.resize(x.size(), 1);
 
@@ -225,13 +228,14 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
   std::vector<fityk::Func*> fns;
   
   fityk::Fityk *f = new fityk::Fityk;
+  f->redir_messages(NULL);
   f->load_data(0, x, y, sigma);
 
   try {
     f->execute("guess Gaussian");
   }
   catch ( ... ) {
-    PL_ERR << "Fytik threw exception a";
+    //PL_ERR << "Fytik threw exception a";
     success = false;
   }
 
@@ -239,7 +243,7 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
     f->execute("fit");
   }
   catch ( ... ) {
-    PL_ERR << "Fytik threw exception b";
+    //PL_ERR << "Fytik threw exception b";
     success = false;
   }
 
@@ -256,37 +260,182 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
   delete f;
 }
 
-void UtilXY::find_peaks(int min_width, int max_width) {
-  if (y_.size() < 3)
-    return;
-  std::vector<int> temp_peaks;
-  for (std::size_t i=1; (i+1) < y_.size(); i++) {
-    if ((y_[i] > y_[i-1]) && (y_[i] > y_[i+1]))
-      temp_peaks.push_back(i);
-  }
-  std::vector<int> peaks;
-  for (int q = 0; q < y_.size(); q++) {
-    bool left = true, right = true;
-    for (int d = 1; d <= min_width; d++) {
-      if (((q-d) >= 0) && (y_[q-d] >= y_[q-(d-1)]))
-        left = false;
-      if (((q+d) < y_.size()) && (y_[q+d] >= y_[q+(d-1)]))
-        right = false;
+
+UtilXY::UtilXY(const std::vector<double> &x, const std::vector<double> &y, uint16_t min, uint16_t max, uint16_t avg_window) {
+  if ((y_.size() == x_.size()) && (min < max) && ((max+1) < x.size())) {
+    for (int i=min; i<=max; ++i) {
+      x_.push_back(x[i]);
+      y_.push_back(y[i]);
     }
-    if (left && right)
-      peaks.push_back(q);
+    set_mov_avg(avg_window);
+    deriv();
+  }
+}
+
+void UtilXY::set_mov_avg(uint16_t window) {
+  y_avg_ = y_;
+
+  if ((window % 2) == 0)
+    window++;
+
+  if (y_.size() < window)
+    return;
+
+  uint16_t half = (window - 1) / 2;
+
+  //assume values under 0 are same as for index 0
+  double avg = (half + 1) * y_[0];
+
+  //begin averaging over the first few
+  for (int i = 0; i < half; ++i)
+    avg += y_[i];
+
+  avg /= window;
+
+  double remove, add;
+  for (int i=0; i < y_.size(); i++) {
+    if (i < (half+1))
+      remove = y_[0] / window;
+    else
+      remove = y_[i-(half+1)] / window;
+
+    if ((i + half) > y_.size())
+      add = y_[y_.size() - 1] / window;
+    else
+      add = y_[i + half] / window;
+
+    avg = avg - remove + add;
+
+    y_avg_[i] = avg;
   }
 
+  deriv();
+}
+
+
+void UtilXY::deriv() {
+  if (!y_avg_.size())
+    return;
+
+  deriv1.clear();
+  deriv2.clear();
+
+  deriv1.push_back(0);
+  for (int i=1; i < y_avg_.size(); ++i) {
+    deriv1.push_back(y_avg_[i] - y_avg_[i-1]);
+  }
+
+  deriv2.push_back(0);
+  for (int i=1; i < deriv1.size(); ++i) {
+    deriv2.push_back(deriv1[i] - deriv1[i-1]);
+  }
+}
+
+
+void UtilXY::find_prelim() {
+  prelim.clear();
+
+  int was = 0, is = 0;
+
+  for (int i = 0; i < deriv1.size(); ++i) {
+    if (deriv1[i] > 0)
+      is = 1;
+    else if (deriv1[i] < 0)
+      is = -1;
+    else
+      is = 0;
+
+    if ((was == 1) && (is == -1))
+      prelim.push_back(i);
+
+    was = is;
+  }
+}
+
+void UtilXY::filter_prelim(uint16_t min_width) {
+  filtered.clear();
+  lefts.clear();
+  rights.clear();
+
+  if ((y_.size() < 3) || !prelim.size())
+    return;
+
+  for (auto &q : prelim) {
+    if (!q)
+      continue;
+    uint16_t left = 0, right = 0;
+    for (int i=q-1; i >= 0; --i)
+      if (deriv1[i] > 0)
+        left++;
+      else
+        break;
+
+    for (int i=q; i < deriv1.size(); ++i)
+      if (deriv1[i] < 0)
+        right++;
+      else
+        break;
+
+    if ((left >= min_width) && (right >= min_width)) {
+      filtered.push_back(q-1);
+      lefts.push_back(q-left-1);
+      rights.push_back(q+right-1);
+    }
+  }
+}
+
+void UtilXY::refine_edges(double threshl, double threshr) {
+  lefts_t.clear();
+  rights_t.clear();
+
+  for (int i=0; i<filtered.size(); ++i) {
+    uint16_t left = lefts[i],
+        right = rights[i];
+
+    for (int j=lefts[i]; j < filtered[i]; ++j) {
+      if (deriv1[j] < threshl)
+        left = j;
+    }
+
+    for (int j=rights[i]; j > filtered[i]; --j) {
+      if ((-deriv1[j]) < threshr)
+        right = j;
+    }
+
+    lefts_t.push_back(left);
+    rights_t.push_back(right);
+  }
+}
+
+void UtilXY::find_peaks(int min_width) {
+  find_prelim();
+  filter_prelim(min_width);
+
+  int err1=0, err2=0, err3=0;
   peaks_.clear();
-  PL_DBG << "Potential peaks found: " << peaks.size();
-  for (auto &q : peaks) {
-    PL_DBG << "fitting peak at x=" << q;
-    int xmin = q - max_width / 2;
-    int xmax = q + max_width / 2;
-    if (xmin < 0) xmin = 0;
-    if (xmax >= x_.size()) xmax = x_.size() - 1;
-    Peak fitted = Peak(x_, y_, xmin, xmax);
-    if (fitted.refined_.height_)
+  for (int i=0; i < filtered.size(); ++i) {
+    //PL_DBG << "fitting peak at x=" << filtered[i] << " on [" << lefts[i] << ", " << rights[i] << "]";
+
+    uint16_t left = lefts[i],
+        right = rights[i],
+        width = rights[i] - lefts[i];
+    std::vector<double> x(width+1), y(width+1), baseline(width+1);
+    double slope = (y_avg_[right] - y_avg_[left]) / static_cast<double>(width);
+    for (int32_t i = 0; i <= width; ++i) {
+      x[i] = x_[left+i];
+      y[i] = y_[left+i];
+      baseline[i] = y_avg_[left] + (i * slope);
+    }
+
+    //PL_DBG << "Baseline y = " << y_avg_[left] " + " << slope << "x";
+
+    Peak fitted = Peak(x, y, baseline);
+
+    if (fitted.gaussian_.height_ > 0)
       peaks_.push_back(fitted);
   }
+
+  PL_INFO << "Preliminary search found " << prelim.size() << " potential peaks";
+  PL_INFO << "After minimum width filter: " << filtered.size();
+  PL_INFO << "Fitted peaks: " << peaks_.size();
 }

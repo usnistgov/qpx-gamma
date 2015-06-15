@@ -105,7 +105,7 @@ public:
 };
 
 
-class WidgetDetectors : public QWidget
+class WidgetDetectors : public QDialog
 {
   Q_OBJECT
 

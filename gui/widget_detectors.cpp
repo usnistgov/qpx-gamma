@@ -41,8 +41,9 @@ DialogDetector::DialogDetector(Pixie::Detector mydet, QDir rd, QString formats, 
 {
   ui->setupUi(this);
 
-  ui->comboType->insertItem(0, QString::fromStdString("HPGe"));
-  ui->comboType->insertItem(1, QString::fromStdString("NaI"));
+  ui->comboType->insertItem(0, QString::fromStdString("HPGe"), QString::fromStdString("HPGe"));
+  ui->comboType->insertItem(1, QString::fromStdString("NaI"), QString::fromStdString("NaI"));
+  ui->comboType->insertItem(1, QString::fromStdString("LaBr"), QString::fromStdString("LaBr"));
 
   ui->lineName->setEnabled(editName);
   my_detector_ = mydet;
@@ -86,7 +87,7 @@ void DialogDetector::on_lineName_editingFinished()
 
 void DialogDetector::on_comboType_currentIndexChanged(const QString &arg1)
 {
-  my_detector_.type_ = arg1.toStdString();
+  my_detector_.type_ = ui->comboType->currentText().toStdString();
 }
 
 void DialogDetector::on_buttonBox_accepted()
@@ -314,7 +315,7 @@ Qt::ItemFlags TableCalibrations::flags(const QModelIndex &index) const
 
 
 WidgetDetectors::WidgetDetectors(QWidget *parent) :
-  QWidget(parent),
+  QDialog(parent),
   selection_model_(&table_model_),
   ui(new Ui::WidgetDetectors)
 {

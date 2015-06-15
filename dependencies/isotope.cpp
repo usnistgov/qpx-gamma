@@ -64,10 +64,12 @@ void Isotope::to_xml(tinyxml2::XMLPrinter& printer) const {
   printer.OpenElement("name");
   printer.PushText(name.c_str());
   printer.CloseElement();
-      
-  printer.OpenElement("gammaConstant");
-  printer.PushText(gamma_constant.c_str());
-  printer.CloseElement();
+
+  if (gamma_constant.size()) {
+    printer.OpenElement("gammaConstant");
+    printer.PushText(gamma_constant.c_str());
+    printer.CloseElement();
+  }
 
   printer.OpenElement("halfLife");
   printer.PushText(dbl2str(half_life).c_str());
@@ -84,24 +86,24 @@ void Isotope::to_xml(tinyxml2::XMLPrinter& printer) const {
 
 void Isotope::from_xml(tinyxml2::XMLElement* root) {
   tinyxml2::XMLElement* NameData = root->FirstChildElement("name");
-  if (NameData == NULL) return;
-  name = std::string(NameData->GetText());
+  if (NameData != nullptr)
+    name = std::string(NameData->GetText());
   
   tinyxml2::XMLElement* gConstData = root->FirstChildElement("gammaConstant");
-  if (gConstData == NULL) return;
-  gamma_constant = std::string(gConstData->GetText());
+  if (gConstData != nullptr)
+    gamma_constant = std::string(gConstData->GetText());
 
   tinyxml2::XMLElement* hlData = root->FirstChildElement("halfLife");
-  if (hlData == NULL) return;
-  half_life = boost::lexical_cast<double>(hlData->GetText());
+  if (hlData != nullptr)
+    half_life = boost::lexical_cast<double>(hlData->GetText());
 
   tinyxml2::XMLElement* gammaData = root->FirstChildElement(gammas.xml_element_name().c_str());
-  if (gammaData == NULL) return;
-  gammas.from_xml(gammaData);
+  if (gammaData != nullptr)
+    gammas.from_xml(gammaData);
 
   tinyxml2::XMLElement* betaData = root->FirstChildElement(beta.xml_element_name().c_str());
-  if (betaData == NULL) return;
-  beta.from_xml(betaData);
+  if (betaData != nullptr)
+    beta.from_xml(betaData);
 }
 
 }
