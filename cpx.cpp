@@ -29,78 +29,175 @@ int main(int argc, char *argv[])
   
   CustomLogger::initLogger(nullptr, "qpx_%N.log");
   PL_INFO << "--==cpx console tool for gamma acquisition==--";
+
+  std::vector<std::string> cmd_params;
+  for (int i=2; i<argc; ++i)
+    cmd_params.push_back(std::string(argv[i]));
+  
+  std::list<CpxLine> program;
+
+  if (!parse_file(gabfile, program, cmd_params)) {
+    PL_ERR << "<cpx> parsing failed. Aborting";
+    return 1;
+  }
+
   Cpx interpreter;
-
-  std::vector<std::string> script;
-
-  //read whole file, omitting commented and empty lines
-  while (!gabfile.eof())
-  {
-    char buf[MAX_CHARS_PER_LINE];
-    gabfile.getline(buf, MAX_CHARS_PER_LINE);
-    if (buf[0] != '#') {
-      std::string buf_str(buf);
-      if (buf_str.size() > 0)
-        script.push_back(buf_str);
-    }
+  std::vector<double> variables;
+  if (!interpreter.interpret(program, variables)) {
+    PL_ERR << "<cpx> interpreting failed. Aborting";
+    return 1;
   }
 
-  //interpret valid lines
-  for (int i=0; i < script.size(); ++i) {
-    PL_INFO << "<cpx> interpreting: " << script[i];
-
-    std::vector<std::string> tokens;
-
-    boost::algorithm::split(tokens, script[i],
-                            boost::algorithm::is_any_of(" "));
-
-    std::string command = tokens[0];
-    std::vector<std::string> params;
-
-    for (int i=1; i<tokens.size(); ++i) {
-      if (tokens[i][0] == '$') {
-        int parnr = boost::lexical_cast<int>(tokens[i].substr(1,std::string::npos));
-        if (parnr && (argc >= (parnr+2)))
-          params.push_back(std::string(argv[parnr+1]));
-        else {
-          PL_ERR << "<cpx> command line option not provided for token " << tokens[i];
-          return 1;
-        }
-      } else
-        params.push_back(tokens[i]);
-    }
-
-    if (command == "end") {
-      PL_INFO << "<cpx> exiting";
-      return 0;
-    }
-
-    if (!interpreter.interpret(command, params)) {
-      PL_ERR << "<cpx> command failed";
-      return 1;
-    }
-
-    boost::this_thread::sleep(boost::posix_time::seconds(2));
-  }
+  return 0;
 }
 
-bool Cpx::interpret(std::string command, std::vector<std::string> &tokens) {
-  if (command == "boot")
-    return boot(tokens);
-  else if (command == "simulation")
-    return load_simulation(tokens);
-  else if (command == "templates")
-    return templates(tokens);
-  else if (command == "run_simulation")
-    return run_simulation(tokens);
-  else if (command == "run_mca")
-    return run_mca(tokens);
-  else if (command == "save_qpx")
-    return save_qpx(tokens);
-  else if (command == "set_mod")
-    return set_mod(tokens);
-  else if (command == "set_chan")
-    return set_chan(tokens);
+bool parse_file(std::ifstream &file, std::list<CpxLine> &program, std::vector<std::string> &cmd_params) {
+   std::list<std::string> lines;
+
+  //read whole file, omitting commented and empty lines
+  while (!file.eof())
+  {
+    char buf[MAX_CHARS_PER_LINE];
+    file.getline(buf, MAX_CHARS_PER_LINE);
+    if (buf[0] != '#') {
+      std::string buf_str(buf);
+      boost::algorithm::trim(buf_str);
+      if (buf_str.size() > 0)
+        lines.push_back(buf_str);
+    }
+  }
+
+  while (!lines.empty()) {
+    //tokenize
+    std::vector<std::string> tokens;
+    boost::algorithm::split(tokens, lines.front(), boost::algorithm::is_any_of(" "));
+
+    //populate parameters, replacing $x with command line arguments
+    CpxLine line;
+    line.command = tokens[0];
+    for (int j=1; j<tokens.size(); ++j) {
+      if (tokens[j][0] == '$') {
+        int parnr = boost::lexical_cast<int>(tokens[j].substr(1,std::string::npos)) - 1;
+        if ((parnr > -1) && (parnr < cmd_params.size()))
+          line.params.push_back(cmd_params[parnr]);
+        else {
+          PL_ERR << "<cpx> command line option not provided for token " << tokens[j]
+                 << " for line: " << lines.front();
+          return false;
+        }
+      } else
+        line.params.push_back(tokens[j]);
+    }
+    lines.pop_front();
+    program.push_back(line);
+  }
+  return true;
+}
+
+
+bool Cpx::interpret(std::list<CpxLine> commands, std::vector<double> variables) {
+  bool running = true;
+
+  while (running && !commands.empty()) {
+    CpxLine line = commands.front();
+    commands.pop_front();
+
+    for (int i=0; i<line.params.size(); ++i) {
+      if (line.params[i][0] == '%') {
+        int varnr = boost::lexical_cast<int>(line.params[i].substr(1,std::string::npos));
+        int j = varnr;
+
+        if (varnr < 0)
+          j = 0 - varnr - 1;
+        else if (varnr > 0)
+          j = varnr - 1;
+        else {
+          PL_ERR << "<cpx> no variable 0";
+          return false;
+        }
+          
+        
+        if (j < variables.size()) {
+          std::string val = std::to_string(variables[j]);
+          if (varnr > 0)
+            line.params[i] = val;
+          else if ((varnr < 0) && (i > 0))
+            line.params[i-1] += val;
+          else {
+            PL_ERR << "<cpx> cannot concatenate below token 0";
+            return false;
+          }
+          
+          
+        } else {
+          PL_ERR << "<cpx> no variable " << j
+                 << " in  this scope";
+          return false;
+        }
+      }
+    }
+
+    PL_INFO << "<cpx> interpreting " << line.command;
+    boost::this_thread::sleep(boost::posix_time::seconds(2));
+    
+    bool success=false;
+    if (line.command == "end") {
+      PL_INFO << "<cpx> exiting";
+      return true;      
+    }
+    else if (line.command == "boot")
+      success = boot(line.params);
+    else if (line.command == "simulation")
+      success = load_simulation(line.params);
+    else if (line.command == "templates")
+      success = templates(line.params);
+    else if (line.command == "run_simulation")
+      success = run_simulation(line.params);
+    else if (line.command == "run_mca")
+      success = run_mca(line.params);
+    else if (line.command == "save_qpx")
+      success = save_qpx(line.params);
+    else if (line.command == "set_mod")
+      success = set_mod(line.params);
+    else if (line.command == "set_chan")
+      success = set_chan(line.params);
+    else if (line.command == "endfor") {
+      if (variables.size())
+        return true;
+      else {
+        PL_ERR << "<cpx> not inside loop";
+        return false;
+      }
+    }
+    else if (line.command == "for") {
+      if (line.params.size() < 3) {
+        PL_ERR << "<cpx> not enough parameters provided for FOR";
+        return false;
+      }
+      double start = boost::lexical_cast<double>(line.params[0]);
+      double step = boost::lexical_cast<double>(line.params[1]);
+      double end = boost::lexical_cast<double>(line.params[2]);
+
+      variables.push_back(0.0);
+      for (double d=start; d <= end; d +=step) {
+        variables[variables.size() - 1] = d;
+        bool ret =  interpret(commands, variables);
+        if (!ret)
+          return false;
+      }
+      success = true;
+      variables.pop_back();
+      while (!commands.empty() && (commands.front().command != "endfor"))
+        commands.pop_front();
+      if (!commands.empty() && (commands.front().command == "endfor"))
+        commands.pop_front();
+    }
+
+    if (!success)
+      return false;
+    
+  }
+  return true;
 }
 
 

@@ -1,0 +1,9 @@
+boot /home/mns16/qpxdata/
+
+for 20 4 76
+  templates standard.tem
+  set_chan 0 TRIGGER_THRESHOLD %1
+  set_chan 1 TRIGGER_THRESHOLD %1
+  run_mca $1
+  save_qpx thresh %-1
+endfor

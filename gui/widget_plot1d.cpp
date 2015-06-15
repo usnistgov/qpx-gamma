@@ -486,7 +486,8 @@ void WidgetPlot1D::set_plot_style(QString stl) {
     q->setChecked(q->text() == stl);
   int total = ui->mcaPlot->graphCount();
   for (int i=0; i < total; i++) {
-    if (ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssDisc)
+    if ((ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssDisc)
+        || (ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssNone))
       set_graph_style(ui->mcaPlot->graph(i), stl);
   }
   ui->mcaPlot->replot();
@@ -510,7 +511,7 @@ void WidgetPlot1D::set_graph_style(QCPGraph* graph, QString style) {
     graph->setBrush(QBrush());
     graph->setLineStyle(QCPGraph::lsStepCenter);
     graph->setScatterStyle(QCPScatterStyle::ssNone);
-  } else /*if (stl == "Scatter") default */{
+  } else if (style == "Scatter") {
     graph->setBrush(QBrush());
     graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 1));
     graph->setLineStyle(QCPGraph::lsNone);

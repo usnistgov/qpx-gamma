@@ -1,14 +1,21 @@
 #include "simulator.h"
 #include "wrapper.h"
 
+struct CpxLine {
+  std::string command;
+  std::vector<std::string> params;
+};
+
+bool parse_file(std::ifstream&, std::list<CpxLine> &, std::vector<std::string> &);
+
 class Cpx {
 public:
   Cpx() : pixie_(Pixie::Wrapper::getInstance())
   {
     interruptor_.store(false);
   }
-
-  bool interpret(std::string command, std::vector<std::string> &tokens);
+  
+  bool interpret(std::list<CpxLine> commands, std::vector<double> variables);
   
 private:
   bool boot(std::vector<std::string> &tokens);
