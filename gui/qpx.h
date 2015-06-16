@@ -34,6 +34,7 @@
 #include "form_start.h"
 #include "form_calibration.h"
 
+
 namespace Ui {
 class qpx;
 }

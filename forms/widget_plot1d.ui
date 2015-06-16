@@ -18,18 +18,6 @@
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <property name="leftMargin">
-    <number>0</number>
-   </property>
-   <property name="topMargin">
-    <number>0</number>
-   </property>
-   <property name="rightMargin">
-    <number>0</number>
-   </property>
-   <property name="bottomMargin">
-    <number>0</number>
-   </property>
    <item row="0" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
@@ -43,13 +31,13 @@
        <property name="minimumSize">
         <size>
          <width>0</width>
-         <height>24</height>
+         <height>25</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>16777215</width>
-         <height>32</height>
+         <height>25</height>
         </size>
        </property>
        <property name="frameShape">
@@ -64,9 +52,6 @@
        <property name="text">
         <string/>
        </property>
-       <property name="textFormat">
-        <enum>Qt::RichText</enum>
-       </property>
       </widget>
      </item>
      <item>
@@ -74,13 +59,13 @@
        <property name="minimumSize">
         <size>
          <width>28</width>
-         <height>24</height>
+         <height>25</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>32</width>
-         <height>32</height>
+         <height>25</height>
         </size>
        </property>
        <property name="toolTip">
@@ -106,13 +91,13 @@
        <property name="minimumSize">
         <size>
          <width>28</width>
-         <height>24</height>
+         <height>25</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>32</width>
-         <height>32</height>
+         <height>25</height>
         </size>
        </property>
        <property name="toolTip">
@@ -138,13 +123,13 @@
        <property name="minimumSize">
         <size>
          <width>28</width>
-         <height>24</height>
+         <height>25</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>32</width>
-         <height>32</height>
+         <height>25</height>
         </size>
        </property>
        <property name="toolTip">
@@ -166,17 +151,52 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushNight">
+      <widget class="QPushButton" name="pushLabels">
        <property name="minimumSize">
         <size>
          <width>0</width>
-         <height>24</height>
+         <height>25</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>32</width>
-         <height>32</height>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="toolTip">
+        <string>Marker labels</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset resource="qpxres.qrc">
+         <normaloff>:/new/icons/oxy/rss_tag.png</normaloff>:/new/icons/oxy/rss_tag.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushNight">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
         </size>
        </property>
        <property name="toolTip">

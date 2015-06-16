@@ -53,7 +53,7 @@ void AbstractRadiation::from_xml(tinyxml2::XMLElement* root) {
 
   el = root->FirstChildElement("abundance");
   if ((el != nullptr) && (str = std::string(el->GetText())).size())
-    abundance = boost::lexical_cast<double>(boost::algorithm::trim_copy(str));  
+    abundance = boost::lexical_cast<double>(boost::algorithm::trim_copy(str));
 }
 
 
@@ -64,10 +64,12 @@ void Isotope::to_xml(tinyxml2::XMLPrinter& printer) const {
   printer.OpenElement("name");
   printer.PushText(name.c_str());
   printer.CloseElement();
-      
-  printer.OpenElement("gammaConstant");
-  printer.PushText(gamma_constant.c_str());
-  printer.CloseElement();
+
+  if (gamma_constant.size()) {
+    printer.OpenElement("gammaConstant");
+    printer.PushText(gamma_constant.c_str());
+    printer.CloseElement();
+  }
 
   printer.OpenElement("halfLife");
   printer.PushText(dbl2str(half_life).c_str());

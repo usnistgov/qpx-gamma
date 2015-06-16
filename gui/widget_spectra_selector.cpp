@@ -113,7 +113,7 @@ void QpxSpectraWidget::paintEvent(QPaintEvent *evt)
     painter.drawRect(inner);
 
     painter.setPen(QPen(Qt::white, 1));
-    painter.drawText(inner, Qt::AlignCenter, my_spectra_[i].name);
+    painter.drawText(inner, Qt::AlignLeft, my_spectra_[i].name);
 
     if (i == selected_) {
       painter.setBrush(Qt::NoBrush);

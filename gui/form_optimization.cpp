@@ -292,7 +292,11 @@ bool FormOptimization::find_peaks() {
   if (xmax >= x.size()) xmax = x.size() - 1;
 
   if (moving_.visible) {
-    peaks_[peaks_.size() - 1] = Peak(x, y_opt, xmin, xmax);
+
+    UtilXY finder_opt(x, y_opt, xmin, xmax, 25);
+    finder_opt.find_peaks(5);
+    if (finder_opt.peaks_.size())
+      peaks_[peaks_.size() - 1] = finder_opt.peaks_[0];
 
     replot_markers();
 
@@ -327,7 +331,7 @@ void FormOptimization::update_plots() {
 
       find_peaks();
       spectra_y_[current_spec] = y_opt;
-      setting_fwhm_[current_spec] = peaks_[current_spec].refined_.hwhm_ * 2;
+      setting_fwhm_[current_spec] = peaks_[current_spec].gaussian_.hwhm_ * 2;
 
       for (std::size_t i=0; i < res; i++)
         x[i] = i;
@@ -430,7 +434,7 @@ void FormOptimization::resultChosen() {
 
         ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_), Qt::black, 2);
         ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_fullfit_), Qt::magenta, 0);
-        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].filled_y_), Qt::red, 0);
+        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_baseline_), Qt::red, 0);
       }
   }
 

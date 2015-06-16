@@ -77,9 +77,15 @@ void QSquareCustomPlot::mouseMoveEvent(QMouseEvent *event)  {
   co_x = xAxis->pixelToCoord(event->x());
   co_y = yAxis->pixelToCoord(event->y());
 
+  QPointF pt = event->pos();
   QVariant details;
-  QCPLayerable *clickedLayerable = layerableAt(event->pos(), true, &details);
-  if (QCPColorMap *ap = qobject_cast<QCPColorMap*>(clickedLayerable)) {
+  QCPColorMap *ap = nullptr;
+  if (!pt.isNull()) {
+    QCPLayerable *clickedLayerable = layerableAt(pt, true, &details);
+    if (clickedLayerable != nullptr)
+      ap = qobject_cast<QCPColorMap*>(clickedLayerable);
+  }
+  if (ap != nullptr) {
     int x = co_x, y = co_y;
     ap->data()->coordToCell(co_x, co_y, &x, &y);
     emit mouse_upon(static_cast<double>(x), static_cast<double>(y));

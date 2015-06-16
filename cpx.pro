@@ -44,14 +44,25 @@ QMAKE_CFLAGS_RELEASE += -w
 QMAKE_CXXFLAGS  += -DBOOST_LOG_DYN_LINK
 
 unix {
-       DEFINES += "XIA_LINUX"
-       DEFINES += "PLX_LINUX"
-       QMAKE_CC = g++
-       LIBS += -lm -ldl -DBOOST_LOG_DYN_LINK \
-               -lboost_system -lboost_date_time -lboost_thread -lboost_log \
-               -lboost_program_options -lboost_filesystem \
-               -lboost_log_setup -lboost_timer \
-               -lxx_usb -lusb
+   SUSE = $$system(cat /proc/version | grep -o SUSE)
+   UBUNTU = $$system(cat /proc/version | grep -o Ubuntu)
+   contains( SUSE, SUSE): {
+       message(Makefile for SUSE)
+       #LIBS += -llua
+   }
+   contains( UBUNTU, Ubuntu): {
+       message(Makefile for Ubuntu)
+       #LIBS += -llua5.2
+   }
+
+   DEFINES += "XIA_LINUX"
+   DEFINES += "PLX_LINUX"
+   QMAKE_CC = g++
+   LIBS += -lm -ldl -DBOOST_LOG_DYN_LINK \
+           -lboost_system -lboost_date_time -lboost_thread -lboost_log \
+           -lboost_program_options -lboost_filesystem \
+           -lboost_log_setup -lboost_timer \
+           -lxx_usb -lusb
 
 	target.path = /usr/local/bin/
 		

@@ -154,6 +154,7 @@ void qpx::add_log_text(QString line) {
 void qpx::loadSettings() {
   settings_.beginGroup("Program");
   QRect myrect = settings_.value("position",QRect(20,20,1234,650)).toRect();
+  ui->splitter->restoreState(settings_.value("splitter").toByteArray());
   setGeometry(myrect);
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
   settings_.endGroup();
@@ -165,6 +166,7 @@ void qpx::loadSettings() {
 void qpx::saveSettings() {
   settings_.beginGroup("Program");
   settings_.setValue("position", this->geometry());
+  settings_.setValue("splitter", ui->splitter->saveState());
   settings_.setValue("save_directory", data_directory_);
   settings_.endGroup();
 

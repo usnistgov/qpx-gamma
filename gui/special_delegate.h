@@ -32,7 +32,6 @@
 Q_DECLARE_METATYPE(Pixie::Detector)
 Q_DECLARE_METATYPE(Pixie::Setting)
 
-
 class QpxSpecialDelegate : public QStyledItemDelegate
 {
     Q_OBJECT

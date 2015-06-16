@@ -26,19 +26,24 @@
 #include <vector>
 #include <iostream>
 
+std::string to_str_precision(double, uint16_t);
+
 class Polynomial {
 public:
   Polynomial() : degree_(-1), xoffset_(0.0) {}
-  Polynomial(std::vector<double> coeffs, double xoff = 0);
+  Polynomial(std::vector<double> coeffs, double center = 0);
   Polynomial(std::vector<double> &x, std::vector<double> &y, uint16_t degree, double center=0);
        
+  std::string to_string();
+  std::string to_UTF8();
+  std::string to_markup();
+
   double evaluate(double x);
-  friend std::ostream &operator<<(std::ostream &out, Polynomial d);
   std::vector<double> evaluate_array(std::vector<double> x);
   
   std::vector<double> coeffs_;
-  int degree_;
   double xoffset_;
+  int degree_;
 };
 
 class Gaussian {
@@ -47,8 +52,9 @@ public:
   Gaussian(const std::vector<double> &x, const std::vector<double> &y);
   Gaussian(double center, double height, double hwhm) : height_(height), hwhm_(hwhm), center_(center) {}
 
+  std::string to_string();
+
   double evaluate(double x);
-  friend std::ostream &operator<<(std::ostream &out, Gaussian d);
   std::vector<double> evaluate_array(std::vector<double> x);
   
   double height_, hwhm_, center_;
@@ -57,33 +63,33 @@ public:
 
 class Peak {
 public:
-  Peak() {err = 0;}
-  Peak(const std::vector<double> &x, const std::vector<double> &y, int min, int max);
+  Peak() {}
+  Peak(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline);
 
-  std::vector<double> x_, y_, filled_y_, y_nobase_, y_fullfit_;
-  Gaussian rough_, refined_;
-
-  int err;
-
-private:
-  //  Polynomial find_p(std::vector<double> x, std::vector<double> y, double center);
-  //  void fill0_linear(int buffer);  
+  std::vector<double> x_, y_, y_baseline_, y_fullfit_;
+  Gaussian gaussian_;
 };
 
 class UtilXY {
 public:
-  UtilXY();
-  UtilXY(const std::vector<double> &x, const std::vector<double> &y):
-    x_(x), y_(y) {}
+  UtilXY() {}
+  UtilXY(const std::vector<double> &x, const std::vector<double> &y, uint16_t avg_window = 1):
+    x_(x), y_(y), y_avg_(y_) {set_mov_avg(avg_window); deriv();}
+  UtilXY(const std::vector<double> &x, const std::vector<double> &y, uint16_t min, uint16_t max, uint16_t avg_window = 1);
 
   void setXY(std::vector<double> x, std::vector<double> y)
     {*this = UtilXY(x, y);}
 
-  void mov_avg(uint16_t);
-  void find_peaks(int min_width, int max_width, uint16_t avg_window);
-  //void find_peaks2(int max);
+  void set_mov_avg(uint16_t);
+  void deriv();
+  void find_prelim();
+  void filter_prelim(uint16_t min_width);
+  void refine_edges(double threshl, double threshr);
+  void find_peaks(int min_width);
 
-  std::vector<double> x_, y_, y_avg_;
+  std::vector<double> x_, y_, y_avg_, deriv1, deriv2;
+
+  std::vector<uint16_t> prelim, filtered, lefts, rights, lefts_t, rights_t;
 
   std::vector<Peak> peaks_;
 };

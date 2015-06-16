@@ -51,6 +51,8 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
 
   use_calibrated_ = false;
 
+  marker_labels_ = false;
+
   menuPlotStyle.addAction("Scatter");
   menuPlotStyle.addAction("Step");
   menuPlotStyle.addAction("Lines");
@@ -169,7 +171,7 @@ void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, 
   }
 }
 
-void WidgetPlot1D::addPoints(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness) {
+void WidgetPlot1D::addPoints(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness, QCPScatterStyle::ScatterShape shape) {
   if (x.empty() || y.empty() || (x.size() != y.size()))
     return;
 
@@ -180,7 +182,7 @@ void WidgetPlot1D::addPoints(const QVector<double>& x, const QVector<double>& y,
   thispen.setWidth(thickness);
   ui->mcaPlot->graph(g)->setPen(thispen);
   ui->mcaPlot->graph(g)->setBrush(QBrush());
-  ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDiamond, color, color, thickness));
+  ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle(shape, color, color, thickness));
   ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsNone);
 
   if (x[0] < minx) {
@@ -228,7 +230,7 @@ void WidgetPlot1D::calc_y_bounds(double lower, double upper) {
       maxy = it->second;
   }
 
-  maxy = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(maxy) - 60);
+  maxy = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(maxy) - 75);
 
   if ((maxy > 1) && (miny == 0))
     miny = 1;
@@ -320,24 +322,26 @@ void WidgetPlot1D::replot_markers() {
         qpen = q.default_pen;
       QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
       line->start->setParentAnchor(top_crs->position);
-      line->start->setCoords(0, -27);
+      line->start->setCoords(0, -30);
       line->end->setParentAnchor(top_crs->position);
       line->end->setCoords(0, -2);
       line->setHead(QCPLineEnding(QCPLineEnding::esSpikeArrow, 7, 7));
       line->setPen(qpen);
       ui->mcaPlot->addItem(line);
 
-      QCPItemText *markerText = new QCPItemText(ui->mcaPlot);
-      markerText->position->setParentAnchor(top_crs->position);
-      markerText->setPositionAlignment(Qt::AlignHCenter|Qt::AlignBottom);
-      markerText->position->setCoords(0, -30);
-      markerText->setText(QString::number(q.energy));
-      markerText->setTextAlignment(Qt::AlignLeft);
-      markerText->setFont(QFont("Helvetica", 9));
-      markerText->setPen(qpen);
-      markerText->setColor(qpen.color());
-      markerText->setPadding(QMargins(1, 1, 1, 1));
-      ui->mcaPlot->addItem(markerText);
+      if (marker_labels_) {
+        QCPItemText *markerText = new QCPItemText(ui->mcaPlot);
+        markerText->position->setParentAnchor(top_crs->position);
+        markerText->setPositionAlignment(Qt::AlignHCenter|Qt::AlignBottom);
+        markerText->position->setCoords(0, -30);
+        markerText->setText(QString::number(q.energy));
+        markerText->setTextAlignment(Qt::AlignLeft);
+        markerText->setFont(QFont("Helvetica", 9));
+        markerText->setPen(qpen);
+        markerText->setColor(qpen.color());
+        markerText->setPadding(QMargins(1, 1, 1, 1));
+        ui->mcaPlot->addItem(markerText);
+      }
     }
   }
 
@@ -366,7 +370,7 @@ void WidgetPlot1D::replot_markers() {
     }
   }
 
-   if ((rect.size() == 2) && (rect[0].visible) && !maxima_.empty() && !minima_.empty()){
+  if ((rect.size() == 2) && (rect[0].visible) && !maxima_.empty() && !minima_.empty()){
     double upperc = maxima_.rbegin()->first;
     double lowerc = maxima_.begin()->first;
 
@@ -400,6 +404,19 @@ void WidgetPlot1D::replot_markers() {
       cprect->setBrush(QBrush(rect[1].default_pen.color()));
 
     ui->mcaPlot->addItem(cprect);
+  }
+  if (!floating_text_.isEmpty()) {
+    QCPItemText *floatingText = new QCPItemText(ui->mcaPlot);
+    ui->mcaPlot->addItem(floatingText);
+    floatingText->setPositionAlignment(Qt::AlignTop|Qt::AlignHCenter);
+    floatingText->position->setType(QCPItemPosition::ptAxisRectRatio);
+    floatingText->position->setCoords(0.5, 0); // place position at center/top of axis rect
+    floatingText->setText(floating_text_);
+    floatingText->setFont(QFont("Helvetica", 10));
+    if (color_theme_ == "light")
+      floatingText->setColor(Qt::black);
+    else
+      floatingText->setColor(Qt::white);
   }
 }
 
@@ -469,7 +486,8 @@ void WidgetPlot1D::set_plot_style(QString stl) {
     q->setChecked(q->text() == stl);
   int total = ui->mcaPlot->graphCount();
   for (int i=0; i < total; i++) {
-    if (ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssDiamond)
+    if ((ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssDisc)
+        || (ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssNone))
       set_graph_style(ui->mcaPlot->graph(i), stl);
   }
   ui->mcaPlot->replot();
@@ -493,9 +511,60 @@ void WidgetPlot1D::set_graph_style(QCPGraph* graph, QString style) {
     graph->setBrush(QBrush());
     graph->setLineStyle(QCPGraph::lsStepCenter);
     graph->setScatterStyle(QCPScatterStyle::ssNone);
-  } else /*if (stl == "Scatter") default */{
+  } else if (style == "Scatter") {
     graph->setBrush(QBrush());
     graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 1));
     graph->setLineStyle(QCPGraph::lsNone);
   }
+}
+
+void WidgetPlot1D::on_pushLabels_clicked()
+{
+  marker_labels_ = !marker_labels_;
+  replot_markers();
+  ui->mcaPlot->replot();
+}
+
+void WidgetPlot1D::set_marker_labels(bool sl)
+{
+  marker_labels_ = sl;
+  ui->pushLabels->setChecked(sl);
+  replot_markers();
+  ui->mcaPlot->replot();
+}
+
+bool WidgetPlot1D::marker_labels() {
+  return marker_labels_;
+}
+
+void WidgetPlot1D::showButtonMarkerLabels(bool v) {
+  ui->pushLabels->setVisible(v);
+}
+
+void WidgetPlot1D::showButtonPlotStyle(bool v) {
+  ui->toolPlotStyle->setVisible(v);
+}
+
+void WidgetPlot1D::showButtonScaleType(bool v) {
+  ui->toolScaleType->setVisible(v);
+}
+
+void WidgetPlot1D::showButtonColorThemes(bool v) {
+  ui->pushNight->setVisible(v);
+}
+
+void WidgetPlot1D::showTitle(bool v) {
+  ui->labelTitle->setVisible(v);
+}
+
+void WidgetPlot1D::setZoomable(bool v) {
+  ui->pushResetScales->setVisible(v);
+  ui->mcaPlot->setInteraction(QCP::iRangeDrag, v);
+  ui->mcaPlot->setInteraction(QCP::iRangeZoom, v);
+}
+
+void WidgetPlot1D::setFloatingText(QString txt) {
+  floating_text_ = txt;
+  replot_markers();
+  ui->mcaPlot->replot();
 }

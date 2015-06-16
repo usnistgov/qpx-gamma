@@ -210,8 +210,8 @@ void FormGainMatch::run_completed() {
     gm_plot_thread_.wait();
     marker_ref_.visible = false;
     marker_opt_.visible = false;
-    gauss_ref_.refined_.height_ = 0;
-    gauss_opt_.refined_.height_ = 0;
+    gauss_ref_.gaussian_.height_ = 0;
+    gauss_opt_.gaussian_.height_ = 0;
     //replot_markers();
 
     y_ref.clear();
@@ -237,10 +237,10 @@ void FormGainMatch::do_post_processing() {
                                       Pixie::LiveStatus::online);*/
   QThread::sleep(2);
   double new_gain = old_gain;
-  if (gauss_opt_.refined_.center_ < gauss_ref_.refined_.center_) {
+  if (gauss_opt_.gaussian_.center_ < gauss_ref_.gaussian_.center_) {
     PL_INFO << "[Gain matching] increasing gain";
     new_gain += ui->doubleSpinDeltaV->value();
-  } else if (gauss_opt_.refined_.center_ > gauss_ref_.refined_.center_) {
+  } else if (gauss_opt_.gaussian_.center_ > gauss_ref_.gaussian_.center_) {
     PL_INFO << "[Gain matching] decreasing gain";
     new_gain -= ui->doubleSpinDeltaV->value();
   } else {
@@ -272,10 +272,19 @@ bool FormGainMatch::find_peaks() {
     if (xmin < 0) xmin = 0;
     if (xmax >= x.size()) xmax = x.size() - 1;
 
-    gauss_ref_ = Peak(x, y_ref, xmin, xmax);
-    gauss_opt_ = Peak(x, y_opt, xmin, xmax);
+    UtilXY finder_ref(x, y_ref, xmin, xmax, 25);
+    UtilXY finder_opt(x, y_opt, xmin, xmax, 25);
 
-    if (gauss_ref_.refined_.height_ && gauss_opt_.refined_.height_)
+    finder_ref.find_peaks(5);
+    finder_opt.find_peaks(5);
+
+    if (finder_ref.peaks_.size())
+      gauss_ref_ = finder_ref.peaks_[0];
+
+    if (finder_opt.peaks_.size())
+      gauss_opt_ = finder_opt.peaks_[0];
+
+    if (gauss_ref_.gaussian_.height_ && gauss_opt_.gaussian_.height_)
       return true;
   }
   return false;
@@ -331,14 +340,14 @@ void FormGainMatch::update_plots() {
     if (have_data)
       have_peaks = find_peaks();
 
-    if (gauss_ref_.refined_.height_) {
+    if (gauss_ref_.gaussian_.height_) {
       ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_fullfit_), Qt::cyan, 0);
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.filled_y_), Qt::cyan, 0);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_baseline_), Qt::cyan, 0);
     }
 
-    if (gauss_opt_.refined_.height_) {
+    if (gauss_opt_.gaussian_.height_) {
       ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_fullfit_), Qt::magenta, 0);
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.filled_y_), Qt::magenta, 0);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_baseline_), Qt::magenta, 0);
     }
 
     std::string new_label = boost::algorithm::trim_copy(gm_spectra_.status());
@@ -379,14 +388,14 @@ void FormGainMatch::removeMovingMarker(double x) {
 void FormGainMatch::replot_markers() {
   std::list<Marker> markers;
 
-  if (gauss_ref_.refined_.height_) {
-    marker_ref_.channel = gauss_ref_.refined_.center_;
+  if (gauss_ref_.gaussian_.height_) {
+    marker_ref_.channel = gauss_ref_.gaussian_.center_;
     marker_ref_.visible = true;
     markers.push_back(marker_ref_);
   }
 
-  if (gauss_opt_.refined_.height_) {
-    marker_opt_.channel = gauss_opt_.refined_.center_;
+  if (gauss_opt_.gaussian_.height_) {
+    marker_opt_.channel = gauss_opt_.gaussian_.center_;
     marker_opt_.visible = true;
     markers.push_back(marker_opt_);
   }
