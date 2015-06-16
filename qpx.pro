@@ -57,6 +57,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 unix {
    SUSE = $$system(cat /proc/version | grep -o SUSE)
    UBUNTU = $$system(cat /proc/version | grep -o Ubuntu)
+   FEDORA = $$system(cat /proc/version | grep -o fedora)
    contains( SUSE, SUSE): {
        message(Makefile for SUSE)
        LIBS += -llua
@@ -64,6 +65,10 @@ unix {
    contains( UBUNTU, Ubuntu): {
        message(Makefile for Ubuntu)
        LIBS += -llua5.2
+   }
+   contains( FEDORA, fedora): {
+       message(Makefile for Fedora)
+       LIBS += -llua
    }
    DEFINES += "XIA_LINUX"
    DEFINES += "PLX_LINUX"

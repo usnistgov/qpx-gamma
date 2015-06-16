@@ -641,8 +641,11 @@ void Wrapper::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQue
   CustomTimer parse_timer;
 
   //setup output file
+  boost::filesystem::path current( boost::filesystem::current_path() );
+  current /= "vme_raw.dat";
+
   FILE *DataFile;
-  DataFile =  fopen("/home/shetty/qpxdata/vmecrap.dat","w");
+  DataFile =  fopen(current.filename().string().c_str(),"w");
   
   while ((spill = in_queue->dequeue()) != NULL ) {
     parse_timer.resume();
