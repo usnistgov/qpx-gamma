@@ -168,8 +168,9 @@ void SpectraSet::set_spectra(const XMLableDB<Spectrum::Template>& newdb) {
 
   for (int i=0; i < numofspectra; i++) {
     Spectrum::Spectrum* newSpectrum = Spectrum::Factory::getInstance().create_from_template(newdb.get(i));
-    if (newSpectrum != nullptr)
+    if (newSpectrum != nullptr) {
       my_spectra_.push_back(newSpectrum);
+    }
   }
 
   ready_ = true; terminating_ = false; newdata_ = false;

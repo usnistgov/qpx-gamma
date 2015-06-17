@@ -52,7 +52,7 @@ bool Spectrum1D_LFC::initialize() {
   channels_all_.resize(resolution_,0);
   channels_run_.resize(resolution_,0);
 
-  time_sample_ = get_attr("time_sample");
+  time_sample_ = get_attr("time_sample").value;
 
   return Spectrum1D::initialize();
 }
@@ -66,9 +66,6 @@ void Spectrum1D_LFC::addHit(const Hit& newHit, int chan)
 
 void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
 {
-  if (!dimensions_)
-    return;
-
   Spectrum1D::addStats(newStats);
 
   if (!newStats.spill_count) {
@@ -132,8 +129,6 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
 }
 
 void Spectrum1D_LFC::addRun(const RunInfo& run_info) {
-  if (!dimensions_)
-    return;
   addStats(time2_);
   Spectrum1D::addRun(run_info);
   count_ = 0.0;

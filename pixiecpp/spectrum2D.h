@@ -45,8 +45,9 @@ public:
 
     Setting buf;
     buf.name = "buffered";
+    buf.node_type = NodeType::setting;
+    buf.setting_type = SettingType::boolean;
     buf.unit = "T/F";
-    buf.value = 0;
     buf.description = "Buffered output for efficient plotting (more memory)";
     buf.writable = true;
     new_temp.generic_attributes.push_back(buf);

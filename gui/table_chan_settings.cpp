@@ -48,8 +48,15 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
     if (row == 0) {
       if (col == 0)
         return "<===detector===>";
-      else if (col <= Pixie::kNumChans)
-        return QString::fromStdString(my_settings_.get_detector(Pixie::Channel(col-1)).name_);
+      else if (col <= Pixie::kNumChans) {
+        if (role == Qt::EditRole) {
+          Pixie::Setting det;
+          det.setting_type = Pixie::SettingType::detector;
+          det.value_text = my_settings_.get_detector(Pixie::Channel(col-1)).name_;
+          return QVariant::fromValue(det);
+        } else if (role == Qt::DisplayRole)
+          return QString::fromStdString(my_settings_.get_detector(Pixie::Channel(col-1)).name_);
+      }
     } else {
       if (col == 0)
         return QString::fromStdString(chan_meta_[row-1].name);

@@ -70,9 +70,6 @@ void Spectrum::addSpill(const Spill& one_spill) {
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
 
-  if (!dimensions_)
-    return;
-  
   for (auto &q : one_spill.hits) {
     if (this->validateHit(q))
       this->addHit(q);
@@ -96,9 +93,6 @@ bool Spectrum::validateHit(const Hit& newHit) const {
 
 void Spectrum::addStats(const StatsUpdate& newBlock) {
   //private; no lock required
-  
-  if (!dimensions_)
-    return;
 
   if (newBlock.spill_count == 0)
     start_stats = newBlock;
@@ -121,9 +115,7 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
 
 void Spectrum::addRun(const RunInfo& run_info) {
   //private; no lock required
-  
-  if (!dimensions_)
-    return;
+
   detectors_ = run_info.p4_state.get_detectors();
   recalc_energies();
   start_time_ = run_info.time_start;
@@ -155,9 +147,6 @@ void Spectrum::set_detectors(const std::vector<Detector>& dets) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
-
-  if (!dimensions_)
-    return;
   
   detectors_ = dets;
   recalc_energies();
@@ -204,13 +193,13 @@ void Spectrum::recalc_energies() {
   }
 }
 
-double Spectrum::get_attr(std::string setting) const {
+Setting Spectrum::get_attr(std::string setting) const {
   //private; no lock required
-  double ret = 0.0;
+  Setting ret;
   
   for (auto &q : generic_attributes_)
     if (q.name == setting)
-      ret = q.value;
+      ret = q;
   
   return ret;
 }
@@ -354,13 +343,13 @@ void Spectrum::set_description(std::string newdesc) {
   description_ = newdesc; 
 }
 
-void Spectrum::set_generic_attr(std::string setting, double value) {
+void Spectrum::set_generic_attr(Setting setting) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   for (auto &q : generic_attributes_) {
-    if ((q.name == setting) && (q.writable))
-      q.value = value;
+    if ((q.name == setting.name) && (q.writable))
+      q = setting;
   }
 }
 
@@ -372,9 +361,6 @@ void Spectrum::set_generic_attr(std::string setting, double value) {
 
 void Spectrum::to_xml(tinyxml2::XMLPrinter& printer) const {
   boost::shared_lock<boost::shared_mutex> lock(mutex_);
-
-  if (!dimensions_)
-    return;
 
   std::stringstream patterndata;
   

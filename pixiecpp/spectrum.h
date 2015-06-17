@@ -126,7 +126,7 @@ public:
   void set_appearance(uint32_t newapp);
   void set_start_time(boost::posix_time::ptime newtime);
   void set_description(std::string newdesc);
-  void set_generic_attr(std::string setting, double value);
+  void set_generic_attr(Setting setting);
 
 
 protected:
@@ -154,7 +154,7 @@ protected:
   virtual bool validateHit(const Hit& newHit) const; //has default behavior
 
   void recalc_energies();
-  double get_attr(std::string name) const;
+  Setting get_attr(std::string name) const;
 
   //////////////////////////////
   ///////member variables///////
