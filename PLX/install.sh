@@ -6,14 +6,9 @@ if [ $(id -u) != "0" ]; then
 	exit 1
 fi
 
-if [ -d ./PlxSdk ]; then
-	echo "PlxSdk found. Continuing script..." >&2
-else
-	echo "Please put the PLX SDK in ./PlxSdk for script to continue" >&2
-	exit 1
-fi
+export PLX_SDK_DIR=$(pwd)
 
-cd PlxSdk/Driver
+cd Driver
 ./builddriver 9054 cleanall
 ./builddriver 9054 d
 
