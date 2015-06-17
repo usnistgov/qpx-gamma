@@ -1,5 +1,5 @@
-Makefile*
-install
+/Makefile*
+/install
 PIXIEmsg*
 debug/*
 release/*
