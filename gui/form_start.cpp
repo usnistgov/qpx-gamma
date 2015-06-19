@@ -107,7 +107,7 @@ void FormStart::boot_complete(bool success, bool online) {
     if (online) {
       pixie_.control_adjust_offsets();  //oscil function, if called through runner would invoke do_oscil
       pixie_.settings().load_optimization(); //if called through runner would invoke do_oscil
-      runner_thread_.do_oscil();
+      runner_thread_.do_oscil(2.0);
     }
     runner_thread_.do_refresh_settings();
     this->setCursor(Qt::ArrowCursor);

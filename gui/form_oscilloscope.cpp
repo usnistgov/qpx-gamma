@@ -29,7 +29,19 @@ FormOscilloscope::FormOscilloscope(ThreadRunner& thread, QWidget *parent) :
   ui(new Ui::FormOscilloscope)
 {
   ui->setupUi(this);
-  connect(&runner_thread_, SIGNAL(oscilReadOut(QList<QVector<double>>*)), this, SLOT(oscil_complete(QList<QVector<double>>*)));
+
+  ui->widgetPlot->set_scale_type("Linear");
+  ui->widgetPlot->set_plot_style("Step");
+  ui->widgetPlot->set_marker_labels(false);
+  ui->widgetPlot->showButtonColorThemes(false);
+  ui->widgetPlot->showButtonMarkerLabels(false);
+  ui->widgetPlot->showButtonPlotStyle(false);
+  ui->widgetPlot->showButtonScaleType(false);
+  ui->widgetPlot->setZoomable(true);
+  ui->widgetPlot->setTitle("Osciloscope");
+  ui->widgetPlot->setLabels("time (ticks)", "energy/channel");
+
+  connect(&runner_thread_, SIGNAL(oscilReadOut(QList<QVector<double>>*, QString)), this, SLOT(oscil_complete(QList<QVector<double>>*, QString)));
 }
 
 FormOscilloscope::~FormOscilloscope()
@@ -42,13 +54,14 @@ void FormOscilloscope::toggle_push(bool enable, Pixie::LiveStatus live) {
   ui->pushOscilRefresh->setEnabled(enable && online);
   ui->pushOscilBaselines->setEnabled(enable && online);
   ui->pushOscilOffsets->setEnabled(enable && online);
+  ui->doubleSpinXDT->setEnabled(enable && online);
 }
 
 void FormOscilloscope::on_pushOscilRefresh_clicked()
 {
   emit statusText("Getting traces...");
   emit toggleIO(false);
-  runner_thread_.do_oscil();
+  runner_thread_.do_oscil(ui->doubleSpinXDT->value());
 }
 
 void FormOscilloscope::on_pushOscilBaselines_clicked()
@@ -67,23 +80,32 @@ void FormOscilloscope::on_pushOscilOffsets_clicked()
 }
 
 
-void FormOscilloscope::oscil_complete(QList<QVector<double>>* plot_data) {
+void FormOscilloscope::oscil_complete(QList<QVector<double>>* plot_data, QString unit) {
+  ui->widgetPlot->clearGraphs();
+  ui->widgetPlot->reset_scales();
+
+
   QVector<QColor> palette {Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow};
-  ui->oscilPlot->clearGraphs();
 
   QVector<QColor>::iterator color_it = palette.begin();
   int i=0;
   for (QList<QVector<double>>::iterator it = ++(plot_data->begin()); it != plot_data->end(); ++it) {
-    ui->oscilPlot->addGraph();
-    ui->oscilPlot->graph(i)->addData(*(plot_data->begin()), *it);
-    ui->oscilPlot->graph(i)->setPen(QPen(*(color_it++)));
+    ui->widgetPlot->addGraph(*(plot_data->begin()), *it, *color_it++, 1);
     i++;
   }
-  ui->oscilPlot->xAxis->setLabel("time (ticks)"); //can do better....
-  ui->oscilPlot->yAxis->setLabel("keV");
-  ui->oscilPlot->rescaleAxes();
-  ui->oscilPlot->replot();
+
+  ui->widgetPlot->setLabels("time (\u03BCs)", "energy (" + unit + ")");
+  ui->doubleSpinXDT->setValue((*plot_data->begin())[1]);
+
+
+  ui->widgetPlot->rescale();
+  ui->widgetPlot->redraw();
 
   delete plot_data;
   emit toggleIO(true);
+}
+
+void FormOscilloscope::on_doubleSpinXDT_editingFinished()
+{
+  on_pushOscilRefresh_clicked();
 }

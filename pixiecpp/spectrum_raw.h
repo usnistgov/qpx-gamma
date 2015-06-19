@@ -39,7 +39,7 @@ public:
     new_temp.type = "Raw";
     //    new_temp.input_types = {""};
     //    new_temp.output_types = {""};
-    new_temp.description = "Custom gated list mode to file";
+    new_temp.description = "Custom gated list mode to file. Please provide path and name for valid and accessible file.";
 
     Setting file_setting;
     file_setting.name = "file_name";

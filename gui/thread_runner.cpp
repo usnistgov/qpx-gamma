@@ -39,6 +39,7 @@ ThreadRunner::ThreadRunner(QObject *parent) :
   boot_keepcw_ = true;
   mod_filter_ = 0.0;
   mod_wait_ = 0.0;
+  xdt_ = 0.0;
 }
 
 ThreadRunner::~ThreadRunner()
@@ -145,9 +146,10 @@ void ThreadRunner::do_optimize() {
     PL_WARN << "Cannot do_optimize. Runner busy.";
 }
 
-void ThreadRunner::do_oscil() {
+void ThreadRunner::do_oscil(double xdt) {
   if (!isRunning()) {
     action_ = kOscil;
+    xdt_ = xdt;
     terminating_.store(false);
     start(HighPriority);
   } else
@@ -246,29 +248,36 @@ void ThreadRunner::run()
     Pixie::Hit oscil_traces_ = Pixie::Wrapper::getInstance().getOscil();
     uint32_t trace_length = oscil_traces_.trace[0].size();
 
-    QList<QVector<double>> *plot_data = new QList<QVector<double>>;
-    plot_data->push_back(QVector<double>(trace_length));
-    std::iota(plot_data->last().begin(), plot_data->last().end(), 0);
+    std::string calib_units = Pixie::Wrapper::getInstance().settings().get_detector(Pixie::Channel(0)).highest_res_calib().units_;
+    for (int i=0; i < Pixie::kNumChans; i++) {
+      Pixie::Wrapper::getInstance().settings().set_chan("XDT", xdt_, Pixie::Channel(i));
+      if (Pixie::Wrapper::getInstance().settings().get_detector(Pixie::Channel(i)).highest_res_calib().units_ != calib_units)
+        calib_units = "channels";
+    }
 
-    for (int i=0; i < 4; i++) {  //hardcoded for 4 channels
-      plot_data->push_back(QVector<double>());
-      Pixie::Detector thisdet = Pixie::Wrapper::getInstance().settings().get_detector(Pixie::Channel(i));
-      int hi_res = 0;
-      for (auto &q : thisdet.energy_calibrations_.my_data_) {
-        if (q.bits_ > hi_res)
-          hi_res = q.bits_;
-      }
-      Pixie::Calibration thiscal = thisdet.energy_calibrations_.get(Pixie::Calibration(hi_res));
-      int shiftby = 0;
-      if (thiscal.bits_)
-        shiftby = 16 - thiscal.bits_;
+    double xinterval = Pixie::Wrapper::getInstance().settings().get_chan("XDT", Pixie::Channel(0), Pixie::Module::current, Pixie::LiveStatus::online);
+
+
+    QVector<double> xx;
+    for (int i=0; i < trace_length; ++i)
+      xx.push_back(i*xinterval);
+
+    QList<QVector<double>> *plot_data = new QList<QVector<double>>;
+    plot_data->push_back(xx);
+
+    for (int i=0; i < Pixie::kNumChans; i++) {
+      QVector<double> yy;
       for (auto it : oscil_traces_.trace[i]) {
-        double calibrated = thiscal.transform(it >> shiftby);
-        plot_data->last().push_back(calibrated);
+        if (calib_units != "channels")
+          yy.push_back(Pixie::Wrapper::getInstance().settings().get_detector(Pixie::Channel(i)).highest_res_calib().transform(it, 16));
+        else
+          yy.push_back(it);
       }
+
+      plot_data->push_back(yy);
     }
     Pixie::Wrapper::getInstance().settings().get_all_settings();
     emit settingsUpdated();
-    emit oscilReadOut(plot_data);
+    emit oscilReadOut(plot_data, QString::fromStdString(calib_units));
   }
 }

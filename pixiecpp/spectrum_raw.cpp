@@ -124,21 +124,27 @@ void SpectrumRaw::addRun(const RunInfo& run) {
 }
 
 void SpectrumRaw::hit_text(const Hit &newHit) {
+  out_file_ << "p ";
+  for (int i=0; i<newHit.pattern.size(); ++i) {
+    out_file_ << newHit.pattern[i];
+  }
+  out_file_ << std::endl;
 
+  /*
   std::string pat = newHit.pattern.to_string();
   std::reverse(pat.begin(),pat.end());
   out_file_ << "p " << pat << std::endl;
+  */
 
   for (int i = 0; i < kNumChans; i++)
     if ((add_pattern_[i]) && (newHit.pattern[i])) {
       out_file_ << "c " << i
                 << " t " << newHit.buf_time_hi
                 << " " << newHit.evt_time_hi
-                << " " << newHit.evt_time_lo
-                << " e " << newHit.energy[i] << newHit.chan_trig_time[i];
+                << " " << newHit.chan_trig_time[i] //newHit.evt_time_lo
+                << " e " << newHit.energy[i];
       out_file_ << std::endl;
     }
-  out_file_ << std::endl;
 }
 
 void SpectrumRaw::hit_bin(const Hit &newHit) {
@@ -147,10 +153,20 @@ void SpectrumRaw::hit_bin(const Hit &newHit) {
 
 void SpectrumRaw::stats_text(const StatsUpdate& stats) {
   out_file_ << "stats at " << to_iso_extended_string(stats.lab_time)
-            << " count=" << stats.spill_count
-            << " total_time=" << stats.total_time
-            << " event_rate=" << stats.event_rate
+            << " spills " << stats.spill_count
+            << " total_time " << stats.total_time
+            << " event_rate " << stats.event_rate
             << std::endl;
+
+  for (int i = 0; i < kNumChans; i++) {
+    out_file_ << " c " << i
+              << " fast_peaks " << stats.fast_peaks[i]
+              << " live_time " << stats.live_time[i]
+              << " ftdt " << stats.ftdt[i]
+              << " sfdt " << stats.sfdt[i]
+              << std::endl;
+  }
+
 }
 
 void SpectrumRaw::stats_bin(const StatsUpdate& stats) {

@@ -25,6 +25,7 @@
 
 #include <QWidget>
 #include "thread_runner.h"
+#include "widget_plot1d.h"
 
 namespace Ui {
 class FormOscilloscope;
@@ -46,9 +47,11 @@ private slots:
   void on_pushOscilRefresh_clicked();
   void on_pushOscilBaselines_clicked();
   void on_pushOscilOffsets_clicked();
-  void oscil_complete(QList<QVector<double>>*);
+  void oscil_complete(QList<QVector<double>>*, QString);
 
   void toggle_push(bool enable, Pixie::LiveStatus live);
+
+  void on_doubleSpinXDT_editingFinished();
 
 private:
   Ui::FormOscilloscope *ui;

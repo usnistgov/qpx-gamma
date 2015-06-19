@@ -43,7 +43,7 @@ DialogDetector::DialogDetector(Pixie::Detector mydet, QDir rd, QString formats, 
 
   ui->comboType->insertItem(0, QString::fromStdString("HPGe"), QString::fromStdString("HPGe"));
   ui->comboType->insertItem(1, QString::fromStdString("NaI"), QString::fromStdString("NaI"));
-  ui->comboType->insertItem(1, QString::fromStdString("LaBr"), QString::fromStdString("LaBr"));
+  ui->comboType->insertItem(2, QString::fromStdString("LaBr"), QString::fromStdString("LaBr"));
 
   ui->lineName->setEnabled(editName);
   my_detector_ = mydet;

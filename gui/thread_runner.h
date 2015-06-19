@@ -59,7 +59,7 @@ public:
     void do_offsets();
     void do_baselines();
     void do_optimize();
-    void do_oscil();
+    void do_oscil(double xdt);
     void do_refresh_settings();
     void do_tau();
     void do_BLcut();
@@ -71,7 +71,7 @@ signals:
     void listComplete(Pixie::ListData*);
     void bootComplete(bool, bool);
     void settingsUpdated();
-    void oscilReadOut(QList<QVector<double>>*);
+    void oscilReadOut(QList<QVector<double>>*, QString);
 
 protected:
     void run();
@@ -88,7 +88,7 @@ private:
     std::vector<std::string> boot_files_;
     std::vector<uint8_t> boot_slots_;
     bool boot_keepcw_;
-    double mod_filter_, mod_wait_;
+    double mod_filter_, mod_wait_, xdt_;
 
     //run variables
     Pixie::RunType run_type_;
