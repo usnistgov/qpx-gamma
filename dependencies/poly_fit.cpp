@@ -270,6 +270,9 @@ UtilXY::UtilXY(const std::vector<double> &x, const std::vector<double> &y, uint1
     set_mov_avg(avg_window);
     deriv();
   }
+
+  if (x_.size() > 0)
+    PL_DBG << "x_ [" << x_[0] << ", " << x_[x_.size() - 1] << "]";
 }
 
 void UtilXY::set_mov_avg(uint16_t window) {

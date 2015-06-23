@@ -22,7 +22,6 @@
 
 #include "gui/form_start.h"
 #include "form_bootup.h"
-#include "form_oscilloscope.h"
 #include <QBoxLayout>
 
 FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixie::Detector> &detectors, QWidget *parent) :
@@ -44,7 +43,7 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixie:
   hl->addWidget(formBootup);
   hl->addStretch();
 
-  FormOscilloscope *formOscilloscope = new FormOscilloscope(runner_thread_);
+  formOscilloscope = new FormOscilloscope(runner_thread_, settings);
   connect(formOscilloscope, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
   connect(this, SIGNAL(toggle_push_(bool,Pixie::LiveStatus)), formOscilloscope, SLOT(toggle_push(bool,Pixie::LiveStatus)));
 
@@ -76,6 +75,7 @@ void FormStart::closeEvent(QCloseEvent *event) {
   if (exiting) {
     formPixieSettings->close();
     formBootup->close();
+    formOscilloscope->close();
     event->accept();
   }
   else
@@ -107,7 +107,7 @@ void FormStart::boot_complete(bool success, bool online) {
     if (online) {
       pixie_.control_adjust_offsets();  //oscil function, if called through runner would invoke do_oscil
       pixie_.settings().load_optimization(); //if called through runner would invoke do_oscil
-      runner_thread_.do_oscil(2.0);
+      runner_thread_.do_oscil(formOscilloscope->xdt());
     }
     runner_thread_.do_refresh_settings();
     this->setCursor(Qt::ArrowCursor);

@@ -95,7 +95,7 @@ private:
   QSettings &settings_;
 
   //from parent
-  QString data_directory_, load_formats_;
+  QString data_directory_;
   Pixie::SpectraSet *spectra_;
   XMLableDB<Pixie::Detector> *detectors_;
 

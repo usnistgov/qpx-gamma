@@ -245,18 +245,18 @@ void ThreadRunner::run()
   }
 
   if (action_ == kOscil) {
-    Pixie::Hit oscil_traces_ = Pixie::Wrapper::getInstance().getOscil();
-    uint32_t trace_length = oscil_traces_.trace[0].size();
+    std::vector<Pixie::Detector> dets = Pixie::Wrapper::getInstance().settings().get_detectors();
 
-    std::string calib_units = Pixie::Wrapper::getInstance().settings().get_detector(Pixie::Channel(0)).highest_res_calib().units_;
-    for (int i=0; i < Pixie::kNumChans; i++) {
+    std::string calib_units = dets[0].highest_res_calib().units_;
+    for (int i=0; i < dets.size(); i++) {
       Pixie::Wrapper::getInstance().settings().set_chan("XDT", xdt_, Pixie::Channel(i));
-      if (Pixie::Wrapper::getInstance().settings().get_detector(Pixie::Channel(i)).highest_res_calib().units_ != calib_units)
+      if (dets[i].highest_res_calib().units_ != calib_units)
         calib_units = "channels";
     }
-
     double xinterval = Pixie::Wrapper::getInstance().settings().get_chan("XDT", Pixie::Channel(0), Pixie::Module::current, Pixie::LiveStatus::online);
 
+    Pixie::Hit oscil_traces_ = Pixie::Wrapper::getInstance().getOscil();
+    uint32_t trace_length = oscil_traces_.trace[0].size();
 
     QVector<double> xx;
     for (int i=0; i < trace_length; ++i)
@@ -269,7 +269,7 @@ void ThreadRunner::run()
       QVector<double> yy;
       for (auto it : oscil_traces_.trace[i]) {
         if (calib_units != "channels")
-          yy.push_back(Pixie::Wrapper::getInstance().settings().get_detector(Pixie::Channel(i)).highest_res_calib().transform(it, 16));
+          yy.push_back(dets[i].highest_res_calib().transform(it, 16));
         else
           yy.push_back(it);
       }

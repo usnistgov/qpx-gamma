@@ -30,6 +30,8 @@
 #include "thread_runner.h"
 #include "form_pixie_settings.h"
 #include "form_bootup.h"
+#include "form_oscilloscope.h"
+
 
 namespace Ui {
 class FormStart;
@@ -77,6 +79,7 @@ private:
 
   FormPixieSettings*  formPixieSettings;
   FormBootup*         formBootup;
+  FormOscilloscope*   formOscilloscope;
 
   bool exiting;
 

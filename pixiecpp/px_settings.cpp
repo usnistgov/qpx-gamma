@@ -187,6 +187,7 @@ void Settings::save_optimization(Channel chan) {
   //current module only
 
   for (int i = start; i < stop; i++) {
+    PL_DBG << "Saving optimization channel " << i << " settings for " << detectors_[i].name_;
     detectors_[i].setting_names_.resize(43);
     detectors_[i].setting_values_.resize(43);
     for (int j = 0; j < 43; j++) {
@@ -212,7 +213,7 @@ void Settings::load_optimization(Channel chan) {
   
   for (int i = start; i < stop; i++) {
     if (detectors_[i].setting_values_.size()) {
-      PL_INFO << "Optimizing channel " << i << " settings for " << detectors_[i].name_;
+      PL_DBG << "Optimizing channel " << i << " settings for " << detectors_[i].name_;
       for (std::size_t j = 0; j < detectors_[i].setting_values_.size(); j++) {
         if (chan_set_meta_[j].writable)
           set_chan(j, detectors_[i].setting_values_[j], Channel(i), Module::current);
@@ -755,6 +756,7 @@ void Settings::initialize() {
   chan_set_meta_[i_chan("PSA_START")].unit = "\u03BCs";
   chan_set_meta_[i_chan("PSA_END")].unit = "\u03BCs";
   chan_set_meta_[i_chan("TAU")].unit = "\u03BCs";
+  chan_set_meta_[i_chan("XDT")].unit = "\u03BCs";
   chan_set_meta_[i_chan("GATE_WINDOW")].unit = "\u03BCs";
   chan_set_meta_[i_chan("GATE_DELAY")].unit = "\u03BCs";
 

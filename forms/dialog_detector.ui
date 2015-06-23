@@ -73,10 +73,16 @@
         </size>
        </property>
        <property name="inputMask">
-        <string>Annnnnnnnnnnnnnnnnnn</string>
+        <string/>
        </property>
        <property name="text">
         <string/>
+       </property>
+       <property name="maxLength">
+        <number>32</number>
+       </property>
+       <property name="placeholderText">
+        <string>none</string>
        </property>
       </widget>
      </item>

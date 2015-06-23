@@ -78,6 +78,8 @@ private:
   void loadSettings();
   void saveSettings();
 
+  void plot_derivs(UtilXY &data);
+
 
   Ui::FormOptimization *ui;
 

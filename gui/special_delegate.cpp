@@ -106,7 +106,7 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
     if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
       Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
       if (set.setting_type == Pixie::SettingType::detector) {
-        int cbIndex = cb->findText(QString::fromStdString(set.name));
+        int cbIndex = cb->findText(QString::fromStdString(set.value_text));
         if(cbIndex >= 0)
           cb->setCurrentIndex(cbIndex);
       } else if (set.int_menu_items.count(set.value_int)) {

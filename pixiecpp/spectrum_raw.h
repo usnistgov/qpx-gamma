@@ -60,6 +60,15 @@ public:
     format_setting.int_menu_items[1] = "human readable";
     new_temp.generic_attributes.push_back(format_setting);
     
+    Setting hit_pattern_write;
+    hit_pattern_write.name = "with_pattern";
+    hit_pattern_write.node_type = NodeType::setting;
+    hit_pattern_write.setting_type = SettingType::boolean;
+    hit_pattern_write.writable = true;
+    hit_pattern_write.description = "write hit pattern before event energies";
+    hit_pattern_write.value_int = 1;
+    new_temp.generic_attributes.push_back(hit_pattern_write);
+
     return new_temp;
   }
   
@@ -87,6 +96,9 @@ protected:
   void stats_text(const StatsUpdate&);
   void stats_bin(const StatsUpdate&);
 
+  void run_text(const RunInfo&);
+  void run_bin(const RunInfo&);
+
   std::string _channels_to_xml() const override {return "written to file";}
   uint16_t _channels_from_xml(const std::string&) override {return 0;}
 
@@ -94,6 +106,7 @@ protected:
   std::ofstream out_file_;
   bool open_;
   int format_;
+  bool with_hit_pattern_;
 };
 
 }}

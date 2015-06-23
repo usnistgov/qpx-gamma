@@ -45,8 +45,6 @@ public:
   explicit FormPixieSettings(ThreadRunner&, XMLableDB<Pixie::Detector>&, QSettings&, QWidget *parent = 0);
   ~FormPixieSettings();
   //void setData(ThreadRunner&, XMLableDB<Pixie::Detector>&);
-  void loadSettings();
-  void saveSettings();
 
   void apply_settings();
 
@@ -73,6 +71,8 @@ private slots:
   void updateDetChoices();
   void toggle_push(bool enable, Pixie::LiveStatus live);
 
+  void on_pushDetDB_clicked();
+
 private:
   Ui::FormPixieSettings *ui;
 
@@ -86,6 +86,12 @@ private:
 
   TableChanSettings   channel_settings_model_;
   QpxSpecialDelegate  settings_delegate_;
+
+  QString data_directory_;
+
+  void loadSettings();
+  void saveSettings();
+
 };
 
 #endif // FORM_PIXIE_SETTINGS_H

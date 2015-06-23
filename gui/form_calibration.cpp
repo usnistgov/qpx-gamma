@@ -40,16 +40,6 @@ FormCalibration::FormCalibration(QSettings &settings, QWidget *parent) :
   qRegisterMetaType<Gaussian>("Gaussian");
   qRegisterMetaType<QVector<Gaussian>>("QVector<Gaussian>");
 
-  //file formats, should be in detector db widget
-  std::vector<std::string> spectypes = Pixie::Spectrum::Factory::getInstance().types();
-  QStringList filetypes;
-  for (auto &q : spectypes) {
-    Pixie::Spectrum::Template* type_template = Pixie::Spectrum::Factory::getInstance().create_template(q);
-    if (!type_template->input_types.empty())
-      filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types) + ")");
-    delete type_template;
-  }
-  load_formats_ = catFileTypes(filetypes);
   ui->plot1D->use_calibrated(true);
 
   ui->PlotCalib->set_scale_type("Linear");
@@ -588,7 +578,7 @@ void FormCalibration::on_pushFindPeaks_clicked()
 void FormCalibration::on_pushDetDB_clicked()
 {
   WidgetDetectors *det_widget = new WidgetDetectors(this);
-  det_widget->setData(*detectors_, data_directory_, load_formats_);
+  det_widget->setData(*detectors_, data_directory_);
   connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
   det_widget->exec();
 }

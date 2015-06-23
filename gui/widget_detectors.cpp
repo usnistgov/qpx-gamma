@@ -30,9 +30,8 @@
 #include "spectra_set.h"
 #include <boost/algorithm/string.hpp>
 
-DialogDetector::DialogDetector(Pixie::Detector mydet, QDir rd, QString formats, bool editName, QWidget *parent) :
+DialogDetector::DialogDetector(Pixie::Detector mydet, QDir rd, bool editName, QWidget *parent) :
   root_dir_(rd),
-  mca_formats_(formats),
   my_detector_(mydet),
   table_model_(my_detector_.energy_calibrations_),
   selection_model_(&table_model_),
@@ -41,11 +40,29 @@ DialogDetector::DialogDetector(Pixie::Detector mydet, QDir rd, QString formats, 
 {
   ui->setupUi(this);
 
-  ui->comboType->insertItem(0, QString::fromStdString("HPGe"), QString::fromStdString("HPGe"));
-  ui->comboType->insertItem(1, QString::fromStdString("NaI"), QString::fromStdString("NaI"));
-  ui->comboType->insertItem(2, QString::fromStdString("LaBr"), QString::fromStdString("LaBr"));
+  //file formats, should be in detector db widget
+  std::vector<std::string> spectypes = Pixie::Spectrum::Factory::getInstance().types();
+  QStringList filetypes;
+  for (auto &q : spectypes) {
+    Pixie::Spectrum::Template* type_template = Pixie::Spectrum::Factory::getInstance().create_template(q);
+    if (!type_template->input_types.empty())
+      filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types) + ")");
+    delete type_template;
+  }
+  mca_formats_ = catFileTypes(filetypes);
 
+  QRegExp rx("^\\w*$");
+  QValidator *validator = new QRegExpValidator(rx, this);
+  ui->lineName->setValidator(validator);
   ui->lineName->setEnabled(editName);
+
+
+  ui->comboType->insertItem(0, QString::fromStdString("none"), QString::fromStdString("none"));
+  ui->comboType->insertItem(1, QString::fromStdString("HPGe"), QString::fromStdString("HPGe"));
+  ui->comboType->insertItem(2, QString::fromStdString("NaI"), QString::fromStdString("NaI"));
+  ui->comboType->insertItem(3, QString::fromStdString("LaBr"), QString::fromStdString("LaBr"));
+  ui->comboType->insertItem(4, QString::fromStdString("BGO"), QString::fromStdString("BGO"));
+
   my_detector_ = mydet;
 
   ui->tableCalibrations->setModel(&table_model_);
@@ -69,8 +86,11 @@ DialogDetector::~DialogDetector()
 }
 
 void DialogDetector::updateDisplay() {
-  ui->lineName->setText(QString::fromStdString(my_detector_.name_));
-  ui->lineName->setCursorPosition(0);
+  if (my_detector_.name_ != Pixie::Detector().name_)
+    ui->lineName->setText(QString::fromStdString(my_detector_.name_));
+  else
+    ui->lineName->clear();
+
   ui->comboType->setCurrentText(QString::fromStdString(my_detector_.type_));
 
   if (my_detector_.setting_names_.empty())
@@ -82,7 +102,7 @@ void DialogDetector::updateDisplay() {
 
 void DialogDetector::on_lineName_editingFinished()
 {
-  my_detector_.name_ = boost::algorithm::trim_copy(ui->lineName->text().toStdString());
+  my_detector_.name_ = ui->lineName->text().toStdString();
 }
 
 void DialogDetector::on_comboType_currentIndexChanged(const QString &arg1)
@@ -325,11 +345,10 @@ WidgetDetectors::WidgetDetectors(QWidget *parent) :
           this, SLOT(selection_changed(QItemSelection,QItemSelection)));
 }
 
-void WidgetDetectors::setData(XMLableDB<Pixie::Detector> &newdb, QString outdir, QString formats) {
+void WidgetDetectors::setData(XMLableDB<Pixie::Detector> &newdb, QString outdir) {
   table_model_.setDB(newdb);
   detectors_ = &newdb;
   root_dir_  = outdir;
-  mca_formats_ = formats;
 
   ui->tableDetectorDB->setModel(&table_model_);
   ui->tableDetectorDB->setSelectionModel(&selection_model_);
@@ -364,7 +383,7 @@ void WidgetDetectors::toggle_push() {
 
 void WidgetDetectors::on_pushNew_clicked()
 {
-  DialogDetector* newDet = new DialogDetector(Pixie::Detector(), QDir(root_dir_), mca_formats_, true, this);
+  DialogDetector* newDet = new DialogDetector(Pixie::Detector(), QDir(root_dir_), true, this);
   connect(newDet, SIGNAL(newDetReady(Pixie::Detector)), this, SLOT(addNewDet(Pixie::Detector)));
   newDet->exec();
 }
@@ -376,7 +395,7 @@ void WidgetDetectors::on_pushEdit_clicked()
     return;
   int i = ixl.front().row();
 
-  DialogDetector* newDet = new DialogDetector(detectors_->get(i), QDir(root_dir_), mca_formats_, false, this);
+  DialogDetector* newDet = new DialogDetector(detectors_->get(i), QDir(root_dir_), false, this);
   connect(newDet, SIGNAL(newDetReady(Pixie::Detector)), this, SLOT(addNewDet(Pixie::Detector)));
   newDet->exec();
 }

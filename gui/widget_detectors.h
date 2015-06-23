@@ -58,7 +58,7 @@ class DialogDetector : public QDialog
 {
   Q_OBJECT
 public:
-  explicit DialogDetector(Pixie::Detector, QDir, QString, bool, QWidget *parent = 0);
+  explicit DialogDetector(Pixie::Detector, QDir, bool, QWidget *parent = 0);
   ~DialogDetector();
 
 private slots:
@@ -113,7 +113,7 @@ public:
   explicit WidgetDetectors(QWidget *parent = 0);
   ~WidgetDetectors();
 
-  void setData(XMLableDB<Pixie::Detector> &newdb, QString outdir, QString formats);
+  void setData(XMLableDB<Pixie::Detector> &newdb, QString outdir);
 
 signals:
   void detectorsUpdated();
@@ -125,7 +125,7 @@ private:
   TableDetectors table_model_;
   QItemSelectionModel selection_model_;
 
-  QString root_dir_, mca_formats_;
+  QString root_dir_;
 
 private slots:
   void on_pushNew_clicked();

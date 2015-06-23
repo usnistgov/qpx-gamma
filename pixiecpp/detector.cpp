@@ -54,7 +54,7 @@ double Calibration::transform(double chan, uint16_t bits) const {
   if (!bits_ || !bits)
     return chan;
   
-//  PL_DBG << "will shift " << chan << " from " << bits << " to " << bits_;
+  //  PL_DBG << "will shift " << chan << " from " << bits << " to " << bits_;
 
   if (bits > bits_)
     chan = chan / pow(2, bits - bits_);
@@ -62,7 +62,7 @@ double Calibration::transform(double chan, uint16_t bits) const {
     chan = chan * pow(2, bits_ - bits);
 
   double re = transform(chan);
-//  PL_DBG << "chan " << chan << " -> energy " << re;
+  //  PL_DBG << "chan " << chan << " -> energy " << re;
 
   return re;
 }
@@ -123,7 +123,7 @@ void Calibration::to_xml(tinyxml2::XMLPrinter& printer) const {
   printer.OpenElement("CalibrationCreationDate");
   printer.PushText(to_iso_extended_string(calib_date_).c_str());
   printer.CloseElement();
-      
+
   printer.OpenElement("Equation");
   std::string  model_str = "undefined";
   if (model_ == CalibrationModel::polynomial)
@@ -190,25 +190,28 @@ void Detector::to_xml(tinyxml2::XMLPrinter& printer) const {
   printer.OpenElement("Name");
   printer.PushText(name_.c_str());
   printer.CloseElement();
-      
+
   printer.OpenElement("Type");
   printer.PushText(type_.c_str());
   printer.CloseElement();
 
-  energy_calibrations_.to_xml(printer);
+  if (energy_calibrations_.size())
+    energy_calibrations_.to_xml(printer);
 
-  printer.OpenElement("Optimization"); 
-  for (std::size_t j = 0; j < setting_values_.size(); j++) {
-    if (!setting_names_[j].empty()) {
-      printer.OpenElement("Setting");
-      printer.PushAttribute("key", std::to_string(j).c_str());
-      printer.PushAttribute("name", setting_names_[j].c_str());
-      printer.PushAttribute("value",
-                            std::to_string(setting_values_[j]).c_str());
-      printer.CloseElement();
+  if (setting_values_.size()) {
+    printer.OpenElement("Optimization");
+    for (std::size_t j = 0; j < setting_values_.size(); j++) {
+      if (!setting_names_[j].empty()) {
+        printer.OpenElement("Setting");
+        printer.PushAttribute("key", std::to_string(j).c_str());
+        printer.PushAttribute("name", setting_names_[j].c_str());
+        printer.PushAttribute("value",
+                              std::to_string(setting_values_[j]).c_str());
+        printer.CloseElement();
+      }
     }
+    printer.CloseElement(); //Optimization
   }
-  printer.CloseElement(); //Optimization
 
   printer.CloseElement(); //Detector
 }
@@ -233,7 +236,7 @@ void Detector::from_xml(tinyxml2::XMLElement* root) {
   if (OptiData == NULL) return;
 
   setting_names_.resize(43); //hardcoded for p4
-  setting_values_.resize(43);  
+  setting_values_.resize(43);
   tinyxml2::XMLElement* SettingElement = OptiData->FirstChildElement();
   while (SettingElement != NULL) {
     if (std::string(SettingElement->Name()) == "Setting") {
@@ -242,7 +245,7 @@ void Detector::from_xml(tinyxml2::XMLElement* root) {
       setting_values_[thisKey] = boost::lexical_cast<double>(SettingElement->Attribute("value"));
     }
     SettingElement = dynamic_cast<tinyxml2::XMLElement*>(SettingElement->NextSibling());
-  }  
+  }
 }
 
 }

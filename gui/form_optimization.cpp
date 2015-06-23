@@ -107,6 +107,9 @@ void FormOptimization::loadSettings() {
   ui->spinOptChan->setValue(settings_.value("channel", 0).toInt());
   ui->spinTimeMins->setValue(settings_.value("sample_minutes", 5).toInt());
   ui->spinTimeSecs->setValue(settings_.value("sample_seconds", 0).toInt());
+  ui->spinPeakWindow->setValue(settings_.value("search_window", 100).toInt());
+  ui->spinMinPeakWidth->setValue(settings_.value("min_peak_width", 5).toInt());
+  ui->spinMovAvg->setValue(settings_.value("moving_avg_window", 15).toInt());
   ui->comboSetting->setCurrentText(settings_.value("setting_name", QString("ENERGY_RISETIME")).toString());
   ui->doubleSpinStart->setValue(settings_.value("setting_start", 5.97).toDouble());
   ui->doubleSpinDelta->setValue(settings_.value("setting_step", 0.213333).toDouble());
@@ -120,6 +123,9 @@ void FormOptimization::saveSettings() {
   settings_.setValue("channel", ui->spinOptChan->value());
   settings_.setValue("sample_minutes", ui->spinTimeMins->value());
   settings_.setValue("sample_seconds", ui->spinTimeSecs->value());
+  settings_.setValue("search_window", ui->spinPeakWindow->value());
+  settings_.setValue("min_peak_width", ui->spinMinPeakWidth->value());
+  settings_.setValue("moving_avg_window", ui->spinMovAvg->value());
   settings_.setValue("setting_name", ui->comboSetting->currentText());
   settings_.setValue("setting_start", ui->doubleSpinStart->value());
   settings_.setValue("setting_step", ui->doubleSpinDelta->value());
@@ -263,42 +269,45 @@ void FormOptimization::do_run()
 
 void FormOptimization::run_completed() {
   if (my_run_) {
+    PL_INFO << "<Optimization> Run completed";
 
-    y_opt.clear();
-
-    if ((val_current < val_max)  && !opt_runner_thread_.terminating()) {
-      PL_INFO << "[Optimization] Completed test " << val_current << " < " << val_max;
+    if (val_current < val_max) {
+      PL_INFO << "<Optimization> Completed test " << val_current << " < " << val_max;
       val_current += val_d;
       emit restart_run();
-    } else
+    } else {
+      PL_INFO << "<Optimization> Done optimizing";
       ui->pushStop->setEnabled(false);
       emit toggleIO(true);
       my_run_ = false;
       emit post_proc();
+    }
   }
 }
 
 void FormOptimization::do_post_processing() {
-
+  PL_INFO << "<Optimization> Pos-proc";
 
 }
 
 bool FormOptimization::find_peaks() {
 
-  int xmin = moving_.channel - ui->spinPeakWindow->value() / 2;
-  int xmax = moving_.channel + ui->spinPeakWindow->value() / 2;
+  int xmin = a.channel;
+  int xmax = b.channel;
 
-  if (xmin < 0) xmin = 0;
-  if (xmax >= x.size()) xmax = x.size() - 1;
+  if (xmin < 0)
+    xmin = 0;
+  if (xmax >= x.size())
+    xmax = x.size() - 1;
 
   if (moving_.visible) {
 
-    UtilXY finder_opt(x, y_opt, xmin, xmax, 25);
-    finder_opt.find_peaks(5);
+    PL_DBG << "<Optimization> Looking for peak on [" << xmin << ", " << xmax << "]";
+
+    UtilXY finder_opt(x, y_opt, xmin, xmax, ui->spinMovAvg->value());
+    finder_opt.find_peaks(ui->spinMinPeakWidth->value());
     if (finder_opt.peaks_.size())
       peaks_[peaks_.size() - 1] = finder_opt.peaks_[0];
-
-    replot_markers();
 
     return true;
   } else
@@ -317,6 +326,10 @@ void FormOptimization::update_plots() {
       std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
           std::move(q->get_spectrum({{0, res}}));
 
+      x.resize(res, 0);
+      for (std::size_t i=0; i < res; i++)
+        x[i] = i;
+
       y_opt.resize(res, 0);
       int xx = 0;
       for (auto it : *spectrum_data) {
@@ -329,12 +342,11 @@ void FormOptimization::update_plots() {
         ++xx;
       }
 
+
       find_peaks();
       spectra_y_[current_spec] = y_opt;
       setting_fwhm_[current_spec] = peaks_[current_spec].gaussian_.hwhm_ * 2;
 
-      for (std::size_t i=0; i < res; i++)
-        x[i] = i;
 
       ui->tableResults->setRowCount(peaks_.size());
       QTableWidgetItem *en = new QTableWidgetItem(QString::number(setting_values_[current_spec]));
@@ -358,7 +370,35 @@ void FormOptimization::update_plots() {
       QColor this_color = QColor::fromRgba(spectra_app_[i]);
       if (i + 1 == peaks_.size()) {
         this_color.setAlpha(255);
-//        ui->plot->addGraph(QVector<double>::fromStdVector(peaks_[ii].x_), QVector<double>::fromStdVector(peaks_[ii].y_fullfit_), this_color, 0);
+
+        if (x.size() == spectra_y_[i].size()) {
+          UtilXY spectrum_data_(x, spectra_y_[i], ui->spinMovAvg->value());
+          spectrum_data_.find_prelim();
+          spectrum_data_.filter_prelim(ui->spinMinPeakWidth->value());
+
+          //plot_derivs(spectrum_data_);
+
+          QVector<double> xx, yy;
+
+          for (auto &q : spectrum_data_.filtered) {
+            xx.push_back(q);
+            yy.push_back(spectra_y_[i][q]);
+          }
+          if (yy.size())
+            ui->plot->addPoints(xx, yy, Qt::blue, 6, QCPScatterStyle::ssDiamond);
+
+          xx.clear(); yy.clear();
+          for (auto &q : spectrum_data_.prelim) {
+            xx.push_back(q);
+            yy.push_back(spectra_y_[i][q]);
+          }
+          if (yy.size())
+            ui->plot->addPoints(xx, yy, Qt::black, 4, QCPScatterStyle::ssDiamond);
+        }
+
+
+
+        //        ui->plot->addGraph(QVector<double>::fromStdVector(peaks_[ii].x_), QVector<double>::fromStdVector(peaks_[ii].y_fullfit_), this_color, 0);
       }
 
       ui->plot->addGraph(QVector<double>::fromStdVector(x),
@@ -367,6 +407,7 @@ void FormOptimization::update_plots() {
 
     }
     ui->plot->setYBounds(minima, maxima);
+    ui->plot->set_block(a,b);
     ui->plot->replot_markers();
     ui->plot->redraw();
 
@@ -374,6 +415,49 @@ void FormOptimization::update_plots() {
   }
 
   resultChosen();
+}
+
+void FormOptimization::plot_derivs(UtilXY &data)
+{
+  QVector<double> temp_y, temp_x;
+  int was = 0, is = 0;
+
+  for (int i = 0; i < x.size(); ++i) {
+    if (data.deriv1[i] > 0)
+      is = 1;
+    else if (data.deriv1[i] < 0)
+      is = -1;
+    else
+      is = 0;
+
+    if ((was != is) && (temp_x.size()))
+    {
+      if (temp_x.size() > ui->spinMinPeakWidth->value()) {
+        if (was == 1)
+          ui->plot->addGraph(temp_x, temp_y, Qt::green, 1);
+        else if (was == -1)
+          ui->plot->addGraph(temp_x, temp_y, Qt::red, 1);
+        else
+          ui->plot->addGraph(temp_x, temp_y, Qt::black, 1);
+      }
+      temp_x.clear(); temp_x.push_back(i-1);
+      temp_y.clear(); temp_y.push_back(data.y_avg_[i-1]);
+    }
+
+    was = is;
+    temp_y.push_back(data.y_avg_[i]);
+    temp_x.push_back(i);
+  }
+
+  if (temp_x.size())
+  {
+    if (was == 1)
+      ui->plot->addGraph(temp_x, temp_y, Qt::green, 1);
+    else if (was == -1)
+      ui->plot->addGraph(temp_x, temp_y, Qt::red, 1);
+    else
+      ui->plot->addGraph(temp_x, temp_y, Qt::black, 1);
+  }
 }
 
 void FormOptimization::addMovingMarker(double x) {
@@ -395,6 +479,7 @@ void FormOptimization::removeMovingMarker(double x) {
 
 
 void FormOptimization::replot_markers() {
+  ui->plot->clearExtras();
   ui->plot->set_block(a,b);
   ui->plot->replot_markers();
   ui->plot->redraw();
@@ -419,6 +504,7 @@ void FormOptimization::resultChosen() {
   this->setCursor(Qt::WaitCursor);
 
   ui->plot2->clearGraphs();
+  ui->plot2->reset_scales();
   ui->plot3->clearGraphs();
 
   ui->plot3->addGraph(QVector<double>::fromStdVector(setting_values_), QVector<double>::fromStdVector(setting_fwhm_), Qt::darkMagenta, 0);

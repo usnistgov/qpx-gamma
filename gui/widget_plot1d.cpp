@@ -382,7 +382,7 @@ void WidgetPlot1D::replot_markers() {
       pos2 = rect[1].energy;
     } else {
       pos1 = rect[0].channel;
-      pos1 = rect[1].channel;
+      pos2 = rect[1].channel;
     }
 
 

@@ -22,6 +22,7 @@
 
 #include "gui/form_pixie_settings.h"
 #include "ui_form_pixie_settings.h"
+#include "widget_detectors.h"
 
 FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Pixie::Detector>& detectors, QSettings& settings, QWidget *parent) :
   QWidget(parent),
@@ -102,6 +103,10 @@ void FormPixieSettings::toggle_push(bool enable, Pixie::LiveStatus live) {
 }
 
 void FormPixieSettings::loadSettings() {
+  settings_.beginGroup("Program");
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_.endGroup();
+
   settings_.beginGroup("Pixie");
   ui->comboFilterSamples->setCurrentText(QString::number(pow(2, settings_.value("filter_samples", 4).toInt())));
   ui->boxCoincWait->setValue(settings_.value("coinc_wait", 1).toDouble());
@@ -113,6 +118,18 @@ void FormPixieSettings::loadSettings() {
 }
 
 void FormPixieSettings::saveSettings() {
+  pixie_.settings().save_optimization();
+  std::vector<Pixie::Detector> dets = pixie_.settings().get_detectors();
+  for (int i=0; i < detectors_.size(); ++i) {
+    for (auto &q : dets)
+      if (q.shallow_equals(detectors_.get(i)))
+        detectors_.replace(q);
+  }
+
+  //should replace only optimizations, not touch the rest of detector definition
+
+  updateDetChoices();
+
   settings_.beginGroup("Pixie");
   settings_.setValue("filter_samples", ui->comboFilterSamples->currentData().toInt());
   settings_.setValue("coinc_wait", ui->boxCoincWait->value());
@@ -187,4 +204,12 @@ void FormPixieSettings::on_boxCoincWait_editingFinished()
   double val = ui->boxCoincWait->value();
   pixie_.settings().set_mod("ACTUAL_COINCIDENCE_WAIT", val);
   runner_thread_.do_refresh_settings();
+}
+
+void FormPixieSettings::on_pushDetDB_clicked()
+{
+  WidgetDetectors *det_widget = new WidgetDetectors(this);
+  det_widget->setData(detectors_, data_directory_);
+  //connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
+  det_widget->exec();
 }

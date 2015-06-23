@@ -27,7 +27,6 @@
 #include "ui_dialog_spectrum_template.h"
 #include <QFileDialog>
 #include <QMessageBox>
-#include <boost/algorithm/string.hpp>
 
 DialogSpectrumTemplate::DialogSpectrumTemplate(Pixie::Spectrum::Template newTemplate, bool edit, QWidget *parent) :
   QDialog(parent),
@@ -38,6 +37,10 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Pixie::Spectrum::Template newTemp
     ui->comboType->addItem(QString::fromStdString(q));
   ui->colPicker->setStandardColors();
   connect(ui->colPicker, SIGNAL(colorChanged(QColor)), this, SLOT(colorChanged(QColor)));
+
+  QRegExp rx("^\\w*$");
+  QValidator *validator = new QRegExpValidator(rx, this);
+  ui->lineName->setValidator(validator);
 
   if (edit) {
     myTemplate = newTemplate;
@@ -77,7 +80,6 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Pixie::Spectrum::Template newTemp
 void DialogSpectrumTemplate::updateData() {
 
   ui->lineName->setText(QString::fromStdString(myTemplate.name_));
-  ui->lineName->setCursorPosition(0);
   ui->comboType->setCurrentText(QString::fromStdString(myTemplate.type));
   ui->checkBox->setChecked(myTemplate.visible);
   ui->spinBits->setValue(myTemplate.bits);
@@ -143,7 +145,7 @@ void DialogSpectrumTemplate::on_buttonBox_rejected()
 
 void DialogSpectrumTemplate::on_lineName_editingFinished()
 {
-  myTemplate.name_ = boost::algorithm::trim_copy(ui->lineName->text().toStdString());
+  myTemplate.name_ = ui->lineName->text().toStdString();
 }
 
 void DialogSpectrumTemplate::on_checkBox_clicked()
@@ -171,7 +173,7 @@ void DialogSpectrumTemplate::on_comboType_activated(const QString &arg1)
     //keep these from previous
     myTemplate.visible = ui->checkBox->isChecked();
     myTemplate.bits = ui->spinBits->value();
-    myTemplate.name_ = boost::algorithm::trim_copy(ui->lineName->text().toStdString());
+    myTemplate.name_ = ui->lineName->text().toStdString();
     myTemplate.appearance = ui->colPicker->currentColor().rgba();
     updateData();
   } else

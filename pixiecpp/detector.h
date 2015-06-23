@@ -72,7 +72,7 @@ class Calibration : public XMLable {
 class Detector : public XMLable {
  public:
   Detector() : energy_calibrations_("Calibrations"),
-                       name_("none"), type_("HPGe") {}
+                       name_("none"), type_("none") {}
   Detector(tinyxml2::XMLElement* el) : Detector() {from_xml(el);}
   Detector(std::string name) : Detector() {name_ = name;}
 
