@@ -219,7 +219,7 @@ void qpx::calibrate(FormCalibration* formCalib) {
     connect(formCalib, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
   }
   ui->qpxTabs->setCurrentWidget(formCalib);
-  formCalib->update_plot();
+  formCalib->update_spectrum();
 }
 
 void qpx::on_pushOpenSpectra_clicked()

@@ -58,11 +58,13 @@ signals:
   void detectorsChanged();
 
 public slots:
-  void update_plot();
+  void update_spectrum();
 
 private slots:
   void addMovingMarker(double);
   void removeMovingMarker(double);
+
+  void replot_all();
   void replot_markers();
   void selection_changed(QItemSelection, QItemSelection);
   void toggle_push();
@@ -78,7 +80,6 @@ private slots:
   void on_pushFromDB_clicked();
   void on_pushFindPeaks_clicked();
   void on_pushDetDB_clicked();
-  void on_pushRefresh_clicked();
   void on_pushAllmarkers_clicked();
   void on_pushAllEnergies_clicked();
   void on_checkShowMovAvg_clicked();
@@ -86,6 +87,10 @@ private slots:
   void on_checkShowGaussians_clicked();
   void on_checkShowBaselines_clicked();
   void on_checkShowFilteredPeaks_clicked();
+
+  void on_spinMovAvg_editingFinished();
+
+  void on_spinMinPeakWidth_editingFinished();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -102,11 +107,14 @@ private:
   //data from selected spectrum
   QString current_spectrum_;
   QVector<double> x_chan, y;
+  std::map<double, double> minima, maxima;
   UtilXY spectrum_data_;
   Pixie::Detector detector_;
 
   //markers
-  Marker moving, list, selected;
+  Marker moving, mov_l, mov_r,
+         list, selected;
+  QVector<double> mov_baseline_x, mov_baseline_y;
 
   std::map<double, double> my_markers_; //channel, energy
   TableMarkers marker_table_;

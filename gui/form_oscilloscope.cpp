@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-#include "gui/form_oscilloscope.h"
+#include "form_oscilloscope.h"
 #include "ui_form_oscilloscope.h"
 
 FormOscilloscope::FormOscilloscope(ThreadRunner& thread, QSettings& settings, QWidget *parent) :
@@ -188,4 +188,8 @@ void FormOscilloscope::oscil_complete(QList<QVector<double>>* plot_data, QString
 void FormOscilloscope::on_doubleSpinXDT_editingFinished()
 {
   on_pushOscilRefresh_clicked();
+}
+
+void FormOscilloscope::dets_updated() {
+  updateMenu();
 }

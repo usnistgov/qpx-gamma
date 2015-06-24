@@ -142,6 +142,12 @@ void FormPixieSettings::saveSettings() {
 
 void FormPixieSettings::updateDetChoices() {
   std::vector<Pixie::Detector> dets = pixie_.settings().get_detectors();
+  bool all_empty = true;
+  for (auto &q : dets)
+    if (!q.shallow_equals(Pixie::Detector()))
+      all_empty = false;
+  if (all_empty)
+    return;
   default_detectors_.clear();
   for (auto &q : dets)
     default_detectors_.push_back(q.name_);

@@ -54,6 +54,9 @@ FormCalibration::FormCalibration(QSettings &settings, QWidget *parent) :
   moving.themes["light"] = QPen(Qt::darkRed, 2);
   moving.themes["dark"] = QPen(Qt::red, 2);
 
+  mov_l = moving;
+  mov_r = moving;
+
   list.themes["light"] = QPen(Qt::darkGray, 1);
   list.themes["dark"] = QPen(Qt::white, 1);
   list.visible = true;
@@ -163,6 +166,8 @@ void FormCalibration::clear() {
   detector_ = Pixie::Detector();
   x_chan.clear(); y.clear();
   spectrum_data_ = UtilXY();
+  maxima.clear();
+  minima.clear();
   selection_model_.reset();
   marker_table_.update();
   toggle_push();
@@ -172,7 +177,7 @@ void FormCalibration::clear() {
   ui->plot1D->clearExtras();
   ui->plot1D->reset_scales();
   ui->pushFromDB->setEnabled(false);
-  update_plot();
+  update_spectrum();
 }
 
 
@@ -206,15 +211,16 @@ void FormCalibration::setSpectrum(Pixie::SpectraSet *newset, QString name) {
   ui->plot1D->reset_scales();
   ui->plot1D->redraw();
 
-  update_plot();
+  update_spectrum();
   toggle_radio();
 }
 
-void FormCalibration::update_plot() {
+void FormCalibration::update_spectrum() {
   if (!spectra_)
     return;
 
-  std::map<double, double> minima, maxima;
+  minima.clear();
+  maxima.clear();
 
   Pixie::Spectrum::Spectrum *spectrum;
   if (!(spectrum = spectra_->by_name(current_spectrum_.toStdString()))) {
@@ -240,48 +246,65 @@ void FormCalibration::update_plot() {
       ++i;
     }
 
-    ui->plot1D->clearGraphs();
-    ui->plot1D->addGraph(x_chan, y, Qt::gray, 1);
-
     spectrum_data_ = UtilXY(x_chan.toStdVector(), y.toStdVector(), ui->spinMovAvg->value());
     spectrum_data_.find_prelim();
     spectrum_data_.filter_prelim(ui->spinMinPeakWidth->value());
-
-    if (ui->checkShowMovAvg->isChecked())
-      plot_derivs(spectrum_data_);
-
-    QVector<double> xx, yy;
-
-    if (ui->checkShowFilteredPeaks->isChecked()) {
-      xx.clear(); yy.clear();
-      for (auto &q : spectrum_data_.filtered) {
-        xx.push_back(q);
-        yy.push_back(y[q]);
-      }
-      if (yy.size())
-        ui->plot1D->addPoints(xx, yy, Qt::blue, 6, QCPScatterStyle::ssDiamond);
-    }
-
-    if (ui->checkShowPrelimPeaks->isChecked()) {
-      xx.clear(); yy.clear();
-      for (auto &q : spectrum_data_.prelim) {
-        xx.push_back(q);
-        yy.push_back(y[q]);
-      }
-      if (yy.size())
-        ui->plot1D->addPoints(xx, yy, Qt::black, 4, QCPScatterStyle::ssDiamond);
-    }
-
-    for (auto &q : peaks_) {
-      if (ui->checkShowBaselines->isChecked())
-        ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_baseline_), Qt::blue, 1);
-      if (ui->checkShowGaussians->isChecked())
-        ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_), Qt::darkYellow, 1);
-    }
-
-    ui->plot1D->setLabels("channel", "counts");
   }
-  ui->plot1D->setYBounds(minima, maxima);
+
+  replot_all();
+}
+
+
+void FormCalibration::replot_all() {
+  ui->plot1D->clearGraphs();
+  ui->plot1D->addGraph(x_chan, y, Qt::gray, 1);
+
+  if (ui->checkShowMovAvg->isChecked())
+    plot_derivs(spectrum_data_);
+
+  QVector<double> xx, yy;
+
+  if (ui->checkShowFilteredPeaks->isChecked()) {
+    xx.clear(); yy.clear();
+    for (auto &q : spectrum_data_.filtered) {
+      xx.push_back(q);
+      yy.push_back(y[q]);
+    }
+    if (yy.size())
+      ui->plot1D->addPoints(xx, yy, Qt::blue, 6, QCPScatterStyle::ssDiamond);
+  }
+
+  if (ui->checkShowPrelimPeaks->isChecked()) {
+    xx.clear(); yy.clear();
+    for (auto &q : spectrum_data_.prelim) {
+      xx.push_back(q);
+      yy.push_back(y[q]);
+    }
+    if (yy.size())
+      ui->plot1D->addPoints(xx, yy, Qt::black, 4, QCPScatterStyle::ssDiamond);
+  }
+
+  for (auto &q : peaks_) {
+    if (ui->checkShowBaselines->isChecked())
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_baseline_), Qt::blue, 1);
+    if (ui->checkShowGaussians->isChecked())
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_), Qt::darkYellow, 1);
+  }
+
+
+  if (moving.visible) {
+    //will need to clear graphs!!!
+    ui->plot1D->addGraph(mov_baseline_x, mov_baseline_y, Qt::darkRed, 1); //should be theme
+
+    std::list<Marker> lst;
+    lst.push_back(mov_l);
+    lst.push_back(mov_r);
+    ui->plot1D->set_edges(lst);
+  }
+
+  ui->plot1D->setLabels("channel", "counts");
+
+  ui->plot1D->setYBounds(minima, maxima); //no baselines or avgs
   replot_markers();
 }
 
@@ -291,16 +314,44 @@ void FormCalibration::addMovingMarker(double x) {
   moving.energy = old_calibration_.transform(x);
   moving.energy_valid = (moving.channel != moving.energy);
   moving.visible = true;
+
+  uint16_t ch = static_cast<uint16_t>(x);
+
+  uint16_t ch_l = spectrum_data_.find_left(ch);
+  mov_l.channel = ch_l;
+  mov_l.chan_valid = true;
+  mov_l.energy = old_calibration_.transform(ch_l);
+  mov_l.energy_valid = (mov_l.channel != mov_l.energy);
+  mov_l.visible = true;
+
+  uint16_t ch_r = spectrum_data_.find_right(ch);
+  mov_r.channel = ch_r;
+  mov_r.chan_valid = true;
+  mov_r.energy = old_calibration_.transform(ch_r);
+  mov_r.energy_valid = (mov_l.channel != mov_l.energy);
+  mov_r.visible = true;
+
+  mov_baseline_y = QVector<double>::fromStdVector(spectrum_data_.make_baseline(ch_l, ch_r, 3));
+  mov_baseline_x.clear();
+  for (int i=ch_l; i <= ch_r; ++i)
+    mov_baseline_x.push_back(i);
+
   ui->pushAdd->setEnabled(true);
   PL_INFO << "Marker at " << moving.channel << " originally caliblated to " << old_calibration_.transform(moving.channel)
-          << ", new calibration = " << new_calibration_.transform(moving.channel);
-  replot_markers();
+          << ", new calibration = " << new_calibration_.transform(moving.channel)
+          << ", edges=[" << mov_l.channel << ", " << mov_r.channel << "]";
+
+  replot_all();
 }
 
 void FormCalibration::removeMovingMarker(double x) {
   moving.visible = false;
+  mov_l.visible = false;
+  mov_r.visible = false;
+  mov_baseline_x.clear();
+  mov_baseline_y.clear();
   ui->pushAdd->setEnabled(false);
-  replot_markers();
+  replot_all();
 }
 
 
@@ -375,13 +426,39 @@ void FormCalibration::replot_markers() {
 
 void FormCalibration::on_pushAdd_clicked()
 {
-  my_markers_[moving.channel] = old_calibration_.transform(moving.channel);
+  uint32_t ch = static_cast<uint32_t>(moving.channel);
+
+  if ((ch < 0) || (ch >= x_chan.size()))
+    return;
+
+  int i = ch;
+  while ((i >= 0) && (spectrum_data_.deriv1[i] <= 0))
+    i--;
+  while ((i >= 0) && (spectrum_data_.deriv1[i] > 0))
+    i--;
+  uint32_t left = i;
+
+  i = ch;
+  while ((i < y.size()) && (spectrum_data_.deriv1[i] >= 0))
+    i++;
+  while ((i < y.size()) && (spectrum_data_.deriv1[i] < 0))
+    i++;
+  uint32_t right = i;
+
+  Peak newpeak = Peak(x_chan.toStdVector(), y.toStdVector(), left, right, 3);
+
+  if (newpeak.gaussian_.height_ > 0) {
+    peaks_.push_back(newpeak);
+    my_markers_[newpeak.gaussian_.center_] = old_calibration_.transform(newpeak.gaussian_.center_);
+  } else
+    my_markers_[moving.channel] = old_calibration_.transform(moving.channel);
 
   ui->pushAdd->setEnabled(false);
+  removeMovingMarker(0);
+
   marker_table_.update();
   toggle_push();
-
-  removeMovingMarker(0);
+  replot_all();
 }
 
 void FormCalibration::selection_changed(QItemSelection, QItemSelection) {
@@ -472,7 +549,7 @@ void FormCalibration::on_pushMarkerRemove_clicked()
       if (q.gaussian_.center_ == p)
         q = Peak();
   }
-  update_plot();
+  replot_all();
 }
 
 void FormCalibration::on_pushFit_clicked()
@@ -561,16 +638,15 @@ void FormCalibration::on_pushFindPeaks_clicked()
 
   my_markers_.clear();
 
-  UtilXY xy(x_chan.toStdVector(), y.toStdVector(), ui->spinMovAvg->value());
-  xy.find_peaks(ui->spinMinPeakWidth->value());
-  peaks_ = xy.peaks_;
+  spectrum_data_.find_peaks(ui->spinMinPeakWidth->value());
+  peaks_ = spectrum_data_.peaks_;
   for (auto &q : peaks_) {
     double chan = q.gaussian_.center_;
     my_markers_[chan] = old_calibration_.transform(chan);
   }
   marker_table_.update();
   toggle_push();
-  update_plot();
+  replot_all();
 
   this->setCursor(Qt::ArrowCursor);
 }
@@ -581,11 +657,6 @@ void FormCalibration::on_pushDetDB_clicked()
   det_widget->setData(*detectors_, data_directory_);
   connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
   det_widget->exec();
-}
-
-void FormCalibration::on_pushRefresh_clicked()
-{
-  update_plot();
 }
 
 void FormCalibration::plot_derivs(UtilXY &data)
@@ -633,27 +704,27 @@ void FormCalibration::plot_derivs(UtilXY &data)
 
 void FormCalibration::on_checkShowMovAvg_clicked()
 {
-  update_plot();
+  replot_all();
 }
 
 void FormCalibration::on_checkShowPrelimPeaks_clicked()
 {
-  update_plot();
+  replot_all();
 }
 
 void FormCalibration::on_checkShowGaussians_clicked()
 {
-  update_plot();
+  replot_all();
 }
 
 void FormCalibration::on_checkShowBaselines_clicked()
 {
-  update_plot();
+  replot_all();
 }
 
 void FormCalibration::on_checkShowFilteredPeaks_clicked()
 {
-  update_plot();
+  replot_all();
 }
 
 void FormCalibration::on_pushAllmarkers_clicked()
@@ -694,4 +765,20 @@ void FormCalibration::on_pushAllEnergies_clicked()
 
   marker_table_.update();
   replot_markers();
+}
+
+void FormCalibration::on_spinMovAvg_editingFinished()
+{
+  spectrum_data_ = UtilXY(x_chan.toStdVector(), y.toStdVector(), ui->spinMovAvg->value());
+  spectrum_data_.find_prelim();
+  spectrum_data_.filter_prelim(ui->spinMinPeakWidth->value());
+  replot_all();
+}
+
+void FormCalibration::on_spinMinPeakWidth_editingFinished()
+{
+  spectrum_data_ = UtilXY(x_chan.toStdVector(), y.toStdVector(), ui->spinMovAvg->value());
+  spectrum_data_.find_prelim();
+  spectrum_data_.filter_prelim(ui->spinMinPeakWidth->value());
+  replot_all();
 }

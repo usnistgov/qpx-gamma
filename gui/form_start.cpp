@@ -57,6 +57,7 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixie:
   connect(this, SIGNAL(refresh()), formPixieSettings, SLOT(update()));
   connect(this, SIGNAL(toggle_push_(bool,Pixie::LiveStatus)), formPixieSettings, SLOT(toggle_push(bool,Pixie::LiveStatus)));
   connect(this, SIGNAL(update_dets()), formPixieSettings, SLOT(updateDetDB()));
+  connect(this, SIGNAL(update_dets()), formOscilloscope, SLOT(dets_updated()));
 
   QHBoxLayout *lo = new QHBoxLayout();
   lo->addLayout(vl);

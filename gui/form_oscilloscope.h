@@ -58,6 +58,7 @@ private slots:
 
   void on_doubleSpinXDT_editingFinished();
   void chansChosen(QAction*);
+  void dets_updated();
 
 private:
   void updateMenu();

@@ -403,7 +403,7 @@ void FormMcaDaq::on_pushEditSpectra_clicked()
 void FormMcaDaq::reqCalib(QString name) {
   if (my_calib_ == nullptr) {
     my_calib_ = new FormCalibration(settings_);
-    connect(&plot_thread_, SIGNAL(plot_ready()), my_calib_, SLOT(update_plot()));
+    connect(&plot_thread_, SIGNAL(plot_ready()), my_calib_, SLOT(update_spectrum()));
     connect(my_calib_, SIGNAL(destroyed()), this, SLOT(calib_destroyed()));
   }
   my_calib_->setData(detectors_);

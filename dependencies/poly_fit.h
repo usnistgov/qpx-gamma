@@ -25,6 +25,7 @@
 
 #include <vector>
 #include <iostream>
+#include <numeric>
 
 std::string to_str_precision(double, uint16_t);
 
@@ -65,9 +66,14 @@ class Peak {
 public:
   Peak() {}
   Peak(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline);
+  Peak(const std::vector<double> &x, const std::vector<double> &y, uint32_t left, uint32_t right, uint32_t BL_samples);
+
 
   std::vector<double> x_, y_, y_baseline_, y_fullfit_;
   Gaussian gaussian_;
+
+private:
+  void fit(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline);
 };
 
 class UtilXY {
@@ -86,6 +92,10 @@ public:
   void filter_prelim(uint16_t min_width);
   void refine_edges(double threshl, double threshr);
   void find_peaks(int min_width);
+
+  uint16_t find_left(uint16_t);
+  uint16_t find_right(uint16_t);
+  std::vector<double> make_baseline(uint16_t left, uint16_t right, uint16_t BL_samples);
 
   std::vector<double> x_, y_, y_avg_, deriv1, deriv2;
 

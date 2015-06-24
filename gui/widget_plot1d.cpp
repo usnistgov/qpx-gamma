@@ -94,6 +94,7 @@ void WidgetPlot1D::clearExtras()
 {
   my_markers_.clear();
   my_cursors_.clear();
+  my_edges_.clear();
   rect.clear();
 }
 
@@ -140,6 +141,10 @@ void WidgetPlot1D::set_block(Marker a, Marker b) {
 
 void WidgetPlot1D::set_cursors(const std::list<Marker>& cursors) {
   my_cursors_ = cursors;
+}
+
+void WidgetPlot1D::set_edges(const std::list<Marker>& edges) {
+  my_edges_ = edges;
 }
 
 void WidgetPlot1D::setYBounds(const std::map<double, double> &minima, const std::map<double, double> &maxima) {
@@ -286,31 +291,34 @@ void WidgetPlot1D::replot_markers() {
       double max = std::numeric_limits<double>::lowest();
       int total = ui->mcaPlot->graphCount();
       for (int i=0; i < total; i++) {
-        if ((ui->mcaPlot->graph(i)->data()->firstKey() <= pos)
-            && (pos <= ui->mcaPlot->graph(i)->data()->lastKey()))
-        {
-          QPen thispen = ui->mcaPlot->graph(i)->pen();
-          QColor thiscol = thispen.color();
-          thiscol.setAlpha(255);
-          thispen.setColor(thiscol);
-          if (q.themes.count(color_theme_))
-            thispen = QPen(q.themes[color_theme_]);
+        if (ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssNone)
+          continue;
 
-          QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
-          crs->setStyle(QCPItemTracer::tsCircle);
-          crs->setSize(4);
-          crs->setGraph(ui->mcaPlot->graph(i));
-          crs->setGraphKey(pos);
-          crs->setInterpolating(true);
-          crs->setPen(thispen);
-          ui->mcaPlot->addItem(crs);
+        if ((ui->mcaPlot->graph(i)->data()->firstKey() >= pos)
+            || (pos >= ui->mcaPlot->graph(i)->data()->lastKey()))
+          continue;
 
-          crs->updatePosition();
-          double val = crs->positions().first()->value();
-          if (val > max) {
-            max = val;
-            top_crs = crs;
-          }
+        QPen thispen = ui->mcaPlot->graph(i)->pen();
+        QColor thiscol = thispen.color();
+        thiscol.setAlpha(255);
+        thispen.setColor(thiscol);
+        if (q.themes.count(color_theme_))
+          thispen = QPen(q.themes[color_theme_]);
+
+        QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
+        crs->setStyle(QCPItemTracer::tsCircle);
+        crs->setSize(4);
+        crs->setGraph(ui->mcaPlot->graph(i));
+        crs->setGraphKey(pos);
+        crs->setInterpolating(true);
+        crs->setPen(thispen);
+        ui->mcaPlot->addItem(crs);
+
+        crs->updatePosition();
+        double val = crs->positions().first()->value();
+        if (val > max) {
+          max = val;
+          top_crs = crs;
         }
       }
     }
@@ -325,7 +333,7 @@ void WidgetPlot1D::replot_markers() {
       line->start->setCoords(0, -30);
       line->end->setParentAnchor(top_crs->position);
       line->end->setCoords(0, -2);
-      line->setHead(QCPLineEnding(QCPLineEnding::esSpikeArrow, 7, 7));
+      line->setHead(QCPLineEnding(QCPLineEnding::esLineArrow, 7, 7));
       line->setPen(qpen);
       ui->mcaPlot->addItem(line);
 
@@ -370,6 +378,54 @@ void WidgetPlot1D::replot_markers() {
     }
   }
 
+  for (auto &q : my_edges_) {
+    if (!q.visible)
+      continue;
+
+    double pos = 0;
+    if (use_calibrated_)
+      pos = q.energy;
+    else
+      pos = q.channel;
+
+    QPen pen;
+    if (q.themes.count(color_theme_))
+      pen = q.themes[color_theme_];
+    else
+      pen = q.default_pen;
+
+
+    int total = ui->mcaPlot->graphCount();
+    for (int i=0; i < total; i++) {
+      if (ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssNone)
+        continue;
+
+      if ((ui->mcaPlot->graph(i)->data()->firstKey() >= pos)
+          || (pos >= ui->mcaPlot->graph(i)->data()->lastKey()))
+        continue;
+
+      QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
+      crs->setPen(pen);
+      crs->setStyle(QCPItemTracer::tsNone);
+      crs->setGraph(ui->mcaPlot->graph(i));
+      crs->setGraphKey(pos);
+      crs->setInterpolating(true);
+      ui->mcaPlot->addItem(crs);
+      crs->updatePosition();
+
+      QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
+      line->start->setParentAnchor(crs->position);
+      line->start->setCoords(0, -10);
+      line->end->setParentAnchor(crs->position);
+      line->end->setCoords(0, 0);
+      line->setHead(QCPLineEnding(QCPLineEnding::esFlatArrow, 10, 10));
+      line->setPen(pen);
+      ui->mcaPlot->addItem(line);
+
+    }
+  }
+
+
   if ((rect.size() == 2) && (rect[0].visible) && !maxima_.empty() && !minima_.empty()){
     double upperc = maxima_.rbegin()->first;
     double lowerc = maxima_.begin()->first;
@@ -405,6 +461,7 @@ void WidgetPlot1D::replot_markers() {
 
     ui->mcaPlot->addItem(cprect);
   }
+
   if (!floating_text_.isEmpty()) {
     QCPItemText *floatingText = new QCPItemText(ui->mcaPlot);
     ui->mcaPlot->addItem(floatingText);
@@ -486,8 +543,7 @@ void WidgetPlot1D::set_plot_style(QString stl) {
     q->setChecked(q->text() == stl);
   int total = ui->mcaPlot->graphCount();
   for (int i=0; i < total; i++) {
-    if ((ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssDisc)
-        || (ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssNone))
+    if (ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssNone)
       set_graph_style(ui->mcaPlot->graph(i), stl);
   }
   ui->mcaPlot->replot();
