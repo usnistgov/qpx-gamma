@@ -68,7 +68,7 @@ public:
   void set_markers(const std::list<Marker>&);
   void set_block(Marker, Marker);
   void set_cursors(const std::list<Marker>&);
-  void set_edges(const std::list<Marker>&);
+  void set_edges(const Marker, const Marker);
 
   void addPoints(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness, QCPScatterStyle::ScatterShape);
   void addGraph(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness);
@@ -104,8 +104,8 @@ private:
 
   std::list<Marker> my_markers_;
   std::list<Marker> my_cursors_;
-  std::list<Marker> my_edges_;
   std::vector<Marker> rect;
+  std::vector<Marker> my_edges_;
 
   bool force_rezoom_;
   double minx, maxx;

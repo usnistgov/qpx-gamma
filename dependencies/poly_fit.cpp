@@ -481,13 +481,11 @@ void UtilXY::refine_edges(double threshl, double threshr) {
   }
 }
 
-uint16_t UtilXY::find_left(uint16_t ch) {
-  if ((ch < 0) || (ch >= x_.size()))
+uint16_t UtilXY::find_left(uint16_t ch, uint16_t grace) {
+  if ((ch - grace < 0) || (ch >= x_.size()))
     return 0;
 
-  int i = ch;
-  while ((i >= 0) && (deriv1[i] <= 0))
-    i--;
+  int i = ch - grace;
   while ((i >= 0) && (deriv1[i] > 0))
     i--;
   return i;
@@ -495,13 +493,11 @@ uint16_t UtilXY::find_left(uint16_t ch) {
   
 }
 
-uint16_t UtilXY::find_right(uint16_t ch) {
-  if ((ch < 0) || (ch >= x_.size()))
+uint16_t UtilXY::find_right(uint16_t ch, uint16_t grace) {
+  if ((ch < 0) || (ch + grace >= x_.size()))
     return x_.size() - 1;
 
-  int i = ch;
-  while ((i < x_.size()) && (deriv1[i] >= 0))
-    i++;
+  int i = ch + grace;
   while ((i < x_.size()) && (deriv1[i] < 0))
     i++;
   return i;

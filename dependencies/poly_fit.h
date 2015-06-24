@@ -93,8 +93,8 @@ public:
   void refine_edges(double threshl, double threshr);
   void find_peaks(int min_width);
 
-  uint16_t find_left(uint16_t);
-  uint16_t find_right(uint16_t);
+  uint16_t find_left(uint16_t, uint16_t);
+  uint16_t find_right(uint16_t, uint16_t);
   std::vector<double> make_baseline(uint16_t left, uint16_t right, uint16_t BL_samples);
 
   std::vector<double> x_, y_, y_avg_, deriv1, deriv2;

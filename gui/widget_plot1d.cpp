@@ -143,8 +143,10 @@ void WidgetPlot1D::set_cursors(const std::list<Marker>& cursors) {
   my_cursors_ = cursors;
 }
 
-void WidgetPlot1D::set_edges(const std::list<Marker>& edges) {
-  my_edges_ = edges;
+void WidgetPlot1D::set_edges(const Marker a, const Marker b) {
+  my_edges_.resize(2);
+  my_edges_[0] = a;
+  my_edges_[1] = b;
 }
 
 void WidgetPlot1D::setYBounds(const std::map<double, double> &minima, const std::map<double, double> &maxima) {
@@ -378,49 +380,85 @@ void WidgetPlot1D::replot_markers() {
     }
   }
 
-  for (auto &q : my_edges_) {
-    if (!q.visible)
-      continue;
+  if ((my_edges_.size() == 2) && (my_edges_[0].visible) && (my_edges_[1].visible)) {
 
-    double pos = 0;
-    if (use_calibrated_)
-      pos = q.energy;
-    else
-      pos = q.channel;
+    double pos1 = 0, pos2 = 0;
+    if (use_calibrated_) {
+      pos1 = my_edges_[0].energy;
+      pos2 = my_edges_[1].energy;
+    } else {
+      pos1 = my_edges_[0].channel;
+      pos2 = my_edges_[1].channel;
+    }
 
-    QPen pen;
-    if (q.themes.count(color_theme_))
-      pen = q.themes[color_theme_];
-    else
-      pen = q.default_pen;
+    if (pos1 < pos2) {
+
+      QPen pen_pt;
+      if (my_edges_[0].themes.count(color_theme_))
+        pen_pt = my_edges_[0].themes[color_theme_];
+      else
+        pen_pt = my_edges_[0].default_pen;
 
 
-    int total = ui->mcaPlot->graphCount();
-    for (int i=0; i < total; i++) {
-      if (ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssNone)
-        continue;
+      QPen pen_ln;
+      if (my_edges_[1].themes.count(color_theme_))
+        pen_ln = my_edges_[1].themes[color_theme_];
+      else
+        pen_ln = my_edges_[1].default_pen;
 
-      if ((ui->mcaPlot->graph(i)->data()->firstKey() >= pos)
-          || (pos >= ui->mcaPlot->graph(i)->data()->lastKey()))
-        continue;
 
-      QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
-      crs->setPen(pen);
-      crs->setStyle(QCPItemTracer::tsNone);
-      crs->setGraph(ui->mcaPlot->graph(i));
-      crs->setGraphKey(pos);
-      crs->setInterpolating(true);
-      ui->mcaPlot->addItem(crs);
-      crs->updatePosition();
+      int total = ui->mcaPlot->graphCount();
+      for (int i=0; i < total; i++) {
 
-      QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
-      line->start->setParentAnchor(crs->position);
-      line->start->setCoords(0, -10);
-      line->end->setParentAnchor(crs->position);
-      line->end->setCoords(0, 0);
-      line->setHead(QCPLineEnding(QCPLineEnding::esFlatArrow, 10, 10));
-      line->setPen(pen);
-      ui->mcaPlot->addItem(line);
+        if (ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssNone)
+          continue;
+
+        if ((ui->mcaPlot->graph(i)->data()->firstKey() >= pos1)
+            || (pos2 >= ui->mcaPlot->graph(i)->data()->lastKey()))
+          continue;
+
+        QCPItemTracer *crs1 = new QCPItemTracer(ui->mcaPlot);
+        crs1->setStyle(QCPItemTracer::tsNone);
+        crs1->setGraph(ui->mcaPlot->graph(i));
+        crs1->setGraphKey(pos1);
+        crs1->setInterpolating(true);
+        ui->mcaPlot->addItem(crs1);
+        crs1->updatePosition();
+
+        QCPItemTracer *crs2 = new QCPItemTracer(ui->mcaPlot);
+        crs2->setStyle(QCPItemTracer::tsNone);
+        crs2->setGraph(ui->mcaPlot->graph(i));
+        crs2->setGraphKey(pos2);
+        crs2->setInterpolating(true);
+        ui->mcaPlot->addItem(crs2);
+        crs2->updatePosition();
+
+        QCPItemLine *arrow1 = new QCPItemLine(ui->mcaPlot);
+        arrow1->start->setParentAnchor(crs1->position);
+        arrow1->start->setCoords(0, -10);
+        arrow1->end->setParentAnchor(crs1->position);
+        arrow1->end->setCoords(0, 0);
+        arrow1->setHead(QCPLineEnding(QCPLineEnding::esFlatArrow, 10, 10));
+        arrow1->setPen(pen_pt);
+        ui->mcaPlot->addItem(arrow1);
+
+        QCPItemLine *arrow2 = new QCPItemLine(ui->mcaPlot);
+        arrow2->start->setParentAnchor(crs2->position);
+        arrow2->start->setCoords(0, -10);
+        arrow2->end->setParentAnchor(crs2->position);
+        arrow2->end->setCoords(0, 0);
+        arrow2->setHead(QCPLineEnding(QCPLineEnding::esFlatArrow, 10, 10));
+        arrow2->setPen(pen_pt);
+        ui->mcaPlot->addItem(arrow2);
+
+        QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
+        line->start->setParentAnchor(crs1->position);
+        line->start->setCoords(0, 0);
+        line->end->setParentAnchor(crs2->position);
+        line->end->setCoords(0, 0);
+        line->setPen(pen_ln);
+        ui->mcaPlot->addItem(line);
+      }
 
     }
   }

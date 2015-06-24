@@ -51,8 +51,8 @@ FormCalibration::FormCalibration(QSettings &settings, QWidget *parent) :
   ui->PlotCalib->showTitle(false);
   ui->PlotCalib->setLabels("channel", "energy");
 
-  moving.themes["light"] = QPen(Qt::darkRed, 2);
-  moving.themes["dark"] = QPen(Qt::red, 2);
+  moving.themes["light"] = QPen(Qt::darkMagenta, 2);
+  moving.themes["dark"] = QPen(Qt::magenta, 2);
 
   mov_l = moving;
   mov_r = moving;
@@ -292,16 +292,6 @@ void FormCalibration::replot_all() {
   }
 
 
-  if (moving.visible) {
-    //will need to clear graphs!!!
-    ui->plot1D->addGraph(mov_baseline_x, mov_baseline_y, Qt::darkRed, 1); //should be theme
-
-    std::list<Marker> lst;
-    lst.push_back(mov_l);
-    lst.push_back(mov_r);
-    ui->plot1D->set_edges(lst);
-  }
-
   ui->plot1D->setLabels("channel", "counts");
 
   ui->plot1D->setYBounds(minima, maxima); //no baselines or avgs
@@ -317,14 +307,14 @@ void FormCalibration::addMovingMarker(double x) {
 
   uint16_t ch = static_cast<uint16_t>(x);
 
-  uint16_t ch_l = spectrum_data_.find_left(ch);
+  uint16_t ch_l = spectrum_data_.find_left(ch, ui->spinMinPeakWidth->value());
   mov_l.channel = ch_l;
   mov_l.chan_valid = true;
   mov_l.energy = old_calibration_.transform(ch_l);
   mov_l.energy_valid = (mov_l.channel != mov_l.energy);
   mov_l.visible = true;
 
-  uint16_t ch_r = spectrum_data_.find_right(ch);
+  uint16_t ch_r = spectrum_data_.find_right(ch, ui->spinMinPeakWidth->value());
   mov_r.channel = ch_r;
   mov_r.chan_valid = true;
   mov_r.energy = old_calibration_.transform(ch_r);
@@ -341,7 +331,7 @@ void FormCalibration::addMovingMarker(double x) {
           << ", new calibration = " << new_calibration_.transform(moving.channel)
           << ", edges=[" << mov_l.channel << ", " << mov_r.channel << "]";
 
-  replot_all();
+  replot_markers();
 }
 
 void FormCalibration::removeMovingMarker(double x) {
@@ -351,16 +341,20 @@ void FormCalibration::removeMovingMarker(double x) {
   mov_baseline_x.clear();
   mov_baseline_y.clear();
   ui->pushAdd->setEnabled(false);
-  replot_all();
+  replot_markers();
 }
 
 
 void FormCalibration::replot_markers() {
-  std::list<Marker> markers;
+
 
   ui->PlotCalib->clearGraphs();
   ui->plot1D->clearExtras();
 
+  if (moving.visible)
+    ui->plot1D->set_edges(mov_l, mov_r);
+
+  std::list<Marker> markers;
   QVector<double> xx, yy, ycab;
 
   markers.push_back(moving);
@@ -426,26 +420,7 @@ void FormCalibration::replot_markers() {
 
 void FormCalibration::on_pushAdd_clicked()
 {
-  uint32_t ch = static_cast<uint32_t>(moving.channel);
-
-  if ((ch < 0) || (ch >= x_chan.size()))
-    return;
-
-  int i = ch;
-  while ((i >= 0) && (spectrum_data_.deriv1[i] <= 0))
-    i--;
-  while ((i >= 0) && (spectrum_data_.deriv1[i] > 0))
-    i--;
-  uint32_t left = i;
-
-  i = ch;
-  while ((i < y.size()) && (spectrum_data_.deriv1[i] >= 0))
-    i++;
-  while ((i < y.size()) && (spectrum_data_.deriv1[i] < 0))
-    i++;
-  uint32_t right = i;
-
-  Peak newpeak = Peak(x_chan.toStdVector(), y.toStdVector(), left, right, 3);
+  Peak newpeak = Peak(x_chan.toStdVector(), y.toStdVector(), mov_l.channel, mov_r.channel, 3);
 
   if (newpeak.gaussian_.height_ > 0) {
     peaks_.push_back(newpeak);

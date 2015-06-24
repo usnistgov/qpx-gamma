@@ -45,7 +45,7 @@ then echo 'Plx9054' >> /etc/modules
 fi
 depmod
 
-cd ../..
+cd ..
 cp ./load-plx9054 /etc/init.d
 chown root /etc/init.d/load-plx9054
 chgrp root /etc/init.d/load-plx9054
