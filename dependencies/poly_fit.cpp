@@ -36,7 +36,9 @@ std::string to_str_precision(double x, uint16_t n) {
   return ss.str();
 }
 
-Polynomial::Polynomial(std::vector<double> coeffs, double center) {
+Polynomial::Polynomial(std::vector<double> coeffs, double center)
+  :Polynomial()
+{
   xoffset_ = center;
   coeffs_ = coeffs;
   int deg = -1;
@@ -46,7 +48,24 @@ Polynomial::Polynomial(std::vector<double> coeffs, double center) {
   degree_ = deg;
 }
 
-Polynomial::Polynomial(std::vector<double> &x, std::vector<double> &y, uint16_t degree, double center) {
+Polynomial::Polynomial(std::vector<double> &x, std::vector<double> &y, uint16_t degree, double center)
+  :Polynomial()
+{
+  std::vector<uint16_t> degrees;
+  for (int i=1; i <= degree; ++i)
+    degrees.push_back(i);
+
+  fit(x, y, degrees, center);
+}
+
+Polynomial::Polynomial(std::vector<double> &x, std::vector<double> &y,
+                       std::vector<uint16_t> &degrees, double center) {
+  fit(x, y, degrees, center);
+}
+
+
+void Polynomial::fit(std::vector<double> &x, std::vector<double> &y,
+                       std::vector<uint16_t> &degrees, double center) {
   degree_ = -1;
 
   xoffset_ = center;
@@ -66,14 +85,14 @@ Polynomial::Polynomial(std::vector<double> &x, std::vector<double> &y, uint16_t 
 
   std::string definition = "define MyPoly(a0=~0";
   std::vector<std::string> varnames(1, "0");
-  for (int i=1; i<=degree; ++i) {
+  for (auto &q : degrees) {
     std::stringstream ss;
-    ss << i;
+    ss << q;
     varnames.push_back(ss.str());
     definition += ",a" + ss.str() + "=~0";
   }
   definition += ") = a0";
-  for (int i=1; i<=degree; ++i)
+  for (int i=1; i<varnames.size(); ++i)
     definition += " + a" + varnames[i] + "*x^" + varnames[i];
   
 
@@ -95,15 +114,23 @@ Polynomial::Polynomial(std::vector<double> &x, std::vector<double> &y, uint16_t 
   }
 
   if (success) {
-    degree_ = degree;
+    degree_ = degrees[degrees.size() - 1];
     fityk::Func* lastfn = f->all_functions().back();
-    coeffs_.resize(degree_+1);
-    for (int i=0; i<=degree_; ++i)
-      coeffs_[i] = lastfn->get_param_value("a" + varnames[i]);
+    coeffs_.resize(degree_ + 1, 0);
+    coeffs_[0] = lastfn->get_param_value("a0");
+    for (auto &q : degrees) {
+      std::stringstream ss;
+      ss << q;
+      coeffs_[q] = lastfn->get_param_value("a" + ss.str());
+    }
+    double rsqq = f->get_rsquared(0);
+    PL_DBG << "rsquared=" << rsqq;
+    rsq = rsqq;
   }
 
   delete f;
 }
+
 
 double Polynomial::evaluate(double x) {
   double x_adjusted = x - xoffset_;
@@ -211,6 +238,7 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
       height_ = lastfn->get_param_value("height");
       hwhm_   = lastfn->get_param_value("hwhm");
     }
+    rsq = f->get_rsquared(0);
   }
 
   delete f;
@@ -270,69 +298,75 @@ void Peak::fit(const std::vector<double> &x, const std::vector<double> &y, const
 
 
 
-Peak::Peak(const std::vector<double> &x, const std::vector<double> &y, uint32_t left, uint32_t right, uint32_t BL_samples) {
-  if (x.size() != y.size())
-    return;
-
+std::vector<double> UtilXY::make_baseline(uint16_t left, uint16_t right, uint16_t BL_samples, BaselineType type) {
   int32_t  width = right - left;
-  if (width < 0)
-    return;
+  double left_avg = local_avg(left, BL_samples);
+  double right_avg = local_avg(right, BL_samples);
 
-  if ((BL_samples % 2) == 0)
-    BL_samples++;
-  int32_t half = (BL_samples - 1) / 2;
-
-  if (((static_cast<uint32_t>(left) - half) < 0)  ||
-      ((static_cast<uint32_t>(right) + half) >= x.size()) ||
-      ((static_cast<uint32_t>(right) - static_cast<uint32_t>(left) - 2*half) <= 0))
-    return;
-
-  double left_avg = std::accumulate(y.begin() + (left-half), y.begin() + (left+half+1), 0) / static_cast<double>(BL_samples);
-  double right_avg = std::accumulate(y.begin() + (right-half), y.begin() + (right+half+1), 0) / static_cast<double>(BL_samples);
-
-  std::vector<double> xx(width+1), yy(width+1), baseline(width+1);
-  double slope = (right_avg - left_avg) / static_cast<double>(width);
-  for (int32_t i = 0; i <= width; ++i) {
-    xx[i] = x[left+i];
-    yy[i] = y[left+i];
-    baseline[i] = left_avg + (i * slope);
-  }
-
-  //PL_DBG << "Baseline y = " << y_avg_[left] " + " << slope << "x";
-
-  fit (xx, yy, baseline);
-}
-
-std::vector<double> UtilXY::make_baseline(uint16_t left, uint16_t right, uint16_t BL_samples) {
-  int32_t  width = right - left;
-  if (width < 0)
+  if ((width <= 0) || isnan(left_avg) || isnan(right_avg))
     return std::vector<double>();
 
-  if ((BL_samples % 2) == 0)
-    BL_samples++;
-  int32_t half = (BL_samples - 1) / 2;
 
-  if (((static_cast<uint32_t>(left) - half) < 0)  ||
-      ((static_cast<uint32_t>(right) + half) >= x_.size()) ||
-      ((static_cast<uint32_t>(right) - static_cast<uint32_t>(left) - 2*half) <= 0))
-    return std::vector<double>();
-
-  double left_avg = std::accumulate(y_.begin() + (left-half), y_.begin() + (left+half+1), 0) / static_cast<double>(BL_samples);
-  double right_avg = std::accumulate(y_.begin() + (right-half), y_.begin() + (right+half+1), 0) / static_cast<double>(BL_samples);
-
-  std::vector<double> xx(width+1), yy(width+1), baseline(width+1);
+  //by default, linear
   double slope = (right_avg - left_avg) / static_cast<double>(width);
+  std::vector<double> xx(width+1), yy(width+1), baseline(width+1);
   for (int32_t i = 0; i <= width; ++i) {
     xx[i] = x_[left+i];
     yy[i] = y_[left+i];
     baseline[i] = left_avg + (i * slope);
   }
 
-  return baseline;
+  if (type == BaselineType::linear)
+    return baseline;
+
+  //find centroid, then make step baseline
+  Peak prelim = Peak(xx, yy, baseline);
+  int32_t center = static_cast<int32_t>(prelim.gaussian_.center_);
+  for (int32_t i = 0; i <= width; ++i) {
+    if (xx[i] <= center)
+      baseline[i] = left_avg;
+    else if (xx[i] > center)
+      baseline[i] = right_avg;
+  } 
+    
+  if (type == BaselineType::step)
+    return baseline;
+
+  //substitute step with poly function
+  std::vector<uint16_t> poly_terms({1,3,5,7,9,11,13,15,17,19,21});
+  Polynomial poly = Polynomial(xx, baseline, 21, prelim.gaussian_.center_);
+  baseline = poly.evaluate_array(xx);
+
+  if (type == BaselineType::step_polynomial)
+    return baseline;
+  
+}
+
+double UtilXY::local_avg(uint16_t chan, uint16_t samples) {
+  if ((chan >= x_.size()) || (samples < 1))
+    return std::numeric_limits<double>::quiet_NaN();
+  
+  if ((samples % 2) == 0)
+    samples++;
+  int32_t half  = (samples - 1) / 2;
+  int32_t left  = static_cast<int32_t>(chan) - half;
+  int32_t right = static_cast<int32_t>(chan) + half;
+
+  if (left < 0)
+    left = 0;
+  if (right >= x_.size())
+    right = x_.size() - 1;
+
+  samples = right - left + 1;
+  
+  return std::accumulate(y_.begin() + left, y_.begin() + (right+1), 0) / static_cast<double>(samples);
+  
 }
 
 
-UtilXY::UtilXY(const std::vector<double> &x, const std::vector<double> &y, uint16_t min, uint16_t max, uint16_t avg_window) {
+UtilXY::UtilXY(const std::vector<double> &x, const std::vector<double> &y, uint16_t min, uint16_t max, uint16_t avg_window) :
+    x_(x), y_(y)
+{
   if ((y_.size() == x_.size()) && (min < max) && ((max+1) < x.size())) {
     for (int i=min; i<=max; ++i) {
       x_.push_back(x[i]);
@@ -481,11 +515,11 @@ void UtilXY::refine_edges(double threshl, double threshr) {
   }
 }
 
-uint16_t UtilXY::find_left(uint16_t ch, uint16_t grace) {
-  if ((ch - grace < 0) || (ch >= x_.size()))
+uint16_t UtilXY::find_left(uint16_t chan, uint16_t grace) {
+  if ((chan - grace < 0) || (chan >= x_.size()))
     return 0;
 
-  int i = ch - grace;
+  int i = chan - grace;
   while ((i >= 0) && (deriv1[i] > 0))
     i--;
   return i;
@@ -493,11 +527,11 @@ uint16_t UtilXY::find_left(uint16_t ch, uint16_t grace) {
   
 }
 
-uint16_t UtilXY::find_right(uint16_t ch, uint16_t grace) {
-  if ((ch < 0) || (ch + grace >= x_.size()))
+uint16_t UtilXY::find_right(uint16_t chan, uint16_t grace) {
+  if ((chan < 0) || (chan + grace >= x_.size()))
     return x_.size() - 1;
 
-  int i = ch + grace;
+  int i = chan + grace;
   while ((i < x_.size()) && (deriv1[i] < 0))
     i++;
   return i;
@@ -509,8 +543,10 @@ void UtilXY::find_peaks(int min_width) {
 
   peaks_.clear();
   for (int i=0; i < filtered.size(); ++i) {
-
-    Peak fitted = Peak(x_, y_, lefts[i], rights[i], 3);
+    std::vector<double> baseline = make_baseline(lefts[i], rights[i], 3);
+    std::vector<double> xx(x_.begin() + lefts[i], x_.begin() + rights[i] + 1);
+    std::vector<double> yy(y_.begin() + lefts[i], y_.begin() + rights[i] + 1);
+    Peak fitted = Peak(xx, yy, baseline);
 
     if (fitted.gaussian_.height_ > 0)
       peaks_.push_back(fitted);

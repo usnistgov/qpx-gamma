@@ -72,6 +72,7 @@ private slots:
   void on_pushApplyCalib_clicked();
 
   void toggle_radio();
+  void edges_moved(double, double);
   void detectorsUpdated() {emit detectorsChanged();}
 
   void on_pushAdd_clicked();
@@ -106,9 +107,8 @@ private:
 
   //data from selected spectrum
   QString current_spectrum_;
-  QVector<double> x_chan, y;
-  std::map<double, double> minima, maxima;
   UtilXY spectrum_data_;
+  std::map<double, double> minima, maxima;
   Pixie::Detector detector_;
 
   //markers

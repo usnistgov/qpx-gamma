@@ -53,6 +53,9 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
 
   marker_labels_ = false;
 
+  edge_trc1 = nullptr;
+  edge_trc2 = nullptr;
+
   menuPlotStyle.addAction("Scatter");
   menuPlotStyle.addAction("Step");
   menuPlotStyle.addAction("Lines");
@@ -280,6 +283,8 @@ void WidgetPlot1D::on_pushNight_clicked()
 
 void WidgetPlot1D::replot_markers() {
   ui->mcaPlot->clearItems();
+  edge_trc1 = nullptr;
+  edge_trc2 = nullptr;
 
   for (auto &q : my_markers_) {
     QCPItemTracer *top_crs = nullptr;
@@ -308,7 +313,7 @@ void WidgetPlot1D::replot_markers() {
           thispen = QPen(q.themes[color_theme_]);
 
         QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
-        crs->setStyle(QCPItemTracer::tsCircle);
+        crs->setStyle(QCPItemTracer::tsNone); //tsCirlce?
         crs->setSize(4);
         crs->setGraph(ui->mcaPlot->graph(i));
         crs->setGraphKey(pos);
@@ -417,44 +422,34 @@ void WidgetPlot1D::replot_markers() {
             || (pos2 >= ui->mcaPlot->graph(i)->data()->lastKey()))
           continue;
 
-        QCPItemTracer *crs1 = new QCPItemTracer(ui->mcaPlot);
-        crs1->setStyle(QCPItemTracer::tsNone);
-        crs1->setGraph(ui->mcaPlot->graph(i));
-        crs1->setGraphKey(pos1);
-        crs1->setInterpolating(true);
-        ui->mcaPlot->addItem(crs1);
-        crs1->updatePosition();
+        edge_trc1 = new QCPItemTracer(ui->mcaPlot);
+        edge_trc1->setStyle(QCPItemTracer::tsNone);
+        edge_trc1->setGraph(ui->mcaPlot->graph(i));
+        edge_trc1->setGraphKey(pos1);
+        edge_trc1->setInterpolating(true);
+        ui->mcaPlot->addItem(edge_trc1);
+        edge_trc1->updatePosition();
 
-        QCPItemTracer *crs2 = new QCPItemTracer(ui->mcaPlot);
-        crs2->setStyle(QCPItemTracer::tsNone);
-        crs2->setGraph(ui->mcaPlot->graph(i));
-        crs2->setGraphKey(pos2);
-        crs2->setInterpolating(true);
-        ui->mcaPlot->addItem(crs2);
-        crs2->updatePosition();
+        edge_trc2 = new QCPItemTracer(ui->mcaPlot);
+        edge_trc2->setStyle(QCPItemTracer::tsNone);
+        edge_trc2->setGraph(ui->mcaPlot->graph(i));
+        edge_trc2->setGraphKey(pos2);
+        edge_trc2->setInterpolating(true);
+        ui->mcaPlot->addItem(edge_trc2);
+        edge_trc2->updatePosition();
 
-        QCPItemLine *arrow1 = new QCPItemLine(ui->mcaPlot);
-        arrow1->start->setParentAnchor(crs1->position);
-        arrow1->start->setCoords(0, -10);
-        arrow1->end->setParentAnchor(crs1->position);
-        arrow1->end->setCoords(0, 0);
-        arrow1->setHead(QCPLineEnding(QCPLineEnding::esFlatArrow, 10, 10));
-        arrow1->setPen(pen_pt);
-        ui->mcaPlot->addItem(arrow1);
+        DraggableTracer *ar1 = new DraggableTracer(ui->mcaPlot, edge_trc1, 10);
+        ar1->setPen(pen_pt);
+        ui->mcaPlot->addItem(ar1);
 
-        QCPItemLine *arrow2 = new QCPItemLine(ui->mcaPlot);
-        arrow2->start->setParentAnchor(crs2->position);
-        arrow2->start->setCoords(0, -10);
-        arrow2->end->setParentAnchor(crs2->position);
-        arrow2->end->setCoords(0, 0);
-        arrow2->setHead(QCPLineEnding(QCPLineEnding::esFlatArrow, 10, 10));
-        arrow2->setPen(pen_pt);
-        ui->mcaPlot->addItem(arrow2);
+        DraggableTracer *ar2 = new DraggableTracer(ui->mcaPlot, edge_trc2, 10);
+        ar2->setPen(pen_pt);
+        ui->mcaPlot->addItem(ar2);
 
         QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
-        line->start->setParentAnchor(crs1->position);
+        line->start->setParentAnchor(edge_trc1->position);
         line->start->setCoords(0, 0);
-        line->end->setParentAnchor(crs2->position);
+        line->end->setParentAnchor(edge_trc2->position);
         line->end->setCoords(0, 0);
         line->setPen(pen_ln);
         ui->mcaPlot->addItem(line);
@@ -537,6 +532,16 @@ void WidgetPlot1D::plot_mouse_release(QMouseEvent*) {
   force_rezoom_ = true;
   plot_rezoom();
   ui->mcaPlot->replot();
+
+  //channels only???
+  if (edge_trc1 != nullptr)
+    my_edges_[0].channel = edge_trc1->graphKey();
+  if (edge_trc2 != nullptr)
+    my_edges_[1].channel = edge_trc2->graphKey();
+
+  if ((edge_trc1 != nullptr) || (edge_trc2 != nullptr))
+    emit edges_moved(my_edges_[0].channel, my_edges_[1].channel);
+
 }
 
 void WidgetPlot1D::on_pushResetScales_clicked()

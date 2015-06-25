@@ -80,6 +80,7 @@ signals:
 
   void clickedLeft(double);
   void clickedRight(double);
+  void edges_moved(double, double);
 
 private slots:
   void plot_mouse_clicked(double x, double y, QMouseEvent *event, bool channels);
@@ -106,6 +107,8 @@ private:
   std::list<Marker> my_cursors_;
   std::vector<Marker> rect;
   std::vector<Marker> my_edges_;
+  QCPItemTracer* edge_trc1;
+  QCPItemTracer* edge_trc2;
 
   bool force_rezoom_;
   double minx, maxx;

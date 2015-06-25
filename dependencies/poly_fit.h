@@ -31,10 +31,17 @@ std::string to_str_precision(double, uint16_t);
 
 class Polynomial {
 public:
-  Polynomial() : degree_(-1), xoffset_(0.0) {}
+  Polynomial() : degree_(-1), xoffset_(0.0), rsq(-1) {}
   Polynomial(std::vector<double> coeffs, double center = 0);
-  Polynomial(std::vector<double> &x, std::vector<double> &y, uint16_t degree, double center=0);
-       
+
+  Polynomial(std::vector<double> &x, std::vector<double> &y,
+             uint16_t degree, double center=0);
+  Polynomial(std::vector<double> &x, std::vector<double> &y,
+             std::vector<uint16_t> &degrees, double center=0);
+
+  void fit(std::vector<double> &x, std::vector<double> &y,
+      std::vector<uint16_t> &degrees, double center=0);
+
   std::string to_string();
   std::string to_UTF8();
   std::string to_markup();
@@ -45,13 +52,14 @@ public:
   std::vector<double> coeffs_;
   double xoffset_;
   int degree_;
+  double rsq;
 };
 
 class Gaussian {
 public:
-  Gaussian() : height_(0), hwhm_(0), center_(0) {}
+  Gaussian() : height_(0), hwhm_(0), center_(0), rsq(-1) {}
   Gaussian(const std::vector<double> &x, const std::vector<double> &y);
-  Gaussian(double center, double height, double hwhm) : height_(height), hwhm_(hwhm), center_(center) {}
+  Gaussian(double center, double height, double hwhm) : height_(height), hwhm_(hwhm), center_(center), rsq(-1) {}
 
   std::string to_string();
 
@@ -59,6 +67,7 @@ public:
   std::vector<double> evaluate_array(std::vector<double> x);
   
   double height_, hwhm_, center_;
+  double rsq;
 };
 
 
@@ -66,8 +75,6 @@ class Peak {
 public:
   Peak() {}
   Peak(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline);
-  Peak(const std::vector<double> &x, const std::vector<double> &y, uint32_t left, uint32_t right, uint32_t BL_samples);
-
 
   std::vector<double> x_, y_, y_baseline_, y_fullfit_;
   Gaussian gaussian_;
@@ -76,7 +83,10 @@ private:
   void fit(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline);
 };
 
+enum class BaselineType : int {linear = 0, step = 1, step_polynomial = 2};
+
 class UtilXY {
+  
 public:
   UtilXY() {}
   UtilXY(const std::vector<double> &x, const std::vector<double> &y, uint16_t avg_window = 1):
@@ -93,9 +103,10 @@ public:
   void refine_edges(double threshl, double threshr);
   void find_peaks(int min_width);
 
-  uint16_t find_left(uint16_t, uint16_t);
-  uint16_t find_right(uint16_t, uint16_t);
-  std::vector<double> make_baseline(uint16_t left, uint16_t right, uint16_t BL_samples);
+  uint16_t find_left(uint16_t chan, uint16_t grace = 0);
+  uint16_t find_right(uint16_t chan, uint16_t grace = 0);
+  double local_avg(uint16_t chan, uint16_t samples = 1);
+  std::vector<double> make_baseline(uint16_t left, uint16_t right, uint16_t BL_samples, BaselineType type = BaselineType::linear);
 
   std::vector<double> x_, y_, y_avg_, deriv1, deriv2;
 

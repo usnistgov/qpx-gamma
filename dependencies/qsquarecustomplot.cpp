@@ -41,7 +41,7 @@ QSize QSquareCustomPlot::sizeHint() const {
         if (QCPColorScale *le = qobject_cast<QCPColorScale*>(q)) {
           QRect ler = le->outerRect();
           //extra_width += ler.width();
-        /*} else if (QCPAxis *le = qobject_cast<QCPAxis*>(q)) {
+          /*} else if (QCPAxis *le = qobject_cast<QCPAxis*>(q)) {
           if (le->axisType() == QCPAxis::atBottom)
             extra_height += le->axisRect()->height();
           else if (le->axisType() == QCPAxis::atLeft)
@@ -69,6 +69,17 @@ void QSquareCustomPlot::resizeEvent(QResizeEvent * event) {
   }
 }
 
+void QSquareCustomPlot::mousePressEvent(QMouseEvent *event)  {
+  emit mousePress(event);
+
+  if (event->button() == Qt::LeftButton && under_mouse_) {
+    under_mouse_->startMoving(event->localPos());
+    return;
+  }
+
+  QCustomPlot::mousePressEvent(event);
+}
+
 
 void QSquareCustomPlot::mouseMoveEvent(QMouseEvent *event)  {
   emit mouseMove(event);
@@ -84,13 +95,36 @@ void QSquareCustomPlot::mouseMoveEvent(QMouseEvent *event)  {
     ap->data()->coordToCell(co_x, co_y, &x, &y);
     emit mouse_upon(static_cast<double>(x), static_cast<double>(y));
   } //else
-    //emit mouse_upon(co_x, co_y);
+  //emit mouse_upon(co_x, co_y);
+
+  if (event->buttons() == Qt::NoButton) {
+    DraggableTracer *trc = qobject_cast<DraggableTracer*>(itemAt(event->localPos(), true));
+    if (trc != under_mouse_) {
+      if (under_mouse_ == nullptr) {
+        // cursor moved from empty space to item
+        trc->setActive(true);
+//        setCursor(Qt::OpenHandCursor);
+      } else if (trc == nullptr) {
+        // cursor move from item to empty space
+        under_mouse_->setActive(false);
+//        unsetCursor();
+      } else {
+        // cursor moved from item to item
+        under_mouse_->setActive(false);
+        trc->setActive(true);
+      }
+      under_mouse_ = trc;
+      replot();
+    }
+  }
 
   QCustomPlot::mouseMoveEvent(event);
 }
 
 void QSquareCustomPlot::mouseReleaseEvent(QMouseEvent *event)  {
+  PL_DBG << "firing mouseRelease signal";
   emit mouseRelease(event);
+
   if ((mMousePressPos-event->pos()).manhattanLength() < 5) {
     double co_x, co_y;
 
@@ -113,4 +147,20 @@ void QSquareCustomPlot::mouseReleaseEvent(QMouseEvent *event)  {
       emit mouse_clicked(co_x, co_y, event, false);
   }
   QCustomPlot::mouseReleaseEvent(event);
+}
+
+void QSquareCustomPlot::keyPressEvent(QKeyEvent *event)
+{
+  if (event->key() == Qt::Key_Shift) {
+    emit shiftStateChanged(true);
+  }
+  QCustomPlot::keyPressEvent(event);
+}
+
+void QSquareCustomPlot::keyReleaseEvent(QKeyEvent *event)
+{
+  if (event->key() == Qt::Key_Shift) {
+    emit shiftStateChanged(false);
+  }
+  QCustomPlot::keyReleaseEvent(event);
 }
