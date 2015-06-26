@@ -51,19 +51,27 @@ FormCalibration::FormCalibration(QSettings &settings, QWidget *parent) :
   ui->PlotCalib->showTitle(false);
   ui->PlotCalib->setLabels("channel", "energy");
 
-  moving.themes["light"] = QPen(Qt::darkMagenta, 2);
-  moving.themes["dark"] = QPen(Qt::magenta, 2);
-
+  moving.appearance.themes["light"] = QPen(Qt::darkMagenta, 2);
+  moving.appearance.themes["dark"] = QPen(Qt::magenta, 2);
   mov_l = moving;
   mov_r = moving;
 
-  list.themes["light"] = QPen(Qt::darkGray, 1);
-  list.themes["dark"] = QPen(Qt::white, 1);
+  list.appearance.themes["light"] = QPen(Qt::darkGray, 1);
+  list.appearance.themes["dark"] = QPen(Qt::white, 1);
   list.visible = true;
 
-  selected.themes["light"] = QPen(Qt::black, 2);
-  selected.themes["dark"] = QPen(Qt::yellow, 2);
+  selected.appearance.themes["light"] = QPen(Qt::black, 2);
+  selected.appearance.themes["dark"] = QPen(Qt::yellow, 2);
   selected.visible = true;
+
+  main_graph_.default_pen = QPen(Qt::gray, 1);
+  prelim_peak_.default_pen = QPen(Qt::black, 4);
+  filtered_peak_.default_pen = QPen(Qt::blue, 6);
+  gaussian_.default_pen = QPen(Qt::blue, 1);
+  baseline_.default_pen = QPen(Qt::darkBlue, 1);
+  rise_.default_pen = QPen(Qt::green, 1);
+  fall_.default_pen = QPen(Qt::red, 1);
+  even_.default_pen = QPen(Qt::black, 1);
 
   ui->tableMarkers->setModel(&marker_table_);
   ui->tableMarkers->setSelectionModel(&selection_model_);
@@ -209,7 +217,6 @@ void FormCalibration::setSpectrum(Pixie::SpectraSet *newset, QString name) {
   }
 
   ui->plot1D->reset_scales();
-  ui->plot1D->redraw();
 
   update_spectrum();
   toggle_radio();
@@ -257,22 +264,12 @@ void FormCalibration::update_spectrum() {
 
 void FormCalibration::replot_all() {
   ui->plot1D->clearGraphs();
-  ui->plot1D->addGraph(QVector<double>::fromStdVector(spectrum_data_.x_), QVector<double>::fromStdVector(spectrum_data_.y_), Qt::gray, 1);
+  ui->plot1D->addGraph(QVector<double>::fromStdVector(spectrum_data_.x_), QVector<double>::fromStdVector(spectrum_data_.y_), main_graph_);
 
   if (ui->checkShowMovAvg->isChecked())
     plot_derivs(spectrum_data_);
 
   QVector<double> xx, yy;
-
-  if (ui->checkShowFilteredPeaks->isChecked()) {
-    xx.clear(); yy.clear();
-    for (auto &q : spectrum_data_.filtered) {
-      xx.push_back(q);
-      yy.push_back(spectrum_data_.y_[q]);
-    }
-    if (yy.size())
-      ui->plot1D->addPoints(xx, yy, Qt::blue, 6, QCPScatterStyle::ssDiamond);
-  }
 
   if (ui->checkShowPrelimPeaks->isChecked()) {
     xx.clear(); yy.clear();
@@ -281,14 +278,24 @@ void FormCalibration::replot_all() {
       yy.push_back(spectrum_data_.y_[q]);
     }
     if (yy.size())
-      ui->plot1D->addPoints(xx, yy, Qt::black, 4, QCPScatterStyle::ssDiamond);
+      ui->plot1D->addPoints(xx, yy, prelim_peak_, QCPScatterStyle::ssDiamond);
+  }
+
+  if (ui->checkShowFilteredPeaks->isChecked()) {
+    xx.clear(); yy.clear();
+    for (auto &q : spectrum_data_.filtered) {
+      xx.push_back(q);
+      yy.push_back(spectrum_data_.y_[q]);
+    }
+    if (yy.size())
+      ui->plot1D->addPoints(xx, yy, filtered_peak_, QCPScatterStyle::ssDiamond);
   }
 
   for (auto &q : peaks_) {
     if (ui->checkShowGaussians->isChecked())
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_), Qt::darkYellow, 1);
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_), gaussian_);
     if (ui->checkShowBaselines->isChecked())
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_baseline_), Qt::blue, 1);
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_baseline_), baseline_);
   }
 
 
@@ -371,8 +378,11 @@ void FormCalibration::replot_markers() {
   }
 
   if (xx.size()) {
+    AppearanceProfile pt;
+    pt.default_pen = QPen(Qt::darkBlue, 7);
+
     ui->PlotCalib->reset_scales();
-    ui->PlotCalib->addPoints(xx, yy, Qt::darkBlue, 7, QCPScatterStyle::ssDiamond);
+    ui->PlotCalib->addPoints(xx, yy, pt, QCPScatterStyle::ssDiamond);
     if (new_calibration_.units_ != "channels") {
       double min = xx[0], max = xx[0];
       for (auto &q : xx) {
@@ -392,7 +402,10 @@ void FormCalibration::replot_markers() {
         xx.push_back(i);
         ycab.push_back(thispoly.evaluate(i));
       }
-      ui->PlotCalib->addGraph(xx, ycab, Qt::blue, 2);
+      AppearanceProfile ln;
+      ln.default_pen = QPen(Qt::blue, 2);
+
+      ui->PlotCalib->addGraph(xx, ycab, ln);
     }
     ui->PlotCalib->rescale();
   }
@@ -654,11 +667,11 @@ void FormCalibration::plot_derivs(UtilXY &data)
     {
       if (temp_x.size() > ui->spinMinPeakWidth->value()) {
         if (was == 1)
-          ui->plot1D->addGraph(temp_x, temp_y, Qt::green, 1);
+          ui->plot1D->addGraph(temp_x, temp_y, rise_);
         else if (was == -1)
-          ui->plot1D->addGraph(temp_x, temp_y, Qt::red, 1);
+          ui->plot1D->addGraph(temp_x, temp_y, fall_);
         else
-          ui->plot1D->addGraph(temp_x, temp_y, Qt::black, 1);
+          ui->plot1D->addGraph(temp_x, temp_y, even_);
       }
       temp_x.clear(); temp_x.push_back(i-1);
       temp_y.clear(); temp_y.push_back(data.y_avg_[i-1]);
@@ -672,11 +685,11 @@ void FormCalibration::plot_derivs(UtilXY &data)
   if (temp_x.size())
   {
     if (was == 1)
-      ui->plot1D->addGraph(temp_x, temp_y, Qt::green, 1);
+      ui->plot1D->addGraph(temp_x, temp_y, rise_);
     else if (was == -1)
-      ui->plot1D->addGraph(temp_x, temp_y, Qt::red, 1);
+      ui->plot1D->addGraph(temp_x, temp_y, fall_);
     else
-      ui->plot1D->addGraph(temp_x, temp_y, Qt::black, 1);
+      ui->plot1D->addGraph(temp_x, temp_y, even_);
   }
 }
 

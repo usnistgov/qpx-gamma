@@ -42,18 +42,18 @@ FormPlot2D::FormPlot2D(QWidget *parent) :
   zoom_2d = 50;
 
   //color theme setup
-  my_marker.themes["Grayscale"] = QPen(Qt::cyan, 1);
-  my_marker.themes["Hot"] = QPen(Qt::cyan, 1);
-  my_marker.themes["Cold"] = QPen(Qt::yellow, 1);
-  my_marker.themes["Night"] = QPen(Qt::red, 1);
-  my_marker.themes["Candy"] = QPen(Qt::red, 1);
-  my_marker.themes["Geography"] = QPen(Qt::yellow, 1);
-  my_marker.themes["Ion"] = QPen(Qt::magenta, 1);
-  my_marker.themes["Thermal"] = QPen(Qt::cyan, 1);
-  my_marker.themes["Polar"] = QPen(Qt::green, 1);
-  my_marker.themes["Spectrum"] = QPen(Qt::cyan, 1);
-  my_marker.themes["Jet"] = QPen(Qt::darkMagenta, 1);
-  my_marker.themes["Hues"] = QPen(Qt::black, 1);
+  my_marker.appearance.themes["Grayscale"] = QPen(Qt::cyan, 1);
+  my_marker.appearance.themes["Hot"] = QPen(Qt::cyan, 1);
+  my_marker.appearance.themes["Cold"] = QPen(Qt::yellow, 1);
+  my_marker.appearance.themes["Night"] = QPen(Qt::red, 1);
+  my_marker.appearance.themes["Candy"] = QPen(Qt::red, 1);
+  my_marker.appearance.themes["Geography"] = QPen(Qt::yellow, 1);
+  my_marker.appearance.themes["Ion"] = QPen(Qt::magenta, 1);
+  my_marker.appearance.themes["Thermal"] = QPen(Qt::cyan, 1);
+  my_marker.appearance.themes["Polar"] = QPen(Qt::green, 1);
+  my_marker.appearance.themes["Spectrum"] = QPen(Qt::cyan, 1);
+  my_marker.appearance.themes["Jet"] = QPen(Qt::darkMagenta, 1);
+  my_marker.appearance.themes["Hues"] = QPen(Qt::black, 1);
   for (auto &q : gradients_)
     gradientMenu.addAction(q.first);
   for (auto &q : gradientMenu.actions()) {
@@ -155,11 +155,7 @@ void FormPlot2D::make_marker(Marker &marker) {
   if (!marker.visible)
     return;
 
-  QPen pen;
-  if (my_marker.themes.count(current_gradient_))
-    pen = QPen(my_marker.themes[current_gradient_]);
-  else
-    pen = QPen(my_marker.default_pen);
+  QPen pen = my_marker.appearance.get_pen(current_gradient_);
 
   QCPItemStraightLine *one_line;
 

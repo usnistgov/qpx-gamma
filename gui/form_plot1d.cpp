@@ -30,11 +30,11 @@ FormPlot1D::FormPlot1D(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  moving.themes["light"] = QPen(Qt::darkGray, 2);
-  moving.themes["dark"] = QPen(Qt::white, 2);
+  moving.appearance.themes["light"] = QPen(Qt::darkGray, 2);
+  moving.appearance.themes["dark"] = QPen(Qt::white, 2);
 
-  markx.themes["light"] = QPen(Qt::darkRed, 1);
-  markx.themes["dark"] = QPen(Qt::yellow, 1);
+  markx.appearance.themes["light"] = QPen(Qt::darkRed, 1);
+  markx.appearance.themes["dark"] = QPen(Qt::yellow, 1);
   marky = markx;
 
   connect(ui->mcaPlot, SIGNAL(clickedLeft(double)), this, SLOT(addMovingMarker(double)));
@@ -174,7 +174,9 @@ void FormPlot1D::update_plot() {
         ++i;
       }
 
-      ui->mcaPlot->addGraph(QVector<double>::fromStdVector(energies), y, QColor::fromRgba(app), 1);
+      AppearanceProfile profile;
+      profile.default_pen = QPen(QColor::fromRgba(app), 1);
+      ui->mcaPlot->addGraph(QVector<double>::fromStdVector(energies), y, profile);
 
     }
   }
@@ -241,10 +243,8 @@ void FormPlot1D::removeMovingMarker(double x) {
 }
 
 void FormPlot1D::set_markers2d(Marker x, Marker y) {
-  x.themes = markx.themes;
-  y.themes = marky.themes;
-  x.default_pen = markx.default_pen;
-  y.default_pen = marky.default_pen;
+  x.appearance = markx.appearance;
+  y.appearance = marky.appearance;
 
   markx = x; marky = y;
   markx.shift(bits);

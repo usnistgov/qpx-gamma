@@ -23,7 +23,7 @@
 TARGET   = qpx
 TEMPLATE = app
 
-CONFIG += qt debug_and_release c++11
+CONFIG += qt debug_and_release c++11 static
 
 INSTALLS += target icon desktop
 

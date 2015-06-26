@@ -93,6 +93,8 @@ private:
   bool my_run_;
 
   Marker moving_, marker_ref_, marker_opt_, a ,b;
+  AppearanceProfile ap_reference_, ap_optimized_;
+
   int bits, current_pass, max_passes;
 
   Peak gauss_ref_, gauss_opt_;

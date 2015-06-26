@@ -99,20 +99,23 @@ void QSquareCustomPlot::mouseMoveEvent(QMouseEvent *event)  {
 
   if (event->buttons() == Qt::NoButton) {
     DraggableTracer *trc = qobject_cast<DraggableTracer*>(itemAt(event->localPos(), true));
+
     if (trc != under_mouse_) {
-      if (under_mouse_ == nullptr) {
+
+      if ((under_mouse_ == nullptr) && (trc != nullptr)) {
         // cursor moved from empty space to item
         trc->setActive(true);
 //        setCursor(Qt::OpenHandCursor);
-      } else if (trc == nullptr) {
+      } else if ((trc == nullptr) && (under_mouse_ != nullptr)){
         // cursor move from item to empty space
         under_mouse_->setActive(false);
 //        unsetCursor();
-      } else {
+      } else if (under_mouse_ != nullptr) {
         // cursor moved from item to item
         under_mouse_->setActive(false);
         trc->setActive(true);
       }
+
       under_mouse_ = trc;
       replot();
     }

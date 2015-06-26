@@ -55,9 +55,9 @@ bool validateFile(QWidget* parent, QString name, bool write) {
 
 
 QColor generateColor() {
-  int H = rand() % 340;
-  int S = rand() % 64 + 192;
-  int V = rand() % 60 + 160;
+  int H = rand() % 359;
+  int S = rand() % 64 + 191;
+  int V = rand() % 60 + 195;
   int A = 128;
   return QColor::fromHsv(H, S, V, A);
 }

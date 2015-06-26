@@ -20,16 +20,32 @@
 #define Q_MARKER_H
 
 #include "detector.h"
+#include <QPen>
+#include <QMap>
+
+struct AppearanceProfile {
+  QMap<QString, QPen> themes;
+  QPen default_pen;
+
+  AppearanceProfile() : default_pen(Qt::gray, 1, Qt::SolidLine) {}
+  QPen get_pen(QString theme) {
+    if (themes.count(theme))
+      return themes[theme];
+    else
+      return default_pen;
+  }
+};
 
 struct Marker {
   double energy, channel;
   uint16_t bits;
-  QMap<QString, QPen> themes;
-  QPen default_pen;
+
+  AppearanceProfile appearance;
+
   bool visible;
   bool chan_valid, energy_valid;
 
-  Marker() : energy(0), channel(0), bits(0), visible(false), default_pen(Qt::gray, 1, Qt::SolidLine), chan_valid(false), energy_valid(false) {}
+  Marker() : energy(0), channel(0), bits(0), visible(false), chan_valid(false), energy_valid(false) {}
 
   void shift(uint16_t to_bits) {
     if (!to_bits || !bits)

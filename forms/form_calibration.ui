@@ -342,6 +342,9 @@
          <property name="text">
           <string>Fitted gaussians</string>
          </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
         </widget>
        </item>
        <item>
@@ -360,6 +363,9 @@
          </property>
          <property name="text">
           <string>Baselines</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>

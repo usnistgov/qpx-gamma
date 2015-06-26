@@ -60,25 +60,30 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
   optimizing_.visible = true;
   optimizing_.appearance = QColor(Qt::red).rgba();
 
-  moving_.themes["light"] = QPen(Qt::darkBlue, 2);
-  moving_.themes["dark"] = QPen(Qt::blue, 2);
+  moving_.appearance.themes["light"] = QPen(Qt::darkBlue, 2);
+  moving_.appearance.themes["dark"] = QPen(Qt::blue, 2);
 
-  a.themes["light"] = QPen(Qt::darkBlue, 1);
-  a.themes["dark"] = QPen(Qt::blue, 1);
+  a.appearance.themes["light"] = QPen(Qt::darkBlue, 1);
+  a.appearance.themes["dark"] = QPen(Qt::blue, 1);
 
   QColor translu(Qt::blue);
   translu.setAlpha(32);
-  b.themes["light"] = QPen(translu, 1);
+  b.appearance.themes["light"] = QPen(translu, 1);
   translu.setAlpha(64);
-  b.themes["dark"] = QPen(translu, 1);
+  b.appearance.themes["dark"] = QPen(translu, 1);
 
-  marker_ref_.themes["light"] = QPen(Qt::darkGreen, 1);
-  marker_ref_.themes["dark"] = QPen(Qt::green, 1);
+  ap_reference_.themes["light"] = QPen(Qt::darkCyan, 0);
+  ap_reference_.themes["dark"] = QPen(Qt::cyan, 0);
+
+  ap_optimized_.themes["light"] = QPen(Qt::darkMagenta, 0);
+  ap_optimized_.themes["dark"] = QPen(Qt::magenta, 0);
+
+  marker_ref_.appearance = ap_reference_;
   marker_ref_.visible = true;
 
-  marker_opt_.themes["light"] = QPen(Qt::darkMagenta, 1);
-  marker_opt_.themes["dark"] = QPen(Qt::magenta, 1);
+  marker_opt_.appearance = ap_optimized_;
   marker_opt_.visible = true;
+
 
   connect(&gm_plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
 
@@ -329,9 +334,11 @@ void FormGainMatch::update_plots() {
         else
           y_opt = y;
 
+        AppearanceProfile profile;
+        profile.default_pen = QPen(QColor::fromRgba(app), 1);
         ui->plot->addGraph(QVector<double>::fromStdVector(x),
                            QVector<double>::fromStdVector(y),
-                           QColor::fromRgba(app), 1);
+                           profile);
       } else
         have_data = false;
     }
@@ -341,13 +348,13 @@ void FormGainMatch::update_plots() {
       have_peaks = find_peaks();
 
     if (gauss_ref_.gaussian_.height_) {
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_fullfit_), Qt::cyan, 0);
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_baseline_), Qt::cyan, 0);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_fullfit_), ap_reference_);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_baseline_), ap_reference_);
     }
 
     if (gauss_opt_.gaussian_.height_) {
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_fullfit_), Qt::magenta, 0);
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_baseline_), Qt::magenta, 0);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_fullfit_), ap_optimized_);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_baseline_), ap_optimized_);
     }
 
     std::string new_label = boost::algorithm::trim_copy(gm_spectra_.status());

@@ -114,6 +114,10 @@ private:
   //markers
   Marker moving, mov_l, mov_r,
          list, selected;
+
+  AppearanceProfile main_graph_, prelim_peak_, filtered_peak_,
+                    gaussian_, baseline_, rise_, fall_, even_;
+
   QVector<double> mov_baseline_x, mov_baseline_y;
 
   std::map<double, double> my_markers_; //channel, energy

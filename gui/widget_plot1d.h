@@ -70,8 +70,8 @@ public:
   void set_cursors(const std::list<Marker>&);
   void set_edges(const Marker, const Marker);
 
-  void addPoints(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness, QCPScatterStyle::ScatterShape);
-  void addGraph(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness);
+  void addPoints(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, QCPScatterStyle::ScatterShape);
+  void addGraph(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance);
   void setYBounds(const std::map<double, double> &minima, const std::map<double, double> &maxima);
 
   void use_calibrated(bool);

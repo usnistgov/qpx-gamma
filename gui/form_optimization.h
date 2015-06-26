@@ -105,6 +105,10 @@ private:
   Marker moving_, a, b;
   int bits;
 
+  AppearanceProfile prelim_peak_, filtered_peak_,
+                    gaussian_, baseline_,
+                    rise_, fall_, even_;
+
   std::string current_setting_;
   std::vector<Peak> peaks_;
   std::vector<double> setting_values_;

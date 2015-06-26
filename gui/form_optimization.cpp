@@ -51,17 +51,26 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   optimizing_.name_ = "Optimizing";
   optimizing_.visible = true;
 
-  moving_.themes["light"] = QPen(Qt::darkBlue, 2);
-  moving_.themes["dark"] = QPen(Qt::blue, 2);
+  moving_.appearance.themes["light"] = QPen(Qt::darkBlue, 2);
+  moving_.appearance.themes["dark"] = QPen(Qt::blue, 2);
 
-  a.themes["light"] = QPen(Qt::darkBlue, 2);
-  a.themes["dark"] = QPen(Qt::blue, 2);
+  a.appearance.themes["light"] = QPen(Qt::darkBlue, 2);
+  a.appearance.themes["dark"] = QPen(Qt::blue, 2);
+
+  prelim_peak_.default_pen = QPen(Qt::black, 4);
+  filtered_peak_.default_pen = QPen(Qt::blue, 6);
+  gaussian_.default_pen = QPen(Qt::blue, 1);
+  baseline_.default_pen = QPen(Qt::darkBlue, 1);
+  rise_.default_pen = QPen(Qt::green, 1);
+  fall_.default_pen = QPen(Qt::red, 1);
+  even_.default_pen = QPen(Qt::black, 1);
+
 
   QColor translu(Qt::blue);
   translu.setAlpha(32);
-  b.themes["light"] = QPen(translu, 2);
+  b.appearance.themes["light"] = QPen(translu, 2);
   translu.setAlpha(64);
-  b.themes["dark"] = QPen(translu, 2);
+  b.appearance.themes["dark"] = QPen(translu, 2);
 
   ui->plot2->set_scale_type("Linear");
   ui->plot2->setTitle("Peak analysis");
@@ -380,20 +389,20 @@ void FormOptimization::update_plots() {
 
           QVector<double> xx, yy;
 
-          for (auto &q : spectrum_data_.filtered) {
-            xx.push_back(q);
-            yy.push_back(spectra_y_[i][q]);
-          }
-          if (yy.size())
-            ui->plot->addPoints(xx, yy, Qt::blue, 6, QCPScatterStyle::ssDiamond);
-
           xx.clear(); yy.clear();
           for (auto &q : spectrum_data_.prelim) {
             xx.push_back(q);
             yy.push_back(spectra_y_[i][q]);
           }
           if (yy.size())
-            ui->plot->addPoints(xx, yy, Qt::black, 4, QCPScatterStyle::ssDiamond);
+            ui->plot->addPoints(xx, yy, prelim_peak_, QCPScatterStyle::ssDiamond);
+
+          for (auto &q : spectrum_data_.filtered) {
+            xx.push_back(q);
+            yy.push_back(spectra_y_[i][q]);
+          }
+          if (yy.size())
+            ui->plot->addPoints(xx, yy, filtered_peak_, QCPScatterStyle::ssDiamond);
         }
 
 
@@ -401,9 +410,11 @@ void FormOptimization::update_plots() {
         //        ui->plot->addGraph(QVector<double>::fromStdVector(peaks_[ii].x_), QVector<double>::fromStdVector(peaks_[ii].y_fullfit_), this_color, 0);
       }
 
+      AppearanceProfile profile;
+      profile.default_pen = QPen(this_color, 1);
       ui->plot->addGraph(QVector<double>::fromStdVector(x),
                          QVector<double>::fromStdVector(spectra_y_[i]),
-                         this_color, 1);
+                         profile);
 
     }
     ui->plot->setYBounds(minima, maxima);
@@ -434,11 +445,11 @@ void FormOptimization::plot_derivs(UtilXY &data)
     {
       if (temp_x.size() > ui->spinMinPeakWidth->value()) {
         if (was == 1)
-          ui->plot->addGraph(temp_x, temp_y, Qt::green, 1);
+          ui->plot->addGraph(temp_x, temp_y, rise_);
         else if (was == -1)
-          ui->plot->addGraph(temp_x, temp_y, Qt::red, 1);
+          ui->plot->addGraph(temp_x, temp_y, fall_);
         else
-          ui->plot->addGraph(temp_x, temp_y, Qt::black, 1);
+          ui->plot->addGraph(temp_x, temp_y, even_);
       }
       temp_x.clear(); temp_x.push_back(i-1);
       temp_y.clear(); temp_y.push_back(data.y_avg_[i-1]);
@@ -452,11 +463,11 @@ void FormOptimization::plot_derivs(UtilXY &data)
   if (temp_x.size())
   {
     if (was == 1)
-      ui->plot->addGraph(temp_x, temp_y, Qt::green, 1);
+      ui->plot->addGraph(temp_x, temp_y, rise_);
     else if (was == -1)
-      ui->plot->addGraph(temp_x, temp_y, Qt::red, 1);
+      ui->plot->addGraph(temp_x, temp_y, fall_);
     else
-      ui->plot->addGraph(temp_x, temp_y, Qt::black, 1);
+      ui->plot->addGraph(temp_x, temp_y, even_);
   }
 }
 
@@ -507,7 +518,7 @@ void FormOptimization::resultChosen() {
   ui->plot2->reset_scales();
   ui->plot3->clearGraphs();
 
-  ui->plot3->addGraph(QVector<double>::fromStdVector(setting_values_), QVector<double>::fromStdVector(setting_fwhm_), Qt::darkMagenta, 0);
+  ui->plot3->addGraph(QVector<double>::fromStdVector(setting_values_), QVector<double>::fromStdVector(setting_fwhm_), AppearanceProfile());
 
   for (auto &q : ui->tableResults->selectedRanges()) {
     if (q.rowCount() > 0)
@@ -518,9 +529,9 @@ void FormOptimization::resultChosen() {
         cursor.channel = setting_values_[j];
         ui->plot3->set_cursors(std::list<Marker>({cursor}));
 
-        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_), Qt::black, 2);
-        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_fullfit_), Qt::magenta, 0);
-        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_baseline_), Qt::red, 0);
+        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_), AppearanceProfile());
+        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_fullfit_), gaussian_);
+        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_baseline_), baseline_);
       }
   }
 

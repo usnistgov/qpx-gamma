@@ -158,7 +158,9 @@ void FormOscilloscope::oscil_complete(QList<QVector<double>>* plot_data, QString
   for (QList<QVector<double>>::iterator it = ++(plot_data->begin()); it != plot_data->end(); ++it) {
     if (det_on_[i]) {
       QVector<double> &yy = *it;
-      ui->widgetPlot->addGraph(xx, yy, palette[i % palette.size()], 1);
+      AppearanceProfile profile;
+      profile.default_pen = QPen(palette[i % palette.size()], 1);
+      ui->widgetPlot->addGraph(xx, yy, profile);
 
       for (int i=0; i < xx.size(); i++) {
         if (!minima.count(xx[i]) || (minima[xx[i]] > yy[i]))

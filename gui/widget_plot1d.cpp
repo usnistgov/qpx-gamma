@@ -159,16 +159,14 @@ void WidgetPlot1D::setYBounds(const std::map<double, double> &minima, const std:
 }
 
 
-void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness) {
+void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance) {
   if (x.empty() || y.empty() || (x.size() != y.size()))
     return;
 
   ui->mcaPlot->addGraph();
   int g = ui->mcaPlot->graphCount() - 1;
   ui->mcaPlot->graph(g)->addData(x, y);
-  QPen thispen = QPen(color);
-  thispen.setWidth(thickness);
-  ui->mcaPlot->graph(g)->setPen(thispen);
+  ui->mcaPlot->graph(g)->setPen(appearance.get_pen(color_theme_));
   set_graph_style(ui->mcaPlot->graph(g), plot_style_);
 
   if (x[0] < minx) {
@@ -181,18 +179,16 @@ void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, 
   }
 }
 
-void WidgetPlot1D::addPoints(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness, QCPScatterStyle::ScatterShape shape) {
+void WidgetPlot1D::addPoints(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, QCPScatterStyle::ScatterShape shape) {
   if (x.empty() || y.empty() || (x.size() != y.size()))
     return;
 
   ui->mcaPlot->addGraph();
   int g = ui->mcaPlot->graphCount() - 1;
   ui->mcaPlot->graph(g)->addData(x, y);
-  QPen thispen = QPen(color);
-  thispen.setWidth(thickness);
-  ui->mcaPlot->graph(g)->setPen(thispen);
+  ui->mcaPlot->graph(g)->setPen(appearance.get_pen((color_theme_)));
   ui->mcaPlot->graph(g)->setBrush(QBrush());
-  ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle(shape, color, color, thickness));
+  ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle(shape, appearance.get_pen(color_theme_).color(), appearance.get_pen(color_theme_).color(), appearance.get_pen(color_theme_).width()));
   ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsNone);
 
   if (x[0] < minx) {
@@ -305,20 +301,13 @@ void WidgetPlot1D::replot_markers() {
             || (pos >= ui->mcaPlot->graph(i)->data()->lastKey()))
           continue;
 
-        QPen thispen = ui->mcaPlot->graph(i)->pen();
-        QColor thiscol = thispen.color();
-        thiscol.setAlpha(255);
-        thispen.setColor(thiscol);
-        if (q.themes.count(color_theme_))
-          thispen = QPen(q.themes[color_theme_]);
-
         QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
         crs->setStyle(QCPItemTracer::tsNone); //tsCirlce?
         crs->setSize(4);
         crs->setGraph(ui->mcaPlot->graph(i));
         crs->setGraphKey(pos);
         crs->setInterpolating(true);
-        crs->setPen(thispen);
+        crs->setPen(q.appearance.get_pen(color_theme_));
         ui->mcaPlot->addItem(crs);
 
         crs->updatePosition();
@@ -330,18 +319,15 @@ void WidgetPlot1D::replot_markers() {
       }
     }
     if (top_crs != nullptr) {
-      QPen qpen;
-      if (q.themes.count(color_theme_))
-        qpen = q.themes[color_theme_];
-      else
-        qpen = q.default_pen;
+      QPen pen = q.appearance.get_pen(color_theme_);
+
       QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
       line->start->setParentAnchor(top_crs->position);
       line->start->setCoords(0, -30);
       line->end->setParentAnchor(top_crs->position);
       line->end->setCoords(0, -2);
       line->setHead(QCPLineEnding(QCPLineEnding::esLineArrow, 7, 7));
-      line->setPen(qpen);
+      line->setPen(pen);
       ui->mcaPlot->addItem(line);
 
       if (marker_labels_) {
@@ -352,8 +338,8 @@ void WidgetPlot1D::replot_markers() {
         markerText->setText(QString::number(q.energy));
         markerText->setTextAlignment(Qt::AlignLeft);
         markerText->setFont(QFont("Helvetica", 9));
-        markerText->setPen(qpen);
-        markerText->setColor(qpen.color());
+        markerText->setPen(pen);
+        markerText->setColor(pen.color());
         markerText->setPadding(QMargins(1, 1, 1, 1));
         ui->mcaPlot->addItem(markerText);
       }
@@ -372,10 +358,7 @@ void WidgetPlot1D::replot_markers() {
     int total = ui->mcaPlot->graphCount();
     for (int i=0; i < total; i++) {
       QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
-      if (q.themes.count(color_theme_))
-        crs->setPen(q.themes[color_theme_]);
-      else
-        crs->setPen(q.default_pen);
+      crs->setPen(q.appearance.get_pen(color_theme_));
       crs->setStyle(QCPItemTracer::tsCircle);
       crs->setSize(4);
       crs->setGraph(ui->mcaPlot->graph(i));
@@ -398,19 +381,8 @@ void WidgetPlot1D::replot_markers() {
 
     if (pos1 < pos2) {
 
-      QPen pen_pt;
-      if (my_edges_[0].themes.count(color_theme_))
-        pen_pt = my_edges_[0].themes[color_theme_];
-      else
-        pen_pt = my_edges_[0].default_pen;
-
-
-      QPen pen_ln;
-      if (my_edges_[1].themes.count(color_theme_))
-        pen_ln = my_edges_[1].themes[color_theme_];
-      else
-        pen_ln = my_edges_[1].default_pen;
-
+      QPen pen_pt = my_edges_[0].appearance.get_pen(color_theme_);
+      QPen pen_ln = my_edges_[1].appearance.get_pen(color_theme_);
 
       int total = ui->mcaPlot->graphCount();
       for (int i=0; i < total; i++) {
@@ -483,15 +455,8 @@ void WidgetPlot1D::replot_markers() {
 
     cprect->topLeft->setCoords(x1, y1);
     cprect->bottomRight->setCoords(x2, y2);
-    if (rect[0].themes.count(color_theme_))
-      cprect->setPen(rect[0].themes[color_theme_]);
-    else
-      cprect->setPen(rect[0].default_pen);
-    if (rect[1].themes.count(color_theme_))
-      cprect->setBrush(QBrush(rect[1].themes[color_theme_].color()));
-    else
-      cprect->setBrush(QBrush(rect[1].default_pen.color()));
-
+    cprect->setPen(rect[0].appearance.get_pen(color_theme_));
+    cprect->setBrush(QBrush(rect[1].appearance.get_pen(color_theme_).color()));
     ui->mcaPlot->addItem(cprect);
   }
 

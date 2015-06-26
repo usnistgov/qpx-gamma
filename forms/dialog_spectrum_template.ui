@@ -465,7 +465,6 @@
    </item>
   </layout>
   <zorder>buttonBox</zorder>
-  <zorder></zorder>
   <zorder>tableGenericAttrs</zorder>
   <zorder>label_8</zorder>
   <zorder>groupBox_2</zorder>

@@ -4,6 +4,9 @@ Major features/overhauls:
 -lock file (one instance per system)
 -pause run
 -spectra warping
+-post-process gain matching
+-integrate peaks
+-gate on energies
 
 pixiecpp:
 -all timestamps with timezone**
@@ -12,12 +15,18 @@ pixiecpp:
 -save/load matrices++
 
 gui:
+-simplify detector and template dialogs
 -ask for simulation parameters***
 -more run parameters
       *delay / prompt
       *save after complete
       *name sample
 -save/load in thread
+
+cpx(batch language):
+-set detector command
+-export to other formats
+
 
 
 
