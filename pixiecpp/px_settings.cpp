@@ -154,16 +154,16 @@ void Settings::set_current_channel(Channel chan) {
   current_channel_ = chan;
 }
 
-Detector Settings::get_detector(Channel ch) const {
+Gamma::Detector Settings::get_detector(Channel ch) const {
   if (ch == Channel::current)
     return detectors_[static_cast<int>(current_channel_)];
   else if ((static_cast<int>(ch) > -1) && (static_cast<int>(ch) < num_chans_))
     return detectors_[static_cast<int>(ch)];
   else
-    return Detector();
+    return Gamma::Detector();
 }
 
-void Settings::set_detector(Channel ch, const Detector& det) {
+void Settings::set_detector(Channel ch, const Gamma::Detector& det) {
   if (ch == Channel::current)
     ch = current_channel_;
   if ((static_cast<int>(ch) > -1) && (static_cast<int>(ch) < num_chans_)) {
@@ -842,7 +842,7 @@ void Settings::from_xml(tinyxml2::XMLElement* root) {
           int thisChan = boost::lexical_cast<short>(ModElement->Attribute("number"));
           tinyxml2::XMLElement* ChanElement = ModElement->FirstChildElement();
           while (ChanElement != nullptr) {
-            if (std::string(ChanElement->Name()) == "Detector") {
+            if (std::string(ChanElement->Name()) == "Gamma::Detector") {
               detectors_[thisChan].from_xml(ChanElement);
             } else if (std::string(ChanElement->Name()) == "Setting") {
               int thisKey =  boost::lexical_cast<short>(ChanElement->Attribute("key"));

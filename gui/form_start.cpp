@@ -24,7 +24,7 @@
 #include "form_bootup.h"
 #include <QBoxLayout>
 
-FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixie::Detector> &detectors, QWidget *parent) :
+FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector> &detectors, QWidget *parent) :
   QWidget(parent),
   runner_thread_(thread),
   settings_(settings),

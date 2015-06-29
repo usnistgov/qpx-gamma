@@ -129,12 +129,12 @@ void FormListDaq::displayTraces()
     uint32_t trace_length = list_data_->hits[chosen_trace].trace[i].size();
     if ((drawit[i]) && (trace_length > 0)) {
       QVector<double> x(trace_length), y(trace_length);
-      Pixie::Detector this_det = list_data_->run.p4_state.get_detector(Pixie::Channel(i));
+      Gamma::Detector this_det = list_data_->run.p4_state.get_detector(Pixie::Channel(i));
       int highest_res = 0;
       for (auto &q : this_det.energy_calibrations_.my_data_)
         if (q.bits_ > highest_res)
           highest_res = q.bits_;
-      Pixie::Calibration this_calibration = this_det.energy_calibrations_.get(highest_res);
+      Gamma::Calibration this_calibration = this_det.energy_calibrations_.get(highest_res);
       int shift_by = 0;
       if (this_calibration.bits_)
         shift_by = 16 - this_calibration.bits_;
@@ -295,13 +295,13 @@ void TableListData::eat_list(Pixie::ListData* stuff) {
   if (stuff != nullptr) {
     time_factor_ = stuff->run.time_scale_factor();
     for (int i =0; i < Pixie::kNumChans; i++) {
-      Pixie::Detector thisdet = mystuff->run.p4_state.get_detector(Pixie::Channel(i));
+      Gamma::Detector thisdet = mystuff->run.p4_state.get_detector(Pixie::Channel(i));
       int hi_res = 0;
       for (auto &q : thisdet.energy_calibrations_.my_data_) {
         if (q.bits_ > hi_res)
           hi_res = q.bits_;
       }
-      calibrations_[i] = thisdet.energy_calibrations_.get(Pixie::Calibration(hi_res));
+      calibrations_[i] = thisdet.energy_calibrations_.get(Gamma::Calibration(hi_res));
     }
   }
 }

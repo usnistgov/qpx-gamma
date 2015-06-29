@@ -72,8 +72,9 @@ void QSquareCustomPlot::resizeEvent(QResizeEvent * event) {
 void QSquareCustomPlot::mousePressEvent(QMouseEvent *event)  {
   emit mousePress(event);
 
-  if (event->button() == Qt::LeftButton && under_mouse_) {
-    under_mouse_->startMoving(event->localPos());
+  DraggableTracer *trc = qobject_cast<DraggableTracer*>(itemAt(event->localPos(), true));
+  if ((event->button() == Qt::LeftButton) && (trc != nullptr)) {
+    trc->startMoving(event->localPos());
     return;
   }
 
@@ -99,33 +100,17 @@ void QSquareCustomPlot::mouseMoveEvent(QMouseEvent *event)  {
 
   if (event->buttons() == Qt::NoButton) {
     DraggableTracer *trc = qobject_cast<DraggableTracer*>(itemAt(event->localPos(), true));
-
-    if (trc != under_mouse_) {
-
-      if ((under_mouse_ == nullptr) && (trc != nullptr)) {
-        // cursor moved from empty space to item
-        trc->setActive(true);
-//        setCursor(Qt::OpenHandCursor);
-      } else if ((trc == nullptr) && (under_mouse_ != nullptr)){
-        // cursor move from item to empty space
-        under_mouse_->setActive(false);
-//        unsetCursor();
-      } else if (under_mouse_ != nullptr) {
-        // cursor moved from item to item
-        under_mouse_->setActive(false);
-        trc->setActive(true);
-      }
-
-      under_mouse_ = trc;
-      replot();
-    }
+    if (trc == nullptr)
+      unsetCursor();
+    else
+      setCursor(Qt::SizeHorCursor);
   }
 
   QCustomPlot::mouseMoveEvent(event);
 }
 
 void QSquareCustomPlot::mouseReleaseEvent(QMouseEvent *event)  {
-  PL_DBG << "firing mouseRelease signal";
+  //PL_DBG << "firing mouseRelease signal";
   emit mouseRelease(event);
 
   if ((mMousePressPos-event->pos()).manhattanLength() < 5) {
@@ -142,10 +127,9 @@ void QSquareCustomPlot::mouseReleaseEvent(QMouseEvent *event)  {
       int xx, yy;
       ap->data()->coordToCell(co_x, co_y, &xx, &yy);
       //PL_DBG << "Corrected to cell : " << xx << ", " << yy;
-      emit mouse_clicked(static_cast<double>(xx), static_cast<double>(yy), event, true);
+      emit mouse_clicked(static_cast<double>(xx), static_cast<double>(yy), event, true); //true?
     } else if (QCPAbstractItem *ai = qobject_cast<QCPAbstractItem*>(clickedLayerable)) {
       //PL_DBG << "clicked on abstractitem in plot";
-      emit mouse_clicked(co_x, co_y, event, false);
     } else
       emit mouse_clicked(co_x, co_y, event, false);
   }

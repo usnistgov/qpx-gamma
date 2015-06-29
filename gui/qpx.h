@@ -32,7 +32,7 @@
 #include "thread_runner.h"
 
 #include "form_start.h"
-#include "form_calibration.h"
+#include "form_analysis_1d.h"
 
 
 namespace Ui {
@@ -57,7 +57,7 @@ private:
 
   QString                       data_directory_;    //data directory
   QSettings                     settings_;
-  XMLableDB<Pixie::Detector>    detectors_;
+  XMLableDB<Gamma::Detector>    detectors_;
   ThreadRunner                  runner_thread_;
 
   FormStart* main_tab_;
@@ -90,7 +90,7 @@ private slots:
 
   void on_splitter_splitterMoved(int pos, int index);
 
-  void calibrate(FormCalibration*);
+  void analyze_1d(FormAnalysis1D*);
   void detectors_updated();
   void update_settings();
 

@@ -76,7 +76,7 @@ void FormPlot1D::spectrumDetails()
 
   if (id.isEmpty() || (someSpectrum == nullptr)) {
     ui->labelSpectrumInfo->setText("Left-click on spectrum above to see statistics, right click to toggle visibility");
-    ui->pushCalibrate->setEnabled(false);
+    ui->pushAnalyse->setEnabled(false);
     ui->pushFullInfo->setEnabled(false);
     return;
   }
@@ -95,7 +95,7 @@ void FormPlot1D::spectrumDetails()
       "<nobr>Dead:  " + QString::number(dead) + "%</nobr><br/>";
 
   ui->labelSpectrumInfo->setText(infoText);
-  ui->pushCalibrate->setEnabled(true);
+  ui->pushAnalyse->setEnabled(true);
   ui->pushFullInfo->setEnabled(true);
 }
 
@@ -140,7 +140,7 @@ void FormPlot1D::update_plot() {
 
   std::map<double, double> minima, maxima;
 
-  calib_ = Pixie::Calibration();
+  calib_ = Gamma::Calibration();
 
   ui->mcaPlot->clearGraphs();
   for (auto &q: mySpectra->spectra(1, bits)) {
@@ -153,10 +153,10 @@ void FormPlot1D::update_plot() {
           std::move(q->get_spectrum({{0, y.size()}}));
       std::vector<double> energies = q->energies(0);
 
-      Pixie::Detector detector = q->get_detector(0);
-      Pixie::Calibration temp_calib;
-      if (detector.energy_calibrations_.has_a(Pixie::Calibration(bits)))
-        temp_calib = detector.energy_calibrations_.get(Pixie::Calibration(bits));
+      Gamma::Detector detector = q->get_detector(0);
+      Gamma::Calibration temp_calib;
+      if (detector.energy_calibrations_.has_a(Gamma::Calibration(bits)))
+        temp_calib = detector.energy_calibrations_.get(Gamma::Calibration(bits));
       else
         temp_calib = detector.highest_res_calib();
       if (temp_calib.bits_)
@@ -210,9 +210,9 @@ void FormPlot1D::on_pushFullInfo_clicked()
   newSpecDia->exec();
 }
 
-void FormPlot1D::on_pushCalibrate_clicked()
+void FormPlot1D::on_pushAnalyse_clicked()
 {
-  emit requestCalibration(ui->spectraWidget->selected());
+  emit requestAnalysis(ui->spectraWidget->selected());
 }
 
 void FormPlot1D::addMovingMarker(double x) {

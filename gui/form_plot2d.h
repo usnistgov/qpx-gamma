@@ -104,7 +104,7 @@ private:
 
   //scaling
   int bits;
-  Pixie::Calibration calib_x_, calib_y_;
+  Gamma::Calibration calib_x_, calib_y_;
 
   void calibrate_markers();
   void make_marker(Marker&);

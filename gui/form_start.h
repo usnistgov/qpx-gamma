@@ -42,7 +42,7 @@ class FormStart : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixie::Detector> &detectors, QWidget *parent = 0);
+  explicit FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector> &detectors, QWidget *parent = 0);
   void exit();
   ~FormStart();
 
@@ -73,7 +73,7 @@ private:
   //reference to pixie singleton
   Pixie::Wrapper& pixie_;
 
-  XMLableDB<Pixie::Detector>  &detectors_;
+  XMLableDB<Gamma::Detector>  &detectors_;
 
   ThreadRunner        &runner_thread_;
 

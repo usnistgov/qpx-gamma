@@ -16,21 +16,23 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Pixie::Calibration defines calibration with units and math model
- *      Pixie::Detector defines detector with name, calibration, DSP parameters
+ *      Gamma::Calibration defines calibration with units and math model
+ *      Gamma::Detector defines detector with name, calibration, DSP parameters
  *
  ******************************************************************************/
 
 
-#ifndef PIXIE_DETECTOR
-#define PIXIE_DETECTOR
+#ifndef GAMMA_DETECTOR
+#define GAMMA_DETECTOR
 
 #include <vector>
 #include <string>
 #include <boost/date_time.hpp>
 #include "xmlable.h"
 
-namespace Pixie {
+namespace Gamma {
+
+enum class CalibApplyTo : int {DetOnAllOpen = 0, DetOnCurrentSpec = 1, AllDetsOnCurrentSpec = 2, DetInDB = 3};
 
 enum class CalibrationModel : int {none = 0, polynomial = 1};
 
@@ -71,8 +73,12 @@ class Calibration : public XMLable {
 
 class Detector : public XMLable {
  public:
-  Detector() : energy_calibrations_("Calibrations"),
-                       name_("none"), type_("none") {}
+  Detector()
+      : energy_calibrations_("Calibrations")
+      , fwhm_calibrations_("FWHM_calibrations")
+      , name_("none")
+      , type_("none") {}
+  
   Detector(tinyxml2::XMLElement* el) : Detector() {from_xml(el);}
   Detector(std::string name) : Detector() {name_ = name;}
 
@@ -92,9 +98,11 @@ class Detector : public XMLable {
   void to_xml(tinyxml2::XMLPrinter&) const;
   void from_xml(tinyxml2::XMLElement*);
   Calibration highest_res_calib();
+  Calibration highest_res_fwhm();
   
   std::string name_, type_;
   XMLableDB<Calibration> energy_calibrations_;
+  XMLableDB<Calibration> fwhm_calibrations_;
   std::vector<double> setting_values_;
   std::vector<std::string> setting_names_;
   

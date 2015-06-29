@@ -40,9 +40,10 @@ struct Marker {
   double energy, channel;
   uint16_t bits;
 
-  AppearanceProfile appearance;
+  AppearanceProfile appearance, selected_appearance;
 
   bool visible;
+  bool selected;
   bool chan_valid, energy_valid;
 
   Marker() : energy(0), channel(0), bits(0), visible(false), chan_valid(false), energy_valid(false) {}
@@ -59,13 +60,19 @@ struct Marker {
     bits = to_bits;
   }
 
-  void calibrate(Pixie::Detector det) {
-    if (det.energy_calibrations_.has_a(Pixie::Calibration(bits))) {
-      energy = det.energy_calibrations_.get(Pixie::Calibration(bits)).transform(channel);
+  void calibrate(Gamma::Detector det) {
+    if (det.energy_calibrations_.has_a(Gamma::Calibration(bits))) {
+      energy = det.energy_calibrations_.get(Gamma::Calibration(bits)).transform(channel);
       energy_valid = true;
-    }
+    } // else highest?
   }
 
+};
+
+struct Range {
+  bool visible;
+  AppearanceProfile base, top;
+  Marker center, l, r;
 };
 
 #endif

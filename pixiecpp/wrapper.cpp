@@ -117,7 +117,7 @@ void Wrapper::getFakeMca(Simulator& source, SpectraSet& spectra,
 
   SynchronizedQueue<Spill*> eventQueue;
 
-  std::vector<Detector> detectors = my_settings_.get_detectors();
+  std::vector<Gamma::Detector> detectors = my_settings_.get_detectors();
   for (std::size_t i = 0; i < detectors.size(); i++)
     source.settings.set_detector(Channel(i), detectors[i]);
   

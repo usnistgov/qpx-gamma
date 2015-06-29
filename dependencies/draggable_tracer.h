@@ -28,23 +28,16 @@ class DraggableTracer : public QCPItemLine
 public:
     explicit DraggableTracer(QCustomPlot *parentPlot, QCPItemTracer *trc, int size);
 
-    QPointF pos() const;
     void startMoving(const QPointF &mousePos);
-
-public slots:
-    void setVisible(bool on);
+    void set_limits(double l , double r);
 
 signals:
-    void activated(); ///< emitted on mouse over
-    void disactivated(); ///< emitted when cursor leave us
-
     void moved(const QPointF &pos);
     void stoppedMoving();
 
 public slots:
     void move(double x, double y, bool signalNeeded = true);
     void movePx(double x, double y);
-    void setActive(bool isActive);
     void stopMov(QMouseEvent* evt);
 
 private slots:
@@ -58,6 +51,8 @@ private:
     QPointF pos_last_;
     QTimer *move_timer_;
     QPointF pos_current_;
+
+    double limit_l, limit_r;
 };
 
 #endif

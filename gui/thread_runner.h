@@ -97,8 +97,8 @@ private:
 
     double value_;
     Pixie::Module module_;
-    Pixie::Detector det_;
-    std::vector<Pixie::Detector> dets_;
+    Gamma::Detector det_;
+    std::vector<Gamma::Detector> dets_;
     std::string setting_;
 
     //simulation

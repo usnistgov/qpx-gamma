@@ -39,7 +39,7 @@ class TableListData : public QAbstractTableModel
 private:
     Pixie::ListData* mystuff;
     double time_factor_;
-    std::vector<Pixie::Calibration> calibrations_;
+    std::vector<Gamma::Calibration> calibrations_;
 
 public:
     TableListData(QObject *parent = 0);

@@ -143,7 +143,7 @@ std::vector<double> Spectrum::energies(uint8_t chan) const {
     return std::vector<double>();
 }
   
-void Spectrum::set_detectors(const std::vector<Detector>& dets) {
+void Spectrum::set_detectors(const std::vector<Gamma::Detector>& dets) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
@@ -152,12 +152,12 @@ void Spectrum::set_detectors(const std::vector<Detector>& dets) {
   recalc_energies();
 }
 
-std::vector<Detector> Spectrum::get_detectors() const {
+std::vector<Gamma::Detector> Spectrum::get_detectors() const {
   boost::shared_lock<boost::shared_mutex> lock(mutex_);
   return detectors_;
 }
 
-Detector Spectrum::get_detector(uint16_t which) const {
+Gamma::Detector Spectrum::get_detector(uint16_t which) const {
   boost::shared_lock<boost::shared_mutex> lock(mutex_);
   for (int i=0; i<detectors_.size(); ++i) {
     if (add_pattern_[i] == 1) {
@@ -167,7 +167,7 @@ Detector Spectrum::get_detector(uint16_t which) const {
         which--;
     }
   }
-  return Detector();
+  return Gamma::Detector();
 }
 
 
@@ -182,9 +182,9 @@ void Spectrum::recalc_energies() {
     if (add_pattern_[phys_chan] == 1) {
       energies_[calib_chan].resize(resolution_, 0.0);
       //      PL_DBG << "spectrum " << name_ << " using calibration for " << detectors_[phys_chan].name_;
-      Calibration this_calib;
-      if (detectors_[phys_chan].energy_calibrations_.has_a(Calibration(bits_)))
-        this_calib = detectors_[phys_chan].energy_calibrations_.get(Calibration(bits_));
+      Gamma::Calibration this_calib;
+      if (detectors_[phys_chan].energy_calibrations_.has_a(Gamma::Calibration(bits_)))
+        this_calib = detectors_[phys_chan].energy_calibrations_.get(Gamma::Calibration(bits_));
       for (uint32_t j=0; j<resolution_; j++)
         energies_[calib_chan][j] = this_calib.transform(j);
       calib_chan++;

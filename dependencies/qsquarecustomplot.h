@@ -35,7 +35,7 @@ public:
 
 signals:
   void mouse_upon(double x, double y);
-  void mouse_clicked(double x, double y, QMouseEvent* e, bool channels);
+  void mouse_clicked(double x, double y, QMouseEvent* e, bool on_item); //why on_item?
   void shiftStateChanged(bool);
 
 protected:

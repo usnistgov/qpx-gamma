@@ -29,7 +29,7 @@
 #include "widget_pattern.h"
 #include "detector.h"
 
-Q_DECLARE_METATYPE(Pixie::Detector)
+Q_DECLARE_METATYPE(Gamma::Detector)
 Q_DECLARE_METATYPE(Pixie::Setting)
 
 class QpxSpecialDelegate : public QStyledItemDelegate
@@ -46,10 +46,10 @@ public:
     void setEditorData(QWidget *editor, const QModelIndex &index) const Q_DECL_OVERRIDE;
     void setModelData(QWidget *editor, QAbstractItemModel *model,
                       const QModelIndex &index) const Q_DECL_OVERRIDE;
-    void eat_detectors(const XMLableDB<Pixie::Detector>&);
+    void eat_detectors(const XMLableDB<Gamma::Detector>&);
 
 private:
-    XMLableDB<Pixie::Detector> detectors_;
+    XMLableDB<Gamma::Detector> detectors_;
 };
 
 #endif

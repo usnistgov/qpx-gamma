@@ -28,7 +28,7 @@
 #include "spectra_set.h"
 #include "thread_runner.h"
 #include "thread_plot_signal.h"
-#include "form_calibration.h"
+#include "form_analysis_1d.h"
 
 namespace Ui {
 class FormMcaDaq;
@@ -39,7 +39,7 @@ class FormMcaDaq : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormMcaDaq(ThreadRunner&, QSettings&, XMLableDB<Pixie::Detector>&, QWidget *parent = 0);
+  explicit FormMcaDaq(ThreadRunner&, QSettings&, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
 
   void replot();
   ~FormMcaDaq();
@@ -47,7 +47,7 @@ public:
 signals:
   void toggleIO(bool);
   void statusText(QString);
-  void requestCalibration(FormCalibration*);
+  void requestAnalysis(FormAnalysis1D*);
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -66,10 +66,11 @@ private slots:
   void update_plots();
   void clearGraphs();
   void updateSpectraUI();
-  void reqCalib(QString);
+
+  void reqAnal(QString);
 
   void toggle_push(bool, Pixie::LiveStatus);
-  void calib_destroyed();
+  void analysis_destroyed();
 
   void on_pushEnable2d_clicked();
 
@@ -79,7 +80,7 @@ private:
   Ui::FormMcaDaq *ui;
   QSettings                  &settings_;
   ThreadRunner               &runner_thread_;
-  XMLableDB<Pixie::Detector> &detectors_;
+  XMLableDB<Gamma::Detector> &detectors_;
 
   QString data_directory_;    //data directory
   QString mca_load_formats_;  //valid mca file formats that can be opened
@@ -90,7 +91,7 @@ private:
   ThreadPlotSignal                plot_thread_;
   boost::atomic<bool>             interruptor_;
 
-  FormCalibration* my_calib_;
+  FormAnalysis1D* my_analysis_;
   bool my_run_;
 
   void loadSettings();

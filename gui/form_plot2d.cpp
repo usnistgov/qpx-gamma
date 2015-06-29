@@ -230,9 +230,9 @@ void FormPlot2D::update_plot() {
           y_marker.shift(bits);
         }
 
-        Pixie::Detector detector_x_ = some_spectrum->get_detector(0);
-        if (detector_x_.energy_calibrations_.has_a(Pixie::Calibration(bits)))
-          calib_x_ = detector_x_.energy_calibrations_.get(Pixie::Calibration(bits));
+        Gamma::Detector detector_x_ = some_spectrum->get_detector(0);
+        if (detector_x_.energy_calibrations_.has_a(Gamma::Calibration(bits)))
+          calib_x_ = detector_x_.energy_calibrations_.get(Gamma::Calibration(bits));
         else
           calib_x_ = detector_x_.highest_res_calib();
         colorMap->keyAxis()->setLabel(QString::fromStdString(detector_x_.name_) + " (" + QString::fromStdString(calib_x_.units_) + ")");
@@ -240,9 +240,9 @@ void FormPlot2D::update_plot() {
         if (!calib_x_.bits_)
           calib_x_.bits_ = bits;
 
-        Pixie::Detector detector_y_ = some_spectrum->get_detector(1);
-        if (detector_y_.energy_calibrations_.has_a(Pixie::Calibration(bits)))
-          calib_y_ = detector_y_.energy_calibrations_.get(Pixie::Calibration(bits));
+        Gamma::Detector detector_y_ = some_spectrum->get_detector(1);
+        if (detector_y_.energy_calibrations_.has_a(Gamma::Calibration(bits)))
+          calib_y_ = detector_y_.energy_calibrations_.get(Gamma::Calibration(bits));
         else
           calib_y_ = detector_y_.highest_res_calib();
         colorMap->valueAxis()->setLabel(QString::fromStdString(detector_y_.name_) + " (" + QString::fromStdString(calib_y_.units_) + ")");

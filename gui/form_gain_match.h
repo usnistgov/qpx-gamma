@@ -29,7 +29,7 @@
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
 #include "widget_plot1d.h"
-#include "poly_fit.h"
+#include "gamma_fitter.h"
 
 namespace Ui {
 class FormGainMatch;
@@ -40,7 +40,7 @@ class FormGainMatch : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormGainMatch(ThreadRunner&, QSettings&, XMLableDB<Pixie::Detector>&, QWidget *parent = 0);
+  explicit FormGainMatch(ThreadRunner&, QSettings&, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
   ~FormGainMatch();
 
 signals:
@@ -82,7 +82,7 @@ private:
   Pixie::Spectrum::Template reference_, optimizing_;
 
   ThreadRunner         &gm_runner_thread_;
-  XMLableDB<Pixie::Detector> &detectors_;
+  XMLableDB<Gamma::Detector> &detectors_;
   QSettings &settings_;
 
   ThreadPlotSignal     gm_plot_thread_;
@@ -97,7 +97,7 @@ private:
 
   int bits, current_pass, max_passes;
 
-  Peak gauss_ref_, gauss_opt_;
+  Gamma::Peak gauss_ref_, gauss_opt_;
 
   CustomTimer* minTimer;
 

@@ -53,7 +53,7 @@ qpx::qpx(QWidget *parent) :
 {
   qRegisterMetaType<QList<QVector<double>>>("QList<QVector<double>>");
   qRegisterMetaType<Pixie::ListData>("Pixie::ListData");
-  qRegisterMetaType<Pixie::Calibration>("Pixie::Calibration");
+  qRegisterMetaType<Gamma::Calibration>("Gamma::Calibration");
   qRegisterMetaType<Pixie::LiveStatus>("Pixie::LiveStatus");
 
   CustomLogger::initLogger(&qpx_stream_, "qpx_%N.log");
@@ -213,20 +213,20 @@ void qpx::update_settings() {
   emit settings_changed();
 }
 
-void qpx::calibrate(FormCalibration* formCalib) {
-  if (ui->qpxTabs->indexOf(formCalib) == -1) {
-    ui->qpxTabs->addTab(formCalib, "Calibration");
-    connect(formCalib, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
+void qpx::analyze_1d(FormAnalysis1D* formAnal) {
+  if (ui->qpxTabs->indexOf(formAnal) == -1) {
+    ui->qpxTabs->addTab(formAnal, "Analysis 1D");
+    connect(formAnal, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
   }
-  ui->qpxTabs->setCurrentWidget(formCalib);
-  formCalib->update_spectrum();
+  ui->qpxTabs->setCurrentWidget(formAnal);
+  formAnal->update_spectrum();
 }
 
 void qpx::on_pushOpenSpectra_clicked()
 {
   FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, settings_, detectors_);
   ui->qpxTabs->addTab(newSpectraForm, "Spectra");
-  connect(newSpectraForm, SIGNAL(requestCalibration(FormCalibration*)), this, SLOT(calibrate(FormCalibration*)));
+  connect(newSpectraForm, SIGNAL(requestAnalysis(FormAnalysis1D*)), this, SLOT(analyze_1d(FormAnalysis1D*)));
 
   connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Pixie::LiveStatus)), newSpectraForm, SLOT(toggle_push(bool,Pixie::LiveStatus)));

@@ -33,7 +33,17 @@
 namespace Pixie {
 
 enum class NodeType : int {none = 0, setting = 1, stem = 2};
-enum class SettingType : int {boolean = 0, integer = 1, floating = 2, text = 3, int_menu = 4, detector = 5};
+enum class SettingType : int {boolean = 0,
+                              integer = 1,
+                              floating = 2,
+                              floating_precise = 3,
+                              text = 4,
+                              int_menu = 5,
+                              detector = 6,
+                              time = 7,
+                              time_duration = 8,
+                              pattern = 9
+                             };
 
 struct Setting;
 

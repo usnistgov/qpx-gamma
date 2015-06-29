@@ -245,7 +245,7 @@ void ThreadRunner::run()
   }
 
   if (action_ == kOscil) {
-    std::vector<Pixie::Detector> dets = Pixie::Wrapper::getInstance().settings().get_detectors();
+    std::vector<Gamma::Detector> dets = Pixie::Wrapper::getInstance().settings().get_detectors();
 
     std::string calib_units = dets[0].highest_res_calib().units_;
     for (int i=0; i < dets.size(); i++) {

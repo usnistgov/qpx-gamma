@@ -92,9 +92,9 @@ public:
   std::vector<double> energies(uint8_t chan = 0) const;
   
   //set and get detectors
-  void set_detectors(const std::vector<Detector>& dets);
-  std::vector<Detector> get_detectors() const;
-  Detector get_detector(uint16_t which = 0) const;
+  void set_detectors(const std::vector<Gamma::Detector>& dets);
+  std::vector<Gamma::Detector> get_detectors() const;
+  Gamma::Detector get_detector(uint16_t which = 0) const;
 
   //feed acquired data to spectrum
   void addSpill(const Spill&);
@@ -168,7 +168,7 @@ protected:
   uint32_t resolution_;
   std::vector<int16_t> match_pattern_, add_pattern_;
 
-  std::vector<Detector> detectors_;
+  std::vector<Gamma::Detector> detectors_;
   std::vector<std::vector<double> > energies_;
   
   std::vector<Setting> generic_attributes_;
@@ -283,7 +283,7 @@ class Factory {
   std::map<std::string, Template> templates;
 
   //singleton assurance
-  Factory() {};
+  Factory() {}
   Factory(Factory const&);
   void operator=(Factory const&);
 };

@@ -59,9 +59,9 @@ public:
   void to_xml(tinyxml2::XMLPrinter&);
   
   //detectors
-  std::vector<Detector> get_detectors() const {return detectors_;}
-  Detector get_detector(Channel ch = Channel::current) const;
-  void set_detector(Channel ch, const Detector& det);
+  std::vector<Gamma::Detector> get_detectors() const {return detectors_;}
+  Gamma::Detector get_detector(Channel ch = Channel::current) const;
+  void set_detector(Channel ch, const Gamma::Detector& det);
   void save_optimization(Channel chan = Channel::all);  //specify module as well?
   void load_optimization(Channel chan = Channel::all);
 
@@ -134,7 +134,7 @@ protected:
   std::vector<Setting> mod_set_meta_;
   std::vector<Setting> chan_set_meta_;
 
-  std::vector<Detector> detectors_;
+  std::vector<Gamma::Detector> detectors_;
 
   //////////for internal use only///////////
   //carry out task

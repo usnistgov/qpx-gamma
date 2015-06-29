@@ -42,9 +42,9 @@ class FormPixieSettings : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormPixieSettings(ThreadRunner&, XMLableDB<Pixie::Detector>&, QSettings&, QWidget *parent = 0);
+  explicit FormPixieSettings(ThreadRunner&, XMLableDB<Gamma::Detector>&, QSettings&, QWidget *parent = 0);
   ~FormPixieSettings();
-  //void setData(ThreadRunner&, XMLableDB<Pixie::Detector>&);
+  //void setData(ThreadRunner&, XMLableDB<Gamma::Detector>&);
 
   void apply_settings();
 
@@ -78,7 +78,7 @@ private:
 
   Pixie::Wrapper& pixie_; //eliminate this
 
-  XMLableDB<Pixie::Detector>            &detectors_;
+  XMLableDB<Gamma::Detector>            &detectors_;
   std::vector<std::string> default_detectors_;
 
   ThreadRunner        &runner_thread_;

@@ -27,7 +27,7 @@
 #include "fityk.h"
 
 
-FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableDB<Pixie::Detector>& detectors, QWidget *parent) :
+FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormGainMatch),
   gm_runner_thread_(thread),
@@ -277,8 +277,8 @@ bool FormGainMatch::find_peaks() {
     if (xmin < 0) xmin = 0;
     if (xmax >= x.size()) xmax = x.size() - 1;
 
-    UtilXY finder_ref(x, y_ref, xmin, xmax, 25);
-    UtilXY finder_opt(x, y_opt, xmin, xmax, 25);
+    Gamma::Fitter finder_ref(x, y_ref, xmin, xmax, 25);
+    Gamma::Fitter finder_opt(x, y_opt, xmin, xmax, 25);
 
     finder_ref.find_peaks(5);
     finder_opt.find_peaks(5);
@@ -348,12 +348,12 @@ void FormGainMatch::update_plots() {
       have_peaks = find_peaks();
 
     if (gauss_ref_.gaussian_.height_) {
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_fullfit_), ap_reference_);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_fullfit_pseudovoigt_), ap_reference_);
       ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_baseline_), ap_reference_);
     }
 
     if (gauss_opt_.gaussian_.height_) {
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_fullfit_), ap_optimized_);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_fullfit_pseudovoigt_), ap_optimized_);
       ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_baseline_), ap_optimized_);
     }
 
@@ -431,10 +431,10 @@ void FormGainMatch::on_pushStop_clicked()
 void FormGainMatch::on_pushSaveOpti_clicked()
 {
   pixie_.settings().save_optimization();
-  std::vector<Pixie::Detector> dets = pixie_.settings().get_detectors();
+  std::vector<Gamma::Detector> dets = pixie_.settings().get_detectors();
   for (auto &q : dets) {
     if (detectors_.has_a(q)) {
-      Pixie::Detector modified = detectors_.get(q);
+      Gamma::Detector modified = detectors_.get(q);
       modified.setting_values_ = q.setting_values_;
       detectors_.replace(modified);
     }

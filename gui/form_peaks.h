@@ -16,13 +16,13 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormCalibration -
+ *      FormPeaks -
  *
  ******************************************************************************/
 
 
-#ifndef FORM_CALIBRATION_H
-#define FORM_CALIBRATION_H
+#ifndef FORM_PEAKS_H
+#define FORM_PEAKS_H
 
 #include <QWidget>
 #include "spectrum1D.h"
@@ -32,57 +32,51 @@
 #include "widget_plot1d.h"
 #include <QItemSelection>
 #include "spectra_set.h"
-#include "poly_fit.h"
+#include "gamma_fitter.h"
 
 namespace Ui {
-class FormCalibration;
+class FormPeaks;
 }
 
-enum class CalibApplyTo : int {DetOnAllOpen = 0, DetOnCurrentSpec = 1, AllDetsOnCurrentSpec = 2, DetInDB = 3};
-
-class FormCalibration : public QWidget
+class FormPeaks : public QWidget
 {
   Q_OBJECT
 
 public:
-  explicit FormCalibration(QSettings &settings, QWidget *parent = 0);
-  ~FormCalibration();
+  explicit FormPeaks(QWidget *parent = 0);
+  ~FormPeaks();
 
-  void setData(XMLableDB<Pixie::Detector>& newDetDB);
-  void setSpectrum(Pixie::SpectraSet *newset, QString spectrum);
-
+  void setSpectrum(Pixie::Spectrum::Spectrum *newspectrum);
   void clear();
-
-signals:
-  void calibrationComplete();
-  void detectorsChanged();
-
-public slots:
+  std::vector<Gamma::Peak> peaks();
+  std::set<double> selected_peaks();
+  void select_peaks(const std::set<double>&);
   void update_spectrum();
 
+  void loadSettings(QSettings &settings_);
+  void saveSettings(QSettings &settings_);
+
+
+signals:
+  void peaks_changed();
+  void peaks_selected();
+
 private slots:
+
+  void user_selected_peaks();
+
   void addMovingMarker(double);
   void removeMovingMarker(double);
 
   void replot_all();
   void replot_markers();
-  void selection_changed(QItemSelection, QItemSelection);
   void toggle_push();
-  void isotope_energies_chosen();
-  void on_pushApplyCalib_clicked();
 
-  void toggle_radio();
-  void edges_moved(double, double);
-  void detectorsUpdated() {emit detectorsChanged();}
+  void range_moved();
 
   void on_pushAdd_clicked();
   void on_pushMarkerRemove_clicked();
-  void on_pushFit_clicked();
-  void on_pushFromDB_clicked();
   void on_pushFindPeaks_clicked();
-  void on_pushDetDB_clicked();
-  void on_pushAllmarkers_clicked();
-  void on_pushAllEnergies_clicked();
   void on_checkShowMovAvg_clicked();
   void on_checkShowPrelimPeaks_clicked();
   void on_checkShowGaussians_clicked();
@@ -93,45 +87,32 @@ private slots:
 
   void on_spinMinPeakWidth_editingFinished();
 
-protected:
-  void closeEvent(QCloseEvent*);
+  void on_checkShowPseudoVoigt_clicked();
 
 private:
-  Ui::FormCalibration *ui;
-  QSettings &settings_;
+  Ui::FormPeaks *ui;
 
   //from parent
-  QString data_directory_;
-  Pixie::SpectraSet *spectra_;
-  XMLableDB<Pixie::Detector> *detectors_;
+  Pixie::Spectrum::Spectrum *spectrum_;
 
   //data from selected spectrum
-  QString current_spectrum_;
-  UtilXY spectrum_data_;
+  Gamma::Fitter spectrum_data_;
   std::map<double, double> minima, maxima;
-  Pixie::Detector detector_;
+  Gamma::Detector detector_;
+  Gamma::Calibration calibration_;
 
   //markers
-  Marker moving, mov_l, mov_r,
-         list, selected;
+  Marker list, selected;
+  Range range_;
 
   AppearanceProfile main_graph_, prelim_peak_, filtered_peak_,
-                    gaussian_, baseline_, rise_, fall_, even_;
+                    gaussian_, pseudo_voigt_, baseline_, rise_, fall_, even_;
 
-  QVector<double> mov_baseline_x, mov_baseline_y;
 
-  std::map<double, double> my_markers_; //channel, energy
-  TableMarkers marker_table_;
-  QItemSelectionModel selection_model_;
-  QpxSpecialDelegate  special_delegate_;
+  std::vector<Gamma::Peak> peaks_;
+  std::set<double> selected_peaks_;
 
-  std::vector<Peak> peaks_;
-
-  Pixie::Calibration old_calibration_, new_calibration_;
-
-  void loadSettings();
-  void saveSettings();
-  void plot_derivs(UtilXY&);
+  void plot_derivs(Gamma::Fitter&);
 };
 
 #endif // FORM_CALIBRATION_H

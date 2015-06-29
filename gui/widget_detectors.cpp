@@ -30,7 +30,7 @@
 #include "spectra_set.h"
 #include <boost/algorithm/string.hpp>
 
-DialogDetector::DialogDetector(Pixie::Detector mydet, QDir rd, bool editName, QWidget *parent) :
+DialogDetector::DialogDetector(Gamma::Detector mydet, QDir rd, bool editName, QWidget *parent) :
   root_dir_(rd),
   my_detector_(mydet),
   table_model_(my_detector_.energy_calibrations_),
@@ -86,7 +86,7 @@ DialogDetector::~DialogDetector()
 }
 
 void DialogDetector::updateDisplay() {
-  if (my_detector_.name_ != Pixie::Detector().name_)
+  if (my_detector_.name_ != Gamma::Detector().name_)
     ui->lineName->setText(QString::fromStdString(my_detector_.name_));
   else
     ui->lineName->clear();
@@ -112,7 +112,7 @@ void DialogDetector::on_comboType_currentIndexChanged(const QString &arg1)
 
 void DialogDetector::on_buttonBox_accepted()
 {
-  if (my_detector_.name_ == Pixie::Detector().name_) {
+  if (my_detector_.name_ == Gamma::Detector().name_) {
     QMessageBox msgBox;
     msgBox.setText("Please give it a proper name");
     msgBox.exec();
@@ -148,9 +148,9 @@ void DialogDetector::on_pushRead1D_clicked()
 
   Pixie::Spectrum::Spectrum* newSpectrum = Pixie::Spectrum::Factory::getInstance().create_from_file(fileName.toStdString());
   if (newSpectrum != nullptr) {
-    std::vector<Pixie::Detector> dets = newSpectrum->get_detectors();
+    std::vector<Gamma::Detector> dets = newSpectrum->get_detectors();
     for (auto &q : dets)
-      if (q != Pixie::Detector()) {
+      if (q != Gamma::Detector()) {
         PL_INFO << "Looking at calibrations from detector " << q.name_;
         for (auto &p : q.energy_calibrations_.my_data_) {
           if (p.bits_) {
@@ -345,7 +345,7 @@ WidgetDetectors::WidgetDetectors(QWidget *parent) :
           this, SLOT(selection_changed(QItemSelection,QItemSelection)));
 }
 
-void WidgetDetectors::setData(XMLableDB<Pixie::Detector> &newdb, QString outdir) {
+void WidgetDetectors::setData(XMLableDB<Gamma::Detector> &newdb, QString outdir) {
   table_model_.setDB(newdb);
   detectors_ = &newdb;
   root_dir_  = outdir;
@@ -383,8 +383,8 @@ void WidgetDetectors::toggle_push() {
 
 void WidgetDetectors::on_pushNew_clicked()
 {
-  DialogDetector* newDet = new DialogDetector(Pixie::Detector(), QDir(root_dir_), true, this);
-  connect(newDet, SIGNAL(newDetReady(Pixie::Detector)), this, SLOT(addNewDet(Pixie::Detector)));
+  DialogDetector* newDet = new DialogDetector(Gamma::Detector(), QDir(root_dir_), true, this);
+  connect(newDet, SIGNAL(newDetReady(Gamma::Detector)), this, SLOT(addNewDet(Gamma::Detector)));
   newDet->exec();
 }
 
@@ -396,7 +396,7 @@ void WidgetDetectors::on_pushEdit_clicked()
   int i = ixl.front().row();
 
   DialogDetector* newDet = new DialogDetector(detectors_->get(i), QDir(root_dir_), false, this);
-  connect(newDet, SIGNAL(newDetReady(Pixie::Detector)), this, SLOT(addNewDet(Pixie::Detector)));
+  connect(newDet, SIGNAL(newDetReady(Gamma::Detector)), this, SLOT(addNewDet(Gamma::Detector)));
   newDet->exec();
 }
 
@@ -439,7 +439,7 @@ void WidgetDetectors::on_pushExport_clicked()
   }
 }
 
-void WidgetDetectors::addNewDet(Pixie::Detector newDetector) {
+void WidgetDetectors::addNewDet(Gamma::Detector newDetector) {
   detectors_->add(newDetector);
   detectors_->replace(newDetector);
   selection_model_.reset();

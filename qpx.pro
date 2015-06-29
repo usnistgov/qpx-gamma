@@ -97,7 +97,10 @@ win32 {
 	   }	
 
 
-INCLUDEPATH += pixiecpp gui \
+INCLUDEPATH += engine \
+               math \
+               pixiecpp \
+               gui \
                PLX/Include \
                dependencies \
                dependencies/XIA \
@@ -118,7 +121,9 @@ SOURCES += $$files(dependencies/*.cpp) \
            $$files(dependencies/fityk/swig/*.cpp) \
            $$files(dependencies/fityk/cmpfit/*.c) \
            $$files(pixiecpp/*.cpp) \
-           $$files(gui/*.cpp)
+           $$files(gui/*.cpp) \
+           $$files(engine/*.cpp) \
+           $$files(math/*.cpp)
 
 HEADERS  += $$files(dependencies/*.h) \
             $$files(dependencies/XIA/*.h) \
@@ -129,7 +134,9 @@ HEADERS  += $$files(dependencies/*.h) \
             $$files(dependencies/fityk/*.cpp) \
             $$files(PLX/Include/*.h) \
             $$files(pixiecpp/*.h) \
-            $$files(gui/*.h)
+            $$files(gui/*.h) \
+            $$files(engine/*.h) \
+            $$files(math/*.h)
 
 FORMS   += $$files(forms/*.ui)
 

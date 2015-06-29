@@ -57,7 +57,7 @@ public slots:
 
 signals:
   void marker_set(Marker n);
-  void requestCalibration(QString);
+  void requestAnalysis(QString);
 
 private slots:
   void on_comboResolution_currentIndexChanged(int index);
@@ -71,7 +71,7 @@ private slots:
 
   void on_pushFullInfo_clicked();
 
-  void on_pushCalibrate_clicked();
+  void on_pushAnalyse_clicked();
 
 
   void on_pushShowAll_clicked();
@@ -83,7 +83,7 @@ private:
   Ui::FormPlot1D *ui;
 
   int bits;
-  Pixie::Calibration calib_;
+  Gamma::Calibration calib_;
 
   Pixie::SpectraSet *mySpectra;
 

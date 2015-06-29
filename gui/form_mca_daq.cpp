@@ -27,13 +27,13 @@
 #include "custom_logger.h"
 #include "custom_timer.h"
 
-FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixie::Detector>& detectors, QWidget *parent) :
+FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   settings_(settings),
   spectra_templates_("SpectrumTemplates"),
   interruptor_(false),
   spectra_(),
-  my_calib_(nullptr),
+  my_analysis_(nullptr),
   runner_thread_(thread),
   plot_thread_(spectra_),
   detectors_(detectors),
@@ -60,7 +60,7 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixi
 
   //1d
   ui->Plot1d->setSpectra(spectra_);
-  connect(ui->Plot1d, SIGNAL(requestCalibration(QString)), this, SLOT(reqCalib(QString)));
+  connect(ui->Plot1d, SIGNAL(requestAnalysis(QString)), this, SLOT(reqAnal(QString)));
   connect(&plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
 
   //2d
@@ -89,6 +89,10 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
     }
   }
 
+  if (my_analysis_ != nullptr) {
+    my_analysis_->close(); //assume always successful
+  }
+
   if (!spectra_.empty()) {
     int reply = QMessageBox::warning(this, "Spectra still open",
                                      "Discard?",
@@ -99,10 +103,6 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
       event->ignore();
       return;
     }
-  }
-
-  if (my_calib_ != nullptr) {
-    my_calib_->close(); //assume always successful
   }
 
   spectra_.terminate();
@@ -374,7 +374,7 @@ void FormMcaDaq::on_pushMcaClear_clicked()
 void FormMcaDaq::updateSpectraUI() {
   ui->Plot2d->setSpectra(spectra_);
   ui->Plot1d->setSpectra(spectra_);
-//  ui->formCalibration->clear();
+//  ui->formGamma::Calibration->clear();
 }
 
 void FormMcaDaq::on_pushMcaStop_clicked()
@@ -400,19 +400,18 @@ void FormMcaDaq::on_pushEditSpectra_clicked()
   newDialog->exec();
 }
 
-void FormMcaDaq::reqCalib(QString name) {
-  if (my_calib_ == nullptr) {
-    my_calib_ = new FormCalibration(settings_);
-    connect(&plot_thread_, SIGNAL(plot_ready()), my_calib_, SLOT(update_spectrum()));
-    connect(my_calib_, SIGNAL(destroyed()), this, SLOT(calib_destroyed()));
+void FormMcaDaq::reqAnal(QString name) {
+  if (my_analysis_ == nullptr) {
+    my_analysis_ = new FormAnalysis1D(settings_, detectors_);
+    connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_, SLOT(update_spectrum()));
+    connect(my_analysis_, SIGNAL(destroyed()), this, SLOT(analysis_destroyed()));
   }
-  my_calib_->setData(detectors_);
-  my_calib_->setSpectrum(&spectra_, name);
-  emit requestCalibration(my_calib_);
+  my_analysis_->setSpectrum(&spectra_, name);
+  emit requestAnalysis(my_analysis_);
 }
 
-void FormMcaDaq::calib_destroyed() {
-  my_calib_ = nullptr;
+void FormMcaDaq::analysis_destroyed() {
+  my_analysis_ = nullptr;
 }
 
 void FormMcaDaq::replot() {

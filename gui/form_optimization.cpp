@@ -27,7 +27,7 @@
 #include "fityk.h"
 #include "qt_util.h"
 
-FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XMLableDB<Pixie::Detector>& detectors, QWidget *parent) :
+FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormOptimization),
   opt_runner_thread_(thread),
@@ -254,7 +254,7 @@ void FormOptimization::do_run()
 
   current_spectra_.clear();
   current_spectra_.set_spectra(db);
-  peaks_.push_back(Peak());
+  peaks_.push_back(Gamma::Peak());
   spectra_y_.push_back(std::vector<double>());
   spectra_app_.push_back(0);
 
@@ -313,7 +313,7 @@ bool FormOptimization::find_peaks() {
 
     PL_DBG << "<Optimization> Looking for peak on [" << xmin << ", " << xmax << "]";
 
-    UtilXY finder_opt(x, y_opt, xmin, xmax, ui->spinMovAvg->value());
+    Gamma::Fitter finder_opt(x, y_opt, xmin, xmax, ui->spinMovAvg->value());
     finder_opt.find_peaks(ui->spinMinPeakWidth->value());
     if (finder_opt.peaks_.size())
       peaks_[peaks_.size() - 1] = finder_opt.peaks_[0];
@@ -381,7 +381,7 @@ void FormOptimization::update_plots() {
         this_color.setAlpha(255);
 
         if (x.size() == spectra_y_[i].size()) {
-          UtilXY spectrum_data_(x, spectra_y_[i], ui->spinMovAvg->value());
+          Gamma::Fitter spectrum_data_(x, spectra_y_[i], ui->spinMovAvg->value());
           spectrum_data_.find_prelim();
           spectrum_data_.filter_prelim(ui->spinMinPeakWidth->value());
 
@@ -428,7 +428,7 @@ void FormOptimization::update_plots() {
   resultChosen();
 }
 
-void FormOptimization::plot_derivs(UtilXY &data)
+void FormOptimization::plot_derivs(Gamma::Fitter &data)
 {
   QVector<double> temp_y, temp_x;
   int was = 0, is = 0;
@@ -500,10 +500,10 @@ void FormOptimization::replot_markers() {
 void FormOptimization::on_pushSaveOpti_clicked()
 {
   pixie_.settings().save_optimization();
-  std::vector<Pixie::Detector> dets = pixie_.settings().get_detectors();
+  std::vector<Gamma::Detector> dets = pixie_.settings().get_detectors();
   for (auto &q : dets) {
     if (detectors_.has_a(q)) {
-      Pixie::Detector modified = detectors_.get(q);
+      Gamma::Detector modified = detectors_.get(q);
       modified.setting_values_ = q.setting_values_;
       detectors_.replace(modified);
     }
@@ -530,7 +530,7 @@ void FormOptimization::resultChosen() {
         ui->plot3->set_cursors(std::list<Marker>({cursor}));
 
         ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_), AppearanceProfile());
-        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_fullfit_), gaussian_);
+        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_fullfit_pseudovoigt_), gaussian_);
         ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_baseline_), baseline_);
       }
   }

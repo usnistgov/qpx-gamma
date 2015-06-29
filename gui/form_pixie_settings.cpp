@@ -24,7 +24,7 @@
 #include "ui_form_pixie_settings.h"
 #include "widget_detectors.h"
 
-FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Pixie::Detector>& detectors, QSettings& settings, QWidget *parent) :
+FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Gamma::Detector>& detectors, QSettings& settings, QWidget *parent) :
   QWidget(parent),
   runner_thread_(thread),
   detectors_(detectors),
@@ -73,7 +73,7 @@ void FormPixieSettings::apply_settings() {
   pixie_.settings().set_mod("FILTER_RANGE", ui->comboFilterSamples->currentData().toDouble());
   pixie_.settings().set_mod("ACTUAL_COINCIDENCE_WAIT", ui->boxCoincWait->value());
   for (int i =0; i < Pixie::kNumChans; i++)
-    pixie_.settings().set_detector(Pixie::Channel(i), detectors_.get(Pixie::Detector(default_detectors_[i])));
+    pixie_.settings().set_detector(Pixie::Channel(i), detectors_.get(Gamma::Detector(default_detectors_[i])));
 }
 
 void FormPixieSettings::closeEvent(QCloseEvent *event) {
@@ -119,7 +119,7 @@ void FormPixieSettings::loadSettings() {
 
 void FormPixieSettings::saveSettings() {
   pixie_.settings().save_optimization();
-  std::vector<Pixie::Detector> dets = pixie_.settings().get_detectors();
+  std::vector<Gamma::Detector> dets = pixie_.settings().get_detectors();
   for (int i=0; i < detectors_.size(); ++i) {
     for (auto &q : dets)
       if (q.shallow_equals(detectors_.get(i)))
@@ -141,10 +141,10 @@ void FormPixieSettings::saveSettings() {
 }
 
 void FormPixieSettings::updateDetChoices() {
-  std::vector<Pixie::Detector> dets = pixie_.settings().get_detectors();
+  std::vector<Gamma::Detector> dets = pixie_.settings().get_detectors();
   bool all_empty = true;
   for (auto &q : dets)
-    if (!q.shallow_equals(Pixie::Detector()))
+    if (!q.shallow_equals(Gamma::Detector()))
       all_empty = false;
   if (all_empty)
     return;
