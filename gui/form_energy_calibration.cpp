@@ -37,9 +37,7 @@ FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Gamm
   ui->setupUi(this);
 
   loadSettings();
-
-  others_have_det_ = false;
-  DB_has_detector_ = false;
+  bits_ = 0;
 
   ui->PlotCalib->set_scale_type("Linear");
   ui->PlotCalib->showButtonColorThemes(false);
@@ -65,8 +63,6 @@ FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Gamm
 
   ui->isotopes->show();
   connect(ui->isotopes, SIGNAL(energiesSelected()), this, SLOT(isotope_energies_chosen()));
-
-  //connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
 }
 
 FormEnergyCalibration::~FormEnergyCalibration()
@@ -74,16 +70,13 @@ FormEnergyCalibration::~FormEnergyCalibration()
   delete ui;
 }
 
-void FormEnergyCalibration::closeEvent(QCloseEvent *event) {
-  if (!ui->isotopes->save_close()) {
-    event->ignore();
-    return;
+bool FormEnergyCalibration::save_close() {
+  if (ui->isotopes->save_close()) {
+    saveSettings();
+    return true;
   }
-
-  //clear();
-
-  saveSettings();
-  event->accept();
+  else
+    return false;
 }
 
 void FormEnergyCalibration::loadSettings() {
@@ -109,58 +102,34 @@ void FormEnergyCalibration::saveSettings() {
   settings_.endGroup();
 }
 
-/*void FormEnergyCalibration::setData(XMLableDB<Gamma::Detector>& newDetDB) {
-  detectors_ = &newDetDB;
-  if (detectors_ && detectors_.has_a(detector_))
-    DB_has_detector_ = true;
-  toggle_radio();
-}*/
-
 void FormEnergyCalibration::clear() {
   my_markers_.clear();
-  spectrum_name_.clear();
+  bits_ = 0;
   new_calibration_ = Gamma::Calibration();
   old_calibration_ = Gamma::Calibration();
   detector_ = Gamma::Detector();
   selection_model_.reset();
   marker_table_.update();
   toggle_push();
-  others_have_det_ = false;
-  DB_has_detector_ = false;
-  toggle_radio();
-
+  ui->PlotCalib->setFloatingText("");
+  ui->pushApplyCalib->setEnabled(false);
   ui->pushFromDB->setEnabled(false);
 }
 
-
-void FormEnergyCalibration::setSpectrum(Pixie::Spectrum::Spectrum *spectrum) {
-  clear();
-  ui->PlotCalib->clearGraphs();
-  ui->PlotCalib->redraw();
-  spectrum_ = spectrum;
-
-  if (spectrum_) {
-    spectrum_name_ = QString::fromStdString(spectrum_->name());
-
-    int bits = spectrum->bits();
-    old_calibration_ = new_calibration_ = Gamma::Calibration(bits);
-    for (std::size_t i=0; i < spectrum->add_pattern().size(); i++) {
-      if (spectrum->add_pattern()[i] == 1) {
-        detector_ = spectrum->get_detectors()[i];
-        if (detector_.energy_calibrations_.has_a(Gamma::Calibration(bits))) {
-          new_calibration_ = old_calibration_ = detector_.energy_calibrations_.get(Gamma::Calibration(bits));
-          PL_INFO << "<Energy calibration> Existing energy calibration drawn from detector \"" << detector_.name_ << "\"";
-        } else
-          PL_INFO << "<Energy calibration> No existing calibration for this resolution";
-      }
-    }
-  }
+void FormEnergyCalibration::setData(Gamma::Calibration nrg_calib, uint16_t bits) {
+  bits_ = bits;
+  new_calibration_ = old_calibration_ = nrg_calib;
+  if (detectors_.has_a(detector_) && detectors_.get(detector_).energy_calibrations_.has_a(old_calibration_))
+    ui->pushFromDB->setEnabled(true);
+  else
+    ui->pushFromDB->setEnabled(false);
+  replot_markers();
 }
 
 void FormEnergyCalibration::update_peaks(std::vector<Gamma::Peak> pks) {
   my_markers_.clear();
   for (auto &q : pks)
-    my_markers_[q.gaussian_.center_] = old_calibration_.transform(q.gaussian_.center_);
+    my_markers_[q.center] = q.energy;
 
   selection_model_.reset();
   marker_table_.update();
@@ -264,37 +233,6 @@ void FormEnergyCalibration::toggle_push() {
   } else {
     ui->pushFit->setEnabled(false);
   }
-
-  if (detectors_.has_a(detector_) && detectors_.get(detector_).energy_calibrations_.has_a(old_calibration_))
-    ui->pushFromDB->setEnabled(true);
-  else
-    ui->pushFromDB->setEnabled(false);
-}
-
-void FormEnergyCalibration::set_conditions(bool others_have_det, bool DB_has_detector) {
-  bool others_have_det_ = others_have_det;
-  bool DB_has_detector_ = DB_has_detector;
-  toggle_radio();
-}
-
-void FormEnergyCalibration::toggle_radio() {
-  Polynomial thispoly(new_calibration_.coefficients_);
-  ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(thispoly.to_UTF8()) + " Rsq=" + QString::number(thispoly.rsq));
-
-  ui->pushApplyCalib->setEnabled(false);
-  ui->comboApplyTo->clear();
-
-  if (!new_calibration_.shallow_equals(Gamma::Calibration()) && !detector_.shallow_equals(Gamma::Detector())) {
-    if (others_have_det_)
-      ui->comboApplyTo->addItem(QString::fromStdString(detector_.name_) + " on all open spectra", QVariant::fromValue((int)Gamma::CalibApplyTo::DetOnAllOpen));
-    if (spectrum_) {
-      ui->comboApplyTo->addItem("all detectors on " + spectrum_name_, QVariant::fromValue((int)Gamma::CalibApplyTo::AllDetsOnCurrentSpec));
-      ui->comboApplyTo->addItem(QString::fromStdString(detector_.name_) + " on " + spectrum_name_, QVariant::fromValue((int)Gamma::CalibApplyTo::DetOnCurrentSpec));
-    }
-    if (DB_has_detector_)
-      ui->comboApplyTo->addItem(QString::fromStdString(detector_.name_) + " in detector database", QVariant::fromValue((int)Gamma::CalibApplyTo::DetInDB));
-  }
-
 }
 
 void FormEnergyCalibration::on_pushFit_clicked()
@@ -312,12 +250,16 @@ void FormEnergyCalibration::on_pushFit_clicked()
   Polynomial p = Polynomial(x, y, ui->spinTerms->value());
 
   if (p.coeffs_.size()) {
+    new_calibration_.type_ = "Energy";
+    new_calibration_.bits_ = bits_;
     new_calibration_.coefficients_ = p.coeffs_;
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "keV";
     new_calibration_.model_ = Gamma::CalibrationModel::polynomial;
     PL_INFO << "<Energy calibration> New calibration coefficients = " << new_calibration_.coef_to_string();
-    toggle_radio();
+    Polynomial thispoly(new_calibration_.coefficients_);
+    ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(thispoly.to_UTF8()) + " Rsq=" + QString::number(thispoly.rsq));
+    ui->pushApplyCalib->setEnabled(new_calibration_ != old_calibration_);
   }
   else
     PL_INFO << "<Energy calibration> Gamma::Calibration failed";
@@ -334,40 +276,7 @@ void FormEnergyCalibration::isotope_energies_chosen() {
 
 void FormEnergyCalibration::on_pushApplyCalib_clicked()
 {
-  PL_INFO << "<Gamma::Calibration> Applying calibration";
-  /*
-  if ((ui->comboApplyTo->currentData() == (int)CalibApplyTo::DetInDB) && detectors_.has_a(detector_)) {
-    Gamma::Detector modified = detectors_.get(detector_);
-    if (modified.energy_calibrations_.has_a(new_calibration_))
-      modified.energy_calibrations_.replace(new_calibration_);
-    else
-      modified.energy_calibrations_.add(new_calibration_);
-    detectors_.replace(modified);
-    emit detectorsChanged();
-  } else {
-    for (auto &q : spectra_->spectra()) {
-      if (q == nullptr)
-        continue;
-      bool is_selected_spectrum = (q->name() == spectrum_name_.toStdString());
-      if ((ui->comboApplyTo->currentData() == (int)CalibApplyTo::DetOnAllOpen) || is_selected_spectrum) {
-        std::vector<Gamma::Detector> detectors = q->get_detectors();
-        for (auto &p : detectors) {
-          if ((is_selected_spectrum && (ui->comboApplyTo->currentData() == (int)CalibApplyTo::AllDetsOnCurrentSpec)) ||
-              (is_selected_spectrum && (ui->comboApplyTo->currentData() == (int)CalibApplyTo::DetOnCurrentSpec) && p.shallow_equals(detector_)) ||
-              ((ui->comboApplyTo->currentData() == (int)CalibApplyTo::DetOnAllOpen) && p.shallow_equals(detector_))) {
-            PL_INFO << "   applying new calibration for " << detector_.name_ << " on " << q->name();
-            if (p.energy_calibrations_.has_a(new_calibration_))
-              p.energy_calibrations_.replace(new_calibration_);
-            else
-              p.energy_calibrations_.add(new_calibration_);
-          }
-        }
-        q->set_detectors(detectors);
-      }
-      emit calibrationComplete();
-    }
-  }*/
-
+  emit update_detector(ui->checkToSpectra->isChecked(), ui->checkToDB->isChecked());
 }
 
 void FormEnergyCalibration::on_pushFromDB_clicked()

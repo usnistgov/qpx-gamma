@@ -21,13 +21,11 @@
  ******************************************************************************/
 
 #ifndef POLYNOMIAL_H
-#define POLYMOMIAL_H
+#define POLYNOMIAL_H
 
 #include <vector>
 #include <iostream>
 #include <numeric>
-
-std::string to_str_precision(double, uint16_t);
 
 std::string to_str_precision(double, uint16_t);
 
@@ -47,6 +45,8 @@ public:
   std::string to_string();
   std::string to_UTF8();
   std::string to_markup();
+  std::string coef_to_string() const;
+  void coef_from_string(std::string);
 
   double evaluate(double x);
   std::vector<double> evaluate_array(std::vector<double> x);

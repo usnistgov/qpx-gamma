@@ -215,7 +215,7 @@ void qpx::update_settings() {
 
 void qpx::analyze_1d(FormAnalysis1D* formAnal) {
   if (ui->qpxTabs->indexOf(formAnal) == -1) {
-    ui->qpxTabs->addTab(formAnal, "Analysis 1D");
+    ui->qpxTabs->addTab(formAnal, formAnal->windowTitle());
     connect(formAnal, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
   }
   ui->qpxTabs->setCurrentWidget(formAnal);

@@ -53,13 +53,13 @@ signals:
 
 public slots:
   void update_spectrum();
+  void update_detector(bool in_spectra, bool in_DB);
 
 private slots:
 
   void update_peaks();
   void update_peak_choice();
   void update_peak_choice(std::set<double>);
-  void toggle_radio();
   void detectorsUpdated() {emit detectorsChanged();}
 
 protected:
@@ -72,8 +72,7 @@ private:
   FormEnergyCalibration *my_energy_calibration_;
   FormFwhmCalibration *my_fwhm_calibration_;
 
-  bool others_have_det_;
-  bool DB_has_detector_;
+  Gamma::Calibration nrg_calibration_, fwhm_calibration_;
 
   //from parent
   QString data_directory_;

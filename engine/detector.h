@@ -29,47 +29,9 @@
 #include <string>
 #include <boost/date_time.hpp>
 #include "xmlable.h"
+#include "calibration.h"
 
 namespace Gamma {
-
-enum class CalibApplyTo : int {DetOnAllOpen = 0, DetOnCurrentSpec = 1, AllDetsOnCurrentSpec = 2, DetInDB = 3};
-
-enum class CalibrationModel : int {none = 0, polynomial = 1};
-
-class Calibration : public XMLable {
- public:
-  Calibration();
-  Calibration(uint16_t bits): Calibration() {bits_ = bits;}
-  void to_xml(tinyxml2::XMLPrinter&) const;
-  void from_xml(tinyxml2::XMLElement*);
-  std::string xml_element_name() const override {return "Calibration";}
-
-  bool shallow_equals(const Calibration& other) const {return (bits_ == other.bits_);}
-  bool operator!= (const Calibration& other) const {return !operator==(other);}
-  bool operator== (const Calibration& other) const {
-    if (calib_date_ != other.calib_date_) return false;
-    if (type_ != other.type_) return false;
-    if (units_ != other.units_) return false;
-    if (model_ != other.model_) return false;
-    if (coefficients_ != other.coefficients_) return false;
-    if (bits_ != other.bits_) return false;
-    return true;
-  }
-  
-  double transform(double) const;
-  double transform(double, uint16_t) const;
-  std::vector<double> transform(std::vector<double>) const;
-  std::string coef_to_string() const;
-  void coef_from_string(std::string);
-
-  boost::posix_time::ptime calib_date_;
-  std::string type_, units_;
-  uint16_t bits_;
-  CalibrationModel model_;
-  std::vector<double> coefficients_;
- private:
-  double polynomial(double) const;
-};
 
 class Detector : public XMLable {
  public:

@@ -66,6 +66,7 @@ class SpectraSet {
   RunInfo runInfo() const {
     boost::unique_lock<boost::mutex> lock(mutex_); return run_info_;
   }
+  void setRunInfo(const RunInfo &);
   
   //get spectra -- may not be thread-safe
   Spectrum::Spectrum* by_name(std::string name);

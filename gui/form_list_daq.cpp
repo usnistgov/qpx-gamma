@@ -301,7 +301,7 @@ void TableListData::eat_list(Pixie::ListData* stuff) {
         if (q.bits_ > hi_res)
           hi_res = q.bits_;
       }
-      calibrations_[i] = thisdet.energy_calibrations_.get(Gamma::Calibration(hi_res));
+      calibrations_[i] = thisdet.energy_calibrations_.get(Gamma::Calibration("Energy", hi_res));
     }
   }
 }

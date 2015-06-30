@@ -36,8 +36,7 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
 
   loadSettings();
 
-  others_have_det_ = false;
-  DB_has_detector_ = false;
+  bits_ = 0;
 
   calib_point.default_pen = QPen(Qt::darkCyan, 7);
   calib_selected.default_pen = QPen(Qt::darkRed, 7);
@@ -63,8 +62,6 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
 
   connect(ui->tableFWHM, SIGNAL(itemSelectionChanged()),
           this, SLOT(selection_changed()));
-
-  //connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
 }
 
 FormFwhmCalibration::~FormFwhmCalibration()
@@ -72,11 +69,9 @@ FormFwhmCalibration::~FormFwhmCalibration()
   delete ui;
 }
 
-void FormFwhmCalibration::closeEvent(QCloseEvent *event) {
-  //clear();
-
+bool FormFwhmCalibration::save_close() {
   saveSettings();
-  event->accept();
+  return true;
 }
 
 void FormFwhmCalibration::loadSettings() {
@@ -99,64 +94,26 @@ void FormFwhmCalibration::saveSettings() {
   settings_.endGroup();
 }
 
-/*void FormFwhmCalibration::setData(XMLableDB<Gamma::Detector>& newDetDB) {
-  detectors_ = &newDetDB;
-  if (detectors_ && detectors_.has_a(detector_))
-    DB_has_detector_ = true;
-  toggle_radio();
-}*/
-
 void FormFwhmCalibration::clear() {
-  spectrum_name_.clear();
   detector_ = Gamma::Detector();
   peaks_.clear();
+  bits_ = 0;
   ui->tableFWHM->clearContents();
   toggle_push();
-  others_have_det_ = false;
-  DB_has_detector_ = false;
-  toggle_radio();
+  ui->PlotCalib->setFloatingText("");
+  ui->pushApplyCalib->setEnabled(false);
 
   ui->pushFromDB->setEnabled(false);
 }
 
-
-void FormFwhmCalibration::setSpectrum(Pixie::Spectrum::Spectrum *spectrum) {
-  clear();
-  ui->PlotCalib->clearGraphs();
-  ui->PlotCalib->redraw();
-
-  spectrum_ = spectrum;
-
-  if (spectrum_) {
-    spectrum_name_ = QString::fromStdString(spectrum_->name());
-
-    int bits = spectrum->bits();
-    nrg_calibration_ = Gamma::Calibration(bits);
-    for (std::size_t i=0; i < spectrum->add_pattern().size(); i++) {
-      if (spectrum->add_pattern()[i] == 1) {
-        detector_ = spectrum->get_detectors()[i];
-        if (detector_.energy_calibrations_.has_a(Gamma::Calibration(bits))) {
-          nrg_calibration_ = detector_.energy_calibrations_.get(Gamma::Calibration(bits));
-          PL_INFO << "<WFHM calibration> Energy calibration drawn from detector \"" << detector_.name_ << "\"";
-        } else
-          PL_INFO << "<WFHM calibration> No existing energy calibration for this resolution";
-      }
-    }
-
-    new_fwhm_calibration_ = old_fwhm_calibration_ = Gamma::Calibration(bits);
-    for (std::size_t i=0; i < spectrum->add_pattern().size(); i++) {
-      if (spectrum->add_pattern()[i] == 1) {
-        detector_ = spectrum->get_detectors()[i];
-        if (detector_.fwhm_calibrations_.has_a(Gamma::Calibration(bits))) {
-          new_fwhm_calibration_ = old_fwhm_calibration_ = detector_.fwhm_calibrations_.get(Gamma::Calibration(bits));
-          PL_INFO << "<WFHM calibration> Existing FWHM calibration drawn from detector \"" << detector_.name_ << "\"";
-        } else
-          PL_INFO << "<WFHM calibration> No existing FWHM calibration for this resolution";
-      }
-    }
-
-
-  }
+void FormFwhmCalibration::setData(Gamma::Calibration fwhm_calib, uint16_t bits) {
+  bits_ = bits;
+  new_fwhm_calibration_ = old_fwhm_calibration_ = fwhm_calib;
+  if (detectors_.has_a(detector_) && detectors_.get(detector_).fwhm_calibrations_.has_a(old_fwhm_calibration_))
+    ui->pushFromDB->setEnabled(true);
+  else
+    ui->pushFromDB->setEnabled(false);
+  replot_markers();
 
 }
 
@@ -184,16 +141,17 @@ void FormFwhmCalibration::replot_markers() {
 
   QVector<double> xx, yy;
 
-  double xmin = 0, xmax = 0;
+  double xmin = std::numeric_limits<double>::max();
+  double xmax = - std::numeric_limits<double>::max();
   std::map<double, double> minima, maxima;
 
   if (peaks_.size()) {
-    xmax = xmin = nrg_calibration_.transform(peaks_[0].gaussian_.center_);
+    xmax = xmin = peaks_[0].energy;
   }
 
   for (auto &q : peaks_) {
-    double x = nrg_calibration_.transform(q.gaussian_.center_);
-    double y = nrg_calibration_.transform(q.pseudovoigt_.hwhm_l + q.pseudovoigt_.hwhm_r);
+    double x = q.energy;
+    double y = q.fwhm_pseudovoigt;
 
     xx.push_back(x);
     yy.push_back(y);
@@ -209,18 +167,18 @@ void FormFwhmCalibration::replot_markers() {
       xmax = x;
   }
 
-  double x_margin = (xmax -xmin) / 8;
+  double x_margin = (xmax - xmin) / 8;
   xmax += x_margin;
   xmin -= x_margin;
 
-  if (xx.size()) {
+  if (xx.size() > 0) {
     ui->PlotCalib->addPoints(xx, yy, calib_point, QCPScatterStyle::ssSquare);
-    if ((new_fwhm_calibration_ != Gamma::Calibration()) && (new_fwhm_calibration_.units_ == "keV")) {
-      PL_INFO << "<WFHM calibration> Will plot calibration curve";
+    if ((new_fwhm_calibration_.coefficients_ != Gamma::Calibration().coefficients_) && (new_fwhm_calibration_.units_ == "keV")) {
 
-
-      double step = xmax-xmin;
+      double step = (xmax-xmin) / 50.0;
       xx.clear(); yy.clear();
+
+      PL_INFO << "<WFHM calibration> Will plot calibration curve on " << xmin << " - " << xmax << " step " << step;
 
       for (double x=xmin; x <= xmax; x+=step) {
         double y = new_fwhm_calibration_.transform(x);
@@ -241,10 +199,9 @@ void FormFwhmCalibration::replot_markers() {
     xx.clear(); yy.clear();
     std::set<double> chosen;
     foreach (QModelIndex idx, ui->tableFWHM->selectionModel()->selectedRows()) {
-      double chan = peaks_[idx.row()].gaussian_.center_;
-      //double nrg = marker_table_.data(nrg_ix, Qt::DisplayRole).toDouble();
-      xx.push_back(nrg_calibration_.transform(chan));
-      yy.push_back(nrg_calibration_.transform(peaks_[idx.row()].pseudovoigt_.hwhm_l + peaks_[idx.row()].pseudovoigt_.hwhm_r));
+      double chan = peaks_[idx.row()].center;
+      xx.push_back(peaks_[idx.row()].energy);
+      yy.push_back(peaks_[idx.row()].fwhm_pseudovoigt);
       chosen.insert(chan);
     }
     ui->PlotCalib->addPoints(xx, yy, calib_selected, QCPScatterStyle::ssCrossSquare);
@@ -279,58 +236,32 @@ void FormFwhmCalibration::toggle_push() {
   } else {
     ui->pushFit->setEnabled(false);
   }
-
-  if (detectors_.has_a(detector_) && detectors_.get(detector_).fwhm_calibrations_.has_a(old_fwhm_calibration_))
-    ui->pushFromDB->setEnabled(true);
-  else
-    ui->pushFromDB->setEnabled(false);
-}
-
-void FormFwhmCalibration::set_conditions(bool others_have_det, bool DB_has_detector) {
-  bool others_have_det_ = others_have_det;
-  bool DB_has_detector_ = DB_has_detector;
-  toggle_radio();
-}
-
-void FormFwhmCalibration::toggle_radio() {
-  //Polynomial thispoly(new_calibration_.coefficients_);
-  //ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(thispoly.to_UTF8()) + " Rsq=" + QString::number(thispoly.rsq));
-
-  ui->pushApplyCalib->setEnabled(false);
-  ui->comboApplyTo->clear();
-
-/*  if (!new_calibration_.shallow_equals(Gamma::Calibration()) && !detector_.shallow_equals(Gamma::Detector())) {
-    if (others_have_det_)
-      ui->comboApplyTo->addItem(QString::fromStdString(detector_.name_) + " on all open spectra", QVariant::fromValue((int)CalibApplyTo::DetOnAllOpen));
-    if (spectrum_) {
-      ui->comboApplyTo->addItem("all detectors on " + spectrum_name_, QVariant::fromValue((int)CalibApplyTo::AllDetsOnCurrentSpec));
-      ui->comboApplyTo->addItem(QString::fromStdString(detector_.name_) + " on " + spectrum_name_, QVariant::fromValue((int)CalibApplyTo::DetOnCurrentSpec));
-    }
-    if (DB_has_detector_)
-      ui->comboApplyTo->addItem(QString::fromStdString(detector_.name_) + " in detector database", QVariant::fromValue((int)CalibApplyTo::DetInDB));
-  }*/
-
 }
 
 void FormFwhmCalibration::on_pushFit_clicked()
 {  
   std::vector<double> xx, yy;
+  xx.resize(peaks_.size());
+  yy.resize(peaks_.size());
+  int i=0;
   for (auto &q : peaks_) {
-    double x = nrg_calibration_.transform(q.gaussian_.center_);
-    double y = nrg_calibration_.transform(q.pseudovoigt_.hwhm_l + q.pseudovoigt_.hwhm_r);
-    xx.push_back(x);
-    yy.push_back(y);
+    xx[i] = q.energy;
+    yy[i] = q.fwhm_pseudovoigt;
+    i++;
   }
 
   Polynomial p = Polynomial(xx, yy, ui->spinTerms->value());
 
   if (p.coeffs_.size()) {
+    new_fwhm_calibration_.type_ = "FWHM";
+    new_fwhm_calibration_.bits_ = bits_;
     new_fwhm_calibration_.coefficients_ = p.coeffs_;
     new_fwhm_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_fwhm_calibration_.units_ = "keV";
     new_fwhm_calibration_.model_ = Gamma::CalibrationModel::polynomial;
     PL_INFO << "<WFHM calibration> New calibration coefficients = " << new_fwhm_calibration_.coef_to_string();
-    toggle_radio();
+    ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(p.to_UTF8()) + " Rsq=" + QString::number(p.rsq));
+    ui->pushApplyCalib->setEnabled(new_fwhm_calibration_ != old_fwhm_calibration_);
   }
   else
     PL_INFO << "<WFHM calibration> Gamma::Calibration failed";
@@ -341,46 +272,13 @@ void FormFwhmCalibration::on_pushFit_clicked()
 
 void FormFwhmCalibration::on_pushApplyCalib_clicked()
 {
-  PL_INFO << "<WFHM calibration> Applying calibration";
-/*
-  if ((ui->comboApplyTo->currentData() == (int)CalibApplyTo::DetInDB) && detectors_.has_a(detector_)) {
-    Gamma::Detector modified = detectors_.get(detector_);
-    if (modified.energy_calibrations_.has_a(new_calibration_))
-      modified.energy_calibrations_.replace(new_calibration_);
-    else
-      modified.energy_calibrations_.add(new_calibration_);
-    detectors_.replace(modified);
-    emit detectorsChanged();
-  } else {
-    for (auto &q : spectra_->spectra()) {
-      if (q == nullptr)
-        continue;
-      bool is_selected_spectrum = (q->name() == spectrum_name_.toStdString());
-      if ((ui->comboApplyTo->currentData() == (int)CalibApplyTo::DetOnAllOpen) || is_selected_spectrum) {
-        std::vector<Gamma::Detector> detectors = q->get_detectors();
-        for (auto &p : detectors) {
-          if ((is_selected_spectrum && (ui->comboApplyTo->currentData() == (int)CalibApplyTo::AllDetsOnCurrentSpec)) ||
-              (is_selected_spectrum && (ui->comboApplyTo->currentData() == (int)CalibApplyTo::DetOnCurrentSpec) && p.shallow_equals(detector_)) ||
-              ((ui->comboApplyTo->currentData() == (int)CalibApplyTo::DetOnAllOpen) && p.shallow_equals(detector_))) {
-            PL_INFO << "   applying new calibration for " << detector_.name_ << " on " << q->name();
-            if (p.energy_calibrations_.has_a(new_calibration_))
-              p.energy_calibrations_.replace(new_calibration_);
-            else
-              p.energy_calibrations_.add(new_calibration_);
-          }
-        }
-        q->set_detectors(detectors);
-      }
-      emit calibrationComplete();
-    }
-  }*/
-
+  emit update_detector(ui->checkToSpectra->isChecked(), ui->checkToDB->isChecked());
 }
 
 void FormFwhmCalibration::on_pushFromDB_clicked()
 {
   Gamma::Detector newdet = detectors_.get(detector_);
-  new_fwhm_calibration_ = newdet.energy_calibrations_.get(old_fwhm_calibration_);
+  new_fwhm_calibration_ = newdet.fwhm_calibrations_.get(old_fwhm_calibration_);
 }
 
 void FormFwhmCalibration::on_pushDetDB_clicked()

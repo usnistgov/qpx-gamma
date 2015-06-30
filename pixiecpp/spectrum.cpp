@@ -183,8 +183,8 @@ void Spectrum::recalc_energies() {
       energies_[calib_chan].resize(resolution_, 0.0);
       //      PL_DBG << "spectrum " << name_ << " using calibration for " << detectors_[phys_chan].name_;
       Gamma::Calibration this_calib;
-      if (detectors_[phys_chan].energy_calibrations_.has_a(Gamma::Calibration(bits_)))
-        this_calib = detectors_[phys_chan].energy_calibrations_.get(Gamma::Calibration(bits_));
+      if (detectors_[phys_chan].energy_calibrations_.has_a(Gamma::Calibration("Energy", bits_)))
+        this_calib = detectors_[phys_chan].energy_calibrations_.get(Gamma::Calibration("Energy", bits_));
       for (uint32_t j=0; j<resolution_; j++)
         energies_[calib_chan][j] = this_calib.transform(j);
       calib_chan++;

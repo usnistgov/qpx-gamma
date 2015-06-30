@@ -247,9 +247,9 @@ bool Spectrum2D:: read_esc(std::string name) {
 
   detectors_.resize(kNumChans);
   detectors_[0].name_ = "default";
-  detectors_[0].energy_calibrations_.add(Gamma::Calibration(bits_));
+  detectors_[0].energy_calibrations_.add(Gamma::Calibration("Energy", bits_));
   detectors_[1].name_ = "default";
-  detectors_[1].energy_calibrations_.add(Gamma::Calibration(bits_));
+  detectors_[1].energy_calibrations_.add(Gamma::Calibration("Energy", bits_));
   
   init_from_file(name);
 }
@@ -277,9 +277,9 @@ bool Spectrum2D:: read_spn(std::string name) {
 
   detectors_.resize(kNumChans);
   detectors_[0].name_ = "default";
-  detectors_[0].energy_calibrations_.add(Gamma::Calibration(bits_));
+  detectors_[0].energy_calibrations_.add(Gamma::Calibration("Energy", bits_));
   detectors_[1].name_ = "default";
-  detectors_[1].energy_calibrations_.add(Gamma::Calibration(bits_));
+  detectors_[1].energy_calibrations_.add(Gamma::Calibration("Energy", bits_));
   
   init_from_file(name);
 }

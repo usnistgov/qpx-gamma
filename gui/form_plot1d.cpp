@@ -155,8 +155,8 @@ void FormPlot1D::update_plot() {
 
       Gamma::Detector detector = q->get_detector(0);
       Gamma::Calibration temp_calib;
-      if (detector.energy_calibrations_.has_a(Gamma::Calibration(bits)))
-        temp_calib = detector.energy_calibrations_.get(Gamma::Calibration(bits));
+      if (detector.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
+        temp_calib = detector.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
       else
         temp_calib = detector.highest_res_calib();
       if (temp_calib.bits_)

@@ -134,12 +134,12 @@ void FormPeaks::setSpectrum(Pixie::Spectrum::Spectrum *newspectrum) {
 
   if (spectrum_ && spectrum_->resolution()) {
     int bits = spectrum_->bits();
-    calibration_ = Gamma::Calibration(bits);
+    calibration_ = Gamma::Calibration("Energy", bits);
     for (std::size_t i=0; i < spectrum_->add_pattern().size(); i++) {
       if (spectrum_->add_pattern()[i] == 1) {
         detector_ = spectrum_->get_detectors()[i];
-        if (detector_.energy_calibrations_.has_a(Gamma::Calibration(bits))) {
-          calibration_ = detector_.energy_calibrations_.get(Gamma::Calibration(bits));
+        if (detector_.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits))) {
+          calibration_ = detector_.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
           PL_INFO << "<Peak finder> Energy calibration drawn from detector \"" << detector_.name_ << "\" with coefs = " << calibration_.coef_to_string();
         } else
           PL_INFO << "<Peak finder> No existing energy calibration for this resolution";
@@ -287,8 +287,8 @@ void FormPeaks::replot_markers() {
   for (auto &q : peaks_) {
     Marker m = list;
     m.selected = false;
-    m.channel = q.gaussian_.center_;
-    m.energy = calibration_.transform(m.channel);
+    m.channel = q.center;
+    m.energy = q.energy;
     m.chan_valid = true;
     m.energy_valid = (m.channel != m.energy);
 
@@ -319,7 +319,7 @@ void FormPeaks::on_pushAdd_clicked()
   std::vector<double> baseline = spectrum_data_.make_baseline(range_.l.channel, range_.r.channel, 3);
   Gamma::Peak newpeak = Gamma::Peak(std::vector<double>(spectrum_data_.x_.begin() + range_.l.channel, spectrum_data_.x_.begin() + range_.r.channel + 1),
                       std::vector<double>(spectrum_data_.y_.begin() + range_.l.channel, spectrum_data_.y_.begin() + range_.r.channel + 1),
-                      baseline);
+                      baseline, calibration_);
 
   if (newpeak.gaussian_.height_ > 0) {
     peaks_.push_back(newpeak);
@@ -372,7 +372,7 @@ void FormPeaks::on_pushFindPeaks_clicked()
   this->setCursor(Qt::WaitCursor);
 
   selected_peaks_.clear();
-  spectrum_data_.find_peaks(ui->spinMinPeakWidth->value());
+  spectrum_data_.find_peaks(ui->spinMinPeakWidth->value(), calibration_);
   peaks_ = spectrum_data_.peaks_;
 
   toggle_push();

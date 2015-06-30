@@ -61,8 +61,8 @@ struct Marker {
   }
 
   void calibrate(Gamma::Detector det) {
-    if (det.energy_calibrations_.has_a(Gamma::Calibration(bits))) {
-      energy = det.energy_calibrations_.get(Gamma::Calibration(bits)).transform(channel);
+    if (det.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits))) {
+      energy = det.energy_calibrations_.get(Gamma::Calibration("Energy", bits)).transform(channel);
       energy_valid = true;
     } // else highest?
   }

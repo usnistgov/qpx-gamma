@@ -231,21 +231,21 @@ void FormPlot2D::update_plot() {
         }
 
         Gamma::Detector detector_x_ = some_spectrum->get_detector(0);
-        if (detector_x_.energy_calibrations_.has_a(Gamma::Calibration(bits)))
-          calib_x_ = detector_x_.energy_calibrations_.get(Gamma::Calibration(bits));
+        if (detector_x_.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
+          calib_x_ = detector_x_.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
         else
           calib_x_ = detector_x_.highest_res_calib();
-        colorMap->keyAxis()->setLabel(QString::fromStdString(detector_x_.name_) + " (" + QString::fromStdString(calib_x_.units_) + ")");
+        colorMap->keyAxis()->setLabel(/*QString::fromStdString(detector_x_.name_) + */ "Energy (" + QString::fromStdString(calib_x_.units_) + ")");
         ui->labelCoDet1->setText(QString::fromStdString(detector_x_.name_) + "(" + QString::fromStdString(calib_x_.units_) + "):");
         if (!calib_x_.bits_)
           calib_x_.bits_ = bits;
 
         Gamma::Detector detector_y_ = some_spectrum->get_detector(1);
-        if (detector_y_.energy_calibrations_.has_a(Gamma::Calibration(bits)))
-          calib_y_ = detector_y_.energy_calibrations_.get(Gamma::Calibration(bits));
+        if (detector_y_.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
+          calib_y_ = detector_y_.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
         else
           calib_y_ = detector_y_.highest_res_calib();
-        colorMap->valueAxis()->setLabel(QString::fromStdString(detector_y_.name_) + " (" + QString::fromStdString(calib_y_.units_) + ")");
+        colorMap->valueAxis()->setLabel(/*QString::fromStdString(detector_y_.name_) + */ "Energy (" + QString::fromStdString(calib_y_.units_) + ")");
         ui->labelCoDet2->setText(QString::fromStdString(detector_y_.name_) + "(" + QString::fromStdString(calib_y_.units_) + "):");
         if (!calib_y_.bits_)
           calib_y_.bits_ = bits;
@@ -384,6 +384,12 @@ void FormPlot2D::on_pushColorScale_clicked()
     colorMap->setGradient(gradients_[current_gradient_]);
     colorMap->setDataScaleType(scale_types_[current_scale_type_]);
     colorMap->rescaleDataRange(true);
+
+    colorScale->axis()->setScaleLogBase(10);
+    colorScale->axis()->setNumberFormat("gbc");
+    colorScale->axis()->setNumberPrecision(0);
+    colorScale->axis()->setRangeLower(1);
+
 
     ui->coincPlot->replot();
     ui->coincPlot->updateGeometry();

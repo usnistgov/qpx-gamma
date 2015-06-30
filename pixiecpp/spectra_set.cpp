@@ -79,6 +79,13 @@ bool SpectraSet::new_data() {
   return ret;  
 }
 
+void SpectraSet::setRunInfo(const RunInfo &ri) {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  run_info_ = ri;
+  //notify?
+}
+
+
 bool SpectraSet::empty() const {
   boost::unique_lock<boost::mutex> lock(mutex_);
   return my_spectra_.empty();  

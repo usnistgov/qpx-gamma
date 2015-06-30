@@ -406,6 +406,7 @@ void FormMcaDaq::reqAnal(QString name) {
     connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_, SLOT(update_spectrum()));
     connect(my_analysis_, SIGNAL(destroyed()), this, SLOT(analysis_destroyed()));
   }
+  my_analysis_->setWindowTitle("Analysis1");
   my_analysis_->setSpectrum(&spectra_, name);
   emit requestAnalysis(my_analysis_);
 }

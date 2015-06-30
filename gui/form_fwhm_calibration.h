@@ -44,16 +44,20 @@ public:
   explicit FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
   ~FormFwhmCalibration();
 
-  void setSpectrum(Pixie::Spectrum::Spectrum *);
+  void setData(Gamma::Calibration fwhm_calib, uint16_t bits);
+
   void update_peaks(std::vector<Gamma::Peak>);
   void update_peak_selection(std::set<double>);
+  Gamma::Calibration get_new_calibration() {return new_fwhm_calibration_;}
 
   void clear();
+  bool save_close();
+
 
 signals:
-  void calibrationComplete();
   void detectorsChanged();
   void peaks_chosen(std::set<double>);
+  void update_detector(bool, bool);
 
 private slots:
 
@@ -63,17 +67,12 @@ private slots:
   void toggle_push();
   void on_pushApplyCalib_clicked();
 
-  void toggle_radio();
-  void set_conditions(bool, bool);
   void detectorsUpdated() {emit detectorsChanged();}
 
   void on_pushFit_clicked();
   void on_pushFromDB_clicked();
   void on_pushDetDB_clicked();
 
-
-protected:
-  void closeEvent(QCloseEvent*);
 
 private:
   Ui::FormFwhmCalibration *ui;
@@ -89,13 +88,10 @@ private:
   Gamma::Detector detector_;
 
   std::vector<Gamma::Peak> peaks_;
-  Gamma::Calibration nrg_calibration_;
+  uint16_t bits_;
   Gamma::Calibration old_fwhm_calibration_, new_fwhm_calibration_;
 
   AppearanceProfile calib_point, calib_line, calib_selected;
-
-  bool others_have_det_;
-  bool DB_has_detector_;
 
   void loadSettings();
   void saveSettings();

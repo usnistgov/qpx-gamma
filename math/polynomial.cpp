@@ -26,7 +26,7 @@
 #include <sstream>
 #include <iomanip>
 #include <numeric>
-
+#include <boost/algorithm/string.hpp>
 #include "fityk.h"
 #include "custom_logger.h"
 
@@ -199,4 +199,30 @@ std::string Polynomial::to_markup() {
     }
   }
   return calib_eqn;
+}
+
+std::string Polynomial::coef_to_string() const{
+  std::stringstream dss;
+  dss.str(std::string());
+  for (auto &q : coeffs_) {
+    dss << q << " ";
+  }
+  return boost::algorithm::trim_copy(dss.str());
+}
+
+void Polynomial::coef_from_string(std::string coefs) {
+  std::stringstream dss(boost::algorithm::trim_copy(coefs));
+
+  std::list<double> templist; double coef;
+  while (dss.rdbuf()->in_avail()) {
+    dss >> coef;
+    templist.push_back(coef);
+  }
+
+  coeffs_.resize(templist.size());
+  int i=0;
+  for (auto &q: templist) {
+    coeffs_[i] = q;
+    i++;
+  }
 }

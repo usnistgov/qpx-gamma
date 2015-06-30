@@ -842,7 +842,7 @@ void Settings::from_xml(tinyxml2::XMLElement* root) {
           int thisChan = boost::lexical_cast<short>(ModElement->Attribute("number"));
           tinyxml2::XMLElement* ChanElement = ModElement->FirstChildElement();
           while (ChanElement != nullptr) {
-            if (std::string(ChanElement->Name()) == "Gamma::Detector") {
+            if (std::string(ChanElement->Name()) == "Detector") {
               detectors_[thisChan].from_xml(ChanElement);
             } else if (std::string(ChanElement->Name()) == "Setting") {
               int thisKey =  boost::lexical_cast<short>(ChanElement->Attribute("key"));

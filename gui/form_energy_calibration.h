@@ -46,16 +46,20 @@ public:
   explicit FormEnergyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
   ~FormEnergyCalibration();
 
-  void setSpectrum(Pixie::Spectrum::Spectrum *);
-  void update_peaks(std::vector<Gamma::Peak>);
+  void setData(Gamma::Calibration nrg_calib, uint16_t bits);
+  bool save_close();
+
+  void update_peaks(std::vector<Gamma::Peak>);  
   void update_peak_selection(std::set<double>);
+  Gamma::Calibration get_new_calibration() {return new_calibration_;}
+
 
   void clear();
 
 signals:
-  void calibrationComplete();
   void detectorsChanged();
   void peaks_chosen(std::set<double>);
+  void update_detector(bool, bool);
 
 private slots:
 
@@ -66,8 +70,6 @@ private slots:
   void isotope_energies_chosen();
   void on_pushApplyCalib_clicked();
 
-  void toggle_radio();
-  void set_conditions(bool, bool);
   void detectorsUpdated() {emit detectorsChanged();}
 
   void on_pushFit_clicked();
@@ -76,19 +78,12 @@ private slots:
   void on_pushAllmarkers_clicked();
   void on_pushAllEnergies_clicked();
 
-
-protected:
-  void closeEvent(QCloseEvent*);
-
 private:
   Ui::FormEnergyCalibration *ui;
   QSettings &settings_;
 
   //from parent
   QString data_directory_;
-
-  Pixie::Spectrum::Spectrum *spectrum_;
-  QString spectrum_name_;
 
   XMLableDB<Gamma::Detector> &detectors_;
   Gamma::Detector detector_;
@@ -97,10 +92,8 @@ private:
   TableMarkers marker_table_;
   QItemSelectionModel selection_model_;
   QpxSpecialDelegate  special_delegate_;
+  uint16_t bits_;
   Gamma::Calibration old_calibration_, new_calibration_;
-
-  bool others_have_det_;
-  bool DB_has_detector_;
 
   void loadSettings();
   void saveSettings();

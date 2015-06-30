@@ -265,7 +265,7 @@ bool Spectrum1D::read_cnf(std::string name) {
     detectors_.resize(kNumChans);
     detectors_[0] = Gamma::Detector();
     detectors_[0].name_ = "default";
-    Gamma::Calibration new_calib(bits_);
+    Gamma::Calibration new_calib("Energy", bits_);
     new_calib.coefficients_ = calibration;
     detectors_[0].energy_calibrations_.add(new_calib);
     
@@ -400,7 +400,7 @@ bool Spectrum1D::read_n42(std::string name) {
 
     branch = root->FirstChildElement("Calibration");
     if (branch != nullptr) {
-      Gamma::Calibration newcalib(bits_);
+      Gamma::Calibration newcalib("Energy", bits_);
       newcalib.from_xml(branch);
       newdet.energy_calibrations_.add(newcalib);
     }
@@ -483,7 +483,7 @@ bool Spectrum1D::read_ava(std::string name) {
   while ((branch != nullptr) && (std::string(branch->Attribute("type")) != "energy"))
     branch = dynamic_cast<tinyxml2::XMLElement*>(branch->NextSibling());
 
-  Gamma::Detector newdet; Gamma::Calibration newcalib(bits_);
+  Gamma::Detector newdet; Gamma::Calibration newcalib("Energy", bits_);
   if ((branch != nullptr) &&
       ((branch = branch->FirstChildElement("model")) != nullptr)) {
     if (std::string(branch->Attribute("type")) == "polynomial")
@@ -540,10 +540,10 @@ void Spectrum1D::write_n42(std::string name) const {
   for (int i = 0; i < kNumChans; i++)
     if (add_pattern_[i] == 1)
       myDetector = i;
-  Gamma::Calibration myCalibration(0);
+  Gamma::Calibration myCalibration;
   if (myDetector != -1) {
-    if (detectors_[myDetector].energy_calibrations_.has_a(Gamma::Calibration(bits_)))
-      myCalibration = detectors_[myDetector].energy_calibrations_.get(Gamma::Calibration(bits_));
+    if (detectors_[myDetector].energy_calibrations_.has_a(Gamma::Calibration("Energy", bits_)))
+      myCalibration = detectors_[myDetector].energy_calibrations_.get(Gamma::Calibration("Energy", bits_));
     else if ((detectors_[myDetector].energy_calibrations_.size() == 1) &&
              (detectors_[myDetector].energy_calibrations_.get(0).units_ != "channels"))
       myCalibration = detectors_[myDetector].energy_calibrations_.get(0);
@@ -561,8 +561,8 @@ void Spectrum1D::write_n42(std::string name) const {
   printer.PushAttribute("Type","PHA");
   if ((myDetector > -1) &&
       (myCalibration.units_ != "channels")) {
-    printer.PushAttribute("Gamma::Detector", detectors_[myDetector].name_.c_str());
-    printer.OpenElement("Gamma::DetectorType");
+    printer.PushAttribute("Detector", detectors_[myDetector].name_.c_str());
+    printer.OpenElement("DetectorType");
     printer.PushText(detectors_[myDetector].type_.c_str());
     printer.CloseElement();
   }
