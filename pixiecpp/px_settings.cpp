@@ -767,7 +767,7 @@ void Settings::initialize() {
 
 }
 
-void Settings::to_xml(tinyxml2::XMLPrinter& printer) {
+void Settings::to_xml(tinyxml2::XMLPrinter& printer) const {
   printer.OpenElement("PixieSettings");
   printer.OpenElement("System");
   for (int i=0; i < N_SYSTEM_PAR; i++) {

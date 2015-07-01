@@ -56,7 +56,7 @@ public:
   void set_current_channel(Channel);
 
   //save
-  void to_xml(tinyxml2::XMLPrinter&);
+  void to_xml(tinyxml2::XMLPrinter&) const;
   
   //detectors
   std::vector<Gamma::Detector> get_detectors() const {return detectors_;}

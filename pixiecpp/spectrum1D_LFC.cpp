@@ -68,14 +68,14 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
 {
   Spectrum1D::addStats(newStats);
 
-  if (!newStats.spill_count) {
+  if (!newStats.spill_number) {
     time2_ = time1_ = newStats;
     return;
   }
 
   double d_lab_time  = (newStats.lab_time - time1_.lab_time).total_microseconds() / 1000000;
 
-  if ((d_lab_time > time_sample_) || (newStats.spill_count == time2_.spill_count)) {
+  if ((d_lab_time > time_sample_) || (newStats.spill_number == time2_.spill_number)) {
     time2_ = newStats;
     StatsUpdate diff = time2_ - time1_;
     time1_ = time2_;

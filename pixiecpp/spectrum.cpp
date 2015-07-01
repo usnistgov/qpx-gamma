@@ -94,7 +94,7 @@ bool Spectrum::validateHit(const Hit& newHit) const {
 void Spectrum::addStats(const StatsUpdate& newBlock) {
   //private; no lock required
 
-  if (newBlock.spill_count == 0)
+  if (newBlock.spill_number == 0)
     start_stats = newBlock;
   else {
     real_time_   = newBlock.lab_time - start_stats.lab_time;

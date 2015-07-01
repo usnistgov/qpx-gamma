@@ -31,7 +31,7 @@ namespace Spectrum {
 class SpectrumRaw : public Spectrum
 {
 public:
-  SpectrumRaw() : open_(false) {}
+  SpectrumRaw() : open_bin_(false), open_xml_(false), events_this_spill_(0) {}
   ~SpectrumRaw();
 
   static Template get_template() {
@@ -42,11 +42,11 @@ public:
     new_temp.description = "Custom gated list mode to file. Please provide path and name for valid and accessible file.";
 
     Setting file_setting;
-    file_setting.name = "file_name";
+    file_setting.name = "file_dir";
     file_setting.node_type = NodeType::setting;
     file_setting.setting_type = SettingType::text;
     file_setting.writable = true;
-    file_setting.description = "path and filename for outputting acquisition data";
+    file_setting.description = "path to temp output directory";
     new_temp.generic_attributes.push_back(file_setting);
 
     Setting format_setting;
@@ -64,8 +64,8 @@ public:
     hit_pattern_write.name = "with_pattern";
     hit_pattern_write.node_type = NodeType::setting;
     hit_pattern_write.setting_type = SettingType::boolean;
-    hit_pattern_write.writable = true;
-    hit_pattern_write.description = "write hit pattern before event energies";
+    hit_pattern_write.writable = false;
+    hit_pattern_write.description = "IGNORED write hit pattern before event energies";
     hit_pattern_write.value_int = 1;
     new_temp.generic_attributes.push_back(hit_pattern_write);
 
@@ -79,9 +79,6 @@ protected:
   //1D is ok with all patterns
   bool initialize() override;
 
-  void init_text();
-  void init_bin();
-
   uint64_t _get_count(std::initializer_list<uint16_t> list) const {return 0;}
   std::unique_ptr<std::list<Entry>> _get_spectrum(std::initializer_list<Pair> list);
 
@@ -90,23 +87,33 @@ protected:
   void addStats(const StatsUpdate&) override;
   void addRun(const RunInfo&) override;
 
+  bool init_text();
+  bool init_bin();
+
   void hit_text(const Hit&);
   void hit_bin(const Hit&);
 
   void stats_text(const StatsUpdate&);
-  void stats_bin(const StatsUpdate&);
+  //void stats_bin(const StatsUpdate&);
 
   void run_text(const RunInfo&);
-  void run_bin(const RunInfo&);
+  //void run_bin(const RunInfo&);
 
   std::string _channels_to_xml() const override {return "written to file";}
   uint16_t _channels_from_xml(const std::string&) override {return 0;}
 
-  std::string file_name_;
-  std::ofstream out_file_;
-  bool open_;
+  std::string file_dir_;
+  std::string file_name_bin_;
+  std::string file_name_txt_;
+
+  std::ofstream file_bin_;
+  FILE *file_xml_;
+  bool open_xml_, open_bin_;
+  tinyxml2::XMLPrinter *xml_printer_;
+
   int format_;
   bool with_hit_pattern_;
+  uint64_t events_this_spill_;
 };
 
 }}

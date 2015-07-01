@@ -70,25 +70,14 @@ struct Hit{
     trace.resize(kNumChans);
   }
 
-  boost::posix_time::time_duration to_posix_time() {
-    //converts Pixie ticks to posix duration
-    //this is not working well...
-    uint64_t result = evt_time_lo;
-    result += evt_time_hi * 65536;      //pow(2,16)
-    result += buf_time_hi * 4294967296; //pow(2,32)
-    result = result * 1000 / 75;
-    boost::posix_time::time_duration answer =
-        boost::posix_time::seconds(result / 1000000000) +
-        boost::posix_time::milliseconds((result % 1000000000) / 1000000) +
-        boost::posix_time::microseconds((result % 1000000) / 1000);
-    //        + boost::posix_time::nanoseconds(result % 1000);
-    return answer;
-  }
-  
+  boost::posix_time::time_duration to_posix_time();
+  void from_xml(tinyxml2::XMLElement*);
+  void to_xml(tinyxml2::XMLPrinter&, bool with_pattern = true) const;
 };
 
 struct StatsUpdate {
-  uint64_t spill_count;
+  uint64_t spill_number;
+  uint64_t events_in_spill;
 
   //per module
   double total_time,
@@ -102,7 +91,12 @@ struct StatsUpdate {
 
   boost::posix_time::ptime lab_time;  //timestamp at end of spill
   
-  inline StatsUpdate(): spill_count(0), total_time(0.0), event_rate(0.0) {
+  inline StatsUpdate()
+    : spill_number(0)
+    , total_time(0.0)
+    , event_rate(0.0)
+    , events_in_spill(0)
+  {
     fast_peaks.resize(kNumChans, 0.0);
     live_time.resize(kNumChans, 0.0);
     ftdt.resize(kNumChans, 0.0);
@@ -120,52 +114,10 @@ struct StatsUpdate {
     total_time = source.get_mod("TOTAL_TIME");
   }
 
-  // difference across all variables
-  // except rate wouldn't make sense
-  // and timestamp would require duration output type
-  StatsUpdate operator-(const StatsUpdate other) const {
-      StatsUpdate answer;
-      for (int i=0; i < kNumChans; i++) {
-        answer.fast_peaks[i] = fast_peaks[i] - other.fast_peaks[i];
-        answer.live_time[i]  = live_time[i] - other.live_time[i];
-        answer.ftdt[i]       = ftdt[i] - other.ftdt[i];
-        answer.sfdt[i]       = sfdt[i] - other.sfdt[i];
-      }
-      answer.total_time = total_time - other.total_time;
-      return answer;
-  }
-
-  // stacks two, adding up all variables
-  // except rate wouldn't make sense, neither does timestamp
-  StatsUpdate operator+(const StatsUpdate other) const {
-      StatsUpdate answer;
-      for (int i=0; i < kNumChans; i++) {
-        answer.fast_peaks[i] = fast_peaks[i] + other.fast_peaks[i];
-        answer.live_time[i]  = live_time[i] + other.live_time[i];
-        answer.ftdt[i]       = ftdt[i] + other.ftdt[i];
-        answer.sfdt[i]       = sfdt[i] + other.sfdt[i];
-      }
-      answer.total_time = total_time + other.total_time;
-      return answer;
-  }
-
-  friend std::ostream &operator<<(std::ostream &out, StatsUpdate d) {
-      out << "{StatsUpdate} "
-          << " lab_time="  << to_simple_string(d.lab_time)
-          << " spill_count=" << d.spill_count
-          << " total_time=" << d.total_time
-          << " event_rate=" << d.event_rate
-          << "\n";
-      for (int i=0; i < kNumChans; i++) {
-        out << "{StatsUpdate chan" << i << "} "
-            << " fast_peaks=" << d.fast_peaks[i]
-            << " live_time=" << d.live_time[i]
-            << " ftdt=" << d.ftdt[i]
-            << " sfdt=" << d.sfdt[i]
-            << "\n";
-      }
-  }
-
+  StatsUpdate operator-(const StatsUpdate) const;
+  StatsUpdate operator+(const StatsUpdate) const;
+  void from_xml(tinyxml2::XMLElement*);
+  void to_xml(tinyxml2::XMLPrinter&) const;
 };
 
 struct RunInfo {
@@ -179,16 +131,9 @@ struct RunInfo {
   }
 
   // to convert Pixie time to lab time
-  double time_scale_factor() const {
-    if (time_stop.is_not_a_date_time() ||
-        time_start.is_not_a_date_time() ||
-        (p4_state.get_mod("TOTAL_TIME") == 0.0) ||
-        (p4_state.get_mod("TOTAL_TIME") == -1))
-      return 1.0;
-    else 
-      return (time_stop - time_start).total_microseconds() /
-          (1000000 * p4_state.get_mod("TOTAL_TIME"));
-  }
+  double time_scale_factor() const;
+  void from_xml(tinyxml2::XMLElement*);
+  void to_xml(tinyxml2::XMLPrinter&, bool with_settings = true)  const;
 };
 
 

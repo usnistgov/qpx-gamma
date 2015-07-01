@@ -34,64 +34,86 @@ namespace Spectrum {
 static Registrar<SpectrumRaw> registrar("Raw");
 
 SpectrumRaw::~SpectrumRaw() {
-  if (open_)
-    out_file_.close();
+  if (open_xml_) {
+    PL_INFO << "closing xml";
+    xml_printer_->CloseElement(); //QpxListData
+    fclose(file_xml_);
+  }
+  if (open_bin_) {
+    file_bin_.close();
+  }
 }
 
 bool SpectrumRaw::initialize() {
   format_ = get_attr("format").value_int;
-  file_name_ = get_attr("file_name").value_text;
+  file_dir_ = get_attr("file_dir").value_text;
   with_hit_pattern_ = get_attr("with_pattern").value_int;
-  if (file_name_.empty())
+  if (file_dir_.empty())
     return false;
-
-  std::ios_base::openmode mode = std::ofstream::out | std::ofstream::trunc;
 
   if (format_ == 0)
-    mode = mode | std::ofstream::binary;
+    return init_bin();
+  if (format_ == 1)
+    return init_text();
+}
 
-  out_file_.open(file_name_, mode);
+bool SpectrumRaw::init_text() {
+  file_name_txt_ = file_dir_ + "/qpx_out.txt";
 
-  if (!out_file_.is_open())
+  file_xml_ = fopen(file_name_txt_.c_str(), "w");
+  if (file_xml_ == nullptr)
     return false;
 
-  if (!out_file_.good()) {
-    out_file_.close();
-    return false;
-  }
+  xml_printer_ = new tinyxml2::XMLPrinter(file_xml_);
+  xml_printer_->PushHeader(true, true);
 
-  open_ = true;
+  xml_printer_->OpenElement("QpxListData");
 
-  if (format_ == 0)
-    init_bin();
-  else if (format_ == 1)
-    init_text();
-  
+  std::stringstream ss;
+  xml_printer_->OpenElement("MatchPattern");
+  for (int i = 0; i < kNumChans; i++)
+    ss << match_pattern_[i] << " ";
+  xml_printer_->PushText(boost::algorithm::trim_copy(ss.str()).c_str());
+  xml_printer_->CloseElement();
+
+  open_xml_ = true;
   return true;
 }
 
-void SpectrumRaw::init_text() {
-  out_file_ << "Qpx list mode" << std::endl;
-  out_file_ << "Resolution " << std::to_string(bits_) << " bits" << std::endl;
+bool SpectrumRaw::init_bin() {
+  file_name_bin_ = file_dir_ + "/qpx_out.bin";
 
-  out_file_ << "Match pattern ";
-  for (int i = 0; i < kNumChans; i++)
-    out_file_ << " " << match_pattern_[i];
-  out_file_ << std::endl;
+  file_bin_.open(file_name_bin_, std::ofstream::out | std::ofstream::trunc | std::ofstream::binary);
 
-  out_file_ << "Add pattern ";
-  for (int i = 0; i < kNumChans; i++)
-    out_file_ << " " << add_pattern_[i];
-  out_file_ << std::endl;
-}
+  if (!file_bin_.is_open())
+    return false;
 
-void SpectrumRaw::init_bin() {
-  std::string header("qpx_list/Pixie-4/");
+  if (!file_bin_.good() || !init_text()) {
+    file_bin_.close();
+    return false;
+  }
+
+  xml_printer_->OpenElement("BinaryOut");
+
+  xml_printer_->OpenElement("FileName");
+  xml_printer_->PushText(file_name_bin_.c_str());
+  xml_printer_->CloseElement();
+
+  xml_printer_->OpenElement("FileFormat");
+  xml_printer_->PushText("CHANNEL_NUMBER  TIME_HI  TIME_MID  TIME_LOW  ENERGY");
+  xml_printer_->CloseElement();
+
+  xml_printer_->CloseElement();
+
+  open_bin_ = true;
+  return true;
+
+  /*  std::string header("qpx_list/Pixie-4/");
   out_file_.write(header.data(), header.size());
   if (with_hit_pattern_) {
     std::string hp("with_pattern/");
     out_file_.write(hp.data(), hp.size());
-  }
+  } */
 }
 
 std::unique_ptr<std::list<Entry>> SpectrumRaw::_get_spectrum(std::initializer_list<Pair> list) {
@@ -100,9 +122,6 @@ std::unique_ptr<std::list<Entry>> SpectrumRaw::_get_spectrum(std::initializer_li
 }
 
 void SpectrumRaw::addHit(const Hit& newHit) {
-  if ((!open_) || !out_file_.good())
-    return;
-
   if (format_ == 0)
     hit_bin(newHit);
   else if (format_ == 1)
@@ -110,97 +129,53 @@ void SpectrumRaw::addHit(const Hit& newHit) {
 }
 
 void SpectrumRaw::addStats(const StatsUpdate& stats) {
-  if ((!open_) || !out_file_.good())
-    return;
-
-  if (format_ == 0)
-    stats_bin(stats);
-  else if (format_ == 1)
+  if (format_ == 0) {
+    //override, because coincident events have been split (one for each channel)
+    StatsUpdate stats_override = stats;
+    stats_override.events_in_spill = events_this_spill_;
+    events_this_spill_ = 0;
+    stats_text(stats_override);
+  } else if (format_ == 1)
     stats_text(stats);
 }
 
 void SpectrumRaw::addRun(const RunInfo& run) {
-  if ((!open_) || !out_file_.good())
-    return;
-
-  if (format_ == 0)
-    run_bin(run);
-  else if (format_ == 1)
-    run_text(run);
+  run_text(run);
 }
 
 void SpectrumRaw::hit_text(const Hit &newHit) {
-
-  if (with_hit_pattern_) {
-    out_file_ << "p ";
-    for (int i=0; i<newHit.pattern.size(); ++i) {
-      out_file_ << newHit.pattern[i];
-    }
-    out_file_ << std::endl;
-  }
-
-  /*
-  std::string pat = newHit.pattern.to_string();
-  std::reverse(pat.begin(),pat.end());
-  out_file_ << "p " << pat << std::endl;
-  */
-
-  for (int i = 0; i < kNumChans; i++)
-    if ((add_pattern_[i]) && (newHit.pattern[i])) {
-      out_file_ << "c " << i
-                << " t " << newHit.buf_time_hi
-                << " " << newHit.evt_time_hi
-                << " " << newHit.chan_trig_time[i] //newHit.evt_time_lo
-                << " e " << newHit.energy[i];
-      out_file_ << std::endl;
-    }
+  if (!open_xml_)
+    return;
+  newHit.to_xml(*xml_printer_);
 }
 
 void SpectrumRaw::hit_bin(const Hit &newHit) {
-  std::string h("h/");
-  out_file_.write(h.c_str(), h.size());
-//  uint16_t pt = newHit.pattern.to_ulong();
-//  out_file_.write((char*)&pt, sizeof(pt));
+  if (!open_bin_)
+    return;
+  for (uint16_t i = 0; i < kNumChans; i++)
+    if (newHit.pattern[i]) {
+      file_bin_.write((char*)&i, sizeof(i));
+      file_bin_.write((char*)&newHit.buf_time_hi, sizeof(newHit.buf_time_hi));
+      file_bin_.write((char*)&newHit.evt_time_hi, sizeof(newHit.evt_time_hi));
+      file_bin_.write((char*)&newHit.chan_trig_time[i], sizeof(newHit.chan_trig_time[i]));
+      file_bin_.write((char*)&newHit.energy[i], sizeof(newHit.energy[i]));
+      events_this_spill_++;
+    }
 }
 
 void SpectrumRaw::stats_text(const StatsUpdate& stats) {
-  out_file_ << "stats at " << to_iso_extended_string(stats.lab_time)
-            << " spills " << stats.spill_count
-            << " total_time " << stats.total_time
-            << " event_rate " << stats.event_rate
-            << std::endl;
-
-  for (int i = 0; i < kNumChans; i++) {
-    out_file_ << " c " << i
-              << " fast_peaks " << stats.fast_peaks[i]
-                 << " live_time " << stats.live_time[i]
-                    << " ftdt " << stats.ftdt[i]
-                       << " sfdt " << stats.sfdt[i]
-                          << std::endl;
-  }
+  if (!open_xml_)
+    return;
+  stats.to_xml(*xml_printer_);
 }
 
-void SpectrumRaw::stats_bin(const StatsUpdate& stats) {
-  std::string s("s/");
-  out_file_.write(s.c_str(), s.size());
-  out_file_.write((char*)&stats.spill_count, sizeof(stats.spill_count));
-  std::string x("\n");
-  out_file_.write(x.c_str(), x.size());
-}
 
 void SpectrumRaw::run_text(const RunInfo& run) {
-  out_file_ << "run start at " << to_iso_extended_string(run.time_start);
-  if (run.time_start != run.time_stop)
-    out_file_ << " end at " << to_iso_extended_string(run.time_stop)
-              << " with " << run.total_events << " gross total events";
-  out_file_ << std::endl;
+  if (!open_xml_)
+    return;
+  run.to_xml(*xml_printer_);
 }
 
-void SpectrumRaw::run_bin(const RunInfo& run) {
-  std::string r("r/");
-  out_file_.write(r.c_str(), r.size());
-//  out_file_.write((char*)&run.total_events, sizeof(run.total_events));
-}
 
 
 }}
