@@ -50,11 +50,22 @@ void SpectraSet::clear() {
 void SpectraSet::clear_helper() {
   //private, no lock needed
   if (!my_spectra_.empty())
-    for (auto &q: my_spectra_)
+    for (auto &q: my_spectra_) {
+      PL_DBG << "deleting " << q->name();
       delete q;
+    }
   my_spectra_.clear();
   status_ = "empty";
   run_info_ = RunInfo();
+}
+
+void SpectraSet::closeAcquisition() {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  if (!my_spectra_.empty())
+    for (auto &q: my_spectra_) {
+      PL_DBG << "closing " << q->name();
+      q->closeAcquisition();
+    }
 }
 
 void SpectraSet::activate() {

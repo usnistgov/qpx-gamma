@@ -86,6 +86,7 @@ protected:
   void addHit(const Hit&) override;
   void addStats(const StatsUpdate&) override;
   void addRun(const RunInfo&) override;
+  void _closeAcquisition() override;
 
   bool init_text();
   bool init_bin();
@@ -113,7 +114,7 @@ protected:
 
   int format_;
   bool with_hit_pattern_;
-  uint64_t events_this_spill_;
+  uint64_t events_this_spill_, total_events_;
 };
 
 }}

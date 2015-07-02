@@ -82,6 +82,14 @@ void Spectrum::addSpill(const Spill& one_spill) {
     this->addRun(*one_spill.run);
 }
 
+void Spectrum::closeAcquisition() {
+  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+  while (!uniqueLock.try_lock())
+    boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  _closeAcquisition();
+}
+
+
 bool Spectrum::validateHit(const Hit& newHit) const {
   bool addit = true;
   for (int i = 0; i < kNumChans; i++)

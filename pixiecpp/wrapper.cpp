@@ -56,7 +56,7 @@ Hit Wrapper::getOscil() {
   if (my_settings_.live() != LiveStatus::online)
     PL_WARN << "Pixie not online";
   else if ((oscil_data = control_collect_ADC(cur_mod)) != nullptr) {
-    for (int i = 0; i < 4; i++) {     ///preset to 4 channels. Hardcoded
+    for (int i = 0; i < kNumChans; i++) {     ///preset to 4 channels. Hardcoded
       oscil_traces.trace[i].resize(max_buf_len);
       oscil_traces.trace[i] = std::vector<U16>(oscil_data + (i*max_buf_len),
                                           oscil_data + ((i+1)*max_buf_len));
@@ -488,6 +488,7 @@ void Wrapper::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
       delete one_spill->run;    
     delete one_spill;
   }
+  spectra->closeAcquisition();
 }
 
 void Wrapper::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queue,

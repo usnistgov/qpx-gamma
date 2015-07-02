@@ -51,6 +51,7 @@ class SpectraSet {
 
   //acquisition feeds events to all spectra
   void add_spill(Spill* one_spill);
+  void closeAcquisition();
 
   //status inquiry
   bool wait_ready(); //wait for cond variable

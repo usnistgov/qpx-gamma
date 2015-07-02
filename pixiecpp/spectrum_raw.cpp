@@ -34,14 +34,7 @@ namespace Spectrum {
 static Registrar<SpectrumRaw> registrar("Raw");
 
 SpectrumRaw::~SpectrumRaw() {
-  if (open_xml_) {
-    PL_INFO << "closing xml";
-    xml_printer_->CloseElement(); //QpxListData
-    fclose(file_xml_);
-  }
-  if (open_bin_) {
-    file_bin_.close();
-  }
+  _closeAcquisition();
 }
 
 bool SpectrumRaw::initialize() {
@@ -133,6 +126,7 @@ void SpectrumRaw::addStats(const StatsUpdate& stats) {
     //override, because coincident events have been split (one for each channel)
     StatsUpdate stats_override = stats;
     stats_override.events_in_spill = events_this_spill_;
+    total_events_ += events_this_spill_;
     events_this_spill_ = 0;
     stats_text(stats_override);
   } else if (format_ == 1)
@@ -140,8 +134,30 @@ void SpectrumRaw::addStats(const StatsUpdate& stats) {
 }
 
 void SpectrumRaw::addRun(const RunInfo& run) {
-  run_text(run);
+  if (format_ == 0) {
+    //override, because coincident events have been split (one for each channel)
+    RunInfo run_override = run;
+    run_override.total_events = total_events_;
+    total_events_ = 0;
+    run_text(run_override);
+  } else if (format_ == 1)
+    run_text(run);
 }
+
+void SpectrumRaw::_closeAcquisition() {
+  if (open_xml_) {
+    PL_DBG << "<SpectrumRaw> closing " << file_name_txt_ << " for " << name_;
+    xml_printer_->CloseElement(); //QpxListData
+    fclose(file_xml_);
+    open_xml_ = false;
+  }
+  if (open_bin_) {
+    PL_DBG << "<SpectrumRaw> closing " << file_name_bin_ << " for " << name_;
+    file_bin_.close();
+    open_bin_ = false;
+  }
+}
+
 
 void SpectrumRaw::hit_text(const Hit &newHit) {
   if (!open_xml_)

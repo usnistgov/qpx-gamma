@@ -98,6 +98,7 @@ public:
 
   //feed acquired data to spectrum
   void addSpill(const Spill&);
+  void closeAcquisition(); //must call this after completing
 
   ///////////////////////////////////////////////
   ///////accessors for various properties////////
@@ -152,6 +153,7 @@ protected:
   virtual void addStats(const StatsUpdate&);         //has default behavior
   virtual void addRun(const RunInfo&);               //has default behavior
   virtual bool validateHit(const Hit& newHit) const; //has default behavior
+  virtual void _closeAcquisition() {}
 
   void recalc_energies();
   Setting get_attr(std::string name) const;
