@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormFwhmCalibration -
+ *      FormFwhmCalibration - 
  *
  ******************************************************************************/
 
@@ -38,17 +38,10 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
 
   bits_ = 0;
 
-  calib_point.default_pen = QPen(Qt::darkCyan, 7);
-  calib_selected.default_pen = QPen(Qt::darkRed, 7);
-  calib_line.default_pen = QPen(Qt::blue, 0);
+  style_pts.default_pen = QPen(Qt::darkCyan, 7);
+  style_pts.themes["selected"] = QPen(Qt::darkRed, 7);
+  style_fit.default_pen = QPen(Qt::blue, 0);
 
-  ui->PlotCalib->set_scale_type("Linear");
-  ui->PlotCalib->showButtonColorThemes(false);
-  ui->PlotCalib->showButtonMarkerLabels(false);
-  ui->PlotCalib->showButtonPlotStyle(false);
-  ui->PlotCalib->showButtonScaleType(false);
-  ui->PlotCalib->setZoomable(false);
-  ui->PlotCalib->showTitle(false);
   ui->PlotCalib->setLabels("energy", "FWHM");
 
   ui->tableFWHM->verticalHeader()->hide();
@@ -60,8 +53,8 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
   ui->tableFWHM->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->tableFWHM->show();
 
-  connect(ui->tableFWHM, SIGNAL(itemSelectionChanged()),
-          this, SLOT(selection_changed()));
+  connect(ui->tableFWHM, SIGNAL(itemSelectionChanged()), this, SLOT(selection_changed_in_table()));
+  connect(ui->PlotCalib, SIGNAL(selection_changed()), this, SLOT(selection_changed_in_plot()));
 }
 
 FormFwhmCalibration::~FormFwhmCalibration()
@@ -135,15 +128,10 @@ void FormFwhmCalibration::update_peaks(std::vector<Gamma::Peak> pks) {
 }
 
 void FormFwhmCalibration::replot_markers() {
-  PL_INFO << "<WFHM calibration> Replotting markers";
-  ui->PlotCalib->clearGraphs();
-  ui->PlotCalib->reset_scales();
-
   QVector<double> xx, yy;
 
   double xmin = std::numeric_limits<double>::max();
   double xmax = - std::numeric_limits<double>::max();
-  std::map<double, double> minima, maxima;
 
   if (peaks_.size()) {
     xmax = xmin = peaks_[0].energy;
@@ -156,78 +144,75 @@ void FormFwhmCalibration::replot_markers() {
     xx.push_back(x);
     yy.push_back(y);
 
-    if (!minima.count(x) || (minima[x] > y))
-      minima[x] = y;
-    if (!maxima.count(x) || (maxima[x] < y))
-      maxima[x] = y;
-
     if (x < xmin)
       xmin = x;
     if (x > xmax)
       xmax = x;
   }
 
-  double x_margin = (xmax - xmin) / 8;
+  double x_margin = (xmax - xmin) / 10;
   xmax += x_margin;
   xmin -= x_margin;
 
   if (xx.size() > 0) {
-    ui->PlotCalib->addPoints(xx, yy, calib_point, QCPScatterStyle::ssSquare);
+    ui->PlotCalib->addPoints(xx, yy, style_pts);
     if ((new_fwhm_calibration_.coefficients_ != Gamma::Calibration().coefficients_) && (new_fwhm_calibration_.units_ == "keV")) {
 
       double step = (xmax-xmin) / 50.0;
       xx.clear(); yy.clear();
 
-      PL_INFO << "<WFHM calibration> Will plot calibration curve on " << xmin << " - " << xmax << " step " << step;
-
       for (double x=xmin; x <= xmax; x+=step) {
         double y = new_fwhm_calibration_.transform(x);
         xx.push_back(x);
         yy.push_back(y);
-
-        if (!minima.count(x) || (minima[x] > y))
-          minima[x] = y;
-        if (!maxima.count(x) || (maxima[x] < y))
-          maxima[x] = y;
       }
 
-      ui->PlotCalib->addGraph(xx, yy, calib_line);
+      ui->PlotCalib->addFit(xx, yy, style_fit);
     }
   }
 
-  if (!ui->tableFWHM->selectionModel()->selectedIndexes().empty()) {
-    xx.clear(); yy.clear();
-    std::set<double> chosen;
-    foreach (QModelIndex idx, ui->tableFWHM->selectionModel()->selectedRows()) {
-      double chan = peaks_[idx.row()].center;
-      xx.push_back(peaks_[idx.row()].energy);
-      yy.push_back(peaks_[idx.row()].fwhm_pseudovoigt);
-      chosen.insert(chan);
-    }
-    ui->PlotCalib->addPoints(xx, yy, calib_selected, QCPScatterStyle::ssCrossSquare);
-    if (isVisible())
-      emit peaks_chosen(chosen);
-  }
+  std::set<double> chosen_peaks_nrg;
 
-  ui->PlotCalib->setYBounds(minima, maxima);
-  ui->PlotCalib->rescale();
-  ui->PlotCalib->redraw();
-}
-
-void FormFwhmCalibration::update_peak_selection(std::set<double> pks) {
   ui->tableFWHM->blockSignals(true);
   ui->tableFWHM->clearSelection();
   for (int i=0; i < peaks_.size(); ++i) {
-    if (pks.count(peaks_[i].gaussian_.center_))
+    if (peaks_[i].selected) {
       ui->tableFWHM->selectRow(i);
+      chosen_peaks_nrg.insert(peaks_[i].energy);
+    }
   }
+  ui->PlotCalib->set_selected_pts(chosen_peaks_nrg);
   ui->tableFWHM->blockSignals(false);
 }
 
-void FormFwhmCalibration::selection_changed() {
+void FormFwhmCalibration::update_peak_selection(std::set<double> pks) {
+  for (int i=0; i < peaks_.size(); ++i)
+    peaks_[i].selected = (pks.count(peaks_[i].center) > 0);
   toggle_push();
   replot_markers();
+  if (isVisible())
+    emit peaks_changed(peaks_, false);
+}
 
+void FormFwhmCalibration::selection_changed_in_plot() {
+  std::set<double> chosen_peaks_nrg = ui->PlotCalib->get_selected_pts();
+  for (int i=0; i < peaks_.size(); ++i)
+    peaks_[i].selected = (chosen_peaks_nrg.count(peaks_[i].energy) > 0);
+  toggle_push();
+  replot_markers();
+  if (isVisible())
+    emit peaks_changed(peaks_, false);
+}
+
+void FormFwhmCalibration::selection_changed_in_table() {
+  for (auto &q : peaks_)
+    q.selected = false;
+  foreach (QModelIndex idx, ui->tableFWHM->selectionModel()->selectedRows())
+    peaks_[idx.row()].selected = true;
+  toggle_push();
+  replot_markers();
+  if (isVisible())
+    emit peaks_changed(peaks_, false);
 }
 
 void FormFwhmCalibration::toggle_push() {
@@ -240,6 +225,13 @@ void FormFwhmCalibration::toggle_push() {
 
 void FormFwhmCalibration::on_pushFit_clicked()
 {  
+  fit_calibration();
+  toggle_push();
+  replot_markers();
+}
+
+Polynomial FormFwhmCalibration::fit_calibration()
+{
   std::vector<double> xx, yy;
   xx.resize(peaks_.size());
   yy.resize(peaks_.size());
@@ -259,15 +251,13 @@ void FormFwhmCalibration::on_pushFit_clicked()
     new_fwhm_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_fwhm_calibration_.units_ = "keV";
     new_fwhm_calibration_.model_ = Gamma::CalibrationModel::polynomial;
-    PL_INFO << "<WFHM calibration> New calibration coefficients = " << new_fwhm_calibration_.coef_to_string();
     ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(p.to_UTF8()) + " Rsq=" + QString::number(p.rsq));
     ui->pushApplyCalib->setEnabled(new_fwhm_calibration_ != old_fwhm_calibration_);
   }
   else
     PL_INFO << "<WFHM calibration> Gamma::Calibration failed";
 
-  toggle_push();
-  replot_markers();
+  return p;
 }
 
 void FormFwhmCalibration::on_pushApplyCalib_clicked()
@@ -287,4 +277,47 @@ void FormFwhmCalibration::on_pushDetDB_clicked()
   det_widget->setData(detectors_, data_directory_);
   connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
   det_widget->exec();
+}
+
+int FormFwhmCalibration::find_outlier()
+{
+  int furthest = -1;
+  double furthest_dist = 0;
+  for (int i=0; i < peaks_.size(); ++i) {
+    double dist = std::abs(peaks_[i].fwhm_pseudovoigt - new_fwhm_calibration_.transform(peaks_[i].energy));
+    if (dist > furthest_dist) {
+      furthest_dist = dist;
+      furthest = i;
+    }
+  }
+
+  return furthest;
+}
+
+void FormFwhmCalibration::on_pushCullOne_clicked()
+{
+  int furthest = find_outlier();
+  if (furthest >= 0) {
+    peaks_.erase(peaks_.begin() + furthest);
+    update_peaks(peaks_);
+    emit peaks_changed(peaks_, true);
+  }
+}
+
+void FormFwhmCalibration::on_pushCullUntil_clicked()
+{
+  Polynomial p = fit_calibration();
+
+  while ((peaks_.size() > 0) && (p.rsq < ui->doubleRsqGoal->value())) {
+    int furthest = find_outlier();
+    if (furthest >= 0) {
+      peaks_.erase(peaks_.begin() + furthest);
+      p = fit_calibration();
+    } else
+      break;
+  }
+
+  p = fit_calibration();
+  update_peaks(peaks_);
+  emit peaks_changed(peaks_, true);
 }

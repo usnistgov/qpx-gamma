@@ -58,11 +58,9 @@ unix {
    SUSE = $$system(cat /proc/version | grep -o SUSE)
    UBUNTU = $$system(cat /proc/version | grep -o Ubuntu)
    contains( SUSE, SUSE): {
-       message(Makefile for SUSE)
        LIBS += -llua
    }
    contains( UBUNTU, Ubuntu): {
-       message(Makefile for Ubuntu)
        LIBS += -llua5.2
    }
    DEFINES += "XIA_LINUX"
@@ -131,7 +129,7 @@ HEADERS  += $$files(dependencies/*.h) \
             $$files(dependencies/qtcolorpicker/*.h) \
             $$files(dependencies/tinyxml2/*.h) \
             $$files(dependencies/xylib/*.h) \
-            $$files(dependencies/fityk/*.cpp) \
+            $$files(dependencies/fityk/*.h) \
             $$files(PLX/Include/*.h) \
             $$files(pixiecpp/*.h) \
             $$files(gui/*.h) \

@@ -147,6 +147,51 @@
          </property>
         </spacer>
        </item>
+       <item>
+        <widget class="QPushButton" name="pushCullOne">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Cull outlier</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushCullUntil">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Cull until rsq=</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QDoubleSpinBox" name="doubleRsqGoal">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximum">
+          <double>1.000000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="value">
+          <double>0.800000000000000</double>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>
@@ -285,10 +330,10 @@
       </layout>
      </item>
      <item>
-      <widget class="WidgetPlot1D" name="PlotCalib" native="true">
+      <widget class="WidgetPlotCalib" name="PlotCalib" native="true">
        <property name="minimumSize">
         <size>
-         <width>500</width>
+         <width>450</width>
          <height>200</height>
         </size>
        </property>
@@ -379,9 +424,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>WidgetPlot1D</class>
+   <class>WidgetPlotCalib</class>
    <extends>QWidget</extends>
-   <header>widget_plot1d.h</header>
+   <header>widget_plot_calib.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

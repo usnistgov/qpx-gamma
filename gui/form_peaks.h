@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormPeaks -
+ *      FormPeaks - 
  *
  ******************************************************************************/
 
@@ -49,17 +49,14 @@ public:
   void setSpectrum(Pixie::Spectrum::Spectrum *newspectrum);
   void clear();
   std::vector<Gamma::Peak> peaks();
-  std::set<double> selected_peaks();
-  void select_peaks(const std::set<double>&);
+  void set_peaks(std::vector<Gamma::Peak>, bool);
   void update_spectrum();
 
   void loadSettings(QSettings &settings_);
   void saveSettings(QSettings &settings_);
 
-
 signals:
-  void peaks_changed();
-  void peaks_selected();
+  void peaks_changed(std::vector<Gamma::Peak>, bool);
 
 private slots:
 
@@ -110,7 +107,6 @@ private:
 
 
   std::vector<Gamma::Peak> peaks_;
-  std::set<double> selected_peaks_;
 
   void plot_derivs(Gamma::Fitter&);
 };

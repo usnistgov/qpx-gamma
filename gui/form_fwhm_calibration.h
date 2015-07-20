@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormFwhmCalibration -
+ *      FormFwhmCalibration - 
  *
  ******************************************************************************/
 
@@ -56,23 +56,23 @@ public:
 
 signals:
   void detectorsChanged();
-  void peaks_chosen(std::set<double>);
+  void peaks_changed(std::vector<Gamma::Peak>, bool);
   void update_detector(bool, bool);
 
 private slots:
-
+  void selection_changed_in_table();
+  void selection_changed_in_plot();
 
   void replot_markers();
-  void selection_changed();
   void toggle_push();
-  void on_pushApplyCalib_clicked();
-
   void detectorsUpdated() {emit detectorsChanged();}
 
+  void on_pushApplyCalib_clicked();
   void on_pushFit_clicked();
   void on_pushFromDB_clicked();
   void on_pushDetDB_clicked();
-
+  void on_pushCullOne_clicked();
+  void on_pushCullUntil_clicked();
 
 private:
   Ui::FormFwhmCalibration *ui;
@@ -88,13 +88,16 @@ private:
   Gamma::Detector detector_;
 
   std::vector<Gamma::Peak> peaks_;
+
   uint16_t bits_;
   Gamma::Calibration old_fwhm_calibration_, new_fwhm_calibration_;
 
-  AppearanceProfile calib_point, calib_line, calib_selected;
+  AppearanceProfile style_pts, style_fit;
 
   void loadSettings();
   void saveSettings();
+  Polynomial fit_calibration();
+  int find_outlier();
 };
 
 #endif // FORM_CALIBRATION_H

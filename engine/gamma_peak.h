@@ -39,6 +39,7 @@ public:
     , height(0)
     , fwhm_gaussian (0)
     , fwhm_pseudovoigt (0)
+    , selected (false)
   {}
 
   Peak(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline, Calibration cali = Calibration());
@@ -48,6 +49,7 @@ public:
   SplitPseudoVoigt pseudovoigt_;
 
   double center, energy, height, fwhm_gaussian, fwhm_pseudovoigt;
+  bool selected;
 
   static bool by_centroid_gaussian (const Peak& a, const Peak& b)
   {

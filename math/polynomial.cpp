@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Polynomial
+ *      Polynomial - 
  *
  ******************************************************************************/
 
@@ -123,9 +123,7 @@ void Polynomial::fit(std::vector<double> &x, std::vector<double> &y,
       ss << q;
       coeffs_[q] = lastfn->get_param_value("a" + ss.str());
     }
-    double rsqq = f->get_rsquared(0);
-    PL_DBG << "rsquared=" << rsqq;
-    rsq = rsqq;
+    rsq = f->get_rsquared(0);
   }
 
   delete f;

@@ -285,7 +285,7 @@
       </layout>
      </item>
      <item>
-      <widget class="WidgetPlot1D" name="PlotCalib" native="true">
+      <widget class="WidgetPlotCalib" name="PlotCalib" native="true">
        <property name="minimumSize">
         <size>
          <width>0</width>
@@ -367,7 +367,7 @@
              </property>
              <property name="minimumSize">
               <size>
-               <width>200</width>
+               <width>180</width>
                <height>150</height>
               </size>
              </property>
@@ -469,15 +469,15 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>WidgetPlot1D</class>
-   <extends>QWidget</extends>
-   <header>widget_plot1d.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>WidgetIsotopes</class>
    <extends>QWidget</extends>
    <header>widget_isotopes.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>WidgetPlotCalib</class>
+   <extends>QWidget</extends>
+   <header>widget_plot_calib.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

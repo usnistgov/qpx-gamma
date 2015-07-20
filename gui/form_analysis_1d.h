@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormAnalysis1D -
+ *      FormAnalysis1D - 
  *
  ******************************************************************************/
 
@@ -57,9 +57,9 @@ public slots:
 
 private slots:
 
-  void update_peaks();
-  void update_peak_choice();
-  void update_peak_choice(std::set<double>);
+  void update_peaks(std::vector<Gamma::Peak>,bool);
+  void update_peaks_from_fwhm(std::vector<Gamma::Peak>, bool);
+  void update_peaks_from_nrg(std::vector<Gamma::Peak>, bool);
   void detectorsUpdated() {emit detectorsChanged();}
 
 protected:

@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormEnergyCalibration -
+ *      FormEnergyCalibration - 
  *
  ******************************************************************************/
 
@@ -58,14 +58,14 @@ public:
 
 signals:
   void detectorsChanged();
-  void peaks_chosen(std::set<double>);
+  void peaks_changed(std::vector<Gamma::Peak>, bool);
   void update_detector(bool, bool);
 
 private slots:
-
+  void selection_changed_in_table(QItemSelection, QItemSelection);
+  void selection_changed_in_plot();
 
   void replot_markers();
-  void selection_changed(QItemSelection, QItemSelection);
   void toggle_push();
   void isotope_energies_chosen();
   void on_pushApplyCalib_clicked();
@@ -88,12 +88,16 @@ private:
   XMLableDB<Gamma::Detector> &detectors_;
   Gamma::Detector detector_;
 
+  std::vector<Gamma::Peak> peaks_;
   std::map<double, double> my_markers_; //channel, energy
+
   TableMarkers marker_table_;
   QItemSelectionModel selection_model_;
   QpxSpecialDelegate  special_delegate_;
   uint16_t bits_;
   Gamma::Calibration old_calibration_, new_calibration_;
+
+  AppearanceProfile style_fit, style_pts;
 
   void loadSettings();
   void saveSettings();

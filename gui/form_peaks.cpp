@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormPeaks -
+ *      FormPeaks - 
  *
  ******************************************************************************/
 
@@ -113,7 +113,6 @@ void FormPeaks::saveSettings(QSettings &settings_) {
 
 void FormPeaks::clear() {
   peaks_.clear();
-  selected_peaks_.clear();
   calibration_ = Gamma::Calibration();
   detector_ = Gamma::Detector();
   spectrum_data_ = Gamma::Fitter();
@@ -286,14 +285,14 @@ void FormPeaks::replot_markers() {
 
   for (auto &q : peaks_) {
     Marker m = list;
-    m.selected = false;
     m.channel = q.center;
     m.energy = q.energy;
     m.chan_valid = true;
     m.energy_valid = (m.channel != m.energy);
 
-    if (selected_peaks_.count(m.channel) == 1)
-      m.selected = true;
+    //if (selected_peaks_.count(m.channel) == 1)
+    //  m.selected = true;
+    m.selected = q.selected;
     markers.push_back(m);
   }
 
@@ -302,14 +301,6 @@ void FormPeaks::replot_markers() {
   ui->plot1D->replot_markers();
   ui->plot1D->redraw();
 }
-
-void FormPeaks::select_peaks(const std::set<double>& pks) {
-  selected_peaks_ = pks;
-
-  toggle_push();
-  replot_markers();
-}
-
 
 void FormPeaks::on_pushAdd_clicked()
 {
@@ -327,32 +318,42 @@ void FormPeaks::on_pushAdd_clicked()
     removeMovingMarker(0);
     toggle_push();
     replot_all();
-    emit peaks_changed();
+    emit peaks_changed(peaks_, true);
   }
 }
 
 void FormPeaks::user_selected_peaks() {
-  selected_peaks_ = ui->plot1D->get_selected_markers();
-  emit peaks_selected();
+  std::set<double> chosen_peaks = ui->plot1D->get_selected_markers();
+  for (int i=0; i < peaks_.size(); ++i)
+    peaks_[i].selected = (chosen_peaks.count(peaks_[i].center) > 0);
+  toggle_push();
+  replot_markers();
+  if (isVisible())
+    emit peaks_changed(peaks_, false);
 }
 
 std::vector<Gamma::Peak> FormPeaks::peaks() {
   return peaks_;
 }
 
-std::set<double> FormPeaks::selected_peaks() {
-  return selected_peaks_;
-}
-
 
 void FormPeaks::toggle_push() {
+  bool sel = false;
+  for (auto &q : peaks_)
+    if (q.selected)
+      sel = true;
   ui->pushAdd->setEnabled(range_.visible);
-  ui->pushMarkerRemove->setEnabled(selected_peaks_.size() > 0);
+  ui->pushMarkerRemove->setEnabled(sel);
 }
 
 void FormPeaks::on_pushMarkerRemove_clicked()
 {
-  for (auto &q : selected_peaks_) {
+  std::set<double> chosen_peaks;
+  for (auto &q : peaks_)
+    if (q.selected)
+      chosen_peaks.insert(q.center);
+
+  for (auto &q : chosen_peaks) {
     for (int i=0; i < peaks_.size(); ++i) {
       if (peaks_[i].gaussian_.center_ == q) {
         peaks_.erase(peaks_.begin() + i);
@@ -361,24 +362,22 @@ void FormPeaks::on_pushMarkerRemove_clicked()
     }
   }
 
-  selected_peaks_.clear();
   toggle_push();
   replot_all();
-  emit peaks_changed();
+  emit peaks_changed(peaks_, true);
 }
 
 void FormPeaks::on_pushFindPeaks_clicked()
 {
   this->setCursor(Qt::WaitCursor);
 
-  selected_peaks_.clear();
   spectrum_data_.find_peaks(ui->spinMinPeakWidth->value(), calibration_);
   peaks_ = spectrum_data_.peaks_;
 
   toggle_push();
   replot_all();
 
-  emit peaks_changed();
+  emit peaks_changed(peaks_, true);
   this->setCursor(Qt::ArrowCursor);
 }
 
@@ -474,3 +473,12 @@ void FormPeaks::range_moved() {
   toggle_push();
   replot_markers();
 }
+
+void FormPeaks::set_peaks(std::vector<Gamma::Peak> pks, bool content_changed) {
+  peaks_ = pks;
+  if (content_changed)
+    replot_all();
+  else
+    replot_markers();
+}
+

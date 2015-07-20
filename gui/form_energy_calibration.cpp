@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormEnergyCalibration -
+ *      FormEnergyCalibration - 
  *
  ******************************************************************************/
 
@@ -39,13 +39,10 @@ FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Gamm
   loadSettings();
   bits_ = 0;
 
-  ui->PlotCalib->set_scale_type("Linear");
-  ui->PlotCalib->showButtonColorThemes(false);
-  ui->PlotCalib->showButtonMarkerLabels(false);
-  ui->PlotCalib->showButtonPlotStyle(false);
-  ui->PlotCalib->showButtonScaleType(false);
-  ui->PlotCalib->setZoomable(false);
-  ui->PlotCalib->showTitle(false);
+  style_fit.default_pen = QPen(Qt::blue, 0);
+  style_pts.default_pen = QPen(Qt::darkBlue, 7);
+  style_pts.themes["selected"] = QPen(Qt::darkRed, 7);
+
   ui->PlotCalib->setLabels("channel", "energy");
 
   ui->tableMarkers->setModel(&marker_table_);
@@ -58,8 +55,9 @@ FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Gamm
   ui->tableMarkers->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->tableMarkers->show();
 
-  connect(&selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-          this, SLOT(selection_changed(QItemSelection,QItemSelection)));
+  connect(&selection_model_, SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+          this, SLOT(selection_changed_in_table(QItemSelection, QItemSelection)));
+  connect(ui->PlotCalib, SIGNAL(selection_changed()), this, SLOT(selection_changed_in_plot()));
 
   ui->isotopes->show();
   connect(ui->isotopes, SIGNAL(energiesSelected()), this, SLOT(isotope_energies_chosen()));
@@ -103,6 +101,7 @@ void FormEnergyCalibration::saveSettings() {
 }
 
 void FormEnergyCalibration::clear() {
+  peaks_.clear();
   my_markers_.clear();
   bits_ = 0;
   new_calibration_ = Gamma::Calibration();
@@ -127,6 +126,7 @@ void FormEnergyCalibration::setData(Gamma::Calibration nrg_calib, uint16_t bits)
 }
 
 void FormEnergyCalibration::update_peaks(std::vector<Gamma::Peak> pks) {
+  peaks_ = pks;
   my_markers_.clear();
   for (auto &q : pks)
     my_markers_[q.center] = q.energy;
@@ -138,82 +138,92 @@ void FormEnergyCalibration::update_peaks(std::vector<Gamma::Peak> pks) {
 }
 
 void FormEnergyCalibration::replot_markers() {
-  ui->PlotCalib->clearGraphs();
 
-  QVector<double> xx, yy, ycab;
+  QVector<double> xx, yy;
+
+  double xmin = std::numeric_limits<double>::max();
+  double xmax = - std::numeric_limits<double>::max();
+
+  if (peaks_.size()) {
+    xmax = xmin = peaks_[0].energy;
+  }
 
   for (auto &q : my_markers_) {
-    xx.push_back(q.first);
-    yy.push_back(q.second);
+    double x = q.first;
+    double y = q.second;
+
+    xx.push_back(x);
+    yy.push_back(y);
+
+    if (x < xmin)
+      xmin = x;
+    if (x > xmax)
+      xmax = x;
   }
+
+  double x_margin = (xmax - xmin) / 10;
+  xmax += x_margin;
+  xmin -= x_margin;
 
   if (xx.size()) {
-    AppearanceProfile pt;
-    pt.default_pen = QPen(Qt::darkBlue, 7);
-
-    ui->PlotCalib->reset_scales();
-    ui->PlotCalib->addPoints(xx, yy, pt, QCPScatterStyle::ssDiamond);
+    ui->PlotCalib->addPoints(xx, yy, style_pts);
     if (new_calibration_.units_ != "channels") {
-      double min = xx[0], max = xx[0];
-      for (auto &q : xx) {
-        if (q < min)
-          min = q;
-        if (q > max)
-          max = q;
-      }
 
-      max = max + abs(min*2);
-      min = min - abs(min*2);
-      double step = (max-min) / 50.0;
-      //expand axes to this even if there is no fit
+      double step = (xmax-xmin) / 50.0;
+      xx.clear(); yy.clear();
 
-      xx.clear();
-      for (double i=min; i <= max; i+=step) {
+      for (double i=xmin; i <= xmax; i+=step) {
         xx.push_back(i);
-        ycab.push_back(new_calibration_.transform(i));
+        yy.push_back(new_calibration_.transform(i));
       }
-      AppearanceProfile ln;
-      ln.default_pen = QPen(Qt::blue, 2);
-
-      ui->PlotCalib->addGraph(xx, ycab, ln);
+      ui->PlotCalib->addFit(xx, yy, style_fit);
     }
-    ui->PlotCalib->rescale();
-  }
-  ui->PlotCalib->redraw();
-
-  if (!selection_model_.selectedIndexes().empty()) {
-    std::set<double> chosen;
-    foreach (QModelIndex idx, selection_model_.selectedRows()) {
-      QModelIndex chan_ix = marker_table_.index(idx.row(), 0);
-      QModelIndex nrg_ix = marker_table_.index(idx.row(), 1);
-      double chan = marker_table_.data(chan_ix, Qt::DisplayRole).toDouble();
-      //double nrg = marker_table_.data(nrg_ix, Qt::DisplayRole).toDouble();
-      chosen.insert(chan);
-    }
-
-    if (isVisible())
-      emit peaks_chosen(chosen);
   }
 
+  std::set<double> chosen_peaks_chan;
+
+  selection_model_.blockSignals(true);
+  ui->tableMarkers->blockSignals(true);
+  ui->tableMarkers->clearSelection();
+  for (int i=0; i < peaks_.size(); ++i) {
+    if (peaks_[i].selected) {
+      ui->tableMarkers->selectRow(i);
+      chosen_peaks_chan.insert(peaks_[i].center);
+    }
+  }
+  ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
+  ui->tableMarkers->blockSignals(false);
+  selection_model_.blockSignals(false);
 }
 
 void FormEnergyCalibration::update_peak_selection(std::set<double> pks) {
-  ui->tableMarkers->blockSignals(true);
-  ui->tableMarkers->clearSelection();
-  int i=0;
-  for (auto &q : my_markers_) {
-    if (pks.count(q.first))
-      ui->tableMarkers->selectRow(i);
-    ++i;
-  }
-  ui->tableMarkers->blockSignals(false);
-}
-
-void FormEnergyCalibration::selection_changed(QItemSelection, QItemSelection) {
-  //send selection to formpeak
-
+  for (int i=0; i < peaks_.size(); ++i)
+    peaks_[i].selected = (pks.count(peaks_[i].center) > 0);
   toggle_push();
   replot_markers();
+  if (isVisible())
+    emit peaks_changed(peaks_, false);
+}
+
+void FormEnergyCalibration::selection_changed_in_plot() {
+  std::set<double> chosen_peaks_chan = ui->PlotCalib->get_selected_pts();
+  for (int i=0; i < peaks_.size(); ++i)
+    peaks_[i].selected = (chosen_peaks_chan.count(peaks_[i].center) > 0);
+  toggle_push();
+  replot_markers();
+  if (isVisible())
+    emit peaks_changed(peaks_, false);
+}
+
+void FormEnergyCalibration::selection_changed_in_table(QItemSelection, QItemSelection) {
+  for (auto &q : peaks_)
+    q.selected = false;
+  foreach (QModelIndex idx, ui->tableMarkers->selectionModel()->selectedRows())
+    peaks_[idx.row()].selected = true;
+  toggle_push();
+  replot_markers();
+  if (isVisible())
+    emit peaks_changed(peaks_, false);
 }
 
 void FormEnergyCalibration::toggle_push() {

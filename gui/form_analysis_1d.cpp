@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormAnalysis1D -
+ *      FormAnalysis1D - 
  *
  ******************************************************************************/
 
@@ -37,22 +37,21 @@ FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLableDB<Gamma::Detector>& 
 
   loadSettings();
 
-  connect(ui->plotSpectrum, SIGNAL(peaks_changed()), this, SLOT(update_peaks()));
-  connect(ui->plotSpectrum, SIGNAL(peaks_selected()), this, SLOT(update_peak_choice()));
+  connect(ui->plotSpectrum, SIGNAL(peaks_changed(std::vector<Gamma::Peak>,bool)), this, SLOT(update_peaks(std::vector<Gamma::Peak>,bool)));
   //connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
 
   my_energy_calibration_ = new FormEnergyCalibration(settings_, detectors_);
   ui->tabs->addTab(my_energy_calibration_, "Energy calibration");
   connect(my_energy_calibration_, SIGNAL(detectorsChanged()), this, SLOT(detectorsUpdated()));
-  connect(my_energy_calibration_, SIGNAL(peaks_chosen(std::set<double>)), this, SLOT(update_peak_choice(std::set<double>)));
+  connect(my_energy_calibration_, SIGNAL(peaks_changed(std::vector<Gamma::Peak>,bool)), this, SLOT(update_peaks_from_nrg(std::vector<Gamma::Peak>,bool)));
   connect(my_energy_calibration_, SIGNAL(update_detector(bool,bool)), this, SLOT(update_detector(bool,bool)));
   ui->tabs->setCurrentWidget(my_energy_calibration_);
 
   my_fwhm_calibration_ = new FormFwhmCalibration(settings_, detectors_);
   ui->tabs->addTab(my_fwhm_calibration_, "FWHM calibration");
   connect(my_fwhm_calibration_, SIGNAL(detectorsChanged()), this, SLOT(detectorsUpdated()));
-  connect(my_fwhm_calibration_, SIGNAL(peaks_chosen(std::set<double>)), this, SLOT(update_peak_choice(std::set<double>)));
   connect(my_fwhm_calibration_, SIGNAL(update_detector(bool,bool)), this, SLOT(update_detector(bool,bool)));
+  connect(my_fwhm_calibration_, SIGNAL(peaks_changed(std::vector<Gamma::Peak>, bool)), this, SLOT(update_peaks_from_fwhm(std::vector<Gamma::Peak>, bool)));
   ui->tabs->setCurrentWidget(my_fwhm_calibration_);
 }
 
@@ -212,21 +211,21 @@ void FormAnalysis1D::update_detector(bool in_spectra, bool in_DB) {
 
 
 void FormAnalysis1D::update_spectrum() {
-  ui->plotSpectrum->update_spectrum();
+  if (this->isVisible())
+    ui->plotSpectrum->update_spectrum();
 }
 
-void FormAnalysis1D::update_peaks() {
-  std::vector<Gamma::Peak> pks = ui->plotSpectrum->peaks();
+void FormAnalysis1D::update_peaks(std::vector<Gamma::Peak> pks, bool content_changed) {
   my_energy_calibration_->update_peaks(pks);
   my_fwhm_calibration_->update_peaks(pks);
 }
 
-void FormAnalysis1D::update_peak_choice(std::set<double> pks) {
-  ui->plotSpectrum->select_peaks(pks);
+void FormAnalysis1D::update_peaks_from_fwhm(std::vector<Gamma::Peak> pks, bool content_changed) {
+  my_energy_calibration_->update_peaks(pks);
+  ui->plotSpectrum->set_peaks(pks, content_changed);
 }
 
-void FormAnalysis1D::update_peak_choice() {
-  std::set<double> pks = ui->plotSpectrum->selected_peaks();
-  my_energy_calibration_->update_peak_selection(pks);
-  my_fwhm_calibration_->update_peak_selection(pks);
+void FormAnalysis1D::update_peaks_from_nrg(std::vector<Gamma::Peak> pks, bool content_changed) {
+  my_fwhm_calibration_->update_peaks(pks);
+  ui->plotSpectrum->set_peaks(pks, content_changed);
 }

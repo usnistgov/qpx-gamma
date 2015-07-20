@@ -1,3 +1,5 @@
+PLX_API_DIR = /home/mns16/PlxSdk
+
 SUBDIRS	= \
 	  PlxApi                   \
 	  Samples/ApiTest          \

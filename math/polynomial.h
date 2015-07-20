@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Polynomial
+ *      Polynomial - 
  *
  ******************************************************************************/
 
