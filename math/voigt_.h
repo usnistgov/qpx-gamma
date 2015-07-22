@@ -33,6 +33,8 @@ public:
   SplitPseudoVoigt() : height_(0), center_(0), hwhm_l(0), hwhm_r(0), shape_l(0), shape_r(0), rsq(-1) {}
   SplitPseudoVoigt(const std::vector<double> &x, const std::vector<double> &y);
 
+  static std::vector<SplitPseudoVoigt> fit_multi(const std::vector<double> &x, const std::vector<double> &y, const std::vector<SplitPseudoVoigt> &cold);
+
   double evaluate(double x);
   std::vector<double> evaluate_array(std::vector<double> x);
   

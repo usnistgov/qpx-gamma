@@ -46,18 +46,22 @@ public:
   void find_prelim();
   void filter_prelim(uint16_t min_width);
   void refine_edges(double threshl, double threshr);
-  void find_peaks(int min_width, Calibration cali = Calibration());
+  void find_peaks(int min_width, Calibration nrg_cali = Calibration(), Calibration fwhm_cali = Calibration(), double overlap = 4.0);
+
+  Peak make_multiplet(std::vector<Peak> peaks, Calibration nrg_cali, Calibration fwhm_cali);
 
   uint16_t find_left(uint16_t chan, uint16_t grace = 0);
   uint16_t find_right(uint16_t chan, uint16_t grace = 0);
   double local_avg(uint16_t chan, uint16_t samples = 1);
   std::vector<double> make_baseline(uint16_t left, uint16_t right, uint16_t BL_samples, BaselineType type = BaselineType::linear);
 
+  static void filter_by_theoretical_fwhm(std::vector<Peak>&, double range);
+
   std::vector<double> x_, y_, y_avg_, deriv1, deriv2;
 
   std::vector<uint16_t> prelim, filtered, lefts, rights, lefts_t, rights_t;
 
-  std::vector<Peak> peaks_;
+  std::vector<Peak> peaks_, multiplets_;
 };
 
 }

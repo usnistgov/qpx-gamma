@@ -16,13 +16,13 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormFwhmCalibration - 
+ *      FormPeakFitter - 
  *
  ******************************************************************************/
 
 
-#ifndef FORM_FWHM_CALIBRATION_H
-#define FORM_FWHM_CALIBRATION_H
+#ifndef FORM_PEAK_FITTER_H
+#define FORM_PEAK_FITTER_H
 
 #include <QWidget>
 #include "spectrum1D.h"
@@ -33,69 +33,44 @@
 #include "gamma_fitter.h"
 
 namespace Ui {
-class FormFwhmCalibration;
+class FormPeakFitter;
 }
 
-class FormFwhmCalibration : public QWidget
+class FormPeakFitter : public QWidget
 {
   Q_OBJECT
 
 public:
-  explicit FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
-  ~FormFwhmCalibration();
-
-  void setData(Gamma::Calibration fwhm_calib, uint16_t bits);
+  explicit FormPeakFitter(QSettings &settings, QWidget *parent = 0);
+  ~FormPeakFitter();
 
   void update_peaks(std::vector<Gamma::Peak>);
   void update_peak_selection(std::set<double>);
-  Gamma::Calibration get_new_calibration() {return new_fwhm_calibration_;}
 
   void clear();
   bool save_close();
 
-
 signals:
-  void detectorsChanged();
   void peaks_changed(std::vector<Gamma::Peak>, bool);
-  void update_detector(bool, bool);
 
 private slots:
   void selection_changed_in_table();
-  void selection_changed_in_plot();
 
   void replot_markers();
   void toggle_push();
-  void detectorsUpdated() {emit detectorsChanged();}
-
-  void on_pushApplyCalib_clicked();
-  void on_pushFit_clicked();
-  void on_pushFromDB_clicked();
-  void on_pushDetDB_clicked();
-  void on_pushCullOne_clicked();
-  void on_pushCullUntil_clicked();
 
 private:
-  Ui::FormFwhmCalibration *ui;
+  Ui::FormPeakFitter *ui;
   QSettings &settings_;
 
   //from parent
   QString data_directory_;
 
-  XMLableDB<Gamma::Detector> &detectors_;
-  Gamma::Detector detector_;
-
   std::vector<Gamma::Peak> peaks_;
-  
-  uint16_t bits_;
-  Gamma::Calibration old_fwhm_calibration_, new_fwhm_calibration_;
-
-  AppearanceProfile style_pts, style_fit;
 
   void loadSettings();
   void saveSettings();
-  Polynomial fit_calibration();
-  int find_outlier();
   void add_peak_to_table(Gamma::Peak, int);
 };
 
-#endif // FORM_FWHM_CALIBRATION_H
+#endif // FORM_PEAK_FITTER_H

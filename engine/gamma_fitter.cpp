@@ -265,16 +265,53 @@ uint16_t Fitter::find_right(uint16_t chan, uint16_t grace) {
   return i;
 }
 
-void Fitter::find_peaks(int min_width, Calibration cali) {
+void Fitter::filter_by_theoretical_fwhm(std::vector<Peak>& peaks, double range) {
+  std::vector<double> to_remove;
+  for (auto &q : peaks) {
+    double frac = q.fwhm_gaussian / q.fwhm_theoretical;
+    if ((frac < (1 - range)) || (frac > (1 + range)))
+      to_remove.push_back(q.center);
+  }
+  for (auto &q : to_remove) {
+    for (int i=0; i < peaks.size(); ++i) {
+      if (peaks[i].center == q) {
+        peaks.erase(peaks.begin() + i);
+        break;
+      }
+    }
+  }
+}
+
+Peak Fitter::make_multiplet(std::vector<Peak> peaks, Calibration nrg_cali, Calibration fwhm_cali) {
+  Peak fitted;
+  if (peaks.size() < 1)
+    return fitted;
+  
+  int left = peaks.front().x_.front();
+  int right = peaks.back().x_.back();
+  std::vector<double> baseline = make_baseline(left, right, 3);
+  std::vector<double> xx(x_.begin() + left, x_.begin() + right + 1);
+  std::vector<double> yy(y_.begin() + left, y_.begin() + right + 1);
+  fitted = Peak(xx, yy, baseline, nrg_cali, fwhm_cali, peaks);
+
+  return fitted;  
+}
+
+
+void Fitter::find_peaks(int min_width, Calibration nrg_cali, Calibration fwhm_cali, double overlap) {
   find_prelim();
   filter_prelim(min_width);
 
+  PL_DBG << "Finder using calib coefs = " << nrg_cali.coef_to_string();
+
+
   peaks_.clear();
+  multiplets_.clear();
   for (int i=0; i < filtered.size(); ++i) {
     std::vector<double> baseline = make_baseline(lefts[i], rights[i], 3);
     std::vector<double> xx(x_.begin() + lefts[i], x_.begin() + rights[i] + 1);
     std::vector<double> yy(y_.begin() + lefts[i], y_.begin() + rights[i] + 1);
-    Peak fitted = Peak(xx, yy, baseline, cali);
+    Peak fitted = Peak(xx, yy, baseline, nrg_cali, fwhm_cali);
 
     if (
         (fitted.height > 0) &&
@@ -285,6 +322,50 @@ void Fitter::find_peaks(int min_width, Calibration cali) {
       peaks_.push_back(fitted);
     }
   }
+
+  if (fwhm_cali.units_ == "keV") {
+    filter_by_theoretical_fwhm(peaks_, 0.25);
+    
+    for (int i=0; i < peaks_.size(); ++i) {
+      peaks_[i].lim_L = peaks_[i].energy - overlap * peaks_[i].fwhm_theoretical;
+      peaks_[i].lim_R = peaks_[i].energy + overlap * peaks_[i].fwhm_theoretical;
+      if ((i > 0) && (peaks_[i-1].energy > peaks_[i].lim_L))
+        peaks_[i].intersects_L = true;
+      if (((i+1) < peaks_.size()) && (peaks_[i+1].energy < peaks_[i].lim_R))
+        peaks_[i].intersects_R = true;
+    }
+
+    std::vector<Peak> multiplet;
+    std::vector<double> to_remove;
+    for (int i=0; i < peaks_.size(); ++i) {
+      if (peaks_[i].intersects_R && ((i+1) < peaks_.size()) && peaks_[i+1].intersects_L) {
+        multiplet.push_back(peaks_[i]);
+        to_remove.push_back(peaks_[i].center);
+      }
+      if ((i > 0) && !peaks_[i].intersects_R && peaks_[i].intersects_L && peaks_[i-1].intersects_R) {
+        multiplet.push_back(peaks_[i]);
+        to_remove.push_back(peaks_[i].center);
+
+        Peak fitted = make_multiplet(multiplet, nrg_cali, fwhm_cali);
+
+        multiplet.clear();
+        multiplets_.push_back(fitted);
+      }
+    }
+    for (auto &q : to_remove) {
+      for (int i=0; i < peaks_.size(); ++i) {
+        if (peaks_[i].center == q) {
+          peaks_.erase(peaks_.begin() + i);
+          break;
+        }
+      }
+    }
+    for (auto &q : multiplets_) {
+      for (auto &p : q.subpeaks_)
+        peaks_.push_back(p);
+    }
+  }
+  
   PL_INFO << "Preliminary search found " << prelim.size() << " potential peaks";
   PL_INFO << "After minimum width filter: " << filtered.size();
   PL_INFO << "Fitted peaks: " << peaks_.size();

@@ -33,6 +33,8 @@ public:
   Gaussian() : height_(0), hwhm_(0), center_(0), rsq(-1) {}
   Gaussian(const std::vector<double> &x, const std::vector<double> &y);
 
+  static std::vector<Gaussian> fit_multi(const std::vector<double> &x, const std::vector<double> &y, const std::vector<Gaussian> &old);
+
   double evaluate(double x);
   std::vector<double> evaluate_array(std::vector<double> x);
   

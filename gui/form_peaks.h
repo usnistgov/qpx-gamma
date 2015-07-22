@@ -47,6 +47,8 @@ public:
   ~FormPeaks();
 
   void setSpectrum(Pixie::Spectrum::Spectrum *newspectrum);
+  void setData(Gamma::Calibration nrg_calib, Gamma::Calibration fwhm_calib);
+
   void clear();
   std::vector<Gamma::Peak> peaks();
   void set_peaks(std::vector<Gamma::Peak>, bool);
@@ -96,17 +98,19 @@ private:
   Gamma::Fitter spectrum_data_;
   std::map<double, double> minima, maxima;
   Gamma::Detector detector_;
-  Gamma::Calibration calibration_;
+  Gamma::Calibration nrg_calibration_, fwhm_calibration_;
 
   //markers
   Marker list, selected;
   Range range_;
 
   AppearanceProfile main_graph_, prelim_peak_, filtered_peak_,
-                    gaussian_, pseudo_voigt_, baseline_, rise_, fall_, even_;
+                    gaussian_, pseudo_voigt_, baseline_,
+                    multiplet_,
+                    rise_, fall_, even_;
 
 
-  std::vector<Gamma::Peak> peaks_;
+  std::vector<Gamma::Peak> peaks_, multiplets_;
 
   void plot_derivs(Gamma::Fitter&);
 };

@@ -30,6 +30,7 @@
 #include "spectra_set.h"
 #include "form_energy_calibration.h"
 #include "form_fwhm_calibration.h"
+#include "form_peak_fitter.h"
 
 namespace Ui {
 class FormAnalysis1D;
@@ -60,6 +61,7 @@ private slots:
   void update_peaks(std::vector<Gamma::Peak>,bool);
   void update_peaks_from_fwhm(std::vector<Gamma::Peak>, bool);
   void update_peaks_from_nrg(std::vector<Gamma::Peak>, bool);
+  void update_peaks_from_fitter(std::vector<Gamma::Peak>, bool);
   void detectorsUpdated() {emit detectorsChanged();}
 
 protected:
@@ -71,6 +73,7 @@ private:
 
   FormEnergyCalibration *my_energy_calibration_;
   FormFwhmCalibration *my_fwhm_calibration_;
+  FormPeakFitter *my_peak_fitter_;
 
   Gamma::Calibration nrg_calibration_, fwhm_calibration_;
 

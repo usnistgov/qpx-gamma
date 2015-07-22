@@ -71,6 +71,58 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
   delete f;
 }
 
+std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x, const std::vector<double> &y, const std::vector<Gaussian> &old) {
+  std::vector<double> sigma;
+  sigma.resize(x.size(), 1);
+
+  bool success = true;
+  std::vector<fityk::Func*> fns;
+
+  fityk::Fityk *f = new fityk::Fityk;
+  f->redir_messages(NULL);
+  f->load_data(0, x, y, sigma);
+
+  for (int i=0; i < old.size(); ++i) {
+    std::string fn = "F += Gaussian(height=~" + std::to_string(old[i].height_)
+        + ", hwhm=~" + std::to_string(old[i].hwhm_)
+        + ", center=~" + std::to_string(old[i].center_) + ")";
+    try {
+      f->execute(fn.c_str());
+    }
+    catch ( ... ) {
+      //PL_ERR << "Fytik threw exception a";
+      success = false;
+    }
+  }
+
+  try {
+    f->execute("fit");
+  }
+  catch ( ... ) {
+    PL_ERR << "Fytik threw exception b";
+    success = false;
+  }
+
+  std::vector<Gaussian> results;
+
+  if (success) {
+    std::vector<fityk::Func*> fns = f->all_functions();
+    for (auto &q : fns) {
+      Gaussian one;
+      one.center_ = q->get_param_value("center");
+      one.height_ = q->get_param_value("height");
+      one.hwhm_   = q->get_param_value("hwhm");
+      one.rsq = f->get_rsquared(0);
+      results.push_back(one);
+    }
+  }
+
+  delete f;
+
+  return results;
+}
+
+
 double Gaussian::evaluate(double x) {
   return height_ * exp(-log(2.0)*(pow(((x-center_)/hwhm_),2)));
 }

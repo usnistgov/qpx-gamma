@@ -78,6 +78,66 @@ SplitPseudoVoigt::SplitPseudoVoigt(const std::vector<double> &x, const std::vect
   delete f;
 }
 
+
+std::vector<SplitPseudoVoigt> SplitPseudoVoigt::fit_multi(const std::vector<double> &x, const std::vector<double> &y, const std::vector<SplitPseudoVoigt> &old) {
+  std::vector<double> sigma;
+  sigma.resize(x.size(), 1);
+
+  bool success = true;
+  std::vector<fityk::Func*> fns;
+
+  fityk::Fityk *f = new fityk::Fityk;
+  f->redir_messages(NULL);
+  f->load_data(0, x, y, sigma);
+
+  for (int i=0; i < old.size(); ++i) {
+     std::string fn = "F += SplitPseudoVoigt(height=~" + std::to_string(old[i].height_)
+        + ", hwhm1=~" + std::to_string(old[i].hwhm_l)
+        + ", hwhm2=~" + std::to_string(old[i].hwhm_r)
+        + ", shape1=~" + std::to_string(old[i].shape_l)
+        + ", shape2=~" + std::to_string(old[i].shape_r)
+        + ", center=~" + std::to_string(old[i].center_) + ")";
+    try {
+      f->execute(fn.c_str());
+    }
+    catch ( ... ) {
+      //PL_ERR << "Fytik threw exception a";
+      success = false;
+    }
+  }
+
+  try {
+    f->execute("fit");
+  }
+  catch ( ... ) {
+    //PL_ERR << "Fytik threw exception b";
+    success = false;
+  }
+
+  std::vector<SplitPseudoVoigt> results;
+
+  if (success) {
+    std::vector<fityk::Func*> fns = f->all_functions();
+    for (auto &q : fns) {
+      SplitPseudoVoigt one;
+      one.center_ = q->get_param_value("center");
+      one.height_ = q->get_param_value("height");
+      one.hwhm_l  = q->get_param_value("hwhm1");
+      one.hwhm_r  = q->get_param_value("hwhm2");
+      one.shape_l  = q->get_param_value("shape1");
+      one.shape_r  = q->get_param_value("shape2");
+      one.rsq = f->get_rsquared(0);
+      results.push_back(one);
+    }
+  }
+
+  delete f;
+
+  return results;
+}
+
+
+
 double SplitPseudoVoigt::evaluate(double x) {
   double hwhm = 0, shape = 0;
   if (x <= center_) {

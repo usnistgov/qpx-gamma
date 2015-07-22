@@ -62,12 +62,15 @@ FormPeaks::FormPeaks(QWidget *parent) :
   main_graph_.default_pen = QPen(Qt::gray, 1);
   prelim_peak_.default_pen = QPen(Qt::black, 4);
   filtered_peak_.default_pen = QPen(Qt::blue, 6);
-  gaussian_.default_pen = QPen(Qt::blue, 1);
-  pseudo_voigt_.default_pen = QPen(Qt::cyan, 1);
-  baseline_.default_pen = QPen(Qt::darkBlue, 1);
-  rise_.default_pen = QPen(Qt::green, 1);
-  fall_.default_pen = QPen(Qt::red, 1);
-  even_.default_pen = QPen(Qt::black, 1);
+  gaussian_.default_pen = QPen(Qt::darkBlue, 0);
+  pseudo_voigt_.default_pen = QPen(Qt::darkCyan, 0);
+
+  multiplet_.default_pen = QPen(Qt::red, 2);
+
+  baseline_.default_pen = QPen(Qt::darkGray, 0);
+  rise_.default_pen = QPen(Qt::green, 0);
+  fall_.default_pen = QPen(Qt::red, 0);
+  even_.default_pen = QPen(Qt::black, 0);
 
   connect(ui->plot1D, SIGNAL(markers_selected()), this, SLOT(user_selected_peaks()));
   connect(ui->plot1D, SIGNAL(clickedLeft(double)), this, SLOT(addMovingMarker(double)));
@@ -84,12 +87,14 @@ FormPeaks::~FormPeaks()
 void FormPeaks::loadSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
   ui->spinMinPeakWidth->setValue(settings_.value("min_peak_width", 5).toInt());
+  ui->doubleOverlapWidth->setValue(settings_.value("overlap_width", 2.70).toDouble());
   ui->spinMovAvg->setValue(settings_.value("moving_avg_window", 15).toInt());
   ui->checkShowMovAvg->setChecked(settings_.value("show_moving_avg", false).toBool());
   ui->checkShowFilteredPeaks->setChecked(settings_.value("show_filtered_peaks", false).toBool());
   ui->checkShowPrelimPeaks->setChecked(settings_.value("show_prelim_peaks", false).toBool());
   ui->checkShowGaussians->setChecked(settings_.value("show_gaussians", false).toBool());
   ui->checkShowBaselines->setChecked(settings_.value("show_baselines", false).toBool());
+  ui->checkShowPseudoVoigt->setChecked(settings_.value("show_pseudovoigt", false).toBool());
   ui->plot1D->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
   ui->plot1D->set_plot_style(settings_.value("plot_style", "Step").toString());
   ui->plot1D->set_marker_labels(settings_.value("marker_labels", true).toBool());
@@ -100,11 +105,13 @@ void FormPeaks::saveSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
   settings_.setValue("min_peak_width", ui->spinMinPeakWidth->value());
   settings_.setValue("moving_avg_window", ui->spinMovAvg->value());
+  settings_.setValue("overlap_width", ui->doubleOverlapWidth->value());
   settings_.setValue("show_moving_avg", ui->checkShowMovAvg->isChecked());
   settings_.setValue("show_prelim_peaks", ui->checkShowPrelimPeaks->isChecked());
   settings_.setValue("show_filtered_peaks", ui->checkShowFilteredPeaks->isChecked());
   settings_.setValue("show_gaussians", ui->checkShowGaussians->isChecked());
   settings_.setValue("show_baselines", ui->checkShowBaselines->isChecked());
+  settings_.setValue("show_pseudovoigt", ui->checkShowPseudoVoigt->isChecked());
   settings_.setValue("scale_type", ui->plot1D->scale_type());
   settings_.setValue("plot_style", ui->plot1D->plot_style());
   settings_.setValue("marker_labels", ui->plot1D->marker_labels());
@@ -113,7 +120,9 @@ void FormPeaks::saveSettings(QSettings &settings_) {
 
 void FormPeaks::clear() {
   peaks_.clear();
-  calibration_ = Gamma::Calibration();
+  multiplets_.clear();
+  nrg_calibration_ = Gamma::Calibration();
+  fwhm_calibration_ = Gamma::Calibration();
   detector_ = Gamma::Detector();
   spectrum_data_ = Gamma::Fitter();
   maxima.clear();
@@ -133,15 +142,9 @@ void FormPeaks::setSpectrum(Pixie::Spectrum::Spectrum *newspectrum) {
 
   if (spectrum_ && spectrum_->resolution()) {
     int bits = spectrum_->bits();
-    calibration_ = Gamma::Calibration("Energy", bits);
     for (std::size_t i=0; i < spectrum_->add_pattern().size(); i++) {
       if (spectrum_->add_pattern()[i] == 1) {
         detector_ = spectrum_->get_detectors()[i];
-        if (detector_.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits))) {
-          calibration_ = detector_.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
-          PL_INFO << "<Peak finder> Energy calibration drawn from detector \"" << detector_.name_ << "\" with coefs = " << calibration_.coef_to_string();
-        } else
-          PL_INFO << "<Peak finder> No existing energy calibration for this resolution";
         QString title = "Spectrum=" + QString::fromStdString(spectrum_->name()) + "  resolution=" + QString::number(bits) + "bits  Detector=" + QString::fromStdString(detector_.name_);
         ui->plot1D->setFloatingText(title);
         ui->plot1D->setTitle(title);
@@ -153,6 +156,15 @@ void FormPeaks::setSpectrum(Pixie::Spectrum::Spectrum *newspectrum) {
 
   update_spectrum();
 }
+
+void FormPeaks::setData(Gamma::Calibration nrg_calib, Gamma::Calibration fwhm_calib) {
+  fwhm_calibration_ = fwhm_calib;
+  PL_DBG << "Peaks received new fwhm calib coefs = " << fwhm_calibration_.coef_to_string();
+  nrg_calibration_ = nrg_calib;
+  PL_DBG << "Peaks received new energy calib coefs = " << nrg_calibration_.coef_to_string();
+  replot_markers();
+}
+
 
 void FormPeaks::update_spectrum() {
 
@@ -221,15 +233,21 @@ void FormPeaks::replot_all() {
       ui->plot1D->addPoints(xx, yy, filtered_peak_, QCPScatterStyle::ssDiamond);
   }
 
+  for (auto &q : multiplets_) {
+    if (ui->checkShowPseudoVoigt->isChecked())
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_pseudovoigt_), multiplet_);
+    if (ui->checkShowGaussians->isChecked())
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_gaussian_), multiplet_);
+  }
+  
   for (auto &q : peaks_) {
     if (ui->checkShowPseudoVoigt->isChecked())
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_pseudovoigt_), pseudo_voigt_);
+        ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_pseudovoigt_), pseudo_voigt_);
     if (ui->checkShowGaussians->isChecked())
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_gaussian_), gaussian_);
+         ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_gaussian_), gaussian_);
     if (ui->checkShowBaselines->isChecked())
       ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_baseline_), baseline_);
   }
-
 
   ui->plot1D->setLabels("channel", "counts");
 
@@ -242,7 +260,7 @@ void FormPeaks::addMovingMarker(double x) {
 
   range_.center.channel = x;
   range_.center.chan_valid = true;
-  range_.center.energy = calibration_.transform(x);
+  range_.center.energy = nrg_calibration_.transform(x);
   range_.center.energy_valid = (range_.center.channel != range_.center.energy);
 
   uint16_t ch = static_cast<uint16_t>(x);
@@ -250,17 +268,17 @@ void FormPeaks::addMovingMarker(double x) {
   uint16_t ch_l = spectrum_data_.find_left(ch, ui->spinMinPeakWidth->value());
   range_.l.channel = ch_l;
   range_.l.chan_valid = true;
-  range_.l.energy = calibration_.transform(ch_l);
+  range_.l.energy = nrg_calibration_.transform(ch_l);
   range_.l.energy_valid = (range_.l.channel != range_.l.energy);
 
   uint16_t ch_r = spectrum_data_.find_right(ch, ui->spinMinPeakWidth->value());
   range_.r.channel = ch_r;
   range_.r.chan_valid = true;
-  range_.r.energy = calibration_.transform(ch_r);
+  range_.r.energy = nrg_calibration_.transform(ch_r);
   range_.r.energy_valid = (range_.r.channel != range_.r.energy);
 
   ui->pushAdd->setEnabled(true);
-  PL_INFO << "<Peak finder> Marker at chan=" << range_.center.channel << " (" << range_.center.energy << " " << calibration_.units_ << ")"
+  PL_INFO << "<Peak finder> Marker at chan=" << range_.center.channel << " (" << range_.center.energy << " " << nrg_calibration_.units_ << ")"
           << ", edges=[" << range_.l.channel << ", " << range_.r.channel << "]";
 
   replot_markers();
@@ -296,10 +314,11 @@ void FormPeaks::replot_markers() {
     markers.push_back(m);
   }
 
-
   ui->plot1D->set_markers(markers);
   ui->plot1D->replot_markers();
   ui->plot1D->redraw();
+
+  PL_DBG << "After markers replot coefs = " << nrg_calibration_.coef_to_string();
 }
 
 void FormPeaks::on_pushAdd_clicked()
@@ -310,7 +329,7 @@ void FormPeaks::on_pushAdd_clicked()
   std::vector<double> baseline = spectrum_data_.make_baseline(range_.l.channel, range_.r.channel, 3);
   Gamma::Peak newpeak = Gamma::Peak(std::vector<double>(spectrum_data_.x_.begin() + range_.l.channel, spectrum_data_.x_.begin() + range_.r.channel + 1),
                       std::vector<double>(spectrum_data_.y_.begin() + range_.l.channel, spectrum_data_.y_.begin() + range_.r.channel + 1),
-                      baseline, calibration_);
+                                    baseline, nrg_calibration_, fwhm_calibration_);
 
   if (newpeak.gaussian_.height_ > 0) {
     peaks_.push_back(newpeak);
@@ -354,10 +373,29 @@ void FormPeaks::on_pushMarkerRemove_clicked()
       chosen_peaks.insert(q.center);
 
   for (auto &q : chosen_peaks) {
+    bool removed_subpeak = false;
     for (int i=0; i < peaks_.size(); ++i) {
-      if (peaks_[i].gaussian_.center_ == q) {
+      if (peaks_[i].center == q) {
+        if (peaks_[i].subpeak)
+          removed_subpeak = true;
         peaks_.erase(peaks_.begin() + i);
         break;
+      }
+    }
+    if (removed_subpeak) {
+      bool removed_subpeak = false;
+      for (int i=0; i<multiplets_.size(); ++i) {
+        for (int j=0; j < multiplets_[i].subpeaks_.size(); ++j) {
+          if (multiplets_[i].subpeaks_[j].center == q) {
+            multiplets_[i].subpeaks_.erase(multiplets_[i].subpeaks_.begin() + j);
+            removed_subpeak = true;
+            break;
+          }
+        }
+        if (removed_subpeak && multiplets_[i].subpeaks_.empty())
+          multiplets_.erase(multiplets_.begin() + i);
+        if (removed_subpeak)
+          break;
       }
     }
   }
@@ -371,8 +409,11 @@ void FormPeaks::on_pushFindPeaks_clicked()
 {
   this->setCursor(Qt::WaitCursor);
 
-  spectrum_data_.find_peaks(ui->spinMinPeakWidth->value(), calibration_);
+  PL_DBG << "FormPeaks using calib coefs = " << nrg_calibration_.coef_to_string();
+
+  spectrum_data_.find_peaks(ui->spinMinPeakWidth->value(), nrg_calibration_, fwhm_calibration_, ui->doubleOverlapWidth->value());
   peaks_ = spectrum_data_.peaks_;
+  multiplets_ = spectrum_data_.multiplets_;
 
   toggle_push();
   replot_all();
@@ -480,5 +521,6 @@ void FormPeaks::set_peaks(std::vector<Gamma::Peak> pks, bool content_changed) {
     replot_all();
   else
     replot_markers();
+  toggle_push();
 }
 

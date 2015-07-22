@@ -45,13 +45,18 @@ FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   connect(my_energy_calibration_, SIGNAL(detectorsChanged()), this, SLOT(detectorsUpdated()));
   connect(my_energy_calibration_, SIGNAL(peaks_changed(std::vector<Gamma::Peak>,bool)), this, SLOT(update_peaks_from_nrg(std::vector<Gamma::Peak>,bool)));
   connect(my_energy_calibration_, SIGNAL(update_detector(bool,bool)), this, SLOT(update_detector(bool,bool)));
-  ui->tabs->setCurrentWidget(my_energy_calibration_);
 
   my_fwhm_calibration_ = new FormFwhmCalibration(settings_, detectors_);
   ui->tabs->addTab(my_fwhm_calibration_, "FWHM calibration");
   connect(my_fwhm_calibration_, SIGNAL(detectorsChanged()), this, SLOT(detectorsUpdated()));
   connect(my_fwhm_calibration_, SIGNAL(update_detector(bool,bool)), this, SLOT(update_detector(bool,bool)));
   connect(my_fwhm_calibration_, SIGNAL(peaks_changed(std::vector<Gamma::Peak>, bool)), this, SLOT(update_peaks_from_fwhm(std::vector<Gamma::Peak>, bool)));
+
+  my_peak_fitter_ = new FormPeakFitter(settings_);
+  ui->tabs->addTab(my_peak_fitter_, "Peak fitter");
+  connect(my_peak_fitter_, SIGNAL(peaks_changed(std::vector<Gamma::Peak>, bool)), this, SLOT(update_peaks_from_fitter(std::vector<Gamma::Peak>, bool)));
+
+  
   ui->tabs->setCurrentWidget(my_fwhm_calibration_);
 }
 
@@ -93,6 +98,8 @@ void FormAnalysis1D::clear() {
   ui->plotSpectrum->setSpectrum(nullptr);
   current_spectrum_.clear();
   detector_ = Gamma::Detector();
+  nrg_calibration_ = Gamma::Calibration();
+  fwhm_calibration_ = Gamma::Calibration();
 }
 
 
@@ -106,10 +113,11 @@ void FormAnalysis1D::setSpectrum(Pixie::SpectraSet *newset, QString name) {
 
   current_spectrum_ = name;
   Pixie::Spectrum::Spectrum *spectrum = spectra_->by_name(current_spectrum_.toStdString());
-  ui->plotSpectrum->setSpectrum(spectrum);
 
-  if (spectrum) {
+  if (spectrum && spectrum->resolution()) {
     int bits = spectrum->bits();
+    nrg_calibration_ = Gamma::Calibration("Energy", bits);
+    fwhm_calibration_ = Gamma::Calibration("FWHM", bits);
     for (std::size_t i=0; i < spectrum->add_pattern().size(); i++) {
       if (spectrum->add_pattern()[i] == 1) {
         detector_ = spectrum->get_detectors()[i];
@@ -118,13 +126,15 @@ void FormAnalysis1D::setSpectrum(Pixie::SpectraSet *newset, QString name) {
 
         if (detector_.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits))) {
           nrg_calibration_ = detector_.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
-          PL_INFO << "<Analysis> Energy calibration drawn from detector \"" << detector_.name_ << "\"";
+          PL_INFO << "<Analysis> Energy calibration drawn from detector \"" << detector_.name_ << "\"   coefs = "
+                  << nrg_calibration_.coef_to_string();
         } else
           PL_INFO << "<Analysis> No existing calibration for this resolution";
 
         if (detector_.fwhm_calibrations_.has_a(Gamma::Calibration("FWHM", bits))) {
           fwhm_calibration_ = detector_.fwhm_calibrations_.get(Gamma::Calibration("FWHM", bits));
-          PL_INFO << "<Analysis> FWHM calibration drawn from detector \"" << detector_.name_ << "\"";
+          PL_INFO << "<Analysis> FWHM calibration drawn from detector \"" << detector_.name_ << "\"   coefs = "
+                  << fwhm_calibration_.coef_to_string();
         } else
           PL_INFO << "<Analysis> No existing FWHM calibration for this resolution";
 
@@ -137,7 +147,12 @@ void FormAnalysis1D::setSpectrum(Pixie::SpectraSet *newset, QString name) {
     my_fwhm_calibration_->clear();
     my_fwhm_calibration_->setData(fwhm_calibration_, bits);
 
+    my_peak_fitter_->clear();
+
   }
+
+  ui->plotSpectrum->setSpectrum(spectrum);
+  ui->plotSpectrum->setData(nrg_calibration_, fwhm_calibration_);
 }
 
 void FormAnalysis1D::update_detector(bool in_spectra, bool in_DB) {
@@ -204,9 +219,10 @@ void FormAnalysis1D::update_detector(bool in_spectra, bool in_DB) {
     spectra_->setRunInfo(ri);
   }
 
+  
+  ui->plotSpectrum->setData(nrg_calibration_, fwhm_calibration_);
   my_energy_calibration_->setData(nrg_calibration_, nrg_calibration_.bits_);
   my_fwhm_calibration_->setData(fwhm_calibration_, fwhm_calibration_.bits_);
-
 }
 
 
@@ -218,14 +234,23 @@ void FormAnalysis1D::update_spectrum() {
 void FormAnalysis1D::update_peaks(std::vector<Gamma::Peak> pks, bool content_changed) {
   my_energy_calibration_->update_peaks(pks);
   my_fwhm_calibration_->update_peaks(pks);
+  my_peak_fitter_->update_peaks(pks);
 }
 
 void FormAnalysis1D::update_peaks_from_fwhm(std::vector<Gamma::Peak> pks, bool content_changed) {
   my_energy_calibration_->update_peaks(pks);
+  my_peak_fitter_->update_peaks(pks);
   ui->plotSpectrum->set_peaks(pks, content_changed);
 }
 
 void FormAnalysis1D::update_peaks_from_nrg(std::vector<Gamma::Peak> pks, bool content_changed) {
+  my_fwhm_calibration_->update_peaks(pks);
+  my_peak_fitter_->update_peaks(pks);
+  ui->plotSpectrum->set_peaks(pks, content_changed);
+}
+
+void FormAnalysis1D::update_peaks_from_fitter(std::vector<Gamma::Peak> pks, bool content_changed) {
+  my_energy_calibration_->update_peaks(pks);
   my_fwhm_calibration_->update_peaks(pks);
   ui->plotSpectrum->set_peaks(pks, content_changed);
 }

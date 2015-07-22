@@ -118,6 +118,7 @@ void FormEnergyCalibration::clear() {
 void FormEnergyCalibration::setData(Gamma::Calibration nrg_calib, uint16_t bits) {
   bits_ = bits;
   new_calibration_ = old_calibration_ = nrg_calib;
+  PL_DBG << "Energy calibration received new calib coefs = " << new_calibration_.coef_to_string();  
   if (detectors_.has_a(detector_) && detectors_.get(detector_).energy_calibrations_.has_a(old_calibration_))
     ui->pushFromDB->setEnabled(true);
   else
@@ -266,9 +267,8 @@ void FormEnergyCalibration::on_pushFit_clicked()
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "keV";
     new_calibration_.model_ = Gamma::CalibrationModel::polynomial;
-    PL_INFO << "<Energy calibration> New calibration coefficients = " << new_calibration_.coef_to_string();
     Polynomial thispoly(new_calibration_.coefficients_);
-    ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(thispoly.to_UTF8()) + " Rsq=" + QString::number(thispoly.rsq));
+    ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(thispoly.to_UTF8(true)));
     ui->pushApplyCalib->setEnabled(new_calibration_ != old_calibration_);
   }
   else

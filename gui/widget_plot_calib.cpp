@@ -106,6 +106,8 @@ void WidgetPlotCalib::redraw() {
     }
   }
 
+  ui->mcaPlot->rescaleAxes();
+
   xmax = ui->mcaPlot->xAxis->pixelToCoord(ui->mcaPlot->xAxis->coordToPixel(xmax) + 15);
   xmin = ui->mcaPlot->xAxis->pixelToCoord(ui->mcaPlot->xAxis->coordToPixel(xmin) - 15);
 
@@ -131,6 +133,8 @@ void WidgetPlotCalib::redraw() {
     }
   }
 
+  ui->mcaPlot->rescaleAxes();
+  
   ymax = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(ymax) - 60);
   ymin = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(ymin) + 15);
 
@@ -146,8 +150,10 @@ void WidgetPlotCalib::redraw() {
     floatingText->setColor(Qt::black);
   }
 
-  ui->mcaPlot->xAxis->setRange(xmin, xmax);
-  ui->mcaPlot->yAxis->setRange(ymin, ymax);
+  if (this->isVisible()) {
+    ui->mcaPlot->xAxis->setRange(xmin, xmax);
+    ui->mcaPlot->yAxis->setRange(ymin, ymax);
+  }
 
   ui->mcaPlot->replot();
 }

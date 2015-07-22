@@ -75,6 +75,7 @@ void FormFwhmCalibration::loadSettings() {
 
   settings_.beginGroup("FWHM_calibration");
   ui->spinTerms->setValue(settings_.value("fit_function_terms", 2).toInt());
+  ui->doubleRsqGoal->setValue(settings_.value("r_squared_goal", 0.85).toDouble());
 
   settings_.endGroup();
 
@@ -84,6 +85,7 @@ void FormFwhmCalibration::saveSettings() {
 
   settings_.beginGroup("FWHM_calibration");
   settings_.setValue("fit_function_terms", ui->spinTerms->value());
+  settings_.setValue("r_squared_goal", ui->doubleRsqGoal->value());
   settings_.endGroup();
 }
 
@@ -92,6 +94,7 @@ void FormFwhmCalibration::clear() {
   peaks_.clear();
   bits_ = 0;
   ui->tableFWHM->clearContents();
+  ui->tableFWHM->setRowCount(0);
   toggle_push();
   ui->PlotCalib->setFloatingText("");
   ui->pushApplyCalib->setEnabled(false);
@@ -113,18 +116,22 @@ void FormFwhmCalibration::setData(Gamma::Calibration fwhm_calib, uint16_t bits) 
 void FormFwhmCalibration::update_peaks(std::vector<Gamma::Peak> pks) {
   peaks_ = pks;
 
-  std::sort(peaks_.begin(), peaks_.end(), Gamma::Peak::by_centroid_gaussian);
+  std::sort(peaks_.begin(), peaks_.end(), Gamma::Peak::by_center);
 
   ui->tableFWHM->clearContents();
   ui->tableFWHM->setRowCount(peaks_.size());
-  for (int i=0; i<peaks_.size(); ++i) {
-    ui->tableFWHM->setItem(i, 0, new QTableWidgetItem( QString::number(peaks_[i].center) ));
-    ui->tableFWHM->setItem(i, 1, new QTableWidgetItem( QString::number(peaks_[i].energy) ));
-    ui->tableFWHM->setItem(i, 2, new QTableWidgetItem( QString::number(peaks_[i].fwhm_gaussian) ));
-    ui->tableFWHM->setItem(i, 3, new QTableWidgetItem( QString::number(peaks_[i].fwhm_pseudovoigt) ));
-  }
+  for (int i=0; i < peaks_.size(); ++i)
+    add_peak_to_table(peaks_[i], i);
+  
   toggle_push();
   replot_markers();
+}
+
+void FormFwhmCalibration::add_peak_to_table(Gamma::Peak p, int row) {
+  ui->tableFWHM->setItem(row, 0, new QTableWidgetItem( QString::number(p.center) ));
+  ui->tableFWHM->setItem(row, 1, new QTableWidgetItem( QString::number(p.energy) ));
+  ui->tableFWHM->setItem(row, 2, new QTableWidgetItem( QString::number(p.fwhm_gaussian) ));
+  ui->tableFWHM->setItem(row, 3, new QTableWidgetItem( QString::number(p.fwhm_pseudovoigt) ));
 }
 
 void FormFwhmCalibration::replot_markers() {
@@ -186,7 +193,7 @@ void FormFwhmCalibration::replot_markers() {
 }
 
 void FormFwhmCalibration::update_peak_selection(std::set<double> pks) {
-  for (int i=0; i < peaks_.size(); ++i)
+  for (int i=0; i <  peaks_.size(); ++i)
     peaks_[i].selected = (pks.count(peaks_[i].center) > 0);
   toggle_push();
   replot_markers();
@@ -251,7 +258,7 @@ Polynomial FormFwhmCalibration::fit_calibration()
     new_fwhm_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_fwhm_calibration_.units_ = "keV";
     new_fwhm_calibration_.model_ = Gamma::CalibrationModel::polynomial;
-    ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(p.to_UTF8()) + " Rsq=" + QString::number(p.rsq));
+    ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(p.to_UTF8(true)));
     ui->pushApplyCalib->setEnabled(new_fwhm_calibration_ != old_fwhm_calibration_);
   }
   else

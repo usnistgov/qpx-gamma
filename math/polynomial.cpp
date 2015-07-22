@@ -154,7 +154,7 @@ std::string Polynomial::to_string() {
   return ss.str();
 }
 
-std::string Polynomial::to_UTF8() {
+std::string Polynomial::to_UTF8(bool with_rsq) {
   std::vector<std::string> superscripts = {
     "\u2070", "\u00B9", "\u00B2",
     "\u00B3", "\u2074", "\u2075",
@@ -164,10 +164,10 @@ std::string Polynomial::to_UTF8() {
 
   std::string calib_eqn;
   if (degree_ >= 0)
-    calib_eqn += to_str_precision(coeffs_[0], 3);
+    calib_eqn += to_str_precision(coeffs_[0], 4);
   for (uint16_t i=1; i <= degree_; i++) {
     calib_eqn += std::string(" + ");
-    calib_eqn += to_str_precision(coeffs_[i], 3);
+    calib_eqn += to_str_precision(coeffs_[i], 4);
     calib_eqn += std::string("x");
     if ((i > 1) && (i < 10)) {
       calib_eqn += superscripts[i];
@@ -179,6 +179,13 @@ std::string Polynomial::to_UTF8() {
       calib_eqn += std::to_string(i);
     }
   }
+
+  if (with_rsq)
+    calib_eqn += std::string("   r")
+        + superscripts[2]
+        + std::string("=")
+        + to_str_precision(rsq, 4);
+  
   return calib_eqn;
 }
 

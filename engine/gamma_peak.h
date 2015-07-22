@@ -30,34 +30,53 @@
 #include "detector.h"
 
 namespace Gamma {
+  
 
 class Peak {
 public:
   Peak()
-    : center(0)
-    , energy(0)
-    , height(0)
-    , fwhm_gaussian (0)
-    , fwhm_pseudovoigt (0)
-    , selected (false)
+      : multiplet (false)
+      , subpeak (false)
+      , center(0)
+      , energy(0)
+      , height(0)
+      , fwhm_gaussian (0)
+      , fwhm_pseudovoigt (0)
+      , hwhm_L (0)
+      , hwhm_R (0)
+      , fwhm_theoretical(0)
+      , lim_L (0)
+      , lim_R (0)
+      , intersects_L (false)
+      , intersects_R (false)
+      , selected (false)
   {}
 
-  Peak(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline, Calibration cali = Calibration());
+  Peak(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline,
+       Calibration cali_nrg = Calibration(), Calibration cali_fwhm = Calibration(), std::vector<Peak> peaks = std::vector<Peak>());
+
+  void construct(Calibration cali_nrg, Calibration cali_fwhm);
 
   std::vector<double> x_, y_, y_baseline_, y_fullfit_gaussian_, y_fullfit_pseudovoigt_;
   Gaussian gaussian_;
   SplitPseudoVoigt pseudovoigt_;
 
-  double center, energy, height, fwhm_gaussian, fwhm_pseudovoigt;
+  double center, energy, height, fwhm_gaussian, fwhm_pseudovoigt, hwhm_L, hwhm_R,
+      fwhm_theoretical, lim_L, lim_R;
+  bool intersects_L, intersects_R;
   bool selected;
+  
+  bool multiplet, subpeak;
+  std::vector<Peak> subpeaks_;
 
-  static bool by_centroid_gaussian (const Peak& a, const Peak& b)
+  static bool by_center (const Peak& a, const Peak& b)
   {
-      return (a.gaussian_.center_ < b.gaussian_.center_);
+      return (a.center < b.center);
   }
-
+  
 private:
-  void fit(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline, Calibration cali = Calibration());
+  void fit(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline,
+           Calibration cali_nrg = Calibration(), Calibration cali_fwhm = Calibration(), std::vector<Peak> peaks = std::vector<Peak>());
 };
 
 enum class BaselineType : int {linear = 0, step = 1, step_polynomial = 2};

@@ -43,7 +43,7 @@ public:
       std::vector<uint16_t> &degrees, double center=0);
 
   std::string to_string();
-  std::string to_UTF8();
+  std::string to_UTF8(bool with_rsq = false);
   std::string to_markup();
   std::string coef_to_string() const;
   void coef_from_string(std::string);
