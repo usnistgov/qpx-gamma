@@ -41,22 +41,20 @@ class FormPeakFitter : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormPeakFitter(QSettings &settings, QWidget *parent = 0);
+  explicit FormPeakFitter(QSettings &settings, Gamma::Fitter&, QWidget *parent = 0);
   ~FormPeakFitter();
 
-  void update_peaks(std::vector<Gamma::Peak>);
+  void update_peaks(bool);
   void update_peak_selection(std::set<double>);
 
   void clear();
   bool save_close();
 
 signals:
-  void peaks_changed(std::vector<Gamma::Peak>, bool);
+  void peaks_changed(bool);
 
 private slots:
   void selection_changed_in_table();
-
-  void replot_markers();
   void toggle_push();
 
 private:
@@ -66,11 +64,11 @@ private:
   //from parent
   QString data_directory_;
 
-  std::vector<Gamma::Peak> peaks_;
+  Gamma::Fitter &fit_data_;
 
   void loadSettings();
   void saveSettings();
-  void add_peak_to_table(Gamma::Peak, int);
+  void add_peak_to_table(const Gamma::Peak &, int);
 };
 
 #endif // FORM_PEAK_FITTER_H

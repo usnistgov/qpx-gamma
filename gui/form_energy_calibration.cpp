@@ -26,12 +26,13 @@
 #include "gamma_fitter.h"
 #include "qt_util.h"
 
-FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>& dets, QWidget *parent) :
+FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>& dets, Gamma::Fitter &fit, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormEnergyCalibration),
   marker_table_(my_markers_),
   settings_(settings),
   detectors_(dets),
+  fit_data_(fit),
   selection_model_(&marker_table_)
 {
   ui->setupUi(this);
@@ -101,7 +102,6 @@ void FormEnergyCalibration::saveSettings() {
 }
 
 void FormEnergyCalibration::clear() {
-  peaks_.clear();
   my_markers_.clear();
   bits_ = 0;
   new_calibration_ = Gamma::Calibration();
@@ -126,11 +126,13 @@ void FormEnergyCalibration::setData(Gamma::Calibration nrg_calib, uint16_t bits)
   replot_markers();
 }
 
-void FormEnergyCalibration::update_peaks(std::vector<Gamma::Peak> pks) {
-  peaks_ = pks;
-  my_markers_.clear();
-  for (auto &q : pks)
-    my_markers_[q.center] = q.energy;
+void FormEnergyCalibration::update_peaks(bool contents_changed) {
+  if (contents_changed) {
+    my_markers_.clear();
+    for (auto &q : fit_data_.peaks_) {
+      my_markers_[q.second.center] = q.second.energy;
+    }
+  }
 
   selection_model_.reset();
   marker_table_.update();
@@ -144,10 +146,6 @@ void FormEnergyCalibration::replot_markers() {
 
   double xmin = std::numeric_limits<double>::max();
   double xmax = - std::numeric_limits<double>::max();
-
-  if (peaks_.size()) {
-    xmax = xmin = peaks_[0].energy;
-  }
 
   for (auto &q : my_markers_) {
     double x = q.first;
@@ -186,11 +184,13 @@ void FormEnergyCalibration::replot_markers() {
   selection_model_.blockSignals(true);
   ui->tableMarkers->blockSignals(true);
   ui->tableMarkers->clearSelection();
-  for (int i=0; i < peaks_.size(); ++i) {
-    if (peaks_[i].selected) {
+  int i = 0;
+  for (auto &q : fit_data_.peaks_) {
+    if (q.second.selected) {
       ui->tableMarkers->selectRow(i);
-      chosen_peaks_chan.insert(peaks_[i].center);
+      chosen_peaks_chan.insert(q.second.center);
     }
+    ++i;
   }
   ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
   ui->tableMarkers->blockSignals(false);
@@ -198,33 +198,35 @@ void FormEnergyCalibration::replot_markers() {
 }
 
 void FormEnergyCalibration::update_peak_selection(std::set<double> pks) {
-  for (int i=0; i < peaks_.size(); ++i)
-    peaks_[i].selected = (pks.count(peaks_[i].center) > 0);
+  for (auto &q : fit_data_.peaks_)
+    q.second.selected = (pks.count(q.second.center) > 0);
   toggle_push();
   replot_markers();
   if (isVisible())
-    emit peaks_changed(peaks_, false);
+    emit peaks_changed(false);
 }
 
 void FormEnergyCalibration::selection_changed_in_plot() {
   std::set<double> chosen_peaks_chan = ui->PlotCalib->get_selected_pts();
-  for (int i=0; i < peaks_.size(); ++i)
-    peaks_[i].selected = (chosen_peaks_chan.count(peaks_[i].center) > 0);
+  for (auto &q : fit_data_.peaks_)
+    q.second.selected = (chosen_peaks_chan.count(q.second.center) > 0);
   toggle_push();
   replot_markers();
   if (isVisible())
-    emit peaks_changed(peaks_, false);
+    emit peaks_changed(false);
 }
 
 void FormEnergyCalibration::selection_changed_in_table(QItemSelection, QItemSelection) {
-  for (auto &q : peaks_)
-    q.selected = false;
-  foreach (QModelIndex idx, ui->tableMarkers->selectionModel()->selectedRows())
-    peaks_[idx.row()].selected = true;
+  for (auto &q : fit_data_.peaks_)
+    q.second.selected = false;
+  foreach (QModelIndex i, ui->tableMarkers->selectionModel()->selectedRows()) {
+    QModelIndex idx = marker_table_.index(i.row(), 0);
+    fit_data_.peaks_[marker_table_.data(idx).toDouble()].selected = true;
+  }
   toggle_push();
   replot_markers();
   if (isVisible())
-    emit peaks_changed(peaks_, false);
+    emit peaks_changed(false);
 }
 
 void FormEnergyCalibration::toggle_push() {

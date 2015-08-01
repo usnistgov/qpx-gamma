@@ -43,13 +43,13 @@ class FormEnergyCalibration : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormEnergyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
+  explicit FormEnergyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, Gamma::Fitter&, QWidget *parent = 0);
   ~FormEnergyCalibration();
 
   void setData(Gamma::Calibration nrg_calib, uint16_t bits);
   bool save_close();
 
-  void update_peaks(std::vector<Gamma::Peak>);  
+  void update_peaks(bool);  
   void update_peak_selection(std::set<double>);
   Gamma::Calibration get_new_calibration() {return new_calibration_;}
 
@@ -58,7 +58,7 @@ public:
 
 signals:
   void detectorsChanged();
-  void peaks_changed(std::vector<Gamma::Peak>, bool);
+  void peaks_changed(bool);
   void update_detector(bool, bool);
 
 private slots:
@@ -88,7 +88,7 @@ private:
   XMLableDB<Gamma::Detector> &detectors_;
   Gamma::Detector detector_;
 
-  std::vector<Gamma::Peak> peaks_;
+  Gamma::Fitter &fit_data_;
   std::map<double, double> my_markers_; //channel, energy
 
   TableMarkers marker_table_;

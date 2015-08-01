@@ -29,6 +29,7 @@
 FormPeaks::FormPeaks(QWidget *parent) :
   QWidget(parent),
   spectrum_(nullptr),
+  fit_data_(nullptr),
   ui(new Ui::FormPeaks)
 {
   ui->setupUi(this);
@@ -84,6 +85,11 @@ FormPeaks::~FormPeaks()
   delete ui;
 }
 
+void FormPeaks::setFit(Gamma::Fitter* fit) {
+  fit_data_ = fit;
+  update_fit(true);
+}
+
 void FormPeaks::loadSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
   ui->spinMinPeakWidth->setValue(settings_.value("min_peak_width", 5).toInt());
@@ -119,12 +125,10 @@ void FormPeaks::saveSettings(QSettings &settings_) {
 }
 
 void FormPeaks::clear() {
-  peaks_.clear();
-  multiplets_.clear();
   nrg_calibration_ = Gamma::Calibration();
   fwhm_calibration_ = Gamma::Calibration();
   detector_ = Gamma::Detector();
-  spectrum_data_ = Gamma::Fitter();
+  fit_data_->clear();
   maxima.clear();
   minima.clear();
   toggle_push();
@@ -167,6 +171,8 @@ void FormPeaks::setData(Gamma::Calibration nrg_calib, Gamma::Calibration fwhm_ca
 
 
 void FormPeaks::update_spectrum() {
+  if (fit_data_ == nullptr)
+    return;
 
   if ((!spectrum_) || (!spectrum_->resolution())) {
     clear();
@@ -196,28 +202,31 @@ void FormPeaks::update_spectrum() {
     ++i;
   }
 
-  spectrum_data_ = Gamma::Fitter(x_chan, y, ui->spinMovAvg->value());
-  spectrum_data_.find_prelim();
-  spectrum_data_.filter_prelim(ui->spinMinPeakWidth->value());
+  fit_data_->setXY(x_chan, y, ui->spinMovAvg->value());
+  fit_data_->find_prelim();
+  fit_data_->filter_prelim(ui->spinMinPeakWidth->value());
 
   replot_all();
 }
 
 
 void FormPeaks::replot_all() {
+  if (fit_data_ == nullptr)
+    return;
+  
   ui->plot1D->clearGraphs();
-  ui->plot1D->addGraph(QVector<double>::fromStdVector(spectrum_data_.x_), QVector<double>::fromStdVector(spectrum_data_.y_), main_graph_);
+  ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->x_), QVector<double>::fromStdVector(fit_data_->y_), main_graph_);
 
   if (ui->checkShowMovAvg->isChecked())
-    plot_derivs(spectrum_data_);
+    plot_derivs();
 
   QVector<double> xx, yy;
 
   if (ui->checkShowPrelimPeaks->isChecked()) {
     xx.clear(); yy.clear();
-    for (auto &q : spectrum_data_.prelim) {
+    for (auto &q : fit_data_->prelim) {
       xx.push_back(q);
-      yy.push_back(spectrum_data_.y_[q]);
+      yy.push_back(fit_data_->y_[q]);
     }
     if (yy.size())
       ui->plot1D->addPoints(xx, yy, prelim_peak_, QCPScatterStyle::ssDiamond);
@@ -225,28 +234,32 @@ void FormPeaks::replot_all() {
 
   if (ui->checkShowFilteredPeaks->isChecked()) {
     xx.clear(); yy.clear();
-    for (auto &q : spectrum_data_.filtered) {
+    for (auto &q : fit_data_->filtered) {
       xx.push_back(q);
-      yy.push_back(spectrum_data_.y_[q]);
+      yy.push_back(fit_data_->y_[q]);
     }
     if (yy.size())
       ui->plot1D->addPoints(xx, yy, filtered_peak_, QCPScatterStyle::ssDiamond);
   }
 
-  for (auto &q : multiplets_) {
-    if (ui->checkShowPseudoVoigt->isChecked())
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_pseudovoigt_), multiplet_);
+  for (auto &q : fit_data_->multiplets_) {
     if (ui->checkShowGaussians->isChecked())
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_gaussian_), multiplet_);
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_), multiplet_);
   }
   
-  for (auto &q : peaks_) {
+  for (auto &q : fit_data_->peaks_) {
     if (ui->checkShowPseudoVoigt->isChecked())
-        ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_pseudovoigt_), pseudo_voigt_);
+        ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
+                             QVector<double>::fromStdVector(q.second.y_fullfit_pseudovoigt_),
+                             pseudo_voigt_);
     if (ui->checkShowGaussians->isChecked())
-         ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_gaussian_), gaussian_);
+         ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
+                              QVector<double>::fromStdVector(q.second.y_fullfit_gaussian_),
+                              gaussian_);
     if (ui->checkShowBaselines->isChecked())
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_baseline_), baseline_);
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
+                           QVector<double>::fromStdVector(q.second.y_baseline_),
+                           baseline_);
   }
 
   ui->plot1D->setLabels("channel", "counts");
@@ -256,6 +269,9 @@ void FormPeaks::replot_all() {
 }
 
 void FormPeaks::addMovingMarker(double x) {
+  if (fit_data_ == nullptr)
+    return;
+  
   range_.visible = true;
 
   range_.center.channel = x;
@@ -265,13 +281,13 @@ void FormPeaks::addMovingMarker(double x) {
 
   uint16_t ch = static_cast<uint16_t>(x);
 
-  uint16_t ch_l = spectrum_data_.find_left(ch, ui->spinMinPeakWidth->value());
+  uint16_t ch_l = fit_data_->find_left(ch, ui->spinMinPeakWidth->value());
   range_.l.channel = ch_l;
   range_.l.chan_valid = true;
   range_.l.energy = nrg_calibration_.transform(ch_l);
   range_.l.energy_valid = (range_.l.channel != range_.l.energy);
 
-  uint16_t ch_r = spectrum_data_.find_right(ch, ui->spinMinPeakWidth->value());
+  uint16_t ch_r = fit_data_->find_right(ch, ui->spinMinPeakWidth->value());
   range_.r.channel = ch_r;
   range_.r.chan_valid = true;
   range_.r.energy = nrg_calibration_.transform(ch_r);
@@ -292,7 +308,8 @@ void FormPeaks::removeMovingMarker(double x) {
 
 
 void FormPeaks::replot_markers() {
-
+  if (fit_data_ == nullptr)
+    return;
 
   ui->plot1D->clearExtras();
 
@@ -301,24 +318,22 @@ void FormPeaks::replot_markers() {
 
   std::list<Marker> markers;
 
-  for (auto &q : peaks_) {
+  for (auto &q : fit_data_->peaks_) {
     Marker m = list;
-    m.channel = q.center;
-    m.energy = q.energy;
+    m.channel = q.second.center;
+    m.energy = q.second.energy;
     m.chan_valid = true;
     m.energy_valid = (m.channel != m.energy);
 
     //if (selected_peaks_.count(m.channel) == 1)
     //  m.selected = true;
-    m.selected = q.selected;
+    m.selected = q.second.selected;
     markers.push_back(m);
   }
 
   ui->plot1D->set_markers(markers);
   ui->plot1D->replot_markers();
   ui->plot1D->redraw();
-
-  PL_DBG << "After markers replot coefs = " << nrg_calibration_.coef_to_string();
 }
 
 void FormPeaks::on_pushAdd_clicked()
@@ -326,40 +341,34 @@ void FormPeaks::on_pushAdd_clicked()
   if (range_.l.channel >= range_.r.channel)
     return;
 
-  std::vector<double> baseline = spectrum_data_.make_baseline(range_.l.channel, range_.r.channel, 3);
-  Gamma::Peak newpeak = Gamma::Peak(std::vector<double>(spectrum_data_.x_.begin() + range_.l.channel, spectrum_data_.x_.begin() + range_.r.channel + 1),
-                      std::vector<double>(spectrum_data_.y_.begin() + range_.l.channel, spectrum_data_.y_.begin() + range_.r.channel + 1),
-                                    baseline, nrg_calibration_, fwhm_calibration_);
-
-  if (newpeak.gaussian_.height_ > 0) {
-    peaks_.push_back(newpeak);
-    ui->pushAdd->setEnabled(false);
-    removeMovingMarker(0);
-    toggle_push();
-    replot_all();
-    emit peaks_changed(peaks_, true);
-  }
+  fit_data_->add_peak(range_.l.channel, range_.r.channel, nrg_calibration_, fwhm_calibration_, ui->doubleOverlapWidth->value());
+  ui->pushAdd->setEnabled(false);
+  removeMovingMarker(0);
+  toggle_push();
+  replot_all();
+  emit peaks_changed(true);
 }
 
 void FormPeaks::user_selected_peaks() {
+  if (fit_data_ == nullptr)
+    return;
+
   std::set<double> chosen_peaks = ui->plot1D->get_selected_markers();
-  for (int i=0; i < peaks_.size(); ++i)
-    peaks_[i].selected = (chosen_peaks.count(peaks_[i].center) > 0);
+  for (auto &q : fit_data_->peaks_)
+    q.second.selected = (chosen_peaks.count(q.second.center) > 0);
   toggle_push();
   replot_markers();
   if (isVisible())
-    emit peaks_changed(peaks_, false);
+    emit peaks_changed(false);
 }
-
-std::vector<Gamma::Peak> FormPeaks::peaks() {
-  return peaks_;
-}
-
 
 void FormPeaks::toggle_push() {
+  if (fit_data_ == nullptr)
+    return;
+
   bool sel = false;
-  for (auto &q : peaks_)
-    if (q.selected)
+  for (auto &q : fit_data_->peaks_)
+    if (q.second.selected)
       sel = true;
   ui->pushAdd->setEnabled(range_.visible);
   ui->pushMarkerRemove->setEnabled(sel);
@@ -367,70 +376,49 @@ void FormPeaks::toggle_push() {
 
 void FormPeaks::on_pushMarkerRemove_clicked()
 {
-  std::set<double> chosen_peaks;
-  for (auto &q : peaks_)
-    if (q.selected)
-      chosen_peaks.insert(q.center);
+  if (fit_data_ == nullptr)
+    return;
 
-  for (auto &q : chosen_peaks) {
-    bool removed_subpeak = false;
-    for (int i=0; i < peaks_.size(); ++i) {
-      if (peaks_[i].center == q) {
-        if (peaks_[i].subpeak)
-          removed_subpeak = true;
-        peaks_.erase(peaks_.begin() + i);
-        break;
-      }
-    }
-    if (removed_subpeak) {
-      bool removed_subpeak = false;
-      for (int i=0; i<multiplets_.size(); ++i) {
-        for (int j=0; j < multiplets_[i].subpeaks_.size(); ++j) {
-          if (multiplets_[i].subpeaks_[j].center == q) {
-            multiplets_[i].subpeaks_.erase(multiplets_[i].subpeaks_.begin() + j);
-            removed_subpeak = true;
-            break;
-          }
-        }
-        if (removed_subpeak && multiplets_[i].subpeaks_.empty())
-          multiplets_.erase(multiplets_.begin() + i);
-        if (removed_subpeak)
-          break;
-      }
-    }
-  }
+  std::set<double> chosen_peaks;
+  for (auto &q : fit_data_->peaks_)
+    if (q.second.selected)
+      chosen_peaks.insert(q.second.center);
+
+  fit_data_->remove_peaks(chosen_peaks, nrg_calibration_, fwhm_calibration_);
 
   toggle_push();
   replot_all();
-  emit peaks_changed(peaks_, true);
+  emit peaks_changed(true);
 }
 
 void FormPeaks::on_pushFindPeaks_clicked()
 {
+  if (fit_data_ == nullptr)
+    return;
+
   this->setCursor(Qt::WaitCursor);
 
-  PL_DBG << "FormPeaks using calib coefs = " << nrg_calibration_.coef_to_string();
-
-  spectrum_data_.find_peaks(ui->spinMinPeakWidth->value(), nrg_calibration_, fwhm_calibration_, ui->doubleOverlapWidth->value());
-  peaks_ = spectrum_data_.peaks_;
-  multiplets_ = spectrum_data_.multiplets_;
+  fit_data_->find_peaks(ui->spinMinPeakWidth->value(), nrg_calibration_, fwhm_calibration_, ui->doubleOverlapWidth->value());
 
   toggle_push();
   replot_all();
 
-  emit peaks_changed(peaks_, true);
+  emit peaks_changed(true);
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormPeaks::plot_derivs(Gamma::Fitter &data)
+void FormPeaks::plot_derivs()
 {
+  if (fit_data_ == nullptr)
+    return;
+
   QVector<double> temp_y, temp_x;
   int was = 0, is = 0;
 
-  for (int i = 0; i < spectrum_data_.deriv1.size(); ++i) {
-    if (data.deriv1[i] > 0)
+  for (int i = 0; i < fit_data_->deriv1.size(); ++i) {
+    if (fit_data_->deriv1[i] > 0)
       is = 1;
-    else if (data.deriv1[i] < 0)
+    else if (fit_data_->deriv1[i] < 0)
       is = -1;
     else
       is = 0;
@@ -446,11 +434,11 @@ void FormPeaks::plot_derivs(Gamma::Fitter &data)
           ui->plot1D->addGraph(temp_x, temp_y, even_);
       }
       temp_x.clear(); temp_x.push_back(i-1);
-      temp_y.clear(); temp_y.push_back(data.y_avg_[i-1]);
+      temp_y.clear(); temp_y.push_back(fit_data_->y_avg_[i-1]);
     }
 
     was = is;
-    temp_y.push_back(data.y_avg_[i]);
+    temp_y.push_back(fit_data_->y_avg_[i]);
     temp_x.push_back(i);
   }
 
@@ -497,15 +485,21 @@ void FormPeaks::on_checkShowPseudoVoigt_clicked()
 
 void FormPeaks::on_spinMovAvg_editingFinished()
 {
-  spectrum_data_.set_mov_avg(ui->spinMovAvg->value());
-  spectrum_data_.find_prelim();
-  spectrum_data_.filter_prelim(ui->spinMinPeakWidth->value());
+  if (fit_data_ == nullptr)
+    return;
+
+  fit_data_->set_mov_avg(ui->spinMovAvg->value());
+  fit_data_->find_prelim();
+  fit_data_->filter_prelim(ui->spinMinPeakWidth->value());
   replot_all();
 }
 
 void FormPeaks::on_spinMinPeakWidth_editingFinished()
 {
-  spectrum_data_.filter_prelim(ui->spinMinPeakWidth->value());
+  if (fit_data_ == nullptr)
+    return;
+
+  fit_data_->filter_prelim(ui->spinMinPeakWidth->value());
   replot_all();
 }
 
@@ -515,8 +509,7 @@ void FormPeaks::range_moved() {
   replot_markers();
 }
 
-void FormPeaks::set_peaks(std::vector<Gamma::Peak> pks, bool content_changed) {
-  peaks_ = pks;
+void FormPeaks::update_fit(bool content_changed) {
   if (content_changed)
     replot_all();
   else

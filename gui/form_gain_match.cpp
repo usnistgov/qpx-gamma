@@ -284,10 +284,10 @@ bool FormGainMatch::find_peaks() {
     finder_opt.find_peaks(5);
 
     if (finder_ref.peaks_.size())
-      gauss_ref_ = finder_ref.peaks_[0];
+      gauss_ref_ = finder_ref.peaks_.begin()->second;
 
     if (finder_opt.peaks_.size())
-      gauss_opt_ = finder_opt.peaks_[0];
+      gauss_opt_ = finder_opt.peaks_.begin()->second;
 
     if (gauss_ref_.gaussian_.height_ && gauss_opt_.gaussian_.height_)
       return true;

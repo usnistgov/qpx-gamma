@@ -24,13 +24,26 @@
 #define GAMMA_PEAK_H
 
 #include <vector>
+#include <set>
 #include "polynomial.h"
 #include "gaussian.h"
 #include "voigt_.h"
 #include "detector.h"
 
 namespace Gamma {
+
+  enum class BaselineType : int {linear = 0, step = 1, step_polynomial = 2};
+
+  double local_avg(const std::vector<double> &x,
+                   const std::vector<double> &y,
+                   uint16_t chan,
+                   uint16_t samples = 1);
   
+  std::vector<double> make_background(const std::vector<double> &x,
+                                      const std::vector<double> &y,
+                                      uint16_t left, uint16_t right,
+                                      uint16_t samples,
+                                      BaselineType type = BaselineType::linear);
 
 class Peak {
 public:
@@ -73,13 +86,44 @@ public:
   {
       return (a.center < b.center);
   }
+
+  bool operator<(const Peak &other) const {
+    return (center < other.center);
+  }
+
+  bool operator==(const Peak &other) const {
+    return (center == other.center);
+  }
+
+  bool operator>(const Peak &other) const {
+    return (center > other.center);
+  }
   
 private:
   void fit(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline,
            Calibration cali_nrg = Calibration(), Calibration cali_fwhm = Calibration(), std::vector<Peak> peaks = std::vector<Peak>());
 };
 
-enum class BaselineType : int {linear = 0, step = 1, step_polynomial = 2};
+struct Multiplet {
+  Multiplet(const Calibration &nrg, const Calibration &fw)
+  : cal_nrg_ (nrg)
+  , cal_fwhm_ (fw)
+  {}
+
+  bool contains(double bin);
+  bool overlaps(const Peak &);
+  void add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y);
+  void add_peak(const Peak &pk, const std::vector<double> &x, const std::vector<double> &y);
+  void remove_peak(const Peak &pk);
+  void remove_peak(double bin);
+  void rebuild();
+
+  std::set<Peak> peaks_;
+  std::vector<double> x_, y_,
+    y_background_, y_fullfit_;
+  Calibration cal_nrg_, cal_fwhm_;  
+};
+
 
 }
 

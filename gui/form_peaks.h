@@ -46,19 +46,19 @@ public:
   explicit FormPeaks(QWidget *parent = 0);
   ~FormPeaks();
 
+  void setFit(Gamma::Fitter *);
   void setSpectrum(Pixie::Spectrum::Spectrum *newspectrum);
   void setData(Gamma::Calibration nrg_calib, Gamma::Calibration fwhm_calib);
 
   void clear();
-  std::vector<Gamma::Peak> peaks();
-  void set_peaks(std::vector<Gamma::Peak>, bool);
+  void update_fit(bool content_changed = false);
   void update_spectrum();
 
   void loadSettings(QSettings &settings_);
   void saveSettings(QSettings &settings_);
 
 signals:
-  void peaks_changed(std::vector<Gamma::Peak>, bool);
+  void peaks_changed(bool content_changed);
 
 private slots:
 
@@ -93,10 +93,10 @@ private:
 
   //from parent
   Pixie::Spectrum::Spectrum *spectrum_;
+  std::map<double, double> minima, maxima;
 
   //data from selected spectrum
-  Gamma::Fitter spectrum_data_;
-  std::map<double, double> minima, maxima;
+  Gamma::Fitter *fit_data_;
   Gamma::Detector detector_;
   Gamma::Calibration nrg_calibration_, fwhm_calibration_;
 
@@ -109,10 +109,7 @@ private:
                     multiplet_,
                     rise_, fall_, even_;
 
-
-  std::vector<Gamma::Peak> peaks_, multiplets_;
-
-  void plot_derivs(Gamma::Fitter&);
+  void plot_derivs();
 };
 
 #endif // FORM_CALIBRATION_H

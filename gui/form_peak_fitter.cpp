@@ -26,9 +26,10 @@
 #include "gamma_fitter.h"
 #include "qt_util.h"
 
-FormPeakFitter::FormPeakFitter(QSettings &settings, QWidget *parent) :
+FormPeakFitter::FormPeakFitter(QSettings &settings, Gamma::Fitter &fit, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormPeakFitter),
+  fit_data_(fit),
   settings_(settings)
 {
   ui->setupUi(this);
@@ -74,29 +75,44 @@ void FormPeakFitter::saveSettings() {
 }
 
 void FormPeakFitter::clear() {
-  peaks_.clear();
   ui->tablePeaks->clearContents();
   ui->tablePeaks->setRowCount(0);
 
   toggle_push();
 }
 
-void FormPeakFitter::update_peaks(std::vector<Gamma::Peak> pks) {
-  peaks_ = pks;
+void FormPeakFitter::update_peaks(bool contents_changed) {
+  if (contents_changed) {
+    ui->tablePeaks->clearContents();
+    ui->tablePeaks->setRowCount(fit_data_.peaks_.size());
+    int i=0;
+    for (auto &q : fit_data_.peaks_) {
+      add_peak_to_table(q.second, i);
+      ++i;
+    }
+  }
 
-  std::sort(peaks_.begin(), peaks_.end(), Gamma::Peak::by_center);
-
-  ui->tablePeaks->clearContents();
-  ui->tablePeaks->setRowCount(peaks_.size());
-  for (int i=0; i < peaks_.size(); ++i)
-    add_peak_to_table(peaks_[i], i);
+  ui->tablePeaks->blockSignals(true);
+  this->blockSignals(true);
+  ui->tablePeaks->clearSelection();
+  int i = 0;
+  for (auto &q : fit_data_.peaks_) {
+    if (q.second.selected) {
+      ui->tablePeaks->selectRow(i);
+    }
+    ++i;
+  }
+  ui->tablePeaks->blockSignals(false);
+  this->blockSignals(false);
   
   toggle_push();
-  replot_markers();
 }
 
-void FormPeakFitter::add_peak_to_table(Gamma::Peak p, int row) {
-  ui->tablePeaks->setItem(row, 0, new QTableWidgetItem( QString::number(p.center) ));
+void FormPeakFitter::add_peak_to_table(const Gamma::Peak &p, int row) {
+    QTableWidgetItem *center = new QTableWidgetItem(QString::number(p.center));
+  center->setData(Qt::EditRole, QVariant::fromValue(p.center));
+  ui->tablePeaks->setItem(row, 0, center);
+
   ui->tablePeaks->setItem(row, 1, new QTableWidgetItem( QString::number(p.energy) ));
   ui->tablePeaks->setItem(row, 2, new QTableWidgetItem( QString::number(p.fwhm_gaussian) ));
   ui->tablePeaks->setItem(row, 3, new QTableWidgetItem( QString::number(p.fwhm_gaussian / p.fwhm_theoretical * 100) + "%" ));
@@ -117,38 +133,23 @@ void FormPeakFitter::add_peak_to_table(Gamma::Peak p, int row) {
   ui->tablePeaks->setItem(row, 5, new QTableWidgetItem( nbrs ));  
 }
 
-void FormPeakFitter::replot_markers() {
-  std::set<double> chosen_peaks_nrg;
-
-  ui->tablePeaks->blockSignals(true);
-  ui->tablePeaks->clearSelection();
-  for (int i=0; i < peaks_.size(); ++i) {
-    if (peaks_[i].selected) {
-      ui->tablePeaks->selectRow(i);
-      chosen_peaks_nrg.insert(peaks_[i].energy);
-    }
-  }
-  ui->tablePeaks->blockSignals(false);
-}
-
 void FormPeakFitter::update_peak_selection(std::set<double> pks) {
-  for (int i=0; i < peaks_.size(); ++i)
-    peaks_[i].selected = (pks.count(peaks_[i].center) > 0);
+  for (auto &q : fit_data_.peaks_)
+    q.second.selected = (pks.count(q.second.center) > 0);
   toggle_push();
-  replot_markers();
   if (isVisible())
-    emit peaks_changed(peaks_, false);
+    emit peaks_changed(false);
 }
 
 void FormPeakFitter::selection_changed_in_table() {
-  for (auto &q : peaks_)
-    q.selected = false;
-  foreach (QModelIndex idx, ui->tablePeaks->selectionModel()->selectedRows())
-    peaks_[idx.row()].selected = true;
+  for (auto &q : fit_data_.peaks_)
+    q.second.selected = false;
+  foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows()) {
+    fit_data_.peaks_[ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble()].selected = true;
+  }
   toggle_push();
-  replot_markers();
   if (isVisible())
-    emit peaks_changed(peaks_, false);
+    emit peaks_changed(false);
 }
 
 void FormPeakFitter::toggle_push() {

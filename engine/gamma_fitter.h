@@ -38,8 +38,10 @@ public:
 
   Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t min, uint16_t max, uint16_t avg_window = 1);
 
-  void setXY(std::vector<double> x, std::vector<double> y)
-    {*this = Fitter(x, y);}
+  void clear();
+  
+  void setXY(std::vector<double> x, std::vector<double> y, uint16_t avg_window = 1)
+  {*this = Fitter(x, y, avg_window);}
 
   void set_mov_avg(uint16_t);
   void deriv();
@@ -48,20 +50,25 @@ public:
   void refine_edges(double threshl, double threshr);
   void find_peaks(int min_width, Calibration nrg_cali = Calibration(), Calibration fwhm_cali = Calibration(), double overlap = 4.0);
 
-  Peak make_multiplet(std::vector<Peak> peaks, Calibration nrg_cali, Calibration fwhm_cali);
+  void add_peak(uint32_t left, uint32_t right, Calibration nrg_cali = Calibration(), Calibration fwhm_cali = Calibration(), double overlap = 4.0);
+  void remove_peak(double bin, Calibration nrg_cali = Calibration(), Calibration fwhm_cali = Calibration());
+  void remove_peaks(std::set<double> bins, Calibration nrg_cali = Calibration(), Calibration fwhm_cali = Calibration());
+
+  void make_multiplets(Calibration nrg_cali, Calibration fwhm_cali, double overlap = 4.0);
 
   uint16_t find_left(uint16_t chan, uint16_t grace = 0);
   uint16_t find_right(uint16_t chan, uint16_t grace = 0);
-  double local_avg(uint16_t chan, uint16_t samples = 1);
-  std::vector<double> make_baseline(uint16_t left, uint16_t right, uint16_t BL_samples, BaselineType type = BaselineType::linear);
 
-  static void filter_by_theoretical_fwhm(std::vector<Peak>&, double range);
+  void filter_by_theoretical_fwhm(double range);
 
   std::vector<double> x_, y_, y_avg_, deriv1, deriv2;
 
   std::vector<uint16_t> prelim, filtered, lefts, rights, lefts_t, rights_t;
+  
+  //  Calibration cal_nrg, cal_fwhm;
 
-  std::vector<Peak> peaks_, multiplets_;
+  std::map<double, Peak> peaks_;
+  std::list<Multiplet> multiplets_;
 };
 
 }

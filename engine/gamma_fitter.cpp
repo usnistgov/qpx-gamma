@@ -26,72 +26,6 @@
 
 namespace Gamma {
 
-std::vector<double> Fitter::make_baseline(uint16_t left, uint16_t right, uint16_t BL_samples, BaselineType type) {
-  int32_t  width = right - left;
-  double left_avg = local_avg(left, BL_samples);
-  double right_avg = local_avg(right, BL_samples);
-
-  if ((width <= 0) || isnan(left_avg) || isnan(right_avg))
-    return std::vector<double>();
-
-
-  //by default, linear
-  double slope = (right_avg - left_avg) / static_cast<double>(width);
-  std::vector<double> xx(width+1), yy(width+1), baseline(width+1);
-  for (int32_t i = 0; i <= width; ++i) {
-    xx[i] = x_[left+i];
-    yy[i] = y_[left+i];
-    baseline[i] = left_avg + (i * slope);
-  }
-
-  if (type == BaselineType::linear)
-    return baseline;
-
-  //find centroid, then make step baseline
-  Peak prelim = Peak(xx, yy, baseline);
-  int32_t center = static_cast<int32_t>(prelim.gaussian_.center_);
-  for (int32_t i = 0; i <= width; ++i) {
-    if (xx[i] <= center)
-      baseline[i] = left_avg;
-    else if (xx[i] > center)
-      baseline[i] = right_avg;
-  }
-
-  if (type == BaselineType::step)
-    return baseline;
-
-  //substitute step with poly function
-  std::vector<uint16_t> poly_terms({1,3,5,7,9,11,13,15,17,19,21});
-  Polynomial poly = Polynomial(xx, baseline, 21, prelim.gaussian_.center_);
-  baseline = poly.evaluate_array(xx);
-
-  if (type == BaselineType::step_polynomial)
-    return baseline;
-  
-}
-
-double Fitter::local_avg(uint16_t chan, uint16_t samples) {
-  if ((chan >= x_.size()) || (samples < 1))
-    return std::numeric_limits<double>::quiet_NaN();
-  
-  if ((samples % 2) == 0)
-    samples++;
-  int32_t half  = (samples - 1) / 2;
-  int32_t left  = static_cast<int32_t>(chan) - half;
-  int32_t right = static_cast<int32_t>(chan) + half;
-
-  if (left < 0)
-    left = 0;
-  if (right >= x_.size())
-    right = x_.size() - 1;
-
-  samples = right - left + 1;
-  
-  return std::accumulate(y_.begin() + left, y_.begin() + (right+1), 0) / static_cast<double>(samples);
-  
-}
-
-
 Fitter::Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t min, uint16_t max, uint16_t avg_window) :
   x_(x), y_(y)
 {
@@ -106,6 +40,22 @@ Fitter::Fitter(const std::vector<double> &x, const std::vector<double> &y, uint1
 
   if (x_.size() > 0)
     PL_DBG << "x_ [" << x_[0] << ", " << x_[x_.size() - 1] << "]";
+}
+
+void Fitter::clear() {
+  x_.clear();
+  y_.clear();
+  y_avg_.clear();
+  deriv1.clear();
+  deriv2.clear();
+  prelim.clear();
+  filtered.clear();
+  lefts.clear();
+  rights.clear();
+  lefts_t.clear();
+  rights_t.clear();
+  peaks_.clear();
+  multiplets_.clear();
 }
 
 void Fitter::set_mov_avg(uint16_t window) {
@@ -170,6 +120,7 @@ void Fitter::deriv() {
 
 void Fitter::find_prelim() {
   prelim.clear();
+  std::string dbg_list("prelim peaks ");
 
   int was = 0, is = 0;
 
@@ -181,17 +132,23 @@ void Fitter::find_prelim() {
     else
       is = 0;
 
-    if ((was == 1) && (is == -1))
+    if ((was == 1) && (is == -1)) {
       prelim.push_back(i);
+      dbg_list += std::to_string(i) + " ";
+    }
 
     was = is;
   }
+  //PL_DBG << dbg_list;
 }
 
 void Fitter::filter_prelim(uint16_t min_width) {
   filtered.clear();
   lefts.clear();
   rights.clear();
+
+  std::string dbg_list("filtered (minw=");
+  dbg_list += std::to_string(min_width) + ") peaks ";
 
   if ((y_.size() < 3) || !prelim.size())
     return;
@@ -213,11 +170,13 @@ void Fitter::filter_prelim(uint16_t min_width) {
         break;
 
     if ((left >= min_width) && (right >= min_width)) {
-      filtered.push_back(q-1);
       lefts.push_back(q-left-1);
+      filtered.push_back(q-1);
       rights.push_back(q+right-1);
+      dbg_list += std::to_string(q-left-1) + "/" + std::to_string(q-1) + "\\" + std::to_string(q+right-1) + " ";
     }
   }
+  //  PL_DBG << dbg_list;
 }
 
 void Fitter::refine_edges(double threshl, double threshr) {
@@ -265,36 +224,15 @@ uint16_t Fitter::find_right(uint16_t chan, uint16_t grace) {
   return i;
 }
 
-void Fitter::filter_by_theoretical_fwhm(std::vector<Peak>& peaks, double range) {
-  std::vector<double> to_remove;
-  for (auto &q : peaks) {
-    double frac = q.fwhm_gaussian / q.fwhm_theoretical;
+void Fitter::filter_by_theoretical_fwhm(double range) {
+  std::set<double> to_remove;
+  for (auto &q : peaks_) {
+    double frac = q.second.fwhm_gaussian / q.second.fwhm_theoretical;
     if ((frac < (1 - range)) || (frac > (1 + range)))
-      to_remove.push_back(q.center);
+      to_remove.insert(q.first);
   }
-  for (auto &q : to_remove) {
-    for (int i=0; i < peaks.size(); ++i) {
-      if (peaks[i].center == q) {
-        peaks.erase(peaks.begin() + i);
-        break;
-      }
-    }
-  }
-}
-
-Peak Fitter::make_multiplet(std::vector<Peak> peaks, Calibration nrg_cali, Calibration fwhm_cali) {
-  Peak fitted;
-  if (peaks.size() < 1)
-    return fitted;
-  
-  int left = peaks.front().x_.front();
-  int right = peaks.back().x_.back();
-  std::vector<double> baseline = make_baseline(left, right, 3);
-  std::vector<double> xx(x_.begin() + left, x_.begin() + right + 1);
-  std::vector<double> yy(y_.begin() + left, y_.begin() + right + 1);
-  fitted = Peak(xx, yy, baseline, nrg_cali, fwhm_cali, peaks);
-
-  return fitted;  
+  for (auto &q : to_remove)
+    peaks_.erase(q);
 }
 
 
@@ -302,13 +240,13 @@ void Fitter::find_peaks(int min_width, Calibration nrg_cali, Calibration fwhm_ca
   find_prelim();
   filter_prelim(min_width);
 
-  PL_DBG << "Finder using calib coefs = " << nrg_cali.coef_to_string();
+  PL_DBG << "Finder using nrg calib coefs = " << nrg_cali.coef_to_string();
 
 
   peaks_.clear();
   multiplets_.clear();
   for (int i=0; i < filtered.size(); ++i) {
-    std::vector<double> baseline = make_baseline(lefts[i], rights[i], 3);
+    std::vector<double> baseline = make_background(x_, y_, lefts[i], rights[i], 3);
     std::vector<double> xx(x_.begin() + lefts[i], x_.begin() + rights[i] + 1);
     std::vector<double> yy(y_.begin() + lefts[i], y_.begin() + rights[i] + 1);
     Peak fitted = Peak(xx, yy, baseline, nrg_cali, fwhm_cali);
@@ -316,59 +254,129 @@ void Fitter::find_peaks(int min_width, Calibration nrg_cali, Calibration fwhm_ca
     if (
         (fitted.height > 0) &&
         (fitted.fwhm_gaussian > 0) &&
-        (fitted.fwhm_pseudovoigt > 0)
+        (fitted.fwhm_pseudovoigt > 0) &&
+        (lefts[i] < fitted.center) &&
+        (fitted.center < rights[i])
        )
     {
-      peaks_.push_back(fitted);
+      peaks_[fitted.center] = fitted;
     }
   }
 
   if (fwhm_cali.units_ == "keV") {
-    filter_by_theoretical_fwhm(peaks_, 0.25);
-    
-    for (int i=0; i < peaks_.size(); ++i) {
-      peaks_[i].lim_L = peaks_[i].energy - overlap * peaks_[i].fwhm_theoretical;
-      peaks_[i].lim_R = peaks_[i].energy + overlap * peaks_[i].fwhm_theoretical;
-      if ((i > 0) && (peaks_[i-1].energy > peaks_[i].lim_L))
-        peaks_[i].intersects_L = true;
-      if (((i+1) < peaks_.size()) && (peaks_[i+1].energy < peaks_[i].lim_R))
-        peaks_[i].intersects_R = true;
-    }
+    PL_DBG << "<GammaFitter> Valid FWHM calib found, performing filtering/deconvolution";
+    filter_by_theoretical_fwhm(0.25);
 
-    std::vector<Peak> multiplet;
-    std::vector<double> to_remove;
-    for (int i=0; i < peaks_.size(); ++i) {
-      if (peaks_[i].intersects_R && ((i+1) < peaks_.size()) && peaks_[i+1].intersects_L) {
-        multiplet.push_back(peaks_[i]);
-        to_remove.push_back(peaks_[i].center);
-      }
-      if ((i > 0) && !peaks_[i].intersects_R && peaks_[i].intersects_L && peaks_[i-1].intersects_R) {
-        multiplet.push_back(peaks_[i]);
-        to_remove.push_back(peaks_[i].center);
+    PL_DBG << "filtered by theoretical fwhm " << peaks_.size();
 
-        Peak fitted = make_multiplet(multiplet, nrg_cali, fwhm_cali);
-
-        multiplet.clear();
-        multiplets_.push_back(fitted);
-      }
-    }
-    for (auto &q : to_remove) {
-      for (int i=0; i < peaks_.size(); ++i) {
-        if (peaks_[i].center == q) {
-          peaks_.erase(peaks_.begin() + i);
-          break;
-        }
-      }
-    }
-    for (auto &q : multiplets_) {
-      for (auto &p : q.subpeaks_)
-        peaks_.push_back(p);
-    }
+    make_multiplets(nrg_cali, fwhm_cali, overlap);
   }
-  
+
   PL_INFO << "Preliminary search found " << prelim.size() << " potential peaks";
   PL_INFO << "After minimum width filter: " << filtered.size();
   PL_INFO << "Fitted peaks: " << peaks_.size();
 }
+
+void Fitter::add_peak(uint32_t left, uint32_t right, Calibration nrg_cali, Calibration fwhm_cali, double overlap) {
+  std::vector<double> xx(x_.begin() + left, x_.begin() + right + 1);
+  std::vector<double> yy(y_.begin() + left, y_.begin() + right + 1);
+  std::vector<double> bckgr = make_background(x_, y_, left, right, 3);
+  
+  Peak newpeak = Gamma::Peak(xx, yy, bckgr, nrg_cali, fwhm_cali);
+
+  peaks_[newpeak.center] = newpeak;
+  multiplets_.clear();
+  make_multiplets(nrg_cali, fwhm_cali, overlap);
+}
+
+void Fitter::make_multiplets(Calibration nrg_cali, Calibration fwhm_cali, double overlap)
+{
+  if (peaks_.size() > 1) {
+
+    for (auto &q : peaks_) {
+      q.second.lim_L = q.second.energy - overlap * q.second.fwhm_theoretical;
+      q.second.lim_R = q.second.energy + overlap * q.second.fwhm_theoretical;
+    }
+    
+    std::map<double, Peak>::iterator pk1 = peaks_.begin();
+    std::map<double, Peak>::iterator pk2 = peaks_.begin();
+    pk2++;
+
+    int juncs=0;
+    while (pk2 != peaks_.end()) {
+      if ((pk1->second.energy > pk2->second.lim_L) || (pk1->second.lim_R > pk2->second.energy)) {
+        pk1->second.intersects_R = true;
+        pk2->second.intersects_L = true;
+        juncs++;
+      }
+      pk1++;
+      pk2++;
+    }
+    PL_DBG << "<Gamma::Fitter> found " << juncs << " peak overlaps";
+
+    std::set<Peak> multiplet;
+    std::set<double> to_remove;
+
+    pk1 = peaks_.begin();
+    pk2 = peaks_.begin();
+    pk2++;
+    
+    while (pk2 != peaks_.end()) {
+      if (pk1->second.intersects_R && pk2->second.intersects_L) {
+        multiplet.insert(pk1->second);
+        to_remove.insert(pk1->first);
+      }
+      if (pk2->second.intersects_L && !pk2->second.intersects_R) {
+        multiplet.insert(pk2->second);
+        to_remove.insert(pk2->first);
+
+        if (!multiplet.empty()) {
+          Multiplet multi(nrg_cali, fwhm_cali);
+          multi.add_peaks(multiplet, x_, y_);
+          multiplets_.push_back(multi);
+        }
+
+        multiplet.clear();
+      }
+      pk1++;
+      pk2++;
+    }
+    for (auto &q : to_remove)
+      peaks_.erase(q);
+    for (auto &q : multiplets_) {
+      for (auto &p : q.peaks_)
+        peaks_[p.center] = p;
+    }
+  }  
+}
+
+void Fitter::remove_peak(double bin, Calibration nrg_cali, Calibration fwhm_cali) {
+
+  bool as_multiplet = false;
+  std::list<Multiplet>::iterator q = multiplets_.begin();
+  while (q != multiplets_.end()) {
+    if (q->contains(bin)) {
+      for (auto &p : q->peaks_)
+        peaks_.erase(p.center);
+      q->remove_peak(bin);
+      for (auto &p : q->peaks_)
+        peaks_[p.center] = p;
+      if (q->peaks_.size() < 2)
+        multiplets_.erase(q);
+      as_multiplet = true;
+      break;
+    }
+    q++;
+  }
+  if (!as_multiplet)
+    peaks_.erase(bin);
+}
+
+
+void Fitter::remove_peaks(std::set<double> bins, Calibration nrg_cali, Calibration fwhm_cali) {
+  for (auto &q : bins)
+    remove_peak(q, nrg_cali, fwhm_cali);
+}
+
 
 }

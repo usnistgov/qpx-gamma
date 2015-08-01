@@ -41,12 +41,12 @@ class FormFwhmCalibration : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
+  explicit FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, Gamma::Fitter&, QWidget *parent = 0);
   ~FormFwhmCalibration();
 
   void setData(Gamma::Calibration fwhm_calib, uint16_t bits);
 
-  void update_peaks(std::vector<Gamma::Peak>);
+  void update_peaks(bool);
   void update_peak_selection(std::set<double>);
   Gamma::Calibration get_new_calibration() {return new_fwhm_calibration_;}
 
@@ -56,7 +56,7 @@ public:
 
 signals:
   void detectorsChanged();
-  void peaks_changed(std::vector<Gamma::Peak>, bool);
+  void peaks_changed(bool);
   void update_detector(bool, bool);
 
 private slots:
@@ -84,7 +84,7 @@ private:
   XMLableDB<Gamma::Detector> &detectors_;
   Gamma::Detector detector_;
 
-  std::vector<Gamma::Peak> peaks_;
+  Gamma::Fitter &fit_data_;
   
   uint16_t bits_;
   Gamma::Calibration old_fwhm_calibration_, new_fwhm_calibration_;
@@ -94,8 +94,8 @@ private:
   void loadSettings();
   void saveSettings();
   Polynomial fit_calibration();
-  int find_outlier();
-  void add_peak_to_table(Gamma::Peak, int);
+  double find_outlier();
+  void add_peak_to_table(const Gamma::Peak &, int);
 };
 
 #endif // FORM_FWHM_CALIBRATION_H

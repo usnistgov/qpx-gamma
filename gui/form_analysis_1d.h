@@ -58,10 +58,10 @@ public slots:
 
 private slots:
 
-  void update_peaks(std::vector<Gamma::Peak>,bool);
-  void update_peaks_from_fwhm(std::vector<Gamma::Peak>, bool);
-  void update_peaks_from_nrg(std::vector<Gamma::Peak>, bool);
-  void update_peaks_from_fitter(std::vector<Gamma::Peak>, bool);
+  void update_peaks(bool);
+  void update_peaks_from_fwhm(bool);
+  void update_peaks_from_nrg(bool);
+  void update_peaks_from_fitter(bool);
   void detectorsUpdated() {emit detectorsChanged();}
 
 protected:
@@ -74,6 +74,9 @@ private:
   FormEnergyCalibration *my_energy_calibration_;
   FormFwhmCalibration *my_fwhm_calibration_;
   FormPeakFitter *my_peak_fitter_;
+
+
+  Gamma::Fitter fit_data_;
 
   Gamma::Calibration nrg_calibration_, fwhm_calibration_;
 

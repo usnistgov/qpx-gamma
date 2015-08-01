@@ -37,24 +37,26 @@ FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLableDB<Gamma::Detector>& 
 
   loadSettings();
 
-  connect(ui->plotSpectrum, SIGNAL(peaks_changed(std::vector<Gamma::Peak>,bool)), this, SLOT(update_peaks(std::vector<Gamma::Peak>,bool)));
+  ui->plotSpectrum->setFit(&fit_data_);
+
+  connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
   //connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
 
-  my_energy_calibration_ = new FormEnergyCalibration(settings_, detectors_);
+  my_energy_calibration_ = new FormEnergyCalibration(settings_, detectors_, fit_data_);
   ui->tabs->addTab(my_energy_calibration_, "Energy calibration");
   connect(my_energy_calibration_, SIGNAL(detectorsChanged()), this, SLOT(detectorsUpdated()));
-  connect(my_energy_calibration_, SIGNAL(peaks_changed(std::vector<Gamma::Peak>,bool)), this, SLOT(update_peaks_from_nrg(std::vector<Gamma::Peak>,bool)));
+  connect(my_energy_calibration_, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks_from_nrg(bool)));
   connect(my_energy_calibration_, SIGNAL(update_detector(bool,bool)), this, SLOT(update_detector(bool,bool)));
 
-  my_fwhm_calibration_ = new FormFwhmCalibration(settings_, detectors_);
+  my_fwhm_calibration_ = new FormFwhmCalibration(settings_, detectors_, fit_data_);
   ui->tabs->addTab(my_fwhm_calibration_, "FWHM calibration");
   connect(my_fwhm_calibration_, SIGNAL(detectorsChanged()), this, SLOT(detectorsUpdated()));
   connect(my_fwhm_calibration_, SIGNAL(update_detector(bool,bool)), this, SLOT(update_detector(bool,bool)));
-  connect(my_fwhm_calibration_, SIGNAL(peaks_changed(std::vector<Gamma::Peak>, bool)), this, SLOT(update_peaks_from_fwhm(std::vector<Gamma::Peak>, bool)));
+  connect(my_fwhm_calibration_, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks_from_fwhm(bool)));
 
-  my_peak_fitter_ = new FormPeakFitter(settings_);
+  my_peak_fitter_ = new FormPeakFitter(settings_, fit_data_);
   ui->tabs->addTab(my_peak_fitter_, "Peak fitter");
-  connect(my_peak_fitter_, SIGNAL(peaks_changed(std::vector<Gamma::Peak>, bool)), this, SLOT(update_peaks_from_fitter(std::vector<Gamma::Peak>, bool)));
+  connect(my_peak_fitter_, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks_from_fitter(bool)));
 
   
   ui->tabs->setCurrentWidget(my_fwhm_calibration_);
@@ -149,6 +151,9 @@ void FormAnalysis1D::setSpectrum(Pixie::SpectraSet *newset, QString name) {
 
     my_peak_fitter_->clear();
 
+    my_energy_calibration_->update_peaks(true);
+    my_fwhm_calibration_->update_peaks(true);
+    my_peak_fitter_->update_peaks(true);
   }
 
   ui->plotSpectrum->setSpectrum(spectrum);
@@ -231,26 +236,26 @@ void FormAnalysis1D::update_spectrum() {
     ui->plotSpectrum->update_spectrum();
 }
 
-void FormAnalysis1D::update_peaks(std::vector<Gamma::Peak> pks, bool content_changed) {
-  my_energy_calibration_->update_peaks(pks);
-  my_fwhm_calibration_->update_peaks(pks);
-  my_peak_fitter_->update_peaks(pks);
+void FormAnalysis1D::update_peaks(bool content_changed) {
+  my_energy_calibration_->update_peaks(content_changed);
+  my_fwhm_calibration_->update_peaks(content_changed);
+  my_peak_fitter_->update_peaks(content_changed);
 }
 
-void FormAnalysis1D::update_peaks_from_fwhm(std::vector<Gamma::Peak> pks, bool content_changed) {
-  my_energy_calibration_->update_peaks(pks);
-  my_peak_fitter_->update_peaks(pks);
-  ui->plotSpectrum->set_peaks(pks, content_changed);
+void FormAnalysis1D::update_peaks_from_fwhm(bool content_changed) {
+  my_peak_fitter_->update_peaks(content_changed);
+  ui->plotSpectrum->update_fit(content_changed);
+  my_energy_calibration_->update_peaks(content_changed);
 }
 
-void FormAnalysis1D::update_peaks_from_nrg(std::vector<Gamma::Peak> pks, bool content_changed) {
-  my_fwhm_calibration_->update_peaks(pks);
-  my_peak_fitter_->update_peaks(pks);
-  ui->plotSpectrum->set_peaks(pks, content_changed);
+void FormAnalysis1D::update_peaks_from_nrg(bool content_changed) {
+  my_fwhm_calibration_->update_peaks(content_changed);
+  my_peak_fitter_->update_peaks(content_changed);
+  ui->plotSpectrum->update_fit(content_changed);
 }
 
-void FormAnalysis1D::update_peaks_from_fitter(std::vector<Gamma::Peak> pks, bool content_changed) {
-  my_energy_calibration_->update_peaks(pks);
-  my_fwhm_calibration_->update_peaks(pks);
-  ui->plotSpectrum->set_peaks(pks, content_changed);
+void FormAnalysis1D::update_peaks_from_fitter(bool content_changed) {
+  my_energy_calibration_->update_peaks(content_changed);
+  my_fwhm_calibration_->update_peaks(content_changed);
+  ui->plotSpectrum->update_fit(content_changed);
 }

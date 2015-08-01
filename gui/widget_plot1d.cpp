@@ -584,7 +584,6 @@ void WidgetPlot1D::plot_mouse_clicked(double x, double y, QMouseEvent* event, bo
 
 
 void WidgetPlot1D::selection_changed() {
-  PL_INFO << "<WidgetPlot1D> selection changed";
   emit markers_selected();
 }
 

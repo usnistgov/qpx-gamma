@@ -222,7 +222,6 @@ void WidgetPlotCalib::setColorScheme(QColor fore, QColor back, QColor grid1, QCo
 }
 
 void WidgetPlotCalib::update_selection() {
-  PL_INFO << "<WidgetPlotCalib> selection changed";
   selection_.clear();
   for (auto &q : ui->mcaPlot->selectedItems())
     if (QCPItemTracer *txt = qobject_cast<QCPItemTracer*>(q))

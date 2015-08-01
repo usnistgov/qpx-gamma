@@ -316,7 +316,7 @@ bool FormOptimization::find_peaks() {
     Gamma::Fitter finder_opt(x, y_opt, xmin, xmax, ui->spinMovAvg->value());
     finder_opt.find_peaks(ui->spinMinPeakWidth->value());
     if (finder_opt.peaks_.size())
-      peaks_[peaks_.size() - 1] = finder_opt.peaks_[0];
+      peaks_[peaks_.size() - 1] = finder_opt.peaks_.begin()->second;
 
     return true;
   } else
