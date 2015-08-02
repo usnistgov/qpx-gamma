@@ -26,20 +26,29 @@
 
 namespace Gamma {
 
-Fitter::Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t min, uint16_t max, uint16_t avg_window) :
-  x_(x), y_(y)
+void Fitter::setXY(std::vector<double> x, std::vector<double> y, uint16_t avg_window)
 {
-  if ((y_.size() == x_.size()) && (min < max) && ((max+1) < x.size())) {
+  x_.clear(); y_.clear();
+  if (y.size() == x.size()) {
+    x_ = x;
+    y_ = y;
+  }  
+  set_mov_avg(avg_window);
+  deriv();
+}
+
+
+void Fitter::setXY(std::vector<double> x, std::vector<double> y,  uint16_t min, uint16_t max, uint16_t avg_window)
+{
+  x_.clear(); y_.clear();
+  if ((y.size() == x.size()) && (min < max) && ((max+1) < x.size())) {
     for (int i=min; i<=max; ++i) {
       x_.push_back(x[i]);
       y_.push_back(y[i]);
     }
-    set_mov_avg(avg_window);
-    deriv();
-  }
-
-  if (x_.size() > 0)
-    PL_DBG << "x_ [" << x_[0] << ", " << x_[x_.size() - 1] << "]";
+  }  
+  set_mov_avg(avg_window);
+  deriv();
 }
 
 void Fitter::clear() {
@@ -236,11 +245,11 @@ void Fitter::filter_by_theoretical_fwhm(double range) {
 }
 
 
-void Fitter::find_peaks(int min_width, Calibration nrg_cali, Calibration fwhm_cali, double overlap) {
+void Fitter::find_peaks(int min_width) {
   find_prelim();
   filter_prelim(min_width);
 
-  PL_DBG << "Finder using nrg calib coefs = " << nrg_cali.coef_to_string();
+  PL_DBG << "Finder using nrg calib coefs = " << nrg_cali_.coef_to_string();
 
 
   peaks_.clear();
@@ -249,7 +258,7 @@ void Fitter::find_peaks(int min_width, Calibration nrg_cali, Calibration fwhm_ca
     std::vector<double> baseline = make_background(x_, y_, lefts[i], rights[i], 3);
     std::vector<double> xx(x_.begin() + lefts[i], x_.begin() + rights[i] + 1);
     std::vector<double> yy(y_.begin() + lefts[i], y_.begin() + rights[i] + 1);
-    Peak fitted = Peak(xx, yy, baseline, nrg_cali, fwhm_cali);
+    Peak fitted = Peak(xx, yy, baseline, nrg_cali_, fwhm_cali_);
 
     if (
         (fitted.height > 0) &&
@@ -263,13 +272,13 @@ void Fitter::find_peaks(int min_width, Calibration nrg_cali, Calibration fwhm_ca
     }
   }
 
-  if (fwhm_cali.units_ == "keV") {
+  if (fwhm_cali_.units_ == "keV") {
     PL_DBG << "<GammaFitter> Valid FWHM calib found, performing filtering/deconvolution";
     filter_by_theoretical_fwhm(0.25);
 
     PL_DBG << "filtered by theoretical fwhm " << peaks_.size();
 
-    make_multiplets(nrg_cali, fwhm_cali, overlap);
+    make_multiplets();
   }
 
   PL_INFO << "Preliminary search found " << prelim.size() << " potential peaks";
@@ -277,25 +286,25 @@ void Fitter::find_peaks(int min_width, Calibration nrg_cali, Calibration fwhm_ca
   PL_INFO << "Fitted peaks: " << peaks_.size();
 }
 
-void Fitter::add_peak(uint32_t left, uint32_t right, Calibration nrg_cali, Calibration fwhm_cali, double overlap) {
+void Fitter::add_peak(uint32_t left, uint32_t right) {
   std::vector<double> xx(x_.begin() + left, x_.begin() + right + 1);
   std::vector<double> yy(y_.begin() + left, y_.begin() + right + 1);
   std::vector<double> bckgr = make_background(x_, y_, left, right, 3);
   
-  Peak newpeak = Gamma::Peak(xx, yy, bckgr, nrg_cali, fwhm_cali);
+  Peak newpeak = Gamma::Peak(xx, yy, bckgr, nrg_cali_, fwhm_cali_);
 
   peaks_[newpeak.center] = newpeak;
   multiplets_.clear();
-  make_multiplets(nrg_cali, fwhm_cali, overlap);
+  make_multiplets();
 }
 
-void Fitter::make_multiplets(Calibration nrg_cali, Calibration fwhm_cali, double overlap)
+void Fitter::make_multiplets()
 {
   if (peaks_.size() > 1) {
 
     for (auto &q : peaks_) {
-      q.second.lim_L = q.second.energy - overlap * q.second.fwhm_theoretical;
-      q.second.lim_R = q.second.energy + overlap * q.second.fwhm_theoretical;
+      q.second.lim_L = q.second.energy - overlap_ * q.second.fwhm_theoretical;
+      q.second.lim_R = q.second.energy + overlap_ * q.second.fwhm_theoretical;
     }
     
     std::map<double, Peak>::iterator pk1 = peaks_.begin();
@@ -312,7 +321,7 @@ void Fitter::make_multiplets(Calibration nrg_cali, Calibration fwhm_cali, double
       pk1++;
       pk2++;
     }
-    PL_DBG << "<Gamma::Fitter> found " << juncs << " peak overlaps";
+    PL_DBG << "<Gamma::Fitter> found " << juncs << " peak overlap_s";
 
     std::set<Peak> multiplet;
     std::set<double> to_remove;
@@ -331,7 +340,7 @@ void Fitter::make_multiplets(Calibration nrg_cali, Calibration fwhm_cali, double
         to_remove.insert(pk2->first);
 
         if (!multiplet.empty()) {
-          Multiplet multi(nrg_cali, fwhm_cali);
+          Multiplet multi(nrg_cali_, fwhm_cali_);
           multi.add_peaks(multiplet, x_, y_);
           multiplets_.push_back(multi);
         }
@@ -350,32 +359,18 @@ void Fitter::make_multiplets(Calibration nrg_cali, Calibration fwhm_cali, double
   }  
 }
 
-void Fitter::remove_peak(double bin, Calibration nrg_cali, Calibration fwhm_cali) {
-
-  bool as_multiplet = false;
-  std::list<Multiplet>::iterator q = multiplets_.begin();
-  while (q != multiplets_.end()) {
-    if (q->contains(bin)) {
-      for (auto &p : q->peaks_)
-        peaks_.erase(p.center);
-      q->remove_peak(bin);
-      for (auto &p : q->peaks_)
-        peaks_[p.center] = p;
-      if (q->peaks_.size() < 2)
-        multiplets_.erase(q);
-      as_multiplet = true;
-      break;
-    }
-    q++;
-  }
-  if (!as_multiplet)
-    peaks_.erase(bin);
+void Fitter::remove_peak(double bin) {
+  peaks_.erase(bin);
+  multiplets_.clear();
+  make_multiplets();
 }
 
 
-void Fitter::remove_peaks(std::set<double> bins, Calibration nrg_cali, Calibration fwhm_cali) {
+void Fitter::remove_peaks(std::set<double> bins) {
   for (auto &q : bins)
-    remove_peak(q, nrg_cali, fwhm_cali);
+    peaks_.erase(q);
+  multiplets_.clear();
+  make_multiplets();
 }
 
 

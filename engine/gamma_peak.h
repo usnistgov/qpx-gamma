@@ -63,6 +63,9 @@ public:
       , intersects_L (false)
       , intersects_R (false)
       , selected (false)
+      , area_net_(0.0)
+      , area_gross_(0.0)
+      , area_bckg_(0.0)
   {}
 
   Peak(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline,
@@ -78,6 +81,8 @@ public:
       fwhm_theoretical, lim_L, lim_R;
   bool intersects_L, intersects_R;
   bool selected;
+
+  double area_net_, area_gross_, area_bckg_;
   
   bool multiplet, subpeak;
   std::vector<Peak> subpeaks_;

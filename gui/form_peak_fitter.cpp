@@ -37,8 +37,8 @@ FormPeakFitter::FormPeakFitter(QSettings &settings, Gamma::Fitter &fit, QWidget 
   loadSettings();
 
   ui->tablePeaks->verticalHeader()->hide();
-  ui->tablePeaks->setColumnCount(6);
-  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fwhm", "fw/theor", "balance", "flags"});
+  ui->tablePeaks->setColumnCount(9);
+  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fwhm", "fw/theor", "balance", "flags", "A(gross)", "A(bckg)", "A(net)"});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tablePeaks->horizontalHeader()->setStretchLastSection(true);
@@ -131,6 +131,9 @@ void FormPeakFitter::add_peak_to_table(const Gamma::Peak &p, int row) {
       if (peaks_[i].hwhm_R > 0.5 * peaks_[i].fwhm_theoretical)
       nbrs += " ]";*/
   ui->tablePeaks->setItem(row, 5, new QTableWidgetItem( nbrs ));  
+  ui->tablePeaks->setItem(row, 6, new QTableWidgetItem( QString::number(p.area_gross_) ));
+  ui->tablePeaks->setItem(row, 7, new QTableWidgetItem( QString::number(p.area_bckg_) ));
+  ui->tablePeaks->setItem(row, 8, new QTableWidgetItem( QString::number(p.area_net_) ));
 }
 
 void FormPeakFitter::update_peak_selection(std::set<double> pks) {

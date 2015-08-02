@@ -341,7 +341,10 @@ void FormPeaks::on_pushAdd_clicked()
   if (range_.l.channel >= range_.r.channel)
     return;
 
-  fit_data_->add_peak(range_.l.channel, range_.r.channel, nrg_calibration_, fwhm_calibration_, ui->doubleOverlapWidth->value());
+  fit_data_->nrg_cali_ = nrg_calibration_;
+  fit_data_->fwhm_cali_ = fwhm_calibration_;
+  fit_data_->overlap_ = ui->doubleOverlapWidth->value();
+  fit_data_->add_peak(range_.l.channel, range_.r.channel);
   ui->pushAdd->setEnabled(false);
   removeMovingMarker(0);
   toggle_push();
@@ -384,7 +387,10 @@ void FormPeaks::on_pushMarkerRemove_clicked()
     if (q.second.selected)
       chosen_peaks.insert(q.second.center);
 
-  fit_data_->remove_peaks(chosen_peaks, nrg_calibration_, fwhm_calibration_);
+  fit_data_->nrg_cali_ = nrg_calibration_;
+  fit_data_->fwhm_cali_ = fwhm_calibration_;
+  fit_data_->overlap_ = ui->doubleOverlapWidth->value();
+  fit_data_->remove_peaks(chosen_peaks);
 
   toggle_push();
   replot_all();
@@ -398,7 +404,11 @@ void FormPeaks::on_pushFindPeaks_clicked()
 
   this->setCursor(Qt::WaitCursor);
 
-  fit_data_->find_peaks(ui->spinMinPeakWidth->value(), nrg_calibration_, fwhm_calibration_, ui->doubleOverlapWidth->value());
+  fit_data_->nrg_cali_ = nrg_calibration_;
+  fit_data_->fwhm_cali_ = fwhm_calibration_;
+  fit_data_->overlap_ = ui->doubleOverlapWidth->value();
+
+  fit_data_->find_peaks(ui->spinMinPeakWidth->value());
 
   toggle_push();
   replot_all();

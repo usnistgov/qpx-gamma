@@ -134,7 +134,20 @@ void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
   if ((pseudovoigt_.hwhm_l + pseudovoigt_.hwhm_r) >= x_.size())
     fwhm_pseudovoigt = 0;
 
-  fwhm_theoretical = cali_fwhm.transform(energy); 
+  fwhm_theoretical = cali_fwhm.transform(energy);
+
+  if (!subpeak)
+  {
+    area_gross_ = 0.0;
+    for (auto &q : y_)
+      area_gross_ += q;
+
+    area_bckg_ = 0.0;
+    for (auto &q : y_baseline_)
+      area_bckg_ += q;
+
+    area_net_ = area_gross_ - area_bckg_;
+  }
 }
 
 

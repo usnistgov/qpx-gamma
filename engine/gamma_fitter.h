@@ -32,29 +32,35 @@ namespace Gamma {
 class Fitter {
   
 public:
-  Fitter() {}
-  Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t avg_window = 1):
-    x_(x), y_(y), y_avg_(y_) {set_mov_avg(avg_window); deriv();}
+  Fitter()
+      : overlap_(4.0)
+  {}
+  
+  Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t avg_window = 1)
+      : Fitter()
+  {setXY(x, y, avg_window);}
 
-  Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t min, uint16_t max, uint16_t avg_window = 1);
+  Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t min, uint16_t max, uint16_t avg_window = 1)
+      : Fitter()
+  {setXY(x, y, min, max, avg_window);}
 
   void clear();
   
-  void setXY(std::vector<double> x, std::vector<double> y, uint16_t avg_window = 1)
-  {*this = Fitter(x, y, avg_window);}
+  void setXY(std::vector<double> x, std::vector<double> y, uint16_t avg_window = 1);
+  void setXY(std::vector<double> x, std::vector<double> y, uint16_t min, uint16_t max, uint16_t avg_window = 1);
 
   void set_mov_avg(uint16_t);
   void deriv();
   void find_prelim();
   void filter_prelim(uint16_t min_width);
   void refine_edges(double threshl, double threshr);
-  void find_peaks(int min_width, Calibration nrg_cali = Calibration(), Calibration fwhm_cali = Calibration(), double overlap = 4.0);
+  void find_peaks(int min_width);
 
-  void add_peak(uint32_t left, uint32_t right, Calibration nrg_cali = Calibration(), Calibration fwhm_cali = Calibration(), double overlap = 4.0);
-  void remove_peak(double bin, Calibration nrg_cali = Calibration(), Calibration fwhm_cali = Calibration());
-  void remove_peaks(std::set<double> bins, Calibration nrg_cali = Calibration(), Calibration fwhm_cali = Calibration());
+  void add_peak(uint32_t left, uint32_t right);
+  void remove_peak(double bin);
+  void remove_peaks(std::set<double> bins);
 
-  void make_multiplets(Calibration nrg_cali, Calibration fwhm_cali, double overlap = 4.0);
+  void make_multiplets();
 
   uint16_t find_left(uint16_t chan, uint16_t grace = 0);
   uint16_t find_right(uint16_t chan, uint16_t grace = 0);
@@ -69,6 +75,8 @@ public:
 
   std::map<double, Peak> peaks_;
   std::list<Multiplet> multiplets_;
+  Calibration nrg_cali_, fwhm_cali_;
+  double overlap_;
 };
 
 }
