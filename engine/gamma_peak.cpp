@@ -99,10 +99,10 @@ std::vector<double> make_background(const std::vector<double> &x,
 
 
 Peak::Peak(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline,
-           Calibration cali_nrg, Calibration cali_fwhm, std::vector<Peak> peaks)
+           Calibration cali_nrg, Calibration cali_fwhm, double live_seconds)
   : Peak()
 {
-  fit(x, y, y_baseline, cali_nrg, cali_fwhm, peaks);
+  fit(x, y, y_baseline, cali_nrg, cali_fwhm, live_seconds);
 }
 
 
@@ -136,6 +136,7 @@ void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
 
   fwhm_theoretical = cali_fwhm.transform(energy);
 
+  area_gauss_ = gaussian_.height_ * gaussian_.hwhm_ * sqrt(3.141592653589793238462643383279502884 / log(2.0));
   if (!subpeak)
   {
     area_gross_ = 0.0;
@@ -148,11 +149,16 @@ void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
 
     area_net_ = area_gross_ - area_bckg_;
   }
+
+  if (live_seconds_ > 0) {
+    cts_per_sec_net_ = area_net_ / live_seconds_;
+    cts_per_sec_gauss_ = area_gauss_ / live_seconds_;
+  }
 }
 
 
 void Peak::fit(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline,
-               Calibration cali_nrg, Calibration cali_fwhm, std::vector<Peak> peaks) {
+               Calibration cali_nrg, Calibration cali_fwhm, double live_seconds) {
   if (
       (x.size() == y.size())
       &&
@@ -167,60 +173,10 @@ void Peak::fit(const std::vector<double> &x, const std::vector<double> &y, const
     for (int32_t i = 0; i < static_cast<int32_t>(y_.size()); ++i)
       nobase[i] = y_[i] - y_baseline_[i];
 
-    if (peaks.empty()) {
-      gaussian_ = Gaussian(x_, nobase);
-      pseudovoigt_ = SplitPseudoVoigt(x_, nobase);
-      construct(cali_nrg, cali_fwhm);
-    } else {
- 
-      std::vector<Gaussian> old_gauss;
-      for (auto &q : peaks)
-        old_gauss.push_back(q.gaussian_);
-      std::vector<Gaussian>       gauss = Gaussian::fit_multi(x_, nobase, old_gauss); 
-
-      std::vector<SplitPseudoVoigt> old_spv;
-      for (auto &q : peaks)
-        old_spv.push_back(q.pseudovoigt_);
-      std::vector<SplitPseudoVoigt> spv = SplitPseudoVoigt::fit_multi(x_, nobase, old_spv);
-      if ((gauss.size() == spv.size()) &&
-          (gauss.size() == peaks.size())) {
-        multiplet = true;
-        y_fullfit_gaussian_.resize(x_.size());
-        y_fullfit_pseudovoigt_.resize(x_.size());
-        for (int32_t i = 0; i < static_cast<int32_t>(x_.size()); ++i) {
-          y_fullfit_gaussian_[i] = y_baseline_[i];
-          y_fullfit_pseudovoigt_[i] = y_baseline_[i];
-        }
-        for (int i=0; i < peaks.size(); ++i) {
-          Peak one;
-          one.subpeak = true;
-          one.intersects_L = peaks[i].intersects_L;
-          one.intersects_R = peaks[i].intersects_R;          
-          one.x_ = x;
-          one.y_ = y;
-          one.y_baseline_ = y_baseline;
-          one.gaussian_ = gauss[i];
-          one.pseudovoigt_ = spv[i];
-          one.construct(cali_nrg, cali_fwhm);
-          subpeaks_.push_back(one);
-          for (int32_t j = 0; j < static_cast<int32_t>(x_.size()); ++j) {
-            y_fullfit_gaussian_[j] +=  gauss[i].evaluate(x_[j]);
-            y_fullfit_pseudovoigt_[j] += spv[i].evaluate(x_[j]);
-          }
-        }
-
-        center = subpeaks_[0].center;
-        energy = subpeaks_[0].energy;
-        height = -1;
-        fwhm_gaussian = -1;
-        hwhm_L = -1;
-        hwhm_R = -1;
-        fwhm_pseudovoigt = -1;
-        fwhm_theoretical = -1; 
-
-        
-      }
-    }
+    gaussian_ = Gaussian(x_, nobase);
+    pseudovoigt_ = SplitPseudoVoigt(x_, nobase);
+    live_seconds_ = live_seconds;
+    construct(cali_nrg, cali_fwhm);
   }
 }
 
@@ -322,6 +278,7 @@ void Multiplet::rebuild() {
       one.y_baseline_ = y_background_;
       one.gaussian_ = gauss[i];
       one.pseudovoigt_ = spv[i];
+      one.live_seconds_ = live_seconds_;
       one.construct(cal_nrg_, cal_fwhm_);
       
       peaks_.insert(one);

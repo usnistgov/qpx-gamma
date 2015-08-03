@@ -29,6 +29,7 @@
 #include "thread_runner.h"
 #include "thread_plot_signal.h"
 #include "form_analysis_1d.h"
+#include "form_analysis_2d.h"
 
 namespace Ui {
 class FormMcaDaq;
@@ -48,6 +49,7 @@ signals:
   void toggleIO(bool);
   void statusText(QString);
   void requestAnalysis(FormAnalysis1D*);
+  void requestAnalysis2D(FormAnalysis2D*);
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -67,14 +69,19 @@ private slots:
   void clearGraphs();
   void updateSpectraUI();
 
-  void reqAnal(QString);
 
   void toggle_push(bool, Pixie::LiveStatus);
-  void analysis_destroyed();
 
   void on_pushEnable2d_clicked();
 
   void on_pushForceRefresh_clicked();
+
+  void reqAnal(QString);
+  void analysis_destroyed();
+
+  void reqAnal2D(QString);
+  void analysis2d_destroyed();
+
 
 private:
   Ui::FormMcaDaq *ui;
@@ -92,6 +99,7 @@ private:
   boost::atomic<bool>             interruptor_;
 
   FormAnalysis1D* my_analysis_;
+  FormAnalysis2D* my_analysis_2d_;
   bool my_run_;
 
   void loadSettings();

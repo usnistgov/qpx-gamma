@@ -33,6 +33,7 @@
 
 #include "form_start.h"
 #include "form_analysis_1d.h"
+#include "form_analysis_2d.h"
 
 
 namespace Ui {
@@ -91,6 +92,7 @@ private slots:
   void on_splitter_splitterMoved(int pos, int index);
 
   void analyze_1d(FormAnalysis1D*);
+  void analyze_2d(FormAnalysis2D*);
   void detectors_updated();
   void update_settings();
 

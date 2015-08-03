@@ -186,6 +186,8 @@ void FormPeaks::update_spectrum() {
   std::vector<double> x_chan(spectrum_->resolution());
   std::vector<double> y(spectrum_->resolution());
 
+  double live_seconds = spectrum_->live_time().total_seconds();
+
   std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_dump =
       std::move(spectrum_->get_spectrum({{0, y.size()}}));
 
@@ -205,6 +207,7 @@ void FormPeaks::update_spectrum() {
   fit_data_->setXY(x_chan, y, ui->spinMovAvg->value());
   fit_data_->find_prelim();
   fit_data_->filter_prelim(ui->spinMinPeakWidth->value());
+  fit_data_->live_seconds_ = live_seconds;
 
   replot_all();
 }

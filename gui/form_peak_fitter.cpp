@@ -37,8 +37,8 @@ FormPeakFitter::FormPeakFitter(QSettings &settings, Gamma::Fitter &fit, QWidget 
   loadSettings();
 
   ui->tablePeaks->verticalHeader()->hide();
-  ui->tablePeaks->setColumnCount(9);
-  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fwhm", "fw/theor", "balance", "flags", "A(gross)", "A(bckg)", "A(net)"});
+  ui->tablePeaks->setColumnCount(7);
+  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fwhm", "A(net)", "A(gaussian)", "cps(net)", "cps(gaussian)"});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tablePeaks->horizontalHeader()->setStretchLastSection(true);
@@ -85,10 +85,13 @@ void FormPeakFitter::update_peaks(bool contents_changed) {
   if (contents_changed) {
     ui->tablePeaks->clearContents();
     ui->tablePeaks->setRowCount(fit_data_.peaks_.size());
+    bool gray = false;
     int i=0;
     for (auto &q : fit_data_.peaks_) {
-      add_peak_to_table(q.second, i);
+      add_peak_to_table(q.second, i, gray);
       ++i;
+      if (!q.second.intersects_R)
+        gray = !gray;
     }
   }
 
@@ -108,18 +111,28 @@ void FormPeakFitter::update_peaks(bool contents_changed) {
   toggle_push();
 }
 
-void FormPeakFitter::add_peak_to_table(const Gamma::Peak &p, int row) {
-    QTableWidgetItem *center = new QTableWidgetItem(QString::number(p.center));
+void FormPeakFitter::add_peak_to_table(const Gamma::Peak &p, int row, bool gray) {
+  QBrush background(gray ? Qt::lightGray : Qt::white);
+
+  QTableWidgetItem *center = new QTableWidgetItem(QString::number(p.center));
   center->setData(Qt::EditRole, QVariant::fromValue(p.center));
+  center->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 0, center);
 
-  ui->tablePeaks->setItem(row, 1, new QTableWidgetItem( QString::number(p.energy) ));
-  ui->tablePeaks->setItem(row, 2, new QTableWidgetItem( QString::number(p.fwhm_gaussian) ));
-  ui->tablePeaks->setItem(row, 3, new QTableWidgetItem( QString::number(p.fwhm_gaussian / p.fwhm_theoretical * 100) + "%" ));
+  QTableWidgetItem *nrg = new QTableWidgetItem(QString::number(p.energy));
+  nrg->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 1, nrg);
+
+
+  QTableWidgetItem *fwhm = new QTableWidgetItem(QString::number(p.fwhm_gaussian));
+  fwhm->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 2, fwhm);
+
+//  ui->tablePeaks->setItem(row, 3, new QTableWidgetItem( QString::number(p.fwhm_gaussian / p.fwhm_theoretical * 100) + "%" ));
   //   ui->tablePeaks->setItem(row, 4, new QTableWidgetItem( QString::number(p.x_[0]) ));
   //   ui->tablePeaks->setItem(row, 5, new QTableWidgetItem( QString::number(p.x_[p.x_.size() - 1]) ));    
-   ui->tablePeaks->setItem(row, 4, new QTableWidgetItem( QString::number(p.hwhm_R - p.hwhm_L) ));
-  QString nbrs = "";
+//   ui->tablePeaks->setItem(row, 4, new QTableWidgetItem( QString::number(p.hwhm_R - p.hwhm_L) ));
+ /* QString nbrs = "";
   if (p.subpeak)
     nbrs += "M ";
   if (p.intersects_L)
@@ -130,10 +143,25 @@ void FormPeakFitter::add_peak_to_table(const Gamma::Peak &p, int row) {
       nbrs += " [";
       if (peaks_[i].hwhm_R > 0.5 * peaks_[i].fwhm_theoretical)
       nbrs += " ]";*/
-  ui->tablePeaks->setItem(row, 5, new QTableWidgetItem( nbrs ));  
-  ui->tablePeaks->setItem(row, 6, new QTableWidgetItem( QString::number(p.area_gross_) ));
-  ui->tablePeaks->setItem(row, 7, new QTableWidgetItem( QString::number(p.area_bckg_) ));
-  ui->tablePeaks->setItem(row, 8, new QTableWidgetItem( QString::number(p.area_net_) ));
+  //ui->tablePeaks->setItem(row, 3, new QTableWidgetItem( nbrs ));
+  //ui->tablePeaks->setItem(row, 6, new QTableWidgetItem( QString::number(p.area_gross_) ));
+  //ui->tablePeaks->setItem(row, 7, new QTableWidgetItem( QString::number(p.area_bckg_) ));
+
+  QTableWidgetItem *area_net = new QTableWidgetItem(QString::number(p.area_net_));
+  area_net->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 3, area_net);
+
+  QTableWidgetItem *area_gauss = new QTableWidgetItem(QString::number(p.area_gauss_));
+  area_gauss->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 4, area_gauss);
+
+  QTableWidgetItem *cps_net = new QTableWidgetItem(QString::number(p.cts_per_sec_net_));
+  cps_net->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 5, cps_net);
+
+  QTableWidgetItem *cps_gauss = new QTableWidgetItem(QString::number(p.cts_per_sec_gauss_));
+  cps_gauss->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 6, cps_gauss);
 }
 
 void FormPeakFitter::update_peak_selection(std::set<double> pks) {

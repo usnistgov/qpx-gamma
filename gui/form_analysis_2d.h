@@ -16,59 +16,77 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormPeakFitter - 
+ *      FormAnalysis2D - 
  *
  ******************************************************************************/
 
 
-#ifndef FORM_PEAK_FITTER_H
-#define FORM_PEAK_FITTER_H
+#ifndef FORM_ANALYSIS_2D_H
+#define FORM_ANALYSIS_2D_H
 
 #include <QWidget>
+#include <QSettings>
 #include "spectrum1D.h"
-#include "special_delegate.h"
-#include "widget_plot1d.h"
-#include <QItemSelection>
-#include "spectrum.h"
-#include "gamma_fitter.h"
+#include "spectra_set.h"
+#include "form_energy_calibration.h"
+#include "form_fwhm_calibration.h"
+#include "form_peak_fitter.h"
 
 namespace Ui {
-class FormPeakFitter;
+class FormAnalysis2D;
 }
 
-class FormPeakFitter : public QWidget
+class FormAnalysis2D : public QWidget
 {
   Q_OBJECT
 
 public:
-  explicit FormPeakFitter(QSettings &settings, Gamma::Fitter&, QWidget *parent = 0);
-  ~FormPeakFitter();
+  explicit FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent = 0);
+  ~FormAnalysis2D();
 
-  void update_peaks(bool);
-  void update_peak_selection(std::set<double>);
+  void setSpectrum(Pixie::SpectraSet *newset, QString spectrum);
 
   void clear();
-  bool save_close();
 
 signals:
-  void peaks_changed(bool);
+  void calibrationComplete();
+  void detectorsChanged();
+
+public slots:
+  void update_spectrum();
 
 private slots:
-  void selection_changed_in_table();
-  void toggle_push();
+  void update_gates(Marker, Marker);
+
+  void update_peaks(bool);
+  void detectorsUpdated() {emit detectorsChanged();}
+
+protected:
+  void closeEvent(QCloseEvent*);
 
 private:
-  Ui::FormPeakFitter *ui;
+  Ui::FormAnalysis2D *ui;
   QSettings &settings_;
+
+
+  Gamma::Fitter fit_data_, fit_data_2_;
+  Pixie::Spectrum::Spectrum *gate_x;
+  Pixie::Spectrum::Spectrum *gate_y;
+
+  Pixie::Spectrum::Template *tempx, *tempy;
+
+  Gamma::Calibration nrg_calibration_, fwhm_calibration_;
 
   //from parent
   QString data_directory_;
+  Pixie::SpectraSet *spectra_;
+  QString current_spectrum_;
 
-  Gamma::Fitter &fit_data_;
+  XMLableDB<Gamma::Detector> &detectors_;
+  Gamma::Detector detector_;
 
   void loadSettings();
   void saveSettings();
-  void add_peak_to_table(const Gamma::Peak &, int, bool);
 };
 
-#endif // FORM_PEAK_FITTER_H
+#endif // FORM_CALIBRATION_H

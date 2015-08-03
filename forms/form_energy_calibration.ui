@@ -327,7 +327,7 @@
               </size>
              </property>
              <property name="text">
-              <string>Markers</string>
+              <string>Peaks in spectrum</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -469,15 +469,15 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>WidgetIsotopes</class>
-   <extends>QWidget</extends>
-   <header>widget_isotopes.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>WidgetPlotCalib</class>
    <extends>QWidget</extends>
    <header>widget_plot_calib.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>WidgetIsotopes</class>
+   <extends>QWidget</extends>
+   <header>widget_isotopes.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -258,7 +258,7 @@ void Fitter::find_peaks(int min_width) {
     std::vector<double> baseline = make_background(x_, y_, lefts[i], rights[i], 3);
     std::vector<double> xx(x_.begin() + lefts[i], x_.begin() + rights[i] + 1);
     std::vector<double> yy(y_.begin() + lefts[i], y_.begin() + rights[i] + 1);
-    Peak fitted = Peak(xx, yy, baseline, nrg_cali_, fwhm_cali_);
+    Peak fitted = Peak(xx, yy, baseline, nrg_cali_, fwhm_cali_, live_seconds_);
 
     if (
         (fitted.height > 0) &&
@@ -291,7 +291,7 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
   std::vector<double> yy(y_.begin() + left, y_.begin() + right + 1);
   std::vector<double> bckgr = make_background(x_, y_, left, right, 3);
   
-  Peak newpeak = Gamma::Peak(xx, yy, bckgr, nrg_cali_, fwhm_cali_);
+  Peak newpeak = Gamma::Peak(xx, yy, bckgr, nrg_cali_, fwhm_cali_, live_seconds_);
 
   peaks_[newpeak.center] = newpeak;
   multiplets_.clear();
@@ -340,7 +340,7 @@ void Fitter::make_multiplets()
         to_remove.insert(pk2->first);
 
         if (!multiplet.empty()) {
-          Multiplet multi(nrg_cali_, fwhm_cali_);
+          Multiplet multi(nrg_cali_, fwhm_cali_, live_seconds_);
           multi.add_peaks(multiplet, x_, y_);
           multiplets_.push_back(multi);
         }

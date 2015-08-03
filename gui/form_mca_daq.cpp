@@ -34,6 +34,7 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamm
   interruptor_(false),
   spectra_(),
   my_analysis_(nullptr),
+  my_analysis_2d_(nullptr),
   runner_thread_(thread),
   plot_thread_(spectra_),
   detectors_(detectors),
@@ -67,6 +68,8 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamm
   ui->Plot2d->setSpectra(spectra_);
   connect(ui->Plot1d, SIGNAL(marker_set(Marker)), ui->Plot2d, SLOT(set_marker(Marker)));
   connect(ui->Plot2d, SIGNAL(markers_set(Marker,Marker)), ui->Plot1d, SLOT(set_markers2d(Marker,Marker)));
+  connect(ui->Plot2d, SIGNAL(requestAnalysis(QString)), this, SLOT(reqAnal2D(QString)));
+  ui->Plot2d->set_show_gate_width(false);
 
   plot_thread_.start();
 }
@@ -91,6 +94,10 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
 
   if (my_analysis_ != nullptr) {
     my_analysis_->close(); //assume always successful
+  }
+
+  if (my_analysis_2d_ != nullptr) {
+    my_analysis_2d_->close(); //assume always successful
   }
 
   if (!spectra_.empty()) {
@@ -413,6 +420,21 @@ void FormMcaDaq::reqAnal(QString name) {
 
 void FormMcaDaq::analysis_destroyed() {
   my_analysis_ = nullptr;
+}
+
+void FormMcaDaq::reqAnal2D(QString name) {
+  if (my_analysis_2d_ == nullptr) {
+    my_analysis_2d_ = new FormAnalysis2D(settings_, detectors_);
+    connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_2d_, SLOT(update_spectrum()));
+    connect(my_analysis_2d_, SIGNAL(destroyed()), this, SLOT(analysis2d_destroyed()));
+  }
+  my_analysis_2d_->setWindowTitle("Analysis1");
+  my_analysis_2d_->setSpectrum(&spectra_, name);
+  emit requestAnalysis2D(my_analysis_2d_);
+}
+
+void FormMcaDaq::analysis2d_destroyed() {
+  my_analysis_2d_ = nullptr;
 }
 
 void FormMcaDaq::replot() {

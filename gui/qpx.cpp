@@ -222,11 +222,21 @@ void qpx::analyze_1d(FormAnalysis1D* formAnal) {
   formAnal->update_spectrum();
 }
 
+void qpx::analyze_2d(FormAnalysis2D* formAnal) {
+  if (ui->qpxTabs->indexOf(formAnal) == -1) {
+    ui->qpxTabs->addTab(formAnal, formAnal->windowTitle());
+    connect(formAnal, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
+  }
+  ui->qpxTabs->setCurrentWidget(formAnal);
+  formAnal->update_spectrum();
+}
+
 void qpx::on_pushOpenSpectra_clicked()
 {
   FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, settings_, detectors_);
   ui->qpxTabs->addTab(newSpectraForm, "Spectra");
   connect(newSpectraForm, SIGNAL(requestAnalysis(FormAnalysis1D*)), this, SLOT(analyze_1d(FormAnalysis1D*)));
+  connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
 
   connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Pixie::LiveStatus)), newSpectraForm, SLOT(toggle_push(bool,Pixie::LiveStatus)));

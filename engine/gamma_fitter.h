@@ -77,6 +77,7 @@ public:
   std::list<Multiplet> multiplets_;
   Calibration nrg_cali_, fwhm_cali_;
   double overlap_;
+  double live_seconds_;
 };
 
 }

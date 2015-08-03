@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>589</width>
+    <width>726</width>
     <height>592</height>
    </rect>
   </property>
@@ -56,7 +56,7 @@
               </size>
              </property>
              <property name="text">
-              <string>Markers</string>
+              <string>Peaks</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -96,7 +96,7 @@
              </property>
              <property name="minimumSize">
               <size>
-               <width>650</width>
+               <width>700</width>
                <height>200</height>
               </size>
              </property>
@@ -112,14 +112,6 @@
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>WidgetPlotCalib</class>
-   <extends>QWidget</extends>
-   <header>widget_plot_calib.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources>
   <include location="qpxres.qrc"/>
  </resources>

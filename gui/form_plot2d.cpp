@@ -19,7 +19,7 @@
  *
  ******************************************************************************/
 
-#include "gui/form_plot2d.h"
+#include "form_plot2d.h"
 #include "ui_form_plot2d.h"
 #include "dialog_spectrum.h"
 #include "custom_timer.h"
@@ -40,6 +40,7 @@ FormPlot2D::FormPlot2D(QWidget *parent) :
   current_gradient_ = "hot";
   current_scale_type_ = "Logarithmic";
   zoom_2d = 50;
+  user_selects_ = true;
 
   //color theme setup
   my_marker.appearance.themes["Grayscale"] = QPen(Qt::cyan, 1);
@@ -118,6 +119,30 @@ void FormPlot2D::on_comboChose2d_activated(const QString &arg1)
   mySpectra->activate();
 }
 
+void FormPlot2D::set_show_selector(bool vis) {
+  ui->comboChose2d->setVisible(vis);
+  user_selects_ = vis;
+}
+
+void FormPlot2D::set_show_analyse(bool vis) {
+  ui->pushAnalyse->setVisible(vis);
+}
+
+void FormPlot2D::set_spectrum(QString name) {
+  name_2d = name;
+  ui->comboChose2d->setCurrentText(name);
+}
+
+
+void FormPlot2D::set_show_gate_width(bool vis) {
+  ui->labelGateWidth->setVisible(vis);
+  ui->spinGateWidth->setVisible(vis);
+}
+
+int FormPlot2D::gate_width() {
+  return ui->spinGateWidth->value();
+}
+
 void FormPlot2D::scaleTypeChosen(QAction* choice) {
   this->setCursor(Qt::WaitCursor);
   current_scale_type_ = choice->text().toStdString();
@@ -144,9 +169,46 @@ void FormPlot2D::gradientChosen(QAction* choice) {
 void FormPlot2D::replot_markers() {
   ui->coincPlot->clearItems();
 
-  make_marker(ext_marker);
-  make_marker(x_marker);
-  make_marker(y_marker);
+  if (!ui->spinGateWidth->isVisible()) {
+    make_marker(ext_marker);
+    make_marker(x_marker);
+    make_marker(y_marker);
+  } else {
+    QPen pen = x_marker.appearance.get_pen(current_gradient_);
+
+    QColor cc = pen.color();
+    cc.setAlpha(169);
+    pen.setColor(cc);
+    pen.setWidth(3);
+
+    int width = ui->spinGateWidth->value() / 2;
+
+    QCPItemStraightLine *one_line;
+
+    one_line = new QCPItemStraightLine(ui->coincPlot);
+    one_line->setPen(pen);
+    one_line->point1->setCoords(0, y_marker.channel - width);
+    one_line->point2->setCoords(1, y_marker.channel - width);
+    ui->coincPlot->addItem(one_line);
+
+    one_line = new QCPItemStraightLine(ui->coincPlot);
+    one_line->setPen(pen);
+    one_line->point1->setCoords(0, y_marker.channel + width);
+    one_line->point2->setCoords(1, y_marker.channel + width);
+    ui->coincPlot->addItem(one_line);
+
+    one_line = new QCPItemStraightLine(ui->coincPlot);
+    one_line->setPen(pen);
+    one_line->point1->setCoords(x_marker.channel - width, 0);
+    one_line->point2->setCoords(x_marker.channel - width, 1);
+    ui->coincPlot->addItem(one_line);
+
+    one_line = new QCPItemStraightLine(ui->coincPlot);
+    one_line->setPen(pen);
+    one_line->point1->setCoords(x_marker.channel + width, 0);
+    one_line->point2->setCoords(x_marker.channel + width, 1);
+    ui->coincPlot->addItem(one_line);
+  }
 
   ui->coincPlot->replot();
 }
@@ -159,18 +221,9 @@ void FormPlot2D::make_marker(Marker &marker) {
 
   QCPItemStraightLine *one_line;
 
-  if (marker.energy_valid && (calib_y_.units_ != "channels")) {
-    one_line = new QCPItemStraightLine(ui->coincPlot);
-    one_line->setPen(pen);
-    one_line->point1->setCoords(0, marker.energy);
-    one_line->point2->setCoords(1, marker.energy);
-    ui->coincPlot->addItem(one_line);
-    one_line = new QCPItemStraightLine(ui->coincPlot);
-    one_line->setPen(pen);
-    one_line->point1->setCoords(marker.energy, 0);
-    one_line->point2->setCoords(marker.energy, 1);
-    ui->coincPlot->addItem(one_line);
-  } else if (marker.chan_valid && (calib_y_.units_ == "channels")) {
+
+  if (marker.chan_valid && (calib_y_.units_ == "channels")) {
+    PL_DBG << "marker option 1: channels valid and units = channels";
     one_line = new QCPItemStraightLine(ui->coincPlot);
     one_line->setPen(pen);
     one_line->point1->setCoords(0, marker.channel);
@@ -182,6 +235,7 @@ void FormPlot2D::make_marker(Marker &marker) {
     one_line->point2->setCoords(marker.channel, 1);
     ui->coincPlot->addItem(one_line);
   } else if (marker.chan_valid && (calib_y_.units_ != "channels")) {
+    PL_DBG << "marker option 2: channels valid and units not channels";
     one_line = new QCPItemStraightLine(ui->coincPlot);
     one_line->setPen(pen);
     one_line->point1->setCoords(0, calib_y_.transform(marker.channel, marker.bits));
@@ -191,6 +245,18 @@ void FormPlot2D::make_marker(Marker &marker) {
     one_line->setPen(pen);
     one_line->point1->setCoords(calib_x_.transform(marker.channel, marker.bits), 0);
     one_line->point2->setCoords(calib_x_.transform(marker.channel, marker.bits), 1);
+    ui->coincPlot->addItem(one_line);
+  } else if (marker.energy_valid && (calib_y_.units_ != "channels")) {
+    PL_DBG << "marker option 3: energy valid and units not channels";
+    one_line = new QCPItemStraightLine(ui->coincPlot);
+    one_line->setPen(pen);
+    one_line->point1->setCoords(0, marker.energy);
+    one_line->point2->setCoords(1, marker.energy);
+    ui->coincPlot->addItem(one_line);
+    one_line = new QCPItemStraightLine(ui->coincPlot);
+    one_line->setPen(pen);
+    one_line->point1->setCoords(marker.energy, 0);
+    one_line->point2->setCoords(marker.energy, 1);
     ui->coincPlot->addItem(one_line);
   }
 
@@ -205,11 +271,13 @@ void FormPlot2D::update_plot() {
   bool rescale2d = ((zoom_2d != ui->sliderZoom2d->value()) || (name_2d != ui->comboChose2d->currentText()));
 
   if (rescale2d || new_data) {
+    name_2d = ui->comboChose2d->currentText();
 
-    Pixie::Spectrum::Spectrum* some_spectrum = mySpectra->by_name(ui->comboChose2d->currentText().toStdString());
+    Pixie::Spectrum::Spectrum* some_spectrum = mySpectra->by_name(name_2d.toStdString());
     uint32_t adjrange;
 
     ui->pushDetails->setEnabled((some_spectrum != nullptr));
+    ui->pushAnalyse->setEnabled((some_spectrum != nullptr));
     zoom_2d = ui->sliderZoom2d->value();
 
     if ((some_spectrum != nullptr)
@@ -252,8 +320,12 @@ void FormPlot2D::update_plot() {
 
         calibrate_markers();
 
-        colorMap->data()->setRange(QCPRange(0, calib_x_.transform(adjrange - 1, bits)),
-                                   QCPRange(0, calib_y_.transform(adjrange - 1, bits)));
+        if (!ui->spinGateWidth->isVisible())
+          colorMap->data()->setRange(QCPRange(0, calib_x_.transform(adjrange - 1, bits)),
+                                     QCPRange(0, calib_y_.transform(adjrange - 1, bits)));
+        else
+          colorMap->data()->setRange(QCPRange(0, adjrange - 1),
+                                     QCPRange(0, adjrange - 1));
 
         //PL_INFO << "range maxes at " << calib_x_.transform(adjrange - 1, bits)<< ", " << calib_y_.transform(adjrange - 1, bits);
 
@@ -268,8 +340,6 @@ void FormPlot2D::update_plot() {
         colorMap->data()->setCell(it.first[0], it.first[1], it.second);
 
       colorMap->rescaleDataRange(true);
-
-      name_2d = ui->comboChose2d->currentText();
 
       ui->coincPlot->updateGeometry();
     } else {
@@ -406,7 +476,7 @@ void FormPlot2D::on_pushColorScale_clicked()
 
 void FormPlot2D::on_pushDetails_clicked()
 {
-  Pixie::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(ui->comboChose2d->currentText().toStdString());
+  Pixie::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(name_2d.toStdString());
   if (someSpectrum == nullptr)
     return;
 
@@ -472,4 +542,14 @@ void FormPlot2D::set_show_legend(bool show) {
 
 bool FormPlot2D::show_legend() {
   return ui->pushColorScale->isChecked();
+}
+
+void FormPlot2D::on_pushAnalyse_clicked()
+{
+  emit requestAnalysis(name_2d);
+}
+
+void FormPlot2D::on_spinGateWidth_editingFinished()
+{
+  replot_markers();
 }

@@ -55,11 +55,19 @@ public:
   double zoom();
   bool show_legend();
 
+  void set_show_selector(bool);
+  void set_show_analyse(bool);
+  void set_show_gate_width(bool);
+  void set_spectrum(QString);
+
+  int gate_width();
+
 public slots:
   void set_marker(Marker n);
 
 signals:
   void markers_set(Marker x, Marker y);
+  void requestAnalysis(QString);
 
 private slots:
   void gradientChosen(QAction*);
@@ -79,6 +87,10 @@ private slots:
 
   void on_sliderZoom2d_valueChanged(int value);
 
+  void on_pushAnalyse_clicked();
+
+  void on_spinGateWidth_editingFinished();
+
 private:
 
   //gui stuff
@@ -97,6 +109,8 @@ private:
   //plot identity
   QString name_2d;
   double zoom_2d;
+
+  bool user_selects_;
 
   //markers
   Marker my_marker, //template(style)

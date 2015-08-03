@@ -372,7 +372,7 @@
               </size>
              </property>
              <property name="text">
-              <string>Markers</string>
+              <string>Peaks</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>

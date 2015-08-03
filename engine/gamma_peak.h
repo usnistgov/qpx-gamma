@@ -66,10 +66,14 @@ public:
       , area_net_(0.0)
       , area_gross_(0.0)
       , area_bckg_(0.0)
+      , area_gauss_(0.0)
+      , live_seconds_(0.0)
+      , cts_per_sec_net_(0.0)
+      , cts_per_sec_gauss_(0.0)
   {}
 
   Peak(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline,
-       Calibration cali_nrg = Calibration(), Calibration cali_fwhm = Calibration(), std::vector<Peak> peaks = std::vector<Peak>());
+       Calibration cali_nrg = Calibration(), Calibration cali_fwhm = Calibration(), double live_seconds = 0.0);
 
   void construct(Calibration cali_nrg, Calibration cali_fwhm);
 
@@ -82,7 +86,8 @@ public:
   bool intersects_L, intersects_R;
   bool selected;
 
-  double area_net_, area_gross_, area_bckg_;
+  double area_net_, area_gross_, area_bckg_, area_gauss_;
+  double live_seconds_, cts_per_sec_net_, cts_per_sec_gauss_;
   
   bool multiplet, subpeak;
   std::vector<Peak> subpeaks_;
@@ -106,13 +111,14 @@ public:
   
 private:
   void fit(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline,
-           Calibration cali_nrg = Calibration(), Calibration cali_fwhm = Calibration(), std::vector<Peak> peaks = std::vector<Peak>());
+           Calibration cali_nrg = Calibration(), Calibration cali_fwhm = Calibration(), double live_seconds = 0.0);
 };
 
 struct Multiplet {
-  Multiplet(const Calibration &nrg, const Calibration &fw)
+  Multiplet(const Calibration &nrg, const Calibration &fw, double live_seconds = 0.0)
   : cal_nrg_ (nrg)
   , cal_fwhm_ (fw)
+  , live_seconds_(live_seconds) 
   {}
 
   bool contains(double bin);
@@ -126,7 +132,8 @@ struct Multiplet {
   std::set<Peak> peaks_;
   std::vector<double> x_, y_,
     y_background_, y_fullfit_;
-  Calibration cal_nrg_, cal_fwhm_;  
+  Calibration cal_nrg_, cal_fwhm_;
+  double live_seconds_;
 };
 
 
