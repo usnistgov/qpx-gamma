@@ -133,8 +133,8 @@ void FormAnalysis1D::setSpectrum(Pixie::SpectraSet *newset, QString name) {
         } else
           PL_INFO << "<Analysis> No existing calibration for this resolution";
 
-        if (detector_.fwhm_calibrations_.has_a(Gamma::Calibration("FWHM", bits))) {
-          fwhm_calibration_ = detector_.fwhm_calibrations_.get(Gamma::Calibration("FWHM", bits));
+        if (detector_.fwhm_calibration_.bits_) {
+          fwhm_calibration_ = detector_.fwhm_calibration_;
           PL_INFO << "<Analysis> FWHM calibration drawn from detector \"" << detector_.name_ << "\"   coefs = "
                   << fwhm_calibration_.coef_to_string();
         } else
@@ -189,7 +189,7 @@ void FormAnalysis1D::update_detector(bool in_spectra, bool in_DB) {
     {
       PL_INFO << "   applying new calibrations for " << modified.name_ << " in detector database";
       modified.energy_calibrations_.replace(nrg_calibration_);
-      modified.fwhm_calibrations_.replace(fwhm_calibration_);
+      modified.fwhm_calibration_ = fwhm_calibration_;
       detectors_.replace(modified);
       emit detectorsChanged();
     }
@@ -204,7 +204,7 @@ void FormAnalysis1D::update_detector(bool in_spectra, bool in_DB) {
           if (p.shallow_equals(detector_)) {
             PL_INFO << "   applying new calibrations for " << detector_.name_ << " on " << q->name();
             p.energy_calibrations_.replace(nrg_calibration_);
-            p.fwhm_calibrations_.replace(fwhm_calibration_);
+            p.fwhm_calibration_ = fwhm_calibration_;
           }
         }
         q->set_detectors(detectors);
@@ -215,7 +215,7 @@ void FormAnalysis1D::update_detector(bool in_spectra, bool in_DB) {
       if (p.shallow_equals(detector_)) {
         PL_INFO << "   applying new calibrations for " << detector_.name_ << " in spectra set " << spectra_->status();
         p.energy_calibrations_.replace(nrg_calibration_);
-        p.fwhm_calibrations_.replace(fwhm_calibration_);
+        p.fwhm_calibration_ = fwhm_calibration_;
       }
     }
     Pixie::RunInfo ri = spectra_->runInfo();

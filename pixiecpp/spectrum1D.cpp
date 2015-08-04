@@ -68,6 +68,17 @@ std::unique_ptr<std::list<Entry>> Spectrum1D::_get_spectrum(std::initializer_lis
   return result;
 }
 
+void Spectrum1D::_add_bulk(const Entry& e) {
+  int sz = add_pattern_.size();
+  if (e.first.size() < sz)
+    sz = e.first.size();
+  for (int i = 0; i < sz; ++i)
+    if (add_pattern_[i] && (e.first[i] < spectrum_.size())) {
+      spectrum_[e.first[i]] += e.second;
+      count_ += e.second;
+    }
+}
+
 void Spectrum1D::addHit(const Hit& newHit, int chan) {
   uint16_t en = newHit.energy[chan] >> shift_by_;
   spectrum_[en]++;

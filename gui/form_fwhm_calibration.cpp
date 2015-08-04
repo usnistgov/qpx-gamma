@@ -105,7 +105,7 @@ void FormFwhmCalibration::clear() {
 void FormFwhmCalibration::setData(Gamma::Calibration fwhm_calib, uint16_t bits) {
   bits_ = bits;
   new_fwhm_calibration_ = old_fwhm_calibration_ = fwhm_calib;
-  if (detectors_.has_a(detector_) && detectors_.get(detector_).fwhm_calibrations_.has_a(old_fwhm_calibration_))
+  if (detectors_.has_a(detector_) && (detectors_.get(detector_).fwhm_calibration_.units_ == "keV"))
     ui->pushFromDB->setEnabled(true);
   else
     ui->pushFromDB->setEnabled(false);
@@ -281,7 +281,7 @@ void FormFwhmCalibration::on_pushApplyCalib_clicked()
 void FormFwhmCalibration::on_pushFromDB_clicked()
 {
   Gamma::Detector newdet = detectors_.get(detector_);
-  new_fwhm_calibration_ = newdet.fwhm_calibrations_.get(old_fwhm_calibration_);
+  new_fwhm_calibration_ = newdet.fwhm_calibration_;
 }
 
 void FormFwhmCalibration::on_pushDetDB_clicked()

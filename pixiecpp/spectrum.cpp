@@ -47,6 +47,14 @@ std::unique_ptr<std::list<Entry>> Spectrum::get_spectrum(std::initializer_list<P
   }
 }
 
+void Spectrum::add_bulk(const Entry& e) {
+  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+  if (dimensions_ < 1)
+    return;
+  else
+    this->_add_bulk(e);
+}
+
 bool Spectrum::from_template(const Template& newtemplate) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())

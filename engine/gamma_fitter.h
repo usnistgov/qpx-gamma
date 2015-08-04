@@ -67,7 +67,7 @@ public:
 
   void filter_by_theoretical_fwhm(double range);
 
-  std::vector<double> x_, y_, y_avg_, deriv1, deriv2;
+  std::vector<double> x_, x_nrg_, y_, y_avg_, deriv1, deriv2;
 
   std::vector<uint16_t> prelim, filtered, lefts, rights, lefts_t, rights_t;
   

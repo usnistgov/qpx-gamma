@@ -42,7 +42,7 @@ public:
 
   void setSpectra(Pixie::SpectraSet& new_set);
 
-  void update_plot();
+  void update_plot(bool force = false);
   void replot_markers();
   void reset_content();
 
@@ -61,6 +61,7 @@ public:
   void set_spectrum(QString);
 
   int gate_width();
+  void set_gate_width(int);
 
 public slots:
   void set_marker(Marker n);

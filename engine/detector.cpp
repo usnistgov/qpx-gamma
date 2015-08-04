@@ -43,14 +43,6 @@ Calibration Detector::highest_res_calib() {
 }
 
 
-Calibration Detector::highest_res_fwhm() {
-  Calibration result;
-  for (int i=0; i<fwhm_calibrations_.size(); ++i)
-    if (fwhm_calibrations_.get(i).bits_ >= result.bits_)
-      result = fwhm_calibrations_.get(i);
-  return result;
-}
-
 void Detector::to_xml(tinyxml2::XMLPrinter& printer) const {
 
   printer.OpenElement("Detector");
@@ -66,8 +58,8 @@ void Detector::to_xml(tinyxml2::XMLPrinter& printer) const {
   if (energy_calibrations_.size())
     energy_calibrations_.to_xml(printer);
   
-  if (fwhm_calibrations_.size())
-    fwhm_calibrations_.to_xml(printer);
+  if (fwhm_calibration_.bits_)
+    fwhm_calibration_.to_xml(printer);
 
   if (setting_values_.size()) {
     printer.OpenElement("Optimization");
@@ -96,15 +88,16 @@ void Detector::from_xml(tinyxml2::XMLElement* root) {
     type_ = std::string(el->GetText());
 
   if (el = root->FirstChildElement(Calibration().xml_element_name().c_str())) {
-    Calibration newCali;  //this branch for bckwds compatibility with n42 calib entries
+    Calibration newCali; 
     newCali.from_xml(el);
-    energy_calibrations_.add(newCali);
-  } else if (el = root->FirstChildElement(energy_calibrations_.xml_element_name().c_str())) {
-    energy_calibrations_.from_xml(el);
+    if (newCali.type_ == "FWHM")
+      fwhm_calibration_ = newCali;
+    else
+      energy_calibrations_.add(newCali);  //this branch for bckwds compatibility with n42 calib entries
   }
 
-  if (el = root->FirstChildElement(fwhm_calibrations_.xml_element_name().c_str())) {
-    fwhm_calibrations_.from_xml(el);
+  if (el = root->FirstChildElement(energy_calibrations_.xml_element_name().c_str())) {
+    energy_calibrations_.from_xml(el);
   }
 
   tinyxml2::XMLElement* OptiData = root->FirstChildElement("Optimization");

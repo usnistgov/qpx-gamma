@@ -134,6 +134,10 @@ void FormPlot2D::set_spectrum(QString name) {
 }
 
 
+void FormPlot2D::set_gate_width(int w) {
+  ui->spinGateWidth->setValue(w);
+}
+
 void FormPlot2D::set_show_gate_width(bool vis) {
   ui->labelGateWidth->setVisible(vis);
   ui->spinGateWidth->setVisible(vis);
@@ -185,29 +189,33 @@ void FormPlot2D::replot_markers() {
 
     QCPItemStraightLine *one_line;
 
-    one_line = new QCPItemStraightLine(ui->coincPlot);
-    one_line->setPen(pen);
-    one_line->point1->setCoords(0, y_marker.channel - width);
-    one_line->point2->setCoords(1, y_marker.channel - width);
-    ui->coincPlot->addItem(one_line);
+    if (y_marker.visible) {
+      one_line = new QCPItemStraightLine(ui->coincPlot);
+      one_line->setPen(pen);
+      one_line->point1->setCoords(0, y_marker.channel - width);
+      one_line->point2->setCoords(1, y_marker.channel - width);
+      ui->coincPlot->addItem(one_line);
 
-    one_line = new QCPItemStraightLine(ui->coincPlot);
-    one_line->setPen(pen);
-    one_line->point1->setCoords(0, y_marker.channel + width);
-    one_line->point2->setCoords(1, y_marker.channel + width);
-    ui->coincPlot->addItem(one_line);
+      one_line = new QCPItemStraightLine(ui->coincPlot);
+      one_line->setPen(pen);
+      one_line->point1->setCoords(0, y_marker.channel + width);
+      one_line->point2->setCoords(1, y_marker.channel + width);
+      ui->coincPlot->addItem(one_line);
+    }
 
-    one_line = new QCPItemStraightLine(ui->coincPlot);
-    one_line->setPen(pen);
-    one_line->point1->setCoords(x_marker.channel - width, 0);
-    one_line->point2->setCoords(x_marker.channel - width, 1);
-    ui->coincPlot->addItem(one_line);
+    if (x_marker.visible) {
+      one_line = new QCPItemStraightLine(ui->coincPlot);
+      one_line->setPen(pen);
+      one_line->point1->setCoords(x_marker.channel - width, 0);
+      one_line->point2->setCoords(x_marker.channel - width, 1);
+      ui->coincPlot->addItem(one_line);
 
-    one_line = new QCPItemStraightLine(ui->coincPlot);
-    one_line->setPen(pen);
-    one_line->point1->setCoords(x_marker.channel + width, 0);
-    one_line->point2->setCoords(x_marker.channel + width, 1);
-    ui->coincPlot->addItem(one_line);
+      one_line = new QCPItemStraightLine(ui->coincPlot);
+      one_line->setPen(pen);
+      one_line->point1->setCoords(x_marker.channel + width, 0);
+      one_line->point2->setCoords(x_marker.channel + width, 1);
+      ui->coincPlot->addItem(one_line);
+    }
   }
 
   ui->coincPlot->replot();
@@ -262,7 +270,8 @@ void FormPlot2D::make_marker(Marker &marker) {
 
 }
 
-void FormPlot2D::update_plot() {
+void FormPlot2D::update_plot(bool force) {
+  PL_DBG << "updating 2d";
 
   this->setCursor(Qt::WaitCursor);
   CustomTimer guiside(true);
@@ -270,8 +279,9 @@ void FormPlot2D::update_plot() {
   bool new_data = mySpectra->new_data();
   bool rescale2d = ((zoom_2d != ui->sliderZoom2d->value()) || (name_2d != ui->comboChose2d->currentText()));
 
-  if (rescale2d || new_data) {
+  if (rescale2d || new_data || force) {
     name_2d = ui->comboChose2d->currentText();
+    PL_DBG << "really updating 2d " << name_2d.toStdString();
 
     Pixie::Spectrum::Spectrum* some_spectrum = mySpectra->by_name(name_2d.toStdString());
     uint32_t adjrange;
@@ -286,7 +296,10 @@ void FormPlot2D::update_plot() {
         && (adjrange = static_cast<uint32_t>(some_spectrum->resolution() * (ui->sliderZoom2d->value() / 100.0)))
         )
     {
+      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
+
       if (rescale2d) {
+        PL_DBG << "rescaling 2d";
         ui->coincPlot->clearGraphs();
         colorMap->data()->setSize(adjrange, adjrange);
 
@@ -303,7 +316,10 @@ void FormPlot2D::update_plot() {
           calib_x_ = detector_x_.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
         else
           calib_x_ = detector_x_.highest_res_calib();
-        colorMap->keyAxis()->setLabel(/*QString::fromStdString(detector_x_.name_) + */ "Energy (" + QString::fromStdString(calib_x_.units_) + ")");
+        if (!ui->spinGateWidth->isVisible())
+          colorMap->keyAxis()->setLabel(/*QString::fromStdString(detector_x_.name_) + */ "Energy (" + QString::fromStdString(calib_x_.units_) + ")");
+        else
+          colorMap->keyAxis()->setLabel("Energy (bin)");
         ui->labelCoDet1->setText(QString::fromStdString(detector_x_.name_) + "(" + QString::fromStdString(calib_x_.units_) + "):");
         if (!calib_x_.bits_)
           calib_x_.bits_ = bits;
@@ -313,7 +329,11 @@ void FormPlot2D::update_plot() {
           calib_y_ = detector_y_.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
         else
           calib_y_ = detector_y_.highest_res_calib();
-        colorMap->valueAxis()->setLabel(/*QString::fromStdString(detector_y_.name_) + */ "Energy (" + QString::fromStdString(calib_y_.units_) + ")");
+        if (!ui->spinGateWidth->isVisible())
+          colorMap->valueAxis()->setLabel(/*QString::fromStdString(detector_y_.name_) + */ "Energy (" + QString::fromStdString(calib_y_.units_) + ")");
+        else
+          colorMap->valueAxis()->setLabel("Energy (bin)");
+
         ui->labelCoDet2->setText(QString::fromStdString(detector_y_.name_) + "(" + QString::fromStdString(calib_y_.units_) + "):");
         if (!calib_y_.bits_)
           calib_y_.bits_ = bits;
@@ -552,4 +572,5 @@ void FormPlot2D::on_pushAnalyse_clicked()
 void FormPlot2D::on_spinGateWidth_editingFinished()
 {
   replot_markers();
+  emit markers_set(x_marker, y_marker);
 }

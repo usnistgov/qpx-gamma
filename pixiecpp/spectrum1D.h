@@ -57,6 +57,7 @@ protected:
 
   uint64_t _get_count(std::initializer_list<uint16_t> list) const;
   std::unique_ptr<std::list<Entry>> _get_spectrum(std::initializer_list<Pair> list);
+  void _add_bulk(const Entry&) override;
 
   //event processing
   void addHit(const Hit&) override;

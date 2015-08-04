@@ -76,6 +76,7 @@ public:
   //parameters take dimensions_ number of ranges of minimum (inclusive) and maximum (exclusive)
   //implemented in children by _get_spectrum and _get_spectrum_update
   std::unique_ptr<EntryList> get_spectrum(std::initializer_list<Pair> list = {});
+  void add_bulk(const Entry&);
 
   //full save with custom format
   void to_xml(tinyxml2::XMLPrinter&) const;
@@ -145,6 +146,7 @@ protected:
 
   virtual uint64_t _get_count(std::initializer_list<uint16_t>) const = 0;
   virtual std::unique_ptr<std::list<Entry>> _get_spectrum(std::initializer_list<Pair>) = 0;
+  virtual void _add_bulk(const Entry&) {}
 
   virtual std::string _channels_to_xml() const = 0;
   virtual uint16_t _channels_from_xml(const std::string&) = 0;

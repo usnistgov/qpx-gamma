@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1666</width>
-    <height>828</height>
+    <width>1406</width>
+    <height>853</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,7 +23,23 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <widget class="FormPeaks" name="plotSpectrum" native="true">
+        <widget class="QTableWidget" name="tableCoincResults">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>150</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="FormCoincPeaks" name="plotSpectrum" native="true">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
            <horstretch>0</horstretch>
@@ -33,7 +49,7 @@
         </widget>
        </item>
        <item>
-        <widget class="FormPeaks" name="plotSpectrum2" native="true">
+        <widget class="FormCoincPeaks" name="plotSpectrum2" native="true">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
            <horstretch>0</horstretch>
@@ -63,18 +79,19 @@
     </layout>
    </item>
   </layout>
+  <zorder>plotMatrix</zorder>
  </widget>
  <customwidgets>
-  <customwidget>
-   <class>FormPeaks</class>
-   <extends>QWidget</extends>
-   <header>form_peaks.h</header>
-   <container>1</container>
-  </customwidget>
   <customwidget>
    <class>FormPlot2D</class>
    <extends>QWidget</extends>
    <header>form_plot2d.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>FormCoincPeaks</class>
+   <extends>QWidget</extends>
+   <header>form_coinc_peaks.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

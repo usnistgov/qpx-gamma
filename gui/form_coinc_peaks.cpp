@@ -16,21 +16,21 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormPeaks - 
+ *      FormCoincPeaks -
  *
  ******************************************************************************/
 
-#include "form_peaks.h"
+#include "form_coinc_peaks.h"
 #include "widget_detectors.h"
-#include "ui_form_peaks.h"
+#include "ui_form_coinc_peaks.h"
 #include "gamma_fitter.h"
 #include "qt_util.h"
 
-FormPeaks::FormPeaks(QWidget *parent) :
+FormCoincPeaks::FormCoincPeaks(QWidget *parent) :
   QWidget(parent),
   spectrum_(nullptr),
   fit_data_(nullptr),
-  ui(new Ui::FormPeaks)
+  ui(new Ui::FormCoincPeaks)
 {
   ui->setupUi(this);
 
@@ -61,17 +61,21 @@ FormPeaks::FormPeaks(QWidget *parent) :
   list.visible = true;
 
   main_graph_.default_pen = QPen(Qt::gray, 1);
-  prelim_peak_.default_pen = QPen(Qt::black, 4);
-  filtered_peak_.default_pen = QPen(Qt::blue, 6);
   gaussian_.default_pen = QPen(Qt::darkBlue, 0);
-  pseudo_voigt_.default_pen = QPen(Qt::darkCyan, 0);
 
   multiplet_.default_pen = QPen(Qt::red, 2);
 
-  baseline_.default_pen = QPen(Qt::darkGray, 0);
-  rise_.default_pen = QPen(Qt::green, 0);
-  fall_.default_pen = QPen(Qt::red, 0);
-  even_.default_pen = QPen(Qt::black, 0);
+  sel_gaussian_.default_pen = QPen(Qt::green, 0);
+
+  ui->tablePeaks->verticalHeader()->hide();
+  ui->tablePeaks->setColumnCount(6);
+  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "edges", "energy", "fwhm", "area", "cps"});
+  ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
+  ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  ui->tablePeaks->horizontalHeader()->setStretchLastSection(true);
+  ui->tablePeaks->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+  ui->tablePeaks->show();
+  connect(ui->tablePeaks, SIGNAL(itemSelectionChanged()), this, SLOT(selection_changed_in_table()));
 
   connect(ui->plot1D, SIGNAL(markers_selected()), this, SLOT(user_selected_peaks()));
   connect(ui->plot1D, SIGNAL(clickedLeft(double)), this, SLOT(addMovingMarker(double)));
@@ -80,51 +84,39 @@ FormPeaks::FormPeaks(QWidget *parent) :
 
 }
 
-FormPeaks::~FormPeaks()
+FormCoincPeaks::~FormCoincPeaks()
 {
   delete ui;
 }
 
-void FormPeaks::setFit(Gamma::Fitter* fit) {
+void FormCoincPeaks::setFit(Gamma::Fitter* fit) {
   fit_data_ = fit;
   update_fit(true);
 }
 
-void FormPeaks::loadSettings(QSettings &settings_) {
-  settings_.beginGroup("Peaks");
+void FormCoincPeaks::loadSettings(QSettings &settings_) {
+  settings_.beginGroup("CoincPeaks");
   ui->spinMinPeakWidth->setValue(settings_.value("min_peak_width", 5).toInt());
   ui->doubleOverlapWidth->setValue(settings_.value("overlap_width", 2.70).toDouble());
   ui->spinMovAvg->setValue(settings_.value("moving_avg_window", 15).toInt());
-  ui->checkShowMovAvg->setChecked(settings_.value("show_moving_avg", false).toBool());
-  ui->checkShowFilteredPeaks->setChecked(settings_.value("show_filtered_peaks", false).toBool());
-  ui->checkShowPrelimPeaks->setChecked(settings_.value("show_prelim_peaks", false).toBool());
-  ui->checkShowGaussians->setChecked(settings_.value("show_gaussians", false).toBool());
-  ui->checkShowBaselines->setChecked(settings_.value("show_baselines", false).toBool());
-  ui->checkShowPseudoVoigt->setChecked(settings_.value("show_pseudovoigt", false).toBool());
   ui->plot1D->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
   ui->plot1D->set_plot_style(settings_.value("plot_style", "Step").toString());
   ui->plot1D->set_marker_labels(settings_.value("marker_labels", true).toBool());
   settings_.endGroup();
 }
 
-void FormPeaks::saveSettings(QSettings &settings_) {
-  settings_.beginGroup("Peaks");
+void FormCoincPeaks::saveSettings(QSettings &settings_) {
+  settings_.beginGroup("CoincPeaks");
   settings_.setValue("min_peak_width", ui->spinMinPeakWidth->value());
   settings_.setValue("moving_avg_window", ui->spinMovAvg->value());
   settings_.setValue("overlap_width", ui->doubleOverlapWidth->value());
-  settings_.setValue("show_moving_avg", ui->checkShowMovAvg->isChecked());
-  settings_.setValue("show_prelim_peaks", ui->checkShowPrelimPeaks->isChecked());
-  settings_.setValue("show_filtered_peaks", ui->checkShowFilteredPeaks->isChecked());
-  settings_.setValue("show_gaussians", ui->checkShowGaussians->isChecked());
-  settings_.setValue("show_baselines", ui->checkShowBaselines->isChecked());
-  settings_.setValue("show_pseudovoigt", ui->checkShowPseudoVoigt->isChecked());
   settings_.setValue("scale_type", ui->plot1D->scale_type());
   settings_.setValue("plot_style", ui->plot1D->plot_style());
   settings_.setValue("marker_labels", ui->plot1D->marker_labels());
   settings_.endGroup();
 }
 
-void FormPeaks::clear() {
+void FormCoincPeaks::clear() {
   nrg_calibration_ = Gamma::Calibration();
   fwhm_calibration_ = Gamma::Calibration();
   detector_ = Gamma::Detector();
@@ -137,12 +129,16 @@ void FormPeaks::clear() {
   ui->plot1D->clearExtras();
   ui->plot1D->reset_scales();
   replot_all();
+  sel_L = 0;
+  sel_R = 0;
 }
 
 
-void FormPeaks::setSpectrum(Pixie::Spectrum::Spectrum *newspectrum) {
+void FormCoincPeaks::setSpectrum(Pixie::Spectrum::Spectrum *newspectrum, uint16_t L, uint16_t R) {
   clear();
   spectrum_ = newspectrum;
+  sel_L = L;
+  sel_R = R;
 
   if (spectrum_ && spectrum_->resolution()) {
     int bits = spectrum_->bits();
@@ -159,16 +155,22 @@ void FormPeaks::setSpectrum(Pixie::Spectrum::Spectrum *newspectrum) {
   ui->plot1D->reset_scales();
 
   update_spectrum();
+
+  if (spectrum_ && (spectrum_->total_count() > 0)) {
+    on_pushFindPeaks_clicked();
+    replot_all();
+  }
+
 }
 
-void FormPeaks::setData(Gamma::Calibration nrg_calib, Gamma::Calibration fwhm_calib) {
+void FormCoincPeaks::setData(Gamma::Calibration nrg_calib, Gamma::Calibration fwhm_calib) {
   fwhm_calibration_ = fwhm_calib;
   nrg_calibration_ = nrg_calib;
   replot_markers();
 }
 
 
-void FormPeaks::update_spectrum() {
+void FormCoincPeaks::update_spectrum() {
   if (fit_data_ == nullptr)
     return;
 
@@ -194,11 +196,12 @@ void FormPeaks::update_spectrum() {
     double yy = it.second;
     double xx = static_cast<double>(i);
     x_chan[i] = xx;
+    double x_nrg = nrg_calibration_.transform(xx);
     y[i] = yy;
-    if (!minima.count(xx) || (minima[xx] > yy))
-      minima[xx] = yy;
-    if (!maxima.count(xx) || (maxima[xx] < yy))
-      maxima[xx] = yy;
+    if (!minima.count(x_nrg) || (minima[xx] > yy))
+      minima[x_nrg] = yy;
+    if (!maxima.count(x_nrg) || (maxima[xx] < yy))
+      maxima[x_nrg] = yy;
     ++i;
   }
 
@@ -211,65 +214,60 @@ void FormPeaks::update_spectrum() {
 }
 
 
-void FormPeaks::replot_all() {
+void FormCoincPeaks::replot_all() {
   if (fit_data_ == nullptr)
     return;
   
   ui->plot1D->clearGraphs();
-  ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->x_), QVector<double>::fromStdVector(fit_data_->y_), main_graph_);
-
-  if (ui->checkShowMovAvg->isChecked())
-    plot_derivs();
+  ui->plot1D->addGraph(QVector<double>::fromStdVector(nrg_calibration_.transform(fit_data_->x_)), QVector<double>::fromStdVector(fit_data_->y_), main_graph_);
 
   QVector<double> xx, yy;
 
-  if (ui->checkShowPrelimPeaks->isChecked()) {
-    xx.clear(); yy.clear();
-    for (auto &q : fit_data_->prelim) {
-      xx.push_back(q);
-      yy.push_back(fit_data_->y_[q]);
-    }
-    if (yy.size())
-      ui->plot1D->addPoints(xx, yy, prelim_peak_, QCPScatterStyle::ssDiamond);
-  }
-
-  if (ui->checkShowFilteredPeaks->isChecked()) {
-    xx.clear(); yy.clear();
-    for (auto &q : fit_data_->filtered) {
-      xx.push_back(q);
-      yy.push_back(fit_data_->y_[q]);
-    }
-    if (yy.size())
-      ui->plot1D->addPoints(xx, yy, filtered_peak_, QCPScatterStyle::ssDiamond);
-  }
-
-  for (auto &q : fit_data_->multiplets_) {
-    if (ui->checkShowGaussians->isChecked())
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_), multiplet_);
-  }
+  for (auto &q : fit_data_->multiplets_)
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(nrg_calibration_.transform(q.x_)), QVector<double>::fromStdVector(q.y_fullfit_), multiplet_);
   
+  AppearanceProfile app;
   for (auto &q : fit_data_->peaks_) {
-    if (ui->checkShowPseudoVoigt->isChecked())
-        ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
-                             QVector<double>::fromStdVector(q.second.y_fullfit_pseudovoigt_),
-                             pseudo_voigt_);
-    if (ui->checkShowGaussians->isChecked())
-         ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
-                              QVector<double>::fromStdVector(q.second.y_fullfit_gaussian_),
-                              gaussian_);
-    if (ui->checkShowBaselines->isChecked())
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
-                           QVector<double>::fromStdVector(q.second.y_baseline_),
-                           baseline_);
+    if ((q.first > sel_L) && (q.first < sel_R))
+      app = sel_gaussian_;
+    else
+      app = gaussian_;
+
+    ui->plot1D->addGraph(QVector<double>::fromStdVector(nrg_calibration_.transform(q.second.x_)),
+                         QVector<double>::fromStdVector(q.second.y_fullfit_gaussian_),
+                         app);
+    ui->plot1D->addGraph(QVector<double>::fromStdVector(nrg_calibration_.transform(q.second.x_)),
+                         QVector<double>::fromStdVector(q.second.y_baseline_),
+                         app);
   }
 
-  ui->plot1D->setLabels("channel", "counts");
+  ui->plot1D->use_calibrated(nrg_calibration_.units_ != "channels");
+  ui->plot1D->setLabels(QString::fromStdString(nrg_calibration_.units_), "count");
+  //ui->plot1D->setLabels("channel", "counts");
+
+  ui->tablePeaks->clearContents();
+  ui->tablePeaks->setRowCount(fit_data_->peaks_.size());
+  bool gray = false;
+  QColor background_col;
+  int i=0;
+  for (auto &q : fit_data_->peaks_) {
+    if ((q.first > sel_L) && (q.first < sel_R))
+      background_col = Qt::green;
+    else if (gray)
+      background_col = Qt::lightGray;
+    else
+      background_col = Qt::white;
+    add_peak_to_table(q.second, i, background_col);
+    ++i;
+    if (!q.second.intersects_R)
+      gray = !gray;
+  }
 
   ui->plot1D->setYBounds(minima, maxima); //no baselines or avgs
   replot_markers();
 }
 
-void FormPeaks::addMovingMarker(double x) {
+void FormCoincPeaks::addMovingMarker(double x) {
   if (fit_data_ == nullptr)
     return;
   
@@ -301,14 +299,14 @@ void FormPeaks::addMovingMarker(double x) {
   replot_markers();
 }
 
-void FormPeaks::removeMovingMarker(double x) {
+void FormCoincPeaks::removeMovingMarker(double x) {
   range_.visible = false;
   toggle_push();
   replot_markers();
 }
 
 
-void FormPeaks::replot_markers() {
+void FormCoincPeaks::replot_markers() {
   if (fit_data_ == nullptr)
     return;
 
@@ -337,7 +335,7 @@ void FormPeaks::replot_markers() {
   ui->plot1D->redraw();
 }
 
-void FormPeaks::on_pushAdd_clicked()
+void FormCoincPeaks::on_pushAdd_clicked()
 {
   if (range_.l.channel >= range_.r.channel)
     return;
@@ -353,20 +351,34 @@ void FormPeaks::on_pushAdd_clicked()
   emit peaks_changed(true);
 }
 
-void FormPeaks::user_selected_peaks() {
+void FormCoincPeaks::user_selected_peaks() {
   if (fit_data_ == nullptr)
     return;
 
   std::set<double> chosen_peaks = ui->plot1D->get_selected_markers();
   for (auto &q : fit_data_->peaks_)
     q.second.selected = (chosen_peaks.count(q.second.center) > 0);
+
+  ui->tablePeaks->blockSignals(true);
+  this->blockSignals(true);
+  ui->tablePeaks->clearSelection();
+  int i = 0;
+  for (auto &q : fit_data_->peaks_) {
+    if (q.second.selected) {
+      ui->tablePeaks->selectRow(i);
+    }
+    ++i;
+  }
+  ui->tablePeaks->blockSignals(false);
+  this->blockSignals(false);
+
   toggle_push();
   replot_markers();
   if (isVisible())
     emit peaks_changed(false);
 }
 
-void FormPeaks::toggle_push() {
+void FormCoincPeaks::toggle_push() {
   if (fit_data_ == nullptr)
     return;
 
@@ -378,7 +390,7 @@ void FormPeaks::toggle_push() {
   ui->pushMarkerRemove->setEnabled(sel);
 }
 
-void FormPeaks::on_pushMarkerRemove_clicked()
+void FormCoincPeaks::on_pushMarkerRemove_clicked()
 {
   if (fit_data_ == nullptr)
     return;
@@ -398,7 +410,7 @@ void FormPeaks::on_pushMarkerRemove_clicked()
   emit peaks_changed(true);
 }
 
-void FormPeaks::on_pushFindPeaks_clicked()
+void FormCoincPeaks::on_pushFindPeaks_clicked()
 {
   if (fit_data_ == nullptr)
     return;
@@ -418,83 +430,37 @@ void FormPeaks::on_pushFindPeaks_clicked()
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormPeaks::plot_derivs()
-{
-  if (fit_data_ == nullptr)
-    return;
-
-  QVector<double> temp_y, temp_x;
-  int was = 0, is = 0;
-
-  for (int i = 0; i < fit_data_->deriv1.size(); ++i) {
-    if (fit_data_->deriv1[i] > 0)
-      is = 1;
-    else if (fit_data_->deriv1[i] < 0)
-      is = -1;
-    else
-      is = 0;
-
-    if ((was != is) && (temp_x.size()))
-    {
-      if (temp_x.size() > ui->spinMinPeakWidth->value()) {
-        if (was == 1)
-          ui->plot1D->addGraph(temp_x, temp_y, rise_);
-        else if (was == -1)
-          ui->plot1D->addGraph(temp_x, temp_y, fall_);
-        else
-          ui->plot1D->addGraph(temp_x, temp_y, even_);
-      }
-      temp_x.clear(); temp_x.push_back(i-1);
-      temp_y.clear(); temp_y.push_back(fit_data_->y_avg_[i-1]);
-    }
-
-    was = is;
-    temp_y.push_back(fit_data_->y_avg_[i]);
-    temp_x.push_back(i);
-  }
-
-  if (temp_x.size())
-  {
-    if (was == 1)
-      ui->plot1D->addGraph(temp_x, temp_y, rise_);
-    else if (was == -1)
-      ui->plot1D->addGraph(temp_x, temp_y, fall_);
-    else
-      ui->plot1D->addGraph(temp_x, temp_y, even_);
-  }
-}
-
-void FormPeaks::on_checkShowMovAvg_clicked()
+void FormCoincPeaks::on_checkShowMovAvg_clicked()
 {
   replot_all();
 }
 
-void FormPeaks::on_checkShowPrelimPeaks_clicked()
+void FormCoincPeaks::on_checkShowPrelimPeaks_clicked()
 {
   replot_all();
 }
 
-void FormPeaks::on_checkShowGaussians_clicked()
+void FormCoincPeaks::on_checkShowGaussians_clicked()
 {
   replot_all();
 }
 
-void FormPeaks::on_checkShowBaselines_clicked()
+void FormCoincPeaks::on_checkShowBaselines_clicked()
 {
   replot_all();
 }
 
-void FormPeaks::on_checkShowFilteredPeaks_clicked()
+void FormCoincPeaks::on_checkShowFilteredPeaks_clicked()
 {
   replot_all();
 }
 
-void FormPeaks::on_checkShowPseudoVoigt_clicked()
+void FormCoincPeaks::on_checkShowPseudoVoigt_clicked()
 {
   replot_all();
 }
 
-void FormPeaks::on_spinMovAvg_editingFinished()
+void FormCoincPeaks::on_spinMovAvg_editingFinished()
 {
   if (fit_data_ == nullptr)
     return;
@@ -505,7 +471,7 @@ void FormPeaks::on_spinMovAvg_editingFinished()
   replot_all();
 }
 
-void FormPeaks::on_spinMinPeakWidth_editingFinished()
+void FormCoincPeaks::on_spinMinPeakWidth_editingFinished()
 {
   if (fit_data_ == nullptr)
     return;
@@ -514,17 +480,67 @@ void FormPeaks::on_spinMinPeakWidth_editingFinished()
   replot_all();
 }
 
-void FormPeaks::range_moved() {
+void FormCoincPeaks::range_moved() {
   range_ = ui->plot1D->get_range();
   toggle_push();
   replot_markers();
 }
 
-void FormPeaks::update_fit(bool content_changed) {
+void FormCoincPeaks::update_fit(bool content_changed) {
   if (content_changed)
     replot_all();
   else
     replot_markers();
   toggle_push();
 }
+
+void FormCoincPeaks::add_peak_to_table(const Gamma::Peak &p, int row, QColor bckg) {
+  QBrush background(bckg);
+
+  QTableWidgetItem *center = new QTableWidgetItem(QString::number(p.center));
+  center->setData(Qt::EditRole, QVariant::fromValue(p.center));
+  center->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 0, center);
+
+  QTableWidgetItem *edges = new QTableWidgetItem( QString::number(p.x_[0]) + "-" + QString::number(p.x_[p.x_.size() - 1]) );
+  edges->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 1, edges);
+
+  QTableWidgetItem *nrg = new QTableWidgetItem(QString::number(p.energy));
+  nrg->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 2, nrg);
+
+  QTableWidgetItem *fwhm = new QTableWidgetItem(QString::number(p.fwhm_gaussian));
+  fwhm->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 3, fwhm);
+
+  if (p.area_net_ != 0) {
+    QTableWidgetItem *area_net = new QTableWidgetItem(QString::number(p.area_net_));
+    area_net->setData(Qt::BackgroundRole, background);
+    ui->tablePeaks->setItem(row, 4, area_net);
+
+    QTableWidgetItem *cps_net = new QTableWidgetItem(QString::number(p.cts_per_sec_net_));
+    cps_net->setData(Qt::BackgroundRole, background);
+    ui->tablePeaks->setItem(row, 5, cps_net);
+  } else {
+    QTableWidgetItem *area_gauss = new QTableWidgetItem(QString::number(p.area_gauss_));
+    area_gauss->setData(Qt::BackgroundRole, background);
+    ui->tablePeaks->setItem(row, 4, area_gauss);
+
+    QTableWidgetItem *cps_gauss = new QTableWidgetItem(QString::number(p.cts_per_sec_gauss_));
+    cps_gauss->setData(Qt::BackgroundRole, background);
+    ui->tablePeaks->setItem(row, 5, cps_gauss);
+  }
+}
+
+void FormCoincPeaks::selection_changed_in_table() {
+  for (auto &q : fit_data_->peaks_)
+    q.second.selected = false;
+  foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows()) {
+    fit_data_->peaks_[ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble()].selected = true;
+  }
+  toggle_push();
+  replot_markers();
+}
+
 

@@ -32,7 +32,8 @@ void Fitter::setXY(std::vector<double> x, std::vector<double> y, uint16_t avg_wi
   if (y.size() == x.size()) {
     x_ = x;
     y_ = y;
-  }  
+  }
+  x_nrg_ = nrg_cali_.transform(x);
   set_mov_avg(avg_window);
   deriv();
 }
@@ -40,12 +41,13 @@ void Fitter::setXY(std::vector<double> x, std::vector<double> y, uint16_t avg_wi
 
 void Fitter::setXY(std::vector<double> x, std::vector<double> y,  uint16_t min, uint16_t max, uint16_t avg_window)
 {
-  x_.clear(); y_.clear();
+  x_.clear(); y_.clear(); x_nrg_.clear();
   if ((y.size() == x.size()) && (min < max) && ((max+1) < x.size())) {
     for (int i=min; i<=max; ++i) {
       x_.push_back(x[i]);
       y_.push_back(y[i]);
     }
+    x_nrg_ = nrg_cali_.transform(x_);
   }  
   set_mov_avg(avg_window);
   deriv();
@@ -53,6 +55,7 @@ void Fitter::setXY(std::vector<double> x, std::vector<double> y,  uint16_t min, 
 
 void Fitter::clear() {
   x_.clear();
+  x_nrg_.clear();
   y_.clear();
   y_avg_.clear();
   deriv1.clear();
@@ -294,8 +297,10 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
   Peak newpeak = Gamma::Peak(xx, yy, bckgr, nrg_cali_, fwhm_cali_, live_seconds_);
 
   peaks_[newpeak.center] = newpeak;
-  multiplets_.clear();
-  make_multiplets();
+  if (fwhm_cali_.units_ == "keV") {
+    multiplets_.clear();
+    make_multiplets();
+  }
 }
 
 void Fitter::make_multiplets()
@@ -305,6 +310,8 @@ void Fitter::make_multiplets()
     for (auto &q : peaks_) {
       q.second.lim_L = q.second.energy - overlap_ * q.second.fwhm_theoretical;
       q.second.lim_R = q.second.energy + overlap_ * q.second.fwhm_theoretical;
+      q.second.intersects_R = false;
+      q.second.intersects_L = false;
     }
     
     std::map<double, Peak>::iterator pk1 = peaks_.begin();
@@ -361,16 +368,20 @@ void Fitter::make_multiplets()
 
 void Fitter::remove_peak(double bin) {
   peaks_.erase(bin);
-  multiplets_.clear();
-  make_multiplets();
+  if (fwhm_cali_.units_ == "keV") {
+    multiplets_.clear();
+    make_multiplets();
+  }
 }
 
 
 void Fitter::remove_peaks(std::set<double> bins) {
   for (auto &q : bins)
     peaks_.erase(q);
-  multiplets_.clear();
-  make_multiplets();
+  if (fwhm_cali_.units_ == "keV") {
+    multiplets_.clear();
+    make_multiplets();
+  }
 }
 
 

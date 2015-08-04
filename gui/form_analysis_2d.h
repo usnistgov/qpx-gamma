@@ -63,19 +63,34 @@ private slots:
 
 protected:
   void closeEvent(QCloseEvent*);
+  void showEvent(QShowEvent* event);
 
 private:
   Ui::FormAnalysis2D *ui;
   QSettings &settings_;
 
 
-  Gamma::Fitter fit_data_, fit_data_2_;
+  Pixie::Spectrum::Template *tempx, *tempy;
+
   Pixie::Spectrum::Spectrum *gate_x;
   Pixie::Spectrum::Spectrum *gate_y;
 
-  Pixie::Spectrum::Template *tempx, *tempy;
+  Gamma::Fitter fit_data_, fit_data_2_;
+  int res;
+  int xmin, xmax, ymin, ymax;
 
-  Gamma::Calibration nrg_calibration_, fwhm_calibration_;
+  double live_seconds,
+         sum_inclusive,
+         sum_exclusive,
+         sum_no_peaks,
+         sum_prism;
+
+  Gamma::Detector detector1_;
+  Gamma::Calibration nrg_calibration1_, fwhm_calibration1_;
+
+  Gamma::Detector detector2_;
+  Gamma::Calibration nrg_calibration2_, fwhm_calibration2_;
+
 
   //from parent
   QString data_directory_;
@@ -83,10 +98,11 @@ private:
   QString current_spectrum_;
 
   XMLableDB<Gamma::Detector> &detectors_;
-  Gamma::Detector detector_;
 
   void loadSettings();
   void saveSettings();
+  void make_gated_spectra();
+  void fill_table();
 };
 
 #endif // FORM_CALIBRATION_H

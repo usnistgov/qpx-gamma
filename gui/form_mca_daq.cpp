@@ -413,7 +413,7 @@ void FormMcaDaq::reqAnal(QString name) {
     connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_, SLOT(update_spectrum()));
     connect(my_analysis_, SIGNAL(destroyed()), this, SLOT(analysis_destroyed()));
   }
-  my_analysis_->setWindowTitle("Analysis1");
+  my_analysis_->setWindowTitle("Analysis1d " + name);
   my_analysis_->setSpectrum(&spectra_, name);
   emit requestAnalysis(my_analysis_);
 }
@@ -428,7 +428,7 @@ void FormMcaDaq::reqAnal2D(QString name) {
     connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_2d_, SLOT(update_spectrum()));
     connect(my_analysis_2d_, SIGNAL(destroyed()), this, SLOT(analysis2d_destroyed()));
   }
-  my_analysis_2d_->setWindowTitle("Analysis1");
+  my_analysis_2d_->setWindowTitle("Analysis2d " + name);
   my_analysis_2d_->setSpectrum(&spectra_, name);
   emit requestAnalysis2D(my_analysis_2d_);
 }
