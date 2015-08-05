@@ -42,6 +42,19 @@ Calibration Detector::highest_res_calib() {
   return result;
 }
 
+Calibration Detector::get_gain_match(uint16_t bits, std::string todet)
+{
+  Calibration result = Calibration("Gain", bits);
+  for (int i=0; i< gain_match_calibrations_.size(); ++i) {
+    Calibration k = gain_match_calibrations_.get(i);
+    if ((k.bits_ == result.bits_) &&
+        (k.from_ == name_) &&
+        (k.to_   == todet))
+      return k;
+  }
+  return result;
+}
+
 
 void Detector::to_xml(tinyxml2::XMLPrinter& printer) const {
 
@@ -57,7 +70,10 @@ void Detector::to_xml(tinyxml2::XMLPrinter& printer) const {
 
   if (energy_calibrations_.size())
     energy_calibrations_.to_xml(printer);
-  
+
+  if (gain_match_calibrations_.size())
+    gain_match_calibrations_.to_xml(printer);
+
   if (fwhm_calibration_.bits_)
     fwhm_calibration_.to_xml(printer);
 
@@ -98,6 +114,10 @@ void Detector::from_xml(tinyxml2::XMLElement* root) {
 
   if (el = root->FirstChildElement(energy_calibrations_.xml_element_name().c_str())) {
     energy_calibrations_.from_xml(el);
+  }
+
+  if (el = root->FirstChildElement(gain_match_calibrations_.xml_element_name().c_str())) {
+    gain_match_calibrations_.from_xml(el);
   }
 
   tinyxml2::XMLElement* OptiData = root->FirstChildElement("Optimization");

@@ -130,6 +130,12 @@ void QSquareCustomPlot::mouseReleaseEvent(QMouseEvent *event)  {
       emit mouse_clicked(static_cast<double>(xx), static_cast<double>(yy), event, true); //true?
     } else if (QCPAbstractItem *ai = qobject_cast<QCPAbstractItem*>(clickedLayerable)) {
       //PL_DBG << "clicked on abstractitem in plot";
+      /*if (QCPItemText *markerText = qobject_cast<QCPItemText*>(ai)) {
+        if (markerText->selectable())
+          markerText->setSelected(!markerText->selected());
+        PL_DBG << "text clicked " << markerText->selected();
+        selectionChangedByUser();
+      }*/
     } else
       emit mouse_clicked(co_x, co_y, event, false);
   }

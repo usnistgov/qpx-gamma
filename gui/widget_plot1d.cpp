@@ -178,8 +178,10 @@ Range WidgetPlot1D::get_range() {
 std::set<double> WidgetPlot1D::get_selected_markers() {
   std::set<double> selection;
   for (auto &q : ui->mcaPlot->selectedItems())
-    if (QCPItemText *txt = qobject_cast<QCPItemText*>(q))
-      selection.insert(txt->property("true_value").toDouble());
+    if (QCPItemText *txt = qobject_cast<QCPItemText*>(q)) {
+      selection.insert(txt->property("chan_value").toDouble());
+      //PL_DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
+    }
   return selection;
 }
 
@@ -340,6 +342,8 @@ void WidgetPlot1D::replot_markers() {
 
         QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
         crs->setStyle(QCPItemTracer::tsNone); //tsCirlce?
+        crs->setProperty("chan_value", q.channel);
+
         crs->setSize(4);
         crs->setGraph(ui->mcaPlot->graph(i));
         crs->setGraphKey(pos);
@@ -374,6 +378,8 @@ void WidgetPlot1D::replot_markers() {
       if (marker_labels_) {
         QCPItemText *markerText = new QCPItemText(ui->mcaPlot);
         markerText->setProperty("true_value", top_crs->graphKey());
+        markerText->setProperty("chan_value", top_crs->property("chan_value"));
+
         markerText->position->setParentAnchor(top_crs->position);
         markerText->setPositionAlignment(Qt::AlignHCenter|Qt::AlignBottom);
         markerText->position->setCoords(0, -30);
@@ -588,7 +594,7 @@ void WidgetPlot1D::selection_changed() {
 }
 
 void WidgetPlot1D::clicked_plottable(QCPAbstractPlottable *plt) {
-  PL_INFO << "<WidgetPlot1D> clickedplottable";
+  //PL_INFO << "<WidgetPlot1D> clickedplottable";
 }
 
 
@@ -613,9 +619,21 @@ void WidgetPlot1D::plot_mouse_release(QMouseEvent*) {
 
   //channels only???
   if (edge_trc1 != nullptr)
-    my_range_.l.channel = edge_trc1->graphKey();
+    if (use_calibrated_) {
+      my_range_.l.energy = edge_trc1->graphKey();
+      my_range_.l.chan_valid = false;
+    } else {
+      my_range_.l.channel = edge_trc1->graphKey();
+      my_range_.l.energy_valid = false;
+    }
   if (edge_trc2 != nullptr)
-    my_range_.r.channel = edge_trc2->graphKey();
+    if (use_calibrated_) {
+      my_range_.r.energy = edge_trc2->graphKey();
+      my_range_.r.chan_valid = false;
+    } else {
+      my_range_.r.channel = edge_trc2->graphKey();
+      my_range_.r.energy_valid = false;
+    }
 
   if ((edge_trc1 != nullptr) || (edge_trc2 != nullptr))
     emit range_moved();

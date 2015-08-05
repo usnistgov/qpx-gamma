@@ -63,6 +63,13 @@ bool Spectrum2D::initialize() {
   return true;
 }
 
+void Spectrum2D::_add_bulk(const Entry& e) {
+  if ((e.first.size() == 2) && (e.first[0] < resolution_) && (e.first[1] < resolution_)) {
+    spectrum_[std::pair<uint16_t,uint16_t>(e.first[0], e.first[1])] += e.second;
+    count_ += e.second;
+  }
+}
+
 uint64_t Spectrum2D::_get_count(std::initializer_list<uint16_t> list) const {
   if (list.size() != 2)
     return 0;

@@ -49,7 +49,7 @@ public:
   void clear();
 
 signals:
-  void calibrationComplete();
+  void spectraChanged();
   void detectorsChanged();
 
 public slots:
@@ -60,6 +60,16 @@ private slots:
 
   void update_peaks(bool);
   void detectorsUpdated() {emit detectorsChanged();}
+
+  void on_pushCalibGain_clicked();
+
+  void on_pushCull_clicked();
+
+  void on_pushSymmetrize_clicked();
+
+  void on_pushFoldData_clicked();
+
+  void on_pushAddGatedSpectra_clicked();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -77,7 +87,7 @@ private:
 
   Gamma::Fitter fit_data_, fit_data_2_;
   int res;
-  int xmin, xmax, ymin, ymax;
+  int xmin_, xmax_, ymin_, ymax_;
 
   double live_seconds,
          sum_inclusive,
@@ -91,6 +101,9 @@ private:
   Gamma::Detector detector2_;
   Gamma::Calibration nrg_calibration2_, fwhm_calibration2_;
 
+  Gamma::Calibration gain_match_cali_;
+
+  AppearanceProfile style_pts, style_fit;
 
   //from parent
   QString data_directory_;
@@ -103,6 +116,7 @@ private:
   void saveSettings();
   void make_gated_spectra();
   void fill_table();
+  void plot_calib();
 };
 
 #endif // FORM_CALIBRATION_H

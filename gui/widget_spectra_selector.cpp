@@ -34,7 +34,7 @@ QpxSpectraWidget::QpxSpectraWidget(QWidget *parent)
   setMouseTracking(true);
   setAutoFillBackground(true);
   max_wide = 3; //make this a parameter
-  rect_w_ = 100;
+  rect_w_ = 140;
   rect_h_ = 20;
   border = 3;
   selected_ = -1;

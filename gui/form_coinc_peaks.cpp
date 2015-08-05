@@ -117,8 +117,6 @@ void FormCoincPeaks::saveSettings(QSettings &settings_) {
 }
 
 void FormCoincPeaks::clear() {
-  nrg_calibration_ = Gamma::Calibration();
-  fwhm_calibration_ = Gamma::Calibration();
   detector_ = Gamma::Detector();
   fit_data_->clear();
   maxima.clear();
@@ -198,9 +196,9 @@ void FormCoincPeaks::update_spectrum() {
     x_chan[i] = xx;
     double x_nrg = nrg_calibration_.transform(xx);
     y[i] = yy;
-    if (!minima.count(x_nrg) || (minima[xx] > yy))
+    if (!minima.count(x_nrg) || (minima[x_nrg] > yy))
       minima[x_nrg] = yy;
-    if (!maxima.count(x_nrg) || (maxima[xx] < yy))
+    if (!maxima.count(x_nrg) || (maxima[x_nrg] < yy))
       maxima[x_nrg] = yy;
     ++i;
   }
@@ -243,7 +241,6 @@ void FormCoincPeaks::replot_all() {
 
   ui->plot1D->use_calibrated(nrg_calibration_.units_ != "channels");
   ui->plot1D->setLabels(QString::fromStdString(nrg_calibration_.units_), "count");
-  //ui->plot1D->setLabels("channel", "counts");
 
   ui->tablePeaks->clearContents();
   ui->tablePeaks->setRowCount(fit_data_->peaks_.size());
@@ -270,7 +267,12 @@ void FormCoincPeaks::replot_all() {
 void FormCoincPeaks::addMovingMarker(double x) {
   if (fit_data_ == nullptr)
     return;
-  
+
+  int i=0;
+  while (nrg_calibration_.transform(i) < x)
+    ++i;
+  x = i;
+
   range_.visible = true;
 
   range_.center.channel = x;
@@ -339,6 +341,8 @@ void FormCoincPeaks::on_pushAdd_clicked()
 {
   if (range_.l.channel >= range_.r.channel)
     return;
+
+  PL_DBG << "add peak bw " << range_.l.channel << "-" << range_.r.channel;
 
   fit_data_->nrg_cali_ = nrg_calibration_;
   fit_data_->fwhm_cali_ = fwhm_calibration_;
@@ -482,6 +486,11 @@ void FormCoincPeaks::on_spinMinPeakWidth_editingFinished()
 
 void FormCoincPeaks::range_moved() {
   range_ = ui->plot1D->get_range();
+
+  range_.center.calibrate(detector_);
+  range_.l.calibrate(detector_);
+  range_.r.calibrate(detector_);
+
   toggle_push();
   replot_markers();
 }

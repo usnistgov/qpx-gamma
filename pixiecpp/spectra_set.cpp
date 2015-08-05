@@ -51,8 +51,8 @@ void SpectraSet::clear_helper() {
   //private, no lock needed
   if (!my_spectra_.empty())
     for (auto &q: my_spectra_) {
-      PL_DBG << "deleting " << q->name();
-      delete q;
+      if (q != nullptr)
+        delete q;
     }
   my_spectra_.clear();
   status_ = "empty";

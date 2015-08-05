@@ -43,6 +43,7 @@ public:
   void setSpectra(Pixie::SpectraSet& new_set);
 
   void update_plot(bool force = false);
+  void refresh();
   void replot_markers();
   void reset_content();
 
@@ -90,7 +91,7 @@ private slots:
 
   void on_pushAnalyse_clicked();
 
-  void on_spinGateWidth_editingFinished();
+  void on_spinGateWidth_valueChanged(int arg1);
 
 private:
 

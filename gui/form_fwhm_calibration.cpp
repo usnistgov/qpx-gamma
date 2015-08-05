@@ -167,7 +167,7 @@ void FormFwhmCalibration::replot_markers() {
       double step = (xmax-xmin) / 50.0;
       xx.clear(); yy.clear();
 
-      for (double x=xmin; x <= xmax; x+=step) {
+      for (double x=xmin; x < xmax; x+=step) {
         double y = new_fwhm_calibration_.transform(x);
         xx.push_back(x);
         yy.push_back(y);

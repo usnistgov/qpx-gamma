@@ -170,6 +170,11 @@ void FormPlot2D::gradientChosen(QAction* choice) {
   this->setCursor(Qt::ArrowCursor);
 }
 
+void FormPlot2D::refresh()
+{
+  ui->coincPlot->replot();
+}
+
 void FormPlot2D::replot_markers() {
   ui->coincPlot->clearItems();
 
@@ -178,7 +183,7 @@ void FormPlot2D::replot_markers() {
     make_marker(x_marker);
     make_marker(y_marker);
   } else {
-    QPen pen = x_marker.appearance.get_pen(current_gradient_);
+    QPen pen = my_marker.appearance.get_pen(current_gradient_);
 
     QColor cc = pen.color();
     cc.setAlpha(169);
@@ -569,7 +574,7 @@ void FormPlot2D::on_pushAnalyse_clicked()
   emit requestAnalysis(name_2d);
 }
 
-void FormPlot2D::on_spinGateWidth_editingFinished()
+void FormPlot2D::on_spinGateWidth_valueChanged(int arg1)
 {
   replot_markers();
   emit markers_set(x_marker, y_marker);

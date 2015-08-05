@@ -252,9 +252,6 @@ void Fitter::find_peaks(int min_width) {
   find_prelim();
   filter_prelim(min_width);
 
-  PL_DBG << "Finder using nrg calib coefs = " << nrg_cali_.coef_to_string();
-
-
   peaks_.clear();
   multiplets_.clear();
   for (int i=0; i < filtered.size(); ++i) {
@@ -276,17 +273,17 @@ void Fitter::find_peaks(int min_width) {
   }
 
   if (fwhm_cali_.units_ == "keV") {
-    PL_DBG << "<GammaFitter> Valid FWHM calib found, performing filtering/deconvolution";
+    //    PL_DBG << "<GammaFitter> Valid FWHM calib found, performing filtering/deconvolution";
     filter_by_theoretical_fwhm(0.25);
 
-    PL_DBG << "filtered by theoretical fwhm " << peaks_.size();
+    //    PL_DBG << "filtered by theoretical fwhm " << peaks_.size();
 
     make_multiplets();
   }
 
-  PL_INFO << "Preliminary search found " << prelim.size() << " potential peaks";
-  PL_INFO << "After minimum width filter: " << filtered.size();
-  PL_INFO << "Fitted peaks: " << peaks_.size();
+  //  PL_INFO << "Preliminary search found " << prelim.size() << " potential peaks";
+  //  PL_INFO << "After minimum width filter: " << filtered.size();
+  //  PL_INFO << "Fitted peaks: " << peaks_.size();
 }
 
 void Fitter::add_peak(uint32_t left, uint32_t right) {
@@ -295,6 +292,7 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
   std::vector<double> bckgr = make_background(x_, y_, left, right, 3);
   
   Peak newpeak = Gamma::Peak(xx, yy, bckgr, nrg_cali_, fwhm_cali_, live_seconds_);
+  PL_DBG << "new peak center = " << newpeak.center;
 
   peaks_[newpeak.center] = newpeak;
   if (fwhm_cali_.units_ == "keV") {
@@ -328,7 +326,7 @@ void Fitter::make_multiplets()
       pk1++;
       pk2++;
     }
-    PL_DBG << "<Gamma::Fitter> found " << juncs << " peak overlap_s";
+    //    PL_DBG << "<Gamma::Fitter> found " << juncs << " peak overlaps";
 
     std::set<Peak> multiplet;
     std::set<double> to_remove;

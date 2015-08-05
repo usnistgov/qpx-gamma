@@ -37,6 +37,7 @@ class Detector : public XMLable {
  public:
   Detector()
       : energy_calibrations_("Calibrations")
+      , gain_match_calibrations_("GainMatchCalibrations")
       , fwhm_calibration_("FWHM", 0)
       , name_("none")
       , type_("none") {}
@@ -60,9 +61,12 @@ class Detector : public XMLable {
   void to_xml(tinyxml2::XMLPrinter&) const;
   void from_xml(tinyxml2::XMLElement*);
   Calibration highest_res_calib();
+  Calibration get_gain_match(uint16_t bits, std::string todet);
   
   std::string name_, type_;
   XMLableDB<Calibration> energy_calibrations_;
+  XMLableDB<Calibration> gain_match_calibrations_;
+
   Calibration fwhm_calibration_;
   std::vector<double> setting_values_;
   std::vector<std::string> setting_names_;

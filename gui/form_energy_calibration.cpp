@@ -171,7 +171,7 @@ void FormEnergyCalibration::replot_markers() {
       double step = (xmax-xmin) / 50.0;
       xx.clear(); yy.clear();
 
-      for (double i=xmin; i <= xmax; i+=step) {
+      for (double i=xmin; i < xmax; i+=step) {
         xx.push_back(i);
         yy.push_back(new_calibration_.transform(i));
       }

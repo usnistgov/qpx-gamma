@@ -99,6 +99,17 @@ void Calibration::coef_from_string(std::string coefs) {
   }
 }
 
+std::string Calibration::to_string()
+{
+  std::string result;
+  result += "[Calibration:" + type_ + "]";
+  result += " bits=" + std::to_string(bits_);
+  result += " units=" + units_;
+  result += " date=" + to_iso_string(calib_date_);
+  result += " coeffs=" + coef_to_string();
+  return result;
+}
+
 
 void Calibration::to_xml(tinyxml2::XMLPrinter& printer) const {
 
@@ -106,6 +117,10 @@ void Calibration::to_xml(tinyxml2::XMLPrinter& printer) const {
   printer.PushAttribute("Type", type_.c_str());
   if (type_ == "Energy")
     printer.PushAttribute("EnergyUnits", units_.c_str());
+  else if (type_ == "Gain") {
+    printer.PushAttribute("From", from_.c_str());
+    printer.PushAttribute("To", to_.c_str());    
+  }
   if (bits_ > 0)
     printer.PushAttribute("ResolutionBits", std::to_string(bits_).c_str());
 
@@ -136,6 +151,10 @@ void Calibration::from_xml(tinyxml2::XMLElement* root) {
   type_ = std::string(root->Attribute("Type"));
   if (type_ == "Energy")
     units_ = std::string(root->Attribute("EnergyUnits"));
+  else if (type_ == "Gain") {
+    from_ = std::string(root->Attribute("From"));
+    to_ = std::string(root->Attribute("To"));    
+  }
   if (root->Attribute("ResolutionBits"))
     bits_ = boost::lexical_cast<short>(root->Attribute("ResolutionBits"));
   

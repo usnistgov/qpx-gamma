@@ -105,7 +105,7 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
                                      "Discard?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
     if (reply == QMessageBox::Yes) {
-      spectra_.clear();
+      //spectra_.clear();
     } else {
       event->ignore();
       return;
@@ -427,6 +427,7 @@ void FormMcaDaq::reqAnal2D(QString name) {
     my_analysis_2d_ = new FormAnalysis2D(settings_, detectors_);
     connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_2d_, SLOT(update_spectrum()));
     connect(my_analysis_2d_, SIGNAL(destroyed()), this, SLOT(analysis2d_destroyed()));
+    connect(my_analysis_2d_, SIGNAL(spectraChanged()), this, SLOT(updateSpectraUI()));
   }
   my_analysis_2d_->setWindowTitle("Analysis2d " + name);
   my_analysis_2d_->setSpectrum(&spectra_, name);

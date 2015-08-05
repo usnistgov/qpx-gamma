@@ -69,6 +69,7 @@ protected:
 
   void addHit(const Hit&) override;
   virtual void addHit(const Hit&, int, int);
+  void _add_bulk(const Entry&) override;
 
   //save/load
   bool _write_file(std::string, std::string) const override;

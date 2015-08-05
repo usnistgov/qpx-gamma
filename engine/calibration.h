@@ -37,7 +37,7 @@ enum class CalibrationModel : int {none = 0, polynomial = 1};
 class Calibration : public XMLable {
  public:
   Calibration();
-  Calibration(std::string type, uint16_t bits): Calibration() {type_=type; bits_ = bits;}
+Calibration(std::string type, uint16_t bits, std::string units = "channels"): Calibration() {type_=type; bits_ = bits; units_ = units;}
   void to_xml(tinyxml2::XMLPrinter&) const;
   void from_xml(tinyxml2::XMLElement*);
   std::string xml_element_name() const override {return "Calibration";}
@@ -59,9 +59,11 @@ class Calibration : public XMLable {
   std::vector<double> transform(std::vector<double>) const;
   std::string coef_to_string() const;
   void coef_from_string(std::string);
+  std::string to_string();
 
   boost::posix_time::ptime calib_date_;
   std::string type_, units_;
+  std::string from_, to_;
   uint16_t bits_;
   CalibrationModel model_;
   std::vector<double> coefficients_;
