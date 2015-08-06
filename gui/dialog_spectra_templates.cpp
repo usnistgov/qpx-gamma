@@ -46,19 +46,19 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Pixie::Spectrum::Template newTemp
     myTemplate = newTemplate;
     ui->lineName->setEnabled(false);
     ui->comboType->setEnabled(false);
-    Pixie::Spectrum::Template *newtemp = Pixie::Spectrum::Factory::getInstance().create_template(ui->comboType->currentText().toStdString());
+    Pixie::Spectrum::Template *newtemp = Pixie::Spectrum::Factory::getInstance().create_template(newTemplate.type);
     if (newtemp != nullptr) {
       myTemplate.description = newtemp->description;
       myTemplate.input_types = newtemp->input_types;
       myTemplate.output_types = newtemp->output_types;
     } else
-      PL_WARN << "Problem with spectrum type. Factory refuses to make template for " << ui->comboType->currentText().toStdString();
+      PL_WARN << "Problem with spectrum type. Factory cannot make template for " << newTemplate.type;
   } else {
     Pixie::Spectrum::Template *newtemp = Pixie::Spectrum::Factory::getInstance().create_template(ui->comboType->currentText().toStdString());
     if (newtemp != nullptr) {
       myTemplate = *newtemp;
     } else
-      PL_WARN << "Problem with spectrum type. Factory refuses to make template for " << ui->comboType->currentText().toStdString();
+      PL_WARN << "Problem with spectrum type. Factory cannot make template for " << ui->comboType->currentText().toStdString();
     myTemplate.appearance = generateColor().rgba();
   }
 

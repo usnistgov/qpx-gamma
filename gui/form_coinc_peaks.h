@@ -77,17 +77,8 @@ private slots:
   void on_pushAdd_clicked();
   void on_pushMarkerRemove_clicked();
   void on_pushFindPeaks_clicked();
-  void on_checkShowMovAvg_clicked();
-  void on_checkShowPrelimPeaks_clicked();
-  void on_checkShowGaussians_clicked();
-  void on_checkShowBaselines_clicked();
-  void on_checkShowFilteredPeaks_clicked();
-
   void on_spinMovAvg_editingFinished();
-
   void on_spinMinPeakWidth_editingFinished();
-
-  void on_checkShowPseudoVoigt_clicked();
 
 private:
   Ui::FormCoincPeaks *ui;

@@ -59,7 +59,7 @@ public:
 signals:
   void detectorsChanged();
   void peaks_changed(bool);
-  void update_detector(bool, bool);
+  void update_detector();
 
 private slots:
   void selection_changed_in_table(QItemSelection, QItemSelection);

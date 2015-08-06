@@ -27,7 +27,7 @@
 #include <iostream>
 #include <numeric>
 
-std::string to_str_precision(double, uint16_t);
+std::string to_str_precision(double, int);
 
 class Polynomial {
 public:
@@ -43,7 +43,7 @@ public:
       std::vector<uint16_t> &degrees, double center=0);
 
   std::string to_string();
-  std::string to_UTF8(bool with_rsq = false);
+  std::string to_UTF8(int precision = -1, bool with_rsq = false);
   std::string to_markup();
   std::string coef_to_string() const;
   void coef_from_string(std::string);

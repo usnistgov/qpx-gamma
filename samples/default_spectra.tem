@@ -49,25 +49,25 @@
         <AddPattern>0 1 0 0</AddPattern>
     </PixieSpectrumTemplate>
     <PixieSpectrumTemplate type="LFC1D">
-        <Name>chan0LFC</Name>
-        <Appearance>2160774956</Appearance>
-        <Visible>1</Visible>
+        <Name>chan0_LFC</Name>
+        <Appearance>2147628284</Appearance>
+        <Visible>0</Visible>
         <Resolution>14</Resolution>
         <MatchPattern>1 0 0 0</MatchPattern>
         <AddPattern>1 0 0 0</AddPattern>
         <GenericAttributes>
-            <Setting name="time_sample" value="10.000000" unit="seconds" writable="1" description="minimum Δt before compensating" address="55784"/>
+            <Setting name="time_sample" index="0" writable="true" address="0" type="floating" value="30.000000" minimum="0.000000" maximum="3600.000000" step="1.000000" unit="seconds" description="minimum Δt before compensating"/>
         </GenericAttributes>
     </PixieSpectrumTemplate>
     <PixieSpectrumTemplate type="LFC1D">
-        <Name>chan1LFC</Name>
-        <Appearance>2148192731</Appearance>
-        <Visible>1</Visible>
+        <Name>chan1_LFC</Name>
+        <Appearance>2162632980</Appearance>
+        <Visible>0</Visible>
         <Resolution>14</Resolution>
         <MatchPattern>0 1 0 0</MatchPattern>
         <AddPattern>0 1 0 0</AddPattern>
         <GenericAttributes>
-            <Setting name="time_sample" value="40.000000" unit="seconds" writable="1" description="minimum Δt before compensating" address="36040"/>
+            <Setting name="time_sample" index="0" writable="true" address="0" type="floating" value="30.000000" minimum="0.000000" maximum="3600.000000" step="1.000000" unit="seconds" description="minimum Δt before compensating"/>
         </GenericAttributes>
     </PixieSpectrumTemplate>
     <PixieSpectrumTemplate type="2D">
@@ -78,7 +78,7 @@
         <MatchPattern>0 0 0 0</MatchPattern>
         <AddPattern>1 1 0 0</AddPattern>
         <GenericAttributes>
-            <Setting name="buffered" value="1.000000" unit="T/F" writable="1" description="Buffered output for efficient plotting (more memory)" address="23144"/>
+            <Setting name="buffered" index="0" writable="true" address="0" type="boolean" value="true" unit="T/F" description="Buffered output for efficient plotting (more memory)"/>
         </GenericAttributes>
     </PixieSpectrumTemplate>
     <PixieSpectrumTemplate type="2D">
@@ -89,7 +89,7 @@
         <MatchPattern>0 0 0 0</MatchPattern>
         <AddPattern>1 1 0 0</AddPattern>
         <GenericAttributes>
-            <Setting name="buffered" value="1.000000" unit="T/F" writable="1" description="Buffered output for efficient plotting (more memory)" address="5896"/>
+            <Setting name="buffered" index="0" writable="true" address="0" type="boolean" value="false" unit="T/F" description="Buffered output for efficient plotting (more memory)"/>
         </GenericAttributes>
     </PixieSpectrumTemplate>
 </SpectrumTemplates>

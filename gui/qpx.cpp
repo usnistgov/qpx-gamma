@@ -214,21 +214,24 @@ void qpx::update_settings() {
 }
 
 void qpx::analyze_1d(FormAnalysis1D* formAnal) {
-  if (ui->qpxTabs->indexOf(formAnal) == -1) {
+  int idx = ui->qpxTabs->indexOf(formAnal);
+  if (idx == -1) {
     ui->qpxTabs->addTab(formAnal, formAnal->windowTitle());
     connect(formAnal, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
-  }
+  } else
+    ui->qpxTabs->setTabText(idx, formAnal->windowTitle());
   ui->qpxTabs->setCurrentWidget(formAnal);
   formAnal->update_spectrum();
 }
 
 void qpx::analyze_2d(FormAnalysis2D* formAnal) {
-  if (ui->qpxTabs->indexOf(formAnal) == -1) {
+  int idx = ui->qpxTabs->indexOf(formAnal);
+  if (idx == -1) {
     ui->qpxTabs->addTab(formAnal, formAnal->windowTitle());
     connect(formAnal, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
-  }
+  } else
+    ui->qpxTabs->setTabText(idx, formAnal->windowTitle());
   ui->qpxTabs->setCurrentWidget(formAnal);
-  formAnal->update_spectrum();
 }
 
 void qpx::on_pushOpenSpectra_clicked()

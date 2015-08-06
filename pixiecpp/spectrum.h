@@ -157,6 +157,8 @@ protected:
   virtual bool validateHit(const Hit& newHit) const; //has default behavior
   virtual void _closeAcquisition() {}
 
+  virtual void _set_detectors(const std::vector<Gamma::Detector>& dets); //has default behavior
+
   void recalc_energies();
   Setting get_attr(std::string name) const;
 

@@ -111,17 +111,12 @@ std::vector<std::string> SpectraSet::types() const {
   return output;
 }
 
-std::list<uint32_t> SpectraSet::resolutions(uint16_t dim) const {
+std::set<uint32_t> SpectraSet::resolutions(uint16_t dim) const {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  std::vector<bool> allres;
-  std::list<uint32_t> haveres;
-  allres.resize(17, 0);  //up to 16 different res
+  std::set<uint32_t> haveres;
   for (auto &q: my_spectra_)
     if (q->dimensions() == dim)
-      allres[q->bits()] = true;
-  for (int i=1; i<17; i++)
-    if (allres[i])
-      haveres.push_back(i);
+      haveres.insert(q->bits());
   return haveres;
 }
 
@@ -177,6 +172,18 @@ void SpectraSet::add_spectrum(Spectrum::Spectrum* newSpectrum) {
   newdata_ = true;
   terminating_ = false;
   // cond_.notify_one();
+}
+
+void SpectraSet::delete_spectrum(std::string name) {
+  std::list<Spectrum::Spectrum*>::iterator it = my_spectra_.begin();
+
+  while (it != my_spectra_.end()) {
+    if ((*it)->name() == name) {
+      my_spectra_.erase(it);
+      return;
+    }
+    it++;
+  }
 }
 
 void SpectraSet::set_spectra(const XMLableDB<Spectrum::Template>& newdb) {

@@ -270,7 +270,7 @@ void FormEnergyCalibration::on_pushFit_clicked()
     new_calibration_.units_ = "keV";
     new_calibration_.model_ = Gamma::CalibrationModel::polynomial;
     Polynomial thispoly(new_calibration_.coefficients_);
-    ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(thispoly.to_UTF8(true)));
+    ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(thispoly.to_UTF8(3, true)));
     ui->pushApplyCalib->setEnabled(new_calibration_ != old_calibration_);
   }
   else
@@ -288,7 +288,7 @@ void FormEnergyCalibration::isotope_energies_chosen() {
 
 void FormEnergyCalibration::on_pushApplyCalib_clicked()
 {
-  emit update_detector(ui->checkToSpectra->isChecked(), ui->checkToDB->isChecked());
+  emit update_detector();
 }
 
 void FormEnergyCalibration::on_pushFromDB_clicked()

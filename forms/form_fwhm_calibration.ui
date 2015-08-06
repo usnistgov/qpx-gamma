@@ -220,37 +220,7 @@
           </size>
          </property>
          <property name="text">
-          <string>Apply to</string>
-         </property>
-         <property name="icon">
-          <iconset resource="qpxres.qrc">
-           <normaloff>:/new/icons/oxy/forward.png</normaloff>:/new/icons/oxy/forward.png</iconset>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="checkToSpectra">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>to open spectra</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="checkToDB">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>to detector database</string>
+          <string>Save calibration</string>
          </property>
         </widget>
        </item>

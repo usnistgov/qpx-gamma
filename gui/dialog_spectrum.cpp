@@ -23,11 +23,15 @@
 #include "ui_dialog_spectrum.h"
 #include "qt_util.h"
 #include "custom_logger.h"
+#include <QInputDialog>
+#include <QMessageBox>
 
 dialog_spectrum::dialog_spectrum(Pixie::Spectrum::Spectrum &spec, QWidget *parent) :
   QDialog(parent),
   my_spectrum_(spec),
+  det_selection_model_(&det_table_model_),
   changed_(false),
+  detectors_("Detectors"),
   ui(new Ui::dialog_spectrum)
 {
   ui->setupUi(this);
@@ -37,6 +41,9 @@ dialog_spectrum::dialog_spectrum(Pixie::Spectrum::Spectrum &spec, QWidget *paren
 
   ui->colPicker->setStandardColors();
   connect(ui->colPicker, SIGNAL(colorChanged(QColor)), this, SLOT(setNewColor(QColor)));
+
+  connect(&det_selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
+          this, SLOT(det_selection_changed(QItemSelection,QItemSelection)));
 
   attributes_ = my_spectrum_.generic_attributes();
 
@@ -50,6 +57,18 @@ dialog_spectrum::dialog_spectrum(Pixie::Spectrum::Spectrum &spec, QWidget *paren
   ui->tableGenericAttrs->setEditTriggers(QAbstractItemView::NoEditTriggers);
   ui->tableGenericAttrs->show();
 
+
+  det_table_model_.setDB(detectors_);
+
+  ui->tableDetectors->setModel(&det_table_model_);
+  ui->tableDetectors->setSelectionModel(&det_selection_model_);
+  ui->tableDetectors->verticalHeader()->hide();
+  ui->tableDetectors->horizontalHeader()->setStretchLastSection(true);
+  ui->tableDetectors->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+  ui->tableDetectors->setSelectionBehavior(QAbstractItemView::SelectRows);
+  ui->tableDetectors->setSelectionMode(QAbstractItemView::SingleSelection);
+  ui->tableDetectors->show();
+
   updateData();
 
   ui->tableGenericAttrs->resizeColumnsToContents();
@@ -60,6 +79,9 @@ dialog_spectrum::~dialog_spectrum()
   delete ui;
 }
 
+void dialog_spectrum::det_selection_changed(QItemSelection, QItemSelection) {
+  toggle_push();
+}
 
 void dialog_spectrum::updateData() {
   ui->groupSpectrum->setTitle(QString::fromStdString(my_spectrum_.name()));
@@ -80,13 +102,11 @@ void dialog_spectrum::updateData() {
 
   ui->lineDescription->setText(QString::fromStdString(my_spectrum_.description()));
 
-  QString dets;
-  for (auto &q : my_spectrum_.get_detectors()) {
-    dets += QString::fromStdString(q.name_);
-    dets += ", ";
-  }
+  detectors_.clear();
+  for (auto &q: my_spectrum_.get_detectors())
+    detectors_.add(q);
+  det_table_model_.update();
 
-  ui->lineDetectors->setText(dets);
   table_model_.update();
   open_close_locks();
 }
@@ -98,15 +118,27 @@ void dialog_spectrum::open_close_locks() {
   ui->pushRandColor->setEnabled(lockit);
   ui->lineDescription->setEnabled(lockit);
   ui->dateTimeStart->setEnabled(lockit);
+  ui->pushDelete->setEnabled(lockit);
   if (!lockit) {
     ui->tableGenericAttrs->clearSelection();
     ui->tableGenericAttrs->setSelectionMode(QAbstractItemView::NoSelection);
     ui->tableGenericAttrs->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->tableDetectors->clearSelection();
+    ui->tableDetectors->setSelectionMode(QAbstractItemView::NoSelection);
   } else {
     ui->tableGenericAttrs->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->tableGenericAttrs->setEditTriggers(QAbstractItemView::AllEditTriggers);
+    ui->tableDetectors->setSelectionMode(QAbstractItemView::SingleSelection);
     changed_ = true;
   }
+  toggle_push();
+}
+
+void dialog_spectrum::toggle_push()
+{
+  bool unlocked = !ui->pushLock->isChecked();
+  ui->pushDetEdit->setEnabled(unlocked);
+  ui->pushDetRename->setEnabled(unlocked);
 }
 
 void dialog_spectrum::on_pushRandColor_clicked()
@@ -141,4 +173,65 @@ void dialog_spectrum::on_lineDescription_editingFinished()
 {
   my_spectrum_.set_description(ui->lineDescription->text().toStdString());
   updateData();
+}
+
+void dialog_spectrum::on_pushDetEdit_clicked()
+{
+  QModelIndexList ixl = ui->tableDetectors->selectionModel()->selectedRows();
+  if (ixl.empty())
+    return;
+  int i = ixl.front().row();
+
+  DialogDetector* newDet = new DialogDetector(detectors_.get(i), QDir("~/"), false, this);
+  connect(newDet, SIGNAL(newDetReady(Gamma::Detector)), this, SLOT(changeDet(Gamma::Detector)));
+  newDet->exec();
+}
+
+void dialog_spectrum::changeDet(Gamma::Detector newDetector) {
+  QModelIndexList ixl = ui->tableDetectors->selectionModel()->selectedRows();
+  if (ixl.empty())
+    return;
+  int i = ixl.front().row();
+
+  std::vector<Gamma::Detector> dets = my_spectrum_.get_detectors();
+  if (i < dets.size()) {
+    dets[i] = newDetector;
+    my_spectrum_.set_detectors(dets);
+  }
+
+  detectors_.replace(newDetector);
+  det_table_model_.update();
+  toggle_push();
+}
+
+void dialog_spectrum::on_pushDetRename_clicked()
+{
+  QModelIndexList ixl = ui->tableDetectors->selectionModel()->selectedRows();
+  if (ixl.empty())
+    return;
+  int i = ixl.front().row();
+
+  bool ok;
+  QString text = QInputDialog::getText(this, "Rename Detector",
+                                       "Detector name:", QLineEdit::Normal,
+                                       QString::fromStdString(detectors_.get(i).name_),
+                                       &ok);
+  if (ok && !text.isEmpty()) {
+    std::vector<Gamma::Detector> dets = my_spectrum_.get_detectors();
+    if (i < dets.size()) {
+      dets[i].name_ = text.toStdString();
+      my_spectrum_.set_detectors(dets);
+      updateData();
+      toggle_push();
+    }
+  }
+}
+
+void dialog_spectrum::on_pushDelete_clicked()
+{
+  int ret = QMessageBox::question(this, "Delete spectrum?", "Are you sure you want to delete this spectrum?");
+  if (ret == QMessageBox::Yes) {
+    emit delete_spectrum();
+    accept();
+  }
 }

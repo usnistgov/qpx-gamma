@@ -43,8 +43,9 @@ class TableCalibrations : public QAbstractTableModel
   Q_OBJECT
 private:
   XMLableDB<Gamma::Calibration> &myDB;
+  bool gain_;
 public:
-  TableCalibrations(XMLableDB<Gamma::Calibration>& db, QObject *parent = 0): myDB(db), QAbstractTableModel(parent) {}
+  TableCalibrations(XMLableDB<Gamma::Calibration>& db, bool gain, QObject *parent = 0): myDB(db), QAbstractTableModel(parent), gain_(gain) {}
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
   int columnCount(const QModelIndex &parent = QModelIndex()) const;
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -71,6 +72,8 @@ private slots:
   void on_pushRemove_clicked();
   void selection_changed(QItemSelection,QItemSelection);
 
+  void on_pushRemoveGain_clicked();
+
 signals:
   void newDetReady(Gamma::Detector);
 
@@ -82,8 +85,11 @@ private:
   QDir root_dir_;
   QString mca_formats_;
 
-  TableCalibrations table_model_;
-  QItemSelectionModel selection_model_;
+  TableCalibrations table_nrgs_;
+  QItemSelectionModel selection_nrgs_;
+
+  TableCalibrations table_gains_;
+  QItemSelectionModel selection_gains_;
 };
 
 

@@ -48,6 +48,8 @@ public:
 
   void clear();
 
+  void reset();
+
 signals:
   void spectraChanged();
   void detectorsChanged();
@@ -71,6 +73,10 @@ private slots:
 
   void on_pushAddGatedSpectra_clicked();
 
+  void on_pushSaveCalib_clicked();
+
+  void initialize();
+
 protected:
   void closeEvent(QCloseEvent*);
   void showEvent(QShowEvent* event);
@@ -84,6 +90,7 @@ private:
 
   Pixie::Spectrum::Spectrum *gate_x;
   Pixie::Spectrum::Spectrum *gate_y;
+  bool gatex_in_spectra, gatey_in_spectra;
 
   Gamma::Fitter fit_data_, fit_data_2_;
   int res;
@@ -111,6 +118,8 @@ private:
   QString current_spectrum_;
 
   XMLableDB<Gamma::Detector> &detectors_;
+
+  bool initialized;
 
   void loadSettings();
   void saveSettings();

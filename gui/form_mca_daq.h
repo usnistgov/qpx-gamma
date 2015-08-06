@@ -67,6 +67,8 @@ private slots:
   void on_pushEditSpectra_clicked();
   void update_plots();
   void clearGraphs();
+
+  void newProject();
   void updateSpectraUI();
 
 

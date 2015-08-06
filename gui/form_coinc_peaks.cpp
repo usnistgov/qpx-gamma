@@ -140,14 +140,10 @@ void FormCoincPeaks::setSpectrum(Pixie::Spectrum::Spectrum *newspectrum, uint16_
 
   if (spectrum_ && spectrum_->resolution()) {
     int bits = spectrum_->bits();
-    for (std::size_t i=0; i < spectrum_->add_pattern().size(); i++) {
-      if (spectrum_->add_pattern()[i] == 1) {
-        detector_ = spectrum_->get_detectors()[i];
-        QString title = "Spectrum=" + QString::fromStdString(spectrum_->name()) + "  resolution=" + QString::number(bits) + "bits  Detector=" + QString::fromStdString(detector_.name_);
-        ui->plot1D->setFloatingText(title);
-        ui->plot1D->setTitle(title);
-      }
-    }
+    detector_ = spectrum_->get_detector(0);
+    QString title = "Spectrum=" + QString::fromStdString(spectrum_->name()) + "  resolution=" + QString::number(bits) + "bits  Detector=" + QString::fromStdString(detector_.name_);
+    ui->plot1D->setFloatingText(title);
+    ui->plot1D->setTitle(title);
   }
 
   ui->plot1D->reset_scales();
@@ -432,36 +428,6 @@ void FormCoincPeaks::on_pushFindPeaks_clicked()
 
   emit peaks_changed(true);
   this->setCursor(Qt::ArrowCursor);
-}
-
-void FormCoincPeaks::on_checkShowMovAvg_clicked()
-{
-  replot_all();
-}
-
-void FormCoincPeaks::on_checkShowPrelimPeaks_clicked()
-{
-  replot_all();
-}
-
-void FormCoincPeaks::on_checkShowGaussians_clicked()
-{
-  replot_all();
-}
-
-void FormCoincPeaks::on_checkShowBaselines_clicked()
-{
-  replot_all();
-}
-
-void FormCoincPeaks::on_checkShowFilteredPeaks_clicked()
-{
-  replot_all();
-}
-
-void FormCoincPeaks::on_checkShowPseudoVoigt_clicked()
-{
-  replot_all();
 }
 
 void FormCoincPeaks::on_spinMovAvg_editingFinished()

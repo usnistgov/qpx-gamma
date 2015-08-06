@@ -54,7 +54,7 @@ signals:
 
 public slots:
   void update_spectrum();
-  void update_detector(bool in_spectra, bool in_DB);
+  void update_detector_calibs();
 
 private slots:
 

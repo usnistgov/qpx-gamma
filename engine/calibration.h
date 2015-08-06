@@ -42,7 +42,7 @@ Calibration(std::string type, uint16_t bits, std::string units = "channels"): Ca
   void from_xml(tinyxml2::XMLElement*);
   std::string xml_element_name() const override {return "Calibration";}
 
-  bool shallow_equals(const Calibration& other) const {return (bits_ == other.bits_);}
+  bool shallow_equals(const Calibration& other) const {return ((bits_ == other.bits_) && (to_ == other.to_));}
   bool operator!= (const Calibration& other) const {return !operator==(other);}
   bool operator== (const Calibration& other) const {
     if (calib_date_ != other.calib_date_) return false;
@@ -51,6 +51,7 @@ Calibration(std::string type, uint16_t bits, std::string units = "channels"): Ca
     if (model_ != other.model_) return false;
     if (coefficients_ != other.coefficients_) return false;
     if (bits_ != other.bits_) return false;
+    if (to_ != other.to_) return false;
     return true;
   }
   
@@ -60,10 +61,11 @@ Calibration(std::string type, uint16_t bits, std::string units = "channels"): Ca
   std::string coef_to_string() const;
   void coef_from_string(std::string);
   std::string to_string();
+  std::string fancy_equation(int precision = -1);
 
   boost::posix_time::ptime calib_date_;
   std::string type_, units_;
-  std::string from_, to_;
+  std::string to_;
   uint16_t bits_;
   CalibrationModel model_;
   std::vector<double> coefficients_;

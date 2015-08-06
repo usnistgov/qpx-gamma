@@ -48,7 +48,6 @@ Calibration Detector::get_gain_match(uint16_t bits, std::string todet)
   for (int i=0; i< gain_match_calibrations_.size(); ++i) {
     Calibration k = gain_match_calibrations_.get(i);
     if ((k.bits_ == result.bits_) &&
-        (k.from_ == name_) &&
         (k.to_   == todet))
       return k;
   }

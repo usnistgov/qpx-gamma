@@ -264,7 +264,7 @@ Polynomial FormFwhmCalibration::fit_calibration()
     new_fwhm_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_fwhm_calibration_.units_ = "keV";
     new_fwhm_calibration_.model_ = Gamma::CalibrationModel::polynomial;
-    ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(p.to_UTF8(true)));
+    ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(p.to_UTF8(3, true)));
     ui->pushApplyCalib->setEnabled(new_fwhm_calibration_ != old_fwhm_calibration_);
   }
   else
@@ -275,7 +275,7 @@ Polynomial FormFwhmCalibration::fit_calibration()
 
 void FormFwhmCalibration::on_pushApplyCalib_clicked()
 {
-  emit update_detector(ui->checkToSpectra->isChecked(), ui->checkToDB->isChecked());
+  emit update_detector();
 }
 
 void FormFwhmCalibration::on_pushFromDB_clicked()

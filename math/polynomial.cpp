@@ -30,9 +30,12 @@
 #include "fityk.h"
 #include "custom_logger.h"
 
-std::string to_str_precision(double x, uint16_t n) {
+std::string to_str_precision(double x, int n) {
   std::ostringstream ss;
-  ss << std::fixed << std::setprecision(n) << x;
+  if (n < 0)
+    ss << x;
+  else 
+    ss << std::fixed << std::setprecision(n) << x;
   return ss.str();
 }
 
@@ -154,7 +157,7 @@ std::string Polynomial::to_string() {
   return ss.str();
 }
 
-std::string Polynomial::to_UTF8(bool with_rsq) {
+std::string Polynomial::to_UTF8(int precision, bool with_rsq) {
   std::vector<std::string> superscripts = {
     "\u2070", "\u00B9", "\u00B2",
     "\u00B3", "\u2074", "\u2075",
@@ -164,10 +167,10 @@ std::string Polynomial::to_UTF8(bool with_rsq) {
 
   std::string calib_eqn;
   if (degree_ >= 0)
-    calib_eqn += to_str_precision(coeffs_[0], 4);
+    calib_eqn += to_str_precision(coeffs_[0], precision);
   for (uint16_t i=1; i <= degree_; i++) {
     calib_eqn += std::string(" + ");
-    calib_eqn += to_str_precision(coeffs_[i], 4);
+    calib_eqn += to_str_precision(coeffs_[i], precision);
     calib_eqn += std::string("x");
     if ((i > 1) && (i < 10)) {
       calib_eqn += superscripts[i];

@@ -33,6 +33,22 @@ namespace Spectrum {
 
 static Registrar<Spectrum1D> registrar("1D");
 
+void Spectrum1D::_set_detectors(const std::vector<Gamma::Detector>& dets) {
+  detectors_.resize(1, Gamma::Detector());
+
+  if (dets.size() == 1)
+    detectors_ = dets;
+  int total = add_pattern_.size();
+  if (dets.size() < total)
+    total = dets.size();
+  for (int i=0; i < total; ++i) {
+    if (add_pattern_[i])
+      detectors_[0] = dets[i];
+  }
+
+  this->recalc_energies();
+}
+
 uint64_t Spectrum1D::_get_count(std::initializer_list<uint16_t> list) const {
   if (list.size() != 1)
     return 0;
@@ -273,7 +289,7 @@ bool Spectrum1D::read_cnf(std::string name) {
     spectrum_.resize(resolution_, 0);
     shift_by_ = 16 - bits_;
 
-    detectors_.resize(kNumChans);
+    detectors_.resize(1);
     detectors_[0] = Gamma::Detector();
     detectors_[0].name_ = "default";
     Gamma::Calibration new_calib("Energy", bits_);
@@ -320,7 +336,7 @@ bool Spectrum1D::read_tka(std::string name) {
   if(!this->channels_from_string(myfile, false))
     return false;
 
-  detectors_.resize(kNumChans);
+  detectors_.resize(1);
   detectors_[0] = Gamma::Detector();
   detectors_[0].name_ = "default";
   
@@ -416,7 +432,7 @@ bool Spectrum1D::read_n42(std::string name) {
       newdet.energy_calibrations_.add(newcalib);
     }
 
-    detectors_.resize(kNumChans);
+    detectors_.resize(1);
     detectors_[0] = newdet;
 
     fclose(myfile);
@@ -513,7 +529,7 @@ bool Spectrum1D::read_ava(std::string name) {
     newdet.energy_calibrations_.add(newcalib);
     newdet.name_ = "default";
   }
-  detectors_.resize(kNumChans);
+  detectors_.resize(1);
   detectors_[0] = newdet;
 
   fclose(myfile);
@@ -547,18 +563,12 @@ void Spectrum1D::write_n42(std::string name) const {
   printer.PushDeclaration(newDoc.NewDeclaration()->Value());
 
   std::stringstream durationdata;
-  int myDetector = -1;
-  for (int i = 0; i < kNumChans; i++)
-    if (add_pattern_[i] == 1)
-      myDetector = i;
   Gamma::Calibration myCalibration;
-  if (myDetector != -1) {
-    if (detectors_[myDetector].energy_calibrations_.has_a(Gamma::Calibration("Energy", bits_)))
-      myCalibration = detectors_[myDetector].energy_calibrations_.get(Gamma::Calibration("Energy", bits_));
-    else if ((detectors_[myDetector].energy_calibrations_.size() == 1) &&
-             (detectors_[myDetector].energy_calibrations_.get(0).units_ != "channels"))
-      myCalibration = detectors_[myDetector].energy_calibrations_.get(0);
-  }
+  if (detectors_[0].energy_calibrations_.has_a(Gamma::Calibration("Energy", bits_)))
+    myCalibration = detectors_[0].energy_calibrations_.get(Gamma::Calibration("Energy", bits_));
+  else if ((detectors_[0].energy_calibrations_.size() == 1) &&
+           (detectors_[0].energy_calibrations_.get(0).units_ != "channels"))
+    myCalibration = detectors_[0].energy_calibrations_.get(0);
   
   printer.OpenElement("N42InstrumentData");
   printer.PushAttribute("xmlns",
@@ -570,11 +580,10 @@ void Spectrum1D::write_n42(std::string name) const {
   printer.OpenElement("Measurement");
   printer.OpenElement("Spectrum");
   printer.PushAttribute("Type","PHA");
-  if ((myDetector > -1) &&
-      (myCalibration.units_ != "channels")) {
-    printer.PushAttribute("Detector", detectors_[myDetector].name_.c_str());
+  if (myCalibration.units_ != "channels") {
+    printer.PushAttribute("Detector", detectors_[0].name_.c_str());
     printer.OpenElement("DetectorType");
-    printer.PushText(detectors_[myDetector].type_.c_str());
+    printer.PushText(detectors_[0].type_.c_str());
     printer.CloseElement();
   }
 
@@ -596,8 +605,7 @@ void Spectrum1D::write_n42(std::string name) const {
   printer.PushText(durationdata.str().c_str());
   printer.CloseElement();
 
-  if ((myDetector > -1) &&
-      (myCalibration.units_ != "channels"))
+  if (myCalibration.units_ != "channels")
     myCalibration.to_xml(printer);    
 
   printer.OpenElement("ChannelData");

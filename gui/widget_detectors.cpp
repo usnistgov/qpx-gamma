@@ -33,8 +33,10 @@
 DialogDetector::DialogDetector(Gamma::Detector mydet, QDir rd, bool editName, QWidget *parent) :
   root_dir_(rd),
   my_detector_(mydet),
-  table_model_(my_detector_.energy_calibrations_),
-  selection_model_(&table_model_),
+  table_nrgs_(my_detector_.energy_calibrations_, false),
+  selection_nrgs_(&table_nrgs_),
+  table_gains_(my_detector_.gain_match_calibrations_, true),
+  selection_gains_(&table_gains_),
   QDialog(parent),
   ui(new Ui::DialogDetector)
 {
@@ -65,16 +67,28 @@ DialogDetector::DialogDetector(Gamma::Detector mydet, QDir rd, bool editName, QW
 
   my_detector_ = mydet;
 
-  ui->tableCalibrations->setModel(&table_model_);
-  ui->tableCalibrations->setSelectionModel(&selection_model_);
-  ui->tableCalibrations->verticalHeader()->hide();
-  ui->tableCalibrations->horizontalHeader()->setStretchLastSection(true);
-  ui->tableCalibrations->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-  ui->tableCalibrations->setSelectionBehavior(QAbstractItemView::SelectRows);
-  ui->tableCalibrations->setSelectionMode(QAbstractItemView::SingleSelection);
-  ui->tableCalibrations->show();
+  ui->tableEnergyCalibrations->setModel(&table_nrgs_);
+  ui->tableEnergyCalibrations->setSelectionModel(&selection_nrgs_);
+  ui->tableEnergyCalibrations->verticalHeader()->hide();
+  ui->tableEnergyCalibrations->horizontalHeader()->setStretchLastSection(true);
+  ui->tableEnergyCalibrations->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+  ui->tableEnergyCalibrations->setSelectionBehavior(QAbstractItemView::SelectRows);
+  ui->tableEnergyCalibrations->setSelectionMode(QAbstractItemView::SingleSelection);
+  ui->tableEnergyCalibrations->show();
 
-  connect(&selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
+  ui->tableGainCalibrations->setModel(&table_gains_);
+  ui->tableGainCalibrations->setSelectionModel(&selection_gains_);
+  ui->tableGainCalibrations->verticalHeader()->hide();
+  ui->tableGainCalibrations->horizontalHeader()->setStretchLastSection(true);
+  ui->tableGainCalibrations->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+  ui->tableGainCalibrations->setSelectionBehavior(QAbstractItemView::SelectRows);
+  ui->tableGainCalibrations->setSelectionMode(QAbstractItemView::SingleSelection);
+  ui->tableGainCalibrations->show();
+
+  connect(&selection_nrgs_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
+          this, SLOT(selection_changed(QItemSelection,QItemSelection)));
+
+  connect(&selection_gains_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(selection_changed(QItemSelection,QItemSelection)));
 
   updateDisplay();
@@ -94,10 +108,18 @@ void DialogDetector::updateDisplay() {
   ui->comboType->setCurrentText(QString::fromStdString(my_detector_.type_));
 
   if (my_detector_.setting_names_.empty())
-    ui->labelOpti->setText(tr("WITHOUT CHANNEL SETTINGS"));
+    ui->labelOpti->setText("WITHOUT CHANNEL SETTINGS");
   else
-    ui->labelOpti->setText(tr("WITH CHANNEL SETTINGS"));
-  table_model_.update();
+    ui->labelOpti->setText("WITH CHANNEL SETTINGS");
+
+
+  if (my_detector_.fwhm_calibration_.coefficients_ == std::vector<double>({0, 1}))
+    ui->labelFWHM->setText("");
+  else
+    ui->labelFWHM->setText(QString::fromStdString(my_detector_.fwhm_calibration_.fancy_equation()));
+
+  table_nrgs_.update();
+  table_gains_.update();
 }
 
 void DialogDetector::on_lineName_editingFinished()
@@ -170,22 +192,36 @@ void DialogDetector::on_pushRead1D_clicked()
 }
 
 void DialogDetector::selection_changed(QItemSelection, QItemSelection) {
-  if (selection_model_.selectedIndexes().empty())
+  if (selection_nrgs_.selectedIndexes().empty())
     ui->pushRemove->setEnabled(false);
   else
     ui->pushRemove->setEnabled(true);
+
+  if (selection_gains_.selectedIndexes().empty())
+    ui->pushRemoveGain->setEnabled(false);
+  else
+    ui->pushRemoveGain->setEnabled(true);
 }
 
 void DialogDetector::on_pushRemove_clicked()
 {
-  QModelIndexList ixl = ui->tableCalibrations->selectionModel()->selectedRows();
+  QModelIndexList ixl = ui->tableEnergyCalibrations->selectionModel()->selectedRows();
   if (ixl.empty())
     return;
   int i = ixl.front().row();
   my_detector_.energy_calibrations_.remove(i);
-  table_model_.update();
+  table_nrgs_.update();
 }
 
+void DialogDetector::on_pushRemoveGain_clicked()
+{
+  QModelIndexList ixl = ui->tableGainCalibrations->selectionModel()->selectedRows();
+  if (ixl.empty())
+    return;
+  int i = ixl.front().row();
+  my_detector_.gain_match_calibrations_.remove(i);
+  table_gains_.update();
+}
 
 
 
@@ -193,7 +229,7 @@ int TableDetectors::rowCount(const QModelIndex & /*parent*/) const
 {    return myDB->size(); }
 
 int TableDetectors::columnCount(const QModelIndex & /*parent*/) const
-{    return 4; }
+{    return 6; }
 
 QVariant TableDetectors::data(const QModelIndex &index, int role) const
 {
@@ -210,15 +246,27 @@ QVariant TableDetectors::data(const QModelIndex &index, int role) const
       return QString::fromStdString(myDB->get(row).type_);
     case 2:
       if (myDB->get(row).setting_names_.empty())
-        return "no";
+        return "none";
       else
-        return "yes";
+        return "valid";
     case 3:
+      if (myDB->get(row).fwhm_calibration_.coefficients_ == std::vector<double>({0, 1}))
+        return "none";
+      else
+        return "valid";
+    case 4:
       dss.str(std::string());
       for (auto &q : myDB->get(row).energy_calibrations_.my_data_) {
         dss << q.bits_ << " ";
       }
       return QString::fromStdString(dss.str());
+    case 5:
+      dss.str(std::string());
+      for (auto &q : myDB->get(row).gain_match_calibrations_.my_data_) {
+        dss << q.to_ << "/" << q.bits_ << " ";
+      }
+      return QString::fromStdString(dss.str());
+
     }
   }
   return QVariant();
@@ -238,7 +286,11 @@ QVariant TableDetectors::headerData(int section, Qt::Orientation orientation, in
       case 2:
         return "Optimization";
       case 3:
-        return "Calib. resolutions (bits)";
+        return "FWHM";
+      case 4:
+        return "Energy calibrations (bits)";
+      case 5:
+        return "Gain matching calibrations (Destination/bits)";
       }
     } else if (orientation == Qt::Vertical) {
       return QString::number(section);
@@ -250,7 +302,7 @@ QVariant TableDetectors::headerData(int section, Qt::Orientation orientation, in
 
 void TableDetectors::update() {
   QModelIndex start_ix = createIndex( 0, 0 );
-  QModelIndex end_ix = createIndex( rowCount() - 1, 3 );
+  QModelIndex end_ix = createIndex( rowCount() - 1, columnCount() - 1 );
   emit dataChanged( start_ix, end_ix );
   emit layoutChanged();
 }
@@ -281,15 +333,14 @@ QVariant TableCalibrations::data(const QModelIndex &index, int role) const
     case 0:
       return QString::number(myDB.get(row).bits_);
     case 1:
-      return QString::fromStdString(myDB.get(row).units_);
+      if (gain_)
+        return QString::fromStdString(myDB.get(row).to_);
+      else
+        return QString::fromStdString(myDB.get(row).units_);
     case 2:
       return QString::fromStdString(boost::gregorian::to_simple_string(myDB.get(row).calib_date_.date()));
     case 3:
-      dss.str(std::string());
-      for (auto &q : myDB.get(row).coefficients_) {
-        dss << q << " ";
-      }
-      return QString::fromStdString(dss.str());
+      return QString::fromStdString(myDB.get(row).fancy_equation());
     }
   }
   return QVariant();
@@ -305,7 +356,10 @@ QVariant TableCalibrations::headerData(int section, Qt::Orientation orientation,
       case 0:
         return "Bits";
       case 1:
-        return "Units";
+        if (gain_)
+          return "Transforms to";
+        else
+          return "Units";
       case 2:
         return "Date";
       case 3:
@@ -462,4 +516,3 @@ void WidgetDetectors::on_pushGetDefault_clicked()
   table_model_.update();
   toggle_push();
 }
-

@@ -132,8 +132,8 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
 void Spectrum::addRun(const RunInfo& run_info) {
   //private; no lock required
 
-  detectors_ = run_info.p4_state.get_detectors();
-  recalc_energies();
+  _set_detectors(run_info.p4_state.get_detectors());
+
   start_time_ = run_info.time_start;
 
   if (!run_info.total_events)
@@ -164,7 +164,13 @@ void Spectrum::set_detectors(const std::vector<Gamma::Detector>& dets) {
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   
-  detectors_ = dets;
+  _set_detectors(dets);
+}
+
+void Spectrum::_set_detectors(const std::vector<Gamma::Detector>& dets) {
+  //private; no lock required
+
+  detectors_.resize(dimensions_, Gamma::Detector());
   recalc_energies();
 }
 
@@ -174,38 +180,29 @@ std::vector<Gamma::Detector> Spectrum::get_detectors() const {
 }
 
 Gamma::Detector Spectrum::get_detector(uint16_t which) const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  for (int i=0; i<detectors_.size(); ++i) {
-    if (add_pattern_[i] == 1) {
-      if (which == 0)
-        return detectors_[i];
-      else
-        which--;
-    }
-  }
-  return Gamma::Detector();
+  if (which < detectors_.size())
+    return detectors_[which];
+  else
+    return Gamma::Detector();
 }
 
 
 void Spectrum::recalc_energies() {
   //private; no lock required
 
-  //what if number of dets and dimensions mismatch?
-  
   energies_.resize(dimensions_);
-  int phys_chan=0, calib_chan=0;
-  while ((calib_chan < dimensions_) && (phys_chan < kNumChans)){
-    if (add_pattern_[phys_chan] == 1) {
-      energies_[calib_chan].resize(resolution_, 0.0);
-      //      PL_DBG << "spectrum " << name_ << " using calibration for " << detectors_[phys_chan].name_;
-      Gamma::Calibration this_calib;
-      if (detectors_[phys_chan].energy_calibrations_.has_a(Gamma::Calibration("Energy", bits_)))
-        this_calib = detectors_[phys_chan].energy_calibrations_.get(Gamma::Calibration("Energy", bits_));
-      for (uint32_t j=0; j<resolution_; j++)
-        energies_[calib_chan][j] = this_calib.transform(j);
-      calib_chan++;
-    }
-    phys_chan++;
+  if (energies_.size() != detectors_.size())
+    return;
+
+  for (int i=0; i < detectors_.size(); ++i) {
+    energies_[i].resize(resolution_, 0.0);
+    Gamma::Calibration this_calib;
+    if (detectors_[i].energy_calibrations_.has_a(Gamma::Calibration("Energy", bits_)))
+      this_calib = detectors_[i].energy_calibrations_.get(Gamma::Calibration("Energy", bits_));
+    else
+      this_calib = detectors_[i].highest_res_calib();
+    for (uint32_t j=0; j<resolution_; j++)
+      energies_[i][j] = this_calib.transform(j, bits_);
   }
 }
 

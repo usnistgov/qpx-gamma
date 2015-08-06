@@ -4,15 +4,15 @@ Major features/overhauls:
 -lock file (one instance per system)
 -pause run
 -spectra warping
--post-process gain matching
--integrate peaks
--gate on energies
+-integration uncertainties
+-efficiency calibration
 
 pixiecpp:
 -all timestamps with timezone**
 -save as 2012 revision of N42
 -fix cnf loading (dll?)
 -save/load matrices++
+-saving raw transfers to new directory
 
 gui:
 -simplify detector and template dialogs
@@ -22,6 +22,8 @@ gui:
       *save after complete
       *name sample
 -save/load in thread
+-follow peaks on selection change
+-save plot to TIF
 
 cpx(batch language):
 -set detector command

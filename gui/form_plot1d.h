@@ -41,6 +41,7 @@ public:
   ~FormPlot1D();
 
   void setSpectra(Pixie::SpectraSet& new_set);
+  void updateUI();
 
   void update_plot();
 
@@ -63,6 +64,8 @@ private slots:
   void on_comboResolution_currentIndexChanged(int index);
   void spectrumDetails();
   void spectrumDetailsClosed(bool);
+  void spectrumDetailsDelete();
+
   void spectraLooksChanged();
 
   void addMovingMarker(double);

@@ -26,6 +26,8 @@
 #include "spectrum.h"
 #include "special_delegate.h"
 #include "table_spectrum_attrs.h"
+#include "widget_detectors.h"
+
 
 namespace Ui {
 class dialog_spectrum;
@@ -51,9 +53,18 @@ private slots:
     void on_lineDescription_editingFinished();
 
     void setNewColor(QColor);
+    void det_selection_changed(QItemSelection,QItemSelection);
+
+    void on_pushDetEdit_clicked();
+    void changeDet(Gamma::Detector);
+
+    void on_pushDetRename_clicked();
+
+    void on_pushDelete_clicked();
 
 signals:
     void finished(bool);
+    void delete_spectrum();
 
 private:
     Ui::dialog_spectrum *ui;
@@ -62,11 +73,16 @@ private:
     QpxSpecialDelegate      special_delegate_;
     TableSpectrumAttrs         table_model_;
 
+    XMLableDB<Gamma::Detector> detectors_;
+    TableDetectors det_table_model_;
+    QItemSelectionModel det_selection_model_;
+
     std::vector<Pixie::Setting> attributes_;
     bool changed_;
 
     void updateData();
     void open_close_locks();
+    void toggle_push();
 };
 
 #endif // DIALOG_SPECTRUM_H

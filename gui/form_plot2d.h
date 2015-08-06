@@ -42,6 +42,8 @@ public:
 
   void setSpectra(Pixie::SpectraSet& new_set);
 
+  void updateUI();
+
   void update_plot(bool force = false);
   void refresh();
   void replot_markers();

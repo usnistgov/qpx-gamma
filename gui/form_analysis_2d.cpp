@@ -39,6 +39,8 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
 {
   ui->setupUi(this);
 
+  initialized = false;
+
   loadSettings();
 
   ui->plotSpectrum->setFit(&fit_data_);
@@ -78,6 +80,9 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   style_fit.default_pen = QPen(Qt::blue, 0);
   style_pts.default_pen = QPen(Qt::darkBlue, 7);
 
+  gatex_in_spectra = false;
+  gatey_in_spectra = false;
+
   ui->tableCoincResults->verticalHeader()->hide();
   ui->tableCoincResults->setColumnCount(3);
   ui->tableCoincResults->setRowCount(4);
@@ -102,9 +107,9 @@ FormAnalysis2D::~FormAnalysis2D()
   if (tempy != nullptr)
     delete tempy;
 
-  if (gate_x != nullptr)
+  if ((!gatex_in_spectra) && (gate_x != nullptr))
     delete gate_x;
-  if (gate_y != nullptr)
+  if ((!gatey_in_spectra) && (gate_y != nullptr))
     delete gate_y;
 
 
@@ -186,10 +191,19 @@ void FormAnalysis2D::setSpectrum(Pixie::SpectraSet *newset, QString name) {
 
   clear();
   spectra_ = newset;
+  current_spectrum_ = name;
+}
+
+void FormAnalysis2D::reset() {
+  initialized = false;
+}
+
+void FormAnalysis2D::initialize() {
+  if (initialized)
+    return;
 
   if (spectra_) {
 
-    current_spectrum_ = name;
     Pixie::Spectrum::Spectrum *spectrum = spectra_->by_name(current_spectrum_.toStdString());
 
     if (spectrum && spectrum->resolution()) {
@@ -230,6 +244,9 @@ void FormAnalysis2D::setSpectrum(Pixie::SpectraSet *newset, QString name) {
     }
   }
 
+  update_spectrum();
+
+  initialized = true;
   make_gated_spectra();
 }
 
@@ -239,15 +256,16 @@ void FormAnalysis2D::update_spectrum() {
     if (spectrum && spectrum->resolution())
       live_seconds = spectrum->live_time().total_seconds();
 
-    ui->plotMatrix->update_plot(true);
+    //ui->plotMatrix->update_plot(true);
     ui->plotSpectrum->update_spectrum();
     ui->plotSpectrum2->update_spectrum();
   }
 }
 
 void FormAnalysis2D::showEvent( QShowEvent* event ) {
-    QWidget::showEvent(event);
-    //ui->plotMatrix->update_plot(true);
+  QWidget::showEvent(event);
+
+  QTimer::singleShot(50, this, SLOT(initialize()));
 }
 
 void FormAnalysis2D::update_peaks(bool content_changed) {
@@ -278,6 +296,7 @@ void FormAnalysis2D::update_gates(Marker xx, Marker yy) {
 }
 
 void FormAnalysis2D::make_gated_spectra() {
+  this->setCursor(Qt::WaitCursor);
 
   Pixie::Spectrum::Spectrum* some_spectrum = spectra_->by_name(current_spectrum_.toStdString());
 
@@ -292,18 +311,20 @@ void FormAnalysis2D::make_gated_spectra() {
       uint32_t adjrange = static_cast<uint32_t>(some_spectrum->resolution()) - 1;
 
       tempx->bits = bits;
-      tempx->name_ = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(ymin_), 1) + "," + to_str_precision(nrg_calibration2_.transform(ymax_), 1) + "]";
+      tempx->name_ = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(ymin_), 0) + "," + to_str_precision(nrg_calibration2_.transform(ymax_), 0) + "]";
 
       tempy->bits = bits;
-      tempy->name_ = detector2_.name_ + "[" + to_str_precision(nrg_calibration1_.transform(xmin_), 1) + "," + to_str_precision(nrg_calibration1_.transform(xmax_), 1) + "]";
+      tempy->name_ = detector2_.name_ + "[" + to_str_precision(nrg_calibration1_.transform(xmin_), 0) + "," + to_str_precision(nrg_calibration1_.transform(xmax_), 0) + "]";
 
-      if (gate_x != nullptr)
+      if ((!gatex_in_spectra) && (gate_x != nullptr))
         delete gate_x;
       gate_x = Pixie::Spectrum::Factory::getInstance().create_from_template(*tempx);
+      gatex_in_spectra = false;
 
-      if (gate_y != nullptr)
+      if ((!gatey_in_spectra) && (gate_y != nullptr))
         delete gate_y;
       gate_y = Pixie::Spectrum::Factory::getInstance().create_from_template(*tempy);
+      gatey_in_spectra = false;
 
       sum_inclusive = 0;
       sum_exclusive = 0;
@@ -349,6 +370,7 @@ void FormAnalysis2D::make_gated_spectra() {
 
       plot_calib();
   }
+  this->setCursor(Qt::ArrowCursor);
 }
 
 void FormAnalysis2D::fill_table()
@@ -393,7 +415,7 @@ void FormAnalysis2D::plot_calib()
 
   if (xx.size()) {
     ui->plotCalib->addPoints(xx, yy, style_pts);
-    if ((gain_match_cali_.from_ == detector2_.name_) && (gain_match_cali_.to_ == detector1_.name_) && (gain_match_cali_.coefficients_ != std::vector<double>({0, 1}))) {
+    if ((gain_match_cali_.to_ == detector1_.name_) && (gain_match_cali_.coefficients_ != std::vector<double>({0, 1}))) {
 
       double step = (xmax-xmin) / 50.0;
       xx.clear(); yy.clear();
@@ -427,14 +449,10 @@ void FormAnalysis2D::on_pushCalibGain_clicked()
 
   if (p.coeffs_.size()) {
     gain_match_cali_.coefficients_ = p.coeffs_;
-    gain_match_cali_.from_ = detector2_.name_;
     gain_match_cali_.to_ = detector1_.name_;
     gain_match_cali_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     gain_match_cali_.model_ = Gamma::CalibrationModel::polynomial;
-    ui->plotCalib->setFloatingText(QString::fromStdString(p.to_UTF8(true)));
-
-    detector2_.gain_match_calibrations_.add(gain_match_cali_);
-
+    ui->plotCalib->setFloatingText(QString::fromStdString(p.to_UTF8(3, true)));
 //    ui->pushApplyCalib->setEnabled(gain_match_calib_ != old_calibration_);
   }
   else
@@ -481,6 +499,8 @@ void FormAnalysis2D::on_pushCull_clicked()
 
 void FormAnalysis2D::on_pushSymmetrize_clicked()
 {
+  this->setCursor(Qt::WaitCursor);
+
   QString sym_spec_name = current_spectrum_ + "_sym";
   bool ok;
   QString text = QInputDialog::getText(this, "New spectrum name",
@@ -507,7 +527,7 @@ void FormAnalysis2D::on_pushSymmetrize_clicked()
     uint32_t adjrange = static_cast<uint32_t>(some_spectrum->resolution());
 
     Pixie::Spectrum::Template *temp_sym = Pixie::Spectrum::Factory::getInstance().create_template("2D");
-    temp_sym->visible = true;
+    temp_sym->visible = false;
     temp_sym->name_ = sym_spec_name.toStdString();
     temp_sym->match_pattern = std::vector<int16_t>({1,1,0,0});
     temp_sym->add_pattern = std::vector<int16_t>({1,1,0,0});
@@ -518,7 +538,7 @@ void FormAnalysis2D::on_pushSymmetrize_clicked()
 
     PL_INFO << "Created spectrum " << sym_spec_name.toStdString();
 
-    if ((gain_match_cali_.from_ == detector2_.name_) && (gain_match_cali_.to_ == detector1_.name_))
+    if (gain_match_cali_.to_ == detector1_.name_)
       PL_INFO << "will use gain match cali from " << detector2_.name_ << " to " << detector1_.name_ << " " << gain_match_cali_.to_string();
     else {
       PL_WARN << "no appropriate gain match calibration";
@@ -558,7 +578,8 @@ void FormAnalysis2D::on_pushSymmetrize_clicked()
     std::vector<Gamma::Detector> detectors = spectra_->runInfo().p4_state.get_detectors();
     for (auto &p : detectors) {
       if (p.shallow_equals(detector2_)) {
-        p.energy_calibrations_.replace(nrg_calibration1_);
+        p = Gamma::Detector(std::string("*") + detector2_.name_);
+        p.energy_calibrations_.add(nrg_calibration1_);
       }
     }
 
@@ -571,14 +592,15 @@ void FormAnalysis2D::on_pushSymmetrize_clicked()
 
     spectra_->add_spectrum(symspec);
 
-    setSpectrum(spectra_, sym_spec_name);
-
     emit spectraChanged();
   }
+  this->setCursor(Qt::ArrowCursor);
 }
 
 void FormAnalysis2D::on_pushFoldData_clicked()
 {
+  this->setCursor(Qt::WaitCursor);
+
   QString fold_spec_name = current_spectrum_ + "_fold";
   bool ok;
   QString text = QInputDialog::getText(this, "New spectrum name",
@@ -605,7 +627,7 @@ void FormAnalysis2D::on_pushFoldData_clicked()
     uint32_t adjrange = static_cast<uint32_t>(some_spectrum->resolution());
 
     Pixie::Spectrum::Template *temp_fold = Pixie::Spectrum::Factory::getInstance().create_template("2D");
-    temp_fold->visible = true;
+    temp_fold->visible = false;
     temp_fold->name_ = fold_spec_name.toStdString();
     temp_fold->match_pattern = std::vector<int16_t>({1,1,0,0});
     temp_fold->add_pattern = std::vector<int16_t>({1,1,0,0});
@@ -630,10 +652,12 @@ void FormAnalysis2D::on_pushFoldData_clicked()
       foldspec->add_bulk(it);
     }
 
+
     std::vector<Gamma::Detector> detectors = spectra_->runInfo().p4_state.get_detectors();
     for (auto &p : detectors) {
-      if (p.shallow_equals(detector2_)) {
-        p.fwhm_calibration_ = Gamma::Calibration();
+      if (p.shallow_equals(detector2_) || p.shallow_equals(detector1_)) {
+        p = Gamma::Detector(detector1_.name_ + std::string("*") + detector2_.name_);
+        p.energy_calibrations_.add(nrg_calibration1_);
       }
     }
 
@@ -646,14 +670,14 @@ void FormAnalysis2D::on_pushFoldData_clicked()
 
     spectra_->add_spectrum(foldspec);
 
-    setSpectrum(spectra_, fold_spec_name);
-
     emit spectraChanged();
   }
+  this->setCursor(Qt::ArrowCursor);
 }
 
 void FormAnalysis2D::on_pushAddGatedSpectra_clicked()
 {
+  this->setCursor(Qt::WaitCursor);
   bool success = false;
 
   if ((gate_x != nullptr) && (gate_x->total_count() > 0)) {
@@ -663,6 +687,7 @@ void FormAnalysis2D::on_pushAddGatedSpectra_clicked()
     {
       gate_x->set_appearance(generateColor().rgba());
       spectra_->add_spectrum(gate_x);
+      gatex_in_spectra = true;
       success = true;
     }
   }
@@ -674,11 +699,87 @@ void FormAnalysis2D::on_pushAddGatedSpectra_clicked()
     {
       gate_y->set_appearance(generateColor().rgba());
       spectra_->add_spectrum(gate_y);
+      gatey_in_spectra = true;
       success = true;
     }
   }
 
   if (success) {
     emit spectraChanged();
+  }
+  this->setCursor(Qt::ArrowCursor);
+}
+
+void FormAnalysis2D::on_pushSaveCalib_clicked()
+{
+  std::string msg_text("Propagating gain match calibration ");
+  msg_text += detector2_.name_ + "->" + gain_match_cali_.to_ + " (" + std::to_string(gain_match_cali_.bits_) + " bits) to all spectra in current project: "
+      + spectra_->status();
+
+  std::string question_text("Do you also want to save this calibration to ");
+  question_text += detector2_.name_ + " in detector database?";
+
+  QMessageBox msgBox;
+  msgBox.setText(QString::fromStdString(msg_text));
+  msgBox.setInformativeText(QString::fromStdString(question_text));
+  msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox::Abort);
+  msgBox.setDefaultButton(QMessageBox::No);
+  msgBox.setIcon(QMessageBox::Question);
+  int ret = msgBox.exec();
+
+  Gamma::Detector modified;
+
+  if (ret == QMessageBox::Yes) {
+    if (!detectors_.has_a(detector2_)) {
+      bool ok;
+      QString text = QInputDialog::getText(this, "New Detector",
+                                           "Detector name:", QLineEdit::Normal,
+                                           QString::fromStdString(detector2_.name_),
+                                           &ok);
+      if (ok && !text.isEmpty()) {
+        modified = detector2_;
+        modified.name_ = text.toStdString();
+        if (detectors_.has_a(modified)) {
+          QMessageBox::warning(this, "Already exists", "Detector " + text + " already exists. Will not save to database.", QMessageBox::Ok);
+          modified = Gamma::Detector();
+        }
+      }
+    } else
+      modified = detectors_.get(detector2_);
+
+    if (modified != Gamma::Detector())
+    {
+      PL_INFO << "   applying new gain_match calibrations for " << modified.name_ << " in detector database";
+      modified.gain_match_calibrations_.replace(gain_match_cali_);
+      detectors_.replace(modified);
+      emit detectorsChanged();
+    }
+  }
+
+  if (ret != QMessageBox::Abort) {
+    for (auto &q : spectra_->spectra()) {
+      if (q == nullptr)
+        continue;
+      std::vector<Gamma::Detector> detectors = q->get_detectors();
+      for (auto &p : detectors) {
+        if (p.shallow_equals(detector2_)) {
+          PL_INFO << "   applying new calibrations for " << detector2_.name_ << " on " << q->name();
+          p.gain_match_calibrations_.replace(gain_match_cali_);
+        }
+      }
+      q->set_detectors(detectors);
+    }
+
+    std::vector<Gamma::Detector> detectors = spectra_->runInfo().p4_state.get_detectors();
+    for (auto &p : detectors) {
+      if (p.shallow_equals(detector2_)) {
+        PL_INFO << "   applying new calibrations for " << detector2_.name_ << " in current project " << spectra_->status();
+        p.gain_match_calibrations_.replace(gain_match_cali_);
+      }
+    }
+    Pixie::RunInfo ri = spectra_->runInfo();
+    for (int i=0; i < detectors.size(); ++i)
+      ri.p4_state.set_detector(Pixie::Channel(i), detectors[i]);
+    spectra_->setRunInfo(ri);
   }
 }

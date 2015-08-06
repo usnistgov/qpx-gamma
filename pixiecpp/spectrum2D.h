@@ -66,6 +66,7 @@ protected:
 
   uint64_t _get_count(std::initializer_list<uint16_t> list ) const;
   std::unique_ptr<EntryList> _get_spectrum(std::initializer_list<Pair> list);
+  void _set_detectors(const std::vector<Gamma::Detector>& dets) override;
 
   void addHit(const Hit&) override;
   virtual void addHit(const Hit&, int, int);

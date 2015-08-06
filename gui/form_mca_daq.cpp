@@ -196,7 +196,7 @@ void FormMcaDaq::on_pushTimeNow_clicked()
 void FormMcaDaq::clearGraphs() //rename this
 {
   spectra_.clear();
-  updateSpectraUI();
+  newProject();
   ui->Plot1d->reset_content();
 
   ui->Plot2d->reset_content(); //is this necessary?
@@ -253,7 +253,7 @@ void FormMcaDaq::on_pushMcaStart_clicked()
 
   clearGraphs();
   spectra_.set_spectra(spectra_templates_);
-  updateSpectraUI();
+  newProject();
 //  spectra_.activate();
 
   my_run_ = true;
@@ -287,7 +287,7 @@ void FormMcaDaq::on_pushMcaSimulate_clicked()
 
   clearGraphs();
   spectra_.set_spectra(spectra_templates_);
-  updateSpectraUI();
+  newProject();
 //  spectra_.activate();
 
   ui->pushMcaStop->setEnabled(true);
@@ -321,7 +321,7 @@ void FormMcaDaq::on_pushMcaReload_clicked()
 
   spectra_.read_xml(fileName.toStdString(), true);
 
-  updateSpectraUI();
+  newProject();
   spectra_.activate();
 
   emit toggleIO(true);
@@ -357,7 +357,7 @@ void FormMcaDaq::on_pushMcaLoad_clicked()
       PL_INFO << "Spectrum construction did not succeed. Aborting";
     }
   }
-  updateSpectraUI();
+  newProject(); //NOT ALWAYS TRUE!!!
   spectra_.activate();
 
   emit toggleIO(true);
@@ -379,9 +379,13 @@ void FormMcaDaq::on_pushMcaClear_clicked()
 }
 
 void FormMcaDaq::updateSpectraUI() {
+  ui->Plot2d->updateUI();
+  ui->Plot1d->setSpectra(spectra_);
+}
+
+void FormMcaDaq::newProject() {
   ui->Plot2d->setSpectra(spectra_);
   ui->Plot1d->setSpectra(spectra_);
-//  ui->formGamma::Calibration->clear();
 }
 
 void FormMcaDaq::on_pushMcaStop_clicked()
@@ -408,6 +412,8 @@ void FormMcaDaq::on_pushEditSpectra_clicked()
 }
 
 void FormMcaDaq::reqAnal(QString name) {
+  this->setCursor(Qt::WaitCursor);
+
   if (my_analysis_ == nullptr) {
     my_analysis_ = new FormAnalysis1D(settings_, detectors_);
     connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_, SLOT(update_spectrum()));
@@ -416,6 +422,8 @@ void FormMcaDaq::reqAnal(QString name) {
   my_analysis_->setWindowTitle("Analysis1d " + name);
   my_analysis_->setSpectrum(&spectra_, name);
   emit requestAnalysis(my_analysis_);
+
+  this->setCursor(Qt::ArrowCursor);
 }
 
 void FormMcaDaq::analysis_destroyed() {
@@ -423,6 +431,8 @@ void FormMcaDaq::analysis_destroyed() {
 }
 
 void FormMcaDaq::reqAnal2D(QString name) {
+  this->setCursor(Qt::WaitCursor);
+
   if (my_analysis_2d_ == nullptr) {
     my_analysis_2d_ = new FormAnalysis2D(settings_, detectors_);
     connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_2d_, SLOT(update_spectrum()));
@@ -431,7 +441,10 @@ void FormMcaDaq::reqAnal2D(QString name) {
   }
   my_analysis_2d_->setWindowTitle("Analysis2d " + name);
   my_analysis_2d_->setSpectrum(&spectra_, name);
+  my_analysis_2d_->reset();
   emit requestAnalysis2D(my_analysis_2d_);
+
+  this->setCursor(Qt::ArrowCursor);
 }
 
 void FormMcaDaq::analysis2d_destroyed() {
@@ -453,5 +466,5 @@ void FormMcaDaq::on_pushEnable2d_clicked()
 
 void FormMcaDaq::on_pushForceRefresh_clicked()
 {
-    update_plots();
+  update_plots();
 }

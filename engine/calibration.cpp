@@ -66,6 +66,13 @@ double Calibration::transform(double chan, uint16_t bits) const {
   return re;
 }
 
+std::string Calibration::fancy_equation(int precision) {
+  if (bits_ && (model_ == CalibrationModel::polynomial))
+    return Polynomial(coefficients_).to_UTF8(precision, false);
+  else
+    return "N/A"; 
+}
+
 std::vector<double> Calibration::transform(std::vector<double> chans) const {
   std::vector<double> results;
   for (auto &q : chans)
@@ -118,7 +125,6 @@ void Calibration::to_xml(tinyxml2::XMLPrinter& printer) const {
   if (type_ == "Energy")
     printer.PushAttribute("EnergyUnits", units_.c_str());
   else if (type_ == "Gain") {
-    printer.PushAttribute("From", from_.c_str());
     printer.PushAttribute("To", to_.c_str());    
   }
   if (bits_ > 0)
@@ -152,7 +158,6 @@ void Calibration::from_xml(tinyxml2::XMLElement* root) {
   if (type_ == "Energy")
     units_ = std::string(root->Attribute("EnergyUnits"));
   else if (type_ == "Gain") {
-    from_ = std::string(root->Attribute("From"));
     to_ = std::string(root->Attribute("To"));    
   }
   if (root->Attribute("ResolutionBits"))

@@ -50,7 +50,7 @@ protected:
   bool initialize() override {
     dimensions_ = 1;
     spectrum_.resize(resolution_, 0);
-    detectors_.resize(kNumChans);
+    detectors_.resize(dimensions_);
     recalc_energies();
     return true;
   }
@@ -58,6 +58,7 @@ protected:
   uint64_t _get_count(std::initializer_list<uint16_t> list) const;
   std::unique_ptr<std::list<Entry>> _get_spectrum(std::initializer_list<Pair> list);
   void _add_bulk(const Entry&) override;
+  void _set_detectors(const std::vector<Gamma::Detector>& dets) override;
 
   //event processing
   void addHit(const Hit&) override;

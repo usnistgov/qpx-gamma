@@ -37,7 +37,7 @@ FormPlot2D::FormPlot2D(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  current_gradient_ = "hot";
+  current_gradient_ = "Hot";
   current_scale_type_ = "Logarithmic";
   zoom_2d = 50;
   user_selects_ = true;
@@ -106,17 +106,53 @@ FormPlot2D::~FormPlot2D()
 void FormPlot2D::setSpectra(Pixie::SpectraSet& new_set) {
   mySpectra = &new_set;
 
-  ui->comboChose2d->clear();
-  for (auto &q: mySpectra->spectra(2, -1))
-    ui->comboChose2d->addItem(QString::fromStdString(q->name()));
-
   name_2d.clear();
-  //replot?
+
+  updateUI();
 }
 
 void FormPlot2D::on_comboChose2d_activated(const QString &arg1)
 {
-  mySpectra->activate();
+  if (arg1 == name_2d)
+    return;
+  std::list<Pixie::Spectrum::Spectrum*> spectra = mySpectra->spectra(2, -1);
+
+  for (auto &q : spectra)
+    if (q->name() == arg1.toStdString())
+      q->set_visible(true);
+    else
+      q->set_visible(false);
+
+  name_2d = arg1;
+  update_plot(true);
+}
+
+void FormPlot2D::updateUI()
+{
+  std::list<Pixie::Spectrum::Spectrum*> spectra = mySpectra->spectra(2, -1);
+  std::string newname;
+  std::list<std::string> names;
+  for (auto &q : spectra) {
+    std::string name = q->name();
+    names.push_back(name);
+    if (q->visible())
+      newname = name;
+  }
+
+  if (newname.empty() && !names.empty())
+    newname = names.front();
+
+  ui->comboChose2d->blockSignals(true);
+  this->blockSignals(true);
+  ui->comboChose2d->clear();
+  for (auto &q: names)
+    ui->comboChose2d->addItem(QString::fromStdString(q));
+  ui->comboChose2d->setCurrentText(QString::fromStdString(newname));
+  ui->comboChose2d->blockSignals(false);
+  this->blockSignals(false);
+
+  if (newname != name_2d.toStdString())
+    update_plot(true);
 }
 
 void FormPlot2D::set_show_selector(bool vis) {
@@ -129,7 +165,7 @@ void FormPlot2D::set_show_analyse(bool vis) {
 }
 
 void FormPlot2D::set_spectrum(QString name) {
-  name_2d = name;
+  //check if valid?
   ui->comboChose2d->setCurrentText(name);
 }
 
@@ -303,7 +339,7 @@ void FormPlot2D::update_plot(bool force) {
     {
       PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
-      if (rescale2d) {
+      if (rescale2d || force) {
         PL_DBG << "rescaling 2d";
         ui->coincPlot->clearGraphs();
         colorMap->data()->setSize(adjrange, adjrange);

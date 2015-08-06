@@ -81,7 +81,7 @@ std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x, const st
   fityk::Fityk *f = new fityk::Fityk;
   f->redir_messages(NULL);
   f->load_data(0, x, y, sigma);
-  PL_DBG << "<Gaussian> fitting multiplet [" << x[0] << "-" << x[x.size() - 1] << "]";  
+  //PL_DBG << "<Gaussian> fitting multiplet [" << x[0] << "-" << x[x.size() - 1] << "]";  
 
   for (int i=0; i < old.size(); ++i) {
     std::string fn = "F += Gaussian(height=~" + std::to_string(old[i].height_)

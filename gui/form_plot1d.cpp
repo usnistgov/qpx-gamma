@@ -54,7 +54,7 @@ FormPlot1D::~FormPlot1D()
 void FormPlot1D::setSpectra(Pixie::SpectraSet& new_set) {
   mySpectra = &new_set;
 
-  std::list<uint32_t> resolutions = mySpectra->resolutions(1);
+  std::set<uint32_t> resolutions = mySpectra->resolutions(1);
   ui->comboResolution->clear();
   for (auto &q: resolutions)
     ui->comboResolution->addItem(QString::number(q) + " bit", QVariant(q));
@@ -81,15 +81,32 @@ void FormPlot1D::spectrumDetails()
     return;
   }
 
+  double count = someSpectrum->total_count();
   double real = someSpectrum->real_time().total_milliseconds() * 0.001;
   double live = someSpectrum->live_time().total_milliseconds() * 0.001;
   double dead = 100;
-  if (real > 0)
+  double rate = 0;
+  Gamma::Detector det = someSpectrum->get_detector(0);
+
+  QString detstr("Detector: ");
+  detstr += QString::fromStdString(det.name_);
+  if (det.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
+    detstr += " [ENRG]";
+  else if (det.highest_res_calib().units_ != "channels")
+    detstr += " (enrg)";
+  if (det.fwhm_calibration_.coefficients_ != std::vector<double>({0,1}))
+    detstr += " [FWHM]";
+
+  if (real > 0) {
     dead = (real - live) * 100.0 / real;
+    rate = count / real;
+  }
 
   QString infoText =
       "<nobr>" + id + "(" + QString::fromStdString(someSpectrum->type()) + ")</nobr><br/>"
-      "<nobr>Count: " + QString::number(someSpectrum->total_count()) + "</nobr><br/>"
+      "<nobr>" + detstr + "</nobr><br/>"
+      "<nobr>Count: " + QString::number(count) + "</nobr><br/>"
+      "<nobr>Rate: " + QString::number(rate) + "cps</nobr><br/>"
       "<nobr>Live:  " + QString::number(live) + "s</nobr><br/>"
       "<nobr>Real:  " + QString::number(real) + "s</nobr><br/>"
       "<nobr>Dead:  " + QString::number(dead) + "%</nobr><br/>";
@@ -207,7 +224,32 @@ void FormPlot1D::on_pushFullInfo_clicked()
 
   dialog_spectrum* newSpecDia = new dialog_spectrum(*someSpectrum, this);
   connect(newSpecDia, SIGNAL(finished(bool)), this, SLOT(spectrumDetailsClosed(bool)));
+  connect(newSpecDia, SIGNAL(delete_spectrum()), this, SLOT(spectrumDetailsDelete()));
   newSpecDia->exec();
+}
+
+void FormPlot1D::spectrumDetailsDelete()
+{
+  std::string name = ui->spectraWidget->selected().toStdString();
+
+  PL_INFO << "will delete " << name;
+  mySpectra->delete_spectrum(name);
+
+  updateUI();
+}
+
+void FormPlot1D::updateUI()
+{
+  std::set<uint32_t> resolutions = mySpectra->resolutions(1);
+
+  if (resolutions.count(bits) == 1) {
+    ui->spectraWidget->setQpxSpectra(*mySpectra, 1, bits);
+    mySpectra->activate();
+  } else {
+    ui->comboResolution->clear();
+    for (auto &q: resolutions)
+      ui->comboResolution->addItem(QString::number(q) + " bit", QVariant(q));
+  }
 }
 
 void FormPlot1D::on_pushAnalyse_clicked()
