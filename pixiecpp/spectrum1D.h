@@ -50,8 +50,6 @@ protected:
   bool initialize() override {
     dimensions_ = 1;
     spectrum_.resize(resolution_, 0);
-    detectors_.resize(dimensions_);
-    recalc_energies();
     return true;
   }
 

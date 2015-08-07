@@ -73,7 +73,7 @@ bool Spectrum::from_template(const Template& newtemplate) {
   return (this->initialize());
 }
 
-void Spectrum::addSpill(const Spill& one_spill) {
+void Spectrum::addSpill(const Spill& one_spill, bool update_dets) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
@@ -86,8 +86,12 @@ void Spectrum::addSpill(const Spill& one_spill) {
   if (one_spill.stats != nullptr)
     this->addStats(*one_spill.stats);
 
-  if (one_spill.run != nullptr)
+  if (one_spill.run != nullptr) {
+    if (update_dets)
+      this->_set_detectors(one_spill.run->p4_state.get_detectors());
+
     this->addRun(*one_spill.run);
+  }
 }
 
 void Spectrum::closeAcquisition() {
@@ -132,8 +136,6 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
 void Spectrum::addRun(const RunInfo& run_info) {
   //private; no lock required
 
-  _set_detectors(run_info.p4_state.get_detectors());
-
   start_time_ = run_info.time_start;
 
   if (!run_info.total_events)
@@ -170,7 +172,9 @@ void Spectrum::set_detectors(const std::vector<Gamma::Detector>& dets) {
 void Spectrum::_set_detectors(const std::vector<Gamma::Detector>& dets) {
   //private; no lock required
 
-  detectors_.resize(dimensions_, Gamma::Detector());
+  detectors_.clear();
+
+  //detectors_.resize(dimensions_, Gamma::Detector());
   recalc_energies();
 }
 
@@ -196,7 +200,7 @@ void Spectrum::recalc_energies() {
 
   for (int i=0; i < detectors_.size(); ++i) {
     energies_[i].resize(resolution_, 0.0);
-    Gamma::Calibration this_calib;
+     Gamma::Calibration this_calib;
     if (detectors_[i].energy_calibrations_.has_a(Gamma::Calibration("Energy", bits_)))
       this_calib = detectors_[i].energy_calibrations_.get(Gamma::Calibration("Energy", bits_));
     else
@@ -428,6 +432,14 @@ void Spectrum::to_xml(tinyxml2::XMLPrinter& printer) const {
     printer.CloseElement();
   }
 
+  if (detectors_.size()) {
+    printer.OpenElement("Detectors");
+    for (auto &q : detectors_) {
+      q.to_xml(printer);
+    }
+    printer.CloseElement();
+  }
+
   printer.OpenElement("ChannelData");
   if ((resolution_ > 0) && (count_ > 0))
     printer.PushText(this->_channels_to_xml().c_str());
@@ -493,13 +505,29 @@ bool Spectrum::from_xml(tinyxml2::XMLElement* root) {
       one_setting = dynamic_cast<tinyxml2::XMLElement*>(one_setting->NextSibling());
     }
   }
+
+  if ((elem = root->FirstChildElement("Detectors")) != nullptr) {
+    detectors_.clear();
+    tinyxml2::XMLElement* one_det = elem->FirstChildElement(Gamma::Detector().xml_element_name().c_str());
+    while (one_det != nullptr) {
+      detectors_.push_back(Gamma::Detector(one_det));
+      one_det = dynamic_cast<tinyxml2::XMLElement*>(one_det->NextSibling());
+    }
+  }
+
   if (((elem = root->FirstChildElement("ChannelData")) != nullptr) &&
       (elem->GetText() != nullptr)) {
     std::string this_data = elem->GetText();
     boost::algorithm::trim(this_data);
     this->_channels_from_xml(this_data);
   }
-  return (this->initialize());
+
+  bool ret = this->initialize();
+
+  if (ret)
+   this->recalc_energies();
+
+  return ret;
 }
 
 

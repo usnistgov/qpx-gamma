@@ -354,8 +354,12 @@ void FormAnalysis2D::make_gated_spectra() {
       sum_inclusive += sum_exclusive;
       fill_table();
 
+
+      std::vector<Gamma::Detector> detectors = some_spectrum->get_detectors();
       Pixie::Spill spill;
       spill.run = new Pixie::RunInfo(spectra_->runInfo());
+      for (int i=0; i < detectors.size(); ++i)
+        spill.run->p4_state.set_detector(Pixie::Channel(i), detectors[i]);
       gate_x->addSpill(spill);
       gate_y->addSpill(spill);
       delete spill.run;
@@ -575,7 +579,7 @@ void FormAnalysis2D::on_pushSymmetrize_clicked()
       }
     }
 
-    std::vector<Gamma::Detector> detectors = spectra_->runInfo().p4_state.get_detectors();
+    std::vector<Gamma::Detector> detectors = some_spectrum->get_detectors();
     for (auto &p : detectors) {
       if (p.shallow_equals(detector2_)) {
         p = Gamma::Detector(std::string("*") + detector2_.name_);
@@ -585,8 +589,10 @@ void FormAnalysis2D::on_pushSymmetrize_clicked()
 
     Pixie::Spill spill;
     spill.run = new Pixie::RunInfo(spectra_->runInfo());
-    for (int i=0; i < detectors.size(); ++i)
+    for (int i=0; i < detectors.size(); ++i) {
+      PL_DBG << "push det " << i << detectors[i].name_;
       spill.run->p4_state.set_detector(Pixie::Channel(i), detectors[i]);
+    }
     symspec->addSpill(spill);
     delete spill.run;
 
@@ -653,7 +659,7 @@ void FormAnalysis2D::on_pushFoldData_clicked()
     }
 
 
-    std::vector<Gamma::Detector> detectors = spectra_->runInfo().p4_state.get_detectors();
+    std::vector<Gamma::Detector> detectors = some_spectrum->get_detectors();
     for (auto &p : detectors) {
       if (p.shallow_equals(detector2_) || p.shallow_equals(detector1_)) {
         p = Gamma::Detector(detector1_.name_ + std::string("*") + detector2_.name_);

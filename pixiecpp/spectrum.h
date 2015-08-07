@@ -98,7 +98,7 @@ public:
   Gamma::Detector get_detector(uint16_t which = 0) const;
 
   //feed acquired data to spectrum
-  void addSpill(const Spill&);
+  void addSpill(const Spill&, bool update_dets = true);
   void closeAcquisition(); //must call this after completing
 
   ///////////////////////////////////////////////

@@ -64,17 +64,22 @@ bool Spectrum2D::initialize() {
 }
 
 void Spectrum2D::_set_detectors(const std::vector<Gamma::Detector>& dets) {
-  detectors_.resize(dimensions_, Gamma::Detector());
-  int total = add_pattern_.size();
-  if (dets.size() < total)
-    total = dets.size();
-  int j=0;
-  for (int i=0; i < total; ++i) {
-    if (add_pattern_[i]) {
-      detectors_[j] = dets[i];
-      j++;
-      if (j >= dimensions_)
-        j = dimensions_ - 1;
+  detectors_.clear();
+
+  if (dets.size() >= 2) {
+    int total = add_pattern_.size();
+    if (dets.size() < total)
+      total = dets.size();
+    detectors_.resize(dimensions_, Gamma::Detector());
+
+    int j=0;
+    for (int i=0; i < total; ++i) {
+      if (add_pattern_[i]) {
+        detectors_[j] = dets[i];
+        j++;
+        if (j >= dimensions_)
+          j = dimensions_ - 1;
+      }
     }
   }
 
@@ -271,9 +276,9 @@ bool Spectrum2D:: read_esc(std::string name) {
   shift_by_ = 5;
 
   detectors_.resize(2);
-  detectors_[0].name_ = "default";
+  detectors_[0].name_ = "unknown1";
   detectors_[0].energy_calibrations_.add(Gamma::Calibration("Energy", bits_));
-  detectors_[1].name_ = "default";
+  detectors_[1].name_ = "unknown2";
   detectors_[1].energy_calibrations_.add(Gamma::Calibration("Energy", bits_));
   
   init_from_file(name);
@@ -301,9 +306,9 @@ bool Spectrum2D:: read_spn(std::string name) {
   shift_by_ = 3;
 
   detectors_.resize(2);
-  detectors_[0].name_ = "default";
+  detectors_[0].name_ = "unknown1";
   detectors_[0].energy_calibrations_.add(Gamma::Calibration("Energy", bits_));
-  detectors_[1].name_ = "default";
+  detectors_[1].name_ = "unknown2";
   detectors_[1].energy_calibrations_.add(Gamma::Calibration("Energy", bits_));
   
   init_from_file(name);

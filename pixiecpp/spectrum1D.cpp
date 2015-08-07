@@ -34,16 +34,21 @@ namespace Spectrum {
 static Registrar<Spectrum1D> registrar("1D");
 
 void Spectrum1D::_set_detectors(const std::vector<Gamma::Detector>& dets) {
-  detectors_.resize(1, Gamma::Detector());
+  detectors_.clear();
 
   if (dets.size() == 1)
     detectors_ = dets;
-  int total = add_pattern_.size();
-  if (dets.size() < total)
-    total = dets.size();
-  for (int i=0; i < total; ++i) {
-    if (add_pattern_[i])
-      detectors_[0] = dets[i];
+  if (dets.size() >= 1) {
+    int total = add_pattern_.size();
+    if (dets.size() < total)
+      total = dets.size();
+    detectors_.resize(1, Gamma::Detector());
+
+    for (int i=0; i < total; ++i) {
+      if (add_pattern_[i]) {
+        detectors_[0] = dets[i];
+      }
+    }
   }
 
   this->recalc_energies();
@@ -291,7 +296,7 @@ bool Spectrum1D::read_cnf(std::string name) {
 
     detectors_.resize(1);
     detectors_[0] = Gamma::Detector();
-    detectors_[0].name_ = "default";
+    detectors_[0].name_ = "unknown";
     Gamma::Calibration new_calib("Energy", bits_);
     new_calib.coefficients_ = calibration;
     detectors_[0].energy_calibrations_.add(new_calib);
@@ -338,7 +343,7 @@ bool Spectrum1D::read_tka(std::string name) {
 
   detectors_.resize(1);
   detectors_[0] = Gamma::Detector();
-  detectors_[0].name_ = "default";
+  detectors_[0].name_ = "unknown";
   
   init_from_file(name);
 
@@ -417,7 +422,7 @@ bool Spectrum1D::read_n42(std::string name) {
   if (this->channels_from_string(channeldata, true)) {//assume compressed
 
     Gamma::Detector newdet;
-    newdet.name_ = "default";
+    newdet.name_ = "unknown";
     if (root->Attribute("Detector"))
       newdet.name_ = std::string(root->Attribute("Detector"));
   
@@ -527,7 +532,7 @@ bool Spectrum1D::read_ava(std::string name) {
     newcalib.units_ = "keV";
     newcalib.type_ = "Energy";
     newdet.energy_calibrations_.add(newcalib);
-    newdet.name_ = "default";
+    newdet.name_ = "unknown";
   }
   detectors_.resize(1);
   detectors_[0] = newdet;
