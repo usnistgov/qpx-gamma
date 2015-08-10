@@ -407,6 +407,9 @@ void FormAnalysis2D::plot_calib()
     return;
   }
 
+  ui->pushSaveCalib->setEnabled(gain_match_cali_.valid());
+  ui->pushSymmetrize->setEnabled(gain_match_cali_.valid());
+
   QVector<double> xx, yy;
 
   double xmin = std::numeric_limits<double>::max();
@@ -432,7 +435,7 @@ void FormAnalysis2D::plot_calib()
     ui->spinPolyOrder->setEnabled(true);
 
     ui->plotCalib->addPoints(xx, yy, style_pts);
-    if ((gain_match_cali_.to_ == detector1_.name_) && (gain_match_cali_.coefficients_ != std::vector<double>({0, 1}))) {
+    if ((gain_match_cali_.to_ == detector1_.name_) && gain_match_cali_.valid()) {
 
       double step = (xmax-xmin) / 50.0;
       xx.clear(); yy.clear();

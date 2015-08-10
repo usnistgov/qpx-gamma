@@ -170,7 +170,7 @@ void WidgetIsotopes::set_current_isotope(QString choice) {
 
 bool WidgetIsotopes::save_close() {
 
-  if (modified_)
+/*  if (modified_)
   {
     int reply = QMessageBox::warning(this, "Isotopes modified",
                                      "Save?",
@@ -182,6 +182,12 @@ bool WidgetIsotopes::save_close() {
     } else if (reply == QMessageBox::Cancel) {
       return false;
     }
+  }*/
+
+  if (modified_) {
+    QString fileName = root_dir_ + "/isotopes.xml";
+    isotopes_.write_xml(fileName.toStdString());
+    modified_ = false;
   }
 
   return true;

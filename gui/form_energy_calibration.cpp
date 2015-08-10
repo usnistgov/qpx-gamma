@@ -114,15 +114,13 @@ void FormEnergyCalibration::clear() {
   ui->pushFromDB->setEnabled(false);
 }
 
-void FormEnergyCalibration::setData(Gamma::Calibration nrg_calib, uint16_t bits) {
+void FormEnergyCalibration::setData(Gamma::Detector det, Gamma::Calibration nrg_calib, uint16_t bits) {
   bits_ = bits;
+  detector_ = det;
   new_calibration_ = old_calibration_ = nrg_calib;
   PL_DBG << "<Energy Calibration> received new calib coefs = " << new_calibration_.coef_to_string();
-  if (detectors_.has_a(detector_) && detectors_.get(detector_).energy_calibrations_.has_a(old_calibration_))
-    ui->pushFromDB->setEnabled(true);
-  else
-    ui->pushFromDB->setEnabled(false);
   replot_markers();
+  toggle_push();
 }
 
 void FormEnergyCalibration::update_peaks(bool contents_changed) {
@@ -154,6 +152,7 @@ void FormEnergyCalibration::update_peaks(bool contents_changed) {
 }
 
 void FormEnergyCalibration::replot_markers() {
+  ui->PlotCalib->setFloatingText("");
 
   QVector<double> xx, yy;
 
@@ -194,6 +193,7 @@ void FormEnergyCalibration::replot_markers() {
         yy.push_back(new_calibration_.transform(i));
       }
       ui->PlotCalib->addFit(xx, yy, style_fit);
+      ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(new_calibration_.fancy_equation(3)));
     }
   }
 
@@ -245,11 +245,20 @@ void FormEnergyCalibration::toggle_push() {
   ui->pushAllEnergies->setEnabled((sel > 0) && (sel == ui->isotopes->current_gammas().size()));
   ui->pushAllmarkers->setEnabled((sel > 0) && (ui->isotopes->current_gammas().empty()));
 
-  if (static_cast<int>(fit_data_.peaks_.size()) >= 2) {
+  if (static_cast<int>(fit_data_.peaks_.size()) > 1) {
     ui->pushFit->setEnabled(true);
+    ui->spinTerms->setEnabled(true);
   } else {
     ui->pushFit->setEnabled(false);
+    ui->spinTerms->setEnabled(false);
   }
+
+  if (detectors_.has_a(detector_) && detectors_.get(detector_).energy_calibrations_.has_a(old_calibration_))
+    ui->pushFromDB->setEnabled(true);
+  else
+    ui->pushFromDB->setEnabled(false);
+
+  ui->pushApplyCalib->setEnabled(new_calibration_ != old_calibration_);
 }
 
 void FormEnergyCalibration::on_pushFit_clicked()
@@ -274,9 +283,6 @@ void FormEnergyCalibration::on_pushFit_clicked()
     new_calibration_.units_ = "keV";
     new_calibration_.model_ = Gamma::CalibrationModel::polynomial;
     fit_data_.nrg_cali_ = new_calibration_;
-    Polynomial thispoly(new_calibration_.coefficients_);
-    ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(thispoly.to_UTF8(3, true)));
-    ui->pushApplyCalib->setEnabled(new_calibration_ != old_calibration_);
   }
   else
     PL_INFO << "<Energy calibration> Gamma::Calibration failed";
@@ -299,6 +305,8 @@ void FormEnergyCalibration::on_pushFromDB_clicked()
   Gamma::Detector newdet = detectors_.get(detector_);
   new_calibration_ = newdet.energy_calibrations_.get(old_calibration_);
   fit_data_.nrg_cali_ = new_calibration_;
+  replot_markers();
+  toggle_push();
 }
 
 void FormEnergyCalibration::on_pushDetDB_clicked()

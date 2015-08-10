@@ -65,6 +65,9 @@
        </item>
        <item>
         <widget class="QDoubleSpinBox" name="doubleRsqGoal">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="sizePolicy">
           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -173,7 +176,7 @@
        <item>
         <widget class="QSpinBox" name="spinTerms">
          <property name="enabled">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
          <property name="sizePolicy">
           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">

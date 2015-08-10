@@ -24,6 +24,128 @@
 
 namespace Gamma {
 
+SUM4::SUM4()
+    :peak_width(0)
+    ,Lw(0)
+    ,Rw(0)
+    ,Lsum(0)
+    ,Rsum(0)
+    ,P_area(0)
+    ,B_area(0)
+    ,B_variance(0)
+    ,net_area(0)
+    ,sumYnet(0)
+    ,CsumYnet(0)
+    ,C2sumYnet(0)
+    ,net_variance(0)
+    ,err(0)
+    ,currieLQ(0)
+    ,currieLD(0)
+    ,currieLC(0)
+    ,Lpeak(0)
+    ,Rpeak(0)
+    ,currie_quality_indicator(-1)
+    ,centroid(0)
+    ,centroid_var(0)
+    ,fwhm(0)
+{
+  
+}
+
+SUM4::SUM4(const std::vector<double> &x,
+           const std::vector<double> &y,
+           uint32_t left, uint32_t right,
+           uint16_t samples)
+    :SUM4()
+{
+
+  if ((x.size() != y.size())
+      || x.empty()
+      || (left > right)
+      || (left >= x.size())
+      || (right >= x.size())
+      || (samples >= x.size()))
+    return;
+
+  x_ = x;
+  y_ = y;
+
+  Lpeak = left;
+  Rpeak = right;
+
+  peak_width = right - left + 1;
+
+  LBend = left - 1;
+  RBstart = right + 1;
+
+  int32_t LBstart = LBend - samples;
+  if (LBstart < 0)
+    LBstart = 0;
+
+  int32_t RBend = RBstart + samples;
+  if (RBend >= x.size())
+    RBend = x.size() - 1;
+
+  Lw = LBend - LBstart + 1;
+  Rw = RBend - RBstart + 1;
+
+  for (int i=LBstart; i <= LBend; ++i)
+    Lsum += y[i];
+
+  for (int i=RBstart; i <= RBend; ++i)
+    Rsum += y[i];
+
+  
+  B_area = peak_width * (Lsum / Lw + Rsum / Rw) / 2.0;
+
+  for (int i=left; i <=right; ++i)
+    P_area += y[i];
+
+  net_area = P_area - B_area;
+
+  B_variance = pow((peak_width / 2.0), 2) * (Lsum / pow(Lw, 2) + Rsum / pow(Rw, 2));
+  net_variance = P_area + B_variance;
+
+  err = 100 * sqrt(net_variance) / net_area;
+
+  
+  currieLQ = 50 * (1 + sqrt(1 + B_variance / 12.5));
+  currieLD = 2.71 + 4.65 * sqrt(B_variance);
+  currieLC = 2.33 * sqrt(B_variance);
+
+  if (net_area > currieLQ)
+    currie_quality_indicator = 1;
+  else if (net_area > currieLD)
+    currie_quality_indicator = 2;
+  else if (net_area > currieLC)
+    currie_quality_indicator = 3;
+  else if (net_area > 0)
+    currie_quality_indicator = 4;
+  else
+    currie_quality_indicator = -1;
+
+
+  //by default, linear
+  double slope = (Rsum / Rw - Lsum / Lw) / (Rpeak - Lpeak);
+  double offset = Lsum / Lw - slope * Lpeak;
+
+  for (int32_t i = Lpeak; i <= Rpeak; ++i) {
+    bx_.push_back(x_[i]);
+    double B_chan  = offset + i*slope; 
+    by_.push_back(B_chan);
+    double yn = y_[i] - B_chan;
+    sumYnet += yn;
+    CsumYnet += i * yn;
+    C2sumYnet += pow(i, 2) * yn;
+  }
+
+  centroid = CsumYnet / sumYnet;
+  centroid_var = (C2sumYnet / sumYnet) - pow(centroid, 2);
+  fwhm = 2.0 * sqrt(centroid_var * log(4));
+
+}
+
+
 double local_avg(const std::vector<double> &x,
                  const std::vector<double> &y,
                  uint16_t chan, uint16_t samples) {
@@ -98,14 +220,6 @@ std::vector<double> make_background(const std::vector<double> &x,
 }
 
 
-Peak::Peak(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline,
-           Calibration cali_nrg, Calibration cali_fwhm, double live_seconds)
-  : Peak()
-{
-  fit(x, y, y_baseline, cali_nrg, cali_fwhm, live_seconds);
-}
-
-
 void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
   y_fullfit_gaussian_.resize(x_.size());
   y_fullfit_pseudovoigt_.resize(x_.size());
@@ -119,6 +233,12 @@ void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
   height = gaussian_.height_;
 
   double L, R;
+
+  L = sum4_.centroid - sum4_.fwhm / 2;
+  R = sum4_.centroid + sum4_.fwhm / 2;
+  fwhm_sum4 = cali_nrg.transform(R) - cali_nrg.transform(L);
+  if (sum4_.fwhm >= x_.size())
+    fwhm_sum4 = 0;
 
   L = gaussian_.center_ - gaussian_.hwhm_;
   R = gaussian_.center_ + gaussian_.hwhm_;
@@ -136,18 +256,12 @@ void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
 
   fwhm_theoretical = cali_fwhm.transform(energy);
 
-  area_gauss_ = gaussian_.height_ * gaussian_.hwhm_ * sqrt(3.141592653589793238462643383279502884 / log(2.0));
+  area_gauss_ =  gaussian_.height_ * gaussian_.hwhm_ * sqrt(3.141592653589793238462643383279502884 / log(2.0));
   if (!subpeak)
   {
-    area_gross_ = 0.0;
-    for (auto &q : y_)
-      area_gross_ += q;
-
-    area_bckg_ = 0.0;
-    for (auto &q : y_baseline_)
-      area_bckg_ += q;
-
-    area_net_ = area_gross_ - area_bckg_;
+    area_gross_ = sum4_.P_area;
+    area_bckg_ = sum4_.B_area;
+    area_net_ = sum4_.net_area;
   }
 
   if (live_seconds_ > 0) {
@@ -156,18 +270,23 @@ void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
   }
 }
 
-
-void Peak::fit(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline,
-               Calibration cali_nrg, Calibration cali_fwhm, double live_seconds) {
+Peak::Peak(const std::vector<double> &x, const std::vector<double> &y, uint32_t L, uint32_t R,
+           Calibration cali_nrg, Calibration cali_fwhm, double live_seconds)
+  : Peak()
+{
   if (
       (x.size() == y.size())
       &&
-      (y_baseline.size() == y.size())
+      (L < R)
+      &&
+      (R < x.size())
       )
   {    
-    x_ = x;
-    y_ = y;
-    y_baseline_ = y_baseline;
+    sum4_ = SUM4(x, y, L, R, 3);
+
+    x_ = std::vector<double>(x.begin() + L, x.begin() + R + 1);
+    y_ = std::vector<double>(y.begin() + L, y.begin() + R + 1);
+    y_baseline_ = sum4_.by_;
     
     std::vector<double> nobase(x_.size());    
     for (int32_t i = 0; i < static_cast<int32_t>(y_.size()); ++i)

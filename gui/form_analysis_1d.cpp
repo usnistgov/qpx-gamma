@@ -131,7 +131,7 @@ void FormAnalysis1D::setSpectrum(Pixie::SpectraSet *newset, QString name) {
     } else
       PL_INFO << "<Analysis> No existing calibration for this resolution";
 
-    if (detector_.fwhm_calibration_.coefficients_ != std::vector<double>({0, 1})) {
+    if (detector_.fwhm_calibration_.valid()) {
       fwhm_calibration_ = detector_.fwhm_calibration_;
       PL_INFO << "<Analysis> FWHM calibration drawn from detector \"" << detector_.name_ << "\"   "
               << fwhm_calibration_.to_string();
@@ -142,8 +142,8 @@ void FormAnalysis1D::setSpectrum(Pixie::SpectraSet *newset, QString name) {
     fit_data_.fwhm_cali_ = fwhm_calibration_;
     fit_data_.nrg_cali_ = nrg_calibration_;
 
-    my_energy_calibration_->setData(nrg_calibration_, bits);
-    my_fwhm_calibration_->setData(fwhm_calibration_, bits);
+    my_energy_calibration_->setData(detector_, nrg_calibration_, bits);
+    my_fwhm_calibration_->setData(detector_, fwhm_calibration_, bits);
 
     my_energy_calibration_->update_peaks(true);
     my_fwhm_calibration_->update_peaks(true);
@@ -268,7 +268,7 @@ void FormAnalysis1D::update_detector_calibs()
     spectra_->setRunInfo(ri);
 
     ui->plotSpectrum->setData(nrg_calibration_, fwhm_calibration_);
-    my_energy_calibration_->setData(nrg_calibration_, nrg_calibration_.bits_);
-    my_fwhm_calibration_->setData(fwhm_calibration_, fwhm_calibration_.bits_);
+    my_energy_calibration_->setData(detector_, nrg_calibration_, nrg_calibration_.bits_);
+    my_fwhm_calibration_->setData(detector_, fwhm_calibration_, fwhm_calibration_.bits_);
   }
 }

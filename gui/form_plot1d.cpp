@@ -94,7 +94,7 @@ void FormPlot1D::spectrumDetails()
     detstr += " [ENRG]";
   else if (det.highest_res_calib().units_ != "channels")
     detstr += " (enrg)";
-  if (det.fwhm_calibration_.coefficients_ != std::vector<double>({0,1}))
+  if (det.fwhm_calibration_.valid())
     detstr += " [FWHM]";
 
   if (real > 0) {

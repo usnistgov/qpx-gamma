@@ -45,7 +45,7 @@ public:
   explicit FormEnergyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, Gamma::Fitter&, QWidget *parent = 0);
   ~FormEnergyCalibration();
 
-  void setData(Gamma::Calibration nrg_calib, uint16_t bits);
+  void setData(Gamma::Detector det, Gamma::Calibration nrg_calib, uint16_t bits);
   bool save_close();
 
   void update_peaks(bool);  

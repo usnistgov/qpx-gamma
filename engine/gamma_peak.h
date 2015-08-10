@@ -32,7 +32,33 @@
 
 namespace Gamma {
 
-  enum class BaselineType : int {linear = 0, step = 1, step_polynomial = 2};
+enum class BaselineType : int {linear = 0, step = 1, step_polynomial = 2};
+
+
+class SUM4 {
+public:
+  std::vector<double> x_, y_, bx_, by_;
+  uint32_t Lpeak, Rpeak, LBstart, LBend, RBstart, RBend;
+  double peak_width, Lw, Rw;
+  double Lsum, Rsum;
+  double B_area, B_variance;
+  double P_area, net_variance;
+  double net_area;
+  double sumYnet, CsumYnet, C2sumYnet;
+  double centroid, centroid_var, fwhm;
+  double err;
+  double currieLQ, currieLD, currieLC;
+  int currie_quality_indicator;
+
+  SUM4();
+
+  SUM4(const std::vector<double> &x,
+       const std::vector<double> &y,
+       uint32_t left, uint32_t right,
+       uint16_t samples);
+
+};
+
 
   double local_avg(const std::vector<double> &x,
                    const std::vector<double> &y,
@@ -48,11 +74,11 @@ namespace Gamma {
 class Peak {
 public:
   Peak()
-      : multiplet (false)
-      , subpeak (false)
+      : subpeak (false)
       , center(0)
       , energy(0)
       , height(0)
+      , fwhm_sum4(0)
       , fwhm_gaussian (0)
       , fwhm_pseudovoigt (0)
       , hwhm_L (0)
@@ -72,16 +98,17 @@ public:
       , cts_per_sec_gauss_(0.0)
   {}
 
-  Peak(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline,
+  Peak(const std::vector<double> &x, const std::vector<double> &y, uint32_t L, uint32_t R,
        Calibration cali_nrg = Calibration(), Calibration cali_fwhm = Calibration(), double live_seconds = 0.0);
-
+  
   void construct(Calibration cali_nrg, Calibration cali_fwhm);
 
   std::vector<double> x_, y_, y_baseline_, y_fullfit_gaussian_, y_fullfit_pseudovoigt_;
+  SUM4 sum4_;
   Gaussian gaussian_;
   SplitPseudoVoigt pseudovoigt_;
 
-  double center, energy, height, fwhm_gaussian, fwhm_pseudovoigt, hwhm_L, hwhm_R,
+  double center, energy, height, fwhm_sum4, fwhm_gaussian, fwhm_pseudovoigt, hwhm_L, hwhm_R,
       fwhm_theoretical, lim_L, lim_R;
   bool intersects_L, intersects_R;
   bool selected;
@@ -89,8 +116,7 @@ public:
   double area_net_, area_gross_, area_bckg_, area_gauss_;
   double live_seconds_, cts_per_sec_net_, cts_per_sec_gauss_;
   
-  bool multiplet, subpeak;
-  std::vector<Peak> subpeaks_;
+  bool subpeak;
 
   static bool by_center (const Peak& a, const Peak& b)
   {
@@ -109,9 +135,6 @@ public:
     return (center > other.center);
   }
   
-private:
-  void fit(const std::vector<double> &x, const std::vector<double> &y, const std::vector<double> &y_baseline,
-           Calibration cali_nrg = Calibration(), Calibration cali_fwhm = Calibration(), double live_seconds = 0.0);
 };
 
 struct Multiplet {

@@ -255,13 +255,14 @@ void Fitter::find_peaks(int min_width) {
   peaks_.clear();
   multiplets_.clear();
   for (int i=0; i < filtered.size(); ++i) {
-    std::vector<double> baseline = make_background(x_, y_, lefts[i], rights[i], 3);
-    std::vector<double> xx(x_.begin() + lefts[i], x_.begin() + rights[i] + 1);
-    std::vector<double> yy(y_.begin() + lefts[i], y_.begin() + rights[i] + 1);
-    Peak fitted = Peak(xx, yy, baseline, nrg_cali_, fwhm_cali_, live_seconds_);
+    //std::vector<double> baseline = make_background(x_, y_, lefts[i], rights[i], 3);
+    //std::vector<double> xx(x_.begin() + lefts[i], x_.begin() + rights[i] + 1);
+    //std::vector<double> yy(y_.begin() + lefts[i], y_.begin() + rights[i] + 1);
+    Peak fitted = Peak(x_, y_, lefts[i],rights[i], nrg_cali_, fwhm_cali_, live_seconds_);
 
     if (
         (fitted.height > 0) &&
+        (fitted.fwhm_sum4 > 0) &&
         (fitted.fwhm_gaussian > 0) &&
         (fitted.fwhm_pseudovoigt > 0) &&
         (lefts[i] < fitted.center) &&
@@ -272,7 +273,7 @@ void Fitter::find_peaks(int min_width) {
     }
   }
 
-  if (fwhm_cali_.units_ == "keV") {
+  if (fwhm_cali_.valid()) {
     //    PL_DBG << "<GammaFitter> Valid FWHM calib found, performing filtering/deconvolution";
     filter_by_theoretical_fwhm(0.25);
 
@@ -287,15 +288,15 @@ void Fitter::find_peaks(int min_width) {
 }
 
 void Fitter::add_peak(uint32_t left, uint32_t right) {
-  std::vector<double> xx(x_.begin() + left, x_.begin() + right + 1);
-  std::vector<double> yy(y_.begin() + left, y_.begin() + right + 1);
-  std::vector<double> bckgr = make_background(x_, y_, left, right, 3);
+  //std::vector<double> xx(x_.begin() + left, x_.begin() + right + 1);
+  //std::vector<double> yy(y_.begin() + left, y_.begin() + right + 1);
+  //std::vector<double> bckgr = make_background(x_, y_, left, right, 3);
   
-  Peak newpeak = Gamma::Peak(xx, yy, bckgr, nrg_cali_, fwhm_cali_, live_seconds_);
+  Peak newpeak = Gamma::Peak(x_, y_, left, right, nrg_cali_, fwhm_cali_, live_seconds_);
   PL_DBG << "new peak center = " << newpeak.center;
 
   peaks_[newpeak.center] = newpeak;
-  if (fwhm_cali_.units_ == "keV") {
+  if (fwhm_cali_.valid()) {
     multiplets_.clear();
     make_multiplets();
   }
@@ -366,7 +367,7 @@ void Fitter::make_multiplets()
 
 void Fitter::remove_peak(double bin) {
   peaks_.erase(bin);
-  if (fwhm_cali_.units_ == "keV") {
+  if (fwhm_cali_.valid()) {
     multiplets_.clear();
     make_multiplets();
   }
@@ -376,7 +377,7 @@ void Fitter::remove_peak(double bin) {
 void Fitter::remove_peaks(std::set<double> bins) {
   for (auto &q : bins)
     peaks_.erase(q);
-  if (fwhm_cali_.units_ == "keV") {
+  if (fwhm_cali_.valid()) {
     multiplets_.clear();
     make_multiplets();
   }

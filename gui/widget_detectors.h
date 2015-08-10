@@ -74,6 +74,8 @@ private slots:
 
   void on_pushRemoveGain_clicked();
 
+  void on_pushClearFWHM_clicked();
+
 signals:
   void newDetReady(Gamma::Detector);
 

@@ -37,9 +37,9 @@ Calibration::Calibration() {
   units_ = "channels";
   model_ = CalibrationModel::polynomial;
   bits_ = 0;
-    coefficients_.resize(2);
-    coefficients_[0] = 0.0;
-    coefficients_[1] = 1.0;
+  //    coefficients_.resize(2);
+  //    coefficients_[0] = 0.0;
+  //    coefficients_[1] = 1.0;
 }
 
 bool Calibration::valid() const {

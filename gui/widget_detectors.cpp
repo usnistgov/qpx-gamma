@@ -113,10 +113,11 @@ void DialogDetector::updateDisplay() {
     ui->labelOpti->setText("WITH CHANNEL SETTINGS");
 
 
-  if (my_detector_.fwhm_calibration_.coefficients_ == std::vector<double>({0, 1}))
-    ui->labelFWHM->setText("");
-  else
+  if (my_detector_.fwhm_calibration_.valid())
     ui->labelFWHM->setText(QString::fromStdString(my_detector_.fwhm_calibration_.fancy_equation()));
+  else
+    ui->labelFWHM->setText("");
+  ui->pushClearFWHM->setEnabled(my_detector_.fwhm_calibration_.valid());
 
   table_nrgs_.update();
   table_gains_.update();
@@ -223,6 +224,15 @@ void DialogDetector::on_pushRemoveGain_clicked()
   table_gains_.update();
 }
 
+void DialogDetector::on_pushClearFWHM_clicked()
+{
+  my_detector_.fwhm_calibration_ = Gamma::Calibration();
+  updateDisplay();
+}
+
+
+
+
 
 
 int TableDetectors::rowCount(const QModelIndex & /*parent*/) const
@@ -250,10 +260,10 @@ QVariant TableDetectors::data(const QModelIndex &index, int role) const
       else
         return "valid";
     case 3:
-      if (myDB->get(row).fwhm_calibration_.coefficients_ == std::vector<double>({0, 1}))
-        return "none";
-      else
+      if (myDB->get(row).fwhm_calibration_.valid())
         return "valid";
+      else
+        return "none";
     case 4:
       dss.str(std::string());
       for (auto &q : myDB->get(row).energy_calibrations_.my_data_) {

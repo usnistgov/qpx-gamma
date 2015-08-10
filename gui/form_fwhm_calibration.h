@@ -44,7 +44,7 @@ public:
   explicit FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, Gamma::Fitter&, QWidget *parent = 0);
   ~FormFwhmCalibration();
 
-  void setData(Gamma::Calibration fwhm_calib, uint16_t bits);
+  void setData(Gamma::Detector det, Gamma::Calibration fwhm_calib, uint16_t bits);
 
   void update_peaks(bool);
   Gamma::Calibration get_new_calibration() {return new_fwhm_calibration_;}

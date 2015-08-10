@@ -46,8 +46,8 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
   ui->PlotCalib->setLabels("energy", "FWHM");
 
   ui->tableFWHM->verticalHeader()->hide();
-  ui->tableFWHM->setColumnCount(4);
-  ui->tableFWHM->setHorizontalHeaderLabels({"chan", "energy", "fwmw (gaussian)", "fwhm (pseudo-Voigt)"});
+  ui->tableFWHM->setColumnCount(5);
+  ui->tableFWHM->setHorizontalHeaderLabels({"chan", "energy", "fwhm(sum4)", "fwmw (gaussian)", "fwhm (pseudo-Voigt)"});
   ui->tableFWHM->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tableFWHM->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tableFWHM->horizontalHeader()->setStretchLastSection(true);
@@ -106,10 +106,11 @@ void FormFwhmCalibration::clear() {
   ui->pushFromDB->setEnabled(false);
 }
 
-void FormFwhmCalibration::setData(Gamma::Calibration fwhm_calib, uint16_t bits) {
+void FormFwhmCalibration::setData(Gamma::Detector det, Gamma::Calibration fwhm_calib, uint16_t bits) {
   bits_ = bits;
+  detector_ = det;
   new_fwhm_calibration_ = old_fwhm_calibration_ = fwhm_calib;
-  if (detectors_.has_a(detector_) && (detectors_.get(detector_).fwhm_calibration_.units_ == "keV"))
+  if (detectors_.has_a(detector_) && (detectors_.get(detector_).fwhm_calibration_.valid()))
     ui->pushFromDB->setEnabled(true);
   else
     ui->pushFromDB->setEnabled(false);
@@ -140,11 +141,13 @@ void FormFwhmCalibration::add_peak_to_table(const Gamma::Peak &p, int row) {
   ui->tableFWHM->setItem(row, 0, center);
   
   ui->tableFWHM->setItem(row, 1, new QTableWidgetItem( QString::number(p.energy) ));
-  ui->tableFWHM->setItem(row, 2, new QTableWidgetItem( QString::number(p.fwhm_gaussian) ));
-  ui->tableFWHM->setItem(row, 3, new QTableWidgetItem( QString::number(p.fwhm_pseudovoigt) ));
+  ui->tableFWHM->setItem(row, 2, new QTableWidgetItem( QString::number(p.fwhm_sum4) ));
+  ui->tableFWHM->setItem(row, 3, new QTableWidgetItem( QString::number(p.fwhm_gaussian) ));
+  ui->tableFWHM->setItem(row, 4, new QTableWidgetItem( QString::number(p.fwhm_pseudovoigt) ));
 }
 
 void FormFwhmCalibration::replot_markers() {
+  ui->PlotCalib->setFloatingText("");
   QVector<double> xx, yy;
 
   double xmin = std::numeric_limits<double>::max();
@@ -152,7 +155,7 @@ void FormFwhmCalibration::replot_markers() {
 
   for (auto &q : fit_data_.peaks_) {
     double x = q.second.energy;
-    double y = q.second.fwhm_pseudovoigt;
+    double y = q.second.fwhm_gaussian;
 
     xx.push_back(x);
     yy.push_back(y);
@@ -169,7 +172,7 @@ void FormFwhmCalibration::replot_markers() {
 
   if (xx.size() > 0) {
     ui->PlotCalib->addPoints(xx, yy, style_pts);
-    if ((new_fwhm_calibration_.coefficients_ != Gamma::Calibration().coefficients_) && (new_fwhm_calibration_.units_ == "keV")) {
+    if ((new_fwhm_calibration_.coefficients_ != Gamma::Calibration().coefficients_) && (new_fwhm_calibration_.valid())) {
 
       double step = (xmax-xmin) / 50.0;
       xx.clear(); yy.clear();
@@ -180,6 +183,7 @@ void FormFwhmCalibration::replot_markers() {
         yy.push_back(y);
       }
 
+      ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(new_fwhm_calibration_.fancy_equation(3)));
       ui->PlotCalib->addFit(xx, yy, style_fit);
     }
   }
@@ -237,17 +241,23 @@ void FormFwhmCalibration::toggle_push() {
 
   ui->pushCullOne->setEnabled(false);
   ui->pushCullUntil->setEnabled(false);
+  ui->doubleRsqGoal->setEnabled(false);
 
-  if (new_fwhm_calibration_.coefficients_ != std::vector<double>({0,1})) {
+  if (new_fwhm_calibration_.valid()) {
     ui->pushCullOne->setEnabled(true);
     ui->pushCullUntil->setEnabled(true);
+    ui->doubleRsqGoal->setEnabled(true);
   }
 
-  if (static_cast<int>(fit_data_.peaks_.size()) >= 2) {
+  if (static_cast<int>(fit_data_.peaks_.size()) > 1) {
+    ui->spinTerms->setEnabled(true);
     ui->pushFit->setEnabled(true);
   } else {
     ui->pushFit->setEnabled(false);
+    ui->spinTerms->setEnabled(false);
   }
+
+  ui->pushApplyCalib->setEnabled(new_fwhm_calibration_ != old_fwhm_calibration_);
 }
 
 void FormFwhmCalibration::on_pushFit_clicked()
@@ -263,7 +273,7 @@ Polynomial FormFwhmCalibration::fit_calibration()
   int i=0;
   for (auto &q : fit_data_.peaks_) {
     xx.push_back(q.second.energy);
-    yy.push_back(q.second.fwhm_pseudovoigt);
+    yy.push_back(q.second.fwhm_gaussian);
     i++;
   }
 
@@ -280,8 +290,6 @@ Polynomial FormFwhmCalibration::fit_calibration()
     new_fwhm_calibration_.units_ = "keV";
     new_fwhm_calibration_.model_ = Gamma::CalibrationModel::polynomial;
     fit_data_.fwhm_cali_ = new_fwhm_calibration_;
-    ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(p.to_UTF8(3, true)));
-    ui->pushApplyCalib->setEnabled(new_fwhm_calibration_ != old_fwhm_calibration_);
   }
   else
     PL_INFO << "<WFHM calibration> Gamma::Calibration failed";
@@ -299,6 +307,8 @@ void FormFwhmCalibration::on_pushFromDB_clicked()
   Gamma::Detector newdet = detectors_.get(detector_);
   new_fwhm_calibration_ = newdet.fwhm_calibration_;
   fit_data_.fwhm_cali_ = new_fwhm_calibration_;
+  replot_markers();
+  toggle_push();
 }
 
 void FormFwhmCalibration::on_pushDetDB_clicked()
@@ -314,7 +324,7 @@ double FormFwhmCalibration::find_outlier()
   double furthest = -1;
   double furthest_dist = 0;
   for (auto &q : fit_data_.peaks_) {
-    double dist = std::abs(q.second.fwhm_pseudovoigt - new_fwhm_calibration_.transform(q.second.energy));
+    double dist = std::abs(q.second.fwhm_gaussian - new_fwhm_calibration_.transform(q.second.energy));
     if (dist > furthest_dist) {
       furthest_dist = dist;
       furthest = q.second.center;

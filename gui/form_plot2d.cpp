@@ -228,6 +228,11 @@ void FormPlot2D::replot_markers() {
 
     int width = ui->spinGateWidth->value() / 2;
 
+    QPen pen2 = pen;
+    cc.setAlpha(50);
+    pen2.setColor(cc);
+    pen2.setWidth(width * 2);
+
     QCPItemStraightLine *one_line;
 
     if (y_marker.visible) {
@@ -242,6 +247,12 @@ void FormPlot2D::replot_markers() {
       one_line->point1->setCoords(0, y_marker.channel + width);
       one_line->point2->setCoords(1, y_marker.channel + width);
       ui->coincPlot->addItem(one_line);
+
+      /*one_line = new QCPItemStraightLine(ui->coincPlot);
+      one_line->setPen(pen2);
+      one_line->point1->setCoords(0, y_marker.channel);
+      one_line->point2->setCoords(1, y_marker.channel);
+      ui->coincPlot->addItem(one_line);*/
     }
 
     if (x_marker.visible) {
@@ -256,6 +267,12 @@ void FormPlot2D::replot_markers() {
       one_line->point1->setCoords(x_marker.channel + width, 0);
       one_line->point2->setCoords(x_marker.channel + width, 1);
       ui->coincPlot->addItem(one_line);
+
+      /*one_line = new QCPItemStraightLine(ui->coincPlot);
+      one_line->setPen(pen2);
+      one_line->point1->setCoords(x_marker.channel, 0);
+      one_line->point2->setCoords(x_marker.channel, 1);
+      ui->coincPlot->addItem(one_line);*/
     }
   }
 
