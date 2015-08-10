@@ -39,8 +39,8 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
 
   bits_ = 0;
 
-  style_pts.default_pen = QPen(Qt::darkCyan, 7);
-  style_pts.themes["selected"] = QPen(Qt::darkRed, 7);
+  style_pts.default_pen = QPen(Qt::darkBlue, 7);
+  style_pts.themes["selected"] = QPen(Qt::cyan, 7);
   style_fit.default_pen = QPen(Qt::blue, 0);
 
   ui->PlotCalib->setLabels("energy", "FWHM");
@@ -56,6 +56,9 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
 
   connect(ui->tableFWHM, SIGNAL(itemSelectionChanged()), this, SLOT(selection_changed_in_table()));
   connect(ui->PlotCalib, SIGNAL(selection_changed()), this, SLOT(selection_changed_in_plot()));
+
+  QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tableFWHM);
+  connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushRemovePeak_clicked()));
 }
 
 FormFwhmCalibration::~FormFwhmCalibration()
@@ -97,6 +100,7 @@ void FormFwhmCalibration::clear() {
   ui->tableFWHM->setRowCount(0);
   toggle_push();
   ui->PlotCalib->setFloatingText("");
+  ui->PlotCalib->clearGraphs();
   ui->pushApplyCalib->setEnabled(false);
 
   ui->pushFromDB->setEnabled(false);
@@ -113,6 +117,9 @@ void FormFwhmCalibration::setData(Gamma::Calibration fwhm_calib, uint16_t bits) 
 }
 
 void FormFwhmCalibration::update_peaks(bool contents_changed) {
+  ui->tableFWHM->blockSignals(true);
+  this->blockSignals(true);
+
   if (contents_changed) {
     ui->tableFWHM->clearContents();
     ui->tableFWHM->setRowCount(fit_data_.peaks_.size());
@@ -195,15 +202,6 @@ void FormFwhmCalibration::replot_markers() {
   this->blockSignals(false);
 }
 
-void FormFwhmCalibration::update_peak_selection(std::set<double> pks) {
-  for (auto &q : fit_data_.peaks_)
-    q.second.selected = (pks.count(q.second.energy) > 0);
-  toggle_push();
-  replot_markers();
-  if (isVisible())
-    emit peaks_changed(false);
-}
-
 void FormFwhmCalibration::selection_changed_in_plot() {
   std::set<double> chosen_peaks_nrg = ui->PlotCalib->get_selected_pts();
   for (auto &q : fit_data_.peaks_)
@@ -215,6 +213,9 @@ void FormFwhmCalibration::selection_changed_in_plot() {
 }
 
 void FormFwhmCalibration::selection_changed_in_table() {
+  //PL_DBG << "fwhm changed in table";
+
+
   for (auto &q : fit_data_.peaks_)
     q.second.selected = false;
   foreach (QModelIndex i, ui->tableFWHM->selectionModel()->selectedRows()) {
@@ -228,6 +229,20 @@ void FormFwhmCalibration::selection_changed_in_table() {
 }
 
 void FormFwhmCalibration::toggle_push() {
+  int sel = 0;
+  for (auto &q : fit_data_.peaks_)
+    if (q.second.selected)
+      sel++;
+  ui->pushRemovePeak->setEnabled(sel > 0);
+
+  ui->pushCullOne->setEnabled(false);
+  ui->pushCullUntil->setEnabled(false);
+
+  if (new_fwhm_calibration_.coefficients_ != std::vector<double>({0,1})) {
+    ui->pushCullOne->setEnabled(true);
+    ui->pushCullUntil->setEnabled(true);
+  }
+
   if (static_cast<int>(fit_data_.peaks_.size()) >= 2) {
     ui->pushFit->setEnabled(true);
   } else {
@@ -264,6 +279,7 @@ Polynomial FormFwhmCalibration::fit_calibration()
     new_fwhm_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_fwhm_calibration_.units_ = "keV";
     new_fwhm_calibration_.model_ = Gamma::CalibrationModel::polynomial;
+    fit_data_.fwhm_cali_ = new_fwhm_calibration_;
     ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(p.to_UTF8(3, true)));
     ui->pushApplyCalib->setEnabled(new_fwhm_calibration_ != old_fwhm_calibration_);
   }
@@ -282,6 +298,7 @@ void FormFwhmCalibration::on_pushFromDB_clicked()
 {
   Gamma::Detector newdet = detectors_.get(detector_);
   new_fwhm_calibration_ = newdet.fwhm_calibration_;
+  fit_data_.fwhm_cali_ = new_fwhm_calibration_;
 }
 
 void FormFwhmCalibration::on_pushDetDB_clicked()
@@ -331,6 +348,28 @@ void FormFwhmCalibration::on_pushCullUntil_clicked()
   }
 
   p = fit_calibration();
+  update_peaks(true);
+  emit peaks_changed(true);
+}
+
+void FormFwhmCalibration::on_pushRemovePeak_clicked()
+{
+  std::set<double> chosen_peaks;
+  double last_sel = -1;
+  for (auto &q : fit_data_.peaks_)
+    if (q.second.selected) {
+      chosen_peaks.insert(q.second.center);
+      last_sel = q.first;
+    }
+
+  fit_data_.remove_peaks(chosen_peaks);
+
+  for (auto &q : fit_data_.peaks_)
+    if (q.first > last_sel) {
+      q.second.selected = true;
+      break;
+    }
+
   update_peaks(true);
   emit peaks_changed(true);
 }

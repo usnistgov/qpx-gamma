@@ -210,6 +210,9 @@ void FormPeaks::update_spectrum() {
 void FormPeaks::replot_all() {
   if (fit_data_ == nullptr)
     return;
+
+  ui->plot1D->blockSignals(true);
+  this->blockSignals(true);
   
   ui->plot1D->clearGraphs();
   ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->x_), QVector<double>::fromStdVector(fit_data_->y_), main_graph_);
@@ -305,8 +308,12 @@ void FormPeaks::removeMovingMarker(double x) {
 
 
 void FormPeaks::replot_markers() {
+
   if (fit_data_ == nullptr)
     return;
+
+  ui->plot1D->blockSignals(true);
+  this->blockSignals(true);
 
   ui->plot1D->clearExtras();
 
@@ -331,6 +338,10 @@ void FormPeaks::replot_markers() {
   ui->plot1D->set_markers(markers);
   ui->plot1D->replot_markers();
   ui->plot1D->redraw();
+
+  ui->plot1D->blockSignals(false);
+  this->blockSignals(false);
+
 }
 
 void FormPeaks::on_pushAdd_clicked()
@@ -338,9 +349,6 @@ void FormPeaks::on_pushAdd_clicked()
   if (range_.l.channel >= range_.r.channel)
     return;
 
-  fit_data_->nrg_cali_ = nrg_calibration_;
-  fit_data_->fwhm_cali_ = fwhm_calibration_;
-  fit_data_->overlap_ = ui->doubleOverlapWidth->value();
   fit_data_->add_peak(range_.l.channel, range_.r.channel);
   ui->pushAdd->setEnabled(false);
   removeMovingMarker(0);
@@ -350,6 +358,8 @@ void FormPeaks::on_pushAdd_clicked()
 }
 
 void FormPeaks::user_selected_peaks() {
+  PL_DBG << "User selectd peaks";
+
   if (fit_data_ == nullptr)
     return;
 
@@ -384,9 +394,6 @@ void FormPeaks::on_pushMarkerRemove_clicked()
     if (q.second.selected)
       chosen_peaks.insert(q.second.center);
 
-  fit_data_->nrg_cali_ = nrg_calibration_;
-  fit_data_->fwhm_cali_ = fwhm_calibration_;
-  fit_data_->overlap_ = ui->doubleOverlapWidth->value();
   fit_data_->remove_peaks(chosen_peaks);
 
   toggle_push();
@@ -400,10 +407,6 @@ void FormPeaks::on_pushFindPeaks_clicked()
     return;
 
   this->setCursor(Qt::WaitCursor);
-
-  fit_data_->nrg_cali_ = nrg_calibration_;
-  fit_data_->fwhm_cali_ = fwhm_calibration_;
-  fit_data_->overlap_ = ui->doubleOverlapWidth->value();
 
   fit_data_->find_peaks(ui->spinMinPeakWidth->value());
 
@@ -524,3 +527,7 @@ void FormPeaks::update_fit(bool content_changed) {
   toggle_push();
 }
 
+void FormPeaks::on_doubleOverlapWidth_editingFinished()
+{
+  fit_data_->overlap_ = ui->doubleOverlapWidth->value();
+}

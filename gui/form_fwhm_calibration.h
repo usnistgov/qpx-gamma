@@ -47,7 +47,6 @@ public:
   void setData(Gamma::Calibration fwhm_calib, uint16_t bits);
 
   void update_peaks(bool);
-  void update_peak_selection(std::set<double>);
   Gamma::Calibration get_new_calibration() {return new_fwhm_calibration_;}
 
   void clear();
@@ -73,6 +72,8 @@ private slots:
   void on_pushDetDB_clicked();
   void on_pushCullOne_clicked();
   void on_pushCullUntil_clicked();
+
+  void on_pushRemovePeak_clicked();
 
 private:
   Ui::FormFwhmCalibration *ui;

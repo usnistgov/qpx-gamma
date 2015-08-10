@@ -26,7 +26,6 @@
 
 #include <QWidget>
 #include "spectrum1D.h"
-#include "table_markers.h"
 #include "special_delegate.h"
 #include "isotope.h"
 #include "widget_plot1d.h"
@@ -87,6 +86,8 @@ private slots:
   void on_spinMinPeakWidth_editingFinished();
 
   void on_checkShowPseudoVoigt_clicked();
+
+  void on_doubleOverlapWidth_editingFinished();
 
 private:
   Ui::FormPeaks *ui;

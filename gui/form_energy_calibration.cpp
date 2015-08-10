@@ -29,11 +29,9 @@
 FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>& dets, Gamma::Fitter &fit, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormEnergyCalibration),
-  marker_table_(my_markers_),
   settings_(settings),
   detectors_(dets),
-  fit_data_(fit),
-  selection_model_(&marker_table_)
+  fit_data_(fit)
 {
   ui->setupUi(this);
 
@@ -42,26 +40,28 @@ FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Gamm
 
   style_fit.default_pen = QPen(Qt::blue, 0);
   style_pts.default_pen = QPen(Qt::darkBlue, 7);
-  style_pts.themes["selected"] = QPen(Qt::darkRed, 7);
+  style_pts.themes["selected"] = QPen(Qt::cyan, 7);
 
   ui->PlotCalib->setLabels("channel", "energy");
 
-  ui->tableMarkers->setModel(&marker_table_);
-  ui->tableMarkers->setSelectionModel(&selection_model_);
-  ui->tableMarkers->setItemDelegate(&special_delegate_);
-  ui->tableMarkers->verticalHeader()->hide();
-  ui->tableMarkers->setSelectionBehavior(QAbstractItemView::SelectRows);
-  ui->tableMarkers->setSelectionMode(QAbstractItemView::ExtendedSelection);
-  ui->tableMarkers->horizontalHeader()->setStretchLastSection(true);
-  ui->tableMarkers->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-  ui->tableMarkers->show();
 
-  connect(&selection_model_, SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
-          this, SLOT(selection_changed_in_table(QItemSelection, QItemSelection)));
+  ui->tablePeaks->verticalHeader()->hide();
+  ui->tablePeaks->setColumnCount(2);
+  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy"});
+  ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
+  ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  ui->tablePeaks->horizontalHeader()->setStretchLastSection(true);
+  ui->tablePeaks->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+  ui->tablePeaks->show();
+  connect(ui->tablePeaks, SIGNAL(itemSelectionChanged()), this, SLOT(selection_changed_in_table()));
+
   connect(ui->PlotCalib, SIGNAL(selection_changed()), this, SLOT(selection_changed_in_plot()));
 
   ui->isotopes->show();
   connect(ui->isotopes, SIGNAL(energiesSelected()), this, SLOT(isotope_energies_chosen()));
+
+  QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tablePeaks);
+  connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushMarkerRemove_clicked()));
 }
 
 FormEnergyCalibration::~FormEnergyCalibration()
@@ -102,15 +102,14 @@ void FormEnergyCalibration::saveSettings() {
 }
 
 void FormEnergyCalibration::clear() {
-  my_markers_.clear();
   bits_ = 0;
   new_calibration_ = Gamma::Calibration();
   old_calibration_ = Gamma::Calibration();
   detector_ = Gamma::Detector();
-  selection_model_.reset();
-  marker_table_.update();
+  replot_markers();
   toggle_push();
   ui->PlotCalib->setFloatingText("");
+  ui->PlotCalib->clearGraphs();
   ui->pushApplyCalib->setEnabled(false);
   ui->pushFromDB->setEnabled(false);
 }
@@ -118,7 +117,7 @@ void FormEnergyCalibration::clear() {
 void FormEnergyCalibration::setData(Gamma::Calibration nrg_calib, uint16_t bits) {
   bits_ = bits;
   new_calibration_ = old_calibration_ = nrg_calib;
-  PL_DBG << "Energy calibration received new calib coefs = " << new_calibration_.coef_to_string();  
+  PL_DBG << "<Energy Calibration> received new calib coefs = " << new_calibration_.coef_to_string();
   if (detectors_.has_a(detector_) && detectors_.get(detector_).energy_calibrations_.has_a(old_calibration_))
     ui->pushFromDB->setEnabled(true);
   else
@@ -127,17 +126,31 @@ void FormEnergyCalibration::setData(Gamma::Calibration nrg_calib, uint16_t bits)
 }
 
 void FormEnergyCalibration::update_peaks(bool contents_changed) {
+  ui->tablePeaks->blockSignals(true);
+  this->blockSignals(true);
+
   if (contents_changed) {
-    my_markers_.clear();
+    ui->tablePeaks->clearContents();
+    ui->tablePeaks->setRowCount(fit_data_.peaks_.size());
+    bool gray = false;
+    QColor background_col;
+    int i=0;
     for (auto &q : fit_data_.peaks_) {
-      my_markers_[q.second.center] = q.second.energy;
+      if (gray)
+        background_col = Qt::lightGray;
+      else
+        background_col = Qt::white;
+      add_peak_to_table(q.second, i, background_col);
+      ++i;
+      if (!q.second.intersects_R)
+        gray = !gray;
     }
   }
+  ui->tablePeaks->blockSignals(false);
+  this->blockSignals(false);
 
-  selection_model_.reset();
-  marker_table_.update();
-  toggle_push();
   replot_markers();
+  toggle_push();
 }
 
 void FormEnergyCalibration::replot_markers() {
@@ -146,10 +159,14 @@ void FormEnergyCalibration::replot_markers() {
 
   double xmin = std::numeric_limits<double>::max();
   double xmax = - std::numeric_limits<double>::max();
+  std::set<double> chosen_peaks_chan;
 
-  for (auto &q : my_markers_) {
+  for (auto &q : fit_data_.peaks_) {
     double x = q.first;
-    double y = q.second;
+    double y = q.second.energy;
+
+    if (q.second.selected)
+      chosen_peaks_chan.insert(q.second.center);
 
     xx.push_back(x);
     yy.push_back(y);
@@ -166,6 +183,7 @@ void FormEnergyCalibration::replot_markers() {
 
   if (xx.size()) {
     ui->PlotCalib->addPoints(xx, yy, style_pts);
+    ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
     if (new_calibration_.units_ != "channels") {
 
       double step = (xmax-xmin) / 50.0;
@@ -179,69 +197,55 @@ void FormEnergyCalibration::replot_markers() {
     }
   }
 
-  std::set<double> chosen_peaks_chan;
 
-  selection_model_.blockSignals(true);
-  ui->tableMarkers->blockSignals(true);
-  ui->tableMarkers->clearSelection();
+  ui->tablePeaks->blockSignals(true);
+  this->blockSignals(true);
+  ui->tablePeaks->clearSelection();
   int i = 0;
   for (auto &q : fit_data_.peaks_) {
     if (q.second.selected) {
-      ui->tableMarkers->selectRow(i);
-      chosen_peaks_chan.insert(q.second.center);
+      ui->tablePeaks->selectRow(i);
     }
     ++i;
   }
-  ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
-  ui->tableMarkers->blockSignals(false);
-  selection_model_.blockSignals(false);
-}
-
-void FormEnergyCalibration::update_peak_selection(std::set<double> pks) {
-  for (auto &q : fit_data_.peaks_)
-    q.second.selected = (pks.count(q.second.center) > 0);
-  toggle_push();
-  replot_markers();
-  if (isVisible())
-    emit peaks_changed(false);
+  ui->tablePeaks->blockSignals(false);
+  this->blockSignals(false);
 }
 
 void FormEnergyCalibration::selection_changed_in_plot() {
   std::set<double> chosen_peaks_chan = ui->PlotCalib->get_selected_pts();
   for (auto &q : fit_data_.peaks_)
     q.second.selected = (chosen_peaks_chan.count(q.second.center) > 0);
-  toggle_push();
   replot_markers();
   if (isVisible())
     emit peaks_changed(false);
+  toggle_push();
 }
 
-void FormEnergyCalibration::selection_changed_in_table(QItemSelection, QItemSelection) {
+void FormEnergyCalibration::selection_changed_in_table() {
   for (auto &q : fit_data_.peaks_)
     q.second.selected = false;
-  foreach (QModelIndex i, ui->tableMarkers->selectionModel()->selectedRows()) {
-    QModelIndex idx = marker_table_.index(i.row(), 0);
-    fit_data_.peaks_[marker_table_.data(idx).toDouble()].selected = true;
+  foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows()) {
+    fit_data_.peaks_[ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble()].selected = true;
   }
-  toggle_push();
   replot_markers();
+
   if (isVisible())
     emit peaks_changed(false);
+  toggle_push();
 }
 
 void FormEnergyCalibration::toggle_push() {
-  ui->pushAllEnergies->setEnabled(false);
-  ui->pushAllmarkers->setEnabled(false);
+  int sel = 0;
+  for (auto &q : fit_data_.peaks_)
+    if (q.second.selected)
+      sel++;
 
-  if (!selection_model_.selectedIndexes().empty()) {
-    if (selection_model_.selectedRows().size() == ui->isotopes->current_gammas().size())
-      ui->pushAllEnergies->setEnabled(true);
+  ui->pushMarkerRemove->setEnabled(sel > 0);
+  ui->pushAllEnergies->setEnabled((sel > 0) && (sel == ui->isotopes->current_gammas().size()));
+  ui->pushAllmarkers->setEnabled((sel > 0) && (ui->isotopes->current_gammas().empty()));
 
-    if (!ui->isotopes->current_isotope().isEmpty() && (ui->isotopes->current_gammas().empty()))
-      ui->pushAllmarkers->setEnabled(true);
-  }
-
-  if (static_cast<int>(my_markers_.size()) >= 2) {
+  if (static_cast<int>(fit_data_.peaks_.size()) >= 2) {
     ui->pushFit->setEnabled(true);
   } else {
     ui->pushFit->setEnabled(false);
@@ -251,12 +255,12 @@ void FormEnergyCalibration::toggle_push() {
 void FormEnergyCalibration::on_pushFit_clicked()
 {  
   std::vector<double> x, y, coefs(ui->spinTerms->value()+1);
-  x.resize(my_markers_.size());
-  y.resize(my_markers_.size());
+  x.resize(fit_data_.peaks_.size());
+  y.resize(fit_data_.peaks_.size());
   int i = 0;
-  for (auto &q : my_markers_) {
+  for (auto &q : fit_data_.peaks_) {
     x[i] = q.first;
-    y[i] = q.second;
+    y[i] = q.second.energy;
     i++;
   }
 
@@ -269,6 +273,7 @@ void FormEnergyCalibration::on_pushFit_clicked()
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "keV";
     new_calibration_.model_ = Gamma::CalibrationModel::polynomial;
+    fit_data_.nrg_cali_ = new_calibration_;
     Polynomial thispoly(new_calibration_.coefficients_);
     ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(thispoly.to_UTF8(3, true)));
     ui->pushApplyCalib->setEnabled(new_calibration_ != old_calibration_);
@@ -276,10 +281,8 @@ void FormEnergyCalibration::on_pushFit_clicked()
   else
     PL_INFO << "<Energy calibration> Gamma::Calibration failed";
 
-  selection_model_.reset();
-  marker_table_.update();
-  toggle_push();
   replot_markers();
+  toggle_push();
 }
 
 void FormEnergyCalibration::isotope_energies_chosen() {
@@ -295,6 +298,7 @@ void FormEnergyCalibration::on_pushFromDB_clicked()
 {
   Gamma::Detector newdet = detectors_.get(detector_);
   new_calibration_ = newdet.energy_calibrations_.get(old_calibration_);
+  fit_data_.nrg_cali_ = new_calibration_;
 }
 
 void FormEnergyCalibration::on_pushDetDB_clicked()
@@ -308,13 +312,9 @@ void FormEnergyCalibration::on_pushDetDB_clicked()
 void FormEnergyCalibration::on_pushAllmarkers_clicked()
 {
   std::vector<double> gammas;
-  if (!selection_model_.selectedIndexes().empty()) {
-    foreach (QModelIndex idx, selection_model_.selectedRows()) {
-      QModelIndex chan_ix = marker_table_.index(idx.row(), 1);
-      double nrg = marker_table_.data(chan_ix, Qt::DisplayRole).toDouble();
-      gammas.push_back(nrg);
-    }
-  }
+  for (auto &q : fit_data_.peaks_)
+    if (q.second.selected)
+      gammas.push_back(q.second.energy);
   ui->isotopes->push_energies(gammas);
 }
 
@@ -323,14 +323,13 @@ void FormEnergyCalibration::on_pushAllEnergies_clicked()
   std::vector<double> gammas = ui->isotopes->current_gammas();
 
   std::vector<double> to_change;
-  if (!selection_model_.selectedIndexes().empty()) {
-    foreach (QModelIndex idx, selection_model_.selectedRows()) {
-      QModelIndex chan_ix = marker_table_.index(idx.row(), 0);
-      double chan = marker_table_.data(chan_ix, Qt::DisplayRole).toDouble();
-      to_change.push_back(chan);
+  double last_sel = -1;
+  for (auto &q : fit_data_.peaks_)
+    if (q.second.selected) {
+      to_change.push_back(q.first);
+      last_sel = q.first;
+      q.second.selected = false;
     }
-  }
-
 
   if (gammas.size() != to_change.size())
     return;
@@ -338,10 +337,53 @@ void FormEnergyCalibration::on_pushAllEnergies_clicked()
   std::sort(gammas.begin(), gammas.end());
 
   for (int i=0; i<gammas.size(); i++) {
-    my_markers_[to_change[i]] = gammas[i];
+    fit_data_.peaks_[to_change[i]].energy = gammas[i];
   }
 
-  marker_table_.update();
-  replot_markers();
+  for (auto &q : fit_data_.peaks_)
+    if (q.first > last_sel) {
+      q.second.selected = true;
+      break;
+    }
+
+  ui->isotopes->select_next_energy();
+
+  update_peaks(true);
+  emit peaks_changed(true);
 }
 
+
+void FormEnergyCalibration::on_pushMarkerRemove_clicked()
+{
+  std::set<double> chosen_peaks;
+  double last_sel = -1;
+  for (auto &q : fit_data_.peaks_)
+    if (q.second.selected) {
+      chosen_peaks.insert(q.second.center);
+      last_sel = q.first;
+    }
+
+  fit_data_.remove_peaks(chosen_peaks);
+
+  for (auto &q : fit_data_.peaks_)
+    if (q.first > last_sel) {
+      q.second.selected = true;
+      break;
+    }
+
+  update_peaks(true);
+  emit peaks_changed(true);
+}
+
+void FormEnergyCalibration::add_peak_to_table(const Gamma::Peak &p, int row, QColor bckg) {
+  QBrush background(bckg);
+
+  QTableWidgetItem *center = new QTableWidgetItem(QString::number(p.center));
+  center->setData(Qt::EditRole, QVariant::fromValue(p.center));
+  center->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 0, center);
+
+  QTableWidgetItem *nrg = new QTableWidgetItem( QString::number(p.energy) );
+  nrg->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 1, nrg);
+}

@@ -26,7 +26,6 @@
 
 #include <QWidget>
 #include "spectrum1D.h"
-#include "table_markers.h"
 #include "special_delegate.h"
 #include "isotope.h"
 #include "widget_plot1d.h"
@@ -100,7 +99,7 @@ private:
 
   AppearanceProfile main_graph_, gaussian_, sel_gaussian_, multiplet_;
 
-    void add_peak_to_table(const Gamma::Peak &, int, QColor);
+  void add_peak_to_table(const Gamma::Peak &, int, QColor);
 };
 
 #endif // FORM_CALIBRATION_H

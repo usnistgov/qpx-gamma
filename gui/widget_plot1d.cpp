@@ -86,6 +86,9 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   connect(ui->toolScaleType, SIGNAL(triggered(QAction*)), this, SLOT(scaleTypeChosen(QAction*)));
   set_scale_type("Logarithmic");
 
+  QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Backspace), ui->mcaPlot);
+  connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushResetScales_clicked()));
+
   redraw();
 }
 

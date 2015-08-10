@@ -390,9 +390,19 @@ void FormAnalysis2D::plot_calib()
 {
   ui->plotCalib->clearGraphs();
 
+  ui->pushCalibGain->setEnabled(false);
+  ui->spinPolyOrder->setEnabled(false);
+
+  ui->pushCull->setEnabled(false);
+  ui->doubleCullDelta->setEnabled(false);
+
   int total = fit_data_.peaks_.size();
   if (total != fit_data_2_.peaks_.size())
   {
+    if (nrg_calibration1_.units_ == nrg_calibration2_.units_) {
+      ui->pushCull->setEnabled(true);
+      ui->doubleCullDelta->setEnabled(true);
+    }
     //make invisible?
     return;
   }
@@ -418,6 +428,9 @@ void FormAnalysis2D::plot_calib()
   xmin -= x_margin;
 
   if (xx.size()) {
+    ui->pushCalibGain->setEnabled(true);
+    ui->spinPolyOrder->setEnabled(true);
+
     ui->plotCalib->addPoints(xx, yy, style_pts);
     if ((gain_match_cali_.to_ == detector1_.name_) && (gain_match_cali_.coefficients_ != std::vector<double>({0, 1}))) {
 
@@ -742,7 +755,10 @@ void FormAnalysis2D::on_pushSaveCalib_clicked()
                                            "Detector name:", QLineEdit::Normal,
                                            QString::fromStdString(detector2_.name_),
                                            &ok);
-      if (ok && !text.isEmpty()) {
+      if (!ok)
+        return;
+
+      if (!text.isEmpty()) {
         modified = detector2_;
         modified.name_ = text.toStdString();
         if (detectors_.has_a(modified)) {

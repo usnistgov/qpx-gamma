@@ -79,6 +79,7 @@ public:
   void push_energies(std::vector<double>);
 
   bool save_close();
+  void select_next_energy();
 
 signals:
   void energiesSelected();

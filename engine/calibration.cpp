@@ -37,12 +37,19 @@ Calibration::Calibration() {
   units_ = "channels";
   model_ = CalibrationModel::polynomial;
   bits_ = 0;
-  coefficients_.resize(2);
-  coefficients_[0] = 0.0;
-  coefficients_[1] = 1.0;
+    coefficients_.resize(2);
+    coefficients_[0] = 0.0;
+    coefficients_[1] = 1.0;
+}
+
+bool Calibration::valid() const {
+  return (coefficients_.size() > 0);
 }
 
 double Calibration::transform(double chan) const {
+  if (coefficients_.empty())
+    return chan;
+  
   if (bits_ && (model_ == CalibrationModel::polynomial))
     return Polynomial(coefficients_).evaluate(chan);
   else
@@ -50,7 +57,7 @@ double Calibration::transform(double chan) const {
 }
 
 double Calibration::transform(double chan, uint16_t bits) const {
-  if (!bits_ || !bits)
+  if (coefficients_.empty() || !bits_ || !bits)
     return chan;
   
   //  PL_DBG << "will shift " << chan << " from " << bits << " to " << bits_;

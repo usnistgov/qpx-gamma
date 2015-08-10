@@ -49,9 +49,12 @@ WidgetPlotCalib::~WidgetPlotCalib()
 
 void WidgetPlotCalib::clearGraphs()
 {
-  ui->mcaPlot->clearGraphs();
-  ui->mcaPlot->clearItems();
-  ui->mcaPlot->replot();
+  x_fit.clear();
+  y_fit.clear();
+  x_pts.clear();
+  y_pts.clear();
+  selection_.clear();
+  redraw();
 }
 
 void WidgetPlotCalib::redraw() {

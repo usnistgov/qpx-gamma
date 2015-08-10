@@ -82,6 +82,9 @@ void FormPeakFitter::clear() {
 }
 
 void FormPeakFitter::update_peaks(bool contents_changed) {
+  ui->tablePeaks->blockSignals(true);
+  this->blockSignals(true);
+
   if (contents_changed) {
     ui->tablePeaks->clearContents();
     ui->tablePeaks->setRowCount(fit_data_.peaks_.size());
@@ -95,8 +98,6 @@ void FormPeakFitter::update_peaks(bool contents_changed) {
     }
   }
 
-  ui->tablePeaks->blockSignals(true);
-  this->blockSignals(true);
   ui->tablePeaks->clearSelection();
   int i = 0;
   for (auto &q : fit_data_.peaks_) {
@@ -164,15 +165,9 @@ void FormPeakFitter::add_peak_to_table(const Gamma::Peak &p, int row, bool gray)
   ui->tablePeaks->setItem(row, 6, cps_gauss);
 }
 
-void FormPeakFitter::update_peak_selection(std::set<double> pks) {
-  for (auto &q : fit_data_.peaks_)
-    q.second.selected = (pks.count(q.second.center) > 0);
-  toggle_push();
-  if (isVisible())
-    emit peaks_changed(false);
-}
-
 void FormPeakFitter::selection_changed_in_table() {
+  //PL_DBG << "peak list changed in table";
+
   for (auto &q : fit_data_.peaks_)
     q.second.selected = false;
   foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows()) {

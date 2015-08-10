@@ -54,7 +54,8 @@ Calibration(std::string type, uint16_t bits, std::string units = "channels"): Ca
     if (to_ != other.to_) return false;
     return true;
   }
-  
+
+  bool valid() const;
   double transform(double) const;
   double transform(double, uint16_t) const;
   std::vector<double> transform(std::vector<double>) const;

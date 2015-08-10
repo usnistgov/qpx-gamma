@@ -45,7 +45,6 @@ public:
   ~FormPeakFitter();
 
   void update_peaks(bool);
-  void update_peak_selection(std::set<double>);
 
   void clear();
   bool save_close();

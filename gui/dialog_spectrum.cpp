@@ -104,7 +104,7 @@ void dialog_spectrum::updateData() {
 
   detectors_.clear();
   for (auto &q: my_spectrum_.get_detectors())
-    detectors_.add(q);
+    detectors_.add_a(q);
   det_table_model_.update();
 
   table_model_.update();

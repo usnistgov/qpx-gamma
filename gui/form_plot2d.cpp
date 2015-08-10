@@ -272,7 +272,7 @@ void FormPlot2D::make_marker(Marker &marker) {
 
 
   if (marker.chan_valid && (calib_y_.units_ == "channels")) {
-    PL_DBG << "marker option 1: channels valid and units = channels";
+    PL_DBG << "<PLot2D> marker option 1: channels valid and units = channels";
     one_line = new QCPItemStraightLine(ui->coincPlot);
     one_line->setPen(pen);
     one_line->point1->setCoords(0, marker.channel);
@@ -284,7 +284,7 @@ void FormPlot2D::make_marker(Marker &marker) {
     one_line->point2->setCoords(marker.channel, 1);
     ui->coincPlot->addItem(one_line);
   } else if (marker.chan_valid && (calib_y_.units_ != "channels")) {
-    PL_DBG << "marker option 2: channels valid and units not channels";
+    PL_DBG << "<PLot2D> marker option 2: channels valid and units not channels";
     one_line = new QCPItemStraightLine(ui->coincPlot);
     one_line->setPen(pen);
     one_line->point1->setCoords(0, calib_y_.transform(marker.channel, marker.bits));
@@ -296,7 +296,7 @@ void FormPlot2D::make_marker(Marker &marker) {
     one_line->point2->setCoords(calib_x_.transform(marker.channel, marker.bits), 1);
     ui->coincPlot->addItem(one_line);
   } else if (marker.energy_valid && (calib_y_.units_ != "channels")) {
-    PL_DBG << "marker option 3: energy valid and units not channels";
+    PL_DBG << "<PLot2D> marker option 3: energy valid and units not channels";
     one_line = new QCPItemStraightLine(ui->coincPlot);
     one_line->setPen(pen);
     one_line->point1->setCoords(0, marker.energy);
@@ -312,7 +312,7 @@ void FormPlot2D::make_marker(Marker &marker) {
 }
 
 void FormPlot2D::update_plot(bool force) {
-  PL_DBG << "updating 2d";
+//  PL_DBG << "updating 2d";
 
   this->setCursor(Qt::WaitCursor);
   CustomTimer guiside(true);
@@ -322,7 +322,7 @@ void FormPlot2D::update_plot(bool force) {
 
   if (rescale2d || new_data || force) {
     name_2d = ui->comboChose2d->currentText();
-    PL_DBG << "really updating 2d " << name_2d.toStdString();
+//    PL_DBG << "really updating 2d " << name_2d.toStdString();
 
     Pixie::Spectrum::Spectrum* some_spectrum = mySpectra->by_name(name_2d.toStdString());
     uint32_t adjrange;
@@ -337,10 +337,10 @@ void FormPlot2D::update_plot(bool force) {
         && (adjrange = static_cast<uint32_t>(some_spectrum->resolution() * (ui->sliderZoom2d->value() / 100.0)))
         )
     {
-      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
+//      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
       if (rescale2d || force) {
-        PL_DBG << "rescaling 2d";
+//        PL_DBG << "rescaling 2d";
         ui->coincPlot->clearGraphs();
         colorMap->data()->setSize(adjrange, adjrange);
 

@@ -55,11 +55,10 @@ FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   connect(my_fwhm_calibration_, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks_from_fwhm(bool)));
 
   my_peak_fitter_ = new FormPeakFitter(settings_, fit_data_);
-  ui->tabs->addTab(my_peak_fitter_, "Peak fitter");
+  ui->tabs->addTab(my_peak_fitter_, "Peak integration");
   connect(my_peak_fitter_, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks_from_fitter(bool)));
 
-  
-  ui->tabs->setCurrentWidget(my_fwhm_calibration_);
+  ui->tabs->setCurrentWidget(my_energy_calibration_);
 }
 
 FormAnalysis1D::~FormAnalysis1D()
@@ -98,6 +97,9 @@ void FormAnalysis1D::saveSettings() {
 
 void FormAnalysis1D::clear() {
   ui->plotSpectrum->setSpectrum(nullptr);
+  my_energy_calibration_->clear();
+  my_fwhm_calibration_->clear();
+  my_peak_fitter_->clear();
   current_spectrum_.clear();
   detector_ = Gamma::Detector();
   nrg_calibration_ = Gamma::Calibration();
@@ -137,13 +139,11 @@ void FormAnalysis1D::setSpectrum(Pixie::SpectraSet *newset, QString name) {
       PL_INFO << "<Analysis> No existing FWHM calibration for this resolution";
 
 
-    my_energy_calibration_->clear();
+    fit_data_.fwhm_cali_ = fwhm_calibration_;
+    fit_data_.nrg_cali_ = nrg_calibration_;
+
     my_energy_calibration_->setData(nrg_calibration_, bits);
-
-    my_fwhm_calibration_->clear();
     my_fwhm_calibration_->setData(fwhm_calibration_, bits);
-
-    my_peak_fitter_->clear();
 
     my_energy_calibration_->update_peaks(true);
     my_fwhm_calibration_->update_peaks(true);
@@ -214,7 +214,11 @@ void FormAnalysis1D::update_detector_calibs()
                                            "Detector name:", QLineEdit::Normal,
                                            QString::fromStdString(detector_.name_),
                                            &ok);
-      if (ok && !text.isEmpty()) {
+
+      if (!ok)
+        return;
+
+      if (!text.isEmpty()) {
         modified = detector_;
         modified.name_ = text.toStdString();
         if (detectors_.has_a(modified)) {

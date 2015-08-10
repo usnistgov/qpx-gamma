@@ -26,7 +26,6 @@
 
 #include <QWidget>
 #include "spectrum1D.h"
-#include "table_markers.h"
 #include "special_delegate.h"
 #include "isotope.h"
 #include "widget_plot1d.h"
@@ -50,7 +49,6 @@ public:
   bool save_close();
 
   void update_peaks(bool);  
-  void update_peak_selection(std::set<double>);
   Gamma::Calibration get_new_calibration() {return new_calibration_;}
 
 
@@ -62,7 +60,7 @@ signals:
   void update_detector();
 
 private slots:
-  void selection_changed_in_table(QItemSelection, QItemSelection);
+  void selection_changed_in_table();
   void selection_changed_in_plot();
 
   void replot_markers();
@@ -78,6 +76,8 @@ private slots:
   void on_pushAllmarkers_clicked();
   void on_pushAllEnergies_clicked();
 
+  void on_pushMarkerRemove_clicked();
+
 private:
   Ui::FormEnergyCalibration *ui;
   QSettings &settings_;
@@ -89,11 +89,7 @@ private:
   Gamma::Detector detector_;
 
   Gamma::Fitter &fit_data_;
-  std::map<double, double> my_markers_; //channel, energy
 
-  TableMarkers marker_table_;
-  QItemSelectionModel selection_model_;
-  QpxSpecialDelegate  special_delegate_;
   uint16_t bits_;
   Gamma::Calibration old_calibration_, new_calibration_;
 
@@ -101,6 +97,8 @@ private:
 
   void loadSettings();
   void saveSettings();
+  void add_peak_to_table(const Gamma::Peak &, int, QColor);
+
 };
 
 #endif // FORM_CALIBRATION_H

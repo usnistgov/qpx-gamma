@@ -35,6 +35,7 @@ WidgetIsotopes::WidgetIsotopes(QWidget *parent) :
   ui(new Ui::WidgetIsotopes),
   isotopes_("isotopes"),
   table_gammas_(this),
+  special_delegate_(this),
   sortModel(this)
 {
   ui->setupUi(this);
@@ -244,7 +245,24 @@ void WidgetIsotopes::push_energies(std::vector<double> new_energies) {
   isotopeChosen(current_isotope());
 }
 
+void WidgetIsotopes::select_next_energy()
+{
+  current_gammas_.clear();
 
+  int top_row = -1;
+  foreach (QModelIndex idx, ui->tableGammas->selectionModel()->selectedRows()) {
+    if (idx.row() > top_row)
+      top_row = idx.row();
+  }
+
+  top_row++;
+  if (top_row < table_gammas_.rowCount()) {
+    ui->tableGammas->clearSelection();
+    ui->tableGammas->selectRow(top_row);
+  }
+
+  emit energiesSelected();
+}
 
 
 
@@ -345,10 +363,10 @@ bool TableGammas::setData(const QModelIndex & index, const QVariant & value, int
       gammas_[row].abundance = value.toDouble();
   }
 
-  QModelIndex start_ix = createIndex( 0, 0 );
-  QModelIndex end_ix = createIndex( (rowCount() - 1), (columnCount() - 1) );
+  QModelIndex start_ix = createIndex( row, col );
+  QModelIndex end_ix = createIndex( row, col );
   emit dataChanged( start_ix, end_ix );
-  emit layoutChanged();
+  //emit layoutChanged();
   emit energiesChanged();
   return true;
 }
