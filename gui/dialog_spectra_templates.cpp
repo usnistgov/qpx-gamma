@@ -372,8 +372,8 @@ void DialogSpectraTemplates::on_pushImport_clicked()
 
 void DialogSpectraTemplates::on_pushExport_clicked()
 {
-  QString fileName = QFileDialog::getSaveFileName(this, "Save template spectra",
-                                                  root_dir_, "Template set (*.tem)");
+  QString fileName = CustomSaveFileDialog(this, "Save template spectra",
+                                          root_dir_, "Template set (*.tem)");
   if (validateFile(this, fileName, true)) {
     QFileInfo file(fileName);
     if (file.suffix() != "tem")

@@ -48,8 +48,9 @@ protected:
 
   //1D is ok with all patterns
   bool initialize() override {
-    dimensions_ = 1;
-    spectrum_.resize(resolution_, 0);
+    metadata_.type = my_type();
+    metadata_.dimensions = 1;
+    spectrum_.resize(metadata_.resolution, 0);
     return true;
   }
 

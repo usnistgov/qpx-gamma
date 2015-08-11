@@ -77,6 +77,8 @@ private:
     TableDetectors det_table_model_;
     QItemSelectionModel det_selection_model_;
 
+    Pixie::Spectrum::Metadata md_;
+
     std::vector<Pixie::Setting> attributes_;
     bool changed_;
 

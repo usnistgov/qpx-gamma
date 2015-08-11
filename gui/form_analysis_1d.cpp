@@ -57,6 +57,7 @@ FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   my_peak_fitter_ = new FormPeakFitter(settings_, fit_data_);
   ui->tabs->addTab(my_peak_fitter_, "Peak integration");
   connect(my_peak_fitter_, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks_from_fitter(bool)));
+  connect(my_peak_fitter_, SIGNAL(save_peaks_request()), this, SLOT(save_report()));
 
   ui->tabs->setCurrentWidget(my_energy_calibration_);
 }
@@ -100,10 +101,6 @@ void FormAnalysis1D::clear() {
   my_energy_calibration_->clear();
   my_fwhm_calibration_->clear();
   my_peak_fitter_->clear();
-  current_spectrum_.clear();
-  detector_ = Gamma::Detector();
-  nrg_calibration_ = Gamma::Calibration();
-  fwhm_calibration_ = Gamma::Calibration();
 }
 
 
@@ -115,35 +112,13 @@ void FormAnalysis1D::setSpectrum(Pixie::SpectraSet *newset, QString name) {
     return;
   }
 
-  current_spectrum_ = name;
-  Pixie::Spectrum::Spectrum *spectrum = spectra_->by_name(current_spectrum_.toStdString());
+  Pixie::Spectrum::Spectrum *spectrum = spectra_->by_name(name.toStdString());
 
   if (spectrum && spectrum->resolution()) {
-    int bits = spectrum->bits();
-    nrg_calibration_ = Gamma::Calibration("Energy", bits);
-    fwhm_calibration_ = Gamma::Calibration("FWHM", bits);
-    detector_ = spectrum->get_detector(0);
+    fit_data_.setData(spectrum);
 
-    if (detector_.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits))) {
-      nrg_calibration_ = detector_.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
-      PL_INFO << "<Analysis> Energy calibration drawn from detector \"" << detector_.name_ << "\"   "
-              << nrg_calibration_.to_string();
-    } else
-      PL_INFO << "<Analysis> No existing calibration for this resolution";
-
-    if (detector_.fwhm_calibration_.valid()) {
-      fwhm_calibration_ = detector_.fwhm_calibration_;
-      PL_INFO << "<Analysis> FWHM calibration drawn from detector \"" << detector_.name_ << "\"   "
-              << fwhm_calibration_.to_string();
-    } else
-      PL_INFO << "<Analysis> No existing FWHM calibration for this resolution";
-
-
-    fit_data_.fwhm_cali_ = fwhm_calibration_;
-    fit_data_.nrg_cali_ = nrg_calibration_;
-
-    my_energy_calibration_->setData(detector_, nrg_calibration_, bits);
-    my_fwhm_calibration_->setData(detector_, fwhm_calibration_, bits);
+    my_energy_calibration_->newSpectrum();
+    my_fwhm_calibration_->newSpectrum();
 
     my_energy_calibration_->update_peaks(true);
     my_fwhm_calibration_->update_peaks(true);
@@ -151,7 +126,6 @@ void FormAnalysis1D::setSpectrum(Pixie::SpectraSet *newset, QString name) {
   }
 
   ui->plotSpectrum->setSpectrum(spectrum);
-  ui->plotSpectrum->setData(nrg_calibration_, fwhm_calibration_);
 }
 
 void FormAnalysis1D::update_spectrum() {
@@ -185,17 +159,14 @@ void FormAnalysis1D::update_peaks_from_fitter(bool content_changed) {
 
 void FormAnalysis1D::update_detector_calibs()
 {
-  nrg_calibration_ = my_energy_calibration_->get_new_calibration();
-  fwhm_calibration_ = my_fwhm_calibration_->get_new_calibration();
-
   std::string msg_text("Propagating calibrations ");
-  msg_text +=  "<nobr>" + nrg_calibration_.to_string() + "</nobr><br/>"
-               "<nobr>" + fwhm_calibration_.to_string() + "</nobr><br/>"
+  msg_text +=  "<nobr>" + fit_data_.nrg_cali_.to_string() + "</nobr><br/>"
+               "<nobr>" + fit_data_.fwhm_cali_.to_string() + "</nobr><br/>"
                "<nobr>  to all spectra in current project: </nobr><br/>"
                "<nobr>" + spectra_->status() + "</nobr>";
 
   std::string question_text("Do you also want to save this calibration to ");
-  question_text += detector_.name_ + " in detector database?";
+  question_text += fit_data_.detector_.name_ + " in detector database?";
 
   QMessageBox msgBox;
   msgBox.setText(QString::fromStdString(msg_text));
@@ -208,18 +179,18 @@ void FormAnalysis1D::update_detector_calibs()
   Gamma::Detector modified;
 
   if (ret == QMessageBox::Yes) {
-    if (!detectors_.has_a(detector_)) {
+    if (!detectors_.has_a(fit_data_.detector_)) {
       bool ok;
       QString text = QInputDialog::getText(this, "New Detector",
                                            "Detector name:", QLineEdit::Normal,
-                                           QString::fromStdString(detector_.name_),
+                                           QString::fromStdString(fit_data_.detector_.name_),
                                            &ok);
 
       if (!ok)
         return;
 
       if (!text.isEmpty()) {
-        modified = detector_;
+        modified = fit_data_.detector_;
         modified.name_ = text.toStdString();
         if (detectors_.has_a(modified)) {
           QMessageBox::warning(this, "Already exists", "Detector " + text + " already exists. Will not save to database.", QMessageBox::Ok);
@@ -227,13 +198,13 @@ void FormAnalysis1D::update_detector_calibs()
         }
       }
     } else
-      modified = detectors_.get(detector_);
+      modified = detectors_.get(fit_data_.detector_);
 
     if (modified != Gamma::Detector())
     {
       PL_INFO << "   applying new calibrations for " << modified.name_ << " in detector database";
-      modified.energy_calibrations_.replace(nrg_calibration_);
-      modified.fwhm_calibration_ = fwhm_calibration_;
+      modified.energy_calibrations_.replace(fit_data_.nrg_cali_);
+      modified.fwhm_calibration_ = fit_data_.fwhm_cali_;
       detectors_.replace(modified);
       emit detectorsChanged();
     }
@@ -243,32 +214,41 @@ void FormAnalysis1D::update_detector_calibs()
     for (auto &q : spectra_->spectra()) {
       if (q == nullptr)
         continue;
-      std::vector<Gamma::Detector> detectors = q->get_detectors();
-      for (auto &p : detectors) {
-        if (p.shallow_equals(detector_)) {
-          PL_INFO << "   applying new calibrations for " << detector_.name_ << " on " << q->name();
-          p.energy_calibrations_.replace(nrg_calibration_);
-          p.fwhm_calibration_ = fwhm_calibration_;
+      Pixie::Spectrum::Metadata md = q->metadata();
+      for (auto &p : md.detectors) {
+        if (p.shallow_equals(fit_data_.detector_)) {
+          PL_INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " on " << q->name();
+          p.energy_calibrations_.replace(fit_data_.nrg_cali_);
+          p.fwhm_calibration_ = fit_data_.fwhm_cali_;
         }
       }
-      q->set_detectors(detectors);
+      q->set_detectors(md.detectors);
     }
 
     std::vector<Gamma::Detector> detectors = spectra_->runInfo().p4_state.get_detectors();
     for (auto &p : detectors) {
-      if (p.shallow_equals(detector_)) {
-        PL_INFO << "   applying new calibrations for " << detector_.name_ << " in current project " << spectra_->status();
-        p.energy_calibrations_.replace(nrg_calibration_);
-        p.fwhm_calibration_ = fwhm_calibration_;
+      if (p.shallow_equals(fit_data_.detector_)) {
+        PL_INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " in current project " << spectra_->status();
+        p.energy_calibrations_.replace(fit_data_.nrg_cali_);
+        p.fwhm_calibration_ = fit_data_.fwhm_cali_;
       }
     }
     Pixie::RunInfo ri = spectra_->runInfo();
     for (int i=0; i < detectors.size(); ++i)
       ri.p4_state.set_detector(Pixie::Channel(i), detectors[i]);
     spectra_->setRunInfo(ri);
+  }
+}
 
-    ui->plotSpectrum->setData(nrg_calibration_, fwhm_calibration_);
-    my_energy_calibration_->setData(detector_, nrg_calibration_, nrg_calibration_.bits_);
-    my_fwhm_calibration_->setData(detector_, fwhm_calibration_, fwhm_calibration_.bits_);
+void FormAnalysis1D::save_report()
+{
+  QString fileName = CustomSaveFileDialog(this, "Save analysis report",
+                                          data_directory_, "Plain text (*.txt)");
+  if (validateFile(this, fileName, true)) {
+    QFileInfo file(fileName);
+    if (file.suffix() != "txt")
+      fileName += ".txt";
+    PL_INFO << "Writing report to " << fileName.toStdString();
+    fit_data_.save_report(fileName.toStdString());
   }
 }

@@ -54,13 +54,32 @@ typedef std::pair<std::vector<uint16_t>, uint64_t> Entry;
 typedef std::list<Entry> EntryList;
 typedef std::pair<uint32_t, uint32_t> Pair;
 
+
+struct Metadata {
+ public:
+  std::string name, description, type;
+  uint16_t dimensions, bits;
+  uint32_t resolution, appearance;
+  bool visible;
+  std::vector<int16_t> match_pattern, add_pattern;
+  std::vector<Setting> attributes;
+  PreciseFloat total_count;
+  uint64_t     max_chan;
+  boost::posix_time::time_duration real_time ,live_time;
+  boost::posix_time::ptime  start_time;
+  std::vector<Gamma::Detector> detectors;
+
+ Metadata() : bits(0), dimensions(0), resolution(0),
+    name("uninitialized_spectrum"), total_count(0.0), max_chan(0),
+    appearance(0), visible(false) {}
+};
+
+
 class Spectrum
 {
 public:
   //constructs invalid spectrum by default. Make private?
-  Spectrum() : bits_(0), dimensions_(0), resolution_(0),
-               name_("uninitialized_spectrum"), count_(0.0), max_chan_(0),
-               appearance_(0), visible_(false) {}
+  Spectrum() {}
 
 public:
   //named constructors, used by factory
@@ -94,8 +113,6 @@ public:
   
   //set and get detectors
   void set_detectors(const std::vector<Gamma::Detector>& dets);
-  std::vector<Gamma::Detector> get_detectors() const;
-  Gamma::Detector get_detector(uint16_t which = 0) const;
 
   //feed acquired data to spectrum
   void addSpill(const Spill&, bool update_dets = true);
@@ -104,24 +121,13 @@ public:
   ///////////////////////////////////////////////
   ///////accessors for various properties////////
   ///////////////////////////////////////////////
+  Metadata metadata() const;
+  
   std::string name() const;
-  std::string description() const;
   std::string type() const;
   uint16_t dimensions() const;
-  uint32_t resolution() const;
   uint16_t bits() const;
-  std::vector<int16_t> const match_pattern() const;
-  std::vector<int16_t> const add_pattern() const;
-  bool visible() const;
-  uint32_t appearance() const;
-  std::vector<Setting> generic_attributes() const;
-
-  //acquisition stats
-  double total_count() const;
-  uint64_t max_chan() const;
-  boost::posix_time::time_duration real_time() const;
-  boost::posix_time::time_duration live_time() const;
-  boost::posix_time::ptime         start_time() const;
+  uint32_t resolution() const;
 
   //change properties - use carefully...
   void set_visible(bool);
@@ -169,23 +175,12 @@ protected:
   mutable boost::shared_mutex mutex_;
   mutable boost::mutex u_mutex_;
 
-  std::string name_, description_;
-  uint8_t dimensions_, bits_, shift_by_;
-  uint32_t resolution_;
-  std::vector<int16_t> match_pattern_, add_pattern_;
+  Metadata metadata_;
 
-  std::vector<Gamma::Detector> detectors_;
+  uint8_t shift_by_;
+
   std::vector<std::vector<double> > energies_;
   
-  std::vector<Setting> generic_attributes_;
-  
-  PreciseFloat count_;
-  uint32_t max_chan_;
-  boost::posix_time::time_duration real_time_, live_time_;
-  boost::posix_time::ptime start_time_;
-
-  uint32_t appearance_;
-  bool visible_;
   StatsUpdate start_stats;
 };
 

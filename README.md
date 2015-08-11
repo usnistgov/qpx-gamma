@@ -1,26 +1,33 @@
 # qpx-gamma
 
-Data acquisition system for multi-detector gamma spectroscopy with Pixie-4.
+Data acquisition and analysis software for multi-detector gamma spectroscopy with Pixie-4.
 Developed at NIST. No warranty and no endorsement of specific product. Please read license and disclaimer.
 
 Features:
-* simultaneous building of multiple MCA spectra
-* gg coincidence spectra (energy-energy-count)
-* multi-threaded DAQ for minimal loss
-* loss-free counting MCA spectra
+* simultaneous building of multiple spectra
+* gg coincidence matrices (energy-energy-count)
+* multi-threaded for minimal dead time
+* optional list mode output
+* loss-free counting spectra
 * logging with timestamps
-* calibration with isotope database
-* gain matching
+* energy and FWHM calibration
+* isotope database
+* peak fitting with multiplet deconvolution
+* SUM4 peak integration with uncertainty
+* energy-gated coincidence matrix projections
+* matrix symmetrization
+* gain matching (analog and post-acquisition)
 * risetime/flattop optimization
+* analysis reports in *.txt
 
 To thoroughly enjoy it you need:
 * Pixie-4 in a PXI crate connected to your PC
-* germanium detector (preferably >= two)
-* radioactive stuff (play safe)
+* germanium detectors
+* radioactive stuff
 
 To compile you need:
-* boost libraries (>=5.7)
-* Qt libraries (>=5.3)
+* boost libraries (5.7)
+* Qt libraries (5.3)
 * gsl libraries
 * lua-dev
 

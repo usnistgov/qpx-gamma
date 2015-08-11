@@ -327,11 +327,15 @@ void FormOptimization::update_plots() {
   std::map<double, double> minima, maxima;
 
   for (auto &q: current_spectra_.by_type("1D")) {
-    if (q->total_count()) {
+    Pixie::Spectrum::Metadata md;
+    if (q)
+      md = q->metadata();
+
+    if (md.total_count > 0) {
       int current_spec = spectra_y_.size() - 1;
 
       uint32_t res = pow(2, bits);
-      spectra_app_[current_spec] = q->appearance();
+      spectra_app_[current_spec] = md.appearance;
       std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
           std::move(q->get_spectrum({{0, res}}));
 

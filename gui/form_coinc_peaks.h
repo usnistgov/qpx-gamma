@@ -47,7 +47,6 @@ public:
 
   void setFit(Gamma::Fitter *);
   void setSpectrum(Pixie::Spectrum::Spectrum *newspectrum, uint16_t L = 0, uint16_t R = 0);
-  void setData(Gamma::Calibration nrg_calib, Gamma::Calibration fwhm_calib);
 
   void clear();
   void update_fit(bool content_changed = false);
@@ -88,8 +87,6 @@ private:
 
   //data from selected spectrum
   Gamma::Fitter *fit_data_;
-  Gamma::Detector detector_;
-  Gamma::Calibration nrg_calibration_, fwhm_calibration_;
 
   //markers
   Marker list, selected;

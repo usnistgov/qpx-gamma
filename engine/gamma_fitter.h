@@ -26,6 +26,7 @@
 #include <vector>
 #include "gamma_peak.h"
 #include "detector.h"
+#include "spectrum.h"
 
 namespace Gamma {
 
@@ -34,6 +35,7 @@ class Fitter {
 public:
   Fitter()
       : overlap_(4.0)
+      , avg_window_(1)
   {}
   
   Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t avg_window = 1)
@@ -44,10 +46,15 @@ public:
       : Fitter()
   {setXY(x, y, min, max, avg_window);}
 
+  Fitter(Pixie::Spectrum::Spectrum *spectrum, uint16_t avg_window = 1)
+      : Fitter()
+  {avg_window_ = avg_window; setData(spectrum);}
+
   void clear();
   
   void setXY(std::vector<double> x, std::vector<double> y, uint16_t avg_window = 1);
   void setXY(std::vector<double> x, std::vector<double> y, uint16_t min, uint16_t max, uint16_t avg_window = 1);
+  void setData(Pixie::Spectrum::Spectrum *spectrum);
 
   void set_mov_avg(uint16_t);
   void deriv();
@@ -67,17 +74,24 @@ public:
 
   void filter_by_theoretical_fwhm(double range);
 
+  void save_report(std::string filename);
+
+  //DATA
+  
   std::vector<double> x_, x_nrg_, y_, y_avg_, deriv1, deriv2;
 
   std::vector<uint16_t> prelim, filtered, lefts, rights, lefts_t, rights_t;
   
-  //  Calibration cal_nrg, cal_fwhm;
-
+  Pixie::Spectrum::Metadata metadata_;
+  Gamma::Detector detector_;
+  
   std::map<double, Peak> peaks_;
   std::list<Multiplet> multiplets_;
   Calibration nrg_cali_, fwhm_cali_;
   double overlap_;
-  double live_seconds_;
+
+private:
+  uint16_t avg_window_;
 };
 
 }

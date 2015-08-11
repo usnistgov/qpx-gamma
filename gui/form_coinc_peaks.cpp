@@ -117,7 +117,6 @@ void FormCoincPeaks::saveSettings(QSettings &settings_) {
 }
 
 void FormCoincPeaks::clear() {
-  detector_ = Gamma::Detector();
   fit_data_->clear();
   maxima.clear();
   minima.clear();
@@ -138,37 +137,32 @@ void FormCoincPeaks::setSpectrum(Pixie::Spectrum::Spectrum *newspectrum, uint16_
   sel_L = L;
   sel_R = R;
 
-  if (spectrum_ && spectrum_->resolution()) {
-    int bits = spectrum_->bits();
-    detector_ = spectrum_->get_detector(0);
-    QString title = "Spectrum=" + QString::fromStdString(spectrum_->name()) + "  resolution=" + QString::number(bits) + "bits  Detector=" + QString::fromStdString(detector_.name_);
-    ui->plot1D->setFloatingText(title);
-    ui->plot1D->setTitle(title);
-  }
+  fit_data_->set_mov_avg(ui->spinMovAvg->value());
+  fit_data_->setData(spectrum_);
+
+  QString title = "Spectrum=" + QString::fromStdString(fit_data_->metadata_.name) + "  resolution=" + QString::number(fit_data_->metadata_.bits) + "bits  Detector=" + QString::fromStdString(fit_data_->detector_.name_);
+  ui->plot1D->setFloatingText(title);
+  ui->plot1D->setTitle(title);
 
   ui->plot1D->reset_scales();
 
   update_spectrum();
 
-  if (spectrum_ && (spectrum_->total_count() > 0)) {
+  if (fit_data_->metadata_.total_count > 0) {
     on_pushFindPeaks_clicked();
     replot_all();
   }
-
 }
-
-void FormCoincPeaks::setData(Gamma::Calibration nrg_calib, Gamma::Calibration fwhm_calib) {
-  fwhm_calibration_ = fwhm_calib;
-  nrg_calibration_ = nrg_calib;
-  replot_markers();
-}
-
 
 void FormCoincPeaks::update_spectrum() {
   if (fit_data_ == nullptr)
     return;
 
-  if ((!spectrum_) || (!spectrum_->resolution())) {
+  Pixie::Spectrum::Metadata md;
+  if (spectrum_)
+    md = spectrum_->metadata();
+
+  if (md.resolution == 0) {
     clear();
     replot_all();
     return;
@@ -177,10 +171,8 @@ void FormCoincPeaks::update_spectrum() {
   minima.clear();
   maxima.clear();
 
-  std::vector<double> x_chan(spectrum_->resolution());
-  std::vector<double> y(spectrum_->resolution());
-
-  double live_seconds = spectrum_->live_time().total_seconds();
+  std::vector<double> x_chan(md.resolution);
+  std::vector<double> y(md.resolution);
 
   std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_dump =
       std::move(spectrum_->get_spectrum({{0, y.size()}}));
@@ -190,19 +182,13 @@ void FormCoincPeaks::update_spectrum() {
     double yy = it.second;
     double xx = static_cast<double>(i);
     x_chan[i] = xx;
-    double x_nrg = nrg_calibration_.transform(xx);
     y[i] = yy;
-    if (!minima.count(x_nrg) || (minima[x_nrg] > yy))
-      minima[x_nrg] = yy;
-    if (!maxima.count(x_nrg) || (maxima[x_nrg] < yy))
-      maxima[x_nrg] = yy;
+    if (!minima.count(xx) || (minima[xx] > yy))
+      minima[xx] = yy;
+    if (!maxima.count(xx) || (maxima[xx] < yy))
+      maxima[xx] = yy;
     ++i;
   }
-
-  fit_data_->setXY(x_chan, y, ui->spinMovAvg->value());
-  fit_data_->find_prelim();
-  fit_data_->filter_prelim(ui->spinMinPeakWidth->value());
-  fit_data_->live_seconds_ = live_seconds;
 
   replot_all();
 }
@@ -213,12 +199,12 @@ void FormCoincPeaks::replot_all() {
     return;
   
   ui->plot1D->clearGraphs();
-  ui->plot1D->addGraph(QVector<double>::fromStdVector(nrg_calibration_.transform(fit_data_->x_)), QVector<double>::fromStdVector(fit_data_->y_), main_graph_);
+  ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->x_)), QVector<double>::fromStdVector(fit_data_->y_), main_graph_);
 
   QVector<double> xx, yy;
 
   for (auto &q : fit_data_->multiplets_)
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(nrg_calibration_.transform(q.x_)), QVector<double>::fromStdVector(q.y_fullfit_), multiplet_);
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.x_)), QVector<double>::fromStdVector(q.y_fullfit_), multiplet_);
   
   AppearanceProfile app;
   for (auto &q : fit_data_->peaks_) {
@@ -227,16 +213,16 @@ void FormCoincPeaks::replot_all() {
     else
       app = gaussian_;
 
-    ui->plot1D->addGraph(QVector<double>::fromStdVector(nrg_calibration_.transform(q.second.x_)),
+    ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.second.x_)),
                          QVector<double>::fromStdVector(q.second.y_fullfit_gaussian_),
                          app);
-    ui->plot1D->addGraph(QVector<double>::fromStdVector(nrg_calibration_.transform(q.second.x_)),
+    ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.second.x_)),
                          QVector<double>::fromStdVector(q.second.y_baseline_),
                          app);
   }
 
-  ui->plot1D->use_calibrated(nrg_calibration_.units_ != "channels");
-  ui->plot1D->setLabels(QString::fromStdString(nrg_calibration_.units_), "count");
+  ui->plot1D->use_calibrated(fit_data_->nrg_cali_.units_ != "channels");
+  ui->plot1D->setLabels(QString::fromStdString(fit_data_->nrg_cali_.units_), "count");
 
   ui->tablePeaks->clearContents();
   ui->tablePeaks->setRowCount(fit_data_->peaks_.size());
@@ -265,7 +251,7 @@ void FormCoincPeaks::addMovingMarker(double x) {
     return;
 
   int i=0;
-  while (nrg_calibration_.transform(i) < x)
+  while (fit_data_->nrg_cali_.transform(i) < x)
     ++i;
   x = i;
 
@@ -273,7 +259,7 @@ void FormCoincPeaks::addMovingMarker(double x) {
 
   range_.center.channel = x;
   range_.center.chan_valid = true;
-  range_.center.energy = nrg_calibration_.transform(x);
+  range_.center.energy = fit_data_->nrg_cali_.transform(x);
   range_.center.energy_valid = (range_.center.channel != range_.center.energy);
 
   uint16_t ch = static_cast<uint16_t>(x);
@@ -281,17 +267,17 @@ void FormCoincPeaks::addMovingMarker(double x) {
   uint16_t ch_l = fit_data_->find_left(ch, ui->spinMinPeakWidth->value());
   range_.l.channel = ch_l;
   range_.l.chan_valid = true;
-  range_.l.energy = nrg_calibration_.transform(ch_l);
+  range_.l.energy = fit_data_->nrg_cali_.transform(ch_l);
   range_.l.energy_valid = (range_.l.channel != range_.l.energy);
 
   uint16_t ch_r = fit_data_->find_right(ch, ui->spinMinPeakWidth->value());
   range_.r.channel = ch_r;
   range_.r.chan_valid = true;
-  range_.r.energy = nrg_calibration_.transform(ch_r);
+  range_.r.energy = fit_data_->nrg_cali_.transform(ch_r);
   range_.r.energy_valid = (range_.r.channel != range_.r.energy);
 
   ui->pushAdd->setEnabled(true);
-  PL_INFO << "<Peak finder> Marker at chan=" << range_.center.channel << " (" << range_.center.energy << " " << nrg_calibration_.units_ << ")"
+  PL_INFO << "<Peak finder> Marker at chan=" << range_.center.channel << " (" << range_.center.energy << " " << fit_data_->nrg_cali_.units_ << ")"
           << ", edges=[" << range_.l.channel << ", " << range_.r.channel << "]";
 
   replot_markers();
@@ -340,8 +326,6 @@ void FormCoincPeaks::on_pushAdd_clicked()
 
   PL_DBG << "add peak bw " << range_.l.channel << "-" << range_.r.channel;
 
-  fit_data_->nrg_cali_ = nrg_calibration_;
-  fit_data_->fwhm_cali_ = fwhm_calibration_;
   fit_data_->overlap_ = ui->doubleOverlapWidth->value();
   fit_data_->add_peak(range_.l.channel, range_.r.channel);
   ui->pushAdd->setEnabled(false);
@@ -400,8 +384,6 @@ void FormCoincPeaks::on_pushMarkerRemove_clicked()
     if (q.second.selected)
       chosen_peaks.insert(q.second.center);
 
-  fit_data_->nrg_cali_ = nrg_calibration_;
-  fit_data_->fwhm_cali_ = fwhm_calibration_;
   fit_data_->overlap_ = ui->doubleOverlapWidth->value();
   fit_data_->remove_peaks(chosen_peaks);
 
@@ -417,8 +399,6 @@ void FormCoincPeaks::on_pushFindPeaks_clicked()
 
   this->setCursor(Qt::WaitCursor);
 
-  fit_data_->nrg_cali_ = nrg_calibration_;
-  fit_data_->fwhm_cali_ = fwhm_calibration_;
   fit_data_->overlap_ = ui->doubleOverlapWidth->value();
 
   fit_data_->find_peaks(ui->spinMinPeakWidth->value());
@@ -453,9 +433,9 @@ void FormCoincPeaks::on_spinMinPeakWidth_editingFinished()
 void FormCoincPeaks::range_moved() {
   range_ = ui->plot1D->get_range();
 
-  range_.center.calibrate(detector_);
-  range_.l.calibrate(detector_);
-  range_.r.calibrate(detector_);
+  range_.center.calibrate(fit_data_->detector_);
+  range_.l.calibrate(fit_data_->detector_);
+  range_.r.calibrate(fit_data_->detector_);
 
   toggle_push();
   replot_markers();

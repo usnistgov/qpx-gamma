@@ -50,10 +50,54 @@ void Fitter::setXY(std::vector<double> x, std::vector<double> y,  uint16_t min, 
     x_nrg_ = nrg_cali_.transform(x_);
   }  
   set_mov_avg(avg_window);
-  deriv();
+}
+
+void Fitter::setData(Pixie::Spectrum::Spectrum* spectrum)
+{
+  clear();
+  if (spectrum != nullptr) {
+    Pixie::Spectrum::Metadata md = spectrum->metadata();
+    if ((md.dimensions != 1) || (md.resolution <= 0) || (md.total_count <= 0))
+      return;
+
+    metadata_ = md;
+
+    if (!md.detectors.empty())
+      detector_ = md.detectors[0];
+
+    if (detector_.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits))) {
+      nrg_cali_ = detector_.energy_calibrations_.get(Gamma::Calibration("Energy", md.bits));
+      PL_INFO << "<Gamma::Fitter> Energy calibration used from detector \"" << detector_.name_ << "\"   "
+              << nrg_cali_.to_string();
+    } else
+      PL_INFO << "<Gamma::Fitter> No existing calibration for this resolution";
+
+    if (detector_.fwhm_calibration_.valid()) {
+      fwhm_cali_ = detector_.fwhm_calibration_;
+      PL_INFO << "<Gamma::Fitter> FWHM calibration used from detector \"" << detector_.name_ << "\"   "
+              << fwhm_cali_.to_string();
+    } else
+      PL_INFO << "<Gamma::Fitter> No existing FWHM calibration";
+
+    std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_dump = std::move(spectrum->get_spectrum({{0, md.resolution}}));
+
+    int i = 0;
+    for (auto it : *spectrum_dump) {
+      x_.push_back(static_cast<double>(i));
+      y_.push_back(it.second);
+      i++;
+    }
+
+    x_nrg_ = nrg_cali_.transform(x_);
+    set_mov_avg(avg_window_);
+  }
 }
 
 void Fitter::clear() {
+  detector_ = Gamma::Detector();
+  metadata_ = Pixie::Spectrum::Metadata();
+  nrg_cali_ = Gamma::Calibration();
+  fwhm_cali_ = Gamma::Calibration();
   x_.clear();
   x_nrg_.clear();
   y_.clear();
@@ -258,7 +302,7 @@ void Fitter::find_peaks(int min_width) {
     //std::vector<double> baseline = make_background(x_, y_, lefts[i], rights[i], 3);
     //std::vector<double> xx(x_.begin() + lefts[i], x_.begin() + rights[i] + 1);
     //std::vector<double> yy(y_.begin() + lefts[i], y_.begin() + rights[i] + 1);
-    Peak fitted = Peak(x_, y_, lefts[i],rights[i], nrg_cali_, fwhm_cali_, live_seconds_);
+    Peak fitted = Peak(x_, y_, lefts[i],rights[i], nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
 
     if (
         (fitted.height > 0) &&
@@ -292,7 +336,7 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
   //std::vector<double> yy(y_.begin() + left, y_.begin() + right + 1);
   //std::vector<double> bckgr = make_background(x_, y_, left, right, 3);
   
-  Peak newpeak = Gamma::Peak(x_, y_, left, right, nrg_cali_, fwhm_cali_, live_seconds_);
+  Peak newpeak = Gamma::Peak(x_, y_, left, right, nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
   PL_DBG << "new peak center = " << newpeak.center;
 
   peaks_[newpeak.center] = newpeak;
@@ -346,7 +390,7 @@ void Fitter::make_multiplets()
         to_remove.insert(pk2->first);
 
         if (!multiplet.empty()) {
-          Multiplet multi(nrg_cali_, fwhm_cali_, live_seconds_);
+          Multiplet multi(nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
           multi.add_peaks(multiplet, x_, y_);
           multiplets_.push_back(multi);
         }
@@ -381,6 +425,110 @@ void Fitter::remove_peaks(std::set<double> bins) {
     multiplets_.clear();
     make_multiplets();
   }
+}
+
+void Fitter::save_report(std::string filename) {
+  std::ofstream file(filename, std::ios::out | std::ios::app);
+  file << "Spectrum \"" << metadata_.name << "\"" << std::endl;
+  file << "========================================================" << std::endl;
+  file << "Bits: " << metadata_.bits << "    Resolution: " << metadata_.resolution << std::endl;
+
+  file << "Match pattern:  ";
+  for (auto &q : metadata_.match_pattern)
+    file << q << " ";
+  file << std::endl;
+  
+  file << "Add pattern:    ";
+  for (auto &q : metadata_.add_pattern)
+    file << q << " ";
+  file << std::endl;
+
+  file << "Spectrum type: " << metadata_.type << std::endl;
+
+  if (!metadata_.attributes.empty()) {
+    file << "Attributes" << std::endl;
+    for (auto &q : metadata_.attributes)
+      file << "   " << q.name << " = " << q.value << std::endl; 
+  }
+
+  if (!metadata_.detectors.empty()) {
+    file << "Detectors" << std::endl;
+    for (auto &q : metadata_.detectors)
+      file << "   " << q.name_ << " (" << q.type_ << ")" << std::endl;
+  }
+  
+  file << "========================================================" << std::endl;
+  file << std::endl;
+
+  file << "Acquisition start time:  " << boost::posix_time::to_iso_extended_string(metadata_.start_time) << std::endl;
+  double rt = metadata_.real_time.total_seconds();
+  double lt = metadata_.live_time.total_seconds();
+  file << "Live time(s):   " << lt << std::endl;
+  file << "Real time(s):   " << rt << std::endl;
+  if ((lt < rt) && (rt > 0))
+    file << "Dead time(%):   " << (rt-lt)/rt*100 << std::endl;
+  double tc = metadata_.total_count.convert_to<double>();
+  file << "Total count:    " << tc << std::endl;
+  if ((tc > 0) && (lt > 0))
+    file << "Count rate:     " << tc/lt << " cps(total/live)"<< std::endl;
+  if ((tc > 0) && (rt > 0))
+    file << "Count rate:     " << tc/rt << " cps(total/real)"<< std::endl;
+  file << std::endl;
+
+  file.fill(' ');
+  file << "========================================================" << std::endl;
+  file << "===========QPX Gamma::Fitter analysis results===========" << std::endl;
+  file << "========================================================" << std::endl;
+
+  file << std::endl;
+  file.fill('-');
+  file << std::setw( 15 ) << "center(Gauss)" << "--|" 
+       << std::setw( 15 ) << "energy(Gauss)" << "--|"
+       << std::setw( 15 ) << "FWHM(Gauss)" << "--|"
+       << std::setw( 15 ) << "area(Gauss)" << "--|"
+       << std::setw( 15 ) << "cps(Gauss)"  << "-||"
+      
+       << std::setw( 15 ) << "center(S4)" << "--|" 
+       << std::setw( 15 ) << "cntr-var(S4)" << "--|" 
+       << std::setw( 7 ) << "L" << "--|"
+       << std::setw( 7 ) << "R" << "--|"
+       << std::setw( 15 ) << "FWHM(S4)" << "--|"
+       << std::setw( 15 ) << "bckg-area(S4)" << "--|"
+       << std::setw( 15 ) << "bckg-var(S4)" << "--|"
+       << std::setw( 15 ) << "net-area(S4)" << "--|"
+       << std::setw( 15 ) << "net-var(S4)" << "--|"
+       << std::setw( 15 ) << "%err(S4)" << "--|"      
+       << std::setw( 15 ) << "cps(S4)"  << "--|"
+       << std::setw( 5 ) << "CQI"  << "--|"
+       << std::endl;
+  file.fill(' ');
+  for (auto &q : peaks_) {
+    file << std::setw( 15 ) << std::setprecision( 10 ) << q.second.center << "  |"
+         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.energy << "  |"
+         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_gaussian << "  |"
+         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.area_gauss_ << "  |"
+         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cts_per_sec_gauss_ << " ||";
+
+    if (!q.second.subpeak) {
+      file << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.centroid << "  |"
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.centroid_var << "  |"
+           << std::setw( 7 ) << std::setprecision( 10 ) << q.second.sum4_.Lpeak << "  |"
+           << std::setw( 7 ) << std::setprecision( 10 ) << q.second.sum4_.Rpeak << "  |"
+
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_sum4 << "  |"
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.area_bckg_ << "  |"
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.B_variance << "  |"
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.area_net_ << "  |"
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.net_variance << "  |"
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.err << "  |"
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cts_per_sec_net_ << "  |"
+           << std::setw( 5 ) << std::setprecision( 10 ) << q.second.sum4_.currie_quality_indicator << "  |";
+    }
+
+    file << std::endl;
+  }
+  
+  file.close();
 }
 
 

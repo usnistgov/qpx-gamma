@@ -55,6 +55,7 @@ signals:
 public slots:
   void update_spectrum();
   void update_detector_calibs();
+  void save_report();
 
 private slots:
 
@@ -78,15 +79,13 @@ private:
 
   Gamma::Fitter fit_data_;
 
-  Gamma::Calibration nrg_calibration_, fwhm_calibration_;
 
   //from parent
   QString data_directory_;
   Pixie::SpectraSet *spectra_;
-  QString current_spectrum_;
 
   XMLableDB<Gamma::Detector> &detectors_;
-  Gamma::Detector detector_;
+
 
   void loadSettings();
   void saveSettings();

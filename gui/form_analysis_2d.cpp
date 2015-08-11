@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormAnalysis2D - 
+ *      FormAnalysis2D -
  *
  ******************************************************************************/
 
@@ -207,29 +207,35 @@ void FormAnalysis2D::initialize() {
     Pixie::Spectrum::Spectrum *spectrum = spectra_->by_name(current_spectrum_.toStdString());
 
     if (spectrum && spectrum->resolution()) {
-      int bits = spectrum->bits();
-      res = spectrum->resolution();
+      Pixie::Spectrum::Metadata md = spectrum->metadata();
+      res = md.resolution;
 
       xmin_ = 0;
       xmax_ = res - 1;
       ymin_ = 0;
       ymax_ = res - 1;
 
-      detector1_ = spectrum->get_detector(0);
-      if (detector1_.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
-        nrg_calibration1_ = detector1_.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
+      detector1_ = Gamma::Detector();
+      detector2_ = Gamma::Detector();
+
+      if (md.detectors.size() > 1) {
+        detector1_ = md.detectors[0];
+        detector2_ = md.detectors[1];
+      }
+
+      if (detector1_.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits)))
+        nrg_calibration1_ = detector1_.energy_calibrations_.get(Gamma::Calibration("Energy", md.bits));
       fwhm_calibration1_ = detector1_.fwhm_calibration_;
       PL_DBG << "<FormAnalysis2D> NRGCALIB1 " << nrg_calibration1_.to_string();
       PL_DBG << "<FormAnalysis2D> FWHMCALIB1 " << fwhm_calibration1_.to_string();
 
-      detector2_ = spectrum->get_detector(1);
-      if (detector2_.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
-        nrg_calibration2_ = detector2_.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
+      if (detector2_.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits)))
+        nrg_calibration2_ = detector2_.energy_calibrations_.get(Gamma::Calibration("Energy", md.bits));
       fwhm_calibration2_ = detector2_.fwhm_calibration_;
       PL_DBG << "<FormAnalysis2D> NRGCALIB2 " << nrg_calibration2_.to_string();
       PL_DBG << "<FormAnalysis2D> FWHMCALIB2 " << fwhm_calibration2_.to_string();
 
-      gain_match_cali_ = detector2_.get_gain_match(bits, detector1_.name_);
+      gain_match_cali_ = detector2_.get_gain_match(md.bits, detector1_.name_);
       PL_DBG << "<FormAnalysis2D> gain match cali from " << detector2_.name_ << " to " << detector1_.name_ << " " << gain_match_cali_.to_string();
 
       ui->plotMatrix->reset_content();
@@ -237,14 +243,11 @@ void FormAnalysis2D::initialize() {
       ui->plotMatrix->set_spectrum(current_spectrum_);
       ui->plotMatrix->update_plot();
 
-      ui->plotSpectrum->setData(nrg_calibration1_, fwhm_calibration1_);
-      ui->plotSpectrum2->setData(nrg_calibration2_, fwhm_calibration2_);
-
       ui->plotCalib->setLabels("channel (" + QString::fromStdString(detector2_.name_) + ")", "channel (" + QString::fromStdString(detector1_.name_) + ")");
     }
   }
 
-  update_spectrum();
+  //update_spectrum();
 
   initialized = true;
   make_gated_spectra();
@@ -254,11 +257,11 @@ void FormAnalysis2D::update_spectrum() {
   if (this->isVisible()) {
     Pixie::Spectrum::Spectrum *spectrum = spectra_->by_name(current_spectrum_.toStdString());
     if (spectrum && spectrum->resolution())
-      live_seconds = spectrum->live_time().total_seconds();
+      live_seconds = spectrum->metadata().live_time.total_seconds();
 
     //ui->plotMatrix->update_plot(true);
-    ui->plotSpectrum->update_spectrum();
-    ui->plotSpectrum2->update_spectrum();
+    //ui->plotSpectrum->update_spectrum();
+    //ui->plotSpectrum2->update_spectrum();
   }
 }
 
@@ -296,83 +299,81 @@ void FormAnalysis2D::update_gates(Marker xx, Marker yy) {
 }
 
 void FormAnalysis2D::make_gated_spectra() {
+  Pixie::Spectrum::Spectrum* some_spectrum = spectra_->by_name(current_spectrum_.toStdString());
+  if (some_spectrum == nullptr)
+    return;
+
   this->setCursor(Qt::WaitCursor);
 
-  Pixie::Spectrum::Spectrum* some_spectrum = spectra_->by_name(current_spectrum_.toStdString());
+  Pixie::Spectrum::Metadata md = some_spectrum->metadata();
 
-//  PL_DBG << "Coincidence gate x[" << xmin_ << "-" << xmax_ << "]   y[" << ymin_ << "-" << ymax_ << "]";
+  //  PL_DBG << "Coincidence gate x[" << xmin_ << "-" << xmax_ << "]   y[" << ymin_ << "-" << ymax_ << "]";
 
-  if ((some_spectrum != nullptr)
-      && some_spectrum->total_count()
-      && (some_spectrum->dimensions() == 2)
-      )
+  if ((md.total_count > 0) && (md.dimensions == 2))
   {
-      int bits = some_spectrum->bits();
-      uint32_t adjrange = static_cast<uint32_t>(some_spectrum->resolution()) - 1;
+    live_seconds = some_spectrum->metadata().live_time.total_seconds();
+    uint32_t adjrange = static_cast<uint32_t>(md.resolution) - 1;
 
-      tempx->bits = bits;
-      tempx->name_ = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(ymin_), 0) + "," + to_str_precision(nrg_calibration2_.transform(ymax_), 0) + "]";
+    tempx->bits = md.bits;
+    tempx->name_ = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(ymin_), 0) + "," + to_str_precision(nrg_calibration2_.transform(ymax_), 0) + "]";
 
-      tempy->bits = bits;
-      tempy->name_ = detector2_.name_ + "[" + to_str_precision(nrg_calibration1_.transform(xmin_), 0) + "," + to_str_precision(nrg_calibration1_.transform(xmax_), 0) + "]";
+    tempy->bits = md.bits;
+    tempy->name_ = detector2_.name_ + "[" + to_str_precision(nrg_calibration1_.transform(xmin_), 0) + "," + to_str_precision(nrg_calibration1_.transform(xmax_), 0) + "]";
 
-      if ((!gatex_in_spectra) && (gate_x != nullptr))
-        delete gate_x;
-      gate_x = Pixie::Spectrum::Factory::getInstance().create_from_template(*tempx);
-      gatex_in_spectra = false;
+    if ((!gatex_in_spectra) && (gate_x != nullptr))
+      delete gate_x;
+    gate_x = Pixie::Spectrum::Factory::getInstance().create_from_template(*tempx);
+    gatex_in_spectra = false;
 
-      if ((!gatey_in_spectra) && (gate_y != nullptr))
-        delete gate_y;
-      gate_y = Pixie::Spectrum::Factory::getInstance().create_from_template(*tempy);
-      gatey_in_spectra = false;
+    if ((!gatey_in_spectra) && (gate_y != nullptr))
+      delete gate_y;
+    gate_y = Pixie::Spectrum::Factory::getInstance().create_from_template(*tempy);
+    gatey_in_spectra = false;
 
-      sum_inclusive = 0;
-      sum_exclusive = 0;
+    sum_inclusive = 0;
+    sum_exclusive = 0;
 
-      std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
-          std::move(some_spectrum->get_spectrum({{xmin_, xmax_}, {0, adjrange}}));
-      for (auto it : *spectrum_data) {
-        if ((it.first[0] >= xmin_) && (it.first[0] <= xmax_)) {
-          gate_y->add_bulk(it);
-          if ((it.first[1] >= ymin_) && (it.first[1] <= ymax_))
-            sum_exclusive += it.second;
-          else
-            sum_inclusive += it.second;
-        }
+    std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
+        std::move(some_spectrum->get_spectrum({{xmin_, xmax_}, {0, adjrange}}));
+    for (auto it : *spectrum_data) {
+      if ((it.first[0] >= xmin_) && (it.first[0] <= xmax_)) {
+        gate_y->add_bulk(it);
+        if ((it.first[1] >= ymin_) && (it.first[1] <= ymax_))
+          sum_exclusive += it.second;
+        else
+          sum_inclusive += it.second;
       }
+    }
 
-      std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data2 =
-          std::move(some_spectrum->get_spectrum({{0, adjrange}, {ymin_, ymax_}}));
-      for (auto it : *spectrum_data2) {
-        if ((it.first[1] >= ymin_) && (it.first[1] <= ymax_)) {
-          gate_x->add_bulk(it);
-          if ((it.first[0] < xmin_) || (it.first[0] > xmax_))
-            sum_inclusive += it.second;
-        }
+    std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data2 =
+        std::move(some_spectrum->get_spectrum({{0, adjrange}, {ymin_, ymax_}}));
+    for (auto it : *spectrum_data2) {
+      if ((it.first[1] >= ymin_) && (it.first[1] <= ymax_)) {
+        gate_x->add_bulk(it);
+        if ((it.first[0] < xmin_) || (it.first[0] > xmax_))
+          sum_inclusive += it.second;
       }
+    }
 
-      sum_inclusive += sum_exclusive;
-      fill_table();
+    sum_inclusive += sum_exclusive;
+    fill_table();
 
 
-      std::vector<Gamma::Detector> detectors = some_spectrum->get_detectors();
-      Pixie::Spill spill;
-      spill.run = new Pixie::RunInfo(spectra_->runInfo());
-      for (int i=0; i < detectors.size(); ++i)
-        spill.run->p4_state.set_detector(Pixie::Channel(i), detectors[i]);
-      gate_x->addSpill(spill);
-      gate_y->addSpill(spill);
-      delete spill.run;
+    Pixie::Spill spill;
+    spill.run = new Pixie::RunInfo(spectra_->runInfo());
+    for (int i=0; i < md.detectors.size(); ++i)
+      spill.run->p4_state.set_detector(Pixie::Channel(i), md.detectors[i]);
+    gate_x->addSpill(spill);
+    gate_y->addSpill(spill);
+    delete spill.run;
 
-      ui->plotSpectrum->setData(nrg_calibration1_, fwhm_calibration1_);
-      ui->plotSpectrum->setSpectrum(gate_x, xmin_, xmax_);
+    ui->plotSpectrum->setSpectrum(gate_x, xmin_, xmax_);
 
-      ui->plotSpectrum2->setData(nrg_calibration2_, fwhm_calibration2_);
-      ui->plotSpectrum2->setSpectrum(gate_y, ymin_, ymax_);
+    ui->plotSpectrum2->setSpectrum(gate_y, ymin_, ymax_);
 
-      ui->plotMatrix->refresh();
+    ui->plotMatrix->refresh();
 
-      plot_calib();
+    plot_calib();
   }
   this->setCursor(Qt::ArrowCursor);
 }
@@ -473,12 +474,12 @@ void FormAnalysis2D::on_pushCalibGain_clicked()
     gain_match_cali_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     gain_match_cali_.model_ = Gamma::CalibrationModel::polynomial;
     ui->plotCalib->setFloatingText(QString::fromStdString(p.to_UTF8(3, true)));
-//    ui->pushApplyCalib->setEnabled(gain_match_calib_ != old_calibration_);
+    //    ui->pushApplyCalib->setEnabled(gain_match_calib_ != old_calibration_);
   }
   else
     PL_INFO << "<Energy calibration> Gamma::Calibration failed";
 
-//  toggle_push();
+  //  toggle_push();
   plot_calib();
 }
 
@@ -534,24 +535,24 @@ void FormAnalysis2D::on_pushSymmetrize_clicked()
     }
 
     Pixie::Spectrum::Spectrum* some_spectrum = spectra_->by_name(current_spectrum_.toStdString());
+    if (some_spectrum == nullptr)
+      return;
 
-    if ((some_spectrum == nullptr)
-        || (some_spectrum->total_count() == 0)
-        || (some_spectrum->dimensions() != 2)
-        ) {
-      PL_WARN << "Original spectrum " << current_spectrum_.toStdString() << " does not exist or has no events or is not 2d";
+    Pixie::Spectrum::Metadata md = some_spectrum->metadata();
+
+    if ((md.total_count == 0) || (md.dimensions != 2)) {
+      PL_WARN << "Original spectrum " << current_spectrum_.toStdString() << " has no events or is not 2d";
       return;
     }
 
-    int bits = some_spectrum->bits();
-    uint32_t adjrange = static_cast<uint32_t>(some_spectrum->resolution());
+    uint32_t adjrange = static_cast<uint32_t>(md.resolution);
 
     Pixie::Spectrum::Template *temp_sym = Pixie::Spectrum::Factory::getInstance().create_template("2D");
     temp_sym->visible = false;
     temp_sym->name_ = sym_spec_name.toStdString();
     temp_sym->match_pattern = std::vector<int16_t>({1,1,0,0});
     temp_sym->add_pattern = std::vector<int16_t>({1,1,0,0});
-    temp_sym->bits = bits;
+    temp_sym->bits = md.bits;
 
     Pixie::Spectrum::Spectrum *symspec = Pixie::Spectrum::Factory::getInstance().create_from_template(*temp_sym);
     delete temp_sym;
@@ -595,8 +596,7 @@ void FormAnalysis2D::on_pushSymmetrize_clicked()
       }
     }
 
-    std::vector<Gamma::Detector> detectors = some_spectrum->get_detectors();
-    for (auto &p : detectors) {
+    for (auto &p : md.detectors) {
       if (p.shallow_equals(detector2_)) {
         p = Gamma::Detector(std::string("*") + detector2_.name_);
         p.energy_calibrations_.add(nrg_calibration1_);
@@ -605,9 +605,9 @@ void FormAnalysis2D::on_pushSymmetrize_clicked()
 
     Pixie::Spill spill;
     spill.run = new Pixie::RunInfo(spectra_->runInfo());
-    for (int i=0; i < detectors.size(); ++i) {
-      PL_DBG << "push det " << i << detectors[i].name_;
-      spill.run->p4_state.set_detector(Pixie::Channel(i), detectors[i]);
+    for (int i=0; i < md.detectors.size(); ++i) {
+      PL_DBG << "push det " << i << md.detectors[i].name_;
+      spill.run->p4_state.set_detector(Pixie::Channel(i), md.detectors[i]);
     }
     symspec->addSpill(spill);
     delete spill.run;
@@ -636,24 +636,24 @@ void FormAnalysis2D::on_pushFoldData_clicked()
     }
 
     Pixie::Spectrum::Spectrum* some_spectrum = spectra_->by_name(current_spectrum_.toStdString());
+    if (some_spectrum == nullptr)
+      return;
 
-    if ((some_spectrum == nullptr)
-        || (some_spectrum->total_count() == 0)
-        || (some_spectrum->dimensions() != 2)
-        ) {
-      PL_WARN << "Original spectrum " << current_spectrum_.toStdString() << " does not exist or has no events or is not 2d";
+    Pixie::Spectrum::Metadata md = some_spectrum->metadata();
+
+    if ((md.total_count == 0) || (md.dimensions != 2)) {
+      PL_WARN << "Original spectrum " << current_spectrum_.toStdString() << " has no events or is not 2d";
       return;
     }
 
-    int bits = some_spectrum->bits();
-    uint32_t adjrange = static_cast<uint32_t>(some_spectrum->resolution());
+    uint32_t adjrange = static_cast<uint32_t>(md.resolution);
 
     Pixie::Spectrum::Template *temp_fold = Pixie::Spectrum::Factory::getInstance().create_template("2D");
     temp_fold->visible = false;
     temp_fold->name_ = fold_spec_name.toStdString();
     temp_fold->match_pattern = std::vector<int16_t>({1,1,0,0});
     temp_fold->add_pattern = std::vector<int16_t>({1,1,0,0});
-    temp_fold->bits = bits;
+    temp_fold->bits = md.bits;
 
     Pixie::Spectrum::Spectrum *foldspec = Pixie::Spectrum::Factory::getInstance().create_from_template(*temp_fold);
     delete temp_fold;
@@ -675,8 +675,7 @@ void FormAnalysis2D::on_pushFoldData_clicked()
     }
 
 
-    std::vector<Gamma::Detector> detectors = some_spectrum->get_detectors();
-    for (auto &p : detectors) {
+    for (auto &p : md.detectors) {
       if (p.shallow_equals(detector2_) || p.shallow_equals(detector1_)) {
         p = Gamma::Detector(detector1_.name_ + std::string("*") + detector2_.name_);
         p.energy_calibrations_.add(nrg_calibration1_);
@@ -685,8 +684,8 @@ void FormAnalysis2D::on_pushFoldData_clicked()
 
     Pixie::Spill spill;
     spill.run = new Pixie::RunInfo(spectra_->runInfo());
-    for (int i=0; i < detectors.size(); ++i)
-      spill.run->p4_state.set_detector(Pixie::Channel(i), detectors[i]);
+    for (int i=0; i < md.detectors.size(); ++i)
+      spill.run->p4_state.set_detector(Pixie::Channel(i), md.detectors[i]);
     foldspec->addSpill(spill);
     delete spill.run;
 
@@ -702,7 +701,7 @@ void FormAnalysis2D::on_pushAddGatedSpectra_clicked()
   this->setCursor(Qt::WaitCursor);
   bool success = false;
 
-  if ((gate_x != nullptr) && (gate_x->total_count() > 0)) {
+  if ((gate_x != nullptr) && (gate_x->metadata().total_count > 0)) {
     if (spectra_->by_name(gate_x->name()) != nullptr)
       PL_WARN << "Spectrum " << gate_x->name() << " already exists.";
     else
@@ -714,7 +713,7 @@ void FormAnalysis2D::on_pushAddGatedSpectra_clicked()
     }
   }
 
-  if ((gate_y != nullptr) && (gate_y->total_count() > 0)) {
+  if ((gate_y != nullptr) && (gate_y->metadata().total_count > 0)) {
     if (spectra_->by_name(gate_y->name()) != nullptr)
       PL_WARN << "Spectrum " << gate_y->name() << " already exists.";
     else
@@ -785,14 +784,14 @@ void FormAnalysis2D::on_pushSaveCalib_clicked()
     for (auto &q : spectra_->spectra()) {
       if (q == nullptr)
         continue;
-      std::vector<Gamma::Detector> detectors = q->get_detectors();
-      for (auto &p : detectors) {
+      Pixie::Spectrum::Metadata md = q->metadata();
+      for (auto &p : md.detectors) {
         if (p.shallow_equals(detector2_)) {
           PL_INFO << "   applying new calibrations for " << detector2_.name_ << " on " << q->name();
           p.gain_match_calibrations_.replace(gain_match_cali_);
         }
       }
-      q->set_detectors(detectors);
+      q->set_detectors(md.detectors);
     }
 
     std::vector<Gamma::Detector> detectors = spectra_->runInfo().p4_state.get_detectors();

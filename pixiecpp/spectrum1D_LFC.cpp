@@ -36,7 +36,7 @@ bool Spectrum1D_LFC::initialize() {
   //add pattern must have exactly one channel
   int adds = 0;
   for (int i=0; i < kNumChans; i++)
-    if (add_pattern_[i] == 1)
+    if (metadata_.add_pattern[i] == 1)
       adds++;
 
   if (adds != 1) {
@@ -45,12 +45,12 @@ bool Spectrum1D_LFC::initialize() {
   }
   
   for (int i=0; i < kNumChans; i++)
-    if (add_pattern_[i] == 1)
+    if (metadata_.add_pattern[i] == 1)
       my_channel_ = i;
 
-  resolution_ = pow(2, 16 - shift_by_);
-  channels_all_.resize(resolution_,0);
-  channels_run_.resize(resolution_,0);
+  metadata_.resolution = pow(2, 16 - shift_by_);
+  channels_all_.resize(metadata_.resolution,0);
+  channels_run_.resize(metadata_.resolution,0);
 
   time_sample_ = get_attr("time_sample").value;
 
@@ -104,26 +104,26 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
     time1_ = time2_;
   
     count_total_ += fast_peaks_compensated;
-    count_ = count_total_.convert_to<uint64_t>();
+    metadata_.total_count = count_total_.convert_to<uint64_t>();
 
     PL_DBG << "LFC update chan[" << my_channel_ << "]"
            << " fast_peaks_compensated=" << fast_peaks_compensated
            << " true_count=" << count_current_;
 
-    for (uint32_t i = 0; i < resolution_; i++) {
+    for (uint32_t i = 0; i < metadata_.resolution; i++) {
       channels_all_[i] += fast_peaks_compensated * channels_run_[i] / count_current_;
       if (channels_all_[i] > 0.0)
         spectrum_[i] = channels_all_[i].convert_to<uint64_t>();
       channels_run_[i] = 0.0;
     }
-    live_time_ = real_time_; //think about this...
+    metadata_.live_time = metadata_.real_time; //think about this...
     count_current_ = 0;
   } else {
-    for (uint32_t i = 0; i < resolution_; i++) {
+    for (uint32_t i = 0; i < metadata_.resolution; i++) {
       if ((channels_run_[i] > 0.0) || (channels_all_[i] > 0.0))
         spectrum_[i] = channels_run_[i].convert_to<uint64_t>() + channels_all_[i].convert_to<uint64_t>();
     }
-    count_ += count_current_.convert_to<uint64_t>();
+    metadata_.total_count += count_current_.convert_to<uint64_t>();
     time2_ = newStats;
   }
 }
@@ -131,10 +131,10 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
 void Spectrum1D_LFC::addRun(const RunInfo& run_info) {
   addStats(time2_);
   Spectrum1D::addRun(run_info);
-  count_ = 0.0;
+  metadata_.total_count = 0.0;
   for (auto &q : spectrum_)
-    count_ += q;
-  live_time_ = real_time_; //think about this...
+    metadata_.total_count += q;
+  metadata_.live_time = metadata_.real_time; //think about this...
 }
 
 }}

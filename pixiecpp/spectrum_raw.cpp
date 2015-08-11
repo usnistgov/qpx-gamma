@@ -44,6 +44,8 @@ bool SpectrumRaw::initialize() {
   if (file_dir_.empty())
     return false;
 
+  metadata_.type = my_type();
+
   if (format_ == 0)
     return init_bin();
   if (format_ == 1)
@@ -65,7 +67,7 @@ bool SpectrumRaw::init_text() {
   std::stringstream ss;
   xml_printer_->OpenElement("MatchPattern");
   for (int i = 0; i < kNumChans; i++)
-    ss << match_pattern_[i] << " ";
+    ss << metadata_.match_pattern[i] << " ";
   xml_printer_->PushText(boost::algorithm::trim_copy(ss.str()).c_str());
   xml_printer_->CloseElement();
 
@@ -146,13 +148,13 @@ void SpectrumRaw::addRun(const RunInfo& run) {
 
 void SpectrumRaw::_closeAcquisition() {
   if (open_xml_) {
-    PL_DBG << "<SpectrumRaw> closing " << file_name_txt_ << " for " << name_;
+    PL_DBG << "<SpectrumRaw> closing " << file_name_txt_ << " for " << metadata_.name;
     xml_printer_->CloseElement(); //QpxListData
     fclose(file_xml_);
     open_xml_ = false;
   }
   if (open_bin_) {
-    PL_DBG << "<SpectrumRaw> closing " << file_name_bin_ << " for " << name_;
+    PL_DBG << "<SpectrumRaw> closing " << file_name_bin_ << " for " << metadata_.name;
     file_bin_.close();
     open_bin_ = false;
   }

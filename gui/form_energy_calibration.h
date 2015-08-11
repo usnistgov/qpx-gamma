@@ -45,12 +45,9 @@ public:
   explicit FormEnergyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, Gamma::Fitter&, QWidget *parent = 0);
   ~FormEnergyCalibration();
 
-  void setData(Gamma::Detector det, Gamma::Calibration nrg_calib, uint16_t bits);
+  void newSpectrum();
   bool save_close();
-
-  void update_peaks(bool);  
-  Gamma::Calibration get_new_calibration() {return new_calibration_;}
-
+  void update_peaks(bool);
 
   void clear();
 
@@ -84,15 +81,10 @@ private:
 
   //from parent
   QString data_directory_;
-
   XMLableDB<Gamma::Detector> &detectors_;
-  Gamma::Detector detector_;
-
   Gamma::Fitter &fit_data_;
 
-  uint16_t bits_;
-  Gamma::Calibration old_calibration_, new_calibration_;
-
+  Gamma::Calibration old_calibration_;
   AppearanceProfile style_fit, style_pts;
 
   void loadSettings();

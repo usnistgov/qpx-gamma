@@ -74,6 +74,10 @@ void FormPlot1D::spectrumDetails()
   QString id = ui->spectraWidget->selected();
   Pixie::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(id.toStdString());
 
+  Pixie::Spectrum::Metadata md;
+  if (someSpectrum)
+    md = someSpectrum->metadata();
+
   if (id.isEmpty() || (someSpectrum == nullptr)) {
     ui->labelSpectrumInfo->setText("Left-click on spectrum above to see statistics, right click to toggle visibility");
     ui->pushAnalyse->setEnabled(false);
@@ -81,12 +85,14 @@ void FormPlot1D::spectrumDetails()
     return;
   }
 
-  double count = someSpectrum->total_count();
-  double real = someSpectrum->real_time().total_milliseconds() * 0.001;
-  double live = someSpectrum->live_time().total_milliseconds() * 0.001;
+  std::string type = someSpectrum->type();
+  double real = md.real_time.total_milliseconds() * 0.001;
+  double live = md.live_time.total_milliseconds() * 0.001;
   double dead = 100;
   double rate = 0;
-  Gamma::Detector det = someSpectrum->get_detector(0);
+  Gamma::Detector det = Gamma::Detector();
+  if (!md.detectors.empty())
+    det = md.detectors[0];
 
   QString detstr("Detector: ");
   detstr += QString::fromStdString(det.name_);
@@ -99,13 +105,13 @@ void FormPlot1D::spectrumDetails()
 
   if (real > 0) {
     dead = (real - live) * 100.0 / real;
-    rate = count / real;
+    rate = md.total_count.convert_to<double>() / real;
   }
 
   QString infoText =
-      "<nobr>" + id + "(" + QString::fromStdString(someSpectrum->type()) + ")</nobr><br/>"
+      "<nobr>" + id + "(" + QString::fromStdString(type) + ")</nobr><br/>"
       "<nobr>" + detstr + "</nobr><br/>"
-      "<nobr>Count: " + QString::number(count) + "</nobr><br/>"
+      "<nobr>Count: " + QString::number(md.total_count.convert_to<double>()) + "</nobr><br/>"
       "<nobr>Rate: " + QString::number(rate) + "cps</nobr><br/>"
       "<nobr>Live:  " + QString::number(live) + "s</nobr><br/>"
       "<nobr>Real:  " + QString::number(real) + "s</nobr><br/>"
@@ -161,16 +167,21 @@ void FormPlot1D::update_plot() {
 
   ui->mcaPlot->clearGraphs();
   for (auto &q: mySpectra->spectra(1, bits)) {
-    if (q && q->visible() && q->resolution() && q->total_count()) {
-      uint32_t app = q->appearance();
+    Pixie::Spectrum::Metadata md;
+    if (q)
+      md = q->metadata();
 
-      QVector<double> y(q->resolution());
+    if (md.visible && (md.resolution > 0) && (md.total_count > 0)) {
+
+      QVector<double> y(md.resolution);
 
       std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
           std::move(q->get_spectrum({{0, y.size()}}));
       std::vector<double> energies = q->energies(0);
 
-      Gamma::Detector detector = q->get_detector(0);
+      Gamma::Detector detector = Gamma::Detector();
+      if (!md.detectors.empty())
+       detector = md.detectors[0];
       Gamma::Calibration temp_calib;
       if (detector.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
         temp_calib = detector.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
@@ -192,7 +203,7 @@ void FormPlot1D::update_plot() {
       }
 
       AppearanceProfile profile;
-      profile.default_pen = QPen(QColor::fromRgba(app), 1);
+      profile.default_pen = QPen(QColor::fromRgba(md.appearance), 1);
       ui->mcaPlot->addGraph(QVector<double>::fromStdVector(energies), y, profile);
 
     }

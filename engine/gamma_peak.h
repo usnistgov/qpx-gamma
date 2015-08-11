@@ -38,7 +38,7 @@ enum class BaselineType : int {linear = 0, step = 1, step_polynomial = 2};
 class SUM4 {
 public:
   std::vector<double> x_, y_, bx_, by_;
-  uint32_t Lpeak, Rpeak, LBstart, LBend, RBstart, RBend;
+  int32_t Lpeak, Rpeak, LBstart, LBend, RBstart, RBend;
   double peak_width, Lw, Rw;
   double Lsum, Rsum;
   double B_area, B_variance;

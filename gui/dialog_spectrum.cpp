@@ -45,7 +45,8 @@ dialog_spectrum::dialog_spectrum(Pixie::Spectrum::Spectrum &spec, QWidget *paren
   connect(&det_selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(det_selection_changed(QItemSelection,QItemSelection)));
 
-  attributes_ = my_spectrum_.generic_attributes();
+  md_ = my_spectrum_.metadata();
+  attributes_ = md_.attributes;
 
   table_model_.eat(&attributes_);
   ui->tableGenericAttrs->setModel(&table_model_);
@@ -84,26 +85,28 @@ void dialog_spectrum::det_selection_changed(QItemSelection, QItemSelection) {
 }
 
 void dialog_spectrum::updateData() {
-  ui->groupSpectrum->setTitle(QString::fromStdString(my_spectrum_.name()));
+  md_ = my_spectrum_.metadata();
+
+  ui->groupSpectrum->setTitle(QString::fromStdString(md_.name));
   ui->lineType->setText(QString::fromStdString(my_spectrum_.type()));
-  ui->lineBits->setText(QString::number(static_cast<int>(my_spectrum_.bits())));
-  ui->lineChannels->setText(QString::number(my_spectrum_.resolution()));
-  ui->colPicker->setCurrentColor(QColor::fromRgba(my_spectrum_.appearance()));
-  ui->patternMatch->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(my_spectrum_.match_pattern()), 25, true, 16));
-  ui->patternAdd->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(my_spectrum_.add_pattern()), 25, false, 16));
+  ui->lineBits->setText(QString::number(static_cast<int>(md_.bits)));
+  ui->lineChannels->setText(QString::number(md_.resolution));
+  ui->colPicker->setCurrentColor(QColor::fromRgba(md_.appearance));
+  ui->patternMatch->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(md_.match_pattern), 25, true, 16));
+  ui->patternAdd->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(md_.add_pattern), 25, false, 16));
   ui->patternMatch->setMinimumSize(ui->patternMatch->sizeHint());
   ui->patternAdd->setMinimumSize(ui->patternAdd->sizeHint());
 
-  ui->lineLiveTime->setText(QString::fromStdString(to_simple_string(my_spectrum_.live_time())));
-  ui->lineRealTime->setText(QString::fromStdString(to_simple_string(my_spectrum_.real_time())));
-  ui->lineTotalCount->setText(QString::number(my_spectrum_.total_count()));
+  ui->lineLiveTime->setText(QString::fromStdString(to_simple_string(md_.live_time)));
+  ui->lineRealTime->setText(QString::fromStdString(to_simple_string(md_.real_time)));
+  ui->lineTotalCount->setText(QString::number(md_.total_count.convert_to<double>()));
 
-  ui->dateTimeStart->setDateTime(fromBoostPtime(my_spectrum_.start_time()));
+  ui->dateTimeStart->setDateTime(fromBoostPtime(md_.start_time));
 
-  ui->lineDescription->setText(QString::fromStdString(my_spectrum_.description()));
+  ui->lineDescription->setText(QString::fromStdString(md_.description));
 
   detectors_.clear();
-  for (auto &q: my_spectrum_.get_detectors())
+  for (auto &q: md_.detectors)
     detectors_.add_a(q);
   det_table_model_.update();
 
@@ -193,10 +196,9 @@ void dialog_spectrum::changeDet(Gamma::Detector newDetector) {
     return;
   int i = ixl.front().row();
 
-  std::vector<Gamma::Detector> dets = my_spectrum_.get_detectors();
-  if (i < dets.size()) {
-    dets[i] = newDetector;
-    my_spectrum_.set_detectors(dets);
+  if (i < md_.detectors.size()) {
+    md_.detectors[i] = newDetector;
+    my_spectrum_.set_detectors(md_.detectors);
   }
 
   detectors_.replace(newDetector);
@@ -217,10 +219,9 @@ void dialog_spectrum::on_pushDetRename_clicked()
                                        QString::fromStdString(detectors_.get(i).name_),
                                        &ok);
   if (ok && !text.isEmpty()) {
-    std::vector<Gamma::Detector> dets = my_spectrum_.get_detectors();
-    if (i < dets.size()) {
-      dets[i].name_ = text.toStdString();
-      my_spectrum_.set_detectors(dets);
+    if (i < md_.detectors.size()) {
+      md_.detectors[i].name_ = text.toStdString();
+      my_spectrum_.set_detectors(md_.detectors);
       updateData();
       toggle_push();
     }

@@ -51,10 +51,13 @@ public:
 
 signals:
   void peaks_changed(bool);
+  void save_peaks_request();
 
 private slots:
   void selection_changed_in_table();
   void toggle_push();
+
+  void on_pushSaveReport_clicked();
 
 private:
   Ui::FormPeakFitter *ui;

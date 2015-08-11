@@ -133,10 +133,13 @@ void FormPlot2D::updateUI()
   std::string newname;
   std::list<std::string> names;
   for (auto &q : spectra) {
-    std::string name = q->name();
-    names.push_back(name);
-    if (q->visible())
-      newname = name;
+    Pixie::Spectrum::Metadata md;
+    if (q)
+      md = q->metadata();
+
+    names.push_back(md.name);
+    if (md.visible)
+      newname = md.name;
   }
 
   if (newname.empty() && !names.empty())
@@ -348,11 +351,11 @@ void FormPlot2D::update_plot(bool force) {
     ui->pushAnalyse->setEnabled((some_spectrum != nullptr));
     zoom_2d = ui->sliderZoom2d->value();
 
-    if ((some_spectrum != nullptr)
-        && some_spectrum->total_count()
-        && (some_spectrum->dimensions() == 2)
-        && (adjrange = static_cast<uint32_t>(some_spectrum->resolution() * (ui->sliderZoom2d->value() / 100.0)))
-        )
+    Pixie::Spectrum::Metadata md;
+    if (some_spectrum)
+      md = some_spectrum->metadata();
+
+    if ((md.total_count > 0) && (md.dimensions == 2) && (adjrange = static_cast<uint32_t>(md.resolution * (ui->sliderZoom2d->value() / 100.0))) )
     {
 //      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
@@ -369,7 +372,13 @@ void FormPlot2D::update_plot(bool force) {
           y_marker.shift(bits);
         }
 
-        Gamma::Detector detector_x_ = some_spectrum->get_detector(0);
+        Gamma::Detector detector_x_;
+        Gamma::Detector detector_y_;
+        if (md.detectors.size() > 1) {
+          detector_x_ = md.detectors[0];
+          detector_y_ = md.detectors[1];
+        }
+
         if (detector_x_.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
           calib_x_ = detector_x_.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
         else
@@ -382,7 +391,6 @@ void FormPlot2D::update_plot(bool force) {
         if (!calib_x_.bits_)
           calib_x_.bits_ = bits;
 
-        Gamma::Detector detector_y_ = some_spectrum->get_detector(1);
         if (detector_y_.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
           calib_y_ = detector_y_.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
         else

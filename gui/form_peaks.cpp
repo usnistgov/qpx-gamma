@@ -125,10 +125,6 @@ void FormPeaks::saveSettings(QSettings &settings_) {
 }
 
 void FormPeaks::clear() {
-  nrg_calibration_ = Gamma::Calibration();
-  fwhm_calibration_ = Gamma::Calibration();
-  detector_ = Gamma::Detector();
-  fit_data_->clear();
   maxima.clear();
   minima.clear();
   toggle_push();
@@ -144,31 +140,25 @@ void FormPeaks::setSpectrum(Pixie::Spectrum::Spectrum *newspectrum) {
   clear();
   spectrum_ = newspectrum;
 
-  if (spectrum_ && spectrum_->resolution()) {
-    int bits = spectrum_->bits();
-    detector_ = spectrum_->get_detector(0);
-    QString title = "Spectrum=" + QString::fromStdString(spectrum_->name()) + "  resolution=" + QString::number(bits) + "bits  Detector=" + QString::fromStdString(detector_.name_);
-    ui->plot1D->setFloatingText(title);
-    ui->plot1D->setTitle(title);
-  }
+  QString title = "Spectrum=" + QString::fromStdString(fit_data_->metadata_.name) + "  resolution=" + QString::number(fit_data_->metadata_.bits) + "bits  Detector=" + QString::fromStdString(fit_data_->detector_.name_);
+  ui->plot1D->setFloatingText(title);
+  ui->plot1D->setTitle(title);
 
   ui->plot1D->reset_scales();
+  fit_data_->set_mov_avg(ui->spinMovAvg->value());
 
   update_spectrum();
 }
-
-void FormPeaks::setData(Gamma::Calibration nrg_calib, Gamma::Calibration fwhm_calib) {
-  fwhm_calibration_ = fwhm_calib;
-  nrg_calibration_ = nrg_calib;
-  replot_markers();
-}
-
 
 void FormPeaks::update_spectrum() {
   if (fit_data_ == nullptr)
     return;
 
-  if ((!spectrum_) || (!spectrum_->resolution())) {
+  Pixie::Spectrum::Metadata md;
+  if (spectrum_)
+    md = spectrum_->metadata();
+
+  if (md.resolution == 0) {
     clear();
     replot_all();
     return;
@@ -177,10 +167,8 @@ void FormPeaks::update_spectrum() {
   minima.clear();
   maxima.clear();
 
-  std::vector<double> x_chan(spectrum_->resolution());
-  std::vector<double> y(spectrum_->resolution());
-
-  double live_seconds = spectrum_->live_time().total_seconds();
+  std::vector<double> x_chan(md.resolution);
+  std::vector<double> y(md.resolution);
 
   std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_dump =
       std::move(spectrum_->get_spectrum({{0, y.size()}}));
@@ -197,11 +185,6 @@ void FormPeaks::update_spectrum() {
       maxima[xx] = yy;
     ++i;
   }
-
-  fit_data_->setXY(x_chan, y, ui->spinMovAvg->value());
-  fit_data_->find_prelim();
-  fit_data_->filter_prelim(ui->spinMinPeakWidth->value());
-  fit_data_->live_seconds_ = live_seconds;
 
   replot_all();
 }
@@ -276,7 +259,7 @@ void FormPeaks::addMovingMarker(double x) {
 
   range_.center.channel = x;
   range_.center.chan_valid = true;
-  range_.center.energy = nrg_calibration_.transform(x);
+  range_.center.energy = fit_data_->nrg_cali_.transform(x);
   range_.center.energy_valid = (range_.center.channel != range_.center.energy);
 
   uint16_t ch = static_cast<uint16_t>(x);
@@ -284,17 +267,17 @@ void FormPeaks::addMovingMarker(double x) {
   uint16_t ch_l = fit_data_->find_left(ch, ui->spinMinPeakWidth->value());
   range_.l.channel = ch_l;
   range_.l.chan_valid = true;
-  range_.l.energy = nrg_calibration_.transform(ch_l);
+  range_.l.energy = fit_data_->nrg_cali_.transform(ch_l);
   range_.l.energy_valid = (range_.l.channel != range_.l.energy);
 
   uint16_t ch_r = fit_data_->find_right(ch, ui->spinMinPeakWidth->value());
   range_.r.channel = ch_r;
   range_.r.chan_valid = true;
-  range_.r.energy = nrg_calibration_.transform(ch_r);
+  range_.r.energy = fit_data_->nrg_cali_.transform(ch_r);
   range_.r.energy_valid = (range_.r.channel != range_.r.energy);
 
   ui->pushAdd->setEnabled(true);
-  PL_INFO << "<Peak finder> Marker at chan=" << range_.center.channel << " (" << range_.center.energy << " " << nrg_calibration_.units_ << ")"
+  PL_INFO << "<Peak finder> Marker at chan=" << range_.center.channel << " (" << range_.center.energy << " " << fit_data_->nrg_cali_.units_ << ")"
           << ", edges=[" << range_.l.channel << ", " << range_.r.channel << "]";
 
   replot_markers();

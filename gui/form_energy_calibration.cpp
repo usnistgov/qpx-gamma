@@ -36,7 +36,6 @@ FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Gamm
   ui->setupUi(this);
 
   loadSettings();
-  bits_ = 0;
 
   style_fit.default_pen = QPen(Qt::blue, 0);
   style_pts.default_pen = QPen(Qt::darkBlue, 7);
@@ -102,10 +101,7 @@ void FormEnergyCalibration::saveSettings() {
 }
 
 void FormEnergyCalibration::clear() {
-  bits_ = 0;
-  new_calibration_ = Gamma::Calibration();
   old_calibration_ = Gamma::Calibration();
-  detector_ = Gamma::Detector();
   replot_markers();
   toggle_push();
   ui->PlotCalib->setFloatingText("");
@@ -114,11 +110,8 @@ void FormEnergyCalibration::clear() {
   ui->pushFromDB->setEnabled(false);
 }
 
-void FormEnergyCalibration::setData(Gamma::Detector det, Gamma::Calibration nrg_calib, uint16_t bits) {
-  bits_ = bits;
-  detector_ = det;
-  new_calibration_ = old_calibration_ = nrg_calib;
-  PL_DBG << "<Energy Calibration> received new calib coefs = " << new_calibration_.coef_to_string();
+void FormEnergyCalibration::newSpectrum() {
+  old_calibration_ = fit_data_.nrg_cali_;
   replot_markers();
   toggle_push();
 }
@@ -183,17 +176,17 @@ void FormEnergyCalibration::replot_markers() {
   if (xx.size()) {
     ui->PlotCalib->addPoints(xx, yy, style_pts);
     ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
-    if (new_calibration_.units_ != "channels") {
+    if (fit_data_.nrg_cali_.units_ != "channels") {
 
       double step = (xmax-xmin) / 50.0;
       xx.clear(); yy.clear();
 
       for (double i=xmin; i < xmax; i+=step) {
         xx.push_back(i);
-        yy.push_back(new_calibration_.transform(i));
+        yy.push_back(fit_data_.nrg_cali_.transform(i));
       }
       ui->PlotCalib->addFit(xx, yy, style_fit);
-      ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(new_calibration_.fancy_equation(3)));
+      ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(fit_data_.nrg_cali_.fancy_equation(3)));
     }
   }
 
@@ -253,12 +246,12 @@ void FormEnergyCalibration::toggle_push() {
     ui->spinTerms->setEnabled(false);
   }
 
-  if (detectors_.has_a(detector_) && detectors_.get(detector_).energy_calibrations_.has_a(old_calibration_))
+  if (detectors_.has_a(fit_data_.detector_) && detectors_.get(fit_data_.detector_).energy_calibrations_.has_a(old_calibration_))
     ui->pushFromDB->setEnabled(true);
   else
     ui->pushFromDB->setEnabled(false);
 
-  ui->pushApplyCalib->setEnabled(new_calibration_ != old_calibration_);
+  ui->pushApplyCalib->setEnabled(fit_data_.nrg_cali_ != old_calibration_);
 }
 
 void FormEnergyCalibration::on_pushFit_clicked()
@@ -276,13 +269,12 @@ void FormEnergyCalibration::on_pushFit_clicked()
   Polynomial p = Polynomial(x, y, ui->spinTerms->value());
 
   if (p.coeffs_.size()) {
-    new_calibration_.type_ = "Energy";
-    new_calibration_.bits_ = bits_;
-    new_calibration_.coefficients_ = p.coeffs_;
-    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
-    new_calibration_.units_ = "keV";
-    new_calibration_.model_ = Gamma::CalibrationModel::polynomial;
-    fit_data_.nrg_cali_ = new_calibration_;
+    fit_data_.nrg_cali_.type_ = "Energy";
+    fit_data_.nrg_cali_.bits_ = fit_data_.metadata_.bits;
+    fit_data_.nrg_cali_.coefficients_ = p.coeffs_;
+    fit_data_.nrg_cali_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
+    fit_data_.nrg_cali_.units_ = "keV";
+    fit_data_.nrg_cali_.model_ = Gamma::CalibrationModel::polynomial;
   }
   else
     PL_INFO << "<Energy calibration> Gamma::Calibration failed";
@@ -302,9 +294,8 @@ void FormEnergyCalibration::on_pushApplyCalib_clicked()
 
 void FormEnergyCalibration::on_pushFromDB_clicked()
 {
-  Gamma::Detector newdet = detectors_.get(detector_);
-  new_calibration_ = newdet.energy_calibrations_.get(old_calibration_);
-  fit_data_.nrg_cali_ = new_calibration_;
+  Gamma::Detector newdet = detectors_.get(fit_data_.detector_);
+  fit_data_.nrg_cali_ = newdet.energy_calibrations_.get(old_calibration_);
   replot_markers();
   toggle_push();
 }

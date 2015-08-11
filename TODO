@@ -4,7 +4,7 @@ Major features/overhauls:
 -lock file (one instance per system)
 -pause run
 -spectra warping
--integration uncertainties
+-uncertainties for multiplet areas
 -efficiency calibration
 
 pixiecpp:

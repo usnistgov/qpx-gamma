@@ -125,25 +125,6 @@ void FormPeakFitter::add_peak_to_table(const Gamma::Peak &p, int row, bool gray)
   fwhm->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 1, fwhm);
 
-//  ui->tablePeaks->setItem(row, 3, new QTableWidgetItem( QString::number(p.fwhm_gaussian / p.fwhm_theoretical * 100) + "%" ));
-  //   ui->tablePeaks->setItem(row, 4, new QTableWidgetItem( QString::number(p.x_[0]) ));
-  //   ui->tablePeaks->setItem(row, 5, new QTableWidgetItem( QString::number(p.x_[p.x_.size() - 1]) ));    
-//   ui->tablePeaks->setItem(row, 4, new QTableWidgetItem( QString::number(p.hwhm_R - p.hwhm_L) ));
- /* QString nbrs = "";
-  if (p.subpeak)
-    nbrs += "M ";
-  if (p.intersects_L)
-    nbrs += "<";
-  if (p.intersects_R)
-    nbrs += " >";
-  /*  if (peaks_[i].hwhm_L > 0.5 * peaks_[i].fwhm_theoretical)
-      nbrs += " [";
-      if (peaks_[i].hwhm_R > 0.5 * peaks_[i].fwhm_theoretical)
-      nbrs += " ]";*/
-  //ui->tablePeaks->setItem(row, 3, new QTableWidgetItem( nbrs ));
-  //ui->tablePeaks->setItem(row, 6, new QTableWidgetItem( QString::number(p.area_gross_) ));
-  //ui->tablePeaks->setItem(row, 7, new QTableWidgetItem( QString::number(p.area_bckg_) ));
-
   QTableWidgetItem *area_gauss = new QTableWidgetItem(QString::number(p.area_gauss_));
   area_gauss->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 2, area_gauss);
@@ -188,4 +169,10 @@ void FormPeakFitter::selection_changed_in_table() {
 }
 
 void FormPeakFitter::toggle_push() {
+  ui->pushSaveReport->setEnabled(!fit_data_.peaks_.empty());
+}
+
+void FormPeakFitter::on_pushSaveReport_clicked()
+{
+  emit save_peaks_request();
 }

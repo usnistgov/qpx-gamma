@@ -171,7 +171,7 @@ void DialogDetector::on_pushRead1D_clicked()
 
   Pixie::Spectrum::Spectrum* newSpectrum = Pixie::Spectrum::Factory::getInstance().create_from_file(fileName.toStdString());
   if (newSpectrum != nullptr) {
-    std::vector<Gamma::Detector> dets = newSpectrum->get_detectors();
+    std::vector<Gamma::Detector> dets = newSpectrum->metadata().detectors;
     for (auto &q : dets)
       if (q != Gamma::Detector()) {
         PL_INFO << "Looking at calibrations from detector " << q.name_;
@@ -492,8 +492,8 @@ void WidgetDetectors::on_pushImport_clicked()
 
 void WidgetDetectors::on_pushExport_clicked()
 {
-  QString fileName = QFileDialog::getSaveFileName(this, "Save detector settings",
-                                                  root_dir_, "Detector settings (*.det)");
+  QString fileName = CustomSaveFileDialog(this, "Save detector settings",
+                                          root_dir_, "Detector settings (*.det)");
   if (validateFile(this, fileName, true)) {
     QFileInfo file(fileName);
     if (file.suffix() != "det")

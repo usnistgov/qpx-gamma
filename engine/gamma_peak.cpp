@@ -76,7 +76,12 @@ SUM4::SUM4(const std::vector<double> &x,
   peak_width = right - left + 1;
 
   LBend = left - 1;
+  if (LBend < 0)
+    LBend = 0;
+
   RBstart = right + 1;
+  if (RBstart >= x.size())
+    RBstart = x.size() - 1;
 
   int32_t LBstart = LBend - samples;
   if (LBstart < 0)

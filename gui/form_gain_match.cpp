@@ -309,10 +309,14 @@ void FormGainMatch::update_plots() {
     have_data = true;
 
     for (auto &q: gm_spectra_.by_type("1D")) {
-      if (q->total_count()) {
+      Pixie::Spectrum::Metadata md;
+      if (q)
+        md = q->metadata();
+
+      if (md.total_count > 0) {
 
         uint32_t res = pow(2, bits);
-        uint32_t app = q->appearance();
+        uint32_t app = md.appearance;
         std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
             std::move(q->get_spectrum({{0, res}}));
 
@@ -329,7 +333,7 @@ void FormGainMatch::update_plots() {
           ++xx;
         }
 
-        if (q->name() == "Reference")
+        if (md.name == "Reference")
           y_ref = y;
         else
           y_opt = y;

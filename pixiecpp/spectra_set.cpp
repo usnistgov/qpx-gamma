@@ -319,7 +319,7 @@ void SpectraSet::read_xml(std::string file_name, bool with_spectra) {
       if (new_spectrum == nullptr)
         PL_INFO << "Could not parse spectrum";
       else {
-        new_spectrum->addSpill(fake_spill, new_spectrum->get_detectors().empty());
+        new_spectrum->addSpill(fake_spill, new_spectrum->metadata().detectors.empty());
         my_spectra_.push_back(new_spectrum);
       }
       one_spectrum = dynamic_cast<tinyxml2::XMLElement*>(one_spectrum->NextSibling());
