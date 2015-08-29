@@ -123,7 +123,7 @@ void FormPlot2D::on_comboChose2d_activated(const QString &arg1)
     else
       q->set_visible(false);
 
-  name_2d = arg1;
+  //name_2d = arg1;
   update_plot(true);
 }
 
@@ -338,13 +338,14 @@ void FormPlot2D::update_plot(bool force) {
   CustomTimer guiside(true);
 
   bool new_data = mySpectra->new_data();
-  bool rescale2d = ((zoom_2d != ui->sliderZoom2d->value()) || (name_2d != ui->comboChose2d->currentText()));
+  bool rescale2d = (zoom_2d != ui->sliderZoom2d->value());
 
   if (rescale2d || new_data || force) {
-    name_2d = ui->comboChose2d->currentText();
 //    PL_DBG << "really updating 2d " << name_2d.toStdString();
 
-    Pixie::Spectrum::Spectrum* some_spectrum = mySpectra->by_name(name_2d.toStdString());
+    QString newname = ui->comboChose2d->currentText();
+
+    Pixie::Spectrum::Spectrum* some_spectrum = mySpectra->by_name(newname.toStdString());
     uint32_t adjrange;
 
     ui->pushDetails->setEnabled((some_spectrum != nullptr));
@@ -355,13 +356,15 @@ void FormPlot2D::update_plot(bool force) {
     if (some_spectrum)
       md = some_spectrum->metadata();
 
-    if ((md.total_count > 0) && (md.dimensions == 2) && (adjrange = static_cast<uint32_t>(md.resolution * (ui->sliderZoom2d->value() / 100.0))) )
+    if ((md.total_count > 0) && (md.dimensions == 2) && (adjrange = static_cast<uint32_t>(md.resolution * (zoom_2d / 100.0))) )
     {
 //      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
-      if (rescale2d || force) {
+      if (rescale2d || force || (name_2d != newname)) {
 //        PL_DBG << "rescaling 2d";
+        name_2d = newname;
         ui->coincPlot->clearGraphs();
+        colorMap->clearData();
         colorMap->data()->setSize(adjrange, adjrange);
 
         int newbits = some_spectrum->bits();

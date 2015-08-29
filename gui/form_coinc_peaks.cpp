@@ -69,7 +69,7 @@ FormCoincPeaks::FormCoincPeaks(QWidget *parent) :
 
   ui->tablePeaks->verticalHeader()->hide();
   ui->tablePeaks->setColumnCount(6);
-  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "edges", "energy", "fwhm", "area", "cps"});
+  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "width(ch)", "energy", "fwhm", "area", "cps"});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tablePeaks->horizontalHeader()->setStretchLastSection(true);
@@ -146,11 +146,9 @@ void FormCoincPeaks::setSpectrum(Pixie::Spectrum::Spectrum *newspectrum, uint16_
 
   ui->plot1D->reset_scales();
 
-  update_spectrum();
-
   if (fit_data_->metadata_.total_count > 0) {
     on_pushFindPeaks_clicked();
-    replot_all();
+    update_spectrum();
   }
 }
 
@@ -171,24 +169,18 @@ void FormCoincPeaks::update_spectrum() {
   minima.clear();
   maxima.clear();
 
-  std::vector<double> x_chan(md.resolution);
-  std::vector<double> y(md.resolution);
-
-  std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_dump =
-      std::move(spectrum_->get_spectrum({{0, y.size()}}));
-
   int i = 0;
-  for (auto it : *spectrum_dump) {
-    double yy = it.second;
-    double xx = static_cast<double>(i);
-    x_chan[i] = xx;
-    y[i] = yy;
+  for (int i=0; i < fit_data_->y_.size(); ++i) {
+    double yy = fit_data_->y_[i];
+    double xx = fit_data_->nrg_cali_.transform(fit_data_->x_[i]);
     if (!minima.count(xx) || (minima[xx] > yy))
       minima[xx] = yy;
     if (!maxima.count(xx) || (maxima[xx] < yy))
       maxima[xx] = yy;
     ++i;
   }
+
+  PL_DBG << "coinc gated plot minima:maxima " << minima.size() << ":" << maxima.size();
 
   replot_all();
 }
@@ -201,10 +193,8 @@ void FormCoincPeaks::replot_all() {
   ui->plot1D->clearGraphs();
   ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->x_)), QVector<double>::fromStdVector(fit_data_->y_), main_graph_);
 
-  QVector<double> xx, yy;
-
   for (auto &q : fit_data_->multiplets_)
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.x_)), QVector<double>::fromStdVector(q.y_fullfit_), multiplet_);
+    ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.x_)), QVector<double>::fromStdVector(q.y_fullfit_), multiplet_);
   
   AppearanceProfile app;
   for (auto &q : fit_data_->peaks_) {
@@ -457,7 +447,7 @@ void FormCoincPeaks::add_peak_to_table(const Gamma::Peak &p, int row, QColor bck
   center->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 0, center);
 
-  QTableWidgetItem *edges = new QTableWidgetItem( QString::number(p.x_[0]) + "-" + QString::number(p.x_[p.x_.size() - 1]) );
+  QTableWidgetItem *edges = new QTableWidgetItem( QString::number(p.x_[p.x_.size() - 1] - p.x_[0]) );
   edges->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 1, edges);
 
