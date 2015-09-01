@@ -104,8 +104,11 @@ uint64_t Spectrum2D::_get_count(std::initializer_list<uint16_t> list) const {
     return 0;
   
   std::pair<uint16_t,uint16_t> point(coords[0], coords[1]);
-  //if not empty
-  return spectrum_.at(point);
+
+  if (spectrum_.count(point))
+    return spectrum_.at(point);
+  else
+    return 0;
 }
 
 std::unique_ptr<EntryList> Spectrum2D::_get_spectrum(std::initializer_list<Pair> list) {

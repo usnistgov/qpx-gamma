@@ -69,8 +69,6 @@ private slots:
 
   void on_pushSymmetrize_clicked();
 
-  void on_pushFoldData_clicked();
-
   void on_pushAddGatedSpectra_clicked();
 
   void on_pushSaveCalib_clicked();
@@ -94,7 +92,7 @@ private:
 
   Gamma::Fitter fit_data_, fit_data_2_;
   int res;
-  int xmin_, xmax_, ymin_, ymax_;
+  int xmin_, xmax_, ymin_, ymax_, xc_, yc_;
 
   double live_seconds,
          sum_inclusive,
@@ -119,13 +117,15 @@ private:
 
   XMLableDB<Gamma::Detector> &detectors_;
 
-  bool initialized;
+  bool initialized, symmetrized;
 
   void loadSettings();
   void saveSettings();
   void make_gated_spectra();
   void fill_table();
   void plot_calib();
+  double sum_with_neighbors(Pixie::Spectrum::Spectrum* some_spectrum, uint16_t x, uint16_t y);
+  double sum_diag(Pixie::Spectrum::Spectrum* some_spectrum, uint16_t x, uint16_t y, uint16_t w);
 };
 
 #endif // FORM_CALIBRATION_H

@@ -684,7 +684,7 @@ void WidgetPlot1D::set_plot_style(QString stl) {
     q->setChecked(q->text() == stl);
   int total = ui->mcaPlot->graphCount();
   for (int i=0; i < total; i++) {
-    if (ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssNone)
+    if ((ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssNone) || (ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssDisc))
       set_graph_style(ui->mcaPlot->graph(i), stl);
   }
   ui->mcaPlot->replot();

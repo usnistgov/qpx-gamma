@@ -165,8 +165,14 @@
          <property name="minimum">
           <number>1</number>
          </property>
+         <property name="maximum">
+          <number>999</number>
+         </property>
+         <property name="singleStep">
+          <number>2</number>
+         </property>
          <property name="value">
-          <number>1</number>
+          <number>13</number>
          </property>
         </widget>
        </item>

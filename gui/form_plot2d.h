@@ -65,6 +65,7 @@ public:
 
   int gate_width();
   void set_gate_width(int);
+  void set_gates_visible(bool vertical, bool horizontal, bool diagonal);
 
 public slots:
   void set_marker(Marker n);
@@ -119,6 +120,7 @@ private:
   //markers
   Marker my_marker, //template(style)
     ext_marker, x_marker, y_marker; //actual data
+  bool gate_vertical_, gate_horizontal_, gate_diagonal_;
 
   //scaling
   int bits;

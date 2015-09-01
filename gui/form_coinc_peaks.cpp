@@ -137,8 +137,10 @@ void FormCoincPeaks::setSpectrum(Pixie::Spectrum::Spectrum *newspectrum, uint16_
   sel_L = L;
   sel_R = R;
 
-  fit_data_->set_mov_avg(ui->spinMovAvg->value());
   fit_data_->setData(spectrum_);
+  fit_data_->set_mov_avg(ui->spinMovAvg->value());
+  fit_data_->find_prelim();
+  fit_data_->filter_prelim(ui->spinMinPeakWidth->value());
 
   QString title = "Spectrum=" + QString::fromStdString(fit_data_->metadata_.name) + "  resolution=" + QString::number(fit_data_->metadata_.bits) + "bits  Detector=" + QString::fromStdString(fit_data_->detector_.name_);
   ui->plot1D->setFloatingText(title);
@@ -179,8 +181,6 @@ void FormCoincPeaks::update_spectrum() {
       maxima[xx] = yy;
     ++i;
   }
-
-  PL_DBG << "coinc gated plot minima:maxima " << minima.size() << ":" << maxima.size();
 
   replot_all();
 }
