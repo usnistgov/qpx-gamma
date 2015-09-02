@@ -96,6 +96,10 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   ui->tableCoincResults->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->tableCoincResults->show();
 
+  ui->comboPlot2->addItem("2nd detector");
+  ui->comboPlot2->addItem("diagonal");
+  ui->comboPlot2->addItem("background blocks");
+
   //connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
 
 }
@@ -250,6 +254,14 @@ void FormAnalysis2D::initialize() {
       ui->spinPolyOrder->setVisible(!symmetrized);
       ui->labelOrder->setVisible(!symmetrized);
       ui->plotMatrix->set_gates_visible(!symmetrized, true, symmetrized);
+
+      if (symmetrized)
+        ui->comboPlot2->setEnabled(true);
+      else {
+        ui->comboPlot2->setCurrentText("2nd detector");
+        ui->comboPlot2->setEnabled(false);
+      }
+
     }
   }
 
@@ -397,8 +409,10 @@ void FormAnalysis2D::make_gated_spectra() {
     }
 
     gate_y->addSpill(spill);
-    ui->plotSpectrum2->setSpectrum(gate_y, ymin_, ymax_);
-
+    if (symmetrized)
+      ui->plotSpectrum2->setSpectrum(gate_y, ymin_, ymax_);
+    else
+      ui->plotSpectrum2->setSpectrum(gate_y, xmin_, xmax_);
 
     sum_inclusive += sum_exclusive;
     fill_table();
@@ -789,4 +803,9 @@ void FormAnalysis2D::on_pushSaveCalib_clicked()
       ri.p4_state.set_detector(Pixie::Channel(i), detectors[i]);
     spectra_->setRunInfo(ri);
   }
+}
+
+void FormAnalysis2D::on_comboPlot2_currentIndexChanged(const QString &arg1)
+{
+    PL_INFO << "gating type " << arg1.toStdString();
 }

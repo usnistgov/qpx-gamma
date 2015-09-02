@@ -75,6 +75,8 @@ private slots:
 
   void initialize();
 
+  void on_comboPlot2_currentIndexChanged(const QString &arg1);
+
 protected:
   void closeEvent(QCloseEvent*);
   void showEvent(QShowEvent* event);

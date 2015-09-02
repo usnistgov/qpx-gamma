@@ -278,7 +278,7 @@ void FormPlot2D::replot_markers() {
       ui->coincPlot->addItem(one_line);*/
     }
 
-    if (gate_diagonal_) {
+    if (gate_diagonal_ && x_marker.visible && y_marker.visible) {
       int width = ui->spinGateWidth->value();
       int diag_width = std::round(std::sqrt((width*width)/2.0) / 2.0);
       if ((diag_width % 2) == 0)
