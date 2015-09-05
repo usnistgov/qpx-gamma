@@ -1,0 +1,1144 @@
+﻿<?xml version="1.0"?>
+<QpxListData>
+    <MatchPattern>0 0 0 0</MatchPattern>
+    <BinaryOut>
+        <FileName>/home/mpgaa/qpxdata/raw/qpx_out.bin</FileName>
+        <FileFormat>CHANNEL_NUMBER  TIME_HI  TIME_MID  TIME_LOW  ENERGY</FileFormat>
+    </BinaryOut>
+    <StatsUpdate lab_time="2015-09-05T17:13:49.559062" spill_number="0" events_in_spill="0" total_time="0.008125" event_rate="1471.383231">
+        <ChanStats chan="0" fast_peaks="0.000000" live_time="0.000000" ftdt="0.000000" sfdt="0.000000"/>
+        <ChanStats chan="1" fast_peaks="0.000000" live_time="0.000873" ftdt="0.000000" sfdt="0.000014"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="0.000873" ftdt="0.000000" sfdt="0.000014"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="0.000873" ftdt="0.000000" sfdt="0.000014"/>
+    </StatsUpdate>
+    <RunInfo time_start="2015-09-05T17:13:49" time_stop="2015-09-05T17:13:49" total_events="0">
+        <PixieSettings>
+            <System>
+                <Setting key="0" name="NUMBER_MODULES" value="1.000000"/>
+                <Setting key="1" name="OFFLINE_ANALYSIS" value="0.000000"/>
+                <Setting key="2" name="AUTO_PROCESSLMDATA" value="0.000000"/>
+                <Setting key="3" name="MAX_NUMBER_MODULES" value="7.000000"/>
+                <Setting key="4" name="C_LIBRARY_RELEASE" value="608.000000"/>
+                <Setting key="5" name="C_LIBRARY_BUILD" value="7.000000"/>
+                <Setting key="6" name="KEEP_CW" value="1.000000"/>
+                <Setting key="7" name="SLOT_WAVE" value="2.000000"/>
+            </System>
+            <Module number="0">
+                <Setting key="0" name="MODULE_NUMBER" value="0.000000"/>
+                <Setting key="1" name="MODULE_CSRA" value="0.000000"/>
+                <Setting key="2" name="MODULE_CSRB" value="0.000000"/>
+                <Setting key="3" name="MODULE_FORMAT" value="256.000000"/>
+                <Setting key="4" name="MAX_EVENTS" value="0.000000"/>
+                <Setting key="5" name="COINCIDENCE_PATTERN" value="65534.000000"/>
+                <Setting key="6" name="ACTUAL_COINCIDENCE_WAIT" value="13.333333"/>
+                <Setting key="7" name="MIN_COINCIDENCE_WAIT" value="15146.666667"/>
+                <Setting key="8" name="SYNCH_WAIT" value="1.000000"/>
+                <Setting key="9" name="IN_SYNCH" value="0.000000"/>
+                <Setting key="10" name="RUN_TYPE" value="259.000000"/>
+                <Setting key="11" name="FILTER_RANGE" value="4.000000"/>
+                <Setting key="12" name="MODULEPATTERN" value="32.000000"/>
+                <Setting key="13" name="NNSHAREPATTERN" value="0.000000"/>
+                <Setting key="14" name="DBLBUFCSR" value="1.000000"/>
+                <Setting key="15" name="MODULE_CSRC" value="0.000000"/>
+                <Setting key="16" name="BUFFER_HEAD_LENGTH" value="6.000000"/>
+                <Setting key="17" name="EVENT_HEAD_LENGTH" value="3.000000"/>
+                <Setting key="18" name="CHANNEL_HEAD_LENGTH" value="2.000000"/>
+                <Setting key="19" name="OUTPUT_BUFFER_LENGTH" value="8192.000000"/>
+                <Setting key="20" name="NUMBER_EVENTS" value="49931.000000"/>
+                <Setting key="21" name="RUN_TIME" value="25.534171"/>
+                <Setting key="22" name="EVENT_RATE" value="1955.458064"/>
+                <Setting key="23" name="TOTAL_TIME" value="25.549414"/>
+                <Setting key="24" name="BOARD_VERSION" value="42754.000000"/>
+                <Setting key="25" name="SERIAL_NUMBER" value="0.000000"/>
+                <Setting key="26" name="DSP_RELEASE" value="1122.000000"/>
+                <Setting key="27" name="DSP_BUILD" value="8196.000000"/>
+                <Setting key="28" name="FIPPI_ID" value="186.000000"/>
+                <Setting key="29" name="SYSTEM_ID" value="42780.000000"/>
+                <Setting key="30" name="XET_DELAY" value="0.000000"/>
+                <Setting key="31" name="PDM_MASKA" value="0.000000"/>
+                <Setting key="32" name="PDM_MASKB" value="0.000000"/>
+                <Setting key="33" name="PDM_MASKC" value="0.000000"/>
+                <Channel number="0">
+                    <Detector>
+                        <Name>Sophia</Name>
+                        <Type>HPGe</Type>
+                        <Calibrations>
+                            <Calibration Type="Energy" EnergyUnits="keV">
+                                <CalibrationCreationDate>2014-12-11T12:29:17.556280</CalibrationCreationDate>
+                                <Equation Model="Polynomial">
+                                    <Coefficients>-0.505959 0.250237 1.05746e-08 0 0 0</Coefficients>
+                                </Equation>
+                            </Calibration>
+                            <Calibration Type="Energy" EnergyUnits="keV" ResolutionBits="14">
+                                <CalibrationCreationDate>2015-09-02T15:56:06.986900</CalibrationCreationDate>
+                                <Equation Model="Polynomial">
+                                    <Coefficients>-0.506 0.2502 1.057e-08</Coefficients>
+                                </Equation>
+                            </Calibration>
+                        </Calibrations>
+                        <Calibration Type="FWHM" ResolutionBits="14">
+                            <CalibrationCreationDate>2015-09-02T16:14:38.793984</CalibrationCreationDate>
+                            <Equation Model="Polynomial">
+                                <Coefficients>2.63053 0.000415588</Coefficients>
+                            </Equation>
+                        </Calibration>
+                        <Optimization>
+                            <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
+                            <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
+                            <Setting key="2" name="ENERGY_RISETIME" value="10.880000"/>
+                            <Setting key="3" name="ENERGY_FLATTOP" value="1.066667"/>
+                            <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
+                            <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
+                            <Setting key="6" name="TRIGGER_THRESHOLD" value="30.000000"/>
+                            <Setting key="7" name="VGAIN" value="4.399957"/>
+                            <Setting key="8" name="VOFFSET" value="0.229263"/>
+                            <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
+                            <Setting key="10" name="TRACE_DELAY" value="1.000000"/>
+                            <Setting key="11" name="PSA_START" value="0.000000"/>
+                            <Setting key="12" name="PSA_END" value="0.000000"/>
+                            <Setting key="13" name="EMIN" value="0.000000"/>
+                            <Setting key="14" name="BINFACTOR" value="1.000000"/>
+                            <Setting key="15" name="TAU" value="56.925934"/>
+                            <Setting key="16" name="BLCUT" value="15.000000"/>
+                            <Setting key="17" name="XDT" value="10.040000"/>
+                            <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
+                            <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
+                            <Setting key="20" name="INTEGRATOR" value="0.000000"/>
+                            <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
+                            <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
+                            <Setting key="23" name="GATE_DELAY" value="0.013333"/>
+                            <Setting key="24" name="COINC_DELAY" value="0.000000"/>
+                            <Setting key="25" name="BLAVG" value="65534.000000"/>
+                            <Setting key="41" name="PSM_TEMP_AVG_LEN" value="2.000000"/>
+                            <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
+                        </Optimization>
+                    </Detector>
+                    <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
+                    <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
+                    <Setting key="2" name="ENERGY_RISETIME" value="10.880000"/>
+                    <Setting key="3" name="ENERGY_FLATTOP" value="1.066667"/>
+                    <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
+                    <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
+                    <Setting key="6" name="TRIGGER_THRESHOLD" value="30.000000"/>
+                    <Setting key="7" name="VGAIN" value="4.399957"/>
+                    <Setting key="8" name="VOFFSET" value="0.229263"/>
+                    <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
+                    <Setting key="10" name="TRACE_DELAY" value="1.000000"/>
+                    <Setting key="11" name="PSA_START" value="0.000000"/>
+                    <Setting key="12" name="PSA_END" value="0.000000"/>
+                    <Setting key="13" name="EMIN" value="0.000000"/>
+                    <Setting key="14" name="BINFACTOR" value="1.000000"/>
+                    <Setting key="15" name="TAU" value="56.925934"/>
+                    <Setting key="16" name="BLCUT" value="15.000000"/>
+                    <Setting key="17" name="XDT" value="10.040000"/>
+                    <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
+                    <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
+                    <Setting key="20" name="INTEGRATOR" value="0.000000"/>
+                    <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
+                    <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
+                    <Setting key="23" name="GATE_DELAY" value="0.013333"/>
+                    <Setting key="24" name="COINC_DELAY" value="2346.666667"/>
+                    <Setting key="25" name="BLAVG" value="65534.000000"/>
+                    <Setting key="26" name="LIVE_TIME" value="25.527024"/>
+                    <Setting key="27" name="INPUT_COUNT_RATE" value="1247.096360"/>
+                    <Setting key="28" name="FAST_PEAKS" value="31815.000000"/>
+                    <Setting key="29" name="OUTPUT_COUNT_RATE" value="1117.874121"/>
+                    <Setting key="30" name="NOUT" value="28536.000000"/>
+                    <Setting key="31" name="GATE_RATE" value="0.000000"/>
+                    <Setting key="32" name="GATE_COUNTS" value="0.000000"/>
+                    <Setting key="33" name="FTDT" value="0.015764"/>
+                    <Setting key="34" name="SFDT" value="1.170729"/>
+                    <Setting key="35" name="GDT" value="25.527196"/>
+                    <Setting key="36" name="CURRENT_ICR" value="1358.985901"/>
+                    <Setting key="37" name="CURRENT_OORF" value="0.376892"/>
+                    <Setting key="38" name="PSM_GAIN_AVG" value="0.000000"/>
+                    <Setting key="39" name="PSM_GAIN_AVG_LEN" value="1.000000"/>
+                    <Setting key="40" name="PSM_TEMP_AVG" value="0.000000"/>
+                    <Setting key="41" name="PSM_TEMP_AVG_LEN" value="2.000000"/>
+                    <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
+                </Channel>
+                <Channel number="1">
+                    <Detector>
+                        <Name>Daphne</Name>
+                        <Type>HPGe</Type>
+                        <Calibrations>
+                            <Calibration Type="Energy" EnergyUnits="keV">
+                                <CalibrationCreationDate>2014-12-11T12:29:17.556280</CalibrationCreationDate>
+                                <Equation Model="Polynomial">
+                                    <Coefficients>-0.422413 0.249778 7.32964e-09 0 0 0</Coefficients>
+                                </Equation>
+                            </Calibration>
+                            <Calibration Type="Energy" EnergyUnits="keV" ResolutionBits="14">
+                                <CalibrationCreationDate>2014-12-11T12:29:17.556280</CalibrationCreationDate>
+                                <Equation Model="Polynomial">
+                                    <Coefficients>-0.4244 0.2498 7.33e-09</Coefficients>
+                                </Equation>
+                            </Calibration>
+                        </Calibrations>
+                        <Calibration Type="FWHM" ResolutionBits="14">
+                            <CalibrationCreationDate>2015-09-02T16:14:28.452057</CalibrationCreationDate>
+                            <Equation Model="Polynomial">
+                                <Coefficients>2.47334 0.000393662</Coefficients>
+                            </Equation>
+                        </Calibration>
+                        <Optimization>
+                            <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
+                            <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
+                            <Setting key="2" name="ENERGY_RISETIME" value="10.880000"/>
+                            <Setting key="3" name="ENERGY_FLATTOP" value="1.066667"/>
+                            <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
+                            <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
+                            <Setting key="6" name="TRIGGER_THRESHOLD" value="35.000000"/>
+                            <Setting key="7" name="VGAIN" value="4.204305"/>
+                            <Setting key="8" name="VOFFSET" value="0.221710"/>
+                            <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
+                            <Setting key="10" name="TRACE_DELAY" value="1.000000"/>
+                            <Setting key="11" name="PSA_START" value="0.000000"/>
+                            <Setting key="12" name="PSA_END" value="0.000000"/>
+                            <Setting key="13" name="EMIN" value="0.000000"/>
+                            <Setting key="14" name="BINFACTOR" value="1.000000"/>
+                            <Setting key="15" name="TAU" value="61.320221"/>
+                            <Setting key="16" name="BLCUT" value="95.000000"/>
+                            <Setting key="17" name="XDT" value="10.040000"/>
+                            <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
+                            <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
+                            <Setting key="20" name="INTEGRATOR" value="0.000000"/>
+                            <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
+                            <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
+                            <Setting key="23" name="GATE_DELAY" value="0.013333"/>
+                            <Setting key="24" name="COINC_DELAY" value="0.000000"/>
+                            <Setting key="25" name="BLAVG" value="65534.000000"/>
+                            <Setting key="41" name="PSM_TEMP_AVG_LEN" value="2.000000"/>
+                            <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
+                        </Optimization>
+                    </Detector>
+                    <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
+                    <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
+                    <Setting key="2" name="ENERGY_RISETIME" value="10.880000"/>
+                    <Setting key="3" name="ENERGY_FLATTOP" value="1.066667"/>
+                    <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
+                    <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
+                    <Setting key="6" name="TRIGGER_THRESHOLD" value="35.000000"/>
+                    <Setting key="7" name="VGAIN" value="4.204305"/>
+                    <Setting key="8" name="VOFFSET" value="0.221710"/>
+                    <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
+                    <Setting key="10" name="TRACE_DELAY" value="1.000000"/>
+                    <Setting key="11" name="PSA_START" value="0.000000"/>
+                    <Setting key="12" name="PSA_END" value="0.000000"/>
+                    <Setting key="13" name="EMIN" value="0.000000"/>
+                    <Setting key="14" name="BINFACTOR" value="1.000000"/>
+                    <Setting key="15" name="TAU" value="61.320221"/>
+                    <Setting key="16" name="BLCUT" value="95.000000"/>
+                    <Setting key="17" name="XDT" value="10.040000"/>
+                    <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
+                    <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
+                    <Setting key="20" name="INTEGRATOR" value="0.000000"/>
+                    <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
+                    <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
+                    <Setting key="23" name="GATE_DELAY" value="0.013333"/>
+                    <Setting key="24" name="COINC_DELAY" value="2346.666667"/>
+                    <Setting key="25" name="BLAVG" value="65534.000000"/>
+                    <Setting key="26" name="LIVE_TIME" value="25.529354"/>
+                    <Setting key="27" name="INPUT_COUNT_RATE" value="1321.042494"/>
+                    <Setting key="28" name="FAST_PEAKS" value="33714.000000"/>
+                    <Setting key="29" name="OUTPUT_COUNT_RATE" value="869.743895"/>
+                    <Setting key="30" name="NOUT" value="22204.000000"/>
+                    <Setting key="31" name="GATE_RATE" value="0.000000"/>
+                    <Setting key="32" name="GATE_COUNTS" value="0.000000"/>
+                    <Setting key="33" name="FTDT" value="0.008601"/>
+                    <Setting key="34" name="SFDT" value="1.139186"/>
+                    <Setting key="35" name="GDT" value="25.529530"/>
+                    <Setting key="36" name="CURRENT_ICR" value="1323.223114"/>
+                    <Setting key="37" name="CURRENT_OORF" value="0.357056"/>
+                    <Setting key="38" name="PSM_GAIN_AVG" value="0.000000"/>
+                    <Setting key="39" name="PSM_GAIN_AVG_LEN" value="1.000000"/>
+                    <Setting key="40" name="PSM_TEMP_AVG" value="0.000000"/>
+                    <Setting key="41" name="PSM_TEMP_AVG_LEN" value="2.000000"/>
+                    <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
+                </Channel>
+                <Channel number="2">
+                    <Detector>
+                        <Name>none</Name>
+                        <Type>none</Type>
+                    </Detector>
+                    <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
+                    <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
+                    <Setting key="2" name="ENERGY_RISETIME" value="11.946667"/>
+                    <Setting key="3" name="ENERGY_FLATTOP" value="2.346667"/>
+                    <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
+                    <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
+                    <Setting key="6" name="TRIGGER_THRESHOLD" value="25.000000"/>
+                    <Setting key="7" name="VGAIN" value="1.314394"/>
+                    <Setting key="8" name="VOFFSET" value="0.578995"/>
+                    <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
+                    <Setting key="10" name="TRACE_DELAY" value="0.000000"/>
+                    <Setting key="11" name="PSA_START" value="0.000000"/>
+                    <Setting key="12" name="PSA_END" value="0.000000"/>
+                    <Setting key="13" name="EMIN" value="0.000000"/>
+                    <Setting key="14" name="BINFACTOR" value="1.000000"/>
+                    <Setting key="15" name="TAU" value="50.000000"/>
+                    <Setting key="16" name="BLCUT" value="15.000000"/>
+                    <Setting key="17" name="XDT" value="10.040000"/>
+                    <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
+                    <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
+                    <Setting key="20" name="INTEGRATOR" value="0.000000"/>
+                    <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
+                    <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
+                    <Setting key="23" name="GATE_DELAY" value="0.013333"/>
+                    <Setting key="24" name="COINC_DELAY" value="0.000000"/>
+                    <Setting key="25" name="BLAVG" value="65534.000000"/>
+                    <Setting key="26" name="LIVE_TIME" value="25.533053"/>
+                    <Setting key="27" name="INPUT_COUNT_RATE" value="0.000000"/>
+                    <Setting key="28" name="FAST_PEAKS" value="0.000000"/>
+                    <Setting key="29" name="OUTPUT_COUNT_RATE" value="0.000000"/>
+                    <Setting key="30" name="NOUT" value="0.000000"/>
+                    <Setting key="31" name="GATE_RATE" value="0.000000"/>
+                    <Setting key="32" name="GATE_COUNTS" value="0.000000"/>
+                    <Setting key="33" name="FTDT" value="0.000000"/>
+                    <Setting key="34" name="SFDT" value="0.693316"/>
+                    <Setting key="35" name="GDT" value="25.533239"/>
+                    <Setting key="36" name="CURRENT_ICR" value="35.762787"/>
+                    <Setting key="37" name="CURRENT_OORF" value="0.337219"/>
+                    <Setting key="38" name="PSM_GAIN_AVG" value="0.000000"/>
+                    <Setting key="39" name="PSM_GAIN_AVG_LEN" value="1.000000"/>
+                    <Setting key="40" name="PSM_TEMP_AVG" value="0.000000"/>
+                    <Setting key="41" name="PSM_TEMP_AVG_LEN" value="1.000000"/>
+                    <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
+                </Channel>
+                <Channel number="3">
+                    <Detector>
+                        <Name>none</Name>
+                        <Type>none</Type>
+                    </Detector>
+                    <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
+                    <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
+                    <Setting key="2" name="ENERGY_RISETIME" value="11.946667"/>
+                    <Setting key="3" name="ENERGY_FLATTOP" value="2.346667"/>
+                    <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
+                    <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
+                    <Setting key="6" name="TRIGGER_THRESHOLD" value="25.000000"/>
+                    <Setting key="7" name="VGAIN" value="1.314394"/>
+                    <Setting key="8" name="VOFFSET" value="0.576935"/>
+                    <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
+                    <Setting key="10" name="TRACE_DELAY" value="0.000000"/>
+                    <Setting key="11" name="PSA_START" value="0.000000"/>
+                    <Setting key="12" name="PSA_END" value="0.000000"/>
+                    <Setting key="13" name="EMIN" value="0.000000"/>
+                    <Setting key="14" name="BINFACTOR" value="1.000000"/>
+                    <Setting key="15" name="TAU" value="50.000000"/>
+                    <Setting key="16" name="BLCUT" value="15.000000"/>
+                    <Setting key="17" name="XDT" value="10.040000"/>
+                    <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
+                    <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
+                    <Setting key="20" name="INTEGRATOR" value="0.000000"/>
+                    <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
+                    <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
+                    <Setting key="23" name="GATE_DELAY" value="0.013333"/>
+                    <Setting key="24" name="COINC_DELAY" value="0.000000"/>
+                    <Setting key="25" name="BLAVG" value="65534.000000"/>
+                    <Setting key="26" name="LIVE_TIME" value="25.533053"/>
+                    <Setting key="27" name="INPUT_COUNT_RATE" value="0.000000"/>
+                    <Setting key="28" name="FAST_PEAKS" value="0.000000"/>
+                    <Setting key="29" name="OUTPUT_COUNT_RATE" value="0.000000"/>
+                    <Setting key="30" name="NOUT" value="0.000000"/>
+                    <Setting key="31" name="GATE_RATE" value="0.000000"/>
+                    <Setting key="32" name="GATE_COUNTS" value="0.000000"/>
+                    <Setting key="33" name="FTDT" value="0.000000"/>
+                    <Setting key="34" name="SFDT" value="0.693316"/>
+                    <Setting key="35" name="GDT" value="25.533239"/>
+                    <Setting key="36" name="CURRENT_ICR" value="35.762787"/>
+                    <Setting key="37" name="CURRENT_OORF" value="0.315857"/>
+                    <Setting key="38" name="PSM_GAIN_AVG" value="0.000000"/>
+                    <Setting key="39" name="PSM_GAIN_AVG_LEN" value="1.000000"/>
+                    <Setting key="40" name="PSM_TEMP_AVG" value="0.000000"/>
+                    <Setting key="41" name="PSM_TEMP_AVG_LEN" value="1.000000"/>
+                    <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
+                </Channel>
+            </Module>
+        </PixieSettings>
+    </RunInfo>
+    <StatsUpdate lab_time="2015-09-05T17:13:49.603724" spill_number="1" events_in_spill="0" total_time="0.009873" event_rate="1716.613770">
+        <ChanStats chan="0" fast_peaks="8.000000" live_time="0.007863" ftdt="0.000005" sfdt="0.000289"/>
+        <ChanStats chan="1" fast_peaks="10.000000" live_time="0.007863" ftdt="0.000001" sfdt="0.000304"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="0.007863" ftdt="0.000000" sfdt="0.000178"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="0.014854" ftdt="0.000000" sfdt="0.000357"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:14:03.021989" spill_number="2" events_in_spill="26429" total_time="13.428730" event_rate="1939.553773">
+        <ChanStats chan="0" fast_peaks="16524.000000" live_time="13.411623" ftdt="0.008178" sfdt="0.608342"/>
+        <ChanStats chan="1" fast_peaks="17626.000000" live_time="13.419585" ftdt="0.004467" sfdt="0.595126"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="13.421505" ftdt="0.000000" sfdt="0.361562"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="13.421505" ftdt="0.000000" sfdt="0.361562"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:14:16.443950" spill_number="3" events_in_spill="26426" total_time="26.850124" event_rate="1943.840616">
+        <ChanStats chan="0" fast_peaks="32931.000000" live_time="26.822013" ftdt="0.016309" sfdt="1.217561"/>
+        <ChanStats chan="1" fast_peaks="35310.000000" live_time="26.831513" ftdt="0.008954" sfdt="1.193567"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="26.835140" ftdt="0.000000" sfdt="0.724559"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="26.835140" ftdt="0.000000" sfdt="0.724559"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:14:29.765619" spill_number="4" events_in_spill="26413" total_time="40.171923" event_rate="1947.953619">
+        <ChanStats chan="0" fast_peaks="49475.000000" live_time="40.134538" ftdt="0.024513" sfdt="1.827371"/>
+        <ChanStats chan="1" fast_peaks="52606.000000" live_time="40.137847" ftdt="0.013386" sfdt="1.785408"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="40.150925" ftdt="0.000000" sfdt="1.086025"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="40.150925" ftdt="0.000000" sfdt="1.086025"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:14:42.886468" spill_number="5" events_in_spill="26423" total_time="53.292716" event_rate="1953.246841">
+        <ChanStats chan="0" fast_peaks="65949.000000" live_time="53.244765" ftdt="0.032683" sfdt="2.432887"/>
+        <ChanStats chan="1" fast_peaks="70124.000000" live_time="53.248682" ftdt="0.017842" sfdt="2.376145"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="53.263967" ftdt="0.000000" sfdt="1.444698"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="53.263967" ftdt="0.000000" sfdt="1.444698"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:14:56.307947" spill_number="6" events_in_spill="26442" total_time="66.714206" event_rate="1950.669624">
+        <ChanStats chan="0" fast_peaks="82570.000000" live_time="66.654901" ftdt="0.040957" sfdt="3.044429"/>
+        <ChanStats chan="1" fast_peaks="87597.000000" live_time="66.659273" ftdt="0.022340" sfdt="2.969593"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="66.677633" ftdt="0.000000" sfdt="1.806578"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="66.677634" ftdt="0.000000" sfdt="1.806578"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:15:09.132114" spill_number="7" events_in_spill="26394" total_time="79.538363" event_rate="1963.802707">
+        <ChanStats chan="0" fast_peaks="98435.000000" live_time="79.471918" ftdt="0.048827" sfdt="3.643750"/>
+        <ChanStats chan="1" fast_peaks="106541.000000" live_time="79.476765" ftdt="0.026820" sfdt="3.576768"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="79.490112" ftdt="0.000000" sfdt="2.167484"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="79.490112" ftdt="0.000000" sfdt="2.167484"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:15:21.853054" spill_number="8" events_in_spill="26414" total_time="92.259281" event_rate="1974.565659">
+        <ChanStats chan="0" fast_peaks="114237.000000" live_time="92.177089" ftdt="0.056651" sfdt="4.240454"/>
+        <ChanStats chan="1" fast_peaks="125525.000000" live_time="92.189534" ftdt="0.031268" sfdt="4.184329"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="92.204691" ftdt="0.000000" sfdt="2.527787"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="92.204691" ftdt="0.000000" sfdt="2.527787"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:15:34.677274" spill_number="9" events_in_spill="26416" total_time="105.083801" event_rate="1981.954514">
+        <ChanStats chan="0" fast_peaks="130270.000000" live_time="104.994787" ftdt="0.064583" sfdt="4.842234"/>
+        <ChanStats chan="1" fast_peaks="144763.000000" live_time="105.000254" ftdt="0.035743" sfdt="4.795542"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="105.017099" ftdt="0.000000" sfdt="2.889699"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="105.024090" ftdt="0.000000" sfdt="2.889850"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:15:47.501206" spill_number="10" events_in_spill="26423" total_time="117.907725" event_rate="1986.210052">
+        <ChanStats chan="0" fast_peaks="146233.000000" live_time="117.803846" ftdt="0.072511" sfdt="5.440965"/>
+        <ChanStats chan="1" fast_peaks="163506.000000" live_time="117.817456" ftdt="0.040109" sfdt="5.399344"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="117.836571" ftdt="0.000000" sfdt="3.249412"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="117.836571" ftdt="0.000000" sfdt="3.249412"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:16:00.122007" spill_number="11" events_in_spill="26433" total_time="130.528062" event_rate="1993.556159">
+        <ChanStats chan="0" fast_peaks="162177.000000" live_time="130.417918" ftdt="0.080430" sfdt="6.040982"/>
+        <ChanStats chan="1" fast_peaks="182473.000000" live_time="130.426003" ftdt="0.044535" sfdt="6.008158"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="130.446286" ftdt="0.000000" sfdt="3.610761"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="130.446286" ftdt="0.000000" sfdt="3.610761"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:16:12.943100" spill_number="12" events_in_spill="26434" total_time="143.349140" event_rate="1997.893996">
+        <ChanStats chan="0" fast_peaks="178284.000000" live_time="143.227178" ftdt="0.088428" sfdt="6.646144"/>
+        <ChanStats chan="1" fast_peaks="201607.000000" live_time="143.237619" ftdt="0.049016" sfdt="6.619328"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="143.258768" ftdt="0.000000" sfdt="3.974282"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="143.265758" ftdt="0.000000" sfdt="3.974433"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:16:25.665301" spill_number="13" events_in_spill="26418" total_time="156.071256" event_rate="2001.545705">
+        <ChanStats chan="0" fast_peaks="194215.000000" live_time="155.937082" ftdt="0.096347" sfdt="7.244689"/>
+        <ChanStats chan="1" fast_peaks="220884.000000" live_time="155.949723" ftdt="0.053477" sfdt="7.229169"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="155.973342" ftdt="0.000000" sfdt="4.334848"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="155.973342" ftdt="0.000000" sfdt="4.334848"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:16:38.387160" spill_number="14" events_in_spill="26435" total_time="168.793645" event_rate="2004.714842">
+        <ChanStats chan="0" fast_peaks="210108.000000" live_time="168.649979" ftdt="0.104243" sfdt="7.843692"/>
+        <ChanStats chan="1" fast_peaks="239959.000000" live_time="168.662239" ftdt="0.057959" sfdt="7.838124"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="168.687946" ftdt="0.000000" sfdt="4.695945"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="168.687946" ftdt="0.000000" sfdt="4.695945"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:16:51.208364" spill_number="15" events_in_spill="26409" total_time="181.614691" event_rate="2006.341704">
+        <ChanStats chan="0" fast_peaks="225992.000000" live_time="181.459292" ftdt="0.112124" sfdt="8.441679"/>
+        <ChanStats chan="1" fast_peaks="259270.000000" live_time="181.471853" ftdt="0.062426" sfdt="8.448076"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="181.500389" ftdt="0.000000" sfdt="5.056419"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="181.500390" ftdt="0.000000" sfdt="5.056419"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:17:03.929553" spill_number="16" events_in_spill="26409" total_time="194.336073" event_rate="2009.142142">
+        <ChanStats chan="0" fast_peaks="241992.000000" live_time="194.163691" ftdt="0.120031" sfdt="9.042813"/>
+        <ChanStats chan="1" fast_peaks="278092.000000" live_time="194.184111" ftdt="0.066788" sfdt="9.054770"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="194.214959" ftdt="0.000000" sfdt="5.417929"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="194.214959" ftdt="0.000000" sfdt="5.417929"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:17:16.650703" spill_number="17" events_in_spill="26408" total_time="207.057141" event_rate="2010.827113">
+        <ChanStats chan="0" fast_peaks="257996.000000" live_time="206.874890" ftdt="0.127984" sfdt="9.641647"/>
+        <ChanStats chan="1" fast_peaks="296709.000000" live_time="206.889358" ftdt="0.071141" sfdt="9.656185"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="206.929590" ftdt="0.000000" sfdt="5.777218"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="206.929590" ftdt="0.000000" sfdt="5.777218"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:17:29.371669" spill_number="18" events_in_spill="26433" total_time="219.778161" event_rate="2013.105114">
+        <ChanStats chan="0" fast_peaks="273842.000000" live_time="219.585025" ftdt="0.135850" sfdt="10.241089"/>
+        <ChanStats chan="1" fast_peaks="315859.000000" live_time="219.600760" ftdt="0.075615" sfdt="10.267669"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="219.637193" ftdt="0.000000" sfdt="6.139103"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="219.644184" ftdt="0.000000" sfdt="6.139295"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:17:41.993197" spill_number="19" events_in_spill="26413" total_time="232.399561" event_rate="2015.851778">
+        <ChanStats chan="0" fast_peaks="289573.000000" live_time="232.190917" ftdt="0.143660" sfdt="10.837886"/>
+        <ChanStats chan="1" fast_peaks="335680.000000" live_time="232.215505" ftdt="0.080067" sfdt="10.884172"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="232.253883" ftdt="0.000000" sfdt="6.500506"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="232.253884" ftdt="0.000000" sfdt="6.500506"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:17:54.417322" spill_number="20" events_in_spill="26431" total_time="244.823427" event_rate="2019.237898">
+        <ChanStats chan="0" fast_peaks="304983.000000" live_time="244.608130" ftdt="0.151290" sfdt="11.427991"/>
+        <ChanStats chan="1" fast_peaks="355540.000000" live_time="244.627508" ftdt="0.084496" sfdt="11.498932"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="244.667881" ftdt="0.000000" sfdt="6.859711"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="244.667881" ftdt="0.000000" sfdt="6.859711"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:18:06.940509" spill_number="21" events_in_spill="26431" total_time="257.346311" event_rate="2022.883125">
+        <ChanStats chan="0" fast_peaks="320639.000000" live_time="257.116425" ftdt="0.159083" sfdt="12.026443"/>
+        <ChanStats chan="1" fast_peaks="375430.000000" live_time="257.137171" ftdt="0.088993" sfdt="12.119567"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="257.186779" ftdt="0.000000" sfdt="7.223988"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="257.186780" ftdt="0.000000" sfdt="7.223988"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:18:19.060911" spill_number="22" events_in_spill="26397" total_time="269.467228" event_rate="2027.705985">
+        <ChanStats chan="0" fast_peaks="335883.000000" live_time="269.226702" ftdt="0.166634" sfdt="12.611227"/>
+        <ChanStats chan="1" fast_peaks="395787.000000" live_time="269.248498" ftdt="0.093366" sfdt="12.738003"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="269.300167" ftdt="0.000000" sfdt="7.581624"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="269.300167" ftdt="0.000000" sfdt="7.581624"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:18:31.486819" spill_number="23" events_in_spill="26399" total_time="281.892933" event_rate="2030.956789">
+        <ChanStats chan="0" fast_peaks="351563.000000" live_time="281.644494" ftdt="0.174432" sfdt="13.207618"/>
+        <ChanStats chan="1" fast_peaks="415555.000000" live_time="281.667319" ftdt="0.097783" sfdt="13.354445"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="281.714180" ftdt="0.000000" sfdt="7.943449"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="281.714180" ftdt="0.000000" sfdt="7.943449"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:18:43.407262" spill_number="24" events_in_spill="26385" total_time="293.813511" event_rate="2037.073705">
+        <ChanStats chan="0" fast_peaks="366446.000000" live_time="293.552580" ftdt="0.181817" sfdt="13.789942"/>
+        <ChanStats chan="1" fast_peaks="436886.000000" live_time="293.575125" ftdt="0.102120" sfdt="13.984743"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="293.624891" ftdt="0.000000" sfdt="8.303510"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="293.631882" ftdt="0.000000" sfdt="8.303675"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:18:55.429811" spill_number="25" events_in_spill="26382" total_time="305.835280" event_rate="2042.295823">
+        <ChanStats chan="0" fast_peaks="381287.000000" live_time="305.565419" ftdt="0.189159" sfdt="14.372702"/>
+        <ChanStats chan="1" fast_peaks="458404.000000" live_time="305.589235" ftdt="0.106546" sfdt="14.619206"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="305.640431" ftdt="0.000000" sfdt="8.664629"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="305.640432" ftdt="0.000000" sfdt="8.664629"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:19:07.750590" spill_number="26" events_in_spill="26391" total_time="318.155918" event_rate="2045.186108">
+        <ChanStats chan="0" fast_peaks="396441.000000" live_time="317.871493" ftdt="0.196679" sfdt="14.960508"/>
+        <ChanStats chan="1" fast_peaks="478943.000000" live_time="317.896320" ftdt="0.110915" sfdt="15.243318"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="317.956575" ftdt="0.000000" sfdt="9.026020"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="317.956576" ftdt="0.000000" sfdt="9.026020"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:19:19.973189" spill_number="27" events_in_spill="26400" total_time="330.378755" event_rate="2048.385728">
+        <ChanStats chan="0" fast_peaks="411635.000000" live_time="330.086081" ftdt="0.204228" sfdt="15.548743"/>
+        <ChanStats chan="1" fast_peaks="499628.000000" live_time="330.113094" ftdt="0.115366" sfdt="15.869480"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="330.167862" ftdt="0.000000" sfdt="9.386958"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="330.167862" ftdt="0.000000" sfdt="9.386958"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:19:32.294119" spill_number="28" events_in_spill="26411" total_time="342.699896" event_rate="2050.809119">
+        <ChanStats chan="0" fast_peaks="426871.000000" live_time="342.393526" ftdt="0.211801" sfdt="16.138759"/>
+        <ChanStats chan="1" fast_peaks="520155.000000" live_time="342.420292" ftdt="0.119823" sfdt="16.494237"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="342.484004" ftdt="0.000000" sfdt="9.748538"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="342.484004" ftdt="0.000000" sfdt="9.748538"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:19:44.514872" spill_number="29" events_in_spill="26404" total_time="354.921318" event_rate="2053.046043">
+        <ChanStats chan="0" fast_peaks="441947.000000" live_time="354.600935" ftdt="0.219249" sfdt="16.721899"/>
+        <ChanStats chan="1" fast_peaks="540868.000000" live_time="354.635869" ftdt="0.124206" sfdt="17.117326"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="354.695287" ftdt="0.000000" sfdt="10.106928"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="354.695287" ftdt="0.000000" sfdt="10.106928"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:19:56.335114" spill_number="30" events_in_spill="26360" total_time="366.740723" event_rate="2058.104269">
+        <ChanStats chan="0" fast_peaks="456699.000000" live_time="366.411231" ftdt="0.226567" sfdt="17.303521"/>
+        <ChanStats chan="1" fast_peaks="562835.000000" live_time="366.439984" ftdt="0.128538" sfdt="17.754155"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="366.508145" ftdt="0.000000" sfdt="10.468095"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="366.508146" ftdt="0.000000" sfdt="10.468095"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:20:08.357021" spill_number="31" events_in_spill="26393" total_time="378.762770" event_rate="2061.488144">
+        <ChanStats chan="0" fast_peaks="471381.000000" live_time="378.423944" ftdt="0.233866" sfdt="17.883389"/>
+        <ChanStats chan="1" fast_peaks="584715.000000" live_time="378.454255" ftdt="0.133027" sfdt="18.391493"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="378.516682" ftdt="0.000000" sfdt="10.828404"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="378.523672" ftdt="0.000000" sfdt="10.828582"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:20:20.881531" spill_number="32" events_in_spill="26417" total_time="391.287559" event_rate="2062.075848">
+        <ChanStats chan="0" fast_peaks="486995.000000" live_time="390.939508" ftdt="0.241602" sfdt="18.478113"/>
+        <ChanStats chan="1" fast_peaks="604685.000000" live_time="390.971324" ftdt="0.137478" sfdt="19.009110"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="391.035535" ftdt="0.000000" sfdt="11.189836"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="391.035536" ftdt="0.000000" sfdt="11.189836"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:20:33.404791" spill_number="33" events_in_spill="26408" total_time="403.810933" event_rate="2062.410822">
+        <ChanStats chan="0" fast_peaks="502510.000000" live_time="403.450004" ftdt="0.249301" sfdt="19.070076"/>
+        <ChanStats chan="1" fast_peaks="624606.000000" live_time="403.481844" ftdt="0.141869" sfdt="19.624234"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="403.554403" ftdt="0.000000" sfdt="11.549870"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="403.554403" ftdt="0.000000" sfdt="11.549870"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:20:45.928041" spill_number="34" events_in_spill="26419" total_time="416.333554" event_rate="2063.088440">
+        <ChanStats chan="0" fast_peaks="518233.000000" live_time="415.958286" ftdt="0.257121" sfdt="19.667513"/>
+        <ChanStats chan="1" fast_peaks="644248.000000" live_time="415.999025" ftdt="0.146351" sfdt="20.241667"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="416.066283" ftdt="0.000000" sfdt="11.912071"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="416.066284" ftdt="0.000000" sfdt="11.912071"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:20:58.549239" spill_number="35" events_in_spill="26407" total_time="428.954557" event_rate="2063.168426">
+        <ChanStats chan="0" fast_peaks="533618.000000" live_time="428.571821" ftdt="0.264755" sfdt="20.259893"/>
+        <ChanStats chan="1" fast_peaks="664150.000000" live_time="428.607120" ftdt="0.150839" sfdt="20.859997"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="428.676039" ftdt="0.000000" sfdt="12.273410"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="428.683030" ftdt="0.000000" sfdt="12.273698"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:21:11.170531" spill_number="36" events_in_spill="26403" total_time="441.576474" event_rate="2063.090004">
+        <ChanStats chan="0" fast_peaks="549204.000000" live_time="441.177200" ftdt="0.272491" sfdt="20.853764"/>
+        <ChanStats chan="1" fast_peaks="683527.000000" live_time="441.222076" ftdt="0.155256" sfdt="21.472519"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="441.292794" ftdt="0.000000" sfdt="12.634014"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="441.292794" ftdt="0.000000" sfdt="12.634014"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:21:23.893432" spill_number="37" events_in_spill="26422" total_time="454.298830" event_rate="2062.687305">
+        <ChanStats chan="0" fast_peaks="564775.000000" live_time="453.888804" ftdt="0.280218" sfdt="21.449069"/>
+        <ChanStats chan="1" fast_peaks="703116.000000" live_time="453.933630" ftdt="0.159713" sfdt="22.088740"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="454.007380" ftdt="0.000000" sfdt="12.995816"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="454.007381" ftdt="0.000000" sfdt="12.995816"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:21:36.414168" spill_number="38" events_in_spill="26414" total_time="466.819630" event_rate="2063.105371">
+        <ChanStats chan="0" fast_peaks="580589.000000" live_time="466.404051" ftdt="0.288048" sfdt="22.046960"/>
+        <ChanStats chan="1" fast_peaks="722753.000000" live_time="466.442959" ftdt="0.164148" sfdt="22.702097"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="466.519240" ftdt="0.000000" sfdt="13.356638"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="466.519240" ftdt="0.000000" sfdt="13.356638"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:21:48.836996" spill_number="39" events_in_spill="26435" total_time="479.242579" event_rate="2063.532324">
+        <ChanStats chan="0" fast_peaks="596199.000000" live_time="478.814568" ftdt="0.295775" sfdt="22.638592"/>
+        <ChanStats chan="1" fast_peaks="742299.000000" live_time="478.854460" ftdt="0.168580" sfdt="23.312986"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="478.933225" ftdt="0.000000" sfdt="13.715373"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="478.933226" ftdt="0.000000" sfdt="13.715373"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:22:01.658276" spill_number="40" events_in_spill="26416" total_time="492.063331" event_rate="2062.986720">
+        <ChanStats chan="0" fast_peaks="612282.000000" live_time="491.624068" ftdt="0.303770" sfdt="23.242648"/>
+        <ChanStats chan="1" fast_peaks="761426.000000" live_time="491.664316" ftdt="0.173078" sfdt="23.924679"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="491.745679" ftdt="0.000000" sfdt="14.078648"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="491.752669" ftdt="0.000000" sfdt="14.078881"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:22:14.481433" spill_number="41" events_in_spill="26423" total_time="504.886220" event_rate="2062.065299">
+        <ChanStats chan="0" fast_peaks="628361.000000" live_time="504.433824" ftdt="0.311764" sfdt="23.843800"/>
+        <ChanStats chan="1" fast_peaks="780036.000000" live_time="504.475158" ftdt="0.177486" sfdt="24.528628"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="504.565146" ftdt="0.000000" sfdt="14.439469"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="504.565147" ftdt="0.000000" sfdt="14.439469"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:22:27.102672" spill_number="42" events_in_spill="26406" total_time="517.507524" event_rate="2061.896255">
+        <ChanStats chan="0" fast_peaks="644289.000000" live_time="517.047558" ftdt="0.319648" sfdt="24.442172"/>
+        <ChanStats chan="1" fast_peaks="798761.000000" live_time="517.090817" ftdt="0.181828" sfdt="25.132610"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="517.174910" ftdt="0.000000" sfdt="14.798909"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="517.174910" ftdt="0.000000" sfdt="14.798909"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:22:39.823359" spill_number="43" events_in_spill="26422" total_time="530.229158" event_rate="2061.743081">
+        <ChanStats chan="0" fast_peaks="660161.000000" live_time="529.748882" ftdt="0.327501" sfdt="25.042674"/>
+        <ChanStats chan="1" fast_peaks="817795.000000" live_time="529.803197" ftdt="0.186239" sfdt="25.743985"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="529.889476" ftdt="0.000000" sfdt="15.161831"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="529.889476" ftdt="0.000000" sfdt="15.161831"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:22:52.344016" spill_number="44" events_in_spill="26400" total_time="542.749633" event_rate="2061.950167">
+        <ChanStats chan="0" fast_peaks="675834.000000" live_time="542.256922" ftdt="0.335277" sfdt="25.636206"/>
+        <ChanStats chan="1" fast_peaks="836948.000000" live_time="542.313275" ftdt="0.190658" sfdt="26.352190"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="542.401357" ftdt="0.000000" sfdt="15.521027"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="542.401358" ftdt="0.000000" sfdt="15.521027"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:23:04.965017" spill_number="45" events_in_spill="26413" total_time="555.370121" event_rate="2062.058099">
+        <ChanStats chan="0" fast_peaks="691427.000000" live_time="554.871201" ftdt="0.343030" sfdt="26.231724"/>
+        <ChanStats chan="1" fast_peaks="856425.000000" live_time="554.921261" ftdt="0.195100" sfdt="26.967465"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="555.011094" ftdt="0.000000" sfdt="15.882698"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="555.018085" ftdt="0.000000" sfdt="15.882929"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:23:17.385991" spill_number="46" events_in_spill="26432" total_time="567.791128" event_rate="2062.540434">
+        <ChanStats chan="0" fast_peaks="707174.000000" live_time="567.281585" ftdt="0.350823" sfdt="26.826486"/>
+        <ChanStats chan="1" fast_peaks="875863.000000" live_time="567.332928" ftdt="0.199569" sfdt="27.577568"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="567.425108" ftdt="0.000000" sfdt="16.242161"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="567.425108" ftdt="0.000000" sfdt="16.242161"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:23:30.006977" spill_number="47" events_in_spill="26400" total_time="580.412080" event_rate="2062.790940">
+        <ChanStats chan="0" fast_peaks="722970.000000" live_time="579.887820" ftdt="0.358653" sfdt="27.425581"/>
+        <ChanStats chan="1" fast_peaks="895332.000000" live_time="579.941107" ftdt="0.203997" sfdt="28.192548"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="580.041869" ftdt="0.000000" sfdt="16.605053"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="580.041869" ftdt="0.000000" sfdt="16.605053"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:23:42.529281" spill_number="48" events_in_spill="26397" total_time="592.934510" event_rate="2063.039654">
+        <ChanStats chan="0" fast_peaks="738617.000000" live_time="592.396397" ftdt="0.366413" sfdt="28.019050"/>
+        <ChanStats chan="1" fast_peaks="915001.000000" live_time="592.457318" ftdt="0.208482" sfdt="28.806990"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="592.553733" ftdt="0.000000" sfdt="16.964931"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="592.553734" ftdt="0.000000" sfdt="16.964931"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:23:55.053187" spill_number="49" events_in_spill="26434" total_time="605.457801" event_rate="2063.221928">
+        <ChanStats chan="0" fast_peaks="754490.000000" live_time="604.913018" ftdt="0.374298" sfdt="28.616974"/>
+        <ChanStats chan="1" fast_peaks="934421.000000" live_time="604.967552" ftdt="0.212907" sfdt="29.417387"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="605.065577" ftdt="0.000000" sfdt="17.325129"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="605.072567" ftdt="0.000000" sfdt="17.325306"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:24:07.677014" spill_number="50" events_in_spill="26411" total_time="618.081647" event_rate="2063.317022">
+        <ChanStats chan="0" fast_peaks="770111.000000" live_time="617.526858" ftdt="0.382046" sfdt="29.213137"/>
+        <ChanStats chan="1" fast_peaks="953919.000000" live_time="617.582767" ftdt="0.217302" sfdt="30.032883"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="617.682235" ftdt="0.000000" sfdt="17.687131"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="617.689226" ftdt="0.000000" sfdt="17.687295"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:24:20.197916" spill_number="51" events_in_spill="26420" total_time="630.602847" event_rate="2063.565088">
+        <ChanStats chan="0" fast_peaks="785866.000000" live_time="630.036417" ftdt="0.389865" sfdt="29.809030"/>
+        <ChanStats chan="1" fast_peaks="973215.000000" live_time="630.093933" ftdt="0.221731" sfdt="30.644451"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="630.194090" ftdt="0.000000" sfdt="18.047763"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="630.201081" ftdt="0.000000" sfdt="18.047872"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:24:32.718850" spill_number="52" events_in_spill="26408" total_time="643.123792" event_rate="2063.808982">
+        <ChanStats chan="0" fast_peaks="801222.000000" live_time="642.543752" ftdt="0.397477" sfdt="30.399348"/>
+        <ChanStats chan="1" fast_peaks="993126.000000" live_time="642.603885" ftdt="0.226121" sfdt="31.261509"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="642.712935" ftdt="0.000000" sfdt="18.408357"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="642.712935" ftdt="0.000000" sfdt="18.408357"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:24:44.939488" spill_number="53" events_in_spill="26417" total_time="655.345399" event_rate="2064.994577">
+        <ChanStats chan="0" fast_peaks="816680.000000" live_time="654.751852" ftdt="0.405142" sfdt="30.991239"/>
+        <ChanStats chan="1" fast_peaks="1013116.000000" live_time="654.820768" ftdt="0.230512" sfdt="31.879954"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="654.924218" ftdt="0.000000" sfdt="18.769142"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="654.924219" ftdt="0.000000" sfdt="18.769142"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:24:57.461190" spill_number="54" events_in_spill="26422" total_time="667.865880" event_rate="2065.341910">
+        <ChanStats chan="0" fast_peaks="832211.000000" live_time="667.260895" ftdt="0.412854" sfdt="31.586196"/>
+        <ChanStats chan="1" fast_peaks="1033536.000000" live_time="667.329878" ftdt="0.235063" sfdt="32.502000"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="667.436091" ftdt="0.000000" sfdt="19.131026"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="667.436092" ftdt="0.000000" sfdt="19.131026"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:25:09.982314" spill_number="55" events_in_spill="26422" total_time="680.387747" event_rate="2065.659017">
+        <ChanStats chan="0" fast_peaks="847869.000000" live_time="679.775426" ftdt="0.420606" sfdt="32.181152"/>
+        <ChanStats chan="1" fast_peaks="1053770.000000" live_time="679.840088" ftdt="0.239492" sfdt="33.122911"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="679.947945" ftdt="0.000000" sfdt="19.492830"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="679.947945" ftdt="0.000000" sfdt="19.492830"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:25:22.303853" spill_number="56" events_in_spill="26422" total_time="692.709481" event_rate="2066.506751">
+        <ChanStats chan="0" fast_peaks="863274.000000" live_time="692.082673" ftdt="0.428206" sfdt="32.773203"/>
+        <ChanStats chan="1" fast_peaks="1073883.000000" live_time="692.154373" ftdt="0.243969" sfdt="33.742978"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="692.264098" ftdt="0.000000" sfdt="19.854159"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="692.264098" ftdt="0.000000" sfdt="19.854159"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:25:35.025081" spill_number="57" events_in_spill="26413" total_time="705.430216" event_rate="2066.073078">
+        <ChanStats chan="0" fast_peaks="879108.000000" live_time="704.793660" ftdt="0.436045" sfdt="33.370121"/>
+        <ChanStats chan="1" fast_peaks="1093235.000000" live_time="704.860288" ftdt="0.248400" sfdt="34.353985"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="704.978680" ftdt="0.000000" sfdt="20.214585"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="704.978680" ftdt="0.000000" sfdt="20.214585"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:25:47.749136" spill_number="58" events_in_spill="26420" total_time="718.153948" event_rate="2065.709967">
+        <ChanStats chan="0" fast_peaks="895109.000000" live_time="717.505610" ftdt="0.444007" sfdt="33.969700"/>
+        <ChanStats chan="1" fast_peaks="1111915.000000" live_time="717.572660" ftdt="0.252862" sfdt="34.959953"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="717.693273" ftdt="0.000000" sfdt="20.575761"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="717.693273" ftdt="0.000000" sfdt="20.575761"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:26:00.173498" spill_number="59" events_in_spill="26408" total_time="730.578731" event_rate="2066.233939">
+        <ChanStats chan="0" fast_peaks="910791.000000" live_time="729.924378" ftdt="0.451776" sfdt="34.565398"/>
+        <ChanStats chan="1" fast_peaks="1131542.000000" live_time="729.991776" ftdt="0.257283" sfdt="35.575709"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="730.107311" ftdt="0.000000" sfdt="20.936785"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="730.107312" ftdt="0.000000" sfdt="20.936785"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:26:12.398725" spill_number="60" events_in_spill="26408" total_time="742.802905" event_rate="2067.072595">
+        <ChanStats chan="0" fast_peaks="926266.000000" live_time="742.129538" ftdt="0.459450" sfdt="35.155103"/>
+        <ChanStats chan="1" fast_peaks="1151074.000000" live_time="742.207104" ftdt="0.261712" sfdt="36.188058"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="742.325568" ftdt="0.000000" sfdt="21.295673"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="742.325568" ftdt="0.000000" sfdt="21.295673"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:26:25.023316" spill_number="61" events_in_spill="26414" total_time="755.427759" event_rate="2067.230322">
+        <ChanStats chan="0" fast_peaks="941863.000000" live_time="754.742992" ftdt="0.467182" sfdt="35.751989"/>
+        <ChanStats chan="1" fast_peaks="1170874.000000" live_time="754.820525" ftdt="0.266146" sfdt="36.808240"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="754.942306" ftdt="0.000000" sfdt="21.659349"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="754.942306" ftdt="0.000000" sfdt="21.659349"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:26:37.445069" spill_number="62" events_in_spill="26431" total_time="767.850277" event_rate="2067.451031">
+        <ChanStats chan="0" fast_peaks="957337.000000" live_time="767.154685" ftdt="0.474885" sfdt="36.342529"/>
+        <ChanStats chan="1" fast_peaks="1190695.000000" live_time="767.232639" ftdt="0.270554" sfdt="37.421096"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="767.356292" ftdt="0.000000" sfdt="22.018160"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="767.356292" ftdt="0.000000" sfdt="22.018160"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:26:49.966177" spill_number="63" events_in_spill="26413" total_time="780.371209" event_rate="2067.658956">
+        <ChanStats chan="0" fast_peaks="973013.000000" live_time="779.664048" ftdt="0.482681" sfdt="36.938708"/>
+        <ChanStats chan="1" fast_peaks="1210663.000000" live_time="779.742618" ftdt="0.274991" sfdt="38.037380"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="779.868170" ftdt="0.000000" sfdt="22.379369"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="779.868170" ftdt="0.000000" sfdt="22.379369"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:27:02.486745" spill_number="64" events_in_spill="26397" total_time="792.891817" event_rate="2067.969446">
+        <ChanStats chan="0" fast_peaks="988646.000000" live_time="792.180230" ftdt="0.490473" sfdt="37.535210"/>
+        <ChanStats chan="1" fast_peaks="1230654.000000" live_time="792.252959" ftdt="0.279446" sfdt="38.656244"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="792.380080" ftdt="0.000000" sfdt="22.741367"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="792.380081" ftdt="0.000000" sfdt="22.741367"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:27:15.009422" spill_number="65" events_in_spill="26397" total_time="805.414262" event_rate="2068.029750">
+        <ChanStats chan="0" fast_peaks="1004256.000000" live_time="804.689748" ftdt="0.498209" sfdt="38.128608"/>
+        <ChanStats chan="1" fast_peaks="1250499.000000" live_time="804.762890" ftdt="0.283874" sfdt="39.269629"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="804.891945" ftdt="0.000000" sfdt="23.100897"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="804.898936" ftdt="0.000000" sfdt="23.101076"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:27:27.432623" spill_number="66" events_in_spill="26403" total_time="817.837854" event_rate="2068.361824">
+        <ChanStats chan="0" fast_peaks="1019887.000000" live_time="817.100455" ftdt="0.505963" sfdt="38.722435"/>
+        <ChanStats chan="1" fast_peaks="1270086.000000" live_time="817.175632" ftdt="0.288286" sfdt="39.882035"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="817.312905" ftdt="0.000000" sfdt="23.460932"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="817.312906" ftdt="0.000000" sfdt="23.460932"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:27:39.954240" spill_number="67" events_in_spill="26411" total_time="830.359301" event_rate="2068.603441">
+        <ChanStats chan="0" fast_peaks="1035458.000000" live_time="829.608246" ftdt="0.513694" sfdt="39.317122"/>
+        <ChanStats chan="1" fast_peaks="1289846.000000" live_time="829.691571" ftdt="0.292761" sfdt="40.500227"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="829.824749" ftdt="0.000000" sfdt="23.822862"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="829.824749" ftdt="0.000000" sfdt="23.822862"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:27:52.475761" spill_number="68" events_in_spill="26413" total_time="842.880369" event_rate="2068.873691">
+        <ChanStats chan="0" fast_peaks="1051219.000000" live_time="842.117125" ftdt="0.521526" sfdt="39.915522"/>
+        <ChanStats chan="1" fast_peaks="1309161.000000" live_time="842.201724" ftdt="0.297115" sfdt="41.113188"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="842.336638" ftdt="0.000000" sfdt="24.185198"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="842.336639" ftdt="0.000000" sfdt="24.185198"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:28:04.896974" spill_number="69" events_in_spill="26415" total_time="855.301799" event_rate="2069.072832">
+        <ChanStats chan="0" fast_peaks="1066762.000000" live_time="854.528318" ftdt="0.529232" sfdt="40.506747"/>
+        <ChanStats chan="1" fast_peaks="1328661.000000" live_time="854.613207" ftdt="0.301532" sfdt="41.724721"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="854.750599" ftdt="0.000000" sfdt="24.544054"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="854.750600" ftdt="0.000000" sfdt="24.544054"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:28:17.418920" spill_number="70" events_in_spill="26399" total_time="867.823256" event_rate="2069.355069">
+        <ChanStats chan="0" fast_peaks="1082369.000000" live_time="867.044963" ftdt="0.536965" sfdt="41.102663"/>
+        <ChanStats chan="1" fast_peaks="1348752.000000" live_time="867.123808" ftdt="0.306057" sfdt="42.345736"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="867.262450" ftdt="0.000000" sfdt="24.906383"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="867.262450" ftdt="0.000000" sfdt="24.906383"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:28:29.840472" spill_number="71" events_in_spill="26388" total_time="880.245504" event_rate="2069.720586">
+        <ChanStats chan="0" fast_peaks="1097914.000000" live_time="879.455631" ftdt="0.544682" sfdt="41.696266"/>
+        <ChanStats chan="1" fast_peaks="1368812.000000" live_time="879.535795" ftdt="0.310484" sfdt="42.962926"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="879.676446" ftdt="0.000000" sfdt="25.266927"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="879.676446" ftdt="0.000000" sfdt="25.266927"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:28:42.361815" spill_number="72" events_in_spill="26407" total_time="892.765777" event_rate="2069.774520">
+        <ChanStats chan="0" fast_peaks="1113351.000000" live_time="891.965213" ftdt="0.552340" sfdt="42.287506"/>
+        <ChanStats chan="1" fast_peaks="1388907.000000" live_time="892.046087" ftdt="0.314890" sfdt="43.580417"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="892.188283" ftdt="0.000000" sfdt="25.626790"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="892.188283" ftdt="0.000000" sfdt="25.626790"/>
+    </StatsUpdate>
+    <StatsUpdate lab_time="2015-09-05T17:28:49.682104" spill_number="73" events_in_spill="14854" total_time="900.086232" event_rate="2069.836371">
+        <ChanStats chan="0" fast_peaks="1122490.000000" live_time="899.279006" ftdt="0.556872" sfdt="42.635242"/>
+        <ChanStats chan="1" fast_peaks="1399942.000000" live_time="899.359392" ftdt="0.317428" sfdt="43.936540"/>
+        <ChanStats chan="2" fast_peaks="0.000000" live_time="899.502731" ftdt="0.000000" sfdt="25.837668"/>
+        <ChanStats chan="3" fast_peaks="0.000000" live_time="899.509722" ftdt="0.000000" sfdt="25.837941"/>
+    </StatsUpdate>
+    <RunInfo time_start="2015-09-05T17:13:49.559062" time_stop="2015-09-05T17:28:49.682104" total_events="1890137">
+        <PixieSettings>
+            <System>
+                <Setting key="0" name="NUMBER_MODULES" value="1.000000"/>
+                <Setting key="1" name="OFFLINE_ANALYSIS" value="0.000000"/>
+                <Setting key="2" name="AUTO_PROCESSLMDATA" value="0.000000"/>
+                <Setting key="3" name="MAX_NUMBER_MODULES" value="7.000000"/>
+                <Setting key="4" name="C_LIBRARY_RELEASE" value="608.000000"/>
+                <Setting key="5" name="C_LIBRARY_BUILD" value="7.000000"/>
+                <Setting key="6" name="KEEP_CW" value="1.000000"/>
+                <Setting key="7" name="SLOT_WAVE" value="2.000000"/>
+            </System>
+            <Module number="0">
+                <Setting key="0" name="MODULE_NUMBER" value="0.000000"/>
+                <Setting key="1" name="MODULE_CSRA" value="0.000000"/>
+                <Setting key="2" name="MODULE_CSRB" value="0.000000"/>
+                <Setting key="3" name="MODULE_FORMAT" value="256.000000"/>
+                <Setting key="4" name="MAX_EVENTS" value="0.000000"/>
+                <Setting key="5" name="COINCIDENCE_PATTERN" value="65534.000000"/>
+                <Setting key="6" name="ACTUAL_COINCIDENCE_WAIT" value="13.333333"/>
+                <Setting key="7" name="MIN_COINCIDENCE_WAIT" value="15146.666667"/>
+                <Setting key="8" name="SYNCH_WAIT" value="1.000000"/>
+                <Setting key="9" name="IN_SYNCH" value="1.000000"/>
+                <Setting key="10" name="RUN_TYPE" value="259.000000"/>
+                <Setting key="11" name="FILTER_RANGE" value="4.000000"/>
+                <Setting key="12" name="MODULEPATTERN" value="32.000000"/>
+                <Setting key="13" name="NNSHAREPATTERN" value="0.000000"/>
+                <Setting key="14" name="DBLBUFCSR" value="1.000000"/>
+                <Setting key="15" name="MODULE_CSRC" value="0.000000"/>
+                <Setting key="16" name="BUFFER_HEAD_LENGTH" value="6.000000"/>
+                <Setting key="17" name="EVENT_HEAD_LENGTH" value="3.000000"/>
+                <Setting key="18" name="CHANNEL_HEAD_LENGTH" value="2.000000"/>
+                <Setting key="19" name="OUTPUT_BUFFER_LENGTH" value="8192.000000"/>
+                <Setting key="20" name="NUMBER_EVENTS" value="1861877.000000"/>
+                <Setting key="21" name="RUN_TIME" value="899.524354"/>
+                <Setting key="22" name="EVENT_RATE" value="2069.846127"/>
+                <Setting key="23" name="TOTAL_TIME" value="900.099868"/>
+                <Setting key="24" name="BOARD_VERSION" value="42754.000000"/>
+                <Setting key="25" name="SERIAL_NUMBER" value="0.000000"/>
+                <Setting key="26" name="DSP_RELEASE" value="1122.000000"/>
+                <Setting key="27" name="DSP_BUILD" value="8196.000000"/>
+                <Setting key="28" name="FIPPI_ID" value="186.000000"/>
+                <Setting key="29" name="SYSTEM_ID" value="42780.000000"/>
+                <Setting key="30" name="XET_DELAY" value="0.000000"/>
+                <Setting key="31" name="PDM_MASKA" value="0.000000"/>
+                <Setting key="32" name="PDM_MASKB" value="0.000000"/>
+                <Setting key="33" name="PDM_MASKC" value="0.000000"/>
+                <Channel number="0">
+                    <Detector>
+                        <Name>Sophia</Name>
+                        <Type>HPGe</Type>
+                        <Calibrations>
+                            <Calibration Type="Energy" EnergyUnits="keV">
+                                <CalibrationCreationDate>2014-12-11T12:29:17.556280</CalibrationCreationDate>
+                                <Equation Model="Polynomial">
+                                    <Coefficients>-0.505959 0.250237 1.05746e-08 0 0 0</Coefficients>
+                                </Equation>
+                            </Calibration>
+                            <Calibration Type="Energy" EnergyUnits="keV" ResolutionBits="14">
+                                <CalibrationCreationDate>2015-09-02T15:56:06.986900</CalibrationCreationDate>
+                                <Equation Model="Polynomial">
+                                    <Coefficients>-0.506 0.2502 1.057e-08</Coefficients>
+                                </Equation>
+                            </Calibration>
+                        </Calibrations>
+                        <Calibration Type="FWHM" ResolutionBits="14">
+                            <CalibrationCreationDate>2015-09-02T16:14:38.793984</CalibrationCreationDate>
+                            <Equation Model="Polynomial">
+                                <Coefficients>2.63053 0.000415588</Coefficients>
+                            </Equation>
+                        </Calibration>
+                        <Optimization>
+                            <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
+                            <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
+                            <Setting key="2" name="ENERGY_RISETIME" value="10.880000"/>
+                            <Setting key="3" name="ENERGY_FLATTOP" value="1.066667"/>
+                            <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
+                            <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
+                            <Setting key="6" name="TRIGGER_THRESHOLD" value="30.000000"/>
+                            <Setting key="7" name="VGAIN" value="4.399957"/>
+                            <Setting key="8" name="VOFFSET" value="0.229263"/>
+                            <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
+                            <Setting key="10" name="TRACE_DELAY" value="1.000000"/>
+                            <Setting key="11" name="PSA_START" value="0.000000"/>
+                            <Setting key="12" name="PSA_END" value="0.000000"/>
+                            <Setting key="13" name="EMIN" value="0.000000"/>
+                            <Setting key="14" name="BINFACTOR" value="1.000000"/>
+                            <Setting key="15" name="TAU" value="56.925934"/>
+                            <Setting key="16" name="BLCUT" value="15.000000"/>
+                            <Setting key="17" name="XDT" value="10.040000"/>
+                            <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
+                            <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
+                            <Setting key="20" name="INTEGRATOR" value="0.000000"/>
+                            <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
+                            <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
+                            <Setting key="23" name="GATE_DELAY" value="0.013333"/>
+                            <Setting key="24" name="COINC_DELAY" value="0.000000"/>
+                            <Setting key="25" name="BLAVG" value="65534.000000"/>
+                            <Setting key="41" name="PSM_TEMP_AVG_LEN" value="2.000000"/>
+                            <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
+                        </Optimization>
+                    </Detector>
+                    <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
+                    <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
+                    <Setting key="2" name="ENERGY_RISETIME" value="10.880000"/>
+                    <Setting key="3" name="ENERGY_FLATTOP" value="1.066667"/>
+                    <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
+                    <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
+                    <Setting key="6" name="TRIGGER_THRESHOLD" value="30.000000"/>
+                    <Setting key="7" name="VGAIN" value="4.399957"/>
+                    <Setting key="8" name="VOFFSET" value="0.229263"/>
+                    <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
+                    <Setting key="10" name="TRACE_DELAY" value="1.000000"/>
+                    <Setting key="11" name="PSA_START" value="0.000000"/>
+                    <Setting key="12" name="PSA_END" value="0.000000"/>
+                    <Setting key="13" name="EMIN" value="0.000000"/>
+                    <Setting key="14" name="BINFACTOR" value="1.000000"/>
+                    <Setting key="15" name="TAU" value="56.925934"/>
+                    <Setting key="16" name="BLCUT" value="15.000000"/>
+                    <Setting key="17" name="XDT" value="10.040000"/>
+                    <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
+                    <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
+                    <Setting key="20" name="INTEGRATOR" value="0.000000"/>
+                    <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
+                    <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
+                    <Setting key="23" name="GATE_DELAY" value="0.013333"/>
+                    <Setting key="24" name="COINC_DELAY" value="2346.666667"/>
+                    <Setting key="25" name="BLAVG" value="65534.000000"/>
+                    <Setting key="26" name="LIVE_TIME" value="899.293207"/>
+                    <Setting key="27" name="INPUT_COUNT_RATE" value="1248.985901"/>
+                    <Setting key="28" name="FAST_PEAKS" value="1122509.000000"/>
+                    <Setting key="29" name="OUTPUT_COUNT_RATE" value="1115.544955"/>
+                    <Setting key="30" name="NOUT" value="1003202.000000"/>
+                    <Setting key="31" name="GATE_RATE" value="0.000000"/>
+                    <Setting key="32" name="GATE_COUNTS" value="0.000000"/>
+                    <Setting key="33" name="FTDT" value="0.556881"/>
+                    <Setting key="34" name="SFDT" value="42.636086"/>
+                    <Setting key="35" name="GDT" value="899.300236"/>
+                    <Setting key="36" name="CURRENT_ICR" value="1358.985901"/>
+                    <Setting key="37" name="CURRENT_OORF" value="0.000000"/>
+                    <Setting key="38" name="PSM_GAIN_AVG" value="0.000000"/>
+                    <Setting key="39" name="PSM_GAIN_AVG_LEN" value="1.000000"/>
+                    <Setting key="40" name="PSM_TEMP_AVG" value="0.000000"/>
+                    <Setting key="41" name="PSM_TEMP_AVG_LEN" value="2.000000"/>
+                    <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
+                </Channel>
+                <Channel number="1">
+                    <Detector>
+                        <Name>Daphne</Name>
+                        <Type>HPGe</Type>
+                        <Calibrations>
+                            <Calibration Type="Energy" EnergyUnits="keV">
+                                <CalibrationCreationDate>2014-12-11T12:29:17.556280</CalibrationCreationDate>
+                                <Equation Model="Polynomial">
+                                    <Coefficients>-0.422413 0.249778 7.32964e-09 0 0 0</Coefficients>
+                                </Equation>
+                            </Calibration>
+                            <Calibration Type="Energy" EnergyUnits="keV" ResolutionBits="14">
+                                <CalibrationCreationDate>2014-12-11T12:29:17.556280</CalibrationCreationDate>
+                                <Equation Model="Polynomial">
+                                    <Coefficients>-0.4244 0.2498 7.33e-09</Coefficients>
+                                </Equation>
+                            </Calibration>
+                        </Calibrations>
+                        <Calibration Type="FWHM" ResolutionBits="14">
+                            <CalibrationCreationDate>2015-09-02T16:14:28.452057</CalibrationCreationDate>
+                            <Equation Model="Polynomial">
+                                <Coefficients>2.47334 0.000393662</Coefficients>
+                            </Equation>
+                        </Calibration>
+                        <Optimization>
+                            <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
+                            <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
+                            <Setting key="2" name="ENERGY_RISETIME" value="10.880000"/>
+                            <Setting key="3" name="ENERGY_FLATTOP" value="1.066667"/>
+                            <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
+                            <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
+                            <Setting key="6" name="TRIGGER_THRESHOLD" value="35.000000"/>
+                            <Setting key="7" name="VGAIN" value="4.204305"/>
+                            <Setting key="8" name="VOFFSET" value="0.221710"/>
+                            <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
+                            <Setting key="10" name="TRACE_DELAY" value="1.000000"/>
+                            <Setting key="11" name="PSA_START" value="0.000000"/>
+                            <Setting key="12" name="PSA_END" value="0.000000"/>
+                            <Setting key="13" name="EMIN" value="0.000000"/>
+                            <Setting key="14" name="BINFACTOR" value="1.000000"/>
+                            <Setting key="15" name="TAU" value="61.320221"/>
+                            <Setting key="16" name="BLCUT" value="95.000000"/>
+                            <Setting key="17" name="XDT" value="10.040000"/>
+                            <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
+                            <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
+                            <Setting key="20" name="INTEGRATOR" value="0.000000"/>
+                            <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
+                            <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
+                            <Setting key="23" name="GATE_DELAY" value="0.013333"/>
+                            <Setting key="24" name="COINC_DELAY" value="0.000000"/>
+                            <Setting key="25" name="BLAVG" value="65534.000000"/>
+                            <Setting key="41" name="PSM_TEMP_AVG_LEN" value="2.000000"/>
+                            <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
+                        </Optimization>
+                    </Detector>
+                    <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
+                    <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
+                    <Setting key="2" name="ENERGY_RISETIME" value="10.880000"/>
+                    <Setting key="3" name="ENERGY_FLATTOP" value="1.066667"/>
+                    <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
+                    <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
+                    <Setting key="6" name="TRIGGER_THRESHOLD" value="35.000000"/>
+                    <Setting key="7" name="VGAIN" value="4.204305"/>
+                    <Setting key="8" name="VOFFSET" value="0.221710"/>
+                    <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
+                    <Setting key="10" name="TRACE_DELAY" value="1.000000"/>
+                    <Setting key="11" name="PSA_START" value="0.000000"/>
+                    <Setting key="12" name="PSA_END" value="0.000000"/>
+                    <Setting key="13" name="EMIN" value="0.000000"/>
+                    <Setting key="14" name="BINFACTOR" value="1.000000"/>
+                    <Setting key="15" name="TAU" value="61.320221"/>
+                    <Setting key="16" name="BLCUT" value="95.000000"/>
+                    <Setting key="17" name="XDT" value="10.040000"/>
+                    <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
+                    <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
+                    <Setting key="20" name="INTEGRATOR" value="0.000000"/>
+                    <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
+                    <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
+                    <Setting key="23" name="GATE_DELAY" value="0.013333"/>
+                    <Setting key="24" name="COINC_DELAY" value="2346.666667"/>
+                    <Setting key="25" name="BLAVG" value="65534.000000"/>
+                    <Setting key="26" name="LIVE_TIME" value="899.373593"/>
+                    <Setting key="27" name="INPUT_COUNT_RATE" value="1557.158568"/>
+                    <Setting key="28" name="FAST_PEAKS" value="1399973.000000"/>
+                    <Setting key="29" name="OUTPUT_COUNT_RATE" value="986.952483"/>
+                    <Setting key="30" name="NOUT" value="887639.000000"/>
+                    <Setting key="31" name="GATE_RATE" value="0.000000"/>
+                    <Setting key="32" name="GATE_COUNTS" value="0.000000"/>
+                    <Setting key="33" name="FTDT" value="0.317434"/>
+                    <Setting key="34" name="SFDT" value="43.937484"/>
+                    <Setting key="35" name="GDT" value="899.380254"/>
+                    <Setting key="36" name="CURRENT_ICR" value="1788.139343"/>
+                    <Setting key="37" name="CURRENT_OORF" value="0.000000"/>
+                    <Setting key="38" name="PSM_GAIN_AVG" value="0.000000"/>
+                    <Setting key="39" name="PSM_GAIN_AVG_LEN" value="1.000000"/>
+                    <Setting key="40" name="PSM_TEMP_AVG" value="0.000000"/>
+                    <Setting key="41" name="PSM_TEMP_AVG_LEN" value="2.000000"/>
+                    <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
+                </Channel>
+                <Channel number="2">
+                    <Detector>
+                        <Name>none</Name>
+                        <Type>none</Type>
+                    </Detector>
+                    <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
+                    <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
+                    <Setting key="2" name="ENERGY_RISETIME" value="11.946667"/>
+                    <Setting key="3" name="ENERGY_FLATTOP" value="2.346667"/>
+                    <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
+                    <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
+                    <Setting key="6" name="TRIGGER_THRESHOLD" value="25.000000"/>
+                    <Setting key="7" name="VGAIN" value="1.314394"/>
+                    <Setting key="8" name="VOFFSET" value="0.578995"/>
+                    <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
+                    <Setting key="10" name="TRACE_DELAY" value="0.000000"/>
+                    <Setting key="11" name="PSA_START" value="0.000000"/>
+                    <Setting key="12" name="PSA_END" value="0.000000"/>
+                    <Setting key="13" name="EMIN" value="0.000000"/>
+                    <Setting key="14" name="BINFACTOR" value="1.000000"/>
+                    <Setting key="15" name="TAU" value="50.000000"/>
+                    <Setting key="16" name="BLCUT" value="15.000000"/>
+                    <Setting key="17" name="XDT" value="10.040000"/>
+                    <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
+                    <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
+                    <Setting key="20" name="INTEGRATOR" value="0.000000"/>
+                    <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
+                    <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
+                    <Setting key="23" name="GATE_DELAY" value="0.013333"/>
+                    <Setting key="24" name="COINC_DELAY" value="0.000000"/>
+                    <Setting key="25" name="BLAVG" value="65534.000000"/>
+                    <Setting key="26" name="LIVE_TIME" value="899.516931"/>
+                    <Setting key="27" name="INPUT_COUNT_RATE" value="0.000000"/>
+                    <Setting key="28" name="FAST_PEAKS" value="0.000000"/>
+                    <Setting key="29" name="OUTPUT_COUNT_RATE" value="0.000000"/>
+                    <Setting key="30" name="NOUT" value="0.000000"/>
+                    <Setting key="31" name="GATE_RATE" value="0.000000"/>
+                    <Setting key="32" name="GATE_COUNTS" value="0.000000"/>
+                    <Setting key="33" name="FTDT" value="0.000000"/>
+                    <Setting key="34" name="SFDT" value="25.838215"/>
+                    <Setting key="35" name="GDT" value="899.523860"/>
+                    <Setting key="36" name="CURRENT_ICR" value="0.000000"/>
+                    <Setting key="37" name="CURRENT_OORF" value="0.000000"/>
+                    <Setting key="38" name="PSM_GAIN_AVG" value="0.000000"/>
+                    <Setting key="39" name="PSM_GAIN_AVG_LEN" value="1.000000"/>
+                    <Setting key="40" name="PSM_TEMP_AVG" value="0.000000"/>
+                    <Setting key="41" name="PSM_TEMP_AVG_LEN" value="1.000000"/>
+                    <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
+                </Channel>
+                <Channel number="3">
+                    <Detector>
+                        <Name>none</Name>
+                        <Type>none</Type>
+                    </Detector>
+                    <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
+                    <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
+                    <Setting key="2" name="ENERGY_RISETIME" value="11.946667"/>
+                    <Setting key="3" name="ENERGY_FLATTOP" value="2.346667"/>
+                    <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
+                    <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
+                    <Setting key="6" name="TRIGGER_THRESHOLD" value="25.000000"/>
+                    <Setting key="7" name="VGAIN" value="1.314394"/>
+                    <Setting key="8" name="VOFFSET" value="0.576935"/>
+                    <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
+                    <Setting key="10" name="TRACE_DELAY" value="0.000000"/>
+                    <Setting key="11" name="PSA_START" value="0.000000"/>
+                    <Setting key="12" name="PSA_END" value="0.000000"/>
+                    <Setting key="13" name="EMIN" value="0.000000"/>
+                    <Setting key="14" name="BINFACTOR" value="1.000000"/>
+                    <Setting key="15" name="TAU" value="50.000000"/>
+                    <Setting key="16" name="BLCUT" value="15.000000"/>
+                    <Setting key="17" name="XDT" value="10.040000"/>
+                    <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
+                    <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
+                    <Setting key="20" name="INTEGRATOR" value="0.000000"/>
+                    <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
+                    <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
+                    <Setting key="23" name="GATE_DELAY" value="0.013333"/>
+                    <Setting key="24" name="COINC_DELAY" value="0.000000"/>
+                    <Setting key="25" name="BLAVG" value="65534.000000"/>
+                    <Setting key="26" name="LIVE_TIME" value="899.516931"/>
+                    <Setting key="27" name="INPUT_COUNT_RATE" value="0.000000"/>
+                    <Setting key="28" name="FAST_PEAKS" value="0.000000"/>
+                    <Setting key="29" name="OUTPUT_COUNT_RATE" value="0.000000"/>
+                    <Setting key="30" name="NOUT" value="0.000000"/>
+                    <Setting key="31" name="GATE_RATE" value="0.000000"/>
+                    <Setting key="32" name="GATE_COUNTS" value="0.000000"/>
+                    <Setting key="33" name="FTDT" value="0.000000"/>
+                    <Setting key="34" name="SFDT" value="25.838215"/>
+                    <Setting key="35" name="GDT" value="899.523860"/>
+                    <Setting key="36" name="CURRENT_ICR" value="0.000000"/>
+                    <Setting key="37" name="CURRENT_OORF" value="0.000000"/>
+                    <Setting key="38" name="PSM_GAIN_AVG" value="0.000000"/>
+                    <Setting key="39" name="PSM_GAIN_AVG_LEN" value="1.000000"/>
+                    <Setting key="40" name="PSM_TEMP_AVG" value="0.000000"/>
+                    <Setting key="41" name="PSM_TEMP_AVG_LEN" value="1.000000"/>
+                    <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
+                </Channel>
+            </Module>
+        </PixieSettings>
+    </RunInfo>
+</QpxListData>
