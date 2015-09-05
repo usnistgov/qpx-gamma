@@ -27,6 +27,8 @@
 #include "custom_logger.h"
 #include "custom_timer.h"
 
+#include "sorter.h"
+
 FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   settings_(settings),
@@ -186,6 +188,7 @@ void FormMcaDaq::toggle_push(bool enable, Pixie::LiveStatus live) {
 
   ui->pushMcaClear->setEnabled(enable && nonempty);
   ui->pushMcaSave->setEnabled(enable && nonempty);
+  ui->pushBuildFromList->setEnabled(enable);
 }
 
 void FormMcaDaq::on_pushTimeNow_clicked()
@@ -467,4 +470,36 @@ void FormMcaDaq::on_pushEnable2d_clicked()
 void FormMcaDaq::on_pushForceRefresh_clicked()
 {
   update_plots();
+}
+
+void FormMcaDaq::on_pushBuildFromList_clicked()
+{
+  QString fileName = QFileDialog::getOpenFileName(this, "Load project", data_directory_, "qpx list output manifest (*.txt)");
+  if (!validateFile(this, fileName, false))
+    return;
+
+  if (!spectra_.empty()) {
+    int reply = QMessageBox::warning(this, "Clear existing?",
+                                     "Spectra already open. Clear existing before building new?",
+                                     QMessageBox::Yes|QMessageBox::Cancel);
+    if (reply == QMessageBox::Yes)
+      spectra_.clear();
+    else
+      return;
+  }
+
+  PL_INFO << "Reading list output metadata from " << fileName.toStdString();
+
+  emit statusText("Simulated spectra acquisition in progress...");
+  emit toggleIO(false);
+
+  clearGraphs();
+  spectra_.set_spectra(spectra_templates_);
+  newProject();
+
+  ui->pushMcaStop->setEnabled(true);
+  my_run_ = true;
+
+  ui->Plot1d->reset_content();
+  runner_thread_.do_from_list(spectra_, interruptor_, fileName);
 }

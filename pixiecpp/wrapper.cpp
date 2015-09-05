@@ -131,6 +131,24 @@ void Wrapper::getFakeMca(Simulator& source, SpectraSet& spectra,
   builder.join();
 }
 
+void Wrapper::simulateFromList(Sorter &sorter, SpectraSet &spectra, boost::atomic<bool> &interruptor) {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  PL_INFO << "Acquisition simulation from saved list data";
+
+  SynchronizedQueue<Spill*> eventQueue;
+
+  boost::thread builder(boost::bind(&Pixie::Wrapper::worker_MCA, this, &eventQueue, &spectra));
+  worker_from_list(&sorter, &eventQueue, &interruptor);
+  while (eventQueue.size() > 0)
+    wait_ms(1000);
+  wait_ms(500);
+  eventQueue.stop();
+  wait_ms(500);
+  builder.join();
+
+}
+
+
 ListData* Wrapper::getList(RunType type, uint64_t timeout,
                            boost::atomic<bool>& interruptor, bool double_buf) {
 
@@ -555,6 +573,16 @@ void Wrapper::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_que
   one_spill->run->time_stop = block_time;
   one_spill->run->total_events = event_count;
   data_queue->enqueue(one_spill);
+}
+
+
+void Wrapper::worker_from_list(Sorter* sorter, SynchronizedQueue<Spill*>* data_queue, boost::atomic<bool>* interruptor) {
+  Spill one_spill;
+
+  while ((!((one_spill = sorter->get_spill()) == Spill())) && !(*interruptor)) {
+    data_queue->enqueue(new Spill(one_spill));
+    //boost::this_thread::sleep(boost::posix_time::seconds(12));
+  }
 }
 
 

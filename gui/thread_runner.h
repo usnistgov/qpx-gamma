@@ -38,7 +38,7 @@
 Q_DECLARE_METATYPE(Pixie::RunType)
 
 enum RunnerAction {
-    kBoot, kList, kMCA, kSimulate,
+    kBoot, kList, kMCA, kSimulate, kFromList,
     kOffsets, kBaselines, kOscil,
     kTau, kBLcut, kSettingsRefresh, kOptimize,
     kTerminate, kNone
@@ -55,6 +55,7 @@ public:
     void do_list(boost::atomic<bool>&, Pixie::RunType, uint64_t timeout, bool dblbuf);
     void do_run(Pixie::SpectraSet&, boost::atomic<bool>&, Pixie::RunType, uint64_t timeout, bool dblbuf);
     void do_fake(Pixie::SpectraSet&, boost::atomic<bool>&, QString file, std::array<int,2> chans, int source_res, int dest_res, int timeout);
+    void do_from_list(Pixie::SpectraSet&, boost::atomic<bool>&, QString file);
 
     void do_offsets();
     void do_baselines();

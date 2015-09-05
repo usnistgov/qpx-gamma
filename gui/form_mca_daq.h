@@ -85,6 +85,8 @@ private slots:
   void analysis2d_destroyed();
 
 
+  void on_pushBuildFromList_clicked();
+
 private:
   Ui::FormMcaDaq *ui;
   QSettings                  &settings_;

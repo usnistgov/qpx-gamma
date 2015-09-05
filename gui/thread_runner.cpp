@@ -107,6 +107,19 @@ void ThreadRunner::do_fake(Pixie::SpectraSet &spectra, boost::atomic<bool> &inte
     PL_WARN << "Cannot do_fake. Runner busy.";
 }
 
+void ThreadRunner::do_from_list(Pixie::SpectraSet &spectra, boost::atomic<bool> &interruptor, QString file) {
+  if (!isRunning()) {
+    terminating_.store(false);
+    QMutexLocker locker(&mutex_);
+    spectra_ = &spectra;
+    interruptor_ = &interruptor;
+    file_ = file;
+    action_ = kFromList;
+    start(HighPriority);
+  } else
+    PL_WARN << "Cannot do_from_list. Runner busy.";
+}
+
 void ThreadRunner::do_boot(bool boot_keepcw, std::vector<std::string> boot_files, std::vector<uint8_t> boot_slots) {
   if (!isRunning()) {
     terminating_.store(false);
@@ -204,6 +217,12 @@ void ThreadRunner::run()
     delete intermediate;
     if (mySource.valid())
       Pixie::Wrapper::getInstance().getFakeMca(mySource, *spectra_, timeout_, *interruptor_);
+    emit runComplete();
+  } else if (action_ == kFromList) {
+    interruptor_->store(false);
+    Pixie::Sorter sorter(file_.toStdString());
+    if (sorter.valid())
+      Pixie::Wrapper::getInstance().simulateFromList(sorter, *spectra_, *interruptor_);
     emit runComplete();
   } else if (action_ == kBoot) {
     Pixie::Wrapper &myPixie = Pixie::Wrapper::getInstance();

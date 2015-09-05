@@ -30,6 +30,7 @@
 #include "custom_timer.h"
 
 #include "simulator.h"
+#include "sorter.h"
 
 #ifndef PIXIE_WRAPPER
 #define PIXIE_WRAPPER
@@ -75,6 +76,8 @@ class Wrapper {
   void getFakeMca(Simulator &simulator, SpectraSet &spectra,
                   uint64_t timeout, boost::atomic<bool> &interruptor);
 
+  void simulateFromList(Sorter &sorter, SpectraSet &spectra, boost::atomic<bool> &interruptor);
+
   /////CONTROL TASKS/////
   void control_set_DAC(uint8_t module);
   void control_connect(uint8_t module);
@@ -107,6 +110,7 @@ class Wrapper {
                        SynchronizedQueue<Spill*>* spill_queue, boost::atomic<bool>* interruptor);
   void worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queue,
                     uint64_t timeout_limit, boost::atomic<bool>* interruptor);
+  void worker_from_list(Sorter* sorter, SynchronizedQueue<Spill*>* data_queue, boost::atomic<bool>* interruptor);
 
   //start and stop runs
   bool start_run(RunType type);

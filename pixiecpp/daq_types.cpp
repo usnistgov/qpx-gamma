@@ -89,6 +89,20 @@ StatsUpdate StatsUpdate::operator-(const StatsUpdate other) const {
   return answer;
 }
 
+bool StatsUpdate::operator==(const StatsUpdate other) const {
+  if (total_time != other.total_time)
+    return false;
+  if (events_in_spill != other.events_in_spill)
+    return false;
+  if (event_rate != other.event_rate)
+    return false;
+  if (spill_number != other.spill_number)
+    return false;
+  if (fast_peaks != other.fast_peaks)
+    return false;
+  return true;
+}
+
 // stacks two, adding up all variables
 // except rate wouldn't make sense, neither does timestamp
 StatsUpdate StatsUpdate::operator+(const StatsUpdate other) const {
@@ -109,7 +123,7 @@ void StatsUpdate::to_xml(tinyxml2::XMLPrinter &printer) const {
   printer.PushAttribute("lab_time", boost::posix_time::to_iso_extended_string(lab_time).c_str());
   printer.PushAttribute("spill_number", std::to_string(spill_number).c_str());
   printer.PushAttribute("events_in_spill", std::to_string(events_in_spill).c_str());
-  printer.PushAttribute("total_time", std::to_string(events_in_spill).c_str());
+  printer.PushAttribute("total_time", std::to_string(total_time).c_str());
   printer.PushAttribute("event_rate", std::to_string(event_rate).c_str());
 
   for (int i=0; i < kNumChans; i++) {
@@ -143,21 +157,21 @@ void StatsUpdate::from_xml(tinyxml2::XMLElement* root) {
   if (root->Attribute("total_time"))
     total_time = boost::lexical_cast<double>(root->Attribute("total_time"));
   if (root->Attribute("event_rate"))
-    total_time = boost::lexical_cast<double>(root->Attribute("event_rate"));
+    event_rate = boost::lexical_cast<double>(root->Attribute("event_rate"));
 
   tinyxml2::XMLElement* elem = root->FirstChildElement("ChanStats");
   while (elem != nullptr) {
-    if (root->Attribute("chan")) {
-      int chan = boost::lexical_cast<int>(root->Attribute("chan"));
+    if (elem->Attribute("chan") != nullptr) {
+      int chan = boost::lexical_cast<int>(elem->Attribute("chan"));
       if ((chan >= 0) && (chan < kNumChans)) {
-        if (root->Attribute("fast_peaks"))
-          fast_peaks[chan] = boost::lexical_cast<double>(root->Attribute("fast_peaks"));
-        if (root->Attribute("live_time"))
-          live_time[chan] = boost::lexical_cast<double>(root->Attribute("live_time"));
-        if (root->Attribute("ftdt"))
-          ftdt[chan] = boost::lexical_cast<double>(root->Attribute("ftdt"));
-        if (root->Attribute("sfdt"))
-          sfdt[chan] = boost::lexical_cast<double>(root->Attribute("sfdt"));
+        if (elem->Attribute("fast_peaks"))
+          fast_peaks[chan] = boost::lexical_cast<double>(elem->Attribute("fast_peaks"));
+        if (elem->Attribute("live_time"))
+          live_time[chan] = boost::lexical_cast<double>(elem->Attribute("live_time"));
+        if (elem->Attribute("ftdt"))
+          ftdt[chan] = boost::lexical_cast<double>(elem->Attribute("ftdt"));
+        if (elem->Attribute("sfdt"))
+          sfdt[chan] = boost::lexical_cast<double>(elem->Attribute("sfdt"));
       }
       elem = dynamic_cast<tinyxml2::XMLElement*>(elem->NextSibling());
     }

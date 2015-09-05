@@ -116,6 +116,8 @@ struct StatsUpdate {
 
   StatsUpdate operator-(const StatsUpdate) const;
   StatsUpdate operator+(const StatsUpdate) const;
+  bool operator<(const StatsUpdate other) const {return (spill_number < other.spill_number);}
+  bool operator==(const StatsUpdate other) const;
   void from_xml(tinyxml2::XMLElement*);
   void to_xml(tinyxml2::XMLPrinter&) const;
 };
@@ -139,6 +141,17 @@ struct RunInfo {
 
 struct Spill {
   inline Spill(): stats(nullptr), run(nullptr) {}
+  bool operator==(const Spill other) const {
+    if (stats != other.stats)
+      return false;
+    if (run != other.run)
+      return false;
+    if (data != other.data)
+      return false;
+    if (hits.size() != other.hits.size())
+      return false;
+    return true;
+  }
 
   std::vector<uint32_t> data;  //as is from Pixie, unparsed
   std::list<Pixie::Hit> hits;  //parsed
