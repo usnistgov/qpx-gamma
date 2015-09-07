@@ -58,9 +58,9 @@ bool Spectrum1D_LFC::initialize() {
 }
 
 
-void Spectrum1D_LFC::addHit(const Hit& newHit, int chan)
+void Spectrum1D_LFC::addHit(const Hit& newHit)
 {
-    channels_run_[ ((newHit.energy[chan]) >> shift_by_) ] ++;
+    channels_run_[ (newHit.energy >> shift_by_) ] ++;
     count_current_++;
 }
 

@@ -46,10 +46,10 @@ Settings& Wrapper::settings() {
   return my_settings_;
 }
 
-Hit Wrapper::getOscil() {
+Event Wrapper::getOscil() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   
-  Hit oscil_traces;
+  Event oscil_traces;
   uint32_t* oscil_data;
   int cur_mod = static_cast<int>(my_settings_.current_module());
 
@@ -57,9 +57,9 @@ Hit Wrapper::getOscil() {
     PL_WARN << "Pixie not online";
   else if ((oscil_data = control_collect_ADC(cur_mod)) != nullptr) {
     for (int i = 0; i < kNumChans; i++) {     ///preset to 4 channels. Hardcoded
-      oscil_traces.trace[i].resize(max_buf_len);
-      oscil_traces.trace[i] = std::vector<U16>(oscil_data + (i*max_buf_len),
-                                          oscil_data + ((i+1)*max_buf_len));
+      oscil_traces.hit[i].trace.resize(max_buf_len);
+      oscil_traces.hit[i].trace = std::vector<U16>(oscil_data + (i*max_buf_len),
+                                                   oscil_data + ((i+1)*max_buf_len));
     }
     delete[] oscil_data;
   }
@@ -579,10 +579,11 @@ void Wrapper::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_que
 void Wrapper::worker_from_list(Sorter* sorter, SynchronizedQueue<Spill*>* data_queue, boost::atomic<bool>* interruptor) {
   Spill one_spill;
 
-  while ((!((one_spill = sorter->get_spill()) == Spill())) && !(*interruptor)) {
+  while ((!((one_spill = sorter->get_spill()) == Spill())) && (!(*interruptor))) {
     data_queue->enqueue(new Spill(one_spill));
-    //boost::this_thread::sleep(boost::posix_time::seconds(12));
+    boost::this_thread::sleep(boost::posix_time::seconds(2));
   }
+  PL_DBG << "worker_from_list terminating";
 }
 
 
@@ -839,48 +840,72 @@ void Wrapper::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQue
           Hit one_hit;
           one_hit.run_type  = buf_format;
           one_hit.module    = buf_module;
-          one_hit.buf_time_hi = buf_timehi;
-          one_hit.buf_time_mi = buf_timemi;
-          one_hit.buf_time_lo = buf_timelo;
-          one_hit.evt_time_hi = buff16[idx++];
-          one_hit.evt_time_lo = buff16[idx++];
-          for (int i=0; i < NUMBER_OF_CHANNELS; ++i)
-            one_hit.pattern[i] = pattern[i+8];
+
+          uint16_t evt_time_hi = buff16[idx++];
+          uint16_t evt_time_lo = buff16[idx++];
           
           for (int i=0; i < NUMBER_OF_CHANNELS; i++) {
             if (pattern[i]) {
+              one_hit.channel = i;
+              uint64_t hi = buf_timehi;
+              uint64_t mi = evt_time_hi;
+              uint64_t lo = evt_time_lo;
+              uint16_t chan_trig_time = lo;
+              uint16_t chan_time_hi   = hi;
+
               if (task_b == 0x0000) {
-                uint16_t trace_len         = buff16[idx++] - 9;
-                one_hit.chan_trig_time[i] = buff16[idx++];
-                one_hit.energy[i]         = buff16[idx++];
-                one_hit.XIA_PSA[i]        = buff16[idx++];
-                one_hit.user_PSA[i]       = buff16[idx++];
+                uint16_t trace_len     = buff16[idx++] - 9;
+                chan_trig_time         = buff16[idx++];
+                if (pattern[i+8])
+                  one_hit.energy       = buff16[idx++];
+                else
+                  idx++;
+                one_hit.XIA_PSA        = buff16[idx++];
+                one_hit.user_PSA       = buff16[idx++];
                 idx += 3;
-                one_hit.chan_real_time[i] = buff16[idx++];
-                one_hit.trace[i] = std::vector<uint16_t>
+                hi                     = buff16[idx++]; //not always!
+                one_hit.trace = std::vector<uint16_t>
                     (buff16 + idx, buff16 + idx + trace_len);
                 idx += trace_len;
               } else if (task_b == 0x0001) {
                 idx++;
-                one_hit.chan_trig_time[i] = buff16[idx++];
-                one_hit.energy[i]         = buff16[idx++];
-                one_hit.XIA_PSA[i]        = buff16[idx++];
-                one_hit.user_PSA[i]       = buff16[idx++];
+                chan_trig_time         = buff16[idx++];
+                if (pattern[i+8])
+                  one_hit.energy       = buff16[idx++];
+                else
+                  idx++;
+                one_hit.XIA_PSA        = buff16[idx++];
+                one_hit.user_PSA       = buff16[idx++];
                 idx += 3;
-                one_hit.chan_real_time[i] = buff16[idx++];
+                hi                     = buff16[idx++];
               } else if (task_b == 0x0002) {
-                one_hit.chan_trig_time[i] = buff16[idx++];
-                one_hit.energy[i]         = buff16[idx++];
-                one_hit.XIA_PSA[i]        = buff16[idx++];
-                one_hit.user_PSA[i]       = buff16[idx++];
+                chan_trig_time         = buff16[idx++];
+                if (pattern[i+8])
+                  one_hit.energy       = buff16[idx++];
+                else
+                  idx++;
+                one_hit.XIA_PSA        = buff16[idx++];
+                one_hit.user_PSA       = buff16[idx++];
               } else if (task_b == 0x0003) {
-                one_hit.chan_trig_time[i] = buff16[idx++];
-                one_hit.energy[i]         = buff16[idx++];
+                chan_trig_time         = buff16[idx++];
+                if (pattern[i+8])
+                  one_hit.energy       = buff16[idx++];
+                else
+                  idx++;
               }
+              //Corrections for overflow, page 30 in Pixie-4 user manual
+              if (chan_trig_time > evt_time_lo)
+                mi--;
+              if (evt_time_hi < buf_timemi)
+                hi++;
+              if ((task_b == 0x0000) || (task_b == 0x0001))
+                hi = chan_time_hi;
+              lo = chan_trig_time;
+              one_hit.timestamp.time = (hi << 32) + (mi << 16) + lo;
+              spill->hits.push_back(one_hit);
+              spill_events++;
             }
           }
-          spill->hits.push_back(one_hit);
-          spill_events++;
         };
       }
       spill->stats->events_in_spill = spill_events;

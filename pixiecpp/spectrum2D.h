@@ -68,8 +68,7 @@ protected:
   std::unique_ptr<EntryList> _get_spectrum(std::initializer_list<Pair> list);
   void _set_detectors(const std::vector<Gamma::Detector>& dets) override;
 
-  void addHit(const Hit&) override;
-  virtual void addHit(const Hit&, int, int);
+  void addEvent(const Event&) override;
   void _add_bulk(const Entry&) override;
 
   //save/load

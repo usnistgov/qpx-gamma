@@ -241,6 +241,41 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QPushButton" name="pushListFileSort">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>44</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>44</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Sort binary list data by timestamp</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="qpxres.qrc">
+           <normaloff>:/new/icons/oxy/chronometer.png</normaloff>:/new/icons/oxy/chronometer.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>18</width>
+           <height>18</height>
+          </size>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>

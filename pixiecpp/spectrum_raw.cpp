@@ -27,7 +27,6 @@
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/filesystem.hpp>
 #include "spectrum_raw.h"
-#include <utility>
 
 namespace Pixie {
 namespace Spectrum {
@@ -117,11 +116,11 @@ std::unique_ptr<std::list<Entry>> SpectrumRaw::_get_spectrum(std::initializer_li
   return result;
 }
 
-void SpectrumRaw::addHit(const Hit& newHit) {
+void SpectrumRaw::addEvent(const Event& newEvent) {
   if (format_ == 0)
-    hit_bin(newHit);
+    hit_bin(newEvent);
   else if (format_ == 1)
-    hit_text(newHit);
+    hit_text(newEvent);
 }
 
 void SpectrumRaw::addStats(const StatsUpdate& stats) {
@@ -162,50 +161,24 @@ void SpectrumRaw::_closeAcquisition() {
 }
 
 
-void SpectrumRaw::hit_text(const Hit &newHit) {
+void SpectrumRaw::hit_text(const Event &newEvent) {
   if (!open_xml_)
     return;
-  newHit.to_xml(*xml_printer_);
+  for (uint16_t i = 0; i < kNumChans; i++)
+    if (newEvent.hit[i].channel > -1)
+      newEvent.hit[i].to_xml(*xml_printer_);
 }
 
-void SpectrumRaw::hit_bin(const Hit &newHit) {
+void SpectrumRaw::hit_bin(const Event &newEvent) {
   if (!open_bin_)
     return;
-
-  std::vector<uint16_t> energy(kNumChans);
-  std::vector<uint16_t> lo(kNumChans);
-  std::vector<uint16_t> mi(kNumChans);
-  std::vector<uint16_t> hi(kNumChans);
-  std::vector<uint64_t> time(kNumChans);
-  std::multimap<uint64_t, uint16_t> order;
-
-  for (uint16_t i = 0; i < kNumChans; i++) {
-    if (newHit.pattern[i]) {
-    energy[i] = newHit.energy[i];
-    hi[i] = newHit.buf_time_hi;
-    mi[i] = newHit.evt_time_hi;
-    lo[i] = newHit.evt_time_lo;
-    if (newHit.chan_trig_time[i] > newHit.evt_time_lo)
-      mi[i]--;
-    if (newHit.evt_time_hi < newHit.buf_time_mi)
-      hi[i]++;
-    uint16_t task_b = (newHit.run_type & 0x000F);
-    if ((task_b == 0x0000) || (task_b == 0x0001))
-      hi[i] = newHit.chan_real_time[i];
-    lo[i] = newHit.chan_trig_time[i];
-    time[i] = (((uint64_t)hi[i]) << 32) + (((uint64_t)mi[i]) << 16) + ((uint64_t)lo[i]);
-    order.insert(std::pair<uint64_t,uint16_t>(time[i], i));
+  for (uint16_t i = 0; i < kNumChans; i++)
+    if (newEvent.hit[i].channel > -1) {
+      file_bin_.write((char*)&i, sizeof(i));
+      file_bin_.write((char*)&newEvent.hit[i].timestamp.time, sizeof(newEvent.hit[i].timestamp.time));
+      file_bin_.write((char*)&newEvent.hit[i].energy, sizeof(newEvent.hit[i].energy));
+      events_this_spill_++;
     }
-  }
-
-  for (auto &q : order) {
-    file_bin_.write((char*)&q.second, sizeof(q.second));
-    file_bin_.write((char*)&hi[q.second], sizeof(hi[q.second]));
-    file_bin_.write((char*)&mi[q.second], sizeof(mi[q.second]));
-    file_bin_.write((char*)&lo[q.second], sizeof(lo[q.second]));
-    file_bin_.write((char*)&energy[q.second], sizeof(energy[q.second]));
-    events_this_spill_++;
-  }
 }
 
 void SpectrumRaw::stats_text(const StatsUpdate& stats) {

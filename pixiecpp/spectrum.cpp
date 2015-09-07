@@ -78,9 +78,15 @@ void Spectrum::addSpill(const Spill& one_spill, bool update_dets) {
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
 
-  for (auto &q : one_spill.hits) {
-    if (this->validateHit(q))
-      this->addHit(q);
+  for (auto &q : one_spill.hits)
+    this->pushHit(q);
+
+  if ((one_spill.run != nullptr) && (one_spill.run->total_events > 0)) {
+    PL_DBG << "<" << metadata_.name << "> final RunInfo received, dumping backlog of events " << backlog.size();
+    while (!backlog.empty()) {
+      this->addEvent(backlog.front());
+      backlog.pop_front();
+    }
   }
 
   if (one_spill.stats != nullptr)
@@ -89,9 +95,56 @@ void Spectrum::addSpill(const Spill& one_spill, bool update_dets) {
   if (one_spill.run != nullptr) {
     if (update_dets)
       this->_set_detectors(one_spill.run->p4_state.get_detectors());
-
     this->addRun(*one_spill.run);
   }
+
+  //PL_DBG << "left in backlog " << backlog.size();
+}
+
+void Spectrum::pushHit(const Hit& newhit)
+{
+  double coinc_window = 3.0;
+  bool appended = false;
+  bool pileup = false;
+  if (backlog.empty() || !backlog.back().in_window(newhit.timestamp)) {
+    backlog.push_back(Event(newhit, coinc_window)); //simple add
+  } else {
+    for (auto &q : backlog) {
+      if (q.in_window(newhit.timestamp)) {
+        if ((q.hit[newhit.channel].channel == -1) && !appended) {
+          //coincidence
+          q.addHit(newhit);
+          appended = true;
+        } else if ((q.hit[newhit.channel].channel == -1) && appended) {
+          //second coincidence
+          q.addHit(newhit);
+          PL_DBG << "<" << metadata_.name << "> processed hit " << newhit.to_string() << " coincident with more than one other hit (counted >=2 times)";
+        } else {
+          PL_DBG << "<" << metadata_.name << "> detected pileup hit " << newhit.to_string() << " with " << q.to_string() << " already has " << q.hit[newhit.channel].to_string();
+          //PL_DBG << "Logical pileup detected. Event may be discarded";
+          pileup = true;
+        }
+      } else
+        break;
+    }
+
+    if (!appended && !pileup)
+      backlog.push_back(Event(newhit, coinc_window));
+  }
+
+  if (!backlog.empty()) {
+    Event evt = backlog.front();
+    while ((newhit.timestamp - evt.upper_time) > (coinc_window*2)) {
+      if (validateEvent(evt))
+        this->addEvent(evt);
+      backlog.pop_front();
+      if (!backlog.empty())
+        evt = backlog.front();
+      else
+        break;
+    }
+  }
+
 }
 
 void Spectrum::closeAcquisition() {
@@ -102,11 +155,11 @@ void Spectrum::closeAcquisition() {
 }
 
 
-bool Spectrum::validateHit(const Hit& newHit) const {
+bool Spectrum::validateEvent(const Event& newEvent) const {
   bool addit = true;
   for (int i = 0; i < kNumChans; i++)
-    if (((metadata_.match_pattern[i] == 1) && (!newHit.pattern[i])) ||
-        ((metadata_.match_pattern[i] == -1) && (newHit.pattern[i])))
+    if (((metadata_.match_pattern[i] == 1) && (newEvent.hit[i].channel < 0)) ||
+        ((metadata_.match_pattern[i] == -1) && (newEvent.hit[i].channel > -1)))
       addit = false;
   return addit;
 }

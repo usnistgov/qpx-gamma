@@ -474,7 +474,7 @@ void FormMcaDaq::on_pushForceRefresh_clicked()
 
 void FormMcaDaq::on_pushBuildFromList_clicked()
 {
-  QString fileName = QFileDialog::getOpenFileName(this, "Load project", data_directory_, "qpx list output manifest (*.txt)");
+  QString fileName = QFileDialog::getOpenFileName(this, "Load list output", data_directory_, "qpx list output manifest (*.txt)");
   if (!validateFile(this, fileName, false))
     return;
 

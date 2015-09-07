@@ -64,7 +64,7 @@ protected:
   void addStats(const StatsUpdate&) override;
   void addRun(const RunInfo&) override;
 
-  void addHit(const Hit&, int) override;
+  void addHit(const Hit&) override;
 
 
   StatsUpdate time1_, time2_;

@@ -33,7 +33,7 @@ namespace Pixie {
 boost::posix_time::time_duration Hit::to_posix_time() {
   //converts Pixie ticks to posix duration
   //this is not working well...
-  uint64_t result = evt_time_lo;
+  /*uint64_t result = evt_time_lo;
   result += evt_time_hi * 65536;      //pow(2,16)
   result += buf_time_hi * 4294967296; //pow(2,32)
   result = result * 1000 / 75;
@@ -41,29 +41,20 @@ boost::posix_time::time_duration Hit::to_posix_time() {
       boost::posix_time::seconds(result / 1000000000) +
       boost::posix_time::milliseconds((result % 1000000000) / 1000000) +
       boost::posix_time::microseconds((result % 1000000) / 1000);
-  //        + boost::posix_time::nanoseconds(result % 1000);
+  //        + boost::posix_time::nanoseconds(result % 1000);*/
+  boost::posix_time::time_duration answer = boost::posix_time::microseconds(timestamp.time / 75);
   return answer;
 }
 
 void Hit::to_xml(tinyxml2::XMLPrinter &printer, bool with_pattern) const {
   printer.OpenElement("Hit");
 
-  std::stringstream ss;
-  for (int i=0; i<pattern.size(); ++i)
-    ss << pattern[i];
-  printer.PushAttribute("pattern", boost::algorithm::trim_copy(ss.str()).c_str());
-
-  for (int i=0; i < kNumChans; i++) {
-    if (pattern[i]) {
-      printer.OpenElement("ChanHit");
-      printer.PushAttribute("chan", std::to_string(i).c_str());
-      printer.PushAttribute("time_hi", std::to_string(buf_time_hi).c_str());
-      printer.PushAttribute("time_mid", std::to_string(evt_time_hi).c_str());
-      printer.PushAttribute("time_low", std::to_string(chan_trig_time[i]).c_str());
-      printer.PushAttribute("energy", std::to_string(energy[i]).c_str());
-      printer.CloseElement(); //ChanHit
-    }
-  }
+  printer.PushAttribute("module", std::to_string(module).c_str());
+  printer.PushAttribute("channel", std::to_string(channel).c_str());
+  printer.PushAttribute("run_type", std::to_string(run_type).c_str());
+  printer.PushAttribute("energy", std::to_string(energy).c_str());
+  printer.PushAttribute("XIA_PSA", std::to_string(XIA_PSA).c_str());
+  printer.PushAttribute("user_PSA", std::to_string(user_PSA).c_str());
 
   printer.CloseElement(); //Hit
 }
@@ -71,7 +62,35 @@ void Hit::to_xml(tinyxml2::XMLPrinter &printer, bool with_pattern) const {
 void Hit::from_xml(tinyxml2::XMLElement* root) {
 }
 
+std::string Hit::to_string() const {
+  std::stringstream ss;
+  ss << "[ch" << channel << "|t" << timestamp.time << "|e" << energy << "]";
+  return ss.str();
+}
 
+bool Event::in_window(const TimeStamp &ts) const {
+  if ((ts.time == lower_time.time) || (ts.time == upper_time.time))
+    return true;
+  if ((ts.time > lower_time.time) && ((ts.time - lower_time.time) < window))
+    return true;
+  if ((ts.time < upper_time.time) && ((upper_time.time - ts.time) < window))
+    return true;
+  return false;
+}
+
+void Event::addHit(const Hit &newhit) {
+  if (lower_time.time > newhit.timestamp.time)
+    lower_time = newhit.timestamp;
+  if (upper_time.time < newhit.timestamp.time)
+    upper_time = newhit.timestamp;
+  hit[newhit.channel] = newhit;
+}
+
+std::string Event::to_string() const {
+  std::stringstream ss;
+  ss << "EVT[t" << lower_time.time << ":" << upper_time.time << "w" << window << "]";
+  return ss.str();
+}
 
 // difference across all variables
 // except rate wouldn't make sense

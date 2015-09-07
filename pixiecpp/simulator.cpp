@@ -116,11 +116,6 @@ Hit Simulator::getHit() {
     uint32_t en1 = newpoint / resolution_;
     uint32_t en2 = newpoint % resolution_;
 
-    if (en1)
-      newHit.pattern[channels_[0]] = 1;
-    if (en2)
-      newHit.pattern[channels_[1]] = 1;
-
     en1 = en1 << shift_by_;
     en2 = en2 << shift_by_;
     
@@ -129,8 +124,7 @@ Hit Simulator::getHit() {
       en2 += refined_dist_(gen);
     }
     
-    newHit.energy[channels_[0]] = en1;
-    newHit.energy[channels_[1]] = en2;
+    newHit.energy = en1;
   }
 
   return newHit;

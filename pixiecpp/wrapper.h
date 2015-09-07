@@ -63,7 +63,7 @@ class Wrapper {
   void die();
 
   ////THE MEAT: ACQUISITION////
-  Hit  getOscil ();
+  Event  getOscil ();
   
   ListData* getList(RunType type, uint64_t timeout,
                     boost::atomic<bool>& inturruptor,

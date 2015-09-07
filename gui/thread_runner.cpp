@@ -274,8 +274,8 @@ void ThreadRunner::run()
     }
     double xinterval = Pixie::Wrapper::getInstance().settings().get_chan("XDT", Pixie::Channel(0), Pixie::Module::current, Pixie::LiveStatus::online);
 
-    Pixie::Hit oscil_traces_ = Pixie::Wrapper::getInstance().getOscil();
-    uint32_t trace_length = oscil_traces_.trace[0].size();
+    Pixie::Event oscil_traces_ = Pixie::Wrapper::getInstance().getOscil();
+    uint32_t trace_length = oscil_traces_.hit[0].trace.size();
 
     QVector<double> xx;
     for (int i=0; i < trace_length; ++i)
@@ -286,7 +286,7 @@ void ThreadRunner::run()
 
     for (int i=0; i < Pixie::kNumChans; i++) {
       QVector<double> yy;
-      for (auto it : oscil_traces_.trace[i]) {
+      for (auto it : oscil_traces_.hit[i].trace) {
         if (calib_units != "channels")
           yy.push_back(dets[i].highest_res_calib().transform(it, 16));
         else

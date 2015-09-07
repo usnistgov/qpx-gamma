@@ -52,7 +52,7 @@ bool Spectrum2D::initialize() {
   energies_.resize(2);
   pattern_.resize(2, 0);
   buffered_ = (get_attr("buffered").value != 0);
-  
+
   adds = 0;
   for (int i=0; i < kNumChans; i++) {
     if (metadata_.add_pattern[i] == 1) {
@@ -161,9 +161,9 @@ std::unique_ptr<EntryList> Spectrum2D::_get_spectrum(std::initializer_list<Pair>
   return result;
 }
 
-void Spectrum2D::addHit(const Hit& newEvent, int chan1, int chan2) {
-  uint64_t chan1_en = (newEvent.energy[chan1]) >> shift_by_;
-  uint64_t chan2_en = (newEvent.energy[chan2]) >> shift_by_;
+void Spectrum2D::addEvent(const Event& newEvent) {
+  uint64_t chan1_en = (newEvent.hit[pattern_[0]].energy >> shift_by_);
+  uint64_t chan2_en = (newEvent.hit[pattern_[1]].energy >> shift_by_);
   spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] += 1;
   if (buffered_)
     temp_spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] =
@@ -171,10 +171,6 @@ void Spectrum2D::addHit(const Hit& newEvent, int chan1, int chan2) {
   if (chan1_en > metadata_.max_chan) metadata_.max_chan = chan1_en;
   if (chan2_en > metadata_.max_chan) metadata_.max_chan = chan2_en;
   metadata_.total_count++;
-}
-
-void Spectrum2D::addHit(const Hit& newHit) {
-  addHit(newHit, pattern_[0], pattern_[1]);
 }
 
 bool Spectrum2D::_write_file(std::string dir, std::string format) const {

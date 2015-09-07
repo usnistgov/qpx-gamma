@@ -37,6 +37,7 @@ class Sorter {
   Spill get_spill();
 
   bool valid() {return valid_;}
+  void order(std::string name_out);
 
   uint64_t OCR;
   Settings settings;

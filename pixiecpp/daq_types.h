@@ -39,40 +39,84 @@ namespace Pixie {
 
 const int kNumChans = 4;
 
+struct TimeStamp {
+  uint64_t time;
+
+  TimeStamp() {
+    time = 0;
+  }
+
+  double operator-(const TimeStamp other) const {
+    return (static_cast<double>(time) - static_cast<double>(other.time));
+  }
+  bool operator<(const TimeStamp other) const {return (time < other.time);}
+  bool operator>(const TimeStamp other) const {return (time > other.time);}
+  bool operator==(const TimeStamp other) const {return (time == other.time);}
+  bool operator!=(const TimeStamp other) const {return (time != other.time);}
+
+};
+
 struct Hit{
-  
-  //common to whole buffer
+
+  int16_t module, channel;
+  TimeStamp timestamp;
+
   uint16_t run_type,
-           module,
-           buf_time_hi,
-           buf_time_mi,
-           buf_time_lo,
-           evt_time_hi,
-           evt_time_lo;
+           energy,
+           XIA_PSA,
+           user_PSA;
 
-  //unique to event
-  std::bitset<Pixie::kNumChans> pattern;
-
-  //per channel
-  std::vector<uint16_t> energy,
-                        chan_trig_time,
-                        XIA_PSA,
-                        user_PSA,
-                        chan_real_time;
-  std::vector<std::vector<uint16_t>> trace;
+  std::vector<uint16_t> trace;
   
   inline Hit() {
-    chan_trig_time.resize(kNumChans,0);
-    energy.resize(kNumChans,0);
-    XIA_PSA.resize(kNumChans,0);
-    user_PSA.resize(kNumChans,0);
-    chan_real_time.resize(kNumChans,0);
-    trace.resize(kNumChans);
+    module = -1;
+    channel = -1;
+    run_type = 0;
+    energy = 0;
+    XIA_PSA = 0;
+    user_PSA = 0;
   }
 
   boost::posix_time::time_duration to_posix_time();
   void from_xml(tinyxml2::XMLElement*);
   void to_xml(tinyxml2::XMLPrinter&, bool with_pattern = true) const;
+  std::string to_string() const;
+
+  bool operator<(const Hit other) const {return (timestamp < other.timestamp);}
+  bool operator>(const Hit other) const {return (timestamp > other.timestamp);}
+  bool operator==(const Hit other) const {
+    if (module != other.module) return false;
+    if (channel != other.channel) return false;
+    if (timestamp != other.timestamp) return false;
+    if (run_type != other.run_type) return false;
+    if (energy != other.energy) return false;
+    if (XIA_PSA != other.XIA_PSA) return false;
+    if (user_PSA != other.user_PSA) return false;
+    return true;
+  }
+  bool operator!=(const Hit other) const { return !operator==(other); }
+};
+
+struct Event {
+  TimeStamp lower_time, upper_time;
+  double window;
+  std::vector<Hit> hit;
+
+  bool in_window(const TimeStamp& ts) const;
+  void addHit(const Hit &newhit);
+  std::string to_string() const;
+
+  inline Event() {
+    hit.resize(kNumChans);
+    window = 0.0;
+  }
+
+  inline Event(const Hit &newhit, double win) {
+    hit.resize(kNumChans);
+    lower_time = upper_time = newhit.timestamp;
+    hit[newhit.channel] = newhit;
+    window = win;
+  }
 };
 
 struct StatsUpdate {

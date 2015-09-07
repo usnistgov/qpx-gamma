@@ -83,7 +83,7 @@ protected:
   std::unique_ptr<std::list<Entry>> _get_spectrum(std::initializer_list<Pair> list);
 
   //event processing
-  void addHit(const Hit&) override;
+  void addEvent(const Event&) override;
   void addStats(const StatsUpdate&) override;
   void addRun(const RunInfo&) override;
   void _closeAcquisition() override;
@@ -91,8 +91,8 @@ protected:
   bool init_text();
   bool init_bin();
 
-  void hit_text(const Hit&);
-  void hit_bin(const Hit&);
+  void hit_text(const Event&);
+  void hit_bin(const Event&);
 
   void stats_text(const StatsUpdate&);
   //void stats_bin(const StatsUpdate&);

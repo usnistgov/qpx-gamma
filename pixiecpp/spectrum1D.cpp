@@ -100,18 +100,18 @@ void Spectrum1D::_add_bulk(const Entry& e) {
     }
 }
 
-void Spectrum1D::addHit(const Hit& newHit, int chan) {
-  uint16_t en = newHit.energy[chan] >> shift_by_;
+void Spectrum1D::addHit(const Hit& newHit) {
+  uint16_t en = newHit.energy >> shift_by_;
   spectrum_[en]++;
   if (en > metadata_.max_chan)
     metadata_.max_chan = en;
   metadata_.total_count++;
 }
 
-void Spectrum1D::addHit(const Hit& newHit) {
+void Spectrum1D::addEvent(const Event& newEvent) {
   for (int i = 0; i < kNumChans; i++)
-    if ((metadata_.add_pattern[i]) && (newHit.pattern[i]))
-      this->addHit(newHit, i);
+    if ((metadata_.add_pattern[i]) && (newEvent.hit[i].channel > -1))
+      this->addHit(newEvent.hit[i]);
 }
 
 bool Spectrum1D::_write_file(std::string dir, std::string format) const {
@@ -147,6 +147,7 @@ void Spectrum1D::init_from_file(std::string filename) {
   std::replace( metadata_.name.begin(), metadata_.name.end(), '.', '_');
   metadata_.visible = true;
   metadata_.appearance = 4278190335;  //randomize?
+
   initialize();
   recalc_energies();
 }

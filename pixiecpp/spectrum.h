@@ -157,10 +157,11 @@ protected:
   virtual std::string _channels_to_xml() const = 0;
   virtual uint16_t _channels_from_xml(const std::string&) = 0;
 
-  virtual void addHit(const Hit&) = 0;
-  virtual void addStats(const StatsUpdate&);         //has default behavior
-  virtual void addRun(const RunInfo&);               //has default behavior
-  virtual bool validateHit(const Hit& newHit) const; //has default behavior
+  virtual void pushHit(const Hit&);           //has default behavior
+  virtual void addEvent(const Event&) = 0;
+  virtual void addStats(const StatsUpdate&);  //has default behavior
+  virtual void addRun(const RunInfo&);        //has default behavior
+  virtual bool validateEvent(const Event&) const; //has default behavior
   virtual void _closeAcquisition() {}
 
   virtual void _set_detectors(const std::vector<Gamma::Detector>& dets); //has default behavior
@@ -182,6 +183,7 @@ protected:
   std::vector<std::vector<double> > energies_;
   
   StatsUpdate start_stats;
+  std::list<Event> backlog;
 };
 
 

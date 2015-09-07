@@ -80,6 +80,8 @@ private slots:
   void list_selection_changed(QItemSelection,QItemSelection);
   void toggle_push(bool online, Pixie::LiveStatus);
 
+  void on_pushListFileSort_clicked();
+
 protected:
   void closeEvent(QCloseEvent*);
 
@@ -87,6 +89,7 @@ private:
   Ui::FormListDaq     *ui;
   ThreadRunner        &runner_thread_;
   QSettings           &settings_;
+  QString data_directory_;    //data directory
 
   boost::atomic<bool> interruptor_;
 

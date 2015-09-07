@@ -60,8 +60,8 @@ protected:
   void _set_detectors(const std::vector<Gamma::Detector>& dets) override;
 
   //event processing
-  void addHit(const Hit&) override;
-  virtual void addHit(const Hit&, int);
+  void addEvent(const Event&) override;
+  virtual void addHit(const Hit&);
 
   //save/load
   bool _write_file(std::string, std::string) const override;
