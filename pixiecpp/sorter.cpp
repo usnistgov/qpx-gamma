@@ -171,18 +171,18 @@ Spill Sorter::get_spill() {
     one_spill.stats = new StatsUpdate(spills_.front());
 
     uint64_t count = 0;
-    uint16_t event_entry[5];
+    uint16_t event_entry[6];
 //    PL_DBG << "will produce no of events " << spills_.front().events_in_spill;
     while ((count < spills_.front().events_in_spill) && (file_bin_.tellg() < bin_end_)) {
       Hit one_event;
-      file_bin_.read(reinterpret_cast<char*>(event_entry), 10);
+      file_bin_.read(reinterpret_cast<char*>(event_entry), 12);
       one_event.channel = event_entry[0];
 //      PL_DBG << "event chan " << chan;
-      uint64_t time_hi = event_entry[1];
-      uint64_t time_mi = event_entry[2];
-      uint64_t time_lo = event_entry[3];
+      uint64_t time_hi = event_entry[2];
+      uint64_t time_mi = event_entry[3];
+      uint64_t time_lo = event_entry[4];
       one_event.timestamp.time = (time_hi << 32) + (time_mi << 16) + time_lo;
-      one_event.energy = event_entry[4];
+      one_event.energy = event_entry[5];
       //PL_DBG << "event created chan=" << one_event.channel << " time=" << one_event.timestamp.time << " energy=" << one_event.energy;
       //file_bin_.seekg(10, std::ios::cur);
 

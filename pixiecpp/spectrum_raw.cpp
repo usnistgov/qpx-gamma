@@ -41,6 +41,7 @@ bool SpectrumRaw::initialize() {
   format_ = get_attr("format").value_int;
   file_dir_ = get_attr("file_dir").value_text;
   with_hit_pattern_ = get_attr("with_pattern").value_int;
+  PL_DBG << "trying to create " << file_dir_;
   if (file_dir_.empty())
     return false;
 
@@ -83,10 +84,14 @@ bool SpectrumRaw::init_bin() {
   if (!file_bin_.is_open())
     return false;
 
+  PL_DBG << "successfully opened binary";
+
   if (!file_bin_.good() || !init_text()) {
     file_bin_.close();
     return false;
   }
+
+  PL_DBG << "binary is good";
 
   xml_printer_->OpenElement("BinaryOut");
 
@@ -172,13 +177,26 @@ void SpectrumRaw::hit_text(const Event &newEvent) {
 void SpectrumRaw::hit_bin(const Event &newEvent) {
   if (!open_bin_)
     return;
+
+  std::multiset<Hit> all_hits;
+
   for (uint16_t i = 0; i < kNumChans; i++)
-    if (newEvent.hit[i].channel > -1) {
-      file_bin_.write((char*)&i, sizeof(i));
-      file_bin_.write((char*)&newEvent.hit[i].timestamp.time, sizeof(newEvent.hit[i].timestamp.time));
-      file_bin_.write((char*)&newEvent.hit[i].energy, sizeof(newEvent.hit[i].energy));
-      events_this_spill_++;
-    }
+    if (newEvent.hit[i].channel > -1)
+      all_hits.insert(newEvent.hit[i]);
+
+  for (auto &q : all_hits) {
+    file_bin_.write((char*)&q.channel, sizeof(q.channel));
+    uint16_t time_hy = (q.timestamp.time >> 48) & 0x000000000000FFFF;
+    uint16_t time_hi = (q.timestamp.time >> 32) & 0x000000000000FFFF;
+    uint16_t time_mi = (q.timestamp.time >> 16) & 0x000000000000FFFF;
+    uint16_t time_lo = q.timestamp.time & 0x000000000000FFFF;
+    file_bin_.write((char*)&time_hy, sizeof(time_hy));
+    file_bin_.write((char*)&time_hi, sizeof(time_hi));
+    file_bin_.write((char*)&time_mi, sizeof(time_mi));
+    file_bin_.write((char*)&time_lo, sizeof(time_lo));
+    file_bin_.write((char*)&q.energy, sizeof(q.energy));
+    events_this_spill_++;
+  }
 }
 
 void SpectrumRaw::stats_text(const StatsUpdate& stats) {

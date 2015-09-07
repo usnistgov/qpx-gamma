@@ -843,6 +843,8 @@ void Wrapper::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQue
 
           uint16_t evt_time_hi = buff16[idx++];
           uint16_t evt_time_lo = buff16[idx++];
+
+          std::multiset<Hit> ordered;
           
           for (int i=0; i < NUMBER_OF_CHANNELS; i++) {
             if (pattern[i]) {
@@ -902,10 +904,15 @@ void Wrapper::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQue
                 hi = chan_time_hi;
               lo = chan_trig_time;
               one_hit.timestamp.time = (hi << 32) + (mi << 16) + lo;
-              spill->hits.push_back(one_hit);
-              spill_events++;
+              ordered.insert(one_hit);
             }
           }
+
+          for (auto &q : ordered) {
+            spill->hits.push_back(q);
+            spill_events++;
+          }
+
         };
       }
       spill->stats->events_in_spill = spill_events;
