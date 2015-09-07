@@ -27,6 +27,7 @@
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/filesystem.hpp>
 #include "spectrum_raw.h"
+#include <utility>
 
 namespace Pixie {
 namespace Spectrum {
@@ -170,15 +171,41 @@ void SpectrumRaw::hit_text(const Hit &newHit) {
 void SpectrumRaw::hit_bin(const Hit &newHit) {
   if (!open_bin_)
     return;
-  for (uint16_t i = 0; i < kNumChans; i++)
+
+  std::vector<uint16_t> energy(kNumChans);
+  std::vector<uint16_t> lo(kNumChans);
+  std::vector<uint16_t> mi(kNumChans);
+  std::vector<uint16_t> hi(kNumChans);
+  std::vector<uint64_t> time(kNumChans);
+  std::multimap<uint64_t, uint16_t> order;
+
+  for (uint16_t i = 0; i < kNumChans; i++) {
     if (newHit.pattern[i]) {
-      file_bin_.write((char*)&i, sizeof(i));
-      file_bin_.write((char*)&newHit.buf_time_hi, sizeof(newHit.buf_time_hi));
-      file_bin_.write((char*)&newHit.evt_time_hi, sizeof(newHit.evt_time_hi));
-      file_bin_.write((char*)&newHit.chan_trig_time[i], sizeof(newHit.chan_trig_time[i]));
-      file_bin_.write((char*)&newHit.energy[i], sizeof(newHit.energy[i]));
-      events_this_spill_++;
+    energy[i] = newHit.energy[i];
+    hi[i] = newHit.buf_time_hi;
+    mi[i] = newHit.evt_time_hi;
+    lo[i] = newHit.evt_time_lo;
+    if (newHit.chan_trig_time[i] > newHit.evt_time_lo)
+      mi[i]--;
+    if (newHit.evt_time_hi < newHit.buf_time_mi)
+      hi[i]++;
+    uint16_t task_b = (newHit.run_type & 0x000F);
+    if ((task_b == 0x0000) || (task_b == 0x0001))
+      hi[i] = newHit.chan_real_time[i];
+    lo[i] = newHit.chan_trig_time[i];
+    time[i] = (((uint64_t)hi[i]) << 32) + (((uint64_t)mi[i]) << 16) + ((uint64_t)lo[i]);
+    order.insert(std::pair<uint64_t,uint16_t>(time[i], i));
     }
+  }
+
+  for (auto &q : order) {
+    file_bin_.write((char*)&q.second, sizeof(q.second));
+    file_bin_.write((char*)&hi[q.second], sizeof(hi[q.second]));
+    file_bin_.write((char*)&mi[q.second], sizeof(mi[q.second]));
+    file_bin_.write((char*)&lo[q.second], sizeof(lo[q.second]));
+    file_bin_.write((char*)&energy[q.second], sizeof(energy[q.second]));
+    events_this_spill_++;
+  }
 }
 
 void SpectrumRaw::stats_text(const StatsUpdate& stats) {
