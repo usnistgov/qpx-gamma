@@ -50,11 +50,22 @@ void SpectraSet::clear() {
 void SpectraSet::clear_helper() {
   //private, no lock needed
   if (!my_spectra_.empty())
-    for (auto &q: my_spectra_)
-      delete q;
+    for (auto &q: my_spectra_) {
+      if (q != nullptr)
+        delete q;
+    }
   my_spectra_.clear();
   status_ = "empty";
   run_info_ = RunInfo();
+}
+
+void SpectraSet::closeAcquisition() {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  if (!my_spectra_.empty())
+    for (auto &q: my_spectra_) {
+      PL_DBG << "closing " << q->name();
+      q->closeAcquisition();
+    }
 }
 
 void SpectraSet::activate() {
@@ -79,6 +90,13 @@ bool SpectraSet::new_data() {
   return ret;  
 }
 
+void SpectraSet::setRunInfo(const RunInfo &ri) {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  run_info_ = ri;
+  //notify?
+}
+
+
 bool SpectraSet::empty() const {
   boost::unique_lock<boost::mutex> lock(mutex_);
   return my_spectra_.empty();  
@@ -93,17 +111,12 @@ std::vector<std::string> SpectraSet::types() const {
   return output;
 }
 
-std::list<uint32_t> SpectraSet::resolutions(uint16_t dim) const {
+std::set<uint32_t> SpectraSet::resolutions(uint16_t dim) const {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  std::vector<bool> allres;
-  std::list<uint32_t> haveres;
-  allres.resize(17, 0);  //up to 16 different res
+  std::set<uint32_t> haveres;
   for (auto &q: my_spectra_)
     if (q->dimensions() == dim)
-      allres[q->bits()] = true;
-  for (int i=1; i<17; i++)
-    if (allres[i])
-      haveres.push_back(i);
+      haveres.insert(q->bits());
   return haveres;
 }
 
@@ -161,6 +174,18 @@ void SpectraSet::add_spectrum(Spectrum::Spectrum* newSpectrum) {
   // cond_.notify_one();
 }
 
+void SpectraSet::delete_spectrum(std::string name) {
+  std::list<Spectrum::Spectrum*>::iterator it = my_spectra_.begin();
+
+  while (it != my_spectra_.end()) {
+    if ((*it)->name() == name) {
+      my_spectra_.erase(it);
+      return;
+    }
+    it++;
+  }
+}
+
 void SpectraSet::set_spectra(const XMLableDB<Spectrum::Template>& newdb) {
   boost::unique_lock<boost::mutex> lock(mutex_);  
   clear_helper();
@@ -168,8 +193,9 @@ void SpectraSet::set_spectra(const XMLableDB<Spectrum::Template>& newdb) {
 
   for (int i=0; i < numofspectra; i++) {
     Spectrum::Spectrum* newSpectrum = Spectrum::Factory::getInstance().create_from_template(newdb.get(i));
-    if (newSpectrum != nullptr)
+    if (newSpectrum != nullptr) {
       my_spectra_.push_back(newSpectrum);
+    }
   }
 
   ready_ = true; terminating_ = false; newdata_ = false;
@@ -182,7 +208,7 @@ void SpectraSet::add_spill(Spill* one_spill) {
   for (auto &q: my_spectra_)
     q->addSpill(*one_spill);
 
-  if ((one_spill->stats != nullptr) && (one_spill->stats->spill_count))
+  if ((one_spill->stats != nullptr) && (one_spill->stats->spill_number))
       status_ = "Live at " +  boost::posix_time::to_simple_string(boost::posix_time::microsec_clock::local_time()) +
           " with " + std::to_string(one_spill->stats->event_rate) + " events/sec";
 
@@ -293,7 +319,7 @@ void SpectraSet::read_xml(std::string file_name, bool with_spectra) {
       if (new_spectrum == nullptr)
         PL_INFO << "Could not parse spectrum";
       else {
-        new_spectrum->addSpill(fake_spill);
+        new_spectrum->addSpill(fake_spill, new_spectrum->metadata().detectors.empty());
         my_spectra_.push_back(new_spectrum);
       }
       one_spectrum = dynamic_cast<tinyxml2::XMLElement*>(one_spectrum->NextSibling());

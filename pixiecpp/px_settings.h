@@ -56,13 +56,13 @@ public:
   LiveStatus live() {return live_;}
 
   //save
-  void to_xml(tinyxml2::XMLPrinter&);
+  void to_xml(tinyxml2::XMLPrinter&) const;
   
   //detectors
-  std::vector<Detector> get_detectors() const {return detectors_;}
-  Detector get_detector(Channel ch = Channel::current) const;
-  void set_detector(Channel ch, const Detector& det);
-  void set_detector_DB(XMLableDB<Detector>);
+  std::vector<Gamma::Detector> get_detectors() const {return detectors_;}
+  Gamma::Detector get_detector(Channel ch = Channel::current) const;
+  void set_detector(Channel ch, const Gamma::Detector& det);
+  void set_detector_DB(XMLableDB<Gamma::Detector>);
 
   void save_optimization(Channel chan = Channel::all);  //specify module as well?
   void load_optimization(Channel chan = Channel::all);
@@ -81,6 +81,11 @@ public:
 
   bool read_detector(Setting &set);
   bool write_detector(const Setting &set);
+
+  double get_chan(const std::string&,
+                  Channel channel = Channel::current,
+                  Module  module = Module::current) const
+	             {return 0;}
   
 protected:
   void initialize(); //populate metadata
@@ -94,8 +99,8 @@ protected:
 
   Setting settings_tree_;
 
-  std::vector<Detector> detectors_;
-  XMLableDB<Detector> detector_db_;
+  std::vector<Gamma::Detector> detectors_;
+  XMLableDB<Gamma::Detector> detector_db_;
 
   struct usb_dev_handle *udev;       // Device Handle
 

@@ -30,7 +30,7 @@
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
 #include "widget_plot1d.h"
-#include "poly_fit.h"
+#include "gamma_fitter.h"
 
 namespace Ui {
 class FormOptimization;
@@ -41,7 +41,7 @@ class FormOptimization : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormOptimization(ThreadRunner&, QSettings&, XMLableDB<Pixie::Detector>&, QWidget *parent = 0);
+  explicit FormOptimization(ThreadRunner&, QSettings&, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
   ~FormOptimization();
 
 signals:
@@ -78,6 +78,8 @@ private:
   void loadSettings();
   void saveSettings();
 
+  void plot_derivs(Gamma::Fitter &data);
+
 
   Ui::FormOptimization *ui;
 
@@ -86,7 +88,7 @@ private:
   Pixie::Spectrum::Template        optimizing_;
 
   ThreadRunner         &opt_runner_thread_;
-  XMLableDB<Pixie::Detector> &detectors_;
+  XMLableDB<Gamma::Detector> &detectors_;
   QSettings &settings_;
 
   ThreadPlotSignal     opt_plot_thread_;
@@ -103,8 +105,12 @@ private:
   Marker moving_, a, b;
   int bits;
 
+  AppearanceProfile prelim_peak_, filtered_peak_,
+                    gaussian_, baseline_,
+                    rise_, fall_, even_;
+
   std::string current_setting_;
-  std::vector<Peak> peaks_;
+  std::vector<Gamma::Peak> peaks_;
   std::vector<double> setting_values_;
   std::vector<double> setting_fwhm_;
 };

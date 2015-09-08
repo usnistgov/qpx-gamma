@@ -45,8 +45,9 @@ public:
 
     Setting buf;
     buf.name = "buffered";
+    buf.node_type = NodeType::setting;
+    buf.setting_type = SettingType::boolean;
     buf.unit = "T/F";
-    buf.value = 0;
     buf.description = "Buffered output for efficient plotting (more memory)";
     buf.writable = true;
     new_temp.generic_attributes.push_back(buf);
@@ -65,9 +66,10 @@ protected:
 
   uint64_t _get_count(std::initializer_list<uint16_t> list ) const;
   std::unique_ptr<EntryList> _get_spectrum(std::initializer_list<Pair> list);
+  void _set_detectors(const std::vector<Gamma::Detector>& dets) override;
 
-  void addHit(const Hit&) override;
-  virtual void addHit(const Hit&, int, int);
+  void addEvent(const Event&) override;
+  void _add_bulk(const Entry&) override;
 
   //save/load
   bool _write_file(std::string, std::string) const override;

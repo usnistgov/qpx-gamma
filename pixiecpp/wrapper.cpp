@@ -46,20 +46,20 @@ Settings& Wrapper::settings() {
   return my_settings_;
 }
 
-Hit Wrapper::getOscil() {
+Event Wrapper::getOscil() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   
-  Hit oscil_traces;
+  Event oscil_traces;
   uint32_t* oscil_data;
   int cur_mod = 0; //static_cast<int>(my_settings_.current_module());
 
   if (my_settings_.live() != LiveStatus::online)
     PL_WARN << "Pixie not online";
   else if ((oscil_data = control_collect_ADC(cur_mod)) != nullptr) {
-    for (int i = 0; i < 4; i++) {     ///preset to 4 channels. Hardcoded
-      oscil_traces.trace[i].resize(max_buf_len);
-      oscil_traces.trace[i] = std::vector<U16>(oscil_data + (i*max_buf_len),
-                                               oscil_data + ((i+1)*max_buf_len));
+    for (int i = 0; i < kNumChans; i++) {     ///preset to 4 channels. Hardcoded
+      oscil_traces.hit[i].trace.resize(max_buf_len);
+      oscil_traces.hit[i].trace = std::vector<U16>(oscil_data + (i*max_buf_len),
+                                                   oscil_data + ((i+1)*max_buf_len));
     }
     delete[] oscil_data;
   }
@@ -125,6 +125,24 @@ void Wrapper::getFakeMca(std::string source, SpectraSet& spectra,
   builder.join();
 }
 
+void Wrapper::simulateFromList(Sorter &sorter, SpectraSet &spectra, boost::atomic<bool> &interruptor) {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  PL_INFO << "Acquisition simulation from saved list data";
+
+  SynchronizedQueue<Spill*> eventQueue;
+
+  boost::thread builder(boost::bind(&Pixie::Wrapper::worker_MCA, this, &eventQueue, &spectra));
+  worker_from_list(&sorter, &eventQueue, &interruptor);
+  while (eventQueue.size() > 0)
+    wait_ms(1000);
+  wait_ms(500);
+  eventQueue.stop();
+  wait_ms(500);
+  builder.join();
+
+}
+
+
 ListData* Wrapper::getList(RunType type, uint64_t timeout,
                            boost::atomic<bool>& interruptor, bool double_buf) {
 
@@ -136,7 +154,7 @@ ListData* Wrapper::getList(RunType type, uint64_t timeout,
 
   Spill* one_spill;
   ListData* result = new ListData;
-
+ 
   int         numChans_;
   PL_INFO << "Multithreaded list mode acquisition: type " << static_cast<int>(type)
           << " scheduled for " << timeout << " seconds";
@@ -170,7 +188,7 @@ ListData* Wrapper::getList(RunType type, uint64_t timeout,
       delete one_spill->stats;
     delete one_spill;
   }
-
+        
   parsedQueue.stop();
   return result;
 }
@@ -307,6 +325,7 @@ void Wrapper::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
       delete one_spill->run;
     delete one_spill;
   }
+  spectra->closeAcquisition();
 }
 
 void Wrapper::worker_fake(std::string source, SynchronizedQueue<Spill*>* data_queue,
@@ -334,7 +353,7 @@ void Wrapper::worker_fake(std::string source, SynchronizedQueue<Spill*>* data_qu
 
 
 
-  uint64_t spill_count = 0, event_count = 0;
+  uint64_t spill_number = 0, event_count = 0;
   bool timeout = false;
   CustomTimer total_timer(timeout_limit);
   boost::posix_time::ptime session_start_time, block_time;
@@ -354,7 +373,7 @@ void Wrapper::worker_fake(std::string source, SynchronizedQueue<Spill*>* data_qu
   
   total_timer.resume();
   while (!timeout) {
-    spill_count++;
+    spill_number++;
     
     PL_INFO << "  SIMULATION  Elapsed: " << total_timer.done()
             << "  ETA: " << total_timer.ETA();
@@ -377,7 +396,7 @@ void Wrapper::worker_fake(std::string source, SynchronizedQueue<Spill*>* data_qu
     event_count += (rate*secsperrun);
 
     moving_stats = moving_stats + one_run;
-    moving_stats.spill_count = spill_count;
+    moving_stats.spill_number = spill_number;
     moving_stats.lab_time = block_time;
     moving_stats.event_rate = one_run.event_rate;
     one_spill->stats = new StatsUpdate(moving_stats);
@@ -399,6 +418,17 @@ void Wrapper::worker_fake(std::string source, SynchronizedQueue<Spill*>* data_qu
 }
 
 
+void Wrapper::worker_from_list(Sorter* sorter, SynchronizedQueue<Spill*>* data_queue, boost::atomic<bool>* interruptor) {
+  Spill one_spill;
+
+  while ((!((one_spill = sorter->get_spill()) == Spill())) && (!(*interruptor))) {
+    data_queue->enqueue(new Spill(one_spill));
+    boost::this_thread::sleep(boost::posix_time::seconds(2));
+  }
+  PL_DBG << "worker_from_list terminating";
+}
+
+
 void Wrapper::worker_run(RunType type, uint64_t timeout_limit,
                          SynchronizedQueue<Spill*>* spill_queue,
                          boost::atomic<bool>* interruptor) {
@@ -407,7 +437,7 @@ void Wrapper::worker_run(RunType type, uint64_t timeout_limit,
   Wrapper &pxi = getInstance();
   double poll_interval = pxi.poll_interval_ms_;
   int32_t retval = 0;
-  uint64_t spill_count = 0;
+  uint64_t spill_number = 0;
   bool timeout = false;
   Spill* fetched_spill;
   CustomTimer readout_timer, start_timer, run_timer, stop_timer,
@@ -448,7 +478,7 @@ void Wrapper::worker_run(RunType type, uint64_t timeout_limit,
   while (!timeout) {
     start_timer.resume();
     
-    if (spill_count > 0)
+    if (spill_number > 0)
       retval = resume_run(type);
     start_timer.stop();
     run_timer.resume();
@@ -456,24 +486,24 @@ void Wrapper::worker_run(RunType type, uint64_t timeout_limit,
     if(retval < 0)
       return;
     
-    if (spill_count > 0) {
+    if (spill_number > 0) {
       //      pxi.my_settings_.get_mod_stats();
       //      pxi.my_settings_.get_chan_stats();
       fetched_spill->stats = new StatsUpdate;
       fetched_spill->stats->eat_stats(pxi.my_settings_);
-      fetched_spill->stats->spill_count = spill_count;
+      fetched_spill->stats->spill_number = spill_number;
       fetched_spill->stats->lab_time   = block_time;
       spill_queue->enqueue(fetched_spill);
     }
 
-    PL_INFO << "  RUNNING(" << spill_count << ")"
+    PL_INFO << "  RUNNING(" << spill_number << ")"
             << "  Elapsed: " << total_timer.done()
             << "  ETA: " << total_timer.ETA();
 
     fetched_spill = new Spill;
     fetched_spill->data.resize(list_mem_len32, 0);
 
-    spill_count++;
+    spill_number++;
 
     retval = poll_run(type);
     while ((retval == 1) && (!timeout)) {
@@ -501,7 +531,7 @@ void Wrapper::worker_run(RunType type, uint64_t timeout_limit,
   //  pxi.my_settings_.get_chan_stats();
   fetched_spill->stats = new StatsUpdate;
   fetched_spill->stats->eat_stats(pxi.my_settings_);
-  fetched_spill->stats->spill_count = spill_count;
+  fetched_spill->stats->spill_number = spill_number;
   fetched_spill->stats->lab_time   = block_time;
 
   total_timer.stop();
@@ -514,7 +544,7 @@ void Wrapper::worker_run(RunType type, uint64_t timeout_limit,
 
   spill_queue->enqueue(fetched_spill);
 
-  timing_stats(total_timer, start_timer, run_timer, stop_timer, readout_timer, spill_count);
+  timing_stats(total_timer, start_timer, run_timer, stop_timer, readout_timer, spill_number);
   PL_INFO << "**Acquisition runs stopped**";
 }
 
@@ -528,7 +558,7 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
   double poll_interval = pxi.poll_interval_ms_;
   int32_t retval = 0;
   std::bitset<32> csr;
-  uint64_t spill_count = 0;
+  uint64_t spill_number = 0;
   bool timeout = false;
   Spill* fetched_spill;
   CustomTimer total_timer(timeout_limit);
@@ -546,6 +576,7 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
   fetched_spill = new Spill;
   fetched_spill->run = new RunInfo;
   fetched_spill->stats = new StatsUpdate;
+
   pxi.my_settings_.get_all_settings();
   fetched_spill->run->p4_state = pxi.my_settings_;
 
@@ -570,7 +601,7 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
   anouncement_timer = new CustomTimer(true);
 
   while (!timeout) {
-    spill_count++;
+    spill_number++;
     if (anouncement_timer->s() > secs_between_anouncements) {
       PL_INFO << "  RUNNING Elapsed: " << total_timer.done()
               << "  ETA: " << total_timer.ETA();
@@ -593,7 +624,7 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
     if (read_EM_dbl(fetched_spill->data.data())) {
       fetched_spill->stats = new StatsUpdate;
       fetched_spill->stats->eat_stats(pxi.my_settings_);
-      fetched_spill->stats->spill_count = spill_count;
+      fetched_spill->stats->spill_number = spill_number;
       fetched_spill->stats->lab_time    = block_time;
       spill_queue->enqueue(fetched_spill);
     } else {
@@ -693,13 +724,15 @@ void Wrapper::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQue
         } else if ((entry & evt_mask) == evt_c) {
           uint8_t chan_nr = (entry & det_mask) >> 16;
 
-          std::bitset<32> chan_pat;
-          chan_pat[chan_nr] = 1;
           uint16_t nrg = (entry & nrg_mask) << 3;
 
           Hit one_hit;
-          one_hit.pattern = chan_pat;
-          one_hit.energy[chan_nr] = nrg;
+          one_hit.run_type  = 0;
+          one_hit.module    = 0;
+          one_hit.channel   = chan_nr;
+          one_hit.energy    = nrg;
+          one_hit.timestamp.time = spill_events;
+
           spill->hits.push_back(one_hit);
           spill_good_events++;
         }
@@ -711,8 +744,10 @@ void Wrapper::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQue
       bad_events += spill_bad_evts;
       total_events += (spill_events - spill_bad_evts);
 
-      if (spill_events)
+      if (spill_events) {
         valid_spills++;
+        spill->stats->events_in_spill = spill_events;
+      }
     }
     if (spill->run != nullptr) {
       spill->run->total_events = good_events;

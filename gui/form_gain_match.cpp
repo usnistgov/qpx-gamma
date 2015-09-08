@@ -27,7 +27,7 @@
 #include "fityk.h"
 
 
-FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableDB<Pixie::Detector>& detectors, QWidget *parent) :
+FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormGainMatch),
   gm_runner_thread_(thread),
@@ -60,25 +60,30 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
   optimizing_.visible = true;
   optimizing_.appearance = QColor(Qt::red).rgba();
 
-  moving_.themes["light"] = QPen(Qt::darkBlue, 2);
-  moving_.themes["dark"] = QPen(Qt::blue, 2);
+  moving_.appearance.themes["light"] = QPen(Qt::darkBlue, 2);
+  moving_.appearance.themes["dark"] = QPen(Qt::blue, 2);
 
-  a.themes["light"] = QPen(Qt::darkBlue, 1);
-  a.themes["dark"] = QPen(Qt::blue, 1);
+  a.appearance.themes["light"] = QPen(Qt::darkBlue, 1);
+  a.appearance.themes["dark"] = QPen(Qt::blue, 1);
 
   QColor translu(Qt::blue);
   translu.setAlpha(32);
-  b.themes["light"] = QPen(translu, 1);
+  b.appearance.themes["light"] = QPen(translu, 1);
   translu.setAlpha(64);
-  b.themes["dark"] = QPen(translu, 1);
+  b.appearance.themes["dark"] = QPen(translu, 1);
 
-  marker_ref_.themes["light"] = QPen(Qt::darkGreen, 1);
-  marker_ref_.themes["dark"] = QPen(Qt::green, 1);
+  ap_reference_.themes["light"] = QPen(Qt::darkCyan, 0);
+  ap_reference_.themes["dark"] = QPen(Qt::cyan, 0);
+
+  ap_optimized_.themes["light"] = QPen(Qt::darkMagenta, 0);
+  ap_optimized_.themes["dark"] = QPen(Qt::magenta, 0);
+
+  marker_ref_.appearance = ap_reference_;
   marker_ref_.visible = true;
 
-  marker_opt_.themes["light"] = QPen(Qt::darkMagenta, 1);
-  marker_opt_.themes["dark"] = QPen(Qt::magenta, 1);
+  marker_opt_.appearance = ap_optimized_;
   marker_opt_.visible = true;
+
 
   connect(&gm_plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
 
@@ -272,17 +277,17 @@ bool FormGainMatch::find_peaks() {
     if (xmin < 0) xmin = 0;
     if (xmax >= x.size()) xmax = x.size() - 1;
 
-    UtilXY finder_ref(x, y_ref, xmin, xmax, 25);
-    UtilXY finder_opt(x, y_opt, xmin, xmax, 25);
+    Gamma::Fitter finder_ref(x, y_ref, xmin, xmax, 25);
+    Gamma::Fitter finder_opt(x, y_opt, xmin, xmax, 25);
 
     finder_ref.find_peaks(5);
     finder_opt.find_peaks(5);
 
     if (finder_ref.peaks_.size())
-      gauss_ref_ = finder_ref.peaks_[0];
+      gauss_ref_ = finder_ref.peaks_.begin()->second;
 
     if (finder_opt.peaks_.size())
-      gauss_opt_ = finder_opt.peaks_[0];
+      gauss_opt_ = finder_opt.peaks_.begin()->second;
 
     if (gauss_ref_.gaussian_.height_ && gauss_opt_.gaussian_.height_)
       return true;
@@ -304,10 +309,14 @@ void FormGainMatch::update_plots() {
     have_data = true;
 
     for (auto &q: gm_spectra_.by_type("1D")) {
-      if (q->total_count()) {
+      Pixie::Spectrum::Metadata md;
+      if (q)
+        md = q->metadata();
+
+      if (md.total_count > 0) {
 
         uint32_t res = pow(2, bits);
-        uint32_t app = q->appearance();
+        uint32_t app = md.appearance;
         std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
             std::move(q->get_spectrum({{0, res}}));
 
@@ -324,14 +333,16 @@ void FormGainMatch::update_plots() {
           ++xx;
         }
 
-        if (q->name() == "Reference")
+        if (md.name == "Reference")
           y_ref = y;
         else
           y_opt = y;
 
+        AppearanceProfile profile;
+        profile.default_pen = QPen(QColor::fromRgba(app), 1);
         ui->plot->addGraph(QVector<double>::fromStdVector(x),
                            QVector<double>::fromStdVector(y),
-                           QColor::fromRgba(app), 1);
+                           profile);
       } else
         have_data = false;
     }
@@ -341,13 +352,13 @@ void FormGainMatch::update_plots() {
       have_peaks = find_peaks();
 
     if (gauss_ref_.gaussian_.height_) {
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_fullfit_), Qt::cyan, 0);
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_baseline_), Qt::cyan, 0);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_fullfit_pseudovoigt_), ap_reference_);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_baseline_), ap_reference_);
     }
 
     if (gauss_opt_.gaussian_.height_) {
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_fullfit_), Qt::magenta, 0);
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_baseline_), Qt::magenta, 0);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_fullfit_pseudovoigt_), ap_optimized_);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_baseline_), ap_optimized_);
     }
 
     std::string new_label = boost::algorithm::trim_copy(gm_spectra_.status());
@@ -424,10 +435,10 @@ void FormGainMatch::on_pushStop_clicked()
 void FormGainMatch::on_pushSaveOpti_clicked()
 {
   pixie_.settings().save_optimization();
-  std::vector<Pixie::Detector> dets = pixie_.settings().get_detectors();
+  std::vector<Gamma::Detector> dets = pixie_.settings().get_detectors();
   for (auto &q : dets) {
     if (detectors_.has_a(q)) {
-      Pixie::Detector modified = detectors_.get(q);
+      Gamma::Detector modified = detectors_.get(q);
       modified.setting_values_ = q.setting_values_;
       detectors_.replace(modified);
     }

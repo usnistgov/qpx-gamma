@@ -43,8 +43,13 @@ public:
     
     Setting t_sample;
     t_sample.name = "time_sample";
+    t_sample.node_type = NodeType::setting;
+    t_sample.setting_type = SettingType::floating;
     t_sample.unit = "seconds";
     t_sample.value = 20.0;
+    t_sample.minimum = 0;
+    t_sample.step = 1;
+    t_sample.maximum = 3600.0;
     t_sample.description = "minimum \u0394t before compensating";
     t_sample.writable = true;
     new_temp.generic_attributes.push_back(t_sample);
@@ -59,7 +64,7 @@ protected:
   void addStats(const StatsUpdate&) override;
   void addRun(const RunInfo&) override;
 
-  void addHit(const Hit&, int) override;
+  void addHit(const Hit&) override;
 
 
   StatsUpdate time1_, time2_;

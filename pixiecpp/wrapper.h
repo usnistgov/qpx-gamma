@@ -30,6 +30,7 @@
 #include "custom_timer.h"
 
 #include "simulator.h"
+#include "sorter.h"
 
 #ifndef PIXIE_WRAPPER
 #define PIXIE_WRAPPER
@@ -57,7 +58,7 @@ class Wrapper {
   void die();
 
   ////THE MEAT: ACQUISITION////
-  Hit  getOscil ();
+  Event  getOscil ();
   
   ListData* getList(RunType type, uint64_t timeout,
                     boost::atomic<bool>& inturruptor,
@@ -70,12 +71,14 @@ class Wrapper {
   void getFakeMca(std::string source, SpectraSet &spectra,
                   uint64_t timeout, boost::atomic<bool> &interruptor);
 
+  void simulateFromList(Sorter &sorter, SpectraSet &spectra, boost::atomic<bool> &interruptor);
+
   /////CONTROL TASKS/////
   void control_measure_baselines(uint8_t module);
   void control_compute_BLcut();
   void control_find_tau();
   void control_adjust_offsets();
-
+  
  private:
   Settings  my_settings_;
   int poll_interval_ms_;  //allow this to change
@@ -96,6 +99,7 @@ class Wrapper {
                        SynchronizedQueue<Spill*>* spill_queue, boost::atomic<bool>* interruptor);
   void worker_fake(std::string source, SynchronizedQueue<Spill*>* data_queue,
                     uint64_t timeout_limit, boost::atomic<bool>* interruptor);
+  void worker_from_list(Sorter* sorter, SynchronizedQueue<Spill*>* data_queue, boost::atomic<bool>* interruptor);
 
   //start and stop runs
   bool start_run(RunType type);

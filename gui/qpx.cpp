@@ -53,9 +53,8 @@ qpx::qpx(QWidget *parent) :
 {
   qRegisterMetaType<QList<QVector<double>>>("QList<QVector<double>>");
   qRegisterMetaType<Pixie::ListData>("Pixie::ListData");
-  qRegisterMetaType<Pixie::Calibration>("Pixie::Calibration");
+  qRegisterMetaType<Gamma::Calibration>("Gamma::Calibration");
   qRegisterMetaType<Pixie::LiveStatus>("Pixie::LiveStatus");
-  qRegisterMetaType<Pixie::Detector>("Pixie::Detector");
 
   CustomLogger::initLogger(&qpx_stream_, "qpx_%N.log");
   ui->setupUi(this);
@@ -217,20 +216,33 @@ void qpx::update_settings() {
   emit settings_changed();
 }
 
-void qpx::calibrate(FormCalibration* formCalib) {
-  if (ui->qpxTabs->indexOf(formCalib) == -1) {
-    ui->qpxTabs->addTab(formCalib, "Calibration");
-    connect(formCalib, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
-  }
-  ui->qpxTabs->setCurrentWidget(formCalib);
-  formCalib->update_plot();
+void qpx::analyze_1d(FormAnalysis1D* formAnal) {
+  int idx = ui->qpxTabs->indexOf(formAnal);
+  if (idx == -1) {
+    ui->qpxTabs->addTab(formAnal, formAnal->windowTitle());
+    connect(formAnal, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
+  } else
+    ui->qpxTabs->setTabText(idx, formAnal->windowTitle());
+  ui->qpxTabs->setCurrentWidget(formAnal);
+  formAnal->update_spectrum();
+}
+
+void qpx::analyze_2d(FormAnalysis2D* formAnal) {
+  int idx = ui->qpxTabs->indexOf(formAnal);
+  if (idx == -1) {
+    ui->qpxTabs->addTab(formAnal, formAnal->windowTitle());
+    connect(formAnal, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
+  } else
+    ui->qpxTabs->setTabText(idx, formAnal->windowTitle());
+  ui->qpxTabs->setCurrentWidget(formAnal);
 }
 
 void qpx::on_pushOpenSpectra_clicked()
 {
   FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, settings_, detectors_);
   ui->qpxTabs->addTab(newSpectraForm, "Spectra");
-  connect(newSpectraForm, SIGNAL(requestCalibration(FormCalibration*)), this, SLOT(calibrate(FormCalibration*)));
+  connect(newSpectraForm, SIGNAL(requestAnalysis(FormAnalysis1D*)), this, SLOT(analyze_1d(FormAnalysis1D*)));
+  connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
 
   connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Pixie::LiveStatus)), newSpectraForm, SLOT(toggle_push(bool,Pixie::LiveStatus)));

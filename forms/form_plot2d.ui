@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>438</width>
-    <height>398</height>
+    <width>1117</width>
+    <height>691</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -57,12 +57,56 @@
            <height>25</height>
           </size>
          </property>
+         <property name="toolTip">
+          <string>Spectrum info</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
           <iconset resource="qpxres.qrc">
            <normaloff>:/new/icons/oxy/help_about.png</normaloff>:/new/icons/oxy/help_about.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>18</width>
+           <height>18</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushAnalyse">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>32</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Analyse</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="qpxres.qrc">
+           <normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -94,6 +138,41 @@
          </property>
          <property name="toolTip">
           <string>Chose 2d plot</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="labelGateWidth">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Gate width</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="spinGateWidth">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>999</number>
+         </property>
+         <property name="singleStep">
+          <number>2</number>
+         </property>
+         <property name="value">
+          <number>13</number>
          </property>
         </widget>
        </item>

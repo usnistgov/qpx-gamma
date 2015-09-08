@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>438</width>
-    <height>196</height>
+    <width>770</width>
+    <height>312</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -31,16 +31,16 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="leftMargin">
-    <number>0</number>
+    <number>9</number>
    </property>
    <property name="topMargin">
-    <number>0</number>
+    <number>9</number>
    </property>
    <property name="rightMargin">
-    <number>0</number>
+    <number>9</number>
    </property>
    <property name="bottomMargin">
-    <number>0</number>
+    <number>9</number>
    </property>
    <property name="horizontalSpacing">
     <number>6</number>
@@ -48,7 +48,7 @@
    <item row="1" column="0">
     <widget class="QTableView" name="tableDetectorDB">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+      <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
@@ -64,7 +64,7 @@
    <item row="2" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout_46">
      <property name="sizeConstraint">
-      <enum>QLayout::SetNoConstraint</enum>
+      <enum>QLayout::SetMaximumSize</enum>
      </property>
      <item>
       <widget class="QPushButton" name="pushNew">
@@ -192,7 +192,7 @@
         <enum>Qt::Horizontal</enum>
        </property>
        <property name="sizeType">
-        <enum>QSizePolicy::Minimum</enum>
+        <enum>QSizePolicy::MinimumExpanding</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>

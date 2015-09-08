@@ -54,13 +54,32 @@ typedef std::pair<std::vector<uint16_t>, uint64_t> Entry;
 typedef std::list<Entry> EntryList;
 typedef std::pair<uint32_t, uint32_t> Pair;
 
+
+struct Metadata {
+ public:
+  std::string name, description, type;
+  uint16_t dimensions, bits;
+  uint32_t resolution, appearance;
+  bool visible;
+  std::vector<int16_t> match_pattern, add_pattern;
+  std::vector<Setting> attributes;
+  PreciseFloat total_count;
+  uint64_t     max_chan;
+  boost::posix_time::time_duration real_time ,live_time;
+  boost::posix_time::ptime  start_time;
+  std::vector<Gamma::Detector> detectors;
+
+ Metadata() : bits(0), dimensions(0), resolution(0),
+    name("uninitialized_spectrum"), total_count(0.0), max_chan(0),
+    appearance(0), visible(false) {}
+};
+
+
 class Spectrum
 {
 public:
   //constructs invalid spectrum by default. Make private?
-  Spectrum() : bits_(0), dimensions_(0), resolution_(0),
-               name_("uninitialized_spectrum"), count_(0.0), max_chan_(0),
-               appearance_(0), visible_(false) {}
+  Spectrum() {}
 
 public:
   //named constructors, used by factory
@@ -76,6 +95,7 @@ public:
   //parameters take dimensions_ number of ranges of minimum (inclusive) and maximum (exclusive)
   //implemented in children by _get_spectrum and _get_spectrum_update
   std::unique_ptr<EntryList> get_spectrum(std::initializer_list<Pair> list = {});
+  void add_bulk(const Entry&);
 
   //full save with custom format
   void to_xml(tinyxml2::XMLPrinter&) const;
@@ -92,41 +112,29 @@ public:
   std::vector<double> energies(uint8_t chan = 0) const;
   
   //set and get detectors
-  void set_detectors(const std::vector<Detector>& dets);
-  std::vector<Detector> get_detectors() const;
-  Detector get_detector(uint16_t which = 0) const;
+  void set_detectors(const std::vector<Gamma::Detector>& dets);
 
   //feed acquired data to spectrum
-  void addSpill(const Spill&);
+  void addSpill(const Spill&, bool update_dets = true);
+  void closeAcquisition(); //must call this after completing
 
   ///////////////////////////////////////////////
   ///////accessors for various properties////////
   ///////////////////////////////////////////////
+  Metadata metadata() const;
+  
   std::string name() const;
-  std::string description() const;
   std::string type() const;
   uint16_t dimensions() const;
-  uint32_t resolution() const;
   uint16_t bits() const;
-  std::vector<int16_t> const match_pattern() const;
-  std::vector<int16_t> const add_pattern() const;
-  bool visible() const;
-  uint32_t appearance() const;
-  std::vector<Setting> generic_attributes() const;
-
-  //acquisition stats
-  double total_count() const;
-  uint64_t max_chan() const;
-  boost::posix_time::time_duration real_time() const;
-  boost::posix_time::time_duration live_time() const;
-  boost::posix_time::ptime         start_time() const;
+  uint32_t resolution() const;
 
   //change properties - use carefully...
   void set_visible(bool);
   void set_appearance(uint32_t newapp);
   void set_start_time(boost::posix_time::ptime newtime);
   void set_description(std::string newdesc);
-  void set_generic_attr(std::string setting, double value);
+  void set_generic_attr(Setting setting);
 
 
 protected:
@@ -144,17 +152,22 @@ protected:
 
   virtual uint64_t _get_count(std::initializer_list<uint16_t>) const = 0;
   virtual std::unique_ptr<std::list<Entry>> _get_spectrum(std::initializer_list<Pair>) = 0;
+  virtual void _add_bulk(const Entry&) {}
 
   virtual std::string _channels_to_xml() const = 0;
   virtual uint16_t _channels_from_xml(const std::string&) = 0;
 
-  virtual void addHit(const Hit&) = 0;
-  virtual void addStats(const StatsUpdate&);         //has default behavior
-  virtual void addRun(const RunInfo&);               //has default behavior
-  virtual bool validateHit(const Hit& newHit) const; //has default behavior
+  virtual void pushHit(const Hit&);           //has default behavior
+  virtual void addEvent(const Event&) = 0;
+  virtual void addStats(const StatsUpdate&);  //has default behavior
+  virtual void addRun(const RunInfo&);        //has default behavior
+  virtual bool validateEvent(const Event&) const; //has default behavior
+  virtual void _closeAcquisition() {}
+
+  virtual void _set_detectors(const std::vector<Gamma::Detector>& dets); //has default behavior
 
   void recalc_energies();
-  double get_attr(std::string name) const;
+  Setting get_attr(std::string name) const;
 
   //////////////////////////////
   ///////member variables///////
@@ -163,24 +176,14 @@ protected:
   mutable boost::shared_mutex mutex_;
   mutable boost::mutex u_mutex_;
 
-  std::string name_, description_;
-  uint8_t dimensions_, bits_, shift_by_;
-  uint32_t resolution_;
-  std::vector<int16_t> match_pattern_, add_pattern_;
+  Metadata metadata_;
 
-  std::vector<Detector> detectors_;
+  uint8_t shift_by_;
+
   std::vector<std::vector<double> > energies_;
   
-  std::vector<Setting> generic_attributes_;
-  
-  PreciseFloat count_;
-  uint32_t max_chan_;
-  boost::posix_time::time_duration real_time_, live_time_;
-  boost::posix_time::ptime start_time_;
-
-  uint32_t appearance_;
-  bool visible_;
   StatsUpdate start_stats;
+  std::list<Event> backlog;
 };
 
 
@@ -217,14 +220,17 @@ class Factory {
 
   Spectrum* create_from_xml(tinyxml2::XMLElement* root)
   {
-    if ((root == nullptr) || ((root->Attribute("type")) == nullptr))
+    if ((root == nullptr) || ((root->Attribute("type")) == nullptr)) {
+      PL_ERR << "<Spectrum::Factory> create_from_xml: no type id in XML";
       return nullptr;
+    }
     Spectrum* instance = create_type(root->Attribute("type"));
     if (instance != nullptr) {
       bool success = instance->from_xml(root);
       if (success)
         return instance;
       else {
+        PL_ERR << "<Spectrum::Factory> create_from_xml: failed to create " << instance->name();
         delete instance;
         return nullptr;
       }
@@ -283,7 +289,7 @@ class Factory {
   std::map<std::string, Template> templates;
 
   //singleton assurance
-  Factory() {};
+  Factory() {}
   Factory(Factory const&);
   void operator=(Factory const&);
 };

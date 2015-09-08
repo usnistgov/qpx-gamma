@@ -48,19 +48,20 @@ protected:
 
   //1D is ok with all patterns
   bool initialize() override {
-    dimensions_ = 1;
-    spectrum_.resize(resolution_, 0);
-    detectors_.resize(kNumChans);
-    recalc_energies();
+    metadata_.type = my_type();
+    metadata_.dimensions = 1;
+    spectrum_.resize(metadata_.resolution, 0);
     return true;
   }
 
   uint64_t _get_count(std::initializer_list<uint16_t> list) const;
   std::unique_ptr<std::list<Entry>> _get_spectrum(std::initializer_list<Pair> list);
+  void _add_bulk(const Entry&) override;
+  void _set_detectors(const std::vector<Gamma::Detector>& dets) override;
 
   //event processing
-  void addHit(const Hit&) override;
-  virtual void addHit(const Hit&, int);
+  void addEvent(const Event&) override;
+  virtual void addHit(const Hit&);
 
   //save/load
   bool _write_file(std::string, std::string) const override;

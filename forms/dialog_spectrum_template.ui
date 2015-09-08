@@ -177,7 +177,13 @@
             </size>
            </property>
            <property name="inputMask">
-            <string>Annnnnnnnnnnnnnnnnnn</string>
+            <string/>
+           </property>
+           <property name="maxLength">
+            <number>32</number>
+           </property>
+           <property name="placeholderText">
+            <string>name</string>
            </property>
           </widget>
          </item>
@@ -459,7 +465,6 @@
    </item>
   </layout>
   <zorder>buttonBox</zorder>
-  <zorder></zorder>
   <zorder>tableGenericAttrs</zorder>
   <zorder>label_8</zorder>
   <zorder>groupBox_2</zorder>

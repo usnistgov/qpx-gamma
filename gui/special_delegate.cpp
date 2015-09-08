@@ -75,7 +75,7 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
       return editor;
     } else if (set.setting_type == Pixie::SettingType::detector) {
       QComboBox *editor = new QComboBox(parent);
-      editor->addItem(QString("none"));
+      editor->addItem(QString("none"), QString("none"));
       for (int i=0; i < detectors_.size(); i++) {
         QString name = QString::fromStdString(detectors_.get(i).name_);
         editor->addItem(name, name);
@@ -106,7 +106,7 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
     if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
       Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
       if (set.setting_type == Pixie::SettingType::detector) {
-        int cbIndex = cb->findText(QString::fromStdString(set.name));
+        int cbIndex = cb->findText(QString::fromStdString(set.value_text));
         if(cbIndex >= 0)
           cb->setCurrentIndex(cbIndex);
       } else if (set.int_menu_items.count(set.value_int)) {
@@ -153,12 +153,18 @@ void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *mod
 {
   if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
+      Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
       if (cb->currentData().type() == QMetaType::Int)
         model->setData(index, QVariant::fromValue(cb->currentData().toInt()), Qt::EditRole);
       else if (cb->currentData().type() == QMetaType::Double)
         model->setData(index, QVariant::fromValue(cb->currentData().toDouble()), Qt::EditRole);
-      else if (cb->currentData().type() == QMetaType::QString)
-        model->setData(index, QVariant::fromValue(cb->currentData().toString()), Qt::EditRole);
+      else if (cb->currentData().type() == QMetaType::QString) {
+        QString word = cb->currentData().toString();
+        if (set.setting_type == Pixie::SettingType::detector)
+          model->setData(index, QVariant::fromValue(detectors_.get(word.toStdString())), Qt::EditRole);
+        else
+          model->setData(index, QVariant::fromValue(word), Qt::EditRole);
+      }
     }
   } else if (QDoubleSpinBox *sb = qobject_cast<QDoubleSpinBox *>(editor))
     model->setData(index, QVariant::fromValue(sb->value()), Qt::EditRole);
@@ -172,6 +178,6 @@ void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *mod
     QStyledItemDelegate::setModelData(editor, model, index);
 }
 
-void QpxSpecialDelegate::eat_detectors(const XMLableDB<Pixie::Detector> &detectors) {
+void QpxSpecialDelegate::eat_detectors(const XMLableDB<Gamma::Detector> &detectors) {
   detectors_ = detectors;
 }

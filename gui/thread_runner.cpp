@@ -106,6 +106,19 @@ void ThreadRunner::do_fake(Pixie::SpectraSet &spectra, boost::atomic<bool> &inte
     PL_WARN << "Cannot do_fake. Runner busy.";
 }
 
+void ThreadRunner::do_from_list(Pixie::SpectraSet &spectra, boost::atomic<bool> &interruptor, QString file) {
+  if (!isRunning()) {
+    terminating_.store(false);
+    QMutexLocker locker(&mutex_);
+    spectra_ = &spectra;
+    interruptor_ = &interruptor;
+    file_ = file;
+    action_ = kFromList;
+    start(HighPriority);
+  } else
+    PL_WARN << "Cannot do_from_list. Runner busy.";
+}
+
 void ThreadRunner::do_boot(bool boot_keepcw, std::vector<std::string> boot_files, std::vector<uint8_t> boot_slots) {
   if (!isRunning()) {
     terminating_.store(false);
@@ -196,6 +209,12 @@ void ThreadRunner::run()
     interruptor_->store(false);
     Pixie::Wrapper::getInstance().getFakeMca(file_.toStdString(), *spectra_, timeout_, *interruptor_);
     emit runComplete();
+  } else if (action_ == kFromList) {
+    interruptor_->store(false);
+    Pixie::Sorter sorter(file_.toStdString());
+    if (sorter.valid())
+      Pixie::Wrapper::getInstance().simulateFromList(sorter, *spectra_, *interruptor_);
+    emit runComplete();
   } else if (action_ == kBoot) {
     Pixie::Wrapper &myPixie = Pixie::Wrapper::getInstance();
 /*    myPixie.settings().set_boot_files(boot_files_);
@@ -236,32 +255,39 @@ void ThreadRunner::run()
   }
 
   if (action_ == kOscil) {
-    Pixie::Hit oscil_traces_ = Pixie::Wrapper::getInstance().getOscil();
-    uint32_t trace_length = oscil_traces_.trace[0].size();
+    std::vector<Gamma::Detector> dets = Pixie::Wrapper::getInstance().settings().get_detectors();
+
+    std::string calib_units = dets[0].highest_res_calib().units_;
+    for (int i=0; i < dets.size(); i++) {
+      //Pixie::Wrapper::getInstance().settings().set_chan("XDT", xdt_, Pixie::Channel(i));
+      if (dets[i].highest_res_calib().units_ != calib_units)
+        calib_units = "channels";
+    }
+    double xinterval = 0;//Pixie::Wrapper::getInstance().settings().get_chan("XDT", Pixie::Channel(0), Pixie::Module::current, Pixie::LiveStatus::online);
+
+    Pixie::Event oscil_traces_ = Pixie::Wrapper::getInstance().getOscil();
+    uint32_t trace_length = oscil_traces_.hit[0].trace.size();
+
+    QVector<double> xx;
+    for (int i=0; i < trace_length; ++i)
+      xx.push_back(i*xinterval);
 
     QList<QVector<double>> *plot_data = new QList<QVector<double>>;
-    plot_data->push_back(QVector<double>(trace_length));
-    std::iota(plot_data->last().begin(), plot_data->last().end(), 0);
+    plot_data->push_back(xx);
 
-    for (int i=0; i < 4; i++) {  //hardcoded for 4 channels
-      plot_data->push_back(QVector<double>());
-      Pixie::Detector thisdet = Pixie::Wrapper::getInstance().settings().get_detector(Pixie::Channel(i));
-      int hi_res = 0;
-      for (auto &q : thisdet.energy_calibrations_.my_data_) {
-        if (q.bits_ > hi_res)
-          hi_res = q.bits_;
+    for (int i=0; i < Pixie::kNumChans; i++) {
+      QVector<double> yy;
+      for (auto it : oscil_traces_.hit[i].trace) {
+        if (calib_units != "channels")
+          yy.push_back(dets[i].highest_res_calib().transform(it, 16));
+        else
+          yy.push_back(it);
       }
-      Pixie::Calibration thiscal = thisdet.energy_calibrations_.get(Pixie::Calibration(hi_res));
-      int shiftby = 0;
-      if (thiscal.bits_)
-        shiftby = 16 - thiscal.bits_;
-      for (auto it : oscil_traces_.trace[i]) {
-        double calibrated = thiscal.transform(it >> shiftby);
-        plot_data->last().push_back(calibrated);
-      }
+
+      plot_data->push_back(yy);
     }
     Pixie::Wrapper::getInstance().settings().get_all_settings();
     emit settingsUpdated();
-    emit oscilReadOut(plot_data);
+    emit oscilReadOut(plot_data, QString::fromStdString(calib_units));
   }
 }

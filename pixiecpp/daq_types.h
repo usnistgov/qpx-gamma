@@ -39,56 +39,89 @@ namespace Pixie {
 
 const int kNumChans = 32;
 
+struct TimeStamp {
+  uint64_t time;
+
+  TimeStamp() {
+    time = 0;
+  }
+
+  double operator-(const TimeStamp other) const {
+    return (static_cast<double>(time) - static_cast<double>(other.time));
+  }
+  bool operator<(const TimeStamp other) const {return (time < other.time);}
+  bool operator>(const TimeStamp other) const {return (time > other.time);}
+  bool operator==(const TimeStamp other) const {return (time == other.time);}
+  bool operator!=(const TimeStamp other) const {return (time != other.time);}
+
+};
+
 struct Hit{
-  
-  //common to whole buffer
+
+  int16_t module, channel;
+  TimeStamp timestamp;
+
   uint16_t run_type,
-           module,
-           buf_time_hi,
-           buf_time_mi,
-           buf_time_lo,
-           evt_time_hi,
-           evt_time_lo;
+           energy,
+           XIA_PSA,
+           user_PSA;
 
-  //unique to event
-  std::bitset<Pixie::kNumChans> pattern;
-
-  //per channel
-  std::vector<uint16_t> energy,
-                        chan_trig_time,
-                        XIA_PSA,
-                        user_PSA,
-                        chan_real_time;
-  std::vector<std::vector<uint16_t>> trace;
+  std::vector<uint16_t> trace;
   
   inline Hit() {
-    chan_trig_time.resize(kNumChans,0);
-    energy.resize(kNumChans,0);
-    XIA_PSA.resize(kNumChans,0);
-    user_PSA.resize(kNumChans,0);
-    chan_real_time.resize(kNumChans,0);
-    trace.resize(kNumChans);
+    module = -1;
+    channel = -1;
+    run_type = 0;
+    energy = 0;
+    XIA_PSA = 0;
+    user_PSA = 0;
   }
 
-  boost::posix_time::time_duration to_posix_time() {
-    //converts Pixie ticks to posix duration
-    //this is not working well...
-    uint64_t result = evt_time_lo;
-    result += evt_time_hi * 65536;      //pow(2,16)
-    result += buf_time_hi * 4294967296; //pow(2,32)
-    result = result * 1000 / 75;
-    boost::posix_time::time_duration answer =
-        boost::posix_time::seconds(result / 1000000000) +
-        boost::posix_time::milliseconds((result % 1000000000) / 1000000) +
-        boost::posix_time::microseconds((result % 1000000) / 1000);
-    //        + boost::posix_time::nanoseconds(result % 1000);
-    return answer;
+  boost::posix_time::time_duration to_posix_time();
+  void from_xml(tinyxml2::XMLElement*);
+  void to_xml(tinyxml2::XMLPrinter&, bool with_pattern = true) const;
+  std::string to_string() const;
+
+  bool operator<(const Hit other) const {return (timestamp < other.timestamp);}
+  bool operator>(const Hit other) const {return (timestamp > other.timestamp);}
+  bool operator==(const Hit other) const {
+    if (module != other.module) return false;
+    if (channel != other.channel) return false;
+    if (timestamp != other.timestamp) return false;
+    if (run_type != other.run_type) return false;
+    if (energy != other.energy) return false;
+    if (XIA_PSA != other.XIA_PSA) return false;
+    if (user_PSA != other.user_PSA) return false;
+    return true;
   }
-  
+  bool operator!=(const Hit other) const { return !operator==(other); }
+};
+
+struct Event {
+  TimeStamp lower_time, upper_time;
+  double window;
+  std::vector<Hit> hit;
+
+  bool in_window(const TimeStamp& ts) const;
+  void addHit(const Hit &newhit);
+  std::string to_string() const;
+
+  inline Event() {
+    hit.resize(kNumChans);
+    window = 0.0;
+  }
+
+  inline Event(const Hit &newhit, double win) {
+    hit.resize(kNumChans);
+    lower_time = upper_time = newhit.timestamp;
+    hit[newhit.channel] = newhit;
+    window = win;
+  }
 };
 
 struct StatsUpdate {
-  uint64_t spill_count;
+  uint64_t spill_number;
+  uint64_t events_in_spill;
 
   //per module
   double total_time,
@@ -102,7 +135,12 @@ struct StatsUpdate {
 
   boost::posix_time::ptime lab_time;  //timestamp at end of spill
   
-  inline StatsUpdate(): spill_count(0), total_time(0.0), event_rate(0.0) {
+  inline StatsUpdate()
+    : spill_number(0)
+    , total_time(0.0)
+    , event_rate(0.0)
+    , events_in_spill(0)
+  {
     fast_peaks.resize(kNumChans, 0.0);
     live_time.resize(kNumChans, 0.0);
     ftdt.resize(kNumChans, 0.0);
@@ -110,8 +148,7 @@ struct StatsUpdate {
   }
 
   inline void eat_stats(Settings& source) {
-    /*
-    for (int i=0; i < kNumChans; i++) {
+    /*for (int i=0; i < kNumChans; i++) {
       fast_peaks[i] = source.get_chan("FAST_PEAKS", Channel(i));
       live_time[i]  = source.get_chan("LIVE_TIME", Channel(i));
       ftdt[i]       = source.get_chan("FTDT", Channel(i));
@@ -121,52 +158,12 @@ struct StatsUpdate {
     total_time = source.get_mod("TOTAL_TIME");*/
   }
 
-  // difference across all variables
-  // except rate wouldn't make sense
-  // and timestamp would require duration output type
-  StatsUpdate operator-(const StatsUpdate other) const {
-      StatsUpdate answer;
-      for (int i=0; i < kNumChans; i++) {
-        answer.fast_peaks[i] = fast_peaks[i] - other.fast_peaks[i];
-        answer.live_time[i]  = live_time[i] - other.live_time[i];
-        answer.ftdt[i]       = ftdt[i] - other.ftdt[i];
-        answer.sfdt[i]       = sfdt[i] - other.sfdt[i];
-      }
-      answer.total_time = total_time - other.total_time;
-      return answer;
-  }
-
-  // stacks two, adding up all variables
-  // except rate wouldn't make sense, neither does timestamp
-  StatsUpdate operator+(const StatsUpdate other) const {
-      StatsUpdate answer;
-      for (int i=0; i < kNumChans; i++) {
-        answer.fast_peaks[i] = fast_peaks[i] + other.fast_peaks[i];
-        answer.live_time[i]  = live_time[i] + other.live_time[i];
-        answer.ftdt[i]       = ftdt[i] + other.ftdt[i];
-        answer.sfdt[i]       = sfdt[i] + other.sfdt[i];
-      }
-      answer.total_time = total_time + other.total_time;
-      return answer;
-  }
-
-  friend std::ostream &operator<<(std::ostream &out, StatsUpdate d) {
-      out << "{StatsUpdate} "
-          << " lab_time="  << to_simple_string(d.lab_time)
-          << " spill_count=" << d.spill_count
-          << " total_time=" << d.total_time
-          << " event_rate=" << d.event_rate
-          << "\n";
-      for (int i=0; i < kNumChans; i++) {
-        out << "{StatsUpdate chan" << i << "} "
-            << " fast_peaks=" << d.fast_peaks[i]
-            << " live_time=" << d.live_time[i]
-            << " ftdt=" << d.ftdt[i]
-            << " sfdt=" << d.sfdt[i]
-            << "\n";
-      }
-  }
-
+  StatsUpdate operator-(const StatsUpdate) const;
+  StatsUpdate operator+(const StatsUpdate) const;
+  bool operator<(const StatsUpdate other) const {return (spill_number < other.spill_number);}
+  bool operator==(const StatsUpdate other) const;
+  void from_xml(tinyxml2::XMLElement*);
+  void to_xml(tinyxml2::XMLPrinter&) const;
 };
 
 struct RunInfo {
@@ -180,21 +177,25 @@ struct RunInfo {
   }
 
   // to convert Pixie time to lab time
-  double time_scale_factor() const {
-    if (time_stop.is_not_a_date_time() ||
-        time_start.is_not_a_date_time()) /* ||
-        (p4_state.get_mod("TOTAL_TIME") == 0.0) ||
-        (p4_state.get_mod("TOTAL_TIME") == -1))*/
-      return 1.0;
-    else 
-      return (time_stop - time_start).total_microseconds() /
-          (1000000 /* * p4_state.get_mod("TOTAL_TIME")*/);
-  }
+  double time_scale_factor() const;
+  void from_xml(tinyxml2::XMLElement*);
+  void to_xml(tinyxml2::XMLPrinter&, bool with_settings = true)  const;
 };
 
 
 struct Spill {
   inline Spill(): stats(nullptr), run(nullptr) {}
+  bool operator==(const Spill other) const {
+    if (stats != other.stats)
+      return false;
+    if (run != other.run)
+      return false;
+    if (data != other.data)
+      return false;
+    if (hits.size() != other.hits.size())
+      return false;
+    return true;
+  }
 
   std::vector<uint32_t> data;  //as is from Pixie, unparsed
   std::list<Pixie::Hit> hits;  //parsed

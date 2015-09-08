@@ -26,6 +26,7 @@
 #include <QWidget>
 #include <QAbstractTableModel>
 #include <QItemSelectionModel>
+#include <QSortFilterProxyModel>
 #include "isotope.h"
 #include "special_delegate.h"
 
@@ -78,6 +79,7 @@ public:
   void push_energies(std::vector<double>);
 
   bool save_close();
+  void select_next_energy();
 
 signals:
   void energiesSelected();
@@ -99,8 +101,9 @@ private slots:
 private:
 
   TableGammas table_gammas_;
-  QItemSelectionModel selection_model_;
   QpxSpecialDelegate  special_delegate_;
+
+  QSortFilterProxyModel sortModel;
 
   Ui::WidgetIsotopes *ui;
   QString root_dir_;

@@ -25,7 +25,7 @@
 #include "form_oscilloscope.h"
 #include <QBoxLayout>
 
-FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixie::Detector> &detectors, QWidget *parent) :
+FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector> &detectors, QWidget *parent) :
   QWidget(parent),
   runner_thread_(thread),
   settings_(settings),
@@ -45,7 +45,7 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixie:
   QSpacerItem *si = new QSpacerItem(200,20, QSizePolicy::Preferred, QSizePolicy::Preferred);
   hl->addSpacerItem(si);
 
-  FormOscilloscope *formOscilloscope = new FormOscilloscope(runner_thread_);
+  FormOscilloscope *formOscilloscope = new FormOscilloscope(runner_thread_, settings_);
   connect(formOscilloscope, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
   connect(this, SIGNAL(toggle_push_(bool,Pixie::LiveStatus)), formOscilloscope, SLOT(toggle_push(bool,Pixie::LiveStatus)));
 
@@ -77,6 +77,7 @@ void FormStart::closeEvent(QCloseEvent *event) {
   if (exiting) {
     formPixieSettings->close();
     formBootup->close();
+    //formOscilloscope->close();
     event->accept();
   }
   else

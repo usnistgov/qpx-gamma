@@ -345,7 +345,7 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
   default_detectors_[3] = "N/A";
 
   //defaults
-  XMLableDB<Pixie::Detector> detectors_("Detectors");
+  XMLableDB<Gamma::Detector> detectors_("Detectors");
   detectors_.read_xml(data_dir + "/default_detectors.det");
   if (detectors_.empty()) {
     PL_ERR << "<cpx> bad detector db";
@@ -375,7 +375,7 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
   pixie_.settings().set_mod("FILTER_RANGE", 4);
   pixie_.settings().set_mod("ACTUAL_COINCIDENCE_WAIT", 0);
   for (int i =0; i < 4; i++)
-    pixie_.settings().set_detector(Pixie::Channel(i), detectors_.get(Pixie::Detector(default_detectors_[i])));
+    pixie_.settings().set_detector(Pixie::Channel(i), detectors_.get(Gamma::Detector(default_detectors_[i])));
   if (true) { //online
     pixie_.control_adjust_offsets();
     pixie_.settings().load_optimization();

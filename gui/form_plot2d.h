@@ -42,7 +42,10 @@ public:
 
   void setSpectra(Pixie::SpectraSet& new_set);
 
-  void update_plot();
+  void updateUI();
+
+  void update_plot(bool force = false);
+  void refresh();
   void replot_markers();
   void reset_content();
 
@@ -55,11 +58,21 @@ public:
   double zoom();
   bool show_legend();
 
+  void set_show_selector(bool);
+  void set_show_analyse(bool);
+  void set_show_gate_width(bool);
+  void set_spectrum(QString);
+
+  int gate_width();
+  void set_gate_width(int);
+  void set_gates_visible(bool vertical, bool horizontal, bool diagonal);
+
 public slots:
   void set_marker(Marker n);
 
 signals:
   void markers_set(Marker x, Marker y);
+  void requestAnalysis(QString);
 
 private slots:
   void gradientChosen(QAction*);
@@ -78,6 +91,10 @@ private slots:
   void spectrumDetailsClosed(bool);
 
   void on_sliderZoom2d_valueChanged(int value);
+
+  void on_pushAnalyse_clicked();
+
+  void on_spinGateWidth_valueChanged(int arg1);
 
 private:
 
@@ -98,13 +115,16 @@ private:
   QString name_2d;
   double zoom_2d;
 
+  bool user_selects_;
+
   //markers
   Marker my_marker, //template(style)
     ext_marker, x_marker, y_marker; //actual data
+  bool gate_vertical_, gate_horizontal_, gate_diagonal_;
 
   //scaling
   int bits;
-  Pixie::Calibration calib_x_, calib_y_;
+  Gamma::Calibration calib_x_, calib_y_;
 
   void calibrate_markers();
   void make_marker(Marker&);

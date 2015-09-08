@@ -30,6 +30,7 @@ namespace Pixie {
 
 Simulator::Simulator(SpectraSet* all_spectra, std::array<int,2> chans,
                      int source_res, int dest_res) {
+
   channels_ = chans;
   shift_by_ = 0;
   resolution_ = 0;
@@ -48,17 +49,22 @@ Simulator::Simulator(SpectraSet* all_spectra, std::array<int,2> chans,
     return;
   }
   
+  Spectrum::Metadata md;
+  
   std::list<Spectrum::Spectrum*> co_found = all_spectra->spectra(2, source_res);
   if (co_found.empty()) { PL_WARN << "no 2d source found"; return; }
 
-  for (auto &q: co_found)
-    if ((q->add_pattern()[chans[0]] && q->add_pattern()[chans[1]]) &&
-        (!q->match_pattern()[chans[0]] && !q->match_pattern()[chans[1]]))
+  for (auto &q: co_found) {
+    md = q->metadata();
+    if ((md.add_pattern[chans[0]] && md.add_pattern[chans[1]]) &&
+        (!md.match_pattern[chans[0]] && !md.match_pattern[chans[1]]))
       co = q;
+  }
 
   if (co == nullptr) { PL_WARN << "no 2d source with matching pattern"; return; }
 
-  PL_INFO << " source total events coinc " << co->total_count();
+  md = co->metadata();
+  PL_INFO << " source total events coinc " << md.total_count;
 
   settings = all_spectra->runInfo().p4_state;
   lab_time = (all_spectra->runInfo().time_stop - all_spectra->runInfo().time_start).total_milliseconds() * 0.001;
@@ -68,7 +74,7 @@ Simulator::Simulator(SpectraSet* all_spectra, std::array<int,2> chans,
     return;
   }
   
-  count_ = co->total_count();
+  count_ = md.total_count;
 
   //time_factor = settings.get_mod("TOTAL_TIME") / lab_time;
   OCR = static_cast<double>(count_) / lab_time;
@@ -110,11 +116,6 @@ Hit Simulator::getHit() {
     uint32_t en1 = newpoint / resolution_;
     uint32_t en2 = newpoint % resolution_;
 
-    if (en1)
-      newHit.pattern[channels_[0]] = 1;
-    if (en2)
-      newHit.pattern[channels_[1]] = 1;
-
     en1 = en1 << shift_by_;
     en2 = en2 << shift_by_;
     
@@ -123,8 +124,7 @@ Hit Simulator::getHit() {
       en2 += refined_dist_(gen);
     }
     
-    newHit.energy[channels_[0]] = en1;
-    newHit.energy[channels_[1]] = en2;
+    newHit.energy = en1;
   }
 
   return newHit;

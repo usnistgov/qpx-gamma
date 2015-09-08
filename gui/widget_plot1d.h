@@ -27,6 +27,21 @@
 #include <QWidget>
 #include "qsquarecustomplot.h"
 #include "marker.h"
+#include <set>
+
+class MarkerText : public QCPItemText
+{
+  Q_OBJECT
+public:
+  explicit MarkerText(QCustomPlot *parentPlot, double truepos)
+    : QCPItemText(parentPlot)
+    , true_position_(truepos) {}
+
+  double true_position() {return true_position_;}
+
+private:
+  double true_position_;
+};
 
 namespace Ui {
 class WidgetPlot1D;
@@ -45,6 +60,8 @@ public:
   void redraw();
   void reset_scales();
   void rescale();
+  void xAxisRange(double, double);
+  void yAxisRange(double, double);
   void replot_markers();
 
   void setLabels(QString x, QString y);
@@ -54,6 +71,7 @@ public:
   void set_scale_type(QString);
   void set_plot_style(QString);
   void set_marker_labels(bool);
+  void set_markers_selectable(bool);
   QString scale_type();
   QString plot_style();
   bool marker_labels();
@@ -65,12 +83,16 @@ public:
   void showTitle(bool);
   void setZoomable(bool);
 
-  void set_markers(const std::list<Marker>& markers);
+  void set_markers(const std::list<Marker>&);
   void set_block(Marker, Marker);
-  void set_cursors(const std::list<Marker>& cursors);
+  void set_cursors(const std::list<Marker>&);
 
-  void addPoints(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness, QCPScatterStyle::ScatterShape);
-  void addGraph(const QVector<double>& x, const QVector<double>& y, QColor color, int thickness);
+  void set_range(Range);
+  Range get_range();
+  std::set<double> get_selected_markers();
+
+  void addPoints(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, QCPScatterStyle::ScatterShape);
+  void addGraph(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance);
   void setYBounds(const std::map<double, double> &minima, const std::map<double, double> &maxima);
 
   void use_calibrated(bool);
@@ -79,11 +101,16 @@ signals:
 
   void clickedLeft(double);
   void clickedRight(double);
+  void range_moved();
+  void markers_selected();
 
 private slots:
   void plot_mouse_clicked(double x, double y, QMouseEvent *event, bool channels);
   void plot_mouse_press(QMouseEvent*);
   void plot_mouse_release(QMouseEvent*);
+  void clicked_plottable(QCPAbstractPlottable *);
+  void selection_changed();
+
   void plot_rezoom();
 
   void on_pushResetScales_clicked();
@@ -105,12 +132,19 @@ private:
   std::list<Marker> my_cursors_;
   std::vector<Marker> rect;
 
+  Range my_range_;
+  QCPItemTracer* edge_trc1;
+  QCPItemTracer* edge_trc2;
+
   bool force_rezoom_;
   double minx, maxx;
   double miny, maxy;
 
   bool use_calibrated_;
   bool marker_labels_;
+  bool mouse_pressed_;
+
+  bool markers_selectable_;
 
   double minx_zoom, maxx_zoom;
 

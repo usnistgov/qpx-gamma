@@ -35,23 +35,28 @@ WidgetIsotopes::WidgetIsotopes(QWidget *parent) :
   ui(new Ui::WidgetIsotopes),
   isotopes_("isotopes"),
   table_gammas_(this),
-  selection_model_(&table_gammas_)
+  special_delegate_(this),
+  sortModel(this)
 {
   ui->setupUi(this);
 
   modified_ = false;
 
   ui->tableGammas->setModel(&table_gammas_);
-  ui->tableGammas->setSelectionModel(&selection_model_);
   ui->tableGammas->setItemDelegate(&special_delegate_);
   ui->tableGammas->verticalHeader()->hide();
+  ui->tableGammas->setSortingEnabled(true);
   ui->tableGammas->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tableGammas->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tableGammas->horizontalHeader()->setStretchLastSection(true);
   ui->tableGammas->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->tableGammas->show();
 
-  connect(&selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
+  sortModel.setSourceModel( &table_gammas_ );
+  sortModel.setSortRole(Qt::EditRole);
+  ui->tableGammas->setModel( &sortModel );
+
+  connect(ui->tableGammas->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(selection_changed(QItemSelection,QItemSelection)));
 
   connect(ui->listIsotopes, SIGNAL(currentTextChanged(QString)), this, SLOT(isotopeChosen(QString)));
@@ -79,10 +84,12 @@ void WidgetIsotopes::setDir(QString filedir) {
 }
 
 void WidgetIsotopes::isotopeChosen(QString choice) {
+
   ui->labelPeaks->setText("Energies");
   ui->pushRemoveIsotope->setEnabled(false);
   ui->pushAddGamma->setEnabled(false);
   table_gammas_.clear();
+
   RadTypes::Isotope iso(choice.toStdString());
   if (isotopes_.has_a(iso)) {
     ui->labelPeaks->setText(choice);
@@ -97,7 +104,7 @@ void WidgetIsotopes::isotopeChosen(QString choice) {
 void WidgetIsotopes::selection_changed(QItemSelection, QItemSelection) {
   current_gammas_.clear();
 
-  foreach (QModelIndex idx, selection_model_.selectedRows()) {
+  foreach (QModelIndex idx, ui->tableGammas->selectionModel()->selectedRows()) {
     QModelIndex nrg_ix = table_gammas_.index(idx.row(), 0);
     current_gammas_.push_back(table_gammas_.data(nrg_ix, Qt::DisplayRole).toDouble());
   }
@@ -163,7 +170,7 @@ void WidgetIsotopes::set_current_isotope(QString choice) {
 
 bool WidgetIsotopes::save_close() {
 
-  if (modified_)
+/*  if (modified_)
   {
     int reply = QMessageBox::warning(this, "Isotopes modified",
                                      "Save?",
@@ -175,6 +182,12 @@ bool WidgetIsotopes::save_close() {
     } else if (reply == QMessageBox::Cancel) {
       return false;
     }
+  }*/
+
+  if (modified_) {
+    QString fileName = root_dir_ + "/isotopes.xml";
+    isotopes_.write_xml(fileName.toStdString());
+    modified_ = false;
   }
 
   return true;
@@ -191,6 +204,7 @@ void WidgetIsotopes::on_pushAddGamma_clicked()
 
 void WidgetIsotopes::on_pushRemoveIsotope_clicked()
 {
+  table_gammas_.clear();
   isotopes_.remove_a(RadTypes::Isotope(current_isotope().toStdString()));
   ui->listIsotopes->clear();
   for (int i=0; i < isotopes_.size(); i++) {
@@ -237,7 +251,24 @@ void WidgetIsotopes::push_energies(std::vector<double> new_energies) {
   isotopeChosen(current_isotope());
 }
 
+void WidgetIsotopes::select_next_energy()
+{
+  current_gammas_.clear();
 
+  int top_row = -1;
+  foreach (QModelIndex idx, ui->tableGammas->selectionModel()->selectedRows()) {
+    if (idx.row() > top_row)
+      top_row = idx.row();
+  }
+
+  top_row++;
+  if (top_row < table_gammas_.rowCount()) {
+    ui->tableGammas->clearSelection();
+    ui->tableGammas->selectRow(top_row);
+  }
+
+  emit energiesSelected();
+}
 
 
 
@@ -293,17 +324,11 @@ QVariant TableGammas::headerData(int section, Qt::Orientation orientation, int r
   return QVariant();
 }
 
-bool byEnegery(RadTypes::Gamma i, RadTypes::Gamma j) { return i.energy > j.energy; }
-bool byIntensity(RadTypes::Gamma i, RadTypes::Gamma j) { return i.abundance > j.abundance; }
-
 
 void TableGammas::set_gammas(const XMLableDB<RadTypes::Gamma> &newgammas) {
   gammas_.clear();
   for (int i=0; i <newgammas.size(); ++i)
     gammas_.push_back(newgammas.get(i));
-
-  if (gammas_.size())
-    std::sort(gammas_.begin(), gammas_.end(), byIntensity);
 
   QModelIndex start_ix = createIndex( 0, 0 );
   QModelIndex end_ix = createIndex( (rowCount() - 1), (columnCount() - 1) );
@@ -320,6 +345,10 @@ XMLableDB<RadTypes::Gamma> TableGammas::get_gammas() {
 
 void TableGammas::clear() {
   set_gammas(XMLableDB<RadTypes::Gamma>("gammas"));
+  QModelIndex start_ix = createIndex( 0, 0 );
+  QModelIndex end_ix = createIndex( (rowCount() - 1), (columnCount() - 1) );
+  emit dataChanged( start_ix, end_ix );
+  emit layoutChanged();
 }
 
 Qt::ItemFlags TableGammas::flags(const QModelIndex &index) const
@@ -340,10 +369,10 @@ bool TableGammas::setData(const QModelIndex & index, const QVariant & value, int
       gammas_[row].abundance = value.toDouble();
   }
 
-  QModelIndex start_ix = createIndex( 0, 0 );
-  QModelIndex end_ix = createIndex( (rowCount() - 1), (columnCount() - 1) );
+  QModelIndex start_ix = createIndex( row, col );
+  QModelIndex end_ix = createIndex( row, col );
   emit dataChanged( start_ix, end_ix );
-  emit layoutChanged();
+  //emit layoutChanged();
   emit energiesChanged();
   return true;
 }

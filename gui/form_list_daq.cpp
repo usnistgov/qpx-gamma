@@ -23,6 +23,7 @@
 #include "gui/form_list_daq.h"
 #include "ui_form_list_daq.h"
 #include "custom_logger.h"
+#include "qt_util.h"
 
 FormListDaq::FormListDaq(ThreadRunner &thread, QSettings &settings, QWidget *parent) :
   QWidget(parent),
@@ -60,6 +61,10 @@ FormListDaq::FormListDaq(ThreadRunner &thread, QSettings &settings, QWidget *par
 }
 
 void FormListDaq::loadSettings() {
+  settings_.beginGroup("Program");
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_.endGroup();
+
   settings_.beginGroup("Lab");
   ui->boxListMins->setValue(settings_.value("list_mins", 5).toInt());
   ui->boxListSecs->setValue(settings_.value("list_secs", 0).toInt());
@@ -126,21 +131,21 @@ void FormListDaq::displayTraces()
 
   int actual_graphs = 0;
   for (int i=0; i < 4; i++) {
-    uint32_t trace_length = list_data_->hits[chosen_trace].trace[i].size();
+    uint32_t trace_length = list_data_->hits[chosen_trace].trace.size();
     if ((drawit[i]) && (trace_length > 0)) {
       QVector<double> x(trace_length), y(trace_length);
-      Pixie::Detector this_det = list_data_->run.p4_state.get_detector(Pixie::Channel(i));
+      Gamma::Detector this_det = list_data_->run.p4_state.get_detector(Pixie::Channel(i));
       int highest_res = 0;
       for (auto &q : this_det.energy_calibrations_.my_data_)
         if (q.bits_ > highest_res)
           highest_res = q.bits_;
-      Pixie::Calibration this_calibration = this_det.energy_calibrations_.get(highest_res);
+      Gamma::Calibration this_calibration = this_det.energy_calibrations_.get(highest_res);
       int shift_by = 0;
       if (this_calibration.bits_)
         shift_by = 16 - this_calibration.bits_;
       for (std::size_t j=0; j<trace_length; j++) {
         x[j] = j;
-        y[j] = this_calibration.transform(list_data_->hits[chosen_trace].trace[i][j] >> shift_by);
+        y[j] = this_calibration.transform(list_data_->hits[chosen_trace].trace[j] >> shift_by);
       }
       ui->tracePlot->addGraph();
       ui->tracePlot->graph(actual_graphs)->addData(x, y);
@@ -243,15 +248,15 @@ QVariant TableListData::data(const QModelIndex &index, int role) const
     switch (col) {
     case 0:
       return QString::fromStdString(to_simple_string(mystuff->hits[index.row()].to_posix_time() * time_factor_));
-    case 1:
-      return QVariant::fromValue(QpxPattern(mystuff->hits[index.row()].pattern, false));
+    //case 1:
+      //return QVariant::fromValue(QpxPattern(mystuff->hits[index.row()].pattern, false));
     default:
       int chan = col - 2;
       if (chan < 4) {
         int shiftby = 0;
         if (calibrations_[chan].bits_)
           shiftby = 16 - calibrations_[chan].bits_;
-        double energy = calibrations_[chan].transform(mystuff->hits[row].energy[chan] >> shiftby);
+        double energy = calibrations_[chan].transform(mystuff->hits[row].energy >> shiftby);
         if (energy < 0)
           return "N";  //negative energy looks ugly :(
         else
@@ -295,13 +300,13 @@ void TableListData::eat_list(Pixie::ListData* stuff) {
   if (stuff != nullptr) {
     time_factor_ = stuff->run.time_scale_factor();
     for (int i =0; i < Pixie::kNumChans; i++) {
-      Pixie::Detector thisdet = mystuff->run.p4_state.get_detector(Pixie::Channel(i));
+      Gamma::Detector thisdet = mystuff->run.p4_state.get_detector(Pixie::Channel(i));
       int hi_res = 0;
       for (auto &q : thisdet.energy_calibrations_.my_data_) {
         if (q.bits_ > hi_res)
           hi_res = q.bits_;
       }
-      calibrations_[i] = thisdet.energy_calibrations_.get(Pixie::Calibration(hi_res));
+      calibrations_[i] = thisdet.energy_calibrations_.get(Gamma::Calibration("Energy", hi_res));
     }
   }
 }
@@ -317,4 +322,25 @@ Qt::ItemFlags TableListData::flags(const QModelIndex &index) const
 {
   Qt::ItemFlags myflags = Qt::ItemIsEnabled | Qt::ItemIsSelectable | QAbstractTableModel::flags(index) & ~Qt::ItemIsSelectable;
   return myflags;
+}
+
+void FormListDaq::on_pushListFileSort_clicked()
+{
+  QString fileName = QFileDialog::getOpenFileName(this, "Load list output", data_directory_, "qpx list output manifest (*.txt)");
+  if (!validateFile(this, fileName, false))
+    return;
+
+  PL_INFO << "Reading list output metadata from " << fileName.toStdString();
+  Pixie::Sorter sorter(fileName.toStdString());
+  if (sorter.valid()) {
+    QString fileName2 = CustomSaveFileDialog(this, "Save list output",
+                                             data_directory_, "qpx list output (*.bin)");
+    if (validateFile(this, fileName2, true)) {
+      QFileInfo file(fileName2);
+      if (file.suffix() != "bin")
+        fileName2 += ".bin";
+      PL_INFO << "Writing sorted list data file " << fileName2.toStdString();
+      sorter.order(fileName2.toStdString());
+    }
+  }
 }

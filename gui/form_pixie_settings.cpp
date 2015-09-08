@@ -22,9 +22,10 @@
 
 #include "gui/form_pixie_settings.h"
 #include "ui_form_pixie_settings.h"
+#include "widget_detectors.h"
 #include <QDir>
 
-FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Pixie::Detector>& detectors, QSettings& settings, QWidget *parent) :
+FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Gamma::Detector>& detectors, QSettings& settings, QWidget *parent) :
   QWidget(parent),
   runner_thread_(thread),
   detectors_(detectors),
@@ -78,10 +79,11 @@ void FormPixieSettings::refresh() {
 
 void FormPixieSettings::apply_settings() {
   for (int i =0; i < Pixie::kNumChans; i++)
-    pixie_.settings().set_detector(Pixie::Channel(i), detectors_.get(Pixie::Detector(default_detectors_[i])));
+    pixie_.settings().set_detector(Pixie::Channel(i), detectors_.get(Gamma::Detector(default_detectors_[i])));
 }
 
 void FormPixieSettings::closeEvent(QCloseEvent *event) {
+
   saveSettings();
   event->accept();
 }
@@ -154,7 +156,13 @@ void FormPixieSettings::saveSettings() {
 }
 
 void FormPixieSettings::updateDetChoices() {
-  std::vector<Pixie::Detector> dets = pixie_.settings().get_detectors();
+  std::vector<Gamma::Detector> dets = pixie_.settings().get_detectors();
+  bool all_empty = true;
+  for (auto &q : dets)
+    if (!q.shallow_equals(Gamma::Detector()))
+      all_empty = false;
+  if (all_empty)
+    return;
   default_detectors_.clear();
   for (auto &q : dets)
     default_detectors_.push_back(q.name_);

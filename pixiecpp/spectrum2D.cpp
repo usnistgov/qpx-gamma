@@ -38,7 +38,7 @@ bool Spectrum2D::initialize() {
   
   int adds = 0;
   for (int i=0; i < kNumChans; i++) {
-    if (add_pattern_[i] == 1)
+    if (metadata_.add_pattern[i] == 1)
       adds++;
   }
 
@@ -47,20 +47,51 @@ bool Spectrum2D::initialize() {
     return false;
   }
   
-  resolution_ = pow(2, 16 - shift_by_);
-  dimensions_ = 2;
+  metadata_.resolution = pow(2, 16 - shift_by_);
+  metadata_.dimensions = 2;
   energies_.resize(2);
   pattern_.resize(2, 0);
-  buffered_ = get_attr("buffered");
-  
+  buffered_ = (get_attr("buffered").value != 0);
+
   adds = 0;
   for (int i=0; i < kNumChans; i++) {
-    if (add_pattern_[i] == 1) {
+    if (metadata_.add_pattern[i] == 1) {
       pattern_[adds] = i;
       adds++;
     }
   }
+  metadata_.type = my_type();
   return true;
+}
+
+void Spectrum2D::_set_detectors(const std::vector<Gamma::Detector>& dets) {
+  metadata_.detectors.clear();
+
+  if (dets.size() >= 2) {
+    int total = metadata_.add_pattern.size();
+    if (dets.size() < total)
+      total = dets.size();
+    metadata_.detectors.resize(metadata_.dimensions, Gamma::Detector());
+
+    int j=0;
+    for (int i=0; i < total; ++i) {
+      if (metadata_.add_pattern[i]) {
+        metadata_.detectors[j] = dets[i];
+        j++;
+        if (j >= metadata_.dimensions)
+          j = metadata_.dimensions - 1;
+      }
+    }
+  }
+
+  this->recalc_energies();
+}
+
+void Spectrum2D::_add_bulk(const Entry& e) {
+  if ((e.first.size() == 2) && (e.first[0] < metadata_.resolution) && (e.first[1] < metadata_.resolution)) {
+    spectrum_[std::pair<uint16_t,uint16_t>(e.first[0], e.first[1])] += e.second;
+    metadata_.total_count += e.second;
+  }
 }
 
 uint64_t Spectrum2D::_get_count(std::initializer_list<uint16_t> list) const {
@@ -69,19 +100,22 @@ uint64_t Spectrum2D::_get_count(std::initializer_list<uint16_t> list) const {
 
   std::vector<uint16_t> coords(list.begin(), list.end());
 
-  if ((coords[0] >= resolution_) || (coords[1] >= resolution_))
+  if ((coords[0] >= metadata_.resolution) || (coords[1] >= metadata_.resolution))
     return 0;
   
   std::pair<uint16_t,uint16_t> point(coords[0], coords[1]);
-  //if not empty
-  return spectrum_.at(point);
+
+  if (spectrum_.count(point))
+    return spectrum_.at(point);
+  else
+    return 0;
 }
 
 std::unique_ptr<EntryList> Spectrum2D::_get_spectrum(std::initializer_list<Pair> list) {
   int min0, min1, max0, max1;
   if (list.size() != 2) {
     min0 = min1 = 0;
-    max0 = max1 = resolution_;
+    max0 = max1 = metadata_.resolution;
   } else {
     Pair range0 = *list.begin(), range1 = *(list.begin()+1);
     min0 = range0.first; max0 = range0.second;
@@ -122,36 +156,32 @@ std::unique_ptr<EntryList> Spectrum2D::_get_spectrum(std::initializer_list<Pair>
       boost::this_thread::sleep_for(boost::chrono::seconds{1});
     temp_spectrum_.clear(); //assumption about client
   }
-  PL_DBG << "Making list for " << name_ << " took " << makelist.ms() << "ms filled with "
+  PL_DBG << "Making list for " << metadata_.name << " took " << makelist.ms() << "ms filled with "
          << result->size() << " elements";
   return result;
 }
 
-void Spectrum2D::addHit(const Hit& newEvent, int chan1, int chan2) {
-  uint64_t chan1_en = (newEvent.energy[chan1]) >> shift_by_;
-  uint64_t chan2_en = (newEvent.energy[chan2]) >> shift_by_;
+void Spectrum2D::addEvent(const Event& newEvent) {
+  uint64_t chan1_en = (newEvent.hit[pattern_[0]].energy >> shift_by_);
+  uint64_t chan2_en = (newEvent.hit[pattern_[1]].energy >> shift_by_);
   spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] += 1;
   if (buffered_)
     temp_spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] =
         spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)];
-  if (chan1_en > max_chan_) max_chan_ = chan1_en;
-  if (chan2_en > max_chan_) max_chan_ = chan2_en;
-  count_++;
-}
-
-void Spectrum2D::addHit(const Hit& newHit) {
-  addHit(newHit, pattern_[0], pattern_[1]);
+  if (chan1_en > metadata_.max_chan) metadata_.max_chan = chan1_en;
+  if (chan2_en > metadata_.max_chan) metadata_.max_chan = chan2_en;
+  metadata_.total_count++;
 }
 
 bool Spectrum2D::_write_file(std::string dir, std::string format) const {
   if (format == "m") {
-      write_m(dir + "/" + name_ + ".m");
+      write_m(dir + "/" + metadata_.name + ".m");
       return true;
   } else if (format == "esc") {
-      write_esc(dir + "/" + name_ + ".esc");
+      write_esc(dir + "/" + metadata_.name + ".esc");
       return true;
   } else if (format == "spn") {
-      write_spn(dir + "/" + name_ + ".spn");
+      write_spn(dir + "/" + metadata_.name + ".spn");
       return true;
   } else
       return false;
@@ -171,8 +201,8 @@ void Spectrum2D::write_m(std::string name) const {
   std::ofstream myfile(name, std::ios::out | std::ios::app);
   myfile << "%MCA 2d spectrum from Pixie" << std::endl
          << "%  Bit precision: " << (16-shift_by_) << std::endl
-         << "%  Channels     : " << resolution_ << std::endl
-         << "%  Total events : " << count_ << std::endl
+         << "%  Channels     : " << metadata_.resolution << std::endl
+         << "%  Total events : " << metadata_.total_count << std::endl
          << "clear;" << std::endl;
   for (auto it = spectrum_.begin(); it != spectrum_.end(); ++it)
     myfile << "coinc(" << (it->first.first + 1)
@@ -228,8 +258,8 @@ bool Spectrum2D:: read_esc(std::string name) {
   std::ifstream myfile(name, std::ios::in | std::ios::binary);
 
   spectrum_.clear();
-  count_ = 0;
-//  max_chan_ = 0;
+  metadata_.total_count = 0;
+//  metadata_.max_chan = 0;
 //  uint16_t max_i =0;
 
   float one;
@@ -237,19 +267,19 @@ bool Spectrum2D:: read_esc(std::string name) {
     // actually, i<2055, more junk there, not sure what it is
     for (int j=0; j<2048; ++j) {
       myfile.read ((char*)&one, sizeof(float));
-      count_ += one;
+      metadata_.total_count += one;
       if (one > 0)
         spectrum_[std::pair<uint16_t, uint16_t>(i,j)] = one;
     }
   }
-  bits_ = 11;
+  metadata_.bits = 11;
   shift_by_ = 5;
 
-  detectors_.resize(kNumChans);
-  detectors_[0].name_ = "default";
-  detectors_[0].energy_calibrations_.add(Calibration(bits_));
-  detectors_[1].name_ = "default";
-  detectors_[1].energy_calibrations_.add(Calibration(bits_));
+  metadata_.detectors.resize(2);
+  metadata_.detectors[0].name_ = "unknown1";
+  metadata_.detectors[0].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
+  metadata_.detectors[1].name_ = "unknown2";
+  metadata_.detectors[1].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
   
   init_from_file(name);
 }
@@ -259,41 +289,41 @@ bool Spectrum2D:: read_spn(std::string name) {
   std::ifstream myfile(name, std::ios::in | std::ios::binary);
 
   spectrum_.clear();
-  count_ = 0;
-//  max_chan_ = 0;
+  metadata_.total_count = 0;
+//  metadata_.max_chan = 0;
 //  uint16_t max_i =0;
 
   uint32_t one;
   for (int i=0; i<8192; ++i) {
     for (int j=0; j<8192; ++j) {
       myfile.read ((char*)&one, sizeof(uint32_t));
-      count_ += one;
+      metadata_.total_count += one;
       if (one > 0)
         spectrum_[std::pair<uint16_t, uint16_t>(i,j)] = one;
     }
   }
-  bits_ = 13;
+  metadata_.bits = 13;
   shift_by_ = 3;
 
-  detectors_.resize(kNumChans);
-  detectors_[0].name_ = "default";
-  detectors_[0].energy_calibrations_.add(Calibration(bits_));
-  detectors_[1].name_ = "default";
-  detectors_[1].energy_calibrations_.add(Calibration(bits_));
+  metadata_.detectors.resize(2);
+  metadata_.detectors[0].name_ = "unknown1";
+  metadata_.detectors[0].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
+  metadata_.detectors[1].name_ = "unknown2";
+  metadata_.detectors[1].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
   
   init_from_file(name);
 }
 
 
 void Spectrum2D::init_from_file(std::string filename) { 
-  match_pattern_.resize(kNumChans, 0);
-  add_pattern_.resize(kNumChans, 0);
-  add_pattern_[0] = 1;
-  add_pattern_[1] = 1;
-  name_ = boost::filesystem::path(filename).filename().string();
-  std::replace( name_.begin(), name_.end(), '.', '_');
-  visible_ = true;
-  appearance_ = 4278190335;  //randomize?
+  metadata_.match_pattern.resize(kNumChans, 0);
+  metadata_.add_pattern.resize(kNumChans, 0);
+  metadata_.add_pattern[0] = 1;
+  metadata_.add_pattern[1] = 1;
+  metadata_.name = boost::filesystem::path(filename).filename().string();
+  std::replace( metadata_.name.begin(), metadata_.name.end(), '.', '_');
+  metadata_.visible = true;
+  metadata_.appearance = 4278190335;  //randomize?
   initialize();
   recalc_energies();
 }
@@ -327,7 +357,7 @@ uint16_t Spectrum2D::_channels_from_xml(const std::string& thisData){
   channeldata.str(thisData);
 
   spectrum_.clear();
-  max_chan_ = 0;
+  metadata_.max_chan = 0;
 
   uint64_t i = 0, j = 0, max_i = 0;
   std::string numero, numero_z;
@@ -335,7 +365,7 @@ uint16_t Spectrum2D::_channels_from_xml(const std::string& thisData){
     channeldata >> numero;
     if (numero == "+") {
       channeldata >> numero_z;
-      if (j > max_chan_) max_chan_ = j;
+      if (j > metadata_.max_chan) metadata_.max_chan = j;
       i += boost::lexical_cast<uint64_t>(numero_z);
       j=0;
       if (j) max_i = i;
@@ -347,9 +377,9 @@ uint16_t Spectrum2D::_channels_from_xml(const std::string& thisData){
       j++;
     }
   }
-  if (max_i > max_chan_)
-    max_chan_ = max_i;
-  return max_chan_;
+  if (max_i > metadata_.max_chan)
+    metadata_.max_chan = max_i;
+  return metadata_.max_chan;
 }
 
 }}

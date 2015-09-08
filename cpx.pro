@@ -74,12 +74,16 @@ unix {
    }
 	 
 INCLUDEPATH += pixiecpp \
+               engine \
+               math \
                dependencies \
                dependencies/vme \
                dependencies/xylib \
                dependencies/tinyxml2
 
 SOURCES += cpx.cpp \
+           engine/*.cpp \
+           math/*.cpp \
            dependencies/custom_logger.cpp \
            dependencies/isotope.cpp \
            $$files(dependencies/vme/*.c) \
@@ -89,7 +93,8 @@ SOURCES += cpx.cpp \
 
 HEADERS  += dependencies/custom_logger.h \
             dependencies/isotope.h \
-            $$files(dependencies/vme/*.h) \
+            $$files(engine/*.h) \
+            $$files(math/*.h) \
             $$files(dependencies/tinyxml2/*.h) \
             $$files(dependencies/xylib/*.h) \
             $$files(pixiecpp/*.h)

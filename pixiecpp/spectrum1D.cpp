@@ -33,12 +33,33 @@ namespace Spectrum {
 
 static Registrar<Spectrum1D> registrar("1D");
 
+void Spectrum1D::_set_detectors(const std::vector<Gamma::Detector>& dets) {
+  metadata_.detectors.clear();
+
+  if (dets.size() == 1)
+    metadata_.detectors = dets;
+  if (dets.size() >= 1) {
+    int total = metadata_.add_pattern.size();
+    if (dets.size() < total)
+      total = dets.size();
+    metadata_.detectors.resize(1, Gamma::Detector());
+
+    for (int i=0; i < total; ++i) {
+      if (metadata_.add_pattern[i]) {
+        metadata_.detectors[0] = dets[i];
+      }
+    }
+  }
+
+  this->recalc_energies();
+}
+
 uint64_t Spectrum1D::_get_count(std::initializer_list<uint16_t> list) const {
   if (list.size() != 1)
     return 0;
   
   uint32_t chan = *list.begin();
-  if (chan >= resolution_)
+  if (chan >= metadata_.resolution)
     return 0;
   else
     return spectrum_[chan];
@@ -48,7 +69,7 @@ std::unique_ptr<std::list<Entry>> Spectrum1D::_get_spectrum(std::initializer_lis
   int min, max;
   if (list.size() != 1) {
     min = 0;
-    max = resolution_;
+    max = metadata_.resolution;
   } else {
     Pair range = *list.begin();
     min = range.first;
@@ -68,26 +89,37 @@ std::unique_ptr<std::list<Entry>> Spectrum1D::_get_spectrum(std::initializer_lis
   return result;
 }
 
-void Spectrum1D::addHit(const Hit& newHit, int chan) {
-  uint16_t en = newHit.energy[chan] >> shift_by_;
-  spectrum_[en]++;
-  if (en > max_chan_)
-    max_chan_ = en;
-  count_++;
+void Spectrum1D::_add_bulk(const Entry& e) {
+  int sz = metadata_.add_pattern.size();
+  if (e.first.size() < sz)
+    sz = e.first.size();
+  for (int i = 0; i < sz; ++i)
+    if (metadata_.add_pattern[i] && (e.first[i] < spectrum_.size())) {
+      spectrum_[e.first[i]] += e.second;
+      metadata_.total_count += e.second;
+    }
 }
 
 void Spectrum1D::addHit(const Hit& newHit) {
+  uint16_t en = newHit.energy >> shift_by_;
+  spectrum_[en]++;
+  if (en > metadata_.max_chan)
+    metadata_.max_chan = en;
+  metadata_.total_count++;
+}
+
+void Spectrum1D::addEvent(const Event& newEvent) {
   for (int i = 0; i < kNumChans; i++)
-    if ((add_pattern_[i]) && (newHit.pattern[i]))
-      this->addHit(newHit, i);
+    if ((metadata_.add_pattern[i]) && (newEvent.hit[i].channel > -1))
+      this->addHit(newEvent.hit[i]);
 }
 
 bool Spectrum1D::_write_file(std::string dir, std::string format) const {
   if (format == "tka") {
-    write_tka(dir + "/" + name_ + ".tka");
+    write_tka(dir + "/" + metadata_.name + ".tka");
     return true;
   } else if (format == "n42") {
-    write_n42(dir + "/" + name_ + ".n42");
+    write_n42(dir + "/" + metadata_.name + ".n42");
     return true;
   } else
     return false;
@@ -107,14 +139,15 @@ bool Spectrum1D::_read_file(std::string name, std::string format) {
 }
 
 void Spectrum1D::init_from_file(std::string filename) { 
-  match_pattern_.resize(kNumChans, 0);
-  add_pattern_.resize(kNumChans, 0);
-  match_pattern_[0] = 1;
-  add_pattern_[0] = 1;
-  name_ = boost::filesystem::path(filename).filename().string();
-  std::replace( name_.begin(), name_.end(), '.', '_');
-  visible_ = true;
-  appearance_ = 4278190335;  //randomize?
+  metadata_.match_pattern.resize(kNumChans, 0);
+  metadata_.add_pattern.resize(kNumChans, 0);
+  metadata_.match_pattern[0] = 1;
+  metadata_.add_pattern[0] = 1;
+  metadata_.name = boost::filesystem::path(filename).filename().string();
+  std::replace( metadata_.name.begin(), metadata_.name.end(), '.', '_');
+  metadata_.visible = true;
+  metadata_.appearance = 4278190335;  //randomize?
+
   initialize();
   recalc_energies();
 }
@@ -123,7 +156,7 @@ std::string Spectrum1D::_channels_to_xml() const {
   std::stringstream channeldata;
 
   uint64_t z_count = 0;
-  for (uint32_t i = 0; i < resolution_; i++)
+  for (uint32_t i = 0; i < metadata_.resolution; i++)
     if (spectrum_[i])
       if (z_count == 0)
         channeldata << spectrum_[i] << " ";
@@ -143,7 +176,7 @@ uint16_t Spectrum1D::_channels_from_xml(const std::string& thisData){
   channeldata.str(thisData);
 
   spectrum_.clear();
-  spectrum_.resize(resolution_, 0);
+  spectrum_.resize(metadata_.resolution, 0);
 
   uint64_t i = 0;
   std::string numero, numero_z;
@@ -157,8 +190,8 @@ uint16_t Spectrum1D::_channels_from_xml(const std::string& thisData){
       i++;
     }
   }
-  max_chan_ = i;
-  return max_chan_;
+  metadata_.max_chan = i;
+  return metadata_.max_chan;
 }
 
 
@@ -197,19 +230,19 @@ bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compressio
   if (i == 0)
     return false;
 
-  bits_ = log2(i);
-  if (pow(2, bits_) < i)
-    bits_++;
-  resolution_ = pow(2, bits_);
-  shift_by_ = 16 - bits_;
-  max_chan_ = i;
+  metadata_.bits = log2(i);
+  if (pow(2, metadata_.bits) < i)
+    metadata_.bits++;
+  metadata_.resolution = pow(2, metadata_.bits);
+  shift_by_ = 16 - metadata_.bits;
+  metadata_.max_chan = i;
 
   spectrum_.clear();
-  spectrum_.resize(resolution_, 0);
+  spectrum_.resize(metadata_.resolution, 0);
       
   for (auto &q : entry_list) {
     spectrum_[q.first[0]] = q.second;
-    count_ += q.second;    
+    metadata_.total_count += q.second;
   }
 
   return true;
@@ -233,7 +266,7 @@ bool Spectrum1D::read_cnf(std::string name) {
       if (key.substr(0, 12) == "energy calib")
         calibration.push_back(boost::lexical_cast<double>(value));
       if (key == "description")
-        description_ = value;
+        metadata_.description = value;
       if (key == "date and time") {
         std::stringstream iss;
         iss.str(value);
@@ -242,32 +275,32 @@ bool Spectrum1D::read_cnf(std::string name) {
         boost::posix_time::time_input_facet
             *tif(new boost::posix_time::time_input_facet("%Y-%m-%d %H:%M:%S"));
         iss.imbue(std::locale(std::locale::classic(), tif));
-        iss >> start_time_;
+        iss >> metadata_.start_time;
       }
       if (key == "real time (s)")
-        real_time_ = boost::posix_time::duration_from_string(value);
+        metadata_.real_time = boost::posix_time::duration_from_string(value);
       if (key == "live time (s)")
-        live_time_ = boost::posix_time::duration_from_string(value);
+        metadata_.live_time = boost::posix_time::duration_from_string(value);
     }
      
     PL_INFO << "block " << i
             << " has " << newdata->get_block(i)->get_column_count() << " columns"
             << " and " << newdata->get_block(i)->get_point_count() << " points";
 
-    resolution_ = newdata->get_block(i)->get_point_count();
-    bits_ = log2(resolution_);
-    if (pow(2, bits_) < resolution_)
-      bits_++;
-    //resolution_ = pow(2, bits_);
-    spectrum_.resize(resolution_, 0);
-    shift_by_ = 16 - bits_;
+    metadata_.resolution = newdata->get_block(i)->get_point_count();
+    metadata_.bits = log2(metadata_.resolution);
+    if (pow(2, metadata_.bits) < metadata_.resolution)
+      metadata_.bits++;
+    //metadata_.resolution = pow(2, metadata_.bits);
+    spectrum_.resize(metadata_.resolution, 0);
+    shift_by_ = 16 - metadata_.bits;
 
-    detectors_.resize(kNumChans);
-    detectors_[0] = Detector();
-    detectors_[0].name_ = "default";
-    Calibration new_calib(bits_);
+    metadata_.detectors.resize(1);
+    metadata_.detectors[0] = Gamma::Detector();
+    metadata_.detectors[0].name_ = "unknown";
+    Gamma::Calibration new_calib("Energy", metadata_.bits);
     new_calib.coefficients_ = calibration;
-    detectors_[0].energy_calibrations_.add(new_calib);
+    metadata_.detectors[0].energy_calibrations_.add(new_calib);
     
     double tempcount = 0.0;
     for (int j = 0; j < newdata->get_block(i)->get_column_count(); j++) {
@@ -281,7 +314,7 @@ bool Spectrum1D::read_cnf(std::string name) {
       }
       //PL_DBG << "column " << blab.str();
     }
-    count_ = tempcount;
+    metadata_.total_count = tempcount;
     //PL_INFO << "total count " << tempcount;
 
   }
@@ -300,18 +333,18 @@ bool Spectrum1D::read_tka(std::string name) {
   
   myfile >> data;
   timed = boost::lexical_cast<double>(trim_copy(data)) * 1000.0;
-  live_time_ = boost::posix_time::milliseconds(timed);
+  metadata_.live_time = boost::posix_time::milliseconds(timed);
   myfile >> data;
   timed = boost::lexical_cast<double>(trim_copy(data)) * 1000.0;
-  real_time_ = boost::posix_time::milliseconds(timed);
+  metadata_.real_time = boost::posix_time::milliseconds(timed);
   int i = 0;
 
   if(!this->channels_from_string(myfile, false))
     return false;
 
-  detectors_.resize(kNumChans);
-  detectors_[0] = Detector();
-  detectors_[0].name_ = "default";
+  metadata_.detectors.resize(1);
+  metadata_.detectors[0] = Gamma::Detector();
+  metadata_.detectors[0].name_ = "unknown";
   
   init_from_file(name);
 
@@ -353,7 +386,7 @@ bool Spectrum1D::read_n42(std::string name) {
   if (branch != nullptr) {
     iss << branch->GetText();
     iss.imbue(std::locale(std::locale::classic(), tif));
-    iss >> start_time_;
+    iss >> metadata_.start_time;
   }
 
   branch = root->FirstChildElement("RealTime");
@@ -363,7 +396,7 @@ bool Spectrum1D::read_n42(std::string name) {
     if (rt_str.size() > 3)
       rt_str = rt_str.substr(2, rt_str.size()-3); //to trim PTnnnS to nnn
     double rt_ms = boost::lexical_cast<double>(rt_str) * 1000.0;
-    real_time_ = boost::posix_time::milliseconds(rt_ms);
+    metadata_.real_time = boost::posix_time::milliseconds(rt_ms);
   }
 
   branch = root->FirstChildElement("LiveTime");
@@ -373,7 +406,7 @@ bool Spectrum1D::read_n42(std::string name) {
     if (lt_str.size() > 3)
       lt_str = lt_str.substr(2, lt_str.size()-3); //to trim PTnnnS to nnn
     double lt_ms = boost::lexical_cast<double>(lt_str) * 1000.0;
-    live_time_ = boost::posix_time::milliseconds(lt_ms);
+    metadata_.live_time = boost::posix_time::milliseconds(lt_ms);
   }
 
   if ((branch = root->FirstChildElement("ChannelData")) == nullptr) {
@@ -389,8 +422,8 @@ bool Spectrum1D::read_n42(std::string name) {
 
   if (this->channels_from_string(channeldata, true)) {//assume compressed
 
-    Detector newdet;
-    newdet.name_ = "default";
+    Gamma::Detector newdet;
+    newdet.name_ = "unknown";
     if (root->Attribute("Detector"))
       newdet.name_ = std::string(root->Attribute("Detector"));
   
@@ -400,13 +433,13 @@ bool Spectrum1D::read_n42(std::string name) {
 
     branch = root->FirstChildElement("Calibration");
     if (branch != nullptr) {
-      Calibration newcalib(bits_);
+      Gamma::Calibration newcalib("Energy", metadata_.bits);
       newcalib.from_xml(branch);
       newdet.energy_calibrations_.add(newcalib);
     }
 
-    detectors_.resize(kNumChans);
-    detectors_[0] = newdet;
+    metadata_.detectors.resize(1);
+    metadata_.detectors[0] = newdet;
 
     fclose(myfile);
 
@@ -453,19 +486,19 @@ bool Spectrum1D::read_ava(std::string name) {
       day = "0" + day; 
     std::string inp = year + "-" + month + "-" + day + " " + time;
     iss.str(inp);  
-    iss >> start_time_;
+    iss >> metadata_.start_time;
   }
 
   std::string RealTime(branch->Attribute("elapsed_real")); boost::algorithm::trim(RealTime);
   if (!RealTime.empty()) {
     double rt_ms = boost::lexical_cast<double>(RealTime) * 1000.0;
-    real_time_ = boost::posix_time::milliseconds(rt_ms);
+    metadata_.real_time = boost::posix_time::milliseconds(rt_ms);
   }
 
   std::string LiveTime(branch->Attribute("elapsed_live")); boost::algorithm::trim(LiveTime);
   if (!LiveTime.empty()) {
     double lt_ms = boost::lexical_cast<double>(LiveTime) * 1000.0;
-    live_time_ = boost::posix_time::milliseconds(lt_ms);
+    metadata_.live_time = boost::posix_time::milliseconds(lt_ms);
   }
 
   std::string this_data = branch->GetText();
@@ -483,11 +516,11 @@ bool Spectrum1D::read_ava(std::string name) {
   while ((branch != nullptr) && (std::string(branch->Attribute("type")) != "energy"))
     branch = dynamic_cast<tinyxml2::XMLElement*>(branch->NextSibling());
 
-  Detector newdet; Calibration newcalib(bits_);
+  Gamma::Detector newdet; Gamma::Calibration newcalib("Energy", metadata_.bits);
   if ((branch != nullptr) &&
       ((branch = branch->FirstChildElement("model")) != nullptr)) {
     if (std::string(branch->Attribute("type")) == "polynomial")
-      newcalib.model_ = CalibrationModel::polynomial;
+      newcalib.model_ = Gamma::CalibrationModel::polynomial;
     std::vector<double> encalib;
     branch = branch->FirstChildElement("coefficient");
     while ((branch != nullptr) && (branch->Attribute("value")) != nullptr) {
@@ -500,10 +533,10 @@ bool Spectrum1D::read_ava(std::string name) {
     newcalib.units_ = "keV";
     newcalib.type_ = "Energy";
     newdet.energy_calibrations_.add(newcalib);
-    newdet.name_ = "default";
+    newdet.name_ = "unknown";
   }
-  detectors_.resize(kNumChans);
-  detectors_[0] = newdet;
+  metadata_.detectors.resize(1);
+  metadata_.detectors[0] = newdet;
 
   fclose(myfile);
   
@@ -513,12 +546,12 @@ bool Spectrum1D::read_ava(std::string name) {
 }
 
 void Spectrum1D::write_tka(std::string name) const {
-  uint32_t range = (resolution_ - 2);
+  uint32_t range = (metadata_.resolution - 2);
   std::ofstream myfile(name, std::ios::out | std::ios::app);
   //  myfile.precision(2);
   //  myfile << std::fixed;
-  myfile << (live_time_.total_milliseconds() * 0.001) << std::endl
-         << (real_time_.total_milliseconds() * 0.001) << std::endl;
+  myfile << (metadata_.live_time.total_milliseconds() * 0.001) << std::endl
+         << (metadata_.real_time.total_milliseconds() * 0.001) << std::endl;
       
   for (uint32_t i = 0; i < range; i++)
     myfile << spectrum_[i] << std::endl;
@@ -536,18 +569,12 @@ void Spectrum1D::write_n42(std::string name) const {
   printer.PushDeclaration(newDoc.NewDeclaration()->Value());
 
   std::stringstream durationdata;
-  int myDetector = -1;
-  for (int i = 0; i < kNumChans; i++)
-    if (add_pattern_[i] == 1)
-      myDetector = i;
-  Calibration myCalibration(0);
-  if (myDetector != -1) {
-    if (detectors_[myDetector].energy_calibrations_.has_a(Calibration(bits_)))
-      myCalibration = detectors_[myDetector].energy_calibrations_.get(Calibration(bits_));
-    else if ((detectors_[myDetector].energy_calibrations_.size() == 1) &&
-             (detectors_[myDetector].energy_calibrations_.get(0).units_ != "channels"))
-      myCalibration = detectors_[myDetector].energy_calibrations_.get(0);
-  }
+  Gamma::Calibration myCalibration;
+  if (metadata_.detectors[0].energy_calibrations_.has_a(Gamma::Calibration("Energy", metadata_.bits)))
+    myCalibration = metadata_.detectors[0].energy_calibrations_.get(Gamma::Calibration("Energy", metadata_.bits));
+  else if ((metadata_.detectors[0].energy_calibrations_.size() == 1) &&
+           (metadata_.detectors[0].energy_calibrations_.get(0).units_ != "channels"))
+    myCalibration = metadata_.detectors[0].energy_calibrations_.get(0);
   
   printer.OpenElement("N42InstrumentData");
   printer.PushAttribute("xmlns",
@@ -559,39 +586,37 @@ void Spectrum1D::write_n42(std::string name) const {
   printer.OpenElement("Measurement");
   printer.OpenElement("Spectrum");
   printer.PushAttribute("Type","PHA");
-  if ((myDetector > -1) &&
-      (myCalibration.units_ != "channels")) {
-    printer.PushAttribute("Detector", detectors_[myDetector].name_.c_str());
+  if (myCalibration.units_ != "channels") {
+    printer.PushAttribute("Detector", metadata_.detectors[0].name_.c_str());
     printer.OpenElement("DetectorType");
-    printer.PushText(detectors_[myDetector].type_.c_str());
+    printer.PushText(metadata_.detectors[0].type_.c_str());
     printer.CloseElement();
   }
 
   
   printer.OpenElement("StartTime");
-  durationdata << to_iso_extended_string(start_time_) << "-5:00"; //fix this hack
+  durationdata << to_iso_extended_string(metadata_.start_time) << "-5:00"; //fix this hack
   printer.PushText(durationdata.str().c_str());
   printer.CloseElement();
       
   durationdata.str(std::string()); //clear it
   printer.OpenElement("RealTime");
-  durationdata << "PT" << (real_time_.total_milliseconds() * 0.001) << "S";
+  durationdata << "PT" << (metadata_.real_time.total_milliseconds() * 0.001) << "S";
   printer.PushText(durationdata.str().c_str());
   printer.CloseElement();
 
   durationdata.str(std::string()); //clear it
   printer.OpenElement("LiveTime");
-  durationdata << "PT" << (live_time_.total_milliseconds() * 0.001) << "S";
+  durationdata << "PT" << (metadata_.live_time.total_milliseconds() * 0.001) << "S";
   printer.PushText(durationdata.str().c_str());
   printer.CloseElement();
 
-  if ((myDetector > -1) &&
-      (myCalibration.units_ != "channels"))
+  if (myCalibration.units_ != "channels")
     myCalibration.to_xml(printer);    
 
   printer.OpenElement("ChannelData");
   printer.PushAttribute("Compression", "CountedZeroes");
-  if ((resolution_ > 0) && (count_ > 0))
+  if ((metadata_.resolution > 0) && (metadata_.total_count > 0))
     printer.PushText(this->_channels_to_xml().c_str());
   printer.CloseElement();
 

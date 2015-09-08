@@ -107,9 +107,14 @@ public:
   void replace(T t) {
     if (t == T())
       return;
+    bool replaced = false;
     for (auto &q : my_data_)
-      if (q.shallow_equals(t))
+      if (q.shallow_equals(t)) {
+        replaced = true;
         q = t;
+      }
+    if (!replaced)
+      my_data_.push_back(t);
   }
  
   void remove(const T &t) {  //using deep compare

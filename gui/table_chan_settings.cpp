@@ -23,7 +23,7 @@
 
 #include "table_chan_settings.h"
 
-Q_DECLARE_METATYPE(Pixie::Detector)
+Q_DECLARE_METATYPE(Gamma::Detector)
 Q_DECLARE_METATYPE(Pixie::Setting)
 
 

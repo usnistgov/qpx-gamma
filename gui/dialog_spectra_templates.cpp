@@ -27,7 +27,6 @@
 #include "ui_dialog_spectrum_template.h"
 #include <QFileDialog>
 #include <QMessageBox>
-#include <boost/algorithm/string.hpp>
 
 DialogSpectrumTemplate::DialogSpectrumTemplate(Pixie::Spectrum::Template newTemplate, bool edit, QWidget *parent) :
   QDialog(parent),
@@ -39,23 +38,27 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Pixie::Spectrum::Template newTemp
   ui->colPicker->setStandardColors();
   connect(ui->colPicker, SIGNAL(colorChanged(QColor)), this, SLOT(colorChanged(QColor)));
 
+  QRegExp rx("^\\w*$");
+  QValidator *validator = new QRegExpValidator(rx, this);
+  ui->lineName->setValidator(validator);
+
   if (edit) {
     myTemplate = newTemplate;
     ui->lineName->setEnabled(false);
     ui->comboType->setEnabled(false);
-    Pixie::Spectrum::Template *newtemp = Pixie::Spectrum::Factory::getInstance().create_template(ui->comboType->currentText().toStdString());
+    Pixie::Spectrum::Template *newtemp = Pixie::Spectrum::Factory::getInstance().create_template(newTemplate.type);
     if (newtemp != nullptr) {
       myTemplate.description = newtemp->description;
       myTemplate.input_types = newtemp->input_types;
       myTemplate.output_types = newtemp->output_types;
     } else
-      PL_WARN << "Problem with spectrum type. Factory refuses to make template for " << ui->comboType->currentText().toStdString();
+      PL_WARN << "Problem with spectrum type. Factory cannot make template for " << newTemplate.type;
   } else {
     Pixie::Spectrum::Template *newtemp = Pixie::Spectrum::Factory::getInstance().create_template(ui->comboType->currentText().toStdString());
     if (newtemp != nullptr) {
       myTemplate = *newtemp;
     } else
-      PL_WARN << "Problem with spectrum type. Factory refuses to make template for " << ui->comboType->currentText().toStdString();
+      PL_WARN << "Problem with spectrum type. Factory cannot make template for " << ui->comboType->currentText().toStdString();
     myTemplate.appearance = generateColor().rgba();
   }
 
@@ -77,7 +80,6 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Pixie::Spectrum::Template newTemp
 void DialogSpectrumTemplate::updateData() {
 
   ui->lineName->setText(QString::fromStdString(myTemplate.name_));
-  ui->lineName->setCursorPosition(0);
   ui->comboType->setCurrentText(QString::fromStdString(myTemplate.type));
   ui->checkBox->setChecked(myTemplate.visible);
   ui->spinBits->setValue(myTemplate.bits);
@@ -143,7 +145,7 @@ void DialogSpectrumTemplate::on_buttonBox_rejected()
 
 void DialogSpectrumTemplate::on_lineName_editingFinished()
 {
-  myTemplate.name_ = boost::algorithm::trim_copy(ui->lineName->text().toStdString());
+  myTemplate.name_ = ui->lineName->text().toStdString();
 }
 
 void DialogSpectrumTemplate::on_checkBox_clicked()
@@ -171,7 +173,7 @@ void DialogSpectrumTemplate::on_comboType_activated(const QString &arg1)
     //keep these from previous
     myTemplate.visible = ui->checkBox->isChecked();
     myTemplate.bits = ui->spinBits->value();
-    myTemplate.name_ = boost::algorithm::trim_copy(ui->lineName->text().toStdString());
+    myTemplate.name_ = ui->lineName->text().toStdString();
     myTemplate.appearance = ui->colPicker->currentColor().rgba();
     updateData();
   } else
@@ -370,8 +372,8 @@ void DialogSpectraTemplates::on_pushImport_clicked()
 
 void DialogSpectraTemplates::on_pushExport_clicked()
 {
-  QString fileName = QFileDialog::getSaveFileName(this, "Save template spectra",
-                                                  root_dir_, "Template set (*.tem)");
+  QString fileName = CustomSaveFileDialog(this, "Save template spectra",
+                                          root_dir_, "Template set (*.tem)");
   if (validateFile(this, fileName, true)) {
     QFileInfo file(fileName);
     if (file.suffix() != "tem")

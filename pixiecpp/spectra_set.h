@@ -48,9 +48,11 @@ class SpectraSet {
   void add_spectrum(Spectrum::Spectrum* newSpectrum);
   void read_xml(std::string file_name, bool with_spectra = true);
   void write_xml(std::string file_name);
+  void delete_spectrum(std::string name);
 
   //acquisition feeds events to all spectra
   void add_spill(Spill* one_spill);
+  void closeAcquisition();
 
   //status inquiry
   bool wait_ready(); //wait for cond variable
@@ -59,13 +61,14 @@ class SpectraSet {
 
   //report on contents
   std::vector<std::string> types() const;
-  std::list<uint32_t>      resolutions(uint16_t dim) const;
+  std::set<uint32_t>      resolutions(uint16_t dim) const;
   std::string status() const {
     boost::unique_lock<boost::mutex> lock(mutex_); return status_;
   }
   RunInfo runInfo() const {
     boost::unique_lock<boost::mutex> lock(mutex_); return run_info_;
   }
+  void setRunInfo(const RunInfo &);
   
   //get spectra -- may not be thread-safe
   Spectrum::Spectrum* by_name(std::string name);

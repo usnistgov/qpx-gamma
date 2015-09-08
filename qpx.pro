@@ -23,7 +23,7 @@
 TARGET   = qpx
 TEMPLATE = app
 
-CONFIG += qt debug_and_release c++11
+CONFIG += qt debug_and_release c++11 static
 
 INSTALLS += target icon desktop
 
@@ -103,7 +103,10 @@ win32 {
 	   }	
 
 
-INCLUDEPATH += pixiecpp gui \
+INCLUDEPATH += engine \
+               math \
+               pixiecpp \
+               gui \
                dependencies \
                dependencies/vme \
                dependencies/xylib \
@@ -123,7 +126,9 @@ SOURCES += $$files(dependencies/*.cpp) \
            $$files(dependencies/fityk/swig/*.cpp) \
            $$files(dependencies/fityk/cmpfit/*.c) \
            $$files(pixiecpp/*.cpp) \
-           $$files(gui/*.cpp)
+           $$files(gui/*.cpp) \
+           $$files(engine/*.cpp) \
+           $$files(math/*.cpp)
 
 HEADERS  += $$files(dependencies/*.h) \
             $$files(dependencies/vme/*.h) \
@@ -131,9 +136,11 @@ HEADERS  += $$files(dependencies/*.h) \
             $$files(dependencies/qtcolorpicker/*.h) \
             $$files(dependencies/tinyxml2/*.h) \
             $$files(dependencies/xylib/*.h) \
-            $$files(dependencies/fityk/*.cpp) \
+            $$files(dependencies/fityk/*.h) \
             $$files(pixiecpp/*.h) \
-            $$files(gui/*.h)
+            $$files(gui/*.h) \
+            $$files(engine/*.h) \
+            $$files(math/*.h)
 
 FORMS   += $$files(forms/*.ui)
 

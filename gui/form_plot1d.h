@@ -41,6 +41,7 @@ public:
   ~FormPlot1D();
 
   void setSpectra(Pixie::SpectraSet& new_set);
+  void updateUI();
 
   void update_plot();
 
@@ -57,12 +58,14 @@ public slots:
 
 signals:
   void marker_set(Marker n);
-  void requestCalibration(QString);
+  void requestAnalysis(QString);
 
 private slots:
   void on_comboResolution_currentIndexChanged(int index);
   void spectrumDetails();
   void spectrumDetailsClosed(bool);
+  void spectrumDetailsDelete();
+
   void spectraLooksChanged();
 
   void addMovingMarker(double);
@@ -71,7 +74,7 @@ private slots:
 
   void on_pushFullInfo_clicked();
 
-  void on_pushCalibrate_clicked();
+  void on_pushAnalyse_clicked();
 
 
   void on_pushShowAll_clicked();
@@ -83,7 +86,7 @@ private:
   Ui::FormPlot1D *ui;
 
   int bits;
-  Pixie::Calibration calib_;
+  Gamma::Calibration calib_;
 
   Pixie::SpectraSet *mySpectra;
 

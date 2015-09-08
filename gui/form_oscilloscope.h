@@ -24,7 +24,9 @@
 #define FORM_OSCILlOSCOPE_H
 
 #include <QWidget>
+#include <QSettings>
 #include "thread_runner.h"
+#include "widget_plot1d.h"
 
 namespace Ui {
 class FormOscilloscope;
@@ -35,24 +37,42 @@ class FormOscilloscope : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormOscilloscope(ThreadRunner&, QWidget *parent = 0);
+  explicit FormOscilloscope(ThreadRunner&, QSettings&, QWidget *parent = 0);
+  double xdt();
   ~FormOscilloscope();
 
 signals:
   void toggleIO(bool);
   void statusText(QString);
 
+protected:
+  void closeEvent(QCloseEvent*);
+
 private slots:
   void on_pushOscilRefresh_clicked();
   void on_pushOscilBaselines_clicked();
   void on_pushOscilOffsets_clicked();
-  void oscil_complete(QList<QVector<double>>*);
+  void oscil_complete(QList<QVector<double>>*, QString);
 
   void toggle_push(bool enable, Pixie::LiveStatus live);
 
+  void on_doubleSpinXDT_editingFinished();
+  void chansChosen(QAction*);
+  void dets_updated();
+
 private:
+  void updateMenu();
+
   Ui::FormOscilloscope *ui;
   ThreadRunner &runner_thread_;
+
+  QMenu menuDetsSelected;
+  std::vector<int> det_on_;
+  QSettings &settings_;
+
+  void loadSettings();
+  void saveSettings();
+
 };
 
 #endif // FORM_OSCILlOSCOPE_H

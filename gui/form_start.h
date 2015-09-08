@@ -30,6 +30,8 @@
 #include "thread_runner.h"
 #include "form_pixie_settings.h"
 #include "form_bootup.h"
+#include "form_oscilloscope.h"
+
 
 namespace Ui {
 class FormStart;
@@ -40,7 +42,7 @@ class FormStart : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Pixie::Detector> &detectors, QWidget *parent = 0);
+  explicit FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector> &detectors, QWidget *parent = 0);
   void exit();
   ~FormStart();
 
@@ -71,12 +73,13 @@ private:
   //reference to pixie singleton
   Pixie::Wrapper& pixie_;
 
-  XMLableDB<Pixie::Detector>  &detectors_;
+  XMLableDB<Gamma::Detector>  &detectors_;
 
   ThreadRunner        &runner_thread_;
 
   FormPixieSettings*  formPixieSettings;
   FormBootup*         formBootup;
+  FormOscilloscope*   formOscilloscope;
 
   bool exiting;
 

@@ -20,13 +20,14 @@
 #define Q_SQUARE_CP_H
 
 #include "qcustomplot.h"
+#include "draggable_tracer.h"
 #include <QWidget>
 
 class QSquareCustomPlot : public QCustomPlot
 {
   Q_OBJECT
 public:
-  explicit QSquareCustomPlot(QWidget *parent = 0) : QCustomPlot(parent), square(false) {}
+  explicit QSquareCustomPlot(QWidget *parent = 0) : QCustomPlot(parent), square(false), under_mouse_(nullptr) {}
 
   void setAlwaysSquare(bool sq);
 
@@ -34,16 +35,23 @@ public:
 
 signals:
   void mouse_upon(double x, double y);
-  void mouse_clicked(double x, double y, QMouseEvent* e, bool channels);
+  void mouse_clicked(double x, double y, QMouseEvent* e, bool on_item); //why on_item?
+  void shiftStateChanged(bool);
 
 protected:
+  void mousePressEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
   void mouseMoveEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
   void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
   void resizeEvent(QResizeEvent * event);
 
+  void keyPressEvent(QKeyEvent*) Q_DECL_OVERRIDE;
+  void keyReleaseEvent(QKeyEvent*) Q_DECL_OVERRIDE;
+
+
 private:
   mutable int lastHeight;
   bool square;
+  DraggableTracer *under_mouse_;
 
 };
 

@@ -21,7 +21,16 @@
 #ifndef QPX_UTIL_H_
 #define QPX_UTIL_H_
 #include <QWidget>
+#include <QFileDialog>
 #include <boost/date_time.hpp>
+
+
+//  Modified FileDialog by Dave Mateer
+//  http://stackoverflow.com/users/183339/dave-mateer
+QString CustomSaveFileDialog(QWidget *parent,
+                           const QString &title,
+                           const QString &directory,
+                           const QString &filter);
 
 bool validateFile(QWidget* parent, QString, bool);
 QColor generateColor();

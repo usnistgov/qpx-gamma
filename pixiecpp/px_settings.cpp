@@ -262,15 +262,15 @@ bool Settings::write_detector(const Setting &set) {
   if ((set.index < 0) || (set.index >= detectors_.size()))
     return true; //should be false
 
-  if (detector_db_.has_a(Detector(set.value_text)))
-    detectors_[set.index] = detector_db_.get(Detector(set.value_text));
+  if (detector_db_.has_a(Gamma::Detector(set.value_text)))
+    detectors_[set.index] = detector_db_.get(Gamma::Detector(set.value_text));
   else
-    detectors_[set.index] = Detector(set.value_text);
+    detectors_[set.index] = Gamma::Detector(set.value_text);
 
   return true;
 }
 
-void Settings::to_xml(tinyxml2::XMLPrinter& printer) {
+void Settings::to_xml(tinyxml2::XMLPrinter& printer) const {
   printer.OpenElement("PixieSettings");
   settings_tree_.to_xml(printer);
   printer.CloseElement(); //Settings
@@ -295,16 +295,16 @@ Settings::Settings(tinyxml2::XMLElement* root):
   from_xml(root);
 }
 
-void Settings::set_detector_DB(XMLableDB<Detector> newdb) {
+void Settings::set_detector_DB(XMLableDB<Gamma::Detector> newdb) {
   detector_db_ = newdb;
   write_settings_bulk();
 }
 
-Detector Settings::get_detector(Channel ch) const {
-  return Detector();
+Gamma::Detector Settings::get_detector(Channel ch) const {
+  return Gamma::Detector();
 }
 
-void Settings::set_detector(Channel ch, const Detector& det) {
+void Settings::set_detector(Channel ch, const Gamma::Detector& det) {
 }
 
 void Settings::save_optimization(Channel chan) {

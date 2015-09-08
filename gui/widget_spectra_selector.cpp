@@ -34,7 +34,7 @@ QpxSpectraWidget::QpxSpectraWidget(QWidget *parent)
   setMouseTracking(true);
   setAutoFillBackground(true);
   max_wide = 3; //make this a parameter
-  rect_w_ = 100;
+  rect_w_ = 140;
   rect_h_ = 20;
   border = 3;
   selected_ = -1;
@@ -50,10 +50,14 @@ void QpxSpectraWidget::setQpxSpectra(Pixie::SpectraSet &newset, int dim, int res
   my_spectra_.clear();
 
   for (auto &q : all_spectra_->spectra(dim, res)) {
+    Pixie::Spectrum::Metadata md;
+    if (q)
+      md = q->metadata();
+
     SpectrumAvatar new_spectrum;
-    new_spectrum.name = QString::fromStdString(q->name());
-    new_spectrum.color = QColor::fromRgba(q->appearance());
-    new_spectrum.selected = q->visible();
+    new_spectrum.name = QString::fromStdString(md.name);
+    new_spectrum.color = QColor::fromRgba(md.appearance);
+    new_spectrum.selected = md.visible;
     my_spectra_.push_back(new_spectrum);
   }
 
@@ -71,7 +75,7 @@ void QpxSpectraWidget::update_looks() {
   for (auto &q : my_spectra_) {
     Pixie::Spectrum::Spectrum *someSpectrum = all_spectra_->by_name(q.name.toStdString());
     if (someSpectrum != nullptr)
-      q.color = QColor::fromRgba(someSpectrum->appearance());
+      q.color = QColor::fromRgba(someSpectrum->metadata().appearance);
   }
   update();
 }
