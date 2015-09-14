@@ -29,7 +29,7 @@ class TableSpectrumAttrs : public QAbstractTableModel
 {
     Q_OBJECT
 private:
-    std::vector<Pixie::Setting> *generic_attributes;
+    std::vector<Gamma::Setting> *generic_attributes;
 
 public:
     TableSpectrumAttrs(QObject *parent = 0);
@@ -40,7 +40,7 @@ public:
     Qt::ItemFlags flags(const QModelIndex & index) const;
     bool setData(const QModelIndex & index, const QVariant & value, int role);
 
-    void eat(std::vector<Pixie::Setting> *generic_attr);
+    void eat(std::vector<Gamma::Setting> *generic_attr);
     void update();
 };
 

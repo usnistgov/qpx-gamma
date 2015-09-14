@@ -175,8 +175,8 @@ void FormOscilloscope::oscil_complete(QList<QVector<double>>* plot_data, QString
   ui->widgetPlot->setLabels("time (\u03BCs)", "energy (" + unit + ")");
   ui->widgetPlot->setYBounds(minima, maxima);
 
-  ui->doubleSpinXDT->setValue((*plot_data->begin())[1]);
-
+  if (!(*plot_data->begin()).empty())
+    ui->doubleSpinXDT->setValue((*plot_data->begin())[1]);
 
   ui->widgetPlot->rescale();
   ui->widgetPlot->redraw();

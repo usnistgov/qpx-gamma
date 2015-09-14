@@ -79,7 +79,7 @@ private:
 
     Pixie::Spectrum::Metadata md_;
 
-    std::vector<Pixie::Setting> attributes_;
+    std::vector<Gamma::Setting> attributes_;
     bool changed_;
 
     void updateData();

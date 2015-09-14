@@ -105,7 +105,7 @@ void Template::from_xml(tinyxml2::XMLElement* root) {
   if ((elem = root->FirstChildElement("GenericAttributes")) != nullptr) {
     tinyxml2::XMLElement* one_setting = elem->FirstChildElement("Setting");
     while (one_setting != nullptr) {
-      generic_attributes.push_back(Setting(one_setting));
+      generic_attributes.push_back(Gamma::Setting(one_setting));
       one_setting = dynamic_cast<tinyxml2::XMLElement*>(one_setting->NextSibling());
     }
   }

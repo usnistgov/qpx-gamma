@@ -62,18 +62,18 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
                                           const QModelIndex &index) const
 
 {
-  if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
-    Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
-    if (set.setting_type == Pixie::SettingType::floating) {
+  if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
+    Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+    if (set.setting_type == Gamma::SettingType::floating) {
       QDoubleSpinBox *editor = new QDoubleSpinBox(parent);
       return editor;
-    } else if (set.setting_type == Pixie::SettingType::integer) {
+    } else if (set.setting_type == Gamma::SettingType::integer) {
       QSpinBox *editor = new QSpinBox(parent);
       return editor;
-    } else if (set.setting_type == Pixie::SettingType::text) {
+    } else if (set.setting_type == Gamma::SettingType::text) {
       QLineEdit *editor = new QLineEdit(parent);
       return editor;
-    } else if (set.setting_type == Pixie::SettingType::detector) {
+    } else if (set.setting_type == Gamma::SettingType::detector) {
       QComboBox *editor = new QComboBox(parent);
       editor->addItem(QString("none"), QString("none"));
       for (int i=0; i < detectors_.size(); i++) {
@@ -81,10 +81,10 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
         editor->addItem(name, name);
       }
       return editor;
-    } else if (set.setting_type == Pixie::SettingType::boolean) {
+    } else if (set.setting_type == Gamma::SettingType::boolean) {
       QCheckBox *editor = new QCheckBox(parent);
       return editor;
-    } else if (set.setting_type == Pixie::SettingType::int_menu) {
+    } else if (set.setting_type == Gamma::SettingType::int_menu) {
       QComboBox *editor = new QComboBox(parent);
       for (auto &q : set.int_menu_items)
         editor->addItem(QString::fromStdString(q.second), QVariant::fromValue(q.first));
@@ -103,9 +103,9 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
 void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &index ) const
 {
   if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
-      Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
-      if (set.setting_type == Pixie::SettingType::detector) {
+    if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
+      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+      if (set.setting_type == Gamma::SettingType::detector) {
         int cbIndex = cb->findText(QString::fromStdString(set.value_text));
         if(cbIndex >= 0)
           cb->setCurrentIndex(cbIndex);
@@ -116,8 +116,8 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
       }
     }
   } else if (QDoubleSpinBox *sb = qobject_cast<QDoubleSpinBox *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
-      Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
+    if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
+      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
       sb->setDecimals(6); //generalize
       sb->setRange(set.minimum, set.maximum);
       sb->setSingleStep(set.step);
@@ -125,22 +125,22 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
     } else
       sb->setValue(index.data(Qt::EditRole).toDouble());
   } else if (QSpinBox *sb = qobject_cast<QSpinBox *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
-      Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
+    if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
+      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
       sb->setRange(static_cast<int64_t>(set.minimum), static_cast<int64_t>(set.maximum));
       sb->setSingleStep(static_cast<int64_t>(set.step));
       sb->setValue(static_cast<int64_t>(set.value_int));
     } else
       sb->setValue(index.data(Qt::EditRole).toInt());
   } else if (QLineEdit *le = qobject_cast<QLineEdit *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
-      Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
+    if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
+      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
       le->setText(QString::fromStdString(set.value_text));
     } else
       le->setText(index.data(Qt::EditRole).toString());
   } else if (QCheckBox *cb = qobject_cast<QCheckBox *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
-      Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
+    if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
+      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
       cb->setChecked(set.value_int);
     } else
       cb->setChecked(index.data(Qt::EditRole).toBool());
@@ -152,15 +152,15 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
 void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *model, const QModelIndex &index ) const
 {
   if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Pixie::Setting>()) {
-      Pixie::Setting set = qvariant_cast<Pixie::Setting>(index.data(Qt::EditRole));
+    if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
+      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
       if (cb->currentData().type() == QMetaType::Int)
         model->setData(index, QVariant::fromValue(cb->currentData().toInt()), Qt::EditRole);
       else if (cb->currentData().type() == QMetaType::Double)
         model->setData(index, QVariant::fromValue(cb->currentData().toDouble()), Qt::EditRole);
       else if (cb->currentData().type() == QMetaType::QString) {
         QString word = cb->currentData().toString();
-        if (set.setting_type == Pixie::SettingType::detector)
+        if (set.setting_type == Gamma::SettingType::detector)
           model->setData(index, QVariant::fromValue(detectors_.get(word.toStdString())), Qt::EditRole);
         else
           model->setData(index, QVariant::fromValue(word), Qt::EditRole);

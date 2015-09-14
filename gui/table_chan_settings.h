@@ -35,7 +35,7 @@ class TableChanSettings : public QAbstractTableModel
     Q_OBJECT
 private:
     Pixie::Settings &my_settings_;
-    std::vector<Pixie::Setting> chan_meta_;
+    std::vector<Gamma::Setting> chan_meta_;
 
 public:
     TableChanSettings(QObject *parent = 0): my_settings_(Pixie::Wrapper::getInstance().settings()) {}

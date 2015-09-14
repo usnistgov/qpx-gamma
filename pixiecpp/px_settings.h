@@ -43,6 +43,7 @@ class Settings {
   friend class Pixie::Wrapper;
   
 public:
+
   Settings();
   Settings(const Settings& other);      //sets state to history if copied
   Settings(tinyxml2::XMLElement* root); //create from xml node
@@ -62,17 +63,27 @@ public:
   std::vector<Gamma::Detector> get_detectors() const {return detectors_;}
   Gamma::Detector get_detector(Channel ch = Channel::current) const;
   void set_detector(Channel ch, const Gamma::Detector& det);
+  void set_detector_DB(XMLableDB<Gamma::Detector>);
+
   void save_optimization(Channel chan = Channel::all);  //specify module as well?
   void load_optimization(Channel chan = Channel::all);
+  void save_det_settings(Gamma::Setting&, const Gamma::Setting&, int);
+  void load_det_settings(Gamma::Setting, Gamma::Setting&, int);
 
   //metadata for display and editing
-  std::vector<Setting> channel_meta() const {return chan_set_meta_;}
+  std::vector<Gamma::Setting> channel_meta() const {return chan_set_meta_;}
 
   uint8_t chan_param_num () const;  //non-empty parameters
 
   /////SETTINGS/////
+  Gamma::Setting pull_settings();
+  void push_settings(const Gamma::Setting&);
+  bool write_settings_bulk();
+  bool read_settings_bulk();
+  bool read_detector(Gamma::Setting &set);
+  bool write_detector(const Gamma::Setting &set);
+  
   void get_all_settings();
-
   void reset_counters_next_run();
   
   //system
@@ -119,6 +130,8 @@ protected:
   void initialize(); //populate metadata
   bool boot();       //only wrapper can use this
   void from_xml(tinyxml2::XMLElement*);
+
+  Gamma::Setting settings_tree_;
   
   int         num_chans_;
   LiveStatus  live_;
@@ -130,11 +143,12 @@ protected:
   std::vector<double> module_parameter_values_;
   std::vector<double> channel_parameter_values_;
 
-  std::vector<Setting> sys_set_meta_;
-  std::vector<Setting> mod_set_meta_;
-  std::vector<Setting> chan_set_meta_;
+  std::vector<Gamma::Setting> sys_set_meta_;
+  std::vector<Gamma::Setting> mod_set_meta_;
+  std::vector<Gamma::Setting> chan_set_meta_;
 
   std::vector<Gamma::Detector> detectors_;
+  XMLableDB<Gamma::Detector> detector_db_;
 
   //////////for internal use only///////////
   //carry out task

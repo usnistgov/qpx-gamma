@@ -21,7 +21,7 @@
 
 #include "table_spectrum_attrs.h"
 
-Q_DECLARE_METATYPE(Pixie::Setting)
+Q_DECLARE_METATYPE(Gamma::Setting)
 
 TableSpectrumAttrs::TableSpectrumAttrs(QObject *parent)
   : QAbstractTableModel(parent)
@@ -49,23 +49,23 @@ QVariant TableSpectrumAttrs::data(const QModelIndex &index, int role) const
     case 0:
       return QString::fromStdString((*generic_attributes)[row].name);
     case 1:
-      if ((*generic_attributes)[row].setting_type == Pixie::SettingType::integer)
+      if ((*generic_attributes)[row].setting_type == Gamma::SettingType::integer)
         if ((*generic_attributes)[row].unit == "binary")
           return QString::number(static_cast<uint32_t>((*generic_attributes)[row].value_int, 16)).toUpper();
         else
           return QVariant::fromValue((*generic_attributes)[row].value_int);
-      else if ((*generic_attributes)[row].setting_type == Pixie::SettingType::floating)
+      else if ((*generic_attributes)[row].setting_type == Gamma::SettingType::floating)
         return QVariant::fromValue((*generic_attributes)[row].value);
-      else if ((*generic_attributes)[row].setting_type == Pixie::SettingType::int_menu)
+      else if ((*generic_attributes)[row].setting_type == Gamma::SettingType::int_menu)
         return QString::fromStdString((*generic_attributes)[row].int_menu_items.at((*generic_attributes)[row].value_int));
-      else if ((*generic_attributes)[row].setting_type == Pixie::SettingType::boolean)
+      else if ((*generic_attributes)[row].setting_type == Gamma::SettingType::boolean)
         if ((*generic_attributes)[row].value_int)
           return "T";
         else
           return "F";
-      else if ((*generic_attributes)[row].setting_type == Pixie::SettingType::text)
+      else if ((*generic_attributes)[row].setting_type == Gamma::SettingType::text)
         return QString::fromStdString((*generic_attributes)[row].value_text);
-      else if ((*generic_attributes)[row].setting_type == Pixie::SettingType::detector)
+      else if ((*generic_attributes)[row].setting_type == Gamma::SettingType::detector)
         return QString::fromStdString((*generic_attributes)[row].value_text);
       else
         return QVariant::fromValue((*generic_attributes)[row].value);
@@ -108,7 +108,7 @@ QVariant TableSpectrumAttrs::headerData(int section, Qt::Orientation orientation
   return QVariant();
 }
 
-void TableSpectrumAttrs::eat(std::vector<Pixie::Setting> *generic_attr) {
+void TableSpectrumAttrs::eat(std::vector<Gamma::Setting> *generic_attr) {
   generic_attributes = generic_attr;
 }
 
@@ -136,22 +136,22 @@ bool TableSpectrumAttrs::setData(const QModelIndex & index, const QVariant & val
 
   if (role == Qt::EditRole)
     if (col == 1)
-      if ((((*generic_attributes)[row].setting_type == Pixie::SettingType::integer) || ((*generic_attributes)[row].setting_type == Pixie::SettingType::int_menu))
+      if ((((*generic_attributes)[row].setting_type == Gamma::SettingType::integer) || ((*generic_attributes)[row].setting_type == Gamma::SettingType::int_menu))
           && (value.type() == QVariant::Int))
         (*generic_attributes)[row].value_int = value.toInt();
-      else if (((*generic_attributes)[row].setting_type == Pixie::SettingType::boolean)
+      else if (((*generic_attributes)[row].setting_type == Gamma::SettingType::boolean)
           && (value.type() == QVariant::Bool))
         (*generic_attributes)[row].value_int = value.toBool();
-      else if (((*generic_attributes)[row].setting_type == Pixie::SettingType::floating)
+      else if (((*generic_attributes)[row].setting_type == Gamma::SettingType::floating)
           && (value.type() == QVariant::Double))
         (*generic_attributes)[row].value = value.toDouble();
-      else if (((*generic_attributes)[row].setting_type == Pixie::SettingType::text)
+      else if (((*generic_attributes)[row].setting_type == Gamma::SettingType::text)
           && (value.type() == QVariant::String))
         (*generic_attributes)[row].value_text = value.toString().toStdString();
-      else if (((*generic_attributes)[row].setting_type == Pixie::SettingType::int_menu)
+      else if (((*generic_attributes)[row].setting_type == Gamma::SettingType::int_menu)
           && (value.type() == QVariant::Int))
         (*generic_attributes)[row].value_int = value.toInt();
-      else if (((*generic_attributes)[row].setting_type == Pixie::SettingType::detector)
+      else if (((*generic_attributes)[row].setting_type == Gamma::SettingType::detector)
           && (value.type() == QVariant::String))
         (*generic_attributes)[row].value_text = value.toString().toStdString();
       else

@@ -45,6 +45,14 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Gamma::Dete
 
   loadSettings();
 
+  dev_settings_ = pixie_.settings().pull_settings();
+
+  tree_settings_model_.set_structure(dev_settings_);
+
+  ui->treeSettings->setModel(&tree_settings_model_);
+  ui->treeSettings->setItemDelegate(&tree_delegate_);
+  tree_delegate_.eat_detectors(detectors_);
+
   ui->viewChanSettings->setModel(&channel_settings_model_);
   ui->viewChanSettings->setItemDelegate(&settings_delegate_);
   ui->viewChanSettings->horizontalHeader()->setStretchLastSection(true);
@@ -54,14 +62,33 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Gamma::Dete
   ui->viewChanSettings->show();
 
   connect(&channel_settings_model_, SIGNAL(detectors_changed()), this, SLOT(updateDetChoices()));
+
+  connect(&tree_settings_model_, SIGNAL(detectors_changed()), this, SLOT(updateDetChoices()));
+  connect(&tree_settings_model_, SIGNAL(tree_changed()), this, SLOT(push_settings()));
 }
 
 void FormPixieSettings::update() {
+  dev_settings_ = pixie_.settings().pull_settings();
+  tree_settings_model_.update(dev_settings_);
+  PL_DBG << "pulled dev settings have " << dev_settings_.branches.size() << " branches";
+
+  ui->treeSettings->resizeColumnToContents(0);
   ui->boxCoincWait->setValue(pixie_.settings().get_mod("ACTUAL_COINCIDENCE_WAIT"));
   ui->comboFilterSamples->setCurrentText(QString::number(pow(2,pixie_.settings().get_mod("FILTER_RANGE"))));
   channel_settings_model_.update();
   ui->viewChanSettings->resizeColumnsToContents();
   ui->viewChanSettings->horizontalHeader()->setStretchLastSection(true);
+}
+
+void FormPixieSettings::push_settings() {
+  dev_settings_ = tree_settings_model_.get_tree();
+
+  PL_DBG << "from model dev settings have " << dev_settings_.branches.size() << " branches";
+
+  pixie_.settings().push_settings(dev_settings_);
+  emit statusText("Refreshing settings_...");
+  emit toggleIO(false);
+  runner_thread_.do_refresh_settings();
 }
 
 void FormPixieSettings::refresh() {
@@ -90,14 +117,17 @@ void FormPixieSettings::toggle_push(bool enable, Pixie::LiveStatus live) {
   ui->comboFilterSamples->setEnabled(enable && online);
   ui->buttonCompTau->setEnabled(enable && online);
   ui->buttonCompBLC->setEnabled(enable && online);
-  ui->pushSettingsRefresh->setEnabled(enable && online);
+  ui->pushSettingsRefresh->setEnabled(enable && (online || offline));
 
   ui->comboFilterSamples->blockSignals(!enable);
   ui->boxCoincWait->blockSignals(!enable);
-  if (enable)
+  if (enable) {
     ui->viewChanSettings->setEditTriggers(QAbstractItemView::AllEditTriggers);
-  else
+    ui->treeSettings->setEditTriggers(QAbstractItemView::AllEditTriggers);
+  } else {
     ui->viewChanSettings->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->treeSettings->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  }
 
   ui->pushOptimizeAll->setEnabled(enable && (online || offline));
 }
@@ -106,6 +136,22 @@ void FormPixieSettings::loadSettings() {
   settings_.beginGroup("Program");
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
   settings_.endGroup();
+
+  QString filename = data_directory_ + "/qpx_settings.set";
+
+  FILE* myfile;
+  myfile = fopen (filename.toStdString().c_str(), "r");
+  if (myfile != nullptr) {
+    tinyxml2::XMLDocument docx;
+    docx.LoadFile(myfile);
+    tinyxml2::XMLElement* root = docx.FirstChildElement(Gamma::Setting().xml_element_name().c_str());
+    if (root != nullptr) {
+      dev_settings_ = Gamma::Setting(root);
+      pixie_.settings().push_settings(dev_settings_);
+      //tree_settings_model_.set_structure(newtree);
+    }
+    fclose(myfile);
+  }
 
   settings_.beginGroup("Pixie");
   ui->comboFilterSamples->setCurrentText(QString::number(pow(2, settings_.value("filter_samples", 4).toInt())));
@@ -118,12 +164,27 @@ void FormPixieSettings::loadSettings() {
 }
 
 void FormPixieSettings::saveSettings() {
+
   pixie_.settings().save_optimization();
   std::vector<Gamma::Detector> dets = pixie_.settings().get_detectors();
   for (int i=0; i < detectors_.size(); ++i) {
     for (auto &q : dets)
       if (q.shallow_equals(detectors_.get(i)))
         detectors_.replace(q);
+  }
+
+  QString filename = data_directory_ + "/qpx_settings.set";
+  dev_settings_ = pixie_.settings().pull_settings();
+
+  PL_DBG << "dev settings have " << dev_settings_.branches.size() << " branches";
+
+  FILE* myfile;
+  myfile = fopen (filename.toStdString().c_str(), "w");
+  if (myfile != nullptr) {
+    tinyxml2::XMLPrinter printer(myfile);
+    printer.PushHeader(true, true);
+    dev_settings_.to_xml(printer);
+    fclose(myfile);
   }
 
   //should replace only optimizations, not touch the rest of detector definition
@@ -158,6 +219,8 @@ void FormPixieSettings::updateDetDB() {
     std::string det_old = pixie_.settings().get_detector(Pixie::Channel(i)).name_;
     pixie_.settings().set_detector(Pixie::Channel(i), detectors_.get(det_old));
   }
+  tree_delegate_.eat_detectors(detectors_);
+  tree_settings_model_.update(Pixie::Wrapper::getInstance().settings().pull_settings());
   settings_delegate_.eat_detectors(detectors_);
   channel_settings_model_.update();
   ui->viewChanSettings->horizontalHeader()->setStretchLastSection(true);

@@ -62,7 +62,6 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma:
   QHBoxLayout *lo = new QHBoxLayout();
   lo->addLayout(vl);
   lo->addWidget(formPixieSettings);
-  lo->addStretch();
 
   this->setLayout(lo);
 }

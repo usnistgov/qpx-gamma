@@ -41,10 +41,9 @@ public:
     new_temp.input_types = {};
     new_temp.description = "One detector loss-free spectrum";
     
-    Setting t_sample;
+    Gamma::Setting t_sample;
     t_sample.name = "time_sample";
-    t_sample.node_type = NodeType::setting;
-    t_sample.setting_type = SettingType::floating;
+    t_sample.setting_type = Gamma::SettingType::floating;
     t_sample.unit = "seconds";
     t_sample.value = 20.0;
     t_sample.minimum = 0;

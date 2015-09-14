@@ -91,6 +91,9 @@ void Detector::to_xml(tinyxml2::XMLPrinter& printer) const {
     printer.CloseElement(); //Optimization
   }
 
+  if (settings_.setting_type == SettingType::stem)
+    settings_.to_xml(printer);
+
   printer.CloseElement(); //Detector
 }
 
@@ -133,6 +136,12 @@ void Detector::from_xml(tinyxml2::XMLElement* root) {
     }
     SettingElement = dynamic_cast<tinyxml2::XMLElement*>(SettingElement->NextSibling());
   }
+
+  tinyxml2::XMLElement* stemData = root->FirstChildElement(settings_.xml_element_name().c_str());
+  if (stemData != NULL)
+    settings_.from_xml(stemData);
+  if (!settings_.branches.empty())
+    PL_DBG << "Loaded optimization " << settings_.branches.my_data_.front().name;
 }
 
 }

@@ -30,7 +30,7 @@
 #include "detector.h"
 
 Q_DECLARE_METATYPE(Gamma::Detector)
-Q_DECLARE_METATYPE(Pixie::Setting)
+Q_DECLARE_METATYPE(Gamma::Setting)
 
 class QpxSpecialDelegate : public QStyledItemDelegate
 {

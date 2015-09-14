@@ -41,18 +41,16 @@ public:
     //    new_temp.output_types = {""};
     new_temp.description = "Custom gated list mode to file. Please provide path and name for valid and accessible file.";
 
-    Setting file_setting;
+    Gamma::Setting file_setting;
     file_setting.name = "file_dir";
-    file_setting.node_type = NodeType::setting;
-    file_setting.setting_type = SettingType::text;
+    file_setting.setting_type = Gamma::SettingType::text;
     file_setting.writable = true;
     file_setting.description = "path to temp output directory";
     new_temp.generic_attributes.push_back(file_setting);
 
-    Setting format_setting;
+    Gamma::Setting format_setting;
     format_setting.name = "format";
-    format_setting.node_type = NodeType::setting;
-    format_setting.setting_type = SettingType::int_menu;
+    format_setting.setting_type = Gamma::SettingType::int_menu;
     format_setting.writable = true;
     format_setting.description = "output file format";
     format_setting.value_int = 1;
@@ -60,10 +58,9 @@ public:
     format_setting.int_menu_items[1] = "human readable";
     new_temp.generic_attributes.push_back(format_setting);
     
-    Setting hit_pattern_write;
+    Gamma::Setting hit_pattern_write;
     hit_pattern_write.name = "with_pattern";
-    hit_pattern_write.node_type = NodeType::setting;
-    hit_pattern_write.setting_type = SettingType::boolean;
+    hit_pattern_write.setting_type = Gamma::SettingType::boolean;
     hit_pattern_write.writable = false;
     hit_pattern_write.description = "IGNORED write hit pattern before event energies";
     hit_pattern_write.value_int = 1;

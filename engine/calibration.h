@@ -62,7 +62,7 @@ Calibration(std::string type, uint16_t bits, std::string units = "channels"): Ca
   std::string coef_to_string() const;
   void coef_from_string(std::string);
   std::string to_string();
-  std::string fancy_equation(int precision = -1);
+  std::string fancy_equation(int precision = -1, bool with_rsq=false);
 
   boost::posix_time::ptime calib_date_;
   std::string type_, units_;

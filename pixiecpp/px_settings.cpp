@@ -25,12 +25,17 @@
 #include "px_settings.h"
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 #include "common_xia.h"
 #include "custom_logger.h"
 
 namespace Pixie {
 
-Settings::Settings() {
+Settings::Settings() :
+  detector_db_("Detectors") {
+  settings_tree_.setting_type = Gamma::SettingType::stem;
+  settings_tree_.name = "QpxSettings";
+
   num_chans_ = NUMBER_OF_CHANNELS;  //This might need to be changed
 
   boot_files_.resize(7);
@@ -67,8 +72,11 @@ Settings::Settings() {
   current_channel_ = Channel(0);
 }
 
-Settings::Settings(const Settings& other):
-    live_(LiveStatus::history), //this is why we have this function, deactivate if copied
+Settings::Settings(const Settings& other) :
+  detector_db_(other.detector_db_),
+  live_(LiveStatus::history), //this is why we have this function, deactivate if copied
+  settings_tree_(other.settings_tree_),
+
     num_chans_(other.num_chans_), detectors_(other.detectors_),
     current_module_(other.current_module_), current_channel_(other.current_channel_),
     boot_files_(other.boot_files_),
@@ -79,10 +87,142 @@ Settings::Settings(const Settings& other):
     mod_set_meta_(other.mod_set_meta_),
     chan_set_meta_(other.chan_set_meta_) {}
 
-Settings::Settings(tinyxml2::XMLElement* root):
-    Settings()
+Settings::Settings(tinyxml2::XMLElement* root) :
+  Settings()
 {
   from_xml(root);
+}
+
+void Settings::set_detector_DB(XMLableDB<Gamma::Detector> newdb) {
+  detector_db_ = newdb;
+  write_settings_bulk();
+}
+
+Gamma::Setting Settings::pull_settings() {
+  return settings_tree_;
+}
+
+void Settings::push_settings(const Gamma::Setting& newsettings) {
+  settings_tree_ = newsettings;
+  write_settings_bulk();
+  PL_INFO << "settings pushed";
+}
+
+bool Settings::read_settings_bulk(){
+  if (live_ == LiveStatus::history)
+    return false;
+
+  for (int i=0; i < settings_tree_.branches.size(); ++i) {
+    Gamma::Setting set = settings_tree_.branches.get(i);
+    PL_INFO << "reading "  << set.name;
+    if (set.name == "Pixie-4") {
+      PL_INFO << "reading bulk Pixie";
+
+      for (auto &q : set.branches.my_data_) {
+        if (q.setting_type == Gamma::SettingType::stem) {
+          uint16_t modnum = q.address;
+          for (auto &p : q.branches.my_data_) {
+            if (p.setting_type == Gamma::SettingType::stem) {
+              uint16_t channum = p.address;
+              for (auto &o : p.branches.my_data_) {
+                if (o.setting_type == Gamma::SettingType::floating)
+                  o.value = channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
+              }
+            } else if (p.setting_type == Gamma::SettingType::floating)
+              p.value = module_parameter_values_[modnum * N_MODULE_PAR +  p.address];
+          }
+        } else if (q.setting_type == Gamma::SettingType::floating)
+          q.value = system_parameter_values_[q.address];
+      }
+
+      settings_tree_.branches.replace(set);
+    } else if (set.name == "Detectors") {
+      PL_INFO << "reading bulk Detectors";
+      set.branches.clear();
+      set.value_int = detectors_.size();
+      for (int j=0; j < detectors_.size(); ++j) {
+        Gamma::Setting det("Detector");
+        det.setting_type = Gamma::SettingType::detector;
+        det.index = j;
+        det.name = detectors_[j].name_;
+        set.branches.add(det);
+      }
+      PL_INFO << "success "  << set.name;
+    }
+    //settings_tree_.branches.add(set);
+  }
+  return true;
+}
+
+bool Settings::write_settings_bulk(){
+  if (live_ == LiveStatus::history)
+    return false;
+
+  for (int i=0; i < settings_tree_.branches.size(); ++i) {
+    Gamma::Setting set = settings_tree_.branches.get(i);
+    PL_INFO << "writing "  << set.name;
+    if (set.name == "Pixie-4") {
+      PL_INFO << "write bulk Pixie";
+
+      for (auto &q : set.branches.my_data_) {
+        if (q.setting_type == Gamma::SettingType::stem) {
+          uint16_t modnum = q.address;
+          for (auto &p : q.branches.my_data_) {
+            if (p.setting_type == Gamma::SettingType::stem) {
+              uint16_t channum = p.address;
+              for (auto &o : p.branches.my_data_) {
+                if ((o.setting_type == Gamma::SettingType::floating) && (channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value)) {
+                  channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value;
+                  write_chan(o.name.c_str(), modnum, channum);
+                }
+              }
+            } else if ((p.setting_type == Gamma::SettingType::floating) && (module_parameter_values_[modnum * N_MODULE_PAR +  p.address] != p.value)) {
+              module_parameter_values_[modnum * N_MODULE_PAR +  p.address] = p.value;
+              write_mod(p.name.c_str(), modnum);
+            }
+          }
+        } else if ((q.setting_type == Gamma::SettingType::floating) && (system_parameter_values_[q.address] != q.value)) {
+          system_parameter_values_[q.address] = q.value;
+          write_sys(q.name.c_str());
+        }
+      }
+
+    } else if (set.name == "Detectors") {
+      PL_INFO << "write bulk Detectors";
+      for (int j=0; j < set.branches.size(); ++j) {
+        if (!write_detector(set.branches.get(j)))
+          return false;
+      }
+    }
+  }
+  return true;
+}
+
+bool Settings::read_detector(Gamma::Setting &set) {
+  if (set.setting_type != Gamma::SettingType::detector)
+    return true; //should be false
+
+  if ((set.index < 0) || (set.index >= detectors_.size()))
+    return true; //should be false
+
+  set.value_text = detectors_[set.index].name_;
+  return true;
+}
+
+
+bool Settings::write_detector(const Gamma::Setting &set) {
+  if (set.setting_type != Gamma::SettingType::detector)
+    return true; //should be false
+
+  if ((set.index < 0) || (set.index >= detectors_.size()))
+    return true; //should be false
+
+  if (detector_db_.has_a(Gamma::Detector(set.value_text)))
+    detectors_[set.index] = detector_db_.get(Gamma::Detector(set.value_text));
+  else
+    detectors_[set.index] = Gamma::Detector(set.value_text);
+
+  return true;
 }
 
 bool Settings::boot() {
@@ -196,6 +336,18 @@ void Settings::save_optimization(Channel chan) {
         detectors_[i].setting_values_[j] = get_chan(j, Channel(i), Module::current);
       }
     }
+
+    detectors_[i].settings_ = Gamma::Setting();
+    save_det_settings(detectors_[i].settings_, settings_tree_, i);
+    if (detectors_[i].settings_.branches.size() > 0) {
+      detectors_[i].settings_.setting_type = Gamma::SettingType::stem;
+      detectors_[i].settings_.name = "Optimization";
+    } else {
+      detectors_[i].settings_.setting_type = Gamma::SettingType::none;
+      detectors_[i].settings_.name.clear();
+    }
+
+
   }
 }
 
@@ -212,13 +364,68 @@ void Settings::load_optimization(Channel chan) {
   //current module only
   
   for (int i = start; i < stop; i++) {
+    /*
     if (detectors_[i].setting_values_.size()) {
       PL_DBG << "Optimizing channel " << i << " settings for " << detectors_[i].name_;
       for (std::size_t j = 0; j < detectors_[i].setting_values_.size(); j++) {
         if (chan_set_meta_[j].writable)
           set_chan(j, detectors_[i].setting_values_[j], Channel(i), Module::current);
       }
+    }*/
+
+    if (detectors_[i].settings_.setting_type == Gamma::SettingType::stem) {
+      for (auto &q : detectors_[i].settings_.branches.my_data_)
+        load_det_settings(q, settings_tree_, i);
     }
+  }
+
+  write_settings_bulk();
+}
+
+void Settings::save_det_settings(Gamma::Setting& result, const Gamma::Setting& root, int index) {
+  std::string stem = result.name;
+  if (root.setting_type == Gamma::SettingType::stem) {
+    result.name = stem;
+    if (!stem.empty())
+      result.name += "/" ;
+    result.name += root.name;
+    for (auto &q : root.branches.my_data_)
+      save_det_settings(result, q, index);
+    result.name = stem;
+    PL_DBG << "maybe created stem " << stem << "/" << root.name;
+  } else if ((root.index == index) && (root.setting_type != Gamma::SettingType::detector)) {
+    Gamma::Setting set(root);
+    set.name = stem + "/" + root.name;
+    set.index = 0;
+    result.branches.add(set);
+    PL_DBG << "saved setting " << stem << "/" << root.name;
+  }
+}
+
+void Settings::load_det_settings(Gamma::Setting det, Gamma::Setting& root, int index) {
+  if ((root.setting_type == Gamma::SettingType::none) || det.name.empty())
+    return;
+  if (root.setting_type == Gamma::SettingType::stem) {
+    //PL_DBG << "comparing stem for " << det.name << " vs " << root.name;
+    std::vector<std::string> tokens;
+    boost::algorithm::split(tokens, det.name, boost::algorithm::is_any_of("/"));
+    if ((tokens.size() > 1) && (root.name == tokens[0])) {
+      Gamma::Setting truncated = det;
+      truncated.name.clear();
+      for (int i=1; i < tokens.size(); ++i) {
+        truncated.name += tokens[i];
+        if ((i+1) < tokens.size())
+          truncated.name += "/";
+      }
+      //PL_DBG << "looking for " << truncated.name << " in " << root.name;
+      for (auto &q : root.branches.my_data_)
+        load_det_settings(truncated, q, index);
+    }
+  } else if ((det.name == root.name) && (root.index == index)) {
+    PL_DBG << "applying " << det.name;
+    root.value = det.value;
+    root.value_int = det.value_int;
+    root.value_text = det.value_text;
   }
 }
 
@@ -240,6 +447,7 @@ void Settings::get_all_settings() {
   for (int i=0; i < num_chans_; i++) {
     get_chan_all(Channel(i));
   }
+  read_settings_bulk();
 };
 
 
@@ -266,15 +474,15 @@ void Settings::set_sys(const std::string& setting, double val) {
   write_sys(setting.c_str());
 }
 
-void Settings::set_slots(const std::vector<uint8_t>& slots) {
+void Settings::set_slots(const std::vector<uint8_t>& new_slots) {
   if (live_ == LiveStatus::history)
     return;
 
   int total = 0;
   std::size_t max = N_SYSTEM_PAR - i_sys("SLOT_WAVE");
   for (std::size_t i=0; i < max; i++) {
-    if ((i < slots.size()) && (slots[i])) {
-      system_parameter_values_[i_sys("SLOT_WAVE") + i] = static_cast<double>(slots[i]);
+    if ((i < new_slots.size()) && (new_slots[i])) {
+      system_parameter_values_[i_sys("SLOT_WAVE") + i] = static_cast<double>(new_slots[i]);
       total++;
     } else
       system_parameter_values_[i_sys("SLOT_WAVE") + i] = 0; 
@@ -714,16 +922,27 @@ void Settings::boot_err(int32_t err_val) {
 
 void Settings::initialize() {
   for (int i=0; i < N_SYSTEM_PAR; i++)
-    if (System_Parameter_Names[i] != nullptr)
+    if (System_Parameter_Names[i] != nullptr) {
       sys_set_meta_[i].name = std::string((char*)System_Parameter_Names[i]);
+      sys_set_meta_[i].setting_type = Gamma::SettingType::floating;
+      sys_set_meta_[i].address = i;
+    }
 
   for (int i=0; i < N_MODULE_PAR; i++)
-    if (Module_Parameter_Names[i] != nullptr)
+    if (Module_Parameter_Names[i] != nullptr) {
       mod_set_meta_[i].name = std::string((char*)Module_Parameter_Names[i]);
+      mod_set_meta_[i].setting_type = Gamma::SettingType::floating;
+      mod_set_meta_[i].address = i;
+    }
+
   
   for (int i=0; i < N_CHANNEL_PAR; i++)
-    if (Channel_Parameter_Names[i] != nullptr)
+    if (Channel_Parameter_Names[i] != nullptr) {
       chan_set_meta_[i].name = std::string((char*)Channel_Parameter_Names[i]);
+      chan_set_meta_[i].setting_type = Gamma::SettingType::floating;
+      chan_set_meta_[i].address = i;
+      chan_set_meta_[i].index = 0;
+    }
 
   mod_set_meta_[i_mod("ACTUAL_COINCIDENCE_WAIT")].unit = "ns";
   mod_set_meta_[i_mod("MIN_COINCIDENCE_WAIT")].unit = "ticks";

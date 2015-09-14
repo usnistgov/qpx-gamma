@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Pixie::Setting exactly what it says
+ *      Gamma::Setting exactly what it says
  *
  ******************************************************************************/
 
@@ -30,29 +30,28 @@
 #include "tinyxml2.h"
 #include "xmlable.h"
 
-namespace Pixie {
+namespace Gamma {
 
-enum class NodeType : int {none = 0, setting = 1, stem = 2};
-enum class SettingType : int {boolean = 0,
-                              integer = 1,
-                              floating = 2,
-                              floating_precise = 3,
-                              text = 4,
-                              int_menu = 5,
-                              detector = 6,
-                              time = 7,
-                              time_duration = 8,
-                              pattern = 9
+enum class SettingType : int {none = 0,
+                              stem = 1,
+                              boolean = 2,
+                              integer = 3,
+                              floating = 4,
+                              floating_precise = 5,
+                              text = 6,
+                              int_menu = 7,
+                              detector = 8,
+                              time = 9,
+                              time_duration = 10,
+                              pattern = 11
                              };
 
 struct Setting;
 
 struct Setting : public XMLable {
 
-  NodeType          node_type;
-
   //if type !none
-  uint32_t          index;
+  int32_t           index;
   bool              writable;
   uint16_t          address;
   std::string       name, description;
@@ -71,9 +70,8 @@ struct Setting : public XMLable {
 
 
   
-  Setting() : writable(false), branches("setting_branches"), address(0), index(0),
-      node_type(NodeType::none), setting_type(SettingType::boolean), 
-      value(0), value_int(0), minimum(0), maximum(1), step(1) {}
+  Setting() : writable(false), branches("branches"), address(0), index(-1),
+    setting_type(SettingType::none), value(0), value_int(0), minimum(0), maximum(1), step(1) {}
   
   Setting(tinyxml2::XMLElement* element) : Setting() {this->from_xml(element);}
   
@@ -83,8 +81,7 @@ struct Setting : public XMLable {
 
   bool shallow_equals(const Setting& other) const {
     return ((name == other.name)
-            && (index == other.index)
-            && (node_type == other.node_type)
+            && (address == other.address)
             && (setting_type == other.setting_type));
   }
   
@@ -97,7 +94,6 @@ struct Setting : public XMLable {
     if (minimum != other.minimum) return false;
     if (maximum != other.maximum) return false;
     if (step != other.step) return false;
-    if (node_type != other.node_type) return false;
     if (setting_type != other.setting_type) return false;
     if (index != other.index) return false;
     if (value_text != other.value_text) return false;
@@ -127,7 +123,6 @@ struct Setting : public XMLable {
       description = std::string(element->Attribute("description"));
 
     if (element->Attribute("type")) {
-      node_type = NodeType::setting;
       std::string temp_str(element->Attribute("type"));
       if (temp_str == "boolean") {
         setting_type = SettingType::boolean;
@@ -169,6 +164,11 @@ struct Setting : public XMLable {
           int_menu_items[setting_val] = setting_text;
           menu_item = dynamic_cast<tinyxml2::XMLElement*>(menu_item->NextSibling());
         }
+      } else if (temp_str == "stem") {
+        setting_type = SettingType::stem;
+        tinyxml2::XMLElement* stemData = element->FirstChildElement(branches.xml_element_name().c_str());
+        if (stemData != NULL)
+          branches.from_xml(stemData);
       }
       if ((temp_str == "floating") || (temp_str == "integer")) {
         if (element->Attribute("minimum"))
@@ -180,11 +180,6 @@ struct Setting : public XMLable {
         if (element->Attribute("unit"))
           unit = std::string(element->Attribute("unit"));
       }
-    } else {
-      node_type = NodeType::stem;
-      tinyxml2::XMLElement* stemData = element->FirstChildElement(branches.xml_element_name().c_str());
-      if (stemData != NULL)
-        branches.from_xml(stemData);
     }
   }
 
@@ -199,53 +194,53 @@ struct Setting : public XMLable {
       printer.PushAttribute("writable", "false");
     printer.PushAttribute("address", std::to_string(address).c_str());
 
-    if (node_type == NodeType::setting) {
-      if (setting_type == SettingType::boolean) {
-        printer.PushAttribute("type", "boolean");
-        if (value_int)
-          printer.PushAttribute("value", "true");
-        else 
-          printer.PushAttribute("value", "false");
-      } else if (setting_type == SettingType::integer) {
-        printer.PushAttribute("type", "integer");
-        printer.PushAttribute("value", std::to_string(value_int).c_str());
-      } else if (setting_type == SettingType::floating) {
-          printer.PushAttribute("type", "floating");
-          printer.PushAttribute("value", std::to_string(value).c_str());
-      } else if (setting_type == SettingType::text) {
-          printer.PushAttribute("type", "text");
-          printer.PushAttribute("value", value_text.c_str());
-      } else if (setting_type == SettingType::detector) {
-          printer.PushAttribute("type", "detector");
-          printer.PushAttribute("value", value_text.c_str());
-      }  else if (setting_type == SettingType::int_menu) {
-        printer.PushAttribute("type", "int_menu");
-        printer.PushAttribute("value", std::to_string(value_int).c_str());
-        for (auto &q : int_menu_items) {
-          printer.OpenElement("menu_item");
-          printer.PushAttribute("item_value", std::to_string(q.first).c_str());
-          printer.PushAttribute("item_text", q.second.c_str());
-          printer.CloseElement();
-        }
+
+    if (setting_type == SettingType::boolean) {
+      printer.PushAttribute("type", "boolean");
+      if (value_int)
+        printer.PushAttribute("value", "true");
+      else
+        printer.PushAttribute("value", "false");
+    } else if (setting_type == SettingType::integer) {
+      printer.PushAttribute("type", "integer");
+      printer.PushAttribute("value", std::to_string(value_int).c_str());
+    } else if (setting_type == SettingType::floating) {
+      printer.PushAttribute("type", "floating");
+      printer.PushAttribute("value", std::to_string(value).c_str());
+    } else if (setting_type == SettingType::text) {
+      printer.PushAttribute("type", "text");
+      printer.PushAttribute("value", value_text.c_str());
+    } else if (setting_type == SettingType::detector) {
+      printer.PushAttribute("type", "detector");
+      printer.PushAttribute("value", value_text.c_str());
+    } else if (setting_type == SettingType::int_menu) {
+      printer.PushAttribute("type", "int_menu");
+      printer.PushAttribute("value", std::to_string(value_int).c_str());
+      for (auto &q : int_menu_items) {
+        printer.OpenElement("menu_item");
+        printer.PushAttribute("item_value", std::to_string(q.first).c_str());
+        printer.PushAttribute("item_text", q.second.c_str());
+        printer.CloseElement();
       }
-      if ((setting_type == SettingType::integer) ||
-          (setting_type == SettingType::floating)) {
-        printer.PushAttribute("minimum", std::to_string(minimum).c_str());
-        printer.PushAttribute("maximum", std::to_string(maximum).c_str());
-        printer.PushAttribute("step", std::to_string(step).c_str());
-      }
-      if (unit.size())
-        printer.PushAttribute("unit", unit.c_str());
+    } else if (setting_type == SettingType::stem) {
+      printer.PushAttribute("type", "stem");
+      if (!branches.empty())
+        branches.to_xml(printer);
     }
+
+    if ((setting_type == SettingType::integer) ||
+        (setting_type == SettingType::floating)) {
+      printer.PushAttribute("minimum", std::to_string(minimum).c_str());
+      printer.PushAttribute("maximum", std::to_string(maximum).c_str());
+      printer.PushAttribute("step", std::to_string(step).c_str());
+    }
+    if (unit.size())
+      printer.PushAttribute("unit", unit.c_str());
+
 
     if (!description.empty())
       printer.PushAttribute("description", description.c_str());
 
-    if (node_type == NodeType::stem) {
-      if (!branches.empty())
-        branches.to_xml(printer);
-    }
-    
     printer.CloseElement();
   }
 

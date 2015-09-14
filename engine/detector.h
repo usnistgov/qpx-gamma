@@ -30,6 +30,7 @@
 #include <boost/date_time.hpp>
 #include "xmlable.h"
 #include "calibration.h"
+#include "generic_setting.h"
 
 namespace Gamma {
 
@@ -38,6 +39,7 @@ class Detector : public XMLable {
   Detector()
       : energy_calibrations_("Calibrations")
       , gain_match_calibrations_("GainMatchCalibrations")
+      , settings_("Optimization")
       , fwhm_calibration_("FWHM", 0)
       , name_("none")
       , type_("none") {}
@@ -54,6 +56,8 @@ class Detector : public XMLable {
     if (type_ != other.type_) return false;
     if (setting_values_ != other.setting_values_) return false;
     if (setting_names_ != other.setting_names_) return false;
+    if (settings_ != other.settings_) return false;
+
     //if (energy_calibration_ != other.energy_calibration_) return false;
     return true;
   }
@@ -70,6 +74,7 @@ class Detector : public XMLable {
   Calibration fwhm_calibration_;
   std::vector<double> setting_values_;
   std::vector<std::string> setting_names_;
+  Setting settings_;
   
 };
 

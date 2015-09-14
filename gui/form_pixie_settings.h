@@ -30,6 +30,7 @@
 #include "special_delegate.h"
 #include "thread_runner.h"
 #include "table_chan_settings.h"
+#include "tree_settings.h"
 
 #include "wrapper.h" //eliminate this
 
@@ -73,6 +74,9 @@ private slots:
 
   void on_pushDetDB_clicked();
 
+  void push_settings();
+
+
 private:
   Ui::FormPixieSettings *ui;
 
@@ -88,6 +92,10 @@ private:
   QpxSpecialDelegate  settings_delegate_;
 
   QString data_directory_;
+
+  Gamma::Setting      dev_settings_;
+  TreeSettings        tree_settings_model_;
+  QpxSpecialDelegate  tree_delegate_;
 
   void loadSettings();
   void saveSettings();

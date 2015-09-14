@@ -65,12 +65,13 @@ unix {
    }
    DEFINES += "XIA_LINUX"
    DEFINES += "PLX_LINUX"
-   QMAKE_CC = g++
+   !android {
+      QMAKE_CC = g++
+   }
    LIBS +=  PLX/Library/PlxApi.a -lm -ldl -DBOOST_LOG_DYN_LINK \
            -lboost_system -lboost_date_time -lboost_thread -lboost_log \
            -lboost_program_options -lboost_filesystem \
-           -lboost_log_setup -lboost_timer \
-           -lgsl -lgslcblas -lz
+           -lboost_log_setup -lboost_timer -lz
 
    target.path = /usr/local/bin/
    icon.path = /usr/share/icons/
@@ -82,14 +83,19 @@ unix {
    QMAKE_CXXFLAGS_RELEASE -= -O2 -std=c++0x
    QMAKE_CXXFLAGS_RELEASE += -O3 -std=c++11
 }
+
+android {
+   INCLUDEPATH += ../crystax-ndk-10.2.1/sources/boost/1.58.0/include
+   equals(ANDROID_TARGET_ARCH, armeabi-v7a) { 
+      LIBPATH     += ../crystax-ndk-10.2.1/sources/boost/1.58.0/libs/armeabi-v7a
+   }
+}
 	 
 win32 {
-    LIBS += dependencies/PLX/PlxApi.lib -lgsl -lcblas
+    LIBS += dependencies/PLX/PlxApi.lib
 
 		LIBPATH += D:\dev\boost_1_57_0\stage\lib
-		LIBPATH += D:\dev\gsl\x64\lib
 		
-		INCLUDEPATH += D:\dev\gsl\x64\include
 		INCLUDEPATH += D:/dev/boost_1_57_0
 		
 	   }	

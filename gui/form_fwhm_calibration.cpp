@@ -174,7 +174,7 @@ void FormFwhmCalibration::replot_markers() {
         yy.push_back(y);
       }
 
-      ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(fit_data_.fwhm_cali_.fancy_equation(3)));
+      ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(fit_data_.fwhm_cali_.fancy_equation(3, true)));
       ui->PlotCalib->addFit(xx, yy, style_fit);
     }
   }

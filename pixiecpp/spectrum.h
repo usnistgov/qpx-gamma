@@ -62,7 +62,7 @@ struct Metadata {
   uint32_t resolution, appearance;
   bool visible;
   std::vector<int16_t> match_pattern, add_pattern;
-  std::vector<Setting> attributes;
+  std::vector<Gamma::Setting> attributes;
   PreciseFloat total_count;
   uint64_t     max_chan;
   boost::posix_time::time_duration real_time ,live_time;
@@ -134,7 +134,7 @@ public:
   void set_appearance(uint32_t newapp);
   void set_start_time(boost::posix_time::ptime newtime);
   void set_description(std::string newdesc);
-  void set_generic_attr(Setting setting);
+  void set_generic_attr(Gamma::Setting setting);
 
 
 protected:
@@ -167,7 +167,7 @@ protected:
   virtual void _set_detectors(const std::vector<Gamma::Detector>& dets); //has default behavior
 
   void recalc_energies();
-  Setting get_attr(std::string name) const;
+  Gamma::Setting get_attr(std::string name) const;
 
   //////////////////////////////
   ///////member variables///////

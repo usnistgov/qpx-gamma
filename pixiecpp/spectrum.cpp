@@ -250,9 +250,9 @@ void Spectrum::recalc_energies() {
   }
 }
 
-Setting Spectrum::get_attr(std::string setting) const {
+Gamma::Setting Spectrum::get_attr(std::string setting) const {
   //private; no lock required
-  Setting ret;
+  Gamma::Setting ret;
   
   for (auto &q : metadata_.attributes)
     if (q.name == setting)
@@ -350,7 +350,7 @@ void Spectrum::set_description(std::string newdesc) {
   metadata_.description = newdesc;
 }
 
-void Spectrum::set_generic_attr(Setting setting) {
+void Spectrum::set_generic_attr(Gamma::Setting setting) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
@@ -491,7 +491,7 @@ bool Spectrum::from_xml(tinyxml2::XMLElement* root) {
     metadata_.attributes.clear();
     tinyxml2::XMLElement* one_setting = elem->FirstChildElement("Setting");
     while (one_setting != nullptr) {
-      metadata_.attributes.push_back(Setting(one_setting));
+      metadata_.attributes.push_back(Gamma::Setting(one_setting));
       one_setting = dynamic_cast<tinyxml2::XMLElement*>(one_setting->NextSibling());
     }
   }

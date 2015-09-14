@@ -22,7 +22,6 @@
 
 #include "voigt_.h"
 
-#include <gsl/gsl_multifit.h>
 #include <sstream>
 #include <iomanip>
 #include <numeric>

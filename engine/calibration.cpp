@@ -73,9 +73,9 @@ double Calibration::transform(double chan, uint16_t bits) const {
   return re;
 }
 
-std::string Calibration::fancy_equation(int precision) {
+std::string Calibration::fancy_equation(int precision, bool with_rsq) {
   if (bits_ && (model_ == CalibrationModel::polynomial))
-    return Polynomial(coefficients_).to_UTF8(precision, false);
+    return Polynomial(coefficients_).to_UTF8(precision, with_rsq);
   else
     return "N/A"; 
 }

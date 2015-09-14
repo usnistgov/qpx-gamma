@@ -43,10 +43,9 @@ public:
     new_temp.input_types = {"esc", "spn"};
     new_temp.description = "Matrix-type coincidence spectrum for two detectors";
 
-    Setting buf;
+    Gamma::Setting buf;
     buf.name = "buffered";
-    buf.node_type = NodeType::setting;
-    buf.setting_type = SettingType::boolean;
+    buf.setting_type = Gamma::SettingType::boolean;
     buf.unit = "T/F";
     buf.description = "Buffered output for efficient plotting (more memory)";
     buf.writable = true;
