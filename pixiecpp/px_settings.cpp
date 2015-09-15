@@ -94,8 +94,8 @@ Settings::Settings(tinyxml2::XMLElement* root) :
 }
 
 void Settings::set_detector_DB(XMLableDB<Gamma::Detector> newdb) {
+  PL_DBG << "pxsetting got det db";
   detector_db_ = newdb;
-  write_settings_bulk();
 }
 
 Gamma::Setting Settings::pull_settings() {
@@ -103,9 +103,9 @@ Gamma::Setting Settings::pull_settings() {
 }
 
 void Settings::push_settings(const Gamma::Setting& newsettings) {
+  PL_INFO << "settings pushed";
   settings_tree_ = newsettings;
   write_settings_bulk();
-  PL_INFO << "settings pushed";
 }
 
 bool Settings::read_settings_bulk(){
@@ -137,7 +137,7 @@ bool Settings::read_settings_bulk(){
 
       settings_tree_.branches.replace(set);
     } else if (set.name == "Detectors") {
-      PL_INFO << "reading bulk Detectors";
+      /*PL_INFO << "reading bulk Detectors";
       set.branches.clear();
       set.value_int = detectors_.size();
       for (int j=0; j < detectors_.size(); ++j) {
@@ -146,10 +146,16 @@ bool Settings::read_settings_bulk(){
         det.index = j;
         det.name = detectors_[j].name_;
         set.branches.add(det);
+      }*/
+
+      //PL_INFO << "write bulk Detectors";
+      for (auto &q : set.branches.my_data_) {
+        read_detector(q);
       }
-      PL_INFO << "success "  << set.name;
+      settings_tree_.branches.replace(set);
+
     }
-    //settings_tree_.branches.add(set);
+    PL_INFO << "success "  << set.name;
   }
   return true;
 }
@@ -171,17 +177,17 @@ bool Settings::write_settings_bulk(){
             if (p.setting_type == Gamma::SettingType::stem) {
               uint16_t channum = p.address;
               for (auto &o : p.branches.my_data_) {
-                if ((o.setting_type == Gamma::SettingType::floating) && (channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value)) {
+                if (o.writable && (o.setting_type == Gamma::SettingType::floating) && (channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value)) {
                   channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value;
                   write_chan(o.name.c_str(), modnum, channum);
                 }
               }
-            } else if ((p.setting_type == Gamma::SettingType::floating) && (module_parameter_values_[modnum * N_MODULE_PAR +  p.address] != p.value)) {
+            } else if (p.writable && (p.setting_type == Gamma::SettingType::floating) && (module_parameter_values_[modnum * N_MODULE_PAR +  p.address] != p.value)) {
               module_parameter_values_[modnum * N_MODULE_PAR +  p.address] = p.value;
               write_mod(p.name.c_str(), modnum);
             }
           }
-        } else if ((q.setting_type == Gamma::SettingType::floating) && (system_parameter_values_[q.address] != q.value)) {
+        } else if (q.writable && (q.setting_type == Gamma::SettingType::floating) && (system_parameter_values_[q.address] != q.value)) {
           system_parameter_values_[q.address] = q.value;
           write_sys(q.name.c_str());
         }
@@ -190,8 +196,7 @@ bool Settings::write_settings_bulk(){
     } else if (set.name == "Detectors") {
       PL_INFO << "write bulk Detectors";
       for (int j=0; j < set.branches.size(); ++j) {
-        if (!write_detector(set.branches.get(j)))
-          return false;
+        write_detector(set.branches.get(j));
       }
     }
   }
@@ -217,10 +222,14 @@ bool Settings::write_detector(const Gamma::Setting &set) {
   if ((set.index < 0) || (set.index >= detectors_.size()))
     return true; //should be false
 
-  if (detector_db_.has_a(Gamma::Detector(set.value_text)))
+  if (detector_db_.has_a(Gamma::Detector(set.value_text))) {
     detectors_[set.index] = detector_db_.get(Gamma::Detector(set.value_text));
-  else
+    PL_DBG << "det " << set.value_text << " from db";
+  }
+  else {
     detectors_[set.index] = Gamma::Detector(set.value_text);
+    PL_DBG << "det " << set.value_text << " from nothing";
+  }
 
   return true;
 }
@@ -271,6 +280,7 @@ bool Settings::boot() {
     else 
       live_ = LiveStatus::online;
     initialize();
+    read_settings_bulk(); //really?
     return true;
   } else {
     boot_err(retval);
@@ -308,7 +318,7 @@ void Settings::set_detector(Channel ch, const Gamma::Detector& det) {
     ch = current_channel_;
   if ((static_cast<int>(ch) > -1) && (static_cast<int>(ch) < num_chans_)) {
     PL_INFO << "Setting detector [" << det.name_ << "] for channel " << static_cast<int>(ch);
-    detectors_[static_cast<int>(ch)] = det;
+    //detectors_[static_cast<int>(ch)] = det;
   }
 
   //set for all?
@@ -328,14 +338,14 @@ void Settings::save_optimization(Channel chan) {
 
   for (int i = start; i < stop; i++) {
     PL_DBG << "Saving optimization channel " << i << " settings for " << detectors_[i].name_;
-    detectors_[i].setting_names_.resize(43);
+    /*detectors_[i].setting_names_.resize(43);
     detectors_[i].setting_values_.resize(43);
     for (int j = 0; j < 43; j++) {
       if (chan_set_meta_[j].writable) {
         detectors_[i].setting_names_[j] = chan_set_meta_[j].name;
         detectors_[i].setting_values_[j] = get_chan(j, Channel(i), Module::current);
       }
-    }
+    }*/
 
     detectors_[i].settings_ = Gamma::Setting();
     save_det_settings(detectors_[i].settings_, settings_tree_, i);
@@ -352,6 +362,8 @@ void Settings::save_optimization(Channel chan) {
 }
 
 void Settings::load_optimization(Channel chan) {
+  PL_INFO << "load optimizations";
+
   int start, stop;
   if (chan == Channel::all) {
     start = 0; stop = num_chans_;
@@ -372,8 +384,10 @@ void Settings::load_optimization(Channel chan) {
           set_chan(j, detectors_[i].setting_values_[j], Channel(i), Module::current);
       }
     }*/
+    PL_DBG << "loading optimization for " << detectors_[i].name_;
 
     if (detectors_[i].settings_.setting_type == Gamma::SettingType::stem) {
+      PL_DBG << "really loading optimization for " << detectors_[i].name_;
       for (auto &q : detectors_[i].settings_.branches.my_data_)
         load_det_settings(q, settings_tree_, i);
     }
@@ -406,7 +420,7 @@ void Settings::load_det_settings(Gamma::Setting det, Gamma::Setting& root, int i
   if ((root.setting_type == Gamma::SettingType::none) || det.name.empty())
     return;
   if (root.setting_type == Gamma::SettingType::stem) {
-    //PL_DBG << "comparing stem for " << det.name << " vs " << root.name;
+    PL_DBG << "comparing stem for " << det.name << " vs " << root.name;
     std::vector<std::string> tokens;
     boost::algorithm::split(tokens, det.name, boost::algorithm::is_any_of("/"));
     if ((tokens.size() > 1) && (root.name == tokens[0])) {
@@ -417,7 +431,7 @@ void Settings::load_det_settings(Gamma::Setting det, Gamma::Setting& root, int i
         if ((i+1) < tokens.size())
           truncated.name += "/";
       }
-      //PL_DBG << "looking for " << truncated.name << " in " << root.name;
+      PL_DBG << "looking for " << truncated.name << " in " << root.name;
       for (auto &q : root.branches.my_data_)
         load_det_settings(truncated, q, index);
     }

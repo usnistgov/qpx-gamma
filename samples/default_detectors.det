@@ -3,81 +3,119 @@
     <Detector>
         <Name>Sophia</Name>
         <Type>HPGe</Type>
-        <Calibration Type="Energy" EnergyUnits="keV">
-            <CalibrationCreationDate>2014-12-11T12:29:17.556280</CalibrationCreationDate>
-            <Equation Model="Polynomial">
-                <Coefficients>-0.505959 0.250237 1.05746e-08 0 0 0</Coefficients>
-            </Equation>
-        </Calibration>
-        <Optimization>
-            <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
-            <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
-            <Setting key="2" name="ENERGY_RISETIME" value="10.880000"/>
-            <Setting key="3" name="ENERGY_FLATTOP" value="1.066667"/>
-            <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
-            <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
-            <Setting key="6" name="TRIGGER_THRESHOLD" value="70.000000"/>
-            <Setting key="7" name="VGAIN" value="4.449439"/>
-            <Setting key="8" name="VOFFSET" value="0.240021"/>
-            <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
-            <Setting key="10" name="TRACE_DELAY" value="1.000000"/>
-            <Setting key="11" name="PSA_START" value="0.000000"/>
-            <Setting key="12" name="PSA_END" value="0.000000"/>
-            <Setting key="13" name="EMIN" value="0.000000"/>
-            <Setting key="14" name="BINFACTOR" value="1.000000"/>
-            <Setting key="15" name="TAU" value="57.000000"/>
-            <Setting key="16" name="BLCUT" value="15.000000"/>
-            <Setting key="17" name="XDT" value="2.040000"/>
-            <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
-            <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
-            <Setting key="20" name="INTEGRATOR" value="0.000000"/>
-            <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
-            <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
-            <Setting key="23" name="GATE_DELAY" value="0.013333"/>
-            <Setting key="24" name="COINC_DELAY" value="2346.666667"/>
-            <Setting key="25" name="BLAVG" value="65534.000000"/>
-            <Setting key="41" name="PSM_TEMP_AVG_LEN" value="1.000000"/>
-            <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
-        </Optimization>
+        <Calibrations>
+            <Calibration Type="Energy" EnergyUnits="keV">
+                <CalibrationCreationDate>2014-12-11T12:29:17.556280</CalibrationCreationDate>
+                <Equation Model="Polynomial">
+                    <Coefficients>-0.505959 0.250237 1.05746e-08 0 0 0</Coefficients>
+                </Equation>
+            </Calibration>
+        </Calibrations>
+        <Setting name="Optimization" index="-1" writable="false" address="0" type="stem">
+            <branches>
+                <Setting name="QpxSettings/Pixie-4/module/channel/CHANNEL_CSRA" index="0" writable="true" address="0" type="floating" value="180.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/CHANNEL_CSRB" index="0" writable="true" address="1" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/ENERGY_RISETIME" index="0" writable="true" address="2" type="floating" value="10.880000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/ENERGY_FLATTOP" index="0" writable="true" address="3" type="floating" value="1.066667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/TRIGGER_RISETIME" index="0" writable="true" address="4" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/TRIGGER_FLATTOP" index="0" writable="true" address="5" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/TRIGGER_THRESHOLD" index="0" writable="true" address="6" type="floating" value="70.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/VGAIN" index="0" writable="true" address="7" type="floating" value="4.449439" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V/V"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/VOFFSET" index="0" writable="true" address="8" type="floating" value="0.240021" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/TRACE_LENGTH" index="0" writable="true" address="9" type="floating" value="4.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/TRACE_DELAY" index="0" writable="true" address="10" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/PSA_START" index="0" writable="true" address="11" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/PSA_END" index="0" writable="true" address="12" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/EMIN" index="0" writable="true" address="13" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/BINFACTOR" index="0" writable="true" address="14" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/TAU" index="0" writable="true" address="15" type="floating" value="57.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/BLCUT" index="0" writable="true" address="16" type="floating" value="15.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/XDT" index="0" writable="true" address="17" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/BASELINE_PERCENT" index="0" writable="true" address="18" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/CFD_THRESHOLD" index="0" writable="true" address="19" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/INTEGRATOR" index="0" writable="true" address="20" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/CHANNEL_CSRC" index="0" writable="true" address="21" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/GATE_WINDOW" index="0" writable="true" address="22" type="floating" value="0.013333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/GATE_DELAY" index="0" writable="true" address="23" type="floating" value="0.013333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/COINC_DELAY" index="0" writable="true" address="24" type="floating" value="2346.666667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/BLAVG" index="0" writable="false" address="25" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/LIVE_TIME" index="0" writable="false" address="26" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/INPUT_COUNT_RATE" index="0" writable="false" address="27" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/FAST_PEAKS" index="0" writable="false" address="28" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/OUTPUT_COUNT_RATE" index="0" writable="false" address="29" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/NOUT" index="0" writable="false" address="30" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/GATE_RATE" index="0" writable="false" address="31" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/GATE_COUNTS" index="0" writable="false" address="32" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/FTDT" index="0" writable="false" address="33" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/SFDT" index="0" writable="false" address="34" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/GDT" index="0" writable="false" address="35" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/CURRENT_ICR" index="0" writable="false" address="36" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/CURRENT_OORF" index="0" writable="false" address="37" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="%"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/PSM_GAIN_AVG" index="0" writable="false" address="38" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/PSM_GAIN_AVG_LEN" index="0" writable="false" address="39" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/PSM_TEMP_AVG" index="0" writable="false" address="40" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="°C"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/PSM_TEMP_AVG_LEN" index="0" writable="true" address="41" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/PSM_GAIN_CORR" index="0" writable="true" address="42" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+            </branches>
+        </Setting>
     </Detector>
     <Detector>
         <Name>Daphne</Name>
         <Type>HPGe</Type>
-        <Calibration Type="Energy" EnergyUnits="keV">
-            <CalibrationCreationDate>2014-12-11T12:29:17.556280</CalibrationCreationDate>
-            <Equation Model="Polynomial">
-                <Coefficients>-0.422413 0.249778 7.32964e-09 0 0 0</Coefficients>
-            </Equation>
-        </Calibration>
-        <Optimization>
-            <Setting key="0" name="CHANNEL_CSRA" value="180.000000"/>
-            <Setting key="1" name="CHANNEL_CSRB" value="0.000000"/>
-            <Setting key="2" name="ENERGY_RISETIME" value="10.880000"/>
-            <Setting key="3" name="ENERGY_FLATTOP" value="1.066667"/>
-            <Setting key="4" name="TRIGGER_RISETIME" value="0.080000"/>
-            <Setting key="5" name="TRIGGER_FLATTOP" value="0.080000"/>
-            <Setting key="6" name="TRIGGER_THRESHOLD" value="50.000000"/>
-            <Setting key="7" name="VGAIN" value="4.204368"/>
-            <Setting key="8" name="VOFFSET" value="0.210037"/>
-            <Setting key="9" name="TRACE_LENGTH" value="4.000000"/>
-            <Setting key="10" name="TRACE_DELAY" value="1.000000"/>
-            <Setting key="11" name="PSA_START" value="0.000000"/>
-            <Setting key="12" name="PSA_END" value="0.000000"/>
-            <Setting key="13" name="EMIN" value="0.000000"/>
-            <Setting key="14" name="BINFACTOR" value="1.000000"/>
-            <Setting key="15" name="TAU" value="60.000000"/>
-            <Setting key="16" name="BLCUT" value="15.000000"/>
-            <Setting key="17" name="XDT" value="2.040000"/>
-            <Setting key="18" name="BASELINE_PERCENT" value="10.000000"/>
-            <Setting key="19" name="CFD_THRESHOLD" value="25.000000"/>
-            <Setting key="20" name="INTEGRATOR" value="0.000000"/>
-            <Setting key="21" name="CHANNEL_CSRC" value="0.000000"/>
-            <Setting key="22" name="GATE_WINDOW" value="0.013333"/>
-            <Setting key="23" name="GATE_DELAY" value="0.013333"/>
-            <Setting key="24" name="COINC_DELAY" value="2346.666667"/>
-            <Setting key="25" name="BLAVG" value="65534.000000"/>
-            <Setting key="41" name="PSM_TEMP_AVG_LEN" value="1.000000"/>
-            <Setting key="42" name="PSM_GAIN_CORR" value="10.000000"/>
-        </Optimization>
+        <Calibrations>
+            <Calibration Type="Energy" EnergyUnits="keV">
+                <CalibrationCreationDate>2014-12-11T12:29:17.556280</CalibrationCreationDate>
+                <Equation Model="Polynomial">
+                    <Coefficients>-0.422413 0.249778 7.32964e-09 0 0 0</Coefficients>
+                </Equation>
+            </Calibration>
+        </Calibrations>
+        <Setting name="Optimization" index="-1" writable="false" address="0" type="stem">
+            <branches>
+                <Setting name="QpxSettings/Pixie-4/module/channel/CHANNEL_CSRA" index="0" writable="true" address="0" type="floating" value="180.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/CHANNEL_CSRB" index="0" writable="true" address="1" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/ENERGY_RISETIME" index="0" writable="true" address="2" type="floating" value="10.880000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/ENERGY_FLATTOP" index="0" writable="true" address="3" type="floating" value="1.066667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/TRIGGER_RISETIME" index="0" writable="true" address="4" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/TRIGGER_FLATTOP" index="0" writable="true" address="5" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/TRIGGER_THRESHOLD" index="0" writable="true" address="6" type="floating" value="50.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/VGAIN" index="0" writable="true" address="7" type="floating" value="4.204368" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V/V"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/VOFFSET" index="0" writable="true" address="8" type="floating" value="0.210037" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/TRACE_LENGTH" index="0" writable="true" address="9" type="floating" value="4.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/TRACE_DELAY" index="0" writable="true" address="10" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/PSA_START" index="0" writable="true" address="11" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/PSA_END" index="0" writable="true" address="12" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/EMIN" index="0" writable="true" address="13" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/BINFACTOR" index="0" writable="true" address="14" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/TAU" index="0" writable="true" address="15" type="floating" value="60.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/BLCUT" index="0" writable="true" address="16" type="floating" value="15.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/XDT" index="0" writable="true" address="17" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/BASELINE_PERCENT" index="0" writable="true" address="18" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/CFD_THRESHOLD" index="0" writable="true" address="19" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/INTEGRATOR" index="0" writable="true" address="20" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/CHANNEL_CSRC" index="0" writable="true" address="21" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/GATE_WINDOW" index="0" writable="true" address="22" type="floating" value="0.013333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/GATE_DELAY" index="0" writable="true" address="23" type="floating" value="0.013333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/COINC_DELAY" index="0" writable="true" address="24" type="floating" value="2346.666667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/BLAVG" index="0" writable="false" address="25" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/LIVE_TIME" index="0" writable="false" address="26" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/INPUT_COUNT_RATE" index="0" writable="false" address="27" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/FAST_PEAKS" index="0" writable="false" address="28" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/OUTPUT_COUNT_RATE" index="0" writable="false" address="29" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/NOUT" index="0" writable="false" address="30" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/GATE_RATE" index="0" writable="false" address="31" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/GATE_COUNTS" index="0" writable="false" address="32" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/FTDT" index="0" writable="false" address="33" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/SFDT" index="0" writable="false" address="34" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/GDT" index="0" writable="false" address="35" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/CURRENT_ICR" index="0" writable="false" address="36" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/CURRENT_OORF" index="0" writable="false" address="37" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="%"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/PSM_GAIN_AVG" index="0" writable="false" address="38" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/PSM_GAIN_AVG_LEN" index="0" writable="false" address="39" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/PSM_TEMP_AVG" index="0" writable="false" address="40" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="°C"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/PSM_TEMP_AVG_LEN" index="0" writable="true" address="41" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                <Setting name="QpxSettings/Pixie-4/module/channel/PSM_GAIN_CORR" index="0" writable="true" address="42" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+            </branches>
+        </Setting>
     </Detector>
 </Detectors>

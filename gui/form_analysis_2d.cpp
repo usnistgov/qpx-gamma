@@ -409,10 +409,7 @@ void FormAnalysis2D::make_gated_spectra() {
     }
 
     gate_y->addSpill(spill);
-    if (symmetrized)
-      ui->plotSpectrum2->setSpectrum(gate_y, ymin_, ymax_);
-    else
-      ui->plotSpectrum2->setSpectrum(gate_y, xmin_, xmax_);
+    ui->plotSpectrum2->setSpectrum(gate_y, ymin_, ymax_);
 
     sum_inclusive += sum_exclusive;
     fill_table();
