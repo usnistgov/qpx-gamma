@@ -5,7 +5,7 @@
             <branches>
                 <Setting name="Detector 0" index="0" writable="true" address="0" type="detector" value="Sophia"/>
                 <Setting name="Detector 1" index="1" writable="true" address="0" type="detector" value="Daphne"/>
-                <Setting name="Detector 2" index="2" writable="true" address="0" type="detector" value="none"/>
+                <Setting name="Detector 2" index="2" writable="true" address="0" type="detector" value="Daphne"/>
                 <Setting name="Detector 3" index="3" writable="true" address="0" type="detector" value="none"/>
             </branches>
         </Setting>
@@ -24,29 +24,35 @@
                 </Setting>
                 <Setting name="System" index="-1" writable="false" address="0" type="stem">
                     <branches>
-                        <Setting name="NUMBER_MODULES" index="-1" writable="true" address="0" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                        <Setting name="OFFLINE_ANALYSIS" index="-1" writable="true" address="1" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                        <Setting name="AUTO_PROCESSLMDATA" index="-1" writable="true" address="2" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                        <Setting name="MAX_NUMBER_MODULES" index="-1" writable="true" address="3" type="floating" value="7.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                        <Setting name="NUMBER_MODULES" index="-1" writable="false" address="0" type="integer" value="2" minimum="0.000000" maximum="56.000000" step="1.000000"/>
+                        <Setting name="OFFLINE_ANALYSIS" index="-1" writable="false" address="1" type="boolean" value="true"/>
+                        <Setting name="AUTO_PROCESSLMDATA" index="-1" writable="false" address="2" type="boolean" value="false"/>
+                        <Setting name="MAX_NUMBER_MODULES" index="-1" writable="true" address="3" type="integer" value="3" minimum="0.000000" maximum="56.000000" step="1.000000"/>
                         <Setting name="C_LIBRARY_RELEASE" index="-1" writable="false" address="4" type="floating" value="608.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                         <Setting name="C_LIBRARY_BUILD" index="-1" writable="false" address="5" type="floating" value="7.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                        <Setting name="KEEP_CW" index="-1" writable="true" address="6" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                        <Setting name="SLOT_WAVE" index="-1" writable="true" address="7" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                        <Setting name="KEEP_CW" index="-1" writable="true" address="6" type="boolean" value="false"/>
                         <Setting name="module" index="-1" writable="false" address="0" type="stem">
                             <branches>
                                 <Setting name="MODULE_NUMBER" index="-1" writable="false" address="0" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                 <Setting name="MODULE_CSRA" index="-1" writable="true" address="1" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                 <Setting name="MODULE_CSRB" index="-1" writable="true" address="2" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                 <Setting name="MODULE_FORMAT" index="-1" writable="true" address="3" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="MAX_EVENTS" index="-1" writable="true" address="4" type="floating" value="6.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                                <Setting name="MAX_EVENTS" index="-1" writable="true" address="4" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                 <Setting name="COINCIDENCE_PATTERN" index="-1" writable="true" address="5" type="floating" value="65534.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="ACTUAL_COINCIDENCE_WAIT" index="-1" writable="true" address="6" type="floating" value="13.333333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="ns"/>
+                                <Setting name="ACTUAL_COINCIDENCE_WAIT" index="-1" writable="true" address="6" type="floating" value="53.333332" minimum="13.333333" maximum="87374663.644800" step="13.333333" unit="ns"/>
                                 <Setting name="MIN_COINCIDENCE_WAIT" index="-1" writable="false" address="7" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="ticks"/>
                                 <Setting name="SYNCH_WAIT" index="-1" writable="true" address="8" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                 <Setting name="IN_SYNCH" index="-1" writable="true" address="9" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                 <Setting name="RUN_TYPE" index="-1" writable="true" address="10" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="FILTER_RANGE" index="-1" writable="true" address="11" type="floating" value="4.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="MODULEPATTERN" index="-1" writable="true" address="12" type="floating" value="32.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                                <Setting name="FILTER_RANGE" index="-1" writable="true" address="11" type="int_menu" value="5">
+                                    <menu_item item_value="1" item_text="2 bits"/>
+                                    <menu_item item_value="2" item_text="4 bits"/>
+                                    <menu_item item_value="3" item_text="8 bits"/>
+                                    <menu_item item_value="4" item_text="16 bits"/>
+                                    <menu_item item_value="5" item_text="32 bits"/>
+                                    <menu_item item_value="6" item_text="64 bits"/>
+                                </Setting>
+                                <Setting name="MODULEPATTERN" index="-1" writable="true" address="12" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                 <Setting name="NNSHAREPATTERN" index="-1" writable="true" address="13" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                 <Setting name="DBLBUFCSR" index="-1" writable="true" address="14" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                 <Setting name="MODULE_CSRC" index="-1" writable="true" address="15" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
@@ -87,7 +93,7 @@
                                         <Setting name="BINFACTOR" index="0" writable="true" address="14" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="TAU" index="0" writable="true" address="15" type="floating" value="50.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="BLCUT" index="0" writable="true" address="16" type="floating" value="190.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="XDT" index="0" writable="true" address="17" type="floating" value="10.040000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                                        <Setting name="XDT" index="0" writable="true" address="17" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="BASELINE_PERCENT" index="0" writable="true" address="18" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="CFD_THRESHOLD" index="0" writable="true" address="19" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="INTEGRATOR" index="0" writable="true" address="20" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
@@ -134,7 +140,7 @@
                                         <Setting name="BINFACTOR" index="1" writable="true" address="14" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="TAU" index="1" writable="true" address="15" type="floating" value="50.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="BLCUT" index="1" writable="true" address="16" type="floating" value="97.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="XDT" index="1" writable="true" address="17" type="floating" value="10.040000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                                        <Setting name="XDT" index="1" writable="true" address="17" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="BASELINE_PERCENT" index="1" writable="true" address="18" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="CFD_THRESHOLD" index="1" writable="true" address="19" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="INTEGRATOR" index="1" writable="true" address="20" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
@@ -172,7 +178,7 @@
                                         <Setting name="TRIGGER_FLATTOP" index="2" writable="true" address="5" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="TRIGGER_THRESHOLD" index="2" writable="true" address="6" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="VGAIN" index="2" writable="true" address="7" type="floating" value="1.314394" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V/V"/>
-                                        <Setting name="VOFFSET" index="2" writable="true" address="8" type="floating" value="0.578995" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V"/>
+                                        <Setting name="VOFFSET" index="2" writable="true" address="8" type="floating" value="0.759277" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V"/>
                                         <Setting name="TRACE_LENGTH" index="2" writable="true" address="9" type="floating" value="4.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="TRACE_DELAY" index="2" writable="true" address="10" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="PSA_START" index="2" writable="true" address="11" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
@@ -180,8 +186,8 @@
                                         <Setting name="EMIN" index="2" writable="true" address="13" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="BINFACTOR" index="2" writable="true" address="14" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="TAU" index="2" writable="true" address="15" type="floating" value="50.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="BLCUT" index="2" writable="true" address="16" type="floating" value="15.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="XDT" index="2" writable="true" address="17" type="floating" value="10.040000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                                        <Setting name="BLCUT" index="2" writable="true" address="16" type="floating" value="97.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                                        <Setting name="XDT" index="2" writable="true" address="17" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="BASELINE_PERCENT" index="2" writable="true" address="18" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="CFD_THRESHOLD" index="2" writable="true" address="19" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="INTEGRATOR" index="2" writable="true" address="20" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
@@ -228,7 +234,7 @@
                                         <Setting name="BINFACTOR" index="3" writable="true" address="14" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="TAU" index="3" writable="true" address="15" type="floating" value="50.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="BLCUT" index="3" writable="true" address="16" type="floating" value="15.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="XDT" index="3" writable="true" address="17" type="floating" value="10.040000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
+                                        <Setting name="XDT" index="3" writable="true" address="17" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="BASELINE_PERCENT" index="3" writable="true" address="18" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="CFD_THRESHOLD" index="3" writable="true" address="19" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="INTEGRATOR" index="3" writable="true" address="20" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
@@ -258,6 +264,9 @@
                                 </Setting>
                             </branches>
                         </Setting>
+                        <Setting name="SLOT_WAVE" index="-1" writable="true" address="7" type="integer" value="0" minimum="0.000000" maximum="3.000000" step="1.000000"/>
+                        <Setting name="SLOT_WAVE" index="-1" writable="true" address="8" type="integer" value="1" minimum="0.000000" maximum="3.000000" step="1.000000"/>
+                        <Setting name="SLOT_WAVE" index="-1" writable="true" address="9" type="integer" value="3" minimum="0.000000" maximum="3.000000" step="1.000000"/>
                     </branches>
                 </Setting>
             </branches>
