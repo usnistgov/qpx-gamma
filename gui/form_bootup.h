@@ -32,37 +32,7 @@
 
 namespace Ui {
 class FormBootup;
-class DialogBootFiles;
 }
-
-class DialogBootFiles : public QDialog
-{
-    Q_OBJECT
-
-public:
-    explicit DialogBootFiles(const std::vector<std::string> &files,  QWidget *parent = 0);
-    ~DialogBootFiles();
-
-signals:
-    void bootFilesReady(std::vector<std::string>);
-
-private slots:
-    void on_FippiFind_clicked();
-    void on_SyspixieFind_clicked();
-    void on_PixieBinFind_clicked();
-    void on_PxiBinFind_clicked();
-    void on_PxiSettingsFind_clicked();
-    void on_PxiVarFind_clicked();
-    void on_PxiLstFind_clicked();
-
-    void on_buttonBox_accepted();
-
-private:
-    Ui::DialogBootFiles *ui;
-
-    std::vector<std::string> my_files_;
-
-};
 
 class FormBootup : public QWidget
 {
@@ -72,9 +42,6 @@ public:
   explicit FormBootup(ThreadRunner&, QSettings&, QWidget *parent = 0);
   ~FormBootup();
 
-  void loadSettings();
-  void saveSettings();
-
 signals:
   void toggleIO(bool);
   void statusText(QString);
@@ -83,9 +50,7 @@ protected:
   void closeEvent(QCloseEvent*);
 
 private slots:
-  void updateBootFiles(std::vector<std::string>);
   void on_bootButton_clicked();
-  void on_pushBootFiles_clicked();
   void boot_complete(bool, bool);
   void toggle_push(bool enable, Pixie::LiveStatus);
 
@@ -93,12 +58,7 @@ private:
   Ui::FormBootup *ui;
 
   Pixie::Wrapper& pixie_; //eliminate this
-
-  std::vector<std::string>    boot_files_;        //XIA stuff
-
   ThreadRunner        &runner_thread_;
-  QString data_directory_;
-  QSettings &settings_;
 };
 
 #endif // FORM_BOOTUP_H

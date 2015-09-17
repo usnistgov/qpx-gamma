@@ -202,14 +202,15 @@ void StatsUpdate::from_xml(tinyxml2::XMLElement* root) {
 
 // to convert Pixie time to lab time
 double RunInfo::time_scale_factor() const {
+  double tot = p4_state.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/TOTAL_TIME", 0, Gamma::SettingType::floating), 0).value;
   if (time_stop.is_not_a_date_time() ||
       time_start.is_not_a_date_time() ||
-      (p4_state.get_mod("TOTAL_TIME") == 0.0) ||
-      (p4_state.get_mod("TOTAL_TIME") == -1))
+      (tot == 0.0) ||
+      (tot == -1))
     return 1.0;
   else
     return (time_stop - time_start).total_microseconds() /
-        (1000000 * p4_state.get_mod("TOTAL_TIME"));
+        (1000000 * tot);
 }
 
 void RunInfo::to_xml(tinyxml2::XMLPrinter &printer, bool with_settings) const {

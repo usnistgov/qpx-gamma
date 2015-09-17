@@ -236,10 +236,8 @@ void FormGainMatch::run_completed() {
 
 void FormGainMatch::do_post_processing() {
   Pixie::Settings &settings = pixie_.settings();
-  double old_gain = settings.get_chan("VGAIN",
-                                      Pixie::Channel(ui->spinOptChan->value()),
-                                      Pixie::Module::current,
-                                      Pixie::LiveStatus::online);
+  settings.get_all_settings();
+  double old_gain = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", ui->spinOptChan->value(), Gamma::SettingType::floating), ui->spinOptChan->value()).value;
   QThread::sleep(2);
   double new_gain = old_gain;
   if (gauss_opt_.gaussian_.center_ < gauss_ref_.gaussian_.center_) {
@@ -254,12 +252,11 @@ void FormGainMatch::do_post_processing() {
     emit toggleIO(true);
     return;
   }
-  settings.set_chan("VGAIN",new_gain,Pixie::Channel(ui->spinOptChan->value()), Pixie::Module::current);
+  Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", ui->spinOptChan->value(), Gamma::SettingType::floating);
+  set.value = new_gain;
+  settings.set_setting(set, ui->spinOptChan->value());
   QThread::sleep(2);
-  new_gain = settings.get_chan("VGAIN",
-                               Pixie::Channel(ui->spinOptChan->value()),
-                               Pixie::Module::current,
-                               Pixie::LiveStatus::online);
+  new_gain = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", ui->spinOptChan->value(), Gamma::SettingType::floating), ui->spinOptChan->value()).value;
 
 
   PL_INFO << "gain changed from " << std::fixed << std::setprecision(6)

@@ -42,11 +42,18 @@ void TreeItem::eat_data(const Gamma::Setting &data) {
 
   if (itemData.setting_type == Gamma::SettingType::stem) {
     if (itemData.branches.size() != childItems.size()) {
-      PL_ERR << "Setting branch size mismatch";
-      return;
+      PL_WARN << "Setting branch size mismatch";
+      for (int i=0; i <  childItems.size(); ++i)
+        delete childItems.takeAt(i);
+
+      //qDeleteAll(childItems);
+      childItems.resize(itemData.branches.size());
+      for (int i=0; i < itemData.branches.size(); ++i)
+        childItems[i] = new TreeItem(itemData.branches.get(i), this);
+    } else {
+      for (int i=0; i < itemData.branches.size(); ++i)
+        childItems[i]->eat_data(itemData.branches.get(i));
     }
-    for (int i=0; i < itemData.branches.size(); ++i)
-      childItems[i]->eat_data(itemData.branches.get(i));
   }
 }
 
@@ -67,7 +74,7 @@ int TreeItem::childCount() const
 
 int TreeItem::childNumber() const
 {
-  if (parentItem)
+  if (parentItem && !parentItem->childItems.empty())
     return parentItem->childItems.indexOf(const_cast<TreeItem*>(this));
 
   return 0;
@@ -89,8 +96,10 @@ QVariant TreeItem::display_data(int column) const
         return QString::number(static_cast<uint32_t>(itemData.value_int, 16)).toUpper();
       else
         return QVariant::fromValue(itemData.value_int);
-    else if (itemData.setting_type == Gamma::SettingType::floating)
+    else if (itemData.setting_type == Gamma::SettingType::floating) {
+      //PL_DBG << "float data " << itemData.value;
       return QVariant::fromValue(itemData.value);
+    }
     else if (itemData.setting_type == Gamma::SettingType::int_menu)
       return QString::fromStdString(itemData.int_menu_items.at(itemData.value_int));
     else if (itemData.setting_type == Gamma::SettingType::boolean)

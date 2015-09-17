@@ -51,7 +51,7 @@ Event Wrapper::getOscil() {
   
   Event oscil_traces;
   uint32_t* oscil_data;
-  int cur_mod = static_cast<int>(my_settings_.current_module());
+  int cur_mod = 0;
 
   if (my_settings_.live() != LiveStatus::online)
     PL_WARN << "Pixie not online";
@@ -78,8 +78,8 @@ void Wrapper::getMca(RunType type, uint64_t timeout, SpectraSet& spectra,
   PL_INFO << "Multithreaded MCA acquisition: type " << static_cast<int>(type)
           << " scheduled for " << timeout << " seconds";
 
-  my_settings_.set_mod("RUN_TYPE",    static_cast<double>(type));
-  my_settings_.set_mod("MAX_EVENTS",  static_cast<double>(0));
+  my_settings_.set_mod("RUN_TYPE",    static_cast<double>(type), Module(0));
+  my_settings_.set_mod("MAX_EVENTS",  static_cast<double>(0), Module(0));
   
   SynchronizedQueue<Spill*> rawQueue;
   SynchronizedQueue<Spill*> parsedQueue;
@@ -165,8 +165,8 @@ ListData* Wrapper::getList(RunType type, uint64_t timeout,
   PL_INFO << "Multithreaded list mode acquisition: type " << static_cast<int>(type)
           << " scheduled for " << timeout << " seconds";
 
-  my_settings_.set_mod("RUN_TYPE",    static_cast<double>(type));
-  my_settings_.set_mod("MAX_EVENTS",  static_cast<double>(0));
+  my_settings_.set_mod("RUN_TYPE",    static_cast<double>(type), Module(0));
+  my_settings_.set_mod("MAX_EVENTS",  static_cast<double>(0), Module(0));
   
   SynchronizedQueue<Spill*> rawQueue;
   SynchronizedQueue<Spill*> parsedQueue;
@@ -304,7 +304,7 @@ void Wrapper::control_err(int32_t err_val) {
 
 bool Wrapper::start_run(RunType type) {
   uint16_t runtype = (static_cast<uint16_t>(type) | 0x1000);
-  int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
+  int cur_mod = 0;
   int32_t ret = Pixie_Acquire_Data(runtype, NULL, 0, cur_mod);
   switch (ret) {
     case 0x10:
@@ -323,7 +323,7 @@ bool Wrapper::start_run(RunType type) {
 
 bool Wrapper::resume_run(RunType type) {
   uint16_t runtype = (static_cast<uint16_t>(type) | 0x2000);
-  int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
+  int cur_mod = 0;
   int32_t ret = Pixie_Acquire_Data(runtype, NULL, 0, cur_mod);
   switch (ret) {
     case 0x20:
@@ -342,7 +342,7 @@ bool Wrapper::resume_run(RunType type) {
 
 bool Wrapper::stop_run(RunType type) {
   uint16_t runtype = (static_cast<uint16_t>(type) | 0x3000);
-  int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
+  int cur_mod = 0;
   int32_t ret = Pixie_Acquire_Data(runtype, NULL, 0, cur_mod);
   switch (ret) {
     case 0x30:
@@ -362,18 +362,18 @@ bool Wrapper::stop_run(RunType type) {
 
 uint32_t Wrapper::poll_run(RunType type) {
   uint16_t runtype = (static_cast<uint16_t>(type) | 0x4000);
-  int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
+  int cur_mod = 0;
   return Pixie_Acquire_Data(runtype, NULL, 0, cur_mod);
 };
 
 uint32_t Wrapper::poll_run_dbl() {
-  int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
+  int cur_mod = 0;
   return Pixie_Acquire_Data(0x40FF, NULL, 0, cur_mod);
 };
 
 
 bool Wrapper::read_EM(uint32_t* data) {
-  int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
+  int cur_mod = 0;
   PL_DBG << "Current module " << cur_mod;
   S32 retval = Pixie_Acquire_Data(0x9003, (U32*)data, NULL, cur_mod);
   switch (retval) {
@@ -394,7 +394,7 @@ bool Wrapper::read_EM(uint32_t* data) {
 };
 
 bool Wrapper::write_EM(uint32_t* data) {
-  int cur_mod = static_cast<int>(getInstance().my_settings_.current_module());
+  int cur_mod = 0;
   return (Pixie_Acquire_Data(0x9004, (U32*)data, NULL, cur_mod) == 0x90);
 };
 
@@ -429,7 +429,7 @@ bool Wrapper::read_EM_dbl(uint32_t* data) {
     CSRs[i] = CSR;
 
     // A read of Pixie's word count register 
-    // This also indicates to the DSP that a readout has begun 
+    // This also indicates to the DSP that a readout has begun
     Pixie_RdWrdCnt((U8)i, &WordCount);
     WCRs[i] = WordCount;
   }	// CSR for loop
@@ -605,8 +605,8 @@ void Wrapper::worker_run(RunType type, uint64_t timeout_limit,
   if (!clear_EM())
     return;
 
-  pxi.my_settings_.set_mod("DBLBUFCSR",   static_cast<double>(0));
-  pxi.my_settings_.set_mod("MODULE_CSRA", static_cast<double>(2));
+  pxi.my_settings_.set_mod("DBLBUFCSR",   static_cast<double>(0), Module(0));
+  pxi.my_settings_.set_mod("MODULE_CSRA", static_cast<double>(2), Module(0));
 
   //start of run pixie status update
   //mainly for spectra to have calibration
@@ -627,8 +627,8 @@ void Wrapper::worker_run(RunType type, uint64_t timeout_limit,
   
   total_timer.resume();
   
-  pxi.my_settings_.get_chan_stats();
-  pxi.my_settings_.get_mod_stats();
+  pxi.my_settings_.get_chan_stats(Module::all);
+  pxi.my_settings_.get_mod_stats(Module::all);
   fetched_spill->stats->eat_stats(pxi.my_settings_);
   fetched_spill->stats->lab_time = session_start_time;
   spill_queue->enqueue(fetched_spill);
@@ -645,8 +645,8 @@ void Wrapper::worker_run(RunType type, uint64_t timeout_limit,
       return;
     
     if (spill_number > 0) {
-      pxi.my_settings_.get_mod_stats();
-      pxi.my_settings_.get_chan_stats();
+      pxi.my_settings_.get_mod_stats(Module::all);
+      pxi.my_settings_.get_chan_stats(Module::all);
       fetched_spill->stats = new StatsUpdate;
       fetched_spill->stats->eat_stats(pxi.my_settings_);
       fetched_spill->stats->spill_number = spill_number;
@@ -685,8 +685,8 @@ void Wrapper::worker_run(RunType type, uint64_t timeout_limit,
     readout_timer.stop();
   }
 
-  pxi.my_settings_.get_mod_stats();
-  pxi.my_settings_.get_chan_stats();
+  pxi.my_settings_.get_mod_stats(Module::all);
+  pxi.my_settings_.get_chan_stats(Module::all);
   fetched_spill->stats = new StatsUpdate;
   fetched_spill->stats->eat_stats(pxi.my_settings_);
   fetched_spill->stats->spill_number = spill_number;
@@ -725,8 +725,8 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
   if (!pxi.clear_EM())
     return;
 
-  pxi.my_settings_.set_mod("DBLBUFCSR",   static_cast<double>(1));
-  pxi.my_settings_.set_mod("MODULE_CSRA", static_cast<double>(0));
+  pxi.my_settings_.set_mod("DBLBUFCSR",   static_cast<double>(1), Module(0));
+  pxi.my_settings_.set_mod("MODULE_CSRA", static_cast<double>(0), Module(0));
   
   //start of run pixie status update
   //mainly for spectra to have calibration
@@ -748,8 +748,8 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
 
   total_timer.resume();
 
-  pxi.my_settings_.get_chan_stats();
-  pxi.my_settings_.get_mod_stats();
+  pxi.my_settings_.get_chan_stats(Module::all);
+  pxi.my_settings_.get_mod_stats(Module::all);
   fetched_spill->stats->eat_stats(pxi.my_settings_);
   fetched_spill->stats->lab_time = session_start_time;
   spill_queue->enqueue(fetched_spill);
@@ -766,8 +766,8 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
       timeout = (total_timer.timeout() || interruptor->load());
     };
     block_time = boost::posix_time::microsec_clock::local_time();
-    pxi.my_settings_.get_mod_stats();
-    pxi.my_settings_.get_chan_stats();
+    pxi.my_settings_.get_mod_stats(Module::all);
+    pxi.my_settings_.get_chan_stats(Module::all);
 
     fetched_spill = new Spill;
     fetched_spill->data.resize(list_mem_len32, 0);

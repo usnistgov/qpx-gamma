@@ -76,7 +76,7 @@ Simulator::Simulator(SpectraSet* all_spectra, std::array<int,2> chans,
   
   count_ = md.total_count;
 
-  time_factor = settings.get_mod("TOTAL_TIME") / lab_time;
+  time_factor = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/TOTAL_TIME", 0, Gamma::SettingType::floating), 0).value / lab_time;
   OCR = static_cast<double>(count_) / lab_time;
 
   int adjust_bits = source_res - dest_res;
@@ -143,10 +143,10 @@ StatsUpdate Simulator::getBlock(double duration) {
     fraction = duration / lab_time;
 
   for (int i = 0; i<2; i++) {
-    newBlock.fast_peaks[channels_[i]] = settings.get_chan("FAST_PEAKS", Channel(channels_[i])) * fraction;
-    newBlock.live_time[channels_[i]]  = settings.get_chan("LIVE_TIME", Channel(channels_[i])) * fraction;
-    newBlock.ftdt[channels_[i]]       = settings.get_chan("FTDT", Channel(channels_[i])) * fraction;
-    newBlock.sfdt[channels_[i]]       = settings.get_chan("SFDT", Channel(channels_[i])) * fraction;
+    newBlock.fast_peaks[channels_[i]] = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/FAST_PEAKS", i, Gamma::SettingType::floating), i).value * fraction;
+    newBlock.live_time[channels_[i]]  = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/LIVE_TIME", i, Gamma::SettingType::floating), i).value * fraction;
+    newBlock.ftdt[channels_[i]]       = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/FTDT", i, Gamma::SettingType::floating), i).value * fraction;
+    newBlock.sfdt[channels_[i]]       = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/SFDT", i, Gamma::SettingType::floating), i).value * fraction;
   }
       
 

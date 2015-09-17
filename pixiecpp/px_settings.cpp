@@ -42,12 +42,7 @@ Settings::Settings() {
   module_parameter_values_.resize(PRESET_MAX_MODULES*N_MODULE_PAR, 0.0);
   channel_parameter_values_.resize(PRESET_MAX_MODULES*N_CHANNEL_PAR*NUMBER_OF_CHANNELS, 0.0);
 
-  current_module_ = Module::none;
-  current_channel_ = Channel::none;
   live_ = LiveStatus::dead;
-
-  current_module_ = Module(0);
-  current_channel_ = Channel(0);
 }
 
 Settings::Settings(const Settings& other) :
@@ -55,7 +50,6 @@ Settings::Settings(const Settings& other) :
   settings_tree_(other.settings_tree_),
 
   num_chans_(other.num_chans_), detectors_(other.detectors_),
-  current_module_(other.current_module_), current_channel_(other.current_channel_),
   boot_files_(other.boot_files_),
   system_parameter_values_(other.system_parameter_values_),
   module_parameter_values_(other.module_parameter_values_),
@@ -100,12 +94,26 @@ bool Settings::read_settings_bulk(){
                   for (auto &o : p.branches.my_data_) {
                     if (o.setting_type == Gamma::SettingType::floating)
                       o.value = channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
+                    else if ((o.setting_type == Gamma::SettingType::integer)
+                             || (o.setting_type == Gamma::SettingType::boolean)
+                             || (o.setting_type == Gamma::SettingType::int_menu))
+                      o.value_int = channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
                   }
-                } else if (p.setting_type == Gamma::SettingType::floating)
+                }
+                else if (p.setting_type == Gamma::SettingType::floating)
                   p.value = module_parameter_values_[modnum * N_MODULE_PAR +  p.address];
+                else if ((p.setting_type == Gamma::SettingType::integer)
+                         || (p.setting_type == Gamma::SettingType::boolean)
+                         || (p.setting_type == Gamma::SettingType::int_menu))
+                  p.value_int = module_parameter_values_[modnum * N_MODULE_PAR +  p.address];
               }
-            } else if (k.setting_type == Gamma::SettingType::floating)
+            }
+            else if (k.setting_type == Gamma::SettingType::floating)
               k.value = system_parameter_values_[k.address];
+            else if ((k.setting_type == Gamma::SettingType::integer)
+                     || (k.setting_type == Gamma::SettingType::boolean)
+                     || (k.setting_type == Gamma::SettingType::int_menu))
+              k.value_int = system_parameter_values_[k.address];
           }
         }
       }
@@ -137,6 +145,59 @@ bool Settings::write_settings_bulk(){
               boot_files_[k.address] = k.value_text;
           }
         } else if ((q.setting_type == Gamma::SettingType::stem) && (q.name == "System")) {
+          bool hardware_changed = false;
+          Gamma::Setting maxmods  = q.branches.get(Gamma::Setting("MAX_NUMBER_MODULES", 3, Gamma::SettingType::integer));
+          if (maxmods.value_int > N_SYSTEM_PAR - 7)
+            maxmods.value_int = N_SYSTEM_PAR - 7;
+          uint16_t oldmax = system_parameter_values_[3];
+          if (oldmax != maxmods.value_int) {
+            PL_DBG << "max num of modules changed";
+            hardware_changed = true;
+            std::vector<Gamma::Setting> old_modules(N_SYSTEM_PAR - 7);
+            for (int i=0; i< N_SYSTEM_PAR - 7; ++i)
+              old_modules[i] = q.branches.get(Gamma::Setting("SLOT_WAVE", 7+i, Gamma::SettingType::integer));
+            for (int i=0; i< N_SYSTEM_PAR - 7; ++i)
+              q.branches.remove_a(Gamma::Setting("SLOT_WAVE", 7+i, Gamma::SettingType::integer));
+            system_parameter_values_[3] = maxmods.value_int;
+            write_sys("MAX_NUMBER_MODULES");
+            for (int i=0; i<maxmods.value_int; ++i) {
+              Gamma::Setting slot = old_modules[i];
+              if (slot == Gamma::Setting())
+                slot = Gamma::Setting("SLOT_WAVE", 7+i, Gamma::SettingType::integer);
+              slot.maximum = maxmods.value_int;
+              slot.writable = true;
+              q.branches.add(slot);
+            }
+          }
+          uint16_t total = 0;
+          for (int i=0; i<maxmods.value_int; ++i) {
+            Gamma::Setting modslot = q.branches.get(Gamma::Setting("SLOT_WAVE", 7+i, Gamma::SettingType::integer));
+            PL_DBG << "iterating slot " << i << " as " << modslot.value_int;
+            if ((modslot != Gamma::Setting()) && (system_parameter_values_[7+i] != modslot.value_int)) {
+              hardware_changed = true;
+            }
+            if (modslot.value_int != 0)
+              total++;
+          }
+          PL_DBG << "total slots = " << total;
+          if (system_parameter_values_[0] != total) {
+            PL_DBG << "total modules in slots changed";
+            system_parameter_values_[0] = total;
+            write_sys("NUMBER_MODULES");
+            hardware_changed = true;
+          }
+          if (hardware_changed) {
+            PL_DBG << "slot config changed";
+            for (int i=0; i<maxmods.value_int; ++i) {
+              Gamma::Setting modslot = q.branches.get(Gamma::Setting("SLOT_WAVE", 7+i, Gamma::SettingType::integer));
+              if ((modslot != Gamma::Setting()) && (system_parameter_values_[7+i] != modslot.value_int)) {
+                PL_DBG << "changing slot " << i << " to " << modslot.value_int;
+                system_parameter_values_[7+i] = modslot.value_int;
+              }
+            }
+            write_sys("SLOT_WAVE");
+          }
+
           for (auto &k : q.branches.my_data_) {
 
             if (k.setting_type == Gamma::SettingType::stem) {
@@ -148,15 +209,29 @@ bool Settings::write_settings_bulk(){
                     if (o.writable && (o.setting_type == Gamma::SettingType::floating) && (channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value)) {
                       channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value;
                       write_chan(o.name.c_str(), modnum, channum);
+                    } else if (o.writable && ((o.setting_type == Gamma::SettingType::integer)
+                                              || (o.setting_type == Gamma::SettingType::boolean)
+                                              || (o.setting_type == Gamma::SettingType::int_menu))
+                                          && (channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value_int)) {
+                      channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value_int;
+                      write_chan(o.name.c_str(), modnum, channum);
                     }
                   }
                 } else if (p.writable && (p.setting_type == Gamma::SettingType::floating) && (module_parameter_values_[modnum * N_MODULE_PAR +  p.address] != p.value)) {
                   module_parameter_values_[modnum * N_MODULE_PAR +  p.address] = p.value;
                   write_mod(p.name.c_str(), modnum);
+                } else if (p.writable && ((p.setting_type == Gamma::SettingType::integer)
+                                          || (p.setting_type == Gamma::SettingType::boolean)
+                                          || (p.setting_type == Gamma::SettingType::int_menu))
+                                      && (module_parameter_values_[modnum * N_MODULE_PAR +  p.address] != p.value_int)) {
+                  module_parameter_values_[modnum * N_MODULE_PAR +  p.address] = p.value_int;
+                  write_mod(p.name.c_str(), modnum);
                 }
               }
-            } else if (k.writable && (k.setting_type == Gamma::SettingType::floating) && (system_parameter_values_[k.address] != k.value)) {
-              system_parameter_values_[k.address] = k.value;
+            } else if (k.writable &&
+                       (k.setting_type == Gamma::SettingType::boolean) &&
+                       (system_parameter_values_[k.address] != k.value_int)) {
+              system_parameter_values_[k.address] = k.value_int;
               write_sys(k.name.c_str());
             }
           }
@@ -185,7 +260,8 @@ bool Settings::boot() {
     return false;
 
   S32 retval;
-  int offline = get_sys("OFFLINE_ANALYSIS");
+  set_sys("OFFLINE_ANALYSIS", 0);  //attempt live boot first
+  set_sys("AUTO_PROCESSLMDATA", 0);  //do not write XIA datafile
 
   bool valid_files = true;
   for (int i=0; i < 7; i++) {
@@ -202,51 +278,36 @@ bool Settings::boot() {
     return false;
   }
 
-  if (!offline) {
-    int max = get_sys("NUMBER_MODULES");
-    if (!max) {
-      PL_ERR << "No valid module slots. Boot aborting.";
-      return false;
-    } else {
-      PL_DBG << "Number of modules to boot: " << max;
-      read_sys("SLOT_WAVE");
-      for (int i=0; i < max; i++)
-        PL_DBG << " module " << i << " in slot "
-               << system_parameter_values_[i_sys("SLOT_WAVE") + i];
-    }
+  int max = get_sys("NUMBER_MODULES");
+  if (!max) {
+    PL_ERR << "No valid module slots.";
+  } else {
+    PL_DBG << "Number of modules to boot: " << max;
+    read_sys("SLOT_WAVE");
+    for (int i=0; i < max; i++)
+      PL_DBG << " module " << i << " in slot "
+             << system_parameter_values_[i_sys("SLOT_WAVE") + i];
   }
-
-  set_sys("AUTO_PROCESSLMDATA", 0);  //do not write XIA datafile
 
   retval = Pixie_Boot_System(0x1F);
   //bad files do not result in boot error!!
   if (retval >= 0) {
-    if (offline)
-      live_ = LiveStatus::offline;
-    else
-      live_ = LiveStatus::online;
+    live_ = LiveStatus::online;
+    read_settings_bulk(); //really?
+    return true;
+  }
+
+  boot_err(retval);
+  set_sys("OFFLINE_ANALYSIS", 1);  //else attempt offline boot
+  retval = Pixie_Boot_System(0x1F);
+  if (retval >= 0) {
+    live_ = LiveStatus::offline;
     read_settings_bulk(); //really?
     return true;
   } else {
     boot_err(retval);
     return false;
   }
-}
-
-Module Settings::current_module() const {
-  return current_module_;
-}
-
-void Settings::set_current_module(Module mod) {
-  current_module_ = mod;
-}
-
-Channel Settings::current_channel() const {
-  return current_channel_;
-}
-
-void Settings::set_current_channel(Channel chan) {
-  current_channel_ = chan;
 }
 
 void Settings::set_detector(int ch, Gamma::Detector det) {
@@ -312,7 +373,7 @@ void Settings::load_optimization(Channel chan) {
   }
 
   //current module only
-  
+
   for (int i = start; i <= stop; i++) {
     PL_DBG << "loading optimization for " << detectors_[i].name_;
 
@@ -324,7 +385,7 @@ void Settings::load_optimization(Channel chan) {
   }
 }
 
-void Settings::save_det_settings(Gamma::Setting& result, const Gamma::Setting& root, int index) {
+void Settings::save_det_settings(Gamma::Setting& result, const Gamma::Setting& root, int index) const {
   std::string stem = result.name;
   if (root.setting_type == Gamma::SettingType::stem) {
     result.name = stem;
@@ -372,11 +433,23 @@ void Settings::load_det_settings(Gamma::Setting det, Gamma::Setting& root, int i
 }
 
 void Settings::set_setting(Gamma::Setting address, int index) {
+  if ((index < 0) || (index >= detectors_.size()))
+    return;
   load_det_settings(address, settings_tree_, index);
   write_settings_bulk();
   read_settings_bulk();
 }
 
+Gamma::Setting Settings::get_setting(Gamma::Setting address, int index) const {
+  if ((index < 0) || (index >= detectors_.size()))
+    return Gamma::Setting();
+  Gamma::Setting addy = address;
+  save_det_settings(addy, settings_tree_, index);
+  if (addy != address)
+    return addy;
+  else
+    return Gamma::Setting();
+}
 
 ////////////////////////////////////////
 ///////////////Settings/////////////////
@@ -384,9 +457,9 @@ void Settings::set_setting(Gamma::Setting address, int index) {
 
 void Settings::get_all_settings() {
   get_sys_all();
-  get_mod_all(); //might want this for more modules
+  get_mod_all(Module::all); //might want this for more modules
   for (int i=0; i < num_chans_; i++) {
-    get_chan_all(Channel(i));
+    get_chan_all(Channel(i), Module::all);
   }
   read_settings_bulk();
 }
@@ -396,8 +469,8 @@ void Settings::reset_counters_next_run() { //for current module only
   if (live_ == LiveStatus::history)
     return;
 
-  set_mod("SYNCH_WAIT", 1, Module::current);
-  set_mod("IN_SYNCH", 0, Module::current);
+  set_mod("SYNCH_WAIT", 1, Module(0));
+  set_mod("IN_SYNCH", 0, Module(0));
 }
 
 
@@ -415,23 +488,6 @@ void Settings::set_sys(const std::string& setting, double val) {
   write_sys(setting.c_str());
 }
 
-void Settings::set_slots(const std::vector<uint8_t>& new_slots) {
-  if (live_ == LiveStatus::history)
-    return;
-
-  int total = 0;
-  std::size_t max = N_SYSTEM_PAR - i_sys("SLOT_WAVE");
-  for (std::size_t i=0; i < max; i++) {
-    if ((i < new_slots.size()) && (new_slots[i])) {
-      system_parameter_values_[i_sys("SLOT_WAVE") + i] = static_cast<double>(new_slots[i]);
-      total++;
-    } else
-      system_parameter_values_[i_sys("SLOT_WAVE") + i] = 0;
-  }
-
-  set_sys("NUMBER_MODULES", total);
-  write_sys("SLOT_WAVE");
-}
 
 double Settings::get_sys(const std::string& setting) {
   PL_TRC << "Getting " << setting << " for system";
@@ -449,16 +505,6 @@ void Settings::get_sys_all() {
   read_sys("ALL_SYSTEM_PARAMETERS");
 }
 
-void Settings::set_boot_files(std::vector<std::string>& files) {
-  if (live_ == LiveStatus::history)
-    return;
-  
-  if (files.size() != 7)
-    PL_WARN << "Bad boot file array provided";
-  else
-    boot_files_ = files;
-}
-
 
 //////Module Settings//////
 ///////////////////////////
@@ -467,25 +513,16 @@ void Settings::set_mod(const std::string& setting, double val, Module mod) {
   if (live_ == LiveStatus::history)
     return;
 
-  switch (mod) {
-  case Module::current:
-    mod = current_module_;
-  default:
     int module = static_cast<int>(mod);
     if (module > -1) {
       PL_INFO << "Setting " << setting << " to " << val << " for module " << module;
       module_parameter_values_[module * N_MODULE_PAR + i_mod(setting.c_str())] = val;
       write_mod(setting.c_str(), module);
     }
-  }
 }
 
 double Settings::get_mod(const std::string& setting,
                          Module mod) const {
-  switch (mod) {
-  case Module::current:
-    mod = current_module_;
-  default:
     int module = static_cast<int>(mod);
     if (module > -1) {
       PL_TRC << "Getting " << setting << " for module " << module;
@@ -493,16 +530,11 @@ double Settings::get_mod(const std::string& setting,
     }
     else
       return -1;
-  }
 }
 
 double Settings::get_mod(const std::string& setting,
                          Module mod,
                          LiveStatus force) {
-  switch (mod) {
-  case Module::current:
-    mod = current_module_;
-  default:
     int module = static_cast<int>(mod);
     if (module > -1) {
       PL_TRC << "Getting " << setting << " for module " << module;
@@ -512,20 +544,17 @@ double Settings::get_mod(const std::string& setting,
     }
     else
       return -1;
-  }
 }
 
 void Settings::get_mod_all(Module mod) {
   if (live_ == LiveStatus::history)
     return;
-  
+
   switch (mod) {
   case Module::all: {
     /*loop through all*/
     break;
   }
-  case Module::current:
-    mod = current_module_;
   default:
     int module = static_cast<int>(mod);
     if (module > -1) {
@@ -538,14 +567,12 @@ void Settings::get_mod_all(Module mod) {
 void Settings::get_mod_stats(Module mod) {
   if (live_ == LiveStatus::history)
     return;
-  
+
   switch (mod) {
   case Module::all: {
     /*loop through all*/
     break;
   }
-  case Module::current:
-    mod = current_module_;
   default:
     int module = static_cast<int>(mod);
     if (module > -1) {
@@ -563,15 +590,10 @@ void Settings::set_chan(const std::string& setting, double val,
                         Channel channel, Module module) {
   if (live_ == LiveStatus::history)
     return;
-  
-  if (module == Module::current)
-    module = current_module_;
-  if (channel == Channel::current)
-    channel = current_channel_;
 
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
-  
+
   PL_DBG << "Setting " << setting << " to " << val
          << " for module " << mod << " chan "<< chan;
 
@@ -586,17 +608,12 @@ void Settings::set_chan(uint8_t setting, double val,
                         Channel channel, Module module) {
   if (live_ == LiveStatus::history)
     return;
-  
+
   S8* setting_name = Channel_Parameter_Names[setting];
-  
-  if (module == Module::current)
-    module = current_module_;
-  if (channel == Channel::current)
-    channel = current_channel_;
 
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
-  
+
   PL_DBG << "Setting " << setting_name << " to " << val
          << " for module " << mod << " chan "<< chan;
 
@@ -609,11 +626,6 @@ void Settings::set_chan(uint8_t setting, double val,
 
 double Settings::get_chan(uint8_t setting, Channel channel, Module module) const {
   S8* setting_name = Channel_Parameter_Names[setting];
-
-  if (module == Module::current)
-    module = current_module_;
-  if (channel == Channel::current)
-    channel = current_channel_;
 
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
@@ -632,17 +644,12 @@ double Settings::get_chan(uint8_t setting, Channel channel,
                           Module module, LiveStatus force) {
   S8* setting_name = Channel_Parameter_Names[setting];
 
-  if (module == Module::current)
-    module = current_module_;
-  if (channel == Channel::current)
-    channel = current_channel_;
-
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
   PL_TRC << "Getting " << setting_name
          << " for module " << mod << " channel " << chan;
-  
+
   if ((mod > -1) && (chan > -1)) {
     if ((force == LiveStatus::online) && (live_ == force))
       read_chan((char*)setting_name, mod, chan);
@@ -654,11 +661,6 @@ double Settings::get_chan(uint8_t setting, Channel channel,
 
 double Settings::get_chan(const std::string& setting,
                           Channel channel, Module module) const {
-  if (module == Module::current)
-    module = current_module_;
-  if (channel == Channel::current)
-    channel = current_channel_;
-
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
@@ -674,14 +676,9 @@ double Settings::get_chan(const std::string& setting,
 double Settings::get_chan(const std::string& setting,
                           Channel channel, Module module,
                           LiveStatus force) {
-  if (module == Module::current)
-    module = current_module_;
-  if (channel == Channel::current)
-    channel = current_channel_;
-
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
-  
+
   PL_TRC << "Getting " << setting << " for module " << mod << " channel " << chan;
 
   if ((mod > -1) && (chan > -1)) {
@@ -696,17 +693,12 @@ double Settings::get_chan(const std::string& setting,
 void Settings::get_chan_all(Channel channel, Module module) {
   if (live_ == LiveStatus::history)
     return;
-  
-  if (module == Module::current)
-    module = current_module_;
-  if (channel == Channel::current)
-    channel = current_channel_;
 
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
   PL_TRC << "Getting all parameters for module " << mod << " channel " << chan;
-  
+
   if ((mod > -1) && (chan > -1))
     read_chan("ALL_CHANNEL_PARAMETERS", mod, chan);
 }
@@ -714,12 +706,9 @@ void Settings::get_chan_all(Channel channel, Module module) {
 void Settings::get_chan_stats(Module module) {
   if (live_ == LiveStatus::history)
     return;
-  
-  if (module == Module::current)
-    module = current_module_;
 
   int mod = static_cast<int>(module);
-  
+
   PL_TRC << "Getting channel run statistics for module " << mod;
 
   if (mod > -1)
@@ -896,7 +885,7 @@ void Settings::to_xml(tinyxml2::XMLPrinter& printer) const {
           printer.PushAttribute("key", std::to_string(k).c_str());
           printer.PushAttribute("name", std::string((char*)Channel_Parameter_Names[k]).c_str());
           printer.PushAttribute("value",
-                                std::to_string(get_chan(k,Channel(j))).c_str());
+                                std::to_string(get_chan(k,Channel(j), Module(0))).c_str());
           printer.CloseElement();
         }
       }

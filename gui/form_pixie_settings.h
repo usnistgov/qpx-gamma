@@ -45,9 +45,6 @@ class FormPixieSettings : public QWidget
 public:
   explicit FormPixieSettings(ThreadRunner&, XMLableDB<Gamma::Detector>&, QSettings&, QWidget *parent = 0);
   ~FormPixieSettings();
-  //void setData(ThreadRunner&, XMLableDB<Gamma::Detector>&);
-
-  void apply_settings();
 
 public slots:
   void refresh();
@@ -62,8 +59,6 @@ protected:
   void closeEvent(QCloseEvent*);
 
 private slots:
-  void on_comboFilterSamples_currentIndexChanged(int index);
-  void on_boxCoincWait_editingFinished();
   void on_pushSettingsRefresh_clicked();
   void on_pushOptimizeAll_clicked();
   void on_buttonCompTau_clicked();

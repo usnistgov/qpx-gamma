@@ -77,6 +77,7 @@ struct Setting : public XMLable {
   Setting(tinyxml2::XMLElement* element) : Setting() {this->from_xml(element);}
   
   Setting(std::string nm) : Setting() {name = nm;}
+  Setting(std::string nm, uint16_t addy, SettingType tp) : Setting() {name = nm; address = addy; setting_type = tp;}
 
   std::string xml_element_name() const {return "Setting";}
 

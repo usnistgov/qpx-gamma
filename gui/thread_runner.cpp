@@ -36,9 +36,6 @@ ThreadRunner::ThreadRunner(QObject *parent) :
   file_ = "";
   source_res_ = 0;
   dest_res_ = 0;
-  boot_keepcw_ = true;
-  mod_filter_ = 0.0;
-  mod_wait_ = 0.0;
   xdt_ = 0.0;
 }
 
@@ -120,12 +117,9 @@ void ThreadRunner::do_from_list(Pixie::SpectraSet &spectra, boost::atomic<bool> 
     PL_WARN << "Cannot do_from_list. Runner busy.";
 }
 
-void ThreadRunner::do_boot(bool boot_keepcw, std::vector<std::string> boot_files, std::vector<uint8_t> boot_slots) {
+void ThreadRunner::do_boot() {
   if (!isRunning()) {
     terminating_.store(false);
-    boot_keepcw_ = boot_keepcw;
-    boot_files_ = boot_files;
-    boot_slots_ = boot_slots;
     action_ = kBoot;
     start(HighPriority);
   } else
@@ -226,23 +220,13 @@ void ThreadRunner::run()
     emit runComplete();
   } else if (action_ == kBoot) {
     Pixie::Wrapper &myPixie = Pixie::Wrapper::getInstance();
-    //myPixie.settings().set_boot_files(boot_files_);
-    myPixie.settings().set_slots(boot_slots_);
-    myPixie.settings().set_sys("OFFLINE_ANALYSIS", 0);
-    myPixie.settings().set_sys("KEEP_CW", boot_keepcw_);
-    myPixie.settings().set_sys("MAX_NUMBER_MODULES", 7);  //should not be hardcoded
     bool success = myPixie.boot();
     if (myPixie.settings().live() == Pixie::LiveStatus::online) {
       PL_INFO << "Pixie online functions enabled.";
-      emit bootComplete(true, true);
-    } else {
-      PL_INFO << "Attempting boot of offline functions";
-      myPixie.settings().set_sys("OFFLINE_ANALYSIS", 1);
-      success = myPixie.boot();
-      if (success)
-        PL_INFO << "Offline boot successful";
-      emit bootComplete(success, false);
+    } else if (myPixie.settings().live() == Pixie::LiveStatus::offline) {
+      PL_INFO << "Offline boot successful";
     }
+    emit bootComplete(success, myPixie.settings().live() == Pixie::LiveStatus::online);
   } else if (action_ == kOffsets) {
     Pixie::Wrapper::getInstance().control_adjust_offsets();
     action_ = kOscil;
@@ -267,12 +251,15 @@ void ThreadRunner::run()
     std::vector<Gamma::Detector> dets = Pixie::Wrapper::getInstance().settings().get_detectors();
 
     std::string calib_units = dets[0].highest_res_calib().units_;
+    Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/XDT", -1, Gamma::SettingType::floating);
     for (int i=0; i < dets.size(); i++) {
-      Pixie::Wrapper::getInstance().settings().set_chan("XDT", xdt_, Pixie::Channel(i));
+      set.index = i;
+      set.value = xdt_;
+      Pixie::Wrapper::getInstance().settings().set_setting(set, i);
       if (dets[i].highest_res_calib().units_ != calib_units)
         calib_units = "channels";
     }
-    double xinterval = Pixie::Wrapper::getInstance().settings().get_chan("XDT", Pixie::Channel(0), Pixie::Module::current, Pixie::LiveStatus::online);
+    double xinterval = Pixie::Wrapper::getInstance().settings().get_setting(set, 0).value;
 
     Pixie::Event oscil_traces_ = Pixie::Wrapper::getInstance().getOscil();
     uint32_t trace_length = oscil_traces_.hit[0].trace.size();

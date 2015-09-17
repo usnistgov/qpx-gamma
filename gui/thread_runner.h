@@ -51,7 +51,7 @@ public:
     explicit ThreadRunner(QObject *parent = 0);
     ~ThreadRunner();
 
-    void do_boot(bool boot_keepcw, std::vector<std::string> boot_files, std::vector<uint8_t> boot_slots);
+    void do_boot();
     void do_list(boost::atomic<bool>&, Pixie::RunType, uint64_t timeout, bool dblbuf);
     void do_run(Pixie::SpectraSet&, boost::atomic<bool>&, Pixie::RunType, uint64_t timeout, bool dblbuf);
     void do_fake(Pixie::SpectraSet&, boost::atomic<bool>&, QString file, std::array<int,2> chans, int source_res, int dest_res, int timeout);
@@ -85,11 +85,7 @@ private:
     boost::atomic<bool>* interruptor_;
     boost::atomic<bool> terminating_;
 
-    //boot variables
-    std::vector<std::string> boot_files_;
-    std::vector<uint8_t> boot_slots_;
-    bool boot_keepcw_;
-    double mod_filter_, mod_wait_, xdt_;
+    double xdt_;
 
     //run variables
     Pixie::RunType run_type_;

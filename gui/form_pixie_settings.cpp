@@ -36,10 +36,6 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Gamma::Dete
   connect(&runner_thread_, SIGNAL(settingsUpdated()), this, SLOT(refresh()));
 
   //PixieSettings
-  ui->comboFilterSamples->blockSignals(true);
-  ui->boxCoincWait->blockSignals(true);
-  for (int i=1; i < 7; i++)
-    ui->comboFilterSamples->addItem(QIcon(), QString::number(pow(2,i)), i);
 
   loadSettings();
 
@@ -69,12 +65,11 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Gamma::Dete
 
 void FormPixieSettings::update() {
   dev_settings_ = pixie_.settings().pull_settings();
+  //ui->treeSettings->clearSelection();
   tree_settings_model_.update(dev_settings_);
   PL_DBG << "pulled dev settings have " << dev_settings_.branches.size() << " branches";
 
   ui->treeSettings->resizeColumnToContents(0);
-  ui->boxCoincWait->setValue(pixie_.settings().get_mod("ACTUAL_COINCIDENCE_WAIT"));
-  ui->comboFilterSamples->setCurrentText(QString::number(pow(2,pixie_.settings().get_mod("FILTER_RANGE"))));
   channel_settings_model_.update(pixie_.settings().get_detectors());
   ui->viewChanSettings->resizeColumnsToContents();
   ui->viewChanSettings->horizontalHeader()->setStretchLastSection(true);
@@ -115,11 +110,6 @@ void FormPixieSettings::refresh() {
   emit toggleIO(true);
 }
 
-void FormPixieSettings::apply_settings() {
-  pixie_.settings().set_mod("FILTER_RANGE", ui->comboFilterSamples->currentData().toDouble());
-  pixie_.settings().set_mod("ACTUAL_COINCIDENCE_WAIT", ui->boxCoincWait->value());
-}
-
 void FormPixieSettings::closeEvent(QCloseEvent *event) {
 
   saveSettings();
@@ -130,14 +120,10 @@ void FormPixieSettings::toggle_push(bool enable, Pixie::LiveStatus live) {
   bool online = (live == Pixie::LiveStatus::online);
   bool offline = (live == Pixie::LiveStatus::offline);
 
-  ui->boxCoincWait->setEnabled(enable && online);
-  ui->comboFilterSamples->setEnabled(enable && online);
   ui->buttonCompTau->setEnabled(enable && online);
   ui->buttonCompBLC->setEnabled(enable && online);
   ui->pushSettingsRefresh->setEnabled(enable && (online || offline));
 
-  ui->comboFilterSamples->blockSignals(!enable);
-  ui->boxCoincWait->blockSignals(!enable);
   if (enable) {
     ui->viewChanSettings->setEditTriggers(QAbstractItemView::AllEditTriggers);
     ui->treeSettings->setEditTriggers(QAbstractItemView::AllEditTriggers);
@@ -169,11 +155,6 @@ void FormPixieSettings::loadSettings() {
     }
     fclose(myfile);
   }
-
-  settings_.beginGroup("Pixie");
-  ui->comboFilterSamples->setCurrentText(QString::number(pow(2, settings_.value("filter_samples", 4).toInt())));
-  ui->boxCoincWait->setValue(settings_.value("coinc_wait", 1).toDouble());
-  settings_.endGroup();
 }
 
 void FormPixieSettings::saveSettings() {
@@ -201,13 +182,7 @@ void FormPixieSettings::saveSettings() {
   }
 
   //should replace only optimizations, not touch the rest of detector definition
-
   updateDetChoices();
-
-  settings_.beginGroup("Pixie");
-  settings_.setValue("filter_samples", ui->comboFilterSamples->currentData().toInt());
-  settings_.setValue("coinc_wait", ui->boxCoincWait->value());
-  settings_.endGroup();
 }
 
 void FormPixieSettings::updateDetChoices() {
@@ -260,20 +235,6 @@ void FormPixieSettings::on_pushSettingsRefresh_clicked()
 {
   emit statusText("Refreshing settings_...");
   emit toggleIO(false);
-  runner_thread_.do_refresh_settings();
-}
-
-void FormPixieSettings::on_comboFilterSamples_currentIndexChanged(int index)
-{
-  int val = ui->comboFilterSamples->currentData().toInt();
-  pixie_.settings().set_mod("FILTER_RANGE", static_cast<double>(val));
-  runner_thread_.do_refresh_settings();
-}
-
-void FormPixieSettings::on_boxCoincWait_editingFinished()
-{
-  double val = ui->boxCoincWait->value();
-  pixie_.settings().set_mod("ACTUAL_COINCIDENCE_WAIT", val);
   runner_thread_.do_refresh_settings();
 }
 

@@ -264,10 +264,12 @@ void FormOptimization::do_run()
   x.resize(pow(2,bits), 0.0);
   y_opt.resize(pow(2,bits), 0.0);
 
-  pixie_.settings().set_chan(current_setting_, val_current, Pixie::Channel(ui->spinOptChan->value()), Pixie::Module::current);
+  Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/" + current_setting_, ui->spinOptChan->value(), Gamma::SettingType::floating);
+  set.value = val_current;
+  pixie_.settings().set_setting(set, ui->spinOptChan->value());
   QThread::sleep(1);
   pixie_.settings().get_all_settings();
-  double got = pixie_.settings().get_chan(current_setting_, Pixie::Channel(ui->spinOptChan->value()));
+  double got = pixie_.settings().get_setting(set, ui->spinOptChan->value()).value;
   setting_values_.push_back(got);
   setting_fwhm_.push_back(0);
   emit settings_changed();

@@ -149,13 +149,13 @@ struct StatsUpdate {
 
   inline void eat_stats(Settings& source) {
     for (int i=0; i < kNumChans; i++) {
-      fast_peaks[i] = source.get_chan("FAST_PEAKS", Channel(i));
-      live_time[i]  = source.get_chan("LIVE_TIME", Channel(i));
-      ftdt[i]       = source.get_chan("FTDT", Channel(i));
-      sfdt[i]       = source.get_chan("SFDT", Channel(i));
+      fast_peaks[i] = source.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/FAST_PEAKS", i, Gamma::SettingType::floating), i).value;
+      live_time[i]  = source.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/LIVE_TIME", i, Gamma::SettingType::floating), i).value;
+      ftdt[i]       = source.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/FTDT", i, Gamma::SettingType::floating), i).value;
+      sfdt[i]       = source.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/SFDT", i, Gamma::SettingType::floating), i).value;
     }
-    event_rate = source.get_mod("EVENT_RATE");
-    total_time = source.get_mod("TOTAL_TIME");
+    event_rate = source.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/EVENT_RATE", 0, Gamma::SettingType::floating), 0).value; //make scalable
+    total_time = source.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/TOTAL_TIME", 0, Gamma::SettingType::floating), 0).value; //make scalable
   }
 
   StatsUpdate operator-(const StatsUpdate) const;

@@ -102,7 +102,6 @@ void FormStart::boot_complete(bool success, bool online) {
   if (success) {
     this->setCursor(Qt::WaitCursor);
     QThread::sleep(1);
-    formPixieSettings->apply_settings();
     pixie_.control_adjust_offsets();  //oscil function, if called through runner would invoke do_oscil
     formPixieSettings->updateDetDB();
     if (online)
