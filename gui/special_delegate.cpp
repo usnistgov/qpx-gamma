@@ -23,11 +23,14 @@
 
 #include "special_delegate.h"
 #include "generic_setting.h"
+#include "qt_util.h"
 #include <QComboBox>
 #include <QPainter>
 #include <QDoubleSpinBox>
 #include <QCheckBox>
 #include <QLineEdit>
+#include <QFileDialog>
+#include <QFileInfo>
 
 void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                                const QModelIndex &index) const
@@ -83,6 +86,14 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
       return editor;
     } else if (set.setting_type == Gamma::SettingType::boolean) {
       QCheckBox *editor = new QCheckBox(parent);
+      return editor;
+    } else if (set.setting_type == Gamma::SettingType::file_path) {
+
+      QFileDialog *editor = new QFileDialog(parent, QString("Open File"),
+                                           QFileInfo(QString::fromStdString(set.value_text)).dir().absolutePath(),
+                                           QString::fromStdString(set.unit));
+      editor->setFileMode(QFileDialog::ExistingFile);
+
       return editor;
     } else if (set.setting_type == Gamma::SettingType::int_menu) {
       QComboBox *editor = new QComboBox(parent);
@@ -158,13 +169,8 @@ void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *mod
         model->setData(index, QVariant::fromValue(cb->currentData().toInt()), Qt::EditRole);
       else if (cb->currentData().type() == QMetaType::Double)
         model->setData(index, QVariant::fromValue(cb->currentData().toDouble()), Qt::EditRole);
-      else if (cb->currentData().type() == QMetaType::QString) {
-        QString word = cb->currentData().toString();
-        if (set.setting_type == Gamma::SettingType::detector)
-          model->setData(index, QVariant::fromValue(detectors_.get(word.toStdString())), Qt::EditRole);
-        else
-          model->setData(index, QVariant::fromValue(word), Qt::EditRole);
-      }
+      else if (cb->currentData().type() == QMetaType::QString)
+        model->setData(index, cb->currentData().toString(), Qt::EditRole);
     }
   } else if (QDoubleSpinBox *sb = qobject_cast<QDoubleSpinBox *>(editor))
     model->setData(index, QVariant::fromValue(sb->value()), Qt::EditRole);
@@ -174,6 +180,9 @@ void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *mod
     model->setData(index, le->text(), Qt::EditRole);
   else if (QCheckBox *cb = qobject_cast<QCheckBox *>(editor))
     model->setData(index, QVariant::fromValue(cb->isChecked()), Qt::EditRole);
+  else if (QFileDialog *fd = qobject_cast<QFileDialog *>(editor))
+    if ((!fd->selectedFiles().isEmpty()) /*&& (validateFile(parent, fd->selectedFiles().front(), false))*/)
+      model->setData(index, QVariant::fromValue(fd->selectedFiles().front()), Qt::EditRole);
   else
     QStyledItemDelegate::setModelData(editor, model, index);
 }

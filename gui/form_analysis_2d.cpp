@@ -340,7 +340,7 @@ void FormAnalysis2D::make_gated_spectra() {
     Pixie::Spill spill;
     spill.run = new Pixie::RunInfo(spectra_->runInfo());
     for (int i=0; i < md.detectors.size(); ++i)
-      spill.run->p4_state.set_detector(Pixie::Channel(i), md.detectors[i]);
+      spill.run->p4_state.set_detector(i, md.detectors[i]);
 
 
     tempx->bits = md.bits;
@@ -677,7 +677,7 @@ void FormAnalysis2D::on_pushSymmetrize_clicked()
     spill.run = new Pixie::RunInfo(spectra_->runInfo());
     for (int i=0; i < md.detectors.size(); ++i) {
       PL_DBG << "push det " << i << md.detectors[i].name_;
-      spill.run->p4_state.set_detector(Pixie::Channel(i), md.detectors[i]);
+      spill.run->p4_state.set_detector(i, md.detectors[i]);
     }
     symspec->addSpill(spill);
 
@@ -797,7 +797,7 @@ void FormAnalysis2D::on_pushSaveCalib_clicked()
     }
     Pixie::RunInfo ri = spectra_->runInfo();
     for (int i=0; i < detectors.size(); ++i)
-      ri.p4_state.set_detector(Pixie::Channel(i), detectors[i]);
+      ri.p4_state.set_detector(i, detectors[i]);
     spectra_->setRunInfo(ri);
   }
 }

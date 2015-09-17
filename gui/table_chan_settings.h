@@ -28,17 +28,16 @@
 #include <QAbstractTableModel>
 #include <QFont>
 #include <QBrush>
-#include "wrapper.h"
+#include "detector.h"
 
 class TableChanSettings : public QAbstractTableModel
 {
     Q_OBJECT
 private:
-    Pixie::Settings &my_settings_;
-    std::vector<Gamma::Setting> chan_meta_;
+    std::vector<Gamma::Detector> channels_;
 
 public:
-    TableChanSettings(QObject *parent = 0): my_settings_(Pixie::Wrapper::getInstance().settings()) {}
+    TableChanSettings(QObject *parent = 0) {}
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     int columnCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -46,10 +45,11 @@ public:
     Qt::ItemFlags flags(const QModelIndex & index) const;
     bool setData(const QModelIndex & index, const QVariant & value, int role = Qt::EditRole);
 
-    void update();
+    void update(const std::vector<Gamma::Detector> &settings);
 
 signals:
-    void detectors_changed();
+    void setting_changed(int chan, Gamma::Setting setting);
+    void detector_chosen(int chan, std::string name);
 
 public slots:
 

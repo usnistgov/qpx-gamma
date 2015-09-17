@@ -61,26 +61,17 @@ public:
   
   //detectors
   std::vector<Gamma::Detector> get_detectors() const {return detectors_;}
-  Gamma::Detector get_detector(Channel ch = Channel::current) const;
-  void set_detector(Channel ch, const Gamma::Detector& det);
-  void set_detector_DB(XMLableDB<Gamma::Detector>);
+  void set_detector(int, Gamma::Detector);
 
   void save_optimization(Channel chan = Channel::all);  //specify module as well?
   void load_optimization(Channel chan = Channel::all);
-  void save_det_settings(Gamma::Setting&, const Gamma::Setting&, int);
-  void load_det_settings(Gamma::Setting, Gamma::Setting&, int);
-
-  //metadata for display and editing
-  std::vector<Gamma::Setting> channel_meta() const {return chan_set_meta_;}
-
-  uint8_t chan_param_num () const;  //non-empty parameters
+  void set_setting(Gamma::Setting address, int index);
 
   /////SETTINGS/////
   Gamma::Setting pull_settings();
   void push_settings(const Gamma::Setting&);
   bool write_settings_bulk();
   bool read_settings_bulk();
-  bool read_detector(Gamma::Setting &set);
   bool write_detector(const Gamma::Setting &set);
   
   void get_all_settings();
@@ -127,7 +118,6 @@ public:
   void get_chan_stats(Module  module  = Module::current);
   
 protected:
-  void initialize(); //populate metadata
   bool boot();       //only wrapper can use this
   void from_xml(tinyxml2::XMLElement*);
 
@@ -143,14 +133,12 @@ protected:
   std::vector<double> module_parameter_values_;
   std::vector<double> channel_parameter_values_;
 
-  std::vector<Gamma::Setting> sys_set_meta_;
-  std::vector<Gamma::Setting> mod_set_meta_;
-  std::vector<Gamma::Setting> chan_set_meta_;
-
   std::vector<Gamma::Detector> detectors_;
-  XMLableDB<Gamma::Detector> detector_db_;
 
   //////////for internal use only///////////
+  void save_det_settings(Gamma::Setting&, const Gamma::Setting&, int);
+  void load_det_settings(Gamma::Setting, Gamma::Setting&, int);
+
   //carry out task
   bool write_sys(const char*);
   bool write_mod(const char*, uint8_t);

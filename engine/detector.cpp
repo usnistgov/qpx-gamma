@@ -76,21 +76,6 @@ void Detector::to_xml(tinyxml2::XMLPrinter& printer) const {
   if (fwhm_calibration_.bits_)
     fwhm_calibration_.to_xml(printer);
 
-  if (setting_values_.size()) {
-    printer.OpenElement("Optimization");
-    for (std::size_t j = 0; j < setting_values_.size(); j++) {
-      if (!setting_names_[j].empty()) {
-        printer.OpenElement("Setting");
-        printer.PushAttribute("key", std::to_string(j).c_str());
-        printer.PushAttribute("name", setting_names_[j].c_str());
-        printer.PushAttribute("value",
-                              std::to_string(setting_values_[j]).c_str());
-        printer.CloseElement();
-      }
-    }
-    printer.CloseElement(); //Optimization
-  }
-
   if (settings_.setting_type == SettingType::stem)
     settings_.to_xml(printer);
 
@@ -122,24 +107,11 @@ void Detector::from_xml(tinyxml2::XMLElement* root) {
     gain_match_calibrations_.from_xml(el);
   }
 
-  tinyxml2::XMLElement* OptiData = root->FirstChildElement("Optimization");
-  if (OptiData == NULL) return;
-
-  setting_names_.resize(43); //hardcoded for p4
-  setting_values_.resize(43);
-  tinyxml2::XMLElement* SettingElement = OptiData->FirstChildElement();
-  while (SettingElement != NULL) {
-    if (std::string(SettingElement->Name()) == "Setting") {
-      int thisKey =  boost::lexical_cast<short>(SettingElement->Attribute("key"));
-      setting_names_[thisKey]  = std::string(SettingElement->Attribute("name"));
-      setting_values_[thisKey] = boost::lexical_cast<double>(SettingElement->Attribute("value"));
-    }
-    SettingElement = dynamic_cast<tinyxml2::XMLElement*>(SettingElement->NextSibling());
-  }
-
   tinyxml2::XMLElement* stemData = root->FirstChildElement(settings_.xml_element_name().c_str());
-  if (stemData != NULL)
+  if (stemData != NULL) {
+    PL_DBG << "loading optimization settings for " << name_;
     settings_.from_xml(stemData);
+  }
   if (!settings_.branches.empty())
     PL_DBG << "Loaded optimization " << settings_.branches.my_data_.front().name;
 }

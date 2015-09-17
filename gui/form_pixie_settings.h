@@ -52,6 +52,7 @@ public:
 public slots:
   void refresh();
   void update();
+  void updateDetDB();
 
 signals:
   void toggleIO(bool);
@@ -68,13 +69,14 @@ private slots:
   void on_buttonCompTau_clicked();
   void on_buttonCompBLC_clicked();
 
-  void updateDetDB();
   void updateDetChoices();
   void toggle_push(bool enable, Pixie::LiveStatus live);
 
   void on_pushDetDB_clicked();
 
   void push_settings();
+  void push_from_table(int chan, Gamma::Setting setting);
+  void chose_detector(int chan, std::string name);
 
 
 private:
@@ -83,7 +85,6 @@ private:
   Pixie::Wrapper& pixie_; //eliminate this
 
   XMLableDB<Gamma::Detector>            &detectors_;
-  std::vector<std::string> default_detectors_;
 
   ThreadRunner        &runner_thread_;
   QSettings &settings_;

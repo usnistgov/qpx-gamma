@@ -508,7 +508,7 @@ void FormOptimization::on_pushSaveOpti_clicked()
   for (auto &q : dets) {
     if (detectors_.has_a(q)) {
       Gamma::Detector modified = detectors_.get(q);
-      modified.setting_values_ = q.setting_values_;
+      modified.settings_ = q.settings_;
       detectors_.replace(modified);
     }
   }

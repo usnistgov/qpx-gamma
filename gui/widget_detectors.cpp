@@ -107,7 +107,7 @@ void DialogDetector::updateDisplay() {
 
   ui->comboType->setCurrentText(QString::fromStdString(my_detector_.type_));
 
-  if (my_detector_.setting_names_.empty())
+  if (my_detector_.settings_.branches.empty())
     ui->labelOpti->setText("WITHOUT CHANNEL SETTINGS");
   else
     ui->labelOpti->setText("WITH CHANNEL SETTINGS");
@@ -255,7 +255,7 @@ QVariant TableDetectors::data(const QModelIndex &index, int role) const
     case 1:
       return QString::fromStdString(myDB->get(row).type_);
     case 2:
-      if (myDB->get(row).setting_names_.empty())
+      if (myDB->get(row).settings_.branches.empty())
         return "none";
       else
         return "valid";

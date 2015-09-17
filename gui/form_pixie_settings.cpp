@@ -33,8 +33,6 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Gamma::Dete
   ui(new Ui::FormPixieSettings)
 {
   ui->setupUi(this);
-  default_detectors_.resize(Pixie::kNumChans);
-
   connect(&runner_thread_, SIGNAL(settingsUpdated()), this, SLOT(refresh()));
 
   //PixieSettings
@@ -58,13 +56,15 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Gamma::Dete
   ui->viewChanSettings->horizontalHeader()->setStretchLastSection(true);
   ui->viewChanSettings->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   settings_delegate_.eat_detectors(detectors_);
-  channel_settings_model_.update();
+  channel_settings_model_.update(pixie_.settings().get_detectors());
   ui->viewChanSettings->show();
 
-  connect(&channel_settings_model_, SIGNAL(detectors_changed()), this, SLOT(updateDetChoices()));
-
-  connect(&tree_settings_model_, SIGNAL(detectors_changed()), this, SLOT(updateDetChoices()));
   connect(&tree_settings_model_, SIGNAL(tree_changed()), this, SLOT(push_settings()));
+  connect(&tree_settings_model_, SIGNAL(detector_chosen(int, std::string)), this, SLOT(chose_detector(int,std::string)));
+
+  connect(&channel_settings_model_, SIGNAL(setting_changed(int, Gamma::Setting)), this, SLOT(push_from_table(int, Gamma::Setting)));
+  connect(&channel_settings_model_, SIGNAL(detector_chosen(int, std::string)), this, SLOT(chose_detector(int,std::string)));
+
 }
 
 void FormPixieSettings::update() {
@@ -75,7 +75,7 @@ void FormPixieSettings::update() {
   ui->treeSettings->resizeColumnToContents(0);
   ui->boxCoincWait->setValue(pixie_.settings().get_mod("ACTUAL_COINCIDENCE_WAIT"));
   ui->comboFilterSamples->setCurrentText(QString::number(pow(2,pixie_.settings().get_mod("FILTER_RANGE"))));
-  channel_settings_model_.update();
+  channel_settings_model_.update(pixie_.settings().get_detectors());
   ui->viewChanSettings->resizeColumnsToContents();
   ui->viewChanSettings->horizontalHeader()->setStretchLastSection(true);
 }
@@ -91,6 +91,25 @@ void FormPixieSettings::push_settings() {
   runner_thread_.do_refresh_settings();
 }
 
+void FormPixieSettings::push_from_table(int chan, Gamma::Setting setting) {
+  pixie_.settings().set_setting(setting, chan);
+  emit statusText("Refreshing settings_...");
+  emit toggleIO(false);
+  runner_thread_.do_refresh_settings();
+}
+
+void FormPixieSettings::chose_detector(int chan, std::string name) {
+  PL_DBG << "chose_detector " << name;
+  Gamma::Detector det = detectors_.get(Gamma::Detector(name));
+  PL_DBG << "det " <<  det.name_ << " with cali " << det.energy_calibrations_.size() << " has sets " << det.settings_.branches.size();
+  for (auto &q : det.settings_.branches.my_data_)
+    q.index = chan;
+  pixie_.settings().set_detector(chan, det);
+  pixie_.settings().write_settings_bulk();
+  runner_thread_.do_refresh_settings();
+}
+
+
 void FormPixieSettings::refresh() {
   update();
   emit toggleIO(true);
@@ -99,8 +118,6 @@ void FormPixieSettings::refresh() {
 void FormPixieSettings::apply_settings() {
   pixie_.settings().set_mod("FILTER_RANGE", ui->comboFilterSamples->currentData().toDouble());
   pixie_.settings().set_mod("ACTUAL_COINCIDENCE_WAIT", ui->boxCoincWait->value());
-  for (int i =0; i < Pixie::kNumChans; i++)
-    pixie_.settings().set_detector(Pixie::Channel(i), detectors_.get(Gamma::Detector(default_detectors_[i])));
 }
 
 void FormPixieSettings::closeEvent(QCloseEvent *event) {
@@ -156,10 +173,6 @@ void FormPixieSettings::loadSettings() {
   settings_.beginGroup("Pixie");
   ui->comboFilterSamples->setCurrentText(QString::number(pow(2, settings_.value("filter_samples", 4).toInt())));
   ui->boxCoincWait->setValue(settings_.value("coinc_wait", 1).toDouble());
-  default_detectors_[0] = settings_.value("detector_0", QString("N/A")).toString().toStdString();
-  default_detectors_[1] = settings_.value("detector_1", QString("N/A")).toString().toStdString();
-  default_detectors_[2] = settings_.value("detector_2", QString("N/A")).toString().toStdString();
-  default_detectors_[3] = settings_.value("detector_3", QString("N/A")).toString().toStdString();
   settings_.endGroup();
 }
 
@@ -194,35 +207,24 @@ void FormPixieSettings::saveSettings() {
   settings_.beginGroup("Pixie");
   settings_.setValue("filter_samples", ui->comboFilterSamples->currentData().toInt());
   settings_.setValue("coinc_wait", ui->boxCoincWait->value());
-  settings_.setValue("detector_0", QString::fromStdString(default_detectors_[0]));
-  settings_.setValue("detector_1", QString::fromStdString(default_detectors_[1]));
-  settings_.setValue("detector_2", QString::fromStdString(default_detectors_[2]));
-  settings_.setValue("detector_3", QString::fromStdString(default_detectors_[3]));
   settings_.endGroup();
 }
 
 void FormPixieSettings::updateDetChoices() {
-  std::vector<Gamma::Detector> dets = pixie_.settings().get_detectors();
-  bool all_empty = true;
-  for (auto &q : dets)
-    if (!q.shallow_equals(Gamma::Detector()))
-      all_empty = false;
-  if (all_empty)
-    return;
-  default_detectors_.clear();
-  for (auto &q : dets)
-    default_detectors_.push_back(q.name_);
+
 }
 
 void FormPixieSettings::updateDetDB() {
   for (std::size_t i = 0; i < pixie_.settings().get_detectors().size(); i++) {
-    std::string det_old = pixie_.settings().get_detector(Pixie::Channel(i)).name_;
-    pixie_.settings().set_detector(Pixie::Channel(i), detectors_.get(det_old));
+    std::string det_old = pixie_.settings().get_detectors()[i].name_;
+    pixie_.settings().set_detector(i, detectors_.get(det_old));
   }
   tree_delegate_.eat_detectors(detectors_);
-  tree_settings_model_.update(Pixie::Wrapper::getInstance().settings().pull_settings());
   settings_delegate_.eat_detectors(detectors_);
-  channel_settings_model_.update();
+
+  tree_settings_model_.update(Pixie::Wrapper::getInstance().settings().pull_settings());
+  channel_settings_model_.update(pixie_.settings().get_detectors());
+
   ui->viewChanSettings->horizontalHeader()->setStretchLastSection(true);
   ui->viewChanSettings->resizeColumnsToContents();
 }

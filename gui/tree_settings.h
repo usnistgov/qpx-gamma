@@ -29,7 +29,7 @@
 #include <QAbstractItemModel>
 #include <QFont>
 #include <QBrush>
-#include "wrapper.h"
+#include "generic_setting.h"
 
 class TreeItem
 {
@@ -95,8 +95,8 @@ public:
   void set_structure(const Gamma::Setting &data);
 
 signals:
-  void detectors_changed();
   void tree_changed();
+  void detector_chosen(int chan, std::string name);
 
 };
 

@@ -41,7 +41,6 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma:
 
   QHBoxLayout *hl = new QHBoxLayout();
   hl->addWidget(formBootup);
-  hl->addStretch();
 
   formOscilloscope = new FormOscilloscope(runner_thread_, settings);
   connect(formOscilloscope, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
@@ -104,11 +103,10 @@ void FormStart::boot_complete(bool success, bool online) {
     this->setCursor(Qt::WaitCursor);
     QThread::sleep(1);
     formPixieSettings->apply_settings();
-    if (online) {
-      pixie_.control_adjust_offsets();  //oscil function, if called through runner would invoke do_oscil
-      pixie_.settings().load_optimization(); //if called through runner would invoke do_oscil
+    pixie_.control_adjust_offsets();  //oscil function, if called through runner would invoke do_oscil
+    formPixieSettings->updateDetDB();
+    if (online)
       runner_thread_.do_oscil(formOscilloscope->xdt());
-    }
     runner_thread_.do_refresh_settings();
     this->setCursor(Qt::ArrowCursor);
   }

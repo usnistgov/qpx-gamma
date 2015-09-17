@@ -226,7 +226,7 @@ void ThreadRunner::run()
     emit runComplete();
   } else if (action_ == kBoot) {
     Pixie::Wrapper &myPixie = Pixie::Wrapper::getInstance();
-    myPixie.settings().set_boot_files(boot_files_);
+    //myPixie.settings().set_boot_files(boot_files_);
     myPixie.settings().set_slots(boot_slots_);
     myPixie.settings().set_sys("OFFLINE_ANALYSIS", 0);
     myPixie.settings().set_sys("KEEP_CW", boot_keepcw_);

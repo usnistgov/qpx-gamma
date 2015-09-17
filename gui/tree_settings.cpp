@@ -23,9 +23,7 @@
 
 #include "tree_settings.h"
 
-Q_DECLARE_METATYPE(Gamma::Detector)
 Q_DECLARE_METATYPE(Gamma::Setting)
-
 
 TreeItem::TreeItem(const Gamma::Setting &data, TreeItem *parent)
 {
@@ -101,6 +99,8 @@ QVariant TreeItem::display_data(int column) const
       else
         return "F";
     else if (itemData.setting_type == Gamma::SettingType::text)
+      return QString::fromStdString(itemData.value_text);
+    else if (itemData.setting_type == Gamma::SettingType::file_path)
       return QString::fromStdString(itemData.value_text);
     else if (itemData.setting_type == Gamma::SettingType::detector)
       return QString::fromStdString(itemData.value_text);
@@ -203,12 +203,17 @@ bool TreeItem::setData(int column, const QVariant &value)
   else if ((itemData.setting_type == Gamma::SettingType::text)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
+  else if ((itemData.setting_type == Gamma::SettingType::file_path)
+      && (value.type() == QVariant::String))
+    itemData.value_text = value.toString().toStdString();
   else if ((itemData.setting_type == Gamma::SettingType::int_menu)
       && (value.type() == QVariant::Int))
     itemData.value_int = value.toInt();
   else if ((itemData.setting_type == Gamma::SettingType::detector)
-      && (value.type() == QVariant::String))
+      && (value.type() == QVariant::String)) {
     itemData.value_text = value.toString().toStdString();
+    PL_DBG << "setting det text to " << value.toString().toStdString();
+  }
   else
     return false;
 
@@ -381,10 +386,14 @@ bool TreeSettings::setData(const QModelIndex &index, const QVariant &value, int 
   bool result = item->setData(index.column(), value);
 
   if (result) {
+    Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
     data_ = rootItem->rebuild();
 
     emit dataChanged(index, index);
-    emit tree_changed();
+    if (set.setting_type == Gamma::SettingType::detector)
+      emit detector_chosen(set.index, set.value_text);
+    else
+      emit tree_changed();
   }
   return result;
 }

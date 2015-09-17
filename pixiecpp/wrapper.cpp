@@ -119,7 +119,7 @@ void Wrapper::getFakeMca(Simulator& source, SpectraSet& spectra,
 
   std::vector<Gamma::Detector> detectors = my_settings_.get_detectors();
   for (std::size_t i = 0; i < detectors.size(); i++)
-    source.settings.set_detector(Channel(i), detectors[i]);
+    source.settings.set_detector(i, detectors[i]);
   
   boost::thread builder(boost::bind(&Pixie::Wrapper::worker_MCA, this, &eventQueue, &spectra));
   worker_fake(&source, &eventQueue, timeout, &interruptor);

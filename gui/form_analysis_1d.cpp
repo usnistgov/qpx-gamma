@@ -235,7 +235,7 @@ void FormAnalysis1D::update_detector_calibs()
     }
     Pixie::RunInfo ri = spectra_->runInfo();
     for (int i=0; i < detectors.size(); ++i)
-      ri.p4_state.set_detector(Pixie::Channel(i), detectors[i]);
+      ri.p4_state.set_detector(i, detectors[i]);
     spectra_->setRunInfo(ri);
   }
 }

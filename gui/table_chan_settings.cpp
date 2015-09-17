@@ -26,7 +26,9 @@
 
 int TableChanSettings::rowCount(const QModelIndex & /*parent*/) const
 {
-  int num = my_settings_.chan_param_num();
+  int num = 0;
+   if (channels_.size() > 0)
+     num = channels_.front().settings_.branches.size();
   if (num)
     return num + 1;
   else
@@ -35,7 +37,8 @@ int TableChanSettings::rowCount(const QModelIndex & /*parent*/) const
 
 int TableChanSettings::columnCount(const QModelIndex & /*parent*/) const
 {
-  return Pixie::kNumChans + 2;
+  int num = 2 + channels_.size();
+  return num;
 }
 
 QVariant TableChanSettings::data(const QModelIndex &index, int role) const
@@ -48,27 +51,28 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
     if (row == 0) {
       if (col == 0)
         return "<===detector===>";
-      else if (col <= Pixie::kNumChans) {
+      else if (col <= channels_.size()) {
         if (role == Qt::EditRole) {
           Gamma::Setting det;
           det.setting_type = Gamma::SettingType::detector;
-          det.value_text = my_settings_.get_detector(Pixie::Channel(col-1)).name_;
+          det.value_text = channels_[col-1].name_;
           return QVariant::fromValue(det);
         } else if (role == Qt::DisplayRole)
-          return QString::fromStdString(my_settings_.get_detector(Pixie::Channel(col-1)).name_);
+          return QString::fromStdString(channels_[col-1].name_);
       }
     } else {
-      if (col == 0)
-        return QString::fromStdString(chan_meta_[row-1].name);
-      else if (col <= Pixie::kNumChans)
+      if ((col == 0) && (channels_.size() > 0))
+        return QString::fromStdString(channels_.front().settings_.branches.get(row-1).name);
+      else if (col <= channels_.size())
       {
-        if (chan_meta_[row-1].unit == "binary")
-          return QString::number(static_cast<uint32_t>(my_settings_.get_chan(row - 1, Pixie::Channel(col-1))), 16).toUpper();
+        Gamma::Setting set = channels_[col-1].settings_.branches.get(row-1);
+        if (set.unit == "binary")
+          return QString::number(static_cast<uint32_t>(set.value, 16)).toUpper();
         else
-          return QVariant::fromValue(my_settings_.get_chan(row - 1, Pixie::Channel(col-1)));
+          return QVariant::fromValue(set.value);
       }
       else
-        return QString::fromStdString(chan_meta_[row-1].unit);
+        return QString::fromStdString(channels_.front().settings_.branches.get(row-1).unit);
     }
   }
   else if (role == Qt::ForegroundRole) {
@@ -76,8 +80,8 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta};
       QBrush brush(palette[col % palette.size()]);
       return brush;
-    } else if ((col > 0) && (col <= Pixie::kNumChans) && ((!chan_meta_[row-1].writable)
-                                          || (chan_meta_[row-1].unit == "binary"))) {
+    } else if ((col > 0) && (col <= channels_.size()) && ((!channels_.front().settings_.branches.get(row-1).writable)
+                                          || (channels_.front().settings_.branches.get(row-1).unit == "binary"))) {
       QBrush brush(Qt::darkGray);
       return brush;
     } else {
@@ -92,7 +96,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       boldfont.setPointSize(10);
       return boldfont;
     }
-    else if (col == Pixie::kNumChans + 1) {
+    else if (col == channels_.size() + 1) {
       QFont italicfont;
       italicfont.setItalic(true);
       italicfont.setPointSize(10);
@@ -114,7 +118,7 @@ QVariant TableChanSettings::headerData(int section, Qt::Orientation orientation,
     if (orientation == Qt::Horizontal) {
       if (section == 0)
         return QString("Setting name");
-      else if (section <= Pixie::kNumChans)
+      else if (section <= channels_.size())
         return (QString("chan ") + QString::number(section-1));
       else
         return "Units";
@@ -134,10 +138,10 @@ QVariant TableChanSettings::headerData(int section, Qt::Orientation orientation,
   return QVariant();
 }
 
-void TableChanSettings::update() {
-  chan_meta_ = my_settings_.channel_meta();
+void TableChanSettings::update(const std::vector<Gamma::Detector> &settings) {
+  channels_ = settings;
   QModelIndex start_ix = createIndex( 0, 0 );
-  QModelIndex end_ix = createIndex( rowCount() , 5 );
+  QModelIndex end_ix = createIndex( rowCount() - 1, columnCount() - 1);
   emit dataChanged( start_ix, end_ix );
   emit layoutChanged();
 }
@@ -147,11 +151,11 @@ Qt::ItemFlags TableChanSettings::flags(const QModelIndex &index) const
   int row = index.row();
   int col = index.column();
 
-  if ((col > 0) && (col <= Pixie::kNumChans))
+  if ((col > 0) && (col <= channels_.size()))
     if (row == 0)
       return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
-    else if ((chan_meta_[row-1].writable) &&
-             (chan_meta_[row-1].unit != "binary"))
+    else if ((channels_.front().settings_.branches.get(row-1).writable) &&
+             (channels_.front().settings_.branches.get(row-1).unit != "binary"))
       return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
     else
       return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
@@ -163,12 +167,15 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
   int col = index.column();
 
   if (role == Qt::EditRole)
-    if (row)
-      my_settings_.set_chan(row - 1, value.toDouble(), Pixie::Channel(col - 1));
-    else if (value.canConvert<Gamma::Detector>()) {
-      my_settings_.set_detector(Pixie::Channel(col - 1), qvariant_cast<Gamma::Detector>(value));
-      emit detectors_changed();
+    if (row > 0) {
+      Gamma::Setting set = channels_[col-1].settings_.branches.get(row-1);
+      set.value = value.toDouble();
+      PL_DBG << "table changing setting " << channels_[col-1].settings_.branches.get(row-1).name << " for chan " << (col-1) << " to " << value.toDouble();
+      emit setting_changed(col-1, set);
     }
-
+    else if (value.type() == QMetaType::QString) {
+      PL_DBG << "table changing detector " << (col-1) << " to " << value.toString().toStdString();
+      emit detector_chosen(col-1, value.toString().toStdString());
+    }
   return true;
 }

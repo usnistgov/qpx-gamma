@@ -130,11 +130,11 @@ void FormListDaq::displayTraces()
   drawit[3] = ui->boxChan3->isChecked();
 
   int actual_graphs = 0;
-  for (int i=0; i < 4; i++) {
+  for (int i=0; i < list_data_->run.p4_state.get_detectors().size(); i++) {
     uint32_t trace_length = list_data_->hits[chosen_trace].trace.size();
     if ((drawit[i]) && (trace_length > 0)) {
       QVector<double> x(trace_length), y(trace_length);
-      Gamma::Detector this_det = list_data_->run.p4_state.get_detector(Pixie::Channel(i));
+      Gamma::Detector this_det = list_data_->run.p4_state.get_detectors()[i];
       int highest_res = 0;
       for (auto &q : this_det.energy_calibrations_.my_data_)
         if (q.bits_ > highest_res)
@@ -299,8 +299,8 @@ void TableListData::eat_list(Pixie::ListData* stuff) {
   mystuff = stuff;
   if (stuff != nullptr) {
     time_factor_ = stuff->run.time_scale_factor();
-    for (int i =0; i < Pixie::kNumChans; i++) {
-      Gamma::Detector thisdet = mystuff->run.p4_state.get_detector(Pixie::Channel(i));
+    for (int i =0; i < mystuff->run.p4_state.get_detectors().size(); i++) {
+      Gamma::Detector thisdet = mystuff->run.p4_state.get_detectors()[i];
       int hi_res = 0;
       for (auto &q : thisdet.energy_calibrations_.my_data_) {
         if (q.bits_ > hi_res)

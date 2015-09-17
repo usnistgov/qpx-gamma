@@ -43,7 +43,8 @@ enum class SettingType : int {none = 0,
                               detector = 8,
                               time = 9,
                               time_duration = 10,
-                              pattern = 11
+                              pattern = 11,
+                              file_path = 12
                              };
 
 struct Setting;
@@ -62,7 +63,7 @@ struct Setting : public XMLable {
   std::string       value_text;
   double            value;
   double            minimum, maximum, step;
-  std::string       unit;
+  std::string       unit; //or extension if file
   std::map<int32_t, std::string> int_menu_items;
 
   //if type is stem
@@ -149,6 +150,12 @@ struct Setting : public XMLable {
         setting_type = SettingType::detector;
         if (element->Attribute("value"))
           value_text = std::string(element->Attribute("value"));
+      } else if (temp_str == "file_path") {
+        setting_type = SettingType::file_path;
+        if (element->Attribute("value"))
+          value_text = std::string(element->Attribute("value"));
+        if (element->Attribute("unit"))
+          unit = std::string(element->Attribute("unit"));
       } else if (temp_str == "int_menu") {
         setting_type = SettingType::int_menu;
         if (element->Attribute("value"))
@@ -212,6 +219,9 @@ struct Setting : public XMLable {
       printer.PushAttribute("value", value_text.c_str());
     } else if (setting_type == SettingType::detector) {
       printer.PushAttribute("type", "detector");
+      printer.PushAttribute("value", value_text.c_str());
+    } else if (setting_type == SettingType::file_path) {
+      printer.PushAttribute("type", "file_path");
       printer.PushAttribute("value", value_text.c_str());
     } else if (setting_type == SettingType::int_menu) {
       printer.PushAttribute("type", "int_menu");
