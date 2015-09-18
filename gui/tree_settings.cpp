@@ -92,14 +92,11 @@ QVariant TreeItem::display_data(int column) const
   else if ((column == 1) && (itemData.setting_type != Gamma::SettingType::none) && (itemData.setting_type != Gamma::SettingType::stem))
   {
     if (itemData.setting_type == Gamma::SettingType::integer)
-      if (itemData.unit == "binary")
-        return QString::number(static_cast<uint32_t>(itemData.value_int, 16)).toUpper();
-      else
-        return QVariant::fromValue(itemData.value_int);
-    else if (itemData.setting_type == Gamma::SettingType::floating) {
-      //PL_DBG << "float data " << itemData.value;
+      return QVariant::fromValue(itemData.value_int);
+    else if (itemData.setting_type == Gamma::SettingType::binary)
+      return QVariant::fromValue(itemData.value_int);
+    else if (itemData.setting_type == Gamma::SettingType::floating)
       return QVariant::fromValue(itemData.value);
-    }
     else if (itemData.setting_type == Gamma::SettingType::int_menu)
       return QString::fromStdString(itemData.int_menu_items.at(itemData.value_int));
     else if (itemData.setting_type == Gamma::SettingType::boolean)
@@ -203,6 +200,9 @@ bool TreeItem::setData(int column, const QVariant &value)
   if (((itemData.setting_type == Gamma::SettingType::integer) || (itemData.setting_type == Gamma::SettingType::int_menu))
       && (value.type() == QVariant::Int))
     itemData.value_int = value.toInt();
+  else if ((itemData.setting_type == Gamma::SettingType::binary)
+      && (value.type() == QVariant::Int))
+    itemData.value_int = value.toInt();
   else if ((itemData.setting_type == Gamma::SettingType::boolean)
       && (value.type() == QVariant::Bool))
     itemData.value_int = value.toBool();
@@ -221,7 +221,6 @@ bool TreeItem::setData(int column, const QVariant &value)
   else if ((itemData.setting_type == Gamma::SettingType::detector)
       && (value.type() == QVariant::String)) {
     itemData.value_text = value.toString().toStdString();
-    PL_DBG << "setting det text to " << value.toString().toStdString();
   }
   else
     return false;

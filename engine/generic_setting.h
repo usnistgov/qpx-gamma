@@ -44,7 +44,8 @@ enum class SettingType : int {none = 0,
                               time = 9,
                               time_duration = 10,
                               pattern = 11,
-                              file_path = 12
+                              file_path = 12,
+                              binary = 13
                              };
 
 struct Setting;
@@ -112,6 +113,8 @@ struct Setting : public XMLable {
       name = std::string(element->Attribute("name"));
     if (element->Attribute("index"))
       index = boost::lexical_cast<uint32_t>(element->Attribute("index"));
+    if (element->Attribute("unit"))
+      unit = std::string(element->Attribute("unit"));
     if (element->Attribute("writable")) {
       std::string rw = std::string(element->Attribute("writable"));
       if (rw == "true")
@@ -139,6 +142,10 @@ struct Setting : public XMLable {
         setting_type = SettingType::integer;
         if (element->Attribute("value"))
           value_int = boost::lexical_cast<int64_t>(element->Attribute("value"));
+      } else if (temp_str == "binary") {
+        setting_type = SettingType::binary;
+        if (element->Attribute("value_int"))
+          value_int = boost::lexical_cast<int64_t>(element->Attribute("value_int"));
       } else if (temp_str == "floating") {
         setting_type = SettingType::floating;
         if (element->Attribute("value"))
@@ -155,8 +162,6 @@ struct Setting : public XMLable {
         setting_type = SettingType::file_path;
         if (element->Attribute("value"))
           value_text = std::string(element->Attribute("value"));
-        if (element->Attribute("unit"))
-          unit = std::string(element->Attribute("unit"));
       } else if (temp_str == "int_menu") {
         setting_type = SettingType::int_menu;
         if (element->Attribute("value"))
@@ -178,15 +183,13 @@ struct Setting : public XMLable {
         if (stemData != NULL)
           branches.from_xml(stemData);
       }
-      if ((temp_str == "floating") || (temp_str == "integer")) {
+      if ((temp_str == "floating") || (temp_str == "integer") || (temp_str == "binary")) {
         if (element->Attribute("minimum"))
           minimum = boost::lexical_cast<double>(element->Attribute("minimum"));
         if (element->Attribute("maximum"))
           maximum = boost::lexical_cast<double>(element->Attribute("maximum"));
         if (element->Attribute("step"))
           step = boost::lexical_cast<double>(element->Attribute("step"));
-        if (element->Attribute("unit"))
-          unit = std::string(element->Attribute("unit"));
       }
     }
   }
@@ -211,6 +214,9 @@ struct Setting : public XMLable {
         printer.PushAttribute("value", "false");
     } else if (setting_type == SettingType::integer) {
       printer.PushAttribute("type", "integer");
+      printer.PushAttribute("value", std::to_string(value_int).c_str());
+    } else if (setting_type == SettingType::binary) {
+      printer.PushAttribute("type", "binary");
       printer.PushAttribute("value", std::to_string(value_int).c_str());
     } else if (setting_type == SettingType::floating) {
       printer.PushAttribute("type", "floating");
@@ -240,7 +246,8 @@ struct Setting : public XMLable {
     }
 
     if ((setting_type == SettingType::integer) ||
-        (setting_type == SettingType::floating)) {
+        (setting_type == SettingType::floating) ||
+        (setting_type == SettingType::binary)) {
       printer.PushAttribute("minimum", std::to_string(minimum).c_str());
       printer.PushAttribute("maximum", std::to_string(maximum).c_str());
       printer.PushAttribute("step", std::to_string(step).c_str());

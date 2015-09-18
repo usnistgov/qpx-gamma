@@ -3,9 +3,9 @@
     <branches>
         <Setting name="Detectors" index="-1" writable="false" address="0" type="stem">
             <branches>
-                <Setting name="Detector 0" index="0" writable="true" address="0" type="detector" value="Sophia"/>
-                <Setting name="Detector 1" index="1" writable="true" address="0" type="detector" value="Daphne"/>
-                <Setting name="Detector 2" index="2" writable="true" address="0" type="detector" value="Daphne"/>
+                <Setting name="Detector 0" index="0" writable="true" address="0" type="detector" value="none"/>
+                <Setting name="Detector 1" index="1" writable="true" address="0" type="detector" value="none"/>
+                <Setting name="Detector 2" index="2" writable="true" address="0" type="detector" value="none"/>
                 <Setting name="Detector 3" index="3" writable="true" address="0" type="detector" value="none"/>
             </branches>
         </Setting>
@@ -76,8 +76,8 @@
                                 <Setting name="PDM_MASKC" index="-1" writable="true" address="33" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                 <Setting name="channel" index="-1" writable="false" address="0" type="stem">
                                     <branches>
-                                        <Setting name="CHANNEL_CSRA" index="0" writable="true" address="0" type="floating" value="180.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
-                                        <Setting name="CHANNEL_CSRB" index="0" writable="true" address="1" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+                                        <Setting name="CHANNEL_CSRA" index="0" writable="true" address="0" type="integer" value="180" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+                                        <Setting name="CHANNEL_CSRB" index="0" writable="true" address="1" type="integer" value="0" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
                                         <Setting name="ENERGY_RISETIME" index="0" writable="true" address="2" type="floating" value="11.946667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="ENERGY_FLATTOP" index="0" writable="true" address="3" type="floating" value="2.346667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="TRIGGER_RISETIME" index="0" writable="true" address="4" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
@@ -123,8 +123,8 @@
                                 </Setting>
                                 <Setting name="channel" index="-1" writable="false" address="1" type="stem">
                                     <branches>
-                                        <Setting name="CHANNEL_CSRA" index="1" writable="true" address="0" type="floating" value="180.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
-                                        <Setting name="CHANNEL_CSRB" index="1" writable="true" address="1" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+                                        <Setting name="CHANNEL_CSRA" index="1" writable="true" address="0" type="integer" value="180" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+                                        <Setting name="CHANNEL_CSRB" index="1" writable="true" address="1" type="integer" value="0" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
                                         <Setting name="ENERGY_RISETIME" index="1" writable="true" address="2" type="floating" value="11.946667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="ENERGY_FLATTOP" index="1" writable="true" address="3" type="floating" value="2.346667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="TRIGGER_RISETIME" index="1" writable="true" address="4" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
@@ -170,8 +170,8 @@
                                 </Setting>
                                 <Setting name="channel" index="-1" writable="false" address="2" type="stem">
                                     <branches>
-                                        <Setting name="CHANNEL_CSRA" index="2" writable="true" address="0" type="floating" value="180.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
-                                        <Setting name="CHANNEL_CSRB" index="2" writable="true" address="1" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+                                        <Setting name="CHANNEL_CSRA" index="2" writable="true" address="0" type="integer" value="180" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+                                        <Setting name="CHANNEL_CSRB" index="2" writable="true" address="1" type="integer" value="0" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
                                         <Setting name="ENERGY_RISETIME" index="2" writable="true" address="2" type="floating" value="11.946667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="ENERGY_FLATTOP" index="2" writable="true" address="3" type="floating" value="2.346667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="TRIGGER_RISETIME" index="2" writable="true" address="4" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
@@ -217,8 +217,8 @@
                                 </Setting>
                                 <Setting name="channel" index="-1" writable="false" address="3" type="stem">
                                     <branches>
-                                        <Setting name="CHANNEL_CSRA" index="3" writable="true" address="0" type="floating" value="180.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
-                                        <Setting name="CHANNEL_CSRB" index="3" writable="true" address="1" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+                                        <Setting name="CHANNEL_CSRA" index="3" writable="true" address="0" type="integer" value="180" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
+                                        <Setting name="CHANNEL_CSRB" index="3" writable="true" address="1" type="integer" value="0" minimum="0.000000" maximum="1.000000" step="1.000000" unit="binary"/>
                                         <Setting name="ENERGY_RISETIME" index="3" writable="true" address="2" type="floating" value="11.946667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="ENERGY_FLATTOP" index="3" writable="true" address="3" type="floating" value="2.346667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
                                         <Setting name="TRIGGER_RISETIME" index="3" writable="true" address="4" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>

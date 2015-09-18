@@ -96,7 +96,8 @@ bool Settings::read_settings_bulk(){
                       o.value = channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
                     else if ((o.setting_type == Gamma::SettingType::integer)
                              || (o.setting_type == Gamma::SettingType::boolean)
-                             || (o.setting_type == Gamma::SettingType::int_menu))
+                             || (o.setting_type == Gamma::SettingType::int_menu)
+                             || (o.setting_type == Gamma::SettingType::binary))
                       o.value_int = channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
                   }
                 }
@@ -104,7 +105,8 @@ bool Settings::read_settings_bulk(){
                   p.value = module_parameter_values_[modnum * N_MODULE_PAR +  p.address];
                 else if ((p.setting_type == Gamma::SettingType::integer)
                          || (p.setting_type == Gamma::SettingType::boolean)
-                         || (p.setting_type == Gamma::SettingType::int_menu))
+                         || (p.setting_type == Gamma::SettingType::int_menu)
+                         || (p.setting_type == Gamma::SettingType::binary))
                   p.value_int = module_parameter_values_[modnum * N_MODULE_PAR +  p.address];
               }
             }
@@ -112,7 +114,8 @@ bool Settings::read_settings_bulk(){
               k.value = system_parameter_values_[k.address];
             else if ((k.setting_type == Gamma::SettingType::integer)
                      || (k.setting_type == Gamma::SettingType::boolean)
-                     || (k.setting_type == Gamma::SettingType::int_menu))
+                     || (k.setting_type == Gamma::SettingType::int_menu)
+                     || (k.setting_type == Gamma::SettingType::binary))
               k.value_int = system_parameter_values_[k.address];
           }
         }
@@ -211,7 +214,8 @@ bool Settings::write_settings_bulk(){
                       write_chan(o.name.c_str(), modnum, channum);
                     } else if (o.writable && ((o.setting_type == Gamma::SettingType::integer)
                                               || (o.setting_type == Gamma::SettingType::boolean)
-                                              || (o.setting_type == Gamma::SettingType::int_menu))
+                                              || (o.setting_type == Gamma::SettingType::int_menu)
+                                              || (o.setting_type == Gamma::SettingType::binary))
                                           && (channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value_int)) {
                       channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value_int;
                       write_chan(o.name.c_str(), modnum, channum);
@@ -222,7 +226,8 @@ bool Settings::write_settings_bulk(){
                   write_mod(p.name.c_str(), modnum);
                 } else if (p.writable && ((p.setting_type == Gamma::SettingType::integer)
                                           || (p.setting_type == Gamma::SettingType::boolean)
-                                          || (p.setting_type == Gamma::SettingType::int_menu))
+                                          || (p.setting_type == Gamma::SettingType::int_menu)
+                                          || (p.setting_type == Gamma::SettingType::binary))
                                       && (module_parameter_values_[modnum * N_MODULE_PAR +  p.address] != p.value_int)) {
                   module_parameter_values_[modnum * N_MODULE_PAR +  p.address] = p.value_int;
                   write_mod(p.name.c_str(), modnum);

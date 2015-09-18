@@ -50,10 +50,9 @@ QVariant TableSpectrumAttrs::data(const QModelIndex &index, int role) const
       return QString::fromStdString((*generic_attributes)[row].name);
     case 1:
       if ((*generic_attributes)[row].setting_type == Gamma::SettingType::integer)
-        if ((*generic_attributes)[row].unit == "binary")
-          return QString::number(static_cast<uint32_t>((*generic_attributes)[row].value_int, 16)).toUpper();
-        else
-          return QVariant::fromValue((*generic_attributes)[row].value_int);
+        return QVariant::fromValue((*generic_attributes)[row].value_int);
+      else if ((*generic_attributes)[row].setting_type == Gamma::SettingType::binary)
+        return QVariant::fromValue((*generic_attributes)[row].value_int);
       else if ((*generic_attributes)[row].setting_type == Gamma::SettingType::floating)
         return QVariant::fromValue((*generic_attributes)[row].value);
       else if ((*generic_attributes)[row].setting_type == Gamma::SettingType::int_menu)

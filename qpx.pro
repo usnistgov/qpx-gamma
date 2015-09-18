@@ -57,6 +57,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 unix {
    SUSE = $$system(cat /proc/version | grep -o SUSE)
    UBUNTU = $$system(cat /proc/version | grep -o Ubuntu)
+   ARCH = $$system(uname -m)
    contains( SUSE, SUSE): {
        LIBS += -llua
    }
@@ -68,7 +69,16 @@ unix {
    !android {
       QMAKE_CC = g++
    }
-   LIBS +=  PLX/Library/PlxApi.a -lm -ldl -DBOOST_LOG_DYN_LINK \
+      
+   contains ( ARCH, x86_64): {
+      LIBS += PLX/Library/64bit/PlxApi.a
+   }
+
+   contains ( ARCH, i686):  {
+      LIBS += PLX/Library/32bit/PlxApi.a
+   }
+   
+   LIBS += -lm -ldl -DBOOST_LOG_DYN_LINK \
            -lboost_system -lboost_date_time -lboost_thread -lboost_log \
            -lboost_program_options -lboost_filesystem \
            -lboost_log_setup -lboost_timer -lz

@@ -727,7 +727,17 @@ void Wrapper::worker_run_dbl(RunType type, uint64_t timeout_limit,
 
   pxi.my_settings_.set_mod("DBLBUFCSR",   static_cast<double>(1), Module(0));
   pxi.my_settings_.set_mod("MODULE_CSRA", static_cast<double>(0), Module(0));
-  
+
+  //to reverse polarity
+  /*for (int i=0; i < kNumChans; ++i) {
+    Gamma::Setting csra = pxi.my_settings_.get_setting(Gamma::Setting("CHANNEL_CSRA", i, Gamma::SettingType::integer), i);
+    Gamma::Setting csrc = pxi.my_settings_.get_setting(Gamma::Setting("CHANNEL_CSRC", i, Gamma::SettingType::integer), i);
+    csra.value_int = csra.value_int & 0xFFDF;
+    csrc.value_int = csrc.value_int | 0x0080;
+    pxi.my_settings_.set_setting(csra, i);
+    pxi.my_settings_.set_setting(csrc, i);
+  }*/
+
   //start of run pixie status update
   //mainly for spectra to have calibration
   fetched_spill = new Spill;

@@ -31,6 +31,9 @@
 #include <QLineEdit>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QBoxLayout>
+#include <QLabel>
+#include <QWidget>
 
 void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                                const QModelIndex &index) const
@@ -43,6 +46,9 @@ void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
   } else if (index.data().type() == QVariant::Color) {
     QColor thisColor = qvariant_cast<QColor>(index.data());
     painter->fillRect(option.rect, thisColor);
+  } else if (index.data().canConvert<Gamma::Setting>()) {
+    Gamma::Setting itemData = qvariant_cast<Gamma::Setting>(index.data());
+
   }
   else
     QStyledItemDelegate::paint(painter, option, index);
@@ -72,6 +78,21 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
       return editor;
     } else if (set.setting_type == Gamma::SettingType::integer) {
       QSpinBox *editor = new QSpinBox(parent);
+      return editor;
+    } else if (set.setting_type == Gamma::SettingType::binary) {
+      PL_DBG << "making widget";
+      QVBoxLayout *vl = new QVBoxLayout();
+      for (int i=0; i<5; ++i) {
+        QCheckBox *box = new QCheckBox(parent);
+        QLabel *label = new QLabel();
+        label->setText("aaa");
+        QHBoxLayout *hl = new QHBoxLayout();
+        hl->addWidget(label);
+        hl->addWidget(box);
+        vl->addLayout(hl);
+      }
+      QWidget *editor = new QWidget(parent);
+      editor->setLayout(vl);
       return editor;
     } else if (set.setting_type == Gamma::SettingType::text) {
       QLineEdit *editor = new QLineEdit(parent);
