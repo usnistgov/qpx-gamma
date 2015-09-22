@@ -136,7 +136,7 @@ void FormPeaks::clear() {
 }
 
 
-void FormPeaks::setSpectrum(Pixie::Spectrum::Spectrum *newspectrum) {
+void FormPeaks::setSpectrum(Qpx::Spectrum::Spectrum *newspectrum) {
   clear();
   spectrum_ = newspectrum;
 
@@ -154,7 +154,7 @@ void FormPeaks::update_spectrum() {
   if (fit_data_ == nullptr)
     return;
 
-  Pixie::Spectrum::Metadata md;
+  Qpx::Spectrum::Metadata md;
   if (spectrum_)
     md = spectrum_->metadata();
 
@@ -170,7 +170,7 @@ void FormPeaks::update_spectrum() {
   std::vector<double> x_chan(md.resolution);
   std::vector<double> y(md.resolution);
 
-  std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_dump =
+  std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_dump =
       std::move(spectrum_->get_spectrum({{0, y.size()}}));
 
   int i = 0;

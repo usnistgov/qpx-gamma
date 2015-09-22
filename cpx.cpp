@@ -211,9 +211,9 @@ bool Cpx::load_simulation(std::vector<std::string> &tokens) {
   uint16_t matrix_res = boost::lexical_cast<uint16_t>(tokens[2]);
   
   PL_INFO << "<cpx> loading simulation from " << source;
-  Pixie::SpectraSet temp_spectra;
+  Qpx::SpectraSet temp_spectra;
   temp_spectra.read_xml(source, true);
-  source_ = Pixie::Simulator(&temp_spectra, std::array<int,2>({0,1}), source_res, matrix_res);
+  source_ = Qpx::Simulator(&temp_spectra, std::array<int,2>({0,1}), source_res, matrix_res);
   return true;
 }
 
@@ -224,7 +224,7 @@ bool Cpx::templates(std::vector<std::string> &tokens) {
   }
   std::string file(tokens[0]);
 
-  XMLableDB<Pixie::Spectrum::Template>  spectra_templates_("SpectrumTemplates");
+  XMLableDB<Qpx::Spectrum::Template>  spectra_templates_("SpectrumTemplates");
   spectra_templates_.read_xml(file);
   if (spectra_templates_.empty()) {
     PL_ERR << "<cpx> bad template file " << file;
@@ -271,7 +271,7 @@ bool Cpx::run_mca(std::vector<std::string> &tokens) {
     PL_ERR << "<cpx> bad type";
     return false;
   }
-  Pixie::RunType type = Pixie::RunType(0x100 | type_n);
+  Qpx::RunType type = Qpx::RunType(0x100 | type_n);
   
   //double-buffer always
   pixie_.getMca(type, duration, spectra_, interruptor_, true);
@@ -305,7 +305,7 @@ bool Cpx::set_chan(std::vector<std::string> &tokens) {
   std::string setting_name(tokens[1]);
   double value = boost::lexical_cast<double>(tokens[2]);
 
-  pixie_.settings().set_chan(setting_name, value, Pixie::Channel(channum));
+  pixie_.settings().set_chan(setting_name, value, Qpx::Channel(channum));
   return true;
 }
 
@@ -359,7 +359,7 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
   pixie_.settings().set_sys("KEEP_CW", 1);
   pixie_.settings().set_sys("MAX_NUMBER_MODULES", 7);
   bool success = pixie_.boot();
-  bool online = (pixie_.settings().live() == Pixie::LiveStatus::online);
+  bool online = (pixie_.settings().live() == Qpx::LiveStatus::online);
   if (!online) {
       PL_INFO << "<cpx> attempting boot of offline functions";
       pixie_.settings().set_sys("OFFLINE_ANALYSIS", 1);
@@ -375,7 +375,7 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
   pixie_.settings().set_mod("FILTER_RANGE", 4);
   pixie_.settings().set_mod("ACTUAL_COINCIDENCE_WAIT", 0);
   for (int i =0; i < 4; i++)
-    pixie_.settings().set_detector(Pixie::Channel(i), detectors_.get(Gamma::Detector(default_detectors_[i])));
+    pixie_.settings().set_detector(Qpx::Channel(i), detectors_.get(Gamma::Detector(default_detectors_[i])));
   if (true) { //online
     pixie_.control_adjust_offsets();
     pixie_.settings().load_optimization();

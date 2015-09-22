@@ -28,12 +28,12 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
-DialogSpectrumTemplate::DialogSpectrumTemplate(Pixie::Spectrum::Template newTemplate, bool edit, QWidget *parent) :
+DialogSpectrumTemplate::DialogSpectrumTemplate(Qpx::Spectrum::Template newTemplate, bool edit, QWidget *parent) :
   QDialog(parent),
   ui(new Ui::DialogSpectrumTemplate)
 {
   ui->setupUi(this);
-  for (auto &q : Pixie::Spectrum::Factory::getInstance().types())
+  for (auto &q : Qpx::Spectrum::Factory::getInstance().types())
     ui->comboType->addItem(QString::fromStdString(q));
   ui->colPicker->setStandardColors();
   connect(ui->colPicker, SIGNAL(colorChanged(QColor)), this, SLOT(colorChanged(QColor)));
@@ -46,7 +46,7 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Pixie::Spectrum::Template newTemp
     myTemplate = newTemplate;
     ui->lineName->setEnabled(false);
     ui->comboType->setEnabled(false);
-    Pixie::Spectrum::Template *newtemp = Pixie::Spectrum::Factory::getInstance().create_template(newTemplate.type);
+    Qpx::Spectrum::Template *newtemp = Qpx::Spectrum::Factory::getInstance().create_template(newTemplate.type);
     if (newtemp != nullptr) {
       myTemplate.description = newtemp->description;
       myTemplate.input_types = newtemp->input_types;
@@ -54,7 +54,7 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Pixie::Spectrum::Template newTemp
     } else
       PL_WARN << "Problem with spectrum type. Factory cannot make template for " << newTemplate.type;
   } else {
-    Pixie::Spectrum::Template *newtemp = Pixie::Spectrum::Factory::getInstance().create_template(ui->comboType->currentText().toStdString());
+    Qpx::Spectrum::Template *newtemp = Qpx::Spectrum::Factory::getInstance().create_template(ui->comboType->currentText().toStdString());
     if (newtemp != nullptr) {
       myTemplate = *newtemp;
     } else
@@ -119,13 +119,13 @@ void DialogSpectrumTemplate::on_buttonBox_accepted()
   myTemplate.match_pattern = ui->patternMatch->qpxPattern().pattern().toStdVector();
   myTemplate.add_pattern = ui->patternAdd->qpxPattern().pattern().toStdVector();
 
-  if (myTemplate.name_ == Pixie::Spectrum::Template().name_) {
+  if (myTemplate.name_ == Qpx::Spectrum::Template().name_) {
     QMessageBox msgBox;
     msgBox.setText("Please give it a proper name");
     msgBox.exec();
   } else {
     PL_INFO << "Type requested " << myTemplate.type;
-    Pixie::Spectrum::Spectrum *newSpectrum = Pixie::Spectrum::Factory::getInstance().create_from_template(myTemplate);
+    Qpx::Spectrum::Spectrum *newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_template(myTemplate);
     if (newSpectrum == nullptr) {
       QMessageBox msgBox;
       msgBox.setText("Failed to create spectrum from template. Check requirements.");
@@ -166,7 +166,7 @@ void DialogSpectrumTemplate::colorChanged(const QColor &col)
 
 void DialogSpectrumTemplate::on_comboType_activated(const QString &arg1)
 {
-  Pixie::Spectrum::Template *newtemp = Pixie::Spectrum::Factory::getInstance().create_template(arg1.toStdString());
+  Qpx::Spectrum::Template *newtemp = Qpx::Spectrum::Factory::getInstance().create_template(arg1.toStdString());
   if (newtemp != nullptr) {
     myTemplate = *newtemp;
 
@@ -190,7 +190,7 @@ void DialogSpectrumTemplate::on_pushRandColor_clicked()
 
 
 
-TableSpectraTemplates::TableSpectraTemplates(XMLableDB<Pixie::Spectrum::Template>& templates, QObject *parent)
+TableSpectraTemplates::TableSpectraTemplates(XMLableDB<Qpx::Spectrum::Template>& templates, QObject *parent)
   : QAbstractTableModel(parent),
     templates_(templates)
 {
@@ -288,7 +288,7 @@ Qt::ItemFlags TableSpectraTemplates::flags(const QModelIndex &index) const
 
 
 
-DialogSpectraTemplates::DialogSpectraTemplates(XMLableDB<Pixie::Spectrum::Template> &newdb, QString savedir, QWidget *parent) :
+DialogSpectraTemplates::DialogSpectraTemplates(XMLableDB<Qpx::Spectrum::Template> &newdb, QString savedir, QWidget *parent) :
   QDialog(parent),
   ui(new Ui::DialogSpectraTemplates),
   table_model_(newdb),
@@ -385,10 +385,10 @@ void DialogSpectraTemplates::on_pushExport_clicked()
 
 void DialogSpectraTemplates::on_pushNew_clicked()
 {
-  Pixie::Spectrum::Template new_template;
+  Qpx::Spectrum::Template new_template;
   new_template.appearance = generateColor().rgba();
   DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(new_template, false, this);
-  connect(newDialog, SIGNAL(templateReady(Pixie::Spectrum::Template)), this, SLOT(add_template(Pixie::Spectrum::Template)));
+  connect(newDialog, SIGNAL(templateReady(Qpx::Spectrum::Template)), this, SLOT(add_template(Qpx::Spectrum::Template)));
   newDialog->exec();
 }
 
@@ -399,7 +399,7 @@ void DialogSpectraTemplates::on_pushEdit_clicked()
     return;
   int i = ixl.front().row();
   DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(templates_.get(i), true, this);
-  connect(newDialog, SIGNAL(templateReady(Pixie::Spectrum::Template)), this, SLOT(change_template(Pixie::Spectrum::Template)));
+  connect(newDialog, SIGNAL(templateReady(Qpx::Spectrum::Template)), this, SLOT(change_template(Qpx::Spectrum::Template)));
   newDialog->exec();
 }
 
@@ -416,7 +416,7 @@ void DialogSpectraTemplates::on_pushDelete_clicked()
 }
 
 
-void DialogSpectraTemplates::add_template(Pixie::Spectrum::Template newTemplate) {
+void DialogSpectraTemplates::add_template(Qpx::Spectrum::Template newTemplate) {
   //notify if duplicate
   templates_.add(newTemplate);
   selection_model_.reset();
@@ -424,7 +424,7 @@ void DialogSpectraTemplates::add_template(Pixie::Spectrum::Template newTemplate)
   toggle_push();
 }
 
-void DialogSpectraTemplates::change_template(Pixie::Spectrum::Template newTemplate) {
+void DialogSpectraTemplates::change_template(Qpx::Spectrum::Template newTemplate) {
   templates_.replace(newTemplate);
   selection_model_.reset();
   table_model_.update();

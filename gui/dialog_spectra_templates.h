@@ -43,10 +43,10 @@ class TableSpectraTemplates : public QAbstractTableModel
 {
   Q_OBJECT
 private:
-  XMLableDB<Pixie::Spectrum::Template> &templates_;
+  XMLableDB<Qpx::Spectrum::Template> &templates_;
 
 public:
-  TableSpectraTemplates(XMLableDB<Pixie::Spectrum::Template>& templates, QObject *parent = 0);
+  TableSpectraTemplates(XMLableDB<Qpx::Spectrum::Template>& templates, QObject *parent = 0);
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
   int columnCount(const QModelIndex &parent = QModelIndex()) const;
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -61,11 +61,11 @@ class DialogSpectrumTemplate : public QDialog
 {
   Q_OBJECT
 public:
-  explicit DialogSpectrumTemplate(Pixie::Spectrum::Template, bool, QWidget *parent = 0);
+  explicit DialogSpectrumTemplate(Qpx::Spectrum::Template, bool, QWidget *parent = 0);
   ~DialogSpectrumTemplate();
 
 signals:
-  void templateReady(Pixie::Spectrum::Template);
+  void templateReady(Qpx::Spectrum::Template);
 
 private slots:
   void on_buttonBox_accepted();
@@ -84,7 +84,7 @@ private:
   void updateData();
 
   Ui::DialogSpectrumTemplate *ui;
-  Pixie::Spectrum::Template myTemplate;
+  Qpx::Spectrum::Template myTemplate;
 
   QpxSpecialDelegate      special_delegate_;
   TableSpectrumAttrs         table_model_;
@@ -95,13 +95,13 @@ class DialogSpectraTemplates : public QDialog
   Q_OBJECT
 
 public:
-  explicit DialogSpectraTemplates(XMLableDB<Pixie::Spectrum::Template> &newdb, QString savedir, QWidget *parent = 0);
+  explicit DialogSpectraTemplates(XMLableDB<Qpx::Spectrum::Template> &newdb, QString savedir, QWidget *parent = 0);
   ~DialogSpectraTemplates();
 
 private:
   Ui::DialogSpectraTemplates *ui;
 
-  XMLableDB<Pixie::Spectrum::Template> &templates_;
+  XMLableDB<Qpx::Spectrum::Template> &templates_;
 
   QpxSpecialDelegate      special_delegate_;
   TableSpectraTemplates         table_model_;
@@ -110,8 +110,8 @@ private:
   QString root_dir_;
 
 private slots:
-  void add_template(Pixie::Spectrum::Template);
-  void change_template(Pixie::Spectrum::Template);
+  void add_template(Qpx::Spectrum::Template);
+  void change_template(Qpx::Spectrum::Template);
 
   void on_pushImport_clicked();
   void on_pushExport_clicked();

@@ -43,10 +43,10 @@ DialogDetector::DialogDetector(Gamma::Detector mydet, QDir rd, bool editName, QW
   ui->setupUi(this);
 
   //file formats, should be in detector db widget
-  std::vector<std::string> spectypes = Pixie::Spectrum::Factory::getInstance().types();
+  std::vector<std::string> spectypes = Qpx::Spectrum::Factory::getInstance().types();
   QStringList filetypes;
   for (auto &q : spectypes) {
-    Pixie::Spectrum::Template* type_template = Pixie::Spectrum::Factory::getInstance().create_template(q);
+    Qpx::Spectrum::Template* type_template = Qpx::Spectrum::Factory::getInstance().create_template(q);
     if (!type_template->input_types.empty())
       filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types) + ")");
     delete type_template;
@@ -151,10 +151,9 @@ void DialogDetector::on_pushReadOpti_clicked()
   if (!validateFile(this, fileName, false))
     return;
 
-  Pixie::SpectraSet optiSource;
+  Qpx::SpectraSet optiSource;
   optiSource.read_xml(fileName.toStdString(), false);
-  optiSource.runInfo().p4_state.save_optimization();
-  for (auto &q : optiSource.runInfo().p4_state.get_detectors())
+  for (auto &q : optiSource.runInfo().detectors)
     if (q.name_ == my_detector_.name_)
       my_detector_ = q;
   updateDisplay();
@@ -169,7 +168,7 @@ void DialogDetector::on_pushRead1D_clicked()
 
   this->setCursor(Qt::WaitCursor);
 
-  Pixie::Spectrum::Spectrum* newSpectrum = Pixie::Spectrum::Factory::getInstance().create_from_file(fileName.toStdString());
+  Qpx::Spectrum::Spectrum* newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_file(fileName.toStdString());
   if (newSpectrum != nullptr) {
     std::vector<Gamma::Detector> dets = newSpectrum->metadata().detectors;
     for (auto &q : dets)

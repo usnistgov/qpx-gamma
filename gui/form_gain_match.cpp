@@ -37,14 +37,14 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
   gm_interruptor_(false),
   gm_plot_thread_(gm_spectra_),
   my_run_(false),
-  pixie_(Pixie::Wrapper::getInstance())
+  pixie_(Qpx::Wrapper::getInstance())
 {
   ui->setupUi(this);
 
   loadSettings();
   connect(&gm_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
 
-  if (Pixie::Spectrum::Template *temp = Pixie::Spectrum::Factory::getInstance().create_template("1D")) {
+  if (Qpx::Spectrum::Template *temp = Qpx::Spectrum::Factory::getInstance().create_template("1D")) {
     reference_   = *temp;
     optimizing_  = *temp;
     delete temp;
@@ -159,8 +159,8 @@ void FormGainMatch::closeEvent(QCloseEvent *event) {
   event->accept();
 }
 
-void FormGainMatch::toggle_push(bool enable, Pixie::LiveStatus live) {
-  bool online = (live == Pixie::LiveStatus::online);
+void FormGainMatch::toggle_push(bool enable, Qpx::LiveStatus live) {
+  bool online = (live == Qpx::LiveStatus::online);
   ui->pushMatchGain->setEnabled(enable && online);
 
   ui->spinRefChan->setEnabled(enable && online);
@@ -180,18 +180,18 @@ void FormGainMatch::do_run()
 
   gm_spectra_.clear();
   reference_.bits = bits;
-  reference_.add_pattern.resize(Pixie::kNumChans,0);
+  reference_.add_pattern.resize(Qpx::kNumChans,0);
   reference_.add_pattern[ui->spinRefChan->value()] = 1;
-  reference_.match_pattern.resize(Pixie::kNumChans,0);
+  reference_.match_pattern.resize(Qpx::kNumChans,0);
   reference_.match_pattern[ui->spinRefChan->value()] = 1;
 
   optimizing_.bits = bits;
-  optimizing_.add_pattern.resize(Pixie::kNumChans,0);
+  optimizing_.add_pattern.resize(Qpx::kNumChans,0);
   optimizing_.add_pattern[ui->spinOptChan->value()] = 1;
-  optimizing_.match_pattern.resize(Pixie::kNumChans,0);
+  optimizing_.match_pattern.resize(Qpx::kNumChans,0);
   optimizing_.match_pattern[ui->spinOptChan->value()] = 1;
 
-  XMLableDB<Pixie::Spectrum::Template> db("SpectrumTemplates");
+  XMLableDB<Qpx::Spectrum::Template> db("SpectrumTemplates");
   db.add(reference_);
   db.add(optimizing_);
 
@@ -205,7 +205,7 @@ void FormGainMatch::do_run()
   y_opt.resize(pow(2,bits), 0.0);
 
   minTimer = new CustomTimer(true);
-  gm_runner_thread_.do_run(gm_spectra_, gm_interruptor_, Pixie::RunType::compressed, ui->spinSampleMax->value(), true);
+  gm_runner_thread_.do_run(gm_spectra_, gm_interruptor_, ui->spinSampleMax->value());
 }
 
 void FormGainMatch::run_completed() {
@@ -235,9 +235,9 @@ void FormGainMatch::run_completed() {
 }
 
 void FormGainMatch::do_post_processing() {
-  Pixie::Settings &settings = pixie_.settings();
+  Qpx::Settings &settings = pixie_.settings();
   settings.get_all_settings();
-  double old_gain = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", ui->spinOptChan->value(), Gamma::SettingType::floating), ui->spinOptChan->value()).value;
+  double old_gain = settings.pull_settings().get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", 7, Gamma::SettingType::floating, ui->spinOptChan->value())).value;
   QThread::sleep(2);
   double new_gain = old_gain;
   if (gauss_opt_.gaussian_.center_ < gauss_ref_.gaussian_.center_) {
@@ -252,11 +252,11 @@ void FormGainMatch::do_post_processing() {
     emit toggleIO(true);
     return;
   }
-  Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", ui->spinOptChan->value(), Gamma::SettingType::floating);
+  Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", 7, Gamma::SettingType::floating, ui->spinOptChan->value());
   set.value = new_gain;
-  settings.set_setting(set, ui->spinOptChan->value());
+  settings.set_setting(set);
   QThread::sleep(2);
-  new_gain = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", ui->spinOptChan->value(), Gamma::SettingType::floating), ui->spinOptChan->value()).value;
+  new_gain = settings.pull_settings().get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", 7, Gamma::SettingType::floating, ui->spinOptChan->value())).value;
 
 
   PL_INFO << "gain changed from " << std::fixed << std::setprecision(6)
@@ -306,7 +306,7 @@ void FormGainMatch::update_plots() {
     have_data = true;
 
     for (auto &q: gm_spectra_.by_type("1D")) {
-      Pixie::Spectrum::Metadata md;
+      Qpx::Spectrum::Metadata md;
       if (q)
         md = q->metadata();
 
@@ -314,7 +314,7 @@ void FormGainMatch::update_plots() {
 
         uint32_t res = pow(2, bits);
         uint32_t app = md.appearance;
-        std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
+        std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
             std::move(q->get_spectrum({{0, res}}));
 
         std::vector<double> y(res, 0.0);

@@ -46,7 +46,7 @@ public:
   ~FormCoincPeaks();
 
   void setFit(Gamma::Fitter *);
-  void setSpectrum(Pixie::Spectrum::Spectrum *newspectrum, uint16_t L = 0, uint16_t R = 0);
+  void setSpectrum(Qpx::Spectrum::Spectrum *newspectrum, uint16_t L = 0, uint16_t R = 0);
 
   void clear();
   void update_fit(bool content_changed = false);
@@ -82,7 +82,7 @@ private:
   Ui::FormCoincPeaks *ui;
 
   //from parent
-  Pixie::Spectrum::Spectrum *spectrum_;
+  Qpx::Spectrum::Spectrum *spectrum_;
   std::map<double, double> minima, maxima;
 
   //data from selected spectrum

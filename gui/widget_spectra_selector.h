@@ -48,7 +48,7 @@ public:
     QpxSpectraWidget(QWidget *parent = 0);
 
     QSize sizeHint() const Q_DECL_OVERRIDE;
-    void setQpxSpectra(Pixie::SpectraSet &newset, int dim = 0, int res = 0);
+    void setQpxSpectra(Qpx::SpectraSet &newset, int dim = 0, int res = 0);
     void update_looks();
     int available_count();
     QString selected();
@@ -64,7 +64,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
 
 private:
-    Pixie::SpectraSet *all_spectra_;
+    Qpx::SpectraSet *all_spectra_;
     QVector<SpectrumAvatar> my_spectra_;
 
     int rect_w_, rect_h_, border;

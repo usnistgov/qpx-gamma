@@ -46,7 +46,7 @@ public:
   ~FormPeaks();
 
   void setFit(Gamma::Fitter *);
-  void setSpectrum(Pixie::Spectrum::Spectrum *newspectrum);
+  void setSpectrum(Qpx::Spectrum::Spectrum *newspectrum);
 
   void clear();
   void update_fit(bool content_changed = false);
@@ -92,7 +92,7 @@ private:
   Ui::FormPeaks *ui;
 
   //from parent
-  Pixie::Spectrum::Spectrum *spectrum_;
+  Qpx::Spectrum::Spectrum *spectrum_;
   std::map<double, double> minima, maxima;
 
   //data from selected spectrum

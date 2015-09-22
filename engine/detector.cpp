@@ -54,9 +54,11 @@ Calibration Detector::get_gain_match(uint16_t bits, std::string todet)
   return result;
 }
 
-
 void Detector::to_xml(tinyxml2::XMLPrinter& printer) const {
+  to_xml_options(printer, true);
+}
 
+void Detector::to_xml_options(tinyxml2::XMLPrinter& printer, bool options) const {
   printer.OpenElement("Detector");
 
   printer.OpenElement("Name");
@@ -76,7 +78,7 @@ void Detector::to_xml(tinyxml2::XMLPrinter& printer) const {
   if (fwhm_calibration_.bits_)
     fwhm_calibration_.to_xml(printer);
 
-  if (settings_.setting_type == SettingType::stem)
+  if (options && (settings_.setting_type == SettingType::stem))
     settings_.to_xml(printer);
 
   printer.CloseElement(); //Detector
@@ -108,12 +110,8 @@ void Detector::from_xml(tinyxml2::XMLElement* root) {
   }
 
   tinyxml2::XMLElement* stemData = root->FirstChildElement(settings_.xml_element_name().c_str());
-  if (stemData != NULL) {
-    PL_DBG << "loading optimization settings for " << name_;
+  if (stemData != NULL)
     settings_.from_xml(stemData);
-  }
-  if (!settings_.branches.empty())
-    PL_DBG << "Loaded optimization " << settings_.branches.my_data_.front().name;
 }
 
 }

@@ -26,6 +26,8 @@
 #include <QWidget>
 #include <QSettings>
 #include <QCloseEvent>
+#include <QTableView>
+#include <QTreeView>
 #include "detector.h"
 #include "special_delegate.h"
 #include "thread_runner.h"
@@ -44,11 +46,12 @@ class FormPixieSettings : public QWidget
 
 public:
   explicit FormPixieSettings(ThreadRunner&, XMLableDB<Gamma::Detector>&, QSettings&, QWidget *parent = 0);
+  Gamma::Setting get_tree() {return dev_settings_;}
   ~FormPixieSettings();
 
 public slots:
   void refresh();
-  void update();
+  void update(const Gamma::Setting &tree, const std::vector<Gamma::Detector> &channels);
   void updateDetDB();
 
 signals:
@@ -61,35 +64,38 @@ protected:
 private slots:
   void on_pushSettingsRefresh_clicked();
   void on_pushOptimizeAll_clicked();
-  void on_buttonCompTau_clicked();
-  void on_buttonCompBLC_clicked();
 
   void updateDetChoices();
-  void toggle_push(bool enable, Pixie::LiveStatus live);
+  void toggle_push(bool enable, Qpx::LiveStatus live);
 
   void on_pushDetDB_clicked();
 
   void push_settings();
   void push_from_table(int chan, Gamma::Setting setting);
   void chose_detector(int chan, std::string name);
+  void execute_command();
+
+  void on_checkShowRO_clicked();
+  void on_bootButton_clicked();
 
 
 private:
   Ui::FormPixieSettings *ui;
 
-  Pixie::Wrapper& pixie_; //eliminate this
-
   XMLableDB<Gamma::Detector>            &detectors_;
-
-  ThreadRunner        &runner_thread_;
-  QSettings &settings_;
-
-  TableChanSettings   channel_settings_model_;
-  QpxSpecialDelegate  settings_delegate_;
-
   QString data_directory_;
 
-  Gamma::Setting      dev_settings_;
+  ThreadRunner        &runner_thread_;
+  QSettings           &settings_;
+
+  Gamma::Setting               dev_settings_;
+  std::vector<Gamma::Detector> channels_;
+
+  QTableView*         viewTableSettings;
+  TableChanSettings   table_settings_model_;
+  QpxSpecialDelegate  table_settings_delegate_;
+
+  QTreeView*          viewTreeSettings;
   TreeSettings        tree_settings_model_;
   QpxSpecialDelegate  tree_delegate_;
 

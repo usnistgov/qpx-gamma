@@ -90,12 +90,11 @@ public:
 //  bool removeRows(int position, int rows, const QModelIndex &parent = QModelIndex()) Q_DECL_OVERRIDE;
 
   const Gamma::Setting & get_tree();
-
   void update(const Gamma::Setting &data);
-  void set_structure(const Gamma::Setting &data);
 
 signals:
   void tree_changed();
+  void execute_command();
   void detector_chosen(int chan, std::string name);
 
 };

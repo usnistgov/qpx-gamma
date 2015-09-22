@@ -70,8 +70,9 @@ unix {
    QMAKE_CXXFLAGS_RELEASE += -O3
 }
 	 
-INCLUDEPATH += pixiecpp \
-               engine \
+INCLUDEPATH += engine \
+               engine/spectrum \
+               engine/plugins \
                math \
                PLX/Include \
                dependencies \
@@ -82,7 +83,10 @@ INCLUDEPATH += pixiecpp \
 
 SOURCES += cpx.cpp \
            engine/*.cpp \
+           engine/spectrum/*.cpp \
+           engine/plugins/*.cpp \
            math/*.cpp \
+           analysis/*.cpp \
            dependencies/custom_logger.cpp \
            dependencies/isotope.cpp \
            $$files(dependencies/XIA/*.c) \
@@ -90,16 +94,17 @@ SOURCES += cpx.cpp \
            $$files(dependencies/xylib/*.cpp) \
            $$files(dependencies/fityk/*.cpp) \
            $$files(dependencies/fityk/swig/*.cpp) \
-           $$files(dependencies/fityk/cmpfit/*.c) \
-           $$files(pixiecpp/*.cpp)
+           $$files(dependencies/fityk/cmpfit/*.c)
 
 HEADERS  += dependencies/custom_logger.h \
             dependencies/isotope.h \
             $$files(engine/*.h) \
+            $$files(engine/spectrum/*.h) \
+            $$files(engine/plugins/*.h) \
             $$files(math/*.h) \
+            $$files(analysis/*.h) \
             $$files(dependencies/XIA/*.h) \
             $$files(dependencies/tinyxml2/*.h) \
             $$files(dependencies/xylib/*.h) \
             $$files(dependencies/fityk/*.h) \
-            $$files(PLX/Include/*.h) \
-            $$files(pixiecpp/*.h)
+            $$files(PLX/Include/*.h)

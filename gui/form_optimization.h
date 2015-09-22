@@ -70,7 +70,7 @@ private slots:
   void do_post_processing();
   void do_run();
 
-  void toggle_push(bool, Pixie::LiveStatus);
+  void toggle_push(bool, Qpx::LiveStatus);
 
   void on_pushSaveOpti_clicked();
 
@@ -83,9 +83,9 @@ private:
 
   Ui::FormOptimization *ui;
 
-  Pixie::Wrapper&      pixie_;
-  Pixie::SpectraSet current_spectra_;
-  Pixie::Spectrum::Template        optimizing_;
+  Qpx::Wrapper&      pixie_;
+  Qpx::SpectraSet current_spectra_;
+  Qpx::Spectrum::Template        optimizing_;
 
   ThreadRunner         &opt_runner_thread_;
   XMLableDB<Gamma::Detector> &detectors_;

@@ -40,7 +40,7 @@ public:
   explicit FormPlot2D(QWidget *parent = 0);
   ~FormPlot2D();
 
-  void setSpectra(Pixie::SpectraSet& new_set);
+  void setSpectra(Qpx::SpectraSet& new_set);
 
   void updateUI();
 
@@ -100,7 +100,7 @@ private:
 
   //gui stuff
   Ui::FormPlot2D *ui;
-  Pixie::SpectraSet *mySpectra;
+  Qpx::SpectraSet *mySpectra;
   QCPColorMap *colorMap;
 
   std::map<QString, QCPColorGradient> gradients_;

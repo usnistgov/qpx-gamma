@@ -26,7 +26,7 @@
 #include <QInputDialog>
 #include <QMessageBox>
 
-dialog_spectrum::dialog_spectrum(Pixie::Spectrum::Spectrum &spec, QWidget *parent) :
+dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, QWidget *parent) :
   QDialog(parent),
   my_spectrum_(spec),
   det_selection_model_(&det_table_model_),

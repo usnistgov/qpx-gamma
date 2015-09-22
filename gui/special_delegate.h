@@ -26,11 +26,31 @@
 #define QPX_SPECIAL_DELEGATE_H_
 
 #include <QStyledItemDelegate>
+#include <QDialog>
+#include <QCheckBox>
 #include "widget_pattern.h"
 #include "detector.h"
 
 Q_DECLARE_METATYPE(Gamma::Detector)
 Q_DECLARE_METATYPE(Gamma::Setting)
+
+class BinaryChecklist : public QDialog {
+  Q_OBJECT
+
+public:
+  explicit BinaryChecklist(Gamma::Setting setting, QWidget *parent = 0);
+  Gamma::Setting get_setting() {return setting_;}
+
+private slots:
+  void change_setting();
+
+private:
+//  Ui::FormDaqSettings *ui;
+
+  Gamma::Setting      setting_;
+  std::vector<QCheckBox*> boxes_;
+
+};
 
 class QpxSpecialDelegate : public QStyledItemDelegate
 {

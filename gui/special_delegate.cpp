@@ -33,7 +33,81 @@
 #include <QFileInfo>
 #include <QBoxLayout>
 #include <QLabel>
-#include <QWidget>
+#include <QDialogButtonBox>
+#include <QMessageBox>
+
+BinaryChecklist::BinaryChecklist(Gamma::Setting setting, QWidget *parent) :
+  QDialog(parent),
+  setting_(setting)
+{
+  int wordsize = setting.maximum;
+  if (wordsize < 0)
+    wordsize = 0;
+  if (wordsize > 64)
+    wordsize = 64;
+
+  std::bitset<64> bs(setting.value_int);
+
+  QVBoxLayout *vl_bit    = new QVBoxLayout();
+  QVBoxLayout *vl_checks = new QVBoxLayout();
+  QVBoxLayout *vl_descr  = new QVBoxLayout();
+
+  for (int i=0; i < wordsize; ++i) {
+    QLabel *label = new QLabel();
+    label->setText(QString::number(i));
+    if (!setting_.int_menu_items.count(i))
+      label->setEnabled(false);
+    vl_bit->addWidget(label);
+
+    QCheckBox *box = new QCheckBox(parent);
+    if (bs[i])
+      box->setChecked(true);
+    if (!setting_.int_menu_items.count(i))
+      box->setEnabled(false);
+    boxes_.push_back(box);
+    vl_checks->addWidget(box);
+
+    QLabel *label2 = new QLabel();
+    if (setting_.int_menu_items.count(i))
+      label2->setText(QString::fromStdString(setting_.int_menu_items[i]));
+    else {
+      label2->setText("N/A");
+      label2->setEnabled(false);
+    }
+    vl_descr->addWidget(label2);
+
+  }
+
+  QHBoxLayout *hl = new QHBoxLayout();
+  hl->addLayout(vl_bit);
+  hl->addLayout(vl_checks);
+  hl->addLayout(vl_descr);
+
+  QLabel *title = new QLabel();
+  title->setText(QString::fromStdString(setting_.name) + " binary breakdown");
+
+  QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+
+  connect(buttonBox, SIGNAL(accepted()), this, SLOT(change_setting()));
+  connect(buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
+
+  QVBoxLayout *total    = new QVBoxLayout();
+  total->addWidget(title);
+  total->addLayout(hl);
+  total->addWidget(buttonBox);
+
+  setLayout(total);
+}
+
+void BinaryChecklist::change_setting() {
+  std::bitset<64> bs(setting_.value_int);
+  for (int i=0; i < boxes_.size(); ++i)
+    bs[i] = boxes_[i]->isChecked();
+  setting_.value_int = bs.to_ullong();
+  accept();
+}
+
+
 
 void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                                const QModelIndex &index) const
@@ -80,22 +154,27 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
       QSpinBox *editor = new QSpinBox(parent);
       return editor;
     } else if (set.setting_type == Gamma::SettingType::binary) {
-      PL_DBG << "making widget";
-      QVBoxLayout *vl = new QVBoxLayout();
-      for (int i=0; i<5; ++i) {
-        QCheckBox *box = new QCheckBox(parent);
-        QLabel *label = new QLabel();
-        label->setText("aaa");
-        QHBoxLayout *hl = new QHBoxLayout();
-        hl->addWidget(label);
-        hl->addWidget(box);
-        vl->addLayout(hl);
-      }
-      QWidget *editor = new QWidget(parent);
-      editor->setLayout(vl);
+      BinaryChecklist *editor = new BinaryChecklist(set, parent);
+      editor->setModal(true);
+      return editor;
+    } else if ((set.setting_type == Gamma::SettingType::command) && (set.value_int > 1))  {
+      QMessageBox *editor = new QMessageBox(parent);
+      editor->setText("Run " + QString::fromStdString(set.name));
+      editor->setInformativeText("Will run command: " + QString::fromStdString(set.name) + "\n Are you sure?");
+      editor->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+      //editor->exec();
       return editor;
     } else if (set.setting_type == Gamma::SettingType::text) {
       QLineEdit *editor = new QLineEdit(parent);
+      return editor;
+    } else if (set.setting_type == Gamma::SettingType::pattern) {
+      std::bitset<64> bset(set.value_int);
+      QVector<int16_t> pat(set.maximum);
+      for (int i=0; i < set.maximum; ++i)
+        pat[i] = bset[i];
+      QpxPattern pattern(pat, 20, false, 8);
+      QpxPatternEditor *editor = new QpxPatternEditor(parent);
+      editor->setQpxPattern(pattern);
       return editor;
     } else if (set.setting_type == Gamma::SettingType::detector) {
       QComboBox *editor = new QComboBox(parent);
@@ -109,10 +188,9 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
       QCheckBox *editor = new QCheckBox(parent);
       return editor;
     } else if (set.setting_type == Gamma::SettingType::file_path) {
-
       QFileDialog *editor = new QFileDialog(parent, QString("Open File"),
-                                           QFileInfo(QString::fromStdString(set.value_text)).dir().absolutePath(),
-                                           QString::fromStdString(set.unit));
+                                            QFileInfo(QString::fromStdString(set.value_text)).dir().absolutePath(),
+                                            QString::fromStdString(set.unit));
       editor->setFileMode(QFileDialog::ExistingFile);
 
       return editor;
@@ -164,6 +242,13 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
       sb->setValue(static_cast<int64_t>(set.value_int));
     } else
       sb->setValue(index.data(Qt::EditRole).toInt());
+  } else if (BinaryChecklist *bc = qobject_cast<BinaryChecklist *>(editor)) {
+    bc->show();
+    bc->raise();
+    bc->activateWindow();
+//    bc->exec();
+  } else if (QMessageBox *mb = qobject_cast<QMessageBox*>(editor)) {
+//    mb->exec();
   } else if (QLineEdit *le = qobject_cast<QLineEdit *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
       Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
@@ -199,11 +284,17 @@ void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *mod
     model->setData(index, QVariant::fromValue(sb->value()), Qt::EditRole);
   else if (QLineEdit *le = qobject_cast<QLineEdit *>(editor))
     model->setData(index, le->text(), Qt::EditRole);
-  else if (QCheckBox *cb = qobject_cast<QCheckBox *>(editor))
+  else if (QMessageBox *mb = qobject_cast<QMessageBox*>(editor)) {
+    if (mb->standardButton(mb->clickedButton()) == QMessageBox::Yes)
+      model->setData(index, QVariant(), Qt::EditRole);
+  } else if (QCheckBox *cb = qobject_cast<QCheckBox *>(editor))
     model->setData(index, QVariant::fromValue(cb->isChecked()), Qt::EditRole);
-  else if (QFileDialog *fd = qobject_cast<QFileDialog *>(editor))
+  else if (QFileDialog *fd = qobject_cast<QFileDialog *>(editor)) {
     if ((!fd->selectedFiles().isEmpty()) /*&& (validateFile(parent, fd->selectedFiles().front(), false))*/)
       model->setData(index, QVariant::fromValue(fd->selectedFiles().front()), Qt::EditRole);
+  }
+  else if (BinaryChecklist *bc = qobject_cast<BinaryChecklist*>(editor))
+    model->setData(index, QVariant::fromValue(bc->get_setting().value_int), Qt::EditRole);
   else
     QStyledItemDelegate::setModelData(editor, model, index);
 }

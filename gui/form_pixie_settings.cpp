@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-#include "gui/form_pixie_settings.h"
+#include "form_pixie_settings.h"
 #include "ui_form_pixie_settings.h"
 #include "widget_detectors.h"
 
@@ -29,68 +29,77 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Gamma::Dete
   runner_thread_(thread),
   detectors_(detectors),
   settings_(settings),
-  pixie_(Pixie::Wrapper::getInstance()),
+  tree_settings_model_(this),
+  table_settings_model_(this),
   ui(new Ui::FormPixieSettings)
 {
   ui->setupUi(this);
-  connect(&runner_thread_, SIGNAL(settingsUpdated()), this, SLOT(refresh()));
+  connect(&runner_thread_, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>)), this, SLOT(update(Gamma::Setting, std::vector<Gamma::Detector>)));
 
-  //PixieSettings
+  tree_settings_model_.update(dev_settings_);
 
-  loadSettings();
-
-  dev_settings_ = pixie_.settings().pull_settings();
-
-  tree_settings_model_.set_structure(dev_settings_);
-
-  ui->treeSettings->setModel(&tree_settings_model_);
-  ui->treeSettings->setItemDelegate(&tree_delegate_);
+  viewTreeSettings = new QTreeView(this);
+  ui->tabsSettings->addTab(viewTreeSettings, "Device tree");
+  viewTreeSettings->setModel(&tree_settings_model_);
+  viewTreeSettings->setItemDelegate(&tree_delegate_);
+  viewTreeSettings->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
   tree_delegate_.eat_detectors(detectors_);
 
-  ui->viewChanSettings->setModel(&channel_settings_model_);
-  ui->viewChanSettings->setItemDelegate(&settings_delegate_);
-  ui->viewChanSettings->horizontalHeader()->setStretchLastSection(true);
-  ui->viewChanSettings->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-  settings_delegate_.eat_detectors(detectors_);
-  channel_settings_model_.update(pixie_.settings().get_detectors());
-  ui->viewChanSettings->show();
+  viewTableSettings = new QTableView(this);
+  ui->tabsSettings->addTab(viewTableSettings, "Settings table");
+  viewTableSettings->setModel(&table_settings_model_);
+  viewTableSettings->setItemDelegate(&table_settings_delegate_);
+  viewTableSettings->horizontalHeader()->setStretchLastSection(true);
+  viewTableSettings->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+  table_settings_delegate_.eat_detectors(detectors_);
+  table_settings_model_.update(channels_);
+  viewTableSettings->show();
 
   connect(&tree_settings_model_, SIGNAL(tree_changed()), this, SLOT(push_settings()));
+  connect(&tree_settings_model_, SIGNAL(execute_command()), this, SLOT(execute_command()));
   connect(&tree_settings_model_, SIGNAL(detector_chosen(int, std::string)), this, SLOT(chose_detector(int,std::string)));
 
-  connect(&channel_settings_model_, SIGNAL(setting_changed(int, Gamma::Setting)), this, SLOT(push_from_table(int, Gamma::Setting)));
-  connect(&channel_settings_model_, SIGNAL(detector_chosen(int, std::string)), this, SLOT(chose_detector(int,std::string)));
+  connect(&table_settings_model_, SIGNAL(setting_changed(int, Gamma::Setting)), this, SLOT(push_from_table(int, Gamma::Setting)));
+  connect(&table_settings_model_, SIGNAL(detector_chosen(int, std::string)), this, SLOT(chose_detector(int,std::string)));
 
+  loadSettings();
 }
 
-void FormPixieSettings::update() {
-  dev_settings_ = pixie_.settings().pull_settings();
-  //ui->treeSettings->clearSelection();
-  tree_settings_model_.update(dev_settings_);
-  PL_DBG << "pulled dev settings have " << dev_settings_.branches.size() << " branches";
+void FormPixieSettings::update(const Gamma::Setting &tree, const std::vector<Gamma::Detector> &channels) {
+  dev_settings_ = tree;
+  channels_ = channels;
 
-  ui->treeSettings->resizeColumnToContents(0);
-  channel_settings_model_.update(pixie_.settings().get_detectors());
-  ui->viewChanSettings->resizeColumnsToContents();
-  ui->viewChanSettings->horizontalHeader()->setStretchLastSection(true);
+  tree_settings_model_.update(dev_settings_);
+  table_settings_model_.update(channels_);
+
+  //update dets in DB as well?
+
+  viewTableSettings->resizeColumnsToContents();
+  viewTableSettings->horizontalHeader()->setStretchLastSection(true);
 }
 
 void FormPixieSettings::push_settings() {
   dev_settings_ = tree_settings_model_.get_tree();
 
-  PL_DBG << "from model dev settings have " << dev_settings_.branches.size() << " branches";
-
-  pixie_.settings().push_settings(dev_settings_);
-  emit statusText("Refreshing settings_...");
+  emit statusText("Updating settings...");
   emit toggleIO(false);
-  runner_thread_.do_refresh_settings();
+  runner_thread_.do_push_settings(dev_settings_);
+}
+
+void FormPixieSettings::execute_command() {
+  dev_settings_ = tree_settings_model_.get_tree();
+
+  emit statusText("Executing command...");
+  emit toggleIO(false);
+  runner_thread_.do_execute_command(dev_settings_);
 }
 
 void FormPixieSettings::push_from_table(int chan, Gamma::Setting setting) {
-  pixie_.settings().set_setting(setting, chan);
-  emit statusText("Refreshing settings_...");
+  setting.index = chan;
+
+  emit statusText("Updating settings...");
   emit toggleIO(false);
-  runner_thread_.do_refresh_settings();
+  runner_thread_.do_set_setting(setting, false);
 }
 
 void FormPixieSettings::chose_detector(int chan, std::string name) {
@@ -99,15 +108,18 @@ void FormPixieSettings::chose_detector(int chan, std::string name) {
   PL_DBG << "det " <<  det.name_ << " with cali " << det.energy_calibrations_.size() << " has sets " << det.settings_.branches.size();
   for (auto &q : det.settings_.branches.my_data_)
     q.index = chan;
-  pixie_.settings().set_detector(chan, det);
-  pixie_.settings().write_settings_bulk();
-  runner_thread_.do_refresh_settings();
+
+  emit statusText("Applying detector settings...");
+  emit toggleIO(false);
+  runner_thread_.do_set_detector(chan, det);
 }
 
 
 void FormPixieSettings::refresh() {
-  update();
-  emit toggleIO(true);
+
+  emit statusText("Updating settings...");
+  emit toggleIO(false);
+  runner_thread_.do_refresh_settings();
 }
 
 void FormPixieSettings::closeEvent(QCloseEvent *event) {
@@ -116,73 +128,43 @@ void FormPixieSettings::closeEvent(QCloseEvent *event) {
   event->accept();
 }
 
-void FormPixieSettings::toggle_push(bool enable, Pixie::LiveStatus live) {
-  bool online = (live == Pixie::LiveStatus::online);
-  bool offline = (live == Pixie::LiveStatus::offline);
+void FormPixieSettings::toggle_push(bool enable, Qpx::LiveStatus live) {
+  bool online = (live == Qpx::LiveStatus::online);
+  bool offline = (live == Qpx::LiveStatus::offline);
 
-  ui->buttonCompTau->setEnabled(enable && online);
-  ui->buttonCompBLC->setEnabled(enable && online);
   ui->pushSettingsRefresh->setEnabled(enable && (online || offline));
 
   if (enable) {
-    ui->viewChanSettings->setEditTriggers(QAbstractItemView::AllEditTriggers);
-    ui->treeSettings->setEditTriggers(QAbstractItemView::AllEditTriggers);
+    viewTableSettings->setEditTriggers(QAbstractItemView::AllEditTriggers);
+    viewTreeSettings->setEditTriggers(QAbstractItemView::AllEditTriggers);
   } else {
-    ui->viewChanSettings->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    ui->treeSettings->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    viewTableSettings->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    viewTreeSettings->setEditTriggers(QAbstractItemView::NoEditTriggers);
   }
 
+  ui->bootButton->setEnabled(enable);
   ui->pushOptimizeAll->setEnabled(enable && (online || offline));
+
+  if ((live == Qpx::LiveStatus::online) || (live == Qpx::LiveStatus::offline)) {
+    ui->bootButton->setText("Reset system");
+    ui->bootButton->setIcon(QIcon(":/new/icons/oxy/start.png"));
+  } else {
+    ui->bootButton->setText("Boot system");
+    ui->bootButton->setIcon(QIcon(":/new/icons/Cowboy-Boot.png"));
+  }
 }
 
 void FormPixieSettings::loadSettings() {
   settings_.beginGroup("Program");
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+
+  //show read only
+  //which tab is open
   settings_.endGroup();
-
-  QString filename = data_directory_ + "/qpx_settings.set";
-
-  FILE* myfile;
-  myfile = fopen (filename.toStdString().c_str(), "r");
-  if (myfile != nullptr) {
-    tinyxml2::XMLDocument docx;
-    docx.LoadFile(myfile);
-    tinyxml2::XMLElement* root = docx.FirstChildElement(Gamma::Setting().xml_element_name().c_str());
-    if (root != nullptr) {
-      dev_settings_ = Gamma::Setting(root);
-      pixie_.settings().push_settings(dev_settings_);
-      //tree_settings_model_.set_structure(newtree);
-    }
-    fclose(myfile);
-  }
 }
 
 void FormPixieSettings::saveSettings() {
 
-  pixie_.settings().save_optimization();
-  std::vector<Gamma::Detector> dets = pixie_.settings().get_detectors();
-  for (int i=0; i < detectors_.size(); ++i) {
-    for (auto &q : dets)
-      if (q.shallow_equals(detectors_.get(i)))
-        detectors_.replace(q);
-  }
-
-  QString filename = data_directory_ + "/qpx_settings.set";
-  dev_settings_ = pixie_.settings().pull_settings();
-
-  PL_DBG << "dev settings have " << dev_settings_.branches.size() << " branches";
-
-  FILE* myfile;
-  myfile = fopen (filename.toStdString().c_str(), "w");
-  if (myfile != nullptr) {
-    tinyxml2::XMLPrinter printer(myfile);
-    printer.PushHeader(true, true);
-    dev_settings_.to_xml(printer);
-    fclose(myfile);
-  }
-
-  //should replace only optimizations, not touch the rest of detector definition
-  updateDetChoices();
 }
 
 void FormPixieSettings::updateDetChoices() {
@@ -190,38 +172,19 @@ void FormPixieSettings::updateDetChoices() {
 }
 
 void FormPixieSettings::updateDetDB() {
-  for (std::size_t i = 0; i < pixie_.settings().get_detectors().size(); i++) {
-    std::string det_old = pixie_.settings().get_detectors()[i].name_;
-    pixie_.settings().set_detector(i, detectors_.get(det_old));
-  }
   tree_delegate_.eat_detectors(detectors_);
-  settings_delegate_.eat_detectors(detectors_);
+  table_settings_delegate_.eat_detectors(detectors_);
 
-  tree_settings_model_.update(Pixie::Wrapper::getInstance().settings().pull_settings());
-  channel_settings_model_.update(pixie_.settings().get_detectors());
+  tree_settings_model_.update(dev_settings_);
+  table_settings_model_.update(channels_);
 
-  ui->viewChanSettings->horizontalHeader()->setStretchLastSection(true);
-  ui->viewChanSettings->resizeColumnsToContents();
+  viewTableSettings->horizontalHeader()->setStretchLastSection(true);
+  viewTableSettings->resizeColumnsToContents();
 }
 
 FormPixieSettings::~FormPixieSettings()
 {
   delete ui;
-}
-
-void FormPixieSettings::on_buttonCompTau_clicked()
-{
-  emit statusText("Calculating Tau...");
-  emit toggleIO(false);
-  runner_thread_.do_tau();
-}
-
-
-void FormPixieSettings::on_buttonCompBLC_clicked()
-{
-  emit statusText("Calculating baselines cutoffs...");
-  emit toggleIO(false);
-  runner_thread_.do_BLcut();
 }
 
 void FormPixieSettings::on_pushOptimizeAll_clicked()
@@ -244,4 +207,27 @@ void FormPixieSettings::on_pushDetDB_clicked()
   det_widget->setData(detectors_, data_directory_);
   //connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
   det_widget->exec();
+}
+
+void FormPixieSettings::on_checkShowRO_clicked()
+{
+  table_settings_model_.set_show_read_only(ui->checkShowRO->isChecked());
+  table_settings_model_.update(channels_);
+}
+
+void FormPixieSettings::on_bootButton_clicked()
+{
+  if (dev_settings_.value_int == 0) {
+    emit toggleIO(false);
+    emit statusText("Booting...");
+    PL_INFO << "Booting pixie...";
+
+    runner_thread_.do_boot();
+  } else {
+    emit toggleIO(false);
+    emit statusText("Shutting down...");
+
+    PL_INFO << "Shutting down";
+    runner_thread_.do_shutdown();
+  }
 }

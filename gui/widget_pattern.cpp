@@ -31,27 +31,28 @@
 
 QpxPattern::QpxPattern(QVector<int16_t> pattern, double size, bool tristate, int wrap)
 {
-  if (pattern.empty())
-    pattern.resize(Pixie::kNumChans);
   pattern_ = pattern;
   tristate_ = tristate;
   size_ = size;
-  if (!wrap || (wrap>Pixie::kNumChans))
-    wrap = Pixie::kNumChans;
+  if (wrap > pattern.size())
+    wrap = pattern.size();
   wrap_ = wrap;
-  rows_ = (Pixie::kNumChans / wrap_) + ((Pixie::kNumChans % wrap_) > 0);
+  if (wrap > 0)
+    rows_ = (pattern.size() / wrap_) + ((pattern.size() % wrap_) > 0);
+  else
+    rows_ = 0;
 
   outer = QRectF(2, 2, size_ - 4, size_ - 4);
   inner = QRectF(4, 4, size_ - 8, size_ - 8);
 }
 
-QpxPattern::QpxPattern(std::bitset<Pixie::kNumChans> pattern, double size, bool tristate, int wrap) {
+QpxPattern::QpxPattern(std::bitset<Qpx::kNumChans> pattern, double size, bool tristate, int wrap) {
   tristate_ = tristate;
 
-  pattern_.resize(Pixie::kNumChans);
+  pattern_.resize(Qpx::kNumChans);
 
   int sum = 0;
-  for (int i=0; i < Pixie::kNumChans; i++) {
+  for (int i=0; i < Qpx::kNumChans; i++) {
     sum+=pattern[i];
     if (pattern[i])
       pattern_[i] = 1;
@@ -59,10 +60,10 @@ QpxPattern::QpxPattern(std::bitset<Pixie::kNumChans> pattern, double size, bool 
       pattern_[i] = 0;
   }
   size_ = size;
-  if (!wrap || (wrap>Pixie::kNumChans))
-    wrap = Pixie::kNumChans;
+  if (!wrap || (wrap>Qpx::kNumChans))
+    wrap = Qpx::kNumChans;
   wrap_ = wrap;
-  rows_ = (Pixie::kNumChans / wrap_) + ((Pixie::kNumChans % wrap_) > 0);
+  rows_ = (Qpx::kNumChans / wrap_) + ((Qpx::kNumChans % wrap_) > 0);
 
   outer = QRectF(2, 2, size_ - 4, size_ - 4);
   inner = QRectF(4, 4, size_ - 8, size_ - 8);

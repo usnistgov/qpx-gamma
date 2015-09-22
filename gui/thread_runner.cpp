@@ -26,13 +26,14 @@
 
 ThreadRunner::ThreadRunner(QObject *parent) :
   QThread(parent),
+  devices_(Qpx::Wrapper::getInstance().settings()),
   terminating_(false)
 {
   spectra_ = nullptr;
   interruptor_ = nullptr;
   action_ = kNone;
-  run_type_ = Pixie::RunType::compressed;
   fake_chans_ = {0,1};
+  exact_index_ = false;
   file_ = "";
   source_res_ = 0;
   dest_res_ = 0;
@@ -55,15 +56,13 @@ bool ThreadRunner::terminating() {
 }
 
 
-void ThreadRunner::do_list(boost::atomic<bool> &interruptor, Pixie::RunType type, uint64_t timeout, bool dblbuf)
+void ThreadRunner::do_list(boost::atomic<bool> &interruptor, uint64_t timeout)
 {
   if (!isRunning()) {
     terminating_.store(false);
     QMutexLocker locker(&mutex_);
     interruptor_ = &interruptor;
-    run_type_ = type;
     timeout_ = timeout;
-    dblbuf_ = dblbuf;
     action_ = kList;
     start(HighPriority);
   } else
@@ -71,23 +70,21 @@ void ThreadRunner::do_list(boost::atomic<bool> &interruptor, Pixie::RunType type
 }
 
 
-void ThreadRunner::do_run(Pixie::SpectraSet &spectra, boost::atomic<bool> &interruptor, Pixie::RunType type, uint64_t timeout, bool dblbuf)
+void ThreadRunner::do_run(Qpx::SpectraSet &spectra, boost::atomic<bool> &interruptor, uint64_t timeout)
 {
   if (!isRunning()) {
     terminating_.store(false);
     QMutexLocker locker(&mutex_);
     spectra_ = &spectra;
     interruptor_ = &interruptor;
-    run_type_ = type;
     timeout_ = timeout;
-    dblbuf_ = dblbuf;
     action_ = kMCA;
     start(HighPriority);
   } else
     PL_WARN << "Cannot do_run. Runner busy.";
 }
 
-void ThreadRunner::do_fake(Pixie::SpectraSet &spectra, boost::atomic<bool> &interruptor, QString file, std::array<int,2> chans, int source_res, int dest_res, int timeout) {
+void ThreadRunner::do_fake(Qpx::SpectraSet &spectra, boost::atomic<bool> &interruptor, QString file, std::array<int,2> chans, int source_res, int dest_res, int timeout) {
   if (!isRunning()) {
     terminating_.store(false);
     QMutexLocker locker(&mutex_);
@@ -104,7 +101,7 @@ void ThreadRunner::do_fake(Pixie::SpectraSet &spectra, boost::atomic<bool> &inte
     PL_WARN << "Cannot do_fake. Runner busy.";
 }
 
-void ThreadRunner::do_from_list(Pixie::SpectraSet &spectra, boost::atomic<bool> &interruptor, QString file) {
+void ThreadRunner::do_from_list(Qpx::SpectraSet &spectra, boost::atomic<bool> &interruptor, QString file) {
   if (!isRunning()) {
     terminating_.store(false);
     QMutexLocker locker(&mutex_);
@@ -126,23 +123,57 @@ void ThreadRunner::do_boot() {
     PL_WARN << "Cannot do_boot. Runner busy.";
 }
 
-void ThreadRunner::do_offsets() {
+void ThreadRunner::do_shutdown() {
   if (!isRunning()) {
     terminating_.store(false);
-    action_ = kOffsets;
+    action_ = kShutdown;
     start(HighPriority);
   } else
-    PL_WARN << "Cannot do_offsets. Runner busy.";
+    PL_WARN << "Cannot do_shutdown. Runner busy.";
 }
 
-void ThreadRunner::do_baselines() {
+void ThreadRunner::do_execute_command(const Gamma::Setting &tree) {
   if (!isRunning()) {
     terminating_.store(false);
-    action_ = kBaselines;
+    action_ = kExecuteCommand;
+    tree_ = tree;
     start(HighPriority);
   } else
-    PL_WARN << "Cannot do_baselines. Runner busy.";
+    PL_WARN << "Cannot do_execute_command. Runner busy.";
 }
+
+void ThreadRunner::do_push_settings(const Gamma::Setting &tree) {
+  if (!isRunning()) {
+    terminating_.store(false);
+    action_ = kPushSettings;
+    tree_ = tree;
+    start(HighPriority);
+  } else
+    PL_WARN << "Cannot do_push_settings. Runner busy.";
+}
+
+void ThreadRunner::do_set_setting(const Gamma::Setting &item, bool exact_index) {
+  if (!isRunning()) {
+    terminating_.store(false);
+    action_ = kSetSetting;
+    tree_ = item;
+    exact_index_ = exact_index;
+    start(HighPriority);
+  } else
+    PL_WARN << "Cannot do_set_setting. Runner busy.";
+}
+
+void ThreadRunner::do_set_detector(int chan, Gamma::Detector det) {
+  if (!isRunning()) {
+    terminating_.store(false);
+    action_ = kSetDetector;
+    chan_ = chan;
+    det_ = det;
+    start(HighPriority);
+  } else
+    PL_WARN << "Cannot do_set_detector. Runner busy.";
+}
+
 
 void ThreadRunner::do_optimize() {
   if (!isRunning()) {
@@ -172,118 +203,95 @@ void ThreadRunner::do_refresh_settings() {
     PL_WARN << "Cannot do_refresh_settings. Runner busy.";
 }
 
-void ThreadRunner::do_tau() {
-  if (!isRunning()) {
-    terminating_.store(false);
-    action_ = kTau;
-    start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_tau. Runner busy.";
-}
-
-void ThreadRunner::do_BLcut() {
-  if (!isRunning()) {
-    terminating_.store(false);
-    action_ = kBLcut;
-    start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_BLcut. Runner busy.";
-}
-
-
 void ThreadRunner::run()
 {
   if (action_ == kMCA) {
     interruptor_->store(false);
-    Pixie::Wrapper::getInstance().settings().reset_counters_next_run();
-    Pixie::Wrapper::getInstance().getMca(run_type_, timeout_, *spectra_, *interruptor_, dblbuf_);
+    devices_.reset_counters_next_run();
+    Qpx::Wrapper::getInstance().getMca(timeout_, *spectra_, *interruptor_);
     emit runComplete();
   } else if (action_ == kList) {
     interruptor_->store(false);
-    Pixie::Wrapper::getInstance().settings().reset_counters_next_run();
-    Pixie::ListData *newListRun = Pixie::Wrapper::getInstance().getList(run_type_, timeout_, *interruptor_, dblbuf_);
+    devices_.reset_counters_next_run();
+    Qpx::ListData *newListRun = Qpx::Wrapper::getInstance().getList(timeout_, *interruptor_);
     emit listComplete(newListRun);
   } else if (action_ == kSimulate) {
     interruptor_->store(false);
-    Pixie::SpectraSet* intermediate = new Pixie::SpectraSet;
+    Qpx::SpectraSet* intermediate = new Qpx::SpectraSet;
     intermediate->read_xml(file_.toStdString(), true);
-    Pixie::Simulator mySource = Pixie::Simulator(intermediate, fake_chans_, source_res_, dest_res_);
+    Qpx::Simulator mySource = Qpx::Simulator(intermediate, fake_chans_, source_res_, dest_res_);
     delete intermediate;
     if (mySource.valid())
-      Pixie::Wrapper::getInstance().getFakeMca(mySource, *spectra_, timeout_, *interruptor_);
+      Qpx::Wrapper::getInstance().getFakeMca(mySource, *spectra_, timeout_, *interruptor_);
     emit runComplete();
   } else if (action_ == kFromList) {
     interruptor_->store(false);
-    Pixie::Sorter sorter(file_.toStdString());
+    Qpx::Sorter sorter(file_.toStdString());
     if (sorter.valid())
-      Pixie::Wrapper::getInstance().simulateFromList(sorter, *spectra_, *interruptor_);
+      Qpx::Wrapper::getInstance().simulateFromList(sorter, *spectra_, *interruptor_);
     emit runComplete();
   } else if (action_ == kBoot) {
-    Pixie::Wrapper &myPixie = Pixie::Wrapper::getInstance();
-    bool success = myPixie.boot();
-    if (myPixie.settings().live() == Pixie::LiveStatus::online) {
-      PL_INFO << "Pixie online functions enabled.";
-    } else if (myPixie.settings().live() == Pixie::LiveStatus::offline) {
-      PL_INFO << "Offline boot successful";
+    if (devices_.boot()) {
+      devices_.get_all_settings();
+      devices_.save_optimization();
     }
-    emit bootComplete(success, myPixie.settings().live() == Pixie::LiveStatus::online);
-  } else if (action_ == kOffsets) {
-    Pixie::Wrapper::getInstance().control_adjust_offsets();
-    action_ = kOscil;
-  } else if (action_ == kBaselines) {
-    Pixie::Wrapper::getInstance().control_measure_baselines(0);  //hardcoded for module 0
-    action_ = kOscil;
+    emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+  } else if (action_ == kShutdown) {
+    if (devices_.die()) {
+      devices_.get_all_settings();
+      devices_.save_optimization();
+    }
+    emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
   } else if (action_ == kOptimize) {
-    Pixie::Wrapper::getInstance().settings().load_optimization();
+    devices_.load_optimization();
     action_ = kOscil;
   } else if (action_ == kSettingsRefresh) {
-    Pixie::Wrapper::getInstance().settings().get_all_settings();
-    emit settingsUpdated();
-  } else if (action_ == kTau) {
-    Pixie::Wrapper::getInstance().control_find_tau();
-    emit settingsUpdated();
-  } else if (action_ == kBLcut) {
-    Pixie::Wrapper::getInstance().control_compute_BLcut();
-    emit settingsUpdated();
+    devices_.get_all_settings();
+    devices_.save_optimization();
+    emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+  } else if (action_ == kExecuteCommand) {
+    devices_.push_settings(tree_);
+    bool success = devices_.execute_command();
+    if (success) {
+      devices_.get_all_settings();
+      devices_.save_optimization();
+    }
+    emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+  } else if (action_ == kPushSettings) {
+    devices_.push_settings(tree_);
+    devices_.get_all_settings();
+    devices_.save_optimization();
+    emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+  } else if (action_ == kSetSetting) {
+    devices_.set_setting(tree_, exact_index_);
+    devices_.get_all_settings();
+    devices_.save_optimization();
+    emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+  } else if (action_ == kSetDetector) {
+    devices_.set_detector(chan_, det_);
+    devices_.load_optimization(chan_);
+    devices_.write_settings_bulk();
+    devices_.get_all_settings();
+    devices_.save_optimization();
+    emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
   }
 
   if (action_ == kOscil) {
-    std::vector<Gamma::Detector> dets = Pixie::Wrapper::getInstance().settings().get_detectors();
+    std::vector<Gamma::Detector> dets = devices_.get_detectors();
 
-    std::string calib_units = dets[0].highest_res_calib().units_;
-    Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/XDT", -1, Gamma::SettingType::floating);
+    Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/XDT", 0, Gamma::SettingType::floating, 0);
     for (int i=0; i < dets.size(); i++) {
       set.index = i;
       set.value = xdt_;
-      Pixie::Wrapper::getInstance().settings().set_setting(set, i);
-      if (dets[i].highest_res_calib().units_ != calib_units)
-        calib_units = "channels";
+      devices_.set_setting(set);
     }
-    double xinterval = Pixie::Wrapper::getInstance().settings().get_setting(set, 0).value;
+    std::vector<Qpx::Trace> traces = devices_.oscilloscope();
 
-    Pixie::Event oscil_traces_ = Pixie::Wrapper::getInstance().getOscil();
-    uint32_t trace_length = oscil_traces_.hit[0].trace.size();
+    devices_.get_all_settings();
+    devices_.save_optimization();
+    emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
 
-    QVector<double> xx;
-    for (int i=0; i < trace_length; ++i)
-      xx.push_back(i*xinterval);
-
-    QList<QVector<double>> *plot_data = new QList<QVector<double>>;
-    plot_data->push_back(xx);
-
-    for (int i=0; i < Pixie::kNumChans; i++) {
-      QVector<double> yy;
-      for (auto it : oscil_traces_.hit[i].trace) {
-        if (calib_units != "channels")
-          yy.push_back(dets[i].highest_res_calib().transform(it, 16));
-        else
-          yy.push_back(it);
-      }
-
-      plot_data->push_back(yy);
-    }
-    Pixie::Wrapper::getInstance().settings().get_all_settings();
-    emit settingsUpdated();
-    emit oscilReadOut(plot_data, QString::fromStdString(calib_units));
+    if (!traces.empty())
+      emit oscilReadOut(traces);
   }
 }

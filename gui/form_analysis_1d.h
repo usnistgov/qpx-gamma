@@ -44,7 +44,7 @@ public:
   explicit FormAnalysis1D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent = 0);
   ~FormAnalysis1D();
 
-  void setSpectrum(Pixie::SpectraSet *newset, QString spectrum);
+  void setSpectrum(Qpx::SpectraSet *newset, QString spectrum);
 
   void clear();
 
@@ -82,7 +82,7 @@ private:
 
   //from parent
   QString data_directory_;
-  Pixie::SpectraSet *spectra_;
+  Qpx::SpectraSet *spectra_;
 
   XMLableDB<Gamma::Detector> &detectors_;
 

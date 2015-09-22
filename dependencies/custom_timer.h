@@ -25,6 +25,10 @@
 #include <cstdint>
 #include <boost/timer/timer.hpp>
 
+inline static void wait_ms(int millisecs) {
+  boost::this_thread::sleep(boost::posix_time::milliseconds(millisecs));
+}
+
 class CustomTimer: public boost::timer::cpu_timer {
 private:
   const double secs = pow(10, 9);

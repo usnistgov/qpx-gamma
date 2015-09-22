@@ -26,6 +26,7 @@
 #include "dialog_save_spectra.h"
 #include "custom_logger.h"
 #include "custom_timer.h"
+#include "form_daq_settings.h"
 
 #include "sorter.h"
 
@@ -51,10 +52,10 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamm
   connect(&runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
 
   //file formats for opening mca spectra
-  std::vector<std::string> spectypes = Pixie::Spectrum::Factory::getInstance().types();
+  std::vector<std::string> spectypes = Qpx::Spectrum::Factory::getInstance().types();
   QStringList filetypes;
   for (auto &q : spectypes) {
-    Pixie::Spectrum::Template* type_template = Pixie::Spectrum::Factory::getInstance().create_template(q);
+    Qpx::Spectrum::Template* type_template = Qpx::Spectrum::Factory::getInstance().create_template(q);
     if (!type_template->input_types.empty())
       filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types) + ")");
     delete type_template;
@@ -171,16 +172,15 @@ void FormMcaDaq::saveSettings() {
   settings_.endGroup();
 }
 
-void FormMcaDaq::toggle_push(bool enable, Pixie::LiveStatus live) {
-  bool online = (live == Pixie::LiveStatus::online);
-  bool offline = online || (live == Pixie::LiveStatus::offline);
+void FormMcaDaq::toggle_push(bool enable, Qpx::LiveStatus live) {
+  bool online = (live == Qpx::LiveStatus::online);
+  bool offline = online || (live == Qpx::LiveStatus::offline);
   bool nonempty = !spectra_.empty();
 
   ui->pushMcaLoad->setEnabled(enable);
   ui->pushMcaReload->setEnabled(enable);
 
   ui->pushMcaStart->setEnabled(enable && online);
-  ui->checkDoubleBuffer->setEnabled(enable && online);
 
   ui->boxMcaMins->setEnabled(enable && offline);
   ui->boxMcaSecs->setEnabled(enable && offline);
@@ -261,7 +261,7 @@ void FormMcaDaq::on_pushMcaStart_clicked()
 
   my_run_ = true;
   ui->Plot1d->reset_content();
-  runner_thread_.do_run(spectra_, interruptor_, Pixie::RunType::compressed, ui->boxMcaMins->value() * 60 + ui->boxMcaSecs->value(), ui->checkDoubleBuffer->isChecked());
+  runner_thread_.do_run(spectra_, interruptor_, ui->boxMcaMins->value() * 60 + ui->boxMcaSecs->value());
 }
 
 void FormMcaDaq::on_pushMcaSimulate_clicked()
@@ -322,7 +322,26 @@ void FormMcaDaq::on_pushMcaReload_clicked()
   this->setCursor(Qt::WaitCursor);
   clearGraphs();
 
-  spectra_.read_xml(fileName.toStdString(), true);
+
+
+  //TEMPORARY
+  QString filename = data_directory_ + "/qpx_settings.set";
+
+  FILE* myfile;
+  Gamma::Setting tree;
+  myfile = fopen (filename.toStdString().c_str(), "r");
+  if (myfile != nullptr) {
+    tinyxml2::XMLDocument docx;
+    docx.LoadFile(myfile);
+    tinyxml2::XMLElement* root = docx.FirstChildElement(tree.xml_element_name().c_str());
+    if (root != nullptr) {
+      tree = Gamma::Setting(root);
+    }
+    fclose(myfile);
+  }
+  //TEMPORARY
+
+  spectra_.read_xml(fileName.toStdString(), true, tree);
 
   newProject();
   spectra_.activate();
@@ -352,7 +371,7 @@ void FormMcaDaq::on_pushMcaLoad_clicked()
 
   for (int i=0; i<fileNames.size(); i++) {
     PL_INFO << "Constructing spectrum from " << fileNames.at(i).toStdString();
-    Pixie::Spectrum::Spectrum* newSpectrum = Pixie::Spectrum::Factory::getInstance().create_from_file(fileNames.at(i).toStdString());
+    Qpx::Spectrum::Spectrum* newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_file(fileNames.at(i).toStdString());
     if (newSpectrum != nullptr) {
       newSpectrum->set_appearance(generateColor().rgba());
       spectra_.add_spectrum(newSpectrum);
@@ -502,4 +521,10 @@ void FormMcaDaq::on_pushBuildFromList_clicked()
 
   ui->Plot1d->reset_content();
   runner_thread_.do_from_list(spectra_, interruptor_, fileName);
+}
+
+void FormMcaDaq::on_pushDetails_clicked()
+{
+  FormDaqSettings *DaqInfo = new FormDaqSettings(spectra_.runInfo().state, this);
+  DaqInfo->exec();
 }

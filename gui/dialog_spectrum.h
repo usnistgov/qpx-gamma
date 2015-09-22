@@ -38,7 +38,7 @@ class dialog_spectrum : public QDialog
     Q_OBJECT
 
 public:
-    explicit dialog_spectrum(Pixie::Spectrum::Spectrum &spec, QWidget *parent = 0);
+    explicit dialog_spectrum(Qpx::Spectrum::Spectrum &spec, QWidget *parent = 0);
     ~dialog_spectrum();
 
 
@@ -68,7 +68,7 @@ signals:
 
 private:
     Ui::dialog_spectrum *ui;
-    Pixie::Spectrum::Spectrum &my_spectrum_;
+    Qpx::Spectrum::Spectrum &my_spectrum_;
 
     QpxSpecialDelegate      special_delegate_;
     TableSpectrumAttrs         table_model_;
@@ -77,7 +77,7 @@ private:
     TableDetectors det_table_model_;
     QItemSelectionModel det_selection_model_;
 
-    Pixie::Spectrum::Metadata md_;
+    Qpx::Spectrum::Metadata md_;
 
     std::vector<Gamma::Setting> attributes_;
     bool changed_;

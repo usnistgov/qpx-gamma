@@ -44,7 +44,7 @@ public:
   explicit FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent = 0);
   ~FormAnalysis2D();
 
-  void setSpectrum(Pixie::SpectraSet *newset, QString spectrum);
+  void setSpectrum(Qpx::SpectraSet *newset, QString spectrum);
 
   void clear();
 
@@ -86,10 +86,10 @@ private:
   QSettings &settings_;
 
 
-  Pixie::Spectrum::Template *tempx, *tempy;
+  Qpx::Spectrum::Template *tempx, *tempy;
 
-  Pixie::Spectrum::Spectrum *gate_x;
-  Pixie::Spectrum::Spectrum *gate_y;
+  Qpx::Spectrum::Spectrum *gate_x;
+  Qpx::Spectrum::Spectrum *gate_y;
   bool gatex_in_spectra, gatey_in_spectra;
 
   Gamma::Fitter fit_data_, fit_data_2_;
@@ -114,7 +114,7 @@ private:
 
   //from parent
   QString data_directory_;
-  Pixie::SpectraSet *spectra_;
+  Qpx::SpectraSet *spectra_;
   QString current_spectrum_;
 
   XMLableDB<Gamma::Detector> &detectors_;
@@ -126,8 +126,8 @@ private:
   void make_gated_spectra();
   void fill_table();
   void plot_calib();
-  double sum_with_neighbors(Pixie::Spectrum::Spectrum* some_spectrum, uint16_t x, uint16_t y);
-  double sum_diag(Pixie::Spectrum::Spectrum* some_spectrum, uint16_t x, uint16_t y, uint16_t w);
+  double sum_with_neighbors(Qpx::Spectrum::Spectrum* some_spectrum, uint16_t x, uint16_t y);
+  double sum_diag(Qpx::Spectrum::Spectrum* some_spectrum, uint16_t x, uint16_t y, uint16_t w);
 };
 
 #endif // FORM_CALIBRATION_H

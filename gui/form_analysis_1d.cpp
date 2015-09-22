@@ -104,7 +104,7 @@ void FormAnalysis1D::clear() {
 }
 
 
-void FormAnalysis1D::setSpectrum(Pixie::SpectraSet *newset, QString name) {
+void FormAnalysis1D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
   clear();
   spectra_ = newset;
   if (!spectra_) {
@@ -112,7 +112,7 @@ void FormAnalysis1D::setSpectrum(Pixie::SpectraSet *newset, QString name) {
     return;
   }
 
-  Pixie::Spectrum::Spectrum *spectrum = spectra_->by_name(name.toStdString());
+  Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(name.toStdString());
 
   if (spectrum && spectrum->resolution()) {
     fit_data_.setData(spectrum);
@@ -214,7 +214,7 @@ void FormAnalysis1D::update_detector_calibs()
     for (auto &q : spectra_->spectra()) {
       if (q == nullptr)
         continue;
-      Pixie::Spectrum::Metadata md = q->metadata();
+      Qpx::Spectrum::Metadata md = q->metadata();
       for (auto &p : md.detectors) {
         if (p.shallow_equals(fit_data_.detector_)) {
           PL_INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " on " << q->name();
@@ -225,17 +225,15 @@ void FormAnalysis1D::update_detector_calibs()
       q->set_detectors(md.detectors);
     }
 
-    std::vector<Gamma::Detector> detectors = spectra_->runInfo().p4_state.get_detectors();
-    for (auto &p : detectors) {
+
+    Qpx::RunInfo ri = spectra_->runInfo();
+    for (auto &p : ri.detectors) {
       if (p.shallow_equals(fit_data_.detector_)) {
         PL_INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " in current project " << spectra_->status();
         p.energy_calibrations_.replace(fit_data_.nrg_cali_);
         p.fwhm_calibration_ = fit_data_.fwhm_cali_;
       }
     }
-    Pixie::RunInfo ri = spectra_->runInfo();
-    for (int i=0; i < detectors.size(); ++i)
-      ri.p4_state.set_detector(i, detectors[i]);
     spectra_->setRunInfo(ri);
   }
 }

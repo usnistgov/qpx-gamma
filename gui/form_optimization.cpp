@@ -36,14 +36,14 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   interruptor_(false),
   opt_plot_thread_(current_spectra_),
   my_run_(false),
-  pixie_(Pixie::Wrapper::getInstance())
+  pixie_(Qpx::Wrapper::getInstance())
 {
   ui->setupUi(this);
 
   //loadSettings();
   connect(&opt_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
 
-  if (Pixie::Spectrum::Template *temp = Pixie::Spectrum::Factory::getInstance().create_template("1D")) {
+  if (Qpx::Spectrum::Template *temp = Qpx::Spectrum::Factory::getInstance().create_template("1D")) {
     optimizing_  = *temp;
     delete temp;
   }
@@ -183,8 +183,8 @@ void FormOptimization::closeEvent(QCloseEvent *event) {
   event->accept();
 }
 
-void FormOptimization::toggle_push(bool enable, Pixie::LiveStatus live) {
-  bool online = (live == Pixie::LiveStatus::online);
+void FormOptimization::toggle_push(bool enable, Qpx::LiveStatus live) {
+  bool online = (live == Qpx::LiveStatus::online);
   ui->pushStart->setEnabled(enable && online);
   ui->comboSetting->setEnabled(enable);
   ui->doubleSpinStart->setEnabled(enable);
@@ -243,13 +243,13 @@ void FormOptimization::do_run()
   bits = ui->spinBits->value();
 
   optimizing_.bits = bits;
-  optimizing_.add_pattern.resize(Pixie::kNumChans,0);
+  optimizing_.add_pattern.resize(Qpx::kNumChans,0);
   optimizing_.add_pattern[ui->spinOptChan->value()] = 1;
-  optimizing_.match_pattern.resize(Pixie::kNumChans,0);
+  optimizing_.match_pattern.resize(Qpx::kNumChans,0);
   optimizing_.match_pattern[ui->spinOptChan->value()] = 1;
   optimizing_.appearance = generateColor().rgba();
 
-  XMLableDB<Pixie::Spectrum::Template> db("SpectrumTemplates");
+  XMLableDB<Qpx::Spectrum::Template> db("SpectrumTemplates");
   db.add(optimizing_);
 
   current_spectra_.clear();
@@ -264,18 +264,18 @@ void FormOptimization::do_run()
   x.resize(pow(2,bits), 0.0);
   y_opt.resize(pow(2,bits), 0.0);
 
-  Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/" + current_setting_, ui->spinOptChan->value(), Gamma::SettingType::floating);
+  Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/" + current_setting_, 0, Gamma::SettingType::floating, ui->spinOptChan->value());
   set.value = val_current;
-  pixie_.settings().set_setting(set, ui->spinOptChan->value());
+  pixie_.settings().set_setting(set);
   QThread::sleep(1);
   pixie_.settings().get_all_settings();
-  double got = pixie_.settings().get_setting(set, ui->spinOptChan->value()).value;
+  double got = pixie_.settings().pull_settings().get_setting(set).value;
   setting_values_.push_back(got);
   setting_fwhm_.push_back(0);
   emit settings_changed();
 
   interruptor_.store(false);
-  opt_runner_thread_.do_run(current_spectra_, interruptor_, Pixie::RunType::compressed, ui->spinTimeMins->value() * 60 + ui->spinTimeSecs->value(), true);
+  opt_runner_thread_.do_run(current_spectra_, interruptor_, ui->spinTimeMins->value() * 60 + ui->spinTimeSecs->value());
 }
 
 void FormOptimization::run_completed() {
@@ -329,7 +329,7 @@ void FormOptimization::update_plots() {
   std::map<double, double> minima, maxima;
 
   for (auto &q: current_spectra_.by_type("1D")) {
-    Pixie::Spectrum::Metadata md;
+    Qpx::Spectrum::Metadata md;
     if (q)
       md = q->metadata();
 
@@ -338,7 +338,7 @@ void FormOptimization::update_plots() {
 
       uint32_t res = pow(2, bits);
       spectra_app_[current_spec] = md.appearance;
-      std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
+      std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
           std::move(q->get_spectrum({{0, res}}));
 
       x.resize(res, 0);

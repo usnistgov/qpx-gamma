@@ -22,6 +22,7 @@
  ******************************************************************************/
 
 #include "tree_settings.h"
+#include "widget_pattern.h"
 
 Q_DECLARE_METATYPE(Gamma::Setting)
 
@@ -93,9 +94,20 @@ QVariant TreeItem::display_data(int column) const
   {
     if (itemData.setting_type == Gamma::SettingType::integer)
       return QVariant::fromValue(itemData.value_int);
-    else if (itemData.setting_type == Gamma::SettingType::binary)
-      return QVariant::fromValue(itemData.value_int);
-    else if (itemData.setting_type == Gamma::SettingType::floating)
+    else if (itemData.setting_type == Gamma::SettingType::binary) {
+      QString hex = QString::number(itemData.value_int, 16).toUpper();
+      int size = itemData.maximum;
+      int tot = (size / 4);
+      if ((size % 4) > 0)
+        tot++;
+      int dif = tot - hex.length();
+      while (dif > 0) {
+        hex = QString("0") + hex;
+        dif--;
+      }
+      hex = QString("0x") + hex;
+      return hex;
+    } else if (itemData.setting_type == Gamma::SettingType::floating)
       return QVariant::fromValue(itemData.value);
     else if (itemData.setting_type == Gamma::SettingType::int_menu)
       return QString::fromStdString(itemData.int_menu_items.at(itemData.value_int));
@@ -104,15 +116,30 @@ QVariant TreeItem::display_data(int column) const
         return "T";
       else
         return "F";
+    else if (itemData.setting_type == Gamma::SettingType::pattern) {
+      std::bitset<64> set(itemData.value_int);
+      QVector<int16_t> pat(itemData.maximum);
+      for (int i=0; i < itemData.maximum; ++i)
+          pat[i] = set[i];
+      QpxPattern pattern(pat, 20, false, 8);
+      return QVariant::fromValue(pattern);
+    }
     else if (itemData.setting_type == Gamma::SettingType::text)
       return QString::fromStdString(itemData.value_text);
     else if (itemData.setting_type == Gamma::SettingType::file_path)
       return QString::fromStdString(itemData.value_text);
     else if (itemData.setting_type == Gamma::SettingType::detector)
       return QString::fromStdString(itemData.value_text);
+    else if (itemData.setting_type == Gamma::SettingType::command) {
+      if (itemData.value_int == 0)
+        return QString("RESERVED");
+      else if (itemData.value_int == 1)
+        return QString("NOT NOW");
+      else if (itemData.value_int > 1)
+        return QString("EXECUTE");
+    }
     else
       return QVariant::fromValue(itemData.value);
-    return QVariant::fromValue(itemData.value);
   }
   else if (column == 2)
     return QString::fromStdString(itemData.unit);
@@ -133,7 +160,10 @@ QVariant TreeItem::edit_data(int column) const
 
 bool TreeItem::is_editable(int column) const
 {
-  return ((column == 1) && (itemData.writable));
+  if ((column == 1)  && (itemData.setting_type == Gamma::SettingType::command) && (itemData.value_int < 2))
+    return false;
+  else
+    return ((column == 1) && (itemData.writable));
 }
 
 
@@ -197,12 +227,13 @@ bool TreeItem::setData(int column, const QVariant &value)
   if (column != 1)
     return false;
 
-  if (((itemData.setting_type == Gamma::SettingType::integer) || (itemData.setting_type == Gamma::SettingType::int_menu))
+
+  if ((itemData.setting_type == Gamma::SettingType::integer)
       && (value.type() == QVariant::Int))
     itemData.value_int = value.toInt();
   else if ((itemData.setting_type == Gamma::SettingType::binary)
-      && (value.type() == QVariant::Int))
-    itemData.value_int = value.toInt();
+      && (value.canConvert(QMetaType::LongLong)))
+    itemData.value_int = value.toLongLong();
   else if ((itemData.setting_type == Gamma::SettingType::boolean)
       && (value.type() == QVariant::Bool))
     itemData.value_int = value.toBool();
@@ -218,6 +249,8 @@ bool TreeItem::setData(int column, const QVariant &value)
   else if ((itemData.setting_type == Gamma::SettingType::int_menu)
       && (value.type() == QVariant::Int))
     itemData.value_int = value.toInt();
+  else if (itemData.setting_type == Gamma::SettingType::command)
+    itemData.value = 1; //flag it for execution
   else if ((itemData.setting_type == Gamma::SettingType::detector)
       && (value.type() == QVariant::String)) {
     itemData.value_text = value.toString().toStdString();
@@ -236,18 +269,12 @@ bool TreeItem::setData(int column, const QVariant &value)
 TreeSettings::TreeSettings(QObject *parent)
   : QAbstractItemModel(parent)
 {
-  rootItem = nullptr;
+  rootItem = new TreeItem(Gamma::Setting());
 }
 
 TreeSettings::~TreeSettings()
 {
   delete rootItem;
-}
-
-void TreeSettings::set_structure(const Gamma::Setting &data) {
-  if (rootItem != nullptr)
-    delete rootItem;
-  rootItem = new TreeItem(data);
 }
 
 int TreeSettings::columnCount(const QModelIndex & /* parent */) const
@@ -269,16 +296,30 @@ QVariant TreeSettings::data(const QModelIndex &index, int role) const
   else if (role == Qt::EditRole)
     return item->edit_data(col);
   else if (role == Qt::ForegroundRole) {
-    /*if (row == 0) {
-      QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta};
-      QBrush brush(palette[col % palette.size()]);
-      return brush;
-    } else */ if ((col == 1) && !item->is_editable(col)) {
-      QBrush brush(Qt::darkGray);
-      return brush;
-    } else {
+    if (item->edit_data(col).canConvert<Gamma::Setting>()) {
+      Gamma::Setting set = qvariant_cast<Gamma::Setting>(item->edit_data(col));
+      if (set.setting_type == Gamma::SettingType::detector) {
+        QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta};
+        QBrush brush(palette[set.index % palette.size()]);
+        return brush;
+      } else if (set.setting_type == Gamma::SettingType::command) {
+        if (set.value_int == 0) {
+          QBrush brush(Qt::darkGray);
+          return brush;
+        } else if (set.value_int == 1) {
+          QBrush brush(Qt::darkRed);
+          return brush;
+        } else if (set.value_int == 2) {
+          QBrush brush(Qt::darkGreen);
+          return brush;
+        }
+      } else if ((col == 1) && (!set.writable)) {
+        QBrush brush(Qt::darkGray);
+        return brush;
+      } else {
       QBrush brush(Qt::black);
       return brush;
+      }
     }
   }
   else
@@ -400,6 +441,8 @@ bool TreeSettings::setData(const QModelIndex &index, const QVariant &value, int 
     emit dataChanged(index, index);
     if (set.setting_type == Gamma::SettingType::detector)
       emit detector_chosen(set.index, set.value_text);
+    if (set.setting_type == Gamma::SettingType::command)
+      emit execute_command();
     else
       emit tree_changed();
   }

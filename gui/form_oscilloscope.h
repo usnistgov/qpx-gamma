@@ -50,11 +50,9 @@ protected:
 
 private slots:
   void on_pushOscilRefresh_clicked();
-  void on_pushOscilBaselines_clicked();
-  void on_pushOscilOffsets_clicked();
-  void oscil_complete(QList<QVector<double>>*, QString);
+  void oscil_complete(std::vector<Qpx::Trace>);
 
-  void toggle_push(bool enable, Pixie::LiveStatus live);
+  void toggle_push(bool enable, Qpx::LiveStatus live);
 
   void on_doubleSpinXDT_editingFinished();
   void chansChosen(QAction*);

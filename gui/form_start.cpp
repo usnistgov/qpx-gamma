@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#include "gui/form_start.h"
-#include "form_bootup.h"
+#include "form_start.h"
 #include <QBoxLayout>
 
 FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector> &detectors, QWidget *parent) :
@@ -29,51 +28,40 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma:
   runner_thread_(thread),
   settings_(settings),
   detectors_(detectors),
-  pixie_(Pixie::Wrapper::getInstance()),
+  pixie_(Qpx::Wrapper::getInstance()),
   exiting(false)
 {
-  connect(&runner_thread_, SIGNAL(bootComplete(bool, bool)), this, SLOT(boot_complete(bool, bool)));
-
-  formBootup = new FormBootup(runner_thread_, settings_);
-  connect(formBootup, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
-  connect(formBootup, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
-  connect(this, SIGNAL(toggle_push_(bool,Pixie::LiveStatus)), formBootup, SLOT(toggle_push(bool,Pixie::LiveStatus)));
-
-  QHBoxLayout *hl = new QHBoxLayout();
-  hl->addWidget(formBootup);
-
   formOscilloscope = new FormOscilloscope(runner_thread_, settings);
   connect(formOscilloscope, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
-  connect(this, SIGNAL(toggle_push_(bool,Pixie::LiveStatus)), formOscilloscope, SLOT(toggle_push(bool,Pixie::LiveStatus)));
+  connect(this, SIGNAL(toggle_push_(bool,Qpx::LiveStatus)), formOscilloscope, SLOT(toggle_push(bool,Qpx::LiveStatus)));
 
-  QVBoxLayout *vl = new QVBoxLayout();
-  vl->addLayout(hl);
-  vl->addWidget(formOscilloscope);
 
   formPixieSettings = new FormPixieSettings(runner_thread_, detectors_, settings_);
   connect(formPixieSettings, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
   connect(formPixieSettings, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
   connect(this, SIGNAL(refresh()), formPixieSettings, SLOT(update()));
-  connect(this, SIGNAL(toggle_push_(bool,Pixie::LiveStatus)), formPixieSettings, SLOT(toggle_push(bool,Pixie::LiveStatus)));
+  connect(this, SIGNAL(toggle_push_(bool,Qpx::LiveStatus)), formPixieSettings, SLOT(toggle_push(bool,Qpx::LiveStatus)));
   connect(this, SIGNAL(update_dets()), formPixieSettings, SLOT(updateDetDB()));
   connect(this, SIGNAL(update_dets()), formOscilloscope, SLOT(dets_updated()));
 
   QHBoxLayout *lo = new QHBoxLayout();
-  lo->addLayout(vl);
+  lo->addWidget(formOscilloscope);
   lo->addWidget(formPixieSettings);
 
   this->setLayout(lo);
+
+  loadSettings();
 }
 
 FormStart::~FormStart()
 {
-//  delete ui;
+  //  delete ui;
 }
 
 void FormStart::closeEvent(QCloseEvent *event) {
   if (exiting) {
+    saveSettings();
     formPixieSettings->close();
-    formBootup->close();
     formOscilloscope->close();
     event->accept();
   }
@@ -94,17 +82,17 @@ void FormStart::toggleIO_(bool enable) {
   emit toggleIO(enable);
 }
 
-void FormStart::toggle_push(bool enable, Pixie::LiveStatus live) {
+void FormStart::toggle_push(bool enable, Qpx::LiveStatus live) {
   emit toggle_push_(enable, live);
 }
 
-void FormStart::boot_complete(bool success, bool online) {
+void FormStart::boot_complete(bool success, Qpx::LiveStatus online) {
+  //DEPRECATED
+
   if (success) {
     this->setCursor(Qt::WaitCursor);
-    QThread::sleep(1);
-    pixie_.control_adjust_offsets();  //oscil function, if called through runner would invoke do_oscil
     formPixieSettings->updateDetDB();
-    if (online)
+    if (online == Qpx::LiveStatus::online)
       runner_thread_.do_oscil(formOscilloscope->xdt());
     runner_thread_.do_refresh_settings();
     this->setCursor(Qt::ArrowCursor);
@@ -118,3 +106,50 @@ void FormStart::settings_updated() {
 void FormStart::detectors_updated() {
   emit update_dets();
 }
+
+void FormStart::loadSettings() {
+  settings_.beginGroup("Program");
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_.endGroup();
+
+  QString filename = data_directory_ + "/qpx_settings.set";
+
+  Gamma::Setting dev_settings;
+
+  FILE* myfile;
+  myfile = fopen (filename.toStdString().c_str(), "r");
+  if (myfile != nullptr) {
+    tinyxml2::XMLDocument docx;
+    docx.LoadFile(myfile);
+    tinyxml2::XMLElement* root = docx.FirstChildElement(Gamma::Setting().xml_element_name().c_str());
+    if (root != nullptr) {
+      dev_settings = Gamma::Setting(root);
+    }
+    fclose(myfile);
+  }
+
+  PL_DBG << "dev_settings = " << dev_settings.name << " with " << dev_settings.branches.size();
+
+  if (dev_settings != Gamma::Setting()) {
+    dev_settings.value_int = int(Qpx::LiveStatus::dead);
+    runner_thread_.do_push_settings(dev_settings);
+  }
+}
+
+void FormStart::saveSettings() {
+  QString filename = data_directory_ + "/qpx_settings.set";
+
+  Gamma::Setting dev_settings = formPixieSettings->get_tree();
+
+  if (dev_settings != Gamma::Setting()) {
+    FILE* myfile;
+    myfile = fopen (filename.toStdString().c_str(), "w");
+    if (myfile != nullptr) {
+      tinyxml2::XMLPrinter printer(myfile);
+      printer.PushHeader(true, true);
+      dev_settings.to_xml(printer);
+      fclose(myfile);
+    }
+  }
+}
+

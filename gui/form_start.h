@@ -29,7 +29,6 @@
 #include "custom_logger.h"
 #include "thread_runner.h"
 #include "form_pixie_settings.h"
-#include "form_bootup.h"
 #include "form_oscilloscope.h"
 
 
@@ -49,15 +48,15 @@ public:
 signals:
   void toggleIO(bool);
   void statusText(QString);
-  void toggle_push_(bool, Pixie::LiveStatus);
+  void toggle_push_(bool, Qpx::LiveStatus);
   void refresh();
   void update_dets();
 
 private slots:
-  void toggle_push(bool, Pixie::LiveStatus);
+  void toggle_push(bool, Qpx::LiveStatus);
   void toggleIO_(bool);
   void updateStatusText(QString);
-  void boot_complete(bool, bool);
+  void boot_complete(bool, Qpx::LiveStatus);
   void settings_updated();
   void detectors_updated();
 
@@ -71,14 +70,13 @@ private:
   QString data_directory_;
 
   //reference to pixie singleton
-  Pixie::Wrapper& pixie_;
+  Qpx::Wrapper& pixie_;
 
   XMLableDB<Gamma::Detector>  &detectors_;
 
   ThreadRunner        &runner_thread_;
 
   FormPixieSettings*  formPixieSettings;
-  FormBootup*         formBootup;
   FormOscilloscope*   formOscilloscope;
 
   bool exiting;

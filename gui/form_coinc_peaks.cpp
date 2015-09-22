@@ -131,7 +131,7 @@ void FormCoincPeaks::clear() {
 }
 
 
-void FormCoincPeaks::setSpectrum(Pixie::Spectrum::Spectrum *newspectrum, uint16_t L, uint16_t R) {
+void FormCoincPeaks::setSpectrum(Qpx::Spectrum::Spectrum *newspectrum, uint16_t L, uint16_t R) {
   clear();
   spectrum_ = newspectrum;
   sel_L = L;
@@ -158,7 +158,7 @@ void FormCoincPeaks::update_spectrum() {
   if (fit_data_ == nullptr)
     return;
 
-  Pixie::Spectrum::Metadata md;
+  Qpx::Spectrum::Metadata md;
   if (spectrum_)
     md = spectrum_->metadata();
 

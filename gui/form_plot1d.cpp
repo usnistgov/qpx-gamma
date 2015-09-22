@@ -51,7 +51,7 @@ FormPlot1D::~FormPlot1D()
   delete ui;
 }
 
-void FormPlot1D::setSpectra(Pixie::SpectraSet& new_set) {
+void FormPlot1D::setSpectra(Qpx::SpectraSet& new_set) {
   mySpectra = &new_set;
 
   std::set<uint32_t> resolutions = mySpectra->resolutions(1);
@@ -72,9 +72,9 @@ void FormPlot1D::spectrumDetails()
   ui->pushHideAll->setEnabled(ui->spectraWidget->available_count());
 
   QString id = ui->spectraWidget->selected();
-  Pixie::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(id.toStdString());
+  Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(id.toStdString());
 
-  Pixie::Spectrum::Metadata md;
+  Qpx::Spectrum::Metadata md;
   if (someSpectrum)
     md = someSpectrum->metadata();
 
@@ -167,7 +167,7 @@ void FormPlot1D::update_plot() {
 
   ui->mcaPlot->clearGraphs();
   for (auto &q: mySpectra->spectra(1, bits)) {
-    Pixie::Spectrum::Metadata md;
+    Qpx::Spectrum::Metadata md;
     if (q)
       md = q->metadata();
 
@@ -175,7 +175,7 @@ void FormPlot1D::update_plot() {
 
       QVector<double> y(md.resolution);
 
-      std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
+      std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
           std::move(q->get_spectrum({{0, y.size()}}));
       std::vector<double> energies = q->energies(0);
 
@@ -229,7 +229,7 @@ void FormPlot1D::update_plot() {
 
 void FormPlot1D::on_pushFullInfo_clicked()
 {
-  Pixie::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(ui->spectraWidget->selected().toStdString());
+  Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(ui->spectraWidget->selected().toStdString());
   if (someSpectrum == nullptr)
     return;
 

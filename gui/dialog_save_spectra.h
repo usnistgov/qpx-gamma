@@ -65,7 +65,7 @@ class DialogSaveSpectra : public QDialog
     Q_OBJECT
 
 public:
-    explicit DialogSaveSpectra(Pixie::SpectraSet&, QString, QWidget *parent = 0);
+    explicit DialogSaveSpectra(Qpx::SpectraSet&, QString, QWidget *parent = 0);
     ~DialogSaveSpectra();
 
 private slots:
@@ -77,7 +77,7 @@ private:
     Ui::DialogSaveSpectra *ui;
     QString root_dir_;
     std::string total_dir_;
-    Pixie::SpectraSet *my_set_;
+    Qpx::SpectraSet *my_set_;
 };
 
 #endif // DIALOGSAVESPECTRA_H

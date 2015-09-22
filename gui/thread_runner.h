@@ -35,13 +35,10 @@
 #include "spectra_set.h"
 #include "simulator.h"
 
-Q_DECLARE_METATYPE(Pixie::RunType)
-
 enum RunnerAction {
-    kBoot, kList, kMCA, kSimulate, kFromList,
-    kOffsets, kBaselines, kOscil,
-    kTau, kBLcut, kSettingsRefresh, kOptimize,
-    kTerminate, kNone
+    kExecuteCommand, kBoot, kShutdown, kPushSettings, kSetSetting, kSetDetector,
+    kList, kMCA, kSimulate, kFromList, kOscil,
+    kSettingsRefresh, kOptimize, kTerminate, kNone
 };
 
 class ThreadRunner : public QThread
@@ -52,51 +49,50 @@ public:
     ~ThreadRunner();
 
     void do_boot();
-    void do_list(boost::atomic<bool>&, Pixie::RunType, uint64_t timeout, bool dblbuf);
-    void do_run(Pixie::SpectraSet&, boost::atomic<bool>&, Pixie::RunType, uint64_t timeout, bool dblbuf);
-    void do_fake(Pixie::SpectraSet&, boost::atomic<bool>&, QString file, std::array<int,2> chans, int source_res, int dest_res, int timeout);
-    void do_from_list(Pixie::SpectraSet&, boost::atomic<bool>&, QString file);
+    void do_shutdown();
+    void do_execute_command(const Gamma::Setting &tree);
+    void do_push_settings(const Gamma::Setting &tree);
+    void do_set_setting(const Gamma::Setting &item, bool exact_index);
+    void do_set_detector(int, Gamma::Detector);
 
-    void do_offsets();
-    void do_baselines();
+    void do_list(boost::atomic<bool>&, uint64_t timeout);
+    void do_run(Qpx::SpectraSet&, boost::atomic<bool>&, uint64_t timeout);
+    void do_fake(Qpx::SpectraSet&, boost::atomic<bool>&, QString file, std::array<int,2> chans, int source_res, int dest_res, int timeout);
+    void do_from_list(Qpx::SpectraSet&, boost::atomic<bool>&, QString file);
+
     void do_optimize();
     void do_oscil(double xdt);
     void do_refresh_settings();
-    void do_tau();
-    void do_BLcut();
     void terminate();
     bool terminating();
 
 signals:
     void runComplete();
-    void listComplete(Pixie::ListData*);
-    void bootComplete(bool, bool);
-    void settingsUpdated();
-    void oscilReadOut(QList<QVector<double>>*, QString);
+    void listComplete(Qpx::ListData*);
+    void settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>);
+    void oscilReadOut(std::vector<Qpx::Trace>);
 
 protected:
     void run();
 
 private:
+    Qpx::Settings &devices_;
+
     QMutex mutex_;
     RunnerAction action_;
 
-    Pixie::SpectraSet* spectra_;
+    Qpx::SpectraSet* spectra_;
     boost::atomic<bool>* interruptor_;
     boost::atomic<bool> terminating_;
 
     double xdt_;
 
-    //run variables
-    Pixie::RunType run_type_;
-    bool dblbuf_;
     uint64_t timeout_;
 
-    double value_;
-    Pixie::Module module_;
     Gamma::Detector det_;
-    std::vector<Gamma::Detector> dets_;
-    std::string setting_;
+    int chan_;
+    Gamma::Setting tree_;
+    bool exact_index_;
 
     //simulation
     QString file_;

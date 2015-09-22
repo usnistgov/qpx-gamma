@@ -35,9 +35,10 @@ class TableChanSettings : public QAbstractTableModel
     Q_OBJECT
 private:
     std::vector<Gamma::Detector> channels_;
+    bool show_read_only_;
 
 public:
-    TableChanSettings(QObject *parent = 0) {}
+    TableChanSettings(QObject *parent = 0) {show_read_only_ = true;}
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     int columnCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -46,6 +47,7 @@ public:
     bool setData(const QModelIndex & index, const QVariant & value, int role = Qt::EditRole);
 
     void update(const std::vector<Gamma::Detector> &settings);
+    void set_show_read_only(bool show_ro);
 
 signals:
     void setting_changed(int chan, Gamma::Setting setting);

@@ -40,12 +40,7 @@ FormListDaq::FormListDaq(ThreadRunner &thread, QSettings &settings, QWidget *par
 
   loadSettings();
 
-  connect(&runner_thread_, SIGNAL(listComplete(Pixie::ListData*)), this, SLOT(list_completed(Pixie::ListData*)));
-
-  ui->comboListType->addItem("with traces", QVariant::fromValue(Pixie::RunType::traces));
-  ui->comboListType->addItem("full, no traces", QVariant::fromValue(Pixie::RunType::full));
-  ui->comboListType->addItem("compressed, PSA", QVariant::fromValue(Pixie::RunType::psa_only));
-  ui->comboListType->addItem("compressed", QVariant::fromValue(Pixie::RunType::compressed));
+  connect(&runner_thread_, SIGNAL(listComplete(Qpx::ListData*)), this, SLOT(list_completed(Qpx::ListData*)));
 
   list_data_model_.eat_list(list_data_);
   ui->listOutputView->setModel(&list_data_model_);
@@ -78,13 +73,11 @@ void FormListDaq::saveSettings() {
   settings_.endGroup();
 }
 
-void FormListDaq::toggle_push(bool enable, Pixie::LiveStatus live) {
-  bool online = (live == Pixie::LiveStatus::online);
+void FormListDaq::toggle_push(bool enable, Qpx::LiveStatus live) {
+  bool online = (live == Qpx::LiveStatus::online);
   ui->pushListStart->setEnabled(enable && online);
   ui->boxListMins->setEnabled(enable && online);
   ui->boxListSecs->setEnabled(enable && online);
-  ui->comboListType->setEnabled(enable && online);
-  ui->checkDoubleBufferList->setEnabled(enable && online);
 }
 
 FormListDaq::~FormListDaq()
@@ -130,11 +123,11 @@ void FormListDaq::displayTraces()
   drawit[3] = ui->boxChan3->isChecked();
 
   int actual_graphs = 0;
-  for (int i=0; i < list_data_->run.p4_state.get_detectors().size(); i++) {
+  for (int i=0; i < list_data_->run.detectors.size(); i++) {
     uint32_t trace_length = list_data_->hits[chosen_trace].trace.size();
     if ((drawit[i]) && (trace_length > 0)) {
       QVector<double> x(trace_length), y(trace_length);
-      Gamma::Detector this_det = list_data_->run.p4_state.get_detectors()[i];
+      Gamma::Detector this_det = list_data_->run.detectors[i];
       int highest_res = 0;
       for (auto &q : this_det.energy_calibrations_.my_data_)
         if (q.bits_ > highest_res)
@@ -163,14 +156,11 @@ void FormListDaq::on_pushListStart_clicked()
 {
   emit statusText("List mode acquisition in progress...");
 
-  int runtype = ui->comboListType->currentData().toInt();
-  PL_INFO << "requested list of type " << runtype;
-
   emit toggleIO(false);
   ui->pushListStop->setEnabled(true);
   my_run_ = true;
 
-  runner_thread_.do_list(interruptor_, Pixie::RunType(runtype), ui->boxListMins->value() * 60 + ui->boxListSecs->value(), ui->checkDoubleBufferList->isChecked());
+  runner_thread_.do_list(interruptor_, ui->boxListMins->value() * 60 + ui->boxListSecs->value());
 }
 
 void FormListDaq::on_pushListStop_clicked()
@@ -180,7 +170,7 @@ void FormListDaq::on_pushListStop_clicked()
   interruptor_.store(true);
 }
 
-void FormListDaq::list_completed(Pixie::ListData* newEvents) {
+void FormListDaq::list_completed(Qpx::ListData* newEvents) {
   if (my_run_) {
     if (list_data_ != nullptr)
       delete list_data_;
@@ -223,7 +213,7 @@ void FormListDaq::on_boxChan3_clicked()
 TableListData::TableListData(QObject *parent)
   :QAbstractTableModel(parent), time_factor_(1.0)
 {
-  calibrations_.resize(Pixie::kNumChans);
+  calibrations_.resize(Qpx::kNumChans);
 }
 
 int TableListData::rowCount(const QModelIndex & /*parent*/) const
@@ -295,12 +285,12 @@ QVariant TableListData::headerData(int section, Qt::Orientation orientation, int
 }
 
 
-void TableListData::eat_list(Pixie::ListData* stuff) {
+void TableListData::eat_list(Qpx::ListData* stuff) {
   mystuff = stuff;
   if (stuff != nullptr) {
     time_factor_ = stuff->run.time_scale_factor();
-    for (int i =0; i < mystuff->run.p4_state.get_detectors().size(); i++) {
-      Gamma::Detector thisdet = mystuff->run.p4_state.get_detectors()[i];
+    for (int i =0; i < mystuff->run.detectors.size(); i++) {
+      Gamma::Detector thisdet = mystuff->run.detectors[i];
       int hi_res = 0;
       for (auto &q : thisdet.energy_calibrations_.my_data_) {
         if (q.bits_ > hi_res)
@@ -331,7 +321,7 @@ void FormListDaq::on_pushListFileSort_clicked()
     return;
 
   PL_INFO << "Reading list output metadata from " << fileName.toStdString();
-  Pixie::Sorter sorter(fileName.toStdString());
+  Qpx::Sorter sorter(fileName.toStdString());
   if (sorter.valid()) {
     QString fileName2 = CustomSaveFileDialog(this, "Save list output",
                                              data_directory_, "qpx list output (*.bin)");

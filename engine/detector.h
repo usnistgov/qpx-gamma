@@ -62,6 +62,8 @@ class Detector : public XMLable {
     return true;
   }
 
+  void to_xml_options(tinyxml2::XMLPrinter&, bool options) const;
+
   void to_xml(tinyxml2::XMLPrinter&) const;
   void from_xml(tinyxml2::XMLElement*);
   Calibration highest_res_calib();

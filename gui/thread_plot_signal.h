@@ -30,7 +30,7 @@ class ThreadPlotSignal : public QThread
 {
     Q_OBJECT
 public:
-    explicit ThreadPlotSignal(Pixie::SpectraSet& spectra, QObject *parent = 0) :
+    explicit ThreadPlotSignal(Qpx::SpectraSet& spectra, QObject *parent = 0) :
         QThread(parent), spectra_(&spectra) {}
 
     void begin() {
@@ -50,7 +50,7 @@ protected:
     }
 
 private:
-    Pixie::SpectraSet* spectra_;
+    Qpx::SpectraSet* spectra_;
 };
 
 #endif

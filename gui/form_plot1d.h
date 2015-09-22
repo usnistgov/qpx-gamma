@@ -40,7 +40,7 @@ public:
   explicit FormPlot1D(QWidget *parent = 0);
   ~FormPlot1D();
 
-  void setSpectra(Pixie::SpectraSet& new_set);
+  void setSpectra(Qpx::SpectraSet& new_set);
   void updateUI();
 
   void update_plot();
@@ -88,7 +88,7 @@ private:
   int bits;
   Gamma::Calibration calib_;
 
-  Pixie::SpectraSet *mySpectra;
+  Qpx::SpectraSet *mySpectra;
 
   Marker moving, markx, marky;
 

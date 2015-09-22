@@ -103,7 +103,7 @@ FormPlot2D::~FormPlot2D()
   delete ui;
 }
 
-void FormPlot2D::setSpectra(Pixie::SpectraSet& new_set) {
+void FormPlot2D::setSpectra(Qpx::SpectraSet& new_set) {
   mySpectra = &new_set;
 
   name_2d.clear();
@@ -115,7 +115,7 @@ void FormPlot2D::on_comboChose2d_activated(const QString &arg1)
 {
   if (arg1 == name_2d)
     return;
-  std::list<Pixie::Spectrum::Spectrum*> spectra = mySpectra->spectra(2, -1);
+  std::list<Qpx::Spectrum::Spectrum*> spectra = mySpectra->spectra(2, -1);
 
   for (auto &q : spectra)
     if (q->name() == arg1.toStdString())
@@ -129,11 +129,11 @@ void FormPlot2D::on_comboChose2d_activated(const QString &arg1)
 
 void FormPlot2D::updateUI()
 {
-  std::list<Pixie::Spectrum::Spectrum*> spectra = mySpectra->spectra(2, -1);
+  std::list<Qpx::Spectrum::Spectrum*> spectra = mySpectra->spectra(2, -1);
   std::string newname;
   std::list<std::string> names;
   for (auto &q : spectra) {
-    Pixie::Spectrum::Metadata md;
+    Qpx::Spectrum::Metadata md;
     if (q)
       md = q->metadata();
 
@@ -365,14 +365,14 @@ void FormPlot2D::update_plot(bool force) {
 
     QString newname = ui->comboChose2d->currentText();
 
-    Pixie::Spectrum::Spectrum* some_spectrum = mySpectra->by_name(newname.toStdString());
+    Qpx::Spectrum::Spectrum* some_spectrum = mySpectra->by_name(newname.toStdString());
     uint32_t adjrange;
 
     ui->pushDetails->setEnabled((some_spectrum != nullptr));
     ui->pushAnalyse->setEnabled((some_spectrum != nullptr));
     zoom_2d = ui->sliderZoom2d->value();
 
-    Pixie::Spectrum::Metadata md;
+    Qpx::Spectrum::Metadata md;
     if (some_spectrum)
       md = some_spectrum->metadata();
 
@@ -443,7 +443,7 @@ void FormPlot2D::update_plot(bool force) {
         //ui->coincPlot->yAxis->setRange(colorMap->valueAxis()->range());
       }
 
-      std::shared_ptr<Pixie::Spectrum::EntryList> spectrum_data =
+      std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
           std::move(some_spectrum->get_spectrum({{0, adjrange}, {0, adjrange}}));
       for (auto it : *spectrum_data)
         colorMap->data()->setCell(it.first[0], it.first[1], it.second);
@@ -585,7 +585,7 @@ void FormPlot2D::on_pushColorScale_clicked()
 
 void FormPlot2D::on_pushDetails_clicked()
 {
-  Pixie::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(name_2d.toStdString());
+  Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(name_2d.toStdString());
   if (someSpectrum == nullptr)
     return;
 

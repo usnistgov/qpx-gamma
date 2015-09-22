@@ -10,7 +10,7 @@ bool parse_file(std::ifstream&, std::list<CpxLine> &, std::vector<std::string> &
 
 class Cpx {
 public:
-  Cpx() : pixie_(Pixie::Wrapper::getInstance())
+  Cpx() : pixie_(Qpx::Wrapper::getInstance())
   {
     interruptor_.store(false);
   }
@@ -27,8 +27,8 @@ private:
   bool set_mod(std::vector<std::string> &tokens);
   bool set_chan(std::vector<std::string> &tokens);
 
-  Pixie::SpectraSet   spectra_;
-  Pixie::Simulator    source_;
-  Pixie::Wrapper      &pixie_;
+  Qpx::SpectraSet   spectra_;
+  Qpx::Simulator    source_;
+  Qpx::Wrapper      &pixie_;
   boost::atomic<bool> interruptor_;
 };

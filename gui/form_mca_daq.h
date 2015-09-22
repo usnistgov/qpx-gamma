@@ -72,7 +72,7 @@ private slots:
   void updateSpectraUI();
 
 
-  void toggle_push(bool, Pixie::LiveStatus);
+  void toggle_push(bool, Qpx::LiveStatus);
 
   void on_pushEnable2d_clicked();
 
@@ -87,6 +87,8 @@ private slots:
 
   void on_pushBuildFromList_clicked();
 
+  void on_pushDetails_clicked();
+
 private:
   Ui::FormMcaDaq *ui;
   QSettings                  &settings_;
@@ -96,8 +98,8 @@ private:
   QString data_directory_;    //data directory
   QString mca_load_formats_;  //valid mca file formats that can be opened
 
-  XMLableDB<Pixie::Spectrum::Template>  spectra_templates_;
-  Pixie::SpectraSet                     spectra_;
+  XMLableDB<Qpx::Spectrum::Template>  spectra_templates_;
+  Qpx::SpectraSet                     spectra_;
 
   ThreadPlotSignal                plot_thread_;
   boost::atomic<bool>             interruptor_;

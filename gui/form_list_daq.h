@@ -37,7 +37,7 @@ class TableListData : public QAbstractTableModel
 {
     Q_OBJECT
 private:
-    Pixie::ListData* mystuff;
+    Qpx::ListData* mystuff;
     double time_factor_;
     std::vector<Gamma::Calibration> calibrations_;
 
@@ -49,7 +49,7 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role) const;
     Qt::ItemFlags flags(const QModelIndex & index) const;
 
-    void eat_list(Pixie::ListData*);
+    void eat_list(Qpx::ListData*);
     void update();
 };
 
@@ -76,9 +76,9 @@ private slots:
   void on_boxChan1_clicked();
   void on_boxChan2_clicked();
   void on_boxChan3_clicked();
-  void list_completed(Pixie::ListData*);
+  void list_completed(Qpx::ListData*);
   void list_selection_changed(QItemSelection,QItemSelection);
-  void toggle_push(bool online, Pixie::LiveStatus);
+  void toggle_push(bool online, Qpx::LiveStatus);
 
   void on_pushListFileSort_clicked();
 
@@ -93,7 +93,7 @@ private:
 
   boost::atomic<bool> interruptor_;
 
-  Pixie::ListData     *list_data_;
+  Qpx::ListData     *list_data_;
 
   //list mode data
   TableListData       list_data_model_;

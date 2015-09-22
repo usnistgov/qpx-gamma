@@ -113,7 +113,10 @@ win32 {
 
 INCLUDEPATH += engine \
                math \
-               pixiecpp \
+               engine \
+               engine/spectrum \
+               engine/plugins \
+               analysis \
                gui \
                PLX/Include \
                dependencies \
@@ -134,9 +137,11 @@ SOURCES += $$files(dependencies/*.cpp) \
            $$files(dependencies/fityk/*.cpp) \
            $$files(dependencies/fityk/swig/*.cpp) \
            $$files(dependencies/fityk/cmpfit/*.c) \
-           $$files(pixiecpp/*.cpp) \
            $$files(gui/*.cpp) \
            $$files(engine/*.cpp) \
+           $$files(engine/spectrum/*.cpp) \
+           $$files(engine/plugins/*.cpp) \
+           $$files(analysis/*.cpp) \
            $$files(math/*.cpp)
 
 HEADERS  += $$files(dependencies/*.h) \
@@ -147,9 +152,11 @@ HEADERS  += $$files(dependencies/*.h) \
             $$files(dependencies/xylib/*.h) \
             $$files(dependencies/fityk/*.h) \
             $$files(PLX/Include/*.h) \
-            $$files(pixiecpp/*.h) \
             $$files(gui/*.h) \
             $$files(engine/*.h) \
+            $$files(engine/spectrum/*.h) \
+            $$files(engine/plugins/*.h) \
+            $$files(analysis/*.h) \
             $$files(math/*.h)
 
 FORMS   += $$files(forms/*.ui)

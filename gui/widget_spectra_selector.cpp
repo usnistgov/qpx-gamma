@@ -45,12 +45,12 @@ QpxSpectraWidget::QpxSpectraWidget(QWidget *parent)
   setToolTipDuration(10000); //hardcoded to 10 secs. Make this a parameter?
 }
 
-void QpxSpectraWidget::setQpxSpectra(Pixie::SpectraSet &newset, int dim, int res) {
+void QpxSpectraWidget::setQpxSpectra(Qpx::SpectraSet &newset, int dim, int res) {
   all_spectra_ = &newset;
   my_spectra_.clear();
 
   for (auto &q : all_spectra_->spectra(dim, res)) {
-    Pixie::Spectrum::Metadata md;
+    Qpx::Spectrum::Metadata md;
     if (q)
       md = q->metadata();
 
@@ -73,7 +73,7 @@ void QpxSpectraWidget::update_looks() {
   if (all_spectra_ == nullptr)
     return;
   for (auto &q : my_spectra_) {
-    Pixie::Spectrum::Spectrum *someSpectrum = all_spectra_->by_name(q.name.toStdString());
+    Qpx::Spectrum::Spectrum *someSpectrum = all_spectra_->by_name(q.name.toStdString());
     if (someSpectrum != nullptr)
       q.color = QColor::fromRgba(someSpectrum->metadata().appearance);
   }
