@@ -86,7 +86,8 @@ Plugin::Plugin(tinyxml2::XMLElement* root, std::vector<Gamma::Detector>& detecto
   detectors = from_xml(root);
 }
 
-bool Plugin::start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) {
+bool Plugin::start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue,
+                       Gamma::Setting root) {
   if (interruptor_ != nullptr)
     return false;
 
@@ -104,9 +105,9 @@ bool Plugin::start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) {
   raw_queue_ = new SynchronizedQueue<Spill*>();
 
   if (run_double_buffer_)
-    runner_ = new boost::thread(&worker_run_dbl, this, timeout, raw_queue_, interruptor_);
+    runner_ = new boost::thread(&worker_run_dbl, this, timeout, raw_queue_, interruptor_, root);
   else
-    runner_ = new boost::thread(&worker_run, this, timeout, raw_queue_, interruptor_);
+    runner_ = new boost::thread(&worker_run, this, timeout, raw_queue_, interruptor_, root);
 
   parser_ = new boost::thread(&worker_parse, raw_queue_, out_queue);
 }
@@ -143,6 +144,24 @@ bool Plugin::stop_daq() {
 
   return true;
 }
+
+void Plugin::fill_stats(StatsUpdate &stats, Gamma::Setting tree) {
+  read_settings_bulk(tree);
+  stats.fast_peaks.resize(NUMBER_OF_CHANNELS, 0.0);
+  stats.live_time.resize(NUMBER_OF_CHANNELS, 0.0);
+  stats.ftdt.resize(NUMBER_OF_CHANNELS, 0.0);
+  stats.sfdt.resize(NUMBER_OF_CHANNELS, 0.0);
+
+  for (int i=0; i < NUMBER_OF_CHANNELS; i++) {
+    stats.fast_peaks[i] = tree.get_setting(Gamma::Setting("Pixie-4/System/module/channel/FAST_PEAKS", 28, Gamma::SettingType::floating, i)).value;
+    stats.live_time[i]  = tree.get_setting(Gamma::Setting("Pixie-4/System/module/channel/LIVE_TIME", 26, Gamma::SettingType::floating, i)).value;
+    stats.ftdt[i]       = tree.get_setting(Gamma::Setting("Pixie-4/System/module/channel/FTDT", 33, Gamma::SettingType::floating, i)).value;
+    stats.sfdt[i]       = tree.get_setting(Gamma::Setting("Pixie-4/System/module/channel/SFDT", 34, Gamma::SettingType::floating, i)).value;
+  }
+  stats.event_rate = tree.get_setting(Gamma::Setting("Pixie-4/System/module/EVENT_RATE", 22, Gamma::SettingType::floating, 0)).value; //make scalable
+  stats.total_time = tree.get_setting(Gamma::Setting("Pixie-4/System/module/TOTAL_TIME", 23, Gamma::SettingType::floating, 0)).value; //make scalable
+}
+
 
 void Plugin::get_stats(int module) {
   if (module > -1)
@@ -1201,7 +1220,8 @@ std::vector<Gamma::Detector> Plugin::from_xml(tinyxml2::XMLElement* root) {
 
 void Plugin::worker_run_test(Plugin* callback, uint64_t timeout_limit,
                              SynchronizedQueue<Spill*>* spill_queue,
-                             boost::atomic<bool>* interruptor) {
+                             boost::atomic<bool>* interruptor,
+                             Gamma::Setting root) {
 
   PL_INFO << "<Qpx::Plugin> worker_run_test started";
   uint64_t spill_number = 0;
@@ -1228,9 +1248,11 @@ void Plugin::worker_run_test(Plugin* callback, uint64_t timeout_limit,
 
 void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
                    SynchronizedQueue<Spill*>* spill_queue,
-                   boost::atomic<bool>* interruptor) {
+                   boost::atomic<bool>* interruptor,
+                   Gamma::Setting root) {
 
-  PL_INFO << "*Pixie Threads* List runner initiated";
+  PL_INFO << "<PixiePlugin> Double buffered daq starting";
+
   int32_t retval = 0;
   uint64_t spill_number = 0;
   bool timeout = false;
@@ -1246,11 +1268,7 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
   callback->set_mod("MODULE_CSRA", static_cast<double>(2), Module(0));
 
   fetched_spill = new Spill;
-  fetched_spill->run = new RunInfo;
   fetched_spill->stats = new StatsUpdate;
-  callback->get_all_settings();
-  //fetched_spill->run->state = pxi.my_settings_.pull_settings();
-
   block_time = session_start_time = boost::posix_time::microsec_clock::local_time();
 
   if(!start_run(callback->run_type_)) {
@@ -1263,10 +1281,8 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
   total_timer.resume();
 
   callback->get_stats(0);
-  //fetched_spill->stats->eat_stats(pxi.my_settings_.pull_settings());
+  callback->fill_stats(*fetched_spill->stats, root);
   fetched_spill->stats->lab_time = session_start_time;
-  //pxi.my_settings_.save_optimization();
-  //fetched_spill->run->detectors = pxi.my_settings_.get_detectors();
   spill_queue->enqueue(fetched_spill);
 
   while (!timeout) {
@@ -1283,7 +1299,7 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
     if (spill_number > 0) {
       callback->get_stats(0);
       fetched_spill->stats = new StatsUpdate;
-      //fetched_spill->stats->eat_stats(pxi.my_settings_.pull_settings());
+      callback->fill_stats(*fetched_spill->stats, root);
       fetched_spill->stats->spill_number = spill_number;
       fetched_spill->stats->lab_time   = block_time;
       spill_queue->enqueue(fetched_spill);
@@ -1322,29 +1338,23 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
 
   callback->get_stats(0);
   fetched_spill->stats = new StatsUpdate;
-  //fetched_spill->stats->eat_stats(pxi.my_settings_.pull_settings());
+  callback->fill_stats(*fetched_spill->stats, root);
   fetched_spill->stats->spill_number = spill_number;
   fetched_spill->stats->lab_time   = block_time;
+  spill_queue->enqueue(fetched_spill);
 
   total_timer.stop();
 
-  callback->get_all_settings();
-  fetched_spill->run = new RunInfo;
-  //fetched_spill->run->state = pxi.my_settings_.pull_settings();
-  fetched_spill->run->time_start = session_start_time;
-  fetched_spill->run->time_stop  = block_time;
-
-  spill_queue->enqueue(fetched_spill);
-
-  PL_INFO << "**Acquisition runs stopped**";
+  PL_INFO << "<PixiePlugin> Single buffered daq stopping";
 }
 
 
 void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
                    SynchronizedQueue<Spill*>* spill_queue,
-                   boost::atomic<bool>* interruptor) {
+                   boost::atomic<bool>* interruptor,
+                   Gamma::Setting root) {
 
-  PL_INFO << "*Pixie Threads* Buffered list runner initiated";
+  PL_INFO << "<PixiePlugin> Double buffered daq starting";
 
   std::bitset<32> csr;
   uint64_t spill_number = 0;
@@ -1360,14 +1370,7 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
   callback->set_mod("MODULE_CSRA", static_cast<double>(0), Module(0));
 
   fetched_spill = new Spill;
-  fetched_spill->run = new RunInfo;
   fetched_spill->stats = new StatsUpdate;
-
-  callback->get_all_settings();
-
-  //!!!!!BAD
-  //fetched_spill->run->state = pxi.my_settings_.pull_settings();
-
   session_start_time = boost::posix_time::microsec_clock::local_time();
 
   if(!start_run(callback->run_type_)) {
@@ -1380,10 +1383,8 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
   total_timer.resume();
 
   callback->get_stats(0);
-  //fetched_spill->stats->eat_stats(pxi.my_settings_.pull_settings());
+  callback->fill_stats(*fetched_spill->stats, root);
   fetched_spill->stats->lab_time = session_start_time;
-  //pxi.my_settings_.save_optimization();
-  //fetched_spill->run->detectors = pxi.my_settings_.get_detectors();
   spill_queue->enqueue(fetched_spill);
 
   while (!timeout) {
@@ -1405,9 +1406,9 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
 
     if (read_EM_dbl(fetched_spill->data.data())) {
       fetched_spill->stats = new StatsUpdate;
-      //fetched_spill->stats->eat_stats(pxi.my_settings_.pull_settings());
       fetched_spill->stats->spill_number = spill_number;
       fetched_spill->stats->lab_time    = block_time;
+      callback->fill_stats(*fetched_spill->stats, root);
       spill_queue->enqueue(fetched_spill);
     } else {
       delete fetched_spill;
@@ -1416,23 +1417,15 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
   }
 
   stop_run(callback->run_type_);
-  callback->get_all_settings();
 
-  fetched_spill = new Spill;
-  fetched_spill->run = new RunInfo;
-  //fetched_spill->run->state = pxi.my_settings_.pull_settings();
-  fetched_spill->run->time_start = session_start_time;
-  fetched_spill->run->time_stop  = block_time;
-  spill_queue->enqueue(fetched_spill);
-
-  PL_INFO << "**Acquisition runs stopped**";
+  PL_INFO << "<PixiePlugin> Double buffered daq stopping";
 }
 
 
 
 void Plugin::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue) {
 
-  PL_INFO << "*Pixie Threads* Event parser initiated";
+  PL_INFO << "<PixiePlugin> parser starting";
 
   Spill* spill;
 
@@ -1558,9 +1551,9 @@ void Plugin::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQueu
   }
 
   if (cycles == 0)
-    PL_DBG << "   Parse worker done. Buffer queue closed without events";
+    PL_INFO << "<PixiePlugin> Parser stopping. Buffer queue closed without events";
   else
-    PL_DBG << "   Parse worker done. " << all_events << " events, with avg time/spill: " << parse_timer.us()/cycles << "us";
+    PL_INFO << "<PixiePlugin> Parser stopping. " << all_events << " events, with avg time/spill: " << parse_timer.us()/cycles << "us";
 }
 
 

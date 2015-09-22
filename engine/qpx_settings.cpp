@@ -184,7 +184,7 @@ bool Settings::start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue)
   for (auto &set : settings_tree_.branches.my_data_) {
     for (auto &q : set.branches.my_data_) {
       if (q.name == "Acquisition Start") {
-        if ((set.name == "Pixie-4") && pixie_plugin_.start_daq(timeout, out_queue)) {
+        if ((set.name == "Pixie-4") && pixie_plugin_.start_daq(timeout, out_queue, set)) {
           success = true;
         }
       }

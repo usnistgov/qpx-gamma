@@ -48,6 +48,15 @@ void Wrapper::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>&
 
   boost::thread builder(boost::bind(&Qpx::Wrapper::worker_MCA, this, &parsedQueue, &spectra));
 
+  Spill* spill = new Spill;
+  spill->run = new RunInfo;
+  my_settings_.get_all_settings();
+  my_settings_.save_optimization();
+  spill->run->state = my_settings_.pull_settings();
+  spill->run->detectors = my_settings_.get_detectors();
+  spill->run->time_start = boost::posix_time::microsec_clock::local_time();
+  parsedQueue.enqueue(spill);
+
   if (my_settings_.start_daq(timeout, &parsedQueue))
     PL_DBG << "Started generating threads";
 
@@ -57,6 +66,16 @@ void Wrapper::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>&
 
   if (my_settings_.stop_daq())
     PL_DBG << "Stopped generating threads";
+
+
+  spill = new Spill;
+  spill->run = new RunInfo;
+  my_settings_.get_all_settings();
+  my_settings_.save_optimization();
+  spill->run->state = my_settings_.pull_settings();
+  spill->run->detectors = my_settings_.get_detectors();
+  spill->run->time_stop = boost::posix_time::microsec_clock::local_time();
+  parsedQueue.enqueue(spill);
 
   wait_ms(500);
   while (parsedQueue.size() > 0)
@@ -123,6 +142,12 @@ ListData* Wrapper::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
   if (my_settings_.start_daq(timeout, &parsedQueue))
     PL_DBG << "Started generating threads";
 
+  my_settings_.get_all_settings();
+  my_settings_.save_optimization();
+  result->run.state = my_settings_.pull_settings();
+  result->run.detectors = my_settings_.get_detectors();
+  result->run.time_start = boost::posix_time::microsec_clock::local_time();
+
   while (!interruptor.load()) {
     wait_ms(1000);
   }
@@ -130,21 +155,19 @@ ListData* Wrapper::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
   if (my_settings_.stop_daq())
     PL_DBG << "Stopped generating threads";
 
+  result->run.time_stop = boost::posix_time::microsec_clock::local_time();
+
   wait_ms(500);
 
   while (parsedQueue.size() > 0) {
     one_spill = parsedQueue.dequeue();
     for (auto &q : one_spill->hits)
       result->hits.push_back(q);
-    if (one_spill->run != nullptr) {
-      result->run = *one_spill->run;
-      delete one_spill->run;
-    }
     if (one_spill->stats != nullptr)
       delete one_spill->stats;
     delete one_spill;
   }
-        
+
   parsedQueue.stop();
   return result;
 }

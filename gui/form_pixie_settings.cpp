@@ -158,13 +158,22 @@ void FormPixieSettings::loadSettings() {
   settings_.beginGroup("Program");
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
 
-  //show read only
-  //which tab is open
+  ui->checkShowRO->setChecked(settings_.value("settings_table_show_readonly", true).toBool());
+  on_checkShowRO_clicked();
+
+  if (settings_.value("settings_tab_tree", true).toBool())
+    ui->tabsSettings->setCurrentWidget(viewTreeSettings);
+  else
+    ui->tabsSettings->setCurrentWidget(viewTableSettings);
+
   settings_.endGroup();
 }
 
 void FormPixieSettings::saveSettings() {
-
+  settings_.beginGroup("Program");
+  settings_.setValue("settings_table_show_readonly", ui->checkShowRO->isChecked());
+  settings_.setValue("settings_tab_tree", (ui->tabsSettings->currentWidget() == viewTreeSettings));
+  settings_.endGroup();
 }
 
 void FormPixieSettings::updateDetChoices() {

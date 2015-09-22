@@ -48,7 +48,7 @@ public:
   virtual bool die() {return true;}
   virtual bool execute_command(Gamma::Setting &set) {return false;}
   virtual std::map<int, std::vector<uint16_t>> oscilloscope() {return std::map<int, std::vector<uint16_t>>();}
-  virtual bool start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) {return false;}
+  virtual bool start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue, Gamma::Setting root) {return false;}
   virtual bool stop_daq() {return true;}
 
 protected:

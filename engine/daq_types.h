@@ -148,16 +148,6 @@ struct StatsUpdate {
     sfdt.resize(kNumChans, 0.0);
   }
 
-  inline void eat_stats(Gamma::Setting all_settings) {
-    for (int i=0; i < kNumChans; i++) {
-      fast_peaks[i] = all_settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/FAST_PEAKS", 28, Gamma::SettingType::floating, i)).value;
-      live_time[i]  = all_settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/LIVE_TIME", 26, Gamma::SettingType::floating, i)).value;
-      ftdt[i]       = all_settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/FTDT", 33, Gamma::SettingType::floating, i)).value;
-      sfdt[i]       = all_settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/SFDT", 34, Gamma::SettingType::floating, i)).value;
-    }
-    event_rate = all_settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/EVENT_RATE", 22, Gamma::SettingType::floating, 0)).value; //make scalable
-    total_time = all_settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/TOTAL_TIME", 23, Gamma::SettingType::floating, 0)).value; //make scalable
-  }
 
   StatsUpdate operator-(const StatsUpdate) const;
   StatsUpdate operator+(const StatsUpdate) const;
