@@ -165,7 +165,7 @@ std::vector<Trace> Settings::oscilloscope() {
         if (set.name == "Pixie-4") {
           std::map<int, std::vector<uint16_t>> trc = pixie_plugin_.oscilloscope();
           for (auto &q : trc) {
-            if ((q.first > 0) && (q.first < detectors_.size())) {
+            if ((q.first >= 0) && (q.first < detectors_.size())) {
               traces[q.first].data = q.second;
               traces[q.first].index = q.first;
               traces[q.first].detector = detectors_[q.first];

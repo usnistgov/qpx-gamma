@@ -87,7 +87,7 @@ void FormOscilloscope::saveSettings() {
 
 void FormOscilloscope::updateMenu() {
   menuDetsSelected.clear();
-  std::vector<Gamma::Detector> dets = Qpx::Wrapper::getInstance().settings().get_detectors();
+  //std::vector<Gamma::Detector> dets = Qpx::Wrapper::getInstance().settings().get_detectors();
   if (dets.size() != det_on_.size())
     det_on_.resize(dets.size());
   for (int i=0; i < dets.size(); ++i)
