@@ -148,7 +148,7 @@ void Setting::from_xml(tinyxml2::XMLElement* element) {
       if (stemData != NULL)
         branches.from_xml(stemData);
     }
-    if ((temp_str == "floating") || (temp_str == "integer")) {
+    if (writable && (temp_str == "floating") || (temp_str == "integer")) {
       if (element->Attribute("minimum"))
         minimum = boost::lexical_cast<double>(element->Attribute("minimum"));
       if (element->Attribute("maximum"))
@@ -188,9 +188,11 @@ void Setting::to_xml(tinyxml2::XMLPrinter& printer) const {
   } else if (setting_type == SettingType::integer) {
     printer.PushAttribute("type", "integer");
     printer.PushAttribute("value", std::to_string(value_int).c_str());
-    printer.PushAttribute("minimum", std::to_string(static_cast<int64_t>(minimum)).c_str());
-    printer.PushAttribute("maximum", std::to_string(static_cast<int64_t>(maximum)).c_str());
-    printer.PushAttribute("step", std::to_string(static_cast<int64_t>(step)).c_str());
+    if (writable) {
+      printer.PushAttribute("minimum", std::to_string(static_cast<int64_t>(minimum)).c_str());
+      printer.PushAttribute("maximum", std::to_string(static_cast<int64_t>(maximum)).c_str());
+      printer.PushAttribute("step", std::to_string(static_cast<int64_t>(step)).c_str());
+    }
   } else if (setting_type == SettingType::binary) {
     printer.PushAttribute("type", "binary");
     printer.PushAttribute("value", std::to_string(value_int).c_str());
@@ -208,9 +210,11 @@ void Setting::to_xml(tinyxml2::XMLPrinter& printer) const {
   } else if (setting_type == SettingType::floating) {
     printer.PushAttribute("type", "floating");
     printer.PushAttribute("value", std::to_string(value).c_str());
-    printer.PushAttribute("minimum", std::to_string(minimum).c_str());
-    printer.PushAttribute("maximum", std::to_string(maximum).c_str());
-    printer.PushAttribute("step", std::to_string(step).c_str());
+    if (writable) {
+      printer.PushAttribute("minimum", std::to_string(minimum).c_str());
+      printer.PushAttribute("maximum", std::to_string(maximum).c_str());
+      printer.PushAttribute("step", std::to_string(step).c_str());
+    }
   } else if (setting_type == SettingType::text) {
     printer.PushAttribute("type", "text");
     printer.PushAttribute("value", value_text.c_str());

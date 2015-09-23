@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0"?>
-<Setting name="QpxSettings" index="-1" indices="-1" writable="false" address="0" type="stem" status="open">
+<Setting name="QpxSettings" index="-1" indices="-1" writable="false" address="0" type="stem" status="dead">
     <branches>
         <Setting name="Detectors" index="-1" indices="-1" writable="false" address="0" type="stem" status="dead">
             <branches>
@@ -45,17 +45,17 @@
                 </Setting>
                 <Setting name="System" index="-1" indices="-1" writable="false" address="0" type="stem" status="dead">
                     <branches>
-                        <Setting name="NUMBER_MODULES" index="-1" indices="-1" writable="false" address="0" type="integer" value="1" minimum="0" maximum="56" step="1"/>
-                        <Setting name="OFFLINE_ANALYSIS" index="-1" indices="-1" writable="false" address="1" type="boolean" value="true"/>
+                        <Setting name="NUMBER_MODULES" index="-1" indices="-1" writable="false" address="0" type="integer" value="1"/>
+                        <Setting name="OFFLINE_ANALYSIS" index="-1" indices="-1" writable="false" address="1" type="boolean" value="false"/>
                         <Setting name="AUTO_PROCESSLMDATA" index="-1" indices="-1" writable="false" address="2" type="boolean" value="false"/>
                         <Setting name="MAX_NUMBER_MODULES" index="-1" indices="-1" writable="true" address="3" type="integer" value="7" minimum="0" maximum="56" step="1"/>
-                        <Setting name="C_LIBRARY_RELEASE" index="-1" indices="-1" writable="false" address="4" type="floating" value="608.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                        <Setting name="C_LIBRARY_BUILD" index="-1" indices="-1" writable="false" address="5" type="floating" value="7.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                        <Setting name="KEEP_CW" index="-1" indices="-1" writable="true" address="6" type="boolean" value="false"/>
+                        <Setting name="C_LIBRARY_RELEASE" index="-1" indices="-1" writable="false" address="4" type="floating" value="608.000000"/>
+                        <Setting name="C_LIBRARY_BUILD" index="-1" indices="-1" writable="false" address="5" type="floating" value="7.000000"/>
+                        <Setting name="KEEP_CW" index="-1" indices="-1" writable="true" address="6" type="boolean" value="true"/>
                         <Setting name="module" index="-1" indices="-1" writable="false" address="0" type="stem" status="dead">
                             <branches>
-                                <Setting name="MODULE_NUMBER" index="-1" indices="0 1 2 3" writable="false" address="0" type="integer" value="0" minimum="0" maximum="56" step="1"/>
-                                <Setting name="MODULE_CSRA" index="-1" indices="0 1 2 3" writable="true" address="1" type="binary" value="4098" word_size="16">
+                                <Setting name="MODULE_NUMBER" index="-1" indices="0 1 2 3" writable="false" address="0" type="integer" value="0"/>
+                                <Setting name="MODULE_CSRA" index="-1" indices="0 1 2 3" writable="true" address="1" type="binary" value="1538" word_size="16">
                                     <flag bit="1" description="acquire 32 buffers and write to EM, else only one at a time"/>
                                     <flag bit="2" description="backpane trigger distribution: see manual..."/>
                                     <flag bit="3" description="Pixie native MCA: bin sums to addback spectrum"/>
@@ -75,9 +75,26 @@
                                 </Setting>
                                 <Setting name="MODULE_FORMAT" index="-1" indices="0 1 2 3" writable="false" address="3" type="binary" value="0" word_size="16" description="not used"/>
                                 <Setting name="MAX_EVENTS" index="-1" indices="0 1 2 3" writable="true" address="4" type="integer" value="0" minimum="0" maximum="100" step="1"/>
-                                <Setting name="COINCIDENCE_PATTERN" index="-1" indices="0 1 2 3" writable="true" address="5" type="pattern" value="65534" word_size="16"/>
+                                <Setting name="COINCIDENCE_PATTERN" index="-1" indices="0 1 2 3" writable="true" address="5" type="binary" value="65534" word_size="16">
+                                    <flag bit="0" description="oooo"/>
+                                    <flag bit="1" description="ooo+"/>
+                                    <flag bit="2" description="oo+o"/>
+                                    <flag bit="3" description="oo++"/>
+                                    <flag bit="4" description="o+oo"/>
+                                    <flag bit="5" description="o+o+"/>
+                                    <flag bit="6" description="o++o"/>
+                                    <flag bit="7" description="o+++"/>
+                                    <flag bit="8" description="+ooo"/>
+                                    <flag bit="9" description="+oo+"/>
+                                    <flag bit="10" description="+o+o"/>
+                                    <flag bit="11" description="+o++"/>
+                                    <flag bit="12" description="++oo"/>
+                                    <flag bit="13" description="++o+"/>
+                                    <flag bit="14" description="+++o"/>
+                                    <flag bit="15" description="++++"/>
+                                </Setting>
                                 <Setting name="ACTUAL_COINCIDENCE_WAIT" index="-1" indices="0 1 2 3" writable="true" address="6" type="floating" value="53.333332" minimum="13.333333" maximum="87374663.644800" step="13.333333" unit="ns"/>
-                                <Setting name="MIN_COINCIDENCE_WAIT" index="-1" indices="0 1 2 3" writable="false" address="7" type="integer" value="0" minimum="0" maximum="100" step="1" unit="ticks"/>
+                                <Setting name="MIN_COINCIDENCE_WAIT" index="-1" indices="0 1 2 3" writable="false" address="7" type="integer" value="0" unit="ticks"/>
                                 <Setting name="SYNCH_WAIT" index="-1" indices="0 1 2 3" writable="true" address="8" type="boolean" value="true" description="wait for all modules ready before starting daq"/>
                                 <Setting name="IN_SYNCH" index="-1" indices="0 1 2 3" writable="true" address="9" type="boolean" value="false" description="modules synchronized; clear to have system reset clocks at start of daq"/>
                                 <Setting name="RUN_TYPE" index="-1" indices="0 1 2 3" writable="true" address="10" type="int_menu" value="259">
@@ -96,212 +113,369 @@
                                     <menu_item item_value="5" item_text="32 bits"/>
                                     <menu_item item_value="6" item_text="64 bits"/>
                                 </Setting>
-                                <Setting name="MODULEPATTERN" index="-1" indices="0 1 2 3" writable="true" address="12" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="NNSHAREPATTERN" index="-1" indices="0 1 2 3" writable="true" address="13" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="DBLBUFCSR" index="-1" indices="0 1 2 3" writable="true" address="14" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="MODULE_CSRC" index="-1" indices="0 1 2 3" writable="true" address="15" type="binary" value="0" word_size="1"/>
-                                <Setting name="BUFFER_HEAD_LENGTH" index="-1" indices="0 1 2 3" writable="false" address="16" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="EVENT_HEAD_LENGTH" index="-1" indices="0 1 2 3" writable="false" address="17" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="CHANNEL_HEAD_LENGTH" index="-1" indices="0 1 2 3" writable="false" address="18" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="OUTPUT_BUFFER_LENGTH" index="-1" indices="0 1 2 3" writable="false" address="19" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="NUMBER_EVENTS" index="-1" indices="0 1 2 3" writable="false" address="20" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="RUN_TIME" index="-1" indices="0 1 2 3" writable="false" address="21" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                <Setting name="EVENT_RATE" index="-1" indices="0 1 2 3" writable="false" address="22" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                <Setting name="TOTAL_TIME" index="-1" indices="0 1 2 3" writable="false" address="23" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                <Setting name="BOARD_VERSION" index="-1" indices="0 1 2 3" writable="false" address="24" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="SERIAL_NUMBER" index="-1" indices="0 1 2 3" writable="false" address="25" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="DSP_RELEASE" index="-1" indices="0 1 2 3" writable="false" address="26" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="DSP_BUILD" index="-1" indices="0 1 2 3" writable="false" address="27" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="FIPPI_ID" index="-1" indices="0 1 2 3" writable="false" address="28" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="SYSTEM_ID" index="-1" indices="0 1 2 3" writable="false" address="29" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="XET_DELAY" index="-1" indices="0 1 2 3" writable="true" address="30" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="PDM_MASKA" index="-1" indices="0 1 2 3" writable="true" address="31" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="PDM_MASKB" index="-1" indices="0 1 2 3" writable="true" address="32" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                <Setting name="PDM_MASKC" index="-1" indices="0 1 2 3" writable="true" address="33" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
+                                <Setting name="MODULEPATTERN" index="-1" indices="0 1 2 3" writable="true" address="12" type="binary" value="1" word_size="16">
+                                    <flag bit="4" description="Gate event acceptance on FRONT panel input"/>
+                                    <flag bit="5" description="Gate event acceptance on LOCAL coincidence test"/>
+                                    <flag bit="6" description="Gate event acceptance on backplane STATUS line"/>
+                                    <flag bit="7" description="Gate event acceptance on GLOBAL coincidence test"/>
+                                </Setting>
+                                <Setting name="NNSHAREPATTERN" index="-1" indices="0 1 2 3" writable="true" address="13" type="integer" value="0" minimum="0" maximum="65535" step="1" description="User-defined control word for PXI-PDM"/>
+                                <Setting name="DBLBUFCSR" index="-1" indices="0 1 2 3" writable="true" address="14" type="binary" value="1" word_size="16">
+                                    <flag bit="0" description="Enable double buffer mode"/>
+                                    <flag bit="1" description="Host has read buffer"/>
+                                    <flag bit="3" description="Host should read first block, else should read second block"/>
+                                </Setting>
+                                <Setting name="MODULE_CSRC" index="-1" indices="0 1 2 3" writable="true" address="15" type="binary" value="0" word_size="16"/>
+                                <Setting name="BUFFER_HEAD_LENGTH" index="-1" indices="0 1 2 3" writable="false" address="16" type="integer" value="0"/>
+                                <Setting name="EVENT_HEAD_LENGTH" index="-1" indices="0 1 2 3" writable="false" address="17" type="integer" value="0"/>
+                                <Setting name="CHANNEL_HEAD_LENGTH" index="-1" indices="0 1 2 3" writable="false" address="18" type="integer" value="0"/>
+                                <Setting name="OUTPUT_BUFFER_LENGTH" index="-1" indices="0 1 2 3" writable="false" address="19" type="integer" value="0"/>
+                                <Setting name="NUMBER_EVENTS" index="-1" indices="0 1 2 3" writable="false" address="20" type="integer" value="0"/>
+                                <Setting name="RUN_TIME" index="-1" indices="0 1 2 3" writable="false" address="21" type="floating" value="0.000000" unit="s"/>
+                                <Setting name="EVENT_RATE" index="-1" indices="0 1 2 3" writable="false" address="22" type="floating" value="0.000000" unit="cps"/>
+                                <Setting name="TOTAL_TIME" index="-1" indices="0 1 2 3" writable="false" address="23" type="floating" value="0.000000" unit="s"/>
+                                <Setting name="BOARD_VERSION" index="-1" indices="0 1 2 3" writable="false" address="24" type="floating" value="0.000000"/>
+                                <Setting name="SERIAL_NUMBER" index="-1" indices="0 1 2 3" writable="false" address="25" type="floating" value="0.000000"/>
+                                <Setting name="DSP_RELEASE" index="-1" indices="0 1 2 3" writable="false" address="26" type="floating" value="0.000000"/>
+                                <Setting name="DSP_BUILD" index="-1" indices="0 1 2 3" writable="false" address="27" type="floating" value="0.000000"/>
+                                <Setting name="FIPPI_ID" index="-1" indices="0 1 2 3" writable="false" address="28" type="floating" value="0.000000"/>
+                                <Setting name="SYSTEM_ID" index="-1" indices="0 1 2 3" writable="false" address="29" type="floating" value="0.000000"/>
+                                <Setting name="XET_DELAY" index="-1" indices="0 1 2 3" writable="true" address="30" type="integer" value="0" minimum="0" maximum="65535" step="1" description="delay for generated event trigger from front panel to backplane"/>
+                                <Setting name="PDM_MASKA" index="-1" indices="0 1 2 3" writable="true" address="31" type="integer" value="0" minimum="0" maximum="65535" step="1"/>
+                                <Setting name="PDM_MASKB" index="-1" indices="0 1 2 3" writable="true" address="32" type="integer" value="0" minimum="0" maximum="65535" step="1"/>
+                                <Setting name="PDM_MASKC" index="-1" indices="0 1 2 3" writable="true" address="33" type="integer" value="0" minimum="0" maximum="65535" step="1"/>
                                 <Setting name="channel" index="-1" indices="-1" writable="false" address="0" type="stem" status="dead">
                                     <branches>
-                                        <Setting name="CHANNEL_CSRA" index="0" indices="0" writable="true" address="0" type="binary" value="0" word_size="1"/>
-                                        <Setting name="CHANNEL_CSRB" index="0" indices="0" writable="true" address="1" type="binary" value="0" word_size="1"/>
-                                        <Setting name="ENERGY_RISETIME" index="0" indices="0" writable="true" address="2" type="floating" value="11.946667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="ENERGY_FLATTOP" index="0" indices="0" writable="true" address="3" type="floating" value="4.053333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRIGGER_RISETIME" index="0" indices="0" writable="true" address="4" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRIGGER_FLATTOP" index="0" indices="0" writable="true" address="5" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRIGGER_THRESHOLD" index="0" indices="0" writable="true" address="6" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="VGAIN" index="0" indices="0" writable="true" address="7" type="floating" value="1.314394" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V/V"/>
-                                        <Setting name="VOFFSET" index="0" indices="0" writable="true" address="8" type="floating" value="0.796890" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V"/>
-                                        <Setting name="TRACE_LENGTH" index="0" indices="0" writable="true" address="9" type="floating" value="4.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRACE_DELAY" index="0" indices="0" writable="true" address="10" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="PSA_START" index="0" indices="0" writable="true" address="11" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="PSA_END" index="0" indices="0" writable="true" address="12" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="EMIN" index="0" indices="0" writable="true" address="13" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="BINFACTOR" index="0" indices="0" writable="true" address="14" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="TAU" index="0" indices="0" writable="true" address="15" type="floating" value="50.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="BLCUT" index="0" indices="0" writable="true" address="16" type="floating" value="190.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="XDT" index="0" indices="0" writable="true" address="17" type="floating" value="0.053333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="BASELINE_PERCENT" index="0" indices="0" writable="true" address="18" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="CFD_THRESHOLD" index="0" indices="0" writable="true" address="19" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="INTEGRATOR" index="0" indices="0" writable="true" address="20" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="CHANNEL_CSRC" index="0" indices="0" writable="true" address="21" type="binary" value="0" word_size="1"/>
-                                        <Setting name="GATE_WINDOW" index="0" indices="0" writable="true" address="22" type="floating" value="0.013333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="GATE_DELAY" index="0" indices="0" writable="true" address="23" type="floating" value="0.013333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="COINC_DELAY" index="0" indices="0" writable="true" address="24" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="BLAVG" index="0" indices="0" writable="false" address="25" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="LIVE_TIME" index="0" indices="0" writable="false" address="26" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="INPUT_COUNT_RATE" index="0" indices="0" writable="false" address="27" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="FAST_PEAKS" index="0" indices="0" writable="false" address="28" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="OUTPUT_COUNT_RATE" index="0" indices="0" writable="false" address="29" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="NOUT" index="0" indices="0" writable="false" address="30" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="GATE_RATE" index="0" indices="0" writable="false" address="31" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="GATE_COUNTS" index="0" indices="0" writable="false" address="32" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="FTDT" index="0" indices="0" writable="false" address="33" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="SFDT" index="0" indices="0" writable="false" address="34" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="GDT" index="0" indices="0" writable="false" address="35" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="CURRENT_ICR" index="0" indices="0" writable="false" address="36" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="CURRENT_OORF" index="0" indices="0" writable="false" address="37" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="%"/>
-                                        <Setting name="PSM_GAIN_AVG" index="0" indices="0" writable="false" address="38" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="PSM_GAIN_AVG_LEN" index="0" indices="0" writable="false" address="39" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="PSM_TEMP_AVG" index="0" indices="0" writable="false" address="40" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="°C"/>
+                                        <Setting name="CHANNEL_CSRA" index="0" indices="0" writable="true" address="0" type="binary" value="0" word_size="16">
+                                            <flag bit="0" description="Respond to group triggers only"/>
+                                            <flag bit="2" description="Good channel (contribute to list mode)"/>
+                                            <flag bit="3" description="Read always (contribute to list mode even without hit)"/>
+                                            <flag bit="4" description="Enable trigger (event trigger)"/>
+                                            <flag bit="5" description="Trigger on positive slope, else on negative"/>
+                                            <flag bit="6" description="GFLT (Veto) required"/>
+                                            <flag bit="7" description="Histogram energies to on-board MCA"/>
+                                            <flag bit="9" description="Allow negative number for pulse height"/>
+                                            <flag bit="10" description="Compute constant fraction timing (PSA)"/>
+                                            <flag bit="12" description="GATE required (Pixie-4 only)"/>
+                                            <flag bit="13" description="Local trigger to latch time stamp, else distributed group trigger"/>
+                                            <flag bit="14" description="Estimate energy when not hit (with read always)"/>
+                                        </Setting>
+                                        <Setting name="CHANNEL_CSRB" index="0" indices="0" writable="true" address="1" type="binary" value="0" word_size="16">
+                                            <flag bit="0" description="Call user written DSP code"/>
+                                            <flag bit="1" description="Overwrite channel header (except Ndata, TrigTime, Energy) with URETVAL"/>
+                                        </Setting>
+                                        <Setting name="ENERGY_RISETIME" index="0" indices="0" writable="true" address="2" type="floating" value="11.946667" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="ENERGY_FLATTOP" index="0" indices="0" writable="true" address="3" type="floating" value="4.053333" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="TRIGGER_RISETIME" index="0" indices="0" writable="true" address="4" type="floating" value="0.080000" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="TRIGGER_FLATTOP" index="0" indices="0" writable="true" address="5" type="floating" value="0.080000" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="TRIGGER_THRESHOLD" index="0" indices="0" writable="true" address="6" type="integer" value="25" minimum="0" maximum="4095" step="1"/>
+                                        <Setting name="VGAIN" index="0" indices="0" writable="true" address="7" type="floating" value="1.314394" minimum="65535.000000" maximum="65535.000000" step="0.000076" unit="V/V"/>
+                                        <Setting name="VOFFSET" index="0" indices="0" writable="true" address="8" type="floating" value="0.796890" minimum="-2.500000" maximum="2.500000" step="0.000076" unit="V"/>
+                                        <Setting name="TRACE_LENGTH" index="0" indices="0" writable="true" address="9" type="floating" value="0.000000" minimum="0.000000" maximum="13.619200" step="0.013333" unit="μs"/>
+                                        <Setting name="TRACE_DELAY" index="0" indices="0" writable="true" address="10" type="floating" value="0.000000" minimum="0.000000" maximum="13.193600" step="0.013333" unit="μs"/>
+                                        <Setting name="PSA_START" index="0" indices="0" writable="true" address="11" type="floating" value="0.000000" minimum="0.000000" maximum="13.193600" step="0.013333" unit="μs"/>
+                                        <Setting name="PSA_END" index="0" indices="0" writable="true" address="12" type="floating" value="0.000000" minimum="0.000000" maximum="13.193600" step="0.013333" unit="μs"/>
+                                        <Setting name="EMIN" index="0" indices="0" writable="true" address="13" type="integer" value="0" minimum="0" maximum="65535" step="1" description="subtracted from computed energy in list mode"/>
+                                        <Setting name="BINFACTOR" index="0" indices="0" writable="true" address="14" type="integer" value="0" minimum="0" maximum="65535" step="1" description="downshift before binning (Pixie-4 MCA)"/>
+                                        <Setting name="TAU" index="0" indices="0" writable="true" address="15" type="floating" value="50.000000" minimum="0.000015" maximum="65535.000000" step="1.000000" unit="μs"/>
+                                        <Setting name="BLCUT" index="0" indices="0" writable="true" address="16" type="integer" value="190" minimum="0" maximum="32767" step="1"/>
+                                        <Setting name="XDT" index="0" indices="0" writable="true" address="17" type="floating" value="0.053333" minimum="0.053333" maximum="873.773330" step="0.013333" unit="μs"/>
+                                        <Setting name="BASELINE_PERCENT" index="0" indices="0" writable="true" address="18" type="floating" value="10.000000" minimum="0.000000" maximum="100.000000" step="1.000000"/>
+                                        <Setting name="CFD_THRESHOLD" index="0" indices="0" writable="true" address="19" type="floating" value="25.000000" minimum="0.000000" maximum="65535.000000" step="1.000000"/>
+                                        <Setting name="INTEGRATOR" index="0" indices="0" writable="true" address="20" type="int_menu" value="0">
+                                            <menu_item item_value="0" item_text="trapezoidal"/>
+                                            <menu_item item_value="1" item_text="gap sum"/>
+                                            <menu_item item_value="2" item_text="step"/>
+                                            <menu_item item_value="3" item_text="2x gap"/>
+                                            <menu_item item_value="4" item_text="4x gap"/>
+                                            <menu_item item_value="5" item_text="8x gap"/>
+                                        </Setting>
+                                        <Setting name="CHANNEL_CSRC" index="0" indices="0" writable="true" address="21" type="binary" value="0" word_size="16">
+                                            <flag bit="0" description="GFLT acceptance polarity"/>
+                                            <flag bit="1" description="GATE acceptance polarity"/>
+                                            <flag bit="2" description="Use GFLT for GATE"/>
+                                            <flag bit="3" description="Disable pileup inspection"/>
+                                            <flag bit="4" description="Disable out-of-range rejection"/>
+                                            <flag bit="5" description="Invert piuleup inspection"/>
+                                            <flag bit="6" description="Pause pileup inspection (426 ns)"/>
+                                            <flag bit="7" description="Gate edge polarity inverted"/>
+                                            <flag bit="8" description="Gate statistics (live only if GATE or VETO)"/>
+                                            <flag bit="9" description="Invert GDT for GATE or VETO presence"/>
+                                            <flag bit="10" description="No gate pulse (pattern only reports status of gate)"/>
+                                            <flag bit="11" description="4x traces - each waveform sample is avg of 4 ADC samples"/>
+                                            <flag bit="12" description="Veto out-of-range (to backplane)"/>
+                                        </Setting>
+                                        <Setting name="GATE_WINDOW" index="0" indices="0" writable="true" address="22" type="floating" value="0.013333" minimum="0.013333" maximum="3.399999" step="0.013333" unit="μs"/>
+                                        <Setting name="GATE_DELAY" index="0" indices="0" writable="true" address="23" type="floating" value="0.013333" minimum="0.013333" maximum="3.399999" step="0.013333" unit="μs"/>
+                                        <Setting name="COINC_DELAY" index="0" indices="0" writable="true" address="24" type="floating" value="0.000000" minimum="0.000000" maximum="65535.000000" step="0.013333" unit="μs"/>
+                                        <Setting name="BLAVG" index="0" indices="0" writable="false" address="25" type="floating" value="0.000000"/>
+                                        <Setting name="LIVE_TIME" index="0" indices="0" writable="false" address="26" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="INPUT_COUNT_RATE" index="0" indices="0" writable="false" address="27" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="FAST_PEAKS" index="0" indices="0" writable="false" address="28" type="floating" value="0.000000"/>
+                                        <Setting name="OUTPUT_COUNT_RATE" index="0" indices="0" writable="false" address="29" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="NOUT" index="0" indices="0" writable="false" address="30" type="floating" value="0.000000"/>
+                                        <Setting name="GATE_RATE" index="0" indices="0" writable="false" address="31" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="GATE_COUNTS" index="0" indices="0" writable="false" address="32" type="floating" value="0.000000"/>
+                                        <Setting name="FTDT" index="0" indices="0" writable="false" address="33" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="SFDT" index="0" indices="0" writable="false" address="34" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="GDT" index="0" indices="0" writable="false" address="35" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="CURRENT_ICR" index="0" indices="0" writable="false" address="36" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="CURRENT_OORF" index="0" indices="0" writable="false" address="37" type="floating" value="0.000000" unit="%"/>
+                                        <Setting name="PSM_GAIN_AVG" index="0" indices="0" writable="false" address="38" type="floating" value="0.000000"/>
+                                        <Setting name="PSM_GAIN_AVG_LEN" index="0" indices="0" writable="false" address="39" type="floating" value="0.000000"/>
+                                        <Setting name="PSM_TEMP_AVG" index="0" indices="0" writable="false" address="40" type="floating" value="0.000000" unit="°C"/>
                                         <Setting name="PSM_TEMP_AVG_LEN" index="0" indices="0" writable="true" address="41" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="PSM_GAIN_CORR" index="0" indices="0" writable="true" address="42" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                     </branches>
                                 </Setting>
                                 <Setting name="channel" index="-1" indices="-1" writable="false" address="1" type="stem" status="dead">
                                     <branches>
-                                        <Setting name="CHANNEL_CSRA" index="1" indices="1" writable="true" address="0" type="binary" value="0" word_size="1"/>
-                                        <Setting name="CHANNEL_CSRB" index="1" indices="1" writable="true" address="1" type="binary" value="0" word_size="1"/>
-                                        <Setting name="ENERGY_RISETIME" index="1" indices="1" writable="true" address="2" type="floating" value="11.946667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="ENERGY_FLATTOP" index="1" indices="1" writable="true" address="3" type="floating" value="4.053333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRIGGER_RISETIME" index="1" indices="1" writable="true" address="4" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRIGGER_FLATTOP" index="1" indices="1" writable="true" address="5" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRIGGER_THRESHOLD" index="1" indices="1" writable="true" address="6" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="VGAIN" index="1" indices="1" writable="true" address="7" type="floating" value="1.314394" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V/V"/>
-                                        <Setting name="VOFFSET" index="1" indices="1" writable="true" address="8" type="floating" value="0.759277" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V"/>
-                                        <Setting name="TRACE_LENGTH" index="1" indices="1" writable="true" address="9" type="floating" value="4.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRACE_DELAY" index="1" indices="1" writable="true" address="10" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="PSA_START" index="1" indices="1" writable="true" address="11" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="PSA_END" index="1" indices="1" writable="true" address="12" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="EMIN" index="1" indices="1" writable="true" address="13" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="BINFACTOR" index="1" indices="1" writable="true" address="14" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="TAU" index="1" indices="1" writable="true" address="15" type="floating" value="50.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="BLCUT" index="1" indices="1" writable="true" address="16" type="floating" value="97.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="XDT" index="1" indices="1" writable="true" address="17" type="floating" value="0.053333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="BASELINE_PERCENT" index="1" indices="1" writable="true" address="18" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="CFD_THRESHOLD" index="1" indices="1" writable="true" address="19" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="INTEGRATOR" index="1" indices="1" writable="true" address="20" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="CHANNEL_CSRC" index="1" indices="1" writable="true" address="21" type="binary" value="0" word_size="1"/>
-                                        <Setting name="GATE_WINDOW" index="1" indices="1" writable="true" address="22" type="floating" value="0.013333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="GATE_DELAY" index="1" indices="1" writable="true" address="23" type="floating" value="0.013333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="COINC_DELAY" index="1" indices="1" writable="true" address="24" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="BLAVG" index="1" indices="1" writable="false" address="25" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="LIVE_TIME" index="1" indices="1" writable="false" address="26" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="INPUT_COUNT_RATE" index="1" indices="1" writable="false" address="27" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="FAST_PEAKS" index="1" indices="1" writable="false" address="28" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="OUTPUT_COUNT_RATE" index="1" indices="1" writable="false" address="29" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="NOUT" index="1" indices="1" writable="false" address="30" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="GATE_RATE" index="1" indices="1" writable="false" address="31" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="GATE_COUNTS" index="1" indices="1" writable="false" address="32" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="FTDT" index="1" indices="1" writable="false" address="33" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="SFDT" index="1" indices="1" writable="false" address="34" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="GDT" index="1" indices="1" writable="false" address="35" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="CURRENT_ICR" index="1" indices="1" writable="false" address="36" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="CURRENT_OORF" index="1" indices="1" writable="false" address="37" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="%"/>
-                                        <Setting name="PSM_GAIN_AVG" index="1" indices="1" writable="false" address="38" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="PSM_GAIN_AVG_LEN" index="1" indices="1" writable="false" address="39" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="PSM_TEMP_AVG" index="1" indices="1" writable="false" address="40" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="°C"/>
+                                        <Setting name="CHANNEL_CSRA" index="1" indices="1" writable="true" address="0" type="binary" value="0" word_size="16">
+                                            <flag bit="0" description="Respond to group triggers only"/>
+                                            <flag bit="2" description="Good channel (contribute to list mode)"/>
+                                            <flag bit="3" description="Read always (contribute to list mode even without hit)"/>
+                                            <flag bit="4" description="Enable trigger (event trigger)"/>
+                                            <flag bit="5" description="Trigger on positive slope, else on negative"/>
+                                            <flag bit="6" description="GFLT (Veto) required"/>
+                                            <flag bit="7" description="Histogram energies to on-board MCA"/>
+                                            <flag bit="9" description="Allow negative number for pulse height"/>
+                                            <flag bit="10" description="Compute constant fraction timing (PSA)"/>
+                                            <flag bit="12" description="GATE required (Pixie-4 only)"/>
+                                            <flag bit="13" description="Local trigger to latch time stamp, else distributed group trigger"/>
+                                            <flag bit="14" description="Estimate energy when not hit (with read always)"/>
+                                        </Setting>
+                                        <Setting name="CHANNEL_CSRB" index="1" indices="1" writable="true" address="1" type="binary" value="0" word_size="16">
+                                            <flag bit="0" description="Call user written DSP code"/>
+                                            <flag bit="1" description="Overwrite channel header (except Ndata, TrigTime, Energy) with URETVAL"/>
+                                        </Setting>
+                                        <Setting name="ENERGY_RISETIME" index="1" indices="1" writable="true" address="2" type="floating" value="11.946667" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="ENERGY_FLATTOP" index="1" indices="1" writable="true" address="3" type="floating" value="4.053333" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="TRIGGER_RISETIME" index="1" indices="1" writable="true" address="4" type="floating" value="0.080000" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="TRIGGER_FLATTOP" index="1" indices="1" writable="true" address="5" type="floating" value="0.080000" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="TRIGGER_THRESHOLD" index="1" indices="1" writable="true" address="6" type="integer" value="25" minimum="0" maximum="4095" step="1"/>
+                                        <Setting name="VGAIN" index="1" indices="1" writable="true" address="7" type="floating" value="1.314394" minimum="65535.000000" maximum="65535.000000" step="0.000076" unit="V/V"/>
+                                        <Setting name="VOFFSET" index="1" indices="1" writable="true" address="8" type="floating" value="0.796890" minimum="-2.500000" maximum="2.500000" step="0.000076" unit="V"/>
+                                        <Setting name="TRACE_LENGTH" index="1" indices="1" writable="true" address="9" type="floating" value="0.000000" minimum="0.000000" maximum="13.619200" step="0.013333" unit="μs"/>
+                                        <Setting name="TRACE_DELAY" index="1" indices="1" writable="true" address="10" type="floating" value="0.000000" minimum="0.000000" maximum="13.193600" step="0.013333" unit="μs"/>
+                                        <Setting name="PSA_START" index="1" indices="1" writable="true" address="11" type="floating" value="0.000000" minimum="0.000000" maximum="13.193600" step="0.013333" unit="μs"/>
+                                        <Setting name="PSA_END" index="1" indices="1" writable="true" address="12" type="floating" value="0.000000" minimum="0.000000" maximum="13.193600" step="0.013333" unit="μs"/>
+                                        <Setting name="EMIN" index="1" indices="1" writable="true" address="13" type="integer" value="0" minimum="0" maximum="65535" step="1" description="subtracted from computed energy in list mode"/>
+                                        <Setting name="BINFACTOR" index="1" indices="1" writable="true" address="14" type="integer" value="0" minimum="0" maximum="65535" step="1" description="downshift before binning (Pixie-4 MCA)"/>
+                                        <Setting name="TAU" index="1" indices="1" writable="true" address="15" type="floating" value="50.000000" minimum="0.000015" maximum="65535.000000" step="1.000000" unit="μs"/>
+                                        <Setting name="BLCUT" index="1" indices="1" writable="true" address="16" type="integer" value="190" minimum="0" maximum="32767" step="1"/>
+                                        <Setting name="XDT" index="1" indices="1" writable="true" address="17" type="floating" value="0.053333" minimum="0.053333" maximum="873.773330" step="0.013333" unit="μs"/>
+                                        <Setting name="BASELINE_PERCENT" index="1" indices="1" writable="true" address="18" type="floating" value="10.000000" minimum="0.000000" maximum="100.000000" step="1.000000"/>
+                                        <Setting name="CFD_THRESHOLD" index="1" indices="1" writable="true" address="19" type="floating" value="25.000000" minimum="0.000000" maximum="65535.000000" step="1.000000"/>
+                                        <Setting name="INTEGRATOR" index="1" indices="1" writable="true" address="20" type="int_menu" value="0">
+                                            <menu_item item_value="0" item_text="trapezoidal"/>
+                                            <menu_item item_value="1" item_text="gap sum"/>
+                                            <menu_item item_value="2" item_text="step"/>
+                                            <menu_item item_value="3" item_text="2x gap"/>
+                                            <menu_item item_value="4" item_text="4x gap"/>
+                                            <menu_item item_value="5" item_text="8x gap"/>
+                                        </Setting>
+                                        <Setting name="CHANNEL_CSRC" index="1" indices="1" writable="true" address="21" type="binary" value="0" word_size="16">
+                                            <flag bit="0" description="GFLT acceptance polarity"/>
+                                            <flag bit="1" description="GATE acceptance polarity"/>
+                                            <flag bit="2" description="Use GFLT for GATE"/>
+                                            <flag bit="3" description="Disable pileup inspection"/>
+                                            <flag bit="4" description="Disable out-of-range rejection"/>
+                                            <flag bit="5" description="Invert piuleup inspection"/>
+                                            <flag bit="6" description="Pause pileup inspection (426 ns)"/>
+                                            <flag bit="7" description="Gate edge polarity inverted"/>
+                                            <flag bit="8" description="Gate statistics (live only if GATE or VETO)"/>
+                                            <flag bit="9" description="Invert GDT for GATE or VETO presence"/>
+                                            <flag bit="10" description="No gate pulse (pattern only reports status of gate)"/>
+                                            <flag bit="11" description="4x traces - each waveform sample is avg of 4 ADC samples"/>
+                                            <flag bit="12" description="Veto out-of-range (to backplane)"/>
+                                        </Setting>
+                                        <Setting name="GATE_WINDOW" index="1" indices="1" writable="true" address="22" type="floating" value="0.013333" minimum="0.013333" maximum="3.399999" step="0.013333" unit="μs"/>
+                                        <Setting name="GATE_DELAY" index="1" indices="1" writable="true" address="23" type="floating" value="0.013333" minimum="0.013333" maximum="3.399999" step="0.013333" unit="μs"/>
+                                        <Setting name="COINC_DELAY" index="1" indices="1" writable="true" address="24" type="floating" value="0.000000" minimum="0.000000" maximum="65535.000000" step="0.013333" unit="μs"/>
+                                        <Setting name="BLAVG" index="1" indices="1" writable="false" address="25" type="floating" value="0.000000"/>
+                                        <Setting name="LIVE_TIME" index="1" indices="1" writable="false" address="26" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="INPUT_COUNT_RATE" index="1" indices="1" writable="false" address="27" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="FAST_PEAKS" index="1" indices="1" writable="false" address="28" type="floating" value="0.000000"/>
+                                        <Setting name="OUTPUT_COUNT_RATE" index="1" indices="1" writable="false" address="29" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="NOUT" index="1" indices="1" writable="false" address="30" type="floating" value="0.000000"/>
+                                        <Setting name="GATE_RATE" index="1" indices="1" writable="false" address="31" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="GATE_COUNTS" index="1" indices="1" writable="false" address="32" type="floating" value="0.000000"/>
+                                        <Setting name="FTDT" index="1" indices="1" writable="false" address="33" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="SFDT" index="1" indices="1" writable="false" address="34" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="GDT" index="1" indices="1" writable="false" address="35" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="CURRENT_ICR" index="1" indices="1" writable="false" address="36" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="CURRENT_OORF" index="1" indices="1" writable="false" address="37" type="floating" value="0.000000" unit="%"/>
+                                        <Setting name="PSM_GAIN_AVG" index="1" indices="1" writable="false" address="38" type="floating" value="0.000000"/>
+                                        <Setting name="PSM_GAIN_AVG_LEN" index="1" indices="1" writable="false" address="39" type="floating" value="0.000000"/>
+                                        <Setting name="PSM_TEMP_AVG" index="1" indices="1" writable="false" address="40" type="floating" value="0.000000" unit="°C"/>
                                         <Setting name="PSM_TEMP_AVG_LEN" index="1" indices="1" writable="true" address="41" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="PSM_GAIN_CORR" index="1" indices="1" writable="true" address="42" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                     </branches>
                                 </Setting>
                                 <Setting name="channel" index="-1" indices="-1" writable="false" address="2" type="stem" status="dead">
                                     <branches>
-                                        <Setting name="CHANNEL_CSRA" index="2" indices="2" writable="true" address="0" type="binary" value="0" word_size="1"/>
-                                        <Setting name="CHANNEL_CSRB" index="2" indices="2" writable="true" address="1" type="binary" value="0" word_size="1"/>
-                                        <Setting name="ENERGY_RISETIME" index="2" indices="2" writable="true" address="2" type="floating" value="11.946667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="ENERGY_FLATTOP" index="2" indices="2" writable="true" address="3" type="floating" value="2.346667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRIGGER_RISETIME" index="2" indices="2" writable="true" address="4" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRIGGER_FLATTOP" index="2" indices="2" writable="true" address="5" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRIGGER_THRESHOLD" index="2" indices="2" writable="true" address="6" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="VGAIN" index="2" indices="2" writable="true" address="7" type="floating" value="1.314394" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V/V"/>
-                                        <Setting name="VOFFSET" index="2" indices="2" writable="true" address="8" type="floating" value="0.759277" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V"/>
-                                        <Setting name="TRACE_LENGTH" index="2" indices="2" writable="true" address="9" type="floating" value="4.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRACE_DELAY" index="2" indices="2" writable="true" address="10" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="PSA_START" index="2" indices="2" writable="true" address="11" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="PSA_END" index="2" indices="2" writable="true" address="12" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="EMIN" index="2" indices="2" writable="true" address="13" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="BINFACTOR" index="2" indices="2" writable="true" address="14" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="TAU" index="2" indices="2" writable="true" address="15" type="floating" value="50.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="BLCUT" index="2" indices="2" writable="true" address="16" type="floating" value="97.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="XDT" index="2" indices="2" writable="true" address="17" type="floating" value="0.053333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="BASELINE_PERCENT" index="2" indices="2" writable="true" address="18" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="CFD_THRESHOLD" index="2" indices="2" writable="true" address="19" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="INTEGRATOR" index="2" indices="2" writable="true" address="20" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="CHANNEL_CSRC" index="2" indices="2" writable="true" address="21" type="binary" value="0" word_size="1"/>
-                                        <Setting name="GATE_WINDOW" index="2" indices="2" writable="true" address="22" type="floating" value="0.013333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="GATE_DELAY" index="2" indices="2" writable="true" address="23" type="floating" value="0.013333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="COINC_DELAY" index="2" indices="2" writable="true" address="24" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="BLAVG" index="2" indices="2" writable="false" address="25" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="LIVE_TIME" index="2" indices="2" writable="false" address="26" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="INPUT_COUNT_RATE" index="2" indices="2" writable="false" address="27" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="FAST_PEAKS" index="2" indices="2" writable="false" address="28" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="OUTPUT_COUNT_RATE" index="2" indices="2" writable="false" address="29" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="NOUT" index="2" indices="2" writable="false" address="30" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="GATE_RATE" index="2" indices="2" writable="false" address="31" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="GATE_COUNTS" index="2" indices="2" writable="false" address="32" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="FTDT" index="2" indices="2" writable="false" address="33" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="SFDT" index="2" indices="2" writable="false" address="34" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="GDT" index="2" indices="2" writable="false" address="35" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="CURRENT_ICR" index="2" indices="2" writable="false" address="36" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="CURRENT_OORF" index="2" indices="2" writable="false" address="37" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="%"/>
-                                        <Setting name="PSM_GAIN_AVG" index="2" indices="2" writable="false" address="38" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="PSM_GAIN_AVG_LEN" index="2" indices="2" writable="false" address="39" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="PSM_TEMP_AVG" index="2" indices="2" writable="false" address="40" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="°C"/>
+                                        <Setting name="CHANNEL_CSRA" index="2" indices="2" writable="true" address="0" type="binary" value="0" word_size="16">
+                                            <flag bit="0" description="Respond to group triggers only"/>
+                                            <flag bit="2" description="Good channel (contribute to list mode)"/>
+                                            <flag bit="3" description="Read always (contribute to list mode even without hit)"/>
+                                            <flag bit="4" description="Enable trigger (event trigger)"/>
+                                            <flag bit="5" description="Trigger on positive slope, else on negative"/>
+                                            <flag bit="6" description="GFLT (Veto) required"/>
+                                            <flag bit="7" description="Histogram energies to on-board MCA"/>
+                                            <flag bit="9" description="Allow negative number for pulse height"/>
+                                            <flag bit="10" description="Compute constant fraction timing (PSA)"/>
+                                            <flag bit="12" description="GATE required (Pixie-4 only)"/>
+                                            <flag bit="13" description="Local trigger to latch time stamp, else distributed group trigger"/>
+                                            <flag bit="14" description="Estimate energy when not hit (with read always)"/>
+                                        </Setting>
+                                        <Setting name="CHANNEL_CSRB" index="2" indices="2" writable="true" address="1" type="binary" value="0" word_size="16">
+                                            <flag bit="0" description="Call user written DSP code"/>
+                                            <flag bit="1" description="Overwrite channel header (except Ndata, TrigTime, Energy) with URETVAL"/>
+                                        </Setting>
+                                        <Setting name="ENERGY_RISETIME" index="2" indices="2" writable="true" address="2" type="floating" value="11.946667" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="ENERGY_FLATTOP" index="2" indices="2" writable="true" address="3" type="floating" value="4.053333" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="TRIGGER_RISETIME" index="2" indices="2" writable="true" address="4" type="floating" value="0.080000" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="TRIGGER_FLATTOP" index="2" indices="2" writable="true" address="5" type="floating" value="0.080000" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="TRIGGER_THRESHOLD" index="2" indices="2" writable="true" address="6" type="integer" value="25" minimum="0" maximum="4095" step="1"/>
+                                        <Setting name="VGAIN" index="2" indices="2" writable="true" address="7" type="floating" value="1.314394" minimum="65535.000000" maximum="65535.000000" step="0.000076" unit="V/V"/>
+                                        <Setting name="VOFFSET" index="2" indices="2" writable="true" address="8" type="floating" value="0.796890" minimum="-2.500000" maximum="2.500000" step="0.000076" unit="V"/>
+                                        <Setting name="TRACE_LENGTH" index="2" indices="2" writable="true" address="9" type="floating" value="0.000000" minimum="0.000000" maximum="13.619200" step="0.013333" unit="μs"/>
+                                        <Setting name="TRACE_DELAY" index="2" indices="2" writable="true" address="10" type="floating" value="0.000000" minimum="0.000000" maximum="13.193600" step="0.013333" unit="μs"/>
+                                        <Setting name="PSA_START" index="2" indices="2" writable="true" address="11" type="floating" value="0.000000" minimum="0.000000" maximum="13.193600" step="0.013333" unit="μs"/>
+                                        <Setting name="PSA_END" index="2" indices="2" writable="true" address="12" type="floating" value="0.000000" minimum="0.000000" maximum="13.193600" step="0.013333" unit="μs"/>
+                                        <Setting name="EMIN" index="2" indices="2" writable="true" address="13" type="integer" value="0" minimum="0" maximum="65535" step="1" description="subtracted from computed energy in list mode"/>
+                                        <Setting name="BINFACTOR" index="2" indices="2" writable="true" address="14" type="integer" value="0" minimum="0" maximum="65535" step="1" description="downshift before binning (Pixie-4 MCA)"/>
+                                        <Setting name="TAU" index="2" indices="2" writable="true" address="15" type="floating" value="50.000000" minimum="0.000015" maximum="65535.000000" step="1.000000" unit="μs"/>
+                                        <Setting name="BLCUT" index="2" indices="2" writable="true" address="16" type="integer" value="190" minimum="0" maximum="32767" step="1"/>
+                                        <Setting name="XDT" index="2" indices="2" writable="true" address="17" type="floating" value="0.053333" minimum="0.053333" maximum="873.773330" step="0.013333" unit="μs"/>
+                                        <Setting name="BASELINE_PERCENT" index="2" indices="2" writable="true" address="18" type="floating" value="10.000000" minimum="0.000000" maximum="100.000000" step="1.000000"/>
+                                        <Setting name="CFD_THRESHOLD" index="2" indices="2" writable="true" address="19" type="floating" value="25.000000" minimum="0.000000" maximum="65535.000000" step="1.000000"/>
+                                        <Setting name="INTEGRATOR" index="2" indices="2" writable="true" address="20" type="int_menu" value="0">
+                                            <menu_item item_value="0" item_text="trapezoidal"/>
+                                            <menu_item item_value="1" item_text="gap sum"/>
+                                            <menu_item item_value="2" item_text="step"/>
+                                            <menu_item item_value="3" item_text="2x gap"/>
+                                            <menu_item item_value="4" item_text="4x gap"/>
+                                            <menu_item item_value="5" item_text="8x gap"/>
+                                        </Setting>
+                                        <Setting name="CHANNEL_CSRC" index="2" indices="2" writable="true" address="21" type="binary" value="0" word_size="16">
+                                            <flag bit="0" description="GFLT acceptance polarity"/>
+                                            <flag bit="1" description="GATE acceptance polarity"/>
+                                            <flag bit="2" description="Use GFLT for GATE"/>
+                                            <flag bit="3" description="Disable pileup inspection"/>
+                                            <flag bit="4" description="Disable out-of-range rejection"/>
+                                            <flag bit="5" description="Invert piuleup inspection"/>
+                                            <flag bit="6" description="Pause pileup inspection (426 ns)"/>
+                                            <flag bit="7" description="Gate edge polarity inverted"/>
+                                            <flag bit="8" description="Gate statistics (live only if GATE or VETO)"/>
+                                            <flag bit="9" description="Invert GDT for GATE or VETO presence"/>
+                                            <flag bit="10" description="No gate pulse (pattern only reports status of gate)"/>
+                                            <flag bit="11" description="4x traces - each waveform sample is avg of 4 ADC samples"/>
+                                            <flag bit="12" description="Veto out-of-range (to backplane)"/>
+                                        </Setting>
+                                        <Setting name="GATE_WINDOW" index="2" indices="2" writable="true" address="22" type="floating" value="0.013333" minimum="0.013333" maximum="3.399999" step="0.013333" unit="μs"/>
+                                        <Setting name="GATE_DELAY" index="2" indices="2" writable="true" address="23" type="floating" value="0.013333" minimum="0.013333" maximum="3.399999" step="0.013333" unit="μs"/>
+                                        <Setting name="COINC_DELAY" index="2" indices="2" writable="true" address="24" type="floating" value="0.000000" minimum="0.000000" maximum="65535.000000" step="0.013333" unit="μs"/>
+                                        <Setting name="BLAVG" index="2" indices="2" writable="false" address="25" type="floating" value="0.000000"/>
+                                        <Setting name="LIVE_TIME" index="2" indices="2" writable="false" address="26" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="INPUT_COUNT_RATE" index="2" indices="2" writable="false" address="27" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="FAST_PEAKS" index="2" indices="2" writable="false" address="28" type="floating" value="0.000000"/>
+                                        <Setting name="OUTPUT_COUNT_RATE" index="2" indices="2" writable="false" address="29" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="NOUT" index="2" indices="2" writable="false" address="30" type="floating" value="0.000000"/>
+                                        <Setting name="GATE_RATE" index="2" indices="2" writable="false" address="31" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="GATE_COUNTS" index="2" indices="2" writable="false" address="32" type="floating" value="0.000000"/>
+                                        <Setting name="FTDT" index="2" indices="2" writable="false" address="33" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="SFDT" index="2" indices="2" writable="false" address="34" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="GDT" index="2" indices="2" writable="false" address="35" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="CURRENT_ICR" index="2" indices="2" writable="false" address="36" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="CURRENT_OORF" index="2" indices="2" writable="false" address="37" type="floating" value="0.000000" unit="%"/>
+                                        <Setting name="PSM_GAIN_AVG" index="2" indices="2" writable="false" address="38" type="floating" value="0.000000"/>
+                                        <Setting name="PSM_GAIN_AVG_LEN" index="2" indices="2" writable="false" address="39" type="floating" value="0.000000"/>
+                                        <Setting name="PSM_TEMP_AVG" index="2" indices="2" writable="false" address="40" type="floating" value="0.000000" unit="°C"/>
                                         <Setting name="PSM_TEMP_AVG_LEN" index="2" indices="2" writable="true" address="41" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="PSM_GAIN_CORR" index="2" indices="2" writable="true" address="42" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                     </branches>
                                 </Setting>
                                 <Setting name="channel" index="-1" indices="-1" writable="false" address="3" type="stem" status="dead">
                                     <branches>
-                                        <Setting name="CHANNEL_CSRA" index="3" indices="3" writable="true" address="0" type="binary" value="0" word_size="1"/>
-                                        <Setting name="CHANNEL_CSRB" index="3" indices="3" writable="true" address="1" type="binary" value="0" word_size="1"/>
-                                        <Setting name="ENERGY_RISETIME" index="3" indices="3" writable="true" address="2" type="floating" value="11.946667" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="ENERGY_FLATTOP" index="3" indices="3" writable="true" address="3" type="floating" value="4.053333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRIGGER_RISETIME" index="3" indices="3" writable="true" address="4" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRIGGER_FLATTOP" index="3" indices="3" writable="true" address="5" type="floating" value="0.080000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRIGGER_THRESHOLD" index="3" indices="3" writable="true" address="6" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="VGAIN" index="3" indices="3" writable="true" address="7" type="floating" value="1.314394" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V/V"/>
-                                        <Setting name="VOFFSET" index="3" indices="3" writable="true" address="8" type="floating" value="0.576706" minimum="0.000000" maximum="1.000000" step="1.000000" unit="V"/>
-                                        <Setting name="TRACE_LENGTH" index="3" indices="3" writable="true" address="9" type="floating" value="4.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="TRACE_DELAY" index="3" indices="3" writable="true" address="10" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="PSA_START" index="3" indices="3" writable="true" address="11" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="PSA_END" index="3" indices="3" writable="true" address="12" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="EMIN" index="3" indices="3" writable="true" address="13" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="BINFACTOR" index="3" indices="3" writable="true" address="14" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="TAU" index="3" indices="3" writable="true" address="15" type="floating" value="50.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="BLCUT" index="3" indices="3" writable="true" address="16" type="floating" value="15.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="XDT" index="3" indices="3" writable="true" address="17" type="floating" value="0.053333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="BASELINE_PERCENT" index="3" indices="3" writable="true" address="18" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="CFD_THRESHOLD" index="3" indices="3" writable="true" address="19" type="floating" value="25.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="INTEGRATOR" index="3" indices="3" writable="true" address="20" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="CHANNEL_CSRC" index="3" indices="3" writable="true" address="21" type="binary" value="0" word_size="1"/>
-                                        <Setting name="GATE_WINDOW" index="3" indices="3" writable="true" address="22" type="floating" value="0.013333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="GATE_DELAY" index="3" indices="3" writable="true" address="23" type="floating" value="0.013333" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="COINC_DELAY" index="3" indices="3" writable="true" address="24" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="μs"/>
-                                        <Setting name="BLAVG" index="3" indices="3" writable="false" address="25" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="LIVE_TIME" index="3" indices="3" writable="false" address="26" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="INPUT_COUNT_RATE" index="3" indices="3" writable="false" address="27" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="FAST_PEAKS" index="3" indices="3" writable="false" address="28" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="OUTPUT_COUNT_RATE" index="3" indices="3" writable="false" address="29" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="NOUT" index="3" indices="3" writable="false" address="30" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="GATE_RATE" index="3" indices="3" writable="false" address="31" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="GATE_COUNTS" index="3" indices="3" writable="false" address="32" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="FTDT" index="3" indices="3" writable="false" address="33" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="SFDT" index="3" indices="3" writable="false" address="34" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="GDT" index="3" indices="3" writable="false" address="35" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="s"/>
-                                        <Setting name="CURRENT_ICR" index="3" indices="3" writable="false" address="36" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="cps"/>
-                                        <Setting name="CURRENT_OORF" index="3" indices="3" writable="false" address="37" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="%"/>
-                                        <Setting name="PSM_GAIN_AVG" index="3" indices="3" writable="false" address="38" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="PSM_GAIN_AVG_LEN" index="3" indices="3" writable="false" address="39" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
-                                        <Setting name="PSM_TEMP_AVG" index="3" indices="3" writable="false" address="40" type="floating" value="0.000000" minimum="0.000000" maximum="1.000000" step="1.000000" unit="°C"/>
+                                        <Setting name="CHANNEL_CSRA" index="3" indices="3" writable="true" address="0" type="binary" value="0" word_size="16">
+                                            <flag bit="0" description="Respond to group triggers only"/>
+                                            <flag bit="2" description="Good channel (contribute to list mode)"/>
+                                            <flag bit="3" description="Read always (contribute to list mode even without hit)"/>
+                                            <flag bit="4" description="Enable trigger (event trigger)"/>
+                                            <flag bit="5" description="Trigger on positive slope, else on negative"/>
+                                            <flag bit="6" description="GFLT (Veto) required"/>
+                                            <flag bit="7" description="Histogram energies to on-board MCA"/>
+                                            <flag bit="9" description="Allow negative number for pulse height"/>
+                                            <flag bit="10" description="Compute constant fraction timing (PSA)"/>
+                                            <flag bit="12" description="GATE required (Pixie-4 only)"/>
+                                            <flag bit="13" description="Local trigger to latch time stamp, else distributed group trigger"/>
+                                            <flag bit="14" description="Estimate energy when not hit (with read always)"/>
+                                        </Setting>
+                                        <Setting name="CHANNEL_CSRB" index="3" indices="3" writable="true" address="1" type="binary" value="0" word_size="16">
+                                            <flag bit="0" description="Call user written DSP code"/>
+                                            <flag bit="1" description="Overwrite channel header (except Ndata, TrigTime, Energy) with URETVAL"/>
+                                        </Setting>
+                                        <Setting name="ENERGY_RISETIME" index="3" indices="3" writable="true" address="2" type="floating" value="11.946667" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="ENERGY_FLATTOP" index="3" indices="3" writable="true" address="3" type="floating" value="4.053333" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="TRIGGER_RISETIME" index="3" indices="3" writable="true" address="4" type="floating" value="0.080000" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="TRIGGER_FLATTOP" index="3" indices="3" writable="true" address="5" type="floating" value="0.080000" minimum="0.000000" maximum="500.000000" step="0.050000" unit="μs"/>
+                                        <Setting name="TRIGGER_THRESHOLD" index="3" indices="3" writable="true" address="6" type="integer" value="25" minimum="0" maximum="4095" step="1"/>
+                                        <Setting name="VGAIN" index="3" indices="3" writable="true" address="7" type="floating" value="1.314394" minimum="65535.000000" maximum="65535.000000" step="0.000076" unit="V/V"/>
+                                        <Setting name="VOFFSET" index="3" indices="3" writable="true" address="8" type="floating" value="0.796890" minimum="-2.500000" maximum="2.500000" step="0.000076" unit="V"/>
+                                        <Setting name="TRACE_LENGTH" index="3" indices="3" writable="true" address="9" type="floating" value="0.000000" minimum="0.000000" maximum="13.619200" step="0.013333" unit="μs"/>
+                                        <Setting name="TRACE_DELAY" index="3" indices="3" writable="true" address="10" type="floating" value="0.000000" minimum="0.000000" maximum="13.193600" step="0.013333" unit="μs"/>
+                                        <Setting name="PSA_START" index="3" indices="3" writable="true" address="11" type="floating" value="0.000000" minimum="0.000000" maximum="13.193600" step="0.013333" unit="μs"/>
+                                        <Setting name="PSA_END" index="3" indices="3" writable="true" address="12" type="floating" value="0.000000" minimum="0.000000" maximum="13.193600" step="0.013333" unit="μs"/>
+                                        <Setting name="EMIN" index="3" indices="3" writable="true" address="13" type="integer" value="0" minimum="0" maximum="65535" step="1" description="subtracted from computed energy in list mode"/>
+                                        <Setting name="BINFACTOR" index="3" indices="3" writable="true" address="14" type="integer" value="0" minimum="0" maximum="65535" step="1" description="downshift before binning (Pixie-4 MCA)"/>
+                                        <Setting name="TAU" index="3" indices="3" writable="true" address="15" type="floating" value="50.000000" minimum="0.000015" maximum="65535.000000" step="1.000000" unit="μs"/>
+                                        <Setting name="BLCUT" index="3" indices="3" writable="true" address="16" type="integer" value="190" minimum="0" maximum="32767" step="1"/>
+                                        <Setting name="XDT" index="3" indices="3" writable="true" address="17" type="floating" value="0.053333" minimum="0.053333" maximum="873.773330" step="0.013333" unit="μs"/>
+                                        <Setting name="BASELINE_PERCENT" index="3" indices="3" writable="true" address="18" type="floating" value="10.000000" minimum="0.000000" maximum="100.000000" step="1.000000"/>
+                                        <Setting name="CFD_THRESHOLD" index="3" indices="3" writable="true" address="19" type="floating" value="25.000000" minimum="0.000000" maximum="65535.000000" step="1.000000"/>
+                                        <Setting name="INTEGRATOR" index="3" indices="3" writable="true" address="20" type="int_menu" value="0">
+                                            <menu_item item_value="0" item_text="trapezoidal"/>
+                                            <menu_item item_value="1" item_text="gap sum"/>
+                                            <menu_item item_value="2" item_text="step"/>
+                                            <menu_item item_value="3" item_text="2x gap"/>
+                                            <menu_item item_value="4" item_text="4x gap"/>
+                                            <menu_item item_value="5" item_text="8x gap"/>
+                                        </Setting>
+                                        <Setting name="CHANNEL_CSRC" index="3" indices="3" writable="true" address="21" type="binary" value="0" word_size="16">
+                                            <flag bit="0" description="GFLT acceptance polarity"/>
+                                            <flag bit="1" description="GATE acceptance polarity"/>
+                                            <flag bit="2" description="Use GFLT for GATE"/>
+                                            <flag bit="3" description="Disable pileup inspection"/>
+                                            <flag bit="4" description="Disable out-of-range rejection"/>
+                                            <flag bit="5" description="Invert piuleup inspection"/>
+                                            <flag bit="6" description="Pause pileup inspection (426 ns)"/>
+                                            <flag bit="7" description="Gate edge polarity inverted"/>
+                                            <flag bit="8" description="Gate statistics (live only if GATE or VETO)"/>
+                                            <flag bit="9" description="Invert GDT for GATE or VETO presence"/>
+                                            <flag bit="10" description="No gate pulse (pattern only reports status of gate)"/>
+                                            <flag bit="11" description="4x traces - each waveform sample is avg of 4 ADC samples"/>
+                                            <flag bit="12" description="Veto out-of-range (to backplane)"/>
+                                        </Setting>
+                                        <Setting name="GATE_WINDOW" index="3" indices="3" writable="true" address="22" type="floating" value="0.013333" minimum="0.013333" maximum="3.399999" step="0.013333" unit="μs"/>
+                                        <Setting name="GATE_DELAY" index="3" indices="3" writable="true" address="23" type="floating" value="0.013333" minimum="0.013333" maximum="3.399999" step="0.013333" unit="μs"/>
+                                        <Setting name="COINC_DELAY" index="3" indices="3" writable="true" address="24" type="floating" value="0.000000" minimum="0.000000" maximum="65535.000000" step="0.013333" unit="μs"/>
+                                        <Setting name="BLAVG" index="3" indices="3" writable="false" address="25" type="floating" value="0.000000"/>
+                                        <Setting name="LIVE_TIME" index="3" indices="3" writable="false" address="26" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="INPUT_COUNT_RATE" index="3" indices="3" writable="false" address="27" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="FAST_PEAKS" index="3" indices="3" writable="false" address="28" type="floating" value="0.000000"/>
+                                        <Setting name="OUTPUT_COUNT_RATE" index="3" indices="3" writable="false" address="29" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="NOUT" index="3" indices="3" writable="false" address="30" type="floating" value="0.000000"/>
+                                        <Setting name="GATE_RATE" index="3" indices="3" writable="false" address="31" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="GATE_COUNTS" index="3" indices="3" writable="false" address="32" type="floating" value="0.000000"/>
+                                        <Setting name="FTDT" index="3" indices="3" writable="false" address="33" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="SFDT" index="3" indices="3" writable="false" address="34" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="GDT" index="3" indices="3" writable="false" address="35" type="floating" value="0.000000" unit="s"/>
+                                        <Setting name="CURRENT_ICR" index="3" indices="3" writable="false" address="36" type="floating" value="0.000000" unit="cps"/>
+                                        <Setting name="CURRENT_OORF" index="3" indices="3" writable="false" address="37" type="floating" value="0.000000" unit="%"/>
+                                        <Setting name="PSM_GAIN_AVG" index="3" indices="3" writable="false" address="38" type="floating" value="0.000000"/>
+                                        <Setting name="PSM_GAIN_AVG_LEN" index="3" indices="3" writable="false" address="39" type="floating" value="0.000000"/>
+                                        <Setting name="PSM_TEMP_AVG" index="3" indices="3" writable="false" address="40" type="floating" value="0.000000" unit="°C"/>
                                         <Setting name="PSM_TEMP_AVG_LEN" index="3" indices="3" writable="true" address="41" type="floating" value="1.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                         <Setting name="PSM_GAIN_CORR" index="3" indices="3" writable="true" address="42" type="floating" value="10.000000" minimum="0.000000" maximum="1.000000" step="1.000000"/>
                                     </branches>
