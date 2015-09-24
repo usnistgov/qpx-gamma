@@ -109,8 +109,12 @@ QVariant TreeItem::display_data(int column) const
       return hex;
     } else if (itemData.setting_type == Gamma::SettingType::floating)
       return QVariant::fromValue(itemData.value);
-    else if (itemData.setting_type == Gamma::SettingType::int_menu)
-      return QString::fromStdString(itemData.int_menu_items.at(itemData.value_int));
+    else if (itemData.setting_type == Gamma::SettingType::int_menu) {
+      if (itemData.int_menu_items.count(itemData.value_int) > 0)
+        return QString::fromStdString(itemData.int_menu_items.at(itemData.value_int));
+      else
+        return QVariant();
+    }
     else if (itemData.setting_type == Gamma::SettingType::boolean)
       if (itemData.value_int)
         return "T";
@@ -228,10 +232,9 @@ bool TreeItem::setData(int column, const QVariant &value)
     return false;
 
 
-  if ((itemData.setting_type == Gamma::SettingType::integer)
-      && (value.type() == QVariant::Int))
-    itemData.value_int = value.toInt();
-  else if ((itemData.setting_type == Gamma::SettingType::binary)
+  if (((itemData.setting_type == Gamma::SettingType::integer) ||
+       (itemData.setting_type == Gamma::SettingType::binary) ||
+       (itemData.setting_type == Gamma::SettingType::int_menu))
       && (value.canConvert(QMetaType::LongLong)))
     itemData.value_int = value.toLongLong();
   else if ((itemData.setting_type == Gamma::SettingType::boolean)
@@ -246,9 +249,6 @@ bool TreeItem::setData(int column, const QVariant &value)
   else if ((itemData.setting_type == Gamma::SettingType::file_path)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
-  else if ((itemData.setting_type == Gamma::SettingType::int_menu)
-      && (value.type() == QVariant::Int))
-    itemData.value_int = value.toInt();
   else if (itemData.setting_type == Gamma::SettingType::command)
     itemData.value = 1; //flag it for execution
   else if ((itemData.setting_type == Gamma::SettingType::detector)

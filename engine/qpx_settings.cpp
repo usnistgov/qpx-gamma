@@ -363,9 +363,9 @@ void Settings::get_all_settings() {
   read_settings_bulk();
 }
 
-void Settings::get_stats(std::string address, int module) {
+void Settings::get_stats(std::string address) {
   if (address == "QpxSettings/Pixie-4")
-    pixie_plugin_.get_stats(module);
+    pixie_plugin_.get_stats();
   read_settings_bulk();
 }
 

@@ -99,8 +99,10 @@ bool Plugin::start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue,
     delete runner_;
   }
 
-  set_mod("RUN_TYPE",    static_cast<double>(run_type_), Module(0));
-  set_mod("MAX_EVENTS",  static_cast<double>(0), Module(0));
+  for (int i=0; i < channel_indices_.size(); ++i) {
+    set_mod("RUN_TYPE",    static_cast<double>(run_type_), Module(i));
+    set_mod("MAX_EVENTS",  static_cast<double>(0), Module(i));
+  }
 
   raw_queue_ = new SynchronizedQueue<Spill*>();
 
@@ -163,11 +165,9 @@ void Plugin::fill_stats(StatsUpdate &stats, Gamma::Setting tree) {
 }
 
 
-void Plugin::get_stats(int module) {
-  if (module > -1)
-    read_mod("MODULE_RUN_STATISTICS", module);
-  //for (int i=0; i<NUMBER_OF_CHANNELS; ++i)
-  //  read_chan("CHANNEL_RUN_STATISTICS", module, i);
+void Plugin::get_stats() {
+  get_mod_stats(Module::all);
+  get_chan_stats(Channel::all, Module::all);
 }
 
 bool Plugin::read_settings_bulk(Gamma::Setting &set) const {
@@ -191,9 +191,13 @@ bool Plugin::read_settings_bulk(Gamma::Setting &set) const {
         for (auto &k : q.branches.my_data_) {
           if (k.setting_type == Gamma::SettingType::stem) {
             uint16_t modnum = k.address;
+            if (modnum < 0)
+              continue;
             for (auto &p : k.branches.my_data_) {
               if (p.setting_type == Gamma::SettingType::stem) {
                 uint16_t channum = p.address;
+                if (channum < 0)
+                  continue;
                 for (auto &o : p.branches.my_data_) {
                   if (o.setting_type == Gamma::SettingType::floating)
                     o.value = channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
@@ -232,6 +236,10 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
     return false;
 
   if (set.name == "Pixie-4") {
+
+    read_sys("NUMBER_MODULES");
+    int expected_modules = system_parameter_values_[0];
+    
     for (auto &q : set.branches.my_data_) {
       if ((q.setting_type == Gamma::SettingType::stem) && (q.name == "Files")) {
         for (auto &k : q.branches.my_data_) {
@@ -248,13 +256,16 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
             run_poll_interval_ms_ = k.value_int;
         }
       } else if ((q.setting_type == Gamma::SettingType::stem) && (q.name == "System")) {
+        int prev_total_modules = 0;
+        int new_total_modules = 0;
+        Gamma::Setting model_module;
+        std::set<int> used_chan_indices;
         bool hardware_changed = false;
         Gamma::Setting maxmods  = q.branches.get(Gamma::Setting("MAX_NUMBER_MODULES", 3, Gamma::SettingType::integer, -1));
         if (maxmods.value_int > N_SYSTEM_PAR - 7)
           maxmods.value_int = N_SYSTEM_PAR - 7;
         uint16_t oldmax = system_parameter_values_[3];
         if (oldmax != maxmods.value_int) {
-          PL_DBG << "max num of modules changed";
           hardware_changed = true;
           std::vector<Gamma::Setting> old_modules(N_SYSTEM_PAR - 7);
           for (int i=0; i< N_SYSTEM_PAR - 7; ++i)
@@ -281,6 +292,7 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
           if (modslot.value_int != 0)
             total++;
         }
+        new_total_modules = total;
         if (system_parameter_values_[0] != total) {
           system_parameter_values_[0] = total;
           write_sys("NUMBER_MODULES");
@@ -296,14 +308,51 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
           write_sys("SLOT_WAVE");
         }
 
+        if (new_total_modules < 1) {
+          PL_DBG << "num modules below 1";
+          Gamma::Setting modslot = q.branches.get(Gamma::Setting("SLOT_WAVE", 7, Gamma::SettingType::integer, -1));
+          q.branches.remove_a(modslot);
+          modslot.value_int = 1;
+          q.branches.add(modslot);
+          new_total_modules = 1;
+          system_parameter_values_[7] = 2;
+          write_sys("SLOT_WAVE");          
+        }
+
+        if (expected_modules != new_total_modules) {
+          PL_DBG << "total modules changed from " << prev_total_modules << " to " << new_total_modules;
+          module_indices_.resize(new_total_modules);
+          channel_indices_.resize(new_total_modules);
+          for (auto &q : channel_indices_)
+            q.resize(NUMBER_OF_CHANNELS, -1);
+        }
+
         for (auto &k : q.branches.my_data_) {
 
           if (k.setting_type == Gamma::SettingType::stem) {
             uint16_t modnum = k.address;
+            if (modnum >= channel_indices_.size()) {
+              PL_DBG << "module address out of bounds, ignoring branch";
+              continue;
+            }
+            prev_total_modules++;
+            if (model_module == Gamma::Setting())
+              model_module = k;
+            
             for (auto &p : k.branches.my_data_) {
               if (p.setting_type == Gamma::SettingType::stem) {
                 uint16_t channum = p.address;
+                if (channum >= NUMBER_OF_CHANNELS) {
+                  PL_DBG << "channel address out of bounds, ignoring branch";
+                  continue;
+                }
+                
                 for (auto &o : p.branches.my_data_) {
+                  if (o.index >= 0) {
+                    used_chan_indices.insert(o.index);
+                    channel_indices_[modnum][channum] = o.index;
+                  }
+                  
                   if (o.writable && (o.setting_type == Gamma::SettingType::floating) && (channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value)) {
                     channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value;
                     write_chan(o.name.c_str(), modnum, channum);
@@ -335,10 +384,41 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
             write_sys(k.name.c_str());
           }
         }
+              int next_chan = 0;
+      if (prev_total_modules < new_total_modules) {
+        PL_DBG << "copying module address=" << prev_total_modules;
+        std::set<int32_t> new_set;
+        while (new_set.size() < NUMBER_OF_CHANNELS) {
+          while (used_chan_indices.count(next_chan))
+            next_chan++;
+          PL_DBG << "new channel index " << next_chan;
+          new_set.insert(next_chan);
+          used_chan_indices.insert(next_chan);
+        }
+
+        std::list<int32_t> copy_set(new_set.begin(), new_set.end());
+        for (auto &k : model_module.branches.my_data_) {
+          if (k.setting_type == Gamma::SettingType::stem) {
+            int this_index = copy_set.front();
+            copy_set.pop_front();
+            for (auto &c : k.branches.my_data_) {
+              c.index = this_index;
+              c.indices.clear();
+              c.indices.insert(this_index);
+            }
+          } else
+            k.indices = new_set;
+        }
+
+        model_module.address = prev_total_modules;
+        channel_indices_[prev_total_modules] = std::vector<int32_t>(new_set.begin(), new_set.end());
+        q.branches.add(model_module);
+        prev_total_modules++;
+      }
+
       }
     }
   }
-
   return true;
 }
 
@@ -351,11 +431,11 @@ bool Plugin::execute_command(Gamma::Setting &set) {
       if ((q.setting_type == Gamma::SettingType::command) && (q.value == 1)) {
         q.value = 0;
         if (q.name == "Measure baselines")
-          return control_measure_baselines(0); //only mod 0
+          return control_measure_baselines(Module::all);
         else if (q.name == "Adjust offsets")
-          return control_adjust_offsets();
+          return control_adjust_offsets(Module::all);
         else if (q.name == "Compute Tau")
-          return control_find_tau();
+          return control_find_tau(Module::all);
         else if (q.name == "Compute BLCUT")
           return control_compute_BLcut();
       }
@@ -431,26 +511,31 @@ std::map<int, std::vector<uint16_t>> Plugin::oscilloscope() {
   uint32_t* oscil_data;
   int cur_mod = 0;
 
-  if (live_ != LiveStatus::online)
+  if ((live_ != LiveStatus::online) && (module_indices_.size() != channel_indices_.size())) {
     PL_WARN << "Pixie not online";
-  else if ((oscil_data = control_collect_ADC(cur_mod)) != nullptr) {
-    for (int i = 0; i < NUMBER_OF_CHANNELS; i++) {     ///preset to 4 channels. Hardcoded
-      std::vector<uint16_t> trace = std::vector<uint16_t>(oscil_data + (i*max_buf_len),
-                                                          oscil_data + ((i+1)*max_buf_len));
-      result[i] = trace;
-    }
-    delete[] oscil_data;
+    return result;
   }
+
+  for (int m=0; m < channel_indices_.size(); ++m) {
+    if ((oscil_data = control_collect_ADC(m)) != nullptr) {
+      for (int i = 0; i < NUMBER_OF_CHANNELS; i++) {
+        std::vector<uint16_t> trace = std::vector<uint16_t>(oscil_data + (i*max_buf_len),
+                                                            oscil_data + ((i+1)*max_buf_len));
+        if ((i < channel_indices_[m].size()) && (channel_indices_[m][i] >= 0))
+          result[channel_indices_[m][i]] = trace;
+      }
+    }
+
+  }
+  delete[] oscil_data;
   return result;
 }
 
 
 void Plugin::get_all_settings() {
   get_sys_all();
-  get_mod_all(Module::all); //might want this for more modules
-  for (int i=0; i < NUMBER_OF_CHANNELS; i++) {
-    get_chan_all(Channel(i), Module::all);
-  }
+  get_mod_all(Module::all);
+  get_chan_all(Channel::all, Module::all);
 }
 
 
@@ -458,8 +543,10 @@ void Plugin::reset_counters_next_run() { //for current module only
   if (live_ == LiveStatus::history)
     return;
 
-  set_mod("SYNCH_WAIT", 1, Module(0));
-  set_mod("IN_SYNCH", 0, Module(0));
+  for (int i=0; i < channel_indices_.size(); ++i) {
+    set_mod("SYNCH_WAIT", 1, Module(i));
+    set_mod("IN_SYNCH", 0, Module(i));
+  }
 }
 
 
@@ -469,11 +556,64 @@ void Plugin::reset_counters_next_run() { //for current module only
 //////////////////////////////
 //////////////////////////////
 
+bool Plugin::start_run(Module mod) {
+  bool success = false;
+  if (mod == Module::all) {
+    for (int i=0; i< channel_indices_.size(); ++i) {
+      PL_INFO << "Start run for module " << i;
+      if (start_run(i))
+        success = true;
+    }
+  } else {
+    int module = static_cast<int>(mod);
+    if ((module > -1) && (module < channel_indices_.size())) {
+      PL_INFO << "Start run for module " << module;
+      success = start_run(module);
+    }
+  }
+  return success;
+}
 
-bool Plugin::start_run(uint16_t type) {
-  uint16_t uint16_t = (type | 0x1000);
-  int cur_mod = 0;
-  int32_t ret = Pixie_Acquire_Data(uint16_t, NULL, 0, cur_mod);
+bool Plugin::resume_run(Module mod) {
+  bool success = false;
+  if (mod == Module::all) {
+    for (int i=0; i< channel_indices_.size(); ++i) {
+      PL_INFO << "Resume run for module " << i;
+      if (resume_run(i))
+        success = true;
+    }
+  } else {
+    int module = static_cast<int>(mod);
+    if ((module > -1) && (module < channel_indices_.size())) {
+      PL_INFO << "Resume run for module " << module;
+      success = resume_run(module);
+    }
+  }
+  return success;  
+}
+
+bool Plugin::stop_run(Module mod) {
+  bool success = false;
+  if (mod == Module::all) {
+    for (int i=0; i< channel_indices_.size(); ++i) {
+      PL_INFO << "Resume run for module " << i;
+      if (stop_run(i))
+        success = true;
+    }
+  } else {
+    int module = static_cast<int>(mod);
+    if ((module > -1) && (module < channel_indices_.size())) {
+      PL_INFO << "Resume run for module " << module;
+      success = stop_run(module);
+    }
+  }
+  return success;
+}
+
+
+bool Plugin::start_run(uint8_t mod) {
+  uint16_t type = (run_type_ | 0x1000);
+  int32_t ret = Pixie_Acquire_Data(type, NULL, 0, mod);
   switch (ret) {
     case 0x10:
       return true;
@@ -489,10 +629,9 @@ bool Plugin::start_run(uint16_t type) {
   }
 }
 
-bool Plugin::resume_run(uint16_t type) {
-  uint16_t uint16_t = (type | 0x2000);
-  int cur_mod = 0;
-  int32_t ret = Pixie_Acquire_Data(uint16_t, NULL, 0, cur_mod);
+bool Plugin::resume_run(uint8_t mod) {
+  uint16_t type = (run_type_ | 0x2000);
+  int32_t ret = Pixie_Acquire_Data(type, NULL, 0, mod);
   switch (ret) {
     case 0x20:
       return true;
@@ -508,10 +647,9 @@ bool Plugin::resume_run(uint16_t type) {
   }
 }
 
-bool Plugin::stop_run(uint16_t type) {
-  uint16_t uint16_t = (type | 0x3000);
-  int cur_mod = 0;
-  int32_t ret = Pixie_Acquire_Data(uint16_t, NULL, 0, cur_mod);
+bool Plugin::stop_run(uint8_t mod) {
+  uint16_t type = (run_type_ | 0x3000);
+  int32_t ret = Pixie_Acquire_Data(type, NULL, 0, mod);
   switch (ret) {
     case 0x30:
       return true;
@@ -528,22 +666,18 @@ bool Plugin::stop_run(uint16_t type) {
 }
 
 
-uint32_t Plugin::poll_run(uint16_t type) {
-  uint16_t uint16_t = (type | 0x4000);
-  int cur_mod = 0;
-  return Pixie_Acquire_Data(uint16_t, NULL, 0, cur_mod);
+uint32_t Plugin::poll_run(uint8_t mod) {
+  uint16_t type = (run_type_ | 0x4000);
+  return Pixie_Acquire_Data(type, NULL, 0, mod);
 }
 
-uint32_t Plugin::poll_run_dbl() {
-  int cur_mod = 0;
-  return Pixie_Acquire_Data(0x40FF, NULL, 0, cur_mod);
+uint32_t Plugin::poll_run_dbl(uint8_t mod) {
+  return Pixie_Acquire_Data(0x40FF, NULL, 0, mod);
 }
 
 
-bool Plugin::read_EM(uint32_t* data) {
-  int cur_mod = 0;
-  PL_DBG << "Current module " << cur_mod;
-  S32 retval = Pixie_Acquire_Data(0x9003, (U32*)data, NULL, cur_mod);
+bool Plugin::read_EM(uint32_t* data, uint8_t mod) {
+  S32 retval = Pixie_Acquire_Data(0x9003, (U32*)data, NULL, mod);
   switch (retval) {
     case -0x93:
       PL_ERR << "Failure to read list mode section of external memory. Reboot recommended.";
@@ -561,9 +695,8 @@ bool Plugin::read_EM(uint32_t* data) {
   }
 }
 
-bool Plugin::write_EM(uint32_t* data) {
-  int cur_mod = 0;
-  return (Pixie_Acquire_Data(0x9004, (U32*)data, NULL, cur_mod) == 0x90);
+bool Plugin::write_EM(uint32_t* data, uint8_t mod) {
+  return (Pixie_Acquire_Data(0x9004, (U32*)data, NULL, mod) == 0x90);
 }
 
 
@@ -572,7 +705,7 @@ uint16_t Plugin::i_dsp(const char* setting_name) {
 }
 
 //this function taken from XIA's code and modified, original comments remain
-bool Plugin::read_EM_dbl(uint32_t* data) {
+bool Plugin::read_EM_dbl(uint32_t* data, uint8_t mod) {
   U16 i, j, MCSRA;
   U16 DblBufCSR;
   U32 Aoffset[2], WordCountPP[2];
@@ -655,9 +788,9 @@ bool Plugin::read_EM_dbl(uint32_t* data) {
   return true;
 }
 
-bool Plugin::clear_EM() {
+bool Plugin::clear_EM(uint8_t mod) {
   std::vector<uint32_t> my_data(list_mem_len32, 0);
-    return (write_EM(my_data.data()) >= 0);
+  return (write_EM(my_data.data(), mod) >= 0);
 }
 
 /////System Settings//////
@@ -676,7 +809,7 @@ void Plugin::set_sys(const std::string& setting, double val) {
 
 
 double Plugin::get_sys(const std::string& setting) {
-  PL_TRC << "Getting " << setting << " for system";
+  PL_DBG << "Getting " << setting << " for system";
 
   //check bounds
   read_sys(setting.c_str());
@@ -687,7 +820,7 @@ void Plugin::get_sys_all() {
   if (live_ == LiveStatus::history)
     return;
 
-  PL_TRC << "Getting all system Plugin";
+  PL_DBG << "Getting all system Plugin";
   read_sys("ALL_SYSTEM_PARAMETERS");
 }
 
@@ -711,7 +844,7 @@ double Plugin::get_mod(const std::string& setting,
                        Module mod) const {
   int module = static_cast<int>(mod);
   if (module > -1) {
-    PL_TRC << "Getting " << setting << " for module " << module;
+    PL_DBG << "Getting " << setting << " for module " << module;
     return module_parameter_values_[module * N_MODULE_PAR + i_mod(setting.c_str())];
   }
   else
@@ -723,7 +856,7 @@ double Plugin::get_mod(const std::string& setting,
                        LiveStatus force) {
   int module = static_cast<int>(mod);
   if (module > -1) {
-    PL_TRC << "Getting " << setting << " for module " << module;
+    PL_DBG << "Getting " << setting << " for module " << module;
     if ((force == LiveStatus::online) && (live_ == force))
       read_mod(setting.c_str(), module);
     return module_parameter_values_[module * N_MODULE_PAR + i_mod(setting.c_str())];
@@ -736,14 +869,14 @@ void Plugin::get_mod_all(Module mod) {
   if (live_ == LiveStatus::history)
     return;
 
-  switch (mod) {
-  case Module::all: {
-    /*loop through all*/
-    break;
-  }
-  default:
+  if (mod == Module::all) {
+    for (int i=0; i< channel_indices_.size(); ++i) {
+      PL_TRC << "Getting all parameters for module " << i;
+      read_mod("ALL_MODULE_PARAMETERS", i);
+    }
+  } else {
     int module = static_cast<int>(mod);
-    if (module > -1) {
+    if ((module > -1) && (module < channel_indices_.size())) {
       PL_TRC << "Getting all parameters for module " << module;
       read_mod("ALL_MODULE_PARAMETERS", module);
     }
@@ -754,14 +887,14 @@ void Plugin::get_mod_stats(Module mod) {
   if (live_ == LiveStatus::history)
     return;
 
-  switch (mod) {
-  case Module::all: {
-    /*loop through all*/
-    break;
-  }
-  default:
+  if (mod == Module::all) {
+    for (int i=0; i< channel_indices_.size(); ++i) {
+      PL_DBG << "Getting run statistics for module " << i;
+      read_mod("MODULE_RUN_STATISTICS", i);
+    }
+  } else {
     int module = static_cast<int>(mod);
-    if (module > -1) {
+    if ((module > -1) && (module < channel_indices_.size())) {
       PL_DBG << "Getting run statistics for module " << module;
       read_mod("MODULE_RUN_STATISTICS", module);
     }
@@ -816,7 +949,7 @@ double Plugin::get_chan(uint8_t setting, Channel channel, Module module) const {
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
-  PL_TRC << "Getting " << setting_name
+  PL_DBG << "Getting " << setting_name
          << " for module " << mod << " channel " << chan;
 
   if ((mod > -1) && (chan > -1)) {
@@ -833,7 +966,7 @@ double Plugin::get_chan(uint8_t setting, Channel channel,
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
-  PL_TRC << "Getting " << setting_name
+  PL_DBG << "Getting " << setting_name
          << " for module " << mod << " channel " << chan;
 
   if ((mod > -1) && (chan > -1)) {
@@ -850,7 +983,7 @@ double Plugin::get_chan(const std::string& setting,
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
-  PL_TRC << "Getting " << setting << " for module " << mod << " channel " << chan;
+  PL_DBG << "Getting " << setting << " for module " << mod << " channel " << chan;
 
   if ((mod > -1) && (chan > -1)) {
     return channel_parameter_values_[i_chan(setting.c_str()) + mod * N_CHANNEL_PAR *
@@ -865,7 +998,7 @@ double Plugin::get_chan(const std::string& setting,
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
-  PL_TRC << "Getting " << setting << " for module " << mod << " channel " << chan;
+  PL_DBG << "Getting " << setting << " for module " << mod << " channel " << chan;
 
   if ((mod > -1) && (chan > -1)) {
     if ((force == LiveStatus::online) && (live_ == force))
@@ -880,25 +1013,68 @@ void Plugin::get_chan_all(Channel channel, Module module) {
   if (live_ == LiveStatus::history)
     return;
 
-  int mod = static_cast<int>(module);
-  int chan = static_cast<int>(channel);
+  int mod_start = -1;
+  int mod_end = -1;
 
-  PL_TRC << "Getting all parameters for module " << mod << " channel " << chan;
+  if (module == Module::all) {
+    mod_start = 0;
+    mod_end = channel_indices_.size();
+  } else {
+    int mod = static_cast<int>(module);
+    if ((mod > -1) && (mod < channel_indices_.size()))
+      mod_start = mod_end = mod;
+  }
 
-  if ((mod > -1) && (chan > -1))
-    read_chan("ALL_CHANNEL_PARAMETERS", mod, chan);
+  for (int i=mod_start; i < mod_end; ++i) {
+    int chan_start = -1;
+    int chan_end = -1;
+    if (channel == Channel::all) {
+      chan_start = 0;
+      chan_end = channel_indices_[i].size();
+    } else {
+      int chan = static_cast<int>(channel);
+      if ((chan > -1) && (chan < channel_indices_[i].size()))
+          chan_start = chan_end = chan;
+    }
+    for (int j=chan_start; j < chan_end; ++j) {
+      PL_TRC << "Getting all parameters for module " << i << " channel " << j;
+      read_chan("ALL_CHANNEL_PARAMETERS", i, j);
+    }
+  }
 }
 
-void Plugin::get_chan_stats(Module module) {
+void Plugin::get_chan_stats(Channel channel, Module module) {
   if (live_ == LiveStatus::history)
     return;
 
-  int mod = static_cast<int>(module);
+  int mod_start = -1;
+  int mod_end = -1;
 
-  PL_TRC << "Getting channel run statistics for module " << mod;
+  if (module == Module::all) {
+    mod_start = 0;
+    mod_end = channel_indices_.size();
+  } else {
+    int mod = static_cast<int>(module);
+    if ((mod > -1) && (mod < channel_indices_.size()))
+      mod_start = mod_end = mod;
+  }
 
-  if (mod > -1)
-    read_chan("CHANNEL_RUN_STATISTICS", mod, 0);
+  for (int i=mod_start; i < mod_end; ++i) {
+    int chan_start = -1;
+    int chan_end = -1;
+    if (channel == Channel::all) {
+      chan_start = 0;
+      chan_end = channel_indices_[i].size();
+    } else {
+      int chan = static_cast<int>(channel);
+      if ((chan > -1) && (chan < channel_indices_[i].size()))
+          chan_start = chan_end = chan;
+    }
+    for (int j=chan_start; j < chan_end; ++j) {
+      PL_DBG << "Getting channel run statistics for module " << i << " channel " << j;
+      read_chan("CHANNEL_RUN_STATISTICS", i, j);
+    }
+  }
 }
 
 uint16_t Plugin::i_sys(const char* setting) const {
@@ -1006,9 +1182,22 @@ bool Plugin::control_program_Fippi(uint8_t module) {
   return control_err(Pixie_Acquire_Data(0x0005, NULL, NULL, module));
 }
 
-bool Plugin::control_measure_baselines(uint8_t module) {
-  PL_INFO << "Pixie Control: measure baselines";
-  return control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, module));
+bool Plugin::control_measure_baselines(Module mod) {
+  bool success = false;
+  if (mod == Module::all) {
+    for (int i=0; i< channel_indices_.size(); ++i) {
+      PL_INFO << "Pixie Control: measure baselines for module " << i;
+      if (control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, i)))
+        success = true;
+    }
+  } else {
+    int module = static_cast<int>(mod);
+    if ((module > -1) && (module < channel_indices_.size())) {
+      PL_INFO << "Pixie Control: measure baselines for module " << module;
+      success = control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, module));
+    }
+  }
+  return success;
 }
 
 bool Plugin::control_test_EM_write(uint8_t module) {
@@ -1026,14 +1215,40 @@ bool Plugin::control_compute_BLcut() {
   return control_err(Pixie_Acquire_Data(0x0080, NULL, NULL, 0));
 }
 
-bool Plugin::control_find_tau() {
-  PL_INFO << "Pixie Control: find tau";
-  return control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, 0));
+bool Plugin::control_find_tau(Module mod) {
+  bool success = false;
+  if (mod == Module::all) {
+    for (int i=0; i< channel_indices_.size(); ++i) {
+      PL_INFO << "Pixie Control: find tau for module " << i;
+      if (control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, i)))
+        success = true;
+    }
+  } else {
+    int module = static_cast<int>(mod);
+    if ((module > -1) && (module < channel_indices_.size())) {
+      PL_INFO << "Pixie Control: find tau for module " << module;
+      success = control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, module));
+    }
+  }
+  return success;
 }
 
-bool Plugin::control_adjust_offsets() {
-  PL_INFO << "Pixie Control: adjust offsets";
-  return control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, 0));
+bool Plugin::control_adjust_offsets(Module mod) {
+  bool success = false;
+  if (mod == Module::all) {
+    for (int i=0; i< channel_indices_.size(); ++i) {
+      PL_INFO << "Pixie Control: adjust offsets for module " << i;
+      if (control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, i)))
+        success = true;
+    }
+  } else {
+    int module = static_cast<int>(mod);
+    if ((module > -1) && (module < channel_indices_.size())) {
+      PL_INFO << "Pixie Control: adjust offsets for module " << module;
+      success = control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, module));
+    }
+  }
+  return success;
 }
 
 bool Plugin::control_err(int32_t err_val) {
@@ -1261,17 +1476,17 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
       total_timer(timeout_limit);
   boost::posix_time::ptime session_start_time, block_time;
 
-  if (!callback->clear_EM())
+  if (!callback->clear_EM(0)) //one module
     return;
 
-  callback->set_mod("DBLBUFCSR",   static_cast<double>(0), Module(0));
-  callback->set_mod("MODULE_CSRA", static_cast<double>(2), Module(0));
+  callback->set_mod("DBLBUFCSR",   static_cast<double>(0), Module(0)); //one module
+  callback->set_mod("MODULE_CSRA", static_cast<double>(2), Module(0)); //one module
 
   fetched_spill = new Spill;
   fetched_spill->stats = new StatsUpdate;
   block_time = session_start_time = boost::posix_time::microsec_clock::local_time();
 
-  if(!start_run(callback->run_type_)) {
+  if(!callback->start_run(Module::all)) {
     delete fetched_spill->run;
     delete fetched_spill->stats;
     delete fetched_spill;
@@ -1280,7 +1495,7 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
 
   total_timer.resume();
 
-  callback->get_stats(0);
+  callback->get_stats();
   callback->fill_stats(*fetched_spill->stats, root);
   fetched_spill->stats->lab_time = session_start_time;
   spill_queue->enqueue(fetched_spill);
@@ -1289,7 +1504,7 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
     start_timer.resume();
 
     if (spill_number > 0)
-      retval = callback->resume_run(callback->run_type_);
+      retval = callback->resume_run(Module::all);
     start_timer.stop();
     run_timer.resume();
 
@@ -1297,7 +1512,7 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
       return;
 
     if (spill_number > 0) {
-      callback->get_stats(0);
+      callback->get_stats();
       fetched_spill->stats = new StatsUpdate;
       callback->fill_stats(*fetched_spill->stats, root);
       fetched_spill->stats->spill_number = spill_number;
@@ -1314,21 +1529,21 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
 
     spill_number++;
 
-    retval = poll_run(callback->run_type_);
+    retval = callback->poll_run(0);  //one module
     while ((retval == 1) && (!timeout)) {
       wait_ms(callback->run_poll_interval_ms_);
-      retval = poll_run(callback->run_type_);
+      retval = callback->poll_run(0);  //one module
       timeout = (total_timer.timeout() || interruptor->load());
     };
     block_time = boost::posix_time::microsec_clock::local_time();
     run_timer.stop();
 
     stop_timer.resume();
-    stop_run(callback->run_type_); //is this really necessary?
+    callback->stop_run(Module::all); //is this really necessary?
     stop_timer.stop();
 
     readout_timer.resume();
-    if(!callback->read_EM(fetched_spill->data.data())) {
+    if(!callback->read_EM(fetched_spill->data.data(), 0)) {  //one module
       PL_DBG << "read_EM failed";
       delete fetched_spill;
       return;
@@ -1336,7 +1551,7 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
     readout_timer.stop();
   }
 
-  callback->get_stats(0);
+  callback->get_stats();
   fetched_spill->stats = new StatsUpdate;
   callback->fill_stats(*fetched_spill->stats, root);
   fetched_spill->stats->spill_number = spill_number;
@@ -1363,17 +1578,17 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
   CustomTimer total_timer(timeout_limit);
   boost::posix_time::ptime session_start_time, block_time;
 
-  if (!callback->clear_EM())
+  if (!callback->clear_EM(0)) //one module
     return;
 
-  callback->set_mod("DBLBUFCSR",   static_cast<double>(1), Module(0));
-  callback->set_mod("MODULE_CSRA", static_cast<double>(0), Module(0));
+  callback->set_mod("DBLBUFCSR",   static_cast<double>(1), Module(0)); //one module
+  callback->set_mod("MODULE_CSRA", static_cast<double>(0), Module(0)); //one module
 
   fetched_spill = new Spill;
   fetched_spill->stats = new StatsUpdate;
   session_start_time = boost::posix_time::microsec_clock::local_time();
 
-  if(!start_run(callback->run_type_)) {
+  if(!callback->start_run(Module::all)) {
     delete fetched_spill->run;
     delete fetched_spill->stats;
     delete fetched_spill;
@@ -1382,7 +1597,7 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
 
   total_timer.resume();
 
-  callback->get_stats(0);
+  callback->get_stats();
   callback->fill_stats(*fetched_spill->stats, root);
   fetched_spill->stats->lab_time = session_start_time;
   spill_queue->enqueue(fetched_spill);
@@ -1392,19 +1607,19 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
     PL_INFO << "  RUNNING Elapsed: " << total_timer.done()
             << "  ETA: " << total_timer.ETA();
 
-    csr = std::bitset<32>(poll_run_dbl());
+    csr = std::bitset<32>(poll_run_dbl(0)); //one module
     while ((!csr[14]) && (!timeout)) {
       wait_ms(callback->run_poll_interval_ms_);
-      csr = std::bitset<32>(poll_run_dbl());
+      csr = std::bitset<32>(poll_run_dbl(0)); //one module
       timeout = (total_timer.timeout() || interruptor->load());
     };
     block_time = boost::posix_time::microsec_clock::local_time();
-    callback->get_stats(0);
+    callback->get_stats();
 
     fetched_spill = new Spill;
     fetched_spill->data.resize(list_mem_len32, 0);
 
-    if (read_EM_dbl(fetched_spill->data.data())) {
+    if (read_EM_dbl(fetched_spill->data.data(), 0)) { //one module
       fetched_spill->stats = new StatsUpdate;
       fetched_spill->stats->spill_number = spill_number;
       fetched_spill->stats->lab_time    = block_time;
@@ -1416,7 +1631,7 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
     }
   }
 
-  stop_run(callback->run_type_);
+  callback->stop_run(Module::all);
 
   PL_INFO << "<PixiePlugin> Double buffered daq stopping";
 }

@@ -39,7 +39,7 @@ FormOscilloscope::FormOscilloscope(ThreadRunner& thread, QSettings& settings, QW
   ui->widgetPlot->showButtonPlotStyle(false);
   ui->widgetPlot->showButtonScaleType(false);
   ui->widgetPlot->setZoomable(true);
-  ui->widgetPlot->setTitle("Osciloscope");
+  ui->widgetPlot->setTitle("Oscilloscope");
   ui->widgetPlot->setLabels("time (ticks)", "energy/channel");
 
   loadSettings();
@@ -137,7 +137,7 @@ void FormOscilloscope::oscil_complete(std::vector<Qpx::Trace> traces) {
   if (!traces.empty()) {
 
     std::map<double, double> minima, maxima;
-    QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::darkCyan};
+    QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::cyan, Qt::blue};
 
     for (int i=0; i < traces.size(); i++) {
       if (!traces[i].data.size())

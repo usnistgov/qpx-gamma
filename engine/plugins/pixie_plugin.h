@@ -60,7 +60,7 @@ public:
 
 
   //Unique
-  void get_stats(int module);
+  void get_stats();
   void reset_counters_next_run();
 
   //DEPRECATE//
@@ -95,37 +95,40 @@ protected:
   std::vector<double> module_parameter_values_;
   std::vector<double> channel_parameter_values_;
 
+  std::vector<int32_t> module_indices_;
+  std::vector<std::vector<int32_t>> channel_indices_;
 
   //////////for internal use only///////////
 
   //CONTROL TASKS//
-
   uint32_t* control_collect_ADC(uint8_t module);
   bool control_set_DAC(uint8_t module);
   bool control_connect(uint8_t module);
   bool control_disconnect(uint8_t module);
   bool control_program_Fippi(uint8_t module);
-  bool control_measure_baselines(uint8_t module);
+  bool control_measure_baselines(Module mod);
   bool control_test_EM_write(uint8_t module);
   bool control_test_HM_write(uint8_t module);
   bool control_compute_BLcut();
-  bool control_find_tau();
-  bool control_adjust_offsets();
+  bool control_find_tau(Module mod);
+  bool control_adjust_offsets(Module mod);
 
+  //DAQ//
   //start and stop runs
-  static bool start_run(uint16_t type);
-  static bool resume_run(uint16_t type);
-  static bool stop_run(uint16_t type);
-
+  bool start_run(Module mod);
+  bool resume_run(Module mod);
+  bool stop_run(Module mod);
+  bool start_run(uint8_t mod);
+  bool resume_run(uint8_t mod);
+  bool stop_run(uint8_t mod);
   //poll runs
-  static uint32_t poll_run(uint16_t type);
-  static uint32_t poll_run_dbl();
-
+  uint32_t poll_run(uint8_t mod);
+  static uint32_t poll_run_dbl(uint8_t mod);
   //read and write external memory
-  static bool write_EM(uint32_t* data);
-  static bool read_EM(uint32_t* data);
-  static bool read_EM_dbl(uint32_t* data);
-  static bool clear_EM();
+  static bool write_EM(uint32_t* data, uint8_t mod);
+  static bool read_EM(uint32_t* data,uint8_t mod);
+  static bool read_EM_dbl(uint32_t* data, uint8_t mod);
+  static bool clear_EM(uint8_t mod);
 
   //carry out task
   bool write_sys(const char*);
@@ -182,7 +185,7 @@ protected:
                   LiveStatus force = LiveStatus::offline);
   void get_chan_all(Channel channel,
                     Module  module);
-  void get_chan_stats(Module  module);
+  void get_chan_stats(Channel channel, Module  module);
 
 };
 

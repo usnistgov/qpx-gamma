@@ -74,7 +74,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       } else if (role == Qt::DisplayRole)
         return QString::fromStdString(channels_[col-1].name_);
       else if (role == Qt::ForegroundRole) {
-        QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta};
+        QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::cyan, Qt::blue};
         QBrush brush(palette[(col-1) % palette.size()]);
         return brush;
       } else if (role == Qt::FontRole) {
@@ -162,7 +162,10 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       } else if (item.setting_type == Gamma::SettingType::floating)
         return QVariant::fromValue(item.value);
       else if (item.setting_type == Gamma::SettingType::int_menu)
-        return QString::fromStdString(item.int_menu_items.at(item.value_int));
+        if (item.int_menu_items.count(item.value_int) > 0)
+          return QString::fromStdString(item.int_menu_items.at(item.value_int));
+        else
+          return QVariant();
       else if (item.setting_type == Gamma::SettingType::boolean)
         if (item.value_int)
           return "T";
@@ -247,12 +250,9 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
   if (role == Qt::EditRole)
     if (row > 0) {
       Gamma::Setting item = channels_[col-1].settings_.branches.get(row-1);
-      if (((item.setting_type == Gamma::SettingType::integer) || (item.setting_type == Gamma::SettingType::int_menu))
-          && (value.type() == QVariant::Int))
-        item.value_int = value.toInt();
-      else if ((item.setting_type == Gamma::SettingType::binary)
-          && (value.type() == QVariant::Int))
-        item.value_int = value.toInt();
+      if (((item.setting_type == Gamma::SettingType::integer) || (item.setting_type == Gamma::SettingType::int_menu) || (item.setting_type == Gamma::SettingType::binary))
+          && (value.canConvert(QMetaType::LongLong)))
+        item.value_int = value.toLongLong();
       else if ((item.setting_type == Gamma::SettingType::boolean)
           && (value.type() == QVariant::Bool))
         item.value_int = value.toBool();
@@ -265,18 +265,14 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
       else if ((item.setting_type == Gamma::SettingType::file_path)
           && (value.type() == QVariant::String))
         item.value_text = value.toString().toStdString();
-      else if ((item.setting_type == Gamma::SettingType::int_menu)
-          && (value.type() == QVariant::Int))
-        item.value_int = value.toInt();
       else if ((item.setting_type == Gamma::SettingType::detector)
           && (value.type() == QVariant::String)) {
         item.value_text = value.toString().toStdString();
+        PL_DBG << "table changing detector " << (col-1) << " to " << value.toString().toStdString();
+        emit detector_chosen(col-1, value.toString().toStdString());
+        return true;
       }
       emit setting_changed(col-1, item);
-    }
-    else if (value.type() == QMetaType::QString) {
-      PL_DBG << "table changing detector " << (col-1) << " to " << value.toString().toStdString();
-      emit detector_chosen(col-1, value.toString().toStdString());
     }
   return true;
 }
