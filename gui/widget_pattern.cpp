@@ -46,29 +46,6 @@ QpxPattern::QpxPattern(QVector<int16_t> pattern, double size, bool tristate, int
   inner = QRectF(4, 4, size_ - 8, size_ - 8);
 }
 
-QpxPattern::QpxPattern(std::bitset<Qpx::kNumChans> pattern, double size, bool tristate, int wrap) {
-  tristate_ = tristate;
-
-  pattern_.resize(Qpx::kNumChans);
-
-  int sum = 0;
-  for (int i=0; i < Qpx::kNumChans; i++) {
-    sum+=pattern[i];
-    if (pattern[i])
-      pattern_[i] = 1;
-    else
-      pattern_[i] = 0;
-  }
-  size_ = size;
-  if (!wrap || (wrap>Qpx::kNumChans))
-    wrap = Qpx::kNumChans;
-  wrap_ = wrap;
-  rows_ = (Qpx::kNumChans / wrap_) + ((Qpx::kNumChans % wrap_) > 0);
-
-  outer = QRectF(2, 2, size_ - 4, size_ - 4);
-  inner = QRectF(4, 4, size_ - 8, size_ - 8);
-}
-
 QSize QpxPattern::sizeHint() const
 {
   return QSize(wrap_ * size_, rows_ * size_);

@@ -111,7 +111,7 @@ bool Plugin::start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue,
   else
     runner_ = new boost::thread(&worker_run, this, timeout, raw_queue_, interruptor_, root);
 
-  parser_ = new boost::thread(&worker_parse, raw_queue_, out_queue);
+  parser_ = new boost::thread(&worker_parse, this, raw_queue_, out_queue);
 }
 
 bool Plugin::stop_daq() {
@@ -147,28 +147,26 @@ bool Plugin::stop_daq() {
   return true;
 }
 
-void Plugin::fill_stats(StatsUpdate &stats, Gamma::Setting tree) {
-  read_settings_bulk(tree);
-  stats.fast_peaks.resize(NUMBER_OF_CHANNELS, 0.0);
-  stats.live_time.resize(NUMBER_OF_CHANNELS, 0.0);
-  stats.ftdt.resize(NUMBER_OF_CHANNELS, 0.0);
-  stats.sfdt.resize(NUMBER_OF_CHANNELS, 0.0);
+void Plugin::fill_stats(std::list<StatsUpdate> &all_stats, uint8_t module) {
+  StatsUpdate stats;
 
-  for (int i=0; i < NUMBER_OF_CHANNELS; i++) {
-    stats.fast_peaks[i] = tree.get_setting(Gamma::Setting("Pixie-4/System/module/channel/FAST_PEAKS", 28, Gamma::SettingType::floating, i)).value;
-    stats.live_time[i]  = tree.get_setting(Gamma::Setting("Pixie-4/System/module/channel/LIVE_TIME", 26, Gamma::SettingType::floating, i)).value;
-    stats.ftdt[i]       = tree.get_setting(Gamma::Setting("Pixie-4/System/module/channel/FTDT", 33, Gamma::SettingType::floating, i)).value;
-    stats.sfdt[i]       = tree.get_setting(Gamma::Setting("Pixie-4/System/module/channel/SFDT", 34, Gamma::SettingType::floating, i)).value;
+  stats.event_rate = get_mod("EVENT_RATE", Module(module));
+  stats.total_time = get_mod("TOTAL_TIME", Module(module));
+  for (int i=0; i<NUMBER_OF_CHANNELS; ++i) {
+    stats.channel    = channel_indices_[module][i];
+    stats.fast_peaks = get_chan("FAST_PEAKS", Channel(i), Module(module));
+    stats.live_time  = get_chan("LIVE_TIME", Channel(i), Module(module));
+    stats.ftdt       = get_chan("FTDT", Channel(i), Module(module));
+    stats.sfdt       = get_chan("SFDT", Channel(i), Module(module));
+    all_stats.push_back(stats);
   }
-  stats.event_rate = tree.get_setting(Gamma::Setting("Pixie-4/System/module/EVENT_RATE", 22, Gamma::SettingType::floating, 0)).value; //make scalable
-  stats.total_time = tree.get_setting(Gamma::Setting("Pixie-4/System/module/TOTAL_TIME", 23, Gamma::SettingType::floating, 0)).value; //make scalable
 }
 
 
-void Plugin::get_stats() {
+/*void Plugin::get_stats() {
   get_mod_stats(Module::all);
   get_chan_stats(Channel::all, Module::all);
-}
+  }*/
 
 bool Plugin::read_settings_bulk(Gamma::Setting &set) const {
   if (set.name == "Pixie-4") {
@@ -596,14 +594,14 @@ bool Plugin::stop_run(Module mod) {
   bool success = false;
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      PL_INFO << "Resume run for module " << i;
+      PL_INFO << "Stop run for module " << i;
       if (stop_run(i))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      PL_INFO << "Resume run for module " << module;
+      PL_INFO << "Stop run for module " << module;
       success = stop_run(module);
     }
   }
@@ -642,7 +640,7 @@ bool Plugin::resume_run(uint8_t mod) {
       PL_ERR << "Resume run failed. Try rebooting";
       return false;
     default:
-      PL_ERR << "Start run failed. Unknown error";
+      PL_ERR << "Resume run failed. Unknown error";
       return false;
   }
 }
@@ -654,13 +652,13 @@ bool Plugin::stop_run(uint8_t mod) {
     case 0x30:
       return true;
     case -0x31:
-      PL_ERR << "Resume run failed: Invalid Pixie module number";
+      PL_ERR << "Stop run failed: Invalid Pixie module number";
       return false;
     case -0x32:
-      PL_ERR << "Resume run failed. Try rebooting";
+      PL_ERR << "Stop run failed. Try rebooting";
       return false;
     default:
-      PL_ERR << "Start run failed. Unknown error";
+      PL_ERR << "Stop run failed. Unknown error";
       return false;
   }
 }
@@ -706,12 +704,11 @@ uint16_t Plugin::i_dsp(const char* setting_name) {
 
 //this function taken from XIA's code and modified, original comments remain
 bool Plugin::read_EM_dbl(uint32_t* data, uint8_t mod) {
-  U16 i, j, MCSRA;
+  U16 j, MCSRA;
   U16 DblBufCSR;
   U32 Aoffset[2], WordCountPP[2];
   U32 WordCount, NumWordsToRead, CSR;
   U32 dsp_word[2];
-  U32 WCRs[PRESET_MAX_MODULES], CSRs[PRESET_MAX_MODULES];
 
   char modcsra_str[] = "MODCSRA";
   char dblbufcsr_str[] = "DBLBUFCSR";
@@ -723,68 +720,55 @@ bool Plugin::read_EM_dbl(uint32_t* data, uint8_t mod) {
   Aoffset[0] = 0;
   Aoffset[1] = LM_DBLBUF_BLOCK_LENGTH;
 
-  for(i=0; i<Number_Modules; i++)
+  Pixie_ReadCSR((U8)mod, &CSR);
+  // A read of Pixie's word count register
+  // This also indicates to the DSP that a readout has begun
+  Pixie_RdWrdCnt((U8)mod, &WordCount);
+
+  // The number of 16-bit words to read is in EMwords or EMwords2
+  char emwords_str[] = "EMWORDS";
+  char emwords2_str[] = "EMWORDS2";
+  Pixie_IODM((U8)mod, (U16)DATA_MEMORY_ADDRESS + i_dsp(emwords_str), MOD_READ, 2, dsp_word);
+  WordCountPP[0] = dsp_word[0] * 65536 + dsp_word[1];
+  Pixie_IODM((U8)mod, (U16)DATA_MEMORY_ADDRESS + i_dsp(emwords2_str), MOD_READ, 2, dsp_word);
+  WordCountPP[1] = dsp_word[0] * 65536 + dsp_word[1];
+
+  if(TstBit(CSR_128K_FIRST, (U16)CSR) == 1)
+    j=0;
+  else		// block at 128K+64K was first
+    j=1;
+
+  if  (TstBit(CSR_DATAREADY, (U16)CSR) == 0 )
+    // function called after a readout that cleared WCR => run stopped => read other block
   {
-    // read the CSR
-    Pixie_ReadCSR((U8)i, &CSR);
-    CSRs[i] = CSR;
+    j=1-j;
+    PL_INFO << "(read_EM_dbl): Module " << mod <<
+        ": Both memory blocks full (block " << 1-j << " older). Run paused (or finished).";
+    Pixie_Print_MSG(ErrMSG);
+  }
 
-    // A read of Pixie's word count register
-    // This also indicates to the DSP that a readout has begun
-    Pixie_RdWrdCnt((U8)i, &WordCount);
-    WCRs[i] = WordCount;
-  }	// CSR for loop
-
-  // Read out list mode data module by module
-  for(i=0; i<Number_Modules; i++)
+  if (WordCountPP[j] >0)
   {
-
-    // The number of 16-bit words to read is in EMwords or EMwords2
-    char emwords_str[] = "EMWORDS";
-    char emwords2_str[] = "EMWORDS2";
-    Pixie_IODM((U8)i, (U16)DATA_MEMORY_ADDRESS + i_dsp(emwords_str), MOD_READ, 2, dsp_word);
-    WordCountPP[0] = dsp_word[0] * 65536 + dsp_word[1];
-    Pixie_IODM((U8)i, (U16)DATA_MEMORY_ADDRESS + i_dsp(emwords2_str), MOD_READ, 2, dsp_word);
-    WordCountPP[1] = dsp_word[0] * 65536 + dsp_word[1];
-
-    if(TstBit(CSR_128K_FIRST, (U16)CSRs[i]) == 1)
-      j=0;
-    else		// block at 128K+64K was first
-      j=1;
-
-    if  (TstBit(CSR_DATAREADY, (U16)CSRs[i]) == 0 )
-      // function called after a readout that cleared WCR => run stopped => read other block
-    {
-      j=1-j;
-      PL_INFO << "(read_EM_dbl): Module " << i <<
-          ": Both memory blocks full (block " << 1-j << " older). Run paused (or finished).";
-      Pixie_Print_MSG(ErrMSG);
-    }
-
-    if (WordCountPP[j] >0)
-    {
       // Check if it is an odd or even number
-      if(fmod(WordCountPP[j], 2.0) == 0.0)
-        NumWordsToRead = WordCountPP[j] / 2;
-      else
-        NumWordsToRead = WordCountPP[j] / 2 + 1;
+    if(fmod(WordCountPP[j], 2.0) == 0.0)
+      NumWordsToRead = WordCountPP[j] / 2;
+    else
+      NumWordsToRead = WordCountPP[j] / 2 + 1;
 
-      if(NumWordsToRead > LIST_MEMORY_LENGTH)
-      {
-        PL_ERR << "(read_EM_dbl): invalid word count " << NumWordsToRead;
-        Pixie_Print_MSG(ErrMSG);
-        return false;
-      }
+    if(NumWordsToRead > LIST_MEMORY_LENGTH)
+    {
+      PL_ERR << "(read_EM_dbl): invalid word count " << NumWordsToRead;
+      Pixie_Print_MSG(ErrMSG);
+      return false;
+    }
 
       // Read out the list mode data
-      Pixie_IOEM((U8)i, LIST_MEMORY_ADDRESS+Aoffset[j], MOD_READ, NumWordsToRead, (U32*)data);
-    }
-  }	// readout for loop
+    Pixie_IOEM((U8)mod, LIST_MEMORY_ADDRESS+Aoffset[j], MOD_READ, NumWordsToRead, (U32*)data);
+  }
 
   // A second read of Pixie's word count register to clear the DBUF_1FULL bit
   // indicating to the DSP that the read is complete
-  for(i=0; i<Number_Modules; i++)
-    Pixie_RdWrdCnt((U8)i, &WordCount);
+  Pixie_RdWrdCnt((U8)mod, &WordCount);
   return true;
 }
 
@@ -809,7 +793,7 @@ void Plugin::set_sys(const std::string& setting, double val) {
 
 
 double Plugin::get_sys(const std::string& setting) {
-  PL_DBG << "Getting " << setting << " for system";
+  PL_TRC << "Getting " << setting << " for system";
 
   //check bounds
   read_sys(setting.c_str());
@@ -820,7 +804,7 @@ void Plugin::get_sys_all() {
   if (live_ == LiveStatus::history)
     return;
 
-  PL_DBG << "Getting all system Plugin";
+  PL_TRC << "Getting all system";
   read_sys("ALL_SYSTEM_PARAMETERS");
 }
 
@@ -844,7 +828,7 @@ double Plugin::get_mod(const std::string& setting,
                        Module mod) const {
   int module = static_cast<int>(mod);
   if (module > -1) {
-    PL_DBG << "Getting " << setting << " for module " << module;
+    PL_TRC << "Getting " << setting << " for module " << module;
     return module_parameter_values_[module * N_MODULE_PAR + i_mod(setting.c_str())];
   }
   else
@@ -856,7 +840,7 @@ double Plugin::get_mod(const std::string& setting,
                        LiveStatus force) {
   int module = static_cast<int>(mod);
   if (module > -1) {
-    PL_DBG << "Getting " << setting << " for module " << module;
+    PL_TRC << "Getting " << setting << " for module " << module;
     if ((force == LiveStatus::online) && (live_ == force))
       read_mod(setting.c_str(), module);
     return module_parameter_values_[module * N_MODULE_PAR + i_mod(setting.c_str())];
@@ -889,13 +873,13 @@ void Plugin::get_mod_stats(Module mod) {
 
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      PL_DBG << "Getting run statistics for module " << i;
+      PL_TRC << "Getting run statistics for module " << i;
       read_mod("MODULE_RUN_STATISTICS", i);
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      PL_DBG << "Getting run statistics for module " << module;
+      PL_TRC << "Getting run statistics for module " << module;
       read_mod("MODULE_RUN_STATISTICS", module);
     }
   }
@@ -983,7 +967,7 @@ double Plugin::get_chan(const std::string& setting,
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
-  PL_DBG << "Getting " << setting << " for module " << mod << " channel " << chan;
+  PL_TRC << "Getting " << setting << " for module " << mod << " channel " << chan;
 
   if ((mod > -1) && (chan > -1)) {
     return channel_parameter_values_[i_chan(setting.c_str()) + mod * N_CHANNEL_PAR *
@@ -998,7 +982,7 @@ double Plugin::get_chan(const std::string& setting,
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
-  PL_DBG << "Getting " << setting << " for module " << mod << " channel " << chan;
+  PL_TRC << "Getting " << setting << " for module " << mod << " channel " << chan;
 
   if ((mod > -1) && (chan > -1)) {
     if ((force == LiveStatus::online) && (live_ == force))
@@ -1071,7 +1055,7 @@ void Plugin::get_chan_stats(Channel channel, Module module) {
           chan_start = chan_end = chan;
     }
     for (int j=chan_start; j < chan_end; ++j) {
-      PL_DBG << "Getting channel run statistics for module " << i << " channel " << j;
+      //      PL_DBG << "Getting channel run statistics for module " << i << " channel " << j;
       read_chan("CHANNEL_RUN_STATISTICS", i, j);
     }
   }
@@ -1483,21 +1467,22 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
   callback->set_mod("MODULE_CSRA", static_cast<double>(2), Module(0)); //one module
 
   fetched_spill = new Spill;
-  fetched_spill->stats = new StatsUpdate;
   block_time = session_start_time = boost::posix_time::microsec_clock::local_time();
 
   if(!callback->start_run(Module::all)) {
     delete fetched_spill->run;
-    delete fetched_spill->stats;
     delete fetched_spill;
     return;
   }
 
   total_timer.resume();
 
-  callback->get_stats();
-  callback->fill_stats(*fetched_spill->stats, root);
-  fetched_spill->stats->lab_time = session_start_time;
+  callback->get_mod_stats(Module::all);
+  callback->get_chan_stats(Channel::all, Module::all);
+  for (int i=0; i < callback->channel_indices_.size(); i++)
+    callback->fill_stats(fetched_spill->stats, i);
+  for (auto &q : fetched_spill->stats)
+    q.lab_time = session_start_time;
   spill_queue->enqueue(fetched_spill);
 
   while (!timeout) {
@@ -1512,11 +1497,14 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
       return;
 
     if (spill_number > 0) {
-      callback->get_stats();
-      fetched_spill->stats = new StatsUpdate;
-      callback->fill_stats(*fetched_spill->stats, root);
-      fetched_spill->stats->spill_number = spill_number;
-      fetched_spill->stats->lab_time   = block_time;
+      callback->get_mod_stats(Module::all);
+      callback->get_chan_stats(Channel::all, Module::all);
+      for (int i=0; i < callback->channel_indices_.size(); i++)
+        callback->fill_stats(fetched_spill->stats, i);
+      for (auto &q : fetched_spill->stats) {
+        q.lab_time = block_time;
+        q.spill_number = spill_number;
+      }
       spill_queue->enqueue(fetched_spill);
     }
 
@@ -1551,11 +1539,14 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
     readout_timer.stop();
   }
 
-  callback->get_stats();
-  fetched_spill->stats = new StatsUpdate;
-  callback->fill_stats(*fetched_spill->stats, root);
-  fetched_spill->stats->spill_number = spill_number;
-  fetched_spill->stats->lab_time   = block_time;
+  callback->get_mod_stats(Module::all);
+  callback->get_chan_stats(Channel::all, Module::all);
+  for (int i=0; i < callback->channel_indices_.size(); i++)
+    callback->fill_stats(fetched_spill->stats, i);
+  for (auto &q : fetched_spill->stats) {
+    q.lab_time = block_time;
+    q.spill_number = spill_number;
+  }
   spill_queue->enqueue(fetched_spill);
 
   total_timer.stop();
@@ -1578,56 +1569,74 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
   CustomTimer total_timer(timeout_limit);
   boost::posix_time::ptime session_start_time, block_time;
 
-  if (!callback->clear_EM(0)) //one module
-    return;
-
-  callback->set_mod("DBLBUFCSR",   static_cast<double>(1), Module(0)); //one module
-  callback->set_mod("MODULE_CSRA", static_cast<double>(0), Module(0)); //one module
+  for (int i=0; i < callback->channel_indices_.size(); i++) {
+    if (!callback->clear_EM(i)) //one module
+      return;
+    callback->set_mod("DBLBUFCSR",   static_cast<double>(1), Module(i));
+    callback->set_mod("MODULE_CSRA", static_cast<double>(0), Module(i));
+  }
 
   fetched_spill = new Spill;
-  fetched_spill->stats = new StatsUpdate;
   session_start_time = boost::posix_time::microsec_clock::local_time();
 
   if(!callback->start_run(Module::all)) {
     delete fetched_spill->run;
-    delete fetched_spill->stats;
     delete fetched_spill;
     return;
   }
 
   total_timer.resume();
 
-  callback->get_stats();
-  callback->fill_stats(*fetched_spill->stats, root);
-  fetched_spill->stats->lab_time = session_start_time;
+  callback->get_mod_stats(Module::all);
+  callback->get_chan_stats(Channel::all, Module::all);
+  for (int i=0; i < callback->channel_indices_.size(); i++)
+    callback->fill_stats(fetched_spill->stats, i);
+  for (auto &q : fetched_spill->stats)
+    q.lab_time = session_start_time;
   spill_queue->enqueue(fetched_spill);
 
-  while (!timeout) {
+  std::set<int> mods;
+  while (!(timeout && mods.empty())) {
     spill_number++;
-    PL_INFO << "  RUNNING Elapsed: " << total_timer.done()
+    PL_INFO << "<PixiePlugin>   RUNNING Elapsed: " << total_timer.done()
             << "  ETA: " << total_timer.ETA();
 
-    csr = std::bitset<32>(poll_run_dbl(0)); //one module
-    while ((!csr[14]) && (!timeout)) {
-      wait_ms(callback->run_poll_interval_ms_);
-      csr = std::bitset<32>(poll_run_dbl(0)); //one module
+    mods.clear();
+    while (!timeout && (mods.empty())) {
+      for (int i=0; i < callback->channel_indices_.size(); ++i) {
+        std::bitset<32> csr = std::bitset<32>(poll_run_dbl(i));
+        if (csr[14])
+          mods.insert(i);
+      }
+      if (mods.empty())
+        wait_ms(callback->run_poll_interval_ms_);
       timeout = (total_timer.timeout() || interruptor->load());
     };
     block_time = boost::posix_time::microsec_clock::local_time();
-    callback->get_stats();
 
-    fetched_spill = new Spill;
-    fetched_spill->data.resize(list_mem_len32, 0);
+    for (auto &q : mods) {
+      callback->get_mod_stats(Module(q));
+      callback->get_chan_stats(Channel::all, Module(q));
+    }
 
-    if (read_EM_dbl(fetched_spill->data.data(), 0)) { //one module
-      fetched_spill->stats = new StatsUpdate;
-      fetched_spill->stats->spill_number = spill_number;
-      fetched_spill->stats->lab_time    = block_time;
-      callback->fill_stats(*fetched_spill->stats, root);
-      spill_queue->enqueue(fetched_spill);
-    } else {
-      delete fetched_spill;
-      return;
+
+    bool success = false;
+    for (auto &q : mods) {
+      fetched_spill = new Spill;
+      fetched_spill->data.resize(list_mem_len32, 0);
+      if (read_EM_dbl(fetched_spill->data.data(), q))
+        success = true;
+      PL_DBG << "<PixiePlugin> fetched spill for mod " << q;
+      callback->fill_stats(fetched_spill->stats, q);
+      for (auto &p : fetched_spill->stats) {
+        p.lab_time = block_time;
+        p.spill_number = spill_number;
+      }
+      spill_queue->enqueue(fetched_spill); 
+    }
+
+    if (!success) {
+      break;
     }
   }
 
@@ -1638,11 +1647,12 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
 
 
 
-void Plugin::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue) {
+void Plugin::worker_parse (Plugin* callback, SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue) {
 
   PL_INFO << "<PixiePlugin> parser starting";
 
   Spill* spill;
+  std::vector<std::vector<int32_t>> channel_indices = callback->channel_indices_;
 
   uint64_t all_events = 0, cycles = 0;
   CustomTimer parse_timer;
@@ -1677,8 +1687,8 @@ void Plugin::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQueu
           std::bitset<16> pattern (buff16[idx++]);
 
           Hit one_hit;
-          one_hit.run_type  = buf_format;
-          one_hit.module    = buf_module;
+          //          one_hit.run_type  = buf_format;
+          //          one_hit.module    = buf_module;
 
           uint16_t evt_time_hi = buff16[idx++];
           uint16_t evt_time_lo = buff16[idx++];
@@ -1743,6 +1753,13 @@ void Plugin::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQueu
                 hi = chan_time_hi;
               lo = chan_trig_time;
               one_hit.timestamp.time = (hi << 32) + (mi << 16) + lo;
+
+              if ((buf_module < channel_indices.size()) &&
+                  (i < channel_indices[buf_module].size()) &&
+                  (channel_indices[buf_module][i] >= 0))
+                one_hit.channel = channel_indices[buf_module][i];
+              //else one_hit.channel will = -1, which is invalid
+
               ordered.insert(one_hit);
             }
           }
@@ -1754,7 +1771,8 @@ void Plugin::worker_parse (SynchronizedQueue<Spill*>* in_queue, SynchronizedQueu
 
         };
       }
-      spill->stats->events_in_spill = spill_events;
+      //FIX THIS!!!
+      //spill->stats->events_in_spill = spill_events;
       all_events += spill_events;
     }
     if (spill->run != nullptr) {

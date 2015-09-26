@@ -67,8 +67,8 @@ bool SpectrumRaw::init_text() {
 
   std::stringstream ss;
   xml_printer_->OpenElement("MatchPattern");
-  for (int i = 0; i < kNumChans; i++)
-    ss << metadata_.match_pattern[i] << " ";
+  for (auto &q : metadata_.match_pattern)
+    ss << q << " ";
   xml_printer_->PushText(boost::algorithm::trim_copy(ss.str()).c_str());
   xml_printer_->CloseElement();
 
@@ -169,9 +169,8 @@ void SpectrumRaw::_closeAcquisition() {
 void SpectrumRaw::hit_text(const Event &newEvent) {
   if (!open_xml_)
     return;
-  for (uint16_t i = 0; i < kNumChans; i++)
-    if (newEvent.hit[i].channel > -1)
-      newEvent.hit[i].to_xml(*xml_printer_);
+  for (auto &q: newEvent.hit)
+    q.second.to_xml(*xml_printer_);
 }
 
 void SpectrumRaw::hit_bin(const Event &newEvent) {
@@ -179,10 +178,8 @@ void SpectrumRaw::hit_bin(const Event &newEvent) {
     return;
 
   std::multiset<Hit> all_hits;
-
-  for (uint16_t i = 0; i < kNumChans; i++)
-    if (newEvent.hit[i].channel > -1)
-      all_hits.insert(newEvent.hit[i]);
+  for (auto &q : newEvent.hit)
+    all_hits.insert(q.second);
 
   for (auto &q : all_hits) {
     file_bin_.write((char*)&q.channel, sizeof(q.channel));

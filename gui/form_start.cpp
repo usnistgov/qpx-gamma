@@ -31,18 +31,19 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma:
   pixie_(Qpx::Wrapper::getInstance()),
   exiting(false)
 {
+  connect(&thread, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>)), this, SLOT(update(Gamma::Setting, std::vector<Gamma::Detector>)));
+
   formOscilloscope = new FormOscilloscope(runner_thread_, settings);
   connect(formOscilloscope, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
   connect(this, SIGNAL(toggle_push_(bool,Qpx::LiveStatus)), formOscilloscope, SLOT(toggle_push(bool,Qpx::LiveStatus)));
 
-
   formPixieSettings = new FormPixieSettings(runner_thread_, detectors_, settings_);
   connect(formPixieSettings, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
   connect(formPixieSettings, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
+  
   connect(this, SIGNAL(refresh()), formPixieSettings, SLOT(update()));
   connect(this, SIGNAL(toggle_push_(bool,Qpx::LiveStatus)), formPixieSettings, SLOT(toggle_push(bool,Qpx::LiveStatus)));
   connect(this, SIGNAL(update_dets()), formPixieSettings, SLOT(updateDetDB()));
-  connect(this, SIGNAL(update_dets()), formOscilloscope, SLOT(dets_updated()));
 
   QHBoxLayout *lo = new QHBoxLayout();
   lo->addWidget(formOscilloscope);
@@ -56,6 +57,10 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma:
 FormStart::~FormStart()
 {
   //  delete ui;
+}
+
+void FormStart::update(Gamma::Setting tree, std::vector<Gamma::Detector> dets) {
+  formOscilloscope->updateMenu(dets);
 }
 
 void FormStart::closeEvent(QCloseEvent *event) {

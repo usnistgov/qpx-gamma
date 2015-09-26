@@ -90,6 +90,8 @@ void DialogSpectrumTemplate::updateData() {
   ui->patternMatch->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(myTemplate.match_pattern), 25, true, 16));
   ui->patternAdd->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(myTemplate.add_pattern), 25, false, 16));
 
+  ui->spinDets->setValue(myTemplate.match_pattern.size());
+
   ui->patternMatch->setMinimumSize(ui->patternMatch->sizeHint());
   ui->patternAdd->setMinimumSize(ui->patternAdd->sizeHint());
 
@@ -184,6 +186,13 @@ void DialogSpectrumTemplate::on_pushRandColor_clicked()
 {
   myTemplate.appearance = generateColor().rgba();
   ui->colPicker->setCurrentColor(QColor::fromRgba(myTemplate.appearance));
+}
+
+void DialogSpectrumTemplate::on_spinDets_valueChanged(int arg1)
+{
+  myTemplate.add_pattern.resize(arg1);
+  myTemplate.match_pattern.resize(arg1);
+  updateData();
 }
 
 
@@ -387,6 +396,8 @@ void DialogSpectraTemplates::on_pushNew_clicked()
 {
   Qpx::Spectrum::Template new_template;
   new_template.appearance = generateColor().rgba();
+  new_template.match_pattern.resize(4);
+  new_template.add_pattern.resize(4);
   DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(new_template, false, this);
   connect(newDialog, SIGNAL(templateReady(Qpx::Spectrum::Template)), this, SLOT(add_template(Qpx::Spectrum::Template)));
   newDialog->exec();

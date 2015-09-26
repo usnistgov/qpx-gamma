@@ -80,6 +80,8 @@ private slots:
 
   void on_comboType_activated(const QString &arg1);
 
+  void on_spinDets_valueChanged(int arg1);
+
 private:
   void updateData();
 

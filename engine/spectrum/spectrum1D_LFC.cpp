@@ -35,8 +35,8 @@ static Registrar<Spectrum1D_LFC> registrar("LFC1D");
 bool Spectrum1D_LFC::initialize() {
   //add pattern must have exactly one channel
   int adds = 0;
-  for (int i=0; i < kNumChans; i++)
-    if (metadata_.add_pattern[i] == 1)
+  for (auto &q : metadata_.add_pattern)
+    if (q == 1)
       adds++;
 
   if (adds != 1) {
@@ -44,7 +44,7 @@ bool Spectrum1D_LFC::initialize() {
     return false;
   }
   
-  for (int i=0; i < kNumChans; i++)
+  for (int i=0; i < metadata_.add_pattern.size(); i++)
     if (metadata_.add_pattern[i] == 1)
       my_channel_ = i;
 
@@ -68,6 +68,10 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
 {
   Spectrum1D::addStats(newStats);
 
+  if ((newStats.channel >= metadata_.add_pattern.size())
+      || (newStats.channel != my_channel_))
+    return;
+
   if (!newStats.spill_number) {
     time2_ = time1_ = newStats;
     return;
@@ -83,16 +87,16 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
     PL_TRC << "LFC update chan[" << my_channel_ << "]"
            << " pixie_time=" << diff.total_time
            << " lab_time=" << d_lab_time
-           << " live_time=" << diff.live_time[my_channel_]
-           << " ftdt=" << diff.ftdt[my_channel_]
-           << " fast_peaks=" << diff.fast_peaks[my_channel_]
-           << " FAST_LIVE(live_time-ftdt)=" << (diff.live_time[my_channel_] - diff.ftdt[my_channel_]);
+           << " live_time=" << diff.live_time
+           << " ftdt=" << diff.ftdt
+           << " fast_peaks=" << diff.fast_peaks
+           << " FAST_LIVE(live_time-ftdt)=" << (diff.live_time - diff.ftdt);
 
     
     if (diff.total_time == 0.0)
       return;
     double scale_factor = d_lab_time / diff.total_time;
-    double fast_scaled  = (diff.live_time[my_channel_] - diff.ftdt[my_channel_]) * scale_factor;// * 1000000;
+    double fast_scaled  = (diff.live_time - diff.ftdt) * scale_factor;// * 1000000;
 
     PL_TRC << "LFC update chan[" << my_channel_ << "]"
            << " scale_factor=" << scale_factor
@@ -100,7 +104,7 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
      
     if (fast_scaled == 0.0)
       return;
-    double fast_peaks_compensated = diff.fast_peaks[my_channel_] * d_lab_time / fast_scaled;
+    double fast_peaks_compensated = diff.fast_peaks * d_lab_time / fast_scaled;
     time1_ = time2_;
   
     count_total_ += fast_peaks_compensated;

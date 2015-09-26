@@ -163,8 +163,8 @@ ListData* Wrapper::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
     one_spill = parsedQueue.dequeue();
     for (auto &q : one_spill->hits)
       result->hits.push_back(q);
-    if (one_spill->stats != nullptr)
-      delete one_spill->stats;
+    if (one_spill->run != nullptr)
+      delete one_spill->run;
     delete one_spill;
   }
 
@@ -183,8 +183,6 @@ void Wrapper::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
   while ((one_spill = data_queue->dequeue()) != nullptr) {
     spectra->add_spill(one_spill);
 
-    if (one_spill->stats != nullptr)
-      delete one_spill->stats;
     if (one_spill->run != nullptr)
       delete one_spill->run;    
     delete one_spill;
@@ -217,7 +215,7 @@ void Wrapper::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_que
   one_spill->run->detectors = source->detectors;
   session_start_time =  boost::posix_time::microsec_clock::local_time();
   moving_stats.lab_time = session_start_time;
-  one_spill->stats = new StatsUpdate(moving_stats);
+  one_spill->stats.push_back(moving_stats);
   data_queue->enqueue(one_spill);
   
   total_timer.resume();
@@ -240,7 +238,7 @@ void Wrapper::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_que
     moving_stats.spill_number = spill_number;
     moving_stats.lab_time = block_time;
     moving_stats.event_rate = one_run.event_rate;
-    one_spill->stats = new StatsUpdate(moving_stats);
+    one_spill->stats.push_back(moving_stats);
     data_queue->enqueue(one_spill);
     
     boost::this_thread::sleep(boost::posix_time::seconds(secsperrun));

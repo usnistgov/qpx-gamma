@@ -38,8 +38,6 @@
 
 namespace Qpx {
 
-const int kNumChans = 4;
-
 struct TimeStamp {
   uint64_t time;
 
@@ -59,20 +57,17 @@ struct TimeStamp {
 
 struct Hit{
 
-  int16_t module, channel;
+  int16_t channel;
   TimeStamp timestamp;
 
-  uint16_t run_type,
-           energy,
+  uint16_t energy,
            XIA_PSA,
            user_PSA;
 
   std::vector<uint16_t> trace;
   
   inline Hit() {
-    module = -1;
     channel = -1;
-    run_type = 0;
     energy = 0;
     XIA_PSA = 0;
     user_PSA = 0;
@@ -86,13 +81,12 @@ struct Hit{
   bool operator<(const Hit other) const {return (timestamp < other.timestamp);}
   bool operator>(const Hit other) const {return (timestamp > other.timestamp);}
   bool operator==(const Hit other) const {
-    if (module != other.module) return false;
     if (channel != other.channel) return false;
     if (timestamp != other.timestamp) return false;
-    if (run_type != other.run_type) return false;
     if (energy != other.energy) return false;
     if (XIA_PSA != other.XIA_PSA) return false;
     if (user_PSA != other.user_PSA) return false;
+    if (trace != other.trace) return false;
     return true;
   }
   bool operator!=(const Hit other) const { return !operator==(other); }
@@ -101,19 +95,17 @@ struct Hit{
 struct Event {
   TimeStamp lower_time, upper_time;
   double window;
-  std::vector<Hit> hit;
+  std::map<int16_t, Hit> hit;
 
   bool in_window(const TimeStamp& ts) const;
   void addHit(const Hit &newhit);
   std::string to_string() const;
 
   inline Event() {
-    hit.resize(kNumChans);
     window = 0.0;
   }
 
   inline Event(const Hit &newhit, double win) {
-    hit.resize(kNumChans);
     lower_time = upper_time = newhit.timestamp;
     hit[newhit.channel] = newhit;
     window = win;
@@ -121,33 +113,31 @@ struct Event {
 };
 
 struct StatsUpdate {
+  int16_t channel;
   uint64_t spill_number;
   uint64_t events_in_spill;
 
   //per module
   double total_time,
-         event_rate;
-
-  //per channel
-  std::vector<double> fast_peaks,
-                      live_time,
-                      ftdt,
-                      sfdt;
+    event_rate,
+    fast_peaks,
+    live_time,
+    ftdt,
+    sfdt;
 
   boost::posix_time::ptime lab_time;  //timestamp at end of spill
   
   inline StatsUpdate()
-    : spill_number(0)
-    , total_time(0.0)
-    , event_rate(0.0)
-    , events_in_spill(0)
-  {
-    fast_peaks.resize(kNumChans, 0.0);
-    live_time.resize(kNumChans, 0.0);
-    ftdt.resize(kNumChans, 0.0);
-    sfdt.resize(kNumChans, 0.0);
-  }
-
+      : channel(-1)
+      , spill_number(0)
+      , total_time(0.0)
+      , event_rate(0.0)
+      , events_in_spill(0)
+      , fast_peaks(0.0)
+      , live_time(0.0)
+      , ftdt(0.0)
+      , sfdt(0.0)
+  {}
 
   StatsUpdate operator-(const StatsUpdate) const;
   StatsUpdate operator+(const StatsUpdate) const;
@@ -176,7 +166,7 @@ struct RunInfo {
 
 
 struct Spill {
-  inline Spill(): stats(nullptr), run(nullptr) {}
+  inline Spill(): run(nullptr) {}
   bool operator==(const Spill other) const {
     if (stats != other.stats)
       return false;
@@ -189,9 +179,9 @@ struct Spill {
     return true;
   }
 
-  std::vector<uint32_t> data;  //as is from Pixie, unparsed
-  std::list<Qpx::Hit> hits;  //parsed
-  StatsUpdate* stats;
+  std::vector<uint32_t>  data;  //as is from Pixie, unparsed
+  std::list<Qpx::Hit>    hits;  //parsed
+  std::list<StatsUpdate> stats;
   RunInfo*     run;
 };
 

@@ -213,7 +213,6 @@ void FormListDaq::on_boxChan3_clicked()
 TableListData::TableListData(QObject *parent)
   :QAbstractTableModel(parent), time_factor_(1.0)
 {
-  calibrations_.resize(Qpx::kNumChans);
 }
 
 int TableListData::rowCount(const QModelIndex & /*parent*/) const

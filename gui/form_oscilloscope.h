@@ -56,11 +56,11 @@ private slots:
 
   void on_doubleSpinXDT_editingFinished();
   void chansChosen(QAction*);
-  void dets_updated();
 
+public slots:
+  void updateMenu(std::vector<Gamma::Detector>);
+  
 private:
-  void updateMenu();
-
   Ui::FormOscilloscope *ui;
   ThreadRunner &runner_thread_;
 

@@ -40,7 +40,7 @@ Simulator::Simulator(SpectraSet* all_spectra, std::array<int,2> chans,
           << " bits from source with " << source_res << " bits";
 
   Spectrum::Spectrum* co = nullptr;
-  if ((chans[0] < 0) || (chans[1] < 0) || (chans[0] >= kNumChans) || (chans[1] >= kNumChans)) {
+  if ((chans[0] < 0) || (chans[1] < 0)) {
     PL_WARN << "channels requested for simulation not in physical range"; return;
   }
 
@@ -56,7 +56,8 @@ Simulator::Simulator(SpectraSet* all_spectra, std::array<int,2> chans,
 
   for (auto &q: co_found) {
     md = q->metadata();
-    if ((md.add_pattern[chans[0]] && md.add_pattern[chans[1]]) &&
+    if ((chans[0] < md.add_pattern.size()) && (chans[1] < md.add_pattern.size()) &&
+        (md.add_pattern[chans[0]] && md.add_pattern[chans[1]]) &&
         (!md.match_pattern[chans[0]] && !md.match_pattern[chans[1]]))
       co = q;
   }
@@ -110,8 +111,6 @@ Simulator::Simulator(SpectraSet* all_spectra, std::array<int,2> chans,
 Hit Simulator::getHit() {
   Hit newHit;
   
-  newHit.run_type = 0x0103;
-    
   if (resolution_ > 0) {
     uint64_t newpoint = dist_(gen);
     uint32_t en1 = newpoint / resolution_;
@@ -143,12 +142,13 @@ StatsUpdate Simulator::getBlock(double duration) {
   else
     fraction = duration / lab_time;
 
-  for (int i = 0; i<2; i++) {
-    newBlock.fast_peaks[channels_[i]] = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/FAST_PEAKS", 28, Gamma::SettingType::floating, i)).value * fraction;
-    newBlock.live_time[channels_[i]]  = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/LIVE_TIME", 26, Gamma::SettingType::floating, i)).value * fraction;
-    newBlock.ftdt[channels_[i]]       = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/FTDT", 33, Gamma::SettingType::floating, i)).value * fraction;
-    newBlock.sfdt[channels_[i]]       = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/SFDT", 34, Gamma::SettingType::floating, i)).value * fraction;
-  }
+  //one channel only
+  //  for (int i = 0; i<2; i++) {
+    newBlock.fast_peaks = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/FAST_PEAKS", 28, Gamma::SettingType::floating, 0)).value * fraction;
+    newBlock.live_time  = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/LIVE_TIME", 26, Gamma::SettingType::floating, 0)).value * fraction;
+    newBlock.ftdt       = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/FTDT", 33, Gamma::SettingType::floating, 0)).value * fraction;
+    newBlock.sfdt       = settings.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/SFDT", 34, Gamma::SettingType::floating, 0)).value * fraction;
+    //  }
       
 
   return newBlock;

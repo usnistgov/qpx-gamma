@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>446</width>
-    <height>518</height>
+    <height>551</height>
    </rect>
   </property>
   <property name="focusPolicy">
@@ -386,7 +386,7 @@
       <string>Coincidence patterns</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="0" column="0">
+      <item row="1" column="0">
        <layout class="QHBoxLayout" name="horizontalLayout_10">
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -457,6 +457,42 @@
            </layout>
           </item>
          </layout>
+        </item>
+       </layout>
+      </item>
+      <item row="0" column="0">
+       <layout class="QHBoxLayout" name="horizontalLayout_11">
+        <item>
+         <widget class="QLabel" name="label_9">
+          <property name="minimumSize">
+           <size>
+            <width>60</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Expected number of detectors </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="spinDets">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>100</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximum">
+           <number>16</number>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>

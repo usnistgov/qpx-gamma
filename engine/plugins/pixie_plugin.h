@@ -60,7 +60,7 @@ public:
 
 
   //Unique
-  void get_stats();
+  //  void get_stats();
   void reset_counters_next_run();
 
   //DEPRECATE//
@@ -68,14 +68,14 @@ public:
 
 private:
   //Acquisition threads, use as static functors
-  static void worker_parse(SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue);
+  static void worker_parse(Plugin* callback, SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue);
   static void worker_run(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue, boost::atomic<bool>* interruptor, Gamma::Setting root);
   static void worker_run_dbl(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue, boost::atomic<bool>* interruptor, Gamma::Setting root);
   static void worker_run_test(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue, boost::atomic<bool>* interruptor, Gamma::Setting root);
 
 
 protected:
-  void fill_stats(StatsUpdate &stats, Gamma::Setting tree);
+  void fill_stats(std::list<StatsUpdate>&, uint8_t module);
 
   //DEPRECATE//
   std::vector<Gamma::Detector> from_xml(tinyxml2::XMLElement*);

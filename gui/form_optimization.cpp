@@ -243,9 +243,9 @@ void FormOptimization::do_run()
   bits = ui->spinBits->value();
 
   optimizing_.bits = bits;
-  optimizing_.add_pattern.resize(Qpx::kNumChans,0);
+  optimizing_.add_pattern.resize(ui->spinOptChan->value()+1,0);
   optimizing_.add_pattern[ui->spinOptChan->value()] = 1;
-  optimizing_.match_pattern.resize(Qpx::kNumChans,0);
+  optimizing_.match_pattern.resize(ui->spinOptChan->value()+1,0);
   optimizing_.match_pattern[ui->spinOptChan->value()] = 1;
   optimizing_.appearance = generateColor().rgba();
 

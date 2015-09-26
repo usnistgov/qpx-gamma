@@ -363,12 +363,6 @@ void Settings::get_all_settings() {
   read_settings_bulk();
 }
 
-void Settings::get_stats(std::string address) {
-  if (address == "QpxSettings/Pixie-4")
-    pixie_plugin_.get_stats();
-  read_settings_bulk();
-}
-
 void Settings::reset_counters_next_run() { //for current module only
   pixie_plugin_.reset_counters_next_run();
 }

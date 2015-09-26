@@ -37,10 +37,9 @@ bool Spectrum2D::initialize() {
   //match pattern can be whatever
   
   int adds = 0;
-  for (int i=0; i < kNumChans; i++) {
-    if (metadata_.add_pattern[i] == 1)
+  for (auto &q : metadata_.add_pattern)
+    if (q == 1)
       adds++;
-  }
 
   if (adds != 2) {
     PL_WARN << "Invalid 2D spectrum created (bad add pattern)";
@@ -54,7 +53,7 @@ bool Spectrum2D::initialize() {
   buffered_ = (get_attr("buffered").value != 0);
 
   adds = 0;
-  for (int i=0; i < kNumChans; i++) {
+  for (int i=0; i < metadata_.add_pattern.size(); i++) {
     if (metadata_.add_pattern[i] == 1) {
       pattern_[adds] = i;
       adds++;
@@ -162,8 +161,12 @@ std::unique_ptr<EntryList> Spectrum2D::_get_spectrum(std::initializer_list<Pair>
 }
 
 void Spectrum2D::addEvent(const Event& newEvent) {
-  uint64_t chan1_en = (newEvent.hit[pattern_[0]].energy >> shift_by_);
-  uint64_t chan2_en = (newEvent.hit[pattern_[1]].energy >> shift_by_);
+  uint64_t chan1_en = 0;
+  uint64_t chan2_en = 0;
+  if (newEvent.hit.count(pattern_[0]))
+    chan1_en = newEvent.hit.at(pattern_[0]).energy >> shift_by_;
+  if (newEvent.hit.count(pattern_[1]))
+    chan1_en = newEvent.hit.at(pattern_[1]).energy >> shift_by_;
   spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] += 1;
   if (buffered_)
     temp_spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] =
@@ -316,8 +319,8 @@ bool Spectrum2D:: read_spn(std::string name) {
 
 
 void Spectrum2D::init_from_file(std::string filename) { 
-  metadata_.match_pattern.resize(kNumChans, 0);
-  metadata_.add_pattern.resize(kNumChans, 0);
+  metadata_.match_pattern.resize(2, 0);
+  metadata_.add_pattern.resize(2, 1);
   metadata_.add_pattern[0] = 1;
   metadata_.add_pattern[1] = 1;
   metadata_.name = boost::filesystem::path(filename).filename().string();

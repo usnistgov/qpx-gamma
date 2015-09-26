@@ -268,11 +268,12 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
       else if ((item.setting_type == Gamma::SettingType::detector)
           && (value.type() == QVariant::String)) {
         item.value_text = value.toString().toStdString();
-        PL_DBG << "table changing detector " << (col-1) << " to " << value.toString().toStdString();
-        emit detector_chosen(col-1, value.toString().toStdString());
         return true;
       }
       emit setting_changed(col-1, item);
+    } else {
+      emit detector_chosen(col-1, value.toString().toStdString());
+      return true;
     }
   return true;
 }

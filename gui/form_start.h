@@ -53,6 +53,7 @@ signals:
   void update_dets();
 
 private slots:
+  void update(Gamma::Setting, std::vector<Gamma::Detector>);
   void toggle_push(bool, Qpx::LiveStatus);
   void toggleIO_(bool);
   void updateStatusText(QString);

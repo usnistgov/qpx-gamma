@@ -77,7 +77,6 @@ public:
   bool write_detector(const Gamma::Setting &set);
   
   void get_all_settings();
-  void get_stats(std::string address);
   void reset_counters_next_run();
   
   bool execute_command();

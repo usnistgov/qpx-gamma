@@ -39,7 +39,6 @@ class QpxPattern
 public:
 
     explicit QpxPattern(QVector<int16_t> pattern = QVector<int16_t>(), double size = 25, bool tristate = false, int wrap = 0);
-    explicit QpxPattern(std::bitset<Qpx::kNumChans> pattern, double size = 25, bool tristate = false, int wrap = 0);
 
     void paint(QPainter *painter, const QRect &rect,
                const QPalette &palette, bool enabled = true) const;

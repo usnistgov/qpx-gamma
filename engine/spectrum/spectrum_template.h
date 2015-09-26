@@ -38,8 +38,8 @@ namespace Spectrum {
 class Template : public XMLable {
  public:
   Template(): //default appearance is blue in RGBA
-  max_chans(kNumChans), type("invalid"), name_("noname"), bits(14), appearance(4278190335), visible(false)
-  {match_pattern.resize(max_chans,0); add_pattern.resize(max_chans,0);}
+  type("invalid"), name_("noname"), bits(14), appearance(4278190335), visible(false) {}
+
   std::string xml_element_name() const override {return "PixieSpectrumTemplate";}
   Template(std::string name) : Template() {name_ = name;}
   
@@ -60,8 +60,6 @@ class Template : public XMLable {
     if (generic_attributes != other.generic_attributes) return false;
     return true;
   }
-  
-  int max_chans;
   
   std::string name_;
   uint8_t bits;

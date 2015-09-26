@@ -89,8 +89,8 @@ void Spectrum::addSpill(const Spill& one_spill) {
     }
   }
 
-  if (one_spill.stats != nullptr)
-    this->addStats(*one_spill.stats);
+  for (auto &q : one_spill.stats)
+    this->addStats(q);
 
   if (one_spill.run != nullptr)
     this->addRun(*one_spill.run);
@@ -108,11 +108,11 @@ void Spectrum::pushHit(const Hit& newhit)
   } else {
     for (auto &q : backlog) {
       if (q.in_window(newhit.timestamp)) {
-        if ((q.hit[newhit.channel].channel == -1) && !appended) {
+        if ((q.hit.count(newhit.channel) == 0) && !appended) {
           //coincidence
           q.addHit(newhit);
           appended = true;
-        } else if ((q.hit[newhit.channel].channel == -1) && appended) {
+        } else if ((q.hit.count(newhit.channel) == 0) && appended) {
           //second coincidence
           q.addHit(newhit);
           PL_DBG << "<" << metadata_.name << "> processed hit " << newhit.to_string() << " coincident with more than one other hit (counted >=2 times)";
@@ -154,9 +154,9 @@ void Spectrum::closeAcquisition() {
 
 bool Spectrum::validateEvent(const Event& newEvent) const {
   bool addit = true;
-  for (int i = 0; i < kNumChans; i++)
-    if (((metadata_.match_pattern[i] == 1) && (newEvent.hit[i].channel < 0)) ||
-        ((metadata_.match_pattern[i] == -1) && (newEvent.hit[i].channel > -1)))
+  for (int i = 0; i < metadata_.match_pattern.size(); i++)
+    if (((metadata_.match_pattern[i] == 1) && (newEvent.hit.count(i) == 0)) ||
+        ((metadata_.match_pattern[i] == -1) && (newEvent.hit.count(i) > 0)))
       addit = false;
   return addit;
 }
@@ -166,7 +166,7 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
 
   if (newBlock.spill_number == 0)
     start_stats = newBlock;
-  else {
+  else if ((newBlock.channel < metadata_.add_pattern.size()) && (metadata_.add_pattern[newBlock.channel])) {
     metadata_.real_time   = newBlock.lab_time - start_stats.lab_time;
     StatsUpdate diff = newBlock - start_stats;
     if (!diff.total_time)
@@ -174,11 +174,9 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
     double scale_factor = metadata_.real_time.total_microseconds() / 1000000 / diff.total_time;
 
     metadata_.live_time = metadata_.real_time;
-    for (int i = 0; i < kNumChans; i++) { //using shortest live time of all added channels
-      double this_time_unscaled = diff.live_time[i] - diff.sfdt[i];
-      if ((metadata_.add_pattern[i]) && (this_time_unscaled < metadata_.live_time.total_seconds()))
-        metadata_.live_time = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));
-    }
+    double this_time_unscaled = diff.live_time - diff.sfdt;
+    if (this_time_unscaled < metadata_.live_time.total_seconds())
+      metadata_.live_time = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));
   }
 }
 
@@ -195,7 +193,7 @@ void Spectrum::addRun(const RunInfo& run_info) {
   metadata_.real_time = run_info.time_stop - run_info.time_start;
   double scale_factor = run_info.time_scale_factor();
   metadata_.live_time = metadata_.real_time;
-  for (int i = 0; i < kNumChans; i++) { //using shortest live time of all added channels
+  for (int i = 0; i < metadata_.add_pattern.size(); i++) { //using shortest live time of all added channels
     double live = run_info.state.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/LIVE_TIME", 26, Gamma::SettingType::floating, i)).value;
     double sfdt = run_info.state.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/SFDT", 34, Gamma::SettingType::floating, i)).value;
     double this_time_unscaled =live - sfdt;
@@ -394,15 +392,15 @@ void Spectrum::to_xml(tinyxml2::XMLPrinter& printer) const {
   printer.CloseElement();
 
   printer.OpenElement("MatchPattern");
-  for (int i = 0; i < kNumChans; i++)
-    patterndata << metadata_.match_pattern[i] << " ";
+  for (auto &q: metadata_.match_pattern)
+    patterndata << static_cast<short>(q) << " ";
   printer.PushText(boost::algorithm::trim_copy(patterndata.str()).c_str());
   printer.CloseElement();
 
   patterndata.str(std::string()); //clear it
   printer.OpenElement("AddPattern");
-  for (int i = 0; i < kNumChans; i++)
-    patterndata << metadata_.add_pattern[i] << " ";
+  for (auto &q: metadata_.add_pattern)
+    patterndata << static_cast<short>(q) << " ";
   printer.PushText(boost::algorithm::trim_copy(patterndata.str()).c_str());
   printer.CloseElement();
   
@@ -464,21 +462,21 @@ bool Spectrum::from_xml(tinyxml2::XMLElement* root) {
   
   shift_by_ = 16 - metadata_.bits;
   metadata_.resolution = pow(2, metadata_.bits);
-  metadata_.match_pattern.resize(kNumChans);
-  metadata_.add_pattern.resize(kNumChans);
+  metadata_.match_pattern.clear();
+  metadata_.add_pattern.clear();
   
   if ((elem = root->FirstChildElement("MatchPattern")) != nullptr) {
     std::stringstream pattern_match(elem->GetText());
-    for (int i = 0; i < kNumChans; i++) {
+    while (pattern_match.rdbuf()->in_avail()) {
       pattern_match >> numero;
-      metadata_.match_pattern[i] = boost::lexical_cast<int>(boost::algorithm::trim_copy(numero));
+      metadata_.match_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
     }
   }
   if ((elem = root->FirstChildElement("AddPattern")) != nullptr) {
     std::stringstream pattern_add(elem->GetText());
-    for (int i = 0; i < kNumChans; i++) {
+    while (pattern_add.rdbuf()->in_avail()) {
       pattern_add >> numero;
-      metadata_.add_pattern[i] = boost::lexical_cast<int>(boost::algorithm::trim_copy(numero));
+      metadata_.add_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
     }
   }
   

@@ -109,9 +109,9 @@ void Spectrum1D::addHit(const Hit& newHit) {
 }
 
 void Spectrum1D::addEvent(const Event& newEvent) {
-  for (int i = 0; i < kNumChans; i++)
-    if ((metadata_.add_pattern[i]) && (newEvent.hit[i].channel > -1))
-      this->addHit(newEvent.hit[i]);
+  for (int16_t i = 0; i < metadata_.add_pattern.size(); i++)
+    if ((metadata_.add_pattern[i]) && (newEvent.hit.count(i) > 0))
+      this->addHit(newEvent.hit.at(i));
 }
 
 bool Spectrum1D::_write_file(std::string dir, std::string format) const {
@@ -139,8 +139,8 @@ bool Spectrum1D::_read_file(std::string name, std::string format) {
 }
 
 void Spectrum1D::init_from_file(std::string filename) { 
-  metadata_.match_pattern.resize(kNumChans, 0);
-  metadata_.add_pattern.resize(kNumChans, 0);
+  metadata_.match_pattern.resize(1, 1);
+  metadata_.add_pattern.resize(1, 1);
   metadata_.match_pattern[0] = 1;
   metadata_.add_pattern[0] = 1;
   metadata_.name = boost::filesystem::path(filename).filename().string();

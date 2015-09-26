@@ -49,9 +49,7 @@ boost::posix_time::time_duration Hit::to_posix_time() {
 void Hit::to_xml(tinyxml2::XMLPrinter &printer, bool with_pattern) const {
   printer.OpenElement("Hit");
 
-  printer.PushAttribute("module", std::to_string(module).c_str());
   printer.PushAttribute("channel", std::to_string(channel).c_str());
-  printer.PushAttribute("run_type", std::to_string(run_type).c_str());
   printer.PushAttribute("energy", std::to_string(energy).c_str());
   printer.PushAttribute("XIA_PSA", std::to_string(XIA_PSA).c_str());
   printer.PushAttribute("user_PSA", std::to_string(user_PSA).c_str());
@@ -97,18 +95,22 @@ std::string Event::to_string() const {
 // and timestamp would require duration output type
 StatsUpdate StatsUpdate::operator-(const StatsUpdate other) const {
   StatsUpdate answer;
-  for (int i=0; i < kNumChans; i++) {
-    answer.fast_peaks[i] = fast_peaks[i] - other.fast_peaks[i];
-    answer.live_time[i]  = live_time[i] - other.live_time[i];
-    answer.ftdt[i]       = ftdt[i] - other.ftdt[i];
-    answer.sfdt[i]       = sfdt[i] - other.sfdt[i];
-  }
+  answer.fast_peaks = fast_peaks - other.fast_peaks;
+  answer.live_time  = live_time - other.live_time;
+  answer.ftdt       = ftdt - other.ftdt;
+  answer.sfdt       = sfdt - other.sfdt;
   answer.total_time = total_time - other.total_time;
   answer.events_in_spill = events_in_spill - other.events_in_spill;
+  //event rate?
+  //spill number?
+  //labtime?
+  //channel?
   return answer;
 }
 
 bool StatsUpdate::operator==(const StatsUpdate other) const {
+  if (channel != other.channel)
+    return false;
   if (total_time != other.total_time)
     return false;
   if (events_in_spill != other.events_in_spill)
@@ -126,35 +128,31 @@ bool StatsUpdate::operator==(const StatsUpdate other) const {
 // except rate wouldn't make sense, neither does timestamp
 StatsUpdate StatsUpdate::operator+(const StatsUpdate other) const {
   StatsUpdate answer;
-  for (int i=0; i < kNumChans; i++) {
-    answer.fast_peaks[i] = fast_peaks[i] + other.fast_peaks[i];
-    answer.live_time[i]  = live_time[i] + other.live_time[i];
-    answer.ftdt[i]       = ftdt[i] + other.ftdt[i];
-    answer.sfdt[i]       = sfdt[i] + other.sfdt[i];
-  }
+  answer.fast_peaks = fast_peaks + other.fast_peaks;
+  answer.live_time  = live_time + other.live_time;
+  answer.ftdt       = ftdt + other.ftdt;
+  answer.sfdt       = sfdt + other.sfdt;
   answer.total_time = total_time + other.total_time;
   answer.events_in_spill = events_in_spill + other.events_in_spill;
   return answer;
+  //event rate?
+  //spill number?
+  //labtime?
+  //channel?
 }
 
 void StatsUpdate::to_xml(tinyxml2::XMLPrinter &printer) const {
   printer.OpenElement("StatsUpdate");
+  printer.PushAttribute("channel", std::to_string(channel).c_str());
   printer.PushAttribute("lab_time", boost::posix_time::to_iso_extended_string(lab_time).c_str());
   printer.PushAttribute("spill_number", std::to_string(spill_number).c_str());
   printer.PushAttribute("events_in_spill", std::to_string(events_in_spill).c_str());
   printer.PushAttribute("total_time", std::to_string(total_time).c_str());
   printer.PushAttribute("event_rate", std::to_string(event_rate).c_str());
-
-  for (int i=0; i < kNumChans; i++) {
-    printer.OpenElement("ChanStats");
-    printer.PushAttribute("chan", std::to_string(i).c_str());
-    printer.PushAttribute("fast_peaks", std::to_string(fast_peaks[i]).c_str());
-    printer.PushAttribute("live_time", std::to_string(live_time[i]).c_str());
-    printer.PushAttribute("ftdt", std::to_string(ftdt[i]).c_str());
-    printer.PushAttribute("sfdt", std::to_string(sfdt[i]).c_str());
-    printer.CloseElement(); //ChanStats
-  }
-
+  printer.PushAttribute("fast_peaks", std::to_string(fast_peaks).c_str());
+  printer.PushAttribute("live_time", std::to_string(live_time).c_str());
+  printer.PushAttribute("ftdt", std::to_string(ftdt).c_str());
+  printer.PushAttribute("sfdt", std::to_string(sfdt).c_str());
   printer.CloseElement(); //StatsUpdate
 }
 
@@ -169,6 +167,8 @@ void StatsUpdate::from_xml(tinyxml2::XMLElement* root) {
     iss >> lab_time;
   }
 
+  if (root->Attribute("channel") != nullptr)
+    channel = boost::lexical_cast<int>(root->Attribute("channel"));
   if (root->Attribute("spill_number"))
     spill_number = boost::lexical_cast<uint64_t>(root->Attribute("spill_number"));
   if (root->Attribute("events_in_spill"))
@@ -177,25 +177,14 @@ void StatsUpdate::from_xml(tinyxml2::XMLElement* root) {
     total_time = boost::lexical_cast<double>(root->Attribute("total_time"));
   if (root->Attribute("event_rate"))
     event_rate = boost::lexical_cast<double>(root->Attribute("event_rate"));
-
-  tinyxml2::XMLElement* elem = root->FirstChildElement("ChanStats");
-  while (elem != nullptr) {
-    if (elem->Attribute("chan") != nullptr) {
-      int chan = boost::lexical_cast<int>(elem->Attribute("chan"));
-      if ((chan >= 0) && (chan < kNumChans)) {
-        if (elem->Attribute("fast_peaks"))
-          fast_peaks[chan] = boost::lexical_cast<double>(elem->Attribute("fast_peaks"));
-        if (elem->Attribute("live_time"))
-          live_time[chan] = boost::lexical_cast<double>(elem->Attribute("live_time"));
-        if (elem->Attribute("ftdt"))
-          ftdt[chan] = boost::lexical_cast<double>(elem->Attribute("ftdt"));
-        if (elem->Attribute("sfdt"))
-          sfdt[chan] = boost::lexical_cast<double>(elem->Attribute("sfdt"));
-      }
-      elem = dynamic_cast<tinyxml2::XMLElement*>(elem->NextSibling());
-    }
-  }
-
+  if (root->Attribute("fast_peaks"))
+    fast_peaks = boost::lexical_cast<double>(root->Attribute("fast_peaks"));
+  if (root->Attribute("live_time"))
+    live_time = boost::lexical_cast<double>(root->Attribute("live_time"));
+  if (root->Attribute("ftdt"))
+    ftdt = boost::lexical_cast<double>(root->Attribute("ftdt"));
+  if (root->Attribute("sfdt"))
+    sfdt = boost::lexical_cast<double>(root->Attribute("sfdt"));
 }
 
 

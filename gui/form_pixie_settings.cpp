@@ -103,7 +103,6 @@ void FormPixieSettings::push_from_table(int chan, Gamma::Setting setting) {
 }
 
 void FormPixieSettings::chose_detector(int chan, std::string name) {
-  PL_DBG << "chose_detector " << name;
   Gamma::Detector det = detectors_.get(Gamma::Detector(name));
   PL_DBG << "det " <<  det.name_ << " with cali " << det.energy_calibrations_.size() << " has sets " << det.settings_.branches.size();
   for (auto &q : det.settings_.branches.my_data_)
@@ -170,14 +169,13 @@ void FormPixieSettings::loadSettings() {
 }
 
 void FormPixieSettings::saveSettings() {
+  for (auto &q : channels_)
+    detectors_.replace(q);
+  
   settings_.beginGroup("Program");
   settings_.setValue("settings_table_show_readonly", ui->checkShowRO->isChecked());
   settings_.setValue("settings_tab_tree", (ui->tabsSettings->currentWidget() == viewTreeSettings));
   settings_.endGroup();
-}
-
-void FormPixieSettings::updateDetChoices() {
-
 }
 
 void FormPixieSettings::updateDetDB() {
@@ -200,6 +198,8 @@ void FormPixieSettings::on_pushOptimizeAll_clicked()
 {
   emit statusText("Applying detector optimizations...");
   emit toggleIO(false);
+  // for (auto &q : channels_)
+    
   runner_thread_.do_optimize();
 }
 
@@ -214,7 +214,7 @@ void FormPixieSettings::on_pushDetDB_clicked()
 {
   WidgetDetectors *det_widget = new WidgetDetectors(this);
   det_widget->setData(detectors_, data_directory_);
-  //connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
+  connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(updateDetDB()));
   det_widget->exec();
 }
 

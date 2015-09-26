@@ -52,15 +52,15 @@ void Template::to_xml(tinyxml2::XMLPrinter& printer) const {
   printer.CloseElement();
 
   printer.OpenElement("MatchPattern");
-  for (int i = 0; i < max_chans; i++)
-    patterndata << static_cast<short>(match_pattern[i]) << " ";
+  for (auto &q: match_pattern)
+    patterndata << static_cast<short>(q) << " ";
   printer.PushText(boost::algorithm::trim_copy(patterndata.str()).c_str());
   printer.CloseElement();
 
   patterndata.str(std::string()); //clear it
   printer.OpenElement("AddPattern");
-  for (int i = 0; i < max_chans; i++)
-    patterndata << static_cast<short>(add_pattern[i]) << " ";
+  for (auto &q: add_pattern)
+    patterndata << static_cast<short>(q) << " ";
   printer.PushText(boost::algorithm::trim_copy(patterndata.str()).c_str());
   printer.CloseElement();
 
@@ -90,16 +90,16 @@ void Template::from_xml(tinyxml2::XMLElement* root) {
     visible = boost::lexical_cast<bool>(std::string(elem->GetText()));
   if ((elem = root->FirstChildElement("MatchPattern")) != nullptr) {
     std::stringstream pattern_match(elem->GetText());
-    for (int i = 0; i < max_chans; i++) {
+    while (pattern_match.rdbuf()->in_avail()) {
       pattern_match >> numero;
-      match_pattern[i] = boost::lexical_cast<short>(boost::algorithm::trim_copy(numero));
+      match_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
     }
   }
   if ((elem = root->FirstChildElement("AddPattern")) != nullptr) {
     std::stringstream pattern_add(elem->GetText());
-    for (int i = 0; i < max_chans; i++) {
+    while (pattern_add.rdbuf()->in_avail()) {
       pattern_add >> numero;
-      add_pattern[i] = boost::lexical_cast<short>(boost::algorithm::trim_copy(numero));
+      add_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
     }
   }
   if ((elem = root->FirstChildElement("GenericAttributes")) != nullptr) {

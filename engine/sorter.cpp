@@ -168,7 +168,7 @@ Spill Sorter::get_spill() {
     if (spills_.front().spill_number == 0)
       one_spill.run = new RunInfo(start_);
 
-    one_spill.stats = new StatsUpdate(spills_.front());
+    one_spill.stats.push_back(spills_.front()); //wrong!!!
 
     uint64_t count = 0;
     uint16_t event_entry[6];

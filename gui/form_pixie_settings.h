@@ -52,7 +52,6 @@ public:
 public slots:
   void refresh();
   void update(const Gamma::Setting &tree, const std::vector<Gamma::Detector> &channels);
-  void updateDetDB();
 
 signals:
   void toggleIO(bool);
@@ -61,11 +60,13 @@ signals:
 protected:
   void closeEvent(QCloseEvent*);
 
+public slots:
+  void updateDetDB();
+  
 private slots:
   void on_pushSettingsRefresh_clicked();
   void on_pushOptimizeAll_clicked();
 
-  void updateDetChoices();
   void toggle_push(bool enable, Qpx::LiveStatus live);
 
   void on_pushDetDB_clicked();
