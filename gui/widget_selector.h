@@ -16,67 +16,65 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      QpxSpectra - displays boxes for multiple spectra with name and color
- *      QpxSpectraWidget - widget that allows selection of spectra
+ *      SelectorWidget - colorful clickable things
  *
  ******************************************************************************/
 
-#ifndef QPX_SPECTRA_WIDGET
-#define QPX_SPECTRA_WIDGET
+#ifndef SELECTOR_WIDGET_H
+#define SELECTOR_WIDGET_H
 #include <QObject>
 #include <QMetaType>
 #include <QWidget>
 #include <QPointF>
 #include <QVector>
 #include <QStaticText>
-#include <vector>
-#include <list>
-#include "spectra_set.h"
-#include "custom_logger.h"
+#include <QVariant>
 
-struct SpectrumAvatar {
-    QString name;
-    QColor color;
-    bool selected;
+struct SelectorItem {
+  QString text;
+  QColor color;
+  bool visible;
+  QVariant data;
+
+  SelectorItem() : visible(false) {}
 };
 
-class QpxSpectraWidget : public QWidget
+class SelectorWidget : public QWidget
 {
-    Q_OBJECT
+  Q_OBJECT
 
 public:
-    QpxSpectraWidget(QWidget *parent = 0);
+  SelectorWidget(QWidget *parent = 0);
 
-    QSize sizeHint() const Q_DECL_OVERRIDE;
-    void setQpxSpectra(Qpx::SpectraSet &newset, int dim = 0, int res = 0);
-    void update_looks();
-    int available_count();
-    QString selected();
-    void show_all();
-    void hide_all();
+  QSize sizeHint() const Q_DECL_OVERRIDE;
+  QSize minimumSizeHint() const Q_DECL_OVERRIDE;
+  void setItems(QVector<SelectorItem>);
+  void replaceSelected(SelectorItem);
+  QVector<SelectorItem> items();
+  SelectorItem selected();
+  virtual void show_all();
+  virtual void hide_all();
 
 signals:
-    void stateChanged();
-    void contextRequested();
+  void itemSelected(SelectorItem);
+  void itemToggled(SelectorItem);
 
 protected:
-    void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
-    void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
+  void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
+  void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
+
+  QVector<SelectorItem> my_items_;
+  int selected_;
+
+  int flagAt(int, int);
 
 private:
-    Qpx::SpectraSet *all_spectra_;
-    QVector<SpectrumAvatar> my_spectra_;
+  int rect_w_, rect_h_, border;
+  int width_last, height_total, max_wide;
 
-    int rect_w_, rect_h_, border;
-    int width_last, height_total, max_wide;
-    int selected_;
+  QRectF inner, outer, text;
 
-    QRectF inner, outer, text;
-
-    void recalcDim(int, int);
-
-    int flagAt(int, int);
-
+  void recalcDim(int, int);
 };
 
 #endif

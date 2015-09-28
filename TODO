@@ -1,9 +1,7 @@
 Major features/overhauls:
 -buffer 2d only when visible
--multiple modules
 -lock file (one instance per system)
 -pause run
--spectra warping
 -uncertainties for multiplet areas
 -efficiency calibration
 
@@ -12,11 +10,10 @@ pixiecpp:
 -save as 2012 revision of N42
 -fix cnf loading (dll?)
 -save/load matrices++
--saving raw transfers to new directory
+-save raw transfers to new directory
 
 gui:
--simplify detector and template dialogs
--ask for simulation parameters***
+-ask for simulation parameters
 -more run parameters
       *delay / prompt
       *save after complete
@@ -26,7 +23,6 @@ gui:
 -save plot to TIF
 
 cpx(batch language):
--set detector command
 -export to other formats
 
 

@@ -54,11 +54,10 @@ class Detector : public XMLable {
   bool operator== (const Detector& other) const {
     if (name_ != other.name_) return false;
     if (type_ != other.type_) return false;
-    //if (setting_values_ != other.setting_values_) return false;
-    //if (setting_names_ != other.setting_names_) return false;
     if (settings_ != other.settings_) return false;
-
-    //if (energy_calibration_ != other.energy_calibration_) return false;
+    if (energy_calibrations_ != other.energy_calibrations_) return false;
+    if (gain_match_calibrations_ != other.gain_match_calibrations_) return false;
+    if (fwhm_calibration_ != other.fwhm_calibration_) return false;
     return true;
   }
 
@@ -74,8 +73,6 @@ class Detector : public XMLable {
   XMLableDB<Calibration> gain_match_calibrations_;
 
   Calibration fwhm_calibration_;
-//  std::vector<double> setting_values_;
-//  std::vector<std::string> setting_names_;
   Setting settings_;
   
 };

@@ -36,19 +36,19 @@ FormOscilloscope::FormOscilloscope(ThreadRunner& thread, QSettings& settings, QW
   ui->widgetPlot->set_marker_labels(false);
   ui->widgetPlot->showButtonColorThemes(false);
   ui->widgetPlot->showButtonMarkerLabels(false);
-  ui->widgetPlot->showButtonPlotStyle(false);
+//  ui->widgetPlot->showButtonPlotStyle(false);
   ui->widgetPlot->showButtonScaleType(false);
   ui->widgetPlot->setZoomable(true);
-  ui->widgetPlot->setTitle("Oscilloscope");
+  ui->widgetPlot->setTitle("");
   ui->widgetPlot->setLabels("time (ticks)", "energy/channel");
 
   loadSettings();
 
-  ui->toolSelectChans->setMenu(&menuDetsSelected);
-  ui->toolSelectChans->setPopupMode(QToolButton::InstantPopup);
-  connect(ui->toolSelectChans, SIGNAL(triggered(QAction*)), this, SLOT(chansChosen(QAction*)));
-
   connect(&runner_thread_, SIGNAL(oscilReadOut(std::vector<Qpx::Trace>)), this, SLOT(oscil_complete(std::vector<Qpx::Trace>)));
+
+  connect(ui->selectorChannels, SIGNAL(itemSelected(SelectorItem)), this, SLOT(channelDetails(SelectorItem)));
+  connect(ui->selectorChannels, SIGNAL(itemToggled(SelectorItem)), this, SLOT(channelToggled(SelectorItem)));
+
 }
 
 FormOscilloscope::~FormOscilloscope()
@@ -75,21 +75,30 @@ void FormOscilloscope::saveSettings() {
 }
 
 void FormOscilloscope::updateMenu(std::vector<Gamma::Detector> dets) {
-  menuDetsSelected.clear();
-  if (dets.size() < det_on_.size())
-    det_on_.resize(dets.size());
+  QVector<SelectorItem> my_channels = ui->selectorChannels->items();
+
+  if (dets.size() < my_channels.size())
+    my_channels.resize(dets.size());
+
+  ui->pushShowAll->setEnabled(!dets.empty());
+  ui->pushHideAll->setEnabled(!dets.empty());
+
+  QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::red, Qt::blue};
+
   for (int i=0; i < dets.size(); ++i) {
-    menuDetsSelected.addAction(QString::fromStdString(dets[i].name_) + " (chan " + QString::number(i) + ")");
-    if (i >= det_on_.size())
-      det_on_.push_back(1);
+    if (i >= my_channels.size()) {
+      my_channels.push_back(SelectorItem());
+      my_channels[i].visible = true;
+    }
+
+    my_channels[i].data = QVariant::fromValue(i);
+    my_channels[i].text = QString::fromStdString(dets[i].name_);
+    my_channels[i].color = palette[i % palette.size()];
   }
-  int i = 0;
-  for (auto &q : menuDetsSelected.actions()) {
-    q->setCheckable(true);
-    q->setChecked(det_on_[i]);
-    q->setData(QVariant::fromValue(i));
-    ++i;
-  }
+
+  ui->selectorChannels->setItems(my_channels);
+
+  replot();
 }
 
 double FormOscilloscope::xdt() {
@@ -97,18 +106,25 @@ double FormOscilloscope::xdt() {
 }
 
 
-void FormOscilloscope::chansChosen(QAction* act) {
-  int choice = act->data().toInt();
-  det_on_[choice] = !det_on_[choice];
-  act->setChecked(det_on_[choice]);
-  on_pushOscilRefresh_clicked();
+void FormOscilloscope::channelToggled(SelectorItem) {
+  replot();
+}
+
+void FormOscilloscope::channelDetails(SelectorItem item) {
+  int i = item.data.toInt();
+  QString text;
+  if ((i > -1) && (i < traces_.size())) {
+    Gamma::Detector det = traces_[i].detector;
+    text += QString::fromStdString(det.name_);
+    text += " (" + QString::fromStdString(det.type_) + ")";
+  }
+  ui->widgetPlot->setTitle(text);
 }
 
 void FormOscilloscope::toggle_push(bool enable, Qpx::LiveStatus live) {
   bool online = (Qpx::LiveStatus::online == live);
   ui->pushOscilRefresh->setEnabled(enable && online);
   ui->doubleSpinXDT->setEnabled(enable && online);
-  ui->toolSelectChans->setEnabled(enable && online);
 }
 
 void FormOscilloscope::on_pushOscilRefresh_clicked()
@@ -119,25 +135,36 @@ void FormOscilloscope::on_pushOscilRefresh_clicked()
 }
 
 void FormOscilloscope::oscil_complete(std::vector<Qpx::Trace> traces) {
+  traces_ = traces;
+
+  std::vector<Gamma::Detector> dets;
+  for (auto &q : traces)
+    dets.push_back(q.detector);
+
+  updateMenu(dets);
+
+  emit toggleIO(true);
+}
+
+void FormOscilloscope::replot() {
   ui->widgetPlot->clearGraphs();
   ui->widgetPlot->reset_scales();
 
-  double xdt = 0.5;
   QString unit = "n/a";
-  std::vector<Gamma::Detector> dets;
+  double xdt = 0.5;
 
-  if (!traces.empty()) {
+  if (!traces_.empty()) {
+
+    QVector<SelectorItem> my_channels = ui->selectorChannels->items();
 
     std::map<double, double> minima, maxima;
-    QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::cyan, Qt::blue};
 
-    for (int i=0; i < traces.size(); i++) {
-      if (!traces[i].data.size())
+    for (int i=0; i < traces_.size(); i++) {
+      if (!traces_[i].data.size())
         continue;
 
-      uint32_t trace_length = traces[i].data.size();
-      dets.push_back(traces[i].detector);
-      double xinterval = traces[i].detector.settings_.branches.get(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/XDT", 17, Gamma::SettingType::floating, i)).value;
+      uint32_t trace_length = traces_[i].data.size();
+      double xinterval = traces_[i].detector.settings_.branches.get(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/XDT", 17, Gamma::SettingType::floating, i)).value;
 
       xdt = xinterval;
 
@@ -145,27 +172,28 @@ void FormOscilloscope::oscil_complete(std::vector<Qpx::Trace> traces) {
       for (int i=0; i < trace_length; ++i)
         xx.push_back(i*xinterval);
 
-      Gamma::Calibration calib = traces[i].detector.highest_res_calib();
+      Gamma::Calibration calib = traces_[i].detector.highest_res_calib();
       unit = QString::fromStdString(calib.units_);
 
       QVector<double> yy;
-      for (auto it : traces[i].data) {
+      for (auto it : traces_[i].data) {
         if (calib.units_ != "channels")
           yy.push_back(calib.transform(it, 16));
         else
           yy.push_back(it);
       }
 
-      AppearanceProfile profile;
-      profile.default_pen = QPen(palette[i % palette.size()], 1);
-      if ((i >= det_on_.size()) || (det_on_[i]))
+      if ((i < my_channels.size()) && (my_channels[i].visible)) {
+        AppearanceProfile profile;
+        profile.default_pen = QPen(my_channels[i].color, 1);
         ui->widgetPlot->addGraph(xx, yy, profile);
 
-      for (int i=0; i < xx.size(); i++) {
-        if (!minima.count(xx[i]) || (minima[xx[i]] > yy[i]))
-          minima[xx[i]] = yy[i];
-        if (!maxima.count(xx[i]) || (maxima[xx[i]] < yy[i]))
-          maxima[xx[i]] = yy[i];
+        for (int i=0; i < xx.size(); i++) {
+          if (!minima.count(xx[i]) || (minima[xx[i]] > yy[i]))
+            minima[xx[i]] = yy[i];
+          if (!maxima.count(xx[i]) || (maxima[xx[i]] < yy[i]))
+            maxima[xx[i]] = yy[i];
+        }
       }
 
     }
@@ -179,8 +207,6 @@ void FormOscilloscope::oscil_complete(std::vector<Qpx::Trace> traces) {
   ui->widgetPlot->rescale();
   ui->widgetPlot->redraw();
 
-  updateMenu(dets);
-  emit toggleIO(true);
 }
 
 void FormOscilloscope::on_doubleSpinXDT_editingFinished()
@@ -188,3 +214,15 @@ void FormOscilloscope::on_doubleSpinXDT_editingFinished()
   on_pushOscilRefresh_clicked();
 }
 
+
+void FormOscilloscope::on_pushShowAll_clicked()
+{
+  ui->selectorChannels->show_all();
+  replot();
+}
+
+void FormOscilloscope::on_pushHideAll_clicked()
+{
+  ui->selectorChannels->hide_all();
+  replot();
+}

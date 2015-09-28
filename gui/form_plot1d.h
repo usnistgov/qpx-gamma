@@ -25,7 +25,7 @@
 #include <QWidget>
 #include <spectra_set.h>
 #include "qsquarecustomplot.h"
-#include "widget_spectra_selector.h"
+#include "widget_selector.h"
 #include "widget_plot1d.h"
 
 namespace Ui {
@@ -62,23 +62,18 @@ signals:
 
 private slots:
   void on_comboResolution_currentIndexChanged(int index);
-  void spectrumDetails();
   void spectrumDetailsClosed(bool);
   void spectrumDetailsDelete();
 
-  void spectraLooksChanged();
+  void spectrumLooksChanged(SelectorItem);
+  void spectrumDetails(SelectorItem);
 
   void addMovingMarker(double);
   void removeMovingMarker(double);
 
-
   void on_pushFullInfo_clicked();
-
   void on_pushAnalyse_clicked();
-
-
   void on_pushShowAll_clicked();
-
   void on_pushHideAll_clicked();
 
 private:

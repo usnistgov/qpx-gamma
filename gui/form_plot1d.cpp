@@ -40,8 +40,8 @@ FormPlot1D::FormPlot1D(QWidget *parent) :
   connect(ui->mcaPlot, SIGNAL(clickedLeft(double)), this, SLOT(addMovingMarker(double)));
   connect(ui->mcaPlot, SIGNAL(clickedRight(double)), this, SLOT(removeMovingMarker(double)));
 
-  connect(ui->spectraWidget, SIGNAL(contextRequested()), this, SLOT(spectrumDetails()));
-  connect(ui->spectraWidget, SIGNAL(stateChanged()), this, SLOT(spectraLooksChanged()));
+  connect(ui->spectraWidget, SIGNAL(itemSelected(SelectorItem)), this, SLOT(spectrumDetails(SelectorItem)));
+  connect(ui->spectraWidget, SIGNAL(itemToggled(SelectorItem)), this, SLOT(spectrumLooksChanged(SelectorItem)));
 
   bits = 0;
 }
@@ -61,17 +61,20 @@ void FormPlot1D::setSpectra(Qpx::SpectraSet& new_set) {
 
 }
 
-void FormPlot1D::spectraLooksChanged() {
-  spectrumDetails();
+void FormPlot1D::spectrumLooksChanged(SelectorItem item) {
+  Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(item.text.toStdString());
+  if (someSpectrum != nullptr) {
+    someSpectrum->set_visible(item.visible);
+  }
   mySpectra->activate();
 }
 
-void FormPlot1D::spectrumDetails()
+void FormPlot1D::spectrumDetails(SelectorItem item)
 {
-  ui->pushShowAll->setEnabled(ui->spectraWidget->available_count());
-  ui->pushHideAll->setEnabled(ui->spectraWidget->available_count());
+  ui->pushShowAll->setEnabled(ui->spectraWidget->items().size());
+  ui->pushHideAll->setEnabled(ui->spectraWidget->items().size());
 
-  QString id = ui->spectraWidget->selected();
+  QString id = ui->spectraWidget->selected().text;
   Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(id.toStdString());
 
   Qpx::Spectrum::Metadata md;
@@ -122,23 +125,44 @@ void FormPlot1D::spectrumDetails()
   ui->pushFullInfo->setEnabled(true);
 }
 
-void FormPlot1D::spectrumDetailsClosed(bool changed) {
-  if (changed) {
-    ui->spectraWidget->update_looks();
-    mySpectra->activate();
+void FormPlot1D::spectrumDetailsClosed(bool looks_changed) {
+  if (looks_changed) {
+    SelectorItem chosen = ui->spectraWidget->selected();
+    Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(chosen.text.toStdString());
+    if (someSpectrum != nullptr) {
+      chosen.color = QColor::fromRgba(someSpectrum->metadata().appearance);
+      ui->spectraWidget->replaceSelected(chosen);
+      mySpectra->activate();
+    }
   }
 }
 
 void FormPlot1D::on_comboResolution_currentIndexChanged(int index)
 {
   int newbits = ui->comboResolution->currentData().toInt();
-  ui->spectraWidget->setQpxSpectra(*mySpectra, 1, newbits);
+
   if (bits != newbits) {
     bits = newbits;
     moving.shift(bits);
     markx.shift(bits);
     marky.shift(bits);
   }
+
+  QVector<SelectorItem> items;
+
+  for (auto &q : mySpectra->spectra(1, newbits)) {
+    Qpx::Spectrum::Metadata md;
+    if (q != nullptr)
+      md = q->metadata();
+
+    SelectorItem new_spectrum;
+    new_spectrum.text = QString::fromStdString(md.name);
+    new_spectrum.color = QColor::fromRgba(md.appearance);
+    new_spectrum.visible = md.visible;
+    items.push_back(new_spectrum);
+  }
+
+  ui->spectraWidget->setItems(items);
 
   mySpectra->activate();
 }
@@ -221,7 +245,7 @@ void FormPlot1D::update_plot() {
   std::string new_label = boost::algorithm::trim_copy(mySpectra->status());
   ui->mcaPlot->setTitle(QString::fromStdString(new_label));
 
-  spectrumDetails();
+  spectrumDetails(SelectorItem());
 
   PL_DBG << "<Plot1D> plotting took " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
@@ -229,7 +253,7 @@ void FormPlot1D::update_plot() {
 
 void FormPlot1D::on_pushFullInfo_clicked()
 {
-  Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(ui->spectraWidget->selected().toStdString());
+  Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(ui->spectraWidget->selected().text.toStdString());
   if (someSpectrum == nullptr)
     return;
 
@@ -241,7 +265,7 @@ void FormPlot1D::on_pushFullInfo_clicked()
 
 void FormPlot1D::spectrumDetailsDelete()
 {
-  std::string name = ui->spectraWidget->selected().toStdString();
+  std::string name = ui->spectraWidget->selected().text.toStdString();
 
   PL_INFO << "will delete " << name;
   mySpectra->delete_spectrum(name);
@@ -253,19 +277,18 @@ void FormPlot1D::updateUI()
 {
   std::set<uint32_t> resolutions = mySpectra->resolutions(1);
 
-  if (resolutions.count(bits) == 1) {
-    ui->spectraWidget->setQpxSpectra(*mySpectra, 1, bits);
-    mySpectra->activate();
-  } else {
-    ui->comboResolution->clear();
-    for (auto &q: resolutions)
-      ui->comboResolution->addItem(QString::number(q) + " bit", QVariant(q));
-  }
+  ui->comboResolution->blockSignals(true);
+  ui->comboResolution->clear();
+  for (auto &q: resolutions)
+    ui->comboResolution->addItem(QString::number(q) + " bit", QVariant(q));
+  ui->comboResolution->blockSignals(false);
+
+  on_comboResolution_currentIndexChanged(0);
 }
 
 void FormPlot1D::on_pushAnalyse_clicked()
 {
-  emit requestAnalysis(ui->spectraWidget->selected());
+  emit requestAnalysis(ui->spectraWidget->selected().text);
 }
 
 void FormPlot1D::addMovingMarker(double x) {
@@ -344,11 +367,19 @@ void FormPlot1D::calibrate_markers() {
 void FormPlot1D::on_pushShowAll_clicked()
 {
   ui->spectraWidget->show_all();
+  QVector<SelectorItem> items = ui->spectraWidget->items();
+  for (auto &q : items)
+    mySpectra->by_name(q.text.toStdString())->set_visible(true);
+  mySpectra->activate();
 }
 
 void FormPlot1D::on_pushHideAll_clicked()
 {
   ui->spectraWidget->hide_all();
+  QVector<SelectorItem> items = ui->spectraWidget->items();
+  for (auto &q : items)
+    mySpectra->by_name(q.text.toStdString())->set_visible(false);
+  mySpectra->activate();
 }
 
 void FormPlot1D::set_scale_type(QString sct) {

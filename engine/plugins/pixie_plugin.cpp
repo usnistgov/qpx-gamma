@@ -456,7 +456,8 @@ bool Plugin::boot() {
 
   bool valid_files = true;
   for (int i=0; i < 7; i++) {
-    memcpy(Boot_File_Name_List[i], (S8*)boot_files_[i].c_str(), boot_files_[i].size()); //+0?
+    memcpy(Boot_File_Name_List[i], (S8*)boot_files_[i].c_str(), boot_files_[i].size());
+    Boot_File_Name_List[i][boot_files_[i].size()] = '\0';
     bool ex = boost::filesystem::exists(boot_files_[i]);
     if (!ex) {
       PL_ERR << "Boot file " << boot_files_[i] << " not found";
@@ -506,13 +507,11 @@ bool Plugin::boot() {
 std::map<int, std::vector<uint16_t>> Plugin::oscilloscope() {
   std::map<int, std::vector<uint16_t>> result;
 
-  uint32_t* oscil_data;
-  int cur_mod = 0;
-
-  if ((live_ != LiveStatus::online) && (module_indices_.size() != channel_indices_.size())) {
-    PL_WARN << "Pixie not online";
+  if (module_indices_.size() != channel_indices_.size()) {
     return result;
   }
+
+  uint32_t* oscil_data;
 
   for (int m=0; m < channel_indices_.size(); ++m) {
     if ((oscil_data = control_collect_ADC(m)) != nullptr) {
@@ -525,6 +524,7 @@ std::map<int, std::vector<uint16_t>> Plugin::oscilloscope() {
     }
 
   }
+
   delete[] oscil_data;
   return result;
 }
@@ -1134,14 +1134,16 @@ bool Plugin::read_chan(const char* setting, uint8_t mod, uint8_t chan) {
 }
 
 uint32_t* Plugin::control_collect_ADC(uint8_t module) {
-  PL_INFO << "Pixie Control: get ADC (oscilloscope) traces";
+  PL_TRC << "Pixie Control: get ADC (oscilloscope) traces";
   ///why is NUMBER_OF_CHANNELS used? Same for multi-module?
   uint32_t* adc_data = new uint32_t[NUMBER_OF_CHANNELS * max_buf_len];
-  int32_t retval = Pixie_Acquire_Data(0x0084, (U32*)adc_data, NULL, module);
-  if (retval < 0) {
-    delete[] adc_data;
-    control_err(retval);
-    return nullptr;
+  if (live_ == LiveStatus::online) {
+    int32_t retval = Pixie_Acquire_Data(0x0084, (U32*)adc_data, NULL, module);
+    if (retval < 0) {
+      delete[] adc_data;
+      control_err(retval);
+      return nullptr;
+    }
   }
   return adc_data;
 }

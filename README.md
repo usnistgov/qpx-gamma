@@ -4,14 +4,14 @@ Data acquisition and analysis software for multi-detector gamma spectroscopy wit
 Developed at NIST. No warranty and no endorsement of specific product. Please read license and disclaimer.
 
 Features:
+* support for multiple modules
 * simultaneous building of multiple spectra
-* gg coincidence matrices (energy-energy-count)
+* coincidence matrices
 * multi-threaded for minimal dead time
 * optional list mode output
 * loss-free counting spectra
-* logging with timestamps
 * energy and FWHM calibration
-* isotope database
+* basic isotope database
 * peak fitting with multiplet deconvolution
 * SUM4 peak integration with uncertainty
 * energy-gated coincidence matrix projections
@@ -22,13 +22,12 @@ Features:
 
 To thoroughly enjoy it you need:
 * Pixie-4 in a PXI crate connected to your PC
-* germanium detectors
+* detectors
 * radioactive stuff
 
 To compile you need:
 * boost libraries (5.7)
 * Qt libraries (5.3)
-* gsl libraries
 * lua-dev
 
 Linux:

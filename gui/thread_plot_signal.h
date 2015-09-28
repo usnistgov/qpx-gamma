@@ -45,7 +45,7 @@ protected:
     void run() {
       while (spectra_->wait_ready()) {
         emit plot_ready();
-        QThread::sleep(5); //make flexible
+        QThread::sleep(3); //make flexible
       }
     }
 

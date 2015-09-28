@@ -74,7 +74,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       } else if (role == Qt::DisplayRole)
         return QString::fromStdString(channels_[col-1].name_);
       else if (role == Qt::ForegroundRole) {
-        QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::cyan, Qt::blue};
+        QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::red, Qt::blue};
         QBrush brush(palette[(col-1) % palette.size()]);
         return brush;
       } else if (role == Qt::FontRole) {

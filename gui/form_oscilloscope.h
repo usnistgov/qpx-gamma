@@ -27,6 +27,7 @@
 #include <QSettings>
 #include "thread_runner.h"
 #include "widget_plot1d.h"
+#include "widget_selector.h"
 
 namespace Ui {
 class FormOscilloscope;
@@ -55,7 +56,12 @@ private slots:
   void toggle_push(bool enable, Qpx::LiveStatus live);
 
   void on_doubleSpinXDT_editingFinished();
-  void chansChosen(QAction*);
+  void channelToggled(SelectorItem);
+  void channelDetails(SelectorItem);
+
+  void on_pushShowAll_clicked();
+
+  void on_pushHideAll_clicked();
 
 public slots:
   void updateMenu(std::vector<Gamma::Detector>);
@@ -64,12 +70,13 @@ private:
   Ui::FormOscilloscope *ui;
   ThreadRunner &runner_thread_;
 
-  QMenu menuDetsSelected;
-  std::vector<int> det_on_;
+  std::vector<Qpx::Trace> traces_;
+
   QSettings &settings_;
 
   void loadSettings();
   void saveSettings();
+  void replot();
 
 };
 

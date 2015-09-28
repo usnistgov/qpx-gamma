@@ -169,8 +169,15 @@ void FormPixieSettings::loadSettings() {
 }
 
 void FormPixieSettings::saveSettings() {
-  for (auto &q : channels_)
-    detectors_.replace(q);
+  for (auto &q : channels_) {
+    if (q.name_ == "none")
+      continue;
+    Gamma::Detector det = detectors_.get(q);
+    if (det != Gamma::Detector()) {
+      det.settings_ = q.settings_;
+      detectors_.replace(det);
+    }
+  }
   
   settings_.beginGroup("Program");
   settings_.setValue("settings_table_show_readonly", ui->checkShowRO->isChecked());

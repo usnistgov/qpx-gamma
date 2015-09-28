@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>729</width>
+    <width>583</width>
     <height>560</height>
    </rect>
   </property>
@@ -68,6 +68,20 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="pushShowAll">
+       <property name="text">
+        <string>Show all</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushHideAll">
+       <property name="text">
+        <string>Hide all</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <spacer name="horizontalSpacer_3">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
@@ -82,28 +96,6 @@
         </size>
        </property>
       </spacer>
-     </item>
-     <item>
-      <widget class="QToolButton" name="toolSelectChans">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>25</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>25</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Select visible...</string>
-       </property>
-      </widget>
      </item>
      <item>
       <widget class="QLabel" name="label">
@@ -133,7 +125,7 @@
      </item>
     </layout>
    </item>
-   <item row="1" column="0">
+   <item row="2" column="0">
     <widget class="WidgetPlot1D" name="widgetPlot" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
@@ -143,7 +135,23 @@
      </property>
      <property name="minimumSize">
       <size>
-       <width>500</width>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="SelectorWidget" name="selectorChannels" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>560</width>
        <height>0</height>
       </size>
      </property>
@@ -156,6 +164,12 @@
    <class>WidgetPlot1D</class>
    <extends>QWidget</extends>
    <header>widget_plot1d.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SelectorWidget</class>
+   <extends>QWidget</extends>
+   <header>widget_selector.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

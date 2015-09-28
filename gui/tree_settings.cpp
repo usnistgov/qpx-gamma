@@ -299,7 +299,7 @@ QVariant TreeSettings::data(const QModelIndex &index, int role) const
     if (item->edit_data(col).canConvert<Gamma::Setting>()) {
       Gamma::Setting set = qvariant_cast<Gamma::Setting>(item->edit_data(col));
       if (set.setting_type == Gamma::SettingType::detector) {
-        QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta};
+        QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::red, Qt::blue};
         QBrush brush(palette[set.index % palette.size()]);
         return brush;
       } else if (set.setting_type == Gamma::SettingType::command) {
