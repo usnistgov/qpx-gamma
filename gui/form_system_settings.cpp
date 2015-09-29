@@ -20,8 +20,8 @@
  *
  ******************************************************************************/
 
-#include "form_pixie_settings.h"
-#include "ui_form_pixie_settings.h"
+#include "form_system_settings.h"
+#include "ui_form_system_settings.h"
 #include "widget_detectors.h"
 
 FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Gamma::Detector>& detectors, QSettings& settings, QWidget *parent) :
@@ -35,6 +35,7 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Gamma::Dete
 {
   ui->setupUi(this);
   connect(&runner_thread_, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>)), this, SLOT(update(Gamma::Setting, std::vector<Gamma::Detector>)));
+  connect(&runner_thread_, SIGNAL(bootComplete()), this, SLOT(post_boot()));
 
   tree_settings_model_.update(dev_settings_);
 
@@ -201,13 +202,23 @@ FormPixieSettings::~FormPixieSettings()
   delete ui;
 }
 
+void FormPixieSettings::post_boot()
+{
+  on_pushOptimizeAll_clicked();
+}
+
+
 void FormPixieSettings::on_pushOptimizeAll_clicked()
 {
   emit statusText("Applying detector optimizations...");
   emit toggleIO(false);
-  // for (auto &q : channels_)
+
+  std::map<int, Gamma::Detector> update;
+  for (int i=0; i < channels_.size(); ++i)
+    if (detectors_.has_a(channels_[i]))
+      update[i] = detectors_.get(channels_[i]);
     
-  runner_thread_.do_optimize();
+  runner_thread_.do_set_detectors(update);
 }
 
 void FormPixieSettings::on_pushSettingsRefresh_clicked()
@@ -236,7 +247,7 @@ void FormPixieSettings::on_bootButton_clicked()
   if (dev_settings_.value_int == 0) {
     emit toggleIO(false);
     emit statusText("Booting...");
-    PL_INFO << "Booting pixie...";
+    PL_INFO << "Booting system...";
 
     runner_thread_.do_boot();
   } else {

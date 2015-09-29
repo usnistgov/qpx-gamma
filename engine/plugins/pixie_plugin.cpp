@@ -543,10 +543,7 @@ void Plugin::get_all_settings() {
 }
 
 
-void Plugin::reset_counters_next_run() { //for current module only
-  if (live_ == LiveStatus::history)
-    return;
-
+void Plugin::reset_counters_next_run() {
   for (int i=0; i < channel_indices_.size(); ++i) {
     set_mod("SYNCH_WAIT", 1, Module(i));
     set_mod("IN_SYNCH", 0, Module(i));
@@ -1460,6 +1457,9 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
 
   PL_INFO << "<PixiePlugin> Double buffered daq starting";
 
+  callback->reset_counters_next_run(); //assume new run
+
+
   int32_t retval = 0;
   uint64_t spill_number = 0;
   bool timeout = false;
@@ -1568,6 +1568,8 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
                    SynchronizedQueue<Spill*>* spill_queue) {
 
   PL_INFO << "<PixiePlugin> Double buffered daq starting";
+
+  callback->reset_counters_next_run(); //assume new run
 
   std::bitset<32> csr;
   uint64_t spill_number = 0;

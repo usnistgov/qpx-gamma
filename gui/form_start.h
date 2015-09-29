@@ -28,7 +28,7 @@
 #include "wrapper.h"
 #include "custom_logger.h"
 #include "thread_runner.h"
-#include "form_pixie_settings.h"
+#include "form_system_settings.h"
 #include "form_oscilloscope.h"
 
 
@@ -69,9 +69,6 @@ private:
   QSettings &settings_;
 
   QString data_directory_;
-
-  //reference to pixie singleton
-  Qpx::Wrapper& pixie_;
 
   XMLableDB<Gamma::Detector>  &detectors_;
 

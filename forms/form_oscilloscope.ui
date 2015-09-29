@@ -69,6 +69,18 @@
      </item>
      <item>
       <widget class="QPushButton" name="pushShowAll">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="text">
         <string>Show all</string>
        </property>
@@ -76,6 +88,18 @@
      </item>
      <item>
       <widget class="QPushButton" name="pushHideAll">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="text">
         <string>Hide all</string>
        </property>
@@ -99,6 +123,12 @@
      </item>
      <item>
       <widget class="QLabel" name="label">
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="text">
         <string>XDT</string>
        </property>
@@ -108,6 +138,12 @@
       <widget class="QDoubleSpinBox" name="doubleSpinXDT">
        <property name="enabled">
         <bool>false</bool>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>25</height>
+        </size>
        </property>
        <property name="decimals">
         <number>6</number>

@@ -33,7 +33,7 @@ namespace Qpx {
 
 enum class Module     : int {all = -3, none = -2, invalid = -1};
 enum class Channel    : int {all = -3, none = -2, invalid = -1};
-const uint32_t max_buf_len  = 8192; //get this from module
+const uint32_t max_buf_len  = 8192; //get this from module?
 const uint32_t list_mem_len32 = 16 * max_buf_len;
 const uint32_t list_mem_len16 = 2 * list_mem_len32;
 
@@ -51,17 +51,14 @@ public:
   bool read_settings_bulk(Gamma::Setting &set) const override;
   void get_all_settings() override;
   bool boot() override;
+  //bool die() override;
+
   bool execute_command(Gamma::Setting &set) override;
   std::map<int, std::vector<uint16_t>> oscilloscope() override;
 
   bool daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) override;
   bool daq_stop() override;
   bool daq_running() override;
-
-
-  //Unique
-  //  void get_stats();
-  void reset_counters_next_run();
 
   //DEPRECATE//
   void from_xml_legacy(tinyxml2::XMLElement* root, std::vector<Gamma::Detector>& dets);
@@ -74,9 +71,9 @@ private:
   static void worker_run_dbl(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue);
   static void worker_run_test(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue);
 
-
 protected:
   void fill_stats(std::list<StatsUpdate>&, uint8_t module);
+  void reset_counters_next_run();
 
   //DEPRECATE//
   std::vector<Gamma::Detector> from_xml(tinyxml2::XMLElement*);

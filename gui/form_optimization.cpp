@@ -148,7 +148,7 @@ FormOptimization::~FormOptimization()
 }
 
 void FormOptimization::closeEvent(QCloseEvent *event) {
-  if (my_run_ && opt_runner_thread_.isRunning()) {
+  if (my_run_ && opt_runner_thread_.running()) {
     int reply = QMessageBox::warning(this, "Ongoing data acquisition",
                                      "Terminate?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
@@ -162,7 +162,11 @@ void FormOptimization::closeEvent(QCloseEvent *event) {
       event->ignore();
       return;
     }
+  } else {
+    opt_runner_thread_.terminate();
+    opt_runner_thread_.wait();
   }
+
 
   if (!spectra_y_.empty()) {
     int reply = QMessageBox::warning(this, "Optimization data still open",

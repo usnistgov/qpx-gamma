@@ -246,16 +246,13 @@ bool Settings::write_detector(const Gamma::Setting &set) {
 void Settings::set_detector(int ch, Gamma::Detector det) {
   if (ch < 0 || ch >= detectors_.size())
     return;
-  PL_DBG << "px_settings changing detector " << ch << " to " << det.name_;
   detectors_[ch] = det;
 
   for (auto &set : settings_tree_.branches.my_data_) {
     if (set.name == "Detectors") {
       if (detectors_.size() == set.branches.size()) {
-        PL_DBG << "inside loop";
         for (auto &q : set.branches.my_data_) {
           if (q.index == ch) {
-            PL_DBG << "change and load optimization for " << q.index << " from " << q.value_text << " to " << detectors_[q.index].name_;
             q.value_text = detectors_[q.index].name_;
             load_optimization(q.index);
           }
@@ -297,12 +294,8 @@ void Settings::load_optimization() {
 void Settings::load_optimization(int i) {
   if ((i < 0) || (i >= detectors_.size()))
     return;
-
-  PL_DBG << "loading optimization for " << detectors_[i].name_;
-
   if (detectors_[i].settings_.setting_type == Gamma::SettingType::stem) {
     detectors_[i].settings_.index = i;
-    PL_DBG << "really loading optimization for " << detectors_[i].name_;
     for (auto &q : detectors_[i].settings_.branches.my_data_) {
       q.index = i;
       load_det_settings(q, settings_tree_);
@@ -377,10 +370,6 @@ void Settings::set_setting(Gamma::Setting address, bool precise_index) {
 void Settings::get_all_settings() {
   pixie_plugin_.get_all_settings();
   read_settings_bulk();
-}
-
-void Settings::reset_counters_next_run() { //for current module only
-  pixie_plugin_.reset_counters_next_run();
 }
 
 }

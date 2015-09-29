@@ -28,7 +28,6 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma:
   runner_thread_(thread),
   settings_(settings),
   detectors_(detectors),
-  pixie_(Qpx::Wrapper::getInstance()),
   exiting(false)
 {
   connect(&thread, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>)), this, SLOT(update(Gamma::Setting, std::vector<Gamma::Detector>)));

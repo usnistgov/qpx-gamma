@@ -33,7 +33,7 @@
 
 #include "form_list_daq.h"
 #include "form_mca_daq.h"
-#include "form_pixie_settings.h"
+#include "form_system_settings.h"
 #include "form_oscilloscope.h"
 #include "form_optimization.h"
 #include "form_gain_match.h"
@@ -97,7 +97,7 @@ qpx::~qpx()
 }
 
 void qpx::closeEvent(QCloseEvent *event) {
-  if (runner_thread_.isRunning()) {
+  if (runner_thread_.running()) {
     int reply = QMessageBox::warning(this, "Ongoing data acquisition operations",
                                      "Terminate?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
@@ -112,6 +112,9 @@ void qpx::closeEvent(QCloseEvent *event) {
       event->ignore();
       return;
     }
+  } else {
+    runner_thread_.terminate();
+    runner_thread_.wait();
   }
 
 

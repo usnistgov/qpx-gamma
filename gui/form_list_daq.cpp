@@ -86,7 +86,7 @@ FormListDaq::~FormListDaq()
 }
 
 void FormListDaq::closeEvent(QCloseEvent *event) {
-  if (my_run_ && runner_thread_.isRunning()) {
+  if (my_run_ && runner_thread_.running()) {
     int reply = QMessageBox::warning(this, "Ongoing data acquisition",
                                      "Terminate?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
@@ -97,7 +97,11 @@ void FormListDaq::closeEvent(QCloseEvent *event) {
       event->ignore();
       return;
     }
+  } else {
+    runner_thread_.terminate();
+    runner_thread_.wait();
   }
+
 
   if (list_data_ != nullptr)
     delete list_data_;

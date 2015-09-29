@@ -82,7 +82,7 @@ FormMcaDaq::~FormMcaDaq()
 }
 
 void FormMcaDaq::closeEvent(QCloseEvent *event) {
-  if (my_run_ && runner_thread_.isRunning()) {
+  if (my_run_ && runner_thread_.running()) {
     int reply = QMessageBox::warning(this, "Ongoing data acquisition",
                                      "Terminate?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
@@ -93,7 +93,11 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
       event->ignore();
       return;
     }
+  } else {
+    runner_thread_.terminate();
+    runner_thread_.wait();
   }
+
 
   if (my_analysis_ != nullptr) {
     my_analysis_->close(); //assume always successful
@@ -526,5 +530,6 @@ void FormMcaDaq::on_pushBuildFromList_clicked()
 void FormMcaDaq::on_pushDetails_clicked()
 {
   FormDaqSettings *DaqInfo = new FormDaqSettings(spectra_.runInfo().state, this);
+  DaqInfo->setWindowTitle("System settings at the time of acquisition");
   DaqInfo->exec();
 }

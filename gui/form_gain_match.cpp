@@ -127,7 +127,7 @@ void FormGainMatch::saveSettings() {
 }
 
 void FormGainMatch::closeEvent(QCloseEvent *event) {
-  if (my_run_ && gm_runner_thread_.isRunning()) {
+  if (my_run_ && gm_runner_thread_.running()) {
     int reply = QMessageBox::warning(this, "Ongoing data acquisition",
                                      "Terminate?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
@@ -138,7 +138,11 @@ void FormGainMatch::closeEvent(QCloseEvent *event) {
       event->ignore();
       return;
     }
+  } else {
+    gm_runner_thread_.terminate();
+    gm_runner_thread_.wait();
   }
+
 
   if (!gm_spectra_.empty()) {
     int reply = QMessageBox::warning(this, "Gain matching data still open",

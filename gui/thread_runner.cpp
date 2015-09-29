@@ -27,7 +27,8 @@
 ThreadRunner::ThreadRunner(QObject *parent) :
   QThread(parent),
   devices_(Qpx::Wrapper::getInstance().settings()),
-  terminating_(false)
+  terminating_(false),
+  running_(false)
 {
   spectra_ = nullptr;
   interruptor_ = nullptr;
@@ -38,13 +39,14 @@ ThreadRunner::ThreadRunner(QObject *parent) :
   source_res_ = 0;
   dest_res_ = 0;
   xdt_ = 0.0;
+  start(HighPriority);
 }
 
 ThreadRunner::~ThreadRunner()
 {}
 
 void ThreadRunner::terminate() {
-  PL_INFO << "runner thread termination requested";
+//  PL_INFO << "runner thread termination requested";
   if (interruptor_)
     interruptor_->store(true);
   terminating_.store(true);
@@ -58,163 +60,215 @@ bool ThreadRunner::terminating() {
 
 void ThreadRunner::do_list(boost::atomic<bool> &interruptor, uint64_t timeout)
 {
-  if (!isRunning()) {
-    terminating_.store(false);
-    QMutexLocker locker(&mutex_);
-    interruptor_ = &interruptor;
-    timeout_ = timeout;
-    action_ = kList;
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  interruptor_ = &interruptor;
+  timeout_ = timeout;
+  action_ = kList;
+  if (!isRunning())
     start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_list. Runner busy.";
 }
 
 
 void ThreadRunner::do_run(Qpx::SpectraSet &spectra, boost::atomic<bool> &interruptor, uint64_t timeout)
 {
-  if (!isRunning()) {
-    terminating_.store(false);
-    QMutexLocker locker(&mutex_);
-    spectra_ = &spectra;
-    interruptor_ = &interruptor;
-    timeout_ = timeout;
-    action_ = kMCA;
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  spectra_ = &spectra;
+  interruptor_ = &interruptor;
+  timeout_ = timeout;
+  action_ = kMCA;
+  if (!isRunning())
     start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_run. Runner busy.";
 }
 
 void ThreadRunner::do_fake(Qpx::SpectraSet &spectra, boost::atomic<bool> &interruptor, QString file, std::array<int,2> chans, int source_res, int dest_res, int timeout) {
-  if (!isRunning()) {
-    terminating_.store(false);
-    QMutexLocker locker(&mutex_);
-    spectra_ = &spectra;
-    interruptor_ = &interruptor;
-    file_ = file;
-    fake_chans_ = chans;
-    source_res_ = source_res;
-    dest_res_ = dest_res;
-    timeout_ = timeout;
-    action_ = kSimulate;
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  spectra_ = &spectra;
+  interruptor_ = &interruptor;
+  file_ = file;
+  fake_chans_ = chans;
+  source_res_ = source_res;
+  dest_res_ = dest_res;
+  timeout_ = timeout;
+  action_ = kSimulate;
+  if (!isRunning())
     start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_fake. Runner busy.";
 }
 
 void ThreadRunner::do_from_list(Qpx::SpectraSet &spectra, boost::atomic<bool> &interruptor, QString file) {
-  if (!isRunning()) {
-    terminating_.store(false);
-    QMutexLocker locker(&mutex_);
-    spectra_ = &spectra;
-    interruptor_ = &interruptor;
-    file_ = file;
-    action_ = kFromList;
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  spectra_ = &spectra;
+  interruptor_ = &interruptor;
+  file_ = file;
+  action_ = kFromList;
+  if (!isRunning())
     start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_from_list. Runner busy.";
 }
 
 void ThreadRunner::do_boot() {
-  if (!isRunning()) {
-    terminating_.store(false);
-    action_ = kBoot;
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  action_ = kBoot;
+  if (!isRunning())
     start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_boot. Runner busy.";
 }
 
 void ThreadRunner::do_shutdown() {
-  if (!isRunning()) {
-    terminating_.store(false);
-    action_ = kShutdown;
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  action_ = kShutdown;
+  if (!isRunning())
     start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_shutdown. Runner busy.";
 }
 
 void ThreadRunner::do_execute_command(const Gamma::Setting &tree) {
-  if (!isRunning()) {
-    terminating_.store(false);
-    action_ = kExecuteCommand;
-    tree_ = tree;
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  tree_ = tree;
+  action_ = kExecuteCommand;
+  if (!isRunning())
     start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_execute_command. Runner busy.";
 }
 
 void ThreadRunner::do_push_settings(const Gamma::Setting &tree) {
-  if (!isRunning()) {
-    terminating_.store(false);
-    action_ = kPushSettings;
-    tree_ = tree;
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  tree_ = tree;
+  action_ = kPushSettings;
+  if (!isRunning())
     start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_push_settings. Runner busy.";
 }
 
 void ThreadRunner::do_set_setting(const Gamma::Setting &item, bool exact_index) {
-  if (!isRunning()) {
-    terminating_.store(false);
-    action_ = kSetSetting;
-    tree_ = item;
-    exact_index_ = exact_index;
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  tree_ = item;
+  exact_index_ = exact_index;
+  action_ = kSetSetting;
+  if (!isRunning())
     start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_set_setting. Runner busy.";
 }
 
 void ThreadRunner::do_set_detector(int chan, Gamma::Detector det) {
-  if (!isRunning()) {
-    terminating_.store(false);
-    action_ = kSetDetector;
-    chan_ = chan;
-    det_ = det;
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  chan_ = chan;
+  det_ = det;
+  action_ = kSetDetector;
+  if (!isRunning())
     start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_set_detector. Runner busy.";
+}
+
+void ThreadRunner::do_set_detectors(std::map<int, Gamma::Detector> dets) {
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  detectors_ = dets;
+  action_ = kSetDetectors;
+  if (!isRunning())
+    start(HighPriority);
 }
 
 
 void ThreadRunner::do_optimize() {
-  if (!isRunning()) {
-    terminating_.store(false);
-    action_ = kOptimize;
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  action_ = kOptimize;
+  if (!isRunning())
     start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_optimize. Runner busy.";
 }
 
 void ThreadRunner::do_oscil(double xdt) {
-  if (!isRunning()) {
-    action_ = kOscil;
-    xdt_ = xdt;
-    terminating_.store(false);
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  xdt_ = xdt;
+  action_ = kOscil;
+  if (!isRunning())
     start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_oscil. Runner busy.";
 }
 
 void ThreadRunner::do_refresh_settings() {
-  if (!isRunning()) {
-    terminating_.store(false);
-    action_ = kSettingsRefresh;
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  action_ = kSettingsRefresh;
+  if (!isRunning())
     start(HighPriority);
-  } else
-    PL_WARN << "Cannot do_refresh_settings. Runner busy.";
 }
 
 void ThreadRunner::run()
 {
-  //  while (!terminating_.load()) {
+  while (!terminating_.load()) {
+
+    if (action_ != kNone)
+      running_.store(true);
+
     if (action_ == kMCA) {
       interruptor_->store(false);
-      devices_.reset_counters_next_run();
       Qpx::Wrapper::getInstance().getMca(timeout_, *spectra_, *interruptor_);
+      action_ = kNone;
       emit runComplete();
     } else if (action_ == kList) {
       interruptor_->store(false);
-      devices_.reset_counters_next_run();
       Qpx::ListData *newListRun = Qpx::Wrapper::getInstance().getList(timeout_, *interruptor_);
+      action_ = kNone;
       emit listComplete(newListRun);
     } else if (action_ == kSimulate) {
       interruptor_->store(false);
@@ -224,24 +278,29 @@ void ThreadRunner::run()
       delete intermediate;
       if (mySource.valid())
         Qpx::Wrapper::getInstance().getFakeMca(mySource, *spectra_, timeout_, *interruptor_);
+      action_ = kNone;
       emit runComplete();
     } else if (action_ == kFromList) {
       interruptor_->store(false);
       Qpx::Sorter sorter(file_.toStdString());
       if (sorter.valid())
         Qpx::Wrapper::getInstance().simulateFromList(sorter, *spectra_, *interruptor_);
+      action_ = kNone;
       emit runComplete();
     } else if (action_ == kBoot) {
       if (devices_.boot()) {
         devices_.get_all_settings();
         devices_.save_optimization();
       }
+      action_ = kNone;
       emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+      emit bootComplete();
     } else if (action_ == kShutdown) {
       if (devices_.die()) {
         devices_.get_all_settings();
         devices_.save_optimization();
       }
+      action_ = kNone;
       emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
     } else if (action_ == kOptimize) {
       devices_.load_optimization();
@@ -249,6 +308,7 @@ void ThreadRunner::run()
     } else if (action_ == kSettingsRefresh) {
       devices_.get_all_settings();
       devices_.save_optimization();
+      action_ = kNone;
       emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
     } else if (action_ == kExecuteCommand) {
       devices_.push_settings(tree_);
@@ -257,16 +317,19 @@ void ThreadRunner::run()
         devices_.get_all_settings();
         devices_.save_optimization();
       }
+      action_ = kNone;
       emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
     } else if (action_ == kPushSettings) {
       devices_.push_settings(tree_);
       devices_.get_all_settings();
       devices_.save_optimization();
+      action_ = kNone;
       emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
     } else if (action_ == kSetSetting) {
       devices_.set_setting(tree_, exact_index_);
       devices_.get_all_settings();
       devices_.save_optimization();
+      action_ = kNone;
       emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
     } else if (action_ == kSetDetector) {
       devices_.set_detector(chan_, det_);
@@ -274,7 +337,25 @@ void ThreadRunner::run()
       devices_.write_settings_bulk();
       devices_.get_all_settings();
       devices_.save_optimization();
+      action_ = kNone;
       emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+    } else if (action_ == kSetDetectors) {
+      for (auto &q : detectors_) {
+        devices_.set_detector(q.first, q.second);
+        devices_.load_optimization(q.first);
+      }
+      devices_.write_settings_bulk();
+      Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/Adjust offsets", 0, Gamma::SettingType::command, -1);
+      set.value = 1;
+      devices_.set_setting(set);
+      devices_.execute_command();
+
+      //XDT?
+
+      //devices_.get_all_settings();
+      //devices_.save_optimization();
+      action_ = kOscil;
+      //emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
     } else if (action_ == kOscil) {
         std::vector<Gamma::Detector> dets = devices_.get_detectors();
 
@@ -288,14 +369,16 @@ void ThreadRunner::run()
 
         devices_.get_all_settings();
         devices_.save_optimization();
-        emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
 
+        action_ = kNone;
+
+        emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
         if (!traces.empty())
           emit oscilReadOut(traces);
     } else {
-      PL_DBG << "idling";
-      QThread::sleep(5);
+      //PL_DBG << "idling";
+      QThread::sleep(0.5);
     }
-    action_ = kNone;
-    //}
+    running_.store(false);
+  }
 }

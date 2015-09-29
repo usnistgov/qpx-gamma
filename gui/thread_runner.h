@@ -36,7 +36,7 @@
 #include "simulator.h"
 
 enum RunnerAction {
-    kExecuteCommand, kBoot, kShutdown, kPushSettings, kSetSetting, kSetDetector,
+    kExecuteCommand, kBoot, kShutdown, kPushSettings, kSetSetting, kSetDetector, kSetDetectors,
     kList, kMCA, kSimulate, kFromList, kOscil,
     kSettingsRefresh, kOptimize, kTerminate, kNone
 };
@@ -54,6 +54,7 @@ public:
     void do_push_settings(const Gamma::Setting &tree);
     void do_set_setting(const Gamma::Setting &item, bool exact_index);
     void do_set_detector(int, Gamma::Detector);
+    void do_set_detectors(std::map<int, Gamma::Detector>);
 
     void do_list(boost::atomic<bool>&, uint64_t timeout);
     void do_run(Qpx::SpectraSet&, boost::atomic<bool>&, uint64_t timeout);
@@ -65,8 +66,10 @@ public:
     void do_refresh_settings();
     void terminate();
     bool terminating();
+    bool running() {return running_.load();}
 
 signals:
+    void bootComplete();
     void runComplete();
     void listComplete(Qpx::ListData*);
     void settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>);
@@ -84,11 +87,13 @@ private:
     Qpx::SpectraSet* spectra_;
     boost::atomic<bool>* interruptor_;
     boost::atomic<bool> terminating_;
+    boost::atomic<bool> running_;
 
     double xdt_;
 
     uint64_t timeout_;
 
+    std::map<int, Gamma::Detector> detectors_;
     Gamma::Detector det_;
     int chan_;
     Gamma::Setting tree_;

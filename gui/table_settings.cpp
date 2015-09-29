@@ -21,7 +21,7 @@
  *
  ******************************************************************************/
 
-#include "table_chan_settings.h"
+#include "table_settings.h"
 #include "special_delegate.h"
 #include <boost/algorithm/string.hpp>
 

@@ -31,7 +31,7 @@
 #include "detector.h"
 #include "special_delegate.h"
 #include "thread_runner.h"
-#include "table_chan_settings.h"
+#include "table_settings.h"
 #include "tree_settings.h"
 
 #include "wrapper.h" //eliminate this
@@ -68,6 +68,7 @@ private slots:
   void on_pushOptimizeAll_clicked();
 
   void toggle_push(bool enable, Qpx::LiveStatus live);
+  void post_boot();
 
   void on_pushDetDB_clicked();
 
