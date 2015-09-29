@@ -72,7 +72,7 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
       || (newStats.channel != my_channel_))
     return;
 
-  if (!newStats.spill_number) {
+  if (time1_ == StatsUpdate()) {
     time2_ = time1_ = newStats;
     return;
   }

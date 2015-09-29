@@ -40,16 +40,19 @@ public:
   DaqDevice(const DaqDevice& other) : live_(LiveStatus::history) {}
 
   LiveStatus live() {return live_;}
+  virtual bool boot() {return false;}
+  virtual bool die() {return true;}
 
   virtual bool write_settings_bulk(Gamma::Setting &set) {return false;}
   virtual bool read_settings_bulk(Gamma::Setting &set) const {return false;}
   virtual void get_all_settings() {}
-  virtual bool boot() {return false;}
-  virtual bool die() {return true;}
+
   virtual bool execute_command(Gamma::Setting &set) {return false;}
   virtual std::map<int, std::vector<uint16_t>> oscilloscope() {return std::map<int, std::vector<uint16_t>>();}
-  virtual bool start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue, Gamma::Setting root) {return false;}
-  virtual bool stop_daq() {return true;}
+  
+  virtual bool daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) {return false;}
+  virtual bool daq_stop() {return true;}
+  virtual bool daq_running() {return false;}
 
 protected:
   LiveStatus  live_;

@@ -43,17 +43,18 @@ Plugin::Plugin() {
 
   live_ = LiveStatus::dead;
 
-  interruptor_ = nullptr;
   runner_ = nullptr;
   parser_ = nullptr;
   raw_queue_ = nullptr;
+
+  run_status_.store(0);
 }
 
 Plugin::Plugin(const Plugin& other)
   : DaqDevice(other)
-  , runner_(other.runner_)
-  , parser_(other.parser_)
-  , interruptor_(other.interruptor_)
+  , runner_(nullptr)
+  , parser_(nullptr)
+  , raw_queue_(nullptr)
   , run_type_(other.run_type_)
   , run_double_buffer_(other.run_double_buffer_)
   , run_poll_interval_ms_(other.run_poll_interval_ms_)
@@ -61,10 +62,11 @@ Plugin::Plugin(const Plugin& other)
   , system_parameter_values_(other.system_parameter_values_)
   , module_parameter_values_(other.module_parameter_values_)
   , channel_parameter_values_(other.channel_parameter_values_)
-{}
+{run_status_.store(0);}
+
 
 Plugin::~Plugin() {
-  stop_daq();
+  daq_stop();
   if (runner_ != nullptr) {
     runner_->detach();
     delete runner_;
@@ -80,24 +82,19 @@ Plugin::~Plugin() {
 }
 
 //DEPRECATE//
-Plugin::Plugin(tinyxml2::XMLElement* root, std::vector<Gamma::Detector>& detectors) :
-  Plugin()
+void Plugin::from_xml_legacy(tinyxml2::XMLElement* root, std::vector<Gamma::Detector>& detectors)
 {
   detectors = from_xml(root);
 }
 
-bool Plugin::start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue,
-                       Gamma::Setting root) {
-  if (interruptor_ != nullptr)
+bool Plugin::daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) {
+  if (run_status_.load() > 0)
     return false;
 
-  if (interruptor_ == nullptr)
-    interruptor_ = new boost::atomic<bool>();
-  interruptor_->store(false);
+  run_status_.store(1);
 
-  if (runner_ != nullptr) {
+  if (runner_ != nullptr)
     delete runner_;
-  }
 
   for (int i=0; i < channel_indices_.size(); ++i) {
     set_mod("RUN_TYPE",    static_cast<double>(run_type_), Module(i));
@@ -107,18 +104,23 @@ bool Plugin::start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue,
   raw_queue_ = new SynchronizedQueue<Spill*>();
 
   if (run_double_buffer_)
-    runner_ = new boost::thread(&worker_run_dbl, this, timeout, raw_queue_, interruptor_, root);
+    runner_ = new boost::thread(&worker_run_dbl, this, timeout, raw_queue_);
   else
-    runner_ = new boost::thread(&worker_run, this, timeout, raw_queue_, interruptor_, root);
+    runner_ = new boost::thread(&worker_run, this, timeout, raw_queue_);
+
+  if (parser_ != nullptr)
+    delete parser_;
 
   parser_ = new boost::thread(&worker_parse, this, raw_queue_, out_queue);
+
+  return true;
 }
 
-bool Plugin::stop_daq() {
-  if ((interruptor_ == nullptr) || interruptor_->load())
+bool Plugin::daq_stop() {
+  if (run_status_.load() == 0)
     return false;
 
-  interruptor_->store(true);
+  run_status_.store(2);
 
   if ((runner_ != nullptr) && runner_->joinable()) {
     runner_->join();
@@ -138,13 +140,17 @@ bool Plugin::stop_daq() {
     delete parser_;
     parser_ = nullptr;
   }
-  delete interruptor_;
-  interruptor_ = nullptr;
-
   delete raw_queue_;
   raw_queue_ = nullptr;
 
+  run_status_.store(0);
   return true;
+}
+
+bool Plugin::daq_running() {
+  if (run_status_.load() == 3)
+    daq_stop();
+  return (run_status_.load() > 0);
 }
 
 void Plugin::fill_stats(std::list<StatsUpdate> &all_stats, uint8_t module) {
@@ -1005,8 +1011,10 @@ void Plugin::get_chan_all(Channel channel, Module module) {
     mod_end = channel_indices_.size();
   } else {
     int mod = static_cast<int>(module);
-    if ((mod > -1) && (mod < channel_indices_.size()))
-      mod_start = mod_end = mod;
+    if ((mod > -1) && (mod < channel_indices_.size())) {
+      mod_start = mod;
+      mod_end = mod + 1;
+    }
   }
 
   for (int i=mod_start; i < mod_end; ++i) {
@@ -1017,8 +1025,10 @@ void Plugin::get_chan_all(Channel channel, Module module) {
       chan_end = channel_indices_[i].size();
     } else {
       int chan = static_cast<int>(channel);
-      if ((chan > -1) && (chan < channel_indices_[i].size()))
-          chan_start = chan_end = chan;
+      if ((chan > -1) && (chan < channel_indices_[i].size())) {
+        chan_start = chan;
+        chan_end = chan + 1;
+      }
     }
     for (int j=chan_start; j < chan_end; ++j) {
       PL_TRC << "Getting all parameters for module " << i << " channel " << j;
@@ -1055,7 +1065,7 @@ void Plugin::get_chan_stats(Channel channel, Module module) {
           chan_start = chan_end = chan;
     }
     for (int j=chan_start; j < chan_end; ++j) {
-      //      PL_DBG << "Getting channel run statistics for module " << i << " channel " << j;
+      PL_DBG << "Getting channel run statistics for module " << i << " channel " << j;
       read_chan("CHANNEL_RUN_STATISTICS", i, j);
     }
   }
@@ -1420,9 +1430,7 @@ std::vector<Gamma::Detector> Plugin::from_xml(tinyxml2::XMLElement* root) {
 
 
 void Plugin::worker_run_test(Plugin* callback, uint64_t timeout_limit,
-                             SynchronizedQueue<Spill*>* spill_queue,
-                             boost::atomic<bool>* interruptor,
-                             Gamma::Setting root) {
+                             SynchronizedQueue<Spill*>* spill_queue) {
 
   PL_INFO << "<Qpx::Plugin> worker_run_test started";
   uint64_t spill_number = 0;
@@ -1438,7 +1446,7 @@ void Plugin::worker_run_test(Plugin* callback, uint64_t timeout_limit,
 
     while (!timeout) {
       wait_ms(callback->run_poll_interval_ms_);
-      timeout = (total_timer.timeout() || interruptor->load());
+      timeout = (total_timer.timeout() || (callback->run_status_.load() == 2));
     };
   }
 
@@ -1448,9 +1456,7 @@ void Plugin::worker_run_test(Plugin* callback, uint64_t timeout_limit,
 
 
 void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
-                   SynchronizedQueue<Spill*>* spill_queue,
-                   boost::atomic<bool>* interruptor,
-                   Gamma::Setting root) {
+                   SynchronizedQueue<Spill*>* spill_queue) {
 
   PL_INFO << "<PixiePlugin> Double buffered daq starting";
 
@@ -1523,7 +1529,7 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
     while ((retval == 1) && (!timeout)) {
       wait_ms(callback->run_poll_interval_ms_);
       retval = callback->poll_run(0);  //one module
-      timeout = (total_timer.timeout() || interruptor->load());
+      timeout = (total_timer.timeout() || (callback->run_status_.load() == 2));
     };
     block_time = boost::posix_time::microsec_clock::local_time();
     run_timer.stop();
@@ -1553,14 +1559,13 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
 
   total_timer.stop();
 
-  PL_INFO << "<PixiePlugin> Single buffered daq stopping";
+  callback->run_status_.store(3);
+  PL_INFO << "<PixiePlugin> Single buffered daq runner completed";
 }
 
 
 void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
-                   SynchronizedQueue<Spill*>* spill_queue,
-                   boost::atomic<bool>* interruptor,
-                   Gamma::Setting root) {
+                   SynchronizedQueue<Spill*>* spill_queue) {
 
   PL_INFO << "<PixiePlugin> Double buffered daq starting";
 
@@ -1572,7 +1577,7 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
   boost::posix_time::ptime session_start_time, block_time;
 
   for (int i=0; i < callback->channel_indices_.size(); i++) {
-    if (!callback->clear_EM(i)) //one module
+    if (!callback->clear_EM(i))
       return;
     callback->set_mod("DBLBUFCSR",   static_cast<double>(1), Module(i));
     callback->set_mod("MODULE_CSRA", static_cast<double>(0), Module(i));
@@ -1612,13 +1617,14 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
       }
       if (mods.empty())
         wait_ms(callback->run_poll_interval_ms_);
-      timeout = (total_timer.timeout() || interruptor->load());
+      timeout = (total_timer.timeout() || (callback->run_status_.load() == 2));
     };
     block_time = boost::posix_time::microsec_clock::local_time();
 
     for (auto &q : mods) {
       callback->get_mod_stats(Module(q));
-      callback->get_chan_stats(Channel::all, Module(q));
+      for (int j=0; j < NUMBER_OF_CHANNELS; ++j)
+        callback->read_chan("ALL_CHANNEL_PARAMETERS", q, j);
     }
 
 
@@ -1628,7 +1634,7 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
       fetched_spill->data.resize(list_mem_len32, 0);
       if (read_EM_dbl(fetched_spill->data.data(), q))
         success = true;
-      PL_DBG << "<PixiePlugin> fetched spill for mod " << q;
+      //      PL_DBG << "<PixiePlugin> fetched spill for mod " << q;
       callback->fill_stats(fetched_spill->stats, q);
       for (auto &p : fetched_spill->stats) {
         p.lab_time = block_time;
@@ -1642,9 +1648,8 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
     }
   }
 
-  callback->stop_run(Module::all);
-
-  PL_INFO << "<PixiePlugin> Double buffered daq stopping";
+  callback->run_status_.store(3);
+  PL_INFO << "<PixiePlugin> Double buffered daq runner finished";
 }
 
 

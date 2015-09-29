@@ -83,9 +83,11 @@ public:
 
   std::vector<Trace> oscilloscope();
   
+  bool daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue);
+  bool daq_stop();
+  bool daq_running();
+
 protected:
-  bool start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue);
-  bool stop_daq();
 
   void from_xml(tinyxml2::XMLElement*);
 

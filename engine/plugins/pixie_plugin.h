@@ -44,9 +44,7 @@ public:
 
   Plugin();
   Plugin(const Plugin& other);      //sets state to history if copied
-  Plugin(tinyxml2::XMLElement* root, std::vector<Gamma::Detector>& dets); //create from xml node
   ~Plugin();
-
   
   //Overrides
   bool write_settings_bulk(Gamma::Setting &set) override;
@@ -55,8 +53,10 @@ public:
   bool boot() override;
   bool execute_command(Gamma::Setting &set) override;
   std::map<int, std::vector<uint16_t>> oscilloscope() override;
-  bool start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue, Gamma::Setting root) override;
-  bool stop_daq() override;
+
+  bool daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) override;
+  bool daq_stop() override;
+  bool daq_running() override;
 
 
   //Unique
@@ -64,14 +64,15 @@ public:
   void reset_counters_next_run();
 
   //DEPRECATE//
+  void from_xml_legacy(tinyxml2::XMLElement* root, std::vector<Gamma::Detector>& dets);
   void to_xml(tinyxml2::XMLPrinter&, std::vector<Gamma::Detector> dets) const;
 
 private:
   //Acquisition threads, use as static functors
   static void worker_parse(Plugin* callback, SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue);
-  static void worker_run(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue, boost::atomic<bool>* interruptor, Gamma::Setting root);
-  static void worker_run_dbl(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue, boost::atomic<bool>* interruptor, Gamma::Setting root);
-  static void worker_run_test(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue, boost::atomic<bool>* interruptor, Gamma::Setting root);
+  static void worker_run(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue);
+  static void worker_run_dbl(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue);
+  static void worker_run_test(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue);
 
 
 protected:
@@ -80,7 +81,7 @@ protected:
   //DEPRECATE//
   std::vector<Gamma::Detector> from_xml(tinyxml2::XMLElement*);
 
-  boost::atomic<bool>* interruptor_;
+  boost::atomic<int> run_status_;
   boost::thread *runner_;
   boost::thread *parser_;
   SynchronizedQueue<Spill*>* raw_queue_;

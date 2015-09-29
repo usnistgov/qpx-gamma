@@ -182,7 +182,7 @@ protected:
 
   std::vector<std::vector<double> > energies_;
   
-  StatsUpdate start_stats;
+  std::map<int, StatsUpdate> start_stats;
   std::list<Event> backlog;
 };
 

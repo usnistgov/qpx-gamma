@@ -54,19 +54,24 @@ void Wrapper::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>&
   my_settings_.save_optimization();
   spill->run->state = my_settings_.pull_settings();
   spill->run->detectors = my_settings_.get_detectors();
-  spill->run->time_start = boost::posix_time::microsec_clock::local_time();
+  boost::posix_time::ptime time_start = boost::posix_time::microsec_clock::local_time();
+  spill->run->time_start = time_start;
+  spill->run->time_stop = time_start;
   parsedQueue.enqueue(spill);
 
-  if (my_settings_.start_daq(timeout, &parsedQueue))
+  if (my_settings_.daq_start(timeout, &parsedQueue))
     PL_DBG << "Started generating threads";
 
-  while (!interruptor.load()) {
+  while (my_settings_.daq_running()) {
     wait_ms(1000);
+    if (interruptor.load()) {
+      PL_DBG << "user interrupted daq";
+      if (my_settings_.daq_stop())
+        PL_DBG << "Stopped generating threads successfully";
+      else 
+        PL_DBG << "Stopped generating threads failed";
+    }
   }
-
-  if (my_settings_.stop_daq())
-    PL_DBG << "Stopped generating threads";
-
 
   spill = new Spill;
   spill->run = new RunInfo;
@@ -74,6 +79,8 @@ void Wrapper::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>&
   my_settings_.save_optimization();
   spill->run->state = my_settings_.pull_settings();
   spill->run->detectors = my_settings_.get_detectors();
+  spill->run->time_start = time_start;
+  //  spill->run->total_events = 1; //BAD!!!!
   spill->run->time_stop = boost::posix_time::microsec_clock::local_time();
   parsedQueue.enqueue(spill);
 
@@ -136,24 +143,26 @@ ListData* Wrapper::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   PL_INFO << "Multithreaded list mode acquisition scheduled for " << timeout << " seconds";
 
-
-  SynchronizedQueue<Spill*> parsedQueue;
-
-  if (my_settings_.start_daq(timeout, &parsedQueue))
-    PL_DBG << "Started generating threads";
-
   my_settings_.get_all_settings();
   my_settings_.save_optimization();
   result->run.state = my_settings_.pull_settings();
   result->run.detectors = my_settings_.get_detectors();
   result->run.time_start = boost::posix_time::microsec_clock::local_time();
 
-  while (!interruptor.load()) {
-    wait_ms(1000);
-  }
+  SynchronizedQueue<Spill*> parsedQueue;
+  if (my_settings_.daq_start(timeout, &parsedQueue))
+    PL_DBG << "Started generating threads";
 
-  if (my_settings_.stop_daq())
-    PL_DBG << "Stopped generating threads";
+  while (my_settings_.daq_running()) {
+    wait_ms(1000);
+    if (interruptor.load()) {
+      PL_DBG << "user interrupted daq";
+      if (my_settings_.daq_stop())
+        PL_DBG << "Stopped generating threads successfully";
+      else 
+        PL_DBG << "Stopped generating threads failed";
+    }
+  }
 
   result->run.time_stop = boost::posix_time::microsec_clock::local_time();
 

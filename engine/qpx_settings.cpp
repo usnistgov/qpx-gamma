@@ -56,7 +56,7 @@ void Settings::to_xml(tinyxml2::XMLPrinter& printer) const {
 void Settings::from_xml(tinyxml2::XMLElement* root) {
   std::string rootname(root->Name());
   if (rootname == "PixieSettings") {
-    pixie_plugin_ = Qpx::Plugin(root, detectors_);
+    pixie_plugin_.from_xml_legacy(root, detectors_);
     read_settings_bulk();
   } else if (rootname == "Setting") {
     settings_tree_.from_xml(root);
@@ -179,12 +179,12 @@ std::vector<Trace> Settings::oscilloscope() {
   return traces;
 }
 
-bool Settings::start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) {
+bool Settings::daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) {
   bool success = false;
   for (auto &set : settings_tree_.branches.my_data_) {
     for (auto &q : set.branches.my_data_) {
       if (q.name == "Acquisition Start") {
-        if ((set.name == "Pixie-4") && pixie_plugin_.start_daq(timeout, out_queue, set)) {
+        if ((set.name == "Pixie-4") && pixie_plugin_.daq_start(timeout, out_queue)) {
           success = true;
         }
       }
@@ -193,12 +193,12 @@ bool Settings::start_daq(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue)
   return success;
 }
 
-bool Settings::stop_daq() {
+bool Settings::daq_stop() {
   bool success = false;
   for (auto &set : settings_tree_.branches.my_data_) {
     for (auto &q : set.branches.my_data_) {
       if (q.name == "Acquisition Stop") {
-        if ((set.name == "Pixie-4") && pixie_plugin_.stop_daq()) {
+        if ((set.name == "Pixie-4") && pixie_plugin_.daq_stop()) {
           success = true;
         }
       }
@@ -210,6 +210,22 @@ bool Settings::stop_daq() {
 
   return success;
 }
+
+bool Settings::daq_running() {
+  bool running = false;
+  for (auto &set : settings_tree_.branches.my_data_) {
+    for (auto &q : set.branches.my_data_) {
+      if (q.name == "Acquisition Start") {
+        if ((set.name == "Pixie-4") && pixie_plugin_.daq_running()) {
+          running = true;
+        }
+      }
+    }
+  }
+
+  return running;
+}
+
 
 
 

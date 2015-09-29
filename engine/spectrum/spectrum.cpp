@@ -164,19 +164,21 @@ bool Spectrum::validateEvent(const Event& newEvent) const {
 void Spectrum::addStats(const StatsUpdate& newBlock) {
   //private; no lock required
 
-  if (newBlock.spill_number == 0)
-    start_stats = newBlock;
-  else if ((newBlock.channel < metadata_.add_pattern.size()) && (metadata_.add_pattern[newBlock.channel])) {
-    metadata_.real_time   = newBlock.lab_time - start_stats.lab_time;
-    StatsUpdate diff = newBlock - start_stats;
-    if (!diff.total_time)
-      return;
-    double scale_factor = metadata_.real_time.total_microseconds() / 1000000 / diff.total_time;
+  if ((newBlock.channel >= 0) && (newBlock.channel < metadata_.add_pattern.size()) && (metadata_.add_pattern[newBlock.channel])) {
+    if (start_stats.count(newBlock.channel) == 0)
+      start_stats[newBlock.channel] = newBlock;
+    else {
+      metadata_.real_time   = newBlock.lab_time - start_stats[newBlock.channel].lab_time;
+      StatsUpdate diff = newBlock - start_stats[newBlock.channel];
+      if (!diff.total_time)
+        return;
+      double scale_factor = metadata_.real_time.total_microseconds() / 1000000 / diff.total_time;
 
-    metadata_.live_time = metadata_.real_time;
-    double this_time_unscaled = diff.live_time - diff.sfdt;
-    if (this_time_unscaled < metadata_.live_time.total_seconds())
-      metadata_.live_time = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));
+      metadata_.live_time = metadata_.real_time;
+      double this_time_unscaled = diff.live_time - diff.sfdt;
+      if (this_time_unscaled < metadata_.live_time.total_seconds())
+        metadata_.live_time = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));
+    }
   }
 }
 
@@ -188,7 +190,7 @@ void Spectrum::addRun(const RunInfo& run_info) {
   if (run_info.detectors.size() > 0)
     _set_detectors(run_info.detectors);
 
-  if (!run_info.total_events)
+  if (run_info.time_start == run_info.time_stop)
     return;
   metadata_.real_time = run_info.time_stop - run_info.time_start;
   double scale_factor = run_info.time_scale_factor();
