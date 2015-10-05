@@ -16,32 +16,45 @@
  *      Martin Shetty (NIST)
  *
  * Description:
+ *      Gamma::DaqDevice abstract class
  *
  ******************************************************************************/
 
-#ifndef TABLE_SPECTRUM_ATTRS_H_
-#define TABLE_SPECTRUM_ATTRS_H_
+#include "daq_device.h"
 
-#include <QAbstractTableModel>
-#include "generic_setting.h"
+namespace Qpx {
 
-class TableSpectrumAttrs : public QAbstractTableModel
-{
-    Q_OBJECT
-private:
-    XMLable2DB<Gamma::Setting> *generic_attributes;
+  bool DaqDevice::load_setting_definitions(std::string file) {
+    pugi::xml_document doc;
 
-public:
-    TableSpectrumAttrs(QObject *parent = 0);
-    int rowCount(const QModelIndex &parent = QModelIndex()) const;
-    int columnCount(const QModelIndex &parent = QModelIndex()) const;
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const;
-    Qt::ItemFlags flags(const QModelIndex & index) const;
-    bool setData(const QModelIndex & index, const QVariant & value, int role);
+    if (!doc.load_file(file.c_str()))
+      return false;
 
-    void eat(XMLable2DB<Gamma::Setting> *generic_attr);
-    void update();
-};
+    pugi::xml_node root = doc.child(this->plugin_name().c_str());
+    if (!root)
+      return false;
 
-#endif
+    for (pugi::xml_node node : root.children()) {
+      if (node.name() && (std::string(node.name()) == Gamma::SettingMeta().xml_element_name())) {
+        Gamma::SettingMeta newset(node);
+        if (newset != Gamma::SettingMeta())
+          setting_definitions_[newset.id_] = newset;
+      }
+    }
+    return true;
+  }
+
+
+  bool DaqDevice::save_setting_definitions(std::string file) {
+    pugi::xml_document doc;
+
+    pugi::xml_node root = doc.append_child();
+    root.set_name(this->plugin_name().c_str());
+    for (auto &q : setting_definitions_)
+      q.second.to_xml(root);
+
+    return doc.save_file(file.c_str());
+  }
+
+}
+

@@ -346,7 +346,7 @@ void ThreadRunner::run()
       }
       devices_.write_settings_bulk();
       Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/Adjust offsets", 0, Gamma::SettingType::command, -1);
-      set.value = 1;
+      set.value_dbl = 1;
       devices_.set_setting(set);
       devices_.execute_command();
 
@@ -362,7 +362,7 @@ void ThreadRunner::run()
         Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/XDT", 0, Gamma::SettingType::floating, 0);
         for (int i=0; i < dets.size(); i++) {
           set.index = i;
-          set.value = xdt_;
+          set.value_dbl = xdt_;
           devices_.set_setting(set);
         }
         std::vector<Qpx::Trace> traces = devices_.oscilloscope();

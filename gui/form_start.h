@@ -41,7 +41,7 @@ class FormStart : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector> &detectors, QWidget *parent = 0);
+  explicit FormStart(ThreadRunner &thread, QSettings &settings, XMLable2DB<Gamma::Detector> &detectors, QWidget *parent = 0);
   void exit();
   ~FormStart();
 
@@ -70,7 +70,7 @@ private:
 
   QString data_directory_;
 
-  XMLableDB<Gamma::Detector>  &detectors_;
+  XMLable2DB<Gamma::Detector>  &detectors_;
 
   ThreadRunner        &runner_thread_;
 

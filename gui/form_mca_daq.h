@@ -40,7 +40,7 @@ class FormMcaDaq : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormMcaDaq(ThreadRunner&, QSettings&, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
+  explicit FormMcaDaq(ThreadRunner&, QSettings&, XMLable2DB<Gamma::Detector>&, QWidget *parent = 0);
 
   void replot();
   ~FormMcaDaq();
@@ -93,12 +93,12 @@ private:
   Ui::FormMcaDaq *ui;
   QSettings                  &settings_;
   ThreadRunner               &runner_thread_;
-  XMLableDB<Gamma::Detector> &detectors_;
+  XMLable2DB<Gamma::Detector> &detectors_;
 
   QString data_directory_;    //data directory
   QString mca_load_formats_;  //valid mca file formats that can be opened
 
-  XMLableDB<Qpx::Spectrum::Template>  spectra_templates_;
+  XMLable2DB<Qpx::Spectrum::Template>  spectra_templates_;
   Qpx::SpectraSet                     spectra_;
 
   ThreadPlotSignal                plot_thread_;

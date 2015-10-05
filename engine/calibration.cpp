@@ -37,9 +37,6 @@ Calibration::Calibration() {
   units_ = "channels";
   model_ = CalibrationModel::polynomial;
   bits_ = 0;
-  //    coefficients_.resize(2);
-  //    coefficients_[0] = 0.0;
-  //    coefficients_[1] = 1.0;
 }
 
 bool Calibration::valid() const {
@@ -60,15 +57,12 @@ double Calibration::transform(double chan, uint16_t bits) const {
   if (coefficients_.empty() || !bits_ || !bits)
     return chan;
   
-  //  PL_DBG << "will shift " << chan << " from " << bits << " to " << bits_;
-
   if (bits > bits_)
     chan = chan / pow(2, bits - bits_);
   if (bits < bits_)
     chan = chan * pow(2, bits_ - bits);
 
   double re = transform(chan);
-  //  PL_DBG << "chan " << chan << " -> energy " << re;
 
   return re;
 }
@@ -156,6 +150,30 @@ void Calibration::to_xml(tinyxml2::XMLPrinter& printer) const {
   printer.CloseElement(); //Calibration
 }
 
+void Calibration::to_xml(pugi::xml_node &root) const {
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+
+  node.append_attribute("Type").set_value(type_.c_str());
+  if (type_ == "Energy")
+    node.append_attribute("EnergyUnits").set_value(units_.c_str());
+  else if (type_ == "Gain")
+    node.append_attribute("To").set_value(to_.c_str());
+  if (bits_ > 0)
+    node.append_attribute("ResolutionBits").set_value(std::to_string(bits_).c_str());
+
+  node.append_child("CalibrationCreationDate");
+  node.last_child().append_child(pugi::node_pcdata).set_value(to_iso_extended_string(calib_date_).c_str());
+
+  std::string  model_str = "undefined";
+  if (model_ == CalibrationModel::polynomial)
+    model_str = "Polynomial";
+  node.append_child("Equation").append_attribute("Model").set_value(model_str.c_str());
+
+  if ((model_ != CalibrationModel::none) && (coefficients_.size()))
+    node.last_child().append_child("Coefficients").append_child(pugi::node_pcdata).set_value(coef_to_string().c_str());
+ }
+
+
 void Calibration::from_xml(tinyxml2::XMLElement* root) {
   boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
   tif->set_iso_extended_format();
@@ -190,6 +208,32 @@ void Calibration::from_xml(tinyxml2::XMLElement* root) {
   }
   
 }
+
+void Calibration::from_xml(const pugi::xml_node &node) {
+  boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
+  tif->set_iso_extended_format();
+  std::stringstream iss;
+
+  type_ = std::string(node.attribute("Type").value());
+
+  if (type_ == "Energy")
+    units_ = std::string(node.attribute("EnergyUnits").value());
+  else if (type_ == "Gain")
+    to_ = std::string(node.attribute("To").value());
+
+  bits_ = node.attribute("ResolutionBits").as_int();
+
+  iss << std::string(node.child_value("CalibrationCreationDate"));
+  iss.imbue(std::locale(std::locale::classic(), tif));
+  iss >> calib_date_;
+
+  std::string model_str = std::string(node.child("Equation").attribute("Model").value());
+  if (model_str == "Polynomial")
+    model_ = CalibrationModel::polynomial;
+  coef_from_string(std::string(node.child("Equation").child_value("Coefficients")));
+
+}
+
 
 
 }

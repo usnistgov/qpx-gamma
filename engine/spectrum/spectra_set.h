@@ -44,10 +44,14 @@ class SpectraSet {
   void terminate();   //explicitly in case other threads waiting for cond var
 
   //populate one of these ways
-  void set_spectra(const XMLableDB<Spectrum::Template>&);
+  void set_spectra(const XMLable2DB<Spectrum::Template>&);
   void add_spectrum(Spectrum::Spectrum* newSpectrum);
   void read_xml(std::string file_name, bool with_spectra = true, Gamma::Setting tree = Gamma::Setting());
   void write_xml(std::string file_name);
+
+  void read_xml2(std::string file_name, bool with_spectra = true);
+  void write_xml2(std::string file_name);
+
   void delete_spectrum(std::string name);
 
   //acquisition feeds events to all spectra

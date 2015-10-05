@@ -447,8 +447,8 @@ void Fitter::save_report(std::string filename) {
 
   if (!metadata_.attributes.empty()) {
     file << "Attributes" << std::endl;
-    for (auto &q : metadata_.attributes)
-      file << "   " << q.name << " = " << q.value << std::endl; 
+    for (auto &q : metadata_.attributes.my_data_)
+      file << "   " << q.id_ << " = " << q.value_dbl << std::endl; //other types?
   }
 
   if (!metadata_.detectors.empty()) {

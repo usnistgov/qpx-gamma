@@ -29,7 +29,7 @@
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_real.hpp>
 
-FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent) :
+FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLable2DB<Gamma::Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormAnalysis2D),
   detectors_(newDetDB),

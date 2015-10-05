@@ -27,7 +27,7 @@
 #include "fityk.h"
 #include "qt_util.h"
 
-FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
+FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XMLable2DB<Gamma::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormOptimization),
   opt_runner_thread_(thread),
@@ -253,7 +253,7 @@ void FormOptimization::do_run()
   optimizing_.match_pattern[ui->spinOptChan->value()] = 1;
   optimizing_.appearance = generateColor().rgba();
 
-  XMLableDB<Qpx::Spectrum::Template> db("SpectrumTemplates");
+  XMLable2DB<Qpx::Spectrum::Template> db("SpectrumTemplates");
   db.add(optimizing_);
 
   current_spectra_.clear();
@@ -269,11 +269,11 @@ void FormOptimization::do_run()
   y_opt.resize(pow(2,bits), 0.0);
 
   Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/" + current_setting_, 0, Gamma::SettingType::floating, ui->spinOptChan->value());
-  set.value = val_current;
+  set.value_dbl = val_current;
   pixie_.settings().set_setting(set);
   QThread::sleep(1);
   pixie_.settings().get_all_settings();
-  double got = pixie_.settings().pull_settings().get_setting(set).value;
+  double got = pixie_.settings().pull_settings().get_setting(set).value_dbl;
   setting_values_.push_back(got);
   setting_fwhm_.push_back(0);
   emit settings_changed();

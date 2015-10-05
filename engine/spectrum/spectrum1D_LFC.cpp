@@ -52,7 +52,7 @@ bool Spectrum1D_LFC::initialize() {
   channels_all_.resize(metadata_.resolution,0);
   channels_run_.resize(metadata_.resolution,0);
 
-  time_sample_ = get_attr("time_sample").value;
+  time_sample_ = get_attr("time_sample").value_dbl;
 
   return Spectrum1D::initialize();
 }

@@ -42,29 +42,29 @@ public:
     new_temp.description = "Custom gated list mode to file. Please provide path and name for valid and accessible file.";
 
     Gamma::Setting file_setting;
-    file_setting.name = "file_dir";
-    file_setting.setting_type = Gamma::SettingType::text;
-    file_setting.writable = true;
-    file_setting.description = "path to temp output directory";
-    new_temp.generic_attributes.push_back(file_setting);
+    file_setting.id_ = "file_dir";
+    file_setting.metadata.setting_type = Gamma::SettingType::dir_path;
+    file_setting.metadata.writable = true;
+    file_setting.metadata.description = "path to temp output directory";
+    new_temp.generic_attributes.add(file_setting);
 
     Gamma::Setting format_setting;
-    format_setting.name = "format";
-    format_setting.setting_type = Gamma::SettingType::int_menu;
-    format_setting.writable = true;
-    format_setting.description = "output file format";
+    format_setting.id_ = "format";
+    format_setting.metadata.setting_type = Gamma::SettingType::int_menu;
+    format_setting.metadata.writable = true;
+    format_setting.metadata.description = "output file format";
     format_setting.value_int = 1;
-    format_setting.int_menu_items[0] = "binary";
-    format_setting.int_menu_items[1] = "human readable";
-    new_temp.generic_attributes.push_back(format_setting);
+    format_setting.metadata.int_menu_items[0] = "binary";
+    format_setting.metadata.int_menu_items[1] = "human readable";
+    new_temp.generic_attributes.add(format_setting);
     
     Gamma::Setting hit_pattern_write;
-    hit_pattern_write.name = "with_pattern";
-    hit_pattern_write.setting_type = Gamma::SettingType::boolean;
-    hit_pattern_write.writable = false;
-    hit_pattern_write.description = "IGNORED write hit pattern before event energies";
+    hit_pattern_write.id_ = "with_pattern";
+    hit_pattern_write.metadata.setting_type = Gamma::SettingType::boolean;
+    hit_pattern_write.metadata.writable = false;
+    hit_pattern_write.metadata.description = "IGNORED write hit pattern before event energies";
     hit_pattern_write.value_int = 1;
-    new_temp.generic_attributes.push_back(hit_pattern_write);
+    new_temp.generic_attributes.add(hit_pattern_write);
 
     return new_temp;
   }

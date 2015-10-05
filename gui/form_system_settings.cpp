@@ -24,7 +24,7 @@
 #include "ui_form_system_settings.h"
 #include "widget_detectors.h"
 
-FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLableDB<Gamma::Detector>& detectors, QSettings& settings, QWidget *parent) :
+FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLable2DB<Gamma::Detector>& detectors, QSettings& settings, QWidget *parent) :
   QWidget(parent),
   runner_thread_(thread),
   detectors_(detectors),
@@ -175,7 +175,9 @@ void FormPixieSettings::saveSettings() {
       continue;
     Gamma::Detector det = detectors_.get(q);
     if (det != Gamma::Detector()) {
-      det.settings_ = q.settings_;
+      for (auto &p : q.settings_.branches.my_data_)
+        if (p.metadata.writable)
+          det.settings_.branches.replace(p);
       detectors_.replace(det);
     }
   }
@@ -240,6 +242,9 @@ void FormPixieSettings::on_checkShowRO_clicked()
 {
   table_settings_model_.set_show_read_only(ui->checkShowRO->isChecked());
   table_settings_model_.update(channels_);
+
+  tree_settings_model_.set_show_read_only(ui->checkShowRO->isChecked());
+  tree_settings_model_.update(dev_settings_);
 }
 
 void FormPixieSettings::on_bootButton_clicked()

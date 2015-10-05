@@ -32,6 +32,7 @@ dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, QWidget *parent)
   det_selection_model_(&det_table_model_),
   changed_(false),
   detectors_("Detectors"),
+  attributes_("Attributes"),
   ui(new Ui::dialog_spectrum)
 {
   ui->setupUi(this);
@@ -46,6 +47,7 @@ dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, QWidget *parent)
           this, SLOT(det_selection_changed(QItemSelection,QItemSelection)));
 
   md_ = my_spectrum_.metadata();
+
   attributes_ = md_.attributes;
 
   table_model_.eat(&attributes_);

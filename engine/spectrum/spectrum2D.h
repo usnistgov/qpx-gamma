@@ -34,7 +34,7 @@ namespace Spectrum {
 class Spectrum2D : public Spectrum
 {
 public:
-  Spectrum2D() {};
+  Spectrum2D() {}
 
   static Template get_template() {
     Template new_temp;
@@ -44,12 +44,12 @@ public:
     new_temp.description = "Matrix-type coincidence spectrum for two detectors";
 
     Gamma::Setting buf;
-    buf.name = "buffered";
-    buf.setting_type = Gamma::SettingType::boolean;
-    buf.unit = "T/F";
-    buf.description = "Buffered output for efficient plotting (more memory)";
-    buf.writable = true;
-    new_temp.generic_attributes.push_back(buf);
+    buf.id_ = "buffered";
+    buf.metadata.setting_type = Gamma::SettingType::boolean;
+    buf.metadata.unit = "T/F";
+    buf.metadata.description = "Buffered output for efficient plotting (more memory)";
+    buf.metadata.writable = true;
+    new_temp.generic_attributes.add(buf);
 
     //have option to not buffer
     return new_temp;

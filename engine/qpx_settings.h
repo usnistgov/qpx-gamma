@@ -17,7 +17,7 @@
  *
  * Description:
  *      Qpx::Settings online and offline setting describing the state of
- *      a Pixie-4 device.
+ *      a device.
  *      Not thread safe, mostly for speed concerns (getting stats during run)
  *
  ******************************************************************************/
@@ -51,10 +51,16 @@ public:
   Settings();
   Settings(const Settings& other);                                              //sets state to history if copied
   Settings(tinyxml2::XMLElement* root, Gamma::Setting tree = Gamma::Setting()); //create from xml node
+  ~Settings();
 
   bool boot();
   bool die();
-  LiveStatus live() {return pixie_plugin_.live();}
+  LiveStatus live() {
+    if (pixie_plugin_ != nullptr)
+      return pixie_plugin_->live();
+    else
+      return LiveStatus::dead;
+  }
 
   //save
   void to_xml(tinyxml2::XMLPrinter&) const;
@@ -90,7 +96,7 @@ protected:
 
   void from_xml(tinyxml2::XMLElement*);
 
-  Qpx::Plugin pixie_plugin_;
+  Qpx::Plugin *pixie_plugin_;
   Gamma::Setting settings_tree_;
   
   std::vector<Gamma::Detector> detectors_;

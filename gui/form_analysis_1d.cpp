@@ -27,7 +27,7 @@
 #include "qt_util.h"
 #include <QInputDialog>
 
-FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent) :
+FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLable2DB<Gamma::Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormAnalysis1D),
   detectors_(newDetDB),

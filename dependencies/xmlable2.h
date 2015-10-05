@@ -21,36 +21,33 @@
  *
  ******************************************************************************/
 
-#ifndef XMLABLE_H
-#define XMLABLE_H
+#ifndef XMLABLE2_H
+#define XMLABLE2_H
 
 #include <string>
 #include <list>
 #include <boost/type_traits.hpp>
-#include "tinyxml2.h"
+#include "pugixml.hpp"
 #include "custom_logger.h"
 
-#include "xmlable2.h"
-
-class XMLable {
+class XMLable2 {
  public:
-  XMLable() {}
+  XMLable2() {}
 
-  virtual void to_xml(tinyxml2::XMLPrinter&) const = 0;
-  virtual void from_xml(tinyxml2::XMLElement*) = 0;
+  virtual void to_xml(pugi::xml_node &node) const = 0;
+  virtual void from_xml(const pugi::xml_node &node) = 0;
   virtual std::string xml_element_name() const = 0;
 
-  //fns such as these needed by XMLableDB
-  //bool shallow_equals(const XMLable&) const = 0;
+  ///////these functions needed by XMLableDB///////////
   //virtual bool operator== (const XMLable&) const = 0;
   //virtual bool shallow_equals(const XMLable&) const = 0;
-  
+
 };
 
-template<class T>
-class XMLableDB : public XMLable {
+template<typename T>
+class XMLable2DB : public XMLable2 {
 public:
-  XMLableDB(std::string xml_name) {xml_name_ = xml_name;}
+  XMLable2DB(std::string xml_name) {xml_name_ = xml_name;}
   //  std::string name() const {return name_;}
   std::string xml_element_name() const {return xml_name_;}
 
@@ -58,12 +55,10 @@ public:
   int size() const {return my_data_.size();}
   void clear() {my_data_.clear();}
 
-  bool operator!= (const XMLableDB& other) const {return !operator==(other);}
-  bool operator== (const XMLableDB& other) const {
+  bool operator!= (const XMLable2DB& other) const {return !operator==(other);}
+  bool operator== (const XMLable2DB& other) const {
     if (xml_name_ != other.xml_name_)
       return false;
-    //    if (name_ != other.name_)
-    //      return false;
     if (my_data_.size() != other.my_data_.size())
       return false;
     //ordering does not matter, deep compare on elements
@@ -71,12 +66,12 @@ public:
       if (!other.has(q))
         return false;
     return true;
-  };
+  }
 
-  bool shallow_equals(const XMLableDB& other) const {
+  bool shallow_equals(const XMLable2DB& other) const {
     return (xml_name_ == other.xml_name_);
     //&& (name_ == other.name_));
-  };  
+  }
 
   bool has(const T& t) const {
     for (auto &q : my_data_)
@@ -174,56 +169,59 @@ public:
   }
 
   void write_xml(std::string file_name) const {
-    FILE* myfile;
-    myfile = fopen (file_name.c_str(), "w");
-    if (myfile == NULL)
-      return;
-    tinyxml2::XMLPrinter printer(myfile);
-    printer.PushHeader(true, true);
-    to_xml(printer);
-    fclose(myfile);
+    pugi::xml_document doc;
+    pugi::xml_node root = doc.root();
+    this->to_xml(root);
+    doc.save_file(file_name.c_str());
   }
   
   void read_xml(std::string file_name) {
-    FILE* myfile;
-    myfile = fopen (file_name.c_str(), "r");
-    if (myfile == nullptr)
+    pugi::xml_document doc;
+    if (!doc.load_file(file_name.c_str()))
       return;
-    tinyxml2::XMLDocument docx;
-    docx.LoadFile(myfile);
-    tinyxml2::XMLElement* root = docx.FirstChildElement(xml_name_.c_str());
-    if (root != nullptr)
-      from_xml(root);
-    fclose(myfile);
+
+
+    pugi::xml_node root = doc.child(xml_name_.c_str());
+
+    if (root) {
+      this->from_xml(root);
+    }
   }
 
-  void to_xml(tinyxml2::XMLPrinter& printer) const {
-    printer.OpenElement(xml_name_.c_str());
+  void to_xml(pugi::xml_node &node) const  {
+    pugi::xml_node child = node.append_child(xml_name_.c_str());
     for (auto &q : my_data_)
-      q.to_xml(printer);
-    printer.CloseElement();   
+      q.to_xml(child);
   }
 
-  void from_xml(tinyxml2::XMLElement* root) {
-    tinyxml2::XMLElement* node = root->FirstChildElement(T().xml_element_name().c_str());
-    while (node != nullptr) {
+  void from_xml(const pugi::xml_node &node) {
+    if (node.name() != xml_name_)
+      return;
+    for (pugi::xml_node &child : node.children()) {
       T t;
-      t.from_xml(node);
-      if (!has(t))  // if doesn't have it, append
+      t.from_xml(child);
+      if (!has(t))  // if doesn't have it, append, no duplicates
         my_data_.push_back(t);
-      node = dynamic_cast<tinyxml2::XMLElement*>(node->NextSibling());
-    }    
+    }
   }
-  
-  XMLableDB(const XMLable2DB<T>& other) {
-    xml_name_ = other.xml_name_;
-    my_data_ = other.my_data_;
+
+  std::vector<T> to_vector() const {
+    if (!my_data_.empty())
+      return std::vector<T>(my_data_.begin(), my_data_.end());
+    else
+      return std::vector<T>();
   }
+
+  void from_vector(std::vector<T> vec) {
+    my_data_.clear();
+    if (!vec.empty())
+      my_data_ = std::list<T>(vec.begin(), vec.end());
+  }
+
 
   std::list<T> my_data_;
-  //  std::string name_;
 
-protected:
+// protected:
   std::string xml_name_;
 };
 

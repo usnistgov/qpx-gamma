@@ -45,7 +45,7 @@ class FormPixieSettings : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormPixieSettings(ThreadRunner&, XMLableDB<Gamma::Detector>&, QSettings&, QWidget *parent = 0);
+  explicit FormPixieSettings(ThreadRunner&, XMLable2DB<Gamma::Detector>&, QSettings&, QWidget *parent = 0);
   Gamma::Setting get_tree() {return dev_settings_;}
   ~FormPixieSettings();
 
@@ -84,7 +84,7 @@ private slots:
 private:
   Ui::FormPixieSettings *ui;
 
-  XMLableDB<Gamma::Detector>            &detectors_;
+  XMLable2DB<Gamma::Detector>            &detectors_;
   QString data_directory_;
 
   ThreadRunner        &runner_thread_;

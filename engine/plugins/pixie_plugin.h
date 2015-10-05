@@ -42,9 +42,11 @@ class Plugin : public DaqDevice {
   
 public:
 
-  Plugin();
+  Plugin(std::string file);
   Plugin(const Plugin& other);      //sets state to history if copied
   ~Plugin();
+
+  std::string plugin_name() override {return "Pixie4";}
   
   //Overrides
   bool write_settings_bulk(Gamma::Setting &set) override;
@@ -72,6 +74,9 @@ private:
   static void worker_run_test(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue);
 
 protected:
+
+  std::string setting_definitions_file_;
+
   void fill_stats(std::list<StatsUpdate>&, uint8_t module);
   void reset_counters_next_run();
 

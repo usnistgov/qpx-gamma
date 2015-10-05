@@ -123,6 +123,7 @@ INCLUDEPATH += engine \
                dependencies/XIA \
                dependencies/xylib \
                dependencies/tinyxml2 \
+               dependencies/pugixml \
                dependencies/qcustomplot \
                dependencies/qtcolorpicker \
                dependencies/fityk \
@@ -133,6 +134,7 @@ SOURCES += $$files(dependencies/*.cpp) \
            $$files(dependencies/qcustomplot/*.cpp) \
            $$files(dependencies/qtcolorpicker/*.cpp) \
            $$files(dependencies/tinyxml2/*.cpp) \
+           $$files(dependencies/pugixml/*.cpp) \
            $$files(dependencies/xylib/*.cpp) \
            $$files(dependencies/fityk/*.cpp) \
            $$files(dependencies/fityk/swig/*.cpp) \
@@ -149,6 +151,7 @@ HEADERS  += $$files(dependencies/*.h) \
             $$files(dependencies/qcustomplot/*.h) \
             $$files(dependencies/qtcolorpicker/*.h) \
             $$files(dependencies/tinyxml2/*.h) \
+            $$files(dependencies/pugixml/*.hpp) \
             $$files(dependencies/xylib/*.h) \
             $$files(dependencies/fityk/*.h) \
             $$files(PLX/Include/*.h) \

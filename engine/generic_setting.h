@@ -29,93 +29,171 @@
 #include <set>
 #include "tinyxml2.h"
 #include "xmlable.h"
+#include "pugixml.hpp"
+
 
 namespace Gamma {
 
-enum class SettingType : int {none = 0,
-                              stem = 1,
-                              boolean = 2,
-                              integer = 3,
-                              floating = 4,
-                              floating_precise = 5,
-                              text = 6,
-                              int_menu = 7,
-                              detector = 8,
-                              time = 9,
-                              time_duration = 10,
-                              pattern = 11,
-                              file_path = 12,
-                              binary = 13,
-                              command = 14
+enum class SettingType : int {none,
+                              stem,
+                              boolean,
+                              integer,
+                              floating,
+                              floating_precise,
+                              text,
+                              int_menu,
+                              detector,
+                              time,
+                              time_duration,
+                              pattern,
+                              file_path,
+                              dir_path,
+                              binary,
+                              command,
                              };
+
+
+SettingType to_type(const std::string &type);
+std::string to_string(SettingType);
+
+struct SettingMeta : public XMLable, public XMLable2 {
+
+  std::string        id_;
+  SettingType        setting_type;
+
+  bool               writable;
+  bool               visible;
+  bool               saveworthy;
+  int32_t            address;
+  std::string        name, description;
+  double             minimum, maximum, step;
+  std::string        unit;                       //or extension if file
+  std::map<int32_t, std::string> int_menu_items; //or intrinsic branches
+
+
+
+  SettingMeta(const pugi::xml_node &node) : SettingMeta() {this->from_xml(node);}
+  SettingMeta() : setting_type(SettingType::none), writable(false), visible(true), saveworthy(true), address(0), minimum(0), maximum(0), step(0) {}
+  SettingMeta(tinyxml2::XMLElement* element) : SettingMeta() {this->from_xml(element);}
+
+  std::string xml_element_name() const {return "SettingMeta";}
+
+  bool shallow_equals(const SettingMeta& other) const {
+    return (id_ == other.id_);
+  }
+
+  bool operator!= (const SettingMeta& other) const {return !operator==(other);}
+  bool operator== (const SettingMeta& other) const {
+    if (id_ != other.id_) return false;
+    if (name != other.name) return false;
+    if (unit != other.unit) return false;
+    if (minimum != other.minimum) return false;
+    if (maximum != other.maximum) return false;
+    if (step != other.step) return false;
+    if (writable != other.writable) return false;
+    if (description != other.description) return false;
+    if (address != other.address) return false;
+    if (int_menu_items != other.int_menu_items) return false;
+    return true;
+  }
+
+  SettingMeta stripped() const {
+    SettingMeta s;
+    s.id_ == id_;
+    s.setting_type = setting_type;
+    return s;
+  }
+
+  bool meaningful() const {
+    return (operator!=(this->stripped()));
+  }
+
+  void from_xml(tinyxml2::XMLElement* element);
+  void to_xml(tinyxml2::XMLPrinter& printer) const;
+
+  void from_xml(const pugi::xml_node &node);
+  void to_xml(pugi::xml_node &node) const;
+
+  void populate_menu(const pugi::xml_node &node,
+                     const std::string &key_name,
+                     const std::string &value_name);
+  void menu_to_node(pugi::xml_node &node, const std::string &element_name,
+                    const std::string &key_name, const std::string &value_name) const;
+
+};
+
 
 struct Setting;
 
-struct Setting : public XMLable {
+struct Setting : public XMLable, public XMLable2 {
+  std::string       id_;
 
-  //if type !none
-  int32_t            index;
-  std::set<int32_t>  indices;
-  bool               writable;
-  uint16_t           address;
-  std::string        name, description;
+  int32_t           index;
+  std::set<int32_t> indices;
 
-  //if type is setting
-  SettingType       setting_type;
   int64_t           value_int;
   std::string       value_text;
-  double            value;
-  double            minimum, maximum, step;
-  std::string       unit; //or extension if file
-  std::map<int32_t, std::string> int_menu_items;
+  double            value_dbl;
 
-  //if type is stem
-  XMLableDB<Setting> branches;
+  XMLable2DB<Setting> branches;
 
+  SettingMeta        metadata;
 
   
-  Setting() : writable(false), branches("branches"), address(0), index(-1),
-    setting_type(SettingType::none), value(0), value_int(0), minimum(0), maximum(1), step(1) {}
+  Setting() : branches("branches"), index(-1), value_dbl(0.0), value_int(0) {}
   
+  Setting(const pugi::xml_node &node) : Setting() {this->from_xml(node);}
+
   Setting(tinyxml2::XMLElement* element) : Setting() {this->from_xml(element);}
   
-  Setting(std::string nm) : Setting() {name = nm;}
-  Setting(std::string nm, uint16_t addy, SettingType tp, int32_t idx) : Setting() {name = nm; address = addy; setting_type = tp; index = idx;}
+  Setting(std::string id) : Setting() {id_ = id;} //BAD
+  Setting(std::string id, uint16_t addy, SettingType tp, int32_t idx) : Setting() {
+    id_ = id;
+    metadata.id_ = id;
+    metadata.address = addy;
+    metadata.setting_type = tp;
+    index = idx;
+  } //BAD
+  Setting(SettingMeta meta, int32_t idx) : Setting() {
+    id_ = meta.id_;
+    metadata = meta;
+    index = idx;
+  }
 
   std::string xml_element_name() const {return "Setting";}
 
   bool shallow_equals(const Setting& other) const {
-    return ((name == other.name)
-            && (address == other.address)
-            && (setting_type == other.setting_type));
+    return (id_ == other.id_);
   }
   
   bool operator!= (const Setting& other) const {return !operator==(other);}
   bool operator== (const Setting& other) const {
-    if (name != other.name) return false;
-    if (unit != other.unit) return false;
-    if (value != other.value) return false;
+    if (id_ != other.id_) return false;
+    if (value_dbl != other.value_dbl) return false;
     if (value_int != other.value_int) return false;
-    if (minimum != other.minimum) return false;
-    if (maximum != other.maximum) return false;
-    if (step != other.step) return false;
-    if (setting_type != other.setting_type) return false;
     if (index != other.index) return false;
     if (indices != other.indices) return false;
     if (value_text != other.value_text) return false;
-    if (writable != other.writable) return false;
-    if (description != other.description) return false;
-    if (address != other.address) return false;
     if (branches != other.branches) return false;
-    if (int_menu_items != other.int_menu_items) return false;
+//    if (metadata != other.metadata) return false;
     return true;
   }
   
   void from_xml(tinyxml2::XMLElement* element);
   void to_xml(tinyxml2::XMLPrinter& printer) const;
 
-  Gamma::Setting get_setting(Gamma::Setting address, bool precise_index = false) const;
-  bool retrieve_one_setting(Gamma::Setting&, const Gamma::Setting&, bool precise_index = false) const;
+  void from_xml(const pugi::xml_node &node) override;
+  void to_xml(pugi::xml_node &node, bool with_metadata) const;
+  void to_xml(pugi::xml_node &node) const override {this->to_xml(node, false);}
+
+  Gamma::Setting get_setting(Gamma::Setting address, bool precise_index = false) const; //BAD
+  bool retrieve_one_setting(Gamma::Setting&, const Gamma::Setting&, bool precise_index = false) const; //BAD
+
+  void condense();
+  void cull_invisible();
+  void cull_readonly();
+  void strip_metadata();
+  void enrich(const std::map<std::string, Gamma::SettingMeta> &);
 
 };
 

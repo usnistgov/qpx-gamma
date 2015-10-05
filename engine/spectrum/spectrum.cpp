@@ -26,6 +26,7 @@
 #include <boost/algorithm/string.hpp>
 #include "spectrum.h"
 #include "custom_logger.h"
+#include "xmlable2.h"
 
 namespace Qpx {
 namespace Spectrum {
@@ -196,8 +197,8 @@ void Spectrum::addRun(const RunInfo& run_info) {
   double scale_factor = run_info.time_scale_factor();
   metadata_.live_time = metadata_.real_time;
   for (int i = 0; i < metadata_.add_pattern.size(); i++) { //using shortest live time of all added channels
-    double live = run_info.state.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/LIVE_TIME", 26, Gamma::SettingType::floating, i)).value;
-    double sfdt = run_info.state.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/SFDT", 34, Gamma::SettingType::floating, i)).value;
+    double live = run_info.state.get_setting(Gamma::Setting("Pixie4/System/module/channel/LIVE_TIME", 26, Gamma::SettingType::floating, i)).value_dbl;
+    double sfdt = run_info.state.get_setting(Gamma::Setting("Pixie4/System/module/channel/SFDT", 34, Gamma::SettingType::floating, i)).value_dbl;
     double this_time_unscaled =live - sfdt;
     if ((metadata_.add_pattern[i]) && (this_time_unscaled <= metadata_.live_time.total_seconds()))
       metadata_.live_time = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));
@@ -250,14 +251,7 @@ void Spectrum::recalc_energies() {
 }
 
 Gamma::Setting Spectrum::get_attr(std::string setting) const {
-  //private; no lock required
-  Gamma::Setting ret;
-  
-  for (auto &q : metadata_.attributes)
-    if (q.name == setting)
-      ret = q;
-  
-  return ret;
+  return metadata_.attributes.get(Gamma::Setting(setting));
 }
 
 
@@ -353,8 +347,8 @@ void Spectrum::set_generic_attr(Gamma::Setting setting) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  for (auto &q : metadata_.attributes) {
-    if ((q.name == setting.name) && (q.writable))
+  for (auto &q : metadata_.attributes.my_data_) {
+    if ((q.id_ == setting.id_) && (q.metadata.writable))
       q = setting;
   }
 }
@@ -416,14 +410,15 @@ void Spectrum::to_xml(tinyxml2::XMLPrinter& printer) const {
 
   if (metadata_.attributes.size()) {
     printer.OpenElement("GenericAttributes");
-    for (auto &q: metadata_.attributes)
+    for (auto &q: metadata_.attributes.my_data_)
       q.to_xml(printer);
     printer.CloseElement();
   }
 
   if (metadata_.detectors.size()) {
     printer.OpenElement("Detectors");
-    for (auto &q : metadata_.detectors) {
+    for (auto q : metadata_.detectors) {
+      q.settings_ = Gamma::Setting();
       q.to_xml(printer);
     }
     printer.CloseElement();
@@ -436,6 +431,48 @@ void Spectrum::to_xml(tinyxml2::XMLPrinter& printer) const {
 
   printer.CloseElement(); //PixieSpectrum
 }
+
+void Spectrum::to_xml(pugi::xml_node &root) const {
+  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+
+  pugi::xml_node node = root.append_child("Spectrum");
+
+  node.append_attribute("type").set_value(this->my_type().c_str());
+
+  node.append_child("Name").append_child(pugi::node_pcdata).set_value(metadata_.name.c_str());
+  node.append_child("TotalEvents").append_child(pugi::node_pcdata).set_value(metadata_.total_count.str().c_str());
+  node.append_child("Appearance").append_child(pugi::node_pcdata).set_value(std::to_string(metadata_.appearance).c_str());
+  node.append_child("Visible").append_child(pugi::node_pcdata).set_value(std::to_string(metadata_.visible).c_str());
+  node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(metadata_.bits).c_str());
+
+  std::stringstream patterndata;
+  for (auto &q: metadata_.match_pattern)
+    patterndata << static_cast<short>(q) << " ";
+  node.append_child("MatchPattern").append_child(pugi::node_pcdata).set_value(boost::algorithm::trim_copy(patterndata.str()).c_str());
+
+  patterndata.str(std::string()); //clear it
+  for (auto &q: metadata_.add_pattern)
+    patterndata << static_cast<short>(q) << " ";
+  node.append_child("AddPattern").append_child(pugi::node_pcdata).set_value(boost::algorithm::trim_copy(patterndata.str()).c_str());
+
+  node.append_child("RealTime").append_child(pugi::node_pcdata).set_value(to_simple_string(metadata_.real_time).c_str());
+  node.append_child("LiveTime").append_child(pugi::node_pcdata).set_value(to_simple_string(metadata_.live_time).c_str());
+
+  if (metadata_.attributes.size())
+    metadata_.attributes.to_xml(node);
+
+  if (metadata_.detectors.size()) {
+    pugi::xml_node child = node.append_child("Detectors");
+    for (auto q : metadata_.detectors) {
+      q.settings_ = Gamma::Setting();
+      q.to_xml(child);
+    }
+  }
+
+  if ((metadata_.resolution > 0) && (metadata_.total_count > 0))
+    node.append_child("ChannelData").append_child(pugi::node_pcdata).set_value(this->_channels_to_xml().c_str());
+}
+
 
 bool Spectrum::from_xml(tinyxml2::XMLElement* root) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
@@ -490,7 +527,7 @@ bool Spectrum::from_xml(tinyxml2::XMLElement* root) {
     metadata_.attributes.clear();
     tinyxml2::XMLElement* one_setting = elem->FirstChildElement("Setting");
     while (one_setting != nullptr) {
-      metadata_.attributes.push_back(Gamma::Setting(one_setting));
+      metadata_.attributes.add(Gamma::Setting(one_setting));
       one_setting = dynamic_cast<tinyxml2::XMLElement*>(one_setting->NextSibling());
     }
   }
@@ -519,6 +556,82 @@ bool Spectrum::from_xml(tinyxml2::XMLElement* root) {
   return ret;
 }
 
+bool Spectrum::from_xml(const pugi::xml_node &node) {
+  if (std::string(node.name()) != "Spectrum")
+    return false;
+
+  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+  while (!uniqueLock.try_lock())
+    boost::this_thread::sleep_for(boost::chrono::seconds{1});
+
+  std::string numero;
+
+  if (!node.child("Name"))
+    return false;
+  metadata_.name = std::string(node.child_value("Name"));
+  PL_DBG << "name: " << metadata_.name;
+
+  metadata_.total_count = PreciseFloat(node.child_value("TotalEvents"));
+  metadata_.appearance = boost::lexical_cast<unsigned int>(std::string(node.child_value("Appearance")));
+  metadata_.visible = boost::lexical_cast<bool>(std::string(node.child_value("Visible")));
+  metadata_.bits = boost::lexical_cast<short>(std::string(node.child_value("Resolution")));
+
+  PL_DBG << "totalct: " << metadata_.total_count;
+  PL_DBG << "bits: " << metadata_.bits;
+
+  if ((!metadata_.bits) || (metadata_.total_count == 0))
+    return false;
+
+  shift_by_ = 16 - metadata_.bits;
+  metadata_.resolution = pow(2, metadata_.bits);
+  metadata_.match_pattern.clear();
+  metadata_.add_pattern.clear();
+
+  std::stringstream pattern_match(node.child_value("MatchPattern"));
+  while (pattern_match.rdbuf()->in_avail()) {
+    pattern_match >> numero;
+    PL_DBG << "match " << numero;
+    metadata_.match_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
+  }
+
+  std::stringstream pattern_add(node.child_value("AddPattern"));
+  while (pattern_add.rdbuf()->in_avail()) {
+    pattern_add >> numero;
+    PL_DBG << "add " << numero;
+    metadata_.add_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
+  }
+
+  if (node.child("RealTime"))
+    metadata_.real_time = boost::posix_time::duration_from_string(node.child_value("RealTime"));
+  if (node.child("LiveTime"))
+    metadata_.live_time = boost::posix_time::duration_from_string(node.child_value("LiveTime"));
+
+  PL_DBG << "rt " << to_simple_string(metadata_.real_time);
+  PL_DBG << "lt " << to_simple_string(metadata_.live_time);
+
+  metadata_.attributes.from_xml(node.child(metadata_.attributes.xml_element_name().c_str()));
+
+  XMLable2DB<Gamma::Detector> dets("Detectors");
+  dets.from_xml(node.child("Detectors"));
+  PL_DBG << "dets " << dets.size();
+  for (auto &q : dets.my_data_)
+    PL_DBG << "det " << q.name_;
+
+  metadata_.detectors = dets.to_vector();
+  PL_DBG << "dets " << metadata_.detectors.size();
+
+  std::string this_data(node.child_value("ChannelData"));
+  boost::algorithm::trim(this_data);
+  PL_DBG << "data length " << this_data.size();
+  this->_channels_from_xml(this_data);
+
+  bool ret = this->initialize();
+
+  if (ret)
+   this->recalc_energies();
+
+  return ret;
+}
 
 
 }}

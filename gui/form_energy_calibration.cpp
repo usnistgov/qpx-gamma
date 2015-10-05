@@ -26,7 +26,7 @@
 #include "gamma_fitter.h"
 #include "qt_util.h"
 
-FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>& dets, Gamma::Fitter &fit, QWidget *parent) :
+FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLable2DB<Gamma::Detector>& dets, Gamma::Fitter &fit, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormEnergyCalibration),
   settings_(settings),

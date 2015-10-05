@@ -42,7 +42,7 @@ class FormEnergyCalibration : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormEnergyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, Gamma::Fitter&, QWidget *parent = 0);
+  explicit FormEnergyCalibration(QSettings &settings, XMLable2DB<Gamma::Detector>&, Gamma::Fitter&, QWidget *parent = 0);
   ~FormEnergyCalibration();
 
   void newSpectrum();
@@ -81,7 +81,7 @@ private:
 
   //from parent
   QString data_directory_;
-  XMLableDB<Gamma::Detector> &detectors_;
+  XMLable2DB<Gamma::Detector> &detectors_;
   Gamma::Fitter &fit_data_;
 
   Gamma::Calibration old_calibration_;

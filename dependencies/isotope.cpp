@@ -27,83 +27,58 @@
 
 namespace RadTypes {
 
-void AbstractRadiation::to_xml(tinyxml2::XMLPrinter& printer) const {
+void AbstractRadiation::to_xml(pugi::xml_node &node) const {
+  pugi::xml_node child = node.append_child();
+  child.set_name(this->xml_element_name().c_str());
 
-  std::string elname = this->xml_element_name();
-  printer.OpenElement(elname.c_str());
-
-  printer.OpenElement("energy");
-  printer.PushText(dbl2str(energy).c_str());
-  printer.CloseElement();
-
-  printer.OpenElement("abundance");
-  printer.PushText(dbl2str(abundance).c_str());
-  printer.CloseElement();
-
-  printer.CloseElement();
+  child.append_child("energy");
+  child.last_child().append_child(pugi::node_pcdata).set_value(dbl2str(energy).c_str());
+  child.append_child("abundance");
+  child.last_child().append_child(pugi::node_pcdata).set_value(dbl2str(abundance).c_str());
 }
 
-void AbstractRadiation::from_xml(tinyxml2::XMLElement* root) {
-  tinyxml2::XMLElement* el;
+void AbstractRadiation::from_xml(const pugi::xml_node &node) {
   std::string str;
-  
-  el = root->FirstChildElement("energy");
-  if ((el != nullptr) && (str = std::string(el->GetText())).size())
+
+  str = std::string(node.child_value("energy"));
+  if (!str.empty())
     energy = boost::lexical_cast<double>(boost::algorithm::trim_copy(str));
 
-  el = root->FirstChildElement("abundance");
-  if ((el != nullptr) && (str = std::string(el->GetText())).size())
+  str = std::string(node.child_value("abundance"));
+  if (!str.empty())
     abundance = boost::lexical_cast<double>(boost::algorithm::trim_copy(str));
 }
 
 
-void Isotope::to_xml(tinyxml2::XMLPrinter& printer) const {
+void Isotope::to_xml(pugi::xml_node &node) const {
+  pugi::xml_node child = node.append_child();
+  child.set_name(this->xml_element_name().c_str());
 
-  printer.OpenElement("isotope");
-
-  printer.OpenElement("name");
-  printer.PushText(name.c_str());
-  printer.CloseElement();
+  child.append_child("name").append_child(pugi::node_pcdata).set_value(name.c_str());
 
   if (gamma_constant.size()) {
-    printer.OpenElement("gammaConstant");
-    printer.PushText(gamma_constant.c_str());
-    printer.CloseElement();
+    child.append_child("gammaConstant");
+    child.last_child().append_child(pugi::node_pcdata).set_value(gamma_constant.c_str());
   }
 
-  printer.OpenElement("halfLife");
-  printer.PushText(dbl2str(half_life).c_str());
-  printer.CloseElement();
+  child.append_child("halfLife");
+  child.last_child().append_child(pugi::node_pcdata).set_value(dbl2str(half_life).c_str());
 
   if (!gammas.empty())
-    gammas.to_xml(printer);
+    gammas.to_xml(child);
 
   if (beta.energy > 0)
-    beta.to_xml(printer);
-
-  printer.CloseElement();
+    beta.to_xml(child);
 }
 
-void Isotope::from_xml(tinyxml2::XMLElement* root) {
-  tinyxml2::XMLElement* NameData = root->FirstChildElement("name");
-  if (NameData != nullptr)
-    name = std::string(NameData->GetText());
-  
-  tinyxml2::XMLElement* gConstData = root->FirstChildElement("gammaConstant");
-  if (gConstData != nullptr)
-    gamma_constant = std::string(gConstData->GetText());
-
-  tinyxml2::XMLElement* hlData = root->FirstChildElement("halfLife");
-  if (hlData != nullptr)
-    half_life = boost::lexical_cast<double>(hlData->GetText());
-
-  tinyxml2::XMLElement* gammaData = root->FirstChildElement(gammas.xml_element_name().c_str());
-  if (gammaData != nullptr)
-    gammas.from_xml(gammaData);
-
-  tinyxml2::XMLElement* betaData = root->FirstChildElement(beta.xml_element_name().c_str());
-  if (betaData != nullptr)
-    beta.from_xml(betaData);
+void Isotope::from_xml(const pugi::xml_node &node) {
+  name = std::string(node.child_value("name"));
+  gamma_constant = std::string(node.child_value("gammaConstant"));
+  std::string hl(node.child_value("halfLife"));
+  if (!hl.empty())
+    half_life = boost::lexical_cast<double>(hl);
+  gammas.from_xml(node.child(gammas.xml_element_name().c_str()));
+  beta.from_xml(node.child(beta.xml_element_name().c_str()));
 }
 
 }

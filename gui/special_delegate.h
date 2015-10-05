@@ -66,10 +66,10 @@ public:
     void setEditorData(QWidget *editor, const QModelIndex &index) const Q_DECL_OVERRIDE;
     void setModelData(QWidget *editor, QAbstractItemModel *model,
                       const QModelIndex &index) const Q_DECL_OVERRIDE;
-    void eat_detectors(const XMLableDB<Gamma::Detector>&);
+    void eat_detectors(const XMLable2DB<Gamma::Detector>&);
 
 private:
-    XMLableDB<Gamma::Detector> detectors_;
+    XMLable2DB<Gamma::Detector> detectors_;
 };
 
 #endif

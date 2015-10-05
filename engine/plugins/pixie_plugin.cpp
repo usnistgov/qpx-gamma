@@ -31,7 +31,7 @@
 
 namespace Qpx {
 
-Plugin::Plugin() {
+Plugin::Plugin(std::string file) {
   boot_files_.resize(7);
   system_parameter_values_.resize(N_SYSTEM_PAR, 0.0);
   module_parameter_values_.resize(PRESET_MAX_MODULES*N_MODULE_PAR, 0.0);
@@ -41,7 +41,14 @@ Plugin::Plugin() {
   run_poll_interval_ms_ = 100;
   run_type_ = 0x103;
 
-  live_ = LiveStatus::dead;
+  setting_definitions_file_ = file;
+
+  if (load_setting_definitions(file)) {
+    live_ = LiveStatus::dead;
+    save_setting_definitions(setting_definitions_file_);
+  } else
+    live_ = LiveStatus::history;
+
 
   runner_ = nullptr;
   parser_ = nullptr;
@@ -64,7 +71,6 @@ Plugin::Plugin(const Plugin& other)
   , channel_parameter_values_(other.channel_parameter_values_)
 {run_status_.store(0);}
 
-
 Plugin::~Plugin() {
   daq_stop();
   if (runner_ != nullptr) {
@@ -79,6 +85,7 @@ Plugin::~Plugin() {
     raw_queue_->stop();
     delete raw_queue_;
   }
+
 }
 
 //DEPRECATE//
@@ -174,60 +181,61 @@ void Plugin::fill_stats(std::list<StatsUpdate> &all_stats, uint8_t module) {
   get_chan_stats(Channel::all, Module::all);
   }*/
 
+
 bool Plugin::read_settings_bulk(Gamma::Setting &set) const {
-  if (set.name == "Pixie-4") {
+  if (set.id_ == "Pixie4") {
     for (auto &q : set.branches.my_data_) {
-      if ((q.setting_type == Gamma::SettingType::stem) && (q.name == "Run settings")) {
+      if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
         for (auto &k : q.branches.my_data_) {
-          if ((k.setting_type == Gamma::SettingType::boolean) && (k.name == "Double buffer"))
+          if ((k.metadata.setting_type == Gamma::SettingType::boolean) && (k.id_ == "Pixie4/Double buffer"))
             k.value_int = run_double_buffer_;
-          else if ((k.setting_type == Gamma::SettingType::int_menu) && (k.name == "Run type"))
+          else if ((k.metadata.setting_type == Gamma::SettingType::int_menu) && (k.id_ == "Pixie4/Run type"))
             k.value_int = run_type_;
-          if ((k.setting_type == Gamma::SettingType::integer) && (k.name == "Poll interval"))
+          if ((k.metadata.setting_type == Gamma::SettingType::integer) && (k.id_ == "Pixie4/Poll interval"))
             k.value_int = run_poll_interval_ms_;
         }
-      } else if ((q.setting_type == Gamma::SettingType::stem) && (q.name == "Files")) {
+      } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Files")) {
         for (auto &k : q.branches.my_data_) {
-          if (k.setting_type == Gamma::SettingType::file_path)
-            k.value_text = boot_files_[k.address];
+          if (k.metadata.setting_type == Gamma::SettingType::file_path)
+            k.value_text = boot_files_[k.metadata.address];
         }
-      } else if ((q.setting_type == Gamma::SettingType::stem) && (q.name == "System")) {
+      } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/System")) {
         for (auto &k : q.branches.my_data_) {
-          if (k.setting_type == Gamma::SettingType::stem) {
-            uint16_t modnum = k.address;
+          if (k.metadata.setting_type == Gamma::SettingType::stem) {
+            uint16_t modnum = k.metadata.address;
             if (modnum < 0)
               continue;
             for (auto &p : k.branches.my_data_) {
-              if (p.setting_type == Gamma::SettingType::stem) {
-                uint16_t channum = p.address;
+              if (p.metadata.setting_type == Gamma::SettingType::stem) {
+                uint16_t channum = p.metadata.address;
                 if (channum < 0)
                   continue;
                 for (auto &o : p.branches.my_data_) {
-                  if (o.setting_type == Gamma::SettingType::floating)
-                    o.value = channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
-                  else if ((o.setting_type == Gamma::SettingType::integer)
-                           || (o.setting_type == Gamma::SettingType::boolean)
-                           || (o.setting_type == Gamma::SettingType::int_menu)
-                           || (o.setting_type == Gamma::SettingType::binary))
-                    o.value_int = channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
+                  if (o.metadata.setting_type == Gamma::SettingType::floating)
+                    o.value_dbl = channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
+                  else if ((o.metadata.setting_type == Gamma::SettingType::integer)
+                           || (o.metadata.setting_type == Gamma::SettingType::boolean)
+                           || (o.metadata.setting_type == Gamma::SettingType::int_menu)
+                           || (o.metadata.setting_type == Gamma::SettingType::binary))
+                    o.value_int = channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
                 }
               }
-              else if (p.setting_type == Gamma::SettingType::floating)
-                p.value = module_parameter_values_[modnum * N_MODULE_PAR +  p.address];
-              else if ((p.setting_type == Gamma::SettingType::integer)
-                       || (p.setting_type == Gamma::SettingType::boolean)
-                       || (p.setting_type == Gamma::SettingType::int_menu)
-                       || (p.setting_type == Gamma::SettingType::binary))
-                p.value_int = module_parameter_values_[modnum * N_MODULE_PAR +  p.address];
+              else if (p.metadata.setting_type == Gamma::SettingType::floating)
+                p.value_dbl = module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address];
+              else if ((p.metadata.setting_type == Gamma::SettingType::integer)
+                       || (p.metadata.setting_type == Gamma::SettingType::boolean)
+                       || (p.metadata.setting_type == Gamma::SettingType::int_menu)
+                       || (p.metadata.setting_type == Gamma::SettingType::binary))
+                p.value_int = module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address];
             }
           }
-          else if (k.setting_type == Gamma::SettingType::floating)
-            k.value = system_parameter_values_[k.address];
-          else if ((k.setting_type == Gamma::SettingType::integer)
-                   || (k.setting_type == Gamma::SettingType::boolean)
-                   || (k.setting_type == Gamma::SettingType::int_menu)
-                   || (k.setting_type == Gamma::SettingType::binary))
-            k.value_int = system_parameter_values_[k.address];
+          else if (k.metadata.setting_type == Gamma::SettingType::floating)
+            k.value_dbl = system_parameter_values_[k.metadata.address];
+          else if ((k.metadata.setting_type == Gamma::SettingType::integer)
+                   || (k.metadata.setting_type == Gamma::SettingType::boolean)
+                   || (k.metadata.setting_type == Gamma::SettingType::int_menu)
+                   || (k.metadata.setting_type == Gamma::SettingType::binary))
+            k.value_int = system_parameter_values_[k.metadata.address];
         }
       }
     }
@@ -236,30 +244,32 @@ bool Plugin::read_settings_bulk(Gamma::Setting &set) const {
 }
 
 bool Plugin::write_settings_bulk(Gamma::Setting &set) {
+  set.enrich(setting_definitions_);
+
   if (live_ == LiveStatus::history)
     return false;
 
-  if (set.name == "Pixie-4") {
+  if (set.id_ == "Pixie4") {
 
     read_sys("NUMBER_MODULES");
     int expected_modules = system_parameter_values_[0];
     
     for (auto &q : set.branches.my_data_) {
-      if ((q.setting_type == Gamma::SettingType::stem) && (q.name == "Files")) {
+      if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Files")) {
         for (auto &k : q.branches.my_data_) {
-          if (k.setting_type == Gamma::SettingType::file_path)
-            boot_files_[k.address] = k.value_text;
+          if (k.metadata.setting_type == Gamma::SettingType::file_path)
+            boot_files_[k.metadata.address] = k.value_text;
         }
-      } else if ((q.setting_type == Gamma::SettingType::stem) && (q.name == "Run settings")) {
+      } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
         for (auto &k : q.branches.my_data_) {
-          if (k.name == "Double buffer")
+          if (k.id_ == "Pixie4/Run settings/Double buffer")
             run_double_buffer_ = k.value_int;
-          else if (k.name == "Run type")
+          else if (k.id_ == "Pixie4/Run settings/Run type")
             run_type_ = k.value_int;
-          else if (k.name == "Poll interval")
+          else if (k.id_ == "Pixie4/Run settings/Poll interval")
             run_poll_interval_ms_ = k.value_int;
         }
-      } else if ((q.setting_type == Gamma::SettingType::stem) && (q.name == "System")) {
+      } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/System")) {
         int prev_total_modules = 0;
         int new_total_modules = 0;
         Gamma::Setting model_module;
@@ -282,8 +292,8 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
             Gamma::Setting slot = old_modules[i];
             if (slot == Gamma::Setting())
               slot = Gamma::Setting("SLOT_WAVE", 7+i, Gamma::SettingType::integer, -1);
-            slot.maximum = maxmods.value_int;
-            slot.writable = true;
+            slot.metadata.maximum = maxmods.value_int;
+            slot.metadata.writable = true;
             q.branches.add(slot);
           }
         }
@@ -333,8 +343,8 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
 
         for (auto &k : q.branches.my_data_) {
 
-          if (k.setting_type == Gamma::SettingType::stem) {
-            uint16_t modnum = k.address;
+          if (k.metadata.setting_type == Gamma::SettingType::stem) {
+            uint16_t modnum = k.metadata.address;
             if (modnum >= channel_indices_.size()) {
               PL_DBG << "module address out of bounds, ignoring branch";
               continue;
@@ -344,8 +354,8 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
               model_module = k;
             
             for (auto &p : k.branches.my_data_) {
-              if (p.setting_type == Gamma::SettingType::stem) {
-                uint16_t channum = p.address;
+              if (p.metadata.setting_type == Gamma::SettingType::stem) {
+                uint16_t channum = p.metadata.address;
                 if (channum >= NUMBER_OF_CHANNELS) {
                   PL_DBG << "channel address out of bounds, ignoring branch";
                   continue;
@@ -357,35 +367,35 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
                     channel_indices_[modnum][channum] = o.index;
                   }
                   
-                  if (o.writable && (o.setting_type == Gamma::SettingType::floating) && (channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value)) {
-                    channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value;
-                    write_chan(o.name.c_str(), modnum, channum);
-                  } else if (o.writable && ((o.setting_type == Gamma::SettingType::integer)
-                                            || (o.setting_type == Gamma::SettingType::boolean)
-                                            || (o.setting_type == Gamma::SettingType::int_menu)
-                                            || (o.setting_type == Gamma::SettingType::binary))
-                             && (channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value_int)) {
-                    channel_parameter_values_[o.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value_int;
-                    write_chan(o.name.c_str(), modnum, channum);
+                  if (o.metadata.writable && (o.metadata.setting_type == Gamma::SettingType::floating) && (channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value_dbl)) {
+                    channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value_dbl;
+                    write_chan(o.metadata.name.c_str(), modnum, channum);
+                  } else if (o.metadata.writable && ((o.metadata.setting_type == Gamma::SettingType::integer)
+                                            || (o.metadata.setting_type == Gamma::SettingType::boolean)
+                                            || (o.metadata.setting_type == Gamma::SettingType::int_menu)
+                                            || (o.metadata.setting_type == Gamma::SettingType::binary))
+                             && (channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value_int)) {
+                    channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value_int;
+                    write_chan(o.metadata.name.c_str(), modnum, channum);
                   }
                 }
-              } else if (p.writable && (p.setting_type == Gamma::SettingType::floating) && (module_parameter_values_[modnum * N_MODULE_PAR +  p.address] != p.value)) {
-                module_parameter_values_[modnum * N_MODULE_PAR +  p.address] = p.value;
-                write_mod(p.name.c_str(), modnum);
-              } else if (p.writable && ((p.setting_type == Gamma::SettingType::integer)
-                                        || (p.setting_type == Gamma::SettingType::boolean)
-                                        || (p.setting_type == Gamma::SettingType::int_menu)
-                                        || (p.setting_type == Gamma::SettingType::binary))
-                         && (module_parameter_values_[modnum * N_MODULE_PAR +  p.address] != p.value_int)) {
-                module_parameter_values_[modnum * N_MODULE_PAR +  p.address] = p.value_int;
-                write_mod(p.name.c_str(), modnum);
+              } else if (p.metadata.writable && (p.metadata.setting_type == Gamma::SettingType::floating) && (module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] != p.value_dbl)) {
+                module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] = p.value_dbl;
+                write_mod(p.metadata.name.c_str(), modnum);
+              } else if (p.metadata.writable && ((p.metadata.setting_type == Gamma::SettingType::integer)
+                                        || (p.metadata.setting_type == Gamma::SettingType::boolean)
+                                        || (p.metadata.setting_type == Gamma::SettingType::int_menu)
+                                        || (p.metadata.setting_type == Gamma::SettingType::binary))
+                         && (module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] != p.value_int)) {
+                module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] = p.value_int;
+                write_mod(p.metadata.name.c_str(), modnum);
               }
             }
-          } else if (k.writable &&
-                     (k.setting_type == Gamma::SettingType::boolean) &&
-                     (system_parameter_values_[k.address] != k.value_int)) {
-            system_parameter_values_[k.address] = k.value_int;
-            write_sys(k.name.c_str());
+          } else if (k.metadata.writable &&
+                     (k.metadata.setting_type == Gamma::SettingType::boolean) &&
+                     (system_parameter_values_[k.metadata.address] != k.value_int)) {
+            system_parameter_values_[k.metadata.address] = k.value_int;
+            write_sys(k.metadata.name.c_str());
           }
         }
               int next_chan = 0;
@@ -402,7 +412,7 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
 
         std::list<int32_t> copy_set(new_set.begin(), new_set.end());
         for (auto &k : model_module.branches.my_data_) {
-          if (k.setting_type == Gamma::SettingType::stem) {
+          if (k.metadata.setting_type == Gamma::SettingType::stem) {
             int this_index = copy_set.front();
             copy_set.pop_front();
             for (auto &c : k.branches.my_data_) {
@@ -414,7 +424,7 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
             k.indices = new_set;
         }
 
-        model_module.address = prev_total_modules;
+        model_module.metadata.address = prev_total_modules;
         channel_indices_[prev_total_modules] = std::vector<int32_t>(new_set.begin(), new_set.end());
         q.branches.add(model_module);
         prev_total_modules++;
@@ -430,17 +440,17 @@ bool Plugin::execute_command(Gamma::Setting &set) {
   if (live_ == LiveStatus::history)
     return false;
 
-  if (set.name == "Pixie-4") {
+  if (set.id_ == "Pixie4") {
     for (auto &q : set.branches.my_data_) {
-      if ((q.setting_type == Gamma::SettingType::command) && (q.value == 1)) {
-        q.value = 0;
-        if (q.name == "Measure baselines")
+      if ((q.metadata.setting_type == Gamma::SettingType::command) && (q.value_dbl == 1)) {
+        q.value_dbl = 0;
+        if (q.id_ == "Pixie4/Measure baselines")
           return control_measure_baselines(Module::all);
-        else if (q.name == "Adjust offsets")
+        else if (q.id_ == "Pixie4/Adjust offsets")
           return control_adjust_offsets(Module::all);
-        else if (q.name == "Compute Tau")
+        else if (q.id_ == "Pixie4/Compute Tau")
           return control_find_tau(Module::all);
-        else if (q.name == "Compute BLCUT")
+        else if (q.id_ == "Pixie4/Compute BLCUT")
           return control_compute_BLcut();
       }
     }
@@ -451,8 +461,10 @@ bool Plugin::execute_command(Gamma::Setting &set) {
 
 
 bool Plugin::boot() {
-  if (live_ == LiveStatus::history)
+  if (live_ == LiveStatus::history) {
+    PL_WARN << "Cannot boot Pixie-4. Improper initialization of parameters in wrapper. Or boot from history...?";
     return false;
+  }
 
   live_ = LiveStatus::dead;
 

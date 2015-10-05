@@ -23,7 +23,7 @@
 #include "form_start.h"
 #include <QBoxLayout>
 
-FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector> &detectors, QWidget *parent) :
+FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLable2DB<Gamma::Detector> &detectors, QWidget *parent) :
   QWidget(parent),
   runner_thread_(thread),
   settings_(settings),
@@ -118,7 +118,21 @@ void FormStart::loadSettings() {
 
   QString filename = data_directory_ + "/qpx_settings.set";
 
-  Gamma::Setting dev_settings;
+  pugi::xml_document doc;
+  if (!doc.load_file(filename.toStdString().c_str()))
+    return;
+
+  pugi::xml_node root = doc.child(Gamma::Setting().xml_element_name().c_str());
+  if (!root)
+    return;
+
+  Gamma::Setting dev_settings(root);
+  if (dev_settings != Gamma::Setting()) {
+    dev_settings.value_int = int(Qpx::LiveStatus::dead);
+    runner_thread_.do_push_settings(dev_settings);
+  }
+
+  return;
 
   FILE* myfile;
   myfile = fopen (filename.toStdString().c_str(), "r");
@@ -132,7 +146,7 @@ void FormStart::loadSettings() {
     fclose(myfile);
   }
 
-  PL_DBG << "dev_settings = " << dev_settings.name << " with " << dev_settings.branches.size();
+  //PL_DBG << "dev_settings = " << dev_settings.id_ << " with " << dev_settings.branches.size();
 
   if (dev_settings != Gamma::Setting()) {
     dev_settings.value_int = int(Qpx::LiveStatus::dead);
@@ -141,9 +155,22 @@ void FormStart::loadSettings() {
 }
 
 void FormStart::saveSettings() {
+  Gamma::Setting dev_settings = formPixieSettings->get_tree();
+
   QString filename = data_directory_ + "/qpx_settings.set";
 
-  Gamma::Setting dev_settings = formPixieSettings->get_tree();
+  pugi::xml_document doc;
+
+  dev_settings.condense();
+  dev_settings.strip_metadata();
+  dev_settings.to_xml(doc);
+
+  if (doc.save_file(filename.toStdString().c_str()));
+    PL_DBG << "successful save";
+
+
+  return;
+
 
   if (dev_settings != Gamma::Setting()) {
     FILE* myfile;
@@ -151,6 +178,7 @@ void FormStart::saveSettings() {
     if (myfile != nullptr) {
       tinyxml2::XMLPrinter printer(myfile);
       printer.PushHeader(true, true);
+      dev_settings.condense();
       dev_settings.to_xml(printer);
       fclose(myfile);
     }

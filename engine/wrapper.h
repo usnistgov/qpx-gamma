@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Wrapper singleton for controlling a Pixie-4 device.
+ *      Qpx::Wrapper singleton for controlling a daq device.
  *      Mutex locking on all public functions. Threads in private static fns.
  *      Use only double-buffer mode acquisition for reliable timing.
  *      Might also use lock file to ensure only one instance per system?

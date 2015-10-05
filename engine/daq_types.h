@@ -55,7 +55,7 @@ struct TimeStamp {
 
 };
 
-struct Hit{
+struct Hit : public XMLable2 {
 
   int16_t channel;
   TimeStamp timestamp;
@@ -75,8 +75,14 @@ struct Hit{
 
   boost::posix_time::time_duration to_posix_time();
   void from_xml(tinyxml2::XMLElement*);
-  void to_xml(tinyxml2::XMLPrinter&, bool with_pattern = true) const;
+  void to_xml(tinyxml2::XMLPrinter&) const;
+
+  void from_xml(const pugi::xml_node &) override {}
+  void to_xml(pugi::xml_node &) const override;
+
+
   std::string to_string() const;
+  std::string xml_element_name() const override {return "Hit";}
 
   bool operator<(const Hit other) const {return (timestamp < other.timestamp);}
   bool operator>(const Hit other) const {return (timestamp > other.timestamp);}
@@ -90,6 +96,7 @@ struct Hit{
     return true;
   }
   bool operator!=(const Hit other) const { return !operator==(other); }
+  bool shallow_equals(const Hit& other) const {return (timestamp == other.timestamp);}
 };
 
 struct Event {
@@ -112,7 +119,7 @@ struct Event {
   }
 };
 
-struct StatsUpdate {
+struct StatsUpdate : public XMLable2 {
   int16_t channel;
   uint64_t spill_number;
   uint64_t events_in_spill;
@@ -143,11 +150,20 @@ struct StatsUpdate {
   StatsUpdate operator+(const StatsUpdate) const;
   bool operator<(const StatsUpdate other) const {return (spill_number < other.spill_number);}
   bool operator==(const StatsUpdate other) const;
+  bool operator!=(const StatsUpdate other) const {return !operator ==(other);}
+  bool shallow_equals(const StatsUpdate& other) const {return ((spill_number == other.spill_number) && (channel == other.channel));}
+
   void from_xml(tinyxml2::XMLElement*);
   void to_xml(tinyxml2::XMLPrinter&) const;
+
+  void from_xml(const pugi::xml_node &) override;
+  void to_xml(pugi::xml_node &) const override;
+
+  std::string xml_element_name() const override {return "StatsUpdate";}
+
 };
 
-struct RunInfo {
+struct RunInfo : public XMLable2 {
   Gamma::Setting state;
   std::vector<Gamma::Detector> detectors;
   uint64_t total_events;
@@ -162,6 +178,16 @@ struct RunInfo {
   double time_scale_factor() const;
   void from_xml(tinyxml2::XMLElement*);
   void to_xml(tinyxml2::XMLPrinter&, bool with_settings = true)  const;
+
+  void from_xml(const pugi::xml_node &) override;
+  void to_xml(pugi::xml_node &, bool with_settings = true) const;
+  void to_xml(pugi::xml_node &node) const override {to_xml(node, true);}
+
+  std::string xml_element_name() const override {return "RunInfo";}
+  bool shallow_equals(const RunInfo& other) const {return (time_start == other.time_start);}
+  bool operator!= (const RunInfo& other) const {return !(operator==(other));}
+  bool operator== (const RunInfo& other) const;
+
 };
 
 

@@ -27,7 +27,7 @@
 #include "fityk.h"
 
 
-FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
+FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLable2DB<Gamma::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormGainMatch),
   gm_runner_thread_(thread),
@@ -195,7 +195,7 @@ void FormGainMatch::do_run()
   optimizing_.match_pattern.resize(ui->spinOptChan->value() + 1, 0);
   optimizing_.match_pattern[ui->spinOptChan->value()] = 1;
 
-  XMLableDB<Qpx::Spectrum::Template> db("SpectrumTemplates");
+  XMLable2DB<Qpx::Spectrum::Template> db("SpectrumTemplates");
   db.add(reference_);
   db.add(optimizing_);
 
@@ -241,7 +241,7 @@ void FormGainMatch::run_completed() {
 void FormGainMatch::do_post_processing() {
   Qpx::Settings &settings = pixie_.settings();
   settings.get_all_settings();
-  double old_gain = settings.pull_settings().get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", 7, Gamma::SettingType::floating, ui->spinOptChan->value())).value;
+  double old_gain = settings.pull_settings().get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", 7, Gamma::SettingType::floating, ui->spinOptChan->value())).value_dbl;
   QThread::sleep(2);
   double new_gain = old_gain;
   if (gauss_opt_.gaussian_.center_ < gauss_ref_.gaussian_.center_) {
@@ -257,10 +257,10 @@ void FormGainMatch::do_post_processing() {
     return;
   }
   Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", 7, Gamma::SettingType::floating, ui->spinOptChan->value());
-  set.value = new_gain;
+  set.value_dbl = new_gain;
   settings.set_setting(set);
   QThread::sleep(2);
-  new_gain = settings.pull_settings().get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", 7, Gamma::SettingType::floating, ui->spinOptChan->value())).value;
+  new_gain = settings.pull_settings().get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", 7, Gamma::SettingType::floating, ui->spinOptChan->value())).value_dbl;
 
 
   PL_INFO << "gain changed from " << std::fixed << std::setprecision(6)

@@ -40,7 +40,7 @@ BinaryChecklist::BinaryChecklist(Gamma::Setting setting, QWidget *parent) :
   QDialog(parent),
   setting_(setting)
 {
-  int wordsize = setting.maximum;
+  int wordsize = setting.metadata.maximum;
   if (wordsize < 0)
     wordsize = 0;
   if (wordsize > 64)
@@ -55,21 +55,21 @@ BinaryChecklist::BinaryChecklist(Gamma::Setting setting, QWidget *parent) :
   for (int i=0; i < wordsize; ++i) {
     QLabel *label = new QLabel();
     label->setText(QString::number(i));
-    if (!setting_.int_menu_items.count(i))
+    if (!setting_.metadata.int_menu_items.count(i))
       label->setEnabled(false);
     vl_bit->addWidget(label);
 
     QCheckBox *box = new QCheckBox(parent);
     if (bs[i])
       box->setChecked(true);
-    if (!setting_.int_menu_items.count(i))
+    if (!setting_.metadata.int_menu_items.count(i))
       box->setEnabled(false);
     boxes_.push_back(box);
     vl_checks->addWidget(box);
 
     QLabel *label2 = new QLabel();
-    if (setting_.int_menu_items.count(i))
-      label2->setText(QString::fromStdString(setting_.int_menu_items[i]));
+    if (setting_.metadata.int_menu_items.count(i))
+      label2->setText(QString::fromStdString(setting_.metadata.int_menu_items[i]));
     else {
       label2->setText("N/A");
       label2->setEnabled(false);
@@ -84,7 +84,7 @@ BinaryChecklist::BinaryChecklist(Gamma::Setting setting, QWidget *parent) :
   hl->addLayout(vl_descr);
 
   QLabel *title = new QLabel();
-  title->setText(QString::fromStdString(setting_.name) + " binary breakdown");
+  title->setText(QString::fromStdString(setting_.id_) + " binary breakdown");
 
   QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 
@@ -147,36 +147,36 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
 {
   if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
     Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
-    if (set.setting_type == Gamma::SettingType::floating) {
+    if (set.metadata.setting_type == Gamma::SettingType::floating) {
       QDoubleSpinBox *editor = new QDoubleSpinBox(parent);
       return editor;
-    } else if (set.setting_type == Gamma::SettingType::integer) {
+    } else if (set.metadata.setting_type == Gamma::SettingType::integer) {
       QSpinBox *editor = new QSpinBox(parent);
       return editor;
-    } else if (set.setting_type == Gamma::SettingType::binary) {
+    } else if (set.metadata.setting_type == Gamma::SettingType::binary) {
       BinaryChecklist *editor = new BinaryChecklist(set, parent);
       editor->setModal(true);
       return editor;
-    } else if ((set.setting_type == Gamma::SettingType::command) && (set.value_int > 1))  {
+    } else if ((set.metadata.setting_type == Gamma::SettingType::command) && (set.metadata.writable))  {
       QMessageBox *editor = new QMessageBox(parent);
-      editor->setText("Run " + QString::fromStdString(set.name));
-      editor->setInformativeText("Will run command: " + QString::fromStdString(set.name) + "\n Are you sure?");
+      editor->setText("Run " + QString::fromStdString(set.id_));
+      editor->setInformativeText("Will run command: " + QString::fromStdString(set.id_) + "\n Are you sure?");
       editor->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
       //editor->exec();
       return editor;
-    } else if (set.setting_type == Gamma::SettingType::text) {
+    } else if (set.metadata.setting_type == Gamma::SettingType::text) {
       QLineEdit *editor = new QLineEdit(parent);
       return editor;
-    } else if (set.setting_type == Gamma::SettingType::pattern) {
+    } else if (set.metadata.setting_type == Gamma::SettingType::pattern) {
       std::bitset<64> bset(set.value_int);
-      QVector<int16_t> pat(set.maximum);
-      for (int i=0; i < set.maximum; ++i)
+      QVector<int16_t> pat(set.metadata.maximum);
+      for (int i=0; i < set.metadata.maximum; ++i)
         pat[i] = bset[i];
       QpxPattern pattern(pat, 20, false, 8);
       QpxPatternEditor *editor = new QpxPatternEditor(parent);
       editor->setQpxPattern(pattern);
       return editor;
-    } else if (set.setting_type == Gamma::SettingType::detector) {
+    } else if (set.metadata.setting_type == Gamma::SettingType::detector) {
       QComboBox *editor = new QComboBox(parent);
       editor->addItem(QString("none"), QString("none"));
       for (int i=0; i < detectors_.size(); i++) {
@@ -184,19 +184,25 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
         editor->addItem(name, name);
       }
       return editor;
-    } else if (set.setting_type == Gamma::SettingType::boolean) {
+    } else if (set.metadata.setting_type == Gamma::SettingType::boolean) {
       QCheckBox *editor = new QCheckBox(parent);
       return editor;
-    } else if (set.setting_type == Gamma::SettingType::file_path) {
-      QFileDialog *editor = new QFileDialog(parent, QString("Open File"),
+    } else if (set.metadata.setting_type == Gamma::SettingType::file_path) {
+      QFileDialog *editor = new QFileDialog(parent, QString("Chose File"),
                                             QFileInfo(QString::fromStdString(set.value_text)).dir().absolutePath(),
-                                            QString::fromStdString(set.unit));
+                                            QString::fromStdString(set.metadata.unit));
       editor->setFileMode(QFileDialog::ExistingFile);
 
       return editor;
-    } else if (set.setting_type == Gamma::SettingType::int_menu) {
+    } else if (set.metadata.setting_type == Gamma::SettingType::dir_path) {
+      QFileDialog *editor = new QFileDialog(parent, QString("Chose Directory"),
+                                            QFileInfo(QString::fromStdString(set.value_text)).dir().absolutePath());
+      editor->setFileMode(QFileDialog::Directory);
+
+      return editor;
+    } else if (set.metadata.setting_type == Gamma::SettingType::int_menu) {
       QComboBox *editor = new QComboBox(parent);
-      for (auto &q : set.int_menu_items)
+      for (auto &q : set.metadata.int_menu_items)
         editor->addItem(QString::fromStdString(q.second), QVariant::fromValue(q.first));
       return editor;
     }
@@ -215,12 +221,12 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
   if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
       Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
-      if (set.setting_type == Gamma::SettingType::detector) {
+      if (set.metadata.setting_type == Gamma::SettingType::detector) {
         int cbIndex = cb->findText(QString::fromStdString(set.value_text));
         if(cbIndex >= 0)
           cb->setCurrentIndex(cbIndex);
-      } else if (set.int_menu_items.count(set.value_int)) {
-        int cbIndex = cb->findText(QString::fromStdString(set.int_menu_items[set.value_int]));
+      } else if (set.metadata.int_menu_items.count(set.value_int)) {
+        int cbIndex = cb->findText(QString::fromStdString(set.metadata.int_menu_items[set.value_int]));
         if(cbIndex >= 0)
           cb->setCurrentIndex(cbIndex);
       }
@@ -229,16 +235,16 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
     if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
       Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
       sb->setDecimals(6); //generalize
-      sb->setRange(set.minimum, set.maximum);
-      sb->setSingleStep(set.step);
-      sb->setValue(set.value);
+      sb->setRange(set.metadata.minimum, set.metadata.maximum);
+      sb->setSingleStep(set.metadata.step);
+      sb->setValue(set.value_dbl);
     } else
       sb->setValue(index.data(Qt::EditRole).toDouble());
   } else if (QSpinBox *sb = qobject_cast<QSpinBox *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
       Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
-      sb->setRange(static_cast<int64_t>(set.minimum), static_cast<int64_t>(set.maximum));
-      sb->setSingleStep(static_cast<int64_t>(set.step));
+      sb->setRange(static_cast<int64_t>(set.metadata.minimum), static_cast<int64_t>(set.metadata.maximum));
+      sb->setSingleStep(static_cast<int64_t>(set.metadata.step));
       sb->setValue(static_cast<int64_t>(set.value_int));
     } else
       sb->setValue(index.data(Qt::EditRole).toInt());
@@ -299,6 +305,6 @@ void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *mod
     QStyledItemDelegate::setModelData(editor, model, index);
 }
 
-void QpxSpecialDelegate::eat_detectors(const XMLableDB<Gamma::Detector> &detectors) {
+void QpxSpecialDelegate::eat_detectors(const XMLable2DB<Gamma::Detector> &detectors) {
   detectors_ = detectors;
 }

@@ -33,7 +33,7 @@ namespace Spectrum {
 class Spectrum1D_LFC : public Spectrum1D
 {
 public:
-  Spectrum1D_LFC() {};
+  Spectrum1D_LFC() {}
 
   static Template get_template() {
     Template new_temp = Spectrum1D::get_template();
@@ -42,16 +42,16 @@ public:
     new_temp.description = "One detector loss-free spectrum";
     
     Gamma::Setting t_sample;
-    t_sample.name = "time_sample";
-    t_sample.setting_type = Gamma::SettingType::floating;
-    t_sample.unit = "seconds";
-    t_sample.value = 20.0;
-    t_sample.minimum = 0;
-    t_sample.step = 1;
-    t_sample.maximum = 3600.0;
-    t_sample.description = "minimum \u0394t before compensating";
-    t_sample.writable = true;
-    new_temp.generic_attributes.push_back(t_sample);
+    t_sample.id_ = "time_sample";
+    t_sample.metadata.setting_type = Gamma::SettingType::floating;
+    t_sample.metadata.unit = "seconds";
+    t_sample.value_dbl = 20.0;
+    t_sample.metadata.minimum = 0;
+    t_sample.metadata.step = 1;
+    t_sample.metadata.maximum = 3600.0;
+    t_sample.metadata.description = "minimum \u0394t before compensating";
+    t_sample.metadata.writable = true;
+    new_temp.generic_attributes.add(t_sample);
     
     return new_temp;
   }

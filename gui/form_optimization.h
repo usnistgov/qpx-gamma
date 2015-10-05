@@ -41,7 +41,7 @@ class FormOptimization : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormOptimization(ThreadRunner&, QSettings&, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
+  explicit FormOptimization(ThreadRunner&, QSettings&, XMLable2DB<Gamma::Detector>&, QWidget *parent = 0);
   ~FormOptimization();
 
 signals:
@@ -88,7 +88,7 @@ private:
   Qpx::Spectrum::Template        optimizing_;
 
   ThreadRunner         &opt_runner_thread_;
-  XMLableDB<Gamma::Detector> &detectors_;
+  XMLable2DB<Gamma::Detector> &detectors_;
   QSettings &settings_;
 
   ThreadPlotSignal     opt_plot_thread_;

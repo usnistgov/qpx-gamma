@@ -62,14 +62,14 @@ struct Metadata {
   uint32_t resolution, appearance;
   bool visible;
   std::vector<int16_t> match_pattern, add_pattern;
-  std::vector<Gamma::Setting> attributes;
+  XMLable2DB<Gamma::Setting> attributes;
   PreciseFloat total_count;
   uint64_t     max_chan;
   boost::posix_time::time_duration real_time ,live_time;
   boost::posix_time::ptime  start_time;
   std::vector<Gamma::Detector> detectors;
 
- Metadata() : bits(0), dimensions(0), resolution(0),
+ Metadata() : bits(0), dimensions(0), resolution(0), attributes("GenericAttributes"),
     name("uninitialized_spectrum"), total_count(0.0), max_chan(0),
     appearance(0), visible(false) {}
 };
@@ -85,6 +85,7 @@ public:
   //named constructors, used by factory
   bool from_template(const Template&);
   bool from_xml(tinyxml2::XMLElement*);
+  bool from_xml(const pugi::xml_node &);
 
   //get count for specific MCA channel in spectrum
   //list takes as many parameters as there are dimensions
@@ -99,6 +100,7 @@ public:
 
   //full save with custom format
   void to_xml(tinyxml2::XMLPrinter&) const;
+  void to_xml(pugi::xml_node &) const;
 
   //export to some format (factory keeps track of file types)
   bool write_file(std::string dir, std::string format) const;
@@ -234,6 +236,26 @@ class Factory {
     }
   }
     
+  Spectrum* create_from_xml(const pugi::xml_node &root)
+  {
+    if (std::string(root.name()) != "Spectrum")
+      return nullptr;
+    PL_DBG << "will create spectrum " << root.attribute("type").value();
+    if (!root.attribute("type"))
+      return nullptr;
+
+    Spectrum* instance = create_type(std::string(root.attribute("type").value()));
+    if (instance != nullptr) {
+      bool success = instance->from_xml(root);
+      if (success)
+        return instance;
+      else {
+        delete instance;
+        return nullptr;
+      }
+    }
+  }
+
   Spectrum* create_from_file(std::string filename)
   {
     std::string ext(boost::filesystem::extension(filename));

@@ -187,7 +187,7 @@ void SpectraSet::delete_spectrum(std::string name) {
   }
 }
 
-void SpectraSet::set_spectra(const XMLableDB<Spectrum::Template>& newdb) {
+void SpectraSet::set_spectra(const XMLable2DB<Spectrum::Template>& newdb) {
   boost::unique_lock<boost::mutex> lock(mutex_);  
   clear_helper();
   int numofspectra = newdb.size();
@@ -255,6 +255,31 @@ void SpectraSet::write_xml(std::string file_name) {
   printer.CloseElement(); //QpxAcquisition
 
   fclose(myfile);
+
+  status_ = file_name;
+  ready_ = true;
+  newdata_ = true;
+  terminating_ = false;
+  cond_.notify_one();
+
+}
+
+void SpectraSet::write_xml2(std::string file_name) {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+
+  pugi::xml_document doc;
+  pugi::xml_node root = doc.append_child();
+  root.set_name("QpxAcquisition");
+
+  run_info_.state.strip_metadata();
+  run_info_.to_xml(root, true);
+
+  pugi::xml_node spectranode = root.append_child("Spectra");
+
+  for (auto &q : my_spectra_)
+    q->to_xml(spectranode);
+
+  doc.save_file(file_name.c_str());
 
   status_ = file_name;
   ready_ = true;
@@ -336,6 +361,51 @@ void SpectraSet::read_xml(std::string file_name, bool with_spectra, Gamma::Setti
   }
   
   fclose(myfile);
+  status_ = file_name;
+  ready_ = true;
+  newdata_ = true;
+  terminating_ = false;
+  cond_.notify_one();
+}
+
+void SpectraSet::read_xml2(std::string file_name, bool with_spectra) {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  clear_helper();
+
+  pugi::xml_document doc;
+
+  if (!doc.load_file(file_name.c_str()))
+    return;
+
+  pugi::xml_node root = doc.child("QpxAcquisition");
+  if (!root)
+    return;
+
+  run_info_.from_xml(root.child(run_info_.xml_element_name().c_str()));
+
+  if (!with_spectra)
+    return;
+
+  if (root.child("Spectra")) {
+    Spill fake_spill;
+    fake_spill.run = new RunInfo(run_info_);
+
+    for (pugi::xml_node &child : root.child("Spectra").children()) {
+      PL_DBG << "child name " << child.name();
+      Spectrum::Spectrum* new_spectrum
+          = Spectrum::Factory::getInstance().create_from_xml(child);
+      if (new_spectrum == nullptr)
+        PL_INFO << "Could not parse spectrum";
+      else {
+        new_spectrum->addSpill(fake_spill);
+        my_spectra_.push_back(new_spectrum);
+        PL_DBG << "loaded " << new_spectrum->name() << " with dets " << new_spectrum->metadata().detectors.size() << " and total "
+               << new_spectrum->metadata().total_count;
+      }
+    }
+    delete fake_spill.run;
+  }
+
   status_ = file_name;
   ready_ = true;
   newdata_ = true;

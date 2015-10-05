@@ -22,29 +22,27 @@
  *
  ******************************************************************************/
 
-#ifndef PIXIE_SPECTRUM_TEMPLATE_H
-#define PIXIE_SPECTRUM_TEMPLATE_H
+#ifndef SPECTRUM_TEMPLATE_H
+#define SPECTRUM_TEMPLATE_H
 
 #include <string>
 #include <vector>
-#include "tinyxml2.h"
 #include "generic_setting.h"
-#include "xmlable.h"
 #include "daq_types.h"
 
 namespace Qpx {
 namespace Spectrum {
 
-class Template : public XMLable {
+class Template : public XMLable2 {
  public:
   Template(): //default appearance is blue in RGBA
-  type("invalid"), name_("noname"), bits(14), appearance(4278190335), visible(false) {}
+  type("invalid"), name_("noname"), generic_attributes("Attributes"), bits(14), appearance(4278190335), visible(false) {}
 
-  std::string xml_element_name() const override {return "PixieSpectrumTemplate";}
+  std::string xml_element_name() const override {return "SpectrumTemplate";}
   Template(std::string name) : Template() {name_ = name;}
   
-  void from_xml(tinyxml2::XMLElement* el) override;
-  void to_xml(tinyxml2::XMLPrinter&) const override;
+  void to_xml(pugi::xml_node &node) const override;
+  void from_xml(const pugi::xml_node &node) override;
 
   bool shallow_equals(const Template& other) const {return (name_ == other.name_);}
   bool operator!= (const Template& other) const {return !operator==(other);}
@@ -66,7 +64,7 @@ class Template : public XMLable {
   std::vector<int16_t> match_pattern, add_pattern;
   uint32_t appearance;
   bool visible;
-  std::vector<Gamma::Setting> generic_attributes;
+  XMLable2DB<Gamma::Setting> generic_attributes;
 
   //this stuff from factory
   std::string type, description;

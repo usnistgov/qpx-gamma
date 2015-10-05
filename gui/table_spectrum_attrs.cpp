@@ -47,39 +47,60 @@ QVariant TableSpectrumAttrs::data(const QModelIndex &index, int role) const
   {
     switch (col) {
     case 0:
-      return QString::fromStdString((*generic_attributes)[row].name);
+      return QString::fromStdString(generic_attributes->get(row).id_);
     case 1:
-      if ((*generic_attributes)[row].setting_type == Gamma::SettingType::integer)
-        return QVariant::fromValue((*generic_attributes)[row].value_int);
-      else if ((*generic_attributes)[row].setting_type == Gamma::SettingType::binary)
-        return QVariant::fromValue((*generic_attributes)[row].value_int);
-      else if ((*generic_attributes)[row].setting_type == Gamma::SettingType::floating)
-        return QVariant::fromValue((*generic_attributes)[row].value);
-      else if ((*generic_attributes)[row].setting_type == Gamma::SettingType::int_menu)
-        return QString::fromStdString((*generic_attributes)[row].int_menu_items.at((*generic_attributes)[row].value_int));
-      else if ((*generic_attributes)[row].setting_type == Gamma::SettingType::boolean)
-        if ((*generic_attributes)[row].value_int)
+    {
+      Gamma::SettingType type = generic_attributes->get(row).metadata.setting_type;
+
+      if (type == Gamma::SettingType::integer)
+        return QVariant::fromValue(generic_attributes->get(row).value_int);
+      else if (type == Gamma::SettingType::binary) {
+        QString hex = QString::number(generic_attributes->get(row).value_int, 16).toUpper();
+        int size = generic_attributes->get(row).metadata.maximum;
+        int tot = (size / 4);
+        if ((size % 4) > 0)
+          tot++;
+        int dif = tot - hex.length();
+        while (dif > 0) {
+          hex = QString("0") + hex;
+          dif--;
+        }
+        hex = QString("0x") + hex;
+        return hex;
+      }
+      else if (type == Gamma::SettingType::floating)
+        return QVariant::fromValue(generic_attributes->get(row).value_dbl);
+      else if (type == Gamma::SettingType::int_menu) {
+        if (generic_attributes->get(row).metadata.int_menu_items.count(generic_attributes->get(row).value_int) > 0)
+          return QString::fromStdString(generic_attributes->get(row).metadata.int_menu_items.at(generic_attributes->get(row).value_int));
+        else
+          return QVariant();
+      }
+      else if (type == Gamma::SettingType::boolean)
+        if (generic_attributes->get(row).value_int)
           return "T";
         else
           return "F";
-      else if ((*generic_attributes)[row].setting_type == Gamma::SettingType::text)
-        return QString::fromStdString((*generic_attributes)[row].value_text);
-      else if ((*generic_attributes)[row].setting_type == Gamma::SettingType::detector)
-        return QString::fromStdString((*generic_attributes)[row].value_text);
+      else if ((type == Gamma::SettingType::text)
+               || (type == Gamma::SettingType::file_path)
+               || (type == Gamma::SettingType::dir_path)
+               || (type == Gamma::SettingType::detector))
+        return QString::fromStdString(generic_attributes->get(row).value_text);
       else
-        return QVariant::fromValue((*generic_attributes)[row].value);
-      return QVariant::fromValue((*generic_attributes)[row].value);
-      return QVariant::fromValue((*generic_attributes)[row]);
+        return QVariant::fromValue(generic_attributes->get(row));
+    }
     case 2:
-      return QString::fromStdString((*generic_attributes)[row].unit);
+      return QString::fromStdString(generic_attributes->get(row).metadata.unit);
     case 3:
-      return QString::fromStdString((*generic_attributes)[row].description);
+      return QString::fromStdString(generic_attributes->get(row).metadata.description);
+    default:
+      return QVariant();
     }
   }
   else if (role == Qt::EditRole)
   {
     if (col == 1)
-      return QVariant::fromValue((*generic_attributes)[row]);
+      return QVariant::fromValue(generic_attributes->get(row));
   }
   return QVariant();
 }
@@ -107,7 +128,7 @@ QVariant TableSpectrumAttrs::headerData(int section, Qt::Orientation orientation
   return QVariant();
 }
 
-void TableSpectrumAttrs::eat(std::vector<Gamma::Setting> *generic_attr) {
+void TableSpectrumAttrs::eat(XMLable2DB<Gamma::Setting> *generic_attr) {
   generic_attributes = generic_attr;
 }
 
@@ -134,28 +155,30 @@ bool TableSpectrumAttrs::setData(const QModelIndex & index, const QVariant & val
   int col = index.column();
 
   if (role == Qt::EditRole)
-    if (col == 1)
-      if ((((*generic_attributes)[row].setting_type == Gamma::SettingType::integer) || ((*generic_attributes)[row].setting_type == Gamma::SettingType::int_menu))
-          && (value.type() == QVariant::Int))
-        (*generic_attributes)[row].value_int = value.toInt();
-      else if (((*generic_attributes)[row].setting_type == Gamma::SettingType::boolean)
+    if (col == 1) {
+      Gamma::Setting setting = generic_attributes->get(row);
+      Gamma::SettingType type = setting.metadata.setting_type;
+
+      if (((type == Gamma::SettingType::integer) || (type == Gamma::SettingType::int_menu) || (type == Gamma::SettingType::binary))
+          && (value.canConvert(QMetaType::LongLong)))
+        setting.value_int = value.toLongLong();
+      else if ((type == Gamma::SettingType::boolean)
           && (value.type() == QVariant::Bool))
-        (*generic_attributes)[row].value_int = value.toBool();
-      else if (((*generic_attributes)[row].setting_type == Gamma::SettingType::floating)
+        setting.value_int = value.toBool();
+      else if ((type == Gamma::SettingType::floating)
           && (value.type() == QVariant::Double))
-        (*generic_attributes)[row].value = value.toDouble();
-      else if (((*generic_attributes)[row].setting_type == Gamma::SettingType::text)
+        setting.value_dbl = value.toDouble();
+      else if (((type == Gamma::SettingType::text)
+                || (type == Gamma::SettingType::detector)
+                || (type == Gamma::SettingType::dir_path)
+                || (type == Gamma::SettingType::file_path))
           && (value.type() == QVariant::String))
-        (*generic_attributes)[row].value_text = value.toString().toStdString();
-      else if (((*generic_attributes)[row].setting_type == Gamma::SettingType::int_menu)
-          && (value.type() == QVariant::Int))
-        (*generic_attributes)[row].value_int = value.toInt();
-      else if (((*generic_attributes)[row].setting_type == Gamma::SettingType::detector)
-          && (value.type() == QVariant::String))
-        (*generic_attributes)[row].value_text = value.toString().toStdString();
+        setting.value_text = value.toString().toStdString();
       else
         return false;
-
-  return true;
+      generic_attributes->replace(setting);
+      return true;
+    }
+  return false;
 }
 

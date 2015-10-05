@@ -29,87 +29,56 @@
 namespace Qpx {
 namespace Spectrum {
 
-void Template::to_xml(tinyxml2::XMLPrinter& printer) const {
+void Template::to_xml(pugi::xml_node &root) const {
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+
+  node.append_attribute("Type").set_value(type.c_str());
+  node.append_child("Name").append_child(pugi::node_pcdata).set_value(name_.c_str());
+  node.append_child("Appearance").append_child(pugi::node_pcdata).set_value(std::to_string(appearance).c_str());
+  node.append_child("Visible").append_child(pugi::node_pcdata).set_value(std::to_string(visible).c_str());
+  node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(bits).c_str());
+
   std::stringstream patterndata;
-  
-  printer.OpenElement("PixieSpectrumTemplate");
-  printer.PushAttribute("type", type.c_str());
-
-  printer.OpenElement("Name");
-  printer.PushText(name_.c_str());
-  printer.CloseElement();
-
-  printer.OpenElement("Appearance");
-  printer.PushText(std::to_string(appearance).c_str());
-  printer.CloseElement();
-
-  printer.OpenElement("Visible");
-  printer.PushText(std::to_string(visible).c_str());
-  printer.CloseElement();
-
-  printer.OpenElement("Resolution");
-  printer.PushText(std::to_string(bits).c_str());
-  printer.CloseElement();
-
-  printer.OpenElement("MatchPattern");
   for (auto &q: match_pattern)
     patterndata << static_cast<short>(q) << " ";
-  printer.PushText(boost::algorithm::trim_copy(patterndata.str()).c_str());
-  printer.CloseElement();
+  node.append_child("MatchPattern").append_child(pugi::node_pcdata).set_value(boost::algorithm::trim_copy(patterndata.str()).c_str());
 
   patterndata.str(std::string()); //clear it
-  printer.OpenElement("AddPattern");
   for (auto &q: add_pattern)
     patterndata << static_cast<short>(q) << " ";
-  printer.PushText(boost::algorithm::trim_copy(patterndata.str()).c_str());
-  printer.CloseElement();
+  node.append_child("AddPattern").append_child(pugi::node_pcdata).set_value(boost::algorithm::trim_copy(patterndata.str()).c_str());
 
-  if (generic_attributes.size()) {
-    printer.OpenElement("GenericAttributes");
-    for (auto &q: generic_attributes)
-      q.to_xml(printer);
-    printer.CloseElement();
-  }
-  
-  printer.CloseElement(); //PixieSpectrum
+  if (generic_attributes.size())
+    generic_attributes.to_xml(node);
 }
 
-void Template::from_xml(tinyxml2::XMLElement* root) {
-  tinyxml2::XMLElement* elem;
+void Template::from_xml(const pugi::xml_node &node) {
+  if (std::string(node.name()) != xml_element_name())
+    return;
+
+  type = std::string(node.attribute("Type").value());
+  name_ = std::string(node.child_value("Name"));
+
+  bits = boost::lexical_cast<short>(node.child_value("Resolution"));
+  appearance = boost::lexical_cast<uint32_t>(node.child_value("Appearance"));
+  visible = boost::lexical_cast<bool>(node.child_value("Visible"));
+
   std::string numero;
 
-  if (root->Attribute("type") != nullptr)
-    type = root->Attribute("type");
-  if ((elem = root->FirstChildElement("Name")) != nullptr)
-    name_ = elem->GetText();
-  if ((elem = root->FirstChildElement("Resolution")) != nullptr)
-    bits = boost::lexical_cast<short>(std::string(elem->GetText()));
-  if ((elem = root->FirstChildElement("Appearance")) != nullptr)
-    appearance = boost::lexical_cast<unsigned int>(std::string(elem->GetText()));
-  if ((elem = root->FirstChildElement("Visible")) != nullptr)
-    visible = boost::lexical_cast<bool>(std::string(elem->GetText()));
-  if ((elem = root->FirstChildElement("MatchPattern")) != nullptr) {
-    std::stringstream pattern_match(elem->GetText());
-    while (pattern_match.rdbuf()->in_avail()) {
-      pattern_match >> numero;
-      match_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
-    }
+  std::stringstream pattern_match(node.child_value("MatchPattern"));
+  while (pattern_match.rdbuf()->in_avail()) {
+    pattern_match >> numero;
+    match_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
   }
-  if ((elem = root->FirstChildElement("AddPattern")) != nullptr) {
-    std::stringstream pattern_add(elem->GetText());
-    while (pattern_add.rdbuf()->in_avail()) {
-      pattern_add >> numero;
-      add_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
-    }
+
+  std::stringstream pattern_add(node.child_value("AddPattern"));
+  while (pattern_add.rdbuf()->in_avail()) {
+    pattern_add >> numero;
+    add_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
   }
-  if ((elem = root->FirstChildElement("GenericAttributes")) != nullptr) {
-    tinyxml2::XMLElement* one_setting = elem->FirstChildElement("Setting");
-    while (one_setting != nullptr) {
-      generic_attributes.push_back(Gamma::Setting(one_setting));
-      one_setting = dynamic_cast<tinyxml2::XMLElement*>(one_setting->NextSibling());
-    }
-  }
-}          
+
+  generic_attributes.from_xml(node.child(generic_attributes.xml_element_name().c_str()));
+}
 
 }
 }

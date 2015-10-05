@@ -46,7 +46,7 @@ boost::posix_time::time_duration Hit::to_posix_time() {
   return answer;
 }
 
-void Hit::to_xml(tinyxml2::XMLPrinter &printer, bool with_pattern) const {
+void Hit::to_xml(tinyxml2::XMLPrinter &printer) const {
   printer.OpenElement("Hit");
 
   printer.PushAttribute("channel", std::to_string(channel).c_str());
@@ -55,6 +55,14 @@ void Hit::to_xml(tinyxml2::XMLPrinter &printer, bool with_pattern) const {
   printer.PushAttribute("user_PSA", std::to_string(user_PSA).c_str());
 
   printer.CloseElement(); //Hit
+}
+
+void Hit::to_xml(pugi::xml_node &root) const {
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+  node.append_attribute("channel").set_value(std::to_string(channel).c_str());
+  node.append_attribute("energy").set_value(std::to_string(energy).c_str());
+  node.append_attribute("XIA_PSA").set_value(std::to_string(XIA_PSA).c_str());
+  node.append_attribute("user_PSA").set_value(std::to_string(user_PSA).c_str());
 }
 
 void Hit::from_xml(tinyxml2::XMLElement* root) {
@@ -156,6 +164,21 @@ void StatsUpdate::to_xml(tinyxml2::XMLPrinter &printer) const {
   printer.CloseElement(); //StatsUpdate
 }
 
+void StatsUpdate::to_xml(pugi::xml_node &root) const {
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+  node.append_attribute("channel").set_value(std::to_string(channel).c_str());
+  node.append_attribute("lab_time").set_value(boost::posix_time::to_iso_extended_string(lab_time).c_str());
+  node.append_attribute("spill_number").set_value(std::to_string(spill_number).c_str());
+  node.append_attribute("events_in_spill").set_value(std::to_string(events_in_spill).c_str());
+  node.append_attribute("total_time").set_value(std::to_string(total_time).c_str());
+  node.append_attribute("event_rate").set_value(std::to_string(event_rate).c_str());
+  node.append_attribute("fast_peaks").set_value(std::to_string(fast_peaks).c_str());
+  node.append_attribute("live_time").set_value(std::to_string(live_time).c_str());
+  node.append_attribute("ftdt").set_value(std::to_string(ftdt).c_str());
+  node.append_attribute("sfdt").set_value(std::to_string(sfdt).c_str());
+}
+
+
 void StatsUpdate::from_xml(tinyxml2::XMLElement* root) {
   boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
   tif->set_iso_extended_format();
@@ -187,11 +210,34 @@ void StatsUpdate::from_xml(tinyxml2::XMLElement* root) {
     sfdt = boost::lexical_cast<double>(root->Attribute("sfdt"));
 }
 
+void StatsUpdate::from_xml(const pugi::xml_node &node) {
+  if (std::string(node.name()) != xml_element_name())
+    return;
 
+  boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
+  tif->set_iso_extended_format();
+  std::stringstream iss;
+
+  if (node.attribute("lab_time")) {
+    iss << node.attribute("lab_time").value();
+    iss.imbue(std::locale(std::locale::classic(), tif));
+    iss >> lab_time;
+  }
+
+  channel = node.attribute("channel").as_int();
+  spill_number = node.attribute("spill_number").as_ullong();
+  events_in_spill = node.attribute("events_in_spill").as_ullong();
+  total_time = node.attribute("total_time").as_double();
+  event_rate = node.attribute("event_rate").as_double();
+  fast_peaks = node.attribute("fast_peaks").as_double();
+  live_time = node.attribute("live_time").as_double();
+  ftdt = node.attribute("ftdt").as_double();
+  sfdt = node.attribute("sfdt").as_double();
+}
 
 // to convert Pixie time to lab time
 double RunInfo::time_scale_factor() const {
-  double tot = state.get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/TOTAL_TIME", 23, Gamma::SettingType::floating, 0)).value;
+  double tot = state.get_setting(Gamma::Setting("Pixie4/System/module/TOTAL_TIME", 23, Gamma::SettingType::floating, 0)).value_dbl;
   if (time_stop.is_not_a_date_time() ||
       time_start.is_not_a_date_time() ||
       (tot == 0.0) ||
@@ -200,6 +246,15 @@ double RunInfo::time_scale_factor() const {
   else
     return (time_stop - time_start).total_microseconds() /
         (1000000 * tot);
+}
+
+bool RunInfo::operator== (const RunInfo& other) const {
+  if (time_start != other.time_start) return false;
+  if (time_stop != other.time_stop) return false;
+  if (total_events != other.total_events) return false;
+  if (detectors != other.detectors) return false;
+  if (state != other.state) return false;
+  return true;
 }
 
 void RunInfo::to_xml(tinyxml2::XMLPrinter &printer, bool with_settings) const {
@@ -213,6 +268,17 @@ void RunInfo::to_xml(tinyxml2::XMLPrinter &printer, bool with_settings) const {
 
   }
   printer.CloseElement();
+}
+
+void RunInfo::to_xml(pugi::xml_node &root, bool with_settings) const {
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+  node.append_attribute("time_start").set_value(boost::posix_time::to_iso_extended_string(time_start).c_str());
+  node.append_attribute("time_stop").set_value(boost::posix_time::to_iso_extended_string(time_stop).c_str());
+  node.append_attribute("total_events").set_value(std::to_string(total_events).c_str());
+  if (with_settings) {
+    state.to_xml(node);
+    //if (!detectors.empty())
+  }
 }
 
 void RunInfo::from_xml(tinyxml2::XMLElement* elem) {
@@ -236,6 +302,34 @@ void RunInfo::from_xml(tinyxml2::XMLElement* elem) {
   if ((elem = elem->FirstChildElement("Setting")) != nullptr) {
     state = Gamma::Setting(elem);
   }
+}
+
+void RunInfo::from_xml(const pugi::xml_node &node) {
+  if (std::string(node.name()) != xml_element_name())
+    return;
+
+  total_events = node.attribute("Name").as_ullong();
+
+  boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
+  tif->set_iso_extended_format();
+  std::stringstream iss;
+
+  if (node.attribute("time_start")) {
+    iss << node.attribute("time_start").value();
+    iss.imbue(std::locale(std::locale::classic(), tif));
+    iss >> time_start;
+  }
+
+  iss.str(std::string());
+  if (node.attribute("time_stop")) {
+    iss << node.attribute("time_stop").value();
+    iss.imbue(std::locale(std::locale::classic(), tif));
+    iss >> time_stop;
+  }
+
+  total_events = node.attribute("total_events").as_ullong();
+
+  state.from_xml(node.child(state.xml_element_name().c_str()));
 }
 
 }

@@ -44,6 +44,7 @@ bool SpectrumRaw::initialize() {
   PL_DBG << "trying to create " << file_dir_;
   if (file_dir_.empty())
     return false;
+  PL_DBG << "raw: file dir not empty";
 
   metadata_.type = my_type();
 

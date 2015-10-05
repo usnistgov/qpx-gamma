@@ -41,7 +41,7 @@ class FormFwhmCalibration : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, Gamma::Fitter&, QWidget *parent = 0);
+  explicit FormFwhmCalibration(QSettings &settings, XMLable2DB<Gamma::Detector>&, Gamma::Fitter&, QWidget *parent = 0);
   ~FormFwhmCalibration();
 
   void newSpectrum();
@@ -79,7 +79,7 @@ private:
 
   //from parent
   QString data_directory_;
-  XMLableDB<Gamma::Detector> &detectors_;
+  XMLable2DB<Gamma::Detector> &detectors_;
   Gamma::Fitter &fit_data_;
   
   Gamma::Calibration old_fwhm_calibration_;

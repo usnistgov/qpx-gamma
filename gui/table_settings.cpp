@@ -68,7 +68,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
     else if (col <= channels_.size()) {
       if (role == Qt::EditRole) {
         Gamma::Setting det;
-        det.setting_type = Gamma::SettingType::detector;
+        det.metadata.setting_type = Gamma::SettingType::detector;
         det.value_text = channels_[col-1].name_;
         return QVariant::fromValue(det);
       } else if (role == Qt::DisplayRole)
@@ -88,7 +88,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
     Gamma::Setting item = channels_.front().settings_.branches.get(row-1);
     if ((role == Qt::DisplayRole) || (role == Qt::EditRole)) {
       std::vector<std::string> tokens;
-      boost::algorithm::split(tokens, item.name, boost::algorithm::is_any_of("/"));
+      boost::algorithm::split(tokens, item.id_, boost::algorithm::is_any_of("/"));
       std::string name;
       if (tokens.size() > 1)
         name += tokens[tokens.size() - 2] + "/" + tokens[tokens.size() - 1];
@@ -96,7 +96,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
         name += tokens[tokens.size() - 1];
       return QString::fromStdString(name);
     } else if (role == Qt::ForegroundRole) {
-      if (item.writable) {
+      if (item.metadata.writable) {
         QBrush brush(Qt::black);
         return brush;
       } else {
@@ -112,9 +112,9 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
   } else if ((col > channels_.size()) && (!channels_.empty())) {
     Gamma::Setting item = channels_.front().settings_.branches.get(row-1);
     if ((role == Qt::DisplayRole) || (role == Qt::EditRole))
-      return QString::fromStdString(item.unit);
+      return QString::fromStdString(item.metadata.unit);
     else if (role == Qt::ForegroundRole) {
-      if (item.writable) {
+      if (item.metadata.writable) {
         QBrush brush(Qt::black);
         return brush;
       } else {
@@ -132,7 +132,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
     if (role == Qt::EditRole)
       return QVariant::fromValue(item);
     else if (role == Qt::ForegroundRole) {
-      if (item.writable) {
+      if (item.metadata.writable) {
         QBrush brush(Qt::black);
         return brush;
       } else {
@@ -144,11 +144,11 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       regularfont.setPointSize(10);
       return regularfont;
     } else if (role == Qt::DisplayRole) {
-      if (item.setting_type == Gamma::SettingType::integer)
+      if (item.metadata.setting_type == Gamma::SettingType::integer)
         return QVariant::fromValue(item.value_int);
-      else if (item.setting_type == Gamma::SettingType::binary) {
+      else if (item.metadata.setting_type == Gamma::SettingType::binary) {
         QString hex = QString::number(item.value_int, 16).toUpper();
-        int size = item.maximum;
+        int size = item.metadata.maximum;
         int tot = (size / 4);
         if ((size % 4) > 0)
           tot++;
@@ -159,26 +159,28 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
         }
         hex = QString("0x") + hex;
         return hex;
-      } else if (item.setting_type == Gamma::SettingType::floating)
-        return QVariant::fromValue(item.value);
-      else if (item.setting_type == Gamma::SettingType::int_menu)
-        if (item.int_menu_items.count(item.value_int) > 0)
-          return QString::fromStdString(item.int_menu_items.at(item.value_int));
+      } else if (item.metadata.setting_type == Gamma::SettingType::floating)
+        return QVariant::fromValue(item.value_dbl);
+      else if (item.metadata.setting_type == Gamma::SettingType::int_menu)
+        if (item.metadata.int_menu_items.count(item.value_int) > 0)
+          return QString::fromStdString(item.metadata.int_menu_items.at(item.value_int));
         else
           return QVariant();
-      else if (item.setting_type == Gamma::SettingType::boolean)
+      else if (item.metadata.setting_type == Gamma::SettingType::boolean)
         if (item.value_int)
           return "T";
         else
           return "F";
-      else if (item.setting_type == Gamma::SettingType::text)
+      else if (item.metadata.setting_type == Gamma::SettingType::text)
         return QString::fromStdString(item.value_text);
-      else if (item.setting_type == Gamma::SettingType::file_path)
+      else if (item.metadata.setting_type == Gamma::SettingType::file_path)
         return QString::fromStdString(item.value_text);
-      else if (item.setting_type == Gamma::SettingType::detector)
+      else if (item.metadata.setting_type == Gamma::SettingType::dir_path)
+        return QString::fromStdString(item.value_text);
+      else if (item.metadata.setting_type == Gamma::SettingType::detector)
         return QString::fromStdString(item.value_text);
       else
-        return QVariant::fromValue(item.value);
+        return QVariant::fromValue(item.value_dbl);
     }
   }
   return QVariant();
@@ -217,7 +219,7 @@ void TableChanSettings::update(const std::vector<Gamma::Detector> &settings) {
     for (int i=0; i < settings.size(); ++i) {
       channels_[i].settings_.branches.clear();
       for (auto &q : settings[i].settings_.branches.my_data_) {
-        if (q.writable)
+        if (q.metadata.writable)
           channels_[i].settings_.branches.add(q);
       }
     }
@@ -236,7 +238,7 @@ Qt::ItemFlags TableChanSettings::flags(const QModelIndex &index) const
   if ((col > 0) && (col <= channels_.size()))
     if (row == 0)
       return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
-    else if (channels_.front().settings_.branches.get(row-1).writable)
+    else if (channels_.front().settings_.branches.get(row-1).metadata.writable)
       return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
     else
       return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
@@ -250,27 +252,23 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
   if (role == Qt::EditRole)
     if (row > 0) {
       Gamma::Setting item = channels_[col-1].settings_.branches.get(row-1);
-      if (((item.setting_type == Gamma::SettingType::integer) || (item.setting_type == Gamma::SettingType::int_menu) || (item.setting_type == Gamma::SettingType::binary))
+      if (((item.metadata.setting_type == Gamma::SettingType::integer) || (item.metadata.setting_type == Gamma::SettingType::int_menu) || (item.metadata.setting_type == Gamma::SettingType::binary))
           && (value.canConvert(QMetaType::LongLong)))
         item.value_int = value.toLongLong();
-      else if ((item.setting_type == Gamma::SettingType::boolean)
+      else if ((item.metadata.setting_type == Gamma::SettingType::boolean)
           && (value.type() == QVariant::Bool))
         item.value_int = value.toBool();
-      else if ((item.setting_type == Gamma::SettingType::floating)
+      else if ((item.metadata.setting_type == Gamma::SettingType::floating)
           && (value.type() == QVariant::Double))
-        item.value = value.toDouble();
-      else if ((item.setting_type == Gamma::SettingType::text)
+        item.value_dbl = value.toDouble();
+      else if (((item.metadata.setting_type == Gamma::SettingType::text)
+                || (item.metadata.setting_type == Gamma::SettingType::file_path)
+                || (item.metadata.setting_type == Gamma::SettingType::dir_path)
+                || (item.metadata.setting_type == Gamma::SettingType::detector) )
           && (value.type() == QVariant::String))
         item.value_text = value.toString().toStdString();
-      else if ((item.setting_type == Gamma::SettingType::file_path)
-          && (value.type() == QVariant::String))
-        item.value_text = value.toString().toStdString();
-      else if ((item.setting_type == Gamma::SettingType::detector)
-          && (value.type() == QVariant::String)) {
-        item.value_text = value.toString().toStdString();
-        return true;
-      }
       emit setting_changed(col-1, item);
+      return true;
     } else {
       emit detector_chosen(col-1, value.toString().toStdString());
       return true;

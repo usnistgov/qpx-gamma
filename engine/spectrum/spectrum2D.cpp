@@ -50,7 +50,7 @@ bool Spectrum2D::initialize() {
   metadata_.dimensions = 2;
   energies_.resize(2);
   pattern_.resize(2, 0);
-  buffered_ = (get_attr("buffered").value != 0);
+  buffered_ = (get_attr("buffered").value_int != 0);
 
   adds = 0;
   for (int i=0; i < metadata_.add_pattern.size(); i++) {

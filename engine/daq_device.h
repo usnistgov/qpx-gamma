@@ -37,7 +37,11 @@ class DaqDevice {
 public:
 
   DaqDevice() : live_(LiveStatus::dead) {}
-  DaqDevice(const DaqDevice& other) : live_(LiveStatus::history) {}
+  DaqDevice(const DaqDevice& other)
+    : live_(LiveStatus::history)
+    , setting_definitions_(other.setting_definitions_)
+  {}
+  virtual std::string plugin_name() = 0;
 
   LiveStatus live() {return live_;}
   virtual bool boot() {return false;}
@@ -55,7 +59,11 @@ public:
   virtual bool daq_running() {return false;}
 
 protected:
-  LiveStatus  live_;
+  LiveStatus                                live_;
+  std::map<std::string, Gamma::SettingMeta> setting_definitions_;
+
+  bool load_setting_definitions(std::string file);
+  bool save_setting_definitions(std::string file);
 
 };
 

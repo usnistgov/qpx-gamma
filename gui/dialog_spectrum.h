@@ -73,13 +73,13 @@ private:
     QpxSpecialDelegate      special_delegate_;
     TableSpectrumAttrs         table_model_;
 
-    XMLableDB<Gamma::Detector> detectors_;
+    XMLable2DB<Gamma::Detector> detectors_;
     TableDetectors det_table_model_;
     QItemSelectionModel det_selection_model_;
 
     Qpx::Spectrum::Metadata md_;
 
-    std::vector<Gamma::Setting> attributes_;
+    XMLable2DB<Gamma::Setting> attributes_;
     bool changed_;
 
     void updateData();
