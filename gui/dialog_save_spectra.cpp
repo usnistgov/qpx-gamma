@@ -185,9 +185,6 @@ void DialogSaveSpectra::on_buttonBox_accepted()
   if (ui->boxQpxFile->isChecked()) {
     dir /= ui->lineName->text().toStdString() + ".qpx";
     my_set_->write_xml(dir.string());
-
-    boost::filesystem::path dir2 = dir += "2";
-    my_set_->write_xml2(dir2.string());
   }
 
   filetime.stop();

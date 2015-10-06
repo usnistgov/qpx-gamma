@@ -34,7 +34,7 @@
 #include "generic_setting.h"
 #include "detector.h"
 #include "custom_logger.h"
-#include "tinyxml2.h"
+#include "xmlable2.h"
 
 namespace Qpx {
 
@@ -74,8 +74,6 @@ struct Hit : public XMLable2 {
   }
 
   boost::posix_time::time_duration to_posix_time();
-  void from_xml(tinyxml2::XMLElement*);
-  void to_xml(tinyxml2::XMLPrinter&) const;
 
   void from_xml(const pugi::xml_node &) override {}
   void to_xml(pugi::xml_node &) const override;
@@ -153,9 +151,6 @@ struct StatsUpdate : public XMLable2 {
   bool operator!=(const StatsUpdate other) const {return !operator ==(other);}
   bool shallow_equals(const StatsUpdate& other) const {return ((spill_number == other.spill_number) && (channel == other.channel));}
 
-  void from_xml(tinyxml2::XMLElement*);
-  void to_xml(tinyxml2::XMLPrinter&) const;
-
   void from_xml(const pugi::xml_node &) override;
   void to_xml(pugi::xml_node &) const override;
 
@@ -176,8 +171,6 @@ struct RunInfo : public XMLable2 {
 
   // to convert Pixie time to lab time
   double time_scale_factor() const;
-  void from_xml(tinyxml2::XMLElement*);
-  void to_xml(tinyxml2::XMLPrinter&, bool with_settings = true)  const;
 
   void from_xml(const pugi::xml_node &) override;
   void to_xml(pugi::xml_node &, bool with_settings = true) const;

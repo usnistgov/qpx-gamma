@@ -27,7 +27,6 @@
 #include <vector>
 #include <string>
 #include <boost/date_time.hpp>
-#include "xmlable.h"
 #include "xmlable2.h"
 #include "polynomial.h"
 
@@ -35,13 +34,10 @@ namespace Gamma {
 
 enum class CalibrationModel : int {none = 0, polynomial = 1};
 
-class Calibration : public XMLable, public XMLable2 {
+class Calibration : public XMLable2 {
  public:
   Calibration();
   Calibration(std::string type, uint16_t bits, std::string units = "channels"): Calibration() {type_=type; bits_ = bits; units_ = units;}
-
-  void to_xml(tinyxml2::XMLPrinter&) const;
-  void from_xml(tinyxml2::XMLElement*);
 
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;

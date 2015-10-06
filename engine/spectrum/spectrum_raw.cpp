@@ -170,8 +170,8 @@ void SpectrumRaw::_closeAcquisition() {
 void SpectrumRaw::hit_text(const Event &newEvent) {
   if (!open_xml_)
     return;
-  for (auto &q: newEvent.hit)
-    q.second.to_xml(*xml_printer_);
+  //for (auto &q: newEvent.hit)
+//    q.second.to_xml(*xml_printer_);
 }
 
 void SpectrumRaw::hit_bin(const Event &newEvent) {
@@ -200,14 +200,14 @@ void SpectrumRaw::hit_bin(const Event &newEvent) {
 void SpectrumRaw::stats_text(const StatsUpdate& stats) {
   if (!open_xml_)
     return;
-  stats.to_xml(*xml_printer_);
+  //stats.to_xml(*xml_printer_);
 }
 
 
 void SpectrumRaw::run_text(const RunInfo& run) {
   if (!open_xml_)
     return;
-  run.to_xml(*xml_printer_);
+  //run.to_xml(*xml_printer_);
 }
 
 

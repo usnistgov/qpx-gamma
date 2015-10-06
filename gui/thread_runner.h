@@ -31,13 +31,13 @@
 #include <cstdint>
 #include <boost/atomic.hpp>
 
-#include "wrapper.h"
+#include "engine.h"
 #include "spectra_set.h"
 #include "simulator.h"
 
 enum RunnerAction {
     kExecuteCommand, kBoot, kShutdown, kPushSettings, kSetSetting, kSetDetector, kSetDetectors,
-    kList, kMCA, kSimulate, kFromList, kOscil,
+    kList, kMCA, kSimulate, kFromList, kOscil, kInitialize,
     kSettingsRefresh, kOptimize, kTerminate, kNone
 };
 
@@ -48,11 +48,12 @@ public:
     explicit ThreadRunner(QObject *parent = 0);
     ~ThreadRunner();
 
+    void do_initialize(QString);
     void do_boot();
     void do_shutdown();
     void do_execute_command(const Gamma::Setting &tree);
     void do_push_settings(const Gamma::Setting &tree);
-    void do_set_setting(const Gamma::Setting &item, bool exact_index);
+    void do_set_setting(const Gamma::Setting &item, Gamma::Match match);
     void do_set_detector(int, Gamma::Detector);
     void do_set_detectors(std::map<int, Gamma::Detector>);
 
@@ -79,7 +80,7 @@ protected:
     void run();
 
 private:
-    Qpx::Settings &devices_;
+    Qpx::Engine &engine_;
 
     QMutex mutex_;
     RunnerAction action_;
@@ -97,7 +98,7 @@ private:
     Gamma::Detector det_;
     int chan_;
     Gamma::Setting tree_;
-    bool exact_index_;
+    Gamma::Match match_conditions_;
 
     //simulation
     QString file_;

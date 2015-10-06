@@ -24,6 +24,7 @@
 #define PIXIE_SPECTRUM_RAW_H
 
 #include "spectrum.h"
+#include "tinyxml2.h"
 
 namespace Qpx {
 namespace Spectrum {

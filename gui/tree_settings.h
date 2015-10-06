@@ -37,7 +37,7 @@ public:
     explicit TreeItem(const Gamma::Setting &data, TreeItem *parent = 0);
     ~TreeItem();
 
-    void eat_data(const Gamma::Setting &data);
+    bool eat_data(const Gamma::Setting &data);
 
     TreeItem *child(int number);
     int childCount() const;

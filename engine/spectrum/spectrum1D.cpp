@@ -27,6 +27,7 @@
 #include <boost/filesystem.hpp>
 #include "spectrum1D.h"
 #include "xylib.h"
+#include "tinyxml2.h"
 
 namespace Qpx {
 namespace Spectrum {
@@ -434,7 +435,7 @@ bool Spectrum1D::read_n42(std::string name) {
     branch = root->FirstChildElement("Calibration");
     if (branch != nullptr) {
       Gamma::Calibration newcalib("Energy", metadata_.bits);
-      newcalib.from_xml(branch);
+      //newcalib.from_xml(branch); //FIX THIS
       newdet.energy_calibrations_.add(newcalib);
     }
 
@@ -612,7 +613,7 @@ void Spectrum1D::write_n42(std::string name) const {
   printer.CloseElement();
 
   if (myCalibration.units_ != "channels")
-    myCalibration.to_xml(printer);    
+    //myCalibration.to_xml(printer);    //FIX THIS
 
   printer.OpenElement("ChannelData");
   printer.PushAttribute("Compression", "CountedZeroes");

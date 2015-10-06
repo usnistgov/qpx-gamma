@@ -46,26 +46,12 @@ boost::posix_time::time_duration Hit::to_posix_time() {
   return answer;
 }
 
-void Hit::to_xml(tinyxml2::XMLPrinter &printer) const {
-  printer.OpenElement("Hit");
-
-  printer.PushAttribute("channel", std::to_string(channel).c_str());
-  printer.PushAttribute("energy", std::to_string(energy).c_str());
-  printer.PushAttribute("XIA_PSA", std::to_string(XIA_PSA).c_str());
-  printer.PushAttribute("user_PSA", std::to_string(user_PSA).c_str());
-
-  printer.CloseElement(); //Hit
-}
-
 void Hit::to_xml(pugi::xml_node &root) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
   node.append_attribute("channel").set_value(std::to_string(channel).c_str());
   node.append_attribute("energy").set_value(std::to_string(energy).c_str());
   node.append_attribute("XIA_PSA").set_value(std::to_string(XIA_PSA).c_str());
   node.append_attribute("user_PSA").set_value(std::to_string(user_PSA).c_str());
-}
-
-void Hit::from_xml(tinyxml2::XMLElement* root) {
 }
 
 std::string Hit::to_string() const {
@@ -149,21 +135,6 @@ StatsUpdate StatsUpdate::operator+(const StatsUpdate other) const {
   //channel?
 }
 
-void StatsUpdate::to_xml(tinyxml2::XMLPrinter &printer) const {
-  printer.OpenElement("StatsUpdate");
-  printer.PushAttribute("channel", std::to_string(channel).c_str());
-  printer.PushAttribute("lab_time", boost::posix_time::to_iso_extended_string(lab_time).c_str());
-  printer.PushAttribute("spill_number", std::to_string(spill_number).c_str());
-  printer.PushAttribute("events_in_spill", std::to_string(events_in_spill).c_str());
-  printer.PushAttribute("total_time", std::to_string(total_time).c_str());
-  printer.PushAttribute("event_rate", std::to_string(event_rate).c_str());
-  printer.PushAttribute("fast_peaks", std::to_string(fast_peaks).c_str());
-  printer.PushAttribute("live_time", std::to_string(live_time).c_str());
-  printer.PushAttribute("ftdt", std::to_string(ftdt).c_str());
-  printer.PushAttribute("sfdt", std::to_string(sfdt).c_str());
-  printer.CloseElement(); //StatsUpdate
-}
-
 void StatsUpdate::to_xml(pugi::xml_node &root) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
   node.append_attribute("channel").set_value(std::to_string(channel).c_str());
@@ -178,37 +149,6 @@ void StatsUpdate::to_xml(pugi::xml_node &root) const {
   node.append_attribute("sfdt").set_value(std::to_string(sfdt).c_str());
 }
 
-
-void StatsUpdate::from_xml(tinyxml2::XMLElement* root) {
-  boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
-  tif->set_iso_extended_format();
-  std::stringstream iss;
-
-  if (root->Attribute("lab_time")) {
-    iss << root->Attribute("lab_time");
-    iss.imbue(std::locale(std::locale::classic(), tif));
-    iss >> lab_time;
-  }
-
-  if (root->Attribute("channel") != nullptr)
-    channel = boost::lexical_cast<int>(root->Attribute("channel"));
-  if (root->Attribute("spill_number"))
-    spill_number = boost::lexical_cast<uint64_t>(root->Attribute("spill_number"));
-  if (root->Attribute("events_in_spill"))
-    events_in_spill = boost::lexical_cast<uint64_t>(root->Attribute("events_in_spill"));
-  if (root->Attribute("total_time"))
-    total_time = boost::lexical_cast<double>(root->Attribute("total_time"));
-  if (root->Attribute("event_rate"))
-    event_rate = boost::lexical_cast<double>(root->Attribute("event_rate"));
-  if (root->Attribute("fast_peaks"))
-    fast_peaks = boost::lexical_cast<double>(root->Attribute("fast_peaks"));
-  if (root->Attribute("live_time"))
-    live_time = boost::lexical_cast<double>(root->Attribute("live_time"));
-  if (root->Attribute("ftdt"))
-    ftdt = boost::lexical_cast<double>(root->Attribute("ftdt"));
-  if (root->Attribute("sfdt"))
-    sfdt = boost::lexical_cast<double>(root->Attribute("sfdt"));
-}
 
 void StatsUpdate::from_xml(const pugi::xml_node &node) {
   if (std::string(node.name()) != xml_element_name())
@@ -237,11 +177,10 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
 
 // to convert Pixie time to lab time
 double RunInfo::time_scale_factor() const {
-  double tot = state.get_setting(Gamma::Setting("Pixie4/System/module/TOTAL_TIME", 23, Gamma::SettingType::floating, 0)).value_dbl;
+  double tot = state.get_setting(Gamma::Setting("TOTAL_TIME"), Gamma::Match::name).value_dbl;
   if (time_stop.is_not_a_date_time() ||
       time_start.is_not_a_date_time() ||
-      (tot == 0.0) ||
-      (tot == -1))
+      (tot <= 0.0))
     return 1.0;
   else
     return (time_stop - time_start).total_microseconds() /
@@ -257,19 +196,6 @@ bool RunInfo::operator== (const RunInfo& other) const {
   return true;
 }
 
-void RunInfo::to_xml(tinyxml2::XMLPrinter &printer, bool with_settings) const {
-  printer.OpenElement("RunInfo");
-  printer.PushAttribute("time_start", boost::posix_time::to_iso_extended_string(time_start).c_str());
-  printer.PushAttribute("time_stop", boost::posix_time::to_iso_extended_string(time_stop).c_str());
-  printer.PushAttribute("total_events", std::to_string(total_events).c_str());
-  if (with_settings) {
-    state.to_xml(printer);
-    //if (!detectors.empty())
-
-  }
-  printer.CloseElement();
-}
-
 void RunInfo::to_xml(pugi::xml_node &root, bool with_settings) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
   node.append_attribute("time_start").set_value(boost::posix_time::to_iso_extended_string(time_start).c_str());
@@ -278,29 +204,6 @@ void RunInfo::to_xml(pugi::xml_node &root, bool with_settings) const {
   if (with_settings) {
     state.to_xml(node);
     //if (!detectors.empty())
-  }
-}
-
-void RunInfo::from_xml(tinyxml2::XMLElement* elem) {
-  boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
-  tif->set_iso_extended_format();
-  std::stringstream iss;
-
-  if (elem->Attribute("time_start")) {
-    iss << elem->Attribute("time_start");
-    iss.imbue(std::locale(std::locale::classic(), tif));
-    iss >> time_start;
-  }
-  if (elem->Attribute("time_stop")) {
-    iss << elem->Attribute("time_stop");
-    iss.imbue(std::locale(std::locale::classic(), tif));
-    iss >> time_stop;
-  }
-  if (elem->Attribute("total_events"))
-    total_events = boost::lexical_cast<uint64_t>(elem->Attribute("total_events"));
-
-  if ((elem = elem->FirstChildElement("Setting")) != nullptr) {
-    state = Gamma::Setting(elem);
   }
 }
 

@@ -24,7 +24,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include "spectrum_template.h"
-#include "xmlable.h"
 
 namespace Qpx {
 namespace Spectrum {

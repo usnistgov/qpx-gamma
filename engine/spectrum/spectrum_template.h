@@ -29,6 +29,7 @@
 #include <vector>
 #include "generic_setting.h"
 #include "daq_types.h"
+#include "xmlable2.h"
 
 namespace Qpx {
 namespace Spectrum {

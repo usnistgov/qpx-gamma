@@ -31,7 +31,9 @@
 
 namespace Qpx {
 
-Plugin::Plugin(std::string file) {
+static DeviceRegistrar<Plugin> registrar("Pixie4");
+
+Plugin::Plugin() {
   boot_files_.resize(7);
   system_parameter_values_.resize(N_SYSTEM_PAR, 0.0);
   module_parameter_values_.resize(PRESET_MAX_MODULES*N_MODULE_PAR, 0.0);
@@ -41,14 +43,9 @@ Plugin::Plugin(std::string file) {
   run_poll_interval_ms_ = 100;
   run_type_ = 0x103;
 
-  setting_definitions_file_ = file;
+  //  setting_definitions_file_ = file;
 
-  if (load_setting_definitions(file)) {
-    live_ = LiveStatus::dead;
-    save_setting_definitions(setting_definitions_file_);
-  } else
-    live_ = LiveStatus::history;
-
+  live_ = LiveStatus::dead;
 
   runner_ = nullptr;
   parser_ = nullptr;
@@ -86,12 +83,6 @@ Plugin::~Plugin() {
     delete raw_queue_;
   }
 
-}
-
-//DEPRECATE//
-void Plugin::from_xml_legacy(tinyxml2::XMLElement* root, std::vector<Gamma::Detector>& detectors)
-{
-  detectors = from_xml(root);
 }
 
 bool Plugin::daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) {
@@ -243,193 +234,203 @@ bool Plugin::read_settings_bulk(Gamma::Setting &set) const {
   return true;
 }
 
+void Plugin::rebuild_structure(Gamma::Setting &set) {
+  Gamma::Setting maxmod("Pixie4/System/MAX_NUMBER_MODULES");
+  Gamma::Setting totmod("Pixie4/System/NUMBER_MODULES");
+  Gamma::Setting slot("Pixie4/System/SLOT_WAVE");
+  Gamma::Setting mod("Pixie4/System/module");
+  Gamma::Setting chan("Pixie4/System/module/channel");
+
+  maxmod = set.get_setting(maxmod, Gamma::Match::id);
+  totmod = set.get_setting(totmod, Gamma::Match::id);
+  slot = set.get_setting(slot, Gamma::Match::id);
+  mod = set.get_setting(mod, Gamma::Match::id);
+  chan = set.get_setting(chan, Gamma::Match::id);
+
+  int newmax = maxmod.value_int;
+  int oldtot = totmod.value_int;
+
+  if (newmax > N_SYSTEM_PAR - 7)
+    newmax = N_SYSTEM_PAR - 7;
+  else if (newmax < 1)
+    newmax = 1;
+  maxmod.value_int = newmax;
+  set.branches.replace(maxmod);
+
+
+  int newtot = 0;
+  std::vector<Gamma::Setting> old_slots;
+  for (int i=0; i< N_SYSTEM_PAR - 7; ++i) {
+    slot.metadata.address = 7+i;
+    Gamma::Setting s = set.get_setting(slot, Gamma::Match::id | Gamma::Match::address);
+    if ((i < newmax) && (s.value_int > 0)) {
+      newtot++;
+      old_slots.push_back(s);
+    }
+  }
+
+  if (newmax > old_slots.size()) {
+    for (int i=old_slots.size(); i < newmax; ++i) {
+      slot.value_int = 0;
+      slot.metadata.address = 7+i;
+      old_slots.push_back(slot);
+    }
+  }
+
+  if (newtot == 0) {
+    newtot = 1;
+    old_slots[0].value_int = 3;
+  }
+
+  if (newtot != oldtot) {
+    totmod.value_int = newtot;
+    set.branches.replace(totmod);
+  }
+
+  bool hardware_changed = false;
+  for (int i=0;i < old_slots.size(); ++i) {
+    old_slots[i].metadata.address = 7+i;
+    old_slots[i].index = 7+i;
+    if (system_parameter_values_[7+i] != old_slots[i].value_int)
+      hardware_changed = true;
+  }
+  if (hardware_changed)
+    PL_DBG << "hardware changed";
+
+  std::vector<Gamma::Setting> old_modules;
+  std::set<int> used_chan_indices;
+
+  for (int i=0; i< newtot; ++i) {
+    mod.metadata.address = i;
+    Gamma::Setting s = set.get_setting(mod, Gamma::Match::id | Gamma::Match::address);
+    if ((s != Gamma::Setting()) && (s.branches.size() > 0)) {
+      for (auto &q : s.indices)
+        used_chan_indices.insert(q);
+      old_modules.push_back(s);
+    }
+  }
+
+  int next_chan = 0;
+  if (old_modules.size() < newtot) {
+    for (int i=old_modules.size(); i < newtot; ++i) {
+      mod.del_setting(chan, Gamma::Match::id);
+      std::set<int32_t> new_set;
+      for (int j=0; j < NUMBER_OF_CHANNELS; ++j) {
+        while (used_chan_indices.count(next_chan))
+          next_chan++;
+        new_set.insert(next_chan);
+        used_chan_indices.insert(next_chan);
+        chan.index = j;
+        chan.indices.clear();
+        chan.indices.insert(next_chan);
+        chan.metadata.address = j;
+        mod.branches.add_a(chan);
+      }
+      mod.metadata.address = i;
+      mod.index = i;
+      mod.indices = new_set;
+      old_modules.push_back(mod);
+    }
+  }
+
+  set.del_setting(slot, Gamma::Match::id);
+  set.del_setting(mod, Gamma::Match::id);
+
+  for (auto &q : old_slots)
+    set.branches.add_a(q);
+
+  for (auto &q : old_modules)
+    set.branches.add_a(q);
+
+  if (oldtot != newtot) {
+    module_indices_.resize(newtot);
+    channel_indices_.resize(newtot);
+    for (auto &q : channel_indices_)
+      q.resize(NUMBER_OF_CHANNELS, -1);
+  }
+}
+
+
 bool Plugin::write_settings_bulk(Gamma::Setting &set) {
   set.enrich(setting_definitions_);
 
   if (live_ == LiveStatus::history)
     return false;
 
-  if (set.id_ == "Pixie4") {
+  if (set.id_ != "Pixie4")
+    return false;
 
-    read_sys("NUMBER_MODULES");
-    int expected_modules = system_parameter_values_[0];
-    
-    for (auto &q : set.branches.my_data_) {
-      if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Files")) {
-        for (auto &k : q.branches.my_data_) {
-          if (k.metadata.setting_type == Gamma::SettingType::file_path)
-            boot_files_[k.metadata.address] = k.value_text;
-        }
-      } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
-        for (auto &k : q.branches.my_data_) {
-          if (k.id_ == "Pixie4/Run settings/Double buffer")
-            run_double_buffer_ = k.value_int;
-          else if (k.id_ == "Pixie4/Run settings/Run type")
-            run_type_ = k.value_int;
-          else if (k.id_ == "Pixie4/Run settings/Poll interval")
-            run_poll_interval_ms_ = k.value_int;
-        }
-      } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/System")) {
-        int prev_total_modules = 0;
-        int new_total_modules = 0;
-        Gamma::Setting model_module;
-        std::set<int> used_chan_indices;
-        bool hardware_changed = false;
-        Gamma::Setting maxmods  = q.branches.get(Gamma::Setting("MAX_NUMBER_MODULES", 3, Gamma::SettingType::integer, -1));
-        if (maxmods.value_int > N_SYSTEM_PAR - 7)
-          maxmods.value_int = N_SYSTEM_PAR - 7;
-        uint16_t oldmax = system_parameter_values_[3];
-        if (oldmax != maxmods.value_int) {
-          hardware_changed = true;
-          std::vector<Gamma::Setting> old_modules(N_SYSTEM_PAR - 7);
-          for (int i=0; i< N_SYSTEM_PAR - 7; ++i)
-            old_modules[i] = q.branches.get(Gamma::Setting("SLOT_WAVE", 7+i, Gamma::SettingType::integer, -1));
-          for (int i=0; i< N_SYSTEM_PAR - 7; ++i)
-            q.branches.remove_a(Gamma::Setting("SLOT_WAVE", 7+i, Gamma::SettingType::integer, -1));
-          system_parameter_values_[3] = maxmods.value_int;
-          write_sys("MAX_NUMBER_MODULES");
-          for (int i=0; i<maxmods.value_int; ++i) {
-            Gamma::Setting slot = old_modules[i];
-            if (slot == Gamma::Setting())
-              slot = Gamma::Setting("SLOT_WAVE", 7+i, Gamma::SettingType::integer, -1);
-            slot.metadata.maximum = maxmods.value_int;
-            slot.metadata.writable = true;
-            q.branches.add(slot);
-          }
-        }
-        uint16_t total = 0;
-        for (int i=0; i<maxmods.value_int; ++i) {
-          Gamma::Setting modslot = q.branches.get(Gamma::Setting("SLOT_WAVE", 7+i, Gamma::SettingType::integer, -1));
-          if ((modslot != Gamma::Setting()) && (system_parameter_values_[7+i] != modslot.value_int)) {
-            hardware_changed = true;
-          }
-          if (modslot.value_int != 0)
-            total++;
-        }
-        new_total_modules = total;
-        if (system_parameter_values_[0] != total) {
-          system_parameter_values_[0] = total;
-          write_sys("NUMBER_MODULES");
-          hardware_changed = true;
-        }
-        if (hardware_changed) {
-          for (int i=0; i<maxmods.value_int; ++i) {
-            Gamma::Setting modslot = q.branches.get(Gamma::Setting("SLOT_WAVE", 7+i, Gamma::SettingType::integer, -1));
-            if ((modslot != Gamma::Setting()) && (system_parameter_values_[7+i] != modslot.value_int)) {
-              system_parameter_values_[7+i] = modslot.value_int;
-            }
-          }
-          write_sys("SLOT_WAVE");
-        }
-
-        if (new_total_modules < 1) {
-          PL_DBG << "num modules below 1";
-          Gamma::Setting modslot = q.branches.get(Gamma::Setting("SLOT_WAVE", 7, Gamma::SettingType::integer, -1));
-          q.branches.remove_a(modslot);
-          modslot.value_int = 1;
-          q.branches.add(modslot);
-          new_total_modules = 1;
-          system_parameter_values_[7] = 2;
-          write_sys("SLOT_WAVE");          
-        }
-
-        if (expected_modules != new_total_modules) {
-          PL_DBG << "total modules changed from " << prev_total_modules << " to " << new_total_modules;
-          module_indices_.resize(new_total_modules);
-          channel_indices_.resize(new_total_modules);
-          for (auto &q : channel_indices_)
-            q.resize(NUMBER_OF_CHANNELS, -1);
-        }
-
-        for (auto &k : q.branches.my_data_) {
-
-          if (k.metadata.setting_type == Gamma::SettingType::stem) {
-            uint16_t modnum = k.metadata.address;
-            if (modnum >= channel_indices_.size()) {
-              PL_DBG << "module address out of bounds, ignoring branch";
-              continue;
-            }
-            prev_total_modules++;
-            if (model_module == Gamma::Setting())
-              model_module = k;
-            
-            for (auto &p : k.branches.my_data_) {
-              if (p.metadata.setting_type == Gamma::SettingType::stem) {
-                uint16_t channum = p.metadata.address;
-                if (channum >= NUMBER_OF_CHANNELS) {
-                  PL_DBG << "channel address out of bounds, ignoring branch";
-                  continue;
-                }
-                
-                for (auto &o : p.branches.my_data_) {
-                  if (o.index >= 0) {
-                    used_chan_indices.insert(o.index);
-                    channel_indices_[modnum][channum] = o.index;
-                  }
-                  
-                  if (o.metadata.writable && (o.metadata.setting_type == Gamma::SettingType::floating) && (channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value_dbl)) {
-                    channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value_dbl;
-                    write_chan(o.metadata.name.c_str(), modnum, channum);
-                  } else if (o.metadata.writable && ((o.metadata.setting_type == Gamma::SettingType::integer)
-                                            || (o.metadata.setting_type == Gamma::SettingType::boolean)
-                                            || (o.metadata.setting_type == Gamma::SettingType::int_menu)
-                                            || (o.metadata.setting_type == Gamma::SettingType::binary))
-                             && (channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value_int)) {
-                    channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value_int;
-                    write_chan(o.metadata.name.c_str(), modnum, channum);
-                  }
-                }
-              } else if (p.metadata.writable && (p.metadata.setting_type == Gamma::SettingType::floating) && (module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] != p.value_dbl)) {
-                module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] = p.value_dbl;
-                write_mod(p.metadata.name.c_str(), modnum);
-              } else if (p.metadata.writable && ((p.metadata.setting_type == Gamma::SettingType::integer)
-                                        || (p.metadata.setting_type == Gamma::SettingType::boolean)
-                                        || (p.metadata.setting_type == Gamma::SettingType::int_menu)
-                                        || (p.metadata.setting_type == Gamma::SettingType::binary))
-                         && (module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] != p.value_int)) {
-                module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] = p.value_int;
-                write_mod(p.metadata.name.c_str(), modnum);
-              }
-            }
-          } else if (k.metadata.writable &&
-                     (k.metadata.setting_type == Gamma::SettingType::boolean) &&
-                     (system_parameter_values_[k.metadata.address] != k.value_int)) {
-            system_parameter_values_[k.metadata.address] = k.value_int;
-            write_sys(k.metadata.name.c_str());
-          }
-        }
-              int next_chan = 0;
-      if (prev_total_modules < new_total_modules) {
-        PL_DBG << "copying module address=" << prev_total_modules;
-        std::set<int32_t> new_set;
-        while (new_set.size() < NUMBER_OF_CHANNELS) {
-          while (used_chan_indices.count(next_chan))
-            next_chan++;
-          PL_DBG << "new channel index " << next_chan;
-          new_set.insert(next_chan);
-          used_chan_indices.insert(next_chan);
-        }
-
-        std::list<int32_t> copy_set(new_set.begin(), new_set.end());
-        for (auto &k : model_module.branches.my_data_) {
-          if (k.metadata.setting_type == Gamma::SettingType::stem) {
-            int this_index = copy_set.front();
-            copy_set.pop_front();
-            for (auto &c : k.branches.my_data_) {
-              c.index = this_index;
-              c.indices.clear();
-              c.indices.insert(this_index);
-            }
-          } else
-            k.indices = new_set;
-        }
-
-        model_module.metadata.address = prev_total_modules;
-        channel_indices_[prev_total_modules] = std::vector<int32_t>(new_set.begin(), new_set.end());
-        q.branches.add(model_module);
-        prev_total_modules++;
+  for (auto &q : set.branches.my_data_) {
+    if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Files")) {
+      for (auto &k : q.branches.my_data_) {
+        if (k.metadata.setting_type == Gamma::SettingType::file_path)
+          boot_files_[k.metadata.address] = k.value_text;
       }
+    } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
+      for (auto &k : q.branches.my_data_) {
+        if (k.id_ == "Pixie4/Run settings/Double buffer")
+          run_double_buffer_ = k.value_int;
+        else if (k.id_ == "Pixie4/Run settings/Run type")
+          run_type_ = k.value_int;
+        else if (k.id_ == "Pixie4/Run settings/Poll interval")
+          run_poll_interval_ms_ = k.value_int;
+      }
+    } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/System")) {
+      rebuild_structure(q);
 
+
+      for (auto &k : q.branches.my_data_) {
+
+        if (k.metadata.setting_type == Gamma::SettingType::stem) {
+          uint16_t modnum = k.metadata.address;
+          if (modnum >= channel_indices_.size()) {
+            PL_DBG << "module address out of bounds, ignoring branch";
+            continue;
+          }
+          for (auto &p : k.branches.my_data_) {
+            if (p.metadata.setting_type == Gamma::SettingType::stem) {
+              uint16_t channum = p.metadata.address;
+              if (channum >= NUMBER_OF_CHANNELS) {
+                PL_DBG << "channel address out of bounds, ignoring branch";
+                continue;
+              }
+
+              for (auto &o : p.branches.my_data_) {
+                if (o.index >= 0)
+                  channel_indices_[modnum][channum] = o.index;
+
+                if (o.metadata.writable && (o.metadata.setting_type == Gamma::SettingType::floating) && (channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value_dbl)) {
+                  channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value_dbl;
+                  write_chan(o.metadata.name.c_str(), modnum, channum);
+                } else if (o.metadata.writable && ((o.metadata.setting_type == Gamma::SettingType::integer)
+                                                   || (o.metadata.setting_type == Gamma::SettingType::boolean)
+                                                   || (o.metadata.setting_type == Gamma::SettingType::int_menu)
+                                                   || (o.metadata.setting_type == Gamma::SettingType::binary))
+                           && (channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value_int)) {
+                  channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value_int;
+                  write_chan(o.metadata.name.c_str(), modnum, channum);
+                }
+              }
+            } else if (p.metadata.writable && (p.metadata.setting_type == Gamma::SettingType::floating) && (module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] != p.value_dbl)) {
+              module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] = p.value_dbl;
+              write_mod(p.metadata.name.c_str(), modnum);
+            } else if (p.metadata.writable && ((p.metadata.setting_type == Gamma::SettingType::integer)
+                                               || (p.metadata.setting_type == Gamma::SettingType::boolean)
+                                               || (p.metadata.setting_type == Gamma::SettingType::int_menu)
+                                               || (p.metadata.setting_type == Gamma::SettingType::binary))
+                       && (module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] != p.value_int)) {
+              module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] = p.value_int;
+              write_mod(p.metadata.name.c_str(), modnum);
+            }
+          }
+        } else if (((k.metadata.setting_type == Gamma::SettingType::integer)
+                                           || (k.metadata.setting_type == Gamma::SettingType::boolean)
+                                           || (k.metadata.setting_type == Gamma::SettingType::int_menu)
+                                           || (k.metadata.setting_type == Gamma::SettingType::binary))
+                   && (system_parameter_values_[k.metadata.address] != k.value_int)) {
+          system_parameter_values_[k.metadata.address] = k.value_int;
+          write_sys(k.metadata.name.c_str());
+        }
       }
     }
   }
@@ -513,7 +514,7 @@ bool Plugin::boot() {
   set_sys("OFFLINE_ANALYSIS", 1);  //else attempt offline boot
   retval = Pixie_Boot_System(0x1F);
   if (retval >= 0) {
-//    live_ = LiveStatus::offline;
+    //    live_ = LiveStatus::offline;
     live_ = LiveStatus::online;
     return true;
   } else {
@@ -602,7 +603,7 @@ bool Plugin::resume_run(Module mod) {
       success = resume_run(module);
     }
   }
-  return success;  
+  return success;
 }
 
 bool Plugin::stop_run(Module mod) {
@@ -628,17 +629,17 @@ bool Plugin::start_run(uint8_t mod) {
   uint16_t type = (run_type_ | 0x1000);
   int32_t ret = Pixie_Acquire_Data(type, NULL, 0, mod);
   switch (ret) {
-    case 0x10:
-      return true;
-    case -0x11:
-      PL_ERR << "Start run failed: Invalid Pixie module number";
-      return false;
-    case -0x12:
-      PL_ERR << "Start run failed. Try rebooting";
-      return false;
-    default:
-      PL_ERR << "Start run failed. Unknown error";
-      return false;
+  case 0x10:
+    return true;
+  case -0x11:
+    PL_ERR << "Start run failed: Invalid Pixie module number";
+    return false;
+  case -0x12:
+    PL_ERR << "Start run failed. Try rebooting";
+    return false;
+  default:
+    PL_ERR << "Start run failed. Unknown error";
+    return false;
   }
 }
 
@@ -646,17 +647,17 @@ bool Plugin::resume_run(uint8_t mod) {
   uint16_t type = (run_type_ | 0x2000);
   int32_t ret = Pixie_Acquire_Data(type, NULL, 0, mod);
   switch (ret) {
-    case 0x20:
-      return true;
-    case -0x21:
-      PL_ERR << "Resume run failed: Invalid Pixie module number";
-      return false;
-    case -0x22:
-      PL_ERR << "Resume run failed. Try rebooting";
-      return false;
-    default:
-      PL_ERR << "Resume run failed. Unknown error";
-      return false;
+  case 0x20:
+    return true;
+  case -0x21:
+    PL_ERR << "Resume run failed: Invalid Pixie module number";
+    return false;
+  case -0x22:
+    PL_ERR << "Resume run failed. Try rebooting";
+    return false;
+  default:
+    PL_ERR << "Resume run failed. Unknown error";
+    return false;
   }
 }
 
@@ -664,17 +665,17 @@ bool Plugin::stop_run(uint8_t mod) {
   uint16_t type = (run_type_ | 0x3000);
   int32_t ret = Pixie_Acquire_Data(type, NULL, 0, mod);
   switch (ret) {
-    case 0x30:
-      return true;
-    case -0x31:
-      PL_ERR << "Stop run failed: Invalid Pixie module number";
-      return false;
-    case -0x32:
-      PL_ERR << "Stop run failed. Try rebooting";
-      return false;
-    default:
-      PL_ERR << "Stop run failed. Unknown error";
-      return false;
+  case 0x30:
+    return true;
+  case -0x31:
+    PL_ERR << "Stop run failed: Invalid Pixie module number";
+    return false;
+  case -0x32:
+    PL_ERR << "Stop run failed. Try rebooting";
+    return false;
+  default:
+    PL_ERR << "Stop run failed. Unknown error";
+    return false;
   }
 }
 
@@ -692,19 +693,19 @@ uint32_t Plugin::poll_run_dbl(uint8_t mod) {
 bool Plugin::read_EM(uint32_t* data, uint8_t mod) {
   S32 retval = Pixie_Acquire_Data(0x9003, (U32*)data, NULL, mod);
   switch (retval) {
-    case -0x93:
-      PL_ERR << "Failure to read list mode section of external memory. Reboot recommended.";
-      return false;
-    case -0x95:
-      PL_ERR << "Invalid external memory I/O request. Check run type.";
-      return false;
-    case 0x90:
-      return true;
-    case 0x0:
-      return true; //undocumented by XIA, returns this rather than 0x90 upon success
-    default:
-      PL_ERR << "Unexpected error " << std::hex << retval;
-      return false;
+  case -0x93:
+    PL_ERR << "Failure to read list mode section of external memory. Reboot recommended.";
+    return false;
+  case -0x95:
+    PL_ERR << "Invalid external memory I/O request. Check run type.";
+    return false;
+  case 0x90:
+    return true;
+  case 0x0:
+    return true; //undocumented by XIA, returns this rather than 0x90 upon success
+  default:
+    PL_ERR << "Unexpected error " << std::hex << retval;
+    return false;
   }
 }
 
@@ -758,13 +759,13 @@ bool Plugin::read_EM_dbl(uint32_t* data, uint8_t mod) {
   {
     j=1-j;
     PL_INFO << "(read_EM_dbl): Module " << mod <<
-        ": Both memory blocks full (block " << 1-j << " older). Run paused (or finished).";
+               ": Both memory blocks full (block " << 1-j << " older). Run paused (or finished).";
     Pixie_Print_MSG(ErrMSG);
   }
 
   if (WordCountPP[j] >0)
   {
-      // Check if it is an odd or even number
+    // Check if it is an odd or even number
     if(fmod(WordCountPP[j], 2.0) == 0.0)
       NumWordsToRead = WordCountPP[j] / 2;
     else
@@ -777,7 +778,7 @@ bool Plugin::read_EM_dbl(uint32_t* data, uint8_t mod) {
       return false;
     }
 
-      // Read out the list mode data
+    // Read out the list mode data
     Pixie_IOEM((U8)mod, LIST_MEMORY_ADDRESS+Aoffset[j], MOD_READ, NumWordsToRead, (U32*)data);
   }
 
@@ -1071,7 +1072,7 @@ void Plugin::get_chan_stats(Channel channel, Module module) {
     } else {
       int chan = static_cast<int>(channel);
       if ((chan > -1) && (chan < channel_indices_[i].size()))
-          chan_start = chan_end = chan;
+        chan_start = chan_end = chan;
     }
     for (int j=chan_start; j < chan_end; ++j) {
       PL_DBG << "Getting channel run statistics for module " << i << " channel " << j;
@@ -1258,22 +1259,22 @@ bool Plugin::control_adjust_offsets(Module mod) {
 
 bool Plugin::control_err(int32_t err_val) {
   switch (err_val) {
-    case 0:
-      return true;
-    case -1:
-      PL_ERR << "Control command failed: Invalid Pixie modules number. Check ModNum";
-      break;
-    case -2:
-      PL_ERR << "Control command failed: Failure to adjust offsets. Reboot recommended";
-      break;
-    case -3:
-      PL_ERR << "Control command failed: Failure to acquire ADC traces. Reboot recommended";
-      break;
-    case -4:
-      PL_ERR << "Control command failed: Failure to start the control task run. Reboot recommended";
-      break;
-    default:
-      PL_ERR << "Control comman failed: Unknown error " << err_val;
+  case 0:
+    return true;
+  case -1:
+    PL_ERR << "Control command failed: Invalid Pixie modules number. Check ModNum";
+    break;
+  case -2:
+    PL_ERR << "Control command failed: Failure to adjust offsets. Reboot recommended";
+    break;
+  case -3:
+    PL_ERR << "Control command failed: Failure to acquire ADC traces. Reboot recommended";
+    break;
+  case -4:
+    PL_ERR << "Control command failed: Failure to start the control task run. Reboot recommended";
+    break;
+  default:
+    PL_ERR << "Control comman failed: Unknown error " << err_val;
   }
   return false;
 }
@@ -1341,102 +1342,6 @@ void Plugin::boot_err(int32_t err_val) {
   }
 }
 
-void Plugin::to_xml(tinyxml2::XMLPrinter& printer, std::vector<Gamma::Detector> detectors) const {
-  printer.OpenElement("PixieSettings");
-  printer.OpenElement("System");
-  for (int i=0; i < N_SYSTEM_PAR; i++) {
-    if (!std::string((char*)System_Parameter_Names[i]).empty()) {
-      printer.OpenElement("Setting");
-      printer.PushAttribute("key", std::to_string(i).c_str());
-      printer.PushAttribute("name", std::string((char*)System_Parameter_Names[i]).c_str()); //not here?
-      printer.PushAttribute("value", std::to_string(system_parameter_values_[i]).c_str());
-      printer.CloseElement();
-    }
-  }
-  printer.CloseElement(); //System
-  for (int i=0; i < 1; i++) { //hardcoded. Make for multiple modules...
-    printer.OpenElement("Module");
-    printer.PushAttribute("number", std::to_string(i).c_str());
-    for (int j=0; j < N_MODULE_PAR; j++) {
-      if (!std::string((char*)Module_Parameter_Names[j]).empty()) {
-        printer.OpenElement("Setting");
-        printer.PushAttribute("key", std::to_string(j).c_str());
-        printer.PushAttribute("name", std::string((char*)Module_Parameter_Names[j]).c_str());
-        printer.PushAttribute("value", std::to_string(module_parameter_values_[j]).c_str());
-        printer.CloseElement();
-      }
-    }
-    for (int j=0; j<NUMBER_OF_CHANNELS; j++) {
-      printer.OpenElement("Channel");
-      printer.PushAttribute("number", std::to_string(j).c_str());
-      detectors[j].to_xml(printer);
-      for (int k=0; k < N_CHANNEL_PAR; k++) {
-        if (!std::string((char*)Channel_Parameter_Names[k]).empty()) {
-          printer.OpenElement("Setting");
-          printer.PushAttribute("key", std::to_string(k).c_str());
-          printer.PushAttribute("name", std::string((char*)Channel_Parameter_Names[k]).c_str());
-          printer.PushAttribute("value",
-                                std::to_string(get_chan(k,Channel(j), Module(0))).c_str());
-          printer.CloseElement();
-        }
-      }
-      printer.CloseElement(); //Channel
-    }
-    printer.CloseElement(); //Module
-  }
-  printer.CloseElement(); //Plugin
-}
-
-std::vector<Gamma::Detector> Plugin::from_xml(tinyxml2::XMLElement* root) {
-  std::vector<Gamma::Detector> detectors(NUMBER_OF_CHANNELS);
-
-  live_ = LiveStatus::history;
-
-  tinyxml2::XMLElement* TopElement = root->FirstChildElement();
-  while (TopElement != nullptr) {
-    std::string topElementName(TopElement->Name());
-    if (topElementName == "System") {
-      tinyxml2::XMLElement* SysSetting = TopElement->FirstChildElement("Setting");
-      while (SysSetting != nullptr) {
-        int thisKey = boost::lexical_cast<short>(SysSetting->Attribute("key"));
-        double thisVal = boost::lexical_cast<double>(SysSetting->Attribute("value"));
-        system_parameter_values_[thisKey] = thisVal;
-        SysSetting = dynamic_cast<tinyxml2::XMLElement*>(SysSetting->NextSibling());
-      }
-    }
-    if (topElementName == "Module") {
-      int thisModule = boost::lexical_cast<short>(TopElement->Attribute("number"));
-      tinyxml2::XMLElement* ModElement = TopElement->FirstChildElement();
-      while (ModElement != nullptr) {
-        std::string modElementName(ModElement->Name());
-        if (modElementName == "Setting") {
-          int thisKey =  boost::lexical_cast<short>(ModElement->Attribute("key"));
-          double thisVal = boost::lexical_cast<double>(ModElement->Attribute("value"));
-          module_parameter_values_[thisModule * N_MODULE_PAR + thisKey] = thisVal;
-        } else if (modElementName == "Channel") {
-          int thisChan = boost::lexical_cast<short>(ModElement->Attribute("number"));
-          tinyxml2::XMLElement* ChanElement = ModElement->FirstChildElement();
-          while (ChanElement != nullptr) {
-            if (std::string(ChanElement->Name()) == "Detector") {
-              detectors[thisChan].from_xml(ChanElement);
-            } else if (std::string(ChanElement->Name()) == "Setting") {
-              int thisKey =  boost::lexical_cast<short>(ChanElement->Attribute("key"));
-              double thisVal = boost::lexical_cast<double>(ChanElement->Attribute("value"));
-              channel_parameter_values_[thisModule * N_CHANNEL_PAR * NUMBER_OF_CHANNELS
-                  + thisChan * N_CHANNEL_PAR + thisKey] = thisVal;
-            }
-            ChanElement = dynamic_cast<tinyxml2::XMLElement*>(ChanElement->NextSibling());
-          }
-        }
-        ModElement = dynamic_cast<tinyxml2::XMLElement*>(ModElement->NextSibling());
-      }
-    }
-    TopElement = dynamic_cast<tinyxml2::XMLElement*>(TopElement->NextSibling());
-  }
-  return detectors;
-}
-
-
 
 void Plugin::worker_run_test(Plugin* callback, uint64_t timeout_limit,
                              SynchronizedQueue<Spill*>* spill_queue) {
@@ -1465,7 +1370,7 @@ void Plugin::worker_run_test(Plugin* callback, uint64_t timeout_limit,
 
 
 void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
-                   SynchronizedQueue<Spill*>* spill_queue) {
+                        SynchronizedQueue<Spill*>* spill_queue) {
 
   PL_INFO << "<PixiePlugin> Double buffered daq starting";
 
@@ -1577,7 +1482,7 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
 
 
 void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
-                   SynchronizedQueue<Spill*>* spill_queue) {
+                            SynchronizedQueue<Spill*>* spill_queue) {
 
   PL_INFO << "<PixiePlugin> Double buffered daq starting";
 
@@ -1654,7 +1559,7 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
         p.lab_time = block_time;
         p.spill_number = spill_number;
       }
-      spill_queue->enqueue(fetched_spill); 
+      spill_queue->enqueue(fetched_spill);
     }
 
     if (!success) {

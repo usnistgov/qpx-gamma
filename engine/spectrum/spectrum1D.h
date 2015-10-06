@@ -31,7 +31,7 @@ namespace Spectrum {
 class Spectrum1D : public Spectrum
 {
 public:
-  Spectrum1D() {};
+  Spectrum1D() {}
 
   static Template get_template() {
     Template new_temp;

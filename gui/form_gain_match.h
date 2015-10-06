@@ -77,7 +77,6 @@ private:
 
   Ui::FormGainMatch *ui;
 
-  Qpx::Wrapper&      pixie_;
   Qpx::SpectraSet    gm_spectra_;
   Qpx::Spectrum::Template reference_, optimizing_;
 

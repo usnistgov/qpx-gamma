@@ -83,7 +83,6 @@ private:
 
   Ui::FormOptimization *ui;
 
-  Qpx::Wrapper&      pixie_;
   Qpx::SpectraSet current_spectra_;
   Qpx::Spectrum::Template        optimizing_;
 

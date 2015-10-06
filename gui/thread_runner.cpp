@@ -26,7 +26,7 @@
 
 ThreadRunner::ThreadRunner(QObject *parent) :
   QThread(parent),
-  devices_(Qpx::Wrapper::getInstance().settings()),
+  engine_(Qpx::Engine::getInstance()),
   terminating_(false),
   running_(false)
 {
@@ -34,11 +34,11 @@ ThreadRunner::ThreadRunner(QObject *parent) :
   interruptor_ = nullptr;
   action_ = kNone;
   fake_chans_ = {0,1};
-  exact_index_ = false;
   file_ = "";
   source_res_ = 0;
   dest_res_ = 0;
   xdt_ = 0.0;
+  match_conditions_ = Gamma::Match::id;
   start(HighPriority);
 }
 
@@ -124,6 +124,20 @@ void ThreadRunner::do_from_list(Qpx::SpectraSet &spectra, boost::atomic<bool> &i
     start(HighPriority);
 }
 
+void ThreadRunner::do_initialize(QString file) {
+  if (running_.load()) {
+    PL_WARN << "Runner busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  action_ = kInitialize;
+  file_ = file;
+  if (!isRunning())
+    start(HighPriority);
+}
+
+
 void ThreadRunner::do_boot() {
   if (running_.load()) {
     PL_WARN << "Runner busy";
@@ -174,7 +188,7 @@ void ThreadRunner::do_push_settings(const Gamma::Setting &tree) {
     start(HighPriority);
 }
 
-void ThreadRunner::do_set_setting(const Gamma::Setting &item, bool exact_index) {
+void ThreadRunner::do_set_setting(const Gamma::Setting &item, Gamma::Match match) {
   if (running_.load()) {
     PL_WARN << "Runner busy";
     return;
@@ -182,7 +196,7 @@ void ThreadRunner::do_set_setting(const Gamma::Setting &item, bool exact_index) 
   QMutexLocker locker(&mutex_);
   terminating_.store(false);
   tree_ = item;
-  exact_index_ = exact_index;
+  match_conditions_ = match;
   action_ = kSetSetting;
   if (!isRunning())
     start(HighPriority);
@@ -262,12 +276,12 @@ void ThreadRunner::run()
 
     if (action_ == kMCA) {
       interruptor_->store(false);
-      Qpx::Wrapper::getInstance().getMca(timeout_, *spectra_, *interruptor_);
+      engine_.getMca(timeout_, *spectra_, *interruptor_);
       action_ = kNone;
       emit runComplete();
     } else if (action_ == kList) {
       interruptor_->store(false);
-      Qpx::ListData *newListRun = Qpx::Wrapper::getInstance().getList(timeout_, *interruptor_);
+      Qpx::ListData *newListRun = engine_.getList(timeout_, *interruptor_);
       action_ = kNone;
       emit listComplete(newListRun);
     } else if (action_ == kSimulate) {
@@ -277,102 +291,106 @@ void ThreadRunner::run()
       Qpx::Simulator mySource = Qpx::Simulator(intermediate, fake_chans_, source_res_, dest_res_);
       delete intermediate;
       if (mySource.valid())
-        Qpx::Wrapper::getInstance().getFakeMca(mySource, *spectra_, timeout_, *interruptor_);
+        engine_.getFakeMca(mySource, *spectra_, timeout_, *interruptor_);
       action_ = kNone;
       emit runComplete();
     } else if (action_ == kFromList) {
       interruptor_->store(false);
       Qpx::Sorter sorter(file_.toStdString());
       if (sorter.valid())
-        Qpx::Wrapper::getInstance().simulateFromList(sorter, *spectra_, *interruptor_);
+        engine_.simulateFromList(sorter, *spectra_, *interruptor_);
       action_ = kNone;
       emit runComplete();
+    } else if (action_ == kInitialize) {
+      engine_.initialize(file_.toStdString());
+      action_ = kNone;
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
     } else if (action_ == kBoot) {
-      if (devices_.boot()) {
-        devices_.get_all_settings();
-        devices_.save_optimization();
+      if (engine_.boot()) {
+        engine_.get_all_settings();
+        engine_.save_optimization();
       }
       action_ = kNone;
-      emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
       emit bootComplete();
     } else if (action_ == kShutdown) {
-      if (devices_.die()) {
-        devices_.get_all_settings();
-        devices_.save_optimization();
+      if (engine_.die()) {
+        engine_.get_all_settings();
+        engine_.save_optimization();
       }
       action_ = kNone;
-      emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
     } else if (action_ == kOptimize) {
-      devices_.load_optimization();
+      engine_.load_optimization();
       action_ = kOscil;
     } else if (action_ == kSettingsRefresh) {
-      devices_.get_all_settings();
-      devices_.save_optimization();
+      engine_.get_all_settings();
+      engine_.save_optimization();
       action_ = kNone;
-      emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
     } else if (action_ == kExecuteCommand) {
-      devices_.push_settings(tree_);
-      bool success = devices_.execute_command();
+      engine_.push_settings(tree_);
+      bool success = engine_.execute_command();
       if (success) {
-        devices_.get_all_settings();
-        devices_.save_optimization();
+        engine_.get_all_settings();
+        engine_.save_optimization();
       }
       action_ = kNone;
-      emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
     } else if (action_ == kPushSettings) {
-      devices_.push_settings(tree_);
-      devices_.get_all_settings();
-      devices_.save_optimization();
+      engine_.push_settings(tree_);
+      engine_.get_all_settings();
+      engine_.save_optimization();
       action_ = kNone;
-      emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
     } else if (action_ == kSetSetting) {
-      devices_.set_setting(tree_, exact_index_);
-      devices_.get_all_settings();
-      devices_.save_optimization();
+      engine_.set_setting(tree_, match_conditions_);
+      engine_.get_all_settings();
+      engine_.save_optimization();
       action_ = kNone;
-      emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
     } else if (action_ == kSetDetector) {
-      devices_.set_detector(chan_, det_);
-      devices_.load_optimization(chan_);
-      devices_.write_settings_bulk();
-      devices_.get_all_settings();
-      devices_.save_optimization();
+      engine_.set_detector(chan_, det_);
+      engine_.load_optimization(chan_);
+      engine_.write_settings_bulk();
+      engine_.get_all_settings();
+      engine_.save_optimization();
       action_ = kNone;
-      emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
     } else if (action_ == kSetDetectors) {
       for (auto &q : detectors_) {
-        devices_.set_detector(q.first, q.second);
-        devices_.load_optimization(q.first);
+        engine_.set_detector(q.first, q.second);
+        engine_.load_optimization(q.first);
       }
-      devices_.write_settings_bulk();
-      Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/Adjust offsets", 0, Gamma::SettingType::command, -1);
+      engine_.write_settings_bulk();
+      Gamma::Setting set = Gamma::Setting("Adjust offsets");
       set.value_dbl = 1;
-      devices_.set_setting(set);
-      devices_.execute_command();
+      engine_.set_setting(set, Gamma::Match::name);
+      engine_.execute_command();
 
       //XDT?
 
-      //devices_.get_all_settings();
-      //devices_.save_optimization();
+      //engine_.get_all_settings();
+      //engine_.save_optimization();
       action_ = kOscil;
-      //emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+      //emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
     } else if (action_ == kOscil) {
-        std::vector<Gamma::Detector> dets = devices_.get_detectors();
+        std::vector<Gamma::Detector> dets = engine_.get_detectors();
 
-        Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/XDT", 0, Gamma::SettingType::floating, 0);
+        Gamma::Setting set = Gamma::Setting("XDT");
         for (int i=0; i < dets.size(); i++) {
           set.index = i;
           set.value_dbl = xdt_;
-          devices_.set_setting(set);
+          engine_.set_setting(set, Gamma::Match::name | Gamma::Match::indices);
         }
-        std::vector<Qpx::Trace> traces = devices_.oscilloscope();
+        std::vector<Qpx::Trace> traces = engine_.oscilloscope();
 
-        devices_.get_all_settings();
-        devices_.save_optimization();
+        engine_.get_all_settings();
+        engine_.save_optimization();
 
         action_ = kNone;
 
-        emit settingsUpdated(devices_.pull_settings(), devices_.get_detectors());
+        emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
         if (!traces.empty())
           emit oscilReadOut(traces);
     } else {

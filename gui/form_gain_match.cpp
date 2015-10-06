@@ -36,8 +36,7 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLable2
   gm_spectra_(),
   gm_interruptor_(false),
   gm_plot_thread_(gm_spectra_),
-  my_run_(false),
-  pixie_(Qpx::Wrapper::getInstance())
+  my_run_(false)
 {
   ui->setupUi(this);
 
@@ -239,9 +238,11 @@ void FormGainMatch::run_completed() {
 }
 
 void FormGainMatch::do_post_processing() {
-  Qpx::Settings &settings = pixie_.settings();
-  settings.get_all_settings();
-  double old_gain = settings.pull_settings().get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", 7, Gamma::SettingType::floating, ui->spinOptChan->value())).value_dbl;
+  Gamma::Setting gain_setting("VGAIN", ui->spinOptChan->value());
+
+  Qpx::Engine::getInstance().get_all_settings();
+  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::name | Gamma::Match::indices);
+  double old_gain = gain_setting.value_dbl;
   QThread::sleep(2);
   double new_gain = old_gain;
   if (gauss_opt_.gaussian_.center_ < gauss_ref_.gaussian_.center_) {
@@ -256,11 +257,11 @@ void FormGainMatch::do_post_processing() {
     emit toggleIO(true);
     return;
   }
-  Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", 7, Gamma::SettingType::floating, ui->spinOptChan->value());
-  set.value_dbl = new_gain;
-  settings.set_setting(set);
+  gain_setting.value_dbl = new_gain;
+  Qpx::Engine::getInstance().set_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
   QThread::sleep(2);
-  new_gain = settings.pull_settings().get_setting(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/VGAIN", 7, Gamma::SettingType::floating, ui->spinOptChan->value())).value_dbl;
+  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
+  new_gain = gain_setting.value_dbl;
 
 
   PL_INFO << "gain changed from " << std::fixed << std::setprecision(6)
@@ -435,8 +436,8 @@ void FormGainMatch::on_pushStop_clicked()
 
 void FormGainMatch::on_pushSaveOpti_clicked()
 {
-  pixie_.settings().save_optimization();
-  std::vector<Gamma::Detector> dets = pixie_.settings().get_detectors();
+  Qpx::Engine::getInstance().save_optimization();
+  std::vector<Gamma::Detector> dets = Qpx::Engine::getInstance().get_detectors();
   for (auto &q : dets) {
     if (detectors_.has_a(q)) {
       Gamma::Detector modified = detectors_.get(q);

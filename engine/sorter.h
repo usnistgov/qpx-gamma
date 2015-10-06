@@ -24,6 +24,7 @@
 #define PIXIE_SORTER
 
 #include "daq_types.h"
+
 #include <list>
 
 namespace Qpx {
@@ -49,7 +50,7 @@ class Sorter {
   FILE          *file_xml_;
   std::streampos bin_begin_, bin_end_;
 
-  tinyxml2::XMLElement* root_;
+  //tinyxml2::XMLElement* root_;
 
   std::list<StatsUpdate> spills_;
   RunInfo start_, end_;

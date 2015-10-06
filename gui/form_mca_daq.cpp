@@ -327,26 +327,7 @@ void FormMcaDaq::on_pushMcaReload_clicked()
   clearGraphs();
 
 
-
-  //TEMPORARY
-  QString filename = data_directory_ + "/qpx_settings.set";
-
-  FILE* myfile;
-  Gamma::Setting tree;
-  myfile = fopen (filename.toStdString().c_str(), "r");
-  if (myfile != nullptr) {
-    tinyxml2::XMLDocument docx;
-    docx.LoadFile(myfile);
-    tinyxml2::XMLElement* root = docx.FirstChildElement(tree.xml_element_name().c_str());
-    if (root != nullptr) {
-      tree = Gamma::Setting(root);
-    }
-    fclose(myfile);
-  }
-  //TEMPORARY
-
-  spectra_.read_xml(fileName.toStdString(), true, tree);
-  //spectra_.read_xml2(fileName.toStdString(), true);
+  spectra_.read_xml(fileName.toStdString(), true);
 
   newProject();
   spectra_.activate();

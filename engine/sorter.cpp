@@ -40,7 +40,7 @@ Sorter::Sorter(std::string name_xml)
   , open_bin_(false)
   , file_name_xml_(name_xml)
 {
-  file_xml_ = fopen(file_name_xml_.c_str(), "r");
+ /* file_xml_ = fopen(file_name_xml_.c_str(), "r");
   if (file_xml_ == nullptr)
     return;
 
@@ -106,7 +106,7 @@ Sorter::Sorter(std::string name_xml)
   bin_end_ = file_bin_.tellg();
   file_bin_.seekg (0, std::ios::beg);
   PL_DBG << "<Sorter> found " << spills_.size() << " spills with total_count = " << end_.total_events << " and binary file size = " << (bin_end_ - bin_begin_) << " bytes";
-  open_bin_ = true;
+  open_bin_ = true;*/
 }
 
 void Sorter::order(std::string name_out) {

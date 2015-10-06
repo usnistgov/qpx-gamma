@@ -35,8 +35,7 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   detectors_(detectors),
   interruptor_(false),
   opt_plot_thread_(current_spectra_),
-  my_run_(false),
-  pixie_(Qpx::Wrapper::getInstance())
+  my_run_(false)
 {
   ui->setupUi(this);
 
@@ -268,13 +267,14 @@ void FormOptimization::do_run()
   x.resize(pow(2,bits), 0.0);
   y_opt.resize(pow(2,bits), 0.0);
 
-  Gamma::Setting set = Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/" + current_setting_, 0, Gamma::SettingType::floating, ui->spinOptChan->value());
+  Gamma::Setting set(current_setting_, ui->spinOptChan->value());
+
   set.value_dbl = val_current;
-  pixie_.settings().set_setting(set);
+  Qpx::Engine::getInstance().set_setting(set, Gamma::Match::name | Gamma::Match::indices);
   QThread::sleep(1);
-  pixie_.settings().get_all_settings();
-  double got = pixie_.settings().pull_settings().get_setting(set).value_dbl;
-  setting_values_.push_back(got);
+  Qpx::Engine::getInstance().get_all_settings();
+  set = Qpx::Engine::getInstance().pull_settings().get_setting(set, Gamma::Match::name | Gamma::Match::indices);
+  setting_values_.push_back(set.value_dbl);
   setting_fwhm_.push_back(0);
   emit settings_changed();
 
@@ -509,8 +509,8 @@ void FormOptimization::replot_markers() {
 
 void FormOptimization::on_pushSaveOpti_clicked()
 {
-  pixie_.settings().save_optimization();
-  std::vector<Gamma::Detector> dets = pixie_.settings().get_detectors();
+  Qpx::Engine::getInstance().save_optimization();
+  std::vector<Gamma::Detector> dets = Qpx::Engine::getInstance().get_detectors();
   for (auto &q : dets) {
     if (detectors_.has_a(q)) {
       Gamma::Detector modified = detectors_.get(q);

@@ -25,7 +25,6 @@
 
 #include <QWidget>
 #include <QSettings>
-#include "wrapper.h"
 #include "custom_logger.h"
 #include "thread_runner.h"
 #include "form_system_settings.h"

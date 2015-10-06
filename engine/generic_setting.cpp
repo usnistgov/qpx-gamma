@@ -22,8 +22,6 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
-#include "tinyxml2.h"
-#include "xmlable.h"
 #include "generic_setting.h"
 
 namespace Gamma {
@@ -184,13 +182,6 @@ void SettingMeta::menu_to_node(pugi::xml_node &node, const std::string &element_
   }
 }
 
-void SettingMeta::from_xml(tinyxml2::XMLElement* element) {
-}
-
-
-void SettingMeta::to_xml(tinyxml2::XMLPrinter& printer) const {
-}
-
 void Setting::from_xml(const pugi::xml_node &node) {
   metadata.setting_type = to_type(std::string(node.attribute("type").value()));
 
@@ -286,179 +277,69 @@ void Setting::to_xml(pugi::xml_node &node, bool with_metadata) const {
 }
 
 
-void Setting::from_xml(tinyxml2::XMLElement* element) {
-  if (element->Attribute("id"))
-    id_ = std::string(element->Attribute("id"));
-  PL_DBG << "loaded one " << id_;
-  if (element->Attribute("index")) {
-    index = boost::lexical_cast<int32_t>(element->Attribute("index"));
-  }
-  if (element->Attribute("indices")) {
-    std::stringstream indices_stream;
-    indices_stream.str(element->Attribute("indices"));
-    std::string numero;
-    indices.clear();
-    while (indices_stream.rdbuf()->in_avail()) {
-      indices_stream >> numero;
-      indices.insert(boost::lexical_cast<int32_t>(numero));
-    }
-  }
-
-  if (element->Attribute("type")) {
-    std::string temp_str(element->Attribute("type"));
-    if (temp_str == "boolean") {
-      metadata.setting_type = SettingType::boolean;
-      if (element->Attribute("value")) {
-        std::string temp_str2(element->Attribute("value"));
-        if (temp_str2 == "true")
-          value_int = 1;
-        else
-          value_int = 0;
-      }
-    } else if (temp_str == "integer") {
-      metadata.setting_type = SettingType::integer;
-      if (element->Attribute("value"))
-        value_int = boost::lexical_cast<int64_t>(element->Attribute("value"));
-    } else if (temp_str == "binary") {
-      metadata.setting_type = SettingType::binary;
-      if (element->Attribute("value"))
-        value_int = boost::lexical_cast<int64_t>(element->Attribute("value"));
-    } else if (temp_str == "pattern") {
-      metadata.setting_type = SettingType::pattern;
-      if (element->Attribute("value"))
-        value_int = boost::lexical_cast<int64_t>(element->Attribute("value"));
-    } else if (temp_str == "floating") {
-      metadata.setting_type = SettingType::floating;
-      if (element->Attribute("value"))
-        value_dbl = boost::lexical_cast<double>(element->Attribute("value"));
-    } else if (temp_str == "text") {
-      metadata.setting_type = SettingType::text;
-      if (element->Attribute("value"))
-        value_text = std::string(element->Attribute("value"));
-    } else if (temp_str == "detector") {
-      metadata.setting_type = SettingType::detector;
-      if (element->Attribute("value"))
-        value_text = std::string(element->Attribute("value"));
-    } else if (temp_str == "file_path") {
-      metadata.setting_type = SettingType::file_path;
-      if (element->Attribute("value"))
-        value_text = std::string(element->Attribute("value"));
-    } else if (temp_str == "int_menu") {
-      metadata.setting_type = SettingType::int_menu;
-      if (element->Attribute("value"))
-        value_int = boost::lexical_cast<int64_t>(element->Attribute("value"));
-    } else if (temp_str == "command") {
-      metadata.setting_type = SettingType::command;
-    } else if (temp_str == "stem") {
-      metadata.setting_type = SettingType::stem;
-      branches.clear();
-      tinyxml2::XMLElement* stemData = element->FirstChildElement(xml_element_name().c_str());
-      while (stemData != NULL) {
-        Setting newset(stemData);
-        PL_DBG << "loaded " << newset.id_;
-        if (newset != Setting())
-          branches.add_a(newset);
-        stemData = dynamic_cast<tinyxml2::XMLElement*>(stemData->NextSibling());
-      }
-    }
-  }
+bool Setting::compare(const Setting &other, Gamma::Match flags) const {
+  bool match = true;
+  if ((flags & Match::id) && (id_ != other.id_))
+    match = false;
+  if ((flags & Match::index) && (index != other.index))
+    match = false;
+  if ((flags & Match::indices) && (indices.count(other.index) < 1))
+    match = false;
+  if ((flags & Match::name) && (other.id_ != metadata.name))
+    match = false;
+  if ((flags & Match::address) && (metadata.address != other.metadata.address))
+    match = false;
+  return match;
 }
 
-void Setting::to_xml(tinyxml2::XMLPrinter& printer) const {
-  if (metadata.setting_type == SettingType::none)
-    return;
 
-  printer.OpenElement(this->xml_element_name().c_str());
-  printer.PushAttribute("id", id_.c_str());
-  //if (index != -1)
-  printer.PushAttribute("index", std::to_string(index).c_str());
-  if (!indices.empty()) {
-    std::stringstream indices_stream;
-    for (auto &q : indices)
-      indices_stream << q << " ";
-    std::string indices_string = boost::algorithm::trim_copy(indices_stream.str());
-    if (!indices_string.empty())
-      printer.PushAttribute("indices", indices_string.c_str());
-  }
-
-  if (metadata.setting_type == SettingType::boolean) {
-    printer.PushAttribute("type", "boolean");
-    if (value_int)
-      printer.PushAttribute("value", "true");
-    else
-      printer.PushAttribute("value", "false");
-  } else if (metadata.setting_type == SettingType::integer) {
-    printer.PushAttribute("type", "integer");
-    printer.PushAttribute("value", std::to_string(value_int).c_str());
-  } else if (metadata.setting_type == SettingType::binary) {
-    printer.PushAttribute("type", "binary");
-    printer.PushAttribute("value", std::to_string(value_int).c_str());
-  } else if (metadata.setting_type == SettingType::pattern) {
-    printer.PushAttribute("type", "pattern");
-    printer.PushAttribute("value", std::to_string(value_int).c_str());
-  } else if (metadata.setting_type == SettingType::floating) {
-    printer.PushAttribute("type", "floating");
-    printer.PushAttribute("value", std::to_string(value_dbl).c_str());
-  } else if (metadata.setting_type == SettingType::text) {
-    printer.PushAttribute("type", "text");
-    printer.PushAttribute("value", value_text.c_str());
-  } else if (metadata.setting_type == SettingType::detector) {
-    printer.PushAttribute("type", "detector");
-    printer.PushAttribute("value", value_text.c_str());
-  } else if (metadata.setting_type == SettingType::file_path) {
-    printer.PushAttribute("type", "file_path");
-    printer.PushAttribute("value", value_text.c_str());
-  } else if (metadata.setting_type == SettingType::command) {
-    printer.PushAttribute("type", "command");
-  } else if (metadata.setting_type == SettingType::int_menu) {
-    printer.PushAttribute("type", "int_menu");
-    printer.PushAttribute("value", std::to_string(value_int).c_str());
-  } else if (metadata.setting_type == SettingType::stem) {
-    printer.PushAttribute("type", "stem");
-    for (auto &q : branches.my_data_)
-      q.to_xml(printer);
-  }
-  printer.CloseElement();
-}
-
-bool Setting::retrieve_one_setting(Gamma::Setting &det, const Gamma::Setting& root, bool precise_index) const {
-  if ((root.metadata.setting_type == Gamma::SettingType::none) || det.id_.empty())
-    return false;
-  if (root.metadata.setting_type == Gamma::SettingType::stem) {
-    Gamma::Setting truncated = det;
-    for (auto &q : root.branches.my_data_) {
-      if (retrieve_one_setting(truncated, q)) {
-        det = truncated;
-        return true;
-      }
-    }
-  } else if (det.id_ == root.id_) {
-    if ((precise_index && (root.index == det.index)) ||
-        (!precise_index && (root.indices.count(det.index) > 0)))
-    {
-      det.value_dbl = root.value_dbl;
-      det.value_int = root.value_int;
-      det.value_text = root.value_text;
+bool Setting::retrieve_one_setting(Gamma::Setting &det, const Gamma::Setting& root, Match flags) const {
+  if (root.compare(det, flags)) {
+      det = root;
       return true;
-    }
+  } else if (root.metadata.setting_type == Gamma::SettingType::stem) {
+    for (auto &q : root.branches.my_data_)
+      if (retrieve_one_setting(det, q, flags))
+        return true;
   }
   return false;
 }
 
-Gamma::Setting Setting::get_setting(Gamma::Setting address, bool precise_index) const {
+Gamma::Setting Setting::get_setting(Gamma::Setting address, Match flags) const {
   Gamma::Setting addy(address);
-  if (retrieve_one_setting(addy, *this, precise_index))
+  if (retrieve_one_setting(addy, *this, flags))
     return addy;
   else
     return Gamma::Setting();
 }
 
+void Setting::delete_one_setting(const Gamma::Setting &det, Gamma::Setting& root, Match flags) {
+  Gamma::Setting truncated = root;
+  truncated.branches.clear();
+  for (auto &q : root.branches.my_data_) {
+    if (!q.compare(det, flags)) {
+      if (q.metadata.setting_type == Gamma::SettingType::stem) {
+        delete_one_setting(det, q, flags);
+        if (!q.branches.empty())
+          truncated.branches.add_a(q);
+      } else
+        truncated.branches.add_a(q);
+    }
+  }
+  root = truncated;
+}
+
+void Setting::del_setting(Gamma::Setting address, Match flags) {
+  Gamma::Setting addy(address);
+  delete_one_setting(addy, *this, flags);
+}
+
+
 void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_definitions) {
   if (setting_definitions.count(id_) > 0) {
     Gamma::SettingMeta meta = setting_definitions.at(id_);
-    if (meta.address == -1) {
+    if (meta.address == -1)
       meta.address = index;
-    }
     metadata = meta;
     if (meta.setting_type == Gamma::SettingType::stem) {
       XMLable2DB<Gamma::Setting> br = branches;

@@ -38,28 +38,47 @@ TreeItem::TreeItem(const Gamma::Setting &data, TreeItem *parent)
   }
 }
 
-void TreeItem::eat_data(const Gamma::Setting &data) {
+bool TreeItem::eat_data(const Gamma::Setting &data) {
   itemData = data;
 
   if (itemData.metadata.setting_type == Gamma::SettingType::stem) {
-    if (itemData.branches.size() != childItems.size()) {
-      //PL_WARN << "Setting branch size mismatch";
-      for (int i=0; i <  childItems.size(); ++i)
-        delete childItems.takeAt(i);
+    if (itemData.branches.size() != childItems.size())
+      return false;
+    for (int i=0; i < itemData.branches.size(); ++i) {
+      Gamma::Setting s = itemData.branches.get(i);
+      if (childItems[i]->itemData.id_ != s.id_)
+        return false;
+      if (!childItems[i]->eat_data(itemData.branches.get(i)))
+        return false;
+    }
+  }
+  return true;
 
-      //qDeleteAll(childItems);
+  /*if (itemData.branches.size() != childItems.size()) {
+      PL_WARN << "Setting branch size mismatch " << itemData.id_ << " idx " << itemData.index;
+//      for (int i=0; i <  childItems.size(); ++i)
+//        delete childItems.takeAt(i);
+
+      qDeleteAll(childItems);
       childItems.resize(itemData.branches.size());
       for (int i=0; i < itemData.branches.size(); ++i)
         childItems[i] = new TreeItem(itemData.branches.get(i), this);
     } else {
-      for (int i=0; i < itemData.branches.size(); ++i)
-        childItems[i]->eat_data(itemData.branches.get(i));
-    }
-  }
+      for (int i=0; i < itemData.branches.size(); ++i) {
+        Gamma::Setting s = itemData.branches.get(i);
+        if (childItems[i]->itemData.id_ == s.id_)
+          childItems[i]->eat_data(itemData.branches.get(i));
+        else {
+          delete childItems.takeAt(i);
+          childItems[i] = new TreeItem(itemData.branches.get(i), this);
+        }
+      }
+    }*/
 }
 
 TreeItem::~TreeItem()
 {
+  parentItem == nullptr;
   qDeleteAll(childItems);
 }
 
@@ -89,10 +108,26 @@ int TreeItem::columnCount() const
 QVariant TreeItem::display_data(int column) const
 {
   if (column == 0) {
+    QString name;
     if (!itemData.metadata.name.empty())
-      return QString::fromStdString(itemData.metadata.name);
+      name = QString::fromStdString(itemData.metadata.name);
     else
-      return QString::fromStdString(itemData.id_);
+      name = QString::fromStdString(itemData.id_);
+
+    if ((itemData.metadata.setting_type == Gamma::SettingType::stem)
+        || (itemData.metadata.setting_type == Gamma::SettingType::detector)) {
+      if (itemData.index >= 0)
+        name += "  " + QString::number(itemData.index);
+      if (!itemData.indices.empty()) {
+        name += "  { ";
+        for (auto &q : itemData.indices)
+          name += QString::number(q) += " ";
+        name += "}";
+      }
+    }
+
+    return name;
+
   }
   else if ((column == 1) && (itemData.metadata.setting_type != Gamma::SettingType::none) && (itemData.metadata.setting_type != Gamma::SettingType::stem))
   {
@@ -213,7 +248,7 @@ Gamma::Setting TreeItem::rebuild() {
   Gamma::Setting root = itemData;
   root.branches.clear();
   for (int i=0; i < childCount(); i++)
-    root.branches.add(child(i)->rebuild());
+    root.branches.add_a(child(i)->rebuild());
   return root;
 }
 
@@ -239,8 +274,10 @@ bool TreeItem::setData(int column, const QVariant &value)
   if (((itemData.metadata.setting_type == Gamma::SettingType::integer) ||
        (itemData.metadata.setting_type == Gamma::SettingType::binary) ||
        (itemData.metadata.setting_type == Gamma::SettingType::int_menu))
-      && (value.canConvert(QMetaType::LongLong)))
+      && (value.canConvert(QMetaType::LongLong))) {
+    //PL_DBG << "int = " << value.toLongLong();
     itemData.value_int = value.toLongLong();
+  }
   else if ((itemData.metadata.setting_type == Gamma::SettingType::boolean)
       && (value.type() == QVariant::Bool))
     itemData.value_int = value.toBool();
@@ -405,10 +442,31 @@ QModelIndex TreeSettings::parent(const QModelIndex &index) const
     return QModelIndex();
 
   TreeItem *childItem = getItem(index);
+
+  if (!childItem)
+    return QModelIndex();
+
+  if (childItem == 0x0)
+    return QModelIndex();
+
   TreeItem *parentItem = childItem->parent();
 
   if (parentItem == rootItem)
     return QModelIndex();
+
+  if (!parentItem)
+    return QModelIndex();
+
+  if (parentItem == 0x0)
+    return QModelIndex();
+
+  //PL_DBG << parentItem;
+
+  //PL_DBG << "Index r" << index.row() << " c" << index.column() << " d=";
+  if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
+    Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+//    PL_DBG << "id=" << set.id_;
+  }
 
   return createIndex(parentItem->childNumber(), 0, parentItem);
 }
@@ -445,6 +503,7 @@ bool TreeSettings::setData(const QModelIndex &index, const QVariant &value, int 
 
   if (result) {
     Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+    //PL_DBG << "set.int = " << set.value_int;
     data_ = rootItem->rebuild();
 
     emit dataChanged(index, index);
@@ -483,10 +542,14 @@ void TreeSettings::update(const Gamma::Setting &data) {
   data_ = data;
   data_.cull_invisible();
   if (!show_read_only_) {
-//    PL_DBG << "Culling read only";
-//    data_.cull_readonly();
+    PL_DBG << "Culling read only";
+    data_.cull_readonly();
   }
-  rootItem->eat_data(data_);
+
+  if (!rootItem->eat_data(data_)) {
+    delete rootItem;
+    rootItem = new TreeItem(data_);
+  }
 
   emit layoutChanged();
 }

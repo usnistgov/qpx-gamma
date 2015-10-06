@@ -70,6 +70,9 @@ void FormPixieSettings::update(const Gamma::Setting &tree, const std::vector<Gam
   dev_settings_ = tree;
   channels_ = channels;
 
+  viewTreeSettings->clearSelection();
+  //viewTableSettings->clearSelection();
+
   tree_settings_model_.update(dev_settings_);
   table_settings_model_.update(channels_);
 
@@ -100,7 +103,7 @@ void FormPixieSettings::push_from_table(int chan, Gamma::Setting setting) {
 
   emit statusText("Updating settings...");
   emit toggleIO(false);
-  runner_thread_.do_set_setting(setting, false);
+  runner_thread_.do_set_setting(setting, Gamma::Match::id | Gamma::Match::indices);
 }
 
 void FormPixieSettings::chose_detector(int chan, std::string name) {
@@ -175,9 +178,14 @@ void FormPixieSettings::saveSettings() {
       continue;
     Gamma::Detector det = detectors_.get(q);
     if (det != Gamma::Detector()) {
-      for (auto &p : q.settings_.branches.my_data_)
-        if (p.metadata.writable)
+      for (auto &p : q.settings_.branches.my_data_) {
+        if (p.metadata.writable) {
           det.settings_.branches.replace(p);
+        }
+      }
+      if (!det.settings_.branches.empty())
+        det.settings_.metadata.setting_type = Gamma::SettingType::stem;
+      det.settings_.strip_metadata();
       detectors_.replace(det);
     }
   }
@@ -240,6 +248,9 @@ void FormPixieSettings::on_pushDetDB_clicked()
 
 void FormPixieSettings::on_checkShowRO_clicked()
 {
+  //viewTreeSettings->clearSelection();
+  //viewTableSettings->clearSelection();
+
   table_settings_model_.set_show_read_only(ui->checkShowRO->isChecked());
   table_settings_model_.update(channels_);
 

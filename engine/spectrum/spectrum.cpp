@@ -197,8 +197,8 @@ void Spectrum::addRun(const RunInfo& run_info) {
   double scale_factor = run_info.time_scale_factor();
   metadata_.live_time = metadata_.real_time;
   for (int i = 0; i < metadata_.add_pattern.size(); i++) { //using shortest live time of all added channels
-    double live = run_info.state.get_setting(Gamma::Setting("Pixie4/System/module/channel/LIVE_TIME", 26, Gamma::SettingType::floating, i)).value_dbl;
-    double sfdt = run_info.state.get_setting(Gamma::Setting("Pixie4/System/module/channel/SFDT", 34, Gamma::SettingType::floating, i)).value_dbl;
+    double live = run_info.state.get_setting(Gamma::Setting("Pixie4/System/module/channel/LIVE_TIME", i), Gamma::Match::id | Gamma::Match::indices).value_dbl;
+    double sfdt = run_info.state.get_setting(Gamma::Setting("Pixie4/System/module/channel/SFDT", i), Gamma::Match::id | Gamma::Match::indices).value_dbl;
     double this_time_unscaled =live - sfdt;
     if ((metadata_.add_pattern[i]) && (this_time_unscaled <= metadata_.live_time.total_seconds()))
       metadata_.live_time = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));
@@ -359,79 +359,6 @@ void Spectrum::set_generic_attr(Gamma::Setting setting) {
 //Save and load//////
 /////////////////////
 
-void Spectrum::to_xml(tinyxml2::XMLPrinter& printer) const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-
-  std::stringstream patterndata;
-  
-  printer.OpenElement("PixieSpectrum");
-  printer.PushAttribute("type", this->my_type().c_str());
-
-  printer.OpenElement("TotalEvents");
-  printer.PushText(metadata_.total_count.str().c_str());
-  printer.CloseElement();
-
-  printer.OpenElement("Name");
-  printer.PushText(metadata_.name.c_str());
-  printer.CloseElement();
-
-  printer.OpenElement("Appearance");
-  printer.PushText(std::to_string(metadata_.appearance).c_str());
-  printer.CloseElement();
-
-  printer.OpenElement("Visible");
-  printer.PushText(std::to_string(metadata_.visible).c_str());
-  printer.CloseElement();
-
-  printer.OpenElement("Resolution");
-  printer.PushText(std::to_string(metadata_.bits).c_str());
-  printer.CloseElement();
-
-  printer.OpenElement("MatchPattern");
-  for (auto &q: metadata_.match_pattern)
-    patterndata << static_cast<short>(q) << " ";
-  printer.PushText(boost::algorithm::trim_copy(patterndata.str()).c_str());
-  printer.CloseElement();
-
-  patterndata.str(std::string()); //clear it
-  printer.OpenElement("AddPattern");
-  for (auto &q: metadata_.add_pattern)
-    patterndata << static_cast<short>(q) << " ";
-  printer.PushText(boost::algorithm::trim_copy(patterndata.str()).c_str());
-  printer.CloseElement();
-  
-  printer.OpenElement("RealTime");
-  printer.PushText(to_simple_string(metadata_.real_time).c_str());
-  printer.CloseElement();
-
-  printer.OpenElement("LiveTime");
-  printer.PushText(to_simple_string(metadata_.live_time).c_str());
-  printer.CloseElement();
-
-  if (metadata_.attributes.size()) {
-    printer.OpenElement("GenericAttributes");
-    for (auto &q: metadata_.attributes.my_data_)
-      q.to_xml(printer);
-    printer.CloseElement();
-  }
-
-  if (metadata_.detectors.size()) {
-    printer.OpenElement("Detectors");
-    for (auto q : metadata_.detectors) {
-      q.settings_ = Gamma::Setting();
-      q.to_xml(printer);
-    }
-    printer.CloseElement();
-  }
-
-  printer.OpenElement("ChannelData");
-  if ((metadata_.resolution > 0) && (metadata_.total_count > 0))
-    printer.PushText(this->_channels_to_xml().c_str());
-  printer.CloseElement();
-
-  printer.CloseElement(); //PixieSpectrum
-}
-
 void Spectrum::to_xml(pugi::xml_node &root) const {
   boost::shared_lock<boost::shared_mutex> lock(mutex_);
 
@@ -474,88 +401,6 @@ void Spectrum::to_xml(pugi::xml_node &root) const {
 }
 
 
-bool Spectrum::from_xml(tinyxml2::XMLElement* root) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
-  while (!uniqueLock.try_lock())
-    boost::this_thread::sleep_for(boost::chrono::seconds{1});
-
-  std::string numero;
-
-  tinyxml2::XMLElement* elem;
-
-  if ((elem = root->FirstChildElement("Name")) != nullptr)
-    metadata_.name = elem->GetText();
-  else
-    return false;
-  
-  if ((elem = root->FirstChildElement("TotalEvents")) != nullptr)
-    metadata_.total_count = PreciseFloat(elem->GetText());
-  if ((elem = root->FirstChildElement("Appearance")) != nullptr)
-    metadata_.appearance = boost::lexical_cast<unsigned int>(std::string(elem->GetText()));
-  if ((elem = root->FirstChildElement("Visible")) != nullptr)
-    metadata_.visible = boost::lexical_cast<bool>(std::string(elem->GetText()));
-  if ((elem = root->FirstChildElement("Resolution")) != nullptr) 
-    metadata_.bits = boost::lexical_cast<short>(std::string(elem->GetText()));
-  else
-    return false;
-  
-  shift_by_ = 16 - metadata_.bits;
-  metadata_.resolution = pow(2, metadata_.bits);
-  metadata_.match_pattern.clear();
-  metadata_.add_pattern.clear();
-  
-  if ((elem = root->FirstChildElement("MatchPattern")) != nullptr) {
-    std::stringstream pattern_match(elem->GetText());
-    while (pattern_match.rdbuf()->in_avail()) {
-      pattern_match >> numero;
-      metadata_.match_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
-    }
-  }
-  if ((elem = root->FirstChildElement("AddPattern")) != nullptr) {
-    std::stringstream pattern_add(elem->GetText());
-    while (pattern_add.rdbuf()->in_avail()) {
-      pattern_add >> numero;
-      metadata_.add_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
-    }
-  }
-  
-  if ((elem = root->FirstChildElement("RealTime")) != nullptr)
-    metadata_.real_time = boost::posix_time::duration_from_string(elem->GetText());
-  if ((elem = root->FirstChildElement("LiveTime")) != nullptr)
-    metadata_.live_time = boost::posix_time::duration_from_string(elem->GetText());
-  if ((elem = root->FirstChildElement("GenericAttributes")) != nullptr) {
-    metadata_.attributes.clear();
-    tinyxml2::XMLElement* one_setting = elem->FirstChildElement("Setting");
-    while (one_setting != nullptr) {
-      metadata_.attributes.add(Gamma::Setting(one_setting));
-      one_setting = dynamic_cast<tinyxml2::XMLElement*>(one_setting->NextSibling());
-    }
-  }
-
-  if ((elem = root->FirstChildElement("Detectors")) != nullptr) {
-    metadata_.detectors.clear();
-    tinyxml2::XMLElement* one_det = elem->FirstChildElement(Gamma::Detector().xml_element_name().c_str());
-    while (one_det != nullptr) {
-      metadata_.detectors.push_back(Gamma::Detector(one_det));
-      one_det = dynamic_cast<tinyxml2::XMLElement*>(one_det->NextSibling());
-    }
-  }
-
-  if (((elem = root->FirstChildElement("ChannelData")) != nullptr) &&
-      (elem->GetText() != nullptr)) {
-    std::string this_data = elem->GetText();
-    boost::algorithm::trim(this_data);
-    this->_channels_from_xml(this_data);
-  }
-
-  bool ret = this->initialize();
-
-  if (ret)
-   this->recalc_energies();
-
-  return ret;
-}
-
 bool Spectrum::from_xml(const pugi::xml_node &node) {
   if (std::string(node.name()) != "Spectrum")
     return false;
@@ -569,15 +414,11 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
   if (!node.child("Name"))
     return false;
   metadata_.name = std::string(node.child_value("Name"));
-  PL_DBG << "name: " << metadata_.name;
 
   metadata_.total_count = PreciseFloat(node.child_value("TotalEvents"));
   metadata_.appearance = boost::lexical_cast<unsigned int>(std::string(node.child_value("Appearance")));
   metadata_.visible = boost::lexical_cast<bool>(std::string(node.child_value("Visible")));
   metadata_.bits = boost::lexical_cast<short>(std::string(node.child_value("Resolution")));
-
-  PL_DBG << "totalct: " << metadata_.total_count;
-  PL_DBG << "bits: " << metadata_.bits;
 
   if ((!metadata_.bits) || (metadata_.total_count == 0))
     return false;
@@ -590,14 +431,12 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
   std::stringstream pattern_match(node.child_value("MatchPattern"));
   while (pattern_match.rdbuf()->in_avail()) {
     pattern_match >> numero;
-    PL_DBG << "match " << numero;
     metadata_.match_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
   }
 
   std::stringstream pattern_add(node.child_value("AddPattern"));
   while (pattern_add.rdbuf()->in_avail()) {
     pattern_add >> numero;
-    PL_DBG << "add " << numero;
     metadata_.add_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
   }
 
@@ -606,23 +445,14 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
   if (node.child("LiveTime"))
     metadata_.live_time = boost::posix_time::duration_from_string(node.child_value("LiveTime"));
 
-  PL_DBG << "rt " << to_simple_string(metadata_.real_time);
-  PL_DBG << "lt " << to_simple_string(metadata_.live_time);
-
   metadata_.attributes.from_xml(node.child(metadata_.attributes.xml_element_name().c_str()));
 
   XMLable2DB<Gamma::Detector> dets("Detectors");
   dets.from_xml(node.child("Detectors"));
-  PL_DBG << "dets " << dets.size();
-  for (auto &q : dets.my_data_)
-    PL_DBG << "det " << q.name_;
-
   metadata_.detectors = dets.to_vector();
-  PL_DBG << "dets " << metadata_.detectors.size();
 
   std::string this_data(node.child_value("ChannelData"));
   boost::algorithm::trim(this_data);
-  PL_DBG << "data length " << this_data.size();
   this->_channels_from_xml(this_data);
 
   bool ret = this->initialize();

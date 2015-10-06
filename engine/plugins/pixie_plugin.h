@@ -24,7 +24,6 @@
 #define PIXIE_PLUGIN
 
 #include "daq_device.h"
-#include "tinyxml2.h"
 #include "detector.h"
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
@@ -42,13 +41,14 @@ class Plugin : public DaqDevice {
   
 public:
 
-  Plugin(std::string file);
+  Plugin();
+//  Plugin(std::string file);
   Plugin(const Plugin& other);      //sets state to history if copied
   ~Plugin();
 
-  std::string plugin_name() override {return "Pixie4";}
-  
-  //Overrides
+  static std::string plugin_name() {return "Pixie4";}
+  std::string device_name() override {return plugin_name();}
+
   bool write_settings_bulk(Gamma::Setting &set) override;
   bool read_settings_bulk(Gamma::Setting &set) const override;
   void get_all_settings() override;
@@ -62,10 +62,6 @@ public:
   bool daq_stop() override;
   bool daq_running() override;
 
-  //DEPRECATE//
-  void from_xml_legacy(tinyxml2::XMLElement* root, std::vector<Gamma::Detector>& dets);
-  void to_xml(tinyxml2::XMLPrinter&, std::vector<Gamma::Detector> dets) const;
-
 private:
   //Acquisition threads, use as static functors
   static void worker_parse(Plugin* callback, SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue);
@@ -76,12 +72,10 @@ private:
 protected:
 
   std::string setting_definitions_file_;
+  void rebuild_structure(Gamma::Setting &set);
 
   void fill_stats(std::list<StatsUpdate>&, uint8_t module);
   void reset_counters_next_run();
-
-  //DEPRECATE//
-  std::vector<Gamma::Detector> from_xml(tinyxml2::XMLElement*);
 
   boost::atomic<int> run_status_;
   boost::thread *runner_;

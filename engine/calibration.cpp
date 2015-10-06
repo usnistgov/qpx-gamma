@@ -119,37 +119,6 @@ std::string Calibration::to_string()
 }
 
 
-void Calibration::to_xml(tinyxml2::XMLPrinter& printer) const {
-
-  printer.OpenElement("Calibration");
-  printer.PushAttribute("Type", type_.c_str());
-  if (type_ == "Energy")
-    printer.PushAttribute("EnergyUnits", units_.c_str());
-  else if (type_ == "Gain") {
-    printer.PushAttribute("To", to_.c_str());    
-  }
-  if (bits_ > 0)
-    printer.PushAttribute("ResolutionBits", std::to_string(bits_).c_str());
-
-  printer.OpenElement("CalibrationCreationDate");
-  printer.PushText(to_iso_extended_string(calib_date_).c_str());
-  printer.CloseElement();
-
-  printer.OpenElement("Equation");
-  std::string  model_str = "undefined";
-  if (model_ == CalibrationModel::polynomial)
-    model_str = "Polynomial";
-  printer.PushAttribute("Model", model_str.c_str());
-
-  if ((model_ != CalibrationModel::none) && (coefficients_.size())){
-    printer.OpenElement("Coefficients");
-    printer.PushText(coef_to_string().c_str());
-    printer.CloseElement(); // Coeff
-  }
-  printer.CloseElement(); // Equation
-  printer.CloseElement(); //Calibration
-}
-
 void Calibration::to_xml(pugi::xml_node &root) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
@@ -173,41 +142,6 @@ void Calibration::to_xml(pugi::xml_node &root) const {
     node.last_child().append_child("Coefficients").append_child(pugi::node_pcdata).set_value(coef_to_string().c_str());
  }
 
-
-void Calibration::from_xml(tinyxml2::XMLElement* root) {
-  boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
-  tif->set_iso_extended_format();
-  std::stringstream iss;
-  
-  type_ = std::string(root->Attribute("Type"));
-  if (type_ == "Energy")
-    units_ = std::string(root->Attribute("EnergyUnits"));
-  else if (type_ == "Gain") {
-    to_ = std::string(root->Attribute("To"));    
-  }
-  if (root->Attribute("ResolutionBits"))
-    bits_ = boost::lexical_cast<short>(root->Attribute("ResolutionBits"));
-  
-  tinyxml2::XMLElement* DateData = root->FirstChildElement("CalibrationCreationDate");
-  if (DateData != NULL) {
-    iss << std::string(DateData->GetText());
-    iss.imbue(std::locale(std::locale::classic(), tif));
-    iss >> calib_date_;
-  }
-
-  tinyxml2::XMLElement* EqnData = root->FirstChildElement("Equation");
-  if (EqnData != NULL) {
-    std::string model_str = std::string(EqnData->Attribute("Model"));
-    if (model_str == "Polynomial")
-      model_ = CalibrationModel::polynomial;
-  }
-
-  tinyxml2::XMLElement* CoefData = EqnData->FirstChildElement("Coefficients");
-  if ((CoefData != NULL) && (CoefData->GetText() !=  NULL)) {
-    coef_from_string(std::string(CoefData->GetText()));
-  }
-  
-}
 
 void Calibration::from_xml(const pugi::xml_node &node) {
   boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;

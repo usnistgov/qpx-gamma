@@ -30,7 +30,7 @@ namespace Qpx {
     if (!doc.load_file(file.c_str()))
       return false;
 
-    pugi::xml_node root = doc.child(this->plugin_name().c_str());
+    pugi::xml_node root = doc.first_child();
     if (!root)
       return false;
 
@@ -49,7 +49,7 @@ namespace Qpx {
     pugi::xml_document doc;
 
     pugi::xml_node root = doc.append_child();
-    root.set_name(this->plugin_name().c_str());
+    root.set_name("SettingDefinitions");
     for (auto &q : setting_definitions_)
       q.second.to_xml(root);
 

@@ -118,40 +118,7 @@ void FormStart::loadSettings() {
 
   QString filename = data_directory_ + "/qpx_settings.set";
 
-  pugi::xml_document doc;
-  if (!doc.load_file(filename.toStdString().c_str()))
-    return;
-
-  pugi::xml_node root = doc.child(Gamma::Setting().xml_element_name().c_str());
-  if (!root)
-    return;
-
-  Gamma::Setting dev_settings(root);
-  if (dev_settings != Gamma::Setting()) {
-    dev_settings.value_int = int(Qpx::LiveStatus::dead);
-    runner_thread_.do_push_settings(dev_settings);
-  }
-
-  return;
-
-  FILE* myfile;
-  myfile = fopen (filename.toStdString().c_str(), "r");
-  if (myfile != nullptr) {
-    tinyxml2::XMLDocument docx;
-    docx.LoadFile(myfile);
-    tinyxml2::XMLElement* root = docx.FirstChildElement(Gamma::Setting().xml_element_name().c_str());
-    if (root != nullptr) {
-      dev_settings = Gamma::Setting(root);
-    }
-    fclose(myfile);
-  }
-
-  //PL_DBG << "dev_settings = " << dev_settings.id_ << " with " << dev_settings.branches.size();
-
-  if (dev_settings != Gamma::Setting()) {
-    dev_settings.value_int = int(Qpx::LiveStatus::dead);
-    runner_thread_.do_push_settings(dev_settings);
-  }
+  runner_thread_.do_initialize(filename);
 }
 
 void FormStart::saveSettings() {
@@ -168,20 +135,5 @@ void FormStart::saveSettings() {
   if (doc.save_file(filename.toStdString().c_str()));
     PL_DBG << "successful save";
 
-
-  return;
-
-
-  if (dev_settings != Gamma::Setting()) {
-    FILE* myfile;
-    myfile = fopen (filename.toStdString().c_str(), "w");
-    if (myfile != nullptr) {
-      tinyxml2::XMLPrinter printer(myfile);
-      printer.PushHeader(true, true);
-      dev_settings.condense();
-      dev_settings.to_xml(printer);
-      fclose(myfile);
-    }
-  }
 }
 

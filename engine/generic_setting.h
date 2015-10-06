@@ -27,9 +27,8 @@
 #include <string>
 #include <map>
 #include <set>
-#include "tinyxml2.h"
-#include "xmlable.h"
 #include "pugixml.hpp"
+#include "xmlable2.h"
 
 
 namespace Gamma {
@@ -52,11 +51,23 @@ enum class SettingType : int {none,
                               command,
                              };
 
+enum Match {
+  id      = 1 << 0,
+  name    = 1 << 1,
+  address = 1 << 2,
+  index   = 1 << 3,
+  indices = 1 << 4
+};
+
+
+inline Match operator|(Match a, Match b) {return static_cast<Match>(static_cast<int>(a) | static_cast<int>(b));}
+inline Match operator&(Match a, Match b) {return static_cast<Match>(static_cast<int>(a) & static_cast<int>(b));}
+
 
 SettingType to_type(const std::string &type);
 std::string to_string(SettingType);
 
-struct SettingMeta : public XMLable, public XMLable2 {
+struct SettingMeta : public XMLable2 {
 
   std::string        id_;
   SettingType        setting_type;
@@ -74,7 +85,6 @@ struct SettingMeta : public XMLable, public XMLable2 {
 
   SettingMeta(const pugi::xml_node &node) : SettingMeta() {this->from_xml(node);}
   SettingMeta() : setting_type(SettingType::none), writable(false), visible(true), saveworthy(true), address(0), minimum(0), maximum(0), step(0) {}
-  SettingMeta(tinyxml2::XMLElement* element) : SettingMeta() {this->from_xml(element);}
 
   std::string xml_element_name() const {return "SettingMeta";}
 
@@ -108,9 +118,6 @@ struct SettingMeta : public XMLable, public XMLable2 {
     return (operator!=(this->stripped()));
   }
 
-  void from_xml(tinyxml2::XMLElement* element);
-  void to_xml(tinyxml2::XMLPrinter& printer) const;
-
   void from_xml(const pugi::xml_node &node);
   void to_xml(pugi::xml_node &node) const;
 
@@ -125,7 +132,7 @@ struct SettingMeta : public XMLable, public XMLable2 {
 
 struct Setting;
 
-struct Setting : public XMLable, public XMLable2 {
+struct Setting : public XMLable2 {
   std::string       id_;
 
   int32_t           index;
@@ -143,15 +150,10 @@ struct Setting : public XMLable, public XMLable2 {
   Setting() : branches("branches"), index(-1), value_dbl(0.0), value_int(0) {}
   
   Setting(const pugi::xml_node &node) : Setting() {this->from_xml(node);}
-
-  Setting(tinyxml2::XMLElement* element) : Setting() {this->from_xml(element);}
   
   Setting(std::string id) : Setting() {id_ = id;} //BAD
-  Setting(std::string id, uint16_t addy, SettingType tp, int32_t idx) : Setting() {
+  Setting(std::string id, int32_t idx) : Setting() {
     id_ = id;
-    metadata.id_ = id;
-    metadata.address = addy;
-    metadata.setting_type = tp;
     index = idx;
   } //BAD
   Setting(SettingMeta meta, int32_t idx) : Setting() {
@@ -165,7 +167,8 @@ struct Setting : public XMLable, public XMLable2 {
   bool shallow_equals(const Setting& other) const {
     return (id_ == other.id_);
   }
-  
+  bool compare(const Setting &other, Gamma::Match flags) const;
+
   bool operator!= (const Setting& other) const {return !operator==(other);}
   bool operator== (const Setting& other) const {
     if (id_ != other.id_) return false;
@@ -178,16 +181,26 @@ struct Setting : public XMLable, public XMLable2 {
 //    if (metadata != other.metadata) return false;
     return true;
   }
-  
-  void from_xml(tinyxml2::XMLElement* element);
-  void to_xml(tinyxml2::XMLPrinter& printer) const;
 
+  friend std::ostream & operator << (std::ostream &os, Setting s) {
+      os << s.id_ << "(i" << s.index << ", a" << s.metadata.address << ")="
+         << s.value_int  << "/"
+         << s.value_dbl  << "/"
+         << s.value_text << std::endl;
+      for (auto &q : s.branches.my_data_)
+        os << "__" << q;
+      return os;
+  }
+  
   void from_xml(const pugi::xml_node &node) override;
   void to_xml(pugi::xml_node &node, bool with_metadata) const;
   void to_xml(pugi::xml_node &node) const override {this->to_xml(node, false);}
 
-  Gamma::Setting get_setting(Gamma::Setting address, bool precise_index = false) const; //BAD
-  bool retrieve_one_setting(Gamma::Setting&, const Gamma::Setting&, bool precise_index = false) const; //BAD
+  Gamma::Setting get_setting(Gamma::Setting address, Match flags) const;
+  bool retrieve_one_setting(Gamma::Setting&, const Gamma::Setting&, Match flags) const;
+
+  void del_setting(Gamma::Setting address, Match flags);
+  void delete_one_setting(const Gamma::Setting&, Gamma::Setting&, Match flags);
 
   void condense();
   void cull_invisible();

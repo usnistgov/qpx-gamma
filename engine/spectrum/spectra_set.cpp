@@ -27,7 +27,6 @@
 #include <set>
 #include "spectra_set.h"
 #include "custom_logger.h"
-#include "qpx_settings.h"
 
 namespace Qpx {
 
@@ -226,45 +225,8 @@ void SpectraSet::add_spill(Spill* one_spill) {
   cond_.notify_one();
 }
 
+
 void SpectraSet::write_xml(std::string file_name) {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-
-  FILE* myfile;
-  myfile = fopen (file_name.c_str(), "w");
-  if (myfile == nullptr)
-    return;
-
-  tinyxml2::XMLPrinter printer(myfile);
-  printer.PushHeader(true, true);
-  
-  printer.OpenElement("QpxAcquisition");
-  
-  printer.OpenElement("Run");
-  printer.PushAttribute("time_start",                       boost::posix_time::to_iso_extended_string(run_info_.time_start).c_str());
-  printer.PushAttribute("time_stop",                       boost::posix_time::to_iso_extended_string(run_info_.time_stop).c_str());
-  printer.PushAttribute("total_events", std::to_string(run_info_.total_events).c_str());
-  printer.CloseElement();  
-
-  run_info_.state.to_xml(printer);
-
-  printer.OpenElement("Spectra");
-  for (auto &q : my_spectra_)
-    q->to_xml(printer);
-  printer.CloseElement();
-
-  printer.CloseElement(); //QpxAcquisition
-
-  fclose(myfile);
-
-  status_ = file_name;
-  ready_ = true;
-  newdata_ = true;
-  terminating_ = false;
-  cond_.notify_one();
-
-}
-
-void SpectraSet::write_xml2(std::string file_name) {
   boost::unique_lock<boost::mutex> lock(mutex_);
 
   pugi::xml_document doc;
@@ -289,86 +251,7 @@ void SpectraSet::write_xml2(std::string file_name) {
 
 }
 
-void SpectraSet::read_xml(std::string file_name, bool with_spectra, Gamma::Setting tree) {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  clear_helper();
-  
-  FILE* myfile;
-  myfile = fopen (file_name.c_str(), "r");
-  if (myfile == nullptr)
-    return;
-  
-  tinyxml2::XMLDocument docx;
-  docx.LoadFile(myfile);
-
-  boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
-  tif->set_iso_extended_format();
-  std::stringstream iss;
-
-  tinyxml2::XMLElement* root = docx.FirstChildElement("QpxAcquisition");
-  if (root == nullptr) return;
-
-  tinyxml2::XMLElement* elem;
-
-  if ((elem = root->FirstChildElement("Run")) != nullptr) {
-    if (elem->Attribute("time_start")) {
-      iss << elem->Attribute("time_start");
-      iss.imbue(std::locale(std::locale::classic(), tif));
-      iss >> run_info_.time_start;
-    }
-    if (elem->Attribute("time_stop")) {
-      iss << elem->Attribute("time_stop");
-      iss.imbue(std::locale(std::locale::classic(), tif));
-      iss >> run_info_.time_stop;
-    }
-    if (elem->Attribute("total_events"))
-      run_info_.total_events = boost::lexical_cast<uint64_t>(elem->Attribute("total_events"));
-  }
-
-  if ((elem = root->FirstChildElement("PixieSettings")) != nullptr) { //backwards compatibility
-    PL_DBG << "Loading PixieSettings";
-    Qpx::Settings sets(elem, tree);
-    sets.save_optimization();
-    run_info_.state = sets.pull_settings();
-    run_info_.detectors = sets.get_detectors();
-  } else if ((elem = root->FirstChildElement("Setting")) != nullptr) {
-    run_info_.state = Gamma::Setting(elem);
-    //run_info_.state.save_optimization();
-  }
-
-  if (!with_spectra) {
-    fclose(myfile);
-    return;
-  }
-  
-  if ((elem = root->FirstChildElement("Spectra")) != nullptr) {
-    Spill fake_spill;
-    fake_spill.run = new RunInfo(run_info_);
-
-    tinyxml2::XMLElement* one_spectrum = elem->FirstChildElement("PixieSpectrum");
-    while (one_spectrum != nullptr) {
-      Spectrum::Spectrum* new_spectrum
-          = Spectrum::Factory::getInstance().create_from_xml(one_spectrum);
-      if (new_spectrum == nullptr)
-        PL_INFO << "Could not parse spectrum";
-      else {
-        new_spectrum->addSpill(fake_spill);
-        my_spectra_.push_back(new_spectrum);
-      }
-      one_spectrum = dynamic_cast<tinyxml2::XMLElement*>(one_spectrum->NextSibling());
-    }
-    delete fake_spill.run;
-  }
-  
-  fclose(myfile);
-  status_ = file_name;
-  ready_ = true;
-  newdata_ = true;
-  terminating_ = false;
-  cond_.notify_one();
-}
-
-void SpectraSet::read_xml2(std::string file_name, bool with_spectra) {
+void SpectraSet::read_xml(std::string file_name, bool with_spectra) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
 
@@ -391,7 +274,6 @@ void SpectraSet::read_xml2(std::string file_name, bool with_spectra) {
     fake_spill.run = new RunInfo(run_info_);
 
     for (pugi::xml_node &child : root.child("Spectra").children()) {
-      PL_DBG << "child name " << child.name();
       Spectrum::Spectrum* new_spectrum
           = Spectrum::Factory::getInstance().create_from_xml(child);
       if (new_spectrum == nullptr)
@@ -399,8 +281,6 @@ void SpectraSet::read_xml2(std::string file_name, bool with_spectra) {
       else {
         new_spectrum->addSpill(fake_spill);
         my_spectra_.push_back(new_spectrum);
-        PL_DBG << "loaded " << new_spectrum->name() << " with dets " << new_spectrum->metadata().detectors.size() << " and total "
-               << new_spectrum->metadata().total_count;
       }
     }
     delete fake_spill.run;

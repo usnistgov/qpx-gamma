@@ -34,8 +34,6 @@
 #include "table_settings.h"
 #include "tree_settings.h"
 
-#include "wrapper.h" //eliminate this
-
 namespace Ui {
 class FormPixieSettings;
 }

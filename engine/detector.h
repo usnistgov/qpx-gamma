@@ -28,13 +28,12 @@
 #include <vector>
 #include <string>
 #include <boost/date_time.hpp>
-#include "xmlable.h"
 #include "calibration.h"
 #include "generic_setting.h"
 
 namespace Gamma {
 
-class Detector : public XMLable, public XMLable2 {
+class Detector : public XMLable2 {
  public:
   Detector()
       : energy_calibrations_("Calibrations")
@@ -42,11 +41,11 @@ class Detector : public XMLable, public XMLable2 {
       , settings_("Optimization")
       , fwhm_calibration_("FWHM", 0)
       , name_("none")
-      , type_("none") {}
+      , type_("none")
+  {settings_.metadata.setting_type = SettingType::stem;}
   
-  Detector(tinyxml2::XMLElement* el) : Detector() {from_xml(el);}
-  Detector(std::string name) : Detector() {name_ = name;}
 
+  Detector(std::string name) : Detector() {name_ = name;}
   std::string xml_element_name() const override {return "Detector";}
   
   bool shallow_equals(const Detector& other) const {return (name_ == other.name_);}
@@ -60,11 +59,6 @@ class Detector : public XMLable, public XMLable2 {
     if (fwhm_calibration_ != other.fwhm_calibration_) return false;
     return true;
   }
-
-  void to_xml_options(tinyxml2::XMLPrinter&, bool options) const;
-
-  void to_xml(tinyxml2::XMLPrinter&) const;
-  void from_xml(tinyxml2::XMLElement*);
 
   void from_xml(const pugi::xml_node &) override;
   void to_xml(pugi::xml_node &) const override;

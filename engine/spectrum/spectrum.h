@@ -41,7 +41,6 @@
 #include "daq_types.h"
 #include "spectrum_template.h"
 #include "detector.h"
-#include "tinyxml2.h"
 #include "custom_logger.h"
 
 //put this somewhere else?
@@ -84,7 +83,6 @@ public:
 public:
   //named constructors, used by factory
   bool from_template(const Template&);
-  bool from_xml(tinyxml2::XMLElement*);
   bool from_xml(const pugi::xml_node &);
 
   //get count for specific MCA channel in spectrum
@@ -99,7 +97,6 @@ public:
   void add_bulk(const Entry&);
 
   //full save with custom format
-  void to_xml(tinyxml2::XMLPrinter&) const;
   void to_xml(pugi::xml_node &) const;
 
   //export to some format (factory keeps track of file types)
@@ -220,27 +217,10 @@ class Factory {
     }
   }
 
-  Spectrum* create_from_xml(tinyxml2::XMLElement* root)
-  {
-    if ((root == nullptr) || ((root->Attribute("type")) == nullptr))
-      return nullptr;
-    Spectrum* instance = create_type(root->Attribute("type"));
-    if (instance != nullptr) {
-      bool success = instance->from_xml(root);
-      if (success)
-        return instance;
-      else {
-        delete instance;
-        return nullptr;
-      }
-    }
-  }
-    
   Spectrum* create_from_xml(const pugi::xml_node &root)
   {
     if (std::string(root.name()) != "Spectrum")
       return nullptr;
-    PL_DBG << "will create spectrum " << root.attribute("type").value();
     if (!root.attribute("type"))
       return nullptr;
 
@@ -288,7 +268,7 @@ class Factory {
 
   void register_type(Template tt, std::function<Spectrum*(void)> typeConstructor)
   {
-    PL_INFO << "registering type " << tt.type;
+    PL_INFO << ">> registering spectrum type '" << tt.type << "'";
     constructors[tt.type] = typeConstructor;
     templates[tt.type] = tt;
     for (auto &q : tt.input_types)
