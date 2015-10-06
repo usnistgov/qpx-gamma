@@ -342,7 +342,7 @@ void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_de
       meta.address = index;
     metadata = meta;
     if (meta.setting_type == Gamma::SettingType::stem) {
-      XMLable2DB<Gamma::Setting> br = branches;
+      XMLableDB<Gamma::Setting> br = branches;
       branches.clear();
       for (auto &q : meta.int_menu_items) {
         if (setting_definitions.count(q.second) > 0) {
@@ -370,7 +370,7 @@ void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_de
 }
 
 void Setting::condense() {
-  XMLable2DB<Gamma::Setting> oldbranches = branches;
+  XMLableDB<Gamma::Setting> oldbranches = branches;
   branches.clear();
   for (int i=0; i < oldbranches.size(); ++i) {
     Gamma::Setting setting = oldbranches.get(i);
@@ -384,7 +384,7 @@ void Setting::condense() {
 }
 
 void Setting::cull_invisible() {
-  XMLable2DB<Gamma::Setting> oldbranches = branches;
+  XMLableDB<Gamma::Setting> oldbranches = branches;
   branches.clear();
   for (int i=0; i < oldbranches.size(); ++i) {
     Gamma::Setting setting = oldbranches.get(i);
@@ -399,7 +399,7 @@ void Setting::cull_invisible() {
 }
 
 void Setting::cull_readonly() {
-  XMLable2DB<Gamma::Setting> oldbranches = branches;
+  XMLableDB<Gamma::Setting> oldbranches = branches;
   branches.clear();
   for (int i=0; i < oldbranches.size(); ++i) {
     Gamma::Setting setting = oldbranches.get(i);

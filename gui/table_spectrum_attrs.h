@@ -29,7 +29,7 @@ class TableSpectrumAttrs : public QAbstractTableModel
 {
     Q_OBJECT
 private:
-    XMLable2DB<Gamma::Setting> *generic_attributes;
+    XMLableDB<Gamma::Setting> *generic_attributes;
 
 public:
     TableSpectrumAttrs(QObject *parent = 0);
@@ -40,7 +40,7 @@ public:
     Qt::ItemFlags flags(const QModelIndex & index) const;
     bool setData(const QModelIndex & index, const QVariant & value, int role);
 
-    void eat(XMLable2DB<Gamma::Setting> *generic_attr);
+    void eat(XMLableDB<Gamma::Setting> *generic_attr);
     void update();
 };
 

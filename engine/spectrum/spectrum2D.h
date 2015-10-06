@@ -22,8 +22,8 @@
  ******************************************************************************/
 
 
-#ifndef PIXIE_SPECTRUM2D_H
-#define PIXIE_SPECTRUM2D_H
+#ifndef SPECTRUM2D_H
+#define SPECTRUM2D_H
 
 #include "spectrum.h"
 #include <unordered_map>

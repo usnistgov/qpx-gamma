@@ -56,22 +56,12 @@ bool SpectrumRaw::initialize() {
 
 bool SpectrumRaw::init_text() {
   file_name_txt_ = file_dir_ + "/qpx_out.txt";
-
-  file_xml_ = fopen(file_name_txt_.c_str(), "w");
-  if (file_xml_ == nullptr)
-    return false;
-
-  xml_printer_ = new tinyxml2::XMLPrinter(file_xml_);
-  xml_printer_->PushHeader(true, true);
-
-  xml_printer_->OpenElement("QpxListData");
+  xml_root_ = xml_doc_.append_child("QpxListData");
 
   std::stringstream ss;
-  xml_printer_->OpenElement("MatchPattern");
   for (auto &q : metadata_.match_pattern)
     ss << q << " ";
-  xml_printer_->PushText(boost::algorithm::trim_copy(ss.str()).c_str());
-  xml_printer_->CloseElement();
+  xml_root_.append_child("MatchPattern").append_child(pugi::node_pcdata).set_value(boost::algorithm::trim_copy(ss.str()).c_str());
 
   open_xml_ = true;
   return true;
@@ -94,22 +84,14 @@ bool SpectrumRaw::init_bin() {
 
   PL_DBG << "binary is good";
 
-  xml_printer_->OpenElement("BinaryOut");
-
-  xml_printer_->OpenElement("FileName");
-  xml_printer_->PushText(file_name_bin_.c_str());
-  xml_printer_->CloseElement();
-
-  xml_printer_->OpenElement("FileFormat");
-  xml_printer_->PushText("CHANNEL_NUMBER  TIME_HI  TIME_MID  TIME_LOW  ENERGY");
-  xml_printer_->CloseElement();
-
-  xml_printer_->CloseElement();
+  xml_root_.append_child("BinaryOut");
+  xml_root_.last_child().append_child("FileName").append_child(pugi::node_pcdata).set_value(file_name_bin_.c_str());
+  xml_root_.last_child().append_child("FileFormat").append_child(pugi::node_pcdata).set_value("CHANNEL_NUMBER  TIME_HI  TIME_MID  TIME_LOW  ENERGY");
 
   open_bin_ = true;
   return true;
 
-  /*  std::string header("qpx_list/Pixie-4/");
+  /*  std::string header("qpx_list/");
   out_file_.write(header.data(), header.size());
   if (with_hit_pattern_) {
     std::string hp("with_pattern/");
@@ -154,9 +136,9 @@ void SpectrumRaw::addRun(const RunInfo& run) {
 
 void SpectrumRaw::_closeAcquisition() {
   if (open_xml_) {
-    PL_DBG << "<SpectrumRaw> closing " << file_name_txt_ << " for " << metadata_.name;
-    xml_printer_->CloseElement(); //QpxListData
-    fclose(file_xml_);
+    PL_DBG << "<SpectrumRaw> writing " << file_name_txt_ << " for " << metadata_.name;
+    if (!xml_doc_.save_file(file_name_txt_.c_str()))
+      PL_ERR << "<SpectrumRaw> Failed to save " << file_name_txt_;
     open_xml_ = false;
   }
   if (open_bin_) {
@@ -170,8 +152,11 @@ void SpectrumRaw::_closeAcquisition() {
 void SpectrumRaw::hit_text(const Event &newEvent) {
   if (!open_xml_)
     return;
-  //for (auto &q: newEvent.hit)
-//    q.second.to_xml(*xml_printer_);
+
+  //make hits ordered
+
+  for (auto &q: newEvent.hit)
+    q.second.to_xml(xml_root_);
 }
 
 void SpectrumRaw::hit_bin(const Event &newEvent) {
@@ -200,14 +185,14 @@ void SpectrumRaw::hit_bin(const Event &newEvent) {
 void SpectrumRaw::stats_text(const StatsUpdate& stats) {
   if (!open_xml_)
     return;
-  //stats.to_xml(*xml_printer_);
+  stats.to_xml(xml_root_);
 }
 
 
 void SpectrumRaw::run_text(const RunInfo& run) {
   if (!open_xml_)
     return;
-  //run.to_xml(*xml_printer_);
+  run.to_xml(xml_root_, true);
 }
 
 

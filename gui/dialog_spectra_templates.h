@@ -43,10 +43,10 @@ class TableSpectraTemplates : public QAbstractTableModel
 {
   Q_OBJECT
 private:
-  XMLable2DB<Qpx::Spectrum::Template> &templates_;
+  XMLableDB<Qpx::Spectrum::Template> &templates_;
 
 public:
-  TableSpectraTemplates(XMLable2DB<Qpx::Spectrum::Template>& templates, QObject *parent = 0);
+  TableSpectraTemplates(XMLableDB<Qpx::Spectrum::Template>& templates, QObject *parent = 0);
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
   int columnCount(const QModelIndex &parent = QModelIndex()) const;
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -97,13 +97,13 @@ class DialogSpectraTemplates : public QDialog
   Q_OBJECT
 
 public:
-  explicit DialogSpectraTemplates(XMLable2DB<Qpx::Spectrum::Template> &newdb, QString savedir, QWidget *parent = 0);
+  explicit DialogSpectraTemplates(XMLableDB<Qpx::Spectrum::Template> &newdb, QString savedir, QWidget *parent = 0);
   ~DialogSpectraTemplates();
 
 private:
   Ui::DialogSpectraTemplates *ui;
 
-  XMLable2DB<Qpx::Spectrum::Template> &templates_;
+  XMLableDB<Qpx::Spectrum::Template> &templates_;
 
   QpxSpecialDelegate      special_delegate_;
   TableSpectraTemplates         table_model_;

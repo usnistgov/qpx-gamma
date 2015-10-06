@@ -22,8 +22,8 @@
  *
  ******************************************************************************/
 
-#ifndef PIXIE_SPECTRA_SET_H
-#define PIXIE_SPECTRA_SET_H
+#ifndef SPECTRA_SET_H
+#define SPECTRA_SET_H
 
 #include <string>
 #include <list>
@@ -44,7 +44,7 @@ class SpectraSet {
   void terminate();   //explicitly in case other threads waiting for cond var
 
   //populate one of these ways
-  void set_spectra(const XMLable2DB<Spectrum::Template>&);
+  void set_spectra(const XMLableDB<Spectrum::Template>&);
   void add_spectrum(Spectrum::Spectrum* newSpectrum);
 
   void read_xml(std::string file_name, bool with_spectra = true);

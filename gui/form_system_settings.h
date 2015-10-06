@@ -20,8 +20,8 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_PIXIE_SETTINGS_H
-#define FORM_PIXIE_SETTINGS_H
+#ifndef FORM_SYSTEM_SETTINGS_H
+#define FORM_SYSTEM_SETTINGS_H
 
 #include <QWidget>
 #include <QSettings>
@@ -35,17 +35,17 @@
 #include "tree_settings.h"
 
 namespace Ui {
-class FormPixieSettings;
+class FormSystemSettings;
 }
 
-class FormPixieSettings : public QWidget
+class FormSystemSettings : public QWidget
 {
   Q_OBJECT
 
 public:
-  explicit FormPixieSettings(ThreadRunner&, XMLable2DB<Gamma::Detector>&, QSettings&, QWidget *parent = 0);
+  explicit FormSystemSettings(ThreadRunner&, XMLableDB<Gamma::Detector>&, QSettings&, QWidget *parent = 0);
   Gamma::Setting get_tree() {return dev_settings_;}
-  ~FormPixieSettings();
+  ~FormSystemSettings();
 
 public slots:
   void refresh();
@@ -80,9 +80,9 @@ private slots:
 
 
 private:
-  Ui::FormPixieSettings *ui;
+  Ui::FormSystemSettings *ui;
 
-  XMLable2DB<Gamma::Detector>            &detectors_;
+  XMLableDB<Gamma::Detector>            &detectors_;
   QString data_directory_;
 
   ThreadRunner        &runner_thread_;
@@ -104,4 +104,4 @@ private:
 
 };
 
-#endif // FORM_PIXIE_SETTINGS_H
+#endif // FORM_SYSTEM_SETTINGS_H

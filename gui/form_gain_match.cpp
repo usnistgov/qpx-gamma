@@ -27,7 +27,7 @@
 #include "fityk.h"
 
 
-FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLable2DB<Gamma::Detector>& detectors, QWidget *parent) :
+FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormGainMatch),
   gm_runner_thread_(thread),
@@ -194,7 +194,7 @@ void FormGainMatch::do_run()
   optimizing_.match_pattern.resize(ui->spinOptChan->value() + 1, 0);
   optimizing_.match_pattern[ui->spinOptChan->value()] = 1;
 
-  XMLable2DB<Qpx::Spectrum::Template> db("SpectrumTemplates");
+  XMLableDB<Qpx::Spectrum::Template> db("SpectrumTemplates");
   db.add(reference_);
   db.add(optimizing_);
 

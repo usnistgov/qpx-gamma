@@ -30,7 +30,7 @@
 
 #include "sorter.h"
 
-FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLable2DB<Gamma::Detector>& detectors, QWidget *parent) :
+FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   settings_(settings),
   spectra_templates_("SpectrumTemplates"),

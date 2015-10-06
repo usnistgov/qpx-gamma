@@ -27,7 +27,7 @@
 #include "fityk.h"
 #include "qt_util.h"
 
-FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XMLable2DB<Gamma::Detector>& detectors, QWidget *parent) :
+FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormOptimization),
   opt_runner_thread_(thread),
@@ -252,7 +252,7 @@ void FormOptimization::do_run()
   optimizing_.match_pattern[ui->spinOptChan->value()] = 1;
   optimizing_.appearance = generateColor().rgba();
 
-  XMLable2DB<Qpx::Spectrum::Template> db("SpectrumTemplates");
+  XMLableDB<Qpx::Spectrum::Template> db("SpectrumTemplates");
   db.add(optimizing_);
 
   current_spectra_.clear();

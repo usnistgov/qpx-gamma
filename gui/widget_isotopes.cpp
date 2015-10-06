@@ -325,7 +325,7 @@ QVariant TableGammas::headerData(int section, Qt::Orientation orientation, int r
 }
 
 
-void TableGammas::set_gammas(const XMLable2DB<RadTypes::Gamma> &newgammas) {
+void TableGammas::set_gammas(const XMLableDB<RadTypes::Gamma> &newgammas) {
   gammas_.clear();
   for (int i=0; i <newgammas.size(); ++i)
     gammas_.push_back(newgammas.get(i));
@@ -336,15 +336,15 @@ void TableGammas::set_gammas(const XMLable2DB<RadTypes::Gamma> &newgammas) {
   emit layoutChanged();
 }
 
-XMLable2DB<RadTypes::Gamma> TableGammas::get_gammas() {
-  XMLable2DB<RadTypes::Gamma> gammas("gammas");
+XMLableDB<RadTypes::Gamma> TableGammas::get_gammas() {
+  XMLableDB<RadTypes::Gamma> gammas("gammas");
   for (auto &q : gammas_)
     gammas.add(q);
   return gammas;
 }
 
 void TableGammas::clear() {
-  set_gammas(XMLable2DB<RadTypes::Gamma>("gammas"));
+  set_gammas(XMLableDB<RadTypes::Gamma>("gammas"));
   QModelIndex start_ix = createIndex( 0, 0 );
   QModelIndex end_ix = createIndex( (rowCount() - 1), (columnCount() - 1) );
   emit dataChanged( start_ix, end_ix );

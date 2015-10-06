@@ -24,14 +24,14 @@
 #include "ui_form_system_settings.h"
 #include "widget_detectors.h"
 
-FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLable2DB<Gamma::Detector>& detectors, QSettings& settings, QWidget *parent) :
+FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::Detector>& detectors, QSettings& settings, QWidget *parent) :
   QWidget(parent),
   runner_thread_(thread),
   detectors_(detectors),
   settings_(settings),
   tree_settings_model_(this),
   table_settings_model_(this),
-  ui(new Ui::FormPixieSettings)
+  ui(new Ui::FormSystemSettings)
 {
   ui->setupUi(this);
   connect(&runner_thread_, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>)), this, SLOT(update(Gamma::Setting, std::vector<Gamma::Detector>)));
@@ -66,7 +66,7 @@ FormPixieSettings::FormPixieSettings(ThreadRunner& thread, XMLable2DB<Gamma::Det
   loadSettings();
 }
 
-void FormPixieSettings::update(const Gamma::Setting &tree, const std::vector<Gamma::Detector> &channels) {
+void FormSystemSettings::update(const Gamma::Setting &tree, const std::vector<Gamma::Detector> &channels) {
   dev_settings_ = tree;
   channels_ = channels;
 
@@ -82,7 +82,7 @@ void FormPixieSettings::update(const Gamma::Setting &tree, const std::vector<Gam
   viewTableSettings->horizontalHeader()->setStretchLastSection(true);
 }
 
-void FormPixieSettings::push_settings() {
+void FormSystemSettings::push_settings() {
   dev_settings_ = tree_settings_model_.get_tree();
 
   emit statusText("Updating settings...");
@@ -90,7 +90,7 @@ void FormPixieSettings::push_settings() {
   runner_thread_.do_push_settings(dev_settings_);
 }
 
-void FormPixieSettings::execute_command() {
+void FormSystemSettings::execute_command() {
   dev_settings_ = tree_settings_model_.get_tree();
 
   emit statusText("Executing command...");
@@ -98,7 +98,7 @@ void FormPixieSettings::execute_command() {
   runner_thread_.do_execute_command(dev_settings_);
 }
 
-void FormPixieSettings::push_from_table(int chan, Gamma::Setting setting) {
+void FormSystemSettings::push_from_table(int chan, Gamma::Setting setting) {
   setting.index = chan;
 
   emit statusText("Updating settings...");
@@ -106,7 +106,7 @@ void FormPixieSettings::push_from_table(int chan, Gamma::Setting setting) {
   runner_thread_.do_set_setting(setting, Gamma::Match::id | Gamma::Match::indices);
 }
 
-void FormPixieSettings::chose_detector(int chan, std::string name) {
+void FormSystemSettings::chose_detector(int chan, std::string name) {
   Gamma::Detector det = detectors_.get(Gamma::Detector(name));
   PL_DBG << "det " <<  det.name_ << " with cali " << det.energy_calibrations_.size() << " has sets " << det.settings_.branches.size();
   for (auto &q : det.settings_.branches.my_data_)
@@ -118,20 +118,20 @@ void FormPixieSettings::chose_detector(int chan, std::string name) {
 }
 
 
-void FormPixieSettings::refresh() {
+void FormSystemSettings::refresh() {
 
   emit statusText("Updating settings...");
   emit toggleIO(false);
   runner_thread_.do_refresh_settings();
 }
 
-void FormPixieSettings::closeEvent(QCloseEvent *event) {
+void FormSystemSettings::closeEvent(QCloseEvent *event) {
 
   saveSettings();
   event->accept();
 }
 
-void FormPixieSettings::toggle_push(bool enable, Qpx::LiveStatus live) {
+void FormSystemSettings::toggle_push(bool enable, Qpx::LiveStatus live) {
   bool online = (live == Qpx::LiveStatus::online);
   bool offline = (live == Qpx::LiveStatus::offline);
 
@@ -157,7 +157,7 @@ void FormPixieSettings::toggle_push(bool enable, Qpx::LiveStatus live) {
   }
 }
 
-void FormPixieSettings::loadSettings() {
+void FormSystemSettings::loadSettings() {
   settings_.beginGroup("Program");
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
 
@@ -172,7 +172,7 @@ void FormPixieSettings::loadSettings() {
   settings_.endGroup();
 }
 
-void FormPixieSettings::saveSettings() {
+void FormSystemSettings::saveSettings() {
   for (auto &q : channels_) {
     if (q.name_ == "none")
       continue;
@@ -196,7 +196,7 @@ void FormPixieSettings::saveSettings() {
   settings_.endGroup();
 }
 
-void FormPixieSettings::updateDetDB() {
+void FormSystemSettings::updateDetDB() {
   tree_delegate_.eat_detectors(detectors_);
   table_settings_delegate_.eat_detectors(detectors_);
 
@@ -207,18 +207,18 @@ void FormPixieSettings::updateDetDB() {
   viewTableSettings->resizeColumnsToContents();
 }
 
-FormPixieSettings::~FormPixieSettings()
+FormSystemSettings::~FormSystemSettings()
 {
   delete ui;
 }
 
-void FormPixieSettings::post_boot()
+void FormSystemSettings::post_boot()
 {
   on_pushOptimizeAll_clicked();
 }
 
 
-void FormPixieSettings::on_pushOptimizeAll_clicked()
+void FormSystemSettings::on_pushOptimizeAll_clicked()
 {
   emit statusText("Applying detector optimizations...");
   emit toggleIO(false);
@@ -231,14 +231,14 @@ void FormPixieSettings::on_pushOptimizeAll_clicked()
   runner_thread_.do_set_detectors(update);
 }
 
-void FormPixieSettings::on_pushSettingsRefresh_clicked()
+void FormSystemSettings::on_pushSettingsRefresh_clicked()
 {
   emit statusText("Refreshing settings_...");
   emit toggleIO(false);
   runner_thread_.do_refresh_settings();
 }
 
-void FormPixieSettings::on_pushDetDB_clicked()
+void FormSystemSettings::on_pushDetDB_clicked()
 {
   WidgetDetectors *det_widget = new WidgetDetectors(this);
   det_widget->setData(detectors_, data_directory_);
@@ -246,7 +246,7 @@ void FormPixieSettings::on_pushDetDB_clicked()
   det_widget->exec();
 }
 
-void FormPixieSettings::on_checkShowRO_clicked()
+void FormSystemSettings::on_checkShowRO_clicked()
 {
   //viewTreeSettings->clearSelection();
   //viewTableSettings->clearSelection();
@@ -258,7 +258,7 @@ void FormPixieSettings::on_checkShowRO_clicked()
   tree_settings_model_.update(dev_settings_);
 }
 
-void FormPixieSettings::on_bootButton_clicked()
+void FormSystemSettings::on_bootButton_clicked()
 {
   if (dev_settings_.value_int == 0) {
     emit toggleIO(false);

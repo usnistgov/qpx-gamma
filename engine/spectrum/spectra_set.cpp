@@ -186,7 +186,7 @@ void SpectraSet::delete_spectrum(std::string name) {
   }
 }
 
-void SpectraSet::set_spectra(const XMLable2DB<Spectrum::Template>& newdb) {
+void SpectraSet::set_spectra(const XMLableDB<Spectrum::Template>& newdb) {
   boost::unique_lock<boost::mutex> lock(mutex_);  
   clear_helper();
   int numofspectra = newdb.size();

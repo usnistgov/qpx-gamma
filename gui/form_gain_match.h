@@ -40,7 +40,7 @@ class FormGainMatch : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormGainMatch(ThreadRunner&, QSettings&, XMLable2DB<Gamma::Detector>&, QWidget *parent = 0);
+  explicit FormGainMatch(ThreadRunner&, QSettings&, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
   ~FormGainMatch();
 
 signals:
@@ -81,7 +81,7 @@ private:
   Qpx::Spectrum::Template reference_, optimizing_;
 
   ThreadRunner         &gm_runner_thread_;
-  XMLable2DB<Gamma::Detector> &detectors_;
+  XMLableDB<Gamma::Detector> &detectors_;
   QSettings &settings_;
 
   ThreadPlotSignal     gm_plot_thread_;

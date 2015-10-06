@@ -20,8 +20,8 @@
  *
  ******************************************************************************/
 
-#ifndef PIXIE_SIMULATOR
-#define PIXIE_SIMULATOR
+#ifndef SIMULATOR
+#define SIMULATOR
 
 #include <vector>
 #include <array>

@@ -20,8 +20,8 @@
  *
  ******************************************************************************/
 
-#ifndef PIXIE_SPECTRUM1D_H
-#define PIXIE_SPECTRUM1D_H
+#ifndef SPECTRUM1D_H
+#define SPECTRUM1D_H
 
 #include "spectrum.h"
 
@@ -87,4 +87,4 @@ protected:
 
 }}
 
-#endif // PIXIE_SPECTRUM1D_H
+#endif // SPECTRUM1D_H

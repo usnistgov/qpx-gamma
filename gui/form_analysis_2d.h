@@ -41,7 +41,7 @@ class FormAnalysis2D : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormAnalysis2D(QSettings &settings, XMLable2DB<Gamma::Detector>& newDetDB, QWidget *parent = 0);
+  explicit FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent = 0);
   ~FormAnalysis2D();
 
   void setSpectrum(Qpx::SpectraSet *newset, QString spectrum);
@@ -117,7 +117,7 @@ private:
   Qpx::SpectraSet *spectra_;
   QString current_spectrum_;
 
-  XMLable2DB<Gamma::Detector> &detectors_;
+  XMLableDB<Gamma::Detector> &detectors_;
 
   bool initialized, symmetrized;
 

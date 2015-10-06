@@ -533,7 +533,7 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   boost::unique_lock<boost::mutex> lock(mutex_);
   if (live() != LiveStatus::online) {
-    PL_WARN << "Pixie not online";
+    PL_WARN << "System not online";
     return nullptr;
   }
 
@@ -586,7 +586,7 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
                         SpectraSet* spectra) {
 
-  PL_INFO << "*Pixie Threads* Spectra builder initiated";
+  PL_INFO << "<Engine> Spectra builder initiated";
   Spill* one_spill;
   while ((one_spill = data_queue->dequeue()) != nullptr) {
     spectra->add_spill(one_spill);
@@ -601,7 +601,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
 void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queue,
                          uint64_t timeout_limit, boost::atomic<bool>* interruptor) {
 
-  PL_INFO << "*Pixie Threads* Simulated event generator initiated";
+  PL_INFO << "<Engine> Simulated event generator initiated";
 
   uint32_t secsperrun = 5;  ///calculate this based on ocr and buf size
   Spill* one_spill;
@@ -615,7 +615,7 @@ void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queu
   StatsUpdate moving_stats,
       one_run = source->getBlock(5.05);  ///bit more than secsperrun
 
-  //start of run pixie status update
+  //start of run status update
   //mainly for spectra to have calibration
   one_spill = new Spill;
   one_spill->run = new RunInfo;

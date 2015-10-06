@@ -199,7 +199,7 @@ void DialogSpectrumTemplate::on_spinDets_valueChanged(int arg1)
 
 
 
-TableSpectraTemplates::TableSpectraTemplates(XMLable2DB<Qpx::Spectrum::Template>& templates, QObject *parent)
+TableSpectraTemplates::TableSpectraTemplates(XMLableDB<Qpx::Spectrum::Template>& templates, QObject *parent)
   : QAbstractTableModel(parent),
     templates_(templates)
 {
@@ -297,7 +297,7 @@ Qt::ItemFlags TableSpectraTemplates::flags(const QModelIndex &index) const
 
 
 
-DialogSpectraTemplates::DialogSpectraTemplates(XMLable2DB<Qpx::Spectrum::Template> &newdb, QString savedir, QWidget *parent) :
+DialogSpectraTemplates::DialogSpectraTemplates(XMLableDB<Qpx::Spectrum::Template> &newdb, QString savedir, QWidget *parent) :
   QDialog(parent),
   ui(new Ui::DialogSpectraTemplates),
   table_model_(newdb),

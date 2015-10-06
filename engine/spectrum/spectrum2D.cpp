@@ -202,7 +202,7 @@ bool Spectrum2D::_read_file(std::string name, std::string format) {
 void Spectrum2D::write_m(std::string name) const {
   //matlab script
   std::ofstream myfile(name, std::ios::out | std::ios::app);
-  myfile << "%MCA 2d spectrum from Pixie" << std::endl
+  myfile << "%=========Qpx 2d spectrum=========" << std::endl
          << "%  Bit precision: " << (16-shift_by_) << std::endl
          << "%  Channels     : " << metadata_.resolution << std::endl
          << "%  Total events : " << metadata_.total_count << std::endl

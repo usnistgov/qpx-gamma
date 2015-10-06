@@ -27,7 +27,6 @@
 #include <boost/filesystem.hpp>
 #include "spectrum1D.h"
 #include "xylib.h"
-#include "tinyxml2.h"
 
 namespace Qpx {
 namespace Spectrum {
@@ -352,131 +351,102 @@ bool Spectrum1D::read_tka(std::string name) {
   return true;
 }
 
-bool Spectrum1D::read_n42(std::string name) {
-  FILE* myfile;
-  myfile = fopen (name.c_str(), "r");
-  if (myfile == nullptr)
+bool Spectrum1D::read_n42(std::string filename) {
+  pugi::xml_document doc;
+
+  if (!doc.load_file(filename.c_str()))
+    return false;
+
+  pugi::xml_node root = doc.first_child();
+  if (!root || (std::string(root.name()) != "N42InstrumentData"))
+    return false;
+
+  pugi::xml_node meas_node = root.child("Measurement");
+  if (!meas_node)
+    return false;
+
+  //will only read out first spectrum in N42
+  pugi::xml_node node = meas_node.child("Spectrum");
+  if (!node)
     return false;
 
   boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
   tif->set_iso_extended_format();
   std::stringstream iss;
-  
-  tinyxml2::XMLDocument docx;
-  docx.LoadFile(myfile);
 
-  tinyxml2::XMLElement* root;
-  tinyxml2::XMLElement* branch;
-  
-  if ((root = docx.FirstChildElement("N42InstrumentData")) == nullptr) {
-    fclose(myfile);
-    return false;
-  }
-  
-  if ((root = root->FirstChildElement("Measurement")) == nullptr) {
-    fclose(myfile);
-    return false;
-  }
-  
-  if ((root = root->FirstChildElement("Spectrum")) == nullptr) {
-    fclose(myfile);
-    return false;
-  }
-  
-  branch = root->FirstChildElement("StartTime");
-  if (branch != nullptr) {
-    iss << branch->GetText();
+  std::string time(node.child_value("StartTime"));
+  if (!time.empty()) {
+    iss << time;
     iss.imbue(std::locale(std::locale::classic(), tif));
     iss >> metadata_.start_time;
   }
 
-  branch = root->FirstChildElement("RealTime");
-  if (branch != nullptr) {
-    std::string rt_str = std::string(branch->GetText());
-    boost::algorithm::trim(rt_str);
-    if (rt_str.size() > 3)
-      rt_str = rt_str.substr(2, rt_str.size()-3); //to trim PTnnnS to nnn
-    double rt_ms = boost::lexical_cast<double>(rt_str) * 1000.0;
+  time = std::string(node.child_value("RealTime"));
+  if (!time.empty()) {
+    boost::algorithm::trim(time);
+    if (time.size() > 3)
+      time = time.substr(2, time.size()-3); //to trim PTnnnS to nnn
+    double rt_ms = boost::lexical_cast<double>(time) * 1000.0;
     metadata_.real_time = boost::posix_time::milliseconds(rt_ms);
   }
 
-  branch = root->FirstChildElement("LiveTime");
-  if (branch != nullptr) {
-    std::string lt_str = std::string(branch->GetText());
-    boost::algorithm::trim(lt_str);
-    if (lt_str.size() > 3)
-      lt_str = lt_str.substr(2, lt_str.size()-3); //to trim PTnnnS to nnn
-    double lt_ms = boost::lexical_cast<double>(lt_str) * 1000.0;
+  time = std::string(node.child_value("LiveTime"));
+  if (!time.empty()) {
+    boost::algorithm::trim(time);
+    if (time.size() > 3)
+      time = time.substr(2, time.size()-3); //to trim PTnnnS to nnn
+    double lt_ms = boost::lexical_cast<double>(time) * 1000.0;
     metadata_.live_time = boost::posix_time::milliseconds(lt_ms);
   }
 
-  if ((branch = root->FirstChildElement("ChannelData")) == nullptr) {
-    fclose(myfile);
-    return false;
-  }
-
-  std::string this_data = branch->GetText();
+  std::string this_data(node.child_value("ChannelData"));
   
   boost::algorithm::trim(this_data);
   std::stringstream channeldata;
   channeldata.str(this_data);
 
-  if (this->channels_from_string(channeldata, true)) {//assume compressed
-
-    Gamma::Detector newdet;
-    newdet.name_ = "unknown";
-    if (root->Attribute("Detector"))
-      newdet.name_ = std::string(root->Attribute("Detector"));
-  
-    branch = root->FirstChildElement("DetectorType");
-    if (branch != nullptr)
-      newdet.type_ = std::string(branch->GetText());
-
-    branch = root->FirstChildElement("Calibration");
-    if (branch != nullptr) {
-      Gamma::Calibration newcalib("Energy", metadata_.bits);
-      //newcalib.from_xml(branch); //FIX THIS
-      newdet.energy_calibrations_.add(newcalib);
-    }
-
-    metadata_.detectors.resize(1);
-    metadata_.detectors[0] = newdet;
-
-    fclose(myfile);
-
-    init_from_file(name);
-    
-    return true;
-  } else {
-    fclose(myfile);
+  if (!this->channels_from_string(channeldata, true)) //assume compressed
     return false;
-  }
+
+  Gamma::Detector newdet;
+  newdet.name_ = "unknown";
+  if (node.attribute("Detector"))
+    newdet.name_ = std::string(node.attribute("Detector").value());
   
+  newdet.type_ = std::string(node.child_value("DetectorType"));
+
+  //have more claibrations? fwhm,etc..
+  if (node.child("Calibration")) {
+    Gamma::Calibration newcalib;
+    newcalib.from_xml(node.child("Calibration"));
+    newcalib.bits_ = metadata_.bits;
+    newdet.energy_calibrations_.add(newcalib);
+  }
+
+  metadata_.detectors.resize(1);
+  metadata_.detectors[0] = newdet;
+
+  init_from_file(filename);
+
+  return true;
+
 }
 
-bool Spectrum1D::read_ava(std::string name) {
-  tinyxml2::XMLElement* root;
-  tinyxml2::XMLElement* branch;
-  
-  FILE* myfile;
-  myfile = fopen (name.c_str(), "r");
-  if (myfile == nullptr)
+bool Spectrum1D::read_ava(std::string filename) {
+  pugi::xml_document doc;
+
+  if (!doc.load_file(filename.c_str()))
     return false;
 
-  tinyxml2::XMLDocument docx;
-  docx.LoadFile(myfile);
-
-  if ((root = docx.FirstChildElement("mcadata")) == nullptr) {
-    fclose(myfile);
+  pugi::xml_node root = doc.first_child();
+  if (!root || (std::string(root.name()) != "mcadata"))
     return false;
-  }
 
-  if ((branch = root->FirstChildElement("spectrum")) == nullptr) {
-    fclose(myfile);
+  pugi::xml_node node = root.child("spectrum");
+  if (!node)
     return false;
-  }
-  
-  std::string StartData(branch->Attribute("start"));
+
+  std::string StartData(node.attribute("start").value());
   boost::algorithm::trim(StartData);
   if (!StartData.empty()) {
     std::stringstream oss, iss;
@@ -490,45 +460,43 @@ bool Spectrum1D::read_ava(std::string name) {
     iss >> metadata_.start_time;
   }
 
-  std::string RealTime(branch->Attribute("elapsed_real")); boost::algorithm::trim(RealTime);
+  std::string RealTime(node.attribute("elapsed_real").value()); boost::algorithm::trim(RealTime);
   if (!RealTime.empty()) {
     double rt_ms = boost::lexical_cast<double>(RealTime) * 1000.0;
     metadata_.real_time = boost::posix_time::milliseconds(rt_ms);
   }
 
-  std::string LiveTime(branch->Attribute("elapsed_live")); boost::algorithm::trim(LiveTime);
+  std::string LiveTime(node.attribute("elapsed_live").value()); boost::algorithm::trim(LiveTime);
   if (!LiveTime.empty()) {
     double lt_ms = boost::lexical_cast<double>(LiveTime) * 1000.0;
     metadata_.live_time = boost::posix_time::milliseconds(lt_ms);
   }
 
-  std::string this_data = branch->GetText();
+  std::string this_data(root.child_value("spectrum"));
 
   std::replace( this_data.begin(), this_data.end(), ',', ' ');
   boost::algorithm::trim(this_data);
   std::stringstream channeldata;
   channeldata.str(this_data);
-  if(!this->channels_from_string(channeldata, false)) {
-    fclose(myfile);
+
+  if(!this->channels_from_string(channeldata, false))
     return false;
-  }
 
-  branch = root->FirstChildElement("calibration_details");
-  while ((branch != nullptr) && (std::string(branch->Attribute("type")) != "energy"))
-    branch = dynamic_cast<tinyxml2::XMLElement*>(branch->NextSibling());
+  Gamma::Detector newdet;
+  for (auto &q : root.children("calibration_details")) {
+    if ((std::string(q.attribute("type").value()) != "energy") ||
+        !q.child("model"))
+      continue;
 
-  Gamma::Detector newdet; Gamma::Calibration newcalib("Energy", metadata_.bits);
-  if ((branch != nullptr) &&
-      ((branch = branch->FirstChildElement("model")) != nullptr)) {
-    if (std::string(branch->Attribute("type")) == "polynomial")
+    Gamma::Calibration newcalib("Energy", metadata_.bits);
+
+    if (std::string(q.child("model").attribute("type").value()) == "polynomial")
       newcalib.model_ = Gamma::CalibrationModel::polynomial;
+
     std::vector<double> encalib;
-    branch = branch->FirstChildElement("coefficient");
-    while ((branch != nullptr) && (branch->Attribute("value")) != nullptr) {
-      std::string coefvalstr =
-          boost::algorithm::trim_copy(std::string(branch->Attribute("value")));
+    for (auto &p : q.child("model").children("coefficient")) {
+      std::string coefvalstr = boost::algorithm::trim_copy(std::string(p.attribute("value").value()));
       encalib.push_back(boost::lexical_cast<double>(coefvalstr));
-      branch = dynamic_cast<tinyxml2::XMLElement*>(branch->NextSibling());
     }
     newcalib.coefficients_ = encalib;
     newcalib.units_ = "keV";
@@ -536,13 +504,11 @@ bool Spectrum1D::read_ava(std::string name) {
     newdet.energy_calibrations_.add(newcalib);
     newdet.name_ = "unknown";
   }
+
   metadata_.detectors.resize(1);
   metadata_.detectors[0] = newdet;
 
-  fclose(myfile);
-  
- 
-  init_from_file(name);
+  init_from_file(filename);
   return true;
 }
 
@@ -559,15 +525,9 @@ void Spectrum1D::write_tka(std::string name) const {
   myfile.close();
 }
 
-void Spectrum1D::write_n42(std::string name) const {
-  FILE* myfile;
-  myfile = fopen (name.c_str(), "w");
-  if (myfile == nullptr)
-    return;
- 
-  tinyxml2::XMLDocument newDoc;
-  tinyxml2::XMLPrinter printer(myfile);
-  printer.PushDeclaration(newDoc.NewDeclaration()->Value());
+void Spectrum1D::write_n42(std::string filename) const {
+  pugi::xml_document doc;
+  pugi::xml_node root = doc.append_child();
 
   std::stringstream durationdata;
   Gamma::Calibration myCalibration;
@@ -576,56 +536,41 @@ void Spectrum1D::write_n42(std::string name) const {
   else if ((metadata_.detectors[0].energy_calibrations_.size() == 1) &&
            (metadata_.detectors[0].energy_calibrations_.get(0).units_ != "channels"))
     myCalibration = metadata_.detectors[0].energy_calibrations_.get(0);
+
+  root.set_name("N42InstrumentData");
+  root.append_attribute("xmlns").set_value("http://physics.nist.gov/Divisions/Div846/Gp4/ANSIN4242/2005/ANSIN4242");
+  root.append_attribute("xmlns:xsi").set_value("http://www.w3.org/2001/XMLSchema-instance");
+  root.append_attribute("xsi:schemaLocation").set_value("http://physics.nist.gov/Divisions/Div846/Gp4/ANSIN4242/2005/ANSIN4242 http://physics.nist.gov/Divisions/Div846/Gp4/ANSIN4242/2005/ANSIN4242.xsd");
   
-  printer.OpenElement("N42InstrumentData");
-  printer.PushAttribute("xmlns",
-                        "http://physics.nist.gov/Divisions/Div846/Gp4/ANSIN4242/2005/ANSIN4242");
-  printer.PushAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
-  printer.PushAttribute("xsi:schemaLocation",
-                        "http://physics.nist.gov/Divisions/Div846/Gp4/ANSIN4242/2005/ANSIN4242 http://physics.nist.gov/Divisions/Div846/Gp4/ANSIN4242/2005/ANSIN4242.xsd");
-  
-  printer.OpenElement("Measurement");
-  printer.OpenElement("Spectrum");
-  printer.PushAttribute("Type","PHA");
+  pugi::xml_node node = root.append_child("Measurement").append_child("Spectrum");
+  node.append_attribute("Type").set_value("PHA");
+
   if (myCalibration.units_ != "channels") {
-    printer.PushAttribute("Detector", metadata_.detectors[0].name_.c_str());
-    printer.OpenElement("DetectorType");
-    printer.PushText(metadata_.detectors[0].type_.c_str());
-    printer.CloseElement();
+    node.append_attribute("Detector").set_value(metadata_.detectors[0].name_.c_str());
+    node.append_child("DetectorType").append_child(pugi::node_pcdata).set_value(metadata_.detectors[0].type_.c_str());
   }
 
-  
-  printer.OpenElement("StartTime");
   durationdata << to_iso_extended_string(metadata_.start_time) << "-5:00"; //fix this hack
-  printer.PushText(durationdata.str().c_str());
-  printer.CloseElement();
+  node.append_child("StartTime").append_child(pugi::node_pcdata).set_value(durationdata.str().c_str());
       
   durationdata.str(std::string()); //clear it
-  printer.OpenElement("RealTime");
   durationdata << "PT" << (metadata_.real_time.total_milliseconds() * 0.001) << "S";
-  printer.PushText(durationdata.str().c_str());
-  printer.CloseElement();
+  node.append_child("RealTime").append_child(pugi::node_pcdata).set_value(durationdata.str().c_str());
 
   durationdata.str(std::string()); //clear it
-  printer.OpenElement("LiveTime");
   durationdata << "PT" << (metadata_.live_time.total_milliseconds() * 0.001) << "S";
-  printer.PushText(durationdata.str().c_str());
-  printer.CloseElement();
+  node.append_child("LiveTime").append_child(pugi::node_pcdata).set_value(durationdata.str().c_str());
 
   if (myCalibration.units_ != "channels")
-    //myCalibration.to_xml(printer);    //FIX THIS
+    myCalibration.to_xml(node);
 
-  printer.OpenElement("ChannelData");
-  printer.PushAttribute("Compression", "CountedZeroes");
-  if ((metadata_.resolution > 0) && (metadata_.total_count > 0))
-    printer.PushText(this->_channels_to_xml().c_str());
-  printer.CloseElement();
+  if ((metadata_.resolution > 0) && (metadata_.total_count > 0)) {
+    node.append_child("ChannelData").append_attribute("Compression").set_value("CountedZeroes");
+    node.last_child().append_child(pugi::node_pcdata).set_value(this->_channels_to_xml().c_str());
+  }
 
-  printer.CloseElement(); //Spectrum
-  printer.CloseElement(); //Measurement
-  printer.CloseElement(); //N42InstrumentData
-
-  fclose(myfile);
+  if (!doc.save_file(filename.c_str()))
+    PL_ERR << "<Spectrum1D> Failed to save " << filename;
 }
 
 }}

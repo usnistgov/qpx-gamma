@@ -22,8 +22,8 @@
  ******************************************************************************/
 
 
-#ifndef PIXIE_SPECTRUM1D_LFC_H
-#define PIXIE_SPECTRUM1D_LFC_H
+#ifndef SPECTRUM1D_LFC_H
+#define SPECTRUM1D_LFC_H
 
 #include "spectrum1D.h"
 
@@ -77,4 +77,4 @@ protected:
 
 
 }}
-#endif // PIXIE_SPECTRUM_LFC_H
+#endif // SPECTRUM_LFC_H

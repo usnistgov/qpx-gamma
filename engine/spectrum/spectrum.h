@@ -28,8 +28,8 @@
  *
  ******************************************************************************/
 
-#ifndef PIXIE_SPECTRUM_H
-#define PIXIE_SPECTRUM_H
+#ifndef SPECTRUM_H
+#define SPECTRUM_H
 
 #include <memory>
 #include <initializer_list>
@@ -61,7 +61,7 @@ struct Metadata {
   uint32_t resolution, appearance;
   bool visible;
   std::vector<int16_t> match_pattern, add_pattern;
-  XMLable2DB<Gamma::Setting> attributes;
+  XMLableDB<Gamma::Setting> attributes;
   PreciseFloat total_count;
   uint64_t     max_chan;
   boost::posix_time::time_duration real_time ,live_time;
@@ -306,4 +306,4 @@ public:
 
 }}
 
-#endif // PIXIE_SPECTRUM_H
+#endif // SPECTRUM_H

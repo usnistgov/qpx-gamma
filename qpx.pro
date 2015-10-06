@@ -71,11 +71,11 @@ unix {
    }
       
    contains ( ARCH, x86_64): {
-      LIBS += PLX/Library/64bit/PlxApi.a
+      LIBS += engine/plugins/pixie4/PLX/Library/64bit/PlxApi.a
    }
 
    contains ( ARCH, i686):  {
-      LIBS += PLX/Library/32bit/PlxApi.a
+      LIBS += engine/plugins/pixie4/PLX/Library/32bit/PlxApi.a
    }
    
    LIBS += -lm -ldl -DBOOST_LOG_DYN_LINK \
@@ -102,7 +102,7 @@ android {
 }
 	 
 win32 {
-    LIBS += dependencies/PLX/PlxApi.lib
+    LIBS += engine/plugins/pixie4/PLX/Library/PlxApi.lib
 
 		LIBPATH += D:\dev\boost_1_57_0\stage\lib
 		
@@ -115,14 +115,13 @@ INCLUDEPATH += engine \
                math \
                engine \
                engine/spectrum \
-               engine/plugins \
+               engine/plugins/pixie4 \
+               engine/plugins/pixie4/XIA \
+               engine/plugins/pixie4/PLX/Include \
                analysis \
                gui \
-               PLX/Include \
                dependencies \
-               dependencies/XIA \
                dependencies/xylib \
-               dependencies/tinyxml2 \
                dependencies/pugixml \
                dependencies/qcustomplot \
                dependencies/qtcolorpicker \
@@ -130,10 +129,8 @@ INCLUDEPATH += engine \
                /usr/include/lua5.2
 
 SOURCES += $$files(dependencies/*.cpp) \
-           $$files(dependencies/XIA/*.c) \
            $$files(dependencies/qcustomplot/*.cpp) \
            $$files(dependencies/qtcolorpicker/*.cpp) \
-           $$files(dependencies/tinyxml2/*.cpp) \
            $$files(dependencies/pugixml/*.cpp) \
            $$files(dependencies/xylib/*.cpp) \
            $$files(dependencies/fityk/*.cpp) \
@@ -142,23 +139,23 @@ SOURCES += $$files(dependencies/*.cpp) \
            $$files(gui/*.cpp) \
            $$files(engine/*.cpp) \
            $$files(engine/spectrum/*.cpp) \
-           $$files(engine/plugins/*.cpp) \
+           $$files(engine/plugins/pixie4/*.cpp) \
+           $$files(engine/plugins/pixie4/XIA/*.c) \
            $$files(analysis/*.cpp) \
            $$files(math/*.cpp)
 
 HEADERS  += $$files(dependencies/*.h) \
-            $$files(dependencies/XIA/*.h) \
             $$files(dependencies/qcustomplot/*.h) \
             $$files(dependencies/qtcolorpicker/*.h) \
-            $$files(dependencies/tinyxml2/*.h) \
             $$files(dependencies/pugixml/*.hpp) \
             $$files(dependencies/xylib/*.h) \
             $$files(dependencies/fityk/*.h) \
-            $$files(PLX/Include/*.h) \
             $$files(gui/*.h) \
             $$files(engine/*.h) \
             $$files(engine/spectrum/*.h) \
-            $$files(engine/plugins/*.h) \
+            $$files(engine/plugins/pixie4/*.h) \
+            $$files(engine/plugins/pixie4/XIA/*.h) \
+            $$files(engine/plugins/pixie4/PLX/Include/*.h) \
             $$files(analysis/*.h) \
             $$files(math/*.h)
 

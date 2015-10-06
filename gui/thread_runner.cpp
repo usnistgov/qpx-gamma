@@ -13,7 +13,7 @@
  * any modified versions bear some notice that they have been modified.
  *
  * Description:
- *      ThreadRunner - thread for issuing commands to Pixie outside of gui thread
+ *      ThreadRunner - thread for issuing commands to daq outside of gui thread
  *
  * Author(s):
  *      Martin Shetty (NIST)

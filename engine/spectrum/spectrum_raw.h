@@ -20,11 +20,10 @@
  *
  ******************************************************************************/
 
-#ifndef PIXIE_SPECTRUM_RAW_H
-#define PIXIE_SPECTRUM_RAW_H
+#ifndef SPECTRUM_RAW_H
+#define SPECTRUM_RAW_H
 
 #include "spectrum.h"
-#include "tinyxml2.h"
 
 namespace Qpx {
 namespace Spectrum {
@@ -106,9 +105,9 @@ protected:
   std::string file_name_txt_;
 
   std::ofstream file_bin_;
-  FILE *file_xml_;
   bool open_xml_, open_bin_;
-  tinyxml2::XMLPrinter *xml_printer_;
+  pugi::xml_document xml_doc_;
+  pugi::xml_node xml_root_;
 
   int format_;
   bool with_hit_pattern_;
@@ -117,4 +116,4 @@ protected:
 
 }}
 
-#endif // PIXIE_SPECTRUM1D_H
+#endif // SPECTRUM1D_H

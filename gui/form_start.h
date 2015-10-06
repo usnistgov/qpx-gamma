@@ -40,7 +40,7 @@ class FormStart : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormStart(ThreadRunner &thread, QSettings &settings, XMLable2DB<Gamma::Detector> &detectors, QWidget *parent = 0);
+  explicit FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector> &detectors, QWidget *parent = 0);
   void exit();
   ~FormStart();
 
@@ -69,11 +69,11 @@ private:
 
   QString data_directory_;
 
-  XMLable2DB<Gamma::Detector>  &detectors_;
+  XMLableDB<Gamma::Detector>  &detectors_;
 
   ThreadRunner        &runner_thread_;
 
-  FormPixieSettings*  formPixieSettings;
+  FormSystemSettings*  formSettings;
   FormOscilloscope*   formOscilloscope;
 
   bool exiting;

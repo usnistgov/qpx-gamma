@@ -31,7 +31,7 @@ To compile you need:
 * lua-dev
 
 Linux:
-* make sure PLX driver is working (driver and installation script included, see ./PLX/README)
+* make sure PLX driver is working (driver and installation script included, see ./engine/plugins/pixie4/PLX/README)
 * utter the following incantations:
   - to compile './install.sh' will also put sample data files in ~/qpxdata/
   - to run './qpx'

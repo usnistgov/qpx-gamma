@@ -78,7 +78,7 @@ Simulator::Simulator(SpectraSet* all_spectra, std::array<int,2> chans,
   
   count_ = md.total_count;
 
-  time_factor = settings.get_setting(Gamma::Setting("Pixie4/System/module/TOTAL_TIME"), Gamma::Match::id).value_dbl / lab_time;
+  time_factor = settings.get_setting(Gamma::Setting("TOTAL_TIME"), Gamma::Match::name).value_dbl / lab_time;
   OCR = static_cast<double>(count_) / lab_time;
 
   int adjust_bits = source_res - dest_res;
@@ -142,12 +142,13 @@ StatsUpdate Simulator::getBlock(double duration) {
   else
     fraction = duration / lab_time;
 
-  //one channel only
+
+  //one channel only, find by indices?
   //  for (int i = 0; i<2; i++) {
-    newBlock.fast_peaks = settings.get_setting(Gamma::Setting("Pixie4/System/module/channel/FAST_PEAKS"), Gamma::Match::id).value_dbl * fraction;
-    newBlock.live_time  = settings.get_setting(Gamma::Setting("Pixie4/System/module/channel/LIVE_TIME"), Gamma::Match::id).value_dbl * fraction;
-    newBlock.ftdt       = settings.get_setting(Gamma::Setting("Pixie4/System/module/channel/FTDT"), Gamma::Match::id).value_dbl * fraction;
-    newBlock.sfdt       = settings.get_setting(Gamma::Setting("Pixie4/System/module/channel/SFDT"), Gamma::Match::id).value_dbl * fraction;
+    newBlock.fast_peaks = settings.get_setting(Gamma::Setting("FAST_PEAKS"), Gamma::Match::name).value_dbl * fraction;
+    newBlock.live_time  = settings.get_setting(Gamma::Setting("LIVE_TIME"), Gamma::Match::name).value_dbl * fraction;
+    newBlock.ftdt       = settings.get_setting(Gamma::Setting("FTDT"), Gamma::Match::name).value_dbl * fraction;
+    newBlock.sfdt       = settings.get_setting(Gamma::Setting("SFDT"), Gamma::Match::name).value_dbl * fraction;
     //  }
       
 

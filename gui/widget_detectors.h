@@ -42,10 +42,10 @@ class TableCalibrations : public QAbstractTableModel
 {
   Q_OBJECT
 private:
-  XMLable2DB<Gamma::Calibration> &myDB;
+  XMLableDB<Gamma::Calibration> &myDB;
   bool gain_;
 public:
-  TableCalibrations(XMLable2DB<Gamma::Calibration>& db, bool gain, QObject *parent = 0): myDB(db), QAbstractTableModel(parent), gain_(gain) {}
+  TableCalibrations(XMLableDB<Gamma::Calibration>& db, bool gain, QObject *parent = 0): myDB(db), QAbstractTableModel(parent), gain_(gain) {}
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
   int columnCount(const QModelIndex &parent = QModelIndex()) const;
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -99,10 +99,10 @@ class TableDetectors : public QAbstractTableModel
 {
   Q_OBJECT
 private:
-  XMLable2DB<Gamma::Detector> *myDB;
+  XMLableDB<Gamma::Detector> *myDB;
 public:
   TableDetectors(QObject *parent = 0): QAbstractTableModel(parent) {}
-  void setDB(XMLable2DB<Gamma::Detector>& db) {myDB = &db;}
+  void setDB(XMLableDB<Gamma::Detector>& db) {myDB = &db;}
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
   int columnCount(const QModelIndex &parent = QModelIndex()) const;
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -121,7 +121,7 @@ public:
   explicit WidgetDetectors(QWidget *parent = 0);
   ~WidgetDetectors();
 
-  void setData(XMLable2DB<Gamma::Detector> &newdb, QString outdir);
+  void setData(XMLableDB<Gamma::Detector> &newdb, QString outdir);
 
 signals:
   void detectorsUpdated();
@@ -129,7 +129,7 @@ signals:
 private:
   Ui::WidgetDetectors *ui;
 
-  XMLable2DB<Gamma::Detector> *detectors_;
+  XMLableDB<Gamma::Detector> *detectors_;
   TableDetectors table_model_;
   QItemSelectionModel selection_model_;
 

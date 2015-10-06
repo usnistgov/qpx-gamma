@@ -16,9 +16,9 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Types for organizing data aquired from Pixie
+ *      Types for organizing data aquired from Device
  *        Qpx::Hit        single energy event with coincidence flags
- *        Qpx::StatsUdate metadata for one spill (memory chunk from Pixie)
+ *        Qpx::StatsUdate metadata for one spill (memory chunk)
  *        Qpx::RunInfo    metadata for the whole run
  *        Qpx::Spill      bundles all data and metadata for a list run
  *        Qpx::ListData   bundles hits in vector and run metadata

@@ -58,7 +58,7 @@ private:
 
   QString                       data_directory_;    //data directory
   QSettings                     settings_;
-  XMLable2DB<Gamma::Detector>    detectors_;
+  XMLableDB<Gamma::Detector>    detectors_;
   ThreadRunner                  runner_thread_;
 
   FormStart* main_tab_;

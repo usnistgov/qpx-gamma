@@ -23,7 +23,7 @@
 #include "form_start.h"
 #include <QBoxLayout>
 
-FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLable2DB<Gamma::Detector> &detectors, QWidget *parent) :
+FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector> &detectors, QWidget *parent) :
   QWidget(parent),
   runner_thread_(thread),
   settings_(settings),
@@ -36,17 +36,17 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLable2DB<Gamma
   connect(formOscilloscope, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
   connect(this, SIGNAL(toggle_push_(bool,Qpx::LiveStatus)), formOscilloscope, SLOT(toggle_push(bool,Qpx::LiveStatus)));
 
-  formPixieSettings = new FormPixieSettings(runner_thread_, detectors_, settings_);
-  connect(formPixieSettings, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
-  connect(formPixieSettings, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
+  formSettings = new FormSystemSettings(runner_thread_, detectors_, settings_);
+  connect(formSettings, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
+  connect(formSettings, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
   
-  connect(this, SIGNAL(refresh()), formPixieSettings, SLOT(update()));
-  connect(this, SIGNAL(toggle_push_(bool,Qpx::LiveStatus)), formPixieSettings, SLOT(toggle_push(bool,Qpx::LiveStatus)));
-  connect(this, SIGNAL(update_dets()), formPixieSettings, SLOT(updateDetDB()));
+  connect(this, SIGNAL(refresh()), formSettings, SLOT(update()));
+  connect(this, SIGNAL(toggle_push_(bool,Qpx::LiveStatus)), formSettings, SLOT(toggle_push(bool,Qpx::LiveStatus)));
+  connect(this, SIGNAL(update_dets()), formSettings, SLOT(updateDetDB()));
 
   QHBoxLayout *lo = new QHBoxLayout();
   lo->addWidget(formOscilloscope);
-  lo->addWidget(formPixieSettings);
+  lo->addWidget(formSettings);
 
   this->setLayout(lo);
 
@@ -65,7 +65,7 @@ void FormStart::update(Gamma::Setting tree, std::vector<Gamma::Detector> dets) {
 void FormStart::closeEvent(QCloseEvent *event) {
   if (exiting) {
     saveSettings();
-    formPixieSettings->close();
+    formSettings->close();
     formOscilloscope->close();
     event->accept();
   }
@@ -95,7 +95,7 @@ void FormStart::boot_complete(bool success, Qpx::LiveStatus online) {
 
   if (success) {
     this->setCursor(Qt::WaitCursor);
-    formPixieSettings->updateDetDB();
+    formSettings->updateDetDB();
     if (online == Qpx::LiveStatus::online)
       runner_thread_.do_oscil(formOscilloscope->xdt());
     runner_thread_.do_refresh_settings();
@@ -122,7 +122,7 @@ void FormStart::loadSettings() {
 }
 
 void FormStart::saveSettings() {
-  Gamma::Setting dev_settings = formPixieSettings->get_tree();
+  Gamma::Setting dev_settings = formSettings->get_tree();
 
   QString filename = data_directory_ + "/qpx_settings.set";
 

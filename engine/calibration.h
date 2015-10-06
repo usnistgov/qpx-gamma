@@ -27,14 +27,14 @@
 #include <vector>
 #include <string>
 #include <boost/date_time.hpp>
-#include "xmlable2.h"
+#include "xmlable.h"
 #include "polynomial.h"
 
 namespace Gamma {
 
 enum class CalibrationModel : int {none = 0, polynomial = 1};
 
-class Calibration : public XMLable2 {
+class Calibration : public XMLable {
  public:
   Calibration();
   Calibration(std::string type, uint16_t bits, std::string units = "channels"): Calibration() {type_=type; bits_ = bits; units_ = units;}

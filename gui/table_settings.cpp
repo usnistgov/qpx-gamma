@@ -13,7 +13,7 @@
  * any modified versions bear some notice that they have been modified.
  *
  * Description:
- *      TableChanSettings - table for displaying and manipulating Pixie's
+ *      TableChanSettings - table for displaying and manipulating
  *      channel settings and chosing detectors.
  *
  * Author(s):

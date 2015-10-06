@@ -20,15 +20,15 @@
  *
  ******************************************************************************/
 
-#ifndef PIXIE_GENERIC_SETTING
-#define PIXIE_GENERIC_SETTING
+#ifndef GENERIC_SETTING
+#define GENERIC_SETTING
 
 #include <vector>
 #include <string>
 #include <map>
 #include <set>
 #include "pugixml.hpp"
-#include "xmlable2.h"
+#include "xmlable.h"
 
 
 namespace Gamma {
@@ -67,7 +67,7 @@ inline Match operator&(Match a, Match b) {return static_cast<Match>(static_cast<
 SettingType to_type(const std::string &type);
 std::string to_string(SettingType);
 
-struct SettingMeta : public XMLable2 {
+struct SettingMeta : public XMLable {
 
   std::string        id_;
   SettingType        setting_type;
@@ -132,7 +132,7 @@ struct SettingMeta : public XMLable2 {
 
 struct Setting;
 
-struct Setting : public XMLable2 {
+struct Setting : public XMLable {
   std::string       id_;
 
   int32_t           index;
@@ -142,7 +142,7 @@ struct Setting : public XMLable2 {
   std::string       value_text;
   double            value_dbl;
 
-  XMLable2DB<Setting> branches;
+  XMLableDB<Setting> branches;
 
   SettingMeta        metadata;
 

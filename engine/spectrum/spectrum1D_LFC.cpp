@@ -85,7 +85,7 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
     time1_ = time2_;
 
     PL_TRC << "LFC update chan[" << my_channel_ << "]"
-           << " pixie_time=" << diff.total_time
+           << " device_time=" << diff.total_time
            << " lab_time=" << d_lab_time
            << " live_time=" << diff.live_time
            << " ftdt=" << diff.ftdt

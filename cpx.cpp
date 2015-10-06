@@ -224,7 +224,7 @@ bool Cpx::templates(std::vector<std::string> &tokens) {
   }
   std::string file(tokens[0]);
 
-  XMLable2DB<Qpx::Spectrum::Template>  spectra_templates_("SpectrumTemplates");
+  XMLableDB<Qpx::Spectrum::Template>  spectra_templates_("SpectrumTemplates");
   spectra_templates_.read_xml(file);
   if (spectra_templates_.empty()) {
     PL_ERR << "<cpx> bad template file " << file;
@@ -345,7 +345,7 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
   default_detectors_[3] = "N/A";
 
   //defaults
-  XMLable2DB<Gamma::Detector> detectors_("Detectors");
+  XMLableDB<Gamma::Detector> detectors_("Detectors");
   detectors_.read_xml(data_dir + "/default_detectors.det");
   if (detectors_.empty()) {
     PL_ERR << "<cpx> bad detector db";

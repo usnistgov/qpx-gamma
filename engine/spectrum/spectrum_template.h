@@ -29,12 +29,12 @@
 #include <vector>
 #include "generic_setting.h"
 #include "daq_types.h"
-#include "xmlable2.h"
+#include "xmlable.h"
 
 namespace Qpx {
 namespace Spectrum {
 
-class Template : public XMLable2 {
+class Template : public XMLable {
  public:
   Template(): //default appearance is blue in RGBA
   type("invalid"), name_("noname"), generic_attributes("Attributes"), bits(14), appearance(4278190335), visible(false) {}
@@ -65,7 +65,7 @@ class Template : public XMLable2 {
   std::vector<int16_t> match_pattern, add_pattern;
   uint32_t appearance;
   bool visible;
-  XMLable2DB<Gamma::Setting> generic_attributes;
+  XMLableDB<Gamma::Setting> generic_attributes;
 
   //this stuff from factory
   std::string type, description;

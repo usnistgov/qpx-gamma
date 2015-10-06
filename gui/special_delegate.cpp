@@ -305,6 +305,6 @@ void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *mod
     QStyledItemDelegate::setModelData(editor, model, index);
 }
 
-void QpxSpecialDelegate::eat_detectors(const XMLable2DB<Gamma::Detector> &detectors) {
+void QpxSpecialDelegate::eat_detectors(const XMLableDB<Gamma::Detector> &detectors) {
   detectors_ = detectors;
 }

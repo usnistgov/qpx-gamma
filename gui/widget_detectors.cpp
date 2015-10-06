@@ -408,7 +408,7 @@ WidgetDetectors::WidgetDetectors(QWidget *parent) :
           this, SLOT(selection_changed(QItemSelection,QItemSelection)));
 }
 
-void WidgetDetectors::setData(XMLable2DB<Gamma::Detector> &newdb, QString outdir) {
+void WidgetDetectors::setData(XMLableDB<Gamma::Detector> &newdb, QString outdir) {
   table_model_.setDB(newdb);
   detectors_ = &newdb;
   root_dir_  = outdir;

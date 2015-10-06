@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      TableChanSettings - table for displaying and manipulating Pixie's
+ *      TableChanSettings - tree for displaying and manipulating
  *      channel settings and chosing detectors.
  *
  ******************************************************************************/

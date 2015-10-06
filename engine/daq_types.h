@@ -16,17 +16,17 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Types for organizing data aquired from Pixie
+ *      Types for organizing data aquired from device
  *        Qpx::Hit        single energy event with coincidence flags
- *        Qpx::StatsUdate metadata for one spill (memory chunk from Pixie)
+ *        Qpx::StatsUdate metadata for one spill (memory chunk)
  *        Qpx::RunInfo    metadata for the whole run
  *        Qpx::Spill      bundles all data and metadata for a list run
  *        Qpx::ListData   bundles hits in vector and run metadata
  *
  ******************************************************************************/
 
-#ifndef PIXIE_DAQ_TYPES
-#define PIXIE_DAQ_TYPES
+#ifndef DAQ_TYPES
+#define DAQ_TYPES
 
 #include <array>
 #include <bitset>
@@ -34,7 +34,7 @@
 #include "generic_setting.h"
 #include "detector.h"
 #include "custom_logger.h"
-#include "xmlable2.h"
+#include "xmlable.h"
 
 namespace Qpx {
 
@@ -55,7 +55,7 @@ struct TimeStamp {
 
 };
 
-struct Hit : public XMLable2 {
+struct Hit : public XMLable {
 
   int16_t channel;
   TimeStamp timestamp;
@@ -117,7 +117,7 @@ struct Event {
   }
 };
 
-struct StatsUpdate : public XMLable2 {
+struct StatsUpdate : public XMLable {
   int16_t channel;
   uint64_t spill_number;
   uint64_t events_in_spill;
@@ -158,7 +158,7 @@ struct StatsUpdate : public XMLable2 {
 
 };
 
-struct RunInfo : public XMLable2 {
+struct RunInfo : public XMLable {
   Gamma::Setting state;
   std::vector<Gamma::Detector> detectors;
   uint64_t total_events;
@@ -198,7 +198,7 @@ struct Spill {
     return true;
   }
 
-  std::vector<uint32_t>  data;  //as is from Pixie, unparsed
+  std::vector<uint32_t>  data;  //as is from device, unparsed
   std::list<Qpx::Hit>    hits;  //parsed
   std::list<StatsUpdate> stats;
   RunInfo*     run;

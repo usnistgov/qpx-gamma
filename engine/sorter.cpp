@@ -40,73 +40,60 @@ Sorter::Sorter(std::string name_xml)
   , open_bin_(false)
   , file_name_xml_(name_xml)
 {
- /* file_xml_ = fopen(file_name_xml_.c_str(), "r");
-  if (file_xml_ == nullptr)
+  pugi::xml_document doc;
+
+  if (!doc.load_file(file_name_xml_.c_str()))
     return;
 
-  tinyxml2::XMLDocument docx;
-  docx.LoadFile(file_xml_);
-
-  if ((root_ = docx.FirstChildElement("QpxListData")) == nullptr) {
-    fclose(file_xml_);
+  pugi::xml_node root = doc.first_child();
+  if (!root || (std::string(root.name()) != "QpxListData"))
     return;
-  }
 
-  tinyxml2::XMLElement* branch;
-  if ((branch = root_->FirstChildElement("BinaryOut")) == nullptr) {
-    fclose(file_xml_);
+  if (!root.child("BinaryOut"))
     return;
-  }
 
-  tinyxml2::XMLElement* fn;
-  if ((fn = branch->FirstChildElement("FileName")) == nullptr) {
-    fclose(file_xml_);
-    return;
-  }
-
-  file_name_bin_ = std::string(fn->GetText());
+  file_name_bin_ = std::string(root.child("BinaryOut").child_value("FileName"));
   file_bin_.open(file_name_bin_, std::ofstream::in | std::ofstream::binary);
 
-  if (!file_bin_.is_open()) {
-    fclose(file_xml_);
+  if (!file_bin_.is_open())
     return;
-  }
 
   if (!file_bin_.good()) {
     file_bin_.close();
-    fclose(file_xml_);
     return;
   }
 
-  tinyxml2::XMLElement* sp = root_->FirstChildElement("StatsUpdate");
-  while (sp != nullptr) {
-    StatsUpdate su;
-    su.from_xml(sp);
-    if (!(su == StatsUpdate()))
-      spills_.push_back(su);
-    sp = dynamic_cast<tinyxml2::XMLElement*>(sp->NextSiblingElement("StatsUpdate"));
+  for (auto &q : root.children(StatsUpdate().xml_element_name().c_str())) {
+    StatsUpdate stats;
+    stats.from_xml(q);
+    if (stats != StatsUpdate())
+      spills_.push_back(stats);
   }
 
-  branch = root_->FirstChildElement("RunInfo");
-  if (branch != nullptr)
-    start_.from_xml(branch);
-  branch = dynamic_cast<tinyxml2::XMLElement*>(branch->NextSiblingElement("RunInfo"));
-  if (branch != nullptr)
-    end_.from_xml(branch);
+
+  for (auto &q : root.children(RunInfo().xml_element_name().c_str())) {
+    RunInfo info;
+    info.from_xml(q);
+    if (info.time_start == info.time_stop)
+      start_ = info;
+    else
+      end_ = info;
+  }
 
   if (spills_.size() > 0)
     valid_ = true;
-  else
+  else {
+    file_bin_.close();
     return;
+  }
 
-  fclose(file_xml_);
   file_bin_.seekg (0, std::ios::beg);
   bin_begin_ = file_bin_.tellg();
   file_bin_.seekg (0, std::ios::end);
   bin_end_ = file_bin_.tellg();
   file_bin_.seekg (0, std::ios::beg);
   PL_DBG << "<Sorter> found " << spills_.size() << " spills with total_count = " << end_.total_events << " and binary file size = " << (bin_end_ - bin_begin_) << " bytes";
-  open_bin_ = true;*/
+  open_bin_ = true;
 }
 
 void Sorter::order(std::string name_out) {

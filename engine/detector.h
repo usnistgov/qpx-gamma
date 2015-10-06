@@ -33,7 +33,7 @@
 
 namespace Gamma {
 
-class Detector : public XMLable2 {
+class Detector : public XMLable {
  public:
   Detector()
       : energy_calibrations_("Calibrations")
@@ -68,8 +68,8 @@ class Detector : public XMLable2 {
   Calibration get_gain_match(uint16_t bits, std::string todet);
   
   std::string name_, type_;
-  XMLable2DB<Calibration> energy_calibrations_;
-  XMLable2DB<Calibration> gain_match_calibrations_;
+  XMLableDB<Calibration> energy_calibrations_;
+  XMLableDB<Calibration> gain_match_calibrations_;
 
   Calibration fwhm_calibration_;
   Setting settings_;

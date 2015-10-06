@@ -30,9 +30,9 @@
 #include "pugixml.hpp"
 #include "custom_logger.h"
 
-class XMLable2 {
+class XMLable {
  public:
-  XMLable2() {}
+  XMLable() {}
 
   virtual void to_xml(pugi::xml_node &node) const = 0;
   virtual void from_xml(const pugi::xml_node &node) = 0;
@@ -45,9 +45,9 @@ class XMLable2 {
 };
 
 template<typename T>
-class XMLable2DB : public XMLable2 {
+class XMLableDB : public XMLable {
 public:
-  XMLable2DB(std::string xml_name) {xml_name_ = xml_name;}
+  XMLableDB(std::string xml_name) {xml_name_ = xml_name;}
   //  std::string name() const {return name_;}
   std::string xml_element_name() const {return xml_name_;}
 
@@ -55,8 +55,8 @@ public:
   int size() const {return my_data_.size();}
   void clear() {my_data_.clear();}
 
-  bool operator!= (const XMLable2DB& other) const {return !operator==(other);}
-  bool operator== (const XMLable2DB& other) const {
+  bool operator!= (const XMLableDB& other) const {return !operator==(other);}
+  bool operator== (const XMLableDB& other) const {
     if (xml_name_ != other.xml_name_)
       return false;
     if (my_data_.size() != other.my_data_.size())
@@ -68,7 +68,7 @@ public:
     return true;
   }
 
-  bool shallow_equals(const XMLable2DB& other) const {
+  bool shallow_equals(const XMLableDB& other) const {
     return (xml_name_ == other.xml_name_);
     //&& (name_ == other.name_));
   }

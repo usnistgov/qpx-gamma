@@ -27,7 +27,7 @@
 #include <list>
 #include <string>
 #include <iomanip>
-#include "xmlable2.h"
+#include "xmlable.h"
 
 namespace RadTypes {
 
@@ -42,7 +42,7 @@ static std::string dbl2str(double d)
 }
 
   
-class AbstractRadiation : public XMLable2 {
+class AbstractRadiation : public XMLable {
  public:
   AbstractRadiation() : energy(0), abundance(0) {}
   AbstractRadiation(double en, double ab) : energy(en), abundance(ab) {}
@@ -77,7 +77,7 @@ public:
   std::string xml_element_name() const override {return "gamma";}
 };
   
-class Isotope : public XMLable2 {
+class Isotope : public XMLable {
  public:
   Isotope () : gammas("gammas"), half_life(0.0) {}
   Isotope (std::string nm) : Isotope() {name = nm;}
@@ -102,7 +102,7 @@ class Isotope : public XMLable2 {
   double half_life;
   std::string gamma_constant;
   Beta beta;
-  XMLable2DB<Gamma> gammas;
+  XMLableDB<Gamma> gammas;
 };
 
 }

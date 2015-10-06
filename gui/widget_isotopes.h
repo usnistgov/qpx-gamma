@@ -42,8 +42,8 @@ private:
   std::vector<RadTypes::Gamma> gammas_;
 
 public:
-  void set_gammas(const XMLable2DB<RadTypes::Gamma> &);
-  XMLable2DB<RadTypes::Gamma> get_gammas();
+  void set_gammas(const XMLableDB<RadTypes::Gamma> &);
+  XMLableDB<RadTypes::Gamma> get_gammas();
   void clear();
 
   explicit TableGammas(QObject *parent = 0);
@@ -109,7 +109,7 @@ private:
   QString root_dir_;
   bool modified_;
 
-  XMLable2DB<RadTypes::Isotope> isotopes_;
+  XMLableDB<RadTypes::Isotope> isotopes_;
 
   std::vector<double> current_gammas_;
 

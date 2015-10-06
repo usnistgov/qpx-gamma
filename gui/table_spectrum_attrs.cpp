@@ -128,7 +128,7 @@ QVariant TableSpectrumAttrs::headerData(int section, Qt::Orientation orientation
   return QVariant();
 }
 
-void TableSpectrumAttrs::eat(XMLable2DB<Gamma::Setting> *generic_attr) {
+void TableSpectrumAttrs::eat(XMLableDB<Gamma::Setting> *generic_attr) {
   generic_attributes = generic_attr;
 }
 

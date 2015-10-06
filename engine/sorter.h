@@ -20,8 +20,8 @@
  *
  ******************************************************************************/
 
-#ifndef PIXIE_SORTER
-#define PIXIE_SORTER
+#ifndef SORTER
+#define SORTER
 
 #include "daq_types.h"
 
@@ -47,10 +47,7 @@ class Sorter {
   std::string file_name_bin_;
 
   std::ifstream  file_bin_;
-  FILE          *file_xml_;
   std::streampos bin_begin_, bin_end_;
-
-  //tinyxml2::XMLElement* root_;
 
   std::list<StatsUpdate> spills_;
   RunInfo start_, end_;

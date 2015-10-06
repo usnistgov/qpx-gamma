@@ -164,7 +164,7 @@ void FormOscilloscope::replot() {
         continue;
 
       uint32_t trace_length = traces_[i].data.size();
-      double xinterval = traces_[i].detector.settings_.branches.get(Gamma::Setting("QpxSettings/Pixie-4/System/module/channel/XDT")).value_dbl;
+      double xinterval = traces_[i].detector.settings_.get_setting(Gamma::Setting("XDT"), Gamma::Match::name).value_dbl;
 
       xdt = xinterval;
 
