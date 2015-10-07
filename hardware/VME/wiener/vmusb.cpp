@@ -164,9 +164,9 @@ std::string VmUsb::information(void)
     std::string result;
 
     if (!udev)
-        result = "Not connected to Wiener XXUSB library!";
+        result = "Not connected to Wiener VME controller";
     else
-        result = "Connected to VME controller Wiener " + m_serialNumber + ".";
+        result = "Connected to Wiener VME controller " + m_serialNumber + ".";
 
     return result;
 }

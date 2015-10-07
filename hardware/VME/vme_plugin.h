@@ -27,6 +27,7 @@
 #include "detector.h"
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
+#include "vmemodule.h"
 
 namespace Qpx {
 
@@ -36,7 +37,7 @@ public:
   QpxVmePlugin();
   ~QpxVmePlugin();
 
-  static std::string plugin_name() {return "Vme";}
+  static std::string plugin_name() {return "VME";}
   std::string device_name() const override {return plugin_name();}
 
   bool write_settings_bulk(Gamma::Setting &set) override;
@@ -57,6 +58,10 @@ protected:
   void rebuild_structure(Gamma::Setting &set);
 
   std::vector<int32_t> channel_indices_;
+
+  std::string controller_name_;
+
+  BaseController *controller_;
 
 };
 

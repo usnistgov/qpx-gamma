@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<VME>
+	<SettingMeta id="VME" type="stem" name="VME" address="0" writable="false" saveworthy="true">
+		<branch address="0" id="VME/ControllerID" />
+		<branch address="1" id="VME/junk" />
+		<branch address="2" id="VME/boot" />
+	</SettingMeta>
+	<SettingMeta id="VME/ControllerID" type="text" visible="false" name="Controller ID" address="0" writable="true"/>
+	<SettingMeta id="VME/junk" type="text" visible="true" name="Some data" address="0" writable="true"/>
+	<SettingMeta id="VME/boot" type="command" name="Boot" address="0" writable="true" visible="false" />
+</VME>

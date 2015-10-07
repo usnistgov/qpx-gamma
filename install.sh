@@ -1,7 +1,5 @@
 #!/bin/bash
-qmake cpx.pro
-make release
-qmake qpx.pro
+qmake
 make release
 SOURCEDIR=./samples/*
 DESTDIR=$HOME/qpxdata

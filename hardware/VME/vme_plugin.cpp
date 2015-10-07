@@ -24,24 +24,25 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
-#include "common_xia.h"
 #include "custom_logger.h"
 #include "custom_timer.h"
-
+#include "vmusb.h"
 
 namespace Qpx {
 
-static DeviceRegistrar<QpxVmePlugin> registrar("Pixie4");
+static DeviceRegistrar<QpxVmePlugin> registrar("VME");
 
 QpxVmePlugin::QpxVmePlugin() {
 
   live_ = LiveStatus::dead;
+  controller_ = nullptr;
 
 }
 
 
 QpxVmePlugin::~QpxVmePlugin() {
-
+  if (controller_ != nullptr)
+    delete controller_;
 }
 
 
@@ -69,7 +70,11 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
     return false;
 
   for (auto &q : set.branches.my_data_) {
-
+    if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "VME/ControllerID")) {
+      PL_DBG << "VME controller expected " << q.value_text;
+      if (controller_name_.empty())
+        controller_name_ = q.value_text;
+    }
   }
   return true;
 }
@@ -93,12 +98,29 @@ bool QpxVmePlugin::execute_command(Gamma::Setting &set) {
 
 
 bool QpxVmePlugin::boot() {
+  PL_DBG << "Attempting to boot VME";
+
   if (live_ == LiveStatus::history) {
     PL_WARN << "Cannot boot VME system. Improper initialization of parameters in wrapper. Or boot from history...?";
     return false;
   }
 
+  if (live_ == LiveStatus::online) {
+    PL_WARN << "Cannot boot VME system. Already booted. Please reset first.";
+    return false;
+  }
+
   live_ = LiveStatus::dead;
+
+  if (controller_ != nullptr)
+    delete controller_;
+
+  if (controller_name_ == "VmUsb") {
+    controller_ = new VmUsb();
+    PL_DBG << "Connected to VME controller " << controller_->information();
+  }
+
+
 }
 
 void QpxVmePlugin::get_all_settings() {
