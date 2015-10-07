@@ -39,8 +39,8 @@ public:
   static Template get_template() {
     Template new_temp;
     new_temp.type = "2D";
-    new_temp.output_types = {"m", "esc", "spn"};
-    new_temp.input_types = {"esc", "spn"};
+    new_temp.output_types = {"m", "spn"};
+    new_temp.input_types = {"spn", "m4b", "mat"};
     new_temp.description = "Matrix-type coincidence spectrum for two detectors";
 
     Gamma::Setting buf;
@@ -79,11 +79,11 @@ protected:
   
   //export to matlab script
   void write_m(std::string) const;
-  void write_esc(std::string) const;
   void write_spn(std::string) const;
 
-  bool read_esc(std::string);
   bool read_spn(std::string);
+  bool read_m4b(std::string);
+  bool read_mat(std::string);
 
   //indexes of the two chosen channels
   std::vector<int8_t> pattern_;

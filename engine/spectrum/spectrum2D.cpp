@@ -180,9 +180,6 @@ bool Spectrum2D::_write_file(std::string dir, std::string format) const {
   if (format == "m") {
       write_m(dir + "/" + metadata_.name + ".m");
       return true;
-  } else if (format == "esc") {
-      write_esc(dir + "/" + metadata_.name + ".esc");
-      return true;
   } else if (format == "spn") {
       write_spn(dir + "/" + metadata_.name + ".spn");
       return true;
@@ -191,8 +188,10 @@ bool Spectrum2D::_write_file(std::string dir, std::string format) const {
 }
 
 bool Spectrum2D::_read_file(std::string name, std::string format) {
-  if (format == "esc")
-    return read_esc(name);
+  if (format == "m4b")
+    return read_m4b(name);
+  else if (format == "mat")
+    return read_mat(name);
   else if (format == "spn")
     return read_spn(name);
   else
@@ -218,12 +217,12 @@ void Spectrum2D::write_m(std::string name) const {
   myfile.close();
 }
 
-void Spectrum2D::write_esc(std::string name) const {
+/*void Spectrum2D::write_m4b(std::string name) const {
   std::ofstream myfile(name, std::ios::out | std::ios::binary);
 
   float one;
-  for (int i=0; i<2048; ++i) {
-    for (int j=0; j<2048; ++j) {
+  for (int i=0; i<4096; ++i) {
+    for (int j=0; j<4096; ++j) {
       one = 0.0;
       std::pair<uint16_t,uint16_t> point(i, j);
       if (spectrum_.count(point))
@@ -234,14 +233,14 @@ void Spectrum2D::write_esc(std::string name) const {
     }
   }
   myfile.close();
-}
+}*/
 
 void Spectrum2D::write_spn(std::string name) const {
   std::ofstream myfile(name, std::ios::out | std::ios::binary);
 
   uint32_t one;
-  for (int i=0; i<8192; ++i) {
-    for (int j=0; j<8192; ++j) {
+  for (int i=0; i<4096; ++i) {
+    for (int j=0; j<4096; ++j) {
       one = 0;
       std::pair<uint16_t,uint16_t> point(i, j);
       if (spectrum_.count(point))
@@ -256,37 +255,6 @@ void Spectrum2D::write_spn(std::string name) const {
 
 
 
-bool Spectrum2D:: read_esc(std::string name) {
-  //radware escl8r file
-  std::ifstream myfile(name, std::ios::in | std::ios::binary);
-
-  spectrum_.clear();
-  metadata_.total_count = 0;
-//  metadata_.max_chan = 0;
-//  uint16_t max_i =0;
-
-  float one;
-  for (int i=0; i<2048; ++i) {
-    // actually, i<2055, more junk there, not sure what it is
-    for (int j=0; j<2048; ++j) {
-      myfile.read ((char*)&one, sizeof(float));
-      metadata_.total_count += one;
-      if (one > 0)
-        spectrum_[std::pair<uint16_t, uint16_t>(i,j)] = one;
-    }
-  }
-  metadata_.bits = 11;
-  shift_by_ = 5;
-
-  metadata_.detectors.resize(2);
-  metadata_.detectors[0].name_ = "unknown1";
-  metadata_.detectors[0].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
-  metadata_.detectors[1].name_ = "unknown2";
-  metadata_.detectors[1].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
-  
-  init_from_file(name);
-}
-
 bool Spectrum2D:: read_spn(std::string name) {
   //radware escl8r file
   std::ifstream myfile(name, std::ios::in | std::ios::binary);
@@ -297,9 +265,8 @@ bool Spectrum2D:: read_spn(std::string name) {
 //  uint16_t max_i =0;
 
   uint32_t one;
-  for (int i=0; i<8192; ++i) {
-    for (int j=0; j<8192; ++j) {
-      myfile.read ((char*)&one, sizeof(uint32_t));
+  for (int i=0; i<201; ++i) {
+    for (int j=0; j<4096; ++j) {      myfile.read ((char*)&one, sizeof(uint32_t));
       metadata_.total_count += one;
       if (one > 0)
         spectrum_[std::pair<uint16_t, uint16_t>(i,j)] = one;
@@ -307,6 +274,7 @@ bool Spectrum2D:: read_spn(std::string name) {
   }
   metadata_.bits = 13;
   shift_by_ = 3;
+
 
   metadata_.detectors.resize(2);
   metadata_.detectors[0].name_ = "unknown1";
@@ -317,6 +285,68 @@ bool Spectrum2D:: read_spn(std::string name) {
   init_from_file(name);
 }
 
+bool Spectrum2D:: read_m4b(std::string name) {
+  //radware escl8r file
+  std::ifstream myfile(name, std::ios::in | std::ios::binary);
+
+  spectrum_.clear();
+  metadata_.total_count = 0;
+//  metadata_.max_chan = 0;
+//  uint16_t max_i =0;
+
+  uint32_t one;
+  for (int i=0; i<4096; ++i) {
+    for (int j=0; j<4096; ++j) {
+      myfile.read ((char*)&one, sizeof(uint32_t));
+      metadata_.total_count += one;
+      if (one > 0)
+        spectrum_[std::pair<uint16_t, uint16_t>(i,j)] = one;
+    }
+  }
+  metadata_.bits = 12;
+  shift_by_ = 4;
+  metadata_.max_chan = 4095;
+
+
+  metadata_.detectors.resize(2);
+  metadata_.detectors[0].name_ = "unknown1";
+  metadata_.detectors[0].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
+  metadata_.detectors[1].name_ = "unknown2";
+  metadata_.detectors[1].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
+
+  init_from_file(name);
+}
+
+bool Spectrum2D:: read_mat(std::string name) {
+  //radware
+  std::ifstream myfile(name, std::ios::in | std::ios::binary);
+
+  spectrum_.clear();
+  metadata_.total_count = 0;
+//  metadata_.max_chan = 0;
+//  uint16_t max_i =0;
+
+  uint16_t one;
+  for (int i=0; i<4096; ++i) {
+    for (int j=0; j<4096; ++j) {
+      myfile.read ((char*)&one, sizeof(uint16_t));
+      metadata_.total_count += one;
+      if (one > 0)
+        spectrum_[std::pair<uint16_t, uint16_t>(i,j)] = one;
+    }
+  }
+  metadata_.bits = 12;
+  shift_by_ = 4;
+  metadata_.max_chan = 4095;
+
+  metadata_.detectors.resize(2);
+  metadata_.detectors[0].name_ = "unknown1";
+  metadata_.detectors[0].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
+  metadata_.detectors[1].name_ = "unknown2";
+  metadata_.detectors[1].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
+
+  init_from_file(name);
+}
 
 void Spectrum2D::init_from_file(std::string filename) { 
   metadata_.match_pattern.resize(2, 0);
