@@ -46,7 +46,13 @@ Engine::Engine() {
 }
 
 
-void Engine::initialize(std::string settings_file) {
+void Engine::initialize(std::string path) {
+  //don't allow this twice?
+
+  path_ = path;
+
+  std::string settings_file = path + "/qpx_settings.set";
+
   pugi::xml_document doc;
   if (!doc.load_file(settings_file.c_str()))
     return;
@@ -64,7 +70,7 @@ void Engine::initialize(std::string settings_file) {
   for (auto &q : tree.branches.my_data_) {
     if (q.id_ != "Detectors") {
       PL_DBG << "Adding device " << q.id_;
-      DaqDevice* device = DeviceFactory::getInstance().create_type(q.id_, q.value_text);
+      DaqDevice* device = DeviceFactory::getInstance().create_type(q.id_, path + q.value_text);
       if (device != nullptr) {
         PL_DBG << "Success creating " << device->device_name();
         devices_[q.id_] = device;

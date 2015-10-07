@@ -116,7 +116,7 @@ void FormStart::loadSettings() {
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
   settings_.endGroup();
 
-  QString filename = data_directory_ + "/qpx_settings.set";
+  QString filename = data_directory_;// + "/qpx_settings.set";
 
   runner_thread_.do_initialize(filename);
 }

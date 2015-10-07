@@ -11,12 +11,12 @@
 		<Setting id="Detector" type="detector" index="6" indices="6" value="none" />
 		<Setting id="Detector" type="detector" index="7" indices="7" value="none" />
 	</Setting>
-	<Setting id="VME" type="stem" index="-1" reference="/home/mgs/qpxdata/VME/qpx_plugin.set">
+	<Setting id="VME" type="stem" index="-1" reference="/VME/qpx_plugin.set">
 		<Setting id="VME/ControllerID" type="text" index="-1" value="VmUsb" />
 		<Setting id="VME/junk" type="text" index="-1" value="jjj" />
 		<Setting id="VME/boot" type="command" index="-1" />
 	</Setting>
-	<Setting id="Pixie4" type="stem" index="-1" reference="/home/mgs/qpxdata/XIA/qpx_plugin.set">
+	<Setting id="Pixie4" type="stem" index="-1" reference="/XIA/qpx_plugin.set">
 		<Setting id="Pixie4/Run settings" type="stem" index="-1">
 			<Setting id="Pixie4/Run settings/Run type" type="int_menu" index="-1" value="259" />
 			<Setting id="Pixie4/Run settings/Double buffer" type="boolean" index="-1" value="true" />
