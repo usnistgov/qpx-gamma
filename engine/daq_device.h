@@ -42,7 +42,7 @@ public:
   {}
   static std::string plugin_name() {return std::string();}
 
-  virtual std::string device_name() {return std::string();}
+  virtual std::string device_name() const {return std::string();}
 
   bool load_setting_definitions(std::string file);
   bool save_setting_definitions(std::string file);

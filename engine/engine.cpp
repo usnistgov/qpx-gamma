@@ -64,7 +64,7 @@ void Engine::initialize(std::string settings_file) {
   for (auto &q : tree.branches.my_data_) {
     if (q.id_ != "Detectors") {
       PL_DBG << "Adding device " << q.id_;
-      DaqDevice* device = DeviceFactory::getInstance().create_type(q.id_, "/home/mgs/qpxdata/XIA/qpx_plugin.set");
+      DaqDevice* device = DeviceFactory::getInstance().create_type(q.id_, q.value_text);
       if (device != nullptr) {
         PL_DBG << "Success creating " << device->device_name();
         devices_[q.id_] = device;

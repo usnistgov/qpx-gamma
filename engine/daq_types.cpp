@@ -177,7 +177,8 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
 
 // to convert Pixie time to lab time
 double RunInfo::time_scale_factor() const {
-  double tot = state.get_setting(Gamma::Setting("TOTAL_TIME"), Gamma::Match::name).value_dbl;
+  double tot = state.get_setting(Gamma::Setting("Pixie4/System/module/TOTAL_TIME"), Gamma::Match::id).value_dbl;
+  PL_DBG << "total time " << tot;
   if (time_stop.is_not_a_date_time() ||
       time_start.is_not_a_date_time() ||
       (tot <= 0.0))

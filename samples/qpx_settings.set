@@ -7,7 +7,7 @@
 		<Setting id="Detector" type="detector" index="2" indices="2" value="none" />
 		<Setting id="Detector" type="detector" index="3" indices="3" value="none" />
 	</Setting>
-	<Setting id="Pixie4" type="stem" index="-1">
+	<Setting id="Pixie4" type="stem" index="-1" reference="/home/mgs/qpxdata/XIA/qpx_plugin.set">
 		<Setting id="Pixie4/Run settings" type="stem" index="-1">
 			<Setting id="Pixie4/Run settings/Run type" type="int_menu" index="-1" value="259" />
 			<Setting id="Pixie4/Run settings/Double buffer" type="boolean" index="-1" value="true" />

@@ -197,8 +197,8 @@ void Spectrum::addRun(const RunInfo& run_info) {
   double scale_factor = run_info.time_scale_factor();
   metadata_.live_time = metadata_.real_time;
   for (int i = 0; i < metadata_.add_pattern.size(); i++) { //using shortest live time of all added channels
-    double live = run_info.state.get_setting(Gamma::Setting("LIVE_TIME", i), Gamma::Match::name | Gamma::Match::indices).value_dbl;
-    double sfdt = run_info.state.get_setting(Gamma::Setting("SFDT", i), Gamma::Match::name | Gamma::Match::indices).value_dbl;
+    double live = run_info.state.get_setting(Gamma::Setting("Pixie4/System/module/channel/LIVE_TIME", i), Gamma::Match::id | Gamma::Match::indices).value_dbl;
+    double sfdt = run_info.state.get_setting(Gamma::Setting("Pixie4/System/module/channel/SFDT", i), Gamma::Match::id | Gamma::Match::indices).value_dbl;
     double this_time_unscaled =live - sfdt;
     if ((metadata_.add_pattern[i]) && (this_time_unscaled <= metadata_.live_time.total_seconds()))
       metadata_.live_time = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));

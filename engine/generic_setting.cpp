@@ -220,6 +220,7 @@ void Setting::from_xml(const pugi::xml_node &node) {
 
   else if (metadata.setting_type == SettingType::stem) {
     branches.clear();
+    value_text = std::string(node.attribute("reference").value());
     for (pugi::xml_node child : node.children()) {
       Setting newset(child);
       if (newset != Setting())
@@ -268,9 +269,12 @@ void Setting::to_xml(pugi::xml_node &node, bool with_metadata) const {
            (metadata.setting_type == SettingType::dir_path))
     child.append_attribute("value").set_value(value_text.c_str());
 
-  else if (metadata.setting_type == SettingType::stem)
+  else if (metadata.setting_type == SettingType::stem) {
+    if (!value_text.empty())
+      child.append_attribute("reference").set_value(value_text.c_str());
     for (auto &q : branches.my_data_)
       q.to_xml(child);
+  }
 
   if (metadata.meaningful())
     metadata.to_xml(child);

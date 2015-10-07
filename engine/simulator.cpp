@@ -78,7 +78,7 @@ Simulator::Simulator(SpectraSet* all_spectra, std::array<int,2> chans,
   
   count_ = md.total_count;
 
-  time_factor = settings.get_setting(Gamma::Setting("TOTAL_TIME"), Gamma::Match::name).value_dbl / lab_time;
+  time_factor = settings.get_setting(Gamma::Setting("Pixie4/System/module/TOTAL_TIME"), Gamma::Match::id).value_dbl / lab_time;
   OCR = static_cast<double>(count_) / lab_time;
 
   int adjust_bits = source_res - dest_res;
