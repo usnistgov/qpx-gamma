@@ -166,9 +166,12 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
   //private; no lock required
 
   if ((newBlock.channel >= 0) && (newBlock.channel < metadata_.add_pattern.size()) && (metadata_.add_pattern[newBlock.channel])) {
-    if (start_stats.count(newBlock.channel) == 0)
+    //PL_DBG << "Spectrum " << metadata_.name << " received update for chan " << newBlock.channel;
+    if (start_stats.count(newBlock.channel) == 0) {
+      //PL_DBG << "initial stats";
       start_stats[newBlock.channel] = newBlock;
-    else {
+    } else {
+      //PL_DBG << "update stats";
       metadata_.real_time   = newBlock.lab_time - start_stats[newBlock.channel].lab_time;
       StatsUpdate diff = newBlock - start_stats[newBlock.channel];
       if (!diff.total_time)
@@ -177,8 +180,10 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
 
       metadata_.live_time = metadata_.real_time;
       double this_time_unscaled = diff.live_time - diff.sfdt;
-      if (this_time_unscaled < metadata_.live_time.total_seconds())
+      if (this_time_unscaled < metadata_.live_time.total_seconds()) {
+        //PL_DBG << "really update stats";
         metadata_.live_time = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));
+      }
     }
   }
 }

@@ -59,6 +59,7 @@ bool Spectrum2D::initialize() {
       adds++;
     }
   }
+
   metadata_.type = my_type();
   return true;
 }
@@ -155,7 +156,7 @@ std::unique_ptr<EntryList> Spectrum2D::_get_spectrum(std::initializer_list<Pair>
       boost::this_thread::sleep_for(boost::chrono::seconds{1});
     temp_spectrum_.clear(); //assumption about client
   }
-  PL_DBG << "Making list for " << metadata_.name << " took " << makelist.ms() << "ms filled with "
+  PL_DBG << "<Spectrum2D> Making list for " << metadata_.name << " took " << makelist.ms() << "ms filled with "
          << result->size() << " elements";
   return result;
 }
@@ -166,7 +167,7 @@ void Spectrum2D::addEvent(const Event& newEvent) {
   if (newEvent.hit.count(pattern_[0]))
     chan1_en = newEvent.hit.at(pattern_[0]).energy >> shift_by_;
   if (newEvent.hit.count(pattern_[1]))
-    chan1_en = newEvent.hit.at(pattern_[1]).energy >> shift_by_;
+    chan2_en = newEvent.hit.at(pattern_[1]).energy >> shift_by_;
   spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] += 1;
   if (buffered_)
     temp_spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] =

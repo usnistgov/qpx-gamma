@@ -63,14 +63,14 @@ private:
 
   FormStart* main_tab_;
   bool gui_enabled_;
-  Qpx::LiveStatus px_status_;
+  Qpx::DeviceStatus px_status_;
 
   //helper functions
   void saveSettings();
   void loadSettings();
 
 signals:
-  void toggle_push(bool, Qpx::LiveStatus);
+  void toggle_push(bool, Qpx::DeviceStatus);
   void settings_changed();
   void update_dets();
 
@@ -78,7 +78,7 @@ protected:
   void closeEvent(QCloseEvent*);
 
 private slots:
-  void update_settings(Gamma::Setting, std::vector<Gamma::Detector>);
+  void update_settings(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus);
   void toggleIO(bool);
   void updateStatusText(QString);
 

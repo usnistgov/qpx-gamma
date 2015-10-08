@@ -34,7 +34,8 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   ui(new Ui::FormSystemSettings)
 {
   ui->setupUi(this);
-  connect(&runner_thread_, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>)), this, SLOT(update(Gamma::Setting, std::vector<Gamma::Detector>)));
+  connect(&runner_thread_, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)),
+          this, SLOT(update(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)));
   connect(&runner_thread_, SIGNAL(bootComplete()), this, SLOT(post_boot()));
 
   tree_settings_model_.update(dev_settings_);
@@ -66,7 +67,7 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   loadSettings();
 }
 
-void FormSystemSettings::update(const Gamma::Setting &tree, const std::vector<Gamma::Detector> &channels) {
+void FormSystemSettings::update(const Gamma::Setting &tree, const std::vector<Gamma::Detector> &channels, Qpx::DeviceStatus status) {
   dev_settings_ = tree;
   channels_ = channels;
 
@@ -131,11 +132,11 @@ void FormSystemSettings::closeEvent(QCloseEvent *event) {
   event->accept();
 }
 
-void FormSystemSettings::toggle_push(bool enable, Qpx::LiveStatus live) {
-  bool online = (live == Qpx::LiveStatus::online);
-  bool offline = (live == Qpx::LiveStatus::offline);
+void FormSystemSettings::toggle_push(bool enable, Qpx::DeviceStatus status) {
+  bool online = (status & Qpx::DeviceStatus::booted);
+  bool offline = (status & Qpx::DeviceStatus::loaded);
 
-  ui->pushSettingsRefresh->setEnabled(enable && (online || offline));
+  ui->pushSettingsRefresh->setEnabled(enable && online);
 
   if (enable) {
     viewTableSettings->setEditTriggers(QAbstractItemView::AllEditTriggers);
@@ -148,7 +149,7 @@ void FormSystemSettings::toggle_push(bool enable, Qpx::LiveStatus live) {
   ui->bootButton->setEnabled(enable);
   ui->pushOptimizeAll->setEnabled(enable && (online || offline));
 
-  if ((live == Qpx::LiveStatus::online) || (live == Qpx::LiveStatus::offline)) {
+  if (online) {
     ui->bootButton->setText("Reset system");
     ui->bootButton->setIcon(QIcon(":/new/icons/oxy/start.png"));
   } else {
@@ -260,17 +261,17 @@ void FormSystemSettings::on_checkShowRO_clicked()
 
 void FormSystemSettings::on_bootButton_clicked()
 {
-  if (dev_settings_.value_int == 0) {
+  if (ui->bootButton->text() == "Boot system") {
     emit toggleIO(false);
     emit statusText("Booting...");
-    PL_INFO << "Booting system...";
+//    PL_INFO << "Booting system...";
 
     runner_thread_.do_boot();
   } else {
     emit toggleIO(false);
     emit statusText("Shutting down...");
 
-    PL_INFO << "Shutting down";
+//    PL_INFO << "Shutting down";
     runner_thread_.do_shutdown();
   }
 }

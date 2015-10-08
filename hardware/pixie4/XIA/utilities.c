@@ -81,6 +81,7 @@
  *
 ******************************************************************************/
 
+#include "custom_logger.h"
 
 #include <string.h>
 #include <math.h>
@@ -4238,18 +4239,21 @@ S32 Pixie_Print_MSG (
 	XOPNotice(message);
 #else
 	
-	FILE *PIXIEmsg = NULL;
+  PL_DBG << "<PixieAPI-native-output> " << message;
+  /*FILE *PIXIEmsg = NULL;
 	
 	PIXIEmsg = fopen("PIXIEmsg.txt", "a");
 	if(PIXIEmsg != NULL)
 	{
-		/* Add new line character '\n' for printf */
+    // Add new line character '\n' for printf
 		strcat(message, "\n");
 		printf(message);
 		
 		fprintf(PIXIEmsg, "%s", message);
 		fclose(PIXIEmsg);
-	}
+  }*/
+
+
 	
 #endif
 	

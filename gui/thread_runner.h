@@ -73,7 +73,7 @@ signals:
     void bootComplete();
     void runComplete();
     void listComplete(Qpx::ListData*);
-    void settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>);
+    void settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus);
     void oscilReadOut(std::vector<Qpx::Trace>);
 
 protected:

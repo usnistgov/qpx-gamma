@@ -49,7 +49,7 @@ public:
 
 public slots:
   void refresh();
-  void update(const Gamma::Setting &tree, const std::vector<Gamma::Detector> &channels);
+  void update(const Gamma::Setting &tree, const std::vector<Gamma::Detector> &channelsupdate, Qpx::DeviceStatus);
 
 signals:
   void toggleIO(bool);
@@ -65,7 +65,7 @@ private slots:
   void on_pushSettingsRefresh_clicked();
   void on_pushOptimizeAll_clicked();
 
-  void toggle_push(bool enable, Qpx::LiveStatus live);
+  void toggle_push(bool enable, Qpx::DeviceStatus status);
   void post_boot();
 
   void on_pushDetDB_clicked();

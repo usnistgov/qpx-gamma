@@ -30,18 +30,19 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma:
   detectors_(detectors),
   exiting(false)
 {
-  connect(&thread, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>)), this, SLOT(update(Gamma::Setting, std::vector<Gamma::Detector>)));
+  connect(&thread, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)),
+          this, SLOT(update(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)));
 
   formOscilloscope = new FormOscilloscope(runner_thread_, settings);
   connect(formOscilloscope, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
-  connect(this, SIGNAL(toggle_push_(bool,Qpx::LiveStatus)), formOscilloscope, SLOT(toggle_push(bool,Qpx::LiveStatus)));
+  connect(this, SIGNAL(toggle_push_(bool,Qpx::DeviceStatus)), formOscilloscope, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
 
   formSettings = new FormSystemSettings(runner_thread_, detectors_, settings_);
   connect(formSettings, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
   connect(formSettings, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
   
   connect(this, SIGNAL(refresh()), formSettings, SLOT(update()));
-  connect(this, SIGNAL(toggle_push_(bool,Qpx::LiveStatus)), formSettings, SLOT(toggle_push(bool,Qpx::LiveStatus)));
+  connect(this, SIGNAL(toggle_push_(bool,Qpx::DeviceStatus)), formSettings, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
   connect(this, SIGNAL(update_dets()), formSettings, SLOT(updateDetDB()));
 
   QHBoxLayout *lo = new QHBoxLayout();
@@ -58,7 +59,7 @@ FormStart::~FormStart()
   //  delete ui;
 }
 
-void FormStart::update(Gamma::Setting tree, std::vector<Gamma::Detector> dets) {
+void FormStart::update(Gamma::Setting tree, std::vector<Gamma::Detector> dets, Qpx::DeviceStatus status) {
   formOscilloscope->updateMenu(dets);
 }
 
@@ -86,17 +87,17 @@ void FormStart::toggleIO_(bool enable) {
   emit toggleIO(enable);
 }
 
-void FormStart::toggle_push(bool enable, Qpx::LiveStatus live) {
+void FormStart::toggle_push(bool enable, Qpx::DeviceStatus live) {
   emit toggle_push_(enable, live);
 }
 
-void FormStart::boot_complete(bool success, Qpx::LiveStatus online) {
+void FormStart::boot_complete(bool success, Qpx::DeviceStatus status) {
   //DEPRECATED
 
   if (success) {
     this->setCursor(Qt::WaitCursor);
     formSettings->updateDetDB();
-    if (online == Qpx::LiveStatus::online)
+    if (status == Qpx::DeviceStatus::can_oscil)
       runner_thread_.do_oscil(formOscilloscope->xdt());
     runner_thread_.do_refresh_settings();
     this->setCursor(Qt::ArrowCursor);
@@ -132,8 +133,8 @@ void FormStart::saveSettings() {
   dev_settings.strip_metadata();
   dev_settings.to_xml(doc);
 
-  if (doc.save_file(filename.toStdString().c_str()));
-    PL_DBG << "successful save";
+  if (!doc.save_file(filename.toStdString().c_str()))
+    PL_ERR << "<FormStart> Failed to save device settings"; //should be in engine class?
 
 }
 

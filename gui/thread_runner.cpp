@@ -277,12 +277,12 @@ void ThreadRunner::run()
     if (action_ == kMCA) {
       interruptor_->store(false);
       engine_.getMca(timeout_, *spectra_, *interruptor_);
-      action_ = kNone;
+      action_ = kSettingsRefresh;
       emit runComplete();
     } else if (action_ == kList) {
       interruptor_->store(false);
       Qpx::ListData *newListRun = engine_.getList(timeout_, *interruptor_);
-      action_ = kNone;
+      action_ = kSettingsRefresh;
       emit listComplete(newListRun);
     } else if (action_ == kSimulate) {
       interruptor_->store(false);
@@ -304,14 +304,14 @@ void ThreadRunner::run()
     } else if (action_ == kInitialize) {
       engine_.initialize(file_.toStdString());
       action_ = kNone;
-      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kBoot) {
       if (engine_.boot()) {
         engine_.get_all_settings();
         engine_.save_optimization();
       }
       action_ = kNone;
-      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
       emit bootComplete();
     } else if (action_ == kShutdown) {
       if (engine_.die()) {
@@ -319,7 +319,7 @@ void ThreadRunner::run()
         engine_.save_optimization();
       }
       action_ = kNone;
-      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kOptimize) {
       engine_.load_optimization();
       action_ = kOscil;
@@ -327,7 +327,7 @@ void ThreadRunner::run()
       engine_.get_all_settings();
       engine_.save_optimization();
       action_ = kNone;
-      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kExecuteCommand) {
       engine_.push_settings(tree_);
       bool success = engine_.execute_command();
@@ -336,27 +336,26 @@ void ThreadRunner::run()
         engine_.save_optimization();
       }
       action_ = kNone;
-      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kPushSettings) {
       engine_.push_settings(tree_);
       engine_.get_all_settings();
       engine_.save_optimization();
       action_ = kNone;
-      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kSetSetting) {
       engine_.set_setting(tree_, match_conditions_);
       engine_.get_all_settings();
       engine_.save_optimization();
       action_ = kNone;
-      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kSetDetector) {
       engine_.set_detector(chan_, det_);
-      engine_.load_optimization(chan_);
       engine_.write_settings_bulk();
       engine_.get_all_settings();
       engine_.save_optimization();
       action_ = kNone;
-      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kSetDetectors) {
       for (auto &q : detectors_) {
         engine_.set_detector(q.first, q.second);
@@ -373,7 +372,7 @@ void ThreadRunner::run()
       //engine_.get_all_settings();
       //engine_.save_optimization();
       action_ = kOscil;
-      //emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
+      //emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kOscil) {
         std::vector<Gamma::Detector> dets = engine_.get_detectors();
 
@@ -390,7 +389,7 @@ void ThreadRunner::run()
 
         action_ = kNone;
 
-        emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors());
+        emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
         if (!traces.empty())
           emit oscilReadOut(traces);
     } else {

@@ -72,7 +72,7 @@ private slots:
   void updateSpectraUI();
 
 
-  void toggle_push(bool, Qpx::LiveStatus);
+  void toggle_push(bool, Qpx::DeviceStatus);
 
   void on_pushEnable2d_clicked();
 

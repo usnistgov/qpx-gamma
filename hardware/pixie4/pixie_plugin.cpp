@@ -45,7 +45,7 @@ Plugin::Plugin() {
 
   //  setting_definitions_file_ = file;
 
-  live_ = LiveStatus::dead;
+  status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 
   runner_ = nullptr;
   parser_ = nullptr;
@@ -54,19 +54,6 @@ Plugin::Plugin() {
   run_status_.store(0);
 }
 
-Plugin::Plugin(const Plugin& other)
-  : DaqDevice(other)
-  , runner_(nullptr)
-  , parser_(nullptr)
-  , raw_queue_(nullptr)
-  , run_type_(other.run_type_)
-  , run_double_buffer_(other.run_double_buffer_)
-  , run_poll_interval_ms_(other.run_poll_interval_ms_)
-  , boot_files_(other.boot_files_)
-  , system_parameter_values_(other.system_parameter_values_)
-  , module_parameter_values_(other.module_parameter_values_)
-  , channel_parameter_values_(other.channel_parameter_values_)
-{run_status_.store(0);}
 
 Plugin::~Plugin() {
   daq_stop();
@@ -95,6 +82,9 @@ bool Plugin::daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) {
     delete runner_;
 
   for (int i=0; i < channel_indices_.size(); ++i) {
+    //PL_DBG << "start daq run mod " << i;
+    for (auto &q : channel_indices_[i])
+      //PL_DBG << " chan=" << q;
     set_mod("RUN_TYPE",    static_cast<double>(run_type_), Module(i));
     set_mod("MAX_EVENTS",  static_cast<double>(0), Module(i));
   }
@@ -163,6 +153,7 @@ void Plugin::fill_stats(std::list<StatsUpdate> &all_stats, uint8_t module) {
     stats.ftdt       = get_chan("FTDT", Channel(i), Module(module));
     stats.sfdt       = get_chan("SFDT", Channel(i), Module(module));
     all_stats.push_back(stats);
+    //PL_DBG << "stats chan " << stats.channel;
   }
 }
 
@@ -174,7 +165,7 @@ void Plugin::fill_stats(std::list<StatsUpdate> &all_stats, uint8_t module) {
 
 
 bool Plugin::read_settings_bulk(Gamma::Setting &set) const {
-  if (set.id_ == "Pixie4") {
+  if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
       if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
         for (auto &k : q.branches.my_data_) {
@@ -294,8 +285,8 @@ void Plugin::rebuild_structure(Gamma::Setting &set) {
     if (system_parameter_values_[7+i] != old_slots[i].value_int)
       hardware_changed = true;
   }
-  if (hardware_changed)
-    PL_DBG << "hardware changed";
+
+  //if (hardware_changed) PL_DBG << "hardware changed";
 
   std::vector<Gamma::Setting> old_modules;
   std::set<int> used_chan_indices;
@@ -354,10 +345,7 @@ void Plugin::rebuild_structure(Gamma::Setting &set) {
 bool Plugin::write_settings_bulk(Gamma::Setting &set) {
   set.enrich(setting_definitions_);
 
-  if (live_ == LiveStatus::history)
-    return false;
-
-  if (set.id_ != "Pixie4")
+  if (set.id_ != device_name())
     return false;
 
   for (auto &q : set.branches.my_data_) {
@@ -384,14 +372,14 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
         if (k.metadata.setting_type == Gamma::SettingType::stem) {
           uint16_t modnum = k.metadata.address;
           if (modnum >= channel_indices_.size()) {
-            PL_DBG << "module address out of bounds, ignoring branch";
+            PL_WARN << "<PixiePlugin> module address out of bounds, ignoring branch";
             continue;
           }
           for (auto &p : k.branches.my_data_) {
             if (p.metadata.setting_type == Gamma::SettingType::stem) {
               uint16_t channum = p.metadata.address;
               if (channum >= NUMBER_OF_CHANNELS) {
-                PL_DBG << "channel address out of bounds, ignoring branch";
+                PL_WARN << "<PixiePlugin> channel address out of bounds, ignoring branch";
                 continue;
               }
 
@@ -438,10 +426,10 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
 }
 
 bool Plugin::execute_command(Gamma::Setting &set) {
-  if (live_ == LiveStatus::history)
+  if (!(status_ & DeviceStatus::can_exec))
     return false;
 
-  if (set.id_ == "Pixie4") {
+  if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
       if ((q.metadata.setting_type == Gamma::SettingType::command) && (q.value_dbl == 1)) {
         q.value_dbl = 0;
@@ -462,12 +450,12 @@ bool Plugin::execute_command(Gamma::Setting &set) {
 
 
 bool Plugin::boot() {
-  if (live_ == LiveStatus::history) {
-    PL_WARN << "Cannot boot Pixie-4. Improper initialization of parameters in wrapper. Or boot from history...?";
+  if (!(status_ & DeviceStatus::can_boot)) {
+    PL_WARN << "<PixiePlugin> Cannot boot Pixie-4. Failed flag check (can_boot == 0)";
     return false;
   }
 
-  live_ = LiveStatus::dead;
+  status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 
   S32 retval;
   set_sys("OFFLINE_ANALYSIS", 0);  //attempt live boot first
@@ -479,31 +467,34 @@ bool Plugin::boot() {
     Boot_File_Name_List[i][boot_files_[i].size()] = '\0';
     bool ex = boost::filesystem::exists(boot_files_[i]);
     if (!ex) {
-      PL_ERR << "Boot file " << boot_files_[i] << " not found";
+      PL_ERR << "<PixiePlugin> Boot file " << boot_files_[i] << " not found";
       valid_files = false;
     }
   }
 
   if (!valid_files) {
-    PL_ERR << "Problem with boot files. Boot aborting.";
+    PL_ERR << "<PixiePlugin> Problem with boot files. Boot aborting.";
     return false;
   }
 
   int max = get_sys("NUMBER_MODULES");
   if (!max) {
-    PL_ERR << "No valid module slots.";
+    PL_ERR << "<PixiePlugin> No valid module slots.";
   } else {
-    PL_DBG << "Number of modules to boot: " << max;
+    //PL_DBG << "Number of modules to boot: " << max;
     read_sys("SLOT_WAVE");
     for (int i=0; i < max; i++)
-      PL_DBG << " module " << i << " in slot "
+      PL_DBG << "<PixiePlugin> Booting module " << i << " in slot "
              << system_parameter_values_[i_sys("SLOT_WAVE") + i];
   }
 
   retval = Pixie_Boot_System(0x1F);
   //bad files do not result in boot error!!
+
   if (retval >= 0) {
-    live_ = LiveStatus::online;
+    status_ = DeviceStatus::loaded | DeviceStatus::booted
+        | DeviceStatus::can_exec | DeviceStatus::can_run
+        | DeviceStatus::can_oscil;
 
     //sleep 1 s and do offsets
 
@@ -514,8 +505,9 @@ bool Plugin::boot() {
   set_sys("OFFLINE_ANALYSIS", 1);  //else attempt offline boot
   retval = Pixie_Boot_System(0x1F);
   if (retval >= 0) {
-    //    live_ = LiveStatus::offline;
-    live_ = LiveStatus::online;
+    status_ = DeviceStatus::loaded | DeviceStatus::booted
+        | DeviceStatus::can_exec;
+
     return true;
   } else {
     boot_err(retval);
@@ -550,9 +542,11 @@ std::map<int, std::vector<uint16_t>> Plugin::oscilloscope() {
 
 
 void Plugin::get_all_settings() {
-  get_sys_all();
-  get_mod_all(Module::all);
-  get_chan_all(Channel::all, Module::all);
+  if (status_ & DeviceStatus::booted) {
+    get_sys_all();
+    get_mod_all(Module::all);
+    get_chan_all(Channel::all, Module::all);
+  }
 }
 
 
@@ -574,14 +568,14 @@ bool Plugin::start_run(Module mod) {
   bool success = false;
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      PL_INFO << "Start run for module " << i;
+      //PL_INFO << "Start run for module " << i;
       if (start_run(i))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      PL_INFO << "Start run for module " << module;
+      //PL_INFO << "Start run for module " << module;
       success = start_run(module);
     }
   }
@@ -592,14 +586,14 @@ bool Plugin::resume_run(Module mod) {
   bool success = false;
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      PL_INFO << "Resume run for module " << i;
+      //PL_INFO << "Resume run for module " << i;
       if (resume_run(i))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      PL_INFO << "Resume run for module " << module;
+      //PL_INFO << "Resume run for module " << module;
       success = resume_run(module);
     }
   }
@@ -610,14 +604,14 @@ bool Plugin::stop_run(Module mod) {
   bool success = false;
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      PL_INFO << "Stop run for module " << i;
+      //PL_INFO << "Stop run for module " << i;
       if (stop_run(i))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      PL_INFO << "Stop run for module " << module;
+      //PL_INFO << "Stop run for module " << module;
       success = stop_run(module);
     }
   }
@@ -758,8 +752,8 @@ bool Plugin::read_EM_dbl(uint32_t* data, uint8_t mod) {
     // function called after a readout that cleared WCR => run stopped => read other block
   {
     j=1-j;
-    PL_INFO << "(read_EM_dbl): Module " << mod <<
-               ": Both memory blocks full (block " << 1-j << " older). Run paused (or finished).";
+    PL_WARN << "<PixiePlugin> read_EM_dbl: module " << mod <<
+               " csr reports both memory blocks full (block " << 1-j << " older). Run paused (or finished).";
     Pixie_Print_MSG(ErrMSG);
   }
 
@@ -773,7 +767,7 @@ bool Plugin::read_EM_dbl(uint32_t* data, uint8_t mod) {
 
     if(NumWordsToRead > LIST_MEMORY_LENGTH)
     {
-      PL_ERR << "(read_EM_dbl): invalid word count " << NumWordsToRead;
+      PL_ERR << "<PixiePlugin> read_EM_dbl: invalid word count " << NumWordsToRead;
       Pixie_Print_MSG(ErrMSG);
       return false;
     }
@@ -797,10 +791,7 @@ bool Plugin::clear_EM(uint8_t mod) {
 //////////////////////////
 
 void Plugin::set_sys(const std::string& setting, double val) {
-  if (live_ == LiveStatus::history)
-    return;
-
-  PL_DBG << "Setting " << setting << " to " << val << " for system";
+  PL_TRC << "Setting " << setting << " to " << val << " for system";
 
   //check bounds
   system_parameter_values_[i_sys(setting.c_str())] = val;
@@ -817,8 +808,6 @@ double Plugin::get_sys(const std::string& setting) {
 }
 
 void Plugin::get_sys_all() {
-  if (live_ == LiveStatus::history)
-    return;
 
   PL_TRC << "Getting all system";
   read_sys("ALL_SYSTEM_PARAMETERS");
@@ -829,12 +818,9 @@ void Plugin::get_sys_all() {
 ///////////////////////////
 
 void Plugin::set_mod(const std::string& setting, double val, Module mod) {
-  if (live_ == LiveStatus::history)
-    return;
-
   int module = static_cast<int>(mod);
   if (module > -1) {
-    PL_INFO << "Setting " << setting << " to " << val << " for module " << module;
+    //PL_INFO << "Setting " << setting << " to " << val << " for module " << module;
     module_parameter_values_[module * N_MODULE_PAR + i_mod(setting.c_str())] = val;
     write_mod(setting.c_str(), module);
   }
@@ -851,24 +837,7 @@ double Plugin::get_mod(const std::string& setting,
     return -1;
 }
 
-double Plugin::get_mod(const std::string& setting,
-                       Module mod,
-                       LiveStatus force) {
-  int module = static_cast<int>(mod);
-  if (module > -1) {
-    PL_TRC << "Getting " << setting << " for module " << module;
-    if ((force == LiveStatus::online) && (live_ == force))
-      read_mod(setting.c_str(), module);
-    return module_parameter_values_[module * N_MODULE_PAR + i_mod(setting.c_str())];
-  }
-  else
-    return -1;
-}
-
 void Plugin::get_mod_all(Module mod) {
-  if (live_ == LiveStatus::history)
-    return;
-
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
       PL_TRC << "Getting all parameters for module " << i;
@@ -884,9 +853,6 @@ void Plugin::get_mod_all(Module mod) {
 }
 
 void Plugin::get_mod_stats(Module mod) {
-  if (live_ == LiveStatus::history)
-    return;
-
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
       PL_TRC << "Getting run statistics for module " << i;
@@ -907,13 +873,10 @@ void Plugin::get_mod_stats(Module mod) {
 
 void Plugin::set_chan(const std::string& setting, double val,
                       Channel channel, Module module) {
-  if (live_ == LiveStatus::history)
-    return;
-
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
-  PL_DBG << "Setting " << setting << " to " << val
+  PL_TRC << "Setting " << setting << " to " << val
          << " for module " << mod << " chan "<< chan;
 
   if ((mod > -1) && (chan > -1)) {
@@ -925,15 +888,12 @@ void Plugin::set_chan(const std::string& setting, double val,
 
 void Plugin::set_chan(uint8_t setting, double val,
                       Channel channel, Module module) {
-  if (live_ == LiveStatus::history)
-    return;
-
   S8* setting_name = Channel_Parameter_Names[setting];
 
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
-  PL_DBG << "Setting " << setting_name << " to " << val
+  PL_TRC << "Setting " << setting_name << " to " << val
          << " for module " << mod << " chan "<< chan;
 
   if ((mod > -1) && (chan > -1)) {
@@ -949,29 +909,10 @@ double Plugin::get_chan(uint8_t setting, Channel channel, Module module) const {
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
-  PL_DBG << "Getting " << setting_name
+  PL_TRC << "Getting " << setting_name
          << " for module " << mod << " channel " << chan;
 
   if ((mod > -1) && (chan > -1)) {
-    return channel_parameter_values_[setting + mod * N_CHANNEL_PAR *
-        NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR];
-  } else
-    return -1;
-}
-
-double Plugin::get_chan(uint8_t setting, Channel channel,
-                        Module module, LiveStatus force) {
-  S8* setting_name = Channel_Parameter_Names[setting];
-
-  int mod = static_cast<int>(module);
-  int chan = static_cast<int>(channel);
-
-  PL_DBG << "Getting " << setting_name
-         << " for module " << mod << " channel " << chan;
-
-  if ((mod > -1) && (chan > -1)) {
-    if ((force == LiveStatus::online) && (live_ == force))
-      read_chan((char*)setting_name, mod, chan);
     return channel_parameter_values_[setting + mod * N_CHANNEL_PAR *
         NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR];
   } else
@@ -992,27 +933,7 @@ double Plugin::get_chan(const std::string& setting,
     return -1;
 }
 
-double Plugin::get_chan(const std::string& setting,
-                        Channel channel, Module module,
-                        LiveStatus force) {
-  int mod = static_cast<int>(module);
-  int chan = static_cast<int>(channel);
-
-  PL_TRC << "Getting " << setting << " for module " << mod << " channel " << chan;
-
-  if ((mod > -1) && (chan > -1)) {
-    if ((force == LiveStatus::online) && (live_ == force))
-      read_chan(setting.c_str(), mod, chan);
-    return channel_parameter_values_[i_chan(setting.c_str()) + mod * N_CHANNEL_PAR *
-        NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR];
-  } else
-    return -1;
-}
-
 void Plugin::get_chan_all(Channel channel, Module module) {
-  if (live_ == LiveStatus::history)
-    return;
-
   int mod_start = -1;
   int mod_end = -1;
 
@@ -1048,9 +969,6 @@ void Plugin::get_chan_all(Channel channel, Module module) {
 }
 
 void Plugin::get_chan_stats(Channel channel, Module module) {
-  if (live_ == LiveStatus::history)
-    return;
-
   int mod_start = -1;
   int mod_end = -1;
 
@@ -1075,7 +993,7 @@ void Plugin::get_chan_stats(Channel channel, Module module) {
         chan_start = chan_end = chan;
     }
     for (int j=chan_start; j < chan_end; ++j) {
-      PL_DBG << "Getting channel run statistics for module " << i << " channel " << j;
+      //PL_DBG << "Getting channel run statistics for module " << i << " channel " << j;
       read_chan("CHANNEL_RUN_STATISTICS", i, j);
     }
   }
@@ -1116,7 +1034,7 @@ bool Plugin::read_sys(const char* setting) {
 bool Plugin::write_mod(const char* setting, uint8_t mod) {
   S32 ret = -42;
   S8 modstr[8] = "MODULE\0";
-  if (live_ == LiveStatus::online)
+  if (status_ & DeviceStatus::booted)
     ret = Pixie_User_Par_IO(module_parameter_values_.data(),
                             (S8*) setting, modstr, MOD_WRITE, mod, 0);
   set_err(ret);
@@ -1126,7 +1044,7 @@ bool Plugin::write_mod(const char* setting, uint8_t mod) {
 bool Plugin::read_mod(const char* setting, uint8_t mod) {
   S32 ret = -42;
   S8 modstr[8] = "MODULE\0";
-  if (live_ == LiveStatus::online)
+  if (status_ & DeviceStatus::booted)
     ret = Pixie_User_Par_IO(module_parameter_values_.data(),
                             (S8*) setting, modstr, MOD_READ, mod, 0);
   set_err(ret);
@@ -1136,7 +1054,7 @@ bool Plugin::read_mod(const char* setting, uint8_t mod) {
 bool Plugin::write_chan(const char* setting, uint8_t mod, uint8_t chan) {
   S32 ret = -42;
   S8 chnstr[9] = "CHANNEL\0";
-  if (live_ == LiveStatus::online)
+  if (status_ & DeviceStatus::booted)
     ret = Pixie_User_Par_IO(channel_parameter_values_.data(),
                             (S8*) setting, chnstr, MOD_WRITE, mod, chan);
   set_err(ret);
@@ -1146,7 +1064,7 @@ bool Plugin::write_chan(const char* setting, uint8_t mod, uint8_t chan) {
 bool Plugin::read_chan(const char* setting, uint8_t mod, uint8_t chan) {
   S32 ret = -42;
   S8 chnstr[9] = "CHANNEL\0";
-  if (live_ == LiveStatus::online)
+  if (status_ & DeviceStatus::booted)
     ret = Pixie_User_Par_IO(channel_parameter_values_.data(),
                             (S8*) setting, chnstr, MOD_READ, mod, chan);
   set_err(ret);
@@ -1154,10 +1072,10 @@ bool Plugin::read_chan(const char* setting, uint8_t mod, uint8_t chan) {
 }
 
 uint32_t* Plugin::control_collect_ADC(uint8_t module) {
-  PL_TRC << "Pixie Control: get ADC (oscilloscope) traces";
+  PL_TRC << "<PixiePlugin> get ADC (oscilloscope) traces";
   ///why is NUMBER_OF_CHANNELS used? Same for multi-module?
   uint32_t* adc_data = new uint32_t[NUMBER_OF_CHANNELS * max_buf_len];
-  if (live_ == LiveStatus::online) {
+  if (status_ & DeviceStatus::can_oscil) {
     int32_t retval = Pixie_Acquire_Data(0x0084, (U32*)adc_data, NULL, module);
     if (retval < 0) {
       delete[] adc_data;
@@ -1169,37 +1087,37 @@ uint32_t* Plugin::control_collect_ADC(uint8_t module) {
 }
 
 bool Plugin::control_set_DAC(uint8_t module) {
-  PL_INFO << "Pixie Control: set DAC";
+  //PL_INFO << "Pixie Control: set DAC";
   return control_err(Pixie_Acquire_Data(0x0000, NULL, NULL, module));
 }
 
 bool Plugin::control_connect(uint8_t module) {
-  PL_INFO << "Pixie Control: connect";
+  //PL_INFO << "Pixie Control: connect";
   return control_err(Pixie_Acquire_Data(0x0001, NULL, NULL, module));
 }
 
 bool Plugin::control_disconnect(uint8_t module) {
-  PL_INFO << "Pixie Control: disconnect";
+  //PL_INFO << "Pixie Control: disconnect";
   return control_err(Pixie_Acquire_Data(0x0002, NULL, NULL, module));
 }
 
 bool Plugin::control_program_Fippi(uint8_t module) {
-  PL_INFO << "Pixie Control: program Fippi";
+  //PL_INFO << "Pixie Control: program Fippi";
   return control_err(Pixie_Acquire_Data(0x0005, NULL, NULL, module));
 }
 
 bool Plugin::control_measure_baselines(Module mod) {
   bool success = false;
-  if (mod == Module::all) {
+  if (status_ & DeviceStatus::can_exec) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      PL_INFO << "Pixie Control: measure baselines for module " << i;
+      PL_DBG << "<PixiePlugin> measure baselines for module " << i;
       if (control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, i)))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      PL_INFO << "Pixie Control: measure baselines for module " << module;
+      PL_DBG << "<PixiePlugin> measure baselines for module " << module;
       success = control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, module));
     }
   }
@@ -1207,17 +1125,17 @@ bool Plugin::control_measure_baselines(Module mod) {
 }
 
 bool Plugin::control_test_EM_write(uint8_t module) {
-  PL_INFO << "Pixie Control: test EM write";
+  PL_TRC << "<PixiePlugin> test EM write";
   return control_err(Pixie_Acquire_Data(0x0016, NULL, NULL, module));
 }
 
 bool Plugin::control_test_HM_write(uint8_t module) {
-  PL_INFO << "Pixie Control: test HM write";
+  PL_TRC << "<PixiePlugin> test HM write";
   return control_err(Pixie_Acquire_Data(0x001A, NULL, NULL, module));
 }
 
 bool Plugin::control_compute_BLcut() {
-  PL_INFO << "Pixie Control: compute BLcut";
+  PL_TRC << "<PixiePlugin> compute BLcut";
   return control_err(Pixie_Acquire_Data(0x0080, NULL, NULL, 0));
 }
 
@@ -1225,14 +1143,14 @@ bool Plugin::control_find_tau(Module mod) {
   bool success = false;
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      PL_INFO << "Pixie Control: find tau for module " << i;
+      PL_DBG << "<PixiePlugin> find tau for module " << i;
       if (control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, i)))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      PL_INFO << "Pixie Control: find tau for module " << module;
+      PL_DBG << "<PixiePlugin> find tau for module " << module;
       success = control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, module));
     }
   }
@@ -1243,14 +1161,14 @@ bool Plugin::control_adjust_offsets(Module mod) {
   bool success = false;
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      PL_INFO << "Pixie Control: adjust offsets for module " << i;
+      PL_TRC << "<PixiePlugin> djust offsets for module " << i;
       if (control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, i)))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      PL_INFO << "Pixie Control: adjust offsets for module " << module;
+      PL_TRC << "<PixiePlugin> adjust offsets for module " << module;
       success = control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, module));
     }
   }
@@ -1262,19 +1180,19 @@ bool Plugin::control_err(int32_t err_val) {
   case 0:
     return true;
   case -1:
-    PL_ERR << "Control command failed: Invalid Pixie modules number. Check ModNum";
+    PL_ERR << "<PixiePlugin> Control command failed: Invalid Pixie modules number. Check ModNum";
     break;
   case -2:
-    PL_ERR << "Control command failed: Failure to adjust offsets. Reboot recommended";
+    PL_ERR << "<PixiePlugin> Control command failed: Failure to adjust offsets. Reboot recommended";
     break;
   case -3:
-    PL_ERR << "Control command failed: Failure to acquire ADC traces. Reboot recommended";
+    PL_ERR << "<PixiePlugin> Control command failed: Failure to acquire ADC traces. Reboot recommended";
     break;
   case -4:
-    PL_ERR << "Control command failed: Failure to start the control task run. Reboot recommended";
+    PL_ERR << "<PixiePlugin> Control command failed: Failure to start the control task run. Reboot recommended";
     break;
   default:
-    PL_ERR << "Control comman failed: Unknown error " << err_val;
+    PL_ERR << "<PixiePlugin> Control comman failed: Unknown error " << err_val;
   }
   return false;
 }
@@ -1284,28 +1202,28 @@ void Plugin::set_err(int32_t err_val) {
   case 0:
     break;
   case -1:
-    PL_ERR << "Set/get parameter failed: Null pointer for User_Par_Values";
+    PL_ERR << "<PixiePlugin> Set/get parameter failed: Null pointer for User_Par_Values";
     break;
   case -2:
-    PL_ERR << "Set/get parameter failed: Invalid user parameter name";
+    PL_ERR << "<PixiePlugin> Set/get parameter failed: Invalid user parameter name";
     break;
   case -3:
-    PL_ERR << "Set/get parameter failed: Invalid user parameter type";
+    PL_ERR << "<PixiePlugin> Set/get parameter failed: Invalid user parameter type";
     break;
   case -4:
-    PL_ERR << "Set/get parameter failed: Invalid I/O direction";
+    PL_ERR << "<PixiePlugin> Set/get parameter failed: Invalid I/O direction";
     break;
   case -5:
-    PL_ERR << "Set/get parameter failed: Invalid module number";
+    PL_ERR << "<PixiePlugin> Set/get parameter failed: Invalid module number";
     break;
   case -6:
-    PL_ERR << "Set/get parameter failed: Invalid channel number";
+    PL_ERR << "<PixiePlugin> Set/get parameter failed: Invalid channel number";
     break;
   case -42:
     //PL_ERR << "Set/get parameter failed: Pixie not online";
     break;
   default:
-    PL_ERR << "Set/get parameter failed: Unknown error " << err_val;
+    PL_ERR << "<PixiePlugin> Set/get parameter failed: Unknown error " << err_val;
   }
 }
 
@@ -1314,65 +1232,39 @@ void Plugin::boot_err(int32_t err_val) {
   case 0:
     break;
   case -1:
-    PL_ERR << "Boot failed: unable to scan crate slots. Check PXI slot map.";
+    PL_ERR << "<PixiePlugin> Boot failed: unable to scan crate slots. Check PXI slot map.";
     break;
   case -2:
-    PL_ERR << "Boot failed: unable to read communication FPGA (rev. B). Check comFPGA file.";
+    PL_ERR << "<PixiePlugin> Boot failed: unable to read communication FPGA (rev. B). Check comFPGA file.";
     break;
   case -3:
-    PL_ERR << "Boot failed: unable to read communication FPGA (rev. C). Check comFPGA file.";
+    PL_ERR << "<PixiePlugin> Boot failed: unable to read communication FPGA (rev. C). Check comFPGA file.";
     break;
   case -4:
-    PL_ERR << "Boot failed: unable to read signal processing FPGA config. Check SPFPGA file.";
+    PL_ERR << "<PixiePlugin> Boot failed: unable to read signal processing FPGA config. Check SPFPGA file.";
     break;
   case -5:
-    PL_ERR << "Boot failed: unable to read DSP executable code. Check DSP code file.";
+    PL_ERR << "<PixiePlugin> Boot failed: unable to read DSP executable code. Check DSP code file.";
     break;
   case -6:
-    PL_ERR << "Boot failed: unable to read DSP parameter values. Check DSP parameter file.";
+    PL_ERR << "<PixiePlugin> Boot failed: unable to read DSP parameter values. Check DSP parameter file.";
     break;
   case -7:
-    PL_ERR << "Boot failed: unable to initialize DSP parameter names. Check DSP .var file.";
+    PL_ERR << "<PixiePlugin> Boot failed: unable to initialize DSP parameter names. Check DSP .var file.";
     break;
   case -8:
-    PL_ERR << "Boot failed: failed to boot all modules in the system. Check Pixie modules.";
+    PL_ERR << "<PixiePlugin> Boot failed: failed to boot all modules in the system. Check Pixie modules.";
     break;
   default:
-    PL_ERR << "Boot failed, undefined error " << err_val;
+    PL_ERR << "<PixiePlugin> Boot failed, undefined error " << err_val;
   }
 }
-
-
-void Plugin::worker_run_test(Plugin* callback, uint64_t timeout_limit,
-                             SynchronizedQueue<Spill*>* spill_queue) {
-
-  PL_INFO << "<Qpx::Plugin> worker_run_test started";
-  uint64_t spill_number = 0;
-  bool timeout = false;
-  CustomTimer total_timer(timeout_limit);
-
-  while (!timeout) {
-    PL_INFO << "<Qpx::Plugin>  RUNNING(" << spill_number << ")"
-            << "  Elapsed: " << total_timer.done()
-            << "  ETA: " << total_timer.ETA();
-
-    spill_number++;
-
-    while (!timeout) {
-      wait_ms(callback->run_poll_interval_ms_);
-      timeout = (total_timer.timeout() || (callback->run_status_.load() == 2));
-    };
-  }
-
-  PL_INFO << "<Qpx::Plugin> worker_run_test stopped";
-}
-
 
 
 void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
                         SynchronizedQueue<Spill*>* spill_queue) {
 
-  PL_INFO << "<PixiePlugin> Double buffered daq starting";
+  PL_DBG << "<PixiePlugin>  Single buffered daq runner thread starting";
 
   callback->reset_counters_next_run(); //assume new run
 
@@ -1433,7 +1325,7 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
       spill_queue->enqueue(fetched_spill);
     }
 
-    PL_INFO << "  RUNNING(" << spill_number << ")"
+    PL_INFO << "<PixiePlugin>   RUNNING(" << spill_number << ")"
             << "  Elapsed: " << total_timer.done()
             << "  ETA: " << total_timer.ETA();
 
@@ -1457,7 +1349,7 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
 
     readout_timer.resume();
     if(!callback->read_EM(fetched_spill->data.data(), 0)) {  //one module
-      PL_DBG << "read_EM failed";
+      PL_ERR << "read_EM failed";
       delete fetched_spill;
       return;
     }
@@ -1477,14 +1369,14 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
   total_timer.stop();
 
   callback->run_status_.store(3);
-  PL_INFO << "<PixiePlugin> Single buffered daq runner completed";
+  PL_DBG << "<PixiePlugin>  Single buffered daq runner thread completed";
 }
 
 
 void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
                             SynchronizedQueue<Spill*>* spill_queue) {
 
-  PL_INFO << "<PixiePlugin> Double buffered daq starting";
+  PL_DBG << "<PixiePlugin> Double buffered daq runner thread starting";
 
   callback->reset_counters_next_run(); //assume new run
 
@@ -1524,7 +1416,7 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
   std::set<int> mods;
   while (!(timeout && mods.empty())) {
     spill_number++;
-    PL_INFO << "<PixiePlugin>   RUNNING Elapsed: " << total_timer.done()
+    PL_INFO << "<PixiePlugin>  RUNNING Elapsed: " << total_timer.done()
             << "  ETA: " << total_timer.ETA();
 
     mods.clear();
@@ -1541,6 +1433,7 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
     block_time = boost::posix_time::microsec_clock::local_time();
 
     for (auto &q : mods) {
+      //PL_DBG << "getting stats for mod " << q;
       callback->get_mod_stats(Module(q));
       for (int j=0; j < NUMBER_OF_CHANNELS; ++j)
         callback->read_chan("ALL_CHANNEL_PARAMETERS", q, j);
@@ -1568,14 +1461,14 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
   }
 
   callback->run_status_.store(3);
-  PL_INFO << "<PixiePlugin> Double buffered daq runner finished";
+  PL_DBG << "<PixiePlugin> Double buffered daq runner thread completed";
 }
 
 
 
 void Plugin::worker_parse (Plugin* callback, SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue) {
 
-  PL_INFO << "<PixiePlugin> parser starting";
+  PL_DBG << "<PixiePlugin> parser thread starting";
 
   Spill* spill;
   std::vector<std::vector<int32_t>> channel_indices = callback->channel_indices_;
@@ -1710,9 +1603,9 @@ void Plugin::worker_parse (Plugin* callback, SynchronizedQueue<Spill*>* in_queue
   }
 
   if (cycles == 0)
-    PL_INFO << "<PixiePlugin> Parser stopping. Buffer queue closed without events";
+    PL_INFO << "<PixiePlugin> Parser thread stopping. Buffer queue closed without events";
   else
-    PL_INFO << "<PixiePlugin> Parser stopping. " << all_events << " events, with avg time/spill: " << parse_timer.us()/cycles << "us";
+    PL_INFO << "<PixiePlugin> Parser thread stopping. " << all_events << " events, with avg time/spill: " << parse_timer.us()/cycles << "us";
 }
 
 

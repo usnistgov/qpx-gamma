@@ -41,7 +41,14 @@ namespace Qpx {
           setting_definitions_[newset.id_] = newset;
       }
     }
-    return true;
+
+    if (!setting_definitions_.empty()) {
+      PL_DBG << "<DaqDevice> " << this->device_name() << " retrieved " << setting_definitions_.size() << " setting definitions";
+      return true;
+    } else {
+      PL_DBG << "<DaqDevice> " << this->device_name() << " failed to load setting definitions";
+      return false;
+    }
   }
 
 

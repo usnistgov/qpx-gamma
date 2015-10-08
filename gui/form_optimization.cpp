@@ -186,8 +186,8 @@ void FormOptimization::closeEvent(QCloseEvent *event) {
   event->accept();
 }
 
-void FormOptimization::toggle_push(bool enable, Qpx::LiveStatus live) {
-  bool online = (live == Qpx::LiveStatus::online);
+void FormOptimization::toggle_push(bool enable, Qpx::DeviceStatus status) {
+  bool online = (status & Qpx::DeviceStatus::can_run);
   ui->pushStart->setEnabled(enable && online);
   ui->comboSetting->setEnabled(enable);
   ui->doubleSpinStart->setEnabled(enable);

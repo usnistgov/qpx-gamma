@@ -121,8 +121,8 @@ void FormOscilloscope::channelDetails(SelectorItem item) {
   ui->widgetPlot->setTitle(text);
 }
 
-void FormOscilloscope::toggle_push(bool enable, Qpx::LiveStatus live) {
-  bool online = (Qpx::LiveStatus::online == live);
+void FormOscilloscope::toggle_push(bool enable, Qpx::DeviceStatus status) {
+  bool online = (status & Qpx::DeviceStatus::can_oscil);
   ui->pushOscilRefresh->setEnabled(enable && online);
   ui->doubleSpinXDT->setEnabled(enable && online);
 }

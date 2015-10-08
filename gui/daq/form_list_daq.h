@@ -78,7 +78,7 @@ private slots:
   void on_boxChan3_clicked();
   void list_completed(Qpx::ListData*);
   void list_selection_changed(QItemSelection,QItemSelection);
-  void toggle_push(bool online, Qpx::LiveStatus);
+  void toggle_push(bool online, Qpx::DeviceStatus);
 
   void on_pushListFileSort_clicked();
 

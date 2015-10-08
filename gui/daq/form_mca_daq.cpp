@@ -176,9 +176,9 @@ void FormMcaDaq::saveSettings() {
   settings_.endGroup();
 }
 
-void FormMcaDaq::toggle_push(bool enable, Qpx::LiveStatus live) {
-  bool online = (live == Qpx::LiveStatus::online);
-  bool offline = online || (live == Qpx::LiveStatus::offline);
+void FormMcaDaq::toggle_push(bool enable, Qpx::DeviceStatus status) {
+  bool online = (status & Qpx::DeviceStatus::can_run);
+  bool offline = online || (status & Qpx::DeviceStatus::loaded);
   bool nonempty = !spectra_.empty();
 
   ui->pushMcaLoad->setEnabled(enable);
@@ -399,13 +399,13 @@ void FormMcaDaq::newProject() {
 void FormMcaDaq::on_pushMcaStop_clicked()
 {
   ui->pushMcaStop->setEnabled(false);
-  PL_INFO << "MCA acquisition interrupted by user";
+  //PL_INFO << "MCA acquisition interrupted by user";
   interruptor_.store(true);
 }
 
 void FormMcaDaq::run_completed() {
   if (my_run_) {
-    PL_INFO << "FormMcaDaq received signal for run completed";
+    //PL_INFO << "FormMcaDaq received signal for run completed";
     update_plots();
     ui->pushMcaStop->setEnabled(false);
     emit toggleIO(true);

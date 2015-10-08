@@ -53,7 +53,7 @@ private slots:
   void on_pushOscilRefresh_clicked();
   void oscil_complete(std::vector<Qpx::Trace>);
 
-  void toggle_push(bool enable, Qpx::LiveStatus live);
+  void toggle_push(bool, Qpx::DeviceStatus);
 
   void on_doubleSpinXDT_editingFinished();
   void channelToggled(SelectorItem);

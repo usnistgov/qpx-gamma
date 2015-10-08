@@ -64,15 +64,7 @@ public:
   void initialize(std::string settings_file);
   bool boot();
   bool die();
-  LiveStatus live() {
-    LiveStatus ls = LiveStatus::dead;
-    for (auto &q : devices_)
-      if (q.second != nullptr)
-        ls = q.second->live();
-
-    return ls;
-  }
-
+  DeviceStatus status() {return aggregate_status_;}
 
   ListData* getList(uint64_t timeout, boost::atomic<bool>& inturruptor);
   void getMca(uint64_t timeout, SpectraSet &spectra, boost::atomic<bool> &interruptor);
@@ -107,7 +99,7 @@ public:
   bool daq_running();
 
 protected:
-  LiveStatus live_;
+  DeviceStatus aggregate_status_;
 
   std::map<std::string, DaqDevice*> devices_;  //use shared pointer instead
 

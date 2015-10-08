@@ -34,7 +34,8 @@ static DeviceRegistrar<QpxVmePlugin> registrar("VME");
 
 QpxVmePlugin::QpxVmePlugin() {
 
-  live_ = LiveStatus::dead;
+  status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
+
   controller_ = nullptr;
 
 }
@@ -63,9 +64,6 @@ void QpxVmePlugin::rebuild_structure(Gamma::Setting &set) {
 bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
   set.enrich(setting_definitions_);
 
-  if (live_ == LiveStatus::history)
-    return false;
-
   if (set.id_ != device_name())
     return false;
 
@@ -80,7 +78,7 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
 }
 
 bool QpxVmePlugin::execute_command(Gamma::Setting &set) {
-  if (live_ == LiveStatus::history)
+  if (!(status_ & DeviceStatus::can_exec))
     return false;
 
   if (set.id_ == device_name()) {
@@ -100,24 +98,19 @@ bool QpxVmePlugin::execute_command(Gamma::Setting &set) {
 bool QpxVmePlugin::boot() {
   PL_DBG << "Attempting to boot VME";
 
-  if (live_ == LiveStatus::history) {
-    PL_WARN << "Cannot boot VME system. Improper initialization of parameters in wrapper. Or boot from history...?";
+  if (!(status_ & DeviceStatus::can_boot)) {
+    PL_WARN << "Cannot boot Pixie-4. Failed flag check (can_boot == 0)";
     return false;
   }
 
-  if (live_ == LiveStatus::online) {
-    PL_WARN << "Cannot boot VME system. Already booted. Please reset first.";
-    return false;
-  }
-
-  live_ = LiveStatus::dead;
+  status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 
   if (controller_ != nullptr)
     delete controller_;
 
   if (controller_name_ == "VmUsb") {
     controller_ = new VmUsb();
-    PL_DBG << "Connected to VME controller " << controller_->information();
+    PL_DBG << "VME controller status: " << controller_->information();
   }
 
 

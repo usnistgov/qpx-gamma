@@ -63,7 +63,7 @@ void SpectraSet::closeAcquisition() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   if (!my_spectra_.empty())
     for (auto &q: my_spectra_) {
-      PL_DBG << "closing " << q->name();
+      //PL_DBG << "closing " << q->name();
       q->closeAcquisition();
     }
 }

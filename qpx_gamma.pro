@@ -22,7 +22,7 @@
 
 TEMPLATE = subdirs
 
-SUBDIRS = cmd gui
+SUBDIRS = gui cmd
 
 CONFIG += ordered
 

@@ -43,7 +43,6 @@ public:
 
   Plugin();
 //  Plugin(std::string file);
-  Plugin(const Plugin& other);      //sets state to history if copied
   ~Plugin();
 
   static std::string plugin_name() {return "Pixie4";}
@@ -53,7 +52,7 @@ public:
   bool read_settings_bulk(Gamma::Setting &set) const override;
   void get_all_settings() override;
   bool boot() override;
-  //bool die() override;
+  bool die() override {status_ = DeviceStatus::loaded | DeviceStatus::can_boot; return true;}
 
   bool execute_command(Gamma::Setting &set) override;
   std::map<int, std::vector<uint16_t>> oscilloscope() override;
@@ -63,11 +62,14 @@ public:
   bool daq_running() override;
 
 private:
+  //no copying
+  void operator=(Plugin const&);
+  Plugin(const Plugin&);
+
   //Acquisition threads, use as static functors
   static void worker_parse(Plugin* callback, SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue);
   static void worker_run(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue);
   static void worker_run_dbl(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue);
-  static void worker_run_test(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue);
 
 protected:
 
@@ -154,8 +156,6 @@ protected:
   //module
   void set_mod(const std::string&, double, Module mod);
   double get_mod(const std::string&, Module mod) const;
-  double get_mod(const std::string&, Module mod,
-                 LiveStatus force = LiveStatus::offline);
   void get_mod_all(Module mod);
   void get_mod_stats(Module mod);
 
@@ -169,17 +169,9 @@ protected:
   double get_chan(const std::string&,
                   Channel channel,
                   Module  module) const;
-  double get_chan(const std::string&,
-                  Channel channel,
-                  Module  module,
-                  LiveStatus force = LiveStatus::offline);
   double get_chan(uint8_t setting,
                   Channel channel,
                   Module  module) const;
-  double get_chan(uint8_t setting,
-                  Channel channel,
-                  Module  module,
-                  LiveStatus force = LiveStatus::offline);
   void get_chan_all(Channel channel,
                     Module  module);
   void get_chan_stats(Channel channel, Module  module);

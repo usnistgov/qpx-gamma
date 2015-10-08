@@ -542,7 +542,7 @@ void TreeSettings::update(const Gamma::Setting &data) {
   data_ = data;
   data_.cull_invisible();
   if (!show_read_only_) {
-    PL_DBG << "Culling read only";
+    //PL_DBG << "Culling read only";
     data_.cull_readonly();
   }
 

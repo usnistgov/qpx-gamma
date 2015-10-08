@@ -56,13 +56,14 @@ qpx::qpx(QWidget *parent) :
   qRegisterMetaType<Qpx::ListData>("Qpx::ListData");
   qRegisterMetaType<Gamma::Setting>("Gamma::Setting");
   qRegisterMetaType<Gamma::Calibration>("Gamma::Calibration");
-  qRegisterMetaType<Qpx::LiveStatus>("Qpx::LiveStatus");
+  qRegisterMetaType<Qpx::DeviceStatus>("Qpx::DeviceStatus");
 
   CustomLogger::initLogger(&qpx_stream_, "qpx_%N.log");
   ui->setupUi(this);
   connect(&my_emitter_, SIGNAL(writeLine(QString)), this, SLOT(add_log_text(QString)));
 
-  connect(&runner_thread_, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>)), this, SLOT(update_settings(Gamma::Setting, std::vector<Gamma::Detector>)));
+  connect(&runner_thread_, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)),
+          this, SLOT(update_settings(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)));
 
   loadSettings();
 
@@ -72,13 +73,13 @@ qpx::qpx(QWidget *parent) :
   main_tab_ = new FormStart(runner_thread_, settings_, detectors_);
   ui->qpxTabs->addTab(main_tab_, "Settings");
   connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::LiveStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::LiveStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
   connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(settings_updated()));
   connect(this, SIGNAL(update_dets()), main_tab_, SLOT(detectors_updated()));
   ui->qpxTabs->setCurrentWidget(main_tab_);
 
   gui_enabled_ = true;
-  px_status_ = Qpx::LiveStatus::dead;
+  px_status_ = Qpx::DeviceStatus(0);
 
   //on_pushAbout_clicked();
   PL_INFO << "Hello! Welcome to Multi-NAA at neutron guide D at NCNR. Please click boot to boot :)";
@@ -182,17 +183,17 @@ void qpx::updateStatusText(QString text) {
   ui->statusBar->showMessage(text);
 }
 
-void qpx::update_settings(Gamma::Setting sets, std::vector<Gamma::Detector>) {
-  px_status_ = Qpx::LiveStatus(sets.value_int);
+void qpx::update_settings(Gamma::Setting sets, std::vector<Gamma::Detector>, Qpx::DeviceStatus status) {
+  px_status_ = status;
   toggleIO(true);
 }
 
 void qpx::toggleIO(bool enable) {
   gui_enabled_ = enable;
 
-  if (enable && (px_status_ == Qpx::LiveStatus::online))
+  if (enable && (px_status_ & Qpx::DeviceStatus::booted))
     ui->statusBar->showMessage("Online");
-  else if (enable && (px_status_ == Qpx::LiveStatus::offline))
+  else if (enable)
     ui->statusBar->showMessage("Offline");
   else
     ui->statusBar->showMessage("Busy");
@@ -253,7 +254,7 @@ void qpx::on_pushOpenSpectra_clicked()
   connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
 
   connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::LiveStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::LiveStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
 
   ui->qpxTabs->setCurrentWidget(newSpectraForm);
   emit toggle_push(gui_enabled_, px_status_);
@@ -266,7 +267,7 @@ void qpx::on_pushOpenList_clicked()
 
   connect(newListForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(newListForm, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::LiveStatus)), newListForm, SLOT(toggle_push(bool,Qpx::LiveStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newListForm, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
 
   ui->qpxTabs->setCurrentWidget(newListForm);
   emit toggle_push(gui_enabled_, px_status_);
@@ -285,7 +286,7 @@ void qpx::on_pushOpenOptimize_clicked()
   connect(newOpt, SIGNAL(settings_changed()), this, SLOT(update_settings()));
 
   connect(newOpt, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::LiveStatus)), newOpt, SLOT(toggle_push(bool,Qpx::LiveStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newOpt, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
 
   ui->qpxTabs->setCurrentWidget(newOpt);
   emit toggle_push(gui_enabled_, px_status_);
@@ -303,7 +304,7 @@ void qpx::on_pushOpenGainMatch_clicked()
   connect(newGain, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
 
   connect(newGain, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::LiveStatus)), newGain, SLOT(toggle_push(bool,Qpx::LiveStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newGain, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
 
   ui->qpxTabs->setCurrentWidget(newGain);
   emit toggle_push(gui_enabled_, px_status_);

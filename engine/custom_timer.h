@@ -51,9 +51,14 @@ public:
     uint64_t e_h = e_tot / 3600;
     uint64_t e_m = (e_tot % 3600) / 60;
     uint64_t e_s = (e_tot % 60);
-    return (std::to_string(e_h) + ":" +
-            std::to_string(e_m) + ":" +
-            std::to_string(e_s));    
+
+    std::string answer = std::to_string(e_h) + ":";
+    if (e_m < 10) answer += "0";
+    answer += std::to_string(e_m) + ":";
+    if (e_s < 10) answer += "0";
+    answer += std::to_string(e_s);
+
+    return answer;
   };
   
   std::string ETA() {
@@ -63,9 +68,14 @@ public:
     uint64_t ETA_h = ETA_tot / 3600;
     uint64_t ETA_m = (ETA_tot % 3600) / 60;
     uint64_t ETA_s = (ETA_tot % 60);
-    return (std::to_string(ETA_h) + ":" +
-            std::to_string(ETA_m) + ":" +
-            std::to_string(ETA_s));
+
+    std::string answer = std::to_string(ETA_h) + ":";
+    if (ETA_m < 10) answer += "0";
+    answer += std::to_string(ETA_m) + ":";
+    if (ETA_s < 10) answer += "0";
+    answer += std::to_string(ETA_s);
+
+    return answer;
   };
 };
 

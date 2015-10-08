@@ -68,7 +68,7 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
 {
   Spectrum1D::addStats(newStats);
 
-  if ((newStats.channel >= metadata_.add_pattern.size())
+  if ((newStats.channel < 0) || (newStats.channel >= metadata_.add_pattern.size())
       || (newStats.channel != my_channel_))
     return;
 
@@ -79,6 +79,8 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
 
   double d_lab_time  = (newStats.lab_time - time1_.lab_time).total_microseconds() / 1000000;
 
+
+  //NO MORE SPILL NUMBERS. MUST IDENTIFY LAST SPILL!!!!
   if ((d_lab_time > time_sample_) || (newStats.spill_number == time2_.spill_number)) {
     time2_ = newStats;
     StatsUpdate diff = time2_ - time1_;
@@ -110,7 +112,7 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
     count_total_ += fast_peaks_compensated;
     metadata_.total_count = count_total_.convert_to<uint64_t>();
 
-    PL_DBG << "LFC update chan[" << my_channel_ << "]"
+    PL_DBG << "<SpectrumLFC1D> '" << metadata_.name << "' update chan[" << my_channel_ << "]"
            << " fast_peaks_compensated=" << fast_peaks_compensated
            << " true_count=" << count_current_;
 

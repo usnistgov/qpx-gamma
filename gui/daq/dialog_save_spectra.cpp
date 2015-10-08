@@ -126,8 +126,8 @@ DialogSaveSpectra::DialogSaveSpectra(Qpx::SpectraSet& newset, QString outdir, QW
   std::string timenow = boost::posix_time::to_iso_string(boost::posix_time::second_clock::local_time());
 
   ui->lineName->setText(QString("Qpx") + QString::fromStdString(timenow));
-  if (my_set_->runInfo().total_events == 0)
-    ui->boxQpxFile->setChecked(false);
+  if (my_set_->runInfo().state == Gamma::Setting())
+    ui->boxQpxFile->setChecked(true);
 }
 
 DialogSaveSpectra::~DialogSaveSpectra()

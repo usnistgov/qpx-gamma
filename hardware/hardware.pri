@@ -28,6 +28,8 @@ unix {
            -lboost_log_setup -lboost_timer -lz
 
    QMAKE_CFLAGS   += -fpermissive
+
+   LIBPATH += /usr/local/lib
 }
 
 

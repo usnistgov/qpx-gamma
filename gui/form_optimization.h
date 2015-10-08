@@ -70,7 +70,7 @@ private slots:
   void do_post_processing();
   void do_run();
 
-  void toggle_push(bool, Qpx::LiveStatus);
+  void toggle_push(bool, Qpx::DeviceStatus);
 
   void on_pushSaveOpti_clicked();
 

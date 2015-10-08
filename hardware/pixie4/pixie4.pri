@@ -43,6 +43,8 @@ unix {
    QMAKE_CFLAGS   += -fpermissive
 
    LIBS += -ldl
+
+   QMAKE_CFLAGS += -DBOOST_LOG_DYN_LINK
 }
 
 win32 {

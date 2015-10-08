@@ -73,8 +73,8 @@ void FormListDaq::saveSettings() {
   settings_.endGroup();
 }
 
-void FormListDaq::toggle_push(bool enable, Qpx::LiveStatus live) {
-  bool online = (live == Qpx::LiveStatus::online);
+void FormListDaq::toggle_push(bool enable, Qpx::DeviceStatus status) {
+  bool online = (status & Qpx::DeviceStatus::can_run);
   ui->pushListStart->setEnabled(enable && online);
   ui->boxListMins->setEnabled(enable && online);
   ui->boxListSecs->setEnabled(enable && online);
@@ -299,7 +299,7 @@ void TableListData::eat_list(Qpx::ListData* stuff) {
         if (q.bits_ > hi_res)
           hi_res = q.bits_;
       }
-      calibrations_[i] = thisdet.energy_calibrations_.get(Gamma::Calibration("Energy", hi_res));
+      calibrations_[i] = thisdet.highest_res_calib();
     }
   }
 }

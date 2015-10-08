@@ -162,8 +162,8 @@ void FormGainMatch::closeEvent(QCloseEvent *event) {
   event->accept();
 }
 
-void FormGainMatch::toggle_push(bool enable, Qpx::LiveStatus live) {
-  bool online = (live == Qpx::LiveStatus::online);
+void FormGainMatch::toggle_push(bool enable, Qpx::DeviceStatus status) {
+  bool online = (status & Qpx::DeviceStatus::can_run);
   ui->pushMatchGain->setEnabled(enable && online);
 
   ui->spinRefChan->setEnabled(enable && online);

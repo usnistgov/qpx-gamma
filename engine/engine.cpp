@@ -33,7 +33,7 @@
 namespace Qpx {
 
 Engine::Engine() {
-  live_ = LiveStatus::dead;
+  aggregate_status_ = DeviceStatus(0);
 
   total_det_num_.id_ = "Total detectors";
   total_det_num_.name = "Total detectors";
@@ -56,23 +56,21 @@ void Engine::initialize(std::string path) {
   pugi::xml_document doc;
   if (!doc.load_file(settings_file.c_str()))
     return;
-  PL_DBG << "Loaded device settings " << settings_file;
+  PL_DBG << "<Engine> Loading device settings " << settings_file;
 
   pugi::xml_node root = doc.child(Gamma::Setting().xml_element_name().c_str());
   if (!root)
     return;
 
   Gamma::Setting tree(root);
-  PL_DBG << "Loaded " << tree.id_;
 
   tree.metadata.setting_type = Gamma::SettingType::stem;
 
   for (auto &q : tree.branches.my_data_) {
     if (q.id_ != "Detectors") {
-      PL_DBG << "Adding device " << q.id_;
       DaqDevice* device = DeviceFactory::getInstance().create_type(q.id_, path + q.value_text);
       if (device != nullptr) {
-        PL_DBG << "Success creating " << device->device_name();
+        PL_DBG << "<Engine> Success loading " << device->device_name();
         devices_[q.id_] = device;
       }
     }
@@ -86,7 +84,7 @@ void Engine::initialize(std::string path) {
 Engine::~Engine() {
   for (auto &q : devices_)
     if (q.second != nullptr) {
-      PL_DBG << "Deleting " << q.first;
+      PL_DBG << "<Engine> Destroying " << q.first;
       delete q.second;
     }
 }
@@ -132,7 +130,7 @@ bool Engine::read_settings_bulk(){
 
       save_optimization();
     } else if (devices_.count(set.id_)) {
-      PL_DBG << "read settings bulk > " << set.id_;
+      //PL_DBG << "read settings bulk > " << set.id_;
       devices_[set.id_]->read_settings_bulk(set);
     }
 
@@ -172,7 +170,7 @@ bool Engine::write_settings_bulk(){
       }
 
     } else if (devices_.count(set.id_)) {
-      PL_DBG << "write settings bulk > " << set.id_;
+      //PL_DBG << "write settings bulk > " << set.id_;
       devices_[set.id_]->write_settings_bulk(set);
     }
   }
@@ -180,11 +178,13 @@ bool Engine::write_settings_bulk(){
 }
 
 bool Engine::execute_command(){
+
   bool success = false;
   for (auto &set : settings_tree_.branches.my_data_) {
     if (devices_.count(set.id_)) {
-      PL_DBG << "execute > " << set.id_;
-      if (devices_[set.id_]->execute_command(set))
+      //PL_DBG << "execute > " << set.id_;
+      if ((devices_[set.id_] != nullptr) && (devices_[set.id_]->status() & DeviceStatus::can_exec) &&
+          (devices_[set.id_]->execute_command(set)))
         success = true;
     }
   }
@@ -195,20 +195,17 @@ bool Engine::execute_command(){
 }
 
 bool Engine::boot() {
+  PL_INFO << "<Engine> Booting system...";
+
   bool success = false;
-  for (auto &set : settings_tree_.branches.my_data_) {
-    for (auto &q : set.branches.my_data_) {
-      if (q.metadata.name == "Boot") {
-        if (devices_.count(set.id_)) {
-          PL_DBG << "boot > " << set.id_;
-          if (devices_[set.id_]->boot())
-            success = true;
-        }
-      }
+  for (auto &q : devices_)
+    if ((q.second != nullptr) && (q.second->status() & DeviceStatus::can_boot)) {
+        success |= q.second->boot();
+        //PL_DBG << "daq_start > " << q.second->device_name();
     }
-  }
 
   if (success) {
+    PL_INFO << "<Engine> Boot successful.";
     //settings_tree_.value_int = 2;
     get_all_settings();
   }
@@ -217,20 +214,12 @@ bool Engine::boot() {
 }
 
 bool Engine::die() {
-  //Must all shutdown?
-
   bool success = false;
-  for (auto &set : settings_tree_.branches.my_data_) {
-    for (auto &q : set.branches.my_data_) {
-      if (q.metadata.name == "Boot") { //Die?
-        if (devices_.count(set.id_)) {
-          PL_DBG << "die > " << set.id_;
-          if (devices_[set.id_]->die())
-            success = true;
-        }
-      }
+  for (auto &q : devices_)
+    if ((q.second != nullptr) && (q.second->status() & DeviceStatus::booted)) {
+        success |= q.second->die();
+        //PL_DBG << "die > " << q.second->device_name();
     }
-  }
 
   if (success) {
     //settings_tree_.value_int = 0;
@@ -243,83 +232,50 @@ bool Engine::die() {
 std::vector<Trace> Engine::oscilloscope() {
   std::vector<Trace> traces(detectors_.size());
 
-  for (auto &set : settings_tree_.branches.my_data_) {
-    for (auto &q : set.branches.my_data_) {
-      if (q.metadata.name == "Oscilloscope") {
-        if (devices_.count(set.id_)) {
-          PL_DBG << "oscil > " << set.id_;
-          std::map<int, std::vector<uint16_t>> trc = devices_[set.id_]->oscilloscope();
-          for (auto &q : trc) {
-            if ((q.first >= 0) && (q.first < detectors_.size())) {
-              traces[q.first].data = q.second;
-              traces[q.first].index = q.first;
-              traces[q.first].detector = detectors_[q.first];
-            }
-          }
+  for (auto &q : devices_)
+    if ((q.second != nullptr) && (q.second->status() & DeviceStatus::can_oscil)) {
+      //PL_DBG << "oscil > " << q.second->device_name();
+      std::map<int, std::vector<uint16_t>> trc = q.second->oscilloscope();
+      for (auto &p : trc) {
+        if ((p.first >= 0) && (p.first < detectors_.size())) {
+          traces[p.first].data = p.second;
+          traces[p.first].index = p.first;
+          traces[p.first].detector = detectors_[p.first];
         }
       }
     }
-  }
-
   return traces;
 }
 
 bool Engine::daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) {
   bool success = false;
-  for (auto &set : settings_tree_.branches.my_data_) {
-    for (auto &q : set.branches.my_data_) {
-      if (q.metadata.name == "Acquisition Start") {
-        if (devices_.count(set.id_)) {
-          PL_DBG << "daq_start > " << set.id_;
-          if (devices_[set.id_]->daq_start(timeout, out_queue))
-            success = true;
-        }
-      }
+  for (auto &q : devices_)
+    if ((q.second != nullptr) && (q.second->status() & DeviceStatus::can_run)) {
+        success |= q.second->daq_start(timeout, out_queue);
+        //PL_DBG << "daq_start > " << q.second->device_name();
     }
-  }
   return success;
 }
 
 bool Engine::daq_stop() {
   bool success = false;
-  for (auto &set : settings_tree_.branches.my_data_) {
-    for (auto &q : set.branches.my_data_) {
-      if (q.metadata.name == "Acquisition Stop") {
-        if (devices_.count(set.id_)) {
-          PL_DBG << "daq_stop > " << set.id_;
-          if (devices_[set.id_]->daq_stop())
-            success = true;
-        }
-      }
+  for (auto &q : devices_)
+    if ((q.second != nullptr) && (q.second->status() & DeviceStatus::can_run)) {
+        success |= q.second->daq_stop();
+        //PL_DBG << "daq_stop > " << q.second->device_name();
     }
-  }
-
-  if (success)
-    get_all_settings();
-
   return success;
 }
 
 bool Engine::daq_running() {
   bool running = false;
-  for (auto &set : settings_tree_.branches.my_data_) {
-    for (auto &q : set.branches.my_data_) {
-      if (q.metadata.name == "Acquisition Start") {
-        if (devices_.count(set.id_)) {
-          PL_DBG << "daq_check > " << set.id_;
-          if (devices_[set.id_]->daq_running())
-            running = true;
-        }
-      }
+  for (auto &q : devices_)
+    if ((q.second != nullptr) && (q.second->status() & DeviceStatus::can_run)) {
+        running |= q.second->daq_running();
+        //PL_DBG << "daq_check > " << q.second->device_name();
     }
-  }
-
   return running;
 }
-
-
-
-
 
 bool Engine::write_detector(const Gamma::Setting &set) {
   if (set.metadata.setting_type != Gamma::SettingType::detector)
@@ -338,15 +294,16 @@ void Engine::set_detector(int ch, Gamma::Detector det) {
   if (ch < 0 || ch >= detectors_.size())
     return;
   detectors_[ch] = det;
+  //PL_DBG << "set det #" << ch << " to  " << det.name_;
 
   for (auto &set : settings_tree_.branches.my_data_) {
     if (set.id_ == "Detectors") {
-      if (detectors_.size() == set.branches.size()) {
-        for (auto &q : set.branches.my_data_) {
-          if (q.index == ch) {
-            q.value_text = detectors_[q.index].name_;
-            load_optimization(q.index);
-          }
+      for (auto &q : set.branches.my_data_) {
+        if (q.index == ch) {
+      //    PL_DBG << "set det in tree #" << q.index << " to  " << detectors_[q.index].name_;
+
+          q.value_text = detectors_[q.index].name_;
+          load_optimization(q.index);
         }
       }
     }
@@ -434,20 +391,24 @@ void Engine::set_setting(Gamma::Setting address, Gamma::Match flags) {
 }
 
 void Engine::get_all_settings() {
-  for (auto &q : devices_)
+  aggregate_status_ = DeviceStatus(0);
+  for (auto &q : devices_) {
     q.second->get_all_settings();
+    aggregate_status_ = aggregate_status_ | q.second->status();
+  }
   read_settings_bulk();
 }
 
 void Engine::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>& interruptor) {
 
   boost::unique_lock<boost::mutex> lock(mutex_);
-  if (live() != LiveStatus::online) {
-    PL_WARN << "System not online";
+
+  if (!(aggregate_status_ & DeviceStatus::can_run)) {
+    PL_WARN << "<Engine> No devices exist that can perform acquisition";
     return;
   }
 
-  PL_INFO << "Multithreaded MCA acquisition scheduled for " << timeout << " seconds";
+  PL_INFO << "<Engine> Multithreaded spectra acquisition scheduled for " << timeout << " seconds";
 
   SynchronizedQueue<Spill*> parsedQueue;
 
@@ -465,16 +426,16 @@ void Engine::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>& 
   parsedQueue.enqueue(spill);
 
   if (daq_start(timeout, &parsedQueue))
-    PL_DBG << "Started generating threads";
+    PL_DBG << "<Engine> Started device daq threads";
 
   while (daq_running()) {
     wait_ms(1000);
     if (interruptor.load()) {
-      PL_DBG << "user interrupted daq";
+      PL_DBG << "<Engine> Client requested daq stop";
       if (daq_stop())
-        PL_DBG << "Stopped generating threads successfully";
+        PL_DBG << "<Engine> Stopped device daq threads successfully";
       else
-        PL_DBG << "Stopped generating threads failed";
+        PL_ERR << "<Engine> Failed to stop device daq threads";
     }
   }
 
@@ -503,7 +464,7 @@ void Engine::getFakeMca(Simulator& source, SpectraSet& spectra,
                         uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   boost::unique_lock<boost::mutex> lock(mutex_);
-  PL_INFO << "Multithreaded MCA simulation scheduled for " << timeout << " seconds";
+  PL_INFO << "<Engine> Multithreaded acquisition simulation scheduled for " << timeout << " seconds";
 
   SynchronizedQueue<Spill*> eventQueue;
 
@@ -519,7 +480,7 @@ void Engine::getFakeMca(Simulator& source, SpectraSet& spectra,
 
 void Engine::simulateFromList(Sorter &sorter, SpectraSet &spectra, boost::atomic<bool> &interruptor) {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  PL_INFO << "Acquisition simulation from saved list data";
+  PL_INFO << "<Engine> Acquisition simulation from saved list data";
 
   SynchronizedQueue<Spill*> eventQueue;
 
@@ -538,15 +499,16 @@ void Engine::simulateFromList(Sorter &sorter, SpectraSet &spectra, boost::atomic
 ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   boost::unique_lock<boost::mutex> lock(mutex_);
-  if (live() != LiveStatus::online) {
-    PL_WARN << "System not online";
+
+  if (!(aggregate_status_ & DeviceStatus::can_run)) {
+    PL_WARN << "<Engine> No devices exist that can perform acquisition";
     return nullptr;
   }
 
   Spill* one_spill;
   ListData* result = new ListData;
 
-  PL_INFO << "Multithreaded list mode acquisition scheduled for " << timeout << " seconds";
+  PL_INFO << "<Engine> Multithreaded list mode acquisition scheduled for " << timeout << " seconds";
 
   get_all_settings();
   save_optimization();
@@ -555,17 +517,18 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
   result->run.time_start = boost::posix_time::microsec_clock::local_time();
 
   SynchronizedQueue<Spill*> parsedQueue;
+
   if (daq_start(timeout, &parsedQueue))
-    PL_DBG << "Started generating threads";
+    PL_DBG << "<Engine> Started device daq threads";
 
   while (daq_running()) {
     wait_ms(1000);
     if (interruptor.load()) {
-      PL_DBG << "user interrupted daq";
+      PL_DBG << "<Engine> Client requested daq stop";
       if (daq_stop())
-        PL_DBG << "Stopped generating threads successfully";
+        PL_DBG << "<Engine> Stopped device daq threads successfully";
       else
-        PL_DBG << "Stopped generating threads failed";
+        PL_ERR << "<Engine> Failed to stop device daq threads";
     }
   }
 
@@ -592,7 +555,7 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
                         SpectraSet* spectra) {
 
-  PL_INFO << "<Engine> Spectra builder initiated";
+  PL_DBG << "<Engine> Spectra builder thread initiated";
   Spill* one_spill;
   while ((one_spill = data_queue->dequeue()) != nullptr) {
     spectra->add_spill(one_spill);
@@ -607,7 +570,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
 void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queue,
                          uint64_t timeout_limit, boost::atomic<bool>* interruptor) {
 
-  PL_INFO << "<Engine> Simulated event generator initiated";
+  PL_DBG << "<Engine> Simulated event generator initiated";
 
   uint32_t secsperrun = 5;  ///calculate this based on ocr and buf size
   Spill* one_spill;
@@ -636,7 +599,7 @@ void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queu
   while (!timeout) {
     spill_number++;
 
-    PL_INFO << "  SIMULATION  Elapsed: " << total_timer.done()
+    PL_INFO << "<Engine>   SIMULATION  Elapsed: " << total_timer.done()
             << "  ETA: " << total_timer.ETA();
 
     one_spill = new Spill;
@@ -679,7 +642,7 @@ void Engine::worker_from_list(Sorter* sorter, SynchronizedQueue<Spill*>* data_qu
     data_queue->enqueue(new Spill(one_spill));
     boost::this_thread::sleep(boost::posix_time::seconds(2));
   }
-  PL_DBG << "worker_from_list terminating";
+  PL_DBG << "<Engine> worker_from_list terminating";
 }
 
 }

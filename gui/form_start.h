@@ -47,16 +47,16 @@ public:
 signals:
   void toggleIO(bool);
   void statusText(QString);
-  void toggle_push_(bool, Qpx::LiveStatus);
+  void toggle_push_(bool, Qpx::DeviceStatus);
   void refresh();
   void update_dets();
 
 private slots:
-  void update(Gamma::Setting, std::vector<Gamma::Detector>);
-  void toggle_push(bool, Qpx::LiveStatus);
+  void update(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus);
+  void toggle_push(bool, Qpx::DeviceStatus);
   void toggleIO_(bool);
   void updateStatusText(QString);
-  void boot_complete(bool, Qpx::LiveStatus);
+  void boot_complete(bool, Qpx::DeviceStatus);
   void settings_updated();
   void detectors_updated();
 
