@@ -174,7 +174,7 @@ int VmeModule::deviceClass(void)
   uint32_t tmp = readLong(m_baseAddress + VdsChannelNumberOFFSET);
   m_deviceClass = (uint16_t)tmp;
 
-  PL_DBG << "VendorID=" << m_vendorId << " deviceClass=" << m_deviceClass;
+  //PL_DBG << "VendorID=" << m_vendorId << " deviceClass=" << m_deviceClass;
 
 
 	if (m_deviceClass == V12C0) {

@@ -247,7 +247,7 @@
         </size>
        </property>
        <property name="toolTip">
-        <string>Plot line style</string>
+        <string>Export plot</string>
        </property>
        <property name="text">
         <string>...</string>

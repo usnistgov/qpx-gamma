@@ -42,8 +42,7 @@ QpxVmePlugin::QpxVmePlugin() {
 
 
 QpxVmePlugin::~QpxVmePlugin() {
-  if (controller_ != nullptr)
-    delete controller_;
+  die();
 }
 
 
@@ -69,7 +68,7 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
 
   for (auto &q : set.branches.my_data_) {
     if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "VME/ControllerID")) {
-      PL_DBG << "VME controller expected " << q.value_text;
+      //PL_DBG << "<VmePlugin> controller expected " << q.value_text;
       if (controller_name_.empty())
         controller_name_ = q.value_text;
     }
@@ -96,10 +95,10 @@ bool QpxVmePlugin::execute_command(Gamma::Setting &set) {
 
 
 bool QpxVmePlugin::boot() {
-  PL_DBG << "Attempting to boot VME";
+  PL_DBG << "<VmePlugin> Attempting to boot";
 
   if (!(status_ & DeviceStatus::can_boot)) {
-    PL_WARN << "Cannot boot Pixie-4. Failed flag check (can_boot == 0)";
+    PL_WARN << "<VmePlugin> Cannot boot. Failed flag check (can_boot == 0)";
     return false;
   }
 
@@ -110,10 +109,40 @@ bool QpxVmePlugin::boot() {
 
   if (controller_name_ == "VmUsb") {
     controller_ = new VmUsb();
-    PL_DBG << "VME controller status: " << controller_->information();
+    PL_DBG << "<VmePlugin> Controller status: " << controller_->information();
   }
 
+  for (int base_address = 0; base_address < 0xFFFF; base_address += VHS_ADDRESS_SPACE_LENGTH) {
+    VmeModule module(controller_, base_address);
 
+    int deviceClass = module.deviceClass();
+
+    if (deviceClass == V12C0 || deviceClass == V24D0) {
+      VmeModule *mod = new VmeModule(controller_, base_address);
+      modules_.push_back(mod);
+      PL_DBG << "<VmePlugin> Adding module [" << base_address << "] firmwareName=" << module.firmwareName() << " serialNumber=" << module.serialNumber();
+
+    }
+  }
+
+  status_ = DeviceStatus::loaded | DeviceStatus::booted;
+  return true;
+}
+
+bool QpxVmePlugin::die() {
+  PL_DBG << "<VmePlugin> Disconnecting";
+
+  for (auto &q : modules_)
+    delete q;
+  modules_.clear();
+
+  if (controller_ != nullptr) {
+    delete controller_;
+    controller_ = nullptr;
+  }
+
+  status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
+  return true;
 }
 
 void QpxVmePlugin::get_all_settings() {

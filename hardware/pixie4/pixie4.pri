@@ -34,11 +34,13 @@ unix {
       QMAKE_CC = g++
    }
       
-   contains ( ARCH, x86_64):
+   contains ( ARCH, x86_64): {
       LIBS += $$PWD/PLX/Library/64bit/PlxApi.a
+   }
 
-   contains ( ARCH, i686):
+   contains ( ARCH, i686): {
       LIBS += $$PWD/PLX/Library/32bit/PlxApi.a
+   }
    
    QMAKE_CFLAGS   += -fpermissive
 

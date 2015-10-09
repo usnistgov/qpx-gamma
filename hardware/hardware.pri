@@ -46,5 +46,5 @@ HEADERS  += $$files($$PWD/../engine/*.h) \
 }
 
 ! include( $$PWD/VME/vme.pri ) {
-    error( "Couldn't find the pixie4.pri file!" )
+    error( "Couldn't find the vme.pri file!" )
 }

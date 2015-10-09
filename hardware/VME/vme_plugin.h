@@ -44,7 +44,7 @@ public:
   bool read_settings_bulk(Gamma::Setting &set) const override;
   void get_all_settings() override;
   bool boot() override;
-  bool die() override {status_ = DeviceStatus::loaded | DeviceStatus::can_boot; return true;}
+  bool die() override;
 
   bool execute_command(Gamma::Setting &set) override;
 
@@ -60,8 +60,9 @@ protected:
   std::vector<int32_t> channel_indices_;
 
   std::string controller_name_;
-
   BaseController *controller_;
+
+  std::list<BaseModule*> modules_;
 
 };
 

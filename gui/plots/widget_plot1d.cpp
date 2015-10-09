@@ -87,10 +87,10 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   connect(ui->toolScaleType, SIGNAL(triggered(QAction*)), this, SLOT(scaleTypeChosen(QAction*)));
   set_scale_type("Logarithmic");
 
-  menuExportFormat.addAction("Save png");
-  menuExportFormat.addAction("Save jpg");
-  menuExportFormat.addAction("Save pdf");
-  menuExportFormat.addAction("Save bmp");
+  menuExportFormat.addAction("png");
+  menuExportFormat.addAction("jpg");
+  menuExportFormat.addAction("pdf");
+  menuExportFormat.addAction("bmp");
   ui->toolExport->setMenu(&menuExportFormat);
   ui->toolExport->setPopupMode(QToolButton::InstantPopup);
   connect(ui->toolExport, SIGNAL(triggered(QAction*)), this, SLOT(exportRequested(QAction*)));
