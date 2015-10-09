@@ -116,10 +116,12 @@ private slots:
   void on_pushResetScales_clicked();
   void scaleTypeChosen(QAction*);
   void plotStyleChosen(QAction*);
+  void exportRequested(QAction*);
 
   void on_pushNight_clicked();
 
   void on_pushLabels_clicked();
+
 
 private:
   void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
@@ -152,6 +154,8 @@ private:
 
   QMenu menuScaleType;
   QMenu menuPlotStyle;
+  QMenu menuExportFormat;
+
   QString color_theme_;
   QString scale_type_;
   QString plot_style_;

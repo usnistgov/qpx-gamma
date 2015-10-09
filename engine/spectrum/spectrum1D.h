@@ -36,7 +36,7 @@ public:
   static Template get_template() {
     Template new_temp;
     new_temp.type = "1D";
-    new_temp.input_types = {"cnf", "tka", "n42", "ava"};
+    new_temp.input_types = {"cnf", "tka", "n42", "ava", "spe"};
     new_temp.output_types = {"n42", "tka"};
     new_temp.description = "Traditional MCA spectrum";
     return new_temp;
@@ -81,6 +81,7 @@ protected:
   bool read_tka(std::string);
   bool read_n42(std::string);
   bool read_ava(std::string);
+  bool read_spe(std::string);
 
   std::vector<uint64_t> spectrum_;
 };

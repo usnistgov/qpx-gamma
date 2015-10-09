@@ -134,6 +134,8 @@ bool Spectrum1D::_read_file(std::string name, std::string format) {
     return read_n42(name);
   else if (format == "ava")
     return read_ava(name);
+  else if (format == "spe")
+    return read_spe(name);
   else
     return false;
 }
@@ -346,6 +348,66 @@ bool Spectrum1D::read_tka(std::string name) {
   metadata_.detectors[0] = Gamma::Detector();
   metadata_.detectors[0].name_ = "unknown";
   
+  init_from_file(name);
+
+  return true;
+}
+
+bool Spectrum1D::read_spe(std::string name) {
+  //radware format
+  std::ifstream myfile(name, std::ios::in | std::ios::binary);
+  if (!myfile)
+    return false;
+
+  myfile.seekg (0, myfile.end);
+  int length = myfile.tellg();
+
+  if (length < 13)
+    return false;
+
+  myfile.seekg (12, myfile.beg);
+
+  spectrum_.clear();
+  metadata_.total_count = 0;
+//  metadata_.max_chan = 0;
+//  uint16_t max_i =0;
+
+  std::list<Entry> entry_list;
+  float one;
+  int i=0;
+  while (myfile.tellg() != length) {
+    myfile.read ((char*)&one, sizeof(float));
+    Entry new_entry;
+    new_entry.first.resize(1);
+    new_entry.first[0] = i;
+    new_entry.second = one;
+    entry_list.push_back(new_entry);
+    i++;
+    metadata_.total_count += one;
+  }
+
+  if (i == 0)
+    return false;
+
+  metadata_.bits = log2(i);
+  if (pow(2, metadata_.bits) < i)
+    metadata_.bits++;
+  metadata_.resolution = pow(2, metadata_.bits);
+  shift_by_ = 16 - metadata_.bits;
+  metadata_.max_chan = i;
+
+  spectrum_.clear();
+  spectrum_.resize(metadata_.resolution, 0);
+
+  for (auto &q : entry_list) {
+    spectrum_[q.first[0]] = q.second;
+    metadata_.total_count += q.second;
+  }
+
+  metadata_.detectors.resize(1);
+  metadata_.detectors[0] = Gamma::Detector();
+  metadata_.detectors[0].name_ = "unknown";
+
   init_from_file(name);
 
   return true;

@@ -39,9 +39,9 @@ public:
   static Template get_template() {
     Template new_temp;
     new_temp.type = "2D";
-    new_temp.output_types = {"m", "spn"};
-    new_temp.input_types = {"spn", "m4b", "mat"};
-    new_temp.description = "Matrix-type coincidence spectrum for two detectors";
+    new_temp.output_types = {"m", "m4b", "mat"};
+    new_temp.input_types = {"m4b", "mat"};
+    new_temp.description = "2-dimensional coincidence matrix";
 
     Gamma::Setting buf;
     buf.id_ = "buffered";
@@ -79,9 +79,9 @@ protected:
   
   //export to matlab script
   void write_m(std::string) const;
-  void write_spn(std::string) const;
+  void write_m4b(std::string) const;
+  void write_mat(std::string) const;
 
-  bool read_spn(std::string);
   bool read_m4b(std::string);
   bool read_mat(std::string);
 

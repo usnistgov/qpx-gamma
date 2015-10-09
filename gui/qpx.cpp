@@ -72,6 +72,7 @@ qpx::qpx(QWidget *parent) :
 
   main_tab_ = new FormStart(runner_thread_, settings_, detectors_);
   ui->qpxTabs->addTab(main_tab_, "Settings");
+  ui->qpxTabs->tabBar()->tabButton(0, QTabBar::RightSide)->resize(0,0);
   connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
   connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(settings_updated()));

@@ -127,7 +127,7 @@ DialogSaveSpectra::DialogSaveSpectra(Qpx::SpectraSet& newset, QString outdir, QW
 
   ui->lineName->setText(QString("Qpx") + QString::fromStdString(timenow));
   if (my_set_->runInfo().state == Gamma::Setting())
-    ui->boxQpxFile->setChecked(true);
+    ui->boxQpxFile->setChecked(false);
 }
 
 DialogSaveSpectra::~DialogSaveSpectra()

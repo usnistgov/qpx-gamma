@@ -23,6 +23,7 @@
 #include "widget_plot1d.h"
 #include "ui_widget_plot1d.h"
 #include "custom_logger.h"
+#include "qt_util.h"
 
 WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   QWidget(parent),  ui(new Ui::WidgetPlot1D)
@@ -85,6 +86,14 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   ui->toolScaleType->setPopupMode(QToolButton::InstantPopup);
   connect(ui->toolScaleType, SIGNAL(triggered(QAction*)), this, SLOT(scaleTypeChosen(QAction*)));
   set_scale_type("Logarithmic");
+
+  menuExportFormat.addAction("Save png");
+  menuExportFormat.addAction("Save jpg");
+  menuExportFormat.addAction("Save pdf");
+  menuExportFormat.addAction("Save bmp");
+  ui->toolExport->setMenu(&menuExportFormat);
+  ui->toolExport->setPopupMode(QToolButton::InstantPopup);
+  connect(ui->toolExport, SIGNAL(triggered(QAction*)), this, SLOT(exportRequested(QAction*)));
 
   QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Backspace), ui->mcaPlot);
   connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushResetScales_clicked()));
@@ -768,4 +777,27 @@ void WidgetPlot1D::setFloatingText(QString txt) {
   floating_text_ = txt;
   replot_markers();
   ui->mcaPlot->replot();
+}
+
+void WidgetPlot1D::exportRequested(QAction* choice) {
+  QString filter = choice->text() + "(*." + choice->text() + ")";
+  QString fileName = CustomSaveFileDialog(this, "Export plot",
+                                          QStandardPaths::locate(QStandardPaths::HomeLocation, ""),
+                                          filter);
+  if (validateFile(this, fileName, true)) {
+    QFileInfo file(fileName);
+    if (file.suffix() == "png") {
+      PL_INFO << "Exporting plot to png " << fileName.toStdString();
+      ui->mcaPlot->savePng(fileName,0,0,1,100);
+    } else if (file.suffix() == "jpg") {
+      PL_INFO << "Exporting plot to jpg " << fileName.toStdString();
+      ui->mcaPlot->saveJpg(fileName,0,0,1,100);
+    } else if (file.suffix() == "bmp") {
+      PL_INFO << "Exporting plot to bmp " << fileName.toStdString();
+      ui->mcaPlot->saveBmp(fileName);
+    } else if (file.suffix() == "pdf") {
+      PL_INFO << "Exporting plot to pdf " << fileName.toStdString();
+      ui->mcaPlot->savePdf(fileName, true);
+    }
+  }
 }

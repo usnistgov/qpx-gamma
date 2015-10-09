@@ -14,7 +14,7 @@
    <string>Form</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="qpxres.qrc">
+   <iconset resource="../resources/qpxres.qrc">
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -87,7 +87,7 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/view_fullscreen.png</normaloff>:/new/icons/oxy/view_fullscreen.png</iconset>
        </property>
        <property name="iconSize">
@@ -119,7 +119,7 @@
         <string>...</string>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/draw_freehand.png</normaloff>:/new/icons/oxy/draw_freehand.png</iconset>
        </property>
        <property name="iconSize">
@@ -151,7 +151,7 @@
         <string>...</string>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/view_statistics.png</normaloff>:/new/icons/oxy/view_statistics.png</iconset>
        </property>
        <property name="iconSize">
@@ -183,7 +183,7 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/rss_tag.png</normaloff>:/new/icons/oxy/rss_tag.png</iconset>
        </property>
        <property name="iconSize">
@@ -218,7 +218,7 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/games_config_background.png</normaloff>:/new/icons/oxy/games_config_background.png</iconset>
        </property>
        <property name="iconSize">
@@ -229,6 +229,38 @@
        </property>
        <property name="checkable">
         <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="toolExport">
+       <property name="minimumSize">
+        <size>
+         <width>28</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="toolTip">
+        <string>Plot line style</string>
+       </property>
+       <property name="text">
+        <string>...</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../resources/qpxres.qrc">
+         <normaloff>:/new/icons/oxy/document_save.png</normaloff>:/new/icons/oxy/document_save.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -254,7 +286,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="qpxres.qrc"/>
+  <include location="../resources/qpxres.qrc"/>
  </resources>
  <connections/>
 </ui>
