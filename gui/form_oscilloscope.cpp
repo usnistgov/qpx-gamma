@@ -160,10 +160,11 @@ void FormOscilloscope::replot() {
     std::map<double, double> minima, maxima;
 
     for (int i=0; i < traces_.size(); i++) {
-      if (!traces_[i].data.size())
+      uint32_t trace_length = traces_[i].data.size();
+
+      if (!trace_length)
         continue;
 
-      uint32_t trace_length = traces_[i].data.size();
       double xinterval = traces_[i].detector.settings_.get_setting(Gamma::Setting("XDT"), Gamma::Match::name).value_dbl;
 
       xdt = xinterval;

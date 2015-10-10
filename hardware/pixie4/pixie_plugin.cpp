@@ -384,8 +384,13 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
               }
 
               for (auto &o : p.branches.my_data_) {
-                if (o.index >= 0)
-                  channel_indices_[modnum][channum] = o.index;
+                if (!p.indices.empty()) {
+                  int det = *p.indices.begin();
+                  channel_indices_[modnum][channum] = det;
+                  o.index = det;
+                  o.indices.clear();
+                  o.indices.insert(det);
+                }
 
                 if (o.metadata.writable && (o.metadata.setting_type == Gamma::SettingType::floating) && (channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value_dbl)) {
                   channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value_dbl;
