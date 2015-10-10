@@ -23,6 +23,7 @@
 unix {
    SUSE = $$system(cat /proc/version | grep -o SUSE)
    UBUNTU = $$system(cat /proc/version | grep -o Ubuntu)
+   FEDORA = $$system(cat /proc/version | grep -o fedora)
    ARCH = $$system(uname -m)
    contains( SUSE, SUSE): {
        LIBS += -llua
@@ -30,7 +31,9 @@ unix {
    contains( UBUNTU, Ubuntu): {
        LIBS += -llua5.2
    }
-      
+   contains( FEDORA, fedora): {
+       LIBS += -llua
+   }
    LIBS += -lm -ldl -lboost_system -lz
 }
 
