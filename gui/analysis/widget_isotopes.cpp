@@ -68,6 +68,25 @@ WidgetIsotopes::~WidgetIsotopes()
   delete ui;
 }
 
+void WidgetIsotopes::set_editable(bool enable) {
+  ui->pushAddGamma->setVisible(enable);
+  ui->pushRemove->setVisible(enable);
+  ui->pushSum->setVisible(enable);
+  ui->pushAddIsotope->setVisible(enable);
+  ui->pushRemoveIsotope->setVisible(enable);
+  ui->spacer1->setGeometry(QRect()); //BAD
+  ui->spacer2->setGeometry(QRect()); //BAD
+  ui->editEnergiesLayout->setGeometry(QRect());
+  ui->editIsotopesLayout->setGeometry(QRect());
+  if (enable) {
+    ui->tableGammas->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    ui->tableGammas->setEditTriggers(QAbstractItemView::AllEditTriggers);
+  } else {
+    ui->tableGammas->setSelectionMode(QAbstractItemView::NoSelection);
+    ui->tableGammas->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  }
+}
+
 void WidgetIsotopes::setDir(QString filedir) {
   root_dir_ = filedir;
   filedir += "/isotopes.xml";
@@ -81,6 +100,13 @@ void WidgetIsotopes::setDir(QString filedir) {
   }
 
   modified_ = false;
+}
+
+std::list<RadTypes::Gamma> WidgetIsotopes::current_isotope_gammas() const {
+  if (ui->listIsotopes->currentItem() != nullptr)
+    return isotopes_.get(RadTypes::Isotope(ui->listIsotopes->currentItem()->text().toStdString())).gammas.my_data_;
+  else
+    return std::list<RadTypes::Gamma>();
 }
 
 void WidgetIsotopes::isotopeChosen(QString choice) {
@@ -99,6 +125,8 @@ void WidgetIsotopes::isotopeChosen(QString choice) {
     ui->pushAddGamma->setEnabled(true);
   }
   selection_changed(QItemSelection(), QItemSelection());
+
+  emit isotopeSelected();
 }
 
 void WidgetIsotopes::selection_changed(QItemSelection, QItemSelection) {
@@ -251,6 +279,14 @@ void WidgetIsotopes::push_energies(std::vector<double> new_energies) {
   isotopeChosen(current_isotope());
 }
 
+void WidgetIsotopes::select_energies(std::set<double> sel_energies) {
+  XMLableDB<RadTypes::Gamma> gammas = table_gammas_.get_gammas();
+  for (auto &q : gammas.my_data_)
+    q.marked = (sel_energies.count(q.energy) > 0);
+  table_gammas_.set_gammas(gammas);
+}
+
+
 void WidgetIsotopes::select_next_energy()
 {
   current_gammas_.clear();
@@ -301,6 +337,11 @@ QVariant TableGammas::data(const QModelIndex &index, int role) const
     case 1:
       return QVariant::fromValue(gammas_[row].abundance);
     }
+  } else if (role == Qt::ForegroundRole) {
+    if (gammas_[row].marked)
+      return QBrush(Qt::darkGreen);
+    else
+      return QBrush(Qt::black);
   }
   return QVariant();
 }

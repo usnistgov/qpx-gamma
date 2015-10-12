@@ -14,7 +14,7 @@
    <string>Form</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="qpxres.qrc">
+   <iconset resource="../resources/qpxres.qrc">
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -198,7 +198,7 @@
           <string>Details</string>
          </property>
          <property name="icon">
-          <iconset resource="qpxres.qrc">
+          <iconset resource="../resources/qpxres.qrc">
            <normaloff>:/new/icons/oxy/help_about.png</normaloff>:/new/icons/oxy/help_about.png</iconset>
          </property>
          <property name="iconSize">
@@ -224,7 +224,7 @@
           <string>Analyse</string>
          </property>
          <property name="icon">
-          <iconset resource="qpxres.qrc">
+          <iconset resource="../resources/qpxres.qrc">
            <normaloff>:/new/icons/oxy/preferences_web_browser_cache16.png</normaloff>:/new/icons/oxy/preferences_web_browser_cache16.png</iconset>
          </property>
          <property name="iconSize">
@@ -253,20 +253,20 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>WidgetPlot1D</class>
-   <extends>QWidget</extends>
-   <header>widget_plot1d.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>SelectorWidget</class>
    <extends>QWidget</extends>
    <header>widget_selector.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>WidgetPlot1D</class>
+   <extends>QWidget</extends>
+   <header>widget_plot1d.h</header>
+   <container>1</container>
+  </customwidget>
  </customwidgets>
  <resources>
-  <include location="qpxres.qrc"/>
+  <include location="../resources/qpxres.qrc"/>
  </resources>
  <connections/>
 </ui>

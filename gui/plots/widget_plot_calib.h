@@ -66,10 +66,12 @@ private:
 
   Ui::WidgetPlotCalib *ui;
 
-  QVector<double> x_fit, y_fit, x_pts, y_pts;
+  QVector<double> x_fit, y_fit;
+  QVector<QVector<double>> x_pts, y_pts;
   std::set<double> selection_;
 
-  AppearanceProfile style_pts, style_fit;
+  AppearanceProfile style_fit;
+  QVector<AppearanceProfile> style_pts;
 
   QString floating_text_;
 };

@@ -72,6 +72,7 @@ class Detector : public XMLable {
   XMLableDB<Calibration> gain_match_calibrations_;
 
   Calibration fwhm_calibration_;
+  Calibration efficiency_calibration_;
   Setting settings_;
   
 };

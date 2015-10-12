@@ -53,6 +53,7 @@ void WidgetPlotCalib::clearGraphs()
   y_fit.clear();
   x_pts.clear();
   y_pts.clear();
+  style_pts.clear();
   selection_.clear();
   redraw();
 }
@@ -68,40 +69,40 @@ void WidgetPlotCalib::redraw() {
   ymin = std::numeric_limits<double>::max();
   ymax = - std::numeric_limits<double>::max();
 
-  if (!x_pts.empty()) {
+  for (int k=0; k < x_pts.size(); ++k) {
     ui->mcaPlot->addGraph();
     int g = ui->mcaPlot->graphCount() - 1;
-    ui->mcaPlot->graph(g)->addData(x_pts, y_pts);
+    ui->mcaPlot->graph(g)->addData(x_pts[k], y_pts[k]);
     ui->mcaPlot->graph(g)->setPen(QPen(Qt::darkCyan));
     ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDot, Qt::black, Qt::black, 0));
     ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsNone);
 
-    for (int i = 0; i < x_pts.size(); ++i) {
+    for (int i = 0; i < x_pts[k].size(); ++i) {
       QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
       crs->setStyle(QCPItemTracer::tsSquare); //tsCirlce?
-      crs->setSize(style_pts.default_pen.width());
+      crs->setSize(style_pts[k].default_pen.width());
       crs->setGraph(ui->mcaPlot->graph(g));
-      crs->setGraphKey(x_pts[i]);
+      crs->setGraphKey(x_pts[k][i]);
       crs->setInterpolating(true);
-      crs->setPen(QPen(style_pts.default_pen.color(), 0));
-      crs->setBrush(style_pts.default_pen.color());
-      crs->setSelectedPen(QPen(style_pts.themes["selected"].color(), 0));
-      crs->setSelectedBrush(style_pts.themes["selected"].color());
+      crs->setPen(QPen(style_pts[k].default_pen.color(), 0));
+      crs->setBrush(style_pts[k].default_pen.color());
+      crs->setSelectedPen(QPen(style_pts[k].themes["selected"].color(), 0));
+      crs->setSelectedBrush(style_pts[k].themes["selected"].color());
       crs->setSelectable(true);
-      crs->setProperty("true_value", x_pts[i]);
-      if (selection_.count(x_pts[i]) > 0)
+      crs->setProperty("true_value", x_pts[k][i]);
+      if (selection_.count(x_pts[k][i]) > 0)
         crs->setSelected(true);
       ui->mcaPlot->addItem(crs);
       crs->updatePosition();
     }
 
-    for (auto &q : x_pts) {
+    for (auto &q : x_pts[k]) {
       if (q < xmin)
         xmin = q;
       if (q > xmax)
         xmax = q;
     }
-    for (auto &q : y_pts) {
+    for (auto &q : y_pts[k]) {
       if (q < ymin)
         ymin = q;
       if (q > ymax)
@@ -185,13 +186,10 @@ void WidgetPlotCalib::addFit(const QVector<double>& x, const QVector<double>& y,
 }
 
 void WidgetPlotCalib::addPoints(const QVector<double>& x, const QVector<double>& y, AppearanceProfile style) {
-  style_pts = style;
-  x_pts.clear();
-  y_pts.clear();
-
   if (!x.empty() && (x.size() == y.size())) {
-    x_pts = x;
-    y_pts = y;
+    x_pts.push_back(x);
+    y_pts.push_back(y);
+    style_pts.push_back(style);
   }
 
   redraw();

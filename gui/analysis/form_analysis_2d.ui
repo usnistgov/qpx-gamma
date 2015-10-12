@@ -14,7 +14,7 @@
    <string>Analysis2D</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="qpxres.qrc">
+   <iconset resource="../resources/qpxres.qrc">
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -242,7 +242,7 @@
                 <string/>
                </property>
                <property name="icon">
-                <iconset resource="qpxres.qrc">
+                <iconset resource="../resources/qpxres.qrc">
                  <normaloff>:/new/icons/oxy/document_save.png</normaloff>:/new/icons/oxy/document_save.png</iconset>
                </property>
                <property name="iconSize">
@@ -414,20 +414,20 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>FormCoincPeaks</class>
-   <extends>QWidget</extends>
-   <header>form_coinc_peaks.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>WidgetPlotCalib</class>
    <extends>QWidget</extends>
    <header>widget_plot_calib.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>FormCoincPeaks</class>
+   <extends>QWidget</extends>
+   <header>form_coinc_peaks.h</header>
+   <container>1</container>
+  </customwidget>
  </customwidgets>
  <resources>
-  <include location="qpxres.qrc"/>
+  <include location="../resources/qpxres.qrc"/>
  </resources>
  <connections/>
 </ui>

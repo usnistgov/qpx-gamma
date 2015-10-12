@@ -44,8 +44,8 @@ static std::string dbl2str(double d)
   
 class AbstractRadiation : public XMLable {
  public:
-  AbstractRadiation() : energy(0), abundance(0) {}
-  AbstractRadiation(double en, double ab) : energy(en), abundance(ab) {}
+  AbstractRadiation() : energy(0), abundance(0), marked(false) {}
+  AbstractRadiation(double en, double ab) : energy(en), abundance(ab), marked(false) {}
   
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;
@@ -61,6 +61,7 @@ class AbstractRadiation : public XMLable {
   
   double energy;
   double abundance;
+  bool marked;
 };
 
 class Beta : public AbstractRadiation {

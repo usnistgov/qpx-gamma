@@ -104,7 +104,7 @@ private:
 
   AppearanceProfile main_graph_, prelim_peak_, filtered_peak_,
                     gaussian_, pseudo_voigt_, baseline_,
-                    multiplet_,
+                    multiplet_, flagged_,
                     rise_, fall_, even_;
 
   void plot_derivs();

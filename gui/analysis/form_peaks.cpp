@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormPeaks - 
+ *      FormPeaks -
  *
  ******************************************************************************/
 
@@ -64,6 +64,7 @@ FormPeaks::FormPeaks(QWidget *parent) :
   prelim_peak_.default_pen = QPen(Qt::black, 4);
   filtered_peak_.default_pen = QPen(Qt::blue, 6);
   gaussian_.default_pen = QPen(Qt::darkBlue, 0);
+  flagged_.default_pen =  QPen(Qt::green, 1);
   pseudo_voigt_.default_pen = QPen(Qt::darkCyan, 0);
 
   multiplet_.default_pen = QPen(Qt::red, 2);
@@ -232,13 +233,17 @@ void FormPeaks::replot_all() {
   
   for (auto &q : fit_data_->peaks_) {
     if (ui->checkShowPseudoVoigt->isChecked())
-        ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
-                             QVector<double>::fromStdVector(q.second.y_fullfit_pseudovoigt_),
-                             pseudo_voigt_);
-    if (ui->checkShowGaussians->isChecked())
-         ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
-                              QVector<double>::fromStdVector(q.second.y_fullfit_gaussian_),
-                              gaussian_);
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
+                           QVector<double>::fromStdVector(q.second.y_fullfit_pseudovoigt_),
+                           pseudo_voigt_);
+    if (ui->checkShowGaussians->isChecked()) {
+      AppearanceProfile prof = gaussian_;
+      if (q.second.flagged)
+        prof = flagged_;
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
+                           QVector<double>::fromStdVector(q.second.y_fullfit_gaussian_),
+                           prof);
+    }
     if (ui->checkShowBaselines->isChecked())
       ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
                            QVector<double>::fromStdVector(q.second.y_baseline_),

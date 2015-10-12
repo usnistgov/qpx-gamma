@@ -146,6 +146,7 @@ void FormEnergyCalibration::update_peaks(bool contents_changed) {
 
 void FormEnergyCalibration::replot_markers() {
   ui->PlotCalib->setFloatingText("");
+  ui->PlotCalib->clearGraphs();
 
   QVector<double> xx, yy;
 

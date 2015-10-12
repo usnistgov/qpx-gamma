@@ -37,6 +37,7 @@
 #include "form_oscilloscope.h"
 #include "form_optimization.h"
 #include "form_gain_match.h"
+#include "form_efficiency_calibration.h"
 
 #include "ui_about.h"
 #include "qt_util.h"
@@ -70,7 +71,7 @@ qpx::qpx(QWidget *parent) :
   connect(ui->qpxTabs, SIGNAL(tabCloseRequested(int)), this, SLOT(tabCloseRequested(int)));
   ui->statusBar->showMessage("Offline");
 
-  main_tab_ = new FormStart(runner_thread_, settings_, detectors_);
+  main_tab_ = new FormStart(runner_thread_, settings_, detectors_, this);
   ui->qpxTabs->addTab(main_tab_, "Settings");
   ui->qpxTabs->tabBar()->tabButton(0, QTabBar::RightSide)->resize(0,0);
   connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
@@ -249,7 +250,7 @@ void qpx::analyze_2d(FormAnalysis2D* formAnal) {
 
 void qpx::on_pushOpenSpectra_clicked()
 {
-  FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, settings_, detectors_);
+  FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, settings_, detectors_, this);
   ui->qpxTabs->addTab(newSpectraForm, "Spectra");
   connect(newSpectraForm, SIGNAL(requestAnalysis(FormAnalysis1D*)), this, SLOT(analyze_1d(FormAnalysis1D*)));
   connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
@@ -263,7 +264,7 @@ void qpx::on_pushOpenSpectra_clicked()
 
 void qpx::on_pushOpenList_clicked()
 {
-  FormListDaq *newListForm = new FormListDaq(runner_thread_, settings_);
+  FormListDaq *newListForm = new FormListDaq(runner_thread_, settings_, this);
   ui->qpxTabs->addTab(newListForm, "List mode");
 
   connect(newListForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
@@ -280,7 +281,7 @@ void qpx::on_pushOpenOptimize_clicked()
   if (hasTab("Optimization"))
     return;
 
-  FormOptimization *newOpt = new FormOptimization(runner_thread_, settings_, detectors_);
+  FormOptimization *newOpt = new FormOptimization(runner_thread_, settings_, detectors_, this);
   ui->qpxTabs->addTab(newOpt, "Optimization");
 
   connect(newOpt, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
@@ -299,7 +300,7 @@ void qpx::on_pushOpenGainMatch_clicked()
   if (hasTab("Gain matching"))
     return;
 
-  FormGainMatch *newGain = new FormGainMatch(runner_thread_, settings_, detectors_);
+  FormGainMatch *newGain = new FormGainMatch(runner_thread_, settings_, detectors_, this);
   ui->qpxTabs->addTab(newGain, "Gain matching");
 
   connect(newGain, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
@@ -316,4 +317,17 @@ bool qpx::hasTab(QString tofind) {
     if (ui->qpxTabs->tabText(i) == tofind)
       return true;
   return false;
+}
+
+void qpx::on_pushOpenEfficiencyCalib_clicked()
+{
+  FormEfficiencyCalibration *newEfficienyForm = new FormEfficiencyCalibration(settings_, detectors_, this);
+  ui->qpxTabs->addTab(newEfficienyForm, "Efficiency calibration");
+
+  connect(newEfficienyForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
+  //connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newEfficienyForm, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
+  connect(newEfficienyForm, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
+
+  ui->qpxTabs->setCurrentWidget(newEfficienyForm);
+  emit toggle_push(gui_enabled_, px_status_);
 }

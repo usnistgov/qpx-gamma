@@ -105,6 +105,7 @@ private slots:
   void on_pushOpenGainMatch_clicked();
 
   bool hasTab(QString);
+  void on_pushOpenEfficiencyCalib_clicked();
 };
 
 #endif // qpx_H

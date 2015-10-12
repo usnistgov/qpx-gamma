@@ -73,16 +73,21 @@ public:
   void setDir(QString filedir);
   ~WidgetIsotopes();
   std::vector<double> current_gammas() const;
+  std::list<RadTypes::Gamma> current_isotope_gammas() const;
   QString current_isotope() const;
   void set_current_isotope(QString);
 
   void push_energies(std::vector<double>);
+  void select_energies(std::set<double>);
 
   bool save_close();
   void select_next_energy();
 
+  void set_editable(bool);
+
 signals:
   void energiesSelected();
+  void isotopeSelected();
 
 
 private slots:

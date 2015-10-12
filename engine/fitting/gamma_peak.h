@@ -89,6 +89,7 @@ public:
       , intersects_L (false)
       , intersects_R (false)
       , selected (false)
+      , flagged (false)
       , area_net_(0.0)
       , area_gross_(0.0)
       , area_bckg_(0.0)
@@ -96,6 +97,10 @@ public:
       , live_seconds_(0.0)
       , cts_per_sec_net_(0.0)
       , cts_per_sec_gauss_(0.0)
+      , area_best_(0.0)
+      , cps_best_(0.0)
+      , intensity_theoretical_(0.0)
+      , efficiency_relative_(0.0)
   {}
 
   Peak(const std::vector<double> &x, const std::vector<double> &y, uint32_t L, uint32_t R,
@@ -111,16 +116,18 @@ public:
   double center, energy, height, fwhm_sum4, fwhm_gaussian, fwhm_pseudovoigt, hwhm_L, hwhm_R,
       fwhm_theoretical, lim_L, lim_R;
   bool intersects_L, intersects_R;
-  bool selected;
+  bool selected, flagged;
 
   double area_net_, area_gross_, area_bckg_, area_gauss_;
   double live_seconds_, cts_per_sec_net_, cts_per_sec_gauss_;
+  double area_best_, cps_best_;
+  double intensity_theoretical_, efficiency_relative_;
   
   bool subpeak;
 
   static bool by_center (const Peak& a, const Peak& b)
   {
-      return (a.center < b.center);
+    return (a.center < b.center);
   }
 
   bool operator<(const Peak &other) const {

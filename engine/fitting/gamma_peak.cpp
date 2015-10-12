@@ -262,16 +262,20 @@ void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
   fwhm_theoretical = cali_fwhm.transform(energy);
 
   area_gauss_ =  gaussian_.height_ * gaussian_.hwhm_ * sqrt(3.141592653589793238462643383279502884 / log(2.0));
+  area_best_ = area_gauss_;
   if (!subpeak)
   {
     area_gross_ = sum4_.P_area;
     area_bckg_ = sum4_.B_area;
     area_net_ = sum4_.net_area;
+    area_best_ = area_net_;
   }
 
   if (live_seconds_ > 0) {
+    cps_best_ = cts_per_sec_gauss_ = area_gauss_ / live_seconds_;
     cts_per_sec_net_ = area_net_ / live_seconds_;
-    cts_per_sec_gauss_ = area_gauss_ / live_seconds_;
+    if (cts_per_sec_net_ > 0)
+      cps_best_ = cts_per_sec_net_;
   }
 }
 

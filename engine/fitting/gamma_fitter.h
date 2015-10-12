@@ -36,6 +36,7 @@ public:
   Fitter()
       : overlap_(4.0)
       , avg_window_(1)
+      , activity_scale_factor_(1.0)
   {}
   
   Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t avg_window = 1)
@@ -77,6 +78,9 @@ public:
   void save_report(std::string filename);
 
   //DATA
+
+  std::string sample_name_;
+  double activity_scale_factor_;
   
   std::vector<double> x_, x_nrg_, y_, y_avg_, deriv1, deriv2;
 
