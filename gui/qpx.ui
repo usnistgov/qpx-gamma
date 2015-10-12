@@ -95,6 +95,9 @@
     </item>
     <item row="0" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="spacing">
+       <number>3</number>
+      </property>
       <item>
        <widget class="QPushButton" name="pushOpenList">
         <property name="minimumSize">

@@ -47,7 +47,7 @@ class Calibration : public XMLable {
   bool shallow_equals(const Calibration& other) const {return ((bits_ == other.bits_) && (to_ == other.to_));}
   bool operator!= (const Calibration& other) const {return !operator==(other);}
   bool operator== (const Calibration& other) const {
-    if (calib_date_ != other.calib_date_) return false;
+    //if (calib_date_ != other.calib_date_) return false;
     if (type_ != other.type_) return false;
     if (units_ != other.units_) return false;
     if (model_ != other.model_) return false;

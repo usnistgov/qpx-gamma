@@ -38,6 +38,9 @@
    </property>
    <item row="0" column="0">
     <layout class="QVBoxLayout" name="verticalLayout_2">
+     <property name="spacing">
+      <number>3</number>
+     </property>
      <property name="sizeConstraint">
       <enum>QLayout::SetMaximumSize</enum>
      </property>
@@ -96,6 +99,9 @@
      </item>
      <item>
       <layout class="QHBoxLayout" name="editEnergiesLayout">
+       <property name="spacing">
+        <number>3</number>
+       </property>
        <property name="sizeConstraint">
         <enum>QLayout::SetMaximumSize</enum>
        </property>
@@ -244,6 +250,9 @@
    </item>
    <item row="0" column="1">
     <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>3</number>
+     </property>
      <property name="sizeConstraint">
       <enum>QLayout::SetMaximumSize</enum>
      </property>
@@ -290,6 +299,9 @@
      </item>
      <item>
       <layout class="QHBoxLayout" name="editIsotopesLayout">
+       <property name="spacing">
+        <number>3</number>
+       </property>
        <item>
         <spacer name="spacer2">
          <property name="orientation">

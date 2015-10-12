@@ -26,6 +26,7 @@
 #include "gamma_fitter.h"
 #include "qt_util.h"
 #include <QInputDialog>
+#include "dialog_spectrum.h"
 
 FormEfficiencyCalibration::FormEfficiencyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
@@ -115,6 +116,7 @@ void FormEfficiencyCalibration::loadSettings() {
   settings_.beginGroup("Efficiency_calibration");
   ui->spinTerms->setValue(settings_.value("fit_function_terms", 2).toInt());
   ui->isotopes->set_current_isotope(settings_.value("current_isotope", "Co-60").toString());
+  ui->doubleEpsilonE->setValue(settings_.value("epsilon_e", 2.0).toDouble());
   settings_.endGroup();
 }
 
@@ -124,6 +126,7 @@ void FormEfficiencyCalibration::saveSettings() {
   settings_.beginGroup("Efficiency_calibration");
   settings_.setValue("fit_function_terms", ui->spinTerms->value());
   settings_.setValue("current_isotope", ui->isotopes->current_isotope());
+  settings_.setValue("epsilon_e", ui->doubleEpsilonE->value());
   settings_.endGroup();
 }
 
@@ -165,7 +168,7 @@ void FormEfficiencyCalibration::update_peaks(bool contents_changed) {
     q.second.flagged = false;
     for (auto &p : ui->isotopes->current_isotope_gammas()) {
       double diff = abs(q.second.energy - p.energy);
-      if (diff < ui->doubleDeltaE->value()) {
+      if (diff < ui->doubleEpsilonE->value()) {
         q.second.flagged = true;
         q.second.intensity_theoretical_ = p.abundance;
         q.second.efficiency_relative_ = (q.second.cps_best_ / q.second.intensity_theoretical_);
@@ -196,11 +199,11 @@ void FormEfficiencyCalibration::update_peaks(bool contents_changed) {
 
 void FormEfficiencyCalibration::update_detector_calibs()
 {
-  std::string msg_text("Propagating calibrations ");
+  std::string msg_text("Propagating calibration ");
   msg_text +=  "<nobr>" + new_calibration_.to_string() + "</nobr><br/>";
 
   std::string question_text("Do you want to save this calibration to ");
-  question_text += fit_data_.detector_.name_ + " in detector database?";
+  question_text += current_detector_ + " in detector database?";
 
   QMessageBox msgBox;
   msgBox.setText(QString::fromStdString(msg_text));
@@ -213,26 +216,25 @@ void FormEfficiencyCalibration::update_detector_calibs()
   Gamma::Detector modified;
 
   if (ret == QMessageBox::Yes) {
-    if (!detectors_.has_a(fit_data_.detector_)) {
+    if (!detectors_.has_a(Gamma::Detector(current_detector_))) {
       bool ok;
       QString text = QInputDialog::getText(this, "New Detector",
                                            "Detector name:", QLineEdit::Normal,
-                                           QString::fromStdString(fit_data_.detector_.name_),
+                                           QString::fromStdString(current_detector_),
                                            &ok);
 
       if (!ok)
         return;
 
       if (!text.isEmpty()) {
-        modified = fit_data_.detector_;
-        modified.name_ = text.toStdString();
+        modified = Gamma::Detector(current_detector_);
         if (detectors_.has_a(modified)) {
           QMessageBox::warning(this, "Already exists", "Detector " + text + " already exists. Will not save to database.", QMessageBox::Ok);
           modified = Gamma::Detector();
         }
       }
     } else
-      modified = detectors_.get(fit_data_.detector_);
+      modified = detectors_.get(Gamma::Detector(current_detector_));
 
     if (modified != Gamma::Detector())
     {
@@ -265,12 +267,10 @@ void FormEfficiencyCalibration::on_pushImport_clicked()
   for (int i=0; i<fileNames.size(); i++) {
     PL_INFO << "Constructing spectrum from " << fileNames.at(i).toStdString();
     Qpx::Spectrum::Spectrum* newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_file(fileNames.at(i).toStdString());
-    if (newSpectrum != nullptr) {
-      newSpectrum->set_appearance(generateColor().rgba());
-      spectra_.add_spectrum(newSpectrum);
-    } else {
+    if (newSpectrum != nullptr)
+      add_spectrum(newSpectrum);
+    else
       PL_INFO << "Spectrum construction did not succeed. Aborting";
-    }
   }
 
   update_spectra();
@@ -319,7 +319,6 @@ void FormEfficiencyCalibration::spectrumDetails(SelectorItem item)
     md = someSpectrum->metadata();
 
   if (id.isEmpty() || (someSpectrum == nullptr)) {
-    ui->labelSpectrumInfo->setText("Left-click on spectrum above to see statistics, right click to toggle visibility");
     ui->pushRemove->setEnabled(false);
     ui->pushFullInfo->setEnabled(false);
     fit_data_ = Gamma::Fitter();
@@ -328,30 +327,6 @@ void FormEfficiencyCalibration::spectrumDetails(SelectorItem item)
     return;
   }
 
-  std::string type = someSpectrum->type();
-  double real = md.real_time.total_milliseconds() * 0.001;
-  double live = md.live_time.total_milliseconds() * 0.001;
-  double dead = 100;
-  double rate = 0;
-  Gamma::Detector det = Gamma::Detector();
-  if (!md.detectors.empty())
-    det = md.detectors[0];
-
-  QString detstr("Detector: ");
-  detstr += QString::fromStdString(det.name_);
-  if (det.highest_res_calib().units_ != "channels")
-    detstr += " [ENRG]";
-  if (det.fwhm_calibration_.valid())
-    detstr += " [FWHM]";
-
-  if (real > 0) {
-    dead = (real - live) * 100.0 / real;
-    rate = md.total_count.convert_to<double>() / real;
-  }
-
-  QString infoText = "<nobr>" + id + "(" + QString::fromStdString(type) + ") // " + detstr + " // Live:  " + QString::number(live) + "s";
-
-  ui->labelSpectrumInfo->setText(infoText);
   ui->pushRemove->setEnabled(true);
   ui->pushFullInfo->setEnabled(true);
 }
@@ -368,6 +343,8 @@ void FormEfficiencyCalibration::on_pushRemove_clicked()
     spectrumDetails(SelectorItem());
     peak_sets_.clear();
     new_calibration_ = Gamma::Calibration();
+    current_detector_.clear();
+    ui->labelCalibForDet->setText("Efficiency calibration for ...");
   }
 
   update_spectra();
@@ -409,7 +386,6 @@ void FormEfficiencyCalibration::add_peak_to_table(const Gamma::Peak &p, int row,
 
 
 void FormEfficiencyCalibration::replot_calib() {
-  PL_DBG << "replot calib";
   ui->PlotCalib->setFloatingText("");
   ui->PlotCalib->clearGraphs();
 
@@ -466,10 +442,8 @@ void FormEfficiencyCalibration::replot_calib() {
   xmin -= x_margin;
 
   if (have_data) {
-    PL_DBG << "xx has size";
     ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
     if (new_calibration_.units_ != "channels") {
-      PL_DBG << "units are valid ";
       xx.clear(); yy.clear();
       double step = (xmax-xmin) / 50.0;
 
@@ -546,6 +520,7 @@ void FormEfficiencyCalibration::selection_changed_in_table() {
 
 void FormEfficiencyCalibration::toggle_push() {
   int sel = 0; int unflagged = 0;
+
   for (auto &q : fit_data_.peaks_) {
     if (q.second.selected)
       sel++;
@@ -554,12 +529,25 @@ void FormEfficiencyCalibration::toggle_push() {
   }
 
   ui->pushMarkerRemove->setEnabled(sel > 0);
-//  ui->pushAllEnergies->setEnabled((sel > 0) && (sel == ui->isotopes->current_gammas().size()));
-//  ui->pushAllmarkers->setEnabled((sel > 0) && (ui->isotopes->current_gammas().empty()));
-
   ui->pushCullPeaks->setEnabled(unflagged > 0);
 
-  if (static_cast<int>(fit_data_.peaks_.size()) > 1) {
+  int points_for_calib = 0;
+  QVector<SelectorItem> items = ui->spectrumSelector->items();
+  for (auto &fit : peak_sets_) {
+    bool visible = false;
+
+    for (auto &i : items)
+      if (i.visible && (fit.second.metadata_.name == i.text.toStdString()))
+        visible = true;
+
+    if (visible) {
+      for (auto &q : fit.second.peaks_)
+        if (q.second.flagged)
+          points_for_calib++;
+    }
+  }
+
+  if (points_for_calib > 1) {
     ui->pushFit->setEnabled(true);
     ui->spinTerms->setEnabled(true);
   } else {
@@ -567,12 +555,7 @@ void FormEfficiencyCalibration::toggle_push() {
     ui->spinTerms->setEnabled(false);
   }
 
-  if (detectors_.has_a(fit_data_.detector_) && (detectors_.get(fit_data_.detector_).efficiency_calibration_ != Gamma::Calibration()))
-    ui->pushFromDB->setEnabled(true);
-  else
-    ui->pushFromDB->setEnabled(false);
-
-  if (detectors_.has_a(fit_data_.detector_) && (detectors_.get(fit_data_.detector_).efficiency_calibration_ != new_calibration_))
+  if (new_calibration_ != Gamma::Calibration())
     ui->pushApplyCalib->setEnabled(true);
   else
     ui->pushApplyCalib->setEnabled(false);
@@ -632,14 +615,6 @@ void FormEfficiencyCalibration::on_pushApplyCalib_clicked()
   update_detector_calibs();
 }
 
-void FormEfficiencyCalibration::on_pushFromDB_clicked()
-{
-  Gamma::Detector newdet = detectors_.get(fit_data_.detector_);
-  new_calibration_ = newdet.efficiency_calibration_;
-  replot_calib();
-  toggle_push();
-}
-
 void FormEfficiencyCalibration::on_pushDetDB_clicked()
 {
   WidgetDetectors *det_widget = new WidgetDetectors(this);
@@ -678,7 +653,7 @@ void FormEfficiencyCalibration::on_pushCullPeaks_clicked()
   on_pushMarkerRemove_clicked();
 }
 
-void FormEfficiencyCalibration::on_doubleDeltaE_editingFinished()
+void FormEfficiencyCalibration::on_doubleEpsilonE_editingFinished()
 {
   update_peaks(true);
 }
@@ -697,4 +672,89 @@ void FormEfficiencyCalibration::on_doubleScaleFactor_valueChanged(double arg1)
   if (!fit_data_.metadata_.name.empty()) //should be ==Gamma::Setting()
     peak_sets_[fit_data_.metadata_.name] = fit_data_;
   replot_calib();
+}
+
+void FormEfficiencyCalibration::add_spectrum(Qpx::Spectrum::Spectrum* spectrum) {
+  bool confirm = false;
+
+  Qpx::Spectrum::Metadata md = spectrum->metadata();
+
+  bool det_valid = ((!md.detectors.empty()) &&
+                    (md.detectors.front() != Gamma::Detector()) &&
+                    (!md.detectors.front().energy_calibrations_.empty()));
+
+  std::string det_name;
+  if (det_valid && (md.detectors.front().name_ != "unknown"))
+    det_name = md.detectors.front().name_;
+
+  if (!det_valid) {
+    QMessageBox::warning(this, "No valid detector",
+                         "No valid detector with energy calibration in "
+                         + QString::fromStdString(md.name)
+                         + ". Discarding spectrum.", QMessageBox::Ok);
+  } else if (current_detector_.empty()) {
+    if (det_name.empty()) {
+      bool ok;
+      QString text = QInputDialog::getText(this, "New Detector",
+                                           "Invalid detector name in " + QString::fromStdString(md.name)
+                                           + ". New detector name:", QLineEdit::Normal,
+                                           QString::fromStdString(fit_data_.detector_.name_),
+                                           &ok);
+      if (ok && !text.isEmpty()) {
+        current_detector_ = text.toStdString();
+        confirm = true;
+      }
+    } else {
+      current_detector_ = det_name;
+      confirm = true;
+    }
+  } else {
+    if (det_name != current_detector_) {
+      std::string msg_text("Loaded spectrum '");
+      msg_text += md.name + "'' has profile for detector '"+ det_name  + "'.";
+
+      std::string question_text("Do you want to save this spectrum for calibrating '");
+      question_text += current_detector_ + "'?";
+
+      QMessageBox msgBox;
+      msgBox.setText(QString::fromStdString(msg_text));
+      msgBox.setInformativeText(QString::fromStdString(question_text));
+      msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+      msgBox.setDefaultButton(QMessageBox::No);
+      msgBox.setIcon(QMessageBox::Question);
+      int ret = msgBox.exec();
+
+      if (ret == QMessageBox::Yes)
+        confirm = true;
+
+    } else {
+      confirm = true;
+    }
+  }
+
+  if (confirm) {
+    ui->labelCalibForDet->setText("Efficiency calibration for " + QString::fromStdString(current_detector_));
+    spectrum->set_appearance(generateColor().rgba());
+    spectra_.add_spectrum(spectrum);
+  } else
+    delete spectrum;
+}
+
+void FormEfficiencyCalibration::on_pushFullInfo_clicked()
+{
+  Qpx::Spectrum::Spectrum* someSpectrum = spectra_.by_name(ui->spectrumSelector->selected().text.toStdString());
+  if (someSpectrum == nullptr)
+    return;
+
+  dialog_spectrum* newSpecDia = new dialog_spectrum(*someSpectrum, this);
+  connect(newSpecDia, SIGNAL(finished(bool)), this, SLOT(spectrumDetailsClosed(bool)));
+  connect(newSpecDia, SIGNAL(delete_spectrum()), this, SLOT(on_pushRemove_clicked()));
+  newSpecDia->exec();
+}
+
+void FormEfficiencyCalibration::spectrumDetailsClosed(bool looks_changed) {
+  if (looks_changed) {
+    update_spectra();
+    //what if energy calibration changes?
+  }
 }

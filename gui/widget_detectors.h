@@ -76,6 +76,8 @@ private slots:
 
   void on_pushClearFWHM_clicked();
 
+  void on_pushClearEfficiency_clicked();
+
 signals:
   void newDetReady(Gamma::Detector);
 

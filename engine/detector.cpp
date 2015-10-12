@@ -71,8 +71,11 @@ void Detector::to_xml_options(pugi::xml_node &root, bool options) const {
   if (gain_match_calibrations_.size())
     gain_match_calibrations_.to_xml(node);
 
-  if (fwhm_calibration_.bits_)
+  if (fwhm_calibration_.valid())
     fwhm_calibration_.to_xml(node);
+
+  if (efficiency_calibration_.valid())
+    efficiency_calibration_.to_xml(node);
 
   if (options && !settings_.branches.empty())
     settings_.to_xml(node);
@@ -86,15 +89,24 @@ void Detector::from_xml(const pugi::xml_node &node) {
   type_ = std::string(node.child_value("Type"));
 
   Calibration newCali;
-  newCali.from_xml(node.child(newCali.xml_element_name().c_str()));
-  if (newCali.type_ == "FWHM")
-    fwhm_calibration_ = newCali;
-  else if (newCali.type_ == "Energy")
-    energy_calibrations_.add(newCali);  //backwards compatibility with n42 calib entries
-
-  energy_calibrations_.from_xml(node.child(energy_calibrations_.xml_element_name().c_str()));
-  gain_match_calibrations_.from_xml(node.child(gain_match_calibrations_.xml_element_name().c_str()));
-  settings_.from_xml(node.child(settings_.xml_element_name().c_str()));
+  for (auto &q : node.children()) {
+    std::string nodename(q.name());
+    if (nodename == newCali.xml_element_name()) {
+      newCali.from_xml(q);
+      if (newCali.type_ == "FWHM")
+        fwhm_calibration_ = newCali;
+      else if (newCali.type_ == "Efficiency")
+        efficiency_calibration_ = newCali;
+      else if (newCali.type_ == "Energy")
+        energy_calibrations_.add(newCali);  //backwards compatibility with n42 calib entries
+    }
+    else if  (nodename == energy_calibrations_.xml_element_name())
+      energy_calibrations_.from_xml(q);
+    else if  (nodename == gain_match_calibrations_.xml_element_name())
+      gain_match_calibrations_.from_xml(q);
+    else if  (nodename == settings_.xml_element_name())
+      settings_.from_xml(q);
+  }
 }
 
 }

@@ -47,5 +47,7 @@
         <file>oxy/start.png</file>
         <file>oxy/forward.png</file>
         <file>oxy/back.png</file>
+        <file>hide.png</file>
+        <file>show.png</file>
     </qresource>
 </RCC>

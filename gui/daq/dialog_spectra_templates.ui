@@ -17,7 +17,7 @@
    <string>Spectra definitions</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="qpxres.qrc">
+   <iconset resource="../resources/qpxres.qrc">
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <property name="modal">
@@ -26,8 +26,23 @@
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout_35">
+     <property name="spacing">
+      <number>3</number>
+     </property>
      <item>
       <widget class="QPushButton" name="pushNew">
+       <property name="minimumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="toolTip">
         <string>Add new</string>
        </property>
@@ -35,8 +50,14 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/edit_add.png</normaloff>:/new/icons/oxy/edit_add.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -45,6 +66,18 @@
        <property name="enabled">
         <bool>false</bool>
        </property>
+       <property name="minimumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="toolTip">
         <string>Edit</string>
        </property>
@@ -52,8 +85,14 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/accessories_text_editor.png</normaloff>:/new/icons/oxy/accessories_text_editor.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -62,6 +101,18 @@
        <property name="enabled">
         <bool>false</bool>
        </property>
+       <property name="minimumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="toolTip">
         <string>Remove</string>
        </property>
@@ -69,8 +120,14 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/editdelete.png</normaloff>:/new/icons/oxy/editdelete.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -79,6 +136,18 @@
        <property name="enabled">
         <bool>false</bool>
        </property>
+       <property name="minimumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="toolTip">
         <string>Move up</string>
        </property>
@@ -86,8 +155,14 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/up.png</normaloff>:/new/icons/oxy/up.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -96,6 +171,18 @@
        <property name="enabled">
         <bool>false</bool>
        </property>
+       <property name="minimumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="toolTip">
         <string>Move down</string>
        </property>
@@ -103,8 +190,14 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/down.png</normaloff>:/new/icons/oxy/down.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -126,6 +219,18 @@
      </item>
      <item>
       <widget class="QPushButton" name="pushClear">
+       <property name="minimumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="toolTip">
         <string>Clear all</string>
        </property>
@@ -133,13 +238,31 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/editclear.png</normaloff>:/new/icons/oxy/editclear.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="pushImport">
+       <property name="minimumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="toolTip">
         <string>Import</string>
        </property>
@@ -147,13 +270,31 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/document_open.png</normaloff>:/new/icons/oxy/document_open.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="pushExport">
+       <property name="minimumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="toolTip">
         <string>Export</string>
        </property>
@@ -161,13 +302,31 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/document_save.png</normaloff>:/new/icons/oxy/document_save.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="pushSetDefault">
+       <property name="minimumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="toolTip">
         <string>Make default</string>
        </property>
@@ -175,13 +334,31 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/bookmark.png</normaloff>:/new/icons/oxy/bookmark.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="pushUseDefault">
+       <property name="minimumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="toolTip">
         <string>Restore default</string>
        </property>
@@ -189,8 +366,14 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/revert.png</normaloff>:/new/icons/oxy/revert.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -225,7 +408,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="qpxres.qrc"/>
+  <include location="../resources/qpxres.qrc"/>
  </resources>
  <connections>
   <connection>

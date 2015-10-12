@@ -14,7 +14,7 @@
    <string>Form</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="qpxres.qrc">
+   <iconset resource="../resources/qpxres.qrc">
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -37,6 +37,9 @@
      </property>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_28">
+       <property name="spacing">
+        <number>3</number>
+       </property>
        <item>
         <widget class="QPushButton" name="pushListStart">
          <property name="enabled">
@@ -58,7 +61,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="qpxres.qrc">
+          <iconset resource="../resources/qpxres.qrc">
            <normaloff>:/new/icons/oxy/1rightarrow.png</normaloff>:/new/icons/oxy/1rightarrow.png</iconset>
          </property>
          <property name="iconSize">
@@ -90,7 +93,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="qpxres.qrc">
+          <iconset resource="../resources/qpxres.qrc">
            <normaloff>:/new/icons/oxy/process_stop.png</normaloff>:/new/icons/oxy/process_stop.png</iconset>
          </property>
          <property name="iconSize">
@@ -218,7 +221,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="qpxres.qrc">
+          <iconset resource="../resources/qpxres.qrc">
            <normaloff>:/new/icons/oxy/chronometer.png</normaloff>:/new/icons/oxy/chronometer.png</iconset>
          </property>
          <property name="iconSize">
@@ -361,7 +364,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="qpxres.qrc"/>
+  <include location="../resources/qpxres.qrc"/>
  </resources>
  <connections/>
 </ui>

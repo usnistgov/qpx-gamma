@@ -20,7 +20,7 @@
    <string>Form</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="qpxres.qrc">
+   <iconset resource="../resources/qpxres.qrc">
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -31,6 +31,9 @@
      </property>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_10">
+       <property name="spacing">
+        <number>3</number>
+       </property>
        <property name="sizeConstraint">
         <enum>QLayout::SetFixedSize</enum>
        </property>
@@ -64,7 +67,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="qpxres.qrc">
+          <iconset resource="../resources/qpxres.qrc">
            <normaloff>:/new/icons/oxy/help_about.png</normaloff>:/new/icons/oxy/help_about.png</iconset>
          </property>
          <property name="iconSize">
@@ -105,7 +108,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="qpxres.qrc">
+          <iconset resource="../resources/qpxres.qrc">
            <normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</iconset>
          </property>
          <property name="iconSize">
@@ -150,7 +153,7 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Gate width</string>
+          <string>  Gate width</string>
          </property>
         </widget>
        </item>
@@ -252,7 +255,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="qpxres.qrc">
+          <iconset resource="../resources/qpxres.qrc">
            <normaloff>:/new/icons/oxy/view_fullscreen.png</normaloff>:/new/icons/oxy/view_fullscreen.png</iconset>
          </property>
          <property name="iconSize">
@@ -290,7 +293,7 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="qpxres.qrc">
+          <iconset resource="../resources/qpxres.qrc">
            <normaloff>:/new/icons/oxy/view_statistics.png</normaloff>:/new/icons/oxy/view_statistics.png</iconset>
          </property>
          <property name="iconSize">
@@ -328,7 +331,7 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="qpxres.qrc">
+          <iconset resource="../resources/qpxres.qrc">
            <normaloff>:/new/icons/oxy/color_line_16.png</normaloff>:/new/icons/oxy/color_line_16.png</iconset>
          </property>
          <property name="iconSize">
@@ -366,7 +369,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="qpxres.qrc">
+          <iconset resource="../resources/qpxres.qrc">
            <normaloff>:/new/icons/oxy/rss_tag.png</normaloff>:/new/icons/oxy/rss_tag.png</iconset>
          </property>
          <property name="iconSize">
@@ -584,7 +587,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="qpxres.qrc"/>
+  <include location="../resources/qpxres.qrc"/>
  </resources>
  <connections/>
 </ui>

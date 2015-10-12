@@ -20,7 +20,7 @@
    <string>Spectrum Template</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="qpxres.qrc">
+   <iconset resource="../resources/qpxres.qrc">
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <property name="modal">
@@ -259,7 +259,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="qpxres.qrc">
+            <iconset resource="../resources/qpxres.qrc">
              <normaloff>:/new/icons/oxy/roll.png</normaloff>:/new/icons/oxy/roll.png</iconset>
            </property>
           </widget>
@@ -520,7 +520,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="qpxres.qrc"/>
+  <include location="../resources/qpxres.qrc"/>
  </resources>
  <connections/>
 </ui>

@@ -14,7 +14,7 @@
    <string>Spectrum Info</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="qpxres.qrc">
+   <iconset resource="../resources/qpxres.qrc">
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout_5">
@@ -548,7 +548,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="qpxres.qrc">
+           <iconset resource="../resources/qpxres.qrc">
             <normaloff>:/new/icons/oxy/roll.png</normaloff>:/new/icons/oxy/roll.png</iconset>
           </property>
          </widget>
@@ -568,7 +568,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="qpxres.qrc">
+           <iconset resource="../resources/qpxres.qrc">
             <normaloff>:/new/icons/oxy/editdelete.png</normaloff>:/new/icons/oxy/editdelete.png</iconset>
           </property>
          </widget>
@@ -685,7 +685,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="qpxres.qrc">
+           <iconset resource="../resources/qpxres.qrc">
             <normaloff>:/new/icons/oxy/accessories_text_editor.png</normaloff>:/new/icons/oxy/accessories_text_editor.png</iconset>
           </property>
           <property name="iconSize">
@@ -715,7 +715,7 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="qpxres.qrc">
+        <iconset resource="../resources/qpxres.qrc">
          <normaloff>:/new/icons/oxy/document_decrypt.png</normaloff>
          <normalon>:/new/icons/oxy/document_encrypt.png</normalon>:/new/icons/oxy/document_decrypt.png</iconset>
        </property>
@@ -792,7 +792,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="qpxres.qrc"/>
+  <include location="../resources/qpxres.qrc"/>
  </resources>
  <connections/>
 </ui>

@@ -119,6 +119,12 @@ void DialogDetector::updateDisplay() {
     ui->labelFWHM->setText("");
   ui->pushClearFWHM->setEnabled(my_detector_.fwhm_calibration_.valid());
 
+  if (my_detector_.efficiency_calibration_.valid())
+    ui->labelEfficiency->setText(QString::fromStdString(my_detector_.efficiency_calibration_.fancy_equation()));
+  else
+    ui->labelEfficiency->setText("");
+  ui->pushClearEfficiency->setEnabled(my_detector_.efficiency_calibration_.valid());
+
   table_nrgs_.update();
   table_gains_.update();
 }
@@ -229,6 +235,11 @@ void DialogDetector::on_pushClearFWHM_clicked()
   updateDisplay();
 }
 
+void DialogDetector::on_pushClearEfficiency_clicked()
+{
+  my_detector_.efficiency_calibration_ = Gamma::Calibration();
+  updateDisplay();
+}
 
 
 
@@ -238,7 +249,7 @@ int TableDetectors::rowCount(const QModelIndex & /*parent*/) const
 {    return myDB->size(); }
 
 int TableDetectors::columnCount(const QModelIndex & /*parent*/) const
-{    return 6; }
+{    return 7; }
 
 QVariant TableDetectors::data(const QModelIndex &index, int role) const
 {
@@ -264,12 +275,17 @@ QVariant TableDetectors::data(const QModelIndex &index, int role) const
       else
         return "none";
     case 4:
+      if (myDB->get(row).efficiency_calibration_.valid())
+        return "valid";
+      else
+        return "none";
+    case 5:
       dss.str(std::string());
       for (auto &q : myDB->get(row).energy_calibrations_.my_data_) {
         dss << q.bits_ << " ";
       }
       return QString::fromStdString(dss.str());
-    case 5:
+    case 6:
       dss.str(std::string());
       for (auto &q : myDB->get(row).gain_match_calibrations_.my_data_) {
         dss << q.to_ << "/" << q.bits_ << " ";
@@ -293,12 +309,14 @@ QVariant TableDetectors::headerData(int section, Qt::Orientation orientation, in
       case 1:
         return "Type";
       case 2:
-        return "Optimization";
+        return "Device settings";
       case 3:
         return "FWHM";
       case 4:
-        return "Energy calibrations (bits)";
+        return "Efficiency";
       case 5:
+        return "Energy calibrations (bits)";
+      case 6:
         return "Gain matching calibrations (Destination/bits)";
       }
     } else if (orientation == Qt::Vertical) {

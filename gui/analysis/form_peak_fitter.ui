@@ -14,7 +14,7 @@
    <string>Peaks</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="qpxres.qrc">
+   <iconset resource="../resources/qpxres.qrc">
     <normaloff>:/new/icons/oxy/bookmark.png</normaloff>:/new/icons/oxy/bookmark.png</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -33,7 +33,7 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
            <property name="spacing">
-            <number>0</number>
+            <number>3</number>
            </property>
            <item>
             <widget class="QPushButton" name="pushSaveReport">
@@ -65,7 +65,7 @@
               <string/>
              </property>
              <property name="icon">
-              <iconset resource="qpxres.qrc">
+              <iconset resource="../resources/qpxres.qrc">
                <normaloff>:/new/icons/oxy/document_save.png</normaloff>:/new/icons/oxy/document_save.png</iconset>
              </property>
              <property name="iconSize">
@@ -75,22 +75,6 @@
               </size>
              </property>
             </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_3">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeType">
-              <enum>QSizePolicy::Maximum</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>32</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
            </item>
            <item>
             <widget class="QLabel" name="label_3">
@@ -154,7 +138,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="qpxres.qrc"/>
+  <include location="../resources/qpxres.qrc"/>
  </resources>
  <connections/>
 </ui>
