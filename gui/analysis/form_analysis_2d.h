@@ -28,9 +28,9 @@
 #include <QSettings>
 #include "spectrum1D.h"
 #include "spectra_set.h"
-#include "form_energy_calibration.h"
-#include "form_fwhm_calibration.h"
-#include "form_peak_fitter.h"
+#include "form_gain_calibration.h"
+
+enum class SecondSpectrumType {none, second_det, diagonal};
 
 namespace Ui {
 class FormAnalysis2D;
@@ -45,9 +45,7 @@ public:
   ~FormAnalysis2D();
 
   void setSpectrum(Qpx::SpectraSet *newset, QString spectrum);
-
   void clear();
-
   void reset();
 
 signals:
@@ -59,23 +57,14 @@ public slots:
 
 private slots:
   void update_gates(Marker, Marker);
-
   void update_peaks(bool);
   void detectorsUpdated() {emit detectorsChanged();}
-
-  void on_pushCalibGain_clicked();
-
-  void on_pushCull_clicked();
-
-  void on_pushSymmetrize_clicked();
-
   void on_pushAddGatedSpectra_clicked();
-
-  void on_pushSaveCalib_clicked();
-
   void initialize();
-
+  void apply_gain_calibration();
   void on_comboPlot2_currentIndexChanged(const QString &arg1);
+
+  void symmetrize();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -90,7 +79,6 @@ private:
 
   Qpx::Spectrum::Spectrum *gate_x;
   Qpx::Spectrum::Spectrum *gate_y;
-  bool gatex_in_spectra, gatey_in_spectra;
 
   Gamma::Fitter fit_data_, fit_data_2_;
   int res;
@@ -98,19 +86,19 @@ private:
 
   double live_seconds,
          sum_inclusive,
-         sum_exclusive,
-         sum_no_peaks,
-         sum_prism;
+         sum_exclusive;
 
   Gamma::Detector detector1_;
-  Gamma::Calibration nrg_calibration1_, fwhm_calibration1_;
-
   Gamma::Detector detector2_;
-  Gamma::Calibration nrg_calibration2_, fwhm_calibration2_;
+
+  Gamma::Calibration nrg_calibration1_;
+  Gamma::Calibration nrg_calibration2_;
 
   Gamma::Calibration gain_match_cali_;
 
   AppearanceProfile style_pts, style_fit;
+
+  FormGainCalibration* my_gain_calibration_;
 
   //from parent
   QString data_directory_;
@@ -119,15 +107,14 @@ private:
 
   XMLableDB<Gamma::Detector> &detectors_;
 
-  bool initialized, symmetrized;
+  SecondSpectrumType second_spectrum_type_;
 
+  bool initialized;
+
+  void configure_UI();
   void loadSettings();
   void saveSettings();
   void make_gated_spectra();
-  void fill_table();
-  void plot_calib();
-  double sum_with_neighbors(Qpx::Spectrum::Spectrum* some_spectrum, uint16_t x, uint16_t y);
-  double sum_diag(Qpx::Spectrum::Spectrum* some_spectrum, uint16_t x, uint16_t y, uint16_t w);
 };
 
-#endif // FORM_CALIBRATION_H
+#endif // FORM_ANALYSIS2D_H

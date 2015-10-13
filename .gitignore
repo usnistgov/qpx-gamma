@@ -9,6 +9,7 @@ cmd/Makefile*
 gui/debug/*
 gui/release/*
 gui/Makefile*
+engine/Makefile*
 ui/*
 qpx
 qpxd

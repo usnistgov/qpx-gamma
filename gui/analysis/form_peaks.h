@@ -37,6 +37,19 @@ namespace Ui {
 class FormPeaks;
 }
 
+enum ShowFitElements {
+  movavg    = 1 << 0,
+  prelim    = 1 << 1,
+  filtered  = 1 << 2,
+  gaussians = 1 << 3,
+  baselines = 1 << 4,
+  voigt     = 1 << 5
+};
+
+inline ShowFitElements operator|(ShowFitElements a, ShowFitElements b) {return static_cast<ShowFitElements>(static_cast<int>(a) | static_cast<int>(b));}
+inline ShowFitElements operator&(ShowFitElements a, ShowFitElements b) {return static_cast<ShowFitElements>(static_cast<int>(a) & static_cast<int>(b));}
+
+
 class FormPeaks : public QWidget
 {
   Q_OBJECT
@@ -51,6 +64,8 @@ public:
   void clear();
   void update_fit(bool content_changed = false);
   void update_spectrum();
+
+  void set_visible_elements(ShowFitElements elems, bool interactive = false);
 
   void loadSettings(QSettings &settings_);
   void saveSettings(QSettings &settings_);

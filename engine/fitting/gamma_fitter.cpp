@@ -67,17 +67,15 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
 
     if (detector_.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits))) {
       nrg_cali_ = detector_.energy_calibrations_.get(Gamma::Calibration("Energy", md.bits));
-      PL_INFO << "<Gamma::Fitter> Energy calibration used from detector \"" << detector_.name_ << "\"   "
-              << nrg_cali_.to_string();
-    } else
-      PL_INFO << "<Gamma::Fitter> No existing calibration for this resolution";
+      //PL_INFO << "<Gamma::Fitter> Energy calibration used from detector \"" << detector_.name_ << "\"   " << nrg_cali_.to_string();
+    } //else
+      //PL_INFO << "<Gamma::Fitter> No existing calibration for this resolution";
 
     if (detector_.fwhm_calibration_.valid()) {
       fwhm_cali_ = detector_.fwhm_calibration_;
-      PL_INFO << "<Gamma::Fitter> FWHM calibration used from detector \"" << detector_.name_ << "\"   "
-              << fwhm_cali_.to_string();
-    } else
-      PL_INFO << "<Gamma::Fitter> No existing FWHM calibration";
+      //PL_INFO << "<Gamma::Fitter> FWHM calibration used from detector \"" << detector_.name_ << "\"   "  << fwhm_cali_.to_string();
+    } //else
+      //PL_INFO << "<Gamma::Fitter> No existing FWHM calibration";
 
     std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_dump = std::move(spectrum->get_spectrum({{0, md.resolution}}));
 

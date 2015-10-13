@@ -91,6 +91,20 @@ void FormPeaks::setFit(Gamma::Fitter* fit) {
   update_fit(true);
 }
 
+void FormPeaks::set_visible_elements(ShowFitElements elems, bool interactive) {
+  ui->checkShowMovAvg->setEnabled(elems & ShowFitElements::movavg);
+  ui->checkShowPrelimPeaks->setEnabled(elems & ShowFitElements::prelim);
+  ui->checkShowFilteredPeaks->setEnabled(elems & ShowFitElements::filtered);
+  ui->checkShowGaussians->setEnabled(elems & ShowFitElements::gaussians);
+  ui->checkShowBaselines->setEnabled(elems & ShowFitElements::baselines);
+  ui->checkShowPseudoVoigt->setEnabled(elems & ShowFitElements::voigt);
+
+  ui->widgetElements->setVisible(interactive);
+  ui->line->setVisible(interactive);
+
+}
+
+
 void FormPeaks::loadSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
   ui->spinMinPeakWidth->setValue(settings_.value("min_peak_width", 5).toInt());
@@ -141,14 +155,22 @@ void FormPeaks::setSpectrum(Qpx::Spectrum::Spectrum *newspectrum) {
   clear();
   spectrum_ = newspectrum;
 
+  fit_data_->setData(spectrum_);
+  fit_data_->set_mov_avg(ui->spinMovAvg->value());
+  fit_data_->find_prelim();
+  fit_data_->filter_prelim(ui->spinMinPeakWidth->value());
+
   QString title = "Spectrum=" + QString::fromStdString(fit_data_->metadata_.name) + "  resolution=" + QString::number(fit_data_->metadata_.bits) + "bits  Detector=" + QString::fromStdString(fit_data_->detector_.name_);
   ui->plot1D->setFloatingText(title);
   ui->plot1D->setTitle(title);
 
   ui->plot1D->reset_scales();
-  fit_data_->set_mov_avg(ui->spinMovAvg->value());
 
-  update_spectrum();
+
+  if (fit_data_->metadata_.total_count > 0) {
+    on_pushFindPeaks_clicked();
+    update_spectrum();
+  }
 }
 
 void FormPeaks::update_spectrum() {

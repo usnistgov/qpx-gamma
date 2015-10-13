@@ -69,15 +69,8 @@ WidgetIsotopes::~WidgetIsotopes()
 }
 
 void WidgetIsotopes::set_editable(bool enable) {
-  ui->pushAddGamma->setVisible(enable);
-  ui->pushRemove->setVisible(enable);
-  ui->pushSum->setVisible(enable);
-  ui->pushAddIsotope->setVisible(enable);
-  ui->pushRemoveIsotope->setVisible(enable);
-  ui->spacer1->setGeometry(QRect()); //BAD
-  ui->spacer2->setGeometry(QRect()); //BAD
-  ui->editEnergiesLayout->setGeometry(QRect());
-  ui->editIsotopesLayout->setGeometry(QRect());
+  ui->groupEnergies->setVisible(enable);
+  ui->groupIsotopes->setVisible(enable);
   if (enable) {
     ui->tableGammas->setSelectionMode(QAbstractItemView::ExtendedSelection);
     ui->tableGammas->setEditTriggers(QAbstractItemView::AllEditTriggers);

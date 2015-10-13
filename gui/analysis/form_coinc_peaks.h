@@ -50,7 +50,6 @@ public:
 
   void clear();
   void update_fit(bool content_changed = false);
-  void update_spectrum();
 
   void loadSettings(QSettings &settings_);
   void saveSettings(QSettings &settings_);
@@ -59,44 +58,19 @@ signals:
   void peaks_changed(bool content_changed);
 
 private slots:
-
-  void user_selected_peaks();
   void selection_changed_in_table();
-
-  void addMovingMarker(double);
-  void removeMovingMarker(double);
-
-  void replot_all();
-  void replot_markers();
-  void toggle_push();
-
-  void range_moved();
-
-  void on_pushAdd_clicked();
-  void on_pushMarkerRemove_clicked();
-  void on_pushFindPeaks_clicked();
-  void on_spinMovAvg_editingFinished();
-  void on_spinMinPeakWidth_editingFinished();
+  void peaks_changed_in_plot(bool);
 
 private:
   Ui::FormCoincPeaks *ui;
 
-  //from parent
-  Qpx::Spectrum::Spectrum *spectrum_;
-  std::map<double, double> minima, maxima;
-
   //data from selected spectrum
   Gamma::Fitter *fit_data_;
 
-  //markers
-  Marker list, selected;
-  Range range_;
-
   uint16_t sel_L, sel_R;
 
-  AppearanceProfile main_graph_, gaussian_, sel_gaussian_, multiplet_;
-
+  void update_table(bool);
   void add_peak_to_table(const Gamma::Peak &, int, QColor);
 };
 
-#endif // FORM_CALIBRATION_H
+#endif

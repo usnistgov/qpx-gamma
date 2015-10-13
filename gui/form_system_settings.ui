@@ -24,6 +24,18 @@
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item row="0" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout_20">
      <property name="spacing">
@@ -175,7 +187,7 @@
        </property>
        <property name="maximumSize">
         <size>
-         <width>32</width>
+         <width>16777215</width>
          <height>25</height>
         </size>
        </property>
@@ -183,7 +195,7 @@
         <string>Edit detector database</string>
        </property>
        <property name="text">
-        <string/>
+        <string>Detectors</string>
        </property>
        <property name="icon">
         <iconset resource="resources/qpxres.qrc">

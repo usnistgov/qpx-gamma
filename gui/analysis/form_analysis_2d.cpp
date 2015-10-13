@@ -21,21 +21,22 @@
  ******************************************************************************/
 
 #include "form_analysis_2d.h"
-#include "widget_detectors.h"
 #include "ui_form_analysis_2d.h"
 #include "gamma_fitter.h"
 #include "qt_util.h"
+#include "manip2d.h"
 #include <QInputDialog>
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/random/uniform_real.hpp>
+
 
 FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormAnalysis2D),
   detectors_(newDetDB),
   settings_(settings),
+  my_gain_calibration_(nullptr),
   gate_x(nullptr),
-  gate_y(nullptr)
+  gate_y(nullptr),
+  second_spectrum_type_(SecondSpectrumType::second_det)
 {
   ui->setupUi(this);
 
@@ -48,6 +49,12 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
 
   ui->plotMatrix->set_show_analyse(false);
   ui->plotMatrix->set_show_selector(false);
+
+  my_gain_calibration_ = new FormGainCalibration(settings_, detectors_, fit_data_, fit_data_2_, this);
+  connect(my_gain_calibration_, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
+  connect(my_gain_calibration_, SIGNAL(update_detector()), this, SLOT(apply_gain_calibration()));
+  connect(my_gain_calibration_, SIGNAL(symmetrize_requested()), this, SLOT(symmetrize()));
+
   connect(ui->plotMatrix, SIGNAL(markers_set(Marker,Marker)), this, SLOT(update_gates(Marker,Marker)));
 
   connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
@@ -56,8 +63,8 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   tempx = Qpx::Spectrum::Factory::getInstance().create_template("1D");
   tempx->visible = true;
   tempx->name_ = "tempx";
-  tempx->match_pattern = std::vector<int16_t>({1,1,0,0});
-  tempx->add_pattern = std::vector<int16_t>({1,0,0,0});
+  tempx->match_pattern = std::vector<int16_t>({1,1});
+  tempx->add_pattern = std::vector<int16_t>({1,0});
 
   tempy = Qpx::Spectrum::Factory::getInstance().create_template("1D");
   tempy->visible = true;
@@ -74,119 +81,46 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   live_seconds = 0;
   sum_inclusive = 0;
   sum_exclusive = 0;
-  sum_no_peaks = 0;
-  sum_prism = 0;
 
   style_fit.default_pen = QPen(Qt::blue, 0);
   style_pts.default_pen = QPen(Qt::darkBlue, 7);
 
-  gatex_in_spectra = false;
-  gatey_in_spectra = false;
-
-  ui->tableCoincResults->verticalHeader()->hide();
-  ui->tableCoincResults->setColumnCount(3);
-  ui->tableCoincResults->setRowCount(4);
-  ui->tableCoincResults->setItem(0, 0, new QTableWidgetItem( "gates inclusive" ));
-  ui->tableCoincResults->setItem(1, 0, new QTableWidgetItem( "gates exclusive" ));
-  ui->tableCoincResults->setItem(2, 0, new QTableWidgetItem( "extended baselines no peaks" ));
-  ui->tableCoincResults->setItem(3, 0, new QTableWidgetItem( "prism under exclusive peak" ));
-
-  ui->tableCoincResults->setHorizontalHeaderLabels({"geometry", "area", "cps"});
-  ui->tableCoincResults->horizontalHeader()->setStretchLastSection(true);
-  ui->tableCoincResults->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-  ui->tableCoincResults->show();
-
+  ui->comboPlot2->blockSignals(true);
   ui->comboPlot2->addItem("2nd detector");
   ui->comboPlot2->addItem("diagonal");
-  ui->comboPlot2->addItem("background blocks");
+  ui->comboPlot2->addItem("none");
+  ui->comboPlot2->blockSignals(false);
 
   //connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
 
 }
 
-FormAnalysis2D::~FormAnalysis2D()
+
+void FormAnalysis2D::on_comboPlot2_currentIndexChanged(const QString &arg1)
 {
-  if (tempx != nullptr)
-    delete tempx;
-  if (tempy != nullptr)
-    delete tempy;
+  if (arg1 == "diagonal")
+    second_spectrum_type_ = SecondSpectrumType::diagonal;
+  else if (arg1 == "none")
+    second_spectrum_type_ = SecondSpectrumType::none;
+  else
+    second_spectrum_type_ = SecondSpectrumType::second_det;
 
-  if (gate_x != nullptr)
-    delete gate_x;
-  if (gate_y != nullptr)
-    delete gate_y;
-
-  delete ui;
+  configure_UI();
 }
 
-void FormAnalysis2D::closeEvent(QCloseEvent *event) {
-  ui->plotSpectrum->saveSettings(settings_);
-  ui->plotSpectrum2->saveSettings(settings_);
+void FormAnalysis2D::configure_UI() {
+  ui->plotSpectrum2->setVisible(second_spectrum_type_ != SecondSpectrumType::none);
+  ui->plotSpectrum2->blockSignals(second_spectrum_type_ != SecondSpectrumType::none);
 
-  saveSettings();
-  event->accept();
-}
+  ui->plotMatrix->set_gates_visible(second_spectrum_type_ == SecondSpectrumType::second_det,
+                                    true,
+                                    second_spectrum_type_ == SecondSpectrumType::diagonal);
 
-void FormAnalysis2D::loadSettings() {
-  settings_.beginGroup("Program");
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
-  settings_.endGroup();
 
-  ui->plotSpectrum->loadSettings(settings_);
-  ui->plotSpectrum2->loadSettings(settings_);
-
-  settings_.beginGroup("AnalysisMatrix");
-  ui->plotMatrix->set_zoom(settings_.value("zoom", 50).toDouble());
-  ui->plotMatrix->set_gradient(settings_.value("gradient", "hot").toString());
-  ui->plotMatrix->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
-  ui->plotMatrix->set_show_legend(settings_.value("show_legend", false).toBool());
-  ui->plotMatrix->set_gate_width(settings_.value("gate_width", 10).toInt());
-  settings_.endGroup();
+  make_gated_spectra();
 
 }
 
-void FormAnalysis2D::saveSettings() {
-  ui->plotSpectrum->saveSettings(settings_);
-
-  settings_.beginGroup("AnalysisMatrix");
-  settings_.setValue("zoom", ui->plotMatrix->zoom());
-  settings_.setValue("gradient", ui->plotMatrix->gradient());
-  settings_.setValue("scale_type", ui->plotMatrix->scale_type());
-  settings_.setValue("show_legend", ui->plotMatrix->show_legend());
-  settings_.setValue("gate_width", ui->plotMatrix->gate_width());
-  settings_.endGroup();
-}
-
-void FormAnalysis2D::clear() {
-  res = 0;
-  xmin_ = ymin_ = 0;
-  xmax_ = ymax_ = 0;
-
-  live_seconds = 0;
-  sum_inclusive = 0;
-  sum_exclusive = 0;
-  sum_no_peaks = 0;
-  sum_prism = 0;
-
-  ui->plotSpectrum->setSpectrum(nullptr);
-  ui->plotSpectrum2->setSpectrum(nullptr);
-  ui->plotMatrix->reset_content();
-
-  current_spectrum_.clear();
-  detector1_ = Gamma::Detector();
-  nrg_calibration1_ = Gamma::Calibration();
-  fwhm_calibration1_ = Gamma::Calibration();
-
-  detector2_ = Gamma::Detector();
-  nrg_calibration2_ = Gamma::Calibration();
-  fwhm_calibration2_ = Gamma::Calibration();
-
-  ui->plotCalib->clearGraphs();
-  ui->plotCalib->setLabels("", "");
-  ui->plotCalib->setFloatingText("");
-
-  gain_match_cali_ = Gamma::Calibration("Gain", 0);
-}
 
 
 void FormAnalysis2D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
@@ -199,6 +133,75 @@ void FormAnalysis2D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
 
 void FormAnalysis2D::reset() {
   initialized = false;
+  while (ui->tabs->count())
+    ui->tabs->removeTab(0);
+}
+
+void FormAnalysis2D::make_gated_spectra() {
+  Qpx::Spectrum::Spectrum* source_spectrum = spectra_->by_name(current_spectrum_.toStdString());
+  if (source_spectrum == nullptr)
+    return;
+
+  this->setCursor(Qt::WaitCursor);
+
+  Qpx::Spectrum::Metadata md = source_spectrum->metadata();
+
+  //  PL_DBG << "Coincidence gate x[" << xmin_ << "-" << xmax_ << "]   y[" << ymin_ << "-" << ymax_ << "]";
+
+  if ((md.total_count > 0) && (md.dimensions == 2))
+  {
+    sum_inclusive = 0;
+    sum_exclusive = 0;
+
+    live_seconds = source_spectrum->metadata().live_time.total_seconds();
+    uint32_t adjrange = static_cast<uint32_t>(md.resolution) - 1;
+
+    tempx->bits = md.bits;
+    tempx->name_ = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(ymin_), 0) + "," + to_str_precision(nrg_calibration2_.transform(ymax_), 0) + "]";
+
+    if (gate_x != nullptr)
+      delete gate_x;
+    gate_x = Qpx::Spectrum::Factory::getInstance().create_from_template(*tempx);
+
+    //if?
+    Qpx::Spectrum::slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {ymin_, ymax_}}, spectra_->runInfo());
+
+    ui->plotSpectrum->setSpectrum(gate_x, xmin_, xmax_);
+
+
+    if (second_spectrum_type_ == SecondSpectrumType::diagonal) {
+      tempy->bits = md.bits;
+      tempy->name_ = "diag_slice_" + detector1_.name_;
+      tempy->match_pattern = std::vector<int16_t>({1,0});
+      tempy->add_pattern = std::vector<int16_t>({1,0});
+    } else if (second_spectrum_type_ == SecondSpectrumType::second_det) {
+      tempy->bits = md.bits;
+      tempy->name_ = detector2_.name_ + "[" + to_str_precision(nrg_calibration1_.transform(xmin_), 0) + "," + to_str_precision(nrg_calibration1_.transform(xmax_), 0) + "]";
+      tempy->match_pattern = std::vector<int16_t>({1,1});
+      tempy->add_pattern = std::vector<int16_t>({0,1});
+    }
+
+    if (second_spectrum_type_ != SecondSpectrumType::none) {
+
+      if (gate_y != nullptr)
+        delete gate_y;
+      gate_y = Qpx::Spectrum::Factory::getInstance().create_from_template(*tempy);
+
+      if (second_spectrum_type_ == SecondSpectrumType::diagonal)
+        Qpx::Spectrum::slice_diagonal(source_spectrum, gate_y, xc_, yc_, ui->plotMatrix->gate_width(), spectra_->runInfo());
+      else if (second_spectrum_type_ == SecondSpectrumType::second_det)
+        Qpx::Spectrum::slice_rectangular(source_spectrum, gate_y, {{xmin_, xmax_}, {0, adjrange}}, spectra_->runInfo());
+
+      ui->plotSpectrum2->setSpectrum(gate_y, ymin_, ymax_);
+    }
+
+    sum_inclusive += sum_exclusive;
+    ui->labelExclusiveArea->setText(QString::number(sum_exclusive));
+    ui->labelExclusiveCps->setText(QString::number(sum_exclusive / live_seconds));
+
+    ui->plotMatrix->refresh();
+  }
+  this->setCursor(Qt::ArrowCursor);
 }
 
 void FormAnalysis2D::initialize() {
@@ -228,47 +231,29 @@ void FormAnalysis2D::initialize() {
 
       if (detector1_.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits)))
         nrg_calibration1_ = detector1_.energy_calibrations_.get(Gamma::Calibration("Energy", md.bits));
-      fwhm_calibration1_ = detector1_.fwhm_calibration_;
 
       if (detector2_.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits)))
         nrg_calibration2_ = detector2_.energy_calibrations_.get(Gamma::Calibration("Energy", md.bits));
-      fwhm_calibration2_ = detector2_.fwhm_calibration_;
 
-      gain_match_cali_ = detector2_.get_gain_match(md.bits, detector1_.name_);
-
-      symmetrized = ((detector1_ != Gamma::Detector()) && (detector2_ != Gamma::Detector()) && (detector1_ == detector2_));
 
       ui->plotMatrix->reset_content();
       ui->plotMatrix->setSpectra(*spectra_);
       ui->plotMatrix->set_spectrum(current_spectrum_);
       ui->plotMatrix->update_plot();
 
-      ui->plotCalib->setVisible(!symmetrized);
-      ui->plotCalib->setLabels("channel (" + QString::fromStdString(detector2_.name_) + ")", "channel (" + QString::fromStdString(detector1_.name_) + ")");
+      bool symmetrized = ((detector1_ != Gamma::Detector()) && (detector2_ != Gamma::Detector()) && (detector1_ == detector2_));
 
-      ui->pushCull->setVisible(!symmetrized);
-      ui->pushCalibGain->setVisible(!symmetrized);
-      ui->pushSaveCalib->setVisible(!symmetrized);
-      ui->pushSymmetrize->setVisible(!symmetrized);
-      ui->doubleCullDelta->setVisible(!symmetrized);
-      ui->spinPolyOrder->setVisible(!symmetrized);
-      ui->labelOrder->setVisible(!symmetrized);
-      ui->plotMatrix->set_gates_visible(!symmetrized, true, symmetrized);
-
-      if (symmetrized)
-        ui->comboPlot2->setEnabled(true);
-      else {
-        ui->comboPlot2->setCurrentText("2nd detector");
+      if (!symmetrized) {
+        second_spectrum_type_ = SecondSpectrumType::second_det;
+        ui->tabs->addTab(my_gain_calibration_, "Gain calibration");
         ui->comboPlot2->setEnabled(false);
-      }
-
+      } else
+        ui->comboPlot2->setEnabled(true);
     }
   }
 
-  //update_spectrum();
-
   initialized = true;
-  make_gated_spectra();
+  configure_UI();
 }
 
 void FormAnalysis2D::update_spectrum() {
@@ -291,7 +276,12 @@ void FormAnalysis2D::showEvent( QShowEvent* event ) {
 
 void FormAnalysis2D::update_peaks(bool content_changed) {
   //update sums
-  plot_calib();
+  ui->plotSpectrum->update_fit(content_changed);
+  if (second_spectrum_type_ != SecondSpectrumType::none)
+    ui->plotSpectrum2->update_fit(content_changed);
+
+  if (my_gain_calibration_)
+    my_gain_calibration_->newSpectrum();
 }
 
 void FormAnalysis2D::update_gates(Marker xx, Marker yy) {
@@ -318,374 +308,6 @@ void FormAnalysis2D::update_gates(Marker xx, Marker yy) {
   }
 }
 
-void FormAnalysis2D::make_gated_spectra() {
-  Qpx::Spectrum::Spectrum* some_spectrum = spectra_->by_name(current_spectrum_.toStdString());
-  if (some_spectrum == nullptr)
-    return;
-
-  this->setCursor(Qt::WaitCursor);
-
-  Qpx::Spectrum::Metadata md = some_spectrum->metadata();
-
-  //  PL_DBG << "Coincidence gate x[" << xmin_ << "-" << xmax_ << "]   y[" << ymin_ << "-" << ymax_ << "]";
-
-  if ((md.total_count > 0) && (md.dimensions == 2))
-  {
-    sum_inclusive = 0;
-    sum_exclusive = 0;
-
-    live_seconds = some_spectrum->metadata().live_time.total_seconds();
-    uint32_t adjrange = static_cast<uint32_t>(md.resolution) - 1;
-
-    Qpx::Spill spill;
-    spill.run = new Qpx::RunInfo(spectra_->runInfo());
-    spill.run->detectors = md.detectors;
-
-
-    tempx->bits = md.bits;
-    tempx->name_ = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(ymin_), 0) + "," + to_str_precision(nrg_calibration2_.transform(ymax_), 0) + "]";
-
-    if (gate_x != nullptr)
-      delete gate_x;
-    gate_x = Qpx::Spectrum::Factory::getInstance().create_from_template(*tempx);
-    gatex_in_spectra = false;
-
-
-    std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data2 =
-        std::move(some_spectrum->get_spectrum({{0, adjrange}, {ymin_, ymax_}}));
-    for (auto it : *spectrum_data2) {
-      if ((it.first[1] >= ymin_) && (it.first[1] <= ymax_)) {
-        gate_x->add_bulk(it);
-        if ((it.first[0] < xmin_) || (it.first[0] > xmax_))
-          sum_inclusive += it.second;
-      }
-    }
-
-    gate_x->addSpill(spill);
-    ui->plotSpectrum->setSpectrum(gate_x, xmin_, xmax_);
-
-    if (symmetrized) {
-      tempy->bits = md.bits;
-      tempy->name_ = "diag_slice_" + detector1_.name_;
-      tempy->match_pattern = std::vector<int16_t>({1,0,0,0});
-      tempy->add_pattern = std::vector<int16_t>({1,0,0,0});
-    } else {
-      tempy->bits = md.bits;
-      tempy->name_ = detector2_.name_ + "[" + to_str_precision(nrg_calibration1_.transform(xmin_), 0) + "," + to_str_precision(nrg_calibration1_.transform(xmax_), 0) + "]";
-      tempy->match_pattern = std::vector<int16_t>({1,1,0,0});
-      tempy->add_pattern = std::vector<int16_t>({0,1,0,0});
-    }
-
-    if (gate_y != nullptr)
-      delete gate_y;
-    gate_y = Qpx::Spectrum::Factory::getInstance().create_from_template(*tempy);
-    gatey_in_spectra = false;
-
-    std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
-        std::move(some_spectrum->get_spectrum({{xmin_, xmax_}, {0, adjrange}}));
-    for (auto it : *spectrum_data) {
-      if ((it.first[0] >= xmin_) && (it.first[0] <= xmax_)) {
-        if (!symmetrized)
-          gate_y->add_bulk(it);
-        if ((it.first[1] >= ymin_) && (it.first[1] <= ymax_))
-          sum_exclusive += it.second;
-        else
-          sum_inclusive += it.second;
-      }
-    }
-
-    if (symmetrized) {
-      int width = ui->plotMatrix->gate_width();
-      int diag_width = std::round(std::sqrt((width*width)/2.0));
-      if ((diag_width % 2) == 0)
-        diag_width++;
-
-      int tot = xc_ + yc_;
-      for (int i=0; i < tot; ++i) {
-        Qpx::Spectrum::Entry entry({i}, sum_diag(some_spectrum, i, tot-i, diag_width));
-        gate_y->add_bulk(entry);
-      }
-    }
-
-    gate_y->addSpill(spill);
-    ui->plotSpectrum2->setSpectrum(gate_y, ymin_, ymax_);
-
-    sum_inclusive += sum_exclusive;
-    fill_table();
-
-
-    delete spill.run;
-    ui->plotMatrix->refresh();
-    plot_calib();
-  }
-  this->setCursor(Qt::ArrowCursor);
-}
-
-double FormAnalysis2D::sum_with_neighbors(Qpx::Spectrum::Spectrum* some_spectrum, uint16_t x, uint16_t y)
-{
-  double ans = 0;
-  ans += some_spectrum->get_count({x,y}) + 0.25 * (some_spectrum->get_count({x+1,y}) + some_spectrum->get_count({x,y+1}));
-  if (x != 0)
-    ans += 0.25 * some_spectrum->get_count({x-1,y});
-  if (y != 0)
-    ans += 0.25 * some_spectrum->get_count({x,y-1});
-  return ans;
-}
-
-double FormAnalysis2D::sum_diag(Qpx::Spectrum::Spectrum* some_spectrum, uint16_t x, uint16_t y, uint16_t width)
-{
-  double ans = sum_with_neighbors(some_spectrum, x, y);
-  int w = (width-1)/2;
-  for (int i=1; i < w; ++i)
-    ans += sum_with_neighbors(some_spectrum, x-i, y-i) + sum_with_neighbors(some_spectrum, x+i, y+i);
-  return ans;
-}
-
-
-void FormAnalysis2D::fill_table()
-{
-  ui->tableCoincResults->setItem(0, 1, new QTableWidgetItem( QString::number(sum_inclusive) ));
-  ui->tableCoincResults->setItem(0, 2, new QTableWidgetItem( QString::number(sum_inclusive / live_seconds) ));
-
-  ui->tableCoincResults->setItem(1, 1, new QTableWidgetItem( QString::number(sum_exclusive) ));
-  ui->tableCoincResults->setItem(1, 2, new QTableWidgetItem( QString::number(sum_exclusive / live_seconds) ));
-}
-
-void FormAnalysis2D::plot_calib()
-{
-  ui->plotCalib->clearGraphs();
-
-  ui->pushCalibGain->setEnabled(false);
-  ui->spinPolyOrder->setEnabled(false);
-
-  ui->pushCull->setEnabled(false);
-  ui->doubleCullDelta->setEnabled(false);
-
-  int total = fit_data_.peaks_.size();
-  if (total != fit_data_2_.peaks_.size())
-  {
-    if (nrg_calibration1_.units_ == nrg_calibration2_.units_) {
-      ui->pushCull->setEnabled(true);
-      ui->doubleCullDelta->setEnabled(true);
-    }
-    //make invisible?
-    return;
-  }
-
-  ui->pushSaveCalib->setEnabled(gain_match_cali_.valid());
-  ui->pushSymmetrize->setEnabled(gain_match_cali_.valid());
-
-  QVector<double> xx, yy;
-
-  double xmin = std::numeric_limits<double>::max();
-  double xmax = - std::numeric_limits<double>::max();
-
-  for (auto &q : fit_data_2_.peaks_) {
-    xx.push_back(q.first);
-    if (q.first < xmin)
-      xmin = q.first;
-    if (q.first > xmax)
-      xmax = q.first;
-  }
-
-  for (auto &q : fit_data_.peaks_)
-    yy.push_back(q.first);
-
-  double x_margin = (xmax - xmin) / 10;
-  xmax += x_margin;
-  xmin -= x_margin;
-
-  if (xx.size()) {
-    ui->pushCalibGain->setEnabled(true);
-    ui->spinPolyOrder->setEnabled(true);
-
-    ui->plotCalib->addPoints(xx, yy, style_pts);
-    if ((gain_match_cali_.to_ == detector1_.name_) && gain_match_cali_.valid()) {
-
-      double step = (xmax-xmin) / 50.0;
-      xx.clear(); yy.clear();
-
-      for (double i=xmin; i < xmax; i+=step) {
-        xx.push_back(i);
-        yy.push_back(gain_match_cali_.transform(i));
-      }
-      ui->plotCalib->addFit(xx, yy, style_fit);
-    }
-  }
-}
-
-void FormAnalysis2D::on_pushCalibGain_clicked()
-{
-  int total = fit_data_.peaks_.size();
-  if (total != fit_data_2_.peaks_.size())
-  {
-    //make invisible?
-    return;
-  }
-
-  std::vector<double> x, y;
-
-  for (auto &q : fit_data_2_.peaks_)
-    x.push_back(q.first);
-  for (auto &q : fit_data_.peaks_)
-    y.push_back(q.first);
-
-  Polynomial p = Polynomial(x, y, ui->spinPolyOrder->value());
-
-  if (p.coeffs_.size()) {
-    gain_match_cali_.coefficients_ = p.coeffs_;
-    gain_match_cali_.to_ = detector1_.name_;
-    gain_match_cali_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
-    gain_match_cali_.model_ = Gamma::CalibrationModel::polynomial;
-    ui->plotCalib->setFloatingText(QString::fromStdString(p.to_UTF8(3, true)));
-    //    ui->pushApplyCalib->setEnabled(gain_match_calib_ != old_calibration_);
-  }
-  else
-    PL_INFO << "<Energy calibration> Gamma::Calibration failed";
-
-  //  toggle_push();
-  plot_calib();
-}
-
-void FormAnalysis2D::on_pushCull_clicked()
-{
-  //while (cull_mismatch()) {}
-
-  std::set<double> to_remove;
-
-  for (auto &q: fit_data_.peaks_) {
-    double nrg = q.second.energy;
-    bool has = false;
-    for (auto &p : fit_data_2_.peaks_)
-      if (std::abs(p.second.energy - nrg) < ui->doubleCullDelta->value())
-        has = true;
-    if (!has)
-      to_remove.insert(q.first);
-  }
-  for (auto &q : to_remove)
-    fit_data_.remove_peaks(to_remove);
-
-  for (auto &q: fit_data_2_.peaks_) {
-    double nrg = q.second.energy;
-    bool has = false;
-    for (auto &p : fit_data_.peaks_)
-      if (std::abs(p.second.energy - nrg) < ui->doubleCullDelta->value())
-        has = true;
-    if (!has)
-      to_remove.insert(q.first);
-  }
-  for (auto &q : to_remove)
-    fit_data_2_.remove_peaks(to_remove);
-
-  ui->plotSpectrum->update_fit(true);
-  ui->plotSpectrum2->update_fit(true);
-  plot_calib();
-}
-
-void FormAnalysis2D::on_pushSymmetrize_clicked()
-{
-  this->setCursor(Qt::WaitCursor);
-
-  QString fold_spec_name = current_spectrum_ + "_sym";
-  bool ok;
-  QString text = QInputDialog::getText(this, "New spectrum name",
-                                       "Spectrum name:", QLineEdit::Normal,
-                                       fold_spec_name,
-                                       &ok);
-  if (ok && !text.isEmpty()) {
-    if (spectra_->by_name(fold_spec_name.toStdString()) != nullptr) {
-      PL_WARN << "Spectrum " << fold_spec_name.toStdString() << " already exists. Aborting symmetrization";
-      return;
-    }
-
-    Qpx::Spectrum::Spectrum* some_spectrum = spectra_->by_name(current_spectrum_.toStdString());
-    if (some_spectrum == nullptr)
-      return;
-
-    Qpx::Spectrum::Metadata md = some_spectrum->metadata();
-
-    if ((md.total_count == 0) || (md.dimensions != 2)) {
-      PL_WARN << "Original spectrum " << current_spectrum_.toStdString() << " has no events or is not 2d";
-      return;
-    }
-
-    uint32_t adjrange = static_cast<uint32_t>(md.resolution);
-
-    Qpx::Spectrum::Template *temp_sym = Qpx::Spectrum::Factory::getInstance().create_template("2D");
-    temp_sym->visible = false;
-    temp_sym->name_ = fold_spec_name.toStdString();
-    temp_sym->match_pattern = std::vector<int16_t>({1,1,0,0});
-    temp_sym->add_pattern = std::vector<int16_t>({1,1,0,0});
-    temp_sym->bits = md.bits;
-
-    Qpx::Spectrum::Spectrum *symspec = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp_sym);
-    delete temp_sym;
-
-    if (gain_match_cali_.to_ == detector1_.name_)
-      PL_INFO << "will use gain match cali from " << detector2_.name_ << " to " << detector1_.name_ << " " << gain_match_cali_.to_string();
-    else {
-      PL_WARN << "no appropriate gain match calibration";
-      return;
-    }
-
-    boost::random::mt19937 gen;
-    boost::random::uniform_real_distribution<> dist(-0.5, 0.5);
-
-    uint16_t e2 = 0;
-    std::unique_ptr<std::list<Qpx::Spectrum::Entry>> spectrum_data = std::move(some_spectrum->get_spectrum({{0, adjrange}, {0, adjrange}}));
-    for (auto it : *spectrum_data) {
-      uint64_t count = it.second;
-
-      //PL_DBG << "adding " << it.first[0] << "+" << it.first[1] << "  x" << it.second;
-      double xformed = gain_match_cali_.transform(it.first[1]);
-      double e1 = it.first[0];
-
-      it.second = 1;
-      for (int i=0; i < count; ++i) {
-        double plus = dist(gen);
-        double xfp = xformed + plus;
-
-        if (xfp > 0)
-          e2 = static_cast<uint16_t>(std::round(xfp));
-        else
-          e2 = 0;
-
-        //PL_DBG << xformed << " plus " << plus << " = " << xfp << " round to " << e2;
-
-        it.first[0] = e1;
-        it.first[1] = e2;
-
-        symspec->add_bulk(it);
-
-        it.first[0] = e2;
-        it.first[1] = e1;
-
-        symspec->add_bulk(it);
-
-      }
-    }
-
-    for (auto &p : md.detectors) {
-      if (p.shallow_equals(detector1_) || p.shallow_equals(detector2_)) {
-        p = Gamma::Detector(detector1_.name_ + std::string("*") + detector2_.name_);
-        p.energy_calibrations_.add(nrg_calibration1_);
-      }
-    }
-
-    Qpx::Spill spill;
-    spill.run = new Qpx::RunInfo(spectra_->runInfo());
-    spill.run->detectors = md.detectors;
-    symspec->addSpill(spill);
-
-    delete spill.run;
-
-    spectra_->add_spectrum(symspec);
-
-    emit spectraChanged();
-  }
-  this->setCursor(Qt::ArrowCursor);
-}
-
 void FormAnalysis2D::on_pushAddGatedSpectra_clicked()
 {
   this->setCursor(Qt::WaitCursor);
@@ -698,31 +320,113 @@ void FormAnalysis2D::on_pushAddGatedSpectra_clicked()
     {
       gate_x->set_appearance(generateColor().rgba());
       spectra_->add_spectrum(gate_x);
-      gatex_in_spectra = true;
+      gate_x = nullptr;
       success = true;
     }
   }
 
-  if ((gate_y != nullptr) && (gate_y->metadata().total_count > 0)) {
-    if (spectra_->by_name(gate_y->name()) != nullptr)
-      PL_WARN << "Spectrum " << gate_y->name() << " already exists.";
-    else
-    {
-      gate_y->set_appearance(generateColor().rgba());
-      spectra_->add_spectrum(gate_y);
-      gatey_in_spectra = true;
-      success = true;
+  if (second_spectrum_type_ != SecondSpectrumType::none) {
+    if ((gate_y != nullptr) && (gate_y->metadata().total_count > 0)) {
+      if (spectra_->by_name(gate_y->name()) != nullptr)
+        PL_WARN << "Spectrum " << gate_y->name() << " already exists.";
+      else
+      {
+        gate_y->set_appearance(generateColor().rgba());
+        spectra_->add_spectrum(gate_y);
+        gate_y = nullptr;
+        success = true;
+      }
     }
   }
 
   if (success) {
     emit spectraChanged();
   }
+  make_gated_spectra();
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormAnalysis2D::on_pushSaveCalib_clicked()
+void FormAnalysis2D::symmetrize()
 {
+  this->setCursor(Qt::WaitCursor);
+
+  QString fold_spec_name = current_spectrum_ + "_sym";
+  bool ok;
+  QString text = QInputDialog::getText(this, "New spectrum name",
+                                       "Spectrum name:", QLineEdit::Normal,
+                                       fold_spec_name,
+                                       &ok);
+  if (ok && !text.isEmpty()) {
+    if (spectra_->by_name(fold_spec_name.toStdString()) != nullptr) {
+      PL_WARN << "Spectrum " << fold_spec_name.toStdString() << " already exists. Aborting symmetrization";
+      this->setCursor(Qt::ArrowCursor);
+      return;
+    }
+
+    Qpx::Spectrum::Spectrum* source_spectrum = spectra_->by_name(current_spectrum_.toStdString());
+    if (source_spectrum == nullptr) {
+      this->setCursor(Qt::ArrowCursor);
+      return;
+    }
+
+    //gain_match_cali_ = fit_data_2_.detector_.get_gain_match(fit_data_2_.metadata_.bits, fit_data_.detector_.name_);
+    //compare with source and replace?
+
+    Qpx::Spectrum::Metadata md = source_spectrum->metadata();
+
+    std::vector<uint16_t> chans;
+    for (int i=0; i < md.add_pattern.size(); ++i) {
+      if (md.add_pattern[i] == 1)
+        chans.push_back(i);
+    }
+
+    if (chans.size() != 2) {
+      PL_WARN << "<Analysis2D> " << md.name << " does not have 2 channels in pattern";
+      this->setCursor(Qt::ArrowCursor);
+      return;
+    }
+
+    std::vector<int16_t> pattern(chans[1] + 1, 0);
+    pattern[chans[0]] = 1;
+    pattern[chans[1]] = 1;
+
+    Qpx::Spectrum::Template *temp_sym = Qpx::Spectrum::Factory::getInstance().create_template(md.type); //assume 2D?
+    temp_sym->visible = false;
+    temp_sym->name_ = fold_spec_name.toStdString();
+    temp_sym->match_pattern = pattern;
+    temp_sym->add_pattern = pattern;
+    temp_sym->bits = md.bits;
+
+    Qpx::Spectrum::Spectrum* destination = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp_sym);
+    delete temp_sym;
+
+    if (destination == nullptr) {
+      PL_WARN << "<Analysis2D> " << fold_spec_name.toStdString() << " could not be created";
+      this->setCursor(Qt::ArrowCursor);
+      return;
+    }
+
+    if (Qpx::Spectrum::symmetrize(source_spectrum, destination, spectra_->runInfo())) {
+      spectra_->add_spectrum(destination);
+      setSpectrum(spectra_, fold_spec_name);
+      reset();
+      initialize();
+      emit spectraChanged();
+    } else {
+      PL_WARN << "<Analysis2D> could not symmetrize " << md.name;
+      delete destination;
+      this->setCursor(Qt::ArrowCursor);
+      return;
+    }
+
+  }
+  this->setCursor(Qt::ArrowCursor);
+}
+
+void FormAnalysis2D::apply_gain_calibration()
+{
+  gain_match_cali_ = fit_data_2_.detector_.get_gain_match(fit_data_2_.metadata_.bits, detector1_.name_);
+
   std::string msg_text("Propagating gain match calibration ");
   msg_text += detector2_.name_ + "->" + gain_match_cali_.to_ + " (" + std::to_string(gain_match_cali_.bits_) + " bits) to all spectra in current project: "
       + spectra_->status();
@@ -797,7 +501,79 @@ void FormAnalysis2D::on_pushSaveCalib_clicked()
   }
 }
 
-void FormAnalysis2D::on_comboPlot2_currentIndexChanged(const QString &arg1)
+void FormAnalysis2D::closeEvent(QCloseEvent *event) {
+  ui->plotSpectrum->saveSettings(settings_);
+  ui->plotSpectrum2->saveSettings(settings_);
+
+  saveSettings();
+  event->accept();
+}
+
+void FormAnalysis2D::loadSettings() {
+  settings_.beginGroup("Program");
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_.endGroup();
+
+  ui->plotSpectrum->loadSettings(settings_);
+  ui->plotSpectrum2->loadSettings(settings_);
+
+  settings_.beginGroup("AnalysisMatrix");
+  ui->plotMatrix->set_zoom(settings_.value("zoom", 50).toDouble());
+  ui->plotMatrix->set_gradient(settings_.value("gradient", "hot").toString());
+  ui->plotMatrix->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
+  ui->plotMatrix->set_show_legend(settings_.value("show_legend", false).toBool());
+  ui->plotMatrix->set_gate_width(settings_.value("gate_width", 10).toInt());
+  settings_.endGroup();
+
+}
+
+void FormAnalysis2D::saveSettings() {
+  ui->plotSpectrum->saveSettings(settings_);
+
+  settings_.beginGroup("AnalysisMatrix");
+  settings_.setValue("zoom", ui->plotMatrix->zoom());
+  settings_.setValue("gradient", ui->plotMatrix->gradient());
+  settings_.setValue("scale_type", ui->plotMatrix->scale_type());
+  settings_.setValue("show_legend", ui->plotMatrix->show_legend());
+  settings_.setValue("gate_width", ui->plotMatrix->gate_width());
+  settings_.endGroup();
+}
+
+void FormAnalysis2D::clear() {
+  res = 0;
+  xmin_ = ymin_ = 0;
+  xmax_ = ymax_ = 0;
+
+  live_seconds = 0;
+  sum_inclusive = 0;
+  sum_exclusive = 0;
+
+  ui->plotSpectrum->setSpectrum(nullptr);
+  ui->plotSpectrum2->setSpectrum(nullptr);
+  ui->plotMatrix->reset_content();
+
+  current_spectrum_.clear();
+  detector1_ = Gamma::Detector();
+  nrg_calibration1_ = Gamma::Calibration();
+
+  detector2_ = Gamma::Detector();
+  nrg_calibration2_ = Gamma::Calibration();
+
+  if (my_gain_calibration_)
+    my_gain_calibration_->clear();
+}
+
+FormAnalysis2D::~FormAnalysis2D()
 {
-    PL_INFO << "gating type " << arg1.toStdString();
+  if (tempx != nullptr)
+    delete tempx;
+  if (tempy != nullptr)
+    delete tempy;
+
+  if (gate_x != nullptr)
+    delete gate_x;
+  if (gate_y != nullptr)
+    delete gate_y;
+
+  delete ui;
 }
