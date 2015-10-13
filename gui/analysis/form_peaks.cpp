@@ -92,12 +92,12 @@ void FormPeaks::setFit(Gamma::Fitter* fit) {
 }
 
 void FormPeaks::set_visible_elements(ShowFitElements elems, bool interactive) {
-  ui->checkShowMovAvg->setEnabled(elems & ShowFitElements::movavg);
-  ui->checkShowPrelimPeaks->setEnabled(elems & ShowFitElements::prelim);
-  ui->checkShowFilteredPeaks->setEnabled(elems & ShowFitElements::filtered);
-  ui->checkShowGaussians->setEnabled(elems & ShowFitElements::gaussians);
-  ui->checkShowBaselines->setEnabled(elems & ShowFitElements::baselines);
-  ui->checkShowPseudoVoigt->setEnabled(elems & ShowFitElements::voigt);
+  ui->checkShowMovAvg->setChecked(elems & ShowFitElements::movavg);
+  ui->checkShowPrelimPeaks->setChecked(elems & ShowFitElements::prelim);
+  ui->checkShowFilteredPeaks->setChecked(elems & ShowFitElements::filtered);
+  ui->checkShowGaussians->setChecked(elems & ShowFitElements::gaussians);
+  ui->checkShowBaselines->setChecked(elems & ShowFitElements::baselines);
+  ui->checkShowPseudoVoigt->setChecked(elems & ShowFitElements::voigt);
 
   ui->widgetElements->setVisible(interactive);
   ui->line->setVisible(interactive);

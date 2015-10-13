@@ -38,6 +38,7 @@ class FormPeaks;
 }
 
 enum ShowFitElements {
+  none      = 0,
   movavg    = 1 << 0,
   prelim    = 1 << 1,
   filtered  = 1 << 2,
