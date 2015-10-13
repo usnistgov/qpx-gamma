@@ -152,25 +152,23 @@ void FormPeaks::clear() {
 
 
 void FormPeaks::setSpectrum(Qpx::Spectrum::Spectrum *newspectrum) {
-  clear();
+//  clear();
   spectrum_ = newspectrum;
 
-  fit_data_->setData(spectrum_);
-  fit_data_->set_mov_avg(ui->spinMovAvg->value());
-  fit_data_->find_prelim();
-  fit_data_->filter_prelim(ui->spinMinPeakWidth->value());
+  if (fit_data_->peaks_.empty()) {
+    fit_data_->setData(spectrum_);
+    fit_data_->set_mov_avg(ui->spinMovAvg->value());
+    fit_data_->find_peaks(ui->spinMinPeakWidth->value());
+    on_pushFindPeaks_clicked();
+  }
 
   QString title = "Spectrum=" + QString::fromStdString(fit_data_->metadata_.name) + "  resolution=" + QString::number(fit_data_->metadata_.bits) + "bits  Detector=" + QString::fromStdString(fit_data_->detector_.name_);
   ui->plot1D->setFloatingText(title);
   ui->plot1D->setTitle(title);
 
   ui->plot1D->reset_scales();
-
-
-  if (fit_data_->metadata_.total_count > 0) {
-    on_pushFindPeaks_clicked();
-    update_spectrum();
-  }
+  update_spectrum();
+  toggle_push();
 }
 
 void FormPeaks::update_spectrum() {
@@ -221,6 +219,8 @@ void FormPeaks::replot_all() {
   this->blockSignals(true);
   
   ui->plot1D->clearGraphs();
+  ui->plot1D->clearExtras();
+
   ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->x_), QVector<double>::fromStdVector(fit_data_->y_), main_graph_);
 
   if (ui->checkShowMovAvg->isChecked())

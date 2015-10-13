@@ -151,8 +151,9 @@ void FormEfficiencyCalibration::setSpectrum(QString name) {
   } else
     spectrum = nullptr;
 
-  update_peaks(true);
   ui->plotSpectrum->setSpectrum(spectrum);
+
+  update_peaks(true);
 }
 
 void FormEfficiencyCalibration::update_spectrum() {
@@ -353,11 +354,13 @@ void FormEfficiencyCalibration::on_pushRemove_clicked()
 void FormEfficiencyCalibration::on_pushShowAll_clicked()
 {
   ui->spectrumSelector->show_all();
+  replot_calib();
 }
 
 void FormEfficiencyCalibration::on_pushHideAll_clicked()
 {
   ui->spectrumSelector->hide_all();
+  replot_calib();
 }
 
 
