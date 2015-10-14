@@ -143,6 +143,7 @@ void FormEfficiencyCalibration::setSpectrum(QString name) {
       fit_data_ = peak_sets_.at(name.toStdString());
       ui->isotopes->set_current_isotope(QString::fromStdString(fit_data_.sample_name_));
     }  else {
+      fit_data_.clear();
       fit_data_.setData(spectrum);
       peak_sets_[name.toStdString()] = fit_data_;
     }
@@ -151,14 +152,14 @@ void FormEfficiencyCalibration::setSpectrum(QString name) {
   } else
     spectrum = nullptr;
 
-  ui->plotSpectrum->setSpectrum(spectrum);
+  ui->plotSpectrum->new_spectrum();
 
   update_peaks(true);
 }
 
 void FormEfficiencyCalibration::update_spectrum() {
   if (this->isVisible())
-    ui->plotSpectrum->update_spectrum();
+    ui->plotSpectrum->new_spectrum();
 }
 
 void FormEfficiencyCalibration::update_peaks(bool contents_changed) {
@@ -194,6 +195,7 @@ void FormEfficiencyCalibration::update_peaks(bool contents_changed) {
 
   ui->plotSpectrum->update_fit(contents_changed);
   replot_calib();
+  PL_DBG << "will rebuild table " << contents_changed;
   rebuild_table(contents_changed);
   toggle_push();
 }
@@ -323,7 +325,7 @@ void FormEfficiencyCalibration::spectrumDetails(SelectorItem item)
     ui->pushRemove->setEnabled(false);
     ui->pushFullInfo->setEnabled(false);
     fit_data_ = Gamma::Fitter();
-    ui->plotSpectrum->setSpectrum(nullptr);
+    ui->plotSpectrum->new_spectrum();
     ui->doubleScaleFactor->setEnabled(false);
     return;
   }
@@ -486,15 +488,16 @@ void FormEfficiencyCalibration::rebuild_table(bool contents_changed) {
       if (!q.second.intersects_R)
         gray = !gray;
     }
-  } else {
-    ui->tablePeaks->clearSelection();
-    int i = 0;
-    for (auto &q : fit_data_.peaks_) {
-      if (q.second.selected) {
-        ui->tablePeaks->selectRow(i);
-      }
-      ++i;
+  }
+
+  ui->tablePeaks->clearSelection();
+  int i = 0;
+  for (auto &q : fit_data_.peaks_) {
+    if (q.second.selected) {
+      PL_DBG << "peak = " << q.second.center << " selected on row " << i;
+      ui->tablePeaks->selectRow(i);
     }
+    ++i;
   }
   ui->tablePeaks->blockSignals(false);
   this->blockSignals(false);
@@ -633,13 +636,14 @@ void FormEfficiencyCalibration::on_pushMarkerRemove_clicked()
   for (auto &q : fit_data_.peaks_)
     if (q.second.selected) {
       chosen_peaks.insert(q.second.center);
-      last_sel = q.first;
+      last_sel = q.second.center;
     }
 
   fit_data_.remove_peaks(chosen_peaks);
 
   for (auto &q : fit_data_.peaks_)
-    if (q.first > last_sel) {
+    if (q.second.center > last_sel) {
+      PL_DBG << "reselected " << q.second.center << " > " << last_sel;
       q.second.selected = true;
       break;
     }

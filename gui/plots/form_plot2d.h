@@ -40,7 +40,7 @@ public:
   explicit FormPlot2D(QWidget *parent = 0);
   ~FormPlot2D();
 
-  void setSpectra(Qpx::SpectraSet& new_set);
+  void setSpectra(Qpx::SpectraSet& new_set, QString spectrum = QString());
 
   void updateUI();
 
@@ -61,7 +61,6 @@ public:
   void set_show_selector(bool);
   void set_show_analyse(bool);
   void set_show_gate_width(bool);
-  void set_spectrum(QString);
 
   int gate_width();
   void set_gate_width(int);
@@ -95,6 +94,8 @@ private slots:
   void on_pushAnalyse_clicked();
 
   void on_spinGateWidth_valueChanged(int arg1);
+
+  void on_spinGateWidth_editingFinished();
 
 private:
 

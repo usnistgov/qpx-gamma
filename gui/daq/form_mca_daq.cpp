@@ -393,6 +393,7 @@ void FormMcaDaq::updateSpectraUI() {
 
 void FormMcaDaq::newProject() {
   ui->Plot2d->setSpectra(spectra_);
+  ui->Plot2d->update_plot(true);
   ui->Plot1d->setSpectra(spectra_);
 }
 

@@ -49,6 +49,10 @@ FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Gamm
   ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy"});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
+
+  //all columns?
+  ui->tablePeaks->setEditTriggers(QTableView::NoEditTriggers);
+
   ui->tablePeaks->horizontalHeader()->setStretchLastSection(true);
   ui->tablePeaks->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->tablePeaks->show();

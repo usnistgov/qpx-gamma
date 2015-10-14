@@ -37,10 +37,11 @@ FormPeakFitter::FormPeakFitter(QSettings &settings, Gamma::Fitter &fit, QWidget 
   loadSettings();
 
   ui->tablePeaks->verticalHeader()->hide();
-  ui->tablePeaks->setColumnCount(9);
-  ui->tablePeaks->setHorizontalHeaderLabels({"energy", "fw(gaus)", "A(gaus)", "cps(gaus)", "fw(S4)", "A(S4)", "%err(S4)", "cps(S4)", "CQI"});
+  ui->tablePeaks->setColumnCount(10);
+  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fw(gaus)", "A(gaus)", "cps(gaus)", "fw(S4)", "A(S4)", "%err(S4)", "cps(S4)", "CQI"});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  ui->tablePeaks->setEditTriggers(QTableView::NoEditTriggers);
   ui->tablePeaks->horizontalHeader()->setStretchLastSection(true);
   ui->tablePeaks->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->tablePeaks->show();
@@ -115,43 +116,46 @@ void FormPeakFitter::update_peaks(bool contents_changed) {
 void FormPeakFitter::add_peak_to_table(const Gamma::Peak &p, int row, bool gray) {
   QBrush background(gray ? Qt::lightGray : Qt::white);
 
-  QTableWidgetItem *nrg = new QTableWidgetItem(QString::number(p.energy));
-  nrg->setData(Qt::EditRole, QVariant::fromValue(p.center));
-  nrg->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 0, nrg);
+  QTableWidgetItem *chn = new QTableWidgetItem(QString::number(p.center));
+  chn->setData(Qt::EditRole, QVariant::fromValue(p.center));
+  chn->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 0, chn);
 
+  QTableWidgetItem *nrg = new QTableWidgetItem(QString::number(p.energy));
+  nrg->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 1, nrg);
 
   QTableWidgetItem *fwhm = new QTableWidgetItem(QString::number(p.fwhm_gaussian));
   fwhm->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 1, fwhm);
+  ui->tablePeaks->setItem(row, 2, fwhm);
 
   QTableWidgetItem *area_gauss = new QTableWidgetItem(QString::number(p.area_gauss_));
   area_gauss->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 2, area_gauss);
+  ui->tablePeaks->setItem(row, 3, area_gauss);
 
   QTableWidgetItem *cps_gauss = new QTableWidgetItem(QString::number(p.cts_per_sec_gauss_));
   cps_gauss->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 3, cps_gauss);
+  ui->tablePeaks->setItem(row, 4, cps_gauss);
 
   QTableWidgetItem *fwhm4 = new QTableWidgetItem(QString::number(p.fwhm_sum4));
   fwhm4->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 4, fwhm4);
+  ui->tablePeaks->setItem(row, 5, fwhm4);
 
   QTableWidgetItem *area_net = new QTableWidgetItem(QString::number(p.area_net_));
   area_net->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 5, area_net);
+  ui->tablePeaks->setItem(row, 6, area_net);
 
   QTableWidgetItem *err = new QTableWidgetItem(QString::number(p.sum4_.err));
   err->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 6, err);
+  ui->tablePeaks->setItem(row, 7, err);
 
   QTableWidgetItem *cps_net = new QTableWidgetItem(QString::number(p.cts_per_sec_net_));
   cps_net->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 7, cps_net);
+  ui->tablePeaks->setItem(row, 8, cps_net);
 
   QTableWidgetItem *CQI = new QTableWidgetItem(QString::number(p.sum4_.currie_quality_indicator));
   CQI->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 8, CQI);
+  ui->tablePeaks->setItem(row, 9, CQI);
 
 }
 

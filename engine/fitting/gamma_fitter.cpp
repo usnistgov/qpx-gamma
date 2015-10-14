@@ -54,7 +54,7 @@ void Fitter::setXY(std::vector<double> x, std::vector<double> y,  uint16_t min, 
 
 void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
 {
-  clear();
+//  clear();
   if (spectrum != nullptr) {
     Qpx::Spectrum::Metadata md = spectrum->metadata();
     if ((md.dimensions != 1) || (md.resolution <= 0) || (md.total_count <= 0))
@@ -78,6 +78,8 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
       //PL_INFO << "<Gamma::Fitter> No existing FWHM calibration";
 
     std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_dump = std::move(spectrum->get_spectrum({{0, md.resolution}}));
+    x_.clear();
+    y_.clear();
 
     int i = 0;
     for (auto it : *spectrum_dump) {

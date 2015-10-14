@@ -92,7 +92,7 @@ public:
   std::set<double> get_selected_markers();
 
   void addPoints(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, QCPScatterStyle::ScatterShape);
-  void addGraph(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance);
+  void addGraph(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, bool fittable = false);
   void setYBounds(const std::map<double, double> &minima, const std::map<double, double> &maxima);
 
   void use_calibrated(bool);

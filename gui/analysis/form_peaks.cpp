@@ -28,7 +28,6 @@
 
 FormPeaks::FormPeaks(QWidget *parent) :
   QWidget(parent),
-  spectrum_(nullptr),
   fit_data_(nullptr),
   ui(new Ui::FormPeaks)
 {
@@ -64,7 +63,11 @@ FormPeaks::FormPeaks(QWidget *parent) :
   prelim_peak_.default_pen = QPen(Qt::black, 4);
   filtered_peak_.default_pen = QPen(Qt::blue, 6);
   gaussian_.default_pen = QPen(Qt::darkBlue, 0);
-  flagged_.default_pen =  QPen(Qt::green, 1);
+
+  QColor flagged_color;
+  flagged_color.setHsv(QColor(Qt::green).hsvHue(), QColor(Qt::green).hsvSaturation(), 192);
+
+  flagged_.default_pen =  QPen(flagged_color, 1);
   pseudo_voigt_.default_pen = QPen(Qt::darkCyan, 0);
 
   multiplet_.default_pen = QPen(Qt::red, 2);
@@ -151,12 +154,8 @@ void FormPeaks::clear() {
 }
 
 
-void FormPeaks::setSpectrum(Qpx::Spectrum::Spectrum *newspectrum) {
-//  clear();
-  spectrum_ = newspectrum;
-
+void FormPeaks::new_spectrum() {
   if (fit_data_->peaks_.empty()) {
-    fit_data_->setData(spectrum_);
     fit_data_->set_mov_avg(ui->spinMovAvg->value());
     fit_data_->find_peaks(ui->spinMinPeakWidth->value());
     on_pushFindPeaks_clicked();
@@ -175,11 +174,7 @@ void FormPeaks::update_spectrum() {
   if (fit_data_ == nullptr)
     return;
 
-  Qpx::Spectrum::Metadata md;
-  if (spectrum_)
-    md = spectrum_->metadata();
-
-  if (md.resolution == 0) {
+  if (fit_data_->metadata_.resolution == 0) {
     clear();
     replot_all();
     return;
@@ -187,24 +182,17 @@ void FormPeaks::update_spectrum() {
 
   minima.clear();
   maxima.clear();
+  QColor plotcolor;
+  plotcolor.setHsv(QColor::fromRgba(fit_data_->metadata_.appearance).hsvHue(), 48, 160);
+  main_graph_.default_pen = QPen(plotcolor, 1);
 
-  std::vector<double> x_chan(md.resolution);
-  std::vector<double> y(md.resolution);
-
-  std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_dump =
-      std::move(spectrum_->get_spectrum({{0, y.size()}}));
-
-  int i = 0;
-  for (auto it : *spectrum_dump) {
-    double yy = it.second;
-    double xx = static_cast<double>(i);
-    x_chan[i] = xx;
-    y[i] = yy;
+  for (int i=0; i < fit_data_->x_.size(); ++i) {
+    double yy = fit_data_->y_[i];
+    double xx = fit_data_->x_[i];
     if (!minima.count(xx) || (minima[xx] > yy))
       minima[xx] = yy;
     if (!maxima.count(xx) || (maxima[xx] < yy))
       maxima[xx] = yy;
-    ++i;
   }
 
   replot_all();
@@ -221,7 +209,7 @@ void FormPeaks::replot_all() {
   ui->plot1D->clearGraphs();
   ui->plot1D->clearExtras();
 
-  ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->x_), QVector<double>::fromStdVector(fit_data_->y_), main_graph_);
+  ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->x_), QVector<double>::fromStdVector(fit_data_->y_), main_graph_, true);
 
   if (ui->checkShowMovAvg->isChecked())
     plot_derivs();

@@ -205,7 +205,7 @@ void WidgetPlot1D::setYBounds(const std::map<double, double> &minima, const std:
 }
 
 
-void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance) {
+void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, bool fittable) {
   if (x.empty() || y.empty() || (x.size() != y.size()))
     return;
 
@@ -213,6 +213,7 @@ void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, 
   int g = ui->mcaPlot->graphCount() - 1;
   ui->mcaPlot->graph(g)->addData(x, y);
   ui->mcaPlot->graph(g)->setPen(appearance.get_pen(color_theme_));
+  ui->mcaPlot->graph(g)->setProperty("fittable", fittable);
   set_graph_style(ui->mcaPlot->graph(g), plot_style_);
 
   if (x[0] < minx) {
@@ -451,6 +452,8 @@ void WidgetPlot1D::replot_markers() {
 
       int total = ui->mcaPlot->graphCount();
       for (int i=0; i < total; i++) {
+        if (!ui->mcaPlot->graph(i)->property("fittable").toBool())
+          continue;
 
         if (ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssNone)
           continue;

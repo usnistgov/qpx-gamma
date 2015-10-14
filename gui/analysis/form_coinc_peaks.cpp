@@ -41,17 +41,29 @@ FormCoincPeaks::FormCoincPeaks(QWidget *parent) :
   ui->tablePeaks->setHorizontalHeaderLabels({"chan", "width(ch)", "energy", "fwhm", "area", "cps"});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  ui->tablePeaks->setEditTriggers(QTableView::NoEditTriggers);
   ui->tablePeaks->horizontalHeader()->setStretchLastSection(true);
   ui->tablePeaks->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->tablePeaks->show();
   connect(ui->tablePeaks, SIGNAL(itemSelectionChanged()), this, SLOT(selection_changed_in_table()));
 
   connect(ui->plotPeaks, SIGNAL(peaks_changed(bool)), this, SLOT(peaks_changed_in_plot(bool)));
+
+  QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tablePeaks);
+  connect(shortcut, SIGNAL(activated()), this, SLOT(remove_peak()));
+
+  //QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Backspace), ui->mcaPlot);
+  //connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushResetScales_clicked()));
 }
 
 FormCoincPeaks::~FormCoincPeaks()
 {
   delete ui;
+}
+
+void FormCoincPeaks::remove_peak() {
+  if (fit_data_)
+    PL_DBG << "Remove peaks for " << fit_data_->metadata_.name;
 }
 
 void FormCoincPeaks::setFit(Gamma::Fitter* fit) {
@@ -73,18 +85,8 @@ void FormCoincPeaks::saveSettings(QSettings &settings_) {
   settings_.endGroup();
 }
 
-void FormCoincPeaks::clear() {
-  ui->plotPeaks->clear();
-  sel_L = 0;
-  sel_R = 0;
-}
-
-
-void FormCoincPeaks::setSpectrum(Qpx::Spectrum::Spectrum *newspectrum, uint16_t L, uint16_t R) {
-  clear();
-  ui->plotPeaks->setSpectrum(newspectrum);
-  sel_L = L;
-  sel_R = R;
+void FormCoincPeaks::update_spectrum() {
+  ui->plotPeaks->new_spectrum();
 
   if (!fit_data_->peaks_.empty())
     update_fit(true);
@@ -92,14 +94,6 @@ void FormCoincPeaks::setSpectrum(Qpx::Spectrum::Spectrum *newspectrum, uint16_t 
 }
 
 void FormCoincPeaks::update_fit(bool content_changed) {
-  if (content_changed) {
-    for (auto &q : fit_data_->peaks_) {
-      if ((q.first > sel_L) && (q.first < sel_R))
-        q.second.flagged = true;
-      else
-        q.second.flagged = false;
-    }
-  }
 
   ui->plotPeaks->update_fit(content_changed);
   update_table(content_changed);

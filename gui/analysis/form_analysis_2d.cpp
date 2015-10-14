@@ -124,8 +124,6 @@ void FormAnalysis2D::configure_UI() {
 
 
 void FormAnalysis2D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
-  PL_DBG << "<FormAnalysis2D> setSpectrum";
-
   clear();
   spectra_ = newset;
   current_spectrum_ = name;
@@ -166,7 +164,9 @@ void FormAnalysis2D::make_gated_spectra() {
     //if?
     Qpx::Spectrum::slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {ymin_, ymax_}}, spectra_->runInfo());
 
-    ui->plotSpectrum->setSpectrum(gate_x, xmin_, xmax_);
+    fit_data_.clear();
+    fit_data_.setData(gate_x);
+    ui->plotSpectrum->update_spectrum();
 
 
     if (second_spectrum_type_ == SecondSpectrumType::diagonal) {
@@ -192,7 +192,9 @@ void FormAnalysis2D::make_gated_spectra() {
       else if (second_spectrum_type_ == SecondSpectrumType::second_det)
         Qpx::Spectrum::slice_rectangular(source_spectrum, gate_y, {{xmin_, xmax_}, {0, adjrange}}, spectra_->runInfo());
 
-      ui->plotSpectrum2->setSpectrum(gate_y, ymin_, ymax_);
+      fit_data_2_.clear();
+      fit_data_2_.setData(gate_y);
+      ui->plotSpectrum2->update_spectrum();
     }
 
     sum_inclusive += sum_exclusive;
@@ -210,6 +212,7 @@ void FormAnalysis2D::initialize() {
 
   if (spectra_) {
 
+    PL_DBG << "<Analysis2D> initializing to " << current_spectrum_.toStdString();
     Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(current_spectrum_.toStdString());
 
     if (spectrum && spectrum->resolution()) {
@@ -237,9 +240,8 @@ void FormAnalysis2D::initialize() {
 
 
       ui->plotMatrix->reset_content();
-      ui->plotMatrix->setSpectra(*spectra_);
-      ui->plotMatrix->set_spectrum(current_spectrum_);
-      ui->plotMatrix->update_plot();
+      ui->plotMatrix->setSpectra(*spectra_, current_spectrum_);
+      ui->plotMatrix->update_plot(true);
 
       bool symmetrized = ((detector1_ != Gamma::Detector()) && (detector2_ != Gamma::Detector()) && (detector1_ == detector2_));
 
@@ -276,9 +278,28 @@ void FormAnalysis2D::showEvent( QShowEvent* event ) {
 
 void FormAnalysis2D::update_peaks(bool content_changed) {
   //update sums
-  ui->plotSpectrum->update_fit(content_changed);
-  if (second_spectrum_type_ != SecondSpectrumType::none)
+  if (second_spectrum_type_ != SecondSpectrumType::none) {
+    if (content_changed) {
+
+      for (auto &q : fit_data_.peaks_) {
+        if ((q.first > xmin_) && (q.first < xmax_))
+          q.second.flagged = true;
+        else
+          q.second.flagged = false;
+      }
+
+      for (auto &q : fit_data_2_.peaks_) {
+        if ((q.first > ymin_) && (q.first < ymax_))
+          q.second.flagged = true;
+        else
+          q.second.flagged = false;
+      }
+
+    }
     ui->plotSpectrum2->update_fit(content_changed);
+  }
+
+  ui->plotSpectrum->update_fit(content_changed);
 
   if (my_gain_calibration_)
     my_gain_calibration_->newSpectrum();
@@ -548,8 +569,6 @@ void FormAnalysis2D::clear() {
   sum_inclusive = 0;
   sum_exclusive = 0;
 
-  ui->plotSpectrum->setSpectrum(nullptr);
-  ui->plotSpectrum2->setSpectrum(nullptr);
   ui->plotMatrix->reset_content();
 
   current_spectrum_.clear();

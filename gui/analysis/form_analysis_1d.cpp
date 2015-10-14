@@ -97,7 +97,8 @@ void FormAnalysis1D::saveSettings() {
 }
 
 void FormAnalysis1D::clear() {
-  ui->plotSpectrum->setSpectrum(nullptr);
+  fit_data_.clear();
+  ui->plotSpectrum->new_spectrum();
   my_energy_calibration_->clear();
   my_fwhm_calibration_->clear();
   my_peak_fitter_->clear();
@@ -105,16 +106,20 @@ void FormAnalysis1D::clear() {
 
 
 void FormAnalysis1D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
-  clear();
+  my_energy_calibration_->clear();
+  my_fwhm_calibration_->clear();
+  my_peak_fitter_->clear();
   spectra_ = newset;
   if (!spectra_) {
-    ui->plotSpectrum->setSpectrum(nullptr);
+    fit_data_.clear();
+    ui->plotSpectrum->new_spectrum();
     return;
   }
 
   Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(name.toStdString());
 
   if (spectrum && spectrum->resolution()) {
+    fit_data_.clear();
     fit_data_.setData(spectrum);
 
     my_energy_calibration_->newSpectrum();
@@ -125,12 +130,16 @@ void FormAnalysis1D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
     my_peak_fitter_->update_peaks(true);
   }
 
-  ui->plotSpectrum->setSpectrum(spectrum);
+  ui->plotSpectrum->new_spectrum();
 }
 
 void FormAnalysis1D::update_spectrum() {
-  if (this->isVisible())
+  if (this->isVisible()) {
+    Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(fit_data_.metadata_.name);
+    if (spectrum && spectrum->resolution())
+      fit_data_.setData(spectrum);
     ui->plotSpectrum->update_spectrum();
+  }
 }
 
 void FormAnalysis1D::update_peaks(bool content_changed) {

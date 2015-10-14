@@ -58,12 +58,12 @@ class FormPeaks : public QWidget
 public:
   explicit FormPeaks(QWidget *parent = 0);
   ~FormPeaks();
-
   void setFit(Gamma::Fitter *);
-  void setSpectrum(Qpx::Spectrum::Spectrum *newspectrum);
+
+  void new_spectrum();
+  void update_fit(bool content_changed = false);
 
   void clear();
-  void update_fit(bool content_changed = false);
   void update_spectrum();
 
   void set_visible_elements(ShowFitElements elems, bool interactive = false);
@@ -108,7 +108,6 @@ private:
   Ui::FormPeaks *ui;
 
   //from parent
-  Qpx::Spectrum::Spectrum *spectrum_;
   std::map<double, double> minima, maxima;
 
   //data from selected spectrum

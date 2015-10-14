@@ -46,9 +46,9 @@ public:
   ~FormCoincPeaks();
 
   void setFit(Gamma::Fitter *);
-  void setSpectrum(Qpx::Spectrum::Spectrum *newspectrum, uint16_t L = 0, uint16_t R = 0);
 
-  void clear();
+  void update_spectrum();
+
   void update_fit(bool content_changed = false);
 
   void loadSettings(QSettings &settings_);
@@ -60,14 +60,13 @@ signals:
 private slots:
   void selection_changed_in_table();
   void peaks_changed_in_plot(bool);
+  void remove_peak();
 
 private:
   Ui::FormCoincPeaks *ui;
 
   //data from selected spectrum
   Gamma::Fitter *fit_data_;
-
-  uint16_t sel_L, sel_R;
 
   void update_table(bool);
   void add_peak_to_table(const Gamma::Peak &, int, QColor);

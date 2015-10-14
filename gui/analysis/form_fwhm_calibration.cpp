@@ -48,6 +48,7 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
   ui->tableFWHM->setHorizontalHeaderLabels({"chan", "energy", "fwhm(sum4)", "fwmw (gaussian)", "fwhm (pseudo-Voigt)"});
   ui->tableFWHM->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tableFWHM->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  ui->tableFWHM->setEditTriggers(QTableView::NoEditTriggers);
   ui->tableFWHM->horizontalHeader()->setStretchLastSection(true);
   ui->tableFWHM->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->tableFWHM->show();
