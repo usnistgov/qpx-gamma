@@ -49,14 +49,19 @@ public:
   void replot_markers();
   void reset_content();
 
+  void set_boxes(std::vector<MarkerBox2D> boxes);
+
   void set_scale_type(QString);
   void set_gradient(QString);
   void set_zoom(double);
   void set_show_legend(bool);
+  void set_show_boxes(bool);
   QString scale_type();
   QString gradient();
   double zoom();
   bool show_legend();
+
+  std::list<MarkerBox2D> get_selected_boxes();
 
   void set_show_selector(bool);
   void set_show_analyse(bool);
@@ -65,17 +70,23 @@ public:
   int gate_width();
   void set_gate_width(int);
   void set_gates_visible(bool vertical, bool horizontal, bool diagonal);
+  void set_gates_movable(bool);
 
 public slots:
   void set_marker(Marker n);
+  void set_markers(Marker x, Marker y);
 
 signals:
   void markers_set(Marker x, Marker y);
   void requestAnalysis(QString);
+  void stuff_selected();
 
 private slots:
   void gradientChosen(QAction*);
   void scaleTypeChosen(QAction*);
+
+  //void clicked_plottable(QCPAbstractPlottable*);
+  void selection_changed();
 
   void on_comboChose2d_activated(const QString &arg1);
 
@@ -121,7 +132,9 @@ private:
   //markers
   Marker my_marker, //template(style)
     ext_marker, x_marker, y_marker; //actual data
-  bool gate_vertical_, gate_horizontal_, gate_diagonal_;
+  bool gate_vertical_, gate_horizontal_, gate_diagonal_, gates_movable_, show_boxes_;
+
+  std::vector<MarkerBox2D> boxes_;
 
   //scaling
   int bits;

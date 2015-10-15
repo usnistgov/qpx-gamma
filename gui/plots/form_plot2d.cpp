@@ -41,6 +41,8 @@ FormPlot2D::FormPlot2D(QWidget *parent) :
   current_scale_type_ = "Logarithmic";
   zoom_2d = 50;
   user_selects_ = true;
+  gates_movable_ = true;
+  show_boxes_ = false;
 
   //color theme setup
   my_marker.appearance.themes["Grayscale"] = QPen(Qt::cyan, 1);
@@ -92,6 +94,9 @@ FormPlot2D::FormPlot2D(QWidget *parent) :
   colorMap->rescaleDataRange(true);
   connect(ui->coincPlot, SIGNAL(mouse_upon(double,double)), this, SLOT(plot_2d_mouse_upon(double,double)));
   connect(ui->coincPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*, bool)), this, SLOT(plot_2d_mouse_clicked(double,double,QMouseEvent*, bool)));
+  //connect(ui->coincPlot, SIGNAL(plottableClick(QCPAbstractPlottable*,QMouseEvent*)), this, SLOT(clicked_plottable(QCPAbstractPlottable*)));
+  connect(ui->coincPlot, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
+
   ui->sliderZoom2d->setValue(zoom_2d);
 
   //scaling-related stuff
@@ -103,6 +108,11 @@ FormPlot2D::~FormPlot2D()
   delete ui;
 }
 
+void FormPlot2D::selection_changed() {
+  emit stuff_selected();
+}
+
+
 void FormPlot2D::setSpectra(Qpx::SpectraSet& new_set, QString spectrum) {
 //  PL_DBG << "setSpectra with " << spectrum.toStdString();
   mySpectra = &new_set;
@@ -111,6 +121,35 @@ void FormPlot2D::setSpectra(Qpx::SpectraSet& new_set, QString spectrum) {
 
   updateUI();
 }
+
+void FormPlot2D::set_gates_movable(bool mov) {
+  gates_movable_ = mov;
+}
+
+void FormPlot2D::set_show_boxes(bool show) {
+  show_boxes_ = show;
+  ui->coincPlot->setInteraction(QCP::iSelectItems, show);
+  ui->coincPlot->setInteraction(QCP::iMultiSelect, false);
+}
+
+std::list<MarkerBox2D> FormPlot2D::get_selected_boxes() {
+  std::list<MarkerBox2D> selection;
+  for (auto &q : ui->coincPlot->selectedItems())
+    if (QCPItemRect *b = qobject_cast<QCPItemRect*>(q)) {
+      MarkerBox2D box;
+      box.x_c = b->property("chan_x").toDouble();
+      box.y_c = b->property("chan_y").toDouble();
+      selection.push_back(box);
+      //PL_DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
+    }
+  return selection;
+}
+
+
+void FormPlot2D::set_boxes(std::vector<MarkerBox2D> boxes) {
+  boxes_ = boxes;
+}
+
 
 void FormPlot2D::reset_content() {
   //PL_DBG << "reset content";
@@ -243,13 +282,28 @@ void FormPlot2D::replot_markers() {
     int width = (ui->spinGateWidth->value() - 1) / 2;
 
     QPen pen2 = pen;
-    cc.setAlpha(50);
+    cc.setAlpha(64);
     pen2.setColor(cc);
     pen2.setWidth(width * 2);
 
+    QPen pen_strong = pen;
+    cc.setAlpha(255);
+    cc.setHsv(cc.hsvHue(), 255, 128, 255);
+    pen_strong.setColor(cc);
+    pen_strong.setWidth(3);
+
+    if (show_boxes_) {
+      pen.setWidth(1);
+      QCPItemRect *box = new QCPItemRect(ui->coincPlot);
+      box->setPen(pen);
+      box->topLeft->setCoords(0, y_marker.channel - width);
+      box->bottomRight->setCoords(x_marker.channel, y_marker.channel + width);
+      ui->coincPlot->addItem(box);
+    }
+
     QCPItemStraightLine *one_line;
 
-    if (gate_horizontal_ && y_marker.visible) {
+    if (gate_horizontal_ && y_marker.visible && !show_boxes_) {
       one_line = new QCPItemStraightLine(ui->coincPlot);
       one_line->setPen(pen);
       one_line->point1->setCoords(0, y_marker.channel - width - 0.5);
@@ -308,6 +362,27 @@ void FormPlot2D::replot_markers() {
       ui->coincPlot->addItem(one_line);
 
     }
+
+    if (show_boxes_) {
+      QCPItemRect *box;
+
+      for (auto &q : boxes_) {
+        if (!q.visible)
+          continue;
+        box = new QCPItemRect(ui->coincPlot);
+        box->setSelected(q.selected);
+        box->setSelectable(true);
+        QColor sel = box->selectedPen().color();
+        box->setSelectedBrush(QBrush(QColor::fromHsv(sel.hsvHue(), sel.saturation(), sel.value(), 64)));
+        box->setBrush(QBrush(pen2.color()));
+        box->setProperty("chan_x", q.x_c);
+        box->setProperty("chan_y", q.y_c);
+        box->topLeft->setCoords(q.x1.channel, q.y1.channel);
+        box->bottomRight->setCoords(q.x2.channel, q.y2.channel);
+        ui->coincPlot->addItem(box);
+      }
+    }
+
   }
 
   ui->coincPlot->replot();
@@ -487,10 +562,9 @@ void FormPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event, b
 
   bool visible = (event->button() == Qt::LeftButton);
 
+  if (gates_movable_) {
   x_marker.bits = bits;
   y_marker.bits = bits;
-  x_marker.visible = visible;
-  y_marker.visible = visible;
 
   if (visible && channels) {
     x_marker.channel = x;
@@ -509,11 +583,16 @@ void FormPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event, b
     y_marker.chan_valid = false;
   }
 
+
+  x_marker.visible = visible;
+  y_marker.visible = visible;
   ext_marker.visible = ext_marker.visible & visible;
+
 
   replot_markers();
 
   emit markers_set(x_marker, y_marker);
+  }
 }
 
 void FormPlot2D::calibrate_markers() {
@@ -536,6 +615,16 @@ void FormPlot2D::set_marker(Marker n) {
     x_marker.visible = false;
     y_marker.visible = false;
   }
+  replot_markers();
+}
+
+void FormPlot2D::set_markers(Marker x, Marker y) {
+  x_marker = x;
+  y_marker = y;
+
+  x_marker.shift(bits);
+  y_marker.shift(bits);
+
   replot_markers();
 }
 

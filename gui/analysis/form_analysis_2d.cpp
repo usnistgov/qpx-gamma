@@ -34,6 +34,7 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   detectors_(newDetDB),
   settings_(settings),
   my_gain_calibration_(nullptr),
+  my_gates_(nullptr),
   gate_x(nullptr),
   gate_y(nullptr),
   second_spectrum_type_(SecondSpectrumType::second_det)
@@ -51,11 +52,22 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   ui->plotMatrix->set_show_selector(false);
 
   my_gain_calibration_ = new FormGainCalibration(settings_, detectors_, fit_data_, fit_data_2_, this);
+  my_gain_calibration_->hide();
+  my_gain_calibration_->blockSignals(true);
   connect(my_gain_calibration_, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
   connect(my_gain_calibration_, SIGNAL(update_detector()), this, SLOT(apply_gain_calibration()));
   connect(my_gain_calibration_, SIGNAL(symmetrize_requested()), this, SLOT(symmetrize()));
+  ui->tabs->addTab(my_gain_calibration_, "Gain calibration");
+
+  my_gates_ = new FormMultiGates(settings_, this);
+  ui->tabs->addTab(my_gates_, "Gates");
+  //my_gates_->hide();
+  //my_gates_->blockSignals(true);
+  connect(my_gates_, SIGNAL(gate_selected()), this, SLOT(remake_gate()));
 
   connect(ui->plotMatrix, SIGNAL(markers_set(Marker,Marker)), this, SLOT(update_gates(Marker,Marker)));
+  connect(ui->plotMatrix, SIGNAL(stuff_selected()), this, SLOT(matrix_selection()));
+
 
   connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
   connect(ui->plotSpectrum2, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
@@ -75,8 +87,8 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   xmax_ = 0;
   ymin_ = 0;
   ymax_ = 0;
-  xc_ = 0;
-  yc_ = 0;
+  xc_ = -1;
+  yc_ = -1;
 
   live_seconds = 0;
   sum_inclusive = 0;
@@ -95,6 +107,105 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
 
 }
 
+void FormAnalysis2D::matrix_selection() {
+  PL_DBG << "User selected peaks in matrix";
+
+  std::list<MarkerBox2D> chosen_peaks = ui->plotMatrix->get_selected_boxes();
+  std::set<double> xs, ys;
+  for (auto &q : chosen_peaks) {
+    xs.insert(q.x_c);
+    ys.insert(q.y_c);
+  }
+
+  for (auto &q : fit_data_.peaks_)
+    q.second.selected = (xs.count(q.second.center) > 0);
+  update_peaks(false);
+}
+
+
+void FormAnalysis2D::remake_gate() {
+  if (!my_gates_)
+    return;
+
+  Gamma::Gate gate = my_gates_->current_gate();
+  PL_DBG << "remake gate c=" << gate.centroid_chan << " w=" << gate.width_chan;
+
+  if (gate.width_chan == 0)
+    return;
+
+  fit_data_ = gate.fit_data_;
+
+  yc_ = xc_ = gate.centroid_chan;
+  double xmin = 0;
+  double xmax = res - 1;
+  double ymin = 0;
+  double ymax = res - 1;
+
+  Marker xx, yy;
+  double width = gate.width_chan / 2;
+  std::vector<MarkerBox2D> boxes;
+
+  if (gate.centroid_chan == -1) {
+    width = res / 2;
+    xx.channel = res / 2;
+    xx.energy = gate.fit_data_.nrg_cali_.transform(res/2);
+    xx.chan_valid = true;
+    xx.energy_valid = true;
+
+    yy.channel = res / 2;
+    yy.energy = gate.fit_data_.nrg_cali_.transform(res/2);
+    yy.chan_valid = true;
+    yy.energy_valid = true;
+
+
+  } else {
+
+    xmin = xc_ - width; if (xmin < 0) xmin = 0;
+    xmax = xc_ + width; if (xmax >= res) xmax = res - 1;
+    ymin = yc_ - width; if (ymin < 0) ymin = 0;
+    ymax = yc_ + width; if (ymax >= res) ymax = res - 1;
+
+    xx.channel = res;
+    xx.energy = gate.fit_data_.nrg_cali_.transform(res);
+    xx.chan_valid = true;
+    xx.energy_valid = true;
+
+    yy.channel = yc_;
+    yy.energy = gate.centroid_nrg;
+    yy.chan_valid = true;
+    yy.energy_valid = true;
+
+    MarkerBox2D box;
+    box.visible = true;
+    box.x1 = xx;
+    box.x2 = xx;
+    box.y1 = yy;
+    box.y2 = yy;
+    box.x1.channel -= width;
+    box.x2.channel += width;
+    box.y1.channel -= width;
+    box.y2.channel += width;
+
+    //boxes.push_back(box);
+
+  }
+  xx.visible = false;
+  yy.visible = true;
+
+  //ui->plotMatrix->set_boxes(boxes);
+
+  if ((xmin != xmin_) || (xmax != xmax_) || (ymin != ymin_) || (ymax != ymax_)
+      || (static_cast<double>(ui->plotMatrix->gate_width()) != width)) {
+    xmin_ = xmin; xmax_ = xmax;
+    ymin_ = ymin; ymax_ = ymax;
+    ui->plotMatrix->set_gate_width(static_cast<uint16_t>(gate.width_chan));
+    ui->plotMatrix->set_markers(xx, yy);
+    if (fit_data_.peaks_.empty())
+      make_gated_spectra();
+    else
+      update_peaks(true);
+  }
+}
 
 void FormAnalysis2D::on_comboPlot2_currentIndexChanged(const QString &arg1)
 {
@@ -109,13 +220,41 @@ void FormAnalysis2D::on_comboPlot2_currentIndexChanged(const QString &arg1)
 }
 
 void FormAnalysis2D::configure_UI() {
+  //while (ui->tabs->count())
+//    ui->tabs->removeTab(0);
+
   ui->plotSpectrum2->setVisible(second_spectrum_type_ != SecondSpectrumType::none);
   ui->plotSpectrum2->blockSignals(second_spectrum_type_ != SecondSpectrumType::none);
 
-  ui->plotMatrix->set_gates_visible(second_spectrum_type_ == SecondSpectrumType::second_det,
+  ui->plotMatrix->set_gates_visible((second_spectrum_type_ == SecondSpectrumType::second_det) ||
+                                    (second_spectrum_type_ == SecondSpectrumType::gain_match),
                                     true,
                                     second_spectrum_type_ == SecondSpectrumType::diagonal);
 
+  ui->plotMatrix->set_gates_movable(second_spectrum_type_ != SecondSpectrumType::none);
+
+  ui->plotMatrix->set_show_boxes(second_spectrum_type_ == SecondSpectrumType::none);
+
+  //if (second_spectrum_type_ == SecondSpectrumType::none) {
+//    PL_DBG << "adding gates tab";
+ //   ui->tabs->addTab(my_gates_, "Gates");
+  //  my_gates_->blockSignals(false);
+  //  my_gates_->show();
+ // } else   {
+ //   my_gates_->hide();
+ //   //my_gates_->blockSignals(true);
+ // }
+
+
+//  if (second_spectrum_type_ == SecondSpectrumType::gain_match)
+//   {
+//    ui->tabs->addTab(my_gain_calibration_, "Gain calibration");
+//    my_gain_calibration_->show();
+//    my_gain_calibration_->blockSignals(false);
+//  } else {
+//    my_gain_calibration_->hide();
+//    my_gain_calibration_->blockSignals(true);
+//  }
 
   make_gated_spectra();
 
@@ -131,8 +270,8 @@ void FormAnalysis2D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
 
 void FormAnalysis2D::reset() {
   initialized = false;
-  while (ui->tabs->count())
-    ui->tabs->removeTab(0);
+//  while (ui->tabs->count())
+//    ui->tabs->removeTab(0);
 }
 
 void FormAnalysis2D::make_gated_spectra() {
@@ -174,7 +313,8 @@ void FormAnalysis2D::make_gated_spectra() {
       tempy->name_ = "diag_slice_" + detector1_.name_;
       tempy->match_pattern = std::vector<int16_t>({1,0});
       tempy->add_pattern = std::vector<int16_t>({1,0});
-    } else if (second_spectrum_type_ == SecondSpectrumType::second_det) {
+    } else if ((second_spectrum_type_ == SecondSpectrumType::second_det) ||
+                (second_spectrum_type_ == SecondSpectrumType::gain_match)) {
       tempy->bits = md.bits;
       tempy->name_ = detector2_.name_ + "[" + to_str_precision(nrg_calibration1_.transform(xmin_), 0) + "," + to_str_precision(nrg_calibration1_.transform(xmax_), 0) + "]";
       tempy->match_pattern = std::vector<int16_t>({1,1});
@@ -189,7 +329,8 @@ void FormAnalysis2D::make_gated_spectra() {
 
       if (second_spectrum_type_ == SecondSpectrumType::diagonal)
         Qpx::Spectrum::slice_diagonal(source_spectrum, gate_y, xc_, yc_, ui->plotMatrix->gate_width(), spectra_->runInfo());
-      else if (second_spectrum_type_ == SecondSpectrumType::second_det)
+      else if ((second_spectrum_type_ == SecondSpectrumType::second_det) ||
+               (second_spectrum_type_ == SecondSpectrumType::gain_match))
         Qpx::Spectrum::slice_rectangular(source_spectrum, gate_y, {{xmin_, xmax_}, {0, adjrange}}, spectra_->runInfo());
 
       fit_data_2_.clear();
@@ -201,7 +342,7 @@ void FormAnalysis2D::make_gated_spectra() {
     ui->labelExclusiveArea->setText(QString::number(sum_exclusive));
     ui->labelExclusiveCps->setText(QString::number(sum_exclusive / live_seconds));
 
-    ui->plotMatrix->refresh();
+//    ui->plotMatrix->refresh();
   }
   this->setCursor(Qt::ArrowCursor);
 }
@@ -219,6 +360,9 @@ void FormAnalysis2D::initialize() {
       Qpx::Spectrum::Metadata md = spectrum->metadata();
       res = md.resolution;
 
+      xc_ = -1;
+      yc_ = -1;
+
       xmin_ = 0;
       xmax_ = res - 1;
       ymin_ = 0;
@@ -230,7 +374,13 @@ void FormAnalysis2D::initialize() {
       if (md.detectors.size() > 1) {
         detector1_ = md.detectors[0];
         detector2_ = md.detectors[1];
+      } else if (md.detectors.size() == 1) {
+        detector2_ = detector1_ = md.detectors[0];
+        //HACK!!!
       }
+
+      PL_DBG << "det1 " << detector1_.name_;
+      PL_DBG << "det2 " << detector2_.name_;
 
       if (detector1_.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits)))
         nrg_calibration1_ = detector1_.energy_calibrations_.get(Gamma::Calibration("Energy", md.bits));
@@ -243,11 +393,11 @@ void FormAnalysis2D::initialize() {
       ui->plotMatrix->setSpectra(*spectra_, current_spectrum_);
       ui->plotMatrix->update_plot(true);
 
-      bool symmetrized = ((detector1_ != Gamma::Detector()) && (detector2_ != Gamma::Detector()) && (detector1_ == detector2_));
+      //need better criterion
+      bool symmetrized = ((detector1_ != Gamma::Detector()) && (detector2_ != Gamma::Detector()) && (detector1_.name_ == detector2_.name_));
 
       if (!symmetrized) {
-        second_spectrum_type_ = SecondSpectrumType::second_det;
-        ui->tabs->addTab(my_gain_calibration_, "Gain calibration");
+        second_spectrum_type_ = SecondSpectrumType::gain_match;
         ui->comboPlot2->setEnabled(false);
       } else
         ui->comboPlot2->setEnabled(true);
@@ -264,7 +414,7 @@ void FormAnalysis2D::update_spectrum() {
     if (spectrum && spectrum->resolution())
       live_seconds = spectrum->metadata().live_time.total_seconds();
 
-    //ui->plotMatrix->update_plot(true);
+    ui->plotMatrix->update_plot(true);
     //ui->plotSpectrum->update_spectrum();
     //ui->plotSpectrum2->update_spectrum();
   }
@@ -303,19 +453,75 @@ void FormAnalysis2D::update_peaks(bool content_changed) {
 
   if (my_gain_calibration_)
     my_gain_calibration_->newSpectrum();
+
+  if (my_gates_) {
+
+    //if (yc_ >= 0) {
+    std::vector<MarkerBox2D> boxes;
+    double width = ui->plotMatrix->gate_width() / 2;
+
+    for (auto &q : fit_data_.peaks_) {
+      Marker xx, yy;
+
+      xx.channel = q.second.center;
+      xx.energy = q.second.energy;
+      xx.chan_valid = true;
+      xx.energy_valid = false;
+
+      yy.channel = yc_;
+      if (yc_ < 0)
+        yy.channel = res / 2;
+      yy.energy = fit_data_.nrg_cali_.transform(yc_);
+      yy.chan_valid = true;
+      yy.energy_valid = false;
+
+      MarkerBox2D box;
+      box.visible = true;
+      box.selected = q.second.selected;
+      box.x_c = xx.channel;
+      box.y_c = yy.channel;
+      box.x1 = xx;
+      box.x2 = xx;
+      box.y1 = yy;
+      box.y2 = yy;
+      box.x1.channel -= (q.second.gaussian_.hwhm_ * 4);
+      box.x2.channel += (q.second.gaussian_.hwhm_ * 4);
+      box.y1.channel -= width;
+      box.y2.channel += width;
+
+      boxes.push_back(box);
+    }
+    ui->plotMatrix->set_boxes(boxes);
+    ui->plotMatrix->replot_markers();
+    //}
+
+    Gamma::Gate gate;
+    gate.fit_data_ = fit_data_;
+    gate.centroid_chan = yc_;
+    gate.centroid_nrg = fit_data_.nrg_cali_.transform(yc_);
+    if (yc_ >= 0) {
+      gate.width_chan = ui->plotMatrix->gate_width();
+      gate.width_nrg = fit_data_.nrg_cali_.transform(ymax_) - fit_data_.nrg_cali_.transform(ymin_);
+    } else {
+      gate.width_chan = res;
+      gate.width_nrg = fit_data_.nrg_cali_.transform(res) - fit_data_.nrg_cali_.transform(0);
+    }
+    my_gates_->update_current_gate(gate);
+  }
 }
 
 void FormAnalysis2D::update_gates(Marker xx, Marker yy) {
-  xc_ = xx.channel;
-  yc_ = yy.channel;
-  int xmin = 0;
-  int xmax = res - 1;
-  int ymin = 0;
-  int ymax = res - 1;
-
+  double xmin = 0;
+  double xmax = res - 1;
+  double ymin = 0;
+  double ymax = res - 1;
+  xc_ = -1;
+  yc_ = -1;
 
   if (xx.visible || yy.visible) {
-    int width = ui->plotMatrix->gate_width() / 2;
+    xc_ = xx.channel;
+    yc_ = yy.channel;
+    double width = ui->plotMatrix->gate_width() / 2;
     xmin = xc_ - width; if (xmin < 0) xmin = 0;
     xmax = xc_ + width; if (xmax >= res) xmax = res - 1;
     ymin = yc_ - width; if (ymin < 0) ymin = 0;
@@ -565,6 +771,10 @@ void FormAnalysis2D::clear() {
   xmin_ = ymin_ = 0;
   xmax_ = ymax_ = 0;
 
+  xc_ = -1;
+  yc_ = -1;
+
+
   live_seconds = 0;
   sum_inclusive = 0;
   sum_exclusive = 0;
@@ -578,8 +788,10 @@ void FormAnalysis2D::clear() {
   detector2_ = Gamma::Detector();
   nrg_calibration2_ = Gamma::Calibration();
 
-  if (my_gain_calibration_)
+  if (my_gain_calibration_->isVisible())
     my_gain_calibration_->clear();
+  if (my_gates_->isVisible())
+    my_gates_->clear();
 }
 
 FormAnalysis2D::~FormAnalysis2D()

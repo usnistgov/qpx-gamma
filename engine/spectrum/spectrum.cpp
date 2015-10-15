@@ -198,7 +198,17 @@ void Spectrum::addRun(const RunInfo& run_info) {
 
   if (run_info.time_start == run_info.time_stop)
     return;
+
   metadata_.real_time = run_info.time_stop - run_info.time_start;
+
+  if (run_info.state.branches.empty()) {       //HACK!!!
+    metadata_.live_time = metadata_.real_time;
+    //PL_DBG << "<Spectrum> making LT = RT ";
+    return;
+  }
+
+  //PL_DBG << "<Spectrum> Calculating LT";
+
   double scale_factor = run_info.time_scale_factor();
   metadata_.live_time = metadata_.real_time;
   for (int i = 0; i < metadata_.add_pattern.size(); i++) { //using shortest live time of all added channels
@@ -452,9 +462,14 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
 
   metadata_.attributes.from_xml(node.child(metadata_.attributes.xml_element_name().c_str()));
 
-  XMLableDB<Gamma::Detector> dets("Detectors");
-  dets.from_xml(node.child("Detectors"));
-  metadata_.detectors = dets.to_vector();
+  if (node.child("Detectors")) {
+    metadata_.detectors.clear();
+    for (auto &q : node.child("Detectors").children()) {
+      Gamma::Detector det;
+      det.from_xml(q);
+      metadata_.detectors.push_back(det);
+    }
+  }
 
   std::string this_data(node.child_value("ChannelData"));
   boost::algorithm::trim(this_data);

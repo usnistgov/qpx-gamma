@@ -29,8 +29,9 @@
 #include "spectrum1D.h"
 #include "spectra_set.h"
 #include "form_gain_calibration.h"
+#include "form_multi_gates.h"
 
-enum class SecondSpectrumType {none, second_det, diagonal};
+enum class SecondSpectrumType {none, second_det, diagonal, gain_match};
 
 namespace Ui {
 class FormAnalysis2D;
@@ -63,8 +64,10 @@ private slots:
   void initialize();
   void apply_gain_calibration();
   void on_comboPlot2_currentIndexChanged(const QString &arg1);
+  void matrix_selection();
 
   void symmetrize();
+  void remake_gate();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -82,7 +85,7 @@ private:
 
   Gamma::Fitter fit_data_, fit_data_2_;
   int res;
-  int xmin_, xmax_, ymin_, ymax_, xc_, yc_;
+  double xmin_, xmax_, ymin_, ymax_, xc_, yc_;
 
   double live_seconds,
          sum_inclusive,
@@ -99,6 +102,7 @@ private:
   AppearanceProfile style_pts, style_fit;
 
   FormGainCalibration* my_gain_calibration_;
+  FormMultiGates*      my_gates_;
 
   //from parent
   QString data_directory_;

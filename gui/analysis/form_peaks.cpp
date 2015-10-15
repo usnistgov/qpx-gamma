@@ -356,7 +356,7 @@ void FormPeaks::on_pushAdd_clicked()
 }
 
 void FormPeaks::user_selected_peaks() {
-  PL_DBG << "User selectd peaks";
+//  PL_DBG << "User selected peaks";
 
   if (fit_data_ == nullptr)
     return;

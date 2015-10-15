@@ -62,8 +62,27 @@ FormCoincPeaks::~FormCoincPeaks()
 }
 
 void FormCoincPeaks::remove_peak() {
-  if (fit_data_)
-    PL_DBG << "Remove peaks for " << fit_data_->metadata_.name;
+  if (!fit_data_)
+    return;
+
+  std::set<double> chosen_peaks;
+  double last_sel = -1;
+  for (auto &q : fit_data_->peaks_)
+    if (q.second.selected) {
+      chosen_peaks.insert(q.second.center);
+      last_sel = q.first;
+    }
+
+  fit_data_->remove_peaks(chosen_peaks);
+
+  for (auto &q : fit_data_->peaks_)
+    if (q.first > last_sel) {
+      q.second.selected = true;
+      break;
+    }
+
+  update_fit(true);
+  emit peaks_changed(true);
 }
 
 void FormCoincPeaks::setFit(Gamma::Fitter* fit) {

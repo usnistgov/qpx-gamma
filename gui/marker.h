@@ -81,4 +81,13 @@ struct Range {
   Marker center, l, r;
 };
 
+struct MarkerBox2D {
+  MarkerBox2D() : visible(false), selected(false) {}
+
+  bool visible;
+  bool selected;
+  Marker x1, x2, y1, y2;
+  double x_c, y_c;
+};
+
 #endif

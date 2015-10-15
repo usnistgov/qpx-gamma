@@ -134,7 +134,7 @@
          <number>0</number>
         </property>
         <item>
-         <spacer name="spacer1">
+         <spacer name="horizontalSpacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
@@ -273,11 +273,6 @@
          </widget>
         </item>
        </layout>
-       <zorder>spacer1</zorder>
-       <zorder>pushAddGamma</zorder>
-       <zorder>pushRemove</zorder>
-       <zorder>pushSum</zorder>
-       <zorder>pushSum</zorder>
       </widget>
      </item>
     </layout>
