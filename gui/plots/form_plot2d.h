@@ -84,6 +84,7 @@ signals:
 private slots:
   void gradientChosen(QAction*);
   void scaleTypeChosen(QAction*);
+  void spectrumDetailsDelete();
 
   //void clicked_plottable(QCPAbstractPlottable*);
   void selection_changed();

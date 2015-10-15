@@ -53,7 +53,7 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
 
   my_gain_calibration_ = new FormGainCalibration(settings_, detectors_, fit_data_, fit_data_2_, this);
   my_gain_calibration_->hide();
-  my_gain_calibration_->blockSignals(true);
+  //my_gain_calibration_->blockSignals(true);
   connect(my_gain_calibration_, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
   connect(my_gain_calibration_, SIGNAL(update_detector()), this, SLOT(apply_gain_calibration()));
   connect(my_gain_calibration_, SIGNAL(symmetrize_requested()), this, SLOT(symmetrize()));
@@ -224,7 +224,7 @@ void FormAnalysis2D::configure_UI() {
 //    ui->tabs->removeTab(0);
 
   ui->plotSpectrum2->setVisible(second_spectrum_type_ != SecondSpectrumType::none);
-  ui->plotSpectrum2->blockSignals(second_spectrum_type_ != SecondSpectrumType::none);
+  ui->plotSpectrum2->blockSignals(second_spectrum_type_ == SecondSpectrumType::none);
 
   ui->plotMatrix->set_gates_visible((second_spectrum_type_ == SecondSpectrumType::second_det) ||
                                     (second_spectrum_type_ == SecondSpectrumType::gain_match),

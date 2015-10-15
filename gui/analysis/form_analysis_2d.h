@@ -55,6 +55,7 @@ signals:
 
 public slots:
   void update_spectrum();
+  void apply_gain_calibration();
 
 private slots:
   void update_gates(Marker, Marker);
@@ -62,7 +63,6 @@ private slots:
   void detectorsUpdated() {emit detectorsChanged();}
   void on_pushAddGatedSpectra_clicked();
   void initialize();
-  void apply_gain_calibration();
   void on_comboPlot2_currentIndexChanged(const QString &arg1);
   void matrix_selection();
 

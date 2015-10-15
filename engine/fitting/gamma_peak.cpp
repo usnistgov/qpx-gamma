@@ -111,6 +111,8 @@ SUM4::SUM4(const std::vector<double> &x,
   B_variance = pow((peak_width / 2.0), 2) * (Lsum / pow(Lw, 2) + Rsum / pow(Rw, 2));
   net_variance = P_area + B_variance;
 
+  //uncertainty = sqrt(net_variance);
+
   err = 100 * sqrt(net_variance) / net_area;
 
   

@@ -684,6 +684,7 @@ void FormPlot2D::on_pushDetails_clicked()
 
   dialog_spectrum* newSpecDia = new dialog_spectrum(*someSpectrum, this);
   connect(newSpecDia, SIGNAL(finished(bool)), this, SLOT(spectrumDetailsClosed(bool)));
+  connect(newSpecDia, SIGNAL(delete_spectrum()), this, SLOT(spectrumDetailsDelete()));
   newSpecDia->exec();
 }
 
@@ -691,6 +692,26 @@ void FormPlot2D::spectrumDetailsClosed(bool changed) {
   if (changed) {
     //replot?
   }
+}
+
+void FormPlot2D::spectrumDetailsDelete()
+{
+
+  PL_INFO << "will delete " << name_2d.toStdString();
+  mySpectra->delete_spectrum(name_2d.toStdString());
+
+  updateUI();
+
+  QString name = ui->comboChose2d->currentText();
+  std::list<Qpx::Spectrum::Spectrum*> spectra = mySpectra->spectra(2, -1);
+
+  for (auto &q : spectra)
+    if (q->name() == name.toStdString())
+      q->set_visible(true);
+    else
+      q->set_visible(false);
+
+  update_plot(true);
 }
 
 void FormPlot2D::on_sliderZoom2d_valueChanged(int value)
