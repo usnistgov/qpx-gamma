@@ -82,6 +82,10 @@ FormPeaks::FormPeaks(QWidget *parent) :
   connect(ui->plot1D, SIGNAL(clickedRight(double)), this, SLOT(removeMovingMarker(double)));
   connect(ui->plot1D, SIGNAL(range_moved()), this, SLOT(range_moved()));
 
+  QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Insert), ui->plot1D);
+  connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushAdd_clicked()));
+
+
 }
 
 FormPeaks::~FormPeaks()
@@ -151,6 +155,14 @@ void FormPeaks::clear() {
   ui->plot1D->clearExtras();
   ui->plot1D->reset_scales();
   replot_all();
+}
+
+
+void FormPeaks::make_range(Marker marker) {
+  if (marker.visible)
+    addMovingMarker(marker.channel);
+  else
+    removeMovingMarker(marker.channel);
 }
 
 
@@ -237,27 +249,47 @@ void FormPeaks::replot_all() {
   }
 
   for (auto &q : fit_data_->multiplets_) {
-    if (ui->checkShowGaussians->isChecked())
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(q.y_fullfit_), multiplet_);
+    if (ui->checkShowGaussians->isChecked()) {
+      std::vector<double> y_fit = q.y_fullfit_;
+      for (auto &p : y_fit)
+        if (p < 1)
+          p = 1;
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(y_fit), multiplet_);
+    }
   }
   
   for (auto &q : fit_data_->peaks_) {
-    if (ui->checkShowPseudoVoigt->isChecked())
+    if (ui->checkShowPseudoVoigt->isChecked()) {
+      std::vector<double> y_fit = q.second.y_fullfit_pseudovoigt_;
+      for (auto &p : y_fit)
+        if (p < 1)
+          p = 1;
       ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
-                           QVector<double>::fromStdVector(q.second.y_fullfit_pseudovoigt_),
+                           QVector<double>::fromStdVector(y_fit),
                            pseudo_voigt_);
+    }
     if (ui->checkShowGaussians->isChecked()) {
+      std::vector<double> y_fit = q.second.y_fullfit_gaussian_;
+      for (auto &p : y_fit)
+        if (p < 1)
+          p = 1;
+
       AppearanceProfile prof = gaussian_;
       if (q.second.flagged)
         prof = flagged_;
       ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
-                           QVector<double>::fromStdVector(q.second.y_fullfit_gaussian_),
+                           QVector<double>::fromStdVector(y_fit),
                            prof);
     }
-    if (ui->checkShowBaselines->isChecked())
+    if (ui->checkShowBaselines->isChecked()) {
+      std::vector<double> y_fit = q.second.y_baseline_;
+      for (auto &p : y_fit)
+        if (p < 1)
+          p = 1;
       ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
-                           QVector<double>::fromStdVector(q.second.y_baseline_),
+                           QVector<double>::fromStdVector(y_fit),
                            baseline_);
+    }
   }
 
   ui->plot1D->setLabels("channel", "counts");
@@ -296,12 +328,14 @@ void FormPeaks::addMovingMarker(double x) {
           << ", edges=[" << range_.l.channel << ", " << range_.r.channel << "]";
 
   replot_markers();
+  emit range_changed(range_);
 }
 
 void FormPeaks::removeMovingMarker(double x) {
   range_.visible = false;
   toggle_push();
   replot_markers();
+  emit range_changed(range_);
 }
 
 
@@ -344,6 +378,9 @@ void FormPeaks::replot_markers() {
 
 void FormPeaks::on_pushAdd_clicked()
 {
+  if (!ui->pushAdd->isEnabled())
+    return;
+
   if (range_.l.channel >= range_.r.channel)
     return;
 
@@ -518,9 +555,10 @@ void FormPeaks::range_moved() {
 }
 
 void FormPeaks::update_fit(bool content_changed) {
-  if (content_changed)
+  if (content_changed) {
+    update_spectrum();
     replot_all();
-  else
+  } else
     replot_markers();
   toggle_push();
 }

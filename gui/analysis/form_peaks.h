@@ -65,6 +65,7 @@ public:
 
   void clear();
   void update_spectrum();
+  void make_range(Marker);
 
   void set_visible_elements(ShowFitElements elems, bool interactive = false);
 
@@ -73,6 +74,7 @@ public:
 
 signals:
   void peaks_changed(bool content_changed);
+  void range_changed(Range range);
 
 private slots:
 

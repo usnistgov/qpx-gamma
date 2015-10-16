@@ -215,7 +215,7 @@
        <item>
         <widget class="QPushButton" name="pushFindPeaks">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -265,12 +265,21 @@
           </size>
          </property>
          <property name="text">
-          <string>Moving avg window (bins)</string>
+          <string>Moving avg (bins)</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QSpinBox" name="spinMovAvg">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimumSize">
           <size>
            <width>0</width>
@@ -312,12 +321,21 @@
           </size>
          </property>
          <property name="text">
-          <string>Minimum peak width (bins)</string>
+          <string>Min peak width (bins)</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QSpinBox" name="spinMinPeakWidth">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimumSize">
           <size>
            <width>0</width>
@@ -356,12 +374,21 @@
           </size>
          </property>
          <property name="text">
-          <string>multiplet overlap width (fraction FWHM)</string>
+          <string>Multiplet overlap (% FWHM)</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QDoubleSpinBox" name="doubleOverlapWidth">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimumSize">
           <size>
            <width>0</width>
@@ -392,6 +419,9 @@
         <spacer name="horizontalSpacer_2">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Preferred</enum>
          </property>
          <property name="sizeHint" stdset="0">
           <size>

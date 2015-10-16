@@ -31,7 +31,7 @@
 #include "form_gain_calibration.h"
 #include "form_multi_gates.h"
 
-enum class SecondSpectrumType {none, second_det, diagonal, gain_match};
+enum class SecondSpectrumType {none, second_det, diagonal, gain_match, boxes};
 
 namespace Ui {
 class FormAnalysis2D;
@@ -58,6 +58,7 @@ public slots:
   void apply_gain_calibration();
 
 private slots:
+  void take_boxes();
   void update_gates(Marker, Marker);
   void update_peaks(bool);
   void detectorsUpdated() {emit detectorsChanged();}
@@ -65,9 +66,10 @@ private slots:
   void initialize();
   void on_comboPlot2_currentIndexChanged(const QString &arg1);
   void matrix_selection();
+  void update_range(Range);
 
   void symmetrize();
-  void remake_gate();
+  void remake_gate(bool);
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -104,10 +106,13 @@ private:
   FormGainCalibration* my_gain_calibration_;
   FormMultiGates*      my_gates_;
 
+  std::list<MarkerBox2D> coincidences_;
+
   //from parent
   QString data_directory_;
   Qpx::SpectraSet *spectra_;
   QString current_spectrum_;
+  MarkerBox2D range2d;
 
   XMLableDB<Gamma::Detector> &detectors_;
 
@@ -119,6 +124,7 @@ private:
   void loadSettings();
   void saveSettings();
   void make_gated_spectra();
+  void show_all_coincidences();
 };
 
 #endif // FORM_ANALYSIS2D_H

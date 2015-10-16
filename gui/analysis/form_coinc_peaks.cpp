@@ -48,6 +48,7 @@ FormCoincPeaks::FormCoincPeaks(QWidget *parent) :
   connect(ui->tablePeaks, SIGNAL(itemSelectionChanged()), this, SLOT(selection_changed_in_table()));
 
   connect(ui->plotPeaks, SIGNAL(peaks_changed(bool)), this, SLOT(peaks_changed_in_plot(bool)));
+  connect(ui->plotPeaks, SIGNAL(range_changed(Range)), this, SLOT(change_range(Range)));
 
   QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tablePeaks);
   connect(shortcut, SIGNAL(activated()), this, SLOT(remove_peak()));
@@ -102,6 +103,14 @@ void FormCoincPeaks::saveSettings(QSettings &settings_) {
   settings_.beginGroup("CoincPeaks");
   ui->plotPeaks->saveSettings(settings_);
   settings_.endGroup();
+}
+
+void FormCoincPeaks::make_range(Marker marker) {
+  ui->plotPeaks->make_range(marker);
+}
+
+void FormCoincPeaks::change_range(Range range) {
+  emit range_changed(range);
 }
 
 void FormCoincPeaks::update_spectrum() {

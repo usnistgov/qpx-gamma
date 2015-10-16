@@ -63,7 +63,8 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   ui->tabs->addTab(my_gates_, "Gates");
   //my_gates_->hide();
   //my_gates_->blockSignals(true);
-  connect(my_gates_, SIGNAL(gate_selected()), this, SLOT(remake_gate()));
+  connect(my_gates_, SIGNAL(gate_selected(bool)), this, SLOT(remake_gate(bool)));
+  connect(my_gates_, SIGNAL(boxes_made()), this, SLOT(take_boxes()));
 
   connect(ui->plotMatrix, SIGNAL(markers_set(Marker,Marker)), this, SLOT(update_gates(Marker,Marker)));
   connect(ui->plotMatrix, SIGNAL(stuff_selected()), this, SLOT(matrix_selection()));
@@ -71,6 +72,8 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
 
   connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
   connect(ui->plotSpectrum2, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
+
+  connect(ui->plotSpectrum, SIGNAL(range_changed(Range)), this, SLOT(update_range(Range)));
 
   tempx = Qpx::Spectrum::Factory::getInstance().create_template("1D");
   tempx->visible = true;
@@ -101,29 +104,58 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   ui->comboPlot2->addItem("2nd detector");
   ui->comboPlot2->addItem("diagonal");
   ui->comboPlot2->addItem("none");
+  ui->comboPlot2->addItem("boxes");
   ui->comboPlot2->blockSignals(false);
 
   //connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
 
 }
 
+void FormAnalysis2D::take_boxes() {
+  coincidences_ = my_gates_->boxes();
+  show_all_coincidences();
+}
+
+void FormAnalysis2D::show_all_coincidences() {
+  ui->plotMatrix->set_boxes(coincidences_);
+  ui->plotMatrix->replot_markers();
+}
+
+
+void FormAnalysis2D::update_range(Range range) {
+  if (second_spectrum_type_ == SecondSpectrumType::none) {
+    range2d.visible = range.visible;
+    range2d.x1 = range.l;
+    range2d.x2 = range.r;
+    update_peaks(false);
+  }
+}
+
+
 void FormAnalysis2D::matrix_selection() {
   PL_DBG << "User selected peaks in matrix";
 
   std::list<MarkerBox2D> chosen_peaks = ui->plotMatrix->get_selected_boxes();
-  std::set<double> xs, ys;
-  for (auto &q : chosen_peaks) {
-    xs.insert(q.x_c);
-    ys.insert(q.y_c);
-  }
 
-  for (auto &q : fit_data_.peaks_)
-    q.second.selected = (xs.count(q.second.center) > 0);
-  update_peaks(false);
+  if (second_spectrum_type_ == SecondSpectrumType::boxes) {
+   for (auto &q : chosen_peaks)
+     for (auto &p : coincidences_)
+       p.selected = (p == q);
+   PL_DBG << "selected some boxes in matrix";
+  } else if (second_spectrum_type_ == SecondSpectrumType::none) {
+    std::set<double> xs, ys;
+    for (auto &q : chosen_peaks) {
+      xs.insert(q.x_c);
+      ys.insert(q.y_c);
+    }
+    for (auto &q : fit_data_.peaks_)
+      q.second.selected = (xs.count(q.second.center) > 0);
+    update_peaks(false);
+  }
 }
 
 
-void FormAnalysis2D::remake_gate() {
+void FormAnalysis2D::remake_gate(bool force) {
   if (!my_gates_)
     return;
 
@@ -142,11 +174,11 @@ void FormAnalysis2D::remake_gate() {
   double ymax = res - 1;
 
   Marker xx, yy;
-  double width = gate.width_chan / 2;
-  std::vector<MarkerBox2D> boxes;
+  double width = gate.width_chan;
 
   if (gate.centroid_chan == -1) {
-    width = res / 2;
+    width = res;
+    gate.width_chan = res;
     xx.channel = res / 2;
     xx.energy = gate.fit_data_.nrg_cali_.transform(res/2);
     xx.chan_valid = true;
@@ -157,6 +189,26 @@ void FormAnalysis2D::remake_gate() {
     yy.chan_valid = true;
     yy.energy_valid = true;
 
+    xmin = 0;
+    xmax = res - 1;
+    ymin = 0;
+    ymax = res - 1;
+
+  } else if (second_spectrum_type_ == SecondSpectrumType::none) {
+    xmin = 0;
+    xmax = xmax = res - 1;
+    ymin = yc_ - (width / 2); if (ymin < 0) ymin = 0;
+    ymax = yc_ + (width / 2); if (ymax >= res) ymax = res - 1;
+
+    xx.channel = res / 2;
+    xx.energy = gate.fit_data_.nrg_cali_.transform(res / 2);
+    xx.chan_valid = true;
+    xx.energy_valid = true;
+
+    yy.channel = yc_;
+    yy.energy = gate.centroid_nrg;
+    yy.chan_valid = true;
+    yy.energy_valid = true;
 
   } else {
 
@@ -165,7 +217,7 @@ void FormAnalysis2D::remake_gate() {
     ymin = yc_ - width; if (ymin < 0) ymin = 0;
     ymax = yc_ + width; if (ymax >= res) ymax = res - 1;
 
-    xx.channel = res;
+    xx.channel = xc_;
     xx.energy = gate.fit_data_.nrg_cali_.transform(res);
     xx.chan_valid = true;
     xx.energy_valid = true;
@@ -175,19 +227,6 @@ void FormAnalysis2D::remake_gate() {
     yy.chan_valid = true;
     yy.energy_valid = true;
 
-    MarkerBox2D box;
-    box.visible = true;
-    box.x1 = xx;
-    box.x2 = xx;
-    box.y1 = yy;
-    box.y2 = yy;
-    box.x1.channel -= width;
-    box.x2.channel += width;
-    box.y1.channel -= width;
-    box.y2.channel += width;
-
-    //boxes.push_back(box);
-
   }
   xx.visible = false;
   yy.visible = true;
@@ -195,7 +234,7 @@ void FormAnalysis2D::remake_gate() {
   //ui->plotMatrix->set_boxes(boxes);
 
   if ((xmin != xmin_) || (xmax != xmax_) || (ymin != ymin_) || (ymax != ymax_)
-      || (static_cast<double>(ui->plotMatrix->gate_width()) != width)) {
+      || (static_cast<double>(ui->plotMatrix->gate_width()) != width) || force) {
     xmin_ = xmin; xmax_ = xmax;
     ymin_ = ymin; ymax_ = ymax;
     ui->plotMatrix->set_gate_width(static_cast<uint16_t>(gate.width_chan));
@@ -213,6 +252,8 @@ void FormAnalysis2D::on_comboPlot2_currentIndexChanged(const QString &arg1)
     second_spectrum_type_ = SecondSpectrumType::diagonal;
   else if (arg1 == "none")
     second_spectrum_type_ = SecondSpectrumType::none;
+  else if (arg1 == "boxes")
+    second_spectrum_type_ = SecondSpectrumType::boxes;
   else
     second_spectrum_type_ = SecondSpectrumType::second_det;
 
@@ -222,18 +263,35 @@ void FormAnalysis2D::on_comboPlot2_currentIndexChanged(const QString &arg1)
 void FormAnalysis2D::configure_UI() {
   //while (ui->tabs->count())
 //    ui->tabs->removeTab(0);
+  bool visible1 = (second_spectrum_type_ != SecondSpectrumType::boxes);
+  bool visible2 = ((second_spectrum_type_ == SecondSpectrumType::diagonal) ||
+                   (second_spectrum_type_ == SecondSpectrumType::second_det) ||
+                   (second_spectrum_type_ == SecondSpectrumType::gain_match));
 
-  ui->plotSpectrum2->setVisible(second_spectrum_type_ != SecondSpectrumType::none);
-  ui->plotSpectrum2->blockSignals(second_spectrum_type_ == SecondSpectrumType::none);
+  bool see_boxes = ((second_spectrum_type_ == SecondSpectrumType::none) ||
+                    (second_spectrum_type_ == SecondSpectrumType::boxes));
+
+  ui->plotSpectrum->setVisible(visible1);
+  ui->plotSpectrum->blockSignals(!visible1);
+
+  ui->plotSpectrum2->setVisible(visible2);
+  ui->plotSpectrum2->blockSignals(!visible2);
+  ui->plotMatrix->set_gates_movable(visible2);
 
   ui->plotMatrix->set_gates_visible((second_spectrum_type_ == SecondSpectrumType::second_det) ||
                                     (second_spectrum_type_ == SecondSpectrumType::gain_match),
-                                    true,
+                                    visible1,
                                     second_spectrum_type_ == SecondSpectrumType::diagonal);
 
-  ui->plotMatrix->set_gates_movable(second_spectrum_type_ != SecondSpectrumType::none);
+  ui->plotMatrix->set_show_boxes(see_boxes);
 
-  ui->plotMatrix->set_show_boxes(second_spectrum_type_ == SecondSpectrumType::none);
+  if (!visible1)
+    ui->plotMatrix->set_markers(Marker(), Marker());
+
+  if (visible1)
+    make_gated_spectra();
+  else
+    show_all_coincidences();
 
   //if (second_spectrum_type_ == SecondSpectrumType::none) {
 //    PL_DBG << "adding gates tab";
@@ -255,8 +313,6 @@ void FormAnalysis2D::configure_UI() {
 //    my_gain_calibration_->hide();
 //    my_gain_calibration_->blockSignals(true);
 //  }
-
-  make_gated_spectra();
 
 }
 
@@ -457,7 +513,7 @@ void FormAnalysis2D::update_peaks(bool content_changed) {
   if (my_gates_) {
 
     //if (yc_ >= 0) {
-    std::vector<MarkerBox2D> boxes;
+    std::list<MarkerBox2D> boxes;
     double width = ui->plotMatrix->gate_width() / 2;
 
     for (auto &q : fit_data_.peaks_) {
@@ -484,14 +540,17 @@ void FormAnalysis2D::update_peaks(bool content_changed) {
       box.x2 = xx;
       box.y1 = yy;
       box.y2 = yy;
-      box.x1.channel -= (q.second.gaussian_.hwhm_ * 4);
-      box.x2.channel += (q.second.gaussian_.hwhm_ * 4);
+      box.x1.channel -= (q.second.gaussian_.hwhm_ * my_gates_->width_factor());
+      box.x2.channel += (q.second.gaussian_.hwhm_ * my_gates_->width_factor());
       box.y1.channel -= width;
       box.y2.channel += width;
 
       boxes.push_back(box);
+      range2d.y1 = box.y1;
+      range2d.y2 = box.y2;
     }
     ui->plotMatrix->set_boxes(boxes);
+    ui->plotMatrix->set_range_x(range2d);
     ui->plotMatrix->replot_markers();
     //}
 
@@ -511,6 +570,14 @@ void FormAnalysis2D::update_peaks(bool content_changed) {
 }
 
 void FormAnalysis2D::update_gates(Marker xx, Marker yy) {
+  if (second_spectrum_type_ == SecondSpectrumType::none) {
+    ui->plotSpectrum->make_range(xx);
+    return;
+  } else if (second_spectrum_type_ == SecondSpectrumType::boxes) {
+    PL_DBG << "make 2D range, unimplemented";
+    return;
+  }
+
   double xmin = 0;
   double xmax = res - 1;
   double ymin = 0;
@@ -756,6 +823,9 @@ void FormAnalysis2D::loadSettings() {
 
 void FormAnalysis2D::saveSettings() {
   ui->plotSpectrum->saveSettings(settings_);
+
+  if (my_gates_)
+    my_gates_->saveSettings();
 
   settings_.beginGroup("AnalysisMatrix");
   settings_.setValue("zoom", ui->plotMatrix->zoom());

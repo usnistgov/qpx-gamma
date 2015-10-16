@@ -167,7 +167,7 @@ void FormOptimization::closeEvent(QCloseEvent *event) {
   }
 
 
-  if (!spectra_y_.empty()) {
+  if (!spectra_.empty()) {
     int reply = QMessageBox::warning(this, "Optimization data still open",
                                      "Discard?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
@@ -201,8 +201,8 @@ void FormOptimization::toggle_push(bool enable, Qpx::DeviceStatus status) {
 
 void FormOptimization::on_pushStart_clicked()
 {
-  spectra_y_.clear();
-  spectra_app_.clear();
+  spectra_.clear();
+  fitter_opt_ = Gamma::Fitter();
   peaks_.clear();
   setting_values_.clear();
   setting_fwhm_.clear();
@@ -258,14 +258,10 @@ void FormOptimization::do_run()
   current_spectra_.clear();
   current_spectra_.set_spectra(db);
   peaks_.push_back(Gamma::Peak());
-  spectra_y_.push_back(std::vector<double>());
-  spectra_app_.push_back(0);
+  spectra_.push_back(Gamma::Fitter());
 
   ui->plot->clearGraphs();
   ui->plot2->clearGraphs();
-
-  x.resize(pow(2,bits), 0.0);
-  y_opt.resize(pow(2,bits), 0.0);
 
   Gamma::Setting set(current_setting_, ui->spinOptChan->value());
 
@@ -306,23 +302,13 @@ void FormOptimization::do_post_processing() {
 }
 
 bool FormOptimization::find_peaks() {
-
-  int xmin = a.channel;
-  int xmax = b.channel;
-
-  if (xmin < 0)
-    xmin = 0;
-  if (xmax >= x.size())
-    xmax = x.size() - 1;
-
   if (moving_.visible) {
 
-    PL_DBG << "<Optimization> Looking for peak on [" << xmin << ", " << xmax << "]";
+//    PL_DBG << "<Optimization> Looking for peak on [" << xmin << ", " << xmax << "]";
 
-    Gamma::Fitter finder_opt(x, y_opt, xmin, xmax, ui->spinMovAvg->value());
-    finder_opt.find_peaks(ui->spinMinPeakWidth->value());
-    if (finder_opt.peaks_.size())
-      peaks_[peaks_.size() - 1] = finder_opt.peaks_.begin()->second;
+    fitter_opt_.find_peaks(ui->spinMinPeakWidth->value());
+    if (fitter_opt_.peaks_.size())
+      peaks_[peaks_.size() - 1] = fitter_opt_.peaks_.begin()->second;
 
     return true;
   } else
@@ -338,34 +324,13 @@ void FormOptimization::update_plots() {
       md = q->metadata();
 
     if (md.total_count > 0) {
-      int current_spec = spectra_y_.size() - 1;
+      int current_spec = spectra_.size() - 1;
 
-      uint32_t res = pow(2, bits);
-      spectra_app_[current_spec] = md.appearance;
-      std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
-          std::move(q->get_spectrum({{0, res}}));
-
-      x.resize(res, 0);
-      for (std::size_t i=0; i < res; i++)
-        x[i] = i;
-
-      y_opt.resize(res, 0);
-      int xx = 0;
-      for (auto it : *spectrum_data) {
-        double yy = it.second;
-        y_opt[it.first[0]] = yy;
-        if (!minima.count(xx) || (minima[xx] > yy))
-          minima[xx] = yy;
-        if (!maxima.count(xx) || (maxima[xx] < yy))
-          maxima[xx] = yy;
-        ++xx;
-      }
-
+      fitter_opt_.setData(q);
 
       find_peaks();
-      spectra_y_[current_spec] = y_opt;
+      spectra_[current_spec] = fitter_opt_;
       setting_fwhm_[current_spec] = peaks_[current_spec].gaussian_.hwhm_ * 2;
-
 
       ui->tableResults->setRowCount(peaks_.size());
       QTableWidgetItem *en = new QTableWidgetItem(QString::number(setting_values_[current_spec]));
@@ -385,31 +350,27 @@ void FormOptimization::update_plots() {
     std::string new_label = boost::algorithm::trim_copy(current_spectra_.status());
     ui->plot->setTitle(QString::fromStdString(new_label));
 
-    for (int i=0; i < spectra_y_.size(); ++i) {
-      QColor this_color = QColor::fromRgba(spectra_app_[i]);
+    for (int i=0; i < spectra_.size(); ++i) {
+      QColor this_color = QColor::fromRgba(spectra_[i].metadata_.appearance);
       if (i + 1 == peaks_.size()) {
         this_color.setAlpha(255);
 
-        if (x.size() == spectra_y_[i].size()) {
-          Gamma::Fitter spectrum_data_(x, spectra_y_[i], ui->spinMovAvg->value());
-          spectrum_data_.find_prelim();
-          spectrum_data_.filter_prelim(ui->spinMinPeakWidth->value());
-
+        if (!spectra_[i].x_.empty()) {
           //plot_derivs(spectrum_data_);
 
           QVector<double> xx, yy;
 
           xx.clear(); yy.clear();
-          for (auto &q : spectrum_data_.prelim) {
+          for (auto &q : spectra_[i].prelim) {
             xx.push_back(q);
-            yy.push_back(spectra_y_[i][q]);
+            yy.push_back(spectra_[i].y_[q]);
           }
           if (yy.size())
             ui->plot->addPoints(xx, yy, prelim_peak_, QCPScatterStyle::ssDiamond);
 
-          for (auto &q : spectrum_data_.filtered) {
+          for (auto &q : spectra_[i].filtered) {
             xx.push_back(q);
-            yy.push_back(spectra_y_[i][q]);
+            yy.push_back(spectra_[i].y_[q]);
           }
           if (yy.size())
             ui->plot->addPoints(xx, yy, filtered_peak_, QCPScatterStyle::ssDiamond);
@@ -422,8 +383,8 @@ void FormOptimization::update_plots() {
 
       AppearanceProfile profile;
       profile.default_pen = QPen(this_color, 1);
-      ui->plot->addGraph(QVector<double>::fromStdVector(x),
-                         QVector<double>::fromStdVector(spectra_y_[i]),
+      ui->plot->addGraph(QVector<double>::fromStdVector(spectra_[i].x_),
+                         QVector<double>::fromStdVector(spectra_[i].y_),
                          profile);
 
     }
@@ -443,7 +404,7 @@ void FormOptimization::plot_derivs(Gamma::Fitter &data)
   QVector<double> temp_y, temp_x;
   int was = 0, is = 0;
 
-  for (int i = 0; i < x.size(); ++i) {
+  for (int i = 0; i < data.x_.size(); ++i) {
     if (data.deriv1[i] > 0)
       is = 1;
     else if (data.deriv1[i] < 0)

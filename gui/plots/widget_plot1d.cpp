@@ -272,7 +272,11 @@ void WidgetPlot1D::plot_rezoom() {
 
   //PL_DBG << "Rezoom";
 
-  ui->mcaPlot->yAxis->setRange(miny, maxy);
+//  if (miny == 0)
+//    ui->mcaPlot->yAxis->rescale();
+//  else
+  ui->mcaPlot->yAxis->setRangeLower(miny);
+  ui->mcaPlot->yAxis->setRangeUpper(maxy);
 }
 
 void WidgetPlot1D::calc_y_bounds(double lower, double upper) {
@@ -290,8 +294,8 @@ void WidgetPlot1D::calc_y_bounds(double lower, double upper) {
 
   maxy = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(maxy) - 75);
 
-  if ((maxy > 1) && (miny == 0))
-    miny = 1;
+  /*if ((maxy > 1) && (miny == 0))
+    miny = 1;*/
 }
 
 void WidgetPlot1D::setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2) {

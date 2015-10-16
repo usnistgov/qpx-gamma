@@ -112,6 +112,10 @@ void FormPlot2D::selection_changed() {
   emit stuff_selected();
 }
 
+void FormPlot2D::set_range_x(MarkerBox2D range) {
+  range_ = range;
+}
+
 
 void FormPlot2D::setSpectra(Qpx::SpectraSet& new_set, QString spectrum) {
 //  PL_DBG << "setSpectra with " << spectrum.toStdString();
@@ -146,7 +150,7 @@ std::list<MarkerBox2D> FormPlot2D::get_selected_boxes() {
 }
 
 
-void FormPlot2D::set_boxes(std::vector<MarkerBox2D> boxes) {
+void FormPlot2D::set_boxes(std::list<MarkerBox2D> boxes) {
   boxes_ = boxes;
 }
 
@@ -279,7 +283,7 @@ void FormPlot2D::replot_markers() {
     pen.setColor(cc);
     pen.setWidth(3);
 
-    int width = (ui->spinGateWidth->value() - 1) / 2;
+    int width = ui->spinGateWidth->value() / 2;
 
     QPen pen2 = pen;
     cc.setAlpha(64);
@@ -297,7 +301,7 @@ void FormPlot2D::replot_markers() {
       QCPItemRect *box = new QCPItemRect(ui->coincPlot);
       box->setPen(pen);
       box->topLeft->setCoords(0, y_marker.channel - width);
-      box->bottomRight->setCoords(x_marker.channel, y_marker.channel + width);
+      box->bottomRight->setCoords(2 * x_marker.channel, y_marker.channel + width);
       ui->coincPlot->addItem(box);
     }
 
@@ -381,6 +385,17 @@ void FormPlot2D::replot_markers() {
         box->bottomRight->setCoords(q.x2.channel, q.y2.channel);
         ui->coincPlot->addItem(box);
       }
+    }
+
+
+    if (range_.visible) {
+      QCPItemRect *box = new QCPItemRect(ui->coincPlot);
+      box->setSelectable(false);
+      box->setPen(pen_strong);
+      box->setBrush(QBrush(pen2.color()));
+      box->topLeft->setCoords(range_.x1.channel, range_.y1.channel);
+      box->bottomRight->setCoords(range_.x2.channel, range_.y2.channel);
+      ui->coincPlot->addItem(box);
     }
 
   }
@@ -514,7 +529,8 @@ void FormPlot2D::update_plot(bool force) {
         if (!calib_y_.bits_)
           calib_y_.bits_ = bits;
 
-        calibrate_markers();
+        calibrate_marker(x_marker);
+        calibrate_marker(y_marker);
 
         if (!ui->spinGateWidth->isVisible())
           colorMap->data()->setRange(QCPRange(0, calib_x_.transform(adjrange - 1, bits)),
@@ -562,48 +578,46 @@ void FormPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event, b
 
   bool visible = (event->button() == Qt::LeftButton);
 
-  if (gates_movable_) {
-  x_marker.bits = bits;
-  y_marker.bits = bits;
+  Marker xt(x_marker), yt(y_marker);
+
+  xt.bits = bits;
+  yt.bits = bits;
+  xt.visible = visible;
+  yt.visible = visible;
 
   if (visible && channels) {
-    x_marker.channel = x;
-    y_marker.channel = y;
-    x_marker.chan_valid = true;
-    y_marker.chan_valid = true;
-    x_marker.energy_valid = false;
-    y_marker.energy_valid = false;
-    calibrate_markers();
+    xt.channel = x;
+    yt.channel = y;
+    xt.chan_valid = true;
+    yt.chan_valid = true;
+    xt.energy_valid = false;
+    yt.energy_valid = false;
+    calibrate_marker(xt);
+    calibrate_marker(yt);
   } else if (visible && !channels){
-    x_marker.energy = x;
-    y_marker.energy = y;
-    x_marker.energy_valid = true;
-    y_marker.energy_valid = true;
-    x_marker.chan_valid = false;
-    y_marker.chan_valid = false;
+    xt.energy = x;
+    yt.energy = y;
+    xt.energy_valid = true;
+    yt.energy_valid = true;
+    xt.chan_valid = false;
+    yt.chan_valid = false;
   }
 
 
-  x_marker.visible = visible;
-  y_marker.visible = visible;
-  ext_marker.visible = ext_marker.visible & visible;
-
-
-  replot_markers();
-
-  emit markers_set(x_marker, y_marker);
+  if (gates_movable_) {
+    x_marker = xt;
+    y_marker = yt;
+    ext_marker.visible = ext_marker.visible & visible;
+    replot_markers();
   }
+
+  emit markers_set(xt, yt);
 }
 
-void FormPlot2D::calibrate_markers() {
-  if (!x_marker.energy_valid && x_marker.chan_valid) {
-    x_marker.energy = calib_x_.transform(x_marker.channel, x_marker.bits);
-    x_marker.energy_valid = (calib_x_.units_ != "channels");
-  }
-
-  if (!y_marker.energy_valid && y_marker.chan_valid) {
-    y_marker.energy = calib_y_.transform(y_marker.channel, y_marker.bits);
-    y_marker.energy_valid = (calib_y_.units_ != "channels");
+void FormPlot2D::calibrate_marker(Marker &marker) {
+  if (!marker.energy_valid && marker.chan_valid) {
+    marker.energy = calib_x_.transform(marker.channel, marker.bits);
+    marker.energy_valid = (calib_x_.units_ != "channels");
   }
 }
 

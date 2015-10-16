@@ -50,14 +50,18 @@ public:
   void update_spectrum();
 
   void update_fit(bool content_changed = false);
+  void make_range(Marker);
 
   void loadSettings(QSettings &settings_);
   void saveSettings(QSettings &settings_);
 
 signals:
   void peaks_changed(bool content_changed);
+  void range_changed(Range range);
 
 private slots:
+  void change_range(Range range);
+
   void selection_changed_in_table();
   void peaks_changed_in_plot(bool);
   void remove_peak();

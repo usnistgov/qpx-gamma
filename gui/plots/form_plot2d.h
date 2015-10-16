@@ -49,7 +49,7 @@ public:
   void replot_markers();
   void reset_content();
 
-  void set_boxes(std::vector<MarkerBox2D> boxes);
+  void set_boxes(std::list<MarkerBox2D> boxes);
 
   void set_scale_type(QString);
   void set_gradient(QString);
@@ -60,6 +60,8 @@ public:
   QString gradient();
   double zoom();
   bool show_legend();
+
+  void set_range_x(MarkerBox2D);
 
   std::list<MarkerBox2D> get_selected_boxes();
 
@@ -135,13 +137,14 @@ private:
     ext_marker, x_marker, y_marker; //actual data
   bool gate_vertical_, gate_horizontal_, gate_diagonal_, gates_movable_, show_boxes_;
 
-  std::vector<MarkerBox2D> boxes_;
+  std::list<MarkerBox2D> boxes_;
+  MarkerBox2D range_;
 
   //scaling
   int bits;
   Gamma::Calibration calib_x_, calib_y_;
 
-  void calibrate_markers();
+  void calibrate_marker(Marker&);
   void make_marker(Marker&);
 };
 

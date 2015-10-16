@@ -30,6 +30,7 @@
 #include <QWidget>
 #include <QSettings>
 #include "gates.h"
+#include "marker.h"
 
 namespace Ui {
 class FormMultiGates;
@@ -74,17 +75,33 @@ public:
 
   void update_current_gate(Gamma::Gate);
   Gamma::Gate current_gate();
+  std::list<MarkerBox2D> boxes() {return all_boxes_;}
+  double width_factor();
 
   void clear();
 
+  void loadSettings();
+  void saveSettings();
+
+
 signals:
-  void gate_selected();
+  void gate_selected(bool);
+  void boxes_made();
+
+protected:
+  void closeEvent(QCloseEvent*);
 
 private slots:
   void selection_changed(QItemSelection,QItemSelection);
   void on_pushApprove_clicked();
 
   void on_pushRemove_clicked();
+
+  void on_pushDistill_clicked();
+
+  void on_doubleGateOn_editingFinished();
+
+  void on_doubleOverlaps_editingFinished();
 
 private:
   Ui::FormMultiGates *ui;
@@ -100,8 +117,8 @@ private:
   //from parent
   QString data_directory_;
 
-  void loadSettings();
-  void saveSettings();
+
+  std::list<MarkerBox2D> all_boxes_;
 
   int32_t index_of(double, bool fuzzy);
   uint32_t current_idx();

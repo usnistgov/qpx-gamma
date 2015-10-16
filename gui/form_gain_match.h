@@ -96,6 +96,7 @@ private:
 
   int bits, current_pass, max_passes;
 
+  Gamma::Fitter fitter_ref_, fitter_opt_;
   Gamma::Peak gauss_ref_, gauss_opt_;
 
   CustomTimer* minTimer;

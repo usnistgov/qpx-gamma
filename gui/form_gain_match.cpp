@@ -273,23 +273,15 @@ void FormGainMatch::do_post_processing() {
 
 bool FormGainMatch::find_peaks() {
   if (moving_.visible) {
-    int xmin = moving_.channel - ui->spinPeakWindow->value() / 2;
-    int xmax = moving_.channel + ui->spinPeakWindow->value() / 2;
 
-    if (xmin < 0) xmin = 0;
-    if (xmax >= x.size()) xmax = x.size() - 1;
+    fitter_ref_.find_peaks(5);
+    fitter_opt_.find_peaks(5);
 
-    Gamma::Fitter finder_ref(x, y_ref, xmin, xmax, 25);
-    Gamma::Fitter finder_opt(x, y_opt, xmin, xmax, 25);
+    if (fitter_ref_.peaks_.size())
+      gauss_ref_ = fitter_ref_.peaks_.begin()->second;
 
-    finder_ref.find_peaks(5);
-    finder_opt.find_peaks(5);
-
-    if (finder_ref.peaks_.size())
-      gauss_ref_ = finder_ref.peaks_.begin()->second;
-
-    if (finder_opt.peaks_.size())
-      gauss_opt_ = finder_opt.peaks_.begin()->second;
+    if (fitter_opt_.peaks_.size())
+      gauss_opt_ = fitter_opt_.peaks_.begin()->second;
 
     if (gauss_ref_.gaussian_.height_ && gauss_opt_.gaussian_.height_)
       return true;
@@ -317,31 +309,20 @@ void FormGainMatch::update_plots() {
 
       if (md.total_count > 0) {
 
-        uint32_t res = pow(2, bits);
-        uint32_t app = md.appearance;
-        std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
-            std::move(q->get_spectrum({{0, res}}));
+        std::vector<double> x, y;
 
-        std::vector<double> y(res, 0.0);
-        int xx = 0;
-        for (auto it : *spectrum_data) {
-          double yy = it.second;
-          y[xx] = yy;
-          x[xx] = xx;
-          if (!minima.count(xx) || (minima[xx] > yy))
-            minima[xx] = yy;
-          if (!maxima.count(xx) || (maxima[xx] < yy))
-            maxima[xx] = yy;
-          ++xx;
+        if (md.name == "Reference") {
+          fitter_ref_.setData(q);
+          y = y_ref = fitter_ref_.y_;
+          x = fitter_ref_.x_;
+        } else {
+          fitter_opt_.setData(q);
+          y = y_opt = fitter_opt_.y_;
+          x = fitter_opt_.x_;
         }
 
-        if (md.name == "Reference")
-          y_ref = y;
-        else
-          y_opt = y;
-
         AppearanceProfile profile;
-        profile.default_pen = QPen(QColor::fromRgba(app), 1);
+        profile.default_pen = QPen(QColor::fromRgba(md.appearance), 1);
         ui->plot->addGraph(QVector<double>::fromStdVector(x),
                            QVector<double>::fromStdVector(y),
                            profile);

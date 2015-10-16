@@ -37,6 +37,13 @@ struct AppearanceProfile {
 };
 
 struct Marker {
+  bool operator!= (const Marker& other) const { return (!operator==(other)); }
+  bool operator== (const Marker& other) const {
+    if (energy != other.energy) return false;
+    if (channel != other.channel) return false;
+    return true;
+  }
+
   double energy, channel;
   uint16_t bits;
 
@@ -83,6 +90,15 @@ struct Range {
 
 struct MarkerBox2D {
   MarkerBox2D() : visible(false), selected(false) {}
+  bool operator== (const MarkerBox2D& other) const {
+    if (x1 != other.x1) return false;
+    if (x2 != other.x2) return false;
+    if (y1 != other.y1) return false;
+    if (y2 != other.y2) return false;
+    if (x_c != other.x_c) return false;
+    if (y_c != other.y_c) return false;
+    return true;
+  }
 
   bool visible;
   bool selected;

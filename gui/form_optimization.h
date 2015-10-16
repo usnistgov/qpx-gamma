@@ -93,16 +93,15 @@ private:
   ThreadPlotSignal     opt_plot_thread_;
   boost::atomic<bool>  interruptor_;
 
-  std::vector<double> x, y_opt;
-  std::vector<std::vector<double>> spectra_y_;
-  std::vector<uint32_t> spectra_app_;
-
   double val_min, val_max, val_d, val_current;
 
   bool my_run_;
 
   Marker moving_, a, b;
   int bits;
+
+  Gamma::Fitter fitter_opt_;
+  std::vector<Gamma::Fitter> spectra_;
 
   AppearanceProfile prelim_peak_, filtered_peak_,
                     gaussian_, baseline_,

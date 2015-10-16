@@ -26,32 +26,6 @@
 
 namespace Gamma {
 
-void Fitter::setXY(std::vector<double> x, std::vector<double> y, uint16_t avg_window)
-{
-  x_.clear(); y_.clear();
-  if (y.size() == x.size()) {
-    x_ = x;
-    y_ = y;
-  }
-  x_nrg_ = nrg_cali_.transform(x);
-  set_mov_avg(avg_window);
-  deriv();
-}
-
-
-void Fitter::setXY(std::vector<double> x, std::vector<double> y,  uint16_t min, uint16_t max, uint16_t avg_window)
-{
-  x_.clear(); y_.clear(); x_nrg_.clear();
-  if ((y.size() == x.size()) && (min < max) && ((max+1) < x.size())) {
-    for (int i=min; i<=max; ++i) {
-      x_.push_back(x[i]);
-      y_.push_back(y[i]);
-    }
-    x_nrg_ = nrg_cali_.transform(x_);
-  }  
-  set_mov_avg(avg_window);
-}
-
 void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
 {
 //  clear();
@@ -85,8 +59,13 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
     for (auto it : *spectrum_dump) {
       x_.push_back(static_cast<double>(i));
       y_.push_back(it.second);
+      if (it.second > 0)
+        x_bound = i+1;
       i++;
     }
+
+    x_.resize(x_bound);
+    y_.resize(x_bound);
 
     x_nrg_ = nrg_cali_.transform(x_);
     set_mov_avg(avg_window_);

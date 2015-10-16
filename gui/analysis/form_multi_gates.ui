@@ -20,6 +20,9 @@
       <layout class="QHBoxLayout" name="horizontalLayout_5">
        <item>
         <widget class="QPushButton" name="pushRemove">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="text">
           <string>Remove</string>
          </property>
@@ -27,6 +30,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="pushApprove">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="text">
           <string>Generate</string>
          </property>
@@ -282,6 +288,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="pushDistill">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
        <property name="text">
         <string>Distill</string>
        </property>
@@ -306,7 +315,14 @@
     </layout>
    </item>
    <item row="0" column="0">
-    <widget class="QTableView" name="tableGateList"/>
+    <widget class="QTableView" name="tableGateList">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

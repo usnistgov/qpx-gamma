@@ -37,15 +37,16 @@ public:
       : overlap_(4.0)
       , avg_window_(1)
       , activity_scale_factor_(1.0)
+      , x_bound(0)
   {}
   
-  Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t avg_window = 1)
-      : Fitter()
-  {setXY(x, y, avg_window);}
+//  Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t avg_window = 1)
+//      : Fitter()
+//  {setXY(x, y, avg_window);}
 
-  Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t min, uint16_t max, uint16_t avg_window = 1)
-      : Fitter()
-  {setXY(x, y, min, max, avg_window);}
+//  Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t min, uint16_t max, uint16_t avg_window = 1)
+//      : Fitter()
+//  {setXY(x, y, min, max, avg_window);}
 
   Fitter(Qpx::Spectrum::Spectrum *spectrum, uint16_t avg_window = 1)
       : Fitter()
@@ -53,8 +54,6 @@ public:
 
   void clear();
   
-  void setXY(std::vector<double> x, std::vector<double> y, uint16_t avg_window = 1);
-  void setXY(std::vector<double> x, std::vector<double> y, uint16_t min, uint16_t max, uint16_t avg_window = 1);
   void setData(Qpx::Spectrum::Spectrum *spectrum);
 
   void set_mov_avg(uint16_t);
@@ -83,6 +82,7 @@ public:
   double activity_scale_factor_;
   
   std::vector<double> x_, x_nrg_, y_, y_avg_, deriv1, deriv2;
+  uint32_t x_bound;
 
   std::vector<uint16_t> prelim, filtered, lefts, rights, lefts_t, rights_t;
   
