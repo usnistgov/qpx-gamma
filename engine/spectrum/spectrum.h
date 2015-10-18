@@ -68,7 +68,7 @@ struct Metadata {
   boost::posix_time::ptime  start_time;
   std::vector<Gamma::Detector> detectors;
 
- Metadata() : bits(0), dimensions(0), resolution(0), attributes("GenericAttributes"),
+ Metadata() : bits(0), dimensions(0), resolution(0), attributes("Attributes"),
     name("uninitialized_spectrum"), total_count(0.0), max_chan(0),
     appearance(0), visible(false) {}
 };
@@ -134,7 +134,8 @@ public:
   void set_start_time(boost::posix_time::ptime newtime);
   void set_description(std::string newdesc);
   void set_generic_attr(Gamma::Setting setting);
-
+  void set_real_time(boost::posix_time::time_duration);
+  void set_live_time(boost::posix_time::time_duration);
 
 protected:
   ////////////////////////////////////////
@@ -167,6 +168,7 @@ protected:
 
   void recalc_energies();
   Gamma::Setting get_attr(std::string name) const;
+  virtual XMLableDB<Gamma::Setting> default_settings() const = 0;
 
   //////////////////////////////
   ///////member variables///////

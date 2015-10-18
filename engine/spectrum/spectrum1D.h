@@ -45,6 +45,7 @@ public:
 
 protected:
   std::string my_type() const override {return "1D";}
+  XMLableDB<Gamma::Setting> default_settings() const override {return this->get_template().generic_attributes; }
 
   //1D is ok with all patterns
   bool initialize() override {

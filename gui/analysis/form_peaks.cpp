@@ -253,7 +253,7 @@ void FormPeaks::replot_all() {
       std::vector<double> y_fit = q.y_fullfit_;
       for (auto &p : y_fit)
         if (p < 1)
-          p = 1;
+          p = std::floor(p * 10 + 0.5)/10;
       ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(y_fit), multiplet_);
     }
   }
@@ -263,7 +263,7 @@ void FormPeaks::replot_all() {
       std::vector<double> y_fit = q.second.y_fullfit_pseudovoigt_;
       for (auto &p : y_fit)
         if (p < 1)
-          p = 1;
+          p = std::floor(p * 10 + 0.5)/10;
       ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
                            QVector<double>::fromStdVector(y_fit),
                            pseudo_voigt_);
@@ -272,7 +272,7 @@ void FormPeaks::replot_all() {
       std::vector<double> y_fit = q.second.y_fullfit_gaussian_;
       for (auto &p : y_fit)
         if (p < 1)
-          p = 1;
+          p = std::floor(p * 10 + 0.5)/10;
 
       AppearanceProfile prof = gaussian_;
       if (q.second.flagged)
@@ -285,7 +285,7 @@ void FormPeaks::replot_all() {
       std::vector<double> y_fit = q.second.y_baseline_;
       for (auto &p : y_fit)
         if (p < 1)
-          p = 1;
+          p = std::floor(p * 10 + 0.5)/10;
       ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
                            QVector<double>::fromStdVector(y_fit),
                            baseline_);

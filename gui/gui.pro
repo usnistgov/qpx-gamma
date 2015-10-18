@@ -70,6 +70,7 @@ HEADERS  += $$files($$PWD/*.h) \
 FORMS   += $$files($$PWD/*.ui) \
            $$files($$PWD/plots/*.ui) \
            $$files($$PWD/analysis/*.ui) \
+           $$files($$PWD/widgets/*.ui) \
            $$files($$PWD/daq/*.ui)
 
 RESOURCES += $$files($$PWD/resources/*.qrc)

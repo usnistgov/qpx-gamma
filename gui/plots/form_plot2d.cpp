@@ -286,15 +286,20 @@ void FormPlot2D::replot_markers() {
     int width = ui->spinGateWidth->value() / 2;
 
     QPen pen2 = pen;
-    cc.setAlpha(64);
+    cc.setAlpha(48);
     pen2.setColor(cc);
     pen2.setWidth(width * 2);
 
     QPen pen_strong = pen;
     cc.setAlpha(255);
-    cc.setHsv(cc.hsvHue(), 255, 128, 255);
+    cc.setHsv((cc.hsvHue() + 180) % 180, 255, 128, 255);
     pen_strong.setColor(cc);
     pen_strong.setWidth(3);
+
+    QPen pen_strong2 = pen_strong;
+    cc.setAlpha(64);
+    pen_strong2.setColor(cc);
+    pen_strong2.setWidth(width * 2);
 
     if (show_boxes_) {
       pen.setWidth(1);
@@ -377,7 +382,7 @@ void FormPlot2D::replot_markers() {
         box->setSelected(q.selected);
         box->setSelectable(true);
         QColor sel = box->selectedPen().color();
-        box->setSelectedBrush(QBrush(QColor::fromHsv(sel.hsvHue(), sel.saturation(), sel.value(), 64)));
+        box->setSelectedBrush(QBrush(QColor::fromHsv(sel.hsvHue(), sel.saturation(), sel.value(), 48)));
         box->setBrush(QBrush(pen2.color()));
         box->setProperty("chan_x", q.x_c);
         box->setProperty("chan_y", q.y_c);
@@ -392,7 +397,7 @@ void FormPlot2D::replot_markers() {
       QCPItemRect *box = new QCPItemRect(ui->coincPlot);
       box->setSelectable(false);
       box->setPen(pen_strong);
-      box->setBrush(QBrush(pen2.color()));
+      box->setBrush(QBrush(pen_strong2.color()));
       box->topLeft->setCoords(range_.x1.channel, range_.y1.channel);
       box->bottomRight->setCoords(range_.x2.channel, range_.y2.channel);
       ui->coincPlot->addItem(box);

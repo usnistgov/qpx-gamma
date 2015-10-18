@@ -193,7 +193,11 @@ std::set<double> WidgetPlot1D::get_selected_markers() {
     if (QCPItemText *txt = qobject_cast<QCPItemText*>(q)) {
       selection.insert(txt->property("chan_value").toDouble());
       //PL_DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
+    } else if (QCPItemLine *line = qobject_cast<QCPItemLine*>(q)) {
+      if (line->property("chan_value").isValid())
+        selection.insert(line->property("chan_value").toDouble());
     }
+
   return selection;
 }
 
@@ -272,10 +276,10 @@ void WidgetPlot1D::plot_rezoom() {
 
   //PL_DBG << "Rezoom";
 
-//  if (miny == 0)
-//    ui->mcaPlot->yAxis->rescale();
-//  else
-  ui->mcaPlot->yAxis->setRangeLower(miny);
+  if (miny <= 0)
+    ui->mcaPlot->yAxis->rescale();
+  else
+    ui->mcaPlot->yAxis->setRangeLower(miny);
   ui->mcaPlot->yAxis->setRangeUpper(maxy);
 }
 
@@ -337,6 +341,9 @@ void WidgetPlot1D::replot_markers() {
   ui->mcaPlot->clearItems();
   edge_trc1 = nullptr;
   edge_trc2 = nullptr;
+  double min_marker = std::numeric_limits<double>::max();
+  double max_marker = - std::numeric_limits<double>::max();
+  int total_markers = 0;
 
   for (auto &q : my_markers_) {
     QCPItemTracer *top_crs = nullptr;
@@ -381,6 +388,14 @@ void WidgetPlot1D::replot_markers() {
       QPen pen = q.appearance.get_pen(color_theme_);
       QPen selected_pen = q.selected_appearance.get_pen(color_theme_);
 
+      if (q.selected) {
+        total_markers++;
+        if (top_crs->graphKey() > max_marker)
+          max_marker = top_crs->graphKey();
+        if (top_crs->graphKey() < min_marker)
+          min_marker = top_crs->graphKey();
+      }
+
       QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
       line->start->setParentAnchor(top_crs->position);
       line->start->setCoords(0, -30);
@@ -389,7 +404,11 @@ void WidgetPlot1D::replot_markers() {
       line->setHead(QCPLineEnding(QCPLineEnding::esLineArrow, 7, 7));
       line->setPen(pen);
       line->setSelectedPen(selected_pen);
-      line->setSelectable(false);
+      line->setProperty("true_value", top_crs->graphKey());
+      line->setProperty("chan_value", top_crs->property("chan_value"));
+      line->setSelectable(markers_selectable_);
+      if (markers_selectable_)
+        line->setSelected(q.selected);
       ui->mcaPlot->addItem(line);
 
       if (marker_labels_) {
@@ -414,6 +433,12 @@ void WidgetPlot1D::replot_markers() {
         ui->mcaPlot->addItem(markerText);
       }
     }
+
+    //ui->mcaPlot->xAxis->setRangeLower(min_marker);
+    //ui->mcaPlot->xAxis->setRangeUpper(max_marker);
+    //ui->mcaPlot->xAxis->setRange(min, max);
+    //ui->mcaPlot->xAxis2->setRange(min, max);
+
   }
 
   for (auto &q : my_cursors_) {
@@ -516,6 +541,11 @@ void WidgetPlot1D::replot_markers() {
           line->end->setCoords(0, 0);
           line->setPen(my_range_.base.get_pen(color_theme_));
           ui->mcaPlot->addItem(line);
+
+          if (edge_trc1->graphKey() < min_marker)
+            min_marker = edge_trc1->graphKey();
+          if (edge_trc2->graphKey() > max_marker)
+            max_marker = edge_trc2->graphKey();
         }
 
         if (my_range_.center.visible) {
@@ -596,6 +626,29 @@ void WidgetPlot1D::replot_markers() {
     else
       floatingText->setColor(Qt::white);
   }
+
+  bool xaxis_changed = false;
+  double dif_lower = min_marker - ui->mcaPlot->xAxis->range().lower;
+  double dif_upper = max_marker - ui->mcaPlot->xAxis->range().upper;
+  if (dif_upper > 0) {
+    ui->mcaPlot->xAxis->setRangeUpper(max_marker + 20);
+    if (dif_lower > (dif_upper + 20))
+      ui->mcaPlot->xAxis->setRangeLower(ui->mcaPlot->xAxis->range().lower + dif_upper + 20);
+    xaxis_changed = true;
+  }
+
+  if (dif_lower < 0) {
+    ui->mcaPlot->xAxis->setRangeLower(min_marker - 20);
+    if (dif_upper < (dif_lower - 20))
+      ui->mcaPlot->xAxis->setRangeUpper(ui->mcaPlot->xAxis->range().upper + dif_lower - 20);
+    xaxis_changed = true;
+  }
+
+  if (xaxis_changed) {
+    ui->mcaPlot->replot();
+    plot_rezoom();
+  }
+
 }
 
 
@@ -712,7 +765,11 @@ QString WidgetPlot1D::plot_style() {
 }
 
 void WidgetPlot1D::set_graph_style(QCPGraph* graph, QString style) {
-  if (style == "Fill") {
+  if (graph->pen().width() != 1) {
+    graph->setBrush(QBrush());
+    graph->setLineStyle(QCPGraph::lsLine);
+    graph->setScatterStyle(QCPScatterStyle::ssNone);
+  } else if (style == "Fill") {
     graph->setBrush(QBrush(graph->pen().color()));
     graph->setLineStyle(QCPGraph::lsLine);
     graph->setScatterStyle(QCPScatterStyle::ssNone);

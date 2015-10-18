@@ -94,7 +94,7 @@ public:
 
   std::vector<Trace> oscilloscope();
   
-  bool daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue);
+  bool daq_start(SynchronizedQueue<Spill*>* out_queue);
   bool daq_stop();
   bool daq_running();
 
@@ -123,8 +123,7 @@ private:
 
   //threads
   void worker_MCA(SynchronizedQueue<Spill*>* data_queue, SpectraSet* spectra);
-  void worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queue,
-                    uint64_t timeout_limit, boost::atomic<bool>* interruptor);
+  void worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queue, boost::atomic<bool>* interruptor);
   void worker_from_list(Sorter* sorter, SynchronizedQueue<Spill*>* data_queue, boost::atomic<bool>* interruptor);
 
 };

@@ -126,6 +126,8 @@ bool Spectrum1D::_write_file(std::string dir, std::string format) const {
 }
 
 bool Spectrum1D::_read_file(std::string name, std::string format) {
+  metadata_.attributes = get_template().generic_attributes;
+
   if (format == "cnf")
     return read_cnf(name);
   else if (format == "tka")

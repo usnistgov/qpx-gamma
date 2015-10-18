@@ -58,6 +58,7 @@ public:
 
 protected:
   std::string my_type() const override {return "LFC1D";}
+  XMLableDB<Gamma::Setting> default_settings() const override {return this->get_template().generic_attributes; }
   bool initialize() override;
   
   void addStats(const StatsUpdate&) override;

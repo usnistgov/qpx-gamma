@@ -51,7 +51,16 @@ public:
     buf.metadata.writable = true;
     new_temp.generic_attributes.add(buf);
 
-    //have option to not buffer
+    Gamma::Setting sym;
+    sym.id_ = "symmetrized";
+    sym.metadata.setting_type = Gamma::SettingType::boolean;
+    sym.metadata.unit = "T/F";
+    sym.metadata.description = "Matrix is symmetrized";
+    sym.metadata.writable = false;
+    sym.value_int = 0;
+    new_temp.generic_attributes.add(sym);
+
+
     return new_temp;
   }
   
@@ -62,6 +71,7 @@ protected:
   void init_from_file(std::string filename);
 
   std::string my_type() const override {return "2D";}
+  XMLableDB<Gamma::Setting> default_settings() const override {return this->get_template().generic_attributes; }
 
   uint64_t _get_count(std::initializer_list<uint16_t> list ) const;
   std::unique_ptr<EntryList> _get_spectrum(std::initializer_list<Pair> list);
@@ -92,7 +102,8 @@ protected:
   SpectrumMap2D spectrum_;
   SpectrumMap2D temp_spectrum_;
   bool buffered_;
-  
+
+  bool check_symmetrization();
 };
 
 }}

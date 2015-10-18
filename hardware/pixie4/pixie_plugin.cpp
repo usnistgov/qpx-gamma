@@ -72,7 +72,7 @@ Plugin::~Plugin() {
 
 }
 
-bool Plugin::daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) {
+bool Plugin::daq_start(SynchronizedQueue<Spill*>* out_queue) {
   if (run_status_.load() > 0)
     return false;
 
@@ -92,9 +92,9 @@ bool Plugin::daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) {
   raw_queue_ = new SynchronizedQueue<Spill*>();
 
   if (run_double_buffer_)
-    runner_ = new boost::thread(&worker_run_dbl, this, timeout, raw_queue_);
+    runner_ = new boost::thread(&worker_run_dbl, this, raw_queue_);
   else
-    runner_ = new boost::thread(&worker_run, this, timeout, raw_queue_);
+    runner_ = new boost::thread(&worker_run, this, raw_queue_);
 
   if (parser_ != nullptr)
     delete parser_;
@@ -1266,8 +1266,7 @@ void Plugin::boot_err(int32_t err_val) {
 }
 
 
-void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
-                        SynchronizedQueue<Spill*>* spill_queue) {
+void Plugin::worker_run(Plugin* callback, SynchronizedQueue<Spill*>* spill_queue) {
 
   PL_DBG << "<PixiePlugin>  Single buffered daq runner thread starting";
 
@@ -1278,8 +1277,7 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
   uint64_t spill_number = 0;
   bool timeout = false;
   Spill* fetched_spill;
-  CustomTimer readout_timer, start_timer, run_timer, stop_timer,
-      total_timer(timeout_limit);
+  CustomTimer readout_timer, start_timer, run_timer, stop_timer;
   boost::posix_time::ptime session_start_time, block_time;
 
   if (!callback->clear_EM(0)) //one module
@@ -1296,8 +1294,6 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
     delete fetched_spill;
     return;
   }
-
-  total_timer.resume();
 
   callback->get_mod_stats(Module::all);
   callback->get_chan_stats(Channel::all, Module::all);
@@ -1330,10 +1326,6 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
       spill_queue->enqueue(fetched_spill);
     }
 
-    PL_INFO << "<PixiePlugin>   RUNNING(" << spill_number << ")"
-            << "  Elapsed: " << total_timer.done()
-            << "  ETA: " << total_timer.ETA();
-
     fetched_spill = new Spill;
     fetched_spill->data.resize(list_mem_len32, 0);
 
@@ -1343,7 +1335,7 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
     while ((retval == 1) && (!timeout)) {
       wait_ms(callback->run_poll_interval_ms_);
       retval = callback->poll_run(0);  //one module
-      timeout = (total_timer.timeout() || (callback->run_status_.load() == 2));
+      timeout = (callback->run_status_.load() == 2);
     };
     block_time = boost::posix_time::microsec_clock::local_time();
     run_timer.stop();
@@ -1371,15 +1363,12 @@ void Plugin::worker_run(Plugin* callback, uint64_t timeout_limit,
   }
   spill_queue->enqueue(fetched_spill);
 
-  total_timer.stop();
-
   callback->run_status_.store(3);
   PL_DBG << "<PixiePlugin>  Single buffered daq runner thread completed";
 }
 
 
-void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
-                            SynchronizedQueue<Spill*>* spill_queue) {
+void Plugin::worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_queue) {
 
   PL_DBG << "<PixiePlugin> Double buffered daq runner thread starting";
 
@@ -1389,7 +1378,6 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
   uint64_t spill_number = 0;
   bool timeout = false;
   Spill* fetched_spill;
-  CustomTimer total_timer(timeout_limit);
   boost::posix_time::ptime session_start_time, block_time;
 
   for (int i=0; i < callback->channel_indices_.size(); i++) {
@@ -1408,8 +1396,6 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
     return;
   }
 
-  total_timer.resume();
-
   callback->get_mod_stats(Module::all);
   callback->get_chan_stats(Channel::all, Module::all);
   for (int i=0; i < callback->channel_indices_.size(); i++)
@@ -1421,8 +1407,6 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
   std::set<int> mods;
   while (!(timeout && mods.empty())) {
     spill_number++;
-    PL_INFO << "<PixiePlugin>  RUNNING Elapsed: " << total_timer.done()
-            << "  ETA: " << total_timer.ETA();
 
     mods.clear();
     while (!timeout && (mods.empty())) {
@@ -1433,7 +1417,7 @@ void Plugin::worker_run_dbl(Plugin* callback, uint64_t timeout_limit,
       }
       if (mods.empty())
         wait_ms(callback->run_poll_interval_ms_);
-      timeout = (total_timer.timeout() || (callback->run_status_.load() == 2));
+      timeout = (callback->run_status_.load() == 2);
     };
     block_time = boost::posix_time::microsec_clock::local_time();
 

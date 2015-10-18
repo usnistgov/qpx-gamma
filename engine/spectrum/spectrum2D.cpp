@@ -64,6 +64,22 @@ bool Spectrum2D::initialize() {
   return true;
 }
 
+bool Spectrum2D::check_symmetrization() {
+  bool symmetrical = true;
+  for (auto &q : spectrum_) {
+    std::pair<uint16_t,uint16_t> point(q.first.second, q.first.first);
+    if ((!spectrum_.count(point)) || (spectrum_.at(point) != q.second)) {
+      symmetrical = false;
+      break;
+    }
+  }
+  Gamma::Setting symset = get_attr("symmetrized");
+  symset.value_int = symmetrical;
+  metadata_.attributes.replace(symset);
+  return symmetrical;
+}
+
+
 void Spectrum2D::_set_detectors(const std::vector<Gamma::Detector>& dets) {
   metadata_.detectors.clear();
 
@@ -282,8 +298,12 @@ bool Spectrum2D:: read_m4b(std::string name) {
   metadata_.detectors.resize(2);
   metadata_.detectors[0].name_ = "unknown1";
   metadata_.detectors[0].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
-  metadata_.detectors[1].name_ = "unknown2";
-  metadata_.detectors[1].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
+  if (check_symmetrization())
+    metadata_.detectors[1] = metadata_.detectors[0];
+  else {
+    metadata_.detectors[1].name_ = "unknown2";
+    metadata_.detectors[1].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
+  }
 
   init_from_file(name);
 }
@@ -313,8 +333,12 @@ bool Spectrum2D:: read_mat(std::string name) {
   metadata_.detectors.resize(2);
   metadata_.detectors[0].name_ = "unknown1";
   metadata_.detectors[0].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
-  metadata_.detectors[1].name_ = "unknown2";
-  metadata_.detectors[1].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
+  if (check_symmetrization())
+    metadata_.detectors[1] = metadata_.detectors[0];
+  else {
+    metadata_.detectors[1].name_ = "unknown2";
+    metadata_.detectors[1].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
+  }
 
   init_from_file(name);
 }

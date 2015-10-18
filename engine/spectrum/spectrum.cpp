@@ -280,6 +280,7 @@ bool Spectrum::read_file(std::string name, std::string format) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  metadata_.attributes = this->default_settings();
   return _read_file(name, format);
 }
 
@@ -349,6 +350,20 @@ void Spectrum::set_start_time(boost::posix_time::ptime newtime) {
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   metadata_.start_time = newtime;
+}
+
+void Spectrum::set_real_time(boost::posix_time::time_duration tm) {
+  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+  while (!uniqueLock.try_lock())
+    boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  metadata_.real_time = tm;
+}
+
+void Spectrum::set_live_time(boost::posix_time::time_duration tm) {
+  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+  while (!uniqueLock.try_lock())
+    boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  metadata_.live_time = tm;
 }
 
 void Spectrum::set_description(std::string newdesc) {

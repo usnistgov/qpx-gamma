@@ -67,7 +67,7 @@ public:
   virtual std::map<int, std::vector<uint16_t>> oscilloscope() {return std::map<int, std::vector<uint16_t>>();}
 
 
-  virtual bool daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) {return false;}
+  virtual bool daq_start(SynchronizedQueue<Spill*>* out_queue) {return false;}
   virtual bool daq_stop() {return true;}
   virtual bool daq_running() {return false;}
 

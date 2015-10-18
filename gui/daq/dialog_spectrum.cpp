@@ -39,12 +39,17 @@ dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, QWidget *parent)
   ui->patternAdd->setEnabled(false);
   ui->patternMatch->setEnabled(false);
   ui->labelWarning->setVisible(false);
+  ui->durationLive->setVisible(false);
+  ui->durationReal->setVisible(false);
 
   ui->colPicker->setStandardColors();
   connect(ui->colPicker, SIGNAL(colorChanged(QColor)), this, SLOT(setNewColor(QColor)));
 
   connect(&det_selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(det_selection_changed(QItemSelection,QItemSelection)));
+
+  connect(ui->durationLive, SIGNAL(editingFinished()), this, SLOT(durationLiveChanged()));
+  connect(ui->durationReal, SIGNAL(editingFinished()), this, SLOT(durationRealChanged()));
 
   md_ = my_spectrum_.metadata();
 
@@ -99,6 +104,8 @@ void dialog_spectrum::updateData() {
   ui->patternMatch->setMinimumSize(ui->patternMatch->sizeHint());
   ui->patternAdd->setMinimumSize(ui->patternAdd->sizeHint());
 
+  ui->durationLive->set_total_seconds(md_.live_time.total_seconds());
+  ui->durationReal->set_total_seconds(md_.real_time.total_seconds());
   ui->lineLiveTime->setText(QString::fromStdString(to_simple_string(md_.live_time)));
   ui->lineRealTime->setText(QString::fromStdString(to_simple_string(md_.real_time)));
   ui->lineTotalCount->setText(QString::number(md_.total_count.convert_to<double>()));
@@ -119,11 +126,16 @@ void dialog_spectrum::updateData() {
 void dialog_spectrum::open_close_locks() {
   bool lockit = !ui->pushLock->isChecked();
   ui->labelWarning->setVisible(lockit);
-  ui->colPicker->setEnabled(lockit);
-  ui->pushRandColor->setEnabled(lockit);
-  ui->lineDescription->setEnabled(lockit);
   ui->dateTimeStart->setEnabled(lockit);
   ui->pushDelete->setEnabled(lockit);
+  ui->durationLive->setEnabled(lockit);
+  ui->durationReal->setEnabled(lockit);
+
+  ui->durationLive->setVisible(lockit);
+  ui->durationReal->setVisible(lockit);
+  ui->lineLiveTime->setVisible(!lockit);
+  ui->lineRealTime->setVisible(!lockit);
+
   if (!lockit) {
     ui->tableGenericAttrs->clearSelection();
     ui->tableGenericAttrs->setSelectionMode(QAbstractItemView::NoSelection);
@@ -154,6 +166,16 @@ void dialog_spectrum::on_pushRandColor_clicked()
 
 void dialog_spectrum::setNewColor(QColor col) {
   my_spectrum_.set_appearance(col.rgba());
+  updateData();
+}
+
+void dialog_spectrum::durationLiveChanged() {
+  my_spectrum_.set_live_time(boost::posix_time::seconds(ui->durationLive->total_seconds()));
+  updateData();
+}
+
+void dialog_spectrum::durationRealChanged() {
+  my_spectrum_.set_real_time(boost::posix_time::seconds(ui->durationReal->total_seconds()));
   updateData();
 }
 

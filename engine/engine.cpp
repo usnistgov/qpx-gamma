@@ -247,11 +247,11 @@ std::vector<Trace> Engine::oscilloscope() {
   return traces;
 }
 
-bool Engine::daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) {
+bool Engine::daq_start(SynchronizedQueue<Spill*>* out_queue) {
   bool success = false;
   for (auto &q : devices_)
     if ((q.second != nullptr) && (q.second->status() & DeviceStatus::can_run)) {
-        success |= q.second->daq_start(timeout, out_queue);
+        success |= q.second->daq_start(out_queue);
         //PL_DBG << "daq_start > " << q.second->device_name();
     }
   return success;
@@ -410,6 +410,9 @@ void Engine::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>& 
 
   PL_INFO << "<Engine> Multithreaded spectra acquisition scheduled for " << timeout << " seconds";
 
+  CustomTimer *anouncement_timer = nullptr;
+  double secs_between_anouncements = 5;
+
   SynchronizedQueue<Spill*> parsedQueue;
 
   boost::thread builder(boost::bind(&Qpx::Engine::worker_MCA, this, &parsedQueue, &spectra));
@@ -425,19 +428,29 @@ void Engine::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>& 
   spill->run->time_stop = time_start;
   parsedQueue.enqueue(spill);
 
-  if (daq_start(timeout, &parsedQueue))
+  if (daq_start(&parsedQueue))
     PL_DBG << "<Engine> Started device daq threads";
+
+  CustomTimer total_timer(timeout, true);
+  anouncement_timer = new CustomTimer(true);
 
   while (daq_running()) {
     wait_ms(1000);
-    if (interruptor.load()) {
-      PL_DBG << "<Engine> Client requested daq stop";
+    if (anouncement_timer->s() > secs_between_anouncements) {
+      PL_INFO << "  RUNNING Elapsed: " << total_timer.done()
+              << "  ETA: " << total_timer.ETA();
+      delete anouncement_timer;
+      anouncement_timer = new CustomTimer(true);
+    }
+    if (interruptor.load() || (timeout && total_timer.timeout())) {
       if (daq_stop())
         PL_DBG << "<Engine> Stopped device daq threads successfully";
       else
         PL_ERR << "<Engine> Failed to stop device daq threads";
     }
   }
+
+  delete anouncement_timer;
 
   spill = new Spill;
   spill->run = new RunInfo;
@@ -469,7 +482,7 @@ void Engine::getFakeMca(Simulator& source, SpectraSet& spectra,
   SynchronizedQueue<Spill*> eventQueue;
 
   boost::thread builder(boost::bind(&Qpx::Engine::worker_MCA, this, &eventQueue, &spectra));
-  worker_fake(&source, &eventQueue, timeout, &interruptor);
+  worker_fake(&source, &eventQueue, &interruptor);
   while (eventQueue.size() > 0)
     wait_ms(1000);
   wait_ms(500);
@@ -510,6 +523,9 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   PL_INFO << "<Engine> Multithreaded list mode acquisition scheduled for " << timeout << " seconds";
 
+  CustomTimer *anouncement_timer = nullptr;
+  double secs_between_anouncements = 5;
+
   get_all_settings();
   save_optimization();
   result->run.state = pull_settings();
@@ -518,19 +534,29 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   SynchronizedQueue<Spill*> parsedQueue;
 
-  if (daq_start(timeout, &parsedQueue))
+  if (daq_start(&parsedQueue))
     PL_DBG << "<Engine> Started device daq threads";
+
+  CustomTimer total_timer(timeout, true);
+  anouncement_timer = new CustomTimer(true);
 
   while (daq_running()) {
     wait_ms(1000);
-    if (interruptor.load()) {
-      PL_DBG << "<Engine> Client requested daq stop";
+    if (anouncement_timer->s() > secs_between_anouncements) {
+      PL_INFO << "  RUNNING Elapsed: " << total_timer.done()
+              << "  ETA: " << total_timer.ETA();
+      delete anouncement_timer;
+      anouncement_timer = new CustomTimer(true);
+    }
+    if (interruptor.load() || (timeout && total_timer.timeout())) {
       if (daq_stop())
         PL_DBG << "<Engine> Stopped device daq threads successfully";
       else
         PL_ERR << "<Engine> Failed to stop device daq threads";
     }
   }
+
+  delete anouncement_timer;
 
   result->run.time_stop = boost::posix_time::microsec_clock::local_time();
 
@@ -567,8 +593,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
   spectra->closeAcquisition();
 }
 
-void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queue,
-                         uint64_t timeout_limit, boost::atomic<bool>* interruptor) {
+void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queue, boost::atomic<bool>* interruptor) {
 
   PL_DBG << "<Engine> Simulated event generator initiated";
 
@@ -577,7 +602,6 @@ void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queu
 
   uint64_t spill_number = 0, event_count = 0;
   bool timeout = false;
-  CustomTimer total_timer(timeout_limit);
   boost::posix_time::ptime session_start_time, block_time;
 
   uint64_t   rate = source->OCR;
@@ -595,12 +619,8 @@ void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queu
   one_spill->stats.push_back(moving_stats);
   data_queue->enqueue(one_spill);
 
-  total_timer.resume();
   while (!timeout) {
     spill_number++;
-
-    PL_INFO << "<Engine>   SIMULATION  Elapsed: " << total_timer.done()
-            << "  ETA: " << total_timer.ETA();
 
     one_spill = new Spill;
 
@@ -620,7 +640,6 @@ void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queu
 
     boost::this_thread::sleep(boost::posix_time::seconds(secsperrun));
 
-    timeout = total_timer.timeout();
     if (*interruptor)
       timeout = true;
   }

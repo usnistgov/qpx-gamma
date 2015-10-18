@@ -89,6 +89,8 @@ private slots:
 
   void on_pushDetails_clicked();
 
+  void on_toggleIndefiniteRun_clicked();
+
 private:
   Ui::FormMcaDaq *ui;
   QSettings                  &settings_;

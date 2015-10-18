@@ -134,8 +134,7 @@ void FormMcaDaq::loadSettings() {
   spectra_templates_.read_xml(data_directory_.toStdString() + "/default_spectra.tem");
 
   settings_.beginGroup("Lab");
-  ui->boxMcaMins->setValue(settings_.value("mca_mins", 5).toInt());
-  ui->boxMcaSecs->setValue(settings_.value("mca_secs", 0).toInt());
+  ui->timeDuration->set_total_seconds(settings_.value("mca_secs", 0).toULongLong());
   ui->pushEnable2d->setChecked(settings_.value("2d_visible", true).toBool());
 
   settings_.beginGroup("McaPlot");
@@ -157,8 +156,7 @@ void FormMcaDaq::loadSettings() {
 
 void FormMcaDaq::saveSettings() {
   settings_.beginGroup("Lab");
-  settings_.setValue("mca_mins", ui->boxMcaMins->value());
-  settings_.setValue("mca_secs", ui->boxMcaSecs->value());
+  settings_.setValue("mca_secs", QVariant::fromValue(ui->timeDuration->total_seconds()));
   settings_.setValue("2d_visible", ui->pushEnable2d->isChecked());
 
   settings_.beginGroup("McaPlot");
@@ -186,8 +184,8 @@ void FormMcaDaq::toggle_push(bool enable, Qpx::DeviceStatus status) {
 
   ui->pushMcaStart->setEnabled(enable && online);
 
-  ui->boxMcaMins->setEnabled(enable && offline);
-  ui->boxMcaSecs->setEnabled(enable && offline);
+  ui->timeDuration->setEnabled(enable && offline);
+  ui->toggleIndefiniteRun->setEnabled(enable && offline);
   ui->pushMcaSimulate->setEnabled(enable && offline);
 
   ui->pushMcaClear->setEnabled(enable && nonempty);
@@ -265,7 +263,10 @@ void FormMcaDaq::on_pushMcaStart_clicked()
 
   my_run_ = true;
   ui->Plot1d->reset_content();
-  runner_thread_.do_run(spectra_, interruptor_, ui->boxMcaMins->value() * 60 + ui->boxMcaSecs->value());
+  uint64_t duration = ui->timeDuration->total_seconds();
+  if (ui->toggleIndefiniteRun->isChecked())
+    duration = 0;
+  runner_thread_.do_run(spectra_, interruptor_, duration);
 }
 
 void FormMcaDaq::on_pushMcaSimulate_clicked()
@@ -302,7 +303,10 @@ void FormMcaDaq::on_pushMcaSimulate_clicked()
 
   //hardcoded precision and channels
   ui->Plot1d->reset_content();
-  runner_thread_.do_fake(spectra_, interruptor_, fileName, {0,1}, 14, 12, ui->boxMcaMins->value() * 60 + ui->boxMcaSecs->value());
+  uint64_t duration = ui->timeDuration->total_seconds();
+  if (ui->toggleIndefiniteRun->isChecked())
+    duration = 0;
+  runner_thread_.do_fake(spectra_, interruptor_, fileName, {0,1}, 14, 12, duration);
 }
 
 void FormMcaDaq::on_pushMcaReload_clicked()
@@ -515,4 +519,9 @@ void FormMcaDaq::on_pushDetails_clicked()
   FormDaqSettings *DaqInfo = new FormDaqSettings(spectra_.runInfo().state, this);
   DaqInfo->setWindowTitle("System settings at the time of acquisition");
   DaqInfo->exec();
+}
+
+void FormMcaDaq::on_toggleIndefiniteRun_clicked()
+{
+   ui->timeDuration->setEnabled(!ui->toggleIndefiniteRun->isChecked());
 }

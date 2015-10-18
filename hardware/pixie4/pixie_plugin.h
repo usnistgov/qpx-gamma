@@ -57,7 +57,7 @@ public:
   bool execute_command(Gamma::Setting &set) override;
   std::map<int, std::vector<uint16_t>> oscilloscope() override;
 
-  bool daq_start(uint64_t timeout, SynchronizedQueue<Spill*>* out_queue) override;
+  bool daq_start(SynchronizedQueue<Spill*>* out_queue) override;
   bool daq_stop() override;
   bool daq_running() override;
 
@@ -68,8 +68,8 @@ private:
 
   //Acquisition threads, use as static functors
   static void worker_parse(Plugin* callback, SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue);
-  static void worker_run(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue);
-  static void worker_run_dbl(Plugin* callback, uint64_t timeout_limit, SynchronizedQueue<Spill*>* spill_queue);
+  static void worker_run(Plugin* callback, SynchronizedQueue<Spill*>* spill_queue);
+  static void worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_queue);
 
 protected:
 

@@ -62,6 +62,9 @@ private slots:
 
     void on_pushDelete_clicked();
 
+    void durationLiveChanged();
+    void durationRealChanged();
+
 signals:
     void finished(bool);
     void delete_spectrum();
