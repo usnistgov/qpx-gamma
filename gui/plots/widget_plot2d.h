@@ -19,118 +19,92 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_PLOT2D_H
-#define FORM_PLOT2D_H
+#ifndef WIDGET_PLOT2D_H
+#define WIDGET_PLOT2D_H
 
 #include <QWidget>
-#include <spectra_set.h>
 #include "qsquarecustomplot.h"
-#include "qtcolorpicker.h"
-#include "widget_selector.h"
+#include "spectrum.h"
 #include "marker.h"
-#include <unordered_map>
 
 namespace Ui {
-class FormPlot2D;
+class WidgetPlot2D;
 }
 
-class FormPlot2D : public QWidget
+class WidgetPlot2D : public QWidget
 {
   Q_OBJECT
 
 public:
-  explicit FormPlot2D(QWidget *parent = 0);
-  ~FormPlot2D();
+  explicit WidgetPlot2D(QWidget *parent = 0);
+  ~WidgetPlot2D();
 
-  void setSpectra(Qpx::SpectraSet& new_set, QString spectrum = QString());
-
-  void updateUI();
-
-  void update_plot(bool force = false);
+  void update_plot(uint64_t size, std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data);
+  void set_axes(Gamma::Calibration cal_x, Gamma::Calibration cal_y, int bits);
   void refresh();
   void replot_markers();
   void reset_content();
 
   void set_boxes(std::list<MarkerBox2D> boxes);
-  void set_show_boxes(bool);
 
   void set_scale_type(QString);
   void set_gradient(QString);
+  void set_zoom(double);
   void set_show_legend(bool);
   QString scale_type();
   QString gradient();
-  bool show_legend();
-
-  void set_zoom(double);
   double zoom();
+  bool show_legend();
 
   void set_range_x(MarkerBox2D);
 
   std::list<MarkerBox2D> get_selected_boxes();
 
-  void set_show_selector(bool);
-  void set_show_gate_width(bool);
-
-  int gate_width();
-  void set_gate_width(int);
-  void set_gates_visible(bool vertical, bool horizontal, bool diagonal);
-  void set_gates_movable(bool);
-
 public slots:
-  void set_marker(Marker n);
-  void set_markers(Marker x, Marker y);
+  void zoom_out();
 
 signals:
   void markers_set(Marker x, Marker y);
-  void requestAnalysis(QString);
   void stuff_selected();
 
 private slots:
-  void spectrumDetailsDelete();
-
   //void clicked_plottable(QCPAbstractPlottable*);
   void selection_changed();
 
-  void on_pushDetails_clicked();
-  void spectrumDetailsClosed(bool);
+  void plot_2d_mouse_upon(double x, double y);
+  void plot_2d_mouse_clicked(double x, double y, QMouseEvent* event, bool channels);
 
-  void on_spinGateWidth_valueChanged(int arg1);
-  void on_spinGateWidth_editingFinished();
-  void markers_moved(Marker x, Marker y);
-  void analyse();
-
-  void choose_spectrum(SelectorItem item);
-  void crop_changed(QAction*);
-  void spectrumDoubleclicked(SelectorItem item);
+  void optionsChanged(QAction*);
+  void exportRequested(QAction*);
+  void clicked_item(QCPAbstractItem*);
 
 private:
 
   //gui stuff
-  Ui::FormPlot2D *ui;
-  Qpx::SpectraSet *mySpectra;
+  Ui::WidgetPlot2D *ui;
+  QCPColorMap *colorMap;
 
+  std::map<QString, QCPColorGradient> gradients_;
+  QString current_gradient_;
 
-  //plot identity
-  QString name_2d;
-  double zoom_2d, new_zoom;
-  uint32_t adjrange;
+  QMenu menuExportFormat;
+  QMenu       menuOptions;
+  bool show_gradient_scale_;
 
-  QMenu cropFraction;
-  std::unordered_map<std::string, double> fractions_;
-
-  //markers
-  Marker my_marker, //template(style)
-    ext_marker, x_marker, y_marker; //actual data
-  bool gate_vertical_, gate_horizontal_, gate_diagonal_, gates_movable_, show_boxes_;
+  std::map<QString, QCPAxis::ScaleType> scale_types_;
+  QString current_scale_type_;
 
   std::list<MarkerBox2D> boxes_;
   MarkerBox2D range_;
 
-  //scaling
-  int bits;
-  Gamma::Calibration calib_x_, calib_y_;
+  Marker my_marker;
 
-  void calibrate_marker(Marker&);
+  //scaling
+  Gamma::Calibration calib_x_, calib_y_;
+  int bits_;
+
+  void build_menu();
+  void toggle_gradient_scale();
 };
 
 #endif // WIDGET_PLOT2D_H

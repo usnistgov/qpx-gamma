@@ -43,6 +43,21 @@ private:
   double true_position_;
 };
 
+enum ShowOptions {
+  empty     = 0,
+  style     = 1 << 0,
+  scale     = 1 << 1,
+  labels    = 1 << 2,
+  themes    = 1 << 3,
+  grid      = 1 << 4,
+  title     = 1 << 5,
+  zoom      = 1 << 6,
+  save      = 1 << 7
+};
+
+inline ShowOptions operator|(ShowOptions a, ShowOptions b) {return static_cast<ShowOptions>(static_cast<int>(a) | static_cast<int>(b));}
+inline ShowOptions operator&(ShowOptions a, ShowOptions b) {return static_cast<ShowOptions>(static_cast<int>(a) & static_cast<int>(b));}
+
 namespace Ui {
 class WidgetPlot1D;
 }
@@ -60,13 +75,10 @@ public:
   void redraw();
   void reset_scales();
   void rescale();
-  void xAxisRange(double, double);
-  void yAxisRange(double, double);
   void replot_markers();
 
   void setLabels(QString x, QString y);
   void setTitle(QString title);
-  void setFloatingText(QString);
 
   void set_scale_type(QString);
   void set_plot_style(QString);
@@ -76,12 +88,7 @@ public:
   QString plot_style();
   bool marker_labels();
 
-  void showButtonMarkerLabels(bool);
-  void showButtonPlotStyle(bool);
-  void showButtonScaleType(bool);
-  void showButtonColorThemes(bool);
-  void showTitle(bool);
-  void setZoomable(bool);
+  void set_visible_options(ShowOptions);
 
   void set_markers(const std::list<Marker>&);
   void set_block(Marker, Marker);
@@ -97,6 +104,9 @@ public:
 
   void use_calibrated(bool);
 
+public slots:
+  void zoom_out();
+
 signals:
 
   void clickedLeft(double);
@@ -109,24 +119,20 @@ private slots:
   void plot_mouse_press(QMouseEvent*);
   void plot_mouse_release(QMouseEvent*);
   void clicked_plottable(QCPAbstractPlottable *);
+  void clicked_item(QCPAbstractItem *);
+
   void selection_changed();
-
   void plot_rezoom();
-
-  void on_pushResetScales_clicked();
-  void scaleTypeChosen(QAction*);
-  void plotStyleChosen(QAction*);
   void exportRequested(QAction*);
-
-  void on_pushNight_clicked();
-
-  void on_pushLabels_clicked();
+  void optionsChanged(QAction*);
 
 
 private:
   void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
   void calc_y_bounds(double lower, double upper);
   void set_graph_style(QCPGraph*, QString);
+
+  void build_menu();
 
   Ui::WidgetPlot1D *ui;
 
@@ -152,15 +158,17 @@ private:
 
   std::map<double, double> minima_, maxima_;
 
-  QMenu menuScaleType;
-  QMenu menuPlotStyle;
   QMenu menuExportFormat;
+
+  QMenu       menuOptions;
+  ShowOptions visible_options_;
 
   QString color_theme_;
   QString scale_type_;
   QString plot_style_;
+  QString grid_style_;
 
-  QString floating_text_;
+  QString title_text_;
 };
 
 #endif // WIDGET_PLOST1D_H

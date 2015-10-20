@@ -67,14 +67,17 @@ private slots:
 
   void spectrumLooksChanged(SelectorItem);
   void spectrumDetails(SelectorItem);
+  void spectrumDoubleclicked(SelectorItem);
 
   void addMovingMarker(double);
   void removeMovingMarker(double);
 
   void on_pushFullInfo_clicked();
-  void on_pushAnalyse_clicked();
   void on_pushShowAll_clicked();
   void on_pushHideAll_clicked();
+
+
+  void analyse();
 
 private:
 

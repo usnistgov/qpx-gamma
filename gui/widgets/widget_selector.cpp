@@ -38,20 +38,40 @@ SelectorWidget::SelectorWidget(QWidget *parent)
   selected_ = -1;
   height_total = 0;
 
+  only_one_ = false;
+
   inner = QRectF(1, 1, rect_w_-1, rect_h_-1);
   outer = QRectF(2, 2, rect_w_-2, rect_h_-2);
 
   setToolTipDuration(10000); //hardcoded to 10 secs. Make this a parameter?
 }
 
+void SelectorWidget::set_only_one(bool o) {
+  only_one_ = o;
+}
+
 void SelectorWidget::setItems(QVector<SelectorItem> items) {
   my_items_ = items;
+
+  if (only_one_) {
+    selected_ = -1;
+    for (int i=0; i < my_items_.size(); ++i) {
+      if (my_items_[i].visible) {
+        selected_ = i;
+        break;
+      }
+    }
+    if ((selected_ == -1) && (!my_items_.empty()))
+      selected_ = 0;
+    for (int i=0; i < my_items_.size(); ++i)
+      my_items_[i].visible = (i == selected_);
+  } else
+    selected_ = -1;
 
   height_total = my_items_.size() / max_wide;
   width_last = my_items_.size() % max_wide;
   if (width_last)
     height_total++;
-  selected_ = -1;
   update();
 }
 
@@ -129,6 +149,12 @@ void SelectorWidget::mouseReleaseEvent(QMouseEvent *event)
 
   if (event->button()==Qt::LeftButton) {
     selected_ = flag;
+    if (only_one_) {
+      for (auto &q : my_items_)
+        q.visible = false;
+      if ((flag > -1) && (flag < my_items_.size()))
+        my_items_[flag].visible = true;
+    }
     update();
     if ((flag > -1) && (flag < my_items_.size()))
       emit itemSelected(my_items_[flag]);
@@ -136,11 +162,30 @@ void SelectorWidget::mouseReleaseEvent(QMouseEvent *event)
       emit itemSelected(SelectorItem());
   }
 
-  if ((event->button()==Qt::RightButton) && (flag > -1) && (flag < my_items_.size())) {
+  if ((!only_one_) && (event->button()==Qt::RightButton) && (flag > -1) && (flag < my_items_.size())) {
     my_items_[flag].visible = !my_items_[flag].visible;
     update();
     emit itemToggled(my_items_[flag]);
   }
+}
+
+
+void SelectorWidget::mouseDoubleClickEvent(QMouseEvent *event)
+{
+  int flag = flagAt(event->x(), event->y());
+
+  if (event->button()==Qt::LeftButton) {
+    selected_ = flag;
+    update();
+    if ((flag > -1) && (flag < my_items_.size()))
+      emit itemDoubleclicked(my_items_[flag]);
+    else
+      emit itemDoubleclicked(SelectorItem());
+  }
+
+//  if ((event->button()==Qt::RightButton) && (flag > -1) && (flag < my_items_.size())) {
+//    emit itemDoubleclicked(my_items_[flag]);
+//  }
 }
 
 

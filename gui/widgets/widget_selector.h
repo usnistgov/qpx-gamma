@@ -54,14 +54,17 @@ public:
   SelectorItem selected();
   virtual void show_all();
   virtual void hide_all();
+  void set_only_one(bool);
 
 signals:
   void itemSelected(SelectorItem);
   void itemToggled(SelectorItem);
+  void itemDoubleclicked(SelectorItem);
 
 protected:
   void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
   void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
+  void mouseDoubleClickEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
 
   QVector<SelectorItem> my_items_;
   int selected_;
@@ -73,6 +76,7 @@ private:
   int width_last, height_total, max_wide;
 
   QRectF inner, outer, text;
+  bool   only_one_;
 
   void recalcDim(int, int);
 };

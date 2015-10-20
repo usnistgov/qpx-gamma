@@ -49,5 +49,8 @@
         <file>oxy/back.png</file>
         <file>hide.png</file>
         <file>show.png</file>
+        <file>oxy/draw_freehand16.png</file>
+        <file>oxy/document_preview.png</file>
+        <file>oxy/editcut.png</file>
     </qresource>
 </RCC>

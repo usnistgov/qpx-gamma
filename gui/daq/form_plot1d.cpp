@@ -42,6 +42,7 @@ FormPlot1D::FormPlot1D(QWidget *parent) :
 
   connect(ui->spectraWidget, SIGNAL(itemSelected(SelectorItem)), this, SLOT(spectrumDetails(SelectorItem)));
   connect(ui->spectraWidget, SIGNAL(itemToggled(SelectorItem)), this, SLOT(spectrumLooksChanged(SelectorItem)));
+  connect(ui->spectraWidget, SIGNAL(itemDoubleclicked(SelectorItem)), this, SLOT(spectrumDoubleclicked(SelectorItem)));
 
   bits = 0;
 }
@@ -69,6 +70,11 @@ void FormPlot1D::spectrumLooksChanged(SelectorItem item) {
   mySpectra->activate();
 }
 
+void FormPlot1D::spectrumDoubleclicked(SelectorItem item)
+{
+  on_pushFullInfo_clicked();
+}
+
 void FormPlot1D::spectrumDetails(SelectorItem item)
 {
   ui->pushShowAll->setEnabled(ui->spectraWidget->items().size());
@@ -83,7 +89,6 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
 
   if (id.isEmpty() || (someSpectrum == nullptr)) {
     ui->labelSpectrumInfo->setText("Left-click on spectrum above to see statistics, right click to toggle visibility");
-    ui->pushAnalyse->setEnabled(false);
     ui->pushFullInfo->setEnabled(false);
     return;
   }
@@ -121,7 +126,6 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
       "<nobr>Dead:  " + QString::number(dead) + "%</nobr><br/>";
 
   ui->labelSpectrumInfo->setText(infoText);
-  ui->pushAnalyse->setEnabled(true);
   ui->pushFullInfo->setEnabled(true);
 }
 
@@ -260,6 +264,7 @@ void FormPlot1D::on_pushFullInfo_clicked()
   dialog_spectrum* newSpecDia = new dialog_spectrum(*someSpectrum, this);
   connect(newSpecDia, SIGNAL(finished(bool)), this, SLOT(spectrumDetailsClosed(bool)));
   connect(newSpecDia, SIGNAL(delete_spectrum()), this, SLOT(spectrumDetailsDelete()));
+  connect(newSpecDia, SIGNAL(analyse()), this, SLOT(analyse()));
   newSpecDia->exec();
 }
 
@@ -286,7 +291,7 @@ void FormPlot1D::updateUI()
   on_comboResolution_currentIndexChanged(0);
 }
 
-void FormPlot1D::on_pushAnalyse_clicked()
+void FormPlot1D::analyse()
 {
   emit requestAnalysis(ui->spectraWidget->selected().text);
 }

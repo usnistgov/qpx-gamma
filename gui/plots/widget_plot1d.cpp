@@ -26,24 +26,25 @@
 #include "qt_util.h"
 
 WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
-  QWidget(parent),  ui(new Ui::WidgetPlot1D)
+  QWidget(parent),
+  ui(new Ui::WidgetPlot1D)
 {
   ui->setupUi(this);
 
-  setColorScheme(Qt::black, Qt::white, QColor(112, 112, 112), QColor(170, 170, 170));
-  color_theme_ = "light";
+  visible_options_  =
+      (ShowOptions::style | ShowOptions::scale | ShowOptions::labels | ShowOptions::themes | ShowOptions::grid | ShowOptions::save);
+
 
   ui->mcaPlot->setInteraction(QCP::iSelectItems, true);
-  ui->mcaPlot->setInteraction(QCP::iMultiSelect, false);
-
   ui->mcaPlot->setInteraction(QCP::iRangeDrag, true);
   ui->mcaPlot->yAxis->axisRect()->setRangeDrag(Qt::Horizontal);
   ui->mcaPlot->setInteraction(QCP::iRangeZoom, true);
-  ui->mcaPlot->yAxis->axisRect()->setRangeZoom(Qt::Horizontal);
-  ui->mcaPlot->setInteraction(QCP::iMultiSelect);
+  ui->mcaPlot->setInteraction(QCP::iMultiSelect, true);
+  ui->mcaPlot->yAxis->setPadding(28);
 
   connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*,bool)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*,bool)));
   connect(ui->mcaPlot, SIGNAL(plottableClick(QCPAbstractPlottable*,QMouseEvent*)), this, SLOT(clicked_plottable(QCPAbstractPlottable*)));
+  connect(ui->mcaPlot, SIGNAL(clickedAbstractItem(QCPAbstractItem*)), this, SLOT(clicked_item(QCPAbstractItem*)));
   connect(ui->mcaPlot, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
   connect(ui->mcaPlot, SIGNAL(beforeReplot()), this, SLOT(plot_rezoom()));
   connect(ui->mcaPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(plot_mouse_release(QMouseEvent*)));
@@ -56,55 +57,101 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
 
   force_rezoom_ = false;
   mouse_pressed_ = false;
-
   use_calibrated_ = false;
-
-  marker_labels_ = false;
-
   markers_selectable_ = false;
 
   edge_trc1 = nullptr;
   edge_trc2 = nullptr;
 
-  menuPlotStyle.addAction("Scatter");
-  menuPlotStyle.addAction("Step");
-  menuPlotStyle.addAction("Lines");
-  menuPlotStyle.addAction("Fill");
-  for (auto &q : menuPlotStyle.actions())
-    q->setCheckable(true);
-  ui->toolPlotStyle->setMenu(&menuPlotStyle);
-  ui->toolPlotStyle->setPopupMode(QToolButton::InstantPopup);
-  connect(ui->toolPlotStyle, SIGNAL(triggered(QAction*)), this, SLOT(plotStyleChosen(QAction*)));
-  set_plot_style("Lines");
+  plot_style_ = "Lines";
+  scale_type_ = "Logarithmic";
+  color_theme_ = "light";
+  grid_style_ = "Grid + subgrid";
+  setColorScheme(Qt::black, Qt::white, QColor(112, 112, 112), QColor(170, 170, 170));
 
-  ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLogarithmic);
-  menuScaleType.addAction("Linear");
-  menuScaleType.addAction("Logarithmic");
-  for (auto &q : menuScaleType.actions())
-    q->setCheckable(true);
-  ui->toolScaleType->setMenu(&menuScaleType);
-  ui->toolScaleType->setPopupMode(QToolButton::InstantPopup);
-  connect(ui->toolScaleType, SIGNAL(triggered(QAction*)), this, SLOT(scaleTypeChosen(QAction*)));
-  set_scale_type("Logarithmic");
+  ui->mcaPlot->xAxis->grid()->setVisible(true);
+  ui->mcaPlot->yAxis->grid()->setVisible(true);
+  ui->mcaPlot->xAxis->grid()->setSubGridVisible(true);
+  ui->mcaPlot->yAxis->grid()->setSubGridVisible(true);
+
+  marker_labels_ = false;
 
   menuExportFormat.addAction("png");
   menuExportFormat.addAction("jpg");
   menuExportFormat.addAction("pdf");
   menuExportFormat.addAction("bmp");
-  ui->toolExport->setMenu(&menuExportFormat);
-  ui->toolExport->setPopupMode(QToolButton::InstantPopup);
-  connect(ui->toolExport, SIGNAL(triggered(QAction*)), this, SLOT(exportRequested(QAction*)));
+  connect(&menuExportFormat, SIGNAL(triggered(QAction*)), this, SLOT(exportRequested(QAction*)));
+
+  connect(&menuOptions, SIGNAL(triggered(QAction*)), this, SLOT(optionsChanged(QAction*)));
 
   QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Backspace), ui->mcaPlot);
-  connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushResetScales_clicked()));
+  connect(shortcut, SIGNAL(activated()), this, SLOT(zoom_out()));
 
-  redraw();
+  build_menu();
+
+  replot_markers();
+//  redraw();
 }
 
 WidgetPlot1D::~WidgetPlot1D()
 {
   delete ui;
 }
+
+void WidgetPlot1D::set_visible_options(ShowOptions options) {
+  visible_options_ = options;
+
+  ui->mcaPlot->setInteraction(QCP::iRangeDrag, options & ShowOptions::zoom);
+  ui->mcaPlot->setInteraction(QCP::iRangeZoom, options & ShowOptions::zoom);
+
+  build_menu();
+  replot_markers();
+}
+
+void WidgetPlot1D::build_menu() {
+  menuOptions.clear();
+
+  if (visible_options_ & ShowOptions::style) {
+    menuOptions.addAction("Step");
+    menuOptions.addAction("Lines");
+    menuOptions.addAction("Scatter");
+    menuOptions.addAction("Fill");
+  }
+
+  if (visible_options_ & ShowOptions::scale) {
+    menuOptions.addSeparator();
+    menuOptions.addAction("Linear");
+    menuOptions.addAction("Logarithmic");
+  }
+
+  if (visible_options_ & ShowOptions::labels) {
+    menuOptions.addSeparator();
+    menuOptions.addAction("Energy labels");
+  }
+
+  if (visible_options_ & ShowOptions::themes) {
+    menuOptions.addSeparator();
+    menuOptions.addAction("dark");
+    menuOptions.addAction("light");
+  }
+
+  if (visible_options_ & ShowOptions::grid) {
+    menuOptions.addSeparator();
+    menuOptions.addAction("No grid");
+    menuOptions.addAction("Grid");
+    menuOptions.addAction("Grid + subgrid");
+  }
+
+  for (auto &q : menuOptions.actions()) {
+    q->setCheckable(true);
+    q->setChecked((q->text() == scale_type_) ||
+                  (q->text() == plot_style_) ||
+                  (q->text() == color_theme_) ||
+                  (q->text() == grid_style_) ||
+                  ((q->text() == "Energy labels") && marker_labels_));
+  }
+}
+
 
 void WidgetPlot1D::clearGraphs()
 {
@@ -127,18 +174,6 @@ void WidgetPlot1D::rescale() {
   plot_rezoom();
 }
 
-void WidgetPlot1D::xAxisRange(double min, double max) {
-  ui->mcaPlot->xAxis->setRange(min, max);
-  ui->mcaPlot->xAxis2->setRange(min, max);
-
-}
-
-void WidgetPlot1D::yAxisRange(double min, double max) {
-  ui->mcaPlot->yAxis->setRange(min, max);
-  ui->mcaPlot->yAxis2->setRange(min, max);
-  PL_INFO << "<WidgetPlot1D> rescale y";
-}
-
 void WidgetPlot1D::redraw() {
   ui->mcaPlot->replot();
 }
@@ -152,7 +187,8 @@ void WidgetPlot1D::reset_scales()
 }
 
 void WidgetPlot1D::setTitle(QString title) {
-  ui->labelTitle->setText(title);
+  title_text_ = title;
+  replot_markers();
 }
 
 void WidgetPlot1D::setLabels(QString x, QString y) {
@@ -317,24 +353,9 @@ void WidgetPlot1D::setColorScheme(QColor fore, QColor back, QColor grid1, QColor
   ui->mcaPlot->yAxis->grid()->setPen(QPen(grid1, 1, Qt::DotLine));
   ui->mcaPlot->xAxis->grid()->setSubGridPen(QPen(grid2, 1, Qt::DotLine));
   ui->mcaPlot->yAxis->grid()->setSubGridPen(QPen(grid2, 1, Qt::DotLine));
-  ui->mcaPlot->xAxis->grid()->setSubGridVisible(true);
-  ui->mcaPlot->yAxis->grid()->setSubGridVisible(true);
   ui->mcaPlot->xAxis->grid()->setZeroLinePen(Qt::NoPen);
   ui->mcaPlot->yAxis->grid()->setZeroLinePen(Qt::NoPen);
   ui->mcaPlot->setBackground(QBrush(back));
-}
-
-void WidgetPlot1D::on_pushNight_clicked()
-{
-  if (ui->pushNight->isChecked()) {
-    setColorScheme(Qt::white, Qt::black, QColor(144, 144, 144), QColor(80, 80, 80));
-    color_theme_ = "dark";
-  } else {
-    setColorScheme(Qt::black, Qt::white, QColor(112, 112, 112), QColor(170, 170, 170));
-    color_theme_ = "light";
-  }
-  replot_markers();
-  ui->mcaPlot->replot();
 }
 
 void WidgetPlot1D::replot_markers() {
@@ -612,19 +633,68 @@ void WidgetPlot1D::replot_markers() {
     ui->mcaPlot->addItem(cprect);
   }
 
-  if (!floating_text_.isEmpty()) {
+  if (!title_text_.isEmpty()) {
     QCPItemText *floatingText = new QCPItemText(ui->mcaPlot);
     ui->mcaPlot->addItem(floatingText);
     floatingText->setPositionAlignment(Qt::AlignTop|Qt::AlignHCenter);
     floatingText->position->setType(QCPItemPosition::ptAxisRectRatio);
     floatingText->position->setCoords(0.5, 0); // place position at center/top of axis rect
-    floatingText->setText(floating_text_);
+    floatingText->setText(title_text_);
     floatingText->setFont(QFont("Helvetica", 10));
     floatingText->setSelectable(false);
     if (color_theme_ == "light")
       floatingText->setColor(Qt::black);
     else
       floatingText->setColor(Qt::white);
+  }
+
+  QCPItemPixmap *overlayButton;
+
+  overlayButton = new QCPItemPixmap(ui->mcaPlot);
+  overlayButton->setClipToAxisRect(false);
+  overlayButton->setPixmap(QPixmap(":/new/icons/oxy/view_fullscreen.png"));
+  overlayButton->topLeft->setType(QCPItemPosition::ptAbsolute);
+  overlayButton->topLeft->setCoords(5, 5);
+  overlayButton->bottomRight->setParentAnchor(overlayButton->topLeft);
+  overlayButton->bottomRight->setCoords(18, 18);
+  overlayButton->setScaled(true);
+  overlayButton->setSelectable(false);
+  overlayButton->setProperty("button_name", QString("reset_scales"));
+  overlayButton->setProperty("tooltip", QString("Reset plot scales"));
+  ui->mcaPlot->addItem(overlayButton);
+
+  if (!menuOptions.isEmpty()) {
+    QCPItemPixmap *newButton = new QCPItemPixmap(ui->mcaPlot);
+    newButton->setClipToAxisRect(false);
+    newButton->setPixmap(QPixmap(":/new/icons/oxy/view_statistics.png"));
+    newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
+    newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
+    newButton->topLeft->setCoords(0, 5);
+    newButton->bottomRight->setParentAnchor(newButton->topLeft);
+    newButton->bottomRight->setCoords(18, 18);
+    newButton->setScaled(false);
+    newButton->setSelectable(false);
+    newButton->setProperty("button_name", QString("options"));
+    newButton->setProperty("tooltip", QString("Style options"));
+    ui->mcaPlot->addItem(newButton);
+    overlayButton = newButton;
+  }
+
+  if (visible_options_ & ShowOptions::save) {
+    QCPItemPixmap *newButton = new QCPItemPixmap(ui->mcaPlot);
+    newButton->setClipToAxisRect(false);
+    newButton->setPixmap(QPixmap(":/new/icons/oxy/document_save.png"));
+    newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
+    newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
+    newButton->topLeft->setCoords(0, 5);
+    newButton->bottomRight->setParentAnchor(newButton->topLeft);
+    newButton->bottomRight->setCoords(18, 18);
+    newButton->setScaled(true);
+    newButton->setSelectable(false);
+    newButton->setProperty("button_name", QString("export"));
+    newButton->setProperty("tooltip", QString("Export plot"));
+    ui->mcaPlot->addItem(newButton);
+    overlayButton = newButton;
   }
 
   bool xaxis_changed = false;
@@ -666,14 +736,36 @@ void WidgetPlot1D::selection_changed() {
 }
 
 void WidgetPlot1D::clicked_plottable(QCPAbstractPlottable *plt) {
-  //PL_INFO << "<WidgetPlot1D> clickedplottable";
+//  PL_INFO << "<WidgetPlot1D> clickedplottable";
 }
 
+void WidgetPlot1D::clicked_item(QCPAbstractItem* itm) {
+  if (QCPItemPixmap *pix = qobject_cast<QCPItemPixmap*>(itm)) {
+//    QPoint p = this->mapFromGlobal(QCursor::pos());
+    QString name = pix->property("button_name").toString();
+    if (name == "options") {
+      menuOptions.exec(QCursor::pos());
+    } else if (name == "export") {
+      menuExportFormat.exec(QCursor::pos());
+    } else if (name == "reset_scales") {
+      zoom_out();
+    }
+  }
+}
+
+void WidgetPlot1D::zoom_out() {
+  ui->mcaPlot->xAxis->rescale();
+  force_rezoom_ = true;
+  plot_rezoom();
+  ui->mcaPlot->replot();
+
+}
 
 void WidgetPlot1D::plot_mouse_press(QMouseEvent*) {
   disconnect(ui->mcaPlot, 0, this, 0);
   connect(ui->mcaPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(plot_mouse_release(QMouseEvent*)));
   connect(ui->mcaPlot, SIGNAL(plottableClick(QCPAbstractPlottable*,QMouseEvent*)), this, SLOT(clicked_plottable(QCPAbstractPlottable*)));
+  connect(ui->mcaPlot, SIGNAL(clickedAbstractItem(QCPAbstractItem*)), this, SLOT(clicked_item(QCPAbstractItem*)));
   connect(ui->mcaPlot, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
 
   force_rezoom_ = false;
@@ -711,53 +803,47 @@ void WidgetPlot1D::plot_mouse_release(QMouseEvent*) {
     emit range_moved();
 }
 
-void WidgetPlot1D::on_pushResetScales_clicked()
-{
-  ui->mcaPlot->xAxis->rescale();
-  force_rezoom_ = true;
-  plot_rezoom();
-  ui->mcaPlot->replot();
-}
-
-void WidgetPlot1D::plotStyleChosen(QAction* choice) {
-  set_plot_style(choice->text());
-}
-
-
-void WidgetPlot1D::scaleTypeChosen(QAction* choice) {
-  set_scale_type(choice->text());
-}
-
-void WidgetPlot1D::set_scale_type(QString sct) {
+void WidgetPlot1D::optionsChanged(QAction* action) {
   this->setCursor(Qt::WaitCursor);
-  scale_type_ = sct;
-  for (auto &q : menuScaleType.actions())
-    q->setChecked(q->text() == sct);
-  if (scale_type_ == "Linear") {
+  QString choice = action->text();
+  if (choice == "Linear") {
+    scale_type_ = choice;
     ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLinear);
-  } else if (scale_type() == "Logarithmic") {
+  } else if (choice == "Logarithmic") {
     ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLogarithmic);
+    scale_type_ = choice;
+  } else if ((choice == "Scatter") || (choice == "Lines") || (choice == "Fill") || (choice == "Step")) {
+    plot_style_ = choice;
+    int total = ui->mcaPlot->graphCount();
+    for (int i=0; i < total; i++)
+      if ((ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssNone) || (ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssDisc))
+        set_graph_style(ui->mcaPlot->graph(i), choice);
+  } else if (choice == "Energy labels") {
+    marker_labels_ = !marker_labels_;
+    replot_markers();
+  } else if (choice == "light") {
+    setColorScheme(Qt::black, Qt::white, QColor(112, 112, 112), QColor(170, 170, 170));
+    color_theme_ = choice;
+    replot_markers();
+  } else if (choice == "dark") {
+    setColorScheme(Qt::white, Qt::black, QColor(144, 144, 144), QColor(80, 80, 80));
+    color_theme_ = choice;
+    replot_markers();
+  } else if ((choice == "No grid") || (choice == "Grid") || (choice == "Grid + subgrid")) {
+    grid_style_ = choice;
+    ui->mcaPlot->xAxis->grid()->setVisible(grid_style_ != "No grid");
+    ui->mcaPlot->yAxis->grid()->setVisible(grid_style_ != "No grid");
+    ui->mcaPlot->xAxis->grid()->setSubGridVisible(grid_style_ == "Grid + subgrid");
+    ui->mcaPlot->yAxis->grid()->setSubGridVisible(grid_style_ == "Grid + subgrid");
   }
+
+  build_menu();
   ui->mcaPlot->replot();
   this->setCursor(Qt::ArrowCursor);
 }
 
 QString WidgetPlot1D::scale_type() {
   return scale_type_;
-}
-
-void WidgetPlot1D::set_plot_style(QString stl) {
-  this->setCursor(Qt::WaitCursor);
-  plot_style_ = stl;
-  for (auto &q : menuPlotStyle.actions())
-    q->setChecked(q->text() == stl);
-  int total = ui->mcaPlot->graphCount();
-  for (int i=0; i < total; i++) {
-    if ((ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssNone) || (ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssDisc))
-      set_graph_style(ui->mcaPlot->graph(i), stl);
-  }
-  ui->mcaPlot->replot();
-  this->setCursor(Qt::ArrowCursor);
 }
 
 QString WidgetPlot1D::plot_style() {
@@ -788,18 +874,36 @@ void WidgetPlot1D::set_graph_style(QCPGraph* graph, QString style) {
   }
 }
 
-void WidgetPlot1D::on_pushLabels_clicked()
-{
-  marker_labels_ = !marker_labels_;
-  replot_markers();
+void WidgetPlot1D::set_scale_type(QString sct) {
+  this->setCursor(Qt::WaitCursor);
+  scale_type_ = sct;
+  if (scale_type_ == "Linear")
+    ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLinear);
+  else if (scale_type() == "Logarithmic")
+    ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLogarithmic);
   ui->mcaPlot->replot();
+  build_menu();
+  this->setCursor(Qt::ArrowCursor);
+}
+
+void WidgetPlot1D::set_plot_style(QString stl) {
+  this->setCursor(Qt::WaitCursor);
+  plot_style_ = stl;
+  int total = ui->mcaPlot->graphCount();
+  for (int i=0; i < total; i++) {
+    if ((ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssNone) || (ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssDisc))
+      set_graph_style(ui->mcaPlot->graph(i), stl);
+  }
+  build_menu();
+  ui->mcaPlot->replot();
+  this->setCursor(Qt::ArrowCursor);
 }
 
 void WidgetPlot1D::set_marker_labels(bool sl)
 {
   marker_labels_ = sl;
-  ui->pushLabels->setChecked(sl);
   replot_markers();
+  build_menu();
   ui->mcaPlot->replot();
 }
 
@@ -807,40 +911,8 @@ bool WidgetPlot1D::marker_labels() {
   return marker_labels_;
 }
 
-void WidgetPlot1D::showButtonMarkerLabels(bool v) {
-  ui->pushLabels->setVisible(v);
-}
-
-void WidgetPlot1D::showButtonPlotStyle(bool v) {
-  ui->toolPlotStyle->setVisible(v);
-}
-
-void WidgetPlot1D::showButtonScaleType(bool v) {
-  ui->toolScaleType->setVisible(v);
-}
-
-void WidgetPlot1D::showButtonColorThemes(bool v) {
-  ui->pushNight->setVisible(v);
-}
-
-void WidgetPlot1D::showTitle(bool v) {
-  ui->labelTitle->setVisible(v);
-}
-
 void WidgetPlot1D::set_markers_selectable(bool s) {
   markers_selectable_ = s;
-}
-
-void WidgetPlot1D::setZoomable(bool v) {
-  ui->pushResetScales->setVisible(v);
-  ui->mcaPlot->setInteraction(QCP::iRangeDrag, v);
-  ui->mcaPlot->setInteraction(QCP::iRangeZoom, v);
-}
-
-void WidgetPlot1D::setFloatingText(QString txt) {
-  floating_text_ = txt;
-  replot_markers();
-  ui->mcaPlot->replot();
 }
 
 void WidgetPlot1D::exportRequested(QAction* choice) {

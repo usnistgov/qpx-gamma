@@ -108,6 +108,41 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="pushFullInfo">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>32</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>32</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Details / analysis</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../resources/qpxres.qrc">
+           <normaloff>:/new/icons/oxy/help_about.png</normaloff>:/new/icons/oxy/help_about.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>18</width>
+           <height>18</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QLabel" name="label_28">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -128,7 +163,7 @@
           </size>
          </property>
          <property name="text">
-          <string>1D plot bits</string>
+          <string>show only</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -145,13 +180,13 @@
          </property>
          <property name="minimumSize">
           <size>
-           <width>80</width>
+           <width>65</width>
            <height>20</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
-           <width>120</width>
+           <width>65</width>
            <height>25</height>
           </size>
          </property>
@@ -180,7 +215,7 @@
         </size>
        </property>
        <property name="toolTip">
-        <string>Click to select&lt;br/&gt; Right-click to toggle visibility</string>
+        <string>Click to select&lt;br/&gt; Right-click: toggle visibility&lt;br/&gt;Double: details/analysis</string>
        </property>
       </widget>
      </item>
@@ -205,7 +240,7 @@
         <number>2</number>
        </property>
        <property name="text">
-        <string>Left-click on spectrum above to see statistics, right click to toggle visibility</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Left-click: see statistics here&lt;br/&gt;Right click: toggle visibility&lt;br/&gt;Double click: details / analysis&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="textFormat">
         <enum>Qt::RichText</enum>
@@ -220,62 +255,6 @@
         <number>2</number>
        </property>
       </widget>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="QPushButton" name="pushFullInfo">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Details</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/help_about.png</normaloff>:/new/icons/oxy/help_about.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>18</width>
-           <height>18</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushAnalyse">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Analyse</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/preferences_web_browser_cache16.png</normaloff>:/new/icons/oxy/preferences_web_browser_cache16.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>18</width>
-           <height>18</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-      </layout>
      </item>
     </layout>
    </item>

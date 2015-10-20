@@ -475,6 +475,7 @@ void FormMcaDaq::on_pushEnable2d_clicked()
     update_plots();
   } else
     ui->Plot2d->hide();
+  ui->line_sep2d->setVisible(ui->pushEnable2d->isChecked());
 }
 
 void FormMcaDaq::on_pushForceRefresh_clicked()

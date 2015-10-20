@@ -89,7 +89,7 @@ struct Range {
 };
 
 struct MarkerBox2D {
-  MarkerBox2D() : visible(false), selected(false) {}
+  MarkerBox2D() : visible(false), selected(false), selectable (true) {}
   bool operator== (const MarkerBox2D& other) const {
     if (x1 != other.x1) return false;
     if (x2 != other.x2) return false;
@@ -102,6 +102,7 @@ struct MarkerBox2D {
 
   bool visible;
   bool selected;
+  bool selectable;
   Marker x1, x2, y1, y2;
   double x_c, y_c;
 };

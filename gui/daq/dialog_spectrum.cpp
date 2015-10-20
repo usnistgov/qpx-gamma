@@ -260,3 +260,9 @@ void dialog_spectrum::on_pushDelete_clicked()
     accept();
   }
 }
+
+void dialog_spectrum::on_pushAnalyse_clicked()
+{
+  emit analyse();
+  accept();
+}

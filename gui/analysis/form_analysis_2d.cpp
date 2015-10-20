@@ -48,7 +48,6 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   ui->plotSpectrum->setFit(&fit_data_);
   ui->plotSpectrum2->setFit(&fit_data_2_);
 
-  ui->plotMatrix->set_show_analyse(false);
   ui->plotMatrix->set_show_selector(false);
 
   my_gain_calibration_ = new FormGainCalibration(settings_, detectors_, fit_data_, fit_data_2_, this);

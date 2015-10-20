@@ -67,7 +67,7 @@ FormPeaks::FormPeaks(QWidget *parent) :
   QColor flagged_color;
   flagged_color.setHsv(QColor(Qt::green).hsvHue(), QColor(Qt::green).hsvSaturation(), 192);
 
-  flagged_.default_pen =  QPen(flagged_color, 1);
+  flagged_.default_pen =  QPen(flagged_color, 0);
   pseudo_voigt_.default_pen = QPen(Qt::darkCyan, 0);
 
   multiplet_.default_pen = QPen(Qt::red, 2);
@@ -174,7 +174,6 @@ void FormPeaks::new_spectrum() {
   }
 
   QString title = "Spectrum=" + QString::fromStdString(fit_data_->metadata_.name) + "  resolution=" + QString::number(fit_data_->metadata_.bits) + "bits  Detector=" + QString::fromStdString(fit_data_->detector_.name_);
-  ui->plot1D->setFloatingText(title);
   ui->plot1D->setTitle(title);
 
   ui->plot1D->reset_scales();

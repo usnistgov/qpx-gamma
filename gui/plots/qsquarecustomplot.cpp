@@ -121,23 +121,20 @@ void QSquareCustomPlot::mouseReleaseEvent(QMouseEvent *event)  {
 
     //PL_DBG << "Custom plot mouse released at coords: " << co_x << ", " << co_y;
 
-    QVariant details;
-    QCPLayerable *clickedLayerable = layerableAt(event->pos(), true, &details);
-    if (QCPColorMap *ap = qobject_cast<QCPColorMap*>(clickedLayerable)) {
-      int xx, yy;
-      ap->data()->coordToCell(co_x, co_y, &xx, &yy);
-      //PL_DBG << "Corrected to cell : " << xx << ", " << yy;
-      emit mouse_clicked(static_cast<double>(xx), static_cast<double>(yy), event, true); //true?
-    } else if (QCPAbstractItem *ai = qobject_cast<QCPAbstractItem*>(clickedLayerable)) {
-      //PL_DBG << "clicked on abstractitem in plot";
-      /*if (QCPItemText *markerText = qobject_cast<QCPItemText*>(ai)) {
-        if (markerText->selectable())
-          markerText->setSelected(!markerText->selected());
-        PL_DBG << "text clicked " << markerText->selected();
-        selectionChangedByUser();
-      }*/
-    } else
-      emit mouse_clicked(co_x, co_y, event, false);
+    QCPAbstractItem *ai = qobject_cast<QCPAbstractItem*>(itemAt(event->localPos(), false));
+    if (ai != nullptr) {
+      emit clickedAbstractItem(ai);
+    } else {
+      QVariant details;
+      QCPLayerable *clickedLayerable = layerableAt(event->pos(), false, &details);
+      if (QCPColorMap *ap = qobject_cast<QCPColorMap*>(clickedLayerable)) {
+        int xx, yy;
+        ap->data()->coordToCell(co_x, co_y, &xx, &yy);
+        //PL_DBG << "Corrected to cell : " << xx << ", " << yy;
+        emit mouse_clicked(static_cast<double>(xx), static_cast<double>(yy), event, true); //true?
+      } else
+        emit mouse_clicked(co_x, co_y, event, false);
+    }
   }
   QCustomPlot::mouseReleaseEvent(event);
 }

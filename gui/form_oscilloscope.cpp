@@ -34,11 +34,7 @@ FormOscilloscope::FormOscilloscope(ThreadRunner& thread, QSettings& settings, QW
   ui->widgetPlot->set_scale_type("Linear");
   ui->widgetPlot->set_plot_style("Step");
   ui->widgetPlot->set_marker_labels(false);
-  ui->widgetPlot->showButtonColorThemes(false);
-  ui->widgetPlot->showButtonMarkerLabels(false);
-//  ui->widgetPlot->showButtonPlotStyle(false);
-  ui->widgetPlot->showButtonScaleType(false);
-  ui->widgetPlot->setZoomable(true);
+  ui->widgetPlot->set_visible_options(ShowOptions::zoom | ShowOptions::title | ShowOptions::save);
   ui->widgetPlot->setTitle("");
   ui->widgetPlot->setLabels("time (ticks)", "energy/channel");
 

@@ -37,6 +37,7 @@ signals:
   void mouse_upon(double x, double y);
   void mouse_clicked(double x, double y, QMouseEvent* e, bool on_item); //why on_item?
   void shiftStateChanged(bool);
+  void clickedAbstractItem(QCPAbstractItem *);
 
 protected:
   void mousePressEvent(QMouseEvent *event) Q_DECL_OVERRIDE;

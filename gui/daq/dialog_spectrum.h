@@ -65,9 +65,12 @@ private slots:
     void durationLiveChanged();
     void durationRealChanged();
 
+    void on_pushAnalyse_clicked();
+
 signals:
     void finished(bool);
     void delete_spectrum();
+    void analyse();
 
 private:
     Ui::dialog_spectrum *ui;
