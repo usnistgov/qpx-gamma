@@ -443,11 +443,11 @@ void FormOptimization::plot_derivs(Gamma::Fitter &data)
 }
 
 void FormOptimization::addMovingMarker(double x) {
-  moving_.channel = x;
+  moving_.pos.set_bin(x, fitter_opt_.metadata_.bits, fitter_opt_.nrg_cali_);
   moving_.visible = true;
-  a.channel = x - ui->spinPeakWindow->value() / 2;
+  a.pos.set_bin(x - ui->spinPeakWindow->value() / 2, fitter_opt_.metadata_.bits, fitter_opt_.nrg_cali_);
   a.visible = true;
-  b.channel = x + ui->spinPeakWindow->value() / 2;
+  b.pos.set_bin(x + ui->spinPeakWindow->value() / 2, fitter_opt_.metadata_.bits, fitter_opt_.nrg_cali_);
   b.visible = true;
   replot_markers();
 }
@@ -496,8 +496,8 @@ void FormOptimization::resultChosen() {
       for (int j = q.topRow(); j <= q.bottomRow(); j++) {
 
         Marker cursor = moving_;
+        cursor.pos.set_bin(setting_values_[j], fitter_opt_.metadata_.bits, fitter_opt_.nrg_cali_);
         cursor.visible = true;
-        cursor.channel = setting_values_[j];
         ui->plot3->set_cursors(std::list<Marker>({cursor}));
 
         ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_), AppearanceProfile());

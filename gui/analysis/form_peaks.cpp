@@ -40,17 +40,10 @@ FormPeaks::FormPeaks(QWidget *parent) :
   ui->plot1D->set_markers_selectable(true);
 
   range_.visible = false;
-  range_.center.visible = true;
-  range_.center.appearance.themes["light"] = QPen(Qt::darkMagenta, 3);
-  range_.center.appearance.themes["dark"] = QPen(Qt::magenta, 3);
-  range_.l.appearance.themes["light"] = QPen(Qt::darkMagenta, 10);
-  range_.l.appearance.themes["dark"] = QPen(Qt::magenta, 10);
-  range_.l.visible = true;
-  range_.r = range_.l;
+  range_.top.themes["light"] = QPen(Qt::darkMagenta, 3);
+  range_.top.themes["dark"] = QPen(Qt::magenta, 3);
   range_.base.themes["light"] = QPen(Qt::darkMagenta, 2, Qt::DashLine);
   range_.base.themes["dark"] = QPen(Qt::magenta, 2, Qt::DashLine);
-  range_.top.themes["light"] = QPen(Qt::darkMagenta, 0, Qt::DashLine);
-  range_.top.themes["dark"] = QPen(Qt::magenta, 0, Qt::DashLine);
 
 
   list.appearance.themes["light"] = QPen(Qt::darkGray, 1);
@@ -80,7 +73,7 @@ FormPeaks::FormPeaks(QWidget *parent) :
   connect(ui->plot1D, SIGNAL(markers_selected()), this, SLOT(user_selected_peaks()));
   connect(ui->plot1D, SIGNAL(clickedLeft(double)), this, SLOT(addMovingMarker(double)));
   connect(ui->plot1D, SIGNAL(clickedRight(double)), this, SLOT(removeMovingMarker(double)));
-  connect(ui->plot1D, SIGNAL(range_moved()), this, SLOT(range_moved()));
+  connect(ui->plot1D, SIGNAL(range_moved(double, double)), this, SLOT(range_moved(double, double)));
 
   QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Insert), ui->plot1D);
   connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushAdd_clicked()));
@@ -160,9 +153,9 @@ void FormPeaks::clear() {
 
 void FormPeaks::make_range(Marker marker) {
   if (marker.visible)
-    addMovingMarker(marker.channel);
+    addMovingMarker(marker.pos.bin(fit_data_->metadata_.bits));
   else
-    removeMovingMarker(marker.channel);
+    removeMovingMarker(marker.pos.bin(fit_data_->metadata_.bits));
 }
 
 
@@ -220,7 +213,10 @@ void FormPeaks::replot_all() {
   ui->plot1D->clearGraphs();
   ui->plot1D->clearExtras();
 
-  ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->x_), QVector<double>::fromStdVector(fit_data_->y_), main_graph_, true);
+  ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->x_),
+                       QVector<double>::fromStdVector(fit_data_->y_),
+                       main_graph_, true,
+                       fit_data_->metadata_.bits);
 
   if (ui->checkShowMovAvg->isChecked())
     plot_derivs();
@@ -303,28 +299,19 @@ void FormPeaks::addMovingMarker(double x) {
   
   range_.visible = true;
 
-  range_.center.channel = x;
-  range_.center.chan_valid = true;
-  range_.center.energy = fit_data_->nrg_cali_.transform(x);
-  range_.center.energy_valid = (range_.center.channel != range_.center.energy);
-
   uint16_t ch = static_cast<uint16_t>(x);
 
+  range_.center.set_bin(x, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
+
   uint16_t ch_l = fit_data_->find_left(ch, ui->spinMinPeakWidth->value());
-  range_.l.channel = ch_l;
-  range_.l.chan_valid = true;
-  range_.l.energy = fit_data_->nrg_cali_.transform(ch_l);
-  range_.l.energy_valid = (range_.l.channel != range_.l.energy);
+  range_.l.set_bin(ch_l, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
 
   uint16_t ch_r = fit_data_->find_right(ch, ui->spinMinPeakWidth->value());
-  range_.r.channel = ch_r;
-  range_.r.chan_valid = true;
-  range_.r.energy = fit_data_->nrg_cali_.transform(ch_r);
-  range_.r.energy_valid = (range_.r.channel != range_.r.energy);
+  range_.r.set_bin(ch_r, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
 
   ui->pushAdd->setEnabled(true);
-  PL_INFO << "<Peak finder> Marker at chan=" << range_.center.channel << " (" << range_.center.energy << " " << fit_data_->nrg_cali_.units_ << ")"
-          << ", edges=[" << range_.l.channel << ", " << range_.r.channel << "]";
+//  PL_INFO << "<Peak finder> Marker at chan=" << range_.center.channel << " (" << range_.center.energy << " " << fit_data_->nrg_cali_.units_ << ")"
+//          << ", edges=[" << range_.l.channel << ", " << range_.r.channel << "]";
 
   replot_markers();
   emit range_changed(range_);
@@ -355,10 +342,8 @@ void FormPeaks::replot_markers() {
 
   for (auto &q : fit_data_->peaks_) {
     Marker m = list;
-    m.channel = q.second.center;
-    m.energy = q.second.energy;
-    m.chan_valid = true;
-    m.energy_valid = (m.channel != m.energy);
+    m.pos.set_bin(q.second.center, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
+    //PL_DBG << "FormPlot1D  marker at c=" << m.pos.bin(fit_data_->metadata_.bits) <<  " e=" <<  m.pos.energy();
 
     //if (selected_peaks_.count(m.channel) == 1)
     //  m.selected = true;
@@ -380,10 +365,10 @@ void FormPeaks::on_pushAdd_clicked()
   if (!ui->pushAdd->isEnabled())
     return;
 
-  if (range_.l.channel >= range_.r.channel)
+  if (range_.l.energy() >= range_.r.energy())
     return;
 
-  fit_data_->add_peak(range_.l.channel, range_.r.channel);
+  fit_data_->add_peak(range_.l.bin(fit_data_->metadata_.bits), range_.r.bin(fit_data_->metadata_.bits));
   ui->pushAdd->setEnabled(false);
   removeMovingMarker(0);
   toggle_push();
@@ -547,8 +532,16 @@ void FormPeaks::on_spinMinPeakWidth_editingFinished()
   replot_all();
 }
 
-void FormPeaks::range_moved() {
-  range_ = ui->plot1D->get_range();
+void FormPeaks::range_moved(double l, double r) {
+
+//  if (use_calibrated_) {
+//    my_range_.l.set_energy(l, fit_data_->nrg_cali_);
+//    my_range_.r.set_energy(r, fit_data_->nrg_cali_);
+//  } else {
+    range_.l.set_bin(l, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
+    range_.r.set_bin(r, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
+//  }
+
   toggle_push();
   replot_markers();
 }

@@ -87,7 +87,7 @@ int32_t FormMultiGates::index_of(double centroid, bool fuzzy) {
       if (gates_[i].centroid_chan == centroid)
         return i;
   }
-    return -1;
+  return -1;
 }
 
 
@@ -130,15 +130,15 @@ uint32_t FormMultiGates::current_idx() {
 
   uint32_t  current_gate_ = -1;
   PL_DBG << "will look at " << indexes.size() << " selected indexes";
-    foreach (index, indexes) {
-        int row = index.row();
-        i = sortModel.index(row, 1, QModelIndex());
-        double centroid = sortModel.data(i, Qt::EditRole).toDouble();
-        int32_t gate_idx = index_of(centroid, false);
-        PL_DBG << "selected " << gate_idx << " -> "  << centroid;
-        current_gate_ = gate_idx;
-    }
-    return current_gate_;
+  foreach (index, indexes) {
+    int row = index.row();
+    i = sortModel.index(row, 1, QModelIndex());
+    double centroid = sortModel.data(i, Qt::EditRole).toDouble();
+    int32_t gate_idx = index_of(centroid, false);
+    PL_DBG << "selected " << gate_idx << " -> "  << centroid;
+    current_gate_ = gate_idx;
+  }
+  return current_gate_;
 }
 
 Gamma::Gate FormMultiGates::current_gate() {
@@ -165,22 +165,22 @@ void FormMultiGates::selection_changed(QItemSelection selected, QItemSelection d
   ui->pushApprove->setEnabled(!indexes.empty());
 
   // Go through all the selected items
-//  foreach (QModelIndex idx, ui->tableGateList->selectionModel()->selectedRows()) {
-//    double centroid = sortModel.data(idx, Qt::EditRole).toDouble();
-//    int32_t gate_idx = index_of(centroid, false);
-//    PL_DBG << "selected " << gate_idx << " -> "  << centroid;
-//    current_gate_ = gate_idx;
-//  }
+  //  foreach (QModelIndex idx, ui->tableGateList->selectionModel()->selectedRows()) {
+  //    double centroid = sortModel.data(idx, Qt::EditRole).toDouble();
+  //    int32_t gate_idx = index_of(centroid, false);
+  //    PL_DBG << "selected " << gate_idx << " -> "  << centroid;
+  //    current_gate_ = gate_idx;
+  //  }
 
-//  foreach (index, indexes) {
-//      int row = sortModel.mapToSource(index).row();
-//      PL_DBG << "row " << row;
-//      i = table_model_.index(row, 1, QModelIndex());
-//      double centroid = table_model_.data(i, Qt::EditRole).toDouble();
-//      int32_t gate_idx = index_of(centroid, false);
-//      PL_DBG << "selected " << gate_idx << " -> "  << centroid;
-//      current_gate_ = gate_idx;
-//  }
+  //  foreach (index, indexes) {
+  //      int row = sortModel.mapToSource(index).row();
+  //      PL_DBG << "row " << row;
+  //      i = table_model_.index(row, 1, QModelIndex());
+  //      double centroid = table_model_.data(i, Qt::EditRole).toDouble();
+  //      int32_t gate_idx = index_of(centroid, false);
+  //      PL_DBG << "selected " << gate_idx << " -> "  << centroid;
+  //      current_gate_ = gate_idx;
+  //  }
 
   emit gate_selected(false);
 }
@@ -208,18 +208,18 @@ void FormMultiGates::rebuild_table(bool contents_changed) {
 
 
   //ui->tableGateList->clearSelection();
-//  for (int i=0; i < sortModel.rowCount(); ++i) {
-//    QModelIndex ix = sortModel.index(i, 1);
-//    double centroid = sortModel.data(ix, Qt::EditRole).toDouble();
-//    PL_DBG << "considering for selection c " << centroid;
-//    int32_t index = index_of(centroid, false);
-//    if (index == current_gate_) {
-//      ui->tableGateList->selectionModel()->select(ix, QItemSelectionModel::SelectCurrent);
-//      break;
-//    }
-//  }
+  //  for (int i=0; i < sortModel.rowCount(); ++i) {
+  //    QModelIndex ix = sortModel.index(i, 1);
+  //    double centroid = sortModel.data(ix, Qt::EditRole).toDouble();
+  //    PL_DBG << "considering for selection c " << centroid;
+  //    int32_t index = index_of(centroid, false);
+  //    if (index == current_gate_) {
+  //      ui->tableGateList->selectionModel()->select(ix, QItemSelectionModel::SelectCurrent);
+  //      break;
+  //    }
+  //  }
 
-//  table_model_.update();
+  //  table_model_.update();
 }
 
 
@@ -295,11 +295,11 @@ void FormMultiGates::on_pushApprove_clicked()
     if (index_of(newgate.centroid_chan, true) < 0)
       gates_.push_back(newgate);
     //else
-      //PL_DBG << "duplicate. ignoring";
+    //PL_DBG << "duplicate. ignoring";
   }
 
   rebuild_table(true);
-//  emit gate_selected();
+  //  emit gate_selected();
 }
 
 void FormMultiGates::on_pushDistill_clicked()
@@ -307,31 +307,24 @@ void FormMultiGates::on_pushDistill_clicked()
   all_boxes_.clear();
   MarkerBox2D box;
   box.visible = true;
+  box.selectable = true;
+  box.selected = false;
 
   for (auto &q : gates_) {
     Gamma::Gate gate = q;
     if (gate.centroid_chan != -1) {
-    box.x1.chan_valid = true;
-    box.x1.energy_valid = true;
-    box.x1.channel = gate.centroid_chan - (gate.width_chan / 2.0);
-    box.x1.energy = gate.centroid_nrg - (gate.width_nrg / 2.0);
-    box.x2.chan_valid = true;
-    box.x2.energy_valid = true;
-    box.x2.channel = gate.centroid_chan + (gate.width_chan / 2.0);
-    box.x2.energy = gate.centroid_nrg + (gate.width_nrg / 2.0);
-    for (auto &p : gate.fit_data_.peaks_) {
-      Gamma::Peak peak = p.second;
-      box.y1.chan_valid = true;
-      box.y1.energy_valid = true;
-      box.y1.channel = peak.center - (peak.gaussian_.hwhm_ * 2);
-      box.y1.energy = gate.fit_data_.nrg_cali_.transform(box.y1.channel);
-      box.y2.chan_valid = true;
-      box.y2.energy_valid = true;
-      box.y2.channel = peak.center + (peak.gaussian_.hwhm_ * 2);
-      box.y2.energy = gate.fit_data_.nrg_cali_.transform(box.y2.channel);
-      all_boxes_.push_back(box);
+      box.x_c.set_bin(gate.centroid_chan, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+      box.x1.set_bin(gate.centroid_chan - (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+      box.x2.set_bin(gate.centroid_chan + (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+
+      for (auto &p : gate.fit_data_.peaks_) {
+        Gamma::Peak peak = p.second;
+        box.y_c.set_bin(peak.center, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+        box.y1.set_bin(peak.center - (peak.gaussian_.hwhm_ * 2), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+        box.y2.set_bin(peak.center + (peak.gaussian_.hwhm_ * 2), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+        all_boxes_.push_back(box);
+      }
     }
-  }
   }
 
   emit boxes_made();
@@ -383,7 +376,7 @@ int TableGates::rowCount(const QModelIndex & /*parent*/) const
 
 int TableGates::columnCount(const QModelIndex & /*parent*/) const
 {
-    return 7;
+  return 7;
 }
 
 QVariant TableGates::data(const QModelIndex &index, int role) const

@@ -87,7 +87,7 @@ private slots:
   void replot_markers();
   void toggle_push();
 
-  void range_moved();
+  void range_moved(double, double);
 
   void on_pushAdd_clicked();
   void on_pushMarkerRemove_clicked();

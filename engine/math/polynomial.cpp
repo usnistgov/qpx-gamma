@@ -140,6 +140,42 @@ double Polynomial::evaluate(double x) {
   return result;
 }
 
+Polynomial Polynomial::derivative() {
+  Polynomial new_poly;
+  new_poly.xoffset_ = xoffset_;
+  if (degree_ > 0)
+    new_poly.coeffs_.resize(coeffs_.size() - 1, 0);
+  for (int i=1; i < coeffs_.size(); ++ i)
+    new_poly.coeffs_[i-1] = i * coeffs_[i];
+  new_poly.degree_ = degree_ - 1;
+  return new_poly;
+}
+
+double Polynomial::inverse_evaluate(double y, double e) {
+  int i=0;
+  double x0=1;
+  Polynomial deriv = derivative();
+  double x1 = x0 + (y - evaluate(x0)) / (deriv.evaluate(x0));
+  while( i<=100 && std::abs(x1-x0) > e)
+  {
+    x0 = x1;
+    x1 = x0 + (y - evaluate(x0)) / (deriv.evaluate(x0));
+    i++;
+  }
+
+  double x_adjusted = x1 - xoffset_;
+
+  if(std::abs(x1-x0) <= e)
+    return x_adjusted;
+
+  else
+  {
+    PL_WARN <<"Maximum iteration reached in polynomial inverse evaluation";
+    return nan("");
+  }
+}
+
+
 std::vector<double> Polynomial::evaluate_array(std::vector<double> x) {
   std::vector<double> y;
   for (auto &q : x)

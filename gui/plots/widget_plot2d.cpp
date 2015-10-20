@@ -161,8 +161,8 @@ std::list<MarkerBox2D> WidgetPlot2D::get_selected_boxes() {
   for (auto &q : ui->coincPlot->selectedItems())
     if (QCPItemRect *b = qobject_cast<QCPItemRect*>(q)) {
       MarkerBox2D box;
-      box.x_c = b->property("chan_x").toDouble();
-      box.y_c = b->property("chan_y").toDouble();
+      box.x_c.set_bin(b->property("chan_x").toDouble(), bits_, calib_x_);
+      box.y_c.set_bin(b->property("chan_y").toDouble(), bits_, calib_y_);
       selection.push_back(box);
       //PL_DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
     }
@@ -230,43 +230,110 @@ void WidgetPlot2D::replot_markers() {
       box->setPen(pen);
     }
 
-    box->setProperty("chan_x", q.x_c);
-    box->setProperty("chan_y", q.y_c);
-    if (calib_x_.units_ != "channels")
-      box->topLeft->setCoords(q.x1.energy, q.y1.energy);
-    else
-      box->topLeft->setCoords(q.x1.channel, q.y1.channel);
-    if (calib_x_.units_ != "channels")
-      box->bottomRight->setCoords(q.x2.energy, q.y2.energy);
-    else
-      box->bottomRight->setCoords(q.x2.channel, q.y2.channel);
+    box->setProperty("chan_x", q.x_c.bin(bits_));
+    box->setProperty("chan_y", q.y_c.bin(bits_));
+    box->setProperty("nrg_x", q.x_c.energy());
+    box->setProperty("nrg_y", q.y_c.energy());
+    if (calib_x_.valid()) {
+      box->topLeft->setCoords(q.x1.energy(), q.y1.energy());
+      box->bottomRight->setCoords(q.x2.energy(), q.y2.energy());
+    } else {
+      box->topLeft->setCoords(q.x1.bin(bits_), q.y1.bin(bits_));
+      box->bottomRight->setCoords(q.x2.bin(bits_), q.y2.bin(bits_));
+    }
     ui->coincPlot->addItem(box);
 
-    bool vertical = (abs(q.x2.energy - q.x1.energy) < abs(q.y2.energy - q.y1.energy));
+    if (!q.label)
+      continue;
 
-      QCPItemText *labelItem = new QCPItemText(ui->coincPlot);
-      labelItem->position->setType(QCPItemPosition::ptPlotCoords);
-      if (vertical) {
-        if (!q.selectable)
-          labelItem->setPositionAlignment(Qt::AlignTop|Qt::AlignRight);
+    PL_DBG << "will make label";
+
+
+    QCPItemText *labelItem = new QCPItemText(ui->coincPlot);
+    labelItem->setClipToAxisRect(false);
+
+    if (q.label & ShowBoxLabel::vLocal)
+      labelItem->position->setTypeY(QCPItemPosition::ptPlotCoords);
+    else
+      labelItem->position->setTypeY(QCPItemPosition::ptAxisRectRatio);
+    if (q.label & ShowBoxLabel::hLocal)
+      labelItem->position->setTypeX(QCPItemPosition::ptPlotCoords);
+    else
+      labelItem->position->setTypeX(QCPItemPosition::ptAxisRectRatio);
+
+    double tx = 0, ty = 0;
+
+    if ((q.label & ShowBoxLabel::vEdgeLabel) || (q.label & ShowBoxLabel::vCenterLabel)) {
+      if (q.label & ShowBoxLabel::hLocal) {
+        PL_DBG << "1";
+
+        if (calib_x_.valid())
+          ty = q.y_c.energy();
         else
-          labelItem->setPositionAlignment(Qt::AlignVCenter|Qt::AlignHCenter);
-        labelItem->setRotation(90);
-        labelItem->setText(QString::number(q.x_c));
-        labelItem->position->setCoords(q.x_c - 1, q.y_c + 1);
-      } else {
-        if (!q.selectable)
-          labelItem->setPositionAlignment(Qt::AlignTop|Qt::AlignLeft);
-        else
-          labelItem->setPositionAlignment(Qt::AlignVCenter|Qt::AlignHCenter);
-        labelItem->setText(QString::number(q.y_c));
-        labelItem->position->setCoords(q.x_c + 1, q.y_c - 1);
+          ty = q.y_c.bin(bits_);
       }
-      labelItem->setFont(QFont("Helvetica", 12));
-      labelItem->setSelectable(false);
-      labelItem->setColor(pen.color());
-      ui->coincPlot->addItem(labelItem);
+      else
+        ty = 0.5;
+
+      PL_DBG << "ty=" << ty;
+
+      if (q.label & ShowBoxLabel::vCenterLabel) {
+        PL_DBG << "2";
+        labelItem->setPositionAlignment(Qt::AlignVCenter|Qt::AlignHCenter);
+        labelItem->setRotation(90);
+        labelItem->setText(QString::number(q.x_c.energy()));
+        if (calib_x_.valid())
+          labelItem->position->setCoords(q.x_c.energy() - 1, ty);
+        else
+          labelItem->position->setCoords(q.x_c.bin(bits_) - 1, ty);
+      } else if (q.label & ShowBoxLabel::vEdgeLabel) {
+        PL_DBG << "3";
+        labelItem->setPositionAlignment(Qt::AlignTop|Qt::AlignRight);
+        labelItem->setRotation(90);
+        labelItem->setText(QString::number(q.x_c.energy()));
+        if (calib_x_.valid())
+          labelItem->position->setCoords(q.x1.energy() - 1, ty + 2);
+        else
+          labelItem->position->setCoords(q.x1.bin(bits_) - 1, ty + 2);
+      }
+    } else if ((q.label & ShowBoxLabel::hEdgeLabel) || (q.label & ShowBoxLabel::hCenterLabel)) {
+      if (q.label & ShowBoxLabel::vLocal) {
+        PL_DBG << "4";
+
+        if (calib_x_.valid())
+          tx = q.x_c.energy();
+        else
+          tx = q.x_c.bin(bits_);
+      }
+      else
+        tx = 0.5;
+
+      PL_DBG << "tx=" << tx;
+
+      if (q.label & ShowBoxLabel::hCenterLabel) {
+        PL_DBG << "5";
+        labelItem->setPositionAlignment(Qt::AlignVCenter|Qt::AlignHCenter);
+        labelItem->setText(QString::number(q.y_c.energy()));
+        if (calib_x_.valid())
+          labelItem->position->setCoords(tx, q.y_c.energy() - 1);
+        else
+          labelItem->position->setCoords(tx, q.y_c.bin(bits_) - 1);
+      } else if (q.label & ShowBoxLabel::hEdgeLabel) {
+        PL_DBG << "6";
+        labelItem->setPositionAlignment(Qt::AlignTop|Qt::AlignLeft);
+        labelItem->setText(QString::number(q.y_c.energy()));
+        if (calib_x_.valid())
+          labelItem->position->setCoords(tx + 2, q.y1.energy() - 1);
+        else
+          labelItem->position->setCoords(tx + 2, q.y1.bin(bits_) - 1);
+      }
     }
+    labelItem->setFont(QFont("Helvetica", 12));
+    labelItem->setSelectable(false);
+    labelItem->setColor(pen_strong.color());
+    PL_DBG << "about to add label " << labelItem->text().toStdString();
+    ui->coincPlot->addItem(labelItem);
+  }
 
 
   if (boxes_.size()) {
@@ -282,8 +349,8 @@ void WidgetPlot2D::replot_markers() {
     box->setSelectable(false);
     box->setPen(pen_strong);
     box->setBrush(QBrush(pen_strong2.color()));
-    box->topLeft->setCoords(range_.x1.channel, range_.y1.channel);
-    box->bottomRight->setCoords(range_.x2.channel, range_.y2.channel);
+    box->topLeft->setCoords(range_.x1.bin(bits_), range_.y1.bin(bits_));
+    box->bottomRight->setCoords(range_.x2.bin(bits_), range_.y2.bin(bits_));
     ui->coincPlot->addItem(box);
   }
 
@@ -376,42 +443,28 @@ void WidgetPlot2D::set_axes(Gamma::Calibration cal_x, Gamma::Calibration cal_y, 
 
 
 void WidgetPlot2D::plot_2d_mouse_upon(double x, double y) {
-  colorMap->keyAxis()->setLabel("Energy (" + QString::fromStdString(calib_x_.units_) + "): " + QString::number(calib_x_.transform(x, bits_)));
-  colorMap->valueAxis()->setLabel("Energy (" + QString::fromStdString(calib_y_.units_) + "): " + QString::number(calib_y_.transform(y, bits_)));
-  ui->coincPlot->replot();
+//  colorMap->keyAxis()->setLabel("Energy (" + QString::fromStdString(calib_x_.units_) + "): " + QString::number(calib_x_.transform(x, bits_)));
+//  colorMap->valueAxis()->setLabel("Energy (" + QString::fromStdString(calib_y_.units_) + "): " + QString::number(calib_y_.transform(y, bits_)));
+//  ui->coincPlot->replot();
 }
 
 void WidgetPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event, bool channels) {
-  PL_INFO << "<Plot2D> markers at " << x << " & " << y;
+  //PL_INFO << "<Plot2D> markers at " << x << " & " << y << " chans?=" << channels;
 
   bool visible = (event->button() == Qt::LeftButton);
 
   Marker xt, yt;
 
-  xt.bits = bits_;
-  yt.bits = bits_;
+  if (channels) {
+    xt.pos.set_bin(x, bits_, calib_x_);
+    yt.pos.set_bin(y, bits_, calib_y_);
+  } else {
+    xt.pos.set_energy(x, calib_x_);
+    yt.pos.set_energy(y, calib_y_);
+  }
+
   xt.visible = visible;
   yt.visible = visible;
-
-  if (visible && channels) {
-    //    PL_DBG << "<Plot2D> channels valid";
-    xt.channel = x;
-    yt.channel = y;
-    xt.chan_valid = true;
-    yt.chan_valid = true;
-    xt.energy_valid = false;
-    yt.energy_valid = false;
-    //calibrate_marker(xt);
-    //calibrate_marker(yt);
-  } else if (visible && !channels){
-    //    PL_DBG << "<Plot2D> energy valid";
-    xt.energy = x;
-    yt.energy = y;
-    xt.energy_valid = true;
-    yt.energy_valid = true;
-    xt.chan_valid = false;
-    yt.chan_valid = false;
-  }
 
   emit markers_set(xt, yt);
 }
@@ -507,16 +560,16 @@ void WidgetPlot2D::exportRequested(QAction* choice) {
   if (validateFile(this, fileName, true)) {
     QFileInfo file(fileName);
     if (file.suffix() == "png") {
-      PL_INFO << "Exporting plot to png " << fileName.toStdString();
+      //PL_INFO << "Exporting plot to png " << fileName.toStdString();
       ui->coincPlot->savePng(fileName,0,0,1,100);
     } else if (file.suffix() == "jpg") {
-      PL_INFO << "Exporting plot to jpg " << fileName.toStdString();
+      //PL_INFO << "Exporting plot to jpg " << fileName.toStdString();
       ui->coincPlot->saveJpg(fileName,0,0,1,100);
     } else if (file.suffix() == "bmp") {
-      PL_INFO << "Exporting plot to bmp " << fileName.toStdString();
+      //PL_INFO << "Exporting plot to bmp " << fileName.toStdString();
       ui->coincPlot->saveBmp(fileName);
     } else if (file.suffix() == "pdf") {
-      PL_INFO << "Exporting plot to pdf " << fileName.toStdString();
+      //PL_INFO << "Exporting plot to pdf " << fileName.toStdString();
       ui->coincPlot->savePdf(fileName, true);
     }
   }

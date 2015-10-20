@@ -53,6 +53,17 @@ double Calibration::transform(double chan) const {
     return chan;
 }
 
+double Calibration::inverse_transform(double energy) const {
+  if (coefficients_.empty())
+    return energy;
+
+  if (bits_ && (model_ == CalibrationModel::polynomial))
+    return Polynomial(coefficients_).inverse_evaluate(energy);
+  else
+    return energy;
+}
+
+
 double Calibration::transform(double chan, uint16_t bits) const {
   if (coefficients_.empty() || !bits_ || !bits)
     return chan;
@@ -65,6 +76,20 @@ double Calibration::transform(double chan, uint16_t bits) const {
   double re = transform(chan);
 
   return re;
+}
+
+double Calibration::inverse_transform(double energy, uint16_t bits) const {
+  if (coefficients_.empty() || !bits_ || !bits)
+    return energy; //NaN?
+
+  double bin = inverse_transform(energy);
+
+  if (bits > bits_)
+    bin = bin / pow(2, bits - bits_);
+  if (bits < bits_)
+    bin = bin * pow(2, bits_ - bits);
+
+  return bin;
 }
 
 std::string Calibration::fancy_equation(int precision, bool with_rsq) {

@@ -90,7 +90,7 @@ private:
 
   Marker moving, markx, marky;
 
-  void calibrate_markers();
+
 };
 
 #endif // WIDGET_PLOT1D_H

@@ -129,8 +129,6 @@ private:
   //scaling
   int bits;
   Gamma::Calibration calib_x_, calib_y_;
-
-  void calibrate_marker(Marker&);
 };
 
 #endif // WIDGET_PLOT2D_H

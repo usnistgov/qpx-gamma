@@ -95,11 +95,10 @@ public:
   void set_cursors(const std::list<Marker>&);
 
   void set_range(Range);
-  Range get_range();
   std::set<double> get_selected_markers();
 
   void addPoints(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, QCPScatterStyle::ScatterShape);
-  void addGraph(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, bool fittable = false);
+  void addGraph(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, bool fittable = false, int32_t bits = 0);
   void setYBounds(const std::map<double, double> &minima, const std::map<double, double> &maxima);
 
   void use_calibrated(bool);
@@ -111,7 +110,7 @@ signals:
 
   void clickedLeft(double);
   void clickedRight(double);
-  void range_moved();
+  void range_moved(double x, double y);
   void markers_selected();
 
 private slots:

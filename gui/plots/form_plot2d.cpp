@@ -216,43 +216,38 @@ void FormPlot2D::replot_markers() {
 
   int width = ui->spinGateWidth->value() / 2;
 
-  if (!ui->spinGateWidth->isVisible())
-    width = 0;
-
   MarkerBox2D gate;
   gate.selectable = false;
   gate.selected = false;
-  gate.x_c = x_marker.channel;
-  gate.y_c = y_marker.channel;
-  gate.x1 = x_marker; gate.x1.chan_valid = true; gate.x1.energy_valid = false;
-  gate.x2 = x_marker; gate.x2.chan_valid = true; gate.x2.energy_valid = false;
-  gate.y1 = y_marker; gate.y1.chan_valid = true; gate.y1.energy_valid = false;
-  gate.y2 = y_marker; gate.y2.chan_valid = true; gate.y2.energy_valid = false;
+
+  if (!ui->spinGateWidth->isVisible())
+    width = 0;
+
+  PL_DBG << "FormPlot2d marker width = " << width;
+
+  gate.x_c = x_marker.pos;
+  gate.y_c = y_marker.pos;
 
   gate.visible = y_marker.visible;
-  gate.x1.channel = 0;
-  gate.x2.channel = adjrange;
-  gate.y1.channel -= width;
-  gate.y2.channel += width;
-  calibrate_marker(gate.x1);
-  calibrate_marker(gate.x2);
-  calibrate_marker(gate.y1);
-  calibrate_marker(gate.y2);
+  gate.x1.set_bin(0, bits, calib_x_);
+  gate.x2.set_bin(adjrange, bits, calib_x_);
+  gate.y1.set_bin(y_marker.pos.bin(bits) - width, bits, calib_x_);
+  gate.y2.set_bin(y_marker.pos.bin(bits) + width, bits, calib_x_);
+  if (width)
+    gate.label = ShowBoxLabel::hCenterLabel | ShowBoxLabel::vLocal;
+  else
+    gate.label = ShowBoxLabel::hEdgeLabel | ShowBoxLabel::vLocal;
   boxes.push_back(gate);
 
   gate.visible = x_marker.visible;
-  gate.x1 = x_marker; gate.x1.chan_valid = true; gate.x1.energy_valid = false;
-  gate.x2 = x_marker; gate.x2.chan_valid = true; gate.x2.energy_valid = false;
-  gate.y1 = y_marker; gate.y1.chan_valid = true; gate.y1.energy_valid = false;
-  gate.y2 = y_marker; gate.y2.chan_valid = true; gate.y2.energy_valid = false;
-  gate.x1.channel -= width;
-  gate.x2.channel += width;
-  gate.y1.channel = 0;
-  gate.y2.channel = adjrange;
-  calibrate_marker(gate.x1);
-  calibrate_marker(gate.x2);
-  calibrate_marker(gate.y1);
-  calibrate_marker(gate.y2);
+  gate.x1.set_bin(x_marker.pos.bin(bits) - width, bits, calib_x_);
+  gate.x2.set_bin(x_marker.pos.bin(bits) + width, bits, calib_x_);
+  gate.y1.set_bin(0, bits, calib_x_);
+  gate.y2.set_bin(adjrange, bits, calib_x_);
+  if (width)
+    gate.label = ShowBoxLabel::vCenterLabel | ShowBoxLabel::hLocal;
+  else
+    gate.label = ShowBoxLabel::vEdgeLabel | ShowBoxLabel::hLocal;
   boxes.push_back(gate);
 
   ui->coincPlot->set_boxes(boxes);
@@ -297,12 +292,8 @@ void FormPlot2D::update_plot(bool force) {
         name_2d = newname;
 
         int newbits = some_spectrum->bits();
-        if (bits != newbits) {
+        if (bits != newbits)
           bits = newbits;
-          ext_marker.shift(bits);
-          x_marker.shift(bits);
-          y_marker.shift(bits);
-        }
 
         Gamma::Detector detector_x_;
         Gamma::Detector detector_y_;
@@ -326,9 +317,6 @@ void FormPlot2D::update_plot(bool force) {
         if (!calib_y_.bits_)
           calib_y_.bits_ = bits;
 
-        calibrate_marker(x_marker);
-        calibrate_marker(y_marker);
-
         ui->coincPlot->set_axes(calib_x_, calib_y_, bits);
       }
 
@@ -345,9 +333,6 @@ void FormPlot2D::update_plot(bool force) {
 }
 
 void FormPlot2D::markers_moved(Marker x, Marker y) {
-  calibrate_marker(x);
-  calibrate_marker(y);
-
   if (gates_movable_) {
     x_marker = x;
     y_marker = y;
@@ -358,17 +343,8 @@ void FormPlot2D::markers_moved(Marker x, Marker y) {
   emit markers_set(x, y);
 }
 
-void FormPlot2D::calibrate_marker(Marker &marker) {
-  if (!marker.energy_valid && marker.chan_valid) {
-    marker.energy = calib_x_.transform(marker.channel, marker.bits);
-    marker.energy_valid = (calib_x_.units_ != "channels");
-  }
-}
-
-
 void FormPlot2D::set_marker(Marker n) {
   ext_marker = n;
-  ext_marker.shift(bits);
   if (!ext_marker.visible) {
     x_marker.visible = false;
     y_marker.visible = false;
@@ -379,9 +355,6 @@ void FormPlot2D::set_marker(Marker n) {
 void FormPlot2D::set_markers(Marker x, Marker y) {
   x_marker = x;
   y_marker = y;
-
-  x_marker.shift(bits);
-  y_marker.shift(bits);
 
   replot_markers();
 }

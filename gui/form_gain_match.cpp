@@ -362,11 +362,11 @@ void FormGainMatch::update_plots() {
 }
 
 void FormGainMatch::addMovingMarker(double x) {
-  moving_.channel = x;
+  moving_.pos.set_bin(x, fitter_ref_.metadata_.bits, fitter_ref_.nrg_cali_);
   moving_.visible = true;
-  a.channel = x - ui->spinPeakWindow->value() / 2;
+  a.pos.set_bin(x - ui->spinPeakWindow->value() / 2, fitter_ref_.metadata_.bits, fitter_ref_.nrg_cali_);
   a.visible = true;
-  b.channel = x + ui->spinPeakWindow->value() / 2;
+  b.pos.set_bin(x + ui->spinPeakWindow->value() / 2, fitter_ref_.metadata_.bits, fitter_ref_.nrg_cali_);
   b.visible = true;
   replot_markers();
 }
@@ -383,13 +383,13 @@ void FormGainMatch::replot_markers() {
   std::list<Marker> markers;
 
   if (gauss_ref_.gaussian_.height_) {
-    marker_ref_.channel = gauss_ref_.gaussian_.center_;
+    marker_ref_.pos.set_bin(gauss_ref_.gaussian_.center_, fitter_ref_.metadata_.bits, fitter_ref_.nrg_cali_);
     marker_ref_.visible = true;
     markers.push_back(marker_ref_);
   }
 
   if (gauss_opt_.gaussian_.height_) {
-    marker_opt_.channel = gauss_opt_.gaussian_.center_;
+    marker_opt_.pos.set_bin(gauss_opt_.gaussian_.center_, fitter_opt_.metadata_.bits, fitter_opt_.nrg_cali_);
     marker_opt_.visible = true;
     markers.push_back(marker_opt_);
   }

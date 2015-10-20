@@ -60,6 +60,9 @@ class Calibration : public XMLable {
   bool valid() const;
   double transform(double) const;
   double transform(double, uint16_t) const;
+  double inverse_transform(double) const;
+  double inverse_transform(double, uint16_t) const;
+
   std::vector<double> transform(std::vector<double>) const;
   std::string coef_to_string() const;
   void coef_from_string(std::string);

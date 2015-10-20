@@ -42,6 +42,8 @@ public:
   void fit(std::vector<double> &x, std::vector<double> &y,
       std::vector<uint16_t> &degrees, double center=0);
 
+  Polynomial derivative();
+
   std::string to_string();
   std::string to_UTF8(int precision = -1, bool with_rsq = false);
   std::string to_markup();
@@ -49,6 +51,7 @@ public:
   void coef_from_string(std::string);
 
   double evaluate(double x);
+  double inverse_evaluate(double y, double e = 0.2);
   std::vector<double> evaluate_array(std::vector<double> x);
   
   std::vector<double> coeffs_;

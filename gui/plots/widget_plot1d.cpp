@@ -219,19 +219,17 @@ void WidgetPlot1D::set_range(Range rng) {
   my_range_ = rng;
 }
 
-Range WidgetPlot1D::get_range() {
-  return my_range_;
-}
-
 std::set<double> WidgetPlot1D::get_selected_markers() {
   std::set<double> selection;
   for (auto &q : ui->mcaPlot->selectedItems())
     if (QCPItemText *txt = qobject_cast<QCPItemText*>(q)) {
-      selection.insert(txt->property("chan_value").toDouble());
-      //PL_DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
+      if (txt->property("chan_value").isValid())
+        selection.insert(txt->property("chan_value").toDouble());
+      PL_DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
     } else if (QCPItemLine *line = qobject_cast<QCPItemLine*>(q)) {
       if (line->property("chan_value").isValid())
         selection.insert(line->property("chan_value").toDouble());
+      PL_DBG << "found selected " << line->property("true_value").toDouble() << " chan=" << line->property("chan_value").toDouble();
     }
 
   return selection;
@@ -245,7 +243,7 @@ void WidgetPlot1D::setYBounds(const std::map<double, double> &minima, const std:
 }
 
 
-void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, bool fittable) {
+void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, bool fittable, int32_t bits) {
   if (x.empty() || y.empty() || (x.size() != y.size()))
     return;
 
@@ -254,6 +252,7 @@ void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, 
   ui->mcaPlot->graph(g)->addData(x, y);
   ui->mcaPlot->graph(g)->setPen(appearance.get_pen(color_theme_));
   ui->mcaPlot->graph(g)->setProperty("fittable", fittable);
+  ui->mcaPlot->graph(g)->setProperty("bits", QVariant::fromValue(bits));
   set_graph_style(ui->mcaPlot->graph(g), plot_style_);
 
   if (x[0] < minx) {
@@ -369,11 +368,6 @@ void WidgetPlot1D::replot_markers() {
   for (auto &q : my_markers_) {
     QCPItemTracer *top_crs = nullptr;
     if (q.visible) {
-      double pos = 0;
-      if (use_calibrated_)
-        pos = q.energy;
-      else
-        pos = q.channel;
 
       double max = std::numeric_limits<double>::lowest();
       int total = ui->mcaPlot->graphCount();
@@ -381,13 +375,27 @@ void WidgetPlot1D::replot_markers() {
         if (ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssNone)
           continue;
 
+        if (!ui->mcaPlot->graph(i)->property("fittable").toBool())
+          continue;
+
+        int bits = ui->mcaPlot->graph(i)->property("bits").toInt();
+
+        double pos = 0;
+        if (use_calibrated_)
+          pos = q.pos.energy();
+        else
+          pos = q.pos.bin(bits);
+
+        //PL_DBG << "Adding crs at " << pos << " on plot " << i;
+
         if ((ui->mcaPlot->graph(i)->data()->firstKey() >= pos)
             || (pos >= ui->mcaPlot->graph(i)->data()->lastKey()))
           continue;
 
         QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
         crs->setStyle(QCPItemTracer::tsNone); //tsCirlce?
-        crs->setProperty("chan_value", q.channel);
+        crs->setProperty("chan_value", q.pos.bin(bits));
+        crs->setProperty("nrg_value", q.pos.energy());
 
         crs->setSize(4);
         crs->setGraph(ui->mcaPlot->graph(i));
@@ -427,6 +435,7 @@ void WidgetPlot1D::replot_markers() {
       line->setSelectedPen(selected_pen);
       line->setProperty("true_value", top_crs->graphKey());
       line->setProperty("chan_value", top_crs->property("chan_value"));
+      line->setProperty("nrg_value", top_crs->property("nrg_value"));
       line->setSelectable(markers_selectable_);
       if (markers_selectable_)
         line->setSelected(q.selected);
@@ -436,11 +445,12 @@ void WidgetPlot1D::replot_markers() {
         QCPItemText *markerText = new QCPItemText(ui->mcaPlot);
         markerText->setProperty("true_value", top_crs->graphKey());
         markerText->setProperty("chan_value", top_crs->property("chan_value"));
+        markerText->setProperty("nrg_value", top_crs->property("nrg_value"));
 
         markerText->position->setParentAnchor(top_crs->position);
         markerText->setPositionAlignment(Qt::AlignHCenter|Qt::AlignBottom);
         markerText->position->setCoords(0, -30);
-        markerText->setText(QString::number(q.energy));
+        markerText->setText(QString::number(q.pos.energy()));
         markerText->setTextAlignment(Qt::AlignLeft);
         markerText->setFont(QFont("Helvetica", 9));
         markerText->setPen(pen);
@@ -464,15 +474,19 @@ void WidgetPlot1D::replot_markers() {
 
   for (auto &q : my_cursors_) {
     double pos = 0;
-    if (use_calibrated_)
-      pos = q.energy;
-    else
-      pos = q.channel;
 
     if (!q.visible)
       continue;
     int total = ui->mcaPlot->graphCount();
     for (int i=0; i < total; i++) {
+
+      int bits = ui->mcaPlot->graph(i)->property("bits").toInt();
+
+      if (use_calibrated_)
+        pos = q.pos.energy();
+      else
+        pos = q.pos.bin(bits);
+
       QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
       crs->setPen(q.appearance.get_pen(color_theme_));
       crs->setStyle(QCPItemTracer::tsCircle);
@@ -488,17 +502,12 @@ void WidgetPlot1D::replot_markers() {
   if (my_range_.visible) {
 
     double pos_l = 0, pos_c = 0, pos_r = 0;
-    if (use_calibrated_) {
-      pos_l = my_range_.l.energy;
-      pos_c = my_range_.center.energy;
-      pos_r = my_range_.r.energy;
-    } else {
-      pos_l = my_range_.l.channel;
-      pos_c = my_range_.center.channel;
-      pos_r = my_range_.r.channel;
-    }
+    pos_l = my_range_.l.energy();
+    pos_c = my_range_.center.energy();
+    pos_r = my_range_.r.energy();
 
     if ((pos_l < pos_c) && (pos_c < pos_r)) {
+      PL_DBG << "will plot range";
 
       int total = ui->mcaPlot->graphCount();
       for (int i=0; i < total; i++) {
@@ -507,6 +516,14 @@ void WidgetPlot1D::replot_markers() {
 
         if (ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssNone)
           continue;
+
+        int bits = ui->mcaPlot->graph(i)->property("bits").toInt();
+
+        if (!use_calibrated_) {
+          pos_l = my_range_.l.bin(bits);
+          pos_c = my_range_.center.bin(bits);
+          pos_r = my_range_.r.bin(bits);
+        }
 
         if ((ui->mcaPlot->graph(i)->data()->firstKey() > pos_l)
             || (pos_r > ui->mcaPlot->graph(i)->data()->lastKey()))
@@ -538,23 +555,23 @@ void WidgetPlot1D::replot_markers() {
         ui->mcaPlot->addItem(edge_trc2);
         edge_trc2->updatePosition();
 
-        QPen pen_l = my_range_.l.appearance.get_pen(color_theme_);
-        DraggableTracer *ar1 = new DraggableTracer(ui->mcaPlot, edge_trc1, pen_l.width());
+        QPen pen_l = my_range_.base.get_pen(color_theme_);
+        QPen pen_r = my_range_.base.get_pen(color_theme_);
+        DraggableTracer *ar1 = new DraggableTracer(ui->mcaPlot, edge_trc1, 10);
         pen_l.setWidth(1);
         ar1->setPen(pen_l);
         ar1->setSelectable(true);
         ar1->set_limits(minx - 1, pos_r + 1); //exclusive limits
         ui->mcaPlot->addItem(ar1);
 
-        QPen pen_r = my_range_.r.appearance.get_pen(color_theme_);
-        DraggableTracer *ar2 = new DraggableTracer(ui->mcaPlot, edge_trc2, pen_r.width());
+        DraggableTracer *ar2 = new DraggableTracer(ui->mcaPlot, edge_trc2, 10);
         pen_r.setWidth(1);
         ar2->setPen(pen_r);
         ar2->setSelectable(true);
         ar2->set_limits(pos_l - 1, maxx + 1); //exclusive limits
         ui->mcaPlot->addItem(ar2);
 
-        if ((my_range_.l.visible) && (my_range_.r.visible)) {
+        if (my_range_.visible) {
           QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
           line->start->setParentAnchor(edge_trc1->position);
           line->start->setCoords(0, 0);
@@ -569,8 +586,8 @@ void WidgetPlot1D::replot_markers() {
             max_marker = edge_trc2->graphKey();
         }
 
-        if (my_range_.center.visible) {
-          crs->setPen(my_range_.center.appearance.get_pen(color_theme_));
+        if (my_range_.visible) {
+          crs->setPen(my_range_.top.get_pen(color_theme_));
           crs->setStyle(QCPItemTracer::tsCircle);
 
           /*
@@ -598,7 +615,7 @@ void WidgetPlot1D::replot_markers() {
 
     } else {
       my_range_.visible = false;
-      emit range_moved();
+      //emit range_moved();
     }
   }
 
@@ -610,13 +627,12 @@ void WidgetPlot1D::replot_markers() {
     calc_y_bounds(lowerc, upperc);
 
     double pos1 = 0, pos2 = 0;
-    if (use_calibrated_) {
-      pos1 = rect[0].energy;
-      pos2 = rect[1].energy;
-    } else {
-      pos1 = rect[0].channel;
-      pos2 = rect[1].channel;
-    }
+    pos1 = rect[0].pos.energy();
+    pos2 = rect[1].pos.energy();
+//    if (!use_calibrated_) {
+//      pos1 = rect[0].channel;
+//      pos2 = rect[1].channel;
+//    }
 
 
     QCPItemRect *cprect = new QCPItemRect(ui->mcaPlot);
@@ -781,26 +797,8 @@ void WidgetPlot1D::plot_mouse_release(QMouseEvent*) {
   plot_rezoom();
   ui->mcaPlot->replot();
 
-  //channels only???
-  if (edge_trc1 != nullptr)
-    if (use_calibrated_) {
-      my_range_.l.energy = edge_trc1->graphKey();
-      my_range_.l.chan_valid = false;
-    } else {
-      my_range_.l.channel = edge_trc1->graphKey();
-      my_range_.l.energy_valid = false;
-    }
-  if (edge_trc2 != nullptr)
-    if (use_calibrated_) {
-      my_range_.r.energy = edge_trc2->graphKey();
-      my_range_.r.chan_valid = false;
-    } else {
-      my_range_.r.channel = edge_trc2->graphKey();
-      my_range_.r.energy_valid = false;
-    }
-
   if ((edge_trc1 != nullptr) || (edge_trc2 != nullptr))
-    emit range_moved();
+    emit range_moved(edge_trc1->graphKey(), edge_trc2->graphKey());
 }
 
 void WidgetPlot1D::optionsChanged(QAction* action) {

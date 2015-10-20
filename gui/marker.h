@@ -36,60 +36,96 @@ struct AppearanceProfile {
   }
 };
 
-struct Marker {
-  bool operator!= (const Marker& other) const { return (!operator==(other)); }
-  bool operator== (const Marker& other) const {
-    if (energy != other.energy) return false;
-    if (channel != other.channel) return false;
+class Coord {
+public:
+  Coord() : bits_(-1), energy_(nan("")), bin_(nan("")) {}
+
+  void set_energy(double nrg, Gamma::Calibration cali) {
+    bin_ = nan("");
+    bits_ = 0;
+    energy_ = nrg;
+    if (!isnan(nrg)) {
+      bits_ = cali.bits_;
+      bin_ = cali.inverse_transform(nrg);
+    }
+  }
+
+  void set_bin(double bin, uint16_t bits, Gamma::Calibration cali) {
+    bin_ = bin;
+    bits_ = bits;
+    energy_ = nan("");
+    if (!isnan(bin) && cali.valid())
+      energy_ = cali.transform(bin_, bits_);
+  }
+
+  double energy() const {
+    return energy_;
+  }
+
+  double bin(const uint16_t to_bits) const {
+    if (!to_bits || !bits_)
+      return nan("");
+
+    if (bits_ > to_bits)
+      return bin_ / pow(2, bits_ - to_bits);
+    if (bits_ < to_bits)
+      return bin_ * pow(2, to_bits - bits_);
+    else
+      return bin_;
+  }
+
+  bool operator!= (const Coord& other) const { return (!operator==(other)); }
+  bool operator== (const Coord& other) const {
+    if (energy_ != other.energy_) return false;
+    if (bin(bits_) != other.bin(bits_)) return false;
     return true;
   }
 
-  double energy, channel;
-  uint16_t bits;
+private:
+  double energy_;
+  double bin_;
+  uint16_t bits_;
+};
+
+struct Marker {
+  bool operator!= (const Marker& other) const { return (!operator==(other)); }
+  bool operator== (const Marker& other) const {
+    if (pos != other.pos) return false;
+    return true;
+  }
+
+  Coord pos;
 
   AppearanceProfile appearance, selected_appearance;
 
   bool visible;
   bool selected;
-  bool chan_valid, energy_valid;
 
-  Marker() : energy(0), channel(0), bits(0), visible(false), chan_valid(false), energy_valid(false) {}
-
-  void shift(uint16_t to_bits) {
-    if (!to_bits || !bits)
-      return;
-
-    if (bits > to_bits)
-      channel = channel / pow(2, bits - to_bits);
-    if (bits < to_bits)
-      channel = channel * pow(2, to_bits - bits);
-
-    bits = to_bits;
-  }
-
-  void calibrate(Gamma::Detector det) {
-    if (chan_valid && det.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits))) {
-      energy = det.energy_calibrations_.get(Gamma::Calibration("Energy", bits)).transform(channel);
-      energy_valid = true;
-    } // else highest?
-    if (!chan_valid && energy_valid && det.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits))) {
-      Gamma::Calibration cal = det.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
-      channel = 0;
-      while (cal.transform(channel) < energy)
-        ++channel;
-    } // else highest?
-  }
-
+  Marker() : visible(false), selected(false) {}
 };
 
 struct Range {
   bool visible;
   AppearanceProfile base, top;
-  Marker center, l, r;
+  Coord center, l, r;
 };
 
+enum ShowBoxLabel {
+  noLabel      = 0,
+  vEdgeLabel   = 1 << 0,
+  hEdgeLabel   = 1 << 1,
+  vCenterLabel = 1 << 2,
+  hCenterLabel = 1 << 3,
+  hLocal       = 1 << 4,
+  vLocal       = 1 << 5
+};
+
+inline ShowBoxLabel operator|(ShowBoxLabel a, ShowBoxLabel b) {return static_cast<ShowBoxLabel>(static_cast<int>(a) | static_cast<int>(b));}
+inline ShowBoxLabel operator&(ShowBoxLabel a, ShowBoxLabel b) {return static_cast<ShowBoxLabel>(static_cast<int>(a) & static_cast<int>(b));}
+
+
 struct MarkerBox2D {
-  MarkerBox2D() : visible(false), selected(false), selectable (true) {}
+  MarkerBox2D() : visible(false), selected(false), selectable (true), label(ShowBoxLabel::noLabel) {}
   bool operator== (const MarkerBox2D& other) const {
     if (x1 != other.x1) return false;
     if (x2 != other.x2) return false;
@@ -103,8 +139,8 @@ struct MarkerBox2D {
   bool visible;
   bool selected;
   bool selectable;
-  Marker x1, x2, y1, y2;
-  double x_c, y_c;
+  ShowBoxLabel label;
+  Coord x1, x2, y1, y2, x_c, y_c;
 };
 
 #endif

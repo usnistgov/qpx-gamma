@@ -144,8 +144,8 @@ void FormAnalysis2D::matrix_selection() {
   } else if (second_spectrum_type_ == SecondSpectrumType::none) {
     std::set<double> xs, ys;
     for (auto &q : chosen_peaks) {
-      xs.insert(q.x_c);
-      ys.insert(q.y_c);
+      xs.insert(q.x_c.bin(fit_data_.metadata_.bits));
+      ys.insert(q.y_c.bin(fit_data_.metadata_.bits));
     }
     for (auto &q : fit_data_.peaks_)
       q.second.selected = (xs.count(q.second.center) > 0);
@@ -178,15 +178,8 @@ void FormAnalysis2D::remake_gate(bool force) {
   if (gate.centroid_chan == -1) {
     width = res;
     gate.width_chan = res;
-    xx.channel = res / 2;
-    xx.energy = gate.fit_data_.nrg_cali_.transform(res/2);
-    xx.chan_valid = true;
-    xx.energy_valid = true;
-
-    yy.channel = res / 2;
-    yy.energy = gate.fit_data_.nrg_cali_.transform(res/2);
-    yy.chan_valid = true;
-    yy.energy_valid = true;
+    xx.pos.set_bin(res / 2, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+    yy.pos.set_bin(res / 2, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
 
     xmin = 0;
     xmax = res - 1;
@@ -199,16 +192,8 @@ void FormAnalysis2D::remake_gate(bool force) {
     ymin = yc_ - (width / 2); if (ymin < 0) ymin = 0;
     ymax = yc_ + (width / 2); if (ymax >= res) ymax = res - 1;
 
-    xx.channel = res / 2;
-    xx.energy = gate.fit_data_.nrg_cali_.transform(res / 2);
-    xx.chan_valid = true;
-    xx.energy_valid = true;
-
-    yy.channel = yc_;
-    yy.energy = gate.centroid_nrg;
-    yy.chan_valid = true;
-    yy.energy_valid = true;
-
+    xx.pos.set_bin(res / 2, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+    yy.pos.set_bin(yc_, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
   } else {
 
     xmin = xc_ - width; if (xmin < 0) xmin = 0;
@@ -216,16 +201,8 @@ void FormAnalysis2D::remake_gate(bool force) {
     ymin = yc_ - width; if (ymin < 0) ymin = 0;
     ymax = yc_ + width; if (ymax >= res) ymax = res - 1;
 
-    xx.channel = xc_;
-    xx.energy = gate.fit_data_.nrg_cali_.transform(res);
-    xx.chan_valid = true;
-    xx.energy_valid = true;
-
-    yy.channel = yc_;
-    yy.energy = gate.centroid_nrg;
-    yy.chan_valid = true;
-    yy.energy_valid = true;
-
+    xx.pos.set_bin(xc_, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+    yy.pos.set_bin(yc_, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
   }
   xx.visible = false;
   yy.visible = true;
@@ -234,6 +211,7 @@ void FormAnalysis2D::remake_gate(bool force) {
 
   if ((xmin != xmin_) || (xmax != xmax_) || (ymin != ymin_) || (ymax != ymax_)
       || (static_cast<double>(ui->plotMatrix->gate_width()) != width) || force) {
+    PL_DBG << "Analysis2D updating gate";
     xmin_ = xmin; xmax_ = xmax;
     ymin_ = ymin; ymax_ = ymax;
     ui->plotMatrix->set_gate_width(static_cast<uint16_t>(gate.width_chan));
@@ -516,33 +494,27 @@ void FormAnalysis2D::update_peaks(bool content_changed) {
     double width = ui->plotMatrix->gate_width() / 2;
 
     for (auto &q : fit_data_.peaks_) {
-      Marker xx, yy;
-
-      xx.channel = q.second.center;
-      xx.energy = q.second.energy;
-      xx.chan_valid = true;
-      xx.energy_valid = false;
-
-      yy.channel = yc_;
-      if (yc_ < 0)
-        yy.channel = res / 2;
-      yy.energy = fit_data_.nrg_cali_.transform(yc_);
-      yy.chan_valid = true;
-      yy.energy_valid = false;
-
       MarkerBox2D box;
+
       box.visible = true;
       box.selected = q.second.selected;
-      box.x_c = xx.channel;
-      box.y_c = yy.channel;
-      box.x1 = xx;
-      box.x2 = xx;
-      box.y1 = yy;
-      box.y2 = yy;
-      box.x1.channel -= (q.second.gaussian_.hwhm_ * my_gates_->width_factor());
-      box.x2.channel += (q.second.gaussian_.hwhm_ * my_gates_->width_factor());
-      box.y1.channel -= width;
-      box.y2.channel += width;
+      box.x_c.set_bin(q.second.center, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+      box.x1.set_bin(q.second.center - (q.second.gaussian_.hwhm_ * my_gates_->width_factor()), fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+      box.x2.set_bin(q.second.center + (q.second.gaussian_.hwhm_ * my_gates_->width_factor()), fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+
+      if (yc_ < 0) {
+        box.label = ShowBoxLabel::vCenterLabel | ShowBoxLabel::hLocal;
+        range2d.label = ShowBoxLabel::vCenterLabel | ShowBoxLabel::hLocal;
+        box.y_c.set_bin(res / 2, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+        box.y1.set_bin(res / 2 - width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+        box.y2.set_bin(res / 2 + width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+      } else {
+        box.label = ShowBoxLabel::vEdgeLabel | ShowBoxLabel::hLocal;
+        range2d.label = ShowBoxLabel::vEdgeLabel | ShowBoxLabel::hLocal;
+        box.y_c.set_bin(yc_, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+        box.y1.set_bin(yc_ - width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+        box.y2.set_bin(yc_ + width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+      }
 
       boxes.push_back(box);
       range2d.y1 = box.y1;
@@ -585,8 +557,8 @@ void FormAnalysis2D::update_gates(Marker xx, Marker yy) {
   yc_ = -1;
 
   if (xx.visible || yy.visible) {
-    xc_ = xx.channel;
-    yc_ = yy.channel;
+    xc_ = xx.pos.bin(fit_data_.metadata_.bits);
+    yc_ = yy.pos.bin(fit_data_.metadata_.bits);
     double width = ui->plotMatrix->gate_width() / 2;
     xmin = xc_ - width; if (xmin < 0) xmin = 0;
     xmax = xc_ + width; if (xmax >= res) xmax = res - 1;

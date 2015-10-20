@@ -145,12 +145,8 @@ void FormPlot1D::on_comboResolution_currentIndexChanged(int index)
 {
   int newbits = ui->comboResolution->currentData().toInt();
 
-  if (bits != newbits) {
+  if (bits != newbits)
     bits = newbits;
-    moving.shift(bits);
-    markx.shift(bits);
-    marky.shift(bits);
-  }
 
   QVector<SelectorItem> items;
 
@@ -232,18 +228,17 @@ void FormPlot1D::update_plot() {
 
       AppearanceProfile profile;
       profile.default_pen = QPen(QColor::fromRgba(md.appearance), 1);
-      ui->mcaPlot->addGraph(QVector<double>::fromStdVector(energies), y, profile);
+      ui->mcaPlot->addGraph(QVector<double>::fromStdVector(energies), y, profile, bits);
 
     }
   }
   if (!calib_.bits_)
     calib_.bits_ = bits;
 
-  ui->mcaPlot->use_calibrated(calib_.units_ != "channels");
+  ui->mcaPlot->use_calibrated(calib_.valid());
   ui->mcaPlot->setLabels(QString::fromStdString(calib_.units_), "count");
   ui->mcaPlot->setYBounds(minima, maxima);
 
-  calibrate_markers();
   replot_markers();
 
   std::string new_label = boost::algorithm::trim_copy(mySpectra->status());
@@ -298,20 +293,14 @@ void FormPlot1D::analyse()
 
 void FormPlot1D::addMovingMarker(double x) {
   PL_INFO << "<Plot1D> marker at " << x;
-  moving.channel = x;
-  moving.bits = bits;
+
+  if (calib_.valid())
+    moving.pos.set_energy(x, calib_);
+  else
+    moving.pos.set_bin(x, bits, calib_);
+
   moving.visible = true;
-  if (calib_.units_ != "channels") {
-    moving.energy = x;
-    moving.energy_valid = true;
-    moving.chan_valid = false;
-    emit marker_set(moving);
-  } else {
-    moving.chan_valid = true;
-    moving.energy_valid = false;
-    calibrate_markers();
-    emit marker_set(moving);
-  }
+  emit marker_set(moving);
   replot_markers();
 }
 
@@ -328,10 +317,6 @@ void FormPlot1D::set_markers2d(Marker x, Marker y) {
   y.appearance = marky.appearance;
 
   markx = x; marky = y;
-  markx.shift(bits);
-  marky.shift(bits);
-
-  calibrate_markers();
 
   if (!x.visible && !y.visible)
     moving.visible = false;
@@ -351,23 +336,6 @@ void FormPlot1D::replot_markers() {
   ui->mcaPlot->redraw();
 }
 
-
-void FormPlot1D::calibrate_markers() {
-  if (!markx.energy_valid && markx.chan_valid) {
-    markx.energy = calib_.transform(markx.channel, markx.bits);
-    markx.energy_valid = (calib_.units_ != "channels");
-  }
-
-  if (!marky.energy_valid && marky.chan_valid) {
-    marky.energy = calib_.transform(marky.channel, marky.bits);
-    marky.energy_valid = (calib_.units_ != "channels");
-  }
-
-  if (!moving.energy_valid && moving.chan_valid) {
-    moving.energy = calib_.transform(moving.channel, moving.bits);
-    moving.energy_valid = (calib_.units_ != "channels");
-  }
-}
 
 void FormPlot1D::on_pushShowAll_clicked()
 {
