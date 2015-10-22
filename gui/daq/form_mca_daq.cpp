@@ -311,7 +311,7 @@ void FormMcaDaq::on_pushMcaSimulate_clicked()
 
 void FormMcaDaq::on_pushMcaReload_clicked()
 {
-  QString fileName = QFileDialog::getOpenFileName(this, "Load project", data_directory_, "qpx project file (*.qpx)");
+  QString fileName = QFileDialog::getOpenFileName(this, "Load project", data_directory_, "qpx project file (*.qpx);;Radware spn (*.spn)");
   if (!validateFile(this, fileName, false))
     return;
 
@@ -326,12 +326,22 @@ void FormMcaDaq::on_pushMcaReload_clicked()
   }
 
   //toggle_push(false, false);
-  PL_INFO << "Reading spectra from complete acquisition record in xml file " << fileName.toStdString();
+  PL_INFO << "Reading spectra from file " << fileName.toStdString();
   this->setCursor(Qt::WaitCursor);
   clearGraphs();
 
+  std::string ext(boost::filesystem::extension(fileName.toStdString()));
+  if (ext.size())
+    ext = ext.substr(1, ext.size()-1);
+  boost::algorithm::to_lower(ext);
 
-  spectra_.read_xml(fileName.toStdString(), true);
+  if (ext == "qpx")
+    spectra_.read_xml(fileName.toStdString(), true);
+  else if (ext == "spn") {
+    spectra_.read_spn(fileName.toStdString());
+    for (auto &q : spectra_.spectra())
+      q->set_appearance(generateColor().rgba());
+  }
 
   newProject();
   spectra_.activate();

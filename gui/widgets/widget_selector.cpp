@@ -72,6 +72,8 @@ void SelectorWidget::setItems(QVector<SelectorItem> items) {
   width_last = my_items_.size() % max_wide;
   if (width_last)
     height_total++;
+
+  recalcDim(size().width(), size().height());
   update();
 }
 
@@ -92,6 +94,7 @@ void SelectorWidget::recalcDim(int w, int h) {
 QSize SelectorWidget::sizeHint() const
 {
   if (my_items_.empty())
+//    return minimumSize();
     return QSize(rect_w_, rect_h_);
   else
     return QSize(max_wide*rect_w_, height_total*rect_h_);
@@ -99,18 +102,24 @@ QSize SelectorWidget::sizeHint() const
 
 QSize SelectorWidget::minimumSizeHint() const
 {
-  if (my_items_.empty())
+  if (my_items_.empty()) {
     return QSize(rect_w_, rect_h_);
-  else
+  } else {
     return QSize(max_wide*rect_w_, height_total*rect_h_);
+  }
+}
+
+
+void SelectorWidget::resizeEvent(QResizeEvent * event) {
+  recalcDim(event->size().width(), event->size().height());
 }
 
 
 void SelectorWidget::paintEvent(QPaintEvent *evt)
 {
-  QPainter painter(this);
+  QWidget::paintEvent(evt);
 
-  recalcDim(evt->rect().width(), evt->rect().height());
+  QPainter painter(this);
 
   painter.setRenderHint(QPainter::Antialiasing, true);
   painter.setPen(QPen(Qt::white));
@@ -120,7 +129,7 @@ void SelectorWidget::paintEvent(QPaintEvent *evt)
     int cur_high = i / max_wide;
     int cur_wide = i % max_wide;
     painter.resetTransform();
-    painter.translate(evt->rect().x() + cur_wide*rect_w_, evt->rect().y() + cur_high*rect_h_);
+    painter.translate(rect().x() + cur_wide*rect_w_, rect().y() + cur_high*rect_h_);
 
     if (my_items_[i].visible)
       painter.setBrush(my_items_[i].color);

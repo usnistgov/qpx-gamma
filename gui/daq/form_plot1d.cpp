@@ -30,6 +30,13 @@ FormPlot1D::FormPlot1D(QWidget *parent) :
 {
   ui->setupUi(this);
 
+  spectraSelector = new SelectorWidget();
+  spectraSelector->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+  spectraSelector->setMaximumWidth(280);
+  ui->scrollArea->setWidget(spectraSelector);
+  //ui->scrollArea->viewport()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+  //ui->scrollArea->viewport()->setMinimumWidth(283);
+
   moving.appearance.themes["light"] = QPen(Qt::darkGray, 2);
   moving.appearance.themes["dark"] = QPen(Qt::white, 2);
 
@@ -40,9 +47,9 @@ FormPlot1D::FormPlot1D(QWidget *parent) :
   connect(ui->mcaPlot, SIGNAL(clickedLeft(double)), this, SLOT(addMovingMarker(double)));
   connect(ui->mcaPlot, SIGNAL(clickedRight(double)), this, SLOT(removeMovingMarker(double)));
 
-  connect(ui->spectraWidget, SIGNAL(itemSelected(SelectorItem)), this, SLOT(spectrumDetails(SelectorItem)));
-  connect(ui->spectraWidget, SIGNAL(itemToggled(SelectorItem)), this, SLOT(spectrumLooksChanged(SelectorItem)));
-  connect(ui->spectraWidget, SIGNAL(itemDoubleclicked(SelectorItem)), this, SLOT(spectrumDoubleclicked(SelectorItem)));
+  connect(spectraSelector, SIGNAL(itemSelected(SelectorItem)), this, SLOT(spectrumDetails(SelectorItem)));
+  connect(spectraSelector, SIGNAL(itemToggled(SelectorItem)), this, SLOT(spectrumLooksChanged(SelectorItem)));
+  connect(spectraSelector, SIGNAL(itemDoubleclicked(SelectorItem)), this, SLOT(spectrumDoubleclicked(SelectorItem)));
 
   bits = 0;
 }
@@ -77,10 +84,10 @@ void FormPlot1D::spectrumDoubleclicked(SelectorItem item)
 
 void FormPlot1D::spectrumDetails(SelectorItem item)
 {
-  ui->pushShowAll->setEnabled(ui->spectraWidget->items().size());
-  ui->pushHideAll->setEnabled(ui->spectraWidget->items().size());
+  ui->pushShowAll->setEnabled(spectraSelector->items().size());
+  ui->pushHideAll->setEnabled(spectraSelector->items().size());
 
-  QString id = ui->spectraWidget->selected().text;
+  QString id = spectraSelector->selected().text;
   Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(id.toStdString());
 
   Qpx::Spectrum::Metadata md;
@@ -88,7 +95,7 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
     md = someSpectrum->metadata();
 
   if (id.isEmpty() || (someSpectrum == nullptr)) {
-    ui->labelSpectrumInfo->setText("Left-click on spectrum above to see statistics, right click to toggle visibility");
+    ui->labelSpectrumInfo->setText("<html><head/><body><p>Left-click: see statistics here<br/>Right click: toggle visibility<br/>Double click: details / analysis</p></body></html>");
     ui->pushFullInfo->setEnabled(false);
     return;
   }
@@ -131,11 +138,11 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
 
 void FormPlot1D::spectrumDetailsClosed(bool looks_changed) {
   if (looks_changed) {
-    SelectorItem chosen = ui->spectraWidget->selected();
+    SelectorItem chosen = spectraSelector->selected();
     Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(chosen.text.toStdString());
     if (someSpectrum != nullptr) {
       chosen.color = QColor::fromRgba(someSpectrum->metadata().appearance);
-      ui->spectraWidget->replaceSelected(chosen);
+      spectraSelector->replaceSelected(chosen);
       mySpectra->activate();
     }
   }
@@ -162,7 +169,16 @@ void FormPlot1D::on_comboResolution_currentIndexChanged(int index)
     items.push_back(new_spectrum);
   }
 
-  ui->spectraWidget->setItems(items);
+  spectraSelector->setItems(items);
+//  PL_DBG << "bin bf " << ui->scrollArea->viewport()->minimumSize().width() << " " << ui->scrollArea->viewport()->minimumSize().height();
+//  ui->scrollArea->viewport()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+//  ui->scrollArea->viewport()->setMinimumWidth(spectraSelector->minimumSizeHint().width());
+//  ui->scrollArea->viewport()->setMinimumHeight(spectraSelector->minimumSizeHint().height());
+//  PL_DBG << "hint " << ui->scrollArea->viewport()->sizeHint().width() << " " << ui->scrollArea->viewport()->sizeHint().height();
+//  PL_DBG << "min af " << ui->scrollArea->viewport()->minimumSize().width() << " " << ui->scrollArea->viewport()->minimumSize().height();
+//  PL_DBG << "max af " << ui->scrollArea->viewport()->maximumSize().width() << " " << ui->scrollArea->viewport()->maximumSize().height();
+//  ui->scrollArea->setMinimumSize(ui->scrollArea->viewport()->maximumSize());
+  ui->scrollArea->updateGeometry();
 
   mySpectra->activate();
 }
@@ -252,7 +268,7 @@ void FormPlot1D::update_plot() {
 
 void FormPlot1D::on_pushFullInfo_clicked()
 {
-  Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(ui->spectraWidget->selected().text.toStdString());
+  Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(spectraSelector->selected().text.toStdString());
   if (someSpectrum == nullptr)
     return;
 
@@ -265,7 +281,7 @@ void FormPlot1D::on_pushFullInfo_clicked()
 
 void FormPlot1D::spectrumDetailsDelete()
 {
-  std::string name = ui->spectraWidget->selected().text.toStdString();
+  std::string name = spectraSelector->selected().text.toStdString();
 
   PL_INFO << "will delete " << name;
   mySpectra->delete_spectrum(name);
@@ -288,7 +304,7 @@ void FormPlot1D::updateUI()
 
 void FormPlot1D::analyse()
 {
-  emit requestAnalysis(ui->spectraWidget->selected().text);
+  emit requestAnalysis(spectraSelector->selected().text);
 }
 
 void FormPlot1D::addMovingMarker(double x) {
@@ -339,8 +355,8 @@ void FormPlot1D::replot_markers() {
 
 void FormPlot1D::on_pushShowAll_clicked()
 {
-  ui->spectraWidget->show_all();
-  QVector<SelectorItem> items = ui->spectraWidget->items();
+  spectraSelector->show_all();
+  QVector<SelectorItem> items = spectraSelector->items();
   for (auto &q : items)
     mySpectra->by_name(q.text.toStdString())->set_visible(true);
   mySpectra->activate();
@@ -348,8 +364,8 @@ void FormPlot1D::on_pushShowAll_clicked()
 
 void FormPlot1D::on_pushHideAll_clicked()
 {
-  ui->spectraWidget->hide_all();
-  QVector<SelectorItem> items = ui->spectraWidget->items();
+  spectraSelector->hide_all();
+  QVector<SelectorItem> items = spectraSelector->items();
   for (auto &q : items)
     mySpectra->by_name(q.text.toStdString())->set_visible(false);
   mySpectra->activate();
@@ -369,4 +385,13 @@ QString FormPlot1D::scale_type() {
 
 QString FormPlot1D::plot_style() {
   return ui->mcaPlot->plot_style();
+}
+
+void FormPlot1D::on_pushRandAll_clicked()
+{
+  for (auto &q : mySpectra->spectra())
+    q->set_appearance(generateColor().rgba());
+
+  on_comboResolution_currentIndexChanged(0);
+  mySpectra->activate();
 }

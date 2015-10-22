@@ -293,4 +293,75 @@ void SpectraSet::read_xml(std::string file_name, bool with_spectra) {
   cond_.notify_one();
 }
 
+void SpectraSet::read_spn(std::string file_name) {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  clear_helper();
+
+  std::ifstream myfile(file_name, std::ios::in | std::ios::binary);
+
+  if (!myfile)
+    return;
+
+  myfile.seekg (0, myfile.end);
+  int length = myfile.tellg();
+
+//  if (length < 13)
+//    return;
+
+  myfile.seekg (0, myfile.beg);
+
+
+  Gamma::Detector det("unknown");
+  det.energy_calibrations_.add(Gamma::Calibration("Energy", 12));
+
+  Qpx::Spill spill;
+  spill.run = new Qpx::RunInfo();
+  spill.run->detectors.push_back(det);
+
+  Qpx::Spectrum::Template *temp = Qpx::Spectrum::Factory::getInstance().create_template("1D");
+  temp->visible = false;
+  temp->bits = 12;
+  temp->match_pattern = std::vector<int16_t>({1});
+  temp->add_pattern = std::vector<int16_t>({1});
+
+  uint32_t one;
+  int spectra_count = 0;
+  while (myfile.tellg() != length) {
+  //for (int j=0; j<150; ++j) {
+    spectra_count++;
+    std::vector<uint32_t> data;
+    uint64_t totalcount = 0;
+//    uint32_t header;
+//    myfile.read ((char*)&header, sizeof(uint32_t));
+//    PL_DBG << "header " << header;
+    for (int i=0; i<4096; ++i) {
+      myfile.read ((char*)&one, sizeof(uint32_t));
+      data.push_back(one);
+      totalcount += one;
+    }
+    if ((totalcount == 0) || data.empty())
+      continue;
+    temp->name_ = boost::filesystem::path(file_name).filename().string() + "[" + std::to_string(spectra_count) + "]";
+    Qpx::Spectrum::Spectrum *spectrum = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp);
+    for (int i=0; i < data.size(); ++i) {
+      Spectrum::Entry entry;
+      entry.first.resize(1, 0);
+      entry.first[0] = i;
+      entry.second = data[i];
+      spectrum->add_bulk(entry);
+    }
+    spectrum->addSpill(spill);
+    my_spectra_.push_back(spectrum);
+  }
+
+  delete spill.run;
+  delete temp;
+
+  status_ = file_name;
+  ready_ = true;
+  newdata_ = true;
+  terminating_ = false;
+  cond_.notify_one();
+}
+
 }

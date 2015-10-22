@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>835</width>
-    <height>537</height>
+    <width>584</width>
+    <height>465</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -32,6 +32,12 @@
    </property>
    <item row="0" column="0">
     <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>3</number>
+     </property>
+     <property name="sizeConstraint">
+      <enum>QLayout::SetMaximumSize</enum>
+     </property>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_5">
        <property name="spacing">
@@ -143,9 +149,44 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="pushRandAll">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>32</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>32</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Randomize all colors</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../resources/qpxres.qrc">
+           <normaloff>:/new/icons/oxy/roll.png</normaloff>:/new/icons/oxy/roll.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>18</width>
+           <height>18</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QLabel" name="label_28">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -195,36 +236,61 @@
       </layout>
      </item>
      <item>
-      <widget class="SelectorWidget" name="spectraWidget" native="true">
+      <widget class="QScrollArea" name="scrollArea">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="MinimumExpanding">
+        <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
+         <horstretch>1</horstretch>
+         <verstretch>1</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>283</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>302</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="horizontalScrollBarPolicy">
+        <enum>Qt::ScrollBarAlwaysOff</enum>
+       </property>
+       <property name="sizeAdjustPolicy">
+        <enum>QAbstractScrollArea::AdjustToContents</enum>
+       </property>
+       <property name="widgetResizable">
+        <bool>true</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignHCenter|Qt::AlignTop</set>
+       </property>
+       <widget class="QWidget" name="scrollAreaWidgetContents">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>281</width>
+          <height>286</height>
+         </rect>
+        </property>
+       </widget>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="labelSpectrumInfo">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
        <property name="minimumSize">
         <size>
-         <width>280</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>280</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="toolTip">
-        <string>Click to select&lt;br/&gt; Right-click: toggle visibility&lt;br/&gt;Double: details/analysis</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="labelSpectrumInfo">
-       <property name="minimumSize">
-        <size>
          <width>0</width>
-         <height>70</height>
+         <height>130</height>
         </size>
        </property>
        <property name="autoFillBackground">
@@ -275,12 +341,6 @@
    <class>WidgetPlot1D</class>
    <extends>QWidget</extends>
    <header>widget_plot1d.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>SelectorWidget</class>
-   <extends>QWidget</extends>
-   <header>widget_selector.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

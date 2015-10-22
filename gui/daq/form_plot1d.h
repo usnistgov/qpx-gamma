@@ -79,6 +79,8 @@ private slots:
 
   void analyse();
 
+  void on_pushRandAll_clicked();
+
 private:
 
   Ui::FormPlot1D *ui;
@@ -87,6 +89,7 @@ private:
   Gamma::Calibration calib_;
 
   Qpx::SpectraSet *mySpectra;
+  SelectorWidget *spectraSelector;
 
   Marker moving, markx, marky;
 
