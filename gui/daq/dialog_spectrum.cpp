@@ -161,21 +161,25 @@ void dialog_spectrum::toggle_push()
 void dialog_spectrum::on_pushRandColor_clicked()
 {
   my_spectrum_.set_appearance(generateColor().rgba());
+  changed_ = true;
   updateData();
 }
 
 void dialog_spectrum::setNewColor(QColor col) {
   my_spectrum_.set_appearance(col.rgba());
+  changed_ = true;
   updateData();
 }
 
 void dialog_spectrum::durationLiveChanged() {
   my_spectrum_.set_live_time(boost::posix_time::seconds(ui->durationLive->total_seconds()));
+  changed_ = true;
   updateData();
 }
 
 void dialog_spectrum::durationRealChanged() {
   my_spectrum_.set_real_time(boost::posix_time::seconds(ui->durationReal->total_seconds()));
+  changed_ = true;
   updateData();
 }
 
@@ -193,12 +197,14 @@ void dialog_spectrum::on_buttonBox_rejected()
 void dialog_spectrum::on_dateTimeStart_editingFinished()
 {
   my_spectrum_.set_start_time(fromQDateTime(ui->dateTimeStart->dateTime()));
+  changed_ = true;
   updateData();
 }
 
 void dialog_spectrum::on_lineDescription_editingFinished()
 {
   my_spectrum_.set_description(ui->lineDescription->text().toStdString());
+  changed_ = true;
   updateData();
 }
 
@@ -246,6 +252,7 @@ void dialog_spectrum::on_pushDetRename_clicked()
     if (i < md_.detectors.size()) {
       md_.detectors[i].name_ = text.toStdString();
       my_spectrum_.set_detectors(md_.detectors);
+      changed_ = true;
       updateData();
       toggle_push();
     }

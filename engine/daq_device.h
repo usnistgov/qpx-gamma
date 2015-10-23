@@ -30,6 +30,7 @@
 namespace Qpx {
 
 enum DeviceStatus {
+  dead      = 0,
   loaded    = 1 << 0,
   booted    = 1 << 1,
   can_boot  = 1 << 2,

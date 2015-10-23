@@ -82,6 +82,8 @@ private slots:
 private:
   Ui::FormSystemSettings *ui;
 
+  Qpx::DeviceStatus current_status_;
+
   XMLableDB<Gamma::Detector>            &detectors_;
   QString data_directory_;
 
@@ -101,6 +103,7 @@ private:
 
   void loadSettings();
   void saveSettings();
+  void chan_settings_to_det_DB();
 
 };
 

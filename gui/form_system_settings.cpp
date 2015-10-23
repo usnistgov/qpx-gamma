@@ -38,6 +38,7 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
           this, SLOT(update(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)));
   connect(&runner_thread_, SIGNAL(bootComplete()), this, SLOT(post_boot()));
 
+  current_status_ = Qpx::DeviceStatus::dead;
   tree_settings_model_.update(dev_settings_);
 
   viewTreeSettings = new QTreeView(this);
@@ -156,6 +157,12 @@ void FormSystemSettings::toggle_push(bool enable, Qpx::DeviceStatus status) {
     ui->bootButton->setText("Boot system");
     ui->bootButton->setIcon(QIcon(":/new/icons/Cowboy-Boot.png"));
   }
+
+  if ((current_status_ & Qpx::DeviceStatus::booted) &&
+      !(status & Qpx::DeviceStatus::booted))
+    chan_settings_to_det_DB();
+
+  current_status_ = status;
 }
 
 void FormSystemSettings::loadSettings() {
@@ -174,6 +181,16 @@ void FormSystemSettings::loadSettings() {
 }
 
 void FormSystemSettings::saveSettings() {
+  if (current_status_ & Qpx::DeviceStatus::booted)
+    chan_settings_to_det_DB();
+
+  settings_.beginGroup("Program");
+  settings_.setValue("settings_table_show_readonly", ui->checkShowRO->isChecked());
+  settings_.setValue("settings_tab_tree", (ui->tabsSettings->currentWidget() == viewTreeSettings));
+  settings_.endGroup();
+}
+
+void FormSystemSettings::chan_settings_to_det_DB() {
   for (auto &q : channels_) {
     if (q.name_ == "none")
       continue;
@@ -190,12 +207,8 @@ void FormSystemSettings::saveSettings() {
       detectors_.replace(det);
     }
   }
-  
-  settings_.beginGroup("Program");
-  settings_.setValue("settings_table_show_readonly", ui->checkShowRO->isChecked());
-  settings_.setValue("settings_tab_tree", (ui->tabsSettings->currentWidget() == viewTreeSettings));
-  settings_.endGroup();
 }
+
 
 void FormSystemSettings::updateDetDB() {
   tree_delegate_.eat_detectors(detectors_);
