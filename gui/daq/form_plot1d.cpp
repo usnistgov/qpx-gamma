@@ -50,8 +50,6 @@ FormPlot1D::FormPlot1D(QWidget *parent) :
   connect(spectraSelector, SIGNAL(itemSelected(SelectorItem)), this, SLOT(spectrumDetails(SelectorItem)));
   connect(spectraSelector, SIGNAL(itemToggled(SelectorItem)), this, SLOT(spectrumLooksChanged(SelectorItem)));
   connect(spectraSelector, SIGNAL(itemDoubleclicked(SelectorItem)), this, SLOT(spectrumDoubleclicked(SelectorItem)));
-
-  bits = 0;
 }
 
 FormPlot1D::~FormPlot1D()
@@ -61,12 +59,7 @@ FormPlot1D::~FormPlot1D()
 
 void FormPlot1D::setSpectra(Qpx::SpectraSet& new_set) {
   mySpectra = &new_set;
-
-  std::set<uint32_t> resolutions = mySpectra->resolutions(1);
-  ui->comboResolution->clear();
-  for (auto &q: resolutions)
-    ui->comboResolution->addItem(QString::number(q) + " bit", QVariant(q));
-
+  updateUI();
 }
 
 void FormPlot1D::spectrumLooksChanged(SelectorItem item) {
@@ -86,6 +79,7 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
 {
   ui->pushShowAll->setEnabled(spectraSelector->items().size());
   ui->pushHideAll->setEnabled(spectraSelector->items().size());
+  ui->pushRandAll->setEnabled(spectraSelector->items().size());
 
   QString id = spectraSelector->selected().text;
   Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(id.toStdString());
@@ -111,9 +105,9 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
 
   QString detstr("Detector: ");
   detstr += QString::fromStdString(det.name_);
-  if (det.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
+  if (det.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits)))
     detstr += " [ENRG]";
-  else if (det.highest_res_calib().units_ != "channels")
+  else if (det.highest_res_calib().valid())
     detstr += " (enrg)";
   if (det.fwhm_calibration_.valid())
     detstr += " [FWHM]";
@@ -124,7 +118,7 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   }
 
   QString infoText =
-      "<nobr>" + id + "(" + QString::fromStdString(type) + ")</nobr><br/>"
+      "<nobr>" + id + "(" + QString::fromStdString(type) + ", " + QString::number(md.bits) + "bits)</nobr><br/>"
       "<nobr>" + detstr + "</nobr><br/>"
       "<nobr>Count: " + QString::number(md.total_count.convert_to<double>()) + "</nobr><br/>"
       "<nobr>Rate: " + QString::number(rate) + "cps</nobr><br/>"
@@ -148,42 +142,6 @@ void FormPlot1D::spectrumDetailsClosed(bool looks_changed) {
   }
 }
 
-void FormPlot1D::on_comboResolution_currentIndexChanged(int index)
-{
-  int newbits = ui->comboResolution->currentData().toInt();
-
-  if (bits != newbits)
-    bits = newbits;
-
-  QVector<SelectorItem> items;
-
-  for (auto &q : mySpectra->spectra(1, newbits)) {
-    Qpx::Spectrum::Metadata md;
-    if (q != nullptr)
-      md = q->metadata();
-
-    SelectorItem new_spectrum;
-    new_spectrum.text = QString::fromStdString(md.name);
-    new_spectrum.color = QColor::fromRgba(md.appearance);
-    new_spectrum.visible = md.visible;
-    items.push_back(new_spectrum);
-  }
-
-  spectraSelector->setItems(items);
-//  PL_DBG << "bin bf " << ui->scrollArea->viewport()->minimumSize().width() << " " << ui->scrollArea->viewport()->minimumSize().height();
-//  ui->scrollArea->viewport()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
-//  ui->scrollArea->viewport()->setMinimumWidth(spectraSelector->minimumSizeHint().width());
-//  ui->scrollArea->viewport()->setMinimumHeight(spectraSelector->minimumSizeHint().height());
-//  PL_DBG << "hint " << ui->scrollArea->viewport()->sizeHint().width() << " " << ui->scrollArea->viewport()->sizeHint().height();
-//  PL_DBG << "min af " << ui->scrollArea->viewport()->minimumSize().width() << " " << ui->scrollArea->viewport()->minimumSize().height();
-//  PL_DBG << "max af " << ui->scrollArea->viewport()->maximumSize().width() << " " << ui->scrollArea->viewport()->maximumSize().height();
-//  ui->scrollArea->setMinimumSize(ui->scrollArea->viewport()->maximumSize());
-  ui->scrollArea->updateGeometry();
-
-  mySpectra->activate();
-}
-
-
 void FormPlot1D::reset_content() {
   moving.visible = false;
   markx.visible = false;
@@ -206,7 +164,7 @@ void FormPlot1D::update_plot() {
   calib_ = Gamma::Calibration();
 
   ui->mcaPlot->clearGraphs();
-  for (auto &q: mySpectra->spectra(1, bits)) {
+  for (auto &q: mySpectra->spectra(1, -1)) {
     Qpx::Spectrum::Metadata md;
     if (q)
       md = q->metadata();
@@ -221,13 +179,13 @@ void FormPlot1D::update_plot() {
 
       Gamma::Detector detector = Gamma::Detector();
       if (!md.detectors.empty())
-       detector = md.detectors[0];
+        detector = md.detectors[0];
       Gamma::Calibration temp_calib;
-      if (detector.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
-        temp_calib = detector.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
+      if (detector.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits)))
+        temp_calib = detector.energy_calibrations_.get(Gamma::Calibration("Energy", md.bits));
       else
         temp_calib = detector.highest_res_calib();
-      if (temp_calib.bits_)
+      if (temp_calib.bits_ > calib_.bits_)
         calib_ = temp_calib;
 
       int i = 0;
@@ -244,12 +202,10 @@ void FormPlot1D::update_plot() {
 
       AppearanceProfile profile;
       profile.default_pen = QPen(QColor::fromRgba(md.appearance), 1);
-      ui->mcaPlot->addGraph(QVector<double>::fromStdVector(energies), y, profile, bits);
+      ui->mcaPlot->addGraph(QVector<double>::fromStdVector(energies), y, profile, md.bits);
 
     }
   }
-  if (!calib_.bits_)
-    calib_.bits_ = bits;
 
   ui->mcaPlot->use_calibrated(calib_.valid());
   ui->mcaPlot->setLabels(QString::fromStdString(calib_.units_), "count");
@@ -291,15 +247,24 @@ void FormPlot1D::spectrumDetailsDelete()
 
 void FormPlot1D::updateUI()
 {
-  std::set<uint32_t> resolutions = mySpectra->resolutions(1);
+  QVector<SelectorItem> items;
 
-  ui->comboResolution->blockSignals(true);
-  ui->comboResolution->clear();
-  for (auto &q: resolutions)
-    ui->comboResolution->addItem(QString::number(q) + " bit", QVariant(q));
-  ui->comboResolution->blockSignals(false);
+  for (auto &q : mySpectra->spectra(1, -1)) {
+    Qpx::Spectrum::Metadata md;
+    if (q != nullptr)
+      md = q->metadata();
 
-  on_comboResolution_currentIndexChanged(0);
+    SelectorItem new_spectrum;
+    new_spectrum.text = QString::fromStdString(md.name);
+    new_spectrum.color = QColor::fromRgba(md.appearance);
+    new_spectrum.visible = md.visible;
+    items.push_back(new_spectrum);
+  }
+
+  spectraSelector->setItems(items);
+  ui->scrollArea->updateGeometry();
+
+  mySpectra->activate();
 }
 
 void FormPlot1D::analyse()
@@ -313,7 +278,7 @@ void FormPlot1D::addMovingMarker(double x) {
   if (calib_.valid())
     moving.pos.set_energy(x, calib_);
   else
-    moving.pos.set_bin(x, bits, calib_);
+    moving.pos.set_bin(x, calib_.bits_, calib_);
 
   moving.visible = true;
   emit marker_set(moving);
@@ -392,6 +357,6 @@ void FormPlot1D::on_pushRandAll_clicked()
   for (auto &q : mySpectra->spectra())
     q->set_appearance(generateColor().rgba());
 
-  on_comboResolution_currentIndexChanged(0);
-  mySpectra->activate();
+  updateUI();
+//  mySpectra->activate();
 }

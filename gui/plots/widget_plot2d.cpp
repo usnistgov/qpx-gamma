@@ -443,11 +443,11 @@ void WidgetPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event,
   Marker xt, yt;
 
   if (channels) {
-    PL_DBG << "markers chan";
+    //PL_DBG << "markers chan";
     xt.pos.set_bin(x, bits_, calib_x_);
     yt.pos.set_bin(y, bits_, calib_y_);
   } else {
-    PL_DBG << "markers nrg";
+    //PL_DBG << "markers nrg";
     xt.pos.set_energy(x, calib_x_);
     yt.pos.set_energy(y, calib_y_);
   }

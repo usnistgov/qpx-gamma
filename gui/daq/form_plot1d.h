@@ -61,7 +61,6 @@ signals:
   void requestAnalysis(QString);
 
 private slots:
-  void on_comboResolution_currentIndexChanged(int index);
   void spectrumDetailsClosed(bool);
   void spectrumDetailsDelete();
 
@@ -85,7 +84,6 @@ private:
 
   Ui::FormPlot1D *ui;
 
-  int bits;
   Gamma::Calibration calib_;
 
   Qpx::SpectraSet *mySpectra;

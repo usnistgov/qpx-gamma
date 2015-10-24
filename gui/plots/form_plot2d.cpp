@@ -400,7 +400,7 @@ void FormPlot2D::markers_moved(Marker x, Marker y) {
     x_marker = x;
     y_marker = y;
     ext_marker.visible = ext_marker.visible & x.visible;
-    PL_DBG << "markers changed";
+    //PL_DBG << "markers changed";
     replot_markers();
   }
 
