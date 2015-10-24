@@ -41,6 +41,8 @@ WidgetPlot2D::WidgetPlot2D(QWidget *parent) :
   current_scale_type_ = "Logarithmic";
   show_gradient_scale_ = false;
   bits_ = 0;
+  antialiased_ = true;
+  show_labels_ = true;
 
   //color theme setup
   my_marker.appearance.themes["Grayscale"] = QPen(Qt::cyan, 1);
@@ -61,7 +63,7 @@ WidgetPlot2D::WidgetPlot2D(QWidget *parent) :
   colorMap = new QCPColorMap(ui->coincPlot->xAxis, ui->coincPlot->yAxis);
   colorMap->clearData();
   ui->coincPlot->addPlottable(colorMap);
-  colorMap->setInterpolate(true);
+  colorMap->setInterpolate(antialiased_);
   colorMap->setTightBoundary(true); //really?
   ui->coincPlot->axisRect()->setupFullAxesBox();
   ui->coincPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
@@ -111,11 +113,19 @@ void WidgetPlot2D::build_menu() {
   menuOptions.addSeparator();
   menuOptions.addAction("Show gradient scale");
 
+  menuOptions.addSeparator();
+  menuOptions.addAction("Show marker labels");
+
+  menuOptions.addSeparator();
+  menuOptions.addAction("Antialiased");
+
   for (auto &q : menuOptions.actions()) {
     q->setCheckable(true);
     q->setChecked((q->text() == current_scale_type_) ||
                   (q->text() == current_gradient_) ||
-                  ((q->text() == "Show gradient scale") && show_gradient_scale_));
+                  ((q->text() == "Show gradient scale") && show_gradient_scale_)||
+                  ((q->text() == "Show marker labels") && show_labels_)||
+                  ((q->text() == "Antialiased") && antialiased_));
   }
 }
 
@@ -135,6 +145,12 @@ void WidgetPlot2D::optionsChanged(QAction* action) {
   } else if (choice == "Show gradient scale") {
     show_gradient_scale_ = !show_gradient_scale_;
     toggle_gradient_scale();
+  } else if (choice == "Show marker labels") {
+    show_labels_ = !show_labels_;
+    replot_markers();
+  } else if (choice == "Antialiased") {
+    antialiased_= !antialiased_;
+    colorMap->setInterpolate(antialiased_);
   }
 
   build_menu();
@@ -169,9 +185,25 @@ std::list<MarkerBox2D> WidgetPlot2D::get_selected_boxes() {
   return selection;
 }
 
+std::list<MarkerLabel2D> WidgetPlot2D::get_selected_labels() {
+  std::list<MarkerLabel2D> selection;
+  for (auto &q : ui->coincPlot->selectedItems())
+    if (QCPItemText *b = qobject_cast<QCPItemText*>(q)) {
+      MarkerLabel2D label;
+      label.x.set_bin(b->property("chan_x").toDouble(), bits_, calib_x_);
+      label.y.set_bin(b->property("chan_y").toDouble(), bits_, calib_y_);
+      selection.push_back(label);
+      //PL_DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
+    }
+  return selection;
+}
 
 void WidgetPlot2D::set_boxes(std::list<MarkerBox2D> boxes) {
   boxes_ = boxes;
+}
+
+void WidgetPlot2D::set_labels(std::list<MarkerLabel2D> labels) {
+  labels_ = labels;
 }
 
 
@@ -179,6 +211,7 @@ void WidgetPlot2D::reset_content() {
   //PL_DBG << "reset content";
   colorMap->clearData();
   boxes_.clear();
+  labels_.clear();
   replot_markers();
 }
 
@@ -242,97 +275,51 @@ void WidgetPlot2D::replot_markers() {
       box->bottomRight->setCoords(q.x2.bin(bits_), q.y2.bin(bits_));
     }
     ui->coincPlot->addItem(box);
+  }
 
-    if (!q.label)
-      continue;
+  if (show_labels_) {
+    for (auto &q : labels_) {
+      QCPItemText *labelItem = new QCPItemText(ui->coincPlot);
+      //    labelItem->setClipToAxisRect(false);
+      labelItem->setText(q.text);
 
-    PL_DBG << "will make label";
+      labelItem->setProperty("chan_x", q.x.bin(bits_));
+      labelItem->setProperty("chan_y", q.y.bin(bits_));
+      labelItem->setProperty("nrg_x", q.x.energy());
+      labelItem->setProperty("nrg_y", q.y.energy());
 
+      labelItem->position->setType(QCPItemPosition::ptPlotCoords);
+      //labelItem->position->setType(QCPItemPosition::ptAxisRectRatio);
 
-    QCPItemText *labelItem = new QCPItemText(ui->coincPlot);
-    labelItem->setClipToAxisRect(false);
-
-    if (q.label & ShowBoxLabel::vLocal)
-      labelItem->position->setTypeY(QCPItemPosition::ptPlotCoords);
-    else
-      labelItem->position->setTypeY(QCPItemPosition::ptAxisRectRatio);
-    if (q.label & ShowBoxLabel::hLocal)
-      labelItem->position->setTypeX(QCPItemPosition::ptPlotCoords);
-    else
-      labelItem->position->setTypeX(QCPItemPosition::ptAxisRectRatio);
-
-    double tx = 0, ty = 0;
-
-    if ((q.label & ShowBoxLabel::vEdgeLabel) || (q.label & ShowBoxLabel::vCenterLabel)) {
-      if (q.label & ShowBoxLabel::hLocal) {
-        PL_DBG << "1";
-
-        if (calib_x_.valid())
-          ty = q.y_c.energy();
-        else
-          ty = q.y_c.bin(bits_);
-      }
+      if (calib_x_.valid())
+        labelItem->position->setCoords(q.x.energy(), q.y.energy());
       else
-        ty = 0.5;
+        labelItem->position->setCoords(q.x.bin(bits_), q.y.bin(bits_));
 
-      PL_DBG << "ty=" << ty;
-
-      if (q.label & ShowBoxLabel::vCenterLabel) {
-        PL_DBG << "2";
-        labelItem->setPositionAlignment(Qt::AlignVCenter|Qt::AlignHCenter);
+      if (q.vertical) {
         labelItem->setRotation(90);
-        labelItem->setText(QString::number(q.x_c.energy()));
-        if (calib_x_.valid())
-          labelItem->position->setCoords(q.x_c.energy() - 1, ty);
-        else
-          labelItem->position->setCoords(q.x_c.bin(bits_) - 1, ty);
-      } else if (q.label & ShowBoxLabel::vEdgeLabel) {
-        PL_DBG << "3";
         labelItem->setPositionAlignment(Qt::AlignTop|Qt::AlignRight);
-        labelItem->setRotation(90);
-        labelItem->setText(QString::number(q.x_c.energy()));
-        if (calib_x_.valid())
-          labelItem->position->setCoords(q.x1.energy() - 1, ty + 2);
-        else
-          labelItem->position->setCoords(q.x1.bin(bits_) - 1, ty + 2);
-      }
-    } else if ((q.label & ShowBoxLabel::hEdgeLabel) || (q.label & ShowBoxLabel::hCenterLabel)) {
-      if (q.label & ShowBoxLabel::vLocal) {
-        PL_DBG << "4";
-
-        if (calib_x_.valid())
-          tx = q.x_c.energy();
-        else
-          tx = q.x_c.bin(bits_);
-      }
-      else
-        tx = 0.5;
-
-      PL_DBG << "tx=" << tx;
-
-      if (q.label & ShowBoxLabel::hCenterLabel) {
-        PL_DBG << "5";
-        labelItem->setPositionAlignment(Qt::AlignVCenter|Qt::AlignHCenter);
-        labelItem->setText(QString::number(q.y_c.energy()));
-        if (calib_x_.valid())
-          labelItem->position->setCoords(tx, q.y_c.energy() - 1);
-        else
-          labelItem->position->setCoords(tx, q.y_c.bin(bits_) - 1);
-      } else if (q.label & ShowBoxLabel::hEdgeLabel) {
-        PL_DBG << "6";
+      } else
         labelItem->setPositionAlignment(Qt::AlignTop|Qt::AlignLeft);
-        labelItem->setText(QString::number(q.y_c.energy()));
-        if (calib_x_.valid())
-          labelItem->position->setCoords(tx + 2, q.y1.energy() - 1);
-        else
-          labelItem->position->setCoords(tx + 2, q.y1.bin(bits_) - 1);
-      }
+
+      labelItem->setFont(QFont("Helvetica", 10));
+      labelItem->setSelectable(q.selectable);
+      labelItem->setSelected(q.selected);
+
+      labelItem->setColor(pen_strong.color());
+      labelItem->setPen(pen_strong);
+      labelItem->setBrush(QBrush(Qt::white));
+
+      QColor sel = labelItem->selectedColor();
+      QPen selpen(QColor::fromHsv(sel.hsvHue(), sel.saturation(), sel.value(), 255));
+      selpen.setWidth(3);
+      labelItem->setSelectedPen(selpen);
+      labelItem->setSelectedBrush(QBrush(Qt::white));
+
+      labelItem->setPadding(QMargins(1, 1, 1, 1));
+
+      ui->coincPlot->addItem(labelItem);
     }
-    labelItem->setFont(QFont("Helvetica", 12));
-    labelItem->setSelectable(false);
-    labelItem->setColor(pen_strong.color());
-    PL_DBG << "about to add label " << labelItem->text().toStdString();
-    ui->coincPlot->addItem(labelItem);
   }
 
 
@@ -456,9 +443,11 @@ void WidgetPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event,
   Marker xt, yt;
 
   if (channels) {
+    PL_DBG << "markers chan";
     xt.pos.set_bin(x, bits_, calib_x_);
     yt.pos.set_bin(y, bits_, calib_y_);
   } else {
+    PL_DBG << "markers nrg";
     xt.pos.set_energy(x, calib_x_);
     yt.pos.set_energy(y, calib_y_);
   }

@@ -110,22 +110,16 @@ struct Range {
   Coord center, l, r;
 };
 
-enum ShowBoxLabel {
-  noLabel      = 0,
-  vEdgeLabel   = 1 << 0,
-  hEdgeLabel   = 1 << 1,
-  vCenterLabel = 1 << 2,
-  hCenterLabel = 1 << 3,
-  hLocal       = 1 << 4,
-  vLocal       = 1 << 5
+struct MarkerLabel2D {
+  MarkerLabel2D() : selected(false), selectable(false), vertical(false) {}
+
+  Coord x, y;
+  QString text;
+  bool selected, selectable, vertical;
 };
 
-inline ShowBoxLabel operator|(ShowBoxLabel a, ShowBoxLabel b) {return static_cast<ShowBoxLabel>(static_cast<int>(a) | static_cast<int>(b));}
-inline ShowBoxLabel operator&(ShowBoxLabel a, ShowBoxLabel b) {return static_cast<ShowBoxLabel>(static_cast<int>(a) & static_cast<int>(b));}
-
-
 struct MarkerBox2D {
-  MarkerBox2D() : visible(false), selected(false), selectable (true), label(ShowBoxLabel::noLabel) {}
+  MarkerBox2D() : visible(false), selected(false), selectable (true), horizontal(false), vertical(false) {}
   bool operator== (const MarkerBox2D& other) const {
     if (x1 != other.x1) return false;
     if (x2 != other.x2) return false;
@@ -139,7 +133,7 @@ struct MarkerBox2D {
   bool visible;
   bool selected;
   bool selectable;
-  ShowBoxLabel label;
+  bool horizontal, vertical;
   Coord x1, x2, y1, y2, x_c, y_c;
 };
 

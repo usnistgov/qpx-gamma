@@ -211,19 +211,54 @@ void FormPlot2D::replot_markers() {
   //PL_DBG << "replot markers";
 
   std::list<MarkerBox2D> boxes;
+  std::list<MarkerLabel2D> labels;
+  MarkerLabel2D label;
+
   if (show_boxes_)
     boxes = boxes_;
 
   int width = ui->spinGateWidth->value() / 2;
 
-  MarkerBox2D gate;
+  for (auto &q : boxes) {
+    label.selectable = q.selectable;
+    label.selected = q.selected;
+
+
+    if ((q.horizontal) && (q.vertical)) {
+      label.x = q.x2;
+      label.y = q.y2;
+      label.vertical = false;
+      label.text = QString::number(q.y_c.energy());
+      labels.push_back(label);
+
+      label.x = q.x2;
+      label.y = q.y2;
+      label.vertical = true;
+      label.text = QString::number(q.x_c.energy());
+      labels.push_back(label);
+    } else if (q.horizontal) {
+      label.x = q.x_c;
+      label.y = q.y2;
+      label.vertical = false;
+      label.text = QString::number(q.y_c.energy());
+      labels.push_back(label);
+    } else if (q.vertical) {
+      label.x = q.x2;
+      label.y = q.y_c;
+      label.vertical = true;
+      label.text = QString::number(q.x_c.energy());
+      labels.push_back(label);
+    }
+  }
+
+  MarkerBox2D gate, gatex, gatey;
   gate.selectable = false;
   gate.selected = false;
 
   if (!ui->spinGateWidth->isVisible())
     width = 0;
 
-  PL_DBG << "FormPlot2d marker width = " << width;
+  //PL_DBG << "FormPlot2d marker width = " << width;
 
   gate.x_c = x_marker.pos;
   gate.y_c = y_marker.pos;
@@ -233,10 +268,7 @@ void FormPlot2D::replot_markers() {
   gate.x2.set_bin(adjrange, bits, calib_x_);
   gate.y1.set_bin(y_marker.pos.bin(bits) - width, bits, calib_x_);
   gate.y2.set_bin(y_marker.pos.bin(bits) + width, bits, calib_x_);
-  if (width)
-    gate.label = ShowBoxLabel::hCenterLabel | ShowBoxLabel::vLocal;
-  else
-    gate.label = ShowBoxLabel::hEdgeLabel | ShowBoxLabel::vLocal;
+  gatey = gate;
   boxes.push_back(gate);
 
   gate.visible = x_marker.visible;
@@ -244,14 +276,45 @@ void FormPlot2D::replot_markers() {
   gate.x2.set_bin(x_marker.pos.bin(bits) + width, bits, calib_x_);
   gate.y1.set_bin(0, bits, calib_x_);
   gate.y2.set_bin(adjrange, bits, calib_x_);
-  if (width)
-    gate.label = ShowBoxLabel::vCenterLabel | ShowBoxLabel::hLocal;
-  else
-    gate.label = ShowBoxLabel::vEdgeLabel | ShowBoxLabel::hLocal;
+  gatex = gate;
   boxes.push_back(gate);
 
-  ui->coincPlot->set_boxes(boxes);
 
+  label.selectable = false;
+  label.selected = false;
+  label.vertical = false;
+
+//  if (y_marker.visible && x_marker.visible) {
+//    label.x = gatex.x2;
+//    label.y = gatey.y_c;
+//    label.text = QString::number(y_marker.pos.energy());
+//    labels.push_back(label);
+
+//    label.x = gatex.x_c;
+//    label.y = gatey.y2;
+//    label.vertical = true;
+//    label.text = QString::number(x_marker.pos.energy());
+//    labels.push_back(label);
+//  }
+  if (y_marker.visible) {
+    label.x = gatex.x2;
+    label.y = gatey.y_c;
+    label.vertical = false;
+    label.text = QString::number(y_marker.pos.energy());
+    labels.push_back(label);
+  }
+  if (x_marker.visible) {
+    label.x = gatex.x_c;
+    label.y = gatey.y2;
+    label.vertical = true;
+    label.text = QString::number(x_marker.pos.energy());
+    labels.push_back(label);
+  }
+
+
+
+  ui->coincPlot->set_boxes(boxes);
+  ui->coincPlot->set_labels(labels);
   ui->coincPlot->replot_markers();
 }
 
@@ -337,6 +400,7 @@ void FormPlot2D::markers_moved(Marker x, Marker y) {
     x_marker = x;
     y_marker = y;
     ext_marker.visible = ext_marker.visible & x.visible;
+    PL_DBG << "markers changed";
     replot_markers();
   }
 

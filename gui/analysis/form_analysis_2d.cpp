@@ -503,19 +503,17 @@ void FormAnalysis2D::update_peaks(bool content_changed) {
       box.x2.set_bin(q.second.center + (q.second.gaussian_.hwhm_ * my_gates_->width_factor()), fit_data_.metadata_.bits, fit_data_.nrg_cali_);
 
       if (yc_ < 0) {
-        box.label = ShowBoxLabel::vCenterLabel | ShowBoxLabel::hLocal;
-        range2d.label = ShowBoxLabel::vCenterLabel | ShowBoxLabel::hLocal;
         box.y_c.set_bin(res / 2, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
         box.y1.set_bin(res / 2 - width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
         box.y2.set_bin(res / 2 + width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
       } else {
-        box.label = ShowBoxLabel::vEdgeLabel | ShowBoxLabel::hLocal;
-        range2d.label = ShowBoxLabel::vEdgeLabel | ShowBoxLabel::hLocal;
         box.y_c.set_bin(yc_, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
         box.y1.set_bin(yc_ - width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
         box.y2.set_bin(yc_ + width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
       }
 
+      box.horizontal = false;
+      box.vertical = true;
       boxes.push_back(box);
       range2d.y1 = box.y1;
       range2d.y2 = box.y2;

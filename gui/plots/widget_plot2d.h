@@ -46,6 +46,7 @@ public:
   void reset_content();
 
   void set_boxes(std::list<MarkerBox2D> boxes);
+  void set_labels(std::list<MarkerLabel2D> labels);
 
   void set_scale_type(QString);
   void set_gradient(QString);
@@ -59,6 +60,7 @@ public:
   void set_range_x(MarkerBox2D);
 
   std::list<MarkerBox2D> get_selected_boxes();
+  std::list<MarkerLabel2D> get_selected_labels();
 
 public slots:
   void zoom_out();
@@ -95,9 +97,12 @@ private:
   QString current_scale_type_;
 
   std::list<MarkerBox2D> boxes_;
+  std::list<MarkerLabel2D> labels_;
   MarkerBox2D range_;
 
   Marker my_marker;
+
+  bool show_labels_, antialiased_;
 
   //scaling
   Gamma::Calibration calib_x_, calib_y_;

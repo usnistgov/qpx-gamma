@@ -309,6 +309,8 @@ void FormMultiGates::on_pushDistill_clicked()
   box.visible = true;
   box.selectable = true;
   box.selected = false;
+  box.vertical = true;
+  box.horizontal = true;
 
   for (auto &q : gates_) {
     Gamma::Gate gate = q;
