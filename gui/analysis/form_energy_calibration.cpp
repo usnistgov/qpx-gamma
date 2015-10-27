@@ -181,7 +181,7 @@ void FormEnergyCalibration::replot_markers() {
   if (xx.size()) {
     ui->PlotCalib->addPoints(xx, yy, style_pts);
     ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
-    if (fit_data_.nrg_cali_.units_ != "channels") {
+    if (fit_data_.nrg_cali_.valid()) {
 
       double step = (xmax-xmin) / 50.0;
       xx.clear(); yy.clear();

@@ -174,7 +174,7 @@ void FormOscilloscope::replot() {
 
       QVector<double> yy;
       for (auto it : traces_[i].data) {
-        if (calib.units_ != "channels")
+        if (calib.valid())
           yy.push_back(calib.transform(it, 16));
         else
           yy.push_back(it);

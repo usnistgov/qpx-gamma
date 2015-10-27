@@ -598,7 +598,7 @@ void Spectrum1D::write_n42(std::string filename) const {
   if (metadata_.detectors[0].energy_calibrations_.has_a(Gamma::Calibration("Energy", metadata_.bits)))
     myCalibration = metadata_.detectors[0].energy_calibrations_.get(Gamma::Calibration("Energy", metadata_.bits));
   else if ((metadata_.detectors[0].energy_calibrations_.size() == 1) &&
-           (metadata_.detectors[0].energy_calibrations_.get(0).units_ != "channels"))
+           (metadata_.detectors[0].energy_calibrations_.get(0).valid()))
     myCalibration = metadata_.detectors[0].energy_calibrations_.get(0);
 
   root.set_name("N42InstrumentData");
@@ -609,7 +609,7 @@ void Spectrum1D::write_n42(std::string filename) const {
   pugi::xml_node node = root.append_child("Measurement").append_child("Spectrum");
   node.append_attribute("Type").set_value("PHA");
 
-  if (myCalibration.units_ != "channels") {
+  if (myCalibration.valid()) {
     node.append_attribute("Detector").set_value(metadata_.detectors[0].name_.c_str());
     node.append_child("DetectorType").append_child(pugi::node_pcdata).set_value(metadata_.detectors[0].type_.c_str());
   }
@@ -625,7 +625,7 @@ void Spectrum1D::write_n42(std::string filename) const {
   durationdata << "PT" << (metadata_.live_time.total_milliseconds() * 0.001) << "S";
   node.append_child("LiveTime").append_child(pugi::node_pcdata).set_value(durationdata.str().c_str());
 
-  if (myCalibration.units_ != "channels")
+  if (myCalibration.valid())
     myCalibration.to_xml(node);
 
   if ((metadata_.resolution > 0) && (metadata_.total_count > 0)) {

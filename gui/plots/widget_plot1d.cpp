@@ -198,7 +198,7 @@ void WidgetPlot1D::setLabels(QString x, QString y) {
 
 void WidgetPlot1D::use_calibrated(bool uc) {
   use_calibrated_ = uc;
-  replot_markers();
+  //replot_markers();
 }
 
 void WidgetPlot1D::set_markers(const std::list<Marker>& markers) {
@@ -507,7 +507,7 @@ void WidgetPlot1D::replot_markers() {
     pos_r = my_range_.r.energy();
 
     if ((pos_l < pos_c) && (pos_c < pos_r)) {
-      PL_DBG << "will plot range";
+      //PL_DBG << "will plot range";
 
       int total = ui->mcaPlot->graphCount();
       for (int i=0; i < total; i++) {

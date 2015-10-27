@@ -216,6 +216,8 @@ void FormPeaks::replot_all() {
   ui->plot1D->clearGraphs();
   ui->plot1D->clearExtras();
 
+  ui->plot1D->use_calibrated(fit_data_->nrg_cali_.valid());
+
   ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->x_)),
                        QVector<double>::fromStdVector(fit_data_->y_),
                        main_graph_, true,
@@ -336,6 +338,8 @@ void FormPeaks::replot_markers() {
 
   if (fit_data_ == nullptr)
     return;
+
+  ui->plot1D->use_calibrated(fit_data_->nrg_cali_.valid());
 
   ui->plot1D->blockSignals(true);
   this->blockSignals(true);
@@ -541,13 +545,16 @@ void FormPeaks::on_spinMinPeakWidth_editingFinished()
 
 void FormPeaks::range_moved(double l, double r) {
 
-//  if (use_calibrated_) {
-//    my_range_.l.set_energy(l, fit_data_->nrg_cali_);
-//    my_range_.r.set_energy(r, fit_data_->nrg_cali_);
-//  } else {
+  //PL_DBG << "<peaks> range moved";
+
+
+  if (fit_data_->nrg_cali_.valid()) {
+    range_.l.set_energy(l, fit_data_->nrg_cali_);
+    range_.r.set_energy(r, fit_data_->nrg_cali_);
+  } else {
     range_.l.set_bin(l, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
     range_.r.set_bin(r, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
-//  }
+  }
 
   toggle_push();
   replot_markers();

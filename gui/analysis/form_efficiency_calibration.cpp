@@ -448,7 +448,7 @@ void FormEfficiencyCalibration::replot_calib() {
 
   if (have_data) {
     ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
-    if (new_calibration_.units_ != "channels") {
+    if (new_calibration_.valid()) {
       xx.clear(); yy.clear();
       double step = (xmax-xmin) / 50.0;
 
