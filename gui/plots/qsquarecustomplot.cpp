@@ -133,7 +133,7 @@ void QSquareCustomPlot::mouseReleaseEvent(QMouseEvent *event)  {
       ap->data()->coordToCell(co_x, co_y, &xx, &yy);
 //      PL_DBG << "Corrected to cell : " << xx << ", " << yy;
       emit mouse_clicked(static_cast<double>(xx), static_cast<double>(yy), event, true); //true?
-    } else
+    } else if (ai == nullptr)
       emit mouse_clicked(co_x, co_y, event, false);
   }
   QCustomPlot::mouseReleaseEvent(event);

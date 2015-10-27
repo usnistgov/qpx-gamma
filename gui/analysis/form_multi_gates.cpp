@@ -139,7 +139,7 @@ void FormMultiGates::update_current_gate(Gamma::Gate gate) {
     gate.approved = true;
 
   double livetime = gate.fit_data_.metadata_.live_time.total_seconds();
-  PL_DBG << "update current gate " << gate.centroid_chan << " with LT = " << livetime;
+  //PL_DBG << "update current gate " << gate.centroid_chan << " with LT = " << livetime;
   if (livetime == 0)
     livetime = 10000;
   gate.cps = gate.fit_data_.metadata_.total_count.convert_to<double>() / livetime;
@@ -327,6 +327,7 @@ void FormMultiGates::on_pushDistill_clicked()
   box.selected = false;
   box.vertical = true;
   box.horizontal = true;
+  box.mark_center = true;
 
   for (auto &q : gates_) {
     Gamma::Gate gate = q;
@@ -389,7 +390,7 @@ void FormMultiGates::remake_gate(bool force) {
   double ymax = res - 1;
 
   Gamma::Gate gate = current_gate();
-  PL_DBG << "gates remake gate c=" << gate.centroid_chan << " w=" << gate.width_chan;
+  //PL_DBG << "gates remake gate c=" << gate.centroid_chan << " w=" << gate.width_chan;
 
   if (gates_.empty()) {
     gate.centroid_chan = -1;
@@ -434,7 +435,6 @@ void FormMultiGates::remake_gate(bool force) {
 
   if ((xmin != xmin_) || (xmax != xmax_) || (ymin != ymin_) || (ymax != ymax_)
       /*|| (static_cast<double>(ui->plotMatrix->gate_width()) != width)*/ || force) {
-    PL_DBG << "<MultiPeaks> updating gate";
     xmin_ = xmin; xmax_ = xmax;
     ymin_ = ymin; ymax_ = ymax;
     //    ui->plotMatrix->set_gate_width(static_cast<uint16_t>(gate.width_chan));

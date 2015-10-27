@@ -119,7 +119,7 @@ struct MarkerLabel2D {
 };
 
 struct MarkerBox2D {
-  MarkerBox2D() : visible(false), selected(false), selectable (true), horizontal(false), vertical(false) {}
+  MarkerBox2D() : visible(false), selected(false), selectable (true), horizontal(false), vertical(false), mark_center(false) {}
   bool operator== (const MarkerBox2D& other) const {
     if (x1 != other.x1) return false;
     if (x2 != other.x2) return false;
@@ -134,6 +134,7 @@ struct MarkerBox2D {
   bool selected;
   bool selectable;
   bool horizontal, vertical;
+  bool mark_center;
   Coord x1, x2, y1, y2, x_c, y_c;
 };
 

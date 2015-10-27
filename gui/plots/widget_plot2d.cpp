@@ -275,6 +275,31 @@ void WidgetPlot2D::replot_markers() {
       box->bottomRight->setCoords(q.x2.bin(bits_), q.y2.bin(bits_));
     }
     ui->coincPlot->addItem(box);
+
+    if (q.mark_center) {
+      QCPItemLine *linev = new QCPItemLine(ui->coincPlot);
+      QCPItemLine *lineh = new QCPItemLine(ui->coincPlot);
+      lineh->setPen(pen_strong);
+      linev->setPen(pen_strong);
+      lineh->setTail(QCPLineEnding::esBar);
+      lineh->setHead(QCPLineEnding::esBar);
+      linev->setTail(QCPLineEnding::esBar);
+      linev->setHead(QCPLineEnding::esBar);
+      if (calib_x_.valid()) {
+        lineh->start->setCoords(q.x1.energy(), q.y_c.energy());
+        lineh->end->setCoords(q.x2.energy(), q.y_c.energy());
+        linev->start->setCoords(q.x_c.energy(), q.y1.energy());
+        linev->end->setCoords(q.x_c.energy(), q.y2.energy());
+      } else {
+        lineh->start->setCoords(q.x1.bin(bits_), q.y_c.bin(bits_));
+        lineh->end->setCoords(q.x2.bin(bits_), q.y_c.bin(bits_));
+        linev->start->setCoords(q.x_c.bin(bits_), q.y1.bin(bits_));
+        linev->end->setCoords(q.x_c.bin(bits_), q.y2.bin(bits_));
+      }
+      ui->coincPlot->addItem(lineh);
+      ui->coincPlot->addItem(linev);
+    }
+
   }
 
   if (show_labels_) {

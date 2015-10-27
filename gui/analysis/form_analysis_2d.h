@@ -29,6 +29,7 @@
 #include "spectrum1D.h"
 #include "spectra_set.h"
 #include "form_multi_gates.h"
+#include "form_integration2d.h"
 
 namespace Ui {
 class FormAnalysis2D;
@@ -56,13 +57,13 @@ public slots:
 private slots:
   void take_boxes();
   void update_gates(Marker, Marker);
-  void update_peaks(bool);
+  void update_peaks();
   void detectorsUpdated() {emit detectorsChanged();}
   void initialize();
   void matrix_selection();
   void update_range(MarkerBox2D);
 
-  void remake_gate();
+  void on_tabs_currentChanged(int index);
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -73,15 +74,10 @@ private:
   QSettings &settings_;
 
 
-//  Qpx::Spectrum::Template *tempx;
-//  Qpx::Spectrum::Spectrum *gate_x;
-//  Gamma::Fitter fit_data_;
   int res;
-  double xmin_, xmax_, ymin_, ymax_, xc_, yc_;
 
   FormMultiGates*      my_gates_;
-
-  std::list<MarkerBox2D> coincidences_;
+  FormIntegration2D*   form_integration_;
 
   //from parent
   QString data_directory_;
@@ -96,7 +92,6 @@ private:
   void configure_UI();
   void loadSettings();
   void saveSettings();
-  void show_all_coincidences();
 };
 
 #endif // FORM_ANALYSIS2D_H
