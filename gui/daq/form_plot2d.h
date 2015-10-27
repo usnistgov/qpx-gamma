@@ -51,9 +51,6 @@ public:
   void replot_markers();
   void reset_content();
 
-  void set_boxes(std::list<MarkerBox2D> boxes);
-  void set_show_boxes(bool);
-
   void set_scale_type(QString);
   void set_gradient(QString);
   void set_show_legend(bool);
@@ -63,13 +60,6 @@ public:
 
   void set_zoom(double);
   double zoom();
-
-  void set_range_x(MarkerBox2D);
-
-  std::list<MarkerBox2D> get_selected_boxes();
-
-  void set_show_selector(bool);
-  void set_show_gate_width(bool);
 
   int gate_width();
   void set_gate_width(int);
@@ -83,25 +73,22 @@ public slots:
 signals:
   void markers_set(Marker x, Marker y);
   void requestAnalysis(QString);
-  void stuff_selected();
+  void requestSymmetrize(QString);
 
 private slots:
   void spectrumDetailsDelete();
 
-  //void clicked_plottable(QCPAbstractPlottable*);
-  void selection_changed();
-
   void on_pushDetails_clicked();
   void spectrumDetailsClosed(bool);
 
-  void on_spinGateWidth_valueChanged(int arg1);
-  void on_spinGateWidth_editingFinished();
   void markers_moved(Marker x, Marker y);
   void analyse();
 
   void choose_spectrum(SelectorItem item);
-  void crop_changed(QAction*);
+  void crop_changed();
   void spectrumDoubleclicked(SelectorItem item);
+
+  void on_pushSymmetrize_clicked();
 
 private:
 
@@ -109,26 +96,23 @@ private:
   Ui::FormPlot2D *ui;
   Qpx::SpectraSet *mySpectra;
 
-
   //plot identity
   QString name_2d;
   double zoom_2d, new_zoom;
   uint32_t adjrange;
 
-  QMenu cropFraction;
-  std::unordered_map<std::string, double> fractions_;
-
   //markers
   Marker my_marker, //template(style)
     ext_marker, x_marker, y_marker; //actual data
-  bool gate_vertical_, gate_horizontal_, gate_diagonal_, gates_movable_, show_boxes_;
-
-  std::list<MarkerBox2D> boxes_;
-  MarkerBox2D range_;
 
   //scaling
   int bits;
   Gamma::Calibration calib_x_, calib_y_;
+
+  QMenu *crop_menu_;
+  QLabel *crop_label_;
+  QSlider *crop_slider_;
+
 };
 
 #endif // WIDGET_PLOT2D_H

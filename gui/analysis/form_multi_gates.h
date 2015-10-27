@@ -31,6 +31,7 @@
 #include <QSettings>
 #include "gates.h"
 #include "marker.h"
+#include "spectra_set.h"
 
 namespace Ui {
 class FormMultiGates;
@@ -73,9 +74,19 @@ public:
   explicit FormMultiGates(QSettings &settings, QWidget *parent = 0);
   ~FormMultiGates();
 
+  void setSpectrum(Qpx::SpectraSet *newset, QString name);
+
+  void remake_gate(bool); //private?
+  void change_width(int width);
+  void make_range(Marker);
+
   void update_current_gate(Gamma::Gate);
   Gamma::Gate current_gate();
   std::list<MarkerBox2D> boxes() {return all_boxes_;}
+  std::list<MarkerBox2D> current_peaks() {return current_peaks_;}
+
+  void choose_peaks(std::list<MarkerBox2D>);
+
   double width_factor();
 
   void clear();
@@ -85,8 +96,9 @@ public:
 
 
 signals:
-  void gate_selected(bool);
+  void gate_selected();
   void boxes_made();
+  void range_changed(MarkerBox2D);
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -94,18 +106,34 @@ protected:
 private slots:
   void selection_changed(QItemSelection,QItemSelection);
   void on_pushApprove_clicked();
-
   void on_pushRemove_clicked();
-
   void on_pushDistill_clicked();
-
   void on_doubleGateOn_editingFinished();
-
   void on_doubleOverlaps_editingFinished();
+  void update_range(Range);
+  void update_peaks(bool);
+
+  void range_changed_in_plot(Range);
+  void peaks_changed_in_plot(bool);
+
+
+  void on_pushAddGatedSpectrum_clicked();
 
 private:
   Ui::FormMultiGates *ui;
   QSettings &settings_;
+
+
+  Qpx::SpectraSet *spectra_;
+  QString current_spectrum_;
+  Qpx::Spectrum::Template *tempx;
+  Qpx::Spectrum::Spectrum *gate_x;
+  Gamma::Fitter fit_data_;
+  int res;
+  MarkerBox2D range2d;
+  double xmin_, xmax_, ymin_, ymax_, xc_, yc_;
+
+
 
   //double current_gate_;
 
@@ -119,11 +147,13 @@ private:
 
 
   std::list<MarkerBox2D> all_boxes_;
+  std::list<MarkerBox2D> current_peaks_;
 
   int32_t index_of(double, bool fuzzy);
-  uint32_t current_idx();
+  int32_t current_idx();
 
   void rebuild_table(bool contents_changed);
+  void make_gated_spectra();
 
 
 };

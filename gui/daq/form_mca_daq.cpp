@@ -38,6 +38,7 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamm
   spectra_(),
   my_analysis_(nullptr),
   my_analysis_2d_(nullptr),
+  my_symmetrization_2d_(nullptr),
   runner_thread_(thread),
   plot_thread_(spectra_),
   detectors_(detectors),
@@ -72,7 +73,7 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamm
   connect(ui->Plot1d, SIGNAL(marker_set(Marker)), ui->Plot2d, SLOT(set_marker(Marker)));
   connect(ui->Plot2d, SIGNAL(markers_set(Marker,Marker)), ui->Plot1d, SLOT(set_markers2d(Marker,Marker)));
   connect(ui->Plot2d, SIGNAL(requestAnalysis(QString)), this, SLOT(reqAnal2D(QString)));
-  ui->Plot2d->set_show_gate_width(false);
+  connect(ui->Plot2d, SIGNAL(requestSymmetrize(QString)), this, SLOT(reqSym2D(QString)));
 
   plot_thread_.start();
 }
@@ -458,7 +459,7 @@ void FormMcaDaq::reqAnal2D(QString name) {
 
   if (my_analysis_2d_ == nullptr) {
     my_analysis_2d_ = new FormAnalysis2D(settings_, detectors_);
-    connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_2d_, SLOT(update_spectrum()));
+    //connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_2d_, SLOT(update_spectrum()));
     connect(my_analysis_2d_, SIGNAL(destroyed()), this, SLOT(analysis2d_destroyed()));
     connect(my_analysis_2d_, SIGNAL(spectraChanged()), this, SLOT(updateSpectraUI()));
   }
@@ -470,8 +471,29 @@ void FormMcaDaq::reqAnal2D(QString name) {
   this->setCursor(Qt::ArrowCursor);
 }
 
+void FormMcaDaq::reqSym2D(QString name) {
+  this->setCursor(Qt::WaitCursor);
+
+  if (my_symmetrization_2d_ == nullptr) {
+    my_symmetrization_2d_ = new FormSymmetrize2D(settings_, detectors_);
+    //connect(&plot_thread_, SIGNAL(plot_ready()), my_symmetrization_2d_, SLOT(update_spectrum()));
+    connect(my_symmetrization_2d_, SIGNAL(destroyed()), this, SLOT(sym2d_destroyed()));
+    connect(my_symmetrization_2d_, SIGNAL(spectraChanged()), this, SLOT(updateSpectraUI()));
+  }
+  my_symmetrization_2d_->setWindowTitle("2D: " + name);
+  my_symmetrization_2d_->setSpectrum(&spectra_, name);
+  my_symmetrization_2d_->reset();
+  emit requestSymmetriza2D(my_symmetrization_2d_);
+
+  this->setCursor(Qt::ArrowCursor);
+}
+
 void FormMcaDaq::analysis2d_destroyed() {
   my_analysis_2d_ = nullptr;
+}
+
+void FormMcaDaq::sym2d_destroyed() {
+  my_symmetrization_2d_ = nullptr;
 }
 
 void FormMcaDaq::replot() {
@@ -490,6 +512,7 @@ void FormMcaDaq::on_pushEnable2d_clicked()
 
 void FormMcaDaq::on_pushForceRefresh_clicked()
 {
+  updateSpectraUI();
   update_plots();
 }
 

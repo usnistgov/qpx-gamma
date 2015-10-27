@@ -31,32 +31,50 @@ FormPlot2D::FormPlot2D(QWidget *parent) :
   ui->setupUi(this);
 
   connect(ui->coincPlot, SIGNAL(markers_set(Marker,Marker)), this, SLOT(markers_moved(Marker,Marker)));
-  connect(ui->coincPlot, SIGNAL(stuff_selected()), this, SLOT(selection_changed()));
 
   ui->spectrumSelector->set_only_one(true);
   connect(ui->spectrumSelector, SIGNAL(itemSelected(SelectorItem)), this, SLOT(choose_spectrum(SelectorItem)));
   connect(ui->spectrumSelector, SIGNAL(itemDoubleclicked(SelectorItem)), this, SLOT(spectrumDoubleclicked(SelectorItem)));
 
-  fractions_["Full"] = 1;
-  fractions_["9/16"] = 9.0/16.0;
-  fractions_["4/9"]  = 4.0/9.0;
-  fractions_["1/4"]  = 1.0/4.0;
-  fractions_["1/9"]  = 1.0/9.0;
-  fractions_["1/16"] = 1.0/16.0;
 
-  for (auto &q : fractions_)
-    cropFraction.addAction(QString::fromStdString(q.first));
-  for (auto &q : cropFraction.actions())
-    q->setCheckable(true);
-  ui->toolCrop->setMenu(&cropFraction);
+  QWidget *popup = new QWidget(this);
+
+  crop_slider_ = new QSlider(Qt::Vertical, popup);
+  crop_slider_->setRange(0, 100);
+
+  crop_label_ = new QLabel(popup);
+  crop_label_->setAlignment(Qt::AlignCenter);
+  crop_label_->setNum(100);
+  crop_label_->setMinimumWidth(crop_label_->sizeHint().width());
+
+  typedef void(QLabel::*IntSlot)(int);
+  connect(crop_slider_, &QAbstractSlider::valueChanged, crop_label_, static_cast<IntSlot>(&QLabel::setNum));
+
+  QBoxLayout *popupLayout = new QHBoxLayout(popup);
+  popupLayout->setMargin(2);
+  popupLayout->addWidget(crop_slider_);
+  popupLayout->addWidget(crop_label_);
+
+  QWidgetAction *action = new QWidgetAction(this);
+  action->setDefaultWidget(popup);
+
+  crop_menu_ = new QMenu(this);
+  crop_menu_->addAction(action);
+
+
+  ui->toolCrop->setMenu(crop_menu_);
   ui->toolCrop->setPopupMode(QToolButton::InstantPopup);
-  connect(&cropFraction, SIGNAL(triggered(QAction*)), this, SLOT(crop_changed(QAction*)));
+  connect(crop_menu_, SIGNAL(aboutToHide()), this, SLOT(crop_changed()));
+
 
   ui->labelBlank->setVisible(false);
 
-  new_zoom = zoom_2d = 0.5;
-  adjrange =0;
-  //scaling-related stuff
+  zoom_2d = 0.5;
+  crop_slider_->setValue(50);
+  crop_changed();
+
+  adjrange = 0;
+
   bits = 0;
 }
 
@@ -65,30 +83,17 @@ FormPlot2D::~FormPlot2D()
   delete ui;
 }
 
-void FormPlot2D::selection_changed() {
-  emit stuff_selected();
-}
-
-void FormPlot2D::set_range_x(MarkerBox2D range) {
-  range_ = range;
-  ui->coincPlot->set_range_x(range);
-}
-
 void FormPlot2D::spectrumDoubleclicked(SelectorItem item)
 {
   on_pushDetails_clicked();
 }
 
-void FormPlot2D::crop_changed(QAction* action) {
-  QString choice = action->text();
-  for (auto &q : cropFraction.actions())
-    q->setChecked(choice == q->text());
-  if (fractions_.count(choice.toStdString())) {
-    new_zoom = fractions_.at(choice.toStdString());
-    PL_DBG << "new zoom";
-    if (this->isVisible() && (mySpectra != nullptr))
-      mySpectra->activate();
-  }
+void FormPlot2D::crop_changed() {
+  PL_DBG << "changing zoom";
+  new_zoom = crop_slider_->value() / 100.0;
+  ui->toolCrop->setText(QString::number(crop_slider_->value()) + "% ");
+  if (this->isVisible() && (mySpectra != nullptr))
+    mySpectra->activate();
 }
 
 void FormPlot2D::setSpectra(Qpx::SpectraSet& new_set, QString spectrum) {
@@ -98,25 +103,6 @@ void FormPlot2D::setSpectra(Qpx::SpectraSet& new_set, QString spectrum) {
   name_2d = spectrum;
 
   updateUI();
-}
-
-void FormPlot2D::set_gates_movable(bool mov) {
-  gates_movable_ = mov;
-}
-
-void FormPlot2D::set_show_boxes(bool show) {
-  show_boxes_ = show;
-  ui->coincPlot->replot_markers();
-}
-
-std::list<MarkerBox2D> FormPlot2D::get_selected_boxes() {
-  return ui->coincPlot->get_selected_boxes();
-}
-
-
-void FormPlot2D::set_boxes(std::list<MarkerBox2D> boxes) {
-  boxes_ = boxes;
-  replot_markers();
 }
 
 
@@ -184,24 +170,6 @@ void FormPlot2D::updateUI()
   ui->spectrumSelector->setItems(items);
 }
 
-void FormPlot2D::set_show_selector(bool vis) {
-  ui->spectrumSelector->setVisible(vis);
-  ui->labelBlank->setVisible(!vis);
-}
-
-void FormPlot2D::set_gate_width(int w) {
-  ui->spinGateWidth->setValue(w);
-}
-
-void FormPlot2D::set_show_gate_width(bool vis) {
-  ui->labelGateWidth->setVisible(vis);
-  ui->spinGateWidth->setVisible(vis);
-}
-
-int FormPlot2D::gate_width() {
-  return ui->spinGateWidth->value();
-}
-
 void FormPlot2D::refresh()
 {
   ui->coincPlot->refresh();
@@ -213,11 +181,6 @@ void FormPlot2D::replot_markers() {
   std::list<MarkerBox2D> boxes;
   std::list<MarkerLabel2D> labels;
   MarkerLabel2D label;
-
-  if (show_boxes_)
-    boxes = boxes_;
-
-  int width = ui->spinGateWidth->value() / 2;
 
   for (auto &q : boxes) {
     label.selectable = q.selectable;
@@ -255,8 +218,6 @@ void FormPlot2D::replot_markers() {
   gate.selectable = false;
   gate.selected = false;
 
-  if (!ui->spinGateWidth->isVisible())
-    width = 0;
 
   //PL_DBG << "FormPlot2d marker width = " << width;
 
@@ -266,14 +227,14 @@ void FormPlot2D::replot_markers() {
   gate.visible = y_marker.visible;
   gate.x1.set_bin(0, bits, calib_x_);
   gate.x2.set_bin(adjrange, bits, calib_x_);
-  gate.y1.set_bin(y_marker.pos.bin(bits) - width, bits, calib_x_);
-  gate.y2.set_bin(y_marker.pos.bin(bits) + width, bits, calib_x_);
+  gate.y1.set_bin(y_marker.pos.bin(bits), bits, calib_x_);
+  gate.y2.set_bin(y_marker.pos.bin(bits), bits, calib_x_);
   gatey = gate;
   boxes.push_back(gate);
 
   gate.visible = x_marker.visible;
-  gate.x1.set_bin(x_marker.pos.bin(bits) - width, bits, calib_x_);
-  gate.x2.set_bin(x_marker.pos.bin(bits) + width, bits, calib_x_);
+  gate.x1.set_bin(x_marker.pos.bin(bits), bits, calib_x_);
+  gate.x2.set_bin(x_marker.pos.bin(bits), bits, calib_x_);
   gate.y1.set_bin(0, bits, calib_x_);
   gate.y2.set_bin(adjrange, bits, calib_x_);
   gatex = gate;
@@ -324,6 +285,8 @@ void FormPlot2D::update_plot(bool force) {
   this->setCursor(Qt::WaitCursor);
   CustomTimer guiside(true);
 
+  ui->pushSymmetrize->setEnabled(false);
+
   bool new_data = mySpectra->new_data();
   bool rescale2d = (zoom_2d != new_zoom);
 
@@ -342,9 +305,12 @@ void FormPlot2D::update_plot(bool force) {
     if (some_spectrum)
       md = some_spectrum->metadata();
 
+
     if ((md.total_count > 0) && (md.dimensions == 2) && (adjrange = static_cast<uint32_t>(md.resolution * zoom_2d)) )
     {
 //      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
+
+      ui->pushSymmetrize->setEnabled(md.attributes.get(Gamma::Setting("symmetrized")).value_int == 0);
 
       std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
           std::move(some_spectrum->get_spectrum({{0, adjrange}, {0, adjrange}}));
@@ -365,20 +331,8 @@ void FormPlot2D::update_plot(bool force) {
           detector_y_ = md.detectors[1];
         }
 
-        if (detector_x_.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
-          calib_x_ = detector_x_.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
-        else
-          calib_x_ = detector_x_.highest_res_calib();
-
-        if (detector_y_.energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
-          calib_y_ = detector_y_.energy_calibrations_.get(Gamma::Calibration("Energy", bits));
-        else
-          calib_y_ = detector_y_.highest_res_calib();
-
-        if (!calib_x_.bits_)
-          calib_x_.bits_ = bits;
-        if (!calib_y_.bits_)
-          calib_y_.bits_ = bits;
+        calib_x_ = detector_x_.best_calib(bits);
+        calib_y_ = detector_y_.best_calib(bits);
 
         ui->coincPlot->set_axes(calib_x_, calib_y_, bits);
       }
@@ -396,13 +350,11 @@ void FormPlot2D::update_plot(bool force) {
 }
 
 void FormPlot2D::markers_moved(Marker x, Marker y) {
-  if (gates_movable_) {
-    x_marker = x;
-    y_marker = y;
-    ext_marker.visible = ext_marker.visible & x.visible;
-    //PL_DBG << "markers changed";
-    replot_markers();
-  }
+  x_marker = x;
+  y_marker = y;
+  ext_marker.visible = ext_marker.visible & x.visible;
+  //PL_DBG << "markers changed";
+  replot_markers();
 
   emit markers_set(x, y);
 }
@@ -461,6 +413,8 @@ void FormPlot2D::spectrumDetailsDelete()
 }
 
 void FormPlot2D::set_zoom(double zm) {
+  if (zm > 1.0)
+    zm = 1.0;
   new_zoom = zm;
   if (this->isVisible() && (mySpectra != nullptr))
     mySpectra->activate();
@@ -473,36 +427,6 @@ double FormPlot2D::zoom() {
 void FormPlot2D::analyse()
 {
   emit requestAnalysis(name_2d);
-}
-
-void FormPlot2D::on_spinGateWidth_valueChanged(int arg1)
-{
-  /*int width = ui->spinGateWidth->value() / 2;
-  if ((ui->spinGateWidth->value() % 2) == 0)
-    ui->spinGateWidth->setValue(width*2 + 1);*/
-
-  replot_markers();
-  //emit markers_set(x_marker, y_marker);
-}
-
-void FormPlot2D::set_gates_visible(bool vertical, bool horizontal, bool diagonal)
-{
-  gate_vertical_ = vertical;
-  gate_horizontal_ = horizontal;
-  gate_diagonal_ = diagonal;
-
-  replot_markers();
-}
-
-
-void FormPlot2D::on_spinGateWidth_editingFinished()
-{
-  int width = ui->spinGateWidth->value() / 2;
-  if ((ui->spinGateWidth->value() % 2) == 0)
-    ui->spinGateWidth->setValue(width*2 + 1);
-
-  replot_markers();
-  emit markers_set(x_marker, y_marker);
 }
 
 void FormPlot2D::set_scale_type(QString st) {
@@ -529,3 +453,7 @@ bool FormPlot2D::show_legend() {
   return ui->coincPlot->show_legend();
 }
 
+void FormPlot2D::on_pushSymmetrize_clicked()
+{
+  emit requestSymmetrize(name_2d);
+}

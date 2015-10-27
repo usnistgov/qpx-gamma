@@ -65,6 +65,7 @@ class Detector : public XMLable {
   void to_xml_options(pugi::xml_node &root, bool options) const;
 
   Calibration highest_res_calib();
+  Calibration best_calib(int bits);
   Calibration get_gain_match(uint16_t bits, std::string todet);
   
   std::string name_, type_;

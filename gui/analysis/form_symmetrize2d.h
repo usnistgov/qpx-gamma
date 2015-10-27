@@ -16,31 +16,31 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormAnalysis2D - 
+ *      FormSymmetrize2D -
  *
  ******************************************************************************/
 
 
-#ifndef FORM_ANALYSIS_2D_H
-#define FORM_ANALYSIS_2D_H
+#ifndef FORM_SYMMETRIZE_2D_H
+#define FORM_SYMMETRIZE_2D_H
 
 #include <QWidget>
 #include <QSettings>
 #include "spectrum1D.h"
 #include "spectra_set.h"
-#include "form_multi_gates.h"
+#include "form_gain_calibration.h"
 
 namespace Ui {
-class FormAnalysis2D;
+class FormSymmetrize2D;
 }
 
-class FormAnalysis2D : public QWidget
+class FormSymmetrize2D : public QWidget
 {
   Q_OBJECT
 
 public:
-  explicit FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent = 0);
-  ~FormAnalysis2D();
+  explicit FormSymmetrize2D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent = 0);
+  ~FormSymmetrize2D();
 
   void setSpectrum(Qpx::SpectraSet *newset, QString spectrum);
   void clear();
@@ -51,43 +51,52 @@ signals:
   void detectorsChanged();
 
 public slots:
-  void update_spectrum();
+  void apply_gain_calibration();
 
 private slots:
-  void take_boxes();
   void update_gates(Marker, Marker);
   void update_peaks(bool);
   void detectorsUpdated() {emit detectorsChanged();}
+  void on_pushAddGatedSpectra_clicked();
   void initialize();
-  void matrix_selection();
-  void update_range(MarkerBox2D);
 
-  void remake_gate();
+  void symmetrize();
 
 protected:
   void closeEvent(QCloseEvent*);
   void showEvent(QShowEvent* event);
 
 private:
-  Ui::FormAnalysis2D *ui;
+  Ui::FormSymmetrize2D *ui;
   QSettings &settings_;
 
+  Qpx::Spectrum::Template *tempx, *tempy;
 
-//  Qpx::Spectrum::Template *tempx;
-//  Qpx::Spectrum::Spectrum *gate_x;
-//  Gamma::Fitter fit_data_;
+  Qpx::Spectrum::Spectrum *gate_x;
+  Qpx::Spectrum::Spectrum *gate_y;
+
+  Gamma::Fitter fit_data_, fit_data_2_;
   int res;
-  double xmin_, xmax_, ymin_, ymax_, xc_, yc_;
 
-  FormMultiGates*      my_gates_;
+  double live_seconds;
 
-  std::list<MarkerBox2D> coincidences_;
+  Gamma::Detector detector1_;
+  Gamma::Detector detector2_;
+
+  Gamma::Calibration nrg_calibration1_;
+  Gamma::Calibration nrg_calibration2_;
+
+  Gamma::Calibration gain_match_cali_;
+
+  AppearanceProfile style_pts, style_fit;
+
+  FormGainCalibration* my_gain_calibration_;
+
 
   //from parent
   QString data_directory_;
   Qpx::SpectraSet *spectra_;
   QString current_spectrum_;
-  MarkerBox2D range2d;
 
   XMLableDB<Gamma::Detector> &detectors_;
 
@@ -96,7 +105,7 @@ private:
   void configure_UI();
   void loadSettings();
   void saveSettings();
-  void show_all_coincidences();
+  void make_gated_spectra();
 };
 
 #endif // FORM_ANALYSIS2D_H

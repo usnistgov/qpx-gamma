@@ -190,9 +190,12 @@ void FormPeaks::update_spectrum() {
   plotcolor.setHsv(QColor::fromRgba(fit_data_->metadata_.appearance).hsvHue(), 48, 160);
   main_graph_.default_pen = QPen(plotcolor, 1);
 
+  ui->plot1D->use_calibrated(fit_data_->nrg_cali_.valid());
+  ui->plot1D->setLabels(QString::fromStdString(fit_data_->nrg_cali_.units_), "count");
+
   for (int i=0; i < fit_data_->x_.size(); ++i) {
     double yy = fit_data_->y_[i];
-    double xx = fit_data_->x_[i];
+    double xx = fit_data_->nrg_cali_.transform(fit_data_->x_[i], fit_data_->metadata_.bits);
     if (!minima.count(xx) || (minima[xx] > yy))
       minima[xx] = yy;
     if (!maxima.count(xx) || (maxima[xx] < yy))
@@ -213,7 +216,7 @@ void FormPeaks::replot_all() {
   ui->plot1D->clearGraphs();
   ui->plot1D->clearExtras();
 
-  ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->x_),
+  ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->x_)),
                        QVector<double>::fromStdVector(fit_data_->y_),
                        main_graph_, true,
                        fit_data_->metadata_.bits);
@@ -226,7 +229,7 @@ void FormPeaks::replot_all() {
   if (ui->checkShowPrelimPeaks->isChecked()) {
     xx.clear(); yy.clear();
     for (auto &q : fit_data_->prelim) {
-      xx.push_back(q);
+      xx.push_back(fit_data_->nrg_cali_.transform(q, fit_data_->metadata_.bits));
       yy.push_back(fit_data_->y_[q]);
     }
     if (yy.size())
@@ -236,7 +239,7 @@ void FormPeaks::replot_all() {
   if (ui->checkShowFilteredPeaks->isChecked()) {
     xx.clear(); yy.clear();
     for (auto &q : fit_data_->filtered) {
-      xx.push_back(q);
+      xx.push_back(fit_data_->nrg_cali_.transform(q, fit_data_->metadata_.bits));
       yy.push_back(fit_data_->y_[q]);
     }
     if (yy.size())
@@ -249,7 +252,7 @@ void FormPeaks::replot_all() {
       for (auto &p : y_fit)
         if (p < 1)
           p = std::floor(p * 10 + 0.5)/10;
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.x_), QVector<double>::fromStdVector(y_fit), multiplet_);
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.x_)), QVector<double>::fromStdVector(y_fit), multiplet_);
     }
   }
   
@@ -259,7 +262,7 @@ void FormPeaks::replot_all() {
       for (auto &p : y_fit)
         if (p < 1)
           p = std::floor(p * 10 + 0.5)/10;
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.second.x_)),
                            QVector<double>::fromStdVector(y_fit),
                            pseudo_voigt_);
     }
@@ -272,7 +275,7 @@ void FormPeaks::replot_all() {
       AppearanceProfile prof = gaussian_;
       if (q.second.flagged)
         prof = flagged_;
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.second.x_)),
                            QVector<double>::fromStdVector(y_fit),
                            prof);
     }
@@ -281,13 +284,13 @@ void FormPeaks::replot_all() {
       for (auto &p : y_fit)
         if (p < 1)
           p = std::floor(p * 10 + 0.5)/10;
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(q.second.x_),
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.second.x_)),
                            QVector<double>::fromStdVector(y_fit),
                            baseline_);
     }
   }
 
-  ui->plot1D->setLabels("channel", "counts");
+  //ui->plot1D->setLabels("channel", "counts");
 
   ui->plot1D->setYBounds(minima, maxima); //no baselines or avgs
   replot_markers();
@@ -298,6 +301,10 @@ void FormPeaks::addMovingMarker(double x) {
     return;
   
   range_.visible = true;
+
+  if (fit_data_->nrg_cali_.valid())
+    x = fit_data_->nrg_cali_.inverse_transform(x, fit_data_->metadata_.bits);
+
 
   uint16_t ch = static_cast<uint16_t>(x);
 
@@ -552,6 +559,7 @@ void FormPeaks::update_fit(bool content_changed) {
     replot_all();
   } else
     replot_markers();
+  ui->plot1D->setLabels(QString::fromStdString(fit_data_->nrg_cali_.units_), "count");
   toggle_push();
 }
 

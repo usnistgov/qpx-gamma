@@ -248,12 +248,23 @@ void qpx::analyze_2d(FormAnalysis2D* formAnal) {
   ui->qpxTabs->setCurrentWidget(formAnal);
 }
 
+void qpx::symmetrize_2d(FormSymmetrize2D* formSym) {
+  int idx = ui->qpxTabs->indexOf(formSym);
+  if (idx == -1) {
+    ui->qpxTabs->addTab(formSym, formSym->windowTitle());
+    connect(formSym, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
+  } else
+    ui->qpxTabs->setTabText(idx, formSym->windowTitle());
+  ui->qpxTabs->setCurrentWidget(formSym);
+}
+
 void qpx::on_pushOpenSpectra_clicked()
 {
   FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, settings_, detectors_, this);
   ui->qpxTabs->addTab(newSpectraForm, "Spectra");
   connect(newSpectraForm, SIGNAL(requestAnalysis(FormAnalysis1D*)), this, SLOT(analyze_1d(FormAnalysis1D*)));
   connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
+  connect(newSpectraForm, SIGNAL(requestSymmetriza2D(FormSymmetrize2D*)), this, SLOT(symmetrize_2d(FormSymmetrize2D*)));
 
   connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::DeviceStatus)));

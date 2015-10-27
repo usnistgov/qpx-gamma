@@ -34,6 +34,7 @@
 #include "form_start.h"
 #include "form_analysis_1d.h"
 #include "form_analysis_2d.h"
+#include "form_symmetrize2d.h"
 
 
 namespace Ui {
@@ -94,6 +95,7 @@ private slots:
 
   void analyze_1d(FormAnalysis1D*);
   void analyze_2d(FormAnalysis2D*);
+  void symmetrize_2d(FormSymmetrize2D*);
   void detectors_updated();
   void update_settings();
 

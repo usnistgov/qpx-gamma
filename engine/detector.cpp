@@ -34,6 +34,13 @@ namespace Gamma {
 // Detector ////////
 ////////////////////
 
+Calibration Detector::best_calib(int bits) {
+  if (energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
+     return energy_calibrations_.get(Gamma::Calibration("Energy", bits));
+  else
+    return highest_res_calib();
+}
+
 Calibration Detector::highest_res_calib() {
   Calibration result;
   for (int i=0; i<energy_calibrations_.size(); ++i)

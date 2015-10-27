@@ -30,6 +30,7 @@
 #include "thread_plot_signal.h"
 #include "form_analysis_1d.h"
 #include "form_analysis_2d.h"
+#include "form_symmetrize2d.h"
 
 namespace Ui {
 class FormMcaDaq;
@@ -50,6 +51,7 @@ signals:
   void statusText(QString);
   void requestAnalysis(FormAnalysis1D*);
   void requestAnalysis2D(FormAnalysis2D*);
+  void requestSymmetriza2D(FormSymmetrize2D*);
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -82,8 +84,9 @@ private slots:
   void analysis_destroyed();
 
   void reqAnal2D(QString);
+  void reqSym2D(QString);
   void analysis2d_destroyed();
-
+  void sym2d_destroyed();
 
   void on_pushBuildFromList_clicked();
 
@@ -108,6 +111,7 @@ private:
 
   FormAnalysis1D* my_analysis_;
   FormAnalysis2D* my_analysis_2d_;
+  FormSymmetrize2D* my_symmetrization_2d_;
   bool my_run_;
 
   void loadSettings();
