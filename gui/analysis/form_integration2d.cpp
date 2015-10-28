@@ -37,6 +37,14 @@ FormIntegration2D::FormIntegration2D(QSettings &settings, QWidget *parent) :
 {
   ui->setupUi(this);
 
+  ui->plotGateX->setFit(&fit_x_);
+  ui->plotGateY->setFit(&fit_y_);
+  ui->plotGateDiagonal->setFit(&fit_d_);
+
+  ui->plotGateX->set_visible_elements(ShowFitElements::gaussians | ShowFitElements::baselines, false);
+  ui->plotGateY->set_visible_elements(ShowFitElements::gaussians | ShowFitElements::baselines, false);
+  ui->plotGateDiagonal->set_visible_elements(ShowFitElements::gaussians | ShowFitElements::baselines, false);
+
   loadSettings();
 
   table_model_.set_data(peaks_);
@@ -49,7 +57,7 @@ FormIntegration2D::FormIntegration2D(QSettings &settings, QWidget *parent) :
   ui->tableGateList->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tableGateList->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->tableGateList->setEditTriggers(QAbstractItemView::NoEditTriggers);
-//  ui->tableGateList->verticalHeader()->hide();
+  ui->tableGateList->verticalHeader()->hide();
   ui->tableGateList->horizontalHeader()->setStretchLastSection(true);
   ui->tableGateList->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
@@ -88,9 +96,14 @@ int32_t FormIntegration2D::index_of(MarkerBox2D pk) {
   if (peaks_.empty())
     return -1;
 
-  for (int i=0; i < peaks_.size(); ++i)
+  //PL_DBG << "indexof checking " << pk.x_c.energy()  << " " << pk.y_c.energy();
+
+  for (int i=0; i < peaks_.size(); ++i) {
+    //PL_DBG << "   against " << peaks_[i].x_c.energy() << " " << peaks_[i].y_c.energy();
+
     if ((peaks_[i].x_c == pk.x_c) && (peaks_[i].y_c == pk.y_c))
       return i;
+  }
   return -1;
 }
 
@@ -129,6 +142,10 @@ void FormIntegration2D::make_range(Marker x, Marker y) {
 
   range_.visible = (x.visible || y.visible);
 
+  ui->pushAdd->setEnabled(range_.visible);
+
+  ui->tableGateList->clearSelection();
+  make_gates(range_);
   emit range_changed(range_);
 }
 
@@ -199,8 +216,10 @@ void FormIntegration2D::selection_changed(QItemSelection selected, QItemSelectio
     q.selected = false;
 
   int32_t current = current_idx();
-  if ((current >= 0) && (current < peaks_.size()))
+  if ((current >= 0) && (current < peaks_.size())) {
     peaks_[current].selected = true;
+    make_gates(peaks_[current]);
+  }
   //PL_DBG << "gates " << peaks_.size() << " selections " << indexes.size();
 
   ui->pushRemove->setEnabled(!indexes.empty());
@@ -273,6 +292,7 @@ void FormIntegration2D::on_pushRemove_clicked()
   peaks_.erase(peaks_.begin() + current_gate_);
 
   rebuild_table(true);
+  emit peak_selected();
 }
 
 void FormIntegration2D::on_doubleGateOn_editingFinished()
@@ -311,6 +331,8 @@ void FormIntegration2D::choose_peaks(std::list<MarkerBox2D> chpeaks) {
   for (auto &q : peaks_)
     q.selected = false;
 
+  //PL_DBG << "checking selected peaks " << chpeaks.size();
+
   int32_t idx = -1;
   for (auto &q : chpeaks) {
     idx = index_of(q);
@@ -320,8 +342,122 @@ void FormIntegration2D::choose_peaks(std::list<MarkerBox2D> chpeaks) {
     }
   }
 
-  rebuild_table(false);
-  update_peaks(false);
+  bool found = false;
+  for (int i=0; i < sortModel.rowCount(); ++i) {
+    QModelIndex ix = sortModel.index(i, 0);
+    QModelIndex iy = sortModel.index(i, 1);
+    double x = sortModel.data(ix, Qt::EditRole).toDouble();
+    double y = sortModel.data(iy, Qt::EditRole).toDouble();
+    for (auto &q : chpeaks) {
+      if ((x == q.x_c.energy()) && (y == q.y_c.energy())) {
+        found = true;
+        ui->tableGateList->selectRow(i);
+        break;
+      }
+    }
+    if (found)
+      break;
+  }
+
+  range_.visible = false;
+  emit range_changed(range_);
+
+  //rebuild_table(false);
+  //update_peaks(false);
+}
+
+void FormIntegration2D::on_pushAdd_clicked()
+{
+  MarkerBox2D newpeak = range_;
+  range_.visible = false;
+
+  newpeak.mark_center = true;
+  newpeak.vertical = true;
+  newpeak.horizontal = true;
+  newpeak.labelfloat = false;
+  peaks_.push_back(newpeak);
+
+  rebuild_table(true);
+  emit peak_selected();
+  emit range_changed(range_);
+}
+
+void FormIntegration2D::make_gates(MarkerBox2D peak) {
+  Qpx::Spectrum::Spectrum* source_spectrum = spectra_->by_name(current_spectrum_.toStdString());
+  if (source_spectrum == nullptr)
+    return;
+
+  md_ = source_spectrum->metadata();
+  double margin = 1;
+
+  uint32_t adjrange = static_cast<uint32_t>(md_.resolution) - 1;
+
+  double xwidth = peak.x2.bin(md_.bits) - peak.x1.bin(md_.bits);
+  double ywidth = peak.y2.bin(md_.bits) - peak.y1.bin(md_.bits);
+
+  double xmin = peak.x1.bin(md_.bits) - xwidth * margin;
+  double xmax = peak.x2.bin(md_.bits) + xwidth * margin;
+  double ymin = peak.y1.bin(md_.bits) - ywidth * margin;
+  double ymax = peak.y2.bin(md_.bits) + ywidth * margin;
+
+  if (xmin < 0)
+    xmin = 0;
+  if (ymin < 0)
+    ymin = 0;
+  if (xmax > adjrange)
+    xmax = adjrange;
+  if (ymax > adjrange)
+    ymax = adjrange;
+
+  Qpx::Spectrum::Template *temp;
+  Qpx::Spectrum::Spectrum *gate;
+
+  temp = Qpx::Spectrum::Factory::getInstance().create_template("1D");
+  temp->visible = true;
+  temp->name_ = "temp";
+  temp->bits = md_.bits;
+
+
+  temp->match_pattern = std::vector<int16_t>({1,1});
+  temp->add_pattern = std::vector<int16_t>({1,0});
+  gate = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp);
+  Qpx::Spectrum::slice_rectangular(source_spectrum, gate, {{xmin, xmax}, {ymin, ymax}}, spectra_->runInfo());
+  fit_x_.clear();
+  fit_x_.setData(gate);
+  delete gate;
+
+  temp->match_pattern = std::vector<int16_t>({1,1});
+  temp->add_pattern = std::vector<int16_t>({0,1});
+  gate = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp);
+  Qpx::Spectrum::slice_rectangular(source_spectrum, gate, {{xmin, xmax}, {ymin, ymax}}, spectra_->runInfo());
+  fit_y_.clear();
+  fit_y_.setData(gate);
+  delete gate;
+
+  temp->match_pattern = std::vector<int16_t>({1,0});
+  temp->add_pattern = std::vector<int16_t>({1,0});
+  gate = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp);
+  Qpx::Spectrum::slice_diagonal(source_spectrum, gate, peak.x_c.bin(md_.bits), peak.y_c.bin(md_.bits), xwidth, xmin, xmax, spectra_->runInfo());
+  fit_d_.clear();
+  fit_d_.setData(gate);
+  delete gate;
+
+  ui->plotGateX->clear();
+  ui->plotGateX->setFit(&fit_x_);
+  ui->plotGateX->update_spectrum();
+  ui->plotGateX->tighten();
+
+  ui->plotGateY->clear();
+  ui->plotGateY->setFit(&fit_y_);
+  ui->plotGateY->update_spectrum();
+  ui->plotGateY->tighten();
+
+  ui->plotGateDiagonal->clear();
+  ui->plotGateDiagonal->setFit(&fit_d_);
+  ui->plotGateDiagonal->update_spectrum();
+  ui->plotGateDiagonal->tighten();
+
+  delete temp;
 }
 
 
@@ -453,5 +589,3 @@ void TablePeaks2D::update() {
   emit energiesChanged();
   return true;
 }*/
-
-

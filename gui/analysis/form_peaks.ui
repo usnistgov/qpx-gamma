@@ -222,7 +222,7 @@
          </property>
          <property name="minimumSize">
           <size>
-           <width>100</width>
+           <width>0</width>
            <height>25</height>
           </size>
          </property>
@@ -236,7 +236,7 @@
           <string>Find peaks</string>
          </property>
          <property name="text">
-          <string>Find peaks</string>
+          <string>Find</string>
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
@@ -265,7 +265,7 @@
           </size>
          </property>
          <property name="text">
-          <string>Moving avg (bins)</string>
+          <string>Mov avg</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -321,7 +321,7 @@
           </size>
          </property>
          <property name="text">
-          <string>Min peak width (bins)</string>
+          <string>Min width</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -374,7 +374,7 @@
           </size>
          </property>
          <property name="text">
-          <string>Multiplet overlap (% FWHM)</string>
+          <string>Overlap</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>

@@ -80,6 +80,7 @@ FormMultiGates::FormMultiGates(QSettings &settings, QWidget *parent) :
 
 void FormMultiGates::range_changed_in_plot(Range range) {
   range2d.visible = range.visible;
+  range2d.vertical = true;
   range2d.x1 = range.l;
   range2d.x2 = range.r;
   emit range_changed(range2d);
@@ -332,15 +333,15 @@ void FormMultiGates::on_pushDistill_clicked()
   for (auto &q : gates_) {
     Gamma::Gate gate = q;
     if (gate.centroid_chan != -1) {
-      box.x_c.set_bin(gate.centroid_chan, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
-      box.x1.set_bin(gate.centroid_chan - (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
-      box.x2.set_bin(gate.centroid_chan + (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+      box.y_c.set_bin(gate.centroid_chan, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+      box.y1.set_bin(gate.centroid_chan - (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+      box.y2.set_bin(gate.centroid_chan + (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
 
       for (auto &p : gate.fit_data_.peaks_) {
         Gamma::Peak peak = p.second;
-        box.y_c.set_bin(peak.center, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
-        box.y1.set_bin(peak.center - (peak.gaussian_.hwhm_ * 2), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
-        box.y2.set_bin(peak.center + (peak.gaussian_.hwhm_ * 2), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+        box.x_c.set_bin(peak.center, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+        box.x1.set_bin(peak.center - (peak.gaussian_.hwhm_ * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+        box.x2.set_bin(peak.center + (peak.gaussian_.hwhm_ * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
         all_boxes_.push_back(box);
       }
     }
@@ -515,10 +516,12 @@ void FormMultiGates::update_peaks(bool content_changed) {
     range2d.y_c.set_bin(res / 2, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
     range2d.y1.set_bin(res / 2 - width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
     range2d.y2.set_bin(res / 2 + width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+    range2d.labelfloat = true;
   } else {
     range2d.y_c.set_bin(yc_, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
     range2d.y1.set_bin(yc_ - width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
     range2d.y2.set_bin(yc_ + width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+    range2d.labelfloat = false;
   }
 
   MarkerBox2D box;
@@ -536,6 +539,7 @@ void FormMultiGates::update_peaks(bool content_changed) {
 
     box.horizontal = false;
     box.vertical = true;
+    box.labelfloat = range2d.labelfloat;
     current_peaks_.push_back(box);
     range2d.y1 = box.y1;
     range2d.y2 = box.y2;

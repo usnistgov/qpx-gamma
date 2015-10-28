@@ -28,7 +28,7 @@
 namespace Qpx {
 namespace Spectrum {
 
-bool slice_diagonal(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destination, uint32_t xc, uint32_t yc, uint32_t width, Qpx::RunInfo info) {
+bool slice_diagonal(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx, Qpx::RunInfo info) {
   if (source == nullptr)
     return false;
   if (destination == nullptr)
@@ -48,8 +48,10 @@ bool slice_diagonal(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* de
 
     int tot = xc + yc;
     for (int i=0; i < tot; ++i) {
-      Qpx::Spectrum::Entry entry({i}, sum_diag(source, i, tot-i, diag_width));
-      destination->add_bulk(entry);
+      if ((i >= minx) && (i < maxx)) {
+        Qpx::Spectrum::Entry entry({i}, sum_diag(source, i, tot-i, diag_width));
+        destination->add_bulk(entry);
+      }
     }
 
     destination->addSpill(spill);

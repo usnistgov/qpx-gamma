@@ -55,12 +55,18 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
     x_.clear();
     y_.clear();
 
-    int i = 0;
+    int i = 0, j = 0;
+    bool go = false;
     for (auto it : *spectrum_dump) {
-      x_.push_back(static_cast<double>(i));
-      y_.push_back(it.second);
       if (it.second > 0)
-        x_bound = i+1;
+        go = true;
+      if (go) {
+        x_.push_back(static_cast<double>(i));
+        y_.push_back(it.second);
+        if (it.second > 0)
+          x_bound = j+1;
+        j++;
+      }
       i++;
     }
 
@@ -238,22 +244,31 @@ void Fitter::refine_edges(double threshl, double threshr) {
 }
 
 uint16_t Fitter::find_left(uint16_t chan, uint16_t grace) {
-  if ((chan - grace < 0) || (chan >= x_.size()))
+  if (x_.empty())
     return 0;
 
-  int i = chan - grace;
+  if (((chan - grace) < x_[0]) || (chan >= x_[x_.size()-1]))
+    return 0;
+
+  int i = x_.size()-1;
+  while ((i >= 0) && (i > (chan - grace)))
+    i--;
   while ((i >= 0) && (deriv1[i] > 0))
     i--;
-  return i;
 
-  
+  return i;
 }
 
 uint16_t Fitter::find_right(uint16_t chan, uint16_t grace) {
-  if ((chan < 0) || (chan + grace >= x_.size()))
+  if (x_.empty())
+    return 0;
+
+  if ((chan < x_[0]) || ((chan + grace) >= x_[x_.size()-1]))
     return x_.size() - 1;
 
-  int i = chan + grace;
+  int i = 0;
+  while ((i < x_.size()) && (i < (chan + grace)))
+    i++;
   while ((i < x_.size()) && (deriv1[i] < 0))
     i++;
   return i;
@@ -314,8 +329,18 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
   //std::vector<double> xx(x_.begin() + left, x_.begin() + right + 1);
   //std::vector<double> yy(y_.begin() + left, y_.begin() + right + 1);
   //std::vector<double> bckgr = make_background(x_, y_, left, right, 3);
+  if (x_.empty())
+    return;
+
+  int32_t l = x_.size() - 1;
+  while ((l > 0) && (x_[l] > left))
+    l--;
+
+  int32_t r = 0;
+  while ((r < x_.size()) && (x_[r] < right))
+    r++;
   
-  Peak newpeak = Gamma::Peak(x_, y_, left, right, nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
+  Peak newpeak = Gamma::Peak(x_, y_, l, r, nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
   PL_DBG << "new peak center = " << newpeak.center;
 
   peaks_[newpeak.center] = newpeak;

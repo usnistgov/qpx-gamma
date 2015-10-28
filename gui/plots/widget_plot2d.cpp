@@ -222,6 +222,11 @@ void WidgetPlot2D::refresh()
 
 void WidgetPlot2D::replot_markers() {
   //PL_DBG << "replot markers";
+  double minx = std::numeric_limits<double>::max();
+  double maxx = - std::numeric_limits<double>::max();
+  double miny = std::numeric_limits<double>::max();
+  double maxy = - std::numeric_limits<double>::max();
+  //int total_markers = 0;
 
   ui->coincPlot->clearItems();
 
@@ -263,39 +268,70 @@ void WidgetPlot2D::replot_markers() {
       box->setPen(pen);
     }
 
+    double xc(0), x1(0), x2(0), yc(0), y1(0), y2(0);
+
+    if (calib_x_.valid()) {
+      xc = q.x_c.energy();
+      x1 = q.x1.energy();
+      x2 = q.x2.energy();
+    } else {
+      xc = q.x_c.bin(bits_);
+      x1 = q.x1.bin(bits_);
+      x2 = q.x2.bin(bits_);
+    }
+
+    if (calib_y_.valid()) {
+      yc = q.y_c.energy();
+      y1 = q.y1.energy();
+      y2 = q.y2.energy();
+    } else {
+      yc = q.y_c.bin(bits_);
+      y1 = q.y1.bin(bits_);
+      y2 = q.y2.bin(bits_);
+    }
+
     box->setProperty("chan_x", q.x_c.bin(bits_));
     box->setProperty("chan_y", q.y_c.bin(bits_));
     box->setProperty("nrg_x", q.x_c.energy());
     box->setProperty("nrg_y", q.y_c.energy());
-    if (calib_x_.valid()) {
-      box->topLeft->setCoords(q.x1.energy(), q.y1.energy());
-      box->bottomRight->setCoords(q.x2.energy(), q.y2.energy());
-    } else {
-      box->topLeft->setCoords(q.x1.bin(bits_), q.y1.bin(bits_));
-      box->bottomRight->setCoords(q.x2.bin(bits_), q.y2.bin(bits_));
-    }
+    box->topLeft->setCoords(x1, y1);
+    box->bottomRight->setCoords(x2, y2);
     ui->coincPlot->addItem(box);
+
+    if (q.selected) {
+//      total_markers++;
+      if (q.vertical) {
+        if (x2 > maxx)
+          maxx = x2;
+        if (x1 < minx)
+          minx = x1;
+      }
+
+      if (q.horizontal) {
+        if (y2 > maxy)
+          maxy = y2;
+        if (y1 < miny)
+          miny = y1;
+      }
+    }
 
     if (q.mark_center) {
       QCPItemLine *linev = new QCPItemLine(ui->coincPlot);
       QCPItemLine *lineh = new QCPItemLine(ui->coincPlot);
       lineh->setPen(pen_strong);
       linev->setPen(pen_strong);
+//      linev->setSelectedPen(QPen(QColor::fromHsv(sel.hsvHue(), sel.saturation(), sel.value(), 48)));
+//      lineh->setSelectedPen(QPen(QColor::fromHsv(sel.hsvHue(), sel.saturation(), sel.value(), 48)));
+      linev->setSelected(q.selected);
+      lineh->setSelected(q.selected);
       lineh->setTail(QCPLineEnding::esBar);
       lineh->setHead(QCPLineEnding::esBar);
       linev->setTail(QCPLineEnding::esBar);
       linev->setHead(QCPLineEnding::esBar);
-      if (calib_x_.valid()) {
-        lineh->start->setCoords(q.x1.energy(), q.y_c.energy());
-        lineh->end->setCoords(q.x2.energy(), q.y_c.energy());
-        linev->start->setCoords(q.x_c.energy(), q.y1.energy());
-        linev->end->setCoords(q.x_c.energy(), q.y2.energy());
-      } else {
-        lineh->start->setCoords(q.x1.bin(bits_), q.y_c.bin(bits_));
-        lineh->end->setCoords(q.x2.bin(bits_), q.y_c.bin(bits_));
-        linev->start->setCoords(q.x_c.bin(bits_), q.y1.bin(bits_));
-        linev->end->setCoords(q.x_c.bin(bits_), q.y2.bin(bits_));
-      }
+      lineh->start->setCoords(x1, yc);
+      lineh->end->setCoords(x2, yc);
+      linev->start->setCoords(xc, y1);
+      linev->end->setCoords(xc, y2);
       ui->coincPlot->addItem(lineh);
       ui->coincPlot->addItem(linev);
     }
@@ -314,12 +350,30 @@ void WidgetPlot2D::replot_markers() {
       labelItem->setProperty("nrg_y", q.y.energy());
 
       labelItem->position->setType(QCPItemPosition::ptPlotCoords);
-      //labelItem->position->setType(QCPItemPosition::ptAxisRectRatio);
+
+      double x = 0, y = 0;
 
       if (calib_x_.valid())
-        labelItem->position->setCoords(q.x.energy(), q.y.energy());
+        x = q.x.energy();
       else
-        labelItem->position->setCoords(q.x.bin(bits_), q.y.bin(bits_));
+        x = q.x.bin(bits_);
+
+      if (calib_y_.valid())
+        y = q.y.energy();
+      else
+        y = q.y.bin(bits_);
+
+      if (q.hfloat) {
+        labelItem->position->setTypeX(QCPItemPosition::ptAxisRectRatio);
+        x = 0.90;
+      }
+      if (q.vfloat) {
+        labelItem->position->setTypeY(QCPItemPosition::ptAxisRectRatio);
+        y = 0.10;
+      }
+
+      labelItem->position->setCoords(x, y);
+      labelItem->position->setCoords(x, y);
 
       if (q.vertical) {
         labelItem->setRotation(90);
@@ -361,9 +415,37 @@ void WidgetPlot2D::replot_markers() {
     box->setSelectable(false);
     box->setPen(pen_strong);
     box->setBrush(QBrush(pen_strong2.color()));
-    box->topLeft->setCoords(range_.x1.bin(bits_), range_.y1.bin(bits_));
-    box->bottomRight->setCoords(range_.x2.bin(bits_), range_.y2.bin(bits_));
+    double x1 = range_.x1.bin(bits_);
+    double y1 = range_.y1.bin(bits_);
+    double x2 = range_.x2.bin(bits_);
+    double y2 = range_.y2.bin(bits_);
+    if (calib_x_.valid()) {
+      x1 = range_.x1.energy();
+      y1 = range_.y1.energy();
+    }
+    if (calib_y_.valid()) {
+      x2 = range_.x2.energy();
+      y2 = range_.y2.energy();
+    }
+
+    box->topLeft->setType(QCPItemPosition::ptPlotCoords);
+    box->topLeft->setCoords(x1, y1);
+    box->bottomRight->setType(QCPItemPosition::ptPlotCoords);
+    box->bottomRight->setCoords(x2, y2);
     ui->coincPlot->addItem(box);
+
+    if (range_.vertical) {
+      if (x2 > maxx)
+        maxx = x2;
+      if (x1 < minx)
+        minx = x1;
+    }
+    if (range_.horizontal) {
+      if (y2 > maxy)
+        maxy = y2;
+      if (y1 < miny)
+        miny = y1;
+    }
   }
 
   QCPItemPixmap *overlayButton;
@@ -398,23 +480,61 @@ void WidgetPlot2D::replot_markers() {
     overlayButton = newButton;
   }
 
-  //if (visible_options_ & ShowOptions::save) {
-    QCPItemPixmap *newButton = new QCPItemPixmap(ui->coincPlot);
-    newButton->setClipToAxisRect(false);
-    newButton->setPixmap(QPixmap(":/new/icons/oxy/document_save.png"));
-    newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
-    newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
-    newButton->topLeft->setCoords(0, 5);
-    newButton->bottomRight->setParentAnchor(newButton->topLeft);
-    newButton->bottomRight->setCoords(18, 18);
-    newButton->setScaled(true);
-    newButton->setSelectable(false);
-    newButton->setProperty("button_name", QString("export"));
-    newButton->setProperty("tooltip", QString("Export plot"));
-    ui->coincPlot->addItem(newButton);
-    overlayButton = newButton;
-  //}
+  QCPItemPixmap *newButton = new QCPItemPixmap(ui->coincPlot);
+  newButton->setClipToAxisRect(false);
+  newButton->setPixmap(QPixmap(":/new/icons/oxy/document_save.png"));
+  newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
+  newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
+  newButton->topLeft->setCoords(0, 5);
+  newButton->bottomRight->setParentAnchor(newButton->topLeft);
+  newButton->bottomRight->setCoords(18, 18);
+  newButton->setScaled(true);
+  newButton->setSelectable(false);
+  newButton->setProperty("button_name", QString("export"));
+  newButton->setProperty("tooltip", QString("Export plot"));
+  ui->coincPlot->addItem(newButton);
+  overlayButton = newButton;
 
+  int margin = 50;
+  bool xaxis_changed = false;
+  bool yaxis_changed = false;
+  double difx_lower = minx - ui->coincPlot->xAxis->range().lower;
+  double difx_upper = maxx - ui->coincPlot->xAxis->range().upper;
+  double dify_lower = miny - ui->coincPlot->yAxis->range().lower;
+  double dify_upper = maxy - ui->coincPlot->yAxis->range().upper;
+  if (difx_upper > 0) {
+    ui->coincPlot->xAxis->setRangeUpper(maxx + margin);
+    if (difx_lower > (difx_upper + margin))
+      ui->coincPlot->xAxis->setRangeLower(ui->coincPlot->xAxis->range().lower + difx_upper + margin);
+    xaxis_changed = true;
+  }
+
+  if (difx_lower < 0) {
+    ui->coincPlot->xAxis->setRangeLower(minx - margin);
+    if (difx_upper < (difx_lower - margin))
+      ui->coincPlot->xAxis->setRangeUpper(ui->coincPlot->xAxis->range().upper + difx_lower - margin);
+    xaxis_changed = true;
+  }
+
+  if (dify_upper > 0) {
+    ui->coincPlot->yAxis->setRangeUpper(maxy + margin);
+    if (dify_lower > (dify_upper + margin))
+      ui->coincPlot->yAxis->setRangeLower(ui->coincPlot->yAxis->range().lower + dify_upper + margin);
+    yaxis_changed = true;
+  }
+
+  if (dify_lower < 0) {
+    ui->coincPlot->yAxis->setRangeLower(miny - margin);
+    if (dify_upper < (dify_lower - margin))
+      ui->coincPlot->yAxis->setRangeUpper(ui->coincPlot->yAxis->range().upper + dify_lower - margin);
+    yaxis_changed = true;
+  }
+
+
+//  if (xaxis_changed) {
+//    ui->coincPlot->replot();
+//    plot_rezoom();
+//  }
 
   ui->coincPlot->replot();
 }
@@ -461,21 +581,32 @@ void WidgetPlot2D::plot_2d_mouse_upon(double x, double y) {
 }
 
 void WidgetPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event, bool channels) {
-  //PL_INFO << "<Plot2D> markers at " << x << " & " << y << " chans?=" << channels;
+//  PL_INFO << "<Plot2D> markers at " << x << " & " << y << " chans?=" << channels;
 
   bool visible = (event->button() == Qt::LeftButton);
 
   Marker xt, yt;
 
   if (channels) {
-    //PL_DBG << "markers chan";
+//    PL_DBG << "markers chan";
     xt.pos.set_bin(x, bits_, calib_x_);
     yt.pos.set_bin(y, bits_, calib_y_);
+//    PL_DBG << "xformed to nrg " << xt.pos.energy() << " " << yt.pos.energy();
   } else {
-    //PL_DBG << "markers nrg";
+//    PL_DBG << "markers nrg";
     xt.pos.set_energy(x, calib_x_);
     yt.pos.set_energy(y, calib_y_);
   }
+
+//  if (calib_x_.valid())
+//    xt.pos.set_energy(x, calib_x_);
+//  else
+//    xt.pos.set_bin(x, bits_, calib_x_);
+
+//  if (calib_y_.valid())
+//    yt.pos.set_energy(y, calib_y_);
+//  else
+//    yt.pos.set_bin(y, bits_, calib_y_);
 
   xt.visible = visible;
   yt.visible = visible;

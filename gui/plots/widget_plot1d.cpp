@@ -50,8 +50,9 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   connect(ui->mcaPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(plot_mouse_release(QMouseEvent*)));
   connect(ui->mcaPlot, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(plot_mouse_press(QMouseEvent*)));
 
-  minx = 0; maxx = 0;
   minx_zoom = 0; maxx_zoom = 0;
+  minx = std::numeric_limits<double>::max();
+  maxx = - std::numeric_limits<double>::max();
   miny = std::numeric_limits<double>::max();
   maxy = - std::numeric_limits<double>::max();
 
@@ -163,6 +164,7 @@ void WidgetPlot1D::clearGraphs()
 
 void WidgetPlot1D::clearExtras()
 {
+  //PL_DBG << "WidgetPlot1D::clearExtras()";
   my_markers_.clear();
   my_cursors_.clear();
   my_range_.visible = false;
@@ -180,7 +182,8 @@ void WidgetPlot1D::redraw() {
 
 void WidgetPlot1D::reset_scales()
 {
-  minx = maxx = 0;
+  minx = std::numeric_limits<double>::max();
+  maxx = - std::numeric_limits<double>::max();
   miny = std::numeric_limits<double>::max();
   maxy = - std::numeric_limits<double>::max();
   ui->mcaPlot->rescaleAxes();
@@ -216,6 +219,7 @@ void WidgetPlot1D::set_cursors(const std::list<Marker>& cursors) {
 }
 
 void WidgetPlot1D::set_range(Range rng) {
+//  PL_DBG << "<WidgetPlot1D> set range";
   my_range_ = rng;
 }
 
@@ -225,11 +229,11 @@ std::set<double> WidgetPlot1D::get_selected_markers() {
     if (QCPItemText *txt = qobject_cast<QCPItemText*>(q)) {
       if (txt->property("chan_value").isValid())
         selection.insert(txt->property("chan_value").toDouble());
-      PL_DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
+      //PL_DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
     } else if (QCPItemLine *line = qobject_cast<QCPItemLine*>(q)) {
       if (line->property("chan_value").isValid())
         selection.insert(line->property("chan_value").toDouble());
-      PL_DBG << "found selected " << line->property("true_value").toDouble() << " chan=" << line->property("chan_value").toDouble();
+      //PL_DBG << "found selected " << line->property("true_value").toDouble() << " chan=" << line->property("chan_value").toDouble();
     }
 
   return selection;
@@ -257,6 +261,7 @@ void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, 
 
   if (x[0] < minx) {
     minx = x[0];
+    //PL_DBG << "new minx " << minx;
     ui->mcaPlot->xAxis->rescale();
   }
   if (x[x.size() - 1] > maxx) {
@@ -279,6 +284,7 @@ void WidgetPlot1D::addPoints(const QVector<double>& x, const QVector<double>& y,
 
   if (x[0] < minx) {
     minx = x[0];
+    //PL_DBG << "new minx " << minx;
     ui->mcaPlot->xAxis->rescale();
   }
   if (x[x.size() - 1] > maxx) {
@@ -316,6 +322,12 @@ void WidgetPlot1D::plot_rezoom() {
   else
     ui->mcaPlot->yAxis->setRangeLower(miny);
   ui->mcaPlot->yAxis->setRangeUpper(maxy);
+}
+
+void WidgetPlot1D::tight_x() {
+  //PL_DBG << "tightning x to " << minx << " " << maxx;
+  ui->mcaPlot->xAxis->setRangeLower(minx);
+  ui->mcaPlot->xAxis->setRangeUpper(maxx);
 }
 
 void WidgetPlot1D::calc_y_bounds(double lower, double upper) {
@@ -363,7 +375,7 @@ void WidgetPlot1D::replot_markers() {
   edge_trc2 = nullptr;
   double min_marker = std::numeric_limits<double>::max();
   double max_marker = - std::numeric_limits<double>::max();
-  int total_markers = 0;
+//  int total_markers = 0;
 
   for (auto &q : my_markers_) {
     QCPItemTracer *top_crs = nullptr;
@@ -418,7 +430,7 @@ void WidgetPlot1D::replot_markers() {
       QPen selected_pen = q.selected_appearance.get_pen(color_theme_);
 
       if (q.selected) {
-        total_markers++;
+//        total_markers++;
         if (top_crs->graphKey() > max_marker)
           max_marker = top_crs->graphKey();
         if (top_crs->graphKey() < min_marker)
@@ -506,8 +518,8 @@ void WidgetPlot1D::replot_markers() {
     pos_c = my_range_.center.energy();
     pos_r = my_range_.r.energy();
 
-    if ((pos_l < pos_c) && (pos_c < pos_r)) {
-      //PL_DBG << "will plot range";
+    if ((pos_l < /*pos_c) && (pos_c <*/ pos_r)) {
+//      PL_DBG << "<WidgetPlot1D> will plot range";
 
       int total = ui->mcaPlot->graphCount();
       for (int i=0; i < total; i++) {
@@ -537,7 +549,7 @@ void WidgetPlot1D::replot_markers() {
         crs->setSelectable(false);
         ui->mcaPlot->addItem(crs);
         crs->updatePosition();
-        double center_val = crs->positions().first()->value();
+        //double center_val = crs->positions().first()->value();
 
         edge_trc1 = new QCPItemTracer(ui->mcaPlot);
         edge_trc1->setStyle(QCPItemTracer::tsNone);
@@ -561,18 +573,19 @@ void WidgetPlot1D::replot_markers() {
         pen_l.setWidth(1);
         ar1->setPen(pen_l);
         ar1->setSelectable(true);
-        ar1->set_limits(minx - 1, pos_r + 1); //exclusive limits
+        ar1->set_limits(minx - 1, maxx + 1); //exclusive limits
         ui->mcaPlot->addItem(ar1);
 
         DraggableTracer *ar2 = new DraggableTracer(ui->mcaPlot, edge_trc2, 10);
         pen_r.setWidth(1);
         ar2->setPen(pen_r);
         ar2->setSelectable(true);
-        ar2->set_limits(pos_l - 1, maxx + 1); //exclusive limits
+        ar2->set_limits(minx - 1, maxx + 1); //exclusive limits
         ui->mcaPlot->addItem(ar2);
 
         if (my_range_.visible) {
           QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
+          line->setSelectable(false);
           line->start->setParentAnchor(edge_trc1->position);
           line->start->setCoords(0, 0);
           line->end->setParentAnchor(edge_trc2->position);
@@ -590,33 +603,48 @@ void WidgetPlot1D::replot_markers() {
           crs->setPen(my_range_.top.get_pen(color_theme_));
           crs->setStyle(QCPItemTracer::tsCircle);
 
-          /*
-          if (my_range_.l.visible) {
+          if (my_range_.visible) {
             QCPItemCurve *ln = new QCPItemCurve(ui->mcaPlot);
+            ln->setSelectable(false);
             ln->start->setParentAnchor(crs->position);
             ln->start->setCoords(0, 0);
             ln->end->setParentAnchor(edge_trc1->position);
             ln->end->setCoords(0, 0);
+            ln->startDir->setType(QCPItemPosition::ptPlotCoords);
+            ln->startDir->setCoords((crs->position->key() + edge_trc1->position->key()) / 2, crs->position->value());
+            ln->endDir->setType(QCPItemPosition::ptPlotCoords);
+            ln->endDir->setCoords((crs->position->key() + edge_trc1->position->key()) / 2, edge_trc1->position->value());
+
             ln->setPen(my_range_.top.get_pen(color_theme_));
             ui->mcaPlot->addItem(ln);
           }
 
-          if (my_range_.r.visible) {
+          if (my_range_.visible) {
             QCPItemCurve *ln = new QCPItemCurve(ui->mcaPlot);
+            ln->setSelectable(false);
             ln->start->setParentAnchor(crs->position);
             ln->start->setCoords(0, 0);
             ln->end->setParentAnchor(edge_trc2->position);
             ln->end->setCoords(0, 0);
+            ln->startDir->setType(QCPItemPosition::ptPlotCoords);
+            ln->startDir->setCoords((crs->position->key() + edge_trc2->position->key()) / 2, crs->position->value());
+            ln->endDir->setType(QCPItemPosition::ptPlotCoords);
+            ln->endDir->setCoords((crs->position->key() + edge_trc2->position->key()) / 2, edge_trc2->position->value());
+
+
             ln->setPen(my_range_.top.get_pen(color_theme_));
             ui->mcaPlot->addItem(ln);
-          } */
+          }
         }
       }
 
     } else {
+//      PL_DBG << "<WidgetPlot1D> bad range";
       my_range_.visible = false;
       //emit range_moved();
     }
+  } else {
+//    PL_DBG << "<WidgetPlot1D> range invisible";
   }
 
 

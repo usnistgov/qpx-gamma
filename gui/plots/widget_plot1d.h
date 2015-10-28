@@ -74,6 +74,8 @@ public:
 
   void redraw();
   void reset_scales();
+
+  void tight_x();
   void rescale();
   void replot_markers();
 

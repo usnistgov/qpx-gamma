@@ -54,7 +54,7 @@ public:
     bin_ = bin;
     bits_ = bits;
     energy_ = nan("");
-    if (!isnan(bin) && cali.valid())
+    if (!isnan(bin)/* && cali.valid()*/)
       energy_ = cali.transform(bin_, bits_);
   }
 
@@ -111,15 +111,17 @@ struct Range {
 };
 
 struct MarkerLabel2D {
-  MarkerLabel2D() : selected(false), selectable(false), vertical(false) {}
+  MarkerLabel2D() : selected(false), selectable(false), vertical(false), vfloat(false), hfloat(false) {}
 
   Coord x, y;
   QString text;
   bool selected, selectable, vertical;
+  bool vfloat, hfloat;
 };
 
 struct MarkerBox2D {
-  MarkerBox2D() : visible(false), selected(false), selectable (true), horizontal(false), vertical(false), mark_center(false) {}
+  MarkerBox2D() : visible(false), selected(false), selectable (true), horizontal(false), vertical(false),
+    mark_center(false), labelfloat(false) {}
   bool operator== (const MarkerBox2D& other) const {
     if (x1 != other.x1) return false;
     if (x2 != other.x2) return false;
@@ -133,7 +135,7 @@ struct MarkerBox2D {
   bool visible;
   bool selected;
   bool selectable;
-  bool horizontal, vertical;
+  bool horizontal, vertical, labelfloat;
   bool mark_center;
   Coord x1, x2, y1, y2, x_c, y_c;
 };

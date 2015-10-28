@@ -118,7 +118,6 @@ void FormGatesPlot2D::replot_markers() {
     label.selectable = q.selectable;
     label.selected = q.selected;
 
-
     if ((q.horizontal) && (q.vertical)) {
       label.x = q.x2;
       label.y = q.y2;
@@ -135,12 +134,14 @@ void FormGatesPlot2D::replot_markers() {
       label.x = q.x_c;
       label.y = q.y2;
       label.vertical = false;
+      label.hfloat = q.labelfloat;
       label.text = QString::number(q.y_c.energy());
       labels.push_back(label);
     } else if (q.vertical) {
       label.x = q.x2;
       label.y = q.y_c;
       label.vertical = true;
+      label.vfloat = q.labelfloat;
       label.text = QString::number(q.x_c.energy());
       labels.push_back(label);
     }
@@ -179,26 +180,31 @@ void FormGatesPlot2D::replot_markers() {
   label.selected = false;
   label.vertical = false;
 
-  //  if (y_marker.visible && x_marker.visible) {
-  //    label.x = gatex.x2;
-  //    label.y = gatey.y_c;
-  //    label.text = QString::number(y_marker.pos.energy());
-  //    labels.push_back(label);
-
-  //    label.x = gatex.x_c;
-  //    label.y = gatey.y2;
-  //    label.vertical = true;
-  //    label.text = QString::number(x_marker.pos.energy());
-  //    labels.push_back(label);
-  //  }
-  if (y_marker.visible) {
+  if (y_marker.visible && x_marker.visible) {
+    label.vfloat = false;
+    label.hfloat = false;
     label.x = gatex.x2;
     label.y = gatey.y_c;
     label.vertical = false;
     label.text = QString::number(y_marker.pos.energy());
     labels.push_back(label);
-  }
-  if (x_marker.visible) {
+
+    label.x = gatex.x_c;
+    label.y = gatey.y2;
+    label.vertical = true;
+    label.text = QString::number(x_marker.pos.energy());
+    labels.push_back(label);
+  } else if (y_marker.visible) {
+    label.vfloat = false;
+    label.hfloat = true;
+    label.x = gatex.x2;
+    label.y = gatey.y_c;
+    label.vertical = false;
+    label.text = QString::number(y_marker.pos.energy());
+    labels.push_back(label);
+  } else if (x_marker.visible) {
+    label.vfloat = true;
+    label.hfloat = false;
     label.x = gatex.x_c;
     label.y = gatey.y2;
     label.vertical = true;

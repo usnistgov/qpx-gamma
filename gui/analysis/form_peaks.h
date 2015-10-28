@@ -63,6 +63,8 @@ public:
   void new_spectrum();
   void update_fit(bool content_changed = false);
 
+  void tighten();
+
   void clear();
   void update_spectrum();
   void make_range(Marker);
@@ -80,6 +82,7 @@ private slots:
 
   void user_selected_peaks();
 
+  void addMovingMarker(Coord);
   void addMovingMarker(double);
   void removeMovingMarker(double);
 
