@@ -581,7 +581,7 @@ void WidgetPlot2D::plot_2d_mouse_upon(double x, double y) {
 }
 
 void WidgetPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event, bool channels) {
-//  PL_INFO << "<Plot2D> markers at " << x << " & " << y << " chans?=" << channels;
+  PL_INFO << "<WidgetPlot2D> mouse clicked at " << x << " & " << y << " chans?=" << channels;
 
   bool visible = (event->button() == Qt::LeftButton);
 

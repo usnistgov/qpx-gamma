@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1189</width>
-    <height>817</height>
+    <width>1171</width>
+    <height>879</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,13 +27,16 @@
        <property name="maximumSize">
         <size>
          <width>16777215</width>
-         <height>200</height>
+         <height>150</height>
         </size>
        </property>
       </widget>
      </item>
      <item>
       <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="spacing">
+        <number>3</number>
+       </property>
        <property name="sizeConstraint">
         <enum>QLayout::SetMaximumSize</enum>
        </property>
@@ -331,22 +334,6 @@
          </item>
         </layout>
        </item>
-       <item>
-        <spacer name="verticalSpacer">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::Preferred</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
       </layout>
      </item>
     </layout>
@@ -368,17 +355,20 @@
      <property name="maximumSize">
       <size>
        <width>16777215</width>
-       <height>300</height>
+       <height>16777215</height>
       </size>
      </property>
     </widget>
    </item>
    <item row="1" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout_7">
+     <property name="sizeConstraint">
+      <enum>QLayout::SetMaximumSize</enum>
+     </property>
      <item>
       <widget class="FormPeaks" name="plotGateX" native="true">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -386,7 +376,13 @@
        <property name="minimumSize">
         <size>
          <width>100</width>
-         <height>100</height>
+         <height>250</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>250</height>
         </size>
        </property>
       </widget>
@@ -394,7 +390,7 @@
      <item>
       <widget class="FormPeaks" name="plotGateY" native="true">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -402,7 +398,13 @@
        <property name="minimumSize">
         <size>
          <width>100</width>
-         <height>100</height>
+         <height>250</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>250</height>
         </size>
        </property>
       </widget>
@@ -410,7 +412,7 @@
      <item>
       <widget class="FormPeaks" name="plotGateDiagonal" native="true">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -418,7 +420,13 @@
        <property name="minimumSize">
         <size>
          <width>100</width>
-         <height>100</height>
+         <height>250</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>250</height>
         </size>
        </property>
       </widget>

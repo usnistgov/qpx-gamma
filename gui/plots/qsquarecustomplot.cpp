@@ -112,13 +112,15 @@ void QSquareCustomPlot::mouseMoveEvent(QMouseEvent *event)  {
 void QSquareCustomPlot::mouseReleaseEvent(QMouseEvent *event)  {
   emit mouseRelease(event);
 
+  //PL_DBG << "QSquareCustomPlot::mouseReleaseEvent";
+
   if ((mMousePressPos-event->pos()).manhattanLength() < 5) {
     double co_x, co_y;
 
     co_x = xAxis->pixelToCoord(event->x());
     co_y = yAxis->pixelToCoord(event->y());
 
-//    PL_DBG << "Custom plot mouse released at coords: " << co_x << ", " << co_y;
+    //PL_DBG << "Custom plot mouse released at coords: " << co_x << ", " << co_y;
 
     QCPAbstractItem *ai = qobject_cast<QCPAbstractItem*>(itemAt(event->localPos(), false));
     if (ai != nullptr) {
@@ -131,10 +133,12 @@ void QSquareCustomPlot::mouseReleaseEvent(QMouseEvent *event)  {
     if (QCPColorMap *ap = qobject_cast<QCPColorMap*>(clickedLayerable)) {
       int xx, yy;
       ap->data()->coordToCell(co_x, co_y, &xx, &yy);
-//      PL_DBG << "Corrected to cell : " << xx << ", " << yy;
+      //PL_DBG << "Corrected to cell : " << xx << ", " << yy;
       emit mouse_clicked(static_cast<double>(xx), static_cast<double>(yy), event, true); //true?
-    } else if (ai == nullptr)
+    } else if (ai == nullptr) {
       emit mouse_clicked(co_x, co_y, event, false);
+      //PL_DBG << "Uncorrected click coords";
+    }
   }
   QCustomPlot::mouseReleaseEvent(event);
 }

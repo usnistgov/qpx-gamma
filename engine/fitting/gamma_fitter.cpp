@@ -161,7 +161,7 @@ void Fitter::deriv() {
 
 void Fitter::find_prelim() {
   prelim.clear();
-  std::string dbg_list("prelim peaks ");
+  //std::string dbg_list("prelim peaks ");
 
   int was = 0, is = 0;
 
@@ -175,7 +175,7 @@ void Fitter::find_prelim() {
 
     if ((was == 1) && (is == -1)) {
       prelim.push_back(i);
-      dbg_list += std::to_string(i) + " ";
+      //dbg_list += std::to_string(i) + " ";
     }
 
     was = is;
@@ -188,8 +188,8 @@ void Fitter::filter_prelim(uint16_t min_width) {
   lefts.clear();
   rights.clear();
 
-  std::string dbg_list("filtered (minw=");
-  dbg_list += std::to_string(min_width) + ") peaks ";
+  //std::string dbg_list("filtered (minw=");
+  //dbg_list += std::to_string(min_width) + ") peaks ";
 
   if ((y_.size() < 3) || !prelim.size())
     return;
@@ -214,7 +214,7 @@ void Fitter::filter_prelim(uint16_t min_width) {
       lefts.push_back(q-left-1);
       filtered.push_back(q-1);
       rights.push_back(q+right-1);
-      dbg_list += std::to_string(q-left-1) + "/" + std::to_string(q-1) + "\\" + std::to_string(q+right-1) + " ";
+      //dbg_list += std::to_string(q-left-1) + "/" + std::to_string(q-1) + "\\" + std::to_string(q+right-1) + " ";
     }
   }
   //  PL_DBG << dbg_list;
@@ -251,12 +251,12 @@ uint16_t Fitter::find_left(uint16_t chan, uint16_t grace) {
     return 0;
 
   int i = x_.size()-1;
-  while ((i >= 0) && (i > (chan - grace)))
+  while ((i > 0) && (x_[i] > (chan - grace)))
     i--;
-  while ((i >= 0) && (deriv1[i] > 0))
+  while ((i > 0) && (deriv1[i] > 0))
     i--;
 
-  return i;
+  return x_[i];
 }
 
 uint16_t Fitter::find_right(uint16_t chan, uint16_t grace) {
@@ -267,11 +267,12 @@ uint16_t Fitter::find_right(uint16_t chan, uint16_t grace) {
     return x_.size() - 1;
 
   int i = 0;
-  while ((i < x_.size()) && (i < (chan + grace)))
+  while ((i < x_.size()) && (x_[i] < (chan + grace)))
     i++;
   while ((i < x_.size()) && (deriv1[i] < 0))
     i++;
-  return i;
+
+  return x_[i];
 }
 
 void Fitter::filter_by_theoretical_fwhm(double range) {
@@ -296,7 +297,7 @@ void Fitter::find_peaks(int min_width) {
     //std::vector<double> baseline = make_background(x_, y_, lefts[i], rights[i], 3);
     //std::vector<double> xx(x_.begin() + lefts[i], x_.begin() + rights[i] + 1);
     //std::vector<double> yy(y_.begin() + lefts[i], y_.begin() + rights[i] + 1);
-    Peak fitted = Peak(x_, y_, lefts[i],rights[i], nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
+    Peak fitted = Peak(x_, y_, x_[lefts[i]], x_[rights[i]], nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
 
     if (
         (fitted.height > 0) &&
@@ -332,16 +333,8 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
   if (x_.empty())
     return;
 
-  int32_t l = x_.size() - 1;
-  while ((l > 0) && (x_[l] > left))
-    l--;
-
-  int32_t r = 0;
-  while ((r < x_.size()) && (x_[r] < right))
-    r++;
-  
-  Peak newpeak = Gamma::Peak(x_, y_, l, r, nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
-  PL_DBG << "new peak center = " << newpeak.center;
+  Peak newpeak = Gamma::Peak(x_, y_, left, right, nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
+  //PL_DBG << "new peak center = " << newpeak.center;
 
   peaks_[newpeak.center] = newpeak;
   if (fwhm_cali_.valid()) {

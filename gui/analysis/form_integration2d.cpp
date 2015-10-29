@@ -41,9 +41,9 @@ FormIntegration2D::FormIntegration2D(QSettings &settings, QWidget *parent) :
   ui->plotGateY->setFit(&fit_y_);
   ui->plotGateDiagonal->setFit(&fit_d_);
 
-  ui->plotGateX->set_visible_elements(ShowFitElements::gaussians | ShowFitElements::baselines, false);
-  ui->plotGateY->set_visible_elements(ShowFitElements::gaussians | ShowFitElements::baselines, false);
-  ui->plotGateDiagonal->set_visible_elements(ShowFitElements::gaussians | ShowFitElements::baselines, false);
+  ui->plotGateX->set_visible_elements(ShowFitElements::gaussians | ShowFitElements::baselines | ShowFitElements::movavg | ShowFitElements::filtered, false);
+  ui->plotGateY->set_visible_elements(ShowFitElements::gaussians | ShowFitElements::baselines | ShowFitElements::movavg | ShowFitElements::filtered, false);
+  ui->plotGateDiagonal->set_visible_elements(ShowFitElements::gaussians | ShowFitElements::baselines | ShowFitElements::movavg | ShowFitElements::filtered, false);
 
   loadSettings();
 
@@ -118,6 +118,8 @@ int32_t FormIntegration2D::index_of(double px, double py) {
 }
 
 void FormIntegration2D::make_range(Marker x, Marker y) {
+  //ui->tableGateList->clearSelection();
+
   range_.x_c = x.pos;
   range_.y_c = y.pos;
   Gamma::Calibration f1, f2, e1, e2;
@@ -129,23 +131,28 @@ void FormIntegration2D::make_range(Marker x, Marker y) {
     e1 = md_.detectors[0].best_calib(md_.bits);
     e2 = md_.detectors[1].best_calib(md_.bits);
   }
-  //PL_DBG << "making 2d marker, calibs valid " << f1.valid() << " " << f2.valid();
+  PL_DBG << "making 2d marker, calibs valid " << f1.valid() << " " << f2.valid();
+
   if (f1.valid()) {
     range_.x1.set_energy(x.pos.energy() - f1.transform(x.pos.energy()) * 2, e1);
     range_.x2.set_energy(x.pos.energy() + f1.transform(x.pos.energy()) * 2, e1);
+  } else {
+    //DO THIS!
   }
 
   if (f2.valid()) {
     range_.y1.set_energy(y.pos.energy() - f2.transform(y.pos.energy()) * 2, e2);
     range_.y2.set_energy(y.pos.energy() + f2.transform(y.pos.energy()) * 2, e2);
+  } else {
+    //DO THIS!
   }
 
   range_.visible = (x.visible || y.visible);
+  PL_DBG << "range visible " << range_.visible << " x" << range_.x1.energy() << "-" << range_.x2.energy()
+         << " y" << range_.y1.energy() << "-" << range_.y2.energy();
 
-  ui->pushAdd->setEnabled(range_.visible);
-
-  ui->tableGateList->clearSelection();
   make_gates(range_);
+  ui->pushAdd->setEnabled(range_.visible);
   emit range_changed(range_);
 }
 

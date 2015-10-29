@@ -172,8 +172,8 @@ std::unique_ptr<EntryList> Spectrum2D::_get_spectrum(std::initializer_list<Pair>
       boost::this_thread::sleep_for(boost::chrono::seconds{1});
     temp_spectrum_.clear(); //assumption about client
   }
-  PL_DBG << "<Spectrum2D> Making list for " << metadata_.name << " took " << makelist.ms() << "ms filled with "
-         << result->size() << " elements";
+//  PL_DBG << "<Spectrum2D> Making list for " << metadata_.name << " took " << makelist.ms() << "ms filled with "
+//         << result->size() << " elements";
   return result;
 }
 

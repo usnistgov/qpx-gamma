@@ -240,7 +240,7 @@ void FormPeaks::replot_all() {
   if (ui->checkShowPrelimPeaks->isChecked()) {
     xx.clear(); yy.clear();
     for (auto &q : fit_data_->prelim) {
-      xx.push_back(fit_data_->nrg_cali_.transform(q, fit_data_->metadata_.bits));
+      xx.push_back(fit_data_->nrg_cali_.transform(fit_data_->x_[q], fit_data_->metadata_.bits));
       yy.push_back(fit_data_->y_[q]);
     }
     if (yy.size())
@@ -250,7 +250,7 @@ void FormPeaks::replot_all() {
   if (ui->checkShowFilteredPeaks->isChecked()) {
     xx.clear(); yy.clear();
     for (auto &q : fit_data_->filtered) {
-      xx.push_back(fit_data_->nrg_cali_.transform(q, fit_data_->metadata_.bits));
+      xx.push_back(fit_data_->nrg_cali_.transform(fit_data_->x_[q], fit_data_->metadata_.bits));
       yy.push_back(fit_data_->y_[q]);
     }
     if (yy.size())
@@ -344,9 +344,9 @@ void FormPeaks::addMovingMarker(Coord c) {
 
 
   ui->pushAdd->setEnabled(true);
-  PL_INFO << "<Peak finder> Marker at chan=" << x << " (" << range_.center.energy() << " " << fit_data_->nrg_cali_.units_ << ")"
-          << ", edges=[" << ch_l << ", " << ch_r << "] "
-          << ", en_edges=[" << range_.l.energy() << ", " << range_.r.energy() << "]";
+//  PL_INFO << "<Peak finder> Marker at chan=" << x << " (" << range_.center.energy() << " " << fit_data_->nrg_cali_.units_ << ")"
+//          << ", edges=[" << ch_l << ", " << ch_r << "] "
+//          << ", en_edges=[" << range_.l.energy() << ", " << range_.r.energy() << "]";
 
 
   for (auto &q : fit_data_->peaks_)
@@ -520,13 +520,13 @@ void FormPeaks::plot_derivs()
         else
           ui->plot1D->addGraph(temp_x, temp_y, even_);
       }
-      temp_x.clear(); temp_x.push_back(i-1);
+      temp_x.clear(); temp_x.push_back(fit_data_->nrg_cali_.transform(fit_data_->x_[i-1]));
       temp_y.clear(); temp_y.push_back(fit_data_->y_avg_[i-1]);
     }
 
     was = is;
     temp_y.push_back(fit_data_->y_avg_[i]);
-    temp_x.push_back(i);
+    temp_x.push_back(fit_data_->nrg_cali_.transform(fit_data_->x_[i]));
   }
 
   if (temp_x.size())

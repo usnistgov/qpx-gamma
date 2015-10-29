@@ -285,18 +285,28 @@ Peak::Peak(const std::vector<double> &x, const std::vector<double> &y, uint32_t 
            Calibration cali_nrg, Calibration cali_fwhm, double live_seconds)
   : Peak()
 {
+
+  int32_t l = x.size() - 1;
+  while ((l > 0) && (x[l] > L))
+    l--;
+
+  int32_t r = 0;
+  while ((r < x.size()) && (x[r] < R))
+    r++;
+
   if (
       (x.size() == y.size())
       &&
-      (L < R)
+      (l < r)
       &&
-      (R < x.size())
+      (r < x.size())
       )
   {    
-    sum4_ = SUM4(x, y, L, R, 3);
+    //PL_DBG << "Constructing peak bw channels " << L << "-" << R << "  indices=" << l << "-" << r;
+    sum4_ = SUM4(x, y, l, r, 3);
 
-    x_ = std::vector<double>(x.begin() + L, x.begin() + R + 1);
-    y_ = std::vector<double>(y.begin() + L, y.begin() + R + 1);
+    x_ = std::vector<double>(x.begin() + l, x.begin() + r + 1);
+    y_ = std::vector<double>(y.begin() + l, y.begin() + r + 1);
     y_baseline_ = sum4_.by_;
     
     std::vector<double> nobase(x_.size());    

@@ -285,13 +285,13 @@ void FormPlot2D::update_plot(bool force) {
   this->setCursor(Qt::WaitCursor);
   CustomTimer guiside(true);
 
-  ui->pushSymmetrize->setEnabled(false);
-
   bool new_data = mySpectra->new_data();
   bool rescale2d = (zoom_2d != new_zoom);
 
   if (rescale2d || new_data || force) {
 //    PL_DBG << "really updating 2d " << name_2d.toStdString();
+
+    ui->pushSymmetrize->setEnabled(false);
 
     QString newname = ui->spectrumSelector->selected().text;
     //PL_DBG << "<Plot2D> getting " << newname.toStdString();
@@ -310,7 +310,11 @@ void FormPlot2D::update_plot(bool force) {
     {
 //      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
-      ui->pushSymmetrize->setEnabled(md.attributes.get(Gamma::Setting("symmetrized")).value_int == 0);
+      Gamma::Setting sym = md.attributes.get(Gamma::Setting("symmetrized"));
+
+      PL_DBG << "Sym :" << sym.id_ << "=" << sym.value_int;
+
+      ui->pushSymmetrize->setEnabled(sym.value_int == 0);
 
       std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
           std::move(some_spectrum->get_spectrum({{0, adjrange}, {0, adjrange}}));
