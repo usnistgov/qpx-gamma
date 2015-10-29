@@ -293,30 +293,35 @@ void Fitter::find_peaks(int min_width) {
 
   peaks_.clear();
   multiplets_.clear();
+  //PL_DBG << "Fitter: looking for " << filtered.size()  << " peaks";
+
   for (int i=0; i < filtered.size(); ++i) {
     //std::vector<double> baseline = make_background(x_, y_, lefts[i], rights[i], 3);
     //std::vector<double> xx(x_.begin() + lefts[i], x_.begin() + rights[i] + 1);
     //std::vector<double> yy(y_.begin() + lefts[i], y_.begin() + rights[i] + 1);
-    Peak fitted = Peak(x_, y_, x_[lefts[i]], x_[rights[i]], nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
+    Peak fitted = Peak(x_, y_, x_[lefts[i]], x_[rights[i]], nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds(), sum4edge_samples);
 
     if (
         (fitted.height > 0) &&
         (fitted.fwhm_sum4 > 0) &&
         (fitted.fwhm_gaussian > 0) &&
         (fitted.fwhm_pseudovoigt > 0) &&
-        (lefts[i] < fitted.center) &&
-        (fitted.center < rights[i])
+        (x_[lefts[i]] < fitted.center) &&
+        (fitted.center < x_[rights[i]])
        )
     {
+      //PL_DBG << "I like this peak at " << fitted.center << " fw " << fitted.fwhm_gaussian;
       peaks_[fitted.center] = fitted;
     }
   }
 
+//  PL_DBG << "peaks before filtering by theoretical fwhm " << peaks_.size();
+
   if (fwhm_cali_.valid()) {
     //    PL_DBG << "<GammaFitter> Valid FWHM calib found, performing filtering/deconvolution";
-    filter_by_theoretical_fwhm(0.25);
+    filter_by_theoretical_fwhm(fw_tolerance_);
 
-    //    PL_DBG << "filtered by theoretical fwhm " << peaks_.size();
+//    PL_DBG << "filtered by theoretical fwhm " << peaks_.size();
 
     make_multiplets();
   }
@@ -333,7 +338,7 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
   if (x_.empty())
     return;
 
-  Peak newpeak = Gamma::Peak(x_, y_, left, right, nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
+  Peak newpeak = Gamma::Peak(x_, y_, left, right, nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds(), sum4edge_samples);
   //PL_DBG << "new peak center = " << newpeak.center;
 
   peaks_[newpeak.center] = newpeak;
@@ -368,7 +373,7 @@ void Fitter::make_multiplets()
       pk1++;
       pk2++;
     }
-    //    PL_DBG << "<Gamma::Fitter> found " << juncs << " peak overlaps";
+    //PL_DBG << "<Gamma::Fitter> found " << juncs << " peak overlaps";
 
     std::set<Peak> multiplet;
     std::set<double> to_remove;

@@ -70,6 +70,9 @@ FormPeaks::FormPeaks(QWidget *parent) :
   fall_.default_pen = QPen(Qt::red, 0);
   even_.default_pen = QPen(Qt::black, 0);
 
+  sum4edge_.default_pen = QPen(Qt::darkYellow, 3);
+
+
   connect(ui->plot1D, SIGNAL(markers_selected()), this, SLOT(user_selected_peaks()));
   connect(ui->plot1D, SIGNAL(clickedLeft(double)), this, SLOT(addMovingMarker(double)));
   connect(ui->plot1D, SIGNAL(clickedRight(double)), this, SLOT(removeMovingMarker(double)));
@@ -98,6 +101,7 @@ void FormPeaks::set_visible_elements(ShowFitElements elems, bool interactive) {
   ui->checkShowGaussians->setChecked(elems & ShowFitElements::gaussians);
   ui->checkShowBaselines->setChecked(elems & ShowFitElements::baselines);
   ui->checkShowPseudoVoigt->setChecked(elems & ShowFitElements::voigt);
+  ui->checkShowEdges->setChecked(elems & ShowFitElements::edges);
 
   ui->widgetElements->setVisible(interactive);
   ui->line->setVisible(interactive);
@@ -108,6 +112,7 @@ void FormPeaks::set_visible_elements(ShowFitElements elems, bool interactive) {
 void FormPeaks::loadSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
   ui->spinMinPeakWidth->setValue(settings_.value("min_peak_width", 5).toInt());
+  ui->spinSum4EdgeW->setValue(settings_.value("sum4_edge_width", 3).toInt());
   ui->doubleOverlapWidth->setValue(settings_.value("overlap_width", 2.70).toDouble());
   ui->spinMovAvg->setValue(settings_.value("moving_avg_window", 15).toInt());
   ui->checkShowMovAvg->setChecked(settings_.value("show_moving_avg", false).toBool());
@@ -116,15 +121,18 @@ void FormPeaks::loadSettings(QSettings &settings_) {
   ui->checkShowGaussians->setChecked(settings_.value("show_gaussians", false).toBool());
   ui->checkShowBaselines->setChecked(settings_.value("show_baselines", false).toBool());
   ui->checkShowPseudoVoigt->setChecked(settings_.value("show_pseudovoigt", false).toBool());
+  ui->checkShowEdges->setChecked(settings_.value("show_edges", false).toBool());
   ui->plot1D->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
   ui->plot1D->set_plot_style(settings_.value("plot_style", "Step").toString());
   ui->plot1D->set_marker_labels(settings_.value("marker_labels", true).toBool());
+  ui->plot1D->set_grid_style(settings_.value("grid_style", "Grid + subgrid").toString());
   settings_.endGroup();
 }
 
 void FormPeaks::saveSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
   settings_.setValue("min_peak_width", ui->spinMinPeakWidth->value());
+  settings_.setValue("sum4_edge_width", ui->spinSum4EdgeW->value());
   settings_.setValue("moving_avg_window", ui->spinMovAvg->value());
   settings_.setValue("overlap_width", ui->doubleOverlapWidth->value());
   settings_.setValue("show_moving_avg", ui->checkShowMovAvg->isChecked());
@@ -133,9 +141,11 @@ void FormPeaks::saveSettings(QSettings &settings_) {
   settings_.setValue("show_gaussians", ui->checkShowGaussians->isChecked());
   settings_.setValue("show_baselines", ui->checkShowBaselines->isChecked());
   settings_.setValue("show_pseudovoigt", ui->checkShowPseudoVoigt->isChecked());
+  settings_.setValue("show_edges", ui->checkShowEdges->isChecked());
   settings_.setValue("scale_type", ui->plot1D->scale_type());
   settings_.setValue("plot_style", ui->plot1D->plot_style());
   settings_.setValue("marker_labels", ui->plot1D->marker_labels());
+  settings_.setValue("grid_style", ui->plot1D->grid_style());
   settings_.endGroup();
 }
 
@@ -160,14 +170,18 @@ void FormPeaks::make_range(Marker marker) {
 }
 
 
-void FormPeaks::new_spectrum() {
+void FormPeaks::new_spectrum(QString title) {
   if (fit_data_->peaks_.empty()) {
     fit_data_->set_mov_avg(ui->spinMovAvg->value());
     fit_data_->find_peaks(ui->spinMinPeakWidth->value());
+//    PL_DBG << "number of peaks found " << fit_data_->peaks_.size();
     on_pushFindPeaks_clicked();
   }
 
-  QString title = "Spectrum=" + QString::fromStdString(fit_data_->metadata_.name) + "  resolution=" + QString::number(fit_data_->metadata_.bits) + "bits  Detector=" + QString::fromStdString(fit_data_->detector_.name_);
+
+  if (title.isEmpty())
+    title = "Spectrum=" + QString::fromStdString(fit_data_->metadata_.name) + "  resolution=" + QString::number(fit_data_->metadata_.bits) + "bits  Detector=" + QString::fromStdString(fit_data_->detector_.name_);
+
   ui->plot1D->setTitle(title);
 
   ui->plot1D->reset_scales();
@@ -277,6 +291,7 @@ void FormPeaks::replot_all() {
                            QVector<double>::fromStdVector(y_fit),
                            pseudo_voigt_);
     }
+
     if (ui->checkShowGaussians->isChecked()) {
       std::vector<double> y_fit = q.second.y_fullfit_gaussian_;
       for (auto &p : y_fit)
@@ -299,6 +314,37 @@ void FormPeaks::replot_all() {
                            QVector<double>::fromStdVector(y_fit),
                            baseline_);
     }
+    if (ui->checkShowEdges->isChecked() && (!q.second.subpeak)) {
+//      PL_DBG << "edges for " << q.second.center << " L:" << q.second.sum4_.LBstart << "-" << q.second.sum4_.LBend
+//                                                << " R:" << q.second.sum4_.RBstart << "-" << q.second.sum4_.RBend;
+
+
+      std::vector<double> x_edge, y_edge;
+      for (int i = q.second.sum4_.LBstart; i <= q.second.sum4_.LBend; ++i) {
+        x_edge.push_back(q.second.sum4_.x_[i]);
+        y_edge.push_back(q.second.sum4_.Lsum / q.second.sum4_.Lw);
+      }
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x_edge)),
+                           QVector<double>::fromStdVector(y_edge),
+                           sum4edge_);
+
+//      PL_DBG << "Plot left edge " << x_edge.size();
+
+      x_edge.clear();
+      y_edge.clear();
+
+      for (int i = q.second.sum4_.RBstart; i <= q.second.sum4_.RBend; ++i) {
+        x_edge.push_back(q.second.sum4_.x_[i]);
+        y_edge.push_back(q.second.sum4_.Rsum / q.second.sum4_.Rw);
+      }
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x_edge)),
+                           QVector<double>::fromStdVector(y_edge),
+                           sum4edge_);
+
+//      PL_DBG << "Plot right edge " << x_edge.size();
+    }
+
+
   }
 
   //ui->plot1D->setLabels("channel", "counts");
@@ -486,6 +532,7 @@ void FormPeaks::on_pushFindPeaks_clicked()
   this->setCursor(Qt::WaitCursor);
 
   fit_data_->find_peaks(ui->spinMinPeakWidth->value());
+//  PL_DBG << "number of peaks found " << fit_data_->peaks_.size();
 
   toggle_push();
   replot_all();
@@ -570,6 +617,11 @@ void FormPeaks::on_checkShowPseudoVoigt_clicked()
   replot_all();
 }
 
+void FormPeaks::on_checkShowEdges_clicked()
+{
+  replot_all();
+}
+
 void FormPeaks::on_spinMovAvg_editingFinished()
 {
   if (fit_data_ == nullptr)
@@ -589,6 +641,12 @@ void FormPeaks::on_spinMinPeakWidth_editingFinished()
   fit_data_->filter_prelim(ui->spinMinPeakWidth->value());
   replot_all();
 }
+
+void FormPeaks::on_spinSum4EdgeW_editingFinished()
+{
+  fit_data_->sum4edge_samples = ui->spinSum4EdgeW->value();
+}
+
 
 void FormPeaks::range_moved(double l, double r) {
 

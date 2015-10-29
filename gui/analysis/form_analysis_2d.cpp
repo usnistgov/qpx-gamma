@@ -77,7 +77,7 @@ void FormAnalysis2D::update_range(MarkerBox2D range) {
 
 
 void FormAnalysis2D::matrix_selection() {
-  PL_DBG << "User selected peaks in matrix";
+  //PL_DBG << "User selected peaks in matrix";
 
   std::list<MarkerBox2D> chosen_peaks = ui->plotMatrix->get_selected_boxes();
 
@@ -218,11 +218,17 @@ void FormAnalysis2D::loadSettings() {
   ui->plotMatrix->set_gate_width(settings_.value("gate_width", 10).toInt());
   settings_.endGroup();
 
+  if (my_gates_)
+    my_gates_->loadSettings();
+  if (form_integration_)
+    form_integration_->loadSettings();
 }
 
 void FormAnalysis2D::saveSettings() {
   if (my_gates_)
     my_gates_->saveSettings();
+  if (form_integration_)
+    form_integration_->saveSettings();
 
   settings_.beginGroup("AnalysisMatrix");
   settings_.setValue("gradient", ui->plotMatrix->gradient());

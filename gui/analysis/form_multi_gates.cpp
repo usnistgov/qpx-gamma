@@ -458,7 +458,7 @@ void FormMultiGates::setSpectrum(Qpx::SpectraSet *newset, QString name) {
     res = md.resolution;
     remake_gate(true);
     if (!gates_.empty()) {
-      PL_DBG << "not empty";
+      //PL_DBG << "not empty";
       ui->tableGateList->selectRow(0);
       ui->gatedSpectrum->update_spectrum();
       ui->gatedSpectrum->update_fit(true);

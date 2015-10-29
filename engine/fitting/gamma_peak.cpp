@@ -83,11 +83,11 @@ SUM4::SUM4(const std::vector<double> &x,
   if (RBstart >= x.size())
     RBstart = x.size() - 1;
 
-  int32_t LBstart = LBend - samples;
+  LBstart = LBend - samples;
   if (LBstart < 0)
     LBstart = 0;
 
-  int32_t RBend = RBstart + samples;
+  RBend = RBstart + samples;
   if (RBend >= x.size())
     RBend = x.size() - 1;
 
@@ -282,7 +282,7 @@ void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
 }
 
 Peak::Peak(const std::vector<double> &x, const std::vector<double> &y, uint32_t L, uint32_t R,
-           Calibration cali_nrg, Calibration cali_fwhm, double live_seconds)
+           Calibration cali_nrg, Calibration cali_fwhm, double live_seconds, uint16_t sum4edge_samples)
   : Peak()
 {
 
@@ -303,7 +303,7 @@ Peak::Peak(const std::vector<double> &x, const std::vector<double> &y, uint32_t 
       )
   {    
     //PL_DBG << "Constructing peak bw channels " << L << "-" << R << "  indices=" << l << "-" << r;
-    sum4_ = SUM4(x, y, l, r, 3);
+    sum4_ = SUM4(x, y, l, r, sum4edge_samples);
 
     x_ = std::vector<double>(x.begin() + l, x.begin() + r + 1);
     y_ = std::vector<double>(y.begin() + l, y.begin() + r + 1);

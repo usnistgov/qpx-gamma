@@ -66,6 +66,7 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
 
   plot_style_ = "Lines";
   scale_type_ = "Logarithmic";
+  ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLogarithmic);
   color_theme_ = "light";
   grid_style_ = "Grid + subgrid";
   setColorScheme(Qt::black, Qt::white, QColor(112, 112, 112), QColor(170, 170, 170));
@@ -868,12 +869,27 @@ void WidgetPlot1D::optionsChanged(QAction* action) {
   this->setCursor(Qt::ArrowCursor);
 }
 
+void WidgetPlot1D::set_grid_style(QString grd) {
+  if ((grd == "No grid") || (grd == "Grid") || (grd == "Grid + subgrid")) {
+    grid_style_ = grd;
+    ui->mcaPlot->xAxis->grid()->setVisible(grid_style_ != "No grid");
+    ui->mcaPlot->yAxis->grid()->setVisible(grid_style_ != "No grid");
+    ui->mcaPlot->xAxis->grid()->setSubGridVisible(grid_style_ == "Grid + subgrid");
+    ui->mcaPlot->yAxis->grid()->setSubGridVisible(grid_style_ == "Grid + subgrid");
+    build_menu();
+  }
+}
+
 QString WidgetPlot1D::scale_type() {
   return scale_type_;
 }
 
 QString WidgetPlot1D::plot_style() {
   return plot_style_;
+}
+
+QString WidgetPlot1D::grid_style() {
+  return grid_style_;
 }
 
 void WidgetPlot1D::set_graph_style(QCPGraph* graph, QString style) {

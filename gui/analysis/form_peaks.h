@@ -44,7 +44,8 @@ enum ShowFitElements {
   filtered  = 1 << 2,
   gaussians = 1 << 3,
   baselines = 1 << 4,
-  voigt     = 1 << 5
+  voigt     = 1 << 5,
+  edges     = 1 << 6
 };
 
 inline ShowFitElements operator|(ShowFitElements a, ShowFitElements b) {return static_cast<ShowFitElements>(static_cast<int>(a) | static_cast<int>(b));}
@@ -60,7 +61,7 @@ public:
   ~FormPeaks();
   void setFit(Gamma::Fitter *);
 
-  void new_spectrum();
+  void new_spectrum(QString title = QString());
   void update_fit(bool content_changed = false);
 
   void tighten();
@@ -109,6 +110,10 @@ private slots:
 
   void on_doubleOverlapWidth_editingFinished();
 
+  void on_checkShowEdges_clicked();
+
+  void on_spinSum4EdgeW_editingFinished();
+
 private:
   Ui::FormPeaks *ui;
 
@@ -123,7 +128,7 @@ private:
   Range range_;
 
   AppearanceProfile main_graph_, prelim_peak_, filtered_peak_,
-                    gaussian_, pseudo_voigt_, baseline_,
+                    gaussian_, pseudo_voigt_, baseline_, sum4edge_,
                     multiplet_, flagged_,
                     rise_, fall_, even_;
 

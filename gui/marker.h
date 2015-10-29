@@ -62,6 +62,8 @@ public:
     return energy_;
   }
 
+  uint16_t bits() const {return bits_;}
+
   double bin(const uint16_t to_bits) const {
     if (!to_bits || !bits_)
       return nan("");

@@ -35,8 +35,10 @@ class Fitter {
 public:
   Fitter()
       : overlap_(4.0)
+      , fw_tolerance_(0.5)
       , avg_window_(1)
       , activity_scale_factor_(1.0)
+      , sum4edge_samples(3)
       , x_bound(0)
   {}
   
@@ -83,6 +85,7 @@ public:
   
   std::vector<double> x_, x_nrg_, y_, y_avg_, deriv1, deriv2;
   uint32_t x_bound;
+  uint16_t sum4edge_samples;
 
   std::vector<uint16_t> prelim, filtered, lefts, rights, lefts_t, rights_t;
   
@@ -92,7 +95,7 @@ public:
   std::map<double, Peak> peaks_;
   std::list<Multiplet> multiplets_;
   Calibration nrg_cali_, fwhm_cali_;
-  double overlap_;
+  double overlap_, fw_tolerance_;
 
 private:
   uint16_t avg_window_;

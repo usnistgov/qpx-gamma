@@ -104,7 +104,7 @@ public:
   {}
 
   Peak(const std::vector<double> &x, const std::vector<double> &y, uint32_t L, uint32_t R,
-       Calibration cali_nrg = Calibration(), Calibration cali_fwhm = Calibration(), double live_seconds = 0.0);
+       Calibration cali_nrg = Calibration(), Calibration cali_fwhm = Calibration(), double live_seconds = 0.0, uint16_t sum4edge_samples = 3);
   
   void construct(Calibration cali_nrg, Calibration cali_fwhm);
 

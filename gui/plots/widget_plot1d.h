@@ -84,10 +84,12 @@ public:
 
   void set_scale_type(QString);
   void set_plot_style(QString);
+  void set_grid_style(QString);
   void set_marker_labels(bool);
   void set_markers_selectable(bool);
   QString scale_type();
   QString plot_style();
+  QString grid_style();
   bool marker_labels();
 
   void set_visible_options(ShowOptions);

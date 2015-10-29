@@ -49,18 +49,31 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>0</width>
+             <width>32</width>
              <height>25</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>16777215</width>
+             <width>32</width>
              <height>25</height>
             </size>
            </property>
+           <property name="toolTip">
+            <string>Remove peak</string>
+           </property>
            <property name="text">
-            <string>Remove</string>
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../resources/qpxres.qrc">
+             <normaloff>:/new/icons/oxy/editdelete.png</normaloff>:/new/icons/oxy/editdelete.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>18</width>
+             <height>18</height>
+            </size>
            </property>
           </widget>
          </item>
@@ -71,25 +84,34 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>0</width>
+             <width>32</width>
              <height>25</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>16777215</width>
+             <width>32</width>
              <height>25</height>
             </size>
            </property>
+           <property name="toolTip">
+            <string>Add peak</string>
+           </property>
            <property name="text">
-            <string>Add</string>
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../resources/qpxres.qrc">
+             <normaloff>:/new/icons/oxy/flag_yellow.png</normaloff>:/new/icons/oxy/flag_yellow.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>18</width>
+             <height>18</height>
+            </size>
            </property>
           </widget>
          </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
          <item>
           <widget class="QLabel" name="label_2">
            <property name="sizePolicy">
@@ -111,7 +133,7 @@
             </size>
            </property>
            <property name="text">
-            <string>Gate on FWHM x</string>
+            <string> box on FWHMx</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -138,22 +160,25 @@
              <height>25</height>
             </size>
            </property>
+           <property name="decimals">
+            <number>2</number>
+           </property>
+           <property name="singleStep">
+            <double>0.200000000000000</double>
+           </property>
            <property name="value">
-            <double>2.000000000000000</double>
+            <double>2.400000000000000</double>
            </property>
           </widget>
          </item>
         </layout>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
          <item>
-          <widget class="QLabel" name="label">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+          <widget class="QPushButton" name="pushCentroidX">
+           <property name="enabled">
+            <bool>false</bool>
            </property>
            <property name="minimumSize">
             <size>
@@ -168,35 +193,80 @@
             </size>
            </property>
            <property name="text">
-            <string>Discard overlaps within FWHM x</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            <string>Recenter X</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QDoubleSpinBox" name="doubleOverlaps">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+          <widget class="QPushButton" name="pushCentroidY">
+           <property name="enabled">
+            <bool>false</bool>
            </property>
            <property name="minimumSize">
             <size>
-             <width>60</width>
+             <width>0</width>
              <height>25</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>60</width>
+             <width>16777215</width>
              <height>25</height>
             </size>
            </property>
-           <property name="value">
-            <double>2.000000000000000</double>
+           <property name="text">
+            <string>Recenter Y</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushCentroidXY">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Recenter both</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QPushButton" name="pushShowDiagonal">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Diagonal</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
@@ -366,7 +436,7 @@
       <enum>QLayout::SetMaximumSize</enum>
      </property>
      <item>
-      <widget class="FormPeaks" name="plotGateX" native="true">
+      <widget class="FormOnePeak" name="plotGateX" native="true">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
          <horstretch>0</horstretch>
@@ -376,19 +446,19 @@
        <property name="minimumSize">
         <size>
          <width>100</width>
-         <height>250</height>
+         <height>300</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>16777215</width>
-         <height>250</height>
+         <height>300</height>
         </size>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="FormPeaks" name="plotGateY" native="true">
+      <widget class="FormOnePeak" name="plotGateY" native="true">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
          <horstretch>0</horstretch>
@@ -398,19 +468,19 @@
        <property name="minimumSize">
         <size>
          <width>100</width>
-         <height>250</height>
+         <height>300</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>16777215</width>
-         <height>250</height>
+         <height>300</height>
         </size>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="FormPeaks" name="plotGateDiagonal" native="true">
+      <widget class="FormOnePeak" name="plotGateDiagonal" native="true">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
          <horstretch>0</horstretch>
@@ -420,13 +490,13 @@
        <property name="minimumSize">
         <size>
          <width>100</width>
-         <height>250</height>
+         <height>300</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>16777215</width>
-         <height>250</height>
+         <height>300</height>
         </size>
        </property>
       </widget>
@@ -437,12 +507,14 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>FormPeaks</class>
+   <class>FormOnePeak</class>
    <extends>QWidget</extends>
-   <header>form_peaks.h</header>
+   <header>form_one_peak.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="../resources/qpxres.qrc"/>
+ </resources>
  <connections/>
 </ui>

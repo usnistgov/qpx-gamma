@@ -106,11 +106,20 @@ private slots:
   void selection_changed(QItemSelection,QItemSelection);
   void on_pushRemove_clicked();
   void on_doubleGateOn_editingFinished();
-  void on_doubleOverlaps_editingFinished();
   void update_range(Range);
   void update_peaks(bool);
 
   void on_pushAdd_clicked();
+
+  void on_pushShowDiagonal_clicked();
+
+  void gated_fits_updated();
+
+  void on_pushCentroidX_clicked();
+
+  void on_pushCentroidY_clicked();
+
+  void on_pushCentroidXY_clicked();
 
 private:
   Ui::FormIntegration2D *ui;
@@ -138,7 +147,7 @@ private:
   Gamma::Fitter fit_x_, fit_y_, fit_d_;
 
   void rebuild_table(bool contents_changed);
-  void make_gates(MarkerBox2D peak);
+  void make_gates();
 };
 
 #endif // FORM_MULTI_GATES_H
