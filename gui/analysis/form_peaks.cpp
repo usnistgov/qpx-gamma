@@ -531,6 +531,9 @@ void FormPeaks::on_pushFindPeaks_clicked()
 
   this->setCursor(Qt::WaitCursor);
 
+  fit_data_->set_mov_avg(ui->spinMovAvg->value());
+  fit_data_->overlap_ = ui->doubleOverlapWidth->value();
+  fit_data_->sum4edge_samples = ui->spinSum4EdgeW->value();
   fit_data_->find_peaks(ui->spinMinPeakWidth->value());
 //  PL_DBG << "number of peaks found " << fit_data_->peaks_.size();
 

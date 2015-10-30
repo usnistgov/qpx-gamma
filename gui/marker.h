@@ -140,6 +140,11 @@ struct MarkerBox2D {
   bool horizontal, vertical, labelfloat;
   bool mark_center;
   Coord x1, x2, y1, y2, x_c, y_c;
+  double integral;
+};
+
+struct Peak2D {
+  MarkerBox2D area[3][3];
 };
 
 #endif

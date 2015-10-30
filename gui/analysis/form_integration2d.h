@@ -43,10 +43,10 @@ class TablePeaks2D : public QAbstractTableModel
   Q_OBJECT
 
 private:
-  std::vector<MarkerBox2D> peaks_;
+  std::vector<Peak2D> peaks_;
 
 public:
-  void set_data(std::vector<MarkerBox2D> peaks);
+  void set_data(std::vector<Peak2D> peaks);
 
   explicit TablePeaks2D(QObject *parent = 0);
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
@@ -77,7 +77,7 @@ public:
   void setSpectrum(Qpx::SpectraSet *newset, QString name);
   void setPeaks(std::list<MarkerBox2D> pks);
 
-  std::list<MarkerBox2D> peaks() {return std::list<MarkerBox2D>(peaks_.begin(), peaks_.end());}
+  std::list<MarkerBox2D> peaks();
 
   void update_current_peak(MarkerBox2D);
   MarkerBox2D current_peak();
@@ -134,7 +134,7 @@ private:
   TablePeaks2D table_model_;
   QSortFilterProxyModel sortModel;
 
-  std::vector<MarkerBox2D> peaks_;
+  std::vector<Peak2D> peaks_;
   MarkerBox2D range_;
 
   //from parent
