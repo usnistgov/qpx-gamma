@@ -579,6 +579,7 @@ void FormIntegration2D::on_pushCentroidXY_clicked()
 
 void FormIntegration2D::on_pushAdd_clicked()
 {
+  PL_DBG << "adding new 2d peak";
   ui->pushAdd->setEnabled(false);
 
   Gamma::Peak xx, yy;
@@ -589,6 +590,7 @@ void FormIntegration2D::on_pushAdd_clicked()
     if (q.second.selected) {
       xx = q.second;
       foundx = true;
+      PL_DBG << "fx";
       break;
     }
 
@@ -596,8 +598,12 @@ void FormIntegration2D::on_pushAdd_clicked()
     if (q.second.selected) {
       yy = q.second;
       foundy = true;
+      PL_DBG << "fy";
       break;
     }
+
+
+  PL_DBG << "fff";
 
   Peak2D pk;
 
@@ -612,12 +618,14 @@ void FormIntegration2D::on_pushAdd_clicked()
   newpeak.selected = true;
 
   if (foundx) {
+    PL_DBG << "foundx";
     newpeak.x_c.set_bin(xx.center, fit_x_.metadata_.bits, fit_x_.nrg_cali_);
     newpeak.x1.set_bin(xx.sum4_.x_[xx.sum4_.Lpeak], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
     newpeak.x2.set_bin(xx.sum4_.x_[xx.sum4_.Rpeak], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
   }
 
   if (foundy) {
+    PL_DBG << "foundy";
     newpeak.y_c.set_bin(yy.center, fit_y_.metadata_.bits, fit_y_.nrg_cali_);
     newpeak.y1.set_bin(yy.sum4_.x_[yy.sum4_.Lpeak], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
     newpeak.y2.set_bin(yy.sum4_.x_[yy.sum4_.Rpeak], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
@@ -653,7 +661,6 @@ void FormIntegration2D::on_pushAdd_clicked()
     pk.area[1][2] = bckg;
   }
 
-
   peaks_.push_back(pk);
 
   rebuild_table(true);
@@ -661,9 +668,6 @@ void FormIntegration2D::on_pushAdd_clicked()
   std::list<MarkerBox2D> ch;
   ch.push_back(newpeak);
   choose_peaks(ch);
-
-  if (ui->pushCentroidY->isEnabled())
-    on_pushCentroidY_clicked();
 
   //  make_gates(range_);
   emit peak_selected();

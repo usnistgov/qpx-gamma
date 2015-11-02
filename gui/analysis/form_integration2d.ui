@@ -6,14 +6,36 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1171</width>
-    <height>879</height>
+    <width>1103</width>
+    <height>783</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string/>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="2" column="0">
+    <widget class="FormOnePeak" name="plotGateY" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>100</width>
+       <height>300</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>16777215</height>
+      </size>
+     </property>
+    </widget>
+   </item>
    <item row="0" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout_6">
      <item>
@@ -408,28 +430,6 @@
      </item>
     </layout>
    </item>
-   <item row="2" column="0">
-    <widget class="QWidget" name="upClose" native="true">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="minimumSize">
-      <size>
-       <width>0</width>
-       <height>200</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>16777215</width>
-       <height>16777215</height>
-      </size>
-     </property>
-    </widget>
-   </item>
    <item row="1" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout_7">
      <property name="sizeConstraint">
@@ -438,7 +438,7 @@
      <item>
       <widget class="FormOnePeak" name="plotGateX" native="true">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+        <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -452,29 +452,7 @@
        <property name="maximumSize">
         <size>
          <width>16777215</width>
-         <height>300</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="FormOnePeak" name="plotGateY" native="true">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>100</width>
-         <height>300</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>300</height>
+         <height>16777215</height>
         </size>
        </property>
       </widget>
@@ -482,7 +460,7 @@
      <item>
       <widget class="FormOnePeak" name="plotGateDiagonal" native="true">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+        <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -496,7 +474,7 @@
        <property name="maximumSize">
         <size>
          <width>16777215</width>
-         <height>300</height>
+         <height>16777215</height>
         </size>
        </property>
       </widget>
