@@ -141,10 +141,12 @@ struct MarkerBox2D {
   bool mark_center;
   Coord x1, x2, y1, y2, x_c, y_c;
   double integral;
+  QString label;
 };
 
 struct Peak2D {
   MarkerBox2D area[3][3];
+  bool approved;
 };
 
 #endif

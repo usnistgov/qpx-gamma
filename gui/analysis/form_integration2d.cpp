@@ -209,17 +209,17 @@ int32_t FormIntegration2D::current_idx() {
   return current_gate_;
 }
 
-MarkerBox2D FormIntegration2D::current_peak() {
-  uint32_t current_peak = current_idx();
+//MarkerBox2D FormIntegration2D::current_peak() {
+//  uint32_t current_peak = current_idx();
 
-  if (current_peak < 0)
-    return MarkerBox2D();
-  if (current_peak >= peaks_.size()) {
-    current_peak = -1;
-    return MarkerBox2D();
-  } else
-    return peaks_[current_peak].area[1][1];
-}
+//  if (current_peak < 0)
+//    return MarkerBox2D();
+//  if (current_peak >= peaks_.size()) {
+//    current_peak = -1;
+//    return MarkerBox2D();
+//  } else
+//    return peaks_[current_peak].area[1][1];
+//}
 
 void FormIntegration2D::selection_changed(QItemSelection selected, QItemSelection deselected) {
   //current_gate_ = -1;
@@ -485,11 +485,14 @@ void FormIntegration2D::gated_fits_updated() {
     return;
 
   for (auto &q : fit_x_.peaks_)
-    if (q.second.selected)
+    if (q.second.selected) {
       ui->pushCentroidX->setEnabled(true);
+
+    }
   for (auto &q : fit_y_.peaks_)
-    if (q.second.selected)
+    if (q.second.selected) {
       ui->pushCentroidY->setEnabled(true);
+    }
 
   ui->pushCentroidXY->setEnabled(ui->pushCentroidX->isEnabled() && ui->pushCentroidY->isEnabled());
 }
@@ -505,8 +508,25 @@ void FormIntegration2D::on_pushCentroidX_clicked()
         peak.x1.set_bin(q.second.sum4_.x_[q.second.sum4_.Lpeak], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
         peak.x2.set_bin(q.second.sum4_.x_[q.second.sum4_.Rpeak], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
 
-
         peaks_[current].area[1][1] = peak;
+
+        peaks_[current].area[1][0].x_c = peak.x_c;
+        peaks_[current].area[1][2].x_c = peak.x_c;
+        peaks_[current].area[0][1].x_c = peak.x_c;
+        peaks_[current].area[2][1].x_c = peak.x_c;
+
+        peaks_[current].area[0][1].x1 = peak.x1;
+        peaks_[current].area[0][1].x2 = peak.x2;
+        peaks_[current].area[2][1].x1 = peak.x1;
+        peaks_[current].area[2][1].x2 = peak.x2;
+
+        peaks_[current].area[1][0].x1.set_bin(q.second.sum4_.x_[q.second.sum4_.LBstart], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+        peaks_[current].area[1][0].x2.set_bin(q.second.sum4_.x_[q.second.sum4_.LBend], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+
+        peaks_[current].area[1][2].x1.set_bin(q.second.sum4_.x_[q.second.sum4_.RBstart], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+        peaks_[current].area[1][2].x2.set_bin(q.second.sum4_.x_[q.second.sum4_.RBend], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+
+
         rebuild_table(true);
         emit peak_selected();
         break;
@@ -526,6 +546,23 @@ void FormIntegration2D::on_pushCentroidY_clicked()
         peak.y2.set_bin(q.second.sum4_.x_[q.second.sum4_.Rpeak], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
 
         peaks_[current].area[1][1] = peak;
+
+        peaks_[current].area[1][0].y_c = peak.y_c;
+        peaks_[current].area[1][2].y_c = peak.y_c;
+        peaks_[current].area[0][1].y_c = peak.y_c;
+        peaks_[current].area[2][1].y_c = peak.y_c;
+
+        peaks_[current].area[1][0].y1 = peak.y1;
+        peaks_[current].area[1][0].y2 = peak.y2;
+        peaks_[current].area[1][2].y1 = peak.y1;
+        peaks_[current].area[1][2].y2 = peak.y2;
+
+        peaks_[current].area[0][1].y1.set_bin(q.second.sum4_.x_[q.second.sum4_.LBstart], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+        peaks_[current].area[0][1].y2.set_bin(q.second.sum4_.x_[q.second.sum4_.LBend], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+
+        peaks_[current].area[2][1].y1.set_bin(q.second.sum4_.x_[q.second.sum4_.RBstart], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+        peaks_[current].area[2][1].y2.set_bin(q.second.sum4_.x_[q.second.sum4_.RBend], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+
         rebuild_table(true);
         emit peak_selected();
         break;
@@ -543,6 +580,27 @@ void FormIntegration2D::on_pushCentroidXY_clicked()
 void FormIntegration2D::on_pushAdd_clicked()
 {
   ui->pushAdd->setEnabled(false);
+
+  Gamma::Peak xx, yy;
+  bool foundx(false), foundy(false);
+
+
+  for (auto &q : fit_x_.peaks_)
+    if (q.second.selected) {
+      xx = q.second;
+      foundx = true;
+      break;
+    }
+
+  for (auto &q : fit_y_.peaks_)
+    if (q.second.selected) {
+      yy = q.second;
+      foundy = true;
+      break;
+    }
+
+  Peak2D pk;
+
   MarkerBox2D newpeak = range_;
   range_.visible = false;
 
@@ -553,24 +611,49 @@ void FormIntegration2D::on_pushAdd_clicked()
   newpeak.selectable = true;
   newpeak.selected = true;
 
-  for (auto &q : fit_x_.peaks_)
-    if (q.second.selected) {
-      newpeak.x_c.set_bin(q.second.center, fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-      newpeak.x1.set_bin(q.second.sum4_.x_[q.second.sum4_.Lpeak], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-      newpeak.x2.set_bin(q.second.sum4_.x_[q.second.sum4_.Rpeak], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-      break;
-    }
+  if (foundx) {
+    newpeak.x_c.set_bin(xx.center, fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+    newpeak.x1.set_bin(xx.sum4_.x_[xx.sum4_.Lpeak], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+    newpeak.x2.set_bin(xx.sum4_.x_[xx.sum4_.Rpeak], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+  }
 
-  for (auto &q : fit_y_.peaks_)
-    if (q.second.selected) {
-      newpeak.y_c.set_bin(q.second.center, fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-      newpeak.y1.set_bin(q.second.sum4_.x_[q.second.sum4_.Lpeak], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-      newpeak.y2.set_bin(q.second.sum4_.x_[q.second.sum4_.Rpeak], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-      break;
-    }
+  if (foundy) {
+    newpeak.y_c.set_bin(yy.center, fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+    newpeak.y1.set_bin(yy.sum4_.x_[yy.sum4_.Lpeak], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+    newpeak.y2.set_bin(yy.sum4_.x_[yy.sum4_.Rpeak], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+  }
 
-  Peak2D pk;
   pk.area[1][1] = newpeak;
+
+  MarkerBox2D bckg;
+  bckg.x_c = newpeak.x_c;
+  bckg.y_c = newpeak.y_c;
+
+  if (foundx && foundy) {
+    bckg.x1 = newpeak.x1;
+    bckg.x2 = newpeak.x2;
+
+    bckg.y1.set_bin(yy.sum4_.x_[yy.sum4_.LBstart], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+    bckg.y2.set_bin(yy.sum4_.x_[yy.sum4_.LBend], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+    pk.area[0][1] = bckg;
+
+    bckg.y1.set_bin(yy.sum4_.x_[yy.sum4_.RBstart], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+    bckg.y2.set_bin(yy.sum4_.x_[yy.sum4_.RBend], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+    pk.area[2][1] = bckg;
+
+    bckg.y1 = newpeak.y1;
+    bckg.y2 = newpeak.y2;
+
+    bckg.x1.set_bin(xx.sum4_.x_[xx.sum4_.LBstart], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+    bckg.x2.set_bin(xx.sum4_.x_[xx.sum4_.LBend], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+    pk.area[1][0] = bckg;
+
+    bckg.x1.set_bin(xx.sum4_.x_[xx.sum4_.RBstart], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+    bckg.x2.set_bin(xx.sum4_.x_[xx.sum4_.RBend], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+    pk.area[1][2] = bckg;
+  }
+
+
   peaks_.push_back(pk);
 
   rebuild_table(true);
@@ -589,10 +672,16 @@ void FormIntegration2D::on_pushAdd_clicked()
 std::list<MarkerBox2D> FormIntegration2D::peaks() {
   std::list<MarkerBox2D> ret;
   for (auto &q : peaks_) {
-    for (int i=0; i < 3; ++i)
-      for (int j=0; j < 3; ++j)
-        if (q.area[i][j].visible)
-          ret.push_back(q.area[i][j]);
+    if (q.area[1][1].visible) {
+      for (int i=0; i < 3; ++i)
+        for (int j=0; j < 3; ++j) {
+          MarkerBox2D box = q.area[i][j];
+          if (q.area[1][1].selected)
+            box.visible = true;
+          box.selected = q.area[1][1].selected;
+          ret.push_back(box);
+        }
+    }
   }
   return ret;
 }
@@ -626,7 +715,7 @@ int TablePeaks2D::rowCount(const QModelIndex & /*parent*/) const
 
 int TablePeaks2D::columnCount(const QModelIndex & /*parent*/) const
 {
-  return 5;
+  return 6;
 }
 
 QVariant TablePeaks2D::data(const QModelIndex &index, int role) const
@@ -634,7 +723,7 @@ QVariant TablePeaks2D::data(const QModelIndex &index, int role) const
   int col = index.column();
   int row = index.row();
 
-  MarkerBox2D peak = peaks_[peaks_.size() - 1 - row].area[1][1];
+  MarkerBox2D peak = peaks_[row].area[1][1];
 
   if ((role == Qt::DisplayRole) || (role == Qt::EditRole))
   {
@@ -648,7 +737,9 @@ QVariant TablePeaks2D::data(const QModelIndex &index, int role) const
     case 3:
       return QVariant::fromValue(peak.y_c.bin(peak.y_c.bits()));
     case 4:
-      return QVariant::fromValue(peak.selected);
+      return QString::number(peak.integral) + " +/- " + QString::number(sqrt(peak.integral));
+    case 5:
+      return QVariant::fromValue(peaks_[row].approved);
 //    case 3:
 //      return QVariant::fromValue(gate.width_chan);
 //    case 4:
@@ -682,7 +773,9 @@ QVariant TablePeaks2D::headerData(int section, Qt::Orientation orientation, int 
       case 3:
         return QString("Y (bin)");
       case 4:
-        return QString("Selected?");
+        return QString("peak area");
+      case 5:
+        return QString("approved?");
 //      case 3:
 //        return QString("Width (chan)");
 //      case 4:

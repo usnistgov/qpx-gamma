@@ -80,7 +80,7 @@ public:
   std::list<MarkerBox2D> peaks();
 
   void update_current_peak(MarkerBox2D);
-  MarkerBox2D current_peak();
+//  MarkerBox2D current_peak();
 
   void make_range(Marker x, Marker y);
 

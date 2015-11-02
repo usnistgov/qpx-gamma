@@ -640,7 +640,7 @@ QVariant TableGates::data(const QModelIndex &index, int role) const
   int col = index.column();
   int row = index.row();
 
-  Gamma::Gate gate = gates_[gates_.size() - 1 - row];
+  Gamma::Gate gate = gates_[row];
 
   if ((role == Qt::DisplayRole) || (role == Qt::EditRole))
   {
