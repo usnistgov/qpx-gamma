@@ -159,7 +159,7 @@ void FormIntegration2D::make_range(Marker x, Marker y) {
 //         << " y" << range_.y1.energy() << "-" << range_.y2.energy();
 
   make_gates();
-  ui->pushAdd->setEnabled(range_.visible);
+  ui->pushAddPeak2d->setEnabled(range_.visible);
   emit range_changed(range_);
 }
 
@@ -381,7 +381,7 @@ void FormIntegration2D::choose_peaks(std::list<MarkerBox2D> chpeaks) {
   }
 
   range_.visible = false;
-  ui->pushAdd->setEnabled(false);
+  ui->pushAddPeak2d->setEnabled(false);
   emit range_changed(range_);
 
   //rebuild_table(false);
@@ -577,10 +577,10 @@ void FormIntegration2D::on_pushCentroidXY_clicked()
    //redundant refreshes and signals from above calls
 }
 
-void FormIntegration2D::on_pushAdd_clicked()
+void FormIntegration2D::on_pushAddPeak2d_clicked()
 {
   PL_DBG << "adding new 2d peak";
-  ui->pushAdd->setEnabled(false);
+  ui->pushAddPeak2d->setEnabled(false);
 
   Gamma::Peak xx, yy;
   bool foundx(false), foundy(false);

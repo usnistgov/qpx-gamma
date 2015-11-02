@@ -109,7 +109,7 @@ private slots:
   void update_range(Range);
   void update_peaks(bool);
 
-  void on_pushAdd_clicked();
+  void on_pushAddPeak2d_clicked();
 
   void on_pushShowDiagonal_clicked();
 

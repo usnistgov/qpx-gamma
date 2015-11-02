@@ -100,7 +100,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="pushAdd">
+          <widget class="QPushButton" name="pushAddPeak2d">
            <property name="enabled">
             <bool>false</bool>
            </property>
