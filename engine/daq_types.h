@@ -164,10 +164,11 @@ struct RunInfo : public XMLable {
   uint64_t total_events;
   boost::posix_time::ptime time_start, time_stop;
 
-  inline RunInfo(): total_events(0),
-      time_start(boost::posix_time::second_clock::local_time()),
-      time_stop(boost::posix_time::second_clock::local_time()) {
-  }
+  inline RunInfo()
+      : total_events(0)
+      //      , time_start(boost::posix_time::second_clock::local_time())
+      //      , time_stop(boost::posix_time::second_clock::local_time())
+  {}
 
   // to convert Pixie time to lab time
   double time_scale_factor() const;
