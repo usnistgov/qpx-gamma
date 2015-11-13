@@ -82,7 +82,7 @@ void Spectrum::addSpill(const Spill& one_spill) {
   for (auto &q : one_spill.hits)
     this->pushHit(q);
 
-  if ((one_spill.run != nullptr) && (one_spill.run->total_events > 0)) {
+  if (one_spill.run.total_events > 0) {
     //PL_DBG << "<" << metadata_.name << "> final RunInfo received, dumping backlog of events " << backlog.size();
     while (!backlog.empty()) {
       this->addEvent(backlog.front());
@@ -93,8 +93,8 @@ void Spectrum::addSpill(const Spill& one_spill) {
   for (auto &q : one_spill.stats)
     this->addStats(q);
 
-  if (one_spill.run != nullptr)
-    this->addRun(*one_spill.run);
+  if (one_spill.run != RunInfo())
+    this->addRun(one_spill.run);
 
   //PL_DBG << "left in backlog " << backlog.size();
 }

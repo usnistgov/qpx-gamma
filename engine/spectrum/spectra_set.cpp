@@ -212,10 +212,10 @@ void SpectraSet::add_spill(Spill* one_spill) {
       status_ = "Live at " +  boost::posix_time::to_simple_string(boost::posix_time::microsec_clock::local_time()) +
           " with " + std::to_string(one_spill->stats.front().event_rate) + " events/sec";
 
-  if (one_spill->run != nullptr) {
-    run_info_ = *one_spill->run;
-    if (one_spill->run->total_events > 0) {
-      status_ = "Complete at " + boost::posix_time::to_simple_string(boost::posix_time::microsec_clock::local_time());
+  if (!one_spill->run.time_start.is_not_a_date_time()) {
+    run_info_ = one_spill->run;
+    if (one_spill->run.total_events > 0) {
+      status_ = "Complete at " + boost::posix_time::to_simple_string(one_spill->run.time_stop);
       PL_INFO << "**Spectra building complete";
     }
   }
@@ -271,7 +271,7 @@ void SpectraSet::read_xml(std::string file_name, bool with_spectra) {
 
   if (root.child("Spectra")) {
     Spill fake_spill;
-    fake_spill.run = new RunInfo(run_info_);
+    fake_spill.run = run_info_;
 
     for (pugi::xml_node &child : root.child("Spectra").children()) {
       Spectrum::Spectrum* new_spectrum
@@ -283,7 +283,6 @@ void SpectraSet::read_xml(std::string file_name, bool with_spectra) {
         my_spectra_.push_back(new_spectrum);
       }
     }
-    delete fake_spill.run;
   }
 
   status_ = file_name;
@@ -315,8 +314,7 @@ void SpectraSet::read_spn(std::string file_name) {
   det.energy_calibrations_.add(Gamma::Calibration("Energy", 12));
 
   Qpx::Spill spill;
-  spill.run = new Qpx::RunInfo();
-  spill.run->detectors.push_back(det);
+  spill.run.detectors.push_back(det);
 
   Qpx::Spectrum::Template *temp = Qpx::Spectrum::Factory::getInstance().create_template("1D");
   temp->visible = false;
@@ -354,7 +352,6 @@ void SpectraSet::read_spn(std::string file_name) {
     my_spectra_.push_back(spectrum);
   }
 
-  delete spill.run;
   delete temp;
 
   status_ = file_name;

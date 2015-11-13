@@ -185,7 +185,7 @@ struct RunInfo : public XMLable {
 
 
 struct Spill {
-  inline Spill(): run(nullptr) {}
+  inline Spill(): spill_number(0) {}
   bool operator==(const Spill other) const {
     if (stats != other.stats)
       return false;
@@ -198,10 +198,12 @@ struct Spill {
     return true;
   }
 
+  uint64_t spill_number;
+
   std::vector<uint32_t>  data;  //as is from device, unparsed
   std::list<Qpx::Hit>    hits;  //parsed
   std::list<StatsUpdate> stats;
-  RunInfo*     run;
+  RunInfo                run; //make this not pointer
 };
 
 struct ListData {

@@ -1290,7 +1290,6 @@ void Plugin::worker_run(Plugin* callback, SynchronizedQueue<Spill*>* spill_queue
   block_time = session_start_time = boost::posix_time::microsec_clock::local_time();
 
   if(!callback->start_run(Module::all)) {
-    delete fetched_spill->run;
     delete fetched_spill;
     return;
   }
@@ -1299,8 +1298,10 @@ void Plugin::worker_run(Plugin* callback, SynchronizedQueue<Spill*>* spill_queue
   callback->get_chan_stats(Channel::all, Module::all);
   for (int i=0; i < callback->channel_indices_.size(); i++)
     callback->fill_stats(fetched_spill->stats, i);
-  for (auto &q : fetched_spill->stats)
+  for (auto &q : fetched_spill->stats) {
     q.lab_time = session_start_time;
+    q.spill_number = 0;
+  }
   spill_queue->enqueue(fetched_spill);
 
   while (!timeout) {
@@ -1391,7 +1392,6 @@ void Plugin::worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_q
   session_start_time = boost::posix_time::microsec_clock::local_time();
 
   if(!callback->start_run(Module::all)) {
-    delete fetched_spill->run;
     delete fetched_spill;
     return;
   }
@@ -1400,8 +1400,10 @@ void Plugin::worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_q
   callback->get_chan_stats(Channel::all, Module::all);
   for (int i=0; i < callback->channel_indices_.size(); i++)
     callback->fill_stats(fetched_spill->stats, i);
-  for (auto &q : fetched_spill->stats)
+  for (auto &q : fetched_spill->stats) {
     q.lab_time = session_start_time;
+    q.spill_number = 0;
+  }
   spill_queue->enqueue(fetched_spill);
 
   std::set<int> mods;
@@ -1583,8 +1585,8 @@ void Plugin::worker_parse (Plugin* callback, SynchronizedQueue<Spill*>* in_queue
       //spill->stats->events_in_spill = spill_events;
       all_events += spill_events;
     }
-    if (spill->run != nullptr) {
-      spill->run->total_events = all_events;
+    if (spill->run != RunInfo()) {
+      spill->run.total_events = all_events;
     }
     spill->data.clear();
     out_queue->enqueue(spill);

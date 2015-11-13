@@ -39,8 +39,8 @@ bool slice_diagonal(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* de
   if ((md.total_count > 0) && (md.dimensions == 2))
   {
     Qpx::Spill spill;
-    spill.run = new Qpx::RunInfo(info);
-    spill.run->detectors = md.detectors;
+    spill.run = info;
+    spill.run.detectors = md.detectors;
 
     int diag_width = std::round(std::sqrt((width*width)/2.0));
     if ((diag_width % 2) == 0)
@@ -55,7 +55,6 @@ bool slice_diagonal(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* de
     }
 
     destination->addSpill(spill);
-    delete spill.run;
   }
 
   return (destination->metadata().total_count > 0);
@@ -73,16 +72,14 @@ bool slice_rectangular(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum*
   if ((md.total_count > 0) && (md.dimensions == 2))
   {
     Qpx::Spill spill;
-    spill.run = new Qpx::RunInfo(info);
-    spill.run->detectors = md.detectors;
+    spill.run = info;
+    spill.run.detectors = md.detectors;
 
     std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data = std::move(source->get_spectrum(bounds));
     for (auto it : *spectrum_data)
       destination->add_bulk(it);
 
     destination->addSpill(spill);
-
-    delete spill.run;
   }
 
   return (destination->metadata().total_count > 0);
@@ -190,10 +187,9 @@ bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destin
   }
 
   Qpx::Spill spill;
-  spill.run = new Qpx::RunInfo(info);
-  spill.run->detectors = md.detectors;
+  spill.run = info;
+  spill.run.detectors = md.detectors;
   destination->addSpill(spill);
-  delete spill.run;
 
   return (destination->metadata().total_count > 0);
 }
