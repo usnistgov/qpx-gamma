@@ -71,6 +71,7 @@ struct SettingMeta : public XMLable {
 
   std::string        id_;
   SettingType        setting_type;
+  std::string        hardware_type; //can specify hardware-specific type info
 
   bool               writable;
   bool               visible;

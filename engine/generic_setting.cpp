@@ -93,6 +93,7 @@ void SettingMeta::from_xml(const pugi::xml_node &node) {
   id_ = std::string(node.attribute("id").value());
   name = std::string(node.attribute("name").value());
   unit = std::string(node.attribute("unit").value());
+  hardware_type = std::string(node.attribute("hardware_type").value());
   description = std::string(node.attribute("description").value());
   writable = node.attribute("writable").as_bool();
   visible = node.attribute("visible").as_bool(1);
@@ -124,6 +125,9 @@ void SettingMeta::to_xml(pugi::xml_node &node) const {
   child.append_attribute("id").set_value(id_.c_str());
 
   child.append_attribute("type").set_value(to_string(setting_type).c_str());
+
+  if (!hardware_type.empty())
+    child.append_attribute("hardware_type").set_value(hardware_type.c_str());
 
   if (!name.empty())
     child.append_attribute("name").set_value(name.c_str());
