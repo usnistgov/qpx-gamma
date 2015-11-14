@@ -33,8 +33,8 @@
 		
 		<branch address="25" id="VME/IsegVHS/Channel" />
 	</SettingMeta>
-	<SettingMeta id="VME/ControllerID" type="text" visible="false" name="Controller ID" address="0" writable="true"/>
 
+	<SettingMeta id="VME/ControllerID" type="text" visible="false" name="Controller ID" address="0" writable="true"/>
 	<SettingMeta id="VME/IsegVHS/ModuleStatus" type="binary" name="Module status" address="0" writable="false" word_size="16">
 		<flag bit="0" description="Activation of fine adjustment" />
 		<flag bit="1" description="Interlock output is active" />
@@ -176,7 +176,6 @@
 		<flag bit="30" description="GR30" />
 		<flag bit="31" description="GR31" />
 	</SettingMeta>
-
 	<SettingMeta id="VME/IsegVHS/VolgateRampSpeed" type="floating" name="Voltage ramp speed" address="20" writable="true" step="0.5" minimum="0" maximum="20" unit="% of nominal voltage in channel" />
 	<SettingMeta id="VME/IsegVHS/CurrentRampSpeed" type="floating" name="Current ramp speed" address="24" writable="true" step="0.5" minimum="0" maximum="20" unit="% of nominal current in channel" />
 	<SettingMeta id="VME/IsegVHS/VolgateMax" type="floating" name="Maximum voltage" address="28" writable="false" unit="value of trim pot in front panel" />
@@ -185,8 +184,6 @@
 	<SettingMeta id="VME/IsegVHS/SupplyP12" type="floating" name="Supply voltage +12" address="40" writable="false" unit="V" />
 	<SettingMeta id="VME/IsegVHS/SupplyN12" type="floating" name="Supply voltage -12" address="44" writable="false" unit="V" />
 	<SettingMeta id="VME/IsegVHS/Temperature" type="floating" name="Board temperature" address="48" writable="false" unit="°C" />
-
-
 	<SettingMeta id="VME/IsegVHS/SerialNumber" type="integer" hardware_type="u32" name="Serial number" address="52" writable="false"/>
 	<SettingMeta id="VME/IsegVHS/FirmwareRelease" type="integer" hardware_type="u32" name="Firmware release" address="56" writable="false"/>
 	<SettingMeta id="VME/IsegVHS/PlacedChannels" type="binary" name="Placed channels" address="60" writable="false" word_size="16">
@@ -203,7 +200,6 @@
 		<flag bit="10" description="CH10" />
 		<flag bit="11" description="CH11" />
 	</SettingMeta>
-
 	<SettingMeta id="VME/IsegVHS/RestartTimeAfterRecallSetValues" type="integer" hardware_type="u16" name="RestartTimeAfterRecallSetValues" address="120" writable="true" unit="ms" />
 	<SettingMeta id="VME/IsegVHS/ADCSamplesPerSecond" type="int_menu" hardware_type="u16" name="ADC samples per second" address="130" writable="true">
 		<menu_item item_value="5" item_text="5 SPS" />
@@ -221,17 +217,101 @@
 		<menu_item item_value="512" item_text="512 samples" />
 		<menu_item item_value="1024" item_text="1024 samples" />
 	</SettingMeta>
-
 	<SettingMeta id="VME/IsegVHS/VendorID" type="integer" hardware_type="u32" name="Vendor ID" address="134" writable="false"/>
 
 	<SettingMeta id="VME/IsegVHS/Channel" type="stem" name="Channel" address="1" writable="true" saveworthy="false">
-		<branch address="0" id="VME/IsegVHS/Channel/a" />
-		<branch address="1" id="VME/IsegVHS/Channel/b" />
-		<branch address="2" id="VME/IsegVHS/Channel/c" />
+		<branch address="0" id="VME/IsegVHS/Channel/ChannelStatus" />
+		<branch address="1" id="VME/IsegVHS/Channel/ChannelControl" />
+		<branch address="2" id="VME/IsegVHS/Channel/ChannelEventStatus" />
+		<branch address="3" id="VME/IsegVHS/Channel/ChannelEventMask" />
+		<branch address="4" id="VME/IsegVHS/Channel/VolatgeSet" />
+		<branch address="5" id="VME/IsegVHS/Channel/CurrentSetOrTrip" />
+		<branch address="6" id="VME/IsegVHS/Channel/VoltageMeasure" />
+		<branch address="7" id="VME/IsegVHS/Channel/CurrentMeasure" />
+		<branch address="8" id="VME/IsegVHS/Channel/VoltageBoundsIlkMaxSet" />
+		<branch address="9" id="VME/IsegVHS/Channel/CurrentBoundsIlkMaxSet" />
+		<branch address="10" id="VME/IsegVHS/Channel/VoltageNominalMaxSet" />
+		<branch address="11" id="VME/IsegVHS/Channel/CurrentNominalMaxSet" />
+		<branch address="12" id="VME/IsegVHS/Channel/VoltageIlkMinSet" />
+		<branch address="13" id="VME/IsegVHS/Channel/CurrentIlkMinSet" />
 	</SettingMeta>
-	
-	<SettingMeta id="VME/IsegVHS/Channel/a" type="floating" name="Sge+5" address="36" writable="false" unit="V" />
-	<SettingMeta id="VME/IsegVHS/Channel/b" type="floating" name="Se+12" address="40" writable="false" unit="V" />
-	<SettingMeta id="VME/IsegVHS/Channel/c" type="floating" name="Sage2" address="44" writable="false" unit="V" />
+
+	<SettingMeta id="VME/IsegVHS/Channel/ChannelStatus" type="binary" name="Channel status" address="0" writable="false" word_size="16">
+		<flag bit="2" description="Input error" />
+		<flag bit="3" description="Ramp is running" />
+		<flag bit="4" description="Channel is on" />
+		<flag bit="5" description="Emergency off without ramp" />
+		<flag bit="6" description="Current control active" />
+		<flag bit="7" description="Voltage control active" />
+		<flag bit="10" description="Current out of bounds" />
+		<flag bit="11" description="Voltage out of bounds" />
+		<flag bit="12" description="External inhibit" />
+		<flag bit="13" description="Trip is set when Iset has been exceeded (when KillEnable = 1)" />
+		<flag bit="14" description="Hardware: current limit has been exceeded (when KillEnable = 0)" />
+		<flag bit="15" description="Hardware: voltage limit has been exceeded (when KillEnable = 0)" />
+	</SettingMeta>
+	<SettingMeta id="VME/IsegVHS/Channel/ChannelControl" type="binary" name="Channel control" address="2" writable="true" word_size="16">
+		<flag bit="3" description="On, if 1; set Off if 0: ramp the output to Vset or to Zero" />
+		<flag bit="5" description="shut off the channel without ramp, clear the Vset value" />
+		<flag bit="10" description="if 1 - set asymmetric current bounds; if 0 - set symmetric current bounds" />
+		<flag bit="11" description="if 1 - set asymmetric voltage bounds; if 0 - set symmetric voltage bounds" />
+	</SettingMeta>
+	<SettingMeta id="VME/IsegVHS/Channel/ChannelEventStatus" type="binary" name="Channel event status" address="4" writable="true" word_size="16">
+		<flag bit="2" description="Input error" />
+		<flag bit="3" description="Change from state ON to state OFF without ramp" />
+		<flag bit="4" description="End of ramp" />
+		<flag bit="5" description="Emergency" />
+		<flag bit="6" description="Current control" />
+		<flag bit="7" description="Voltage control" />
+		<flag bit="10" description="Current out of bounds" />
+		<flag bit="11" description="Voltage out of bounds" />
+		<flag bit="12" description="External inhibit" />
+		<flag bit="13" description="Trip is set when Iset has been exceeded (when KillEnable=1)" />
+		<flag bit="14" description="Hardware: current limit has been exceeded" />
+		<flag bit="15" description="Hardware: voltage limit has been exceeded" />
+	</SettingMeta>
+	<SettingMeta id="VME/IsegVHS/Channel/ChannelEventMask" type="binary" name="Channel event mask" address="6" writable="true" word_size="16">
+		<flag bit="2" description="Input error" />
+		<flag bit="3" description="Change from state ON to state OFF without ramp" />
+		<flag bit="4" description="End of ramp" />
+		<flag bit="5" description="Emergency" />
+		<flag bit="6" description="Current control" />
+		<flag bit="7" description="Voltage control" />
+		<flag bit="10" description="Current out of bounds" />
+		<flag bit="11" description="Voltage out of bounds" />
+		<flag bit="12" description="External inhibit" />
+		<flag bit="13" description="Trip is set when Iset has been exceeded (when KillEnable=1)" />
+		<flag bit="14" description="Hardware: current limit has been exceeded" />
+		<flag bit="15" description="Hardware: voltage limit has been exceeded" />
+	</SettingMeta>
+	<SettingMeta id="VME/IsegVHS/Channel/VoltageSet" type="floating" name="Voltage preset" address="8" writable="true" unit="V" />
+	<SettingMeta id="VME/IsegVHS/Channel/CurrentSetOrTrip" type="floating" name="Current preset" address="12" writable="true" />
+	<SettingMeta id="VME/IsegVHS/Channel/VoltageMeasure" type="floating" name="Voltage measured" address="16" writable="true" unit="V" />
+	<SettingMeta id="VME/IsegVHS/Channel/CurrentMeasure" type="floating" name="Current measured" address="20" writable="true" />
+	<SettingMeta id="VME/IsegVHS/Channel/VoltageBoundsIlkMaxSet" type="floating" name="Voltage bounds (or max)" address="24" writable="true" unit="V" />
+	<SettingMeta id="VME/IsegVHS/Channel/CurrentBoundsIlkMaxSet" type="floating" name="Current bounds (or max)" address="28" writable="true" />
+	<SettingMeta id="VME/IsegVHS/Channel/VoltageNominalMaxSet" type="floating" name="Voltage nominal (or maxset)" address="32" writable="true" unit="V" />
+	<SettingMeta id="VME/IsegVHS/Channel/CurrentNominalMaxSet" type="floating" name="Current nominal (or maxset)" address="36" writable="true" />
+	<SettingMeta id="VME/IsegVHS/Channel/VoltageIlkMinSet" type="floating" name="VoltageIlkMinSet" address="40" writable="true" unit="V" />
+	<SettingMeta id="VME/IsegVHS/Channel/CurrentIlkMinSet" type="floating" name="CurrentIlkMinSet" address="44" writable="true" />
+
+	<SettingMeta id="VME/IsegVHS/T" type="binary" name="T" address="0" writable="false" word_size="16">
+		<flag bit="0" description="Activation of fine adjustment" />
+		<flag bit="1" description="Interlock output is active" />
+		<flag bit="2" description="Module is in state STOP, all high voltages are off" />
+		<flag bit="3" description="Module is in state STOP, all high voltages are off" />
+		<flag bit="4" description="Module shows that factory service is needed" />
+		<flag bit="5" description="Input error in connection with module access" />
+		<flag bit="6" description="Module is in SpecialMode" />
+		<flag bit="7" description="All commands complete" />
+		<flag bit="8" description="Module without failure" />
+		<flag bit="9" description="All channels stable, no ramp active" />
+		<flag bit="10" description="Safety loop closed" />
+		<flag bit="11" description="Some event is active and mask is set" />
+		<flag bit="12" description="Module is in good state" />
+		<flag bit="13" description="Power supply is good" />
+		<flag bit="14" description="Module temperature is good" />
+		<flag bit="15" description="Kill enable" />
+	</SettingMeta>
 
 </VME>

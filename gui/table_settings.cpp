@@ -90,10 +90,10 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       std::vector<std::string> tokens;
       boost::algorithm::split(tokens, item.id_, boost::algorithm::is_any_of("/"));
       std::string name;
-      if (tokens.size() > 1)
-        name += tokens[tokens.size() - 2] + "/" + tokens[tokens.size() - 1];
-      else if (tokens.size() > 0)
-        name += tokens[tokens.size() - 1];
+//      if (tokens.size() > 2)
+//        name = tokens[0] + "/../" + tokens[tokens.size() - 1];
+//      else
+        name = item.id_;
       return QString::fromStdString(name);
     } else if (role == Qt::ForegroundRole) {
       if (item.metadata.writable) {

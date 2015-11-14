@@ -49,7 +49,32 @@ QpxVmePlugin::~QpxVmePlugin() {
 bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
-
+      if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "VME/IsegVHS")) {
+        //PL_DBG << "reading VME/IsegVHS";
+        int modnum = 0;
+        for (auto &k : q.branches.my_data_) {
+          if (k.metadata.setting_type == Gamma::SettingType::floating)
+            k.value_dbl = k.metadata.address * 0.1;// channel_parameter_values_[k.metadata.address + modnum];
+          else if ((k.metadata.setting_type == Gamma::SettingType::integer)
+                   || (k.metadata.setting_type == Gamma::SettingType::boolean)
+                   || (k.metadata.setting_type == Gamma::SettingType::int_menu)
+                   || (k.metadata.setting_type == Gamma::SettingType::binary))
+            k.value_int = k.metadata.address; //channel_parameter_values_[k.metadata.address + modnum];
+          else if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channel")) {
+            //PL_DBG << "reading VME/IsegVHS/Channel";
+            uint16_t channum = k.index;
+            for (auto &p : k.branches.my_data_) {
+              if (p.metadata.setting_type == Gamma::SettingType::floating)
+                p.value_dbl = p.metadata.address + (30 * channum) + 0x0060;// channel_parameter_values_[k.metadata.address + modnum];
+              else if ((p.metadata.setting_type == Gamma::SettingType::integer)
+                       || (p.metadata.setting_type == Gamma::SettingType::boolean)
+                       || (p.metadata.setting_type == Gamma::SettingType::int_menu)
+                       || (p.metadata.setting_type == Gamma::SettingType::binary))
+                p.value_dbl = p.metadata.address + (30 * channum) + 0x0060; //channel_parameter_values_[k.metadata.address + modnum];
+            }
+          }
+        }
+      }
     }
   }
   return true;
@@ -68,9 +93,40 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
 
   for (auto &q : set.branches.my_data_) {
     if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "VME/ControllerID")) {
-      //PL_DBG << "<VmePlugin> controller expected " << q.value_text;
+      PL_DBG << "<VmePlugin> controller expected " << q.value_text;
       if (controller_name_.empty())
         controller_name_ = q.value_text;
+    } else       if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "VME/IsegVHS")) {
+      rebuild_structure(q);
+
+      //PL_DBG << "writing VME/IsegVHS";
+      int modnum = 0;
+      for (auto &k : q.branches.my_data_) {
+        if (k.metadata.setting_type == Gamma::SettingType::floating) {
+         // k.value_dbl = k.metadata.address * 0.1;// channel_parameter_values_[k.metadata.address + modnum];
+        }
+        else if ((k.metadata.setting_type == Gamma::SettingType::integer)
+                 || (k.metadata.setting_type == Gamma::SettingType::boolean)
+                 || (k.metadata.setting_type == Gamma::SettingType::int_menu)
+                 || (k.metadata.setting_type == Gamma::SettingType::binary)) {
+         // k.value_int = k.metadata.address; //channel_parameter_values_[k.metadata.address + modnum];
+        }
+        else if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channel")) {
+          //PL_DBG << "writing VME/IsegVHS/Channel";
+          uint16_t channum = k.index;
+          for (auto &p : k.branches.my_data_) {
+            if (p.metadata.setting_type == Gamma::SettingType::floating) {
+             // p.value_dbl = p.metadata.address + (30 * channum) + 0x0060;// channel_parameter_values_[k.metadata.address + modnum];
+            }
+            else if ((p.metadata.setting_type == Gamma::SettingType::integer)
+                     || (p.metadata.setting_type == Gamma::SettingType::boolean)
+                     || (p.metadata.setting_type == Gamma::SettingType::int_menu)
+                     || (p.metadata.setting_type == Gamma::SettingType::binary)) {
+            //  p.value_dbl = p.metadata.address + (30 * channum) + 0x0060; //channel_parameter_values_[k.metadata.address + modnum];
+            }
+          }
+        }
+      }
     }
   }
   return true;

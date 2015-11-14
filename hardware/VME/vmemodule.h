@@ -22,6 +22,39 @@ public:
 //public slots:
 	bool    connected(void);
 
+  uint16_t readShort(int address);
+  void    writeShort(int address, uint16_t data);
+  uint16_t readShortBitfield(int address);
+  void    writeShortBitfield(int address, uint16_t data);
+  uint32_t readLong(int address);
+  void    writeLong(int address, uint32_t data);
+  uint32_t readLongBitfield(int address);
+  void    writeLongBitfield(int address, uint32_t data);
+  float   readFloat(int address);
+  void    writeFloat(int address, float data);
+
+  uint16_t mirrorShort(uint16_t data);
+  uint32_t mirrorLong(uint32_t data);
+
+  void    programBaseAddress(uint16_t address);
+  uint16_t verifyBaseAddress(void);
+
+  std::string address() {   std::stringstream stream;
+                            stream << "VME BA 0x"
+                                   << std::setfill ('0') << std::setw(sizeof(uint16_t)*2)
+                                   << std::hex << m_baseAddress;
+                            return stream.str();}
+  uint16_t baseAddress() { return m_baseAddress; }
+  void    setBaseAddress(uint16_t baseAddress);
+
+
+
+
+
+
+
+
+
   std::string alarmMessage(void) { return std::string(); }
 	bool currentControl() const
 	{
@@ -36,13 +69,7 @@ public:
   uint32_t decoderRelease(void);
 
 	void    doClear(void);
-  std::string address() {   std::stringstream stream;
-                            stream << "VME BA 0x"
-                                   << std::setfill ('0') << std::setw(sizeof(uint16_t)*2)
-                                   << std::hex << m_baseAddress;
-                            return stream.str();}
-  uint16_t baseAddress() { return m_baseAddress; }
-  void    setBaseAddress(uint16_t baseAddress);
+
 
 	float   temperature(int index = 0);
 	float   supplyP5(void);
@@ -161,23 +188,8 @@ public:
   uint32_t specialControlStatus(void);
   void    sendHexLine(std::vector<uint8_t> record);
 
-  void    programBaseAddress(uint16_t address);
-  uint16_t verifyBaseAddress(void);
 
 private:
-  uint16_t readShort(int address);
-  void    writeShort(int address, uint16_t data);
-  uint16_t readShortBitfield(int address);
-  void    writeShortBitfield(int address, uint16_t data);
-  uint32_t readLong(int address);
-  void    writeLong(int address, uint32_t data);
-  uint32_t readLongBitfield(int address);
-  void    writeLongBitfield(int address, uint32_t data);
-	float   readFloat(int address);
-	void    writeFloat(int address, float data);
-
-  uint16_t mirrorShort(uint16_t data);
-  uint32_t mirrorLong(uint32_t data);
 
 	float   siVoltageToUserVoltage(float value);
 	float   userVoltageToSiVoltage(float value);
@@ -374,207 +386,5 @@ private:
 #define VhsSpecialControlAddressOFFSET				0x03B6
 #define VhsSpecialControlReadDataOFFSET				0x03B8
 #define VhsSpecialControlWriteDataOFFSET			0x03B8
-
-// --- VDS24 ------------------------------------------------------------------
-#define VdsModuleStatusOFFSET						0
-#define VdsModuleEventStatusOFFSET					4
-#define VdsModuleEventMaskOFFSET					8
-#define VdsModuleControlOFFSET						12
-
-#define VdsModuleEventChannelStatusOFFSET			16
-#define VdsModuleEventChannelMaskOFFSET				20
-#define VdsModuleEventGroupStatusOFFSET				24
-#define VdsModuleEventGroupMaskOFFSET				28
-
-#define VdsVoltageRampSpeedOFFSET					32
-#define VdsCurrentRampSpeedOFFSET					36
-#define VdsVoltageMaxOFFSET							40
-#define VdsCurrentMaxOFFSET							44
-#define VdsSerialNumberOFFSET						48
-#define VdsFirmwareReleaseOFFSET					52
-#define VdsPlacedChannelOFFSET						56
-#define VdsChannelNumberOFFSET						60
-#define VdsDeviceClassOFFSET						62
-#define VdsSupplyP5OFFSET							64
-#define VdsSupplyP12OFFSET							68
-#define VdsSupplyN12OFFSET							72
-#define VdsTemperatureOFFSET						76
-#define VdsRestartTimeOFFSET						80
-#define VdsADCSamplesPerSecondOFFSET				84
-#define VdsDigitalFilterOFFSET						88
-#define VdsVendorIdOFFSET							92
-
-#define VdsDecoderReleaseOFFSET						124
-#define VdsBootLoaderReleaseOFFSET					126
-
-
-
-#define VdsNewBaseAddressOFFSET						0x00A0
-#define VdsNewBaseAddressXorOFFSET					0x00A2
-#define VdsOldBaseAddressOFFSET						0x00A4
-#define VdsNewBaseAddressAcceptedOFFSET				0x00A8
-#define VdsSpecialControlStatusOFFSET				0x00AC
-#define VdsSpecialControlCommandOFFSET				0x00B0
-
-/// FIXME add addresses
-#define VdsSpecialControlPageOFFSET					0xFFFF
-#define VdsSpecialControlAddressOFFSET				0xFFFF
-#define VdsSpecialControlReadDataOFFSET				0xFFFF
-#define VdsSpecialControlWriteDataOFFSET			0xFFFF
-
-#define VdsModuleIlkOutStatusOFFSET					0xFFFF
-#define VdsModuleIlkOutControlOFFSET				0xFFFF
-#define VdsModuleIlkCountOFFSET						0xFFFF
-#define VdsModuleIlkLastTriggerOFFSET				0xFFFF
-#define VdsModuleIlkChnActualActiveOFFSET			0xFFFF
-#define VdsModuleIlkChnEverTriggeredOFFSET			0xFFFF
-
-#define VdsChannel00OFFSET							0x0100
-#define VdsChannel01OFFSET							VdsChannel00OFFSET + 0x40
-#define VdsChannel02OFFSET							VdsChannel01OFFSET + 0x40
-#define VdsChannel03OFFSET							VdsChannel02OFFSET + 0x40
-#define VdsChannel04OFFSET							VdsChannel03OFFSET + 0x40
-#define VdsChannel05OFFSET							VdsChannel04OFFSET + 0x40
-#define VdsChannel06OFFSET							VdsChannel05OFFSET + 0x40
-#define VdsChannel07OFFSET							VdsChannel06OFFSET + 0x40
-#define VdsChannel08OFFSET							VdsChannel07OFFSET + 0x40
-#define VdsChannel09OFFSET							VdsChannel08OFFSET + 0x40
-#define VdsChannel10OFFSET							VdsChannel09OFFSET + 0x40
-#define VdsChannel11OFFSET							VdsChannel10OFFSET + 0x40
-#define VdsChannel12OFFSET							VdsChannel11OFFSET + 0x40
-#define VdsChannel13OFFSET							VdsChannel12OFFSET + 0x40
-#define VdsChannel14OFFSET							VdsChannel13OFFSET + 0x40
-#define VdsChannel15OFFSET							VdsChannel14OFFSET + 0x40
-#define VdsChannel16OFFSET							VdsChannel15OFFSET + 0x40
-#define VdsChannel17OFFSET							VdsChannel16OFFSET + 0x40
-#define VdsChannel18OFFSET							VdsChannel17OFFSET + 0x40
-#define VdsChannel19OFFSET							VdsChannel18OFFSET + 0x40
-#define VdsChannel20OFFSET							VdsChannel19OFFSET + 0x40
-#define VdsChannel21OFFSET							VdsChannel20OFFSET + 0x40
-#define VdsChannel22OFFSET							VdsChannel21OFFSET + 0x40
-#define VdsChannel23OFFSET							VdsChannel22OFFSET + 0x40
-
-#define VdsChannelStatusOFFSET						0
-#define VdsChannelEventStatusOFFSET					4
-#define VdsChannelEventMaskOFFSET					8
-#define VdsChannelControlOFFSET						12
-
-#define VdsChannelVoltageSetOFFSET					16
-#define VdsChannelCurrentSetOFFSET					20
-#define VdsChannelVoltageMeasureOFFSET				24
-#define VdsChannelCurrentMeasureOFFSET				28
-#define VdsChannelVoltageIlkMaxSetOFFSET			32
-#define VdsChannelVoltageIlkMinSetOFFSET			36
-#define VdsChannelCurrentIlkMaxSetOFFSET			40
-#define VdsChannelCurrentIlkMinSetOFFSET			44
-#define VdsChannelVoltageNominalOFFSET				48
-#define VdsChannelCurrentNominalOFFSET				52
-
-#define VdsAddrFixGroupsOFFSET						0x00d0
-
-#define VdsFlexGroupOFFSET							0x0700
-#define VdsFlexGroupMember2OFFSET					0
-#define VdsFlexGroupMember1OFFSET					2
-#define VdsFlexGroupType2OFFSET						4
-#define VdsFlexGroupType1OFFSET						6
-#define VdsFlexGroup00OFFSET						VdsFlexGroupOFFSET
-#define VdsFlexGroup01OFFSET						VdsFlexGroup00OFFSET + 8
-#define VdsFlexGroup02OFFSET						VdsFlexGroup01OFFSET + 8
-#define VdsFlexGroup03OFFSET						VdsFlexGroup02OFFSET + 8
-#define VdsFlexGroup04OFFSET						VdsFlexGroup03OFFSET + 8
-#define VdsFlexGroup05OFFSET						VdsFlexGroup04OFFSET + 8
-#define VdsFlexGroup06OFFSET						VdsFlexGroup05OFFSET + 8
-#define VdsFlexGroup07OFFSET						VdsFlexGroup06OFFSET + 8
-#define VdsFlexGroup08OFFSET						VdsFlexGroup07OFFSET + 8
-#define VdsFlexGroup09OFFSET						VdsFlexGroup08OFFSET + 8
-#define VdsFlexGroup10OFFSET						VdsFlexGroup09OFFSET + 8
-#define VdsFlexGroup11OFFSET						VdsFlexGroup10OFFSET + 8
-#define VdsFlexGroup12OFFSET						VdsFlexGroup11OFFSET + 8
-#define VdsFlexGroup13OFFSET						VdsFlexGroup12OFFSET + 8
-#define VdsFlexGroup14OFFSET						VdsFlexGroup13OFFSET + 8
-#define VdsFlexGroup15OFFSET						VdsFlexGroup14OFFSET + 8
-#define VdsFlexGroup16OFFSET						VdsFlexGroup15OFFSET + 8
-#define VdsFlexGroup17OFFSET						VdsFlexGroup16OFFSET + 8
-#define VdsFlexGroup18OFFSET						VdsFlexGroup17OFFSET + 8
-#define VdsFlexGroup19OFFSET						VdsFlexGroup18OFFSET + 8
-#define VdsFlexGroup20OFFSET						VdsFlexGroup19OFFSET + 8
-#define VdsFlexGroup21OFFSET						VdsFlexGroup20OFFSET + 8
-#define VdsFlexGroup22OFFSET						VdsFlexGroup21OFFSET + 8
-#define VdsFlexGroup23OFFSET						VdsFlexGroup22OFFSET + 8
-#define VdsFlexGroup24OFFSET						VdsFlexGroup23OFFSET + 8
-#define VdsFlexGroup25OFFSET						VdsFlexGroup24OFFSET + 8
-#define VdsFlexGroup26OFFSET						VdsFlexGroup25OFFSET + 8
-#define VdsFlexGroup27OFFSET						VdsFlexGroup26OFFSET + 8
-#define VdsFlexGroup28OFFSET						VdsFlexGroup27OFFSET + 8
-#define VdsFlexGroup29OFFSET						VdsFlexGroup28OFFSET + 8
-#define VdsFlexGroup30OFFSET						VdsFlexGroup29OFFSET + 8
-#define VdsFlexGroup31OFFSET						VdsFlexGroup30OFFSET + 8
-
-// === In VDS, Groups and Voltage/CurrentMaxSet are multiplexed ===============
-
-// VDS Voltage Max Set
-#define VdsVoltageMaxSet00OFFSET					0x0700
-#define VdsVoltageMaxSet01OFFSET					VdsVoltageMaxSet00OFFSET + 8
-#define VdsVoltageMaxSet02OFFSET					VdsVoltageMaxSet01OFFSET + 8
-#define VdsVoltageMaxSet03OFFSET					VdsVoltageMaxSet02OFFSET + 8
-#define VdsVoltageMaxSet04OFFSET					VdsVoltageMaxSet03OFFSET + 8
-#define VdsVoltageMaxSet05OFFSET					VdsVoltageMaxSet04OFFSET + 8
-#define VdsVoltageMaxSet06OFFSET					VdsVoltageMaxSet05OFFSET + 8
-#define VdsVoltageMaxSet07OFFSET					VdsVoltageMaxSet06OFFSET + 8
-#define VdsVoltageMaxSet08OFFSET					VdsVoltageMaxSet07OFFSET + 8
-#define VdsVoltageMaxSet09OFFSET					VdsVoltageMaxSet08OFFSET + 8
-#define VdsVoltageMaxSet10OFFSET					VdsVoltageMaxSet09OFFSET + 8
-#define VdsVoltageMaxSet11OFFSET					VdsVoltageMaxSet10OFFSET + 8
-#define VdsVoltageMaxSet12OFFSET					VdsVoltageMaxSet11OFFSET + 8
-#define VdsVoltageMaxSet13OFFSET					VdsVoltageMaxSet12OFFSET + 8
-#define VdsVoltageMaxSet14OFFSET					VdsVoltageMaxSet13OFFSET + 8
-#define VdsVoltageMaxSet15OFFSET					VdsVoltageMaxSet14OFFSET + 8
-#define VdsVoltageMaxSet16OFFSET					VdsVoltageMaxSet15OFFSET + 8
-#define VdsVoltageMaxSet17OFFSET					VdsVoltageMaxSet16OFFSET + 8
-#define VdsVoltageMaxSet18OFFSET					VdsVoltageMaxSet17OFFSET + 8
-#define VdsVoltageMaxSet19OFFSET					VdsVoltageMaxSet18OFFSET + 8
-#define VdsVoltageMaxSet20OFFSET					VdsVoltageMaxSet19OFFSET + 8
-#define VdsVoltageMaxSet21OFFSET					VdsVoltageMaxSet20OFFSET + 8
-#define VdsVoltageMaxSet22OFFSET					VdsVoltageMaxSet21OFFSET + 8
-#define VdsVoltageMaxSet23OFFSET					VdsVoltageMaxSet22OFFSET + 8
-
-// VDS Current Max Set
-#define VdsCurrentMaxSet00OFFSET					0x0704
-#define VdsCurrentMaxSet01OFFSET					VdsCurrentMaxSet00OFFSET + 8
-#define VdsCurrentMaxSet02OFFSET					VdsCurrentMaxSet01OFFSET + 8
-#define VdsCurrentMaxSet03OFFSET					VdsCurrentMaxSet02OFFSET + 8
-#define VdsCurrentMaxSet04OFFSET					VdsCurrentMaxSet03OFFSET + 8
-#define VdsCurrentMaxSet05OFFSET					VdsCurrentMaxSet04OFFSET + 8
-#define VdsCurrentMaxSet06OFFSET					VdsCurrentMaxSet05OFFSET + 8
-#define VdsCurrentMaxSet07OFFSET					VdsCurrentMaxSet06OFFSET + 8
-#define VdsCurrentMaxSet08OFFSET					VdsCurrentMaxSet07OFFSET + 8
-#define VdsCurrentMaxSet09OFFSET					VdsCurrentMaxSet08OFFSET + 8
-#define VdsCurrentMaxSet10OFFSET					VdsCurrentMaxSet09OFFSET + 8
-#define VdsCurrentMaxSet11OFFSET					VdsCurrentMaxSet10OFFSET + 8
-#define VdsCurrentMaxSet12OFFSET					VdsCurrentMaxSet11OFFSET + 8
-#define VdsCurrentMaxSet13OFFSET					VdsCurrentMaxSet12OFFSET + 8
-#define VdsCurrentMaxSet14OFFSET					VdsCurrentMaxSet13OFFSET + 8
-#define VdsCurrentMaxSet15OFFSET					VdsCurrentMaxSet14OFFSET + 8
-#define VdsCurrentMaxSet16OFFSET					VdsCurrentMaxSet15OFFSET + 8
-#define VdsCurrentMaxSet17OFFSET					VdsCurrentMaxSet16OFFSET + 8
-#define VdsCurrentMaxSet18OFFSET					VdsCurrentMaxSet17OFFSET + 8
-#define VdsCurrentMaxSet19OFFSET					VdsCurrentMaxSet18OFFSET + 8
-#define VdsCurrentMaxSet20OFFSET					VdsCurrentMaxSet19OFFSET + 8
-#define VdsCurrentMaxSet21OFFSET					VdsCurrentMaxSet20OFFSET + 8
-#define VdsCurrentMaxSet22OFFSET					VdsCurrentMaxSet21OFFSET + 8
-#define VdsCurrentMaxSet23OFFSET					VdsCurrentMaxSet22OFFSET + 8
-
-/**
- *  Defines of Offsets of the arrays of fix groups
- *    offset values in bytes !
- */
-#define VdsSetVoltageAllChannelsOFFSET				VdsAddrFixGroupsOFFSET
-#define VdsSetCurrentAllChannelsOFFSET				(VdsSetVoltageAllChannelsOFFSET+4)
-#define VdsSetVoltageBoundsAllChannelsOFFSET		(VdsSetCurrentAllChannelsOFFSET+4)
-#define VdsSetCurrentBoundsAllChannelsOFFSET		(VdsSetVoltageBoundsAllChannelsOFFSET+4)
-#define VdsSetEmergencyAllChannelsOFFSET			(VdsSetCurrentBoundsAllChannelsOFFSET+4)
-#define VdsSetOnOffAllChannelsOFFSET				(VdsSetEmergencyAllChannelsOFFSET+4)
-#define VdsSetVoltageMaxAllChannelsOFFSET			(VdsSetOnOffAllChannelsOFFSET+4)
-#define VdsSetCurrentMaxAllChannelsOFFSET			(VdsSetVoltageMaxAllChannelsOFFSET+4)
 
 #endif // VMEMODULE_H
