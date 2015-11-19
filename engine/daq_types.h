@@ -198,6 +198,7 @@ struct Spill {
       return false;
     return true;
   }
+  bool operator<(const Spill other) const {return (spill_number < other.spill_number);}
 
   uint64_t spill_number;
 

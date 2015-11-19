@@ -1434,6 +1434,7 @@ void Plugin::worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_q
     bool success = false;
     for (auto &q : mods) {
       fetched_spill = new Spill;
+      fetched_spill->spill_number = spill_number;
       fetched_spill->data.resize(list_mem_len32, 0);
       if (read_EM_dbl(fetched_spill->data.data(), q))
         success = true;
