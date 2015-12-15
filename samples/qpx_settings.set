@@ -11,6 +11,15 @@
 		<Setting id="Detector" type="detector" index="6" indices="6" value="none" />
 		<Setting id="Detector" type="detector" index="7" indices="7" value="none" />
 	</Setting>
+	<Setting id="HV8" type="stem" index="-1" reference="/HV8/qpx_plugin.set">
+		<Setting id="HV8/PortName" type="text" index="-1" value="tty1" />
+		<Setting id="HV8/BaudRate" type="int_menu" index="-1" value="19200" />
+		<Setting id="HV8/CharacterSize" type="integer" index="-1" value="8" />
+		<Setting id="HV8/Parity" type="int_menu" index="-1" value="1" />
+		<Setting id="HV8/StopBits" type="int_menu" index="-1" value="1" />
+		<Setting id="HV8/FlowControl" type="int_menu" index="-1" value="1" />
+		<Setting id="HV8/Channels" type="stem" index="-1" />
+	</Setting>
 	<Setting id="VME" type="stem" index="-1" reference="/VME/qpx_plugin.set">
 		<Setting id="VME/ControllerID" type="text" index="-1" value="VmUsb" />
 		<Setting id="VME/junk" type="text" index="-1" value="jjj" />

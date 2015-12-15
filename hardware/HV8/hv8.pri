@@ -21,34 +21,11 @@
 #-------------------------------------------------------------------------------
 
 unix {
-
-   LIBS += -lm -ldl -DBOOST_LOG_DYN_LINK \
-           -lboost_system -lboost_date_time -lboost_thread -lboost_log \
-           -lboost_program_options -lboost_filesystem \
-           -lboost_log_setup -lboost_timer -lz
-
-   QMAKE_CFLAGS   += -fpermissive
-
-   LIBPATH += /usr/local/lib
+   LIBS += -ldl -lm
 }
 
+INCLUDEPATH += $$PWD
 
-INCLUDEPATH += $$PWD/../engine \
-               $$PWD/../engine/pugixml \
-               $$PWD/../engine/math
+SOURCES += $$files($$PWD/*.cpp)
 
-HEADERS  += $$files($$PWD/../engine/*.h) \
-            $$files($$PWD/../engine/pugixml/*.h) \
-            $$files($$PWD/../engine/math/*.h)
-
-! include( $$PWD/pixie4/pixie4.pri ) {
-    error( "Couldn't find the pixie4.pri file!" )
-}
-
-! include( $$PWD/VME/vme.pri ) {
-    error( "Couldn't find the vme.pri file!" )
-}
-
-! include( $$PWD/HV8/hv8.pri ) {
-    error( "Couldn't find the hv8.pri file!" )
-}
+HEADERS  += $$files($$PWD/*.h)

@@ -200,8 +200,8 @@ bool Engine::boot() {
   bool success = false;
   for (auto &q : devices_)
     if ((q.second != nullptr) && (q.second->status() & DeviceStatus::can_boot)) {
-        success |= q.second->boot();
-        //PL_DBG << "daq_start > " << q.second->device_name();
+      success |= q.second->boot();
+      //PL_DBG << "daq_start > " << q.second->device_name();
     }
 
   if (success) {
@@ -217,8 +217,8 @@ bool Engine::die() {
   bool success = false;
   for (auto &q : devices_)
     if ((q.second != nullptr) && (q.second->status() & DeviceStatus::booted)) {
-        success |= q.second->die();
-        //PL_DBG << "die > " << q.second->device_name();
+      success |= q.second->die();
+      //PL_DBG << "die > " << q.second->device_name();
     }
 
   if (success) {
@@ -251,8 +251,8 @@ bool Engine::daq_start(SynchronizedQueue<Spill*>* out_queue) {
   bool success = false;
   for (auto &q : devices_)
     if ((q.second != nullptr) && (q.second->status() & DeviceStatus::can_run)) {
-        success |= q.second->daq_start(out_queue);
-        //PL_DBG << "daq_start > " << q.second->device_name();
+      success |= q.second->daq_start(out_queue);
+      //PL_DBG << "daq_start > " << q.second->device_name();
     }
   return success;
 }
@@ -261,8 +261,8 @@ bool Engine::daq_stop() {
   bool success = false;
   for (auto &q : devices_)
     if ((q.second != nullptr) && (q.second->status() & DeviceStatus::can_run)) {
-        success |= q.second->daq_stop();
-        //PL_DBG << "daq_stop > " << q.second->device_name();
+      success |= q.second->daq_stop();
+      //PL_DBG << "daq_stop > " << q.second->device_name();
     }
   return success;
 }
@@ -271,8 +271,8 @@ bool Engine::daq_running() {
   bool running = false;
   for (auto &q : devices_)
     if ((q.second != nullptr) && (q.second->status() & DeviceStatus::can_run)) {
-        running |= q.second->daq_running();
-        //PL_DBG << "daq_check > " << q.second->device_name();
+      running |= q.second->daq_running();
+      //PL_DBG << "daq_check > " << q.second->device_name();
     }
   return running;
 }
@@ -300,7 +300,7 @@ void Engine::set_detector(int ch, Gamma::Detector det) {
     if (set.id_ == "Detectors") {
       for (auto &q : set.branches.my_data_) {
         if (q.index == ch) {
-      //    PL_DBG << "set det in tree #" << q.index << " to  " << detectors_[q.index].name_;
+          //    PL_DBG << "set det in tree #" << q.index << " to  " << detectors_[q.index].name_;
 
           q.value_text = detectors_[q.index].name_;
           load_optimization(q.index);
@@ -580,198 +580,99 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
 
   std::vector<int> queue_status;
   queue_status.resize(detectors_.size(), 0);
-  // 0 = unused, 1 = empty, 2 = data, 3 = end
+  // 0 = unused, 1 = empty, 2 = data
 
   std::list<Spill*> current_spills;
 
   PL_DBG << "<Engine> Spectra builder thread initiated";
   Spill* in_spill;
   Spill* out_spill;
-  while ((in_spill = data_queue->dequeue()) != nullptr) {
+  while (true) {
 
-    if (in_spill->spill_number == 0) {
-      spectra->add_spill(in_spill);
-      PL_DBG << "adding spill 0 to spectra";
-    } else {
-      current_spills.push_back(in_spill);
-      PL_DBG << "enqueue non0 spill to spectra n=" << in_spill->spill_number;
-    }
-
-    for (auto &q : in_spill->stats) {
-      if (q.spill_number == 0) {
-        if (q.channel >= queue_status.size()) {
-          //          PL_DBG << "spill 0 for chan " << q.channel << " enlarges status list";
-
-          queue_status.resize(q.channel);
-        }
-        if (q.channel >= 0) {
-          //          PL_DBG << "spill 0 for chan " << q.channel << " sets status 1";
-          queue_status[q.channel] = 1;
-        }
-      } else if ((q.channel >= 0) && (q.channel < queue_status.size())) {
-        //        PL_DBG << "spill " << q.spill_number << " for chan " << q.channel << ":";
-
-        if (!in_spill->hits.empty()) {
-          //          PL_DBG << "   nonempty: set status 2";
-          queue_status[q.channel] = 2;
-        } else {
-          //          PL_DBG << "   empty: set status 1";
-          queue_status[q.channel] = 1;
+    in_spill = data_queue->dequeue();
+    if (in_spill != nullptr) {
+      for (auto &q : in_spill->stats) {
+        if (q.spill_number == 0) {
+          if (q.channel >= queue_status.size())
+            queue_status.resize(q.channel);
+          if (q.channel >= 0)
+            queue_status[q.channel] = 1;
+        } else if ((q.channel >= 0) && (q.channel < queue_status.size())) {
+          if (!in_spill->hits.empty())
+            queue_status[q.channel] = 2;
+          else
+            queue_status[q.channel] = 1;
         }
       }
+      current_spills.push_back(in_spill);
     }
 
-    bool empty = queue_status.empty();
-    for (auto q : queue_status) {
-      if (q != 2)
-        empty = true;
-    }
-
-    PL_DBG << "after new spill arrival empty = " << empty << " with no of spills = " << current_spills.size(); 
-
+    bool empty = false;
     while (!empty) {
-    
       out_spill = new Spill;
+
+      empty = queue_status.empty();
+      if (in_spill != nullptr) {
+        for (auto &q : queue_status)
+          if (q != 0)
+            q = 1;
+        for (auto i = current_spills.begin(); i != current_spills.end(); i++) {
+          if (!(*i)->hits.empty())
+            for (auto &q : (*i)->stats) {
+              if ((q.channel >= 0) && (q.channel < queue_status.size()))
+                queue_status[q.channel] = 2;
+            }
+        }
+        for (auto q : queue_status)
+          if (q == 1)
+            empty = true;
+      }
+
       while (!empty) {
         Hit oldest;
         for (auto &q : current_spills) {
           if (q->hits.empty()) {
-            PL_DBG << "some spill is now empty";
             empty = true;
             break;
-          } else if (oldest == Hit()) {
+          } else if ((oldest == Hit()) || (q->hits.front().timestamp < oldest.timestamp))
             oldest = q->hits.front();
-          } else if (q->hits.front().timestamp < oldest.timestamp) {
-            oldest = q->hits.front();
-          }
         }
-        if (!empty && (oldest != Hit())) {
-          //        PL_DBG << "enqueueing hit on chan " << oldest.channel;
+        if (!empty) {
           out_spill->hits.push_back(oldest);
           for (auto &q : current_spills)
             if ((!q->hits.empty()) && (q->hits.front().timestamp == oldest.timestamp)) {
-              //            PL_DBG << "pop oldest hit";
               q->hits.pop_front();
               break;
             }
         }
       }
 
-      PL_DBG << "enqueued hits and now some spill empty";
-
-      for (auto i = current_spills.begin(); i != current_spills.end(); i++)
-        if ((*i)->hits.empty()) {
-          out_spill->spill_number = (*i)->spill_number;
-          out_spill->data = (*i)->data;
-          out_spill->stats = (*i)->stats;
-          out_spill->run = (*i)->run;
-          PL_DBG << "enqueued some spill n=" << out_spill->spill_number;
-          delete (*i);    
-          current_spills.erase(i);
-          break;
-        }
-
-      spectra->add_spill(out_spill);
-      delete out_spill;
-
       bool noempties = false;
       while (!noempties) {
         noempties = true;
-        
         for (auto i = current_spills.begin(); i != current_spills.end(); i++)
           if ((*i)->hits.empty()) {
-            spectra->add_spill(*i);
-            PL_DBG << "enqueued some leftover empty spill " << (*i)->spill_number;
-            delete (*i);          
+            out_spill->spill_number = (*i)->spill_number;
+            out_spill->data = (*i)->data;
+            out_spill->stats = (*i)->stats;
+            out_spill->run = (*i)->run;
+            spectra->add_spill(out_spill);
+            PL_DBG << "enqueued some spill n=" << out_spill->spill_number;
+
+            delete (*i);
             current_spills.erase(i);
+
+            delete out_spill;
+            out_spill = new Spill;
             noempties = false;
             break;
           }
       }
-
-
-      PL_DBG << "at loop end no of spills = " << current_spills.size(); 
-      empty = queue_status.empty();
-      for (auto &q : queue_status)
-        if (q != 0)
-          q = 1;
-
-      for (auto i = current_spills.begin(); i != current_spills.end(); i++) {
-        PL_DBG << "   at loop end spill[" << (*i)->spill_number << "] has " << (*i)->hits.size();
-        if (!(*i)->hits.empty())
-          for (auto &q : (*i)->stats) {
-            queue_status[q.channel] = 2;
-          }
-      }
-    
-      //    PL_DBG << "loop end";
-
-      for (auto q : queue_status)
-        if (q == 1)
-          empty = true;
-      PL_DBG << "at end of loop empty = " << empty;
-
-      
+      delete out_spill;
     }
 
-  }
-
-  PL_DBG << "after queue closed spills remaining " << current_spills.size();
-
-
-  bool empty = false;
-  out_spill = new Spill;
-
-  while (!empty) {
-    Hit oldest;
-
-    empty = true;
-    for (auto &q : current_spills) {
-      if (!q->hits.empty()) {
-        empty = false;
-        if (oldest == Hit()) {
-          oldest = q->hits.front();
-        } else if (q->hits.front().timestamp < oldest.timestamp) {
-          oldest = q->hits.front();
-        }
-      }
-    }
-    
-    if (!empty && (oldest != Hit())) {
-      //      PL_DBG << "enqueueing hit on chan " << oldest.channel;
-      out_spill->hits.push_back(oldest);
-      for (auto &q : current_spills)
-        if ((!q->hits.empty()) && (q->hits.front().timestamp == oldest.timestamp)) {
-          //          PL_DBG << "pop oldest hit";
-          q->hits.pop_front();
-          break;
-        }
-    }
-  }
-
-  PL_DBG << "before last valid spills remaining " << current_spills.size();
-  
-  if (!current_spills.empty()) {
-    current_spills.sort([](const Spill* a, const Spill * b) {return (a->spill_number < b->spill_number);});
-    in_spill = current_spills.front();
-    out_spill->spill_number = in_spill->spill_number;
-    out_spill->data = in_spill->data;
-    out_spill->stats = in_spill->stats;
-    out_spill->run = in_spill->run;
-    delete in_spill;
-    current_spills.pop_front();
-  }
-
-  PL_DBG << "enqueueing last valid spill n=" << out_spill->spill_number;
-  spectra->add_spill(out_spill);
-  delete out_spill;
-
-  PL_DBG << "before dump spills remaining " << current_spills.size();
-
-  for (auto i = current_spills.begin(); i != current_spills.end(); i++) {
-    PL_DBG << "dumping remaining spill " << (*i)->spill_number;
-    spectra->add_spill(*i);
-    delete (*i);          
+    if ((in_spill != nullptr) && current_spills.empty())
+      break;
   }
 
   spectra->closeAcquisition();
