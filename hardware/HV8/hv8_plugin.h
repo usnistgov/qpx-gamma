@@ -25,7 +25,7 @@
 
 #include "daq_device.h"
 #include "detector.h"
-#include "asio_serial.h"
+#include "TimeoutSerial.h"
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
 
@@ -57,14 +57,14 @@ protected:
 
   void rebuild_structure(Gamma::Setting &set);
 
-  Serial port;
+  TimeoutSerial port;
 
   std::string portname;
-  int baudrate;
-  int charactersize;
-  boost::asio::serial_port_base::parity::type parity;
-  boost::asio::serial_port_base::stop_bits::type stopbits;
-  boost::asio::serial_port_base::flow_control::type flowcontrol;
+  unsigned int baudrate;
+  boost::asio::serial_port_base::character_size charactersize;
+  boost::asio::serial_port_base::parity parity;
+  boost::asio::serial_port_base::stop_bits stopbits;
+  boost::asio::serial_port_base::flow_control flowcontrol;
 
   std::string controller_name_;
 };

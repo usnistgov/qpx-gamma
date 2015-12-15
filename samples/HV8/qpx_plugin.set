@@ -19,8 +19,8 @@
 		<branch address="7" id="HV8/Channels/V7" />
 		<branch address="8" id="HV8/Channels/V8" />
 	</SettingMeta>
-	<SettingMeta id="HV8/PortName" type="text" visible="true" name="Port name" address="0" writable="true"/>
-	<SettingMeta id="HV8/BaudRate" type="int_menu" name="Buad rate" address="0" writable="true">
+	<SettingMeta id="HV8/PortName" type="file_path" visible="true" name="Port name" address="0" writable="true" unit="Serial port (tty*)"/>
+	<SettingMeta id="HV8/BaudRate" type="int_menu" name="Baud rate" address="0" writable="true">
 		<menu_item item_value="1200" item_text="1200" />
 		<menu_item item_value="2400" item_text="2400" />
 		<menu_item item_value="4800" item_text="4800" />

@@ -343,7 +343,7 @@ void Setting::del_setting(Gamma::Setting address, Match flags) {
 }
 
 
-void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_definitions) {
+void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_definitions, bool impose_limits) {
   if (setting_definitions.count(id_) > 0) {
     Gamma::SettingMeta meta = setting_definitions.at(id_);
     if (meta.address == -1)
@@ -359,7 +359,7 @@ void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_de
           for (int i=0; i < br.size(); ++i) {
             Gamma::Setting newset = br.get(i);
             if (newset.id_ == newmeta.id_) {
-              newset.enrich(setting_definitions);
+              newset.enrich(setting_definitions, impose_limits);
               branches.add_a(newset);
               added = true;
             }
@@ -367,11 +367,23 @@ void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_de
           if (!added && (q.first != 666)) {
             Gamma::Setting newset = Gamma::Setting(newmeta, index);
             newset.indices = indices;
-            newset.enrich(setting_definitions);
+            newset.enrich(setting_definitions, impose_limits);
             branches.add(newset);
           }
 
         }
+      }
+    } else if (impose_limits) {
+      if (meta.setting_type == Gamma::SettingType::integer) {
+        if (value_int > meta.maximum)
+          value_int = meta.maximum;
+        if (value_int < meta.minimum)
+          value_int = meta.minimum;
+      } else if (meta.setting_type == Gamma::SettingType::floating) {
+        if (value_dbl > meta.maximum)
+          value_dbl = meta.maximum;
+        if (value_dbl < meta.minimum)
+          value_dbl = meta.minimum;
       }
     }
   }

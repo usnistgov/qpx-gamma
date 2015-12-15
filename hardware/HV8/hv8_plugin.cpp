@@ -32,9 +32,9 @@ namespace Qpx {
 static DeviceRegistrar<QpxHV8Plugin> registrar("HV8");
 
 QpxHV8Plugin::QpxHV8Plugin()
-  : portname("/dev/pts/8")
-  , baudrate(19200)
-  , charactersize(8)
+  : portname("/dev/tty")
+  , baudrate(9600)
+  , charactersize(boost::asio::serial_port_base::character_size(8))
   , parity(boost::asio::serial_port_base::parity::none)
   , stopbits(boost::asio::serial_port_base::stop_bits::one)
   , flowcontrol(boost::asio::serial_port_base::flow_control::none)
@@ -51,7 +51,7 @@ QpxHV8Plugin::~QpxHV8Plugin() {
 bool QpxHV8Plugin::read_settings_bulk(Gamma::Setting &set) const {
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
-      if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "VME/IsegVHS")) {
+      if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "HV8/Channels")) {
         //PL_DBG << "reading VME/IsegVHS";
         int modnum = 0;
         for (auto &k : q.branches.my_data_) {
@@ -62,20 +62,9 @@ bool QpxHV8Plugin::read_settings_bulk(Gamma::Setting &set) const {
                    || (k.metadata.setting_type == Gamma::SettingType::int_menu)
                    || (k.metadata.setting_type == Gamma::SettingType::binary))
             k.value_int = k.metadata.address; //channel_parameter_values_[k.metadata.address + modnum];
-          else if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channel")) {
-            //PL_DBG << "reading VME/IsegVHS/Channel";
-            uint16_t channum = k.index;
-            for (auto &p : k.branches.my_data_) {
-              if (p.metadata.setting_type == Gamma::SettingType::floating)
-                p.value_dbl = p.metadata.address + (30 * channum) + 0x0060;// channel_parameter_values_[k.metadata.address + modnum];
-              else if ((p.metadata.setting_type == Gamma::SettingType::integer)
-                       || (p.metadata.setting_type == Gamma::SettingType::boolean)
-                       || (p.metadata.setting_type == Gamma::SettingType::int_menu)
-                       || (p.metadata.setting_type == Gamma::SettingType::binary))
-                p.value_dbl = p.metadata.address + (30 * channum) + 0x0060; //channel_parameter_values_[k.metadata.address + modnum];
-            }
-          }
         }
+      } else {
+        //q.metadata.writable = !(status_ & DeviceStatus::booted);
       }
     }
   }
@@ -88,17 +77,43 @@ void QpxHV8Plugin::rebuild_structure(Gamma::Setting &set) {
 
 
 bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
-  set.enrich(setting_definitions_);
+  set.enrich(setting_definitions_, true);
 
   if (set.id_ != device_name())
     return false;
 
   for (auto &q : set.branches.my_data_) {
-    if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "VME/ControllerID")) {
-      PL_DBG << "<HV8Plugin> controller expected " << q.value_text;
-      if (controller_name_.empty())
-        controller_name_ = q.value_text;
-    } else       if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "VME/IsegVHS")) {
+    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "HV8/PortName"))
+      portname = q.value_text;
+    else if ((q.metadata.setting_type == Gamma::SettingType::int_menu) && (q.id_ == "HV8/BaudRate"))
+      baudrate = q.value_int;
+    else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "HV8/CharacterSize"))
+      charactersize = boost::asio::serial_port_base::character_size(q.value_int);
+    else if ((q.metadata.setting_type == Gamma::SettingType::int_menu) && (q.id_ == "HV8/Parity")) {
+      if (q.value_int == 2)
+        parity = boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::odd);
+      else if (q.value_int == 3)
+        parity = boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::even);
+      else
+        parity = boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::none);
+    }
+    else if ((q.metadata.setting_type == Gamma::SettingType::int_menu) && (q.id_ == "HV8/StopBits")) {
+      if (q.value_int == 2)
+        stopbits = boost::asio::serial_port_base::stop_bits(boost::asio::serial_port_base::stop_bits::onepointfive);
+      else if (q.value_int == 3)
+        stopbits = boost::asio::serial_port_base::stop_bits(boost::asio::serial_port_base::stop_bits::two);
+      else
+        stopbits = boost::asio::serial_port_base::stop_bits(boost::asio::serial_port_base::stop_bits::one);
+    }
+    else if ((q.metadata.setting_type == Gamma::SettingType::int_menu) && (q.id_ == "HV8/FlowControl")) {
+      if (q.value_int == 2)
+        flowcontrol = boost::asio::serial_port_base::flow_control(boost::asio::serial_port_base::flow_control::software);
+      else if (q.value_int == 3)
+        flowcontrol = boost::asio::serial_port_base::flow_control(boost::asio::serial_port_base::flow_control::hardware);
+      else
+        flowcontrol = boost::asio::serial_port_base::flow_control(boost::asio::serial_port_base::flow_control::none);
+    }
+    else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "HV8/Channels")) {
       rebuild_structure(q);
 
       //PL_DBG << "writing VME/IsegVHS";
@@ -112,21 +127,6 @@ bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
                  || (k.metadata.setting_type == Gamma::SettingType::int_menu)
                  || (k.metadata.setting_type == Gamma::SettingType::binary)) {
          // k.value_int = k.metadata.address; //channel_parameter_values_[k.metadata.address + modnum];
-        }
-        else if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channel")) {
-          //PL_DBG << "writing VME/IsegVHS/Channel";
-          uint16_t channum = k.index;
-          for (auto &p : k.branches.my_data_) {
-            if (p.metadata.setting_type == Gamma::SettingType::floating) {
-             // p.value_dbl = p.metadata.address + (30 * channum) + 0x0060;// channel_parameter_values_[k.metadata.address + modnum];
-            }
-            else if ((p.metadata.setting_type == Gamma::SettingType::integer)
-                     || (p.metadata.setting_type == Gamma::SettingType::boolean)
-                     || (p.metadata.setting_type == Gamma::SettingType::int_menu)
-                     || (p.metadata.setting_type == Gamma::SettingType::binary)) {
-            //  p.value_dbl = p.metadata.address + (30 * channum) + 0x0060; //channel_parameter_values_[k.metadata.address + modnum];
-            }
-          }
         }
       }
     }
@@ -152,7 +152,7 @@ bool QpxHV8Plugin::execute_command(Gamma::Setting &set) {
 }
 
 
-bool QpxHV8Plugin::boot() {
+bool QpxHV8Plugin::boot() noexcept(false) {
   PL_DBG << "<HV8Plugin> Attempting to boot";
 
   if (!(status_ & DeviceStatus::can_boot)) {
@@ -162,16 +162,33 @@ bool QpxHV8Plugin::boot() {
 
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 
-  port.open(portname, baudrate, charactersize, parity, stopbits, flowcontrol);
+  try {
+    port.open(portname, baudrate, parity, boost::asio::serial_port_base::character_size(charactersize), flowcontrol, stopbits);
+    port.setTimeout(boost::posix_time::seconds(5));
+  } catch (...) {
+    PL_ERR << "could not open serial port";
+    return false;
+  }
 
-  port.writeString("\r\n");
-  port.writeString("\r\n");
+  if (!port.isOpen()) {
+    PL_DBG << "serial port could not be opened";
+    return false;
+  } else {
+    PL_DBG << "serial port opened successfully";
+  }
+
+  port.writeString("\r");
   boost::this_thread::sleep(boost::posix_time::seconds(1));
 
   bool success = false;
   bool logged = false;
   for (int i=0; i < 10; ++i) {
-    std::string line = port.readLine(0);
+    std::string line;
+    try { line = port.readStringUntil("\r"); }
+    catch (...) { PL_ERR << "could not read line from serial"; }
+    boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
+
+//    boost::algorithm::trim(line);
     PL_DBG << "Received :\n" << line;
     if (line == "->") {
       PL_DBG << "not logged in";
@@ -186,20 +203,19 @@ bool QpxHV8Plugin::boot() {
   }
 
   if (success) {
-    port.flush(flush_both);
+//    port.flush(flush_both);
     if (!logged) {
 //      port.writeString("Q");
 //      port.writeString("\r\n");
-      port.writeString("L");
+      port.writeString("L\r");
       boost::this_thread::sleep(boost::posix_time::seconds(1));
-      port.writeString("\r\n");
-      boost::this_thread::sleep(boost::posix_time::seconds(1));
-      port.writeString("\r\n");
-      boost::this_thread::sleep(boost::posix_time::seconds(3));
 
       success = false;
       for (int i=0; i < 10; ++i) {
-        std::string line = port.readLine(0);
+        std::string line;
+        try { line = port.readStringUntil("\r"); }
+        catch (...) { PL_ERR << "could not read line from serial"; }
+        boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
         PL_DBG << "L: received :\n" << line;
         if (line == "Login:") {
           PL_DBG << "login prompt";
@@ -210,28 +226,17 @@ bool QpxHV8Plugin::boot() {
 
       if (success) {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
-        char c;
-        c = 'H';
-        port.send((void*) &c, 1);
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
-        c = 'V';
-        port.send((void*) &c, 1);
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
-        c = '8';
-        port.send((void*) &c, 1);
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
-        c = '\r';
-        port.send((void*) &c, 1);
+        port.writeString("HV8\r");
         boost::this_thread::sleep(boost::posix_time::seconds(1));
 //        c = '\n';
 //        port.send((void*) &c, 1);
 //        boost::this_thread::sleep(boost::posix_time::seconds(1));
 
-        port.writeString("\r\n");
-        boost::this_thread::sleep(boost::posix_time::seconds(3));
-
         for (int i=0; i < 10; ++i) {
-          std::string line = port.readLine(0);
+          std::string line;
+          try { line = port.readStringUntil("\r"); }
+          catch (...) { PL_ERR << "could not read line from serial"; }
+          boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
           PL_DBG << "LP: received :\n" << line;
           if (line == "+>") {
             PL_DBG << "logged in";
@@ -242,7 +247,7 @@ bool QpxHV8Plugin::boot() {
 
       }
     }
-    port.flush(flush_both);
+    //port.flush(flush_both);
 
 
     if (logged) {

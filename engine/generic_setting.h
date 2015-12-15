@@ -207,7 +207,7 @@ struct Setting : public XMLable {
   void cull_invisible();
   void cull_readonly();
   void strip_metadata();
-  void enrich(const std::map<std::string, Gamma::SettingMeta> &);
+  void enrich(const std::map<std::string, Gamma::SettingMeta> &, bool impose_limits = false);
 
 };
 
