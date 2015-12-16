@@ -155,6 +155,8 @@ bool QpxHV8Plugin::execute_command(Gamma::Setting &set) {
 bool QpxHV8Plugin::boot() noexcept(false) {
   PL_DBG << "<HV8Plugin> Attempting to boot";
 
+  int attempts = 5;
+
   if (!(status_ & DeviceStatus::can_boot)) {
     PL_WARN << "<HV8Plugin> Cannot boot. Failed flag check (can_boot == 0)";
     return false;
@@ -166,80 +168,79 @@ bool QpxHV8Plugin::boot() noexcept(false) {
     port.open(portname, baudrate, parity, boost::asio::serial_port_base::character_size(charactersize), flowcontrol, stopbits);
     port.setTimeout(boost::posix_time::seconds(5));
   } catch (...) {
-    PL_ERR << "could not open serial port";
+    PL_ERR << "<HV8Plugin> could not open serial port";
     return false;
   }
 
   if (!port.isOpen()) {
-    PL_DBG << "serial port could not be opened";
+    PL_DBG << "<HV8Plugin> serial port could not be opened";
     return false;
-  } else {
-    PL_DBG << "serial port opened successfully";
   }
-
-  port.writeString("\r");
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
 
   bool success = false;
   bool logged = false;
-  for (int i=0; i < 10; ++i) {
+  for (int i=0; i < attempts; ++i) {
+    port.writeString("\r");
     std::string line;
-    try { line = port.readStringUntil("\r"); }
-    catch (...) { PL_ERR << "could not read line from serial"; }
+    try { line = port.readStringUntil(">"); }
+    catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
     boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
 
-//    boost::algorithm::trim(line);
-    PL_DBG << "Received :\n" << line;
+//    PL_DBG << line;
     if (line == "->") {
-      PL_DBG << "not logged in";
+//      PL_DBG << "not logged in";
       success = true;
       break;
     } else if (line == "+>") {
-      PL_DBG << "logged in";
+//      PL_DBG << "logged in";
       success = true;
       logged = true;
       break;
     }
+
   }
 
   if (success) {
 //    port.flush(flush_both);
     if (!logged) {
-//      port.writeString("Q");
-//      port.writeString("\r\n");
-      port.writeString("L\r");
-      boost::this_thread::sleep(boost::posix_time::seconds(1));
 
       success = false;
       for (int i=0; i < 10; ++i) {
+//        boost::this_thread::sleep(boost::posix_time::seconds(1));
+        port.writeString("L\r");
+
         std::string line;
-        try { line = port.readStringUntil("\r"); }
-        catch (...) { PL_ERR << "could not read line from serial"; }
+        try { line = port.readStringUntil(":"); }
+        catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
         boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
-        PL_DBG << "L: received :\n" << line;
-        if (line == "Login:") {
-          PL_DBG << "login prompt";
+
+        std::vector<std::string> tokens;
+        boost::algorithm::split(tokens, line, boost::algorithm::is_any_of("\r\n\t "));
+
+//        PL_DBG << line;
+        if (!tokens.empty() && (tokens[tokens.size() - 1] == "Login:")) {
+//          PL_DBG << "login prompt";
           success = true;
           break;
         }
+
       }
 
       if (success) {
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
-        port.writeString("HV8\r");
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
 //        c = '\n';
 //        port.send((void*) &c, 1);
 //        boost::this_thread::sleep(boost::posix_time::seconds(1));
 
         for (int i=0; i < 10; ++i) {
+//          boost::this_thread::sleep(boost::posix_time::seconds(1));
+          port.writeString("HV8\r");
           std::string line;
-          try { line = port.readStringUntil("\r"); }
-          catch (...) { PL_ERR << "could not read line from serial"; }
+          try { line = port.readStringUntil(">"); }
+          catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
           boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
-          PL_DBG << "LP: received :\n" << line;
+          PL_DBG << line;
           if (line == "+>") {
-            PL_DBG << "logged in";
+//            PL_DBG << "logged in";
             logged = true;
             break;
           }
@@ -251,6 +252,7 @@ bool QpxHV8Plugin::boot() noexcept(false) {
 
 
     if (logged) {
+      PL_DBG << "<HV8Plugin> Logged in. Startup successful";
       status_ = DeviceStatus::loaded | DeviceStatus::booted;
       return true;
     }

@@ -176,6 +176,7 @@ std::string TimeoutSerial::readStringUntil(const std::string& delim)
                     string result(bytesTransferred,'\0');//Alloc string
                     is.read(&result[0],bytesTransferred);//Fill values
                     is.ignore(delim.size());//Remove delimiter from stream
+                    result += delim;
                     return result;
                 }
             case resultTimeoutExpired:
