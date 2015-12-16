@@ -85,9 +85,9 @@ bool slice_rectangular(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum*
   return (destination->metadata().total_count > 0);
 }
 
-double sum_with_neighbors(Qpx::Spectrum::Spectrum* source, uint16_t x, uint16_t y)
+PreciseFloat sum_with_neighbors(Qpx::Spectrum::Spectrum* source, uint16_t x, uint16_t y)
 {
-  double ans = 0;
+  PreciseFloat ans = 0;
   ans += source->get_count({x,y}) + 0.25 * (source->get_count({x+1,y}) + source->get_count({x,y+1}));
   if (x != 0)
     ans += 0.25 * source->get_count({x-1,y});
@@ -96,9 +96,9 @@ double sum_with_neighbors(Qpx::Spectrum::Spectrum* source, uint16_t x, uint16_t 
   return ans;
 }
 
-double sum_diag(Qpx::Spectrum::Spectrum* source, uint16_t x, uint16_t y, uint16_t width)
+PreciseFloat sum_diag(Qpx::Spectrum::Spectrum* source, uint16_t x, uint16_t y, uint16_t width)
 {
-  double ans = sum_with_neighbors(source, x, y);
+  PreciseFloat ans = sum_with_neighbors(source, x, y);
   int w = (width-1)/2;
   for (int i=1; i < w; ++i)
     ans += sum_with_neighbors(source, x-i, y-i) + sum_with_neighbors(source, x+i, y+i);
@@ -148,7 +148,7 @@ bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destin
   uint16_t e2 = 0;
   std::unique_ptr<std::list<Qpx::Spectrum::Entry>> spectrum_data = std::move(source->get_spectrum({{0, adjrange}, {0, adjrange}}));
   for (auto it : *spectrum_data) {
-    uint64_t count = it.second;
+    PreciseFloat count = it.second;
 
     //PL_DBG << "adding " << it.first[0] << "+" << it.first[1] << "  x" << it.second;
     double xformed = gain_match_cali.transform(it.first[1]);

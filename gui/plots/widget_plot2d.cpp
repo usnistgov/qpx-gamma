@@ -548,7 +548,7 @@ void WidgetPlot2D::update_plot(uint64_t size, std::shared_ptr<Qpx::Spectrum::Ent
   if ((size > 0) && (spectrum_data->size())) {
     colorMap->data()->setSize(size, size);
     for (auto it : *spectrum_data)
-      colorMap->data()->setCell(it.first[0], it.first[1], it.second);
+      colorMap->data()->setCell(it.first[0], it.first[1], it.second.convert_to<double>());
     colorMap->rescaleDataRange(true);
     ui->coincPlot->updateGeometry();
   } else {

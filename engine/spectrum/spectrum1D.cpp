@@ -54,7 +54,7 @@ void Spectrum1D::_set_detectors(const std::vector<Gamma::Detector>& dets) {
   this->recalc_energies();
 }
 
-uint64_t Spectrum1D::_get_count(std::initializer_list<uint16_t> list) const {
+PreciseFloat Spectrum1D::_get_count(std::initializer_list<uint16_t> list) const {
   if (list.size() != 1)
     return 0;
   
@@ -95,14 +95,21 @@ void Spectrum1D::_add_bulk(const Entry& e) {
     sz = e.first.size();
   for (int i = 0; i < sz; ++i)
     if (metadata_.add_pattern[i] && (e.first[i] < spectrum_.size())) {
-      spectrum_[e.first[i]] += e.second;
+      PreciseFloat nr = (spectrum_[e.first[i]] += e.second);
+
+      if (nr > metadata_.max_count)
+        metadata_.max_count = nr;
+
       metadata_.total_count += e.second;
     }
 }
 
 void Spectrum1D::addHit(const Hit& newHit) {
   uint16_t en = newHit.energy >> shift_by_;
-  spectrum_[en]++;
+  PreciseFloat nr = ++spectrum_[en];
+  if (nr > metadata_.max_count)
+    metadata_.max_count = nr;
+
   if (en > metadata_.max_chan)
     metadata_.max_chan = en;
   metadata_.total_count++;
@@ -159,14 +166,14 @@ void Spectrum1D::init_from_file(std::string filename) {
 std::string Spectrum1D::_channels_to_xml() const {
   std::stringstream channeldata;
 
-  uint64_t z_count = 0;
+  PreciseFloat z_count = 0;
   for (uint32_t i = 0; i < metadata_.resolution; i++)
     if (spectrum_[i])
       if (z_count == 0)
-        channeldata << spectrum_[i] << " ";
+        channeldata << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << spectrum_[i] << " ";
       else {
         channeldata << "0 " << z_count << " "
-                    << spectrum_[i] << " ";
+                    << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << spectrum_[i] << " ";
         z_count = 0;
       }
     else
@@ -182,15 +189,20 @@ uint16_t Spectrum1D::_channels_from_xml(const std::string& thisData){
   spectrum_.clear();
   spectrum_.resize(metadata_.resolution, 0);
 
-  uint64_t i = 0;
+  metadata_.max_count = 0;
+
+  uint16_t i = 0;
   std::string numero, numero_z;
   while (channeldata.rdbuf()->in_avail()) {
     channeldata >> numero;
     if (numero == "0") {
       channeldata >> numero_z;
-      i += boost::lexical_cast<uint64_t>(numero_z);
+      i += boost::lexical_cast<uint16_t>(numero_z);
     } else {
-      spectrum_[i] = boost::lexical_cast<uint64_t>(numero);
+      PreciseFloat nr(numero);
+      spectrum_[i] = nr;
+      if (nr > metadata_.max_count)
+        metadata_.max_count = nr;
       i++;
     }
   }
@@ -203,18 +215,20 @@ bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compressio
   std::list<Entry> entry_list;
 
   int i = 0;
+
   std::string numero, numero_z;
   if (compression) {
     while (data_stream.rdbuf()->in_avail()) {
       data_stream >> numero;
       if (numero == "0") {
         data_stream >> numero_z;
-        i += boost::lexical_cast<uint64_t>(numero_z);
+        i += boost::lexical_cast<uint16_t>(numero_z);
       } else {
         Entry new_entry;
         new_entry.first.resize(1);
         new_entry.first[0] = i;
-        new_entry.second = boost::lexical_cast<uint64_t>(numero);
+        PreciseFloat nr(numero);
+        new_entry.second = nr;
         entry_list.push_back(new_entry);
         i++;
       }
@@ -225,7 +239,8 @@ bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compressio
       Entry new_entry;
       new_entry.first.resize(1);
       new_entry.first[0] = i;
-      new_entry.second = boost::lexical_cast<uint64_t>(numero);
+      PreciseFloat nr(numero);
+      new_entry.second = nr;
       entry_list.push_back(new_entry);
       i++;
     }
@@ -243,10 +258,14 @@ bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compressio
 
   spectrum_.clear();
   spectrum_.resize(metadata_.resolution, 0);
+  metadata_.max_count = 0;
       
   for (auto &q : entry_list) {
     spectrum_[q.first[0]] = q.second;
     metadata_.total_count += q.second;
+    if (q.second > metadata_.max_count)
+      metadata_.max_count = q.second;
+
   }
 
   return true;
@@ -298,6 +317,7 @@ bool Spectrum1D::read_cnf(std::string name) {
     //metadata_.resolution = pow(2, metadata_.bits);
     spectrum_.resize(metadata_.resolution, 0);
     shift_by_ = 16 - metadata_.bits;
+    metadata_.max_count = 0;
 
     metadata_.detectors.resize(1);
     metadata_.detectors[0] = Gamma::Detector();
@@ -311,8 +331,13 @@ bool Spectrum1D::read_cnf(std::string name) {
       //std::stringstream blab;
       for (int k = 0; k < newdata->get_block(i)->get_point_count(); k++) {
         double data = newdata->get_block(i)->get_column(j).get_value(k);
+        PreciseFloat nr(data);
 
-        spectrum_[k] = static_cast<uint64_t>(round(data));
+        spectrum_[k] = PreciseFloat(data);
+
+        if (nr > metadata_.max_count)
+          metadata_.max_count = nr;
+
         //blab << data << " ";
         tempcount += data;
       }

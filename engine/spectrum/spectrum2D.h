@@ -65,7 +65,7 @@ public:
   }
   
 protected:
-  typedef std::map<std::pair<uint16_t,uint16_t>, uint64_t> SpectrumMap2D;
+  typedef std::map<std::pair<uint16_t,uint16_t>, PreciseFloat> SpectrumMap2D;
   
   bool initialize() override;
   void init_from_file(std::string filename);
@@ -73,7 +73,7 @@ protected:
   std::string my_type() const override {return "2D";}
   XMLableDB<Gamma::Setting> default_settings() const override {return this->get_template().generic_attributes; }
 
-  uint64_t _get_count(std::initializer_list<uint16_t> list ) const;
+  PreciseFloat _get_count(std::initializer_list<uint16_t> list ) const;
   std::unique_ptr<EntryList> _get_spectrum(std::initializer_list<Pair> list);
   void _set_detectors(const std::vector<Gamma::Detector>& dets) override;
 

@@ -103,6 +103,7 @@ void dialog_spectrum::updateData() {
   ui->patternAdd->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(md_.add_pattern), 25, false, 16));
   ui->patternMatch->setMinimumSize(ui->patternMatch->sizeHint());
   ui->patternAdd->setMinimumSize(ui->patternAdd->sizeHint());
+  ui->doubleRescaleFactor->setValue(md_.rescale_factor.convert_to<double>());
 
   ui->durationLive->set_total_seconds(md_.live_time.total_seconds());
   ui->durationReal->set_total_seconds(md_.real_time.total_seconds());
@@ -272,4 +273,11 @@ void dialog_spectrum::on_pushAnalyse_clicked()
 {
   emit analyse();
   accept();
+}
+
+void dialog_spectrum::on_doubleRescaleFactor_valueChanged(double arg1)
+{
+  my_spectrum_.set_rescale_factor(PreciseFloat(arg1));
+  changed_ = true;
+  updateData();
 }

@@ -31,7 +31,7 @@
 namespace Qpx {
 namespace Spectrum {
 
-uint64_t Spectrum::get_count(std::initializer_list<uint16_t> list ) const {
+PreciseFloat Spectrum::get_count(std::initializer_list<uint16_t> list ) const {
   boost::shared_lock<boost::shared_mutex> lock(mutex_);
   if (list.size() != this->metadata_.dimensions)
     return 0;
@@ -382,6 +382,15 @@ void Spectrum::set_generic_attr(Gamma::Setting setting) {
       q = setting;
   }
 }
+
+void Spectrum::set_rescale_factor(PreciseFloat newfactor) {
+  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+  while (!uniqueLock.try_lock())
+    boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  metadata_.rescale_factor = newfactor;
+}
+
+
 
 
 

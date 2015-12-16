@@ -110,7 +110,7 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
     time1_ = time2_;
   
     count_total_ += fast_peaks_compensated;
-    metadata_.total_count = count_total_.convert_to<uint64_t>();
+    metadata_.total_count = count_total_;
 
     PL_DBG << "<SpectrumLFC1D> '" << metadata_.name << "' update chan[" << my_channel_ << "]"
            << " fast_peaks_compensated=" << fast_peaks_compensated
@@ -119,7 +119,7 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
     for (uint32_t i = 0; i < metadata_.resolution; i++) {
       channels_all_[i] += fast_peaks_compensated * channels_run_[i] / count_current_;
       if (channels_all_[i] > 0.0)
-        spectrum_[i] = channels_all_[i].convert_to<uint64_t>();
+        spectrum_[i] = channels_all_[i];
       channels_run_[i] = 0.0;
     }
     metadata_.live_time = metadata_.real_time; //think about this...
@@ -127,9 +127,9 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
   } else {
     for (uint32_t i = 0; i < metadata_.resolution; i++) {
       if ((channels_run_[i] > 0.0) || (channels_all_[i] > 0.0))
-        spectrum_[i] = channels_run_[i].convert_to<uint64_t>() + channels_all_[i].convert_to<uint64_t>();
+        spectrum_[i] = channels_run_[i] + channels_all_[i].convert_to<uint64_t>();
     }
-    metadata_.total_count += count_current_.convert_to<uint64_t>();
+    metadata_.total_count += count_current_;
     time2_ = newStats;
   }
 }

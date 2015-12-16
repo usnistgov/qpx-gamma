@@ -77,7 +77,7 @@ protected:
   //1D is ok with all patterns
   bool initialize() override;
 
-  uint64_t _get_count(std::initializer_list<uint16_t> list) const {return 0;}
+  PreciseFloat _get_count(std::initializer_list<uint16_t> list) const {return 0;}
   std::unique_ptr<std::list<Entry>> _get_spectrum(std::initializer_list<Pair> list);
 
   //event processing

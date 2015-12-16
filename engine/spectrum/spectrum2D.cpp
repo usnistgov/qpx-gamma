@@ -110,7 +110,7 @@ void Spectrum2D::_add_bulk(const Entry& e) {
   }
 }
 
-uint64_t Spectrum2D::_get_count(std::initializer_list<uint16_t> list) const {
+PreciseFloat Spectrum2D::_get_count(std::initializer_list<uint16_t> list) const {
   if (list.size() != 2)
     return 0;
 
@@ -178,8 +178,8 @@ std::unique_ptr<EntryList> Spectrum2D::_get_spectrum(std::initializer_list<Pair>
 }
 
 void Spectrum2D::addEvent(const Event& newEvent) {
-  uint64_t chan1_en = 0;
-  uint64_t chan2_en = 0;
+  uint16_t chan1_en = 0;
+  uint16_t chan2_en = 0;
   if (newEvent.hit.count(pattern_[0]))
     chan1_en = newEvent.hit.at(pattern_[0]).energy >> shift_by_;
   if (newEvent.hit.count(pattern_[1]))
@@ -374,7 +374,7 @@ std::string Spectrum2D::_channels_to_xml() const {
     }
     if (this_j > j)
       channeldata << "0 " << (this_j - j) << " ";
-    channeldata << it->second  <<  " ";
+    channeldata << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << it->second  <<  " ";
     j = this_j + 1;
   }  
   return channeldata.str();
@@ -387,21 +387,21 @@ uint16_t Spectrum2D::_channels_from_xml(const std::string& thisData){
   spectrum_.clear();
   metadata_.max_chan = 0;
 
-  uint64_t i = 0, j = 0, max_i = 0;
+  uint16_t i = 0, j = 0, max_i = 0;
   std::string numero, numero_z;
   while (channeldata.rdbuf()->in_avail()) {
     channeldata >> numero;
     if (numero == "+") {
       channeldata >> numero_z;
       if (j > metadata_.max_chan) metadata_.max_chan = j;
-      i += boost::lexical_cast<uint64_t>(numero_z);
+      i += boost::lexical_cast<uint16_t>(numero_z);
       j=0;
       if (j) max_i = i;
     } else if (numero == "0") {
       channeldata >> numero_z;
-      j += boost::lexical_cast<uint64_t>(numero_z);
+      j += boost::lexical_cast<uint16_t>(numero_z);
     } else {
-      spectrum_[std::pair<uint16_t, uint16_t>(i,j)] = boost::lexical_cast<uint64_t>(numero);
+      spectrum_[std::pair<uint16_t, uint16_t>(i,j)] = boost::lexical_cast<PreciseFloat>(numero);
       j++;
     }
   }

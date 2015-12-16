@@ -55,7 +55,7 @@ protected:
     return true;
   }
 
-  uint64_t _get_count(std::initializer_list<uint16_t> list) const;
+  PreciseFloat _get_count(std::initializer_list<uint16_t> list) const;
   std::unique_ptr<std::list<Entry>> _get_spectrum(std::initializer_list<Pair> list);
   void _add_bulk(const Entry&) override;
   void _set_detectors(const std::vector<Gamma::Detector>& dets) override;
@@ -84,7 +84,7 @@ protected:
   bool read_ava(std::string);
   bool read_spe(std::string);
 
-  std::vector<uint64_t> spectrum_;
+  std::vector<PreciseFloat> spectrum_;
 };
 
 }}

@@ -80,6 +80,12 @@ private slots:
 
   void on_pushRandAll_clicked();
 
+  void on_pushPerLive_clicked();
+
+  void on_pushRescaleToThisMax_clicked();
+
+  void on_pushRescaleReset_clicked();
+
 private:
 
   Ui::FormPlot1D *ui;

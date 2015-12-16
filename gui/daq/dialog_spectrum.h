@@ -67,6 +67,8 @@ private slots:
 
     void on_pushAnalyse_clicked();
 
+    void on_doubleRescaleFactor_valueChanged(double arg1);
+
 signals:
     void finished(bool);
     void delete_spectrum();

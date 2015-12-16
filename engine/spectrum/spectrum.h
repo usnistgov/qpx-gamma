@@ -44,12 +44,12 @@
 #include "custom_logger.h"
 
 //put this somewhere else?
-typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<15> > PreciseFloat;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<16> > PreciseFloat;
 
 namespace Qpx {
 namespace Spectrum {
 
-typedef std::pair<std::vector<uint16_t>, uint64_t> Entry;
+typedef std::pair<std::vector<uint16_t>, PreciseFloat> Entry;
 typedef std::list<Entry> EntryList;
 typedef std::pair<uint32_t, uint32_t> Pair;
 
@@ -63,13 +63,16 @@ struct Metadata {
   std::vector<int16_t> match_pattern, add_pattern;
   XMLableDB<Gamma::Setting> attributes;
   PreciseFloat total_count;
-  uint64_t     max_chan;
+  uint16_t     max_chan;
+  PreciseFloat max_count;
+  PreciseFloat rescale_factor;
+
   boost::posix_time::time_duration real_time ,live_time;
   boost::posix_time::ptime  start_time;
   std::vector<Gamma::Detector> detectors;
 
  Metadata() : bits(0), dimensions(0), resolution(0), attributes("Attributes"),
-    name("uninitialized_spectrum"), total_count(0.0), max_chan(0),
+    name("uninitialized_spectrum"), total_count(0.0), max_chan(0), max_count(0), rescale_factor(1),
     appearance(0), visible(false) {}
 };
 
@@ -88,7 +91,7 @@ public:
   //get count for specific MCA channel in spectrum
   //list takes as many parameters as there are dimensions
   //implemented in children by _get_count
-  uint64_t get_count(std::initializer_list<uint16_t> list = {}) const;
+  PreciseFloat get_count(std::initializer_list<uint16_t> list = {}) const;
   
   //optimized retrieval of whole spectrum as list of Entries (typedef above)
   //parameters take dimensions_ number of ranges of minimum (inclusive) and maximum (exclusive)
@@ -136,6 +139,7 @@ public:
   void set_generic_attr(Gamma::Setting setting);
   void set_real_time(boost::posix_time::time_duration);
   void set_live_time(boost::posix_time::time_duration);
+  void set_rescale_factor(PreciseFloat);
 
 protected:
   ////////////////////////////////////////
@@ -150,7 +154,7 @@ protected:
   virtual bool _write_file(std::string, std::string) const {return false;}
   virtual bool _read_file(std::string, std::string) {return false;}
 
-  virtual uint64_t _get_count(std::initializer_list<uint16_t>) const = 0;
+  virtual PreciseFloat _get_count(std::initializer_list<uint16_t>) const = 0;
   virtual std::unique_ptr<std::list<Entry>> _get_spectrum(std::initializer_list<Pair>) = 0;
   virtual void _add_bulk(const Entry&) {}
 

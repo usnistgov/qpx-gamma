@@ -62,7 +62,7 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
         go = true;
       if (go) {
         x_.push_back(static_cast<double>(i));
-        y_.push_back(it.second);
+        y_.push_back(it.second.convert_to<double>());
         if (it.second > 0)
           x_bound = j+1;
         j++;

@@ -80,11 +80,15 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   ui->pushShowAll->setEnabled(spectraSelector->items().size());
   ui->pushHideAll->setEnabled(spectraSelector->items().size());
   ui->pushRandAll->setEnabled(spectraSelector->items().size());
+  ui->pushRescaleReset->setEnabled(spectraSelector->items().size());
 
   QString id = spectraSelector->selected().text;
   Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(id.toStdString());
 
   Qpx::Spectrum::Metadata md;
+
+  ui->pushRescaleToThisMax->setEnabled(someSpectrum);
+
   if (someSpectrum)
     md = someSpectrum->metadata();
 
@@ -169,6 +173,9 @@ void FormPlot1D::update_plot() {
     if (q)
       md = q->metadata();
 
+    double livetime = md.live_time.total_milliseconds() / 0.001;
+    double rescale  = md.rescale_factor.convert_to<double>();
+
     if (md.visible && (md.resolution > 0) && (md.total_count > 0)) {
 
       QVector<double> y(md.resolution);
@@ -188,7 +195,9 @@ void FormPlot1D::update_plot() {
       int i = 0;
       for (auto it : *spectrum_data) {
         double xx = energies[i];
-        double yy = it.second;
+        double yy = it.second.convert_to<double>() * rescale;
+        if (ui->pushPerLive->isChecked() && (livetime > 0))
+          yy = yy / livetime;
         y[it.first[0]] = yy;
         if (!minima.count(xx) || (minima[energies[i]] > yy))
           minima[xx] = yy;
@@ -356,4 +365,52 @@ void FormPlot1D::on_pushRandAll_clicked()
 
   updateUI();
 //  mySpectra->activate();
+}
+
+void FormPlot1D::on_pushPerLive_clicked()
+{
+  update_plot();
+}
+
+void FormPlot1D::on_pushRescaleToThisMax_clicked()
+{
+  QString id = spectraSelector->selected().text;
+  Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(id.toStdString());
+
+  Qpx::Spectrum::Metadata md;
+
+  if (someSpectrum)
+    md = someSpectrum->metadata();
+
+  if (id.isEmpty() || (someSpectrum == nullptr))
+    return;
+
+  PreciseFloat max = md.max_count;
+  if (moving.visible)
+    max = someSpectrum->get_count({std::round(moving.pos.bin(md.bits))});
+
+  if (max == 0)
+    return;
+
+  for (auto &q: mySpectra->spectra(1, -1))
+    if (q) {
+      Qpx::Spectrum::Metadata mdt = q->metadata();
+      PreciseFloat mc = mdt.max_count;
+      if (moving.visible)
+        mc = q->get_count({std::round(moving.pos.bin(mdt.bits))});
+
+      if (mc != 0)
+        q->set_rescale_factor(max / mc);
+      else
+        q->set_rescale_factor(0);
+    }
+  update_plot();
+}
+
+void FormPlot1D::on_pushRescaleReset_clicked()
+{
+  for (auto &q: mySpectra->spectra(1, -1))
+    if (q)
+      q->set_rescale_factor(1);
+  update_plot();
 }
