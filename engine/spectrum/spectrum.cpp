@@ -168,20 +168,25 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
   if ((newBlock.channel >= 0) && (newBlock.channel < metadata_.add_pattern.size()) && (metadata_.add_pattern[newBlock.channel])) {
     //PL_DBG << "Spectrum " << metadata_.name << " received update for chan " << newBlock.channel;
     if (start_stats.count(newBlock.channel) == 0) {
-      //PL_DBG << "initial stats";
+      //      PL_DBG << "initial stats rt " << newBlock.lab_time << " lt " << newBlock.live_time;
       start_stats[newBlock.channel] = newBlock;
     } else {
-      //PL_DBG << "update stats";
       metadata_.real_time   = newBlock.lab_time - start_stats[newBlock.channel].lab_time;
+      //      PL_DBG << "update stats rt " << newBlock.lab_time  << " - " << start_stats[newBlock.channel].lab_time << " = " << metadata_.real_time;
       StatsUpdate diff = newBlock - start_stats[newBlock.channel];
       if (!diff.total_time)
         return;
       double scale_factor = metadata_.real_time.total_microseconds() / 1000000 / diff.total_time;
 
+      //      PL_DBG << "update stats scalefactor " << scale_factor;
+
       metadata_.live_time = metadata_.real_time;
       double this_time_unscaled = diff.live_time - diff.sfdt;
+
+      //      PL_DBG << "update stats lt " << diff.live_time  << " sfdt " << diff.sfdt;
+
       if (this_time_unscaled < metadata_.live_time.total_seconds()) {
-        //PL_DBG << "really update stats";
+        //        PL_DBG << "really update stats";
         metadata_.live_time = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));
       }
     }

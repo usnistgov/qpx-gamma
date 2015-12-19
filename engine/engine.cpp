@@ -588,7 +588,6 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
   Spill* in_spill;
   Spill* out_spill;
   while (true) {
-
     in_spill = data_queue->dequeue();
     if (in_spill != nullptr) {
       for (auto &q : in_spill->stats) {
@@ -609,6 +608,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
 
     bool empty = false;
     while (!empty) {
+
       out_spill = new Spill;
 
       empty = queue_status.empty();
@@ -623,10 +623,16 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
                 queue_status[q.channel] = 2;
             }
         }
-        for (auto q : queue_status)
-          if (q == 1)
-            empty = true;
+      } else {
+        for (auto &q : queue_status)
+          if (q != 0)
+            q = 2;        
       }
+
+      for (auto q : queue_status)
+        if (q == 1)
+          empty = true;
+
 
       while (!empty) {
         Hit oldest;
@@ -645,10 +651,13 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
               break;
             }
         }
+        if (current_spills.empty())
+          empty = true;
       }
 
       bool noempties = false;
       while (!noempties) {
+
         noempties = true;
         for (auto i = current_spills.begin(); i != current_spills.end(); i++)
           if ((*i)->hits.empty()) {
@@ -657,7 +666,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
             out_spill->stats = (*i)->stats;
             out_spill->run = (*i)->run;
             spectra->add_spill(out_spill);
-            PL_DBG << "enqueued some spill n=" << out_spill->spill_number;
+            //            PL_DBG << "enqueued some spill n=" << out_spill->spill_number;
 
             delete (*i);
             current_spills.erase(i);
@@ -674,6 +683,8 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
     if ((in_spill == nullptr) && current_spills.empty())
       break;
   }
+
+  PL_DBG << "<Engine> Spectra builder thread terminating";
 
   spectra->closeAcquisition();
 }
