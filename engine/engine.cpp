@@ -671,7 +671,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
       delete out_spill;
     }
 
-    if ((in_spill != nullptr) && current_spills.empty())
+    if ((in_spill == nullptr) && current_spills.empty())
       break;
   }
 

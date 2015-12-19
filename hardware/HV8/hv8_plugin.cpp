@@ -40,6 +40,7 @@ QpxHV8Plugin::QpxHV8Plugin()
   , flowcontrol(boost::asio::serial_port_base::flow_control::none)
 {
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
+  voltages.resize(8);
 }
 
 
@@ -52,16 +53,9 @@ bool QpxHV8Plugin::read_settings_bulk(Gamma::Setting &set) const {
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
       if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "HV8/Channels")) {
-        //PL_DBG << "reading VME/IsegVHS";
-        int modnum = 0;
         for (auto &k : q.branches.my_data_) {
-          if (k.metadata.setting_type == Gamma::SettingType::floating)
-            k.value_dbl = k.metadata.address * 0.1;// channel_parameter_values_[k.metadata.address + modnum];
-          else if ((k.metadata.setting_type == Gamma::SettingType::integer)
-                   || (k.metadata.setting_type == Gamma::SettingType::boolean)
-                   || (k.metadata.setting_type == Gamma::SettingType::int_menu)
-                   || (k.metadata.setting_type == Gamma::SettingType::binary))
-            k.value_int = k.metadata.address; //channel_parameter_values_[k.metadata.address + modnum];
+          if ((k.metadata.setting_type == Gamma::SettingType::floating) && (k.metadata.address < voltages.size()))
+            k.value_dbl = voltages[k.metadata.address];
         }
       } else {
         //q.metadata.writable = !(status_ & DeviceStatus::booted);
@@ -119,14 +113,8 @@ bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
       //PL_DBG << "writing VME/IsegVHS";
       int modnum = 0;
       for (auto &k : q.branches.my_data_) {
-        if (k.metadata.setting_type == Gamma::SettingType::floating) {
+        if ((k.metadata.setting_type == Gamma::SettingType::floating) && (k.metadata.address < voltages.size())) {
          // k.value_dbl = k.metadata.address * 0.1;// channel_parameter_values_[k.metadata.address + modnum];
-        }
-        else if ((k.metadata.setting_type == Gamma::SettingType::integer)
-                 || (k.metadata.setting_type == Gamma::SettingType::boolean)
-                 || (k.metadata.setting_type == Gamma::SettingType::int_menu)
-                 || (k.metadata.setting_type == Gamma::SettingType::binary)) {
-         // k.value_int = k.metadata.address; //channel_parameter_values_[k.metadata.address + modnum];
         }
       }
     }
@@ -205,7 +193,7 @@ bool QpxHV8Plugin::boot() noexcept(false) {
     if (!logged) {
 
       success = false;
-      for (int i=0; i < 10; ++i) {
+      for (int i=0; i < attempts; ++i) {
 //        boost::this_thread::sleep(boost::posix_time::seconds(1));
         port.writeString("L\r");
 
@@ -231,7 +219,7 @@ bool QpxHV8Plugin::boot() noexcept(false) {
 //        port.send((void*) &c, 1);
 //        boost::this_thread::sleep(boost::posix_time::seconds(1));
 
-        for (int i=0; i < 10; ++i) {
+        for (int i=0; i < attempts; ++i) {
 //          boost::this_thread::sleep(boost::posix_time::seconds(1));
           port.writeString("HV8\r");
           std::string line;
@@ -271,6 +259,87 @@ bool QpxHV8Plugin::die() {
 }
 
 void QpxHV8Plugin::get_all_settings() {
+  int attempts = 5;
+
+  if (!port.isOpen()) {
+    PL_DBG << "<HV8Plugin> cannot read settings. Serial port is not open";
+    return;
+  }
+
+  bool logged = false;
+  for (int i=0; i < attempts; ++i) {
+    port.writeString("\r");
+    std::string line;
+    try { line = port.readStringUntil(">"); }
+    catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
+    boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
+
+    if (line == "+>") {
+      PL_DBG << "logged in";
+      logged = true;
+      break;
+    }
+  }
+
+  if (!logged) {
+    PL_DBG << "<HV8Plugin> cannot read settings. Not logged into HV8";
+    return;
+  }
+
+
+  bool success = false;
+  std::vector<std::string> tokens;
+  for (int i=0; i < attempts; ++i) {
+//        boost::this_thread::sleep(boost::posix_time::seconds(1));
+
+    if (tokens.size() < 3) {
+      port.writeString("R\r");
+      boost::this_thread::sleep(boost::posix_time::seconds(0.2));
+      port.writeString("\r");
+    }
+
+    std::string line;
+
+    try { line = port.readStringUntil(">"); }
+    catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
+
+    PL_DBG << "will tokenize: " << line << "<end>";
+    boost::algorithm::split(tokens, line, boost::algorithm::is_any_of("\r\n"));
+
+    for (auto &q : tokens) {
+      PL_DBG << "token: " << q;
+    }
+
+    PL_DBG << "tokenized size = " << tokens.size();
+    if (tokens.size() > 6) {
+      success = true;
+      break;
+    }
+  }
+
+  if (success) {
+    for (auto &q : tokens) {
+      boost::algorithm::trim_if(q, boost::algorithm::is_any_of("\r\n\t "));
+
+      PL_DBG << "tokenizing " << q;
+      std::vector<std::string> tokens2;
+      boost::algorithm::split(tokens2, q, boost::algorithm::is_any_of("\t "));
+      if (tokens2.size() > 2) {
+
+
+        PL_DBG << "tokens2 size " << tokens2.size();
+        for (auto &q : tokens2) {
+          PL_DBG << " token: " << q;
+        }
+        int chan = boost::lexical_cast<int>(tokens2[0]);
+        double voltage = boost::lexical_cast<double>(tokens2[3]);
+        PL_DBG << "Voltage for chan " << chan << " reported as " << voltage;
+        if ((chan >= 0) && (chan < voltages.size()))
+          voltages[chan] = voltage;
+      }
+    }
+  }
+
 }
 
 

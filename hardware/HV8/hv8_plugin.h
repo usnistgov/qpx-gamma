@@ -67,6 +67,8 @@ protected:
   boost::asio::serial_port_base::flow_control flowcontrol;
 
   std::string controller_name_;
+
+  std::vector<double> voltages;
 };
 
 
