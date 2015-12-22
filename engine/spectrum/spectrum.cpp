@@ -162,18 +162,21 @@ bool Spectrum::validateEvent(const Event& newEvent) const {
   return addit;
 }
 
+std::map<int, std::list<StatsUpdate>> Spectrum::get_stats() {
+  return stats_list_;
+}
+
+
 void Spectrum::addStats(const StatsUpdate& newBlock) {
   //private; no lock required
 
   if ((newBlock.channel >= 0) && (newBlock.channel < metadata_.add_pattern.size()) && (metadata_.add_pattern[newBlock.channel])) {
     //PL_DBG << "Spectrum " << metadata_.name << " received update for chan " << newBlock.channel;
-    if (start_stats.count(newBlock.channel) == 0) {
-      //      PL_DBG << "initial stats rt " << newBlock.lab_time << " lt " << newBlock.live_time;
-      start_stats[newBlock.channel] = newBlock;
-    } else {
-      metadata_.real_time   = newBlock.lab_time - start_stats[newBlock.channel].lab_time;
+    bool chan_new = (stats_list_.count(newBlock.channel) == 0);
+    if (!chan_new) {
+      metadata_.real_time   = newBlock.lab_time - stats_list_[newBlock.channel].front().lab_time;
       //      PL_DBG << "update stats rt " << newBlock.lab_time  << " - " << start_stats[newBlock.channel].lab_time << " = " << metadata_.real_time;
-      StatsUpdate diff = newBlock - start_stats[newBlock.channel];
+      StatsUpdate diff = newBlock - stats_list_[newBlock.channel].front();
       if (!diff.total_time)
         return;
       double scale_factor = metadata_.real_time.total_microseconds() / 1000000 / diff.total_time;
@@ -190,6 +193,8 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
         metadata_.live_time = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));
       }
     }
+    stats_list_[newBlock.channel].push_back(newBlock);
+
   }
 }
 

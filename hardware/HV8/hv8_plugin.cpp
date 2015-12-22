@@ -114,6 +114,8 @@ bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
       int modnum = 0;
       for (auto &k : q.branches.my_data_) {
         if ((k.metadata.setting_type == Gamma::SettingType::floating) && (k.metadata.address < voltages.size())) {
+          if (k.value_dbl != voltages[k.metadata.address])
+            set_voltage(k.metadata.address, k.value_dbl);
          // k.value_dbl = k.metadata.address * 0.1;// channel_parameter_values_[k.metadata.address + modnum];
         }
       }
@@ -121,6 +123,97 @@ bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
   }
   return true;
 }
+
+void QpxHV8Plugin::set_voltage(int chan, double voltage) {
+  PL_DBG << "<HV8Plugin> Set voltage " << chan << " to " << voltage;
+  int attempts = 5;
+
+  if (!port.isOpen()) {
+    PL_DBG << "<HV8Plugin> cannot read settings. Serial port is not open";
+    return;
+  }
+
+  bool logged = false;
+  for (int i=0; i < attempts; ++i) {
+    port.writeString("\r");
+    std::string line;
+    try { line = port.readStringUntil(">"); }
+    catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
+    boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
+
+    if (line == "+>") {
+      PL_DBG << "logged in";
+      logged = true;
+      break;
+    }
+  }
+
+  if (!logged) {
+    PL_DBG << "<HV8Plugin> cannot write settings. Not logged into HV8";
+    return;
+  } else
+    PL_DBG << "<HV8Plugin> Logged into HV8. Proceed with write setting";
+
+
+  bool success = false;
+  std::vector<std::string> tokens;
+  for (int i=0; i < attempts; ++i) {
+//        boost::this_thread::sleep(boost::posix_time::seconds(1));
+
+    std::string line;
+
+    try { line = port.readStringUntil(">"); }
+    catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
+    boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
+
+
+    if (line == "+>") {
+      std::stringstream ss;
+      ss << "S " << chan << "\r";
+      PL_DBG << "Will write " << ss.str();
+      port.writeString(ss.str());
+      boost::this_thread::sleep(boost::posix_time::seconds(0.2));
+
+      try { line = port.readStringUntil(">"); }
+      catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
+      PL_DBG << "Output after write " << line;
+      boost::algorithm::split(tokens, line, boost::algorithm::is_any_of("\r\n\t "));
+      if (!tokens.empty() && (tokens[tokens.size() - 1] == "+>"))
+        success = true;
+
+      if (success) {
+      std::stringstream ss2;
+      ss2 << "V " << voltage << "\r";
+      PL_DBG << "Will write " << ss2.str();
+      port.writeString(ss2.str());
+      boost::this_thread::sleep(boost::posix_time::seconds(0.2));
+
+      try { line = port.readStringUntil(">"); }
+      catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
+      PL_DBG << "Output after write " << line;
+      tokens.clear();
+      boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
+      boost::algorithm::split(tokens, line, boost::algorithm::is_any_of("\r\n\t "));
+      if (!tokens.empty() && (tokens[tokens.size() - 1] == "+>"))
+        success = true;
+      else
+        success = false;
+      }
+
+    }
+
+
+    if (success)
+      break;
+
+
+    PL_DBG << "will tokenize: " << line << "<end>";
+    boost::algorithm::split(tokens, line, boost::algorithm::is_any_of("\r\n"));
+  }
+
+
+}
+
 
 bool QpxHV8Plugin::execute_command(Gamma::Setting &set) {
   if (!(status_ & DeviceStatus::can_exec))
@@ -320,6 +413,8 @@ void QpxHV8Plugin::get_all_settings() {
   if (success) {
     for (auto &q : tokens) {
       boost::algorithm::trim_if(q, boost::algorithm::is_any_of("\r\n\t "));
+      q.erase(std::unique(q.begin(), q.end(),
+            [](char a, char b) { return a == ' ' && b == ' '; } ), q.end() );
 
       PL_DBG << "tokenizing " << q;
       std::vector<std::string> tokens2;
@@ -332,7 +427,7 @@ void QpxHV8Plugin::get_all_settings() {
           PL_DBG << " token: " << q;
         }
         int chan = boost::lexical_cast<int>(tokens2[0]);
-        double voltage = boost::lexical_cast<double>(tokens2[3]);
+        double voltage = boost::lexical_cast<double>(tokens2[1]);
         PL_DBG << "Voltage for chan " << chan << " reported as " << voltage;
         if ((chan >= 0) && (chan < voltages.size()))
           voltages[chan] = voltage;

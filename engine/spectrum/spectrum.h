@@ -131,6 +131,8 @@ public:
   uint16_t bits() const;
   uint32_t resolution() const;
 
+  std::map<int, std::list<StatsUpdate>> get_stats();
+
   //change properties - use carefully...
   void set_visible(bool);
   void set_appearance(uint32_t newapp);
@@ -187,7 +189,7 @@ protected:
 
   //std::vector<std::vector<double> > energies_;
   
-  std::map<int, StatsUpdate> start_stats;
+  std::map<int, std::list<StatsUpdate>> stats_list_;
   std::list<Event> backlog;
 };
 

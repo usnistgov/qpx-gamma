@@ -53,6 +53,8 @@ private:
   void operator=(QpxHV8Plugin const&);
   QpxHV8Plugin(const QpxHV8Plugin&);
 
+  void set_voltage(int, double);
+
 protected:
 
   void rebuild_structure(Gamma::Setting &set);
