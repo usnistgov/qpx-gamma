@@ -74,3 +74,5 @@ FORMS   += $$files($$PWD/*.ui) \
            $$files($$PWD/daq/*.ui)
 
 RESOURCES += $$files($$PWD/resources/*.qrc)
+
+DISTFILES +=

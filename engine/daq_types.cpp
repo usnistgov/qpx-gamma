@@ -103,6 +103,8 @@ StatsUpdate StatsUpdate::operator-(const StatsUpdate other) const {
 }
 
 bool StatsUpdate::operator==(const StatsUpdate other) const {
+  if (stats_type != other.stats_type)
+    return false;
   if (channel != other.channel)
     return false;
   if (total_time != other.total_time)

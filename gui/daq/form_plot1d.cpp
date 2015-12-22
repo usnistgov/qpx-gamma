@@ -23,9 +23,11 @@
 #include "ui_form_plot1d.h"
 #include "dialog_spectrum.h"
 #include "custom_timer.h"
+#include "form_manip1d.h"
 
 FormPlot1D::FormPlot1D(QWidget *parent) :
   QWidget(parent),
+  detectors_(nullptr),
   ui(new Ui::FormPlot1D)
 {
   ui->setupUi(this);
@@ -57,6 +59,11 @@ FormPlot1D::~FormPlot1D()
   delete ui;
 }
 
+void FormPlot1D::setDetDB(XMLableDB<Gamma::Detector>& detDB) {
+  detectors_ = &detDB;
+}
+
+
 void FormPlot1D::setSpectra(Qpx::SpectraSet& new_set) {
   mySpectra = &new_set;
   updateUI();
@@ -80,6 +87,7 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   ui->pushShowAll->setEnabled(spectraSelector->items().size());
   ui->pushHideAll->setEnabled(spectraSelector->items().size());
   ui->pushRandAll->setEnabled(spectraSelector->items().size());
+  ui->pushManip1D->setEnabled(spectraSelector->items().size());
   ui->pushRescaleReset->setEnabled(spectraSelector->items().size());
 
   QString id = spectraSelector->selected().text;
@@ -178,11 +186,11 @@ void FormPlot1D::update_plot() {
 
     if (md.visible && (md.resolution > 0) && (md.total_count > 0)) {
 
+      QVector<double> x(md.resolution);
       QVector<double> y(md.resolution);
 
       std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
           std::move(q->get_spectrum({{0, y.size()}}));
-      std::vector<double> energies = q->energies(0);
 
       Gamma::Detector detector = Gamma::Detector();
       if (!md.detectors.empty())
@@ -194,21 +202,22 @@ void FormPlot1D::update_plot() {
 
       int i = 0;
       for (auto it : *spectrum_data) {
-        double xx = energies[i];
+        double xx = temp_calib.transform(i, md.bits);
         double yy = it.second.convert_to<double>() * rescale;
         if (ui->pushPerLive->isChecked() && (livetime > 0))
           yy = yy / livetime;
+        x[it.first[0]] = xx;
         y[it.first[0]] = yy;
-        if (!minima.count(xx) || (minima[energies[i]] > yy))
+        if (!minima.count(xx) || (minima[xx] > yy))
           minima[xx] = yy;
-        if (!maxima.count(xx) || (maxima[energies[i]] < yy))
+        if (!maxima.count(xx) || (maxima[xx] < yy))
           maxima[xx] = yy;
         ++i;
       }
 
       AppearanceProfile profile;
       profile.default_pen = QPen(QColor::fromRgba(md.appearance), 1);
-      ui->mcaPlot->addGraph(QVector<double>::fromStdVector(energies), y, profile, md.bits);
+      ui->mcaPlot->addGraph(x, y, profile, md.bits);
 
     }
   }
@@ -234,7 +243,10 @@ void FormPlot1D::on_pushFullInfo_clicked()
   if (someSpectrum == nullptr)
     return;
 
-  dialog_spectrum* newSpecDia = new dialog_spectrum(*someSpectrum, this);
+  if (detectors_ == nullptr)
+    return;
+
+  dialog_spectrum* newSpecDia = new dialog_spectrum(*someSpectrum, *detectors_, this);
   connect(newSpecDia, SIGNAL(finished(bool)), this, SLOT(spectrumDetailsClosed(bool)));
   connect(newSpecDia, SIGNAL(delete_spectrum()), this, SLOT(spectrumDetailsDelete()));
   connect(newSpecDia, SIGNAL(analyse()), this, SLOT(analyse()));
@@ -386,8 +398,18 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
     return;
 
   PreciseFloat max = md.max_count;
-  if (moving.visible)
-    max = someSpectrum->get_count({std::round(moving.pos.bin(md.bits))});
+  double livetime = md.live_time.total_milliseconds() / 0.001;
+
+  if (moving.visible) {
+    Gamma::Calibration cal;
+    if (!md.detectors.empty())
+      cal = md.detectors[0].best_calib(md.bits);
+
+    max = someSpectrum->get_count({std::round(cal.inverse_transform(moving.pos.energy()))});
+  }
+
+  if (ui->pushPerLive->isChecked() && (livetime != 0))
+    max = max / livetime;
 
   if (max == 0)
     return;
@@ -396,8 +418,18 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
     if (q) {
       Qpx::Spectrum::Metadata mdt = q->metadata();
       PreciseFloat mc = mdt.max_count;
-      if (moving.visible)
-        mc = q->get_count({std::round(moving.pos.bin(mdt.bits))});
+      double lt = mdt.live_time.total_milliseconds() / 0.001;
+
+      if (moving.visible) {
+        Gamma::Calibration cal;
+        if (!mdt.detectors.empty())
+          cal = mdt.detectors[0].best_calib(mdt.bits);
+
+        mc = q->get_count({std::round(cal.inverse_transform(moving.pos.energy()))});
+      }
+
+      if (ui->pushPerLive->isChecked() && (lt != 0))
+        mc = mc / lt;
 
       if (mc != 0)
         q->set_rescale_factor(max / mc);
@@ -413,4 +445,10 @@ void FormPlot1D::on_pushRescaleReset_clicked()
     if (q)
       q->set_rescale_factor(1);
   update_plot();
+}
+
+void FormPlot1D::on_pushManip1D_clicked()
+{
+  FormManip1D* newDialog = new FormManip1D(*mySpectra, this);
+  newDialog->exec();
 }

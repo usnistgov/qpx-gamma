@@ -91,6 +91,8 @@ private slots:
 
   void on_pushFullInfo_clicked();
 
+  void on_pushRandAll_clicked();
+
 protected:
   void closeEvent(QCloseEvent*);
 

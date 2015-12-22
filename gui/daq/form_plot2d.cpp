@@ -83,6 +83,10 @@ FormPlot2D::~FormPlot2D()
   delete ui;
 }
 
+void FormPlot2D::setDetDB(XMLableDB<Gamma::Detector>& detDB) {
+  detectors_ = &detDB;
+}
+
 void FormPlot2D::spectrumDoubleclicked(SelectorItem item)
 {
   on_pushDetails_clicked();
@@ -385,7 +389,10 @@ void FormPlot2D::on_pushDetails_clicked()
   if (someSpectrum == nullptr)
     return;
 
-  dialog_spectrum* newSpecDia = new dialog_spectrum(*someSpectrum, this);
+  if (detectors_ == nullptr)
+    return;
+
+  dialog_spectrum* newSpecDia = new dialog_spectrum(*someSpectrum, *detectors_, this);
   connect(newSpecDia, SIGNAL(finished(bool)), this, SLOT(spectrumDetailsClosed(bool)));
   connect(newSpecDia, SIGNAL(delete_spectrum()), this, SLOT(spectrumDetailsDelete()));
   connect(newSpecDia, SIGNAL(analyse()), this, SLOT(analyse()));

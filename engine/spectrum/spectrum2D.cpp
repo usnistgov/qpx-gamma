@@ -48,7 +48,7 @@ bool Spectrum2D::initialize() {
   
   metadata_.resolution = pow(2, 16 - shift_by_);
   metadata_.dimensions = 2;
-  energies_.resize(2);
+//  energies_.resize(2);
   pattern_.resize(2, 0);
   buffered_ = (get_attr("buffered").value_int != 0);
 

@@ -26,12 +26,13 @@
 #include <QInputDialog>
 #include <QMessageBox>
 
-dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, QWidget *parent) :
+dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, XMLableDB<Gamma::Detector>& detDB, QWidget *parent) :
   QDialog(parent),
   my_spectrum_(spec),
   det_selection_model_(&det_table_model_),
   changed_(false),
-  detectors_("Detectors"),
+  detectors_(detDB),
+  spectrum_detectors_("Detectors"),
   attributes_("Attributes"),
   ui(new Ui::dialog_spectrum)
 {
@@ -66,7 +67,7 @@ dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, QWidget *parent)
   ui->tableGenericAttrs->show();
 
 
-  det_table_model_.setDB(detectors_);
+  det_table_model_.setDB(spectrum_detectors_);
 
   ui->tableDetectors->setModel(&det_table_model_);
   ui->tableDetectors->setSelectionModel(&det_selection_model_);
@@ -115,9 +116,9 @@ void dialog_spectrum::updateData() {
 
   ui->lineDescription->setText(QString::fromStdString(md_.description));
 
-  detectors_.clear();
+  spectrum_detectors_.clear();
   for (auto &q: md_.detectors)
-    detectors_.add_a(q);
+    spectrum_detectors_.add_a(q);
   det_table_model_.update();
 
   table_model_.update();
@@ -154,9 +155,26 @@ void dialog_spectrum::open_close_locks() {
 
 void dialog_spectrum::toggle_push()
 {
+  ui->pushDetEdit->setEnabled(false);
+  ui->pushDetRename->setEnabled(false);
+  ui->pushDetFromDB->setEnabled(false);
+  ui->pushDetToDB->setEnabled(false);
+
   bool unlocked = !ui->pushLock->isChecked();
-  ui->pushDetEdit->setEnabled(unlocked);
-  ui->pushDetRename->setEnabled(unlocked);
+
+  QModelIndexList ixl = ui->tableDetectors->selectionModel()->selectedRows();
+  if (ixl.empty())
+    return;
+  int i = ixl.front().row();
+
+  if (i < md_.detectors.size()) {
+    ui->pushDetEdit->setEnabled(unlocked);
+    ui->pushDetRename->setEnabled(unlocked);
+    ui->pushDetToDB->setEnabled(unlocked);
+    Gamma::Detector det = md_.detectors[i];
+    if (unlocked && detectors_.has_a(det))
+      ui->pushDetFromDB->setEnabled(true);
+  }
 }
 
 void dialog_spectrum::on_pushRandColor_clicked()
@@ -216,7 +234,7 @@ void dialog_spectrum::on_pushDetEdit_clicked()
     return;
   int i = ixl.front().row();
 
-  DialogDetector* newDet = new DialogDetector(detectors_.get(i), QDir("~/"), false, this);
+  DialogDetector* newDet = new DialogDetector(spectrum_detectors_.get(i), QDir("~/"), false, this);
   connect(newDet, SIGNAL(newDetReady(Gamma::Detector)), this, SLOT(changeDet(Gamma::Detector)));
   newDet->exec();
 }
@@ -230,11 +248,9 @@ void dialog_spectrum::changeDet(Gamma::Detector newDetector) {
   if (i < md_.detectors.size()) {
     md_.detectors[i] = newDetector;
     my_spectrum_.set_detectors(md_.detectors);
+    changed_ = true;
+    updateData();
   }
-
-  detectors_.replace(newDetector);
-  det_table_model_.update();
-  toggle_push();
 }
 
 void dialog_spectrum::on_pushDetRename_clicked()
@@ -247,7 +263,7 @@ void dialog_spectrum::on_pushDetRename_clicked()
   bool ok;
   QString text = QInputDialog::getText(this, "Rename Detector",
                                        "Detector name:", QLineEdit::Normal,
-                                       QString::fromStdString(detectors_.get(i).name_),
+                                       QString::fromStdString(spectrum_detectors_.get(i).name_),
                                        &ok);
   if (ok && !text.isEmpty()) {
     if (i < md_.detectors.size()) {
@@ -255,7 +271,6 @@ void dialog_spectrum::on_pushDetRename_clicked()
       my_spectrum_.set_detectors(md_.detectors);
       changed_ = true;
       updateData();
-      toggle_push();
     }
   }
 }
@@ -280,4 +295,74 @@ void dialog_spectrum::on_doubleRescaleFactor_valueChanged(double arg1)
   my_spectrum_.set_rescale_factor(PreciseFloat(arg1));
   changed_ = true;
   updateData();
+}
+
+void dialog_spectrum::on_pushDetFromDB_clicked()
+{
+  QModelIndexList ixl = ui->tableDetectors->selectionModel()->selectedRows();
+  if (ixl.empty())
+    return;
+  int i = ixl.front().row();
+
+  if (i < md_.detectors.size()) {
+    Gamma::Detector newdet = detectors_.get(md_.detectors[i]);
+    md_.detectors[i] = newdet;
+    my_spectrum_.set_detectors(md_.detectors);
+    changed_ = true;
+    updateData();
+  }
+}
+
+void dialog_spectrum::on_pushDetToDB_clicked()
+{
+  QModelIndexList ixl = ui->tableDetectors->selectionModel()->selectedRows();
+  if (ixl.empty())
+    return;
+  int i = ixl.front().row();
+
+  if (i < md_.detectors.size()) {
+    Gamma::Detector newdet = md_.detectors[i];
+
+    if (!detectors_.has_a(newdet)) {
+      bool ok;
+      QString text = QInputDialog::getText(this, "New Detector",
+                                           "Detector name:", QLineEdit::Normal,
+                                           QString::fromStdString(newdet.name_),
+                                           &ok);
+
+      if (!ok)
+        return;
+
+      if (!text.isEmpty()) {
+        if (text.toStdString() != newdet.name_)
+          newdet.name_ = text.toStdString();
+
+        if (detectors_.has_a(newdet)) {
+          QMessageBox::StandardButton reply = QMessageBox::question(this, "Replace existing?",
+                                        "Detector " + text + " already exists. Replace?",
+                                         QMessageBox::Yes|QMessageBox::No);
+          if (reply == QMessageBox::No)
+            return;
+          else {
+            detectors_.replace(newdet);
+            if (md_.detectors[i].name_ != newdet.name_) {
+              md_.detectors[i] = newdet;
+              my_spectrum_.set_detectors(md_.detectors);
+              changed_ = true;
+              updateData();
+            }
+          }
+        } else
+          detectors_.replace(newdet);
+      }
+    } else {
+      QMessageBox::StandardButton reply = QMessageBox::question(this, "Replace existing?",
+                                    "Detector " + QString::fromStdString(newdet.name_) + " already exists. Replace?",
+                                     QMessageBox::Yes|QMessageBox::No);
+      if (reply == QMessageBox::No)
+        return;
+      else
+        detectors_.replace(newdet);
+    }
+  }
 }

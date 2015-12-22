@@ -44,6 +44,9 @@ public:
 
   void setSpectra(Qpx::SpectraSet& new_set, QString spectrum = QString());
 
+  void setDetDB(XMLableDB<Gamma::Detector>& detDB);
+
+
   void updateUI();
 
   void update_plot(bool force = false);
@@ -95,6 +98,9 @@ private:
   //gui stuff
   Ui::FormPlot2D *ui;
   Qpx::SpectraSet *mySpectra;
+
+  XMLableDB<Gamma::Detector> * detectors_;
+
 
   //plot identity
   QString name_2d;

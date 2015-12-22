@@ -225,14 +225,14 @@ void Spectrum::addRun(const RunInfo& run_info) {
   }
 }
 
-std::vector<double> Spectrum::energies(uint8_t chan) const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+//std::vector<double> Spectrum::energies(uint8_t chan) const {
+//  boost::shared_lock<boost::shared_mutex> lock(mutex_);
   
-  if (chan < metadata_.dimensions)
-    return energies_[chan];
-  else
-    return std::vector<double>();
-}
+//  if (chan < metadata_.dimensions)
+//    return energies_[chan];
+//  else
+//    return std::vector<double>();
+//}
   
 void Spectrum::set_detectors(const std::vector<Gamma::Detector>& dets) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
@@ -254,20 +254,20 @@ void Spectrum::_set_detectors(const std::vector<Gamma::Detector>& dets) {
 void Spectrum::recalc_energies() {
   //private; no lock required
 
-  energies_.resize(metadata_.dimensions);
-  if (energies_.size() != metadata_.detectors.size())
-    return;
+//  energies_.resize(metadata_.dimensions);
+//  if (energies_.size() != metadata_.detectors.size())
+//    return;
 
-  for (int i=0; i < metadata_.detectors.size(); ++i) {
-    energies_[i].resize(metadata_.resolution, 0.0);
-     Gamma::Calibration this_calib;
-    if (metadata_.detectors[i].energy_calibrations_.has_a(Gamma::Calibration("Energy", metadata_.bits)))
-      this_calib = metadata_.detectors[i].energy_calibrations_.get(Gamma::Calibration("Energy", metadata_.bits));
-    else
-      this_calib = metadata_.detectors[i].highest_res_calib();
-    for (uint32_t j=0; j<metadata_.resolution; j++)
-      energies_[i][j] = this_calib.transform(j, metadata_.bits);
-  }
+//  for (int i=0; i < metadata_.detectors.size(); ++i) {
+//    energies_[i].resize(metadata_.resolution, 0.0);
+//     Gamma::Calibration this_calib;
+//    if (metadata_.detectors[i].energy_calibrations_.has_a(Gamma::Calibration("Energy", metadata_.bits)))
+//      this_calib = metadata_.detectors[i].energy_calibrations_.get(Gamma::Calibration("Energy", metadata_.bits));
+//    else
+//      this_calib = metadata_.detectors[i].highest_res_calib();
+//    for (uint32_t j=0; j<metadata_.resolution; j++)
+//      energies_[i][j] = this_calib.transform(j, metadata_.bits);
+//  }
 }
 
 Gamma::Setting Spectrum::get_attr(std::string setting) const {

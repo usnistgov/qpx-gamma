@@ -111,7 +111,7 @@ public:
   uint16_t channels_from_xml(const std::string& str);
   
   //retrieve pre-calculated energies for a given channel
-  std::vector<double> energies(uint8_t chan = 0) const;
+  //std::vector<double> energies(uint8_t chan = 0) const;
   
   //set and get detectors
   void set_detectors(const std::vector<Gamma::Detector>& dets);
@@ -185,7 +185,7 @@ protected:
 
   uint8_t shift_by_;
 
-  std::vector<std::vector<double> > energies_;
+  //std::vector<std::vector<double> > energies_;
   
   std::map<int, StatsUpdate> start_stats;
   std::list<Event> backlog;

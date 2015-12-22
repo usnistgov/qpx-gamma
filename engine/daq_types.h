@@ -117,7 +117,12 @@ struct Event {
   }
 };
 
+enum StatsType {
+  start, running, stop
+};
+
 struct StatsUpdate : public XMLable {
+  StatsType stats_type;
   int16_t channel;
   uint64_t spill_number;
   uint64_t events_in_spill;
@@ -133,7 +138,8 @@ struct StatsUpdate : public XMLable {
   boost::posix_time::ptime lab_time;  //timestamp at end of spill
   
   inline StatsUpdate()
-      : channel(-1)
+      : stats_type(StatsType::running)
+      , channel(-1)
       , spill_number(0)
       , total_time(0.0)
       , event_rate(0.0)

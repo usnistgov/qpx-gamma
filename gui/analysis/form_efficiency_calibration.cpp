@@ -195,7 +195,7 @@ void FormEfficiencyCalibration::update_peaks(bool contents_changed) {
 
   ui->plotSpectrum->update_fit(contents_changed);
   replot_calib();
-  PL_DBG << "will rebuild table " << contents_changed;
+  //PL_DBG << "will rebuild table " << contents_changed;
   rebuild_table(contents_changed);
   toggle_push();
 }
@@ -302,6 +302,7 @@ void FormEfficiencyCalibration::update_spectra() {
 
   ui->pushShowAll->setEnabled(ui->spectrumSelector->items().size());
   ui->pushHideAll->setEnabled(ui->spectrumSelector->items().size());
+  ui->pushRandAll->setEnabled(ui->spectrumSelector->items().size());
 
   setSpectrum(ui->spectrumSelector->selected().text);
 }
@@ -753,7 +754,7 @@ void FormEfficiencyCalibration::on_pushFullInfo_clicked()
   if (someSpectrum == nullptr)
     return;
 
-  dialog_spectrum* newSpecDia = new dialog_spectrum(*someSpectrum, this);
+  dialog_spectrum* newSpecDia = new dialog_spectrum(*someSpectrum, detectors_, this);
   connect(newSpecDia, SIGNAL(finished(bool)), this, SLOT(spectrumDetailsClosed(bool)));
   connect(newSpecDia, SIGNAL(delete_spectrum()), this, SLOT(on_pushRemove_clicked()));
   newSpecDia->exec();
@@ -764,4 +765,12 @@ void FormEfficiencyCalibration::spectrumDetailsClosed(bool looks_changed) {
     update_spectra();
     //what if energy calibration changes?
   }
+}
+
+void FormEfficiencyCalibration::on_pushRandAll_clicked()
+{
+  for (auto &q : spectra_.spectra())
+    q->set_appearance(generateColor().rgba());
+
+  update_spectra();
 }

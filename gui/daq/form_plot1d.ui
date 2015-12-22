@@ -280,6 +280,41 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="pushManip1D">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>32</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>32</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Arithmetic operations on spectra</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../resources/qpxres.qrc">
+           <normaloff>:/new/icons/oxy/kpercentage.png</normaloff>:/new/icons/oxy/kpercentage.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>18</width>
+           <height>18</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="pushFullInfo">
          <property name="enabled">
           <bool>false</bool>
@@ -353,7 +388,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>300</width>
+          <width>296</width>
           <height>286</height>
          </rect>
         </property>

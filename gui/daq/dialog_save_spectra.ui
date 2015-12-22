@@ -135,11 +135,18 @@
       </size>
      </property>
      <property name="title">
-      <string>Individual files per spectrum type</string>
+      <string>Export individual files per spectrum type</string>
      </property>
      <layout class="QGridLayout" name="gridLayout">
-      <item row="0" column="0">
+      <item row="1" column="0">
        <widget class="WidgetSaveTypes" name="typesWidget" native="true"/>
+      </item>
+      <item row="0" column="0">
+       <widget class="QCheckBox" name="checkVisibleOnly">
+        <property name="text">
+         <string>Export visible spectra only</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
