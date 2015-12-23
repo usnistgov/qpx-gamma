@@ -4,6 +4,7 @@
 
 VmUsb::VmUsb()
 {
+  PL_DBG << "Attempting to load xx_usb library";
     udev = NULL;
 
     boost::system::error_code ec;

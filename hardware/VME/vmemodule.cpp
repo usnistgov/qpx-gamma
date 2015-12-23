@@ -14,8 +14,10 @@ VmeModule::VmeModule(BaseController *controller, int baseAddress)
 	m_controller = static_cast<VmeController *>(controller);
 
 	m_deviceClass = 0;
-	m_vendorId    = 0;
 	m_baseAddress = baseAddress;
+  m_vendorId    = readLong(m_baseAddress + VhsVendorIdOFFSET);
+
+  //PL_DBG << "device class load : " << deviceClass();
 
 	m_channelNumber = -1;
 }
@@ -166,19 +168,21 @@ uint32_t VmeModule::mirrorLong(uint32_t data)
 
 int VmeModule::deviceClass(void)
 {
+  //PL_DBG << "vendorID " << m_vendorId;
 
   if (m_vendorId != ISEG_VENDOR_ID) { // iseg
-		m_vendorId = readLong(m_baseAddress + VhsVendorIdOFFSET);
-	}
+    m_vendorId = readLong(m_baseAddress + VhsVendorIdOFFSET);
+    //PL_DBG << "new vendorID " << m_vendorId;
+  }
 
-  uint32_t tmp = readLong(m_baseAddress + VhsDeviceClassOFFSET);
+  uint32_t tmp = readLong(m_baseAddress + 60/*VhsDeviceClassOFFSET*/);
   m_deviceClass = (uint16_t)tmp;
 
-  PL_DBG << "VendorID=" << m_vendorId << " deviceClass=" << m_deviceClass;
+  //PL_DBG << "VendorID=" << m_vendorId << " deviceClass=" << m_deviceClass;
 
 
 	if (m_deviceClass == V12C0) {
-    PL_DBG << "loading V12C0";
+    //PL_DBG << "loading V12C0";
 
     m_firmwareName = "V12C0";
 		m_channelNumber = 0;

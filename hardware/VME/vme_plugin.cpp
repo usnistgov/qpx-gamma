@@ -93,7 +93,7 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
 
   for (auto &q : set.branches.my_data_) {
     if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "VME/ControllerID")) {
-      PL_DBG << "<VmePlugin> controller expected " << q.value_text;
+      //PL_DBG << "<VmePlugin> controller expected " << q.value_text;
       if (controller_name_.empty())
         controller_name_ = q.value_text;
     } else       if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "VME/IsegVHS")) {
@@ -169,6 +169,7 @@ bool QpxVmePlugin::boot() {
   }
 
   for (int base_address = 0; base_address < 0xFFFF; base_address += VHS_ADDRESS_SPACE_LENGTH) {
+//    PL_DBG << "trying to load mod at BA " << base_address;
     VmeModule module(controller_, base_address);
 
     int deviceClass = module.deviceClass();

@@ -133,82 +133,39 @@ void QpxHV8Plugin::set_voltage(int chan, double voltage) {
     return;
   }
 
-  bool logged = false;
-  for (int i=0; i < attempts; ++i) {
-    port.writeString("\r");
-    std::string line;
-    try { line = port.readStringUntil(">"); }
-    catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
-    boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
-
-    if (line == "+>") {
-      PL_DBG << "logged in";
-      logged = true;
-      break;
-    }
-  }
-
-  if (!logged) {
+  if (!get_prompt(5)) {
     PL_DBG << "<HV8Plugin> cannot write settings. Not logged into HV8";
     return;
-  } else
-    PL_DBG << "<HV8Plugin> Logged into HV8. Proceed with write setting";
-
+  }
 
   bool success = false;
   std::vector<std::string> tokens;
   for (int i=0; i < attempts; ++i) {
 //        boost::this_thread::sleep(boost::posix_time::seconds(1));
 
-    std::string line;
-
-    try { line = port.readStringUntil(">"); }
-    catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
-    boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
-
-
-    if (line == "+>") {
+    if (get_prompt(5)) {
       std::stringstream ss;
       ss << "S " << chan << "\r";
       PL_DBG << "Will write " << ss.str();
       port.writeString(ss.str());
       boost::this_thread::sleep(boost::posix_time::seconds(0.2));
 
-      try { line = port.readStringUntil(">"); }
-      catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
-      PL_DBG << "Output after write " << line;
-      boost::algorithm::split(tokens, line, boost::algorithm::is_any_of("\r\n\t "));
-      if (!tokens.empty() && (tokens[tokens.size() - 1] == "+>"))
-        success = true;
+      if (get_prompt(5)) {
+        std::stringstream ss2;
+        ss2 << "V " << voltage << "\r";
+        PL_DBG << "Will write " << ss2.str();
+        port.writeString(ss2.str());
+        boost::this_thread::sleep(boost::posix_time::seconds(0.2));
 
-      if (success) {
-      std::stringstream ss2;
-      ss2 << "V " << voltage << "\r";
-      PL_DBG << "Will write " << ss2.str();
-      port.writeString(ss2.str());
-      boost::this_thread::sleep(boost::posix_time::seconds(0.2));
-
-      try { line = port.readStringUntil(">"); }
-      catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
-      PL_DBG << "Output after write " << line;
-      tokens.clear();
-      boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
-      boost::algorithm::split(tokens, line, boost::algorithm::is_any_of("\r\n\t "));
-      if (!tokens.empty() && (tokens[tokens.size() - 1] == "+>"))
-        success = true;
-      else
-        success = false;
+        if (get_prompt(5))
+          success = true;
       }
-
     }
 
 
     if (success)
       break;
 
-
-    PL_DBG << "will tokenize: " << line << "<end>";
-    boost::algorithm::split(tokens, line, boost::algorithm::is_any_of("\r\n"));
   }
 
 
@@ -233,61 +190,37 @@ bool QpxHV8Plugin::execute_command(Gamma::Setting &set) {
 }
 
 
-bool QpxHV8Plugin::boot() noexcept(false) {
-  PL_DBG << "<HV8Plugin> Attempting to boot";
-
-  int attempts = 5;
-
-  if (!(status_ & DeviceStatus::can_boot)) {
-    PL_WARN << "<HV8Plugin> Cannot boot. Failed flag check (can_boot == 0)";
-    return false;
-  }
-
-  status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
-
-  try {
-    port.open(portname, baudrate, parity, boost::asio::serial_port_base::character_size(charactersize), flowcontrol, stopbits);
-    port.setTimeout(boost::posix_time::seconds(5));
-  } catch (...) {
-    PL_ERR << "<HV8Plugin> could not open serial port";
-    return false;
-  }
-
-  if (!port.isOpen()) {
-    PL_DBG << "<HV8Plugin> serial port could not be opened";
-    return false;
-  }
-
+bool QpxHV8Plugin::get_prompt(uint16_t attempts) {
   bool success = false;
   bool logged = false;
   for (int i=0; i < attempts; ++i) {
     port.writeString("\r");
-    std::string line;
-    try { line = port.readStringUntil(">"); }
+    std::string lines;
+    try { lines = port.readStringUntil(">"); }
     catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
-    boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
+    boost::algorithm::trim_if(lines, boost::algorithm::is_any_of("\r\n\t "));
+    std::vector<std::string> tokens;
+    boost::algorithm::split(tokens, lines, boost::algorithm::is_any_of("\r\n\t "));
 
-//    PL_DBG << line;
+    std::string line;
+    if (!tokens.empty())
+      line = tokens[tokens.size() - 1];
+
     if (line == "->") {
-//      PL_DBG << "not logged in";
       success = true;
       break;
     } else if (line == "+>") {
-//      PL_DBG << "logged in";
       success = true;
       logged = true;
       break;
     }
-
   }
 
   if (success) {
-//    port.flush(flush_both);
     if (!logged) {
 
       success = false;
       for (int i=0; i < attempts; ++i) {
-//        boost::this_thread::sleep(boost::posix_time::seconds(1));
         port.writeString("L\r");
 
         std::string line;
@@ -329,14 +262,41 @@ bool QpxHV8Plugin::boot() noexcept(false) {
 
       }
     }
-    //port.flush(flush_both);
+  }
+  return logged;
+}
 
 
-    if (logged) {
+bool QpxHV8Plugin::boot() noexcept(false) {
+  PL_DBG << "<HV8Plugin> Attempting to boot";
+
+  int attempts = 5;
+
+  if (!(status_ & DeviceStatus::can_boot)) {
+    PL_WARN << "<HV8Plugin> Cannot boot. Failed flag check (can_boot == 0)";
+    return false;
+  }
+
+  status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
+
+  try {
+    port.open(portname, baudrate, parity, boost::asio::serial_port_base::character_size(charactersize), flowcontrol, stopbits);
+    port.setTimeout(boost::posix_time::seconds(5));
+  } catch (...) {
+    PL_ERR << "<HV8Plugin> could not open serial port";
+    return false;
+  }
+
+  if (!port.isOpen()) {
+    PL_DBG << "<HV8Plugin> serial port could not be opened";
+    return false;
+  }
+
+
+  if (get_prompt(5)) {
       PL_DBG << "<HV8Plugin> Logged in. Startup successful";
       status_ = DeviceStatus::loaded | DeviceStatus::booted;
       return true;
-    }
   } else
     return false;
 
@@ -359,22 +319,7 @@ void QpxHV8Plugin::get_all_settings() {
     return;
   }
 
-  bool logged = false;
-  for (int i=0; i < attempts; ++i) {
-    port.writeString("\r");
-    std::string line;
-    try { line = port.readStringUntil(">"); }
-    catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
-    boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
-
-    if (line == "+>") {
-      PL_DBG << "logged in";
-      logged = true;
-      break;
-    }
-  }
-
-  if (!logged) {
+  if (!get_prompt(5)) {
     PL_DBG << "<HV8Plugin> cannot read settings. Not logged into HV8";
     return;
   }
