@@ -56,15 +56,6 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   a.appearance.themes["light"] = QPen(Qt::darkBlue, 2);
   a.appearance.themes["dark"] = QPen(Qt::blue, 2);
 
-  prelim_peak_.default_pen = QPen(Qt::black, 4);
-  filtered_peak_.default_pen = QPen(Qt::blue, 6);
-  gaussian_.default_pen = QPen(Qt::blue, 1);
-  baseline_.default_pen = QPen(Qt::darkBlue, 1);
-  rise_.default_pen = QPen(Qt::green, 1);
-  fall_.default_pen = QPen(Qt::red, 1);
-  even_.default_pen = QPen(Qt::black, 1);
-
-
   QColor translu(Qt::blue);
   translu.setAlpha(32);
   b.appearance.themes["light"] = QPen(translu, 2);
@@ -72,7 +63,7 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   b.appearance.themes["dark"] = QPen(translu, 2);
 
   ui->plotSpectrum->setFit(&fitter_opt_);
-  connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
+  //connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
 
   ui->comboSetting->addItem("ENERGY_RISETIME");
   ui->comboSetting->addItem("ENERGY_FLATTOP");
@@ -84,9 +75,10 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   ui->comboSetting->addItem("BASELINE_PERCENT");
   ui->comboSetting->addItem("CFD_THRESHOLD");
 
-  ui->tableResults->setColumnCount(2);
+  ui->tableResults->setColumnCount(3);
   ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem("Setting value", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Energy", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
   ui->tableResults->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tableResults->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->tableResults->horizontalHeader()->setStretchLastSection(true);
@@ -97,6 +89,8 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
 
   loadSettings();
 
+  update_settings();
+
   opt_plot_thread_.start();
 }
 
@@ -104,10 +98,8 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
 void FormOptimization::loadSettings() {
   settings_.beginGroup("Optimization");
   ui->spinBits->setValue(settings_.value("bits", 14).toInt());
-  ui->spinOptChan->setValue(settings_.value("channel", 0).toInt());
-  ui->spinTimeMins->setValue(settings_.value("sample_minutes", 5).toInt());
-  ui->spinTimeSecs->setValue(settings_.value("sample_seconds", 0).toInt());
-  ui->spinPeakWindow->setValue(settings_.value("search_window", 100).toInt());
+//  ui->spinOptChan->setValue(settings_.value("channel", 0).toInt());
+  ui->timeDuration->set_total_seconds(settings_.value("mca_secs", 0).toULongLong());
   ui->comboSetting->setCurrentText(settings_.value("setting_name", QString("ENERGY_RISETIME")).toString());
   ui->doubleSpinStart->setValue(settings_.value("setting_start", 5.97).toDouble());
   ui->doubleSpinDelta->setValue(settings_.value("setting_step", 0.213333).toDouble());
@@ -121,10 +113,8 @@ void FormOptimization::loadSettings() {
 void FormOptimization::saveSettings() {
   settings_.beginGroup("Optimization");
   settings_.setValue("bits", ui->spinBits->value());
-  settings_.setValue("channel", ui->spinOptChan->value());
-  settings_.setValue("sample_minutes", ui->spinTimeMins->value());
-  settings_.setValue("sample_seconds", ui->spinTimeSecs->value());
-  settings_.setValue("search_window", ui->spinPeakWindow->value());
+//  settings_.setValue("channel", ui->spinOptChan->value());
+  settings_.setValue("mca_secs", QVariant::fromValue(ui->timeDuration->total_seconds()));
   settings_.setValue("setting_name", ui->comboSetting->currentText());
   settings_.setValue("setting_start", ui->doubleSpinStart->value());
   settings_.setValue("setting_step", ui->doubleSpinDelta->value());
@@ -138,6 +128,19 @@ void FormOptimization::saveSettings() {
 FormOptimization::~FormOptimization()
 {
   delete ui;
+}
+
+void FormOptimization::update_settings() {
+  ui->comboTarget->clear();
+
+  //should come from other thread?
+  std::vector<Gamma::Detector> chans = Qpx::Engine::getInstance().get_detectors();
+
+  for (int i=0; i < chans.size(); ++i) {
+    QString text = "[" + QString::number(i) + "] "
+        + QString::fromStdString(chans[i].name_);
+    ui->comboTarget->addItem(text, QVariant::fromValue(i));
+  }
 }
 
 void FormOptimization::closeEvent(QCloseEvent *event) {
@@ -181,14 +184,15 @@ void FormOptimization::closeEvent(QCloseEvent *event) {
 
 void FormOptimization::toggle_push(bool enable, Qpx::DeviceStatus status) {
   bool online = (status & Qpx::DeviceStatus::can_run);
+  bool offline = online || (status & Qpx::DeviceStatus::loaded);
+
   ui->pushStart->setEnabled(enable && online);
   ui->comboSetting->setEnabled(enable);
   ui->doubleSpinStart->setEnabled(enable);
   ui->doubleSpinDelta->setEnabled(enable);
   ui->doubleSpinEnd->setEnabled(enable);
-  ui->spinTimeSecs->setEnabled(enable);
-  ui->spinTimeMins->setEnabled(enable);
-  ui->spinOptChan->setEnabled(enable);
+  ui->timeDuration->setEnabled(enable && offline);
+  ui->comboTarget->setEnabled(enable);
   ui->spinBits->setEnabled(enable);
 }
 
@@ -212,7 +216,8 @@ void FormOptimization::on_pushStart_clicked()
 
   ui->tableResults->clear();
   ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromStdString(current_setting_), QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Energy", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
 
   ui->plot3->setLabels(QString::fromStdString(current_setting_), "FWHM");
   ui->plot3->setTitle(QString::fromStdString("FWHM vs. " + current_setting_));
@@ -236,10 +241,11 @@ void FormOptimization::do_run()
   bits = ui->spinBits->value();
 
   optimizing_.bits = bits;
-  optimizing_.add_pattern.resize(ui->spinOptChan->value()+1,0);
-  optimizing_.add_pattern[ui->spinOptChan->value()] = 1;
-  optimizing_.match_pattern.resize(ui->spinOptChan->value()+1,0);
-  optimizing_.match_pattern[ui->spinOptChan->value()] = 1;
+  int optchan = ui->comboTarget->currentData().toInt();
+  optimizing_.add_pattern.resize(optchan + 1, 0);
+  optimizing_.add_pattern[optchan] = 1;
+  optimizing_.match_pattern.resize(optchan + 1, 0);
+  optimizing_.match_pattern[optchan] = 1;
   optimizing_.appearance = generateColor().rgba();
 
   XMLableDB<Qpx::Spectrum::Template> db("SpectrumTemplates");
@@ -252,19 +258,20 @@ void FormOptimization::do_run()
 
   ui->plotSpectrum->new_spectrum();
 
-  Gamma::Setting set(current_setting_, ui->spinOptChan->value());
+  Gamma::Setting set(current_setting_, optchan);
 
   set.value_dbl = val_current;
-  Qpx::Engine::getInstance().set_setting(set, Gamma::Match::name | Gamma::Match::indices);
+  Qpx::Engine::getInstance().set_setting(set, Gamma::Match::id | Gamma::Match::indices);
   QThread::sleep(1);
   Qpx::Engine::getInstance().get_all_settings();
-  set = Qpx::Engine::getInstance().pull_settings().get_setting(set, Gamma::Match::name | Gamma::Match::indices);
+  set = Qpx::Engine::getInstance().pull_settings().get_setting(set, Gamma::Match::id | Gamma::Match::indices);
   setting_values_.push_back(set.value_dbl);
   setting_fwhm_.push_back(0);
   emit settings_changed();
 
   interruptor_.store(false);
-  opt_runner_thread_.do_run(current_spectra_, interruptor_, ui->spinTimeMins->value() * 60 + ui->spinTimeSecs->value());
+  uint64_t duration = ui->timeDuration->total_seconds();
+  opt_runner_thread_.do_run(current_spectra_, interruptor_, duration);
 }
 
 void FormOptimization::run_completed() {
@@ -327,15 +334,21 @@ void FormOptimization::update_plots() {
 
       find_peaks();
       spectra_[current_spec] = fitter_opt_;
-      setting_fwhm_[current_spec] = peaks_[current_spec].gaussian_.hwhm_ * 2;
+      setting_fwhm_[current_spec] = peaks_[current_spec].fwhm_sum4;
 
       ui->tableResults->setRowCount(peaks_.size());
-      QTableWidgetItem *en = new QTableWidgetItem(QString::number(setting_values_[current_spec]));
+
+      QTableWidgetItem *st = new QTableWidgetItem(QString::number(setting_values_[current_spec]));
+      st->setFlags(st->flags() ^ Qt::ItemIsEditable);
+      ui->tableResults->setItem(current_spec, 0, st);
+
+      QTableWidgetItem *en = new QTableWidgetItem(QString::number(peaks_[current_spec].energy));
       en->setFlags(en->flags() ^ Qt::ItemIsEditable);
-      ui->tableResults->setItem(current_spec,0, en);
-      QTableWidgetItem *abu = new QTableWidgetItem(QString::number(setting_fwhm_[current_spec]));
+      ui->tableResults->setItem(current_spec, 1, en);
+
+      QTableWidgetItem *abu = new QTableWidgetItem(QString::number(peaks_[current_spec].fwhm_sum4));
       abu->setFlags(abu->flags() ^ Qt::ItemIsEditable);
-      ui->tableResults->setItem(current_spec,1, abu);
+      ui->tableResults->setItem(current_spec, 2, abu);
 
     }
   }
@@ -381,4 +394,21 @@ void FormOptimization::resultChosen() {
   ui->plot3->redraw();
 
   this->setCursor(Qt::ArrowCursor);
+}
+
+void FormOptimization::on_comboTarget_currentIndexChanged(int index)
+{
+  int optchan = ui->comboTarget->currentData().toInt();
+
+  std::vector<Gamma::Detector> chans = Qpx::Engine::getInstance().get_detectors();
+
+  ui->comboSetting->clear();
+  if (optchan < chans.size()) {
+    for (auto &q : chans[optchan].settings_.branches.my_data_) {
+      if (q.metadata.flags.count("optimize") > 0) {
+        QString text = QString::fromStdString(q.id_);
+        ui->comboSetting->addItem(text);
+      }
+    }
+  }
 }

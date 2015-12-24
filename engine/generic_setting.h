@@ -81,7 +81,7 @@ struct SettingMeta : public XMLable {
   double             minimum, maximum, step;
   std::string        unit;                       //or extension if file
   std::map<int32_t, std::string> int_menu_items; //or intrinsic branches
-
+  std::set<std::string> flags;
 
 
   SettingMeta(const pugi::xml_node &node) : SettingMeta() {this->from_xml(node);}
@@ -105,6 +105,7 @@ struct SettingMeta : public XMLable {
     if (description != other.description) return false;
     if (address != other.address) return false;
     if (int_menu_items != other.int_menu_items) return false;
+    if (flags != other.flags) return false;
     return true;
   }
 

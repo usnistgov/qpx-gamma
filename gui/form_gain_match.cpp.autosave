@@ -266,10 +266,10 @@ void FormGainMatch::do_post_processing() {
 
 
   int optchan = ui->comboTarget->currentData().toInt();
-  Gamma::Setting gain_setting("VGAIN", optchan);
+  Gamma::Setting gain_setting(current_setting_, optchan);
 
   Qpx::Engine::getInstance().get_all_settings();
-  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::name | Gamma::Match::indices);
+  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
   double old_gain = gain_setting.value_dbl;
   QThread::sleep(1);
   double delta = gauss_opt_.gaussian_.center_ - gauss_ref_.gaussian_.center_;

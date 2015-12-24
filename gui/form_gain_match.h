@@ -41,6 +41,7 @@ class FormGainMatch : public QWidget
 
 public:
   explicit FormGainMatch(ThreadRunner&, QSettings&, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
+  void update_settings();
   ~FormGainMatch();
 
 signals:
@@ -73,6 +74,8 @@ private slots:
 
   void on_pushFindPeaks_clicked();
 
+  void on_comboTarget_currentIndexChanged(int index);
+
 private:
   void loadSettings();
   void saveSettings();
@@ -102,6 +105,8 @@ private:
 
 
   int bits, current_pass, max_passes;
+
+  std::string current_setting_;
 
   Gamma::Fitter fitter_ref_, fitter_opt_;
   Gamma::Peak gauss_ref_, gauss_opt_;

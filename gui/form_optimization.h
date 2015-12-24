@@ -42,6 +42,7 @@ class FormOptimization : public QWidget
 
 public:
   explicit FormOptimization(ThreadRunner&, QSettings&, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
+  void update_settings();
   ~FormOptimization();
 
 signals:
@@ -71,6 +72,8 @@ private slots:
 
   void on_pushSaveOpti_clicked();
 
+  void on_comboTarget_currentIndexChanged(int index);
+
 private:
   void loadSettings();
   void saveSettings();
@@ -96,10 +99,6 @@ private:
 
   Gamma::Fitter fitter_opt_;
   std::vector<Gamma::Fitter> spectra_;
-
-  AppearanceProfile prelim_peak_, filtered_peak_,
-                    gaussian_, baseline_,
-                    rise_, fall_, even_;
 
   std::string current_setting_;
   std::vector<Gamma::Peak> peaks_;

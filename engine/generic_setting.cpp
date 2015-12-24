@@ -105,7 +105,6 @@ void SettingMeta::from_xml(const pugi::xml_node &node) {
   if (!node.attribute("word_size").empty())
     maximum = node.attribute("word_size").as_double();
 
-
   if (setting_type == SettingType::binary)
     populate_menu(node, "bit", "description");
 
@@ -114,6 +113,18 @@ void SettingMeta::from_xml(const pugi::xml_node &node) {
 
   if (setting_type == SettingType::stem)
     populate_menu(node, "address", "id");
+
+  if (!node.attribute("flags").empty()) {
+    std::string flgs = std::string(node.attribute("flags").value());
+    std::vector<std::string> tokens;
+    boost::algorithm::split(tokens, flgs, boost::algorithm::is_any_of("\r\n\t "));
+    for (auto &q : tokens) {
+      boost::algorithm::trim_if(q, boost::algorithm::is_any_of("\r\n\t "));
+      if (!q.empty())
+        flags.insert(q);
+    }
+  }
+
 }
 
 void SettingMeta::to_xml(pugi::xml_node &node) const {
@@ -162,6 +173,15 @@ void SettingMeta::to_xml(pugi::xml_node &node) const {
 
   if (setting_type == SettingType::stem)
     menu_to_node(child, "branch", "address", "id");
+
+  if (!flags.empty()) {
+    std::string flgs;
+    for (auto &q : flags)
+      flgs += q + " ";
+    boost::algorithm::trim_if(flgs, boost::algorithm::is_any_of("\r\n\t "));
+    if (!flgs.empty())
+      child.append_attribute("flags").set_value(flgs.c_str());
+  }
 }
 
 void SettingMeta::populate_menu(const pugi::xml_node &node, const std::string &key_name, const std::string &value_name) {
