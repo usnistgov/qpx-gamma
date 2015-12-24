@@ -285,8 +285,8 @@
 	<SettingMeta id="Pixie4/System/module/channel/CURRENT_ICR" type="floating" name="CURRENT_ICR" address="36" writable="false" step="0" minimum="0" maximum="0" unit="cps" />
 	<SettingMeta id="Pixie4/System/module/channel/CURRENT_OORF" type="floating" name="CURRENT_OORF" address="37" writable="false" step="0" minimum="0" maximum="0" unit="%" />
 	<SettingMeta id="Pixie4/System/module/channel/EMIN" type="integer" name="EMIN" address="13" writable="true" step="1" minimum="0" maximum="65535" description="subtracted from computed energy in list mode" />
-	<SettingMeta id="Pixie4/System/module/channel/ENERGY_FLATTOP" type="floating" name="ENERGY_FLATTOP" address="3" writable="true" step="0.050000000000000003" minimum="0" maximum="500" unit="μs" />
-	<SettingMeta id="Pixie4/System/module/channel/ENERGY_RISETIME" type="floating" name="ENERGY_RISETIME" address="2" writable="true" step="0.050000000000000003" minimum="0" maximum="500" unit="μs" />
+	<SettingMeta id="Pixie4/System/module/channel/ENERGY_FLATTOP" type="floating" name="ENERGY_FLATTOP" address="3" writable="true" step="0.050000000000000003" minimum="0" maximum="500" unit="μs" flags="optimize" />
+	<SettingMeta id="Pixie4/System/module/channel/ENERGY_RISETIME" type="floating" name="ENERGY_RISETIME" address="2" writable="true" step="0.050000000000000003" minimum="0" maximum="500" unit="μs" flags="optimize" />
 	<SettingMeta id="Pixie4/System/module/channel/FAST_PEAKS" type="floating" name="FAST_PEAKS" address="28" writable="false" step="0" minimum="0" maximum="0" />
 	<SettingMeta id="Pixie4/System/module/channel/FTDT" type="floating" name="FTDT" address="33" writable="false" step="0" minimum="0" maximum="0" unit="s" />
 	<SettingMeta id="Pixie4/System/module/channel/GATE_COUNTS" type="floating" name="GATE_COUNTS" address="32" writable="false" step="0" minimum="0" maximum="0" />
@@ -320,7 +320,7 @@
 	<SettingMeta id="Pixie4/System/module/channel/TRIGGER_FLATTOP" type="floating" name="TRIGGER_FLATTOP" address="5" writable="true" step="0.050000000000000003" minimum="0" maximum="500" unit="μs" />
 	<SettingMeta id="Pixie4/System/module/channel/TRIGGER_RISETIME" type="floating" name="TRIGGER_RISETIME" address="4" writable="true" step="0.050000000000000003" minimum="0" maximum="500" unit="μs" />
 	<SettingMeta id="Pixie4/System/module/channel/TRIGGER_THRESHOLD" type="integer" name="TRIGGER_THRESHOLD" address="6" writable="true" step="1" minimum="0" maximum="4095" />
-	<SettingMeta id="Pixie4/System/module/channel/VGAIN" type="floating" name="VGAIN" address="7" writable="true" step="7.6000000000000004e-05" minimum="0" maximum="65535" unit="V/V" />
+	<SettingMeta id="Pixie4/System/module/channel/VGAIN" type="floating" name="VGAIN" address="7" writable="true" step="7.6000000000000004e-05" minimum="0" maximum="65535" unit="V/V" flags="gain" />
 	<SettingMeta id="Pixie4/System/module/channel/VOFFSET" type="floating" name="VOFFSET" address="8" writable="true" step="7.6000000000000004e-05" minimum="-2.5" maximum="2.5" unit="V" />
 	<SettingMeta id="Pixie4/System/module/channel/XDT" type="floating" name="XDT" address="17" writable="true" step="0.013332999999999999" minimum="0.053332999999999998" maximum="873.77332999999999" unit="μs" />
 </Pixie4>
