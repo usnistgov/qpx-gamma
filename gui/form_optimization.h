@@ -59,9 +59,6 @@ private slots:
   void run_completed();
 
   void on_pushStart_clicked();
-  void addMovingMarker(double);
-  void removeMovingMarker(double);
-  void replot_markers();
 
   bool find_peaks();
   void resultChosen();
@@ -77,9 +74,6 @@ private slots:
 private:
   void loadSettings();
   void saveSettings();
-
-  void plot_derivs(Gamma::Fitter &data);
-
 
   Ui::FormOptimization *ui;
 

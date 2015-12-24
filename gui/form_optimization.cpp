@@ -71,11 +71,8 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   translu.setAlpha(64);
   b.appearance.themes["dark"] = QPen(translu, 2);
 
-  ui->plot2->set_scale_type("Linear");
-  ui->plot2->setTitle("Peak analysis");
-  ui->plot3->set_scale_type("Linear");
-  ui->plot->setLabels("channel", "count");
-  ui->plot2->setLabels("channel", "count");
+  ui->plotSpectrum->setFit(&fitter_opt_);
+  connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
 
   ui->comboSetting->addItem("ENERGY_RISETIME");
   ui->comboSetting->addItem("ENERGY_FLATTOP");
@@ -98,11 +95,6 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
 
   connect(&opt_plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
 
-  connect(ui->plot, SIGNAL(clickedLeft(double)), this, SLOT(addMovingMarker(double)));
-  connect(ui->plot, SIGNAL(clickedRight(double)), this, SLOT(removeMovingMarker(double)));
-  connect(this, SIGNAL(restart_run()), this, SLOT(do_run()));
-  connect(this, SIGNAL(post_proc()), this, SLOT(do_post_processing()));
-
   loadSettings();
 
   opt_plot_thread_.start();
@@ -116,12 +108,13 @@ void FormOptimization::loadSettings() {
   ui->spinTimeMins->setValue(settings_.value("sample_minutes", 5).toInt());
   ui->spinTimeSecs->setValue(settings_.value("sample_seconds", 0).toInt());
   ui->spinPeakWindow->setValue(settings_.value("search_window", 100).toInt());
-  ui->spinMinPeakWidth->setValue(settings_.value("min_peak_width", 5).toInt());
-  ui->spinMovAvg->setValue(settings_.value("moving_avg_window", 15).toInt());
   ui->comboSetting->setCurrentText(settings_.value("setting_name", QString("ENERGY_RISETIME")).toString());
   ui->doubleSpinStart->setValue(settings_.value("setting_start", 5.97).toDouble());
   ui->doubleSpinDelta->setValue(settings_.value("setting_step", 0.213333).toDouble());
   ui->doubleSpinEnd->setValue(settings_.value("setting_end", 12.37).toDouble());
+
+  ui->plotSpectrum->loadSettings(settings_);
+
   settings_.endGroup();
 }
 
@@ -132,12 +125,13 @@ void FormOptimization::saveSettings() {
   settings_.setValue("sample_minutes", ui->spinTimeMins->value());
   settings_.setValue("sample_seconds", ui->spinTimeSecs->value());
   settings_.setValue("search_window", ui->spinPeakWindow->value());
-  settings_.setValue("min_peak_width", ui->spinMinPeakWidth->value());
-  settings_.setValue("moving_avg_window", ui->spinMovAvg->value());
   settings_.setValue("setting_name", ui->comboSetting->currentText());
   settings_.setValue("setting_start", ui->doubleSpinStart->value());
   settings_.setValue("setting_step", ui->doubleSpinDelta->value());
   settings_.setValue("setting_end", ui->doubleSpinEnd->value());
+
+  ui->plotSpectrum->saveSettings(settings_);
+
   settings_.endGroup();
 }
 
@@ -181,7 +175,6 @@ void FormOptimization::closeEvent(QCloseEvent *event) {
   current_spectra_.terminate();
   opt_plot_thread_.wait();
 
-
   saveSettings();
   event->accept();
 }
@@ -201,6 +194,7 @@ void FormOptimization::toggle_push(bool enable, Qpx::DeviceStatus status) {
 
 void FormOptimization::on_pushStart_clicked()
 {
+
   spectra_.clear();
   fitter_opt_ = Gamma::Fitter();
   peaks_.clear();
@@ -213,10 +207,6 @@ void FormOptimization::on_pushStart_clicked()
 
   current_setting_ = ui->comboSetting->currentText().toStdString();
 
-  ui->plot->clearGraphs();
-  ui->plot->reset_scales();
-  ui->plot2->clearGraphs();
-  ui->plot2->reset_scales();
   ui->plot3->clearGraphs();
   ui->plot3->reset_scales();
 
@@ -260,8 +250,7 @@ void FormOptimization::do_run()
   peaks_.push_back(Gamma::Peak());
   spectra_.push_back(Gamma::Fitter());
 
-  ui->plot->clearGraphs();
-  ui->plot2->clearGraphs();
+  ui->plotSpectrum->new_spectrum();
 
   Gamma::Setting set(current_setting_, ui->spinOptChan->value());
 
@@ -285,13 +274,12 @@ void FormOptimization::run_completed() {
     if (val_current < val_max) {
       PL_INFO << "<Optimization> Completed test " << val_current << " < " << val_max;
       val_current += val_d;
-      emit restart_run();
+      do_run();
     } else {
       PL_INFO << "<Optimization> Done optimizing";
+      my_run_ = false;
       ui->pushStop->setEnabled(false);
       emit toggleIO(true);
-      my_run_ = false;
-      emit post_proc();
     }
   }
 }
@@ -302,17 +290,24 @@ void FormOptimization::do_post_processing() {
 }
 
 bool FormOptimization::find_peaks() {
-  if (moving_.visible) {
 
-//    PL_DBG << "<Optimization> Looking for peak on [" << xmin << ", " << xmax << "]";
+    ui->plotSpectrum->perform_fit();
 
-    fitter_opt_.find_peaks(ui->spinMinPeakWidth->value());
-    if (fitter_opt_.peaks_.size())
-      peaks_[peaks_.size() - 1] = fitter_opt_.peaks_.begin()->second;
+    peaks_[peaks_.size() - 1] = Gamma::Peak();
+
+    if (fitter_opt_.peaks_.size()) {
+      for (auto &q : fitter_opt_.peaks_) {
+        double center = q.first;
+        if ((q.second.gaussian_.height_ > peaks_[peaks_.size() - 1].height)
+            && ((!moving_.visible)
+                || ((center > a.pos.bin(a.pos.bits())) && (center < b.pos.bin(b.pos.bits())))
+                )
+            )
+          peaks_[peaks_.size() - 1] = q.second;
+      }
+    }
 
     return true;
-  } else
-    return false;
 }
 
 void FormOptimization::update_plots() {
@@ -327,6 +322,8 @@ void FormOptimization::update_plots() {
       int current_spec = spectra_.size() - 1;
 
       fitter_opt_.setData(q);
+
+      ui->plotSpectrum->update_spectrum();
 
       find_peaks();
       spectra_[current_spec] = fitter_opt_;
@@ -343,130 +340,8 @@ void FormOptimization::update_plots() {
     }
   }
 
-  if (ui->plot->isVisible()) {
-    this->setCursor(Qt::WaitCursor);
-
-    ui->plot->clearGraphs();
-    std::string new_label = boost::algorithm::trim_copy(current_spectra_.status());
-    ui->plot->setTitle(QString::fromStdString(new_label));
-
-    for (int i=0; i < spectra_.size(); ++i) {
-      QColor this_color = QColor::fromRgba(spectra_[i].metadata_.appearance);
-      if (i + 1 == peaks_.size()) {
-        this_color.setAlpha(255);
-
-        if (!spectra_[i].x_.empty()) {
-          //plot_derivs(spectrum_data_);
-
-          QVector<double> xx, yy;
-
-          xx.clear(); yy.clear();
-          for (auto &q : spectra_[i].prelim) {
-            xx.push_back(q);
-            yy.push_back(spectra_[i].y_[q]);
-          }
-          if (yy.size())
-            ui->plot->addPoints(xx, yy, prelim_peak_, QCPScatterStyle::ssDiamond);
-
-          for (auto &q : spectra_[i].filtered) {
-            xx.push_back(q);
-            yy.push_back(spectra_[i].y_[q]);
-          }
-          if (yy.size())
-            ui->plot->addPoints(xx, yy, filtered_peak_, QCPScatterStyle::ssDiamond);
-        }
-
-
-
-        //        ui->plot->addGraph(QVector<double>::fromStdVector(peaks_[ii].x_), QVector<double>::fromStdVector(peaks_[ii].y_fullfit_), this_color, 0);
-      }
-
-      AppearanceProfile profile;
-      profile.default_pen = QPen(this_color, 1);
-      ui->plot->addGraph(QVector<double>::fromStdVector(spectra_[i].x_),
-                         QVector<double>::fromStdVector(spectra_[i].y_),
-                         profile);
-
-    }
-    ui->plot->setYBounds(minima, maxima);
-    ui->plot->set_block(a,b);
-    ui->plot->replot_markers();
-    ui->plot->redraw();
-
-    this->setCursor(Qt::ArrowCursor);
-  }
-
   resultChosen();
 }
-
-void FormOptimization::plot_derivs(Gamma::Fitter &data)
-{
-  QVector<double> temp_y, temp_x;
-  int was = 0, is = 0;
-
-  for (int i = 0; i < data.x_.size(); ++i) {
-    if (data.deriv1[i] > 0)
-      is = 1;
-    else if (data.deriv1[i] < 0)
-      is = -1;
-    else
-      is = 0;
-
-    if ((was != is) && (temp_x.size()))
-    {
-      if (temp_x.size() > ui->spinMinPeakWidth->value()) {
-        if (was == 1)
-          ui->plot->addGraph(temp_x, temp_y, rise_);
-        else if (was == -1)
-          ui->plot->addGraph(temp_x, temp_y, fall_);
-        else
-          ui->plot->addGraph(temp_x, temp_y, even_);
-      }
-      temp_x.clear(); temp_x.push_back(i-1);
-      temp_y.clear(); temp_y.push_back(data.y_avg_[i-1]);
-    }
-
-    was = is;
-    temp_y.push_back(data.y_avg_[i]);
-    temp_x.push_back(i);
-  }
-
-  if (temp_x.size())
-  {
-    if (was == 1)
-      ui->plot->addGraph(temp_x, temp_y, rise_);
-    else if (was == -1)
-      ui->plot->addGraph(temp_x, temp_y, fall_);
-    else
-      ui->plot->addGraph(temp_x, temp_y, even_);
-  }
-}
-
-void FormOptimization::addMovingMarker(double x) {
-  moving_.pos.set_bin(x, fitter_opt_.metadata_.bits, fitter_opt_.nrg_cali_);
-  moving_.visible = true;
-  a.pos.set_bin(x - ui->spinPeakWindow->value() / 2, fitter_opt_.metadata_.bits, fitter_opt_.nrg_cali_);
-  a.visible = true;
-  b.pos.set_bin(x + ui->spinPeakWindow->value() / 2, fitter_opt_.metadata_.bits, fitter_opt_.nrg_cali_);
-  b.visible = true;
-  replot_markers();
-}
-
-void FormOptimization::removeMovingMarker(double x) {
-  moving_.visible = false;
-  a.visible = false;
-  b.visible = false;
-  replot_markers();
-}
-
-
-void FormOptimization::replot_markers() {
-  ui->plot->clearExtras();
-  ui->plot->set_block(a,b);
-  ui->plot->replot_markers();
-  ui->plot->redraw();
-}
-
 
 void FormOptimization::on_pushSaveOpti_clicked()
 {
@@ -485,8 +360,6 @@ void FormOptimization::on_pushSaveOpti_clicked()
 void FormOptimization::resultChosen() {
   this->setCursor(Qt::WaitCursor);
 
-  ui->plot2->clearGraphs();
-  ui->plot2->reset_scales();
   ui->plot3->clearGraphs();
 
   ui->plot3->addGraph(QVector<double>::fromStdVector(setting_values_), QVector<double>::fromStdVector(setting_fwhm_), AppearanceProfile());
@@ -500,16 +373,11 @@ void FormOptimization::resultChosen() {
         cursor.visible = true;
         ui->plot3->set_cursors(std::list<Marker>({cursor}));
 
-        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_), AppearanceProfile());
-        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_fullfit_pseudovoigt_), gaussian_);
-        ui->plot2->addGraph(QVector<double>::fromStdVector(peaks_[j].x_), QVector<double>::fromStdVector(peaks_[j].y_baseline_), baseline_);
       }
   }
 
-  ui->plot2->rescale();
   ui->plot3->rescale();
 
-  ui->plot2->redraw();
   ui->plot3->redraw();
 
   this->setCursor(Qt::ArrowCursor);

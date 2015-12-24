@@ -60,7 +60,7 @@ void FormOscilloscope::closeEvent(QCloseEvent *event) {
 
 void FormOscilloscope::loadSettings() {
   settings_.beginGroup("Oscilloscope");
-  ui->doubleSpinXDT->setValue(settings_.value("xdt", 0.053333).toDouble());
+  ui->doubleSpinXDT->setValue(settings_.value("xdt", 0.5).toDouble());
   settings_.endGroup();
 }
 

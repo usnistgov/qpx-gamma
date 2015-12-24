@@ -524,12 +524,9 @@ void FormPeaks::on_pushMarkerRemove_clicked()
   emit peaks_changed(true);
 }
 
-void FormPeaks::on_pushFindPeaks_clicked()
-{
+void FormPeaks::perform_fit() {
   if (fit_data_ == nullptr)
     return;
-
-  this->setCursor(Qt::WaitCursor);
 
   fit_data_->set_mov_avg(ui->spinMovAvg->value());
   fit_data_->overlap_ = ui->doubleOverlapWidth->value();
@@ -539,6 +536,14 @@ void FormPeaks::on_pushFindPeaks_clicked()
 
   toggle_push();
   replot_all();
+
+}
+
+void FormPeaks::on_pushFindPeaks_clicked()
+{
+  this->setCursor(Qt::WaitCursor);
+
+  perform_fit();
 
   emit peaks_changed(true);
   this->setCursor(Qt::ArrowCursor);

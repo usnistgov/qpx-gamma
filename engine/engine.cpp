@@ -436,8 +436,12 @@ void Engine::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>& 
   while (daq_running()) {
     wait_ms(1000);
     if (anouncement_timer->s() > secs_between_anouncements) {
-      PL_INFO << "  RUNNING Elapsed: " << total_timer.done()
-              << "  ETA: " << total_timer.ETA();
+      if (timeout > 0)
+        PL_INFO << "  RUNNING Elapsed: " << total_timer.done()
+                << "  ETA: " << total_timer.ETA();
+      else
+        PL_INFO << "  RUNNING Elapsed: " << total_timer.done();
+
       delete anouncement_timer;
       anouncement_timer = new CustomTimer(true);
     }

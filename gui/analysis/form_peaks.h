@@ -64,6 +64,8 @@ public:
   void new_spectrum(QString title = QString());
   void update_fit(bool content_changed = false);
 
+  void perform_fit();
+
   void tighten();
 
   void clear();

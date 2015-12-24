@@ -71,9 +71,13 @@ private slots:
 
   void on_pushSaveOpti_clicked();
 
+  void on_pushFindPeaks_clicked();
+
 private:
   void loadSettings();
   void saveSettings();
+
+  void plot_one_spectrum(Gamma::Fitter &sp, std::map<double, double> &minima, std::map<double, double> &maxima);
 
   Ui::FormGainMatch *ui;
 
@@ -87,12 +91,15 @@ private:
   ThreadPlotSignal     gm_plot_thread_;
   boost::atomic<bool>  gm_interruptor_;
 
-  std::vector<double> x, y_ref, y_opt;
+  std::vector<double> gains, deltas;
 
   bool my_run_;
 
   Marker moving_, marker_ref_, marker_opt_, a ,b;
   AppearanceProfile ap_reference_, ap_optimized_;
+
+  AppearanceProfile style_fit, style_pts;
+
 
   int bits, current_pass, max_passes;
 

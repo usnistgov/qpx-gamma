@@ -658,10 +658,10 @@ void WidgetPlot1D::replot_markers() {
     double pos1 = 0, pos2 = 0;
     pos1 = rect[0].pos.energy();
     pos2 = rect[1].pos.energy();
-//    if (!use_calibrated_) {
-//      pos1 = rect[0].channel;
-//      pos2 = rect[1].channel;
-//    }
+    if (!use_calibrated_) {
+      pos1 = rect[0].pos.bin(rect[0].pos.bits());
+      pos2 = rect[1].pos.bin(rect[1].pos.bits());
+    }
 
 
     QCPItemRect *cprect = new QCPItemRect(ui->mcaPlot);
@@ -669,6 +669,8 @@ void WidgetPlot1D::replot_markers() {
     double y1 = maxy;
     double x2 = pos2;
     double y2 = miny;
+
+    //PL_DBG << "will make box x=" << x1 << "-" << x2 << " y=" << y1 << "-" << y2;
 
     cprect->topLeft->setCoords(x1, y1);
     cprect->bottomRight->setCoords(x2, y2);
