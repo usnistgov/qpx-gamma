@@ -75,10 +75,11 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   ui->comboSetting->addItem("BASELINE_PERCENT");
   ui->comboSetting->addItem("CFD_THRESHOLD");
 
-  ui->tableResults->setColumnCount(3);
+  ui->tableResults->setColumnCount(4);
   ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem("Setting value", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Energy", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("%error", QTableWidgetItem::Type));
   ui->tableResults->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tableResults->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->tableResults->horizontalHeader()->setStretchLastSection(true);
@@ -218,6 +219,7 @@ void FormOptimization::on_pushStart_clicked()
   ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromStdString(current_setting_), QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Energy", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("%error", QTableWidgetItem::Type));
 
   ui->plot3->setLabels(QString::fromStdString(current_setting_), "FWHM");
   ui->plot3->setTitle(QString::fromStdString("FWHM vs. " + current_setting_));
@@ -346,9 +348,13 @@ void FormOptimization::update_plots() {
       en->setFlags(en->flags() ^ Qt::ItemIsEditable);
       ui->tableResults->setItem(current_spec, 1, en);
 
-      QTableWidgetItem *abu = new QTableWidgetItem(QString::number(peaks_[current_spec].fwhm_sum4));
-      abu->setFlags(abu->flags() ^ Qt::ItemIsEditable);
-      ui->tableResults->setItem(current_spec, 2, abu);
+      QTableWidgetItem *fw = new QTableWidgetItem(QString::number(peaks_[current_spec].fwhm_sum4));
+      fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
+      ui->tableResults->setItem(current_spec, 2, fw);
+
+      QTableWidgetItem *err = new QTableWidgetItem(QString::number(peaks_[current_spec].sum4_.err));
+      err->setFlags(err->flags() ^ Qt::ItemIsEditable);
+      ui->tableResults->setItem(current_spec, 3, err);
 
     }
   }
@@ -411,4 +417,19 @@ void FormOptimization::on_comboTarget_currentIndexChanged(int index)
       }
     }
   }
+}
+
+void FormOptimization::on_comboSetting_activated(const QString &arg1)
+{
+  int optchan = ui->comboTarget->currentData().toInt();
+  current_setting_ = ui->comboSetting->currentText().toStdString();
+
+  Gamma::Setting set(current_setting_, optchan);
+
+  set = Qpx::Engine::getInstance().pull_settings().get_setting(set, Gamma::Match::id | Gamma::Match::indices);
+
+  ui->doubleSpinStart->setValue(set.metadata.minimum);
+  ui->doubleSpinEnd->setValue(set.metadata.maximum);
+  ui->doubleSpinDelta->setValue(set.metadata.step);
+
 }

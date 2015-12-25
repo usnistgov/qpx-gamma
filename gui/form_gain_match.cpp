@@ -91,6 +91,16 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
 
   ui->PlotCalib->setLabels("channel", "energy");
 
+  ui->tableResults->setColumnCount(4);
+  ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem("Setting value", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Bin", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("%error", QTableWidgetItem::Type));
+  ui->tableResults->setSelectionBehavior(QAbstractItemView::SelectRows);
+  ui->tableResults->setSelectionMode(QAbstractItemView::SingleSelection);
+  ui->tableResults->horizontalHeader()->setStretchLastSection(true);
+  ui->tableResults->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+  connect(ui->tableResults, SIGNAL(itemSelectionChanged()), this, SLOT(resultChosen()));
 
 
   connect(&gm_plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
@@ -129,7 +139,6 @@ void FormGainMatch::loadSettings() {
 //  ui->spinRefChan->setValue(settings_.value("reference_channel", 0).toInt());
 //  ui->spinOptChan->setValue(settings_.value("optimized_channel", 1).toInt());
   ui->timeDuration->set_total_seconds(settings_.value("mca_secs", 0).toULongLong());
-  ui->spinMaxPasses->setValue(settings_.value("maximum_passes", 30).toInt());
   ui->spinPeakWindow->setValue(settings_.value("peak_window", 180).toInt());
   ui->doubleSpinDeltaV->setValue(settings_.value("delta_V", 0.000300).toDouble());
   settings_.endGroup();
@@ -141,7 +150,6 @@ void FormGainMatch::saveSettings() {
 //  settings_.setValue("reference_channel", ui->spinRefChan->value());
 //  settings_.setValue("optimized_channel", ui->spinOptChan->value());
   settings_.setValue("mca_secs", QVariant::fromValue(ui->timeDuration->total_seconds()));
-  settings_.setValue("maximum_passes", ui->spinMaxPasses->value());
   settings_.setValue("peak_window", ui->spinPeakWindow->value());
   settings_.setValue("delta_V", ui->doubleSpinDeltaV->value());
   settings_.endGroup();
@@ -194,7 +202,6 @@ void FormGainMatch::toggle_push(bool enable, Qpx::DeviceStatus status) {
   ui->comboReference->setEnabled(enable);
   ui->comboTarget->setEnabled(enable);
   ui->spinBits->setEnabled(enable && online);
-  ui->spinMaxPasses->setEnabled(enable && online);
 }
 
 void FormGainMatch::do_run()
@@ -232,6 +239,8 @@ void FormGainMatch::do_run()
   if (minTimer != nullptr)
     delete minTimer;
 
+  peaks_.push_back(Gamma::Peak());
+
   minTimer = new CustomTimer(true);
   gm_runner_thread_.do_run(gm_spectra_, gm_interruptor_, 0);
 }
@@ -247,8 +256,8 @@ void FormGainMatch::run_completed() {
     gauss_opt_.gaussian_.height_ = 0;
     //replot_markers();
 
-    if ((current_pass < max_passes)  && !gm_runner_thread_.terminating()){
-      PL_INFO << "[Gain matching] Passes remaining " << max_passes - current_pass;
+    if (!gm_runner_thread_.terminating()) {
+      PL_INFO << "[Gain matching] Completed pass # " << current_pass;
       current_pass++;
       do_post_processing();
     } else {
@@ -266,10 +275,10 @@ void FormGainMatch::do_post_processing() {
 
 
   int optchan = ui->comboTarget->currentData().toInt();
-  Gamma::Setting gain_setting("VGAIN", optchan);
+  Gamma::Setting gain_setting(current_setting_, optchan);
 
   Qpx::Engine::getInstance().get_all_settings();
-  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::name | Gamma::Match::indices);
+  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
   double old_gain = gain_setting.value_dbl;
   QThread::sleep(1);
   double delta = gauss_opt_.gaussian_.center_ - gauss_ref_.gaussian_.center_;
@@ -395,6 +404,8 @@ bool FormGainMatch::find_peaks() {
     }
   }
 
+  peaks_[peaks_.size() - 1] = gauss_opt_;
+
   return (gauss_ref_.gaussian_.height_ && gauss_opt_.gaussian_.height_);
 }
 
@@ -438,6 +449,27 @@ void FormGainMatch::update_plots() {
 
   if (have_data)
     have_peaks = find_peaks();
+
+  ui->tableResults->setRowCount(peaks_.size());
+
+  int current_spec = peaks_.size() - 1;
+
+  QTableWidgetItem *st = new QTableWidgetItem(QString::number(gains[current_spec]));
+  st->setFlags(st->flags() ^ Qt::ItemIsEditable);
+  ui->tableResults->setItem(current_spec, 0, st);
+
+  QTableWidgetItem *en = new QTableWidgetItem(QString::number(peaks_[current_spec].energy));
+  en->setFlags(en->flags() ^ Qt::ItemIsEditable);
+  ui->tableResults->setItem(current_spec, 1, en);
+
+  QTableWidgetItem *fw = new QTableWidgetItem(QString::number(peaks_[current_spec].fwhm_sum4));
+  fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
+  ui->tableResults->setItem(current_spec, 2, fw);
+
+  QTableWidgetItem *err = new QTableWidgetItem(QString::number(peaks_[current_spec].sum4_.err));
+  err->setFlags(err->flags() ^ Qt::ItemIsEditable);
+  ui->tableResults->setItem(current_spec, 3, err);
+
 
   if (ui->plot->isVisible()) {
     this->setCursor(Qt::WaitCursor);
@@ -523,21 +555,26 @@ void FormGainMatch::on_pushMatchGain_clicked()
 {
   gains.clear();
   deltas.clear();
+  peaks_.clear();
 
   current_setting_ = ui->comboSetting->currentText().toStdString();
+
+  ui->tableResults->clear();
+  ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromStdString(current_setting_), QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Bin", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("%error", QTableWidgetItem::Type));
 
   ui->PlotCalib->setFloatingText("");
   ui->PlotCalib->clearGraphs();
 
   current_pass = 0;
-  max_passes = ui->spinMaxPasses->value();
   do_run();
 }
 
 void FormGainMatch::on_pushStop_clicked()
 {
   PL_INFO << "Acquisition interrupted by user";
-  max_passes = 0;
   gm_interruptor_.store(true);
 }
 

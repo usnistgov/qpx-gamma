@@ -74,6 +74,8 @@ private slots:
 
   void on_comboTarget_currentIndexChanged(int index);
 
+  void on_comboSetting_activated(const QString &arg1);
+
 private:
   void loadSettings();
   void saveSettings();

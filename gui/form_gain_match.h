@@ -95,6 +95,7 @@ private:
   boost::atomic<bool>  gm_interruptor_;
 
   std::vector<double> gains, deltas;
+  std::vector<Gamma::Peak> peaks_;
 
   bool my_run_;
 
@@ -104,7 +105,7 @@ private:
   AppearanceProfile style_fit, style_pts;
 
 
-  int bits, current_pass, max_passes;
+  int bits, current_pass;
 
   std::string current_setting_;
 
