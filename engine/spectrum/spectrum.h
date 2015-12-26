@@ -67,13 +67,16 @@ struct Metadata {
   PreciseFloat max_count;
   PreciseFloat rescale_factor;
 
+  uint64_t recent_count;
+  StatsUpdate recent_start, recent_end;
+
   boost::posix_time::time_duration real_time ,live_time;
   boost::posix_time::ptime  start_time;
   std::vector<Gamma::Detector> detectors;
 
  Metadata() : bits(0), dimensions(0), resolution(0), attributes("Attributes"),
     name("uninitialized_spectrum"), total_count(0.0), max_chan(0), max_count(0), rescale_factor(1),
-    appearance(0), visible(false) {}
+    appearance(0), visible(false), recent_count(0) {}
 };
 
 
@@ -111,7 +114,7 @@ public:
   uint16_t channels_from_xml(const std::string& str);
   
   //retrieve pre-calculated energies for a given channel
-  //std::vector<double> energies(uint8_t chan = 0) const;
+  std::vector<double> energies(uint8_t chan = 0) const;
   
   //set and get detectors
   void set_detectors(const std::vector<Gamma::Detector>& dets);
@@ -187,10 +190,13 @@ protected:
 
   uint8_t shift_by_;
 
-  //std::vector<std::vector<double> > energies_;
+  std::vector<std::vector<double> > energies_;
   
   std::map<int, std::list<StatsUpdate>> stats_list_;
+  std::map<int, boost::posix_time::time_duration> real_times_;
+  std::map<int, boost::posix_time::time_duration> live_times_;
   std::list<Event> backlog;
+  uint64_t recent_count_;
 };
 
 

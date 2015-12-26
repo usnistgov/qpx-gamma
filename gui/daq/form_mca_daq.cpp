@@ -245,12 +245,10 @@ void FormMcaDaq::on_pushMcaSave_clicked()
 void FormMcaDaq::on_pushMcaStart_clicked()
 {
   if (!spectra_.empty()) {
-    int reply = QMessageBox::warning(this, "Clear existing?",
-                                     "Spectra already open. Clear existing before opening?",
+    int reply = QMessageBox::warning(this, "Continue?",
+                                     "Non-empty spectra in project. Append to existing data?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
-    if (reply == QMessageBox::Yes)
-      spectra_.clear();
-    else
+    if (reply != QMessageBox::Yes)
       return;
   }
 

@@ -59,7 +59,7 @@ PreciseFloat SpectrumTime::_get_count(std::initializer_list<uint16_t> list) cons
     return 0;
   
   uint32_t chan = *list.begin();
-  if (chan >= metadata_.resolution)
+  if (chan >= spectrum_.size())
     return 0;
   else
     return spectrum_[chan];
@@ -69,7 +69,7 @@ std::unique_ptr<std::list<Entry>> SpectrumTime::_get_spectrum(std::initializer_l
   int min, max;
   if (list.size() != 1) {
     min = 0;
-    max = metadata_.resolution;
+    max = spectrum_.size();
   } else {
     Pair range = *list.begin();
     min = range.first;
@@ -105,38 +105,38 @@ void SpectrumTime::_add_bulk(const Entry& e) {
 }
 
 void SpectrumTime::addHit(const Hit& newHit) {
-  current_cts_++;
-  PreciseFloat nr = current_cts_;
-
-  if (nr > metadata_.max_count)
-    metadata_.max_count = nr;
+  if (recent_count_ > metadata_.max_count)
+    metadata_.max_count = recent_count_;
 
   metadata_.total_count++;
 }
 
 void SpectrumTime::addStats(const StatsUpdate& newStats)
 {
+
+  if ((newStats.channel >= 0) || (newStats.channel < metadata_.add_pattern.size())
+      || (metadata_.add_pattern[newStats.channel] == 1)) {
+
+    PreciseFloat rt = 0;
+    if (!updates_.empty())
+      rt = (newStats.lab_time - updates_.back().lab_time).total_seconds();
+
+    seconds_.push_back(rt.convert_to<double>());
+    updates_.push_back(newStats);
+
+    if (rt > metadata_.max_chan)
+      metadata_.max_chan = seconds_.size() - 1;
+
+    PreciseFloat count = recent_count_;
+    if (rt > 0)
+      count /= rt;
+
+    spectrum_.push_back(count);
+
+    energies_[0] = seconds_;
+  }
+
   Spectrum::addStats(newStats);
-
-  if ((newStats.channel < 0) || (newStats.channel >= metadata_.add_pattern.size())
-      || (metadata_.add_pattern[newStats.channel] != 1))
-    return;
-
-  if (newStats.spill_number == -1)
-    return;
-
-  if (newStats.spill_number >= spectrum_.size())
-    return;
-    //spectrum_.resize(newStats.spill_number + 1);
-
-  PL_DBG << "time period count " << current_cts_;
-
-  spectrum_[newStats.spill_number] = current_cts_;
-  current_cts_ = 0;
-
-  if (newStats.spill_number > metadata_.max_chan)
-    metadata_.max_chan = newStats.spill_number;
-
 }
 
 

@@ -110,7 +110,11 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   double real = md.real_time.total_milliseconds() * 0.001;
   double live = md.live_time.total_milliseconds() * 0.001;
   double dead = 100;
-  double rate = 0;
+  double rate_inst = md.recent_count;
+  double recent_time = (md.recent_end.lab_time - md.recent_end.lab_time).total_seconds();
+  if (recent_time > 0)
+    rate_inst /= recent_time;
+  double rate_total = 0;
   Gamma::Detector det = Gamma::Detector();
   if (!md.detectors.empty())
     det = md.detectors[0];
@@ -123,19 +127,20 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
     detstr += " (enrg)";
   if (det.fwhm_calibration_.valid())
     detstr += " [FWHM]";
+  if (det.efficiency_calibration_.valid())
+    detstr += " [EFF]";
 
   if (real > 0) {
     dead = (real - live) * 100.0 / real;
-    rate = md.total_count.convert_to<double>() / real;
+    rate_total = md.total_count.convert_to<double>() / real;
   }
 
   QString infoText =
       "<nobr>" + id + "(" + QString::fromStdString(type) + ", " + QString::number(md.bits) + "bits)</nobr><br/>"
       "<nobr>" + detstr + "</nobr><br/>"
       "<nobr>Count: " + QString::number(md.total_count.convert_to<double>()) + "</nobr><br/>"
-      "<nobr>Rate: " + QString::number(rate) + "cps</nobr><br/>"
-      "<nobr>Live:  " + QString::number(live) + "s</nobr><br/>"
-      "<nobr>Real:  " + QString::number(real) + "s</nobr><br/>"
+      "<nobr>Rate (inst/total): " + QString::number(rate_inst) + "s / " + QString::number(rate_total) + "cps</nobr><br/>"
+      "<nobr>Live / real:  " + QString::number(live) + "s / " + QString::number(real) + "s</nobr><br/>"
       "<nobr>Dead:  " + QString::number(dead) + "%</nobr><br/>";
 
   ui->labelSpectrumInfo->setText(infoText);
@@ -186,11 +191,12 @@ void FormPlot1D::update_plot() {
 
     if (md.visible && (md.resolution > 0) && (md.total_count > 0)) {
 
-      QVector<double> x(md.resolution);
-      QVector<double> y(md.resolution);
+
+      QVector<double> x = QVector<double>::fromStdVector(q->energies(0));
+      QVector<double> y(x.size());
 
       std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
-          std::move(q->get_spectrum({{0, y.size()}}));
+          std::move(q->get_spectrum({{0, x.size()}}));
 
       Gamma::Detector detector = Gamma::Detector();
       if (!md.detectors.empty())
@@ -200,19 +206,16 @@ void FormPlot1D::update_plot() {
       if (temp_calib.bits_ > calib_.bits_)
         calib_ = temp_calib;
 
-      int i = 0;
       for (auto it : *spectrum_data) {
-        double xx = temp_calib.transform(i, md.bits);
+        double xx = x[it.first[0]];
         double yy = it.second.convert_to<double>() * rescale;
         if (ui->pushPerLive->isChecked() && (livetime > 0))
           yy = yy / livetime;
-        x[it.first[0]] = xx;
         y[it.first[0]] = yy;
         if (!minima.count(xx) || (minima[xx] > yy))
           minima[xx] = yy;
         if (!maxima.count(xx) || (maxima[xx] < yy))
           maxima[xx] = yy;
-        ++i;
       }
 
       AppearanceProfile profile;

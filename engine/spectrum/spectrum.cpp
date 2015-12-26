@@ -133,8 +133,10 @@ void Spectrum::pushHit(const Hit& newhit)
   if (!backlog.empty()) {
     Event evt = backlog.front();
     while ((newhit.timestamp - evt.upper_time) > (coinc_window*2)) {
-      if (validateEvent(evt))
+      if (validateEvent(evt)) {
+        recent_count_++;
         this->addEvent(evt);
+      }
       backlog.pop_front();
       if (!backlog.empty())
         evt = backlog.front();
@@ -170,31 +172,60 @@ std::map<int, std::list<StatsUpdate>> Spectrum::get_stats() {
 void Spectrum::addStats(const StatsUpdate& newBlock) {
   //private; no lock required
 
-  if ((newBlock.channel >= 0) && (newBlock.channel < metadata_.add_pattern.size()) && (metadata_.add_pattern[newBlock.channel])) {
+  if ((newBlock.channel >= 0)
+      && (newBlock.channel < metadata_.add_pattern.size())
+      && (metadata_.add_pattern[newBlock.channel])) {
     //PL_DBG << "Spectrum " << metadata_.name << " received update for chan " << newBlock.channel;
     bool chan_new = (stats_list_.count(newBlock.channel) == 0);
-    if (!chan_new) {
-      metadata_.real_time   = newBlock.lab_time - stats_list_[newBlock.channel].front().lab_time;
-      //      PL_DBG << "update stats rt " << newBlock.lab_time  << " - " << start_stats[newBlock.channel].lab_time << " = " << metadata_.real_time;
-      StatsUpdate diff = newBlock - stats_list_[newBlock.channel].front();
-      if (!diff.total_time)
-        return;
-      double scale_factor = metadata_.real_time.total_microseconds() / 1000000 / diff.total_time;
+    bool new_start = (newBlock.stats_type == StatsType::start);
+    if (!chan_new && new_start && (stats_list_[newBlock.channel].back().stats_type == StatsType::running))
+      stats_list_[newBlock.channel].back().stats_type = StatsType::stop;
 
-      //      PL_DBG << "update stats scalefactor " << scale_factor;
+    metadata_.recent_start = metadata_.recent_end;
+    metadata_.recent_end = newBlock;
+    metadata_.recent_count = recent_count_;
+    recent_count_ = 0;
 
-      metadata_.live_time = metadata_.real_time;
-      double this_time_unscaled = diff.live_time - diff.sfdt;
+    if (!chan_new && (stats_list_[newBlock.channel].back().stats_type == StatsType::running))
+      stats_list_[newBlock.channel].pop_back();
 
-      //      PL_DBG << "update stats lt " << diff.live_time  << " sfdt " << diff.sfdt;
-
-      if (this_time_unscaled < metadata_.live_time.total_seconds()) {
-        //        PL_DBG << "really update stats";
-        metadata_.live_time = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));
-      }
-    }
     stats_list_[newBlock.channel].push_back(newBlock);
 
+    if (!chan_new) {
+      StatsUpdate start = stats_list_[newBlock.channel].front();
+
+      boost::posix_time::time_duration rt ,lt;
+      boost::posix_time::time_duration real ,live;
+
+      for (auto &q : stats_list_[newBlock.channel]) {
+        if (q.stats_type == StatsType::start) {
+          real += rt;
+          live += lt;
+          start = q;
+        } else {
+          lt = rt = q.lab_time - start.lab_time;
+          StatsUpdate diff = q - start;
+          if (diff.total_time > 0) {
+            double scale_factor = rt.total_microseconds() / diff.total_time;
+            double this_time_unscaled = diff.live_time - diff.sfdt;
+            lt = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor));
+          }
+        }
+      }
+      real += rt;
+      live += lt;
+      real_times_[newBlock.channel] = real;
+      live_times_[newBlock.channel] = live;
+
+      metadata_.live_time = metadata_.real_time = real;
+      for (auto &q : real_times_)
+        if (q.second.total_seconds() < metadata_.real_time.total_seconds())
+          metadata_.real_time = q.second;
+
+      for (auto &q : live_times_)
+        if (q.second.total_seconds() < metadata_.live_time.total_seconds())
+          metadata_.live_time = q.second;
+    }
   }
 }
 
@@ -206,38 +237,38 @@ void Spectrum::addRun(const RunInfo& run_info) {
   if (run_info.detectors.size() > 0)
     _set_detectors(run_info.detectors);
 
-  if (run_info.time_start == run_info.time_stop)
-    return;
+//  if (run_info.time_start == run_info.time_stop)
+//    return;
 
-  metadata_.real_time = run_info.time_stop - run_info.time_start;
+//  metadata_.real_time = run_info.time_stop - run_info.time_start;
 
-  if (run_info.state.branches.empty()) {       //HACK!!!
-    metadata_.live_time = metadata_.real_time;
-    //PL_DBG << "<Spectrum> making LT = RT ";
-    return;
-  }
+//  if (run_info.state.branches.empty()) {       //HACK!!!
+//    metadata_.live_time = metadata_.real_time;
+//    //PL_DBG << "<Spectrum> making LT = RT ";
+//    return;
+//  }
 
-  //PL_DBG << "<Spectrum> Calculating LT";
+//  //PL_DBG << "<Spectrum> Calculating LT";
 
-  double scale_factor = run_info.time_scale_factor();
-  metadata_.live_time = metadata_.real_time;
-  for (int i = 0; i < metadata_.add_pattern.size(); i++) { //using shortest live time of all added channels
-    double live = run_info.state.get_setting(Gamma::Setting("Pixie4/System/module/channel/LIVE_TIME", i), Gamma::Match::id | Gamma::Match::indices).value_dbl;
-    double sfdt = run_info.state.get_setting(Gamma::Setting("Pixie4/System/module/channel/SFDT", i), Gamma::Match::id | Gamma::Match::indices).value_dbl;
-    double this_time_unscaled =live - sfdt;
-    if ((metadata_.add_pattern[i]) && (this_time_unscaled <= metadata_.live_time.total_seconds()))
-      metadata_.live_time = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));
-  }
+//  double scale_factor = run_info.time_scale_factor();
+//  metadata_.live_time = metadata_.real_time;
+//  for (int i = 0; i < metadata_.add_pattern.size(); i++) { //using shortest live time of all added channels
+//    double live = run_info.state.get_setting(Gamma::Setting("Pixie4/System/module/channel/LIVE_TIME", i), Gamma::Match::id | Gamma::Match::indices).value_dbl;
+//    double sfdt = run_info.state.get_setting(Gamma::Setting("Pixie4/System/module/channel/SFDT", i), Gamma::Match::id | Gamma::Match::indices).value_dbl;
+//    double this_time_unscaled =live - sfdt;
+//    if ((metadata_.add_pattern[i]) && (this_time_unscaled <= metadata_.live_time.total_seconds()))
+//      metadata_.live_time = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));
+//  }
 }
 
-//std::vector<double> Spectrum::energies(uint8_t chan) const {
-//  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+std::vector<double> Spectrum::energies(uint8_t chan) const {
+  boost::shared_lock<boost::shared_mutex> lock(mutex_);
   
-//  if (chan < metadata_.dimensions)
-//    return energies_[chan];
-//  else
-//    return std::vector<double>();
-//}
+  if (chan < metadata_.dimensions)
+    return energies_[chan];
+  else
+    return std::vector<double>();
+}
   
 void Spectrum::set_detectors(const std::vector<Gamma::Detector>& dets) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
@@ -259,20 +290,20 @@ void Spectrum::_set_detectors(const std::vector<Gamma::Detector>& dets) {
 void Spectrum::recalc_energies() {
   //private; no lock required
 
-//  energies_.resize(metadata_.dimensions);
-//  if (energies_.size() != metadata_.detectors.size())
-//    return;
+  energies_.resize(metadata_.dimensions);
+  if (energies_.size() != metadata_.detectors.size())
+    return;
 
-//  for (int i=0; i < metadata_.detectors.size(); ++i) {
-//    energies_[i].resize(metadata_.resolution, 0.0);
-//     Gamma::Calibration this_calib;
-//    if (metadata_.detectors[i].energy_calibrations_.has_a(Gamma::Calibration("Energy", metadata_.bits)))
-//      this_calib = metadata_.detectors[i].energy_calibrations_.get(Gamma::Calibration("Energy", metadata_.bits));
-//    else
-//      this_calib = metadata_.detectors[i].highest_res_calib();
-//    for (uint32_t j=0; j<metadata_.resolution; j++)
-//      energies_[i][j] = this_calib.transform(j, metadata_.bits);
-//  }
+  for (int i=0; i < metadata_.detectors.size(); ++i) {
+    energies_[i].resize(metadata_.resolution, 0.0);
+     Gamma::Calibration this_calib;
+    if (metadata_.detectors[i].energy_calibrations_.has_a(Gamma::Calibration("Energy", metadata_.bits)))
+      this_calib = metadata_.detectors[i].energy_calibrations_.get(Gamma::Calibration("Energy", metadata_.bits));
+    else
+      this_calib = metadata_.detectors[i].highest_res_calib();
+    for (uint32_t j=0; j<metadata_.resolution; j++)
+      energies_[i][j] = this_calib.transform(j, metadata_.bits);
+  }
 }
 
 Gamma::Setting Spectrum::get_attr(std::string setting) const {

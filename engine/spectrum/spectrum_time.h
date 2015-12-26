@@ -49,9 +49,7 @@ protected:
   bool initialize() override {
     metadata_.type = my_type();
     metadata_.dimensions = 1;
-    spectrum_.resize(metadata_.resolution, 0);
 
-    current_cts_ = 0;
     return true;
   }
 
@@ -71,7 +69,8 @@ protected:
   bool channels_from_string(std::istream &data_stream, bool compression);
 
   std::vector<PreciseFloat> spectrum_;
-  uint64_t current_cts_;
+  std::vector<double> seconds_;
+  std::vector<StatsUpdate>  updates_;
 };
 
 }}
