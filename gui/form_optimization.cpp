@@ -56,6 +56,9 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   a.appearance.themes["light"] = QPen(Qt::darkBlue, 2);
   a.appearance.themes["dark"] = QPen(Qt::blue, 2);
 
+  style_pts.default_pen = QPen(Qt::darkBlue, 7);
+  style_pts.themes["selected"] = QPen(Qt::red, 7);
+
   QColor translu(Qt::blue);
   translu.setAlpha(32);
   b.appearance.themes["light"] = QPen(translu, 2);
@@ -65,15 +68,7 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   ui->plotSpectrum->setFit(&fitter_opt_);
   //connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
 
-  ui->comboSetting->addItem("ENERGY_RISETIME");
-  ui->comboSetting->addItem("ENERGY_FLATTOP");
-  ui->comboSetting->addItem("TRIGGER_RISETIME");
-  ui->comboSetting->addItem("TRIGGER_FLATTOP");
-  ui->comboSetting->addItem("TRIGGER_THRESHOLD");
-  ui->comboSetting->addItem("TAU");
-  ui->comboSetting->addItem("BLCUT");
-  ui->comboSetting->addItem("BASELINE_PERCENT");
-  ui->comboSetting->addItem("CFD_THRESHOLD");
+  ui->PlotCalib->setLabels("setting", "FWHM");
 
   ui->tableResults->setColumnCount(4);
   ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem("Setting value", QTableWidgetItem::Type));
@@ -212,17 +207,14 @@ void FormOptimization::on_pushStart_clicked()
 
   current_setting_ = ui->comboSetting->currentText().toStdString();
 
-  ui->plot3->clearGraphs();
-  ui->plot3->reset_scales();
+  ui->PlotCalib->setFloatingText("");
+  ui->PlotCalib->clearGraphs();
 
   ui->tableResults->clear();
   ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromStdString(current_setting_), QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Energy", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("%error", QTableWidgetItem::Type));
-
-  ui->plot3->setLabels(QString::fromStdString(current_setting_), "FWHM");
-  ui->plot3->setTitle(QString::fromStdString("FWHM vs. " + current_setting_));
 
   do_run();
 }
@@ -379,25 +371,20 @@ void FormOptimization::on_pushSaveOpti_clicked()
 void FormOptimization::resultChosen() {
   this->setCursor(Qt::WaitCursor);
 
-  ui->plot3->clearGraphs();
+  QVector<double> xx = QVector<double>::fromStdVector(setting_values_);
+  QVector<double> yy = QVector<double>::fromStdVector(setting_fwhm_);
 
-  ui->plot3->addGraph(QVector<double>::fromStdVector(setting_values_), QVector<double>::fromStdVector(setting_fwhm_), AppearanceProfile());
+  ui->PlotCalib->clearGraphs();
+  ui->PlotCalib->addPoints(xx, yy, style_pts);
 
-  for (auto &q : ui->tableResults->selectedRanges()) {
-    if (q.rowCount() > 0)
-      for (int j = q.topRow(); j <= q.bottomRow(); j++) {
+  std::set<double> chosen_peaks_chan;
 
-        Marker cursor = moving_;
-        cursor.pos.set_bin(setting_values_[j], fitter_opt_.metadata_.bits, fitter_opt_.nrg_cali_);
-        cursor.visible = true;
-        ui->plot3->set_cursors(std::list<Marker>({cursor}));
+  //if selected insert;
 
-      }
-  }
+  ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
 
-  ui->plot3->rescale();
+  ui->PlotCalib->setLabels(QString::fromStdString(current_setting_), "FWHM");
 
-  ui->plot3->redraw();
 
   this->setCursor(Qt::ArrowCursor);
 }

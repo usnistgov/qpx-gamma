@@ -68,7 +68,6 @@ private:
 
   //Acquisition threads, use as static functors
   static void worker_parse(Plugin* callback, SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue);
-  static void worker_run(Plugin* callback, SynchronizedQueue<Spill*>* spill_queue);
   static void worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_queue);
 
 protected:

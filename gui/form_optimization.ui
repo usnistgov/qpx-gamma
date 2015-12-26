@@ -359,9 +359,9 @@
         </widget>
        </item>
        <item>
-        <widget class="WidgetPlot1D" name="plot3" native="true">
+        <widget class="WidgetPlotCalib" name="PlotCalib" native="true">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Ignored" vsizetype="MinimumExpanding">
+          <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -369,13 +369,7 @@
          <property name="minimumSize">
           <size>
            <width>600</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>16777215</height>
+           <height>200</height>
           </size>
          </property>
         </widget>
@@ -394,9 +388,9 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>WidgetPlot1D</class>
+   <class>WidgetPlotCalib</class>
    <extends>QWidget</extends>
-   <header>widget_plot1d.h</header>
+   <header>widget_plot_calib.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>

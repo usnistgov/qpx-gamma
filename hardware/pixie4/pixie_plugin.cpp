@@ -90,11 +90,7 @@ bool Plugin::daq_start(SynchronizedQueue<Spill*>* out_queue) {
   }
 
   raw_queue_ = new SynchronizedQueue<Spill*>();
-
-  if (run_double_buffer_)
-    runner_ = new boost::thread(&worker_run_dbl, this, raw_queue_);
-  else
-    runner_ = new boost::thread(&worker_run, this, raw_queue_);
+  runner_ = new boost::thread(&worker_run_dbl, this, raw_queue_);
 
   if (parser_ != nullptr)
     delete parser_;
@@ -1266,109 +1262,6 @@ void Plugin::boot_err(int32_t err_val) {
 }
 
 
-void Plugin::worker_run(Plugin* callback, SynchronizedQueue<Spill*>* spill_queue) {
-
-  PL_DBG << "<PixiePlugin>  Single buffered daq runner thread starting";
-
-  callback->reset_counters_next_run(); //assume new run
-
-
-  int32_t retval = 0;
-  uint64_t spill_number = 0;
-  bool timeout = false;
-  Spill* fetched_spill;
-  CustomTimer readout_timer, start_timer, run_timer, stop_timer;
-  boost::posix_time::ptime session_start_time, block_time;
-
-  if (!callback->clear_EM(0)) //one module
-    return;
-
-  callback->set_mod("DBLBUFCSR",   static_cast<double>(0), Module(0)); //one module
-  callback->set_mod("MODULE_CSRA", static_cast<double>(2), Module(0)); //one module
-
-  fetched_spill = new Spill;
-  block_time = session_start_time = boost::posix_time::microsec_clock::local_time();
-
-  if(!callback->start_run(Module::all)) {
-    delete fetched_spill;
-    return;
-  }
-
-  callback->get_mod_stats(Module::all);
-  callback->get_chan_stats(Channel::all, Module::all);
-  for (int i=0; i < callback->channel_indices_.size(); i++)
-    callback->fill_stats(fetched_spill->stats, i);
-  for (auto &q : fetched_spill->stats) {
-    q.lab_time = session_start_time;
-    q.spill_number = 0;
-  }
-  spill_queue->enqueue(fetched_spill);
-
-  while (!timeout) {
-    start_timer.resume();
-
-    if (spill_number > 0)
-      retval = callback->resume_run(Module::all);
-    start_timer.stop();
-    run_timer.resume();
-
-    if(retval < 0)
-      return;
-
-    if (spill_number > 0) {
-      callback->get_mod_stats(Module::all);
-      callback->get_chan_stats(Channel::all, Module::all);
-      for (int i=0; i < callback->channel_indices_.size(); i++)
-        callback->fill_stats(fetched_spill->stats, i);
-      for (auto &q : fetched_spill->stats) {
-        q.lab_time = block_time;
-        q.spill_number = spill_number;
-      }
-      spill_queue->enqueue(fetched_spill);
-    }
-
-    fetched_spill = new Spill;
-    fetched_spill->data.resize(list_mem_len32, 0);
-
-    spill_number++;
-
-    retval = callback->poll_run(0);  //one module
-    while ((retval == 1) && (!timeout)) {
-      wait_ms(callback->run_poll_interval_ms_);
-      retval = callback->poll_run(0);  //one module
-      timeout = (callback->run_status_.load() == 2);
-    };
-    block_time = boost::posix_time::microsec_clock::local_time();
-    run_timer.stop();
-
-    stop_timer.resume();
-    callback->stop_run(Module::all); //is this really necessary?
-    stop_timer.stop();
-
-    readout_timer.resume();
-    if(!callback->read_EM(fetched_spill->data.data(), 0)) {  //one module
-      PL_ERR << "read_EM failed";
-      delete fetched_spill;
-      return;
-    }
-    readout_timer.stop();
-  }
-
-  callback->get_mod_stats(Module::all);
-  callback->get_chan_stats(Channel::all, Module::all);
-  for (int i=0; i < callback->channel_indices_.size(); i++)
-    callback->fill_stats(fetched_spill->stats, i);
-  for (auto &q : fetched_spill->stats) {
-    q.lab_time = block_time;
-    q.spill_number = spill_number;
-  }
-  spill_queue->enqueue(fetched_spill);
-
-  callback->run_status_.store(3);
-  PL_DBG << "<PixiePlugin>  Single buffered daq runner thread completed";
-}
-
-
 void Plugin::worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_queue) {
 
   PL_DBG << "<PixiePlugin> Double buffered daq runner thread starting";
@@ -1402,6 +1295,7 @@ void Plugin::worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_q
     callback->fill_stats(fetched_spill->stats, i);
   for (auto &q : fetched_spill->stats) {
     q.lab_time = session_start_time;
+    q.stats_type = StatsType::start;
     q.spill_number = 0;
   }
   spill_queue->enqueue(fetched_spill);

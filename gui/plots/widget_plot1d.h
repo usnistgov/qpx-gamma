@@ -96,7 +96,6 @@ public:
 
   void set_markers(const std::list<Marker>&);
   void set_block(Marker, Marker);
-  void set_cursors(const std::list<Marker>&);
 
   void set_range(Range);
   std::set<double> get_selected_markers();
@@ -140,7 +139,6 @@ private:
   Ui::WidgetPlot1D *ui;
 
   std::list<Marker> my_markers_;
-  std::list<Marker> my_cursors_;
   std::vector<Marker> rect;
 
   Range my_range_;

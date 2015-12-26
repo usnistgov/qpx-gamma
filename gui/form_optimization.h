@@ -102,6 +102,8 @@ private:
   Gamma::Fitter fitter_opt_;
   std::vector<Gamma::Fitter> spectra_;
 
+  AppearanceProfile style_pts;
+
   std::string current_setting_;
   std::vector<Gamma::Peak> peaks_;
   std::vector<double> setting_values_;

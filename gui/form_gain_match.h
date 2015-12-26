@@ -76,6 +76,8 @@ private slots:
 
   void on_comboTarget_currentIndexChanged(int index);
 
+  void on_comboSetting_activated(int index);
+
 private:
   void loadSettings();
   void saveSettings();

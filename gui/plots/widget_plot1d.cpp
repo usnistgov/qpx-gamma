@@ -167,7 +167,6 @@ void WidgetPlot1D::clearExtras()
 {
   //PL_DBG << "WidgetPlot1D::clearExtras()";
   my_markers_.clear();
-  my_cursors_.clear();
   my_range_.visible = false;
   rect.clear();
 }
@@ -213,10 +212,6 @@ void WidgetPlot1D::set_block(Marker a, Marker b) {
   rect.resize(2);
   rect[0] = a;
   rect[1] = b;
-}
-
-void WidgetPlot1D::set_cursors(const std::list<Marker>& cursors) {
-  my_cursors_ = cursors;
 }
 
 void WidgetPlot1D::set_range(Range rng) {
@@ -483,33 +478,6 @@ void WidgetPlot1D::replot_markers() {
     //ui->mcaPlot->xAxis->setRange(min, max);
     //ui->mcaPlot->xAxis2->setRange(min, max);
 
-  }
-
-  for (auto &q : my_cursors_) {
-    double pos = 0;
-
-    if (!q.visible)
-      continue;
-    int total = ui->mcaPlot->graphCount();
-    for (int i=0; i < total; i++) {
-
-      int bits = ui->mcaPlot->graph(i)->property("bits").toInt();
-
-      if (use_calibrated_)
-        pos = q.pos.energy();
-      else
-        pos = q.pos.bin(bits);
-
-      QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
-      crs->setPen(q.appearance.get_pen(color_theme_));
-      crs->setStyle(QCPItemTracer::tsCircle);
-      crs->setSize(4);
-      crs->setGraph(ui->mcaPlot->graph(i));
-      crs->setGraphKey(pos);
-      crs->setInterpolating(true);
-      crs->setSelectable(false);
-      ui->mcaPlot->addItem(crs);
-    }
   }
 
   if (my_range_.visible) {

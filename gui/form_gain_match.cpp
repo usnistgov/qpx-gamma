@@ -89,7 +89,7 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
   style_pts.default_pen = QPen(Qt::darkBlue, 7);
   style_pts.themes["selected"] = QPen(Qt::red, 7);
 
-  ui->PlotCalib->setLabels("channel", "energy");
+  ui->PlotCalib->setLabels("gain", "peak center bin");
 
   ui->tableResults->setColumnCount(4);
   ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem("Setting value", QTableWidgetItem::Type));
@@ -100,8 +100,7 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
   ui->tableResults->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->tableResults->horizontalHeader()->setStretchLastSection(true);
   ui->tableResults->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-  connect(ui->tableResults, SIGNAL(itemSelectionChanged()), this, SLOT(resultChosen()));
-
+  //connect(ui->tableResults, SIGNAL(itemSelectionChanged()), this, SLOT(resultChosen()));
 
   connect(&gm_plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
 
@@ -309,7 +308,7 @@ void FormGainMatch::do_post_processing() {
     double xmin = std::numeric_limits<double>::max();
     double xmax = - std::numeric_limits<double>::max();
 
-    for (auto &q : gains) {
+    for (auto &q : xx) {
       if (q < xmin)
         xmin = q;
       if (q > xmax)
@@ -618,4 +617,16 @@ void FormGainMatch::on_comboTarget_currentIndexChanged(int index)
     }
   }
 
+}
+
+void FormGainMatch::on_comboSetting_activated(int index)
+{
+  int optchan = ui->comboTarget->currentData().toInt();
+  current_setting_ = ui->comboSetting->currentText().toStdString();
+
+  Gamma::Setting set(current_setting_, optchan);
+
+  set = Qpx::Engine::getInstance().pull_settings().get_setting(set, Gamma::Match::id | Gamma::Match::indices);
+
+  ui->doubleSpinDeltaV->setValue(set.metadata.step * 10);
 }
