@@ -208,7 +208,7 @@ void SpectraSet::add_spill(Spill* one_spill) {
   for (auto &q: my_spectra_)
     q->addSpill(*one_spill);
 
-  if ((!one_spill->stats.empty()) && (one_spill->stats.front().spill_number > 0))
+  if ((!one_spill->stats.empty()) /*&& (one_spill->stats.front().spill_number > 0)*/)
       status_ = "Live at " +  boost::posix_time::to_simple_string(boost::posix_time::microsec_clock::local_time()) +
           " with " + std::to_string(one_spill->stats.front().event_rate) + " events/sec";
 

@@ -151,9 +151,9 @@ Spill Sorter::get_spill() {
   Spill one_spill;
 
   if ((spills_.size() > 0) && (file_bin_.tellg() < bin_end_)) {
-    PL_INFO << "<Sorter> Producing spill " << spills_.front().spill_number << " (" << spills_.size() << " remaining) from list data";
-    if (spills_.front().spill_number == 0)
-      one_spill.run = start_;
+    PL_INFO << "<Sorter> Producing spill " /*<< spills_.front().spill_number <<*/ " (" << spills_.size() << " remaining) from list data";
+//    if (spills_.front().spill_number == 0)
+//      one_spill.run = start_;
 
     one_spill.stats.push_back(spills_.front()); //wrong!!!
 

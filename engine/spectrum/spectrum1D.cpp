@@ -112,7 +112,6 @@ void Spectrum1D::addHit(const Hit& newHit) {
 
   if (en > metadata_.max_chan)
     metadata_.max_chan = en;
-  metadata_.total_count++;
 }
 
 void Spectrum1D::addEvent(const Event& newEvent) {

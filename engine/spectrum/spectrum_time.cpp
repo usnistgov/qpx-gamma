@@ -76,6 +76,9 @@ std::unique_ptr<std::list<Entry>> SpectrumTime::_get_spectrum(std::initializer_l
     max = range.second;
   }
 
+  if (max > spectrum_.size())
+    max = spectrum_.size();
+
   //in range?
   
   std::unique_ptr<std::list<Entry>> result(new std::list<Entry>);
@@ -104,46 +107,46 @@ void SpectrumTime::_add_bulk(const Entry& e) {
     }
 }
 
-void SpectrumTime::addHit(const Hit& newHit) {
-  if (recent_count_ > metadata_.max_count)
-    metadata_.max_count = recent_count_;
-
-  metadata_.total_count++;
-}
-
 void SpectrumTime::addStats(const StatsUpdate& newStats)
 {
 
-  if ((newStats.channel >= 0) || (newStats.channel < metadata_.add_pattern.size())
-      || (metadata_.add_pattern[newStats.channel] == 1)) {
+  if ((newStats.channel >= 0) && (newStats.channel < metadata_.add_pattern.size())
+      && (metadata_.add_pattern[newStats.channel] == 1)) {
 
     PreciseFloat rt = 0;
-    if (!updates_.empty())
-      rt = (newStats.lab_time - updates_.back().lab_time).total_seconds();
+    PreciseFloat tot_time = 0;
 
-    seconds_.push_back(rt.convert_to<double>());
-    updates_.push_back(newStats);
-
-    if (rt > metadata_.max_chan)
-      metadata_.max_chan = seconds_.size() - 1;
+    if (!updates_.empty()) {
+      rt = (newStats.lab_time - updates_.back().lab_time).total_milliseconds() * 0.001;
+      tot_time = (newStats.lab_time - updates_.front().lab_time).total_milliseconds() * 0.001;
+    }
 
     PreciseFloat count = recent_count_;
     if (rt > 0)
       count /= rt;
 
-    spectrum_.push_back(count);
+    if (seconds_.empty() || (tot_time != 0)) {
 
-    energies_[0] = seconds_;
+      seconds_.push_back(tot_time.convert_to<double>());
+      updates_.push_back(newStats);
+
+      metadata_.resolution = seconds_.size();
+      metadata_.max_chan = seconds_.size() - 1;
+
+      spectrum_.push_back(count);
+
+      if (count > metadata_.max_count)
+        metadata_.max_count = count;
+
+      energies_[0] = seconds_;
+
+//      PL_DBG << "<SpectrumTime> \"" << metadata_.name << "\" chan " << int(newStats.channel) << " nrgs.size="
+//             << energies_[0].size() << " nrgs.last=" << energies_[0][energies_[0].size()-1]
+//             << " spectrum.size=" << spectrum_.size() << " spectrum.last=" << spectrum_[spectrum_.size()-1].convert_to<double>();
+    }
   }
 
   Spectrum::addStats(newStats);
-}
-
-
-void SpectrumTime::addEvent(const Event& newEvent) {
-  for (int16_t i = 0; i < metadata_.add_pattern.size(); i++)
-    if ((metadata_.add_pattern[i]) && (newEvent.hit.count(i) > 0))
-      this->addHit(newEvent.hit.at(i));
 }
 
 

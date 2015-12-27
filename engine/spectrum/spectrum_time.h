@@ -59,8 +59,7 @@ protected:
   void _set_detectors(const std::vector<Gamma::Detector>& dets) override;
 
   //event processing
-  void addEvent(const Event&) override;
-  virtual void addHit(const Hit&);
+  void addEvent(const Event&) override {}
   void addStats(const StatsUpdate&) override;
 
   std::string _channels_to_xml() const override;

@@ -49,10 +49,11 @@ enum ShowOptions {
   scale     = 1 << 1,
   labels    = 1 << 2,
   themes    = 1 << 3,
-  grid      = 1 << 4,
-  title     = 1 << 5,
-  zoom      = 1 << 6,
-  save      = 1 << 7
+  thickness = 1 << 4,
+  grid      = 1 << 5,
+  title     = 1 << 6,
+  zoom      = 1 << 7,
+  save      = 1 << 8
 };
 
 inline ShowOptions operator|(ShowOptions a, ShowOptions b) {return static_cast<ShowOptions>(static_cast<int>(a) | static_cast<int>(b));}
@@ -168,6 +169,7 @@ private:
   QString scale_type_;
   QString plot_style_;
   QString grid_style_;
+  int thickness_;
 
   QString title_text_;
 };

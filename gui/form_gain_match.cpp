@@ -30,7 +30,6 @@
 FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormGainMatch),
-  minTimer(nullptr),
   gm_runner_thread_(thread),
   settings_(settings),
   detectors_(detectors),
@@ -54,48 +53,30 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
 
   reference_.name_ = "Reference";
   reference_.visible = true;
-  reference_.appearance = QColor(Qt::blue).rgba();
+  QColor col;
+  col.setHsv(QColor(Qt::blue).hsvHue(), 48, 160);
+  reference_.appearance = col.rgba();
 
   optimizing_.name_ = "Optimizing";
   optimizing_.visible = true;
-  optimizing_.appearance = QColor(Qt::red).rgba();
+  col.setHsv(QColor(Qt::red).hsvHue(), 48, 160);
+  optimizing_.appearance = col.rgba();
 
-  moving_.appearance.themes["light"] = QPen(Qt::darkYellow, 2);
-  moving_.appearance.themes["dark"] = QPen(Qt::yellow, 2);
+  ap_reference_.default_pen = QPen(Qt::blue, 0);
+  ap_optimized_.default_pen = QPen(Qt::red, 0);
 
-  a.appearance.themes["light"] = QPen(Qt::darkYellow, 1);
-  a.appearance.themes["dark"] = QPen(Qt::yellow, 1);
-
-  QColor translu(Qt::darkYellow);
-  translu.setAlpha(32);
-  b.appearance.themes["light"] = QPen(translu, 1);
-  translu.setAlpha(64);
-  b.appearance.themes["dark"] = QPen(translu, 1);
-
-  ap_reference_.themes["light"] = QPen(Qt::darkCyan, 0);
-  ap_reference_.themes["dark"] = QPen(Qt::cyan, 0);
-
-  ap_optimized_.themes["light"] = QPen(Qt::darkMagenta, 0);
-  ap_optimized_.themes["dark"] = QPen(Qt::magenta, 0);
-
-  marker_ref_.appearance = ap_reference_;
-  marker_ref_.visible = true;
-
-  marker_opt_.appearance = ap_optimized_;
-  marker_opt_.visible = true;
-
-
-  style_fit.default_pen = QPen(Qt::blue, 0);
-  style_pts.default_pen = QPen(Qt::darkBlue, 7);
+  style_fit.default_pen = QPen(Qt::darkBlue, 0);
+  style_pts.default_pen = QPen(Qt::blue, 7);
   style_pts.themes["selected"] = QPen(Qt::red, 7);
 
   ui->PlotCalib->setLabels("gain", "peak center bin");
 
-  ui->tableResults->setColumnCount(4);
+  ui->tableResults->setColumnCount(5);
   ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem("Setting value", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Bin", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("%error", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("area", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(4, new QTableWidgetItem("%error", QTableWidgetItem::Type));
   ui->tableResults->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tableResults->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->tableResults->horizontalHeader()->setStretchLastSection(true);
@@ -104,8 +85,6 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
 
   connect(&gm_plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
 
-  connect(ui->plot, SIGNAL(clickedLeft(double)), this, SLOT(addMovingMarker(double)));
-  connect(ui->plot, SIGNAL(clickedRight(double)), this, SLOT(removeMovingMarker(double)));
 
   update_settings();
 
@@ -137,8 +116,7 @@ void FormGainMatch::loadSettings() {
   ui->spinBits->setValue(settings_.value("bits", 14).toInt());
 //  ui->spinRefChan->setValue(settings_.value("reference_channel", 0).toInt());
 //  ui->spinOptChan->setValue(settings_.value("optimized_channel", 1).toInt());
-  ui->timeDuration->set_total_seconds(settings_.value("mca_secs", 0).toULongLong());
-  ui->spinPeakWindow->setValue(settings_.value("peak_window", 180).toInt());
+  ui->doubleError->setValue(settings_.value("error", 1.0).toDouble());
   ui->doubleSpinDeltaV->setValue(settings_.value("delta_V", 0.000300).toDouble());
   settings_.endGroup();
 }
@@ -148,8 +126,7 @@ void FormGainMatch::saveSettings() {
   settings_.setValue("bits", ui->spinBits->value());
 //  settings_.setValue("reference_channel", ui->spinRefChan->value());
 //  settings_.setValue("optimized_channel", ui->spinOptChan->value());
-  settings_.setValue("mca_secs", QVariant::fromValue(ui->timeDuration->total_seconds()));
-  settings_.setValue("peak_window", ui->spinPeakWindow->value());
+  settings_.setValue("error", ui->doubleError->value());
   settings_.setValue("delta_V", ui->doubleSpinDeltaV->value());
   settings_.endGroup();
 }
@@ -166,11 +143,7 @@ void FormGainMatch::closeEvent(QCloseEvent *event) {
       event->ignore();
       return;
     }
-  } else {
-    gm_runner_thread_.terminate();
-    gm_runner_thread_.wait();
   }
-
 
   if (!gm_spectra_.empty()) {
     int reply = QMessageBox::warning(this, "Gain matching data still open",
@@ -193,10 +166,7 @@ void FormGainMatch::closeEvent(QCloseEvent *event) {
 
 void FormGainMatch::toggle_push(bool enable, Qpx::DeviceStatus status) {
   bool online = (status & Qpx::DeviceStatus::can_run);
-  ui->pushMatchGain->setEnabled(enable && online);
-
-
-  ui->timeDuration->setEnabled(enable);
+  ui->pushMatchGain->setEnabled(enable && online && !my_run_);
 
   ui->comboReference->setEnabled(enable);
   ui->comboTarget->setEnabled(enable);
@@ -206,8 +176,8 @@ void FormGainMatch::toggle_push(bool enable, Qpx::DeviceStatus status) {
 void FormGainMatch::do_run()
 {
   ui->pushStop->setEnabled(true);
-  emit toggleIO(false);
   my_run_ = true;
+  emit toggleIO(false);
 
   bits = ui->spinBits->value();
 
@@ -235,12 +205,15 @@ void FormGainMatch::do_run()
   gm_spectra_.set_spectra(db);
   ui->plot->clearGraphs();
 
-  if (minTimer != nullptr)
-    delete minTimer;
+  Gamma::Setting gain_setting(current_setting_, optchan);
 
+  Qpx::Engine::getInstance().get_all_settings();
+  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
+  double old_gain = gain_setting.value_dbl;
+
+  gains.push_back(old_gain);
   peaks_.push_back(Gamma::Peak());
 
-  minTimer = new CustomTimer(true);
   gm_runner_thread_.do_run(gm_spectra_, gm_interruptor_, 0);
 }
 
@@ -249,8 +222,6 @@ void FormGainMatch::run_completed() {
     gm_spectra_.clear();
     gm_spectra_.terminate();
     gm_plot_thread_.wait();
-    marker_ref_.visible = false;
-    marker_opt_.visible = false;
     gauss_ref_.gaussian_.height_ = 0;
     gauss_opt_.gaussian_.height_ = 0;
     //replot_markers();
@@ -261,8 +232,8 @@ void FormGainMatch::run_completed() {
       do_post_processing();
     } else {
       ui->pushStop->setEnabled(false);
-      emit toggleIO(true);
       my_run_ = false;
+      emit toggleIO(true);
     }
   }
 }
@@ -272,19 +243,9 @@ void FormGainMatch::do_post_processing() {
 
   update_plots();
 
-
-  int optchan = ui->comboTarget->currentData().toInt();
-  Gamma::Setting gain_setting(current_setting_, optchan);
-
-  Qpx::Engine::getInstance().get_all_settings();
-  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
-  double old_gain = gain_setting.value_dbl;
-  QThread::sleep(1);
+  double old_gain = gains.back();
   double delta = gauss_opt_.gaussian_.center_ - gauss_ref_.gaussian_.center_;
 
-  PL_DBG << "[Gain matching] current gain = " << old_gain << " centroid = " << gauss_opt_.gaussian_.center_ << " with delta = " << delta;
-
-  gains.push_back(old_gain);
   deltas.push_back(gauss_opt_.gaussian_.center_);
 
   double new_gain = old_gain;
@@ -350,11 +311,16 @@ void FormGainMatch::do_post_processing() {
   if (std::abs(delta) < ui->doubleThreshold->value()) {
     PL_INFO << "[Gain matching] gain matching complete";
     ui->pushStop->setEnabled(false);
+    my_run_ = false;
     emit toggleIO(true);
     return;
   }
 
+  int optchan = ui->comboTarget->currentData().toInt();
+  Gamma::Setting gain_setting(current_setting_, optchan);
+  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
   gain_setting.value_dbl = new_gain;
+
   Qpx::Engine::getInstance().set_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
   QThread::sleep(2);
   gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
@@ -374,34 +340,18 @@ bool FormGainMatch::find_peaks() {
   fitter_ref_.overlap_ = ui->doubleOverlapWidth->value();
   fitter_ref_.sum4edge_samples = ui->spinSum4EdgeW->value();
   fitter_ref_.find_peaks(ui->spinMinPeakWidth->value());
-  if (fitter_ref_.peaks_.size()) {
-    for (auto &q : fitter_ref_.peaks_) {
-      double center = q.first;
-      if ((q.second.gaussian_.height_ > gauss_ref_.height)
-          && ((!moving_.visible)
-              || ((center > a.pos.bin(a.pos.bits())) && (center < b.pos.bin(b.pos.bits())))
-              )
-          )
-        gauss_ref_ = q.second;
-    }
-  }
+  for (auto &q : fitter_ref_.peaks_)
+    if (q.second.area_net_ > gauss_ref_.area_net_)
+      gauss_ref_ = q.second;
 
   gauss_opt_ = Gamma::Peak();
   fitter_opt_.set_mov_avg(ui->spinMovAvg->value());
   fitter_ref_.overlap_ = ui->doubleOverlapWidth->value();
   fitter_ref_.sum4edge_samples = ui->spinSum4EdgeW->value();
   fitter_opt_.find_peaks(ui->spinMinPeakWidth->value());
-  if (fitter_opt_.peaks_.size()) {
-    for (auto &q : fitter_opt_.peaks_) {
-      double center = q.first;
-      if ((q.second.gaussian_.height_ > gauss_opt_.height)
-          && ((!moving_.visible)
-              || ((center > a.pos.bin(a.pos.bits())) && (center < b.pos.bin(b.pos.bits())))
-              )
-          )
+  for (auto &q : fitter_opt_.peaks_)
+    if (q.second.area_net_ > gauss_opt_.area_net_)
         gauss_opt_ = q.second;
-    }
-  }
 
   peaks_[peaks_.size() - 1] = gauss_opt_;
 
@@ -451,23 +401,29 @@ void FormGainMatch::update_plots() {
 
   ui->tableResults->setRowCount(peaks_.size());
 
-  int current_spec = peaks_.size() - 1;
+  if (peaks_.size()) {
+    int current_spec = peaks_.size() - 1;
 
-  QTableWidgetItem *st = new QTableWidgetItem(QString::number(gains[current_spec]));
-  st->setFlags(st->flags() ^ Qt::ItemIsEditable);
-  ui->tableResults->setItem(current_spec, 0, st);
+    QTableWidgetItem *st = new QTableWidgetItem(QString::number(gains[current_spec]));
+    st->setFlags(st->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(current_spec, 0, st);
 
-  QTableWidgetItem *en = new QTableWidgetItem(QString::number(peaks_[current_spec].energy));
-  en->setFlags(en->flags() ^ Qt::ItemIsEditable);
-  ui->tableResults->setItem(current_spec, 1, en);
+    QTableWidgetItem *ctr = new QTableWidgetItem(QString::number(peaks_[current_spec].center));
+    ctr->setFlags(ctr->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(current_spec, 1, ctr);
 
-  QTableWidgetItem *fw = new QTableWidgetItem(QString::number(peaks_[current_spec].fwhm_sum4));
-  fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
-  ui->tableResults->setItem(current_spec, 2, fw);
+    QTableWidgetItem *fw = new QTableWidgetItem(QString::number(peaks_[current_spec].fwhm_sum4));
+    fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(current_spec, 2, fw);
 
-  QTableWidgetItem *err = new QTableWidgetItem(QString::number(peaks_[current_spec].sum4_.err));
-  err->setFlags(err->flags() ^ Qt::ItemIsEditable);
-  ui->tableResults->setItem(current_spec, 3, err);
+    QTableWidgetItem *area = new QTableWidgetItem(QString::number(peaks_[current_spec].area_net_));
+    area->setFlags(area->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(current_spec, 3, area);
+
+    QTableWidgetItem *err = new QTableWidgetItem(QString::number(peaks_[current_spec].sum4_.err));
+    err->setFlags(err->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(current_spec, 4, err);
+  }
 
 
   if (ui->plot->isVisible()) {
@@ -501,54 +457,11 @@ void FormGainMatch::update_plots() {
   }
 
 
-  if (have_peaks && (minTimer != nullptr) && (minTimer->s() > ui->timeDuration->total_seconds())) {
-    delete minTimer;
-    minTimer = nullptr;
+  if (have_peaks && !peaks_.empty() && (peaks_.back().sum4_.err < ui->doubleError->value()))
     gm_interruptor_.store(true);
-  }
 
   this->setCursor(Qt::ArrowCursor);
 }
-
-void FormGainMatch::addMovingMarker(double x) {
-  moving_.pos.set_bin(x, fitter_ref_.metadata_.bits, fitter_ref_.nrg_cali_);
-  moving_.visible = true;
-  a.pos.set_bin(x - ui->spinPeakWindow->value() / 2, fitter_ref_.metadata_.bits, fitter_ref_.nrg_cali_);
-  a.visible = true;
-  b.pos.set_bin(x + ui->spinPeakWindow->value() / 2, fitter_ref_.metadata_.bits, fitter_ref_.nrg_cali_);
-  b.visible = true;
-  replot_markers();
-}
-
-void FormGainMatch::removeMovingMarker(double x) {
-  moving_.visible = false;
-  a.visible = false;
-  b.visible = false;
-  replot_markers();
-}
-
-
-void FormGainMatch::replot_markers() {
-  std::list<Marker> markers;
-
-  if (gauss_ref_.gaussian_.height_) {
-    marker_ref_.pos.set_bin(gauss_ref_.gaussian_.center_, fitter_ref_.metadata_.bits, fitter_ref_.nrg_cali_);
-    marker_ref_.visible = true;
-    markers.push_back(marker_ref_);
-  }
-
-  if (gauss_opt_.gaussian_.height_) {
-    marker_opt_.pos.set_bin(gauss_opt_.gaussian_.center_, fitter_opt_.metadata_.bits, fitter_opt_.nrg_cali_);
-    marker_opt_.visible = true;
-    markers.push_back(marker_opt_);
-  }
-
-  ui->plot->set_markers(markers);
-  ui->plot->set_block(a,b);
-  ui->plot->replot_markers();
-  ui->plot->redraw();
-}
-
 
 void FormGainMatch::on_pushMatchGain_clicked()
 {
@@ -562,7 +475,8 @@ void FormGainMatch::on_pushMatchGain_clicked()
   ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromStdString(current_setting_), QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Bin", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("%error", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("area", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(4, new QTableWidgetItem("%error", QTableWidgetItem::Type));
 
   ui->PlotCalib->setFloatingText("");
   ui->PlotCalib->clearGraphs();
@@ -577,28 +491,11 @@ void FormGainMatch::on_pushStop_clicked()
   gm_interruptor_.store(true);
 }
 
-void FormGainMatch::on_pushSaveOpti_clicked()
-{
-  Qpx::Engine::getInstance().save_optimization();
-  std::vector<Gamma::Detector> dets = Qpx::Engine::getInstance().get_detectors();
-  for (auto &q : dets) {
-    if (detectors_.has_a(q)) {
-      Gamma::Detector modified = detectors_.get(q);
-      modified.settings_ = q.settings_;
-      detectors_.replace(modified);
-    }
-  }
-  emit optimization_approved();
-}
-
 void FormGainMatch::on_pushFindPeaks_clicked()
 {
   bool have_peaks = find_peaks();
-  if (have_peaks && (minTimer != nullptr) && (minTimer->s() > ui->timeDuration->total_seconds())) {
-    delete minTimer;
-    minTimer = nullptr;
+  if (have_peaks && !peaks_.empty() && (peaks_.back().sum4_.err < ui->doubleError->value()))
     gm_interruptor_.store(true);
-  }
 }
 
 void FormGainMatch::on_comboTarget_currentIndexChanged(int index)

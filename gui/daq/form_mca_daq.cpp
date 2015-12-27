@@ -96,11 +96,7 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
       event->ignore();
       return;
     }
-  } else {
-    runner_thread_.terminate();
-    runner_thread_.wait();
   }
-
 
   if (my_analysis_ != nullptr) {
     my_analysis_->close(); //assume always successful
@@ -257,9 +253,11 @@ void FormMcaDaq::on_pushMcaStart_clicked()
   emit toggleIO(false);
   ui->pushMcaStop->setEnabled(true);
 
-  clearGraphs();
-  spectra_.set_spectra(spectra_templates_);
-  newProject();
+  if (spectra_.empty()) {
+    clearGraphs();
+    spectra_.set_spectra(spectra_templates_);
+    newProject();
+  }
 //  spectra_.activate();
 
   my_run_ = true;

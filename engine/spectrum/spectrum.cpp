@@ -82,16 +82,16 @@ void Spectrum::addSpill(const Spill& one_spill) {
   for (auto &q : one_spill.hits)
     this->pushHit(q);
 
-  if (one_spill.run.total_events > 0) {
-    //PL_DBG << "<" << metadata_.name << "> final RunInfo received, dumping backlog of events " << backlog.size();
-    while (!backlog.empty()) {
-      this->addEvent(backlog.front());
-      backlog.pop_front();
+  for (auto &q : one_spill.stats) {
+    if (q.stats_type == StatsType::stop) {
+//      PL_DBG << "<" << metadata_.name << "> final RunInfo received, dumping backlog of events " << backlog.size();
+      while (!backlog.empty()) {
+        this->addEvent(backlog.front());
+        backlog.pop_front();
+      }
     }
-  }
-
-  for (auto &q : one_spill.stats)
     this->addStats(q);
+  }
 
   if (one_spill.run != RunInfo())
     this->addRun(one_spill.run);
@@ -135,6 +135,7 @@ void Spectrum::pushHit(const Hit& newhit)
     while ((newhit.timestamp - evt.upper_time) > (coinc_window*2)) {
       if (validateEvent(evt)) {
         recent_count_++;
+        metadata_.total_count++;
         this->addEvent(evt);
       }
       backlog.pop_front();
@@ -174,16 +175,22 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
 
   if ((newBlock.channel >= 0)
       && (newBlock.channel < metadata_.add_pattern.size())
-      && (metadata_.add_pattern[newBlock.channel])) {
+      && (newBlock.channel < metadata_.match_pattern.size())
+      && (metadata_.add_pattern[newBlock.channel] || metadata_.match_pattern[newBlock.channel])) {
     //PL_DBG << "Spectrum " << metadata_.name << " received update for chan " << newBlock.channel;
     bool chan_new = (stats_list_.count(newBlock.channel) == 0);
     bool new_start = (newBlock.stats_type == StatsType::start);
     if (!chan_new && new_start && (stats_list_[newBlock.channel].back().stats_type == StatsType::running))
       stats_list_[newBlock.channel].back().stats_type = StatsType::stop;
 
-    metadata_.recent_start = metadata_.recent_end;
+    if (metadata_.recent_end.lab_time.is_not_a_date_time())
+      metadata_.recent_start = newBlock;
+    else
+      metadata_.recent_start = metadata_.recent_end;
+
     metadata_.recent_end = newBlock;
     metadata_.recent_count = recent_count_;
+//    PL_DBG << "<Spectrum> \"" << metadata_.name << "\" recent count_ = " << recent_count_;
     recent_count_ = 0;
 
     if (!chan_new && (stats_list_[newBlock.channel].back().stats_type == StatsType::running))
@@ -202,29 +209,48 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
           real += rt;
           live += lt;
           start = q;
+//          PL_DBG << "<Spectrum> \"" << metadata_.name << "\" RT + "
+//                 << rt << " = " << real << "   LT + " << lt << " = " << live;
+//          PL_DBG << "<Spectrum> \"" << metadata_.name << "\" FROM "
+//                 << boost::posix_time::to_iso_extended_string(start.lab_time);
         } else {
           lt = rt = q.lab_time - start.lab_time;
           StatsUpdate diff = q - start;
+//          PL_DBG << "<Spectrum> \"" << metadata_.name << "\" TOTAL_TIME " << q.total_time << "-" << start.total_time
+//                 << " = " << diff.total_time;
           if (diff.total_time > 0) {
             double scale_factor = rt.total_microseconds() / diff.total_time;
             double this_time_unscaled = diff.live_time - diff.sfdt;
             lt = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor));
+//            PL_DBG << "<Spectrum> \"" << metadata_.name << "\" TO "
+//                   << boost::posix_time::to_iso_extended_string(q.lab_time)
+//                   << "  RT = " << rt << "   LT = " << lt;
           }
         }
       }
-      real += rt;
-      live += lt;
+
+      if (stats_list_[newBlock.channel].back().stats_type != StatsType::start) {
+        real += rt;
+        live += lt;
+//        PL_DBG << "<Spectrum> \"" << metadata_.name << "\" RT + "
+//               << rt << " = " << real << "   LT + " << lt << " = " << live;
+      }
       real_times_[newBlock.channel] = real;
       live_times_[newBlock.channel] = live;
 
       metadata_.live_time = metadata_.real_time = real;
       for (auto &q : real_times_)
-        if (q.second.total_seconds() < metadata_.real_time.total_seconds())
+        if (q.second.total_milliseconds() < metadata_.real_time.total_milliseconds())
           metadata_.real_time = q.second;
 
       for (auto &q : live_times_)
-        if (q.second.total_seconds() < metadata_.live_time.total_seconds())
+        if (q.second.total_milliseconds() < metadata_.live_time.total_milliseconds())
           metadata_.live_time = q.second;
+
+//      PL_DBG << "<Spectrum> \"" << metadata_.name << "\"  ********* "
+//             << "RT = " << to_simple_string(metadata_.real_time)
+//             << "   LT = " << to_simple_string(metadata_.live_time) ;
+
     }
   }
 }
@@ -233,8 +259,11 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
 void Spectrum::addRun(const RunInfo& run_info) {
   //private; no lock required
 
-  metadata_.start_time = run_info.time_start;
-  if (run_info.detectors.size() > 0)
+  if (metadata_.start_time.is_not_a_date_time() && (!run_info.time_start.is_not_a_date_time())) {
+    metadata_.start_time = run_info.time_start;
+  }
+
+ if (run_info.detectors.size() > 0)
     _set_detectors(run_info.detectors);
 
 //  if (run_info.time_start == run_info.time_stop)

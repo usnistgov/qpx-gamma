@@ -1269,7 +1269,7 @@ void Plugin::worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_q
   callback->reset_counters_next_run(); //assume new run
 
   std::bitset<32> csr;
-  uint64_t spill_number = 0;
+  //uint64_t spill_number = 0;
   bool timeout = false;
   Spill* fetched_spill;
   boost::posix_time::ptime session_start_time, block_time;
@@ -1296,16 +1296,16 @@ void Plugin::worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_q
   for (auto &q : fetched_spill->stats) {
     q.lab_time = session_start_time;
     q.stats_type = StatsType::start;
-    q.spill_number = 0;
+    //q.spill_number = 0;
   }
   spill_queue->enqueue(fetched_spill);
 
   std::set<int> mods;
   while (!(timeout && mods.empty())) {
-    spill_number++;
+    //spill_number++;
 
     mods.clear();
-    while (!timeout && (mods.empty())) {
+    while (!timeout && mods.empty()) {
       for (int i=0; i < callback->channel_indices_.size(); ++i) {
         std::bitset<32> csr = std::bitset<32>(poll_run_dbl(i));
         if (csr[14])
@@ -1315,7 +1315,18 @@ void Plugin::worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_q
         wait_ms(callback->run_poll_interval_ms_);
       timeout = (callback->run_status_.load() == 2);
     };
+
     block_time = boost::posix_time::microsec_clock::local_time();
+
+    if (timeout) {
+      callback->stop_run(Module::all);
+      wait_ms(callback->run_poll_interval_ms_);
+      for (int i=0; i < callback->channel_indices_.size(); ++i) {
+        std::bitset<32> csr = std::bitset<32>(poll_run_dbl(i));
+        if (csr[14])
+          mods.insert(i);
+      }
+    }
 
     for (auto &q : mods) {
       //PL_DBG << "getting stats for mod " << q;
@@ -1328,7 +1339,7 @@ void Plugin::worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_q
     bool success = false;
     for (auto &q : mods) {
       fetched_spill = new Spill;
-      fetched_spill->spill_number = spill_number;
+      //fetched_spill->spill_number = spill_number;
       fetched_spill->data.resize(list_mem_len32, 0);
       if (read_EM_dbl(fetched_spill->data.data(), q))
         success = true;
@@ -1336,7 +1347,9 @@ void Plugin::worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_q
       callback->fill_stats(fetched_spill->stats, q);
       for (auto &p : fetched_spill->stats) {
         p.lab_time = block_time;
-        p.spill_number = spill_number;
+        if (timeout)
+          p.stats_type = StatsType::stop;
+        //p.spill_number = spill_number;
       }
       spill_queue->enqueue(fetched_spill);
     }

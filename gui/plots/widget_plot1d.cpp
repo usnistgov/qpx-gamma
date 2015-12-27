@@ -32,7 +32,7 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   ui->setupUi(this);
 
   visible_options_  =
-      (ShowOptions::style | ShowOptions::scale | ShowOptions::labels | ShowOptions::themes | ShowOptions::grid | ShowOptions::save);
+      (ShowOptions::style | ShowOptions::scale | ShowOptions::labels | ShowOptions::themes | ShowOptions::thickness | ShowOptions::grid | ShowOptions::save);
 
 
   ui->mcaPlot->setInteraction(QCP::iSelectItems, true);
@@ -76,7 +76,8 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   ui->mcaPlot->xAxis->grid()->setSubGridVisible(true);
   ui->mcaPlot->yAxis->grid()->setSubGridVisible(true);
 
-  marker_labels_ = false;
+  marker_labels_ = true;
+  thickness_ = 1;
 
   menuExportFormat.addAction("png");
   menuExportFormat.addAction("jpg");
@@ -114,7 +115,9 @@ void WidgetPlot1D::build_menu() {
   menuOptions.clear();
 
   if (visible_options_ & ShowOptions::style) {
-    menuOptions.addAction("Step");
+    menuOptions.addAction("Step center");
+    menuOptions.addAction("Step left");
+    menuOptions.addAction("Step right");
     menuOptions.addAction("Lines");
     menuOptions.addAction("Scatter");
     menuOptions.addAction("Fill");
@@ -137,6 +140,13 @@ void WidgetPlot1D::build_menu() {
     menuOptions.addAction("light");
   }
 
+  if (visible_options_ & ShowOptions::thickness) {
+    menuOptions.addSeparator();
+    menuOptions.addAction("1");
+    menuOptions.addAction("2");
+    menuOptions.addAction("3");
+  }
+
   if (visible_options_ & ShowOptions::grid) {
     menuOptions.addSeparator();
     menuOptions.addAction("No grid");
@@ -150,6 +160,7 @@ void WidgetPlot1D::build_menu() {
                   (q->text() == plot_style_) ||
                   (q->text() == color_theme_) ||
                   (q->text() == grid_style_) ||
+                  (q->text() == QString::number(thickness_)) ||
                   ((q->text() == "Energy labels") && marker_labels_));
   }
 }
@@ -250,7 +261,10 @@ void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, 
   ui->mcaPlot->addGraph();
   int g = ui->mcaPlot->graphCount() - 1;
   ui->mcaPlot->graph(g)->addData(x, y);
-  ui->mcaPlot->graph(g)->setPen(appearance.get_pen(color_theme_));
+  QPen pen = appearance.get_pen(color_theme_);
+  if (visible_options_ & ShowOptions::thickness)
+    pen.setWidth(thickness_);
+  ui->mcaPlot->graph(g)->setPen(pen);
   ui->mcaPlot->graph(g)->setProperty("fittable", fittable);
   ui->mcaPlot->graph(g)->setProperty("bits", QVariant::fromValue(bits));
   set_graph_style(ui->mcaPlot->graph(g), plot_style_);
@@ -809,7 +823,8 @@ void WidgetPlot1D::optionsChanged(QAction* action) {
   } else if (choice == "Logarithmic") {
     ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLogarithmic);
     scale_type_ = choice;
-  } else if ((choice == "Scatter") || (choice == "Lines") || (choice == "Fill") || (choice == "Step")) {
+  } else if ((choice == "Scatter") || (choice == "Lines") || (choice == "Fill")
+             || (choice == "Step center") || (choice == "Step left") || (choice == "Step right")) {
     plot_style_ = choice;
     int total = ui->mcaPlot->graphCount();
     for (int i=0; i < total; i++)
@@ -818,6 +833,24 @@ void WidgetPlot1D::optionsChanged(QAction* action) {
   } else if (choice == "Energy labels") {
     marker_labels_ = !marker_labels_;
     replot_markers();
+  } else if (choice == "1") {
+    thickness_ = 1;
+    int total = ui->mcaPlot->graphCount();
+    for (int i=0; i < total; i++)
+      if ((ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssNone) || (ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssDisc))
+        set_graph_style(ui->mcaPlot->graph(i), choice);
+  } else if (choice == "2") {
+    thickness_ = 2;
+    int total = ui->mcaPlot->graphCount();
+    for (int i=0; i < total; i++)
+      if ((ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssNone) || (ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssDisc))
+        set_graph_style(ui->mcaPlot->graph(i), choice);
+  } else if (choice == "3") {
+    thickness_ = 3;
+    int total = ui->mcaPlot->graphCount();
+    for (int i=0; i < total; i++)
+      if ((ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssNone) || (ui->mcaPlot->graph(i)->scatterStyle().shape() == QCPScatterStyle::ssDisc))
+        set_graph_style(ui->mcaPlot->graph(i), choice);
   } else if (choice == "light") {
     setColorScheme(Qt::black, Qt::white, QColor(112, 112, 112), QColor(170, 170, 170));
     color_theme_ = choice;
@@ -863,11 +896,12 @@ QString WidgetPlot1D::grid_style() {
 }
 
 void WidgetPlot1D::set_graph_style(QCPGraph* graph, QString style) {
-  if (graph->pen().width() != 1) {
+/*  if (graph->pen().width() != 1) {
     graph->setBrush(QBrush());
     graph->setLineStyle(QCPGraph::lsLine);
     graph->setScatterStyle(QCPScatterStyle::ssNone);
-  } else if (style == "Fill") {
+  } else */
+  if (style == "Fill") {
     graph->setBrush(QBrush(graph->pen().color()));
     graph->setLineStyle(QCPGraph::lsLine);
     graph->setScatterStyle(QCPScatterStyle::ssNone);
@@ -875,15 +909,30 @@ void WidgetPlot1D::set_graph_style(QCPGraph* graph, QString style) {
     graph->setBrush(QBrush());
     graph->setLineStyle(QCPGraph::lsLine);
     graph->setScatterStyle(QCPScatterStyle::ssNone);
-  } else if (style == "Step") {
+  } else if (style == "Step center") {
     graph->setBrush(QBrush());
     graph->setLineStyle(QCPGraph::lsStepCenter);
+    graph->setScatterStyle(QCPScatterStyle::ssNone);
+  } else if (style == "Step left") {
+    graph->setBrush(QBrush());
+    graph->setLineStyle(QCPGraph::lsStepLeft);
+    graph->setScatterStyle(QCPScatterStyle::ssNone);
+  } else if (style == "Step right") {
+    graph->setBrush(QBrush());
+    graph->setLineStyle(QCPGraph::lsStepRight);
     graph->setScatterStyle(QCPScatterStyle::ssNone);
   } else if (style == "Scatter") {
     graph->setBrush(QBrush());
     graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 1));
     graph->setLineStyle(QCPGraph::lsNone);
   }
+
+  if (visible_options_ & ShowOptions::thickness) {
+    QPen pen = graph->pen();
+    pen.setWidth(thickness_);
+    graph->setPen(pen);
+  }
+
 }
 
 void WidgetPlot1D::set_scale_type(QString sct) {

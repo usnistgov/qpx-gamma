@@ -110,10 +110,11 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   double real = md.real_time.total_milliseconds() * 0.001;
   double live = md.live_time.total_milliseconds() * 0.001;
   double dead = 100;
-  double rate_inst = md.recent_count;
-  double recent_time = (md.recent_end.lab_time - md.recent_end.lab_time).total_seconds();
+  double rate_inst = 0;
+  double recent_time = (md.recent_end.lab_time - md.recent_start.lab_time).total_milliseconds() * 0.001;
   if (recent_time > 0)
-    rate_inst /= recent_time;
+    rate_inst = md.recent_count / recent_time;
+//  PL_DBG << "<Plot1D> instant rate for \"" << md.name << "\"  " << md.recent_count << "/" << recent_time << " = " << rate_inst;
   double rate_total = 0;
   Gamma::Detector det = Gamma::Detector();
   if (!md.detectors.empty())
@@ -139,7 +140,7 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
       "<nobr>" + id + "(" + QString::fromStdString(type) + ", " + QString::number(md.bits) + "bits)</nobr><br/>"
       "<nobr>" + detstr + "</nobr><br/>"
       "<nobr>Count: " + QString::number(md.total_count.convert_to<double>()) + "</nobr><br/>"
-      "<nobr>Rate (inst/total): " + QString::number(rate_inst) + "s / " + QString::number(rate_total) + "cps</nobr><br/>"
+      "<nobr>Rate (inst/total): " + QString::number(rate_inst) + "cps / " + QString::number(rate_total) + "cps</nobr><br/>"
       "<nobr>Live / real:  " + QString::number(live) + "s / " + QString::number(real) + "s</nobr><br/>"
       "<nobr>Dead:  " + QString::number(dead) + "%</nobr><br/>";
 

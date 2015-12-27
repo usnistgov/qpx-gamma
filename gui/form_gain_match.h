@@ -58,9 +58,6 @@ private slots:
   void run_completed();
 
   void on_pushMatchGain_clicked();
-  void addMovingMarker(double);
-  void removeMovingMarker(double);
-  void replot_markers();
 
   bool find_peaks();
 
@@ -69,8 +66,6 @@ private slots:
   void do_run();
 
   void toggle_push(bool, Qpx::DeviceStatus);
-
-  void on_pushSaveOpti_clicked();
 
   void on_pushFindPeaks_clicked();
 
@@ -101,7 +96,6 @@ private:
 
   bool my_run_;
 
-  Marker moving_, marker_ref_, marker_opt_, a ,b;
   AppearanceProfile ap_reference_, ap_optimized_;
 
   AppearanceProfile style_fit, style_pts;
@@ -113,8 +107,6 @@ private:
 
   Gamma::Fitter fitter_ref_, fitter_opt_;
   Gamma::Peak gauss_ref_, gauss_opt_;
-
-  CustomTimer* minTimer;
 
 };
 

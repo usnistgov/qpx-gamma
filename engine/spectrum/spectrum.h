@@ -84,9 +84,8 @@ class Spectrum
 {
 public:
   //constructs invalid spectrum by default. Make private?
-  Spectrum() {}
+  Spectrum(): recent_count_(0) {}
 
-public:
   //named constructors, used by factory
   bool from_template(const Template&);
   bool from_xml(const pugi::xml_node &);

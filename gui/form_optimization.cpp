@@ -50,31 +50,20 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   optimizing_.name_ = "Optimizing";
   optimizing_.visible = true;
 
-  moving_.appearance.themes["light"] = QPen(Qt::darkBlue, 2);
-  moving_.appearance.themes["dark"] = QPen(Qt::blue, 2);
-
-  a.appearance.themes["light"] = QPen(Qt::darkBlue, 2);
-  a.appearance.themes["dark"] = QPen(Qt::blue, 2);
-
   style_pts.default_pen = QPen(Qt::darkBlue, 7);
   style_pts.themes["selected"] = QPen(Qt::red, 7);
-
-  QColor translu(Qt::blue);
-  translu.setAlpha(32);
-  b.appearance.themes["light"] = QPen(translu, 2);
-  translu.setAlpha(64);
-  b.appearance.themes["dark"] = QPen(translu, 2);
 
   ui->plotSpectrum->setFit(&fitter_opt_);
   //connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
 
   ui->PlotCalib->setLabels("setting", "FWHM");
 
-  ui->tableResults->setColumnCount(4);
+  ui->tableResults->setColumnCount(5);
   ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem("Setting value", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Energy", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("%error", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("area", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(4, new QTableWidgetItem("%error", QTableWidgetItem::Type));
   ui->tableResults->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tableResults->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->tableResults->horizontalHeader()->setStretchLastSection(true);
@@ -95,7 +84,8 @@ void FormOptimization::loadSettings() {
   settings_.beginGroup("Optimization");
   ui->spinBits->setValue(settings_.value("bits", 14).toInt());
 //  ui->spinOptChan->setValue(settings_.value("channel", 0).toInt());
-  ui->timeDuration->set_total_seconds(settings_.value("mca_secs", 0).toULongLong());
+  ui->doubleError->setValue(settings_.value("error", 1.0).toDouble());
+
   ui->comboSetting->setCurrentText(settings_.value("setting_name", QString("ENERGY_RISETIME")).toString());
   ui->doubleSpinStart->setValue(settings_.value("setting_start", 5.97).toDouble());
   ui->doubleSpinDelta->setValue(settings_.value("setting_step", 0.213333).toDouble());
@@ -110,7 +100,8 @@ void FormOptimization::saveSettings() {
   settings_.beginGroup("Optimization");
   settings_.setValue("bits", ui->spinBits->value());
 //  settings_.setValue("channel", ui->spinOptChan->value());
-  settings_.setValue("mca_secs", QVariant::fromValue(ui->timeDuration->total_seconds()));
+  settings_.setValue("error", ui->doubleError->value());
+
   settings_.setValue("setting_name", ui->comboSetting->currentText());
   settings_.setValue("setting_start", ui->doubleSpinStart->value());
   settings_.setValue("setting_step", ui->doubleSpinDelta->value());
@@ -154,11 +145,7 @@ void FormOptimization::closeEvent(QCloseEvent *event) {
       event->ignore();
       return;
     }
-  } else {
-    opt_runner_thread_.terminate();
-    opt_runner_thread_.wait();
   }
-
 
   if (!spectra_.empty()) {
     int reply = QMessageBox::warning(this, "Optimization data still open",
@@ -182,12 +169,11 @@ void FormOptimization::toggle_push(bool enable, Qpx::DeviceStatus status) {
   bool online = (status & Qpx::DeviceStatus::can_run);
   bool offline = online || (status & Qpx::DeviceStatus::loaded);
 
-  ui->pushStart->setEnabled(enable && online);
+  ui->pushStart->setEnabled(enable && online && !my_run_);
   ui->comboSetting->setEnabled(enable);
   ui->doubleSpinStart->setEnabled(enable);
   ui->doubleSpinDelta->setEnabled(enable);
   ui->doubleSpinEnd->setEnabled(enable);
-  ui->timeDuration->setEnabled(enable && offline);
   ui->comboTarget->setEnabled(enable);
   ui->spinBits->setEnabled(enable);
 }
@@ -214,7 +200,8 @@ void FormOptimization::on_pushStart_clicked()
   ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromStdString(current_setting_), QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Energy", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("%error", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("area", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(4, new QTableWidgetItem("%error", QTableWidgetItem::Type));
 
   do_run();
 }
@@ -229,8 +216,8 @@ void FormOptimization::on_pushStop_clicked()
 void FormOptimization::do_run()
 {
   ui->pushStop->setEnabled(true);
-  emit toggleIO(false);
   my_run_ = true;
+  emit toggleIO(false);
 
   bits = ui->spinBits->value();
 
@@ -264,8 +251,7 @@ void FormOptimization::do_run()
   emit settings_changed();
 
   interruptor_.store(false);
-  uint64_t duration = ui->timeDuration->total_seconds();
-  opt_runner_thread_.do_run(current_spectra_, interruptor_, duration);
+  opt_runner_thread_.do_run(current_spectra_, interruptor_, 0);
 }
 
 void FormOptimization::run_completed() {
@@ -296,23 +282,17 @@ bool FormOptimization::find_peaks() {
 
     peaks_[peaks_.size() - 1] = Gamma::Peak();
 
-    if (fitter_opt_.peaks_.size()) {
-      for (auto &q : fitter_opt_.peaks_) {
-        double center = q.first;
-        if ((q.second.gaussian_.height_ > peaks_[peaks_.size() - 1].height)
-            && ((!moving_.visible)
-                || ((center > a.pos.bin(a.pos.bits())) && (center < b.pos.bin(b.pos.bits())))
-                )
-            )
+    for (auto &q : fitter_opt_.peaks_)
+      if (q.second.area_net_ > peaks_[peaks_.size() - 1].area_net_)
           peaks_[peaks_.size() - 1] = q.second;
-      }
-    }
 
-    return true;
+    return fitter_opt_.peaks_.size();
 }
 
 void FormOptimization::update_plots() {
-  std::map<double, double> minima, maxima;
+
+  bool have_data = false;
+  bool have_peaks = false;
 
   for (auto &q: current_spectra_.by_type("1D")) {
     Qpx::Spectrum::Metadata md;
@@ -320,19 +300,20 @@ void FormOptimization::update_plots() {
       md = q->metadata();
 
     if (md.total_count > 0) {
-      int current_spec = spectra_.size() - 1;
-
+      have_data = true;
       fitter_opt_.setData(q);
+    }
+  }
 
-      ui->plotSpectrum->update_spectrum();
+  if (have_data) {
+    have_peaks = find_peaks();
+    int current_spec = spectra_.size() - 1;
+    spectra_[current_spec] = fitter_opt_;
+    setting_fwhm_[current_spec] = peaks_[current_spec].fwhm_gaussian;
 
-      find_peaks();
-      spectra_[current_spec] = fitter_opt_;
-      setting_fwhm_[current_spec] = peaks_[current_spec].fwhm_sum4;
+    ui->tableResults->setRowCount(peaks_.size());
 
-      ui->tableResults->setRowCount(peaks_.size());
-
-      QTableWidgetItem *st = new QTableWidgetItem(QString::number(setting_values_[current_spec]));
+    QTableWidgetItem *st = new QTableWidgetItem(QString::number(setting_values_[current_spec]));
       st->setFlags(st->flags() ^ Qt::ItemIsEditable);
       ui->tableResults->setItem(current_spec, 0, st);
 
@@ -340,32 +321,26 @@ void FormOptimization::update_plots() {
       en->setFlags(en->flags() ^ Qt::ItemIsEditable);
       ui->tableResults->setItem(current_spec, 1, en);
 
-      QTableWidgetItem *fw = new QTableWidgetItem(QString::number(peaks_[current_spec].fwhm_sum4));
+      QTableWidgetItem *fw = new QTableWidgetItem(QString::number(peaks_[current_spec].fwhm_gaussian));
       fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
       ui->tableResults->setItem(current_spec, 2, fw);
 
+      QTableWidgetItem *area = new QTableWidgetItem(QString::number(peaks_[current_spec].area_net_));
+      area->setFlags(area->flags() ^ Qt::ItemIsEditable);
+      ui->tableResults->setItem(current_spec, 3, area);
+
       QTableWidgetItem *err = new QTableWidgetItem(QString::number(peaks_[current_spec].sum4_.err));
       err->setFlags(err->flags() ^ Qt::ItemIsEditable);
-      ui->tableResults->setItem(current_spec, 3, err);
-
-    }
+      ui->tableResults->setItem(current_spec, 4, err);
   }
+
+  if (ui->plotSpectrum->isVisible())
+    ui->plotSpectrum->update_spectrum();
+
+  if (have_peaks && !peaks_.empty() && (peaks_.back().sum4_.err < ui->doubleError->value()))
+    interruptor_.store(true);
 
   resultChosen();
-}
-
-void FormOptimization::on_pushSaveOpti_clicked()
-{
-  Qpx::Engine::getInstance().save_optimization();
-  std::vector<Gamma::Detector> dets = Qpx::Engine::getInstance().get_detectors();
-  for (auto &q : dets) {
-    if (detectors_.has_a(q)) {
-      Gamma::Detector modified = detectors_.get(q);
-      modified.settings_ = q.settings_;
-      detectors_.replace(modified);
-    }
-  }
-  emit optimization_approved();
 }
 
 void FormOptimization::resultChosen() {

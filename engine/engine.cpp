@@ -424,7 +424,6 @@ void Engine::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>& 
   spill->run.detectors = get_detectors();
   boost::posix_time::ptime time_start = boost::posix_time::microsec_clock::local_time();
   spill->run.time_start = time_start;
-  spill->run.time_stop = time_start;
   parsedQueue.enqueue(spill);
 
   if (daq_start(&parsedQueue))
@@ -460,8 +459,7 @@ void Engine::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>& 
   save_optimization();
   spill->run.state = pull_settings();
   spill->run.detectors = get_detectors();
-  spill->run.time_start = time_start;
-  spill->spill_number = -1;
+  //spill->spill_number = -1;
   //  spill->run->total_events = 1; //BAD!!!!
   spill->run.time_stop = boost::posix_time::microsec_clock::local_time();
   parsedQueue.enqueue(spill);
@@ -595,12 +593,9 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
     in_spill = data_queue->dequeue();
     if (in_spill != nullptr) {
       for (auto &q : in_spill->stats) {
-        if (q.spill_number == 0) {
-          if (q.channel >= queue_status.size())
-            queue_status.resize(q.channel);
-          if (q.channel >= 0)
-            queue_status[q.channel] = 1;
-        } else if ((q.channel >= 0) && (q.channel < queue_status.size())) {
+        if (q.channel >= queue_status.size())
+          queue_status.resize(q.channel);
+        if ((q.channel >= 0) && (q.channel < queue_status.size())) {
           if (!in_spill->hits.empty())
             queue_status[q.channel] = 2;
           else
@@ -665,7 +660,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
         noempties = true;
         for (auto i = current_spills.begin(); i != current_spills.end(); i++)
           if ((*i)->hits.empty()) {
-            out_spill->spill_number = (*i)->spill_number;
+//            out_spill->spill_number = (*i)->spill_number;
             out_spill->data = (*i)->data;
             out_spill->stats = (*i)->stats;
             out_spill->run = (*i)->run;
@@ -700,7 +695,7 @@ void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queu
   uint32_t secsperrun = 5;  ///calculate this based on ocr and buf size
   Spill* one_spill;
 
-  uint64_t spill_number = 0, event_count = 0;
+  uint64_t /*spill_number = 0,*/ event_count = 0;
   bool timeout = false;
   boost::posix_time::ptime session_start_time, block_time;
 
@@ -719,7 +714,7 @@ void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queu
   data_queue->enqueue(one_spill);
 
   while (!timeout) {
-    spill_number++;
+//    spill_number++;
 
     one_spill = new Spill;
 
@@ -731,7 +726,7 @@ void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queu
     event_count += (rate*secsperrun);
 
     moving_stats = moving_stats + one_run;
-    moving_stats.spill_number = spill_number;
+//    moving_stats.spill_number = spill_number;
     moving_stats.lab_time = block_time;
     moving_stats.event_rate = one_run.event_rate;
     one_spill->stats.push_back(moving_stats);

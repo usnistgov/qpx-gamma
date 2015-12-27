@@ -97,11 +97,7 @@ void FormListDaq::closeEvent(QCloseEvent *event) {
       event->ignore();
       return;
     }
-  } else {
-    runner_thread_.terminate();
-    runner_thread_.wait();
   }
-
 
   if (list_data_ != nullptr)
     delete list_data_;

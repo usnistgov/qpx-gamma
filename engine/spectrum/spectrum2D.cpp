@@ -190,7 +190,7 @@ void Spectrum2D::addEvent(const Event& newEvent) {
         spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)];
   if (chan1_en > metadata_.max_chan) metadata_.max_chan = chan1_en;
   if (chan2_en > metadata_.max_chan) metadata_.max_chan = chan2_en;
-  metadata_.total_count++;
+  //metadata_.total_count++;
 }
 
 bool Spectrum2D::_write_file(std::string dir, std::string format) const {

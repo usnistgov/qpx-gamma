@@ -70,8 +70,6 @@ private slots:
 
   void toggle_push(bool, Qpx::DeviceStatus);
 
-  void on_pushSaveOpti_clicked();
-
   void on_comboTarget_currentIndexChanged(int index);
 
   void on_comboSetting_activated(const QString &arg1);
@@ -96,7 +94,6 @@ private:
 
   bool my_run_;
 
-  Marker moving_, a, b;
   int bits;
 
   Gamma::Fitter fitter_opt_;

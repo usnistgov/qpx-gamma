@@ -1,15 +1,13 @@
 Major features/overhauls:
 -buffer 2d only when visible
 -lock file (one instance per system)
--pause run
 -uncertainties for multiplet areas
--efficiency calibration
++efficiency calibration (absolute)
 
-pixiecpp:
+engine:
 -all timestamps with timezone**
 -save as 2012 revision of N42
 -fix cnf loading (dll?)
--save/load matrices++
 -save raw transfers to new directory
 
 gui:
@@ -19,8 +17,6 @@ gui:
       *save after complete
       *name sample
 -save/load in thread
--follow peaks on selection change
--save plot to TIF
 
 cpx(batch language):
 -export to other formats
