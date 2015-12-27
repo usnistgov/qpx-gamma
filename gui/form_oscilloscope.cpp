@@ -32,7 +32,7 @@ FormOscilloscope::FormOscilloscope(ThreadRunner& thread, QSettings& settings, QW
   ui->setupUi(this);
 
   ui->widgetPlot->set_scale_type("Linear");
-  ui->widgetPlot->set_plot_style("Step");
+  ui->widgetPlot->set_plot_style("Step center");
   ui->widgetPlot->set_marker_labels(false);
   ui->widgetPlot->set_visible_options(ShowOptions::zoom | ShowOptions::title | ShowOptions::save);
   ui->widgetPlot->setTitle("");

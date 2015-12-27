@@ -216,7 +216,7 @@ void SpectraSet::add_spill(Spill* one_spill) {
     run_info_ = one_spill->run;
     if (one_spill->run.total_events > 0) {
       status_ = "Complete at " + boost::posix_time::to_simple_string(one_spill->run.time_stop);
-      PL_INFO << "**Spectra building complete";
+//      PL_INFO << "**Spectra building complete";
     }
   }
   

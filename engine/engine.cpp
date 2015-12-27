@@ -605,6 +605,8 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
       current_spills.push_back(in_spill);
     }
 
+//    PL_DBG << "<Engine: worker_MCA> spill backlog " << current_spills.size();
+
     bool empty = false;
     while (!empty) {
 
@@ -628,9 +630,11 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
             q = 2;        
       }
 
-      for (auto q : queue_status)
+      for (auto q : queue_status) {
+//        PL_DBG << "<Engine: worker_MCA> qstatus " << q;
         if (q == 1)
           empty = true;
+      }
 
 
       while (!empty) {
@@ -749,10 +753,25 @@ void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queu
 
 void Engine::worker_from_list(Sorter* sorter, SynchronizedQueue<Spill*>* data_queue, boost::atomic<bool>* interruptor) {
   Spill one_spill;
+  StatsUpdate prev;
 
-  while ((!((one_spill = sorter->get_spill()) == Spill())) && (!(*interruptor))) {
+  while (((one_spill = sorter->get_spill()) != Spill()) && (!(*interruptor))) {
+
+    if (!one_spill.stats.empty() && (one_spill.stats.front() != StatsUpdate())) {
+      StatsUpdate newstats = one_spill.stats.front();
+
+      if ((prev != StatsUpdate()) && (newstats != StatsUpdate()) && (newstats.lab_time > prev.lab_time)) {
+        boost::posix_time::time_duration dif = newstats.lab_time - prev.lab_time;
+        PL_DBG << "<Engine: worker_from_list> will pause for " << dif.total_seconds();
+        boost::this_thread::sleep(dif);
+      }
+
+      if ((prev == StatsUpdate()) || (newstats.lab_time > prev.lab_time))
+        prev = newstats;
+    }
+
     data_queue->enqueue(new Spill(one_spill));
-    boost::this_thread::sleep(boost::posix_time::seconds(2));
+//    boost::this_thread::sleep(boost::posix_time::seconds(2));
   }
   PL_DBG << "<Engine> worker_from_list terminating";
 }

@@ -123,7 +123,7 @@ void FormPeaks::loadSettings(QSettings &settings_) {
   ui->checkShowPseudoVoigt->setChecked(settings_.value("show_pseudovoigt", false).toBool());
   ui->checkShowEdges->setChecked(settings_.value("show_edges", false).toBool());
   ui->plot1D->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
-  ui->plot1D->set_plot_style(settings_.value("plot_style", "Step").toString());
+  ui->plot1D->set_plot_style(settings_.value("plot_style", "Step center").toString());
   ui->plot1D->set_marker_labels(settings_.value("marker_labels", true).toBool());
   ui->plot1D->set_grid_style(settings_.value("grid_style", "Grid + subgrid").toString());
   settings_.endGroup();

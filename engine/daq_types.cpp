@@ -206,7 +206,11 @@ void RunInfo::to_xml(pugi::xml_node &root, bool with_settings) const {
   node.append_attribute("total_events").set_value(std::to_string(total_events).c_str());
   if (with_settings) {
     state.to_xml(node);
-    //if (!detectors.empty())
+    if (!detectors.empty()) {
+      pugi::xml_node child = node.append_child("Detectors");
+      for (auto q : detectors)
+        q.to_xml(child);
+    }
   }
 }
 
@@ -236,6 +240,16 @@ void RunInfo::from_xml(const pugi::xml_node &node) {
   total_events = node.attribute("total_events").as_ullong();
 
   state.from_xml(node.child(state.xml_element_name().c_str()));
+
+  if (node.child("Detectors")) {
+    detectors.clear();
+    for (auto &q : node.child("Detectors").children()) {
+      Gamma::Detector det;
+      det.from_xml(q);
+      detectors.push_back(det);
+    }
+  }
+
 }
 
 }

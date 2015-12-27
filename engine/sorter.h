@@ -56,6 +56,8 @@ class Sorter {
 
   //PreciseFloat count_;
   bool valid_;
+
+  bool started, ended;
 };
 
 }

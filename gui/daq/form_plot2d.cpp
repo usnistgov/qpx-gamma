@@ -316,7 +316,7 @@ void FormPlot2D::update_plot(bool force) {
 
       Gamma::Setting sym = md.attributes.get(Gamma::Setting("symmetrized"));
 
-      PL_DBG << "Sym :" << sym.id_ << "=" << sym.value_int;
+      //PL_DBG << "Sym :" << sym.id_ << "=" << sym.value_int;
 
       ui->pushSymmetrize->setEnabled(sym.value_int == 0);
 
@@ -353,7 +353,7 @@ void FormPlot2D::update_plot(bool force) {
     replot_markers();
   }
 
-  PL_DBG << "<Plot2D> plotting took " << guiside.ms() << " ms";
+  //PL_DBG << "<Plot2D> plotting took " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
 }
 

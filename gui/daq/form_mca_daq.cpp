@@ -138,7 +138,7 @@ void FormMcaDaq::loadSettings() {
 
   settings_.beginGroup("McaPlot");
   ui->Plot1d->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
-  ui->Plot1d->set_plot_style(settings_.value("plot_style", "Step").toString());
+  ui->Plot1d->set_plot_style(settings_.value("plot_style", "Step center").toString());
   settings_.endGroup();
 
   settings_.beginGroup("MatrixPlot");
