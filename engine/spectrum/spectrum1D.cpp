@@ -278,7 +278,7 @@ bool Spectrum1D::read_cnf(std::string name) {
   if (newdata == nullptr)
     return false;
   
-  PL_TRC << "has " << newdata->get_block_count() << " blocks";
+  PL_DBG << "has " << newdata->get_block_count() << " blocks";
   for (int i=0; i < newdata->get_block_count(); i++) {
 
     std::vector<double> calibration;
@@ -305,9 +305,9 @@ bool Spectrum1D::read_cnf(std::string name) {
         metadata_.live_time = boost::posix_time::duration_from_string(value);
     }
      
-    PL_INFO << "block " << i
-            << " has " << newdata->get_block(i)->get_column_count() << " columns"
-            << " and " << newdata->get_block(i)->get_point_count() << " points";
+    PL_DBG << "block " << i
+           << " has " << newdata->get_block(i)->get_column_count() << " columns"
+           << " and " << newdata->get_block(i)->get_point_count() << " points";
 
     metadata_.resolution = newdata->get_block(i)->get_point_count();
     metadata_.bits = log2(metadata_.resolution);
@@ -327,7 +327,7 @@ bool Spectrum1D::read_cnf(std::string name) {
     
     double tempcount = 0.0;
     for (int j = 0; j < newdata->get_block(i)->get_column_count(); j++) {
-      //std::stringstream blab;
+      std::stringstream blab;
       for (int k = 0; k < newdata->get_block(i)->get_point_count(); k++) {
         double data = newdata->get_block(i)->get_column(j).get_value(k);
         PreciseFloat nr(data);
@@ -337,13 +337,13 @@ bool Spectrum1D::read_cnf(std::string name) {
         if (nr > metadata_.max_count)
           metadata_.max_count = nr;
 
-        //blab << data << " ";
+        blab << data << " ";
         tempcount += data;
       }
-      //PL_DBG << "column " << blab.str();
+      PL_DBG << "column " << blab.str();
     }
     metadata_.total_count = tempcount;
-    //PL_INFO << "total count " << tempcount;
+    PL_DBG << "total count " << tempcount;
 
   }
 

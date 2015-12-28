@@ -41,6 +41,7 @@ WidgetPlot1D::WidgetPlot1D(QWidget *parent) :
   ui->mcaPlot->setInteraction(QCP::iRangeZoom, true);
   ui->mcaPlot->setInteraction(QCP::iMultiSelect, true);
   ui->mcaPlot->yAxis->setPadding(28);
+  ui->mcaPlot->setNoAntialiasingOnDrag(true);
 
   connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*,bool)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*,bool)));
   connect(ui->mcaPlot, SIGNAL(plottableClick(QCPAbstractPlottable*,QMouseEvent*)), this, SLOT(clicked_plottable(QCPAbstractPlottable*)));
@@ -262,7 +263,7 @@ void WidgetPlot1D::addGraph(const QVector<double>& x, const QVector<double>& y, 
   int g = ui->mcaPlot->graphCount() - 1;
   ui->mcaPlot->graph(g)->addData(x, y);
   QPen pen = appearance.get_pen(color_theme_);
-  if (visible_options_ & ShowOptions::thickness)
+  if (fittable && (visible_options_ & ShowOptions::thickness))
     pen.setWidth(thickness_);
   ui->mcaPlot->graph(g)->setPen(pen);
   ui->mcaPlot->graph(g)->setProperty("fittable", fittable);
@@ -394,7 +395,9 @@ void WidgetPlot1D::replot_markers() {
       double max = std::numeric_limits<double>::lowest();
       int total = ui->mcaPlot->graphCount();
       for (int i=0; i < total; i++) {
-        if (ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssNone)
+
+        if ((ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssNone) &&
+            (ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssDisc))
           continue;
 
         if (!ui->mcaPlot->graph(i)->property("fittable").toBool())
@@ -421,8 +424,8 @@ void WidgetPlot1D::replot_markers() {
 
         crs->setSize(4);
         crs->setGraph(ui->mcaPlot->graph(i));
-        crs->setGraphKey(pos);
         crs->setInterpolating(true);
+        crs->setGraphKey(pos);
         crs->setPen(q.appearance.get_pen(color_theme_));
         crs->setSelectable(false);
         ui->mcaPlot->addItem(crs);
@@ -509,7 +512,8 @@ void WidgetPlot1D::replot_markers() {
         if (!ui->mcaPlot->graph(i)->property("fittable").toBool())
           continue;
 
-        if (ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssNone)
+        if ((ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssNone) &&
+            (ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssDisc))
           continue;
 
         int bits = ui->mcaPlot->graph(i)->property("bits").toInt();
@@ -896,41 +900,42 @@ QString WidgetPlot1D::grid_style() {
 }
 
 void WidgetPlot1D::set_graph_style(QCPGraph* graph, QString style) {
-/*  if (graph->pen().width() != 1) {
+  if (!graph->property("fittable").toBool()) {
     graph->setBrush(QBrush());
     graph->setLineStyle(QCPGraph::lsLine);
     graph->setScatterStyle(QCPScatterStyle::ssNone);
-  } else */
-  if (style == "Fill") {
-    graph->setBrush(QBrush(graph->pen().color()));
-    graph->setLineStyle(QCPGraph::lsLine);
-    graph->setScatterStyle(QCPScatterStyle::ssNone);
-  } else if (style == "Lines") {
-    graph->setBrush(QBrush());
-    graph->setLineStyle(QCPGraph::lsLine);
-    graph->setScatterStyle(QCPScatterStyle::ssNone);
-  } else if (style == "Step center") {
-    graph->setBrush(QBrush());
-    graph->setLineStyle(QCPGraph::lsStepCenter);
-    graph->setScatterStyle(QCPScatterStyle::ssNone);
-  } else if (style == "Step left") {
-    graph->setBrush(QBrush());
-    graph->setLineStyle(QCPGraph::lsStepLeft);
-    graph->setScatterStyle(QCPScatterStyle::ssNone);
-  } else if (style == "Step right") {
-    graph->setBrush(QBrush());
-    graph->setLineStyle(QCPGraph::lsStepRight);
-    graph->setScatterStyle(QCPScatterStyle::ssNone);
-  } else if (style == "Scatter") {
-    graph->setBrush(QBrush());
-    graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 1));
-    graph->setLineStyle(QCPGraph::lsNone);
-  }
+  } else {
+    if (style == "Fill") {
+      graph->setBrush(QBrush(graph->pen().color()));
+      graph->setLineStyle(QCPGraph::lsLine);
+      graph->setScatterStyle(QCPScatterStyle::ssNone);
+    } else if (style == "Lines") {
+      graph->setBrush(QBrush());
+      graph->setLineStyle(QCPGraph::lsLine);
+      graph->setScatterStyle(QCPScatterStyle::ssNone);
+    } else if (style == "Step center") {
+      graph->setBrush(QBrush());
+      graph->setLineStyle(QCPGraph::lsStepCenter);
+      graph->setScatterStyle(QCPScatterStyle::ssNone);
+    } else if (style == "Step left") {
+      graph->setBrush(QBrush());
+      graph->setLineStyle(QCPGraph::lsStepLeft);
+      graph->setScatterStyle(QCPScatterStyle::ssNone);
+    } else if (style == "Step right") {
+      graph->setBrush(QBrush());
+      graph->setLineStyle(QCPGraph::lsStepRight);
+      graph->setScatterStyle(QCPScatterStyle::ssNone);
+    } else if (style == "Scatter") {
+      graph->setBrush(QBrush());
+      graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 1));
+      graph->setLineStyle(QCPGraph::lsNone);
+    }
 
-  if (visible_options_ & ShowOptions::thickness) {
-    QPen pen = graph->pen();
-    pen.setWidth(thickness_);
-    graph->setPen(pen);
+    if (visible_options_ & ShowOptions::thickness) {
+      QPen pen = graph->pen();
+      pen.setWidth(thickness_);
+      graph->setPen(pen);
+    }
   }
 
 }

@@ -282,14 +282,20 @@ void FormPeaks::replot_all() {
   }
   
   for (auto &q : fit_data_->peaks_) {
+    std::vector<double> x = q.second.x_;
+    if (!x.empty()) {
+      x[0] -= 0.5;
+      x[x.size()-1] += 0.5;
+    }
+
+    xx = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x));
+
     if (ui->checkShowPseudoVoigt->isChecked()) {
       std::vector<double> y_fit = q.second.y_fullfit_pseudovoigt_;
       for (auto &p : y_fit)
         if (p < 1)
           p = std::floor(p * 10 + 0.5)/10;
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.second.x_)),
-                           QVector<double>::fromStdVector(y_fit),
-                           pseudo_voigt_);
+      ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), pseudo_voigt_);
     }
 
     if (ui->checkShowGaussians->isChecked()) {
@@ -301,18 +307,14 @@ void FormPeaks::replot_all() {
       AppearanceProfile prof = gaussian_;
       if (q.second.flagged)
         prof = flagged_;
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.second.x_)),
-                           QVector<double>::fromStdVector(y_fit),
-                           prof);
+      ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), prof);
     }
     if (ui->checkShowBaselines->isChecked()) {
       std::vector<double> y_fit = q.second.y_baseline_;
       for (auto &p : y_fit)
         if (p < 1)
           p = std::floor(p * 10 + 0.5)/10;
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.second.x_)),
-                           QVector<double>::fromStdVector(y_fit),
-                           baseline_);
+      ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), baseline_);
     }
     if (ui->checkShowEdges->isChecked() && (!q.second.subpeak)) {
 //      PL_DBG << "edges for " << q.second.center << " L:" << q.second.sum4_.LBstart << "-" << q.second.sum4_.LBend
@@ -324,6 +326,11 @@ void FormPeaks::replot_all() {
         x_edge.push_back(q.second.sum4_.x_[i]);
         y_edge.push_back(q.second.sum4_.Lsum / q.second.sum4_.Lw);
       }
+      if (!x_edge.empty()) {
+        x_edge[0] -= 0.5;
+        x_edge[x_edge.size()-1] += 0.5;
+      }
+
       ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x_edge)),
                            QVector<double>::fromStdVector(y_edge),
                            sum4edge_);
@@ -336,6 +343,10 @@ void FormPeaks::replot_all() {
       for (int i = q.second.sum4_.RBstart; i <= q.second.sum4_.RBend; ++i) {
         x_edge.push_back(q.second.sum4_.x_[i]);
         y_edge.push_back(q.second.sum4_.Rsum / q.second.sum4_.Rw);
+      }
+      if (!x_edge.empty()) {
+        x_edge[0] -= 0.5;
+        x_edge[x_edge.size()-1] += 0.5;
       }
       ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x_edge)),
                            QVector<double>::fromStdVector(y_edge),

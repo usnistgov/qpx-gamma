@@ -9,7 +9,6 @@
 
 
 #define BUILDING_XYLIB
-#define UNICODE
 #include "specsxy.h"
 
 #include <cmath>
@@ -213,14 +212,12 @@ void SpecsxyDataSet::load_data(std::istream &f){
         double xval=0.0, yval=0.0;
         string option="";
 		string xcolname = "";
-        bool read = true;
 		int ScanMode = 0;
 
-        while(read){
+        while(1){
             getline(f, str);
             line+=1;
             if (f.eof()){// hit EOF
-                    read= false;
                     break;
             }
             str=str_trim(str);
@@ -279,8 +276,8 @@ void SpecsxyDataSet::load_data(std::istream &f){
 	                switch(ScanMode)
 	                {
 	                    case ScanMode_FixedTransm:
-                        	startx -= my_strtod(excEnergy); // negative binding energy for XPS
-                        	xcolname = "bindingenergy [eV]";
+                                //startx -= my_strtod(excEnergy);
+                                xcolname = "energy [eV]";
 	                    break;
 	                    case ScanMode_FixedEnerg:
                         	startx = 0;

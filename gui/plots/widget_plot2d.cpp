@@ -67,6 +67,8 @@ WidgetPlot2D::WidgetPlot2D(QWidget *parent) :
   colorMap->setTightBoundary(true); //really?
   ui->coincPlot->axisRect()->setupFullAxesBox();
   ui->coincPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+  ui->coincPlot->setNoAntialiasingOnDrag(true);
+
   colorMap->setGradient(gradients_[current_gradient_]);
   colorMap->setDataScaleType(scale_types_[current_scale_type_]);
   colorMap->rescaleDataRange(true);

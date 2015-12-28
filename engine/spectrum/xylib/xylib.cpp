@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <climits>  // for INT_MAX
 #include <iomanip>
 #include <algorithm>
 #include <sys/types.h>
@@ -47,6 +48,13 @@
 
 #include <vector>
 #include <map>
+#ifdef _WIN32
+# define WIN32_LEAN_AND_MEAN
+# include <windows.h> // MultiByteToWideChar
+# if defined(__GLIBCXX__)
+#  include <ext/stdio_filebuf.h> // __gnu_cxx::stdio_filebuf
+# endif
+#endif
 
 using namespace std;
 using namespace xylib;
@@ -409,7 +417,7 @@ struct decompressing_istreambuf : public std::streambuf
 
     void init_buf()
     {
-        bufavail_ = 512;
+        bufavail_ = 2048;
         bufdata_ = (char*) malloc(bufavail_);
         writeptr_ = bufdata_;
     }
@@ -418,13 +426,29 @@ struct decompressing_istreambuf : public std::streambuf
     void double_buf()
     {
         int old_size = (int) (writeptr_ - bufdata_);
+        if (old_size > INT_MAX / 2) {
+            // bufdata_ will be freed in dtor
+            throw RunTimeError("We ignore very big (1GB+ uncompressed) files");
+        }
         bufdata_ = (char*) realloc(bufdata_, 2 * old_size);
-        if (!bufdata_)
+        if (!bufdata_) {
+            bufdata_ = writeptr_ - old_size; // will be freed in dtor
             throw RunTimeError("Can't allocate memory (" + S(2*old_size)
                     + " bytes).");
+        }
         // bufdata_ can be changed
         writeptr_ = bufdata_ + old_size;
         bufavail_ = old_size;
+    }
+
+    virtual streampos seekpos (streampos sp, ios_base::openmode which)
+    {
+        if ((which & ios_base::in) && sp >= 0 &&  sp < writeptr_ - bufdata_) {
+            setg(bufdata_, bufdata_+(int)sp, writeptr_);
+            return sp;
+        }
+        else
+            return -1;
     }
 
     ~decompressing_istreambuf() { free(bufdata_); }
@@ -438,7 +462,7 @@ protected:
 #ifdef HAVE_LIBZ
 struct gzip_istreambuf : public decompressing_istreambuf
 {
-    gzip_istreambuf(gzFile gz)
+    explicit gzip_istreambuf(gzFile gz)
     {
         for (;;) {
             int n = gzread(gz, writeptr_, bufavail_);
@@ -455,7 +479,7 @@ struct gzip_istreambuf : public decompressing_istreambuf
 #ifdef HAVE_LIBBZ2
 struct bzip2_istreambuf : public decompressing_istreambuf
 {
-    bzip2_istreambuf(BZFILE* bz2)
+    explicit bzip2_istreambuf(BZFILE* bz2)
     {
         for (;;) {
             int n = BZ2_bzread(bz2, writeptr_, bufavail_);//the only difference
@@ -493,31 +517,46 @@ DataSet* guess_and_load_stream(istream &is,
     return load_stream_of_format(is, fi, options);
 }
 
-static bool is_directory(string const& path)
+// MSVC has no S_ISDIR
+#ifndef S_ISDIR
+# define S_ISDIR(mode) ((mode&S_IFMT) == S_IFDIR)
+#endif
+
+bool is_directory(string const& path)
 {
     struct stat buf;
     if (stat(path.c_str(), &buf) != 0)
         return false;
-
-    #ifndef _WIN32
-        return S_ISDIR(buf.st_mode);
-    #endif
+    return S_ISDIR(buf.st_mode);
     // could use PathIsDirectory() on Windows
 }
 
 DataSet* load_file(string const& path, string const& format_name,
                    string const& options)
 {
+    int len = (int)path.size();
+#if defined(_WIN32)
+    vector<wchar_t> wpath;
+    //MultiByteToWideChar(CP_UTF8, 0, path.c_str(), path.size(), 0, 0);
+    wpath.resize(len + 1); // should be enough
+    MultiByteToWideChar(CP_UTF8, 0, path.c_str(), len, &wpath[0], len);
+#endif
     DataSet *ret = NULL;
     // open stream
-    int len = (int) path.size();
     bool gzipped = (len > 3 && path.substr(len-3) == ".gz");
     bool bz2ed = (len > 4 && path.substr(len-4) == ".bz2");
+    if ((gzipped && len > 7 && path.substr(len-7) == ".tar.gz") ||
+            (bz2ed && len > 8 && path.substr(len-8) == ".tar.bz2"))
+        throw RunTimeError("Refusing to read a tarball: " + path);
     if (is_directory(path)) {
         throw RunTimeError("It is a directory, not a file: " + path);
     } else if (gzipped) {
 #ifdef HAVE_LIBZ
+#if defined(_WIN32)
+        gzFile gz_stream = gzopen_w(wpath.data(), "rb");
+#else
         gzFile gz_stream = gzopen(path.c_str(), "rb");
+#endif
         if (!gz_stream) {
             throw RunTimeError("can't open .gz input file: " + path);
         }
@@ -530,6 +569,7 @@ DataSet* load_file(string const& path, string const& format_name,
 #endif //HAVE_LIBZ
     } else if (bz2ed) {
 #ifdef HAVE_LIBBZ2
+        // not used much on Windows I suppose
         BZFILE* bz_stream = BZ2_bzopen(path.c_str(), "rb");
         if (!bz_stream) {
             throw RunTimeError("can't open .bz2 input file: " + path);
@@ -542,10 +582,30 @@ DataSet* load_file(string const& path, string const& format_name,
         throw RunTimeError("Program is compiled with disabled bzlib support.");
 #endif //HAVE_LIBBZ2
     } else {
+#if defined(_MSC_VER)
+        ifstream is(&wpath[0], ios::in | ios::binary);
+#elif defined(_WIN32) && defined(__GLIBCXX__)
+        // based on http://stackoverflow.com/a/19271763/104453
+        // and https://sf.net/p/mingw-w64/mailman/message/29714455/
+        FILE* c_file = _wfopen(&wpath[0], L"rb");
+        if (c_file == NULL)
+            throw RunTimeError("can't open input file: " + path);
+        try {
+         __gnu_cxx::stdio_filebuf<char> fbuf(c_file, ios::in | ios::binary, 1);
+         iostream is(&fbuf);
+#else
         ifstream is(path.c_str(), ios::in | ios::binary);
+#endif
         if (!is)
             throw RunTimeError("can't open input file: " + path);
         ret = guess_and_load_stream(is, path, format_name, options);
+#if defined(_WIN32) && defined(__GLIBCXX__)
+        } catch (...) {
+            fclose(c_file);
+            throw;
+        }
+        fclose(c_file);
+#endif
     }
     return ret;
 }

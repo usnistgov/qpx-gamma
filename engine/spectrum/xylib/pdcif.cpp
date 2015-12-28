@@ -466,10 +466,11 @@ template <typename IteratorT>
 void t_on_loop_finish::operator()(IteratorT, IteratorT) const
 {
     int ncol = (int) da.loop_tags.size();
-    int nrow = (int) da.loop_values.size() / ncol;
-    if (ncol == 0 || nrow == 0)
+    if (ncol == 0)
         return;
-    vector<VecColumn*> cols;
+    int nrow = (int) da.loop_values.size() / ncol;
+    if (nrow == 0)
+        return;
     for (int i = 0; i < ncol; ++i) {
         string const& name = da.loop_tags[i];
         if (!is_pd_data_tag(name))
@@ -531,7 +532,7 @@ void PdCifDataSet::load_data(std::istream &f)
     parse_info<vector<char>::const_iterator> info =
         parse(vec.begin(), vec.end(), p);
     format_assert(this, info.full,
-                  "Parse error at character " + S((long)(info.stop - vec.begin())));
+                  "Parse error at character " + S(info.stop - vec.begin()));
     int n = (int) actions.block_list.size();
     if (n == 0)
         throw RunTimeError("pdCIF file was read, "

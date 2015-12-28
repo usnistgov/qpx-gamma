@@ -20,8 +20,9 @@
 #include <vector>
 #include "xylib.h"
 
-// MSVC has shared_ptr in <memory>, but let's use boost
-#ifndef _MSC_VER
+// boost/shared_ptr.hpp works on all systems, but to avoid pulling boost as
+// dependency of xylib-dev on Linux distros we directly include <tr1/memory>
+#ifdef __GLIBCXX__
 // the value here (1 or 0) is set by xylib configure script
 // (yes, the configure script can modify this file!)
 #define XYLIB_USE_TR1_MEMORY 1
@@ -45,8 +46,7 @@ class XYLIB_API Cache
 {
 public:
     // get instance
-    static Cache* Get()
-        { if (instance_ == NULL) instance_ = new Cache(); return instance_; }
+    static Cache* Get();
 
     // Arguments are the same as in load_file() in xylib.h,
     // but a const ref is returned instead of pointer.
@@ -57,7 +57,7 @@ public:
     // set max. number of cached files, default=1
     void set_max_size(size_t max_size);
     // get max. number of cached files
-    inline size_t get_max_size() const;
+    size_t get_max_size() const;
 
     // clear cache
     void clear_cache();
@@ -67,6 +67,7 @@ private:
     CacheImp* imp_;
     Cache();
     ~Cache();
+    Cache(const Cache&); // disallow
 };
 
 inline

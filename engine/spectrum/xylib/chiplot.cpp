@@ -16,7 +16,7 @@ const FormatInfo ChiPlotDataSet::fmt_info(
     "ChiPLOT data",
     "chi",
     false,                      // whether binary
-    true,                       // whether has multi-blocks
+    false,                      // whether has multi-blocks
     &ChiPlotDataSet::ctor,
     &ChiPlotDataSet::check
 );
@@ -35,12 +35,12 @@ bool ChiPlotDataSet::check(istream &f, string*)
     // check 5. line
     getline(f, line);
     const char* p = line.c_str();
-    strtod(p, &endptr); // return value ignored intentionally
+    (void) strtod(p, &endptr); // return value ignored intentionally
     if (endptr == p)
         return false;
     while (isspace(*p) || *p == ',')
         ++p;
-    strtod(p, &endptr); // return value ignored intentionally
+    (void) strtod(p, &endptr); // return value ignored intentionally
     if (endptr == p)
         return false;
     return true;
