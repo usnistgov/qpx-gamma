@@ -25,6 +25,8 @@
 #include "engine.h"
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
 #include <boost/algorithm/string.hpp>
 #include "custom_logger.h"
 #include <iomanip>
@@ -46,17 +48,13 @@ Engine::Engine() {
 }
 
 
-void Engine::initialize(std::string path) {
+void Engine::initialize(std::string profile) {
   //don't allow this twice?
 
-  path_ = path;
-
-  std::string settings_file = path + "/qpx_settings.set";
-
   pugi::xml_document doc;
-  if (!doc.load_file(settings_file.c_str()))
+  if (!doc.load_file(profile.c_str()))
     return;
-  PL_DBG << "<Engine> Loading device settings " << settings_file;
+  PL_DBG << "<Engine> Loading device settings " << profile;
 
   pugi::xml_node root = doc.child(Gamma::Setting().xml_element_name().c_str());
   if (!root)
@@ -64,11 +62,27 @@ void Engine::initialize(std::string path) {
 
   Gamma::Setting tree(root);
 
-  tree.metadata.setting_type = Gamma::SettingType::stem;
+  //tree.metadata.setting_type = Gamma::SettingType::stem;
+  tree.metadata.saveworthy = true;
+
+  Gamma::Setting descr = tree.get_setting(Gamma::Setting("Profile description"), Gamma::Match::id);
+  descr.metadata.setting_type = Gamma::SettingType::text;
+  descr.metadata.writable = true;
+  tree.branches.replace(descr);
+
+  boost::filesystem::path dir(profile);
+  dir.make_preferred();
+  boost::filesystem::path path = dir.remove_filename();
+
+  if (!boost::filesystem::is_directory(path)) {
+    PL_DBG << "<Engine> Bad profile root directory. Will not proceed with loading device settings";
+    return;
+  }
 
   for (auto &q : tree.branches.my_data_) {
     if (q.id_ != "Detectors") {
-      DaqDevice* device = DeviceFactory::getInstance().create_type(q.id_, path + q.value_text);
+      boost::filesystem::path dev_settings = path / q.value_text;
+      DaqDevice* device = DeviceFactory::getInstance().create_type(q.id_, dev_settings.string());
       if (device != nullptr) {
         PL_DBG << "<Engine> Success loading " << device->device_name();
         devices_[q.id_] = device;
@@ -79,12 +93,14 @@ void Engine::initialize(std::string path) {
   push_settings(tree);
   get_all_settings();
   save_optimization();
+
+  PL_INFO << "<Engine> Welcome to " << descr.value_text;
 }
 
 Engine::~Engine() {
   for (auto &q : devices_)
     if (q.second != nullptr) {
-      PL_DBG << "<Engine> Destroying " << q.first;
+      PL_DBG << "<Engine> Destroying device " << q.first;
       delete q.second;
     }
 }

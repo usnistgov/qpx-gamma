@@ -175,6 +175,8 @@ QVariant TreeItem::display_data(int column) const
       return QString::fromStdString(itemData.value_text);
     else if (itemData.metadata.setting_type == Gamma::SettingType::detector)
       return QString::fromStdString(itemData.value_text);
+    else if (itemData.metadata.setting_type == Gamma::SettingType::stem)
+      return QString::fromStdString(itemData.value_text);
     else if (itemData.metadata.setting_type == Gamma::SettingType::command) {
       if (itemData.metadata.writable)
         return QString("EXECUTE");

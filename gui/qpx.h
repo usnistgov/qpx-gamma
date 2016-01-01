@@ -108,6 +108,9 @@ private slots:
 
   bool hasTab(QString);
   void on_pushOpenEfficiencyCalib_clicked();
+
+  void choose_profiles();
+  void profile_chosen(QString);
 };
 
 #endif // qpx_H

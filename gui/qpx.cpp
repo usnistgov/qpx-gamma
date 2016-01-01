@@ -39,6 +39,8 @@
 #include "form_gain_match.h"
 #include "form_efficiency_calibration.h"
 
+#include "widget_profiles.h"
+
 #include "ui_about.h"
 #include "qt_util.h"
 
@@ -48,6 +50,7 @@ qpx::qpx(QWidget *parent) :
   settings_("NIST-MML", "qpx"),
   my_emitter_(),
   qpx_stream_(),
+  main_tab_(nullptr),
   detectors_("Detectors"),
   text_buffer_(qpx_stream_, my_emitter_),
   runner_thread_()
@@ -71,26 +74,16 @@ qpx::qpx(QWidget *parent) :
   connect(ui->qpxTabs, SIGNAL(tabCloseRequested(int)), this, SLOT(tabCloseRequested(int)));
   ui->statusBar->showMessage("Offline");
 
-  main_tab_ = new FormStart(runner_thread_, settings_, detectors_, this);
-  ui->qpxTabs->addTab(main_tab_, "Settings");
-  ui->qpxTabs->tabBar()->tabButton(0, QTabBar::RightSide)->resize(0,0);
-  connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
-  connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(settings_updated()));
-  connect(this, SIGNAL(update_dets()), main_tab_, SLOT(detectors_updated()));
-  ui->qpxTabs->setCurrentWidget(main_tab_);
-
   gui_enabled_ = true;
   px_status_ = Qpx::DeviceStatus(0);
 
-  //on_pushAbout_clicked();
-  PL_INFO << "Hello! Welcome to Multi-NAA at neutron guide D at NCNR. Please click boot to boot :)";
 
 //for now available only in debug mode
 //#ifdef QPX_DBG_
   ui->pushOpenOptimize->setEnabled(true);
   ui->pushOpenGainMatch->setEnabled(true);
 //#endif
+  QTimer::singleShot(50, this, SLOT(choose_profiles()));
 
 }
 
@@ -133,11 +126,32 @@ void qpx::closeEvent(QCloseEvent *event) {
     }
   }
 
-  main_tab_->exit();
-  main_tab_->close();
+  if (main_tab_ != nullptr) {
+    main_tab_->exit();
+    main_tab_->close();
+  }
 
   saveSettings();
   event->accept();
+}
+
+void qpx::choose_profiles() {
+  WidgetProfiles *profiles = new WidgetProfiles(data_directory_, this);
+  connect(profiles, SIGNAL(profileChosen(QString)), this, SLOT(profile_chosen(QString)));
+  profiles->exec();
+}
+
+void qpx::profile_chosen(QString profile) {
+  main_tab_ = new FormStart(runner_thread_, settings_, detectors_, profile, this);
+  ui->qpxTabs->addTab(main_tab_, "Settings");
+  ui->qpxTabs->tabBar()->tabButton(0, QTabBar::RightSide)->resize(0,0);
+  connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
+  connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(settings_updated()));
+  connect(this, SIGNAL(update_dets()), main_tab_, SLOT(detectors_updated()));
+  ui->qpxTabs->setCurrentWidget(main_tab_);
+
+  //on_pushAbout_clicked();
 }
 
 void qpx::tabCloseRequested(int index) {

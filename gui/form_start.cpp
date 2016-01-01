@@ -23,11 +23,12 @@
 #include "form_start.h"
 #include <QBoxLayout>
 
-FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector> &detectors, QWidget *parent) :
+FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector> &detectors, QString profile, QWidget *parent) :
   QWidget(parent),
   runner_thread_(thread),
   settings_(settings),
   detectors_(detectors),
+  profile_path_(profile),
   exiting(false)
 {
   connect(&thread, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)),
@@ -117,15 +118,11 @@ void FormStart::loadSettings() {
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
   settings_.endGroup();
 
-  QString filename = data_directory_;// + "/qpx_settings.set";
-
-  runner_thread_.do_initialize(filename);
+  runner_thread_.do_initialize(profile_path_);
 }
 
 void FormStart::saveSettings() {
   Gamma::Setting dev_settings = formSettings->get_tree();
-
-  QString filename = data_directory_ + "/qpx_settings.set";
 
   pugi::xml_document doc;
 
@@ -133,7 +130,7 @@ void FormStart::saveSettings() {
   dev_settings.strip_metadata();
   dev_settings.to_xml(doc);
 
-  if (!doc.save_file(filename.toStdString().c_str()))
+  if (!doc.save_file(profile_path_.toStdString().c_str()))
     PL_ERR << "<FormStart> Failed to save device settings"; //should be in engine class?
 
 }

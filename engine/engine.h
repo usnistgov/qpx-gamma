@@ -114,7 +114,6 @@ protected:
 
 private:
   mutable boost::mutex mutex_;
-  std::string path_;
 
   //singleton assurance
   Engine();
