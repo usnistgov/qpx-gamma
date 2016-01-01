@@ -37,7 +37,7 @@
 
 enum RunnerAction {
     kExecuteCommand, kBoot, kShutdown, kPushSettings, kSetSetting, kSetDetector, kSetDetectors,
-    kList, kMCA, kSimulate, kFromList, kOscil, kInitialize,
+    kList, kMCA, kSimulate, kOscil, kInitialize,
     kSettingsRefresh, kOptimize, kTerminate, kNone
 };
 
@@ -60,7 +60,6 @@ public:
     void do_list(boost::atomic<bool>&, uint64_t timeout);
     void do_run(Qpx::SpectraSet&, boost::atomic<bool>&, uint64_t timeout);
     void do_fake(Qpx::SpectraSet&, boost::atomic<bool>&, QString file, std::array<int,2> chans, int source_res, int dest_res, int timeout);
-    void do_from_list(Qpx::SpectraSet&, boost::atomic<bool>&, QString file);
 
     void do_optimize();
     void do_oscil(double xdt);

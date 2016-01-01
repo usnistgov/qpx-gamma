@@ -312,24 +312,3 @@ Qt::ItemFlags TableListData::flags(const QModelIndex &index) const
   Qt::ItemFlags myflags = Qt::ItemIsEnabled | Qt::ItemIsSelectable | QAbstractTableModel::flags(index) & ~Qt::ItemIsSelectable;
   return myflags;
 }
-
-void FormListDaq::on_pushListFileSort_clicked()
-{
-  QString fileName = QFileDialog::getOpenFileName(this, "Load list output", data_directory_, "qpx list output manifest (*.txt)");
-  if (!validateFile(this, fileName, false))
-    return;
-
-  PL_INFO << "Reading list output metadata from " << fileName.toStdString();
-  Qpx::Sorter sorter(fileName.toStdString());
-  if (sorter.valid()) {
-    QString fileName2 = CustomSaveFileDialog(this, "Save list output",
-                                             data_directory_, "qpx list output (*.bin)");
-    if (validateFile(this, fileName2, true)) {
-      QFileInfo file(fileName2);
-      if (file.suffix() != "bin")
-        fileName2 += ".bin";
-      PL_INFO << "Writing sorted list data file " << fileName2.toStdString();
-      sorter.order(fileName2.toStdString());
-    }
-  }
-}

@@ -88,8 +88,6 @@ private slots:
   void analysis2d_destroyed();
   void sym2d_destroyed();
 
-  void on_pushBuildFromList_clicked();
-
   void on_pushDetails_clicked();
 
   void on_toggleIndefiniteRun_clicked();

@@ -80,8 +80,6 @@ private slots:
   void list_selection_changed(QItemSelection,QItemSelection);
   void toggle_push(bool online, Qpx::DeviceStatus);
 
-  void on_pushListFileSort_clicked();
-
 protected:
   void closeEvent(QCloseEvent*);
 

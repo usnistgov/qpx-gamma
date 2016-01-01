@@ -508,23 +508,6 @@ void Engine::getFakeMca(Simulator& source, SpectraSet& spectra,
   builder.join();
 }
 
-void Engine::simulateFromList(Sorter &sorter, SpectraSet &spectra, boost::atomic<bool> &interruptor) {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  PL_INFO << "<Engine> Acquisition simulation from saved list data";
-
-  SynchronizedQueue<Spill*> eventQueue;
-
-  boost::thread builder(boost::bind(&Qpx::Engine::worker_MCA, this, &eventQueue, &spectra));
-  worker_from_list(&sorter, &eventQueue, &interruptor);
-  while (eventQueue.size() > 0)
-    wait_ms(1000);
-  wait_ms(500);
-  eventQueue.stop();
-  wait_ms(500);
-  builder.join();
-
-}
-
 
 ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 
@@ -766,30 +749,5 @@ void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queu
   data_queue->enqueue(one_spill);
 }
 
-
-void Engine::worker_from_list(Sorter* sorter, SynchronizedQueue<Spill*>* data_queue, boost::atomic<bool>* interruptor) {
-  Spill one_spill;
-  StatsUpdate prev;
-
-  while (((one_spill = sorter->get_spill()) != Spill()) && (!(*interruptor))) {
-
-    if (!one_spill.stats.empty() && (one_spill.stats.front() != StatsUpdate())) {
-      StatsUpdate newstats = one_spill.stats.front();
-
-      if ((prev != StatsUpdate()) && (newstats != StatsUpdate()) && (newstats.lab_time > prev.lab_time)) {
-        boost::posix_time::time_duration dif = newstats.lab_time - prev.lab_time;
-        PL_DBG << "<Engine: worker_from_list> will pause for " << dif.total_seconds();
-        boost::this_thread::sleep(dif);
-      }
-
-      if ((prev == StatsUpdate()) || (newstats.lab_time > prev.lab_time))
-        prev = newstats;
-    }
-
-    data_queue->enqueue(new Spill(one_spill));
-//    boost::this_thread::sleep(boost::posix_time::seconds(2));
-  }
-  PL_DBG << "<Engine> worker_from_list terminating";
-}
 
 }

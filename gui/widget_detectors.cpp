@@ -424,6 +424,10 @@ WidgetDetectors::WidgetDetectors(QWidget *parent) :
 
   connect(&selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(selection_changed(QItemSelection,QItemSelection)));
+
+  connect(ui->tableDetectorDB, SIGNAL(doubleClicked(QModelIndex)),
+          this, SLOT(selection_double_clicked(QModelIndex)));
+
 }
 
 void WidgetDetectors::setData(XMLableDB<Gamma::Detector> &newdb, QString outdir) {
@@ -479,6 +483,10 @@ void WidgetDetectors::on_pushEdit_clicked()
   DialogDetector* newDet = new DialogDetector(detectors_->get(i), QDir(root_dir_), false, this);
   connect(newDet, SIGNAL(newDetReady(Gamma::Detector)), this, SLOT(addNewDet(Gamma::Detector)));
   newDet->exec();
+}
+
+void WidgetDetectors::selection_double_clicked(QModelIndex idx) {
+  on_pushEdit_clicked();
 }
 
 void WidgetDetectors::on_pushDelete_clicked()

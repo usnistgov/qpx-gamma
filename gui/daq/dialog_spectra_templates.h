@@ -125,6 +125,8 @@ private slots:
   void on_pushUseDefault_clicked();
 
   void selection_changed(QItemSelection,QItemSelection);
+  void selection_double_clicked(QModelIndex);
+
   void toggle_push();
   void on_pushClear_clicked();
   void on_pushUp_clicked();

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<Setting id="QpxSettings" type="stem" index="-1">
+	<Setting id="Profile description" type="text" index="-1" value="Sorter for offline list data" />
+	<Setting id="Detectors" type="stem" index="-1">
+		<Setting id="Total detectors" type="integer" index="-1" indices="-1" value="4" />
+		<Setting id="Detector" type="detector" index="0" indices="0" value="Sophia" />
+		<Setting id="Detector" type="detector" index="1" indices="1" value="Daphne" />
+		<Setting id="Detector" type="detector" index="2" indices="2" value="none" />
+		<Setting id="Detector" type="detector" index="3" indices="3" value="none" />
+	</Setting>
+	<Setting id="Sorter" type="stem" index="-1" reference="/Sorter/qpx_plugin.set">
+		<Setting id="Sorter/Source file" type="file_path" index="-1" value="/home/mgs/qpxdata/raw_xmas2/qpx_out.txt" />
+		<Setting id="Sorter/Loop data" type="boolean" index="-1" value="false" />
+		<Setting id="Sorter/Override pause" type="boolean" index="-1" value="true" />
+		<Setting id="Sorter/Pause" type="integer" index="-1" value="2000" />
+		<Setting id="Sorter/Override timestamps" type="boolean" index="-1" value="false" />
+	</Setting>
+</Setting>

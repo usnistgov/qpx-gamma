@@ -109,21 +109,6 @@ void ThreadRunner::do_fake(Qpx::SpectraSet &spectra, boost::atomic<bool> &interr
     start(HighPriority);
 }
 
-void ThreadRunner::do_from_list(Qpx::SpectraSet &spectra, boost::atomic<bool> &interruptor, QString file) {
-  if (running_.load()) {
-    PL_WARN << "Runner busy";
-    return;
-  }
-  QMutexLocker locker(&mutex_);
-  terminating_.store(false);
-  spectra_ = &spectra;
-  interruptor_ = &interruptor;
-  file_ = file;
-  action_ = kFromList;
-  if (!isRunning())
-    start(HighPriority);
-}
-
 void ThreadRunner::do_initialize(QString file) {
   if (running_.load()) {
     PL_WARN << "Runner busy";
@@ -292,13 +277,6 @@ void ThreadRunner::run()
       delete intermediate;
       if (mySource.valid())
         engine_.getFakeMca(mySource, *spectra_, timeout_, *interruptor_);
-      action_ = kNone;
-      emit runComplete();
-    } else if (action_ == kFromList) {
-      interruptor_->store(false);
-      Qpx::Sorter sorter(file_.toStdString());
-      if (sorter.valid())
-        engine_.simulateFromList(sorter, *spectra_, *interruptor_);
       action_ = kNone;
       emit runComplete();
     } else if (action_ == kInitialize) {

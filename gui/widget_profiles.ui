@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Detector definitions</string>
+   <string>Qpx setting profiles</string>
   </property>
   <property name="windowIcon">
    <iconset resource="resources/qpxres.qrc">

@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<Setting id="QpxSettings" type="stem" index="-1">
+	<Setting id="Profile description" type="text" index="-1" value="Test cell LaBr quartet with HV8" />
+	<Setting id="Detectors" type="stem" index="-1">
+		<Setting id="Total detectors" type="integer" index="-1" indices="-1" value="4" />
+		<Setting id="Detector" type="detector" index="0" indices="0" value="none" />
+		<Setting id="Detector" type="detector" index="1" indices="1" value="none" />
+		<Setting id="Detector" type="detector" index="2" indices="2" value="none" />
+		<Setting id="Detector" type="detector" index="3" indices="3" value="none" />
+	</Setting>
+	<Setting id="HV8" type="stem" index="-1" reference="/HV8/qpx_plugin.set">
+		<Setting id="HV8/PortName" type="file_path" index="-1" value="/dev/ttyUSB0" />
+		<Setting id="HV8/BaudRate" type="int_menu" index="-1" value="9600" />
+		<Setting id="HV8/CharacterSize" type="integer" index="-1" value="8" />
+		<Setting id="HV8/Parity" type="int_menu" index="-1" value="1" />
+		<Setting id="HV8/StopBits" type="int_menu" index="-1" value="1" />
+		<Setting id="HV8/FlowControl" type="int_menu" index="-1" value="1" />
+		<Setting id="HV8/Channels" type="stem" index="-1" />
+	</Setting>
+	<Setting id="Pixie4" type="stem" index="-1" reference="/XIA/qpx_plugin.set">
+		<Setting id="Pixie4/Run settings" type="stem" index="-1">
+			<Setting id="Pixie4/Run settings/Run type" type="int_menu" index="-1" value="259" />
+			<Setting id="Pixie4/Run settings/Double buffer" type="boolean" index="-1" value="true" />
+			<Setting id="Pixie4/Run settings/Poll interval" type="integer" index="-1" value="400" />
+		</Setting>
+		<Setting id="Pixie4/Files" type="stem" index="-1">
+			<Setting id="Pixie4/Files/Fippi" type="file_path" index="-1" value="/home/mgs/qpxdata/XIA/FippiP500.bin" />
+			<Setting id="Pixie4/Files/SysPixie" type="file_path" index="-1" value="/home/mgs/qpxdata/XIA/syspixie_revC.bin" />
+			<Setting id="Pixie4/Files/PixieBin" type="file_path" index="-1" value="/home/mgs/qpxdata/XIA/pixie.bin" />
+			<Setting id="Pixie4/Files/PxiBin" type="file_path" index="-1" value="/home/mgs/qpxdata/XIA/PXIcode.bin" />
+			<Setting id="Pixie4/Files/SetFile" type="file_path" index="-1" value="/home/mgs/qpxdata/XIA/LaBr.set" />
+			<Setting id="Pixie4/Files/PxiVar" type="file_path" index="-1" value="/home/mgs/qpxdata/XIA/PXIcode.var" />
+			<Setting id="Pixie4/Files/PxiLst" type="file_path" index="-1" value="/home/mgs/qpxdata/XIA/PXIcode.lst" />
+		</Setting>
+		<Setting id="Pixie4/System" type="stem" index="-1">
+			<Setting id="Pixie4/System/MAX_NUMBER_MODULES" type="integer" index="-1" indices="-1" value="7" />
+			<Setting id="Pixie4/System/KEEP_CW" type="boolean" index="-1" indices="-1" value="true" />
+			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" index="7" indices="-1" value="3" />
+			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" index="8" indices="-1" value="0" />
+			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" index="9" indices="-1" value="0" />
+			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" index="10" indices="-1" value="0" />
+			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" index="11" indices="-1" value="0" />
+			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" index="12" indices="-1" value="0" />
+			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" index="13" indices="-1" value="0" />
+			<Setting id="Pixie4/System/module" type="stem" index="0" indices="0 1 2 3">
+				<Setting id="Pixie4/System/module/channel" type="stem" index="0" indices="0" />
+				<Setting id="Pixie4/System/module/channel" type="stem" index="1" indices="1" />
+				<Setting id="Pixie4/System/module/channel" type="stem" index="2" indices="2" />
+				<Setting id="Pixie4/System/module/channel" type="stem" index="3" indices="3" />
+			</Setting>
+		</Setting>
+	</Setting>
+</Setting>

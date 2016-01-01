@@ -315,11 +315,14 @@ DialogSpectraTemplates::DialogSpectraTemplates(XMLableDB<Qpx::Spectrum::Template
   ui->spectraSetupView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->spectraSetupView->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->spectraSetupView->setSelectionBehavior(QAbstractItemView::SelectRows);
-  ui->spectraSetupView->setSelectionMode(QAbstractItemView::SingleSelection);
+  ui->spectraSetupView->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->spectraSetupView->show();
 
   connect(&selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(selection_changed(QItemSelection,QItemSelection)));
+  connect(ui->spectraSetupView, SIGNAL(doubleClicked(QModelIndex)),
+          this, SLOT(selection_double_clicked(QModelIndex)));
+
 
   table_model_.update();
   ui->spectraSetupView->resizeColumnsToContents();
@@ -342,8 +345,11 @@ void DialogSpectraTemplates::toggle_push() {
     ui->pushUp->setEnabled(false);
     ui->pushDown->setEnabled(false);
   } else {
-    ui->pushEdit->setEnabled(true);
     ui->pushDelete->setEnabled(true);
+  }
+
+  if (selection_model_.selectedIndexes().size() == 1) {
+    ui->pushEdit->setEnabled(true);
     QModelIndexList ixl = selection_model_.selectedRows();
     if (ixl.front().row() > 0)
       ui->pushUp->setEnabled(true);
@@ -414,13 +420,27 @@ void DialogSpectraTemplates::on_pushEdit_clicked()
   newDialog->exec();
 }
 
+void DialogSpectraTemplates::selection_double_clicked(QModelIndex idx) {
+  on_pushEdit_clicked();
+}
+
 void DialogSpectraTemplates::on_pushDelete_clicked()
 {
   QModelIndexList ixl = ui->spectraSetupView->selectionModel()->selectedRows();
   if (ixl.empty())
     return;
-  int i = ixl.front().row();
-  templates_.remove(i);
+
+  std::vector<std::string> names;
+
+  for (auto &ix : ixl) {
+    int i = ix.row();
+    names.push_back(templates_.get(i).name_);
+  }
+
+  for (auto &q : names) {
+    Qpx::Spectrum::Template t(q);
+    templates_.remove_a(t);
+  }
   selection_model_.reset();
   table_model_.update();
   toggle_push();
