@@ -39,7 +39,7 @@ class TableListData : public QAbstractTableModel
 private:
     Qpx::ListData* mystuff;
     double time_factor_;
-    std::vector<Gamma::Calibration> calibrations_;
+    std::vector<Gamma::Detector> dets_;
 
 public:
     TableListData(QObject *parent = 0);
@@ -72,10 +72,6 @@ signals:
 private slots:
   void on_pushListStart_clicked();
   void on_pushListStop_clicked();
-  void on_boxChan0_clicked();
-  void on_boxChan1_clicked();
-  void on_boxChan2_clicked();
-  void on_boxChan3_clicked();
   void list_completed(Qpx::ListData*);
   void list_selection_changed(QItemSelection,QItemSelection);
   void toggle_push(bool online, Qpx::DeviceStatus);

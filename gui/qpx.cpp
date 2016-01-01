@@ -78,11 +78,6 @@ qpx::qpx(QWidget *parent) :
   px_status_ = Qpx::DeviceStatus(0);
 
 
-//for now available only in debug mode
-//#ifdef QPX_DBG_
-  ui->pushOpenOptimize->setEnabled(true);
-  ui->pushOpenGainMatch->setEnabled(true);
-//#endif
   QTimer::singleShot(50, this, SLOT(choose_profiles()));
 
 }
@@ -149,6 +144,9 @@ void qpx::profile_chosen(QString profile) {
   connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
   connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(settings_updated()));
   connect(this, SIGNAL(update_dets()), main_tab_, SLOT(detectors_updated()));
+  connect(main_tab_, SIGNAL(optimization_requested()), this, SLOT(open_optimization()));
+  connect(main_tab_, SIGNAL(gain_matching_requested()), this, SLOT(open_gain_matching()));
+
   ui->qpxTabs->setCurrentWidget(main_tab_);
 
   //on_pushAbout_clicked();
@@ -300,7 +298,7 @@ void qpx::on_pushOpenList_clicked()
   emit toggle_push(gui_enabled_, px_status_);
 }
 
-void qpx::on_pushOpenOptimize_clicked()
+void qpx::open_optimization()
 {
   //limit only one of these
   if (hasTab("Optimization"))
@@ -319,7 +317,7 @@ void qpx::on_pushOpenOptimize_clicked()
   emit toggle_push(gui_enabled_, px_status_);
 }
 
-void qpx::on_pushOpenGainMatch_clicked()
+void qpx::open_gain_matching()
 {
   //limit only one of these
   if (hasTab("Gain matching"))

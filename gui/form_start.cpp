@@ -41,6 +41,8 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma:
   formSettings = new FormSystemSettings(runner_thread_, detectors_, settings_);
   connect(formSettings, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
   connect(formSettings, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
+  connect(formSettings, SIGNAL(gain_matching_requested()), this, SLOT(request_gain_matching()));
+  connect(formSettings, SIGNAL(optimization_requested()), this, SLOT(request_optimization()));
   
   connect(this, SIGNAL(refresh()), formSettings, SLOT(update()));
   connect(this, SIGNAL(toggle_push_(bool,Qpx::DeviceStatus)), formSettings, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
@@ -133,5 +135,13 @@ void FormStart::saveSettings() {
   if (!doc.save_file(profile_path_.toStdString().c_str()))
     PL_ERR << "<FormStart> Failed to save device settings"; //should be in engine class?
 
+}
+
+void FormStart::request_gain_matching() {
+  emit gain_matching_requested();
+}
+
+void FormStart::request_optimization() {
+  emit optimization_requested();
 }
 

@@ -103,14 +103,16 @@ private slots:
 
   void on_pushOpenSpectra_clicked();
   void on_pushOpenList_clicked();
-  void on_pushOpenOptimize_clicked();
-  void on_pushOpenGainMatch_clicked();
 
   bool hasTab(QString);
   void on_pushOpenEfficiencyCalib_clicked();
 
   void choose_profiles();
   void profile_chosen(QString);
+
+  void open_gain_matching();
+  void open_optimization();
+
 };
 
 #endif // qpx_H

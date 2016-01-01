@@ -54,6 +54,8 @@ public slots:
 signals:
   void toggleIO(bool);
   void statusText(QString);
+  void optimization_requested();
+  void gain_matching_requested();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -78,6 +80,9 @@ private slots:
   void on_checkShowRO_clicked();
   void on_bootButton_clicked();
 
+
+  void on_pushOpenGainMatch_clicked();
+  void on_pushOpenOptimize_clicked();
 
 private:
   Ui::FormSystemSettings *ui;

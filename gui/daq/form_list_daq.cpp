@@ -60,24 +60,22 @@ void FormListDaq::loadSettings() {
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
   settings_.endGroup();
 
-  settings_.beginGroup("Lab");
-  ui->boxListMins->setValue(settings_.value("list_mins", 5).toInt());
-  ui->boxListSecs->setValue(settings_.value("list_secs", 0).toInt());
+
+  settings_.beginGroup("ListDaq");
+  ui->timeDuration->set_total_seconds(settings_.value("run_secs", 60).toULongLong());
   settings_.endGroup();
 }
 
 void FormListDaq::saveSettings() {
-  settings_.beginGroup("Lab");
-  settings_.setValue("list_mins", ui->boxListMins->value());
-  settings_.setValue("list_secs", ui->boxListSecs->value());
+  settings_.beginGroup("ListDaq");
+  settings_.setValue("run_secs", QVariant::fromValue(ui->timeDuration->total_seconds()));
   settings_.endGroup();
 }
 
 void FormListDaq::toggle_push(bool enable, Qpx::DeviceStatus status) {
   bool online = (status & Qpx::DeviceStatus::can_run);
   ui->pushListStart->setEnabled(enable && online);
-  ui->boxListMins->setEnabled(enable && online);
-  ui->boxListSecs->setEnabled(enable && online);
+  ui->timeDuration->setEnabled(enable && online);
 }
 
 FormListDaq::~FormListDaq()
@@ -114,38 +112,31 @@ void FormListDaq::displayTraces()
   }
 
   long int chosen_trace = list_selection_model_.selectedIndexes().first().row();
-  QVector<QColor> palette {Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow};
-
-  bool drawit[4];
-  drawit[0] = ui->boxChan0->isChecked();
-  drawit[1] = ui->boxChan1->isChecked();
-  drawit[2] = ui->boxChan2->isChecked();
-  drawit[3] = ui->boxChan3->isChecked();
-
-  int actual_graphs = 0;
-  for (int i=0; i < list_data_->run.detectors.size(); i++) {
-    uint32_t trace_length = list_data_->hits[chosen_trace].trace.size();
-    if ((drawit[i]) && (trace_length > 0)) {
-      QVector<double> x(trace_length), y(trace_length);
-      Gamma::Detector this_det = list_data_->run.detectors[i];
-      int highest_res = 0;
-      for (auto &q : this_det.energy_calibrations_.my_data_)
-        if (q.bits_ > highest_res)
-          highest_res = q.bits_;
-      Gamma::Calibration this_calibration = this_det.energy_calibrations_.get(highest_res);
-      int shift_by = 0;
-      if (this_calibration.bits_)
-        shift_by = 16 - this_calibration.bits_;
-      for (std::size_t j=0; j<trace_length; j++) {
-        x[j] = j;
-        y[j] = this_calibration.transform(list_data_->hits[chosen_trace].trace[j] >> shift_by);
-      }
-      ui->tracePlot->addGraph();
-      ui->tracePlot->graph(actual_graphs)->addData(x, y);
-      ui->tracePlot->graph(actual_graphs)->setPen(QPen(palette[i]));
-      actual_graphs++;
-    }
+  if (chosen_trace >= list_data_->hits.size()) {
+    ui->tracePlot->replot(); return;
   }
+
+  uint32_t trace_length = list_data_->hits[chosen_trace].trace.size();
+  if (trace_length > 0) {
+    QVector<double> x(trace_length), y(trace_length);
+    int chan = list_data_->hits[chosen_trace].channel;
+    Gamma::Detector this_det;
+
+    if ((chan > -1) && (chan < list_data_->run.detectors.size()))
+      this_det = list_data_->run.detectors[chan];
+
+    Gamma::Calibration this_calibration = this_det.best_calib(16);
+
+    for (std::size_t j=0; j<trace_length; j++) {
+      x[j] = j;
+      y[j] = this_calibration.transform(list_data_->hits[chosen_trace].trace[j], 16);
+    }
+
+    ui->tracePlot->addGraph();
+    ui->tracePlot->graph(0)->addData(x, y);
+    ui->tracePlot->graph(0)->setPen(QPen(Qt::darkGreen));
+  }
+
   ui->tracePlot->xAxis->setLabel("time (ticks)"); //can do better....
   ui->tracePlot->yAxis->setLabel("keV");
   ui->tracePlot->rescaleAxes();
@@ -160,7 +151,12 @@ void FormListDaq::on_pushListStart_clicked()
   ui->pushListStop->setEnabled(true);
   my_run_ = true;
 
-  runner_thread_.do_list(interruptor_, ui->boxListMins->value() * 60 + ui->boxListSecs->value());
+  uint64_t duration = ui->timeDuration->total_seconds();
+
+  if (duration == 0)
+    return;
+
+  runner_thread_.do_list(interruptor_, duration);
 }
 
 void FormListDaq::on_pushListStop_clicked()
@@ -190,26 +186,6 @@ void FormListDaq::list_selection_changed(QItemSelection, QItemSelection) {
   displayTraces();
 }
 
-void FormListDaq::on_boxChan0_clicked()
-{
-  displayTraces();
-}
-
-void FormListDaq::on_boxChan1_clicked()
-{
-  displayTraces();
-}
-
-void FormListDaq::on_boxChan2_clicked()
-{
-  displayTraces();
-}
-
-void FormListDaq::on_boxChan3_clicked()
-{
-  displayTraces();
-}
-
 TableListData::TableListData(QObject *parent)
   :QAbstractTableModel(parent), time_factor_(1.0)
 {
@@ -225,32 +201,35 @@ int TableListData::rowCount(const QModelIndex & /*parent*/) const
 
 int TableListData::columnCount(const QModelIndex & /*parent*/) const
 {
-  return 6;
+  return 3;
 }
 
 QVariant TableListData::data(const QModelIndex &index, int role) const
 {
   int col = index.column();
   int row = index.row();
+  int chan = mystuff->hits[row].channel;
   if (role == Qt::DisplayRole)
   {
     switch (col) {
-    case 0:
-      return QString::fromStdString(to_simple_string(mystuff->hits[index.row()].to_posix_time() * time_factor_));
-    //case 1:
-      //return QVariant::fromValue(QpxPattern(mystuff->hits[index.row()].pattern, false));
-    default:
-      int chan = col - 2;
-      if (chan < 4) {
-        int shiftby = 0;
-        if (calibrations_[chan].bits_)
-          shiftby = 16 - calibrations_[chan].bits_;
-        double energy = calibrations_[chan].transform(mystuff->hits[row].energy >> shiftby);
-        if (energy < 0)
-          return "N";  //negative energy looks ugly :(
-        else
-          return QString::number(energy) + QString::fromStdString(calibrations_[chan].units_);
+    case 0: {
+      QString det = QString::number(chan);
+      if ((chan > -1) && (chan < dets_.size()))
+        det += " [" + QString::fromStdString(dets_[chan].name_) + "]";
+      return det;
+    }
+    case 1:
+      return QString::fromStdString(to_simple_string(mystuff->hits[row].to_posix_time() * time_factor_));
+//    case 2:
+//      return QVariant::fromValue(QpxPattern(mystuff->hits[index.row()].pattern, false));
+    case 2:
+      Gamma::Calibration cal;
+      double energy = mystuff->hits[row].energy;
+      if ((chan > -1) && (chan < dets_.size())) {
+        cal = dets_[chan].best_calib(16);
+        energy = cal.transform(energy, 16);
       }
+      return QString::number(energy) + QString::fromStdString(cal.units_);
     }
   }
   return QVariant();
@@ -264,17 +243,11 @@ QVariant TableListData::headerData(int section, Qt::Orientation orientation, int
       switch (section)
       {
       case 0:
-        return QString("Time (s)");
+        return QString("Detector");
       case 1:
-        return QString("Hit pattern");
+        return QString("Time (s)");
       case 2:
-        return QString("Energy[0]");
-      case 3:
-        return QString("Energy[1]");
-      case 4:
-        return QString("Energy[2]");
-      case 5:
-        return QString("Energy[3]");
+        return QString("Energy");
       }
     } else if (orientation == Qt::Vertical) {
       return QString::number(section);
@@ -287,16 +260,8 @@ QVariant TableListData::headerData(int section, Qt::Orientation orientation, int
 void TableListData::eat_list(Qpx::ListData* stuff) {
   mystuff = stuff;
   if (stuff != nullptr) {
+    dets_ = mystuff->run.detectors;
     time_factor_ = stuff->run.time_scale_factor();
-    for (int i =0; i < mystuff->run.detectors.size(); i++) {
-      Gamma::Detector thisdet = mystuff->run.detectors[i];
-      int hi_res = 0;
-      for (auto &q : thisdet.energy_calibrations_.my_data_) {
-        if (q.bits_ > hi_res)
-          hi_res = q.bits_;
-      }
-      calibrations_[i] = thisdet.highest_res_calib();
-    }
   }
 }
 

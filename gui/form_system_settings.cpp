@@ -78,6 +78,19 @@ void FormSystemSettings::update(const Gamma::Setting &tree, const std::vector<Ga
   tree_settings_model_.update(dev_settings_);
   table_settings_model_.update(channels_);
 
+  bool can_gain_match = false;
+  bool can_optimize = false;
+  for (auto &q : channels_)
+    for (auto & p: q.settings_.branches.my_data_) {
+      if (p.metadata.flags.count("gain") > 0)
+        can_gain_match = true;
+      if (p.metadata.flags.count("optimize") > 0)
+        can_optimize = true;
+    }
+
+  ui->pushOpenGainMatch->setEnabled(can_gain_match);
+  ui->pushOpenOptimize->setEnabled(can_optimize);
+
   //update dets in DB as well?
 
   viewTableSettings->resizeColumnsToContents();
@@ -287,4 +300,14 @@ void FormSystemSettings::on_bootButton_clicked()
 //    PL_INFO << "Shutting down";
     runner_thread_.do_shutdown();
   }
+}
+
+void FormSystemSettings::on_pushOpenGainMatch_clicked()
+{
+  emit gain_matching_requested();
+}
+
+void FormSystemSettings::on_pushOpenOptimize_clicked()
+{
+  emit optimization_requested();
 }

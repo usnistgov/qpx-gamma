@@ -64,9 +64,9 @@ class Detector : public XMLable {
   void to_xml(pugi::xml_node &) const override;
   void to_xml_options(pugi::xml_node &root, bool options) const;
 
-  Calibration highest_res_calib();
-  Calibration best_calib(int bits);
-  Calibration get_gain_match(uint16_t bits, std::string todet);
+  Calibration highest_res_calib() const;
+  Calibration best_calib(int bits) const;
+  Calibration get_gain_match(uint16_t bits, std::string todet) const;
   
   std::string name_, type_;
   XMLableDB<Calibration> energy_calibrations_;

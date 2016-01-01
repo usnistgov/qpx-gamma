@@ -15,7 +15,16 @@
 		<Setting id="HV8/Parity" type="int_menu" index="-1" value="1" />
 		<Setting id="HV8/StopBits" type="int_menu" index="-1" value="1" />
 		<Setting id="HV8/FlowControl" type="int_menu" index="-1" value="1" />
-		<Setting id="HV8/Channels" type="stem" index="-1" />
+		<Setting id="HV8/Channels" type="stem" index="-1">
+			<Setting id="HV8/Channels/V1" type="floating" index="0" indices="0" value="0" />
+			<Setting id="HV8/Channels/V2" type="floating" index="1" indices="1" value="0" />
+			<Setting id="HV8/Channels/V3" type="floating" index="2" indices="2" value="0" />
+			<Setting id="HV8/Channels/V4" type="floating" index="3" indices="3" value="0" />
+			<Setting id="HV8/Channels/V5" type="floating" index="4" indices="4" value="0" />
+			<Setting id="HV8/Channels/V6" type="floating" index="5" indices="5" value="0" />
+			<Setting id="HV8/Channels/V7" type="floating" index="6" indices="6" value="0" />
+			<Setting id="HV8/Channels/V8" type="floating" index="7" indices="7" value="0" />
+		</Setting>
 	</Setting>
 	<Setting id="Pixie4" type="stem" index="-1" reference="/XIA/qpx_plugin.set">
 		<Setting id="Pixie4/Run settings" type="stem" index="-1">

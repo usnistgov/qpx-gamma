@@ -130,8 +130,9 @@ void FormMcaDaq::loadSettings() {
 
   spectra_templates_.read_xml(data_directory_.toStdString() + "/default_spectra.tem");
 
-  settings_.beginGroup("Lab");
-  ui->timeDuration->set_total_seconds(settings_.value("mca_secs", 0).toULongLong());
+  settings_.beginGroup("McaDaq");
+  ui->timeDuration->set_total_seconds(settings_.value("run_secs", 60).toULongLong());
+  ui->toggleIndefiniteRun->setChecked(settings_.value("run_indefinite", false).toBool());
   ui->pushEnable2d->setChecked(settings_.value("2d_visible", true).toBool());
 
   settings_.beginGroup("McaPlot");
@@ -152,8 +153,9 @@ void FormMcaDaq::loadSettings() {
 }
 
 void FormMcaDaq::saveSettings() {
-  settings_.beginGroup("Lab");
-  settings_.setValue("mca_secs", QVariant::fromValue(ui->timeDuration->total_seconds()));
+  settings_.beginGroup("McaDaq");
+  settings_.setValue("run_secs", QVariant::fromValue(ui->timeDuration->total_seconds()));
+  settings_.setValue("run_indefinite", ui->toggleIndefiniteRun->isChecked());
   settings_.setValue("2d_visible", ui->pushEnable2d->isChecked());
 
   settings_.beginGroup("McaPlot");

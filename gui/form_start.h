@@ -50,6 +50,9 @@ signals:
   void toggle_push_(bool, Qpx::DeviceStatus);
   void refresh();
   void update_dets();
+  void optimization_requested();
+  void gain_matching_requested();
+
 
 private slots:
   void update(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus);
@@ -59,6 +62,9 @@ private slots:
   void boot_complete(bool, Qpx::DeviceStatus);
   void settings_updated();
   void detectors_updated();
+
+  void request_gain_matching();
+  void request_optimization();
 
 protected:
   void closeEvent(QCloseEvent*);

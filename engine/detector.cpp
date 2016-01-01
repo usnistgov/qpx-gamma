@@ -34,14 +34,14 @@ namespace Gamma {
 // Detector ////////
 ////////////////////
 
-Calibration Detector::best_calib(int bits) {
+Calibration Detector::best_calib(int bits) const {
   if (energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
      return energy_calibrations_.get(Gamma::Calibration("Energy", bits));
   else
     return highest_res_calib();
 }
 
-Calibration Detector::highest_res_calib() {
+Calibration Detector::highest_res_calib() const {
   Calibration result;
   for (int i=0; i<energy_calibrations_.size(); ++i)
     if (energy_calibrations_.get(i).bits_ >= result.bits_)
@@ -49,7 +49,7 @@ Calibration Detector::highest_res_calib() {
   return result;
 }
 
-Calibration Detector::get_gain_match(uint16_t bits, std::string todet)
+Calibration Detector::get_gain_match(uint16_t bits, std::string todet) const
 {
   Calibration result = Calibration("Gain", bits);
   for (int i=0; i< gain_match_calibrations_.size(); ++i) {

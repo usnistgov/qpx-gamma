@@ -31,7 +31,7 @@
 namespace Qpx {
 namespace Spectrum {
 
-static Registrar<SpectrumTime> registrar("1D");
+static Registrar<SpectrumTime> registrar("Time");
 
 void SpectrumTime::_set_detectors(const std::vector<Gamma::Detector>& dets) {
   metadata_.detectors.clear();
@@ -51,7 +51,7 @@ void SpectrumTime::_set_detectors(const std::vector<Gamma::Detector>& dets) {
     }
   }
 
-  this->recalc_energies();
+  energies_.resize(1);
 }
 
 PreciseFloat SpectrumTime::_get_count(std::initializer_list<uint16_t> list) const {
