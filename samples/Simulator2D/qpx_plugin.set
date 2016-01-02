@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<Simulator2D>
+	<SettingMeta id="Simulator2D" type="stem" name="Simulator2D" address="0" writable="false" saveworthy="true">
+		<branch address="0" id="Simulator2D/Source file" />
+		<branch address="1" id="Simulator2D/Source spectrum" />
+		<branch address="2" id="Simulator2D/Override pause" />
+		<branch address="3" id="Simulator2D/Pause" />
+	</SettingMeta>
+	<SettingMeta id="Simulator2D/Source file" type="file_path" name="Source file" address="0" writable="true" unit="Qpx project (*.qpx)" />
+	<SettingMeta id="Simulator2D/Source spectrum" type="int_menu" name="Source spectrum" address="0" writable="true" />
+	<SettingMeta id="Simulator2D/Override pause" type="boolean" name="Override pause" address="0" writable="true" />
+	<SettingMeta id="Simulator2D/Pause" type="integer" name="Pause" address="0" writable="true" step="50" minimum="0" maximum="5000000" unit="ms" />
+</Simulator2D>

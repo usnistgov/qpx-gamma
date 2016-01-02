@@ -49,7 +49,7 @@ class SpectraSet {
 
   void read_spn(std::string file_name);
 
-  void read_xml(std::string file_name, bool with_spectra = true);
+  void read_xml(std::string file_name, bool with_spectra = true, bool with_full_spectra = true);
   void write_xml(std::string file_name);
 
   void delete_spectrum(std::string name);

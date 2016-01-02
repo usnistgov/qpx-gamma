@@ -1,4 +1,3 @@
-#include "simulator.h"
 #include "engine.h"
 
 struct CpxLine {
@@ -19,14 +18,11 @@ public:
   
 private:
   bool boot(std::vector<std::string> &tokens);
-  bool load_simulation(std::vector<std::string> &tokens);
   bool templates(std::vector<std::string> &tokens);
-  bool run_simulation(std::vector<std::string> &tokens);
   bool run_mca(std::vector<std::string> &tokens);
   bool save_qpx(std::vector<std::string> &tokens);
 
   Qpx::SpectraSet   spectra_;
-  Qpx::Simulator    source_;
   Qpx::Engine       &engine_;
   boost::atomic<bool> interruptor_;
 };

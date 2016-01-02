@@ -33,8 +33,8 @@
 #include "generic_setting.h"  //make full use of this!!!
 #include "daq_device.h"
 #include "synchronized_queue.h"
+#include "spectra_set.h"
 
-#include "simulator.h"
 #include "custom_timer.h"
 
 namespace Qpx {
@@ -67,7 +67,6 @@ public:
 
   ListData* getList(uint64_t timeout, boost::atomic<bool>& inturruptor);
   void getMca(uint64_t timeout, SpectraSet &spectra, boost::atomic<bool> &interruptor);
-  void getFakeMca(Simulator &simulator, SpectraSet &spectra, uint64_t timeout, boost::atomic<bool> &interruptor);
 
   //detectors
   std::vector<Gamma::Detector> get_detectors() const {return detectors_;}
@@ -120,7 +119,6 @@ private:
 
   //threads
   void worker_MCA(SynchronizedQueue<Spill*>* data_queue, SpectraSet* spectra);
-  void worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queue, boost::atomic<bool>* interruptor);
 
 };
 

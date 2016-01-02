@@ -33,10 +33,7 @@ ThreadRunner::ThreadRunner(QObject *parent) :
   spectra_ = nullptr;
   interruptor_ = nullptr;
   action_ = kNone;
-  fake_chans_ = {0,1};
   file_ = "";
-  source_res_ = 0;
-  dest_res_ = 0;
   xdt_ = 0.0;
   match_conditions_ = Gamma::Match::id;
   start(HighPriority);
@@ -86,25 +83,6 @@ void ThreadRunner::do_run(Qpx::SpectraSet &spectra, boost::atomic<bool> &interru
   interruptor_ = &interruptor;
   timeout_ = timeout;
   action_ = kMCA;
-  if (!isRunning())
-    start(HighPriority);
-}
-
-void ThreadRunner::do_fake(Qpx::SpectraSet &spectra, boost::atomic<bool> &interruptor, QString file, std::array<int,2> chans, int source_res, int dest_res, int timeout) {
-  if (running_.load()) {
-    PL_WARN << "Runner busy";
-    return;
-  }
-  QMutexLocker locker(&mutex_);
-  terminating_.store(false);
-  spectra_ = &spectra;
-  interruptor_ = &interruptor;
-  file_ = file;
-  fake_chans_ = chans;
-  source_res_ = source_res;
-  dest_res_ = dest_res;
-  timeout_ = timeout;
-  action_ = kSimulate;
   if (!isRunning())
     start(HighPriority);
 }
@@ -269,16 +247,6 @@ void ThreadRunner::run()
       Qpx::ListData *newListRun = engine_.getList(timeout_, *interruptor_);
       action_ = kSettingsRefresh;
       emit listComplete(newListRun);
-    } else if (action_ == kSimulate) {
-      interruptor_->store(false);
-      Qpx::SpectraSet* intermediate = new Qpx::SpectraSet;
-      intermediate->read_xml(file_.toStdString(), true);
-      Qpx::Simulator mySource = Qpx::Simulator(intermediate, fake_chans_, source_res_, dest_res_);
-      delete intermediate;
-      if (mySource.valid())
-        engine_.getFakeMca(mySource, *spectra_, timeout_, *interruptor_);
-      action_ = kNone;
-      emit runComplete();
     } else if (action_ == kInitialize) {
       engine_.initialize(file_.toStdString());
       action_ = kNone;

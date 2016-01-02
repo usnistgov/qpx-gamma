@@ -146,12 +146,8 @@ bool Cpx::interpret(std::list<CpxLine> commands, std::vector<double> variables) 
     }
     else if (line.command == "boot")
       success = boot(line.params);
-    else if (line.command == "simulation")
-      success = load_simulation(line.params);
     else if (line.command == "templates")
       success = templates(line.params);
-    else if (line.command == "run_simulation")
-      success = run_simulation(line.params);
     else if (line.command == "run_mca")
       success = run_mca(line.params);
     else if (line.command == "save_qpx")
@@ -196,22 +192,6 @@ bool Cpx::interpret(std::list<CpxLine> commands, std::vector<double> variables) 
 }
 
 
-bool Cpx::load_simulation(std::vector<std::string> &tokens) {
-  if (tokens.size() < 3) {
-    PL_ERR << "<cpx> expected syntax: simulation source.qpx source_bits matrix_bits";
-    return false;
-  }
-  std::string source(tokens[0]);
-  uint16_t source_res = boost::lexical_cast<uint16_t>(tokens[1]);
-  uint16_t matrix_res = boost::lexical_cast<uint16_t>(tokens[2]);
-  
-  PL_INFO << "<cpx> loading simulation from " << source;
-  Qpx::SpectraSet temp_spectra;
-  temp_spectra.read_xml(source, true);
-  source_ = Qpx::Simulator(&temp_spectra, std::array<int,2>({0,1}), source_res, matrix_res);
-  return true;
-}
-
 bool Cpx::templates(std::vector<std::string> &tokens) {
   if (tokens.size() < 1) {
     PL_ERR << "<cpx> expected syntax: template template_file.tem";
@@ -228,22 +208,6 @@ bool Cpx::templates(std::vector<std::string> &tokens) {
   PL_INFO << "<cpx> loading templates from " << file;
   spectra_.clear();
   spectra_.set_spectra(spectra_templates_);
-  return true;
-}
-
-bool Cpx::run_simulation(std::vector<std::string> &tokens) {
-  if (tokens.size() < 1) {
-    PL_ERR << "<cpx> expected syntax: run_simulation duration";
-    return false;
-  }
-  uint64_t duration = boost::lexical_cast<uint64_t>(tokens[0]);
-  if (duration == 0) {
-    PL_ERR << "<cpx> bad duration";
-    return false;
-  }
-  
-  PL_INFO << "<cpx> running simulation for " << duration;
-  engine_.getFakeMca(source_, spectra_, duration, interruptor_);
   return true;
 }
 

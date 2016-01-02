@@ -33,12 +33,10 @@
 
 #include "engine.h"
 #include "spectra_set.h"
-#include "simulator.h"
 
 enum RunnerAction {
     kExecuteCommand, kBoot, kShutdown, kPushSettings, kSetSetting, kSetDetector, kSetDetectors,
-    kList, kMCA, kSimulate, kOscil, kInitialize,
-    kSettingsRefresh, kOptimize, kTerminate, kNone
+    kList, kMCA, kOscil, kInitialize, kSettingsRefresh, kOptimize, kTerminate, kNone
 };
 
 class ThreadRunner : public QThread
@@ -59,7 +57,6 @@ public:
 
     void do_list(boost::atomic<bool>&, uint64_t timeout);
     void do_run(Qpx::SpectraSet&, boost::atomic<bool>&, uint64_t timeout);
-    void do_fake(Qpx::SpectraSet&, boost::atomic<bool>&, QString file, std::array<int,2> chans, int source_res, int dest_res, int timeout);
 
     void do_optimize();
     void do_oscil(double xdt);
@@ -101,8 +98,6 @@ private:
 
     //simulation
     QString file_;
-    int source_res_, dest_res_;
-    std::array<int,2> fake_chans_;
 };
 
 #endif

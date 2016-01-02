@@ -490,25 +490,6 @@ void Engine::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>& 
   builder.join();
 }
 
-void Engine::getFakeMca(Simulator& source, SpectraSet& spectra,
-                        uint64_t timeout, boost::atomic<bool>& interruptor) {
-
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  PL_INFO << "<Engine> Multithreaded acquisition simulation scheduled for " << timeout << " seconds";
-
-  SynchronizedQueue<Spill*> eventQueue;
-
-  boost::thread builder(boost::bind(&Qpx::Engine::worker_MCA, this, &eventQueue, &spectra));
-  worker_fake(&source, &eventQueue, &interruptor);
-  while (eventQueue.size() > 0)
-    wait_ms(1000);
-  wait_ms(500);
-  eventQueue.stop();
-  wait_ms(500);
-  builder.join();
-}
-
-
 ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   boost::unique_lock<boost::mutex> lock(mutex_);
@@ -689,64 +670,6 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
   PL_DBG << "<Engine> Spectra builder thread terminating";
 
   spectra->closeAcquisition();
-}
-
-void Engine::worker_fake(Simulator* source, SynchronizedQueue<Spill*>* data_queue, boost::atomic<bool>* interruptor) {
-
-  PL_DBG << "<Engine> Simulated event generator initiated";
-
-  uint32_t secsperrun = 5;  ///calculate this based on ocr and buf size
-  Spill* one_spill;
-
-  uint64_t /*spill_number = 0,*/ event_count = 0;
-  bool timeout = false;
-  boost::posix_time::ptime session_start_time, block_time;
-
-  uint64_t   rate = source->OCR;
-  StatsUpdate moving_stats,
-      one_run = source->getBlock(5.05);  ///bit more than secsperrun
-
-  //start of run status update
-  //mainly for spectra to have calibration
-  one_spill = new Spill;
-  one_spill->run.state = source->settings;
-  one_spill->run.detectors = source->detectors;
-  session_start_time =  boost::posix_time::microsec_clock::local_time();
-  moving_stats.lab_time = session_start_time;
-  one_spill->stats.push_back(moving_stats);
-  data_queue->enqueue(one_spill);
-
-  while (!timeout) {
-//    spill_number++;
-
-    one_spill = new Spill;
-
-    for (uint32_t i=0; i<(rate*secsperrun); i++)
-      one_spill->hits.push_back(source->getHit());
-
-    block_time =  boost::posix_time::microsec_clock::local_time();
-
-    event_count += (rate*secsperrun);
-
-    moving_stats = moving_stats + one_run;
-//    moving_stats.spill_number = spill_number;
-    moving_stats.lab_time = block_time;
-    moving_stats.event_rate = one_run.event_rate;
-    one_spill->stats.push_back(moving_stats);
-    data_queue->enqueue(one_spill);
-
-    boost::this_thread::sleep(boost::posix_time::seconds(secsperrun));
-
-    if (*interruptor)
-      timeout = true;
-  }
-
-  one_spill = new Spill;
-  one_spill->run.state = source->settings;
-  one_spill->run.time_start = session_start_time;
-  one_spill->run.time_stop = block_time;
-  one_spill->run.total_events = event_count;
-  data_queue->enqueue(one_spill);
 }
 
 

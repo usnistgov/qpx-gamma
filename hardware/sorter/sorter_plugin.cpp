@@ -51,6 +51,11 @@ bool SorterPlugin::die() {
   spills2_.clear();
 
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
+//  for (auto &q : set.branches.my_data_) {
+//    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "Sorter/Source file"))
+//      q.metadata.writable = true;
+//  }
+
   return true;
 }
 
@@ -233,6 +238,11 @@ bool SorterPlugin::boot() {
   }
 
   status_ = DeviceStatus::loaded | DeviceStatus::booted | DeviceStatus::can_run;
+//  for (auto &q : set.branches.my_data_) {
+//    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "Sorter/Source file"))
+//      q.metadata.writable = false;
+//  }
+
   return true;
 }
 

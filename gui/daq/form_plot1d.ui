@@ -389,7 +389,7 @@
           <x>0</x>
           <y>0</y>
           <width>296</width>
-          <height>286</height>
+          <height>301</height>
          </rect>
         </property>
        </widget>
@@ -406,7 +406,7 @@
        <property name="minimumSize">
         <size>
          <width>0</width>
-         <height>130</height>
+         <height>115</height>
         </size>
        </property>
        <property name="autoFillBackground">

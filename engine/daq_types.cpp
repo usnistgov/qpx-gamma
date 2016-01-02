@@ -130,11 +130,10 @@ StatsUpdate StatsUpdate::operator+(const StatsUpdate other) const {
   answer.sfdt       = sfdt + other.sfdt;
   answer.total_time = total_time + other.total_time;
   answer.events_in_spill = events_in_spill + other.events_in_spill;
-  return answer;
   //event rate?
-  //spill number?
   //labtime?
   //channel?
+  return answer;
 }
 
 void StatsUpdate::to_xml(pugi::xml_node &root) const {

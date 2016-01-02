@@ -59,7 +59,6 @@ protected:
 private slots:
   void on_pushMcaStart_clicked();
   void on_pushMcaStop_clicked();
-  void on_pushMcaSimulate_clicked();
   void on_pushMcaSave_clicked();
   void on_pushMcaLoad_clicked();
   void on_pushMcaClear_clicked();

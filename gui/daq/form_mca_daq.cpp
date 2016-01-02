@@ -185,7 +185,6 @@ void FormMcaDaq::toggle_push(bool enable, Qpx::DeviceStatus status) {
 
   ui->timeDuration->setEnabled(enable && offline);
   ui->toggleIndefiniteRun->setEnabled(enable && offline);
-  ui->pushMcaSimulate->setEnabled(enable && offline);
 
   ui->pushMcaClear->setEnabled(enable && nonempty);
   ui->pushMcaSave->setEnabled(enable && nonempty);
@@ -265,46 +264,6 @@ void FormMcaDaq::on_pushMcaStart_clicked()
   if (ui->toggleIndefiniteRun->isChecked())
     duration = 0;
   runner_thread_.do_run(spectra_, interruptor_, duration);
-}
-
-void FormMcaDaq::on_pushMcaSimulate_clicked()
-{
-  QString fileName = QFileDialog::getOpenFileName(this, "Load simulation data", data_directory_,
-                                                  "qpx project file (*.qpx)");
-  if (!validateFile(this, fileName, false)) {
-    return;
-  }
-
-  if (!spectra_.empty()) {
-    int reply = QMessageBox::warning(this, "Clear existing?",
-                                     "Spectra already open. Clear existing before opening?",
-                                     QMessageBox::Yes|QMessageBox::Cancel);
-    if (reply == QMessageBox::Yes)
-      spectra_.clear();
-    else
-      return;
-  }
-
-  emit statusText("Simulated spectra acquisition in progress...");
-
-  emit toggleIO(false);
-  PL_INFO << "Reading spectra for simulation " << fileName.toStdString();
-  //make popup to warn of delay
-
-  clearGraphs();
-  spectra_.set_spectra(spectra_templates_);
-  newProject();
-//  spectra_.activate();
-
-  ui->pushMcaStop->setEnabled(true);
-  my_run_ = true;
-
-  //hardcoded precision and channels
-  ui->Plot1d->reset_content();
-  uint64_t duration = ui->timeDuration->total_seconds();
-  if (ui->toggleIndefiniteRun->isChecked())
-    duration = 0;
-  runner_thread_.do_fake(spectra_, interruptor_, fileName, {0,1}, 14, 12, duration);
 }
 
 void FormMcaDaq::on_pushMcaReload_clicked()

@@ -251,7 +251,7 @@ void SpectraSet::write_xml(std::string file_name) {
 
 }
 
-void SpectraSet::read_xml(std::string file_name, bool with_spectra) {
+void SpectraSet::read_xml(std::string file_name, bool with_spectra, bool with_full_spectra) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
 
@@ -270,10 +270,14 @@ void SpectraSet::read_xml(std::string file_name, bool with_spectra) {
     return;
 
   if (root.child("Spectra")) {
+
     Spill fake_spill;
     fake_spill.run = run_info_;
 
     for (pugi::xml_node &child : root.child("Spectra").children()) {
+      if (child.child("ChannelData") && !with_full_spectra)
+        child.remove_child("ChannelData");
+
       Spectrum::Spectrum* new_spectrum
           = Spectrum::Factory::getInstance().create_from_xml(child);
       if (new_spectrum == nullptr)
