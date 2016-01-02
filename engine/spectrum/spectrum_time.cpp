@@ -52,6 +52,11 @@ void SpectrumTime::_set_detectors(const std::vector<Gamma::Detector>& dets) {
   }
 
   energies_.resize(1);
+  energies_[0].clear();
+  for (auto &q : seconds_)
+    energies_[0].push_back(q.convert_to<double>());
+
+//  PL_DBG << "<SpectrumTime> _set_detectors";
 }
 
 PreciseFloat SpectrumTime::_get_count(std::initializer_list<uint16_t> list) const {
@@ -117,15 +122,35 @@ void SpectrumTime::addStats(const StatsUpdate& newStats)
     PreciseFloat tot_time = 0;
 
     if (!updates_.empty()) {
-      rt = (newStats.lab_time - updates_.back().lab_time).total_milliseconds() * 0.001;
-      tot_time = (newStats.lab_time - updates_.front().lab_time).total_milliseconds() * 0.001;
-    }
+      if ((newStats.stats_type == StatsType::stop) && (updates_.back().stats_type == StatsType::running)) {
+        updates_.pop_back();
+        seconds_.pop_back();
+        spectrum_.pop_back();
+        counts_.push_back(recent_count_ + counts_.back());
+      } else
+        counts_.push_back(recent_count_);
 
-    PreciseFloat count = recent_count_;
-    if (rt > 0)
-      count /= rt;
+      rt       = (newStats.lab_time - updates_.back().lab_time).total_milliseconds()  * 0.001;
+      tot_time = (newStats.lab_time - updates_.front().lab_time).total_milliseconds() * 0.001;
+    } else
+      counts_.push_back(recent_count_);
+
 
     if (seconds_.empty() || (tot_time != 0)) {
+
+      PreciseFloat count = 0;
+
+      if (codomain == 0) {
+        count = counts_.back();
+        if (rt > 0)
+          count /= rt;
+      } else if (codomain == 1) {
+        //should be % dead-time, unimplemented
+
+        count = counts_.back();
+        if (rt > 0)
+          count /= rt;
+      }
 
       seconds_.push_back(tot_time.convert_to<double>());
       updates_.push_back(newStats);
@@ -138,7 +163,9 @@ void SpectrumTime::addStats(const StatsUpdate& newStats)
       if (count > metadata_.max_count)
         metadata_.max_count = count;
 
-      energies_[0] = seconds_;
+      energies_[0].clear();
+      for (auto &q : seconds_)
+        energies_[0].push_back(q.convert_to<double>());
 
 //      PL_DBG << "<SpectrumTime> \"" << metadata_.name << "\" chan " << int(newStats.channel) << " nrgs.size="
 //             << energies_[0].size() << " nrgs.last=" << energies_[0][energies_[0].size()-1]
@@ -153,18 +180,13 @@ void SpectrumTime::addStats(const StatsUpdate& newStats)
 std::string SpectrumTime::_channels_to_xml() const {
   std::stringstream channeldata;
 
-  PreciseFloat z_count = 0;
-  for (uint32_t i = 0; i < metadata_.resolution; i++)
-    if (spectrum_[i])
-      if (z_count == 0)
-        channeldata << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << spectrum_[i] << " ";
-      else {
-        channeldata << "0 " << z_count << " "
-                    << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << spectrum_[i] << " ";
-        z_count = 0;
-      }
-    else
-      z_count++;
+  for (uint32_t i = 0; i < spectrum_.size(); i++)
+    channeldata << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << spectrum_[i] << " ";
+
+  channeldata << " | ";
+
+  for (uint32_t i = 0; i < seconds_.size(); i++)
+    channeldata << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << seconds_[i] << " ";
 
   return channeldata.str();
 }
@@ -175,87 +197,36 @@ uint16_t SpectrumTime::_channels_from_xml(const std::string& thisData){
 
   spectrum_.clear();
   spectrum_.resize(metadata_.resolution, 0);
+  seconds_.clear();
+  seconds_.resize(metadata_.resolution, 0);
 
   metadata_.max_count = 0;
 
   uint16_t i = 0;
-  std::string numero, numero_z;
+  std::string numero;
   while (channeldata.rdbuf()->in_avail()) {
     channeldata >> numero;
-    if (numero == "0") {
-      channeldata >> numero_z;
-      i += boost::lexical_cast<uint16_t>(numero_z);
-    } else {
-      PreciseFloat nr(numero);
-      spectrum_[i] = nr;
-      if (nr > metadata_.max_count)
-        metadata_.max_count = nr;
-      i++;
-    }
+    if (numero == "|")
+      break;
+
+    PreciseFloat nr(numero);
+    spectrum_[i] = nr;
+    if (nr > metadata_.max_count)
+      metadata_.max_count = nr;
+    i++;
   }
+
+  i = 0;
+  while (channeldata.rdbuf()->in_avail()) {
+    channeldata >> numero;
+
+    PreciseFloat nr(numero);
+    seconds_[i] = nr;
+    i++;
+  }
+
   metadata_.max_chan = i;
   return metadata_.max_chan;
-}
-
-
-bool SpectrumTime::channels_from_string(std::istream &data_stream, bool compression) {
-  std::list<Entry> entry_list;
-
-  int i = 0;
-
-  std::string numero, numero_z;
-  if (compression) {
-    while (data_stream.rdbuf()->in_avail()) {
-      data_stream >> numero;
-      if (numero == "0") {
-        data_stream >> numero_z;
-        i += boost::lexical_cast<uint16_t>(numero_z);
-      } else {
-        Entry new_entry;
-        new_entry.first.resize(1);
-        new_entry.first[0] = i;
-        PreciseFloat nr(numero);
-        new_entry.second = nr;
-        entry_list.push_back(new_entry);
-        i++;
-      }
-    }    
-  } else {
-    while (data_stream.rdbuf()->in_avail()) {
-      data_stream >> numero;
-      Entry new_entry;
-      new_entry.first.resize(1);
-      new_entry.first[0] = i;
-      PreciseFloat nr(numero);
-      new_entry.second = nr;
-      entry_list.push_back(new_entry);
-      i++;
-    }
-  } 
-  
-  if (i == 0)
-    return false;
-
-  metadata_.bits = log2(i);
-  if (pow(2, metadata_.bits) < i)
-    metadata_.bits++;
-  metadata_.resolution = pow(2, metadata_.bits);
-  shift_by_ = 16 - metadata_.bits;
-  metadata_.max_chan = i;
-
-  spectrum_.clear();
-  spectrum_.resize(metadata_.resolution, 0);
-  metadata_.max_count = 0;
-      
-  for (auto &q : entry_list) {
-    spectrum_[q.first[0]] = q.second;
-    metadata_.total_count += q.second;
-    if (q.second > metadata_.max_count)
-      metadata_.max_count = q.second;
-
-  }
-
-  return true;
 }
 
 

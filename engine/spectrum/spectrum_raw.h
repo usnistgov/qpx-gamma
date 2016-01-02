@@ -35,7 +35,8 @@ public:
   ~SpectrumRaw();
 
   static Template get_template() {
-    Template new_temp;
+    Template new_temp = Spectrum::get_template();
+
     new_temp.type = "Raw";
     //    new_temp.input_types = {""};
     //    new_temp.output_types = {""};
@@ -58,14 +59,6 @@ public:
     format_setting.metadata.int_menu_items[1] = "human readable";
     new_temp.generic_attributes.add(format_setting);
     
-    Gamma::Setting hit_pattern_write;
-    hit_pattern_write.id_ = "with_pattern";
-    hit_pattern_write.metadata.setting_type = Gamma::SettingType::boolean;
-    hit_pattern_write.metadata.writable = false;
-    hit_pattern_write.metadata.description = "IGNORED write hit pattern before event energies";
-    hit_pattern_write.value_int = 1;
-    new_temp.generic_attributes.add(hit_pattern_write);
-
     return new_temp;
   }
   

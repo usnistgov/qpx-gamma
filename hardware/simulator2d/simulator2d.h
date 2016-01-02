@@ -71,11 +71,14 @@ protected:
   boost::atomic<int> run_status_;
   boost::thread *runner_;
 
-
-  bool override_pause_;
-  int  pause_ms_;
   std::string source_file_;
   std::string source_spectrum_;
+  int     bits_;
+  int     spill_interval_;
+  double  scale_rate_;
+  int     chan0_;
+  int     chan1_;
+  int     coinc_thresh_;
 
   std::vector<std::string> spectra_;
 

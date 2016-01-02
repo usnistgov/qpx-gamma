@@ -81,7 +81,7 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
 
 
   //NO MORE SPILL NUMBERS. MUST IDENTIFY LAST SPILL!!!!
-  if ((d_lab_time > time_sample_) /*|| (newStats.spill_number == time2_.spill_number)*/) {
+  if (d_lab_time > time_sample_) {
     time2_ = newStats;
     StatsUpdate diff = time2_ - time1_;
     time1_ = time2_;

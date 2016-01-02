@@ -475,7 +475,6 @@ void Engine::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>& 
   save_optimization();
   spill->run.state = pull_settings();
   spill->run.detectors = get_detectors();
-  //spill->spill_number = -1;
   //  spill->run->total_events = 1; //BAD!!!!
   spill->run.time_stop = boost::posix_time::microsec_clock::local_time();
   parsedQueue.enqueue(spill);
@@ -644,12 +643,10 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
         noempties = true;
         for (auto i = current_spills.begin(); i != current_spills.end(); i++)
           if ((*i)->hits.empty()) {
-//            out_spill->spill_number = (*i)->spill_number;
             out_spill->data = (*i)->data;
             out_spill->stats = (*i)->stats;
             out_spill->run = (*i)->run;
             spectra->add_spill(out_spill);
-            //            PL_DBG << "enqueued some spill n=" << out_spill->spill_number;
 
             delete (*i);
             current_spills.erase(i);

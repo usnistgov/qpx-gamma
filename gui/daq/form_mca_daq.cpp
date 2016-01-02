@@ -133,6 +133,7 @@ void FormMcaDaq::loadSettings() {
   settings_.beginGroup("McaDaq");
   ui->timeDuration->set_total_seconds(settings_.value("run_secs", 60).toULongLong());
   ui->toggleIndefiniteRun->setChecked(settings_.value("run_indefinite", false).toBool());
+  ui->timeDuration->setEnabled(!ui->toggleIndefiniteRun->isChecked());
   ui->pushEnable2d->setChecked(settings_.value("2d_visible", true).toBool());
 
   settings_.beginGroup("McaPlot");
@@ -183,7 +184,7 @@ void FormMcaDaq::toggle_push(bool enable, Qpx::DeviceStatus status) {
 
   ui->pushMcaStart->setEnabled(enable && online);
 
-  ui->timeDuration->setEnabled(enable && offline);
+  ui->timeDuration->setEnabled(enable && offline && !ui->toggleIndefiniteRun->isChecked());
   ui->toggleIndefiniteRun->setEnabled(enable && offline);
 
   ui->pushMcaClear->setEnabled(enable && nonempty);

@@ -106,6 +106,9 @@ void Spectrum1D::_add_bulk(const Entry& e) {
 
 void Spectrum1D::addHit(const Hit& newHit) {
   uint16_t en = newHit.energy >> shift_by_;
+  if (en < cutoff_bin_)
+    return;
+
   PreciseFloat nr = ++spectrum_[en];
   if (nr > metadata_.max_count)
     metadata_.max_count = nr;

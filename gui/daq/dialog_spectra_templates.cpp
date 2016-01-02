@@ -348,7 +348,7 @@ void DialogSpectraTemplates::toggle_push() {
     ui->pushDelete->setEnabled(true);
   }
 
-  if (selection_model_.selectedIndexes().size() == 1) {
+  if (selection_model_.selectedRows().size() == 1) {
     ui->pushEdit->setEnabled(true);
     QModelIndexList ixl = selection_model_.selectedRows();
     if (ixl.front().row() > 0)

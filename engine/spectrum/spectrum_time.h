@@ -31,12 +31,24 @@ namespace Spectrum {
 class SpectrumTime : public Spectrum
 {
 public:
-  SpectrumTime() {}
+  SpectrumTime() : codomain(0) {}
 
   static Template get_template() {
-    Template new_temp;
+    Template new_temp = Spectrum::get_template();
+
     new_temp.type = "Time";
     new_temp.description = "Time-domain log of activity";
+
+    Gamma::Setting format_setting;
+    format_setting.id_ = "co-domain";
+    format_setting.metadata.setting_type = Gamma::SettingType::int_menu;
+    format_setting.metadata.writable = true;
+    format_setting.metadata.description = "Choice of dependent variable";
+    format_setting.value_int = 0;
+    format_setting.metadata.int_menu_items[0] = "event rate";
+    format_setting.metadata.int_menu_items[1] = "% dead-time";
+    new_temp.generic_attributes.add(format_setting);
+
     return new_temp;
   }
   
@@ -47,6 +59,9 @@ protected:
 
   //1D is ok with all patterns
   bool initialize() override {
+    Spectrum::initialize();
+    codomain = get_attr("co-domain").value_int;
+
     metadata_.type = my_type();
     metadata_.dimensions = 1;
 
@@ -65,10 +80,11 @@ protected:
   std::string _channels_to_xml() const override;
   uint16_t _channels_from_xml(const std::string&) override;
 
-  bool channels_from_string(std::istream &data_stream, bool compression);
+  int codomain;
 
   std::vector<PreciseFloat> spectrum_;
-  std::vector<double> seconds_;
+  std::vector<PreciseFloat> counts_;
+  std::vector<PreciseFloat> seconds_;
   std::vector<StatsUpdate>  updates_;
 };
 

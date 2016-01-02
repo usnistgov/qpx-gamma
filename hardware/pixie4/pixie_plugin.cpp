@@ -1269,9 +1269,8 @@ void Plugin::worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_q
   callback->reset_counters_next_run(); //assume new run
 
   std::bitset<32> csr;
-  //uint64_t spill_number = 0;
   bool timeout = false;
-  Spill* fetched_spill;
+  Spill fetched_spill;
   boost::posix_time::ptime session_start_time, block_time;
 
   for (int i=0; i < callback->channel_indices_.size(); i++) {
@@ -1281,28 +1280,24 @@ void Plugin::worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_q
     callback->set_mod("MODULE_CSRA", static_cast<double>(0), Module(i));
   }
 
-  fetched_spill = new Spill;
+  fetched_spill = Spill();
   session_start_time = boost::posix_time::microsec_clock::local_time();
 
-  if(!callback->start_run(Module::all)) {
-    delete fetched_spill;
+  if(!callback->start_run(Module::all))
     return;
-  }
 
   callback->get_mod_stats(Module::all);
   callback->get_chan_stats(Channel::all, Module::all);
   for (int i=0; i < callback->channel_indices_.size(); i++)
-    callback->fill_stats(fetched_spill->stats, i);
-  for (auto &q : fetched_spill->stats) {
+    callback->fill_stats(fetched_spill.stats, i);
+  for (auto &q : fetched_spill.stats) {
     q.lab_time = session_start_time;
     q.stats_type = StatsType::start;
-    //q.spill_number = 0;
   }
-  spill_queue->enqueue(fetched_spill);
+  spill_queue->enqueue(new Spill(fetched_spill));
 
   std::set<int> mods;
   while (!(timeout && mods.empty())) {
-    //spill_number++;
 
     mods.clear();
     while (!timeout && mods.empty()) {
@@ -1338,26 +1333,39 @@ void Plugin::worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_q
 
     bool success = false;
     for (auto &q : mods) {
-      fetched_spill = new Spill;
-      //fetched_spill->spill_number = spill_number;
-      fetched_spill->data.resize(list_mem_len32, 0);
-      if (read_EM_dbl(fetched_spill->data.data(), q))
+      fetched_spill = Spill();
+      fetched_spill.data.resize(list_mem_len32, 0);
+      if (read_EM_dbl(fetched_spill.data.data(), q))
         success = true;
       //      PL_DBG << "<PixiePlugin> fetched spill for mod " << q;
-      callback->fill_stats(fetched_spill->stats, q);
-      for (auto &p : fetched_spill->stats) {
+      callback->fill_stats(fetched_spill.stats, q);
+      for (auto &p : fetched_spill.stats) {
         p.lab_time = block_time;
         if (timeout)
           p.stats_type = StatsType::stop;
-        //p.spill_number = spill_number;
       }
-      spill_queue->enqueue(fetched_spill);
+      spill_queue->enqueue(new Spill(fetched_spill));
     }
 
     if (!success) {
       break;
     }
   }
+
+
+  fetched_spill = Spill();
+  block_time = boost::posix_time::microsec_clock::local_time();
+
+  callback->get_mod_stats(Module::all);
+  callback->get_chan_stats(Channel::all, Module::all);
+  for (int i=0; i < callback->channel_indices_.size(); i++)
+    callback->fill_stats(fetched_spill.stats, i);
+  for (auto &q : fetched_spill.stats) {
+    q.lab_time = block_time;
+    q.stats_type = StatsType::stop;
+  }
+  spill_queue->enqueue(new Spill(fetched_spill));
+
 
   callback->run_status_.store(3);
   PL_DBG << "<PixiePlugin> Double buffered daq runner thread completed";

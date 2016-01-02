@@ -61,12 +61,20 @@ std::string Hit::to_string() const {
 }
 
 bool Event::in_window(const TimeStamp &ts) const {
-  if ((ts.time == lower_time.time) || (ts.time == upper_time.time))
+//  PL_DBG << "comparing " << ts.time << " on [" << lower_time.time << "," << upper_time.time << "] w:" << window;
+  if ((ts.time == lower_time.time) || (ts.time == upper_time.time)) {
+//    PL_DBG << "T1";
     return true;
-  if ((ts.time > lower_time.time) && ((ts.time - lower_time.time) < window))
+  }
+  else if ((ts.time > lower_time.time) && ((ts.time - lower_time.time) < window)) {
+//    PL_DBG << "T2";
     return true;
-  if ((ts.time < upper_time.time) && ((upper_time.time - ts.time) < window))
+  }
+  if ((ts.time < upper_time.time) && ((upper_time.time - ts.time) < window)) {
+//    PL_DBG << "T3";
     return true;
+  }
+//  PL_DBG << "F";
   return false;
 }
 
@@ -81,6 +89,8 @@ void Event::addHit(const Hit &newhit) {
 std::string Event::to_string() const {
   std::stringstream ss;
   ss << "EVT[t" << lower_time.time << ":" << upper_time.time << "w" << window << "]";
+  for (auto &q : hit)
+    ss << " " << q.first << "=" << q.second.to_string();
   return ss.str();
 }
 
@@ -96,7 +106,6 @@ StatsUpdate StatsUpdate::operator-(const StatsUpdate other) const {
   answer.total_time = total_time - other.total_time;
   answer.events_in_spill = events_in_spill - other.events_in_spill;
   //event rate?
-  //spill number?
   //labtime?
   //channel?
   return answer;
@@ -113,8 +122,6 @@ bool StatsUpdate::operator==(const StatsUpdate other) const {
     return false;
   if (event_rate != other.event_rate)
     return false;
-//  if (spill_number != other.spill_number)
-//    return false;
   if (fast_peaks != other.fast_peaks)
     return false;
   return true;
@@ -140,7 +147,6 @@ void StatsUpdate::to_xml(pugi::xml_node &root) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
   node.append_attribute("channel").set_value(std::to_string(channel).c_str());
   node.append_attribute("lab_time").set_value(boost::posix_time::to_iso_extended_string(lab_time).c_str());
-//  node.append_attribute("spill_number").set_value(std::to_string(spill_number).c_str());
   node.append_attribute("events_in_spill").set_value(std::to_string(events_in_spill).c_str());
   node.append_attribute("total_time").set_value(std::to_string(total_time).c_str());
   node.append_attribute("event_rate").set_value(std::to_string(event_rate).c_str());
@@ -166,7 +172,6 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
   }
 
   channel = node.attribute("channel").as_int();
-//  spill_number = node.attribute("spill_number").as_ullong();
   events_in_spill = node.attribute("events_in_spill").as_ullong();
   total_time = node.attribute("total_time").as_double();
   event_rate = node.attribute("event_rate").as_double();

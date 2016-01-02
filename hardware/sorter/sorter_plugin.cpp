@@ -292,11 +292,15 @@ void SorterPlugin::worker_run(SorterPlugin* callback, SynchronizedQueue<Spill*>*
         starts_signalled.insert(q.channel);
       }
     }
-
     spill_queue->enqueue(new Spill(one_spill));
 
     timeout = (callback->run_status_.load() == 2);
   }
+
+  for (auto &q : one_spill.stats)
+    q.stats_type = StatsType::stop;
+
+  spill_queue->enqueue(new Spill(one_spill));
 
   if (callback->spills_.empty()) {
     PL_DBG << "<SorterPlugin> Out of spills. Premature termination";

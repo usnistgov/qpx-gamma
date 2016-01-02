@@ -31,6 +31,46 @@
 namespace Qpx {
 namespace Spectrum {
 
+Template Spectrum::get_template() {
+  Template new_temp;
+
+  Gamma::Setting ignore_zero;
+  ignore_zero.id_ = "cutoff_logic";
+  ignore_zero.metadata.setting_type = Gamma::SettingType::integer;
+  ignore_zero.metadata.description = "Hits rejected below minimum energy (affects coincidence logic and binning)";
+  ignore_zero.metadata.writable = true;
+  ignore_zero.metadata.minimum = 0;
+  ignore_zero.metadata.step = 1;
+  ignore_zero.metadata.maximum = 1000000;
+  new_temp.generic_attributes.add(ignore_zero);
+
+  Gamma::Setting coinc_window;
+  coinc_window.id_ = "coinc_window";
+  coinc_window.metadata.setting_type = Gamma::SettingType::floating;
+  coinc_window.metadata.minimum = 0;
+  coinc_window.metadata.step = 1;
+  coinc_window.metadata.maximum = 1000000;
+  coinc_window.metadata.unit = "ticks";
+  coinc_window.metadata.description = "Coincidence window";
+  coinc_window.metadata.writable = true;
+  coinc_window.value_dbl = 3.0;
+  new_temp.generic_attributes.add(coinc_window);
+
+  return new_temp;
+}
+
+bool Spectrum::initialize() {
+  cutoff_logic_ = get_attr("cutoff_logic").value_int;
+
+  coinc_window_ = get_attr("coinc_window").value_dbl;
+
+  if (coinc_window_ < 0)
+    coinc_window_ = 0;
+
+  return false;
+}
+
+
 PreciseFloat Spectrum::get_count(std::initializer_list<uint16_t> list ) const {
   boost::shared_lock<boost::shared_mutex> lock(mutex_);
   if (list.size() != this->metadata_.dimensions)
@@ -86,6 +126,8 @@ void Spectrum::addSpill(const Spill& one_spill) {
     if (q.stats_type == StatsType::stop) {
 //      PL_DBG << "<" << metadata_.name << "> final RunInfo received, dumping backlog of events " << backlog.size();
       while (!backlog.empty()) {
+        recent_count_++;
+        metadata_.total_count++;
         this->addEvent(backlog.front());
         backlog.pop_front();
       }
@@ -96,44 +138,55 @@ void Spectrum::addSpill(const Spill& one_spill) {
   if (one_spill.run != RunInfo())
     this->addRun(one_spill.run);
 
-  //PL_DBG << "left in backlog " << backlog.size();
+//  PL_DBG << "<" << metadata_.name << "> left in backlog " << backlog.size();
 }
 
 void Spectrum::pushHit(const Hit& newhit)
 {
-  double coinc_window = 3.0;
+  if (newhit.energy < cutoff_logic_)
+    return;
+//  PL_DBG << "Processing " << newhit.to_string();
+
   bool appended = false;
   bool pileup = false;
-  if (backlog.empty() || !backlog.back().in_window(newhit.timestamp)) {
-    backlog.push_back(Event(newhit, coinc_window)); //simple add
+  if (backlog.empty()) {
+    backlog.push_back(Event(newhit, coinc_window_));
+//    PL_DBG << "add to empty";
+  } else if (!backlog.back().in_window(newhit.timestamp)) {
+    backlog.push_back(Event(newhit, coinc_window_));
+//    PL_DBG << "add out of window";
   } else {
     for (auto &q : backlog) {
       if (q.in_window(newhit.timestamp)) {
         if ((q.hit.count(newhit.channel) == 0) && !appended) {
-          //coincidence
+//          PL_DBG << "coinc 1";
           q.addHit(newhit);
           appended = true;
         } else if ((q.hit.count(newhit.channel) == 0) && appended) {
-          //second coincidence
           q.addHit(newhit);
-          PL_DBG << "<" << metadata_.name << "> processed hit " << newhit.to_string() << " coincident with more than one other hit (counted >=2 times)";
+          PL_DBG << "<" << metadata_.name << "> hit " << newhit.to_string() << " coincident with more than one other hit (counted >=2 times)";
         } else {
-          PL_DBG << "<" << metadata_.name << "> detected pileup hit " << newhit.to_string() << " with " << q.to_string() << " already has " << q.hit[newhit.channel].to_string();
+          PL_DBG << "<" << metadata_.name << "> pileup hit " << newhit.to_string() << " with " << q.to_string() << " already has " << q.hit[newhit.channel].to_string();
           //PL_DBG << "Logical pileup detected. Event may be discarded";
           pileup = true;
         }
-      } else
-        break;
+      } /*else
+        break;*/
     }
 
-    if (!appended && !pileup)
-      backlog.push_back(Event(newhit, coinc_window));
+    if (!appended && !pileup) {
+      backlog.push_back(Event(newhit, coinc_window_));
+//      PL_DBG << "append fresh";
+    }
   }
 
   if (!backlog.empty()) {
     Event evt = backlog.front();
-    while ((newhit.timestamp - evt.upper_time) > (coinc_window*2)) {
+    while ((newhit.timestamp - evt.upper_time) > (coinc_window_*2)) {
+//      PL_DBG << "in while loop";
+
       if (validateEvent(evt)) {
+//        PL_DBG << "validated " << evt.to_string();
         recent_count_++;
         metadata_.total_count++;
         this->addEvent(evt);
@@ -264,30 +317,8 @@ void Spectrum::addRun(const RunInfo& run_info) {
   }
 
  if (run_info.detectors.size() > 0)
-    _set_detectors(run_info.detectors);
+    this->_set_detectors(run_info.detectors);
 
-//  if (run_info.time_start == run_info.time_stop)
-//    return;
-
-//  metadata_.real_time = run_info.time_stop - run_info.time_start;
-
-//  if (run_info.state.branches.empty()) {       //HACK!!!
-//    metadata_.live_time = metadata_.real_time;
-//    //PL_DBG << "<Spectrum> making LT = RT ";
-//    return;
-//  }
-
-//  //PL_DBG << "<Spectrum> Calculating LT";
-
-//  double scale_factor = run_info.time_scale_factor();
-//  metadata_.live_time = metadata_.real_time;
-//  for (int i = 0; i < metadata_.add_pattern.size(); i++) { //using shortest live time of all added channels
-//    double live = run_info.state.get_setting(Gamma::Setting("Pixie4/System/module/channel/LIVE_TIME", i), Gamma::Match::id | Gamma::Match::indices).value_dbl;
-//    double sfdt = run_info.state.get_setting(Gamma::Setting("Pixie4/System/module/channel/SFDT", i), Gamma::Match::id | Gamma::Match::indices).value_dbl;
-//    double this_time_unscaled =live - sfdt;
-//    if ((metadata_.add_pattern[i]) && (this_time_unscaled <= metadata_.live_time.total_seconds()))
-//      metadata_.live_time = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor * 1000000));
-//  }
 }
 
 std::vector<double> Spectrum::energies(uint8_t chan) const {
@@ -304,11 +335,12 @@ void Spectrum::set_detectors(const std::vector<Gamma::Detector>& dets) {
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   
-  _set_detectors(dets);
+  this->_set_detectors(dets);
 }
 
 void Spectrum::_set_detectors(const std::vector<Gamma::Detector>& dets) {
   //private; no lock required
+//  PL_DBG << "<Spectrum> _set_detectors";
 
   metadata_.detectors.clear();
 

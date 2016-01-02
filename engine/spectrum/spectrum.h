@@ -84,7 +84,8 @@ class Spectrum
 {
 public:
   //constructs invalid spectrum by default. Make private?
-  Spectrum(): recent_count_(0) {}
+  Spectrum(): recent_count_(0), cutoff_logic_(0), coinc_window_(0) {}
+  static Template get_template();
 
   //named constructors, used by factory
   bool from_template(const Template&);
@@ -153,7 +154,7 @@ protected:
   ////////////////////////////////////////
   
   virtual std::string my_type() const {return "INVALID";}
-  virtual bool initialize() {return false;}
+  virtual bool initialize();
 
   virtual bool _write_file(std::string, std::string) const {return false;}
   virtual bool _read_file(std::string, std::string) {return false;}
@@ -186,6 +187,9 @@ protected:
   mutable boost::mutex u_mutex_;
 
   Metadata metadata_;
+
+  int32_t cutoff_logic_;
+  double coinc_window_;
 
   uint8_t shift_by_;
 

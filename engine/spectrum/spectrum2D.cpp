@@ -33,6 +33,7 @@ namespace Spectrum {
 static Registrar<Spectrum2D> registrar("2D");
 
 bool Spectrum2D::initialize() {
+  Spectrum::initialize();
   //make add pattern has exactly 2 channels
   //match pattern can be whatever
   
@@ -61,8 +62,23 @@ bool Spectrum2D::initialize() {
   }
 
   metadata_.type = my_type();
+
   return true;
 }
+
+void Spectrum2D::init_from_file(std::string filename) {
+  metadata_.match_pattern.resize(2, 0);
+  metadata_.add_pattern.resize(2, 1);
+  metadata_.add_pattern[0] = 1;
+  metadata_.add_pattern[1] = 1;
+  metadata_.name = boost::filesystem::path(filename).filename().string();
+  std::replace( metadata_.name.begin(), metadata_.name.end(), '.', '_');
+  metadata_.visible = true;
+  metadata_.appearance = 4278190335;  //randomize?
+  initialize();
+  recalc_energies();
+}
+
 
 bool Spectrum2D::check_symmetrization() {
   bool symmetrical = true;
@@ -144,7 +160,7 @@ std::unique_ptr<EntryList> Spectrum2D::_get_spectrum(std::initializer_list<Pair>
   if (buffered_ && !temp_spectrum_.empty()) {
     for (auto it : temp_spectrum_) {
       int co0 = it.first.first, co1 = it.first.second;
-      if ((min0 < co0) && (co0 < max0) && (min1 < co1) && (co1 < max1)) {
+      if ((min0 <= co0) && (co0 < max0) && (min1 <= co1) && (co1 < max1)) {
         Entry newentry;
         newentry.first.resize(2, 0);
         newentry.first[0] = co0;
@@ -156,7 +172,7 @@ std::unique_ptr<EntryList> Spectrum2D::_get_spectrum(std::initializer_list<Pair>
   } else {
     for (auto it : spectrum_) {
       int co0 = it.first.first, co1 = it.first.second;
-      if ((min0 < co0) && (co0 < max0) && (min1 < co1) && (co1 < max1)) {
+      if ((min0 <= co0) && (co0 < max0) && (min1 <= co1) && (co1 < max1)) {
         Entry newentry;
         newentry.first.resize(2, 0);
         newentry.first[0] = co0;
@@ -342,20 +358,6 @@ bool Spectrum2D:: read_mat(std::string name) {
 
   init_from_file(name);
 }
-
-void Spectrum2D::init_from_file(std::string filename) { 
-  metadata_.match_pattern.resize(2, 0);
-  metadata_.add_pattern.resize(2, 1);
-  metadata_.add_pattern[0] = 1;
-  metadata_.add_pattern[1] = 1;
-  metadata_.name = boost::filesystem::path(filename).filename().string();
-  std::replace( metadata_.name.begin(), metadata_.name.end(), '.', '_');
-  metadata_.visible = true;
-  metadata_.appearance = 4278190335;  //randomize?
-  initialize();
-  recalc_energies();
-}
-
 
 std::string Spectrum2D::_channels_to_xml() const {
   std::stringstream channeldata;

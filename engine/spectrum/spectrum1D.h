@@ -31,14 +31,25 @@ namespace Spectrum {
 class Spectrum1D : public Spectrum
 {
 public:
-  Spectrum1D() {}
+  Spectrum1D() : cutoff_bin_(0) {}
 
   static Template get_template() {
-    Template new_temp;
+    Template new_temp = Spectrum::get_template();
     new_temp.type = "1D";
     new_temp.input_types = {"cnf", "tka", "n42", "ava", "spe"};
     new_temp.output_types = {"n42", "tka"};
     new_temp.description = "Traditional MCA spectrum";
+
+    Gamma::Setting cutoff_bin;
+    cutoff_bin.id_ = "cutoff_bin";
+    cutoff_bin.metadata.setting_type = Gamma::SettingType::integer;
+    cutoff_bin.metadata.description = "Hits rejected below minimum energy (affects binning only)";
+    cutoff_bin.metadata.writable = true;
+    cutoff_bin.metadata.minimum = 0;
+    cutoff_bin.metadata.step = 1;
+    cutoff_bin.metadata.maximum = 1000000;
+    new_temp.generic_attributes.add(cutoff_bin);
+
     return new_temp;
   }
   
@@ -49,9 +60,14 @@ protected:
 
   //1D is ok with all patterns
   bool initialize() override {
+    cutoff_bin_ = get_attr("cutoff_bin").value_int;
+
     metadata_.type = my_type();
     metadata_.dimensions = 1;
     spectrum_.resize(metadata_.resolution, 0);
+
+    Spectrum::initialize();
+
     return true;
   }
 
@@ -85,6 +101,7 @@ protected:
   bool read_spe(std::string);
 
   std::vector<PreciseFloat> spectrum_;
+  int32_t cutoff_bin_;
 };
 
 }}

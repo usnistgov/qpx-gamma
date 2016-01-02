@@ -9,9 +9,13 @@
 		<Setting id="Detector" type="detector" index="3" indices="3" value="none" />
 	</Setting>
 	<Setting id="Simulator2D" type="stem" index="-1" reference="/Simulator2D/qpx_plugin.set">
-		<Setting id="Simulator2D/Source file" type="file_path" index="-1" value="/home/mgs/qpxdata/projects/Co60_12h.qpx" />
+		<Setting id="Simulator2D/Source file" type="file_path" index="-1" value="/home/mgs/qpxdata/projects/Co60_24h_16bit.qpx" />
 		<Setting id="Simulator2D/Source spectrum" type="int_menu" index="-1" value="0" />
-		<Setting id="Simulator2D/Override pause" type="boolean" index="-1" value="false" />
-		<Setting id="Simulator2D/Pause" type="integer" index="-1" value="0" />
+		<Setting id="Simulator2D/Resolution" type="integer" index="-1" value="13" />
+		<Setting id="Simulator2D/Dest1" type="integer" index="-1" value="0" />
+		<Setting id="Simulator2D/Dest2" type="integer" index="-1" value="1" />
+		<Setting id="Simulator2D/CoincThresh" type="integer" index="-1" value="5" />
+		<Setting id="Simulator2D/ScaleRate" type="floating" index="-1" value="1" />
+		<Setting id="Simulator2D/SpillInterval" type="integer" index="-1" value="5" />
 	</Setting>
 </Setting>

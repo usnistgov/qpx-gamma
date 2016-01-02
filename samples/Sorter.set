@@ -12,7 +12,7 @@
 		<Setting id="Sorter/Source file" type="file_path" index="-1" value="/home/mgs/qpxdata/raw_xmas2/qpx_out.txt" />
 		<Setting id="Sorter/Loop data" type="boolean" index="-1" value="false" />
 		<Setting id="Sorter/Override pause" type="boolean" index="-1" value="true" />
-		<Setting id="Sorter/Pause" type="integer" index="-1" value="2000" />
+		<Setting id="Sorter/Pause" type="integer" index="-1" value="500" />
 		<Setting id="Sorter/Override timestamps" type="boolean" index="-1" value="false" />
 	</Setting>
 </Setting>

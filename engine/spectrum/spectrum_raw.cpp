@@ -38,6 +38,8 @@ SpectrumRaw::~SpectrumRaw() {
 }
 
 bool SpectrumRaw::initialize() {
+  Spectrum::initialize();
+
   format_ = get_attr("format").value_int;
   file_dir_ = get_attr("file_dir").value_text;
   with_hit_pattern_ = get_attr("with_pattern").value_int;

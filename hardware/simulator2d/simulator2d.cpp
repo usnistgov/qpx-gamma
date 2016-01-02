@@ -36,11 +36,15 @@ static DeviceRegistrar<Simulator2D> registrar("Simulator2D");
 
 Simulator2D::Simulator2D() {
   status_ = DeviceStatus::loaded;// | DeviceStatus::can_boot;
-
   runner_ = nullptr;
-
   run_status_.store(0);
 
+  bits_  = 4;
+  spill_interval_ = 5;
+  scale_rate_ = 1.0;
+  chan0_ = 0;
+  chan1_ = 1;
+  coinc_thresh_ = 3;
 }
 
 bool Simulator2D::die() {
@@ -107,10 +111,18 @@ bool Simulator2D::daq_running() {
 bool Simulator2D::read_settings_bulk(Gamma::Setting &set) const {
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
-      if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "Simulator2D/Override pause"))
-        q.value_int = override_pause_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/Pause"))
-        q.value_int = pause_ms_;
+      if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/SpillInterval"))
+        q.value_int = spill_interval_;
+      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/Resolution"))
+        q.value_int = bits_;
+      else if ((q.metadata.setting_type == Gamma::SettingType::floating) && (q.id_ == "Simulator2D/ScaleRate"))
+        q.value_dbl = scale_rate_;
+      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/Dest1"))
+        q.value_int = chan0_;
+      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/Dest2"))
+        q.value_int = chan1_;
+      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/CoincThresh"))
+        q.value_int = coinc_thresh_;
       else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "Simulator2D/Source file"))
         q.value_text = source_file_;
       else if ((q.metadata.setting_type == Gamma::SettingType::int_menu) && (q.id_ == "Simulator2D/Source spectrum")) {
@@ -136,10 +148,18 @@ bool Simulator2D::write_settings_bulk(Gamma::Setting &set) {
     return false;
 
   for (auto &q : set.branches.my_data_) {
-    if (q.id_ == "Simulator2D/Override pause")
-      override_pause_ = q.value_int;
-    else if (q.id_ == "Simulator2D/Pause")
-      pause_ms_ = q.value_int;
+    if (q.id_ == "Simulator2D/SpillInterval")
+      spill_interval_ = q.value_int;
+    else if (q.id_ == "Simulator2D/Resolution")
+      bits_ = q.value_int;
+    else if (q.id_ == "Simulator2D/Dest1")
+      chan0_ = q.value_int;
+    else if (q.id_ == "Simulator2D/Dest2")
+      chan1_ = q.value_int;
+    else if (q.id_ == "Simulator2D/CoincThresh")
+      coinc_thresh_ = q.value_int;
+    else if (q.id_ == "Simulator2D/ScaleRate")
+      scale_rate_ = q.value_dbl;
     else if (q.id_ == "Simulator2D/Source file") {
       if (q.value_text != source_file_) {
         Qpx::SpectraSet* temp_set = new Qpx::SpectraSet;
@@ -192,16 +212,13 @@ bool Simulator2D::boot() {
   PL_DBG << "Will use " << md.name << " t:" << md.type << " r:" << md.bits;
 
 
-
-
   int source_res = md.bits;
-  int dest_res = 13;
 
   PL_DBG << " source total events coinc " << md.total_count;
 
   settings = temp_set->runInfo().state;
   detectors = md.detectors;
-  lab_time = (temp_set->runInfo().time_stop - temp_set->runInfo().time_start).total_milliseconds() * 0.001;
+  lab_time = md.real_time.total_milliseconds() * 0.001;
 
   if (lab_time == 0.0) {
     PL_WARN << "Lab time = 0. Cannot create simulation.";
@@ -215,10 +232,10 @@ bool Simulator2D::boot() {
   OCR = static_cast<double>(count_) / lab_time;
   PL_DBG << "total count=" << count_ << " time_factor=" << time_factor << " OCR=" << OCR;
 
-  int adjust_bits = source_res - dest_res;
+  int adjust_bits = source_res - bits_;
 
-  shift_by_ = 16 - dest_res;
-  resolution_ = pow(2, dest_res);
+  shift_by_ = 16 - bits_;
+  resolution_ = pow(2, bits_);
 
   PL_INFO << " building matrix for simulation res=" << resolution_ << " shift="  << shift_by_;
   std::vector<double> distribution(resolution_*resolution_, 0.0);   //optimize somehow
@@ -228,7 +245,7 @@ bool Simulator2D::boot() {
   for (auto it : *spec_list)
     distribution[(it.first[0] >> adjust_bits) * resolution_
                  + (it.first[1] >> adjust_bits)]
-        = static_cast<double>(it.second) / static_cast<double> (count_);
+        =  static_cast<double>(it.second) / static_cast<double> (count_);
 
   PL_INFO << " creating discrete distribution for simulation";
   dist_ = boost::random::discrete_distribution<>(distribution);
@@ -270,14 +287,13 @@ void Simulator2D::get_all_settings() {
 void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* spill_queue) {
   PL_DBG << "<SorterPlugin> Start run worker";
 
-  double secsperrun = 5.0;  ///calculate this based on ocr and buf size
 
   bool timeout = false;
 
-  uint64_t   rate = callback->OCR;
-  uint64_t   t = 0;
+  uint64_t   rate = callback->OCR * callback->scale_rate_;
+  uint64_t   t = 1;
   StatsUpdate moving_stats,
-      one_run = callback->getBlock(secsperrun * 1.0001);  ///bit more than secsperrun
+      one_run = callback->getBlock(callback->spill_interval_ * 0.999);
 
   Spill one_spill;
 
@@ -287,22 +303,24 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
   one_spill = Spill();
   moving_stats.stats_type = StatsType::start;
   moving_stats.lab_time = boost::posix_time::microsec_clock::local_time();
-  for (int i=0; i < 2; ++i) {
-    moving_stats.channel = i;
-    one_spill.stats.push_back(moving_stats);
-  }
+
+  moving_stats.channel = callback->chan0_;
+  one_spill.stats.push_back(moving_stats);
+  moving_stats.channel = callback->chan1_;
+  one_spill.stats.push_back(moving_stats);
+
   spill_queue->enqueue(new Spill(one_spill));
 
   while (!timeout) {
-    boost::this_thread::sleep(boost::posix_time::seconds(secsperrun));
+    boost::this_thread::sleep(boost::posix_time::seconds(callback->spill_interval_));
 
     one_spill = Spill();
 
-    for (uint32_t i=0; i<(rate*secsperrun); i++) {
+    for (uint32_t i=0; i< (rate * callback->spill_interval_); i++) {
       if (callback->resolution_ > 0) {
         uint64_t newpoint = callback->dist_(callback->gen);
-        uint32_t en1 = newpoint / callback->resolution_;
-        uint32_t en2 = newpoint % callback->resolution_;
+        int32_t en1 = newpoint / callback->resolution_;
+        int32_t en2 = newpoint % callback->resolution_;
 
         en1 = en1 << callback->shift_by_;
         en2 = en2 << callback->shift_by_;
@@ -313,16 +331,23 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
         }
 
         Hit h;
-        h.channel = 0;
-        h.energy = en1;
         h.timestamp.time = t;
-        one_spill.hits.push_back(h);
-        t++;
-        h.channel = 1;
-        h.energy = en2;
-        h.timestamp.time = t;
-        one_spill.hits.push_back(h);
-        t+=5;
+
+//        PL_DBG << "evt " << en1 << "x" << en2;
+
+        if (en1 > 0) {
+          h.channel = callback->chan0_;
+          h.energy = en1;
+          one_spill.hits.push_back(h);
+        }
+
+        if (en2 > 0) {
+          h.channel = callback->chan1_;
+          h.energy = en2;
+          one_spill.hits.push_back(h);
+        }
+
+        t += callback->coinc_thresh_;
       }
     }
 
@@ -330,14 +355,20 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
     moving_stats.stats_type = StatsType::running;
     moving_stats.lab_time = boost::posix_time::microsec_clock::local_time();
     moving_stats.event_rate = one_run.event_rate;
-    for (int i=0; i < 2; ++i) {
-      moving_stats.channel = i;
-      one_spill.stats.push_back(moving_stats);
-    }
+
+    moving_stats.channel = callback->chan0_;
+    one_spill.stats.push_back(moving_stats);
+    moving_stats.channel = callback->chan1_;
+    one_spill.stats.push_back(moving_stats);
+
     spill_queue->enqueue(new Spill(one_spill));
 
     timeout = (callback->run_status_.load() == 2);
   }
+
+  for (auto &q : one_spill.stats)
+      q.stats_type = StatsType::stop;
+  spill_queue->enqueue(new Spill(one_spill));
 
   callback->run_status_.store(3);
 

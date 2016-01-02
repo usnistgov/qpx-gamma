@@ -37,7 +37,8 @@ public:
   Spectrum2D() {}
 
   static Template get_template() {
-    Template new_temp;
+    Template new_temp = Spectrum::get_template();
+
     new_temp.type = "2D";
     new_temp.output_types = {"m", "m4b", "mat"};
     new_temp.input_types = {"m4b", "mat"};
