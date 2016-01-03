@@ -27,11 +27,12 @@
 
 #include <QDir>
 #include <QDialog>
+#include <QSettings>
+
 #include <QAbstractTableModel>
 #include <QItemSelectionModel>
 #include "form_daq_settings.h"
 #include "qt_util.h"
-#include "special_delegate.h"
 
 namespace Ui {
 class WidgetProfiles;
@@ -59,14 +60,16 @@ class WidgetProfiles : public QDialog
   Q_OBJECT
 
 public:
-  explicit WidgetProfiles(QString data_dir, QWidget *parent = 0);
+  explicit WidgetProfiles(QSettings &settings, QWidget *parent = 0);
   ~WidgetProfiles();
 
 signals:
-  void profileChosen(QString);
+  void profileChosen(QString, bool);
 
 private:
   Ui::WidgetProfiles *ui;
+
+  QSettings &settings_;
 
   std::vector<Gamma::Setting> profiles_;
 
@@ -74,6 +77,8 @@ private:
   QItemSelectionModel selection_model_;
 
   QString root_dir_;
+
+  void update_profiles();
 
 private slots:
   void on_pushNew_clicked();
@@ -84,6 +89,9 @@ private slots:
   void selection_changed(QItemSelection,QItemSelection);
   void selection_double_clicked(QModelIndex);
   void toggle_push();
+  void on_pushApply_clicked();
+  void on_pushApplyBoot_clicked();
+  void on_OutputDirFind_clicked();
 };
 
 #endif // WidgetProfiles_H

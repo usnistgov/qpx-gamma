@@ -56,6 +56,7 @@ signals:
   void statusText(QString);
   void optimization_requested();
   void gain_matching_requested();
+  void list_view_requested();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -83,6 +84,8 @@ private slots:
 
   void on_pushOpenGainMatch_clicked();
   void on_pushOpenOptimize_clicked();
+
+  void on_pushOpenListView_clicked();
 
 private:
   Ui::FormSystemSettings *ui;

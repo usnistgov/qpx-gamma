@@ -53,5 +53,7 @@
         <file>oxy/document_preview.png</file>
         <file>oxy/editcut.png</file>
         <file>oxy/kpercentage.png</file>
+        <file>oxy/games_endturn.png</file>
+        <file>oxy/filenew.png</file>
     </qresource>
 </RCC>

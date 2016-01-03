@@ -43,7 +43,8 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma:
   connect(formSettings, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
   connect(formSettings, SIGNAL(gain_matching_requested()), this, SLOT(request_gain_matching()));
   connect(formSettings, SIGNAL(optimization_requested()), this, SLOT(request_optimization()));
-  
+  connect(formSettings, SIGNAL(list_view_requested()), this, SLOT(request_list_view()));
+
   connect(this, SIGNAL(refresh()), formSettings, SLOT(update()));
   connect(this, SIGNAL(toggle_push_(bool,Qpx::DeviceStatus)), formSettings, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
   connect(this, SIGNAL(update_dets()), formSettings, SLOT(updateDetDB()));
@@ -94,19 +95,6 @@ void FormStart::toggle_push(bool enable, Qpx::DeviceStatus live) {
   emit toggle_push_(enable, live);
 }
 
-void FormStart::boot_complete(bool success, Qpx::DeviceStatus status) {
-  //DEPRECATED
-
-  if (success) {
-    this->setCursor(Qt::WaitCursor);
-    formSettings->updateDetDB();
-    if (status == Qpx::DeviceStatus::can_oscil)
-      runner_thread_.do_oscil(formOscilloscope->xdt());
-    runner_thread_.do_refresh_settings();
-    this->setCursor(Qt::ArrowCursor);
-  }
-}
-
 void FormStart::settings_updated() {
   emit refresh();
 }
@@ -145,3 +133,6 @@ void FormStart::request_optimization() {
   emit optimization_requested();
 }
 
+void FormStart::request_list_view() {
+  emit list_view_requested();
+}

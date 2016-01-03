@@ -484,3 +484,8 @@ void FormMcaDaq::on_toggleIndefiniteRun_clicked()
 {
    ui->timeDuration->setEnabled(!ui->toggleIndefiniteRun->isChecked());
 }
+
+void FormMcaDaq::on_pushEfficiencyCal_clicked()
+{
+  emit requestEfficiencyCal();
+}

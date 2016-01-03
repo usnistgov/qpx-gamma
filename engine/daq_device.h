@@ -108,7 +108,7 @@ public:
 
   void register_type(std::string name, std::function<DaqDevice*(void)> typeConstructor)
   {
-    PL_INFO << ">> registering device class '" << name << "'";
+    PL_INFO << "<DeviceFactory> registering source '" << name << "'";
     constructors[name] = typeConstructor;
   }
 

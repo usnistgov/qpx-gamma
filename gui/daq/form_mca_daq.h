@@ -52,6 +52,7 @@ signals:
   void requestAnalysis(FormAnalysis1D*);
   void requestAnalysis2D(FormAnalysis2D*);
   void requestSymmetriza2D(FormSymmetrize2D*);
+  void requestEfficiencyCal();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -90,6 +91,8 @@ private slots:
   void on_pushDetails_clicked();
 
   void on_toggleIndefiniteRun_clicked();
+
+  void on_pushEfficiencyCal_clicked();
 
 private:
   Ui::FormMcaDaq *ui;

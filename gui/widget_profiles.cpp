@@ -104,38 +104,23 @@ Qt::ItemFlags TableProfiles::flags(const QModelIndex &index) const
 
 
 
-WidgetProfiles::WidgetProfiles(QString data_dir, QWidget *parent) :
+WidgetProfiles::WidgetProfiles(QSettings &settings, QWidget *parent) :
   QDialog(parent),
   table_model_(profiles_),
+  settings_(settings),
   selection_model_(&table_model_),
   ui(new Ui::WidgetProfiles)
 {
   ui->setupUi(this);
 
-  root_dir_  = data_dir;
+  settings_.beginGroup("Program");
+  root_dir_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_.endGroup();
 
-  QStringList nameFilter("*.set");
-  QDir directory(root_dir_);
-  QStringList txtFilesAndDirectories = directory.entryList(nameFilter);
-  for (auto &q : txtFilesAndDirectories) {
-    std::string path = data_dir.toStdString() + "/" + q.toStdString();
+  ui->pushDelete->setVisible(false);
+  ui->pushNew->setVisible(false);
 
-    pugi::xml_document doc;
-    if (!doc.load_file(path.c_str())) {
-      PL_DBG << "<WidgetProfiles> Cannot parse XML in " << path;
-      continue;
-    }
-
-    pugi::xml_node root = doc.child(Gamma::Setting().xml_element_name().c_str());
-    if (!root) {
-      PL_DBG << "<WidgetProfiles> Profile root element invalid in " << path;
-      continue;
-    }
-
-    Gamma::Setting tree(root);
-    tree.value_text = path;
-    profiles_.push_back(tree);
-  }
+  update_profiles();
 
   ui->tableProfiles->setModel(&table_model_);
   ui->tableProfiles->setSelectionModel(&selection_model_);
@@ -159,18 +144,47 @@ WidgetProfiles::~WidgetProfiles()
   delete ui;
 }
 
+void WidgetProfiles::update_profiles()
+{
+
+  selection_model_.clearSelection();
+  profiles_.clear();
+
+  QStringList nameFilter("*.set");
+  QDir directory(root_dir_);
+  QStringList txtFilesAndDirectories = directory.entryList(nameFilter);
+  for (auto &q : txtFilesAndDirectories) {
+    std::string path = root_dir_.toStdString() + "/" + q.toStdString();
+
+    pugi::xml_document doc;
+    if (!doc.load_file(path.c_str())) {
+      PL_DBG << "<WidgetProfiles> Cannot parse XML in " << path;
+      continue;
+    }
+
+    pugi::xml_node root = doc.child(Gamma::Setting().xml_element_name().c_str());
+    if (!root) {
+      PL_DBG << "<WidgetProfiles> Profile root element invalid in " << path;
+      continue;
+    }
+
+    Gamma::Setting tree(root);
+    tree.value_text = path;
+    profiles_.push_back(tree);
+  }
+
+  table_model_.update();
+}
+
 void WidgetProfiles::selection_changed(QItemSelection, QItemSelection) {
   toggle_push();
 }
 
 void WidgetProfiles::toggle_push() {
-  if (selection_model_.selectedIndexes().empty()) {
-    ui->pushEdit->setEnabled(false);
-    ui->pushDelete->setEnabled(false);
-  } else {
-    ui->pushEdit->setEnabled(true);
-    ui->pushDelete->setEnabled(true);
-  }
+    ui->pushApply->setEnabled(!selection_model_.selectedIndexes().empty());
+    ui->pushApplyBoot->setEnabled(!selection_model_.selectedIndexes().empty());
+    ui->pushEdit->setEnabled(!selection_model_.selectedIndexes().empty());
+    ui->pushDelete->setEnabled(!selection_model_.selectedIndexes().empty());
 }
 
 void WidgetProfiles::on_pushNew_clicked()
@@ -192,7 +206,7 @@ void WidgetProfiles::on_pushEdit_clicked()
 
 void WidgetProfiles::selection_double_clicked(QModelIndex idx) {
   int i = idx.row();
-  emit profileChosen(QString::fromStdString(profiles_[i].value_text));
+  emit profileChosen(QString::fromStdString(profiles_[i].value_text), true);
   accept();
 }
 
@@ -215,4 +229,41 @@ void WidgetProfiles::addNewDet(Gamma::Detector newDetector) {
   selection_model_.reset();
   table_model_.update();
   toggle_push();
+}
+
+void WidgetProfiles::on_pushApply_clicked()
+{
+  QModelIndexList ixl = ui->tableProfiles->selectionModel()->selectedRows();
+  if (ixl.empty())
+    return;
+  int i = ixl.front().row();
+
+  emit profileChosen(QString::fromStdString(profiles_[i].value_text), false);
+  accept();
+}
+
+void WidgetProfiles::on_pushApplyBoot_clicked()
+{
+  QModelIndexList ixl = ui->tableProfiles->selectionModel()->selectedRows();
+  if (ixl.empty())
+    return;
+  int i = ixl.front().row();
+
+  emit profileChosen(QString::fromStdString(profiles_[i].value_text), true);
+  accept();
+}
+
+void WidgetProfiles::on_OutputDirFind_clicked()
+{
+  QString dirName = QFileDialog::getExistingDirectory(this, "Open Directory", root_dir_,
+                                                      QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+  if (!dirName.isEmpty()) {
+    root_dir_ = QDir(dirName).absolutePath();
+
+    settings_.beginGroup("Program");
+    settings_.setValue("save_directory", root_dir_);
+    settings_.endGroup();
+
+    update_profiles();
+  }
 }

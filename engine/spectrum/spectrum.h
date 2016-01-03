@@ -285,7 +285,7 @@ class Factory {
 
   void register_type(Template tt, std::function<Spectrum*(void)> typeConstructor)
   {
-    PL_INFO << ">> registering spectrum type '" << tt.type << "'";
+    PL_INFO << "<Spectrum::Factory> registering spectrum type '" << tt.type << "'";
     constructors[tt.type] = typeConstructor;
     templates[tt.type] = tt;
     for (auto &q : tt.input_types)

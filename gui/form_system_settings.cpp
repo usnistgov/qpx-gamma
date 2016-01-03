@@ -78,6 +78,7 @@ void FormSystemSettings::update(const Gamma::Setting &tree, const std::vector<Ga
   tree_settings_model_.update(dev_settings_);
   table_settings_model_.update(channels_);
 
+  bool can_run = ((status & Qpx::DeviceStatus::can_run) != 0);
   bool can_gain_match = false;
   bool can_optimize = false;
   for (auto &q : channels_)
@@ -90,6 +91,7 @@ void FormSystemSettings::update(const Gamma::Setting &tree, const std::vector<Ga
 
   ui->pushOpenGainMatch->setEnabled(can_gain_match);
   ui->pushOpenOptimize->setEnabled(can_optimize);
+  ui->pushOpenListView->setEnabled(can_run);
 
   //update dets in DB as well?
 
@@ -310,4 +312,9 @@ void FormSystemSettings::on_pushOpenGainMatch_clicked()
 void FormSystemSettings::on_pushOpenOptimize_clicked()
 {
   emit optimization_requested();
+}
+
+void FormSystemSettings::on_pushOpenListView_clicked()
+{
+  emit list_view_requested();
 }

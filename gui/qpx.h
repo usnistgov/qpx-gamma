@@ -70,6 +70,8 @@ private:
   void saveSettings();
   void loadSettings();
 
+  void reorder_tabs();
+
 signals:
   void toggle_push(bool, Qpx::DeviceStatus);
   void settings_changed();
@@ -88,9 +90,6 @@ private slots:
   //logger receiver
   void add_log_text(QString);
 
-  //application settings
-  void on_OutputDirFind_clicked();
-
   void on_splitter_splitterMoved(int pos, int index);
 
   void analyze_1d(FormAnalysis1D*);
@@ -99,19 +98,19 @@ private slots:
   void detectors_updated();
   void update_settings();
 
-  void on_pushAbout_clicked();
-
-  void on_pushOpenSpectra_clicked();
-  void on_pushOpenList_clicked();
+  void openNewProject();
 
   bool hasTab(QString);
-  void on_pushOpenEfficiencyCalib_clicked();
 
   void choose_profiles();
-  void profile_chosen(QString);
+  void profile_chosen(QString, bool);
 
   void open_gain_matching();
   void open_optimization();
+  void open_list();
+  void open_efficiency_cal();
+
+  void tabs_moved(int, int);
 
 };
 
