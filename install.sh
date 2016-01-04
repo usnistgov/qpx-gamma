@@ -2,7 +2,7 @@
 qmake
 make release
 SOURCEDIR=./samples/*
-DESTDIR=$HOME/qpxdata
+DESTDIR=$HOME/qpx
 mkdir $DESTDIR
 cp -ur $SOURCEDIR $DESTDIR
 
