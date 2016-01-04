@@ -28,6 +28,8 @@
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
 
+#include "CFileDataSource.h"
+
 namespace Qpx {
 
 class SorterEVT : public DaqDevice {
@@ -66,26 +68,19 @@ protected:
   boost::atomic<int> run_status_;
   boost::thread *runner_;
 
-  std::vector<int32_t> module_indices_;
-  std::vector<std::vector<int32_t>> channel_indices_;
-
   bool loop_data_;
   bool override_pause_;
   bool override_timestamps_;
   int  pause_ms_;
   std::string source_file_;
 
-
-  std::list<StatsUpdate> spills_;
-  std::list<StatsUpdate> spills2_;
-
-  RunInfo start_, end_;
-  std::ifstream  file_bin_;
-  std::streampos bin_begin_, bin_end_;
-
   Spill get_spill();
 
+  CFileDataSource *evt_file;
 
+
+  std::string itobin (uint32_t bin);
+  std::string itobin (uint16_t bin);
 };
 
 }

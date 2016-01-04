@@ -52,6 +52,18 @@ FormPlot1D::FormPlot1D(QWidget *parent) :
   connect(spectraSelector, SIGNAL(itemSelected(SelectorItem)), this, SLOT(spectrumDetails(SelectorItem)));
   connect(spectraSelector, SIGNAL(itemToggled(SelectorItem)), this, SLOT(spectrumLooksChanged(SelectorItem)));
   connect(spectraSelector, SIGNAL(itemDoubleclicked(SelectorItem)), this, SLOT(spectrumDoubleclicked(SelectorItem)));
+
+
+  menuColors.addAction(QIcon(":/new/icons/show.png"), "Show all", this, SLOT(showAll()));
+  menuColors.addAction(QIcon(":/new/icons/hide.png"), "Hide all", this, SLOT(hideAll()));
+  menuColors.addAction(QIcon(":/new/icons/oxy/roll.png"), "Randomize all colors", this, SLOT(randAll()));
+  ui->toolColors->setMenu(&menuColors);
+
+  menuDelete.addAction(QIcon(":/new/icons/oxy/editdelete.png"), "Delete selected spectrum", this, SLOT(deleteSelected()));
+  menuDelete.addAction(QIcon(":/new/icons/show.png"), "Delete shown spectra", this, SLOT(deleteShown()));
+  menuDelete.addAction(QIcon(":/new/icons/hide.png"), "Delete hidden spectra", this, SLOT(deleteHidden()));
+  ui->toolDelete->setMenu(&menuDelete);
+
 }
 
 FormPlot1D::~FormPlot1D()
@@ -84,9 +96,9 @@ void FormPlot1D::spectrumDoubleclicked(SelectorItem item)
 
 void FormPlot1D::spectrumDetails(SelectorItem item)
 {
-  ui->pushShowAll->setEnabled(spectraSelector->items().size());
-  ui->pushHideAll->setEnabled(spectraSelector->items().size());
-  ui->pushRandAll->setEnabled(spectraSelector->items().size());
+  ui->toolColors->setEnabled(spectraSelector->items().size());
+  ui->toolDelete->setEnabled(spectraSelector->items().size());
+
   ui->pushManip1D->setEnabled(spectraSelector->items().size());
   ui->pushRescaleReset->setEnabled(spectraSelector->items().size());
 
@@ -340,7 +352,7 @@ void FormPlot1D::replot_markers() {
 }
 
 
-void FormPlot1D::on_pushShowAll_clicked()
+void FormPlot1D::showAll()
 {
   spectraSelector->show_all();
   QVector<SelectorItem> items = spectraSelector->items();
@@ -349,13 +361,21 @@ void FormPlot1D::on_pushShowAll_clicked()
   mySpectra->activate();
 }
 
-void FormPlot1D::on_pushHideAll_clicked()
+void FormPlot1D::hideAll()
 {
   spectraSelector->hide_all();
   QVector<SelectorItem> items = spectraSelector->items();
   for (auto &q : items)
     mySpectra->by_name(q.text.toStdString())->set_visible(false);
   mySpectra->activate();
+}
+
+void FormPlot1D::randAll()
+{
+  for (auto &q : mySpectra->spectra())
+    q->set_appearance(generateColor().rgba());
+
+  updateUI();
 }
 
 void FormPlot1D::set_scale_type(QString sct) {
@@ -372,15 +392,6 @@ QString FormPlot1D::scale_type() {
 
 QString FormPlot1D::plot_style() {
   return ui->mcaPlot->plot_style();
-}
-
-void FormPlot1D::on_pushRandAll_clicked()
-{
-  for (auto &q : mySpectra->spectra())
-    q->set_appearance(generateColor().rgba());
-
-  updateUI();
-//  mySpectra->activate();
 }
 
 void FormPlot1D::on_pushPerLive_clicked()
@@ -455,4 +466,26 @@ void FormPlot1D::on_pushManip1D_clicked()
 {
   FormManip1D* newDialog = new FormManip1D(*mySpectra, this);
   newDialog->exec();
+}
+
+void FormPlot1D::deleteSelected() {
+  SelectorItem item = spectraSelector->selected();
+  mySpectra->delete_spectrum(item.text.toStdString());
+  updateUI();
+}
+
+void FormPlot1D::deleteShown() {
+  QVector<SelectorItem> items = spectraSelector->items();
+  for (auto &q : items)
+    if (q.visible)
+      mySpectra->delete_spectrum(q.text.toStdString());
+  updateUI();
+}
+
+void FormPlot1D::deleteHidden() {
+  QVector<SelectorItem> items = spectraSelector->items();
+  for (auto &q : items)
+    if (!q.visible)
+      mySpectra->delete_spectrum(q.text.toStdString());
+  updateUI();
 }

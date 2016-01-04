@@ -1,6 +1,6 @@
 # qpx-gamma
 
-Data acquisition and analysis software for multi-detector gamma spectroscopy with Pixie-4.
+Data acquisition and analysis software for multi-detector gamma spectroscopy.
 Developed at NIST. No warranty and no endorsement of specific product. Please read license and disclaimer.
 
 Features:
@@ -11,7 +11,7 @@ Features:
 * loss-free counting spectra
 * energy, FWHM and efficiency calibration tools
 * basic isotope database
-* SUM4 peak integration with uncertainty
+* SUM4 peak integration with uncertainties
 * gain matching (iterative online, and post-acquisition)
 * automatic digitizer setting optimization to minimize FWHM
 
@@ -28,9 +28,9 @@ To compile, first install:
 * libglu1-mesa-dev
 
 Linux:
-* make sure PLX driver is working (driver and installation script included, see /hardware/pixie4/PLX/README)
+* If using Pixie-4, make sure PLX driver is working (driver and installation script included, see /hardware/pixie4/PLX/README)
 * utter the following incantations:
-  - to compile './install.sh' will also put sample data files in ~/qpxdata/
+  - to compile './install.sh' will also put sample data files in ~/qpx/
   - to run './qpx'
 * to make global, follow it up with 'sudo make install'
 

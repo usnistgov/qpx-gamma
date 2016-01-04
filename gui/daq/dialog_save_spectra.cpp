@@ -125,8 +125,10 @@ DialogSaveSpectra::DialogSaveSpectra(Qpx::SpectraSet& newset, QString outdir, QW
   root_dir_ = outdir;
   std::string timenow = boost::posix_time::to_iso_string(boost::posix_time::second_clock::local_time());
 
-  ui->lineName->setText(QString("Qpx") + QString::fromStdString(timenow));
-  ui->boxQpxFile->setChecked(my_set_->identity() == "New project");
+  if (my_set_->identity() != "New project")
+    ui->lineName->setText(QString("Qpx_") + QString::fromStdString(my_set_->identity()));
+  else
+    ui->lineName->setText(QString("Qpx_") + QString::fromStdString(timenow));
 }
 
 DialogSaveSpectra::~DialogSaveSpectra()
@@ -136,7 +138,6 @@ DialogSaveSpectra::~DialogSaveSpectra()
 
 void DialogSaveSpectra::on_lineName_textChanged(const QString &arg1)
 {
-  ui->boxQpxFile->setText(arg1 + ".qpx");
   namespace fs = boost::filesystem;
   fs::path dir(root_dir_.toStdString());
   dir.make_preferred();
@@ -183,10 +184,6 @@ void DialogSaveSpectra::on_buttonBox_accepted()
     }
   }
 
-  if (ui->boxQpxFile->isChecked()) {
-    dir /= ui->lineName->text().toStdString() + ".qpx";
-    my_set_->save_as(dir.string());
-  }
 
   filetime.stop();
 

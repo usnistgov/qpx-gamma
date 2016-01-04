@@ -127,6 +127,7 @@ private:
 
   void loadSettings();
   void saveSettings();
+  void update_data_dir(QString filename);
 };
 
 #endif // FORM_MCA_DAQ_H

@@ -44,27 +44,27 @@
         <number>3</number>
        </property>
        <item>
-        <widget class="QPushButton" name="pushShowAll">
+        <widget class="QToolButton" name="toolColors">
          <property name="enabled">
           <bool>false</bool>
          </property>
          <property name="minimumSize">
           <size>
-           <width>32</width>
+           <width>34</width>
            <height>25</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
-           <width>32</width>
+           <width>34</width>
            <height>25</height>
           </size>
          </property>
          <property name="toolTip">
-          <string>Show all</string>
+          <string>Apply to all</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
@@ -73,37 +73,40 @@
          <property name="iconSize">
           <size>
            <width>18</width>
-           <height>18</height>
+           <height>16</height>
           </size>
+         </property>
+         <property name="popupMode">
+          <enum>QToolButton::InstantPopup</enum>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushHideAll">
+        <widget class="QToolButton" name="toolDelete">
          <property name="enabled">
           <bool>false</bool>
          </property>
          <property name="minimumSize">
           <size>
-           <width>32</width>
+           <width>34</width>
            <height>25</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
-           <width>32</width>
+           <width>34</width>
            <height>25</height>
           </size>
          </property>
          <property name="toolTip">
-          <string>Hide all</string>
+          <string>Delete spectra...</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/hide.png</normaloff>:/new/icons/hide.png</iconset>
+           <normaloff>:/new/icons/oxy/emptytrash.png</normaloff>:/new/icons/oxy/emptytrash.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -111,10 +114,13 @@
            <height>18</height>
           </size>
          </property>
+         <property name="popupMode">
+          <enum>QToolButton::InstantPopup</enum>
+         </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushRandAll">
+        <widget class="QPushButton" name="pushFullInfo">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -131,14 +137,14 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>Randomize all colors</string>
+          <string>Details / analysis</string>
          </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/roll.png</normaloff>:/new/icons/oxy/roll.png</iconset>
+           <normaloff>:/new/icons/oxy/help_about.png</normaloff>:/new/icons/oxy/help_about.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -152,40 +158,6 @@
         <widget class="Line" name="line">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushPerLive">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Show as counts/sec</string>
-         </property>
-         <property name="text">
-          <string>cps</string>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>18</width>
-           <height>18</height>
-          </size>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -252,34 +224,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label_28">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>10</width>
-           <height>20</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QPushButton" name="pushManip1D">
          <property name="enabled">
           <bool>false</bool>
@@ -315,9 +259,37 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushFullInfo">
+        <widget class="QLabel" name="label_28">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>10</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushPerLive">
          <property name="enabled">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <property name="minimumSize">
           <size>
@@ -332,20 +304,19 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>Details / analysis</string>
+          <string>Show as counts/sec</string>
          </property>
          <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/help_about.png</normaloff>:/new/icons/oxy/help_about.png</iconset>
+          <string>cps</string>
          </property>
          <property name="iconSize">
           <size>
            <width>18</width>
            <height>18</height>
           </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -388,7 +359,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>296</width>
+          <width>281</width>
           <height>301</height>
          </rect>
         </property>

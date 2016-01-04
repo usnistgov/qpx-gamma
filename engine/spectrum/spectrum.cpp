@@ -145,6 +145,15 @@ void Spectrum::pushHit(const Hit& newhit)
 {
   if (newhit.energy < cutoff_logic_)
     return;
+
+  if (newhit.channel < 0)
+    return;
+
+  bool ignore_match = ((newhit.channel < metadata_.match_pattern.size()) && (metadata_.match_pattern[newhit.channel] == 0));
+  bool ignore_add = ((newhit.channel < metadata_.add_pattern.size()) && (metadata_.add_pattern[newhit.channel] == 0));
+
+  if (ignore_add && ignore_match)
+    return;
 //  PL_DBG << "Processing " << newhit.to_string();
 
   bool appended = false;

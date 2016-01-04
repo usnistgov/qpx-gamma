@@ -989,16 +989,16 @@ void WidgetPlot1D::exportRequested(QAction* choice) {
   if (validateFile(this, fileName, true)) {
     QFileInfo file(fileName);
     if (file.suffix() == "png") {
-      PL_INFO << "Exporting plot to png " << fileName.toStdString();
+//      PL_INFO << "Exporting plot to png " << fileName.toStdString();
       ui->mcaPlot->savePng(fileName,0,0,1,100);
     } else if (file.suffix() == "jpg") {
-      PL_INFO << "Exporting plot to jpg " << fileName.toStdString();
+//      PL_INFO << "Exporting plot to jpg " << fileName.toStdString();
       ui->mcaPlot->saveJpg(fileName,0,0,1,100);
     } else if (file.suffix() == "bmp") {
-      PL_INFO << "Exporting plot to bmp " << fileName.toStdString();
+//      PL_INFO << "Exporting plot to bmp " << fileName.toStdString();
       ui->mcaPlot->saveBmp(fileName);
     } else if (file.suffix() == "pdf") {
-      PL_INFO << "Exporting plot to pdf " << fileName.toStdString();
+//      PL_INFO << "Exporting plot to pdf " << fileName.toStdString();
       ui->mcaPlot->savePdf(fileName, true);
     }
   }

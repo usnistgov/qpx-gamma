@@ -198,7 +198,6 @@ void qpx::saveSettings() {
   settings_.beginGroup("Program");
   settings_.setValue("position", this->geometry());
   settings_.setValue("splitter", ui->splitter->saveState());
-  settings_.setValue("save_directory", data_directory_);
   settings_.setValue("settings_directory", settings_directory_);
   settings_.endGroup();
 

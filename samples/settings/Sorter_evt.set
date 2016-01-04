@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<Setting id="QpxSettings" type="stem" index="-1">
+	<Setting id="Profile description" type="text" index="-1" value="Sorter for EVT files" />
+	<Setting id="Detectors" type="stem" index="-1">
+		<Setting id="Total detectors" type="integer" index="-1" indices="-1" value="12" />
+		<Setting id="Detector" type="detector" index="0" indices="0" value="none" />
+		<Setting id="Detector" type="detector" index="1" indices="1" value="none" />
+		<Setting id="Detector" type="detector" index="2" indices="2" value="none" />
+		<Setting id="Detector" type="detector" index="3" indices="3" value="none" />
+		<Setting id="Detector" type="detector" index="4" indices="4" value="none" />
+		<Setting id="Detector" type="detector" index="5" indices="5" value="none" />
+		<Setting id="Detector" type="detector" index="6" indices="6" value="none" />
+		<Setting id="Detector" type="detector" index="7" indices="7" value="none" />
+		<Setting id="Detector" type="detector" index="8" indices="8" value="none" />
+		<Setting id="Detector" type="detector" index="9" indices="9" value="none" />
+		<Setting id="Detector" type="detector" index="10" indices="10" value="none" />
+		<Setting id="Detector" type="detector" index="11" indices="11" value="none" />
+	</Setting>
+	<Setting id="SorterEVT" type="stem" index="-1" reference="/SorterEVT/qpx_plugin.set">
+		<Setting id="SorterEVT/Source file" type="file_path" index="-1" value="/home/mgs/qpx/data/run-0002-00.evt" />
+		<Setting id="SorterEVT/Loop data" type="boolean" index="-1" value="false" />
+		<Setting id="SorterEVT/Override pause" type="boolean" index="-1" value="true" />
+		<Setting id="SorterEVT/Pause" type="integer" index="-1" value="5000" />
+		<Setting id="SorterEVT/Override timestamps" type="boolean" index="-1" value="false" />
+	</Setting>
+</Setting>

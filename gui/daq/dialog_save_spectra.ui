@@ -53,7 +53,7 @@
        <item>
         <widget class="QLineEdit" name="lineName">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -66,7 +66,7 @@
          </property>
          <property name="maximumSize">
           <size>
-           <width>200</width>
+           <width>16777215</width>
            <height>25</height>
           </size>
          </property>
@@ -75,16 +75,6 @@
            <width>200</width>
            <height>0</height>
           </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="boxQpxFile">
-         <property name="text">
-          <string>qpx_complete.xml</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
          </property>
         </widget>
        </item>

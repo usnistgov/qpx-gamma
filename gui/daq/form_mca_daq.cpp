@@ -224,10 +224,16 @@ void FormMcaDaq::update_plots() {
   CustomTimer guiside(true);
 
   QString name = QString::fromStdString(spectra_.identity());
+  if (name != "New project") {
+    QStringList slist = name.split("/");
+    if (!slist.empty())
+      name = slist.back();
+  }
+
   if (my_run_)
     name += QString::fromUtf8("  \u25b6");
   else if (spectra_.changed())
-      name += QString::fromUtf8(" \u2731");
+    name += QString::fromUtf8(" \u2731");
 
   if (name != this->windowTitle()) {
     this->setWindowTitle(name);
@@ -277,6 +283,8 @@ void FormMcaDaq::projectSaveAs()
     spectra_.save_as(fileName.toStdString());
     update_plots();
   }
+
+  update_data_dir(fileName);
 }
 
 void FormMcaDaq::projectExport()
@@ -346,6 +354,7 @@ void FormMcaDaq::projectOpen()
   if (!validateFile(this, fileName, false))
     return;
 
+  update_data_dir(fileName);
 
   //save first?
   if (!spectra_.empty()) {
@@ -379,6 +388,8 @@ void FormMcaDaq::projectImport()
 
   if (fileNames.empty())
     return;
+
+  update_data_dir(fileNames.front());
 
   for (int i=0; i<fileNames.size(); i++)
     if (!validateFile(this, fileNames.at(i), false))
@@ -419,6 +430,17 @@ void FormMcaDaq::projectImport()
   emit toggleIO(true);
 
   this->setCursor(Qt::ArrowCursor);
+}
+
+void FormMcaDaq::update_data_dir(QString filename) {
+  QFileInfo file(filename);
+  if (file.absoluteDir().isReadable()) {
+    data_directory_ = file.absoluteDir().absolutePath();
+    settings_.beginGroup("Program");
+    settings_.setValue("save_directory", data_directory_);
+    settings_.endGroup();
+  }
+  //propagate to other gui elements?
 }
 
 void FormMcaDaq::updateSpectraUI() {

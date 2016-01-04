@@ -20,8 +20,36 @@
 # 
 #-------------------------------------------------------------------------------
 
-INCLUDEPATH += $$PWD
+unix {
+   LIBS += -lrt
+}
 
-SOURCES += $$files($$PWD/*.cpp)
+DEFINES += BINDIR=\\\"/home/mgs/dev/nscldaq/nscldaq-11.0-017/base/dataflow/\\\"
 
-HEADERS  += $$files($$PWD/*.h)
+INCLUDEPATH += /usr/include/tcl8.6
+
+INCLUDEPATH += $$PWD \
+		$$PWD/nscldaq \
+		$$PWD/nscldaq/uri \
+		$$PWD/nscldaq/os \
+		$$PWD/nscldaq/libtcl \
+		$$PWD/nscldaq/dataflow \
+		$$PWD/nscldaq/portmanager
+
+SOURCES += $$files($$PWD/*.cpp) \
+    $$files($$PWD/nscldaq/*.c) \
+    $$files($$PWD/nscldaq/*.cpp) \
+		$$files($$PWD/nscldaq/uri/*.cpp) \
+		$$files($$PWD/nscldaq/os/*.cpp) \
+		$$files($$PWD/nscldaq/libtcl/*.cpp) \
+		$$files($$PWD/nscldaq/dataflow/*.cpp) \
+		$$files($$PWD/nscldaq/portmanager/*.cpp)
+
+
+HEADERS  += $$files($$PWD/*.h) \
+		$$files($$PWD/nscldaq/*.h) \
+		$$files($$PWD/nscldaq/uri/*.h) \
+		$$files($$PWD/nscldaq/os/*.h) \
+		$$files($$PWD/nscldaq/libtcl/*.h) \
+		$$files($$PWD/nscldaq/dataflow/*.h) \
+		$$files($$PWD/nscldaq/portmanager/*.h)

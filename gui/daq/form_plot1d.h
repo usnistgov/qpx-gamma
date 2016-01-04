@@ -74,20 +74,20 @@ private slots:
   void removeMovingMarker(double);
 
   void on_pushFullInfo_clicked();
-  void on_pushShowAll_clicked();
-  void on_pushHideAll_clicked();
 
+  void showAll();
+  void hideAll();
+  void randAll();
+
+  void deleteSelected();
+  void deleteShown();
+  void deleteHidden();
 
   void analyse();
 
-  void on_pushRandAll_clicked();
-
   void on_pushPerLive_clicked();
-
   void on_pushRescaleToThisMax_clicked();
-
   void on_pushRescaleReset_clicked();
-
   void on_pushManip1D_clicked();
 
 private:
@@ -102,7 +102,8 @@ private:
   SelectorWidget *spectraSelector;
 
   Marker moving, markx, marky;
-
+  QMenu menuColors;
+  QMenu menuDelete;
 
 };
 

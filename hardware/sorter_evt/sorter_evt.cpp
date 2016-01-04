@@ -27,6 +27,15 @@
 #include "custom_logger.h"
 #include "custom_timer.h"
 
+#include "URL.h"
+#include "CRingItem.h"
+#include "DataFormat.h"
+#include "CRingItemFactory.h"
+
+#include "CPhysicsEventItem.h"
+#include "CDataFormatItem.h"
+#include "CRingStateChangeItem.h"
+#include "CRingPhysicsEventCountItem.h"
 
 namespace Qpx {
 
@@ -37,6 +46,8 @@ SorterEVT::SorterEVT() {
 
   runner_ = nullptr;
 
+  evt_file = nullptr;
+
   run_status_.store(0);
 
   loop_data_ = false;
@@ -44,11 +55,8 @@ SorterEVT::SorterEVT() {
 }
 
 bool SorterEVT::die() {
-  if ((status_ & DeviceStatus::booted) != 0)
-    file_bin_.close();
-
-  spills_.clear();
-  spills2_.clear();
+  if (evt_file != nullptr)
+    delete evt_file;
 
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 //  for (auto &q : set.branches.my_data_) {
@@ -122,12 +130,6 @@ bool SorterEVT::read_settings_bulk(Gamma::Setting &set) const {
         q.value_int = pause_ms_;
       else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "SorterEVT/Source file"))
         q.value_text = source_file_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "SorterEVT/StatsUpdates"))
-        q.value_int = spills_.size();
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "SorterEVT/Hits"))
-        q.value_int = (bin_end_ - bin_begin_) / 12;
-      else if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "SorterEVT/StartTime"))
-        q.value_text = boost::posix_time::to_iso_extended_string(start_.time_start);
     }
   }
   return true;
@@ -163,79 +165,20 @@ bool SorterEVT::boot() {
 
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 
-  pugi::xml_document doc;
+  //does file exist?
 
-  if (!doc.load_file(source_file_.c_str())) {
-    PL_WARN << "<SorterEVT> Could not parse XML in " << source_file_;
-    return false;
-  }
+  std::string filename("file://");
+  filename += source_file_;
 
-  pugi::xml_node root = doc.first_child();
-  if (!root || (std::string(root.name()) != "QpxListData")) {
-    PL_WARN << "<SorterEVT> Bad root ID in " << source_file_;
-    return false;
-  }
+  try { URL url(filename); }
+  catch (...) { PL_ERR << "<SorterEVT> could not parse URL"; return false; }
 
-  if (!root.child("BinaryOut")) {
-    PL_WARN << "<SorterEVT> No reference to binary file in " << source_file_;
-    return false;
-  }
+  URL url(filename);
 
-  std::string file_name_bin = std::string(root.child("BinaryOut").child_value("FileName"));
+  //catch exception
+  evt_file = new CFileDataSource(url, std::vector<uint16_t>());
 
-  boost::filesystem::path meta(source_file_);
-  meta.make_preferred();
-  boost::filesystem::path path = meta.remove_filename();
-
-  if (!boost::filesystem::is_directory(meta)) {
-    PL_DBG << "<SorterEVT> Bad path for list mode data";
-    return false;
-  }
-
-  boost::filesystem::path bin_path = path / file_name_bin;
-
-  file_bin_.open(bin_path.string(), std::ofstream::in | std::ofstream::binary);
-
-  if (!file_bin_.is_open()) {
-    PL_DBG << "<SorterEVT> Could not open binary " << bin_path.string();
-    return false;
-  }
-
-  if (!file_bin_.good()) {
-    file_bin_.close();
-    PL_DBG << "<SorterEVT> Could not open binary " << bin_path.string();
-    return false;
-  }
-
-  PL_DBG << "<SorterEVT> Success opening binary " << bin_path.string();
-
-  file_bin_.seekg (0, std::ios::beg);
-  bin_begin_ = file_bin_.tellg();
-  file_bin_.seekg (0, std::ios::end);
-  bin_end_ = file_bin_.tellg();
-  file_bin_.seekg (0, std::ios::beg);
-
-  for (pugi::xml_node child : root.children()) {
-    std::string name = std::string(child.name());
-    if (name == StatsUpdate().xml_element_name()) {
-      StatsUpdate stats;
-      stats.from_xml(child);
-      if (stats != StatsUpdate())
-        spills_.push_back(stats);
-    } else if (name == RunInfo().xml_element_name()) {
-      RunInfo info;
-      info.from_xml(child);
-      if (!info.time_start.is_not_a_date_time())
-        start_ = info;
-      if (!info.time_stop.is_not_a_date_time())
-        end_ = info;
-    }
-  }
-
-  if (spills_.size() == 0) {
-    file_bin_.close();
-    return false;
-  }
+  PL_DBG << "<SorterEVT> opened file data source successfully";
 
   status_ = DeviceStatus::loaded | DeviceStatus::booted | DeviceStatus::can_run;
 //  for (auto &q : set.branches.my_data_) {
@@ -257,14 +200,210 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
   PL_DBG << "<SorterEVT> Start run worker";
 
   Spill one_spill;
-
   bool timeout = false;
-
   std::set<int> starts_signalled;
 
-  while ((!callback->spills_.empty()) && (!timeout)) {
+  uint64_t count = 0;
+  uint64_t events = 0;
 
-    one_spill = callback->get_spill();
+  uint64_t headers = 0;
+  uint64_t footers = 0;
+  uint64_t junk = 0;
+
+  CRingItem* item;
+  CRingItemFactory  fact;
+
+  boost::posix_time::ptime time_start;
+
+  while (!timeout) {
+
+    one_spill = Spill();
+
+    bool done = false;
+
+    while ((!done) && (item = callback->evt_file->getItem()) != NULL)  {
+      count++;
+
+      switch (item->type()) {
+
+      case RING_FORMAT: {
+        CDataFormatItem* pEvent = reinterpret_cast<CDataFormatItem*>(fact.createRingItem(*item));
+        if (pEvent) {
+          //PL_DBG << "Ring format: " << pEvent->toString();
+          delete pEvent;
+        }
+        break;
+      }
+      case END_RUN:
+      case BEGIN_RUN:
+      {
+        CRingStateChangeItem* pEvent = reinterpret_cast<CRingStateChangeItem*>(fact.createRingItem(*item));
+        if (pEvent) {
+
+          boost::posix_time::ptime ts = boost::posix_time::from_time_t(pEvent->getTimestamp());
+  //        PL_DBG << "State :" << pEvent->toString();
+          PL_DBG << "State  ts=" << boost::posix_time::to_iso_extended_string(ts)
+                 << "  elapsed=" << pEvent->getElapsedTime()
+                 << "  run#=" << pEvent->getRunNumber()
+                 << "  barrier=" << pEvent->getBarrierType();
+
+          if (pEvent->getBarrierType() == 1) {
+            time_start = ts;
+            starts_signalled.clear();
+          } else if (pEvent->getBarrierType() == 2) {
+            done = true;
+          }
+
+          delete pEvent;
+        }
+        break;
+      }
+
+      case PHYSICS_EVENT_COUNT:
+      {
+        CRingPhysicsEventCountItem* pEvent = reinterpret_cast<CRingPhysicsEventCountItem*>(fact.createRingItem(*item));
+        if (pEvent) {
+  //        PL_DBG << "Physics counts: " << pEvent->toString();
+          boost::posix_time::ptime ts = boost::posix_time::from_time_t(pEvent->getTimestamp());
+//          PL_DBG << "State  ts=" << boost::posix_time::to_iso_extended_string(ts)
+//                 << "  elapsed=" << pEvent->getTimeOffset()
+//                 << "  total_events=" << pEvent->getEventCount();
+
+          for (auto &q : starts_signalled) {
+            StatsUpdate udt;
+            udt.channel = q;
+            udt.lab_time = ts;
+            udt.fast_peaks = pEvent->getEventCount();
+            udt.live_time = pEvent->getTimeOffset();
+            udt.total_time = pEvent->getTimeOffset();
+            one_spill.stats.push_back(udt);
+            done = true;
+          }
+
+          delete pEvent;
+        }
+        break;
+      }
+
+
+      case PHYSICS_EVENT: {
+        CPhysicsEventItem* pEvent = reinterpret_cast<CPhysicsEventItem*>(fact.createRingItem(*item));
+        if (pEvent) {
+
+            uint32_t  bytes = pEvent->getBodySize();
+            uint32_t  words = bytes/sizeof(uint16_t);
+
+            const uint16_t* body  = reinterpret_cast<const uint16_t*>((const_cast<CPhysicsEventItem*>(pEvent))->getBodyPointer());
+            uint16_t expected_words = *body;
+            if (expected_words == (words - 1)) {
+              //PL_DBG << "Header indicates " << expected_words << " expected 16-bit words. Correct";
+              body++;
+
+              std::list<uint32_t> MADC_data;
+              for (int i=0; i < expected_words; i+=2) {
+                uint32_t lower = *body++;
+                uint32_t upper = *body++;
+                MADC_data.push_back(lower | (upper << 16));
+              }
+
+//              std::ostringstream out2;
+//              int j=0;
+//              for (auto &q : MADC_data) {
+//                out2 << itobin(q) << "   ";
+//                j++;
+//                if ( (j % 6) == 0)
+//                  out2 << std::endl;
+//              }
+//              PL_DBG << "Made " << MADC_data.size() << " 32-bit words:\n"  << out2.str();
+
+              uint32_t header_m   = 0xff008000; // Header Mask
+              uint32_t header_c   = 0x40000000; // Header Compare
+
+              uint32_t footer_m   = 0xc0000000; // Footer Mask
+              uint32_t footer_c   = 0xc0000000; // Footer Compare
+
+              uint32_t evt_mask = 0xffe04000; // event header mask
+              uint32_t evt_c    = 0x04000000; // event compare
+
+              uint32_t det_mask = 0x001f0000; // Detector mask
+              uint32_t nrg_mask = 0x00001fff; // Energy mask
+              uint32_t ovrfl_c  = 0x00004000; // Overflow compare
+
+              uint32_t junk_c  = 0xffffffff; // Overflow compare
+
+              int upshift = 0;
+              while (!MADC_data.empty()) {
+                uint32_t word = MADC_data.front();
+                MADC_data.pop_front();
+                if (word == junk_c) {
+                  junk++;
+                } else if ((word & header_m) == header_c) {
+                  uint32_t module = ((word & 0x00ff0000) >> 16);
+                  uint32_t resolution = ((word & 0x00007000) >> 12);
+                  uint32_t words_f = (word & 0x00000fff);
+                  if ((resolution == 4) || (resolution == 3))
+                    upshift = 3;
+                  else if ((resolution == 1) || (resolution == 2))
+                    upshift = 4;
+                  else if (resolution == 0)
+                    upshift = 5;
+//                  PL_DBG << "  MADC header module=" << module << "  resolution=" << resolution
+//                         << "  words=" << words_f << "  upshift=" << upshift;
+                  headers++;
+
+                } else if ((word & footer_m) == footer_c) {
+                  footers++;
+//                  PL_DBG << "  MADC footer: " << itobin(word);
+                } else if ((word & evt_mask) == evt_c) {
+                  int chan_nr = (word & det_mask) >> 16;
+                  uint16_t nrg = (word & nrg_mask);
+                  bool overflow = ((word & ovrfl_c) != 0);
+//                  PL_DBG << "  MADC hit detector=" << chan_nr << "  energy=" << nrg << "  overflow=" << overflow;
+
+                  if (!starts_signalled.count(chan_nr)) {
+                    StatsUpdate udt;
+                    udt.channel = chan_nr;
+                    udt.lab_time = time_start;
+                    udt.stats_type = StatsType::start;
+//                    udt.fast_peaks = pEvent->getEventCount();
+//                    udt.live_time = pEvent->getTimeOffset();
+//                    udt.real_time = pEvent->getTimeOffset();
+                    Spill extra_spill;
+                    extra_spill.stats.push_back(udt);
+                    spill_queue->enqueue(new Spill(extra_spill));
+
+                    starts_signalled.insert(chan_nr);
+                  }
+
+                  Hit one_hit;
+                  one_hit.channel   = chan_nr;
+                  one_hit.energy    = nrg << upshift;
+                  one_hit.timestamp.time = events * 5;
+                  one_spill.hits.push_back(one_hit);
+                  events++;
+                } else {
+                  PL_DBG << "Unrecognized data in buffer";
+                }
+              }
+
+
+            } else
+              PL_DBG << "Header indicates " << expected_words << " expected 16-bit words, but does not match body size = " << (words - 1);
+
+          delete pEvent;
+        }
+        break;
+      }
+
+      }
+
+      delete item;
+    }
+
+    PL_DBG << "<SorterEVT> Processed " << count << " entries total hits = " << events
+           << "  headers="  << headers << "  footers=" << footers << "  junk=" << junk;
+
+
 
     if (callback->override_timestamps_) {
       for (auto &q : one_spill.stats)
@@ -275,36 +414,26 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
     if (callback->override_pause_) {
       boost::this_thread::sleep(boost::posix_time::milliseconds(callback->pause_ms_));
     } else {
-      if (!one_spill.stats.empty() && (!callback->spills_.empty())) {
-        StatsUpdate newstats = callback->spills_.front();
-        StatsUpdate prevstats = one_spill.stats.front();
-        if ((prevstats != StatsUpdate()) && (newstats != StatsUpdate()) && (newstats.lab_time > prevstats.lab_time)) {
-          boost::posix_time::time_duration dif = newstats.lab_time - prevstats.lab_time;
-          //        PL_DBG << "<SorterEVT> Pause for " << dif.total_seconds();
-          boost::this_thread::sleep(dif);
-        }
-      }
+
     }
 
-    for (auto &q : one_spill.stats) {
-      if (!starts_signalled.count(q.channel)) {
-        q.stats_type = StatsType::start;
-        starts_signalled.insert(q.channel);
-      }
-    }
+//    for (auto &q : one_spill.stats) {
+//      if (!starts_signalled.count(q.channel)) {
+//        q.stats_type = StatsType::start;
+//        starts_signalled.insert(q.channel);
+//      }
+//    }
     spill_queue->enqueue(new Spill(one_spill));
 
     timeout = (callback->run_status_.load() == 2);
+    if (item == NULL)
+      break;
   }
 
   for (auto &q : one_spill.stats)
     q.stats_type = StatsType::stop;
 
   spill_queue->enqueue(new Spill(one_spill));
-
-  if (callback->spills_.empty()) {
-    PL_DBG << "<SorterEVT> Out of spills. Premature termination";
-  }
 
   callback->run_status_.store(3);
 
@@ -317,59 +446,38 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
 Spill SorterEVT::get_spill() {
   Spill one_spill;
 
-  if (!spills_.empty()) {
-
-    StatsUpdate this_spill = spills_.front();
-
-
-    uint16_t event_entry[6];
-    //      PL_DBG << "<Sorter> will produce no of events " << spills_.front().events_in_spill;
-    while ((one_spill.hits.size() < this_spill.events_in_spill) && (file_bin_.tellg() < bin_end_)) {
-      Hit one_event;
-      file_bin_.read(reinterpret_cast<char*>(event_entry), 12);
-      one_event.channel = event_entry[0];
-      //      PL_DBG << "event chan " << chan;
-      uint64_t time_hi = event_entry[2];
-      uint64_t time_mi = event_entry[3];
-      uint64_t time_lo = event_entry[4];
-      one_event.timestamp.time = (time_hi << 32) + (time_mi << 16) + time_lo;
-      one_event.energy = event_entry[5];
-      //PL_DBG << "event created chan=" << one_event.channel << " time=" << one_event.timestamp.time << " energy=" << one_event.energy;
-      //file_bin_.seekg(10, std::ios::cur);
-
-      one_spill.hits.push_back(one_event);
-    }
-    one_spill.stats.push_back(this_spill);
-    spills2_.push_back(this_spill);
-    spills_.pop_front();
-
-    while (!spills_.empty()
-           && (spills_.front().events_in_spill == 0)
-           && (spills_.front().lab_time == one_spill.stats.back().lab_time)) {
-//      PL_DBG << "<SorterEVT> adding to update ch=" << one_spill.stats.back().channel << " another update ch=" << callback->spills_.front().channel;
-      one_spill.stats.push_back(spills_.front());
-      spills2_.push_back(spills_.front());
-      spills_.pop_front();
-    }
-
-  }
-
-//  PL_DBG << "<SorterEVT> made events " << one_spill.hits.size();
-
-  if (loop_data_) {
-    if (spills_.empty() && (!spills2_.empty())) {
-      spills_ = spills2_;
-      spills2_.clear();
-      PL_DBG << "<SorterEVT> rewinding spills";
-    }
-
-    if (file_bin_.tellg() == bin_end_) {
-      PL_DBG << "<SorterEVT> rewinding binary";
-      file_bin_.seekg (0, std::ios::beg);
-    }
-  }
-
   return one_spill;
+}
+
+
+std::string SorterEVT::itobin (uint32_t bin)
+{
+  std::stringstream ss;
+  int k=0;
+  for (k = 31; k >= 0; --k) {
+    if (bin & 0x80000000)
+      ss << "1";
+    else
+      ss << "0";
+    bin <<= 1;
+    if (k == 16)
+      ss << " ";
+  }
+  return ss.str();
+}
+
+std::string SorterEVT::itobin (uint16_t bin)
+{
+  std::stringstream ss;
+  int k=0;
+  for (k = 15; k >= 0; --k) {
+    if (bin & 0x8000)
+      ss << "1";
+    else
+      ss << "0";
+    bin <<= 1;
+  }
+  return ss.str();
 }
 
 
