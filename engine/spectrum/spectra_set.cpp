@@ -50,12 +50,14 @@ void SpectraSet::clear() {
 void SpectraSet::clear_helper() {
   //private, no lock needed
   if (!my_spectra_.empty())
+    changed_ = true;
+
+  if (!my_spectra_.empty())
     for (auto &q: my_spectra_) {
       if (q != nullptr)
         delete q;
     }
   my_spectra_.clear();
-  status_ = "empty";
   run_info_ = RunInfo();
 }
 
@@ -93,7 +95,18 @@ bool SpectraSet::new_data() {
 void SpectraSet::setRunInfo(const RunInfo &ri) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   run_info_ = ri;
+  changed_ = true;
   //notify?
+}
+
+bool SpectraSet::changed() {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+
+  for (auto &q : my_spectra_)
+    if (q->metadata().changed)
+      changed_ = true;
+
+  return changed_;
 }
 
 
@@ -167,7 +180,7 @@ void SpectraSet::add_spectrum(Spectrum::Spectrum* newSpectrum) {
     return;
   boost::unique_lock<boost::mutex> lock(mutex_);  
   my_spectra_.push_back(newSpectrum);
-  status_ = "imported from file(s)";
+  changed_ = true;
   ready_ = true;
   newdata_ = true;
   terminating_ = false;
@@ -180,6 +193,7 @@ void SpectraSet::delete_spectrum(std::string name) {
   while (it != my_spectra_.end()) {
     if ((*it)->name() == name) {
       my_spectra_.erase(it);
+      changed_ = true;
       return;
     }
     it++;
@@ -198,6 +212,8 @@ void SpectraSet::set_spectra(const XMLableDB<Spectrum::Template>& newdb) {
     }
   }
 
+  changed_ = true;
+
   ready_ = true; terminating_ = false; newdata_ = false;
   cond_.notify_one();
 }
@@ -208,17 +224,15 @@ void SpectraSet::add_spill(Spill* one_spill) {
   for (auto &q: my_spectra_)
     q->addSpill(*one_spill);
 
-  if (!one_spill->stats.empty())
-      status_ = "Live at " +  boost::posix_time::to_simple_string(boost::posix_time::microsec_clock::local_time()) +
-          " with " + std::to_string(one_spill->stats.front().event_rate) + " events/sec";
-
-  if (!one_spill->run.time_start.is_not_a_date_time()) {
+  if (!one_spill->run.time_start.is_not_a_date_time())
     run_info_ = one_spill->run;
-    if (one_spill->run.total_events > 0) {
-      status_ = "Complete at " + boost::posix_time::to_simple_string(one_spill->run.time_stop);
-//      PL_INFO << "**Spectra building complete";
-    }
-  }
+
+  if ((!one_spill->stats.empty())
+       || (!one_spill->hits.empty())
+       || (!one_spill->data.empty())
+       || (one_spill->run != RunInfo()))
+      changed_ = true;
+
   
   ready_ = true;
   newdata_ = true;
@@ -226,8 +240,19 @@ void SpectraSet::add_spill(Spill* one_spill) {
 }
 
 
-void SpectraSet::write_xml(std::string file_name) {
+void SpectraSet::save() {
   boost::unique_lock<boost::mutex> lock(mutex_);
+  if (/*changed_ && */(identity_ != "New project"))
+    write_xml(identity_);
+}
+
+
+void SpectraSet::save_as(std::string file_name) {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  write_xml(file_name);
+}
+
+void SpectraSet::write_xml(std::string file_name) {
 
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child();
@@ -243,7 +268,12 @@ void SpectraSet::write_xml(std::string file_name) {
 
   doc.save_file(file_name.c_str());
 
-  status_ = file_name;
+  for (auto &q : my_spectra_)
+    q->reset_changed();
+
+  changed_ = false;
+  identity_ = file_name;
+
   ready_ = true;
   newdata_ = true;
   terminating_ = false;
@@ -289,16 +319,18 @@ void SpectraSet::read_xml(std::string file_name, bool with_spectra, bool with_fu
     }
   }
 
-  status_ = file_name;
+  changed_ = false;
+  identity_ = file_name;
+
   ready_ = true;
   newdata_ = true;
   terminating_ = false;
   cond_.notify_one();
 }
 
-void SpectraSet::read_spn(std::string file_name) {
+void SpectraSet::import_spn(std::string file_name) {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  clear_helper();
+  //clear_helper();
 
   std::ifstream myfile(file_name, std::ios::in | std::ios::binary);
 
@@ -330,7 +362,6 @@ void SpectraSet::read_spn(std::string file_name) {
   int spectra_count = 0;
   while (myfile.tellg() != length) {
   //for (int j=0; j<150; ++j) {
-    spectra_count++;
     std::vector<uint32_t> data;
     uint64_t totalcount = 0;
 //    uint32_t header;
@@ -354,11 +385,14 @@ void SpectraSet::read_spn(std::string file_name) {
     }
     spectrum->addSpill(spill);
     my_spectra_.push_back(spectrum);
+    spectra_count++;
   }
 
   delete temp;
 
-  status_ = file_name;
+  changed_ = true;
+//  identity_ = file_name;
+
   ready_ = true;
   newdata_ = true;
   terminating_ = false;

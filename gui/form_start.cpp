@@ -31,6 +31,8 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma:
   profile_path_(profile),
   exiting(false)
 {
+  this->setWindowTitle("Settings");
+
   connect(&thread, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)),
           this, SLOT(update(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)));
 
@@ -105,7 +107,8 @@ void FormStart::detectors_updated() {
 
 void FormStart::loadSettings() {
   settings_.beginGroup("Program");
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
   runner_thread_.do_initialize(profile_path_);

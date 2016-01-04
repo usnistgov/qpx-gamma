@@ -144,6 +144,7 @@ private:
 
   //from parent
   QString data_directory_;
+  QString settings_directory_;
 
 
   std::list<MarkerBox2D> all_boxes_;

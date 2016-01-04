@@ -74,6 +74,8 @@ private:
   QSettings &settings_;
 
   QString data_directory_;
+  QString settings_directory_;
+
   QString profile_path_;
 
   XMLableDB<Gamma::Detector>  &detectors_;

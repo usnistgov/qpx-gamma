@@ -4,31 +4,28 @@ Data acquisition and analysis software for multi-detector gamma spectroscopy wit
 Developed at NIST. No warranty and no endorsement of specific product. Please read license and disclaimer.
 
 Features:
-* support for multiple modules
-* simultaneous building of multiple spectra
-* coincidence matrices
-* multi-threaded for minimal dead time
-* optional list mode output
+* modular multithreaded architecture with multiple data sources and data sinks
+* simultaneous building of multiple spectra (real-time sorting)
+* coincidence matrices with symmetrization, projections, 2D peak search
+* list mode output
 * loss-free counting spectra
-* energy and FWHM calibration
+* energy, FWHM and efficiency calibration tools
 * basic isotope database
-* peak fitting with multiplet deconvolution
 * SUM4 peak integration with uncertainty
-* energy-gated coincidence matrix projections
-* matrix symmetrization
-* gain matching (analog and post-acquisition)
-* risetime/flattop optimization
-* analysis reports in *.txt
+* gain matching (iterative online, and post-acquisition)
+* automatic digitizer setting optimization to minimize FWHM
 
-To thoroughly enjoy it you need:
-* Pixie-4 in a PXI crate connected to your PC
-* detectors
-* radioactive stuff
+Works with the following hardware:
+* Pixie-4
+* HV8
+* IsegSHV via Wiener VMUSB
 
-To compile you need:
+To compile, first install:
 * boost libraries (5.7)
 * Qt libraries (5.3)
 * lua-dev
+* mesa-comon-dev
+* libglu1-mesa-dev
 
 Linux:
 * make sure PLX driver is working (driver and installation script included, see /hardware/pixie4/PLX/README)

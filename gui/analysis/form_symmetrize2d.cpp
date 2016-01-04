@@ -331,7 +331,7 @@ void FormSymmetrize2D::apply_gain_calibration()
 
   std::string msg_text("Propagating gain match calibration ");
   msg_text += detector2_.name_ + "->" + gain_match_cali_.to_ + " (" + std::to_string(gain_match_cali_.bits_) + " bits) to all spectra in current project: "
-      + spectra_->status();
+      + spectra_->identity();
 
   std::string question_text("Do you also want to save this calibration to ");
   question_text += detector2_.name_ + " in detector database?";
@@ -393,7 +393,7 @@ void FormSymmetrize2D::apply_gain_calibration()
     std::vector<Gamma::Detector> detectors = spectra_->runInfo().detectors;
     for (auto &p : detectors) {
       if (p.shallow_equals(detector2_)) {
-        PL_INFO << "   applying new calibrations for " << detector2_.name_ << " in current project " << spectra_->status();
+        PL_INFO << "   applying new calibrations for " << detector2_.name_ << " in current project " << spectra_->identity();
         p.gain_match_calibrations_.replace(gain_match_cali_);
       }
     }
@@ -413,7 +413,8 @@ void FormSymmetrize2D::closeEvent(QCloseEvent *event) {
 
 void FormSymmetrize2D::loadSettings() {
   settings_.beginGroup("Program");
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
   ui->plotSpectrum->loadSettings(settings_);

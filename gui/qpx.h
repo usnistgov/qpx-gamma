@@ -57,7 +57,8 @@ private:
   LogEmitter        my_emitter_;
   LogStreamBuffer   text_buffer_;
 
-  QString                       data_directory_;    //data directory
+  QString                       settings_directory_;    //settings directory
+  QString                       data_directory_;        //data directory
   QSettings                     settings_;
   XMLableDB<Gamma::Detector>    detectors_;
   ThreadRunner                  runner_thread_;

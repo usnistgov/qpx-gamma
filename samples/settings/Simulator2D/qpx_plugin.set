@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<Simulator2D>
+	<SettingMeta id="Simulator2D" type="stem" name="Simulator2D" address="0" writable="false" saveworthy="true">
+		<branch address="0" id="Simulator2D/Source file" />
+		<branch address="1" id="Simulator2D/Source spectrum" />
+		<branch address="2" id="Simulator2D/Resolution" />
+		<branch address="3" id="Simulator2D/Dest1" />
+		<branch address="4" id="Simulator2D/Dest2" />
+		<branch address="5" id="Simulator2D/CoincThresh" />
+		<branch address="6" id="Simulator2D/ScaleRate" />
+		<branch address="7" id="Simulator2D/SpillInterval" />
+	</SettingMeta>
+	<SettingMeta id="Simulator2D/Source file" type="file_path" name="Source file" address="0" writable="true" unit="Qpx project (*.qpx)" />
+	<SettingMeta id="Simulator2D/Source spectrum" type="int_menu" name="Source spectrum" address="0" writable="true" />
+	<SettingMeta id="Simulator2D/Resolution" type="integer" name="Resolution" address="0" writable="true" step="1" minimum="4" maximum="16" unit="bits"/>
+	<SettingMeta id="Simulator2D/Dest1" type="integer" name="Destination channel 1" address="0" writable="true" step="1" minimum="0" maximum="42"/>
+	<SettingMeta id="Simulator2D/Dest2" type="integer" name="Destination channel 2" address="0" writable="true" step="1" minimum="0" maximum="42"/>
+	<SettingMeta id="Simulator2D/CoincThresh" type="integer" name="Coincidence threshold" address="0" writable="true" step="1" minimum="1" maximum="1000000" unit="ticks"/>
+	<SettingMeta id="Simulator2D/ScaleRate" type="floating" name="Scale event rate" address="0" writable="true" step="0.001" minimum="0.001" maximum="1000000"/>
+	<SettingMeta id="Simulator2D/SpillInterval" type="integer" name="Interval between spills" address="0" writable="true" step="1" minimum="1" maximum="3600" unit="s" />
+</Simulator2D>

@@ -390,9 +390,6 @@ void DialogSpectraTemplates::on_pushExport_clicked()
   QString fileName = CustomSaveFileDialog(this, "Save template spectra",
                                           root_dir_, "Template set (*.tem)");
   if (validateFile(this, fileName, true)) {
-    QFileInfo file(fileName);
-    if (file.suffix() != "tem")
-      fileName += ".tem";
     PL_INFO << "Writing templates to xml file " << fileName.toStdString();
     templates_.write_xml(fileName.toStdString());
   }

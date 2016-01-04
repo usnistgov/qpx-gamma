@@ -347,7 +347,7 @@ void FormManip1D::update_plot() {
 
   replot_markers();
 
-  std::string new_label = boost::algorithm::trim_copy(mySpectra->status());
+  std::string new_label = boost::algorithm::trim_copy(mySpectra->identity());
   ui->mcaPlot->setTitle(QString::fromStdString(new_label));
 
   //spectrumDetails(SelectorItem());

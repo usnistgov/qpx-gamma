@@ -182,7 +182,8 @@ void FormSystemSettings::toggle_push(bool enable, Qpx::DeviceStatus status) {
 
 void FormSystemSettings::loadSettings() {
   settings_.beginGroup("Program");
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
 
   ui->checkShowRO->setChecked(settings_.value("settings_table_show_readonly", true).toBool());
   on_checkShowRO_clicked();
@@ -270,7 +271,7 @@ void FormSystemSettings::on_pushSettingsRefresh_clicked()
 void FormSystemSettings::on_pushDetDB_clicked()
 {
   WidgetDetectors *det_widget = new WidgetDetectors(this);
-  det_widget->setData(detectors_, data_directory_);
+  det_widget->setData(detectors_, settings_directory_);
   connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(updateDetDB()));
   det_widget->exec();
 }

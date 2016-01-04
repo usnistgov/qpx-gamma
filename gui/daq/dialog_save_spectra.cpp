@@ -126,8 +126,7 @@ DialogSaveSpectra::DialogSaveSpectra(Qpx::SpectraSet& newset, QString outdir, QW
   std::string timenow = boost::posix_time::to_iso_string(boost::posix_time::second_clock::local_time());
 
   ui->lineName->setText(QString("Qpx") + QString::fromStdString(timenow));
-  if (my_set_->runInfo().state == Gamma::Setting())
-    ui->boxQpxFile->setChecked(false);
+  ui->boxQpxFile->setChecked(my_set_->identity() == "New project");
 }
 
 DialogSaveSpectra::~DialogSaveSpectra()
@@ -186,7 +185,7 @@ void DialogSaveSpectra::on_buttonBox_accepted()
 
   if (ui->boxQpxFile->isChecked()) {
     dir /= ui->lineName->text().toStdString() + ".qpx";
-    my_set_->write_xml(dir.string());
+    my_set_->save_as(dir.string());
   }
 
   filetime.stop();

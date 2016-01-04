@@ -27,6 +27,8 @@
 #include "custom_logger.h"
 #include "custom_timer.h"
 #include "form_daq_settings.h"
+#include "qt_util.h"
+
 
 FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
@@ -59,7 +61,7 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamm
       filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types) + ")");
     delete type_template;
   }
-  mca_load_formats_ = catFileTypes(filetypes);
+  mca_load_formats_ = catFileTypes(filetypes) + ";;Radware spn (*.spn)";
 
   //1d
   ui->Plot1d->setSpectra(spectra_);
@@ -74,6 +76,17 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamm
   connect(ui->Plot2d, SIGNAL(requestAnalysis(QString)), this, SLOT(reqAnal2D(QString)));
   connect(ui->Plot2d, SIGNAL(requestSymmetrize(QString)), this, SLOT(reqSym2D(QString)));
   ui->Plot2d->setDetDB(detectors_);
+
+  menuLoad.addAction(QIcon(":/new/icons/oxy/document_open.png"), "Open qpx project", this, SLOT(projectOpen()));
+  menuLoad.addAction(QIcon(":/new/icons/oxy/document_open_folder.png"), "Import spectra", this, SLOT(projectImport()));
+  ui->toolOpen->setMenu(&menuLoad);
+
+  menuSave.addAction(QIcon(":/new/icons/oxy/document_save.png"), "Save project", this, SLOT(projectSave()));
+  menuSave.addAction(QIcon(":/new/icons/oxy/document_save_as.png"), "Save project as...", this, SLOT(projectSaveAs()));
+  menuSave.addAction(QIcon(":/new/icons/oxy/document_save_all.png"), "Export spectra...", this, SLOT(projectExport()));
+  ui->toolSave->setMenu(&menuSave);
+
+  this->setWindowTitle(QString::fromStdString(spectra_.identity()));
 
   plot_thread_.start();
 }
@@ -104,8 +117,8 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
     my_analysis_2d_->close(); //assume always successful
   }
 
-  if (!spectra_.empty()) {
-    int reply = QMessageBox::warning(this, "Spectra still open",
+  if (spectra_.changed()) {
+    int reply = QMessageBox::warning(this, "Project contents changed",
                                      "Discard?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
     if (reply == QMessageBox::Yes) {
@@ -125,10 +138,11 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
 
 void FormMcaDaq::loadSettings() {
   settings_.beginGroup("Program");
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
-  spectra_templates_.read_xml(data_directory_.toStdString() + "/default_spectra.tem");
+  spectra_templates_.read_xml(settings_directory_.toStdString() + "/default_spectra.tem");
 
   settings_.beginGroup("McaDaq");
   ui->timeDuration->set_total_seconds(settings_.value("run_secs", 60).toULongLong());
@@ -176,19 +190,15 @@ void FormMcaDaq::saveSettings() {
 
 void FormMcaDaq::toggle_push(bool enable, Qpx::DeviceStatus status) {
   bool online = (status & Qpx::DeviceStatus::can_run);
-  bool offline = online || (status & Qpx::DeviceStatus::loaded);
   bool nonempty = !spectra_.empty();
 
-  ui->pushMcaLoad->setEnabled(enable);
-  ui->pushMcaReload->setEnabled(enable);
+  ui->pushMcaStart->setEnabled(enable && online && !my_run_);
 
-  ui->pushMcaStart->setEnabled(enable && online);
+  ui->timeDuration->setEnabled(enable && online && !ui->toggleIndefiniteRun->isChecked());
+  ui->toggleIndefiniteRun->setEnabled(enable && online);
 
-  ui->timeDuration->setEnabled(enable && offline && !ui->toggleIndefiniteRun->isChecked());
-  ui->toggleIndefiniteRun->setEnabled(enable && offline);
-
-  ui->pushMcaClear->setEnabled(enable && nonempty);
-  ui->pushMcaSave->setEnabled(enable && nonempty);
+  ui->toolOpen->setEnabled(enable && !my_run_);
+  ui->toolSave->setEnabled(enable && nonempty && !my_run_);
 }
 
 void FormMcaDaq::on_pushTimeNow_clicked()
@@ -213,6 +223,19 @@ void FormMcaDaq::update_plots() {
 
   CustomTimer guiside(true);
 
+  QString name = QString::fromStdString(spectra_.identity());
+  if (my_run_)
+    name += QString::fromUtf8("  \u25b6");
+  else if (spectra_.changed())
+      name += QString::fromUtf8(" \u2731");
+
+  if (name != this->windowTitle()) {
+    this->setWindowTitle(name);
+    emit toggleIO(true);
+  }
+
+  ui->pushEditSpectra->setVisible(spectra_.empty());
+
   if (ui->Plot2d->isVisible()) {
     this->setCursor(Qt::WaitCursor);
     ui->Plot2d->update_plot();
@@ -229,11 +252,49 @@ void FormMcaDaq::update_plots() {
 }
 
 
-void FormMcaDaq::on_pushMcaSave_clicked()
+void FormMcaDaq::projectSave()
+{
+  if (spectra_.changed() && (spectra_.identity() != "New project")) {
+    int reply = QMessageBox::warning(this, "Save?",
+                                     "Save changes to existing project: " + QString::fromStdString(spectra_.identity()),
+                                     QMessageBox::Yes|QMessageBox::Cancel);
+    if (reply == QMessageBox::Yes) {
+      this->setCursor(Qt::WaitCursor);
+      spectra_.save();
+      update_plots();
+    }
+  } else
+    projectSaveAs();
+}
+
+void FormMcaDaq::projectSaveAs()
+{
+  QString fileName = CustomSaveFileDialog(this, "Save project",
+                                          data_directory_, "qpx project file (*.qpx)");
+  if (validateFile(this, fileName, true)) {
+    PL_INFO << "Writing project to " << fileName.toStdString();
+    this->setCursor(Qt::WaitCursor);
+    spectra_.save_as(fileName.toStdString());
+    update_plots();
+  }
+}
+
+void FormMcaDaq::projectExport()
 {
   this->setCursor(Qt::WaitCursor);
   DialogSaveSpectra* newDialog = new DialogSaveSpectra(spectra_, data_directory_);
-  connect(newDialog, SIGNAL(accepted()), this, SLOT(update_plots())); //needs its own slot in case not saved
+  connect(newDialog, SIGNAL(accepted()), this, SLOT(after_export()));
+  connect(newDialog, SIGNAL(rejected()), this, SLOT(after_export()));
+  newDialog->exec();
+}
+
+void FormMcaDaq::after_export() {
+  this->setCursor(Qt::ArrowCursor);
+}
+
+void FormMcaDaq::on_pushEditSpectra_clicked()
+{
+  DialogSpectraTemplates* newDialog = new DialogSpectraTemplates(spectra_templates_, settings_directory_, this);
   newDialog->exec();
 }
 
@@ -241,11 +302,22 @@ void FormMcaDaq::on_pushMcaStart_clicked()
 {
   if (!spectra_.empty()) {
     int reply = QMessageBox::warning(this, "Continue?",
-                                     "Non-empty spectra in project. Append to existing data?",
+                                     "Non-empty spectra in project. Acquire and append to existing data?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
     if (reply != QMessageBox::Yes)
       return;
+    else
+      start_DAQ();
+  } else {
+    DialogSpectraTemplates* newDialog = new DialogSpectraTemplates(spectra_templates_, settings_directory_, this);
+    connect(newDialog, SIGNAL(accepted()), this, SLOT(start_DAQ()));
+    newDialog->exec();
   }
+}
+
+void FormMcaDaq::start_DAQ() {
+  if (spectra_.empty() && spectra_templates_.empty())
+    return;
 
   emit statusText("Spectra acquisition in progress...");
 
@@ -267,12 +339,15 @@ void FormMcaDaq::on_pushMcaStart_clicked()
   runner_thread_.do_run(spectra_, interruptor_, duration);
 }
 
-void FormMcaDaq::on_pushMcaReload_clicked()
+
+void FormMcaDaq::projectOpen()
 {
-  QString fileName = QFileDialog::getOpenFileName(this, "Load project", data_directory_, "qpx project file (*.qpx);;Radware spn (*.spn)");
+  QString fileName = QFileDialog::getOpenFileName(this, "Load project", data_directory_, "qpx project file (*.qpx)");
   if (!validateFile(this, fileName, false))
     return;
 
+
+  //save first?
   if (!spectra_.empty()) {
     int reply = QMessageBox::warning(this, "Clear existing?",
                                      "Spectra already open. Clear existing before opening?",
@@ -288,18 +363,7 @@ void FormMcaDaq::on_pushMcaReload_clicked()
   this->setCursor(Qt::WaitCursor);
   clearGraphs();
 
-  std::string ext(boost::filesystem::extension(fileName.toStdString()));
-  if (ext.size())
-    ext = ext.substr(1, ext.size()-1);
-  boost::algorithm::to_lower(ext);
-
-  if (ext == "qpx")
-    spectra_.read_xml(fileName.toStdString(), true);
-  else if (ext == "spn") {
-    spectra_.read_spn(fileName.toStdString());
-    for (auto &q : spectra_.spectra())
-      q->set_appearance(generateColor().rgba());
-  }
+  spectra_.read_xml(fileName.toStdString(), true);
 
   newProject();
   spectra_.activate();
@@ -309,7 +373,7 @@ void FormMcaDaq::on_pushMcaReload_clicked()
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormMcaDaq::on_pushMcaLoad_clicked()
+void FormMcaDaq::projectImport()
 {
   QStringList fileNames = QFileDialog::getOpenFileNames(this, "Load spectra", data_directory_, mca_load_formats_);
 
@@ -328,13 +392,25 @@ void FormMcaDaq::on_pushMcaLoad_clicked()
   this->setCursor(Qt::WaitCursor);
 
   for (int i=0; i<fileNames.size(); i++) {
-    PL_INFO << "Constructing spectrum from " << fileNames.at(i).toStdString();
-    Qpx::Spectrum::Spectrum* newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_file(fileNames.at(i).toStdString());
-    if (newSpectrum != nullptr) {
-      newSpectrum->set_appearance(generateColor().rgba());
-      spectra_.add_spectrum(newSpectrum);
+    PL_INFO << "Importing from " << fileNames.at(i).toStdString();
+
+    std::string ext(boost::filesystem::extension(fileNames.at(i).toStdString()));
+    if (ext.size())
+      ext = ext.substr(1, ext.size()-1);
+    boost::algorithm::to_lower(ext);
+
+    if (ext == "spn") {
+      spectra_.import_spn(fileNames.at(i).toStdString());
+      for (auto &q : spectra_.spectra())
+        q->set_appearance(generateColor().rgba());
     } else {
-      PL_INFO << "Spectrum construction did not succeed. Aborting";
+      Qpx::Spectrum::Spectrum* newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_file(fileNames.at(i).toStdString());
+      if (newSpectrum != nullptr) {
+        newSpectrum->set_appearance(generateColor().rgba());
+        spectra_.add_spectrum(newSpectrum);
+      } else {
+        PL_INFO << "Spectrum construction did not succeed.";
+      }
     }
   }
   newProject(); //NOT ALWAYS TRUE!!!
@@ -343,19 +419,6 @@ void FormMcaDaq::on_pushMcaLoad_clicked()
   emit toggleIO(true);
 
   this->setCursor(Qt::ArrowCursor);
-}
-
-void FormMcaDaq::on_pushMcaClear_clicked()
-{
-  int reply = QMessageBox::warning(this, "Clear spectra?",
-                                   "Clear all spectra?",
-                                   QMessageBox::Yes|QMessageBox::No);
-  if (reply == QMessageBox::Yes) {
-    clearGraphs();
-    ui->pushMcaSave->setEnabled(false);
-    ui->pushMcaClear->setEnabled(false);
-    //spectra_.activate();
-  }
 }
 
 void FormMcaDaq::updateSpectraUI() {
@@ -379,18 +442,15 @@ void FormMcaDaq::on_pushMcaStop_clicked()
 void FormMcaDaq::run_completed() {
   if (my_run_) {
     //PL_INFO << "FormMcaDaq received signal for run completed";
-    update_plots();
     ui->pushMcaStop->setEnabled(false);
-    emit toggleIO(true);
     my_run_ = false;
+
+    update_plots();
+
+    emit toggleIO(true);
   }
 }
 
-void FormMcaDaq::on_pushEditSpectra_clicked()
-{
-  DialogSpectraTemplates* newDialog = new DialogSpectraTemplates(spectra_templates_, data_directory_, this);
-  newDialog->exec();
-}
 
 void FormMcaDaq::reqAnal(QString name) {
   this->setCursor(Qt::WaitCursor);

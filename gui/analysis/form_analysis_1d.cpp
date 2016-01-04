@@ -86,13 +86,18 @@ void FormAnalysis1D::closeEvent(QCloseEvent *event) {
 
 void FormAnalysis1D::loadSettings() {
   settings_.beginGroup("Program");
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
   ui->plotSpectrum->loadSettings(settings_);
 }
 
 void FormAnalysis1D::saveSettings() {
+//  settings_.beginGroup("Program");
+//  settings_.setValue("save_directory", data_directory_);
+//  settings_.endGroup();
+
   ui->plotSpectrum->saveSettings(settings_);
 }
 
@@ -172,7 +177,7 @@ void FormAnalysis1D::update_detector_calibs()
   msg_text +=  "<nobr>" + fit_data_.nrg_cali_.to_string() + "</nobr><br/>"
                "<nobr>" + fit_data_.fwhm_cali_.to_string() + "</nobr><br/>"
                "<nobr>  to all spectra in current project: </nobr><br/>"
-               "<nobr>" + spectra_->status() + "</nobr>";
+               "<nobr>" + spectra_->identity() + "</nobr>";
 
   std::string question_text("Do you also want to save this calibration to ");
   question_text += fit_data_.detector_.name_ + " in detector database?";
@@ -238,7 +243,7 @@ void FormAnalysis1D::update_detector_calibs()
     Qpx::RunInfo ri = spectra_->runInfo();
     for (auto &p : ri.detectors) {
       if (p.shallow_equals(fit_data_.detector_)) {
-        PL_INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " in current project " << spectra_->status();
+        PL_INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " in current project " << spectra_->identity();
         p.energy_calibrations_.replace(fit_data_.nrg_cali_);
         p.fwhm_calibration_ = fit_data_.fwhm_cali_;
       }
@@ -252,9 +257,6 @@ void FormAnalysis1D::save_report()
   QString fileName = CustomSaveFileDialog(this, "Save analysis report",
                                           data_directory_, "Plain text (*.txt)");
   if (validateFile(this, fileName, true)) {
-    QFileInfo file(fileName);
-    if (file.suffix() != "txt")
-      fileName += ".txt";
     PL_INFO << "Writing report to " << fileName.toStdString();
     fit_data_.save_report(fileName.toStdString());
   }

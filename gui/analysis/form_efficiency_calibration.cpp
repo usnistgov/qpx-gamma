@@ -35,6 +35,7 @@ FormEfficiencyCalibration::FormEfficiencyCalibration(QSettings &settings, XMLabl
   settings_(settings)
 {
   ui->setupUi(this);
+  this->setWindowTitle("Efficiency calib");
 
   loadSettings();
 
@@ -107,11 +108,12 @@ void FormEfficiencyCalibration::closeEvent(QCloseEvent *event) {
 
 void FormEfficiencyCalibration::loadSettings() {
   settings_.beginGroup("Program");
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
   ui->plotSpectrum->loadSettings(settings_);
-  ui->isotopes->setDir(data_directory_);
+  ui->isotopes->setDir(settings_directory_);
 
   settings_.beginGroup("Efficiency_calibration");
   ui->spinTerms->setValue(settings_.value("fit_function_terms", 2).toInt());
@@ -625,7 +627,7 @@ void FormEfficiencyCalibration::on_pushApplyCalib_clicked()
 void FormEfficiencyCalibration::on_pushDetDB_clicked()
 {
   WidgetDetectors *det_widget = new WidgetDetectors(this);
-  det_widget->setData(detectors_, data_directory_);
+  det_widget->setData(detectors_, settings_directory_);
   connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
   det_widget->exec();
 }

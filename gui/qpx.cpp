@@ -79,6 +79,7 @@ qpx::qpx(QWidget *parent) :
   QPushButton *tb = new QPushButton();
   tb->setIcon(QIcon(":/new/icons/oxy/filenew.png"));
   tb->setIconSize(QSize(16, 16));
+  tb->setToolTip("New project");
   tb->setFlat(true);
   connect(tb, SIGNAL(clicked()), this, SLOT(openNewProject()));
   // Add empty, not enabled tab to tabWidget
@@ -150,7 +151,7 @@ void qpx::profile_chosen(QString profile, bool boot) {
   loadSettings();
 
   main_tab_ = new FormStart(runner_thread_, settings_, detectors_, profile, this);
-  ui->qpxTabs->addTab(main_tab_, "Settings");
+  ui->qpxTabs->addTab(main_tab_, main_tab_->windowTitle());
   ui->qpxTabs->tabBar()->tabButton(ui->qpxTabs->count() - 1, QTabBar::RightSide)->resize(0,0);
   connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
@@ -183,11 +184,14 @@ void qpx::loadSettings() {
   QRect myrect = settings_.value("position",QRect(20,20,1234,650)).toRect();
   ui->splitter->restoreState(settings_.value("splitter").toByteArray());
   setGeometry(myrect);
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+
+  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
+
   settings_.endGroup();
 
   detectors_.clear();
-  detectors_.read_xml(data_directory_.toStdString() + "/default_detectors.det");
+  detectors_.read_xml(settings_directory_.toStdString() + "/default_detectors.det");
 }
 
 void qpx::saveSettings() {
@@ -195,9 +199,10 @@ void qpx::saveSettings() {
   settings_.setValue("position", this->geometry());
   settings_.setValue("splitter", ui->splitter->saveState());
   settings_.setValue("save_directory", data_directory_);
+  settings_.setValue("settings_directory", settings_directory_);
   settings_.endGroup();
 
-  detectors_.write_xml(data_directory_.toStdString() + "/default_detectors.det");
+  detectors_.write_xml(settings_directory_.toStdString() + "/default_detectors.det");
 }
 
 void qpx::updateStatusText(QString text) {
@@ -218,6 +223,16 @@ void qpx::toggleIO(bool enable) {
     ui->statusBar->showMessage("Offline");
   else
     ui->statusBar->showMessage("Busy");
+
+  for (int i = 0; i < ui->qpxTabs->count(); ++i) {
+
+    ui->qpxTabs->setTabText(i, ui->qpxTabs->widget(i)->windowTitle());
+//    if (ui->qpxTabs->tabText(i).isEmpty() && (i != (ui->qpxTabs->count() - 1)))
+//      ui->qpxTabs->tabBar()->moveTab(i, ui->qpxTabs->count() - 1);
+
+//    ui->qpxTabs->addTab(formAnal, formAnal->windowTitle());
+
+  }
 
   emit toggle_push(enable, px_status_);
 }
@@ -273,7 +288,7 @@ void qpx::symmetrize_2d(FormSymmetrize2D* formSym) {
 void qpx::openNewProject()
 {
   FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, settings_, detectors_, this);
-  ui->qpxTabs->addTab(newSpectraForm, "Project");
+  ui->qpxTabs->addTab(newSpectraForm, newSpectraForm->windowTitle());
   connect(newSpectraForm, SIGNAL(requestAnalysis(FormAnalysis1D*)), this, SLOT(analyze_1d(FormAnalysis1D*)));
   connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
   connect(newSpectraForm, SIGNAL(requestSymmetriza2D(FormSymmetrize2D*)), this, SLOT(symmetrize_2d(FormSymmetrize2D*)));
@@ -282,11 +297,12 @@ void qpx::openNewProject()
   connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
 
+
   ui->qpxTabs->setCurrentWidget(newSpectraForm);
 
   reorder_tabs();
 
-  emit toggle_push(gui_enabled_, px_status_);
+  newSpectraForm->toggle_push(true, px_status_);
 }
 
 void qpx::reorder_tabs() {
@@ -302,8 +318,11 @@ void qpx::tabs_moved(int, int) {
 
 void qpx::open_list()
 {
+  if (hasTab("List view") || hasTab("List view >>"))
+    return;
+
   FormListDaq *newListForm = new FormListDaq(runner_thread_, settings_, this);
-  ui->qpxTabs->addTab(newListForm, "List view");
+  ui->qpxTabs->addTab(newListForm, newListForm->windowTitle());
 
   connect(newListForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(newListForm, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
@@ -319,11 +338,11 @@ void qpx::open_list()
 void qpx::open_optimization()
 {
   //limit only one of these
-  if (hasTab("Optimization"))
+  if (hasTab("Optimization") || hasTab("Optimization >>"))
     return;
 
   FormOptimization *newOpt = new FormOptimization(runner_thread_, settings_, detectors_, this);
-  ui->qpxTabs->addTab(newOpt, "Optimization");
+  ui->qpxTabs->addTab(newOpt, newOpt->windowTitle());
 
   connect(newOpt, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
   connect(newOpt, SIGNAL(settings_changed()), this, SLOT(update_settings()));
@@ -340,11 +359,11 @@ void qpx::open_optimization()
 void qpx::open_gain_matching()
 {
   //limit only one of these
-  if (hasTab("Gain matching"))
+  if (hasTab("Gain matching") || hasTab("Gain matching >>"))
     return;
 
   FormGainMatch *newGain = new FormGainMatch(runner_thread_, settings_, detectors_, this);
-  ui->qpxTabs->addTab(newGain, "Gain matching");
+  ui->qpxTabs->addTab(newGain, newGain->windowTitle());
 
   connect(newGain, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
 
@@ -367,7 +386,7 @@ bool qpx::hasTab(QString tofind) {
 void qpx::open_efficiency_cal()
 {
   FormEfficiencyCalibration *newEfficienyForm = new FormEfficiencyCalibration(settings_, detectors_, this);
-  ui->qpxTabs->addTab(newEfficienyForm, "Efficiency calibration");
+  ui->qpxTabs->addTab(newEfficienyForm, newEfficienyForm->windowTitle());
 
   connect(newEfficienyForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   //connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newEfficienyForm, SLOT(toggle_push(bool,Qpx::DeviceStatus)));

@@ -39,6 +39,7 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
   my_run_(false)
 {
   ui->setupUi(this);
+  this->setWindowTitle("Gain matching");
 
   loadSettings();
   connect(&gm_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
@@ -448,8 +449,6 @@ void FormGainMatch::update_plots() {
       ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_baseline_), ap_optimized_);
     }
 
-    std::string new_label = boost::algorithm::trim_copy(gm_spectra_.status());
-    ui->plot->setTitle(QString::fromStdString(new_label));
 
     ui->plot->setYBounds(minima, maxima);
     ui->plot->replot_markers();

@@ -79,6 +79,8 @@ private:
 
   //from parent
   QString data_directory_;
+  QString settings_directory_;
+
   XMLableDB<Gamma::Detector> &detectors_;
   Gamma::Fitter &fit_data_;
   

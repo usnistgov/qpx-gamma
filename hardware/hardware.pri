@@ -57,6 +57,10 @@ HEADERS  += $$files($$PWD/../engine/*.h) \
     error( "Couldn't find the sorter.pri file!" )
 }
 
+! include( $$PWD/sorter_evt/sorter_evt.pri ) {
+    error( "Couldn't find the sorter_evt.pri file!" )
+}
+
 ! include( $$PWD/simulator2d/simulator2d.pri ) {
     error( "Couldn't find the simulator2d.pri file!" )
 }

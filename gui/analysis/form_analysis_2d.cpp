@@ -208,7 +208,8 @@ void FormAnalysis2D::closeEvent(QCloseEvent *event) {
 
 void FormAnalysis2D::loadSettings() {
   settings_.beginGroup("Program");
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
   settings_.beginGroup("AnalysisMatrix");

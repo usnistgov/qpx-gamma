@@ -57,6 +57,18 @@ QString CustomSaveFileDialog(QWidget *parent,
         file_name += QLatin1String(".") + extension;
       }
     }
+
+    QFile file(file_name);
+    if (file.exists()) {
+        QMessageBox msgBox;
+        msgBox.setText("Replace?");
+        msgBox.setInformativeText("File \'" + file_name + "\' already exists. Replace?");
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
+        msgBox.setDefaultButton(QMessageBox::Cancel);
+        if (msgBox.exec() != QMessageBox::Yes)
+          return QString();
+    }
+
     return file_name;
   } else {
     return QString();

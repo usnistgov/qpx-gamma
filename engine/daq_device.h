@@ -41,6 +41,7 @@ enum DeviceStatus {
 
 inline DeviceStatus operator|(DeviceStatus a, DeviceStatus b) {return static_cast<DeviceStatus>(static_cast<int>(a) | static_cast<int>(b));}
 inline DeviceStatus operator&(DeviceStatus a, DeviceStatus b) {return static_cast<DeviceStatus>(static_cast<int>(a) & static_cast<int>(b));}
+inline DeviceStatus operator^(DeviceStatus a, DeviceStatus b) {return static_cast<DeviceStatus>(static_cast<int>(a) ^ static_cast<int>(b));}
 
 
 class DaqDevice {

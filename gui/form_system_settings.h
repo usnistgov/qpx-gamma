@@ -94,6 +94,7 @@ private:
 
   XMLableDB<Gamma::Detector>            &detectors_;
   QString data_directory_;
+  QString settings_directory_;
 
   ThreadRunner        &runner_thread_;
   QSettings           &settings_;

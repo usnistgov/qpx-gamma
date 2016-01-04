@@ -57,24 +57,23 @@ signals:
 protected:
   void closeEvent(QCloseEvent*);
 
+public slots:
+  void toggle_push(bool, Qpx::DeviceStatus);
+
 private slots:
   void on_pushMcaStart_clicked();
   void on_pushMcaStop_clicked();
-  void on_pushMcaSave_clicked();
-  void on_pushMcaLoad_clicked();
-  void on_pushMcaClear_clicked();
-  void on_pushMcaReload_clicked();
   void on_pushTimeNow_clicked();
   void run_completed();
   void on_pushEditSpectra_clicked();
   void update_plots();
+  void after_export();
   void clearGraphs();
 
+  void start_DAQ();
   void newProject();
   void updateSpectraUI();
 
-
-  void toggle_push(bool, Qpx::DeviceStatus);
 
   void on_pushEnable2d_clicked();
 
@@ -94,6 +93,12 @@ private slots:
 
   void on_pushEfficiencyCal_clicked();
 
+  void projectSave();
+  void projectSaveAs();
+  void projectExport();
+  void projectOpen();
+  void projectImport();
+
 private:
   Ui::FormMcaDaq *ui;
   QSettings                  &settings_;
@@ -101,6 +106,8 @@ private:
   XMLableDB<Gamma::Detector> &detectors_;
 
   QString data_directory_;    //data directory
+  QString settings_directory_;
+
   QString mca_load_formats_;  //valid mca file formats that can be opened
 
   XMLableDB<Qpx::Spectrum::Template>  spectra_templates_;
@@ -113,6 +120,10 @@ private:
   FormAnalysis2D* my_analysis_2d_;
   FormSymmetrize2D* my_symmetrization_2d_;
   bool my_run_;
+
+  QMenu  menuLoad;
+  QMenu  menuSave;
+
 
   void loadSettings();
   void saveSettings();

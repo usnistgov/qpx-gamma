@@ -38,6 +38,8 @@ FormListDaq::FormListDaq(ThreadRunner &thread, QSettings &settings, QWidget *par
 {
   ui->setupUi(this);
 
+  this->setWindowTitle("List view");
+
   loadSettings();
 
   connect(&runner_thread_, SIGNAL(listComplete(Qpx::ListData*)), this, SLOT(list_completed(Qpx::ListData*)));
@@ -57,7 +59,8 @@ FormListDaq::FormListDaq(ThreadRunner &thread, QSettings &settings, QWidget *par
 
 void FormListDaq::loadSettings() {
   settings_.beginGroup("Program");
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
 
@@ -147,6 +150,8 @@ void FormListDaq::on_pushListStart_clicked()
 {
   emit statusText("List mode acquisition in progress...");
 
+  this->setWindowTitle("List view >>");
+
   emit toggleIO(false);
   ui->pushListStop->setEnabled(true);
   my_run_ = true;
@@ -177,6 +182,8 @@ void FormListDaq::list_completed(Qpx::ListData* newEvents) {
     displayTraces();
 
     ui->pushListStop->setEnabled(false);
+    this->setWindowTitle("List view");
+
     emit toggleIO(true);
     my_run_ = false;
   }

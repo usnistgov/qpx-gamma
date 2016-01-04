@@ -1,0 +1,103 @@
+<?xml version="1.0"?>
+<SpectrumTemplates>
+	<SpectrumTemplate Type="1D">
+		<Name>Detector1</Name>
+		<Appearance>2248147199</Appearance>
+		<Visible>1</Visible>
+		<Resolution>14</Resolution>
+		<MatchPattern>1 0 0 0</MatchPattern>
+		<AddPattern>1 0 0 0</AddPattern>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>Detector2</Name>
+		<Appearance>2161633545</Appearance>
+		<Visible>1</Visible>
+		<Resolution>14</Resolution>
+		<MatchPattern>0 1 0 0</MatchPattern>
+		<AddPattern>0 1 0 0</AddPattern>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="LFC1D">
+		<Name>Detector1_LFC</Name>
+		<Appearance>2151556554</Appearance>
+		<Visible>0</Visible>
+		<Resolution>14</Resolution>
+		<MatchPattern>1 0 0 0</MatchPattern>
+		<AddPattern>1 0 0 0</AddPattern>
+		<Attributes>
+			<Setting id="time_sample" type="floating" index="-1" value="60">
+				<SettingMeta id="" type="floating" address="0" writable="true" step="1" minimum="0" maximum="3600" unit="seconds" description="minimum Δt before compensating" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="LFC1D">
+		<Name>Detector2_LFC</Name>
+		<Appearance>2160168748</Appearance>
+		<Visible>0</Visible>
+		<Resolution>14</Resolution>
+		<MatchPattern>0 1 0 0</MatchPattern>
+		<AddPattern>0 1 0 0</AddPattern>
+		<Attributes>
+			<Setting id="time_sample" type="floating" index="-1" value="60">
+				<SettingMeta id="" type="floating" address="0" writable="true" step="1" minimum="0" maximum="3600" unit="seconds" description="minimum Δt before compensating" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>Detector1_co2</Name>
+		<Appearance>2147572189</Appearance>
+		<Visible>1</Visible>
+		<Resolution>14</Resolution>
+		<MatchPattern>1 1 0 0</MatchPattern>
+		<AddPattern>1 0 0 0</AddPattern>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>Detector2_co1</Name>
+		<Appearance>2159807195</Appearance>
+		<Visible>1</Visible>
+		<Resolution>14</Resolution>
+		<MatchPattern>1 1 0 0</MatchPattern>
+		<AddPattern>0 1 0 0</AddPattern>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>Detector1_anti2</Name>
+		<Appearance>2148904913</Appearance>
+		<Visible>0</Visible>
+		<Resolution>14</Resolution>
+		<MatchPattern>1 -1 0 0</MatchPattern>
+		<AddPattern>1 0 0 0</AddPattern>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>Detector2_anti1</Name>
+		<Appearance>2162304260</Appearance>
+		<Visible>0</Visible>
+		<Resolution>14</Resolution>
+		<MatchPattern>-1 1 0 0</MatchPattern>
+		<AddPattern>0 1 0 0</AddPattern>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="2D">
+		<Name>Matrix12bit</Name>
+		<Appearance>4278190080</Appearance>
+		<Visible>1</Visible>
+		<Resolution>12</Resolution>
+		<MatchPattern>1 1 0 0</MatchPattern>
+		<AddPattern>1 1 0 0</AddPattern>
+		<Attributes>
+			<Setting id="buffered" type="boolean" index="-1" value="true">
+				<SettingMeta id="" type="boolean" address="0" writable="true" unit="T/F" description="Buffered output for efficient plotting (more memory)" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="2D">
+		<Name>Matrix14bit</Name>
+		<Appearance>4278190080</Appearance>
+		<Visible>0</Visible>
+		<Resolution>14</Resolution>
+		<MatchPattern>1 1 0 0</MatchPattern>
+		<AddPattern>1 1 0 0</AddPattern>
+		<Attributes>
+			<Setting id="buffered" type="boolean" index="-1" value="true">
+				<SettingMeta id="" type="boolean" address="0" writable="true" unit="T/F" description="Buffered output for efficient plotting (more memory)" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+</SpectrumTemplates>

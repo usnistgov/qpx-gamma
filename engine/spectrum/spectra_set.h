@@ -35,7 +35,8 @@ namespace Qpx {
 
 class SpectraSet {
  public:
-  SpectraSet(): ready_(false), newdata_(false), terminating_(false) {}
+  SpectraSet(): ready_(false), newdata_(false), terminating_(false), changed_(false),
+    identity_("New project") {}
   ~SpectraSet();
 
   ////control//////
@@ -47,10 +48,12 @@ class SpectraSet {
   void set_spectra(const XMLableDB<Spectrum::Template>&);
   void add_spectrum(Spectrum::Spectrum* newSpectrum);
 
-  void read_spn(std::string file_name);
+  void import_spn(std::string file_name);
+
+  void save();
+  void save_as(std::string file_name);
 
   void read_xml(std::string file_name, bool with_spectra = true, bool with_full_spectra = true);
-  void write_xml(std::string file_name);
 
   void delete_spectrum(std::string name);
 
@@ -66,9 +69,12 @@ class SpectraSet {
   //report on contents
   std::vector<std::string> types() const;
   std::set<uint32_t>      resolutions(uint16_t dim) const;
-  std::string status() const {
-    boost::unique_lock<boost::mutex> lock(mutex_); return status_;
+  std::string identity() const {
+    boost::unique_lock<boost::mutex> lock(mutex_); return identity_;
   }
+
+  bool changed();
+
   RunInfo runInfo() const {
     boost::unique_lock<boost::mutex> lock(mutex_); return run_info_;
   }
@@ -90,10 +96,14 @@ class SpectraSet {
   //data
   std::list<Spectrum::Spectrum*> my_spectra_;
   RunInfo run_info_;
-  std::string status_;
+
+  std::string identity_;
+  bool        changed_;
 
   //helpers
   void clear_helper();
+  void write_xml(std::string file_name);
+
 };
 
 }

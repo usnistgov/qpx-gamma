@@ -74,9 +74,11 @@ struct Metadata {
   boost::posix_time::ptime  start_time;
   std::vector<Gamma::Detector> detectors;
 
+  bool changed;
+
  Metadata() : bits(0), dimensions(0), resolution(0), attributes("Attributes"),
     name("uninitialized_spectrum"), total_count(0.0), max_chan(0), max_count(0), rescale_factor(1),
-    appearance(0), visible(false), recent_count(0) {}
+    appearance(0), visible(false), recent_count(0), changed(false) {}
 };
 
 
@@ -145,6 +147,7 @@ public:
   void set_real_time(boost::posix_time::time_duration);
   void set_live_time(boost::posix_time::time_duration);
   void set_rescale_factor(PreciseFloat);
+  void reset_changed();
 
 protected:
   ////////////////////////////////////////

@@ -521,8 +521,6 @@ void WidgetDetectors::on_pushExport_clicked()
                                           root_dir_, "Detector settings (*.det)");
   if (validateFile(this, fileName, true)) {
     QFileInfo file(fileName);
-    if (file.suffix() != "det")
-      fileName += ".det";
     PL_INFO << "Writing detector settings to xml file " << fileName.toStdString();
     detectors_->write_xml(fileName.toStdString());
   }

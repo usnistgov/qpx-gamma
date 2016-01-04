@@ -81,6 +81,8 @@ private:
 
   //from parent
   QString data_directory_;
+  QString settings_directory_;
+
   Qpx::SpectraSet *spectra_;
   QString current_spectrum_;
   MarkerBox2D range2d;

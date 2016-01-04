@@ -238,6 +238,10 @@ void ThreadRunner::run()
       running_.store(true);
 
     if (action_ == kMCA) {
+      engine_.get_all_settings();
+      engine_.save_optimization();
+      Qpx::DeviceStatus ds = engine_.status() ^ Qpx::DeviceStatus::can_run;
+      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), ds);
       interruptor_->store(false);
       engine_.getMca(timeout_, *spectra_, *interruptor_);
       action_ = kSettingsRefresh;

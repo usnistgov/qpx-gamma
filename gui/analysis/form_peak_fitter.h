@@ -65,6 +65,7 @@ private:
 
   //from parent
   QString data_directory_;
+  QString settings_directory_;
 
   Gamma::Fitter &fit_data_;
 

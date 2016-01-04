@@ -38,6 +38,7 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   my_run_(false)
 {
   ui->setupUi(this);
+  this->setWindowTitle("Optimization");
 
   //loadSettings();
   connect(&opt_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));

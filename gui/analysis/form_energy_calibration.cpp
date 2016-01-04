@@ -83,10 +83,11 @@ bool FormEnergyCalibration::save_close() {
 
 void FormEnergyCalibration::loadSettings() {
   settings_.beginGroup("Program");
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
-  ui->isotopes->setDir(data_directory_);
+  ui->isotopes->setDir(settings_directory_);
 
   settings_.beginGroup("Energy_calibration");
   ui->spinTerms->setValue(settings_.value("fit_function_terms", 2).toInt());
@@ -308,7 +309,7 @@ void FormEnergyCalibration::on_pushFromDB_clicked()
 void FormEnergyCalibration::on_pushDetDB_clicked()
 {
   WidgetDetectors *det_widget = new WidgetDetectors(this);
-  det_widget->setData(detectors_, data_directory_);
+  det_widget->setData(detectors_, settings_directory_);
   connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
   det_widget->exec();
 }

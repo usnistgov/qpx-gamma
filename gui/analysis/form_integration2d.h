@@ -139,6 +139,7 @@ private:
 
   //from parent
   QString data_directory_;
+  QString settings_directory_;
 
   int32_t index_of(MarkerBox2D);
   int32_t index_of(double, double);

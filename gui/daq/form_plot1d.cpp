@@ -232,7 +232,7 @@ void FormPlot1D::update_plot() {
 
   replot_markers();
 
-  std::string new_label = boost::algorithm::trim_copy(mySpectra->status());
+  std::string new_label = boost::algorithm::trim_copy(mySpectra->identity());
   ui->mcaPlot->setTitle(QString::fromStdString(new_label));
 
   spectrumDetails(SelectorItem());
@@ -440,7 +440,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
       else
         q->set_rescale_factor(0);
     }
-  update_plot();
+  updateUI();
 }
 
 void FormPlot1D::on_pushRescaleReset_clicked()
@@ -448,7 +448,7 @@ void FormPlot1D::on_pushRescaleReset_clicked()
   for (auto &q: mySpectra->spectra(1, -1))
     if (q)
       q->set_rescale_factor(1);
-  update_plot();
+  updateUI();
 }
 
 void FormPlot1D::on_pushManip1D_clicked()

@@ -84,6 +84,7 @@ private:
   ThreadRunner        &runner_thread_;
   QSettings           &settings_;
   QString data_directory_;    //data directory
+  QString settings_directory_;
 
   boost::atomic<bool> interruptor_;
 

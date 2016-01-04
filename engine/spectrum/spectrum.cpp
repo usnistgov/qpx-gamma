@@ -336,6 +336,14 @@ void Spectrum::set_detectors(const std::vector<Gamma::Detector>& dets) {
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   
   this->_set_detectors(dets);
+  metadata_.changed = true;
+}
+
+void Spectrum::reset_changed() {
+  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+  while (!uniqueLock.try_lock())
+    boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  metadata_.changed = false;
 }
 
 void Spectrum::_set_detectors(const std::vector<Gamma::Detector>& dets) {
@@ -437,6 +445,8 @@ void Spectrum::set_visible(bool vis) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  if (metadata_.visible != vis)
+    metadata_.changed = true;
   metadata_.visible = vis;
 }
 
@@ -444,6 +454,8 @@ void Spectrum::set_appearance(uint32_t newapp) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  if (metadata_.appearance != newapp)
+    metadata_.changed = true;
   metadata_.appearance = newapp;
 }
 
@@ -451,6 +463,8 @@ void Spectrum::set_start_time(boost::posix_time::ptime newtime) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  if (metadata_.start_time != newtime)
+    metadata_.changed = true;
   metadata_.start_time = newtime;
 }
 
@@ -458,6 +472,8 @@ void Spectrum::set_real_time(boost::posix_time::time_duration tm) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  if (metadata_.real_time != tm)
+    metadata_.changed = true;
   metadata_.real_time = tm;
 }
 
@@ -465,6 +481,8 @@ void Spectrum::set_live_time(boost::posix_time::time_duration tm) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  if (metadata_.live_time != tm)
+    metadata_.changed = true;
   metadata_.live_time = tm;
 }
 
@@ -472,6 +490,8 @@ void Spectrum::set_description(std::string newdesc) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  if (metadata_.description != newdesc)
+    metadata_.changed = true;
   metadata_.description = newdesc;
 }
 
@@ -480,8 +500,11 @@ void Spectrum::set_generic_attr(Gamma::Setting setting) {
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   for (auto &q : metadata_.attributes.my_data_) {
-    if ((q.id_ == setting.id_) && (q.metadata.writable))
+    if ((q.id_ == setting.id_) && (q.metadata.writable)) {
+      if (q != setting)
+        metadata_.changed = true;
       q = setting;
+    }
   }
 }
 
@@ -489,6 +512,8 @@ void Spectrum::set_rescale_factor(PreciseFloat newfactor) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  if (metadata_.rescale_factor != newfactor)
+    metadata_.changed = true;
   metadata_.rescale_factor = newfactor;
 }
 

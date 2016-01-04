@@ -114,7 +114,7 @@ WidgetProfiles::WidgetProfiles(QSettings &settings, QWidget *parent) :
   ui->setupUi(this);
 
   settings_.beginGroup("Program");
-  root_dir_ = settings_.value("save_directory", QDir::homePath() + "/qpxdata").toString();
+  root_dir_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   settings_.endGroup();
 
   ui->pushDelete->setVisible(false);
@@ -261,7 +261,7 @@ void WidgetProfiles::on_OutputDirFind_clicked()
     root_dir_ = QDir(dirName).absolutePath();
 
     settings_.beginGroup("Program");
-    settings_.setValue("save_directory", root_dir_);
+    settings_.setValue("settings_directory", root_dir_);
     settings_.endGroup();
 
     update_profiles();
