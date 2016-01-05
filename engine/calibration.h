@@ -30,10 +30,11 @@
 #include "xmlable.h"
 #include "polynomial.h"
 #include "polylog.h"
+#include "log_inverse.h"
 
 namespace Gamma {
 
-enum class CalibrationModel : int {none = 0, polynomial = 1, polylog = 2, polyinv = 3, effit = 4};
+enum class CalibrationModel : int {none = 0, polynomial = 1, polylog = 2, loginverse = 3, effit = 4};
 
 class Calibration : public XMLable {
  public:

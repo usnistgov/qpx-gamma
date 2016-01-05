@@ -51,6 +51,8 @@ double Calibration::transform(double chan) const {
     return Polynomial(coefficients_).evaluate(chan);
   else if (bits_ && (model_ == CalibrationModel::polylog))
     return PolyLog(coefficients_).evaluate(chan);
+  else if (bits_ && (model_ == CalibrationModel::loginverse))
+    return LogInverse(coefficients_).evaluate(chan);
   else
     return chan;
 }
@@ -101,6 +103,8 @@ std::string Calibration::fancy_equation(int precision, bool with_rsq) {
     return Polynomial(coefficients_).to_UTF8(precision, with_rsq);
   else if (bits_ && (model_ == CalibrationModel::polylog))
     return PolyLog(coefficients_).to_UTF8(precision, with_rsq);
+  else if (bits_ && (model_ == CalibrationModel::loginverse))
+    return LogInverse(coefficients_).to_UTF8(precision, with_rsq);
   else
     return "N/A"; 
 }
@@ -169,6 +173,8 @@ void Calibration::to_xml(pugi::xml_node &root) const {
     model_str = "Polynomial";
   else if (model_ == CalibrationModel::polylog)
     model_str = "PolyLog";
+  else if (model_ == CalibrationModel::loginverse)
+    model_str = "LogInverse";
   node.append_child("Equation").append_attribute("Model").set_value(model_str.c_str());
 
   if ((model_ != CalibrationModel::none) && (coefficients_.size()))
@@ -199,6 +205,8 @@ void Calibration::from_xml(const pugi::xml_node &node) {
     model_ = CalibrationModel::polynomial;
   else if (model_str == "PolyLog")
     model_ = CalibrationModel::polylog;
+  else if (model_str == "LogInverse")
+    model_ = CalibrationModel::loginverse;
   coef_from_string(std::string(node.child("Equation").child_value("Coefficients")));
 
 }

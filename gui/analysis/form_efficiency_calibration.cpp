@@ -383,25 +383,19 @@ void FormEfficiencyCalibration::replot_calib() {
     }
   }
 
-  double x_margin = (xmax - xmin) / 10;
-  xmax += x_margin;
-  xmin -= x_margin;
-
-  if (xmin < 0)
-    xmin = 0;
 
   if (have_data) {
     ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
     if (new_calibration_.valid()) {
       xx.clear(); yy.clear();
-      double step = (xmax-xmin) / 150.0;
+      double step = (xmax-xmin) / 300.0;
+      xmin -= step;
+      xmax += (step * 100);
 
       for (double i=xmin; i < xmax; i+=step) {
         double y = new_calibration_.transform(i);
-//        if (y > 0.01) {
-          xx.push_back(i);
-          yy.push_back(y);
-//        }
+        xx.push_back(i);
+        yy.push_back(y);
       }
       ui->PlotCalib->addFit(xx, yy, style_fit);
       ui->PlotCalib->setFloatingText("ε = " + QString::fromStdString(new_calibration_.fancy_equation(3, true)));
@@ -500,13 +494,9 @@ void FormEfficiencyCalibration::toggle_push() {
     }
   }
 
-  if (points_for_calib > 1) {
-    ui->pushFit->setEnabled(true);
-    ui->spinTerms->setEnabled(true);
-  } else {
-    ui->pushFit->setEnabled(false);
-    ui->spinTerms->setEnabled(false);
-  }
+  ui->pushFit->setEnabled(points_for_calib > 1);
+  ui->pushFit_2->setEnabled(points_for_calib > 1);
+  ui->spinTerms->setEnabled(points_for_calib > 1);
 
   if (new_calibration_ != Gamma::Calibration())
     ui->pushApplyCalib->setEnabled(true);
@@ -626,4 +616,49 @@ void FormEfficiencyCalibration::on_doubleScaleFactor_valueChanged(double arg1)
   if (!fit_data_.metadata_.name.empty()) //should be ==Gamma::Setting()
     peak_sets_[fit_data_.metadata_.name] = fit_data_;
   replot_calib();
+}
+
+void FormEfficiencyCalibration::on_pushFit_2_clicked()
+{
+  QVector<SelectorItem> items = ui->spectrumSelector->items();
+  std::vector<double> xx, yy;
+
+  for (auto &fit : peak_sets_) {
+    bool visible = false;
+
+    for (auto &i : items)
+      if (i.visible && (fit.second.metadata_.name == i.text.toStdString()))
+        visible = true;
+
+    if (visible) {
+      for (auto &q : fit.second.peaks_) {
+        if (!q.second.flagged)
+          continue;
+
+        double x = q.second.energy;
+        double y = q.second.efficiency_relative_ * fit.second.activity_scale_factor_;
+
+        xx.push_back(x);
+        yy.push_back(y);
+      }
+
+    }
+  }
+
+  LogInverse p = LogInverse(xx, yy, ui->spinTerms->value());
+
+  if (p.coeffs_.size()) {
+    new_calibration_.type_ = "Efficiency";
+    new_calibration_.bits_ = fit_data_.metadata_.bits;
+    new_calibration_.coefficients_ = p.coeffs_;
+    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
+    new_calibration_.units_ = "ratio";
+    new_calibration_.model_ = Gamma::CalibrationModel::loginverse;
+    PL_DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
+  }
+  else
+    PL_INFO << "<Efficiency calibration> Gamma::Calibration failed";
+
+  replot_calib();
+  toggle_push();
 }

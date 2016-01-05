@@ -87,6 +87,8 @@ private slots:
 
   void on_doubleScaleFactor_valueChanged(double arg1);
 
+  void on_pushFit_2_clicked();
+
 protected:
   void closeEvent(QCloseEvent*);
 
