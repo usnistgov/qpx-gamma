@@ -41,6 +41,7 @@ public:
   explicit WidgetPlotCalib(QWidget *parent = 0);
   ~WidgetPlotCalib();
   void clearGraphs();
+  void clearPoints();
 
   void redraw();
 
@@ -53,6 +54,11 @@ public:
   void addPoints(const QVector<double>& x, const QVector<double>& y, AppearanceProfile style);
   void addFit(const QVector<double>& x, const QVector<double>& y, AppearanceProfile style);
 
+  void set_scale_type_x(QString);
+  void set_scale_type_y(QString);
+  QString scale_type_x();
+  QString scale_type_y();
+
 signals:
   void clickedLeft(double);
   void clickedRight(double);
@@ -60,6 +66,9 @@ signals:
 
 private slots:
   void update_selection();
+
+  void clicked_item(QCPAbstractItem*);
+  void optionsChanged(QAction*);
 
 private:
   void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
@@ -74,6 +83,13 @@ private:
   QVector<AppearanceProfile> style_pts;
 
   QString floating_text_;
+  QString scale_type_x_;
+  QString scale_type_y_;
+
+  QMenu       menuOptions;
+
+  void build_menu();
+
 };
 
-#endif // WIDGET_PLOST1D_H
+#endif

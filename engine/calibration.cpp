@@ -49,6 +49,8 @@ double Calibration::transform(double chan) const {
   
   if (bits_ && (model_ == CalibrationModel::polynomial))
     return Polynomial(coefficients_).evaluate(chan);
+  else if (bits_ && (model_ == CalibrationModel::polylog))
+    return PolyLog(coefficients_).evaluate(chan);
   else
     return chan;
 }
@@ -59,6 +61,8 @@ double Calibration::inverse_transform(double energy) const {
 
   if (bits_ && (model_ == CalibrationModel::polynomial))
     return Polynomial(coefficients_).inverse_evaluate(energy);
+//  else if (bits_ && (model_ == CalibrationModel::polylog))
+//    return PolyLog(coefficients_).inverse_evaluate(energy);
   else
     return energy;
 }
@@ -95,6 +99,8 @@ double Calibration::inverse_transform(double energy, uint16_t bits) const {
 std::string Calibration::fancy_equation(int precision, bool with_rsq) {
   if (bits_ && (model_ == CalibrationModel::polynomial))
     return Polynomial(coefficients_).to_UTF8(precision, with_rsq);
+  else if (bits_ && (model_ == CalibrationModel::polylog))
+    return PolyLog(coefficients_).to_UTF8(precision, with_rsq);
   else
     return "N/A"; 
 }
@@ -161,6 +167,8 @@ void Calibration::to_xml(pugi::xml_node &root) const {
   std::string  model_str = "undefined";
   if (model_ == CalibrationModel::polynomial)
     model_str = "Polynomial";
+  else if (model_ == CalibrationModel::polylog)
+    model_str = "PolyLog";
   node.append_child("Equation").append_attribute("Model").set_value(model_str.c_str());
 
   if ((model_ != CalibrationModel::none) && (coefficients_.size()))
@@ -189,6 +197,8 @@ void Calibration::from_xml(const pugi::xml_node &node) {
   std::string model_str = std::string(node.child("Equation").attribute("Model").value());
   if (model_str == "Polynomial")
     model_ = CalibrationModel::polynomial;
+  else if (model_str == "PolyLog")
+    model_ = CalibrationModel::polylog;
   coef_from_string(std::string(node.child("Equation").child_value("Coefficients")));
 
 }

@@ -23,6 +23,7 @@
 #include "widget_plot_calib.h"
 #include "ui_widget_plot_calib.h"
 #include "custom_logger.h"
+#include "qt_util.h"
 
 WidgetPlotCalib::WidgetPlotCalib(QWidget *parent) :
   QWidget(parent),  ui(new Ui::WidgetPlotCalib)
@@ -35,9 +36,17 @@ WidgetPlotCalib::WidgetPlotCalib(QWidget *parent) :
   ui->mcaPlot->setInteraction(QCP::iMultiSelect, true);
 
   connect(ui->mcaPlot, SIGNAL(selectionChangedByUser()), this, SLOT(update_selection()));
+  connect(ui->mcaPlot, SIGNAL(clickedAbstractItem(QCPAbstractItem*)), this, SLOT(clicked_item(QCPAbstractItem*)));
 
+  scale_type_x_ = "Linear";
+  scale_type_y_ = "Linear";
   ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLinear);
   ui->mcaPlot->yAxis2->setScaleType(QCPAxis::stLinear);
+  ui->mcaPlot->xAxis->setScaleType(QCPAxis::stLinear);
+  ui->mcaPlot->xAxis2->setScaleType(QCPAxis::stLinear);
+
+  connect(&menuOptions, SIGNAL(triggered(QAction*)), this, SLOT(optionsChanged(QAction*)));
+  build_menu();
 
   redraw();
 }
@@ -45,6 +54,70 @@ WidgetPlotCalib::WidgetPlotCalib(QWidget *parent) :
 WidgetPlotCalib::~WidgetPlotCalib()
 {
   delete ui;
+}
+
+void WidgetPlotCalib::build_menu() {
+  menuOptions.clear();
+
+  menuOptions.addAction("X linear");
+  menuOptions.addAction("X logarithmic");
+  menuOptions.addSeparator();
+  menuOptions.addAction("Y linear");
+  menuOptions.addAction("Y logarithmic");
+  menuOptions.addSeparator();
+  menuOptions.addAction("png");
+  menuOptions.addAction("jpg");
+  menuOptions.addAction("pdf");
+  menuOptions.addAction("bmp");
+
+  for (auto &q : menuOptions.actions()) {
+    q->setCheckable(true);
+    if ((q->text() == "X linear") && (scale_type_x_ == "Linear"))
+      q->setChecked(true);
+    if ((q->text() == "X logarithmic") && (scale_type_x_ == "Logarithmic"))
+      q->setChecked(true);
+    if ((q->text() == "Y linear") && (scale_type_y_ == "Linear"))
+      q->setChecked(true);
+    if ((q->text() == "Y logarithmic") && (scale_type_y_ == "Logarithmic"))
+      q->setChecked(true);
+  }
+
+}
+
+QString WidgetPlotCalib::scale_type_x() {
+  return scale_type_x_;
+}
+
+QString WidgetPlotCalib::scale_type_y() {
+  return scale_type_y_;
+}
+
+void WidgetPlotCalib::set_scale_type_x(QString sct) {
+  scale_type_x_ = sct;
+  if (scale_type_x_ == "Linear")
+    ui->mcaPlot->xAxis->setScaleType(QCPAxis::stLinear);
+  else if (scale_type_x_ == "Logarithmic")
+    ui->mcaPlot->xAxis->setScaleType(QCPAxis::stLogarithmic);
+  ui->mcaPlot->replot();
+  build_menu();
+}
+
+void WidgetPlotCalib::set_scale_type_y(QString sct) {
+  scale_type_y_ = sct;
+  if (scale_type_y_ == "Linear")
+    ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLinear);
+  else if (scale_type_y_ == "Logarithmic")
+    ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLogarithmic);
+  ui->mcaPlot->replot();
+  build_menu();
+}
+
+void WidgetPlotCalib::clearPoints()
+{
+  x_pts.clear();
+  y_pts.clear();
+  style_pts.clear();
+  selection_.clear();
 }
 
 void WidgetPlotCalib::clearGraphs()
@@ -154,12 +227,46 @@ void WidgetPlotCalib::redraw() {
     floatingText->setColor(Qt::black);
   }
 
+  QCPItemPixmap *overlayButton;
+
+  overlayButton = new QCPItemPixmap(ui->mcaPlot);
+  overlayButton->setClipToAxisRect(false);
+  overlayButton->setPixmap(QPixmap(":/new/icons/oxy/view_statistics.png"));
+  overlayButton->topLeft->setType(QCPItemPosition::ptAbsolute);
+  overlayButton->topLeft->setCoords(5, 5);
+  overlayButton->bottomRight->setParentAnchor(overlayButton->topLeft);
+  overlayButton->bottomRight->setCoords(18, 18);
+  overlayButton->setScaled(true);
+  overlayButton->setSelectable(false);
+  overlayButton->setProperty("button_name", QString("options"));
+  overlayButton->setProperty("tooltip", QString("Style options"));
+  ui->mcaPlot->addItem(overlayButton);
+
+
+  if ((scale_type_x_ == "Logarithmic") && (xmin < 1))
+    xmin = 1;
+
+  if ((scale_type_y_ == "Logarithmic") && (ymin < 0))
+    ymin = 0;
+
   if (this->isVisible()) {
     ui->mcaPlot->xAxis->setRange(xmin, xmax);
+    ui->mcaPlot->xAxis2->setRange(xmin, xmax);
     ui->mcaPlot->yAxis->setRange(ymin, ymax);
+    ui->mcaPlot->yAxis2->setRange(ymin, ymax);
   }
 
   ui->mcaPlot->replot();
+}
+
+void WidgetPlotCalib::clicked_item(QCPAbstractItem* itm) {
+  if (QCPItemPixmap *pix = qobject_cast<QCPItemPixmap*>(itm)) {
+//    QPoint p = this->mapFromGlobal(QCursor::pos());
+    QString name = pix->property("button_name").toString();
+    if (name == "options") {
+      menuOptions.exec(QCursor::pos());
+    }
+  }
 }
 
 
@@ -234,4 +341,44 @@ void WidgetPlotCalib::update_selection() {
 void WidgetPlotCalib::setFloatingText(QString txt) {
   floating_text_ = txt;
   redraw();
+}
+
+void WidgetPlotCalib::optionsChanged(QAction* action) {
+  this->setCursor(Qt::WaitCursor);
+  QString choice = action->text();
+  if (choice == "X linear") {
+    scale_type_x_ = "Linear";
+    ui->mcaPlot->xAxis->setScaleType(QCPAxis::stLinear);
+  } else if (choice == "X logarithmic") {
+    scale_type_x_ = "Logarithmic";
+    ui->mcaPlot->xAxis->setScaleType(QCPAxis::stLogarithmic);
+  } else if (choice == "Y linear") {
+    scale_type_y_ = "Linear";
+    ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLinear);
+  } else if (choice == "Y logarithmic") {
+    scale_type_y_ = "Logarithmic";
+    ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLogarithmic);
+  } else {
+    QString filter = action->text() + "(*." + action->text() + ")";
+    QString fileName = CustomSaveFileDialog(this, "Export plot",
+                                            QStandardPaths::locate(QStandardPaths::HomeLocation, ""),
+                                            filter);
+    if (validateFile(this, fileName, true)) {
+      QFileInfo file(fileName);
+      if (file.suffix() == "png") {
+        ui->mcaPlot->savePng(fileName,0,0,1,100);
+      } else if (file.suffix() == "jpg") {
+        ui->mcaPlot->saveJpg(fileName,0,0,1,100);
+      } else if (file.suffix() == "bmp") {
+        ui->mcaPlot->saveBmp(fileName);
+      } else if (file.suffix() == "pdf") {
+        ui->mcaPlot->savePdf(fileName, true);
+      }
+    }
+
+  }
+
+  build_menu();
+  ui->mcaPlot->replot();
+  this->setCursor(Qt::ArrowCursor);
 }

@@ -29,10 +29,11 @@
 #include <boost/date_time.hpp>
 #include "xmlable.h"
 #include "polynomial.h"
+#include "polylog.h"
 
 namespace Gamma {
 
-enum class CalibrationModel : int {none = 0, polynomial = 1};
+enum class CalibrationModel : int {none = 0, polynomial = 1, polylog = 2, polyinv = 3, effit = 4};
 
 class Calibration : public XMLable {
  public:

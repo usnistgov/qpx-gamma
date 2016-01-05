@@ -37,7 +37,6 @@
 #include "form_oscilloscope.h"
 #include "form_optimization.h"
 #include "form_gain_match.h"
-#include "form_efficiency_calibration.h"
 
 #include "widget_profiles.h"
 
@@ -284,6 +283,17 @@ void qpx::symmetrize_2d(FormSymmetrize2D* formSym) {
 
 }
 
+void qpx::eff_cal(FormEfficiencyCalibration *formEf) {
+  int idx = ui->qpxTabs->indexOf(formEf);
+  if (idx == -1) {
+    ui->qpxTabs->addTab(formEf, formEf->windowTitle());
+    connect(formEf, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
+  } else
+    ui->qpxTabs->setTabText(idx, formEf->windowTitle());
+  ui->qpxTabs->setCurrentWidget(formEf);
+  reorder_tabs();
+}
+
 void qpx::openNewProject()
 {
   FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, settings_, detectors_, this);
@@ -291,7 +301,7 @@ void qpx::openNewProject()
   connect(newSpectraForm, SIGNAL(requestAnalysis(FormAnalysis1D*)), this, SLOT(analyze_1d(FormAnalysis1D*)));
   connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
   connect(newSpectraForm, SIGNAL(requestSymmetriza2D(FormSymmetrize2D*)), this, SLOT(symmetrize_2d(FormSymmetrize2D*)));
-  connect(newSpectraForm, SIGNAL(requestEfficiencyCal()), this, SLOT(open_efficiency_cal()));
+  connect(newSpectraForm, SIGNAL(requestEfficiencyCal(FormEfficiencyCalibration*)), this, SLOT(eff_cal(FormEfficiencyCalibration*)));
 
   connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
@@ -380,19 +390,4 @@ bool qpx::hasTab(QString tofind) {
     if (ui->qpxTabs->tabText(i) == tofind)
       return true;
   return false;
-}
-
-void qpx::open_efficiency_cal()
-{
-  FormEfficiencyCalibration *newEfficienyForm = new FormEfficiencyCalibration(settings_, detectors_, this);
-  ui->qpxTabs->addTab(newEfficienyForm, newEfficienyForm->windowTitle());
-
-  connect(newEfficienyForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  //connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newEfficienyForm, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
-  connect(newEfficienyForm, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
-
-  ui->qpxTabs->setCurrentWidget(newEfficienyForm);
-  reorder_tabs();
-
-  emit toggle_push(gui_enabled_, px_status_);
 }

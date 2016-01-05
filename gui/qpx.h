@@ -35,6 +35,7 @@
 #include "form_analysis_1d.h"
 #include "form_analysis_2d.h"
 #include "form_symmetrize2d.h"
+#include "form_efficiency_calibration.h"
 
 
 namespace Ui {
@@ -96,6 +97,8 @@ private slots:
   void analyze_1d(FormAnalysis1D*);
   void analyze_2d(FormAnalysis2D*);
   void symmetrize_2d(FormSymmetrize2D*);
+  void eff_cal(FormEfficiencyCalibration*);
+
   void detectors_updated();
   void update_settings();
 
@@ -109,7 +112,6 @@ private slots:
   void open_gain_matching();
   void open_optimization();
   void open_list();
-  void open_efficiency_cal();
 
   void tabs_moved(int, int);
 

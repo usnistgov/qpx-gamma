@@ -211,6 +211,14 @@ void SelectorWidget::replaceSelected(SelectorItem item) {
   update();
 }
 
+void SelectorWidget::setSelected(QString name) {
+  for (int i=0; i < my_items_.size(); ++i)
+    if (my_items_[i].text == name) {
+      selected_ = i;
+    }
+  update();
+}
+
 int SelectorWidget::flagAt(int x, int y) {
   if (!my_items_.size())
     return -1;

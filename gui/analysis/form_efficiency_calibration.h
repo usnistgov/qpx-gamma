@@ -43,10 +43,13 @@ public:
   explicit FormEfficiencyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent = 0);
   ~FormEfficiencyCalibration();
 
+  void setDetector(Qpx::SpectraSet *newset, QString detector);
+  void clear();
+
 signals:
-  void toggleIO(bool);
   void calibrationComplete();
   void detectorsChanged();
+
 
 public slots:
   void update_spectrum();
@@ -56,15 +59,10 @@ private slots:
   void update_spectra();
   void update_peaks(bool);
   void detectorsUpdated() {emit detectorsChanged();}
-  void on_pushImport_clicked();
+
   void setSpectrum(QString spectrum);
   void spectrumLooksChanged(SelectorItem);
   void spectrumDetails(SelectorItem);
-  void spectrumDetailsClosed(bool looks_changed);
-  void on_pushRemove_clicked();
-  void on_pushShowAll_clicked();
-  void on_pushHideAll_clicked();
-
 
 
   void selection_changed_in_table();
@@ -89,10 +87,6 @@ private slots:
 
   void on_doubleScaleFactor_valueChanged(double arg1);
 
-  void on_pushFullInfo_clicked();
-
-  void on_pushRandAll_clicked();
-
 protected:
   void closeEvent(QCloseEvent*);
 
@@ -109,7 +103,7 @@ private:
   QString data_directory_;
   QString settings_directory_;
 
-  Qpx::SpectraSet                     spectra_;
+  Qpx::SpectraSet          *spectra_;
   std::string current_detector_;
 
   XMLableDB<Gamma::Detector> &detectors_;
@@ -123,10 +117,6 @@ private:
   Gamma::Calibration new_calibration_;
   AppearanceProfile style_fit, style_pts;
   void add_peak_to_table(const Gamma::Peak &, int, QColor);
-  void add_spectrum(Qpx::Spectrum::Spectrum*);
-
-
-
 };
 
 #endif // FORM_EFFICIENCY_CALIBRATION_H

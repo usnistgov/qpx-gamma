@@ -64,6 +64,9 @@ FormPlot1D::FormPlot1D(QWidget *parent) :
   menuDelete.addAction(QIcon(":/new/icons/hide.png"), "Delete hidden spectra", this, SLOT(deleteHidden()));
   ui->toolDelete->setMenu(&menuDelete);
 
+  ui->toolEffCal->setMenu(&menuEffCal);
+  connect(&menuEffCal, SIGNAL(triggered(QAction*)), this, SLOT(effCalRequested(QAction*)));
+
 }
 
 FormPlot1D::~FormPlot1D()
@@ -96,11 +99,6 @@ void FormPlot1D::spectrumDoubleclicked(SelectorItem item)
 
 void FormPlot1D::spectrumDetails(SelectorItem item)
 {
-  ui->toolColors->setEnabled(spectraSelector->items().size());
-  ui->toolDelete->setEnabled(spectraSelector->items().size());
-
-  ui->pushManip1D->setEnabled(spectraSelector->items().size());
-  ui->pushRescaleReset->setEnabled(spectraSelector->items().size());
 
   QString id = spectraSelector->selected().text;
   Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(id.toStdString());
@@ -158,18 +156,6 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
 
   ui->labelSpectrumInfo->setText(infoText);
   ui->pushFullInfo->setEnabled(true);
-}
-
-void FormPlot1D::spectrumDetailsClosed(bool looks_changed) {
-  if (looks_changed) {
-    SelectorItem chosen = spectraSelector->selected();
-    Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(chosen.text.toStdString());
-    if (someSpectrum != nullptr) {
-      chosen.color = QColor::fromRgba(someSpectrum->metadata().appearance);
-      spectraSelector->replaceSelected(chosen);
-      mySpectra->activate();
-    }
-  }
 }
 
 void FormPlot1D::reset_content() {
@@ -273,7 +259,6 @@ void FormPlot1D::spectrumDetailsDelete()
 {
   std::string name = spectraSelector->selected().text.toStdString();
 
-  PL_INFO << "will delete " << name;
   mySpectra->delete_spectrum(name);
 
   updateUI();
@@ -281,12 +266,17 @@ void FormPlot1D::spectrumDetailsDelete()
 
 void FormPlot1D::updateUI()
 {
+  SelectorItem chosen = spectraSelector->selected();
   QVector<SelectorItem> items;
+  QSet<QString> dets;
 
   for (auto &q : mySpectra->spectra(1, -1)) {
     Qpx::Spectrum::Metadata md;
     if (q != nullptr)
       md = q->metadata();
+
+    if (!md.detectors.empty())
+      dets.insert(QString::fromStdString(md.detectors.front().name_));
 
     SelectorItem new_spectrum;
     new_spectrum.text = QString::fromStdString(md.name);
@@ -295,11 +285,38 @@ void FormPlot1D::updateUI()
     items.push_back(new_spectrum);
   }
 
+
+  menuEffCal.clear();
+
+  for (auto &q : dets)
+    menuEffCal.addAction(q);
+
   spectraSelector->setItems(items);
+  spectraSelector->setSelected(chosen.text);
+
   ui->scrollArea->updateGeometry();
+
+  ui->toolColors->setEnabled(spectraSelector->items().size());
+  ui->toolDelete->setEnabled(spectraSelector->items().size());
+  ui->toolEffCal->setEnabled(menuEffCal.actions().size());
+
+  ui->pushManip1D->setEnabled(spectraSelector->items().size());
+  ui->pushRescaleReset->setEnabled(spectraSelector->items().size());
+
 
   mySpectra->activate();
 }
+
+void FormPlot1D::spectrumDetailsClosed(bool looks_changed) {
+  updateUI();
+}
+
+void FormPlot1D::effCalRequested(QAction* choice) {
+  QString det = choice->text();
+
+  emit requestEffCal(choice->text());
+}
+
 
 void FormPlot1D::analyse()
 {

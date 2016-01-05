@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1587</width>
+    <width>1492</width>
     <height>653</height>
    </rect>
   </property>
@@ -33,270 +33,6 @@
      <property name="leftMargin">
       <number>6</number>
      </property>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <property name="spacing">
-        <number>3</number>
-       </property>
-       <property name="sizeConstraint">
-        <enum>QLayout::SetFixedSize</enum>
-       </property>
-       <item>
-        <widget class="QPushButton" name="pushShowAll">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Show all</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/show.png</normaloff>:/new/icons/show.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>18</width>
-           <height>18</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushHideAll">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Hide all</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/hide.png</normaloff>:/new/icons/hide.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>18</width>
-           <height>18</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushRandAll">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Hide all</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/roll.png</normaloff>:/new/icons/oxy/roll.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>18</width>
-           <height>18</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_5">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushImport">
-         <property name="minimumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Add spectrum</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/edit_add.png</normaloff>:/new/icons/oxy/edit_add.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>18</width>
-           <height>18</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushRemove">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Remove spectrum</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/editdelete.png</normaloff>:/new/icons/oxy/editdelete.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>18</width>
-           <height>18</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushFullInfo">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Spectrum details</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/help_about.png</normaloff>:/new/icons/oxy/help_about.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>18</width>
-           <height>18</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <widget class="SelectorWidget" name="spectrumSelector" native="true">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>840</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>840</width>
-         <height>16777215</height>
-        </size>
-       </property>
-      </widget>
-     </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_4">
        <property name="spacing">
@@ -339,7 +75,7 @@
           <string>Perform fit</string>
          </property>
          <property name="text">
-          <string>Fit poly</string>
+          <string>Fit</string>
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
@@ -408,7 +144,7 @@
           <number>10</number>
          </property>
          <property name="value">
-          <number>2</number>
+          <number>5</number>
          </property>
         </widget>
        </item>
@@ -492,6 +228,28 @@
         </widget>
        </item>
       </layout>
+     </item>
+     <item>
+      <widget class="SelectorWidget" name="spectrumSelector" native="true">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>840</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>840</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="WidgetPlotCalib" name="PlotCalib" native="true">
@@ -625,10 +383,10 @@
                 <number>1</number>
                </property>
                <property name="singleStep">
-                <double>0.200000000000000</double>
+                <double>0.100000000000000</double>
                </property>
                <property name="value">
-                <double>4.000000000000000</double>
+                <double>0.500000000000000</double>
                </property>
               </widget>
              </item>
@@ -766,27 +524,27 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>FormPeaks</class>
-   <extends>QWidget</extends>
-   <header>form_peaks.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>WidgetPlotCalib</class>
    <extends>QWidget</extends>
    <header>widget_plot_calib.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>SelectorWidget</class>
-   <extends>QWidget</extends>
-   <header>widget_selector.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>WidgetIsotopes</class>
    <extends>QWidget</extends>
    <header>widget_isotopes.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>FormPeaks</class>
+   <extends>QWidget</extends>
+   <header>form_peaks.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SelectorWidget</class>
+   <extends>QWidget</extends>
+   <header>widget_selector.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

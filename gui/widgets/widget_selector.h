@@ -50,6 +50,7 @@ public:
   QSize minimumSizeHint() const Q_DECL_OVERRIDE;
   void setItems(QVector<SelectorItem>);
   void replaceSelected(SelectorItem);
+  void setSelected(QString);
   QVector<SelectorItem> items();
   SelectorItem selected();
   virtual void show_all();

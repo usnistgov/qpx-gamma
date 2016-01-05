@@ -38,6 +38,7 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamm
   spectra_(),
   my_analysis_(nullptr),
   my_analysis_2d_(nullptr),
+  my_eff_cal_(nullptr),
   my_symmetrization_2d_(nullptr),
   runner_thread_(thread),
   plot_thread_(spectra_),
@@ -66,6 +67,7 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamm
   //1d
   ui->Plot1d->setSpectra(spectra_);
   connect(ui->Plot1d, SIGNAL(requestAnalysis(QString)), this, SLOT(reqAnal(QString)));
+  connect(ui->Plot1d, SIGNAL(requestEffCal(QString)), this, SLOT(reqEffCal(QString)));
   connect(&plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
   ui->Plot1d->setDetDB(detectors_);
 
@@ -115,6 +117,14 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
 
   if (my_analysis_2d_ != nullptr) {
     my_analysis_2d_->close(); //assume always successful
+  }
+
+  if (my_symmetrization_2d_!= nullptr) {
+    my_symmetrization_2d_->close(); //assume always successful
+  }
+
+  if (my_eff_cal_ != nullptr) {
+    my_eff_cal_->close(); //assume always successful
   }
 
   if (spectra_.changed()) {
@@ -527,12 +537,32 @@ void FormMcaDaq::reqSym2D(QString name) {
   this->setCursor(Qt::ArrowCursor);
 }
 
+void FormMcaDaq::reqEffCal(QString name)
+{
+  this->setCursor(Qt::WaitCursor);
+
+  if (my_eff_cal_ == nullptr) {
+    my_eff_cal_ = new FormEfficiencyCalibration(settings_, detectors_);
+    connect(&plot_thread_, SIGNAL(plot_ready()), my_eff_cal_, SLOT(update_spectrum()));
+    connect(my_eff_cal_, SIGNAL(destroyed()), this, SLOT(analysis_destroyed()));
+  }
+  my_eff_cal_->setWindowTitle("1D: " + name);
+  my_eff_cal_->setDetector(&spectra_, name);
+  emit requestEfficiencyCal(my_eff_cal_);
+
+  this->setCursor(Qt::ArrowCursor);
+}
+
 void FormMcaDaq::analysis2d_destroyed() {
   my_analysis_2d_ = nullptr;
 }
 
 void FormMcaDaq::sym2d_destroyed() {
   my_symmetrization_2d_ = nullptr;
+}
+
+void FormMcaDaq::effcal_destroyed() {
+  my_eff_cal_ = nullptr;
 }
 
 void FormMcaDaq::replot() {
@@ -565,9 +595,4 @@ void FormMcaDaq::on_pushDetails_clicked()
 void FormMcaDaq::on_toggleIndefiniteRun_clicked()
 {
    ui->timeDuration->setEnabled(!ui->toggleIndefiniteRun->isChecked());
-}
-
-void FormMcaDaq::on_pushEfficiencyCal_clicked()
-{
-  emit requestEfficiencyCal();
 }

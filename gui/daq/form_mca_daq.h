@@ -31,6 +31,7 @@
 #include "form_analysis_1d.h"
 #include "form_analysis_2d.h"
 #include "form_symmetrize2d.h"
+#include "form_efficiency_calibration.h"
 
 namespace Ui {
 class FormMcaDaq;
@@ -52,7 +53,7 @@ signals:
   void requestAnalysis(FormAnalysis1D*);
   void requestAnalysis2D(FormAnalysis2D*);
   void requestSymmetriza2D(FormSymmetrize2D*);
-  void requestEfficiencyCal();
+  void requestEfficiencyCal(FormEfficiencyCalibration*);
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -74,24 +75,22 @@ private slots:
   void newProject();
   void updateSpectraUI();
 
-
   void on_pushEnable2d_clicked();
-
   void on_pushForceRefresh_clicked();
 
   void reqAnal(QString);
-  void analysis_destroyed();
-
   void reqAnal2D(QString);
   void reqSym2D(QString);
+  void reqEffCal(QString);
+
+  void analysis_destroyed();
   void analysis2d_destroyed();
   void sym2d_destroyed();
+  void effcal_destroyed();
 
   void on_pushDetails_clicked();
 
   void on_toggleIndefiniteRun_clicked();
-
-  void on_pushEfficiencyCal_clicked();
 
   void projectSave();
   void projectSaveAs();
@@ -118,6 +117,8 @@ private:
 
   FormAnalysis1D* my_analysis_;
   FormAnalysis2D* my_analysis_2d_;
+  FormEfficiencyCalibration* my_eff_cal_;
+
   FormSymmetrize2D* my_symmetrization_2d_;
   bool my_run_;
 

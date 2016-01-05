@@ -61,6 +61,7 @@ public slots:
 signals:
   void marker_set(Marker n);
   void requestAnalysis(QString);
+  void requestEffCal(QString);
 
 private slots:
   void spectrumDetailsClosed(bool);
@@ -90,6 +91,8 @@ private slots:
   void on_pushRescaleReset_clicked();
   void on_pushManip1D_clicked();
 
+  void effCalRequested(QAction*);
+
 private:
 
   Ui::FormPlot1D *ui;
@@ -104,6 +107,7 @@ private:
   Marker moving, markx, marky;
   QMenu menuColors;
   QMenu menuDelete;
+  QMenu menuEffCal;
 
 };
 
