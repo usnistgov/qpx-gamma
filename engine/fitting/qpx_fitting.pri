@@ -21,28 +21,14 @@
 #-------------------------------------------------------------------------------
 
 unix {
-   SUSE = $$system(cat /proc/version | grep -o SUSE)
-   UBUNTU = $$system(cat /proc/version | grep -o Ubuntu)
-   FEDORA = $$system(cat /proc/version | grep -o fedora)
-   ARCH = $$system(uname -m)
-   contains( SUSE, SUSE): {
-       LIBS += -llua
-   }
-   contains( UBUNTU, Ubuntu): {
-       LIBS += -llua5.2
-   }
-   contains( FEDORA, fedora): {
-       LIBS += -llua
-   }
    LIBS += -lm -ldl -lboost_system -lz
 }
 
-INCLUDEPATH += $$PWD/fityk $$PWD /usr/include/lua5.2
+INCLUDEPATH += $$PWD/fityk $$PWD
 
 SOURCES += $$files($$PWD/*.cpp) \
            $$files($$PWD/fityk/*.cpp) \
-           $$files($$PWD/fityk/swig/*.cpp) \
-           $$files($$PWD/fityk/cmpfit/*.c) \
+           $$files($$PWD/fityk/cmpfit/*.c)
 
 HEADERS  += $$files($$PWD/*.h) \
             $$files($$PWD/dependencies/fityk/*.h)

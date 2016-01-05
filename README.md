@@ -23,7 +23,6 @@ Works with the following hardware:
 To compile, first install:
 * boost libraries (5.7)
 * Qt libraries (5.3)
-* lua-dev
 * mesa-comon-dev
 * libglu1-mesa-dev
 
