@@ -30,18 +30,16 @@
 
 class Effit {
 public:
-  Effit() : degree_(-1), xoffset_(0.0), rsq(-1) {}
+  Effit() : xoffset_(0.0), rsq(-1), A(0), B(1), C(0), D(0), E(0), F(0), G(20) {}
   Effit(std::vector<double> coeffs, double center = 0);
 
-  Effit(std::vector<double> &x, std::vector<double> &y,
-             uint16_t degree, double center=0);
-  Effit(std::vector<double> &x, std::vector<double> &y,
-             std::vector<uint16_t> &degrees, double center=0);
+  Effit(std::vector<double> &x, std::vector<double> &y, double center=0);
 
-  void fit(std::vector<double> &x, std::vector<double> &y,
-      std::vector<uint16_t> &degrees, double center=0);
+  void fit(std::vector<double> &x, std::vector<double> &y, double center=0);
 
   //Effit derivative();
+
+  std::vector<double> coeffs();
 
   std::string to_string();
   std::string to_UTF8(int precision = -1, bool with_rsq = false);
@@ -53,10 +51,10 @@ public:
 //  double inverse_evaluate(double y, double e = 0.2);
   std::vector<double> evaluate_array(std::vector<double> x);
   
-  std::vector<double> coeffs_;
   double xoffset_;
-  int degree_;
   double rsq;
+
+  double A, B, C, D, E, F, G;
 
   std::string to_str_precision(double, int); //move this somewhere else
 };

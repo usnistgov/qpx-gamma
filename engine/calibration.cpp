@@ -29,6 +29,11 @@
 #include "custom_logger.h"
 #include "xylib.h"
 
+#include "polynomial.h"
+#include "polylog.h"
+#include "log_inverse.h"
+#include "effit.h"
+
 namespace Gamma {
 
 Calibration::Calibration() {
@@ -53,6 +58,8 @@ double Calibration::transform(double chan) const {
     return PolyLog(coefficients_).evaluate(chan);
   else if (bits_ && (model_ == CalibrationModel::loginverse))
     return LogInverse(coefficients_).evaluate(chan);
+  else if (bits_ && (model_ == CalibrationModel::effit))
+    return Effit(coefficients_).evaluate(chan);
   else
     return chan;
 }
@@ -105,6 +112,8 @@ std::string Calibration::fancy_equation(int precision, bool with_rsq) {
     return PolyLog(coefficients_).to_UTF8(precision, with_rsq);
   else if (bits_ && (model_ == CalibrationModel::loginverse))
     return LogInverse(coefficients_).to_UTF8(precision, with_rsq);
+  else if (bits_ && (model_ == CalibrationModel::effit))
+    return Effit(coefficients_).to_UTF8(precision, with_rsq);
   else
     return "N/A"; 
 }
@@ -175,6 +184,8 @@ void Calibration::to_xml(pugi::xml_node &root) const {
     model_str = "PolyLog";
   else if (model_ == CalibrationModel::loginverse)
     model_str = "LogInverse";
+  else if (model_ == CalibrationModel::effit)
+    model_str = "Effit";
   node.append_child("Equation").append_attribute("Model").set_value(model_str.c_str());
 
   if ((model_ != CalibrationModel::none) && (coefficients_.size()))
@@ -207,6 +218,8 @@ void Calibration::from_xml(const pugi::xml_node &node) {
     model_ = CalibrationModel::polylog;
   else if (model_str == "LogInverse")
     model_ = CalibrationModel::loginverse;
+  else if (model_str == "Effit")
+    model_ = CalibrationModel::effit;
   coef_from_string(std::string(node.child("Equation").child_value("Coefficients")));
 
 }

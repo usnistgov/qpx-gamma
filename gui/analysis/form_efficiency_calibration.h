@@ -89,6 +89,8 @@ private slots:
 
   void on_pushFit_2_clicked();
 
+  void on_pushFitEffit_clicked();
+
 protected:
   void closeEvent(QCloseEvent*);
 

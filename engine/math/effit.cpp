@@ -42,33 +42,26 @@ Effit::Effit(std::vector<double> coeffs, double center)
   :Effit()
 {
   xoffset_ = center;
-  coeffs_ = coeffs;
-  int deg = -1;
-  for (size_t i = 0; i < coeffs.size(); i++)
-    if (coeffs[i])
-      deg = i;
-  degree_ = deg;
+  if (coeffs.size() > 6) {
+    A = coeffs[0];
+    B = coeffs[1];
+    C = coeffs[2];
+    D = coeffs[3];
+    E = coeffs[4];
+    F = coeffs[5];
+    G = coeffs[6];
+  }
+  if (G==0)
+    G = 20;
 }
 
-Effit::Effit(std::vector<double> &x, std::vector<double> &y, uint16_t degree, double center)
+Effit::Effit(std::vector<double> &x, std::vector<double> &y, double center)
   :Effit()
 {
-  std::vector<uint16_t> degrees;
-  for (int i=1; i <= degree; ++i)
-    degrees.push_back(i);
-
-  fit(x, y, degrees, center);
+  fit(x, y, center);
 }
 
-Effit::Effit(std::vector<double> &x, std::vector<double> &y,
-                       std::vector<uint16_t> &degrees, double center) {
-  fit(x, y, degrees, center);
-}
-
-
-void Effit::fit(std::vector<double> &x, std::vector<double> &y,
-                       std::vector<uint16_t> &degrees, double center) {
-  degree_ = -1;
+void Effit::fit(std::vector<double> &x, std::vector<double> &y, double center) {
 
   xoffset_ = center;
   if (x.size() != y.size())
@@ -78,7 +71,7 @@ void Effit::fit(std::vector<double> &x, std::vector<double> &y,
   sigma.resize(x.size(), 1);
   
   for (auto &q : x)
-    x_c.push_back(log(q - center));
+    x_c.push_back(q - center);
 
   for (auto &q : y)
     yy.push_back(log(q));
@@ -89,27 +82,27 @@ void Effit::fit(std::vector<double> &x, std::vector<double> &y,
 
   f->load_data(0, x_c, yy, sigma);
 
-  std::string definition = "define MyPoly(a0=~0";
-  std::vector<std::string> varnames(1, "0");
-  for (auto &q : degrees) {
-    std::stringstream ss;
-    ss << q;
-    varnames.push_back(ss.str());
-    definition += ",a" + ss.str() + "=~0";
-  }
-  definition += ") = a0";
-  for (int i=1; i<varnames.size(); ++i)
-    definition += " + a" + varnames[i] + "*x^" + varnames[i];
-  
-
   bool success = true;
 
-  f->execute(definition);
+//  std::string definition = "define Effit(a=~0,b=~1,c=~0,d=~0,e=~0,f=~0,g=~20) = ((a + b*xa + c*(xa^2))^(-g) + (d + e*xb + f*(xb^2))^(-g))^(1-(1/g)) where xa=ln(x/100), xb=ln(x/1000)";
+//  std::string definition = "define Effit(a=~0,d=~0,e=~0,f=~0) = ((a + xa)^(-20) + (d + e*xb + f*(xb^2))^(-20))^(-0.05) where xa=ln(x/100), xb=ln(x/1000)";
+  std::string definition = "define Effit(a=~0,d=~0,e=~0,f=~0) = ((d + e*xb + f*(xb^2))^(-20))^(-0.05) where xb=ln(x/1000)";
+
+  PL_DBG << "Definition: " << definition;
+
   try {
-    f->execute("guess MyPoly");
+    f->execute(definition);
+  } catch ( ... ) {
+    success = false;
+    PL_DBG << "failed to define Effit";
+  }
+
+  try {
+    f->execute("guess Effit");
   }
   catch ( ... ) {
     success = false;
+    PL_DBG << "cannot guess Effit";
   }
 
   try {
@@ -117,19 +110,23 @@ void Effit::fit(std::vector<double> &x, std::vector<double> &y,
   }
   catch ( ... ) {
     success = false;
+    PL_DBG << "cannot fit Effit";
   }
 
   if (success) {
-    degree_ = degrees[degrees.size() - 1];
     fityk::Func* lastfn = f->all_functions().back();
-    coeffs_.resize(degree_ + 1, 0);
-    coeffs_[0] = lastfn->get_param_value("a0");
-    for (auto &q : degrees) {
-      std::stringstream ss;
-      ss << q;
-      coeffs_[q] = lastfn->get_param_value("a" + ss.str());
-    }
+//    A = lastfn->get_param_value("a");
+  //  B = lastfn->get_param_value("b");
+//    C = lastfn->get_param_value("c");
+    D = lastfn->get_param_value("d");
+    E = lastfn->get_param_value("e");
+    F = lastfn->get_param_value("f");
+//    G = lastfn->get_param_value("g");
     rsq = f->get_rsquared(0);
+
+    if (G==0)
+      G = 20;
+
   }
 
   delete f;
@@ -137,10 +134,11 @@ void Effit::fit(std::vector<double> &x, std::vector<double> &y,
 
 
 double Effit::evaluate(double x) {
-  double x_adjusted = log(x - xoffset_);
-  double result = 0.0;
-  for (int i=0; i <= degree_; i++)
-    result += coeffs_[i] * pow(x_adjusted, i);
+  double xa = log((x - xoffset_)/100);
+  double xb = log((x - xoffset_)/1000);
+//   x= ((A + B*ln(x/100.0) + C*(ln(x/100.0)^2))^(-G) + (D + E*ln(x/1000.0) + F*(ln(x/1000.0)^2))^(1-G))^(1-(1/G))
+  double result = pow(pow(A + B*xa + C*xa*xa,-G) + pow(D + E*xb + F*xb*xb,-G), -1.0/G);
+//  PL_DBG << "effit eval =" << exp(result);
   return exp(result);
 }
 
@@ -191,76 +189,67 @@ std::vector<double> Effit::evaluate_array(std::vector<double> x) {
 
 std::string Effit::to_string() {
   std::stringstream ss;
-  ss << "exp(";
-  if (degree_ >=0 )
-    ss << coeffs_[0];
-  for (int i=1; i <= degree_; i++)
-    ss << " + " << coeffs_[i] << "ln(x)^" << i;
-  ss << ")";
+  //ss << "exp( ((A + B*x + C*x^2)^-G + (D + E*y + F*y^2)^-G)^(-1/G) )";
+  ss << "A=" << A;
+  ss << " B=" << B;
+  ss << " C=" << C;
+  ss << " D=" << D;
+  ss << " E=" << E;
+  ss << " F=" << F;
+  ss << " G=" << G;
   return ss.str();
 }
 
 std::string Effit::to_UTF8(int precision, bool with_rsq) {
-  std::vector<std::string> superscripts = {
-    "\u2070", "\u00B9", "\u00B2",
-    "\u00B3", "\u2074", "\u2075",
-    "\u2076", "\u2077", "\u2078",
-    "\u2079"
-  };
-
-  std::string calib_eqn = "exp(";
-  if (degree_ >= 0)
-    calib_eqn += to_str_precision(coeffs_[0], precision);
-  for (uint16_t i=1; i <= degree_; i++) {
-    calib_eqn += std::string(" + ");
-    calib_eqn += to_str_precision(coeffs_[i], precision);
-    calib_eqn += std::string("ln(x)");
-    if ((i > 1) && (i < 10)) {
-      calib_eqn += superscripts[i];
-    } else if ((i>9) && (i<100)) {
-      calib_eqn += superscripts[i / 10];
-      calib_eqn += superscripts[i % 10];
-    } else if (i>99) {
-      calib_eqn += std::string("^");
-      calib_eqn += std::to_string(i);
-    }
-  }
-
-  if (with_rsq)
-    calib_eqn += std::string("   r")
-        + superscripts[2]
-        + std::string("=")
-        + to_str_precision(rsq, 4);
-  
-  calib_eqn += ")";
-  return calib_eqn;
+  std::stringstream ss;
+  //ss << "exp( ((A + B*x + C*x^2)^-G + (D + E*y + F*y^2)^-G)^(-1/G) )";
+  ss << "A=" << A;
+  ss << " B=" << B;
+  ss << " C=" << C;
+  ss << " D=" << D;
+  ss << " E=" << E;
+  ss << " F=" << F;
+  ss << " G=" << G;
+  return ss.str();
 }
 
 std::string Effit::to_markup() {
-  std::string calib_eqn = "exp(";
-  if (degree_ >= 0)
-    calib_eqn += std::to_string(coeffs_[0]);
-  for (uint16_t i=1; i <= degree_; i++) {
-    calib_eqn += std::string(" + ");
-    calib_eqn += std::to_string(coeffs_[i]);
-    calib_eqn += std::string("ln(x)");
-    if (i > 1) {
-      calib_eqn += std::string("<sup>");
-      calib_eqn += std::to_string(i);
-      calib_eqn += std::string("</sup>");
-    }
-  }
-  calib_eqn += ")";
-  return calib_eqn;
+  std::stringstream ss;
+  //ss << "exp( ((A + B*x + C*x^2)^-G + (D + E*y + F*y^2)^-G)^(-1/G) )";
+  ss << "A=" << A;
+  ss << " B=" << B;
+  ss << " C=" << C;
+  ss << " D=" << D;
+  ss << " E=" << E;
+  ss << " F=" << F;
+  ss << " G=" << G;
+  return ss.str();
 }
 
 std::string Effit::coef_to_string() const{
-  std::stringstream dss;
-  dss.str(std::string());
-  for (auto &q : coeffs_) {
-    dss << q << " ";
-  }
-  return boost::algorithm::trim_copy(dss.str());
+  std::stringstream ss;
+  //ss << "exp( ((A + B*x + C*x^2)^-G + (D + E*y + F*y^2)^-G)^(-1/G) )";
+  ss << A;
+  ss << " " << B;
+  ss << " " << C;
+  ss << " " << D;
+  ss << " " << E;
+  ss << " " << F;
+  ss << " " << G;
+
+  return boost::algorithm::trim_copy(ss.str());
+}
+
+std::vector<double> Effit::coeffs() {
+  std::vector<double> coeffs(7);
+  coeffs[0] = A;
+  coeffs[1] = B;
+  coeffs[2] = C;
+  coeffs[3] = D;
+  coeffs[4] = E;
+  coeffs[5] = F;
+  coeffs[6] = G;
+  return coeffs;
 }
 
 void Effit::coef_from_string(std::string coefs) {
@@ -272,10 +261,24 @@ void Effit::coef_from_string(std::string coefs) {
     templist.push_back(coef);
   }
 
-  coeffs_.resize(templist.size());
+  std::vector<double> coeffs(templist.size());
+
   int i=0;
   for (auto &q: templist) {
-    coeffs_[i] = q;
+    coeffs[i] = q;
     i++;
   }
+
+  if (coeffs.size() > 6) {
+    A = coeffs[0];
+    B = coeffs[1];
+    C = coeffs[2];
+    D = coeffs[3];
+    E = coeffs[4];
+    F = coeffs[5];
+    G = coeffs[6];
+  }
+  if (G==0)
+    G = 20;
+
 }

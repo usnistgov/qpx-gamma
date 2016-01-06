@@ -207,8 +207,9 @@ void qpx::updateStatusText(QString text) {
   ui->statusBar->showMessage(text);
 }
 
-void qpx::update_settings(Gamma::Setting sets, std::vector<Gamma::Detector>, Qpx::DeviceStatus status) {
+void qpx::update_settings(Gamma::Setting sets, std::vector<Gamma::Detector> channels, Qpx::DeviceStatus status) {
   px_status_ = status;
+  current_dets_ = channels;
   toggleIO(true);
 }
 
@@ -296,12 +297,13 @@ void qpx::eff_cal(FormEfficiencyCalibration *formEf) {
 
 void qpx::openNewProject()
 {
-  FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, settings_, detectors_, this);
+  FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, settings_, detectors_, current_dets_, this);
   ui->qpxTabs->addTab(newSpectraForm, newSpectraForm->windowTitle());
   connect(newSpectraForm, SIGNAL(requestAnalysis(FormAnalysis1D*)), this, SLOT(analyze_1d(FormAnalysis1D*)));
   connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
   connect(newSpectraForm, SIGNAL(requestSymmetriza2D(FormSymmetrize2D*)), this, SLOT(symmetrize_2d(FormSymmetrize2D*)));
   connect(newSpectraForm, SIGNAL(requestEfficiencyCal(FormEfficiencyCalibration*)), this, SLOT(eff_cal(FormEfficiencyCalibration*)));
+  connect(newSpectraForm, SIGNAL(requestClose(QWidget*)), this, SLOT(close_tab(QWidget*)));
 
   connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
@@ -320,6 +322,16 @@ void qpx::reorder_tabs() {
       ui->qpxTabs->tabBar()->moveTab(i, ui->qpxTabs->count() - 1);
 }
 
+void qpx::close_tab(QWidget* widget) {
+  int idx = ui->qpxTabs->indexOf(widget);
+  PL_DBG << "requested tab close " << idx;
+  if (idx == -1) {
+    tabCloseRequested(idx);
+//    QWidget * tab =  ui->qpxTabs->widget(index);
+//    m_parentTabWidget->removeTab(index);
+//    ui->qpxTabs->removeTab(idx);
+  }
+}
 
 void qpx::tabs_moved(int, int) {
   reorder_tabs();

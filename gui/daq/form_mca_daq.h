@@ -42,7 +42,7 @@ class FormMcaDaq : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormMcaDaq(ThreadRunner&, QSettings&, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
+  explicit FormMcaDaq(ThreadRunner&, QSettings&, XMLableDB<Gamma::Detector>&, std::vector<Gamma::Detector>&, QWidget *parent = 0);
 
   void replot();
   ~FormMcaDaq();
@@ -54,6 +54,7 @@ signals:
   void requestAnalysis2D(FormAnalysis2D*);
   void requestSymmetriza2D(FormSymmetrize2D*);
   void requestEfficiencyCal(FormEfficiencyCalibration*);
+  void requestClose(QWidget*);
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -103,6 +104,7 @@ private:
   QSettings                  &settings_;
   ThreadRunner               &runner_thread_;
   XMLableDB<Gamma::Detector> &detectors_;
+  std::vector<Gamma::Detector> &current_dets_;
 
   QString data_directory_;    //data directory
   QString settings_directory_;

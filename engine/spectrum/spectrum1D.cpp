@@ -275,13 +275,11 @@ bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compressio
 
 
 bool Spectrum1D::read_cnf(std::string name) {
-  PL_INFO << "about to read cnf";
   xylib::DataSet* newdata = xylib::load_file(name, "canberra_cnf");
 
   if (newdata == nullptr)
     return false;
   
-  PL_DBG << "has " << newdata->get_block_count() << " blocks";
   for (int i=0; i < newdata->get_block_count(); i++) {
 
     std::vector<double> calibration;
@@ -308,9 +306,9 @@ bool Spectrum1D::read_cnf(std::string name) {
         metadata_.live_time = boost::posix_time::duration_from_string(value);
     }
      
-    PL_DBG << "block " << i
-           << " has " << newdata->get_block(i)->get_column_count() << " columns"
-           << " and " << newdata->get_block(i)->get_point_count() << " points";
+//    PL_DBG << "block " << i
+//           << " has " << newdata->get_block(i)->get_column_count() << " columns"
+//           << " and " << newdata->get_block(i)->get_point_count() << " points";
 
     metadata_.resolution = newdata->get_block(i)->get_point_count();
     metadata_.bits = log2(metadata_.resolution);
@@ -326,13 +324,15 @@ bool Spectrum1D::read_cnf(std::string name) {
     metadata_.detectors[0].name_ = "unknown";
     Gamma::Calibration new_calib("Energy", metadata_.bits);
     new_calib.coefficients_ = calibration;
+    new_calib.units_ = "keV";
     metadata_.detectors[0].energy_calibrations_.add(new_calib);
     
     double tempcount = 0.0;
-    for (int j = 0; j < newdata->get_block(i)->get_column_count(); j++) {
-      std::stringstream blab;
+    int column = newdata->get_block(i)->get_column_count();
+    if (column == 2) {
+
       for (int k = 0; k < newdata->get_block(i)->get_point_count(); k++) {
-        double data = newdata->get_block(i)->get_column(j).get_value(k);
+        double data = newdata->get_block(i)->get_column(column).get_value(k);
         PreciseFloat nr(data);
 
         spectrum_[k] = PreciseFloat(data);
@@ -340,13 +340,10 @@ bool Spectrum1D::read_cnf(std::string name) {
         if (nr > metadata_.max_count)
           metadata_.max_count = nr;
 
-        blab << data << " ";
         tempcount += data;
       }
-      PL_DBG << "column " << blab.str();
     }
     metadata_.total_count = tempcount;
-    PL_DBG << "total count " << tempcount;
 
   }
 

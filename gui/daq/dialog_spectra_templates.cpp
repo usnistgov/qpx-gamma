@@ -28,8 +28,11 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
-DialogSpectrumTemplate::DialogSpectrumTemplate(Qpx::Spectrum::Template newTemplate, bool edit, QWidget *parent) :
+DialogSpectrumTemplate::DialogSpectrumTemplate(Qpx::Spectrum::Template newTemplate,
+                                               std::vector<Gamma::Detector> current_dets,
+                                               bool edit, QWidget *parent) :
   QDialog(parent),
+  current_dets_(current_dets),
   ui(new Ui::DialogSpectrumTemplate)
 {
   ui->setupUi(this);
@@ -57,6 +60,8 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Qpx::Spectrum::Template newTempla
     Qpx::Spectrum::Template *newtemp = Qpx::Spectrum::Factory::getInstance().create_template(ui->comboType->currentText().toStdString());
     if (newtemp != nullptr) {
       myTemplate = *newtemp;
+      myTemplate.match_pattern.resize(current_dets_.size());
+      myTemplate.add_pattern.resize(current_dets_.size());
     } else
       PL_WARN << "Problem with spectrum type. Factory cannot make template for " << ui->comboType->currentText().toStdString();
     myTemplate.appearance = generateColor().rgba();
@@ -177,6 +182,8 @@ void DialogSpectrumTemplate::on_comboType_activated(const QString &arg1)
     myTemplate.bits = ui->spinBits->value();
     myTemplate.name_ = ui->lineName->text().toStdString();
     myTemplate.appearance = ui->colPicker->currentColor().rgba();
+    myTemplate.match_pattern.resize(current_dets_.size());
+    myTemplate.add_pattern.resize(current_dets_.size());
     updateData();
   } else
     PL_WARN << "Problem with spectrum type. Factory refuses to make template for " << arg1.toStdString();
@@ -297,12 +304,15 @@ Qt::ItemFlags TableSpectraTemplates::flags(const QModelIndex &index) const
 
 
 
-DialogSpectraTemplates::DialogSpectraTemplates(XMLableDB<Qpx::Spectrum::Template> &newdb, QString savedir, QWidget *parent) :
+DialogSpectraTemplates::DialogSpectraTemplates(XMLableDB<Qpx::Spectrum::Template> &newdb,
+                                               std::vector<Gamma::Detector> current_dets,
+                                               QString savedir, QWidget *parent) :
   QDialog(parent),
   ui(new Ui::DialogSpectraTemplates),
   table_model_(newdb),
   selection_model_(&table_model_),
   templates_(newdb),
+  current_dets_(current_dets),
   root_dir_(savedir)
 {
   ui->setupUi(this);
@@ -322,7 +332,6 @@ DialogSpectraTemplates::DialogSpectraTemplates(XMLableDB<Qpx::Spectrum::Template
           this, SLOT(selection_changed(QItemSelection,QItemSelection)));
   connect(ui->spectraSetupView, SIGNAL(doubleClicked(QModelIndex)),
           this, SLOT(selection_double_clicked(QModelIndex)));
-
 
   table_model_.update();
   ui->spectraSetupView->resizeColumnsToContents();
@@ -399,9 +408,9 @@ void DialogSpectraTemplates::on_pushNew_clicked()
 {
   Qpx::Spectrum::Template new_template;
   new_template.appearance = generateColor().rgba();
-  new_template.match_pattern.resize(4);
-  new_template.add_pattern.resize(4);
-  DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(new_template, false, this);
+  new_template.match_pattern.resize(current_dets_.size());
+  new_template.add_pattern.resize(current_dets_.size());
+  DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(new_template, current_dets_, false, this);
   connect(newDialog, SIGNAL(templateReady(Qpx::Spectrum::Template)), this, SLOT(add_template(Qpx::Spectrum::Template)));
   newDialog->exec();
 }
@@ -412,7 +421,7 @@ void DialogSpectraTemplates::on_pushEdit_clicked()
   if (ixl.empty())
     return;
   int i = ixl.front().row();
-  DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(templates_.get(i), true, this);
+  DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(templates_.get(i), current_dets_, true, this);
   connect(newDialog, SIGNAL(templateReady(Qpx::Spectrum::Template)), this, SLOT(change_template(Qpx::Spectrum::Template)));
   newDialog->exec();
 }

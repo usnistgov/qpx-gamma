@@ -30,7 +30,8 @@
 #include "qt_util.h"
 
 
-FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
+FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector>& detectors,
+                       std::vector<Gamma::Detector>& current_dets, QWidget *parent) :
   QWidget(parent),
   settings_(settings),
   spectra_templates_("SpectrumTemplates"),
@@ -43,6 +44,7 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamm
   runner_thread_(thread),
   plot_thread_(spectra_),
   detectors_(detectors),
+  current_dets_(current_dets),
   my_run_(false),
   ui(new Ui::FormMcaDaq)
 {
@@ -112,19 +114,27 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
   }
 
   if (my_analysis_ != nullptr) {
+    PL_DBG << "will kill assoc analysis1D";
     my_analysis_->close(); //assume always successful
+    emit requestClose(my_analysis_);
   }
 
   if (my_analysis_2d_ != nullptr) {
+    PL_DBG << "will kill assoc analysis2D";
     my_analysis_2d_->close(); //assume always successful
+    emit requestClose(my_analysis_2d_);
   }
 
   if (my_symmetrization_2d_!= nullptr) {
+    PL_DBG << "will kill assoc sym2D";
     my_symmetrization_2d_->close(); //assume always successful
+    emit requestClose(my_symmetrization_2d_);
   }
 
   if (my_eff_cal_ != nullptr) {
+    PL_DBG << "will kill assoc effcal";
     my_eff_cal_->close(); //assume always successful
+    emit requestClose(my_eff_cal_);
   }
 
   if (spectra_.changed()) {
@@ -227,7 +237,6 @@ void FormMcaDaq::clearGraphs() //rename this
   spectra_.activate();
 }
 
-
 void FormMcaDaq::update_plots() {
   //ui->statusBar->showMessage("Updating plots");
 
@@ -312,7 +321,8 @@ void FormMcaDaq::after_export() {
 
 void FormMcaDaq::on_pushEditSpectra_clicked()
 {
-  DialogSpectraTemplates* newDialog = new DialogSpectraTemplates(spectra_templates_, settings_directory_, this);
+  DialogSpectraTemplates* newDialog = new DialogSpectraTemplates(spectra_templates_, current_dets_,
+                                                                 settings_directory_, this);
   newDialog->exec();
 }
 
@@ -327,7 +337,8 @@ void FormMcaDaq::on_pushMcaStart_clicked()
     else
       start_DAQ();
   } else {
-    DialogSpectraTemplates* newDialog = new DialogSpectraTemplates(spectra_templates_, settings_directory_, this);
+    DialogSpectraTemplates* newDialog = new DialogSpectraTemplates(spectra_templates_, current_dets_,
+                                                                   settings_directory_, this);
     connect(newDialog, SIGNAL(accepted()), this, SLOT(start_DAQ()));
     newDialog->exec();
   }
@@ -488,7 +499,7 @@ void FormMcaDaq::reqAnal(QString name) {
   this->setCursor(Qt::WaitCursor);
 
   if (my_analysis_ == nullptr) {
-    my_analysis_ = new FormAnalysis1D(settings_, detectors_);
+    my_analysis_ = new FormAnalysis1D(settings_, detectors_, this);
     connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_, SLOT(update_spectrum()));
     connect(my_analysis_, SIGNAL(destroyed()), this, SLOT(analysis_destroyed()));
   }
@@ -500,6 +511,7 @@ void FormMcaDaq::reqAnal(QString name) {
 }
 
 void FormMcaDaq::analysis_destroyed() {
+  PL_DBG << "analysis destroyed";
   my_analysis_ = nullptr;
 }
 
@@ -524,7 +536,7 @@ void FormMcaDaq::reqSym2D(QString name) {
   this->setCursor(Qt::WaitCursor);
 
   if (my_symmetrization_2d_ == nullptr) {
-    my_symmetrization_2d_ = new FormSymmetrize2D(settings_, detectors_);
+    my_symmetrization_2d_ = new FormSymmetrize2D(settings_, detectors_, this);
     //connect(&plot_thread_, SIGNAL(plot_ready()), my_symmetrization_2d_, SLOT(update_spectrum()));
     connect(my_symmetrization_2d_, SIGNAL(destroyed()), this, SLOT(sym2d_destroyed()));
     connect(my_symmetrization_2d_, SIGNAL(spectraChanged()), this, SLOT(updateSpectraUI()));
@@ -542,7 +554,7 @@ void FormMcaDaq::reqEffCal(QString name)
   this->setCursor(Qt::WaitCursor);
 
   if (my_eff_cal_ == nullptr) {
-    my_eff_cal_ = new FormEfficiencyCalibration(settings_, detectors_);
+    my_eff_cal_ = new FormEfficiencyCalibration(settings_, detectors_, this);
     connect(&plot_thread_, SIGNAL(plot_ready()), my_eff_cal_, SLOT(update_spectrum()));
     connect(my_eff_cal_, SIGNAL(destroyed()), this, SLOT(analysis_destroyed()));
   }

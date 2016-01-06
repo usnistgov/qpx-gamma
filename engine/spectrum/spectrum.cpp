@@ -546,6 +546,8 @@ void Spectrum::to_xml(pugi::xml_node &root) const {
   node.append_child("Appearance").append_child(pugi::node_pcdata).set_value(std::to_string(metadata_.appearance).c_str());
   node.append_child("Visible").append_child(pugi::node_pcdata).set_value(std::to_string(metadata_.visible).c_str());
   node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(metadata_.bits).c_str());
+  if (!metadata_.description.empty())
+    node.append_child("Description").append_child(pugi::node_pcdata).set_value(metadata_.description.c_str());
 
   std::stringstream patterndata;
   for (auto &q: metadata_.match_pattern)
@@ -594,6 +596,8 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
   metadata_.appearance = boost::lexical_cast<unsigned int>(std::string(node.child_value("Appearance")));
   metadata_.visible = boost::lexical_cast<bool>(std::string(node.child_value("Visible")));
   metadata_.bits = boost::lexical_cast<short>(std::string(node.child_value("Resolution")));
+  if (node.child("Description"))
+    metadata_.description = std::string(node.child_value("Description"));
 
   if ((!metadata_.bits) || (metadata_.total_count == 0))
     return false;

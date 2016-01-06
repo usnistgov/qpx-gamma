@@ -36,15 +36,15 @@ private:
   const double usecs = pow(10, 3);
   uint64_t timeout_limit;
 public:
-  CustomTimer(bool start = false) {if (!start) stop(); timeout_limit = 0;};
-  CustomTimer(uint64_t timeout, bool start = false) { if (!start) stop(); timeout_limit = timeout;};
-  double s () {return elapsed().wall / secs;};
-  double ms () {return elapsed().wall / msecs;};
-  double us () {return elapsed().wall / usecs;};
-  double ns() {return elapsed().wall;};
+  CustomTimer(bool start = false) {if (!start) stop(); timeout_limit = 0;}
+  CustomTimer(uint64_t timeout, bool start = false) { if (!start) stop(); timeout_limit = timeout;}
+  double s () {return elapsed().wall / secs;}
+  double ms () {return elapsed().wall / msecs;}
+  double us () {return elapsed().wall / usecs;}
+  double ns() {return elapsed().wall;}
   bool timeout() {
     return (s() > static_cast<double>(timeout_limit));
-  };
+  }
 
   std::string done() {
     uint64_t e_tot = static_cast<uint64_t>(s());
@@ -59,7 +59,7 @@ public:
     answer += std::to_string(e_s);
 
     return answer;
-  };
+  }
   
   std::string ETA() {
     uint64_t ETA_tot = static_cast<uint64_t>(
@@ -76,7 +76,7 @@ public:
     answer += std::to_string(ETA_s);
 
     return answer;
-  };
+  }
 };
 
 #endif

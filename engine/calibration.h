@@ -28,9 +28,6 @@
 #include <string>
 #include <boost/date_time.hpp>
 #include "xmlable.h"
-#include "polynomial.h"
-#include "polylog.h"
-#include "log_inverse.h"
 
 namespace Gamma {
 

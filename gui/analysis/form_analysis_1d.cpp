@@ -80,6 +80,7 @@ void FormAnalysis1D::closeEvent(QCloseEvent *event) {
 
   ui->plotSpectrum->saveSettings(settings_);
 
+  PL_DBG << "closing analysis1d";
   saveSettings();
   event->accept();
 }

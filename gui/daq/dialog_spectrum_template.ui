@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>446</width>
-    <height>551</height>
+    <height>614</height>
    </rect>
   </property>
   <property name="focusPolicy">
@@ -28,94 +28,91 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="0">
-    <layout class="QHBoxLayout" name="horizontalLayout_9">
+    <widget class="QLabel" name="label_10">
+     <property name="text">
+      <string>&lt;b&gt;Energy resolution&lt;/b&gt;</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout_4">
      <item>
-      <widget class="QGroupBox" name="groupBox_3">
-       <property name="title">
-        <string>Energy resolution</string>
+      <widget class="QLabel" name="label_3">
+       <property name="minimumSize">
+        <size>
+         <width>60</width>
+         <height>25</height>
+        </size>
        </property>
-       <layout class="QGridLayout" name="gridLayout_3">
-        <item row="0" column="0">
-         <layout class="QHBoxLayout" name="horizontalLayout_4">
-          <item>
-           <widget class="QLabel" name="label_3">
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Bits</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QSpinBox" name="spinBits">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="maximum">
-             <number>16</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="1" column="0">
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
-          <item>
-           <widget class="QLabel" name="label_7">
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Channels</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="lineChannels">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>25</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-       </layout>
+       <property name="text">
+        <string>Bits</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="spinBits">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximum">
+        <number>16</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_7">
+       <property name="minimumSize">
+        <size>
+         <width>60</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Channels</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineChannels">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>25</height>
+        </size>
+       </property>
       </widget>
      </item>
     </layout>
    </item>
-   <item row="4" column="0">
-    <widget class="QTableView" name="tableGenericAttrs"/>
-   </item>
    <item row="5" column="0">
+    <widget class="QTableView" name="tableGenericAttrs">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -301,8 +298,17 @@
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_6">
+         <property name="sizeConstraint">
+          <enum>QLayout::SetMaximumSize</enum>
+         </property>
          <item>
           <widget class="QLabel" name="label">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
             <size>
              <width>50</width>
@@ -323,7 +329,7 @@
          <item>
           <widget class="QComboBox" name="comboType">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Maximum">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -373,14 +379,14 @@
      </item>
     </layout>
    </item>
-   <item row="3" column="0">
+   <item row="4" column="0">
     <widget class="QLabel" name="label_8">
      <property name="text">
       <string>Type-specific settings</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="0">
+   <item row="3" column="0">
     <widget class="QGroupBox" name="groupBox_2">
      <property name="title">
       <string>Coincidence patterns</string>
@@ -504,6 +510,8 @@
   <zorder>tableGenericAttrs</zorder>
   <zorder>label_8</zorder>
   <zorder>groupBox_2</zorder>
+  <zorder></zorder>
+  <zorder>label_10</zorder>
  </widget>
  <customwidgets>
   <customwidget>

@@ -28,6 +28,11 @@
 #include <QInputDialog>
 #include "dialog_spectrum.h"
 
+#include "polynomial.h"
+#include "polylog.h"
+#include "log_inverse.h"
+#include "effit.h"
+
 FormEfficiencyCalibration::FormEfficiencyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormEfficiencyCalibration),
@@ -56,6 +61,8 @@ FormEfficiencyCalibration::FormEfficiencyCalibration(QSettings &settings, XMLabl
   connect(ui->tablePeaks, SIGNAL(itemSelectionChanged()), this, SLOT(selection_changed_in_table()));
 
   connect(ui->PlotCalib, SIGNAL(selection_changed()), this, SLOT(selection_changed_in_calib_plot()));
+  ui->PlotCalib->set_scale_type_x("Logarithmic");
+  ui->PlotCalib->set_scale_type_y("Logarithmic");
 
   ui->isotopes->show();
   connect(ui->isotopes, SIGNAL(isotopeSelected()), this, SLOT(isotope_chosen()));
@@ -157,14 +164,24 @@ void FormEfficiencyCalibration::setSpectrum(QString name) {
       fit_data_ = peak_sets_.at(name.toStdString());
       ui->isotopes->set_current_isotope(QString::fromStdString(fit_data_.sample_name_));
     }  else {
+      Qpx::Spectrum::Metadata md = spectrum->metadata();
+      if (!md.description.empty()) {
+        //find among data
+        ui->isotopes->set_current_isotope(QString::fromStdString(md.description));
+      }
+
       fit_data_.clear();
       fit_data_.setData(spectrum);
       peak_sets_[name.toStdString()] = fit_data_;
     }
     ui->doubleScaleFactor->setValue(fit_data_.activity_scale_factor_);
     ui->doubleScaleFactor->setEnabled(true);
-  } else
+  } else {
     spectrum = nullptr;
+    fit_data_ = Gamma::Fitter();
+    ui->plotSpectrum->new_spectrum();
+    ui->doubleScaleFactor->setEnabled(false);
+  }
 
   ui->plotSpectrum->new_spectrum();
 
@@ -292,21 +309,6 @@ void FormEfficiencyCalibration::spectrumLooksChanged(SelectorItem item) {
 void FormEfficiencyCalibration::spectrumDetails(SelectorItem item)
 {
   setSpectrum(item.text);
-
-  QString id = ui->spectrumSelector->selected().text;
-  Qpx::Spectrum::Spectrum* someSpectrum = spectra_->by_name(id.toStdString());
-
-  Qpx::Spectrum::Metadata md;
-  if (someSpectrum)
-    md = someSpectrum->metadata();
-
-  if (id.isEmpty() || (someSpectrum == nullptr)) {
-    fit_data_ = Gamma::Fitter();
-    ui->plotSpectrum->new_spectrum();
-    ui->doubleScaleFactor->setEnabled(false);
-    return;
-  }
-
 }
 
 void FormEfficiencyCalibration::add_peak_to_table(const Gamma::Peak &p, int row, QColor bckg) {
@@ -390,6 +392,9 @@ void FormEfficiencyCalibration::replot_calib() {
       xx.clear(); yy.clear();
       double step = (xmax-xmin) / 300.0;
       xmin -= step;
+      if (xmin < 0)
+        xmin = 0;
+
       xmax += (step * 100);
 
       for (double i=xmin; i < xmax; i+=step) {
@@ -496,6 +501,7 @@ void FormEfficiencyCalibration::toggle_push() {
 
   ui->pushFit->setEnabled(points_for_calib > 1);
   ui->pushFit_2->setEnabled(points_for_calib > 1);
+  ui->pushFitEffit->setEnabled(points_for_calib > 1);
   ui->spinTerms->setEnabled(points_for_calib > 1);
 
   if (new_calibration_ != Gamma::Calibration())
@@ -658,6 +664,47 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
   }
   else
     PL_INFO << "<Efficiency calibration> Gamma::Calibration failed";
+
+  replot_calib();
+  toggle_push();
+}
+
+void FormEfficiencyCalibration::on_pushFitEffit_clicked()
+{
+  QVector<SelectorItem> items = ui->spectrumSelector->items();
+  std::vector<double> xx, yy;
+
+  for (auto &fit : peak_sets_) {
+    bool visible = false;
+
+    for (auto &i : items)
+      if (i.visible && (fit.second.metadata_.name == i.text.toStdString()))
+        visible = true;
+
+    if (visible) {
+      for (auto &q : fit.second.peaks_) {
+        if (!q.second.flagged)
+          continue;
+
+        double x = q.second.energy;
+        double y = q.second.efficiency_relative_ * fit.second.activity_scale_factor_;
+
+        xx.push_back(x);
+        yy.push_back(y);
+      }
+
+    }
+  }
+
+  Effit p = Effit(xx, yy);
+
+    new_calibration_.type_ = "Efficiency";
+    new_calibration_.bits_ = fit_data_.metadata_.bits;
+    new_calibration_.coefficients_ = p.coeffs();
+    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
+    new_calibration_.units_ = "ratio";
+    new_calibration_.model_ = Gamma::CalibrationModel::effit;
+    PL_DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
 
   replot_calib();
   toggle_push();

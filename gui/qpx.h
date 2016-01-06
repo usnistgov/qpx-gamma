@@ -62,6 +62,7 @@ private:
   QString                       data_directory_;        //data directory
   QSettings                     settings_;
   XMLableDB<Gamma::Detector>    detectors_;
+  std::vector<Gamma::Detector>  current_dets_;
   ThreadRunner                  runner_thread_;
 
   FormStart* main_tab_;
@@ -98,6 +99,7 @@ private slots:
   void analyze_2d(FormAnalysis2D*);
   void symmetrize_2d(FormSymmetrize2D*);
   void eff_cal(FormEfficiencyCalibration*);
+  void close_tab(QWidget*);
 
   void detectors_updated();
   void update_settings();

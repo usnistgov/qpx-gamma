@@ -49,6 +49,47 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="pushFitEffit">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Perform fit</string>
+         </property>
+         <property name="text">
+          <string>Effit</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../resources/qpxres.qrc">
+           <normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>18</width>
+           <height>18</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="pushFit_2">
          <property name="enabled">
           <bool>false</bool>
@@ -75,7 +116,7 @@
           <string>Perform fit</string>
          </property>
          <property name="text">
-          <string>Inv</string>
+          <string>LogInv</string>
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
@@ -116,7 +157,7 @@
           <string>Perform fit</string>
          </property>
          <property name="text">
-          <string>Log</string>
+          <string>LogLog</string>
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
