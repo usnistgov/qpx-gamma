@@ -296,7 +296,7 @@ void qpx::openNewProject()
   connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
   connect(newSpectraForm, SIGNAL(requestSymmetriza2D(FormSymmetrize2D*)), this, SLOT(symmetrize_2d(FormSymmetrize2D*)));
   connect(newSpectraForm, SIGNAL(requestEfficiencyCal(FormEfficiencyCalibration*)), this, SLOT(eff_cal(FormEfficiencyCalibration*)));
-  connect(newSpectraForm, SIGNAL(requestClose(QWidget*)), this, SLOT(close_tab(QWidget*)));
+  connect(newSpectraForm, SIGNAL(requestClose(QWidget*)), this, SLOT(closeTab(QWidget*)));
 
   connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
@@ -321,24 +321,15 @@ void qpx::addClosableTab(QWidget* widget, QString tooltip) {
 
 
 void qpx::closeTab(QWidget* w) {
-  tabCloseRequested(ui->qpxTabs->indexOf(w));
+  int idx = ui->qpxTabs->indexOf(w);
+  PL_DBG << "requested tab close " << idx;
+  tabCloseRequested(idx);
 }
 
 void qpx::reorder_tabs() {
   for (int i = 0; i < ui->qpxTabs->count(); ++i)
     if (ui->qpxTabs->tabText(i).isEmpty() && (i != (ui->qpxTabs->count() - 1)))
       ui->qpxTabs->tabBar()->moveTab(i, ui->qpxTabs->count() - 1);
-}
-
-void qpx::close_tab(QWidget* widget) {
-  int idx = ui->qpxTabs->indexOf(widget);
-  PL_DBG << "requested tab close " << idx;
-  if (idx == -1) {
-    tabCloseRequested(idx);
-//    QWidget * tab =  ui->qpxTabs->widget(index);
-//    m_parentTabWidget->removeTab(index);
-//    ui->qpxTabs->removeTab(idx);
-  }
 }
 
 void qpx::tabs_moved(int, int) {

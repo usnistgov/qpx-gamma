@@ -114,7 +114,6 @@ private slots:
   void analyze_2d(FormAnalysis2D*);
   void symmetrize_2d(FormSymmetrize2D*);
   void eff_cal(FormEfficiencyCalibration*);
-  void close_tab(QWidget*);
 
   void detectors_updated();
   void update_settings();
