@@ -42,6 +42,20 @@ namespace Ui {
 class qpx;
 }
 
+class CloseTabButton : public QPushButton {
+  Q_OBJECT
+public:
+  CloseTabButton(QWidget* pt) : parent_tab_(pt) {
+    connect(this, SIGNAL(clicked(bool)), this, SLOT(closeme(bool)));
+  }
+private slots:
+  void closeme(bool) { emit closeTab(parent_tab_); }
+signals:
+  void closeTab(QWidget*);
+protected:
+  QWidget *parent_tab_;
+};
+
 class qpx : public QMainWindow
 {
   Q_OBJECT
@@ -89,6 +103,7 @@ private slots:
   void updateStatusText(QString);
 
   void tabCloseRequested(int index);
+  void closeTab(QWidget*);
 
   //logger receiver
   void add_log_text(QString);
@@ -116,6 +131,7 @@ private slots:
   void open_list();
 
   void tabs_moved(int, int);
+  void addClosableTab(QWidget*, QString);
 
 };
 

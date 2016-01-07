@@ -151,7 +151,6 @@ void qpx::profile_chosen(QString profile, bool boot) {
 
   main_tab_ = new FormStart(runner_thread_, settings_, detectors_, profile, this);
   ui->qpxTabs->addTab(main_tab_, main_tab_->windowTitle());
-  ui->qpxTabs->tabBar()->tabButton(ui->qpxTabs->count() - 1, QTabBar::RightSide)->resize(0,0);
   connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
   connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(settings_updated()));
@@ -169,6 +168,8 @@ void qpx::profile_chosen(QString profile, bool boot) {
 }
 
 void qpx::tabCloseRequested(int index) {
+  if ((index < 0) || (index >= ui->qpxTabs->count()))
+      return;
   ui->qpxTabs->setCurrentIndex(index);
   if (ui->qpxTabs->widget(index)->close())
     ui->qpxTabs->removeTab(index);
@@ -223,15 +224,8 @@ void qpx::toggleIO(bool enable) {
   else
     ui->statusBar->showMessage("Busy");
 
-  for (int i = 0; i < ui->qpxTabs->count(); ++i) {
-
+  for (int i = 0; i < ui->qpxTabs->count(); ++i)
     ui->qpxTabs->setTabText(i, ui->qpxTabs->widget(i)->windowTitle());
-//    if (ui->qpxTabs->tabText(i).isEmpty() && (i != (ui->qpxTabs->count() - 1)))
-//      ui->qpxTabs->tabBar()->moveTab(i, ui->qpxTabs->count() - 1);
-
-//    ui->qpxTabs->addTab(formAnal, formAnal->windowTitle());
-
-  }
 
   emit toggle_push(enable, px_status_);
 }
@@ -252,7 +246,7 @@ void qpx::update_settings() {
 void qpx::analyze_1d(FormAnalysis1D* formAnal) {
   int idx = ui->qpxTabs->indexOf(formAnal);
   if (idx == -1) {
-    ui->qpxTabs->addTab(formAnal, formAnal->windowTitle());
+    addClosableTab(formAnal, "Close");
     connect(formAnal, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
   } else
     ui->qpxTabs->setTabText(idx, formAnal->windowTitle());
@@ -264,7 +258,7 @@ void qpx::analyze_1d(FormAnalysis1D* formAnal) {
 void qpx::analyze_2d(FormAnalysis2D* formAnal) {
   int idx = ui->qpxTabs->indexOf(formAnal);
   if (idx == -1) {
-    ui->qpxTabs->addTab(formAnal, formAnal->windowTitle());
+    addClosableTab(formAnal, "Close");
     connect(formAnal, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
   } else
     ui->qpxTabs->setTabText(idx, formAnal->windowTitle());
@@ -275,7 +269,7 @@ void qpx::analyze_2d(FormAnalysis2D* formAnal) {
 void qpx::symmetrize_2d(FormSymmetrize2D* formSym) {
   int idx = ui->qpxTabs->indexOf(formSym);
   if (idx == -1) {
-    ui->qpxTabs->addTab(formSym, formSym->windowTitle());
+    addClosableTab(formSym, "Close");
     connect(formSym, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
   } else
     ui->qpxTabs->setTabText(idx, formSym->windowTitle());
@@ -287,7 +281,7 @@ void qpx::symmetrize_2d(FormSymmetrize2D* formSym) {
 void qpx::eff_cal(FormEfficiencyCalibration *formEf) {
   int idx = ui->qpxTabs->indexOf(formEf);
   if (idx == -1) {
-    ui->qpxTabs->addTab(formEf, formEf->windowTitle());
+    addClosableTab(formEf, "Close");
     connect(formEf, SIGNAL(detectorsChanged()), this, SLOT(detectors_updated()));
   } else
     ui->qpxTabs->setTabText(idx, formEf->windowTitle());
@@ -298,7 +292,6 @@ void qpx::eff_cal(FormEfficiencyCalibration *formEf) {
 void qpx::openNewProject()
 {
   FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, settings_, detectors_, current_dets_, this);
-  ui->qpxTabs->addTab(newSpectraForm, newSpectraForm->windowTitle());
   connect(newSpectraForm, SIGNAL(requestAnalysis(FormAnalysis1D*)), this, SLOT(analyze_1d(FormAnalysis1D*)));
   connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
   connect(newSpectraForm, SIGNAL(requestSymmetriza2D(FormSymmetrize2D*)), this, SLOT(symmetrize_2d(FormSymmetrize2D*)));
@@ -308,12 +301,27 @@ void qpx::openNewProject()
   connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
 
-
+  addClosableTab(newSpectraForm, "Close project");
   ui->qpxTabs->setCurrentWidget(newSpectraForm);
-
   reorder_tabs();
 
   newSpectraForm->toggle_push(true, px_status_);
+}
+
+void qpx::addClosableTab(QWidget* widget, QString tooltip) {
+  CloseTabButton *cb = new CloseTabButton(widget);
+  cb->setIcon( QIcon::fromTheme("window-close"));
+//  tb->setIconSize(QSize(16, 16));
+  cb->setToolTip(tooltip);
+  cb->setFlat(true);
+  connect(cb, SIGNAL(closeTab(QWidget*)), this, SLOT(closeTab(QWidget*)));
+  ui->qpxTabs->addTab(widget, widget->windowTitle());
+  ui->qpxTabs->tabBar()->setTabButton(ui->qpxTabs->count()-1, QTabBar::RightSide, cb);
+}
+
+
+void qpx::closeTab(QWidget* w) {
+  tabCloseRequested(ui->qpxTabs->indexOf(w));
 }
 
 void qpx::reorder_tabs() {
@@ -343,7 +351,7 @@ void qpx::open_list()
     return;
 
   FormListDaq *newListForm = new FormListDaq(runner_thread_, settings_, this);
-  ui->qpxTabs->addTab(newListForm, newListForm->windowTitle());
+  addClosableTab(newListForm, "Close");
 
   connect(newListForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(newListForm, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
@@ -363,7 +371,7 @@ void qpx::open_optimization()
     return;
 
   FormOptimization *newOpt = new FormOptimization(runner_thread_, settings_, detectors_, this);
-  ui->qpxTabs->addTab(newOpt, newOpt->windowTitle());
+  addClosableTab(newOpt, "Close");
 
   connect(newOpt, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
   connect(newOpt, SIGNAL(settings_changed()), this, SLOT(update_settings()));
@@ -384,7 +392,7 @@ void qpx::open_gain_matching()
     return;
 
   FormGainMatch *newGain = new FormGainMatch(runner_thread_, settings_, detectors_, this);
-  ui->qpxTabs->addTab(newGain, newGain->windowTitle());
+  addClosableTab(newGain, "Close");
 
   connect(newGain, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
 
