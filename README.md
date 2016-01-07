@@ -15,23 +15,29 @@ Features:
 * gain matching (iterative online, and post-acquisition)
 * automatic digitizer setting optimization to minimize FWHM
 
-Works with the following hardware:
-* Pixie-4
+Supports:
+* Linux and Mac
+* XIA Pixie-4
 * HV8
 * IsegSHV via Wiener VMUSB
 
-To compile, first install:
-* boost libraries (5.7)
-* Qt libraries (5.3)
-* mesa-comon-dev
-* libglu1-mesa-dev
+Reads:
+* Canberra cnf, mca, tka, ava
+* Radware spn, spe, mat, m4b
+* N42 (ANSI N42.42-2006)
+* Gammavision spe
+* NSCLdaq evt
 
-Linux:
+To install, you need:
+* [boost](http://www.boost.org/)
+* [Qt 5](http://www.qt.io/)
 * If using Pixie-4, make sure PLX driver is working (driver and installation script included, see /hardware/pixie4/PLX/README)
 * utter the following incantations:
   - to compile './install.sh' will also put sample data files in ~/qpx/
   - to run './qpx'
 * to make global, follow it up with 'sudo make install'
+
+[Upcoming/ToDo](https://trello.com/b/YKb96auO/qpx-todo-list)
 
 For questions, contact:
 <br>   Martin Shetty (martin.shetty@nist.gov)
