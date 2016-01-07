@@ -56,5 +56,6 @@
         <file>oxy/games_endturn.png</file>
         <file>oxy/filenew.png</file>
         <file>oxy/document_save_as.png</file>
+        <file>oxy/application_exit.png</file>
     </qresource>
 </RCC>
