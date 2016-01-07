@@ -37,7 +37,7 @@ public:
     Template new_temp = Spectrum::get_template();
     new_temp.type = "1D";
     new_temp.input_types = {"cnf", "tka", "n42", "ava", "spe"};
-    new_temp.output_types = {"n42", "tka"};
+    new_temp.output_types = {"n42", "tka", "spe"};
     new_temp.description = "Traditional MCA spectrum";
 
     Gamma::Setting cutoff_bin;
@@ -93,12 +93,14 @@ protected:
   //format-specific stuff
   void write_tka(std::string) const;
   void write_n42(std::string) const;
-  
+  void write_spe(std::string) const;
+
   bool read_cnf(std::string);
   bool read_tka(std::string);
   bool read_n42(std::string);
   bool read_ava(std::string);
   bool read_spe(std::string);
+  bool read_spe_gammavision(std::string);
 
   std::vector<PreciseFloat> spectrum_;
   int32_t cutoff_bin_;

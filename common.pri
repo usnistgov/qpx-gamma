@@ -49,8 +49,10 @@ unix {
 
   LIBPATH += /usr/local/lib
 
-  CONFIG -= c++11
-  QMAKE_CXXFLAGS += -std=c++11
+  !mac {
+    CONFIG -= c++11
+    QMAKE_CXXFLAGS += -std=c++11
+  }
 }
 
 android {
@@ -59,6 +61,14 @@ android {
              LIBPATH += ../crystax-ndk-10.2.1/sources/boost/1.58.0/libs/armeabi-v7a
             }
         }
+
+mac {
+     CONFIG += c++11
+     QMAKE_LFLAGS += -lc++
+     LIBPATH += /usr/local/boost_1_59_0/stage/lib /opt/local/lib
+     INCLUDEPATH += /usr/local/boost_1_59_0
+     QMAKE_CXXFLAGS += -stdlib=libc++ -Wno-c++11-narrowing
+}
 
 win32 {
        LIBPATH += D:\dev\boost_1_57_0\stage\lib

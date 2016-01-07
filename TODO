@@ -2,16 +2,14 @@ Major features/overhauls:
 -buffer 2d only when visible
 -lock file (one instance per system)
 -uncertainties for multiplet areas
-+efficiency calibration (absolute)
++absolute efficiency
 
 engine:
 -all timestamps with timezone**
 -save as 2012 revision of N42
--fix cnf loading (dll?)
 -save raw transfers to new directory
 
 gui:
--ask for simulation parameters
 -more run parameters
       *delay / prompt
       *save after complete

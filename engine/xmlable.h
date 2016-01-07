@@ -26,6 +26,7 @@
 
 #include <string>
 #include <list>
+#include <vector>
 #include <boost/type_traits.hpp>
 #include "pugixml.hpp"
 #include "custom_logger.h"

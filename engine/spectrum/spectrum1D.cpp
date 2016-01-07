@@ -130,6 +130,9 @@ bool Spectrum1D::_write_file(std::string dir, std::string format) const {
   } else if (format == "n42") {
     write_n42(dir + "/" + metadata_.name + ".n42");
     return true;
+  } else if (format == "spe") {
+    write_spe(dir + "/" + metadata_.name + ".spe");
+    return true;
   } else
     return false;
 }
@@ -286,6 +289,7 @@ bool Spectrum1D::read_cnf(std::string name) {
     for (uint32_t j=0; j < newdata->get_block(i)->meta.size(); j++) {
       std::string key = newdata->get_block(i)->meta.get_key(j);
       std::string value = newdata->get_block(i)->meta.get(key);
+//      PL_DBG << "CNF.meta " << key << " = " << value;
       if (key.substr(0, 12) == "energy calib")
         calibration.push_back(boost::lexical_cast<double>(value));
       if (key == "description")
@@ -306,15 +310,10 @@ bool Spectrum1D::read_cnf(std::string name) {
         metadata_.live_time = boost::posix_time::duration_from_string(value);
     }
      
-//    PL_DBG << "block " << i
-//           << " has " << newdata->get_block(i)->get_column_count() << " columns"
-//           << " and " << newdata->get_block(i)->get_point_count() << " points";
-
     metadata_.resolution = newdata->get_block(i)->get_point_count();
     metadata_.bits = log2(metadata_.resolution);
     if (pow(2, metadata_.bits) < metadata_.resolution)
       metadata_.bits++;
-    //metadata_.resolution = pow(2, metadata_.bits);
     spectrum_.resize(metadata_.resolution, 0);
     shift_by_ = 16 - metadata_.bits;
     metadata_.max_count = 0;
@@ -365,7 +364,6 @@ bool Spectrum1D::read_tka(std::string name) {
   myfile >> data;
   timed = boost::lexical_cast<double>(trim_copy(data)) * 1000.0;
   metadata_.real_time = boost::posix_time::milliseconds(timed);
-  int i = 0;
 
   if(!this->channels_from_string(myfile, false))
     return false;
@@ -388,32 +386,70 @@ bool Spectrum1D::read_spe(std::string name) {
   myfile.seekg (0, myfile.end);
   int length = myfile.tellg();
 
-  if (length < 13)
+  if (length < 36)
     return false;
 
-  myfile.seekg (12, myfile.beg);
+  myfile.seekg (0, myfile.beg);
+
+  uint32_t val;
+  myfile.read ((char*)&val, sizeof(uint32_t));
+  if (val != 24) {
+    //if not radware, try gammavision
+    myfile.close();
+    return read_spe_gammavision(name);
+  }
+
+  char cname[9];
+  myfile.read ((char*)&cname, 8*sizeof(char));
+  cname[8] = '\0';
+  metadata_.name = std::string(cname);
+
+  uint32_t dim1, dim2;
+  myfile.read ((char*)&dim1, sizeof(uint32_t));
+  myfile.read ((char*)&dim2, sizeof(uint32_t));
+
+  if ((dim1*dim2) > length)
+    return false;
+
+  metadata_.resolution = dim1*dim2;
+
+  myfile.seekg (28, myfile.beg);
+
+  myfile.read ((char*)&val, sizeof(uint32_t));
+  if (val != 24)
+    return false;
+
+  myfile.read ((char*)&val, sizeof(uint32_t));
+  if (val != metadata_.resolution *4)
+    return false;
 
   spectrum_.clear();
   metadata_.total_count = 0;
-//  metadata_.max_chan = 0;
-//  uint16_t max_i =0;
+  metadata_.max_chan = 0;
+  metadata_.max_count = 0;
 
   std::list<Entry> entry_list;
   float one;
   int i=0;
-  while (myfile.tellg() != length) {
+  while ((myfile.tellg() != length) && (i < metadata_.resolution)) {
     myfile.read ((char*)&one, sizeof(float));
     Entry new_entry;
     new_entry.first.resize(1);
     new_entry.first[0] = i;
     new_entry.second = one;
     entry_list.push_back(new_entry);
+    if (one > 0)
+      metadata_.max_chan = i;
+    if (one > metadata_.max_count)
+      metadata_.max_count = one;
     i++;
-    metadata_.total_count += one;
   }
 
-  if (i == 0)
-    return false;
+  myfile.read ((char*)&val, sizeof(uint32_t));
+//  PL_DBG << "bytes again = " << val;
+
+  myfile.close();
+
 
   metadata_.bits = log2(i);
   if (pow(2, metadata_.bits) < i)
@@ -435,6 +471,142 @@ bool Spectrum1D::read_spe(std::string name) {
   metadata_.detectors[0].name_ = "unknown";
 
   init_from_file(name);
+
+  return true;
+}
+
+
+bool Spectrum1D::read_spe_gammavision(std::string name) {
+  //gammavision format
+  std::ifstream myfile(name, std::ios::in);
+  if (!myfile)
+    return false;
+
+  std::string line, token;
+  std::list<Entry> entry_list;
+  int detnum = 0;
+  std::string detname = "unknown";
+  std::string enerfit, mcacal, shapecal;
+  double time;
+
+  PL_DBG << "<Spectrum1D> Reading spe as gammavision";
+
+  while (myfile.rdbuf()->in_avail()) {
+    if (line.empty()) {
+      std::getline(myfile, line);
+      boost::algorithm::trim(line);
+    }
+    //PL_DBG << "Line = " << line;
+    if (line == "$SPEC_ID:") {
+      std::getline(myfile, metadata_.name);
+      //PL_DBG << "name: " << metadata_.name;
+      line.clear();
+    } else if (line == "$SPEC_REM:") {
+      while (myfile.rdbuf()->in_avail()) {
+        std::getline(myfile, line);
+        boost::algorithm::trim(line);
+        std::stringstream ss(line);
+        ss >> token;
+        if (token == "DET#")
+          ss >> detnum;
+        else if (token == "DETDESC#") {
+          detname.clear();
+          while (ss.rdbuf()->in_avail()) {
+            ss >> token;
+            detname += token + " ";
+          }
+          boost::algorithm::trim(detname);
+        }
+        else if (token == "AP#")
+          ss >> token; //do nothing
+        else
+          break;
+      }
+    } else if (line == "$MEAS_TIM:") {
+      std::getline(myfile, line);
+      boost::algorithm::trim(line);
+      std::stringstream ss(line);
+      ss >> time;
+      metadata_.live_time = boost::posix_time::seconds(time);
+      ss >> time;
+      metadata_.real_time = boost::posix_time::seconds(time);
+      line.clear();
+    } else if (line == "$ENER_FIT:") {
+      std::getline(myfile, enerfit);
+      line.clear();
+    } else if (line == "$MCA_CAL:") {
+      std::getline(myfile, line);
+      std::getline(myfile, mcacal);
+      line.clear();
+    } else if (line == "$SHAPE_CAL:") {
+      std::getline(myfile, line);
+      std::getline(myfile, shapecal);
+      line.clear();
+    } else if (line == "$DATA:") {
+      std::getline(myfile, line);
+      std::stringstream ss(line);
+      int k1, k2;
+      ss >> k1 >> k2;
+
+      //PL_DBG << "should be " << k2;
+      for (int i=0; i < k2; ++i) {
+        myfile >> token;
+        Entry new_entry;
+        new_entry.first.resize(1);
+        new_entry.first[0] = i;
+        PreciseFloat nr(token);
+        new_entry.second = nr;
+        entry_list.push_back(new_entry);
+        if (nr > metadata_.max_count)
+          metadata_.max_count = nr;
+        if (nr > 0)
+          metadata_.max_chan = i;
+      }
+      line.clear();
+    } else
+      line.clear();
+  }
+
+  //PL_DBG << "entry list is " << entry_list.size();
+
+  metadata_.bits = log2(entry_list.size());
+  if (pow(2, metadata_.bits) < entry_list.size())
+    metadata_.bits++;
+  metadata_.resolution = pow(2, metadata_.bits);
+  shift_by_ = 16 - metadata_.bits;
+  metadata_.max_chan = entry_list.size() - 1;
+
+  spectrum_.clear();
+  spectrum_.resize(metadata_.resolution, 0);
+  metadata_.max_count = 0;
+
+  for (auto &q : entry_list) {
+    spectrum_[q.first[0]] = q.second;
+    metadata_.total_count += q.second;
+  }
+
+
+  Gamma::Calibration enc("Energy", metadata_.bits, "keV");
+  enc.coef_from_string(mcacal);
+
+  Gamma::Calibration fwc("FWHM", metadata_.bits, "keV");
+  fwc.coef_from_string(shapecal);
+
+
+  Gamma::Detector det(detname);
+  det.energy_calibrations_.add(enc);
+  det.fwhm_calibration_ = fwc;
+
+  metadata_.detectors.resize(1);
+  metadata_.detectors[0] = det;
+
+  init_from_file(name);
+
+//  metadata_.match_pattern.resize(detnum+1);
+//  metadata_.match_pattern[detnum] = 1;
+
+//  metadata_.add_pattern.resize(detnum+1);
+//  metadata_.add_pattern[detnum] = 1;
 
   return true;
 }
@@ -659,6 +831,47 @@ void Spectrum1D::write_n42(std::string filename) const {
 
   if (!doc.save_file(filename.c_str()))
     PL_ERR << "<Spectrum1D> Failed to save " << filename;
+}
+
+void Spectrum1D::write_spe(std::string filename) const {
+  //radware format
+
+  std::ofstream myfile(filename, std::ios::out | std::ios::trunc | std::ios::binary);
+
+  if (!myfile.is_open())
+    return;
+
+  uint32_t val = 24;
+  myfile.write((char*)&val, sizeof(uint32_t));
+
+  std::string cname = metadata_.name;
+  if (cname.size() < 8)
+    cname.resize(8);
+  myfile.write ((char*)cname.data(), 8*sizeof(char));
+
+  uint32_t dim1 = metadata_.resolution;
+  uint32_t dim2 = 1;
+  myfile.write ((char*)&dim1, sizeof(uint32_t));
+  myfile.write ((char*)&dim2, sizeof(uint32_t));
+  myfile.write ((char*)&dim2, sizeof(uint32_t));
+  myfile.write ((char*)&dim2, sizeof(uint32_t));
+
+  myfile.write ((char*)&val, sizeof(uint32_t));
+
+  val = metadata_.resolution *4;
+  myfile.write ((char*)&val, sizeof(uint32_t));
+
+
+  float one = 0.0;
+  for (int i=0; i < metadata_.resolution; ++i) {
+    one = 0.0;
+    if (i < spectrum_.size())
+      one = spectrum_[i].convert_to<double>();
+    myfile.write ((char*)&one, sizeof(float));
+  }
+
+  myfile.write ((char*)&val, sizeof(uint32_t));
+  myfile.close();
 }
 
 }}

@@ -41,8 +41,14 @@ HEADERS  += $$files($$PWD/../engine/*.h) \
             $$files($$PWD/../engine/pugixml/*.h) \
             $$files($$PWD/../engine/math/*.h)
 
-! include( $$PWD/pixie4/pixie4.pri ) {
-    error( "Couldn't find the pixie4.pri file!" )
+!mac {
+  ! include( $$PWD/pixie4/pixie4.pri ) {
+      error( "Couldn't find the pixie4.pri file!" )
+  }
+
+  ! include( $$PWD/sorter_evt/sorter_evt.pri ) {
+     error( "Couldn't find the sorter_evt.pri file!" )
+  }
 }
 
 ! include( $$PWD/VME/vme.pri ) {
@@ -55,10 +61,6 @@ HEADERS  += $$files($$PWD/../engine/*.h) \
 
 ! include( $$PWD/sorter/sorter.pri ) {
     error( "Couldn't find the sorter.pri file!" )
-}
-
-! include( $$PWD/sorter_evt/sorter_evt.pri ) {
-    error( "Couldn't find the sorter_evt.pri file!" )
 }
 
 ! include( $$PWD/simulator2d/simulator2d.pri ) {
