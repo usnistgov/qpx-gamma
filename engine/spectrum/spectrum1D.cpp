@@ -140,16 +140,24 @@ bool Spectrum1D::_write_file(std::string dir, std::string format) const {
 bool Spectrum1D::_read_file(std::string name, std::string format) {
   metadata_.attributes = get_template().generic_attributes;
 
-  if (format == "cnf")
-    return read_cnf(name);
-  else if (format == "tka")
+  PL_DBG << "Will try to make " << format;
+
+  if (format == "tka")
     return read_tka(name);
   else if (format == "n42")
     return read_n42(name);
   else if (format == "ava")
     return read_ava(name);
-  else if (format == "spe")
-    return read_spe(name);
+  else if (format == "spe") {
+    if (read_spe_radware(name))
+      return true;
+    else if (read_spe_gammavision(name))
+      return true;
+    else
+      return read_xylib(name, format);
+  }
+  else if ((format == "mca") || (format == "cnf"))
+    return read_xylib(name, format);
   else
     return false;
 }
@@ -277,19 +285,31 @@ bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compressio
 }
 
 
-bool Spectrum1D::read_cnf(std::string name) {
-  xylib::DataSet* newdata = xylib::load_file(name, "canberra_cnf");
+bool Spectrum1D::read_xylib(std::string name, std::string ext) {
+  xylib::DataSet* newdata;
+
+  if (ext == "mca") {
+    newdata = xylib::load_file(name, "canberra_mca");
+  } else if (ext == "cnf") {
+    newdata = xylib::load_file(name, "canberra_cnf");
+  } else if (ext == "spe") {
+    newdata = xylib::load_file(name, "spe");
+  } else
+    return false;
 
   if (newdata == nullptr)
     return false;
-  
-  for (int i=0; i < newdata->get_block_count(); i++) {
 
-    std::vector<double> calibration;
+  std::vector<double> calibration;
+
+  PL_DBG << "xylib.blocks =  " << newdata->get_block_count();
+  for (int i=0; i < newdata->get_block_count(); i++) {
+    calibration.clear();
+
     for (uint32_t j=0; j < newdata->get_block(i)->meta.size(); j++) {
       std::string key = newdata->get_block(i)->meta.get_key(j);
       std::string value = newdata->get_block(i)->meta.get(key);
-//      PL_DBG << "CNF.meta " << key << " = " << value;
+      PL_DBG << "xylib.meta " << key << " = " << value;
       if (key.substr(0, 12) == "energy calib")
         calibration.push_back(boost::lexical_cast<double>(value));
       if (key == "description")
@@ -309,32 +329,21 @@ bool Spectrum1D::read_cnf(std::string name) {
       if (key == "live time (s)")
         metadata_.live_time = boost::posix_time::duration_from_string(value);
     }
-     
-    metadata_.resolution = newdata->get_block(i)->get_point_count();
-    metadata_.bits = log2(metadata_.resolution);
-    if (pow(2, metadata_.bits) < metadata_.resolution)
-      metadata_.bits++;
-    spectrum_.resize(metadata_.resolution, 0);
-    shift_by_ = 16 - metadata_.bits;
-    metadata_.max_count = 0;
 
-    metadata_.detectors.resize(1);
-    metadata_.detectors[0] = Gamma::Detector();
-    metadata_.detectors[0].name_ = "unknown";
-    Gamma::Calibration new_calib("Energy", metadata_.bits);
-    new_calib.coefficients_ = calibration;
-    new_calib.units_ = "keV";
-    metadata_.detectors[0].energy_calibrations_.add(new_calib);
-    
     double tempcount = 0.0;
     int column = newdata->get_block(i)->get_column_count();
+    PL_DBG << "xylib.columns = " << column;
+//    if (ext == "vms")
+//      column--;
+
     if (column == 2) {
 
+      PL_DBG << "xylib.points = " << newdata->get_block(i)->get_point_count();
       for (int k = 0; k < newdata->get_block(i)->get_point_count(); k++) {
         double data = newdata->get_block(i)->get_column(column).get_value(k);
         PreciseFloat nr(data);
 
-        spectrum_[k] = PreciseFloat(data);
+        spectrum_.push_back(PreciseFloat(data));
 
         if (nr > metadata_.max_count)
           metadata_.max_count = nr;
@@ -346,9 +355,25 @@ bool Spectrum1D::read_cnf(std::string name) {
 
   }
 
+  metadata_.resolution = spectrum_.size();
+  metadata_.bits = log2(metadata_.resolution);
+  if (pow(2, metadata_.bits) < metadata_.resolution)
+    metadata_.bits++;
+  spectrum_.resize(metadata_.resolution, 0);
+  shift_by_ = 16 - metadata_.bits;
+  metadata_.max_count = 0;
+
+  metadata_.detectors.resize(1);
+  metadata_.detectors[0] = Gamma::Detector();
+  metadata_.detectors[0].name_ = "unknown";
+  Gamma::Calibration new_calib("Energy", metadata_.bits);
+  new_calib.coefficients_ = calibration;
+  new_calib.units_ = "keV";
+  metadata_.detectors[0].energy_calibrations_.add(new_calib);
+
   init_from_file(name);
-  delete newdata;  
-    
+  delete newdata;
+
   return true;
 }
 
@@ -377,8 +402,8 @@ bool Spectrum1D::read_tka(std::string name) {
   return true;
 }
 
-bool Spectrum1D::read_spe(std::string name) {
-  //radware format
+bool Spectrum1D::read_spe_radware(std::string name) {
+  //radware spe format
   std::ifstream myfile(name, std::ios::in | std::ios::binary);
   if (!myfile)
     return false;
@@ -394,9 +419,8 @@ bool Spectrum1D::read_spe(std::string name) {
   uint32_t val;
   myfile.read ((char*)&val, sizeof(uint32_t));
   if (val != 24) {
-    //if not radware, try gammavision
     myfile.close();
-    return read_spe_gammavision(name);
+    return false;
   }
 
   char cname[9];
@@ -477,7 +501,7 @@ bool Spectrum1D::read_spe(std::string name) {
 
 
 bool Spectrum1D::read_spe_gammavision(std::string name) {
-  //gammavision format
+  //gammavision plain text
   std::ifstream myfile(name, std::ios::in);
   if (!myfile)
     return false;
@@ -488,6 +512,16 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
   std::string detname = "unknown";
   std::string enerfit, mcacal, shapecal;
   double time;
+
+  myfile >> line;
+  boost::algorithm::trim(line);
+  if (line != "$SPEC_ID:") {
+    myfile.close();
+    return false;
+  }
+
+  myfile.seekg (0, myfile.beg);
+  line.clear();
 
   PL_DBG << "<Spectrum1D> Reading spe as gammavision";
 
@@ -530,6 +564,14 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
       metadata_.live_time = boost::posix_time::seconds(time);
       ss >> time;
       metadata_.real_time = boost::posix_time::seconds(time);
+      line.clear();
+    } else if (line == "$DATE_MEA:") {
+      std::getline(myfile, line);
+      std::stringstream iss(line);
+      boost::posix_time::time_input_facet
+          *tif(new boost::posix_time::time_input_facet("%m/%d/%Y %H:%M:%S"));
+      iss.imbue(std::locale(std::locale::classic(), tif));
+      iss >> metadata_.start_time;
       line.clear();
     } else if (line == "$ENER_FIT:") {
       std::getline(myfile, enerfit);
