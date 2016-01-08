@@ -37,6 +37,7 @@ ThreadRunner::ThreadRunner(QObject *parent) :
   xdt_ = 0.0;
   match_conditions_ = Gamma::Match::id;
   start(HighPriority);
+  flag_ = false;
 }
 
 ThreadRunner::~ThreadRunner()
@@ -87,13 +88,14 @@ void ThreadRunner::do_run(Qpx::SpectraSet &spectra, boost::atomic<bool> &interru
     start(HighPriority);
 }
 
-void ThreadRunner::do_initialize(QString file) {
+void ThreadRunner::do_initialize(QString file, bool boot) {
   if (running_.load()) {
     PL_WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
   terminating_.store(false);
+  flag_ = boot;
   action_ = kInitialize;
   file_ = file;
   if (!isRunning())
@@ -253,8 +255,13 @@ void ThreadRunner::run()
       emit listComplete(newListRun);
     } else if (action_ == kInitialize) {
       engine_.initialize(file_.toStdString());
-      action_ = kNone;
-      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
+      if (flag_) {
+        action_ = kBoot;
+        flag_ = false;
+      } else {
+        action_ = kNone;
+        emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
+      }
     } else if (action_ == kBoot) {
       if (engine_.boot()) {
         engine_.get_all_settings();

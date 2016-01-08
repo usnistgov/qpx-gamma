@@ -7,17 +7,12 @@
 		<branch address="4" id="HV8/Parity" />
 		<branch address="5" id="HV8/StopBits" />
 		<branch address="6" id="HV8/FlowControl" />
-		<branch address="7" id="HV8/Channels" />
+		<branch address="7" id="HV8/ResponseTimeout" />
+		<branch address="8" id="HV8/ResponseAttempts" />
+		<branch address="9" id="HV8/Channels" />
 	</SettingMeta>
 	<SettingMeta id="HV8/Channels" type="stem" name="Channels" address="-1" writable="true" saveworthy="true">
-		<branch address="1" id="HV8/Channels/V1" />
-		<branch address="2" id="HV8/Channels/V2" />
-		<branch address="3" id="HV8/Channels/V3" />
-		<branch address="4" id="HV8/Channels/V4" />
-		<branch address="5" id="HV8/Channels/V5" />
-		<branch address="6" id="HV8/Channels/V6" />
-		<branch address="7" id="HV8/Channels/V7" />
-		<branch address="8" id="HV8/Channels/V8" />
+		<branch address="0" id="HV8/Channels/Voltage" />
 	</SettingMeta>
 	<SettingMeta id="HV8/PortName" type="file_path" visible="true" name="Port name" address="0" writable="true" unit="Serial port (*)"/>
 	<SettingMeta id="HV8/BaudRate" type="int_menu" name="Baud rate" address="0" writable="true">
@@ -46,13 +41,7 @@
 		<menu_item item_value="2" item_text="software" />
 		<menu_item item_value="3" item_text="hardware" />
 	</SettingMeta>
-
-	<SettingMeta id="HV8/Channels/V1" type="floating" name="Voltage 1" address="1" writable="true" unit="V" step="0.3" minimum="0" maximum="900" flags="gain" />
-	<SettingMeta id="HV8/Channels/V2" type="floating" name="Voltage 2" address="2" writable="true" unit="V" step="0.3" minimum="0" maximum="900" flags="gain" />
-	<SettingMeta id="HV8/Channels/V3" type="floating" name="Voltage 3" address="3" writable="true" unit="V" step="0.3" minimum="0" maximum="900" flags="gain" />
-	<SettingMeta id="HV8/Channels/V4" type="floating" name="Voltage 4" address="4" writable="true" unit="V" step="0.3" minimum="0" maximum="900" flags="gain" />
-	<SettingMeta id="HV8/Channels/V5" type="floating" name="Voltage 5" address="5" writable="true" unit="V" step="0.3" minimum="0" maximum="900" flags="gain" />
-	<SettingMeta id="HV8/Channels/V6" type="floating" name="Voltage 6" address="6" writable="true" unit="V" step="0.3" minimum="0" maximum="900" flags="gain" />
-	<SettingMeta id="HV8/Channels/V7" type="floating" name="Voltage 7" address="7" writable="true" unit="V" step="0.3" minimum="0" maximum="900" flags="gain" />
-	<SettingMeta id="HV8/Channels/V8" type="floating" name="Voltage 8" address="8" writable="true" unit="V" step="0.3" minimum="0" maximum="900" flags="gain" />
+	<SettingMeta id="HV8/ResponseTimeout" type="floating" name="Device response timeout" address="0" writable="true" step="0.1" minimum="0.1" maximum="3" unit="seconds"/>
+	<SettingMeta id="HV8/ResponseAttempts" type="integer" name="Device prompt attempts" address="0" writable="true" step="1" minimum="1" maximum="10"/>
+	<SettingMeta id="HV8/Channels/Voltage" type="floating" name="Voltage" address="0" writable="true" unit="V" step="0.1" minimum="0" maximum="900" flags="gain" />
 </HV8>

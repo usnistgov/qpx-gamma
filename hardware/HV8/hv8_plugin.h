@@ -56,14 +56,15 @@ private:
   void set_voltage(int, double);
 
 protected:
-
-  void rebuild_structure(Gamma::Setting &set);
   bool get_prompt(uint16_t attempts);
 
   TimeoutSerial port;
 
   std::string portname;
   unsigned int baudrate;
+  int attempts_;
+  double timeout_;
+
   boost::asio::serial_port_base::character_size charactersize;
   boost::asio::serial_port_base::parity parity;
   boost::asio::serial_port_base::stop_bits stopbits;

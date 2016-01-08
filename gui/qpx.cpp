@@ -94,6 +94,7 @@ qpx::qpx(QWidget *parent) :
 
 qpx::~qpx()
 {
+  CustomLogger::closeLogger();
   delete ui;
 }
 
@@ -149,7 +150,7 @@ void qpx::choose_profiles() {
 void qpx::profile_chosen(QString profile, bool boot) {
   loadSettings();
 
-  main_tab_ = new FormStart(runner_thread_, settings_, detectors_, profile, this);
+  main_tab_ = new FormStart(runner_thread_, settings_, detectors_, profile, boot, this);
   ui->qpxTabs->addTab(main_tab_, main_tab_->windowTitle());
   connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
@@ -161,10 +162,6 @@ void qpx::profile_chosen(QString profile, bool boot) {
 
   ui->qpxTabs->setCurrentWidget(main_tab_);
   reorder_tabs();
-
-  if (boot)
-    runner_thread_.do_boot();
-
 }
 
 void qpx::tabCloseRequested(int index) {

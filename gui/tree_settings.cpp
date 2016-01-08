@@ -118,12 +118,19 @@ QVariant TreeItem::display_data(int column) const
         || (itemData.metadata.setting_type == Gamma::SettingType::detector)) {
       if (itemData.index >= 0)
         name += "  " + QString::number(itemData.index);
-      if (!itemData.indices.empty()) {
-        name += "  { ";
-        for (auto &q : itemData.indices)
-          name += QString::number(q) += " ";
-        name += "}";
+    }
+    if (!itemData.indices.empty()) {
+      QString append = "  { ";
+      bool valid = false;
+      //better dealing with index = -1
+      for (auto &q : itemData.indices) {
+        append += QString::number(q) += " ";
+        if (q >= 0)
+          valid = true;
       }
+      append += "}";
+      if (valid)
+        name += append;
     }
 
     return name;

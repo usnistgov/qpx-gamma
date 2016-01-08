@@ -96,7 +96,9 @@ public:
   bool daq_running();
 
 protected:
-  DeviceStatus aggregate_status_;
+  std::string profile_path_;
+  DeviceStatus aggregate_status_, intrinsic_status_;
+  mutable boost::mutex mutex_;
 
   std::map<std::string, DaqDevice*> devices_;  //use shared pointer instead
 
@@ -105,20 +107,18 @@ protected:
 
   std::vector<Gamma::Detector> detectors_;
 
-  //////////for internal use only///////////
   void save_det_settings(Gamma::Setting&, const Gamma::Setting&, Gamma::Match flags) const;
   void load_det_settings(Gamma::Setting, Gamma::Setting&, Gamma::Match flags);
 
+  //threads
+  void worker_MCA(SynchronizedQueue<Spill*>* data_queue, SpectraSet* spectra);
+
 private:
-  mutable boost::mutex mutex_;
 
   //singleton assurance
   Engine();
   Engine(Engine const&);
   void operator=(Engine const&);
-
-  //threads
-  void worker_MCA(SynchronizedQueue<Spill*>* data_queue, SpectraSet* spectra);
 
 };
 

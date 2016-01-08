@@ -23,13 +23,18 @@
 #include "form_start.h"
 #include <QBoxLayout>
 
-FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector> &detectors, QString profile, QWidget *parent) :
-  QWidget(parent),
-  runner_thread_(thread),
-  settings_(settings),
-  detectors_(detectors),
-  profile_path_(profile),
-  exiting(false)
+FormStart::FormStart(ThreadRunner &thread,
+                     QSettings &settings,
+                     XMLableDB<Gamma::Detector> &detectors,
+                     QString profile,
+                     bool boot,
+                     QWidget *parent)
+  : QWidget(parent)
+  , runner_thread_(thread)
+  , settings_(settings)
+  , detectors_(detectors)
+  , profile_path_(profile)
+  , exiting(false)
 {
   this->setWindowTitle("Settings");
 
@@ -58,6 +63,8 @@ FormStart::FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma:
   this->setLayout(lo);
 
   loadSettings();
+
+  runner_thread_.do_initialize(profile_path_, boot);
 }
 
 FormStart::~FormStart()
@@ -110,21 +117,9 @@ void FormStart::loadSettings() {
   settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
-
-  runner_thread_.do_initialize(profile_path_);
 }
 
 void FormStart::saveSettings() {
-  Gamma::Setting dev_settings = formSettings->get_tree();
-
-  pugi::xml_document doc;
-
-  dev_settings.condense();
-  dev_settings.strip_metadata();
-  dev_settings.to_xml(doc);
-
-  if (!doc.save_file(profile_path_.toStdString().c_str()))
-    PL_ERR << "<FormStart> Failed to save device settings"; //should be in engine class?
 
 }
 

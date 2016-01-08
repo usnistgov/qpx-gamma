@@ -40,7 +40,12 @@ class FormStart : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormStart(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector> &detectors, QString profile, QWidget *parent = 0);
+  explicit FormStart(ThreadRunner &thread,
+                     QSettings &settings,
+                     XMLableDB<Gamma::Detector> &detectors,
+                     QString profile,
+                     bool boot,
+                     QWidget *parent = 0);
   void exit();
   ~FormStart();
 

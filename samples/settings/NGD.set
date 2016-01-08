@@ -15,13 +15,13 @@
 			<Setting id="Pixie4/Run settings/Poll interval" type="integer" index="-1" value="400" />
 		</Setting>
 		<Setting id="Pixie4/Files" type="stem" index="-1">
-			<Setting id="Pixie4/Files/Fippi" type="file_path" index="-1" value="/home/mgs/qpxdata/XIA/FippiP500.bin" />
-			<Setting id="Pixie4/Files/SysPixie" type="file_path" index="-1" value="/home/mgs/qpxdata/XIA/syspixie_revC.bin" />
-			<Setting id="Pixie4/Files/PixieBin" type="file_path" index="-1" value="/home/mgs/qpxdata/XIA/pixie.bin" />
-			<Setting id="Pixie4/Files/PxiBin" type="file_path" index="-1" value="/home/mgs/qpxdata/XIA/PXIcode.bin" />
-			<Setting id="Pixie4/Files/SetFile" type="file_path" index="-1" value="/home/mgs/qpxdata/XIA/LaBr.set" />
-			<Setting id="Pixie4/Files/PxiVar" type="file_path" index="-1" value="/home/mgs/qpxdata/XIA/PXIcode.var" />
-			<Setting id="Pixie4/Files/PxiLst" type="file_path" index="-1" value="/home/mgs/qpxdata/XIA/PXIcode.lst" />
+			<Setting id="Pixie4/Files/Fippi" type="file_path" index="-1" value="/home/mpgaa/qpx/XIA/FippiP500.bin" />
+			<Setting id="Pixie4/Files/SysPixie" type="file_path" index="-1" value="/home/mpgaa/qpx/XIA/syspixie_revC.bin" />
+			<Setting id="Pixie4/Files/PixieBin" type="file_path" index="-1" value="/home/mpgaa/qpx/XIA/pixie.bin" />
+			<Setting id="Pixie4/Files/PxiBin" type="file_path" index="-1" value="/home/mpgaa/qpx/XIA/PXIcode.bin" />
+			<Setting id="Pixie4/Files/SetFile" type="file_path" index="-1" value="/home/mpgaa/qpx/XIA/LaBr.set" />
+			<Setting id="Pixie4/Files/PxiVar" type="file_path" index="-1" value="/home/mpgaa/qpx/XIA/PXIcode.var" />
+			<Setting id="Pixie4/Files/PxiLst" type="file_path" index="-1" value="/home/mpgaa/qpx/XIA/PXIcode.lst" />
 		</Setting>
 		<Setting id="Pixie4/System" type="stem" index="-1">
 			<Setting id="Pixie4/System/MAX_NUMBER_MODULES" type="integer" index="-1" indices="-1" value="7" />

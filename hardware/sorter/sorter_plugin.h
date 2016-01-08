@@ -60,9 +60,6 @@ private:
   static void worker_run(SorterPlugin* callback, SynchronizedQueue<Spill*>* spill_queue);
 
 protected:
-
-  std::string setting_definitions_file_;
-
   boost::atomic<int> run_status_;
   boost::thread *runner_;
 
@@ -74,6 +71,7 @@ protected:
   bool override_timestamps_;
   int  pause_ms_;
   std::string source_file_;
+  std::string source_file_bin_;
 
 
   std::list<StatsUpdate> spills_;

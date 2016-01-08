@@ -38,6 +38,8 @@ QpxHV8Plugin::QpxHV8Plugin()
   , parity(boost::asio::serial_port_base::parity::none)
   , stopbits(boost::asio::serial_port_base::stop_bits::one)
   , flowcontrol(boost::asio::serial_port_base::flow_control::none)
+  , attempts_(3)
+  , timeout_(1)
 {
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
   voltages.resize(8);
@@ -54,21 +56,16 @@ bool QpxHV8Plugin::read_settings_bulk(Gamma::Setting &set) const {
     for (auto &q : set.branches.my_data_) {
       if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "HV8/Channels")) {
         for (auto &k : q.branches.my_data_) {
-          if ((k.metadata.setting_type == Gamma::SettingType::floating) && (k.metadata.address < voltages.size()))
-            k.value_dbl = voltages[k.metadata.address];
+          if ((k.metadata.setting_type == Gamma::SettingType::floating) && (k.index > -1) && (k.index < voltages.size()))
+            k.value_dbl = voltages[k.index];
         }
-      } else {
-        //q.metadata.writable = !(status_ & DeviceStatus::booted);
+      } else if ((q.id_ != "HV8/ResponseTimeout") && (q.id_ != "HV8/ResponseAttempts")) {
+        q.metadata.writable = !(status_ & DeviceStatus::booted);
       }
     }
   }
   return true;
 }
-
-void QpxHV8Plugin::rebuild_structure(Gamma::Setting &set) {
-
-}
-
 
 bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
   set.enrich(setting_definitions_, true);
@@ -107,18 +104,41 @@ bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
       else
         flowcontrol = boost::asio::serial_port_base::flow_control(boost::asio::serial_port_base::flow_control::none);
     }
+    else if ((q.metadata.setting_type == Gamma::SettingType::floating) && (q.id_ == "HV8/ResponseTimeout"))
+      timeout_ = q.value_dbl;
+    else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "HV8/ResponseAttemps"))
+      attempts_ = q.value_int;
     else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "HV8/Channels")) {
-      rebuild_structure(q);
+      Gamma::Setting voltage("HV8/Channels/Voltage");
+      voltage.enrich(setting_definitions_, true);
 
-      //PL_DBG << "writing VME/IsegVHS";
-      int modnum = 0;
+      Gamma::Setting channels = q;
+      channels.branches.clear();
+      channels.indices.clear();
+
       for (auto &k : q.branches.my_data_) {
-        if ((k.metadata.setting_type == Gamma::SettingType::floating) && (k.metadata.address < voltages.size())) {
+        if ((k.id_ == voltage.id_) && (k.index > -1) && (k.index < voltages.size())) {
+          voltage.index = k.index;
+          voltage.indices.clear();
+          voltage.indices.insert(k.index);
+          channels.indices.insert(k.index);
+          channels.branches.add_a(voltage);
           if (k.value_dbl != voltages[k.metadata.address])
             set_voltage(k.metadata.address, k.value_dbl);
-         // k.value_dbl = k.metadata.address * 0.1;// channel_parameter_values_[k.metadata.address + modnum];
         }
       }
+
+      for (int i=0; i < voltages.size(); ++i) {
+        if (channels.indices.count(i) == 0) {
+          voltage.index = i;
+          voltage.indices.clear();
+          voltage.indices.insert(i);
+          channels.indices.insert(i);
+          channels.branches.add_a(voltage);
+        }
+      }
+
+      q = channels;
     }
   }
   return true;
@@ -126,38 +146,37 @@ bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
 
 void QpxHV8Plugin::set_voltage(int chan, double voltage) {
   PL_DBG << "<HV8Plugin> Set voltage " << chan << " to " << voltage;
-  int attempts = 5;
 
   if (!port.isOpen()) {
     PL_DBG << "<HV8Plugin> cannot read settings. Serial port is not open";
     return;
   }
 
-  if (!get_prompt(5)) {
+  if (!get_prompt(attempts_)) {
     PL_DBG << "<HV8Plugin> cannot write settings. Not logged into HV8";
     return;
   }
 
   bool success = false;
   std::vector<std::string> tokens;
-  for (int i=0; i < attempts; ++i) {
+  for (int i=0; i < attempts_; ++i) {
 //        boost::this_thread::sleep(boost::posix_time::seconds(1));
 
-    if (get_prompt(5)) {
+    if (get_prompt(attempts_)) {
       std::stringstream ss;
       ss << "S " << chan << "\r";
       PL_DBG << "Will write " << ss.str();
       port.writeString(ss.str());
-      boost::this_thread::sleep(boost::posix_time::seconds(0.2));
+      boost::this_thread::sleep(boost::posix_time::seconds(timeout_));
 
-      if (get_prompt(5)) {
+      if (get_prompt(attempts_)) {
         std::stringstream ss2;
         ss2 << "V " << voltage << "\r";
         PL_DBG << "Will write " << ss2.str();
         port.writeString(ss2.str());
-        boost::this_thread::sleep(boost::posix_time::seconds(0.2));
+        boost::this_thread::sleep(boost::posix_time::seconds(timeout_));
 
-        if (get_prompt(5))
+        if (get_prompt(attempts_))
           success = true;
       }
     }
@@ -270,8 +289,6 @@ bool QpxHV8Plugin::get_prompt(uint16_t attempts) {
 bool QpxHV8Plugin::boot() noexcept(false) {
   PL_DBG << "<HV8Plugin> Attempting to boot";
 
-  int attempts = 5;
-
   if (!(status_ & DeviceStatus::can_boot)) {
     PL_WARN << "<HV8Plugin> Cannot boot. Failed flag check (can_boot == 0)";
     return false;
@@ -281,7 +298,7 @@ bool QpxHV8Plugin::boot() noexcept(false) {
 
   try {
     port.open(portname, baudrate, parity, boost::asio::serial_port_base::character_size(charactersize), flowcontrol, stopbits);
-    port.setTimeout(boost::posix_time::seconds(5));
+    port.setTimeout(boost::posix_time::milliseconds(timeout_ * 1000));
   } catch (...) {
     PL_ERR << "<HV8Plugin> could not open serial port";
     return false;
@@ -293,7 +310,7 @@ bool QpxHV8Plugin::boot() noexcept(false) {
   }
 
 
-  if (get_prompt(5)) {
+  if (get_prompt(attempts_)) {
       PL_DBG << "<HV8Plugin> Logged in. Startup successful";
       status_ = DeviceStatus::loaded | DeviceStatus::booted;
       return true;
@@ -312,14 +329,15 @@ bool QpxHV8Plugin::die() {
 }
 
 void QpxHV8Plugin::get_all_settings() {
-  int attempts = 5;
+  if ((status_ & DeviceStatus::booted) == 0)
+    return;
 
   if (!port.isOpen()) {
     PL_DBG << "<HV8Plugin> cannot read settings. Serial port is not open";
     return;
   }
 
-  if (!get_prompt(5)) {
+  if (!get_prompt(attempts_)) {
     PL_DBG << "<HV8Plugin> cannot read settings. Not logged into HV8";
     return;
   }
@@ -327,7 +345,7 @@ void QpxHV8Plugin::get_all_settings() {
 
   bool success = false;
   std::vector<std::string> tokens;
-  for (int i=0; i < attempts; ++i) {
+  for (int i=0; i < attempts_; ++i) {
 //        boost::this_thread::sleep(boost::posix_time::seconds(1));
 
     if (tokens.size() < 3) {

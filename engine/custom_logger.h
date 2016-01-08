@@ -31,6 +31,7 @@
 namespace CustomLogger {
 
   void initLogger(std::ostream *gui_stream, std::string log_file_N);
+  void closeLogger();
 
   enum SeverityLevel
   {

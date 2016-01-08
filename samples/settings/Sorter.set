@@ -9,7 +9,7 @@
 		<Setting id="Detector" type="detector" index="3" indices="3" value="none" />
 	</Setting>
 	<Setting id="Sorter" type="stem" index="-1" reference="/Sorter/qpx_plugin.set">
-		<Setting id="Sorter/Source file" type="file_path" index="-1" value="/home/mgs/qpxdata/raw_xmas2/qpx_out.txt" />
+		<Setting id="Sorter/Source file" type="file_path" index="-1" value="/home/mgs/qpx/data/raw_xmas2/qpx_out.txt" />
 		<Setting id="Sorter/Loop data" type="boolean" index="-1" value="false" />
 		<Setting id="Sorter/Override pause" type="boolean" index="-1" value="true" />
 		<Setting id="Sorter/Pause" type="integer" index="-1" value="500" />

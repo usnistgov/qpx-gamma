@@ -46,7 +46,7 @@ public:
     explicit ThreadRunner(QObject *parent = 0);
     ~ThreadRunner();
 
-    void do_initialize(QString);
+    void do_initialize(QString, bool boot);
     void do_boot();
     void do_shutdown();
     void do_execute_command(const Gamma::Setting &tree);
@@ -96,8 +96,8 @@ private:
     Gamma::Setting tree_;
     Gamma::Match match_conditions_;
 
-    //simulation
     QString file_;
+    bool flag_;
 };
 
 #endif

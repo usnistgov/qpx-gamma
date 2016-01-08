@@ -88,3 +88,10 @@ void CustomLogger::initLogger(std::ostream *gui_stream, std::string log_file_N)
   sink_file->set_filter(expr::attr<SeverityLevel >("Severity") >= kTrace);
   core->add_sink(sink_file);
 }
+
+void CustomLogger::closeLogger()
+{
+  PL_DBG << "<CustomLogger> Closing logger sinks";
+  logging::core::get()->remove_all_sinks();
+}
+

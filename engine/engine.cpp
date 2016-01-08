@@ -36,6 +36,7 @@ namespace Qpx {
 
 Engine::Engine() {
   aggregate_status_ = DeviceStatus(0);
+  intrinsic_status_ = DeviceStatus(0);
 
   total_det_num_.id_ = "Total detectors";
   total_det_num_.name = "Total detectors";
@@ -50,11 +51,14 @@ Engine::Engine() {
 
 void Engine::initialize(std::string profile) {
   //don't allow this twice?
+  profile_path_ = profile;
+
+  PL_DBG << "Engine will attempt to initialize with profile at " << profile_path_;
 
   pugi::xml_document doc;
-  if (!doc.load_file(profile.c_str()))
+  if (!doc.load_file(profile_path_.c_str()))
     return;
-  PL_DBG << "<Engine> Loading device settings " << profile;
+  PL_DBG << "<Engine> Loading device settings " << profile_path_;
 
   pugi::xml_node root = doc.child(Gamma::Setting().xml_element_name().c_str());
   if (!root)
@@ -70,14 +74,14 @@ void Engine::initialize(std::string profile) {
   descr.metadata.writable = true;
   tree.branches.replace(descr);
 
-  boost::filesystem::path dir(profile);
+  boost::filesystem::path dir(profile_path_);
   dir.make_preferred();
   boost::filesystem::path path = dir.remove_filename();
 
-  if (!boost::filesystem::is_directory(path)) {
-    PL_DBG << "<Engine> Bad profile root directory. Will not proceed with loading device settings";
-    return;
-  }
+//  if (!boost::filesystem::is_directory(path)) {
+//    PL_DBG << "<Engine> Bad profile root directory. Will not proceed with loading device settings";
+//    return;
+//  }
 
   for (auto &q : tree.branches.my_data_) {
     if (q.id_ != "Detectors") {
@@ -98,11 +102,32 @@ void Engine::initialize(std::string profile) {
 }
 
 Engine::~Engine() {
+  if (die()) {
+    get_all_settings();
+    save_optimization();
+  }
+
+  if (!profile_path_.empty()) {
+    get_all_settings();
+
+    Gamma::Setting dev_settings = pull_settings();
+    dev_settings.condense();
+    dev_settings.strip_metadata();
+
+    pugi::xml_document doc;
+    dev_settings.to_xml(doc);
+
+    if (doc.save_file(profile_path_.c_str()))
+      PL_ERR << "<Engine> Saved settings to " << profile_path_;
+    else
+      PL_ERR << "<Engine> Failed to save device settings";
+  }
+
   for (auto &q : devices_)
     if (q.second != nullptr) {
       PL_DBG << "<Engine> Destroying device " << q.first;
       delete q.second;
-    }
+    }  
 }
 
 Gamma::Setting Engine::pull_settings() const {
