@@ -185,12 +185,10 @@ bool QpxVmePlugin::boot() {
     //PL_DBG << "trying to load mod at BA " << base_address;
     VmeModule module(controller_, base_address);
 
-    int deviceClass = module.deviceClass();
-
-    if (deviceClass == V12C0 || deviceClass == V24D0) {
+    if (module.firmwareName() == "V12C0") {
       VmeModule *mod = new VmeModule(controller_, base_address);
       modules_["VME/IsegVHS"] = mod;
-      PL_DBG << "<VmePlugin> Adding module [" << base_address << "] firmwareName=" << module.firmwareName() << " serialNumber=" << module.serialNumber();
+      PL_DBG << "<VmePlugin> Adding module [" << base_address << "] firmwareName=" << module.firmwareName();
 
     }
   }

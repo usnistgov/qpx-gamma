@@ -15,7 +15,7 @@ class VmUsb : public VmeController
 public:
   VmUsb();
   ~VmUsb();
-  //std::stringList enumControllers(void);
+//  std::list<std::string> enumControllers(void);
 
   virtual std::string errorString(void);
   virtual std::string controllerName(void);

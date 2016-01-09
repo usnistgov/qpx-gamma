@@ -19,7 +19,7 @@ public:
 	}
 
   virtual std::string errorString(void) = 0;
-  virtual std::string controllerName(void) { return "VmeController"; } //QLatin1String
+  virtual std::string controllerName(void) { return "VmeController"; }
   virtual std::string information(void) = 0;
 	virtual void systemReset(int *errorCode = NULL) = 0;
 

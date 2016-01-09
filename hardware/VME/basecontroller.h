@@ -17,8 +17,6 @@ public:
 
   virtual bool connect(std::string target)
 	{
-    //Q_UNUSED(target);
-
 		return false;
 	}
 
@@ -29,19 +27,17 @@ public:
 
   virtual bool setAddress(std::string address)
 	{
-    //Q_UNUSED(address);
-
 		return false;
 	}
 
   virtual void setLiveInsertion(bool liveInsertion) {
-    //Q_UNUSED(liveInsertion);
+
   }
 	virtual bool liveInsertion() const { return false; }
   virtual std::string busStatus() { return std::string(); }
 
   virtual std::string errorString(void) = 0;
-  virtual std::string controllerName(void) { return "BaseController"; } //QLatin1String
+  virtual std::string controllerName(void) { return "BaseController"; }
   virtual std::string information(void) = 0;
 
   virtual std::list<std::string> moduleList() = 0;
