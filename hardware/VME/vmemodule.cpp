@@ -34,6 +34,64 @@ bool VmeModule::connected()
 	return vendorId == ISEG_VENDOR_ID;
 }
 
+bool VmeModule::read_setting(Gamma::Setting& set, int address_modifier) {
+  if (set.metadata.setting_type == Gamma::SettingType::floating)
+    set.value_dbl = readFloat(m_baseAddress + address_modifier + set.metadata.address);
+  else if (set.metadata.setting_type == Gamma::SettingType::binary) {
+    if (set.metadata.maximum == 32)
+      set.value_int = readLongBitfield(m_baseAddress + address_modifier + set.metadata.address);
+    else if (set.metadata.maximum == 16)
+      set.value_int = readShortBitfield(m_baseAddress + address_modifier + set.metadata.address);
+    else {
+      PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
+      return false;
+    }
+  }
+  else if ((set.metadata.setting_type == Gamma::SettingType::integer)
+           || (set.metadata.setting_type == Gamma::SettingType::boolean)
+           || (set.metadata.setting_type == Gamma::SettingType::int_menu))
+  {
+    if (set.metadata.hardware_type == "u32")
+      set.value_int = readLong(m_baseAddress + address_modifier + set.metadata.address);
+    else if (set.metadata.hardware_type == "u16")
+      set.value_int = readShort(m_baseAddress + address_modifier + set.metadata.address);
+    else {
+      PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
+      return false;
+    }
+  }
+  return true;
+}
+
+bool VmeModule::write_setting(Gamma::Setting& set, int address_modifier) {
+  if (set.metadata.setting_type == Gamma::SettingType::floating)
+    writeFloat(m_baseAddress + address_modifier + set.metadata.address, set.value_dbl);
+  else if (set.metadata.setting_type == Gamma::SettingType::binary) {
+    if (set.metadata.maximum == 32)
+      writeLongBitfield(m_baseAddress + address_modifier + set.metadata.address, set.value_int);
+    else if (set.metadata.maximum == 16)
+      writeShortBitfield(m_baseAddress + address_modifier + set.metadata.address, set.value_int);
+    else {
+      PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
+      return false;
+    }
+  }
+  else if ((set.metadata.setting_type == Gamma::SettingType::integer)
+           || (set.metadata.setting_type == Gamma::SettingType::boolean)
+           || (set.metadata.setting_type == Gamma::SettingType::int_menu))
+  {
+    if (set.metadata.hardware_type == "u32")
+      writeLong(m_baseAddress + address_modifier + set.metadata.address, set.value_int);
+    else if (set.metadata.hardware_type == "u16")
+      writeShort(m_baseAddress + address_modifier + set.metadata.address, set.value_int);
+    else {
+      PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
+      return false;
+    }
+  }
+  return true;
+}
+
 uint16_t VmeModule::readShort(int address)
 {
 	if ((m_controller)) {

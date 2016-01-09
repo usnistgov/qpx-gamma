@@ -32,6 +32,9 @@
 		<branch address="24" id="VME/IsegVHS/VendorID" />
 		
 		<branch address="25" id="VME/IsegVHS/Channel" />
+
+		<branch address="26" id="VME/IsegVHS/FixedGroups" />
+		<branch address="27" id="VME/IsegVHS/VariableGroups" />
 	</SettingMeta>
 
 	<SettingMeta id="VME/ControllerID" type="text" visible="false" name="Controller ID" address="0" writable="true"/>
@@ -200,8 +203,8 @@
 		<flag bit="10" description="CH10" />
 		<flag bit="11" description="CH11" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/RestartTimeAfterRecallSetValues" type="integer" hardware_type="u16" name="RestartTimeAfterRecallSetValues" address="120" writable="true" unit="ms" />
-	<SettingMeta id="VME/IsegVHS/ADCSamplesPerSecond" type="int_menu" hardware_type="u16" name="ADC samples per second" address="130" writable="true">
+	<SettingMeta id="VME/IsegVHS/RestartTimeAfterRecallSetValues" type="integer" hardware_type="u16" name="RestartTimeAfterRecallSetValues" address="80" writable="true" unit="ms" />
+	<SettingMeta id="VME/IsegVHS/ADCSamplesPerSecond" type="int_menu" hardware_type="u16" name="ADC samples per second" address="88" writable="true">
 		<menu_item item_value="5" item_text="5 SPS" />
 		<menu_item item_value="10" item_text="10 SPS" />
 		<menu_item item_value="25" item_text="25 SPS" />
@@ -209,7 +212,7 @@
 		<menu_item item_value="60" item_text="60 SPS" />
 		<menu_item item_value="100" item_text="100 SPS" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/DigitalFilter" type="int_menu" hardware_type="u16" name="Digital filter" address="132" writable="true">
+	<SettingMeta id="VME/IsegVHS/DigitalFilter" type="int_menu" hardware_type="u16" name="Digital filter" address="90" writable="true">
 		<menu_item item_value="1" item_text="1 sample" />
 		<menu_item item_value="16" item_text="16 samples" />
 		<menu_item item_value="64" item_text="64 samples" />
@@ -217,14 +220,14 @@
 		<menu_item item_value="512" item_text="512 samples" />
 		<menu_item item_value="1024" item_text="1024 samples" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/VendorID" type="integer" hardware_type="u32" name="Vendor ID" address="134" writable="false"/>
+	<SettingMeta id="VME/IsegVHS/VendorID" type="integer" hardware_type="u32" name="Vendor ID" address="92" writable="false"/>
 
 	<SettingMeta id="VME/IsegVHS/Channel" type="stem" name="Channel" address="1" writable="true" saveworthy="false">
 		<branch address="0" id="VME/IsegVHS/Channel/ChannelStatus" />
 		<branch address="1" id="VME/IsegVHS/Channel/ChannelControl" />
 		<branch address="2" id="VME/IsegVHS/Channel/ChannelEventStatus" />
 		<branch address="3" id="VME/IsegVHS/Channel/ChannelEventMask" />
-		<branch address="4" id="VME/IsegVHS/Channel/VolatgeSet" />
+		<branch address="4" id="VME/IsegVHS/Channel/VoltageSet" />
 		<branch address="5" id="VME/IsegVHS/Channel/CurrentSetOrTrip" />
 		<branch address="6" id="VME/IsegVHS/Channel/VoltageMeasure" />
 		<branch address="7" id="VME/IsegVHS/Channel/CurrentMeasure" />
@@ -235,6 +238,18 @@
 		<branch address="12" id="VME/IsegVHS/Channel/VoltageIlkMinSet" />
 		<branch address="13" id="VME/IsegVHS/Channel/CurrentIlkMinSet" />
 	</SettingMeta>
+
+	<SettingMeta id="VME/IsegVHS/FixedGroups" type="stem" name="Fixed groups" address="1" writable="true" saveworthy="false">
+		<branch address="0" id="VME/IsegVHS/FixedGroups/SetVoltageAllChannels" />
+		<branch address="1" id="VME/IsegVHS/FixedGroups/SetCurrentAllChannels" />
+		<branch address="2" id="VME/IsegVHS/FixedGroups/SetVoltageBoundsAllChannels" />
+		<branch address="3" id="VME/IsegVHS/FixedGroups/SetCurrentBoundsAllChannels" />
+		<branch address="4" id="VME/IsegVHS/FixedGroups/SetEmergencyAllChannels" />
+		<branch address="5" id="VME/IsegVHS/FixedGroups/SetOnOffAllChannels" />
+		<branch address="6" id="VME/IsegVHS/FixedGroups/SetVoltageIlkMinSetAllChannels" />
+		<branch address="7" id="VME/IsegVHS/FixedGroups/SetCurrentIlkMinSetAllChannels" />
+	</SettingMeta>
+
 
 	<SettingMeta id="VME/IsegVHS/Channel/ChannelStatus" type="binary" name="Channel status" address="0" writable="false" word_size="16">
 		<flag bit="2" description="Input error" />
@@ -286,8 +301,8 @@
 	</SettingMeta>
 	<SettingMeta id="VME/IsegVHS/Channel/VoltageSet" type="floating" name="Voltage preset" address="8" writable="true" unit="V" />
 	<SettingMeta id="VME/IsegVHS/Channel/CurrentSetOrTrip" type="floating" name="Current preset" address="12" writable="true" />
-	<SettingMeta id="VME/IsegVHS/Channel/VoltageMeasure" type="floating" name="Voltage measured" address="16" writable="true" unit="V" />
-	<SettingMeta id="VME/IsegVHS/Channel/CurrentMeasure" type="floating" name="Current measured" address="20" writable="true" />
+	<SettingMeta id="VME/IsegVHS/Channel/VoltageMeasure" type="floating" name="Voltage measured" address="16" writable="false" unit="V" />
+	<SettingMeta id="VME/IsegVHS/Channel/CurrentMeasure" type="floating" name="Current measured" address="20" writable="false" />
 	<SettingMeta id="VME/IsegVHS/Channel/VoltageBoundsIlkMaxSet" type="floating" name="Voltage bounds (or max)" address="24" writable="true" unit="V" />
 	<SettingMeta id="VME/IsegVHS/Channel/CurrentBoundsIlkMaxSet" type="floating" name="Current bounds (or max)" address="28" writable="true" />
 	<SettingMeta id="VME/IsegVHS/Channel/VoltageNominalMaxSet" type="floating" name="Voltage nominal (or maxset)" address="32" writable="true" unit="V" />
@@ -295,7 +310,16 @@
 	<SettingMeta id="VME/IsegVHS/Channel/VoltageIlkMinSet" type="floating" name="VoltageIlkMinSet" address="40" writable="true" unit="V" />
 	<SettingMeta id="VME/IsegVHS/Channel/CurrentIlkMinSet" type="floating" name="CurrentIlkMinSet" address="44" writable="true" />
 
-	<SettingMeta id="VME/IsegVHS/T" type="binary" name="T" address="0" writable="false" word_size="16">
+	<SettingMeta id="VME/IsegVHS/FixedGroups/SetVoltageAllChannels" type="floating" name="Set voltage for all channels" address="672" writable="true" unit="V"/>
+	<SettingMeta id="VME/IsegVHS/FixedGroups/SetCurrentAllChannels" type="floating" name="Set current for all channels" address="676" writable="true" />
+	<SettingMeta id="VME/IsegVHS/FixedGroups/SetVoltageBoundsAllChannels" type="floating" name="Set voltage bounds for all channels" address="680" writable="true" unit="V"/>
+	<SettingMeta id="VME/IsegVHS/FixedGroups/SetCurrentBoundsAllChannels" type="floating" name="Set current bounds for all channels" address="684" writable="true" />
+	<SettingMeta id="VME/IsegVHS/FixedGroups/SetEmergencyAllChannels" type="integer" hardware_type="u32" name="Trigger emergency shutoff" address="688" writable="true"/>
+    <SettingMeta id="VME/IsegVHS/FixedGroups/SetOnOffAllChannels" type="integer" hardware_type="u32" name="Set all channels ON/OFF" address="692" writable="true"/>
+	<SettingMeta id="VME/IsegVHS/FixedGroups/SetVoltageIlkMinSetAllChannels" type="floating" name="Set voltage IlkMinSet for all channels" address="696" writable="true" unit="V"/>
+	<SettingMeta id="VME/IsegVHS/FixedGroups/SetCurrentIlkMinSetAllChannels" type="floating" name="Set current IlkMinSet for all channels" address="700" writable="true" />
+
+	<SettingMeta id="VME/IsegVHS/ttt" type="binary" name="T" address="0" writable="false" word_size="16">
 		<flag bit="0" description="Activation of fine adjustment" />
 		<flag bit="1" description="Interlock output is active" />
 		<flag bit="2" description="Module is in state STOP, all high voltages are off" />

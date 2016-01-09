@@ -4,6 +4,7 @@
 #include "basemodule.h"
 #include "vmecontroller.h"
 #include "const.h"
+#include "generic_setting.h"
 
 
 #define ISEG_VENDOR_ID									0x69736567
@@ -21,6 +22,10 @@ public:
 
 //public slots:
 	bool    connected(void);
+
+  bool read_setting(Gamma::Setting& set, int address_modifier);
+  bool write_setting(Gamma::Setting& set, int address_modifier);
+
 
   uint16_t readShort(int address);
   void    writeShort(int address, uint16_t data);

@@ -62,7 +62,7 @@ protected:
   std::string controller_name_;
   BaseController *controller_;
 
-  std::list<BaseModule*> modules_;
+  std::map<std::string, BaseModule*> modules_;
 
 };
 

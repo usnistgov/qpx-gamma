@@ -50,27 +50,31 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
       if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "VME/IsegVHS")) {
-        //PL_DBG << "reading VME/IsegVHS";
-        int modnum = 0;
-        for (auto &k : q.branches.my_data_) {
-          if (k.metadata.setting_type == Gamma::SettingType::floating)
-            k.value_dbl = k.metadata.address * 0.1;// channel_parameter_values_[k.metadata.address + modnum];
-          else if ((k.metadata.setting_type == Gamma::SettingType::integer)
-                   || (k.metadata.setting_type == Gamma::SettingType::boolean)
-                   || (k.metadata.setting_type == Gamma::SettingType::int_menu)
-                   || (k.metadata.setting_type == Gamma::SettingType::binary))
-            k.value_int = k.metadata.address; //channel_parameter_values_[k.metadata.address + modnum];
-          else if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channel")) {
-            //PL_DBG << "reading VME/IsegVHS/Channel";
-            uint16_t channum = k.index;
-            for (auto &p : k.branches.my_data_) {
-              if (p.metadata.setting_type == Gamma::SettingType::floating)
-                p.value_dbl = p.metadata.address + (30 * channum) + 0x0060;// channel_parameter_values_[k.metadata.address + modnum];
-              else if ((p.metadata.setting_type == Gamma::SettingType::integer)
-                       || (p.metadata.setting_type == Gamma::SettingType::boolean)
-                       || (p.metadata.setting_type == Gamma::SettingType::int_menu)
-                       || (p.metadata.setting_type == Gamma::SettingType::binary))
-                p.value_dbl = p.metadata.address + (30 * channum) + 0x0060; //channel_parameter_values_[k.metadata.address + modnum];
+        if (modules_.count(q.id_)) {
+          VmeModule *mod = dynamic_cast<VmeModule*>(modules_.at(q.id_));
+//          PL_DBG << "Reading out settings for module " << q.id_;
+          for (auto &k : q.branches.my_data_) {
+            if ((k.metadata.setting_type == Gamma::SettingType::floating)
+                || (k.metadata.setting_type == Gamma::SettingType::binary)
+                || (k.metadata.setting_type == Gamma::SettingType::integer)
+                || (k.metadata.setting_type == Gamma::SettingType::boolean)
+                || (k.metadata.setting_type == Gamma::SettingType::int_menu))
+            {
+              if (!mod->read_setting(k, 0))
+                PL_DBG << "Could not read " << k.id_;
+            }
+            else if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channel")) {
+              uint16_t channum = k.index;
+              for (auto &p : k.branches.my_data_) {
+                if ((p.metadata.setting_type == Gamma::SettingType::floating)
+                    || (p.metadata.setting_type == Gamma::SettingType::integer)
+                    || (p.metadata.setting_type == Gamma::SettingType::boolean)
+                    || (p.metadata.setting_type == Gamma::SettingType::int_menu)
+                    || (p.metadata.setting_type == Gamma::SettingType::binary)) {
+                  if (!mod->read_setting(p, ((48 * channum) + 96)))
+                    PL_DBG << "Could not read " << k.id_;
+                }
+              }
             }
           }
         }
@@ -99,30 +103,39 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
     } else       if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "VME/IsegVHS")) {
       rebuild_structure(q);
 
-      //PL_DBG << "writing VME/IsegVHS";
-      int modnum = 0;
-      for (auto &k : q.branches.my_data_) {
-        if (k.metadata.setting_type == Gamma::SettingType::floating) {
-         // k.value_dbl = k.metadata.address * 0.1;// channel_parameter_values_[k.metadata.address + modnum];
-        }
-        else if ((k.metadata.setting_type == Gamma::SettingType::integer)
-                 || (k.metadata.setting_type == Gamma::SettingType::boolean)
-                 || (k.metadata.setting_type == Gamma::SettingType::int_menu)
-                 || (k.metadata.setting_type == Gamma::SettingType::binary)) {
-         // k.value_int = k.metadata.address; //channel_parameter_values_[k.metadata.address + modnum];
-        }
-        else if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channel")) {
-          //PL_DBG << "writing VME/IsegVHS/Channel";
-          uint16_t channum = k.index;
-          for (auto &p : k.branches.my_data_) {
-            if (p.metadata.setting_type == Gamma::SettingType::floating) {
-             // p.value_dbl = p.metadata.address + (30 * channum) + 0x0060;// channel_parameter_values_[k.metadata.address + modnum];
+      if (modules_.count(q.id_)) {
+        VmeModule *mod = dynamic_cast<VmeModule*>(modules_.at(q.id_));
+//        PL_DBG << "Writing settings for module " << q.id_;
+
+        for (auto &k : q.branches.my_data_) {
+          if ((k.metadata.setting_type == Gamma::SettingType::floating)
+              || (k.metadata.setting_type == Gamma::SettingType::integer)
+              || (k.metadata.setting_type == Gamma::SettingType::boolean)
+              || (k.metadata.setting_type == Gamma::SettingType::int_menu)
+              || (k.metadata.setting_type == Gamma::SettingType::binary)) {
+            Gamma::Setting s = k;
+            if (k.metadata.writable && mod->read_setting(s, 0) && (s != k)) {
+              PL_DBG << "writing " << k.id_;
+              if (!mod->write_setting(k, 0))
+                PL_DBG << "Could not write " << k.id_;
             }
-            else if ((p.metadata.setting_type == Gamma::SettingType::integer)
-                     || (p.metadata.setting_type == Gamma::SettingType::boolean)
-                     || (p.metadata.setting_type == Gamma::SettingType::int_menu)
-                     || (p.metadata.setting_type == Gamma::SettingType::binary)) {
-            //  p.value_dbl = p.metadata.address + (30 * channum) + 0x0060; //channel_parameter_values_[k.metadata.address + modnum];
+          }
+          else if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channel")) {
+            //PL_DBG << "writing VME/IsegVHS/Channel";
+            uint16_t channum = k.index;
+            for (auto &p : k.branches.my_data_) {
+              if ((p.metadata.setting_type == Gamma::SettingType::floating)
+                  || (p.metadata.setting_type == Gamma::SettingType::integer)
+                  || (p.metadata.setting_type == Gamma::SettingType::boolean)
+                  || (p.metadata.setting_type == Gamma::SettingType::int_menu)
+                  || (p.metadata.setting_type == Gamma::SettingType::binary)) {
+                Gamma::Setting s = p;
+                if (p.metadata.writable && mod->read_setting(s, ((48 * channum) + 96)) && (s != p)) {
+                  PL_DBG << "writing " << p.id_;
+                  if (!mod->write_setting(p, ((48 * channum) + 96)))
+                    PL_DBG << "Could not write " << k.id_;
+                }
+              }
             }
           }
         }
@@ -169,14 +182,14 @@ bool QpxVmePlugin::boot() {
   }
 
   for (int base_address = 0; base_address < 0xFFFF; base_address += VHS_ADDRESS_SPACE_LENGTH) {
-//    PL_DBG << "trying to load mod at BA " << base_address;
+    //PL_DBG << "trying to load mod at BA " << base_address;
     VmeModule module(controller_, base_address);
 
     int deviceClass = module.deviceClass();
 
     if (deviceClass == V12C0 || deviceClass == V24D0) {
       VmeModule *mod = new VmeModule(controller_, base_address);
-      modules_.push_back(mod);
+      modules_["VME/IsegVHS"] = mod;
       PL_DBG << "<VmePlugin> Adding module [" << base_address << "] firmwareName=" << module.firmwareName() << " serialNumber=" << module.serialNumber();
 
     }
@@ -190,7 +203,7 @@ bool QpxVmePlugin::die() {
   PL_DBG << "<VmePlugin> Disconnecting";
 
   for (auto &q : modules_)
-    delete q;
+    delete q.second;
   modules_.clear();
 
   if (controller_ != nullptr) {
