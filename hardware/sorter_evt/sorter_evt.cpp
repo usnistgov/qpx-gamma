@@ -128,8 +128,10 @@ bool SorterEVT::read_settings_bulk(Gamma::Setting &set) const {
         q.value_int = override_pause_;
       else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "SorterEVT/Pause"))
         q.value_int = pause_ms_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "SorterEVT/Source file"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "SorterEVT/Source file")) {
         q.value_text = source_file_;
+        q.metadata.writable = !(status_ & DeviceStatus::booted);
+      }
     }
   }
   return true;

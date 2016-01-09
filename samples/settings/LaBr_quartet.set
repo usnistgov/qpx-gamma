@@ -39,13 +39,14 @@
 			<Setting id="Pixie4/Run settings/Poll interval" type="integer" index="-1" value="400" />
 		</Setting>
 		<Setting id="Pixie4/Files" type="stem" index="-1">
-			<Setting id="Pixie4/Files/Fippi" type="file_path" index="-1" value="/home/daq500/qpx/settings/XIA/FippiP500.bin" />
-			<Setting id="Pixie4/Files/SysPixie" type="file_path" index="-1" value="/home/daq500/qpx/settings/XIA/syspixie_revC.bin" />
-			<Setting id="Pixie4/Files/PixieBin" type="file_path" index="-1" value="/home/daq500/qpx/settings/XIA/pixie.bin" />
-			<Setting id="Pixie4/Files/PxiBin" type="file_path" index="-1" value="/home/daq500/qpx/settings/XIA/PXIcode.bin" />
-			<Setting id="Pixie4/Files/SetFile" type="file_path" index="-1" value="/home/daq500/qpx/settings/XIA/LaBr.set" />
-			<Setting id="Pixie4/Files/PxiVar" type="file_path" index="-1" value="/home/daq500/qpx/settings/XIA/PXIcode.var" />
-			<Setting id="Pixie4/Files/PxiLst" type="file_path" index="-1" value="/home/daq500/qpx/settings/XIA/PXIcode.lst" />
+			<Setting id="Pixie4/Files/XIA_path" type="dir_path" index="-1" value="/home/mgs/qpx/settings/XIA" />
+			<Setting id="Pixie4/Files/Fippi" type="file_path" index="-1" value="/home/mgs/qpx/settings/XIA/FippiP500.bin" />
+			<Setting id="Pixie4/Files/SysPixie" type="file_path" index="-1" value="/home/mgs/qpx/settings/XIA/syspixie_revC.bin" />
+			<Setting id="Pixie4/Files/PixieBin" type="file_path" index="-1" value="/home/mgs/qpx/settings/XIA/pixie.bin" />
+			<Setting id="Pixie4/Files/PxiBin" type="file_path" index="-1" value="/home/mgs/qpx/settings/XIA/PXIcode.bin" />
+			<Setting id="Pixie4/Files/SetFile" type="file_path" index="-1" value="/home/mgs/qpx/settings/XIA/LaBr.set" />
+			<Setting id="Pixie4/Files/PxiVar" type="file_path" index="-1" value="/home/mgs/qpx/settings/XIA/PXIcode.var" />
+			<Setting id="Pixie4/Files/PxiLst" type="file_path" index="-1" value="/home/mgs/qpx/settings/XIA/PXIcode.lst" />
 		</Setting>
 		<Setting id="Pixie4/System" type="stem" index="-1">
 			<Setting id="Pixie4/System/MAX_NUMBER_MODULES" type="integer" index="-1" indices="-1" value="7" />

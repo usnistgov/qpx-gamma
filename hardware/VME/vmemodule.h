@@ -8,7 +8,6 @@
 
 #define ISEG_VENDOR_ID									0x69736567
 #define VHS_ADDRESS_SPACE_LENGTH				0x0400
-#define VDS_ADDRESS_SPACE_LENGTH				0x0800
 #define VME_ADDRESS_MODIFIER						0x29
 
 class VmeModule : public BaseModule

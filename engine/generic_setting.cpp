@@ -417,7 +417,9 @@ void Setting::condense() {
     if (setting.metadata.setting_type == SettingType::stem) {
       setting.condense();
       branches.add_a(setting);
-    } else if (metadata.saveworthy && setting.metadata.writable) {
+    } else if (metadata.saveworthy
+               && setting.metadata.writable
+               && (setting.metadata.setting_type != Gamma::SettingType::command)) {
       branches.add_a(setting);
     }
   }

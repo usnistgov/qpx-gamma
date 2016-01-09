@@ -66,47 +66,65 @@ private:
   void operator=(Plugin const&);
   Plugin(const Plugin&);
 
-  //Acquisition threads, use as static functors
-  static void worker_parse(Plugin* callback, SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue);
-  static void worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_queue);
-
 protected:
+  //setup
+  bool run_double_buffer_;
+  int  run_type_;
+  int  run_poll_interval_ms_;
 
-  std::string setting_definitions_file_;
-  void rebuild_structure(Gamma::Setting &set);
+  std::string XIA_file_directory_;
+  std::vector<std::string> boot_files_;
 
-  void fill_stats(std::list<StatsUpdate>&, uint8_t module);
-  void reset_counters_next_run();
+  std::vector<double> system_parameter_values_;
+  std::vector<double> module_parameter_values_;
+  std::vector<double> channel_parameter_values_;
 
+  std::vector<std::vector<int32_t>> channel_indices_;
+
+  //Multithreading
   boost::atomic<int> run_status_;
   boost::thread *runner_;
   boost::thread *parser_;
   SynchronizedQueue<Spill*>* raw_queue_;
 
-  //member variables
-  bool run_double_buffer_;
-  int  run_type_;
-  int  run_poll_interval_ms_;
+  static void worker_parse(Plugin* callback, SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue);
+  static void worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_queue);
 
-  std::vector<std::string> boot_files_;
-  std::vector<double> system_parameter_values_;
-  std::vector<double> module_parameter_values_;
-  std::vector<double> channel_parameter_values_;
+  //CONVENIENCE FUNCTIONS//
+  void rebuild_structure(Gamma::Setting &set);
+  void fill_stats(std::list<StatsUpdate>&, uint8_t module);
+  void reset_counters_next_run();
 
-  std::vector<int32_t> module_indices_;
-  std::vector<std::vector<int32_t>> channel_indices_;
+  //system
+  void set_sys(const std::string&, double);
+  double get_sys(const std::string&);
+  void get_sys_all();
 
-  //////////for internal use only///////////
+  //module
+  void set_mod(const std::string&, double, Module mod);
+  double get_mod(const std::string&, Module mod) const;
+  void get_mod_all(Module mod);
+  void get_mod_stats(Module mod);
+
+  //channel
+  double get_chan(const std::string&,
+                  Channel channel,
+                  Module  module) const;
+  void get_chan_all(Channel channel,
+                    Module  module);
+  void get_chan_stats(Channel channel, Module  module);
+
+  //////////LOW LEVEL///////////
 
   //CONTROL TASKS//
   uint32_t* control_collect_ADC(uint8_t module);
-  bool control_set_DAC(uint8_t module);
-  bool control_connect(uint8_t module);
-  bool control_disconnect(uint8_t module);
-  bool control_program_Fippi(uint8_t module);
+  bool control_set_DAC(uint8_t module);       //unused
+  bool control_connect(uint8_t module);       //unused
+  bool control_disconnect(uint8_t module);    //unused
+  bool control_program_Fippi(uint8_t module); //unused
   bool control_measure_baselines(Module mod);
-  bool control_test_EM_write(uint8_t module);
-  bool control_test_HM_write(uint8_t module);
+  bool control_test_EM_write(uint8_t module); //unused
+  bool control_test_HM_write(uint8_t module); //unused
   bool control_compute_BLcut();
   bool control_find_tau(Module mod);
   bool control_adjust_offsets(Module mod);
@@ -114,10 +132,10 @@ protected:
   //DAQ//
   //start and stop runs
   bool start_run(Module mod);
-  bool resume_run(Module mod);
+  bool resume_run(Module mod);  //unused
   bool stop_run(Module mod);
   bool start_run(uint8_t mod);
-  bool resume_run(uint8_t mod);
+  bool resume_run(uint8_t mod); //unused
   bool stop_run(uint8_t mod);
   //poll runs
   uint32_t poll_run(uint8_t mod);
@@ -146,34 +164,6 @@ protected:
   void set_err(int32_t);
   void boot_err(int32_t);
   bool control_err(int32_t);
-
-  //system
-  void set_sys(const std::string&, double);
-  double get_sys(const std::string&);
-  void get_sys_all();
-
-  //module
-  void set_mod(const std::string&, double, Module mod);
-  double get_mod(const std::string&, Module mod) const;
-  void get_mod_all(Module mod);
-  void get_mod_stats(Module mod);
-
-  //channel
-  void set_chan(const std::string&, double val,
-                Channel channel,
-                Module  module);
-  void set_chan(uint8_t setting, double val,
-                Channel channel,
-                Module  module);
-  double get_chan(const std::string&,
-                  Channel channel,
-                  Module  module) const;
-  double get_chan(uint8_t setting,
-                  Channel channel,
-                  Module  module) const;
-  void get_chan_all(Channel channel,
-                    Module  module);
-  void get_chan_stats(Channel channel, Module  module);
 
 };
 

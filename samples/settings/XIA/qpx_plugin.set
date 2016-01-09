@@ -1,42 +1,35 @@
 <?xml version="1.0"?>
 <Pixie4>
 	<SettingMeta id="Pixie4" type="stem" name="Pixie4" address="0" writable="false" saveworthy="false">
-		<branch address="0" id="Pixie4/Boot" />
-		<branch address="1" id="Pixie4/Oscilloscope" />
-		<branch address="2" id="Pixie4/Acquisition Start" />
-		<branch address="3" id="Pixie4/Acquisition Stop" />
-		<branch address="4" id="Pixie4/Acquisition Pause" />
-		<branch address="5" id="Pixie4/Measure baselines" />
-		<branch address="6" id="Pixie4/Adjust offsets" />
-		<branch address="7" id="Pixie4/Compute Tau" />
-		<branch address="8" id="Pixie4/Compute BLCUT" />
-		<branch address="9" id="Pixie4/Run settings" />
-		<branch address="10" id="Pixie4/Files" />
-		<branch address="11" id="Pixie4/System" />
+		<branch address="0" id="Pixie4/Measure baselines" />
+		<branch address="1" id="Pixie4/Adjust offsets" />
+		<branch address="2" id="Pixie4/Compute Tau" />
+		<branch address="3" id="Pixie4/Compute BLCUT" />
+		<branch address="4" id="Pixie4/Run settings" />
+		<branch address="5" id="Pixie4/Files" />
+		<branch address="6" id="Pixie4/System" />
 	</SettingMeta>
-	<SettingMeta id="Pixie4/Acquisition Pause" type="command" name="Acquisition Pause" address="0" writable="true" visible="false" />
-	<SettingMeta id="Pixie4/Acquisition Start" type="command" name="Acquisition Start" address="0" writable="true" visible="false" />
-	<SettingMeta id="Pixie4/Acquisition Stop" type="command" name="Acquisition Stop" address="0" writable="true" visible="false" />
 	<SettingMeta id="Pixie4/Adjust offsets" type="command" name="Adjust offsets" address="0" writable="true" visible="true" />
-	<SettingMeta id="Pixie4/Boot" type="command" name="Boot" address="0" writable="true" visible="false" />
 	<SettingMeta id="Pixie4/Compute BLCUT" type="command" name="Compute BLCUT" address="0" writable="true" visible="true" />
 	<SettingMeta id="Pixie4/Compute Tau" type="command" name="Compute Tau" address="0" writable="true" visible="true" />
 	<SettingMeta id="Pixie4/Files" type="stem" name="Files" address="0" writable="false" saveworthy="true">
-		<branch address="0" id="Pixie4/Files/Fippi" />
-		<branch address="1" id="Pixie4/Files/SysPixie" />
-		<branch address="2" id="Pixie4/Files/PixieBin" />
-		<branch address="3" id="Pixie4/Files/PxiBin" />
-		<branch address="4" id="Pixie4/Files/SetFile" />
-		<branch address="5" id="Pixie4/Files/PxiVar" />
-		<branch address="6" id="Pixie4/Files/PxiLst" />
+		<branch address="0" id="Pixie4/Files/XIA_path" />
+		<branch address="1" id="Pixie4/Files/Fippi" />
+		<branch address="2" id="Pixie4/Files/SysPixie" />
+		<branch address="3" id="Pixie4/Files/PixieBin" />
+		<branch address="4" id="Pixie4/Files/PxiBin" />
+		<branch address="5" id="Pixie4/Files/SetFile" />
+		<branch address="6" id="Pixie4/Files/PxiVar" />
+		<branch address="7" id="Pixie4/Files/PxiLst" />
 	</SettingMeta>
-	<SettingMeta id="Pixie4/Files/Fippi" type="file_path" name="Fippi" address="0" writable="true" unit="Fippi binary (FippiP500.bin)" />
-	<SettingMeta id="Pixie4/Files/PixieBin" type="file_path" name="PixieBin" address="2" writable="true" unit="Pixie binary (pixie.bin)" />
-	<SettingMeta id="Pixie4/Files/PxiBin" type="file_path" name="PxiBin" address="3" writable="true" unit="PXI code binary (PXIcode.bin)" />
-	<SettingMeta id="Pixie4/Files/PxiLst" type="file_path" name="PxiLst" address="6" writable="true" unit="Pxi list file (PXIcode.lst)" />
-	<SettingMeta id="Pixie4/Files/PxiVar" type="file_path" name="PxiVar" address="5" writable="true" unit="Pxi variable file (PXIcode.var)" />
-	<SettingMeta id="Pixie4/Files/SetFile" type="file_path" name="SetFile" address="4" writable="true" unit="Pixie settings file (*.set)" />
-	<SettingMeta id="Pixie4/Files/SysPixie" type="file_path" name="SysPixie" address="1" writable="true" unit="Syspixie binary (syspixie*.bin)" />
+	<SettingMeta id="Pixie4/Files/XIA_path" type="dir_path" name="XIA settings path" address="0" writable="true" />
+	<SettingMeta id="Pixie4/Files/Fippi" type="file_path" name="Fippi" address="1" writable="true" unit="Fippi binary (FippiP500.bin)" />
+	<SettingMeta id="Pixie4/Files/PixieBin" type="file_path" name="PixieBin" address="3" writable="true" unit="Pixie binary (pixie.bin)" />
+	<SettingMeta id="Pixie4/Files/PxiBin" type="file_path" name="PxiBin" address="4" writable="true" unit="PXI code binary (PXIcode.bin)" />
+	<SettingMeta id="Pixie4/Files/PxiLst" type="file_path" name="PxiLst" address="7" writable="true" unit="Pxi list file (PXIcode.lst)" />
+	<SettingMeta id="Pixie4/Files/PxiVar" type="file_path" name="PxiVar" address="6" writable="true" unit="Pxi variable file (PXIcode.var)" />
+	<SettingMeta id="Pixie4/Files/SetFile" type="file_path" name="SetFile" address="5" writable="true" unit="Pixie settings file (*.set)" />
+	<SettingMeta id="Pixie4/Files/SysPixie" type="file_path" name="SysPixie" address="2" writable="true" unit="Syspixie binary (syspixie*.bin)" />
 	<SettingMeta id="Pixie4/Measure baselines" type="command" name="Measure baselines" address="0" writable="true" visible="true" />
 	<SettingMeta id="Pixie4/Oscilloscope" type="command" name="Oscilloscope" address="0" writable="true" visible="false" />
 	<SettingMeta id="Pixie4/Run settings" type="stem" name="Run settings" address="0" writable="false" saveworthy="true">

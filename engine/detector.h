@@ -57,6 +57,7 @@ class Detector : public XMLable {
     if (energy_calibrations_ != other.energy_calibrations_) return false;
     if (gain_match_calibrations_ != other.gain_match_calibrations_) return false;
     if (fwhm_calibration_ != other.fwhm_calibration_) return false;
+    if (efficiency_calibration_ != other.efficiency_calibration_) return false;
     return true;
   }
 

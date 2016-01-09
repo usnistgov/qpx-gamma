@@ -15,6 +15,7 @@
 			<Setting id="Pixie4/Run settings/Poll interval" type="integer" index="-1" value="400" />
 		</Setting>
 		<Setting id="Pixie4/Files" type="stem" index="-1">
+			<Setting id="Pixie4/Files/XIA_path" type="dir_path" index="-1" value="/home/mpgaa/qpx/XIA" />
 			<Setting id="Pixie4/Files/Fippi" type="file_path" index="-1" value="/home/mpgaa/qpx/XIA/FippiP500.bin" />
 			<Setting id="Pixie4/Files/SysPixie" type="file_path" index="-1" value="/home/mpgaa/qpx/XIA/syspixie_revC.bin" />
 			<Setting id="Pixie4/Files/PixieBin" type="file_path" index="-1" value="/home/mpgaa/qpx/XIA/pixie.bin" />
@@ -38,6 +39,12 @@
 				<Setting id="Pixie4/System/module/channel" type="stem" index="1" indices="1" />
 				<Setting id="Pixie4/System/module/channel" type="stem" index="2" indices="2" />
 				<Setting id="Pixie4/System/module/channel" type="stem" index="3" indices="3" />
+			</Setting>
+			<Setting id="Pixie4/System/module" type="stem" index="1" indices="4 5 6 7">
+				<Setting id="Pixie4/System/module/channel" type="stem" index="0" indices="4" />
+				<Setting id="Pixie4/System/module/channel" type="stem" index="1" indices="5" />
+				<Setting id="Pixie4/System/module/channel" type="stem" index="2" indices="6" />
+				<Setting id="Pixie4/System/module/channel" type="stem" index="3" indices="7" />
 			</Setting>
 		</Setting>
 	</Setting>

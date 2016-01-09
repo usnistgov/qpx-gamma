@@ -24,10 +24,19 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
-#include "common_xia.h"
 #include "custom_logger.h"
 #include "custom_timer.h"
 
+//XIA stuff:
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include "PlxTypes.h"
+#include "Plx.h"
+#include "globals.h"
+#include "sharedfiles.h"
+#include "utilities.h"
 
 namespace Qpx {
 
@@ -42,8 +51,6 @@ Plugin::Plugin() {
   run_double_buffer_ = true;
   run_poll_interval_ms_ = 100;
   run_type_ = 0x103;
-
-  //  setting_definitions_file_ = file;
 
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 
@@ -174,23 +181,40 @@ bool Plugin::read_settings_bulk(Gamma::Setting &set) const {
         }
       } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Files")) {
         for (auto &k : q.branches.my_data_) {
-          if (k.metadata.setting_type == Gamma::SettingType::file_path)
-            k.value_text = boot_files_[k.metadata.address];
+          k.metadata.writable = !(status_ & DeviceStatus::booted);
+          if ((k.metadata.setting_type == Gamma::SettingType::dir_path) && (k.id_ == "Pixie4/Files/XIA_path"))
+            k.value_text = XIA_file_directory_;
+          else if ((k.metadata.setting_type == Gamma::SettingType::file_path) && (k.metadata.address > 0) && (k.metadata.address < 8))
+            k.value_text = boot_files_[k.metadata.address - 1];
         }
       } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/System")) {
         for (auto &k : q.branches.my_data_) {
+          k.metadata.writable = (!(status_ & DeviceStatus::booted) && setting_definitions_.count(k.id_) && setting_definitions_.at(k.id_).writable);
           if (k.metadata.setting_type == Gamma::SettingType::stem) {
             uint16_t modnum = k.metadata.address;
             if (modnum < 0)
               continue;
+            int filterrange = module_parameter_values_[modnum * N_MODULE_PAR + i_mod("FILTER_RANGE")];
             for (auto &p : k.branches.my_data_) {
               if (p.metadata.setting_type == Gamma::SettingType::stem) {
                 uint16_t channum = p.metadata.address;
                 if (channum < 0)
                   continue;
                 for (auto &o : p.branches.my_data_) {
-                  if (o.metadata.setting_type == Gamma::SettingType::floating)
+                  if (o.metadata.setting_type == Gamma::SettingType::floating) {
                     o.value_dbl = channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
+                    if (o.metadata.name == "ENERGY_RISETIME") {
+                      o.metadata.step = static_cast<double>(pow(2, filterrange)) / 75.0 ;
+                      o.metadata.minimum = 2 * o.metadata.step;
+                      o.metadata.maximum = 124 * o.metadata.step;
+//                      PL_DBG << "risetime " << o.metadata.minimum << "-" << o.metadata.step << "-" << o.metadata.maximum;
+                    } else if (o.metadata.name == "ENERGY_FLATTOP") {
+                      o.metadata.step = static_cast<double>(pow(2, filterrange)) / 75.0;
+                      o.metadata.minimum = 3 * o.metadata.step;
+                      o.metadata.maximum = 125 * o.metadata.step;
+//                      PL_DBG << "flattop " << o.metadata.minimum << "-" << o.metadata.step << "-" << o.metadata.maximum;
+                    }
+                  }
                   else if ((o.metadata.setting_type == Gamma::SettingType::integer)
                            || (o.metadata.setting_type == Gamma::SettingType::boolean)
                            || (o.metadata.setting_type == Gamma::SettingType::int_menu)
@@ -330,7 +354,6 @@ void Plugin::rebuild_structure(Gamma::Setting &set) {
     set.branches.add_a(q);
 
   if (oldtot != newtot) {
-    module_indices_.resize(newtot);
     channel_indices_.resize(newtot);
     for (auto &q : channel_indices_)
       q.resize(NUMBER_OF_CHANNELS, -1);
@@ -345,10 +368,24 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
     return false;
 
   for (auto &q : set.branches.my_data_) {
-    if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Files")) {
+    if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Files") && !(status_ & DeviceStatus::booted)) {
       for (auto &k : q.branches.my_data_) {
-        if (k.metadata.setting_type == Gamma::SettingType::file_path)
-          boot_files_[k.metadata.address] = k.value_text;
+        if ((k.metadata.setting_type == Gamma::SettingType::dir_path) && (k.id_ == "Pixie4/Files/XIA_path")) {
+          if (XIA_file_directory_ != k.value_text) {
+            if (!XIA_file_directory_.empty()) {
+              XIA_file_directory_ = k.value_text;
+              boost::filesystem::path path(k.value_text);
+              for (auto &f : boot_files_) {
+                boost::filesystem::path file(f);
+                boost::filesystem::path full_path = path / file.filename();
+                f = full_path.string();
+              }
+              break;
+            } else
+              XIA_file_directory_ = k.value_text;
+          }
+        } else if ((k.metadata.setting_type == Gamma::SettingType::file_path) && (k.metadata.address > 0) && (k.metadata.address < 8))
+          boot_files_[k.metadata.address - 1] = k.value_text;
       }
     } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
       for (auto &k : q.branches.my_data_) {
@@ -360,8 +397,8 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
           run_poll_interval_ms_ = k.value_int;
       }
     } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/System")) {
-      rebuild_structure(q);
-
+      if (!(status_ & DeviceStatus::booted))
+        rebuild_structure(q);
 
       for (auto &k : q.branches.my_data_) {
 
@@ -518,10 +555,6 @@ bool Plugin::boot() {
 
 std::map<int, std::vector<uint16_t>> Plugin::oscilloscope() {
   std::map<int, std::vector<uint16_t>> result;
-
-  if (module_indices_.size() != channel_indices_.size()) {
-    return result;
-  }
 
   uint32_t* oscil_data;
 
@@ -715,18 +748,18 @@ uint16_t Plugin::i_dsp(const char* setting_name) {
 
 //this function taken from XIA's code and modified, original comments remain
 bool Plugin::read_EM_dbl(uint32_t* data, uint8_t mod) {
-  U16 j, MCSRA;
-  U16 DblBufCSR;
+  U16 j;
+//  U16 DblBufCSR, MCSRA;
   U32 Aoffset[2], WordCountPP[2];
   U32 WordCount, NumWordsToRead, CSR;
   U32 dsp_word[2];
 
-  char modcsra_str[] = "MODCSRA";
-  char dblbufcsr_str[] = "DBLBUFCSR";
-  Pixie_IODM(0, (U16)DATA_MEMORY_ADDRESS + i_dsp(modcsra_str), MOD_READ, 1, dsp_word);
-  MCSRA = (U16)dsp_word[0];
-  Pixie_IODM(0, (U16)DATA_MEMORY_ADDRESS + i_dsp(dblbufcsr_str), MOD_READ, 1, dsp_word);
-  DblBufCSR = (U16)dsp_word[0];
+//  char modcsra_str[] = "MODCSRA";
+//  char dblbufcsr_str[] = "DBLBUFCSR";
+//  Pixie_IODM(0, (U16)DATA_MEMORY_ADDRESS + i_dsp("MODCSRA"), MOD_READ, 1, dsp_word);
+//  MCSRA = (U16)dsp_word[0];
+//  Pixie_IODM(0, (U16)DATA_MEMORY_ADDRESS + i_dsp("DBLBUFCSR"), MOD_READ, 1, dsp_word);
+//  DblBufCSR = (U16)dsp_word[0];
 
   Aoffset[0] = 0;
   Aoffset[1] = LM_DBLBUF_BLOCK_LENGTH;
@@ -737,11 +770,11 @@ bool Plugin::read_EM_dbl(uint32_t* data, uint8_t mod) {
   Pixie_RdWrdCnt((U8)mod, &WordCount);
 
   // The number of 16-bit words to read is in EMwords or EMwords2
-  char emwords_str[] = "EMWORDS";
-  char emwords2_str[] = "EMWORDS2";
-  Pixie_IODM((U8)mod, (U16)DATA_MEMORY_ADDRESS + i_dsp(emwords_str), MOD_READ, 2, dsp_word);
+//  char emwords_str[] = "EMWORDS";
+//  char emwords2_str[] = "EMWORDS2";
+  Pixie_IODM((U8)mod, (U16)DATA_MEMORY_ADDRESS + i_dsp("EMWORDS"), MOD_READ, 2, dsp_word);
   WordCountPP[0] = dsp_word[0] * 65536 + dsp_word[1];
-  Pixie_IODM((U8)mod, (U16)DATA_MEMORY_ADDRESS + i_dsp(emwords2_str), MOD_READ, 2, dsp_word);
+  Pixie_IODM((U8)mod, (U16)DATA_MEMORY_ADDRESS + i_dsp("EMWORDS2"), MOD_READ, 2, dsp_word);
   WordCountPP[1] = dsp_word[0] * 65536 + dsp_word[1];
 
   if(TstBit(CSR_128K_FIRST, (U16)CSR) == 1)
@@ -755,7 +788,6 @@ bool Plugin::read_EM_dbl(uint32_t* data, uint8_t mod) {
     j=1-j;
     PL_WARN << "<PixiePlugin> read_EM_dbl: module " << mod <<
                " csr reports both memory blocks full (block " << 1-j << " older). Run paused (or finished).";
-    Pixie_Print_MSG(ErrMSG);
   }
 
   if (WordCountPP[j] >0)
@@ -769,7 +801,6 @@ bool Plugin::read_EM_dbl(uint32_t* data, uint8_t mod) {
     if(NumWordsToRead > LIST_MEMORY_LENGTH)
     {
       PL_ERR << "<PixiePlugin> read_EM_dbl: invalid word count " << NumWordsToRead;
-      Pixie_Print_MSG(ErrMSG);
       return false;
     }
 
@@ -871,54 +902,6 @@ void Plugin::get_mod_stats(Module mod) {
 
 ////////Channels////////////
 ////////////////////////////
-
-void Plugin::set_chan(const std::string& setting, double val,
-                      Channel channel, Module module) {
-  int mod = static_cast<int>(module);
-  int chan = static_cast<int>(channel);
-
-  PL_TRC << "Setting " << setting << " to " << val
-         << " for module " << mod << " chan "<< chan;
-
-  if ((mod > -1) && (chan > -1)) {
-    channel_parameter_values_[i_chan(setting.c_str()) + mod * N_CHANNEL_PAR *
-        NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR] = val;
-    write_chan(setting.c_str(), mod, chan);
-  }
-}
-
-void Plugin::set_chan(uint8_t setting, double val,
-                      Channel channel, Module module) {
-  S8* setting_name = Channel_Parameter_Names[setting];
-
-  int mod = static_cast<int>(module);
-  int chan = static_cast<int>(channel);
-
-  PL_TRC << "Setting " << setting_name << " to " << val
-         << " for module " << mod << " chan "<< chan;
-
-  if ((mod > -1) && (chan > -1)) {
-    channel_parameter_values_[setting + mod * N_CHANNEL_PAR *
-        NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR] = val;
-    write_chan((char*)setting_name, mod, chan);
-  }
-}
-
-double Plugin::get_chan(uint8_t setting, Channel channel, Module module) const {
-  S8* setting_name = Channel_Parameter_Names[setting];
-
-  int mod = static_cast<int>(module);
-  int chan = static_cast<int>(channel);
-
-  PL_TRC << "Getting " << setting_name
-         << " for module " << mod << " channel " << chan;
-
-  if ((mod > -1) && (chan > -1)) {
-    return channel_parameter_values_[setting + mod * N_CHANNEL_PAR *
-        NUMBER_OF_CHANNELS + chan * N_CHANNEL_PAR];
-  } else
-    return -1;
-}
 
 double Plugin::get_chan(const std::string& setting,
                         Channel channel, Module module) const {
@@ -1110,16 +1093,18 @@ bool Plugin::control_program_Fippi(uint8_t module) {
 bool Plugin::control_measure_baselines(Module mod) {
   bool success = false;
   if (status_ & DeviceStatus::can_exec) {
-    for (int i=0; i< channel_indices_.size(); ++i) {
-      PL_DBG << "<PixiePlugin> measure baselines for module " << i;
-      if (control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, i)))
-        success = true;
-    }
-  } else {
-    int module = static_cast<int>(mod);
-    if ((module > -1) && (module < channel_indices_.size())) {
-      PL_DBG << "<PixiePlugin> measure baselines for module " << module;
-      success = control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, module));
+    if (mod == Module::all) {
+      for (int i=0; i< channel_indices_.size(); ++i) {
+        PL_DBG << "<PixiePlugin> measure baselines for module " << i;
+        if (control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, i)))
+          success = true;
+      }
+    } else {
+      int module = static_cast<int>(mod);
+      if ((module > -1) && (module < channel_indices_.size())) {
+        PL_DBG << "<PixiePlugin> measure baselines for module " << module;
+        success = control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, module));
+      }
     }
   }
   return success;
@@ -1142,17 +1127,19 @@ bool Plugin::control_compute_BLcut() {
 
 bool Plugin::control_find_tau(Module mod) {
   bool success = false;
-  if (mod == Module::all) {
-    for (int i=0; i< channel_indices_.size(); ++i) {
-      PL_DBG << "<PixiePlugin> find tau for module " << i;
-      if (control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, i)))
-        success = true;
-    }
-  } else {
-    int module = static_cast<int>(mod);
-    if ((module > -1) && (module < channel_indices_.size())) {
-      PL_DBG << "<PixiePlugin> find tau for module " << module;
-      success = control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, module));
+  if (status_ & DeviceStatus::can_exec) {
+    if (mod == Module::all) {
+      for (int i=0; i< channel_indices_.size(); ++i) {
+        PL_DBG << "<PixiePlugin> find tau for module " << i;
+        if (control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, i)))
+          success = true;
+      }
+    } else {
+      int module = static_cast<int>(mod);
+      if ((module > -1) && (module < channel_indices_.size())) {
+        PL_DBG << "<PixiePlugin> find tau for module " << module;
+        success = control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, module));
+      }
     }
   }
   return success;
@@ -1160,17 +1147,19 @@ bool Plugin::control_find_tau(Module mod) {
 
 bool Plugin::control_adjust_offsets(Module mod) {
   bool success = false;
-  if (mod == Module::all) {
-    for (int i=0; i< channel_indices_.size(); ++i) {
-      PL_TRC << "<PixiePlugin> djust offsets for module " << i;
-      if (control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, i)))
-        success = true;
-    }
-  } else {
-    int module = static_cast<int>(mod);
-    if ((module > -1) && (module < channel_indices_.size())) {
-      PL_TRC << "<PixiePlugin> adjust offsets for module " << module;
-      success = control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, module));
+  if (status_ & DeviceStatus::can_exec) {
+    if (mod == Module::all) {
+      for (int i=0; i< channel_indices_.size(); ++i) {
+        PL_TRC << "<PixiePlugin> djust offsets for module " << i;
+        if (control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, i)))
+          success = true;
+      }
+    } else {
+      int module = static_cast<int>(mod);
+      if ((module > -1) && (module < channel_indices_.size())) {
+        PL_TRC << "<PixiePlugin> adjust offsets for module " << module;
+        success = control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, module));
+      }
     }
   }
   return success;
