@@ -214,6 +214,8 @@ bool TreeItem::is_editable(int column) const
 {
   if ((column != 1)  || (itemData.metadata.setting_type == Gamma::SettingType::stem))
     return false;
+  else if (itemData.metadata.setting_type == Gamma::SettingType::binary)
+    return true;
   else
     return ((column == 1) && (itemData.metadata.writable));
 }

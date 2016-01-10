@@ -55,14 +55,14 @@ BinaryChecklist::BinaryChecklist(Gamma::Setting setting, QWidget *parent) :
   for (int i=0; i < wordsize; ++i) {
     QLabel *label = new QLabel();
     label->setText(QString::number(i));
-    if (!setting_.metadata.int_menu_items.count(i))
+    if (!setting.metadata.writable || !setting_.metadata.int_menu_items.count(i))
       label->setEnabled(false);
     vl_bit->addWidget(label);
 
     QCheckBox *box = new QCheckBox(parent);
     if (bs[i])
       box->setChecked(true);
-    if (!setting_.metadata.int_menu_items.count(i))
+    if (!setting.metadata.writable || !setting_.metadata.int_menu_items.count(i))
       box->setEnabled(false);
     boxes_.push_back(box);
     vl_checks->addWidget(box);
@@ -70,12 +70,10 @@ BinaryChecklist::BinaryChecklist(Gamma::Setting setting, QWidget *parent) :
     QLabel *label2 = new QLabel();
     if (setting_.metadata.int_menu_items.count(i))
       label2->setText(QString::fromStdString(setting_.metadata.int_menu_items[i]));
-    else {
+    else
       label2->setText("N/A");
-      label2->setEnabled(false);
-    }
+    label2->setEnabled(setting.metadata.writable);
     vl_descr->addWidget(label2);
-
   }
 
   QHBoxLayout *hl = new QHBoxLayout();
@@ -86,15 +84,21 @@ BinaryChecklist::BinaryChecklist(Gamma::Setting setting, QWidget *parent) :
   QLabel *title = new QLabel();
   title->setText(QString::fromStdString(setting_.id_) + " binary breakdown");
 
-  QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-
-  connect(buttonBox, SIGNAL(accepted()), this, SLOT(change_setting()));
-  connect(buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
-
   QVBoxLayout *total    = new QVBoxLayout();
   total->addWidget(title);
   total->addLayout(hl);
-  total->addWidget(buttonBox);
+
+  if (setting.metadata.writable) {
+    QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    connect(buttonBox, SIGNAL(accepted()), this, SLOT(change_setting()));
+    connect(buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
+    total->addWidget(buttonBox);
+  } else {
+    QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Close);
+    connect(buttonBox, SIGNAL(accepted()), this, SLOT(reject()));
+    connect(buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
+    total->addWidget(buttonBox);
+  }
 
   setLayout(total);
 }
@@ -145,6 +149,8 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
                                           const QModelIndex &index) const
 
 {
+  emit begin_editing();
+
   if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
     Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
     if (set.metadata.setting_type == Gamma::SettingType::floating) {

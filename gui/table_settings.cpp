@@ -25,6 +25,13 @@
 #include "special_delegate.h"
 #include <boost/algorithm/string.hpp>
 
+TableChanSettings::TableChanSettings(QObject *parent) {
+  show_read_only_ = true;
+  scalable_units_.insert("V");
+  scalable_units_.insert("A");
+  scalable_units_.insert("s");
+}
+
 void TableChanSettings::set_show_read_only(bool show_ro) {
   show_read_only_ = show_ro;
 }
@@ -33,8 +40,8 @@ void TableChanSettings::set_show_read_only(bool show_ro) {
 int TableChanSettings::rowCount(const QModelIndex & /*parent*/) const
 {
   int num = 0;
-   if (channels_.size() > 0)
-     num = channels_.front().settings_.branches.size();
+   if ((channels_.size() > 0) && (!consolidated_list_.branches.empty()))
+     num = consolidated_list_.branches.size();
   if (num)
     return num + 1;
   else
@@ -43,7 +50,7 @@ int TableChanSettings::rowCount(const QModelIndex & /*parent*/) const
 
 int TableChanSettings::columnCount(const QModelIndex & /*parent*/) const
 {
-  int num = 2 + channels_.size();
+  int num = 3 + channels_.size();
   return num;
 }
 
@@ -85,7 +92,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       }
     }
   } else if ((col == 0) && (channels_.size() > 0)) {
-    Gamma::Setting item = channels_.front().settings_.branches.get(row-1);
+    Gamma::Setting item = consolidated_list_.branches.get(row-1);
     if ((role == Qt::DisplayRole) || (role == Qt::EditRole)) {
       std::vector<std::string> tokens;
       boost::algorithm::split(tokens, item.id_, boost::algorithm::is_any_of("/"));
@@ -109,10 +116,23 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       boldfont.setPointSize(10);
       return boldfont;
     }
-  } else if ((col > channels_.size()) && (!channels_.empty())) {
-    Gamma::Setting item = channels_.front().settings_.branches.get(row-1);
-    if ((role == Qt::DisplayRole) || (role == Qt::EditRole))
-      return QString::fromStdString(item.metadata.unit);
+  } else if ((col == (channels_.size()+1)) && (!channels_.empty()) && (!consolidated_list_.branches.empty())) {
+    Gamma::Setting item = consolidated_list_.branches.get(row-1);
+    if ((role == Qt::DisplayRole) && preferred_units_.count(item.id_))
+      return QString::fromStdString(preferred_units_.at(item.id_));
+    else if  ((role == Qt::EditRole) && preferred_units_.count(item.id_)) {
+      UnitConverter uc;
+      Gamma::Setting st("unit");
+      st.metadata.setting_type = Gamma::SettingType::int_menu;
+      if (item.metadata.minimum)
+        st.metadata.int_menu_items = uc.make_ordered_map(item.metadata.unit, item.metadata.minimum, item.metadata.maximum);
+      else
+        st.metadata.int_menu_items = uc.make_ordered_map(item.metadata.unit, item.metadata.step, item.metadata.maximum);
+      for (auto &q : st.metadata.int_menu_items)
+        if (q.second == preferred_units_.at(item.id_))
+          st.value_int = q.first;
+      return QVariant::fromValue(st);
+    }
     else if (role == Qt::ForegroundRole) {
       if (item.metadata.writable) {
         QBrush brush(Qt::black);
@@ -127,10 +147,43 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       italicfont.setPointSize(10);
       return italicfont;
     }
+  } else if ((col == (channels_.size()+2)) && (!channels_.empty()) && (!consolidated_list_.branches.empty())) {
+    Gamma::Setting item = consolidated_list_.branches.get(row-1);
+    if ((role == Qt::DisplayRole) || (role == Qt::EditRole)) {
+      return QString::fromStdString(item.metadata.description);
+    } else if (role == Qt::ForegroundRole) {
+      if (item.metadata.writable) {
+        QBrush brush(Qt::black);
+        return brush;
+      } else {
+        QBrush brush(Qt::darkGray);
+        return brush;
+      }
+    } else if (role == Qt::FontRole) {
+      QFont italicfont;
+      italicfont.setItalic(true);
+      italicfont.setPointSize(10);
+      return italicfont;
+    }
   } else if (col <= channels_.size()) {
-    Gamma::Setting item = channels_[col-1].settings_.branches.get(row-1);
-    if (role == Qt::EditRole)
+    Gamma::Setting item = consolidated_list_.branches.get(row-1);
+    item.index = col -1;
+    item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
+    if (item == Gamma::Setting())
+      return QVariant();
+    if (role == Qt::EditRole) {
+      if ((item.metadata.setting_type == Gamma::SettingType::floating)
+          && preferred_units_.count(item.id_)
+          && (item.metadata.unit != preferred_units_.at(item.id_))) {
+            std::string to_units = preferred_units_.at(item.id_);
+            UnitConverter uc;
+            item.value_dbl = uc.convert_units(item.value_dbl, item.metadata.unit, to_units).convert_to<double>();
+            item.metadata.minimum = uc.convert_units(item.metadata.minimum, item.metadata.unit, to_units).convert_to<double>();
+            item.metadata.step = uc.convert_units(item.metadata.step, item.metadata.unit, to_units).convert_to<double>();
+            item.metadata.maximum = uc.convert_units(item.metadata.maximum, item.metadata.unit, to_units).convert_to<double>();
+          }
       return QVariant::fromValue(item);
+    }
     else if (role == Qt::ForegroundRole) {
       if (item.metadata.writable) {
         QBrush brush(Qt::black);
@@ -159,9 +212,14 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
         }
         hex = QString("0x") + hex;
         return hex;
-      } else if (item.metadata.setting_type == Gamma::SettingType::floating)
-        return QVariant::fromValue(item.value_dbl);
-      else if (item.metadata.setting_type == Gamma::SettingType::int_menu)
+      } else if (item.metadata.setting_type == Gamma::SettingType::floating) {
+        double val = item.value_dbl;
+        if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
+          UnitConverter uc;
+          val = uc.convert_units(val, item.metadata.unit, preferred_units_.at(item.id_)).convert_to<double>();
+        }
+        return QVariant::fromValue(val);
+      } else if (item.metadata.setting_type == Gamma::SettingType::int_menu)
         if (item.metadata.int_menu_items.count(item.value_int) > 0)
           return QString::fromStdString(item.metadata.int_menu_items.at(item.value_int));
         else
@@ -195,8 +253,10 @@ QVariant TableChanSettings::headerData(int section, Qt::Orientation orientation,
         return QString("Setting name");
       else if (section <= channels_.size())
         return (QString("chan ") + QString::number(section-1));
-      else
+      else if (section == (channels_.size()+1))
         return "Units";
+      else if (section == (channels_.size()+2))
+        return "Description";
     } else if (orientation == Qt::Vertical) {
       if (section)
         return QString::number(section-1);
@@ -224,6 +284,19 @@ void TableChanSettings::update(const std::vector<Gamma::Detector> &settings) {
       }
     }
   }
+
+  consolidated_list_ = Gamma::Setting();
+  for (auto &q : channels_) {
+    for (auto &p : q.settings_.branches.my_data_) {
+      p.index = 0;
+      consolidated_list_.branches.add(p);
+      if (!preferred_units_.count(p.id_) && (!p.metadata.unit.empty())) {
+//        PL_DBG << "adding preferred unit for " << p.id_ << " as " << p.metadata.unit;
+        preferred_units_[p.id_] = p.metadata.unit;
+      }
+    }
+  }
+
   QModelIndex start_ix = createIndex( 0, 0 );
   QModelIndex end_ix = createIndex( rowCount() - 1, columnCount() - 1);
   emit dataChanged( start_ix, end_ix );
@@ -235,13 +308,31 @@ Qt::ItemFlags TableChanSettings::flags(const QModelIndex &index) const
   int row = index.row();
   int col = index.column();
 
-  if ((col > 0) && (col <= channels_.size()))
+  if ((col > 0) && (col <= (channels_.size() + 2)) && (!consolidated_list_.branches.empty())) {
     if (row == 0)
       return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
-    else if (channels_.front().settings_.branches.get(row-1).metadata.writable)
+    Gamma::Setting item = consolidated_list_.branches.get(row-1);
+
+    if (col == (channels_.size() + 1)) {
+       if (preferred_units_.count(item.id_) && scalable_units_.count(UnitConverter().strip_unit(item.metadata.unit)))
+         return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
+       else
+         return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
+    } else if (col == (channels_.size() + 2))
+      return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
+
+    item.index = col -1;
+    item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
+
+    if (item == Gamma::Setting())
+      return QAbstractTableModel::flags(index);
+    else if (item.metadata.writable)
+      return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
+    else if (item.metadata.setting_type == Gamma::SettingType::binary)
       return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
     else
       return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
+  }
 }
 
 bool TableChanSettings::setData(const QModelIndex & index, const QVariant & value, int role)
@@ -250,8 +341,30 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
   int col = index.column();
 
   if (role == Qt::EditRole)
-    if (row > 0) {
-      Gamma::Setting item = channels_[col-1].settings_.branches.get(row-1);
+    if ((row > 0) && (col <= (channels_.size()+2))) {
+      Gamma::Setting item = consolidated_list_.branches.get(row-1);
+
+      if (col == (channels_.size()+1)) {
+        if (preferred_units_.count(item.id_)) {
+          int idx = value.toInt();
+          std::string prefix;
+          UnitConverter uc;
+          if (idx < uc.prefix_values_indexed.size())
+            prefix = uc.prefix_values_indexed[idx];
+          preferred_units_[item.id_] = prefix + uc.strip_unit(preferred_units_[item.id_]);
+          QModelIndex start_ix = createIndex( row, 0 );
+          QModelIndex end_ix = createIndex( row, columnCount() - 1);
+          emit dataChanged( start_ix, end_ix );
+          return true;
+        } else
+          return false;
+      }
+
+      item.index = col -1;
+      item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
+      if (item == Gamma::Setting())
+        return false;
+
       if (((item.metadata.setting_type == Gamma::SettingType::integer) || (item.metadata.setting_type == Gamma::SettingType::int_menu) || (item.metadata.setting_type == Gamma::SettingType::binary))
           && (value.canConvert(QMetaType::LongLong)))
         item.value_int = value.toLongLong();
@@ -259,8 +372,15 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
           && (value.type() == QVariant::Bool))
         item.value_int = value.toBool();
       else if ((item.metadata.setting_type == Gamma::SettingType::floating)
-          && (value.type() == QVariant::Double))
-        item.value_dbl = value.toDouble();
+          && (value.type() == QVariant::Double)) {
+        double val = value.toDouble();
+        if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
+              std::string to_units = preferred_units_.at(item.id_);
+              UnitConverter uc;
+              val = uc.convert_units(val, preferred_units_.at(item.id_), item.metadata.unit).convert_to<double>();
+            }
+        item.value_dbl = val;
+      }
       else if (((item.metadata.setting_type == Gamma::SettingType::text)
                 || (item.metadata.setting_type == Gamma::SettingType::file_path)
                 || (item.metadata.setting_type == Gamma::SettingType::dir_path)

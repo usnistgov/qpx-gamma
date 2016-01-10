@@ -98,6 +98,8 @@ private:
 
     QString file_;
     bool flag_;
+
+    Qpx::DeviceStatus recent_status_;
 };
 
 #endif

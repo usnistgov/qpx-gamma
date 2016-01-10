@@ -68,6 +68,9 @@ public:
                       const QModelIndex &index) const Q_DECL_OVERRIDE;
     void eat_detectors(const XMLableDB<Gamma::Detector>&);
 
+signals:
+    void begin_editing() const;
+
 private:
     XMLableDB<Gamma::Detector> detectors_;
 };

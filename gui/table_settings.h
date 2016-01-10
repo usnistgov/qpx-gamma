@@ -29,16 +29,21 @@
 #include <QFont>
 #include <QBrush>
 #include "detector.h"
+#include "units.h"
 
 class TableChanSettings : public QAbstractTableModel
 {
     Q_OBJECT
 private:
     std::vector<Gamma::Detector> channels_;
+    Gamma::Setting consolidated_list_;
+    std::map<std::string, std::string> preferred_units_;
     bool show_read_only_;
 
+    std::set<std::string> scalable_units_;
+
 public:
-    TableChanSettings(QObject *parent = 0) {show_read_only_ = true;}
+    TableChanSettings(QObject *parent = 0);
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     int columnCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -52,8 +57,6 @@ public:
 signals:
     void setting_changed(int chan, Gamma::Setting setting);
     void detector_chosen(int chan, std::string name);
-
-public slots:
 
 };
 

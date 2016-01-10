@@ -31,6 +31,7 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   settings_(settings),
   tree_settings_model_(this),
   table_settings_model_(this),
+  editing_(false),
   ui(new Ui::FormSystemSettings)
 {
   ui->setupUi(this);
@@ -47,6 +48,7 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   viewTreeSettings->setItemDelegate(&tree_delegate_);
   viewTreeSettings->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
   tree_delegate_.eat_detectors(detectors_);
+  connect(&tree_delegate_, SIGNAL(begin_editing()), this, SLOT(begin_editing()));
 
   viewTableSettings = new QTableView(this);
   ui->tabsSettings->addTab(viewTableSettings, "Settings table");
@@ -57,6 +59,7 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   table_settings_delegate_.eat_detectors(detectors_);
   table_settings_model_.update(channels_);
   viewTableSettings->show();
+  connect(&table_settings_delegate_, SIGNAL(begin_editing()), this, SLOT(begin_editing()));
 
   connect(&tree_settings_model_, SIGNAL(tree_changed()), this, SLOT(push_settings()));
   connect(&tree_settings_model_, SIGNAL(execute_command()), this, SLOT(execute_command()));
@@ -69,14 +72,6 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
 }
 
 void FormSystemSettings::update(const Gamma::Setting &tree, const std::vector<Gamma::Detector> &channels, Qpx::DeviceStatus status) {
-  dev_settings_ = tree;
-  channels_ = channels;
-
-  viewTreeSettings->clearSelection();
-  //viewTableSettings->clearSelection();
-
-  tree_settings_model_.update(dev_settings_);
-  table_settings_model_.update(channels_);
 
   bool can_run = ((status & Qpx::DeviceStatus::can_run) != 0);
   bool can_gain_match = false;
@@ -95,11 +90,30 @@ void FormSystemSettings::update(const Gamma::Setting &tree, const std::vector<Ga
 
   //update dets in DB as well?
 
+  if (editing_) {
+//    PL_DBG << "<FormSystemSettings> ignoring update";
+    return;
+  }
+
+  dev_settings_ = tree;
+  channels_ = channels;
+
+  viewTreeSettings->clearSelection();
+  //viewTableSettings->clearSelection();
+
+  tree_settings_model_.update(dev_settings_);
+  table_settings_model_.update(channels_);
+
   viewTableSettings->resizeColumnsToContents();
   viewTableSettings->horizontalHeader()->setStretchLastSection(true);
 }
 
+void FormSystemSettings::begin_editing() {
+  editing_ = true;
+}
+
 void FormSystemSettings::push_settings() {
+  editing_ = false;
   dev_settings_ = tree_settings_model_.get_tree();
 
   emit statusText("Updating settings...");
@@ -108,6 +122,7 @@ void FormSystemSettings::push_settings() {
 }
 
 void FormSystemSettings::execute_command() {
+  editing_ = false;
   dev_settings_ = tree_settings_model_.get_tree();
 
   emit statusText("Executing command...");
@@ -116,6 +131,8 @@ void FormSystemSettings::execute_command() {
 }
 
 void FormSystemSettings::push_from_table(int chan, Gamma::Setting setting) {
+  editing_ = false;
+
   setting.index = chan;
 
   emit statusText("Updating settings...");
@@ -124,6 +141,7 @@ void FormSystemSettings::push_from_table(int chan, Gamma::Setting setting) {
 }
 
 void FormSystemSettings::chose_detector(int chan, std::string name) {
+  editing_ = false;
   Gamma::Detector det = detectors_.get(Gamma::Detector(name));
   PL_DBG << "det " <<  det.name_ << " with cali " << det.energy_calibrations_.size() << " has sets " << det.settings_.branches.size();
   for (auto &q : det.settings_.branches.my_data_)

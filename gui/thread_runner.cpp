@@ -351,8 +351,9 @@ void ThreadRunner::run()
         if (!traces.empty())
           emit oscilReadOut(traces);
     } else {
-      PL_TRC << "<ThreadRunner> idling";
-      action_ = kSettingsRefresh;
+      bool booted = ((engine_.status() & Qpx::DeviceStatus::booted) != 0);
+      if (booted)
+        action_ = kSettingsRefresh;
       QThread::sleep(1);
     }
     running_.store(false);

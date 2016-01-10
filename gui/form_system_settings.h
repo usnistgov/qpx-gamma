@@ -65,6 +65,7 @@ public slots:
   void updateDetDB();
   
 private slots:
+  void begin_editing();
   void on_pushSettingsRefresh_clicked();
   void on_pushOptimizeAll_clicked();
 
@@ -98,6 +99,7 @@ private:
 
   ThreadRunner        &runner_thread_;
   QSettings           &settings_;
+  bool editing_;
 
   Gamma::Setting               dev_settings_;
   std::vector<Gamma::Detector> channels_;
