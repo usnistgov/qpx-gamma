@@ -36,6 +36,9 @@
 #include <QDialogButtonBox>
 #include <QMessageBox>
 
+#include <QApplication>
+
+
 BinaryChecklist::BinaryChecklist(Gamma::Setting setting, QWidget *parent) :
   QDialog(parent),
   setting_(setting)
@@ -126,7 +129,15 @@ void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
     painter->fillRect(option.rect, thisColor);
   } else if (index.data().canConvert<Gamma::Setting>()) {
     Gamma::Setting itemData = qvariant_cast<Gamma::Setting>(index.data());
+    if (itemData.metadata.setting_type == Gamma::SettingType::command) {
+      QStyleOptionButton button;
+      button.rect = option.rect;
+      button.text = QString::fromStdString(itemData.metadata.name);
+      if (itemData.metadata.writable)
+        button.state = QStyle::State_Enabled;
 
+      QApplication::style()->drawControl( QStyle::CE_PushButton, &button, painter);
+    }
   }
   else
     QStyledItemDelegate::paint(painter, option, index);
@@ -160,16 +171,14 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
       QSpinBox *editor = new QSpinBox(parent);
       return editor;
     } else if (set.metadata.setting_type == Gamma::SettingType::binary) {
-      BinaryChecklist *editor = new BinaryChecklist(set, parent);
-      editor->setModal(true);
-      return editor;
+//      BinaryChecklist *editor = new BinaryChecklist(set, parent);
+//      editor->setModal(true);
+      emit ask_binary(set, index);
+//      return editor;
+      return nullptr;
     } else if ((set.metadata.setting_type == Gamma::SettingType::command) && (set.metadata.writable))  {
-      QMessageBox *editor = new QMessageBox(parent);
-      editor->setText("Run " + QString::fromStdString(set.id_));
-      editor->setInformativeText("Will run command: " + QString::fromStdString(set.id_) + "\n Are you sure?");
-      editor->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-      //editor->exec();
-      return editor;
+      emit ask_execute(set, index);
+      return nullptr;
     } else if (set.metadata.setting_type == Gamma::SettingType::text) {
       QLineEdit *editor = new QLineEdit(parent);
       return editor;
@@ -255,12 +264,10 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
     } else
       sb->setValue(index.data(Qt::EditRole).toInt());
   } else if (BinaryChecklist *bc = qobject_cast<BinaryChecklist *>(editor)) {
-    bc->show();
-    bc->raise();
-    bc->activateWindow();
+//    bc->show();
+//    bc->raise();
+//    bc->activateWindow();
 //    bc->exec();
-  } else if (QMessageBox *mb = qobject_cast<QMessageBox*>(editor)) {
-//    mb->exec();
   } else if (QLineEdit *le = qobject_cast<QLineEdit *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
       Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
@@ -296,10 +303,7 @@ void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *mod
     model->setData(index, QVariant::fromValue(sb->value()), Qt::EditRole);
   else if (QLineEdit *le = qobject_cast<QLineEdit *>(editor))
     model->setData(index, le->text(), Qt::EditRole);
-  else if (QMessageBox *mb = qobject_cast<QMessageBox*>(editor)) {
-    if (mb->standardButton(mb->clickedButton()) == QMessageBox::Yes)
-      model->setData(index, QVariant(), Qt::EditRole);
-  } else if (QCheckBox *cb = qobject_cast<QCheckBox *>(editor))
+  else if (QCheckBox *cb = qobject_cast<QCheckBox *>(editor))
     model->setData(index, QVariant::fromValue(cb->isChecked()), Qt::EditRole);
   else if (QFileDialog *fd = qobject_cast<QFileDialog *>(editor)) {
     if ((!fd->selectedFiles().isEmpty()) /*&& (validateFile(parent, fd->selectedFiles().front(), false))*/)

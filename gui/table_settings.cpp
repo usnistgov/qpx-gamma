@@ -30,6 +30,7 @@ TableChanSettings::TableChanSettings(QObject *parent) {
   scalable_units_.insert("V");
   scalable_units_.insert("A");
   scalable_units_.insert("s");
+  scalable_units_.insert("Hz");
 }
 
 void TableChanSettings::set_show_read_only(bool show_ro) {
@@ -168,6 +169,8 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
   } else if (col <= channels_.size()) {
     Gamma::Setting item = consolidated_list_.branches.get(row-1);
     item.index = col -1;
+    item.indices.clear();
+    item.indices.insert(item.index);
     item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
     if (item == Gamma::Setting())
       return QVariant();
@@ -185,17 +188,32 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       return QVariant::fromValue(item);
     }
     else if (role == Qt::ForegroundRole) {
-      if (item.metadata.writable) {
+      if (item.metadata.setting_type == Gamma::SettingType::indicator) {
+        QBrush brush(Qt::white);
+        return brush;
+      } else if (item.metadata.writable) {
         QBrush brush(Qt::black);
         return brush;
       } else {
         QBrush brush(Qt::darkGray);
         return brush;
       }
+    } else if (role == Qt::BackgroundColorRole) {
+      if (item.metadata.setting_type == Gamma::SettingType::indicator)
+        return QColor::fromRgba(item.get_setting(Gamma::Setting(item.metadata.int_menu_items.at(item.value_int)), Gamma::Match::id).metadata.address);
+      else
+        return QVariant();
     } else if (role == Qt::FontRole) {
-      QFont regularfont;
-      regularfont.setPointSize(10);
-      return regularfont;
+      if (item.metadata.setting_type == Gamma::SettingType::indicator) {
+        QFont boldfont;
+        boldfont.setBold(true);
+        boldfont.setPointSize(11);
+        return boldfont;
+      } else {
+        QFont regularfont;
+        regularfont.setPointSize(10);
+        return regularfont;
+      }
     } else if (role == Qt::DisplayRole) {
       if (item.metadata.setting_type == Gamma::SettingType::integer)
         return QVariant::fromValue(item.value_int);
@@ -224,6 +242,14 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
           return QString::fromStdString(item.metadata.int_menu_items.at(item.value_int));
         else
           return QVariant();
+      else if (item.metadata.setting_type == Gamma::SettingType::indicator) {
+              if (item.metadata.int_menu_items.count(item.value_int) > 0)
+                return QString::fromStdString(
+                      item.get_setting(Gamma::Setting(item.metadata.int_menu_items.at(item.value_int)), Gamma::Match::id).metadata.name
+                      );
+              else
+                return QVariant();
+      }
       else if (item.metadata.setting_type == Gamma::SettingType::boolean)
         if (item.value_int)
           return "T";
@@ -231,6 +257,8 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
           return "F";
       else if (item.metadata.setting_type == Gamma::SettingType::text)
         return QString::fromStdString(item.value_text);
+      else if (item.metadata.setting_type == Gamma::SettingType::command)
+        return QVariant::fromValue(item);
       else if (item.metadata.setting_type == Gamma::SettingType::file_path)
         return QString::fromStdString(item.value_text);
       else if (item.metadata.setting_type == Gamma::SettingType::dir_path)

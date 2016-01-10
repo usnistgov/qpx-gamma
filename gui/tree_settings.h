@@ -97,7 +97,6 @@ public:
 
 signals:
   void tree_changed();
-  void execute_command();
   void detector_chosen(int chan, std::string name);
 
 };

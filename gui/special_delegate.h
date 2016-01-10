@@ -70,6 +70,8 @@ public:
 
 signals:
     void begin_editing() const;
+    void ask_execute(Gamma::Setting command, QModelIndex index) const;
+    void ask_binary(Gamma::Setting command, QModelIndex index) const;
 
 private:
     XMLableDB<Gamma::Detector> detectors_;

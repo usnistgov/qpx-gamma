@@ -49,6 +49,7 @@ enum class SettingType : int {none,
                               dir_path,
                               binary,
                               command,
+                              indicator
                              };
 
 enum Match {

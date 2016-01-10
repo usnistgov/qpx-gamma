@@ -223,20 +223,22 @@
 	<SettingMeta id="VME/IsegVHS/VendorID" type="integer" hardware_type="u32" name="Vendor ID" address="92" writable="false"/>
 
 	<SettingMeta id="VME/IsegVHS/Channel" type="stem" name="Channel" address="1" writable="true" saveworthy="false">
-		<branch address="0" id="VME/IsegVHS/Channel/ChannelStatus" />
-		<branch address="1" id="VME/IsegVHS/Channel/ChannelControl" />
-		<branch address="2" id="VME/IsegVHS/Channel/ChannelEventStatus" />
-		<branch address="3" id="VME/IsegVHS/Channel/ChannelEventMask" />
-		<branch address="4" id="VME/IsegVHS/Channel/VoltageSet" />
-		<branch address="5" id="VME/IsegVHS/Channel/CurrentSetOrTrip" />
-		<branch address="6" id="VME/IsegVHS/Channel/VoltageMeasure" />
-		<branch address="7" id="VME/IsegVHS/Channel/CurrentMeasure" />
-		<branch address="8" id="VME/IsegVHS/Channel/VoltageBoundsIlkMaxSet" />
-		<branch address="9" id="VME/IsegVHS/Channel/CurrentBoundsIlkMaxSet" />
-		<branch address="10" id="VME/IsegVHS/Channel/VoltageNominalMaxSet" />
-		<branch address="11" id="VME/IsegVHS/Channel/CurrentNominalMaxSet" />
-		<branch address="12" id="VME/IsegVHS/Channel/VoltageIlkMinSet" />
-		<branch address="13" id="VME/IsegVHS/Channel/CurrentIlkMinSet" />
+		<branch address="0" id="VME/IsegVHS/Channel/Status" />
+		<branch address="1" id="VME/IsegVHS/Channel/OnOff" />
+		<branch address="2" id="VME/IsegVHS/Channel/ChannelStatus" />
+		<branch address="3" id="VME/IsegVHS/Channel/ChannelControl" />
+		<branch address="4" id="VME/IsegVHS/Channel/ChannelEventStatus" />
+		<branch address="5" id="VME/IsegVHS/Channel/ChannelEventMask" />
+		<branch address="6" id="VME/IsegVHS/Channel/VoltageSet" />
+		<branch address="7" id="VME/IsegVHS/Channel/CurrentSetOrTrip" />
+		<branch address="8" id="VME/IsegVHS/Channel/VoltageMeasure" />
+		<branch address="9" id="VME/IsegVHS/Channel/CurrentMeasure" />
+		<branch address="10" id="VME/IsegVHS/Channel/VoltageBoundsIlkMaxSet" />
+		<branch address="11" id="VME/IsegVHS/Channel/CurrentBoundsIlkMaxSet" />
+		<branch address="12" id="VME/IsegVHS/Channel/VoltageNominalMaxSet" />
+		<branch address="13" id="VME/IsegVHS/Channel/CurrentNominalMaxSet" />
+		<branch address="14" id="VME/IsegVHS/Channel/VoltageIlkMinSet" />
+		<branch address="15" id="VME/IsegVHS/Channel/CurrentIlkMinSet" />
 	</SettingMeta>
 
 	<SettingMeta id="VME/IsegVHS/FixedGroups" type="stem" name="Fixed groups" address="1" writable="true" saveworthy="false">
@@ -250,6 +252,16 @@
 		<branch address="7" id="VME/IsegVHS/FixedGroups/SetCurrentIlkMinSetAllChannels" />
 	</SettingMeta>
 
+	<SettingMeta id="VME/IsegVHS/Channel/Status" type="indicator" name="Status" address="0" writable="false" saveworthy="false" description="Current status of controller" >
+		<state state="0" description="VME/IsegVHS/Channel/Status/Off" />
+		<state state="1" description="VME/IsegVHS/Channel/Status/Ramping" />
+		<state state="2" description="VME/IsegVHS/Channel/Status/On" />
+	</SettingMeta>
+	<SettingMeta id="VME/IsegVHS/Channel/OnOff" type="command" name="ON/OFF" writable="false" visible="true" saveworthy="false" description="Toggle channel voltage"/>
+	
+	<SettingMeta id="VME/IsegVHS/Channel/Status/On" type="text" name="ON" address="2503253112" writable="false" visible="false" />
+	<SettingMeta id="VME/IsegVHS/Channel/Status/Ramping" type="text" name="RAMPING" address="2263453729" writable="false" visible="false" />
+	<SettingMeta id="VME/IsegVHS/Channel/Status/Off" type="text" name="OFF" address="2164195328" writable="false" visible="false" />
 
 	<SettingMeta id="VME/IsegVHS/Channel/ChannelStatus" type="binary" name="Channel status" address="0" writable="false" word_size="16">
 		<flag bit="2" description="Input error" />

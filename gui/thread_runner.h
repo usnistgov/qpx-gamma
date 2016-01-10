@@ -93,7 +93,7 @@ private:
     std::map<int, Gamma::Detector> detectors_;
     Gamma::Detector det_;
     int chan_;
-    Gamma::Setting tree_;
+    Gamma::Setting tree_, one_setting_;
     Gamma::Match match_conditions_;
 
     QString file_;

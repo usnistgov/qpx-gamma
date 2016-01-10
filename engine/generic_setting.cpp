@@ -51,6 +51,8 @@ SettingType to_type(const std::string &type) {
     return SettingType::command;
   else if (type == "stem")
     return SettingType::stem;
+  else if (type == "indicator")
+    return SettingType::indicator;
   else
     return SettingType::none;
 }
@@ -78,6 +80,8 @@ std::string to_string(SettingType type) {
     return "command";
   else if (type == SettingType::int_menu)
     return "int_menu";
+  else if (type == SettingType::indicator)
+    return "indicator";
   else if (type == SettingType::stem)
     return "stem";
   else
@@ -107,6 +111,9 @@ void SettingMeta::from_xml(const pugi::xml_node &node) {
 
   if (setting_type == SettingType::binary)
     populate_menu(node, "bit", "description");
+
+  if (setting_type == SettingType::indicator)
+    populate_menu(node, "state", "description");
 
   if (setting_type == SettingType::int_menu)
     populate_menu(node, "item_value", "item_text");
@@ -167,6 +174,9 @@ void SettingMeta::to_xml(pugi::xml_node &node) const {
 
   if (setting_type == SettingType::binary)
     menu_to_node(child, "flag", "bit", "description");
+
+  if (setting_type == SettingType::indicator)
+    menu_to_node(child, "state", "state", "description");
 
   if (setting_type == SettingType::int_menu)
     menu_to_node(child, "menu_item", "item_value", "item_text");
@@ -230,6 +240,7 @@ void Setting::from_xml(const pugi::xml_node &node) {
   else if ((metadata.setting_type == SettingType::integer) ||
            (metadata.setting_type == SettingType::binary) ||
            (metadata.setting_type == SettingType::int_menu) ||
+           (metadata.setting_type == SettingType::indicator) ||
            (metadata.setting_type == SettingType::pattern))
     value_int = node.attribute("value").as_llong();
 
@@ -281,6 +292,7 @@ void Setting::to_xml(pugi::xml_node &node, bool with_metadata) const {
   else if ((metadata.setting_type == SettingType::integer) ||
            (metadata.setting_type == SettingType::binary) ||
            (metadata.setting_type == SettingType::int_menu) ||
+           (metadata.setting_type == SettingType::indicator) ||
            (metadata.setting_type == SettingType::pattern))
     child.append_attribute("value").set_value(std::to_string(value_int).c_str());
 
@@ -325,7 +337,8 @@ bool Setting::retrieve_one_setting(Gamma::Setting &det, const Gamma::Setting& ro
   if (root.compare(det, flags)) {
       det = root;
       return true;
-  } else if (root.metadata.setting_type == Gamma::SettingType::stem) {
+  } else if ((root.metadata.setting_type == Gamma::SettingType::stem)
+             || (root.metadata.setting_type == Gamma::SettingType::indicator)) {
     for (auto &q : root.branches.my_data_)
       if (retrieve_one_setting(det, q, flags))
         return true;
@@ -369,7 +382,8 @@ void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_de
     if (meta.address == -1)
       meta.address = index;
     metadata = meta;
-    if (meta.setting_type == Gamma::SettingType::stem) {
+    if ((meta.setting_type == Gamma::SettingType::stem) ||
+        (meta.setting_type == Gamma::SettingType::indicator)) {
       XMLableDB<Gamma::Setting> br = branches;
       branches.clear();
       for (auto &q : meta.int_menu_items) {

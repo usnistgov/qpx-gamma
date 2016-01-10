@@ -23,6 +23,7 @@
 #include "form_system_settings.h"
 #include "ui_form_system_settings.h"
 #include "widget_detectors.h"
+#include <QMessageBox>
 
 FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::Detector>& detectors, QSettings& settings, QWidget *parent) :
   QWidget(parent),
@@ -49,6 +50,8 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   viewTreeSettings->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
   tree_delegate_.eat_detectors(detectors_);
   connect(&tree_delegate_, SIGNAL(begin_editing()), this, SLOT(begin_editing()));
+  connect(&tree_delegate_, SIGNAL(ask_execute(Gamma::Setting, QModelIndex)), this, SLOT(ask_execute_tree(Gamma::Setting, QModelIndex)));
+  connect(&tree_delegate_, SIGNAL(ask_binary(Gamma::Setting, QModelIndex)), this, SLOT(ask_binary_tree(Gamma::Setting, QModelIndex)));
 
   viewTableSettings = new QTableView(this);
   ui->tabsSettings->addTab(viewTableSettings, "Settings table");
@@ -60,9 +63,10 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   table_settings_model_.update(channels_);
   viewTableSettings->show();
   connect(&table_settings_delegate_, SIGNAL(begin_editing()), this, SLOT(begin_editing()));
+  connect(&table_settings_delegate_, SIGNAL(ask_execute(Gamma::Setting, QModelIndex)), this, SLOT(ask_execute_table(Gamma::Setting, QModelIndex)));
+  connect(&table_settings_delegate_, SIGNAL(ask_binary(Gamma::Setting, QModelIndex)), this, SLOT(ask_binary_table(Gamma::Setting, QModelIndex)));
 
   connect(&tree_settings_model_, SIGNAL(tree_changed()), this, SLOT(push_settings()));
-  connect(&tree_settings_model_, SIGNAL(execute_command()), this, SLOT(execute_command()));
   connect(&tree_settings_model_, SIGNAL(detector_chosen(int, std::string)), this, SLOT(chose_detector(int,std::string)));
 
   connect(&table_settings_model_, SIGNAL(setting_changed(int, Gamma::Setting)), this, SLOT(push_from_table(int, Gamma::Setting)));
@@ -121,13 +125,58 @@ void FormSystemSettings::push_settings() {
   runner_thread_.do_push_settings(dev_settings_);
 }
 
-void FormSystemSettings::execute_command() {
+void FormSystemSettings::ask_binary_tree(Gamma::Setting set, QModelIndex index) {
+  editing_ = true;
+  BinaryChecklist *editor = new BinaryChecklist(set, qobject_cast<QWidget *> (parent()));
+  editor->setModal(true);
+  editor->exec();
+
+  if (set.metadata.writable) {
+    set.value_int = editor->get_setting().value_int;
+    tree_settings_model_.setData(index, QVariant::fromValue(editor->get_setting().value_int), Qt::EditRole);
+  }
+}
+
+void FormSystemSettings::ask_binary_table(Gamma::Setting set, QModelIndex index) {
+  editing_ = true;
+  BinaryChecklist *editor = new BinaryChecklist(set, qobject_cast<QWidget *> (parent()));
+  editor->setModal(true);
+  editor->exec();
+
+  if (set.metadata.writable) {
+    set.value_int = editor->get_setting().value_int;
+    table_settings_model_.setData(index, QVariant::fromValue(editor->get_setting().value_int), Qt::EditRole);
+  }
+}
+
+void FormSystemSettings::ask_execute_table(Gamma::Setting command, QModelIndex index) {
+  ask_execute_tree(command, index);
+}
+
+
+void FormSystemSettings::ask_execute_tree(Gamma::Setting command, QModelIndex index) {
+  editing_ = true;
+
+  QMessageBox *editor = new QMessageBox(qobject_cast<QWidget *> (parent()));
+  //editor->move(option.rect.x(), option.rect.y());
+  editor->setText("Run " + QString::fromStdString(command.id_));
+  editor->setInformativeText("Will run command: " + QString::fromStdString(command.id_) + "\n Are you sure?");
+  editor->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+  editor->exec();
+
+  if (editor->standardButton(editor->clickedButton()) == QMessageBox::Yes) {
+    command.value_dbl = 1;
+    execute_command(command);
+  }
+}
+
+void FormSystemSettings::execute_command(Gamma::Setting set) {
   editing_ = false;
-  dev_settings_ = tree_settings_model_.get_tree();
+  //dev_settings_ = tree_settings_model_.get_tree();
 
   emit statusText("Executing command...");
   emit toggleIO(false);
-  runner_thread_.do_execute_command(dev_settings_);
+  runner_thread_.do_execute_command(set);
 }
 
 void FormSystemSettings::push_from_table(int chan, Gamma::Setting setting) {
@@ -137,7 +186,7 @@ void FormSystemSettings::push_from_table(int chan, Gamma::Setting setting) {
 
   emit statusText("Updating settings...");
   emit toggleIO(false);
-  runner_thread_.do_set_setting(setting, Gamma::Match::id | Gamma::Match::indices);
+  runner_thread_.do_set_setting(setting, Gamma::Match::id | Gamma::Match::index);
 }
 
 void FormSystemSettings::chose_detector(int chan, std::string name) {

@@ -127,14 +127,15 @@ void ThreadRunner::do_shutdown() {
     start(HighPriority);
 }
 
-void ThreadRunner::do_execute_command(const Gamma::Setting &tree) {
+void ThreadRunner::do_execute_command(const Gamma::Setting &setting) {
   if (running_.load()) {
     PL_WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
   terminating_.store(false);
-  tree_ = tree;
+  one_setting_ = setting;
+  //tree_ = tree;
   action_ = kExecuteCommand;
   if (!isRunning())
     start(HighPriority);
@@ -287,7 +288,8 @@ void ThreadRunner::run()
       action_ = kNone;
       emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kExecuteCommand) {
-      engine_.push_settings(tree_);
+      engine_.set_setting(one_setting_, Gamma::Match::id | Gamma::Match::index);
+      //engine_.push_settings(tree_);
       bool success = engine_.execute_command();
       if (success) {
         engine_.get_all_settings();

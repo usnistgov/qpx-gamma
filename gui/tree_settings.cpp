@@ -161,6 +161,14 @@ QVariant TreeItem::display_data(int column) const
       else
         return QVariant();
     }
+    else if (itemData.metadata.setting_type == Gamma::SettingType::indicator) {
+      if (itemData.metadata.int_menu_items.count(itemData.value_int) > 0)
+        return QString::fromStdString(
+              itemData.get_setting(Gamma::Setting(itemData.metadata.int_menu_items.at(itemData.value_int)), Gamma::Match::id).metadata.name
+              );
+      else
+        return QVariant();
+    }
     else if (itemData.metadata.setting_type == Gamma::SettingType::boolean)
       if (itemData.value_int)
         return "T";
@@ -184,12 +192,8 @@ QVariant TreeItem::display_data(int column) const
       return QString::fromStdString(itemData.value_text);
     else if (itemData.metadata.setting_type == Gamma::SettingType::stem)
       return QString::fromStdString(itemData.value_text);
-    else if (itemData.metadata.setting_type == Gamma::SettingType::command) {
-      if (itemData.metadata.writable)
-        return QString("EXECUTE");
-      else
-        return QString("UNAVAILABLE");
-    }
+    else if (itemData.metadata.setting_type == Gamma::SettingType::command)
+      return QVariant::fromValue(itemData);
     else
       return QVariant::fromValue(itemData.value_dbl);
   }
@@ -362,20 +366,24 @@ QVariant TreeSettings::data(const QModelIndex &index, int role) const
         QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::red, Qt::blue};
         QBrush brush(palette[set.index % palette.size()]);
         return brush;
-      } else if (set.metadata.setting_type == Gamma::SettingType::command) {
-        if (set.metadata.writable) {
-          QBrush brush(Qt::darkGreen);
-          return brush;
-        } else {
-          QBrush brush(Qt::darkRed);
-          return brush;
-        }
+      } else if (set.metadata.setting_type == Gamma::SettingType::indicator) {
+        QBrush brush(Qt::white);
+        return brush;
       } else if ((col == 1) && (!set.metadata.writable)) {
         QBrush brush(Qt::darkGray);
         return brush;
       } else {
       QBrush brush(Qt::black);
       return brush;
+      }
+    }
+  } else if (role == Qt::BackgroundColorRole) {
+    if (item->edit_data(col).canConvert<Gamma::Setting>()) {
+      Gamma::Setting set = qvariant_cast<Gamma::Setting>(item->edit_data(col));
+      if (set.metadata.setting_type == Gamma::SettingType::indicator) {
+        return QColor::fromRgba(
+              set.get_setting(Gamma::Setting(set.metadata.int_menu_items.at(set.value_int)), Gamma::Match::id).metadata.address
+              );
       }
     }
   }
@@ -520,8 +528,6 @@ bool TreeSettings::setData(const QModelIndex &index, const QVariant &value, int 
     emit dataChanged(index, index);
     if (set.metadata.setting_type == Gamma::SettingType::detector)
       emit detector_chosen(set.index, set.value_text);
-    if (set.metadata.setting_type == Gamma::SettingType::command)
-      emit execute_command();
     else
       emit tree_changed();
   }

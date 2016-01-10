@@ -77,7 +77,12 @@ private slots:
   void push_settings();
   void push_from_table(int chan, Gamma::Setting setting);
   void chose_detector(int chan, std::string name);
-  void execute_command();
+
+  void ask_binary_tree(Gamma::Setting, QModelIndex index);
+  void ask_execute_tree(Gamma::Setting, QModelIndex index);
+  void ask_binary_table(Gamma::Setting, QModelIndex index);
+  void ask_execute_table(Gamma::Setting, QModelIndex index);
+  void execute_command(Gamma::Setting);
 
   void on_checkShowRO_clicked();
   void on_bootButton_clicked();
