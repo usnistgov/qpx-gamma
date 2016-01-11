@@ -181,7 +181,7 @@
 	</SettingMeta>
 	<SettingMeta id="VME/IsegVHS/VolgateRampSpeed" type="floating" name="Voltage ramp speed" address="20" writable="true" step="0.5" minimum="0" maximum="20" unit="% of nominal voltage in channel" />
 	<SettingMeta id="VME/IsegVHS/CurrentRampSpeed" type="floating" name="Current ramp speed" address="24" writable="true" step="0.5" minimum="0" maximum="20" unit="% of nominal current in channel" />
-	<SettingMeta id="VME/IsegVHS/VolgateMax" type="floating" name="Maximum voltage" address="28" writable="false" unit="value of trim pot in front panel" />
+	<SettingMeta id="VME/IsegVHS/VoltageMax" type="floating" name="Maximum voltage" address="28" writable="false" unit="value of trim pot in front panel" />
 	<SettingMeta id="VME/IsegVHS/CurrentMax" type="floating" name="Maximum current" address="32" writable="false" unit="value of trim pot in front panel" />
 	<SettingMeta id="VME/IsegVHS/SupplyP5" type="floating" name="Supply Voltage +5" address="36" writable="false" unit="V" />
 	<SettingMeta id="VME/IsegVHS/SupplyP12" type="floating" name="Supply voltage +12" address="40" writable="false" unit="V" />
@@ -265,8 +265,8 @@
 
 	<SettingMeta id="VME/IsegVHS/Channel/ChannelStatus" type="binary" name="Channel status" address="0" writable="false" word_size="16">
 		<flag bit="2" description="Input error" />
-		<flag bit="3" description="Ramp is running" />
-		<flag bit="4" description="Channel is on" />
+		<flag bit="3" description="Is on" />
+		<flag bit="4" description="Ramp is running" />
 		<flag bit="5" description="Emergency off without ramp" />
 		<flag bit="6" description="Current control active" />
 		<flag bit="7" description="Voltage control active" />
