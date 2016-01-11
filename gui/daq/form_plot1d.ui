@@ -14,7 +14,7 @@
    <string>Form</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -68,11 +68,11 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/show.png</normaloff>:/new/icons/show.png</iconset>
+           <normaloff>:/icons/show16.png</normaloff>:/icons/show16.png</iconset>
          </property>
          <property name="iconSize">
           <size>
-           <width>18</width>
+           <width>16</width>
            <height>16</height>
           </size>
          </property>
@@ -106,12 +106,12 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/emptytrash.png</normaloff>:/new/icons/oxy/emptytrash.png</iconset>
+           <normaloff>:/icons/oxy/16/emptytrash.png</normaloff>:/icons/oxy/16/emptytrash.png</iconset>
          </property>
          <property name="iconSize">
           <size>
-           <width>18</width>
-           <height>18</height>
+           <width>16</width>
+           <height>16</height>
           </size>
          </property>
          <property name="popupMode">
@@ -144,12 +144,12 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/help_about.png</normaloff>:/new/icons/oxy/help_about.png</iconset>
+           <normaloff>:/icons/oxy/16/help_about.png</normaloff>:/icons/oxy/16/help_about.png</iconset>
          </property>
          <property name="iconSize">
           <size>
-           <width>18</width>
-           <height>18</height>
+           <width>16</width>
+           <height>16</height>
           </size>
          </property>
         </widget>
@@ -248,7 +248,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/kpercentage.png</normaloff>:/new/icons/oxy/kpercentage.png</iconset>
+           <normaloff>:/icons/oxy/16/kpercentage.png</normaloff>:/icons/oxy/16/kpercentage.png</iconset>
          </property>
          <property name="iconSize">
           <size>

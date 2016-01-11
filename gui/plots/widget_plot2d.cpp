@@ -454,11 +454,11 @@ void WidgetPlot2D::replot_markers() {
 
   overlayButton = new QCPItemPixmap(ui->coincPlot);
   overlayButton->setClipToAxisRect(false);
-  overlayButton->setPixmap(QPixmap(":/new/icons/oxy/view_fullscreen.png"));
+  overlayButton->setPixmap(QPixmap(":/icons/oxy/16/view_fullscreen.png"));
   overlayButton->topLeft->setType(QCPItemPosition::ptAbsolute);
   overlayButton->topLeft->setCoords(5, 5);
   overlayButton->bottomRight->setParentAnchor(overlayButton->topLeft);
-  overlayButton->bottomRight->setCoords(18, 18);
+  overlayButton->bottomRight->setCoords(16, 16);
   overlayButton->setScaled(true);
   overlayButton->setSelectable(false);
   overlayButton->setProperty("button_name", QString("reset_scales"));
@@ -468,12 +468,12 @@ void WidgetPlot2D::replot_markers() {
   if (!menuOptions.isEmpty()) {
     QCPItemPixmap *newButton = new QCPItemPixmap(ui->coincPlot);
     newButton->setClipToAxisRect(false);
-    newButton->setPixmap(QPixmap(":/new/icons/oxy/view_statistics.png"));
+    newButton->setPixmap(QPixmap(":/icons/oxy/16/view_statistics.png"));
     newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
     newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
     newButton->topLeft->setCoords(0, 5);
     newButton->bottomRight->setParentAnchor(newButton->topLeft);
-    newButton->bottomRight->setCoords(18, 18);
+    newButton->bottomRight->setCoords(16, 16);
     newButton->setScaled(false);
     newButton->setSelectable(false);
     newButton->setProperty("button_name", QString("options"));
@@ -484,12 +484,12 @@ void WidgetPlot2D::replot_markers() {
 
   QCPItemPixmap *newButton = new QCPItemPixmap(ui->coincPlot);
   newButton->setClipToAxisRect(false);
-  newButton->setPixmap(QPixmap(":/new/icons/oxy/document_save.png"));
+  newButton->setPixmap(QPixmap(":/icons/oxy/16/document_save.png"));
   newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
   newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
   newButton->topLeft->setCoords(0, 5);
   newButton->bottomRight->setParentAnchor(newButton->topLeft);
-  newButton->bottomRight->setCoords(18, 18);
+  newButton->bottomRight->setCoords(16, 16);
   newButton->setScaled(true);
   newButton->setSelectable(false);
   newButton->setProperty("button_name", QString("export"));

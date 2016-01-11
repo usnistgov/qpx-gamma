@@ -54,14 +54,14 @@ FormPlot1D::FormPlot1D(QWidget *parent) :
   connect(spectraSelector, SIGNAL(itemDoubleclicked(SelectorItem)), this, SLOT(spectrumDoubleclicked(SelectorItem)));
 
 
-  menuColors.addAction(QIcon(":/new/icons/show.png"), "Show all", this, SLOT(showAll()));
-  menuColors.addAction(QIcon(":/new/icons/hide.png"), "Hide all", this, SLOT(hideAll()));
-  menuColors.addAction(QIcon(":/new/icons/oxy/roll.png"), "Randomize all colors", this, SLOT(randAll()));
+  menuColors.addAction(QIcon(":/icons/show16.png"), "Show all", this, SLOT(showAll()));
+  menuColors.addAction(QIcon(":/icons/hide16.png"), "Hide all", this, SLOT(hideAll()));
+  menuColors.addAction(QIcon(":/icons/oxy/16/roll.png"), "Randomize all colors", this, SLOT(randAll()));
   ui->toolColors->setMenu(&menuColors);
 
-  menuDelete.addAction(QIcon(":/new/icons/oxy/editdelete.png"), "Delete selected spectrum", this, SLOT(deleteSelected()));
-  menuDelete.addAction(QIcon(":/new/icons/show.png"), "Delete shown spectra", this, SLOT(deleteShown()));
-  menuDelete.addAction(QIcon(":/new/icons/hide.png"), "Delete hidden spectra", this, SLOT(deleteHidden()));
+  menuDelete.addAction(QIcon(":/icons/oxy/16/editdelete.png"), "Delete selected spectrum", this, SLOT(deleteSelected()));
+  menuDelete.addAction(QIcon(":/icons/show16.png"), "Delete shown spectra", this, SLOT(deleteShown()));
+  menuDelete.addAction(QIcon(":/icons/hide16.png"), "Delete hidden spectra", this, SLOT(deleteHidden()));
   ui->toolDelete->setMenu(&menuDelete);
 
   ui->toolEffCal->setMenu(&menuEffCal);

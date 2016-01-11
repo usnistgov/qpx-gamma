@@ -81,13 +81,13 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamm
   connect(ui->Plot2d, SIGNAL(requestSymmetrize(QString)), this, SLOT(reqSym2D(QString)));
   ui->Plot2d->setDetDB(detectors_);
 
-  menuLoad.addAction(QIcon(":/new/icons/oxy/document_open.png"), "Open qpx project", this, SLOT(projectOpen()));
-  menuLoad.addAction(QIcon(":/new/icons/oxy/document_open_folder.png"), "Import spectra", this, SLOT(projectImport()));
+  menuLoad.addAction(QIcon(":/icons/oxy/16/document_open.png"), "Open qpx project", this, SLOT(projectOpen()));
+  menuLoad.addAction(QIcon(":/icons/oxy/16/document_open_folder.png"), "Import spectra", this, SLOT(projectImport()));
   ui->toolOpen->setMenu(&menuLoad);
 
-  menuSave.addAction(QIcon(":/new/icons/oxy/document_save.png"), "Save project", this, SLOT(projectSave()));
-  menuSave.addAction(QIcon(":/new/icons/oxy/document_save_as.png"), "Save project as...", this, SLOT(projectSaveAs()));
-  menuSave.addAction(QIcon(":/new/icons/oxy/document_save_all.png"), "Export spectra...", this, SLOT(projectExport()));
+  menuSave.addAction(QIcon(":/icons/oxy/16/document_save.png"), "Save project", this, SLOT(projectSave()));
+  menuSave.addAction(QIcon(":/icons/oxy/16/document_save_as.png"), "Save project as...", this, SLOT(projectSaveAs()));
+  menuSave.addAction(QIcon(":/icons/oxy/16/document_save_all.png"), "Export spectra...", this, SLOT(projectExport()));
   ui->toolSave->setMenu(&menuSave);
 
   this->setWindowTitle(QString::fromStdString(spectra_.identity()));

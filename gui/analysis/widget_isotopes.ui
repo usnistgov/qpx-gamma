@@ -32,7 +32,7 @@
    <string>Form</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -186,12 +186,12 @@
           </property>
           <property name="icon">
            <iconset resource="../resources/qpxres.qrc">
-            <normaloff>:/new/icons/oxy/edit_add.png</normaloff>:/new/icons/oxy/edit_add.png</iconset>
+            <normaloff>:/icons/oxy/16/edit_add.png</normaloff>:/icons/oxy/16/edit_add.png</iconset>
           </property>
           <property name="iconSize">
            <size>
-            <width>18</width>
-            <height>18</height>
+            <width>16</width>
+            <height>16</height>
            </size>
           </property>
          </widget>
@@ -227,12 +227,12 @@
           </property>
           <property name="icon">
            <iconset resource="../resources/qpxres.qrc">
-            <normaloff>:/new/icons/oxy/editdelete.png</normaloff>:/new/icons/oxy/editdelete.png</iconset>
+            <normaloff>:/icons/oxy/16/editdelete.png</normaloff>:/icons/oxy/16/editdelete.png</iconset>
           </property>
           <property name="iconSize">
            <size>
-            <width>18</width>
-            <height>18</height>
+            <width>16</width>
+            <height>16</height>
            </size>
           </property>
          </widget>
@@ -268,12 +268,12 @@
           </property>
           <property name="icon">
            <iconset resource="../resources/qpxres.qrc">
-            <normaloff>:/new/icons/sigma-wikimedia.png</normaloff>:/new/icons/sigma-wikimedia.png</iconset>
+            <normaloff>:/icons/sigma16.png</normaloff>:/icons/sigma16.png</iconset>
           </property>
           <property name="iconSize">
            <size>
-            <width>15</width>
-            <height>15</height>
+            <width>16</width>
+            <height>16</height>
            </size>
           </property>
          </widget>
@@ -406,12 +406,12 @@
           </property>
           <property name="icon">
            <iconset resource="../resources/qpxres.qrc">
-            <normaloff>:/new/icons/oxy/edit_add.png</normaloff>:/new/icons/oxy/edit_add.png</iconset>
+            <normaloff>:/icons/oxy/16/edit_add.png</normaloff>:/icons/oxy/16/edit_add.png</iconset>
           </property>
           <property name="iconSize">
            <size>
-            <width>18</width>
-            <height>18</height>
+            <width>16</width>
+            <height>16</height>
            </size>
           </property>
          </widget>
@@ -447,12 +447,12 @@
           </property>
           <property name="icon">
            <iconset resource="../resources/qpxres.qrc">
-            <normaloff>:/new/icons/oxy/editdelete.png</normaloff>:/new/icons/oxy/editdelete.png</iconset>
+            <normaloff>:/icons/oxy/16/editdelete.png</normaloff>:/icons/oxy/16/editdelete.png</iconset>
           </property>
           <property name="iconSize">
            <size>
-            <width>18</width>
-            <height>18</height>
+            <width>16</width>
+            <height>16</height>
            </size>
           </property>
          </widget>

@@ -14,7 +14,7 @@
    <string>Peaks</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -247,7 +247,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/bookmark.png</normaloff>:/new/icons/oxy/bookmark.png</iconset>
+           <normaloff>:/icons/oxy/16/edit_find.png</normaloff>:/icons/oxy/16/edit_find.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -537,7 +537,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/flag_green.png</normaloff>:/new/icons/oxy/flag_green.png</iconset>
+           <normaloff>:/icons/oxy/16/flag.png</normaloff>:/icons/oxy/16/flag.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -578,7 +578,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/editdelete.png</normaloff>:/new/icons/oxy/editdelete.png</iconset>
+           <normaloff>:/icons/oxy/16/editdelete.png</normaloff>:/icons/oxy/16/editdelete.png</iconset>
          </property>
          <property name="iconSize">
           <size>

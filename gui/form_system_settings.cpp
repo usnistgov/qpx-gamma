@@ -234,10 +234,10 @@ void FormSystemSettings::toggle_push(bool enable, Qpx::DeviceStatus status) {
 
   if (online) {
     ui->bootButton->setText("Reset system");
-    ui->bootButton->setIcon(QIcon(":/new/icons/oxy/start.png"));
+    ui->bootButton->setIcon(QIcon(":/icons/oxy/16/start.png"));
   } else {
     ui->bootButton->setText("Boot system");
-    ui->bootButton->setIcon(QIcon(":/new/icons/Cowboy-Boot.png"));
+    ui->bootButton->setIcon(QIcon(":/icons/boot16.png"));
   }
 
   if ((current_status_ & Qpx::DeviceStatus::booted) &&

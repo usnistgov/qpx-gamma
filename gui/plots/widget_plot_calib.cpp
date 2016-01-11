@@ -231,11 +231,11 @@ void WidgetPlotCalib::redraw() {
 
   overlayButton = new QCPItemPixmap(ui->mcaPlot);
   overlayButton->setClipToAxisRect(false);
-  overlayButton->setPixmap(QPixmap(":/new/icons/oxy/view_statistics.png"));
+  overlayButton->setPixmap(QPixmap(":/icons/oxy/16/view_statistics.png"));
   overlayButton->topLeft->setType(QCPItemPosition::ptAbsolute);
   overlayButton->topLeft->setCoords(5, 5);
   overlayButton->bottomRight->setParentAnchor(overlayButton->topLeft);
-  overlayButton->bottomRight->setCoords(18, 18);
+  overlayButton->bottomRight->setCoords(16, 16);
   overlayButton->setScaled(true);
   overlayButton->setSelectable(false);
   overlayButton->setProperty("button_name", QString("options"));

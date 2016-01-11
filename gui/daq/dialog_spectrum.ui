@@ -14,7 +14,7 @@
    <string>Spectrum Info</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout_5">
@@ -344,7 +344,7 @@
           </property>
           <property name="icon">
            <iconset resource="../resources/qpxres.qrc">
-            <normaloff>:/new/icons/oxy/accessories_text_editor.png</normaloff>:/new/icons/oxy/accessories_text_editor.png</iconset>
+            <normaloff>:/icons/oxy/16/edit.png</normaloff>:/icons/oxy/16/edit.png</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -678,7 +678,7 @@
           </property>
           <property name="icon">
            <iconset resource="../resources/qpxres.qrc">
-            <normaloff>:/new/icons/oxy/document_preview.png</normaloff>:/new/icons/oxy/document_preview.png</iconset>
+            <normaloff>:/icons/oxy/16/document_preview.png</normaloff>:/icons/oxy/16/document_preview.png</iconset>
           </property>
          </widget>
         </item>
@@ -822,7 +822,7 @@
           </property>
           <property name="icon">
            <iconset resource="../resources/qpxres.qrc">
-            <normaloff>:/new/icons/oxy/roll.png</normaloff>:/new/icons/oxy/roll.png</iconset>
+            <normaloff>:/icons/oxy/16/roll.png</normaloff>:/icons/oxy/16/roll.png</iconset>
           </property>
          </widget>
         </item>
@@ -848,8 +848,8 @@
           </property>
           <property name="icon">
            <iconset resource="../resources/qpxres.qrc">
-            <normaloff>:/new/icons/oxy/document_decrypt.png</normaloff>
-            <normalon>:/new/icons/oxy/document_encrypt.png</normalon>:/new/icons/oxy/document_decrypt.png</iconset>
+            <normaloff>:/icons/oxy/16/document_encrypt.png</normaloff>
+            <normalon>:/new/icons/oxy/document_encrypt.png</normalon>:/icons/oxy/16/document_encrypt.png</iconset>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -878,7 +878,7 @@
           </property>
           <property name="icon">
            <iconset resource="../resources/qpxres.qrc">
-            <normaloff>:/new/icons/oxy/editdelete.png</normaloff>:/new/icons/oxy/editdelete.png</iconset>
+            <normaloff>:/icons/oxy/16/editdelete.png</normaloff>:/icons/oxy/16/editdelete.png</iconset>
           </property>
          </widget>
         </item>

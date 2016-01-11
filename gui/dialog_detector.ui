@@ -17,7 +17,7 @@
    <string>Detector definition</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <property name="modal">
@@ -314,8 +314,9 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="resources/qpxres.qrc">
-            <normaloff>:/new/icons/oxy/editdelete.png</normaloff>:/new/icons/oxy/editdelete.png</iconset>
+           <iconset>
+            <normaloff>:/new/icons/oxy/editdelete.png</normaloff>
+            <normalon>:/icons/oxy/16/editdelete.png</normalon>:/new/icons/oxy/editdelete.png</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -458,8 +459,9 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="resources/qpxres.qrc">
-            <normaloff>:/new/icons/oxy/editdelete.png</normaloff>:/new/icons/oxy/editdelete.png</iconset>
+           <iconset>
+            <normaloff>:/new/icons/oxy/editdelete.png</normaloff>
+            <normalon>:/icons/oxy/16/editdelete.png</normalon>:/new/icons/oxy/editdelete.png</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -529,9 +531,7 @@
    </item>
   </layout>
  </widget>
- <resources>
-  <include location="resources/qpxres.qrc"/>
- </resources>
+ <resources/>
  <connections>
   <connection>
    <sender>buttonBox</sender>

@@ -76,7 +76,7 @@ qpx::qpx(QWidget *parent) :
   px_status_ = Qpx::DeviceStatus(0);
 
   QPushButton *tb = new QPushButton();
-  tb->setIcon(QIcon(":/new/icons/oxy/filenew.png"));
+  tb->setIcon(QIcon(":/icons/oxy/16/filenew.png"));
 //  tb->setIconSize(QSize(16, 16));
   tb->setToolTip("New project");
   tb->setFlat(true);
@@ -307,7 +307,7 @@ void qpx::openNewProject()
 
 void qpx::addClosableTab(QWidget* widget, QString tooltip) {
   CloseTabButton *cb = new CloseTabButton(widget);
-  cb->setIcon( QIcon(":/new/icons/oxy/application_exit.png"));
+  cb->setIcon( QIcon(":/icons/oxy/16/application_exit.png"));
 //  tb->setIconSize(QSize(16, 16));
   cb->setToolTip(tooltip);
   cb->setFlat(true);

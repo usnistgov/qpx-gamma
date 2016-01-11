@@ -20,7 +20,7 @@
    <string>Spectrum Template</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <property name="modal">
@@ -257,7 +257,7 @@
            </property>
            <property name="icon">
             <iconset resource="../resources/qpxres.qrc">
-             <normaloff>:/new/icons/oxy/roll.png</normaloff>:/new/icons/oxy/roll.png</iconset>
+             <normaloff>:/icons/oxy/16/roll.png</normaloff>:/icons/oxy/16/roll.png</iconset>
            </property>
           </widget>
          </item>
@@ -510,7 +510,6 @@
   <zorder>tableGenericAttrs</zorder>
   <zorder>label_8</zorder>
   <zorder>groupBox_2</zorder>
-  <zorder></zorder>
   <zorder>label_10</zorder>
  </widget>
  <customwidgets>

@@ -14,7 +14,7 @@
    <string>Form</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -62,7 +62,7 @@
           <string>Find</string>
          </property>
          <property name="icon">
-          <iconset resource="resources/qpxres.qrc">
+          <iconset>
            <normaloff>:/new/icons/oxy/bookmark.png</normaloff>:/new/icons/oxy/bookmark.png</iconset>
          </property>
          <property name="iconSize">
@@ -361,7 +361,7 @@
          </property>
          <property name="icon">
           <iconset resource="resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/1rightarrow.png</normaloff>:/new/icons/oxy/1rightarrow.png</iconset>
+           <normaloff>:/icons/oxy/16/1rightarrow.png</normaloff>:/icons/oxy/16/1rightarrow.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -402,7 +402,7 @@
          </property>
          <property name="icon">
           <iconset resource="resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/process_stop.png</normaloff>:/new/icons/oxy/process_stop.png</iconset>
+           <normaloff>:/icons/oxy/16/stop.png</normaloff>:/icons/oxy/16/stop.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -631,15 +631,15 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>WidgetPlotCalib</class>
-   <extends>QWidget</extends>
-   <header>widget_plot_calib.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>WidgetPlot1D</class>
    <extends>QWidget</extends>
    <header>widget_plot1d.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>WidgetPlotCalib</class>
+   <extends>QWidget</extends>
+   <header>widget_plot_calib.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -14,7 +14,7 @@
    <string>Project</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -71,7 +71,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/document_open_folder.png</normaloff>:/new/icons/oxy/document_open_folder.png</iconset>
+           <normaloff>:/icons/oxy/32/document_open_folder.png</normaloff>:/icons/oxy/32/document_open_folder.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -124,7 +124,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/document_save.png</normaloff>:/new/icons/oxy/document_save.png</iconset>
+           <normaloff>:/icons/oxy/32/document_save.png</normaloff>:/icons/oxy/32/document_save.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -207,7 +207,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/package_utilities.png</normaloff>:/new/icons/oxy/package_utilities.png</iconset>
+           <normaloff>:/icons/oxy/32/package_utilities.png</normaloff>:/icons/oxy/32/package_utilities.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -245,7 +245,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/1rightarrow.png</normaloff>:/new/icons/oxy/1rightarrow.png</iconset>
+           <normaloff>:/icons/oxy/32/1rightarrow.png</normaloff>:/icons/oxy/32/1rightarrow.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -283,7 +283,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/process_stop.png</normaloff>:/new/icons/oxy/process_stop.png</iconset>
+           <normaloff>:/icons/oxy/32/stop.png</normaloff>:/icons/oxy/32/stop.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -372,7 +372,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/chronometer.png</normaloff>:/new/icons/oxy/chronometer.png</iconset>
+           <normaloff>:/icons/oxy/32/chronometer.png</normaloff>:/icons/oxy/32/chronometer.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -429,7 +429,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/help_about.png</normaloff>:/new/icons/oxy/help_about.png</iconset>
+           <normaloff>:/icons/oxy/32/help_about.png</normaloff>:/icons/oxy/32/help_about.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -464,7 +464,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/view_refresh.png</normaloff>:/new/icons/oxy/view_refresh.png</iconset>
+           <normaloff>:/icons/oxy/32/view_refresh.png</normaloff>:/icons/oxy/32/view_refresh.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -499,7 +499,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
+           <normaloff>:/icons/qpx.xpm</normaloff>:/icons/qpx.xpm</iconset>
          </property>
          <property name="iconSize">
           <size>

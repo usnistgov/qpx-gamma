@@ -20,7 +20,7 @@
    <string>Form</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -146,12 +146,12 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/help_about.png</normaloff>:/new/icons/oxy/help_about.png</iconset>
+           <normaloff>:/icons/oxy/16/help_about.png</normaloff>:/icons/oxy/16/help_about.png</iconset>
          </property>
          <property name="iconSize">
           <size>
-           <width>18</width>
-           <height>18</height>
+           <width>16</width>
+           <height>16</height>
           </size>
          </property>
         </widget>
@@ -187,12 +187,12 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</iconset>
+           <normaloff>:/icons/oxy/16/preferences_web_browser_cache.png</normaloff>:/icons/oxy/16/preferences_web_browser_cache.png</iconset>
          </property>
          <property name="iconSize">
           <size>
-           <width>18</width>
-           <height>18</height>
+           <width>16</width>
+           <height>16</height>
           </size>
          </property>
         </widget>
@@ -225,12 +225,12 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/editcut.png</normaloff>:/new/icons/oxy/editcut.png</iconset>
+           <normaloff>:/icons/oxy/16/editcut.png</normaloff>:/icons/oxy/16/editcut.png</iconset>
          </property>
          <property name="iconSize">
           <size>
-           <width>18</width>
-           <height>18</height>
+           <width>16</width>
+           <height>16</height>
           </size>
          </property>
          <property name="toolButtonStyle">
@@ -249,15 +249,15 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>WidgetPlot2D</class>
-   <extends>QWidget</extends>
-   <header>widget_plot2d.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>SelectorWidget</class>
    <extends>QWidget</extends>
    <header>widget_selector.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>WidgetPlot2D</class>
+   <extends>QWidget</extends>
+   <header>widget_plot2d.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

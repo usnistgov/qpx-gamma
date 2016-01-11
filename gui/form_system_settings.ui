@@ -20,7 +20,7 @@
    <string>Start</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -69,12 +69,12 @@
        </property>
        <property name="icon">
         <iconset resource="resources/qpxres.qrc">
-         <normaloff>:/new/icons/oxy/view_refresh.png</normaloff>:/new/icons/oxy/view_refresh.png</iconset>
+         <normaloff>:/icons/oxy/16/view_refresh.png</normaloff>:/icons/oxy/16/view_refresh.png</iconset>
        </property>
        <property name="iconSize">
         <size>
-         <width>18</width>
-         <height>18</height>
+         <width>16</width>
+         <height>16</height>
         </size>
        </property>
       </widget>
@@ -104,12 +104,12 @@
        </property>
        <property name="icon">
         <iconset resource="resources/qpxres.qrc">
-         <normaloff>:/new/icons/Cowboy-Boot.png</normaloff>:/new/icons/Cowboy-Boot.png</iconset>
+         <normaloff>:/icons/boot16.png</normaloff>:/icons/boot16.png</iconset>
        </property>
        <property name="iconSize">
         <size>
-         <width>18</width>
-         <height>18</height>
+         <width>16</width>
+         <height>16</height>
         </size>
        </property>
       </widget>
@@ -161,12 +161,12 @@
        </property>
        <property name="icon">
         <iconset resource="resources/qpxres.qrc">
-         <normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</iconset>
+         <normaloff>:/icons/oxy/16/preferences_web_browser_cache.png</normaloff>:/icons/oxy/16/preferences_web_browser_cache.png</iconset>
        </property>
        <property name="iconSize">
         <size>
-         <width>18</width>
-         <height>18</height>
+         <width>16</width>
+         <height>16</height>
         </size>
        </property>
       </widget>
@@ -243,12 +243,12 @@
        </property>
        <property name="icon">
         <iconset resource="resources/qpxres.qrc">
-         <normaloff>:/new/icons/oxy/alacarte.png</normaloff>:/new/icons/oxy/alacarte.png</iconset>
+         <normaloff>:/icons/oxy/16/alacarte.png</normaloff>:/icons/oxy/16/alacarte.png</iconset>
        </property>
        <property name="iconSize">
         <size>
-         <width>18</width>
-         <height>18</height>
+         <width>16</width>
+         <height>16</height>
         </size>
        </property>
       </widget>

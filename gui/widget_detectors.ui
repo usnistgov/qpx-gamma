@@ -26,7 +26,7 @@
    <string>Detector definitions</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -97,12 +97,12 @@
        </property>
        <property name="icon">
         <iconset resource="resources/qpxres.qrc">
-         <normaloff>:/new/icons/oxy/edit_add.png</normaloff>:/new/icons/oxy/edit_add.png</iconset>
+         <normaloff>:/icons/oxy/16/edit_add.png</normaloff>:/icons/oxy/16/edit_add.png</iconset>
        </property>
        <property name="iconSize">
         <size>
-         <width>18</width>
-         <height>18</height>
+         <width>16</width>
+         <height>16</height>
         </size>
        </property>
       </widget>
@@ -138,12 +138,12 @@
        </property>
        <property name="icon">
         <iconset resource="resources/qpxres.qrc">
-         <normaloff>:/new/icons/oxy/accessories_text_editor.png</normaloff>:/new/icons/oxy/accessories_text_editor.png</iconset>
+         <normaloff>:/icons/oxy/16/edit.png</normaloff>:/icons/oxy/16/edit.png</iconset>
        </property>
        <property name="iconSize">
         <size>
-         <width>18</width>
-         <height>18</height>
+         <width>16</width>
+         <height>16</height>
         </size>
        </property>
       </widget>
@@ -179,12 +179,12 @@
        </property>
        <property name="icon">
         <iconset resource="resources/qpxres.qrc">
-         <normaloff>:/new/icons/oxy/editdelete.png</normaloff>:/new/icons/oxy/editdelete.png</iconset>
+         <normaloff>:/icons/oxy/16/editdelete.png</normaloff>:/icons/oxy/16/editdelete.png</iconset>
        </property>
        <property name="iconSize">
         <size>
-         <width>18</width>
-         <height>18</height>
+         <width>16</width>
+         <height>16</height>
         </size>
        </property>
       </widget>
@@ -233,12 +233,12 @@
        </property>
        <property name="icon">
         <iconset resource="resources/qpxres.qrc">
-         <normaloff>:/new/icons/oxy/document_open.png</normaloff>:/new/icons/oxy/document_open.png</iconset>
+         <normaloff>:/icons/oxy/16/document_open_folder.png</normaloff>:/icons/oxy/16/document_open_folder.png</iconset>
        </property>
        <property name="iconSize">
         <size>
-         <width>18</width>
-         <height>18</height>
+         <width>16</width>
+         <height>16</height>
         </size>
        </property>
       </widget>
@@ -271,12 +271,12 @@
        </property>
        <property name="icon">
         <iconset resource="resources/qpxres.qrc">
-         <normaloff>:/new/icons/oxy/document_save.png</normaloff>:/new/icons/oxy/document_save.png</iconset>
+         <normaloff>:/icons/oxy/16/document_save.png</normaloff>:/icons/oxy/16/document_save.png</iconset>
        </property>
        <property name="iconSize">
         <size>
-         <width>18</width>
-         <height>18</height>
+         <width>16</width>
+         <height>16</height>
         </size>
        </property>
       </widget>
@@ -309,12 +309,12 @@
        </property>
        <property name="icon">
         <iconset resource="resources/qpxres.qrc">
-         <normaloff>:/new/icons/oxy/bookmark.png</normaloff>:/new/icons/oxy/bookmark.png</iconset>
+         <normaloff>:/icons/oxy/16/bookmark.png</normaloff>:/icons/oxy/16/bookmark.png</iconset>
        </property>
        <property name="iconSize">
         <size>
-         <width>18</width>
-         <height>18</height>
+         <width>16</width>
+         <height>16</height>
         </size>
        </property>
       </widget>
@@ -347,12 +347,12 @@
        </property>
        <property name="icon">
         <iconset resource="resources/qpxres.qrc">
-         <normaloff>:/new/icons/oxy/revert.png</normaloff>:/new/icons/oxy/revert.png</iconset>
+         <normaloff>:/icons/oxy/16/revert.png</normaloff>:/icons/oxy/16/revert.png</iconset>
        </property>
        <property name="iconSize">
         <size>
-         <width>18</width>
-         <height>18</height>
+         <width>16</width>
+         <height>16</height>
         </size>
        </property>
       </widget>

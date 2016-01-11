@@ -111,12 +111,12 @@
            </property>
            <property name="icon">
             <iconset resource="../resources/qpxres.qrc">
-             <normaloff>:/new/icons/oxy/editdelete.png</normaloff>:/new/icons/oxy/editdelete.png</iconset>
+             <normaloff>:/icons/oxy/16/editdelete.png</normaloff>:/icons/oxy/16/editdelete.png</iconset>
            </property>
            <property name="iconSize">
             <size>
-             <width>18</width>
-             <height>18</height>
+             <width>16</width>
+             <height>16</height>
             </size>
            </property>
           </widget>
@@ -146,12 +146,12 @@
            </property>
            <property name="icon">
             <iconset resource="../resources/qpxres.qrc">
-             <normaloff>:/new/icons/oxy/flag_yellow.png</normaloff>:/new/icons/oxy/flag_yellow.png</iconset>
+             <normaloff>:/icons/oxy/16/flag_yellow.png</normaloff>:/icons/oxy/16/flag_yellow.png</iconset>
            </property>
            <property name="iconSize">
             <size>
-             <width>18</width>
-             <height>18</height>
+             <width>16</width>
+             <height>16</height>
             </size>
            </property>
           </widget>

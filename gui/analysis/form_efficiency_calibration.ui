@@ -14,7 +14,7 @@
    <string>Efficiency calibration</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -79,12 +79,12 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</iconset>
+           <normaloff>:/icons/oxy/16/preferences_web_browser_cache.png</normaloff>:/icons/oxy/16/preferences_web_browser_cache.png</iconset>
          </property>
          <property name="iconSize">
           <size>
-           <width>18</width>
-           <height>18</height>
+           <width>16</width>
+           <height>16</height>
           </size>
          </property>
         </widget>
@@ -120,12 +120,12 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</iconset>
+           <normaloff>:/icons/oxy/16/preferences_web_browser_cache.png</normaloff>:/icons/oxy/16/preferences_web_browser_cache.png</iconset>
          </property>
          <property name="iconSize">
           <size>
-           <width>18</width>
-           <height>18</height>
+           <width>16</width>
+           <height>16</height>
           </size>
          </property>
         </widget>
@@ -161,12 +161,12 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</normaloff>:/new/icons/oxy/preferences_web_browser_cache.png</iconset>
+           <normaloff>:/icons/oxy/16/preferences_web_browser_cache.png</normaloff>:/icons/oxy/16/preferences_web_browser_cache.png</iconset>
          </property>
          <property name="iconSize">
           <size>
-           <width>18</width>
-           <height>18</height>
+           <width>16</width>
+           <height>16</height>
           </size>
          </property>
         </widget>
@@ -261,12 +261,12 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/document_save.png</normaloff>:/new/icons/oxy/document_save.png</iconset>
+           <normaloff>:/icons/oxy/16/document_save.png</normaloff>:/icons/oxy/16/document_save.png</iconset>
          </property>
          <property name="iconSize">
           <size>
-           <width>18</width>
-           <height>18</height>
+           <width>16</width>
+           <height>16</height>
           </size>
          </property>
         </widget>
@@ -299,12 +299,12 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/alacarte.png</normaloff>:/new/icons/oxy/alacarte.png</iconset>
+           <normaloff>:/icons/oxy/16/alacarte.png</normaloff>:/icons/oxy/16/alacarte.png</iconset>
          </property>
          <property name="iconSize">
           <size>
-           <width>18</width>
-           <height>18</height>
+           <width>16</width>
+           <height>16</height>
           </size>
          </property>
         </widget>
@@ -502,7 +502,7 @@
                 <string>Cull</string>
                </property>
                <property name="icon">
-                <iconset resource="../resources/qpxres.qrc">
+                <iconset>
                  <normaloff>:/new/icons/oxy/editclear.png</normaloff>:/new/icons/oxy/editclear.png</iconset>
                </property>
                <property name="iconSize">
@@ -544,12 +544,12 @@
                </property>
                <property name="icon">
                 <iconset resource="../resources/qpxres.qrc">
-                 <normaloff>:/new/icons/oxy/editdelete.png</normaloff>:/new/icons/oxy/editdelete.png</iconset>
+                 <normaloff>:/icons/oxy/16/editdelete.png</normaloff>:/icons/oxy/16/editdelete.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
-                 <width>18</width>
-                 <height>18</height>
+                 <width>16</width>
+                 <height>16</height>
                 </size>
                </property>
               </widget>
@@ -606,15 +606,15 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>WidgetPlotCalib</class>
+   <class>SelectorWidget</class>
    <extends>QWidget</extends>
-   <header>widget_plot_calib.h</header>
+   <header>widget_selector.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>WidgetIsotopes</class>
+   <class>WidgetPlotCalib</class>
    <extends>QWidget</extends>
-   <header>widget_isotopes.h</header>
+   <header>widget_plot_calib.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
@@ -624,9 +624,9 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>SelectorWidget</class>
+   <class>WidgetIsotopes</class>
    <extends>QWidget</extends>
-   <header>widget_selector.h</header>
+   <header>widget_isotopes.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

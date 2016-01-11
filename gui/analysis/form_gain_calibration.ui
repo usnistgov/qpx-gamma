@@ -14,7 +14,7 @@
    <string>Gain calibration</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/oxy/bookmark.png</normaloff>:/new/icons/oxy/bookmark.png</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -264,12 +264,12 @@
             </property>
             <property name="icon">
              <iconset resource="../resources/qpxres.qrc">
-              <normaloff>:/new/icons/oxy/document_save.png</normaloff>:/new/icons/oxy/document_save.png</iconset>
+              <normaloff>:/icons/oxy/16/document_save.png</normaloff>:/icons/oxy/16/document_save.png</iconset>
             </property>
             <property name="iconSize">
              <size>
-              <width>18</width>
-              <height>18</height>
+              <width>16</width>
+              <height>16</height>
              </size>
             </property>
            </widget>

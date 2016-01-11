@@ -14,7 +14,7 @@
    <string>Form</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -65,7 +65,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/1rightarrow.png</normaloff>:/new/icons/oxy/1rightarrow.png</iconset>
+           <normaloff>:/icons/oxy/32/1rightarrow.png</normaloff>:/icons/oxy/32/1rightarrow.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -100,7 +100,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/new/icons/oxy/process_stop.png</normaloff>:/new/icons/oxy/process_stop.png</iconset>
+           <normaloff>:/icons/oxy/32/stop.png</normaloff>:/icons/oxy/32/stop.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -207,15 +207,15 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>QCustomPlot</class>
-   <extends>QWidget</extends>
-   <header>qcustomplot.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>TimeDurationWidget</class>
    <extends>QWidget</extends>
    <header>time_duration_widget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QCustomPlot</class>
+   <extends>QWidget</extends>
+   <header>qcustomplot.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
