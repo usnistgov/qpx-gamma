@@ -164,15 +164,15 @@ void QpxHV8Plugin::set_voltage(int chan, double voltage) {
 
     if (get_prompt(attempts_)) {
       std::stringstream ss;
-      ss << "S " << chan << "\r";
-      PL_DBG << "Will write " << ss.str();
+      ss << "S " << chan + 1 << "\r";
+      //      PL_DBG << "Will write " << ss.str();
       port.writeString(ss.str());
       boost::this_thread::sleep(boost::posix_time::seconds(timeout_));
 
       if (get_prompt(attempts_)) {
         std::stringstream ss2;
         ss2 << "V " << voltage << "\r";
-        PL_DBG << "Will write " << ss2.str();
+        //        PL_DBG << "Will write " << ss2.str();
         port.writeString(ss2.str());
         boost::this_thread::sleep(boost::posix_time::seconds(timeout_));
 
@@ -359,14 +359,14 @@ void QpxHV8Plugin::get_all_settings() {
     try { line = port.readStringUntil(">"); }
     catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
 
-    PL_DBG << "will tokenize: " << line << "<end>";
+    //    PL_DBG << "will tokenize: " << line << "<end>";
     boost::algorithm::split(tokens, line, boost::algorithm::is_any_of("\r\n"));
 
-    for (auto &q : tokens) {
-      PL_DBG << "token: " << q;
-    }
+    //    for (auto &q : tokens) {
+    //      PL_DBG << "token: " << q;
+    //    }
 
-    PL_DBG << "tokenized size = " << tokens.size();
+    //    PL_DBG << "tokenized size = " << tokens.size();
     if (tokens.size() > 6) {
       success = true;
       break;
@@ -379,24 +379,25 @@ void QpxHV8Plugin::get_all_settings() {
       q.erase(std::unique(q.begin(), q.end(),
             [](char a, char b) { return a == ' ' && b == ' '; } ), q.end() );
 
-      PL_DBG << "tokenizing " << q;
+      //PL_DBG << "tokenizing " << q;
       std::vector<std::string> tokens2;
       boost::algorithm::split(tokens2, q, boost::algorithm::is_any_of("\t "));
       if (tokens2.size() > 2) {
 
 
-        PL_DBG << "tokens2 size " << tokens2.size();
-        for (auto &q : tokens2) {
-          PL_DBG << " token: " << q;
-        }
+        //PL_DBG << "tokens2 size " << tokens2.size();
+        //for (auto &q : tokens2) {
+        //  PL_DBG << " token: " << q;
+        //}
         int chan = boost::lexical_cast<int>(tokens2[0]);
         double voltage = boost::lexical_cast<double>(tokens2[1]);
-        PL_DBG << "Voltage for chan " << chan << " reported as " << voltage;
-        if ((chan >= 0) && (chan < voltages.size()))
-          voltages[chan] = voltage;
+        //        PL_DBG << "Voltage for chan " << chan << " reported as " << voltage;
+        if ((chan >= 1) && (chan <= voltages.size()))
+          voltages[chan-1] = voltage;
       }
     }
   }
+  PL_DBG << "<HV8> read all voltages";
 
 }
 
