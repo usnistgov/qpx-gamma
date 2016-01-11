@@ -197,7 +197,7 @@ bool QpxHV8Plugin::execute_command(Gamma::Setting &set) {
 
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
-      if ((q.metadata.setting_type == Gamma::SettingType::command) && (q.value_dbl == 1)) {
+      if ((q.metadata.setting_type == Gamma::SettingType::command) && (q.value_int == 1)) {
         q.value_dbl = 0;
         if (q.id_ == "Vme/Iseg/Sing a song")
           return true;

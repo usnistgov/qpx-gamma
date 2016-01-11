@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="resources/qpxres.qrc">
-    <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
+    <normaloff>:/icons/qpx.xpm</normaloff>:/icons/qpx.xpm</iconset>
   </property>
   <property name="iconSize">
    <size>

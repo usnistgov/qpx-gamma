@@ -27,7 +27,7 @@
 #include "detector.h"
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
-#include "vmemodule.h"
+#include "IsegVHS.h"
 
 namespace Qpx {
 

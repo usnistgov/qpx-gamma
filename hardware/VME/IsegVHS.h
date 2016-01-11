@@ -1,5 +1,5 @@
-#ifndef VMEMODULE_H
-#define VMEMODULE_H
+#ifndef IsegVHS_H
+#define IsegVHS_H
 
 #include "basemodule.h"
 #include "vmecontroller.h"
@@ -10,12 +10,12 @@
 #define VHS_ADDRESS_SPACE_LENGTH				0x0400
 #define VME_ADDRESS_MODIFIER						0x29
 
-class VmeModule : public BaseModule
+class IsegVHS : public BaseModule
 {
 
 public:
-	VmeModule(BaseController *controller, int baseAddress);
-	~VmeModule();
+  IsegVHS(BaseController *controller, int baseAddress);
+  ~IsegVHS();
 
 	bool    connected(void);
 
@@ -68,6 +68,6 @@ private:
 #define VhsNewBaseAddressXorOFFSET					0x03A2
 #define VhsNewBaseAddressAcceptedOFFSET				0x03A6
 
-#endif // VMEMODULE_H
+#endif // IsegVHS_H
 
 

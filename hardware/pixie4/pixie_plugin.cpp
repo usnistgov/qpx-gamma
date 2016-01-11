@@ -469,8 +469,8 @@ bool Plugin::execute_command(Gamma::Setting &set) {
 
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
-      if ((q.metadata.setting_type == Gamma::SettingType::command) && (q.value_dbl == 1)) {
-        q.value_dbl = 0;
+      if ((q.metadata.setting_type == Gamma::SettingType::command) && (q.value_int == 1)) {
+        q.value_int = 0;
         if (q.id_ == "Pixie4/Measure baselines")
           return control_measure_baselines(Module::all);
         else if (q.id_ == "Pixie4/Adjust offsets")

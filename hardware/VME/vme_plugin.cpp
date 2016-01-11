@@ -50,8 +50,10 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
       if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "VME/IsegVHS")) {
+        double voltage_max = 0;
+        double current_max = 0;
         if (modules_.count(q.id_)) {
-          VmeModule *mod = dynamic_cast<VmeModule*>(modules_.at(q.id_));
+          IsegVHS *mod = dynamic_cast<IsegVHS*>(modules_.at(q.id_));
           PL_DBG << "Reading out settings for module " << q.id_;
           for (auto &k : q.branches.my_data_) {
             if ((k.metadata.setting_type == Gamma::SettingType::floating)
@@ -62,6 +64,10 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
             {
               if (!mod->read_setting(k, 0))
                 PL_DBG << "Could not read " << k.id_;
+              if (k.id_ == "VME/IsegVHS/VoltageMax")
+                voltage_max = k.value_dbl;
+              if (k.id_ == "VME/IsegVHS/CurrentMax")
+                current_max = k.value_dbl;
             }
             else if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channel")) {
               uint16_t channum = k.index;
@@ -82,12 +88,19 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
 
               for (auto &p : k.branches.my_data_) {
                 if (p.id_ == "VME/IsegVHS/Channel/Status") {
-                  if ((k.get_setting(Gamma::Setting("VME/IsegVHS/Channel/ChannelStatus"), Gamma::Match::id).value_int & 0x0008) != 0)
+                  Gamma::Setting status = k.get_setting(Gamma::Setting("VME/IsegVHS/Channel/ChannelStatus"), Gamma::Match::id);
+                  if (status.value_int & 0x0008)
                     p.value_int = 1;
-                  else if ((k.get_setting(Gamma::Setting("VME/IsegVHS/Channel/ChannelStatus"), Gamma::Match::id).value_int & 0x0010) != 0)
+                  else if (status.value_int & 0x0010)
                     p.value_int = 2;
                   else
                     p.value_int = 0;
+                } else if (p.id_ == "VME/IsegVHS/Channel/VoltageSet") {
+                  Gamma::Setting nominal = k.get_setting(Gamma::Setting("VME/IsegVHS/Channel/VoltageNominalMaxSet"), Gamma::Match::id);
+                  p.metadata.maximum = nominal.value_dbl * voltage_max;
+                } else if (p.id_ == "VME/IsegVHS/Channel/CurrentSetOrTrip") {
+                  Gamma::Setting nominal = k.get_setting(Gamma::Setting("VME/IsegVHS/Channel/CurrentNominalMaxSet"), Gamma::Match::id);
+                  p.metadata.maximum = nominal.value_dbl * current_max;
                 }
               }
 
@@ -121,7 +134,7 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
       rebuild_structure(q);
 
       if (modules_.count(q.id_)) {
-        VmeModule *mod = dynamic_cast<VmeModule*>(modules_.at(q.id_));
+        IsegVHS *mod = dynamic_cast<IsegVHS*>(modules_.at(q.id_));
 //        PL_DBG << "Writing settings for module " << q.id_;
 
         for (auto &k : q.branches.my_data_) {
@@ -172,7 +185,7 @@ bool QpxVmePlugin::execute_command(Gamma::Setting &set) {
   for (auto &q : set.branches.my_data_) {
     if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "VME/IsegVHS")) {
       if (modules_.count(q.id_)) {
-      VmeModule *mod = dynamic_cast<VmeModule*>(modules_.at(q.id_));
+      IsegVHS *mod = dynamic_cast<IsegVHS*>(modules_.at(q.id_));
         PL_DBG << "Writing settings for module " << q.id_;
 
         for (auto &k : q.branches.my_data_) {
@@ -181,10 +194,10 @@ bool QpxVmePlugin::execute_command(Gamma::Setting &set) {
             uint16_t channum = k.index;
             for (auto &p : k.branches.my_data_) {
 
-              if ((p.metadata.setting_type == Gamma::SettingType::command) && (p.value_dbl == 1)) {
+              if ((p.metadata.setting_type == Gamma::SettingType::command) && (p.value_int == 1)) {
                 if (p.id_ == "VME/IsegVHS/Channel/OnOff") {
                   PL_DBG << "Triggered ON/OFF for " << p.index;
-                  p.value_dbl = 0;
+                  p.value_int = 0;
                   Gamma::Setting ctrl = k.get_setting(Gamma::Setting("VME/IsegVHS/Channel/ChannelControl"), Gamma::Match::id);
                   if (p.metadata.writable && mod->read_setting(ctrl, ((48 * channum) + 96))) {
                     ctrl.value_int  ^= 0x0008;
@@ -222,13 +235,20 @@ bool QpxVmePlugin::boot() {
     PL_DBG << "<VmePlugin> Controller status: " << controller_->information();
   }
 
+  if (!controller_->connected()) {
+    PL_DBG << "<VmePlugin> Could not connect to " << controller_name_;
+    return false;
+  } else {
+    PL_DBG << "<VmePlugin> Controller status: " << controller_->information();
+  }
+
   bool success = false;
   for (int base_address = 0; base_address < 0xFFFF; base_address += VHS_ADDRESS_SPACE_LENGTH) {
     //PL_DBG << "trying to load mod at BA " << base_address;
-    VmeModule module(controller_, base_address);
+    IsegVHS module(controller_, base_address);
 
     if (module.firmwareName() == "V12C0") {
-      VmeModule *mod = new VmeModule(controller_, base_address);
+      IsegVHS *mod = new IsegVHS(controller_, base_address);
       modules_["VME/IsegVHS"] = mod;
       PL_DBG << "<VmePlugin> Adding module [" << base_address << "] firmwareName=" << module.firmwareName();
       success = true;

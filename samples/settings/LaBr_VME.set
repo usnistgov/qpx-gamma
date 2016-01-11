@@ -31,6 +31,7 @@
 			<Setting id="VME/IsegVHS/Channel" type="stem" index="9" indices="9" />
 			<Setting id="VME/IsegVHS/Channel" type="stem" index="10" indices="10" />
 			<Setting id="VME/IsegVHS/Channel" type="stem" index="11" indices="11" />
+			<Setting id="VME/IsegVHS/FixedGroups" type="stem" index="-1" />
 		</Setting>
 	</Setting>
 </Setting>

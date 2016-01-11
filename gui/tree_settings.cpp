@@ -309,7 +309,7 @@ bool TreeItem::setData(int column, const QVariant &value)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
   else if (itemData.metadata.setting_type == Gamma::SettingType::command)
-    itemData.value_dbl = 1; //flag it for execution
+    itemData.value_int = 1; //flag it for execution
   else if ((itemData.metadata.setting_type == Gamma::SettingType::detector)
       && (value.type() == QVariant::String)) {
     itemData.value_text = value.toString().toStdString();

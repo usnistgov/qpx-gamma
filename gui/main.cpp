@@ -26,7 +26,7 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    a.setWindowIcon(QIcon(":/new/icons/qpx.xpm"));
+    a.setWindowIcon(QIcon(":/icons/qpx.xpm"));
 
     qpx w;
     w.show();

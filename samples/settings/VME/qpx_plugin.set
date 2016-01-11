@@ -311,43 +311,43 @@
 		<flag bit="14" description="Hardware: current limit has been exceeded" />
 		<flag bit="15" description="Hardware: voltage limit has been exceeded" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/Channel/VoltageSet" type="floating" name="Voltage preset" address="8" writable="true" unit="V" />
-	<SettingMeta id="VME/IsegVHS/Channel/CurrentSetOrTrip" type="floating" name="Current preset" address="12" writable="true" />
+	<SettingMeta id="VME/IsegVHS/Channel/VoltageSet" type="floating" name="Voltage preset" address="8" writable="true" step="0.01" unit="V" />
+	<SettingMeta id="VME/IsegVHS/Channel/CurrentSetOrTrip" type="floating" name="Current preset" address="12" writable="true" step="0.01" unit="A" />
 	<SettingMeta id="VME/IsegVHS/Channel/VoltageMeasure" type="floating" name="Voltage measured" address="16" writable="false" unit="V" />
-	<SettingMeta id="VME/IsegVHS/Channel/CurrentMeasure" type="floating" name="Current measured" address="20" writable="false" />
+	<SettingMeta id="VME/IsegVHS/Channel/CurrentMeasure" type="floating" name="Current measured" address="20" writable="false" unit="A" />
 	<SettingMeta id="VME/IsegVHS/Channel/VoltageBoundsIlkMaxSet" type="floating" name="Voltage bounds (or max)" address="24" writable="true" unit="V" />
-	<SettingMeta id="VME/IsegVHS/Channel/CurrentBoundsIlkMaxSet" type="floating" name="Current bounds (or max)" address="28" writable="true" />
-	<SettingMeta id="VME/IsegVHS/Channel/VoltageNominalMaxSet" type="floating" name="Voltage nominal (or maxset)" address="32" writable="true" unit="V" />
-	<SettingMeta id="VME/IsegVHS/Channel/CurrentNominalMaxSet" type="floating" name="Current nominal (or maxset)" address="36" writable="true" />
+	<SettingMeta id="VME/IsegVHS/Channel/CurrentBoundsIlkMaxSet" type="floating" name="Current bounds (or max)" address="28" writable="true" unit="A" />
+	<SettingMeta id="VME/IsegVHS/Channel/VoltageNominalMaxSet" type="floating" name="Voltage nominal (or maxset)" address="32" writable="false" step="0.01" maximum="1000" unit="V" />
+	<SettingMeta id="VME/IsegVHS/Channel/CurrentNominalMaxSet" type="floating" name="Current nominal (or maxset)" address="36" writable="false" step="0.01" maximum="1000" unit="A" />
 	<SettingMeta id="VME/IsegVHS/Channel/VoltageIlkMinSet" type="floating" name="VoltageIlkMinSet" address="40" writable="true" unit="V" />
-	<SettingMeta id="VME/IsegVHS/Channel/CurrentIlkMinSet" type="floating" name="CurrentIlkMinSet" address="44" writable="true" />
+	<SettingMeta id="VME/IsegVHS/Channel/CurrentIlkMinSet" type="floating" name="CurrentIlkMinSet" address="44" writable="true" unit="A" />
 
 	<SettingMeta id="VME/IsegVHS/FixedGroups/SetVoltageAllChannels" type="floating" name="Set voltage for all channels" address="672" writable="true" unit="V"/>
-	<SettingMeta id="VME/IsegVHS/FixedGroups/SetCurrentAllChannels" type="floating" name="Set current for all channels" address="676" writable="true" />
+	<SettingMeta id="VME/IsegVHS/FixedGroups/SetCurrentAllChannels" type="floating" name="Set current for all channels" address="676" writable="true" unit="A" />
 	<SettingMeta id="VME/IsegVHS/FixedGroups/SetVoltageBoundsAllChannels" type="floating" name="Set voltage bounds for all channels" address="680" writable="true" unit="V"/>
-	<SettingMeta id="VME/IsegVHS/FixedGroups/SetCurrentBoundsAllChannels" type="floating" name="Set current bounds for all channels" address="684" writable="true" />
+	<SettingMeta id="VME/IsegVHS/FixedGroups/SetCurrentBoundsAllChannels" type="floating" name="Set current bounds for all channels" address="684" writable="true" unit="A" />
 	<SettingMeta id="VME/IsegVHS/FixedGroups/SetEmergencyAllChannels" type="integer" hardware_type="u32" name="Trigger emergency shutoff" address="688" writable="true"/>
     <SettingMeta id="VME/IsegVHS/FixedGroups/SetOnOffAllChannels" type="integer" hardware_type="u32" name="Set all channels ON/OFF" address="692" writable="true"/>
 	<SettingMeta id="VME/IsegVHS/FixedGroups/SetVoltageIlkMinSetAllChannels" type="floating" name="Set voltage IlkMinSet for all channels" address="696" writable="true" unit="V"/>
-	<SettingMeta id="VME/IsegVHS/FixedGroups/SetCurrentIlkMinSetAllChannels" type="floating" name="Set current IlkMinSet for all channels" address="700" writable="true" />
+	<SettingMeta id="VME/IsegVHS/FixedGroups/SetCurrentIlkMinSetAllChannels" type="floating" name="Set current IlkMinSet for all channels" address="700" writable="true" unit="A" />
 
-	<SettingMeta id="VME/IsegVHS/ttt" type="binary" name="T" address="0" writable="false" word_size="16">
-		<flag bit="0" description="Activation of fine adjustment" />
-		<flag bit="1" description="Interlock output is active" />
-		<flag bit="2" description="Module is in state STOP, all high voltages are off" />
-		<flag bit="3" description="Module is in state STOP, all high voltages are off" />
-		<flag bit="4" description="Module shows that factory service is needed" />
-		<flag bit="5" description="Input error in connection with module access" />
-		<flag bit="6" description="Module is in SpecialMode" />
-		<flag bit="7" description="All commands complete" />
-		<flag bit="8" description="Module without failure" />
-		<flag bit="9" description="All channels stable, no ramp active" />
-		<flag bit="10" description="Safety loop closed" />
-		<flag bit="11" description="Some event is active and mask is set" />
-		<flag bit="12" description="Module is in good state" />
-		<flag bit="13" description="Power supply is good" />
-		<flag bit="14" description="Module temperature is good" />
-		<flag bit="15" description="Kill enable" />
+	<SettingMeta id="VME/IsegVHS/dummy for cut and paste purposes" type="binary" name="T" address="0" writable="false" word_size="16">
+		<flag bit="0" description="" />
+		<flag bit="1" description="" />
+		<flag bit="2" description="" />
+		<flag bit="3" description="" />
+		<flag bit="4" description="" />
+		<flag bit="5" description="" />
+		<flag bit="6" description="" />
+		<flag bit="7" description="" />
+		<flag bit="8" description="" />
+		<flag bit="9" description="" />
+		<flag bit="10" description="" />
+		<flag bit="11" description="" />
+		<flag bit="12" description="" />
+		<flag bit="13" description="" />
+		<flag bit="14" description="" />
+		<flag bit="15" description="" />
 	</SettingMeta>
 
 </VME>

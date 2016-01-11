@@ -1,4 +1,4 @@
-#include "vmemodule.h"
+#include "IsegVHS.h"
 #include "boost/endian/conversion.hpp"
 #include "custom_logger.h"
 
@@ -9,24 +9,24 @@ typedef union {
   uint8_t   b[4];
 } TFloatWord;
 
-VmeModule::VmeModule(BaseController *controller, int baseAddress)
+IsegVHS::IsegVHS(BaseController *controller, int baseAddress)
 {
 	m_controller = static_cast<VmeController *>(controller);
   setBaseAddress(baseAddress);
 }
 
-VmeModule::~VmeModule()
+IsegVHS::~IsegVHS()
 {
 }
 
-bool VmeModule::connected()
+bool IsegVHS::connected()
 {
   uint32_t vendorId = readLong(m_baseAddress + VhsVendorIdOFFSET);
 
 	return vendorId == ISEG_VENDOR_ID;
 }
 
-bool VmeModule::read_setting(Gamma::Setting& set, int address_modifier) {
+bool IsegVHS::read_setting(Gamma::Setting& set, int address_modifier) {
   if (set.metadata.setting_type == Gamma::SettingType::floating)
     set.value_dbl = readFloat(m_baseAddress + address_modifier + set.metadata.address);
   else if (set.metadata.setting_type == Gamma::SettingType::binary) {
@@ -55,7 +55,7 @@ bool VmeModule::read_setting(Gamma::Setting& set, int address_modifier) {
   return true;
 }
 
-bool VmeModule::write_setting(Gamma::Setting& set, int address_modifier) {
+bool IsegVHS::write_setting(Gamma::Setting& set, int address_modifier) {
   if (set.metadata.setting_type == Gamma::SettingType::floating)
     writeFloat(m_baseAddress + address_modifier + set.metadata.address, set.value_dbl);
   else if (set.metadata.setting_type == Gamma::SettingType::binary) {
@@ -84,7 +84,7 @@ bool VmeModule::write_setting(Gamma::Setting& set, int address_modifier) {
   return true;
 }
 
-uint16_t VmeModule::readShort(int address)
+uint16_t IsegVHS::readShort(int address)
 {
 	if ((m_controller)) {
 		return m_controller->readShort(address, VME_ADDRESS_MODIFIER);
@@ -93,24 +93,24 @@ uint16_t VmeModule::readShort(int address)
 	}
 }
 
-void VmeModule::writeShort(int address, uint16_t data)
+void IsegVHS::writeShort(int address, uint16_t data)
 {
 	if ((m_controller)) {
 		m_controller->writeShort(address, VME_ADDRESS_MODIFIER, data);
 	}
 }
 
-uint16_t VmeModule::readShortBitfield(int address)
+uint16_t IsegVHS::readShortBitfield(int address)
 {
 	return readShort(address);
 }
 
-void VmeModule::writeShortBitfield(int address, uint16_t data)
+void IsegVHS::writeShortBitfield(int address, uint16_t data)
 {
 	writeShort(address, data);
 }
 
-float VmeModule::readFloat(int address)
+float IsegVHS::readFloat(int address)
 {
 	TFloatWord fw = { 0 };
 
@@ -125,7 +125,7 @@ float VmeModule::readFloat(int address)
 	return fw.f;
 }
 
-void VmeModule::writeFloat(int address, float data)
+void IsegVHS::writeFloat(int address, float data)
 {
 	TFloatWord fw;
 
@@ -140,7 +140,7 @@ void VmeModule::writeFloat(int address, float data)
 #endif
 }
 
-uint32_t VmeModule::readLong(int address)
+uint32_t IsegVHS::readLong(int address)
 {
 	TFloatWord fw = { 0 };
 
@@ -155,7 +155,7 @@ uint32_t VmeModule::readLong(int address)
 	return fw.l;
 }
 
-void VmeModule::writeLong(int address, uint32_t data)
+void IsegVHS::writeLong(int address, uint32_t data)
 {
 	TFloatWord fw;
 
@@ -170,12 +170,12 @@ void VmeModule::writeLong(int address, uint32_t data)
 #endif
 }
 
-uint32_t VmeModule::readLongBitfield(int address)
+uint32_t IsegVHS::readLongBitfield(int address)
 {
 	return readLong(address);
 }
 
-void VmeModule::writeLongBitfield(int address, uint32_t data)
+void IsegVHS::writeLongBitfield(int address, uint32_t data)
 {
 	writeLong(address, data);
 }
@@ -183,7 +183,7 @@ void VmeModule::writeLongBitfield(int address, uint32_t data)
 /**
  * Mirrors the Bit positions in a 16 bit word.
  */
-uint16_t VmeModule::mirrorShort(uint16_t data)
+uint16_t IsegVHS::mirrorShort(uint16_t data)
 {
   uint16_t result = 0;
 
@@ -199,7 +199,7 @@ uint16_t VmeModule::mirrorShort(uint16_t data)
 /**
  * Mirrors the Bit positions in a 32 bit word.
  */
-uint32_t VmeModule::mirrorLong(uint32_t data)
+uint32_t IsegVHS::mirrorLong(uint32_t data)
 {
   uint32_t result = 0;
 
@@ -217,7 +217,7 @@ uint32_t VmeModule::mirrorLong(uint32_t data)
 //=============================================================================
 
 
-std::string VmeModule::firmwareRelease(void)
+std::string IsegVHS::firmwareRelease(void)
 {
   uint32_t version = readLong(m_baseAddress + VhsFirmwareReleaseOFFSET);
 
@@ -226,7 +226,7 @@ std::string VmeModule::firmwareRelease(void)
 }
 
 
-void VmeModule::setBaseAddress(uint16_t baseAddress)
+void IsegVHS::setBaseAddress(uint16_t baseAddress)
 {
   m_firmwareName.clear();
 	m_baseAddress = baseAddress;
@@ -245,13 +245,13 @@ void VmeModule::setBaseAddress(uint16_t baseAddress)
 // Special Commands
 //=============================================================================
 
-void VmeModule::programBaseAddress(uint16_t address)
+void IsegVHS::programBaseAddress(uint16_t address)
 {
   writeShort(m_baseAddress + VhsNewBaseAddressOFFSET, address);
   writeShort(m_baseAddress + VhsNewBaseAddressXorOFFSET, address ^ 0xFFFF);
 }
 
-uint16_t VmeModule::verifyBaseAddress(void)
+uint16_t IsegVHS::verifyBaseAddress(void)
 {
   uint16_t newAddress = -1;
   uint16_t temp;
