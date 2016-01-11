@@ -54,7 +54,7 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
         double current_max = 0;
         if (modules_.count(q.id_)) {
           IsegVHS *mod = dynamic_cast<IsegVHS*>(modules_.at(q.id_));
-          PL_DBG << "Reading out settings for module " << q.id_;
+          //PL_DBG << "Reading out settings for module " << q.id_;
           for (auto &k : q.branches.my_data_) {
             if ((k.metadata.setting_type == Gamma::SettingType::floating)
                 || (k.metadata.setting_type == Gamma::SettingType::binary)
@@ -64,17 +64,21 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
             {
               if (!mod->read_setting(k, 0))
                 PL_DBG << "Could not read " << k.id_;
-              if (k.id_ == "VME/IsegVHS/VoltageMax")
+              if (k.id_ == "VME/IsegVHS/VoltageMax") {
                 voltage_max = k.value_dbl;
-              if (k.id_ == "VME/IsegVHS/CurrentMax")
+//                PL_DBG << "voltage max = " << voltage_max;
+              }
+              if (k.id_ == "VME/IsegVHS/CurrentMax") {
                 current_max = k.value_dbl;
+//                PL_DBG << "current max = " << current_max;
+              }
             }
             else if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channel")) {
               uint16_t channum = k.index;
               for (auto &p : k.branches.my_data_) {
                 if (p.metadata.setting_type == Gamma::SettingType::command) {
                   p.metadata.writable =  ((status_ & DeviceStatus::can_exec) != 0);
-                  PL_DBG << "command " << p.id_ << p.index << " now " << p.metadata.writable;
+                  //PL_DBG << "command " << p.id_ << p.index << " now " << p.metadata.writable;
                 }
                 else if ((p.metadata.setting_type == Gamma::SettingType::floating)
                          || (p.metadata.setting_type == Gamma::SettingType::integer)
@@ -89,18 +93,20 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
               for (auto &p : k.branches.my_data_) {
                 if (p.id_ == "VME/IsegVHS/Channel/Status") {
                   Gamma::Setting status = k.get_setting(Gamma::Setting("VME/IsegVHS/Channel/ChannelStatus"), Gamma::Match::id);
-                  if (status.value_int & 0x0008)
+                  if (status.value_int & 0x0010)
                     p.value_int = 1;
-                  else if (status.value_int & 0x0010)
+                  else if (status.value_int & 0x0008)
                     p.value_int = 2;
                   else
                     p.value_int = 0;
                 } else if (p.id_ == "VME/IsegVHS/Channel/VoltageSet") {
                   Gamma::Setting nominal = k.get_setting(Gamma::Setting("VME/IsegVHS/Channel/VoltageNominalMaxSet"), Gamma::Match::id);
-                  p.metadata.maximum = nominal.value_dbl * voltage_max;
+                  p.metadata.maximum = nominal.value_dbl;// * voltage_max;
+//                  PL_DBG << "Volatge bounds "  << nominal.value_dbl << " " << p.metadata.maximum;
                 } else if (p.id_ == "VME/IsegVHS/Channel/CurrentSetOrTrip") {
                   Gamma::Setting nominal = k.get_setting(Gamma::Setting("VME/IsegVHS/Channel/CurrentNominalMaxSet"), Gamma::Match::id);
-                  p.metadata.maximum = nominal.value_dbl * current_max;
+                  p.metadata.maximum = nominal.value_dbl;// * current_max;
+//                  PL_DBG << "Current bounds "  << nominal.value_dbl << " " << p.metadata.maximum;
                 }
               }
 
@@ -196,7 +202,7 @@ bool QpxVmePlugin::execute_command(Gamma::Setting &set) {
 
               if ((p.metadata.setting_type == Gamma::SettingType::command) && (p.value_int == 1)) {
                 if (p.id_ == "VME/IsegVHS/Channel/OnOff") {
-                  PL_DBG << "Triggered ON/OFF for " << p.index;
+//                  PL_DBG << "Triggered ON/OFF for " << p.index;
                   p.value_int = 0;
                   Gamma::Setting ctrl = k.get_setting(Gamma::Setting("VME/IsegVHS/Channel/ChannelControl"), Gamma::Match::id);
                   if (p.metadata.writable && mod->read_setting(ctrl, ((48 * channum) + 96))) {
@@ -232,7 +238,6 @@ bool QpxVmePlugin::boot() {
 
   if (controller_name_ == "VmUsb") {
     controller_ = new VmUsb();
-    PL_DBG << "<VmePlugin> Controller status: " << controller_->information();
   }
 
   if (!controller_->connected()) {

@@ -52,6 +52,7 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   connect(&tree_delegate_, SIGNAL(begin_editing()), this, SLOT(begin_editing()));
   connect(&tree_delegate_, SIGNAL(ask_execute(Gamma::Setting, QModelIndex)), this, SLOT(ask_execute_tree(Gamma::Setting, QModelIndex)));
   connect(&tree_delegate_, SIGNAL(ask_binary(Gamma::Setting, QModelIndex)), this, SLOT(ask_binary_tree(Gamma::Setting, QModelIndex)));
+  connect(&tree_delegate_, SIGNAL(closeEditor(QWidget*,QAbstractItemDelegate::EndEditHint)), this, SLOT(stop_editing(QWidget*,QAbstractItemDelegate::EndEditHint)));
 
   viewTableSettings = new QTableView(this);
   ui->tabsSettings->addTab(viewTableSettings, "Settings table");
@@ -65,6 +66,7 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   connect(&table_settings_delegate_, SIGNAL(begin_editing()), this, SLOT(begin_editing()));
   connect(&table_settings_delegate_, SIGNAL(ask_execute(Gamma::Setting, QModelIndex)), this, SLOT(ask_execute_table(Gamma::Setting, QModelIndex)));
   connect(&table_settings_delegate_, SIGNAL(ask_binary(Gamma::Setting, QModelIndex)), this, SLOT(ask_binary_table(Gamma::Setting, QModelIndex)));
+  connect(&table_settings_delegate_, SIGNAL(closeEditor(QWidget*,QAbstractItemDelegate::EndEditHint)), this, SLOT(stop_editing(QWidget*,QAbstractItemDelegate::EndEditHint)));
 
   connect(&tree_settings_model_, SIGNAL(tree_changed()), this, SLOT(push_settings()));
   connect(&tree_settings_model_, SIGNAL(detector_chosen(int, std::string)), this, SLOT(chose_detector(int,std::string)));
@@ -116,6 +118,11 @@ void FormSystemSettings::begin_editing() {
   editing_ = true;
 }
 
+void FormSystemSettings::stop_editing(QWidget*,QAbstractItemDelegate::EndEditHint) {
+  editing_ = false;
+}
+
+
 void FormSystemSettings::push_settings() {
   editing_ = false;
   dev_settings_ = tree_settings_model_.get_tree();
@@ -135,6 +142,7 @@ void FormSystemSettings::ask_binary_tree(Gamma::Setting set, QModelIndex index) 
     set.value_int = editor->get_setting().value_int;
     tree_settings_model_.setData(index, QVariant::fromValue(editor->get_setting().value_int), Qt::EditRole);
   }
+  editing_ = false;
 }
 
 void FormSystemSettings::ask_binary_table(Gamma::Setting set, QModelIndex index) {
@@ -147,6 +155,7 @@ void FormSystemSettings::ask_binary_table(Gamma::Setting set, QModelIndex index)
     set.value_int = editor->get_setting().value_int;
     table_settings_model_.setData(index, QVariant::fromValue(editor->get_setting().value_int), Qt::EditRole);
   }
+  editing_ = false;
 }
 
 void FormSystemSettings::ask_execute_table(Gamma::Setting command, QModelIndex index) {
@@ -165,7 +174,7 @@ void FormSystemSettings::ask_execute_tree(Gamma::Setting command, QModelIndex in
   editor->exec();
 
   if (editor->standardButton(editor->clickedButton()) == QMessageBox::Yes) {
-    command.value_dbl = 1;
+    command.value_int = 1;
     execute_command(command);
   }
 }
@@ -330,6 +339,7 @@ void FormSystemSettings::on_pushOptimizeAll_clicked()
 
 void FormSystemSettings::on_pushSettingsRefresh_clicked()
 {
+  editing_ = false;
   emit statusText("Refreshing settings_...");
   emit toggleIO(false);
   runner_thread_.do_refresh_settings();

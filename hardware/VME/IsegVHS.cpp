@@ -230,13 +230,17 @@ void IsegVHS::setBaseAddress(uint16_t baseAddress)
 {
   m_firmwareName.clear();
 	m_baseAddress = baseAddress;
-  //m_vendorId    = readLong(m_baseAddress + VhsVendorIdOFFSET);
 
+  //uint32_t vendorId = readLong(m_baseAddress + VhsVendorIdOFFSET);
   uint32_t tmp = readLong(m_baseAddress + 60);
+
+  int deviceClass = (uint16_t)tmp;
+
+  //PL_DBG << "device class = " << deviceClass;
 
   int V12C0 = 20;		// IsegVHS 12 channel common ground VME
 
-  if (tmp == V12C0)
+  if (deviceClass == V12C0)
     m_firmwareName = "V12C0";
   // re-scan of module here
 }

@@ -66,6 +66,7 @@ public slots:
   
 private slots:
   void begin_editing();
+  void stop_editing(QWidget*,QAbstractItemDelegate::EndEditHint);
   void on_pushSettingsRefresh_clicked();
   void on_pushOptimizeAll_clicked();
 

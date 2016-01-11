@@ -168,10 +168,10 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
     }
   } else if (col <= channels_.size()) {
     Gamma::Setting item = consolidated_list_.branches.get(row-1);
-    item.index = col -1;
+    item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
+    item.index = col - 1;
     item.indices.clear();
     item.indices.insert(item.index);
-    item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
     if (item == Gamma::Setting())
       return QVariant();
     if (role == Qt::EditRole) {
