@@ -109,6 +109,8 @@ bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
     else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "HV8/ResponseAttemps"))
       attempts_ = q.value_int;
     else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "HV8/Channels")) {
+
+
       Gamma::Setting voltage("HV8/Channels/Voltage");
       voltage.enrich(setting_definitions_, true);
 
@@ -116,26 +118,22 @@ bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
       channels.branches.clear();
       channels.indices.clear();
 
+      int i=0;
       for (auto &k : q.branches.my_data_) {
-        if ((k.id_ == voltage.id_) && (k.index > -1) && (k.index < voltages.size())) {
+        if (k.id_ == voltage.id_) {
+          voltage.metadata.address = i;
           voltage.index = k.index;
           voltage.indices.clear();
           voltage.indices.insert(k.index);
+          voltage.value_dbl = k.value_dbl;
           channels.indices.insert(k.index);
           channels.branches.add_a(voltage);
-          if (k.value_dbl != voltages[k.metadata.address])
-            set_voltage(k.metadata.address, k.value_dbl);
+          if (k.value_dbl != voltages[i])
+            set_voltage(i, k.value_dbl);
+          ++i;
         }
-      }
-
-      for (int i=0; i < voltages.size(); ++i) {
-        if (channels.indices.count(i) == 0) {
-          voltage.index = i;
-          voltage.indices.clear();
-          voltage.indices.insert(i);
-          channels.indices.insert(i);
-          channels.branches.add_a(voltage);
-        }
+        if (i >= voltages.size())
+          break;
       }
 
       q = channels;
@@ -164,15 +162,15 @@ void QpxHV8Plugin::set_voltage(int chan, double voltage) {
 
     if (get_prompt(attempts_)) {
       std::stringstream ss;
-      ss << "S " << chan + 1 << "\r";
-      //      PL_DBG << "Will write " << ss.str();
+      ss << "s " << chan + 1 << "\r";
+//            PL_DBG << "Will write " << ss.str();
       port.writeString(ss.str());
       boost::this_thread::sleep(boost::posix_time::seconds(timeout_));
 
       if (get_prompt(attempts_)) {
         std::stringstream ss2;
-        ss2 << "V " << voltage << "\r";
-        //        PL_DBG << "Will write " << ss2.str();
+        ss2 << "v " << voltage << "\r";
+//                PL_DBG << "Will write " << ss2.str();
         port.writeString(ss2.str());
         boost::this_thread::sleep(boost::posix_time::seconds(timeout_));
 
@@ -213,17 +211,20 @@ bool QpxHV8Plugin::get_prompt(uint16_t attempts) {
   bool success = false;
   bool logged = false;
   for (int i=0; i < attempts; ++i) {
-    port.writeString("\r");
     std::string lines;
     try { lines = port.readStringUntil(">"); }
-    catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
+    catch (...) { /*PL_ERR << "<HV8Plugin> could not read line from serial";*/ }
     boost::algorithm::trim_if(lines, boost::algorithm::is_any_of("\r\n\t "));
     std::vector<std::string> tokens;
     boost::algorithm::split(tokens, lines, boost::algorithm::is_any_of("\r\n\t "));
 
+//    PL_DBG << "lines " << lines;
+
     std::string line;
     if (!tokens.empty())
       line = tokens[tokens.size() - 1];
+
+//    PL_DBG << "last token " << line;
 
     if (line == "->") {
       success = true;
@@ -233,6 +234,7 @@ bool QpxHV8Plugin::get_prompt(uint16_t attempts) {
       logged = true;
       break;
     }
+    port.writeString("\r");
   }
 
   if (success) {
@@ -244,7 +246,7 @@ bool QpxHV8Plugin::get_prompt(uint16_t attempts) {
 
         std::string line;
         try { line = port.readStringUntil(":"); }
-        catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
+        catch (...) { /*PL_ERR << "<HV8Plugin> could not read line from serial";*/ }
         boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
 
         std::vector<std::string> tokens;
@@ -359,7 +361,7 @@ void QpxHV8Plugin::get_all_settings() {
     try { line = port.readStringUntil(">"); }
     catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
 
-    //    PL_DBG << "will tokenize: " << line << "<end>";
+//        PL_DBG << "will tokenize: " << line << "<end>";
     boost::algorithm::split(tokens, line, boost::algorithm::is_any_of("\r\n"));
 
     //    for (auto &q : tokens) {
@@ -391,7 +393,7 @@ void QpxHV8Plugin::get_all_settings() {
         //}
         int chan = boost::lexical_cast<int>(tokens2[0]);
         double voltage = boost::lexical_cast<double>(tokens2[1]);
-        //        PL_DBG << "Voltage for chan " << chan << " reported as " << voltage;
+//                PL_DBG << "Voltage for chan " << chan << " reported as " << voltage;
         if ((chan >= 1) && (chan <= voltages.size()))
           voltages[chan-1] = voltage;
       }
