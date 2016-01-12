@@ -3,6 +3,8 @@
 Data acquisition and analysis software for multi-detector gamma spectroscopy.
 Developed at NIST. No warranty and no endorsement of specific product. Please read license and disclaimer.
 
+![qpx-gamma](/screenshot.png)
+
 Features:
 * modular multithreaded architecture with multiple data sources and data sinks
 * simultaneous building of multiple spectra (real-time sorting)
