@@ -15,24 +15,25 @@ class VmUsb : public VmeController
 public:
   VmUsb();
   ~VmUsb();
-//  std::list<std::string> enumControllers(void);
 
-  virtual std::string errorString(void);
   virtual std::string controllerName(void);
-  virtual std::string information(void);
-  virtual void systemReset(int *errorCode = NULL);
+  virtual std::string serialNumber(void) { return m_serialNumber; }
 
+  virtual std::list<std::string> controllers(void);
+  virtual bool connect(int target);
+  virtual bool connect(std::string target);
   virtual bool connected() { return (udev); }
+  virtual int systemReset();
 
+  //virtual std::list<std::string> moduleList() {}
   virtual void writeShort(int vmeAddress, int addressModifier, int data, int *errorCode = NULL);
   virtual int  readShort(int vmeAddress, int addressModifier, int *errorCode = NULL);
 
 private:
+  boost::shared_ptr<boost::dll::shared_library> xxlib;
   usb_dev_handle *udev;
 
   std::string m_serialNumber;
-  std::string m_errorString;
-
 
 
   //  short __stdcall xxusb_devices_find(xxusb_device_type *xxusbDev);

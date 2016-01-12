@@ -10,23 +10,19 @@
 class VmeController : public BaseController
 {
 public:
-	VmeController()
-	{
-	}
+  VmeController()	{}
+  virtual ~VmeController() {}
 
-	virtual ~VmeController()
-	{
-	}
-
-  virtual std::string errorString(void) = 0;
   virtual std::string controllerName(void) { return "VmeController"; }
-  virtual std::string information(void) = 0;
-	virtual void systemReset(int *errorCode = NULL) = 0;
+  virtual std::string serialNumber(void) { return std::string(); }
 
+  virtual std::list<std::string> controllers(void) { return std::list<std::string>(); }
+  virtual bool connect(int target) { return false; }
+  virtual bool connect(std::string target) { return false; }
 	virtual bool connected() { return false; }
+  virtual int systemReset() = 0;
 
   virtual std::list<std::string> moduleList() { return std::list<std::string>(); }
-
 	virtual void writeShort(int vmeAddress, int addressModifier, int data, int *errorCode = NULL) = 0;
 	virtual int  readShort(int vmeAddress, int addressModifier, int *errorCode = NULL) = 0;
 };

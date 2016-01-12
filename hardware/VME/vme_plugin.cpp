@@ -238,13 +238,15 @@ bool QpxVmePlugin::boot() {
 
   if (controller_name_ == "VmUsb") {
     controller_ = new VmUsb();
+    controller_->connect(0);
   }
 
   if (!controller_->connected()) {
     PL_DBG << "<VmePlugin> Could not connect to " << controller_name_;
     return false;
   } else {
-    PL_DBG << "<VmePlugin> Controller status: " << controller_->information();
+    PL_DBG << "<VmePlugin> Connected to " << controller_->controllerName()
+           << " SN:" << controller_->serialNumber();
   }
 
   bool success = false;
