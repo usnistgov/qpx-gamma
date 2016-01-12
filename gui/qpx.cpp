@@ -88,6 +88,7 @@ qpx::qpx(QWidget *parent) :
   ui->qpxTabs->tabBar()->setTabButton(0, QTabBar::RightSide, tb);
 
   connect(ui->qpxTabs->tabBar(), SIGNAL(tabMoved(int,int)), this, SLOT(tabs_moved(int,int)));
+  connect(ui->qpxTabs, SIGNAL(currentChanged(int)), this, SLOT(tab_changed(int)));
 
   QTimer::singleShot(50, this, SLOT(choose_profiles()));
 }
@@ -170,6 +171,14 @@ void qpx::tabCloseRequested(int index) {
   ui->qpxTabs->setCurrentIndex(index);
   if (ui->qpxTabs->widget(index)->close())
     ui->qpxTabs->removeTab(index);
+}
+
+void qpx::tab_changed(int index) {
+  if ((index < 0) || (index >= ui->qpxTabs->count()))
+    return;
+  if (main_tab_ == nullptr)
+    return;
+  runner_thread_.set_idle_refresh(ui->qpxTabs->widget(index) == main_tab_);
 }
 
 void qpx::add_log_text(QString line) {

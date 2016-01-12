@@ -28,6 +28,7 @@
 #include <QCloseEvent>
 #include <QTableView>
 #include <QTreeView>
+#include <QMenu>
 #include "detector.h"
 #include "special_delegate.h"
 #include "thread_runner.h"
@@ -68,12 +69,10 @@ private slots:
   void begin_editing();
   void stop_editing(QWidget*,QAbstractItemDelegate::EndEditHint);
   void on_pushSettingsRefresh_clicked();
-  void on_pushOptimizeAll_clicked();
 
   void toggle_push(bool enable, Qpx::DeviceStatus status);
   void post_boot();
 
-  void on_pushDetDB_clicked();
 
   void push_settings();
   void push_from_table(int chan, Gamma::Setting setting);
@@ -88,11 +87,14 @@ private slots:
   void on_checkShowRO_clicked();
   void on_bootButton_clicked();
 
-
-  void on_pushOpenGainMatch_clicked();
-  void on_pushOpenOptimize_clicked();
+  void apply_detector_presets();
+  void open_detector_DB();
+  void open_gain_match();
+  void open_optimize();
 
   void on_pushOpenListView_clicked();
+
+  void on_spinRefreshFrequency_valueChanged(int arg1);
 
 private:
   Ui::FormSystemSettings *ui;
@@ -117,6 +119,8 @@ private:
   QTreeView*          viewTreeSettings;
   TreeSettings        tree_settings_model_;
   QpxSpecialDelegate  tree_delegate_;
+
+  QMenu detectorOptions;
 
   void loadSettings();
   void saveSettings();

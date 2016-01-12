@@ -44,7 +44,7 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   tree_settings_model_.update(dev_settings_);
 
   viewTreeSettings = new QTreeView(this);
-  ui->tabsSettings->addTab(viewTreeSettings, "Device tree");
+  ui->tabsSettings->addTab(viewTreeSettings, "Settings tree");
   viewTreeSettings->setModel(&tree_settings_model_);
   viewTreeSettings->setItemDelegate(&tree_delegate_);
   viewTreeSettings->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
@@ -74,6 +74,12 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   connect(&table_settings_model_, SIGNAL(setting_changed(int, Gamma::Setting)), this, SLOT(push_from_table(int, Gamma::Setting)));
   connect(&table_settings_model_, SIGNAL(detector_chosen(int, std::string)), this, SLOT(chose_detector(int,std::string)));
 
+  detectorOptions.addAction("Apply saved settings", this, SLOT(apply_detector_presets()));
+  detectorOptions.addAction("Edit detector database", this, SLOT(open_detector_DB()));
+  detectorOptions.addAction("Gain matching utility", this, SLOT(open_gain_match()));
+  detectorOptions.addAction("Setting optimization utility", this, SLOT(open_optimize()));
+  ui->toolDetectors->setMenu(&detectorOptions);
+
   loadSettings();
 }
 
@@ -90,8 +96,8 @@ void FormSystemSettings::update(const Gamma::Setting &tree, const std::vector<Ga
         can_optimize = true;
     }
 
-  ui->pushOpenGainMatch->setEnabled(can_gain_match);
-  ui->pushOpenOptimize->setEnabled(can_optimize);
+//  ui->pushOpenGainMatch->setEnabled(can_gain_match);
+//  ui->pushOpenOptimize->setEnabled(can_optimize);
   ui->pushOpenListView->setEnabled(can_run);
 
   //update dets in DB as well?
@@ -239,7 +245,7 @@ void FormSystemSettings::toggle_push(bool enable, Qpx::DeviceStatus status) {
   }
 
   ui->bootButton->setEnabled(enable);
-  ui->pushOptimizeAll->setEnabled(enable && (online || offline));
+//  ui->pushOptimizeAll->setEnabled(enable && (online || offline));
 
   if (online) {
     ui->bootButton->setText("Reset system");
@@ -320,11 +326,11 @@ FormSystemSettings::~FormSystemSettings()
 
 void FormSystemSettings::post_boot()
 {
-  on_pushOptimizeAll_clicked();
+  apply_detector_presets(); //make this optional?
 }
 
 
-void FormSystemSettings::on_pushOptimizeAll_clicked()
+void FormSystemSettings::apply_detector_presets()
 {
   emit statusText("Applying detector optimizations...");
   emit toggleIO(false);
@@ -345,7 +351,7 @@ void FormSystemSettings::on_pushSettingsRefresh_clicked()
   runner_thread_.do_refresh_settings();
 }
 
-void FormSystemSettings::on_pushDetDB_clicked()
+void FormSystemSettings::open_detector_DB()
 {
   WidgetDetectors *det_widget = new WidgetDetectors(this);
   det_widget->setData(detectors_, settings_directory_);
@@ -382,12 +388,12 @@ void FormSystemSettings::on_bootButton_clicked()
   }
 }
 
-void FormSystemSettings::on_pushOpenGainMatch_clicked()
+void FormSystemSettings::open_gain_match()
 {
   emit gain_matching_requested();
 }
 
-void FormSystemSettings::on_pushOpenOptimize_clicked()
+void FormSystemSettings::open_optimize()
 {
   emit optimization_requested();
 }
@@ -395,4 +401,9 @@ void FormSystemSettings::on_pushOpenOptimize_clicked()
 void FormSystemSettings::on_pushOpenListView_clicked()
 {
   emit list_view_requested();
+}
+
+void FormSystemSettings::on_spinRefreshFrequency_valueChanged(int arg1)
+{
+  runner_thread_.set_idle_refresh_frequency(arg1);
 }

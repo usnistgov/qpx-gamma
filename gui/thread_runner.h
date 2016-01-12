@@ -46,6 +46,10 @@ public:
     explicit ThreadRunner(QObject *parent = 0);
     ~ThreadRunner();
 
+    void set_idle_refresh(bool);
+    void set_idle_refresh_frequency(int);
+
+
     void do_initialize(QString, bool boot);
     void do_boot();
     void do_shutdown();
@@ -77,14 +81,16 @@ protected:
 
 private:
     Qpx::Engine &engine_;
-
     QMutex mutex_;
     RunnerAction action_;
+    boost::atomic<bool> running_;
+    boost::atomic<bool> idle_refresh_;
+    boost::atomic<int> idle_refresh_frequency_;
+
 
     Qpx::SpectraSet* spectra_;
     boost::atomic<bool>* interruptor_;
     boost::atomic<bool> terminating_;
-    boost::atomic<bool> running_;
 
     double xdt_;
 

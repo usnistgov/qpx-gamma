@@ -131,6 +131,9 @@ void FormOscilloscope::on_pushOscilRefresh_clicked()
 }
 
 void FormOscilloscope::oscil_complete(std::vector<Qpx::Trace> traces) {
+  if (!this->isVisible())
+    return;
+
   traces_ = traces;
 
   std::vector<Gamma::Detector> dets;

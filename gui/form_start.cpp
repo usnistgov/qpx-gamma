@@ -44,6 +44,7 @@ FormStart::FormStart(ThreadRunner &thread,
   formOscilloscope = new FormOscilloscope(runner_thread_, settings);
   connect(formOscilloscope, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
   connect(this, SIGNAL(toggle_push_(bool,Qpx::DeviceStatus)), formOscilloscope, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
+  formOscilloscope->setVisible(false);
 
   formSettings = new FormSystemSettings(runner_thread_, detectors_, settings_);
   connect(formSettings, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
@@ -73,7 +74,12 @@ FormStart::~FormStart()
 }
 
 void FormStart::update(Gamma::Setting tree, std::vector<Gamma::Detector> dets, Qpx::DeviceStatus status) {
-  formOscilloscope->updateMenu(dets);
+  bool oscil = (status & Qpx::DeviceStatus::can_oscil);
+  if (oscil) {
+    formOscilloscope->setVisible(true);
+    formOscilloscope->updateMenu(dets);
+  } else
+    formOscilloscope->setVisible(false);
 }
 
 void FormStart::closeEvent(QCloseEvent *event) {

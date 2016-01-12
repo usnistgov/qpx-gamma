@@ -35,9 +35,11 @@ ThreadRunner::ThreadRunner(QObject *parent) :
   action_ = kNone;
   file_ = "";
   xdt_ = 0.0;
-  match_conditions_ = Gamma::Match::id;
-  start(HighPriority);
   flag_ = false;
+  match_conditions_ = Gamma::Match::id;
+  idle_refresh_.store(false);
+  idle_refresh_frequency_.store(1);
+  start(HighPriority);
 }
 
 ThreadRunner::~ThreadRunner()
@@ -53,6 +55,16 @@ void ThreadRunner::terminate() {
 
 bool ThreadRunner::terminating() {
   return terminating_.load();
+}
+
+void ThreadRunner::set_idle_refresh(bool refresh) {
+  idle_refresh_.store(refresh);
+}
+
+void ThreadRunner::set_idle_refresh_frequency(int secs) {
+  if (secs < 1)
+    secs = 1;
+  idle_refresh_frequency_.store(secs);
 }
 
 
@@ -353,10 +365,12 @@ void ThreadRunner::run()
         if (!traces.empty())
           emit oscilReadOut(traces);
     } else {
+      QThread::sleep(idle_refresh_frequency_.load());
       bool booted = ((engine_.status() & Qpx::DeviceStatus::booted) != 0);
-      if (booted)
+      if (booted && idle_refresh_.load()) {
+        //PL_DBG << "idle runner will refresh settings";
         action_ = kSettingsRefresh;
-      QThread::sleep(1);
+      }
     }
     running_.store(false);
   }

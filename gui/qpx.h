@@ -131,6 +131,7 @@ private slots:
 
   void tabs_moved(int, int);
   void addClosableTab(QWidget*, QString);
+  void tab_changed(int);
 
 };
 
