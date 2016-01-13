@@ -201,6 +201,7 @@ struct Setting : public XMLable {
 
   Gamma::Setting get_setting(Gamma::Setting address, Match flags) const;
   bool retrieve_one_setting(Gamma::Setting&, const Gamma::Setting&, Match flags) const;
+  bool push_one_setting(const Gamma::Setting &setting, Gamma::Setting& root, Match flags);
 
   void del_setting(Gamma::Setting address, Match flags);
   void delete_one_setting(const Gamma::Setting&, Gamma::Setting&, Match flags);

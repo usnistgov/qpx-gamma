@@ -365,11 +365,11 @@ void ThreadRunner::run()
         if (!traces.empty())
           emit oscilReadOut(traces);
     } else {
-      QThread::sleep(idle_refresh_frequency_.load());
       bool booted = ((engine_.status() & Qpx::DeviceStatus::booted) != 0);
       if (booted && idle_refresh_.load()) {
-        //PL_DBG << "idle runner will refresh settings";
         action_ = kSettingsRefresh;
+        QThread::sleep(idle_refresh_frequency_.load());
+        //PL_DBG << "idle runner will refresh settings";
       }
     }
     running_.store(false);

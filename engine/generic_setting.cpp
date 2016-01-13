@@ -332,6 +332,19 @@ bool Setting::compare(const Setting &other, Gamma::Match flags) const {
   return match;
 }
 
+bool Setting::push_one_setting(const Gamma::Setting &setting, Gamma::Setting& root, Match flags){
+  if (root.compare(setting, flags)) {
+      root = setting;
+      return true;
+  } else if ((root.metadata.setting_type == Gamma::SettingType::stem)
+             || (root.metadata.setting_type == Gamma::SettingType::indicator)) {
+    for (auto &q : root.branches.my_data_)
+      if (push_one_setting(setting, q, flags))
+        return true;
+  }
+  return false;
+}
+
 
 bool Setting::retrieve_one_setting(Gamma::Setting &det, const Gamma::Setting& root, Match flags) const {
   if (root.compare(det, flags)) {

@@ -223,7 +223,7 @@ bool Engine::execute_command(){
   bool success = false;
   for (auto &set : settings_tree_.branches.my_data_) {
     if (devices_.count(set.id_)) {
-      //PL_DBG << "execute > " << set.id_;
+      PL_DBG << "execute > " << set.id_;
       if ((devices_[set.id_] != nullptr) && (devices_[set.id_]->status() & DeviceStatus::can_exec) &&
           (devices_[set.id_]->execute_command(set)))
         success = true;
@@ -424,9 +424,7 @@ void Engine::load_det_settings(Gamma::Setting det, Gamma::Setting& root, Gamma::
 }
 
 void Engine::set_setting(Gamma::Setting address, Gamma::Match flags) {
-  if ((address.index < 0) || (address.index >= detectors_.size()))
-    return;
-  load_det_settings(address, settings_tree_, flags);
+  settings_tree_.push_one_setting(address, settings_tree_, flags);
   write_settings_bulk();
   read_settings_bulk();
 }

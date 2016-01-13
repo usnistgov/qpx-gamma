@@ -468,7 +468,9 @@ bool Plugin::execute_command(Gamma::Setting &set) {
     return false;
 
   if (set.id_ == device_name()) {
+    PL_DBG << "<Pixie4> executing " << set.id_;
     for (auto &q : set.branches.my_data_) {
+      PL_DBG << "<Pixie4> executing " << q.id_ << " " << q.value_int;
       if ((q.metadata.setting_type == Gamma::SettingType::command) && (q.value_int == 1)) {
         q.value_int = 0;
         if (q.id_ == "Pixie4/Measure baselines")
