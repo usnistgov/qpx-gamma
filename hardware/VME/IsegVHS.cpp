@@ -2,6 +2,18 @@
 #include "boost/endian/conversion.hpp"
 #include "custom_logger.h"
 
+
+#define ISEG_VENDOR_ID									0x69736567
+#define VME_ADDRESS_MODIFIER						0x29
+
+// --- VHS12 ------------------------------------------------------------------
+#define VhsFirmwareReleaseOFFSET          56
+#define VhsDeviceClassOFFSET              62
+#define VhsVendorIdOFFSET                 92
+#define VhsNewBaseAddressOFFSET           0x03A0
+#define VhsNewBaseAddressXorOFFSET        0x03A2
+#define VhsNewBaseAddressAcceptedOFFSET   0x03A6
+
 typedef union {
 	long    l;
 	float   f;
@@ -9,24 +21,49 @@ typedef union {
   uint8_t   b[4];
 } TFloatWord;
 
-IsegVHS::IsegVHS(BaseController *controller, int baseAddress)
+
+IsegVHS::IsegVHS()
 {
-	m_controller = static_cast<VmeController *>(controller);
-  setBaseAddress(baseAddress);
+  m_controller = nullptr;
+  m_baseAddress = 0;
 }
 
 IsegVHS::~IsegVHS()
+{}
+
+bool IsegVHS::connect(VmeController *controller, int baseAddress)
 {
+  m_controller = controller;
+  setBaseAddress(baseAddress);
 }
 
-bool IsegVHS::connected()
+bool IsegVHS::connected() const
 {
-  uint32_t vendorId = readLong(m_baseAddress + VhsVendorIdOFFSET);
+  uint32_t vendorId = 0;
+  if (m_controller)
+    vendorId = readLong(m_baseAddress + VhsVendorIdOFFSET);
 
 	return vendorId == ISEG_VENDOR_ID;
 }
 
-bool IsegVHS::read_setting(Gamma::Setting& set, int address_modifier) {
+void IsegVHS::disconnect()
+{
+  m_controller = nullptr;
+  m_baseAddress = 0;
+}
+
+std::string IsegVHS::address() const {
+  std::stringstream stream;
+  stream << "VME BA 0x"
+         << std::setfill ('0') << std::setw(sizeof(uint16_t)*2)
+         << std::hex << m_baseAddress;
+  return stream.str();
+}
+
+bool IsegVHS::read_setting(Gamma::Setting& set, int address_modifier) const {
+  if (!(status_ & Qpx::DeviceStatus::booted))
+    return false;
+
   if (set.metadata.setting_type == Gamma::SettingType::floating)
     set.value_dbl = readFloat(m_baseAddress + address_modifier + set.metadata.address);
   else if (set.metadata.setting_type == Gamma::SettingType::binary) {
@@ -56,6 +93,9 @@ bool IsegVHS::read_setting(Gamma::Setting& set, int address_modifier) {
 }
 
 bool IsegVHS::write_setting(Gamma::Setting& set, int address_modifier) {
+  if (!(status_ & Qpx::DeviceStatus::booted))
+    return false;
+
   if (set.metadata.setting_type == Gamma::SettingType::floating)
     writeFloat(m_baseAddress + address_modifier + set.metadata.address, set.value_dbl);
   else if (set.metadata.setting_type == Gamma::SettingType::binary) {
@@ -84,9 +124,9 @@ bool IsegVHS::write_setting(Gamma::Setting& set, int address_modifier) {
   return true;
 }
 
-uint16_t IsegVHS::readShort(int address)
+uint16_t IsegVHS::readShort(int address) const
 {
-	if ((m_controller)) {
+  if (m_controller) {
 		return m_controller->readShort(address, VME_ADDRESS_MODIFIER);
 	} else {
 		return 0;
@@ -95,12 +135,12 @@ uint16_t IsegVHS::readShort(int address)
 
 void IsegVHS::writeShort(int address, uint16_t data)
 {
-	if ((m_controller)) {
+  if (m_controller) {
 		m_controller->writeShort(address, VME_ADDRESS_MODIFIER, data);
 	}
 }
 
-uint16_t IsegVHS::readShortBitfield(int address)
+uint16_t IsegVHS::readShortBitfield(int address) const
 {
 	return readShort(address);
 }
@@ -110,7 +150,7 @@ void IsegVHS::writeShortBitfield(int address, uint16_t data)
 	writeShort(address, data);
 }
 
-float IsegVHS::readFloat(int address)
+float IsegVHS::readFloat(int address) const
 {
 	TFloatWord fw = { 0 };
 
@@ -140,7 +180,7 @@ void IsegVHS::writeFloat(int address, float data)
 #endif
 }
 
-uint32_t IsegVHS::readLong(int address)
+uint32_t IsegVHS::readLong(int address) const
 {
 	TFloatWord fw = { 0 };
 
@@ -170,7 +210,7 @@ void IsegVHS::writeLong(int address, uint32_t data)
 #endif
 }
 
-uint32_t IsegVHS::readLongBitfield(int address)
+uint32_t IsegVHS::readLongBitfield(int address) const
 {
 	return readLong(address);
 }
@@ -217,8 +257,11 @@ uint32_t IsegVHS::mirrorLong(uint32_t data)
 //=============================================================================
 
 
-std::string IsegVHS::firmwareRelease(void)
+std::string IsegVHS::firmwareName() const
 {
+  if (!m_controller)
+    return std::string();
+
   uint32_t version = readLong(m_baseAddress + VhsFirmwareReleaseOFFSET);
 
   return std::to_string(version >> 24) + std::to_string(version >> 16) + "." +
@@ -226,9 +269,8 @@ std::string IsegVHS::firmwareRelease(void)
 }
 
 
-void IsegVHS::setBaseAddress(uint16_t baseAddress)
+bool IsegVHS::setBaseAddress(uint16_t baseAddress)
 {
-  m_firmwareName.clear();
 	m_baseAddress = baseAddress;
 
   //uint32_t vendorId = readLong(m_baseAddress + VhsVendorIdOFFSET);
@@ -240,9 +282,7 @@ void IsegVHS::setBaseAddress(uint16_t baseAddress)
 
   int V12C0 = 20;		// IsegVHS 12 channel common ground VME
 
-  if (deviceClass == V12C0)
-    m_firmwareName = "V12C0";
-  // re-scan of module here
+  return (deviceClass == V12C0);
 }
 
 //=============================================================================
@@ -255,7 +295,7 @@ void IsegVHS::programBaseAddress(uint16_t address)
   writeShort(m_baseAddress + VhsNewBaseAddressXorOFFSET, address ^ 0xFFFF);
 }
 
-uint16_t IsegVHS::verifyBaseAddress(void)
+uint16_t IsegVHS::verifyBaseAddress(void) const
 {
   uint16_t newAddress = -1;
   uint16_t temp;

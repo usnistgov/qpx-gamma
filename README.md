@@ -20,8 +20,9 @@ Features:
 Supports:
 * Linux and Mac
 * XIA Pixie-4
-* HV8
-* IsegSHV via Wiener VMUSB
+* Radiation Technologies HV-8
+* Wiener Vmusb
+* Iseg VHS-12
 
 Reads:
 * Canberra cnf, mca, tka, ava

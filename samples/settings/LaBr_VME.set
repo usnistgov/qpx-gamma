@@ -18,7 +18,7 @@
 	</Setting>
 	<Setting id="VME" type="stem" index="-1" reference="/VME/qpx_plugin.set">
 		<Setting id="VME/ControllerID" type="text" index="-1" value="VmUsb" />
-		<Setting id="VME/IsegVHS" type="stem" index="-1">
+		<Setting id="VME/IsegVHS" type="stem" index="-1" reference="/IsegVHS.set">
 			<Setting id="VME/IsegVHS/Channel" type="stem" index="0" indices="0" />
 			<Setting id="VME/IsegVHS/Channel" type="stem" index="1" indices="1" />
 			<Setting id="VME/IsegVHS/Channel" type="stem" index="2" indices="2" />

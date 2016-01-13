@@ -78,9 +78,11 @@ private:
   void operator=(DaqDevice const&);
   DaqDevice(const DaqDevice&);
 
+
 protected:
   DeviceStatus                              status_;
   std::map<std::string, Gamma::SettingMeta> setting_definitions_;
+  std::string                               profile_path_;
 
 };
 

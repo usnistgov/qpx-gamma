@@ -16,28 +16,27 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      QpxVmePlugin
+ *      QpxIsegVHSPlugin
  *
  ******************************************************************************/
 
-#ifndef QPX_VME_PLUGIN
-#define QPX_VME_PLUGIN
+#ifndef QPX_ISEGVHS_PLUGIN
+#define QPX_ISEGVHS_PLUGIN
 
-#include "daq_device.h"
 #include "detector.h"
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
-#include "IsegVHS_plugin.h"
+#include "IsegVHS.h"
 
 namespace Qpx {
 
-class QpxVmePlugin : public DaqDevice {
+class QpxIsegVHSPlugin : public IsegVHS {
   
 public:
-  QpxVmePlugin();
-  ~QpxVmePlugin();
+  QpxIsegVHSPlugin();
+  ~QpxIsegVHSPlugin();
 
-  static std::string plugin_name() {return "VME";}
+  static std::string plugin_name() {return "VME/IsegVHS";}
   std::string device_name() const override {return plugin_name();}
 
   bool write_settings_bulk(Gamma::Setting &set) override;
@@ -50,17 +49,12 @@ public:
 
 private:
   //no copying
-  void operator=(QpxVmePlugin const&);
-  QpxVmePlugin(const QpxVmePlugin&);
+  void operator=(QpxIsegVHSPlugin const&);
+  QpxIsegVHSPlugin(const QpxIsegVHSPlugin&);
 
 protected:
 
   void rebuild_structure(Gamma::Setting &set);
-
-  std::string controller_name_;
-  VmeController *controller_;
-
-  std::map<std::string, VmeModule*> modules_;
 
 };
 

@@ -1,13 +1,11 @@
 #ifndef VMECONTROLLER_H
 #define VMECONTROLLER_H
 
-#include <stddef.h>
 #include <string>
 #include <list>
 
-#include "basecontroller.h"
 
-class VmeController : public BaseController
+class VmeController
 {
 public:
   VmeController()	{}
@@ -22,8 +20,16 @@ public:
 	virtual bool connected() { return false; }
   virtual int systemReset() = 0;
 
+  virtual std::string address() const	{ return std::string();	}
+  virtual bool setAddress(std::string address) { return false; }
+
+//  virtual void setLiveInsertion(bool liveInsertion) {}
+//	virtual bool liveInsertion() const { return false; }
+//  virtual std::string busStatus() { return std::string(); }
+
   virtual std::list<std::string> moduleList() { return std::list<std::string>(); }
-	virtual void writeShort(int vmeAddress, int addressModifier, int data, int *errorCode = NULL) = 0;
+
+  virtual void writeShort(int vmeAddress, int addressModifier, int data, int *errorCode = NULL) = 0;
 	virtual int  readShort(int vmeAddress, int addressModifier, int *errorCode = NULL) = 0;
 };
 

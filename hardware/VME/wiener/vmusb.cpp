@@ -180,7 +180,7 @@ bool VmUsb::connect(int target) {
   int deviceCount = xxusbDevicesFind(devices);
 
   if (deviceCount <= target) {
-    PL_ERR << "<VmUsb> Controller #" << target << " not found";
+    PL_DBG << "<VmUsb> Controller #" << target << " not found";
     return false;
   }
 
