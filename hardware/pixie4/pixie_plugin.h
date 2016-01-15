@@ -68,7 +68,6 @@ private:
 
 protected:
   //setup
-  bool run_double_buffer_;
   int  run_type_;
   int  run_poll_interval_ms_;
 

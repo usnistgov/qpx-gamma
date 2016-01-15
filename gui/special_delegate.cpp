@@ -55,28 +55,31 @@ BinaryChecklist::BinaryChecklist(Gamma::Setting setting, QWidget *parent) :
   QVBoxLayout *vl_checks = new QVBoxLayout();
   QVBoxLayout *vl_descr  = new QVBoxLayout();
 
+  bool showall = false;
   for (int i=0; i < wordsize; ++i) {
-    QLabel *label = new QLabel();
-    label->setText(QString::number(i));
-    if (!setting.metadata.writable || !setting_.metadata.int_menu_items.count(i))
-      label->setEnabled(false);
-    vl_bit->addWidget(label);
+    if (setting_.metadata.int_menu_items.count(i) || showall) {
+      QLabel *label = new QLabel();
+      label->setText(QString::number(i));
+      if (!setting.metadata.writable || !setting_.metadata.int_menu_items.count(i))
+        label->setEnabled(false);
+      vl_bit->addWidget(label);
 
-    QCheckBox *box = new QCheckBox(parent);
-    if (bs[i])
-      box->setChecked(true);
-    if (!setting.metadata.writable || !setting_.metadata.int_menu_items.count(i))
-      box->setEnabled(false);
-    boxes_.push_back(box);
-    vl_checks->addWidget(box);
+      QCheckBox *box = new QCheckBox(parent);
+      if (bs[i])
+        box->setChecked(true);
+      if (!setting.metadata.writable || !setting_.metadata.int_menu_items.count(i))
+        box->setEnabled(false);
+      boxes_.push_back(box);
+      vl_checks->addWidget(box);
 
-    QLabel *label2 = new QLabel();
-    if (setting_.metadata.int_menu_items.count(i))
-      label2->setText(QString::fromStdString(setting_.metadata.int_menu_items[i]));
-    else
-      label2->setText("N/A");
-    label2->setEnabled(setting.metadata.writable);
-    vl_descr->addWidget(label2);
+      QLabel *label2 = new QLabel();
+      if (setting_.metadata.int_menu_items.count(i))
+        label2->setText(QString::fromStdString(setting_.metadata.int_menu_items[i]));
+      else
+        label2->setText("N/A");
+      label2->setEnabled(setting.metadata.writable);
+      vl_descr->addWidget(label2);
+    }
   }
 
   QHBoxLayout *hl = new QHBoxLayout();
@@ -85,7 +88,7 @@ BinaryChecklist::BinaryChecklist(Gamma::Setting setting, QWidget *parent) :
   hl->addLayout(vl_descr);
 
   QLabel *title = new QLabel();
-  title->setText(QString::fromStdString(setting_.id_) + " binary breakdown");
+  title->setText(QString::fromStdString(setting_.id_));
 
   QVBoxLayout *total    = new QVBoxLayout();
   total->addWidget(title);
@@ -171,13 +174,10 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
       QSpinBox *editor = new QSpinBox(parent);
       return editor;
     } else if (set.metadata.setting_type == Gamma::SettingType::binary) {
-//      BinaryChecklist *editor = new BinaryChecklist(set, parent);
-//      editor->setModal(true);
       emit ask_binary(set, index);
-//      return editor;
       return nullptr;
     } else if ((set.metadata.setting_type == Gamma::SettingType::command) && (set.metadata.writable))  {
-      emit ask_execute(set, index);
+      emit ask_execute(set);
       return nullptr;
     } else if (set.metadata.setting_type == Gamma::SettingType::text) {
       QLineEdit *editor = new QLineEdit(parent);
@@ -263,11 +263,6 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
       sb->setValue(static_cast<int64_t>(set.value_int));
     } else
       sb->setValue(index.data(Qt::EditRole).toInt());
-  } else if (BinaryChecklist *bc = qobject_cast<BinaryChecklist *>(editor)) {
-//    bc->show();
-//    bc->raise();
-//    bc->activateWindow();
-//    bc->exec();
   } else if (QLineEdit *le = qobject_cast<QLineEdit *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
       Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));

@@ -53,8 +53,8 @@ bool QpxIsegVHSPlugin::read_settings_bulk(Gamma::Setting &set) const {
           || (k.metadata.setting_type == Gamma::SettingType::boolean)
           || (k.metadata.setting_type == Gamma::SettingType::int_menu))
       {
-        if (!read_setting(k, 0))
-          PL_DBG << "Could not read " << k.id_;
+        if (!read_setting(k, 0)) {}
+//          PL_DBG << "Could not read " << k.id_;
         if (k.id_ == "VME/IsegVHS/VoltageMax") {
           voltage_max = k.value_dbl;
           //                PL_DBG << "voltage max = " << voltage_max;
@@ -76,8 +76,8 @@ bool QpxIsegVHSPlugin::read_settings_bulk(Gamma::Setting &set) const {
                    || (p.metadata.setting_type == Gamma::SettingType::boolean)
                    || (p.metadata.setting_type == Gamma::SettingType::int_menu)
                    || (p.metadata.setting_type == Gamma::SettingType::binary)) {
-            if (!read_setting(p, ((48 * channum) + 96)))
-              PL_DBG << "Could not read " << p.id_;
+            if (!read_setting(p, ((48 * channum) + 96))) {}
+//              PL_DBG << "Could not read " << p.id_;
           }
         }
 
@@ -116,7 +116,7 @@ bool QpxIsegVHSPlugin::write_settings_bulk(Gamma::Setting &set) {
   set.enrich(setting_definitions_);
 
   if (set.id_ == "VME/IsegVHS") {
-    PL_DBG << "writing VME/IsegVHS";
+//    PL_DBG << "writing VME/IsegVHS";
     rebuild_structure(set);
 
     for (auto &k : set.branches.my_data_) {
@@ -127,13 +127,13 @@ bool QpxIsegVHSPlugin::write_settings_bulk(Gamma::Setting &set) {
           || (k.metadata.setting_type == Gamma::SettingType::binary)) {
         Gamma::Setting s = k;
         if (k.metadata.writable && read_setting(s, 0) && (s != k)) {
-          PL_DBG << "writing " << k.id_;
-          if (!write_setting(k, 0))
-            PL_DBG << "Could not write " << k.id_;
+//          PL_DBG << "writing " << k.id_;
+          if (!write_setting(k, 0)) {}
+//            PL_DBG << "Could not write " << k.id_;
         }
       }
       else if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channel")) {
-        PL_DBG << "writing VME/IsegVHS/Channel";
+//        PL_DBG << "writing VME/IsegVHS/Channel";
         uint16_t channum = k.index;
         for (auto &p : k.branches.my_data_) {
           if ((p.metadata.setting_type == Gamma::SettingType::floating)
@@ -143,9 +143,9 @@ bool QpxIsegVHSPlugin::write_settings_bulk(Gamma::Setting &set) {
               || (p.metadata.setting_type == Gamma::SettingType::binary)) {
             Gamma::Setting s = p;
             if (p.metadata.writable && read_setting(s, ((48 * channum) + 96)) && (s != p)) {
-              PL_DBG << "writing " << p.id_;
-              if (!write_setting(p, ((48 * channum) + 96)))
-                PL_DBG << "Could not write " << k.id_;
+//              PL_DBG << "writing " << p.id_;
+              if (!write_setting(p, ((48 * channum) + 96))) {}
+//                PL_DBG << "Could not write " << k.id_;
             }
           }
         }

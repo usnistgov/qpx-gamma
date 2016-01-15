@@ -51,7 +51,7 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
     for (auto &q : set.branches.my_data_) {
       if (q.metadata.setting_type == Gamma::SettingType::stem) {
         if (modules_.count(q.id_) && modules_.at(q.id_)) {
-          PL_DBG << "read settings bulk " << q.id_;
+//          PL_DBG << "read settings bulk " << q.id_;
           modules_.at(q.id_)->read_settings_bulk(q);
         }
       }
@@ -85,10 +85,10 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
       if (controller_name_.empty())
         controller_name_ = q.value_text;
     } else if (q.metadata.setting_type == Gamma::SettingType::stem) {
-      PL_DBG << "<VmePlugin> looking at " << q.id_;
+//      PL_DBG << "<VmePlugin> looking at " << q.id_;
       if (modules_.count(q.id_) && modules_[q.id_]) {
         modules_[q.id_]->write_settings_bulk(q);
-      } else if (device_types.count(q.id_) && (q.id_.size() > 4) && (q.id_.substr(0,3) == "VME")) {
+      } else if (device_types.count(q.id_) && (q.id_.size() > 4) && (q.id_.substr(0,4) == "VME/")) {
         boost::filesystem::path dev_settings = path / q.value_text;
         modules_[q.id_] = dynamic_cast<VmeModule*>(DeviceFactory::getInstance().create_type(q.id_, dev_settings.string()));
         PL_DBG << "added module " << q.id_ << " with settings at " << dev_settings.string()
@@ -134,10 +134,10 @@ bool QpxVmePlugin::boot() {
   if (controller_ != nullptr)
     delete controller_;
 
-  if (controller_name_ == "VmUsb") {
+//  if (controller_name_ == "VmUsb") {
     controller_ = new VmUsb();
     controller_->connect(0);
-  }
+//  }
 
   if (!controller_->connected()) {
     PL_WARN << "<VmePlugin> Could not connect to " << controller_name_;

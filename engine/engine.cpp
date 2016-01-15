@@ -223,7 +223,7 @@ bool Engine::execute_command(){
   bool success = false;
   for (auto &set : settings_tree_.branches.my_data_) {
     if (devices_.count(set.id_)) {
-      PL_DBG << "execute > " << set.id_;
+      //PL_DBG << "execute > " << set.id_;
       if ((devices_[set.id_] != nullptr) && (devices_[set.id_]->status() & DeviceStatus::can_exec) &&
           (devices_[set.id_]->execute_command(set)))
         success = true;
@@ -401,8 +401,8 @@ void Engine::save_det_settings(Gamma::Setting& result, const Gamma::Setting& roo
   } else if ((root.metadata.setting_type != Gamma::SettingType::detector) && root.compare(result, flags))
   {
     Gamma::Setting set(root);
-    set.index = result.index;
-    set.indices.clear();
+    //set.index = result.index;
+    //set.indices.clear();
     result.branches.add(set);
     //PL_DBG << "saved setting " << stem << "/" << root.name;
   }

@@ -164,12 +164,12 @@ void FormSystemSettings::ask_binary_table(Gamma::Setting set, QModelIndex index)
   editing_ = false;
 }
 
-void FormSystemSettings::ask_execute_table(Gamma::Setting command, QModelIndex index) {
-  ask_execute_tree(command, index);
+void FormSystemSettings::ask_execute_table(Gamma::Setting command) {
+  ask_execute_tree(command);
 }
 
 
-void FormSystemSettings::ask_execute_tree(Gamma::Setting command, QModelIndex index) {
+void FormSystemSettings::ask_execute_tree(Gamma::Setting command) {
   editing_ = true;
 
   QMessageBox *editor = new QMessageBox(qobject_cast<QWidget *> (parent()));
@@ -197,11 +197,11 @@ void FormSystemSettings::execute_command(Gamma::Setting set) {
 void FormSystemSettings::push_from_table(int chan, Gamma::Setting setting) {
   editing_ = false;
 
-  setting.index = chan;
+  //setting.index = chan;
 
   emit statusText("Updating settings...");
   emit toggleIO(false);
-  runner_thread_.do_set_setting(setting, Gamma::Match::id | Gamma::Match::index);
+  runner_thread_.do_set_setting(setting, Gamma::Match::id | Gamma::Match::index | Gamma::Match::indices);
 }
 
 void FormSystemSettings::chose_detector(int chan, std::string name) {

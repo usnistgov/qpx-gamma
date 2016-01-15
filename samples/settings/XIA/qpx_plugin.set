@@ -34,10 +34,8 @@
 	<SettingMeta id="Pixie4/Oscilloscope" type="command" name="Oscilloscope" address="0" writable="true" visible="false" />
 	<SettingMeta id="Pixie4/Run settings" type="stem" name="Run settings" address="0" writable="false" saveworthy="true">
 		<branch address="0" id="Pixie4/Run settings/Run type" />
-		<branch address="1" id="Pixie4/Run settings/Double buffer" />
 		<branch address="2" id="Pixie4/Run settings/Poll interval" />
 	</SettingMeta>
-	<SettingMeta id="Pixie4/Run settings/Double buffer" type="boolean" name="Double buffer" address="0" writable="true" />
 	<SettingMeta id="Pixie4/Run settings/Poll interval" type="integer" name="Poll interval" address="0" writable="true" step="50" minimum="5" maximum="5000" unit="ms" />
 	<SettingMeta id="Pixie4/Run settings/Run type" type="int_menu" name="Run type" address="0" writable="true">
 		<menu_item item_value="256" item_text="Traces" />

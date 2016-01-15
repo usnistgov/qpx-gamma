@@ -352,7 +352,7 @@ void ThreadRunner::run()
         for (int i=0; i < dets.size(); i++) {
           set.index = i;
           set.value_dbl = xdt_;
-          engine_.set_setting(set, Gamma::Match::name | Gamma::Match::indices);
+          engine_.set_setting(set, Gamma::Match::name);
         }
         std::vector<Qpx::Trace> traces = engine_.oscilloscope();
 

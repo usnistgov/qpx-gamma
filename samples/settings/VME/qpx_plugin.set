@@ -4,7 +4,7 @@
 		<branch address="0" id="VME/ControllerID" />
 		<branch address="1" id="VME/IsegVHS" />
 	</SettingMeta>
-	<SettingMeta id="VME/ControllerID" type="text" visible="false" name="Controller ID" address="0" writable="true"/>
+	<SettingMeta id="VME/ControllerID" type="text" visible="true" name="Controller ID" address="0" writable="true"/>
 	<SettingMeta id="VME/IsegVHS" type="stem" name="IsegVHS" address="-1" writable="true" saveworthy="false" />
 
 	<SettingMeta id="VME/dummy for cut and paste purposes" type="binary" name="T" address="0" writable="false" word_size="16">

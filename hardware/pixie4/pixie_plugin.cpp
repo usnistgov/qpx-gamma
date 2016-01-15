@@ -48,7 +48,6 @@ Plugin::Plugin() {
   module_parameter_values_.resize(PRESET_MAX_MODULES*N_MODULE_PAR, 0.0);
   channel_parameter_values_.resize(PRESET_MAX_MODULES*N_CHANNEL_PAR*NUMBER_OF_CHANNELS, 0.0);
 
-  run_double_buffer_ = true;
   run_poll_interval_ms_ = 100;
   run_type_ = 0x103;
 
@@ -172,9 +171,7 @@ bool Plugin::read_settings_bulk(Gamma::Setting &set) const {
     for (auto &q : set.branches.my_data_) {
       if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
         for (auto &k : q.branches.my_data_) {
-          if ((k.metadata.setting_type == Gamma::SettingType::boolean) && (k.id_ == "Pixie4/Double buffer"))
-            k.value_int = run_double_buffer_;
-          else if ((k.metadata.setting_type == Gamma::SettingType::int_menu) && (k.id_ == "Pixie4/Run type"))
+          if ((k.metadata.setting_type == Gamma::SettingType::int_menu) && (k.id_ == "Pixie4/Run type"))
             k.value_int = run_type_;
           if ((k.metadata.setting_type == Gamma::SettingType::integer) && (k.id_ == "Pixie4/Poll interval"))
             k.value_int = run_poll_interval_ms_;
@@ -389,9 +386,7 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
       }
     } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
       for (auto &k : q.branches.my_data_) {
-        if (k.id_ == "Pixie4/Run settings/Double buffer")
-          run_double_buffer_ = k.value_int;
-        else if (k.id_ == "Pixie4/Run settings/Run type")
+        if (k.id_ == "Pixie4/Run settings/Run type")
           run_type_ = k.value_int;
         else if (k.id_ == "Pixie4/Run settings/Poll interval")
           run_poll_interval_ms_ = k.value_int;

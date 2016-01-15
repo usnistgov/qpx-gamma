@@ -70,7 +70,7 @@ public:
 
 signals:
     void begin_editing() const;
-    void ask_execute(Gamma::Setting command, QModelIndex index) const;
+    void ask_execute(Gamma::Setting command) const;
     void ask_binary(Gamma::Setting command, QModelIndex index) const;
 
 private:

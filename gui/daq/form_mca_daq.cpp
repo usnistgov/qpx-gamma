@@ -177,7 +177,7 @@ void FormMcaDaq::loadSettings() {
 
   settings_.beginGroup("MatrixPlot");
   ui->Plot2d->set_zoom(settings_.value("zoom", 50).toDouble());
-  ui->Plot2d->set_gradient(settings_.value("gradient", "hot").toString());
+  ui->Plot2d->set_gradient(settings_.value("gradient", "Hot").toString());
   ui->Plot2d->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
   ui->Plot2d->set_show_legend(settings_.value("show_legend", false).toBool());
   settings_.endGroup();
