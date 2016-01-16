@@ -350,9 +350,11 @@ void ThreadRunner::run()
 
         Gamma::Setting set = Gamma::Setting("XDT");
         for (int i=0; i < dets.size(); i++) {
-          set.index = i;
+//          set.index = i;
+          set.indices.clear();
+          set.indices.insert(i);
           set.value_dbl = xdt_;
-          engine_.set_setting(set, Gamma::Match::name);
+          engine_.set_setting(set, Gamma::Match::name | Gamma::Match::indices);
         }
         std::vector<Qpx::Trace> traces = engine_.oscilloscope();
 

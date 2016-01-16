@@ -50,7 +50,7 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   viewTreeSettings->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
   tree_delegate_.eat_detectors(detectors_);
   connect(&tree_delegate_, SIGNAL(begin_editing()), this, SLOT(begin_editing()));
-  connect(&tree_delegate_, SIGNAL(ask_execute(Gamma::Setting, QModelIndex)), this, SLOT(ask_execute_tree(Gamma::Setting, QModelIndex)));
+  connect(&tree_delegate_, SIGNAL(ask_execute(Gamma::Setting)), this, SLOT(ask_execute_tree(Gamma::Setting)));
   connect(&tree_delegate_, SIGNAL(ask_binary(Gamma::Setting, QModelIndex)), this, SLOT(ask_binary_tree(Gamma::Setting, QModelIndex)));
   connect(&tree_delegate_, SIGNAL(closeEditor(QWidget*,QAbstractItemDelegate::EndEditHint)), this, SLOT(stop_editing(QWidget*,QAbstractItemDelegate::EndEditHint)));
 
@@ -64,7 +64,7 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   table_settings_model_.update(channels_);
   viewTableSettings->show();
   connect(&table_settings_delegate_, SIGNAL(begin_editing()), this, SLOT(begin_editing()));
-  connect(&table_settings_delegate_, SIGNAL(ask_execute(Gamma::Setting, QModelIndex)), this, SLOT(ask_execute_table(Gamma::Setting, QModelIndex)));
+  connect(&table_settings_delegate_, SIGNAL(ask_execute(Gamma::Setting)), this, SLOT(ask_execute_table(Gamma::Setting)));
   connect(&table_settings_delegate_, SIGNAL(ask_binary(Gamma::Setting, QModelIndex)), this, SLOT(ask_binary_table(Gamma::Setting, QModelIndex)));
   connect(&table_settings_delegate_, SIGNAL(closeEditor(QWidget*,QAbstractItemDelegate::EndEditHint)), this, SLOT(stop_editing(QWidget*,QAbstractItemDelegate::EndEditHint)));
 

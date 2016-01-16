@@ -73,8 +73,12 @@ void FormOscilloscope::saveSettings() {
 void FormOscilloscope::updateMenu(std::vector<Gamma::Detector> dets) {
   QVector<SelectorItem> my_channels = ui->selectorChannels->items();
 
-  if (dets.size() < my_channels.size())
+  bool changed = false;
+
+  if (dets.size() < my_channels.size()) {
     my_channels.resize(dets.size());
+    changed = true;
+  }
 
   ui->pushShowAll->setEnabled(!dets.empty());
   ui->pushHideAll->setEnabled(!dets.empty());
@@ -85,16 +89,21 @@ void FormOscilloscope::updateMenu(std::vector<Gamma::Detector> dets) {
     if (i >= my_channels.size()) {
       my_channels.push_back(SelectorItem());
       my_channels[i].visible = true;
+      changed = true;
     }
 
-    my_channels[i].data = QVariant::fromValue(i);
-    my_channels[i].text = QString::fromStdString(dets[i].name_);
-    my_channels[i].color = palette[i % palette.size()];
+    if (my_channels[i].text != QString::fromStdString(dets[i].name_)) {
+      my_channels[i].data = QVariant::fromValue(i);
+      my_channels[i].text = QString::fromStdString(dets[i].name_);
+      my_channels[i].color = palette[i % palette.size()];
+      changed = true;
+    }
   }
 
-  ui->selectorChannels->setItems(my_channels);
-
-  replot();
+  if (changed) {
+    ui->selectorChannels->setItems(my_channels);
+    replot();
+  }
 }
 
 double FormOscilloscope::xdt() {
@@ -137,10 +146,13 @@ void FormOscilloscope::oscil_complete(std::vector<Qpx::Trace> traces) {
   traces_ = traces;
 
   std::vector<Gamma::Detector> dets;
-  for (auto &q : traces)
+  for (auto &q : traces) {
     dets.push_back(q.detector);
+  }
 
   updateMenu(dets);
+
+  replot();
 
   emit toggleIO(true);
 }
@@ -168,6 +180,8 @@ void FormOscilloscope::replot() {
 
       xdt = xinterval;
 
+      PL_DBG << "trace " << i << " length " << trace_length << " xdt " << xdt;
+
       QVector<double> xx;
       for (int i=0; i < trace_length; ++i)
         xx.push_back(i*xinterval);
@@ -184,6 +198,7 @@ void FormOscilloscope::replot() {
       }
 
       if ((i < my_channels.size()) && (my_channels[i].visible)) {
+        PL_DBG << "will plot trace " << i;
         AppearanceProfile profile;
         profile.default_pen = QPen(my_channels[i].color, 1);
         ui->widgetPlot->addGraph(xx, yy, profile);

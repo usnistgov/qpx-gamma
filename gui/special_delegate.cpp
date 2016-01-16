@@ -57,29 +57,32 @@ BinaryChecklist::BinaryChecklist(Gamma::Setting setting, QWidget *parent) :
 
   bool showall = false;
   for (int i=0; i < wordsize; ++i) {
-    if (setting_.metadata.int_menu_items.count(i) || showall) {
-      QLabel *label = new QLabel();
-      label->setText(QString::number(i));
-      if (!setting.metadata.writable || !setting_.metadata.int_menu_items.count(i))
-        label->setEnabled(false);
-      vl_bit->addWidget(label);
+    bool visible = setting_.metadata.int_menu_items.count(i) || showall;
 
-      QCheckBox *box = new QCheckBox(parent);
-      if (bs[i])
-        box->setChecked(true);
-      if (!setting.metadata.writable || !setting_.metadata.int_menu_items.count(i))
-        box->setEnabled(false);
-      boxes_.push_back(box);
-      vl_checks->addWidget(box);
+    QLabel *label = new QLabel();
+    label->setText(QString::number(i));
+    label->setVisible(visible);
+    if (!setting.metadata.writable || !setting_.metadata.int_menu_items.count(i))
+      label->setEnabled(false);
+    vl_bit->addWidget(label);
 
-      QLabel *label2 = new QLabel();
-      if (setting_.metadata.int_menu_items.count(i))
-        label2->setText(QString::fromStdString(setting_.metadata.int_menu_items[i]));
-      else
-        label2->setText("N/A");
-      label2->setEnabled(setting.metadata.writable);
-      vl_descr->addWidget(label2);
-    }
+    QCheckBox *box = new QCheckBox(parent);
+    if (bs[i])
+      box->setChecked(true);
+    if (!setting.metadata.writable || !setting_.metadata.int_menu_items.count(i))
+      box->setEnabled(false);
+    box->setVisible(visible);
+    boxes_.push_back(box);
+    vl_checks->addWidget(box);
+
+    QLabel *label2 = new QLabel();
+    if (setting_.metadata.int_menu_items.count(i))
+      label2->setText(QString::fromStdString(setting_.metadata.int_menu_items[i]));
+    else
+      label2->setText("N/A");
+    label2->setEnabled(setting.metadata.writable);
+    label2->setVisible(visible);
+    vl_descr->addWidget(label2);
   }
 
   QHBoxLayout *hl = new QHBoxLayout();
