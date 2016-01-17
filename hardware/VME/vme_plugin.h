@@ -57,6 +57,9 @@ protected:
 
   void rebuild_structure(Gamma::Setting &set);
 
+  bool read_register(Gamma::Setting& set) const;
+  bool write_register(Gamma::Setting& set);
+
   std::string controller_name_;
   VmeController *controller_;
 

@@ -2,10 +2,320 @@
 <VME>
 	<SettingMeta id="VME" type="stem" name="VME" address="0" writable="false" saveworthy="true">
 		<branch address="0" id="VME/ControllerID" />
-		<branch address="1" id="VME/IsegVHS" />
+		<branch address="1" id="VME/Registers" />
+		<branch address="2" id="VME/IsegVHS" />
 	</SettingMeta>
+	
 	<SettingMeta id="VME/ControllerID" type="text" visible="true" name="Controller ID" address="0" writable="true"/>
+	<SettingMeta id="VME/Registers" type="stem" name="VmUsb Registers" address="0" writable="false" saveworthy="true">
+		<branch address="0" id="VME/Registers/FirmwareID" />
+		<branch address="1" id="VME/Registers/GlobalMode" />
+		<branch address="2" id="VME/Registers/DAQSettings" />
+		<branch address="3" id="VME/Registers/LED" />
+		<branch address="4" id="VME/Registers/DeviceSources" />
+		<branch address="5" id="VME/Registers/DGG_A" />
+		<branch address="6" id="VME/Registers/DGG_B" />
+		<branch address="7" id="VME/Registers/DGG_Ext" />
+		<branch address="8" id="VME/Registers/Scaler_A" />
+		<branch address="9" id="VME/Registers/Scaler_B" />
+		<branch address="10" id="VME/Registers/EvtsPerBuffer" />
+		<branch address="11" id="VME/Registers/InterruptVecLo1+2" />
+		<branch address="12" id="VME/Registers/InterruptVecLo3+4" />
+		<branch address="13" id="VME/Registers/InterruptVecLo5+6" />
+		<branch address="14" id="VME/Registers/InterruptVecLo7+8" />
+		<branch address="15" id="VME/Registers/InterruptVecHi1234" />
+		<branch address="16" id="VME/Registers/InterruptVecHi5678" />
+		<branch address="17" id="VME/Registers/USB_Bulk" />
+		<branch address="18" id="VME/Registers/IRQ_Mask" />
+	</SettingMeta>
 	<SettingMeta id="VME/IsegVHS" type="stem" name="IsegVHS" address="-1" writable="true" saveworthy="false" />
+
+	<SettingMeta id="VME/Registers/FirmwareID" type="binary" name="Firmware ID" address="0" writable="false" word_size="32" />
+	<SettingMeta id="VME/Registers/GlobalMode" type="binary" name="Global mode" address="4" writable="true" word_size="16">
+		<flag bit="0" description="VME/Registers/GlobalMode/buff_opt" />
+		<flag bit="5" description="mixed buffers" />
+		<flag bit="6" description="force immediate USB dump of scaler data" />
+		<flag bit="7" description="convert all header (buffer and event) and terminator words to 32b (add blank 16b words)" />
+		<flag bit="8" description="write second word in buffer header identifying number of events in buffer" />
+		<flag bit="12" description="VME/Registers/GlobalMode/bus_request_level" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/GlobalMode/buff_opt" type="int_menu" name="Output buffer length" address="0" writable="true">
+		<menu_item item_value="0" item_text="13k (default)" />
+		<menu_item item_value="1" item_text="8k" />
+		<menu_item item_value="2" item_text="4k" />
+		<menu_item item_value="3" item_text="2k" />
+		<menu_item item_value="4" item_text="1k = 1024" />
+		<menu_item item_value="5" item_text="512" />
+		<menu_item item_value="6" item_text="256" />
+		<menu_item item_value="7" item_text="128" />
+		<menu_item item_value="8" item_text="64" />
+		<menu_item item_value="9" item_text="Event count" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/GlobalMode/bus_request_level" type="int_menu" name="VME Bus request level" address="12" writable="true">
+		<menu_item item_value="0" item_text="no request lines used" />
+		<menu_item item_value="1" item_text="BR0" />
+		<menu_item item_value="2" item_text="BR1" />
+		<menu_item item_value="3" item_text="BR2" />
+		<menu_item item_value="4" item_text="BR3" />
+	</SettingMeta>
+
+	<SettingMeta id="VME/Registers/DAQSettings" type="binary" name="Data Acquisition Settings" address="8" writable="true" word_size="32">
+		<flag bit="0" description="VME/Registers/DAQSettings/readout_trigger_delay" />
+		<flag bit="8" description="VME/Registers/DAQSettings/scaler_readout_period" />
+		<flag bit="16" description="VME/Registers/DAQSettings/scaler_readout_frequency" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/DAQSettings/readout_trigger_delay" type="integer" name="Readout trigger delay (μs)" address="0" writable="true" step="1" minimum="0" maximum="8" unit="μs"/>
+	<SettingMeta id="VME/Registers/DAQSettings/scaler_readout_period" type="integer" name="Scaler readout period (s)" address="8" writable="true" step="0.5" minimum="0" maximum="8" unit="s"/>
+	<SettingMeta id="VME/Registers/DAQSettings/scaler_readout_frequency" type="integer" name="Scaler readout frequency" address="16" writable="true" step="1" minimum="0" maximum="16" unit="max events"/>
+
+	<SettingMeta id="VME/Registers/LED" type="binary" name="LED Source Settings" address="10" writable="true" word_size="32">
+		<flag bit="0" description="VME/Registers/LED/top_yellow" />
+		<flag bit="3" description="Top Yellow invert" />
+		<flag bit="4" description="Top Yellow latch" />
+		<flag bit="8" description="VME/Registers/LED/red" />
+		<flag bit="11" description="Red invert" />
+		<flag bit="12" description="Red latch" />
+		<flag bit="16" description="VME/Registers/LED/green" />
+		<flag bit="19" description="Green invert" />
+		<flag bit="20" description="Green latch" />
+		<flag bit="24" description="VME/Registers/LED/bottom_yellow" />
+		<flag bit="27" description="Bottom Yellow invert" />
+		<flag bit="28" description="Bottom Yellow latch" />		
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/LED/top_yellow" type="int_menu" name="Top Yellow source" address="0" writable="true">
+		<menu_item item_value="0" item_text="USB OutFIFO not empty" />
+		<menu_item item_value="1" item_text="USB InFIFO not empty" />
+		<menu_item item_value="2" item_text="Scaler event" />
+		<menu_item item_value="3" item_text="USB InFIFO full" />
+		<menu_item item_value="4" item_text="VME DTACK" />
+		<menu_item item_value="5" item_text="VME BERR" />
+		<menu_item item_value="6" item_text="VME Bus Request" />
+		<menu_item item_value="7" item_text="VME Bus Granted" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/LED/red" type="int_menu" name="Red source" address="8" writable="true">
+		<menu_item item_value="0" item_text="Event trigger" />
+		<menu_item item_value="1" item_text="NIM I1" />
+		<menu_item item_value="2" item_text="NIM I2" />
+		<menu_item item_value="3" item_text="Busy" />
+		<menu_item item_value="4" item_text="VME DTACK" />
+		<menu_item item_value="5" item_text="VME BERR" />
+		<menu_item item_value="6" item_text="VME Bus Request" />
+		<menu_item item_value="7" item_text="VME Bus Granted" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/LED/green" type="int_menu" name="Green source" address="16" writable="true">
+		<menu_item item_value="0" item_text="Acquire" />
+		<menu_item item_value="1" item_text="Stack not empty" />
+		<menu_item item_value="2" item_text="Event ready" />
+		<menu_item item_value="3" item_text="Event trigger" />
+		<menu_item item_value="4" item_text="VME DTACK" />
+		<menu_item item_value="5" item_text="VME BERR" />
+		<menu_item item_value="6" item_text="VME Bus Request" />
+		<menu_item item_value="7" item_text="VME Bus Granted" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/LED/bottom_yellow" type="int_menu" name="Bottom Yellow source" address="24" writable="true">
+		<menu_item item_value="0" item_text="Not slot one" />
+		<menu_item item_value="1" item_text="USB trigger" />
+		<menu_item item_value="2" item_text="USB reset" />
+		<menu_item item_value="3" item_text="VME BERR" />
+		<menu_item item_value="4" item_text="VME DTACK" />
+		<menu_item item_value="5" item_text="VME BERR" />
+		<menu_item item_value="6" item_text="VME Bus Request" />
+		<menu_item item_value="7" item_text="VME Bus Granted" />
+	</SettingMeta>
+	
+	<SettingMeta id="VME/Registers/DeviceSources" type="binary" name="Device Sources Selector" address="16" writable="true" word_size="32">
+		<flag bit="0" description="VME/Registers/DeviceSources/nim_o1" />
+		<flag bit="3" description="NIM Output 1 invert" />
+		<flag bit="4" description="NIM Output 1 latch" />
+		<flag bit="8" description="VME/Registers/DeviceSources/nim_o2" />
+		<flag bit="11" description="NIM Output 2 invert" />
+		<flag bit="12" description="NIM Output 2 latch" />
+		<flag bit="16" description="VME/Registers/DeviceSources/sclr_a" />
+		<flag bit="18" description="Scaler A enable" />
+		<flag bit="19" description="Scaler A reset" />
+		<flag bit="20" description="VME/Registers/DeviceSources/sclr_b" />
+		<flag bit="22" description="Scaler B enable" />
+		<flag bit="23" description="Scaler B reset" />
+		<flag bit="24" description="VME/Registers/DeviceSources/dgg_a" />
+		<flag bit="28" description="VME/Registers/DeviceSources/dgg_b" />
+		<flag bit="31" description="Freeze register" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/DeviceSources/nim_o1" type="int_menu" name="NIM Output 1 Source" address="0" writable="true">
+		<menu_item item_value="0" item_text="Busy" />
+		<menu_item item_value="1" item_text="Event trigger" />
+		<menu_item item_value="2" item_text="Bus request" />
+		<menu_item item_value="3" item_text="Transfer event to data buffer" />
+		<menu_item item_value="4" item_text="Delay/gate generator A" />
+		<menu_item item_value="5" item_text="Delay/gate generator B" />
+		<menu_item item_value="6" item_text="End of event" />
+		<menu_item item_value="7" item_text="USB trigger" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/DeviceSources/nim_o2" type="int_menu" name="NIM Output 2 Source" address="8" writable="true">
+		<menu_item item_value="0" item_text="USB trigger" />
+		<menu_item item_value="1" item_text="Executing VME command" />
+		<menu_item item_value="2" item_text="VME address strobe AS" />
+		<menu_item item_value="3" item_text="Transfer data buffer to USB FIFO" />
+		<menu_item item_value="4" item_text="Delay/gate generator A" />
+		<menu_item item_value="5" item_text="Delay/gate generator B" />
+		<menu_item item_value="6" item_text="End of event" />
+		<menu_item item_value="7" item_text="USB trigger" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/DeviceSources/sclr_a" type="int_menu" name="Scaler A Source" address="16" writable="true">
+		<menu_item item_value="0" item_text="Delay/gate generator A" />
+		<menu_item item_value="1" item_text="NIM Input 1" />
+		<menu_item item_value="2" item_text="NIM Input 2" />
+		<menu_item item_value="3" item_text="Event" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/DeviceSources/sclr_b" type="int_menu" name="Scaler B Source" address="20" writable="true">
+		<menu_item item_value="0" item_text="Terminal count of Scaler A (daisy-chain)" />
+		<menu_item item_value="1" item_text="NIM Input 1" />
+		<menu_item item_value="2" item_text="NIM Input 2" />
+		<menu_item item_value="3" item_text="Event" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/DeviceSources/dgg_a" type="int_menu" name="Delay/gate generator/pulser A" address="24" writable="true">
+		<menu_item item_value="0" item_text="Not used" />
+		<menu_item item_value="1" item_text="NIM Input 1" />
+		<menu_item item_value="2" item_text="NIM Input 2" />
+		<menu_item item_value="3" item_text="Event trigger" />
+		<menu_item item_value="4" item_text="End of event" />
+		<menu_item item_value="5" item_text="USB trigger" />
+		<menu_item item_value="6" item_text="Pulser" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/DeviceSources/dgg_b" type="int_menu" name="Delay/gate generator/pulser B" address="28" writable="true">
+		<menu_item item_value="0" item_text="Not used" />
+		<menu_item item_value="1" item_text="NIM Input 1" />
+		<menu_item item_value="2" item_text="NIM Input 2" />
+		<menu_item item_value="3" item_text="Event trigger" />
+		<menu_item item_value="4" item_text="End of event" />
+		<menu_item item_value="5" item_text="USB trigger" />
+		<menu_item item_value="6" item_text="Pulser" />
+	</SettingMeta>
+	
+	<SettingMeta id="VME/Registers/DGG_A" type="binary" name="Delay/gate generator A" address="20" writable="true" word_size="32">
+		<flag bit="0" description="VME/Registers/DGG_A/gate" />
+		<flag bit="16" description="VME/Registers/DGG_A/delay_fine" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/DGG_A/gate" type="integer" name="Gate length (ns)" address="0" writable="true" step="12.5" minimum="0" maximum="16" unit="ns"/>
+	<SettingMeta id="VME/Registers/DGG_A/delay_fine" type="integer" name="Fine delay (ns)" address="16" writable="true" step="12.5" minimum="0" maximum="16" unit="ns"/>
+
+	<SettingMeta id="VME/Registers/DGG_B" type="binary" name="Delay/gate generator B" address="24" writable="true" word_size="32">
+		<flag bit="0" description="VME/Registers/DGG_B/gate" />
+		<flag bit="16" description="VME/Registers/DGG_B/delay_fine" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/DGG_B/gate" type="integer" name="Gate length (ns)" address="0" writable="true" step="12.5" minimum="0" maximum="16" unit="ns"/>
+	<SettingMeta id="VME/Registers/DGG_B/delay_fine" type="integer" name="Fine delay (ns)" address="16" writable="true" step="12.5" minimum="0" maximum="16" unit="ns"/>
+	
+	<SettingMeta id="VME/Registers/DGG_Ext" type="binary" name="Delay/gate A&B extended delay" address="56" writable="true" word_size="32">
+		<flag bit="0" description="VME/Registers/DGG_Ext/coarse_A" />
+		<flag bit="16" description="VME/Registers/DGG_Ext/coarse_B" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/DGG_Ext/coarse_A" type="integer" name="Delay/gate generator A coarse delay (μs)" address="0" writable="true" step="819.2" minimum="0" maximum="16" unit="μs"/>
+	<SettingMeta id="VME/Registers/DGG_Ext/coarse_B" type="integer" name="Delay/gate generator B coarse delay (μs)" address="16" writable="true" step="819.2" minimum="0" maximum="16" unit="μs"/>
+
+	<SettingMeta id="VME/Registers/Scaler_A" type="integer" name="Scaler A" address="28" writable="false" hardware_type="u32" />
+	<SettingMeta id="VME/Registers/Scaler_B" type="integer" name="Scaler B" address="32" writable="false" hardware_type="u32" />
+	<SettingMeta id="VME/Registers/EvtsPerBuffer" type="integer" name="Events per buffer" address="36" writable="true" step="1" minimum="0" maximum="4095" hardware_type="u32" description="Output buffer length in Global Mode must be set to 'Event count'" />
+
+	<SettingMeta id="VME/Registers/InterruptVecLo1+2" type="binary" name="IRQ Service Vectors 1 & 2" address="40" writable="true" word_size="32">
+		<flag bit="0" description="VME/Registers/InterruptVecLo1+2/irq_id_low1" />
+		<flag bit="8" description="VME/Registers/InterruptVecLo1+2/irq_level1" />
+		<flag bit="12" description="VME/Registers/InterruptVecLo1+2/irq_stack1" />
+		<flag bit="16" description="VME/Registers/InterruptVecLo1+2/irq_id_low2" />
+		<flag bit="24" description="VME/Registers/InterruptVecLo1+2/irq_level2" />
+		<flag bit="28" description="VME/Registers/InterruptVecLo1+2/irq_stack2" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/InterruptVecLo1+2/irq_id_low1" type="integer" name="IRQ-1 ID low bits" address="0" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo1+2/irq_level1" type="integer" name="IRQ-1 level" address="8" writable="true" step="1" minimum="0" maximum="3"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo1+2/irq_stack1" type="integer" name="IRQ-1 -> stack #" address="12" writable="true" step="1" minimum="0" maximum="3"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo1+2/irq_id_low2" type="integer" name="IRQ-2 ID low bits" address="16" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo1+2/irq_level2" type="integer" name="IRQ-2 level" address="24" writable="true" step="1" minimum="0" maximum="3"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo1+2/irq_stack2" type="integer" name="IRQ-2 -> stack #" address="28" writable="true" step="1" minimum="0" maximum="3"/>
+
+	<SettingMeta id="VME/Registers/InterruptVecLo3+4" type="binary" name="IRQ Service Vectors 3 & 4" address="44" writable="true" word_size="32">
+		<flag bit="0" description="VME/Registers/InterruptVecLo3+4/irq_id_low3" />
+		<flag bit="8" description="VME/Registers/InterruptVecLo3+4/irq_level3" />
+		<flag bit="12" description="VME/Registers/InterruptVecLo3+4/irq_stack3" />
+		<flag bit="16" description="VME/Registers/InterruptVecLo3+4/irq_id_low4" />
+		<flag bit="24" description="VME/Registers/InterruptVecLo3+4/irq_level4" />
+		<flag bit="28" description="VME/Registers/InterruptVecLo3+4/irq_stack4" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/InterruptVecLo3+4/irq_id_low3" type="integer" name="IRQ-3 ID low bits" address="0" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo3+4/irq_level3" type="integer" name="IRQ-3 level" address="8" writable="true" step="1" minimum="0" maximum="3"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo3+4/irq_stack3" type="integer" name="IRQ-3 -> stack #" address="12" writable="true" step="1" minimum="0" maximum="3"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo3+4/irq_id_low4" type="integer" name="IRQ-4 ID low bits" address="16" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo3+4/irq_level4" type="integer" name="IRQ-4 level" address="24" writable="true" step="1" minimum="0" maximum="3"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo3+4/irq_stack4" type="integer" name="IRQ-4 -> stack #" address="28" writable="true" step="1" minimum="0" maximum="3"/>
+
+	<SettingMeta id="VME/Registers/InterruptVecLo5+6" type="binary" name="IRQ Service Vectors 5 & 6" address="48" writable="true" word_size="32">
+		<flag bit="0" description="VME/Registers/InterruptVecLo5+6/irq_id_low5" />
+		<flag bit="8" description="VME/Registers/InterruptVecLo5+6/irq_level5" />
+		<flag bit="12" description="VME/Registers/InterruptVecLo5+6/irq_stack5" />
+		<flag bit="16" description="VME/Registers/InterruptVecLo5+6/irq_id_low6" />
+		<flag bit="24" description="VME/Registers/InterruptVecLo5+6/irq_level6" />
+		<flag bit="28" description="VME/Registers/InterruptVecLo5+6/irq_stack6" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/InterruptVecLo5+6/irq_id_low5" type="integer" name="IRQ-5 ID low bits" address="0" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo5+6/irq_level5" type="integer" name="IRQ-5 level" address="8" writable="true" step="1" minimum="0" maximum="3"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo5+6/irq_stack5" type="integer" name="IRQ-5 -> stack #" address="12" writable="true" step="1" minimum="0" maximum="3"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo5+6/irq_id_low6" type="integer" name="IRQ-6 ID low bits" address="16" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo5+6/irq_level6" type="integer" name="IRQ-6 level" address="24" writable="true" step="1" minimum="0" maximum="3"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo5+6/irq_stack6" type="integer" name="IRQ-6 -> stack #" address="28" writable="true" step="1" minimum="0" maximum="3"/>
+
+	<SettingMeta id="VME/Registers/InterruptVecLo7+8" type="binary" name="IRQ Service Vectors 7 & 8" address="52" writable="true" word_size="32">
+		<flag bit="0" description="VME/Registers/InterruptVecLo7+8/irq_id_low7" />
+		<flag bit="8" description="VME/Registers/InterruptVecLo7+8/irq_level7" />
+		<flag bit="12" description="VME/Registers/InterruptVecLo7+8/irq_stack7" />
+		<flag bit="16" description="VME/Registers/InterruptVecLo7+8/irq_id_low8" />
+		<flag bit="24" description="VME/Registers/InterruptVecLo7+8/irq_level8" />
+		<flag bit="28" description="VME/Registers/InterruptVecLo7+8/irq_stack8" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/InterruptVecLo7+8/irq_id_low7" type="integer" name="IRQ-7 ID low bits" address="0" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo7+8/irq_level7" type="integer" name="IRQ-7 level" address="8" writable="true" step="1" minimum="0" maximum="3"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo7+8/irq_stack7" type="integer" name="IRQ-7 -> stack #" address="12" writable="true" step="1" minimum="0" maximum="3"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo7+8/irq_id_low8" type="integer" name="IRQ-8 ID low bits" address="16" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo7+8/irq_level8" type="integer" name="IRQ-8 level" address="24" writable="true" step="1" minimum="0" maximum="3"/>
+	<SettingMeta id="VME/Registers/InterruptVecLo7+8/irq_stack8" type="integer" name="IRQ-8 -> stack #" address="28" writable="true" step="1" minimum="0" maximum="3"/>
+
+	<SettingMeta id="VME/Registers/InterruptVecHi1234" type="binary" name="IRQ Service Vector upper bits for 1234" address="64" writable="true" word_size="32">
+		<flag bit="0" description="VME/Registers/InterruptVecHi1234/irq_id_hi1" />
+		<flag bit="8" description="VME/Registers/InterruptVecHi1234/irq_id_hi2" />
+		<flag bit="16" description="VME/Registers/InterruptVecHi1234/irq_id_hi3" />
+		<flag bit="24" description="VME/Registers/InterruptVecHi1234/irq_id_hi4" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/InterruptVecHi1234/irq_id_hi1" type="integer" name="IRQ-1 ID high bits" address="0" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/InterruptVecHi1234/irq_id_hi2" type="integer" name="IRQ-2 ID high bits" address="8" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/InterruptVecHi1234/irq_id_hi3" type="integer" name="IRQ-3 ID high bits" address="16" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/InterruptVecHi1234/irq_id_hi4" type="integer" name="IRQ-4 ID high bits" address="24" writable="true" step="1" minimum="0" maximum="8"/>
+
+	<SettingMeta id="VME/Registers/InterruptVecHi5678" type="binary" name="IRQ Service Vector upper bits for 5678" address="68" writable="true" word_size="32">
+		<flag bit="0" description="VME/Registers/InterruptVecHi5678/irq_id_hi5" />
+		<flag bit="8" description="VME/Registers/InterruptVecHi5678/irq_id_hi6" />
+		<flag bit="16" description="VME/Registers/InterruptVecHi5678/irq_id_hi7" />
+		<flag bit="24" description="VME/Registers/InterruptVecHi5678/irq_id_hi8" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/InterruptVecHi5678/irq_id_hi5" type="integer" name="IRQ-5 ID high bits" address="0" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/InterruptVecHi5678/irq_id_hi6" type="integer" name="IRQ-6 ID high bits" address="8" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/InterruptVecHi5678/irq_id_hi7" type="integer" name="IRQ-7 ID high bits" address="16" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/InterruptVecHi5678/irq_id_hi8" type="integer" name="IRQ-8 ID high bits" address="24" writable="true" step="1" minimum="0" maximum="8"/>
+
+	<SettingMeta id="VME/Registers/USB_Bulk" type="binary" name="Bulk Transfer Setup" address="60" writable="true" word_size="32">
+		<flag bit="0" description="VME/Registers/USB_Bulk/num_of_buffers" />
+		<flag bit="8" description="VME/Registers/USB_Bulk/time_out" />
+		<flag bit="16" description="VME/Registers/USB_Bulk/time_out2" />
+	</SettingMeta>
+	<SettingMeta id="VME/Registers/USB_Bulk/num_of_buffers" type="integer" name="Number of buffers" address="0" writable="true" step="1" minimum="0" maximum="8"/>
+	<SettingMeta id="VME/Registers/USB_Bulk/time_out"       type="integer" name="Time-out (s) in addition to 1 sec" address="8" writable="true" step="1" minimum="0" maximum="4"/>
+	<SettingMeta id="VME/Registers/USB_Bulk/time_out2"      type="integer" name="Time-out2 ?? documentation ambiguous" address="16" writable="true" step="1" minimum="0" maximum="3"/>
+
+	<SettingMeta id="VME/Registers/IRQ_Mask" type="binary" name="IRQ Mask" address="-1" writable="true" word_size="16">
+		<flag bit="0" description="Ignore IRQ-1" />
+		<flag bit="1" description="Ignore IRQ-2" />
+		<flag bit="2" description="Ignore IRQ-3" />
+		<flag bit="3" description="Ignore IRQ-4" />
+		<flag bit="4" description="Ignore IRQ-5" />
+		<flag bit="5" description="Ignore IRQ-6" />
+		<flag bit="6" description="Ignore IRQ-7" />
+	</SettingMeta>
 
 	<SettingMeta id="VME/dummy for cut and paste purposes" type="binary" name="T" address="0" writable="false" word_size="16">
 		<flag bit="0" description="" />

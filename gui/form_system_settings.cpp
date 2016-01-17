@@ -139,6 +139,9 @@ void FormSystemSettings::push_settings() {
 }
 
 void FormSystemSettings::ask_binary_tree(Gamma::Setting set, QModelIndex index) {
+  if (set.metadata.int_menu_items.empty())
+    return;
+
   editing_ = true;
   BinaryChecklist *editor = new BinaryChecklist(set, qobject_cast<QWidget *> (parent()));
   editor->setModal(true);
@@ -152,6 +155,9 @@ void FormSystemSettings::ask_binary_tree(Gamma::Setting set, QModelIndex index) 
 }
 
 void FormSystemSettings::ask_binary_table(Gamma::Setting set, QModelIndex index) {
+  if (set.metadata.int_menu_items.empty())
+    return;
+
   editing_ = true;
   BinaryChecklist *editor = new BinaryChecklist(set, qobject_cast<QWidget *> (parent()));
   editor->setModal(true);

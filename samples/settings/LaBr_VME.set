@@ -18,6 +18,24 @@
 	</Setting>
 	<Setting id="VME" type="stem" index="-1" reference="/VME/qpx_plugin.set">
 		<Setting id="VME/ControllerID" type="text" index="-1" value="VmUsb" />
+		<Setting id="VME/Registers" type="stem" index="-1">
+			<Setting id="VME/Registers/GlobalMode" type="binary" index="-1" value="8388" />
+			<Setting id="VME/Registers/DAQSettings" type="binary" index="-1" value="4540167" />
+			<Setting id="VME/Registers/LED" type="binary" index="-1" value="0" />
+			<Setting id="VME/Registers/DeviceSources" type="binary" index="-1" value="1135152396" />
+			<Setting id="VME/Registers/DGG_A" type="binary" index="-1" value="0" />
+			<Setting id="VME/Registers/DGG_B" type="binary" index="-1" value="0" />
+			<Setting id="VME/Registers/DGG_Ext" type="binary" index="-1" value="0" />
+			<Setting id="VME/Registers/EvtsPerBuffer" type="integer" index="-1" value="0" />
+			<Setting id="VME/Registers/InterruptVecLo1+2" type="binary" index="-1" value="0" />
+			<Setting id="VME/Registers/InterruptVecLo3+4" type="binary" index="-1" value="0" />
+			<Setting id="VME/Registers/InterruptVecLo5+6" type="binary" index="-1" value="0" />
+			<Setting id="VME/Registers/InterruptVecLo7+8" type="binary" index="-1" value="0" />
+			<Setting id="VME/Registers/InterruptVecHi1234" type="binary" index="-1" value="0" />
+			<Setting id="VME/Registers/InterruptVecHi5678" type="binary" index="-1" value="0" />
+			<Setting id="VME/Registers/USB_Bulk" type="binary" index="-1" value="0" />
+			<Setting id="VME/Registers/IRQ_Mask" type="binary" index="-1" value="0" />
+		</Setting>
 		<Setting id="VME/IsegVHS" type="stem" index="-1" reference="/IsegVHS.set">
 			<Setting id="VME/IsegVHS/Channel" type="stem" index="0" indices="0" />
 			<Setting id="VME/IsegVHS/Channel" type="stem" index="1" indices="1" />

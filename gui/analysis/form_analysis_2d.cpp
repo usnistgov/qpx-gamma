@@ -213,7 +213,7 @@ void FormAnalysis2D::loadSettings() {
   settings_.endGroup();
 
   settings_.beginGroup("AnalysisMatrix");
-  ui->plotMatrix->set_gradient(settings_.value("gradient", "hot").toString());
+  ui->plotMatrix->set_gradient(settings_.value("gradient", "Hot").toString());
   ui->plotMatrix->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
   ui->plotMatrix->set_show_legend(settings_.value("show_legend", false).toBool());
   ui->plotMatrix->set_gate_width(settings_.value("gate_width", 10).toInt());

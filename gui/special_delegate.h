@@ -28,6 +28,8 @@
 #include <QStyledItemDelegate>
 #include <QDialog>
 #include <QCheckBox>
+#include <QDoubleSpinBox>
+#include <QComboBox>
 #include "widget_pattern.h"
 #include "detector.h"
 
@@ -49,6 +51,8 @@ private:
 
   Gamma::Setting      setting_;
   std::vector<QCheckBox*> boxes_;
+  std::vector<QDoubleSpinBox*>  spins_;
+  std::vector<QComboBox*> menus_;
 
 };
 

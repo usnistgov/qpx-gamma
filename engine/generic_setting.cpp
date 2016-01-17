@@ -395,7 +395,7 @@ void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_de
     if (meta.address == -1)
       meta.address = index;
     metadata = meta;
-    if (((meta.setting_type == Gamma::SettingType::indicator) ||
+    if (((meta.setting_type == Gamma::SettingType::indicator) || (meta.setting_type == Gamma::SettingType::binary) ||
         (meta.setting_type == Gamma::SettingType::stem)) && !meta.int_menu_items.empty()) {
       XMLableDB<Gamma::Setting> br = branches;
       branches.clear();

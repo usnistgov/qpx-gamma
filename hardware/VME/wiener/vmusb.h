@@ -29,6 +29,9 @@ public:
   virtual void writeShort(int vmeAddress, int addressModifier, int data, int *errorCode = NULL);
   virtual int  readShort(int vmeAddress, int addressModifier, int *errorCode = NULL);
 
+  virtual void writeRegister(long vmeAddress, long data, int *errorCode);
+  virtual long readRegister(long vmeAddress, int *errorCode);
+
 private:
   boost::shared_ptr<boost::dll::shared_library> xxlib;
   usb_dev_handle *udev;

@@ -31,6 +31,10 @@ public:
 
   virtual void writeShort(int vmeAddress, int addressModifier, int data, int *errorCode = NULL) = 0;
 	virtual int  readShort(int vmeAddress, int addressModifier, int *errorCode = NULL) = 0;
+
+  virtual void writeRegister(long vmeAddress, long data, int *errorCode = NULL) = 0;
+  virtual long readRegister(long vmeAddress, int *errorCode = NULL) = 0;
+
 };
 
 #endif // VMECONTROLLER_H

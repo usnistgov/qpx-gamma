@@ -53,6 +53,16 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
         if (modules_.count(q.id_) && modules_.at(q.id_)) {
 //          PL_DBG << "read settings bulk " << q.id_;
           modules_.at(q.id_)->read_settings_bulk(q);
+        } else if (q.id_ == "VME/Registers") {
+          for (auto &k : q.branches.my_data_) {
+            if (k.id_ == "VME/Registers/IRQ_Mask") {
+              PL_DBG << "IRQ Mask read";
+              // do something fancy
+            } else {
+              PL_DBG << "VmUsb register read";
+              read_register(k);
+            }
+          }
         }
       }
     }
@@ -94,6 +104,16 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
         PL_DBG << "added module " << q.id_ << " with settings at " << dev_settings.string()
                << " produced from factory as " << modules_[q.id_]->plugin_name();
         modules_[q.id_]->write_settings_bulk(q);
+      } else if (q.id_ == "VME/Registers") {
+        for (auto &k : q.branches.my_data_) {
+          if (k.id_ == "VME/Registers/IRQ_Mask") {
+            PL_DBG << "IRQ Mask write";
+            // do something fancy
+          } else {
+            PL_DBG << "VmUsb register write";
+            write_register(k);
+          }
+        }
       }
     }
   }
@@ -110,7 +130,7 @@ bool QpxVmePlugin::execute_command(Gamma::Setting &set) {
   for (auto &q : set.branches.my_data_) {
     if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "VME/IsegVHS")) {
       if (modules_.count(q.id_)) {
-      IsegVHS *mod = dynamic_cast<IsegVHS*>(modules_.at(q.id_));
+      QpxIsegVHSPlugin *mod = dynamic_cast<QpxIsegVHSPlugin*>(modules_.at(q.id_));
         PL_DBG << "Executing for module " << q.id_;
 
 
@@ -191,6 +211,79 @@ bool QpxVmePlugin::die() {
 void QpxVmePlugin::get_all_settings() {
 }
 
+
+bool QpxVmePlugin::read_register(Gamma::Setting& set) const {
+  if (!(status_ & Qpx::DeviceStatus::booted))
+    return false;
+
+  int wordsize = 0;
+
+  if (set.metadata.setting_type == Gamma::SettingType::binary) {
+    if (set.metadata.maximum == 32)
+      wordsize = 32;
+    else if (set.metadata.maximum == 16)
+      wordsize = 16;
+  }
+  else if ((set.metadata.setting_type == Gamma::SettingType::integer)
+           || (set.metadata.setting_type == Gamma::SettingType::int_menu))
+  {
+    if (set.metadata.hardware_type == "u32")
+      wordsize = 32;
+    else if (set.metadata.hardware_type == "u16")
+      wordsize = 16;
+  }
+
+  if (wordsize == 16) {
+    long data = controller_->readRegister(set.metadata.address);
+    data &= 0x0000FFFF;
+    set.value_int = data;
+    return true;
+  } else if (wordsize == 32) {
+    long data = controller_->readRegister(set.metadata.address);
+    set.value_int = data;
+    return true;
+  } else {
+    PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
+    return false;
+  }
+  return true;
+}
+
+bool QpxVmePlugin::write_register(Gamma::Setting& set) {
+  if (!(status_ & Qpx::DeviceStatus::booted))
+    return false;
+
+  int wordsize = 0;
+
+  if (set.metadata.setting_type == Gamma::SettingType::binary) {
+    if (set.metadata.maximum == 32)
+      wordsize = 32;
+    else if (set.metadata.maximum == 16)
+      wordsize = 16;
+  }
+  else if ((set.metadata.setting_type == Gamma::SettingType::integer)
+           || (set.metadata.setting_type == Gamma::SettingType::int_menu))
+  {
+    if (set.metadata.hardware_type == "u32")
+      wordsize = 32;
+    else if (set.metadata.hardware_type == "u16")
+      wordsize = 16;
+  }
+
+  if (wordsize == 16) {
+    long data = set.value_int &= 0x0000FFFF;
+    controller_->writeRegister(set.metadata.address, data);
+    return true;
+  } else if (wordsize == 32) {
+    long data = set.value_int;
+    controller_->writeRegister(set.metadata.address, data);
+    return true;
+  } else {
+    PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
+    return false;
+  }
+  return true;
+}
 
 
 }

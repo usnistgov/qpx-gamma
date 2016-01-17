@@ -260,10 +260,10 @@ void VmUsb::writeShort(int vmeAddress, int addressModifier, int data, int *error
 {
   int result = -1;
 
-  if ((udev))
+  if (udev)
     result = vmeWrite16(udev, addressModifier, vmeAddress, data);
 
-  if ((errorCode))
+  if (errorCode)
     *errorCode = result;
 }
 
@@ -272,10 +272,35 @@ int VmUsb::readShort(int vmeAddress, int addressModifier, int *errorCode)
   long data = 0;
   int  result = -1;
 
-  if ((udev))
+  if (udev)
     result = vmeRead16(udev, addressModifier, vmeAddress, &data);
 
-  if ((errorCode))
+  if (errorCode)
+    *errorCode = result;
+
+  return data;
+}
+
+void VmUsb::writeRegister(long vmeAddress, long data, int *errorCode)
+{
+  int result = -1;
+
+  if (udev)
+    result = vmeRegisterWrite(udev, vmeAddress, data);
+
+  if (errorCode)
+    *errorCode = result;
+}
+
+long VmUsb::readRegister(long vmeAddress, int *errorCode)
+{
+  long data = 0;
+  int  result = -1;
+
+  if (udev)
+    result = vmeRegisterRead(udev, vmeAddress, &data);
+
+  if (errorCode)
     *errorCode = result;
 
   return data;
