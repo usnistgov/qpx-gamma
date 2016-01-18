@@ -37,19 +37,62 @@
 			<Setting id="VME/Registers/IRQ_Mask" type="binary" index="-1" value="0" />
 		</Setting>
 		<Setting id="VME/IsegVHS" type="stem" index="-1" reference="/IsegVHS.set">
-			<Setting id="VME/IsegVHS/Channel" type="stem" index="0" indices="0" />
-			<Setting id="VME/IsegVHS/Channel" type="stem" index="1" indices="1" />
-			<Setting id="VME/IsegVHS/Channel" type="stem" index="2" indices="2" />
-			<Setting id="VME/IsegVHS/Channel" type="stem" index="3" indices="3" />
-			<Setting id="VME/IsegVHS/Channel" type="stem" index="4" indices="4" />
-			<Setting id="VME/IsegVHS/Channel" type="stem" index="5" indices="5" />
-			<Setting id="VME/IsegVHS/Channel" type="stem" index="6" indices="6" />
-			<Setting id="VME/IsegVHS/Channel" type="stem" index="7" indices="7" />
-			<Setting id="VME/IsegVHS/Channel" type="stem" index="8" indices="8" />
-			<Setting id="VME/IsegVHS/Channel" type="stem" index="9" indices="9" />
-			<Setting id="VME/IsegVHS/Channel" type="stem" index="10" indices="10" />
-			<Setting id="VME/IsegVHS/Channel" type="stem" index="11" indices="11" />
+			<Setting id="VME/IsegVHS/Channels" type="stem" index="-1">
+				<Setting id="VME/IsegVHS/Channel" type="stem" index="0" indices="0" />
+				<Setting id="VME/IsegVHS/Channel" type="stem" index="1" indices="1" />
+				<Setting id="VME/IsegVHS/Channel" type="stem" index="2" indices="2" />
+				<Setting id="VME/IsegVHS/Channel" type="stem" index="3" indices="3" />
+				<Setting id="VME/IsegVHS/Channel" type="stem" index="4" indices="4" />
+				<Setting id="VME/IsegVHS/Channel" type="stem" index="5" indices="5" />
+				<Setting id="VME/IsegVHS/Channel" type="stem" index="6" indices="6" />
+				<Setting id="VME/IsegVHS/Channel" type="stem" index="7" indices="7" />
+				<Setting id="VME/IsegVHS/Channel" type="stem" index="8" indices="8" />
+				<Setting id="VME/IsegVHS/Channel" type="stem" index="9" indices="9" />
+				<Setting id="VME/IsegVHS/Channel" type="stem" index="10" indices="10" />
+				<Setting id="VME/IsegVHS/Channel" type="stem" index="11" indices="11" />
+			</Setting>
 			<Setting id="VME/IsegVHS/FixedGroups" type="stem" index="-1" />
+		</Setting>
+		<Setting id="VME/MADC32" type="stem" index="-1" reference="/MADC32.set">
+			<Setting id="VME/MADC32/ChannelThresholds" type="stem" index="-1">
+				<Setting id="VME/MADC32/Threshold" type="integer" index="0" indices="0" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="1" indices="1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="2" indices="2" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="3" indices="3" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="4" indices="4" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="5" indices="5" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="6" indices="6" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="7" indices="7" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="8" indices="8" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="9" indices="9" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="10" indices="10" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="11" indices="11" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
+			</Setting>
+			<Setting id="VME/MADC32/IRQ_Settings" type="stem" index="-1" />
+			<Setting id="VME/MADC32/MCST_CBLT" type="stem" index="-1" />
+			<Setting id="VME/MADC32/FIFO_Handling" type="stem" index="-1" />
+			<Setting id="VME/MADC32/OperationMode" type="stem" index="-1" />
+			<Setting id="VME/MADC32/InputsOutputs" type="stem" index="-1" />
 		</Setting>
 	</Setting>
 </Setting>

@@ -16,12 +16,12 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      QpxIsegVHSPlugin
+ *      MADC32
  *
  ******************************************************************************/
 
-#ifndef QPX_ISEGVHS_PLUGIN
-#define QPX_ISEGVHS_PLUGIN
+#ifndef QPX_MADC32_PLUGIN
+#define QPX_MADC32_PLUGIN
 
 #include "detector.h"
 #include <boost/thread.hpp>
@@ -31,18 +31,18 @@
 #include "vmecontroller.h"
 #include "generic_setting.h"
 
-#define VHS_ADDRESS_SPACE_LENGTH				0x0400
+#define MADC32_ADDRESS_SPACE_LENGTH				0xFFFF
 
 namespace Qpx {
 
-class QpxIsegVHSPlugin : public VmeModule {
+class MADC32 : public VmeModule {
   
 public:
-  QpxIsegVHSPlugin();
-  ~QpxIsegVHSPlugin();
+  MADC32();
+  ~MADC32();
 
   //QpxPlugin
-  static std::string plugin_name() {return "VME/IsegVHS";}
+  static std::string plugin_name() {return "VME/MADC32";}
   std::string device_name() const override {return plugin_name();}
 
   bool write_settings_bulk(Gamma::Setting &set) override;
@@ -61,18 +61,15 @@ public:
   std::string firmwareName() const;
 
   uint16_t    baseAddress() const { return m_baseAddress; }
-  virtual uint16_t baseAddressSpaceLength() const {return VHS_ADDRESS_SPACE_LENGTH;}
+  virtual uint16_t baseAddressSpaceLength() const {return MADC32_ADDRESS_SPACE_LENGTH;}
   bool        setBaseAddress(uint16_t baseAddress);
   std::string address() const;
-
-  void    programBaseAddress(uint16_t address);
-  uint16_t verifyBaseAddress(void) const;
 
 
 private:
   //no copying
-  void operator=(QpxIsegVHSPlugin const&);
-  QpxIsegVHSPlugin(const QpxIsegVHSPlugin&);
+  void operator=(MADC32 const&);
+  MADC32(const MADC32&);
 
 protected:
   void rebuild_structure(Gamma::Setting &set);
@@ -85,8 +82,6 @@ protected:
 
   uint16_t readShort(int address) const;
   void    writeShort(int address, uint16_t data);
-  uint32_t readLong(int address) const;
-  void    writeLong(int address, uint32_t data);
   float   readFloat(int address) const;
   void    writeFloat(int address, float data);
 

@@ -1,5 +1,13 @@
 #include "vmusb.h"
 #include "custom_logger.h"
+#include <boost/utility/binary.hpp>
+
+#define XXUSB_ACTION_STOP                  BOOST_BINARY(00000)
+#define XXUSB_ACTION_START                 BOOST_BINARY(00001)
+#define XXUSB_ACTION_USB_TRIGGER           BOOST_BINARY(00010)
+#define XXUSB_ACTION_CLEAR                 BOOST_BINARY(00100)
+#define XXUSB_ACTION_SYSRES                BOOST_BINARY(01000)
+#define XXUSB_ACTION_SCALER_DUMP           BOOST_BINARY(10000)
 
 
 VmUsb::VmUsb()
@@ -256,24 +264,49 @@ std::list<std::string> VmUsb::controllers(void)
 }
 
 
-void VmUsb::writeShort(int vmeAddress, int addressModifier, int data, int *errorCode)
+void VmUsb::writeShort(int vmeAddress, AddressModifier am, int data, int *errorCode)
 {
   int result = -1;
 
   if (udev)
-    result = vmeWrite16(udev, addressModifier, vmeAddress, data);
+    result = vmeWrite16(udev, static_cast<int>(am), vmeAddress, data);
 
   if (errorCode)
     *errorCode = result;
 }
 
-int VmUsb::readShort(int vmeAddress, int addressModifier, int *errorCode)
+int VmUsb::readShort(int vmeAddress, AddressModifier am, int *errorCode)
 {
   long data = 0;
   int  result = -1;
 
   if (udev)
-    result = vmeRead16(udev, addressModifier, vmeAddress, &data);
+    result = vmeRead16(udev, static_cast<int>(am), vmeAddress, &data);
+
+  if (errorCode)
+    *errorCode = result;
+
+  return data;
+}
+
+void VmUsb::writeLong(int vmeAddress, AddressModifier am, long data, int *errorCode)
+{
+  int result = -1;
+
+  if (udev)
+    result = vmeWrite32(udev, static_cast<int>(am), vmeAddress, data);
+
+  if (errorCode)
+    *errorCode = result;
+}
+
+long VmUsb::readLong(int vmeAddress, AddressModifier am, int *errorCode)
+{
+  long data = 0;
+  int result = -1;
+
+  if (udev)
+    result = vmeRead32(udev, static_cast<int>(am), vmeAddress, &data);
 
   if (errorCode)
     *errorCode = result;
@@ -311,8 +344,33 @@ std::string VmUsb::controllerName(void)
   return "VM-USB";
 }
 
-int VmUsb::systemReset()
+void VmUsb::systemReset()
 {
-  // not supported by VM-USB yet
-  return -1;
+  xxusbRegisterWrite(udev, 0, XXUSB_ACTION_SYSRES);
+}
+
+void VmUsb::start_daq() {
+  xxusbRegisterWrite(udev, 0, XXUSB_ACTION_START);
+}
+
+void VmUsb::stop_daq() {
+  xxusbRegisterWrite(udev, 0, XXUSB_ACTION_STOP);
+}
+
+void VmUsb::clear_registers() {
+  xxusbRegisterWrite(udev, 0, XXUSB_ACTION_CLEAR);
+}
+
+void VmUsb::trigger_USB() {
+  xxusbRegisterWrite(udev, 0, XXUSB_ACTION_USB_TRIGGER);
+}
+
+void VmUsb::scaler_dump() {
+  xxusbRegisterWrite(udev, 0, XXUSB_ACTION_SCALER_DUMP);
+}
+
+void VmUsb::trigger_IRQ(short flags) {
+  uint16_t shifted = flags & 0x00FF;
+  shifted = shifted << 8;
+  xxusbRegisterWrite(udev, 0, shifted);
 }

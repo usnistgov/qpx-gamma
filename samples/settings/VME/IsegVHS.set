@@ -27,10 +27,14 @@
 		<branch address="23" id="VME/IsegVHS/DigitalFilter" />
 		<branch address="24" id="VME/IsegVHS/VendorID" />
 		
-		<branch address="25" id="VME/IsegVHS/Channel" />
+		<branch address="25" id="VME/IsegVHS/Channels" />
 
 		<branch address="26" id="VME/IsegVHS/FixedGroups" />
 		<branch address="27" id="VME/IsegVHS/VariableGroups" />
+	</SettingMeta>
+
+	<SettingMeta id="VME/IsegVHS/Channels" type="stem" name="Channels" address="96" writable="true" saveworthy="true">
+		<branch address="0" id="VME/IsegVHS/Channel" />
 	</SettingMeta>
 
 	<SettingMeta id="VME/IsegVHS/ModuleStatus" type="binary" name="Module status" address="0" writable="false" word_size="16">

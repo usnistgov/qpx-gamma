@@ -4,6 +4,7 @@
 		<branch address="0" id="VME/ControllerID" />
 		<branch address="1" id="VME/Registers" />
 		<branch address="2" id="VME/IsegVHS" />
+		<branch address="3" id="VME/MADC32" />
 	</SettingMeta>
 	
 	<SettingMeta id="VME/ControllerID" type="text" visible="true" name="Controller ID" address="0" writable="true"/>
@@ -29,6 +30,7 @@
 		<branch address="18" id="VME/Registers/IRQ_Mask" />
 	</SettingMeta>
 	<SettingMeta id="VME/IsegVHS" type="stem" name="IsegVHS" address="-1" writable="true" saveworthy="false" />
+	<SettingMeta id="VME/MADC32" type="stem" name="IsegVHS" address="-1" writable="true" saveworthy="false" />
 
 	<SettingMeta id="VME/Registers/FirmwareID" type="binary" name="Firmware ID" address="0" writable="false" word_size="32" />
 	<SettingMeta id="VME/Registers/GlobalMode" type="binary" name="Global mode" address="4" writable="true" word_size="16">

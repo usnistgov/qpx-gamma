@@ -1,0 +1,147 @@
+<?xml version="1.0"?>
+<MADC32>
+	<SettingMeta id="VME/MADC32" type="stem" name="MADC32" address="-1" writable="true" saveworthy="false">
+		<branch address="0" id="VME/MADC32/firmware_version" />
+        <branch address="1" id="VME/MADC32/address_source" />
+		<branch address="2" id="VME/MADC32/address_reg" />
+		<branch address="3" id="VME/MADC32/module_id" />
+		<branch address="4" id="VME/MADC32/soft_reset" />
+		<branch address="5" id="VME/MADC32/ChannelThresholds" />
+		<branch address="6" id="VME/MADC32/IRQ_Settings" />
+		<branch address="7" id="VME/MADC32/MCST_CBLT" />
+		<branch address="8" id="VME/MADC32/FIFO_Handling" />
+		<branch address="9" id="VME/MADC32/OperationMode" />
+		<branch address="10" id="VME/MADC32/GateGenerator" />
+		<branch address="11" id="VME/MADC32/InputsOutputs" />
+		<branch address="12" id="VME/MADC32/CounterA" />
+		<branch address="13" id="VME/MADC32/CounterB" />
+	</SettingMeta>
+	<SettingMeta id="VME/MADC32/firmware_version" type="floating" name="Firmware version" address="24590" writable="false"/>
+	<SettingMeta id="VME/MADC32/address_source" type="int_menu" name="Address source" address="24576" writable="true">
+		<menu_item item_value="0" item_text="From board coder" />
+		<menu_item item_value="1" item_text="From address register" />
+	</SettingMeta>
+	<SettingMeta id="VME/MADC32/address_reg" type="integer" name="Address override" address="24578" maximum="65535" writable="true"/>
+	<SettingMeta id="VME/MADC32/module_id" type="integer" name="Module ID" address="24580" maximum="255" writable="true" description="Written to data header; if 0xFF: high bits of base address used"/>
+	<SettingMeta id="VME/MADC32/soft_reset" type="command" name="Soft reset" address="24584" writable="false" visible="true" saveworthy="false" description="Break all activities, set critical params to default"/>
+
+	<SettingMeta id="VME/MADC32/ChannelThresholds" type="stem" name="Channel thresholds" address="16384" writable="true" saveworthy="true">
+        <branch address="0" id="VME/MADC32/Threshold" />
+	</SettingMeta>
+	<SettingMeta id="VME/MADC32/Threshold" type="integer" name="Threshold" address="0" maximum="8191" writable="true" description="8191 to disable"/>
+
+	<SettingMeta id="VME/MADC32/IRQ_Settings" type="stem" name="IRQ Settings" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MADC32/irq_level" />
+		<branch address="1" id="VME/MADC32/irq_vector" />
+        <branch address="2" id="VME/MADC32/irq_test" />
+        <branch address="3" id="VME/MADC32/irq_reset" />
+        <branch address="4" id="VME/MADC32/irq_threshold" />
+		<branch address="5" id="VME/MADC32/max_transfer_data" />
+        <branch address="6" id="VME/MADC32/withdraw_IRQ" />
+	</SettingMeta>
+	<SettingMeta id="VME/MADC32/irq_level" type="integer" name="IRQ priority" address="24592" maximum="7" writable="true" description="0: off"/>
+	<SettingMeta id="VME/MADC32/irq_vector" type="integer" name="IRQ return value" address="24594" maximum="255" writable="true" />
+	<SettingMeta id="VME/MADC32/irq_test" type="command" name="IRQ test" address="24596" writable="false" visible="true" saveworthy="false" />
+	<SettingMeta id="VME/MADC32/irq_reset" type="command" name="IRQ reset" address="24598" writable="false" visible="true" saveworthy="false" />
+	<SettingMeta id="VME/MADC32/irq_threshold" type="integer" name="IRQ Threshold" address="24600" maximum="8120" writable="true" unit="32 bit words" description="IRQ emitted when FIFO exceeds this"/>
+	<SettingMeta id="VME/MADC32/max_transfer_data" type="integer" name="Maximum words transferred" address="24602" maximum="16383" writable="true" unit="32 bit words" description="max events before footer (mode 3), 0: unlimited, 1: 1 event/xfer"/>
+	<SettingMeta id="VME/MADC32/withdraw_IRQ" type="boolean" name="Withdraw IRQ" address="24604" writable="true" description="withdraw IRQ when FIFO empty"/>
+
+	<SettingMeta id="VME/MADC32/MCST_CBLT" type="stem" name="MCST/CBLT settings" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MADC32/cblt_mcst_control_r" />
+        <branch address="1" id="VME/MADC32/cblt_mcst_control_w" />
+        <branch address="2" id="VME/MADC32/cblt_address" />
+        <branch address="3" id="VME/MADC32/mcst_address" />
+	</SettingMeta>
+	<SettingMeta id="VME/MADC32/cblt_mcst_control_r" type="binary" name="CBLT/MCST control (read)" address="24608" writable="false" word_size="8">
+		<flag bit="0" description="CBLT enabled" />
+		<flag bit="2" description="Last module in CBLT chain" />
+		<flag bit="4" description="First module in CBLT chain" />
+		<flag bit="6" description="MCST enabled" />
+	</SettingMeta>
+	<SettingMeta id="VME/MADC32/cblt_mcst_control_w" type="binary" name="CBLT/MCST control (write)" address="24608" writable="true" word_size="8">
+		<flag bit="0" description="Disable CBLT" />
+		<flag bit="1" description="Enable CBLT" />
+		<flag bit="2" description="Disable last module in CBLT chain" />
+		<flag bit="3" description="Enable last module in CBLT chain" />
+		<flag bit="4" description="Disable first module in CBLT chain" />
+		<flag bit="5" description="Enable first module in CBLT chain" />
+		<flag bit="6" description="Disable MCST" />
+		<flag bit="7" description="Enable MCST" />
+	</SettingMeta>
+
+
+	<SettingMeta id="VME/MADC32/FIFO_Handling" type="stem" name="FIFO Handling" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MADC32/buffer_data_length" />
+        <branch address="1" id="VME/MADC32/data_length_format" />
+        <branch address="2" id="VME/MADC32/readout_reset" />
+        <branch address="3" id="VME/MADC32/multi_event" />
+        <branch address="4" id="VME/MADC32/marking_type" />
+	</SettingMeta>
+	<SettingMeta id="VME/MADC32/buffer_data_length" type="integer" name="Buffer length" address="24624" maximum="65535" writable="false" unit="words (!)" description="number of words in buffer, word size = data_length_format"/>
+	<SettingMeta id="VME/MADC32/data_length_format" type="int_menu" name="Data length format" address="24626" writable="true">
+		<menu_item item_value="0" item_text="8 bits"/>
+        <menu_item item_value="1" item_text="16 bits"/>
+        <menu_item item_value="2" item_text="32 bits"/>
+        <menu_item item_value="3" item_text="64 bits"/>
+	</SettingMeta>
+	<SettingMeta id="VME/MADC32/readout_reset" type="command" name="Readout reset" address="24628" writable="false" visible="true" saveworthy="false" description="Depends on multi_event (page 8)"/>
+	<SettingMeta id="VME/MADC32/multi_event" type="binary" name="Multi-event settings" address="24630" writable="true" word_size="2">
+		<flag bit="0" description="VME/MADC32/multi_event/mode" />
+		<flag bit="2" description="Send EOB (bits31:30,= bx10) instead of BERR" />
+		<flag bit="3" description="Count events, not words, compare with max_transfer_data" />
+	</SettingMeta>
+	<SettingMeta id="VME/MADC32/multi_event/mode" type="int_menu" name="Multi-event mode" address="0" writable="true">
+		<menu_item item_value="0" item_text="disabled" />
+		<menu_item item_value="1" item_text="unlimited, no reset" />
+		<menu_item item_value="3" item_text="limited, emits BERR" />
+	</SettingMeta>
+	<SettingMeta id="VME/MADC32/marking_type" type="int_menu" name="Event marking type" address="24632" writable="true">
+		<menu_item item_value="0" item_text="event counter" />
+		<menu_item item_value="1" item_text="time stamp" />
+		<menu_item item_value="3" item_text="extended time stamp" />
+	</SettingMeta>
+	
+	<SettingMeta id="VME/MADC32/OperationMode" type="stem" name="Operation mode" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MADC32/adc_resolution" />
+        <branch address="1" id="VME/MADC32/skip_oorange" />
+	</SettingMeta>
+	<SettingMeta id="VME/MADC32/adc_resolution" type="int_menu" name="ADC resolution (conversion time)" address="24642" writable="true">
+		<menu_item item_value="0" item_text="2k (800ns)" />
+		<menu_item item_value="1" item_text="4k (1.6us)" />
+		<menu_item item_value="2" item_text="4k hires (3.2us)" />
+		<menu_item item_value="3" item_text="8k (6.4us)" />
+		<menu_item item_value="4" item_text="8k hires (12.5us)" />
+	</SettingMeta>
+	<SettingMeta id="VME/MADC32/skip_oorange" type="boolean" name="Skip out of range values" address="24650" writable="true" />
+
+	<SettingMeta id="VME/MADC32/InputsOutputs" type="stem" name="Inputs & outputs" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MADC32/input_range"/>
+	</SettingMeta>
+	<SettingMeta id="VME/MADC32/input_range" type="int_menu" name="Input range" address="24672" writable="true">
+		<menu_item item_value="0" item_text="4V" />
+		<menu_item item_value="1" item_text="10V" />
+		<menu_item item_value="3" item_text="8V" />
+	</SettingMeta>
+
+
+	<SettingMeta id="VME/MADC32/dummy for cut and paste purposes" type="binary" name="T" address="0" writable="false" word_size="16">
+		<flag bit="0" description="" />
+		<flag bit="1" description="" />
+		<flag bit="2" description="" />
+		<flag bit="3" description="" />
+		<flag bit="4" description="" />
+		<flag bit="5" description="" />
+		<flag bit="6" description="" />
+		<flag bit="7" description="" />
+		<flag bit="8" description="" />
+		<flag bit="9" description="" />
+		<flag bit="10" description="" />
+		<flag bit="11" description="" />
+		<flag bit="12" description="" />
+		<flag bit="13" description="" />
+		<flag bit="14" description="" />
+		<flag bit="15" description="" />
+	</SettingMeta>
+
+</MADC32>

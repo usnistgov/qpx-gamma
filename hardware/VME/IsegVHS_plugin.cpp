@@ -28,7 +28,6 @@
 #include "custom_timer.h"
 
 #define ISEG_VENDOR_ID									0x69736567
-#define VME_ADDRESS_MODIFIER						0x29
 
 // --- VHS12 ------------------------------------------------------------------
 #define VhsFirmwareReleaseOFFSET          56
@@ -67,14 +66,9 @@ bool QpxIsegVHSPlugin::read_settings_bulk(Gamma::Setting &set) const {
     double voltage_max = 0;
     double current_max = 0;
     for (auto &k : set.branches.my_data_) {
-      if ((k.metadata.setting_type == Gamma::SettingType::floating)
-          || (k.metadata.setting_type == Gamma::SettingType::binary)
-          || (k.metadata.setting_type == Gamma::SettingType::integer)
-          || (k.metadata.setting_type == Gamma::SettingType::boolean)
-          || (k.metadata.setting_type == Gamma::SettingType::int_menu))
-      {
-        if (!read_setting(k, 0)) {}
-//          PL_DBG << "Could not read " << k.id_;
+      if (k.metadata.setting_type != Gamma::SettingType::stem) {
+        if (!read_setting(k)) {}
+        //          PL_DBG << "Could not read " << k.id_;
         if (k.id_ == "VME/IsegVHS/VoltageMax") {
           voltage_max = k.value_dbl;
           //                PL_DBG << "voltage max = " << voltage_max;
@@ -83,43 +77,49 @@ bool QpxIsegVHSPlugin::read_settings_bulk(Gamma::Setting &set) const {
           current_max = k.value_dbl;
           //                PL_DBG << "current max = " << current_max;
         }
-      }
-      else if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channel")) {
-        uint16_t channum = k.index;
+      } else {
         for (auto &p : k.branches.my_data_) {
           if (p.metadata.setting_type == Gamma::SettingType::command) {
             p.metadata.writable =  ((status_ & DeviceStatus::can_exec) != 0);
             //PL_DBG << "command " << p.id_ << p.index << " now " << p.metadata.writable;
-          }
-          else if ((p.metadata.setting_type == Gamma::SettingType::floating)
-                   || (p.metadata.setting_type == Gamma::SettingType::integer)
-                   || (p.metadata.setting_type == Gamma::SettingType::boolean)
-                   || (p.metadata.setting_type == Gamma::SettingType::int_menu)
-                   || (p.metadata.setting_type == Gamma::SettingType::binary)) {
-            if (!read_setting(p, ((48 * channum) + 96))) {}
-//              PL_DBG << "Could not read " << p.id_;
+          } else if (p.metadata.setting_type != Gamma::SettingType::stem) {
+            if (!read_setting(p)) {}
+            //              PL_DBG << "Could not read " << p.id_;
+          } else {
+
+            for (auto &q : p.branches.my_data_) {
+              if (q.metadata.setting_type == Gamma::SettingType::command) {
+                q.metadata.writable =  ((status_ & DeviceStatus::can_exec) != 0);
+                //PL_DBG << "command " << p.id_ << p.index << " now " << p.metadata.writable;
+              } else if (q.metadata.setting_type != Gamma::SettingType::stem) {
+                if (!read_setting(q)) {}
+                //              PL_DBG << "Could not read " << p.id_;
+              }
+
+              for (auto &q : p.branches.my_data_) {
+                if (q.id_ == "VME/IsegVHS/Channel/Status") {
+                  Gamma::Setting status = p.get_setting(Gamma::Setting("VME/IsegVHS/Channel/ChannelStatus"), Gamma::Match::id);
+                  if (status.value_int & 0x0010)
+                    q.value_int = 1;
+                  else if (status.value_int & 0x0008)
+                    q.value_int = 2;
+                  else
+                    q.value_int = 0;
+                } else if (q.id_ == "VME/IsegVHS/Channel/VoltageSet") {
+                  Gamma::Setting nominal = p.get_setting(Gamma::Setting("VME/IsegVHS/Channel/VoltageNominalMaxSet"), Gamma::Match::id);
+                  q.metadata.maximum = nominal.value_dbl;// * voltage_max;
+                  //                  PL_DBG << "Volatge bounds "  << nominal.value_dbl << " " << p.metadata.maximum;
+                } else if (q.id_ == "VME/IsegVHS/Channel/CurrentSetOrTrip") {
+                  Gamma::Setting nominal = p.get_setting(Gamma::Setting("VME/IsegVHS/Channel/CurrentNominalMaxSet"), Gamma::Match::id);
+                  q.metadata.maximum = nominal.value_dbl;// * current_max;
+                  //                  PL_DBG << "Current bounds "  << nominal.value_dbl << " " << p.metadata.maximum;
+                }
+              }
+
+            }
           }
         }
 
-        for (auto &p : k.branches.my_data_) {
-          if (p.id_ == "VME/IsegVHS/Channel/Status") {
-            Gamma::Setting status = k.get_setting(Gamma::Setting("VME/IsegVHS/Channel/ChannelStatus"), Gamma::Match::id);
-            if (status.value_int & 0x0010)
-              p.value_int = 1;
-            else if (status.value_int & 0x0008)
-              p.value_int = 2;
-            else
-              p.value_int = 0;
-          } else if (p.id_ == "VME/IsegVHS/Channel/VoltageSet") {
-            Gamma::Setting nominal = k.get_setting(Gamma::Setting("VME/IsegVHS/Channel/VoltageNominalMaxSet"), Gamma::Match::id);
-            p.metadata.maximum = nominal.value_dbl;// * voltage_max;
-            //                  PL_DBG << "Volatge bounds "  << nominal.value_dbl << " " << p.metadata.maximum;
-          } else if (p.id_ == "VME/IsegVHS/Channel/CurrentSetOrTrip") {
-            Gamma::Setting nominal = k.get_setting(Gamma::Setting("VME/IsegVHS/Channel/CurrentNominalMaxSet"), Gamma::Match::id);
-            p.metadata.maximum = nominal.value_dbl;// * current_max;
-            //                  PL_DBG << "Current bounds "  << nominal.value_dbl << " " << p.metadata.maximum;
-          }
-        }
       }
     }
 
@@ -128,7 +128,36 @@ bool QpxIsegVHSPlugin::read_settings_bulk(Gamma::Setting &set) const {
 }
 
 void QpxIsegVHSPlugin::rebuild_structure(Gamma::Setting &set) {
+  for (auto &k : set.branches.my_data_) {
+    if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channels")) {
+//        PL_DBG << "writing VME/MADC32/Channel";
+      while (k.branches.size() > 12) {
+        k.branches.my_data_.pop_back();
+      }
 
+      Gamma::Setting temp = k.branches.get(0);
+      temp.indices.clear();
+      temp.index = -1;
+      while (k.branches.size() < 12) {
+        k.branches.my_data_.push_back(temp);
+      }
+
+      uint32_t offset = k.metadata.address;
+
+      std::set<int32_t> indices;
+      int address = 0;
+      for (auto &p : k.branches.my_data_) {
+        p.metadata.address = offset + address * 48;
+
+        for (auto &q : p.branches.my_data_) {
+          q.enrich(setting_definitions_);
+          q.metadata.address = q.metadata.address + p.metadata.address;
+        }
+
+        ++address;
+      }
+    }
+  }
 }
 
 
@@ -140,32 +169,32 @@ bool QpxIsegVHSPlugin::write_settings_bulk(Gamma::Setting &set) {
     rebuild_structure(set);
 
     for (auto &k : set.branches.my_data_) {
-      if ((k.metadata.setting_type == Gamma::SettingType::floating)
-          || (k.metadata.setting_type == Gamma::SettingType::integer)
-          || (k.metadata.setting_type == Gamma::SettingType::boolean)
-          || (k.metadata.setting_type == Gamma::SettingType::int_menu)
-          || (k.metadata.setting_type == Gamma::SettingType::binary)) {
+      if (k.metadata.setting_type != Gamma::SettingType::stem) {
         Gamma::Setting s = k;
-        if (k.metadata.writable && read_setting(s, 0) && (s != k)) {
+        if (k.metadata.writable && read_setting(s) && (s != k)) {
 //          PL_DBG << "writing " << k.id_;
-          if (!write_setting(k, 0)) {}
+          if (!write_setting(k)) {}
 //            PL_DBG << "Could not write " << k.id_;
         }
-      }
-      else if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channel")) {
-//        PL_DBG << "writing VME/IsegVHS/Channel";
-        uint16_t channum = k.index;
+      } else {
         for (auto &p : k.branches.my_data_) {
-          if ((p.metadata.setting_type == Gamma::SettingType::floating)
-              || (p.metadata.setting_type == Gamma::SettingType::integer)
-              || (p.metadata.setting_type == Gamma::SettingType::boolean)
-              || (p.metadata.setting_type == Gamma::SettingType::int_menu)
-              || (p.metadata.setting_type == Gamma::SettingType::binary)) {
+          if (p.metadata.setting_type != Gamma::SettingType::stem) {
             Gamma::Setting s = p;
-            if (p.metadata.writable && read_setting(s, ((48 * channum) + 96)) && (s != p)) {
+            if (p.metadata.writable && read_setting(s) && (s != p)) {
 //              PL_DBG << "writing " << p.id_;
-              if (!write_setting(p, ((48 * channum) + 96))) {}
+              if (!write_setting(p)) {}
 //                PL_DBG << "Could not write " << k.id_;
+            }
+          } else {
+            for (auto &q : k.branches.my_data_) {
+              if (q.metadata.setting_type != Gamma::SettingType::stem) {
+                Gamma::Setting s = q;
+                if (q.metadata.writable && read_setting(s) && (s != p)) {
+    //              PL_DBG << "writing " << p.id_;
+                  if (!write_setting(q)) {}
+    //                PL_DBG << "Could not write " << k.id_;
+                }
+              }
             }
           }
         }
@@ -195,9 +224,9 @@ bool QpxIsegVHSPlugin::execute_command(Gamma::Setting &set) {
               //                  PL_DBG << "Triggered ON/OFF for " << p.index;
               p.value_int = 0;
               Gamma::Setting ctrl = k.get_setting(Gamma::Setting("VME/IsegVHS/Channel/ChannelControl"), Gamma::Match::id);
-              if (p.metadata.writable && read_setting(ctrl, ((48 * channum) + 96))) {
+              if (p.metadata.writable && read_setting(ctrl)) {
                 ctrl.value_int  ^= 0x0008;
-                if (!write_setting(ctrl, ((48 * channum) + 96)))
+                if (!write_setting(ctrl))
                   PL_DBG << "Could not write " << k.id_;
               }
               return true;
@@ -268,74 +297,78 @@ std::string QpxIsegVHSPlugin::address() const {
   return stream.str();
 }
 
-bool QpxIsegVHSPlugin::read_setting(Gamma::Setting& set, int address_modifier) const {
+bool QpxIsegVHSPlugin::read_setting(Gamma::Setting& set) const {
   if (!(status_ & Qpx::DeviceStatus::booted))
     return false;
 
   if (set.metadata.setting_type == Gamma::SettingType::floating)
-    set.value_dbl = readFloat(m_baseAddress + address_modifier + set.metadata.address);
+    set.value_dbl = readFloat(m_baseAddress + set.metadata.address);
   else if (set.metadata.setting_type == Gamma::SettingType::binary) {
     if (set.metadata.maximum == 32)
-      set.value_int = readLongBitfield(m_baseAddress + address_modifier + set.metadata.address);
+      set.value_int = readLong(m_baseAddress + set.metadata.address);
     else if (set.metadata.maximum == 16)
-      set.value_int = readShortBitfield(m_baseAddress + address_modifier + set.metadata.address);
+      set.value_int = readShort(m_baseAddress + set.metadata.address);
     else {
       PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
       return false;
     }
+    return true;
   }
   else if ((set.metadata.setting_type == Gamma::SettingType::integer)
            || (set.metadata.setting_type == Gamma::SettingType::boolean)
            || (set.metadata.setting_type == Gamma::SettingType::int_menu))
   {
     if (set.metadata.hardware_type == "u32")
-      set.value_int = readLong(m_baseAddress + address_modifier + set.metadata.address);
+      set.value_int = readLong(m_baseAddress + set.metadata.address);
     else if (set.metadata.hardware_type == "u16")
-      set.value_int = readShort(m_baseAddress + address_modifier + set.metadata.address);
+      set.value_int = readShort(m_baseAddress + set.metadata.address);
     else {
       PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
       return false;
     }
+    return true;
   }
-  return true;
+  return false;
 }
 
-bool QpxIsegVHSPlugin::write_setting(Gamma::Setting& set, int address_modifier) {
+bool QpxIsegVHSPlugin::write_setting(Gamma::Setting& set) {
   if (!(status_ & Qpx::DeviceStatus::booted))
     return false;
 
   if (set.metadata.setting_type == Gamma::SettingType::floating)
-    writeFloat(m_baseAddress + address_modifier + set.metadata.address, set.value_dbl);
+    writeFloat(m_baseAddress + set.metadata.address, set.value_dbl);
   else if (set.metadata.setting_type == Gamma::SettingType::binary) {
     if (set.metadata.maximum == 32)
-      writeLongBitfield(m_baseAddress + address_modifier + set.metadata.address, set.value_int);
+      writeLong(m_baseAddress + set.metadata.address, set.value_int);
     else if (set.metadata.maximum == 16)
-      writeShortBitfield(m_baseAddress + address_modifier + set.metadata.address, set.value_int);
+      writeShort(m_baseAddress + set.metadata.address, set.value_int);
     else {
       PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
       return false;
     }
+    return true;
   }
   else if ((set.metadata.setting_type == Gamma::SettingType::integer)
            || (set.metadata.setting_type == Gamma::SettingType::boolean)
            || (set.metadata.setting_type == Gamma::SettingType::int_menu))
   {
     if (set.metadata.hardware_type == "u32")
-      writeLong(m_baseAddress + address_modifier + set.metadata.address, set.value_int);
+      writeLong(m_baseAddress + set.metadata.address, set.value_int);
     else if (set.metadata.hardware_type == "u16")
-      writeShort(m_baseAddress + address_modifier + set.metadata.address, set.value_int);
+      writeShort(m_baseAddress + set.metadata.address, set.value_int);
     else {
       PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
       return false;
     }
+    return true;
   }
-  return true;
+  return false;
 }
 
 uint16_t QpxIsegVHSPlugin::readShort(int address) const
 {
   if (m_controller) {
-    return m_controller->readShort(address, VME_ADDRESS_MODIFIER);
+    return m_controller->readShort(address, AddressModifier::A16_Nonprivileged);
   } else {
     return 0;
   }
@@ -344,18 +377,8 @@ uint16_t QpxIsegVHSPlugin::readShort(int address) const
 void QpxIsegVHSPlugin::writeShort(int address, uint16_t data)
 {
   if (m_controller) {
-    m_controller->writeShort(address, VME_ADDRESS_MODIFIER, data);
+    m_controller->writeShort(address, AddressModifier::A16_Nonprivileged, data);
   }
-}
-
-uint16_t QpxIsegVHSPlugin::readShortBitfield(int address) const
-{
-  return readShort(address);
-}
-
-void QpxIsegVHSPlugin::writeShortBitfield(int address, uint16_t data)
-{
-  writeShort(address, data);
 }
 
 float QpxIsegVHSPlugin::readFloat(int address) const
@@ -418,47 +441,6 @@ void QpxIsegVHSPlugin::writeLong(int address, uint32_t data)
 #endif
 }
 
-uint32_t QpxIsegVHSPlugin::readLongBitfield(int address) const
-{
-  return readLong(address);
-}
-
-void QpxIsegVHSPlugin::writeLongBitfield(int address, uint32_t data)
-{
-  writeLong(address, data);
-}
-
-/**
- * Mirrors the Bit positions in a 16 bit word.
- */
-uint16_t QpxIsegVHSPlugin::mirrorShort(uint16_t data)
-{
-  uint16_t result = 0;
-
-  for (int i = 16; i; --i) {
-    result >>= 1;
-    result |= data & 0x8000;
-    data <<= 1;
-  }
-
-  return result;
-}
-
-/**
- * Mirrors the Bit positions in a 32 bit word.
- */
-uint32_t QpxIsegVHSPlugin::mirrorLong(uint32_t data)
-{
-  uint32_t result = 0;
-
-  for (int i = 32; i; --i) {
-    result >>= 1;
-    result |= data & 0x80000000;
-    data <<= 1;
-  }
-
-  return result;
-}
 
 //=============================================================================
 // Module Commands

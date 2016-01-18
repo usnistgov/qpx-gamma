@@ -23,14 +23,25 @@ public:
   virtual bool connect(int target);
   virtual bool connect(std::string target);
   virtual bool connected() { return (udev); }
-  virtual int systemReset();
+  virtual void systemReset();
 
   //virtual std::list<std::string> moduleList() {}
-  virtual void writeShort(int vmeAddress, int addressModifier, int data, int *errorCode = NULL);
-  virtual int  readShort(int vmeAddress, int addressModifier, int *errorCode = NULL);
+  virtual void writeShort(int vmeAddress, AddressModifier am, int data, int *errorCode = NULL);
+  virtual int  readShort(int vmeAddress, AddressModifier am, int *errorCode = NULL);
+
+  virtual void writeLong(int vmeAddress, AddressModifier am, long data, int *errorCode = NULL);
+  virtual long  readLong(int vmeAddress, AddressModifier am,            int *errorCode = NULL);
 
   virtual void writeRegister(long vmeAddress, long data, int *errorCode);
   virtual long readRegister(long vmeAddress, int *errorCode);
+
+  virtual void start_daq();
+  virtual void stop_daq();
+
+  virtual void clear_registers();
+  virtual void trigger_USB();
+  virtual void scaler_dump();
+  virtual void trigger_IRQ(short);
 
 private:
   boost::shared_ptr<boost::dll::shared_library> xxlib;

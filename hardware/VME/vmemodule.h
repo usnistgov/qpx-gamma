@@ -27,8 +27,8 @@ public:
   virtual bool    setBaseAddress(uint16_t baseAddress) {}
   virtual std::string address() const = 0;
 
-  virtual void    programBaseAddress(uint16_t address) = 0;
-  virtual uint16_t verifyBaseAddress() const = 0;
+  virtual void    programBaseAddress(uint16_t address) {}
+  virtual uint16_t verifyBaseAddress() { return 0; }
 };
 
 #endif // VmeModule_H

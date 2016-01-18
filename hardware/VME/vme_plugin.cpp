@@ -59,7 +59,7 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
               PL_DBG << "IRQ Mask read";
               // do something fancy
             } else {
-              PL_DBG << "VmUsb register read";
+//              PL_DBG << "VmUsb register read";
               read_register(k);
             }
           }
@@ -101,8 +101,7 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
       } else if (device_types.count(q.id_) && (q.id_.size() > 4) && (q.id_.substr(0,4) == "VME/")) {
         boost::filesystem::path dev_settings = path / q.value_text;
         modules_[q.id_] = dynamic_cast<VmeModule*>(DeviceFactory::getInstance().create_type(q.id_, dev_settings.string()));
-        PL_DBG << "added module " << q.id_ << " with settings at " << dev_settings.string()
-               << " produced from factory as " << modules_[q.id_]->plugin_name();
+        PL_DBG << "added module " << q.id_ << " with settings at " << dev_settings.string();
         modules_[q.id_]->write_settings_bulk(q);
       } else if (q.id_ == "VME/Registers") {
         for (auto &k : q.branches.my_data_) {
@@ -110,8 +109,12 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
             PL_DBG << "IRQ Mask write";
             // do something fancy
           } else {
-            PL_DBG << "VmUsb register write";
-            write_register(k);
+            Gamma::Setting s = k;
+            read_register(s);
+            if (s != k) {
+              PL_DBG << "VmUsb register write " << k.id_;
+              write_register(k);
+            }
           }
         }
       }
@@ -165,6 +168,7 @@ bool QpxVmePlugin::boot() {
   } else {
     PL_DBG << "<VmePlugin> Connected to " << controller_->controllerName()
            << " SN:" << controller_->serialNumber();
+    controller_->clear_registers();
   }
 
   bool success = false;
@@ -172,7 +176,7 @@ bool QpxVmePlugin::boot() {
   for (auto &q : modules_) {
     if ((q.second) && (!q.second->connected())) {
       PL_DBG << "module " << q.first << " not yet connected";
-      for (int base_address = 0; base_address < 0xFFFF; base_address += q.second->baseAddressSpaceLength()) {
+      for (long base_address = 0; base_address < 0xFFFFFFFF; base_address += q.second->baseAddressSpaceLength()) {
         q.second->connect(controller_, base_address);
 
         if (q.second->connected()) {
