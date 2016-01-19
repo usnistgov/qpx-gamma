@@ -88,11 +88,27 @@
 				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
 				<Setting id="VME/MADC32/Threshold" type="integer" index="-1" value="0" />
 			</Setting>
+			<Setting id="VME/MADC32/GateGenerator" type="stem" index="-1" />
 			<Setting id="VME/MADC32/IRQ_Settings" type="stem" index="-1" />
 			<Setting id="VME/MADC32/MCST_CBLT" type="stem" index="-1" />
 			<Setting id="VME/MADC32/FIFO_Handling" type="stem" index="-1" />
 			<Setting id="VME/MADC32/OperationMode" type="stem" index="-1" />
 			<Setting id="VME/MADC32/InputsOutputs" type="stem" index="-1" />
+			<Setting id="VME/MADC32/CountersA" type="stem" index="-1" />
+			<Setting id="VME/MADC32/CountersB" type="stem" index="-1" />
+			<Setting id="VME/MADC32/ModuleRC" type="stem" index="-1" />
+		</Setting>
+		<Setting id="VME/MTDC32" type="stem" index="-1" reference="/MTDC32.set">
+			<Setting id="VME/MTDC32/TestPulserThreshold" type="stem" index="-1" />
+			<Setting id="VME/MTDC32/MultiplicityFilter" type="stem" index="-1" />
+			<Setting id="VME/MTDC32/IRQ_Settings" type="stem" index="-1" />
+			<Setting id="VME/MTDC32/MCST_CBLT" type="stem" index="-1" />
+			<Setting id="VME/MTDC32/FIFO_Handling" type="stem" index="-1" />
+			<Setting id="VME/MTDC32/OperationMode" type="stem" index="-1" />
+			<Setting id="VME/MTDC32/InputsOutputs" type="stem" index="-1" />
+			<Setting id="VME/MTDC32/CountersA" type="stem" index="-1" />
+			<Setting id="VME/MTDC32/CountersB" type="stem" index="-1" />
+			<Setting id="VME/MTDC32/ModuleRC" type="stem" index="-1" />
 		</Setting>
 	</Setting>
 </Setting>

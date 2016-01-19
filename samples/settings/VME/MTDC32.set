@@ -1,0 +1,293 @@
+<?xml version="1.0"?>
+<MTDC32>
+	<SettingMeta id="VME/MTDC32" type="stem" name="MTDC32" address="-1" writable="true" saveworthy="false">
+		<branch address="0" id="VME/MTDC32/firmware_version" />
+        <branch address="1" id="VME/MTDC32/address_source" />
+		<branch address="2" id="VME/MTDC32/address_reg" />
+		<branch address="3" id="VME/MTDC32/module_id" />
+		<branch address="4" id="VME/MTDC32/soft_reset" />
+
+		<branch address="20" id="VME/MTDC32/IRQ_Settings" />
+		<branch address="21" id="VME/MTDC32/MCST_CBLT" />
+		<branch address="22" id="VME/MTDC32/FIFO_Handling" />
+		<branch address="23" id="VME/MTDC32/OperationMode" />
+		<branch address="24" id="VME/MTDC32/InputsOutputs" />
+		<branch address="25" id="VME/MTDC32/CountersA" />
+		<branch address="26" id="VME/MTDC32/CountersB" />
+		
+		<branch address="50" id="VME/MTDC32/ModuleRC" />
+
+		<branch address="10" id="VME/MTDC32/TestPulserThreshold" />
+		<branch address="11" id="VME/MTDC32/Trigger" />
+		<branch address="12" id="VME/MTDC32/MultiplicityFilter" />
+
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/firmware_version" type="floating" name="Firmware version" address="24590" writable="false"/>
+	<SettingMeta id="VME/MTDC32/address_source" type="int_menu" name="Address source" address="24576" writable="true">
+		<menu_item item_value="0" item_text="From board coder" />
+		<menu_item item_value="1" item_text="From address register" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/address_reg" type="integer" name="Address override" address="24578" maximum="65535" writable="true"/>
+	<SettingMeta id="VME/MTDC32/module_id" type="integer" name="Module ID" address="24580" maximum="255" writable="true" description="Written to data header; if 0xFF: high bits of base address used"/>
+	<SettingMeta id="VME/MTDC32/soft_reset" type="command" name="Soft reset" address="24584" writable="false" visible="true" saveworthy="false" description="Break all activities, set critical params to default"/>
+
+	<SettingMeta id="VME/MTDC32/IRQ_Settings" type="stem" name="IRQ Settings" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MTDC32/irq_level" />
+		<branch address="1" id="VME/MTDC32/irq_vector" />
+        <branch address="2" id="VME/MTDC32/irq_test" />
+        <branch address="3" id="VME/MTDC32/irq_reset" />
+        <branch address="4" id="VME/MTDC32/irq_threshold" />
+		<branch address="5" id="VME/MTDC32/max_transfer_data" />
+        <branch address="6" id="VME/MTDC32/withdraw_IRQ" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/irq_level" type="integer" name="IRQ priority" address="24592" maximum="7" writable="true" description="0: off"/>
+	<SettingMeta id="VME/MTDC32/irq_vector" type="integer" name="IRQ return value" address="24594" maximum="255" writable="true" />
+	<SettingMeta id="VME/MTDC32/irq_test" type="command" name="IRQ test" address="24596" writable="false" visible="true" saveworthy="false" />
+	<SettingMeta id="VME/MTDC32/irq_reset" type="command" name="IRQ reset" address="24598" writable="false" visible="true" saveworthy="false" />
+	<SettingMeta id="VME/MTDC32/withdraw_IRQ" type="boolean" name="Withdraw IRQ" address="24604" writable="true" description="withdraw IRQ when FIFO empty"/>
+
+	<SettingMeta id="VME/MTDC32/MCST_CBLT" type="stem" name="MCST/CBLT settings" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MTDC32/cblt_mcst_control_r" />
+        <branch address="1" id="VME/MTDC32/cblt_mcst_control_w" />
+        <branch address="2" id="VME/MTDC32/cblt_address" />
+        <branch address="3" id="VME/MTDC32/mcst_address" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/cblt_mcst_control_r" type="binary" name="CBLT/MCST control (read)" address="24608" writable="false" word_size="8">
+		<flag bit="0" description="CBLT enabled" />
+		<flag bit="2" description="Last module in CBLT chain" />
+		<flag bit="4" description="First module in CBLT chain" />
+		<flag bit="6" description="MCST enabled" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/cblt_mcst_control_w" type="binary" name="CBLT/MCST control (write)" address="24608" writable="true" word_size="8">
+		<flag bit="0" description="Disable CBLT" />
+		<flag bit="1" description="Enable CBLT" />
+		<flag bit="2" description="Disable last module in CBLT chain" />
+		<flag bit="3" description="Enable last module in CBLT chain" />
+		<flag bit="4" description="Disable first module in CBLT chain" />
+		<flag bit="5" description="Enable first module in CBLT chain" />
+		<flag bit="6" description="Disable MCST" />
+		<flag bit="7" description="Enable MCST" />
+	</SettingMeta>
+
+
+	<SettingMeta id="VME/MTDC32/FIFO_Handling" type="stem" name="FIFO Handling" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MTDC32/buffer_data_length" />
+        <branch address="1" id="VME/MTDC32/data_length_format" />
+        <branch address="2" id="VME/MTDC32/readout_reset" />
+        <branch address="3" id="VME/MTDC32/multi_event" />
+        <branch address="4" id="VME/MTDC32/marking_type" />
+   		<branch address="5" id="VME/MTDC32/start_acq" />
+		<branch address="6" id="VME/MTDC32/FIFO_reset" />
+		<branch address="7" id="VME/MTDC32/data_ready" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/buffer_data_length" type="integer" name="Buffer length" address="24624" maximum="65535" writable="false" unit="words (!)" description="number of words in buffer, word size = data_length_format"/>
+	<SettingMeta id="VME/MTDC32/data_length_format" type="int_menu" name="Data length format" address="24626" writable="true">
+		<menu_item item_value="0" item_text="8 bits"/>
+        <menu_item item_value="1" item_text="16 bits"/>
+        <menu_item item_value="2" item_text="32 bits"/>
+        <menu_item item_value="3" item_text="64 bits"/>
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/readout_reset" type="command" name="Readout reset" address="24628" writable="false" visible="true" saveworthy="false" description="Depends on multi_event (page 8)"/>
+	<SettingMeta id="VME/MTDC32/multi_event" type="binary" name="Multi-event settings" address="24630" writable="true" word_size="2">
+		<flag bit="0" description="VME/MTDC32/multi_event/mode" />
+		<flag bit="2" description="Send EOB (bits31:30,= bx10) instead of BERR" />
+		<flag bit="3" description="Count events, not words, compare with max_transfer_data" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/multi_event/mode" type="int_menu" name="Multi-event mode" address="0" writable="true">
+		<menu_item item_value="0" item_text="disabled" />
+		<menu_item item_value="1" item_text="unlimited, no reset" />
+		<menu_item item_value="3" item_text="limited, emits BERR" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/marking_type" type="int_menu" name="Event marking type" address="24632" writable="true">
+		<menu_item item_value="0" item_text="event counter" />
+		<menu_item item_value="1" item_text="time stamp" />
+		<menu_item item_value="3" item_text="extended time stamp" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/start_acq" type="boolean" name="Start accepting gates" address="24634" writable="true" description=""/>
+	<SettingMeta id="VME/MTDC32/FIFO_reset" type="command" name="Initialize FIFO" address="24636" writable="false" visible="true" saveworthy="false" description="Must wrap in disable and reenable start_daq"/>
+	<SettingMeta id="VME/MTDC32/data_ready" type="boolean" name="Data available" address="24638" writable="false" />
+
+
+	<SettingMeta id="VME/MTDC32/CountersA" type="stem" name="Counters A" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MTDC32/reset_ctr_ab" />
+        <branch address="1" id="VME/MTDC32/evctr_lo" />
+        <branch address="2" id="VME/MTDC32/evctr_hi" />
+		<branch address="3" id="VME/MTDC32/ts_sources" />
+        <branch address="4" id="VME/MTDC32/ts_divisor" />
+		<branch address="5" id="VME/MTDC32/ts_counter_lo" />
+        <branch address="6" id="VME/MTDC32/ts_counter_hi" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/reset_ctr_ab" type="binary" name="Reset counters A/B" address="24720" writable="true" word_size="4" description="add up?">
+		<flag bit="0" description="reset all counters in CTRA" />
+		<flag bit="1" description="reset all counters in CTRB" />
+		<flag bit="2" description="VME/MTDC32/reset_ctr_ab/allow_singleshot" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/reset_ctr_ab/allow_singleshot" type="int_menu" name="allow single shot reset for CTRA" address="2" writable="true" description="">
+		<flag item_value="0" item_text="nothing to report" />
+		<flag item_value="1" item_text="counter was reset" />
+		<flag item_value="2" item_text="allow" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/evctr_lo" type="integer" name="Event counter low"  address="24722" writable="false" description=""/>
+	<SettingMeta id="VME/MTDC32/evctr_hi" type="integer" name="Event counter high" address="24724" writable="false" description=""/>
+	<SettingMeta id="VME/MTDC32/ts_sources" type="binary" name="Time stamp sources" address="24726" writable="true" word_size="4" description="">
+		<flag bit="0" description="Frequency source (0:VME, 1:external)" />
+		<flag bit="1" description="External reset enable" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/ts_divisor" type="integer" name="Timestamp divisor"  address="24728" maximum="65535" writable="true" description="0->35536" />
+	<SettingMeta id="VME/MTDC32/ts_counter_lo" type="integer" name="Timestamp low"  address="24730" writable="false" description=""/>
+	<SettingMeta id="VME/MTDC32/ts_counter_hi" type="integer" name="Timestamp high" address="24732" writable="false" description=""/>
+
+	<SettingMeta id="VME/MTDC32/ModuleRC" type="stem" name="Mesytec control bus" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MTDC32/rc_busno" />
+        <branch address="1" id="VME/MTDC32/rc_modnum" />
+        <branch address="2" id="VME/MTDC32/rc_opcode" />
+		<branch address="3" id="VME/MTDC32/rc_adr" />
+        <branch address="4" id="VME/MTDC32/rc_dat" />
+		<branch address="5" id="VME/MTDC32/rc_return_status" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/rc_busno" type="integer" name="RC Bus number"  address="24704" maximum="3" writable="true" description=""/>
+	<SettingMeta id="VME/MTDC32/rc_modnum" type="integer" name="RC external module"  address="24706" maximum="15" writable="true" description=""/>
+	<SettingMeta id="VME/MTDC32/rc_opcode" type="int_menu" name="RC opcode" address="24708" writable="true" description="">
+		<flag item_value="3" item_text="RC_on" />
+		<flag item_value="4" item_text="RC_off" />
+		<flag item_value="6" item_text="read_id" />
+		<flag item_value="16" item_text="write_data" />
+		<flag item_value="18" item_text="read_data" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/rc_adr" type="integer" name="RC module internal address"  address="24710" maximum="255" writable="true" description=""/>
+	<SettingMeta id="VME/MTDC32/rc_dat" type="integer" name="RC data"  address="24712" maximum="65535" writable="true" description=""/>
+	<SettingMeta id="VME/MTDC32/rc_return_status" type="binary" name="RC send return status" address="24714" writable="true" word_size="4" description="">
+		<flag bit="0" description="active" />
+		<flag bit="1" description="address collision" />
+		<flag bit="2" description="no response from bus (no valid address)" />
+	</SettingMeta>
+	
+	
+	
+	<SettingMeta id="VME/MTDC32/irq_threshold" type="integer" name="IRQ Threshold" address="24600" maximum="32767" writable="true" unit="32 bit words" description="IRQ emitted when FIFO exceeds this"/>
+	<SettingMeta id="VME/MTDC32/max_transfer_data" type="integer" name="Maximum words transferred" address="24602" maximum="32767" writable="true" unit="32 bit words" description="max events before footer (mode 3), 0: unlimited, 1: 1 event/xfer"/>
+
+	<SettingMeta id="VME/MTDC32/TestPulserThreshold" type="stem" name="Test pulser / threshold" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MTDC32/pulser_status" />
+        <branch address="1" id="VME/MTDC32/pulser_pattern" />
+        <branch address="2" id="VME/MTDC32/bank0_input_thr" />
+        <branch address="3" id="VME/MTDC32/bank1_input_thr" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/pulser_status" type="boolean" name="Test pulser status" address="24688" writable="true" description="" />
+	<SettingMeta id="VME/MTDC32/pulser_pattern" type="integer" name="Pulser pattern"  address="24690" maximum="31" writable="true" description="Pulser position"/>
+	<SettingMeta id="VME/MTDC32/bank0_input_thr" type="integer" name="Discriminator for unipolar input 0"  address="24692" maximum="255" writable="true" description=""/>
+	<SettingMeta id="VME/MTDC32/bank1_input_thr" type="integer" name="Discriminator for unipolar input 1"  address="24694" maximum="255" writable="true" description=""/>
+
+
+	<SettingMeta id="VME/MTDC32/OperationMode" type="stem" name="Operation mode" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MTDC32/bank_operation" />
+        <branch address="1" id="VME/MTDC32/tdc_resolution" />
+        <branch address="2" id="VME/MTDC32/output_format" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/bank_operation" type="int_menu" name="Bank operation options" address="24640" writable="true">
+		<menu_item item_value="0" item_text="banks connected" />
+		<menu_item item_value="1" item_text="operate banks independently" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/tdc_resolution" type="int_menu" name="TDC resolution" address="24642" writable="true">
+		<menu_item item_value="2" item_text="3.9ps 1ns/256" />
+		<menu_item item_value="3" item_text="7.8ps 1ns/128" />
+		<menu_item item_value="4" item_text="15.6ps 1ns/64" />
+		<menu_item item_value="5" item_text="31.3ps 1ns/32" />
+		<menu_item item_value="6" item_text="62.5ps 1ns/16" />
+		<menu_item item_value="7" item_text="125ps" />
+		<menu_item item_value="8" item_text="250ps" />
+		<menu_item item_value="9" item_text="500ps" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/output_format" type="int_menu" name="Output format" address="24644" writable="true">
+		<menu_item item_value="0" item_text="Standard (time difference)" />
+		<menu_item item_value="1" item_text="Single hit full time stamp" />
+	</SettingMeta>
+
+	<SettingMeta id="VME/MTDC32/InputsOutputs" type="stem" name="Inputs &amp; outputs" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MTDC32/negative_edge"/>
+        <branch address="1" id="VME/MTDC32/ECL_term"/>
+        <branch address="2" id="VME/MTDC32/ECL_trig1_osc"/>
+        <branch address="3" id="VME/MTDC32/trig_select"/>
+        <branch address="4" id="VME/MTDC32/NIM_trig1_osc"/>
+        <branch address="5" id="VME/MTDC32/NIM_busy"/>
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/negative_edge" type="boolean" name="Negative edge" address="24672" writable="true" description="Neg edge(dif. input jmp) / Rising edge (unip. input jmp)" />
+	<SettingMeta id="VME/MTDC32/ECL_term" type="binary" name="ECL/LVDS terminators" address="24674" writable="true" word_size="3" description="">
+		<flag bit="0" description="trig0" />
+		<flag bit="1" description="trig1" />
+		<flag bit="2" description="reset" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/ECL_trig1_osc" type="int_menu" name="ECL trig1" address="24676" writable="true" description="must also set...">
+		<flag item_value="0" item_text="trig1 input" />
+		<flag item_value="1" item_text="oscillator input" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/trig_select" type="int_menu" name="Trigger select" address="24680" writable="true" description="">
+		<flag item_value="0" item_text="0 and 1 from NIM" />
+		<flag item_value="1" item_text="0 and 1 from ECL" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/NIM_trig1_osc" type="int_menu" name="NIM trig1" address="24682" writable="true" description="must also set ...">
+		<flag item_value="0" item_text="trig1 input" />
+		<flag item_value="1" item_text="oscillator input" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/NIM_busy" type="int_menu" name="NIM busy" address="24686" writable="true" description="8 superimpose???">
+		<flag item_value="0" item_text="as busy (FIFO full/ACQ stopped)" />
+		<flag item_value="3" item_text="as Cbus output" />
+	</SettingMeta>
+
+	<SettingMeta id="VME/MTDC32/CountersB" type="stem" name="Counters B" writable="true" saveworthy="false">
+        <branch address="4" id="VME/MTDC32/time_0" />
+		<branch address="5" id="VME/MTDC32/time_1" />
+        <branch address="6" id="VME/MTDC32/time_2" />
+        <branch address="7" id="VME/MTDC32/stop_ctr" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/time_0" type="integer" name="Time low"  address="24744" writable="false" description=""/>
+	<SettingMeta id="VME/MTDC32/time_1" type="integer" name="Time mid" address="24746" writable="false" description=""/>
+	<SettingMeta id="VME/MTDC32/time_2" type="integer" name="Time high" address="24748" writable="false" description=""/>
+	<SettingMeta id="VME/MTDC32/stop_ctr" type="binary" name="Stop counters" address="24750" writable="true" word_size="4" description="">
+		<flag bit="0" description="Stop all counter B" />
+		<flag bit="1" description="Stop time stamp counter A" />
+	</SettingMeta>
+
+	<SettingMeta id="VME/MTDC32/Trigger" type="stem" name="Trigger" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MTDC32/bank0_win_start" />
+		<branch address="1" id="VME/MTDC32/bank1_win_start" />
+        <branch address="2" id="VME/MTDC32/bank0_win_width" />
+        <branch address="3" id="VME/MTDC32/bank1_win_width" />
+        <branch address="4" id="VME/MTDC32/bank0_trig_source" />
+        <branch address="5" id="VME/MTDC32/bank1_trig_source" />
+        <branch address="6" id="VME/MTDC32/first_hit" />
+	</SettingMeta>
+
+
+	<SettingMeta id="VME/MTDC32/MultiplicityFilter" type="stem" name="Multiplicity filter" writable="true" saveworthy="false">
+        <branch address="0" id="VME/MTDC32/high_limit0" />
+		<branch address="1" id="VME/MTDC32/low_limit0" />
+        <branch address="2" id="VME/MTDC32/high_limit1" />
+        <branch address="3" id="VME/MTDC32/low_limit1" />
+	</SettingMeta>
+	<SettingMeta id="VME/MTDC32/high_limit0" type="integer" name="Bank 0 upper limit" address="24752" maximum="255" writable="true" description=""/>
+	<SettingMeta id="VME/MTDC32/low_limit0"  type="integer" name="Bank 0 lower limit" address="24754" maximum="255" writable="true" description=""/>
+	<SettingMeta id="VME/MTDC32/high_limit1" type="integer" name="Bank 1 upper limit" address="24756" maximum="255" writable="true" description=""/>
+	<SettingMeta id="VME/MTDC32/low_limit1"  type="integer" name="Bank 1 lower limit" address="24758" maximum="255" writable="true" description=""/>
+
+
+	<SettingMeta id="VME/MTDC32/dummy for cut and paste purposes" type="binary" name="T" address="0" writable="false" word_size="16">
+		<flag bit="0" description="" />
+		<flag bit="1" description="" />
+		<flag bit="2" description="" />
+		<flag bit="3" description="" />
+		<flag bit="4" description="" />
+		<flag bit="5" description="" />
+		<flag bit="6" description="" />
+		<flag bit="7" description="" />
+		<flag bit="8" description="" />
+		<flag bit="9" description="" />
+		<flag bit="10" description="" />
+		<flag bit="11" description="" />
+		<flag bit="12" description="" />
+		<flag bit="13" description="" />
+		<flag bit="14" description="" />
+		<flag bit="15" description="" />
+	</SettingMeta>
+
+</MTDC32>
