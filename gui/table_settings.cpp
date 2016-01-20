@@ -393,7 +393,10 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
       if (item == Gamma::Setting())
         return false;
 
-      if (((item.metadata.setting_type == Gamma::SettingType::integer) || (item.metadata.setting_type == Gamma::SettingType::int_menu) || (item.metadata.setting_type == Gamma::SettingType::binary))
+      if (((item.metadata.setting_type == Gamma::SettingType::integer)
+           || (item.metadata.setting_type == Gamma::SettingType::int_menu)
+           || (item.metadata.setting_type == Gamma::SettingType::binary)
+           || (item.metadata.setting_type == Gamma::SettingType::command))
           && (value.canConvert(QMetaType::LongLong)))
         item.value_int = value.toLongLong();
       else if ((item.metadata.setting_type == Gamma::SettingType::boolean)

@@ -283,11 +283,6 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
   }
 
   engine_.write_settings_bulk();
-  Gamma::Setting set = Gamma::Setting("Adjust offsets");
-  set.value_dbl = 1;
-  engine_.set_setting(set, Gamma::Match::name);
-  engine_.execute_command();
-
   engine_.get_all_settings();
 
   return true;

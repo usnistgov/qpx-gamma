@@ -139,20 +139,6 @@ void ThreadRunner::do_shutdown() {
     start(HighPriority);
 }
 
-void ThreadRunner::do_execute_command(const Gamma::Setting &setting) {
-  if (running_.load()) {
-    PL_WARN << "Runner busy";
-    return;
-  }
-  QMutexLocker locker(&mutex_);
-  terminating_.store(false);
-  one_setting_ = setting;
-  //tree_ = tree;
-  action_ = kExecuteCommand;
-  if (!isRunning())
-    start(HighPriority);
-}
-
 void ThreadRunner::do_push_settings(const Gamma::Setting &tree) {
   if (running_.load()) {
     PL_WARN << "Runner busy";
@@ -299,16 +285,6 @@ void ThreadRunner::run()
       engine_.save_optimization();
       action_ = kNone;
       emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
-    } else if (action_ == kExecuteCommand) {
-      engine_.set_setting(one_setting_, Gamma::Match::id | Gamma::Match::index);
-      //engine_.push_settings(tree_);
-      bool success = engine_.execute_command();
-      if (success) {
-        engine_.get_all_settings();
-        engine_.save_optimization();
-      }
-      action_ = kNone;
-      emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kPushSettings) {
       engine_.push_settings(tree_);
       engine_.get_all_settings();
@@ -334,10 +310,6 @@ void ThreadRunner::run()
         engine_.load_optimization(q.first);
       }
       engine_.write_settings_bulk();
-      Gamma::Setting set = Gamma::Setting("Adjust offsets");
-      set.value_dbl = 1;
-      engine_.set_setting(set, Gamma::Match::name);
-      engine_.execute_command();
 
       //XDT?
 

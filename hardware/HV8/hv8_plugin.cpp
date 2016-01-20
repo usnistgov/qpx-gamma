@@ -188,25 +188,6 @@ void QpxHV8Plugin::set_voltage(int chan, double voltage) {
 
 }
 
-
-bool QpxHV8Plugin::execute_command(Gamma::Setting &set) {
-  if (!(status_ & DeviceStatus::can_exec))
-    return false;
-
-  if (set.id_ == device_name()) {
-    for (auto &q : set.branches.my_data_) {
-      if ((q.metadata.setting_type == Gamma::SettingType::command) && (q.value_int == 1)) {
-        q.value_dbl = 0;
-        if (q.id_ == "Vme/Iseg/Sing a song")
-          return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-
 bool QpxHV8Plugin::get_prompt(uint16_t attempts) {
   bool success = false;
   bool logged = false;

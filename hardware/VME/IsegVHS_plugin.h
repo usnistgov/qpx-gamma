@@ -51,8 +51,6 @@ public:
   bool boot() override;
   bool die() override;
 
-  bool execute_command(Gamma::Setting &set) override;
-
   //VmeModule
   virtual bool    connect(VmeController *controller, int baseAddress);
   virtual bool    connected() const;

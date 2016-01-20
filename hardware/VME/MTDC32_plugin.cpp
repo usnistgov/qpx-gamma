@@ -55,22 +55,18 @@ MTDC32::~MTDC32() {
 
 
 bool MTDC32::read_settings_bulk(Gamma::Setting &set) const {
-  if (set.id_ == "VME/MTDC32") {
+  if (set.id_ != device_name())
+    return false;
+
     for (auto &k : set.branches.my_data_) {
-      if (k.metadata.setting_type == Gamma::SettingType::command) {
-        k.metadata.writable =  ((status_ & DeviceStatus::can_exec) != 0);
-        //PL_DBG << "command " << p.id_ << p.index << " now " << p.metadata.writable;
-      } else if (k.metadata.setting_type != Gamma::SettingType::stem)
+      if (k.metadata.setting_type != Gamma::SettingType::stem)
       {
         if (!read_setting(k)) {}
 //          PL_DBG << "Could not read " << k.id_;
       }
       else  {
         for (auto &p : k.branches.my_data_) {
-          if (p.metadata.setting_type == Gamma::SettingType::command) {
-            p.metadata.writable =  ((status_ & DeviceStatus::can_exec) != 0);
-            //PL_DBG << "command " << p.id_ << p.index << " now " << p.metadata.writable;
-          } else if (k.metadata.setting_type != Gamma::SettingType::stem) {
+          if (k.metadata.setting_type != Gamma::SettingType::stem) {
             if (!read_setting(p)) {}
 //              PL_DBG << "Could not read " << p.id_;
           }
@@ -78,63 +74,38 @@ bool MTDC32::read_settings_bulk(Gamma::Setting &set) const {
       }
     }
 
-  }
   return true;
 }
 
 void MTDC32::rebuild_structure(Gamma::Setting &set) {
-  for (auto &k : set.branches.my_data_) {
-    if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/MTDC32/ChannelThresholds")) {
-//        PL_DBG << "writing VME/MTDC32/Channel";
-      while (k.branches.size() > 32) {
-        k.branches.my_data_.pop_back();
-      }
 
-      Gamma::Setting temp = k.branches.get(0);
-      temp.indices.clear();
-      temp.index = -1;
-      while (k.branches.size() < 32) {
-        k.branches.my_data_.push_back(temp);
-      }
-
-
-      uint32_t offset = k.metadata.address;
-
-      std::set<int32_t> indices;
-      int address = 0;
-      for (auto &p : k.branches.my_data_) {
-        p.metadata.address = offset + address * 2;
-        ++address;
-      }
-    }
-  }
 }
 
 
 bool MTDC32::write_settings_bulk(Gamma::Setting &set) {
+  if (set.id_ != device_name())
+    return false;
+
   set.enrich(setting_definitions_);
 
-  if (set.id_ == "VME/MTDC32") {
-//    PL_DBG << "writing VME/MTDC32";
-    rebuild_structure(set);
+  rebuild_structure(set);
 
-    for (auto &k : set.branches.my_data_) {
-      if (k.metadata.setting_type != Gamma::SettingType::stem) {
-        Gamma::Setting s = k;
-        if (k.metadata.writable && read_setting(s) && (s != k)) {
-//          PL_DBG << "writing " << k.id_;
-          if (!write_setting(k)) {}
-//            PL_DBG << "Could not write " << k.id_;
-        }
-      } else {
-        for (auto &p : k.branches.my_data_) {
-          if (k.metadata.setting_type != Gamma::SettingType::stem) {
-            Gamma::Setting s = p;
-            if (p.metadata.writable && read_setting(s) && (s != p)) {
-//              PL_DBG << "writing " << p.id_;
-              if (!write_setting(p)) {}
-//                PL_DBG << "Could not write " << k.id_;
-            }
+  for (auto &k : set.branches.my_data_) {
+    if (k.metadata.setting_type != Gamma::SettingType::stem) {
+      Gamma::Setting s = k;
+      if (k.metadata.writable && read_setting(s) && (s != k)) {
+        //          PL_DBG << "writing " << k.id_;
+        if (!write_setting(k)) {}
+        //            PL_DBG << "Could not write " << k.id_;
+      }
+    } else {
+      for (auto &p : k.branches.my_data_) {
+        if (k.metadata.setting_type != Gamma::SettingType::stem) {
+          Gamma::Setting s = p;
+          if (p.metadata.writable && read_setting(s) && (s != p)) {
+            //              PL_DBG << "writing " << p.id_;
+            if (!write_setting(p)) {}
+            //                PL_DBG << "Could not write " << k.id_;
           }
         }
       }
@@ -142,32 +113,6 @@ bool MTDC32::write_settings_bulk(Gamma::Setting &set) {
   }
   return true;
 }
-
-bool MTDC32::execute_command(Gamma::Setting &set) {
-  if (!(status_ & DeviceStatus::can_exec))
-    return false;
-
-  //  if (set.id_ != device_name())
-  //    return false;
-
-  if (set.id_ == "VME/MTDC32") {
-
-    for (auto &k : set.branches.my_data_) {
-      if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/MTDC32/Channel")) {
-
-        uint16_t channum = k.index;
-        for (auto &p : k.branches.my_data_) {
-
-          if ((p.metadata.setting_type == Gamma::SettingType::command) && (p.value_int == 1)) {
-
-          }
-        }
-      }
-    }
-  }
-  return false;
-}
-
 
 bool MTDC32::boot() {
   if (!(status_ & DeviceStatus::can_boot)) {
@@ -182,7 +127,7 @@ bool MTDC32::boot() {
     return false;
   }
 
-  status_ = DeviceStatus::loaded | DeviceStatus::booted | DeviceStatus::can_exec;
+  status_ = DeviceStatus::loaded | DeviceStatus::booted;
   return true;
 }
 
@@ -227,13 +172,17 @@ std::string MTDC32::address() const {
 }
 
 bool MTDC32::read_setting(Gamma::Setting& set) const {
+  if (set.metadata.setting_type == Gamma::SettingType::command)
+    set.metadata.writable =  ((status_ & DeviceStatus::booted) != 0);
+
   if (!(status_ & Qpx::DeviceStatus::booted))
     return false;
 
   if ((set.metadata.setting_type == Gamma::SettingType::binary)
-           || (set.metadata.setting_type == Gamma::SettingType::integer)
-           || (set.metadata.setting_type == Gamma::SettingType::boolean)
-           || (set.metadata.setting_type == Gamma::SettingType::int_menu))
+      || (set.metadata.setting_type == Gamma::SettingType::command)
+      || (set.metadata.setting_type == Gamma::SettingType::integer)
+      || (set.metadata.setting_type == Gamma::SettingType::boolean)
+      || (set.metadata.setting_type == Gamma::SettingType::int_menu))
   {
     set.value_int = readShort(m_baseAddress + set.metadata.address);
   } else if (set.metadata.setting_type == Gamma::SettingType::floating) {
@@ -247,9 +196,10 @@ bool MTDC32::write_setting(Gamma::Setting& set) {
     return false;
 
   if ((set.metadata.setting_type == Gamma::SettingType::binary)
-        || (set.metadata.setting_type == Gamma::SettingType::integer)
-        || (set.metadata.setting_type == Gamma::SettingType::boolean)
-        || (set.metadata.setting_type == Gamma::SettingType::int_menu))
+      || (set.metadata.setting_type == Gamma::SettingType::command)
+      || (set.metadata.setting_type == Gamma::SettingType::integer)
+      || (set.metadata.setting_type == Gamma::SettingType::boolean)
+      || (set.metadata.setting_type == Gamma::SettingType::int_menu))
   {
     writeShort(m_baseAddress + set.metadata.address, set.value_int);
   } else if (set.metadata.setting_type == Gamma::SettingType::floating) {
@@ -295,8 +245,13 @@ void MTDC32::writeFloat(int address, float data)
 
 std::string MTDC32::firmwareName() const
 {
-  int firmware = readShort(m_baseAddress + MTDC32_Firmware_Address);
-  return std::to_string(firmware);
+  uint16_t firmware = readShort(m_baseAddress + MTDC32_Firmware_Address);
+
+  std::stringstream stream;
+  stream << "0x" << std::setfill ('0') << std::setw(sizeof(uint16_t)*2)
+         << std::hex << firmware;
+
+  return stream.str();
 }
 
 

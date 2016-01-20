@@ -218,23 +218,6 @@ bool Engine::write_settings_bulk(){
   return true;
 }
 
-bool Engine::execute_command(){
-
-  bool success = false;
-  for (auto &set : settings_tree_.branches.my_data_) {
-    if (devices_.count(set.id_)) {
-      //PL_DBG << "execute > " << set.id_;
-      if ((devices_[set.id_] != nullptr) && (devices_[set.id_]->status() & DeviceStatus::can_exec) &&
-          (devices_[set.id_]->execute_command(set)))
-        success = true;
-    }
-  }
-  if (success)
-    get_all_settings();
-
-  return success;
-}
-
 bool Engine::boot() {
   PL_INFO << "<Engine> Booting system...";
 

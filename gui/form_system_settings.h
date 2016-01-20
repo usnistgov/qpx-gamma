@@ -79,10 +79,9 @@ private slots:
   void chose_detector(int chan, std::string name);
 
   void ask_binary_tree(Gamma::Setting, QModelIndex index);
-  void ask_execute_tree(Gamma::Setting);
+  void ask_execute_tree(Gamma::Setting, QModelIndex index);
   void ask_binary_table(Gamma::Setting, QModelIndex index);
-  void ask_execute_table(Gamma::Setting);
-  void execute_command(Gamma::Setting);
+  void ask_execute_table(Gamma::Setting, QModelIndex index);
 
   void on_checkShowRO_clicked();
   void on_bootButton_clicked();

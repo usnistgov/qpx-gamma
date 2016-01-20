@@ -312,7 +312,7 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
       emit ask_binary(set, index);
       return nullptr;
     } else if ((set.metadata.setting_type == Gamma::SettingType::command) && (set.metadata.writable))  {
-      emit ask_execute(set);
+      emit ask_execute(set, index);
       return nullptr;
     } else if (set.metadata.setting_type == Gamma::SettingType::text) {
       QLineEdit *editor = new QLineEdit(parent);

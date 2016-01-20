@@ -46,8 +46,6 @@ public:
   bool boot() override;
   bool die() override;
 
-  bool execute_command(Gamma::Setting &set) override;
-
 private:
   //no copying
   void operator=(QpxHV8Plugin const&);

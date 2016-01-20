@@ -87,7 +87,6 @@ public:
   
   void get_all_settings();
   
-  bool execute_command();
 
   std::vector<Trace> oscilloscope();
   

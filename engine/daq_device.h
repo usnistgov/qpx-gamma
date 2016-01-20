@@ -34,9 +34,8 @@ enum DeviceStatus {
   loaded    = 1 << 0,
   booted    = 1 << 1,
   can_boot  = 1 << 2,
-  can_exec  = 1 << 3,
-  can_run   = 1 << 4,
-  can_oscil = 1 << 5
+  can_run   = 1 << 3,
+  can_oscil = 1 << 4
 };
 
 inline DeviceStatus operator|(DeviceStatus a, DeviceStatus b) {return static_cast<DeviceStatus>(static_cast<int>(a) | static_cast<int>(b));}
@@ -65,7 +64,6 @@ public:
   virtual bool read_settings_bulk(Gamma::Setting &set) const {return false;}
   virtual void get_all_settings() {}
 
-  virtual bool execute_command(Gamma::Setting &set) {return false;}
   virtual std::map<int, std::vector<uint16_t>> oscilloscope() {return std::map<int, std::vector<uint16_t>>();}
 
 

@@ -47,21 +47,22 @@ QpxVmePlugin::~QpxVmePlugin() {
 
 
 bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
-  if (set.id_ == device_name()) {
-    for (auto &q : set.branches.my_data_) {
-      if (q.metadata.setting_type == Gamma::SettingType::stem) {
-        if (modules_.count(q.id_) && modules_.at(q.id_)) {
-//          PL_DBG << "read settings bulk " << q.id_;
-          modules_.at(q.id_)->read_settings_bulk(q);
-        } else if (q.id_ == "VME/Registers") {
-          for (auto &k : q.branches.my_data_) {
-            if (k.id_ == "VME/Registers/IRQ_Mask") {
-//              PL_DBG << "IRQ Mask read";
-              // do something fancy
-            } else {
-//              PL_DBG << "VmUsb register read";
-              read_register(k);
-            }
+  if (set.id_ != device_name())
+    return false;
+
+  for (auto &q : set.branches.my_data_) {
+    if (q.metadata.setting_type == Gamma::SettingType::stem) {
+      if (modules_.count(q.id_) && modules_.at(q.id_)) {
+        //          PL_DBG << "read settings bulk " << q.id_;
+        modules_.at(q.id_)->read_settings_bulk(q);
+      } else if (q.id_ == "VME/Registers") {
+        for (auto &k : q.branches.my_data_) {
+          if (k.id_ == "VME/Registers/IRQ_Mask") {
+            //              PL_DBG << "IRQ Mask read";
+            // do something fancy
+          } else {
+            //              PL_DBG << "VmUsb register read";
+            read_register(k);
           }
         }
       }
@@ -76,10 +77,10 @@ void QpxVmePlugin::rebuild_structure(Gamma::Setting &set) {
 
 
 bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
-  set.enrich(setting_definitions_);
-
   if (set.id_ != device_name())
     return false;
+
+  set.enrich(setting_definitions_);
 
   boost::filesystem::path dir(profile_path_);
   dir.make_preferred();
@@ -110,8 +111,7 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
             // do something fancy
           } else {
             Gamma::Setting s = k;
-            read_register(s);
-            if (s != k) {
+            if (s.metadata.writable && read_register(s) && (s != k)) {
               PL_DBG << "VmUsb register write " << k.id_;
               write_register(k);
             }
@@ -121,26 +121,6 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
     }
   }
   return true;
-}
-
-bool QpxVmePlugin::execute_command(Gamma::Setting &set) {
-  if (!(status_ & DeviceStatus::can_exec))
-    return false;
-
-  if (set.id_ != device_name())
-    return false;
-
-  for (auto &q : set.branches.my_data_) {
-    if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "VME/IsegVHS")) {
-      if (modules_.count(q.id_)) {
-      QpxIsegVHSPlugin *mod = dynamic_cast<QpxIsegVHSPlugin*>(modules_.at(q.id_));
-        PL_DBG << "Executing for module " << q.id_;
-
-
-      }
-    }
-  }
-  return false;
 }
 
 
@@ -196,7 +176,7 @@ bool QpxVmePlugin::boot() {
   }
 
   if (success) {
-    status_ = DeviceStatus::loaded | DeviceStatus::booted | DeviceStatus::can_exec;
+    status_ = DeviceStatus::loaded | DeviceStatus::booted;
     return true;
   } else
     return false;

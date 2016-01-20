@@ -167,75 +167,79 @@ void Plugin::fill_stats(std::list<StatsUpdate> &all_stats, uint8_t module) {
 
 
 bool Plugin::read_settings_bulk(Gamma::Setting &set) const {
-  if (set.id_ == device_name()) {
-    for (auto &q : set.branches.my_data_) {
-      if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
-        for (auto &k : q.branches.my_data_) {
-          if ((k.metadata.setting_type == Gamma::SettingType::int_menu) && (k.id_ == "Pixie4/Run type"))
-            k.value_int = run_type_;
-          if ((k.metadata.setting_type == Gamma::SettingType::integer) && (k.id_ == "Pixie4/Poll interval"))
-            k.value_int = run_poll_interval_ms_;
-        }
-      } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Files")) {
-        for (auto &k : q.branches.my_data_) {
-          k.metadata.writable = !(status_ & DeviceStatus::booted);
-          if ((k.metadata.setting_type == Gamma::SettingType::dir_path) && (k.id_ == "Pixie4/Files/XIA_path"))
-            k.value_text = XIA_file_directory_;
-          else if ((k.metadata.setting_type == Gamma::SettingType::file_path) && (k.metadata.address > 0) && (k.metadata.address < 8))
-            k.value_text = boot_files_[k.metadata.address - 1];
-        }
-      } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/System")) {
-        for (auto &k : q.branches.my_data_) {
-          k.metadata.writable = (!(status_ & DeviceStatus::booted) && setting_definitions_.count(k.id_) && setting_definitions_.at(k.id_).writable);
-          if (k.metadata.setting_type == Gamma::SettingType::stem) {
-            uint16_t modnum = k.metadata.address;
-            if (modnum < 0)
-              continue;
-            int filterrange = module_parameter_values_[modnum * N_MODULE_PAR + i_mod("FILTER_RANGE")];
-            for (auto &p : k.branches.my_data_) {
-              if (p.metadata.setting_type == Gamma::SettingType::stem) {
-                uint16_t channum = p.metadata.address;
-                if (channum < 0)
-                  continue;
-                for (auto &o : p.branches.my_data_) {
-                  if (o.metadata.setting_type == Gamma::SettingType::floating) {
-                    o.value_dbl = channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
-                    if (o.metadata.name == "ENERGY_RISETIME") {
-                      o.metadata.step = static_cast<double>(pow(2, filterrange)) / 75.0 ;
-                      o.metadata.minimum = 2 * o.metadata.step;
-                      o.metadata.maximum = 124 * o.metadata.step;
-//                      PL_DBG << "risetime " << o.metadata.minimum << "-" << o.metadata.step << "-" << o.metadata.maximum;
-                    } else if (o.metadata.name == "ENERGY_FLATTOP") {
-                      o.metadata.step = static_cast<double>(pow(2, filterrange)) / 75.0;
-                      o.metadata.minimum = 3 * o.metadata.step;
-                      o.metadata.maximum = 125 * o.metadata.step;
-//                      PL_DBG << "flattop " << o.metadata.minimum << "-" << o.metadata.step << "-" << o.metadata.maximum;
-                    }
+  if (set.id_ != device_name())
+    return false;
+
+  for (auto &q : set.branches.my_data_) {
+    if (set.metadata.setting_type == Gamma::SettingType::command)
+      set.metadata.writable =  ((status_ & DeviceStatus::booted) != 0);
+
+    if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
+      for (auto &k : q.branches.my_data_) {
+        if ((k.metadata.setting_type == Gamma::SettingType::int_menu) && (k.id_ == "Pixie4/Run type"))
+          k.value_int = run_type_;
+        if ((k.metadata.setting_type == Gamma::SettingType::integer) && (k.id_ == "Pixie4/Poll interval"))
+          k.value_int = run_poll_interval_ms_;
+      }
+    } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Files")) {
+      for (auto &k : q.branches.my_data_) {
+        k.metadata.writable = !(status_ & DeviceStatus::booted);
+        if ((k.metadata.setting_type == Gamma::SettingType::dir_path) && (k.id_ == "Pixie4/Files/XIA_path"))
+          k.value_text = XIA_file_directory_;
+        else if ((k.metadata.setting_type == Gamma::SettingType::file_path) && (k.metadata.address > 0) && (k.metadata.address < 8))
+          k.value_text = boot_files_[k.metadata.address - 1];
+      }
+    } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/System")) {
+      for (auto &k : q.branches.my_data_) {
+        k.metadata.writable = (!(status_ & DeviceStatus::booted) && setting_definitions_.count(k.id_) && setting_definitions_.at(k.id_).writable);
+        if (k.metadata.setting_type == Gamma::SettingType::stem) {
+          uint16_t modnum = k.metadata.address;
+          if (modnum < 0)
+            continue;
+          int filterrange = module_parameter_values_[modnum * N_MODULE_PAR + i_mod("FILTER_RANGE")];
+          for (auto &p : k.branches.my_data_) {
+            if (p.metadata.setting_type == Gamma::SettingType::stem) {
+              uint16_t channum = p.metadata.address;
+              if (channum < 0)
+                continue;
+              for (auto &o : p.branches.my_data_) {
+                if (o.metadata.setting_type == Gamma::SettingType::floating) {
+                  o.value_dbl = channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
+                  if (o.metadata.name == "ENERGY_RISETIME") {
+                    o.metadata.step = static_cast<double>(pow(2, filterrange)) / 75.0 ;
+                    o.metadata.minimum = 2 * o.metadata.step;
+                    o.metadata.maximum = 124 * o.metadata.step;
+                    //                      PL_DBG << "risetime " << o.metadata.minimum << "-" << o.metadata.step << "-" << o.metadata.maximum;
+                  } else if (o.metadata.name == "ENERGY_FLATTOP") {
+                    o.metadata.step = static_cast<double>(pow(2, filterrange)) / 75.0;
+                    o.metadata.minimum = 3 * o.metadata.step;
+                    o.metadata.maximum = 125 * o.metadata.step;
+                    //                      PL_DBG << "flattop " << o.metadata.minimum << "-" << o.metadata.step << "-" << o.metadata.maximum;
                   }
-                  else if ((o.metadata.setting_type == Gamma::SettingType::integer)
-                           || (o.metadata.setting_type == Gamma::SettingType::boolean)
-                           || (o.metadata.setting_type == Gamma::SettingType::int_menu)
-                           || (o.metadata.setting_type == Gamma::SettingType::binary))
-                    o.value_int = channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
                 }
+                else if ((o.metadata.setting_type == Gamma::SettingType::integer)
+                         || (o.metadata.setting_type == Gamma::SettingType::boolean)
+                         || (o.metadata.setting_type == Gamma::SettingType::int_menu)
+                         || (o.metadata.setting_type == Gamma::SettingType::binary))
+                  o.value_int = channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
               }
-              else if (p.metadata.setting_type == Gamma::SettingType::floating)
-                p.value_dbl = module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address];
-              else if ((p.metadata.setting_type == Gamma::SettingType::integer)
-                       || (p.metadata.setting_type == Gamma::SettingType::boolean)
-                       || (p.metadata.setting_type == Gamma::SettingType::int_menu)
-                       || (p.metadata.setting_type == Gamma::SettingType::binary))
-                p.value_int = module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address];
             }
+            else if (p.metadata.setting_type == Gamma::SettingType::floating)
+              p.value_dbl = module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address];
+            else if ((p.metadata.setting_type == Gamma::SettingType::integer)
+                     || (p.metadata.setting_type == Gamma::SettingType::boolean)
+                     || (p.metadata.setting_type == Gamma::SettingType::int_menu)
+                     || (p.metadata.setting_type == Gamma::SettingType::binary))
+              p.value_int = module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address];
           }
-          else if (k.metadata.setting_type == Gamma::SettingType::floating)
-            k.value_dbl = system_parameter_values_[k.metadata.address];
-          else if ((k.metadata.setting_type == Gamma::SettingType::integer)
-                   || (k.metadata.setting_type == Gamma::SettingType::boolean)
-                   || (k.metadata.setting_type == Gamma::SettingType::int_menu)
-                   || (k.metadata.setting_type == Gamma::SettingType::binary))
-            k.value_int = system_parameter_values_[k.metadata.address];
         }
+        else if (k.metadata.setting_type == Gamma::SettingType::floating)
+          k.value_dbl = system_parameter_values_[k.metadata.address];
+        else if ((k.metadata.setting_type == Gamma::SettingType::integer)
+                 || (k.metadata.setting_type == Gamma::SettingType::boolean)
+                 || (k.metadata.setting_type == Gamma::SettingType::int_menu)
+                 || (k.metadata.setting_type == Gamma::SettingType::binary))
+          k.value_int = system_parameter_values_[k.metadata.address];
       }
     }
   }
@@ -359,13 +363,23 @@ void Plugin::rebuild_structure(Gamma::Setting &set) {
 
 
 bool Plugin::write_settings_bulk(Gamma::Setting &set) {
-  set.enrich(setting_definitions_);
-
   if (set.id_ != device_name())
     return false;
 
+  set.enrich(setting_definitions_);
+
   for (auto &q : set.branches.my_data_) {
-    if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Files") && !(status_ & DeviceStatus::booted)) {
+    if ((q.metadata.setting_type == Gamma::SettingType::command) && (q.value_int == 1)) {
+      q.value_int = 0;
+      if (q.id_ == "Pixie4/Measure baselines")
+        return control_measure_baselines(Module::all);
+      else if (q.id_ == "Pixie4/Adjust offsets")
+        return control_adjust_offsets(Module::all);
+      else if (q.id_ == "Pixie4/Compute Tau")
+        return control_find_tau(Module::all);
+      else if (q.id_ == "Pixie4/Compute BLCUT")
+        return control_compute_BLcut();
+    } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Files") && !(status_ & DeviceStatus::booted)) {
       for (auto &k : q.branches.my_data_) {
         if ((k.metadata.setting_type == Gamma::SettingType::dir_path) && (k.id_ == "Pixie4/Files/XIA_path")) {
           if (XIA_file_directory_ != k.value_text) {
@@ -458,32 +472,6 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
   return true;
 }
 
-bool Plugin::execute_command(Gamma::Setting &set) {
-  if (!(status_ & DeviceStatus::can_exec))
-    return false;
-
-  if (set.id_ == device_name()) {
-    PL_DBG << "<Pixie4> executing " << set.id_;
-    for (auto &q : set.branches.my_data_) {
-      PL_DBG << "<Pixie4> executing " << q.id_ << " " << q.value_int;
-      if ((q.metadata.setting_type == Gamma::SettingType::command) && (q.value_int == 1)) {
-        q.value_int = 0;
-        if (q.id_ == "Pixie4/Measure baselines")
-          return control_measure_baselines(Module::all);
-        else if (q.id_ == "Pixie4/Adjust offsets")
-          return control_adjust_offsets(Module::all);
-        else if (q.id_ == "Pixie4/Compute Tau")
-          return control_find_tau(Module::all);
-        else if (q.id_ == "Pixie4/Compute BLCUT")
-          return control_compute_BLcut();
-      }
-    }
-  }
-
-  return false;
-}
-
-
 bool Plugin::boot() {
   if (!(status_ & DeviceStatus::can_boot)) {
     PL_WARN << "<PixiePlugin> Cannot boot Pixie-4. Failed flag check (can_boot == 0)";
@@ -528,22 +516,20 @@ bool Plugin::boot() {
 
   if (retval >= 0) {
     status_ = DeviceStatus::loaded | DeviceStatus::booted
-        | DeviceStatus::can_exec | DeviceStatus::can_run
-        | DeviceStatus::can_oscil;
+        | DeviceStatus::can_run | DeviceStatus::can_oscil;
 
     //sleep 1 s and do offsets
 
     return true;
-  }
+//  }
 
-  boot_err(retval);
-  set_sys("OFFLINE_ANALYSIS", 1);  //else attempt offline boot
-  retval = Pixie_Boot_System(0x1F);
-  if (retval >= 0) {
-    status_ = DeviceStatus::loaded | DeviceStatus::booted
-        | DeviceStatus::can_exec;
+//  boot_err(retval);
+//  set_sys("OFFLINE_ANALYSIS", 1);  //else attempt offline boot
+//  retval = Pixie_Boot_System(0x1F);
+//  if (retval >= 0) {
+//    status_ = DeviceStatus::loaded | DeviceStatus::booted;
 
-    return true;
+//    return true;
   } else {
     boot_err(retval);
     return false;
@@ -1089,7 +1075,7 @@ bool Plugin::control_program_Fippi(uint8_t module) {
 
 bool Plugin::control_measure_baselines(Module mod) {
   bool success = false;
-  if (status_ & DeviceStatus::can_exec) {
+  if (status_ & DeviceStatus::booted) {
     if (mod == Module::all) {
       for (int i=0; i< channel_indices_.size(); ++i) {
         PL_DBG << "<PixiePlugin> measure baselines for module " << i;
@@ -1124,7 +1110,7 @@ bool Plugin::control_compute_BLcut() {
 
 bool Plugin::control_find_tau(Module mod) {
   bool success = false;
-  if (status_ & DeviceStatus::can_exec) {
+  if (status_ & DeviceStatus::booted) {
     if (mod == Module::all) {
       for (int i=0; i< channel_indices_.size(); ++i) {
         PL_DBG << "<PixiePlugin> find tau for module " << i;
@@ -1144,7 +1130,7 @@ bool Plugin::control_find_tau(Module mod) {
 
 bool Plugin::control_adjust_offsets(Module mod) {
   bool success = false;
-  if (status_ & DeviceStatus::can_exec) {
+  if (status_ & DeviceStatus::booted) {
     if (mod == Module::all) {
       for (int i=0; i< channel_indices_.size(); ++i) {
         PL_TRC << "<PixiePlugin> djust offsets for module " << i;

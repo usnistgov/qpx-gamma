@@ -34,8 +34,7 @@
 #include "engine.h"
 #include "spectra_set.h"
 
-enum RunnerAction {
-    kExecuteCommand, kBoot, kShutdown, kPushSettings, kSetSetting, kSetDetector, kSetDetectors,
+enum RunnerAction {kBoot, kShutdown, kPushSettings, kSetSetting, kSetDetector, kSetDetectors,
     kList, kMCA, kOscil, kInitialize, kSettingsRefresh, kOptimize, kTerminate, kNone
 };
 
@@ -53,7 +52,6 @@ public:
     void do_initialize(QString, bool boot);
     void do_boot();
     void do_shutdown();
-    void do_execute_command(const Gamma::Setting &tree);
     void do_push_settings(const Gamma::Setting &tree);
     void do_set_setting(const Gamma::Setting &item, Gamma::Match match);
     void do_set_detector(int, Gamma::Detector);

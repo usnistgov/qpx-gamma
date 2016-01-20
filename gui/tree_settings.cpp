@@ -288,7 +288,8 @@ bool TreeItem::setData(int column, const QVariant &value)
 
   if (((itemData.metadata.setting_type == Gamma::SettingType::integer) ||
        (itemData.metadata.setting_type == Gamma::SettingType::binary) ||
-       (itemData.metadata.setting_type == Gamma::SettingType::int_menu))
+       (itemData.metadata.setting_type == Gamma::SettingType::int_menu) ||
+       (itemData.metadata.setting_type == Gamma::SettingType::command))
       && (value.canConvert(QMetaType::LongLong))) {
     //PL_DBG << "int = " << value.toLongLong();
     itemData.value_int = value.toLongLong();
@@ -308,8 +309,6 @@ bool TreeItem::setData(int column, const QVariant &value)
   else if ((itemData.metadata.setting_type == Gamma::SettingType::dir_path)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
-  else if (itemData.metadata.setting_type == Gamma::SettingType::command)
-    itemData.value_int = 1; //flag it for execution
   else if ((itemData.metadata.setting_type == Gamma::SettingType::detector)
       && (value.type() == QVariant::String)) {
     itemData.value_text = value.toString().toStdString();
