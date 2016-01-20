@@ -22,12 +22,12 @@ public:
 
   virtual std::string firmwareName() const {return std::string();}
 
-  virtual uint16_t baseAddress() const { return 0; }
-  virtual uint16_t baseAddressSpaceLength() const = 0;
-  virtual bool    setBaseAddress(uint16_t baseAddress) {}
+  virtual uint32_t baseAddress() const { return 0; }
+  virtual uint32_t baseAddressSpaceLength() const = 0;
+  virtual bool    setBaseAddress(uint32_t baseAddress) {}
   virtual std::string address() const = 0;
 
-  virtual void    programBaseAddress(uint16_t address) {}
+  virtual void    programBaseAddress(uint32_t address) {}
   virtual uint16_t verifyBaseAddress() { return 0; }
 };
 

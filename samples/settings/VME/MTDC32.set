@@ -22,7 +22,7 @@
 		<branch address="12" id="VME/MTDC32/MultiplicityFilter" />
 
 	</SettingMeta>
-	<SettingMeta id="VME/MTDC32/firmware_version" type="floating" name="Firmware version" address="24590" writable="false"/>
+	<SettingMeta id="VME/MTDC32/firmware_version" type="binary" name="Firmware version" address="24590" writable="false"/>
 	<SettingMeta id="VME/MTDC32/address_source" type="int_menu" name="Address source" address="24576" writable="true">
 		<menu_item item_value="0" item_text="From board coder" />
 		<menu_item item_value="1" item_text="From address register" />

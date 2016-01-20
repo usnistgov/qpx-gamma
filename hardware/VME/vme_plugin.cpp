@@ -56,7 +56,7 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
         } else if (q.id_ == "VME/Registers") {
           for (auto &k : q.branches.my_data_) {
             if (k.id_ == "VME/Registers/IRQ_Mask") {
-              PL_DBG << "IRQ Mask read";
+//              PL_DBG << "IRQ Mask read";
               // do something fancy
             } else {
 //              PL_DBG << "VmUsb register read";
@@ -106,7 +106,7 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
       } else if (q.id_ == "VME/Registers") {
         for (auto &k : q.branches.my_data_) {
           if (k.id_ == "VME/Registers/IRQ_Mask") {
-            PL_DBG << "IRQ Mask write";
+//            PL_DBG << "IRQ Mask write";
             // do something fancy
           } else {
             Gamma::Setting s = k;
@@ -175,13 +175,19 @@ bool QpxVmePlugin::boot() {
 
   for (auto &q : modules_) {
     if ((q.second) && (!q.second->connected())) {
-      PL_DBG << "module " << q.first << " not yet connected";
+      PL_DBG << "<VmePlugin> Searching for module " << q.first;
+//      long base_address = 0;
+//      if (q.first == "VME/MADC32")
+//        base_address = 0x20000000;
       for (long base_address = 0; base_address < 0xFFFFFFFF; base_address += q.second->baseAddressSpaceLength()) {
         q.second->connect(controller_, base_address);
 
         if (q.second->connected()) {
           q.second->boot(); //disregard return value
-          PL_DBG << "<VmePlugin> Adding module [" << base_address << "] firmwareName=" << q.second->firmwareName();
+          PL_DBG << "<VmePlugin> Adding module " << q.first
+                 << "[" << q.second->address()
+                 << "] firmware=" << q.second->firmwareName()
+                 << " booted=" << (0 != (q.second->status() & DeviceStatus::booted));
           success = true;
           break;
         }

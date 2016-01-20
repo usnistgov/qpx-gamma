@@ -27,7 +27,7 @@
 #include "custom_logger.h"
 #include "custom_timer.h"
 
-#define MADC32_Firmware                   0x01.10p0
+#define MADC32_Firmware                   0x0203
 #define MADC32_Firmware_Address           0x600E
 
 typedef union {
@@ -57,7 +57,10 @@ MADC32::~MADC32() {
 bool MADC32::read_settings_bulk(Gamma::Setting &set) const {
   if (set.id_ == "VME/MADC32") {
     for (auto &k : set.branches.my_data_) {
-      if (k.metadata.setting_type != Gamma::SettingType::stem)
+      if (k.metadata.setting_type == Gamma::SettingType::command) {
+        k.metadata.writable =  ((status_ & DeviceStatus::can_exec) != 0);
+        //PL_DBG << "command " << p.id_ << p.index << " now " << p.metadata.writable;
+      } else if (k.metadata.setting_type != Gamma::SettingType::stem)
       {
         if (!read_setting(k)) {}
 //          PL_DBG << "Could not read " << k.id_;
@@ -202,9 +205,10 @@ bool MADC32::connect(VmeController *controller, int baseAddress)
 
 bool MADC32::connected() const
 {
-  float firmware = 0;
+
+  int firmware = 0;
   if (m_controller)
-    firmware = readFloat(m_baseAddress + MADC32_Firmware_Address);
+    firmware = readShort(m_baseAddress + MADC32_Firmware_Address);
 
   return firmware == MADC32_Firmware;
 }
@@ -292,18 +296,20 @@ void MADC32::writeFloat(int address, float data)
 
 std::string MADC32::firmwareName() const
 {
-  float firmware = readFloat(m_baseAddress + MADC32_Firmware_Address);
+  int firmware = readShort(m_baseAddress + MADC32_Firmware_Address);
   return std::to_string(firmware);
 }
 
 
-bool MADC32::setBaseAddress(uint16_t baseAddress)
+bool MADC32::setBaseAddress(uint32_t baseAddress)
 {
   m_baseAddress = baseAddress;
 
-  float firmware = 0;
+  int firmware = 0;
   if (m_controller)
-    firmware = readFloat(m_baseAddress + MADC32_Firmware_Address);
+    firmware = readShort(m_baseAddress + MADC32_Firmware_Address);
+
+  //PL_DBG << "MADC32 BA=" << m_baseAddress <<  " firmware " << firmware;
 
   return (firmware == MADC32_Firmware);
 }

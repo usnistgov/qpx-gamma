@@ -60,13 +60,13 @@ public:
 
   std::string firmwareName() const;
 
-  uint16_t    baseAddress() const { return m_baseAddress; }
-  virtual uint16_t baseAddressSpaceLength() const {return VHS_ADDRESS_SPACE_LENGTH;}
-  bool        setBaseAddress(uint16_t baseAddress);
+  uint32_t    baseAddress() const { return m_baseAddress; }
+  virtual uint32_t baseAddressSpaceLength() const {return VHS_ADDRESS_SPACE_LENGTH;}
+  bool        setBaseAddress(uint32_t baseAddress);
   std::string address() const;
 
-  void    programBaseAddress(uint16_t address);
-  uint16_t verifyBaseAddress(void) const;
+  void    programBaseAddress(uint32_t address);
+  uint32_t verifyBaseAddress(void) const;
 
 
 private:
@@ -79,7 +79,7 @@ protected:
   bool read_setting(Gamma::Setting& set) const;
   bool write_setting(Gamma::Setting& set);
 
-  uint16_t m_baseAddress;
+  uint32_t m_baseAddress;
   VmeController *m_controller;
 
 

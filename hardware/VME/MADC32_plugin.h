@@ -31,7 +31,7 @@
 #include "vmecontroller.h"
 #include "generic_setting.h"
 
-#define MADC32_ADDRESS_SPACE_LENGTH				0xFFFF
+#define MADC32_ADDRESS_SPACE_LENGTH				0x10000000
 
 namespace Qpx {
 
@@ -60,9 +60,9 @@ public:
 
   std::string firmwareName() const;
 
-  uint16_t    baseAddress() const { return m_baseAddress; }
-  virtual uint16_t baseAddressSpaceLength() const {return MADC32_ADDRESS_SPACE_LENGTH;}
-  bool        setBaseAddress(uint16_t baseAddress);
+  uint32_t    baseAddress() const { return m_baseAddress; }
+  virtual uint32_t baseAddressSpaceLength() const {return MADC32_ADDRESS_SPACE_LENGTH;}
+  bool        setBaseAddress(uint32_t baseAddress);
   std::string address() const;
 
 
@@ -76,7 +76,7 @@ protected:
   bool read_setting(Gamma::Setting& set) const;
   bool write_setting(Gamma::Setting& set);
 
-  uint16_t m_baseAddress;
+  uint32_t m_baseAddress;
   VmeController *m_controller;
 
 

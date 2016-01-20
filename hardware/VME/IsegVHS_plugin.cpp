@@ -452,19 +452,19 @@ std::string QpxIsegVHSPlugin::firmwareName() const
   if (!m_controller)
     return std::string();
 
-  uint32_t version = readLong(m_baseAddress + VhsFirmwareReleaseOFFSET);
+  uint32_t version = readShort(m_baseAddress + VhsFirmwareReleaseOFFSET);
 
   return std::to_string(version >> 24) + std::to_string(version >> 16) + "." +
     std::to_string(version >>  8) + std::to_string(version >>  0);
 }
 
 
-bool QpxIsegVHSPlugin::setBaseAddress(uint16_t baseAddress)
+bool QpxIsegVHSPlugin::setBaseAddress(uint32_t baseAddress)
 {
   m_baseAddress = baseAddress;
 
   //uint32_t vendorId = readLong(m_baseAddress + VhsVendorIdOFFSET);
-  uint32_t tmp = readLong(m_baseAddress + 60);
+  uint32_t tmp = readShort(m_baseAddress + VhsFirmwareReleaseOFFSET /*60*/);
 
   int deviceClass = (uint16_t)tmp;
 
@@ -479,15 +479,15 @@ bool QpxIsegVHSPlugin::setBaseAddress(uint16_t baseAddress)
 // Special Commands
 //=============================================================================
 
-void QpxIsegVHSPlugin::programBaseAddress(uint16_t address)
+void QpxIsegVHSPlugin::programBaseAddress(uint32_t address)
 {
   writeShort(m_baseAddress + VhsNewBaseAddressOFFSET, address);
   writeShort(m_baseAddress + VhsNewBaseAddressXorOFFSET, address ^ 0xFFFF);
 }
 
-uint16_t QpxIsegVHSPlugin::verifyBaseAddress(void) const
+uint32_t QpxIsegVHSPlugin::verifyBaseAddress(void) const
 {
-  uint16_t newAddress = -1;
+  uint32_t newAddress = -1;
   uint16_t temp;
 
   newAddress = readShort(m_baseAddress + VhsNewBaseAddressAcceptedOFFSET);

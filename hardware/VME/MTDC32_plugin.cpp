@@ -27,7 +27,7 @@
 #include "custom_logger.h"
 #include "custom_timer.h"
 
-#define MTDC32_Firmware                   0x0104
+#define MTDC32_Firmware                   0x0105
 #define MTDC32_Firmware_Address           0x600E
 
 typedef union {
@@ -57,7 +57,10 @@ MTDC32::~MTDC32() {
 bool MTDC32::read_settings_bulk(Gamma::Setting &set) const {
   if (set.id_ == "VME/MTDC32") {
     for (auto &k : set.branches.my_data_) {
-      if (k.metadata.setting_type != Gamma::SettingType::stem)
+      if (k.metadata.setting_type == Gamma::SettingType::command) {
+        k.metadata.writable =  ((status_ & DeviceStatus::can_exec) != 0);
+        //PL_DBG << "command " << p.id_ << p.index << " now " << p.metadata.writable;
+      } else if (k.metadata.setting_type != Gamma::SettingType::stem)
       {
         if (!read_setting(k)) {}
 //          PL_DBG << "Could not read " << k.id_;
@@ -297,13 +300,15 @@ std::string MTDC32::firmwareName() const
 }
 
 
-bool MTDC32::setBaseAddress(uint16_t baseAddress)
+bool MTDC32::setBaseAddress(uint32_t baseAddress)
 {
   m_baseAddress = baseAddress;
 
   int firmware = 0;
   if (m_controller)
     firmware = readShort(m_baseAddress + MTDC32_Firmware_Address);
+
+  //PL_DBG << "MTDC32 BA=" << m_baseAddress <<  " firmware " << firmware;
 
   return (firmware == MTDC32_Firmware);
 }
