@@ -223,7 +223,6 @@ void Setting::from_xml(const pugi::xml_node &node) {
     return;
 
   id_ = std::string(node.attribute("id").value());
-  index = node.attribute("index").as_int(-1);
 
   std::stringstream indices_stream;
   indices_stream.str(node.attribute("indices").value());
@@ -275,7 +274,6 @@ void Setting::to_xml(pugi::xml_node &node, bool with_metadata) const {
   child.set_name(xml_element_name().c_str());
   child.append_attribute("id").set_value(id_.c_str());
   child.append_attribute("type").set_value(to_string(metadata.setting_type).c_str());
-  child.append_attribute("index").set_value(index);
 
   if (!indices.empty()) {
     std::stringstream indices_stream;
@@ -321,10 +319,14 @@ bool Setting::compare(const Setting &other, Gamma::Match flags) const {
   bool match = true;
   if ((flags & Match::id) && (id_ != other.id_))
     match = false;
-  if ((flags & Match::index) && (index != other.index))
+  if (flags & Match::indices) {
     match = false;
-  if ((flags & Match::indices) && (indices.count(other.index) < 1))
-    match = false;
+    for (auto &q : other.indices)
+      if (indices.count(q) > 0) {
+        match = true;
+        break;
+      }
+  }
   if ((flags & Match::name) && (other.id_ != metadata.name))
     match = false;
   if ((flags & Match::address) && (metadata.address != other.metadata.address))
@@ -392,8 +394,6 @@ void Setting::del_setting(Gamma::Setting address, Match flags) {
 void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_definitions, bool impose_limits) {
   if (setting_definitions.count(id_) > 0) {
     Gamma::SettingMeta meta = setting_definitions.at(id_);
-    if (meta.address == -1)
-      meta.address = index;
     metadata = meta;
     if (((meta.setting_type == Gamma::SettingType::indicator) || (meta.setting_type == Gamma::SettingType::binary) ||
         (meta.setting_type == Gamma::SettingType::stem)) && !meta.int_menu_items.empty()) {
@@ -412,7 +412,7 @@ void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_de
             }
           }
           if (!added && (q.first != 666)) {
-            Gamma::Setting newset = Gamma::Setting(newmeta, index);
+            Gamma::Setting newset = Gamma::Setting(newmeta);
             newset.indices = indices;
             newset.enrich(setting_definitions, impose_limits);
             branches.add(newset);

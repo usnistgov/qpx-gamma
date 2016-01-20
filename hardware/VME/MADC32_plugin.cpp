@@ -80,24 +80,25 @@ bool MADC32::read_settings_bulk(Gamma::Setting &set) const {
 void MADC32::rebuild_structure(Gamma::Setting &set) {
   for (auto &k : set.branches.my_data_) {
     if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/MADC32/ChannelThresholds")) {
-//        PL_DBG << "writing VME/MADC32/Channel";
-      while (k.branches.size() > 32) {
-        k.branches.my_data_.pop_back();
-      }
 
-      Gamma::Setting temp = k.branches.get(0);
-      temp.indices.clear();
-      temp.index = -1;
-      while (k.branches.size() < 32) {
+      Gamma::Setting temp("VME/MADC32/Threshold");
+      temp.enrich(setting_definitions_, true);
+
+      while (k.branches.size() < 32)
         k.branches.my_data_.push_back(temp);
-      }
-
+      while (k.branches.size() > 32)
+        k.branches.my_data_.pop_back();
 
       uint32_t offset = k.metadata.address;
 
       std::set<int32_t> indices;
       int address = 0;
       for (auto &p : k.branches.my_data_) {
+        if (p.id_ != temp.id_) {
+          temp.indices = p.indices;
+          p = temp;
+        }
+
         p.metadata.address = offset + address * 2;
         p.metadata.name = "Threshold " + std::to_string(address);
 

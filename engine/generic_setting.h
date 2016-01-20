@@ -56,8 +56,7 @@ enum Match {
   id      = 1 << 0,
   name    = 1 << 1,
   address = 1 << 2,
-  index   = 1 << 3,
-  indices = 1 << 4
+  indices = 1 << 3
 };
 
 
@@ -138,7 +137,6 @@ struct Setting;
 struct Setting : public XMLable {
   std::string       id_;
 
-  int32_t           index;
   std::set<int32_t> indices;
 
   int64_t           value_int;
@@ -150,19 +148,14 @@ struct Setting : public XMLable {
   SettingMeta        metadata;
 
   
-  Setting() : branches("branches"), index(-1), value_dbl(0.0), value_int(0) {}
+  Setting() : branches("branches"), value_dbl(0.0), value_int(0) {}
   
   Setting(const pugi::xml_node &node) : Setting() {this->from_xml(node);}
   
   Setting(std::string id) : Setting() {id_ = id;} //BAD
-  Setting(std::string id, int32_t idx) : Setting() {
-    id_ = id;
-    index = idx;
-  } //BAD
-  Setting(SettingMeta meta, int32_t idx) : Setting() {
+  Setting(SettingMeta meta) : Setting() {
     id_ = meta.id_;
     metadata = meta;
-    index = idx;
   }
 
   std::string xml_element_name() const {return "Setting";}
@@ -177,7 +170,6 @@ struct Setting : public XMLable {
     if (id_ != other.id_) return false;
     if (value_dbl != other.value_dbl) return false;
     if (value_int != other.value_int) return false;
-    if (index != other.index) return false;
     if (indices != other.indices) return false;
     if (value_text != other.value_text) return false;
     if (branches != other.branches) return false;
@@ -186,7 +178,7 @@ struct Setting : public XMLable {
   }
 
   friend std::ostream & operator << (std::ostream &os, Setting s) {
-      os << s.id_ << "(i" << s.index << ", a" << s.metadata.address << ")="
+      os << s.id_ << "(a" << s.metadata.address << ")="
          << s.value_int  << "/"
          << s.value_dbl  << "/"
          << s.value_text << std::endl;

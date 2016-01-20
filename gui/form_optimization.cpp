@@ -240,7 +240,9 @@ void FormOptimization::do_run()
 
   ui->plotSpectrum->new_spectrum();
 
-  Gamma::Setting set(current_setting_, optchan);
+  Gamma::Setting set(current_setting_);
+  set.indices.clear();
+  set.indices.insert(optchan);
 
   set.value_dbl = val_current;
   Qpx::Engine::getInstance().set_setting(set, Gamma::Match::id | Gamma::Match::indices);
@@ -387,7 +389,9 @@ void FormOptimization::on_comboSetting_activated(const QString &arg1)
   int optchan = ui->comboTarget->currentData().toInt();
   current_setting_ = ui->comboSetting->currentText().toStdString();
 
-  Gamma::Setting set(current_setting_, optchan);
+  Gamma::Setting set(current_setting_);
+  set.indices.clear();
+  set.indices.insert(optchan);
 
   set = Qpx::Engine::getInstance().pull_settings().get_setting(set, Gamma::Match::id | Gamma::Match::indices);
 

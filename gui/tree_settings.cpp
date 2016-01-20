@@ -55,7 +55,7 @@ bool TreeItem::eat_data(const Gamma::Setting &data) {
   return true;
 
   /*if (itemData.branches.size() != childItems.size()) {
-      PL_WARN << "Setting branch size mismatch " << itemData.id_ << " idx " << itemData.index;
+      PL_WARN << "Setting branch size mismatch " << itemData.id_;
 //      for (int i=0; i <  childItems.size(); ++i)
 //        delete childItems.takeAt(i);
 
@@ -114,11 +114,11 @@ QVariant TreeItem::display_data(int column) const
     else
       name = QString::fromStdString(itemData.id_);
 
-    if ((itemData.metadata.setting_type == Gamma::SettingType::stem)
-        || (itemData.metadata.setting_type == Gamma::SettingType::detector)) {
-      if (itemData.index >= 0)
-        name += "  " + QString::number(itemData.index);
-    }
+//    if ((itemData.metadata.setting_type == Gamma::SettingType::stem)
+//        || (itemData.metadata.setting_type == Gamma::SettingType::detector)) {
+//      if (itemData.address >= 0)
+//        name += "  " + QString::number(itemData.address);
+//    }
     if (!itemData.indices.empty()) {
       QString append = "  { ";
       bool valid = false;
@@ -241,7 +241,6 @@ bool TreeItem::is_editable(int column) const
   }
   for (int row = start; row < (start + count); ++row) {
     Gamma::Setting newsetting;
-    newsetting.index = row;
     newsetting.name = name;
     newsetting.metadata.setting_type = type;
     itemData.branches.add(newsetting);
@@ -363,7 +362,7 @@ QVariant TreeSettings::data(const QModelIndex &index, int role) const
       Gamma::Setting set = qvariant_cast<Gamma::Setting>(item->edit_data(col));
       if (set.metadata.setting_type == Gamma::SettingType::detector) {
         QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::red, Qt::blue};
-        QBrush brush(palette[set.index % palette.size()]);
+        QBrush brush(palette[(row - 1) % palette.size()]);
         return brush;
       } else if (set.metadata.setting_type == Gamma::SettingType::indicator) {
         QBrush brush(Qt::white);
@@ -526,7 +525,7 @@ bool TreeSettings::setData(const QModelIndex &index, const QVariant &value, int 
 
     emit dataChanged(index, index);
     if (set.metadata.setting_type == Gamma::SettingType::detector)
-      emit detector_chosen(set.index, set.value_text);
+      emit detector_chosen(index.row() - 1, set.value_text);
     else
       emit tree_changed();
   }

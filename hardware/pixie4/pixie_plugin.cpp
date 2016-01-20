@@ -302,7 +302,6 @@ void Plugin::rebuild_structure(Gamma::Setting &set) {
   bool hardware_changed = false;
   for (int i=0;i < old_slots.size(); ++i) {
     old_slots[i].metadata.address = 7+i;
-    old_slots[i].index = 7+i;
     if (system_parameter_values_[7+i] != old_slots[i].value_int)
       hardware_changed = true;
   }
@@ -332,14 +331,12 @@ void Plugin::rebuild_structure(Gamma::Setting &set) {
           next_chan++;
         new_set.insert(next_chan);
         used_chan_indices.insert(next_chan);
-        chan.index = j;
         chan.indices.clear();
         chan.indices.insert(next_chan);
         chan.metadata.address = j;
         mod.branches.add_a(chan);
       }
       mod.metadata.address = i;
-      mod.index = i;
       mod.indices = new_set;
       old_modules.push_back(mod);
     }
@@ -429,7 +426,6 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
                 if (!p.indices.empty()) {
                   int det = *p.indices.begin();
                   channel_indices_[modnum][channum] = det;
-                  o.index = det;
                   o.indices.clear();
                   o.indices.insert(det);
                 }

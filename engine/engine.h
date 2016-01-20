@@ -83,7 +83,7 @@ public:
   void push_settings(const Gamma::Setting&);
   bool write_settings_bulk();
   bool read_settings_bulk();
-  bool write_detector(const Gamma::Setting &set);
+//  bool write_detector(const Gamma::Setting &set);
   
   void get_all_settings();
   
@@ -102,12 +102,13 @@ protected:
   std::map<std::string, DaqDevice*> devices_;  //use shared pointer instead
 
   Gamma::Setting settings_tree_;
-  Gamma::SettingMeta total_det_num_;
+  Gamma::SettingMeta total_det_num_, single_det_;
 
   std::vector<Gamma::Detector> detectors_;
 
   void save_det_settings(Gamma::Setting&, const Gamma::Setting&, Gamma::Match flags) const;
   void load_det_settings(Gamma::Setting, Gamma::Setting&, Gamma::Match flags);
+  void rebuild_structure(Gamma::Setting &set);
 
   //threads
   void worker_MCA(SynchronizedQueue<Spill*>* data_queue, SpectraSet* spectra);

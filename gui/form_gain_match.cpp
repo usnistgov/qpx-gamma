@@ -206,7 +206,9 @@ void FormGainMatch::do_run()
   gm_spectra_.set_spectra(db);
   ui->plot->clearGraphs();
 
-  Gamma::Setting gain_setting(current_setting_, optchan);
+  Gamma::Setting gain_setting(current_setting_);
+  gain_setting.indices.clear();
+  gain_setting.indices.insert(optchan);
 
   Qpx::Engine::getInstance().get_all_settings();
   gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
@@ -318,7 +320,10 @@ void FormGainMatch::do_post_processing() {
   }
 
   int optchan = ui->comboTarget->currentData().toInt();
-  Gamma::Setting gain_setting(current_setting_, optchan);
+  Gamma::Setting gain_setting(current_setting_);
+  gain_setting.indices.clear();
+  gain_setting.indices.insert(optchan);
+
   gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
   gain_setting.value_dbl = new_gain;
 
@@ -520,9 +525,12 @@ void FormGainMatch::on_comboSetting_activated(int index)
   int optchan = ui->comboTarget->currentData().toInt();
   current_setting_ = ui->comboSetting->currentText().toStdString();
 
-  Gamma::Setting set(current_setting_, optchan);
+  Gamma::Setting gain_setting(current_setting_);
+  gain_setting.indices.clear();
+  gain_setting.indices.insert(optchan);
 
-  set = Qpx::Engine::getInstance().pull_settings().get_setting(set, Gamma::Match::id | Gamma::Match::indices);
 
-  ui->doubleSpinDeltaV->setValue(set.metadata.step * 10);
+  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
+
+  ui->doubleSpinDeltaV->setValue(gain_setting.metadata.step * 10);
 }

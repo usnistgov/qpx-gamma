@@ -54,6 +54,8 @@ private:
   void set_voltage(int, double);
 
 protected:
+  void rebuild_structure(Gamma::Setting &set);
+
   bool get_prompt(uint16_t attempts);
 
   TimeoutSerial port;

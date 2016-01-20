@@ -56,8 +56,8 @@ bool QpxHV8Plugin::read_settings_bulk(Gamma::Setting &set) const {
     for (auto &q : set.branches.my_data_) {
       if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "HV8/Channels")) {
         for (auto &k : q.branches.my_data_) {
-          if ((k.metadata.setting_type == Gamma::SettingType::floating) && (k.index > -1) && (k.index < voltages.size()))
-            k.value_dbl = voltages[k.index];
+          if ((k.metadata.setting_type == Gamma::SettingType::floating) && (k.metadata.address > -1) && (k.metadata.address < voltages.size()))
+            k.value_dbl = voltages[k.metadata.address];
         }
       } else if ((q.id_ != "HV8/ResponseTimeout") && (q.id_ != "HV8/ResponseAttempts")) {
         q.metadata.writable = !(status_ & DeviceStatus::booted);
@@ -67,11 +67,48 @@ bool QpxHV8Plugin::read_settings_bulk(Gamma::Setting &set) const {
   return true;
 }
 
+void QpxHV8Plugin::rebuild_structure(Gamma::Setting &set) {
+  for (auto &k : set.branches.my_data_) {
+    if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "HV8/Channels")) {
+
+
+      Gamma::Setting temp("HV8/Channels/Voltage");
+      temp.enrich(setting_definitions_, true);
+      while (k.branches.size() < 8)
+        k.branches.my_data_.push_back(temp);
+      while (k.branches.size() > 8)
+        k.branches.my_data_.pop_back();
+
+      std::set<int32_t> indices;
+      int address = 0;
+      for (auto &p : k.branches.my_data_) {
+        if (p.id_ != temp.id_) {
+          temp.indices = p.indices;
+          p = temp;
+        }
+
+        p.metadata.address = address;
+        temp.metadata.name = "Voltage " + std::to_string(address);
+
+        for (auto &i : p.indices)
+          indices.insert(i);
+
+        ++address;
+      }
+
+      k.indices = indices;
+
+    }
+  }
+}
+
 bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
   set.enrich(setting_definitions_, true);
 
   if (set.id_ != device_name())
     return false;
+
+  rebuild_structure(set);
 
   for (auto &q : set.branches.my_data_) {
     if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "HV8/PortName"))
@@ -109,34 +146,10 @@ bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
     else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "HV8/ResponseAttemps"))
       attempts_ = q.value_int;
     else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "HV8/Channels")) {
-
-
-      Gamma::Setting voltage("HV8/Channels/Voltage");
-      voltage.enrich(setting_definitions_, true);
-
-      Gamma::Setting channels = q;
-      channels.branches.clear();
-      channels.indices.clear();
-
-      int i=0;
       for (auto &k : q.branches.my_data_) {
-        if (k.id_ == voltage.id_) {
-          voltage.metadata.address = i;
-          voltage.index = k.index;
-          voltage.indices.clear();
-          voltage.indices.insert(k.index);
-          voltage.value_dbl = k.value_dbl;
-          channels.indices.insert(k.index);
-          channels.branches.add_a(voltage);
-          if (k.value_dbl != voltages[i])
-            set_voltage(i, k.value_dbl);
-          ++i;
-        }
-        if (i >= voltages.size())
-          break;
+        if (k.value_dbl != voltages[k.metadata.address])
+          set_voltage(k.metadata.address, k.value_dbl);
       }
-
-      q = channels;
     }
   }
   return true;

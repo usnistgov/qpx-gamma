@@ -198,25 +198,26 @@ void FormSystemSettings::ask_execute_tree(Gamma::Setting command, QModelIndex in
 void FormSystemSettings::push_from_table(int chan, Gamma::Setting setting) {
   editing_ = false;
 
-  //setting.index = chan;
+  //setting.indices.insert(chan);
 
   emit statusText("Updating settings...");
   emit toggleIO(false);
-  runner_thread_.do_set_setting(setting, Gamma::Match::id | Gamma::Match::index | Gamma::Match::indices);
+  runner_thread_.do_set_setting(setting, Gamma::Match::id | Gamma::Match::indices);
 }
 
 void FormSystemSettings::chose_detector(int chan, std::string name) {
   editing_ = false;
   Gamma::Detector det = detectors_.get(Gamma::Detector(name));
   PL_DBG << "det " <<  det.name_ << " with cali " << det.energy_calibrations_.size() << " has sets " << det.settings_.branches.size();
-  for (auto &q : det.settings_.branches.my_data_)
-    q.index = chan;
+  for (auto &q : det.settings_.branches.my_data_) {
+    q.indices.clear();
+    q.indices.insert(chan);
+  }
 
   emit statusText("Applying detector settings...");
   emit toggleIO(false);
   runner_thread_.do_set_detector(chan, det);
 }
-
 
 void FormSystemSettings::refresh() {
 

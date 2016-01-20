@@ -46,6 +46,13 @@ Engine::Engine() {
   total_det_num_.minimum = 1;
   total_det_num_.maximum = 42;
   total_det_num_.step = 1;
+
+  single_det_.id_ = "Detector";
+  single_det_.name = "Detector";
+  single_det_.writable = true;
+  single_det_.saveworthy = true;
+  single_det_.visible = true;
+  single_det_.setting_type = Gamma::SettingType::detector;
 }
 
 
@@ -145,24 +152,19 @@ bool Engine::read_settings_bulk(){
   for (auto &set : settings_tree_.branches.my_data_) {
     //PL_INFO << "read bulk "  << set.name;
     if (set.id_ == "Detectors") {
-      for (auto &q : set.branches.my_data_) {
-        if (q.id_ == "Total Detectors")
-          q.value_int = detectors_.size();
 
-      }
       //set.metadata.step = 2; //to always save
-      Gamma::Setting totaldets = set.get_setting(Gamma::Setting("Total detectors"), Gamma::Match::id);
+      Gamma::Setting totaldets(total_det_num_);
       totaldets.value_int = detectors_.size();
-      totaldets.metadata = total_det_num_;
 
-      Gamma::Setting det = set.get_setting(Gamma::Setting("Detector"), Gamma::Match::id);
+      Gamma::Setting det(single_det_);
 
       set.branches.clear();
       set.branches.add_a(totaldets);
 
       for (int i=0; i < detectors_.size(); ++i) {
+        det.metadata.name = "Detector " + std::to_string(i);
         det.value_text = detectors_[i].name_;
-        det.index = i;
         det.indices.clear();
         det.indices.insert(i);
         det.metadata.writable = true;
@@ -182,40 +184,25 @@ bool Engine::read_settings_bulk(){
 bool Engine::write_settings_bulk(){
   for (auto &set : settings_tree_.branches.my_data_) {
     if (set.id_ == "Detectors") {
-      Gamma::Setting totaldets = set.get_setting(Gamma::Setting("Total detectors"), Gamma::Match::id);
-      Gamma::Setting det = set.get_setting(Gamma::Setting("Detector"), Gamma::Match::id);
-      int oldtotal = detectors_.size();
-
-      if (oldtotal != totaldets.value_int)
-        detectors_.resize(totaldets.value_int);
-
-      for (auto &q : set.branches.my_data_) {
-        if (q.index < detectors_.size()) {
-          if (detectors_[q.index].name_ != q.value_text)
-            detectors_[q.index] = Gamma::Detector(q.value_text);
-        }
-      }
-
-      if (oldtotal != totaldets.value_int) {
-        set.branches.clear();
-        set.branches.add_a(totaldets);
-
-        for (int i=0; i < detectors_.size(); ++i) {
-          det.value_text = detectors_[i].name_;
-          det.index = i;
-          det.indices.clear();
-          det.indices.insert(i);
-          det.metadata.writable = true;
-          set.branches.add_a(det);
-        }
-      }
-
+      rebuild_structure(set);
     } else if (devices_.count(set.id_)) {
       //PL_DBG << "write settings bulk > " << set.id_;
       devices_[set.id_]->write_settings_bulk(set);
     }
   }
   return true;
+}
+
+void Engine::rebuild_structure(Gamma::Setting &set) {
+  Gamma::Setting totaldets = set.get_setting(Gamma::Setting("Total detectors"), Gamma::Match::id);
+  int oldtotal = detectors_.size();
+  int newtotal = totaldets.value_int;
+  if (newtotal < 0)
+    newtotal = 0;
+
+  if (oldtotal != newtotal)
+    detectors_.resize(newtotal);
+
 }
 
 bool Engine::boot() {
@@ -301,18 +288,18 @@ bool Engine::daq_running() {
   return running;
 }
 
-bool Engine::write_detector(const Gamma::Setting &set) {
-  if (set.metadata.setting_type != Gamma::SettingType::detector)
-    return false;
+//bool Engine::write_detector(const Gamma::Setting &set) {
+//  if (set.metadata.setting_type != Gamma::SettingType::detector)
+//    return false;
 
-  if ((set.index < 0) || (set.index >= detectors_.size()))
-    return false;
+//  if ((set.index < 0) || (set.index >= detectors_.size()))
+//    return false;
 
-  if (detectors_[set.index].name_ != set.value_text)
-    detectors_[set.index] = Gamma::Detector(set.value_text);
+//  if (detectors_[set.index].name_ != set.value_text)
+//    detectors_[set.index] = Gamma::Detector(set.value_text);
 
-  return true;
-}
+//  return true;
+//}
 
 void Engine::set_detector(int ch, Gamma::Detector det) {
   if (ch < 0 || ch >= detectors_.size())
@@ -323,11 +310,11 @@ void Engine::set_detector(int ch, Gamma::Detector det) {
   for (auto &set : settings_tree_.branches.my_data_) {
     if (set.id_ == "Detectors") {
       for (auto &q : set.branches.my_data_) {
-        if (q.index == ch) {
-          //    PL_DBG << "set det in tree #" << q.index << " to  " << detectors_[q.index].name_;
+        if (q.indices.count(ch) > 0) {
+          //    PL_DBG << "set det in tree #" << ch << " to  " << detectors_[ch].name_;
 
-          q.value_text = detectors_[q.index].name_;
-          load_optimization(q.index);
+          q.value_text = detectors_[ch].name_;
+          load_optimization(ch);
         }
       }
     }
@@ -341,7 +328,7 @@ void Engine::save_optimization() {
   for (int i = start; i <= stop; i++) {
     //PL_DBG << "Saving optimization channel " << i << " settings for " << detectors_[i].name_;
     detectors_[i].settings_ = Gamma::Setting();
-    detectors_[i].settings_.index = i;
+    detectors_[i].settings_.indices.insert(i);
     save_det_settings(detectors_[i].settings_, settings_tree_, Gamma::Match::indices);
     if (detectors_[i].settings_.branches.size() > 0) {
       detectors_[i].settings_.metadata.setting_type = Gamma::SettingType::stem;
@@ -367,9 +354,11 @@ void Engine::load_optimization(int i) {
   if ((i < 0) || (i >= detectors_.size()))
     return;
   if (detectors_[i].settings_.metadata.setting_type == Gamma::SettingType::stem) {
-    detectors_[i].settings_.index = i;
+    detectors_[i].settings_.indices.clear();
+    detectors_[i].settings_.indices.insert(i);
     for (auto &q : detectors_[i].settings_.branches.my_data_) {
-      q.index = i;
+      q.indices.clear();
+      q.indices.insert(i);
       load_det_settings(q, settings_tree_, Gamma::Match::id | Gamma::Match::indices);
     }
   }
@@ -384,7 +373,6 @@ void Engine::save_det_settings(Gamma::Setting& result, const Gamma::Setting& roo
   } else if ((root.metadata.setting_type != Gamma::SettingType::detector) && root.compare(result, flags))
   {
     Gamma::Setting set(root);
-    //set.index = result.index;
     //set.indices.clear();
     result.branches.add(set);
     //PL_DBG << "saved setting " << stem << "/" << root.name;

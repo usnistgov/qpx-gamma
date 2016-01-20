@@ -123,23 +123,25 @@ bool QpxIsegVHSPlugin::read_settings_bulk(Gamma::Setting &set) const {
 void QpxIsegVHSPlugin::rebuild_structure(Gamma::Setting &set) {
   for (auto &k : set.branches.my_data_) {
     if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channels")) {
-//        PL_DBG << "writing VME/MADC32/Channel";
-      while (k.branches.size() > 12) {
-        k.branches.my_data_.pop_back();
-      }
 
-      Gamma::Setting temp = k.branches.get(0);
-      temp.indices.clear();
-      temp.index = -1;
-      while (k.branches.size() < 12) {
+      Gamma::Setting temp("VME/IsegVHS/Channel");
+      temp.enrich(setting_definitions_, true);
+
+      while (k.branches.size() < 12)
         k.branches.my_data_.push_back(temp);
-      }
+      while (k.branches.size() > 12)
+        k.branches.my_data_.pop_back();
 
       uint32_t offset = k.metadata.address;
 
       std::set<int32_t> indices;
       int address = 0;
       for (auto &p : k.branches.my_data_) {
+        if (p.id_ != temp.id_) {
+          temp.indices = p.indices;
+          p = temp;
+        }
+
         p.metadata.name = "Channel " + std::to_string(address);
         p.metadata.address = offset + address * 48;
 
@@ -187,7 +189,6 @@ bool QpxIsegVHSPlugin::write_settings_bulk(Gamma::Setting &set) {
           for (auto &q : p.branches.my_data_) {
               if ((q.metadata.setting_type == Gamma::SettingType::command) && (q.value_int != 0)) {
               if (q.id_ == "VME/IsegVHS/Channel/OnOff") {
-                //                  PL_DBG << "Triggered ON/OFF for " << p.index;
                 q.value_int = 0;
                 Gamma::Setting ctrl = p.get_setting(Gamma::Setting("VME/IsegVHS/Channel/ChannelControl"), Gamma::Match::id);
                 ctrl.value_int  ^= 0x0008;

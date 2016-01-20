@@ -322,7 +322,6 @@ void ThreadRunner::run()
 
         Gamma::Setting set = Gamma::Setting("XDT");
         for (int i=0; i < dets.size(); i++) {
-//          set.index = i;
           set.indices.clear();
           set.indices.insert(i);
           set.value_dbl = xdt_;

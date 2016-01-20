@@ -169,9 +169,8 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
   } else if (col <= channels_.size()) {
     Gamma::Setting item = consolidated_list_.branches.get(row-1);
     item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
-    //item.index = col - 1;
     //item.indices.clear();
-    //item.indices.insert(item.index);
+    //item.indices.insert(col-1);
     if (item == Gamma::Setting())
       return QVariant();
     if (role == Qt::EditRole) {
@@ -316,7 +315,6 @@ void TableChanSettings::update(const std::vector<Gamma::Detector> &settings) {
   consolidated_list_ = Gamma::Setting();
   for (auto &q : channels_) {
     for (auto &p : q.settings_.branches.my_data_) {
-      //p.index = 0;
       consolidated_list_.branches.add(p);
       if (!preferred_units_.count(p.id_) && (!p.metadata.unit.empty())) {
 //        PL_DBG << "adding preferred unit for " << p.id_ << " as " << p.metadata.unit;
@@ -349,7 +347,6 @@ Qt::ItemFlags TableChanSettings::flags(const QModelIndex &index) const
     } else if (col == (channels_.size() + 2))
       return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
 
-    //item.index = col -1;
     item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
 
     if (item == Gamma::Setting())
@@ -388,7 +385,6 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
           return false;
       }
 
-      //item.index = col -1;
       item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
       if (item == Gamma::Setting())
         return false;
