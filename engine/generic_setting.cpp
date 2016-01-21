@@ -415,7 +415,13 @@ void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_de
             newset.enrich(setting_definitions, impose_limits);
             branches.add(newset);
           }
-
+        }        
+      }
+      for (int i=0; i < br.size(); ++i) {
+        if (setting_definitions.count(br.get(i).id_) == 0) {
+          Gamma::Setting newset = br.get(i);
+          newset.metadata.visible = false;
+          branches.add_a(newset);
         }
       }
     } else if (impose_limits) {

@@ -97,6 +97,9 @@
 			<Setting id="VME/MADC32/CountersA" type="stem" />
 			<Setting id="VME/MADC32/CountersB" type="stem" />
 			<Setting id="VME/MADC32/ModuleRC" type="stem" />
+			<Setting id="VME/MesytecRC/MSCF16" type="stem" reference="/MSCF16.set">
+				<Setting id="VME/MesytecRC/MSCF16/Groups" type="stem" />
+			</Setting>
 		</Setting>
 		<Setting id="VME/MTDC32" type="stem" reference="/MTDC32.set">
 			<Setting id="VME/MTDC32/TestPulserThreshold" type="stem" />

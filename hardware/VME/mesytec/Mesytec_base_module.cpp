@@ -108,7 +108,7 @@ bool MesytecVME::boot() {
   //      long base_address = 0;
   //      if (q.first == "VME/MADC32")
   //        base_address = 0x20000000;
-        for (int addr = 0; addr < 15; addr++) {
+        for (int addr = 0; addr < 16; addr++) {
           q.second->connect(this, addr);
 
           if (q.second->connected()) {
