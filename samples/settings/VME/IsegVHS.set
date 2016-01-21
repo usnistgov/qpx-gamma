@@ -37,7 +37,7 @@
 		<branch address="0" id="VME/IsegVHS/Channel" />
 	</SettingMeta>
 
-	<SettingMeta id="VME/IsegVHS/ModuleStatus" type="binary" name="Module status" address="0" writable="false" word_size="16">
+	<SettingMeta id="VME/IsegVHS/ModuleStatus" type="binary" name="Module status" address="0" writable="false" word_size="16" flags="u16">
 		<flag bit="0" description="Activation of fine adjustment" />
 		<flag bit="1" description="Interlock output is active" />
 		<flag bit="2" description="Module is in state STOP, all high voltages are off" />
@@ -54,7 +54,7 @@
 		<flag bit="14" description="Module temperature is good" />
 		<flag bit="15" description="Kill enable" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/ModuleControl" type="binary" name="Module control" address="2" writable="true" word_size="16">
+	<SettingMeta id="VME/IsegVHS/ModuleControl" type="binary" name="Module control" address="2" writable="true" word_size="16" flags="u16">
 		<flag bit="0" description="Set into special mode" />
 		<flag bit="1" description="Recall set values" />
 		<flag bit="2" description="SetStop" />
@@ -67,7 +67,7 @@
 		<flag bit="14" description="Set kill enable" />
 		<flag bit="15" description="Do save values" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/ModuleEventStatus" type="binary" name="Module event status" address="4" writable="true" word_size="16">
+	<SettingMeta id="VME/IsegVHS/ModuleEventStatus" type="binary" name="Module event status" address="4" writable="true" word_size="16" flags="u16">
 		<flag bit="1" description="Event: restart of HV after the RestartTimerAfterRecallSetValues" />
 		<flag bit="4" description="Event: Module needs factory service" />
 		<flag bit="5" description="Event: Input error in connection with module access" />
@@ -75,14 +75,14 @@
 		<flag bit="13" description="Event: at least one supply is not good" />
 		<flag bit="14" description="Event: temperature above 55°C" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/ModuleEventMask" type="binary" name="Module event mask" address="6" writable="true" word_size="16">
+	<SettingMeta id="VME/IsegVHS/ModuleEventMask" type="binary" name="Module event mask" address="6" writable="true" word_size="16" flags="u16">
 		<flag bit="1" description="Restart of HV after RestartTimerAfterRecallSetValues" />
 		<flag bit="5" description="Input error in conenction with module access" />
 		<flag bit="10" description="Safety loop is open" />
 		<flag bit="13" description="at least one supply not good" />
 		<flag bit="14" description="Temperature above 55°C" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/ModuleEventChannelStatus" type="binary" name="Module event channel status" address="8" writable="true" word_size="16">
+	<SettingMeta id="VME/IsegVHS/ModuleEventChannelStatus" type="binary" name="Module event channel status" address="8" writable="true" word_size="16" flags="u16">
 		<flag bit="0" description="CH00" />
 		<flag bit="1" description="CH01" />
 		<flag bit="2" description="CH02" />
@@ -96,7 +96,7 @@
 		<flag bit="10" description="CH10" />
 		<flag bit="11" description="CH11" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/ModuleEventChannelMask" type="binary" name="Module event channel mask" address="10" writable="true" word_size="16">
+	<SettingMeta id="VME/IsegVHS/ModuleEventChannelMask" type="binary" name="Module event channel mask" address="10" writable="true" word_size="16" flags="u16">
 		<flag bit="0" description="CH00" />
 		<flag bit="1" description="CH01" />
 		<flag bit="2" description="CH02" />
@@ -110,7 +110,7 @@
 		<flag bit="10" description="CH10" />
 		<flag bit="11" description="CH11" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/ModuleEventGroupStatus" type="binary" name="Module event group status" address="12" writable="true" word_size="32">
+	<SettingMeta id="VME/IsegVHS/ModuleEventGroupStatus" type="binary" name="Module event group status" address="12" writable="true" word_size="32" flags="u32">
 		<flag bit="0" description="GR00" />
 		<flag bit="1" description="GR01" />
 		<flag bit="2" description="GR02" />
@@ -144,7 +144,7 @@
 		<flag bit="30" description="GR30" />
 		<flag bit="31" description="GR31" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/ModuleEventGroupMask" type="binary" name="Module event group mask" address="16" writable="true" word_size="32">
+	<SettingMeta id="VME/IsegVHS/ModuleEventGroupMask" type="binary" name="Module event group mask" address="16" writable="true" word_size="32" flags="u32">
 		<flag bit="0" description="GR00" />
 		<flag bit="1" description="GR01" />
 		<flag bit="2" description="GR02" />
@@ -186,9 +186,9 @@
 	<SettingMeta id="VME/IsegVHS/SupplyP12" type="floating" name="Supply voltage +12" address="40" writable="false" unit="V" />
 	<SettingMeta id="VME/IsegVHS/SupplyN12" type="floating" name="Supply voltage -12" address="44" writable="false" unit="V" />
 	<SettingMeta id="VME/IsegVHS/Temperature" type="floating" name="Board temperature" address="48" writable="false" unit="°C" />
-	<SettingMeta id="VME/IsegVHS/SerialNumber" type="integer" hardware_type="u32" name="Serial number" address="52" writable="false"/>
-	<SettingMeta id="VME/IsegVHS/FirmwareRelease" type="integer" hardware_type="u32" name="Firmware release" address="56" writable="false"/>
-	<SettingMeta id="VME/IsegVHS/PlacedChannels" type="binary" name="Placed channels" address="60" writable="false" word_size="16">
+	<SettingMeta id="VME/IsegVHS/SerialNumber" type="integer" flags="u32" name="Serial number" address="52" writable="false"/>
+	<SettingMeta id="VME/IsegVHS/FirmwareRelease" type="integer" flags="u32" name="Firmware release" address="56" writable="false"/>
+	<SettingMeta id="VME/IsegVHS/PlacedChannels" type="binary" name="Placed channels" address="60" writable="false" word_size="16" flags="u16">
 		<flag bit="0" description="CH00" />
 		<flag bit="1" description="CH01" />
 		<flag bit="2" description="CH02" />
@@ -202,8 +202,9 @@
 		<flag bit="10" description="CH10" />
 		<flag bit="11" description="CH11" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/RestartTimeAfterRecallSetValues" type="integer" hardware_type="u16" name="RestartTimeAfterRecallSetValues" address="80" writable="true" unit="ms" />
-	<SettingMeta id="VME/IsegVHS/ADCSamplesPerSecond" type="int_menu" hardware_type="u16" name="ADC samples per second" address="88" writable="true">
+	<SettingMeta id="VME/IsegVHS/DeviceClass" type="integer" flags="u16" name="Device class" address="62" writable="false"/>
+	<SettingMeta id="VME/IsegVHS/RestartTimeAfterRecallSetValues" type="integer" flags="u16" name="RestartTimeAfterRecallSetValues" address="80" writable="true" unit="ms" />
+	<SettingMeta id="VME/IsegVHS/ADCSamplesPerSecond" type="int_menu" flags="u16" name="ADC samples per second" address="88" writable="true">
 		<menu_item item_value="5" item_text="5 SPS" />
 		<menu_item item_value="10" item_text="10 SPS" />
 		<menu_item item_value="25" item_text="25 SPS" />
@@ -211,7 +212,7 @@
 		<menu_item item_value="60" item_text="60 SPS" />
 		<menu_item item_value="100" item_text="100 SPS" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/DigitalFilter" type="int_menu" hardware_type="u16" name="Digital filter" address="90" writable="true">
+	<SettingMeta id="VME/IsegVHS/DigitalFilter" type="int_menu" flags="u16" name="Digital filter" address="90" writable="true">
 		<menu_item item_value="1" item_text="1 sample" />
 		<menu_item item_value="16" item_text="16 samples" />
 		<menu_item item_value="64" item_text="64 samples" />
@@ -219,7 +220,7 @@
 		<menu_item item_value="512" item_text="512 samples" />
 		<menu_item item_value="1024" item_text="1024 samples" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/VendorID" type="integer" hardware_type="u32" name="Vendor ID" address="92" writable="false"/>
+	<SettingMeta id="VME/IsegVHS/VendorID" type="integer" flags="u32" name="Vendor ID" address="92" writable="false"/>
 
 	<SettingMeta id="VME/IsegVHS/Channel" type="stem" name="Channel" address="1" writable="true" saveworthy="false">
 		<branch address="0" id="VME/IsegVHS/Channel/Status" />
@@ -262,7 +263,7 @@
 	<SettingMeta id="VME/IsegVHS/Channel/Status/Ramping" type="text" name="RAMPING" address="2263453729" writable="false" visible="false" />
 	<SettingMeta id="VME/IsegVHS/Channel/Status/Off" type="text" name="OFF" address="2164195328" writable="false" visible="false" />
 
-	<SettingMeta id="VME/IsegVHS/Channel/ChannelStatus" type="binary" name="Channel status" address="0" writable="false" word_size="16">
+	<SettingMeta id="VME/IsegVHS/Channel/ChannelStatus" type="binary" name="Channel status" address="0" writable="false" word_size="16" flags="u16">
 		<flag bit="2" description="Input error" />
 		<flag bit="3" description="Is on" />
 		<flag bit="4" description="Ramp is running" />
@@ -276,13 +277,13 @@
 		<flag bit="14" description="Hardware: current limit has been exceeded (when KillEnable = 0)" />
 		<flag bit="15" description="Hardware: voltage limit has been exceeded (when KillEnable = 0)" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/Channel/ChannelControl" type="binary" name="Channel control" address="2" writable="true" word_size="16">
+	<SettingMeta id="VME/IsegVHS/Channel/ChannelControl" type="binary" name="Channel control" address="2" writable="true" word_size="16" flags="u16">
 		<flag bit="3" description="On, if 1; set Off if 0: ramp the output to Vset or to Zero" />
 		<flag bit="5" description="shut off the channel without ramp, clear the Vset value" />
 		<flag bit="10" description="if 1 - set asymmetric current bounds; if 0 - set symmetric current bounds" />
 		<flag bit="11" description="if 1 - set asymmetric voltage bounds; if 0 - set symmetric voltage bounds" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/Channel/ChannelEventStatus" type="binary" name="Channel event status" address="4" writable="true" word_size="16">
+	<SettingMeta id="VME/IsegVHS/Channel/ChannelEventStatus" type="binary" name="Channel event status" address="4" writable="true" word_size="16" flags="u16">
 		<flag bit="2" description="Input error" />
 		<flag bit="3" description="Change from state ON to state OFF without ramp" />
 		<flag bit="4" description="End of ramp" />
@@ -296,7 +297,7 @@
 		<flag bit="14" description="Hardware: current limit has been exceeded" />
 		<flag bit="15" description="Hardware: voltage limit has been exceeded" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/Channel/ChannelEventMask" type="binary" name="Channel event mask" address="6" writable="true" word_size="16">
+	<SettingMeta id="VME/IsegVHS/Channel/ChannelEventMask" type="binary" name="Channel event mask" address="6" writable="true" word_size="16" flags="u16">
 		<flag bit="2" description="Input error" />
 		<flag bit="3" description="Change from state ON to state OFF without ramp" />
 		<flag bit="4" description="End of ramp" />
@@ -310,7 +311,7 @@
 		<flag bit="14" description="Hardware: current limit has been exceeded" />
 		<flag bit="15" description="Hardware: voltage limit has been exceeded" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/Channel/VoltageSet" type="floating" name="Voltage preset" address="8" writable="true" step="0.01" unit="V" />
+	<SettingMeta id="VME/IsegVHS/Channel/VoltageSet" type="floating" name="Voltage preset" address="8" writable="true" step="0.01" unit="V" flags="gain"/>
 	<SettingMeta id="VME/IsegVHS/Channel/CurrentSetOrTrip" type="floating" name="Current preset" address="12" writable="true" step="0.01" unit="A" />
 	<SettingMeta id="VME/IsegVHS/Channel/VoltageMeasure" type="floating" name="Voltage measured" address="16" writable="false" unit="V" />
 	<SettingMeta id="VME/IsegVHS/Channel/CurrentMeasure" type="floating" name="Current measured" address="20" writable="false" unit="A" />
@@ -325,12 +326,12 @@
 	<SettingMeta id="VME/IsegVHS/FixedGroups/SetCurrentAllChannels" type="floating" name="Set current for all channels" address="676" writable="true" unit="A" />
 	<SettingMeta id="VME/IsegVHS/FixedGroups/SetVoltageBoundsAllChannels" type="floating" name="Set voltage bounds for all channels" address="680" writable="true" unit="V"/>
 	<SettingMeta id="VME/IsegVHS/FixedGroups/SetCurrentBoundsAllChannels" type="floating" name="Set current bounds for all channels" address="684" writable="true" unit="A" />
-	<SettingMeta id="VME/IsegVHS/FixedGroups/SetEmergencyAllChannels" type="integer" hardware_type="u32" name="Trigger emergency shutoff" address="688" writable="true"/>
-    <SettingMeta id="VME/IsegVHS/FixedGroups/SetOnOffAllChannels" type="integer" hardware_type="u32" name="Set all channels ON/OFF" address="692" writable="true"/>
+	<SettingMeta id="VME/IsegVHS/FixedGroups/SetEmergencyAllChannels" type="integer" flags="u32" name="Trigger emergency shutoff" address="688" writable="true"/>
+    <SettingMeta id="VME/IsegVHS/FixedGroups/SetOnOffAllChannels" type="integer" flags="u32" name="Set all channels ON/OFF" address="692" writable="true"/>
 	<SettingMeta id="VME/IsegVHS/FixedGroups/SetVoltageIlkMinSetAllChannels" type="floating" name="Set voltage IlkMinSet for all channels" address="696" writable="true" unit="V"/>
 	<SettingMeta id="VME/IsegVHS/FixedGroups/SetCurrentIlkMinSetAllChannels" type="floating" name="Set current IlkMinSet for all channels" address="700" writable="true" unit="A" />
 
-	<SettingMeta id="VME/IsegVHS/dummy for cut and paste purposes" type="binary" name="T" address="0" writable="false" word_size="16">
+	<SettingMeta id="VME/IsegVHS/dummy for cut and paste purposes" type="binary" name="T" address="0" writable="false" word_size="16" flags="u16">
 		<flag bit="0" description="" />
 		<flag bit="1" description="" />
 		<flag bit="2" description="" />

@@ -20,19 +20,14 @@
  *
  ******************************************************************************/
 
-#include "IsegVHS_plugin.h"
-#include <boost/lexical_cast.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
+#include "IsegVHS_module.h"
+#include "vmecontroller.h"
 #include "custom_logger.h"
-#include "custom_timer.h"
 
-#define ISEG_VENDOR_ID									0x69736567
+#define ISEG_VENDOR_ID        0x69736567
+#define ISEG_DEVCLASS_V12C0   20          // QpxIsegVHSPlugin 12 channel common ground VME
 
 // --- VHS12 ------------------------------------------------------------------
-#define VhsFirmwareReleaseOFFSET          56
-#define VhsDeviceClassOFFSET              62
-#define VhsVendorIdOFFSET                 92
 #define VhsNewBaseAddressOFFSET           0x03A0
 #define VhsNewBaseAddressXorOFFSET        0x03A2
 #define VhsNewBaseAddressAcceptedOFFSET   0x03A6
@@ -216,61 +211,8 @@ bool QpxIsegVHSPlugin::write_settings_bulk(Gamma::Setting &set) {
   return true;
 }
 
-bool QpxIsegVHSPlugin::boot() {
-  if (!(status_ & DeviceStatus::can_boot)) {
-    PL_WARN << "<IsegVHS> Cannot boot. Failed flag check (can_boot == 0)";
-    return false;
-  }
-
-  status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
-
-  if (!connected()) {
-    PL_WARN << "<IsegVHS> Not connected to controller";
-    return false;
-  }
-
-  status_ = DeviceStatus::loaded | DeviceStatus::booted;
-  return true;
-}
-
-bool QpxIsegVHSPlugin::die() {
-  PL_DBG << "<IsegVHS> Disconnecting";
-
-  disconnect();
-  status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
-  return true;
-}
 
 void QpxIsegVHSPlugin::get_all_settings() {
-}
-
-bool QpxIsegVHSPlugin::connect(VmeController *controller, int baseAddress)
-{
-  m_controller = controller;
-  setBaseAddress(baseAddress);
-}
-
-bool QpxIsegVHSPlugin::connected() const
-{
-  uint32_t vendorId = 0;
-  if (m_controller)
-    vendorId = readLong(m_baseAddress + VhsVendorIdOFFSET);
-
-  return vendorId == ISEG_VENDOR_ID;
-}
-
-void QpxIsegVHSPlugin::disconnect()
-{
-  m_controller = nullptr;
-  m_baseAddress = 0;
-}
-
-std::string QpxIsegVHSPlugin::address() const {
-  std::stringstream stream;
-  stream << "VME BA 0x"
-         << std::setfill ('0') << std::setw(sizeof(uint16_t)*2)
-         << std::hex << m_baseAddress;
-  return stream.str();
 }
 
 bool QpxIsegVHSPlugin::read_setting(Gamma::Setting& set) const {
@@ -280,26 +222,17 @@ bool QpxIsegVHSPlugin::read_setting(Gamma::Setting& set) const {
   if (!(status_ & Qpx::DeviceStatus::booted))
     return false;
 
-  if (set.metadata.setting_type == Gamma::SettingType::floating)
+  if (set.metadata.setting_type == Gamma::SettingType::floating) {
     set.value_dbl = readFloat(m_baseAddress + set.metadata.address);
-  else if (set.metadata.setting_type == Gamma::SettingType::binary) {
-    if (set.metadata.maximum == 32)
-      set.value_int = readLong(m_baseAddress + set.metadata.address);
-    else if (set.metadata.maximum == 16)
-      set.value_int = readShort(m_baseAddress + set.metadata.address);
-    else {
-      PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
-      return false;
-    }
     return true;
   }
-  else if ((set.metadata.setting_type == Gamma::SettingType::integer)
-           || (set.metadata.setting_type == Gamma::SettingType::boolean)
-           || (set.metadata.setting_type == Gamma::SettingType::int_menu))
-  {
-    if (set.metadata.hardware_type == "u32")
+  else if ((set.metadata.setting_type == Gamma::SettingType::binary)
+            || (set.metadata.setting_type == Gamma::SettingType::integer)
+            || (set.metadata.setting_type == Gamma::SettingType::boolean)
+             || (set.metadata.setting_type == Gamma::SettingType::int_menu)) {
+    if (set.metadata.flags.count("u32"))
       set.value_int = readLong(m_baseAddress + set.metadata.address);
-    else if (set.metadata.hardware_type == "u16")
+    else if (set.metadata.flags.count("u16"))
       set.value_int = readShort(m_baseAddress + set.metadata.address);
     else {
       PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
@@ -314,26 +247,17 @@ bool QpxIsegVHSPlugin::write_setting(Gamma::Setting& set) {
   if (!(status_ & Qpx::DeviceStatus::booted))
     return false;
 
-  if (set.metadata.setting_type == Gamma::SettingType::floating)
+  if (set.metadata.setting_type == Gamma::SettingType::floating) {
     writeFloat(m_baseAddress + set.metadata.address, set.value_dbl);
-  else if (set.metadata.setting_type == Gamma::SettingType::binary) {
-    if (set.metadata.maximum == 32)
-      writeLong(m_baseAddress + set.metadata.address, set.value_int);
-    else if (set.metadata.maximum == 16)
-      writeShort(m_baseAddress + set.metadata.address, set.value_int);
-    else {
-      PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
-      return false;
-    }
     return true;
-  }
-  else if ((set.metadata.setting_type == Gamma::SettingType::integer)
+  } else if ((set.metadata.setting_type == Gamma::SettingType::binary)
+           || (set.metadata.setting_type == Gamma::SettingType::integer)
            || (set.metadata.setting_type == Gamma::SettingType::boolean)
            || (set.metadata.setting_type == Gamma::SettingType::int_menu))
   {
-    if (set.metadata.hardware_type == "u32")
+    if (set.metadata.flags.count("u32"))
       writeLong(m_baseAddress + set.metadata.address, set.value_int);
-    else if (set.metadata.hardware_type == "u16")
+    else if (set.metadata.flags.count("u16"))
       writeShort(m_baseAddress + set.metadata.address, set.value_int);
     else {
       PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
@@ -420,40 +344,6 @@ void QpxIsegVHSPlugin::writeLong(int address, uint32_t data)
 #endif
 }
 
-
-//=============================================================================
-// Module Commands
-//=============================================================================
-
-
-std::string QpxIsegVHSPlugin::firmwareName() const
-{
-  if (!m_controller)
-    return std::string();
-
-  uint32_t version = readShort(m_baseAddress + VhsFirmwareReleaseOFFSET);
-
-  return std::to_string(version >> 24) + std::to_string(version >> 16) + "." +
-    std::to_string(version >>  8) + std::to_string(version >>  0);
-}
-
-
-bool QpxIsegVHSPlugin::setBaseAddress(uint32_t baseAddress)
-{
-  m_baseAddress = baseAddress;
-
-  //uint32_t vendorId = readLong(m_baseAddress + VhsVendorIdOFFSET);
-  uint32_t tmp = readShort(m_baseAddress + VhsFirmwareReleaseOFFSET /*60*/);
-
-  int deviceClass = (uint16_t)tmp;
-
-  //PL_DBG << "device class = " << deviceClass;
-
-  int V12C0 = 20;		// QpxIsegVHSPlugin 12 channel common ground VME
-
-  return (deviceClass == V12C0);
-}
-
 //=============================================================================
 // Special Commands
 //=============================================================================
@@ -476,6 +366,45 @@ uint32_t QpxIsegVHSPlugin::verifyBaseAddress(void) const
   }
 
   return newAddress;
+}
+
+
+//=============================================================================
+// Module Commands
+//=============================================================================
+
+bool QpxIsegVHSPlugin::connected() const
+{
+  if (!m_controller)
+    return false;
+
+  Gamma::Setting vendID(this->device_name() + "/VendorID");
+  vendID.enrich(setting_definitions_);
+  read_setting(vendID);
+
+  if (vendID.value_int != ISEG_VENDOR_ID)
+    return false;
+
+  Gamma::Setting devClass(this->device_name() + "/DeviceClass");
+  devClass.enrich(setting_definitions_);
+  read_setting(devClass);
+
+  return (devClass.value_int == ISEG_DEVCLASS_V12C0);
+}
+
+std::string QpxIsegVHSPlugin::firmwareName() const
+{
+  if (!m_controller)
+    return std::string();
+
+  Gamma::Setting fwaddress(this->device_name() + "/FirmwareRelease");
+  fwaddress.enrich(setting_definitions_);
+  read_setting(fwaddress);
+
+  uint32_t version = fwaddress.value_int;
+
+  return std::to_string(version >> 24) + std::to_string(version >> 16) + "." +
+    std::to_string(version >>  8) + std::to_string(version >>  0);
 }
 
 

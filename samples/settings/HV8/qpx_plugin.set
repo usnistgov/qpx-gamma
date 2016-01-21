@@ -12,7 +12,7 @@
 		<branch address="9" id="HV8/Channels" />
 	</SettingMeta>
 	<SettingMeta id="HV8/Channels" type="stem" name="Channels" address="-1" writable="true" saveworthy="true">
-		<branch address="0" id="HV8/Channels/Voltage" />
+		<branch address="0" id="HV8/Channels/Voltage" flags="gain"/>
 	</SettingMeta>
 	<SettingMeta id="HV8/PortName" type="file_path" visible="true" name="Port name" address="0" writable="true" unit="Serial port (*)"/>
 	<SettingMeta id="HV8/BaudRate" type="int_menu" name="Baud rate" address="0" writable="true">

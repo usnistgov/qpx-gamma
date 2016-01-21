@@ -23,19 +23,11 @@
 #ifndef QPX_MTDC32_PLUGIN
 #define QPX_MTDC32_PLUGIN
 
-#include "detector.h"
-#include <boost/thread.hpp>
-#include <boost/atomic.hpp>
-
-#include "vmemodule.h"
-#include "vmecontroller.h"
-#include "generic_setting.h"
-
-#define MTDC32_ADDRESS_SPACE_LENGTH				0x10000000
+#include "Mesytec_base_module.h"
 
 namespace Qpx {
 
-class MTDC32 : public VmeModule {
+class MTDC32 : public MesytecVME {
   
 public:
   MTDC32();
@@ -45,43 +37,13 @@ public:
   static std::string plugin_name() {return "VME/MTDC32";}
   std::string device_name() const override {return plugin_name();}
 
-  bool write_settings_bulk(Gamma::Setting &set) override;
-  bool read_settings_bulk(Gamma::Setting &set) const override;
-  void get_all_settings() override;
-  bool boot() override;
-  bool die() override;
-
-  //VmeModule
-  virtual bool    connect(VmeController *controller, int baseAddress);
-  virtual bool    connected() const;
-  virtual void    disconnect();
-
-  std::string firmwareName() const;
-
-  uint32_t    baseAddress() const { return m_baseAddress; }
-  virtual uint32_t baseAddressSpaceLength() const {return MTDC32_ADDRESS_SPACE_LENGTH;}
-  bool        setBaseAddress(uint32_t baseAddress);
-  std::string address() const;
-
-
 private:
   //no copying
   void operator=(MTDC32 const&);
   MTDC32(const MTDC32&);
 
 protected:
-  void rebuild_structure(Gamma::Setting &set);
-  bool read_setting(Gamma::Setting& set) const;
-  bool write_setting(Gamma::Setting& set);
-
-  uint32_t m_baseAddress;
-  VmeController *m_controller;
-
-
-  uint16_t readShort(int address) const;
-  void    writeShort(int address, uint16_t data);
-  float   readFloat(int address) const;
-  void    writeFloat(int address, float data);
+  void rebuild_structure(Gamma::Setting &set) override;
 
 };
 

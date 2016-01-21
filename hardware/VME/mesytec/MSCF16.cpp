@@ -16,57 +16,26 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      QpxVmePlugin
+ *      MSCF16
  *
  ******************************************************************************/
 
-#ifndef QPX_VME_PLUGIN
-#define QPX_VME_PLUGIN
-
-#include "daq_device.h"
-#include <boost/thread.hpp>
-#include <boost/atomic.hpp>
-
-class VmeController;
-class VmeModule;
+#include "MSCF16.h"
 
 namespace Qpx {
 
-class QpxVmePlugin : public DaqDevice {
-  
-public:
-  QpxVmePlugin();
-  ~QpxVmePlugin();
+static DeviceRegistrar<MSCF16> registrar("VME/MesytecRC/MSCF16");
 
-  static std::string plugin_name() {return "VME";}
-  std::string device_name() const override {return plugin_name();}
-
-  bool write_settings_bulk(Gamma::Setting &set) override;
-  bool read_settings_bulk(Gamma::Setting &set) const override;
-  void get_all_settings() override;
-  bool boot() override;
-  bool die() override;
-
-private:
-  //no copying
-  void operator=(QpxVmePlugin const&);
-  QpxVmePlugin(const QpxVmePlugin&);
-
-protected:
-
-  void rebuild_structure(Gamma::Setting &set);
-
-  bool read_register(Gamma::Setting& set) const;
-  bool write_register(Gamma::Setting& set);
-
-  std::string controller_name_;
-  VmeController *controller_;
-
-  std::map<std::string, VmeModule*> modules_;
-
-};
-
-
+MSCF16::MSCF16() {
+  controller_ = nullptr;
+  modnum_ = 0;
+  status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
+  module_ID_code_ = -1;
 }
 
-#endif
+
+MSCF16::~MSCF16() {
+  die();
+}
+
+}

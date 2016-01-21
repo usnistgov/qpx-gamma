@@ -25,8 +25,12 @@
 #include <cstdint>
 #include <boost/timer/timer.hpp>
 
-inline static void wait_ms(int millisecs) {
-  boost::this_thread::sleep(boost::posix_time::milliseconds(millisecs));
+inline static void wait_ms(int millisex) {
+  boost::this_thread::sleep(boost::posix_time::milliseconds(millisex));
+}
+
+inline static void wait_us(int microsex) {
+  boost::this_thread::sleep(boost::posix_time::microseconds(microsex));
 }
 
 class CustomTimer: public boost::timer::cpu_timer {

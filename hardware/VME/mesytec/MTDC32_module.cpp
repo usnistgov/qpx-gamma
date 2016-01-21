@@ -16,57 +16,34 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      QpxVmePlugin
+ *      MTDC32
  *
  ******************************************************************************/
 
-#ifndef QPX_VME_PLUGIN
-#define QPX_VME_PLUGIN
+#include "MTDC32_module.h"
+#include "custom_logger.h"
 
-#include "daq_device.h"
-#include <boost/thread.hpp>
-#include <boost/atomic.hpp>
-
-class VmeController;
-class VmeModule;
+#define MTDC32_Firmware                   0x0105
 
 namespace Qpx {
 
-class QpxVmePlugin : public DaqDevice {
-  
-public:
-  QpxVmePlugin();
-  ~QpxVmePlugin();
+static DeviceRegistrar<MTDC32> registrar("VME/MTDC32");
 
-  static std::string plugin_name() {return "VME";}
-  std::string device_name() const override {return plugin_name();}
+MTDC32::MTDC32() {
+  m_controller = nullptr;
+  m_baseAddress = 0;
+  status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
+  module_firmware_code_ = MTDC32_Firmware;
+}
 
-  bool write_settings_bulk(Gamma::Setting &set) override;
-  bool read_settings_bulk(Gamma::Setting &set) const override;
-  void get_all_settings() override;
-  bool boot() override;
-  bool die() override;
 
-private:
-  //no copying
-  void operator=(QpxVmePlugin const&);
-  QpxVmePlugin(const QpxVmePlugin&);
+MTDC32::~MTDC32() {
+  this->die();
+}
 
-protected:
 
-  void rebuild_structure(Gamma::Setting &set);
-
-  bool read_register(Gamma::Setting& set) const;
-  bool write_register(Gamma::Setting& set);
-
-  std::string controller_name_;
-  VmeController *controller_;
-
-  std::map<std::string, VmeModule*> modules_;
-
-};
-
+void MTDC32::rebuild_structure(Gamma::Setting &set) {
 
 }
 
-#endif
+}

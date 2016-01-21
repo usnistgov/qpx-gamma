@@ -71,7 +71,6 @@ struct SettingMeta : public XMLable {
 
   std::string        id_;
   SettingType        setting_type;
-  std::string        hardware_type; //can specify hardware-specific type info
 
   bool               writable;
   bool               visible;
@@ -82,6 +81,7 @@ struct SettingMeta : public XMLable {
   std::string        unit;                       //or extension if file
   std::map<int32_t, std::string> int_menu_items; //or intrinsic branches
   std::set<std::string> flags;
+  int16_t            max_indices;
 
 
   SettingMeta(const pugi::xml_node &node) : SettingMeta() {this->from_xml(node);}

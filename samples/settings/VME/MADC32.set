@@ -137,7 +137,7 @@
 	<SettingMeta id="VME/MADC32/ts_counter_lo" type="integer" name="Timestamp low"  address="24730" writable="false" description=""/>
 	<SettingMeta id="VME/MADC32/ts_counter_hi" type="integer" name="Timestamp high" address="24732" writable="false" description=""/>
 
-	<SettingMeta id="VME/MADC32/ModuleRC" type="stem" name="Mesytec control bus" writable="true" saveworthy="false">
+	<SettingMeta id="VME/MADC32/ModuleRC" type="stem" name="Mesytec control bus" writable="false" saveworthy="false" visible="false">
         <branch address="0" id="VME/MADC32/rc_busno" />
         <branch address="1" id="VME/MADC32/rc_modnum" />
         <branch address="2" id="VME/MADC32/rc_opcode" />
@@ -158,8 +158,8 @@
 	<SettingMeta id="VME/MADC32/rc_dat" type="integer" name="RC data"  address="24712" maximum="65535" writable="true" description=""/>
 	<SettingMeta id="VME/MADC32/rc_return_status" type="binary" name="RC send return status" address="24714" writable="true" word_size="4" description="">
 		<flag bit="0" description="active" />
-		<flag bit="1" description="address collision" />
-		<flag bit="2" description="no response from bus (no valid address)" />
+		<flag bit="1" description="collision" />
+		<flag bit="2" description="no response" />
 	</SettingMeta>
 	
 	

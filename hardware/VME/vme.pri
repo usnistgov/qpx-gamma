@@ -26,11 +26,14 @@ unix {
 
 INCLUDEPATH += $$PWD \
                $$PWD/wiener \
+               $$PWD/mesytec \
                $$PWD/boostdll
 
 SOURCES += $$files($$PWD/*.cpp) \
-           $$files($$PWD/wiener/*.cpp)
+           $$files($$PWD/wiener/*.cpp) \
+           $$files($$PWD/mesytec/*.cpp)
 
 HEADERS  += $$files($$PWD/*.h) \
             $$files($$PWD/wiener/*.h) \
+            $$files($$PWD/mesytec/*.h) \
             $$files($$PWD/boostdll/*.h)

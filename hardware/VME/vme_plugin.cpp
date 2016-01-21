@@ -26,6 +26,9 @@
 #include <boost/algorithm/string.hpp>
 #include "custom_logger.h"
 #include "custom_timer.h"
+#include "vmecontroller.h"
+#include "vmemodule.h"
+
 #include "vmusb.h"
 
 namespace Qpx {
@@ -208,35 +211,24 @@ bool QpxVmePlugin::read_register(Gamma::Setting& set) const {
 
   int wordsize = 0;
 
-  if (set.metadata.setting_type == Gamma::SettingType::binary) {
-    if (set.metadata.maximum == 32)
-      wordsize = 32;
-    else if (set.metadata.maximum == 16)
-      wordsize = 16;
-  }
-  else if ((set.metadata.setting_type == Gamma::SettingType::integer)
-           || (set.metadata.setting_type == Gamma::SettingType::int_menu))
+  if ((set.metadata.setting_type == Gamma::SettingType::binary)
+       || (set.metadata.setting_type == Gamma::SettingType::integer)
+       || (set.metadata.setting_type == Gamma::SettingType::int_menu))
   {
-    if (set.metadata.hardware_type == "u32")
-      wordsize = 32;
-    else if (set.metadata.hardware_type == "u16")
-      wordsize = 16;
+    if (set.metadata.flags.count("u32")) {
+      long data = controller_->readRegister(set.metadata.address);
+      set.value_int = data;
+      return true;
+    }
+    else if (set.metadata.flags.count("u16")) {
+      long data = controller_->readRegister(set.metadata.address);
+      data &= 0x0000FFFF;
+      set.value_int = data;
+      return true;
+    }
   }
-
-  if (wordsize == 16) {
-    long data = controller_->readRegister(set.metadata.address);
-    data &= 0x0000FFFF;
-    set.value_int = data;
-    return true;
-  } else if (wordsize == 32) {
-    long data = controller_->readRegister(set.metadata.address);
-    set.value_int = data;
-    return true;
-  } else {
-    PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
-    return false;
-  }
-  return true;
+  PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
+  return false;
 }
 
 bool QpxVmePlugin::write_register(Gamma::Setting& set) {
@@ -245,34 +237,23 @@ bool QpxVmePlugin::write_register(Gamma::Setting& set) {
 
   int wordsize = 0;
 
-  if (set.metadata.setting_type == Gamma::SettingType::binary) {
-    if (set.metadata.maximum == 32)
-      wordsize = 32;
-    else if (set.metadata.maximum == 16)
-      wordsize = 16;
-  }
-  else if ((set.metadata.setting_type == Gamma::SettingType::integer)
-           || (set.metadata.setting_type == Gamma::SettingType::int_menu))
+  if ((set.metadata.setting_type == Gamma::SettingType::binary)
+       || (set.metadata.setting_type == Gamma::SettingType::integer)
+       || (set.metadata.setting_type == Gamma::SettingType::int_menu))
   {
-    if (set.metadata.hardware_type == "u32")
-      wordsize = 32;
-    else if (set.metadata.hardware_type == "u16")
-      wordsize = 16;
+    if (set.metadata.flags.count("u32")) {
+      long data = set.value_int;
+      controller_->writeRegister(set.metadata.address, data);
+      return true;
+    }
+    else if (set.metadata.flags.count("u16")) {
+      long data = set.value_int &= 0x0000FFFF;
+      controller_->writeRegister(set.metadata.address, data);
+      return true;
+    }
   }
-
-  if (wordsize == 16) {
-    long data = set.value_int &= 0x0000FFFF;
-    controller_->writeRegister(set.metadata.address, data);
-    return true;
-  } else if (wordsize == 32) {
-    long data = set.value_int;
-    controller_->writeRegister(set.metadata.address, data);
-    return true;
-  } else {
-    PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
-    return false;
-  }
-  return true;
+  PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
+  return false;
 }
 
 
