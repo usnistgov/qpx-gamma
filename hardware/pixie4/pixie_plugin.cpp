@@ -248,16 +248,24 @@ bool Plugin::read_settings_bulk(Gamma::Setting &set) const {
 
 void Plugin::rebuild_structure(Gamma::Setting &set) {
   Gamma::Setting maxmod("Pixie4/System/MAX_NUMBER_MODULES");
-  Gamma::Setting totmod("Pixie4/System/NUMBER_MODULES");
-  Gamma::Setting slot("Pixie4/System/SLOT_WAVE");
-  Gamma::Setting mod("Pixie4/System/module");
-  Gamma::Setting chan("Pixie4/System/module/channel");
-
   maxmod = set.get_setting(maxmod, Gamma::Match::id);
+
+  Gamma::Setting totmod("Pixie4/System/NUMBER_MODULES");
   totmod = set.get_setting(totmod, Gamma::Match::id);
-  slot = set.get_setting(slot, Gamma::Match::id);
-  mod = set.get_setting(mod, Gamma::Match::id);
-  chan = set.get_setting(chan, Gamma::Match::id);
+
+  Gamma::Setting slot("Pixie4/System/SLOT_WAVE");
+  slot.enrich(setting_definitions_, true);
+
+  Gamma::Setting chan("Pixie4/System/module/channel");
+  chan.enrich(setting_definitions_, true);
+
+  Gamma::Setting mod("Pixie4/System/module");
+  mod.enrich(setting_definitions_, true);
+  for (int j=0; j < NUMBER_OF_CHANNELS; ++j) {
+    chan.metadata.address = j;
+    mod.branches.add_a(chan);
+  }
+
 
   int newmax = maxmod.value_int;
   int oldtot = totmod.value_int;
@@ -266,37 +274,33 @@ void Plugin::rebuild_structure(Gamma::Setting &set) {
     newmax = N_SYSTEM_PAR - 7;
   else if (newmax < 1)
     newmax = 1;
-  maxmod.value_int = newmax;
-  set.branches.replace(maxmod);
 
+  if (newmax != maxmod.value_int) {
+    maxmod.value_int = newmax;
+    set.branches.replace(maxmod);
+  }
 
   int newtot = 0;
   std::vector<Gamma::Setting> old_slots;
-  for (int i=0; i< N_SYSTEM_PAR - 7; ++i) {
-    slot.metadata.address = 7+i;
-    Gamma::Setting s = set.get_setting(slot, Gamma::Match::id | Gamma::Match::address);
-    if ((i < newmax) && (s.value_int > 0)) {
-      newtot++;
-      old_slots.push_back(s);
+  for (auto &q : set.branches.my_data_) {
+    if (q.id_ == "Pixie4/System/SLOT_WAVE") {
+      old_slots.push_back(q);
+      if (q.value_int > 0)
+        newtot++;
     }
+    if (old_slots.size() == newmax)
+      break;
   }
 
-  if (newmax > old_slots.size()) {
-    for (int i=old_slots.size(); i < newmax; ++i) {
-      slot.value_int = 0;
-      slot.metadata.address = 7+i;
-      old_slots.push_back(slot);
-    }
-  }
+  while (old_slots.size() > newmax)
+    old_slots.pop_back();
+
+  while (old_slots.size() < newmax)
+    old_slots.push_back(slot);
 
   if (newtot == 0) {
     newtot = 1;
-    old_slots[0].value_int = 3;
-  }
-
-  if (newtot != oldtot) {
-    totmod.value_int = newtot;
-    set.branches.replace(totmod);
+    old_slots[0].value_int = 2;
   }
 
   bool hardware_changed = false;
@@ -306,55 +310,75 @@ void Plugin::rebuild_structure(Gamma::Setting &set) {
       hardware_changed = true;
   }
 
+  if (newtot != oldtot)
+    hardware_changed = true;
+
+//  if (hardware_changed) {
+    totmod.value_int = newtot;
+    set.branches.replace(totmod);
+    while (set.branches.has_a(slot))
+      set.branches.remove_a(slot);
+    for (auto &q : old_slots)
+      set.branches.add_a(q);
+//  }
+
   //if (hardware_changed) PL_DBG << "hardware changed";
 
-  std::vector<Gamma::Setting> old_modules;
-  std::set<int> used_chan_indices;
+//  if (newtot != oldtot) {
+    std::vector<Gamma::Setting> old_modules;
 
-  for (int i=0; i< newtot; ++i) {
-    mod.metadata.address = i;
-    Gamma::Setting s = set.get_setting(mod, Gamma::Match::id | Gamma::Match::address);
-    if ((s != Gamma::Setting()) && (s.branches.size() > 0)) {
-      for (auto &q : s.indices)
-        used_chan_indices.insert(q);
-      old_modules.push_back(s);
-    }
-  }
-
-  int next_chan = 0;
-  if (old_modules.size() < newtot) {
-    for (int i=old_modules.size(); i < newtot; ++i) {
-      mod.del_setting(chan, Gamma::Match::id);
-      std::set<int32_t> new_set;
-      for (int j=0; j < NUMBER_OF_CHANNELS; ++j) {
-        while (used_chan_indices.count(next_chan))
-          next_chan++;
-        new_set.insert(next_chan);
-        used_chan_indices.insert(next_chan);
-        chan.indices.clear();
-        chan.indices.insert(next_chan);
-        chan.metadata.address = j;
-        mod.branches.add_a(chan);
+    int actualmods = 0;
+    for (auto &q : set.branches.my_data_) {
+      if (q.id_ == "Pixie4/System/module")  {
+        old_modules.push_back(q);
+        actualmods++;
       }
-      mod.metadata.address = i;
-      mod.indices = new_set;
-      old_modules.push_back(mod);
+      if (old_modules.size() == newtot)
+        break;
     }
-  }
 
-  set.del_setting(slot, Gamma::Match::id);
-  set.del_setting(mod, Gamma::Match::id);
+    while (old_modules.size() > newtot)
+      old_modules.pop_back();
 
-  for (auto &q : old_slots)
-    set.branches.add_a(q);
+    while (old_modules.size() < newtot)
+      old_modules.push_back(mod);
 
-  for (auto &q : old_modules)
-    set.branches.add_a(q);
+//    if (actualmods != newtot) {
+      while (set.branches.has_a(mod))
+        set.branches.remove_a(mod);
 
-  if (oldtot != newtot) {
+      for (auto &q : old_modules)
+        set.branches.add_a(q);
+//    }
+
     channel_indices_.resize(newtot);
     for (auto &q : channel_indices_)
       q.resize(NUMBER_OF_CHANNELS, -1);
+
+//  }
+
+  int ma = 0;
+  for (auto &m : set.branches.my_data_) {
+    if (m.id_ == "Pixie4/System/module") {
+      std::set<int32_t> new_set;
+      int ca = 0;
+      for (auto &c : m.branches.my_data_) {
+        if (c.id_ == "Pixie4/System/module/channel") {
+          if (c.indices.size() > 1) {
+            int32_t i = *c.indices.begin();
+            c.indices.clear();
+            c.indices.insert(i);
+          }
+          if (c.indices.size() > 0)
+            new_set.insert(*c.indices.begin());
+          c.metadata.address = ca;
+          ca++;
+        }
+      }
+      m.indices = new_set;
+      m.metadata.address = ma;
+      ma++;
+    }
   }
 }
 
@@ -411,24 +435,28 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
         if (k.metadata.setting_type == Gamma::SettingType::stem) {
           uint16_t modnum = k.metadata.address;
           if (modnum >= channel_indices_.size()) {
-            PL_WARN << "<PixiePlugin> module address out of bounds, ignoring branch";
+            PL_WARN << "<PixiePlugin> module address out of bounds, ignoring branch " << modnum;
             continue;
           }
           for (auto &p : k.branches.my_data_) {
+            if (p.metadata.setting_type != Gamma::SettingType::stem)
+              p.indices = k.indices;
+
             if (p.metadata.setting_type == Gamma::SettingType::stem) {
               uint16_t channum = p.metadata.address;
               if (channum >= NUMBER_OF_CHANNELS) {
-                PL_WARN << "<PixiePlugin> channel address out of bounds, ignoring branch";
+                PL_WARN << "<PixiePlugin> channel address out of bounds, ignoring branch " << channum;
                 continue;
               }
 
+              int det = -1;
+              if (!p.indices.empty())
+                det = *p.indices.begin();
+              channel_indices_[modnum][channum] = det;
+
               for (auto &o : p.branches.my_data_) {
-                if (!p.indices.empty()) {
-                  int det = *p.indices.begin();
-                  channel_indices_[modnum][channum] = det;
-                  o.indices.clear();
-                  o.indices.insert(det);
-                }
+                o.indices.clear();
+                o.indices.insert(det);
 
                 if (o.metadata.writable && (o.metadata.setting_type == Gamma::SettingType::floating) && (channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value_dbl)) {
                   channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value_dbl;

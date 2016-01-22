@@ -56,7 +56,6 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
   for (auto &q : set.branches.my_data_) {
     if (q.metadata.setting_type == Gamma::SettingType::stem) {
       if (modules_.count(q.id_) && modules_.at(q.id_)) {
-        //          PL_DBG << "read settings bulk " << q.id_;
         modules_.at(q.id_)->read_settings_bulk(q);
       } else if (q.id_ == "VME/Registers") {
         for (auto &k : q.branches.my_data_) {
@@ -64,7 +63,6 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
             //              PL_DBG << "IRQ Mask read";
             // do something fancy
           } else {
-            //              PL_DBG << "VmUsb register read";
             read_register(k);
           }
         }
@@ -146,10 +144,10 @@ bool QpxVmePlugin::boot() {
 //  }
 
   if (!controller_->connected()) {
-    PL_WARN << "<VmePlugin> Could not connect to " << controller_name_;
+    PL_WARN << "<VmePlugin> Could not connect to controller " << controller_name_;
     return false;
   } else {
-    PL_DBG << "<VmePlugin> Connected to " << controller_->controllerName()
+    PL_DBG << "<VmePlugin> Connected to controller " << controller_->controllerName()
            << " SN:" << controller_->serialNumber();
     controller_->clear_registers();
   }
@@ -159,15 +157,12 @@ bool QpxVmePlugin::boot() {
   for (auto &q : modules_) {
     if ((q.second) && (!q.second->connected())) {
       PL_DBG << "<VmePlugin> Searching for module " << q.first;
-//      long base_address = 0;
-//      if (q.first == "VME/MADC32")
-//        base_address = 0x20000000;
       for (long base_address = 0; base_address < 0xFFFFFFFF; base_address += q.second->baseAddressSpaceLength()) {
         q.second->connect(controller_, base_address);
 
         if (q.second->connected()) {
           q.second->boot(); //disregard return value
-          PL_DBG << "<VmePlugin> Adding module " << q.first
+          PL_DBG << "<VmePlugin> Connected to module " << q.first
                  << "[" << q.second->address()
                  << "] firmware=" << q.second->firmwareName()
                  << " booted=" << (0 != (q.second->status() & DeviceStatus::booted));

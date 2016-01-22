@@ -24,21 +24,21 @@
 			<Setting id="Pixie4/Files/PxiLst" type="file_path" value="/home/mgs/qpx/settings/XIA/PXIcode.lst" />
 		</Setting>
 		<Setting id="Pixie4/System" type="stem">
-			<Setting id="Pixie4/System/MAX_NUMBER_MODULES" type="integer" indices="-1" value="7" />
-			<Setting id="Pixie4/System/KEEP_CW" type="boolean" indices="-1" value="true" />
-			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" indices="-1" value="3" />
-			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" indices="-1" value="0" />
-			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" indices="-1" value="0" />
-			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" indices="-1" value="0" />
-			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" indices="-1" value="0" />
-			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" indices="-1" value="0" />
-			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" indices="-1" value="0" />
+			<Setting id="Pixie4/System/MAX_NUMBER_MODULES" type="integer" value="7" />
+			<Setting id="Pixie4/System/KEEP_CW" type="boolean" value="true" />
 			<Setting id="Pixie4/System/module" type="stem" indices="0 1 2 3">
 				<Setting id="Pixie4/System/module/channel" type="stem" indices="0" />
 				<Setting id="Pixie4/System/module/channel" type="stem" indices="1" />
 				<Setting id="Pixie4/System/module/channel" type="stem" indices="2" />
 				<Setting id="Pixie4/System/module/channel" type="stem" indices="3" />
 			</Setting>
+			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" value="2" />
+			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" value="0" />
+			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" value="0" />
+			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" value="0" />
+			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" value="0" />
+			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" value="0" />
+			<Setting id="Pixie4/System/SLOT_WAVE" type="integer" value="0" />
 		</Setting>
 	</Setting>
 </Setting>
