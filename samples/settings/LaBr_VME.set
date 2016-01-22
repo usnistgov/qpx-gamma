@@ -98,7 +98,38 @@
 			<Setting id="VME/MADC32/CountersB" type="stem" />
 			<Setting id="VME/MADC32/ModuleRC" type="stem" />
 			<Setting id="VME/MesytecRC/MSCF16" type="stem" reference="/MSCF16.set">
-				<Setting id="VME/MesytecRC/MSCF16/Groups" type="stem" />
+				<Setting id="VME/MesytecRC/MSCF16/Group" type="stem" indices="0 1 2">
+					<Setting id="VME/MesytecRC/MSCF16/gain" type="integer" indices="0 1 2" value="0" />
+					<Setting id="VME/MesytecRC/MSCF16/shaping_time" type="integer" indices="0 1 2" value="0" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" indices="0" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" indices="1" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" indices="2" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" indices="1" />
+				</Setting>
+				<Setting id="VME/MesytecRC/MSCF16/Group" type="stem" indices="4 5">
+					<Setting id="VME/MesytecRC/MSCF16/gain" type="integer" indices="4 5" value="0" />
+					<Setting id="VME/MesytecRC/MSCF16/shaping_time" type="integer" indices="4 5" value="0" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" indices="4" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" indices="5" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" />
+				</Setting>
+				<Setting id="VME/MesytecRC/MSCF16/Group" type="stem" indices="2">
+					<Setting id="VME/MesytecRC/MSCF16/gain" type="integer" indices="2" value="0" />
+					<Setting id="VME/MesytecRC/MSCF16/shaping_time" type="integer" indices="2" value="0" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" indices="2" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" />
+				</Setting>
+				<Setting id="VME/MesytecRC/MSCF16/Group" type="stem" indices="3">
+					<Setting id="VME/MesytecRC/MSCF16/gain" type="integer" indices="3" value="0" />
+					<Setting id="VME/MesytecRC/MSCF16/shaping_time" type="integer" indices="3" value="0" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" indices="3" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" />
+					<Setting id="VME/MesytecRC/MSCF16/Channel" type="stem" />
+				</Setting>
 			</Setting>
 		</Setting>
 		<Setting id="VME/MTDC32" type="stem" reference="/MTDC32.set">

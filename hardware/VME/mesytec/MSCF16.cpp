@@ -38,4 +38,79 @@ MSCF16::~MSCF16() {
   die();
 }
 
+void MSCF16::rebuild_structure(Gamma::Setting &set) {
+  Gamma::Setting group("VME/MesytecRC/MSCF16/Group");
+  group.enrich(setting_definitions_, true);
+  Gamma::Setting chan("VME/MesytecRC/MSCF16/Channel");
+  chan.enrich(setting_definitions_, true);
+
+  std::vector<Gamma::Setting> groups;
+  for (auto &k : set.branches.my_data_)
+    if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/MesytecRC/MSCF16/Group"))
+      groups.push_back(k);
+
+  while (groups.size() < 4)
+    groups.push_back(group);
+  while (groups.size() > 4)
+    groups.pop_back();
+
+  int i=0;
+  for (auto &gr : groups) {
+    std::vector<Gamma::Setting> channels;
+    std::set<int32_t> indices;
+
+    gr.metadata.name += " " + std::to_string(i+1);
+    for (auto &k : gr.branches.my_data_) {
+      if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/MesytecRC/MSCF16/Channel"))
+        channels.push_back(k);
+      else
+        k.metadata.address += i;
+    }
+
+    while (channels.size() < 4)
+      channels.push_back(chan);
+    while (groups.size() > 4)
+      channels.pop_back();
+
+    int j=0;
+    for (auto &ch : channels) {
+      ch.metadata.name += " " + std::to_string(i*4 + j + 1);
+      if (ch.indices.size() > 1) {
+        int32_t idx = *ch.indices.begin();
+        ch.indices.clear();
+        ch.indices.insert(idx);
+      }
+      for (auto &m : ch.branches.my_data_) {
+        m.metadata.address += i*4 + j;
+        m.indices = ch.indices;
+      }
+      for (auto &idx : ch.indices)
+        indices.insert(idx);
+      j++;
+    }
+
+    while (gr.branches.has_a(chan))
+      gr.branches.remove_a(chan);
+
+    for (auto &q : channels)
+      gr.branches.add_a(q);
+
+    gr.indices = indices;
+
+    for (auto &k : gr.branches.my_data_) {
+      if (k.metadata.setting_type != Gamma::SettingType::stem)
+        k.indices = indices;
+    }
+
+    i++;
+  }
+
+  while (set.branches.has_a(group))
+    set.branches.remove_a(group);
+
+  for (auto &q : groups)
+    set.branches.add_a(q);
+
+}
+
 }

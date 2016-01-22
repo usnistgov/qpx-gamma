@@ -17,7 +17,7 @@
         <branch address="13" id="VME/MesytecRC/MSCF16/gain_common" />
         <branch address="14" id="VME/MesytecRC/MSCF16/PZ_common" />
 
-		<branch address="30" id="VME/MesytecRC/MSCF16/Groups" />
+		<branch address="30" id="VME/MesytecRC/MSCF16/Group" />
 	</SettingMeta>
 	<SettingMeta id="VME/MesytecRC/MSCF16/version" type="binary" name="Version" address="49" writable="false" />
 	<SettingMeta id="VME/MesytecRC/MSCF16/RC_on" type="boolean" name="RC enabled" address="48" writable="true" />
@@ -35,41 +35,19 @@
 	<SettingMeta id="VME/MesytecRC/MSCF16/gain_common" type="integer" name="Gain common" address="4" maximum="15" writable="true"/>
 	<SettingMeta id="VME/MesytecRC/MSCF16/PZ_common" type="integer" name="PZ value common" address="38" maximum="255" writable="true"/>
 	
-	<SettingMeta id="VME/MesytecRC/MSCF16/Groups" type="stem" name="Groups" writable="true" saveworthy="false">
-        <branch address="0" id="VME/MesytecRC/MSCF16/buffer_data_length" />
-        <branch address="1" id="VME/MesytecRC/MSCF16/data_length_format" />
-        <branch address="2" id="VME/MesytecRC/MSCF16/readout_reset" />
-        <branch address="3" id="VME/MesytecRC/MSCF16/multi_event" />
-        <branch address="4" id="VME/MesytecRC/MSCF16/marking_type" />
-   		<branch address="5" id="VME/MesytecRC/MSCF16/start_acq" />
-		<branch address="6" id="VME/MesytecRC/MSCF16/FIFO_reset" />
-		<branch address="7" id="VME/MesytecRC/MSCF16/data_ready" />
+	<SettingMeta id="VME/MesytecRC/MSCF16/Group" type="stem" name="Group" writable="true" saveworthy="true">
+        <branch address="0" id="VME/MesytecRC/MSCF16/gain" />
+        <branch address="1" id="VME/MesytecRC/MSCF16/shaping_time" />
+        <branch address="2" id="VME/MesytecRC/MSCF16/Channel" />
 	</SettingMeta>
-	<SettingMeta id="VME/MesytecRC/MSCF16/buffer_data_length" type="integer" name="Buffer length" address="24624" maximum="65535" writable="false" unit="words (!)" description="number of words in buffer, word size = data_length_format"/>
-	<SettingMeta id="VME/MesytecRC/MSCF16/data_length_format" type="int_menu" name="Data length format" address="24626" writable="true">
-		<menu_item item_value="0" item_text="8 bits"/>
-        <menu_item item_value="1" item_text="16 bits"/>
-        <menu_item item_value="2" item_text="32 bits"/>
-        <menu_item item_value="3" item_text="64 bits"/>
+	<SettingMeta id="VME/MesytecRC/MSCF16/gain" type="integer" name="Gain" address="0" maximum="15" writable="true"/>
+	<SettingMeta id="VME/MesytecRC/MSCF16/shaping_time" type="integer" name="Shaping time" address="39" maximum="3" writable="true"/>
+
+	<SettingMeta id="VME/MesytecRC/MSCF16/Channel" type="stem" name="Channel" writable="true" saveworthy="false" max_indices="1">
+        <branch address="0" id="VME/MesytecRC/MSCF16/threshold" />
+        <branch address="1" id="VME/MesytecRC/MSCF16/PZ_value" />
 	</SettingMeta>
-	<SettingMeta id="VME/MesytecRC/MSCF16/readout_reset" type="command" name="Readout reset" address="24628" writable="false" visible="true" saveworthy="false" description="Depends on multi_event (page 8)"/>
-	<SettingMeta id="VME/MesytecRC/MSCF16/multi_event" type="binary" name="Multi-event settings" address="24630" writable="true" word_size="2">
-		<flag bit="0" description="VME/MesytecRC/MSCF16/multi_event/mode" />
-		<flag bit="2" description="Send EOB (bits31:30,= bx10) instead of BERR" />
-		<flag bit="3" description="Count events, not words, compare with max_transfer_data" />
-	</SettingMeta>
-	<SettingMeta id="VME/MesytecRC/MSCF16/multi_event/mode" type="int_menu" name="Multi-event mode" address="0" writable="true">
-		<menu_item item_value="0" item_text="disabled" />
-		<menu_item item_value="1" item_text="unlimited, no reset" />
-		<menu_item item_value="3" item_text="limited, emits BERR" />
-	</SettingMeta>
-	<SettingMeta id="VME/MesytecRC/MSCF16/marking_type" type="int_menu" name="Event marking type" address="24632" writable="true">
-		<menu_item item_value="0" item_text="event counter" />
-		<menu_item item_value="1" item_text="time stamp" />
-		<menu_item item_value="3" item_text="extended time stamp" />
-	</SettingMeta>
-	<SettingMeta id="VME/MesytecRC/MSCF16/start_acq" type="boolean" name="Start accepting gates" address="24634" writable="true" description=""/>
-	<SettingMeta id="VME/MesytecRC/MSCF16/FIFO_reset" type="command" name="Initialize FIFO" address="24636" writable="false" visible="true" saveworthy="false" description="Must wrap in disable and reenable start_daq"/>
-	<SettingMeta id="VME/MesytecRC/MSCF16/data_ready" type="boolean" name="Data available" address="24638" writable="false" />
+	<SettingMeta id="VME/MesytecRC/MSCF16/threshold" type="integer" name="Threshold" address="5" maximum="255" writable="true"/>
+	<SettingMeta id="VME/MesytecRC/MSCF16/PZ_value" type="integer" name="PZ value" address="22" maximum="255" writable="true"/>
 
 </MSCF16>

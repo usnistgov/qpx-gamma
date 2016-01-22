@@ -175,7 +175,7 @@
 	<SettingMeta id="VME/MADC32/ChannelThresholds" type="stem" name="Channel thresholds" address="16384" writable="true" saveworthy="true">
         <branch address="0" id="VME/MADC32/Threshold" />
 	</SettingMeta>
-	<SettingMeta id="VME/MADC32/Threshold" type="integer" name="Threshold" address="0" maximum="8191" writable="true" description="8191 to disable"/>
+	<SettingMeta id="VME/MADC32/Threshold" type="integer" name="Threshold" address="0" maximum="8191" writable="true" description="8191 to disable" max_indices ="1"/>
 
 	<SettingMeta id="VME/MADC32/irq_threshold" type="integer" name="IRQ Threshold" address="24600" maximum="8120" writable="true" unit="32 bit words" description="IRQ emitted when FIFO exceeds this"/>
 	<SettingMeta id="VME/MADC32/max_transfer_data" type="integer" name="Maximum words transferred" address="24602" maximum="16383" writable="true" unit="32 bit words" description="max events before footer (mode 3), 0: unlimited, 1: 1 event/xfer"/>

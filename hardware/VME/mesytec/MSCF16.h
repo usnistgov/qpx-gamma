@@ -25,7 +25,7 @@ protected:
   MesytecVME     *controller_;
   uint16_t       modnum_;
 
-  virtual void rebuild_structure(Gamma::Setting &set) {}
+  virtual void rebuild_structure(Gamma::Setting &set);
 };
 
 }

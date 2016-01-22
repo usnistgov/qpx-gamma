@@ -101,8 +101,8 @@ void SettingMeta::from_xml(const pugi::xml_node &node) {
   writable = node.attribute("writable").as_bool();
   visible = node.attribute("visible").as_bool(1);
   saveworthy = node.attribute("saveworthy").as_bool();
-  address = node.attribute("address").as_int();
-  max_indices = node.attribute("max_indices").as_int();
+  address = node.attribute("address").as_llong(-1);
+  max_indices = node.attribute("max_indices").as_int(0);
   step = node.attribute("step").as_double();
   minimum = node.attribute("minimum").as_double();
   maximum = node.attribute("maximum").as_double();
@@ -146,7 +146,7 @@ void SettingMeta::to_xml(pugi::xml_node &node) const {
 
   if (!name.empty())
     child.append_attribute("name").set_value(name.c_str());
-  child.append_attribute("address").set_value(address);
+  child.append_attribute("address").set_value(std::to_string(address).c_str());
   child.append_attribute("max_indices").set_value(max_indices);
   child.append_attribute("writable").set_value(writable);
 
@@ -413,7 +413,7 @@ void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_de
             Gamma::Setting newset = Gamma::Setting(newmeta);
             newset.indices = indices;
             newset.enrich(setting_definitions, impose_limits);
-            branches.add(newset);
+            branches.add_a(newset);
           }
         }        
       }

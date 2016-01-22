@@ -78,9 +78,6 @@ protected:
 
   CFileDataSource *evt_file;
 
-
-  std::string itobin (uint32_t bin);
-  std::string itobin (uint16_t bin);
 };
 
 }

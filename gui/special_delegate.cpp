@@ -356,6 +356,9 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
         editor->addItem(QString::fromStdString(q.second), QVariant::fromValue(q.first));
       return editor;
     }
+  } else if (index.data(Qt::EditRole).canConvert(QMetaType::QVariantList)) {
+    QLineEdit *editor = new QLineEdit(parent);
+    return editor;
   } else if (index.data(Qt::EditRole).type() == QVariant::Double) {
     QDoubleSpinBox *editor = new QDoubleSpinBox(parent);
     editor->setDecimals(6);
@@ -402,6 +405,15 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
     if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
       Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
       le->setText(QString::fromStdString(set.value_text));
+    } else if (index.data(Qt::EditRole).canConvert(QMetaType::QVariantList)) {
+      QVariantList qlist = index.data(Qt::EditRole).toList();
+      if (!qlist.isEmpty())
+        qlist.pop_front(); //number of indices allowed;
+      QString text;
+      foreach (QVariant var, qlist) {
+        text += QString::number(var.toInt()) + " ";
+      }
+      le->setText(text.trimmed());
     } else
       le->setText(index.data(Qt::EditRole).toString());
   } else if (QCheckBox *cb = qobject_cast<QCheckBox *>(editor)) {

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <VME>
-	<SettingMeta id="VME" type="stem" name="VME" address="0" writable="false" saveworthy="true">
+	<SettingMeta id="VME" type="stem" name="VME" writable="false" saveworthy="true">
 		<branch address="0" id="VME/ControllerID" />
 		<branch address="1" id="VME/Registers" />
 		<branch address="2" id="VME/IsegVHS" />
@@ -8,8 +8,8 @@
 		<branch address="4" id="VME/MTDC32" />
 	</SettingMeta>
 	
-	<SettingMeta id="VME/ControllerID" type="text" visible="true" name="Controller ID" address="0" writable="true"/>
-	<SettingMeta id="VME/Registers" type="stem" name="VmUsb Registers" address="0" writable="false" saveworthy="true">
+	<SettingMeta id="VME/ControllerID" type="text" visible="true" name="Controller ID" writable="true"/>
+	<SettingMeta id="VME/Registers" type="stem" name="VmUsb Registers" writable="false" saveworthy="true">
 		<branch address="0" id="VME/Registers/FirmwareID" />
 		<branch address="1" id="VME/Registers/GlobalMode" />
 		<branch address="2" id="VME/Registers/DAQSettings" />

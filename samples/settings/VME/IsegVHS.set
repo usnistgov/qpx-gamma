@@ -178,10 +178,10 @@
 		<flag bit="30" description="GR30" />
 		<flag bit="31" description="GR31" />
 	</SettingMeta>
-	<SettingMeta id="VME/IsegVHS/VolgateRampSpeed" type="floating" name="Voltage ramp speed" address="20" writable="true" step="0.5" minimum="0" maximum="20" unit="% of nominal voltage in channel" />
-	<SettingMeta id="VME/IsegVHS/CurrentRampSpeed" type="floating" name="Current ramp speed" address="24" writable="true" step="0.5" minimum="0" maximum="20" unit="% of nominal current in channel" />
-	<SettingMeta id="VME/IsegVHS/VoltageMax" type="floating" name="Maximum voltage" address="28" writable="false" unit="value of trim pot in front panel" />
-	<SettingMeta id="VME/IsegVHS/CurrentMax" type="floating" name="Maximum current" address="32" writable="false" unit="value of trim pot in front panel" />
+	<SettingMeta id="VME/IsegVHS/VoltageRampSpeed" type="floating" name="Voltage ramp speed" address="20" writable="true" step="0.5" minimum="0" maximum="20" unit="%" description="% of nominal voltage in channel" />
+	<SettingMeta id="VME/IsegVHS/CurrentRampSpeed" type="floating" name="Current ramp speed" address="24" writable="true" step="0.5" minimum="0" maximum="20" unit="%" description="% of nominal current in channel" />
+	<SettingMeta id="VME/IsegVHS/VoltageMax" type="floating" name="Maximum voltage" address="28" writable="false" unit="V" description="value of trim pot in front panel" />
+	<SettingMeta id="VME/IsegVHS/CurrentMax" type="floating" name="Maximum current" address="32" writable="false" unit="A" description="value of trim pot in front panel" />
 	<SettingMeta id="VME/IsegVHS/SupplyP5" type="floating" name="Supply Voltage +5" address="36" writable="false" unit="V" />
 	<SettingMeta id="VME/IsegVHS/SupplyP12" type="floating" name="Supply voltage +12" address="40" writable="false" unit="V" />
 	<SettingMeta id="VME/IsegVHS/SupplyN12" type="floating" name="Supply voltage -12" address="44" writable="false" unit="V" />
@@ -222,7 +222,7 @@
 	</SettingMeta>
 	<SettingMeta id="VME/IsegVHS/VendorID" type="integer" flags="u32" name="Vendor ID" address="92" writable="false"/>
 
-	<SettingMeta id="VME/IsegVHS/Channel" type="stem" name="Channel" address="1" writable="true" saveworthy="false">
+	<SettingMeta id="VME/IsegVHS/Channel" type="stem" name="Channel" address="1" writable="true" saveworthy="false" max_indices="1">
 		<branch address="0" id="VME/IsegVHS/Channel/Status" />
 		<branch address="1" id="VME/IsegVHS/Channel/OnOff" />
 		<branch address="2" id="VME/IsegVHS/Channel/ChannelStatus" />
@@ -252,7 +252,7 @@
 		<branch address="7" id="VME/IsegVHS/FixedGroups/SetCurrentIlkMinSetAllChannels" />
 	</SettingMeta>
 
-	<SettingMeta id="VME/IsegVHS/Channel/Status" type="indicator" name="Status" address="0" writable="false" saveworthy="false" description="Current status of controller" >
+	<SettingMeta id="VME/IsegVHS/Channel/Status" type="indicator" name="Status" writable="false" saveworthy="false" description="Current status of controller" >
 		<state state="0" description="VME/IsegVHS/Channel/Status/Off" />
 		<state state="1" description="VME/IsegVHS/Channel/Status/Ramping" />
 		<state state="2" description="VME/IsegVHS/Channel/Status/On" />

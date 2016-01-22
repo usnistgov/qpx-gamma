@@ -37,6 +37,8 @@
 #include "CRingStateChangeItem.h"
 #include "CRingPhysicsEventCountItem.h"
 
+#include "qpx_util.h"
+
 namespace Qpx {
 
 static DeviceRegistrar<SorterEVT> registrar("SorterEVT");
@@ -449,37 +451,6 @@ Spill SorterEVT::get_spill() {
   Spill one_spill;
 
   return one_spill;
-}
-
-
-std::string SorterEVT::itobin (uint32_t bin)
-{
-  std::stringstream ss;
-  int k=0;
-  for (k = 31; k >= 0; --k) {
-    if (bin & 0x80000000)
-      ss << "1";
-    else
-      ss << "0";
-    bin <<= 1;
-    if (k == 16)
-      ss << " ";
-  }
-  return ss.str();
-}
-
-std::string SorterEVT::itobin (uint16_t bin)
-{
-  std::stringstream ss;
-  int k=0;
-  for (k = 15; k >= 0; --k) {
-    if (bin & 0x8000)
-      ss << "1";
-    else
-      ss << "0";
-    bin <<= 1;
-  }
-  return ss.str();
 }
 
 

@@ -95,7 +95,7 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
 
   for (auto &q : set.branches.my_data_) {
     if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "VME/ControllerID")) {
-      PL_DBG << "<VmePlugin> controller expected " << q.value_text;
+      //PL_DBG << "<VmePlugin> controller expected " << q.value_text;
       if (controller_name_.empty())
         controller_name_ = q.value_text;
     } else if (q.metadata.setting_type == Gamma::SettingType::stem) {
@@ -105,7 +105,7 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
       } else if (device_types.count(q.id_) && (q.id_.size() > 4) && (q.id_.substr(0,4) == "VME/")) {
         boost::filesystem::path dev_settings = path / q.value_text;
         modules_[q.id_] = dynamic_cast<VmeModule*>(DeviceFactory::getInstance().create_type(q.id_, dev_settings.string()));
-        PL_DBG << "added module " << q.id_ << " with settings at " << dev_settings.string();
+        PL_DBG << "<VmePlugin> added module " << q.id_ << " with settings at " << dev_settings.string();
         modules_[q.id_]->write_settings_bulk(q);
       } else if (q.id_ == "VME/Registers") {
         for (auto &k : q.branches.my_data_) {
@@ -227,7 +227,7 @@ bool QpxVmePlugin::read_register(Gamma::Setting& set) const {
       return true;
     }
   }
-  PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
+  PL_DBG << "<VmePlugin> Setting " << set.id_ << " does not have a well defined hardware type";
   return false;
 }
 
@@ -252,7 +252,7 @@ bool QpxVmePlugin::write_register(Gamma::Setting& set) {
       return true;
     }
   }
-  PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
+  PL_DBG << "<VmePlugin> Setting " << set.id_ << " does not have a well defined hardware type";
   return false;
 }
 

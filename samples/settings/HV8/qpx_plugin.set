@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <HV8>
-	<SettingMeta id="HV8" type="stem" name="HV8" address="0" writable="false" saveworthy="true">
+	<SettingMeta id="HV8" type="stem" name="HV8" writable="false" saveworthy="true">
 		<branch address="0" id="HV8/PortName" />
 		<branch address="1" id="HV8/BaudRate" />
 		<branch address="3" id="HV8/CharacterSize" />
@@ -11,11 +11,11 @@
 		<branch address="8" id="HV8/ResponseAttempts" />
 		<branch address="9" id="HV8/Channels" />
 	</SettingMeta>
-	<SettingMeta id="HV8/Channels" type="stem" name="Channels" address="-1" writable="true" saveworthy="true">
+	<SettingMeta id="HV8/Channels" type="stem" name="Channels" writable="true" saveworthy="true">
 		<branch address="0" id="HV8/Channels/Voltage" flags="gain"/>
 	</SettingMeta>
-	<SettingMeta id="HV8/PortName" type="file_path" visible="true" name="Port name" address="0" writable="true" unit="Serial port (*)"/>
-	<SettingMeta id="HV8/BaudRate" type="int_menu" name="Baud rate" address="0" writable="true">
+	<SettingMeta id="HV8/PortName" type="file_path" visible="true" name="Port name" writable="true" unit="Serial port (*)"/>
+	<SettingMeta id="HV8/BaudRate" type="int_menu" name="Baud rate" writable="true">
 		<menu_item item_value="1200" item_text="1200" />
 		<menu_item item_value="2400" item_text="2400" />
 		<menu_item item_value="4800" item_text="4800" />
@@ -25,23 +25,23 @@
 		<menu_item item_value="57600" item_text="57600" />
 		<menu_item item_value="115200" item_text="115200" />
 	</SettingMeta>
-	<SettingMeta id="HV8/CharacterSize" type="integer" name="Character size" address="0" writable="true" step="1" minimum="5" maximum="8" unit="bits"/>
-	<SettingMeta id="HV8/Parity" type="int_menu" name="Parity" address="0" writable="true">
+	<SettingMeta id="HV8/CharacterSize" type="integer" name="Character size" writable="true" step="1" minimum="5" maximum="8" unit="bits"/>
+	<SettingMeta id="HV8/Parity" type="int_menu" name="Parity" writable="true">
 		<menu_item item_value="1" item_text="none" />
 		<menu_item item_value="2" item_text="odd" />
 		<menu_item item_value="3" item_text="even" />
 	</SettingMeta>
-	<SettingMeta id="HV8/StopBits" type="int_menu" name="Stop bits" address="0" writable="true">
+	<SettingMeta id="HV8/StopBits" type="int_menu" name="Stop bits" writable="true">
 		<menu_item item_value="1" item_text="1" />
 		<menu_item item_value="2" item_text="1.5" />
 		<menu_item item_value="3" item_text="2" />
 	</SettingMeta>
-	<SettingMeta id="HV8/FlowControl" type="int_menu" name="Flow control" address="0" writable="true">
+	<SettingMeta id="HV8/FlowControl" type="int_menu" name="Flow control" writable="true">
 		<menu_item item_value="1" item_text="none" />
 		<menu_item item_value="2" item_text="software" />
 		<menu_item item_value="3" item_text="hardware" />
 	</SettingMeta>
-	<SettingMeta id="HV8/ResponseTimeout" type="floating" name="Device response timeout" address="0" writable="true" step="0.1" minimum="0.1" maximum="3" unit="seconds"/>
-	<SettingMeta id="HV8/ResponseAttempts" type="integer" name="Device prompt attempts" address="0" writable="true" step="1" minimum="1" maximum="10"/>
-	<SettingMeta id="HV8/Channels/Voltage" type="floating" name="Voltage" address="0" writable="true" unit="V" step="0.1" minimum="0" maximum="900" flags="gain" />
+	<SettingMeta id="HV8/ResponseTimeout" type="floating" name="Device response timeout" writable="true" step="0.1" minimum="0.1" maximum="3" unit="seconds"/>
+	<SettingMeta id="HV8/ResponseAttempts" type="integer" name="Device prompt attempts" writable="true" step="1" minimum="1" maximum="10"/>
+	<SettingMeta id="HV8/Channels/Voltage" type="floating" name="Voltage" address="0" writable="true" unit="V" step="0.1" minimum="0" maximum="900" flags="gain" max_indices="1"/>
 </HV8>

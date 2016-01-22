@@ -75,7 +75,7 @@ struct SettingMeta : public XMLable {
   bool               writable;
   bool               visible;
   bool               saveworthy;
-  int32_t            address;
+  int64_t            address;
   std::string        name, description;
   double             minimum, maximum, step;
   std::string        unit;                       //or extension if file
@@ -85,7 +85,8 @@ struct SettingMeta : public XMLable {
 
 
   SettingMeta(const pugi::xml_node &node) : SettingMeta() {this->from_xml(node);}
-  SettingMeta() : setting_type(SettingType::none), writable(false), visible(true), saveworthy(true), address(0), minimum(0), maximum(0), step(0) {}
+  SettingMeta() : setting_type(SettingType::none), writable(false), visible(true), saveworthy(true),
+    address(-1), minimum(0), maximum(0), step(0), max_indices(0) {}
 
   std::string xml_element_name() const {return "SettingMeta";}
 

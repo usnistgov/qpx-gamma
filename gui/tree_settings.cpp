@@ -23,6 +23,7 @@
 
 #include "tree_settings.h"
 #include "widget_pattern.h"
+#include "qpx_util.h"
 
 Q_DECLARE_METATYPE(Gamma::Setting)
 
@@ -102,7 +103,7 @@ int TreeItem::childNumber() const
 
 int TreeItem::columnCount() const
 {
-  return 4; //name, value, units, description
+  return 6; //name, indices, value, units, address, description
 }
 
 QVariant TreeItem::display_data(int column) const
@@ -113,30 +114,25 @@ QVariant TreeItem::display_data(int column) const
       name = QString::fromStdString(itemData.metadata.name);
     else
       name = QString::fromStdString(itemData.id_);
-
-//    if ((itemData.metadata.setting_type == Gamma::SettingType::stem)
-//        || (itemData.metadata.setting_type == Gamma::SettingType::detector)) {
-//      if (itemData.address >= 0)
-//        name += "  " + QString::number(itemData.address);
-//    }
-    if (!itemData.indices.empty()) {
-      QString append = "  { ";
-      bool valid = false;
-      //better dealing with index = -1
-      for (auto &q : itemData.indices) {
-        append += QString::number(q) += " ";
-        if (q >= 0)
-          valid = true;
-      }
-      append += "}";
-      if (valid)
-        name += append;
-    }
-
     return name;
-
   }
-  else if ((column == 1) && (itemData.metadata.setting_type != Gamma::SettingType::none) && (itemData.metadata.setting_type != Gamma::SettingType::stem))
+  else if (column == 1) {
+    if (!itemData.indices.empty()) {
+       QString append = "  { ";
+       bool valid = false;
+       //better dealing with index = -1
+       for (auto &q : itemData.indices) {
+         append += QString::number(q) += " ";
+         if (q >= 0)
+           valid = true;
+       }
+       append += "}";
+       if (valid)
+         return append;
+    }
+    return QVariant();
+  }
+  else if ((column == 2) && (itemData.metadata.setting_type != Gamma::SettingType::none) && (itemData.metadata.setting_type != Gamma::SettingType::stem))
   {
     if (itemData.metadata.setting_type == Gamma::SettingType::integer)
       return QVariant::fromValue(itemData.value_int);
@@ -182,8 +178,12 @@ QVariant TreeItem::display_data(int column) const
       QpxPattern pattern(pat, 20, false, 8);
       return QVariant::fromValue(pattern);
     }
-    else if (itemData.metadata.setting_type == Gamma::SettingType::text)
-      return QString::fromStdString(itemData.value_text);
+    else if (itemData.metadata.setting_type == Gamma::SettingType::text) {
+      QString text = QString::fromStdString(itemData.value_text);
+      if (text.size() > 24)
+        text = QString::fromStdString(itemData.value_text.substr(0,24) + "...");
+      return text;
+    }
     else if (itemData.metadata.setting_type == Gamma::SettingType::file_path)
       return QString::fromStdString(itemData.value_text);
     else if (itemData.metadata.setting_type == Gamma::SettingType::dir_path)
@@ -197,9 +197,17 @@ QVariant TreeItem::display_data(int column) const
     else
       return QVariant::fromValue(itemData.value_dbl);
   }
-  else if (column == 2)
-    return QString::fromStdString(itemData.metadata.unit);
   else if (column == 3)
+    return QString::fromStdString(itemData.metadata.unit);
+  else if (column == 4) {
+    QString text;
+    if (itemData.metadata.address >= 0)
+      text +=  "0x" + QString::fromStdString(itohex32(itemData.metadata.address));
+    else if (itemData.metadata.address != -1)
+      text += QString::number(itemData.metadata.address);
+    return text;
+  }
+  else if (column == 5)
     return QString::fromStdString(itemData.metadata.description);
   else
     return QVariant();
@@ -208,20 +216,29 @@ QVariant TreeItem::display_data(int column) const
 
 QVariant TreeItem::edit_data(int column) const
 {
-  if (column == 1)
+  if (column == 2)
     return QVariant::fromValue(itemData);
-  else
+  else if ((column == 1) && (itemData.metadata.max_indices > 0)) {
+    QList<QVariant> qlist;
+    qlist.push_back(QVariant::fromValue(itemData.metadata.max_indices));
+    for (auto &q : itemData.indices) {
+      qlist.push_back(q);
+    }
+    return qlist;
+  } else
     return QVariant();
 }
 
 bool TreeItem::is_editable(int column) const
 {
-  if ((column != 1)  || (itemData.metadata.setting_type == Gamma::SettingType::stem))
+  if ((column == 1)  && (itemData.metadata.max_indices > 0))
+    return true;
+  else if ((column != 2)  || (itemData.metadata.setting_type == Gamma::SettingType::stem))
     return false;
   else if (itemData.metadata.setting_type == Gamma::SettingType::binary)
     return true;
   else
-    return ((column == 1) && (itemData.metadata.writable));
+    return ((column == 2) && (itemData.metadata.writable));
 }
 
 
@@ -281,7 +298,35 @@ Gamma::Setting TreeItem::rebuild() {
 
 bool TreeItem::setData(int column, const QVariant &value)
 {
-  if (column != 1)
+  if ((column == 1)  && (itemData.metadata.max_indices > 0)) {
+    QString val = value.toString();
+    QStringList ilist = val.split(QRegExp("\\W+"), QString::SkipEmptyParts);
+    if (ilist.isEmpty()) {
+      itemData.indices.clear();
+      return true;
+    }
+
+    std::set<int32_t> new_indices;
+    foreach (QString idx, ilist) {
+      bool ok;
+      int i = idx.toInt(&ok);
+      if (ok && (i >= 0) && (new_indices.size() < itemData.metadata.max_indices))
+        new_indices.insert(i);
+    }
+
+    bool diff = (new_indices.size() != itemData.indices.size());
+    for (auto &q : new_indices)
+      if (!itemData.indices.count(q))
+        diff = true;
+
+    if (!diff)
+      return false;
+
+    itemData.indices = new_indices;
+    return true;
+  }
+
+  if (column != 2)
     return false;
 
 
@@ -358,21 +403,24 @@ QVariant TreeSettings::data(const QModelIndex &index, int role) const
   else if (role == Qt::EditRole)
     return item->edit_data(col);
   else if (role == Qt::ForegroundRole) {
-    if (item->edit_data(col).canConvert<Gamma::Setting>()) {
-      Gamma::Setting set = qvariant_cast<Gamma::Setting>(item->edit_data(col));
-      if (set.metadata.setting_type == Gamma::SettingType::detector) {
+    if (item->edit_data(2).canConvert<Gamma::Setting>()) {
+      Gamma::Setting set = qvariant_cast<Gamma::Setting>(item->edit_data(2));
+      if ((col == 2) && (set.metadata.setting_type == Gamma::SettingType::detector)) {
         QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::red, Qt::blue};
         QBrush brush(palette[(row - 1) % palette.size()]);
         return brush;
-      } else if (set.metadata.setting_type == Gamma::SettingType::indicator) {
+      } else if ((col == 2) && (set.metadata.setting_type == Gamma::SettingType::indicator)) {
         QBrush brush(Qt::white);
         return brush;
-      } else if ((col == 1) && (!set.metadata.writable)) {
+      } else if ((col == 2) && (!set.metadata.writable)) {
+        QBrush brush(Qt::darkGray);
+        return brush;
+      } else if ((col == 1) && (set.metadata.max_indices < 1)) {
         QBrush brush(Qt::darkGray);
         return brush;
       } else {
-      QBrush brush(Qt::black);
-      return brush;
+        QBrush brush(Qt::black);
+        return brush;
       }
     }
   } else if (role == Qt::BackgroundColorRole) {
@@ -418,10 +466,14 @@ QVariant TreeSettings::headerData(int section, Qt::Orientation orientation,
     if (section == 0)
       return "setting";
     else if (section == 1)
-      return "value";
+      return "indices";
     else if (section == 2)
-      return "units";
+      return "value";
     else if (section == 3)
+      return "units";
+    else if (section == 4)
+      return "address";
+    else if (section == 5)
       return "notes";
 
   return QVariant();
@@ -519,15 +571,20 @@ bool TreeSettings::setData(const QModelIndex &index, const QVariant &value, int 
   bool result = item->setData(index.column(), value);
 
   if (result) {
-    Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
-    //PL_DBG << "set.int = " << set.value_int;
-    data_ = rootItem->rebuild();
+    if (index.column() == 2) {
+      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+      data_ = rootItem->rebuild();
 
-    emit dataChanged(index, index);
-    if (set.metadata.setting_type == Gamma::SettingType::detector)
-      emit detector_chosen(index.row() - 1, set.value_text);
-    else
+      emit dataChanged(index, index);
+      if (set.metadata.setting_type == Gamma::SettingType::detector)
+        emit detector_chosen(index.row() - 1, set.value_text);
+      else
+        emit tree_changed();
+    } else if (index.column() == 1) {
+      data_ = rootItem->rebuild();
+      emit dataChanged(index, index);
       emit tree_changed();
+    }
   }
   return result;
 }

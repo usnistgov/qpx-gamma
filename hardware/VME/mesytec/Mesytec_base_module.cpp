@@ -27,6 +27,7 @@
 #include "custom_timer.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
+#include "qpx_util.h"
 
 namespace Qpx {
 
@@ -104,7 +105,7 @@ bool MesytecVME::boot() {
 
     for (auto &q : ext_modules_) {
       if ((q.second) && (!q.second->connected())) {
-        PL_DBG << "<MesytecPlugin> Searching for module " << q.first;
+        PL_DBG << "<" << this->device_name() << "> Searching for module " << q.first;
   //      long base_address = 0;
   //      if (q.first == "VME/MADC32")
   //        base_address = 0x20000000;
@@ -113,7 +114,7 @@ bool MesytecVME::boot() {
 
           if (q.second->connected()) {
             q.second->boot(); //disregard return value
-            PL_DBG << "<VmePlugin> Adding module " << q.first
+            PL_DBG << "<" << this->device_name() << "> Adding module " << q.first
                    << "[" << q.second->modnum()
                    << "] booted=" << (0 != (q.second->status() & DeviceStatus::booted));
             success = true;
@@ -194,7 +195,7 @@ bool MesytecVME::write_settings_bulk(Gamma::Setting &set) {
     } else if (device_types.count(k.id_) && (k.id_.size() > 14) && (k.id_.substr(0,14) == "VME/MesytecRC/")) {
       boost::filesystem::path dev_settings = path / k.value_text;
       ext_modules_[k.id_] = dynamic_cast<MesytecExternal*>(DeviceFactory::getInstance().create_type(k.id_, dev_settings.string()));
-      PL_DBG << "added module " << k.id_ << " with settings at " << dev_settings.string();
+      PL_DBG << "<" << this->device_name() << ">added module " << k.id_ << " with settings at " << dev_settings.string();
       ext_modules_[k.id_]->write_settings_bulk(k);
     } else {
       for (auto &p : k.branches.my_data_) {
@@ -293,11 +294,7 @@ std::string MesytecVME::firmwareName() const
   fwaddress.enrich(setting_definitions_);
   read_setting(fwaddress);
 
-  std::stringstream stream;
-  stream << "0x" << std::setfill ('0') << std::setw(sizeof(uint16_t)*2)
-         << std::hex << fwaddress.value_int;
-
-  return stream.str();
+  return "0x" + itohex32(uint32_t(fwaddress.value_int));
 }
 
 

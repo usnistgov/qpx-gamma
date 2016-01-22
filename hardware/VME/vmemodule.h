@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iomanip>
 #include "daq_device.h"
+#include "qpx_util.h"
 
 class VmeController;
 
@@ -51,11 +52,7 @@ public:
   }
 
   virtual std::string address() {
-      std::stringstream stream;
-      stream << "VME BA 0x"
-             << std::setfill ('0') << std::setw(sizeof(uint16_t)*2)
-             << std::hex << m_baseAddress;
-      return stream.str();
+    return "0x" + itohex32(m_baseAddress);
   }
 
   //implement these for derived classes

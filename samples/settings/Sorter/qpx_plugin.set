@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <Sorter>
-	<SettingMeta id="Sorter" type="stem" name="Sorter" address="0" writable="false" saveworthy="true">
+	<SettingMeta id="Sorter" type="stem" name="Sorter" writable="false" saveworthy="true">
 		<branch address="0" id="Sorter/Source file" />
 		<branch address="1" id="Sorter/Loop data" />
 		<branch address="2" id="Sorter/Override pause" />
@@ -11,13 +11,13 @@
 		<branch address="7" id="Sorter/Hits" />
 		<branch address="8" id="Sorter/StartTime" />
 	</SettingMeta>
-	<SettingMeta id="Sorter/Source file" type="file_path" name="Source file" address="0" writable="true" unit="List mode output (*.txt)" />
-	<SettingMeta id="Sorter/Loop data" type="boolean" name="Loop data" address="0" writable="true" />
-	<SettingMeta id="Sorter/Override pause" type="boolean" name="Override pause" address="0" writable="true" />
-	<SettingMeta id="Sorter/Pause" type="integer" name="Pause" address="0" writable="true" step="50" minimum="0" maximum="5000000" unit="ms" />
-	<SettingMeta id="Sorter/Override timestamps" type="boolean" name="Override timestamps" address="0" writable="true" />
-	<SettingMeta id="Sorter/Binary file" type="file_path" name="Source file" address="0" writable="false" unit="Qpx binary out (*.bin)" />
-	<SettingMeta id="Sorter/StatsUpdates" type="integer" name="Number of stats updates" address="0" writable="false" />
-	<SettingMeta id="Sorter/Hits" type="integer" name="Number of hits" address="0" writable="false" />
-	<SettingMeta id="Sorter/StartTime" type="text" name="Start timestamp" address="0" writable="false" />
+	<SettingMeta id="Sorter/Source file" type="file_path" name="Source file" writable="true" unit="List mode output (*.txt)" />
+	<SettingMeta id="Sorter/Loop data" type="boolean" name="Loop data" writable="true" />
+	<SettingMeta id="Sorter/Override pause" type="boolean" name="Override pause" writable="true" />
+	<SettingMeta id="Sorter/Pause" type="integer" name="Pause" writable="true" step="50" minimum="0" maximum="5000000" unit="ms" />
+	<SettingMeta id="Sorter/Override timestamps" type="boolean" name="Override timestamps" writable="true" />
+	<SettingMeta id="Sorter/Binary file" type="file_path" name="Source file" writable="false" unit="Qpx binary out (*.bin)" />
+	<SettingMeta id="Sorter/StatsUpdates" type="integer" name="Number of stats updates" writable="false" />
+	<SettingMeta id="Sorter/Hits" type="integer" name="Number of hits" writable="false" />
+	<SettingMeta id="Sorter/StartTime" type="text" name="Start timestamp" writable="false" />
 </Sorter>

@@ -231,7 +231,7 @@ bool VmUsb::connect(std::string target) {
 
   long fwrel;
   xxusbRegisterRead(udev, 0x00, &fwrel);
-  PL_DBG << "Connected to VM-USB serial_nr=" << m_serialNumber << " firmware=" << fwrel;
+  PL_DBG << "<VmUsb> Connected to VM-USB serial_nr=" << m_serialNumber << " firmware=" << fwrel;
 
 }
 

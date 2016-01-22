@@ -67,7 +67,7 @@ bool MesytecExternal::connected() const {
   if (!controller_->RC_get_ID(modnum_, status))
     return false;
 
-  PL_DBG << "Mesytec external module at " << modnum_
+  PL_DBG << "<" << this->device_name() << "> Mesytec external module at " << modnum_
          << " has status " << ((status & 1) != 0)
          << " with ID " << (status >> 1);
 

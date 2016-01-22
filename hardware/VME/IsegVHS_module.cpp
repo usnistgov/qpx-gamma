@@ -235,7 +235,7 @@ bool QpxIsegVHSPlugin::read_setting(Gamma::Setting& set) const {
     else if (set.metadata.flags.count("u16"))
       set.value_int = readShort(m_baseAddress + set.metadata.address);
     else {
-      PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
+      PL_DBG << "<IsegVHS> Setting " << set.id_ << " does not have a well defined hardware type";
       return false;
     }
     return true;
@@ -260,7 +260,7 @@ bool QpxIsegVHSPlugin::write_setting(Gamma::Setting& set) {
     else if (set.metadata.flags.count("u16"))
       writeShort(m_baseAddress + set.metadata.address, set.value_int);
     else {
-      PL_DBG << "Setting " << set.id_ << " does not have a well defined hardware type";
+      PL_DBG << "<IsegVHS> Setting " << set.id_ << " does not have a well defined hardware type";
       return false;
     }
     return true;
