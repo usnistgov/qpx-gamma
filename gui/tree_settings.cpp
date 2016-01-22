@@ -287,6 +287,7 @@ TreeItem *TreeItem::parent()
 
 Gamma::Setting TreeItem::rebuild() {
   Gamma::Setting root = itemData;
+
   root.branches.clear();
   for (int i=0; i < childCount(); i++)
     root.branches.add_a(child(i)->rebuild());
@@ -542,10 +543,10 @@ QModelIndex TreeSettings::parent(const QModelIndex &index) const
   //PL_DBG << parentItem;
 
   //PL_DBG << "Index r" << index.row() << " c" << index.column() << " d=";
-  if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
-    Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+//  if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
+//    Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
 //    PL_DBG << "id=" << set.id_;
-  }
+//  }
 
   return createIndex(parentItem->childNumber(), 0, parentItem);
 }
@@ -629,8 +630,11 @@ void TreeSettings::update(const Gamma::Setting &data) {
   }
 
   if (!rootItem->eat_data(data_)) {
+    PL_DBG << "deleting root node";
+    beginResetModel();
     delete rootItem;
     rootItem = new TreeItem(data_);
+    endResetModel();
   }
 
   emit layoutChanged();
