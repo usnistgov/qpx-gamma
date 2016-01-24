@@ -352,11 +352,11 @@ void VmUsb::systemReset()
   xxusbRegisterWrite(udev, 0, XXUSB_ACTION_SYSRES);
 }
 
-void VmUsb::start_daq() {
+void VmUsb::daq_start() {
   xxusbRegisterWrite(udev, 0, XXUSB_ACTION_START);
 }
 
-void VmUsb::stop_daq() {
+void VmUsb::daq_stop() {
   xxusbRegisterWrite(udev, 0, XXUSB_ACTION_STOP);
 }
 

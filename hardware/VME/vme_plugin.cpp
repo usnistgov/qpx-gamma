@@ -42,11 +42,81 @@ QpxVmePlugin::QpxVmePlugin() {
 
   controller_ = nullptr;
 
+
+  runner_ = nullptr;
+  parser_ = nullptr;
+  raw_queue_ = nullptr;
+  run_status_.store(0);
 }
 
 
 QpxVmePlugin::~QpxVmePlugin() {
   die();
+}
+
+bool QpxVmePlugin::daq_start(SynchronizedQueue<Spill*>* out_queue) {
+  if (run_status_.load() > 0)
+    return false;
+
+  if (runner_ != nullptr)
+    delete runner_;
+
+  if (parser_ != nullptr)
+    delete parser_;
+
+  if (!daq_init())
+    return false;
+
+  run_status_.store(1);
+  raw_queue_ = new SynchronizedQueue<Spill*>();
+  //runner_ = new boost::thread(&worker_run_dbl, this, raw_queue_);
+  //parser_ = new boost::thread(&worker_parse, this, raw_queue_, out_queue);
+
+  return true;
+}
+
+bool QpxVmePlugin::daq_init() {
+  if (!controller_ || !controller_->connected())
+    return false;
+
+  controller_->daq_init();
+}
+
+bool QpxVmePlugin::daq_stop() {
+  if (run_status_.load() == 0)
+    return false;
+
+  run_status_.store(2);
+
+  if ((runner_ != nullptr) && runner_->joinable()) {
+    runner_->join();
+    delete runner_;
+    runner_ = nullptr;
+  }
+
+  wait_ms(500);
+  while (raw_queue_->size() > 0)
+    wait_ms(1000);
+  wait_ms(500);
+  raw_queue_->stop();
+  wait_ms(500);
+
+  if ((parser_ != nullptr) && parser_->joinable()) {
+    parser_->join();
+    delete parser_;
+    parser_ = nullptr;
+  }
+  delete raw_queue_;
+  raw_queue_ = nullptr;
+
+  run_status_.store(0);
+  return true;
+}
+
+bool QpxVmePlugin::daq_running() {
+  if (run_status_.load() == 3)
+    daq_stop();
+  return (run_status_.load() > 0);
 }
 
 
@@ -189,6 +259,20 @@ bool QpxVmePlugin::boot() {
 
 bool QpxVmePlugin::die() {
   PL_DBG << "<VmePlugin> Disconnecting";
+
+  daq_stop();
+  if (runner_ != nullptr) {
+    runner_->detach();
+    delete runner_;
+  }
+  if (parser_ != nullptr) {
+    parser_->detach();
+    delete parser_;
+  }
+  if (raw_queue_ != nullptr) {
+    raw_queue_->stop();
+    delete raw_queue_;
+  }
 
   for (auto &q : modules_)
     delete q.second;

@@ -47,6 +47,12 @@ public:
   bool boot() override;
   bool die() override;
 
+
+  bool daq_init();
+  bool daq_start(SynchronizedQueue<Spill*>* out_queue);
+  bool daq_stop();
+  bool daq_running();
+
 private:
   //no copying
   void operator=(QpxVmePlugin const&);
@@ -63,6 +69,12 @@ protected:
   VmeController *controller_;
 
   std::map<std::string, VmeModule*> modules_;
+
+  //Multithreading
+  boost::atomic<int> run_status_;
+  boost::thread *runner_;
+  boost::thread *parser_;
+  SynchronizedQueue<Spill*>* raw_queue_;
 
 };
 

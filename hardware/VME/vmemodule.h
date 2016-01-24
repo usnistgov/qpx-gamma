@@ -61,7 +61,7 @@ public:
   virtual bool connected() const { return false; }
   virtual std::string firmwareName() const {return std::string();}
 
-  virtual void addReadout(VmeStack& stack) {}
+  virtual void addReadout(VmeStack& stack, int param) {}
 
   //probably does not apply to many...
   virtual void    programBaseAddress(uint32_t address) {}

@@ -45,6 +45,54 @@ static const int ENDPOINT_OUT(2);
 static const int ENDPOINT_IN(0x86);
 
 
+bool VmUsb2::daq_init() {
+  //  First do a bulk read just to flush any crap that's in the VM-USB
+  // output fifo..as it appears to sometimes leave crap there.
+  // ignore any error status, and use a short timeout:
+
+  PL_DBG << "<VmUsb> Flushing any garbage in the VM-USB fifo...\n";
+
+  char junk[1000];
+  size_t moreJunk;
+  usbRead(junk, sizeof(junk), &moreJunk, 1*1000); // One second timeout.
+
+  PL_DBG << "<VmUsb> Starting VM-USB initialization\n";
+
+
+  // Now we can start preparing to read...
+  systemReset();
+
+  wait_ms(300);
+  writeActionRegister(0);
+
+//  m_pVme->writeBulkXferSetup(0 << CVMUSB::TransferSetupRegister::timeoutShift); // don't want multibuffering...1sec timeout is fine.
+
+  // The global mode:
+  //   13k buffer
+  //   Single event seperator.
+  //   Aligned on 16 bits.
+  //   Single header word.
+  //   Bus request level 4.
+  //   Flush scalers on a single event.
+  //
+//  m_pVme->writeGlobalMode((4 << CVMUSB::GlobalModeRegister::busReqLevelShift) |
+                            //        CVMUSB::GlobalModeRegister::flushScalers |
+                            // CVMUSB::GlobalModeRegister::mixedBuffers        |
+                            // CVMUSB::GlobalModeRegister::spanBuffers         |
+//                            (CVMUSB::GlobalModeRegister::bufferLen13K <<
+//                                  CVMUSB::GlobalModeRegister::bufferLenShift));
+
+
+}
+
+void VmUsb2::daq_start() {
+  writeActionRegister(XXUSB_ACTION_START);
+}
+
+void VmUsb2::daq_stop() {
+  writeActionRegister(XXUSB_ACTION_STOP);
+}
+
 void VmUsb2::systemReset()
 {
   writeActionRegister(XXUSB_ACTION_SYSRES);

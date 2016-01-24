@@ -20,7 +20,9 @@
 #ifndef VME_STACK_H
 #define VME_STACK_H
 
-#include "vmecontroller.h"
+#include "vme.h"
+
+//#include "vmecontroller.h"
 
 /*!
    The best way to use the VM-USB involves building lists of VME

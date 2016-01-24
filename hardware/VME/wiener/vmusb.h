@@ -40,8 +40,8 @@ public:
   void    writeRegister(uint16_t vmeAddress, uint32_t data);
   uint32_t readRegister(uint16_t vmeAddress);
 
-  virtual void start_daq();
-  virtual void stop_daq();
+  void daq_start();
+  void daq_stop();
 
   virtual void clear_registers();
   virtual void trigger_USB();

@@ -49,6 +49,12 @@ public:
 
   virtual void systemReset();
 
+  void daq_start();
+  void daq_stop();
+  virtual bool daq_init();
+
+  virtual VmeStack* newStack() { return new VmUsbStack(); }
+
   void      write8(uint32_t vmeAddress, AddressModifier am, uint8_t data);
   uint8_t   read8(uint32_t vmeAddress, AddressModifier am);
 

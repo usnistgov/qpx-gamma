@@ -37,7 +37,8 @@ public:
   static std::string plugin_name() {return "VME/MADC32";}
   std::string device_name() const override {return plugin_name();}
 
-  void addReadout(VmeStack& stack) override;
+  void addReadout(VmeStack& stack, int style) override;
+  bool daq_init();
 
 
 private:

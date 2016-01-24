@@ -100,6 +100,7 @@ bool MesytecVME::boot() {
       return true;
 
     rc_bus = true;
+    PL_DBG << "<" << this->device_name() << "> Mesytec RC bus configured";
 
     bool success = false;
 
@@ -124,7 +125,26 @@ bool MesytecVME::boot() {
       }
     }
 
-    return true;
+    if (success) {
+      if (setting_definitions_.count(this->device_name() + "/soft_reset"))
+        m_controller->write16(m_baseAddress + setting_definitions_.at(this->device_name() + "/soft_reset").address,
+                                AddressModifier::A32_UserData, (uint16_t)1);
+      wait_ms(1000);
+
+      if (setting_definitions_.count(this->device_name() + "/start_acq"))
+        m_controller->write16(m_baseAddress + setting_definitions_.at(this->device_name() + "/start_acq").address,
+                                AddressModifier::A32_UserData, (uint16_t)0);
+
+      if (setting_definitions_.count(this->device_name() + "/readout_reset"))
+        m_controller->write16(m_baseAddress + setting_definitions_.at(this->device_name() + "/readout_reset").address,
+                                AddressModifier::A32_UserData, (uint16_t)1);
+
+      //disable interrupts prior to setup
+      if (setting_definitions_.count(this->device_name() + "/irq_level"))
+        m_controller->write16(m_baseAddress + setting_definitions_.at(this->device_name() + "/irq_level").address,
+                                AddressModifier::A32_UserData, (uint16_t)0);
+      return true;
+    }
 
   } else
     return false;
