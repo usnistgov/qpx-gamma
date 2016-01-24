@@ -30,6 +30,7 @@
 #include "vmemodule.h"
 
 #include "vmusb.h"
+#include "vmusb2.h"
 
 namespace Qpx {
 
@@ -55,13 +56,15 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
 
   for (auto &q : set.branches.my_data_) {
     if (q.metadata.setting_type == Gamma::SettingType::stem) {
-      if (modules_.count(q.id_) && modules_.at(q.id_)) {
+      if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "VME/ControllerID")) {
+        q.metadata.writable = (!(status_ & DeviceStatus::booted));
+      } else if (modules_.count(q.id_) && modules_.at(q.id_)) {
         modules_.at(q.id_)->read_settings_bulk(q);
       } else if (q.id_ == "VME/Registers") {
         for (auto &k : q.branches.my_data_) {
           if (k.id_ == "VME/Registers/IRQ_Mask") {
-            //              PL_DBG << "IRQ Mask read";
-            // do something fancy
+            if (controller_)
+              k.value_int = controller_->readIrqMask();
           } else {
             read_register(k);
           }
@@ -93,8 +96,7 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
 
   for (auto &q : set.branches.my_data_) {
     if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "VME/ControllerID")) {
-      //PL_DBG << "<VmePlugin> controller expected " << q.value_text;
-      if (controller_name_.empty())
+      if (!(status_ & DeviceStatus::booted))
         controller_name_ = q.value_text;
     } else if (q.metadata.setting_type == Gamma::SettingType::stem) {
 //      PL_DBG << "<VmePlugin> looking at " << q.id_;
@@ -108,8 +110,8 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
       } else if (q.id_ == "VME/Registers") {
         for (auto &k : q.branches.my_data_) {
           if (k.id_ == "VME/Registers/IRQ_Mask") {
-//            PL_DBG << "IRQ Mask write";
-            // do something fancy
+            if (controller_ && (controller_->readIrqMask() != k.value_int))
+              controller_->writeIrqMask(k.value_int);
           } else {
             Gamma::Setting s = k;
             if (s.metadata.writable && read_register(s) && (s != k)) {
@@ -138,18 +140,23 @@ bool QpxVmePlugin::boot() {
   if (controller_ != nullptr)
     delete controller_;
 
-//  if (controller_name_ == "VmUsb") {
+  if (controller_name_ == "VmUsb") {
     controller_ = new VmUsb();
     controller_->connect(0);
-//  }
+  } else if (controller_name_ == "VmUsb2") {
+    controller_ = new VmUsb2();
+    controller_->connect(0);
+  }
 
   if (!controller_->connected()) {
-    PL_WARN << "<VmePlugin> Could not connect to controller " << controller_name_;
+    PL_WARN << "<VmePlugin> Could not connect to controller " << controller_->controllerName();
+    delete controller_;
+    controller_ = nullptr;
     return false;
   } else {
     PL_DBG << "<VmePlugin> Connected to controller " << controller_->controllerName()
            << " SN:" << controller_->serialNumber();
-    controller_->clear_registers();
+    //controller_->clear_registers();
   }
 
   bool success = false;
@@ -203,6 +210,8 @@ void QpxVmePlugin::get_all_settings() {
 bool QpxVmePlugin::read_register(Gamma::Setting& set) const {
   if (!(status_ & Qpx::DeviceStatus::booted))
     return false;
+  if (set.metadata.address < 0)
+    return false;
 
   int wordsize = 0;
 
@@ -228,6 +237,9 @@ bool QpxVmePlugin::read_register(Gamma::Setting& set) const {
 
 bool QpxVmePlugin::write_register(Gamma::Setting& set) {
   if (!(status_ & Qpx::DeviceStatus::booted))
+    return false;
+
+  if (set.metadata.address < 0)
     return false;
 
   int wordsize = 0;

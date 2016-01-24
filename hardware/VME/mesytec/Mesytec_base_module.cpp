@@ -218,6 +218,9 @@ bool MesytecVME::read_setting(Gamma::Setting& set) const {
   if (!(status_ & Qpx::DeviceStatus::booted))
     return false;
 
+  if (set.metadata.address < 0)
+    return false;
+
   if ((set.metadata.setting_type == Gamma::SettingType::binary)
       || (set.metadata.setting_type == Gamma::SettingType::command)
       || (set.metadata.setting_type == Gamma::SettingType::integer)
@@ -233,6 +236,9 @@ bool MesytecVME::read_setting(Gamma::Setting& set) const {
 
 bool MesytecVME::write_setting(Gamma::Setting& set) {
   if (!(status_ & Qpx::DeviceStatus::booted))
+    return false;
+
+  if (set.metadata.address < 0)
     return false;
 
   if ((set.metadata.setting_type == Gamma::SettingType::binary)
@@ -251,7 +257,7 @@ bool MesytecVME::write_setting(Gamma::Setting& set) {
 uint16_t MesytecVME::readShort(int address) const
 {
   if (m_controller) {
-    return m_controller->readShort(m_baseAddress + address, AddressModifier::A16_Supervisory);
+    return m_controller->read16(m_baseAddress + address, AddressModifier::A16_Priv);
   } else {
     return 0;
   }
@@ -260,7 +266,7 @@ uint16_t MesytecVME::readShort(int address) const
 void MesytecVME::writeShort(int address, uint16_t data) const
 {
   if (m_controller) {
-    m_controller->writeShort(m_baseAddress + address, AddressModifier::A16_Supervisory, data);
+    m_controller->write16(m_baseAddress + address, AddressModifier::A16_Priv, data);
   }
 }
 

@@ -37,6 +37,9 @@ public:
   static std::string plugin_name() {return "VME/MADC32";}
   std::string device_name() const override {return plugin_name();}
 
+  void addReadout(VmeStack& stack) override;
+
+
 private:
   //no copying
   void operator=(MADC32 const&);

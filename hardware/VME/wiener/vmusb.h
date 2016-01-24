@@ -8,6 +8,7 @@
 
 #include "../vmecontroller.h"
 #include "xxusbdll.h"
+#include "vmusb_stack.h"
 
 
 class VmUsb : public VmeController
@@ -20,20 +21,24 @@ public:
   virtual std::string serialNumber(void) { return m_serialNumber; }
 
   virtual std::list<std::string> controllers(void);
-  virtual bool connect(int target);
+  virtual bool connect(uint16_t target);
   virtual bool connect(std::string target);
   virtual bool connected() { return (udev); }
   virtual void systemReset();
 
   //virtual std::list<std::string> moduleList() {}
-  virtual void writeShort(int vmeAddress, AddressModifier am, int data, int *errorCode = NULL);
-  virtual int  readShort(int vmeAddress, AddressModifier am, int *errorCode = NULL);
 
-  virtual void writeLong(int vmeAddress, AddressModifier am, long data, int *errorCode = NULL);
-  virtual long  readLong(int vmeAddress, AddressModifier am,            int *errorCode = NULL);
+//  void      write8(uint32_t vmeAddress, AddressModifier am, uint8_t data);
+//  uint8_t   read8(uint32_t vmeAddress, AddressModifier am);
 
-  virtual void writeRegister(long vmeAddress, long data, int *errorCode);
-  virtual long readRegister(long vmeAddress, int *errorCode);
+  void       write16(uint32_t vmeAddress, AddressModifier am, uint16_t data);
+  uint16_t    read16(uint32_t vmeAddress, AddressModifier am);
+
+  void        write32(uint32_t vmeAddress, AddressModifier am, uint32_t data);
+  uint32_t     read32(uint32_t vmeAddress, AddressModifier am);
+
+  void    writeRegister(uint16_t vmeAddress, uint32_t data);
+  uint32_t readRegister(uint16_t vmeAddress);
 
   virtual void start_daq();
   virtual void stop_daq();
@@ -43,12 +48,11 @@ public:
   virtual void scaler_dump();
   virtual void trigger_IRQ(short);
 
+
 private:
+  std::string m_serialNumber;
   boost::shared_ptr<boost::dll::shared_library> xxlib;
   usb_dev_handle *udev;
-
-  std::string m_serialNumber;
-
 
   //  short __stdcall xxusb_devices_find(xxusb_device_type *xxusbDev);
   boost::function<short(xxusb_device_type *)> xxusbDevicesFind;

@@ -222,6 +222,9 @@ bool QpxIsegVHSPlugin::read_setting(Gamma::Setting& set) const {
   if (!(status_ & Qpx::DeviceStatus::booted))
     return false;
 
+  if (set.metadata.address < 0)
+    return false;
+
   if (set.metadata.setting_type == Gamma::SettingType::floating) {
     set.value_dbl = readFloat(m_baseAddress + set.metadata.address);
     return true;
@@ -245,6 +248,9 @@ bool QpxIsegVHSPlugin::read_setting(Gamma::Setting& set) const {
 
 bool QpxIsegVHSPlugin::write_setting(Gamma::Setting& set) {
   if (!(status_ & Qpx::DeviceStatus::booted))
+    return false;
+
+  if (set.metadata.address < 0)
     return false;
 
   if (set.metadata.setting_type == Gamma::SettingType::floating) {
@@ -271,7 +277,7 @@ bool QpxIsegVHSPlugin::write_setting(Gamma::Setting& set) {
 uint16_t QpxIsegVHSPlugin::readShort(int address) const
 {
   if (m_controller) {
-    return m_controller->readShort(address, AddressModifier::A16_Nonprivileged);
+    return m_controller->read16(address, AddressModifier::A16_User);
   } else {
     return 0;
   }
@@ -280,7 +286,7 @@ uint16_t QpxIsegVHSPlugin::readShort(int address) const
 void QpxIsegVHSPlugin::writeShort(int address, uint16_t data)
 {
   if (m_controller) {
-    m_controller->writeShort(address, AddressModifier::A16_Nonprivileged, data);
+    m_controller->write16(address, AddressModifier::A16_User, data);
   }
 }
 

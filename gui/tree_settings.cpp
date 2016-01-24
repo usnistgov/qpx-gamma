@@ -630,7 +630,7 @@ void TreeSettings::update(const Gamma::Setting &data) {
   }
 
   if (!rootItem->eat_data(data_)) {
-    PL_DBG << "deleting root node";
+//    PL_DBG << "deleting root node";
     beginResetModel();
     delete rootItem;
     rootItem = new TreeItem(data_);

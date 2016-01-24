@@ -25,6 +25,11 @@
 
 #define MADC32_Firmware                   0x0203
 
+#define Const(name) static const int name =
+
+static const int eventBuffer  = 0x0000;
+static const int ReadoutReset = 0x6034;
+
 namespace Qpx {
 
 static DeviceRegistrar<MADC32> registrar("VME/MADC32");
@@ -74,6 +79,19 @@ void MADC32::rebuild_structure(Gamma::Setting &set) {
       }
     }
   }
+}
+
+
+//  Add instructions to read out the ADC for a event. Since we're only working in
+//  single even tmode, we'll just read 'too many' words and let the
+//  BERR terminate for us.  This ensures that we'll have that 0xfff at the end of
+//  the data.
+//  stack  - The VMUSB readout stack that's being built for this stack.
+void MADC32::addReadout(VmeStack& stack)
+{
+  stack.addFifoRead32(m_baseAddress + eventBuffer, readamod, (size_t)45);
+  stack.addWrite16(m_baseAddress + ReadoutReset, initamod, (uint16_t)1);
+  stack.addDelay(5);
 }
 
 }

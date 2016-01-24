@@ -27,6 +27,11 @@
 
 #define MESYTEC_ADDRESS_SPACE_LENGTH				0x10000000
 
+static const AddressModifier initamod = AddressModifier::A32_UserData;   //  setup using user data access.
+static const AddressModifier readamod = AddressModifier::A32_UserBlock;  //  Read in block mode.
+static const AddressModifier cbltamod = AddressModifier::A32_UserBlock;
+static const AddressModifier mcstamod = AddressModifier::A32_UserData;
+
 namespace Qpx {
 
 class MesytecExternal;

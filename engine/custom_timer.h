@@ -23,6 +23,8 @@
 
 #include <string>
 #include <cstdint>
+
+#include <boost/thread.hpp>
 #include <boost/timer/timer.hpp>
 
 inline static void wait_ms(int millisex) {

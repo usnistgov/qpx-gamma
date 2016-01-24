@@ -12,8 +12,9 @@
 
 VmUsb::VmUsb()
 {
-  PL_DBG << "<VmUsb> Attempting to load xx_usb library";
   udev = NULL;
+
+  PL_DBG << "<VmUsb> Attempting to load xx_usb library";
 
   boost::system::error_code ec;
   xxlib = boost::make_shared<boost::dll::shared_library>();
@@ -176,9 +177,11 @@ VmUsb::VmUsb()
     }
   } else
     PL_ERR << "<VmUsb> Could not load xx_usb library;  ec= " << ec.message();
+
+
 }
 
-bool VmUsb::connect(int target) {
+bool VmUsb::connect(uint16_t target) {
   if (!xxlib->is_loaded())
     return false;
   if (udev)
@@ -264,84 +267,84 @@ std::list<std::string> VmUsb::controllers(void)
 }
 
 
-void VmUsb::writeShort(int vmeAddress, AddressModifier am, int data, int *errorCode)
+void VmUsb::write16(uint32_t vmeAddress, AddressModifier am, uint16_t data)
 {
   int result = -1;
 
   if (udev)
     result = vmeWrite16(udev, static_cast<int>(am), vmeAddress, data);
 
-  if (errorCode)
-    *errorCode = result;
+  if (result < 0)
+    PL_ERR << "vme_write16 failed";
 }
 
-int VmUsb::readShort(int vmeAddress, AddressModifier am, int *errorCode)
+uint16_t VmUsb::read16(uint32_t vmeAddress, AddressModifier am)
 {
-  long data = 0;
+  uint32_t data = 0;
   int  result = -1;
 
   if (udev)
-    result = vmeRead16(udev, static_cast<int>(am), vmeAddress, &data);
+    result = vmeRead16(udev, static_cast<int>(am), vmeAddress, (long int*) &data);
 
-  if (errorCode)
-    *errorCode = result;
+  if (result < 0)
+    PL_ERR << "vme_read16 failed";
 
   return data;
 }
 
-void VmUsb::writeLong(int vmeAddress, AddressModifier am, long data, int *errorCode)
+void VmUsb::write32(uint32_t vmeAddress, AddressModifier am, uint32_t data)
 {
   int result = -1;
 
   if (udev)
     result = vmeWrite32(udev, static_cast<int>(am), vmeAddress, data);
 
-  if (errorCode)
-    *errorCode = result;
+  if (result < 0)
+    PL_ERR << "vme_write32 failed";
 }
 
-long VmUsb::readLong(int vmeAddress, AddressModifier am, int *errorCode)
+uint32_t VmUsb::read32(uint32_t vmeAddress, AddressModifier am)
 {
-  long data = 0;
+  uint32_t data = 0;
   int result = -1;
 
   if (udev)
-    result = vmeRead32(udev, static_cast<int>(am), vmeAddress, &data);
+    result = vmeRead32(udev, static_cast<int>(am), vmeAddress, (long int*) &data);
 
-  if (errorCode)
-    *errorCode = result;
+  if (result < 0)
+    PL_ERR << "vme_read32 failed";
 
   return data;
 }
 
-void VmUsb::writeRegister(long vmeAddress, long data, int *errorCode)
+void VmUsb::writeRegister(uint16_t vmeAddress, uint32_t data)
 {
   int result = -1;
 
   if (udev)
     result = vmeRegisterWrite(udev, vmeAddress, data);
 
-  if (errorCode)
-    *errorCode = result;
+  if (result < 0)
+    PL_ERR << "register_write failed";
 }
 
-long VmUsb::readRegister(long vmeAddress, int *errorCode)
+uint32_t VmUsb::readRegister(uint16_t vmeAddress)
 {
-  long data = 0;
+  uint32_t data = 0;
   int  result = -1;
 
   if (udev)
-    result = vmeRegisterRead(udev, vmeAddress, &data);
+    result = vmeRegisterRead(udev, vmeAddress, (long int*) &data);
 
-  if (errorCode)
-    *errorCode = result;
+  if (result < 0)
+    PL_ERR << "vme_write16 failed";
 
   return data;
 }
 
 std::string VmUsb::controllerName(void)
 {
-  return "VM-USB";
+  return "VM-USB (xxusb)";
 }
 
 void VmUsb::systemReset()
@@ -374,3 +377,5 @@ void VmUsb::trigger_IRQ(short flags) {
   shifted = shifted << 8;
   xxusbRegisterWrite(udev, 0, shifted);
 }
+
+

@@ -5,6 +5,7 @@
 #include <iomanip>
 #include "daq_device.h"
 #include "qpx_util.h"
+#include "vme_stack.h"
 
 class VmeController;
 
@@ -59,6 +60,8 @@ public:
   virtual uint32_t baseAddressSpaceLength() const = 0;
   virtual bool connected() const { return false; }
   virtual std::string firmwareName() const {return std::string();}
+
+  virtual void addReadout(VmeStack& stack) {}
 
   //probably does not apply to many...
   virtual void    programBaseAddress(uint32_t address) {}
