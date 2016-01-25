@@ -70,7 +70,8 @@ class WidgetPlot1D : public QWidget
 public:
   explicit WidgetPlot1D(QWidget *parent = 0);
   ~WidgetPlot1D();
-  void clearGraphs();
+  virtual void clearGraphs();
+
   void clearExtras();
 
   void redraw();
@@ -117,7 +118,7 @@ signals:
   void range_moved(double x, double y);
   void markers_selected();
 
-private slots:
+protected slots:
   void plot_mouse_clicked(double x, double y, QMouseEvent *event, bool channels);
   void plot_mouse_press(QMouseEvent*);
   void plot_mouse_release(QMouseEvent*);
@@ -125,12 +126,12 @@ private slots:
   void clicked_item(QCPAbstractItem *);
 
   void selection_changed();
-  void plot_rezoom();
+  virtual void plot_rezoom();
   void exportRequested(QAction*);
   void optionsChanged(QAction*);
 
 
-private:
+protected:
   void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
   void calc_y_bounds(double lower, double upper);
   void set_graph_style(QCPGraph*, QString);

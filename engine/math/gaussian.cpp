@@ -29,31 +29,46 @@
 #include "fityk.h"
 #include "custom_logger.h"
 
+#include <boost/lexical_cast.hpp>
+
 Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
   Gaussian() {
   std::vector<double> sigma;
-  sigma.resize(x.size(), 1);
+  for (auto &q : y) {
+    sigma.push_back(1/sqrt(q));
+  }
 
   bool success = true;
+
+  if ((x.size() < 1) || (x.size() != y.size()))
+    return;
+
   std::vector<fityk::Func*> fns;
 
   fityk::Fityk *f = new fityk::Fityk;
   f->redir_messages(NULL);
   f->load_data(0, x, y, sigma);
 
+    try {
+      f->execute("set fitting_method = nlopt_nm");
+    } catch ( ... ) {
+      success = false;
+      PL_DBG << "failed to set fitter";
+    }
+
   try {
     f->execute("guess Gaussian");
   }
   catch ( ... ) {
-    //PL_ERR << "Fytik threw exception a";
+    PL_ERR << "Gaussian could not guess";
     success = false;
   }
 
   try {
-    f->execute("fit");
+    f->execute("fit 10000");
   }
   catch ( ... ) {
-    //PL_ERR << "Fytik threw exception b";
+    PL_ERR << "Gaussian could not fit";
     success = false;
   }
 
@@ -64,6 +79,7 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
       center_ = lastfn->get_param_value("center");
       height_ = lastfn->get_param_value("height");
       hwhm_   = lastfn->get_param_value("hwhm");
+//      PL_DBG << "Gaussian fit as c=" << center_ << " h=" << height_ << " w=" << hwhm_;
     }
     rsq = f->get_rsquared(0);
   }

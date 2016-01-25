@@ -86,101 +86,54 @@ void Fitter::clear() {
   x_.clear();
   x_nrg_.clear();
   y_.clear();
-  y_avg_.clear();
-  deriv1.clear();
-  deriv2.clear();
   prelim.clear();
   filtered.clear();
   lefts.clear();
   rights.clear();
-  lefts_t.clear();
-  rights_t.clear();
   peaks_.clear();
   multiplets_.clear();
+
+  x_kon.clear();
+  x_conv.clear();
+
 }
 
 void Fitter::set_mov_avg(uint16_t window) {
-  y_avg_ = y_;
-
-  if ((window % 2) == 0)
-    window++;
-
-  if (y_.size() < window)
-    return;
-
-  uint16_t half = (window - 1) / 2;
-
-  //assume values under 0 are same as for index 0
-  double avg = (half + 1) * y_[0];
-
-  //begin averaging over the first few
-  for (int i = 0; i < half; ++i)
-    avg += y_[i];
-
-  avg /= window;
-
-  double remove, add;
-  for (int i=0; i < y_.size(); i++) {
-    if (i < (half+1))
-      remove = y_[0] / window;
-    else
-      remove = y_[i-(half+1)] / window;
-
-    if ((i + half) > y_.size())
-      add = y_[y_.size() - 1] / window;
-    else
-      add = y_[i + half] / window;
-
-    avg = avg - remove + add;
-
-    y_avg_[i] = avg;
-  }
-
-  deriv();
+  find_kon(window);
 }
 
 
-void Fitter::deriv() {
-  if (!y_avg_.size())
-    return;
+void Fitter::find_kon(uint16_t width) {
+  if (width < 2)
+    width = 2;
 
-  deriv1.clear();
-  deriv2.clear();
+  int shift = width / 2;
 
-  deriv1.push_back(0);
-  for (int i=1; i < y_avg_.size(); ++i) {
-    deriv1.push_back(y_avg_[i] - y_avg_[i-1]);
-  }
+  x_kon.resize(y_.size(), 0);
+  x_conv.resize(y_.size(), 0);
 
-  deriv2.push_back(0);
-  for (int i=1; i < deriv1.size(); ++i) {
-    deriv2.push_back(deriv1[i] - deriv1[i-1]);
+  for (int j = width; (j+2*width+1) < y_.size(); ++j) {
+    double kon = 0;
+    double avg = 0;
+    for (int i=j; i <= (j+width+1); ++i) {
+      kon += 2*y_[i] - y_[i-width] - y_[i+width];
+      avg += y_[i];
+    }
+    avg = avg / width;
+    x_kon[j + shift] = kon;
+    x_conv[j + shift] = kon / sqrt(6* width * avg);
   }
 }
 
 
 void Fitter::find_prelim() {
   prelim.clear();
-  //std::string dbg_list("prelim peaks ");
-
-  int was = 0, is = 0;
-
-  for (int i = 0; i < deriv1.size(); ++i) {
-    if (deriv1[i] > 0)
-      is = 1;
-    else if (deriv1[i] < 0)
-      is = -1;
-    else
-      is = 0;
-
-    if ((was == 1) && (is == -1)) {
+  for (int i=0; i < x_conv.size(); ++i) {
+    if (x_conv[i] > 3.0)
       prelim.push_back(i);
-      //dbg_list += std::to_string(i) + " ";
-    }
-
-    was = is;
   }
-  //PL_DBG << dbg_list;
+  return;
+  //std::string dbg_list("prelim peaks ");
 }
 
 void Fitter::filter_prelim(uint16_t min_width) {
@@ -188,59 +141,43 @@ void Fitter::filter_prelim(uint16_t min_width) {
   lefts.clear();
   rights.clear();
 
-  //std::string dbg_list("filtered (minw=");
-  //dbg_list += std::to_string(min_width) + ") peaks ";
-
-  if ((y_.size() < 3) || !prelim.size())
+  if (prelim.empty())
     return;
 
-  for (auto &q : prelim) {
-    if (!q)
-      continue;
-    uint16_t left = 0, right = 0;
-    for (int i=q-1; i >= 0; --i)
-      if (deriv1[i] > 0)
-        left++;
-      else
-        break;
-
-    for (int i=q; i < deriv1.size(); ++i)
-      if (deriv1[i] < 0)
-        right++;
-      else
-        break;
-
-    if ((left >= min_width) && (right >= min_width)) {
-      lefts.push_back(q-left-1);
-      filtered.push_back(q-1);
-      rights.push_back(q+right-1);
-      //dbg_list += std::to_string(q-left-1) + "/" + std::to_string(q-1) + "\\" + std::to_string(q+right-1) + " ";
+  lefts.push_back(prelim[0]);
+  int prev = prelim[0];
+  for (int i=0; i < prelim.size(); ++i) {
+    int current = prelim[i];
+    if ((current - prev) > 1) {
+      rights.push_back(prev);
+      lefts.push_back(current);
     }
+    prev = current;
   }
-  //  PL_DBG << dbg_list;
-}
+  rights.push_back(prelim[prelim.size()-1]);
 
-void Fitter::refine_edges(double threshl, double threshr) {
-  lefts_t.clear();
-  rights_t.clear();
-
-  for (int i=0; i<filtered.size(); ++i) {
-    uint16_t left = lefts[i],
-        right = rights[i];
-
-    for (int j=lefts[i]; j < filtered[i]; ++j) {
-      if (deriv1[j] < threshl)
-        left = j;
-    }
-
-    for (int j=rights[i]; j > filtered[i]; --j) {
-      if ((-deriv1[j]) < threshr)
-        right = j;
-    }
-
-    lefts_t.push_back(left);
-    rights_t.push_back(right);
+  if (lefts.size() != rights.size()) {
+    lefts.clear(); rights.clear();
+    return;
   }
+
+  for (int i=0; i < lefts.size(); ++i) {
+    filtered.push_back((rights[i] + lefts[i])/2);
+  }
+
+  if (filtered.size() < 3)
+    return;
+
+  for (int i=0; i < filtered.size(); ++i) {
+    lefts[i] -= 2*(filtered[i] - lefts[i]);
+    rights[i] += 2*(rights[i] - filtered[i]);
+    if (lefts[i] < 0)
+      lefts[i] = 0;
+    if (rights[i] >= x_.size())
+      rights[i] = x_.size() - 1;
+  }
+
+  return;
 }
 
 uint16_t Fitter::find_left(uint16_t chan, uint16_t grace) {
@@ -253,7 +190,7 @@ uint16_t Fitter::find_left(uint16_t chan, uint16_t grace) {
   int i = x_.size()-1;
   while ((i > 0) && (x_[i] > (chan - grace)))
     i--;
-  while ((i > 0) && (deriv1[i] > 0))
+  while ((i > 0) && (x_conv[i] > 2.0))
     i--;
 
   return x_[i];
@@ -269,7 +206,7 @@ uint16_t Fitter::find_right(uint16_t chan, uint16_t grace) {
   int i = 0;
   while ((i < x_.size()) && (x_[i] < (chan + grace)))
     i++;
-  while ((i < x_.size()) && (deriv1[i] < 0))
+  while ((i < x_.size()) && (x_conv[i] > 2.0))
     i++;
 
   return x_[i];
@@ -293,7 +230,7 @@ void Fitter::find_peaks(int min_width) {
 
   peaks_.clear();
   multiplets_.clear();
-  //PL_DBG << "Fitter: looking for " << filtered.size()  << " peaks";
+  PL_DBG << "Fitter: looking for " << filtered.size()  << " peaks";
 
   for (int i=0; i < filtered.size(); ++i) {
     //std::vector<double> baseline = make_background(x_, y_, lefts[i], rights[i], 3);
@@ -304,13 +241,12 @@ void Fitter::find_peaks(int min_width) {
     if (
         (fitted.height > 0) &&
         (fitted.fwhm_sum4 > 0) &&
-        (fitted.fwhm_gaussian > 0) &&
-        (fitted.fwhm_pseudovoigt > 0) &&
+//        (fitted.fwhm_gaussian > 0) &&
         (x_[lefts[i]] < fitted.center) &&
         (fitted.center < x_[rights[i]])
        )
     {
-      //PL_DBG << "I like this peak at " << fitted.center << " fw " << fitted.fwhm_gaussian;
+      PL_DBG << "I like this peak at " << fitted.center << " fw " << fitted.fwhm_gaussian;
       peaks_[fitted.center] = fitted;
     }
   }
@@ -321,7 +257,7 @@ void Fitter::find_peaks(int min_width) {
     //    PL_DBG << "<GammaFitter> Valid FWHM calib found, performing filtering/deconvolution";
     filter_by_theoretical_fwhm(fw_tolerance_);
 
-//    PL_DBG << "filtered by theoretical fwhm " << peaks_.size();
+    PL_DBG << "filtered by theoretical fwhm " << peaks_.size();
 
     make_multiplets();
   }

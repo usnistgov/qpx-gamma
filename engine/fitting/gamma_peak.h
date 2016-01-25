@@ -27,7 +27,7 @@
 #include <set>
 #include "polynomial.h"
 #include "gaussian.h"
-#include "voigt_.h"
+#include "hypermet.h"
 #include "detector.h"
 
 namespace Gamma {
@@ -80,7 +80,6 @@ public:
       , height(0)
       , fwhm_sum4(0)
       , fwhm_gaussian (0)
-      , fwhm_pseudovoigt (0)
       , hwhm_L (0)
       , hwhm_R (0)
       , fwhm_theoretical(0)
@@ -108,12 +107,12 @@ public:
   
   void construct(Calibration cali_nrg, Calibration cali_fwhm);
 
-  std::vector<double> x_, y_, y_baseline_, y_fullfit_gaussian_, y_fullfit_pseudovoigt_;
+  std::vector<double> x_, y_, y_baseline_, y_fullfit_gaussian_, y_fullfit_hypermet_;
   SUM4 sum4_;
   Gaussian gaussian_;
-  SplitPseudoVoigt pseudovoigt_;
+  Hypermet hypermet_;
 
-  double center, energy, height, fwhm_sum4, fwhm_gaussian, fwhm_pseudovoigt, hwhm_L, hwhm_R,
+  double center, energy, height, fwhm_sum4, fwhm_gaussian, hwhm_L, hwhm_R,
       fwhm_theoretical, lim_L, lim_R;
   bool intersects_L, intersects_R;
   bool selected, flagged;

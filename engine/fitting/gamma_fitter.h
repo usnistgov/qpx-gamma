@@ -36,7 +36,7 @@ public:
   Fitter()
       : overlap_(4.0)
       , fw_tolerance_(0.5)
-      , avg_window_(1)
+      , avg_window_(3)
       , activity_scale_factor_(1.0)
       , sum4edge_samples(3)
       , x_bound(0)
@@ -59,10 +59,10 @@ public:
   void setData(Qpx::Spectrum::Spectrum *spectrum);
 
   void set_mov_avg(uint16_t);
-  void deriv();
   void find_prelim();
+  void find_kon(uint16_t width);
+
   void filter_prelim(uint16_t min_width);
-  void refine_edges(double threshl, double threshr);
   void find_peaks(int min_width);
 
   void add_peak(uint32_t left, uint32_t right);
@@ -83,12 +83,14 @@ public:
   std::string sample_name_;
   double activity_scale_factor_;
   
-  std::vector<double> x_, x_nrg_, y_, y_avg_, deriv1, deriv2;
+  std::vector<double> x_, x_nrg_, y_;
+  std::vector<double> x_kon, x_conv;
+
   uint32_t x_bound;
   uint16_t sum4edge_samples;
 
-  std::vector<uint16_t> prelim, filtered, lefts, rights, lefts_t, rights_t;
-  
+  std::vector<uint16_t> prelim, filtered, lefts, rights;
+
   Qpx::Spectrum::Metadata metadata_;
   Gamma::Detector detector_;
   

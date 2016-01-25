@@ -44,7 +44,7 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
   ui->PlotCalib->setLabels("energy", "FWHM");
 
   ui->tableFWHM->verticalHeader()->hide();
-  ui->tableFWHM->setColumnCount(5);
+  ui->tableFWHM->setColumnCount(4);
   ui->tableFWHM->setHorizontalHeaderLabels({"chan", "energy", "fwhm(sum4)", "fwmw (gaussian)", "fwhm (pseudo-Voigt)"});
   ui->tableFWHM->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tableFWHM->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -136,7 +136,7 @@ void FormFwhmCalibration::add_peak_to_table(const Gamma::Peak &p, int row) {
   ui->tableFWHM->setItem(row, 1, new QTableWidgetItem( QString::number(p.energy) ));
   ui->tableFWHM->setItem(row, 2, new QTableWidgetItem( QString::number(p.fwhm_sum4) ));
   ui->tableFWHM->setItem(row, 3, new QTableWidgetItem( QString::number(p.fwhm_gaussian) ));
-  ui->tableFWHM->setItem(row, 4, new QTableWidgetItem( QString::number(p.fwhm_pseudovoigt) ));
+//  ui->tableFWHM->setItem(row, 4, new QTableWidgetItem( QString::number(p.fwhm_pseudovoigt) ));
 }
 
 void FormFwhmCalibration::replot_markers() {

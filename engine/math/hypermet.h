@@ -20,25 +20,31 @@
  *
  ******************************************************************************/
 
-#ifndef VOIGT_H
-#define VOIGT_H
+#ifndef HYPERMET_H
+#define HYPERMET_H
 
 #include <vector>
 #include <iostream>
 #include <numeric>
 
 
-class SplitPseudoVoigt {
+class Hypermet {
 public:
-  SplitPseudoVoigt() : height_(0), center_(0), hwhm_l(0), hwhm_r(0), shape_l(0), shape_r(0), rsq(-1) {}
-  SplitPseudoVoigt(const std::vector<double> &x, const std::vector<double> &y);
+  Hypermet() : height_(0), center_(0), width_(0),
+    Lshort_height_(0), Lshort_slope_(0),
+    rsq(-1) {}
 
-  static std::vector<SplitPseudoVoigt> fit_multi(const std::vector<double> &x, const std::vector<double> &y, const std::vector<SplitPseudoVoigt> &cold);
+  Hypermet(double h, double c, double w) : height_(h), center_(c), width_(w),
+    Lshort_height_(0), Lshort_slope_(0),
+    rsq(-1) {}
+  Hypermet(const std::vector<double> &x, const std::vector<double> &y, double h, double c, double w);
+
+  static std::vector<Hypermet> fit_multi(const std::vector<double> &x, const std::vector<double> &y, const std::vector<Hypermet> &old);
 
   double evaluate(double x);
   std::vector<double> evaluate_array(std::vector<double> x);
   
-  double height_, hwhm_, center_, hwhm_l, hwhm_r, shape_l, shape_r;
+  double center_, height_, width_, Lshort_height_, Lshort_slope_;
   double rsq;
 };
 

@@ -33,7 +33,7 @@
    <item row="0" column="0">
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
-      <widget class="WidgetPlot1D" name="plot1D" native="true">
+      <widget class="WidgetPlotFit" name="plot1D" native="true">
        <property name="sizePolicy">
         <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
          <horstretch>0</horstretch>
@@ -91,7 +91,7 @@
            </size>
           </property>
           <property name="text">
-           <string>Mov avg</string>
+           <string>mov</string>
           </property>
          </widget>
         </item>
@@ -110,7 +110,7 @@
            </size>
           </property>
           <property name="text">
-           <string>Prelim peaks</string>
+           <string>Prelim</string>
           </property>
          </widget>
         </item>
@@ -129,7 +129,7 @@
            </size>
           </property>
           <property name="text">
-           <string>Filtered peaks</string>
+           <string>Filtered</string>
           </property>
          </widget>
         </item>
@@ -312,7 +312,7 @@
           <number>999</number>
          </property>
          <property name="singleStep">
-          <number>2</number>
+          <number>1</number>
          </property>
          <property name="value">
           <number>9</number>
@@ -596,9 +596,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>WidgetPlot1D</class>
+   <class>WidgetPlotFit</class>
    <extends>QWidget</extends>
-   <header>widget_plot1d.h</header>
+   <header>widget_plot_fit.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

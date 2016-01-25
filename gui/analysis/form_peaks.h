@@ -134,7 +134,7 @@ private:
                     multiplet_, flagged_,
                     rise_, fall_, even_;
 
-  void plot_derivs();
+
 };
 
 #endif // FORM_CALIBRATION_H

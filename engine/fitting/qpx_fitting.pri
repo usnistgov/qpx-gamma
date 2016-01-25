@@ -21,7 +21,7 @@
 #-------------------------------------------------------------------------------
 
 unix {
-   LIBS += -lm -ldl -lboost_system -lz
+   LIBS += -lm -ldl -lboost_system -lz -lnlopt
 }
 
 INCLUDEPATH += $$PWD/fityk $$PWD
@@ -31,4 +31,4 @@ SOURCES += $$files($$PWD/*.cpp) \
            $$files($$PWD/fityk/cmpfit/*.c)
 
 HEADERS  += $$files($$PWD/*.h) \
-            $$files($$PWD/dependencies/fityk/*.h)
+            $$files($$PWD/fityk/*.h)

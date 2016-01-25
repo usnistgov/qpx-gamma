@@ -246,8 +246,17 @@ void FormPeaks::replot_all() {
                        main_graph_, true,
                        fit_data_->metadata_.bits);
 
-  if (ui->checkShowMovAvg->isChecked())
-    plot_derivs();
+  if (ui->checkShowMovAvg->isChecked()) {
+//    ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->x_)),
+//                         QVector<double>::fromStdVector(fit_data_->x_kon),
+//                         flagged_, true,
+//                         fit_data_->metadata_.bits);
+
+
+    ui->plot1D->addResid(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->x_)),
+                                                             QVector<double>::fromStdVector(fit_data_->x_conv), multiplet_);
+
+  }
 
   QVector<double> xx, yy;
 
@@ -291,7 +300,7 @@ void FormPeaks::replot_all() {
     xx = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x));
 
     if (ui->checkShowPseudoVoigt->isChecked()) {
-      std::vector<double> y_fit = q.second.y_fullfit_pseudovoigt_;
+      std::vector<double> y_fit = q.second.y_fullfit_hypermet_;
       for (auto &p : y_fit)
         if (p < 1)
           p = std::floor(p * 10 + 0.5)/10;
@@ -558,52 +567,6 @@ void FormPeaks::on_pushFindPeaks_clicked()
 
   emit peaks_changed(true);
   this->setCursor(Qt::ArrowCursor);
-}
-
-void FormPeaks::plot_derivs()
-{
-  if (fit_data_ == nullptr)
-    return;
-
-  QVector<double> temp_y, temp_x;
-  int was = 0, is = 0;
-
-  for (int i = 0; i < fit_data_->deriv1.size(); ++i) {
-    if (fit_data_->deriv1[i] > 0)
-      is = 1;
-    else if (fit_data_->deriv1[i] < 0)
-      is = -1;
-    else
-      is = 0;
-
-    if ((was != is) && (temp_x.size()))
-    {
-      if (temp_x.size() > ui->spinMinPeakWidth->value()) {
-        if (was == 1)
-          ui->plot1D->addGraph(temp_x, temp_y, rise_);
-        else if (was == -1)
-          ui->plot1D->addGraph(temp_x, temp_y, fall_);
-        else
-          ui->plot1D->addGraph(temp_x, temp_y, even_);
-      }
-      temp_x.clear(); temp_x.push_back(fit_data_->nrg_cali_.transform(fit_data_->x_[i-1]));
-      temp_y.clear(); temp_y.push_back(fit_data_->y_avg_[i-1]);
-    }
-
-    was = is;
-    temp_y.push_back(fit_data_->y_avg_[i]);
-    temp_x.push_back(fit_data_->nrg_cali_.transform(fit_data_->x_[i]));
-  }
-
-  if (temp_x.size())
-  {
-    if (was == 1)
-      ui->plot1D->addGraph(temp_x, temp_y, rise_);
-    else if (was == -1)
-      ui->plot1D->addGraph(temp_x, temp_y, fall_);
-    else
-      ui->plot1D->addGraph(temp_x, temp_y, even_);
-  }
 }
 
 void FormPeaks::on_checkShowMovAvg_clicked()
