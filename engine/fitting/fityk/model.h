@@ -1,8 +1,8 @@
 // This file is part of fityk program. Copyright 2001-2013 Marcin Wojdyr
 // Licence: GNU General Public License ver. 2+
 
-#ifndef FITYK__SUM__H__
-#define FITYK__SUM__H__
+#ifndef FITYK_SUM_H_
+#define FITYK_SUM_H_
 #include <vector>
 #include <string>
 #include <utility>
@@ -52,7 +52,7 @@ public:
     std::string get_formula(bool simplify, const char *num_fmt,
                             bool extra_breaks) const;
     std::string get_peak_parameters(const std::vector<double>& errors) const;
-    std::vector<realt> get_symbolic_derivatives(realt x) const;
+    std::vector<realt> get_symbolic_derivatives(realt x, realt *y) const;
     std::vector<realt> get_numeric_derivatives(realt x, realt numerical_h)const;
     realt zero_shift(realt x) const;
 

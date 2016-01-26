@@ -8,8 +8,6 @@
 #ifndef FITYK_NLFIT_H_
 #define FITYK_NLFIT_H_
 
-#define HAVE_LIBNLOPT 1
-
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif

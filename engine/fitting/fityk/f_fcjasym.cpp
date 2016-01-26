@@ -312,14 +312,16 @@ is pi/2.
 
 Note that callers will need to apply the 1/(2_hl) factor found in the FCJ paper.
 */
+if(twopsi == 0) return 0.0;
+if(fabs(twopsi - twotheta)<1e-8) return M_PI/2.0;
 realt stwopsi = sin(twopsi);
 realt stwoth  = sin(twotheta);
 realt ctwoth = cos(twotheta);
-if(twopsi == 0) return 0.0;
-if(twopsi == twotheta) return M_PI/2.0;
 return 0.5 * (asin((2.0*ctwoth*ctwoth + 2*stwopsi -2)/(abs(2*stwopsi-2)*stwoth)) -
        asin((2.0*ctwoth*ctwoth - 2*stwopsi -2)/(abs(2*stwopsi+2)*stwoth)));
 }
+
+static double sq(double a) { return a*a; }
 
 void FuncFCJAsymm::more_precomputations()
 {
@@ -331,10 +333,10 @@ realt hfunc_neg, hfunc_pos;
 // Handle extrema by setting twopsimin to appropriate limit
  twopsimin = 0.0;
  if (cent_rad > M_PI/2) twopsimin = M_PI;
-realt cospsimin = cos(cent_rad)*sqrt(pow(av_[4]+av_[5],2) + 1.0);
+realt cospsimin = cos(cent_rad)*sqrt(sq(av_[4]+av_[5]) + 1.0);
  if(fabs(cospsimin)<1.0) twopsimin = acos(cospsimin);
 twopsiinfl = 0.0;
-realt cospsiinfl = cos(cent_rad)*sqrt(pow(av_[4]-av_[5],2) + 1.0);
+realt cospsiinfl = cos(cent_rad)*sqrt(sq(av_[4]-av_[5]) + 1.0);
  if(fabs(cospsiinfl)<1.0) twopsiinfl = acos(cospsiinfl);
  if(av_[4] == 0 && av_[5] == 0) denom = 1.0;
  else {
@@ -348,22 +350,27 @@ extra_int is the integral of 1/cos(psi).
 */
 realt u = 0.5*dfunc_int(twopsimin,cent_rad)/av_[4];
 realt v = 0.5*dfunc_int(twopsiinfl,cent_rad)/av_[4];
-denom_unscaled = 2.0 * fmin(av_[5],av_[4]) * (M_PI/(4.0*av_[4]) - v) + (av_[4] + av_[5])* (v - u) -
+denom_unscaled = 2.0 * min(av_[5],av_[4]) * (M_PI/(4.0*av_[4]) - v) + (av_[4] + av_[5])* (v - u) -
    (1.0/(2*av_[4]))*0.5*(log(fabs(sin(twopsiinfl) + 1)) - log(fabs(sin(twopsiinfl)-1)) -
-		     log(fabs(sin(twopsimin) + 1)) + log(fabs(sin(twopsimin)-1)));
+                     log(fabs(sin(twopsimin) + 1)) + log(fabs(sin(twopsimin)-1)));
 denom = denom_unscaled * 2.0/fabs(cent_rad-twopsimin);     //Scale to [-1,1] interval of G-L integration
 // The following two factors are the analytic derivatives of the integral of D with respect to
 // h_l and s_l.
-df_dh_factor = (1.0/(2*av_[4]))*(dfunc_int(twopsiinfl,cent_rad) - dfunc_int(twopsimin,cent_rad)) -
-					     (1.0/av_[4])*denom_unscaled;
-df_ds_factor = (1.0/(2*av_[4]))*(dfunc_int(twopsiinfl,cent_rad) - dfunc_int(twopsimin,cent_rad)) +
-					    (1.0/av_[4])*(M_PI/2 - dfunc_int(twopsiinfl,cent_rad));
+realt uu = dfunc_int(twopsiinfl,cent_rad);
+realt vv = dfunc_int(twopsimin,cent_rad);
+df_dh_factor = (1.0/(2*av_[4]))*(uu - vv) - (1.0/av_[4])*denom_unscaled;
+if (av_[4]<av_[5]) {
+	df_dh_factor += (1.0/(2*av_[4]))*(M_PI - 2*uu);
+        df_ds_factor = (1.0/(2*av_[4]))*(uu - vv);
+        } else {
+        df_ds_factor = (1.0/(2*av_[4]))*(M_PI - (uu+vv));
+}
 // Precalculate the x and hfunc coefficients
 for(int pt=0;pt<512;pt++) {
     delta_n_neg[pt] = (cent_rad + twopsimin)/2.0 - (cent_rad-twopsimin)*x1024[pt]/2;
     delta_n_pos[pt] = (cent_rad + twopsimin)/2.0 + (cent_rad-twopsimin)*x1024[pt]/2;
-    hfunc_neg = sqrt(pow(cos(delta_n_neg[pt]),2)/pow(cos(cent_rad),2) -1);
-    hfunc_pos = sqrt(pow(cos(delta_n_pos[pt]),2)/pow(cos(cent_rad),2)-1);
+    hfunc_neg = sqrt(sq(cos(delta_n_neg[pt]))/sq(cos(cent_rad)) -1);
+    hfunc_pos = sqrt(sq(cos(delta_n_pos[pt]))/sq(cos(cent_rad))-1);
     //Weights for negative half of G-L interval
     if(fabs(cos(delta_n_neg[pt])) > fabs(cos(twopsiinfl))) {
             weight_neg[pt] = av_[4] + av_[5] - hfunc_neg;
@@ -393,7 +400,7 @@ if (level == 0)
     else if (fabs(level) >= fabs(av_[0]))
         left = right = 0;
     else {
-      // As for Pseudo-Voight, allow 4 half-widths for Gaussian
+      // As for Pseudo-Voigt, allow 4 half-widths for Gaussian
       realt pvw = av_[2]*(sqrt(fabs(av_[0]/(level*M_PI*av_[2])-1))+4.); //halfwidths for Lorenzian
       // The first non-zero point occurs when the convoluting PV reaches twopsimin. The
       // last value occurs when the convoluting PV moves completely past the centre
@@ -408,7 +415,7 @@ if (level == 0)
     return true;
 }
 
-//Pseudo-Voight with scaling factors as used in crystallography.
+//Pseudo-Voigt with scaling factors as used in crystallography.
 realt FuncFCJAsymm::fcj_psv(realt x, realt location, realt fwhm, realt mixing) const {
     realt xa1a2 = (location - x) / fwhm;
     realt ex = exp(- 4.0 * M_LN2 * xa1a2 * xa1a2);
@@ -420,7 +427,7 @@ realt FuncFCJAsymm::fcj_psv(realt x, realt location, realt fwhm, realt mixing) c
 CALCULATE_VALUE_BEGIN(FuncFCJAsymm)
     realt numer = 0.0;
     realt fwhm_rad = av_[2]*2*M_PI/180.0;  // Fityk uses hwhm, we use fwhm
-if((av_[4]==0 && av_[5]==0) || cent_rad==M_PI/2) {     // Plain PseudoVoight
+if((av_[4]==0 && av_[5]==0) || cent_rad==M_PI/2) {     // Plain PseudoVoigt
   numer = fcj_psv(x*radians,cent_rad,fwhm_rad, av_[3]);
  } else {
     //do the sum over 1024 Gauss-Legendre points
@@ -467,17 +474,17 @@ CALCULATE_DERIV_BEGIN(FuncFCJAsymm)
     realt psvval = av_[0] * without_height;
     if(side == 0) {
         numer += weight_neg[pt] * psvval;
-        hfunc_neg = 1/(2.0*av_[4]*sqrt(pow(cos(delta_n_neg[pt]),2)/pow(cos(cent_rad),2)-1));
+        hfunc_neg = 1/(2.0*av_[4]*sqrt(sq(cos(delta_n_neg[pt]))/sq(cos(cent_rad))-1));
     } else
     if(side == 1) {           //So hfunc nonzero
         numer += weight_pos[pt] * psvval;
-        hfunc_pos = 1.0/(2.0*av_[4]*sqrt(pow(cos(delta_n_pos[pt]),2)/pow(cos(cent_rad),2)-1));
+        hfunc_pos = 1.0/(2.0*av_[4]*sqrt(sq(cos(delta_n_pos[pt]))/sq(cos(cent_rad))-1));
     }
-    // pseudo-voight derivatives: first fwhm.  The parameter is expressed in
+    // pseudo-voigt derivatives: first fwhm.  The parameter is expressed in
     // degrees, but our calculations use radians,so we remember to scale at the end.
     realt dRdg = ex/fwhm_rad * (-1.0 + -2.0*facta*xa1a2);  //gaussian part:checked
     dRdg = av_[0] * ((1-av_[3])* dRdg + av_[3]*(-1.0*lor/fwhm_rad +
-						16*xa1a2*xa1a2/(M_PI*(fwhm_rad*fwhm_rad))*1.0/pow(1.0+4*xa1a2*xa1a2,2)));
+                                                16*xa1a2*xa1a2/(M_PI*(fwhm_rad*fwhm_rad))*1.0/sq(1.0+4*xa1a2*xa1a2)));
     realt dRde =  av_[0] * (lor - ex);           //with respect to mixing
     realt dRdtt = -1.0* av_[0] * ((1.0-av_[3])*2.0*ex*facta/fwhm_rad - av_[3]*lor*8*xa1a2/(fwhm_rad*(1+4*xa1a2*xa1a2)));
     if(side==0) {
@@ -491,31 +498,36 @@ CALCULATE_DERIV_BEGIN(FuncFCJAsymm)
       sumWdRdt += weight_pos[pt] * dRdtt;
     }
     /* The derivative for h_l includes the convolution of dfunc with PV only up
-       to twopsiinfl when s_l < h_l  as it is zero above this limit.  To save
+       to twopsiinfl when s_l < h_l  as it is zero above this limit, and
+       likewise for s_l when h_l < s_l. To save
        program bytes, we keep the same G-L interval and therefore quadrature
        points.  This is defensible as it is equivalent to including the zero
        valued points in the integration.
        The derivative for peak "centre" given here ignores the contribution
        from changes in the weighting function, as it is not possible to
        numerically integrate the derivative of dfunc that appears in the
-       full expression.  It seems to work.
-       W is 2 min(s_l,h_l) above twopsiinfl.  If W = 2h_l, the 2h_l factor
-       cancels at top and bottom, leaving a derivative of zero with respect
-       to both s_l and h_l.  If W=2s_l, the derivative with respect to
-       s_l only is non-zero.*/
-    if(fabs(cos(delta_n_pos[pt])) > fabs(cos(twopsiinfl)) && side == 1) {
-      realt dconvol =  w1024[pt] * psvval * hfunc_pos / abs(cos(delta_n_pos[pt]));
-    sumWdGdh += dconvol;
-    sumWdGds += dconvol;
-    } else if(side == 1 && av_[5] < av_[4]) {
-      sumWdGds += 2.0* w1024[pt] * psvval *hfunc_pos / abs(cos(delta_n_pos[pt]));
+       full expression.  It seems to work. */
+    realt angpt = 0;
+    realt dconvol = 0;
+    if (side == 1) {
+      angpt = cos(delta_n_pos[pt]);
+      dconvol =  w1024[pt] * psvval * hfunc_pos / abs(angpt);
+      }
+    else
+      {
+      angpt = cos(delta_n_neg[pt]);
+      dconvol =  w1024[pt] * psvval * hfunc_neg / abs(angpt);
+      }
+    if(fabs(angpt) > fabs(cos(twopsiinfl))){   //further from centre than psi_infl
+      sumWdGdh += dconvol;
+      sumWdGds += dconvol;
     }
-    if(fabs(cos(delta_n_neg[pt])) > fabs(cos(twopsiinfl)) && side == 0) {
-      realt dconvol =  w1024[pt] * psvval * hfunc_neg / abs(cos(delta_n_neg[pt]));
-    sumWdGdh += dconvol;
-    sumWdGds += dconvol;
-    } else if (side == 0 && av_[5] < av_[4]) {
-      sumWdGds += 2.0* w1024[pt] * psvval * hfunc_neg / abs(cos(delta_n_neg[pt]));
+    if(fabs(angpt) < fabs(cos(twopsiinfl))) {  //closer to centre than psi_infl
+    if (av_[5] < av_[4]) {   // H_L is larger
+      sumWdGds += 2.0* dconvol;
+    } else {   // S_L is larger
+      sumWdGdh += 2.0 * dconvol;
+    }
     }
     }
     }

@@ -1,8 +1,8 @@
 // This file is part of fityk program. Copyright 2001-2013 Marcin Wojdyr
 // Licence: GNU General Public License ver. 2+
 
-#ifndef FITYK__FUNC__H__
-#define FITYK__FUNC__H__
+#ifndef FITYK_FUNC_H_
+#define FITYK_FUNC_H_
 
 #include "tplate.h"
 #include "var.h"
@@ -126,7 +126,8 @@ protected:
     int center_idx_;
 
 private:
-    static std::vector<realt> calc_val_xx, calc_val_yy;
+    static std::vector<realt> calc_val_xx;
+    static std::vector<realt> calc_val_yy;
 };
 
 } // namespace fityk

@@ -1,8 +1,8 @@
 // This file is part of fityk program. Copyright 2001-2013 Marcin Wojdyr
 // Licence: GNU General Public License ver. 2+
 
-#ifndef FITYK__LOGIC__H__
-#define FITYK__LOGIC__H__
+#ifndef FITYK_LOGIC_H_
+#define FITYK_LOGIC_H_
 
 #include <string>
 #include "mgr.h"
@@ -43,12 +43,8 @@ public:
     void import_dataset(int slot, const std::string& data_path,
                         const std::string& format, const std::string& options,
                         BasicContext* ctx, ModelManager &mgr);
-    void do_import_dataset(bool new_dataset, int slot,
-                        const std::string& filename,
-                        int idx_x, int idx_y, int idx_s,
-                        const std::vector<int>& block_range,
-                        const std::string& format, const std::string& options,
-                        BasicContext* ctx, ModelManager &mgr);
+    void do_import_dataset(bool new_dataset, int slot, const LoadSpec& spec,
+                           BasicContext* ctx, ModelManager &mgr);
 
 private:
     int default_idx_;

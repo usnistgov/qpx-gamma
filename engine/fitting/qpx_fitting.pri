@@ -26,6 +26,8 @@ unix {
 
 INCLUDEPATH += $$PWD/fityk $$PWD
 
+DEFINES += "DISABLE_LUA"
+
 SOURCES += $$files($$PWD/*.cpp) \
            $$files($$PWD/fityk/*.cpp) \
            $$files($$PWD/fityk/cmpfit/*.c)

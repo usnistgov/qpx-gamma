@@ -16,20 +16,20 @@ class BasicContext;
 class FITYK_API LuaBridge
 {
 public:
-    LuaBridge(Full *F) {}
-    ~LuaBridge() {}
+    LuaBridge(Full *F);
+    ~LuaBridge();
     void close_lua();
-    void exec_lua_string(const std::string& str) {}
-    void exec_lua_script(const std::string& str) {}
-    void exec_lua_output(const std::string& str) {}
-    bool is_lua_line_incomplete(const char* str) {}
+    void exec_lua_string(const std::string& str);
+    void exec_lua_script(const std::string& str);
+    void exec_lua_output(const std::string& str);
+    bool is_lua_line_incomplete(const char* str);
     //lua_State* state() { return L_ };
 
 private:
     lua_State *L_;
     BasicContext* ctx_;
 
-    void handle_lua_error() {}
+    void handle_lua_error();
     DISALLOW_COPY_AND_ASSIGN(LuaBridge);
 };
 
