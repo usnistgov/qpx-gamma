@@ -26,26 +26,43 @@
 #include <vector>
 #include <iostream>
 #include <numeric>
+#include "fityk.h"
 
 
 class Hypermet {
 public:
   Hypermet() : height_(0), center_(0), width_(0),
-    Lshort_height_(0), Lshort_slope_(0),
+    Lshort_height_(0), Lshort_slope_(0.3),
+    Rshort_height_(0), Rshort_slope_(0.3),
+    Llong_height_(0), Llong_slope_(2.5),
+    step_height_(0),
     rsq(-1) {}
 
-  Hypermet(double h, double c, double w) : height_(h), center_(c), width_(w),
-    Lshort_height_(0), Lshort_slope_(0),
+  Hypermet(double h, double c, double w) : height_(h), center_(c), width_(w / sqrt(log(2.0))),
+    Lshort_height_(0), Lshort_slope_(0.3),
+    Rshort_height_(0), Rshort_slope_(0.3),
+    Llong_height_(0), Llong_slope_(2.5),
+    step_height_(0),
     rsq(-1) {}
   Hypermet(const std::vector<double> &x, const std::vector<double> &y, double h, double c, double w);
 
-  static std::vector<Hypermet> fit_multi(const std::vector<double> &x, const std::vector<double> &y, const std::vector<Hypermet> &old);
+  static std::vector<Hypermet> fit_multi(const std::vector<double> &x,
+                                         const std::vector<double> &y,
+                                         const std::vector<Hypermet> &old,
+                                         bool constrain_to_first);
 
   double evaluate(double x);
   std::vector<double> evaluate_array(std::vector<double> x);
   
-  double center_, height_, width_, Lshort_height_, Lshort_slope_;
+  double center_, height_, width_,
+        Lshort_height_, Lshort_slope_,
+        Rshort_height_, Rshort_slope_,
+        Llong_height_, Llong_slope_,
+        step_height_;
   double rsq;
+
+  static std::string fityk_definition();
+  bool extract_params(fityk::Func*);
 };
 
 #endif

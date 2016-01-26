@@ -34,9 +34,10 @@
 Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
   Gaussian() {
   std::vector<double> sigma;
-  for (auto &q : y) {
-    sigma.push_back(1/sqrt(q));
-  }
+//  for (auto &q : y) {
+//    sigma.push_back(1/sqrt(q));
+//  }
+  sigma.resize(x.size(), 1);
 
   bool success = true;
 
@@ -50,7 +51,8 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
   f->load_data(0, x, y, sigma);
 
     try {
-      f->execute("set fitting_method = nlopt_nm");
+//      f->execute("set fitting_method = nlopt_nm");
+//      f->execute("set fitting_method = nlopt_lbfgs");
     } catch ( ... ) {
       success = false;
       PL_DBG << "failed to set fitter";
@@ -60,7 +62,7 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
     f->execute("guess Gaussian");
   }
   catch ( ... ) {
-    PL_ERR << "Gaussian could not guess";
+    PL_DBG << "Gaussian could not guess";
     success = false;
   }
 
@@ -68,7 +70,7 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
     f->execute("fit 10000");
   }
   catch ( ... ) {
-    PL_ERR << "Gaussian could not fit";
+    PL_DBG << "Gaussian could not fit";
     success = false;
   }
 
@@ -89,6 +91,9 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
 
 std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x, const std::vector<double> &y, const std::vector<Gaussian> &old) {
   std::vector<double> sigma;
+//  for (auto &q : y) {
+//    sigma.push_back(1/sqrt(q));
+//  }
   sigma.resize(x.size(), 1);
 
   bool success = true;
@@ -107,7 +112,7 @@ std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x, const st
       f->execute(fn.c_str());
     }
     catch ( ... ) {
-      //PL_ERR << "Fytik threw exception a";
+      //PL_DBG << "Fytik threw exception a";
       success = false;
     }
   }
@@ -116,7 +121,7 @@ std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x, const st
     f->execute("fit");
   }
   catch ( ... ) {
-    PL_ERR << "Fytik threw exception b";
+    PL_DBG << "Fytik threw exception b";
     success = false;
   }
 
@@ -145,73 +150,6 @@ double Gaussian::evaluate(double x) {
 }
 
 std::vector<double> Gaussian::evaluate_array(std::vector<double> x) {
-  std::vector<double> y;
-  for (auto &q : x) {
-    double val = evaluate(q);
-    if (val < 0)
-      y.push_back(0);
-    else
-      y.push_back(val);
-  }
-  return y;
-}
-
-
-SplitGaussian::SplitGaussian(const std::vector<double> &x, const std::vector<double> &y):
-  SplitGaussian() {
-  std::vector<double> sigma;
-  sigma.resize(x.size(), 1);
-
-  bool success = true;
-  std::vector<fityk::Func*> fns;
-
-  fityk::Fityk *f = new fityk::Fityk;
-  f->redir_messages(NULL);
-  f->load_data(0, x, y, sigma);
-
-  try {
-    f->execute("guess SplitGaussian");
-  }
-  catch ( ... ) {
-    //    PL_ERR << "Fytik threw exception while guessing";
-    success = false;
-  }
-
-  try {
-    f->execute("fit");
-  }
-  catch ( ... ) {
-    //    PL_ERR << "Fytik threw exception while fitting";
-    success = false;
-  }
-
-  if (success) {
-    std::vector<fityk::Func*> fns = f->all_functions();
-    if (fns.size()) {
-      fityk::Func* lastfn = fns.back();
-      
-      
-      center_ = lastfn->get_param_value("center");
-      height_ = lastfn->get_param_value("height");
-      hwhm_l  = lastfn->get_param_value("hwhm1");
-      hwhm_r  = lastfn->get_param_value("hwhm2");
-    }
-    rsq = f->get_rsquared(0);
-  }
-
-  delete f;
-}
-
-double SplitGaussian::evaluate(double x) {
-  double hwhm = 0;
-  if (x <= center_)
-    hwhm = hwhm_l;
-  else
-    hwhm = hwhm_r;
-  return height_ * exp(-log(2.0)*(pow(((x-center_)/hwhm),2)));
-}
-
-std::vector<double> SplitGaussian::evaluate_array(std::vector<double> x) {
   std::vector<double> y;
   for (auto &q : x) {
     double val = evaluate(q);

@@ -52,8 +52,8 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
       //PL_INFO << "<Gamma::Fitter> No existing FWHM calibration";
 
     std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_dump = std::move(spectrum->get_spectrum({{0, md.resolution}}));
-    x_.clear();
-    y_.clear();
+    std::vector<double> x;
+    std::vector<double> y;
 
     int i = 0, j = 0;
     bool go = false;
@@ -61,8 +61,8 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
       if (it.second > 0)
         go = true;
       if (go) {
-        x_.push_back(static_cast<double>(i));
-        y_.push_back(it.second.convert_to<double>());
+        x.push_back(static_cast<double>(i));
+        y.push_back(it.second.convert_to<double>());
         if (it.second > 0)
           x_bound = j+1;
         j++;
@@ -70,11 +70,12 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
       i++;
     }
 
-    x_.resize(x_bound);
-    y_.resize(x_bound);
+    x.resize(x_bound);
+    y.resize(x_bound);
 
-    x_nrg_ = nrg_cali_.transform(x_);
-    set_mov_avg(avg_window_);
+    x_nrg_ = nrg_cali_.transform(x);
+
+    finder_.setData(x, y);
   }
 }
 
@@ -83,134 +84,12 @@ void Fitter::clear() {
   metadata_ = Qpx::Spectrum::Metadata();
   nrg_cali_ = Gamma::Calibration();
   fwhm_cali_ = Gamma::Calibration();
-  x_.clear();
+  finder_.clear();
   x_nrg_.clear();
-  y_.clear();
-  prelim.clear();
-  filtered.clear();
-  lefts.clear();
-  rights.clear();
   peaks_.clear();
   multiplets_.clear();
-
-  x_kon.clear();
-  x_conv.clear();
-
 }
 
-void Fitter::set_mov_avg(uint16_t window) {
-  find_kon(window);
-}
-
-
-void Fitter::find_kon(uint16_t width) {
-  if (width < 2)
-    width = 2;
-
-  int shift = width / 2;
-
-  x_kon.resize(y_.size(), 0);
-  x_conv.resize(y_.size(), 0);
-
-  for (int j = width; (j+2*width+1) < y_.size(); ++j) {
-    double kon = 0;
-    double avg = 0;
-    for (int i=j; i <= (j+width+1); ++i) {
-      kon += 2*y_[i] - y_[i-width] - y_[i+width];
-      avg += y_[i];
-    }
-    avg = avg / width;
-    x_kon[j + shift] = kon;
-    x_conv[j + shift] = kon / sqrt(6* width * avg);
-  }
-}
-
-
-void Fitter::find_prelim() {
-  prelim.clear();
-  for (int i=0; i < x_conv.size(); ++i) {
-    if (x_conv[i] > 3.0)
-      prelim.push_back(i);
-  }
-  return;
-  //std::string dbg_list("prelim peaks ");
-}
-
-void Fitter::filter_prelim(uint16_t min_width) {
-  filtered.clear();
-  lefts.clear();
-  rights.clear();
-
-  if (prelim.empty())
-    return;
-
-  lefts.push_back(prelim[0]);
-  int prev = prelim[0];
-  for (int i=0; i < prelim.size(); ++i) {
-    int current = prelim[i];
-    if ((current - prev) > 1) {
-      rights.push_back(prev);
-      lefts.push_back(current);
-    }
-    prev = current;
-  }
-  rights.push_back(prelim[prelim.size()-1]);
-
-  if (lefts.size() != rights.size()) {
-    lefts.clear(); rights.clear();
-    return;
-  }
-
-  for (int i=0; i < lefts.size(); ++i) {
-    filtered.push_back((rights[i] + lefts[i])/2);
-  }
-
-  if (filtered.size() < 3)
-    return;
-
-  for (int i=0; i < filtered.size(); ++i) {
-    lefts[i] -= 2*(filtered[i] - lefts[i]);
-    rights[i] += 2*(rights[i] - filtered[i]);
-    if (lefts[i] < 0)
-      lefts[i] = 0;
-    if (rights[i] >= x_.size())
-      rights[i] = x_.size() - 1;
-  }
-
-  return;
-}
-
-uint16_t Fitter::find_left(uint16_t chan, uint16_t grace) {
-  if (x_.empty())
-    return 0;
-
-  if (((chan - grace) < x_[0]) || (chan >= x_[x_.size()-1]))
-    return 0;
-
-  int i = x_.size()-1;
-  while ((i > 0) && (x_[i] > (chan - grace)))
-    i--;
-  while ((i > 0) && (x_conv[i] > 2.0))
-    i--;
-
-  return x_[i];
-}
-
-uint16_t Fitter::find_right(uint16_t chan, uint16_t grace) {
-  if (x_.empty())
-    return 0;
-
-  if ((chan < x_[0]) || ((chan + grace) >= x_[x_.size()-1]))
-    return x_.size() - 1;
-
-  int i = 0;
-  while ((i < x_.size()) && (x_[i] < (chan + grace)))
-    i++;
-  while ((i < x_.size()) && (x_conv[i] > 2.0))
-    i++;
-
-  return x_[i];
-}
 
 void Fitter::filter_by_theoretical_fwhm(double range) {
   std::set<double> to_remove;
@@ -224,29 +103,35 @@ void Fitter::filter_by_theoretical_fwhm(double range) {
 }
 
 
-void Fitter::find_peaks(int min_width) {
-  find_prelim();
-  filter_prelim(min_width);
+void Fitter::find_peaks() {
 
   peaks_.clear();
   multiplets_.clear();
-  PL_DBG << "Fitter: looking for " << filtered.size()  << " peaks";
+//  PL_DBG << "Fitter: looking for " << filtered.size()  << " peaks";
 
-  for (int i=0; i < filtered.size(); ++i) {
+  for (int i=0; i < finder_.filtered.size(); ++i) {
     //std::vector<double> baseline = make_background(x_, y_, lefts[i], rights[i], 3);
     //std::vector<double> xx(x_.begin() + lefts[i], x_.begin() + rights[i] + 1);
     //std::vector<double> yy(y_.begin() + lefts[i], y_.begin() + rights[i] + 1);
-    Peak fitted = Peak(x_, y_, x_[lefts[i]], x_[rights[i]], nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds(), sum4edge_samples);
+//    PL_DBG << "<Fitter> Building peak " << i+1 << " of " << finder_.filtered.size()
+//           << " [" << finder_.x_[finder_.lefts[i]]
+//           << ":" << finder_.x_[finder_.filtered[i]]
+//           << ":" << finder_.x_[finder_.rights[i]] << "]";
+
+    Peak fitted = Peak(finder_.x_, finder_.y_,
+                       finder_.x_[finder_.lefts[i]], finder_.x_[finder_.rights[i]],
+                       nrg_cali_, fwhm_cali_,
+                       metadata_.live_time.total_seconds(), sum4edge_samples);
 
     if (
         (fitted.height > 0) &&
         (fitted.fwhm_sum4 > 0) &&
 //        (fitted.fwhm_gaussian > 0) &&
-        (x_[lefts[i]] < fitted.center) &&
-        (fitted.center < x_[rights[i]])
+        (finder_.x_[finder_.lefts[i]] < fitted.center) &&
+        (fitted.center < finder_.x_[finder_.rights[i]])
        )
     {
-      PL_DBG << "I like this peak at " << fitted.center << " fw " << fitted.fwhm_gaussian;
+//      PL_DBG << "I like this peak at " << fitted.center << " fw " << fitted.fwhm_gaussian;
       peaks_[fitted.center] = fitted;
     }
   }
@@ -271,16 +156,52 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
   //std::vector<double> xx(x_.begin() + left, x_.begin() + right + 1);
   //std::vector<double> yy(y_.begin() + left, y_.begin() + right + 1);
   //std::vector<double> bckgr = make_background(x_, y_, left, right, 3);
-  if (x_.empty())
+  if (finder_.x_.empty())
     return;
 
-  Peak newpeak = Gamma::Peak(x_, y_, left, right, nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds(), sum4edge_samples);
+  Peak newpeak = Gamma::Peak(finder_.x_, finder_.y_, left, right, nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds(), sum4edge_samples);
   //PL_DBG << "new peak center = " << newpeak.center;
 
-  peaks_[newpeak.center] = newpeak;
   if (fwhm_cali_.valid()) {
-    multiplets_.clear();
-    make_multiplets();
+    newpeak.lim_L = newpeak.energy - overlap_ * newpeak.fwhm_theoretical;
+    newpeak.lim_R = newpeak.energy + overlap_ * newpeak.fwhm_theoretical;
+    newpeak.intersects_R = false;
+    newpeak.intersects_L = false;
+
+    if (multiplets_.empty()) {
+      peaks_[newpeak.center] = newpeak;
+      make_multiplets();
+    } else {
+      for (auto &q : multiplets_) {
+        if (q.overlaps(newpeak)) {
+          q.add_peak(newpeak, finder_.x_, finder_.y_);
+          newpeak.subpeak = true;
+          peaks_[newpeak.center] = newpeak;
+          return;
+        }
+      }
+
+      std::set<Peak> multiplet;
+      std::set<double> to_remove;
+      for (auto &q : peaks_) {
+        if ((newpeak.energy > q.second.lim_L) && (newpeak.energy < q.second.lim_R)) {
+          to_remove.insert(q.first);
+          multiplet.insert(q.second);
+        }
+      }
+      if (!to_remove.empty()) {
+        ROI new_roi(nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
+        new_roi.add_peaks(multiplet, finder_.x_, finder_.y_);
+        multiplets_.push_back(new_roi);
+        for (auto &q : to_remove)
+          peaks_.erase(q);
+        newpeak.subpeak = true;
+        peaks_[newpeak.center] = newpeak;
+      } else
+        peaks_[newpeak.center] = newpeak;
+    }
+  } else {
+    peaks_[newpeak.center] = newpeak;
   }
 }
 
@@ -328,8 +249,8 @@ void Fitter::make_multiplets()
         to_remove.insert(pk2->first);
 
         if (!multiplet.empty()) {
-          Multiplet multi(nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
-          multi.add_peaks(multiplet, x_, y_);
+          ROI multi(nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
+          multi.add_peaks(multiplet, finder_.x_, finder_.y_);
           multiplets_.push_back(multi);
         }
 

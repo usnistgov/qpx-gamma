@@ -38,7 +38,7 @@ FormOnePeak::FormOnePeak(QWidget *parent) :
   connect(ui->plotPeaks, SIGNAL(peaks_changed(bool)), this, SLOT(peaks_changed_in_plot(bool)));
   connect(ui->plotPeaks, SIGNAL(range_changed(Range)), this, SLOT(change_range(Range)));
 
-  ui->plotPeaks->set_visible_elements(ShowFitElements::gaussians | ShowFitElements::baselines | ShowFitElements::movavg | ShowFitElements::filtered, false);
+  ui->plotPeaks->set_visible_elements(ShowFitElements::gaussians | ShowFitElements::baselines | ShowFitElements::kon | ShowFitElements::filtered, false);
 
   //QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Backspace), ui->mcaPlot);
   //connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushResetScales_clicked()));

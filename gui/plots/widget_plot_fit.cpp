@@ -95,10 +95,11 @@ void WidgetPlotFit::plot_rezoom() {
 
 
 void WidgetPlotFit::addResid(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, bool fittable, int32_t bits) {
-  if (resid == nullptr)
+  if (resid == nullptr) {
     resid = new QCPGraph(residAxisRect->axis(QCPAxis::atBottom), residAxisRect->axis(QCPAxis::atLeft));
+    ui->mcaPlot->addPlottable(resid);
+  }
 
-  ui->mcaPlot->addPlottable(resid);
   resid->setName("resid");
   resid->clearData();
 

@@ -16,32 +16,43 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gaussian
+ *      Gamma::SUM4
  *
  ******************************************************************************/
 
-#ifndef GAUSSIAN_H
-#define GAUSSIAN_H
+#ifndef GAMMA_SUM4_H
+#define GAMMA_SUM4_H
 
 #include <vector>
-#include <iostream>
-#include <numeric>
+#include <cstdint>
 
+namespace Gamma {
 
-class Gaussian {
+class SUM4 {
 public:
-  Gaussian() : height_(0), hwhm_(0), center_(0), rsq(-1) {}
-  Gaussian(const std::vector<double> &x, const std::vector<double> &y);
+  std::vector<double> x_, y_, bx_, by_;
+  int32_t Lpeak, Rpeak, LBstart, LBend, RBstart, RBend;
+  double peak_width, Lw, Rw;
+  double Lsum, Rsum;
+  double offset, slope;
+  double B_area, B_variance;
+  double P_area, net_variance;
+  double net_area;
+  double sumYnet, CsumYnet, C2sumYnet;
+  double centroid, centroid_var, fwhm;
+  double err;
+  double currieLQ, currieLD, currieLC;
+  int currie_quality_indicator;
 
-  static std::vector<Gaussian> fit_multi(const std::vector<double> &x, const std::vector<double> &y, const std::vector<Gaussian> &old);
+  SUM4();
 
-  double evaluate(double x);
-  std::vector<double> evaluate_array(std::vector<double> x);
-  
-  double height_, hwhm_, center_;
-  double rsq;
+  SUM4(const std::vector<double> &x,
+       const std::vector<double> &y,
+       uint32_t left, uint32_t right,
+       uint16_t samples);
+
 };
 
+}
 
 #endif
-

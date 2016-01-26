@@ -39,13 +39,15 @@ class FormPeaks;
 
 enum ShowFitElements {
   none      = 0,
-  movavg    = 1 << 0,
-  prelim    = 1 << 1,
-  filtered  = 1 << 2,
-  gaussians = 1 << 3,
-  baselines = 1 << 4,
-  voigt     = 1 << 5,
-  edges     = 1 << 6
+  kon       = 1 << 0,
+  resid     = 1 << 1,
+  prelim    = 1 << 2,
+  filtered  = 1 << 3,
+  gaussians = 1 << 4,
+  baselines = 1 << 5,
+  hypermet  = 1 << 6,
+  multiplet = 1 << 7,
+  edges     = 1 << 8
 };
 
 inline ShowFitElements operator|(ShowFitElements a, ShowFitElements b) {return static_cast<ShowFitElements>(static_cast<int>(a) | static_cast<int>(b));}
@@ -98,23 +100,23 @@ private slots:
   void on_pushAdd_clicked();
   void on_pushMarkerRemove_clicked();
   void on_pushFindPeaks_clicked();
-  void on_checkShowMovAvg_clicked();
-  void on_checkShowPrelimPeaks_clicked();
-  void on_checkShowGaussians_clicked();
-  void on_checkShowBaselines_clicked();
-  void on_checkShowFilteredPeaks_clicked();
 
   void on_spinMovAvg_editingFinished();
-
   void on_spinMinPeakWidth_editingFinished();
-
-  void on_checkShowPseudoVoigt_clicked();
-
   void on_doubleOverlapWidth_editingFinished();
-
-  void on_checkShowEdges_clicked();
-
   void on_spinSum4EdgeW_editingFinished();
+
+
+  void on_pushKON_clicked();
+  void on_pushPrelim_clicked();
+  void on_pushCtrs_clicked();
+  void on_pushBkg_clicked();
+  void on_pushGauss_clicked();
+  void on_pushHypermet_clicked();
+  void on_pushMulti_clicked();
+  void on_pushEdges_clicked();
+
+  void on_pushResid_clicked();
 
 private:
   Ui::FormPeaks *ui;
@@ -131,7 +133,7 @@ private:
 
   AppearanceProfile main_graph_, prelim_peak_, filtered_peak_,
                     gaussian_, pseudo_voigt_, baseline_, sum4edge_,
-                    multiplet_, flagged_,
+                    multiplet_g_, multiplet_h_, flagged_,
                     rise_, fall_, even_;
 
 

@@ -23,10 +23,11 @@
 #ifndef GAMMA_FITTER_H
 #define GAMMA_FITTER_H
 
-#include <vector>
 #include "gamma_peak.h"
+#include "roi.h"
 #include "detector.h"
 #include "spectrum.h"
+#include "finder.h"
 
 namespace Gamma {
 
@@ -42,28 +43,15 @@ public:
       , x_bound(0)
   {}
   
-//  Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t avg_window = 1)
-//      : Fitter()
-//  {setXY(x, y, avg_window);}
-
-//  Fitter(const std::vector<double> &x, const std::vector<double> &y, uint16_t min, uint16_t max, uint16_t avg_window = 1)
-//      : Fitter()
-//  {setXY(x, y, min, max, avg_window);}
-
-  Fitter(Qpx::Spectrum::Spectrum *spectrum, uint16_t avg_window = 1)
+  Fitter(Qpx::Spectrum::Spectrum *spectrum)
       : Fitter()
-  {avg_window_ = avg_window; setData(spectrum);}
+  {setData(spectrum);}
 
   void clear();
   
   void setData(Qpx::Spectrum::Spectrum *spectrum);
 
-  void set_mov_avg(uint16_t);
-  void find_prelim();
-  void find_kon(uint16_t width);
-
-  void filter_prelim(uint16_t min_width);
-  void find_peaks(int min_width);
+  void find_peaks();
 
   void add_peak(uint32_t left, uint32_t right);
   void remove_peak(double bin);
@@ -71,31 +59,27 @@ public:
 
   void make_multiplets();
 
-  uint16_t find_left(uint16_t chan, uint16_t grace = 0);
-  uint16_t find_right(uint16_t chan, uint16_t grace = 0);
-
   void filter_by_theoretical_fwhm(double range);
 
   void save_report(std::string filename);
 
   //DATA
 
+  Finder finder_;
+
   std::string sample_name_;
   double activity_scale_factor_;
   
-  std::vector<double> x_, x_nrg_, y_;
-  std::vector<double> x_kon, x_conv;
+  std::vector<double> x_nrg_;
 
   uint32_t x_bound;
   uint16_t sum4edge_samples;
-
-  std::vector<uint16_t> prelim, filtered, lefts, rights;
 
   Qpx::Spectrum::Metadata metadata_;
   Gamma::Detector detector_;
   
   std::map<double, Peak> peaks_;
-  std::list<Multiplet> multiplets_;
+  std::list<ROI> multiplets_;
   Calibration nrg_cali_, fwhm_cali_;
   double overlap_, fw_tolerance_;
 

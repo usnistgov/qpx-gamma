@@ -29,47 +29,9 @@
 #include "gaussian.h"
 #include "hypermet.h"
 #include "detector.h"
+#include "sum4.h"
 
 namespace Gamma {
-
-enum class BaselineType : int {linear = 0, step = 1, step_polynomial = 2};
-
-
-class SUM4 {
-public:
-  std::vector<double> x_, y_, bx_, by_;
-  int32_t Lpeak, Rpeak, LBstart, LBend, RBstart, RBend;
-  double peak_width, Lw, Rw;
-  double Lsum, Rsum;
-  double B_area, B_variance;
-  double P_area, net_variance;
-  double net_area;
-  double sumYnet, CsumYnet, C2sumYnet;
-  double centroid, centroid_var, fwhm;
-  double err;
-  double currieLQ, currieLD, currieLC;
-  int currie_quality_indicator;
-
-  SUM4();
-
-  SUM4(const std::vector<double> &x,
-       const std::vector<double> &y,
-       uint32_t left, uint32_t right,
-       uint16_t samples);
-
-};
-
-
-  double local_avg(const std::vector<double> &x,
-                   const std::vector<double> &y,
-                   uint16_t chan,
-                   uint16_t samples = 1);
-  
-  std::vector<double> make_background(const std::vector<double> &x,
-                                      const std::vector<double> &y,
-                                      uint16_t left, uint16_t right,
-                                      uint16_t samples,
-                                      BaselineType type = BaselineType::linear);
 
 class Peak {
 public:
@@ -107,7 +69,10 @@ public:
   
   void construct(Calibration cali_nrg, Calibration cali_fwhm);
 
-  std::vector<double> x_, y_, y_baseline_, y_fullfit_gaussian_, y_fullfit_hypermet_;
+  std::vector<double> x_, y_, y_baseline_, y_fullfit_gaussian_, y_fullfit_hypermet_, y_residues_g_;
+
+  std::vector<double> hr_x_, hr_baseline_, hr_fullfit_gaussian_, hr_fullfit_hypermet_;
+
   SUM4 sum4_;
   Gaussian gaussian_;
   Hypermet hypermet_;
@@ -142,29 +107,6 @@ public:
   }
   
 };
-
-struct Multiplet {
-  Multiplet(const Calibration &nrg, const Calibration &fw, double live_seconds = 0.0)
-  : cal_nrg_ (nrg)
-  , cal_fwhm_ (fw)
-  , live_seconds_(live_seconds) 
-  {}
-
-  bool contains(double bin);
-  bool overlaps(const Peak &);
-  void add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y);
-  void add_peak(const Peak &pk, const std::vector<double> &x, const std::vector<double> &y);
-  void remove_peak(const Peak &pk);
-  void remove_peak(double bin);
-  void rebuild();
-
-  std::set<Peak> peaks_;
-  std::vector<double> x_, y_,
-    y_background_, y_fullfit_;
-  Calibration cal_nrg_, cal_fwhm_;
-  double live_seconds_;
-};
-
 
 }
 

@@ -342,19 +342,19 @@ void FormGainMatch::do_post_processing() {
 
 bool FormGainMatch::find_peaks() {
   gauss_ref_ = Gamma::Peak();
-  fitter_ref_.set_mov_avg(ui->spinMovAvg->value());
+  fitter_ref_.finder_.find_peaks(ui->spinMovAvg->value(), 3.0, ui->spinMinPeakWidth->value());
   fitter_ref_.overlap_ = ui->doubleOverlapWidth->value();
   fitter_ref_.sum4edge_samples = ui->spinSum4EdgeW->value();
-  fitter_ref_.find_peaks(ui->spinMinPeakWidth->value());
+  fitter_ref_.find_peaks();
   for (auto &q : fitter_ref_.peaks_)
     if (q.second.area_net_ > gauss_ref_.area_net_)
       gauss_ref_ = q.second;
 
   gauss_opt_ = Gamma::Peak();
-  fitter_opt_.set_mov_avg(ui->spinMovAvg->value());
+  fitter_ref_.finder_.find_peaks(ui->spinMovAvg->value(), 3.0, ui->spinMinPeakWidth->value());
   fitter_ref_.overlap_ = ui->doubleOverlapWidth->value();
   fitter_ref_.sum4edge_samples = ui->spinSum4EdgeW->value();
-  fitter_opt_.find_peaks(ui->spinMinPeakWidth->value());
+  fitter_opt_.find_peaks();
   for (auto &q : fitter_opt_.peaks_)
     if (q.second.area_net_ > gauss_opt_.area_net_)
         gauss_opt_ = q.second;
@@ -366,8 +366,8 @@ bool FormGainMatch::find_peaks() {
 
 void FormGainMatch::plot_one_spectrum(Gamma::Fitter &sp, std::map<double, double> &minima, std::map<double, double> &maxima) {
 
-  for (int i=0; i < sp.y_.size(); ++i) {
-    double yy = sp.y_[i];
+  for (int i=0; i < sp.finder_.y_.size(); ++i) {
+    double yy = sp.finder_.y_[i];
     if (!minima.count(i) || (minima[i] > yy))
       minima[i] = yy;
     if (!maxima.count(i) || (maxima[i] < yy))
@@ -376,8 +376,8 @@ void FormGainMatch::plot_one_spectrum(Gamma::Fitter &sp, std::map<double, double
 
   AppearanceProfile profile;
   profile.default_pen = QPen(QColor::fromRgba(sp.metadata_.appearance), 1);
-  ui->plot->addGraph(QVector<double>::fromStdVector(sp.x_),
-                     QVector<double>::fromStdVector(sp.y_),
+  ui->plot->addGraph(QVector<double>::fromStdVector(sp.finder_.x_),
+                     QVector<double>::fromStdVector(sp.finder_.y_),
                      profile, sp.metadata_.bits);
 }
 

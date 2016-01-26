@@ -16,32 +16,21 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gaussian
+ *      FitykUtil -
  *
  ******************************************************************************/
 
-#ifndef GAUSSIAN_H
-#define GAUSSIAN_H
+#ifndef FITYK_UTIL_H
+#define FITYK_UTIL_H
 
-#include <vector>
-#include <iostream>
-#include <numeric>
+#include "fityk.h"
+#include <string>
 
-
-class Gaussian {
+class FitykUtil {
 public:
-  Gaussian() : height_(0), hwhm_(0), center_(0), rsq(-1) {}
-  Gaussian(const std::vector<double> &x, const std::vector<double> &y);
+  static std::string var_def(std::string name, double val, double min, double max, int idx = -1);
 
-  static std::vector<Gaussian> fit_multi(const std::vector<double> &x, const std::vector<double> &y, const std::vector<Gaussian> &old);
 
-  double evaluate(double x);
-  std::vector<double> evaluate_array(std::vector<double> x);
-  
-  double height_, hwhm_, center_;
-  double rsq;
 };
 
-
 #endif
-

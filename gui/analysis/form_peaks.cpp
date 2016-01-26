@@ -63,7 +63,8 @@ FormPeaks::FormPeaks(QWidget *parent) :
   flagged_.default_pen =  QPen(flagged_color, 0);
   pseudo_voigt_.default_pen = QPen(Qt::darkCyan, 0);
 
-  multiplet_.default_pen = QPen(Qt::red, 2);
+  multiplet_g_.default_pen = QPen(Qt::red, 2);
+  multiplet_h_.default_pen = QPen(Qt::magenta, 2);
 
   baseline_.default_pen = QPen(Qt::darkGray, 0);
   rise_.default_pen = QPen(Qt::green, 0);
@@ -95,13 +96,15 @@ void FormPeaks::setFit(Gamma::Fitter* fit) {
 }
 
 void FormPeaks::set_visible_elements(ShowFitElements elems, bool interactive) {
-  ui->checkShowMovAvg->setChecked(elems & ShowFitElements::movavg);
-  ui->checkShowPrelimPeaks->setChecked(elems & ShowFitElements::prelim);
-  ui->checkShowFilteredPeaks->setChecked(elems & ShowFitElements::filtered);
-  ui->checkShowGaussians->setChecked(elems & ShowFitElements::gaussians);
-  ui->checkShowBaselines->setChecked(elems & ShowFitElements::baselines);
-  ui->checkShowPseudoVoigt->setChecked(elems & ShowFitElements::voigt);
-  ui->checkShowEdges->setChecked(elems & ShowFitElements::edges);
+  ui->pushKON->setChecked(elems & ShowFitElements::kon);
+  ui->pushResid->setChecked(elems & ShowFitElements::resid);
+  ui->pushPrelim->setChecked(elems & ShowFitElements::prelim);
+  ui->pushCtrs->setChecked(elems & ShowFitElements::filtered);
+  ui->pushGauss->setChecked(elems & ShowFitElements::gaussians);
+  ui->pushBkg->setChecked(elems & ShowFitElements::baselines);
+  ui->pushHypermet->setChecked(elems & ShowFitElements::hypermet);
+  ui->pushMulti->setChecked(elems & ShowFitElements::multiplet);
+  ui->pushEdges->setChecked(elems & ShowFitElements::edges);
 
   ui->widgetElements->setVisible(interactive);
   ui->line->setVisible(interactive);
@@ -115,13 +118,15 @@ void FormPeaks::loadSettings(QSettings &settings_) {
   ui->spinSum4EdgeW->setValue(settings_.value("sum4_edge_width", 3).toInt());
   ui->doubleOverlapWidth->setValue(settings_.value("overlap_width", 2.70).toDouble());
   ui->spinMovAvg->setValue(settings_.value("moving_avg_window", 15).toInt());
-  ui->checkShowMovAvg->setChecked(settings_.value("show_moving_avg", false).toBool());
-  ui->checkShowFilteredPeaks->setChecked(settings_.value("show_filtered_peaks", false).toBool());
-  ui->checkShowPrelimPeaks->setChecked(settings_.value("show_prelim_peaks", false).toBool());
-  ui->checkShowGaussians->setChecked(settings_.value("show_gaussians", false).toBool());
-  ui->checkShowBaselines->setChecked(settings_.value("show_baselines", false).toBool());
-  ui->checkShowPseudoVoigt->setChecked(settings_.value("show_pseudovoigt", false).toBool());
-  ui->checkShowEdges->setChecked(settings_.value("show_edges", false).toBool());
+  ui->pushKON->setChecked(settings_.value("show_kon", false).toBool());
+  ui->pushResid->setChecked(settings_.value("show_resid", false).toBool());
+  ui->pushCtrs->setChecked(settings_.value("show_filtered_peaks", false).toBool());
+  ui->pushPrelim->setChecked(settings_.value("show_prelim_peaks", false).toBool());
+  ui->pushGauss->setChecked(settings_.value("show_gaussians", false).toBool());
+  ui->pushBkg->setChecked(settings_.value("show_baselines", false).toBool());
+  ui->pushHypermet->setChecked(settings_.value("show_hypermet", false).toBool());
+  ui->pushMulti->setChecked(settings_.value("show_multiplets", false).toBool());
+  ui->pushEdges->setChecked(settings_.value("show_edges", false).toBool());
   ui->plot1D->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
   ui->plot1D->set_plot_style(settings_.value("plot_style", "Step center").toString());
   ui->plot1D->set_marker_labels(settings_.value("marker_labels", true).toBool());
@@ -135,13 +140,15 @@ void FormPeaks::saveSettings(QSettings &settings_) {
   settings_.setValue("sum4_edge_width", ui->spinSum4EdgeW->value());
   settings_.setValue("moving_avg_window", ui->spinMovAvg->value());
   settings_.setValue("overlap_width", ui->doubleOverlapWidth->value());
-  settings_.setValue("show_moving_avg", ui->checkShowMovAvg->isChecked());
-  settings_.setValue("show_prelim_peaks", ui->checkShowPrelimPeaks->isChecked());
-  settings_.setValue("show_filtered_peaks", ui->checkShowFilteredPeaks->isChecked());
-  settings_.setValue("show_gaussians", ui->checkShowGaussians->isChecked());
-  settings_.setValue("show_baselines", ui->checkShowBaselines->isChecked());
-  settings_.setValue("show_pseudovoigt", ui->checkShowPseudoVoigt->isChecked());
-  settings_.setValue("show_edges", ui->checkShowEdges->isChecked());
+  settings_.setValue("show_kon", ui->pushKON->isChecked());
+  settings_.setValue("show_resid", ui->pushResid->isChecked());
+  settings_.setValue("show_prelim_peaks", ui->pushPrelim->isChecked());
+  settings_.setValue("show_filtered_peaks", ui->pushCtrs->isChecked());
+  settings_.setValue("show_gaussians", ui->pushGauss->isChecked());
+  settings_.setValue("show_baselines", ui->pushBkg->isChecked());
+  settings_.setValue("show_hypermet", ui->pushHypermet->isChecked());
+  settings_.setValue("show_multiplets", ui->pushMulti->isChecked());
+  settings_.setValue("show_edges", ui->pushEdges->isChecked());
   settings_.setValue("scale_type", ui->plot1D->scale_type());
   settings_.setValue("plot_style", ui->plot1D->plot_style());
   settings_.setValue("marker_labels", ui->plot1D->marker_labels());
@@ -172,10 +179,10 @@ void FormPeaks::make_range(Marker marker) {
 
 void FormPeaks::new_spectrum(QString title) {
   if (fit_data_->peaks_.empty()) {
-    fit_data_->set_mov_avg(ui->spinMovAvg->value());
-    fit_data_->find_peaks(ui->spinMinPeakWidth->value());
+    fit_data_->finder_.find_peaks(ui->spinMovAvg->value(), 3.0, ui->spinMinPeakWidth->value());
+
 //    PL_DBG << "number of peaks found " << fit_data_->peaks_.size();
-    on_pushFindPeaks_clicked();
+//    on_pushFindPeaks_clicked();
   }
 
 
@@ -213,9 +220,9 @@ void FormPeaks::update_spectrum() {
   ui->plot1D->use_calibrated(fit_data_->nrg_cali_.valid());
   ui->plot1D->setLabels(QString::fromStdString(fit_data_->nrg_cali_.units_), "count");
 
-  for (int i=0; i < fit_data_->x_.size(); ++i) {
-    double yy = fit_data_->y_[i];
-    double xx = fit_data_->nrg_cali_.transform(fit_data_->x_[i], fit_data_->metadata_.bits);
+  for (int i=0; i < fit_data_->finder_.x_.size(); ++i) {
+    double yy = fit_data_->finder_.y_[i];
+    double xx = fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[i], fit_data_->metadata_.bits);
     if (!minima.count(xx) || (minima[xx] > yy))
       minima[xx] = yy;
     if (!maxima.count(xx) || (maxima[xx] < yy))
@@ -241,74 +248,83 @@ void FormPeaks::replot_all() {
 
   ui->plot1D->use_calibrated(fit_data_->nrg_cali_.valid());
 
-  ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->x_)),
-                       QVector<double>::fromStdVector(fit_data_->y_),
+  ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_)),
+                       QVector<double>::fromStdVector(fit_data_->finder_.y_),
                        main_graph_, true,
                        fit_data_->metadata_.bits);
 
-  if (ui->checkShowMovAvg->isChecked()) {
+  if (ui->pushKON->isChecked()) {
 //    ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->x_)),
 //                         QVector<double>::fromStdVector(fit_data_->x_kon),
 //                         flagged_, true,
 //                         fit_data_->metadata_.bits);
 
 
-    ui->plot1D->addResid(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->x_)),
-                                                             QVector<double>::fromStdVector(fit_data_->x_conv), multiplet_);
+    ui->plot1D->addResid(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_)),
+                                                             QVector<double>::fromStdVector(fit_data_->finder_.x_conv), multiplet_g_);
 
   }
 
   QVector<double> xx, yy;
 
-  if (ui->checkShowPrelimPeaks->isChecked()) {
+  if (ui->pushPrelim->isChecked()) {
     xx.clear(); yy.clear();
-    for (auto &q : fit_data_->prelim) {
-      xx.push_back(fit_data_->nrg_cali_.transform(fit_data_->x_[q], fit_data_->metadata_.bits));
-      yy.push_back(fit_data_->y_[q]);
+    for (auto &q : fit_data_->finder_.prelim) {
+      xx.push_back(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[q], fit_data_->metadata_.bits));
+      yy.push_back(fit_data_->finder_.y_[q]);
     }
     if (yy.size())
       ui->plot1D->addPoints(xx, yy, prelim_peak_, QCPScatterStyle::ssDiamond);
   }
 
-  if (ui->checkShowFilteredPeaks->isChecked()) {
+  if (ui->pushCtrs->isChecked()) {
     xx.clear(); yy.clear();
-    for (auto &q : fit_data_->filtered) {
-      xx.push_back(fit_data_->nrg_cali_.transform(fit_data_->x_[q], fit_data_->metadata_.bits));
-      yy.push_back(fit_data_->y_[q]);
+    for (auto &q : fit_data_->finder_.filtered) {
+      xx.push_back(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[q], fit_data_->metadata_.bits));
+      yy.push_back(fit_data_->finder_.y_[q]);
     }
     if (yy.size())
       ui->plot1D->addPoints(xx, yy, filtered_peak_, QCPScatterStyle::ssDiamond);
   }
 
-  for (auto &q : fit_data_->multiplets_) {
-    if (ui->checkShowGaussians->isChecked()) {
-      std::vector<double> y_fit = q.y_fullfit_;
-      for (auto &p : y_fit)
-        if (p < 1)
-          p = std::floor(p * 10 + 0.5)/10;
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.x_)), QVector<double>::fromStdVector(y_fit), multiplet_);
+  if (ui->pushMulti->isChecked()) {
+    for (auto &q : fit_data_->multiplets_) {
+      if (ui->pushGauss->isChecked()) {
+        std::vector<double> y_fit_g = q.y_fullfit_g_;
+        for (auto &p : y_fit_g)
+          if (p < 1)
+            p = std::floor(p * 10 + 0.5)/10;
+        ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.x_)), QVector<double>::fromStdVector(y_fit_g), multiplet_g_);
+      }
+      if (ui->pushHypermet->isChecked()) {
+        std::vector<double> y_fit_h = q.y_fullfit_h_;
+        for (auto &p : y_fit_h)
+          if (p < 1)
+            p = std::floor(p * 10 + 0.5)/10;
+        ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.x_)), QVector<double>::fromStdVector(y_fit_h), multiplet_h_);
+      }
     }
   }
   
   for (auto &q : fit_data_->peaks_) {
-    std::vector<double> x = q.second.x_;
-    if (!x.empty()) {
-      x[0] -= 0.5;
-      x[x.size()-1] += 0.5;
-    }
+    std::vector<double> x = q.second.hr_x_;
+//    if (!x.empty()) {
+//      x[0] -= 0.5;
+//      x[x.size()-1] += 0.5;
+//    }
 
     xx = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x));
 
-    if (ui->checkShowPseudoVoigt->isChecked()) {
-      std::vector<double> y_fit = q.second.y_fullfit_hypermet_;
+    if (ui->pushHypermet->isChecked()) {
+      std::vector<double> y_fit = q.second.hr_fullfit_hypermet_;
       for (auto &p : y_fit)
         if (p < 1)
           p = std::floor(p * 10 + 0.5)/10;
       ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), pseudo_voigt_);
     }
 
-    if (ui->checkShowGaussians->isChecked()) {
-      std::vector<double> y_fit = q.second.y_fullfit_gaussian_;
+    if (ui->pushGauss->isChecked()) {
+      std::vector<double> y_fit = q.second.hr_fullfit_gaussian_;
       for (auto &p : y_fit)
         if (p < 1)
           p = std::floor(p * 10 + 0.5)/10;
@@ -318,14 +334,14 @@ void FormPeaks::replot_all() {
         prof = flagged_;
       ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), prof);
     }
-    if (ui->checkShowBaselines->isChecked()) {
-      std::vector<double> y_fit = q.second.y_baseline_;
+    if (ui->pushBkg->isChecked()) {
+      std::vector<double> y_fit = q.second.hr_baseline_;
       for (auto &p : y_fit)
         if (p < 1)
           p = std::floor(p * 10 + 0.5)/10;
       ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), baseline_);
     }
-    if (ui->checkShowEdges->isChecked() && (!q.second.subpeak)) {
+    if (ui->pushEdges->isChecked() && (!q.second.subpeak)) {
 //      PL_DBG << "edges for " << q.second.center << " L:" << q.second.sum4_.LBstart << "-" << q.second.sum4_.LBend
 //                                                << " R:" << q.second.sum4_.RBstart << "-" << q.second.sum4_.RBend;
 
@@ -362,6 +378,30 @@ void FormPeaks::replot_all() {
                            sum4edge_);
 
 //      PL_DBG << "Plot right edge " << x_edge.size();
+    }
+
+    if (ui->pushResid->isChecked()) {
+      xx.clear(); yy.clear();
+
+      for (auto &q : fit_data_->multiplets_) {
+        for (auto &p : q.x_)
+          xx.push_back(fit_data_->nrg_cali_.transform(p));
+        for (auto &p : q.y_resid_h_)
+          yy.push_back(p);
+      }
+
+      for (auto &q : fit_data_->peaks_) {
+        if (q.second.subpeak)
+          continue;
+        for (auto &p : q.second.x_)
+          xx.push_back(fit_data_->nrg_cali_.transform(p));
+        for (auto &p : q.second.y_residues_g_)
+          yy.push_back(p);
+      }
+
+      ui->plot1D->addResid(xx, yy, baseline_);
+
+
     }
 
 
@@ -402,10 +442,10 @@ void FormPeaks::addMovingMarker(Coord c) {
 
   range_.center.set_bin(x, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
 
-  uint16_t ch_l = fit_data_->find_left(ch, ui->spinMinPeakWidth->value());
+  uint16_t ch_l = fit_data_->finder_.find_left(ch);
   range_.l.set_bin(ch_l, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
 
-  uint16_t ch_r = fit_data_->find_right(ch, ui->spinMinPeakWidth->value());
+  uint16_t ch_r = fit_data_->finder_.find_right(ch);
   range_.r.set_bin(ch_r, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
 
 
@@ -548,10 +588,10 @@ void FormPeaks::perform_fit() {
   if (fit_data_ == nullptr)
     return;
 
-  fit_data_->set_mov_avg(ui->spinMovAvg->value());
+  fit_data_->finder_.find_peaks(ui->spinMovAvg->value(), 3.0, ui->spinMinPeakWidth->value());
   fit_data_->overlap_ = ui->doubleOverlapWidth->value();
   fit_data_->sum4edge_samples = ui->spinSum4EdgeW->value();
-  fit_data_->find_peaks(ui->spinMinPeakWidth->value());
+  fit_data_->find_peaks();
 //  PL_DBG << "number of peaks found " << fit_data_->peaks_.size();
 
   toggle_push();
@@ -569,49 +609,12 @@ void FormPeaks::on_pushFindPeaks_clicked()
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormPeaks::on_checkShowMovAvg_clicked()
-{
-  replot_all();
-}
-
-void FormPeaks::on_checkShowPrelimPeaks_clicked()
-{
-  replot_all();
-}
-
-void FormPeaks::on_checkShowGaussians_clicked()
-{
-  replot_all();
-}
-
-void FormPeaks::on_checkShowBaselines_clicked()
-{
-  replot_all();
-}
-
-void FormPeaks::on_checkShowFilteredPeaks_clicked()
-{
-  replot_all();
-}
-
-void FormPeaks::on_checkShowPseudoVoigt_clicked()
-{
-  replot_all();
-}
-
-void FormPeaks::on_checkShowEdges_clicked()
-{
-  replot_all();
-}
-
 void FormPeaks::on_spinMovAvg_editingFinished()
 {
   if (fit_data_ == nullptr)
     return;
 
-  fit_data_->set_mov_avg(ui->spinMovAvg->value());
-  fit_data_->find_prelim();
-  fit_data_->filter_prelim(ui->spinMinPeakWidth->value());
+  fit_data_->finder_.find_peaks(ui->spinMovAvg->value(), 3.0, ui->spinMinPeakWidth->value());
   replot_all();
 }
 
@@ -620,7 +623,7 @@ void FormPeaks::on_spinMinPeakWidth_editingFinished()
   if (fit_data_ == nullptr)
     return;
 
-  fit_data_->filter_prelim(ui->spinMinPeakWidth->value());
+  fit_data_->finder_.find_peaks(ui->spinMovAvg->value(), 3.0, ui->spinMinPeakWidth->value());
   replot_all();
 }
 
@@ -671,4 +674,53 @@ void FormPeaks::update_fit(bool content_changed) {
 void FormPeaks::on_doubleOverlapWidth_editingFinished()
 {
   fit_data_->overlap_ = ui->doubleOverlapWidth->value();
+}
+
+void FormPeaks::on_pushPrelim_clicked()
+{
+  replot_all();
+}
+
+void FormPeaks::on_pushCtrs_clicked()
+{
+  replot_all();
+}
+
+void FormPeaks::on_pushBkg_clicked()
+{
+  replot_all();
+}
+
+void FormPeaks::on_pushGauss_clicked()
+{
+  replot_all();
+}
+
+void FormPeaks::on_pushHypermet_clicked()
+{
+  replot_all();
+}
+
+void FormPeaks::on_pushMulti_clicked()
+{
+  replot_all();
+}
+
+void FormPeaks::on_pushEdges_clicked()
+{
+  replot_all();
+}
+
+void FormPeaks::on_pushResid_clicked()
+{
+  if (ui->pushResid->isChecked())
+    ui->pushKON->setChecked(false);
+  replot_all();
+}
+
+void FormPeaks::on_pushKON_clicked()
+{
+  if (ui->pushKON->isChecked())
+    ui->pushResid->setChecked(false);
+  replot_all();
 }
