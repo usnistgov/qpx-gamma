@@ -91,10 +91,10 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
 
 std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x, const std::vector<double> &y, const std::vector<Gaussian> &old) {
   std::vector<double> sigma;
-//  for (auto &q : y) {
-//    sigma.push_back(1/sqrt(q));
-//  }
-  sigma.resize(x.size(), 1);
+  for (auto &q : y) {
+    sigma.push_back(1/sqrt(q));
+  }
+//  sigma.resize(x.size(), 1);
 
   bool success = true;
   std::vector<fityk::Func*> fns;

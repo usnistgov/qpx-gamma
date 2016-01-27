@@ -109,13 +109,14 @@ void WidgetPlotFit::addResid(const QVector<double>& x, const QVector<double>& y,
 
   resid->addData(x, y);
   QPen pen = appearance.get_pen(color_theme_);
+  pen.setWidth(1);
 //  if (fittable && (visible_options_ & ShowOptions::thickness))
 //    pen.setWidth(thickness_);
   resid->setPen(pen);
   //resid->setProperty("fittable", fittable);
   resid->setProperty("bits", QVariant::fromValue(bits));
   //resid->setBrush(QBrush(pen.color(),Qt::SolidPattern));
-  resid->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssSquare, 4));
+  resid->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssSquare));
   resid->setLineStyle(QCPGraph::lsNone);
 
   double extr = 0;

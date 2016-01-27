@@ -290,7 +290,7 @@ void WidgetPlot1D::addPoints(const QVector<double>& x, const QVector<double>& y,
   ui->mcaPlot->graph(g)->addData(x, y);
   ui->mcaPlot->graph(g)->setPen(appearance.get_pen((color_theme_)));
   ui->mcaPlot->graph(g)->setBrush(QBrush());
-  ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle(shape, appearance.get_pen(color_theme_).color(), appearance.get_pen(color_theme_).color(), appearance.get_pen(color_theme_).width()));
+  ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle(shape, appearance.get_pen(color_theme_).color(), appearance.get_pen(color_theme_).color(), 6 /*appearance.get_pen(color_theme_).width()*/));
   ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsNone);
 
   if (x[0] < minx) {
@@ -927,7 +927,7 @@ void WidgetPlot1D::set_graph_style(QCPGraph* graph, QString style) {
       graph->setScatterStyle(QCPScatterStyle::ssNone);
     } else if (style == "Scatter") {
       graph->setBrush(QBrush());
-      graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 1));
+      graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc));
       graph->setLineStyle(QCPGraph::lsNone);
     }
 

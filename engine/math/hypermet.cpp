@@ -78,8 +78,9 @@ Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y, d
   f->load_data(0, x, y, sigma);
 
   try {
-        f->execute("set fitting_method = mpfit");
+//        f->execute("set fitting_method = mpfit");
 //    f->execute("set fitting_method = nlopt_nm");
+    f->execute("set fitting_method = nlopt_bobyqa");
 //        f->execute("set fitting_method = nlopt_lbfgs");
   } catch ( ... ) {
     success = false;

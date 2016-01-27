@@ -46,10 +46,11 @@ void ROI::set_data(const std::vector<double> &x, const std::vector<double> &y,
   finder_.setData(x_, y_); //assumes default threshold parameters!!!!
   make_background();
 
-//  PL_DBG << "finder found " << finder_.filtered.size();
+  PL_DBG << "ROI finder found " << finder_.filtered.size();
 
   if (peaks_.empty() && finder_.filtered.size()) {
     for (int i=0; i < finder_.filtered.size(); ++i) {
+      PL_DBG << "ROI finding peak " << finder_.x_[finder_.lefts[i]] << "-" << finder_.x_[finder_.rights[i]];
       Peak fitted = Peak(finder_.x_, y_nobkg_,
                          finder_.x_[finder_.lefts[i]], finder_.x_[finder_.rights[i]],
                          cal_nrg_, cal_fwhm_,
@@ -57,8 +58,8 @@ void ROI::set_data(const std::vector<double> &x, const std::vector<double> &y,
 
       if (
           (fitted.height > 0) &&
-          (fitted.fwhm_sum4 > 0) &&
-//          (fitted.fwhm_gaussian > 0) &&
+//          (fitted.fwhm_sum4 > 0) &&
+          (fitted.fwhm_gaussian > 0) &&
           (finder_.x_[finder_.lefts[i]] < fitted.center) &&
           (fitted.center < finder_.x_[finder_.rights[i]])
          )
@@ -173,20 +174,20 @@ void ROI::rebuild() {
 
 //  PL_DBG << "Using tallest peak at " << tallest_g.center_ << " as starting point for Hypermet constraints";
 
-  Hypermet tallest_h;//(x_, y_nobkg_, tallest_g.height_, tallest_g.center_, tallest_g.hwhm_);
+  Hypermet tallest_h(x_, y_nobkg_, tallest_g.height_, tallest_g.center_, tallest_g.hwhm_);
 
   std::vector<Hypermet> old_hype;
-//  old_hype.push_back(tallest_h);
+  old_hype.push_back(tallest_h);
 
   for (int i=0; i < gauss.size(); ++i) {
-//    if ((gauss[i].hwhm_ > 0) &&
-//        (gauss[i].height_ > 0) && (gauss[i].center_ != tallest_g.center_)) {
+    if ((gauss[i].hwhm_ > 0) &&
+        (gauss[i].height_ > 0) && (gauss[i].center_ != tallest_g.center_)) {
       Hypermet hyp(gauss[i].height_, gauss[i].center_, gauss[i].hwhm_);
       old_hype.push_back(hyp);
-//    }
+    }
   }
 
-  std::vector<Hypermet> hype = old_hype;// Hypermet::fit_multi(x_, y_nobkg_, old_hype, true);
+  std::vector<Hypermet> hype = Hypermet::fit_multi(x_, y_nobkg_, old_hype, true);
 
   peaks_.clear();
 
