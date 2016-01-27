@@ -55,21 +55,21 @@ FormPeaks::FormPeaks(QWidget *parent) :
   main_graph_.default_pen = QPen(Qt::gray, 1);
   prelim_peak_.default_pen = QPen(Qt::black, 4);
   filtered_peak_.default_pen = QPen(Qt::blue, 6);
-  gaussian_.default_pen = QPen(Qt::darkBlue, 0);
+  gaussian_.default_pen = QPen(Qt::darkBlue, 1);
 
   QColor flagged_color;
   flagged_color.setHsv(QColor(Qt::green).hsvHue(), QColor(Qt::green).hsvSaturation(), 192);
 
-  flagged_.default_pen =  QPen(flagged_color, 0);
-  pseudo_voigt_.default_pen = QPen(Qt::darkCyan, 0);
+  flagged_.default_pen =  QPen(flagged_color, 1);
+  hypermet_.default_pen = QPen(Qt::darkCyan, 1);
 
   multiplet_g_.default_pen = QPen(Qt::red, 2);
   multiplet_h_.default_pen = QPen(Qt::magenta, 2);
 
-  baseline_.default_pen = QPen(Qt::darkGray, 0);
-  rise_.default_pen = QPen(Qt::green, 0);
-  fall_.default_pen = QPen(Qt::red, 0);
-  even_.default_pen = QPen(Qt::black, 0);
+  baseline_.default_pen = QPen(Qt::darkGray, 1);
+  rise_.default_pen = QPen(Qt::green, 3);
+  fall_.default_pen = QPen(Qt::red, 3);
+  even_.default_pen = QPen(Qt::black, 3);
 
   sum4edge_.default_pen = QPen(Qt::darkYellow, 3);
 
@@ -114,10 +114,10 @@ void FormPeaks::set_visible_elements(ShowFitElements elems, bool interactive) {
 
 void FormPeaks::loadSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
-  ui->spinMinPeakWidth->setValue(settings_.value("min_peak_width", 5).toInt());
+  ui->spinSqWidth->setValue(settings_.value("square_width", 3).toInt());
   ui->spinSum4EdgeW->setValue(settings_.value("sum4_edge_width", 3).toInt());
   ui->doubleOverlapWidth->setValue(settings_.value("overlap_width", 2.70).toDouble());
-  ui->spinMovAvg->setValue(settings_.value("moving_avg_window", 15).toInt());
+  ui->doubleThresh->setValue(settings_.value("peak_threshold", 3.0).toDouble());
   ui->pushKON->setChecked(settings_.value("show_kon", false).toBool());
   ui->pushResid->setChecked(settings_.value("show_resid", false).toBool());
   ui->pushCtrs->setChecked(settings_.value("show_filtered_peaks", false).toBool());
@@ -136,9 +136,9 @@ void FormPeaks::loadSettings(QSettings &settings_) {
 
 void FormPeaks::saveSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
-  settings_.setValue("min_peak_width", ui->spinMinPeakWidth->value());
+  settings_.setValue("square_width", ui->spinSqWidth->value());
   settings_.setValue("sum4_edge_width", ui->spinSum4EdgeW->value());
-  settings_.setValue("moving_avg_window", ui->spinMovAvg->value());
+  settings_.setValue("peak_threshold", ui->doubleThresh->value());
   settings_.setValue("overlap_width", ui->doubleOverlapWidth->value());
   settings_.setValue("show_kon", ui->pushKON->isChecked());
   settings_.setValue("show_resid", ui->pushResid->isChecked());
@@ -179,7 +179,7 @@ void FormPeaks::make_range(Marker marker) {
 
 void FormPeaks::new_spectrum(QString title) {
   if (fit_data_->peaks_.empty()) {
-    fit_data_->finder_.find_peaks(ui->spinMovAvg->value(), 3.0, ui->spinMinPeakWidth->value());
+    fit_data_->finder_.find_peaks(ui->spinSqWidth->value(), ui->doubleThresh->value());
 
 //    PL_DBG << "number of peaks found " << fit_data_->peaks_.size();
 //    on_pushFindPeaks_clicked();
@@ -285,10 +285,26 @@ void FormPeaks::replot_all() {
     }
     if (yy.size())
       ui->plot1D->addPoints(xx, yy, filtered_peak_, QCPScatterStyle::ssDiamond);
+
+    xx.clear(); yy.clear();
+    for (auto &q : fit_data_->finder_.lefts) {
+      xx.push_back(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[q], fit_data_->metadata_.bits));
+      yy.push_back(fit_data_->finder_.y_[q]);
+    }
+    if (yy.size())
+      ui->plot1D->addPoints(xx, yy, rise_, QCPScatterStyle::ssDiamond);
+
+    xx.clear(); yy.clear();
+    for (auto &q : fit_data_->finder_.rights) {
+      xx.push_back(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[q], fit_data_->metadata_.bits));
+      yy.push_back(fit_data_->finder_.y_[q]);
+    }
+    if (yy.size())
+      ui->plot1D->addPoints(xx, yy, fall_, QCPScatterStyle::ssDiamond);
   }
 
   if (ui->pushMulti->isChecked()) {
-    for (auto &q : fit_data_->multiplets_) {
+    for (auto &q : fit_data_->regions_) {
       if (ui->pushGauss->isChecked()) {
         std::vector<double> y_fit_g = q.y_fullfit_g_;
         for (auto &p : y_fit_g)
@@ -320,7 +336,7 @@ void FormPeaks::replot_all() {
       for (auto &p : y_fit)
         if (p < 1)
           p = std::floor(p * 10 + 0.5)/10;
-      ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), pseudo_voigt_);
+      ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), hypermet_);
     }
 
     if (ui->pushGauss->isChecked()) {
@@ -383,7 +399,7 @@ void FormPeaks::replot_all() {
     if (ui->pushResid->isChecked()) {
       xx.clear(); yy.clear();
 
-      for (auto &q : fit_data_->multiplets_) {
+      for (auto &q : fit_data_->regions_) {
         for (auto &p : q.x_)
           xx.push_back(fit_data_->nrg_cali_.transform(p));
         for (auto &p : q.y_resid_h_)
@@ -399,7 +415,7 @@ void FormPeaks::replot_all() {
           yy.push_back(p);
       }
 
-      ui->plot1D->addResid(xx, yy, baseline_);
+      ui->plot1D->addResid(xx, yy, even_);
 
 
     }
@@ -588,7 +604,7 @@ void FormPeaks::perform_fit() {
   if (fit_data_ == nullptr)
     return;
 
-  fit_data_->finder_.find_peaks(ui->spinMovAvg->value(), 3.0, ui->spinMinPeakWidth->value());
+  fit_data_->finder_.find_peaks(ui->spinSqWidth->value(),ui->doubleThresh->value());
   fit_data_->overlap_ = ui->doubleOverlapWidth->value();
   fit_data_->sum4edge_samples = ui->spinSum4EdgeW->value();
   fit_data_->find_peaks();
@@ -609,21 +625,12 @@ void FormPeaks::on_pushFindPeaks_clicked()
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormPeaks::on_spinMovAvg_editingFinished()
+void FormPeaks::on_spinSqWidth_editingFinished()
 {
   if (fit_data_ == nullptr)
     return;
 
-  fit_data_->finder_.find_peaks(ui->spinMovAvg->value(), 3.0, ui->spinMinPeakWidth->value());
-  replot_all();
-}
-
-void FormPeaks::on_spinMinPeakWidth_editingFinished()
-{
-  if (fit_data_ == nullptr)
-    return;
-
-  fit_data_->finder_.find_peaks(ui->spinMovAvg->value(), 3.0, ui->spinMinPeakWidth->value());
+  fit_data_->finder_.find_peaks(ui->spinSqWidth->value(), ui->doubleThresh->value());
   replot_all();
 }
 
@@ -722,5 +729,14 @@ void FormPeaks::on_pushKON_clicked()
 {
   if (ui->pushKON->isChecked())
     ui->pushResid->setChecked(false);
+  replot_all();
+}
+
+void FormPeaks::on_doubleThresh_editingFinished()
+{
+  if (fit_data_ == nullptr)
+    return;
+
+  fit_data_->finder_.find_peaks(ui->spinSqWidth->value(), ui->doubleThresh->value());
   replot_all();
 }

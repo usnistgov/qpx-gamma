@@ -37,10 +37,8 @@ public:
   Fitter()
       : overlap_(4.0)
       , fw_tolerance_(0.5)
-      , avg_window_(3)
       , activity_scale_factor_(1.0)
       , sum4edge_samples(3)
-      , x_bound(0)
   {}
   
   Fitter(Qpx::Spectrum::Spectrum *spectrum)
@@ -68,23 +66,19 @@ public:
   Finder finder_;
 
   std::string sample_name_;
-  double activity_scale_factor_;
-  
-  std::vector<double> x_nrg_;
+  double activity_scale_factor_; //should be in spectrum?
 
-  uint32_t x_bound;
   uint16_t sum4edge_samples;
 
   Qpx::Spectrum::Metadata metadata_;
-  Gamma::Detector detector_;
+  Gamma::Detector detector_; //need this? metadata?
   
   std::map<double, Peak> peaks_;
-  std::list<ROI> multiplets_;
-  Calibration nrg_cali_, fwhm_cali_;
+  std::list<ROI> regions_;
+
+  Calibration nrg_cali_, fwhm_cali_; //need these? metadata?
   double overlap_, fw_tolerance_;
 
-private:
-  uint16_t avg_window_;
 };
 
 }

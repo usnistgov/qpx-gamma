@@ -342,7 +342,7 @@ void FormGainMatch::do_post_processing() {
 
 bool FormGainMatch::find_peaks() {
   gauss_ref_ = Gamma::Peak();
-  fitter_ref_.finder_.find_peaks(ui->spinMovAvg->value(), 3.0, ui->spinMinPeakWidth->value());
+  fitter_ref_.finder_.find_peaks(ui->spinMovAvg->value(), 3.0);
   fitter_ref_.overlap_ = ui->doubleOverlapWidth->value();
   fitter_ref_.sum4edge_samples = ui->spinSum4EdgeW->value();
   fitter_ref_.find_peaks();
@@ -351,7 +351,7 @@ bool FormGainMatch::find_peaks() {
       gauss_ref_ = q.second;
 
   gauss_opt_ = Gamma::Peak();
-  fitter_ref_.finder_.find_peaks(ui->spinMovAvg->value(), 3.0, ui->spinMinPeakWidth->value());
+  fitter_ref_.finder_.find_peaks(ui->spinMovAvg->value(), 3.0);
   fitter_ref_.overlap_ = ui->doubleOverlapWidth->value();
   fitter_ref_.sum4edge_samples = ui->spinSum4EdgeW->value();
   fitter_opt_.find_peaks();

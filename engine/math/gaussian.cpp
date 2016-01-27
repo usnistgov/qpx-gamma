@@ -50,13 +50,13 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
   f->redir_messages(NULL);
   f->load_data(0, x, y, sigma);
 
-    try {
+//    try {
 //      f->execute("set fitting_method = nlopt_nm");
 //      f->execute("set fitting_method = nlopt_lbfgs");
-    } catch ( ... ) {
-      success = false;
-      PL_DBG << "failed to set fitter";
-    }
+//    } catch ( ... ) {
+//      success = false;
+//      PL_DBG << "failed to set fitter";
+//    }
 
   try {
     f->execute("guess Gaussian");
@@ -102,6 +102,17 @@ std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x, const st
   fityk::Fityk *f = new fityk::Fityk;
   f->redir_messages(NULL);
   f->load_data(0, x, y, sigma);
+
+
+      try {
+//        f->execute("set fitting_method = mpfit");
+//        f->execute("set fitting_method = nlopt_nm");
+        f->execute("set fitting_method = nlopt_lbfgs");
+      } catch ( std::string st ) {
+        success = false;
+        PL_DBG << "failed to set fitter " << st;
+      }
+
   //PL_DBG << "<Gaussian> fitting multiplet [" << x[0] << "-" << x[x.size() - 1] << "]";  
 
   for (int i=0; i < old.size(); ++i) {

@@ -32,7 +32,7 @@ void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
   for (int32_t i = 0; i < static_cast<int32_t>(x_.size()); ++i) {
     y_fullfit_gaussian_[i] = y_baseline_[i] + gaussian_.evaluate(x_[i]);
     y_fullfit_hypermet_[i] = y_baseline_[i] + hypermet_.evaluate(x_[i]);
-    y_residues_g_[i] = y_[i] - y_fullfit_gaussian_[i];
+    y_residues_g_[i] = y_[i] - y_fullfit_hypermet_[i];
   }
 
 
@@ -113,11 +113,14 @@ Peak::Peak(const std::vector<double> &x, const std::vector<double> &y, uint32_t 
 
     x_ = std::vector<double>(x.begin() + l, x.begin() + r + 1);
     y_ = std::vector<double>(y.begin() + l, y.begin() + r + 1);
-    y_baseline_ = sum4_.by_;
-    
-    std::vector<double> nobase(x_.size());    
-    for (int32_t i = 0; i < static_cast<int32_t>(y_.size()); ++i)
-      nobase[i] = y_[i] - y_baseline_[i];
+
+    y_baseline_.resize(x_.size(), 0);
+    std::vector<double> nobase = y_;
+
+//    y_baseline_ = sum4_.by_;
+//    std::vector<double> nobase(x_.size());
+//    for (int32_t i = 0; i < static_cast<int32_t>(y_.size()); ++i)
+//      nobase[i] = y_[i] - y_baseline_[i];
 
     gaussian_ = Gaussian(x_, nobase);
     if (gaussian_.height_ > 0)

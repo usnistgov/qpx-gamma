@@ -23,7 +23,8 @@
 #ifndef GAMMA_FINDER_H
 #define GAMMA_FINDER_H
 
-#include "roi.h"
+#include <vector>
+#include <cinttypes>
 
 namespace Gamma {
 
@@ -32,13 +33,11 @@ class Finder {
 private:
   static constexpr uint16_t default_width  = 3;
   static constexpr double   default_thresh = 3.0;
-  static constexpr uint16_t defalt_margin  = 3;
   
 public:
-  Finder(uint16_t width = default_width, double thresh = default_thresh, uint16_t margin = defalt_margin) :
+  Finder(uint16_t width = default_width, double thresh = default_thresh) :
       square_width_(default_width),
-      threshold_(default_thresh),
-      margin_(margin)
+      threshold_(default_thresh)
   {}
 
 
@@ -46,10 +45,10 @@ public:
   
   void setData(std::vector<double> x, std::vector<double> y);
   void find_peaks();
-  void find_peaks(uint16_t width, double thresh, uint16_t margin);
+  void find_peaks(uint16_t width, double thresh);
 
-  uint16_t find_left(uint16_t chan, uint16_t margin = 0);
-  uint16_t find_right(uint16_t chan, uint16_t margin = 0);
+  uint16_t find_left(uint16_t chan);
+  uint16_t find_right(uint16_t chan);
 
   //DATA
 
@@ -61,9 +60,11 @@ public:
 private:
   uint16_t square_width_;
   double threshold_;
-  uint16_t margin_;
 
   void calc_kon();
+
+  uint16_t left_edge(uint16_t idx);
+  uint16_t right_edge(uint16_t idx);
 
 };
 

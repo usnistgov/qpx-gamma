@@ -22,6 +22,7 @@
 
 #include "gamma_fitter.h"
 #include <numeric>
+#include <algorithm>
 #include "custom_logger.h"
 
 namespace Gamma {
@@ -56,6 +57,7 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
     std::vector<double> y;
 
     int i = 0, j = 0;
+    int x_bound = 0;
     bool go = false;
     for (auto it : *spectrum_dump) {
       if (it.second > 0)
@@ -73,8 +75,6 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
     x.resize(x_bound);
     y.resize(x_bound);
 
-    x_nrg_ = nrg_cali_.transform(x);
-
     finder_.setData(x, y);
   }
 }
@@ -85,9 +85,8 @@ void Fitter::clear() {
   nrg_cali_ = Gamma::Calibration();
   fwhm_cali_ = Gamma::Calibration();
   finder_.clear();
-  x_nrg_.clear();
   peaks_.clear();
-  multiplets_.clear();
+  regions_.clear();
 }
 
 
@@ -106,172 +105,178 @@ void Fitter::filter_by_theoretical_fwhm(double range) {
 void Fitter::find_peaks() {
 
   peaks_.clear();
-  multiplets_.clear();
+  regions_.clear();
 //  PL_DBG << "Fitter: looking for " << filtered.size()  << " peaks";
 
-  for (int i=0; i < finder_.filtered.size(); ++i) {
-    //std::vector<double> baseline = make_background(x_, y_, lefts[i], rights[i], 3);
-    //std::vector<double> xx(x_.begin() + lefts[i], x_.begin() + rights[i] + 1);
-    //std::vector<double> yy(y_.begin() + lefts[i], y_.begin() + rights[i] + 1);
-//    PL_DBG << "<Fitter> Building peak " << i+1 << " of " << finder_.filtered.size()
-//           << " [" << finder_.x_[finder_.lefts[i]]
-//           << ":" << finder_.x_[finder_.filtered[i]]
-//           << ":" << finder_.x_[finder_.rights[i]] << "]";
+  if (finder_.filtered.empty())
+    return;
 
-    Peak fitted = Peak(finder_.x_, finder_.y_,
-                       finder_.x_[finder_.lefts[i]], finder_.x_[finder_.rights[i]],
-                       nrg_cali_, fwhm_cali_,
-                       metadata_.live_time.total_seconds(), sum4edge_samples);
-
-    if (
-        (fitted.height > 0) &&
-        (fitted.fwhm_sum4 > 0) &&
-//        (fitted.fwhm_gaussian > 0) &&
-        (finder_.x_[finder_.lefts[i]] < fitted.center) &&
-        (fitted.center < finder_.x_[finder_.rights[i]])
-       )
-    {
-//      PL_DBG << "I like this peak at " << fitted.center << " fw " << fitted.fwhm_gaussian;
-      peaks_[fitted.center] = fitted;
+  uint16_t L = finder_.lefts[0];
+  uint16_t R = finder_.rights[0];
+  for (int i=1; i < finder_.filtered.size(); ++i) {
+    if (finder_.lefts[i] < R) {
+      PL_DBG << "cat ROI " << L << " " << R << " " << finder_.lefts[i] << " " << finder_.rights[i];
+      L = std::min(L, finder_.lefts[i]);
+      R = std::max(R, finder_.rights[i]);
+      PL_DBG << "postcat ROI " << L << " " << R;
+    } else {
+      PL_DBG << "making new ROI " << L << "-" << R;
+      ROI newROI(nrg_cali_, fwhm_cali_, metadata_.live_time.total_milliseconds() * 0.001);
+      newROI.set_data(finder_.x_, finder_.y_, L, R);
+      if (!newROI.peaks_.empty())
+        regions_.push_back(newROI);
+      L = finder_.lefts[i];
+      R = finder_.rights[i];
     }
   }
+  ROI newROI(nrg_cali_, fwhm_cali_, metadata_.live_time.total_milliseconds() * 0.001);
+  newROI.set_data(finder_.x_, finder_.y_, L, R);
+  if (!newROI.peaks_.empty())
+    regions_.push_back(newROI);
 
 //  PL_DBG << "peaks before filtering by theoretical fwhm " << peaks_.size();
 
-  if (fwhm_cali_.valid()) {
-    //    PL_DBG << "<GammaFitter> Valid FWHM calib found, performing filtering/deconvolution";
-    filter_by_theoretical_fwhm(fw_tolerance_);
+//  if (fwhm_cali_.valid()) {
+//    //    PL_DBG << "<GammaFitter> Valid FWHM calib found, performing filtering/deconvolution";
+//    filter_by_theoretical_fwhm(fw_tolerance_);
 
-    PL_DBG << "filtered by theoretical fwhm " << peaks_.size();
+//    PL_DBG << "filtered by theoretical fwhm " << peaks_.size();
 
-    make_multiplets();
-  }
+//    make_multiplets();
+//  }
 
   //  PL_INFO << "Preliminary search found " << prelim.size() << " potential peaks";
   //  PL_INFO << "After minimum width filter: " << filtered.size();
   //  PL_INFO << "Fitted peaks: " << peaks_.size();
+
+  for (auto &q : regions_) {
+    for (auto &p : q.peaks_) {
+      peaks_[p.center] = p;
+    }
+  }
+
 }
 
 void Fitter::add_peak(uint32_t left, uint32_t right) {
   //std::vector<double> xx(x_.begin() + left, x_.begin() + right + 1);
   //std::vector<double> yy(y_.begin() + left, y_.begin() + right + 1);
   //std::vector<double> bckgr = make_background(x_, y_, left, right, 3);
-  if (finder_.x_.empty())
-    return;
+//  if (finder_.x_.empty())
+//    return;
 
-  Peak newpeak = Gamma::Peak(finder_.x_, finder_.y_, left, right, nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds(), sum4edge_samples);
-  //PL_DBG << "new peak center = " << newpeak.center;
+//  Peak newpeak = Gamma::Peak(finder_.x_, finder_.y_, left, right, nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds(), sum4edge_samples);
+//  //PL_DBG << "new peak center = " << newpeak.center;
 
-  if (fwhm_cali_.valid()) {
-    newpeak.lim_L = newpeak.energy - overlap_ * newpeak.fwhm_theoretical;
-    newpeak.lim_R = newpeak.energy + overlap_ * newpeak.fwhm_theoretical;
-    newpeak.intersects_R = false;
-    newpeak.intersects_L = false;
+//  if (fwhm_cali_.valid()) {
+//    newpeak.lim_L = newpeak.energy - overlap_ * newpeak.fwhm_theoretical;
+//    newpeak.lim_R = newpeak.energy + overlap_ * newpeak.fwhm_theoretical;
+//    newpeak.intersects_R = false;
+//    newpeak.intersects_L = false;
 
-    if (multiplets_.empty()) {
-      peaks_[newpeak.center] = newpeak;
-      make_multiplets();
-    } else {
-      for (auto &q : multiplets_) {
-        if (q.overlaps(newpeak)) {
-          q.add_peak(newpeak, finder_.x_, finder_.y_);
-          newpeak.subpeak = true;
-          peaks_[newpeak.center] = newpeak;
-          return;
-        }
-      }
+//    if (regions_.empty()) {
+//      peaks_[newpeak.center] = newpeak;
+//      make_multiplets();
+//    } else {
+//      for (auto &q : regions_) {
+//        if (q.overlaps(newpeak)) {
+//          q.add_peak(newpeak, finder_.x_, finder_.y_);
+//          newpeak.subpeak = true;
+//          peaks_[newpeak.center] = newpeak;
+//          return;
+//        }
+//      }
 
-      std::set<Peak> multiplet;
-      std::set<double> to_remove;
-      for (auto &q : peaks_) {
-        if ((newpeak.energy > q.second.lim_L) && (newpeak.energy < q.second.lim_R)) {
-          to_remove.insert(q.first);
-          multiplet.insert(q.second);
-        }
-      }
-      if (!to_remove.empty()) {
-        ROI new_roi(nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
-        new_roi.add_peaks(multiplet, finder_.x_, finder_.y_);
-        multiplets_.push_back(new_roi);
-        for (auto &q : to_remove)
-          peaks_.erase(q);
-        newpeak.subpeak = true;
-        peaks_[newpeak.center] = newpeak;
-      } else
-        peaks_[newpeak.center] = newpeak;
-    }
-  } else {
-    peaks_[newpeak.center] = newpeak;
-  }
+//      std::set<Peak> multiplet;
+//      std::set<double> to_remove;
+//      for (auto &q : peaks_) {
+//        if ((newpeak.energy > q.second.lim_L) && (newpeak.energy < q.second.lim_R)) {
+//          to_remove.insert(q.first);
+//          multiplet.insert(q.second);
+//        }
+//      }
+//      if (!to_remove.empty()) {
+//        ROI new_roi(nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
+//        new_roi.add_peaks(multiplet, finder_.x_, finder_.y_);
+//        regions_.push_back(new_roi);
+//        for (auto &q : to_remove)
+//          peaks_.erase(q);
+//        newpeak.subpeak = true;
+//        peaks_[newpeak.center] = newpeak;
+//      } else
+//        peaks_[newpeak.center] = newpeak;
+//    }
+//  } else {
+//    peaks_[newpeak.center] = newpeak;
+//  }
 }
 
 void Fitter::make_multiplets()
 {
-  if (peaks_.size() > 1) {
+//  if (peaks_.size() > 1) {
 
-    for (auto &q : peaks_) {
-      q.second.lim_L = q.second.energy - overlap_ * q.second.fwhm_theoretical;
-      q.second.lim_R = q.second.energy + overlap_ * q.second.fwhm_theoretical;
-      q.second.intersects_R = false;
-      q.second.intersects_L = false;
-    }
+//    for (auto &q : peaks_) {
+//      q.second.lim_L = q.second.energy - overlap_ * q.second.fwhm_theoretical;
+//      q.second.lim_R = q.second.energy + overlap_ * q.second.fwhm_theoretical;
+//      q.second.intersects_R = false;
+//      q.second.intersects_L = false;
+//    }
     
-    std::map<double, Peak>::iterator pk1 = peaks_.begin();
-    std::map<double, Peak>::iterator pk2 = peaks_.begin();
-    pk2++;
+//    std::map<double, Peak>::iterator pk1 = peaks_.begin();
+//    std::map<double, Peak>::iterator pk2 = peaks_.begin();
+//    pk2++;
 
-    int juncs=0;
-    while (pk2 != peaks_.end()) {
-      if ((pk1->second.energy > pk2->second.lim_L) || (pk1->second.lim_R > pk2->second.energy)) {
-        pk1->second.intersects_R = true;
-        pk2->second.intersects_L = true;
-        juncs++;
-      }
-      pk1++;
-      pk2++;
-    }
-    //PL_DBG << "<Gamma::Fitter> found " << juncs << " peak overlaps";
+//    int juncs=0;
+//    while (pk2 != peaks_.end()) {
+//      if ((pk1->second.energy > pk2->second.lim_L) || (pk1->second.lim_R > pk2->second.energy)) {
+//        pk1->second.intersects_R = true;
+//        pk2->second.intersects_L = true;
+//        juncs++;
+//      }
+//      pk1++;
+//      pk2++;
+//    }
+//    //PL_DBG << "<Gamma::Fitter> found " << juncs << " peak overlaps";
 
-    std::set<Peak> multiplet;
-    std::set<double> to_remove;
+//    std::set<Peak> multiplet;
+//    std::set<double> to_remove;
 
-    pk1 = peaks_.begin();
-    pk2 = peaks_.begin();
-    pk2++;
+//    pk1 = peaks_.begin();
+//    pk2 = peaks_.begin();
+//    pk2++;
     
-    while (pk2 != peaks_.end()) {
-      if (pk1->second.intersects_R && pk2->second.intersects_L) {
-        multiplet.insert(pk1->second);
-        to_remove.insert(pk1->first);
-      }
-      if (pk2->second.intersects_L && !pk2->second.intersects_R) {
-        multiplet.insert(pk2->second);
-        to_remove.insert(pk2->first);
+//    while (pk2 != peaks_.end()) {
+//      if (pk1->second.intersects_R && pk2->second.intersects_L) {
+//        multiplet.insert(pk1->second);
+//        to_remove.insert(pk1->first);
+//      }
+//      if (pk2->second.intersects_L && !pk2->second.intersects_R) {
+//        multiplet.insert(pk2->second);
+//        to_remove.insert(pk2->first);
 
-        if (!multiplet.empty()) {
-          ROI multi(nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
-          multi.add_peaks(multiplet, finder_.x_, finder_.y_);
-          multiplets_.push_back(multi);
-        }
+//        if (!multiplet.empty()) {
+//          ROI multi(nrg_cali_, fwhm_cali_, metadata_.live_time.total_seconds());
+//          multi.add_peaks(multiplet, finder_.x_, finder_.y_);
+//          regions_.push_back(multi);
+//        }
 
-        multiplet.clear();
-      }
-      pk1++;
-      pk2++;
-    }
-    for (auto &q : to_remove)
-      peaks_.erase(q);
-    for (auto &q : multiplets_) {
-      for (auto &p : q.peaks_)
-        peaks_[p.center] = p;
-    }
-  }  
+//        multiplet.clear();
+//      }
+//      pk1++;
+//      pk2++;
+//    }
+//    for (auto &q : to_remove)
+//      peaks_.erase(q);
+//    for (auto &q : regions_) {
+//      for (auto &p : q.peaks_)
+//        peaks_[p.center] = p;
+//    }
+//  }
 }
 
 void Fitter::remove_peak(double bin) {
   peaks_.erase(bin);
   if (fwhm_cali_.valid()) {
-    multiplets_.clear();
+    regions_.clear();
     make_multiplets();
   }
 }
@@ -281,7 +286,7 @@ void Fitter::remove_peaks(std::set<double> bins) {
   for (auto &q : bins)
     peaks_.erase(q);
   if (fwhm_cali_.valid()) {
-    multiplets_.clear();
+    regions_.clear();
     make_multiplets();
   }
 }

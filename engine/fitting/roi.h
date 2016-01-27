@@ -24,6 +24,7 @@
 #define GAMMA_ROI_H
 
 #include "gamma_peak.h"
+#include "finder.h"
 
 namespace Gamma {
 
@@ -35,30 +36,35 @@ struct ROI {
   , live_seconds_(live_seconds) 
   {}
 
+  void set_data(const std::vector<double> &x, const std::vector<double> &y,
+                uint16_t min, uint16_t max);
+
   bool contains(double bin);
-  bool overlaps(const Peak &);
-  void add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y);
-  void add_peak(const Peak &pk, const std::vector<double> &x, const std::vector<double> &y);
+  bool overlaps(uint16_t bin);
+
+//  void add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y);
+//  void add_peak(const Peak &pk, const std::vector<double> &x, const std::vector<double> &y);
+
+  void remove_peaks(const std::set<double> &pks);
   void remove_peak(const Peak &pk);
   void remove_peak(double bin);
   void rebuild();
 
+  Finder finder_;
   std::set<Peak> peaks_;
   std::vector<double> x_, y_,
-    y_background_, y_fullfit_g_, y_fullfit_h_, y_resid_h_;
+    y_background_,
+    y_nobkg_,
+    y_fullfit_g_,
+    y_fullfit_h_,
+    y_resid_h_;
+
+
   Calibration cal_nrg_, cal_fwhm_;
   double live_seconds_;
 
 private:
-  static double local_avg(const std::vector<double> &x,
-                          const std::vector<double> &y,
-                          uint16_t chan,
-                          uint16_t samples = 1);
-
-  static std::vector<double> make_background(const std::vector<double> &x,
-                                             const std::vector<double> &y,
-                                             uint16_t left, uint16_t right,
-                                             uint16_t samples);
+  void make_background();
 
 };
 

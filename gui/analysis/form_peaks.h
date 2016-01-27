@@ -101,8 +101,7 @@ private slots:
   void on_pushMarkerRemove_clicked();
   void on_pushFindPeaks_clicked();
 
-  void on_spinMovAvg_editingFinished();
-  void on_spinMinPeakWidth_editingFinished();
+  void on_spinSqWidth_editingFinished();
   void on_doubleOverlapWidth_editingFinished();
   void on_spinSum4EdgeW_editingFinished();
 
@@ -118,6 +117,8 @@ private slots:
 
   void on_pushResid_clicked();
 
+  void on_doubleThresh_editingFinished();
+
 private:
   Ui::FormPeaks *ui;
 
@@ -132,7 +133,7 @@ private:
   Range range_;
 
   AppearanceProfile main_graph_, prelim_peak_, filtered_peak_,
-                    gaussian_, pseudo_voigt_, baseline_, sum4edge_,
+                    gaussian_, hypermet_, baseline_, sum4edge_,
                     multiplet_g_, multiplet_h_, flagged_,
                     rise_, fall_, even_;
 

@@ -21,6 +21,7 @@
  ******************************************************************************/
 
 #include <vector>
+#include <cmath>
 #include "finder.h"
 
 namespace Gamma {
@@ -78,10 +79,9 @@ void Finder::calc_kon() {
 }
 
 
-void Finder::find_peaks(uint16_t width, double thresh, uint16_t margin) {
+void Finder::find_peaks(uint16_t width, double thresh) {
   square_width_ = width;
   threshold_ = thresh;
-  margin_ = margin;
   calc_kon();
   find_peaks();
 }
@@ -111,26 +111,19 @@ void Finder::find_peaks() {
   for (int i=0; i < lefts.size(); ++i)
     filtered.push_back((rights[i] + lefts[i])/2);
 
-  //expand edges by factor of margin
-  if (!margin_ || (filtered.size() < 3))
-    return;
-
   for (int i=0; i < filtered.size(); ++i) {
-    lefts[i] -= margin_*(filtered[i] - lefts[i]);
-    rights[i] += margin_*(rights[i] - filtered[i]);
-    if (lefts[i] < 0)
-      lefts[i] = 0;
-    if (rights[i] >= x_.size())
-      rights[i] = x_.size() - 1;
-//    PL_DBG << "xpanded peak area " << lefts[i] << " - " << filtered[i] << " - " << rights[i];
+    lefts[i]  = left_edge(lefts[i]);
+    rights[i] = right_edge(rights[i]);
   }
 }
 
-uint16_t Finder::find_left(uint16_t chan, uint16_t margin) {
+uint16_t Finder::find_left(uint16_t chan) {
   if (x_.empty())
     return 0;
 
   //assume x is monotone increasing
+
+  double edge_threshold = -0.5 * threshold_;
 
   if ((chan < x_[0]) || (chan >= x_[x_.size()-1]))
     return 0;
@@ -140,23 +133,16 @@ uint16_t Finder::find_left(uint16_t chan, uint16_t margin) {
   while ((i > 0) && (x_[i] > chan))
     i--;
 
-  int chan_idx = i;
-
-  while ((i > 0) && (x_conv[i] > threshold_))
-    i--;
-
-  i -= margin*(chan_idx - i);
-  if (i < 0)
-    i = 0;
-
-  return x_[i];
+  return x_[left_edge(i)];
 }
 
-uint16_t Finder::find_right(uint16_t chan, uint16_t margin) {
+uint16_t Finder::find_right(uint16_t chan) {
   if (x_.empty())
     return 0;
 
   //assume x is monotone increasing
+
+  double edge_threshold = -0.5 * threshold_;
 
   if ((chan < x_[0]) || (chan >= x_[x_.size()-1]))
     return x_.size() - 1;
@@ -166,16 +152,40 @@ uint16_t Finder::find_right(uint16_t chan, uint16_t margin) {
   while ((i < x_.size()) && (x_[i] < chan))
     i++;
 
-  int chan_idx = i;
+  return x_[right_edge(i)];
+}
 
-  while ((i < x_.size()) && (x_conv[i] > threshold_))
-    i++;
 
-  i += margin*(i - chan_idx);
-  if (i >= x_.size())
-    i = x_.size() - 1;
+uint16_t Finder::left_edge(uint16_t idx) {
+  if (x_conv.empty() || idx >= x_conv.size())
+    return 0;
 
-  return x_[i];
+  double edge_threshold = -0.5 * threshold_;
+
+  while ((idx > 0) && (x_conv[idx] > 0))
+    idx--;
+  if (idx > 0)
+    idx--;
+  while ((idx > 0) && (x_conv[idx] < edge_threshold))
+    idx--;
+
+  return idx;
+}
+
+uint16_t Finder::right_edge(uint16_t idx) {
+  if (x_conv.empty() || idx >= x_conv.size())
+    return 0;
+
+  double edge_threshold = -0.5 * threshold_;
+
+  while ((idx < x_conv.size()) && (x_conv[idx] > 0))
+    idx++;
+  if (idx < x_conv.size())
+    idx++;
+  while ((idx < x_conv.size()) && (x_conv[idx] < edge_threshold))
+    idx++;
+
+  return idx;
 }
 
 

@@ -47,11 +47,11 @@ bool Hypermet::extract_params(fityk::Func* func) {
     Llong_height_ = func->get_param_value("llong_h");
     Llong_slope_ = func->get_param_value("llong_s");
     step_height_ = func->get_param_value("step_h");
-        PL_DBG << "Hypermet fit as  c=" << center_ << " h=" << height_ << " w=" << width_
-               << " lsh=" << Lshort_height_ << " lss=" << Lshort_slope_
-               << " rsh=" << Rshort_height_ << " rss=" << Rshort_slope_
-               << " llh=" << Llong_height_ << " lls=" << Llong_slope_
-               << " steph=" << step_height_;
+//        PL_DBG << "Hypermet fit as  c=" << center_ << " h=" << height_ << " w=" << width_
+//               << " lsh=" << Lshort_height_ << " lss=" << Lshort_slope_
+//               << " rsh=" << Rshort_height_ << " rss=" << Rshort_slope_
+//               << " llh=" << Llong_height_ << " lls=" << Llong_slope_
+//               << " steph=" << step_height_;
   }
   catch ( ... ) {
     PL_DBG << "Hypermet could not extract parameters from Fityk";
@@ -78,12 +78,12 @@ Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y, d
   f->load_data(0, x, y, sigma);
 
   try {
-    //    f->execute("set fitting_method = mpfit");
+        f->execute("set fitting_method = mpfit");
 //    f->execute("set fitting_method = nlopt_nm");
-        f->execute("set fitting_method = nlopt_lbfgs");
+//        f->execute("set fitting_method = nlopt_lbfgs");
   } catch ( ... ) {
     success = false;
-    PL_DBG << "Fityk failed to set fitter";
+    PL_DBG << "Hypermet failed to set fitter";
   }
 
   try {
@@ -177,9 +177,9 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
   f->load_data(0, x, y, sigma);
 
   try {
-    //    f->execute("set fitting_method = mpfit");
+        f->execute("set fitting_method = mpfit");
 //    f->execute("set fitting_method = nlopt_nm");
-        f->execute("set fitting_method = nlopt_lbfgs");
+//        f->execute("set fitting_method = nlopt_lbfgs");
   } catch ( ... ) {
     success = false;
     PL_DBG << "Fityk failed to set fitter";
@@ -192,16 +192,16 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
     PL_DBG << "Hypermet failed to define";
   }
 
-  std::string initial_lsh = FitykUtil::var_def("lsh", 0.001, 0, 0.75);
+  std::string initial_lsh = FitykUtil::var_def("lsh", 0.000, 0, 0.75);
   std::string initial_lss = FitykUtil::var_def("lss", 0.3, 0.3, 2);
 
-  std::string initial_rsh = FitykUtil::var_def("rsh", 0.001, 0, 0.75);
+  std::string initial_rsh = FitykUtil::var_def("rsh", 0.000, 0, 0.75);
   std::string initial_rss = FitykUtil::var_def("rss", 0.3, 0.3, 2);
 
-  std::string initial_llh = FitykUtil::var_def("llh", 0.00001, 0, 0.015);
+  std::string initial_llh = FitykUtil::var_def("llh", 0.00000, 0, 0.015);
   std::string initial_lls = FitykUtil::var_def("lls", 2.5, 2.5, 50);
 
-  std::string initial_step = FitykUtil::var_def("step", 0.00001, 0, 0.75);
+  std::string initial_step = FitykUtil::var_def("step", 0.00000, 0, 0.75);
 
 
   if (false) {

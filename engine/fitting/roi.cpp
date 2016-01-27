@@ -24,6 +24,54 @@
 
 namespace Gamma {
 
+void ROI::set_data(const std::vector<double> &x, const std::vector<double> &y,
+                   uint16_t min, uint16_t max) {
+  x_.clear();
+  y_.clear();
+  finder_.clear();
+
+  if (x.size() != y.size())
+    return;
+
+  if ((min >= x.size()) || (max >= x.size()))
+    return;
+
+  for (uint16_t i = min; i <= max; ++i) {
+    x_.push_back(x[i]);
+    y_.push_back(y[i]);
+  }
+
+//  PL_DBG << "ROI has " << y_.size() << " points";
+
+  finder_.setData(x_, y_); //assumes default threshold parameters!!!!
+  make_background();
+
+//  PL_DBG << "finder found " << finder_.filtered.size();
+
+  if (peaks_.empty() && finder_.filtered.size()) {
+    for (int i=0; i < finder_.filtered.size(); ++i) {
+      Peak fitted = Peak(finder_.x_, y_nobkg_,
+                         finder_.x_[finder_.lefts[i]], finder_.x_[finder_.rights[i]],
+                         cal_nrg_, cal_fwhm_,
+                         live_seconds_, /*sum4edge_samples*/ 3); //assumption
+
+      if (
+          (fitted.height > 0) &&
+          (fitted.fwhm_sum4 > 0) &&
+//          (fitted.fwhm_gaussian > 0) &&
+          (finder_.x_[finder_.lefts[i]] < fitted.center) &&
+          (fitted.center < finder_.x_[finder_.rights[i]])
+         )
+      {
+        PL_DBG << "I like this peak at " << fitted.center << " fw " << fitted.fwhm_gaussian;
+        peaks_.insert(fitted);
+      }
+    }
+
+    rebuild();
+  }
+}
+
 bool ROI::contains(double bin) {
   for (auto &q : peaks_)
     if (q.center == bin)
@@ -31,49 +79,60 @@ bool ROI::contains(double bin) {
   return false;
 }
 
-bool ROI::overlaps(const Peak &pk) {
-  if ((pk.center >= x_.front()) && (pk.center <= x_.back()))
-    return true;
-  if ((pk.x_.front() >= x_.front()) && (pk.x_.front() <= x_.back()))
-    return true;
-  if ((pk.x_.back() >= x_.front()) && (pk.x_.back() <= x_.back()))
-    return true;
-  return false;
+//bool ROI::overlaps(const Peak &pk) {
+//  return (overlaps(pk.x_.front()) || overlaps(pk.x_.back()));
+//}
+
+bool ROI::overlaps(uint16_t bin) {
+  return ((bin >= x_.front()) && (bin <= x_.back()));
 }
 
+//void ROI::add_peak(const Peak &pk, const std::vector<double> &x, const std::vector<double> &y)
+//{
+//  std::set<Peak> pks;
+//  pks.insert(pk);
+//  add_peaks(pks, x, y);
+//}
 
-void ROI::add_peak(const Peak &pk, const std::vector<double> &x, const std::vector<double> &y)
-{
-  std::set<Peak> pks;
-  pks.insert(pk);
-  add_peaks(pks, x, y);
-}
+//void ROI::add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y)
+//{
+//  for (auto &q : pks) {
+//    peaks_.erase(q);
+//    peaks_.insert(q);
+//  }
 
-void ROI::add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y)
-{
-  for (auto &q : pks) {
-    peaks_.erase(q);
-    peaks_.insert(q);
-  }
-
-  int left = std::numeric_limits<int>::max();
-  int right = - std::numeric_limits<int>::max();
-  for (auto &q : peaks_) {
-    int l = q.x_.front();
-    int r = q.x_.back();
+//  int left = std::numeric_limits<int>::max();
+//  int right = - std::numeric_limits<int>::max();
+//  for (auto &q : peaks_) {
+//    int l = q.x_.front();
+//    int r = q.x_.back();
     
-    if (l < left)
-      left = l;
-    if (r > right)
-      right = r;    
+//    if (l < left)
+//      left = l;
+//    if (r > right)
+//      right = r;
+//  }
+//  x_ = std::vector<double>(x.begin() + left, x.begin() + right + 1);
+//  y_ = std::vector<double>(y.begin() + left, y.begin() + right + 1);
+//  finder_.setData(x_, y_);
+//  make_background();
+//  rebuild();
+//}
+
+void ROI::remove_peaks(const std::set<double> &pks) {
+  bool found = false;
+  for (auto &q : pks) {
+    for (auto &p : peaks_) {
+      if (p.center == q) {
+        peaks_.erase(p);
+        found = true;
+        break;
+      }
+    }
   }
-  y_background_ = make_background(x, y, left, right, 3);
-  x_ = std::vector<double>(x.begin() + left, x.begin() + right + 1);
-  y_ = std::vector<double>(y.begin() + left, y.begin() + right + 1);
-
-  rebuild();
+  if (found)
+    rebuild();
 }
-
 
 void ROI::remove_peak(const Peak &pk) {
   if (peaks_.count(pk)) {
@@ -96,19 +155,15 @@ void ROI::rebuild() {
   y_fullfit_g_.clear();
   y_fullfit_h_.clear();
 
-  std::vector<double> nobck(x_.size());
-  for (int32_t i = 0; i < static_cast<int32_t>(y_.size()); ++i)
-    nobck[i] = y_[i] - y_background_[i];
-
-  std::vector<Gaussian> old_gauss;
-  for (auto &q : peaks_)
-    old_gauss.push_back(q.gaussian_);
-  std::vector<Gaussian> gauss = Gaussian::fit_multi(x_, nobck, old_gauss);
-
-  if (gauss.size() < 2) {
-    PL_DBG << "multiplet build failed";
+  if (peaks_.empty())
     return;
-  }
+
+  std::vector<Gaussian> gauss;
+  for (auto &q : peaks_)
+    gauss.push_back(q.gaussian_);
+
+  if (peaks_.size() > 1)
+   gauss = Gaussian::fit_multi(x_, y_nobkg_, gauss);
 
   Gaussian tallest_g;
   for (auto &q : gauss) {
@@ -116,22 +171,22 @@ void ROI::rebuild() {
       tallest_g = q;
   }
 
-  PL_DBG << "Using tallest peak at " << tallest_g.center_ << " as starting point for Hypermet constraints";
+//  PL_DBG << "Using tallest peak at " << tallest_g.center_ << " as starting point for Hypermet constraints";
 
-  Hypermet tallest_h(x_, nobck, tallest_g.height_, tallest_g.center_, tallest_g.hwhm_);
+  Hypermet tallest_h;//(x_, y_nobkg_, tallest_g.height_, tallest_g.center_, tallest_g.hwhm_);
 
   std::vector<Hypermet> old_hype;
-  old_hype.push_back(tallest_h);
+//  old_hype.push_back(tallest_h);
 
   for (int i=0; i < gauss.size(); ++i) {
-    if ((gauss[i].hwhm_ > 0) &&
-        (gauss[i].height_ > 0) && (gauss[i].center_ != tallest_g.center_)) {
+//    if ((gauss[i].hwhm_ > 0) &&
+//        (gauss[i].height_ > 0) && (gauss[i].center_ != tallest_g.center_)) {
       Hypermet hyp(gauss[i].height_, gauss[i].center_, gauss[i].hwhm_);
       old_hype.push_back(hyp);
-    }
+//    }
   }
 
-  std::vector<Hypermet> hype = Hypermet::fit_multi(x_, nobck, old_hype, true);
+  std::vector<Hypermet> hype = old_hype;// Hypermet::fit_multi(x_, y_nobkg_, old_hype, true);
 
   peaks_.clear();
 
@@ -174,85 +229,25 @@ void ROI::rebuild() {
 
 }
 
+void ROI::make_background() {
+  y_background_.clear();
 
-//void Multiplet::rebuild() {
-//  y_fullfit_.clear();
+  if (x_.empty())
+    return;
 
-//  std::vector<double> nobck(x_.size());
-//  for (int32_t i = 0; i < static_cast<int32_t>(y_.size()); ++i)
-//    nobck[i] = y_[i] - y_background_[i];
-
-//  std::vector<Gaussian> old_gauss;
-//  for (auto &q : peaks_)
-//    old_gauss.push_back(q.gaussian_);
-//  std::vector<Gaussian> gauss = Gaussian::fit_multi(x_, nobck, old_gauss);
-
-//  peaks_.clear();
-
-//  y_fullfit_ = y_background_;
-
-//  for (int i=0; i < gauss.size(); ++i) {
-//    Peak one;
-//    one.subpeak = true;
-//    one.intersects_L = (i != 0);
-//    one.intersects_R = ((i+1) < gauss.size());
-//    one.x_ = x_;
-//    one.y_ = y_;
-//    one.y_baseline_ = y_background_;
-//    one.gaussian_ = gauss[i];
-//    one.live_seconds_ = live_seconds_;
-//    one.construct(cal_nrg_, cal_fwhm_);
-
-//    peaks_.insert(one);
-
-//    for (int32_t j = 0; j < static_cast<int32_t>(x_.size()); ++j)
-//      y_fullfit_[j] +=  gauss[i].evaluate(x_[j]);
-//  }
-
-//}
-
-double ROI::local_avg(const std::vector<double> &x,
-                 const std::vector<double> &y,
-                 uint16_t chan, uint16_t samples) {
-
-  if ((chan >= x.size()) || (samples < 1) || (x.size() != y.size()))
-    return std::numeric_limits<double>::quiet_NaN();
-
-  if ((samples % 2) == 0)
-    samples++;
-  int32_t half  = (samples - 1) / 2;
-  int32_t left  = static_cast<int32_t>(chan) - half;
-  int32_t right = static_cast<int32_t>(chan) + half;
-
-  if (left < 0)
-    left = 0;
-  if (right >= x.size())
-    right = x.size() - 1;
-
-  samples = right - left + 1;
-
-  return std::accumulate(y.begin() + left, y.begin() + (right+1), 0) / static_cast<double>(samples);
-}
-
-
-
-std::vector<double> ROI::make_background(const std::vector<double> &x,
-                                    const std::vector<double> &y,
-                                    uint16_t left, uint16_t right,
-                                    uint16_t samples) {
-  int32_t  width = right - left;
-  double left_avg = local_avg(x, y, left, samples);
-  double right_avg = local_avg(x, y, right, samples);
-
-  if ((width <= 0) || isnan(left_avg) || isnan(right_avg))
-    return std::vector<double>();
+  double rise = y_[y_.size()-1] - y_[0];
+  double run = x_[x_.size()-1] - x_[0];
+  double slope = rise / run;
+  double offset = y_[0];
 
   //by default, linear
-  double slope = (right_avg - left_avg) / static_cast<double>(width);
-  std::vector<double> baseline(width+1);
-  for (int32_t i = 0; i <= width; ++i)
-    baseline[i] = left_avg + (i * slope);
-  return baseline;
+  y_background_.resize(y_.size());
+  for (int32_t i = 0; i < y_.size() ; ++i)
+    y_background_[i] = offset + (i * slope);
+
+  y_nobkg_.resize(x_.size());
+  for (int32_t i = 0; i < static_cast<int32_t>(y_.size()); ++i)
+    y_nobkg_[i] = y_[i] - y_background_[i];
 }
 
 }
