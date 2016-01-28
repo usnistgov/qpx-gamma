@@ -28,15 +28,7 @@
 #include <boost/algorithm/string.hpp>
 #include "fityk.h"
 #include "custom_logger.h"
-
-std::string Effit::to_str_precision(double x, int n) {
-  std::ostringstream ss;
-  if (n < 0)
-    ss << x;
-  else 
-    ss << std::fixed << std::setprecision(n) << x;
-  return ss.str();
-}
+#include "qpx_util.h"
 
 Effit::Effit(std::vector<double> coeffs, double center)
   :Effit()

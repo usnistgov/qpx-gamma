@@ -58,7 +58,6 @@ public:
   int degree_;
   double rsq;
 
-  std::string to_str_precision(double, int); //move this somewhere else
 };
 
 #endif

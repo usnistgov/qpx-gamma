@@ -63,8 +63,8 @@ FormPeaks::FormPeaks(QWidget *parent) :
   flagged_.default_pen =  QPen(flagged_color, 1);
   hypermet_.default_pen = QPen(Qt::darkCyan, 1);
 
-  multiplet_g_.default_pen = QPen(Qt::red, 2);
-  multiplet_h_.default_pen = QPen(Qt::magenta, 2);
+  multiplet_g_.default_pen = QPen(Qt::red, 1);
+  multiplet_h_.default_pen = QPen(Qt::magenta, 1);
 
   baseline_.default_pen = QPen(Qt::darkGray, 1);
   rise_.default_pen = QPen(Qt::green, 3);
@@ -103,6 +103,7 @@ void FormPeaks::set_visible_elements(ShowFitElements elems, bool interactive) {
   ui->pushGauss->setChecked(elems & ShowFitElements::gaussians);
   ui->pushBkg->setChecked(elems & ShowFitElements::baselines);
   ui->pushHypermet->setChecked(elems & ShowFitElements::hypermet);
+  ui->pushSingle->setChecked(elems & ShowFitElements::singlet);
   ui->pushMulti->setChecked(elems & ShowFitElements::multiplet);
   ui->pushEdges->setChecked(elems & ShowFitElements::edges);
 
@@ -125,6 +126,7 @@ void FormPeaks::loadSettings(QSettings &settings_) {
   ui->pushGauss->setChecked(settings_.value("show_gaussians", false).toBool());
   ui->pushBkg->setChecked(settings_.value("show_baselines", false).toBool());
   ui->pushHypermet->setChecked(settings_.value("show_hypermet", false).toBool());
+  ui->pushSingle->setChecked(settings_.value("show_singlets", false).toBool());
   ui->pushMulti->setChecked(settings_.value("show_multiplets", false).toBool());
   ui->pushEdges->setChecked(settings_.value("show_edges", false).toBool());
   ui->plot1D->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
@@ -147,6 +149,7 @@ void FormPeaks::saveSettings(QSettings &settings_) {
   settings_.setValue("show_gaussians", ui->pushGauss->isChecked());
   settings_.setValue("show_baselines", ui->pushBkg->isChecked());
   settings_.setValue("show_hypermet", ui->pushHypermet->isChecked());
+  settings_.setValue("show_singlets", ui->pushSingle->isChecked());
   settings_.setValue("show_multiplets", ui->pushMulti->isChecked());
   settings_.setValue("show_edges", ui->pushEdges->isChecked());
   settings_.setValue("scale_type", ui->plot1D->scale_type());
@@ -218,6 +221,7 @@ void FormPeaks::update_spectrum() {
   main_graph_.default_pen = QPen(plotcolor, 1);
 
   ui->plot1D->use_calibrated(fit_data_->nrg_cali_.valid());
+
   ui->plot1D->setLabels(QString::fromStdString(fit_data_->nrg_cali_.units_), "count");
 
   for (int i=0; i < fit_data_->finder_.x_.size(); ++i) {
@@ -248,7 +252,7 @@ void FormPeaks::replot_all() {
 
   ui->plot1D->use_calibrated(fit_data_->nrg_cali_.valid());
 
-  ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_)),
+  ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_, fit_data_->metadata_.bits)),
                        QVector<double>::fromStdVector(fit_data_->finder_.y_),
                        main_graph_, true,
                        fit_data_->metadata_.bits);
@@ -260,7 +264,7 @@ void FormPeaks::replot_all() {
 //                         fit_data_->metadata_.bits);
 
 
-    ui->plot1D->addResid(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_)),
+    ui->plot1D->addResid(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_, fit_data_->metadata_.bits)),
                                                              QVector<double>::fromStdVector(fit_data_->finder_.x_conv), multiplet_g_);
 
   }
@@ -305,19 +309,39 @@ void FormPeaks::replot_all() {
 
   if (ui->pushMulti->isChecked()) {
     for (auto &q : fit_data_->regions_) {
+      QVector<double> x = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.x_, fit_data_->metadata_.bits));
       if (ui->pushGauss->isChecked()) {
+
         std::vector<double> y_fit_g = q.y_fullfit_g_;
         for (auto &p : y_fit_g)
           if (p < 1)
             p = std::floor(p * 10 + 0.5)/10;
-        ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.x_)), QVector<double>::fromStdVector(y_fit_g), multiplet_g_);
+        ui->plot1D->addGraph(x, QVector<double>::fromStdVector(y_fit_g), multiplet_g_);
+
+        if (ui->pushBkg->isChecked()) {
+          std::vector<double> y_fit = q.y_background_g_;
+          for (auto &p : y_fit)
+            if (p < 1)
+              p = std::floor(p * 10 + 0.5)/10;
+          ui->plot1D->addGraph(x, QVector<double>::fromStdVector(y_fit), baseline_);
+        }
+
       }
       if (ui->pushHypermet->isChecked()) {
         std::vector<double> y_fit_h = q.y_fullfit_h_;
         for (auto &p : y_fit_h)
           if (p < 1)
             p = std::floor(p * 10 + 0.5)/10;
-        ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.x_)), QVector<double>::fromStdVector(y_fit_h), multiplet_h_);
+        ui->plot1D->addGraph(x, QVector<double>::fromStdVector(y_fit_h), multiplet_h_);
+
+        if (ui->pushBkg->isChecked()) {
+          std::vector<double> y_fit = q.y_background_h_;
+          for (auto &p : y_fit)
+            if (p < 1)
+              p = std::floor(p * 10 + 0.5)/10;
+          ui->plot1D->addGraph(x, QVector<double>::fromStdVector(y_fit), baseline_);
+        }
+
       }
     }
   }
@@ -329,34 +353,36 @@ void FormPeaks::replot_all() {
 //      x[x.size()-1] += 0.5;
 //    }
 
-    xx = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x));
+    xx = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x, fit_data_->metadata_.bits));
 
-    if (ui->pushHypermet->isChecked()) {
-      std::vector<double> y_fit = q.second.hr_fullfit_hypermet_;
-      for (auto &p : y_fit)
-        if (p < 1)
-          p = std::floor(p * 10 + 0.5)/10;
-      ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), hypermet_);
+    if (ui->pushSingle->isChecked()) {
+      if (ui->pushHypermet->isChecked()) {
+        std::vector<double> y_fit = q.second.hr_fullfit_hypermet_;
+        for (auto &p : y_fit)
+          if (p < 1)
+            p = std::floor(p * 10 + 0.5)/10;
+
+        AppearanceProfile prof = hypermet_;
+        if (q.second.flagged)
+          prof = flagged_;
+        ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), prof);
+      }
+
+      if (ui->pushGauss->isChecked()) {
+        std::vector<double> y_fit = q.second.hr_fullfit_gaussian_;
+        for (auto &p : y_fit)
+          if (p < 1)
+            p = std::floor(p * 10 + 0.5)/10;
+
+        AppearanceProfile prof = gaussian_;
+        if (q.second.flagged)
+          prof = flagged_;
+        ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), prof);
+      }
+
     }
 
-    if (ui->pushGauss->isChecked()) {
-      std::vector<double> y_fit = q.second.hr_fullfit_gaussian_;
-      for (auto &p : y_fit)
-        if (p < 1)
-          p = std::floor(p * 10 + 0.5)/10;
 
-      AppearanceProfile prof = gaussian_;
-      if (q.second.flagged)
-        prof = flagged_;
-      ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), prof);
-    }
-    if (ui->pushBkg->isChecked()) {
-      std::vector<double> y_fit = q.second.hr_baseline_;
-      for (auto &p : y_fit)
-        if (p < 1)
-          p = std::floor(p * 10 + 0.5)/10;
-      ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), baseline_);
-    }
     if (ui->pushEdges->isChecked() && (!q.second.subpeak)) {
 //      PL_DBG << "edges for " << q.second.center << " L:" << q.second.sum4_.LBstart << "-" << q.second.sum4_.LBend
 //                                                << " R:" << q.second.sum4_.RBstart << "-" << q.second.sum4_.RBend;
@@ -372,7 +398,7 @@ void FormPeaks::replot_all() {
         x_edge[x_edge.size()-1] += 0.5;
       }
 
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x_edge)),
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x_edge, fit_data_->metadata_.bits)),
                            QVector<double>::fromStdVector(y_edge),
                            sum4edge_);
 
@@ -389,7 +415,7 @@ void FormPeaks::replot_all() {
         x_edge[0] -= 0.5;
         x_edge[x_edge.size()-1] += 0.5;
       }
-      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x_edge)),
+      ui->plot1D->addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x_edge, fit_data_->metadata_.bits)),
                            QVector<double>::fromStdVector(y_edge),
                            sum4edge_);
 
@@ -401,19 +427,19 @@ void FormPeaks::replot_all() {
 
       for (auto &q : fit_data_->regions_) {
         for (auto &p : q.x_)
-          xx.push_back(fit_data_->nrg_cali_.transform(p));
+          xx.push_back(fit_data_->nrg_cali_.transform(p, fit_data_->metadata_.bits));
         for (auto &p : q.y_resid_h_)
           yy.push_back(p);
       }
 
-      for (auto &q : fit_data_->peaks_) {
-        if (q.second.subpeak)
-          continue;
-        for (auto &p : q.second.x_)
-          xx.push_back(fit_data_->nrg_cali_.transform(p));
-        for (auto &p : q.second.y_residues_g_)
-          yy.push_back(p);
-      }
+//      for (auto &q : fit_data_->peaks_) {
+//        if (q.second.subpeak)
+//          continue;
+//        for (auto &p : q.second.x_)
+//          xx.push_back(fit_data_->nrg_cali_.transform(p, fit_data_->metadata_.bits));
+//        for (auto &p : q.second.y_residues_g_)
+//          yy.push_back(p);
+//      }
 
       ui->plot1D->addResid(xx, yy, even_);
 
@@ -738,5 +764,10 @@ void FormPeaks::on_doubleThresh_editingFinished()
     return;
 
   fit_data_->finder_.find_peaks(ui->spinSqWidth->value(), ui->doubleThresh->value());
+  replot_all();
+}
+
+void FormPeaks::on_pushSingle_clicked()
+{
   replot_all();
 }

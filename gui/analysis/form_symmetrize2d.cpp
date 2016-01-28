@@ -26,7 +26,7 @@
 #include "qt_util.h"
 #include "manip2d.h"
 #include <QInputDialog>
-
+#include "qpx_util.h"
 
 FormSymmetrize2D::FormSymmetrize2D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),

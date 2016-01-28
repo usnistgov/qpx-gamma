@@ -36,7 +36,7 @@ void ROI::set_data(const std::vector<double> &x, const std::vector<double> &y,
   if ((min >= x.size()) || (max >= x.size()))
     return;
 
-  for (uint16_t i = min; i <= max; ++i) {
+  for (uint16_t i = min; i < max; ++i) {
     x_.push_back(x[i]);
     y_.push_back(y[i]);
   }
@@ -46,7 +46,7 @@ void ROI::set_data(const std::vector<double> &x, const std::vector<double> &y,
   finder_.setData(x_, y_); //assumes default threshold parameters!!!!
   make_background();
 
-  PL_DBG << "ROI finder found " << finder_.filtered.size();
+//  PL_DBG << "ROI finder found " << finder_.filtered.size();
 
   if (peaks_.empty() && finder_.filtered.size()) {
     for (int i=0; i < finder_.filtered.size(); ++i) {
@@ -64,7 +64,7 @@ void ROI::set_data(const std::vector<double> &x, const std::vector<double> &y,
           (fitted.center < finder_.x_[finder_.rights[i]])
          )
       {
-        PL_DBG << "I like this peak at " << fitted.center << " fw " << fitted.fwhm_gaussian;
+//        PL_DBG << "I like this peak at " << fitted.center << " fw " << fitted.fwhm_gaussian;
         peaks_.insert(fitted);
       }
     }
@@ -88,12 +88,52 @@ bool ROI::overlaps(uint16_t bin) {
   return ((bin >= x_.front()) && (bin <= x_.back()));
 }
 
-//void ROI::add_peak(const Peak &pk, const std::vector<double> &x, const std::vector<double> &y)
-//{
-//  std::set<Peak> pks;
-//  pks.insert(pk);
-//  add_peaks(pks, x, y);
-//}
+void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
+                   uint16_t L, uint16_t R)
+{
+  if (x.size() != y.size())
+    return;
+
+  if ((L >= x.size()) || (R >= x.size()))
+    return;
+
+  Peak fitted;
+
+  if (overlaps(L) && overlaps(R)) {
+    fitted = Peak(finder_.x_, y_resid_g_,       //use gaussian resid
+                  x[L], x[R],
+                  cal_nrg_, cal_fwhm_,
+                  live_seconds_, /*sum4edge_samples*/ 3); //assumption
+  } else {
+    uint32_t min = std::min(x[L], x_.front());
+    uint32_t max = std::max(x[R], x_.back());
+    x_.clear(); y_.clear();
+    for (uint32_t i = min; i < max; ++i) {
+      x_.push_back(x[i]);
+      y_.push_back(y[i]);
+    }
+    finder_.setData(x_, y_); //assumes default threshold parameters!!!!
+    make_background();
+    fitted = Peak(finder_.x_, y_nobkg_,
+                  x[L], x[R],
+                  cal_nrg_, cal_fwhm_,
+                  live_seconds_, /*sum4edge_samples*/ 3); //assumption
+  }
+
+  if (
+      (fitted.height > 0) &&
+//          (fitted.fwhm_sum4 > 0) &&
+      (fitted.fwhm_gaussian > 0) &&
+      (x[L] < fitted.center) &&
+      (fitted.center < x[R])
+     )
+  {
+    PL_DBG << "I like this peak at " << fitted.center << " fw " << fitted.fwhm_gaussian;
+    peaks_.insert(fitted);
+    rebuild();
+  }
+
+}
 
 //void ROI::add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y)
 //{
@@ -122,34 +162,22 @@ bool ROI::overlaps(uint16_t bin) {
 
 void ROI::remove_peaks(const std::set<double> &pks) {
   bool found = false;
-  for (auto &q : pks) {
-    for (auto &p : peaks_) {
-      if (p.center == q) {
-        peaks_.erase(p);
-        found = true;
-        break;
-      }
-    }
-  }
+  for (auto &q : pks)
+    if (remove_peak(q))
+      found = true;
+
   if (found)
     rebuild();
 }
 
-void ROI::remove_peak(const Peak &pk) {
-  if (peaks_.count(pk)) {
-    peaks_.erase(pk);
-    rebuild();
-  }
-}
-
-void ROI::remove_peak(double bin) {
+bool ROI::remove_peak(double bin) {
   for (auto &q : peaks_) {
     if (q.center == bin) {
       peaks_.erase(q);
-      rebuild();
-      break;
+      return true;
     }
   }
+  return false;
 }
 
 void ROI::rebuild() {
@@ -187,22 +215,34 @@ void ROI::rebuild() {
     }
   }
 
-  std::vector<Hypermet> hype = Hypermet::fit_multi(x_, y_nobkg_, old_hype, true);
+  std::vector<Hypermet> hype = Hypermet::fit_multi(x_, y_, old_hype, true);
 
   peaks_.clear();
 
-  y_fullfit_g_ = y_background_;
-  y_fullfit_h_ = y_background_;
-  y_resid_h_ = y_;
+  y_fullfit_g_ = y_background_g_;
 
-  std::vector<double> hr_baseline_;
+  std::vector<double> hr_baseline_g_;
+  std::vector<double> hr_baseline_h_;
   std::vector<double> hr_x_;
-  double offset = y_background_[0];
-  double slope  = (y_background_[y_background_.size() -1] - y_background_[0]) / (x_[x_.size() -1] - x_[0]);
+  double offset = y_background_g_[0];
+  double slope  = (y_background_g_[y_background_g_.size() -1] - y_background_g_[0]) / (x_[x_.size() -1] - x_[0]);
+  double xc = 0, xs = slope, xl = offset;
+  if (!hype.empty()) {
+    xc = hype.front().xc_;
+    xs = hype.front().xs_;
+    xl = hype.front().xl_;
+  }
+
   for (double i = 0; i < x_.size(); i += 0.25) {
     hr_x_.push_back(x_[0] + i);
-    hr_baseline_.push_back(offset + i* slope);
+    hr_baseline_g_.push_back(offset + i* slope);
+    hr_baseline_h_.push_back(xc*i*i + xs*i + xl);
   }
+
+  y_background_h_.clear();
+  for (int i = 0; i < x_.size(); i ++)
+    y_background_h_.push_back(xc*i*i + xs*i + xl);
+  y_fullfit_h_ = y_background_h_;
 
   for (int i=0; i < hype.size(); ++i) {
     Peak one;
@@ -211,8 +251,10 @@ void ROI::rebuild() {
     one.intersects_R = ((i+1) < hype.size());
     one.x_ = x_;
     one.y_ = y_;
-    one.y_baseline_ = y_background_;
-    one.hr_baseline_ = hr_baseline_;
+    one.y_baseline_g_ = y_background_g_;
+    one.y_baseline_h_ = y_background_h_;
+    one.hr_baseline_g_ = hr_baseline_g_;
+    one.hr_baseline_h_ = hr_baseline_h_;
     one.hr_x_ = hr_x_;
     one.gaussian_ = gauss[i];
     one.hypermet_ = hype[i];
@@ -224,14 +266,20 @@ void ROI::rebuild() {
     for (int32_t j = 0; j < static_cast<int32_t>(x_.size()); ++j) {
       y_fullfit_g_[j] +=  gauss[i].evaluate(x_[j]);
       y_fullfit_h_[j] +=  hype[i].evaluate(x_[j]);
-      y_resid_h_[j] -= y_fullfit_h_[j];
     }
+  }
+
+  y_resid_g_ = y_;
+  y_resid_h_ = y_;
+  for (int i=0; i < y_.size(); ++ i) {
+    y_resid_g_[i] -= y_fullfit_g_[i];
+    y_resid_h_[i] -= y_fullfit_h_[i];
   }
 
 }
 
 void ROI::make_background() {
-  y_background_.clear();
+  y_background_g_.clear();
 
   if (x_.empty())
     return;
@@ -242,13 +290,13 @@ void ROI::make_background() {
   double offset = y_[0];
 
   //by default, linear
-  y_background_.resize(y_.size());
+  y_background_g_.resize(y_.size());
   for (int32_t i = 0; i < y_.size() ; ++i)
-    y_background_[i] = offset + (i * slope);
+    y_background_g_[i] = offset + (i * slope);
 
   y_nobkg_.resize(x_.size());
   for (int32_t i = 0; i < static_cast<int32_t>(y_.size()); ++i)
-    y_nobkg_[i] = y_[i] - y_background_[i];
+    y_nobkg_[i] = y_[i] - y_background_g_[i];
 }
 
 }

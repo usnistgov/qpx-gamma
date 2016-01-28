@@ -46,8 +46,9 @@ enum ShowFitElements {
   gaussians = 1 << 4,
   baselines = 1 << 5,
   hypermet  = 1 << 6,
-  multiplet = 1 << 7,
-  edges     = 1 << 8
+  singlet   = 1 << 7,
+  multiplet = 1 << 8,
+  edges     = 1 << 9
 };
 
 inline ShowFitElements operator|(ShowFitElements a, ShowFitElements b) {return static_cast<ShowFitElements>(static_cast<int>(a) | static_cast<int>(b));}
@@ -118,6 +119,8 @@ private slots:
   void on_pushResid_clicked();
 
   void on_doubleThresh_editingFinished();
+
+  void on_pushSingle_clicked();
 
 private:
   Ui::FormPeaks *ui;

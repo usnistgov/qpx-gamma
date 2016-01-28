@@ -18,8 +18,8 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_UTIL_H_
-#define QPX_UTIL_H_
+#ifndef QT_UTIL_H_
+#define QT_UTIL_H_
 #include <QWidget>
 #include <QFileDialog>
 #include <boost/date_time.hpp>

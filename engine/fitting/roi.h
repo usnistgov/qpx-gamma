@@ -43,20 +43,23 @@ struct ROI {
   bool overlaps(uint16_t bin);
 
 //  void add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y);
-//  void add_peak(const Peak &pk, const std::vector<double> &x, const std::vector<double> &y);
+  void add_peak(const std::vector<double> &x, const std::vector<double> &y,
+                uint16_t L, uint16_t R);
+
 
   void remove_peaks(const std::set<double> &pks);
-  void remove_peak(const Peak &pk);
-  void remove_peak(double bin);
+
   void rebuild();
 
   Finder finder_;
   std::set<Peak> peaks_;
   std::vector<double> x_, y_,
-    y_background_,
+    y_background_g_,
+    y_background_h_,
     y_nobkg_,
     y_fullfit_g_,
     y_fullfit_h_,
+    y_resid_g_,
     y_resid_h_;
 
 
@@ -65,7 +68,7 @@ struct ROI {
 
 private:
   void make_background();
-
+  bool remove_peak(double bin);
 };
 
 

@@ -36,7 +36,6 @@ class Fitter {
 public:
   Fitter()
       : overlap_(4.0)
-      , fw_tolerance_(0.5)
       , activity_scale_factor_(1.0)
       , sum4edge_samples(3)
   {}
@@ -52,12 +51,7 @@ public:
   void find_peaks();
 
   void add_peak(uint32_t left, uint32_t right);
-  void remove_peak(double bin);
   void remove_peaks(std::set<double> bins);
-
-  void make_multiplets();
-
-  void filter_by_theoretical_fwhm(double range);
 
   void save_report(std::string filename);
 
@@ -77,7 +71,7 @@ public:
   std::list<ROI> regions_;
 
   Calibration nrg_cali_, fwhm_cali_; //need these? metadata?
-  double overlap_, fw_tolerance_;
+  double overlap_;
 
 };
 

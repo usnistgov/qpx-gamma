@@ -27,6 +27,7 @@
 #include "qt_util.h"
 #include <QCloseEvent>
 #include "manip2d.h"
+#include "qpx_util.h"
 
 FormMultiGates::FormMultiGates(QSettings &settings, QWidget *parent) :
   QWidget(parent),

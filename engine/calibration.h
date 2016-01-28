@@ -31,7 +31,7 @@
 
 namespace Gamma {
 
-enum class CalibrationModel : int {none = 0, polynomial = 1, polylog = 2, loginverse = 3, effit = 4};
+enum class CalibrationModel : int {none = 0, polynomial = 1, polylog = 2, loginverse = 3, effit = 4, sqrt_poly = 5};
 
 class Calibration : public XMLable {
  public:
@@ -62,7 +62,7 @@ class Calibration : public XMLable {
   double inverse_transform(double) const;
   double inverse_transform(double, uint16_t) const;
 
-  std::vector<double> transform(std::vector<double>) const;
+  std::vector<double> transform(std::vector<double>, uint16_t) const;
   std::string coef_to_string() const;
   void coef_from_string(std::string);
   std::string to_string();

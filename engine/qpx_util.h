@@ -27,6 +27,31 @@
 #include <string>
 #include <sstream>
 
+const std::vector<std::string> k_UTF_superscripts = {
+  "\u2070", "\u00B9", "\u00B2",
+  "\u00B3", "\u2074", "\u2075",
+  "\u2076", "\u2077", "\u2078",
+  "\u2079"
+};
+
+inline std::string to_str_precision(double number, int precision = -1) {
+  std::ostringstream ss;
+  if (precision < 0)
+    ss << number;
+  else
+    ss << std::fixed << std::setprecision(precision) << number;
+  return ss.str();
+}
+
+inline std::string UTF_superscript(uint16_t value) {
+  std::string output;
+  if (value < 10)
+    output = k_UTF_superscripts[value];
+  else
+    output = UTF_superscript(value / 10) + k_UTF_superscripts[value % 10];
+  return output;
+}
+
 inline std::string itobin16 (uint16_t bin)
 {
   std::stringstream ss;

@@ -16,28 +16,31 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Polynomial - 
+ *      SqrtPoly -
  *
  ******************************************************************************/
 
-#ifndef POLYNOMIAL_H
-#define POLYNOMIAL_H
+#ifndef SQRT_POLY_H
+#define SQRT_POLY_H
 
 #include <vector>
 #include <iostream>
 #include <numeric>
+#include <map>
 
-class Polynomial {
+
+class SqrtPoly {
 public:
-  Polynomial() : rsq(-1), xoffset_(0) {}
-  Polynomial(std::vector<double> coeffs, double xoffset = 0);
-  Polynomial(std::vector<double> &x, std::vector<double> &y, uint16_t degree, double xoffset = 0);
-  Polynomial(std::vector<double> &x, std::vector<double> &y, std::vector<uint16_t> &degrees, double xoffset = 0);
+  SqrtPoly() : rsq(-1) {}
+  SqrtPoly(std::vector<double> coeffs); //deprecate
+  SqrtPoly(std::map<uint16_t, double> coeffs);
 
-  void fit(std::vector<double> &x, std::vector<double> &y, std::vector<uint16_t> &degrees, double xoffset = 0);
+  SqrtPoly(std::vector<double> &x, std::vector<double> &y, uint16_t degree);
 
-  Polynomial derivative();
+  SqrtPoly(std::vector<double> &x, std::vector<double> &y, std::vector<uint16_t> &degrees);
+  void fit(std::vector<double> &x, std::vector<double> &y, std::vector<uint16_t> &degrees);
 
+  //output
   std::string to_string();
   std::string to_UTF8(int precision = -1, bool with_rsq = false);
   std::string to_markup(int precision = -1);
@@ -45,13 +48,14 @@ public:
   void coef_from_string(std::string);
 
   double eval(double x);
+  double eval_deriv(double x);
   std::vector<double> eval(std::vector<double> x);
 
-  double eval_inverse(double y, double e = 0.2);
+  //  double inverse_evaluate(double y, double e = 0.2);
   
-  std::vector<double> coeffs_;
-  double xoffset_;
+  std::map<uint16_t, double> coeffs_;
   double rsq;
+
 };
 
 #endif

@@ -33,6 +33,7 @@
 #include "polylog.h"
 #include "log_inverse.h"
 #include "effit.h"
+#include "sqrt_poly.h"
 
 namespace Gamma {
 
@@ -53,7 +54,9 @@ double Calibration::transform(double chan) const {
     return chan;
   
   if (bits_ && (model_ == CalibrationModel::polynomial))
-    return Polynomial(coefficients_).evaluate(chan);
+    return Polynomial(coefficients_).eval(chan);
+  else if (bits_ && (model_ == CalibrationModel::sqrt_poly))
+    return SqrtPoly(coefficients_).eval(chan);
   else if (bits_ && (model_ == CalibrationModel::polylog))
     return PolyLog(coefficients_).evaluate(chan);
   else if (bits_ && (model_ == CalibrationModel::loginverse))
@@ -69,7 +72,7 @@ double Calibration::inverse_transform(double energy) const {
     return energy;
 
   if (bits_ && (model_ == CalibrationModel::polynomial))
-    return Polynomial(coefficients_).inverse_evaluate(energy);
+    return Polynomial(coefficients_).eval_inverse(energy);
 //  else if (bits_ && (model_ == CalibrationModel::polylog))
 //    return PolyLog(coefficients_).inverse_evaluate(energy);
   else
@@ -108,6 +111,8 @@ double Calibration::inverse_transform(double energy, uint16_t bits) const {
 std::string Calibration::fancy_equation(int precision, bool with_rsq) {
   if (bits_ && (model_ == CalibrationModel::polynomial))
     return Polynomial(coefficients_).to_UTF8(precision, with_rsq);
+  else if (bits_ && (model_ == CalibrationModel::sqrt_poly))
+    return SqrtPoly(coefficients_).to_UTF8(precision, with_rsq);
   else if (bits_ && (model_ == CalibrationModel::polylog))
     return PolyLog(coefficients_).to_UTF8(precision, with_rsq);
   else if (bits_ && (model_ == CalibrationModel::loginverse))
@@ -118,10 +123,10 @@ std::string Calibration::fancy_equation(int precision, bool with_rsq) {
     return "N/A"; 
 }
 
-std::vector<double> Calibration::transform(std::vector<double> chans) const {
+std::vector<double> Calibration::transform(std::vector<double> chans, uint16_t bits) const {
   std::vector<double> results;
   for (auto &q : chans)
-    results.push_back(transform(q));
+    results.push_back(transform(q, bits));
   return results;
 }
 
@@ -180,6 +185,8 @@ void Calibration::to_xml(pugi::xml_node &root) const {
   std::string  model_str = "undefined";
   if (model_ == CalibrationModel::polynomial)
     model_str = "Polynomial";
+  else if (model_ == CalibrationModel::sqrt_poly)
+    model_str = "SqrtPoly";
   else if (model_ == CalibrationModel::polylog)
     model_str = "PolyLog";
   else if (model_ == CalibrationModel::loginverse)
@@ -214,6 +221,8 @@ void Calibration::from_xml(const pugi::xml_node &node) {
   std::string model_str = std::string(node.child("Equation").attribute("Model").value());
   if (model_str == "Polynomial")
     model_ = CalibrationModel::polynomial;
+  else if (model_str == "SqrtPoly")
+    model_ = CalibrationModel::sqrt_poly;
   else if (model_str == "PolyLog")
     model_ = CalibrationModel::polylog;
   else if (model_str == "LogInverse")

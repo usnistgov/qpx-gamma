@@ -29,18 +29,20 @@ void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
   y_fullfit_gaussian_.resize(x_.size());
   y_fullfit_hypermet_.resize(x_.size());
   y_residues_g_.resize(x_.size());
+  y_residues_h_.resize(x_.size());
   for (int32_t i = 0; i < static_cast<int32_t>(x_.size()); ++i) {
-    y_fullfit_gaussian_[i] = y_baseline_[i] + gaussian_.evaluate(x_[i]);
-    y_fullfit_hypermet_[i] = y_baseline_[i] + hypermet_.evaluate(x_[i]);
-    y_residues_g_[i] = y_[i] - y_fullfit_hypermet_[i];
+    y_fullfit_gaussian_[i] = y_baseline_g_[i] + gaussian_.evaluate(x_[i]);
+    y_fullfit_hypermet_[i] = y_baseline_h_[i] + hypermet_.evaluate(x_[i]);
+    y_residues_g_[i] = y_[i] - y_fullfit_gaussian_[i];
+    y_residues_h_[i] = y_[i] - y_fullfit_hypermet_[i];
   }
 
 
   hr_fullfit_gaussian_.resize(hr_x_.size());
   hr_fullfit_hypermet_.resize(hr_x_.size());
   for (int32_t i = 0; i < static_cast<int32_t>(hr_x_.size()); ++i) {
-    hr_fullfit_gaussian_[i] = hr_baseline_[i] + gaussian_.evaluate(hr_x_[i]);
-    hr_fullfit_hypermet_[i] = hr_baseline_[i] + hypermet_.evaluate(hr_x_[i]);
+    hr_fullfit_gaussian_[i] = hr_baseline_g_[i] + gaussian_.evaluate(hr_x_[i]);
+    hr_fullfit_hypermet_[i] = hr_baseline_h_[i] + hypermet_.evaluate(hr_x_[i]);
   }
 
   center = gaussian_.center_;
@@ -69,7 +71,7 @@ void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
 
   fwhm_theoretical = cali_fwhm.transform(energy);
 
-  area_gauss_ =  gaussian_.height_ * gaussian_.hwhm_ * sqrt(3.141592653589793238462643383279502884 / log(2.0));
+  area_gauss_ =  gaussian_.height_ * gaussian_.hwhm_ * sqrt(M_PI / log(2.0));
   area_best_ = area_gauss_;
   if (!subpeak)
   {
@@ -114,7 +116,8 @@ Peak::Peak(const std::vector<double> &x, const std::vector<double> &y, uint32_t 
     x_ = std::vector<double>(x.begin() + l, x.begin() + r + 1);
     y_ = std::vector<double>(y.begin() + l, y.begin() + r + 1);
 
-    y_baseline_.resize(x_.size(), 0);
+    y_baseline_g_.resize(x_.size(), 0);
+    y_baseline_h_.resize(x_.size(), 0);
     std::vector<double> nobase = y_;
 
 //    y_baseline_ = sum4_.by_;
@@ -127,11 +130,13 @@ Peak::Peak(const std::vector<double> &x, const std::vector<double> &y, uint32_t 
       hypermet_ = Hypermet(x_, nobase, gaussian_.height_, gaussian_.center_, gaussian_.hwhm_);
     live_seconds_ = live_seconds;
 
-    hr_baseline_.clear();
+    hr_baseline_g_.clear();
+    hr_baseline_h_.clear();
     hr_x_.clear();
     for (double i = x_[0]; i <= x_[x_.size() -1]; i += 0.25) {
       hr_x_.push_back(i);
-      hr_baseline_.push_back(sum4_.offset + i* sum4_.slope);
+      hr_baseline_g_.push_back(sum4_.offset + i* sum4_.slope);
+      hr_baseline_h_.push_back(hypermet_.xc_*i*i + hypermet_.xs_*i + hypermet_.xl_);
     }
 
     construct(cali_nrg, cali_fwhm);

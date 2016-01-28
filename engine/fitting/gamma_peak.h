@@ -69,9 +69,9 @@ public:
   
   void construct(Calibration cali_nrg, Calibration cali_fwhm);
 
-  std::vector<double> x_, y_, y_baseline_, y_fullfit_gaussian_, y_fullfit_hypermet_, y_residues_g_;
+  std::vector<double> x_, y_, y_baseline_g_, y_baseline_h_, y_fullfit_gaussian_, y_fullfit_hypermet_, y_residues_g_, y_residues_h_;
 
-  std::vector<double> hr_x_, hr_baseline_, hr_fullfit_gaussian_, hr_fullfit_hypermet_;
+  std::vector<double> hr_x_, hr_baseline_g_, hr_baseline_h_, hr_fullfit_gaussian_, hr_fullfit_hypermet_;
 
   SUM4 sum4_;
   Gaussian gaussian_;

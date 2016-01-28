@@ -27,7 +27,6 @@
 #include <numeric>
 #include <boost/lexical_cast.hpp>
 
-#include "fityk.h"
 #include "fityk_util.h"
 #include "custom_logger.h"
 
@@ -44,8 +43,8 @@ bool Hypermet::extract_params(fityk::Func* func) {
     Lshort_slope_ = func->get_param_value("lshort_s");
     Rshort_height_ = func->get_param_value("rshort_h");
     Rshort_slope_ = func->get_param_value("rshort_s");
-    Llong_height_ = func->get_param_value("llong_h");
-    Llong_slope_ = func->get_param_value("llong_s");
+//    Llong_height_ = func->get_param_value("llong_h");
+//    Llong_slope_ = func->get_param_value("llong_s");
     step_height_ = func->get_param_value("step_h");
 //        PL_DBG << "Hypermet fit as  c=" << center_ << " h=" << height_ << " w=" << width_
 //               << " lsh=" << Lshort_height_ << " lss=" << Lshort_slope_
@@ -80,8 +79,8 @@ Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y, d
   try {
 //        f->execute("set fitting_method = mpfit");
 //    f->execute("set fitting_method = nlopt_nm");
-    f->execute("set fitting_method = nlopt_bobyqa");
-//        f->execute("set fitting_method = nlopt_lbfgs");
+//    f->execute("set fitting_method = nlopt_bobyqa");
+        f->execute("set fitting_method = nlopt_lbfgs");
   } catch ( ... ) {
     success = false;
     PL_DBG << "Hypermet failed to set fitter";
@@ -99,21 +98,21 @@ Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y, d
   std::string initial_c = FitykUtil::var_def("c", center_, center_ - lateral_slack, center_ + lateral_slack);
 
 //  std::string initial_c = FitykUtil::var_def("c", center_, x[0], x[x.size()-1]);
-  std::string initial_h = FitykUtil::var_def("h", height_, height_*0.90, height_*1.10);
+  std::string initial_h = FitykUtil::var_def("h", height_, height_*0.30, height_*1.30);
   std::string initial_w = FitykUtil::var_def("w", width_, width_*0.7, width_*1.3);
 
-  std::string initial_lsh = FitykUtil::var_def("lsh", 0.01, 0, 0.75);
+  std::string initial_lsh = FitykUtil::var_def("lsh", 0.00, 0, 0.75);
   std::string initial_lss = FitykUtil::var_def("lss", 0.3, 0.3, 2);
 
-  std::string initial_rsh = FitykUtil::var_def("rsh", 0.01, 0, 0.75);
+  std::string initial_rsh = FitykUtil::var_def("rsh", 0.00, 0, 0.75);
   std::string initial_rss = FitykUtil::var_def("rss", 0.3, 0.3, 2);
 
-  std::string initial_llh = FitykUtil::var_def("llh", 0.0001, 0, 0.015);
-  std::string initial_lls = FitykUtil::var_def("lls", 2.5, 2.5, 50);
+//  std::string initial_llh = FitykUtil::var_def("llh", 0.0000, 0, 0.015);
+//  std::string initial_lls = FitykUtil::var_def("lls", 2.5, 2.5, 50);
 
-  std::string initial_step = FitykUtil::var_def("step", 0.00001, 0, 0.75);
+  std::string initial_step = FitykUtil::var_def("step", 0.00000, 0, 0.75);
 
-  std::string initial = "F += Hypermet($c,$h,$w,$lsh,$lss,$llh,$lls,$step,$rsh,$rss)";
+  std::string initial = "F += Hypermet($c,$h,$w,$lsh,$lss,$rsh,$rss,$step)";
 
   //PL_DBG << "Hypermet initial c=" << center_ << " h=" << height_ << " w=" << width_;
 
@@ -125,8 +124,8 @@ Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y, d
     f->execute(initial_lss);
     f->execute(initial_rsh);
     f->execute(initial_rss);
-    f->execute(initial_llh);
-    f->execute(initial_lls);
+//    f->execute(initial_llh);
+//    f->execute(initial_lls);
     f->execute(initial_step);
     f->execute(initial);
 
@@ -161,6 +160,7 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
                                           const std::vector<double> &y,
                                           const std::vector<Hypermet> &old,
                                           bool constrain_to_first) {
+
   std::vector<Hypermet> results;
   if (old.empty())
     return results;
@@ -174,23 +174,28 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
   bool success = true;
 
   fityk::Fityk *f = new fityk::Fityk;
-//  f->redir_messages(NULL);
+  f->redir_messages(NULL);
   f->load_data(0, x, y, sigma);
 
   try {
-        f->execute("set fitting_method = mpfit");
+//        f->execute("set fitting_method = mpfit");
 //    f->execute("set fitting_method = nlopt_nm");
-//        f->execute("set fitting_method = nlopt_lbfgs");
+        f->execute("set fitting_method = nlopt_lbfgs");
   } catch ( ... ) {
     success = false;
-    PL_DBG << "Fityk failed to set fitter";
+    PL_DBG << "Hypermet multifit failed to set fitter";
   }
+
+  double x_offset = x[0];
+  std::string background_def = "define Poly3(bc, bs, bl) = bc*xx*xx + bs*xx + bl"
+                               " where xx = (x - " + std::to_string(x_offset) + ")";
 
   try {
     f->execute(fityk_definition());
+    f->execute(background_def);
   } catch ( ... ) {
     success = false;
-    PL_DBG << "Hypermet failed to define";
+    PL_DBG << "Hypermet multifit failed to define";
   }
 
   std::string initial_lsh = FitykUtil::var_def("lsh", 0.000, 0, 0.75);
@@ -199,10 +204,20 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
   std::string initial_rsh = FitykUtil::var_def("rsh", 0.000, 0, 0.75);
   std::string initial_rss = FitykUtil::var_def("rss", 0.3, 0.3, 2);
 
-  std::string initial_llh = FitykUtil::var_def("llh", 0.00000, 0, 0.015);
-  std::string initial_lls = FitykUtil::var_def("lls", 2.5, 2.5, 50);
+//  std::string initial_llh = FitykUtil::var_def("llh", 0.00000, 0, 0.015);
+//  std::string initial_lls = FitykUtil::var_def("lls", 2.5, 2.5, 50);
 
   std::string initial_step = FitykUtil::var_def("step", 0.00000, 0, 0.75);
+
+  double rise = y[y.size()-1] - y[0];
+  double run = x[x.size()-1] - x[0];
+  double xc = 0;
+  double xs = rise / run;
+  double xl = y[0];
+
+  std::string initial_xc = FitykUtil::var_def("sxc", xc, -2*abs(xs), 2*abs(xs));
+  std::string initial_xs = FitykUtil::var_def("sxs", xs, -2*abs(xs), 2*abs(xs));
+  std::string initial_xl = FitykUtil::var_def("sxl", xl, 0, 1000 * (abs(xl) + abs(rise)));
 
 
   if (false) {
@@ -238,19 +253,19 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
       rss_upper = 2;
     initial_rss = FitykUtil::var_def("rss", f.Rshort_slope_, 0.3, rss_upper);
 
-    double llh_upper = 2*f.Llong_height_;
-    if (llh_upper > 0.015)
-      llh_upper = 0.015;
-    if (llh_upper < 0.001)
-      llh_upper = 0.015;
-    initial_llh = FitykUtil::var_def("llh", f.Llong_height_, 0, llh_upper);
+//    double llh_upper = 2*f.Llong_height_;
+//    if (llh_upper > 0.015)
+//      llh_upper = 0.015;
+//    if (llh_upper < 0.001)
+//      llh_upper = 0.015;
+//    initial_llh = FitykUtil::var_def("llh", f.Llong_height_, 0, llh_upper);
 
-    double lls_upper = 2.5 + 2*(f.Llong_slope_ - 2.5);
-    if (lls_upper > 50)
-      lls_upper = 50;
-    if (lls_upper < 5)
-      lls_upper = 50;
-    initial_lls = FitykUtil::var_def("lls", f.Llong_slope_, 2.5, lss_upper);
+//    double lls_upper = 2.5 + 2*(f.Llong_slope_ - 2.5);
+//    if (lls_upper > 50)
+//      lls_upper = 50;
+//    if (lls_upper < 5)
+//      lls_upper = 50;
+//    initial_lls = FitykUtil::var_def("lls", f.Llong_slope_, 2.5, lss_upper);
 
 //    std::string initial_w = FitykUtil::var_def("w", f.width_,  f.width_*0.7,   f.width_*1.3, i);
 
@@ -258,8 +273,8 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
     PL_DBG << initial_lss;
     PL_DBG << initial_rsh;
     PL_DBG << initial_rss;
-    PL_DBG << initial_llh;
-    PL_DBG << initial_lls;
+//    PL_DBG << initial_llh;
+//    PL_DBG << initial_lls;
     PL_DBG << initial_step;
 //    PL_DBG << initial_w;
   }
@@ -269,35 +284,40 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
     f->execute(initial_lss);
     f->execute(initial_rsh);
     f->execute(initial_rss);
-    f->execute(initial_llh);
-    f->execute(initial_lls);
+//    f->execute(initial_llh);
+//    f->execute(initial_lls);
     f->execute(initial_step);
 
+    f->execute(initial_xc);
+    f->execute(initial_xs);
+    f->execute(initial_xl);
+    f->execute("F += Poly3($sxc, $sxs, $sxl)");
 
   } catch ( ... ) {
     success = false;
     PL_DBG << "Hypermet: multifit failed to set up initial globals";
   }
 
-  double lateral_slack = (x[x.size() -1]  - x[0]) / old.size();
+  double lateral_slack = (x[x.size() -1]  - x[0]) / (old.size() * 5);
 
   for (int i=0; i < old.size(); ++i) {
     //std::string initial_c = FitykUtil::var_def("c", old[i].center_, x[0], x[x.size()-1], i);
     std::string initial_c = FitykUtil::var_def("c", old[i].center_, old[i].center_ - lateral_slack, old[i].center_ + lateral_slack, i);
 
-    std::string initial_h = FitykUtil::var_def("h", old[i].height_, old[i].height_*0.70, old[i].height_*1.30, i);
+    std::string initial_h = FitykUtil::var_def("h", old[i].height_, old[i].height_*0.30, old[i].height_*1.30, i);
     std::string initial_w = FitykUtil::var_def("w", old[i].width_,  old[i].width_*0.7,   old[i].width_*1.3, i);
     std::string initial = "F += Hypermet("
         "$c" + boost::lexical_cast<std::string>(i) + ","
         "$h" + boost::lexical_cast<std::string>(i) + ","
         "$w" + boost::lexical_cast<std::string>(i) + ","
-        "$lsh,$lss,$llh,$lls,$step,$rsh,$rss)";
+        "$lsh,$lss,"
+                                                     "$rsh,$rss,$step)";
 
-    PL_DBG << "Hypermet multifit setting up peak " << i;
-    PL_DBG << initial_c;
-    PL_DBG << initial_h;
-    PL_DBG << initial_w;
-    PL_DBG << initial;
+//    PL_DBG << "Hypermet multifit setting up peak " << i;
+//    PL_DBG << initial_c;
+//    PL_DBG << initial_h;
+//    PL_DBG << initial_w;
+//    PL_DBG << initial;
 
 
     try {
@@ -311,7 +331,6 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
       success = false;
     }
   }
-
   try {
     f->execute("fit");
   }
@@ -323,26 +342,43 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
   if (success) {
     std::vector<fityk::Func*> fns = f->all_functions();
     for (auto &q : fns) {
-      Hypermet one;
-      one.extract_params(q);
-      results.push_back(one);
+      if (q->get_template_name() == "Hypermet") {
+        Hypermet one;
+        one.extract_params(q);
+        results.push_back(one);
+      } else if (q->get_template_name() == "Poly3") {
+        xc = q->get_param_value("bc");
+        xs = q->get_param_value("bs");
+        xl = q->get_param_value("bl");
+      }
     }
+  }  else {
+    results = old;
   }
 
   delete f;
+
+  for (auto &q : results) {
+//    PL_DBG << "Hypermet propagate background to results " << xc << " " << xs << " " << xl;
+    q.x_offset_ = x_offset;
+    q.xc_ = xc;
+    q.xs_ = xs;
+    q.xl_ = xl;
+  }
 
   return results;
 }
 
 std::string Hypermet::fityk_definition() {
-  return "define Hypermet(cc, hh, ww, lshort_h, lshort_s, llong_h, llong_s, step_h, rshort_h, rshort_s) = "
+  return "define Hypermet(cc, hh, ww, lshort_h, lshort_s, rshort_h, rshort_s, step_h) = "
          "hh*("
          "   exp(-(xc/ww)^2)"
-         " + 0.5*lshort_h*exp( (xc/lshort_s)) * erfc((0.5*ww/lshort_s) + xc/ww)"
-         " + 0.5*rshort_h*exp( - (xc/rshort_s)) * erfc((0.5*ww/rshort_s) - xc/ww)"
-         " + 0.5*llong_h*exp( (xc/llong_s)) * erfc((0.5*ww/llong_s) + xc/ww)"
-         " + 0.5*step_h*erfc(xc/ww)"
-         ")"
+         " + 0.5 * ("
+         "   lshort_h*exp(  (xc/lshort_s)) * erfc((0.5*ww/lshort_s) + xc/ww)"
+         " + rshort_h*exp( -(xc/rshort_s)) * erfc((0.5*ww/rshort_s) - xc/ww)"
+//         " + 0.5*llong_h*exp( (xc/llong_s)) * erfc((0.5*ww/llong_s) + xc/ww)"
+         " + step_h * erfc(xc/ww)"
+         " ) )"
          " where xc=(x-cc)";
 }
 
@@ -353,22 +389,23 @@ double Hypermet::evaluate(double x) {
   double gaussian = exp(- pow(xc/width_, 2) );
 
 //  double left_short = 0;
-  double left_short = Lshort_height_ * 0.5 *
+  double left_short = Lshort_height_ *
       exp( /*pow(0.5*width_/Lshort_slope_, 2) +*/ xc/width_) *
-      erfc( 0.5*width_/Lshort_slope_ +  xc/Lshort_slope_ );
+      erfc( (0.5*width_ + xc) / Lshort_slope_ );
 
-  double right_short = Rshort_height_ * 0.5 *
+  double right_short = Rshort_height_ *
       exp( /*pow(0.5*width_/Rshort_slope_, 2) +*/ xc/width_) *
-      erfc( 0.5*width_/Rshort_slope_ +  xc/Rshort_slope_ );
+      erfc( (0.5*width_ + xc) /Rshort_slope_ );
 
-  double left_long = Llong_height_ * 0.5 *
-      exp( /*pow(0.5*width_/Llong_slope_, 2) +*/ xc/width_) *
-      erfc( 0.5*width_/Llong_slope_ +  xc/width_ );
+  double left_long = 0;
+//  double left_long = Llong_height_ * 0.5 *
+//      exp( /*pow(0.5*width_/Llong_slope_, 2) +*/ xc/width_) *
+//      erfc( 0.5*width_/Llong_slope_ +  xc/width_ );
 
-  double step = step_height_ * 0.5 *
+  double step = step_height_ *
       erfc( xc/width_ );
 
-  return height_ * (gaussian + left_short + left_long + step + right_short);
+  return height_ * (gaussian + 0.5 * (left_short + left_long + step + right_short) );
 //    return height_ * exp(-log(2.0)*(pow(((x-center_)/width_),2)));
 }
 

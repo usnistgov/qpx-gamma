@@ -26,6 +26,7 @@
 #include <vector>
 #include <iostream>
 #include <numeric>
+#include "fityk.h"
 
 
 class Gaussian {
@@ -40,6 +41,9 @@ public:
   
   double height_, hwhm_, center_;
   double rsq;
+
+  static std::string fityk_definition();
+  bool extract_params(fityk::Func*);
 };
 
 

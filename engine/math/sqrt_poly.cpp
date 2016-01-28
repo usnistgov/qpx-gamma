@@ -16,11 +16,11 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Polynomial - 
+ *      SqrtPoly -
  *
  ******************************************************************************/
 
-#include "polynomial.h"
+#include "sqrt_poly.h"
 
 #include <sstream>
 #include <iomanip>
@@ -30,52 +30,52 @@
 #include "custom_logger.h"
 #include "qpx_util.h"
 
-Polynomial::Polynomial(std::vector<double> coeffs, double xoffset)
-  :Polynomial()
+SqrtPoly::SqrtPoly(std::vector<double> coeffs) //deprecate
+  :SqrtPoly()
 {
-  xoffset_ = xoffset;
-  int highest = -1;
   for (int i=0; i < coeffs.size(); ++i)
     if (coeffs[i] > 0)
-      highest = i;
-  for (int i=0; i <= highest; ++i)
-    coeffs_.push_back(coeffs[i]);
+      coeffs_[i] = coeffs[i];
 }
 
-Polynomial::Polynomial(std::vector<double> &x, std::vector<double> &y, uint16_t degree, double xoffset)
-  :Polynomial()
+SqrtPoly::SqrtPoly(std::map<uint16_t, double> coeffs)
+  :SqrtPoly()
+{
+  coeffs_ = coeffs;
+}
+
+SqrtPoly::SqrtPoly(std::vector<double> &x, std::vector<double> &y, uint16_t degree)
+  :SqrtPoly()
 {
   std::vector<uint16_t> degrees;
   for (int i=0; i <= degree; ++i)
     degrees.push_back(i);
 
-  fit(x, y, degrees, xoffset);
+  fit(x, y, degrees);
 }
 
-Polynomial::Polynomial(std::vector<double> &x, std::vector<double> &y,
-                       std::vector<uint16_t> &degrees, double xoffset) {
-  fit(x, y, degrees, xoffset);
+SqrtPoly::SqrtPoly(std::vector<double> &x, std::vector<double> &y,
+                       std::vector<uint16_t> &degrees) {
+  fit(x, y, degrees);
 }
 
 
-void Polynomial::fit(std::vector<double> &x, std::vector<double> &y,
-                       std::vector<uint16_t> &degrees, double xoffset) {
-  xoffset_ = xoffset;
-  coeffs_.clear();
-
+void SqrtPoly::fit(std::vector<double> &x, std::vector<double> &y,
+                       std::vector<uint16_t> &degrees) {
   if (x.size() != y.size())
     return;
 
-  std::vector<double> x_c, sigma;
+  std::vector<double> yy, sigma;
   sigma.resize(x.size(), 1);
   
-  for (auto &q : x)
-    x_c.push_back(q - xoffset_);
+  for (auto &q : y)
+    yy.push_back(q*q);
+
 
   fityk::Fityk *f = new fityk::Fityk;
   f->redir_messages(NULL);
 
-  f->load_data(0, x_c, y, sigma);
+  f->load_data(0, x, yy, sigma);
 
   std::string definition = "define MyPoly(";
   std::vector<std::string> varnames;
@@ -91,7 +91,7 @@ void Polynomial::fit(std::vector<double> &x, std::vector<double> &y,
     definition += (i==0)?"":"+";
     definition += "a" + varnames[i] + "*x^" + varnames[i];
   }
-
+  
 
   bool success = true;
 
@@ -111,19 +111,12 @@ void Polynomial::fit(std::vector<double> &x, std::vector<double> &y,
   }
 
   if (success) {
-    int highest = 0;
-    for (auto &q : degrees)
-      if (q > highest)
-        highest = q;
-
     fityk::Func* lastfn = f->all_functions().back();
-    coeffs_.resize(highest + 1, 0);
     for (auto &q : degrees) {
       std::stringstream ss;
       ss << q;
       coeffs_[q] = lastfn->get_param_value("a" + ss.str());
     }
-
     rsq = f->get_rsquared(0);
   }
 
@@ -131,42 +124,35 @@ void Polynomial::fit(std::vector<double> &x, std::vector<double> &y,
 }
 
 
-double Polynomial::eval(double x) {
-  double x_adjusted = x - xoffset_;
+double SqrtPoly::eval(double x) {
   double result = 0.0;
-  for (int i=0; i < coeffs_.size(); i++)
-    result += coeffs_[i] * pow(x_adjusted, i);
-  return result;
+  for (auto &q: coeffs_)
+    result += q.second * pow(x, q.first);
+  result = sqrt(result);
+  return exp(result);
 }
 
-Polynomial Polynomial::derivative() {
-  Polynomial new_poly;
+/*
+SqrtPoly SqrtPoly::derivative() {
+  SqrtPoly new_poly;
   new_poly.xoffset_ = xoffset_;
-
-  int highest = 0;
-  for (int i=0; i < coeffs_.size(); ++i)
-    if (coeffs_[i] > 0)
-      highest = i;
-
-  if (highest == 0)
-    return new_poly;
-
-  new_poly.coeffs_.resize(highest, 0);
-  for (int i=1; i <= highest; ++ i)
+  if (degree_ > 0)
+    new_poly.coeffs_.resize(coeffs_.size() - 1, 0);
+  for (int i=1; i < coeffs_.size(); ++ i)
     new_poly.coeffs_[i-1] = i * coeffs_[i];
-
+  new_poly.degree_ = degree_ - 1;
   return new_poly;
 }
 
-double Polynomial::eval_inverse(double y, double e) {
+double SqrtPoly::inverse_evaluate(double y, double e) {
   int i=0;
   double x0=1;
-  Polynomial deriv = derivative();
-  double x1 = x0 + (y - eval(x0)) / (deriv.eval(x0));
+  SqrtPoly deriv = derivative();
+  double x1 = x0 + (y - evaluate(x0)) / (deriv.evaluate(x0));
   while( i<=100 && std::abs(x1-x0) > e)
   {
     x0 = x1;
-    x1 = x0 + (y - eval(x0)) / (deriv.eval(x0));
+    x1 = x0 + (y - evaluate(x0)) / (deriv.evaluate(x0));
     i++;
   }
 
@@ -177,80 +163,95 @@ double Polynomial::eval_inverse(double y, double e) {
 
   else
   {
-    PL_WARN <<"Maximum iteration reached in polynomial inverse evaluation";
+    PL_WARN <<"Maximum iteration reached in SqrtPoly inverse evaluation";
     return nan("");
   }
 }
+*/
 
 
-std::vector<double> Polynomial::eval(std::vector<double> x) {
+std::vector<double> SqrtPoly::eval(std::vector<double> x) {
   std::vector<double> y;
   for (auto &q : x)
     y.push_back(eval(q));
   return y;
 }
 
-std::string Polynomial::to_string() {
+std::string SqrtPoly::to_string() {
   std::stringstream ss;
-  for (int i=0; i < coeffs_.size(); i++) {
-    if (i > 0)
+  ss << "sqrt(";
+  bool first = true;
+  for (auto &q: coeffs_) {
+    if (!first)
       ss << " + ";
-    ss << coeffs_[i];
-    if (i > 0)
+    else
+      first = false;
+    ss << q.second;
+    if (q.first > 0)
       ss << "x";
-    if (i > 1)
-      ss << "^" << i;
+    if (q.first > 1)
+      ss << "^" << q.first;
   }
+  ss << ")";
   return ss.str();
 }
 
-std::string Polynomial::to_UTF8(int precision, bool with_rsq) {
+std::string SqrtPoly::to_UTF8(int precision, bool with_rsq) {
 
-  std::string calib_eqn;
-  for (int i=0; i <= coeffs_.size(); i++) {
-    if (i > 0)
+  bool first = true;
+  std::string calib_eqn = "sqrt(";
+  for (auto &q: coeffs_) {
+    if (!first)
       calib_eqn += " + ";
-    calib_eqn += to_str_precision(coeffs_[i]);
-    if (i > 0)
+    else
+      first = false;
+    calib_eqn += to_str_precision(q.second, precision);
+    if (q.first > 0)
       calib_eqn += "x";
-    if (i > 1)
-      calib_eqn += UTF_superscript(i);
+    if (q.first > 1)
+      calib_eqn += UTF_superscript(q.first);
   }
 
   if (with_rsq)
-    calib_eqn += std::string("   r")
+    calib_eqn += std::string("  r")
         + UTF_superscript(2)
         + std::string("=")
         + to_str_precision(rsq, 4);
   
+  calib_eqn += ")";
   return calib_eqn;
 }
 
-std::string Polynomial::to_markup(int precision) {
-  std::string calib_eqn;
-  for (int i=0; i <= coeffs_.size(); i++) {
-    if (i > 0)
+std::string SqrtPoly::to_markup(int precision) {
+  std::string calib_eqn = "sqrt(";
+  bool first = true;
+
+  for (auto &q: coeffs_) {
+    if (!first)
       calib_eqn += " + ";
-    calib_eqn += to_str_precision(coeffs_[i], precision);
-    if (i > 0)
+    else
+      first = false;
+    calib_eqn += to_str_precision(q.second, precision);
+    if (q.first > 0)
       calib_eqn += "x";
-    if (i > 1)
-      calib_eqn += "<sup>" + UTF_superscript(i) + "</sup>";
+    if (q.first > 1)
+      calib_eqn += "<sup>" + std::to_string(q.first) + "</sup>";
   }
 
+  calib_eqn += ")";
   return calib_eqn;
 }
 
-std::string Polynomial::coef_to_string() const{
+std::string SqrtPoly::coef_to_string() const{
   std::stringstream dss;
   dss.str(std::string());
   for (auto &q : coeffs_) {
-    dss << q << " ";
+    dss << q.first << ":" << q.second << " ";
   }
   return boost::algorithm::trim_copy(dss.str());
 }
 
-void Polynomial::coef_from_string(std::string coefs) {
+void SqrtPoly::coef_from_string(std::string coefs) {
   std::stringstream dss(boost::algorithm::trim_copy(coefs));
 
   std::list<double> templist; double coef;
@@ -259,7 +260,6 @@ void Polynomial::coef_from_string(std::string coefs) {
     templist.push_back(coef);
   }
 
-  coeffs_.resize(templist.size());
   int i=0;
   for (auto &q: templist) {
     coeffs_[i] = q;

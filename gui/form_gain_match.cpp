@@ -259,7 +259,7 @@ void FormGainMatch::do_post_processing() {
 
   if (gains.size() > 1) {
     Polynomial p = Polynomial(gains, deltas, 2);
-    double predict = p.inverse_evaluate(gauss_ref_.gaussian_.center_/*, ui->doubleThreshold->value() / 4.0*/);
+    double predict = p.eval_inverse(gauss_ref_.gaussian_.center_/*, ui->doubleThreshold->value() / 4.0*/);
     PL_INFO << "[Gain matching] for next pass, predicted gain = " << predict;
     new_gain = predict;
 
@@ -301,7 +301,7 @@ void FormGainMatch::do_post_processing() {
 
     for (double i=xmin; i < xmax; i+=step) {
       xx.push_back(i);
-      yy.push_back(p.evaluate(i));
+      yy.push_back(p.eval(i));
     }
     PL_DBG << "gain response will plot " << xx.size() << " for curve";
 
@@ -446,12 +446,12 @@ void FormGainMatch::update_plots() {
 
     if (gauss_ref_.gaussian_.height_) {
       ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_fullfit_gaussian_), ap_reference_);
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_baseline_), ap_reference_);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_baseline_g_), ap_reference_);
     }
 
     if (gauss_opt_.gaussian_.height_) {
       ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_fullfit_gaussian_), ap_optimized_);
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_baseline_), ap_optimized_);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_baseline_g_), ap_optimized_);
     }
 
 

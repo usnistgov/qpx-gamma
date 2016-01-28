@@ -36,6 +36,7 @@ public:
     Rshort_height_(0), Rshort_slope_(0.3),
     Llong_height_(0), Llong_slope_(2.5),
     step_height_(0),
+    xc_(0), xs_(0), xl_(0), x_offset_(0),
     rsq(-1) {}
 
   Hypermet(double h, double c, double w) : height_(h), center_(c), width_(w / sqrt(log(2.0))),
@@ -43,6 +44,7 @@ public:
     Rshort_height_(0), Rshort_slope_(0.3),
     Llong_height_(0), Llong_slope_(2.5),
     step_height_(0),
+    xc_(0), xs_(0), xl_(0), x_offset_(0),
     rsq(-1) {}
   Hypermet(const std::vector<double> &x, const std::vector<double> &y, double h, double c, double w);
 
@@ -59,6 +61,7 @@ public:
         Rshort_height_, Rshort_slope_,
         Llong_height_, Llong_slope_,
         step_height_;
+  double xc_, xs_, xl_, x_offset_;
   double rsq;
 
   static std::string fityk_definition();

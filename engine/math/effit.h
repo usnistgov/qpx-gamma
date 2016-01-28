@@ -55,8 +55,6 @@ public:
   double rsq;
 
   double A, B, C, D, E, F, G;
-
-  std::string to_str_precision(double, int); //move this somewhere else
 };
 
 #endif
