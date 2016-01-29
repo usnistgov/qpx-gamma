@@ -111,7 +111,7 @@ void Fitter::find_peaks() {
       R = std::max(R, static_cast<int32_t>(finder_.rights[i]));
 //      PL_DBG << "postcat ROI " << L << " " << R;
     } else {
-      PL_DBG << "<Fitter> Creating ROI " << L << "-" << R;
+//      PL_DBG << "<Fitter> Creating ROI " << L << "-" << R;
       ROI newROI(nrg_cali_, fwhm_cali_, metadata_.live_time.total_milliseconds() * 0.001);
       L -= margin; if (L < 0) L = 0;
       R += margin; if (R >= finder_.x_.size()) R = finder_.x_.size() - 1;
@@ -138,12 +138,12 @@ void Fitter::find_peaks() {
 }
 
 void Fitter::add_peak(uint32_t left, uint32_t right) {
-  PL_DBG << "Add new peak " << left << "-" << right;
+//  PL_DBG << "Add new peak " << left << "-" << right;
 
   bool added = false;
   for (auto &q : regions_) {
     if (q.overlaps(left) || q.overlaps(right)) {
-      PL_DBG << "<Fitter> adding to existing region";
+//      PL_DBG << "<Fitter> adding to existing region";
       q.add_peak(finder_.x_, finder_.y_, left, right);
       added = true;
       break;

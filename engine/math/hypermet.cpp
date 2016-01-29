@@ -101,16 +101,16 @@ Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y, d
   std::string initial_h = FitykUtil::var_def("h", height_, height_*0.003, height_*3000);
   std::string initial_w = FitykUtil::var_def("w", width_, width_*0.7, width_*1.3);
 
-  std::string initial_lsh = FitykUtil::var_def("lsh", 0.00, 0, 0.75);
-  std::string initial_lss = FitykUtil::var_def("lss", 0.3, 0.3, 2);
+  std::string initial_lsh = FitykUtil::var_def("lsh", 1.0e-10, 1.0e-10, 0.75);
+  std::string initial_lss = FitykUtil::var_def("lss", 0.5, 0.3, 2);
 
-  std::string initial_rsh = FitykUtil::var_def("rsh", 0.00, 0, 0.75);
-  std::string initial_rss = FitykUtil::var_def("rss", 0.3, 0.3, 2);
+  std::string initial_rsh = FitykUtil::var_def("rsh", 1.0e-10, 1.0e-10, 0.75);
+  std::string initial_rss = FitykUtil::var_def("rss", 0.5, 0.3, 2);
 
 //  std::string initial_llh = FitykUtil::var_def("llh", 0.0000, 0, 0.015);
 //  std::string initial_lls = FitykUtil::var_def("lls", 2.5, 2.5, 50);
 
-  std::string initial_step = FitykUtil::var_def("step", 0.00000, 0, 0.75);
+  std::string initial_step = FitykUtil::var_def("step", 1.0e-10, 1.0e-10, 0.75);
 
   std::string initial = "F += Hypermet($c,$h,$w,$lsh,$lss,$rsh,$rss,$step)";
 
@@ -198,16 +198,16 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
     PL_DBG << "Hypermet multifit failed to define";
   }
 
-  std::string initial_lsh = FitykUtil::var_def("lsh", 0.000, 0, 0.75);
-  std::string initial_lss = FitykUtil::var_def("lss", 0.3, 0.3, 2);
+  std::string initial_lsh = FitykUtil::var_def("lsh", 1.0e-10, 1.0e-10, 0.75);
+  std::string initial_lss = FitykUtil::var_def("lss", 0.5, 0.3, 2);
 
-  std::string initial_rsh = FitykUtil::var_def("rsh", 0.000, 0, 0.75);
-  std::string initial_rss = FitykUtil::var_def("rss", 0.3, 0.3, 2);
+  std::string initial_rsh = FitykUtil::var_def("rsh", 1.0e-10, 1.0e-10, 0.75);
+  std::string initial_rss = FitykUtil::var_def("rss", 0.5, 0.3, 2);
 
 //  std::string initial_llh = FitykUtil::var_def("llh", 0.00000, 0, 0.015);
 //  std::string initial_lls = FitykUtil::var_def("lls", 2.5, 2.5, 50);
 
-  std::string initial_step = FitykUtil::var_def("step", 0.00000, 0, 0.75);
+  std::string initial_step = FitykUtil::var_def("step", 1.0e-10, 1.0e-10, 0.75);
 
   uint16_t samples = 5;
   if (x.size() < 5)

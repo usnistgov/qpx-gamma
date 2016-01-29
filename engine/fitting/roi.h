@@ -43,9 +43,8 @@ struct ROI {
   bool overlaps(uint16_t bin);
 
 //  void add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y);
-  void add_peak(const std::vector<double> &x, const std::vector<double> &y,
-                uint16_t L, uint16_t R);
-
+  void add_peak(const std::vector<double> &x, const std::vector<double> &y, uint16_t L, uint16_t R);
+  bool add_from_resid(uint16_t centroid_hint = -1);
 
   void remove_peaks(const std::set<double> &pks);
 

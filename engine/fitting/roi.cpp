@@ -81,47 +81,74 @@ void ROI::set_data(const std::vector<double> &x, const std::vector<double> &y,
     }
 
 //    PL_DBG << "preliminary peaks " << peaks_.size();
+    PL_DBG << "<ROI> Fitting new ROI " << min << "-" << max
+           << " with " << peaks_.size() << " peaks";
 
     rebuild();
-    int MAX_ITER = 3;
 
-    for (int i=0; i < MAX_ITER; ++i) {
-      PL_DBG << "Searching residues iteration " << i;
+    if (cal_fwhm_.valid()) {
+      int MAX_ITER = 3;
 
-      finder_.setData(x_, y_resid_);
-       if (finder_.filtered.size()) {
-         int tallest = 0;
-         for (int j=0; j < finder_.filtered.size(); ++j)
-           if (y_resid_[finder_.filtered[j]] > y_resid_[tallest])
-             tallest = j;
-         std::vector<double> x_pk = std::vector<double>(finder_.x_.begin() + finder_.lefts[tallest], finder_.x_.begin() + finder_.rights[tallest] + 1);
-         std::vector<double> y_pk = std::vector<double>(finder_.y_.begin() + finder_.lefts[tallest], finder_.y_.begin() + finder_.rights[tallest] + 1);
-         Gaussian gaussian(x_pk, y_pk);
-
-         if (
-             (gaussian.height_ > 0) &&
-             (gaussian.hwhm_ > 0) &&
-             (finder_.x_[finder_.lefts[i]] < gaussian.center_) &&
-             (gaussian.center_ < finder_.x_[finder_.rights[i]])
-            )
-         {
-           Hypermet hyp;
-           hyp.center_ = gaussian.center_;
-           hyp.height_ = gaussian.height_;
-           hyp.width_ = gaussian.hwhm_ / sqrt(log(2));
-
-           Peak fitted;
-           fitted.hypermet_ = hyp;
-           fitted.construct(cal_nrg_, live_seconds_);
-
-           rebuild();
-         }
-         else
-           break;
-       }
+      for (int i=0; i < MAX_ITER; ++i) {
+        PL_DBG << "Adding from residues iteration " << i;
+        if (!add_from_resid(-1))
+          break;
+      }
     }
+
+
   }
 }
+
+bool ROI::add_from_resid(uint16_t centroid_hint) {
+  if (finder_.filtered.empty())
+    return false;
+
+  int target_peak = 0;
+  if (centroid_hint == -1) {
+    for (int j=0; j < finder_.filtered.size(); ++j)
+      if (y_resid_[finder_.filtered[j]] > y_resid_[target_peak])
+        target_peak = j;
+  } else {
+    double diff = abs(x_[finder_.filtered[target_peak]] - centroid_hint);
+    for (int j=0; j < finder_.filtered.size(); ++j)
+      if (abs(x_[finder_.filtered[j]] - centroid_hint) < diff) {
+        target_peak = j;
+        diff = abs(x_[finder_.filtered[j]] - centroid_hint);
+      }
+  }
+
+  std::vector<double> x_pk = std::vector<double>(finder_.x_.begin() + finder_.lefts[target_peak],
+                                                 finder_.x_.begin() + finder_.rights[target_peak] + 1);
+  std::vector<double> y_pk = std::vector<double>(finder_.y_.begin() + finder_.lefts[target_peak],
+                                                 finder_.y_.begin() + finder_.rights[target_peak] + 1);
+  Gaussian gaussian(x_pk, y_pk);
+
+  if (
+      (gaussian.height_ > 0) &&
+      (gaussian.hwhm_ > 0) &&
+      (finder_.x_[finder_.lefts[target_peak]] < gaussian.center_) &&
+      (gaussian.center_ < finder_.x_[finder_.rights[target_peak]])
+      )
+  {
+    Hypermet hyp;
+    hyp.center_ = gaussian.center_;
+    hyp.height_ = gaussian.height_;
+    hyp.width_ = gaussian.hwhm_ / sqrt(log(2));
+
+    Peak fitted;
+    fitted.hypermet_ = hyp;
+    fitted.construct(cal_nrg_, live_seconds_);
+
+    peaks_.insert(fitted);
+
+    rebuild();
+    return true;
+  }
+  else
+    return false;
+}
+
 
 bool ROI::contains(double bin) {
   for (auto &q : peaks_)
@@ -148,43 +175,11 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
     return;
 
   Peak fitted;
+  uint16_t center_prelim = (L+R) /2; //assume down the middle
 
   if (overlaps(L) && overlaps(R)) {
-    int i=0;
-    while (x_[i] < L)
-      ++i;
-    uint16_t center_prelim = i;
-    for (; x_[i] <= R; i++)
-      if (y_resid_[i] > y_resid_[center_prelim])
-        center_prelim = i;
-    if ((x_[center_prelim] >= R) || (x_[center_prelim] <= L))
-      center_prelim = (L+R) /2;
 
-    double hwhm_predicted = (R-L) / 2.0;
-    if (!peaks_.empty()) {
-      //use tallest?
-
-      hwhm_predicted = peaks_.begin()->hypermet_.width_;
-    } else if (cal_fwhm_.valid()) {
-      hwhm_predicted = cal_nrg_.inverse_transform(cal_fwhm_.transform(cal_nrg_.transform(center_prelim))) / (2.0 * sqrt(log(2))) ;
-    }
-
-    PL_DBG << "<ROI> New Hyp will fit h=" << y_resid_[center_prelim]
-              << " c=" << x_[center_prelim]
-              << " fw=" << hwhm_predicted;
-
-    fitted.hypermet_ = Hypermet(finder_.x_, y_resid_,
-                    y_resid_[center_prelim],
-                    x_[center_prelim],
-                    hwhm_predicted
-                    );
-
-    PL_DBG << "<ROI> New Hyp fitted   h=" << fitted.hypermet_.height_
-              << " c=" << fitted.hypermet_.center_
-              << " fw=" << fitted.hypermet_.width_;
-
-
-    fitted.construct(cal_nrg_, live_seconds_);
+    add_from_resid(center_prelim);
 
   } else if (!x_.empty()) {
     uint32_t min = std::min(static_cast<double>(L), x_[0]);
@@ -196,6 +191,7 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
       y_.push_back(y[i]);
     }
     finder_.setData(x_, y_); //assumes default threshold parameters!!!!
+
     std::vector<double> y_nobkg = make_background();
 
     Gaussian gaussian(finder_.x_, y_nobkg);
@@ -203,26 +199,22 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
 
     fitted.hypermet_ = hyp;
     fitted.construct(cal_nrg_, live_seconds_);
+
+    if (
+        (fitted.height > 0) &&
+  //          (fitted.fwhm_sum4 > 0) &&
+        (fitted.fwhm_hyp > 0) &&
+        (L < fitted.center) &&
+        (fitted.center < R)
+       )
+    {
+  //    PL_DBG << "I like this peak at " << fitted.center << " fw " << fitted.fwhm_hyp;
+      peaks_.insert(fitted);
+      rebuild();
+    }
+
   } else {
     PL_DBG << "<ROI> cannot add to empty ROI";
-  }
-
-//  PL_DBG << "<ROI>       Adding?? new peak h=" << fitted.height
-//         << " fwgauss=" << fitted.fwhm_hyp
-//         << " c=" << fitted.center
-//         << " cf " << L << "-" << R;
-
-  if (
-      (fitted.height > 0) &&
-//          (fitted.fwhm_sum4 > 0) &&
-      (fitted.fwhm_hyp > 0) &&
-      (L < fitted.center) &&
-      (fitted.center < R)
-     )
-  {
-//    PL_DBG << "I like this peak at " << fitted.center << " fw " << fitted.fwhm_hyp;
-    peaks_.insert(fitted);
-    rebuild();
   }
 
 }
@@ -341,6 +333,7 @@ void ROI::rebuild() {
   for (int i=0; i < y_.size(); ++ i)
     y_resid_[i] -= lowres_fullfit[i];
 
+  finder_.setData(x_, y_resid_);
 }
 
 std::vector<double> ROI::make_background(uint16_t samples) {
