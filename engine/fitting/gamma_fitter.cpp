@@ -111,7 +111,7 @@ void Fitter::find_peaks() {
       R = std::max(R, static_cast<int32_t>(finder_.rights[i]));
 //      PL_DBG << "postcat ROI " << L << " " << R;
     } else {
-//      PL_DBG << "making new ROI " << L << "-" << R;
+      PL_DBG << "<Fitter> Creating ROI " << L << "-" << R;
       ROI newROI(nrg_cali_, fwhm_cali_, metadata_.live_time.total_milliseconds() * 0.001);
       L -= margin; if (L < 0) L = 0;
       R += margin; if (R >= finder_.x_.size()) R = finder_.x_.size() - 1;
@@ -138,9 +138,12 @@ void Fitter::find_peaks() {
 }
 
 void Fitter::add_peak(uint32_t left, uint32_t right) {
+  PL_DBG << "Add new peak " << left << "-" << right;
+
   bool added = false;
   for (auto &q : regions_) {
     if (q.overlaps(left) || q.overlaps(right)) {
+      PL_DBG << "<Fitter> adding to existing region";
       q.add_peak(finder_.x_, finder_.y_, left, right);
       added = true;
       break;
@@ -148,9 +151,11 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
   }
 
   if (!added) {
+    PL_DBG << "<Fitter> making new ROI to add peak manually";
     ROI newROI(nrg_cali_, fwhm_cali_, metadata_.live_time.total_milliseconds() * 0.001);
     newROI.set_data(finder_.x_, finder_.y_, left, right);
     if (!newROI.peaks_.empty()) {
+      PL_DBG << "<Fitter> succeeded making new ROI";
       regions_.push_back(newROI);
       added = true;
     }
@@ -259,11 +264,11 @@ void Fitter::save_report(std::string filename) {
   for (auto &q : peaks_) {
     file << std::setw( 15 ) << std::setprecision( 10 ) << q.second.center << "  |"
          << std::setw( 15 ) << std::setprecision( 10 ) << q.second.energy << "  |"
-         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_gaussian << "  |"
-         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.area_gauss_ << "  |"
-         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cts_per_sec_gauss_ << " ||";
+         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_hyp << "  |"
+         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.area_hyp_ << "  |"
+         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cts_per_sec_hyp_ << " ||";
 
-    if (!q.second.subpeak) {
+    if (!q.second.sum4_.fwhm > 0) {
       file << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.centroid << "  |"
            << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.centroid_var << "  |"
            << std::setw( 7 ) << std::setprecision( 10 ) << q.second.sum4_.Lpeak << "  |"

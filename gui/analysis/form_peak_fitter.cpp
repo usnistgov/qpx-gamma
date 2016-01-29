@@ -95,8 +95,8 @@ void FormPeakFitter::update_peaks(bool contents_changed) {
     for (auto &q : fit_data_.peaks_) {
       add_peak_to_table(q.second, i, gray);
       ++i;
-      if (!q.second.intersects_R)
-        gray = !gray;
+//      if (!q.second.intersects_R)
+//        gray = !gray;
     }
   }
 
@@ -126,17 +126,17 @@ void FormPeakFitter::add_peak_to_table(const Gamma::Peak &p, int row, bool gray)
   nrg->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 1, nrg);
 
-  QTableWidgetItem *fwhm = new QTableWidgetItem(QString::number(p.fwhm_gaussian));
+  QTableWidgetItem *fwhm = new QTableWidgetItem(QString::number(p.fwhm_hyp));
   fwhm->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 2, fwhm);
 
-  QTableWidgetItem *area_gauss = new QTableWidgetItem(QString::number(p.area_gauss_));
-  area_gauss->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 3, area_gauss);
+  QTableWidgetItem *area_hyp = new QTableWidgetItem(QString::number(p.area_hyp_));
+  area_hyp->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 3, area_hyp);
 
-  QTableWidgetItem *cps_gauss = new QTableWidgetItem(QString::number(p.cts_per_sec_gauss_));
-  cps_gauss->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 4, cps_gauss);
+  QTableWidgetItem *cps_hyp = new QTableWidgetItem(QString::number(p.cts_per_sec_hyp_));
+  cps_hyp->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 4, cps_hyp);
 
   QTableWidgetItem *fwhm4 = new QTableWidgetItem(QString::number(p.fwhm_sum4));
   fwhm4->setData(Qt::BackgroundRole, background);

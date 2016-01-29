@@ -25,29 +25,15 @@
 namespace Gamma {
 
 
-void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
-  y_fullfit_gaussian_.resize(x_.size());
-  y_fullfit_hypermet_.resize(x_.size());
-  y_residues_g_.resize(x_.size());
-  y_residues_h_.resize(x_.size());
-  for (int32_t i = 0; i < static_cast<int32_t>(x_.size()); ++i) {
-    y_fullfit_gaussian_[i] = y_baseline_g_[i] + gaussian_.evaluate(x_[i]);
-    y_fullfit_hypermet_[i] = y_baseline_h_[i] + hypermet_.evaluate(x_[i]);
-    y_residues_g_[i] = y_[i] - y_fullfit_gaussian_[i];
-    y_residues_h_[i] = y_[i] - y_fullfit_hypermet_[i];
-  }
+void Peak::construct(Calibration cali_nrg, double live_seconds) {
 
-
-  hr_fullfit_gaussian_.resize(hr_x_.size());
   hr_fullfit_hypermet_.resize(hr_x_.size());
-  for (int32_t i = 0; i < static_cast<int32_t>(hr_x_.size()); ++i) {
-    hr_fullfit_gaussian_[i] = hr_baseline_g_[i] + gaussian_.evaluate(hr_x_[i]);
-    hr_fullfit_hypermet_[i] = hr_baseline_h_[i] + hypermet_.evaluate(hr_x_[i]);
-  }
+  for (int32_t i = 0; i < static_cast<int32_t>(hr_x_.size()); ++i)
+    hr_fullfit_hypermet_[i] = hr_baseline_h_[i] + hypermet_.eval_peak(hr_x_[i]);
 
-  center = gaussian_.center_;
-  energy = cali_nrg.transform(center);
-  height = gaussian_.height_;
+  center = hypermet_.center_;
+  energy = cali_nrg.transform(center); //bits??
+  height = hypermet_.height_;
 
 //  center = sum4_.centroid;
 //  energy = cali_nrg.transform(center);
@@ -58,22 +44,18 @@ void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
   L = sum4_.centroid - sum4_.fwhm / 2;
   R = sum4_.centroid + sum4_.fwhm / 2;
   fwhm_sum4 = cali_nrg.transform(R) - cali_nrg.transform(L);
-  if (sum4_.fwhm >= x_.size())
-    fwhm_sum4 = 0;
+//  if (sum4_.fwhm >= x_.size())
+//    fwhm_sum4 = 0;
 
-  L = gaussian_.center_ - gaussian_.hwhm_;
-  R = gaussian_.center_ + gaussian_.hwhm_;
-  hwhm_L = energy - cali_nrg.transform(L);
-  hwhm_R = cali_nrg.transform(R) - energy;
-  fwhm_gaussian = cali_nrg.transform(R) - cali_nrg.transform(L);
-  if ((gaussian_.hwhm_*2) >= x_.size())
-    fwhm_gaussian = 0;
+  L = hypermet_.center_ - hypermet_.width_ * 2 * sqrt(log(2));
+  R = hypermet_.center_ + hypermet_.width_ * 2 * sqrt(log(2));
+  fwhm_hyp = cali_nrg.transform(R) - cali_nrg.transform(L);
+//  if ((gaussian_.hwhm_*2) >= x_.size())
+//    fwhm_gaussian = 0;
 
-  fwhm_theoretical = cali_fwhm.transform(energy);
-
-  area_gauss_ =  gaussian_.height_ * gaussian_.hwhm_ * sqrt(M_PI / log(2.0));
-  area_best_ = area_gauss_;
-  if (!subpeak)
+  area_hyp_ = hypermet_.area(); //gaussian_.height_ * gaussian_.hwhm_ * sqrt(M_PI / log(2.0));
+  area_best_ = area_hyp_;
+  if (sum4_.fwhm > 0)
   {
     area_gross_ = sum4_.P_area;
     area_bckg_ = sum4_.B_area;
@@ -81,66 +63,46 @@ void Peak::construct(Calibration cali_nrg, Calibration cali_fwhm) {
     area_best_ = area_net_;
   }
 
-  if (live_seconds_ > 0) {
-    cps_best_ = cts_per_sec_gauss_ = area_gauss_ / live_seconds_;
-    cts_per_sec_net_ = area_net_ / live_seconds_;
+  if (live_seconds > 0) {
+    cps_best_ = cts_per_sec_hyp_ = area_hyp_ / live_seconds;
+    cts_per_sec_net_ = area_net_ / live_seconds;
     if (cts_per_sec_net_ > 0)
       cps_best_ = cts_per_sec_net_;
   }
 }
 
-Peak::Peak(const std::vector<double> &x, const std::vector<double> &y, uint32_t L, uint32_t R,
-           Calibration cali_nrg, Calibration cali_fwhm, double live_seconds, uint16_t sum4edge_samples)
-  : Peak()
+Peak::Peak(const Hypermet &hype, const SUM4 &sum4,
+     const std::vector<double> &hr_x,
+     const std::vector<double> &hr_baseline_h,
+     Calibration cali_nrg,
+     double live_seconds)
 {
+  if ((hr_x.size() != hr_baseline_h.size())
+      || (hr_x.empty()))
+    return;
 
-  int32_t l = x.size() - 1;
-  while ((l > 0) && (x[l] > L))
-    l--;
+//      sum4_ = SUM4(x, y, l, r, sum4edge_samples);
 
-  int32_t r = 0;
-  while ((r < x.size()) && (x[r] < R))
-    r++;
+  hr_x_ = hr_x;
+  hr_baseline_h_ = hr_baseline_h;
+  hypermet_ = hype;
+  sum4_ = sum4;
 
-  if (
-      (x.size() == y.size())
-      &&
-      (l < r)
-      &&
-      (r < x.size())
-      )
-  {    
-    //PL_DBG << "Constructing peak bw channels " << L << "-" << R << "  indices=" << l << "-" << r;
-    sum4_ = SUM4(x, y, l, r, sum4edge_samples);
+  construct(cali_nrg, live_seconds);
 
-    x_ = std::vector<double>(x.begin() + l, x.begin() + r + 1);
-    y_ = std::vector<double>(y.begin() + l, y.begin() + r + 1);
+//  if (gaussian_.hwhm_ > 0) {
+//    double L = gaussian_.center_ - 2.5*gaussian_.hwhm_;
+//    double R = gaussian_.center_ + 2.5*gaussian_.hwhm_;
 
-    y_baseline_g_.resize(x_.size(), 0);
-    y_baseline_h_.resize(x_.size(), 0);
-    std::vector<double> nobase = y_;
+//    int32_t l = x.size() - 1;
+//    while ((l > 0) && (x[l] > L))
+//      l--;
 
-//    y_baseline_ = sum4_.by_;
-//    std::vector<double> nobase(x_.size());
-//    for (int32_t i = 0; i < static_cast<int32_t>(y_.size()); ++i)
-//      nobase[i] = y_[i] - y_baseline_[i];
+//    int32_t r = 0;
+//    while ((r < x.size()) && (x[r] < R))
+//      r++;
 
-    gaussian_ = Gaussian(x_, nobase);
-    if (gaussian_.height_ > 0)
-      hypermet_ = Hypermet(x_, nobase, gaussian_.height_, gaussian_.center_, gaussian_.hwhm_);
-    live_seconds_ = live_seconds;
-
-    hr_baseline_g_.clear();
-    hr_baseline_h_.clear();
-    hr_x_.clear();
-    for (double i = x_[0]; i <= x_[x_.size() -1]; i += 0.25) {
-      hr_x_.push_back(i);
-      hr_baseline_g_.push_back(sum4_.offset + i* sum4_.slope);
-      hr_baseline_h_.push_back(hypermet_.xc_*i*i + hypermet_.xs_*i + hypermet_.xl_);
-    }
-
-    construct(cali_nrg, cali_fwhm);
-  }
+//  }
 }
 
 

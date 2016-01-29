@@ -431,8 +431,8 @@ void FormEfficiencyCalibration::rebuild_table(bool contents_changed) {
         background_col = Qt::white;
       add_peak_to_table(q.second, i, background_col);
       ++i;
-      if (!q.second.intersects_R)
-        gray = !gray;
+//      if (!q.second.intersects_R)
+//        gray = !gray;
     }
   }
 

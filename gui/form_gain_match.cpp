@@ -225,8 +225,8 @@ void FormGainMatch::run_completed() {
     gm_spectra_.clear();
     gm_spectra_.terminate();
     gm_plot_thread_.wait();
-    gauss_ref_.gaussian_.height_ = 0;
-    gauss_opt_.gaussian_.height_ = 0;
+    gauss_ref_.height = 0;
+    gauss_opt_.height = 0;
     //replot_markers();
 
     if (!gm_runner_thread_.terminating()) {
@@ -247,19 +247,19 @@ void FormGainMatch::do_post_processing() {
   update_plots();
 
   double old_gain = gains.back();
-  double delta = gauss_opt_.gaussian_.center_ - gauss_ref_.gaussian_.center_;
+  double delta = gauss_opt_.center - gauss_ref_.center;
 
-  deltas.push_back(gauss_opt_.gaussian_.center_);
+  deltas.push_back(gauss_opt_.center);
 
   double new_gain = old_gain;
-  if (gauss_opt_.gaussian_.center_ < gauss_ref_.gaussian_.center_)
+  if (gauss_opt_.center < gauss_ref_.center)
     new_gain += ui->doubleSpinDeltaV->value();
-  else if (gauss_opt_.gaussian_.center_ > gauss_ref_.gaussian_.center_)
+  else if (gauss_opt_.center > gauss_ref_.center)
     new_gain -= ui->doubleSpinDeltaV->value();
 
   if (gains.size() > 1) {
     Polynomial p = Polynomial(gains, deltas, 2);
-    double predict = p.eval_inverse(gauss_ref_.gaussian_.center_/*, ui->doubleThreshold->value() / 4.0*/);
+    double predict = p.eval_inverse(gauss_ref_.center/*, ui->doubleThreshold->value() / 4.0*/);
     PL_INFO << "[Gain matching] for next pass, predicted gain = " << predict;
     new_gain = predict;
 
@@ -267,7 +267,7 @@ void FormGainMatch::do_post_processing() {
     QVector<double> yy = QVector<double>::fromStdVector(deltas);
 
     xx.push_back(predict);
-    yy.push_back(gauss_ref_.gaussian_.center_);
+    yy.push_back(gauss_ref_.center);
 
     double xmin = std::numeric_limits<double>::max();
     double xmax = - std::numeric_limits<double>::max();
@@ -361,7 +361,7 @@ bool FormGainMatch::find_peaks() {
 
   peaks_[peaks_.size() - 1] = gauss_opt_;
 
-  return (gauss_ref_.gaussian_.height_ && gauss_opt_.gaussian_.height_);
+  return (gauss_ref_.height && gauss_opt_.height);
 }
 
 void FormGainMatch::plot_one_spectrum(Gamma::Fitter &sp, std::map<double, double> &minima, std::map<double, double> &maxima) {
@@ -444,14 +444,14 @@ void FormGainMatch::update_plots() {
 
     ui->plot->setLabels("channel", "count");
 
-    if (gauss_ref_.gaussian_.height_) {
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_fullfit_gaussian_), ap_reference_);
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.x_), QVector<double>::fromStdVector(gauss_ref_.y_baseline_g_), ap_reference_);
+    if (gauss_ref_.height) {
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.hr_x_), QVector<double>::fromStdVector(gauss_ref_.hr_fullfit_hypermet_), ap_reference_);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.hr_x_), QVector<double>::fromStdVector(gauss_ref_.hr_baseline_h_), ap_reference_);
     }
 
-    if (gauss_opt_.gaussian_.height_) {
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_fullfit_gaussian_), ap_optimized_);
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.x_), QVector<double>::fromStdVector(gauss_opt_.y_baseline_g_), ap_optimized_);
+    if (gauss_opt_.height) {
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.hr_x_), QVector<double>::fromStdVector(gauss_opt_.hr_fullfit_hypermet_), ap_optimized_);
+      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.hr_x_), QVector<double>::fromStdVector(gauss_opt_.hr_baseline_h_), ap_optimized_);
     }
 
 

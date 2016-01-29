@@ -45,7 +45,7 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
 
   ui->tableFWHM->verticalHeader()->hide();
   ui->tableFWHM->setColumnCount(4);
-  ui->tableFWHM->setHorizontalHeaderLabels({"chan", "energy", "fwhm(sum4)", "fwmw (gaussian)", "fwhm (pseudo-Voigt)"});
+  ui->tableFWHM->setHorizontalHeaderLabels({"chan", "energy", "fwhm(sum4)", "fwmw (hypermet)", "fwhm (pseudo-Voigt)"});
   ui->tableFWHM->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tableFWHM->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tableFWHM->setEditTriggers(QTableView::NoEditTriggers);
@@ -135,7 +135,7 @@ void FormFwhmCalibration::add_peak_to_table(const Gamma::Peak &p, int row) {
   
   ui->tableFWHM->setItem(row, 1, new QTableWidgetItem( QString::number(p.energy) ));
   ui->tableFWHM->setItem(row, 2, new QTableWidgetItem( QString::number(p.fwhm_sum4) ));
-  ui->tableFWHM->setItem(row, 3, new QTableWidgetItem( QString::number(p.fwhm_gaussian) ));
+  ui->tableFWHM->setItem(row, 3, new QTableWidgetItem( QString::number(p.fwhm_hyp) ));
 //  ui->tableFWHM->setItem(row, 4, new QTableWidgetItem( QString::number(p.fwhm_pseudovoigt) ));
 }
 
@@ -149,7 +149,7 @@ void FormFwhmCalibration::replot_markers() {
 
   for (auto &q : fit_data_.peaks_) {
     double x = q.second.energy;
-    double y = q.second.fwhm_gaussian;
+    double y = q.second.fwhm_hyp;
 
     xx.push_back(x);
     yy.push_back(y);
@@ -272,7 +272,7 @@ Polynomial FormFwhmCalibration::fit_calibration()
   int i=0;
   for (auto &q : fit_data_.peaks_) {
     xx.push_back(q.second.energy);
-    yy.push_back(q.second.fwhm_gaussian);
+    yy.push_back(q.second.fwhm_hyp);
     i++;
   }
 
@@ -321,7 +321,7 @@ double FormFwhmCalibration::find_outlier()
   double furthest = -1;
   double furthest_dist = 0;
   for (auto &q : fit_data_.peaks_) {
-    double dist = std::abs(q.second.fwhm_gaussian - fit_data_.fwhm_cali_.transform(q.second.energy));
+    double dist = std::abs(q.second.fwhm_hyp - fit_data_.fwhm_cali_.transform(q.second.energy));
     if (dist > furthest_dist) {
       furthest_dist = dist;
       furthest = q.second.center;
@@ -335,7 +335,9 @@ void FormFwhmCalibration::on_pushCullOne_clicked()
 {
   double furthest = find_outlier();
   if (furthest >= 0) {
-    fit_data_.peaks_.erase(furthest);
+    std::set<double> pks;
+    pks.insert(furthest);
+    fit_data_.remove_peaks(pks);
     update_peaks(true);
     emit peaks_changed(true);
   }
@@ -345,9 +347,11 @@ void FormFwhmCalibration::on_pushCullUntil_clicked()
 {
   Polynomial p = fit_calibration();
 
+  std::set<double> pks;
   while ((fit_data_.peaks_.size() > 0) && (p.rsq < ui->doubleRsqGoal->value())) {
     double furthest = find_outlier();
     if (furthest >= 0) {
+      pks.insert(furthest);
       fit_data_.peaks_.erase(furthest);
       p = fit_calibration();
     } else
@@ -355,6 +359,7 @@ void FormFwhmCalibration::on_pushCullUntil_clicked()
   }
 
   p = fit_calibration();
+  fit_data_.remove_peaks(pks);
   update_peaks(true);
   emit peaks_changed(true);
 }

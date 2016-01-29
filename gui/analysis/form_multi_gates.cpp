@@ -305,10 +305,10 @@ void FormMultiGates::on_pushApprove_clicked()
 
   for (auto &q : data.peaks_) {
     Gamma::Gate newgate;
-    newgate.cps           = q.second.area_bckg_ / q.second.live_seconds_;
+    newgate.cps           = q.second.area_bckg_ / (data.metadata_.live_time.total_milliseconds() / 1000);
     newgate.centroid_chan = q.second.center;
     newgate.centroid_nrg  = q.second.energy;
-    newgate.width_chan    = std::round(q.second.gaussian_.hwhm_ * 2.0 * ui->doubleGateOn->value());
+    newgate.width_chan    = std::round(q.second.fwhm_hyp * ui->doubleGateOn->value());
     newgate.width_nrg     = data.nrg_cali_.transform(newgate.centroid_chan + newgate.width_chan / 2)
         - data.nrg_cali_.transform(newgate.centroid_chan - newgate.width_chan / 2);
     if (index_of(newgate.centroid_chan, true) < 0)
@@ -342,8 +342,8 @@ void FormMultiGates::on_pushDistill_clicked()
       for (auto &p : gate.fit_data_.peaks_) {
         Gamma::Peak peak = p.second;
         box.x_c.set_bin(peak.center, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
-        box.x1.set_bin(peak.center - (peak.gaussian_.hwhm_ * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
-        box.x2.set_bin(peak.center + (peak.gaussian_.hwhm_ * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+        box.x1.set_bin(peak.center - (peak.fwhm_hyp * 0.5 * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+        box.x2.set_bin(peak.center + (peak.fwhm_hyp * 0.5 * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
         all_boxes_.push_back(box);
       }
     }
@@ -536,8 +536,8 @@ void FormMultiGates::update_peaks(bool content_changed) {
     box.visible = true;
     box.selected = q.second.selected;
     box.x_c.set_bin(q.second.center, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
-    box.x1.set_bin(q.second.center - (q.second.gaussian_.hwhm_ * width_factor()), fit_data_.metadata_.bits, fit_data_.nrg_cali_);
-    box.x2.set_bin(q.second.center + (q.second.gaussian_.hwhm_ * width_factor()), fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+    box.x1.set_bin(q.second.center - (q.second.fwhm_hyp * 0.5 * width_factor()), fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+    box.x2.set_bin(q.second.center + (q.second.fwhm_hyp * 0.5 * width_factor()), fit_data_.metadata_.bits, fit_data_.nrg_cali_);
 
     box.horizontal = false;
     box.vertical = true;

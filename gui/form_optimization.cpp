@@ -312,7 +312,7 @@ void FormOptimization::update_plots() {
     have_peaks = find_peaks();
     int current_spec = spectra_.size() - 1;
     spectra_[current_spec] = fitter_opt_;
-    setting_fwhm_[current_spec] = peaks_[current_spec].fwhm_gaussian;
+    setting_fwhm_[current_spec] = peaks_[current_spec].fwhm_hyp;
 
     ui->tableResults->setRowCount(peaks_.size());
 
@@ -324,7 +324,7 @@ void FormOptimization::update_plots() {
       en->setFlags(en->flags() ^ Qt::ItemIsEditable);
       ui->tableResults->setItem(current_spec, 1, en);
 
-      QTableWidgetItem *fw = new QTableWidgetItem(QString::number(peaks_[current_spec].fwhm_gaussian));
+      QTableWidgetItem *fw = new QTableWidgetItem(QString::number(peaks_[current_spec].fwhm_hyp));
       fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
       ui->tableResults->setItem(current_spec, 2, fw);
 

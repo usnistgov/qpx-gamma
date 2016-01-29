@@ -33,9 +33,6 @@ FormPeaks::FormPeaks(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  qRegisterMetaType<Gaussian>("Gaussian");
-  qRegisterMetaType<QVector<Gaussian>>("QVector<Gaussian>");
-
   ui->plot1D->use_calibrated(true);
   ui->plot1D->set_markers_selectable(true);
 
@@ -100,9 +97,7 @@ void FormPeaks::set_visible_elements(ShowFitElements elems, bool interactive) {
   ui->pushResid->setChecked(elems & ShowFitElements::resid);
   ui->pushPrelim->setChecked(elems & ShowFitElements::prelim);
   ui->pushCtrs->setChecked(elems & ShowFitElements::filtered);
-  ui->pushGauss->setChecked(elems & ShowFitElements::gaussians);
   ui->pushBkg->setChecked(elems & ShowFitElements::baselines);
-  ui->pushHypermet->setChecked(elems & ShowFitElements::hypermet);
   ui->pushSingle->setChecked(elems & ShowFitElements::singlet);
   ui->pushMulti->setChecked(elems & ShowFitElements::multiplet);
   ui->pushEdges->setChecked(elems & ShowFitElements::edges);
@@ -123,9 +118,7 @@ void FormPeaks::loadSettings(QSettings &settings_) {
   ui->pushResid->setChecked(settings_.value("show_resid", false).toBool());
   ui->pushCtrs->setChecked(settings_.value("show_filtered_peaks", false).toBool());
   ui->pushPrelim->setChecked(settings_.value("show_prelim_peaks", false).toBool());
-  ui->pushGauss->setChecked(settings_.value("show_gaussians", false).toBool());
   ui->pushBkg->setChecked(settings_.value("show_baselines", false).toBool());
-  ui->pushHypermet->setChecked(settings_.value("show_hypermet", false).toBool());
   ui->pushSingle->setChecked(settings_.value("show_singlets", false).toBool());
   ui->pushMulti->setChecked(settings_.value("show_multiplets", false).toBool());
   ui->pushEdges->setChecked(settings_.value("show_edges", false).toBool());
@@ -146,9 +139,7 @@ void FormPeaks::saveSettings(QSettings &settings_) {
   settings_.setValue("show_resid", ui->pushResid->isChecked());
   settings_.setValue("show_prelim_peaks", ui->pushPrelim->isChecked());
   settings_.setValue("show_filtered_peaks", ui->pushCtrs->isChecked());
-  settings_.setValue("show_gaussians", ui->pushGauss->isChecked());
   settings_.setValue("show_baselines", ui->pushBkg->isChecked());
-  settings_.setValue("show_hypermet", ui->pushHypermet->isChecked());
   settings_.setValue("show_singlets", ui->pushSingle->isChecked());
   settings_.setValue("show_multiplets", ui->pushMulti->isChecked());
   settings_.setValue("show_edges", ui->pushEdges->isChecked());
@@ -309,40 +300,29 @@ void FormPeaks::replot_all() {
 
   if (ui->pushMulti->isChecked()) {
     for (auto &q : fit_data_->regions_) {
-      QVector<double> x = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.x_, fit_data_->metadata_.bits));
-      if (ui->pushGauss->isChecked()) {
+      QVector<double> x = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.hr_x, fit_data_->metadata_.bits));
 
-        std::vector<double> y_fit_g = q.y_fullfit_g_;
-        for (auto &p : y_fit_g)
+      std::vector<double> y_fit = q.hr_fullfit;
+      for (auto &p : y_fit)
+        if (p < 1)
+          p = std::floor(p * 10 + 0.5)/10;
+      ui->plot1D->addGraph(x, QVector<double>::fromStdVector(y_fit), multiplet_h_);
+
+      if (ui->pushBkg->isChecked()) {
+        y_fit = q.hr_background;
+        for (auto &p : y_fit)
           if (p < 1)
             p = std::floor(p * 10 + 0.5)/10;
-        ui->plot1D->addGraph(x, QVector<double>::fromStdVector(y_fit_g), multiplet_g_);
+        ui->plot1D->addGraph(x, QVector<double>::fromStdVector(y_fit), baseline_);
 
-        if (ui->pushBkg->isChecked()) {
-          std::vector<double> y_fit = q.y_background_g_;
-          for (auto &p : y_fit)
-            if (p < 1)
-              p = std::floor(p * 10 + 0.5)/10;
-          ui->plot1D->addGraph(x, QVector<double>::fromStdVector(y_fit), baseline_);
-        }
-
-      }
-      if (ui->pushHypermet->isChecked()) {
-        std::vector<double> y_fit_h = q.y_fullfit_h_;
-        for (auto &p : y_fit_h)
+        y_fit = q.hr_back_steps;
+        for (auto &p : y_fit)
           if (p < 1)
             p = std::floor(p * 10 + 0.5)/10;
-        ui->plot1D->addGraph(x, QVector<double>::fromStdVector(y_fit_h), multiplet_h_);
-
-        if (ui->pushBkg->isChecked()) {
-          std::vector<double> y_fit = q.y_background_h_;
-          for (auto &p : y_fit)
-            if (p < 1)
-              p = std::floor(p * 10 + 0.5)/10;
-          ui->plot1D->addGraph(x, QVector<double>::fromStdVector(y_fit), baseline_);
-        }
+        ui->plot1D->addGraph(x, QVector<double>::fromStdVector(y_fit), gaussian_);
 
       }
+
     }
   }
   
@@ -356,34 +336,22 @@ void FormPeaks::replot_all() {
     xx = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x, fit_data_->metadata_.bits));
 
     if (ui->pushSingle->isChecked()) {
-      if (ui->pushHypermet->isChecked()) {
-        std::vector<double> y_fit = q.second.hr_fullfit_hypermet_;
-        for (auto &p : y_fit)
-          if (p < 1)
-            p = std::floor(p * 10 + 0.5)/10;
 
-        AppearanceProfile prof = hypermet_;
-        if (q.second.flagged)
-          prof = flagged_;
-        ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), prof);
-      }
+      std::vector<double> y_fit = q.second.hr_fullfit_hypermet_;
+      for (auto &p : y_fit)
+        if (p < 1)
+          p = std::floor(p * 10 + 0.5)/10;
 
-      if (ui->pushGauss->isChecked()) {
-        std::vector<double> y_fit = q.second.hr_fullfit_gaussian_;
-        for (auto &p : y_fit)
-          if (p < 1)
-            p = std::floor(p * 10 + 0.5)/10;
+      AppearanceProfile prof = hypermet_;
+      if (q.second.flagged)
+        prof = flagged_;
+      ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), prof);
 
-        AppearanceProfile prof = gaussian_;
-        if (q.second.flagged)
-          prof = flagged_;
-        ui->plot1D->addGraph(xx, QVector<double>::fromStdVector(y_fit), prof);
-      }
 
     }
 
 
-    if (ui->pushEdges->isChecked() && (!q.second.subpeak)) {
+    if (false && ui->pushEdges->isChecked() && (!q.second.sum4_.fwhm > 0)) {
 //      PL_DBG << "edges for " << q.second.center << " L:" << q.second.sum4_.LBstart << "-" << q.second.sum4_.LBend
 //                                                << " R:" << q.second.sum4_.RBstart << "-" << q.second.sum4_.RBend;
 
@@ -428,21 +396,11 @@ void FormPeaks::replot_all() {
       for (auto &q : fit_data_->regions_) {
         for (auto &p : q.x_)
           xx.push_back(fit_data_->nrg_cali_.transform(p, fit_data_->metadata_.bits));
-        for (auto &p : q.y_resid_h_)
+        for (auto &p : q.y_resid_)
           yy.push_back(p);
       }
 
-//      for (auto &q : fit_data_->peaks_) {
-//        if (q.second.subpeak)
-//          continue;
-//        for (auto &p : q.second.x_)
-//          xx.push_back(fit_data_->nrg_cali_.transform(p, fit_data_->metadata_.bits));
-//        for (auto &p : q.second.y_residues_g_)
-//          yy.push_back(p);
-//      }
-
       ui->plot1D->addResid(xx, yy, even_);
-
 
     }
 
@@ -720,16 +678,6 @@ void FormPeaks::on_pushCtrs_clicked()
 }
 
 void FormPeaks::on_pushBkg_clicked()
-{
-  replot_all();
-}
-
-void FormPeaks::on_pushGauss_clicked()
-{
-  replot_all();
-}
-
-void FormPeaks::on_pushHypermet_clicked()
 {
   replot_all();
 }

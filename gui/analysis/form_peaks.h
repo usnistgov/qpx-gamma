@@ -111,8 +111,6 @@ private slots:
   void on_pushPrelim_clicked();
   void on_pushCtrs_clicked();
   void on_pushBkg_clicked();
-  void on_pushGauss_clicked();
-  void on_pushHypermet_clicked();
   void on_pushMulti_clicked();
   void on_pushEdges_clicked();
 

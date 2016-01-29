@@ -39,7 +39,7 @@ public:
     xc_(0), xs_(0), xl_(0), x_offset_(0),
     rsq(-1) {}
 
-  Hypermet(double h, double c, double w) : height_(h), center_(c), width_(w / sqrt(log(2.0))),
+  Hypermet(double h, double c, double w) : height_(h), center_(c), width_(w),
     Lshort_height_(0), Lshort_slope_(0.3),
     Rshort_height_(0), Rshort_slope_(0.3),
     Llong_height_(0), Llong_slope_(2.5),
@@ -53,9 +53,15 @@ public:
                                          const std::vector<Hypermet> &old,
                                          bool constrain_to_first);
 
-  double evaluate(double x);
-  std::vector<double> evaluate_array(std::vector<double> x);
-  
+  double eval_peak(double);
+  double eval_step_tail(double);
+  double eval_poly(double);
+
+  std::vector<double> peak(std::vector<double> x);
+  std::vector<double> step_tail(std::vector<double> x);
+  std::vector<double> poly(std::vector<double> x);
+  double area();
+
   double center_, height_, width_,
         Lshort_height_, Lshort_slope_,
         Rshort_height_, Rshort_slope_,
@@ -63,6 +69,7 @@ public:
         step_height_;
   double xc_, xs_, xl_, x_offset_;
   double rsq;
+
 
   static std::string fityk_definition();
   bool extract_params(fityk::Func*);

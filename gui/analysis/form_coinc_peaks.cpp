@@ -154,8 +154,8 @@ void FormCoincPeaks::update_table(bool contents_changed) {
         background_col = Qt::white;
       add_peak_to_table(q.second, i, background_col);
       ++i;
-      if (!q.second.intersects_R)
-        gray = !gray;
+//      if (!q.second.intersects_R)
+//        gray = !gray;
     }
   } else {
     ui->tablePeaks->clearSelection();
@@ -188,7 +188,7 @@ void FormCoincPeaks::add_peak_to_table(const Gamma::Peak &p, int row, QColor bck
   nrg->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 1, nrg);
 
-  QTableWidgetItem *fwhm = new QTableWidgetItem(QString::number(p.fwhm_gaussian));
+  QTableWidgetItem *fwhm = new QTableWidgetItem(QString::number(p.fwhm_hyp));
   fwhm->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 2, fwhm);
 
@@ -201,7 +201,7 @@ void FormCoincPeaks::add_peak_to_table(const Gamma::Peak &p, int row, QColor bck
 //    cps_net->setData(Qt::BackgroundRole, background);
 //    ui->tablePeaks->setItem(row, 5, cps_net);
   } else {
-    QTableWidgetItem *area_gauss = new QTableWidgetItem(QString::number(p.area_gauss_));
+    QTableWidgetItem *area_gauss = new QTableWidgetItem(QString::number(p.area_hyp_));
     area_gauss->setData(Qt::BackgroundRole, background);
     ui->tablePeaks->setItem(row, 3, area_gauss);
 

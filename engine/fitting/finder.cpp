@@ -169,6 +169,9 @@ uint16_t Finder::left_edge(uint16_t idx) {
   while ((idx > 0) && (x_conv[idx] < edge_threshold))
     idx--;
 
+  if (idx < 0)
+    idx = 0;
+
   return idx;
 }
 
@@ -184,6 +187,9 @@ uint16_t Finder::right_edge(uint16_t idx) {
     idx++;
   while ((idx < x_conv.size()) && (x_conv[idx] < edge_threshold))
     idx++;
+
+  if (idx >= x_conv.size())
+    idx = x_conv.size() - 1;
 
   return idx;
 }

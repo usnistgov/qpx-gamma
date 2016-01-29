@@ -53,21 +53,16 @@ struct ROI {
 
   Finder finder_;
   std::set<Peak> peaks_;
-  std::vector<double> x_, y_,
-    y_background_g_,
-    y_background_h_,
-    y_nobkg_,
-    y_fullfit_g_,
-    y_fullfit_h_,
-    y_resid_g_,
-    y_resid_h_;
+  std::vector<double> x_, y_, y_resid_;
+
+   std::vector<double> hr_x, hr_background, hr_back_steps, hr_fullfit;
 
 
   Calibration cal_nrg_, cal_fwhm_;
   double live_seconds_;
 
 private:
-  void make_background();
+  std::vector<double> make_background(uint16_t samples = 5);
   bool remove_peak(double bin);
 };
 
