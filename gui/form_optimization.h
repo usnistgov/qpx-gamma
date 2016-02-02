@@ -29,7 +29,7 @@
 #include "spectrum1D.h"
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
-#include "widget_plot1d.h"
+#include "widget_plot_fit.h"
 #include "gamma_fitter.h"
 
 namespace Ui {

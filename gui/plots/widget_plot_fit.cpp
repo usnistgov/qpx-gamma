@@ -108,7 +108,7 @@ void WidgetPlotFit::addResid(const QVector<double>& x, const QVector<double>& y,
 
 
   resid->addData(x, y);
-  QPen pen = appearance.get_pen(color_theme_);
+  QPen pen = appearance.default_pen;
   pen.setWidth(1);
 //  if (fittable && (visible_options_ & ShowOptions::thickness))
 //    pen.setWidth(thickness_);

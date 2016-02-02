@@ -29,36 +29,6 @@
 #include "marker.h"
 #include <set>
 
-class MarkerText : public QCPItemText
-{
-  Q_OBJECT
-public:
-  explicit MarkerText(QCustomPlot *parentPlot, double truepos)
-    : QCPItemText(parentPlot)
-    , true_position_(truepos) {}
-
-  double true_position() {return true_position_;}
-
-private:
-  double true_position_;
-};
-
-enum ShowOptions {
-  empty     = 0,
-  style     = 1 << 0,
-  scale     = 1 << 1,
-  labels    = 1 << 2,
-  themes    = 1 << 3,
-  thickness = 1 << 4,
-  grid      = 1 << 5,
-  title     = 1 << 6,
-  zoom      = 1 << 7,
-  save      = 1 << 8
-};
-
-inline ShowOptions operator|(ShowOptions a, ShowOptions b) {return static_cast<ShowOptions>(static_cast<int>(a) | static_cast<int>(b));}
-inline ShowOptions operator&(ShowOptions a, ShowOptions b) {return static_cast<ShowOptions>(static_cast<int>(a) & static_cast<int>(b));}
-
 namespace Ui {
 class WidgetPlot1D;
 }
