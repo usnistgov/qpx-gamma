@@ -37,24 +37,6 @@ namespace Ui {
 class FormPeaks;
 }
 
-enum ShowFitElements {
-  none      = 0,
-  kon       = 1 << 0,
-  resid     = 1 << 1,
-  prelim    = 1 << 2,
-  filtered  = 1 << 3,
-  gaussians = 1 << 4,
-  baselines = 1 << 5,
-  hypermet  = 1 << 6,
-  singlet   = 1 << 7,
-  multiplet = 1 << 8,
-  edges     = 1 << 9
-};
-
-inline ShowFitElements operator|(ShowFitElements a, ShowFitElements b) {return static_cast<ShowFitElements>(static_cast<int>(a) | static_cast<int>(b));}
-inline ShowFitElements operator&(ShowFitElements a, ShowFitElements b) {return static_cast<ShowFitElements>(static_cast<int>(a) & static_cast<int>(b));}
-
-
 class FormPeaks : public QWidget
 {
   Q_OBJECT
@@ -74,8 +56,6 @@ public:
   void clear();
   void update_spectrum();
   void make_range(Marker);
-
-  void set_visible_elements(ShowFitElements elems, bool interactive = false);
 
   void loadSettings(QSettings &settings_);
   void saveSettings(QSettings &settings_);
@@ -105,20 +85,8 @@ private slots:
   void on_spinSqWidth_editingFinished();
   void on_doubleOverlapWidth_editingFinished();
   void on_spinSum4EdgeW_editingFinished();
-
-
-  void on_pushKON_clicked();
-  void on_pushPrelim_clicked();
-  void on_pushCtrs_clicked();
-  void on_pushBkg_clicked();
-  void on_pushMulti_clicked();
-  void on_pushEdges_clicked();
-
-  void on_pushResid_clicked();
-
   void on_doubleThresh_editingFinished();
 
-  void on_pushSingle_clicked();
 
 private:
   Ui::FormPeaks *ui;
@@ -132,12 +100,6 @@ private:
   //markers
   Marker list, selected;
   Range range_;
-
-  AppearanceProfile main_graph_, prelim_peak_, filtered_peak_,
-                    gaussian_, hypermet_, baseline_, sum4edge_,
-                    multiplet_g_, multiplet_h_, flagged_,
-                    rise_, fall_, even_;
-
 
 };
 

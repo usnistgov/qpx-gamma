@@ -26,12 +26,26 @@
 
 namespace Gamma {
 
-void Finder::setData(std::vector<double> x, std::vector<double> y)
+void Finder::setData(const std::vector<double> &x, const std::vector<double> &y)
 {
   clear();
   if (x.size() == y.size()) {
     x_ = x;
-    y_ = y;
+    y_resid_ = y_ = y;
+    calc_kon();
+    find_peaks();
+  }
+}
+
+void Finder::setFit(const std::vector<double> &y_fit)
+{
+  if (y_fit.size() == y_.size()) {
+    y_fit_ = y_fit;
+
+    y_resid_ = y_;
+    for (int i=0; i < y_.size(); ++i)
+      y_resid_[i] = y_[i] - y_fit_[i];
+
     calc_kon();
     find_peaks();
   }
@@ -40,6 +54,8 @@ void Finder::setData(std::vector<double> x, std::vector<double> y)
 void Finder::clear() {
   x_.clear();
   y_.clear();
+  y_fit_.clear();
+  y_resid_.clear();
 
   prelim.clear();
   filtered.clear();
@@ -57,16 +73,16 @@ void Finder::calc_kon() {
 
   int shift = square_width_ / 2;
 
-  x_kon.resize(y_.size(), 0);
-  x_conv.resize(y_.size(), 0);
+  x_kon.resize(y_resid_.size(), 0);
+  x_conv.resize(y_resid_.size(), 0);
   prelim.clear();
 
-  for (int j = square_width_; (j+2*square_width_+1) < y_.size(); ++j) {
+  for (int j = square_width_; (j+2*square_width_+1) < y_resid_.size(); ++j) {
     double kon = 0;
     double avg = 0;
     for (int i=j; i <= (j+square_width_+1); ++i) {
-      kon += 2*y_[i] - y_[i-square_width_] - y_[i+square_width_];
-      avg += y_[i];
+      kon += 2*y_resid_[i] - y_resid_[i-square_width_] - y_resid_[i+square_width_];
+      avg += y_resid_[i];
     }
     avg = avg / square_width_;
     x_kon[j + shift] = kon;

@@ -28,7 +28,7 @@
 #include "spectra_set.h"
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
-#include "widget_plot1d.h"
+#include "widget_plot_multi1d.h"
 #include "gamma_fitter.h"
 
 namespace Ui {

@@ -218,7 +218,7 @@
     </layout>
    </item>
    <item row="2" column="0">
-    <widget class="WidgetPlot1D" name="widgetPlot" native="true">
+    <widget class="WidgetPlotMulti1D" name="widgetPlot" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
        <horstretch>0</horstretch>
@@ -253,15 +253,15 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>WidgetPlot1D</class>
-   <extends>QWidget</extends>
-   <header>widget_plot1d.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>SelectorWidget</class>
    <extends>QWidget</extends>
    <header>widget_selector.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>WidgetPlotMulti1D</class>
+   <extends>QWidget</extends>
+   <header>widget_plot_multi1d.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

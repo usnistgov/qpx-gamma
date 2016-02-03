@@ -29,7 +29,7 @@
 
 #include <spectra_set.h>
 #include "qsquarecustomplot.h"
-#include "widget_plot1d.h"
+#include "widget_plot_multi1d.h"
 
 namespace Ui {
   class FormManip1D;

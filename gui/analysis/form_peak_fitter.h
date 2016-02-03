@@ -27,7 +27,7 @@
 #include <QWidget>
 #include "spectrum1D.h"
 #include "special_delegate.h"
-#include "widget_plot1d.h"
+#include "widget_plot_fit.h"
 #include <QItemSelection>
 #include "spectrum.h"
 #include "gamma_fitter.h"

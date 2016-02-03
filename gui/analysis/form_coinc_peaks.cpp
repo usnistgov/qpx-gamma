@@ -33,9 +33,6 @@ FormCoincPeaks::FormCoincPeaks(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  qRegisterMetaType<Gaussian>("Gaussian");
-  qRegisterMetaType<QVector<Gaussian>>("QVector<Gaussian>");
-
   ui->tablePeaks->verticalHeader()->hide();
   ui->tablePeaks->setColumnCount(4);
   ui->tablePeaks->setHorizontalHeaderLabels({"bin", "energy", "fwhm", "area"});
@@ -95,7 +92,6 @@ void FormCoincPeaks::setFit(Gamma::Fitter* fit) {
 void FormCoincPeaks::loadSettings(QSettings &settings_) {
   settings_.beginGroup("CoincPeaks");
   ui->plotPeaks->loadSettings(settings_);
-  ui->plotPeaks->set_visible_elements(ShowFitElements::gaussians | ShowFitElements::baselines, false);
   settings_.endGroup();
 }
 

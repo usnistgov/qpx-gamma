@@ -25,7 +25,7 @@
 #define FORM_ONE_PEAK_H
 
 #include <QWidget>
-#include "widget_plot1d.h"
+#include "widget_plot_fit.h"
 #include "gamma_fitter.h"
 
 namespace Ui {

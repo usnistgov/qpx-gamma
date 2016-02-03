@@ -444,15 +444,15 @@ void FormGainMatch::update_plots() {
 
     ui->plot->setLabels("channel", "count");
 
-    if (gauss_ref_.height) {
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.hr_x_), QVector<double>::fromStdVector(gauss_ref_.hr_fullfit_hypermet_), ap_reference_);
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.hr_x_), QVector<double>::fromStdVector(gauss_ref_.hr_baseline_h_), ap_reference_);
-    }
+//    if (gauss_ref_.height) {
+//      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.hr_x_), QVector<double>::fromStdVector(gauss_ref_.hr_fullfit_hypermet_), ap_reference_);
+//      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.hr_x_), QVector<double>::fromStdVector(gauss_ref_.hr_baseline_h_), ap_reference_);
+//    }
 
-    if (gauss_opt_.height) {
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.hr_x_), QVector<double>::fromStdVector(gauss_opt_.hr_fullfit_hypermet_), ap_optimized_);
-      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.hr_x_), QVector<double>::fromStdVector(gauss_opt_.hr_baseline_h_), ap_optimized_);
-    }
+//    if (gauss_opt_.height) {
+//      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.hr_x_), QVector<double>::fromStdVector(gauss_opt_.hr_fullfit_hypermet_), ap_optimized_);
+//      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.hr_x_), QVector<double>::fromStdVector(gauss_opt_.hr_baseline_h_), ap_optimized_);
+//    }
 
 
     ui->plot->setYBounds(minima, maxima);

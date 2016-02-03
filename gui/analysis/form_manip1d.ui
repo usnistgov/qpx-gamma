@@ -14,7 +14,7 @@
    <string>Form</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -111,7 +111,7 @@
       </layout>
      </item>
      <item>
-      <widget class="WidgetPlot1D" name="mcaPlot" native="true">
+      <widget class="WidgetPlotMulti1D" name="mcaPlot" native="true">
        <property name="sizePolicy">
         <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
          <horstretch>0</horstretch>
@@ -126,14 +126,12 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>WidgetPlot1D</class>
+   <class>WidgetPlotMulti1D</class>
    <extends>QWidget</extends>
-   <header>widget_plot1d.h</header>
+   <header>widget_plot_multi1d.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="../resources/qpxres.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

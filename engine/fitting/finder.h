@@ -43,7 +43,8 @@ public:
 
   void clear();
   
-  void setData(std::vector<double> x, std::vector<double> y);
+  void setData(const std::vector<double> &x, const std::vector<double> &y);
+  void setFit(const std::vector<double> &y_fit);
   void find_peaks();
   void find_peaks(uint16_t width, double thresh);
 
@@ -52,7 +53,7 @@ public:
 
   //DATA
 
-  std::vector<double> x_, y_;
+  std::vector<double> x_, y_, y_fit_, y_resid_;
   std::vector<double> x_kon, x_conv;
 
   std::vector<uint16_t> prelim, filtered, lefts, rights;

@@ -112,7 +112,7 @@ void Fitter::find_peaks() {
 //      PL_DBG << "postcat ROI " << L << " " << R;
     } else {
 //      PL_DBG << "<Fitter> Creating ROI " << L << "-" << R;
-      ROI newROI(nrg_cali_, fwhm_cali_, metadata_.live_time.total_milliseconds() * 0.001);
+      ROI newROI(nrg_cali_, fwhm_cali_, metadata_.bits, metadata_.live_time.total_milliseconds() * 0.001);
       L -= margin; if (L < 0) L = 0;
       R += margin; if (R >= finder_.x_.size()) R = finder_.x_.size() - 1;
       newROI.set_data(finder_.x_, finder_.y_, L, R);
@@ -126,15 +126,18 @@ void Fitter::find_peaks() {
   if (fwhm_cali_.valid() && nrg_cali_.valid())
     margin = overlap_ * fwhm_cali_.transform(nrg_cali_.transform(R, metadata_.bits));
   R += margin; if (R >= finder_.x_.size()) R = finder_.x_.size() - 1;
-  ROI newROI(nrg_cali_, fwhm_cali_, metadata_.live_time.total_milliseconds() * 0.001);
+  ROI newROI(nrg_cali_, fwhm_cali_, metadata_.bits, metadata_.live_time.total_milliseconds() * 0.001);
   newROI.set_data(finder_.x_, finder_.y_, L, R);
   if (!newROI.peaks_.empty())
     regions_.push_back(newROI);
+
+  PL_DBG << "<Fitter> Created " << regions_.size() << " regions";
 
   for (auto &q : regions_)
     for (auto &p : q.peaks_)
       peaks_[p.center] = p;
 
+  PL_DBG << "<Fitter> Created " << peaks_.size() << " peaks";
 }
 
 void Fitter::add_peak(uint32_t left, uint32_t right) {
@@ -152,7 +155,7 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
 
   if (!added) {
     PL_DBG << "<Fitter> making new ROI to add peak manually";
-    ROI newROI(nrg_cali_, fwhm_cali_, metadata_.live_time.total_milliseconds() * 0.001);
+    ROI newROI(nrg_cali_, fwhm_cali_, metadata_.bits, metadata_.live_time.total_milliseconds() * 0.001);
     newROI.set_data(finder_.x_, finder_.y_, left, right);
     if (!newROI.peaks_.empty()) {
       PL_DBG << "<Fitter> succeeded making new ROI";

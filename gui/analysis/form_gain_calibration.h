@@ -26,7 +26,7 @@
 
 #include <QWidget>
 #include "gamma_fitter.h"
-#include "widget_plot1d.h"
+#include "widget_plot_calib.h"
 
 namespace Ui {
 class FormGainCalibration;

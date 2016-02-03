@@ -30,10 +30,12 @@ namespace Gamma {
 
 
 struct ROI {
-  ROI(const Calibration &nrg, const Calibration &fw, double live_seconds = 0.0)
-  : cal_nrg_ (nrg)
-  , cal_fwhm_ (fw)
-  , live_seconds_(live_seconds) 
+  ROI(const Calibration &nrg, const Calibration &fw, uint16_t bits, double live_seconds = 0.0)
+    : cal_nrg_ (nrg)
+    , cal_fwhm_ (fw)
+    , live_seconds_(live_seconds)
+    , bits_(bits)
+    , visible_(false)
   {}
 
   void set_data(const std::vector<double> &x, const std::vector<double> &y,
@@ -42,7 +44,7 @@ struct ROI {
   bool contains(double bin);
   bool overlaps(uint16_t bin);
 
-//  void add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y);
+  //  void add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y);
   void add_peak(const std::vector<double> &x, const std::vector<double> &y, uint16_t L, uint16_t R);
   bool add_from_resid(uint16_t centroid_hint = -1);
 
@@ -52,13 +54,17 @@ struct ROI {
 
   Finder finder_;
   std::set<Peak> peaks_;
-  std::vector<double> x_, y_, y_resid_;
 
-   std::vector<double> hr_x, hr_background, hr_back_steps, hr_fullfit;
+  std::vector<double> hr_x, hr_x_nrg,
+                      hr_background, hr_back_steps,
+                      hr_fullfit;
 
 
   Calibration cal_nrg_, cal_fwhm_;
   double live_seconds_;
+  uint16_t bits_;
+
+  bool visible_;
 
 private:
   std::vector<double> make_background(uint16_t samples = 5);

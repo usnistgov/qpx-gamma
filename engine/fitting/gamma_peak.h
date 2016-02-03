@@ -26,7 +26,6 @@
 #include <vector>
 #include <set>
 #include "polynomial.h"
-#include "gaussian.h"
 #include "hypermet.h"
 #include "detector.h"
 #include "sum4.h"
@@ -56,19 +55,11 @@ public:
   {}
 
 
-  Peak(const Hypermet &hype, const SUM4 &sum4,
-       const std::vector<double> &hr_x,
-       const std::vector<double> &hr_baseline_h,
-       Calibration cali_nrg = Calibration(),
-       double live_seconds = 0.0);
+  void construct(Calibration cali_nrg, double live_seconds, uint16_t bits);
 
-
-  void construct(Calibration cali_nrg, double live_seconds);
-
-  std::vector<double> hr_x_, hr_baseline_h_, hr_fullfit_hypermet_;
+  std::vector<double> hr_peak_, hr_fullfit_;
 
   SUM4 sum4_;
-  //Gaussian gaussian_;
   Hypermet hypermet_;
 
   double center, energy, height, fwhm_sum4, fwhm_hyp;
@@ -79,10 +70,6 @@ public:
   double area_best_, cps_best_;
   double intensity_theoretical_, efficiency_relative_;
   
-  static bool by_center (const Peak& a, const Peak& b)
-  {
-    return (a.center < b.center);
-  }
 
   bool operator<(const Peak &other) const {
     return (center < other.center);
