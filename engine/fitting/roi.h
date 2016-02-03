@@ -40,6 +40,7 @@ struct ROI {
 
   void set_data(const std::vector<double> &x, const std::vector<double> &y,
                 uint16_t min, uint16_t max);
+  void auto_fit();
 
   bool contains(double bin);
   bool overlaps(uint16_t bin);

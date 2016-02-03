@@ -32,6 +32,7 @@
 #include <QItemSelection>
 #include "spectra_set.h"
 #include "gamma_fitter.h"
+#include "thread_fitter.h"
 
 namespace Ui {
 class FormPeaks;
@@ -68,6 +69,8 @@ private slots:
 
   void user_selected_peaks();
 
+  void fit_updated(Gamma::Fitter);
+
   void addMovingMarker(Coord);
   void addMovingMarker(double);
   void removeMovingMarker(double);
@@ -100,6 +103,8 @@ private:
   //markers
   Marker list, selected;
   Range range_;
+
+  ThreadFitter thread_fitter_;
 
 };
 

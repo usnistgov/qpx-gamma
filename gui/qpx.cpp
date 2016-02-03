@@ -59,6 +59,7 @@ qpx::qpx(QWidget *parent) :
   qRegisterMetaType<Gamma::Setting>("Gamma::Setting");
   qRegisterMetaType<Gamma::Calibration>("Gamma::Calibration");
   qRegisterMetaType<Qpx::DeviceStatus>("Qpx::DeviceStatus");
+  qRegisterMetaType<Gamma::Fitter>("Gamma::Fitter");
 
   CustomLogger::initLogger(&qpx_stream_, "qpx_%N.log");
   ui->setupUi(this);

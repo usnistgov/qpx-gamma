@@ -116,8 +116,7 @@ void Fitter::find_peaks() {
       L -= margin; if (L < 0) L = 0;
       R += margin; if (R >= finder_.x_.size()) R = finder_.x_.size() - 1;
       newROI.set_data(finder_.x_, finder_.y_, L, R);
-      if (!newROI.peaks_.empty())
-        regions_.push_back(newROI);
+      regions_.push_back(newROI);
       L = finder_.lefts[i];
       R = finder_.rights[i];
     }
@@ -128,16 +127,27 @@ void Fitter::find_peaks() {
   R += margin; if (R >= finder_.x_.size()) R = finder_.x_.size() - 1;
   ROI newROI(nrg_cali_, fwhm_cali_, metadata_.bits, metadata_.live_time.total_milliseconds() * 0.001);
   newROI.set_data(finder_.x_, finder_.y_, L, R);
-  if (!newROI.peaks_.empty())
-    regions_.push_back(newROI);
+  regions_.push_back(newROI);
 
   PL_DBG << "<Fitter> Created " << regions_.size() << " regions";
 
+//  int current = 0;
+//  for (auto &q : regions_) {
+//    PL_DBG << "<Fitter> Fitting region " << current << " of " << regions_.size() << "...";
+//    q.auto_fit();
+//    current++;
+//  }
+
+//  remap_peaks();
+
+}
+
+void Fitter::remap_peaks() {
   for (auto &q : regions_)
     for (auto &p : q.peaks_)
       peaks_[p.center] = p;
 
-  PL_DBG << "<Fitter> Created " << peaks_.size() << " peaks";
+//  PL_DBG << "<Fitter> Mapped " << peaks_.size() << " peaks";
 }
 
 void Fitter::add_peak(uint32_t left, uint32_t right) {

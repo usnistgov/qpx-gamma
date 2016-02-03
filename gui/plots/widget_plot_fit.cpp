@@ -1032,7 +1032,7 @@ void WidgetPlotFit::updateData() {
   flagged_.default_pen =  QPen(flagged_color, 1);
   hypermet_.default_pen = QPen(Qt::darkCyan, 1);
 
-  full_fit_.default_pen = QPen(Qt::magenta, 1);
+  full_fit_.default_pen = QPen(Qt::magenta, 2);
 
   back_poly_.default_pen = QPen(Qt::darkGray, 1);
   rise_.default_pen = QPen(Qt::green, 3);

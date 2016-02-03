@@ -52,11 +52,16 @@ FormPeaks::FormPeaks(QWidget *parent) :
   QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Insert), ui->plot1D);
   connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushAdd_clicked()));
 
+  connect(&thread_fitter_, SIGNAL(fit_updated(Gamma::Fitter)), this, SLOT(fit_updated(Gamma::Fitter)));
 
+  thread_fitter_.start();
 }
 
 FormPeaks::~FormPeaks()
 {
+  thread_fitter_.stop_work();
+  thread_fitter_.terminate(); //in thread itself?
+
   delete ui;
 }
 
@@ -351,9 +356,19 @@ void FormPeaks::perform_fit() {
   fit_data_->find_peaks();
   //  PL_DBG << "number of peaks found " << fit_data_->peaks_.size();
 
+  thread_fitter_.set_data(*fit_data_);
+  thread_fitter_.fit_peaks();
+
   toggle_push();
   replot_all();
 
+}
+
+void FormPeaks::fit_updated(Gamma::Fitter fitter) {
+  *fit_data_ = fitter;
+  toggle_push();
+  replot_all();
+  emit peaks_changed(true);
 }
 
 void FormPeaks::on_pushFindPeaks_clicked()

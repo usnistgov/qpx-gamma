@@ -49,6 +49,7 @@ public:
   void setData(Qpx::Spectrum::Spectrum *spectrum);
 
   void find_peaks();
+  void remap_peaks();
 
   void add_peak(uint32_t left, uint32_t right);
   void remove_peaks(std::set<double> bins);
