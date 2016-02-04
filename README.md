@@ -14,6 +14,7 @@ Features:
 * energy, FWHM and efficiency calibration tools
 * basic isotope database
 * SUM4 peak integration with uncertainties
+* Multiplet deconvolution using Hypermet
 * gain matching (iterative online, and post-acquisition)
 * automatic digitizer setting optimization to minimize FWHM
 
@@ -21,7 +22,7 @@ Supports:
 * Linux and Mac
 * XIA Pixie-4
 * Radiation Technologies HV-8
-* Wiener Vmusb
+* Wiener VmUsb
 * Iseg VHS-12
 
 Reads:
@@ -34,6 +35,8 @@ Reads:
 To install, you need:
 * [boost](http://www.boost.org/)
 * [Qt 5](http://www.qt.io/)
+* libnlopt-dev
+* libusb-dev (VmUsb suuport)
 * If using Pixie-4, make sure PLX driver is working (driver and installation script included, see /hardware/pixie4/PLX/README)
 * utter the following incantations:
   - to compile './install.sh' will also put sample data files in ~/qpx/
