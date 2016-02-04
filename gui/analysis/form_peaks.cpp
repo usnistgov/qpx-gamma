@@ -50,7 +50,9 @@ FormPeaks::FormPeaks(QWidget *parent) :
   connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushAdd_clicked()));
 
   connect(&thread_fitter_, SIGNAL(fit_updated(Gamma::Fitter)), this, SLOT(fit_updated(Gamma::Fitter)));
+  connect(&thread_fitter_, SIGNAL(fitting_done()), this, SLOT(fitting_complete()));
 
+  busy_ = false;
   thread_fitter_.start();
 }
 
@@ -202,8 +204,6 @@ void FormPeaks::addMovingMarker(Coord c) {
   range_.l.set_bin(ch_l, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
   range_.r.set_bin(ch_r, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
 
-  ui->pushAdd->setEnabled(true);
-
   for (auto &q : fit_data_->peaks_)
     q.second.selected = false;
   toggle_push();
@@ -256,12 +256,11 @@ void FormPeaks::replot_markers() {
 
 void FormPeaks::on_pushFindPeaks_clicked()
 {
-  this->setCursor(Qt::WaitCursor);
-
+  busy_= true;
+  toggle_push();
   perform_fit();
 
   emit peaks_changed(true);
-  this->setCursor(Qt::ArrowCursor);
 }
 
 
@@ -275,19 +274,13 @@ void FormPeaks::perform_fit() {
   fit_data_->find_peaks();
   //  PL_DBG << "number of peaks found " << fit_data_->peaks_.size();
 
+  busy_= true;
+  toggle_push();
+  replot_all();
+
   thread_fitter_.set_data(*fit_data_);
   thread_fitter_.fit_peaks();
 
-  toggle_push();
-  replot_all();
-
-}
-
-void FormPeaks::fit_updated(Gamma::Fitter fitter) {
-  *fit_data_ = fitter;
-  toggle_push();
-  replot_all();
-  emit peaks_changed(true);
 }
 
 void FormPeaks::on_pushAdd_clicked()
@@ -298,12 +291,40 @@ void FormPeaks::on_pushAdd_clicked()
   if (range_.l.energy() >= range_.r.energy())
     return;
 
-  fit_data_->add_peak(range_.l.bin(fit_data_->metadata_.bits), range_.r.bin(fit_data_->metadata_.bits));
-  ui->pushAdd->setEnabled(false);
   removeMovingMarker(0);
+  busy_= true;
+  toggle_push();
+
+  thread_fitter_.set_data(*fit_data_);
+  thread_fitter_.add_peak(range_.l.bin(fit_data_->metadata_.bits), range_.r.bin(fit_data_->metadata_.bits));
+}
+
+void FormPeaks::on_pushMarkerRemove_clicked()
+{
+  if (fit_data_ == nullptr)
+    return;
+
+  std::set<double> chosen_peaks;
+  for (auto &q : fit_data_->peaks_)
+    if (q.second.selected)
+      chosen_peaks.insert(q.second.center);
+
+  busy_= true;
+  toggle_push();
+
+  thread_fitter_.remove_peaks(chosen_peaks);
+}
+
+void FormPeaks::fit_updated(Gamma::Fitter fitter) {
+  *fit_data_ = fitter;
   toggle_push();
   replot_all();
   emit peaks_changed(true);
+}
+
+void FormPeaks::fitting_complete() {
+  busy_= false;
+  toggle_push();
 }
 
 void FormPeaks::user_selected_peaks() {
@@ -334,29 +355,25 @@ void FormPeaks::toggle_push() {
   if (fit_data_ == nullptr)
     return;
 
+  ui->pushStopFitter->setEnabled(busy_);
+  ui->pushFindPeaks->setEnabled(!busy_);
+  ui->spinSqWidth->setEnabled(!busy_);
+  ui->spinSum4EdgeW->setEnabled(!busy_);
+  ui->doubleThresh->setEnabled(!busy_);
+  ui->doubleOverlapWidth->setEnabled(!busy_);
+
+  ui->pushAdd->setEnabled(false);
+  ui->pushMarkerRemove->setEnabled(false);
+
+  if (busy_)
+    return;
+
   bool sel = false;
   for (auto &q : fit_data_->peaks_)
     if (q.second.selected)
       sel = true;
   ui->pushAdd->setEnabled(range_.visible);
   ui->pushMarkerRemove->setEnabled(sel);
-}
-
-void FormPeaks::on_pushMarkerRemove_clicked()
-{
-  if (fit_data_ == nullptr)
-    return;
-
-  std::set<double> chosen_peaks;
-  for (auto &q : fit_data_->peaks_)
-    if (q.second.selected)
-      chosen_peaks.insert(q.second.center);
-
-  fit_data_->remove_peaks(chosen_peaks);
-
-  toggle_push();
-  replot_all();
-  emit peaks_changed(true);
 }
 
 void FormPeaks::on_spinSqWidth_editingFinished()
@@ -425,4 +442,9 @@ void FormPeaks::on_doubleThresh_editingFinished()
 
   fit_data_->finder_.find_peaks(ui->spinSqWidth->value(), ui->doubleThresh->value());
   replot_all();
+}
+
+void FormPeaks::on_pushStopFitter_clicked()
+{
+  thread_fitter_.stop_work();
 }

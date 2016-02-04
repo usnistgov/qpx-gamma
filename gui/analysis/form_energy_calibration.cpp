@@ -64,7 +64,7 @@ FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Gamm
   connect(ui->isotopes, SIGNAL(energiesSelected()), this, SLOT(isotope_energies_chosen()));
 
   QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tablePeaks);
-  connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushMarkerRemove_clicked()));
+  connect(shortcut, SIGNAL(activated()), this, SLOT(remove_peaks()));
 }
 
 FormEnergyCalibration::~FormEnergyCalibration()
@@ -240,7 +240,6 @@ void FormEnergyCalibration::toggle_push() {
     if (q.second.selected)
       sel++;
 
-  ui->pushMarkerRemove->setEnabled(sel > 0);
   ui->pushAllEnergies->setEnabled((sel > 0) && (sel == ui->isotopes->current_gammas().size()));
   ui->pushAllmarkers->setEnabled((sel > 0) && (ui->isotopes->current_gammas().empty()));
 
@@ -358,7 +357,7 @@ void FormEnergyCalibration::on_pushAllEnergies_clicked()
 }
 
 
-void FormEnergyCalibration::on_pushMarkerRemove_clicked()
+void FormEnergyCalibration::remove_peaks()
 {
   std::set<double> chosen_peaks;
   double last_sel = -1;

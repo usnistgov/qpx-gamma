@@ -27,102 +27,41 @@
 #include <QMutex>
 #include "gamma_fitter.h"
 
-enum FitterAction {kFit, kStop, kIdle};
+enum FitterAction {kFit, kStop, kIdle, kAddPeak, kRemovePeaks};
 
 class ThreadFitter : public QThread
 {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit ThreadFitter(QObject *parent = 0) :
-        QThread(parent),
-        terminating_(false),
-        running_(false)
-      {
-        action_ = kIdle;
-        start(HighPriority);
-      }
+  explicit ThreadFitter(QObject *parent = 0);
+  void terminate();
 
+  void begin();
+  void set_data(Gamma::Fitter &data);
 
-  void terminate() {
-    terminating_.store(true);
-    wait();
-  }
-
-    void begin() {
-      if (!isRunning())
-        start(HighPriority);
-    }
-
-    void set_data(Gamma::Fitter &data)
-    {
-      if (running_.load()) {
-        PL_WARN << "Fitter busy";
-        return;
-      }
-      QMutexLocker locker(&mutex_);
-      terminating_.store(false);
-      fitter_ = data;
-      action_ = kIdle;
-      if (!isRunning())
-        start(HighPriority);
-    }
-
-    void fit_peaks() {
-      if (running_.load()) {
-        PL_WARN << "Fitter busy";
-        return;
-      }
-      QMutexLocker locker(&mutex_);
-      terminating_.store(false);
-      action_ = kFit;
-      if (!isRunning())
-        start(HighPriority);
-    }
-
-    void stop_work() {
-      QMutexLocker locker(&mutex_);
-      action_ = kStop; //not thread safe
-    }
+  void fit_peaks();
+  void stop_work();
+  void add_peak(uint32_t L, uint32_t R);
+  void remove_peaks(std::set<double> chosen_peaks);
 
 signals:
-    void fit_updated(Gamma::Fitter data);
-    void fitting_done();
+  void fit_updated(Gamma::Fitter data);
+  void fitting_done();
 
 protected:
-    void run() {
-
-      while (!terminating_.load()) {
-        if (action_ != kIdle)
-          running_.store(true);
-
-        if (action_ == kFit) {
-          int current = 1;
-          for (auto &q : fitter_.regions_) {
-            PL_DBG << "<Fitter> Fitting region " << current << " of " << fitter_.regions_.size() << "...";
-            q.auto_fit();
-            current++;
-            fitter_.remap_peaks();
-            emit fit_updated(fitter_);
-            if ((action_ == kStop) || terminating_.load())
-              break;
-          }
-          emit fitting_done();
-          action_ = kIdle;
-        } else {
-          QThread::sleep(2);
-        }
-        running_.store(false);
-      }
-    }
+  void run();
 
 private:
-    Gamma::Fitter fitter_;
+  Gamma::Fitter fitter_;
 
-    QMutex mutex_;
-    FitterAction action_;
+  QMutex mutex_;
+  FitterAction action_;
 
-    boost::atomic<bool> running_;
-    boost::atomic<bool> terminating_;
+  uint32_t left_, right_;
+  std::set<double> chosen_peaks_;
+
+  boost::atomic<bool> running_;
+  boost::atomic<bool> terminating_;
 };
 
 #endif

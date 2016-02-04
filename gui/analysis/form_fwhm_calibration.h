@@ -71,7 +71,7 @@ private slots:
   void on_pushCullOne_clicked();
   void on_pushCullUntil_clicked();
 
-  void on_pushRemovePeak_clicked();
+  void remove_peaks();
 
 private:
   Ui::FormFwhmCalibration *ui;

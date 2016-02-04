@@ -57,7 +57,7 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
   connect(ui->PlotCalib, SIGNAL(selection_changed()), this, SLOT(selection_changed_in_plot()));
 
   QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tableFWHM);
-  connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushRemovePeak_clicked()));
+  connect(shortcut, SIGNAL(activated()), this, SLOT(remove_peaks()));
 }
 
 FormFwhmCalibration::~FormFwhmCalibration()
@@ -231,7 +231,6 @@ void FormFwhmCalibration::toggle_push() {
   for (auto &q : fit_data_.peaks_)
     if (q.second.selected)
       sel++;
-  ui->pushRemovePeak->setEnabled(sel > 0);
 
   ui->pushCullOne->setEnabled(false);
   ui->pushCullUntil->setEnabled(false);
@@ -364,7 +363,7 @@ void FormFwhmCalibration::on_pushCullUntil_clicked()
   emit peaks_changed(true);
 }
 
-void FormFwhmCalibration::on_pushRemovePeak_clicked()
+void FormFwhmCalibration::remove_peaks()
 {
   std::set<double> chosen_peaks;
   double last_sel = -1;

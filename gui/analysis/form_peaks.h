@@ -70,6 +70,7 @@ private slots:
   void user_selected_peaks();
 
   void fit_updated(Gamma::Fitter);
+  void fitting_complete();
 
   void addMovingMarker(Coord);
   void addMovingMarker(double);
@@ -91,6 +92,8 @@ private slots:
   void on_doubleThresh_editingFinished();
 
 
+  void on_pushStopFitter_clicked();
+
 private:
   Ui::FormPeaks *ui;
 
@@ -98,8 +101,10 @@ private:
   Gamma::Fitter *fit_data_;
 
   //markers
-  Marker list, selected;
+  Marker list;
   Range range_;
+
+  bool busy_;
 
   ThreadFitter thread_fitter_;
 

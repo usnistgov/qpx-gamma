@@ -73,7 +73,7 @@ private slots:
   void on_pushAllmarkers_clicked();
   void on_pushAllEnergies_clicked();
 
-  void on_pushMarkerRemove_clicked();
+  void remove_peaks();
 
 private:
   Ui::FormEnergyCalibration *ui;
