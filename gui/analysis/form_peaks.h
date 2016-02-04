@@ -94,9 +94,6 @@ private slots:
 private:
   Ui::FormPeaks *ui;
 
-  //from parent
-  std::map<double, double> minima, maxima;
-
   //data from selected spectrum
   Gamma::Fitter *fit_data_;
 

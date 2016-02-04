@@ -94,8 +94,7 @@ void ROI::auto_fit() {
 
       Peak fitted;
       fitted.hypermet_ = hyp;
-      fitted.construct(cal_nrg_, live_seconds_, bits_);
-
+      fitted.center = hyp.center_;
       peaks_.insert(fitted);
     }
   }
@@ -160,8 +159,7 @@ bool ROI::add_from_resid(uint16_t centroid_hint) {
 
     Peak fitted;
     fitted.hypermet_ = hyp;
-    fitted.construct(cal_nrg_, live_seconds_, bits_);
-
+    fitted.center = hyp.center_;
     peaks_.insert(fitted);
 
     rebuild();
@@ -194,7 +192,6 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
   if ((L >= x.size()) || (R >= x.size()))
     return;
 
-  Peak fitted;
   uint16_t center_prelim = (L+R) /2; //assume down the middle
 
   if (overlaps(L) && overlaps(R)) {
@@ -217,17 +214,17 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
     Gaussian gaussian(finder_.x_, y_nobkg);
     Hypermet hyp(finder_.x_, y_nobkg, gaussian.height_, gaussian.center_, gaussian.hwhm_ / sqrt(log(2)));
 
-    fitted.hypermet_ = hyp;
-    fitted.construct(cal_nrg_, live_seconds_, bits_);
 
     if (
-        (fitted.height > 0) &&
-        //          (fitted.fwhm_sum4 > 0) &&
-        (fitted.fwhm_hyp > 0) &&
-        (L < fitted.center) &&
-        (fitted.center < R)
+        (hyp.height_ > 0) &&
+        (hyp.width_ > 0) &&
+        (L < hyp.center_) &&
+        (hyp.center_ < R)
         )
     {
+      Peak fitted;
+      fitted.hypermet_ = hyp;
+      fitted.center = hyp.center_;
       //    PL_DBG << "I like this peak at " << fitted.center << " fw " << fitted.fwhm_hyp;
       peaks_.insert(fitted);
       rebuild();
@@ -316,18 +313,22 @@ void ROI::rebuild() {
   hr_back_steps = hr_background;
   hr_fullfit    = hr_background;
 
+  std::vector<double> lowres_backsteps = hype.front().poly(finder_.x_);
   std::vector<double> lowres_fullfit = hype.front().poly(finder_.x_);
 
   for (int i=0; i < hype.size(); ++i) {
     for (int32_t j = 0; j < static_cast<int32_t>(hr_x.size()); ++j) {
-      hr_back_steps[j] += hype[i].eval_step_tail(hr_x[j]);
-      hr_fullfit[j]    += hype[i].eval_step_tail(hr_x[j]) + hype[i].eval_peak(hr_x[j]);
+      double step = hype[i].eval_step_tail(hr_x[j]);
+      hr_back_steps[j] += step;
+      hr_fullfit[j]    += step + hype[i].eval_peak(hr_x[j]);
     }
 
-    for (int32_t j = 0; j < static_cast<int32_t>(finder_.x_.size()); ++j)
-      lowres_fullfit[j] += hype[i].eval_step_tail(finder_.x_[j]) + hype[i].eval_peak(finder_.x_[j]);
+    for (int32_t j = 0; j < static_cast<int32_t>(finder_.x_.size()); ++j) {
+      double step = hype[i].eval_step_tail(finder_.x_[j]);
+      lowres_backsteps[j] += step;
+      lowres_fullfit[j]   += step + hype[i].eval_peak(finder_.x_[j]);
+    }
   }
-
 
   for (int i=0; i < hype.size(); ++i) {
     Peak one;
@@ -339,11 +340,11 @@ void ROI::rebuild() {
     }
 
     one.hypermet_ = hype[i];
-    one.construct(cal_nrg_, live_seconds_, bits_);
+    one.center = hype[i].center_;
     peaks_.insert(one);
   }
 
-  finder_.setFit(lowres_fullfit);
+  finder_.setFit(lowres_fullfit, lowres_backsteps);
 }
 
 std::vector<double> ROI::make_background(uint16_t samples) {

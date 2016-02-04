@@ -33,9 +33,6 @@ FormPeaks::FormPeaks(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  ui->plot1D->use_calibrated(true);
-  ui->plot1D->set_markers_selectable(true);
-
   range_.visible = false;
   range_.top.default_pen = QPen(Qt::darkMagenta, 1);
   range_.base.default_pen = QPen(Qt::darkMagenta, 2, Qt::DashLine);
@@ -77,8 +74,6 @@ void FormPeaks::loadSettings(QSettings &settings_) {
   ui->doubleOverlapWidth->setValue(settings_.value("overlap_width", 2.70).toDouble());
   ui->doubleThresh->setValue(settings_.value("peak_threshold", 3.0).toDouble());
   ui->plot1D->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
-  ui->plot1D->set_plot_style(settings_.value("plot_style", "Step").toString());
-  ui->plot1D->set_grid_style(settings_.value("grid_style", "Grid + subgrid").toString());
   settings_.endGroup();
 }
 
@@ -89,15 +84,11 @@ void FormPeaks::saveSettings(QSettings &settings_) {
   settings_.setValue("peak_threshold", ui->doubleThresh->value());
   settings_.setValue("overlap_width", ui->doubleOverlapWidth->value());
   settings_.setValue("scale_type", ui->plot1D->scale_type());
-  settings_.setValue("plot_style", ui->plot1D->plot_style());
-  settings_.setValue("grid_style", ui->plot1D->grid_style());
   settings_.endGroup();
 }
 
 void FormPeaks::clear() {
   //PL_DBG << "FormPeaks::clear()";
-  maxima.clear();
-  minima.clear();
   toggle_push();
   ui->plot1D->setTitle("");
   ui->plot1D->clearGraphs();
@@ -152,22 +143,6 @@ void FormPeaks::update_spectrum() {
     return;
   }
 
-  minima.clear();
-  maxima.clear();
-
-  ui->plot1D->use_calibrated(fit_data_->nrg_cali_.valid());
-
-  ui->plot1D->setLabels(QString::fromStdString(fit_data_->nrg_cali_.units_), "count");
-
-  for (int i=0; i < fit_data_->finder_.x_.size(); ++i) {
-    double yy = fit_data_->finder_.y_[i];
-    double xx = fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[i], fit_data_->metadata_.bits);
-    if (!minima.count(xx) || (minima[xx] > yy))
-      minima[xx] = yy;
-    if (!maxima.count(xx) || (maxima[xx] < yy))
-      maxima[xx] = yy;
-  }
-
   replot_all();
   ui->plot1D->redraw();
 }
@@ -187,7 +162,6 @@ void FormPeaks::replot_all() {
 
   ui->plot1D->updateData();
 
-  ui->plot1D->setYBounds(minima, maxima); //no baselines or avgs
   replot_markers();
 }
 
@@ -214,15 +188,19 @@ void FormPeaks::addMovingMarker(Coord c) {
   double x = c.bin(fit_data_->metadata_.bits);
 
   uint16_t ch = static_cast<uint16_t>(x);
+  uint16_t ch_l = fit_data_->finder_.find_left(ch);
+  uint16_t ch_r = fit_data_->finder_.find_right(ch);
+
+  for (auto &q : fit_data_->regions_) {
+    if (q.overlaps(x)) {
+      ch_l = q.finder_.find_left(ch);
+      ch_r = q.finder_.find_right(ch);
+    }
+  }
 
   range_.center.set_bin(x, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
-
-  uint16_t ch_l = fit_data_->finder_.find_left(ch);
   range_.l.set_bin(ch_l, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
-
-  uint16_t ch_r = fit_data_->finder_.find_right(ch);
   range_.r.set_bin(ch_r, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
-
 
   ui->pushAdd->setEnabled(true);
 
@@ -230,7 +208,6 @@ void FormPeaks::addMovingMarker(Coord c) {
     q.second.selected = false;
   toggle_push();
   replot_markers();
-
 
   emit peaks_changed(false);
   emit range_changed(range_);
@@ -431,7 +408,6 @@ void FormPeaks::update_fit(bool content_changed) {
     replot_all();
   } else
     replot_markers();
-  ui->plot1D->setLabels(QString::fromStdString(fit_data_->nrg_cali_.units_), "count");
   toggle_push();
 }
 

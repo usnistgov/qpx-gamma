@@ -96,7 +96,7 @@ protected:
           running_.store(true);
 
         if (action_ == kFit) {
-          int current = 0;
+          int current = 1;
           for (auto &q : fitter_.regions_) {
             PL_DBG << "<Fitter> Fitting region " << current << " of " << fitter_.regions_.size() << "...";
             q.auto_fit();

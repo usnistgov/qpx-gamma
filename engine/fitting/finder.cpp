@@ -31,20 +31,23 @@ void Finder::setData(const std::vector<double> &x, const std::vector<double> &y)
   clear();
   if (x.size() == y.size()) {
     x_ = x;
-    y_resid_ = y_ = y;
+    y_resid_on_background_ = y_resid_ = y_ = y;
     calc_kon();
     find_peaks();
   }
 }
 
-void Finder::setFit(const std::vector<double> &y_fit)
+void Finder::setFit(const std::vector<double> &y_fit, const std::vector<double> &y_background)
 {
   if (y_fit.size() == y_.size()) {
     y_fit_ = y_fit;
 
     y_resid_ = y_;
-    for (int i=0; i < y_.size(); ++i)
+    y_resid_on_background_ = y_background;
+    for (int i=0; i < y_.size(); ++i) {
       y_resid_[i] = y_[i] - y_fit_[i];
+      y_resid_on_background_[i] += y_resid_[i];
+    }
 
     calc_kon();
     find_peaks();

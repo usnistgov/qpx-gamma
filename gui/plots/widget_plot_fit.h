@@ -56,14 +56,7 @@ public:
   void setTitle(QString title);
 
   void set_scale_type(QString);
-  void set_plot_style(QString);
-  void set_grid_style(QString);
-  void set_markers_selectable(bool);
   QString scale_type();
-  QString plot_style();
-  QString grid_style();
-
-  void set_visible_options(ShowOptions);
 
   void set_markers(const std::list<Marker>&);
 
@@ -74,14 +67,6 @@ public:
 
   void setData(Gamma::Fitter* fit);
   void updateData();
-
-  void addPoints(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, QCPScatterStyle::ScatterShape);
-  void addGraph(const QVector<double>& x, const QVector<double>& y,
-                AppearanceProfile appearance, bool fittable = false, int32_t bits = 0,
-                QString name = QString());
-  void setYBounds(const std::map<double, double> &minima, const std::map<double, double> &maxima);
-  void addResid(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, bool fittable = false, int32_t bits = 0);
-
 
   void use_calibrated(bool);
 
@@ -113,7 +98,6 @@ protected:
 
   void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
   void calc_y_bounds(double lower, double upper);
-  void set_graph_style(QCPGraph*, QString);
 
   void build_menu();
 
@@ -132,33 +116,22 @@ protected:
   bool use_calibrated_;
   bool mouse_pressed_;
 
-  bool markers_selectable_;
-
   double minx_zoom, maxx_zoom;
 
   std::map<double, double> minima_, maxima_;
 
   QMenu menuExportFormat;
-
-  QMenu       menuOptions;
-  ShowOptions visible_options_;
+  QMenu menuOptions;
 
   QString scale_type_;
-  QString plot_style_;
-  QString grid_style_;
-  int thickness_;
-
   QString title_text_;
 
-
-  QCPGraph *resid;
-  QCPAxisRect *residAxisRect;
-  std::map<double, double> resid_extrema_;
-
   void trim_log_lower(QVector<double> &array);
-
-  uint16_t visible_roi_, visible_peaks_;
   void calc_visible();
+  void add_bounds(const QVector<double>& x, const QVector<double>& y);
+  void addGraph(const QVector<double>& x, const QVector<double>& y, QPen appearance,
+                int fittable = 0, int32_t bits = 0,
+                QString name = QString());
 
 };
 

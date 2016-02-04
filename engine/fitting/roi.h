@@ -30,10 +30,9 @@ namespace Gamma {
 
 
 struct ROI {
-  ROI(const Calibration &nrg, const Calibration &fw, uint16_t bits, double live_seconds = 0.0)
+  ROI(const Calibration &nrg, const Calibration &fw, uint16_t bits)
     : cal_nrg_ (nrg)
     , cal_fwhm_ (fw)
-    , live_seconds_(live_seconds)
     , bits_(bits)
     , visible_(false)
   {}
@@ -62,7 +61,6 @@ struct ROI {
 
 
   Calibration cal_nrg_, cal_fwhm_;
-  double live_seconds_;
   uint16_t bits_;
 
   bool visible_;

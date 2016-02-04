@@ -40,17 +40,12 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
     if (!md.detectors.empty())
       detector_ = md.detectors[0];
 
-    if (detector_.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits))) {
+    if (detector_.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits)))
       nrg_cali_ = detector_.energy_calibrations_.get(Gamma::Calibration("Energy", md.bits));
-      //PL_INFO << "<Gamma::Fitter> Energy calibration used from detector \"" << detector_.name_ << "\"   " << nrg_cali_.to_string();
-    } //else
-      //PL_INFO << "<Gamma::Fitter> No existing calibration for this resolution";
+    //best?
 
-    if (detector_.fwhm_calibration_.valid()) {
+    if (detector_.fwhm_calibration_.valid())
       fwhm_cali_ = detector_.fwhm_calibration_;
-      //PL_INFO << "<Gamma::Fitter> FWHM calibration used from detector \"" << detector_.name_ << "\"   "  << fwhm_cali_.to_string();
-    } //else
-      //PL_INFO << "<Gamma::Fitter> No existing FWHM calibration";
 
     std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_dump = std::move(spectrum->get_spectrum({{0, md.resolution}}));
     std::vector<double> x;
@@ -112,7 +107,7 @@ void Fitter::find_peaks() {
 //      PL_DBG << "postcat ROI " << L << " " << R;
     } else {
 //      PL_DBG << "<Fitter> Creating ROI " << L << "-" << R;
-      ROI newROI(nrg_cali_, fwhm_cali_, metadata_.bits, metadata_.live_time.total_milliseconds() * 0.001);
+      ROI newROI(nrg_cali_, fwhm_cali_, metadata_.bits);
       L -= margin; if (L < 0) L = 0;
       R += margin; if (R >= finder_.x_.size()) R = finder_.x_.size() - 1;
       newROI.set_data(finder_.x_, finder_.y_, L, R);
@@ -125,7 +120,7 @@ void Fitter::find_peaks() {
   if (fwhm_cali_.valid() && nrg_cali_.valid())
     margin = overlap_ * fwhm_cali_.transform(nrg_cali_.transform(R, metadata_.bits));
   R += margin; if (R >= finder_.x_.size()) R = finder_.x_.size() - 1;
-  ROI newROI(nrg_cali_, fwhm_cali_, metadata_.bits, metadata_.live_time.total_milliseconds() * 0.001);
+  ROI newROI(nrg_cali_, fwhm_cali_, metadata_.bits);
   newROI.set_data(finder_.x_, finder_.y_, L, R);
   regions_.push_back(newROI);
 
@@ -143,9 +138,13 @@ void Fitter::find_peaks() {
 }
 
 void Fitter::remap_peaks() {
+  peaks_.clear();
   for (auto &q : regions_)
-    for (auto &p : q.peaks_)
-      peaks_[p.center] = p;
+    for (auto &p : q.peaks_) {
+      Peak pk = p;
+      pk.construct(nrg_cali_, metadata_.live_time.total_milliseconds() * 0.001, metadata_.bits);
+      peaks_[pk.center] = pk;
+    }
 
 //  PL_DBG << "<Fitter> Mapped " << peaks_.size() << " peaks";
 }
@@ -165,7 +164,7 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
 
   if (!added) {
     PL_DBG << "<Fitter> making new ROI to add peak manually";
-    ROI newROI(nrg_cali_, fwhm_cali_, metadata_.bits, metadata_.live_time.total_milliseconds() * 0.001);
+    ROI newROI(nrg_cali_, fwhm_cali_, metadata_.bits);
     newROI.set_data(finder_.x_, finder_.y_, left, right);
     if (!newROI.peaks_.empty()) {
       PL_DBG << "<Fitter> succeeded making new ROI";
@@ -174,12 +173,9 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
     }
   }
 
-  if (added) {
-    peaks_.clear();
-    for (auto &q : regions_)
-      for (auto &p : q.peaks_)
-        peaks_[p.center] = p;
-  }
+  if (added)
+    remap_peaks();
+
 }
 
 void Fitter::remove_peaks(std::set<double> bins) {
@@ -192,11 +188,7 @@ void Fitter::remove_peaks(std::set<double> bins) {
       regions.push_back(r);
 
   regions_ = regions;
-  peaks_.clear();
-  for (auto &q : regions_)
-    for (auto &p : q.peaks_)
-      peaks_[p.center] = p;
-
+  remap_peaks();
 }
 
 void Fitter::save_report(std::string filename) {
