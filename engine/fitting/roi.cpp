@@ -28,8 +28,11 @@ namespace Gamma {
 void ROI::set_data(const std::vector<double> &x, const std::vector<double> &y,
                    uint16_t min, uint16_t max) {
 
-  std::vector<double> x_local, y_local;
   finder_.clear();
+  hr_x.clear();
+  hr_background.clear();
+  hr_back_steps.clear();
+  hr_fullfit.clear();
 
   if (x.size() != y.size())
     return;
@@ -37,22 +40,21 @@ void ROI::set_data(const std::vector<double> &x, const std::vector<double> &y,
   if ((min >= x.size()) || (max >= x.size()))
     return;
 
+  std::vector<double> x_local, y_local;
   for (uint16_t i = min; i < max; ++i) {
     x_local.push_back(x[i]);
     y_local.push_back(y[i]);
   }
 
   finder_.setData(x_local, y_local);
+  init_background();
 
-  hr_x.clear();
-  hr_background.clear();
-  hr_back_steps.clear();
-  hr_fullfit.clear();
   for (double i = 0; i < finder_.x_.size(); i += 0.25) {
     hr_x.push_back(finder_.x_[0] + i);
-    hr_background.push_back(finder_.y_[i]);
-    hr_back_steps.push_back(finder_.y_[i]);
-    hr_fullfit.push_back(finder_.y_[i]);
+    double bkg = background_.eval(finder_.x_[0] + i);
+    hr_background.push_back(bkg);
+    hr_back_steps.push_back(bkg);
+    hr_fullfit.push_back(bkg);
   }
 
   hr_x_nrg = cal_nrg_.transform(hr_x, bits_);
@@ -66,6 +68,7 @@ void ROI::auto_fit() {
   if (finder_.filtered.empty())
     return;
 
+  init_background();
   std::vector<double> y_nobkg = make_background();
 
   //  PL_DBG << "ROI finder found " << finder_.filtered.size();
@@ -152,6 +155,7 @@ bool ROI::add_from_resid(uint16_t centroid_hint) {
       (gaussian.center_ < finder_.x_[finder_.rights[target_peak]])
       )
   {
+//    PL_DBG << "<ROI> new peak accepted";
     Hypermet hyp;
     hyp.center_ = gaussian.center_;
     hyp.height_ = gaussian.height_;
@@ -183,6 +187,17 @@ bool ROI::overlaps(uint16_t bin) {
   return ((bin >= finder_.x_.front()) && (bin <= finder_.x_.back()));
 }
 
+bool ROI::overlaps(uint16_t Lbin, uint16_t Rbin) {
+  if (finder_.x_.empty())
+    return false;
+  if (overlaps(Lbin) || overlaps(Rbin))
+    return true;
+  if ((Lbin <= finder_.x_.front()) && (Rbin >= finder_.x_.back()))
+    return true;
+  return false;
+}
+
+
 void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
                    uint16_t L, uint16_t R)
 {
@@ -201,7 +216,7 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
   } else if (!finder_.x_.empty()) {
     uint32_t min = std::min(static_cast<double>(L), finder_.x_[0]);
     uint32_t max = std::max(static_cast<double>(R), finder_.x_[finder_.x_.size() - 1]);
-    PL_DBG << "<ROI> adding on exterior " << min << " " << max;
+    PL_DBG << "<ROI> adding on exterior " << min << " " << max << " at around " << center_prelim;
     std::vector<double> x_local, y_local;
     for (uint32_t i = min; i <= max; ++i) {
       x_local.push_back(x[i]);
@@ -209,26 +224,26 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
     }
     finder_.setData(x_local, y_local); //assumes default threshold parameters!!!!
 
-    std::vector<double> y_nobkg = make_background();
-
-    Gaussian gaussian(finder_.x_, y_nobkg);
-    Hypermet hyp(finder_.x_, y_nobkg, gaussian.height_, gaussian.center_, gaussian.hwhm_ / sqrt(log(2)));
-
-
-    if (
-        (hyp.height_ > 0) &&
-        (hyp.width_ > 0) &&
-        (L < hyp.center_) &&
-        (hyp.center_ < R)
-        )
-    {
-      Peak fitted;
-      fitted.hypermet_ = hyp;
-      fitted.center = hyp.center_;
-      //    PL_DBG << "I like this peak at " << fitted.center << " fw " << fitted.fwhm_hyp;
-      peaks_.insert(fitted);
-      rebuild();
+    hr_x.clear();
+    hr_background.clear();
+    hr_back_steps.clear();
+    hr_fullfit.clear();
+    for (double i = 0; i < finder_.x_.size(); i += 0.25) {
+      hr_x.push_back(finder_.x_[0] + i);
+      double bkg = background_.eval(finder_.x_[0] + i);
+      hr_background.push_back(bkg);
+      hr_back_steps.push_back(bkg);
+      hr_fullfit.push_back(bkg);
     }
+    hr_x_nrg = cal_nrg_.transform(hr_x, bits_);
+
+
+    init_background();
+    finder_.y_resid_ = make_background();
+    finder_.find_peaks(3, 3.0);  //assumes default params!!!
+
+    if (!add_from_resid(center_prelim))
+      auto_fit();
 
   } else {
     PL_DBG << "<ROI> cannot add to empty ROI";
@@ -348,51 +363,48 @@ void ROI::rebuild() {
 }
 
 std::vector<double> ROI::make_background(uint16_t samples) {
-  std::vector<double> y_background_h;
-
-
-  if (finder_.x_.size() < samples) {
-    y_background_h.resize(finder_.y_.size(), 0);
-    return y_background_h;
-  }
-
-  //  double min_y = y_[0], min_x = x_[0];
-  //  double max_y = y_[0], max_x = x_[0];
-  //  for (int i=0; i < y_.size(); ++i) {
-  //    if (y_[i] < min_y) {
-  //      min_y = y_[i];
-  //      min_x = x_[i];
-  //    }
-  //    if (y_[i] > max_y) {
-  //      max_y = y_[i];
-  //      max_x = x_[i];
-  //    }
-  //  }
-
-  double min_L = finder_.y_[0];
-  for (int i=0; i < samples; ++i)
-    min_L = std::min(min_L, finder_.y_[i]);
-
-  double min_R = finder_.y_[finder_.y_.size()-1];
-  for (int i=finder_.y_.size()-1; i >= finder_.y_.size()-samples; --i)
-    min_R = std::min(min_R, finder_.y_[i]);
-
-
-  double rise = min_R - min_L;
-  double run = finder_.x_[finder_.x_.size()-1] - finder_.x_[0];
-  double slope = rise / run;
-  double offset = min_L;
-
-  //by default, linear
-  y_background_h.resize(finder_.y_.size());
-  for (int32_t i = 0; i < finder_.y_.size() ; ++i)
-    y_background_h[i] = offset + (i * slope);
+  std::vector<double> y_background = background_.eval(finder_.x_);
 
   std::vector<double> y_nobkg(finder_.x_.size());
   for (int32_t i = 0; i < static_cast<int32_t>(finder_.y_.size()); ++i)
-    y_nobkg[i] = finder_.y_[i] - y_background_h[i];
+    y_nobkg[i] = finder_.y_[i] - y_background[i];
 
   return y_nobkg;
+}
+
+void ROI::init_background(uint16_t samples) {
+  background_ = Polynomial();
+
+  if (finder_.x_.size() < samples)
+    return;
+
+  double min_L = finder_.y_[0];
+  double avg_L = 0;
+  for (int i=0; i < samples; ++i) {
+    min_L = std::min(min_L, finder_.y_[i]);
+    avg_L += finder_.y_[i];
+  }
+  avg_L /= samples;
+
+  double min_R = finder_.y_[finder_.y_.size()-1];
+  double avg_R = 0;
+  for (int i=finder_.y_.size()-1; i >= finder_.y_.size()-samples; --i) {
+    min_R = std::min(min_R, finder_.y_[i]);
+    avg_R += finder_.y_[i];
+  }
+  avg_R /= samples;
+
+  double run = finder_.x_[finder_.x_.size()-1] - finder_.x_[0];
+
+  double rise = min_R - min_L;
+//  double rise = avg_R - avg_L;
+
+  double slope = rise / run;
+  double base = min_L;
+  double offset = finder_.x_[0];
+
+  background_.coeffs_ = std::vector<double>({base, slope});
+  background_.xoffset_ = offset;
 }
 
 }

@@ -254,6 +254,42 @@ void FormPeaks::replot_markers() {
 
 }
 
+void FormPeaks::on_pushFindPeaks_clicked()
+{
+  this->setCursor(Qt::WaitCursor);
+
+  perform_fit();
+
+  emit peaks_changed(true);
+  this->setCursor(Qt::ArrowCursor);
+}
+
+
+void FormPeaks::perform_fit() {
+  if (fit_data_ == nullptr)
+    return;
+
+  fit_data_->finder_.find_peaks(ui->spinSqWidth->value(),ui->doubleThresh->value());
+  fit_data_->overlap_ = ui->doubleOverlapWidth->value();
+  fit_data_->sum4edge_samples = ui->spinSum4EdgeW->value();
+  fit_data_->find_peaks();
+  //  PL_DBG << "number of peaks found " << fit_data_->peaks_.size();
+
+  thread_fitter_.set_data(*fit_data_);
+  thread_fitter_.fit_peaks();
+
+  toggle_push();
+  replot_all();
+
+}
+
+void FormPeaks::fit_updated(Gamma::Fitter fitter) {
+  *fit_data_ = fitter;
+  toggle_push();
+  replot_all();
+  emit peaks_changed(true);
+}
+
 void FormPeaks::on_pushAdd_clicked()
 {
   if (!ui->pushAdd->isEnabled())
@@ -321,41 +357,6 @@ void FormPeaks::on_pushMarkerRemove_clicked()
   toggle_push();
   replot_all();
   emit peaks_changed(true);
-}
-
-void FormPeaks::perform_fit() {
-  if (fit_data_ == nullptr)
-    return;
-
-  fit_data_->finder_.find_peaks(ui->spinSqWidth->value(),ui->doubleThresh->value());
-  fit_data_->overlap_ = ui->doubleOverlapWidth->value();
-  fit_data_->sum4edge_samples = ui->spinSum4EdgeW->value();
-  fit_data_->find_peaks();
-  //  PL_DBG << "number of peaks found " << fit_data_->peaks_.size();
-
-  thread_fitter_.set_data(*fit_data_);
-  thread_fitter_.fit_peaks();
-
-  toggle_push();
-  replot_all();
-
-}
-
-void FormPeaks::fit_updated(Gamma::Fitter fitter) {
-  *fit_data_ = fitter;
-  toggle_push();
-  replot_all();
-  emit peaks_changed(true);
-}
-
-void FormPeaks::on_pushFindPeaks_clicked()
-{
-  this->setCursor(Qt::WaitCursor);
-
-  perform_fit();
-
-  emit peaks_changed(true);
-  this->setCursor(Qt::ArrowCursor);
 }
 
 void FormPeaks::on_spinSqWidth_editingFinished()

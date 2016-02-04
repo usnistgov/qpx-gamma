@@ -788,15 +788,6 @@ void WidgetPlotFit::updateData() {
     addGraph(xx, yy, full_fit_, false, q.bits_, "Region fit");
     add_bounds(xx, yy);
 
-    yy = QVector<double>::fromStdVector(q.hr_background);
-    trim_log_lower(yy);
-    addGraph(xx, yy, back_poly_, false, q.bits_, "Background poly");
-    add_bounds(xx, yy);
-
-    yy = QVector<double>::fromStdVector(q.hr_back_steps);
-    trim_log_lower(yy);
-    addGraph(xx, yy, back_with_steps_, false, q.bits_, "Background steps");
-
     for (auto & p : q.peaks_) {
       yy = QVector<double>::fromStdVector(p.hr_fullfit_);
       trim_log_lower(yy);
@@ -838,10 +829,21 @@ void WidgetPlotFit::updateData() {
     }
 
     if (!q.peaks_.empty()) {
+
+      yy = QVector<double>::fromStdVector(q.hr_background);
+      trim_log_lower(yy);
+      addGraph(xx, yy, back_poly_, false, q.bits_, "Background poly");
+      add_bounds(xx, yy);
+
+      yy = QVector<double>::fromStdVector(q.hr_back_steps);
+      trim_log_lower(yy);
+      addGraph(xx, yy, back_with_steps_, false, q.bits_, "Background steps");
+
       xx = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.finder_.x_, fit_data_->metadata_.bits));
       yy = QVector<double>::fromStdVector(q.finder_.y_resid_on_background_);
+//      trim_log_lower(yy); //maybe not?
       addGraph(xx, yy, resid, 2, q.bits_, "Residuals");
-      add_bounds(xx, yy);
+//      add_bounds(xx, yy);
     }
 
   }
@@ -872,7 +874,6 @@ void WidgetPlotFit::calc_visible() {
         (q.hr_x_nrg.front() > maxx_zoom) ||
         (q.hr_x_nrg.back() < minx_zoom))
       continue;
-    q.visible_ = true;
     visible_roi_++;
     visible_peaks_ += q.peaks_.size();
     good_starts.insert(q.hr_x_nrg.front());

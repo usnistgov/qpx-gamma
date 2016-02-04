@@ -24,6 +24,7 @@
 #define GAMMA_ROI_H
 
 #include "gamma_peak.h"
+#include "polynomial.h"
 #include "finder.h"
 
 namespace Gamma {
@@ -43,6 +44,7 @@ struct ROI {
 
   bool contains(double bin);
   bool overlaps(uint16_t bin);
+  bool overlaps(uint16_t Lbin, uint16_t Rbin);
 
   //  void add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y);
   void add_peak(const std::vector<double> &x, const std::vector<double> &y, uint16_t L, uint16_t R);
@@ -54,6 +56,7 @@ struct ROI {
 
   Finder finder_;
   std::set<Peak> peaks_;
+  Polynomial background_;
 
   std::vector<double> hr_x, hr_x_nrg,
                       hr_background, hr_back_steps,
@@ -67,6 +70,7 @@ struct ROI {
 
 private:
   std::vector<double> make_background(uint16_t samples = 5);
+  void init_background(uint16_t samples = 5);
   bool remove_peak(double bin);
 };
 
