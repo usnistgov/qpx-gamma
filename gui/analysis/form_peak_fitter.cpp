@@ -130,11 +130,11 @@ void FormPeakFitter::add_peak_to_table(const Gamma::Peak &p, int row, bool gray)
   fwhm->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 2, fwhm);
 
-  QTableWidgetItem *area_hyp = new QTableWidgetItem(QString::number(p.area_hyp_));
+  QTableWidgetItem *area_hyp = new QTableWidgetItem(QString::number(p.area_hyp));
   area_hyp->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 3, area_hyp);
 
-  QTableWidgetItem *cps_hyp = new QTableWidgetItem(QString::number(p.cts_per_sec_hyp_));
+  QTableWidgetItem *cps_hyp = new QTableWidgetItem(QString::number(p.cps_hyp));
   cps_hyp->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 4, cps_hyp);
 
@@ -142,7 +142,7 @@ void FormPeakFitter::add_peak_to_table(const Gamma::Peak &p, int row, bool gray)
   fwhm4->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 5, fwhm4);
 
-  QTableWidgetItem *area_net = new QTableWidgetItem(QString::number(p.area_net_));
+  QTableWidgetItem *area_net = new QTableWidgetItem(QString::number(p.area_sum4));
   area_net->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 6, area_net);
 
@@ -150,7 +150,7 @@ void FormPeakFitter::add_peak_to_table(const Gamma::Peak &p, int row, bool gray)
   err->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 7, err);
 
-  QTableWidgetItem *cps_net = new QTableWidgetItem(QString::number(p.cts_per_sec_net_));
+  QTableWidgetItem *cps_net = new QTableWidgetItem(QString::number(p.cps_sum4));
   cps_net->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 8, cps_net);
 

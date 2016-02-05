@@ -286,7 +286,7 @@ bool FormOptimization::find_peaks() {
     peaks_[peaks_.size() - 1] = Gamma::Peak();
 
     for (auto &q : fitter_opt_.peaks_)
-      if (q.second.area_net_ > peaks_[peaks_.size() - 1].area_net_)
+      if (q.second.area_best > peaks_[peaks_.size() - 1].area_best)
           peaks_[peaks_.size() - 1] = q.second;
 
     return fitter_opt_.peaks_.size();
@@ -328,7 +328,7 @@ void FormOptimization::update_plots() {
       fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
       ui->tableResults->setItem(current_spec, 2, fw);
 
-      QTableWidgetItem *area = new QTableWidgetItem(QString::number(peaks_[current_spec].area_net_));
+      QTableWidgetItem *area = new QTableWidgetItem(QString::number(peaks_[current_spec].area_best));
       area->setFlags(area->flags() ^ Qt::ItemIsEditable);
       ui->tableResults->setItem(current_spec, 3, area);
 

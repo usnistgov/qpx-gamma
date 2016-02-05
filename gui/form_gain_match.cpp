@@ -225,8 +225,8 @@ void FormGainMatch::run_completed() {
     gm_spectra_.clear();
     gm_spectra_.terminate();
     gm_plot_thread_.wait();
-    gauss_ref_.height = 0;
-    gauss_opt_.height = 0;
+    gauss_ref_.area_best = 0;
+    gauss_opt_.area_best = 0;
     //replot_markers();
 
     if (!gm_runner_thread_.terminating()) {
@@ -347,7 +347,7 @@ bool FormGainMatch::find_peaks() {
   fitter_ref_.sum4edge_samples = ui->spinSum4EdgeW->value();
   fitter_ref_.find_peaks();
   for (auto &q : fitter_ref_.peaks_)
-    if (q.second.area_net_ > gauss_ref_.area_net_)
+    if (q.second.area_best > gauss_ref_.area_best)
       gauss_ref_ = q.second;
 
   gauss_opt_ = Gamma::Peak();
@@ -356,12 +356,12 @@ bool FormGainMatch::find_peaks() {
   fitter_ref_.sum4edge_samples = ui->spinSum4EdgeW->value();
   fitter_opt_.find_peaks();
   for (auto &q : fitter_opt_.peaks_)
-    if (q.second.area_net_ > gauss_opt_.area_net_)
+    if (q.second.area_best > gauss_opt_.area_best)
         gauss_opt_ = q.second;
 
   peaks_[peaks_.size() - 1] = gauss_opt_;
 
-  return (gauss_ref_.height && gauss_opt_.height);
+  return (gauss_ref_.area_best && gauss_opt_.area_best);
 }
 
 void FormGainMatch::plot_one_spectrum(Gamma::Fitter &sp, std::map<double, double> &minima, std::map<double, double> &maxima) {
@@ -422,7 +422,7 @@ void FormGainMatch::update_plots() {
     fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
     ui->tableResults->setItem(current_spec, 2, fw);
 
-    QTableWidgetItem *area = new QTableWidgetItem(QString::number(peaks_[current_spec].area_net_));
+    QTableWidgetItem *area = new QTableWidgetItem(QString::number(peaks_[current_spec].area_best));
     area->setFlags(area->flags() ^ Qt::ItemIsEditable);
     ui->tableResults->setItem(current_spec, 3, area);
 

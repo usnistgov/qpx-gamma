@@ -30,7 +30,6 @@ namespace Gamma {
 
 class SUM4 {
 public:
-  std::vector<double> x_, y_, bx_, by_;
   int32_t Lpeak, Rpeak, LBstart, LBend, RBstart, RBend;
   double peak_width, Lw, Rw;
   double Lsum, Rsum;

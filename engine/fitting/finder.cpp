@@ -213,5 +213,22 @@ uint16_t Finder::right_edge(uint16_t idx) {
   return idx;
 }
 
+int32_t Finder::find_index(double chan_val) {
+  if (x_.empty())
+    return -1;
+
+  if (chan_val <= x_[0])
+    return 0;
+
+  if (chan_val >= x_[x_.size()-1])
+    return x_.size()-1;
+
+  int32_t i = 0;
+  while ((i < x_.size()) && (x_[i] < chan_val))
+    i++;
+
+  return i;
+}
+
 
 }

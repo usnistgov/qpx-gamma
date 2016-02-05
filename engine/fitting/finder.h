@@ -50,6 +50,7 @@ public:
 
   uint16_t find_left(uint16_t chan);
   uint16_t find_right(uint16_t chan);
+  int32_t find_index(double chan_val);
 
   //DATA
 

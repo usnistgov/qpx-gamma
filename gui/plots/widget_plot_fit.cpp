@@ -794,11 +794,11 @@ void WidgetPlotFit::updateData() {
       QPen prof = p.flagged ? flagged : peak;
       addGraph(xx, yy, prof, false, q.bits_, "Individual peak");
 
-      if (false && (!p.sum4_.fwhm > 0)) {
+      if (p.sum4_.fwhm > 0) {
 
         std::vector<double> x_edge, y_edge;
         for (int i = p.sum4_.LBstart; i <= p.sum4_.LBend; ++i) {
-          x_edge.push_back(p.sum4_.x_[i]);
+          x_edge.push_back(fit_data_->finder_.x_[i]);
           y_edge.push_back(p.sum4_.Lsum / p.sum4_.Lw);
         }
         if (!x_edge.empty()) {
@@ -814,7 +814,7 @@ void WidgetPlotFit::updateData() {
         x_edge.clear(); y_edge.clear();
 
         for (int i = p.sum4_.RBstart; i <= p.sum4_.RBend; ++i) {
-          x_edge.push_back(p.sum4_.x_[i]);
+          x_edge.push_back(fit_data_->finder_.x_[i]);
           y_edge.push_back(p.sum4_.Rsum / p.sum4_.Rw);
         }
         if (!x_edge.empty()) {
@@ -903,6 +903,9 @@ void WidgetPlotFit::calc_visible() {
     else if (ui->mcaPlot->graph(i)->name() == "Residuals")
       ui->mcaPlot->graph(i)->setVisible(plot_resid_on_back &&
                                         (good_starts.count(ui->mcaPlot->graph(i)->property("start").toDouble()) > 0));
+    else if (ui->mcaPlot->graph(i)->name() == "SUM4 edge")
+      ui->mcaPlot->graph(i)->setVisible(plot_peak /*&&
+                                        (good_starts.count(ui->mcaPlot->graph(i)->property("start").toDouble()) > 0)*/);
   }
 
 }

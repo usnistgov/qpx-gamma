@@ -29,7 +29,6 @@ void Peak::construct(Calibration cali_nrg, double live_seconds, uint16_t bits) {
 
   center = hypermet_.center_;
   energy = cali_nrg.transform(center, bits);
-  height = hypermet_.height_;
 
 //  center = sum4_.centroid;
 //  energy = cali_nrg.transform(center, bits);
@@ -45,22 +44,24 @@ void Peak::construct(Calibration cali_nrg, double live_seconds, uint16_t bits) {
   R = hypermet_.center_ + hypermet_.width_ * sqrt(log(2));
   fwhm_hyp = cali_nrg.transform(R, bits) - cali_nrg.transform(L, bits);
 
-  area_hyp_ = hypermet_.area();
-  area_best_ = area_hyp_;
-  if (sum4_.fwhm > 0)
-  {
-    area_gross_ = sum4_.P_area;
-    area_bckg_ = sum4_.B_area;
-    area_net_ = sum4_.net_area;
-    area_best_ = area_net_;
-  }
+  area_hyp = hypermet_.area();
+  area_sum4 = sum4_.net_area;
+
+  area_best = area_hyp;
+
+  //  if (sum4_.currie_quality_indicator == 1)
+//  {
+//    area_gross_ = sum4_.P_area;
+//    area_bckg_ = sum4_.B_area;
+//    area_best_ = area_net_;
+//  }
 
   if (live_seconds > 0) {
-    cps_best_ = cts_per_sec_hyp_ = area_hyp_ / live_seconds;
-    cts_per_sec_net_ = area_net_ / live_seconds;
-    if (cts_per_sec_net_ > 0)
-      cps_best_ = cts_per_sec_net_;
+    cps_hyp  = area_hyp / live_seconds;
+    cps_sum4 = area_sum4 / live_seconds;
   }
+
+  cps_best = cps_hyp;
 }
 
 

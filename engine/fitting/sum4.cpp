@@ -70,9 +70,6 @@ SUM4::SUM4(const std::vector<double> &x,
       || (samples >= x.size()))
     return;
 
-  x_ = x;
-  y_ = y;
-
   Lpeak = left;
   Rpeak = right;
 
@@ -140,10 +137,8 @@ SUM4::SUM4(const std::vector<double> &x,
   offset = Lsum / Lw - slope * Lpeak;
 
   for (int32_t i = Lpeak; i <= Rpeak; ++i) {
-    bx_.push_back(x_[i]);
     double B_chan  = offset + i*slope; 
-    by_.push_back(B_chan);
-    double yn = y_[i] - B_chan;
+    double yn = y[i] - B_chan;
     sumYnet += yn;
     CsumYnet += i * yn;
     C2sumYnet += pow(i, 2) * yn;

@@ -117,7 +117,7 @@ void FormOnePeak::peaks_changed_in_plot(bool content_changed) {
     for (auto &q : fit_data_->peaks_) {
       if (q.second.selected)
         selected = true;
-      if (q.second.height >= fit_data_->peaks_[highest].height)
+      if (q.second.area_best >= fit_data_->peaks_[highest].area_best)
         highest = q.first;
     }
     if (!selected) {

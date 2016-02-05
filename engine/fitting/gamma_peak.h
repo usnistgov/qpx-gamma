@@ -37,19 +37,16 @@ public:
   Peak()
       : center(0)
       , energy(0)
-      , height(0)
       , fwhm_sum4(0)
       , fwhm_hyp (0)
       , selected (false)
       , flagged (false)
-      , area_net_(0.0)
-      , area_gross_(0.0)
-      , area_bckg_(0.0)
-      , area_hyp_(0.0)
-      , cts_per_sec_net_(0.0)
-      , cts_per_sec_hyp_(0.0)
-      , area_best_(0.0)
-      , cps_best_(0.0)
+      , area_sum4(0.0)
+      , area_hyp(0.0)
+      , cps_sum4(0.0)
+      , cps_hyp(0.0)
+      , area_best(0.0)
+      , cps_best(0.0)
       , intensity_theoretical_(0.0)
       , efficiency_relative_(0.0)
   {}
@@ -61,13 +58,13 @@ public:
 
   SUM4 sum4_;
   Hypermet hypermet_;
-
-  double center, energy, height, fwhm_sum4, fwhm_hyp;
   bool selected, flagged;
 
-  double area_net_, area_gross_, area_bckg_, area_hyp_;
-  double cts_per_sec_net_, cts_per_sec_hyp_;
-  double area_best_, cps_best_;
+  double center, energy, fwhm_sum4, fwhm_hyp;
+
+  double area_sum4, area_hyp;
+  double cps_sum4, cps_hyp;
+  double area_best, cps_best;
   double intensity_theoretical_, efficiency_relative_;
   
 

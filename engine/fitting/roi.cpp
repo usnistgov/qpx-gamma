@@ -354,6 +354,7 @@ void ROI::rebuild() {
       one.hr_fullfit_[j] += one.hr_peak_[j];
     }
 
+
     one.hypermet_ = hype[i];
     one.center = hype[i].center_;
     peaks_.insert(one);

@@ -98,8 +98,10 @@ void Fitter::find_peaks() {
   int32_t R = finder_.rights[0];
   for (int i=1; i < finder_.filtered.size(); ++i) {
     double margin = 0;
-    if (fwhm_cali_.valid() && nrg_cali_.valid())
+    if (fwhm_cali_.valid() && nrg_cali_.valid()) {
       margin = overlap_ * fwhm_cali_.transform(nrg_cali_.transform(R, metadata_.bits));
+      margin = nrg_cali_.inverse_transform(margin, metadata_.bits);
+    }
     if (finder_.lefts[i] < (R + 2 * margin) ) {
 //      PL_DBG << "cat ROI " << L << " " << R << " " << finder_.lefts[i] << " " << finder_.rights[i];
       L = std::min(L, static_cast<int32_t>(finder_.lefts[i]));
@@ -141,12 +143,19 @@ void Fitter::remap_peaks() {
   peaks_.clear();
   for (auto &q : regions_)
     for (auto &p : q.peaks_) {
+      if (p.sum4_.peak_width == 0) {
+        double edge =  p.hypermet_.width_ * sqrt(log(2)) * 3;
+        uint32_t edgeL = finder_.find_index(p.hypermet_.center_ - edge);
+        uint32_t edgeR = finder_.find_index(p.hypermet_.center_ + edge);
+        const_cast<Peak&>(p).sum4_ = SUM4 (finder_.x_, finder_.y_,
+                                     edgeL, edgeR, sum4edge_samples); //default edge width
+      }
       Peak pk = p;
       pk.construct(nrg_cali_, metadata_.live_time.total_milliseconds() * 0.001, metadata_.bits);
       peaks_[pk.center] = pk;
     }
 
-//  PL_DBG << "<Fitter> Mapped " << peaks_.size() << " peaks";
+  //  PL_DBG << "<Fitter> Mapped " << peaks_.size() << " peaks";
 }
 
 void Fitter::add_peak(uint32_t left, uint32_t right) {
@@ -271,8 +280,8 @@ void Fitter::save_report(std::string filename) {
     file << std::setw( 15 ) << std::setprecision( 10 ) << q.second.center << "  |"
          << std::setw( 15 ) << std::setprecision( 10 ) << q.second.energy << "  |"
          << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_hyp << "  |"
-         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.area_hyp_ << "  |"
-         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cts_per_sec_hyp_ << " ||";
+         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.area_hyp << "  |"
+         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_hyp << " ||";
 
     if (!q.second.sum4_.fwhm > 0) {
       file << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.centroid << "  |"
@@ -281,12 +290,12 @@ void Fitter::save_report(std::string filename) {
            << std::setw( 7 ) << std::setprecision( 10 ) << q.second.sum4_.Rpeak << "  |"
 
            << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_sum4 << "  |"
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.area_bckg_ << "  |"
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.B_area << "  |"
            << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.B_variance << "  |"
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.area_net_ << "  |"
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.area_sum4 << "  |"
            << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.net_variance << "  |"
            << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.err << "  |"
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cts_per_sec_net_ << "  |"
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_sum4 << "  |"
            << std::setw( 5 ) << std::setprecision( 10 ) << q.second.sum4_.currie_quality_indicator << "  |";
     }
 

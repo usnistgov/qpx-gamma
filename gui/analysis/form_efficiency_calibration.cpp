@@ -204,7 +204,7 @@ void FormEfficiencyCalibration::update_peaks(bool contents_changed) {
       if (diff < ui->doubleEpsilonE->value()) {
         q.second.flagged = true;
         q.second.intensity_theoretical_ = p.abundance;
-        q.second.efficiency_relative_ = (q.second.cps_best_ / q.second.intensity_theoretical_);
+        q.second.efficiency_relative_ = (q.second.cps_best / q.second.intensity_theoretical_);
         if (q.second.efficiency_relative_ > max)
           max = q.second.efficiency_relative_;
         flagged.insert(p.energy);
@@ -323,7 +323,7 @@ void FormEfficiencyCalibration::add_peak_to_table(const Gamma::Peak &p, int row,
   nrg->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 1, nrg);
 
-  QTableWidgetItem *cps = new QTableWidgetItem(QString::number(p.cps_best_));
+  QTableWidgetItem *cps = new QTableWidgetItem(QString::number(p.cps_best));
   cps->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 2, cps);
 
