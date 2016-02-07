@@ -63,8 +63,8 @@ FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Gamm
   ui->isotopes->show();
   connect(ui->isotopes, SIGNAL(energiesSelected()), this, SLOT(isotope_energies_chosen()));
 
-  QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tablePeaks);
-  connect(shortcut, SIGNAL(activated()), this, SLOT(remove_peaks()));
+//  QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tablePeaks);
+//  connect(shortcut, SIGNAL(activated()), this, SLOT(remove_peaks()));
 }
 
 FormEnergyCalibration::~FormEnergyCalibration()
@@ -121,32 +121,48 @@ void FormEnergyCalibration::newSpectrum() {
   toggle_push();
 }
 
-void FormEnergyCalibration::update_peaks(bool contents_changed) {
+void FormEnergyCalibration::update_data() {
   ui->tablePeaks->blockSignals(true);
   this->blockSignals(true);
 
-  if (contents_changed) {
-    ui->tablePeaks->clearContents();
-    ui->tablePeaks->setRowCount(fit_data_.peaks_.size());
-    bool gray = false;
-    QColor background_col;
-    int i=0;
-    for (auto &q : fit_data_.peaks_) {
-      if (gray)
-        background_col = Qt::lightGray;
-      else
-        background_col = Qt::white;
-      add_peak_to_table(q.second, i, background_col);
-      ++i;
-//      if (!q.second.intersects_R)
-//        gray = !gray;
-    }
+  ui->tablePeaks->clearContents();
+  ui->tablePeaks->setRowCount(fit_data_.peaks().size());
+  int i=0;
+  for (auto &q : fit_data_.peaks()) {
+    add_peak_to_table(q.second, i, Qt::white);
+    ++i;
   }
+
   ui->tablePeaks->blockSignals(false);
   this->blockSignals(false);
 
+  select_in_table();
+
   replot_markers();
   toggle_push();
+}
+
+void FormEnergyCalibration::update_selection(std::set<double> selected_peaks) {
+  bool changed = (selected_peaks_ != selected_peaks);
+  selected_peaks_ = selected_peaks;
+
+  if (changed)
+    select_in_table();
+}
+
+void FormEnergyCalibration::select_in_table() {
+  ui->tablePeaks->blockSignals(true);
+  this->blockSignals(true);
+  ui->tablePeaks->clearSelection();
+  int i = 0;
+  for (auto &q : fit_data_.peaks()) {
+    if (selected_peaks_.count(q.second.center) > 0) {
+      ui->tablePeaks->selectRow(i);
+    }
+    ++i;
+  }
+  ui->tablePeaks->blockSignals(false);
+  this->blockSignals(false);
 }
 
 void FormEnergyCalibration::replot_markers() {
@@ -157,14 +173,10 @@ void FormEnergyCalibration::replot_markers() {
 
   double xmin = std::numeric_limits<double>::max();
   double xmax = - std::numeric_limits<double>::max();
-  std::set<double> chosen_peaks_chan;
 
-  for (auto &q : fit_data_.peaks_) {
+  for (auto &q : fit_data_.peaks()) {
     double x = q.first;
     double y = q.second.energy;
-
-    if (q.second.selected)
-      chosen_peaks_chan.insert(q.second.center);
 
     xx.push_back(x);
     yy.push_back(y);
@@ -181,7 +193,7 @@ void FormEnergyCalibration::replot_markers() {
 
   if (xx.size()) {
     ui->PlotCalib->addPoints(xx, yy, style_pts);
-    ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
+    ui->PlotCalib->set_selected_pts(selected_peaks_);
     if (fit_data_.nrg_cali_.valid()) {
 
       double step = (xmax-xmin) / 50.0;
@@ -201,8 +213,8 @@ void FormEnergyCalibration::replot_markers() {
   this->blockSignals(true);
   ui->tablePeaks->clearSelection();
   int i = 0;
-  for (auto &q : fit_data_.peaks_) {
-    if (q.second.selected) {
+  for (auto &q : fit_data_.peaks()) {
+    if (selected_peaks_.count(q.second.center) > 0) {
       ui->tablePeaks->selectRow(i);
     }
     ++i;
@@ -212,38 +224,30 @@ void FormEnergyCalibration::replot_markers() {
 }
 
 void FormEnergyCalibration::selection_changed_in_plot() {
-  std::set<double> chosen_peaks_chan = ui->PlotCalib->get_selected_pts();
-  for (auto &q : fit_data_.peaks_)
-    q.second.selected = (chosen_peaks_chan.count(q.second.center) > 0);
+  selected_peaks_ = ui->PlotCalib->get_selected_pts();
   replot_markers();
   if (isVisible())
-    emit peaks_changed(false);
+    emit selection_changed(selected_peaks_);
   toggle_push();
 }
 
 void FormEnergyCalibration::selection_changed_in_table() {
-  for (auto &q : fit_data_.peaks_)
-    q.second.selected = false;
-  foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows()) {
-    fit_data_.peaks_[ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble()].selected = true;
-  }
+  selected_peaks_.clear();
+  foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows())
+    selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble());
   replot_markers();
-
   if (isVisible())
-    emit peaks_changed(false);
+    emit selection_changed(selected_peaks_);
   toggle_push();
 }
 
 void FormEnergyCalibration::toggle_push() {
-  int sel = 0;
-  for (auto &q : fit_data_.peaks_)
-    if (q.second.selected)
-      sel++;
+  int sel = selected_peaks_.size();
 
   ui->pushAllEnergies->setEnabled((sel > 0) && (sel == ui->isotopes->current_gammas().size()));
   ui->pushAllmarkers->setEnabled((sel > 0) && (ui->isotopes->current_gammas().empty()));
 
-  if (static_cast<int>(fit_data_.peaks_.size()) > 1) {
+  if (static_cast<int>(fit_data_.peaks().size()) > 1) {
     ui->pushFit->setEnabled(true);
     ui->spinTerms->setEnabled(true);
   } else {
@@ -262,10 +266,10 @@ void FormEnergyCalibration::toggle_push() {
 void FormEnergyCalibration::on_pushFit_clicked()
 {  
   std::vector<double> x, y, coefs(ui->spinTerms->value()+1);
-  x.resize(fit_data_.peaks_.size());
-  y.resize(fit_data_.peaks_.size());
+  x.resize(fit_data_.peaks().size());
+  y.resize(fit_data_.peaks().size());
   int i = 0;
-  for (auto &q : fit_data_.peaks_) {
+  for (auto &q : fit_data_.peaks()) {
     x[i] = q.first;
     y[i] = q.second.energy;
     i++;
@@ -316,8 +320,8 @@ void FormEnergyCalibration::on_pushDetDB_clicked()
 void FormEnergyCalibration::on_pushAllmarkers_clicked()
 {
   std::vector<double> gammas;
-  for (auto &q : fit_data_.peaks_)
-    if (q.second.selected)
+  for (auto &q : fit_data_.peaks())
+    if (selected_peaks_.count(q.first))
       gammas.push_back(q.second.energy);
   ui->isotopes->push_energies(gammas);
 }
@@ -328,11 +332,10 @@ void FormEnergyCalibration::on_pushAllEnergies_clicked()
 
   std::vector<double> to_change;
   double last_sel = -1;
-  for (auto &q : fit_data_.peaks_)
-    if (q.second.selected) {
+  for (auto &q : fit_data_.peaks())
+    if (selected_peaks_.count(q.first)) {
       to_change.push_back(q.first);
       last_sel = q.first;
-      q.second.selected = false;
     }
 
   if (gammas.size() != to_change.size())
@@ -340,43 +343,45 @@ void FormEnergyCalibration::on_pushAllEnergies_clicked()
 
   std::sort(gammas.begin(), gammas.end());
 
-  for (int i=0; i<gammas.size(); i++) {
-    fit_data_.peaks_[to_change[i]].energy = gammas[i];
-  }
+//BROKEN
+  //  for (int i=0; i<gammas.size(); i++) {
+//    fit_data_.peaks_[to_change[i]].energy = gammas[i];
+//  }
 
-  for (auto &q : fit_data_.peaks_)
+  selected_peaks_.clear();
+  for (auto &q : fit_data_.peaks())
     if (q.first > last_sel) {
-      q.second.selected = true;
+      selected_peaks_.insert(q.first);
       break;
     }
 
   ui->isotopes->select_next_energy();
 
-  update_peaks(true);
-  emit peaks_changed(true);
+  update_data();
+  emit selection_changed(selected_peaks_);
 }
 
 
 void FormEnergyCalibration::remove_peaks()
 {
-  std::set<double> chosen_peaks;
-  double last_sel = -1;
-  for (auto &q : fit_data_.peaks_)
-    if (q.second.selected) {
-      chosen_peaks.insert(q.second.center);
-      last_sel = q.first;
-    }
+//  std::set<double> chosen_peaks;
+//  double last_sel = -1;
+//  for (auto &q : fit_data_.peaks_)
+//    if (q.second.selected) {
+//      chosen_peaks.insert(q.second.center);
+//      last_sel = q.first;
+//    }
 
-  fit_data_.remove_peaks(chosen_peaks);
+//  fit_data_.remove_peaks(chosen_peaks);
 
-  for (auto &q : fit_data_.peaks_)
-    if (q.first > last_sel) {
-      q.second.selected = true;
-      break;
-    }
+//  for (auto &q : fit_data_.peaks_)
+//    if (q.first > last_sel) {
+//      q.second.selected = true;
+//      break;
+//    }
 
-  update_peaks(true);
-  emit peaks_changed(true);
+//  update_peaks(true);
+//  emit peaks_changed(true);
 }
 
 void FormEnergyCalibration::add_peak_to_table(const Gamma::Peak &p, int row, QColor bckg) {

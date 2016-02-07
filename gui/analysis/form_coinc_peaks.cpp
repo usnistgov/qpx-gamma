@@ -44,11 +44,12 @@ FormCoincPeaks::FormCoincPeaks(QWidget *parent) :
   ui->tablePeaks->show();
   connect(ui->tablePeaks, SIGNAL(itemSelectionChanged()), this, SLOT(selection_changed_in_table()));
 
-  connect(ui->plotPeaks, SIGNAL(peaks_changed(bool)), this, SLOT(peaks_changed_in_plot(bool)));
   connect(ui->plotPeaks, SIGNAL(range_changed(Range)), this, SLOT(change_range(Range)));
+  connect(ui->plotPeaks, SIGNAL(selection_changed(std::set<double>)), this, SLOT(update_selection(std::set<double>)));
+  connect(ui->plotPeaks, SIGNAL(data_changed()), this, SLOT(update_data()));
 
-  QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tablePeaks);
-  connect(shortcut, SIGNAL(activated()), this, SLOT(remove_peak()));
+//  QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tablePeaks);
+//  connect(shortcut, SIGNAL(activated()), this, SLOT(remove_peak()));
 
   //QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Backspace), ui->mcaPlot);
   //connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushResetScales_clicked()));
@@ -59,34 +60,38 @@ FormCoincPeaks::~FormCoincPeaks()
   delete ui;
 }
 
-void FormCoincPeaks::remove_peak() {
-  if (!fit_data_)
-    return;
+//void FormCoincPeaks::remove_peak() {
+//  if (!fit_data_)
+//    return;
 
-  std::set<double> chosen_peaks;
-  double last_sel = -1;
-  for (auto &q : fit_data_->peaks_)
-    if (q.second.selected) {
-      chosen_peaks.insert(q.second.center);
-      last_sel = q.first;
-    }
+//  std::set<double> chosen_peaks;
+//  double last_sel = -1;
+//  for (auto &q : fit_data_->peaks())
+//    if (q.second.selected) {
+//      chosen_peaks.insert(q.second.center);
+//      last_sel = q.first;
+//    }
 
-  fit_data_->remove_peaks(chosen_peaks);
+//  fit_data_->remove_peaks(chosen_peaks);
 
-  for (auto &q : fit_data_->peaks_)
-    if (q.first > last_sel) {
-      q.second.selected = true;
-      break;
-    }
+//  for (auto &q : fit_data_->peaks())
+//    if (q.first > last_sel) {
+//      q.second.selected = true;
+//      break;
+//    }
 
-  update_fit(true);
-  emit peaks_changed(true);
-}
+//  update_fit(true);
+//  emit peaks_changed(true);
+//}
 
 void FormCoincPeaks::setFit(Gamma::Fitter* fit) {
   fit_data_ = fit;
   ui->plotPeaks->setFit(fit);
-  update_fit(true);
+  update_data();
+}
+
+std::set<double> FormCoincPeaks::get_selected_peaks() {
+  return ui->plotPeaks->get_selected_peaks();
 }
 
 void FormCoincPeaks::loadSettings(QSettings &settings_) {
@@ -110,22 +115,26 @@ void FormCoincPeaks::change_range(Range range) {
 }
 
 void FormCoincPeaks::update_spectrum() {
-  ui->plotPeaks->new_spectrum();
+  ui->plotPeaks->update_spectrum();
 
-  if (!fit_data_->peaks_.empty())
-    update_fit(true);
+  if (!fit_data_->peaks().empty())
+    update_data();
   emit peaks_changed(true);
 }
 
-void FormCoincPeaks::update_fit(bool content_changed) {
-
-  ui->plotPeaks->update_fit(content_changed);
-  update_table(content_changed);
+void FormCoincPeaks::update_data() {
+  ui->plotPeaks->update_spectrum();
+  update_table(true);
 }
 
-void FormCoincPeaks::peaks_changed_in_plot(bool content_changed) {
-  update_table(content_changed);
-  emit peaks_changed(content_changed);
+void FormCoincPeaks::update_selection(std::set<double> selected_peaks) {
+  bool changed = (selected_peaks_ != selected_peaks);
+  selected_peaks_ = selected_peaks;
+
+  if (changed) {
+    update_table(false);
+    emit peaks_changed(false);
+  }
 }
 
 void FormCoincPeaks::update_table(bool contents_changed) {
@@ -134,35 +143,24 @@ void FormCoincPeaks::update_table(bool contents_changed) {
 
   if (contents_changed) {
     ui->tablePeaks->clearContents();
-    ui->tablePeaks->setRowCount(fit_data_->peaks_.size());
+    ui->tablePeaks->setRowCount(fit_data_->peaks().size());
 
-    bool gray = false;
-    QColor background_col;
     int i=0;
-    for (auto &q : fit_data_->peaks_) {
-      if (q.second.flagged && gray)
-        background_col = Qt::darkGreen;
-      else if (gray)
-        background_col = Qt::lightGray;
-      else if (q.second.flagged)
-        background_col = Qt::green;
-      else
-        background_col = Qt::white;
-      add_peak_to_table(q.second, i, background_col);
-      ++i;
-//      if (!q.second.intersects_R)
-//        gray = !gray;
-    }
-  } else {
-    ui->tablePeaks->clearSelection();
-    int i = 0;
-    for (auto &q : fit_data_->peaks_) {
-      if (q.second.selected) {
-        ui->tablePeaks->selectRow(i);
-      }
+    for (auto &q : fit_data_->peaks()) {
+      add_peak_to_table(q.second, i, Qt::white);
       ++i;
     }
   }
+
+  ui->tablePeaks->clearSelection();
+  int i = 0;
+  for (auto &q : fit_data_->peaks()) {
+    if (selected_peaks_.count(q.second.center) > 0) {
+      ui->tablePeaks->selectRow(i);
+    }
+    ++i;
+  }
+
   ui->tablePeaks->blockSignals(false);
   this->blockSignals(false);
 }
@@ -208,12 +206,10 @@ void FormCoincPeaks::add_peak_to_table(const Gamma::Peak &p, int row, QColor bck
 }
 
 void FormCoincPeaks::selection_changed_in_table() {
-  for (auto &q : fit_data_->peaks_)
-    q.second.selected = false;
-  foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows()) {
-    fit_data_->peaks_[ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble()].selected = true;
-  }
-  ui->plotPeaks->update_fit(false);
+  selected_peaks_.clear();
+  foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows())
+    selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble());
+  ui->plotPeaks->update_selection(selected_peaks_);
   emit peaks_changed(false);
 }
 

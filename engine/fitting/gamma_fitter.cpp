@@ -143,16 +143,14 @@ void Fitter::remap_peaks() {
   peaks_.clear();
   for (auto &q : regions_)
     for (auto &p : q.peaks_) {
-      if (p.sum4_.peak_width == 0) {
-        double edge =  p.hypermet_.width_ * sqrt(log(2)) * 3;
-        uint32_t edgeL = finder_.find_index(p.hypermet_.center_ - edge);
-        uint32_t edgeR = finder_.find_index(p.hypermet_.center_ + edge);
-        const_cast<Peak&>(p).sum4_ = SUM4 (finder_.x_, finder_.y_,
-                                     edgeL, edgeR, sum4edge_samples); //default edge width
+      if (p.second.sum4_.peak_width == 0) {
+        double edge =  p.second.hypermet_.width_ * sqrt(log(2)) * 3;
+        uint32_t edgeL = finder_.find_index(p.second.hypermet_.center_ - edge);
+        uint32_t edgeR = finder_.find_index(p.second.hypermet_.center_ + edge);
+        p.second.sum4_ = SUM4 (finder_.y_, edgeL, edgeR, sum4edge_samples);
       }
-      Peak pk = p;
-      pk.construct(nrg_cali_, metadata_.live_time.total_milliseconds() * 0.001, metadata_.bits);
-      peaks_[pk.center] = pk;
+      p.second.construct(nrg_cali_, metadata_.live_time.total_milliseconds() * 0.001, metadata_.bits);
+      peaks_[p.second.center] = p.second;
     }
 
   //  PL_DBG << "<Fitter> Mapped " << peaks_.size() << " peaks";
@@ -285,15 +283,15 @@ void Fitter::save_report(std::string filename) {
 
     if (!q.second.sum4_.fwhm > 0) {
       file << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.centroid << "  |"
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.centroid_var << "  |"
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.centroid_variance << "  |"
            << std::setw( 7 ) << std::setprecision( 10 ) << q.second.sum4_.Lpeak << "  |"
            << std::setw( 7 ) << std::setprecision( 10 ) << q.second.sum4_.Rpeak << "  |"
 
            << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_sum4 << "  |"
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.B_area << "  |"
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.B_variance << "  |"
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.background_area << "  |"
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.background_variance << "  |"
            << std::setw( 15 ) << std::setprecision( 10 ) << q.second.area_sum4 << "  |"
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.net_variance << "  |"
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.peak_variance << "  |"
            << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.err << "  |"
            << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_sum4 << "  |"
            << std::setw( 5 ) << std::setprecision( 10 ) << q.second.sum4_.currie_quality_indicator << "  |";

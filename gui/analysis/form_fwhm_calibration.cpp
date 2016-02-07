@@ -56,8 +56,8 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
   connect(ui->tableFWHM, SIGNAL(itemSelectionChanged()), this, SLOT(selection_changed_in_table()));
   connect(ui->PlotCalib, SIGNAL(selection_changed()), this, SLOT(selection_changed_in_plot()));
 
-  QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tableFWHM);
-  connect(shortcut, SIGNAL(activated()), this, SLOT(remove_peaks()));
+//  QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tableFWHM);
+//  connect(shortcut, SIGNAL(activated()), this, SLOT(remove_peaks()));
 }
 
 FormFwhmCalibration::~FormFwhmCalibration()
@@ -110,22 +110,49 @@ void FormFwhmCalibration::newSpectrum() {
   toggle_push();
 }
 
-void FormFwhmCalibration::update_peaks(bool contents_changed) {
+void FormFwhmCalibration::update_data() {
   ui->tableFWHM->blockSignals(true);
   this->blockSignals(true);
 
-  if (contents_changed) {
-    ui->tableFWHM->clearContents();
-    ui->tableFWHM->setRowCount(fit_data_.peaks_.size());
-    int i=0;
-    for (auto &q : fit_data_.peaks_) {
-      add_peak_to_table(q.second, i);
-      ++i;
-    }
+  ui->tableFWHM->clearContents();
+  ui->tableFWHM->setRowCount(fit_data_.peaks().size());
+  int i=0;
+  for (auto &q : fit_data_.peaks()) {
+    add_peak_to_table(q.second, i);
+    ++i;
   }
+
+  ui->tableFWHM->blockSignals(false);
+  this->blockSignals(false);
+
+  select_in_table();
   
   toggle_push();
   replot_markers();
+}
+
+
+void FormFwhmCalibration::update_selection(std::set<double> selected_peaks) {
+  bool changed = (selected_peaks_ != selected_peaks);
+  selected_peaks_ = selected_peaks;
+
+  if (changed)
+    select_in_table();
+}
+
+void FormFwhmCalibration::select_in_table() {
+  ui->tableFWHM->blockSignals(true);
+  this->blockSignals(true);
+  ui->tableFWHM->clearSelection();
+  int i = 0;
+  for (auto &q : fit_data_.peaks()) {
+    if (selected_peaks_.count(q.second.center) > 0) {
+      ui->tableFWHM->selectRow(i);
+    }
+    ++i;
+  }
+  ui->tableFWHM->blockSignals(false);
+  this->blockSignals(false);
 }
 
 void FormFwhmCalibration::add_peak_to_table(const Gamma::Peak &p, int row) {
@@ -147,7 +174,7 @@ void FormFwhmCalibration::replot_markers() {
   double xmin = std::numeric_limits<double>::max();
   double xmax = - std::numeric_limits<double>::max();
 
-  for (auto &q : fit_data_.peaks_) {
+  for (auto &q : fit_data_.peaks()) {
     double x = q.second.energy;
     double y = q.second.fwhm_hyp;
 
@@ -166,6 +193,7 @@ void FormFwhmCalibration::replot_markers() {
 
   if (xx.size() > 0) {
     ui->PlotCalib->addPoints(xx, yy, style_pts);
+    ui->PlotCalib->set_selected_pts(selected_peaks_);
     if ((fit_data_.fwhm_cali_.coefficients_ != Gamma::Calibration().coefficients_) && (fit_data_.fwhm_cali_.valid())) {
 
       double step = (xmax-xmin) / 50.0;
@@ -182,63 +210,42 @@ void FormFwhmCalibration::replot_markers() {
     }
   }
 
-  std::set<double> chosen_peaks_nrg;
-
   ui->tableFWHM->blockSignals(true);
   this->blockSignals(true);
   ui->tableFWHM->clearSelection();
   int i = 0;
-  for (auto &q : fit_data_.peaks_) {
-    if (q.second.selected) {
+  for (auto &q : fit_data_.peaks()) {
+    if (selected_peaks_.count(q.second.center) > 0) {
       ui->tableFWHM->selectRow(i);
-      chosen_peaks_nrg.insert(q.second.energy);
     }
     ++i;
   }
-  ui->PlotCalib->set_selected_pts(chosen_peaks_nrg);
   ui->tableFWHM->blockSignals(false);
   this->blockSignals(false);
 }
 
 void FormFwhmCalibration::selection_changed_in_plot() {
-  std::set<double> chosen_peaks_nrg = ui->PlotCalib->get_selected_pts();
-  for (auto &q : fit_data_.peaks_)
-    q.second.selected = (chosen_peaks_nrg.count(q.second.energy) > 0);
-  toggle_push();
+  selected_peaks_ = ui->PlotCalib->get_selected_pts();
   replot_markers();
   if (isVisible())
-    emit peaks_changed(false);
+    emit selection_changed(selected_peaks_);
+  toggle_push();
 }
 
 void FormFwhmCalibration::selection_changed_in_table() {
-  //PL_DBG << "fwhm changed in table";
-
-
-  for (auto &q : fit_data_.peaks_)
-    q.second.selected = false;
-  foreach (QModelIndex i, ui->tableFWHM->selectionModel()->selectedRows()) {
-    fit_data_.peaks_[ui->tableFWHM->item(i.row(), 0)->data(Qt::EditRole).toDouble()].selected = true;
-  }
- 
-  toggle_push();
+  selected_peaks_.clear();
+  foreach (QModelIndex i, ui->tableFWHM->selectionModel()->selectedRows())
+    selected_peaks_.insert(ui->tableFWHM->item(i.row(), 0)->data(Qt::EditRole).toDouble());
   replot_markers();
   if (isVisible())
-    emit peaks_changed(false);
+    emit selection_changed(selected_peaks_);
+  toggle_push();
 }
 
 void FormFwhmCalibration::toggle_push() {
-  int sel = 0;
-  for (auto &q : fit_data_.peaks_)
-    if (q.second.selected)
-      sel++;
-
-  ui->pushCullOne->setEnabled(false);
-  ui->pushCullUntil->setEnabled(false);
   ui->doubleRsqGoal->setEnabled(false);
 
   if (fit_data_.fwhm_cali_.valid()) {
-    ui->pushCullOne->setEnabled(true);
-    ui->pushCullUntil->setEnabled(true);
     ui->doubleRsqGoal->setEnabled(true);
   }
 
@@ -247,7 +254,7 @@ void FormFwhmCalibration::toggle_push() {
   else
     ui->pushFromDB->setEnabled(false);
 
-  if (static_cast<int>(fit_data_.peaks_.size()) > 1) {
+  if (static_cast<int>(fit_data_.peaks().size()) > 1) {
     ui->spinTerms->setEnabled(true);
     ui->pushFit->setEnabled(true);
   } else {
@@ -269,7 +276,7 @@ Polynomial FormFwhmCalibration::fit_calibration()
 {
   std::vector<double> xx, yy;
   int i=0;
-  for (auto &q : fit_data_.peaks_) {
+  for (auto &q : fit_data_.peaks()) {
     xx.push_back(q.second.energy);
     yy.push_back(q.second.fwhm_hyp);
     i++;
@@ -319,7 +326,7 @@ double FormFwhmCalibration::find_outlier()
 {
   double furthest = -1;
   double furthest_dist = 0;
-  for (auto &q : fit_data_.peaks_) {
+  for (auto &q : fit_data_.peaks()) {
     double dist = std::abs(q.second.fwhm_hyp - fit_data_.fwhm_cali_.transform(q.second.energy));
     if (dist > furthest_dist) {
       furthest_dist = dist;
@@ -330,57 +337,57 @@ double FormFwhmCalibration::find_outlier()
   return furthest;
 }
 
-void FormFwhmCalibration::on_pushCullOne_clicked()
-{
-  double furthest = find_outlier();
-  if (furthest >= 0) {
-    std::set<double> pks;
-    pks.insert(furthest);
-    fit_data_.remove_peaks(pks);
-    update_peaks(true);
-    emit peaks_changed(true);
-  }
-}
+//void FormFwhmCalibration::on_pushCullOne_clicked()
+//{
+//  double furthest = find_outlier();
+//  if (furthest >= 0) {
+//    std::set<double> pks;
+//    pks.insert(furthest);
+//    fit_data_.remove_peaks(pks);
+//    update_peaks(true);
+//    emit peaks_changed(true);
+//  }
+//}
 
-void FormFwhmCalibration::on_pushCullUntil_clicked()
-{
-  Polynomial p = fit_calibration();
+//void FormFwhmCalibration::on_pushCullUntil_clicked()
+//{
+//  Polynomial p = fit_calibration();
 
-  std::set<double> pks;
-  while ((fit_data_.peaks_.size() > 0) && (p.rsq < ui->doubleRsqGoal->value())) {
-    double furthest = find_outlier();
-    if (furthest >= 0) {
-      pks.insert(furthest);
-      fit_data_.peaks_.erase(furthest);
-      p = fit_calibration();
-    } else
-      break;
-  }
+//  std::set<double> pks;
+//  while ((fit_data_.peaks_.size() > 0) && (p.rsq < ui->doubleRsqGoal->value())) {
+//    double furthest = find_outlier();
+//    if (furthest >= 0) {
+//      pks.insert(furthest);
+//      fit_data_.peaks_.erase(furthest);
+//      p = fit_calibration();
+//    } else
+//      break;
+//  }
 
-  p = fit_calibration();
-  fit_data_.remove_peaks(pks);
-  update_peaks(true);
-  emit peaks_changed(true);
-}
+//  p = fit_calibration();
+//  fit_data_.remove_peaks(pks);
+//  update_peaks(true);
+//  emit peaks_changed(true);
+//}
 
-void FormFwhmCalibration::remove_peaks()
-{
-  std::set<double> chosen_peaks;
-  double last_sel = -1;
-  for (auto &q : fit_data_.peaks_)
-    if (q.second.selected) {
-      chosen_peaks.insert(q.second.center);
-      last_sel = q.first;
-    }
+//void FormFwhmCalibration::remove_peaks()
+//{
+//  std::set<double> chosen_peaks;
+//  double last_sel = -1;
+//  for (auto &q : fit_data_.peaks_)
+//    if (q.second.selected) {
+//      chosen_peaks.insert(q.second.center);
+//      last_sel = q.first;
+//    }
 
-  fit_data_.remove_peaks(chosen_peaks);
+//  fit_data_.remove_peaks(chosen_peaks);
 
-  for (auto &q : fit_data_.peaks_)
-    if (q.first > last_sel) {
-      q.second.selected = true;
-      break;
-    }
+//  for (auto &q : fit_data_.peaks_)
+//    if (q.first > last_sel) {
+//      q.second.selected = true;
+//      break;
+//    }
 
-  update_peaks(true);
-  emit peaks_changed(true);
-}
+//  update_peaks(true);
+//  emit peaks_changed(true);
+//}

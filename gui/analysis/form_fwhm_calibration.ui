@@ -29,44 +29,6 @@
         <number>3</number>
        </property>
        <item>
-        <widget class="QPushButton" name="pushCullOne">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="toolTip">
-          <string>Cull one outlier</string>
-         </property>
-         <property name="text">
-          <string>Cull one</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushCullUntil">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="toolTip">
-          <string>Cull outliers until R-squared equals...</string>
-         </property>
-         <property name="text">
-          <string>Cull until rsq=</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QDoubleSpinBox" name="doubleRsqGoal">
          <property name="enabled">
           <bool>false</bool>

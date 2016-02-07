@@ -66,7 +66,6 @@ WidgetPlotFit::WidgetPlotFit(QWidget *parent) :
 
   force_rezoom_ = false;
   mouse_pressed_ = false;
-  use_calibrated_ = false;
 
   edge_trc1 = nullptr;
   edge_trc2 = nullptr;
@@ -94,7 +93,7 @@ WidgetPlotFit::WidgetPlotFit(QWidget *parent) :
 
   build_menu();
 
-  replot_markers();
+  plotButtons();
   //  redraw();
 }
 
@@ -119,16 +118,17 @@ void WidgetPlotFit::build_menu() {
 void WidgetPlotFit::clearGraphs()
 {
   ui->mcaPlot->clearGraphs();
+  ui->mcaPlot->clearItems();
   minima_.clear();
   maxima_.clear();
-  use_calibrated_ = false;
 }
 
-void WidgetPlotFit::clearExtras()
+void WidgetPlotFit::clearSelection()
 {
-  //PL_DBG << "WidgetPlotFit::clearExtras()";
-  my_markers_.clear();
   my_range_.visible = false;
+  selected_peaks_.clear();
+  plotRange();
+  calc_visible();
 }
 
 void WidgetPlotFit::rescale() {
@@ -151,42 +151,45 @@ void WidgetPlotFit::reset_scales()
 
 void WidgetPlotFit::setTitle(QString title) {
   title_text_ = title;
-  replot_markers();
-}
+  std::list<QCPAbstractItem*> to_remove;
+  for (int i=0; i < ui->mcaPlot->itemCount(); ++i)
+    if (ui->mcaPlot->item(i)->property("floating text").isValid())
+      to_remove.push_back(ui->mcaPlot->item(i));
+  for (auto &q : to_remove)
+    ui->mcaPlot->removeItem(q);
 
-void WidgetPlotFit::setLabels(QString x, QString y) {
-  ui->mcaPlot->xAxis->setLabel(x);
-  ui->mcaPlot->yAxis->setLabel(y);
-}
-
-void WidgetPlotFit::use_calibrated(bool uc) {
-  use_calibrated_ = uc;
-  //replot_markers();
-}
-
-void WidgetPlotFit::set_markers(const std::list<Marker>& markers) {
-  my_markers_ = markers;
+  if (!title_text_.isEmpty()) {
+    QCPItemText *floatingText = new QCPItemText(ui->mcaPlot);
+    ui->mcaPlot->addItem(floatingText);
+    floatingText->setPositionAlignment(Qt::AlignTop|Qt::AlignHCenter);
+    floatingText->position->setType(QCPItemPosition::ptAxisRectRatio);
+    floatingText->position->setCoords(0.5, 0); // place position at center/top of axis rect
+    floatingText->setText(title_text_);
+    floatingText->setProperty("floating text", true);
+    floatingText->setFont(QFont("Helvetica", 10));
+    floatingText->setSelectable(false);
+    floatingText->setColor(Qt::black);
+  }
 }
 
 void WidgetPlotFit::set_range(Range rng) {
   //  PL_DBG << "<WidgetPlotFit> set range";
   my_range_ = rng;
+  plotRange();
+  if (my_range_.visible)
+    follow_selection();
+  calc_visible();
 }
 
-std::set<double> WidgetPlotFit::get_selected_markers() {
-  std::set<double> selection;
-  for (auto &q : ui->mcaPlot->selectedItems())
-    if (QCPItemText *txt = qobject_cast<QCPItemText*>(q)) {
-      if (txt->property("chan_value").isValid())
-        selection.insert(txt->property("chan_value").toDouble());
-      //PL_DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
-    } else if (QCPItemLine *line = qobject_cast<QCPItemLine*>(q)) {
-      if (line->property("chan_value").isValid())
-        selection.insert(line->property("chan_value").toDouble());
-      //PL_DBG << "found selected " << line->property("true_value").toDouble() << " chan=" << line->property("chan_value").toDouble();
-    }
+void WidgetPlotFit::select_peaks(const std::set<double> &peaks) {
+  selected_peaks_ = peaks;
+  if (!selected_peaks_.empty())
+    follow_selection();
+  calc_visible();
+}
 
-  return selection;
+std::set<double> WidgetPlotFit::get_selected_peaks() {
+  return selected_peaks_;
 }
 
 
@@ -278,10 +281,22 @@ void WidgetPlotFit::calc_y_bounds(double lower, double upper) {
       maxy = it->second;
   }
 
-  maxy = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(maxy) - 75);
+  if (my_range_.visible && (edge_trc1 != nullptr) && (edge_trc2 != nullptr)) {
+    if (edge_trc1->position->value() > maxy)
+      maxy = edge_trc1->position->value();
+    if (edge_trc1->position->value() < miny)
+      miny = edge_trc1->position->value();
+    if (edge_trc2->position->value() > maxy)
+      maxy = edge_trc2->position->value();
+    if (edge_trc2->position->value() < miny)
+      miny = edge_trc2->position->value();
+  }
 
-  /*if ((maxy > 1) && (miny == 0))
-    miny = 1;*/
+  double miny2 = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(miny) + 20);
+  maxy = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(maxy) - 100);
+
+  if (miny2 > 1.0)
+    miny = miny2;
 }
 
 void WidgetPlotFit::setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2) {
@@ -304,50 +319,122 @@ void WidgetPlotFit::setColorScheme(QColor fore, QColor back, QColor grid1, QColo
   ui->mcaPlot->setBackground(QBrush(back));
 }
 
-void WidgetPlotFit::replot_markers() {
-  ui->mcaPlot->clearItems();
+void WidgetPlotFit::plotRange() {
+  std::list<QCPAbstractItem*> to_remove;
+  for (int i=0; i < ui->mcaPlot->itemCount(); ++i)
+    if (ui->mcaPlot->item(i)->property("tracer").isValid())
+      to_remove.push_back(ui->mcaPlot->item(i));
+  for (auto &q : to_remove)
+    ui->mcaPlot->removeItem(q);
+
   edge_trc1 = nullptr;
   edge_trc2 = nullptr;
-  double min_marker = std::numeric_limits<double>::max();
-  double max_marker = - std::numeric_limits<double>::max();
-  //  int total_markers = 0;
+  int fit_level = 0;
 
-  for (auto &q : my_markers_) {
-    QCPItemTracer *top_crs = nullptr;
-    if (q.visible) {
+  if (my_range_.visible) {
+
+    double pos_l = 0, pos_c = 0, pos_r = 0;
+    pos_l = my_range_.l.energy();
+    pos_c = my_range_.center.energy();
+    pos_r = my_range_.r.energy();
+
+    if (pos_l < pos_r) {
+
+      int top_idx = -1;
+      for (int i=0; i < ui->mcaPlot->graphCount(); i++) {
+
+        int level = ui->mcaPlot->graph(i)->property("fittable").toInt();
+
+        if (level < fit_level)
+          continue;
+
+        if ((ui->mcaPlot->graph(i)->data()->firstKey() > pos_l)
+            || (pos_r > ui->mcaPlot->graph(i)->data()->lastKey()))
+          continue;
+
+        fit_level = level;
+        top_idx = i;
+      }
+
+      if (top_idx >= 0) {
+        edge_trc1 = new QCPItemTracer(ui->mcaPlot);
+        edge_trc1->setStyle(QCPItemTracer::tsNone);
+        edge_trc1->setGraph(ui->mcaPlot->graph(top_idx));
+        edge_trc1->setGraphKey(pos_l);
+        edge_trc1->setInterpolating(true);
+        edge_trc1->setProperty("tracer", QVariant::fromValue(0));
+        ui->mcaPlot->addItem(edge_trc1);
+        edge_trc1->updatePosition();
+
+        edge_trc2 = new QCPItemTracer(ui->mcaPlot);
+        edge_trc2->setStyle(QCPItemTracer::tsNone);
+        edge_trc2->setGraph(ui->mcaPlot->graph(top_idx));
+        edge_trc2->setGraphKey(pos_r);
+        edge_trc2->setInterpolating(true);
+        edge_trc2->setProperty("tracer", QVariant::fromValue(0));
+        ui->mcaPlot->addItem(edge_trc2);
+        edge_trc2->updatePosition();
+      } else
+        fit_level = 0;
+    } else {
+      //      PL_DBG << "<WidgetPlotFit> bad range";
+      my_range_.visible = false;
+      //emit range_moved();
+    }
+  }
+
+  if (fit_level > 0) {
+      DraggableTracer *ar1 = new DraggableTracer(ui->mcaPlot, edge_trc1, 10);
+      ar1->setPen(QPen(Qt::darkGreen, 1));
+      ar1->setProperty("tracer", QVariant::fromValue(1));
+      ar1->setSelectable(true);
+      ar1->set_limits(minx, maxx);
+      ui->mcaPlot->addItem(ar1);
+
+      DraggableTracer *ar2 = new DraggableTracer(ui->mcaPlot, edge_trc2, 10);
+      ar2->setPen(QPen(Qt::darkGreen, 1));
+      ar2->setProperty("tracer", QVariant::fromValue(1));
+      ar2->setSelectable(true);
+      ar2->set_limits(minx, maxx);
+      ui->mcaPlot->addItem(ar2);
+
+      QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
+      line->setSelectable(false);
+      line->setProperty("tracer", QVariant::fromValue(2));
+      line->start->setParentAnchor(edge_trc1->position);
+      line->start->setCoords(0, 0);
+      line->end->setParentAnchor(edge_trc2->position);
+      line->end->setCoords(0, 0);
+      line->setPen(QPen(Qt::darkGreen, 2, Qt::DashLine));
+      ui->mcaPlot->addItem(line);
+  }
+}
+
+void WidgetPlotFit::plotEnergyLabels() {
+  if (fit_data_ == nullptr)
+    return;
+
+  for (auto &r : fit_data_->regions_) {
+    for (auto &q : r.peaks_) {
+      QCPItemTracer *top_crs = nullptr;
 
       double max = std::numeric_limits<double>::lowest();
-      int total = ui->mcaPlot->graphCount();
-      for (int i=0; i < total; i++) {
+      for (int i=0; i < ui->mcaPlot->graphCount(); i++) {
 
         if (!ui->mcaPlot->graph(i)->property("fittable").toBool())
           continue;
 
-        int bits = ui->mcaPlot->graph(i)->property("bits").toInt();
-
-        double pos = 0;
-        if (use_calibrated_)
-          pos = q.pos.energy();
-        else
-          pos = q.pos.bin(bits);
-
-        //PL_DBG << "Adding crs at " << pos << " on plot " << i;
-
-        if ((ui->mcaPlot->graph(i)->data()->firstKey() >= pos)
-            || (pos >= ui->mcaPlot->graph(i)->data()->lastKey()))
+        if ((ui->mcaPlot->graph(i)->data()->firstKey() >= q.second.energy)
+            || (q.second.energy >= ui->mcaPlot->graph(i)->data()->lastKey()))
           continue;
 
         QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
         crs->setStyle(QCPItemTracer::tsNone); //tsCirlce?
-        crs->setProperty("chan_value", q.pos.bin(bits));
-        crs->setProperty("nrg_value", q.pos.energy());
+        crs->setProperty("chan_value", q.second.center);
 
-        crs->setSize(4);
         crs->setGraph(ui->mcaPlot->graph(i));
         crs->setInterpolating(true);
-        crs->setGraphKey(pos);
-        crs->setPen(q.appearance.default_pen);
-        crs->setSelectable(false);
+        crs->setGraphKey(q.second.energy);
         ui->mcaPlot->addItem(crs);
 
         crs->updatePosition();
@@ -357,174 +444,97 @@ void WidgetPlotFit::replot_markers() {
           top_crs = crs;
         }
       }
-    }
-    if (top_crs != nullptr) {
-      QPen pen = q.appearance.default_pen;
-      QPen selected_pen = q.selected_appearance.default_pen;
 
-      if (q.selected) {
-        //        total_markers++;
-        if (top_crs->graphKey() > max_marker)
-          max_marker = top_crs->graphKey();
-        if (top_crs->graphKey() < min_marker)
-          min_marker = top_crs->graphKey();
+
+      if (top_crs != nullptr) {
+        QPen pen = QPen(Qt::darkGray, 1);
+        QPen selected_pen = QPen(Qt::black, 2);
+
+        QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
+        line->start->setParentAnchor(top_crs->position);
+        line->start->setCoords(0, -35);
+        line->end->setParentAnchor(top_crs->position);
+        line->end->setCoords(0, -5);
+        line->setHead(QCPLineEnding(QCPLineEnding::esSpikeArrow, 7, 18));
+        line->setPen(pen);
+        line->setSelectedPen(selected_pen);
+        line->setProperty("chan_value", top_crs->property("chan_value"));
+        line->setSelectable(true);
+        line->setSelected(selected_peaks_.count(q.second.center));
+        ui->mcaPlot->addItem(line);
+
+        QCPItemText *markerText = new QCPItemText(ui->mcaPlot);
+        markerText->setProperty("chan_value", top_crs->property("chan_value"));
+
+        markerText->position->setParentAnchor(top_crs->position);
+        markerText->setPositionAlignment(Qt::AlignHCenter|Qt::AlignBottom);
+        markerText->position->setCoords(0, -35);
+        markerText->setText(QString::number(q.second.energy));
+        markerText->setTextAlignment(Qt::AlignLeft);
+        markerText->setFont(QFont("Helvetica", 9));
+        markerText->setPen(pen);
+        markerText->setColor(pen.color());
+        markerText->setSelectedColor(selected_pen.color());
+        markerText->setSelectedPen(selected_pen);
+        markerText->setPadding(QMargins(1, 1, 1, 1));
+        markerText->setSelectable(true);
+        markerText->setSelected(selected_peaks_.count(q.second.center));
+        ui->mcaPlot->addItem(markerText);
+
       }
 
-      QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
-      line->start->setParentAnchor(top_crs->position);
-      line->start->setCoords(0, -30);
-      line->end->setParentAnchor(top_crs->position);
-      line->end->setCoords(0, -2);
-      line->setHead(QCPLineEnding(QCPLineEnding::esLineArrow, 7, 7));
-      line->setPen(pen);
-      line->setSelectedPen(selected_pen);
-      line->setProperty("true_value", top_crs->graphKey());
-      line->setProperty("chan_value", top_crs->property("chan_value"));
-      line->setProperty("nrg_value", top_crs->property("nrg_value"));
-      line->setSelectable(true);
-      line->setSelected(q.selected);
-      ui->mcaPlot->addItem(line);
-
-      QCPItemText *markerText = new QCPItemText(ui->mcaPlot);
-      markerText->setProperty("true_value", top_crs->graphKey());
-      markerText->setProperty("chan_value", top_crs->property("chan_value"));
-      markerText->setProperty("nrg_value", top_crs->property("nrg_value"));
-
-      markerText->position->setParentAnchor(top_crs->position);
-      markerText->setPositionAlignment(Qt::AlignHCenter|Qt::AlignBottom);
-      markerText->position->setCoords(0, -30);
-      markerText->setText(QString::number(q.pos.energy()));
-      markerText->setTextAlignment(Qt::AlignLeft);
-      markerText->setFont(QFont("Helvetica", 9));
-      markerText->setPen(pen);
-      markerText->setColor(pen.color());
-      markerText->setSelectedColor(selected_pen.color());
-      markerText->setSelectedPen(selected_pen);
-      markerText->setPadding(QMargins(1, 1, 1, 1));
-      markerText->setSelectable(true);
-      markerText->setSelected(q.selected);
-      ui->mcaPlot->addItem(markerText);
-
     }
+  }
+}
 
-    //ui->mcaPlot->xAxis->setRangeLower(min_marker);
-    //ui->mcaPlot->xAxis->setRangeUpper(max_marker);
-    //ui->mcaPlot->xAxis->setRange(min, max);
-    //ui->mcaPlot->xAxis2->setRange(min, max);
+void WidgetPlotFit::follow_selection() {
+  double min_marker = std::numeric_limits<double>::max();
+  double max_marker = - std::numeric_limits<double>::max();
 
+  for (auto &q : selected_peaks_) {
+    double nrg = fit_data_->nrg_cali_.transform(q);
+    if (nrg > max_marker)
+      max_marker = nrg;
+    if (nrg < min_marker)
+      min_marker = nrg;
   }
 
   if (my_range_.visible) {
-
-    double pos_l = 0, pos_c = 0, pos_r = 0;
-    pos_l = my_range_.l.energy();
-    pos_c = my_range_.center.energy();
-    pos_r = my_range_.r.energy();
-
-    int fit_level = 0;
-
-    if (pos_l < pos_r) {
-
-      int total = ui->mcaPlot->graphCount();
-      for (int i=0; i < total; i++) {
-
-        int level = ui->mcaPlot->graph(i)->property("fittable").toInt();
-
-        if (level < fit_level)
-          continue;
-
-        fit_level = level;
-
-        int bits = ui->mcaPlot->graph(i)->property("bits").toInt();
-        if (!use_calibrated_) {
-          pos_l = my_range_.l.bin(bits);
-          pos_c = my_range_.center.bin(bits);
-          pos_r = my_range_.r.bin(bits);
-        } else {
-          pos_l = my_range_.l.energy();
-          pos_c = my_range_.center.energy();
-          pos_r = my_range_.r.energy();
-        }
-
-        if ((ui->mcaPlot->graph(i)->data()->firstKey() > pos_l)
-            || (pos_r > ui->mcaPlot->graph(i)->data()->lastKey()))
-          continue;
-
-        edge_trc1 = new QCPItemTracer(ui->mcaPlot);
-        edge_trc1->setStyle(QCPItemTracer::tsNone);
-        edge_trc1->setGraph(ui->mcaPlot->graph(i));
-        edge_trc1->setGraphKey(pos_l);
-        edge_trc1->setInterpolating(true);
-        ui->mcaPlot->addItem(edge_trc1);
-        edge_trc1->updatePosition();
-
-        edge_trc2 = new QCPItemTracer(ui->mcaPlot);
-        edge_trc2->setStyle(QCPItemTracer::tsNone);
-        edge_trc2->setGraph(ui->mcaPlot->graph(i));
-        edge_trc2->setGraphKey(pos_r);
-        edge_trc2->setInterpolating(true);
-        ui->mcaPlot->addItem(edge_trc2);
-        edge_trc2->updatePosition();
-      }
-
-    } else {
-      //      PL_DBG << "<WidgetPlotFit> bad range";
-      my_range_.visible = false;
-      //emit range_moved();
-    }
-
-    if (my_range_.visible && (fit_level > 0)) {
-
-      QPen pen_l = my_range_.base.default_pen;
-      QPen pen_r = my_range_.base.default_pen;
-      DraggableTracer *ar1 = new DraggableTracer(ui->mcaPlot, edge_trc1, 10);
-      pen_l.setWidth(1);
-      ar1->setPen(pen_l);
-      ar1->setSelectable(true);
-      ar1->set_limits(minx - 1, maxx + 1); //exclusive limits
-      ui->mcaPlot->addItem(ar1);
-
-      DraggableTracer *ar2 = new DraggableTracer(ui->mcaPlot, edge_trc2, 10);
-      pen_r.setWidth(1);
-      ar2->setPen(pen_r);
-      ar2->setSelectable(true);
-      ar2->set_limits(minx - 1, maxx + 1); //exclusive limits
-      ui->mcaPlot->addItem(ar2);
-
-      if (my_range_.visible) {
-        QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
-        line->setSelectable(false);
-        line->start->setParentAnchor(edge_trc1->position);
-        line->start->setCoords(0, 0);
-        line->end->setParentAnchor(edge_trc2->position);
-        line->end->setCoords(0, 0);
-        line->setPen(my_range_.base.default_pen);
-        ui->mcaPlot->addItem(line);
-
-        if (edge_trc1->graphKey() < min_marker)
-          min_marker = edge_trc1->graphKey();
-        if (edge_trc2->graphKey() > max_marker)
-          max_marker = edge_trc2->graphKey();
-      }
-    }
-
-  } else {
-    //    PL_DBG << "<WidgetPlotFit> range invisible";
+    if (my_range_.l.energy() < min_marker)
+      min_marker = my_range_.l.energy();
+    if (my_range_.r.energy() < max_marker)
+      max_marker = my_range_.r.energy();
   }
 
-
-  if (!title_text_.isEmpty()) {
-    QCPItemText *floatingText = new QCPItemText(ui->mcaPlot);
-    ui->mcaPlot->addItem(floatingText);
-    floatingText->setPositionAlignment(Qt::AlignTop|Qt::AlignHCenter);
-    floatingText->position->setType(QCPItemPosition::ptAxisRectRatio);
-    floatingText->position->setCoords(0.5, 0); // place position at center/top of axis rect
-    floatingText->setText(title_text_);
-    floatingText->setFont(QFont("Helvetica", 10));
-    floatingText->setSelectable(false);
-    floatingText->setColor(Qt::black);
+  bool xaxis_changed = false;
+  double dif_lower = min_marker - ui->mcaPlot->xAxis->range().lower;
+  double dif_upper = max_marker - ui->mcaPlot->xAxis->range().upper;
+  if (dif_upper > 0) {
+    ui->mcaPlot->xAxis->setRangeUpper(max_marker + 20);
+    if (dif_lower > (dif_upper + 20))
+      ui->mcaPlot->xAxis->setRangeLower(ui->mcaPlot->xAxis->range().lower + dif_upper + 20);
+    xaxis_changed = true;
   }
 
+  if (dif_lower < 0) {
+    ui->mcaPlot->xAxis->setRangeLower(min_marker - 20);
+    if (dif_upper < (dif_lower - 20))
+      ui->mcaPlot->xAxis->setRangeUpper(ui->mcaPlot->xAxis->range().upper + dif_lower - 20);
+    xaxis_changed = true;
+  }
+
+  if (xaxis_changed) {
+    ui->mcaPlot->replot();
+    plot_rezoom();
+  }
+
+//  miny = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(miny) + 20);
+//  maxy = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(maxy) - 100);
+
+
+}
+
+void WidgetPlotFit::plotButtons() {
   QCPItemPixmap *overlayButton;
 
   overlayButton = new QCPItemPixmap(ui->mcaPlot);
@@ -573,29 +583,6 @@ void WidgetPlotFit::replot_markers() {
     ui->mcaPlot->addItem(newButton);
     overlayButton = newButton;
   }
-
-  bool xaxis_changed = false;
-  double dif_lower = min_marker - ui->mcaPlot->xAxis->range().lower;
-  double dif_upper = max_marker - ui->mcaPlot->xAxis->range().upper;
-  if (dif_upper > 0) {
-    ui->mcaPlot->xAxis->setRangeUpper(max_marker + 20);
-    if (dif_lower > (dif_upper + 20))
-      ui->mcaPlot->xAxis->setRangeLower(ui->mcaPlot->xAxis->range().lower + dif_upper + 20);
-    xaxis_changed = true;
-  }
-
-  if (dif_lower < 0) {
-    ui->mcaPlot->xAxis->setRangeLower(min_marker - 20);
-    if (dif_upper < (dif_lower - 20))
-      ui->mcaPlot->xAxis->setRangeUpper(ui->mcaPlot->xAxis->range().upper + dif_lower - 20);
-    xaxis_changed = true;
-  }
-
-  if (xaxis_changed) {
-    ui->mcaPlot->replot();
-    plot_rezoom();
-  }
-
 }
 
 
@@ -609,6 +596,19 @@ void WidgetPlotFit::plot_mouse_clicked(double x, double y, QMouseEvent* event, b
 
 
 void WidgetPlotFit::selection_changed() {
+  selected_peaks_.clear();
+  for (auto &q : ui->mcaPlot->selectedItems())
+    if (QCPItemText *txt = qobject_cast<QCPItemText*>(q)) {
+      if (txt->property("chan_value").isValid())
+        selected_peaks_.insert(txt->property("chan_value").toDouble());
+    } else if (QCPItemLine *line = qobject_cast<QCPItemLine*>(q)) {
+      if (line->property("chan_value").isValid())
+        selected_peaks_.insert(line->property("chan_value").toDouble());
+    }
+  my_range_.visible = false;
+  plotRange();
+  calc_visible();
+
   emit markers_selected();
 }
 
@@ -631,7 +631,7 @@ void WidgetPlotFit::clicked_item(QCPAbstractItem* itm) {
 }
 
 void WidgetPlotFit::zoom_out() {
-  ui->mcaPlot->xAxis->rescale();
+  ui->mcaPlot->rescaleAxes();
   force_rezoom_ = true;
   plot_rezoom();
   ui->mcaPlot->replot();
@@ -720,7 +720,7 @@ void WidgetPlotFit::exportRequested(QAction* choice) {
 
 void WidgetPlotFit::setData(Gamma::Fitter* fit) {
   fit_data_ = fit;
-  calc_visible();
+  updateData();
 }
 
 void WidgetPlotFit::add_bounds(const QVector<double>& x, const QVector<double>& y) {
@@ -739,45 +739,41 @@ void WidgetPlotFit::updateData() {
   if (fit_data_ == nullptr)
     return;
 
-  QPen main_graph_, back_with_steps_, peak, back_poly_, sum4edge_,
-       full_fit_, flagged,
-       resid;
-
   QColor plotcolor;
   plotcolor.setHsv(QColor::fromRgba(fit_data_->metadata_.appearance).hsvHue(), 48, 160);
-  main_graph_ = QPen(plotcolor, 1);
+  QPen main_graph = QPen(plotcolor, 1);
 
-  back_poly_ = QPen(Qt::darkGray, 1);
-  back_with_steps_ = QPen(Qt::darkBlue, 1);
-  full_fit_ = QPen(Qt::red, 2);
+  QPen back_poly = QPen(Qt::darkGray, 1);
+  QPen back_with_steps = QPen(Qt::darkBlue, 1);
+  QPen full_fit = QPen(Qt::red, 2);
 
-  peak  = QPen(Qt::darkCyan, 2);
+  QPen peak  = QPen(Qt::darkCyan, 2);
   peak.setStyle(Qt::DotLine);
 
-  resid = QPen( Qt::darkGreen, 1);
+  QPen resid = QPen( Qt::darkGreen, 1);
   resid.setStyle(Qt::DashLine);
 
-  QColor flagged_color;
-  flagged_color.setHsv(QColor(Qt::green).hsvHue(), QColor(Qt::green).hsvSaturation(), 192);
-  flagged =  QPen(flagged_color, 1);
-  flagged.setStyle(Qt::DotLine);
+//  QColor flagged_color;
+//  flagged_color.setHsv(QColor(Qt::green).hsvHue(), QColor(Qt::green).hsvSaturation(), 192);
+//  QPen flagged =  QPen(flagged_color, 1);
+//  flagged.setStyle(Qt::DotLine);
 
-  sum4edge_ = QPen(Qt::darkYellow, 3);
+  QPen sum4edge = QPen(Qt::darkYellow, 3);
+  QPen sum4back = QPen(Qt::darkYellow, 1);
 
-//  this->clearGraphs();
-//  this->clearExtras();
+  this->clearGraphs();
 
   minima_.clear(); maxima_.clear();
 
-  use_calibrated(fit_data_->nrg_cali_.valid());
-  setLabels(QString::fromStdString(fit_data_->nrg_cali_.units_), "count");
+  ui->mcaPlot->xAxis->setLabel(QString::fromStdString(fit_data_->nrg_cali_.units_));
+  ui->mcaPlot->yAxis->setLabel("count");
 
   QVector<double> xx, yy;
 
   xx = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_, fit_data_->metadata_.bits));
   yy = QVector<double>::fromStdVector(fit_data_->finder_.y_);
 
-  addGraph(xx, yy, main_graph_, 1, fit_data_->metadata_.bits, "Data");
+  addGraph(xx, yy, main_graph, 1, fit_data_->metadata_.bits, "Data");
   add_bounds(xx, yy);
 
   for (auto &q : fit_data_->regions_) {
@@ -785,46 +781,28 @@ void WidgetPlotFit::updateData() {
 
     yy = QVector<double>::fromStdVector(q.hr_fullfit);
     trim_log_lower(yy);
-    addGraph(xx, yy, full_fit_, false, q.bits_, "Region fit");
+    addGraph(xx, yy, full_fit, false, q.bits_, "Region fit");
     add_bounds(xx, yy);
 
     for (auto & p : q.peaks_) {
-      yy = QVector<double>::fromStdVector(p.hr_fullfit_);
+      yy = QVector<double>::fromStdVector(p.second.hr_fullfit_);
       trim_log_lower(yy);
-      QPen prof = p.flagged ? flagged : peak;
-      addGraph(xx, yy, prof, false, q.bits_, "Individual peak");
+//      QPen pen = p.second.flagged ? flagged : peak;
+      addGraph(xx, yy, peak, false, q.bits_, "Individual peak");
 
-      if (p.sum4_.fwhm > 0) {
+      if (p.second.sum4_.peak_width > 0) {
+        addEdge(p.second.sum4_.LB(), sum4edge);
 
-        std::vector<double> x_edge, y_edge;
-        for (int i = p.sum4_.LBstart; i <= p.sum4_.LBend; ++i) {
-          x_edge.push_back(fit_data_->finder_.x_[i]);
-          y_edge.push_back(p.sum4_.Lsum / p.sum4_.Lw);
+        if (!p.second.sum4_.bx.empty()) {
+          std::vector<double> x_sum4;
+          for (auto &i : p.second.sum4_.bx)
+            x_sum4.push_back(fit_data_->finder_.x_[i]);
+          addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x_sum4, fit_data_->metadata_.bits)),
+                               QVector<double>::fromStdVector(p.second.sum4_.by),
+                               sum4back, false, fit_data_->metadata_.bits, "SUM4 background");
         }
-        if (!x_edge.empty()) {
-          x_edge[0] -= 0.5;
-          x_edge[x_edge.size()-1] += 0.5;
-        }
 
-        addGraph(QVector<double>::fromStdVector(q.cal_nrg_.transform(x_edge, q.bits_)),
-                             QVector<double>::fromStdVector(y_edge),
-                             sum4edge_, false, q.bits_, "SUM4 edge");
-
-
-        x_edge.clear(); y_edge.clear();
-
-        for (int i = p.sum4_.RBstart; i <= p.sum4_.RBend; ++i) {
-          x_edge.push_back(fit_data_->finder_.x_[i]);
-          y_edge.push_back(p.sum4_.Rsum / p.sum4_.Rw);
-        }
-        if (!x_edge.empty()) {
-          x_edge[0] -= 0.5;
-          x_edge[x_edge.size()-1] += 0.5;
-        }
-        addGraph(QVector<double>::fromStdVector(q.cal_nrg_.transform(x_edge, q.bits_)),
-                             QVector<double>::fromStdVector(y_edge),
-                             sum4edge_, false, q.bits_, "SUM4 edge");
-
+        addEdge(p.second.sum4_.RB(), sum4edge);
       }
     }
 
@@ -832,12 +810,12 @@ void WidgetPlotFit::updateData() {
 
       yy = QVector<double>::fromStdVector(q.hr_background);
       trim_log_lower(yy);
-      addGraph(xx, yy, back_poly_, false, q.bits_, "Background poly");
+      addGraph(xx, yy, back_poly, false, q.bits_, "Background poly");
       add_bounds(xx, yy);
 
       yy = QVector<double>::fromStdVector(q.hr_back_steps);
       trim_log_lower(yy);
-      addGraph(xx, yy, back_with_steps_, false, q.bits_, "Background steps");
+      addGraph(xx, yy, back_with_steps, false, q.bits_, "Background steps");
 
       xx = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.finder_.x_, fit_data_->metadata_.bits));
       yy = QVector<double>::fromStdVector(q.finder_.y_resid_on_background_);
@@ -848,10 +826,34 @@ void WidgetPlotFit::updateData() {
 
   }
 
+  ui->mcaPlot->clearItems();
+
+  setTitle(title_text_);
+
+  plotEnergyLabels();
+  plotRange();
+  plotButtons();
+
   calc_visible();
   rescale();
-//  replot_markers();
 }
+
+void WidgetPlotFit::addEdge(Gamma::SUM4Edge edge, QPen pen) {
+  std::vector<double> x_edge, y_edge;
+  for (int i = edge.start(); i <= edge.end(); ++i) {
+    x_edge.push_back(fit_data_->finder_.x_[i]);
+    y_edge.push_back(edge.average());
+  }
+//  if (!x_edge.empty()) {
+//    x_edge[0] -= 0.5;
+//    x_edge[x_edge.size()-1] += 0.5;
+//  }
+
+  addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x_edge, fit_data_->metadata_.bits)),
+                       QVector<double>::fromStdVector(y_edge),
+                       pen, false, fit_data_->metadata_.bits, "SUM4 edge");
+}
+
 
 void WidgetPlotFit::trim_log_lower(QVector<double> &array) {
   for (auto &r : array)
@@ -869,16 +871,38 @@ void WidgetPlotFit::calc_visible() {
     return;
 
   for (auto &q : fit_data_->regions_) {
-    q.visible_ = false;
     if (q.hr_x_nrg.empty() ||
         (q.hr_x_nrg.front() > maxx_zoom) ||
         (q.hr_x_nrg.back() < minx_zoom))
       continue;
     visible_roi_++;
     visible_peaks_ += q.peaks_.size();
-    good_starts.insert(q.hr_x_nrg.front());
-    good_starts.insert(q.cal_nrg_.transform(q.finder_.x_.front(), q.bits_));
+    good_starts.insert(q.hr_x_nrg.front()); //for all parts of fit
+    good_starts.insert(q.cal_nrg_.transform(q.finder_.x_.front(), q.bits_)); //for residues
+    for (auto &p : q.peaks_) {
+      if ((selected_peaks_.count(p.second.center) > 0) && (p.second.sum4_.peak_width > 0)) {
+        good_starts.insert(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[p.second.sum4_.LB().start()], fit_data_->metadata_.bits));
+        good_starts.insert(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[p.second.sum4_.RB().start()], fit_data_->metadata_.bits));
+        if (!p.second.sum4_.bx.empty())
+          good_starts.insert(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[p.second.sum4_.bx.front()], fit_data_->metadata_.bits));
+      }
+    }
   }
+
+  this->blockSignals(true);
+  for (int i=0; i < ui->mcaPlot->itemCount(); ++i) {
+    QCPAbstractItem *q =  ui->mcaPlot->item(i);
+    if (QCPItemText *txt = qobject_cast<QCPItemText*>(q)) {
+      if (txt->property("chan_value").isValid()) {
+        txt->setSelected(selected_peaks_.count(txt->property("chan_value").toDouble()));
+      }
+    } else if (QCPItemLine *line = qobject_cast<QCPItemLine*>(q)) {
+      if (line->property("chan_value").isValid()) {
+        line->setSelected(selected_peaks_.count(line->property("chan_value").toDouble()));
+      }
+    }
+  }
+  this->blockSignals(false);
 
   bool plot_back_poly = (visible_roi_ < 4);
   bool plot_resid_on_back = plot_back_poly;
@@ -904,8 +928,11 @@ void WidgetPlotFit::calc_visible() {
       ui->mcaPlot->graph(i)->setVisible(plot_resid_on_back &&
                                         (good_starts.count(ui->mcaPlot->graph(i)->property("start").toDouble()) > 0));
     else if (ui->mcaPlot->graph(i)->name() == "SUM4 edge")
-      ui->mcaPlot->graph(i)->setVisible(plot_peak /*&&
-                                        (good_starts.count(ui->mcaPlot->graph(i)->property("start").toDouble()) > 0)*/);
+      ui->mcaPlot->graph(i)->setVisible(plot_peak &&
+                                        (good_starts.count(ui->mcaPlot->graph(i)->property("start").toDouble()) > 0));
+    else if (ui->mcaPlot->graph(i)->name() == "SUM4 background")
+      ui->mcaPlot->graph(i)->setVisible(plot_peak &&
+                                        (good_starts.count(ui->mcaPlot->graph(i)->property("start").toDouble()) > 0));
   }
 
 }

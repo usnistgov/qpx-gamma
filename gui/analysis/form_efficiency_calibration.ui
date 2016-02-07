@@ -513,47 +513,6 @@
                </property>
               </widget>
              </item>
-             <item>
-              <widget class="QPushButton" name="pushMarkerRemove">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>32</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>32</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="toolTip">
-                <string>Remove peak</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="icon">
-                <iconset resource="../resources/qpxres.qrc">
-                 <normaloff>:/icons/oxy/16/editdelete.png</normaloff>:/icons/oxy/16/editdelete.png</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>16</width>
-                 <height>16</height>
-                </size>
-               </property>
-              </widget>
-             </item>
             </layout>
            </item>
            <item>
@@ -606,6 +565,12 @@
  </widget>
  <customwidgets>
   <customwidget>
+   <class>FormPeaks</class>
+   <extends>QWidget</extends>
+   <header>form_peaks.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
    <class>SelectorWidget</class>
    <extends>QWidget</extends>
    <header>widget_selector.h</header>
@@ -615,12 +580,6 @@
    <class>WidgetPlotCalib</class>
    <extends>QWidget</extends>
    <header>widget_plot_calib.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>FormPeaks</class>
-   <extends>QWidget</extends>
-   <header>form_peaks.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>

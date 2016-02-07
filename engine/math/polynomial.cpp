@@ -36,7 +36,7 @@ Polynomial::Polynomial(std::vector<double> coeffs, double xoffset)
   xoffset_ = xoffset;
   int highest = -1;
   for (int i=0; i < coeffs.size(); ++i)
-    if (coeffs[i] > 0)
+    if (coeffs[i] != 0)
       highest = i;
   for (int i=0; i <= highest; ++i)
     coeffs_.push_back(coeffs[i]);
@@ -145,7 +145,7 @@ Polynomial Polynomial::derivative() {
 
   int highest = 0;
   for (int i=0; i < coeffs_.size(); ++i)
-    if (coeffs_[i] > 0)
+    if (coeffs_[i] != 0)
       highest = i;
 
   if (highest == 0)

@@ -50,14 +50,15 @@ signals:
   void calibrationComplete();
   void detectorsChanged();
 
-
 public slots:
   void update_spectrum();
   void update_detector_calibs();
+  void update_selection(std::set<double> selected_peaks);
 
 private slots:
+  void update_data();
+
   void update_spectra();
-  void update_peaks(bool);
   void detectorsUpdated() {emit detectorsChanged();}
 
   void setSpectrum(QString spectrum);
@@ -76,8 +77,6 @@ private slots:
 
   void on_pushFit_clicked();
   void on_pushDetDB_clicked();
-
-  void on_pushMarkerRemove_clicked();
 
   void on_pushCullPeaks_clicked();
 
@@ -99,6 +98,9 @@ private:
   QSettings &settings_;
 
   std::map<std::string, Gamma::Fitter> peak_sets_;
+  std::set<double> selected_peaks_;
+  std::set<double> falgged_peaks_;
+
   Gamma::Fitter fit_data_;
 
   QString mca_load_formats_;  //valid mca file formats that can be opened
@@ -116,11 +118,10 @@ private:
   void loadSettings();
   void saveSettings();
 
-
-
   Gamma::Calibration new_calibration_;
   AppearanceProfile style_fit, style_pts;
   void add_peak_to_table(const Gamma::Peak &, int, QColor);
+  void select_in_table();
 };
 
 #endif // FORM_EFFICIENCY_CALIBRATION_H

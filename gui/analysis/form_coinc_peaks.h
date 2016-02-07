@@ -32,6 +32,7 @@
 #include <QItemSelection>
 #include "spectra_set.h"
 #include "gamma_fitter.h"
+#include "thread_fitter.h"
 
 namespace Ui {
 class FormCoincPeaks;
@@ -49,11 +50,16 @@ public:
 
   void update_spectrum();
 
-  void update_fit(bool content_changed = false);
+  std::set<double> get_selected_peaks();
+
   void make_range(Marker);
 
   void loadSettings(QSettings &settings_);
   void saveSettings(QSettings &settings_);
+
+public slots:
+  void update_selection(std::set<double> selected_peaks);
+  void update_data();
 
 signals:
   void peaks_changed(bool content_changed);
@@ -61,16 +67,18 @@ signals:
 
 private slots:
   void change_range(Range range);
+;
 
   void selection_changed_in_table();
-  void peaks_changed_in_plot(bool);
-  void remove_peak();
 
 private:
   Ui::FormCoincPeaks *ui;
 
   //data from selected spectrum
   Gamma::Fitter *fit_data_;
+  ThreadFitter thread_fitter_;
+
+  std::set<double> selected_peaks_;
 
   void update_table(bool);
   void add_peak_to_table(const Gamma::Peak &, int, QColor);

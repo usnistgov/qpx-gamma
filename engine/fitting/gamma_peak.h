@@ -39,8 +39,6 @@ public:
       , energy(0)
       , fwhm_sum4(0)
       , fwhm_hyp (0)
-      , selected (false)
-      , flagged (false)
       , area_sum4(0.0)
       , area_hyp(0.0)
       , cps_sum4(0.0)
@@ -58,7 +56,6 @@ public:
 
   SUM4 sum4_;
   Hypermet hypermet_;
-  bool selected, flagged;
 
   double center, energy, fwhm_sum4, fwhm_hyp;
 

@@ -43,7 +43,7 @@ void ThreadFitter::begin() {
     start(HighPriority);
 }
 
-void ThreadFitter::set_data(Gamma::Fitter &data)
+void ThreadFitter::set_data(const Gamma::Fitter &data)
 {
   if (running_.load()) {
     PL_WARN << "Fitter busy";

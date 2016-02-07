@@ -45,7 +45,7 @@ public:
   void clear();
 
 signals:
-  void peaks_changed(bool);
+  void selection_changed(std::set<double> selected_peaks);
   void update_detector();
   void symmetrize_requested();
 
@@ -54,9 +54,7 @@ private slots:
   void plot_calib();
 
   void on_pushSaveCalib_clicked();
-  void on_pushRemovePeak_clicked();
   void on_pushCalibGain_clicked();
-  void on_pushCull_clicked();
 
   void on_pushSymmetrize_clicked();
 

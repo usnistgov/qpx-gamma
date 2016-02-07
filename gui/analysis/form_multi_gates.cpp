@@ -225,7 +225,7 @@ void FormMultiGates::rebuild_table(bool contents_changed) {
     if (q.approved)
       approved++;
     if (q.centroid_chan != -1)
-      peaks += q.fit_data_.peaks_.size();
+      peaks += q.fit_data_.peaks().size();
   }
 
   ui->labelGates->setText(QString::number(approved) + "/"  + QString::number(gates_.size() - approved));
@@ -300,10 +300,10 @@ void FormMultiGates::on_pushApprove_clicked()
   gates_[current_gate_].approved = true;
   Gamma::Fitter data = gates_[current_gate_].fit_data_;
 
-  if (!data.peaks_.size())
+  if (!data.peaks().size())
     return;
 
-  for (auto &q : data.peaks_) {
+  for (auto &q : data.peaks()) {
     Gamma::Gate newgate;
     newgate.cps           = q.second.area_best / (data.metadata_.live_time.total_milliseconds() / 1000);
     newgate.centroid_chan = q.second.center;
@@ -339,7 +339,7 @@ void FormMultiGates::on_pushDistill_clicked()
       box.y1.set_bin(gate.centroid_chan - (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
       box.y2.set_bin(gate.centroid_chan + (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
 
-      for (auto &p : gate.fit_data_.peaks_) {
+      for (auto &p : gate.fit_data_.peaks()) {
         Gamma::Peak peak = p.second;
         box.x_c.set_bin(peak.center, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
         box.x1.set_bin(peak.center - (peak.fwhm_hyp * 0.5 * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
@@ -442,7 +442,7 @@ void FormMultiGates::remake_gate(bool force) {
     ymin_ = ymin; ymax_ = ymax;
     //    ui->plotMatrix->set_gate_width(static_cast<uint16_t>(gate.width_chan));
     //    ui->plotMatrix->set_markers(xx, yy);
-    if (fit_data_.peaks_.empty() || force)
+    if (fit_data_.peaks().empty() || force)
       make_gated_spectra();
   }
   update_peaks(true);
@@ -463,7 +463,6 @@ void FormMultiGates::setSpectrum(Qpx::SpectraSet *newset, QString name) {
       //PL_DBG << "not empty";
       ui->tableGateList->selectRow(0);
       ui->gatedSpectrum->update_spectrum();
-      ui->gatedSpectrum->update_fit(true);
     }
     emit gate_selected();
   }
@@ -510,7 +509,8 @@ void FormMultiGates::make_gated_spectra() {
 void FormMultiGates::update_peaks(bool content_changed) {
   //update sums
 
-  ui->gatedSpectrum->update_fit(content_changed);
+  if (content_changed)
+    ui->gatedSpectrum->update_data();
 
   current_peaks_.clear();
   double width = current_gate().width_chan / 2;
@@ -532,9 +532,9 @@ void FormMultiGates::update_peaks(bool content_changed) {
   box.y2 = range2d.y2;
 
 
-  for (auto &q : fit_data_.peaks_) {
+  for (auto &q : fit_data_.peaks()) {
     box.visible = true;
-    box.selected = q.second.selected;
+    box.selected = ui->gatedSpectrum->get_selected_peaks().count(q.first);
     box.x_c.set_bin(q.second.center, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
     box.x1.set_bin(q.second.center - (q.second.fwhm_hyp * 0.5 * width_factor()), fit_data_.metadata_.bits, fit_data_.nrg_cali_);
     box.x2.set_bin(q.second.center + (q.second.fwhm_hyp * 0.5 * width_factor()), fit_data_.metadata_.bits, fit_data_.nrg_cali_);
@@ -572,8 +572,7 @@ void FormMultiGates::choose_peaks(std::list<MarkerBox2D> chpeaks) {
     xs.insert(q.x_c.bin(fit_data_.metadata_.bits));
     ys.insert(q.y_c.bin(fit_data_.metadata_.bits));
   }
-  for (auto &q : fit_data_.peaks_)
-    q.second.selected = (xs.count(q.second.center) > 0);
+  ui->gatedSpectrum->update_selection(xs);
   update_peaks(false);
 }
 
@@ -658,7 +657,7 @@ QVariant TableGates::data(const QModelIndex &index, int role) const
     case 4:
       return QVariant::fromValue(gate.width_nrg);
     case 5:
-      return QVariant::fromValue(gate.fit_data_.peaks_.size());
+      return QVariant::fromValue(gate.fit_data_.peaks().size());
     case 6:
       if (gate.approved)
         return "Yes";

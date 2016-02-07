@@ -33,17 +33,9 @@ FormPeaks::FormPeaks(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  range_.visible = false;
-  range_.top.default_pen = QPen(Qt::darkMagenta, 1);
-  range_.base.default_pen = QPen(Qt::darkMagenta, 2, Qt::DashLine);
-
-  list.appearance.default_pen = QPen(Qt::darkGray, 1);
-  list.selected_appearance.default_pen = QPen(Qt::black, 2);
-  list.visible = true;
-
   connect(ui->plot1D, SIGNAL(markers_selected()), this, SLOT(user_selected_peaks()));
-  connect(ui->plot1D, SIGNAL(clickedLeft(double)), this, SLOT(addMovingMarker(double)));
-  connect(ui->plot1D, SIGNAL(clickedRight(double)), this, SLOT(removeMovingMarker(double)));
+  connect(ui->plot1D, SIGNAL(clickedLeft(double)), this, SLOT(addRange(double)));
+  connect(ui->plot1D, SIGNAL(clickedRight(double)), this, SLOT(removeRange(double)));
   connect(ui->plot1D, SIGNAL(range_moved(double, double)), this, SLOT(range_moved(double, double)));
 
   QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Insert), ui->plot1D);
@@ -66,7 +58,9 @@ FormPeaks::~FormPeaks()
 
 void FormPeaks::setFit(Gamma::Fitter* fit) {
   fit_data_ = fit;
-  update_fit(true);
+  ui->plot1D->setData(fit_data_);
+  update_spectrum();
+  replot_all();
 }
 
 void FormPeaks::loadSettings(QSettings &settings_) {
@@ -94,48 +88,18 @@ void FormPeaks::clear() {
   toggle_push();
   ui->plot1D->setTitle("");
   ui->plot1D->clearGraphs();
-  ui->plot1D->clearExtras();
   ui->plot1D->reset_scales();
+  ui->plot1D->clearSelection();
+  selected_peaks_.clear();
   replot_all();
 }
 
-
-void FormPeaks::make_range(Marker marker) {
-  if (marker.visible)
-    addMovingMarker(marker.pos);
-  else
-    removeMovingMarker(0);
-}
-
-
-void FormPeaks::new_spectrum(QString title) {
-  if (fit_data_ == nullptr)
-    return;
-
-  if (fit_data_->peaks_.empty()) {
-    fit_data_->finder_.find_peaks(ui->spinSqWidth->value(), ui->doubleThresh->value());
-
-    //    PL_DBG << "number of peaks found " << fit_data_->peaks_.size();
-    //    on_pushFindPeaks_clicked();
-  }
-
-
-  if (title.isEmpty())
-    title = "Spectrum=" + QString::fromStdString(fit_data_->metadata_.name) + "  resolution=" + QString::number(fit_data_->metadata_.bits) + "bits  Detector=" + QString::fromStdString(fit_data_->detector_.name_);
-
-  ui->plot1D->setTitle(title);
-
-  ui->plot1D->reset_scales();
-  update_spectrum();
-  toggle_push();
-}
 
 void FormPeaks::tighten() {
   ui->plot1D->tight_x();
 }
 
-
-void FormPeaks::update_spectrum() {
+void FormPeaks::update_spectrum(QString title) {
   if (fit_data_ == nullptr)
     return;
 
@@ -145,8 +109,16 @@ void FormPeaks::update_spectrum() {
     return;
   }
 
+  if (title.isEmpty())
+    title = "Spectrum=" + QString::fromStdString(fit_data_->metadata_.name) + "  Detector=" + QString::fromStdString(fit_data_->detector_.name_);
+  ui->plot1D->setTitle(title);
+  ui->plot1D->reset_scales();
+
+  if (fit_data_->peaks().empty())
+    fit_data_->finder_.find_peaks(ui->spinSqWidth->value(), ui->doubleThresh->value());
+
   replot_all();
-  ui->plot1D->redraw();
+  toggle_push();
 }
 
 
@@ -160,14 +132,14 @@ void FormPeaks::replot_all() {
   this->blockSignals(true);
   
   ui->plot1D->clearGraphs();
-  ui->plot1D->clearExtras();
-
   ui->plot1D->updateData();
+  ui->plot1D->redraw();
 
-  replot_markers();
+  ui->plot1D->blockSignals(false);
+  this->blockSignals(false);
 }
 
-void FormPeaks::addMovingMarker(double x) {
+void FormPeaks::addRange(double x) {
   if (fit_data_ == nullptr)
     return;
 
@@ -178,10 +150,26 @@ void FormPeaks::addMovingMarker(double x) {
   else
     c.set_bin(x, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
 
-  addMovingMarker(c);
+  createRange(c);
 }
 
-void FormPeaks::addMovingMarker(Coord c) {
+void FormPeaks::removeRange(double dummy) {
+  range_.visible = false;
+  ui->plot1D->set_range(range_);
+  ui->plot1D->clearSelection();
+  toggle_push();
+  emit range_changed(range_);
+  emit selection_changed(ui->plot1D->get_selected_peaks());
+}
+
+void FormPeaks::make_range(Marker marker) {
+  if (marker.visible)
+    createRange(marker.pos);
+  else
+    removeRange(0);
+}
+
+void FormPeaks::createRange(Coord c) {
   if (fit_data_ == nullptr)
     return;
   
@@ -204,54 +192,78 @@ void FormPeaks::addMovingMarker(Coord c) {
   range_.l.set_bin(ch_l, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
   range_.r.set_bin(ch_r, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
 
-  for (auto &q : fit_data_->peaks_)
-    q.second.selected = false;
+  ui->plot1D->clearSelection();
+  ui->plot1D->set_range(range_);
   toggle_push();
-  replot_markers();
 
-  emit peaks_changed(false);
+  emit selection_changed(ui->plot1D->get_selected_peaks());
   emit range_changed(range_);
 }
 
-void FormPeaks::removeMovingMarker(double dummy) {
-  range_.visible = false;
+void FormPeaks::range_moved(double l, double r) {
+
+  //PL_DBG << "<peaks> range moved";
+
+  if (r < l) {
+    double t = l;
+    l = r;
+    r = t;
+  }
+
+  //double c = (r + l) / 2.0;
+
+  if (fit_data_->nrg_cali_.valid()) {
+    range_.l.set_energy(l, fit_data_->nrg_cali_);
+    range_.r.set_energy(r, fit_data_->nrg_cali_);
+    //range_.center.set_energy(c, fit_data_->nrg_cali_);
+  } else {
+    range_.l.set_bin(l, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
+    range_.r.set_bin(r, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
+    //range_.center.set_bin(c, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
+  }
+
+  ui->plot1D->set_range(range_);
   toggle_push();
-  replot_markers();
+
   emit range_changed(range_);
 }
 
-
-void FormPeaks::replot_markers() {
+void FormPeaks::user_selected_peaks() {
 
   if (fit_data_ == nullptr)
     return;
 
-  ui->plot1D->use_calibrated(fit_data_->nrg_cali_.valid());
+  std::set<double> selected_peaks = ui->plot1D->get_selected_peaks();
+  bool changed = (selected_peaks_ != selected_peaks);
+  selected_peaks_ = selected_peaks;
 
-  ui->plot1D->blockSignals(true);
-  this->blockSignals(true);
-
-  ui->plot1D->clearExtras();
-
-  if (range_.visible)
+  if (changed) {
+    range_.visible = false;
     ui->plot1D->set_range(range_);
-
-  std::list<Marker> markers;
-
-  for (auto &q : fit_data_->peaks_) {
-    Marker m = list;
-    m.pos.set_bin(q.second.center, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
-    m.selected = q.second.selected;
-    markers.push_back(m);
+    ui->plot1D->redraw();
+    toggle_push();
+    if (isVisible()) {
+      emit selection_changed(selected_peaks_);
+      emit range_changed(range_);
+    }
   }
+}
 
-  ui->plot1D->set_markers(markers);
-  ui->plot1D->replot_markers();
-  ui->plot1D->redraw();
+void FormPeaks::update_selection(std::set<double> selected_peaks) {
+  bool changed = (selected_peaks_ != selected_peaks);
+  selected_peaks_ = selected_peaks;
 
-  ui->plot1D->blockSignals(false);
-  this->blockSignals(false);
+  if (changed) {
+    range_.visible = false;
+    ui->plot1D->set_range(range_);
+    ui->plot1D->select_peaks(selected_peaks);
+    ui->plot1D->redraw();
+  }
+}
 
+std::set<double> FormPeaks::get_selected_peaks() {
+  selected_peaks_ = ui->plot1D->get_selected_peaks();
+  return selected_peaks_;
 }
 
 void FormPeaks::on_pushFindPeaks_clicked()
@@ -260,7 +272,7 @@ void FormPeaks::on_pushFindPeaks_clicked()
   toggle_push();
   perform_fit();
 
-  emit peaks_changed(true);
+//  emit peaks_changed(true);
 }
 
 
@@ -291,7 +303,7 @@ void FormPeaks::on_pushAdd_clicked()
   if (range_.l.energy() >= range_.r.energy())
     return;
 
-  removeMovingMarker(0);
+  removeRange(0);
   busy_= true;
   toggle_push();
 
@@ -304,14 +316,13 @@ void FormPeaks::on_pushMarkerRemove_clicked()
   if (fit_data_ == nullptr)
     return;
 
-  std::set<double> chosen_peaks;
-  for (auto &q : fit_data_->peaks_)
-    if (q.second.selected)
-      chosen_peaks.insert(q.second.center);
+  std::set<double> chosen_peaks = ui->plot1D->get_selected_peaks();
+  ui->plot1D->clearSelection();
 
   busy_= true;
   toggle_push();
 
+  thread_fitter_.set_data(*fit_data_);
   thread_fitter_.remove_peaks(chosen_peaks);
 }
 
@@ -319,36 +330,13 @@ void FormPeaks::fit_updated(Gamma::Fitter fitter) {
   *fit_data_ = fitter;
   toggle_push();
   replot_all();
-  emit peaks_changed(true);
+  emit data_changed();
 }
 
 void FormPeaks::fitting_complete() {
   busy_= false;
   toggle_push();
-}
-
-void FormPeaks::user_selected_peaks() {
-
-  if (fit_data_ == nullptr)
-    return;
-
-  bool changed = false;
-  std::set<double> chosen_peaks = ui->plot1D->get_selected_markers();
-  for (auto &q : fit_data_->peaks_) {
-    if (q.second.selected != (chosen_peaks.count(q.second.center) > 0))
-      changed = true;
-    q.second.selected = (chosen_peaks.count(q.second.center) > 0);
-  }
-
-  if (changed) {
-    range_.visible = false;
-    toggle_push();
-    replot_markers();
-    if (isVisible()) {
-      emit peaks_changed(false);
-      emit range_changed(range_);
-    }
-  }
+  emit data_changed();
 }
 
 void FormPeaks::toggle_push() {
@@ -368,12 +356,8 @@ void FormPeaks::toggle_push() {
   if (busy_)
     return;
 
-  bool sel = false;
-  for (auto &q : fit_data_->peaks_)
-    if (q.second.selected)
-      sel = true;
   ui->pushAdd->setEnabled(range_.visible);
-  ui->pushMarkerRemove->setEnabled(sel);
+  ui->pushMarkerRemove->setEnabled(!ui->plot1D->get_selected_peaks().empty());
 }
 
 void FormPeaks::on_spinSqWidth_editingFinished()
@@ -390,44 +374,15 @@ void FormPeaks::on_spinSum4EdgeW_editingFinished()
   fit_data_->sum4edge_samples = ui->spinSum4EdgeW->value();
 }
 
-
-void FormPeaks::range_moved(double l, double r) {
-
-  //PL_DBG << "<peaks> range moved";
-
-  if (r < l) {
-    double t = l;
-    l = r;
-    r = t;
-  }
-
-  //double c = (r + l) / 2.0;
-
-  if (fit_data_->nrg_cali_.valid()) {
-    range_.l.set_energy(l, fit_data_->nrg_cali_);
-    range_.r.set_energy(r, fit_data_->nrg_cali_);
-    //range_.center.set_energy(c, fit_data_->nrg_cali_);
-  } else {
-    range_.l.set_bin(l, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
-    range_.r.set_bin(r, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
-    //range_.center.set_bin(c, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
-  }
-
-  toggle_push();
-  replot_markers();
-
-  emit range_changed(range_);
-}
-
-void FormPeaks::update_fit(bool content_changed) {
-  ui->plot1D->setData(fit_data_);
-  if (content_changed) {
-    update_spectrum();
-    replot_all();
-  } else
-    replot_markers();
-  toggle_push();
-}
+//void FormPeaks::update_fit(bool content_changed) {
+//  ui->plot1D->setData(fit_data_);
+//  if (content_changed) {
+//    update_spectrum();
+//    replot_all();
+//  } else
+//    replot_markers();
+//  toggle_push();
+//}
 
 void FormPeaks::on_doubleOverlapWidth_editingFinished()
 {

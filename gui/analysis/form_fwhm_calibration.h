@@ -46,14 +46,16 @@ public:
 
   void newSpectrum();
 
-  void update_peaks(bool);
   void clear();
   bool save_close();
 
+public slots:
+  void update_selection(std::set<double> selected_peaks);
+  void update_data();
 
 signals:
+  void selection_changed(std::set<double> selected_peaks);
   void detectorsChanged();
-  void peaks_changed(bool);
   void update_detector();
 
 private slots:
@@ -68,10 +70,7 @@ private slots:
   void on_pushFit_clicked();
   void on_pushFromDB_clicked();
   void on_pushDetDB_clicked();
-  void on_pushCullOne_clicked();
-  void on_pushCullUntil_clicked();
 
-  void remove_peaks();
 
 private:
   Ui::FormFwhmCalibration *ui;
@@ -83,6 +82,7 @@ private:
 
   XMLableDB<Gamma::Detector> &detectors_;
   Gamma::Fitter &fit_data_;
+  std::set<double> selected_peaks_;
   
   Gamma::Calibration old_fwhm_calibration_;
   AppearanceProfile style_pts, style_fit;
@@ -92,6 +92,7 @@ private:
   Polynomial fit_calibration();
   double find_outlier();
   void add_peak_to_table(const Gamma::Peak &, int);
+  void select_in_table();
 };
 
 #endif // FORM_FWHM_CALIBRATION_H

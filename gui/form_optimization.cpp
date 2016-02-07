@@ -238,7 +238,7 @@ void FormOptimization::do_run()
   peaks_.push_back(Gamma::Peak());
   spectra_.push_back(Gamma::Fitter());
 
-  ui->plotSpectrum->new_spectrum();
+  ui->plotSpectrum->update_spectrum();
 
   Gamma::Setting set(current_setting_);
   set.indices.clear();
@@ -285,11 +285,11 @@ bool FormOptimization::find_peaks() {
 
     peaks_[peaks_.size() - 1] = Gamma::Peak();
 
-    for (auto &q : fitter_opt_.peaks_)
+    for (auto &q : fitter_opt_.peaks())
       if (q.second.area_best > peaks_[peaks_.size() - 1].area_best)
           peaks_[peaks_.size() - 1] = q.second;
 
-    return fitter_opt_.peaks_.size();
+    return fitter_opt_.peaks().size();
 }
 
 void FormOptimization::update_plots() {

@@ -89,8 +89,9 @@ FormEfficiencyCalibration::FormEfficiencyCalibration(QSettings &settings, XMLabl
 
   ui->plotSpectrum->setFit(&fit_data_);
 
-  connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
 
+  connect(ui->plotSpectrum, SIGNAL(selection_changed(std::set<double>)), this, SLOT(update_selection(std::set<double>)));
+  connect(ui->plotSpectrum, SIGNAL(data_changed()), this, SLOT(update_data()));
 
   connect(ui->spectrumSelector, SIGNAL(itemSelected(SelectorItem)), this, SLOT(spectrumDetails(SelectorItem)));
   connect(ui->spectrumSelector, SIGNAL(itemToggled(SelectorItem)), this, SLOT(spectrumLooksChanged(SelectorItem)));
@@ -179,55 +180,56 @@ void FormEfficiencyCalibration::setSpectrum(QString name) {
   } else {
     spectrum = nullptr;
     fit_data_ = Gamma::Fitter();
-    ui->plotSpectrum->new_spectrum();
+    ui->plotSpectrum->update_spectrum();
     ui->doubleScaleFactor->setEnabled(false);
   }
 
-  ui->plotSpectrum->new_spectrum();
+  ui->plotSpectrum->update_spectrum();
 
-  update_peaks(true);
+  update_data();
 }
 
 void FormEfficiencyCalibration::update_spectrum() {
   if (this->isVisible())
-    ui->plotSpectrum->new_spectrum();
+    ui->plotSpectrum->update_spectrum();
 }
 
-void FormEfficiencyCalibration::update_peaks(bool contents_changed) {
+void FormEfficiencyCalibration::update_data() {
   double max = 0;
   std::set<double> flagged;
   fit_data_.sample_name_ = ui->isotopes->current_isotope().toStdString();
-  for (auto &q : fit_data_.peaks_) {
-    q.second.flagged = false;
+  for (auto &q : fit_data_.peaks()) {
+//    q.second.flagged = false;
     for (auto &p : ui->isotopes->current_isotope_gammas()) {
       double diff = abs(q.second.energy - p.energy);
       if (diff < ui->doubleEpsilonE->value()) {
-        q.second.flagged = true;
-        q.second.intensity_theoretical_ = p.abundance;
-        q.second.efficiency_relative_ = (q.second.cps_best / q.second.intensity_theoretical_);
-        if (q.second.efficiency_relative_ > max)
-          max = q.second.efficiency_relative_;
-        flagged.insert(p.energy);
+        Gamma::Peak pk = q.second; //BROKEN
+//        pk.flagged = true;
+        pk.intensity_theoretical_ = p.abundance;
+        pk.efficiency_relative_ = (pk.cps_best / pk.intensity_theoretical_);
+        if (pk.efficiency_relative_ > max)
+          max = pk.efficiency_relative_;
+        flagged.insert(pk.energy);
       }
     }
   }
 
   ui->isotopes->select_energies(flagged);
 
+  //BROKEN
   if (max > 0) {
-    for (auto &q : fit_data_.peaks_) {
-      if (q.second.intensity_theoretical_ > 0)
-        q.second.efficiency_relative_ = q.second.efficiency_relative_ / max;
+    for (auto &q : fit_data_.peaks()) {
+//      if (q.second.intensity_theoretical_ > 0)
+//        q.second.efficiency_relative_ = q.second.efficiency_relative_ / max;
     }
   }
 
   if (!fit_data_.metadata_.name.empty()) //should be ==Gamma::Setting()
     peak_sets_[fit_data_.metadata_.name] = fit_data_;
 
-  ui->plotSpectrum->update_fit(contents_changed);
+//  ui->plotSpectrum->update_fit(contents_changed);
   replot_calib();
-  //PL_DBG << "will rebuild table " << contents_changed;
-  rebuild_table(contents_changed);
+  rebuild_table(true);
   toggle_push();
 }
 
@@ -341,7 +343,6 @@ void FormEfficiencyCalibration::replot_calib() {
 
   double xmin = std::numeric_limits<double>::max();
   double xmax = - std::numeric_limits<double>::max();
-  std::set<double> chosen_peaks_chan;
 
   QVector<SelectorItem> items = ui->spectrumSelector->items();
 
@@ -361,15 +362,12 @@ void FormEfficiencyCalibration::replot_calib() {
       have_data = true;
       xx.clear(); yy.clear();
 
-      for (auto &q : fit.second.peaks_) {
+      for (auto &q : fit.second.peaks()) {
         if (q.second.intensity_theoretical_ == 0)
           continue;
 
         double x = q.second.energy;
         double y = q.second.efficiency_relative_ * fit.second.activity_scale_factor_;
-
-        if (q.second.selected)
-          chosen_peaks_chan.insert(q.second.energy);
 
         xx.push_back(x);
         yy.push_back(y);
@@ -387,7 +385,7 @@ void FormEfficiencyCalibration::replot_calib() {
 
 
   if (have_data) {
-    ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
+    ui->PlotCalib->set_selected_pts(selected_peaks_);
     if (new_calibration_.valid()) {
       xx.clear(); yy.clear();
       double step = (xmax-xmin) / 300.0;
@@ -415,18 +413,18 @@ void FormEfficiencyCalibration::rebuild_table(bool contents_changed) {
 
   if (contents_changed) {
     ui->tablePeaks->clearContents();
-    ui->tablePeaks->setRowCount(fit_data_.peaks_.size());
+    ui->tablePeaks->setRowCount(fit_data_.peaks().size());
 
     bool gray = false;
     QColor background_col;
     int i=0;
-    for (auto &q : fit_data_.peaks_) {
-      if (q.second.flagged && gray)
+    for (auto &q : fit_data_.peaks()) {
+/*      if (q.second.flagged && gray)
         background_col = Qt::darkGreen;
-      else if (gray)
+      else */if (gray)
         background_col = Qt::lightGray;
-      else if (q.second.flagged)
-        background_col = Qt::green;
+//      else if (q.second.flagged)
+//        background_col = Qt::green;
       else
         background_col = Qt::white;
       add_peak_to_table(q.second, i, background_col);
@@ -438,9 +436,31 @@ void FormEfficiencyCalibration::rebuild_table(bool contents_changed) {
 
   ui->tablePeaks->clearSelection();
   int i = 0;
-  for (auto &q : fit_data_.peaks_) {
-    if (q.second.selected) {
-      PL_DBG << "peak = " << q.second.center << " selected on row " << i;
+  for (auto &q : fit_data_.peaks()) {
+    if (selected_peaks_.count(q.second.center) > 0) {
+      ui->tablePeaks->selectRow(i);
+    }
+    ++i;
+  }
+  ui->tablePeaks->blockSignals(false);
+  this->blockSignals(false);
+}
+
+void FormEfficiencyCalibration::update_selection(std::set<double> selected_peaks) {
+  bool changed = (selected_peaks_ != selected_peaks);
+  selected_peaks_ = selected_peaks;
+
+  if (changed)
+    select_in_table();
+}
+
+void FormEfficiencyCalibration::select_in_table() {
+  ui->tablePeaks->blockSignals(true);
+  this->blockSignals(true);
+  ui->tablePeaks->clearSelection();
+  int i = 0;
+  for (auto &q : fit_data_.peaks()) {
+    if (selected_peaks_.count(q.second.center) > 0) {
       ui->tablePeaks->selectRow(i);
     }
     ++i;
@@ -451,36 +471,25 @@ void FormEfficiencyCalibration::rebuild_table(bool contents_changed) {
 
 
 void FormEfficiencyCalibration::selection_changed_in_calib_plot() {
-  std::set<double> chosen_peaks_chan = ui->PlotCalib->get_selected_pts();
-  for (auto &q : fit_data_.peaks_)
-    q.second.selected = (chosen_peaks_chan.count(q.second.energy) > 0);
+  selected_peaks_ = ui->PlotCalib->get_selected_pts();
+  ui->plotSpectrum->update_selection(ui->PlotCalib->get_selected_pts());
   rebuild_table(false);
-  ui->plotSpectrum->update_fit(false);
   toggle_push();
 }
 
 void FormEfficiencyCalibration::selection_changed_in_table() {
-  for (auto &q : fit_data_.peaks_)
-    q.second.selected = false;
-  foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows()) {
-    fit_data_.peaks_[ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble()].selected = true;
-  }
+  selected_peaks_.clear();
+  foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows())
+    selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble());
+  ui->plotSpectrum->update_selection(selected_peaks_);
   replot_calib();
-  ui->plotSpectrum->update_fit(false);
   toggle_push();
 }
 
 void FormEfficiencyCalibration::toggle_push() {
-  int sel = 0; int unflagged = 0;
+  int unflagged = 0; //BROKEN
 
-  for (auto &q : fit_data_.peaks_) {
-    if (q.second.selected)
-      sel++;
-    if (!q.second.flagged)
-      unflagged++;
-  }
 
-  ui->pushMarkerRemove->setEnabled(sel > 0);
   ui->pushCullPeaks->setEnabled(unflagged > 0);
 
   int points_for_calib = 0;
@@ -492,10 +501,10 @@ void FormEfficiencyCalibration::toggle_push() {
       if (i.visible && (fit.second.metadata_.name == i.text.toStdString()))
         visible = true;
 
-    if (visible) {
-      for (auto &q : fit.second.peaks_)
-        if (q.second.flagged)
-          points_for_calib++;
+    if (visible) { //BROKEN
+//      for (auto &q : fit.second.peaks())
+//        if (q.second.flagged)
+//          points_for_calib++;
     }
   }
 
@@ -523,9 +532,9 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
         visible = true;
 
     if (visible) {
-      for (auto &q : fit.second.peaks_) {
-        if (!q.second.flagged)
-          continue;
+      for (auto &q : fit.second.peaks()) { //bROKEN
+//        if (!q.second.flagged) //BROKEN
+//          continue;
 
         double x = q.second.energy;
         double y = q.second.efficiency_relative_ * fit.second.activity_scale_factor_;
@@ -556,7 +565,7 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
 }
 
 void FormEfficiencyCalibration::isotope_chosen() {
-  update_peaks(true);
+  update_data();
 }
 
 void FormEfficiencyCalibration::on_pushApplyCalib_clicked()
@@ -572,40 +581,17 @@ void FormEfficiencyCalibration::on_pushDetDB_clicked()
   det_widget->exec();
 }
 
-void FormEfficiencyCalibration::on_pushMarkerRemove_clicked()
-{
-  std::set<double> chosen_peaks;
-  double last_sel = -1;
-  for (auto &q : fit_data_.peaks_)
-    if (q.second.selected) {
-      chosen_peaks.insert(q.second.center);
-      last_sel = q.second.center;
-    }
-
-  fit_data_.remove_peaks(chosen_peaks);
-
-  for (auto &q : fit_data_.peaks_)
-    if (q.second.center > last_sel) {
-      PL_DBG << "reselected " << q.second.center << " > " << last_sel;
-      q.second.selected = true;
-      break;
-    }
-
-  update_peaks(true);
-}
-
-
 void FormEfficiencyCalibration::on_pushCullPeaks_clicked()
-{
-  for (auto &q : fit_data_.peaks_)
-    if (!q.second.flagged)
-      q.second.selected = true;
-  on_pushMarkerRemove_clicked();
+{ //BROKEN
+//  for (auto &q : fit_data_.peaks())
+//    if (!q.second.flagged)
+//      q.second.selected = true;
+//  on_pushMarkerRemove_clicked();
 }
 
 void FormEfficiencyCalibration::on_doubleEpsilonE_editingFinished()
 {
-  update_peaks(true);
+  update_data();
 }
 
 void FormEfficiencyCalibration::on_doubleScaleFactor_editingFinished()
@@ -637,9 +623,11 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
         visible = true;
 
     if (visible) {
-      for (auto &q : fit.second.peaks_) {
-        if (!q.second.flagged)
-          continue;
+      for (auto &q : fit.second.peaks()) {
+        //BROKEN
+
+//        if (!q.second.flagged)
+//          continue;
 
         double x = q.second.energy;
         double y = q.second.efficiency_relative_ * fit.second.activity_scale_factor_;
@@ -682,9 +670,11 @@ void FormEfficiencyCalibration::on_pushFitEffit_clicked()
         visible = true;
 
     if (visible) {
-      for (auto &q : fit.second.peaks_) {
-        if (!q.second.flagged)
-          continue;
+      for (auto &q : fit.second.peaks()) {
+
+// BROKEN
+//        if (!q.second.flagged)
+//          continue;
 
         double x = q.second.energy;
         double y = q.second.efficiency_relative_ * fit.second.activity_scale_factor_;

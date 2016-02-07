@@ -59,10 +59,6 @@ public slots:
 
 private slots:
 
-  void update_peaks(bool);
-  void update_peaks_from_fwhm(bool);
-  void update_peaks_from_nrg(bool);
-  void update_peaks_from_fitter(bool);
   void detectorsUpdated() {emit detectorsChanged();}
 
 protected:

@@ -22,132 +22,150 @@
 
 #include "sum4.h"
 #include <cmath>
+#include "custom_logger.h"
 
 namespace Gamma {
 
+SUM4Edge::SUM4Edge(const std::vector<double> &y, uint32_t left, uint32_t right)
+  : SUM4Edge()
+{
+  if (y.empty()
+      || (left > right)
+      || (left >= y.size())
+      || (right >= y.size()))
+    return;
+
+  start_ = left;
+  end_   = right;
+
+  w_ = right - left + 1;
+
+  for (int i=left; i <= right; ++i)
+    sum_ += y[i];
+
+  avg_ = sum_ / w_;
+
+  variance_ = sum_ / pow(w_, 2);
+}
+
 SUM4::SUM4()
     :peak_width(0)
-    ,Lw(0)
-    ,Rw(0)
-    ,offset(0)
-    ,slope(0)
-    ,Lsum(0)
-    ,Rsum(0)
-    ,P_area(0)
-    ,B_area(0)
-    ,B_variance(0)
-    ,net_area(0)
-    ,sumYnet(0)
-    ,CsumYnet(0)
-    ,C2sumYnet(0)
-    ,net_variance(0)
+    ,background_area(0)
+    ,background_variance(0)
+    ,peak_area(0)
+    ,peak_variance(0)
     ,err(0)
-    ,currieLQ(0)
-    ,currieLD(0)
-    ,currieLC(0)
     ,Lpeak(0)
     ,Rpeak(0)
     ,currie_quality_indicator(-1)
     ,centroid(0)
-    ,centroid_var(0)
+    ,centroid_variance(0)
     ,fwhm(0)
 {}
 
 
 
-SUM4::SUM4(const std::vector<double> &x,
-           const std::vector<double> &y,
+SUM4::SUM4(const std::vector<double> &y,
            uint32_t left, uint32_t right,
            uint16_t samples)
     :SUM4()
 {
 
-  if ((x.size() != y.size())
-      || x.empty()
+  if (y.empty()
       || (left > right)
-      || (left >= x.size())
-      || (right >= x.size())
-      || (samples >= x.size()))
+      || (left >= y.size())
+      || (right >= y.size())
+      || (samples >= y.size()))
     return;
 
   Lpeak = left;
   Rpeak = right;
 
-  peak_width = right - left + 1;
-
-  LBend = left - 1;
+  int32_t LBend = left - 1;
   if (LBend < 0)
     LBend = 0;
 
-  RBstart = right + 1;
-  if (RBstart >= x.size())
-    RBstart = x.size() - 1;
+  int32_t RBstart = right + 1;
+  if (RBstart >= y.size())
+    RBstart = y.size() - 1;
 
-  LBstart = LBend - samples;
+  int32_t LBstart = LBend - samples;
   if (LBstart < 0)
     LBstart = 0;
 
-  RBend = RBstart + samples;
-  if (RBend >= x.size())
-    RBend = x.size() - 1;
+  int32_t RBend = RBstart + samples;
+  if (RBend >= y.size())
+    RBend = y.size() - 1;
 
-  Lw = LBend - LBstart + 1;
-  Rw = RBend - RBstart + 1;
+  LB_ = SUM4Edge(y, LBstart, LBend);
+  RB_ = SUM4Edge(y, RBstart, RBend);
 
-  for (int i=LBstart; i <= LBend; ++i)
-    Lsum += y[i];
+//  PL_DBG << "<SUM4> edgel " << LB_.start() << "-" << LB_.end();
+//  PL_DBG << "<SUM4> edger " << RB_.start() << "-" << RB_.end();
 
-  for (int i=RBstart; i <= RBend; ++i)
-    Rsum += y[i];
+  recalc(y);
+}
 
-  
-  B_area = peak_width * (Lsum / Lw + Rsum / Rw) / 2.0;
+void SUM4::recalc(const std::vector<double> &y)
+{
+  peak_width = Rpeak - Lpeak + 1;
 
-  for (int i=left; i <=right; ++i)
-    P_area += y[i];
+  background_area = peak_width * (LB_.average() + RB_.average()) / 2.0;
 
-  net_area = P_area - B_area;
+  double gross_area(0);
+  for (int i=Lpeak; i <=Rpeak; ++i)
+    gross_area += y[i];
 
-  B_variance = pow((peak_width / 2.0), 2) * (Lsum / pow(Lw, 2) + Rsum / pow(Rw, 2));
-  net_variance = P_area + B_variance;
+  peak_area = gross_area - background_area;
 
-  //uncertainty = sqrt(net_variance);
+  background_variance = pow((peak_width / 2.0), 2) * (LB_.variance() + RB_.variance());
+  peak_variance = gross_area + background_variance;
 
-  err = 100 * sqrt(net_variance) / net_area;
+  //uncertainty = sqrt(peak_variance);
 
-  
-  currieLQ = 50 * (1 + sqrt(1 + B_variance / 12.5));
-  currieLD = 2.71 + 4.65 * sqrt(B_variance);
-  currieLC = 2.33 * sqrt(B_variance);
+  err = 100 * sqrt(peak_variance) / peak_area;
 
-  if (net_area > currieLQ)
+  double currieLQ(0), currieLD(0), currieLC(0);
+  currieLQ = 50 * (1 + sqrt(1 + background_variance / 12.5));
+  currieLD = 2.71 + 4.65 * sqrt(background_variance);
+  currieLC = 2.33 * sqrt(background_variance);
+
+  if (peak_area > currieLQ)
     currie_quality_indicator = 1;
-  else if (net_area > currieLD)
+  else if (peak_area > currieLD)
     currie_quality_indicator = 2;
-  else if (net_area > currieLC)
+  else if (peak_area > currieLC)
     currie_quality_indicator = 3;
-  else if (net_area > 0)
+  else if (peak_area > 0)
     currie_quality_indicator = 4;
   else
     currie_quality_indicator = -1;
 
-
   //by default, linear
-  slope = (Rsum / Rw - Lsum / Lw) / (Rpeak - Lpeak);
-  offset = Lsum / Lw - slope * Lpeak;
+  double slope = (RB_.average() - LB_.average()) / peak_width;
+  background_ = Polynomial({LB_.average(), slope}, Lpeak);
 
+  bx.resize(peak_width);
+  by.resize(peak_width);
+
+  double sumYnet(0), CsumYnet(0), C2sumYnet(0);
   for (int32_t i = Lpeak; i <= Rpeak; ++i) {
-    double B_chan  = offset + i*slope; 
+    double B_chan  = background_.eval(i);
     double yn = y[i] - B_chan;
     sumYnet += yn;
     CsumYnet += i * yn;
     C2sumYnet += pow(i, 2) * yn;
+
+    bx[i-Lpeak] = i;
+    by[i-Lpeak] = B_chan;
   }
 
-  centroid = CsumYnet / sumYnet;
-  centroid_var = (C2sumYnet / sumYnet) - pow(centroid, 2);
-  fwhm = 2.0 * sqrt(centroid_var * log(4));
+//  PL_DBG << "<SUM4> bx " << bx[0] << "-" << bx[bx.size() -1];
 
+  centroid = CsumYnet / sumYnet;
+  centroid_variance = (C2sumYnet / sumYnet) - pow(centroid, 2);
+  fwhm = 2.0 * sqrt(centroid_variance * log(4));
 }
+
 
 }

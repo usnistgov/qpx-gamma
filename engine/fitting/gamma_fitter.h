@@ -56,6 +56,8 @@ public:
 
   void save_report(std::string filename);
 
+  const std::map<double, Peak> & peaks() {return peaks_;}
+
   //DATA
 
   Finder finder_;
@@ -68,11 +70,13 @@ public:
   Qpx::Spectrum::Metadata metadata_;
   Gamma::Detector detector_; //need this? metadata?
   
-  std::map<double, Peak> peaks_;
   std::list<ROI> regions_;
 
   Calibration nrg_cali_, fwhm_cali_; //need these? metadata?
   double overlap_;
+
+private:
+  std::map<double, Peak> peaks_;
 
 };
 

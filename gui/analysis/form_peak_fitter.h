@@ -44,13 +44,15 @@ public:
   explicit FormPeakFitter(QSettings &settings, Gamma::Fitter&, QWidget *parent = 0);
   ~FormPeakFitter();
 
-  void update_peaks(bool);
-
   void clear();
   bool save_close();
 
+public slots:
+  void update_selection(std::set<double> selected_peaks);
+  void update_data();
+
 signals:
-  void peaks_changed(bool);
+  void selection_changed(std::set<double> selected_peaks);
   void save_peaks_request();
 
 private slots:
@@ -68,10 +70,12 @@ private:
   QString settings_directory_;
 
   Gamma::Fitter &fit_data_;
+  std::set<double> selected_peaks_;
 
   void loadSettings();
   void saveSettings();
   void add_peak_to_table(const Gamma::Peak &, int, bool);
+  void select_in_table();
 };
 
 #endif // FORM_PEAK_FITTER_H

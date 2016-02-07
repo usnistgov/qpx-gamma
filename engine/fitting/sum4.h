@@ -25,30 +25,55 @@
 
 #include <vector>
 #include <cstdint>
+#include "polynomial.h"
 
 namespace Gamma {
 
-class SUM4 {
+class SUM4Edge {
+  uint32_t start_, end_;
+  double sum_, w_, avg_, variance_;
+
 public:
-  int32_t Lpeak, Rpeak, LBstart, LBend, RBstart, RBend;
-  double peak_width, Lw, Rw;
-  double Lsum, Rsum;
-  double offset, slope;
-  double B_area, B_variance;
-  double P_area, net_variance;
-  double net_area;
-  double sumYnet, CsumYnet, C2sumYnet;
-  double centroid, centroid_var, fwhm;
+  SUM4Edge() : start_(0), end_(0), sum_(0), w_(0), avg_(0), variance_(0) {}
+  SUM4Edge(const std::vector<double> &y,
+           uint32_t left, uint32_t right);
+
+  uint32_t start()  const {return start_;}
+  uint32_t end()    const {return end_;}
+  double sum()      const {return sum_;}
+  double width()    const {return w_;}
+  double average()  const {return avg_;}
+  double variance() const {return variance_;}
+
+};
+
+class SUM4 {
+
+  SUM4Edge LB_, RB_;
+  Polynomial background_;
+
+public:
+  double background_area, background_variance;
+  std::vector<double> bx, by;
+
+  int32_t Lpeak, Rpeak;
+  double peak_width;
+  double peak_area, peak_variance;
+  double centroid, centroid_variance;
+  double fwhm;
   double err;
-  double currieLQ, currieLD, currieLC;
   int currie_quality_indicator;
 
   SUM4();
 
-  SUM4(const std::vector<double> &x,
-       const std::vector<double> &y,
+  SUM4(const std::vector<double> &y,
        uint32_t left, uint32_t right,
        uint16_t samples);
+
+  SUM4Edge LB() const {return LB_;}
+  SUM4Edge RB() const {return RB_;}
+
+  void recalc(const std::vector<double> &y);
 
 };
 

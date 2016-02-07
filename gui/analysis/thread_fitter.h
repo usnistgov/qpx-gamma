@@ -37,7 +37,7 @@ public:
   void terminate();
 
   void begin();
-  void set_data(Gamma::Fitter &data);
+  void set_data(const Gamma::Fitter &data);
 
   void fit_peaks();
   void stop_work();

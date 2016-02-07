@@ -47,13 +47,16 @@ public:
 
   void newSpectrum();
   bool save_close();
-  void update_peaks(bool);
 
   void clear();
 
+public slots:
+  void update_selection(std::set<double> selected_peaks);
+  void update_data();
+
 signals:
+  void selection_changed(std::set<double> selected_peaks);
   void detectorsChanged();
-  void peaks_changed(bool);
   void update_detector();
 
 private slots:
@@ -85,6 +88,7 @@ private:
 
   XMLableDB<Gamma::Detector> &detectors_;
   Gamma::Fitter &fit_data_;
+  std::set<double> selected_peaks_;
 
   Gamma::Calibration old_calibration_;
   AppearanceProfile style_fit, style_pts;
@@ -92,6 +96,7 @@ private:
   void loadSettings();
   void saveSettings();
   void add_peak_to_table(const Gamma::Peak &, int, QColor);
+  void select_in_table();
 
 };
 

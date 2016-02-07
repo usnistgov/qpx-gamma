@@ -15,7 +15,7 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="2" column="0">
-    <widget class="FormOnePeak" name="plotGateX" native="true">
+    <widget class="FormPeaks" name="plotGateX" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
        <horstretch>0</horstretch>
@@ -37,7 +37,7 @@
     </widget>
    </item>
    <item row="4" column="0">
-    <widget class="FormOnePeak" name="plotGateDiagonal" native="true">
+    <widget class="FormPeaks" name="plotGateDiagonal" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
        <horstretch>0</horstretch>
@@ -453,7 +453,7 @@
     </layout>
    </item>
    <item row="3" column="0">
-    <widget class="FormOnePeak" name="plotGateY" native="true">
+    <widget class="FormPeaks" name="plotGateY" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
        <horstretch>0</horstretch>
@@ -478,9 +478,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>FormOnePeak</class>
+   <class>FormPeaks</class>
    <extends>QWidget</extends>
-   <header>form_one_peak.h</header>
+   <header>form_peaks.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

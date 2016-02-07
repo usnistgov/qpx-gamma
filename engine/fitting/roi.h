@@ -35,7 +35,6 @@ struct ROI {
     : cal_nrg_ (nrg)
     , cal_fwhm_ (fw)
     , bits_(bits)
-    , visible_(false)
   {}
 
   void set_data(const std::vector<double> &x, const std::vector<double> &y,
@@ -55,7 +54,7 @@ struct ROI {
   void rebuild();
 
   Finder finder_;
-  std::set<Peak> peaks_;
+  std::map<double, Peak> peaks_;
   Polynomial background_;
 
   std::vector<double> hr_x, hr_x_nrg,
@@ -65,8 +64,6 @@ struct ROI {
 
   Calibration cal_nrg_, cal_fwhm_;
   uint16_t bits_;
-
-  bool visible_;
 
 private:
   std::vector<double> make_background(uint16_t samples = 5);

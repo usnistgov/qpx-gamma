@@ -47,22 +47,26 @@ public:
   ~FormPeaks();
   void setFit(Gamma::Fitter *);
 
-  void new_spectrum(QString title = QString());
-  void update_fit(bool content_changed = false);
+  void update_spectrum(QString title = QString());
+
+  std::set<double> get_selected_peaks();
 
   void perform_fit();
 
   void tighten();
 
   void clear();
-  void update_spectrum();
   void make_range(Marker);
 
   void loadSettings(QSettings &settings_);
   void saveSettings(QSettings &settings_);
 
+public slots:
+  void update_selection(std::set<double> selected_peaks);
+
 signals:
-  void peaks_changed(bool content_changed);
+  void data_changed();
+  void selection_changed(std::set<double> selected_peaks);
   void range_changed(Range range);
 
 private slots:
@@ -72,36 +76,32 @@ private slots:
   void fit_updated(Gamma::Fitter);
   void fitting_complete();
 
-  void addMovingMarker(Coord);
-  void addMovingMarker(double);
-  void removeMovingMarker(double);
+
+  void addRange(double);
+  void removeRange(double);
+  void createRange(Coord);
+  void range_moved(double, double);
 
   void replot_all();
-  void replot_markers();
   void toggle_push();
-
-  void range_moved(double, double);
 
   void on_pushAdd_clicked();
   void on_pushMarkerRemove_clicked();
   void on_pushFindPeaks_clicked();
+  void on_pushStopFitter_clicked();
 
   void on_spinSqWidth_editingFinished();
   void on_doubleOverlapWidth_editingFinished();
   void on_spinSum4EdgeW_editingFinished();
   void on_doubleThresh_editingFinished();
 
-
-  void on_pushStopFitter_clicked();
-
 private:
   Ui::FormPeaks *ui;
 
   //data from selected spectrum
   Gamma::Fitter *fit_data_;
+  std::set<double> selected_peaks_;
 
-  //markers
-  Marker list;
   Range range_;
 
   bool busy_;

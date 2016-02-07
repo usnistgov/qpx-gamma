@@ -98,7 +98,7 @@ void ROI::auto_fit() {
       Peak fitted;
       fitted.hypermet_ = hyp;
       fitted.center = hyp.center_;
-      peaks_.insert(fitted);
+      peaks_[hyp.center_] = fitted;
     }
   }
 
@@ -164,7 +164,7 @@ bool ROI::add_from_resid(uint16_t centroid_hint) {
     Peak fitted;
     fitted.hypermet_ = hyp;
     fitted.center = hyp.center_;
-    peaks_.insert(fitted);
+    peaks_[hyp.center_] = fitted;
 
     rebuild();
     return true;
@@ -175,10 +175,7 @@ bool ROI::add_from_resid(uint16_t centroid_hint) {
 
 
 bool ROI::contains(double bin) {
-  for (auto &q : peaks_)
-    if (q.center == bin)
-      return true;
-  return false;
+  return (peaks_.count(bin) > 0);
 }
 
 bool ROI::overlaps(uint16_t bin) {
@@ -287,11 +284,9 @@ void ROI::remove_peaks(const std::set<double> &pks) {
 }
 
 bool ROI::remove_peak(double bin) {
-  for (auto &q : peaks_) {
-    if (q.center == bin) {
-      peaks_.erase(q);
-      return true;
-    }
+  if (peaks_.count(bin)) {
+    peaks_.erase(bin);
+    return true;
   }
   return false;
 }
@@ -306,16 +301,16 @@ void ROI::rebuild() {
 
   Hypermet tallest_h;
   for (auto &q : peaks_) {
-    if (q.hypermet_.height_ > tallest_h.height_)
-      tallest_h = q.hypermet_;
+    if (q.second.hypermet_.height_ > tallest_h.height_)
+      tallest_h = q.second.hypermet_;
   }
 
   std::vector<Hypermet> old_hype;
   old_hype.push_back(tallest_h);
 
   for (auto &q : peaks_)
-    if (q.hypermet_.center_ != tallest_h.center_)
-      old_hype.push_back(q.hypermet_);
+    if (q.second.hypermet_.center_ != tallest_h.center_)
+      old_hype.push_back(q.second.hypermet_);
 
   std::vector<Hypermet> hype = Hypermet::fit_multi(finder_.x_, finder_.y_, old_hype, true);
 
@@ -357,7 +352,7 @@ void ROI::rebuild() {
 
     one.hypermet_ = hype[i];
     one.center = hype[i].center_;
-    peaks_.insert(one);
+    peaks_[one.center] = one;
   }
 
   finder_.setFit(lowres_fullfit, lowres_backsteps);

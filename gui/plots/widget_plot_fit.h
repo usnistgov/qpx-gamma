@@ -43,32 +43,26 @@ public:
   ~WidgetPlotFit();
   virtual void clearGraphs();
 
-  void clearExtras();
+  void clearSelection();
 
   void redraw();
   void reset_scales();
 
   void tight_x();
   void rescale();
-  void replot_markers();
 
-  void setLabels(QString x, QString y);
   void setTitle(QString title);
 
   void set_scale_type(QString);
   QString scale_type();
 
-  void set_markers(const std::list<Marker>&);
-
+  void select_peaks(const std::set<double> &peaks);
+  std::set<double> get_selected_peaks();
 
   void set_range(Range);
-  std::set<double> get_selected_markers();
-
-
   void setData(Gamma::Fitter* fit);
   void updateData();
 
-  void use_calibrated(bool);
 
 public slots:
   void zoom_out();
@@ -94,6 +88,8 @@ protected slots:
 
 
 protected:
+  std::set<double> selected_peaks_;
+
   Gamma::Fitter *fit_data_;
 
   void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
@@ -103,8 +99,6 @@ protected:
 
   Ui::WidgetPlotFit *ui;
 
-  std::list<Marker> my_markers_;
-
   Range my_range_;
   QCPItemTracer* edge_trc1;
   QCPItemTracer* edge_trc2;
@@ -113,7 +107,6 @@ protected:
   double minx, maxx;
   double miny, maxy;
 
-  bool use_calibrated_;
   bool mouse_pressed_;
 
   double minx_zoom, maxx_zoom;
@@ -132,6 +125,12 @@ protected:
   void addGraph(const QVector<double>& x, const QVector<double>& y, QPen appearance,
                 int fittable = 0, int32_t bits = 0,
                 QString name = QString());
+  void addEdge(Gamma::SUM4Edge edge, QPen pen);
+
+  void follow_selection();
+  void plotButtons();
+  void plotEnergyLabels();
+  void plotRange();
 
 };
 

@@ -256,7 +256,7 @@ void FormIntegration2D::rebuild_table(bool contents_changed) {
 //    if (q.approved)
 //      approved++;
 //    if (q.x_c.energy() != -1)
-//      peaks += q.fit_data_.peaks_.size();
+//      peaks += q.fit_data_.peaks().size();
   }
 
   ui->labelGates->setText(QString::number(approved) + "/"  + QString::number(peaks_.size() - approved));
@@ -274,9 +274,9 @@ void FormIntegration2D::loadSettings() {
   settings_.beginGroup("Integration2d");
   ui->doubleGateOn->setValue(settings_.value("gate_on", 2).toDouble());
   ui->pushShowDiagonal->setChecked(settings_.value("show_diagonal_gate", false).toBool());
-  ui->plotGateX->loadSettings(settings_, "GateX");
-  ui->plotGateY->loadSettings(settings_, "GateX");
-  ui->plotGateDiagonal->loadSettings(settings_, "GateDiagonal");
+  ui->plotGateX->loadSettings(settings_); //name these!!!!
+  ui->plotGateY->loadSettings(settings_);
+  ui->plotGateDiagonal->loadSettings(settings_);
   settings_.endGroup();
 
   on_pushShowDiagonal_clicked();
@@ -287,9 +287,9 @@ void FormIntegration2D::saveSettings() {
   settings_.beginGroup("Integration2d");
   settings_.setValue("gate_on", ui->doubleGateOn->value());
   settings_.setValue("show_diagonal_gate", ui->pushShowDiagonal->isChecked());
-  ui->plotGateX->saveSettings(settings_, "GateX");
-  ui->plotGateY->saveSettings(settings_, "GateX");
-  ui->plotGateDiagonal->saveSettings(settings_, "GateDiagonal");
+  ui->plotGateX->saveSettings(settings_);
+  ui->plotGateY->saveSettings(settings_);
+  ui->plotGateDiagonal->saveSettings(settings_);
   settings_.endGroup();
 }
 
@@ -485,23 +485,17 @@ void FormIntegration2D::gated_fits_updated() {
   if (current_idx() < 0)
     return;
 
-  for (auto &q : fit_x_.peaks_)
-    if (q.second.selected) {
-      ui->pushCentroidX->setEnabled(true);
-
-    }
-  for (auto &q : fit_y_.peaks_)
-    if (q.second.selected) {
-      ui->pushCentroidY->setEnabled(true);
-    }
+  ui->pushCentroidX->setEnabled(!ui->plotGateX->get_selected_peaks().empty());
+  ui->pushCentroidY->setEnabled(!ui->plotGateY->get_selected_peaks().empty());
 
   ui->pushCentroidXY->setEnabled(ui->pushCentroidX->isEnabled() && ui->pushCentroidY->isEnabled());
 }
 
 void FormIntegration2D::on_pushCentroidX_clicked()
 {
-  for (auto &q : fit_x_.peaks_)
-    if (q.second.selected) {
+  std::set<double> selected_x = ui->plotGateX->get_selected_peaks();
+  for (auto &q : fit_x_.peaks())
+    if (selected_x.count(q.first)) {
       int32_t current = current_idx();
       if ((current >= 0) && (current < peaks_.size())) {
         MarkerBox2D peak = peaks_[current].area[1][1];
@@ -521,11 +515,11 @@ void FormIntegration2D::on_pushCentroidX_clicked()
         peaks_[current].area[2][1].x1 = peak.x1;
         peaks_[current].area[2][1].x2 = peak.x2;
 
-        peaks_[current].area[1][0].x1.set_bin(fit_x_.finder_.x_[q.second.sum4_.LBstart], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-        peaks_[current].area[1][0].x2.set_bin(fit_x_.finder_.x_[q.second.sum4_.LBend], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+        peaks_[current].area[1][0].x1.set_bin(fit_x_.finder_.x_[q.second.sum4_.LB().start()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+        peaks_[current].area[1][0].x2.set_bin(fit_x_.finder_.x_[q.second.sum4_.LB().end()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
 
-        peaks_[current].area[1][2].x1.set_bin(fit_x_.finder_.x_[q.second.sum4_.RBstart], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-        peaks_[current].area[1][2].x2.set_bin(fit_x_.finder_.x_[q.second.sum4_.RBend], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+        peaks_[current].area[1][2].x1.set_bin(fit_x_.finder_.x_[q.second.sum4_.RB().start()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+        peaks_[current].area[1][2].x2.set_bin(fit_x_.finder_.x_[q.second.sum4_.RB().end()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
 
 
         rebuild_table(true);
@@ -537,8 +531,9 @@ void FormIntegration2D::on_pushCentroidX_clicked()
 
 void FormIntegration2D::on_pushCentroidY_clicked()
 {
-  for (auto &q : fit_y_.peaks_)
-    if (q.second.selected) {
+  std::set<double> selected_y = ui->plotGateY->get_selected_peaks();
+  for (auto &q : fit_y_.peaks())
+    if (selected_y.count(q.first)) {
       int32_t current = current_idx();
       if ((current >= 0) && (current < peaks_.size())) {
         MarkerBox2D peak = peaks_[current].area[1][1];
@@ -558,11 +553,11 @@ void FormIntegration2D::on_pushCentroidY_clicked()
         peaks_[current].area[1][2].y1 = peak.y1;
         peaks_[current].area[1][2].y2 = peak.y2;
 
-        peaks_[current].area[0][1].y1.set_bin(fit_y_.finder_.x_[q.second.sum4_.LBstart], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-        peaks_[current].area[0][1].y2.set_bin(fit_y_.finder_.x_[q.second.sum4_.LBend], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+        peaks_[current].area[0][1].y1.set_bin(fit_y_.finder_.x_[q.second.sum4_.LB().start()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+        peaks_[current].area[0][1].y2.set_bin(fit_y_.finder_.x_[q.second.sum4_.LB().end()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
 
-        peaks_[current].area[2][1].y1.set_bin(fit_y_.finder_.x_[q.second.sum4_.RBstart], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-        peaks_[current].area[2][1].y2.set_bin(fit_y_.finder_.x_[q.second.sum4_.RBend], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+        peaks_[current].area[2][1].y1.set_bin(fit_y_.finder_.x_[q.second.sum4_.RB().start()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+        peaks_[current].area[2][1].y2.set_bin(fit_y_.finder_.x_[q.second.sum4_.RB().end()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
 
         rebuild_table(true);
         emit peak_selected();
@@ -586,25 +581,24 @@ void FormIntegration2D::on_pushAddPeak2d_clicked()
   Gamma::Peak xx, yy;
   bool foundx(false), foundy(false);
 
+  std::set<double> selected_x = ui->plotGateX->get_selected_peaks();
+  std::set<double> selected_y = ui->plotGateY->get_selected_peaks();
 
-  for (auto &q : fit_x_.peaks_)
-    if (q.second.selected) {
+
+  for (auto &q : fit_x_.peaks())
+    if (selected_x.count(q.first)) {
       xx = q.second;
       foundx = true;
-      PL_DBG << "fx";
       break;
     }
 
-  for (auto &q : fit_y_.peaks_)
-    if (q.second.selected) {
+  for (auto &q : fit_y_.peaks())
+    if (selected_y.count(q.first)) {
       yy = q.second;
       foundy = true;
-      PL_DBG << "fy";
       break;
     }
 
-
-  PL_DBG << "fff";
 
   Peak2D pk;
 
@@ -642,23 +636,23 @@ void FormIntegration2D::on_pushAddPeak2d_clicked()
     bckg.x1 = newpeak.x1;
     bckg.x2 = newpeak.x2;
 
-    bckg.y1.set_bin(fit_y_.finder_.x_[yy.sum4_.LBstart], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-    bckg.y2.set_bin(fit_y_.finder_.x_[yy.sum4_.LBend], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+    bckg.y1.set_bin(fit_y_.finder_.x_[yy.sum4_.LB().start()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+    bckg.y2.set_bin(fit_y_.finder_.x_[yy.sum4_.LB().end()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
     pk.area[0][1] = bckg;
 
-    bckg.y1.set_bin(fit_y_.finder_.x_[yy.sum4_.RBstart], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-    bckg.y2.set_bin(fit_y_.finder_.x_[yy.sum4_.RBend], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+    bckg.y1.set_bin(fit_y_.finder_.x_[yy.sum4_.RB().start()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+    bckg.y2.set_bin(fit_y_.finder_.x_[yy.sum4_.RB().end()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
     pk.area[2][1] = bckg;
 
     bckg.y1 = newpeak.y1;
     bckg.y2 = newpeak.y2;
 
-    bckg.x1.set_bin(fit_x_.finder_.x_[xx.sum4_.LBstart], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-    bckg.x2.set_bin(fit_x_.finder_.x_[xx.sum4_.LBend], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+    bckg.x1.set_bin(fit_x_.finder_.x_[xx.sum4_.LB().start()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+    bckg.x2.set_bin(fit_x_.finder_.x_[xx.sum4_.LB().end()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
     pk.area[1][0] = bckg;
 
-    bckg.x1.set_bin(fit_x_.finder_.x_[xx.sum4_.RBstart], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-    bckg.x2.set_bin(fit_x_.finder_.x_[xx.sum4_.RBend], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+    bckg.x1.set_bin(fit_x_.finder_.x_[xx.sum4_.RB().start()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+    bckg.x2.set_bin(fit_x_.finder_.x_[xx.sum4_.RB().end()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
     pk.area[1][2] = bckg;
   }
 
@@ -750,7 +744,7 @@ QVariant TablePeaks2D::data(const QModelIndex &index, int role) const
 //    case 4:
 //      return QVariant::fromValue(gate.width_nrg);
 //    case 5:
-//      return QVariant::fromValue(gate.fit_data_.peaks_.size());
+//      return QVariant::fromValue(gate.fit_data_.peaks().size());
 //    case 6:
 //      if (gate.approved)
 //        return "Yes";

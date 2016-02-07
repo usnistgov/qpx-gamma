@@ -45,7 +45,7 @@ void Peak::construct(Calibration cali_nrg, double live_seconds, uint16_t bits) {
   fwhm_hyp = cali_nrg.transform(R, bits) - cali_nrg.transform(L, bits);
 
   area_hyp = hypermet_.area();
-  area_sum4 = sum4_.net_area;
+  area_sum4 = sum4_.peak_area;
 
   area_best = area_hyp;
 

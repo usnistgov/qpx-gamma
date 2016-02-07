@@ -201,8 +201,10 @@ void FormSymmetrize2D::showEvent( QShowEvent* event ) {
 
 void FormSymmetrize2D::update_peaks(bool content_changed) {
   //update sums
-  ui->plotSpectrum2->update_fit(content_changed);
-  ui->plotSpectrum->update_fit(content_changed);
+  if (content_changed) {
+    ui->plotSpectrum2->update_data();
+    ui->plotSpectrum->update_data();
+  }
 
   if (my_gain_calibration_)
     my_gain_calibration_->newSpectrum();

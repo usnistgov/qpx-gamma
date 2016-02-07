@@ -114,14 +114,12 @@ void FormGainCalibration::update_peaks() {
 void FormGainCalibration::plot_calib() {
   ui->plotCalib->clearGraphs();
 
-  ui->pushCull->setEnabled(false);
   ui->doubleCullDelta->setEnabled(false);
 
-  int total = fit_data1_.peaks_.size();
-  if (total != fit_data2_.peaks_.size())
+  int total = fit_data1_.peaks().size();
+  if (total != fit_data2_.peaks().size())
   {
     if (nrg_calibration1_.units_ == nrg_calibration2_.units_) {
-      ui->pushCull->setEnabled(true);
       ui->doubleCullDelta->setEnabled(true);
     }
     //make invisible?
@@ -136,7 +134,7 @@ void FormGainCalibration::plot_calib() {
   double xmin = std::numeric_limits<double>::max();
   double xmax = - std::numeric_limits<double>::max();
 
-  for (auto &q : fit_data2_.peaks_) {
+  for (auto &q : fit_data2_.peaks()) {
     xx.push_back(q.first);
     if (q.first < xmin)
       xmin = q.first;
@@ -144,7 +142,7 @@ void FormGainCalibration::plot_calib() {
       xmax = q.first;
   }
 
-  for (auto &q : fit_data1_.peaks_)
+  for (auto &q : fit_data1_.peaks())
     yy.push_back(q.first);
 
   double x_margin = (xmax - xmin) / 10;
@@ -173,12 +171,10 @@ void FormGainCalibration::plot_calib() {
 }
 
 void FormGainCalibration::selection_changed_in_plot() {
-  std::set<double> chosen_peaks_nrg = ui->plotCalib->get_selected_pts();
-  for (auto &q : fit_data1_.peaks_)
-    q.second.selected = (chosen_peaks_nrg.count(q.second.energy) > 0);
+  std::set<double> selected_peaks = ui->plotCalib->get_selected_pts();
   plot_calib();
   if (isVisible())
-    emit peaks_changed(false);
+    emit selection_changed(selected_peaks);
 }
 
 void FormGainCalibration::on_pushSaveCalib_clicked()
@@ -186,41 +182,19 @@ void FormGainCalibration::on_pushSaveCalib_clicked()
   emit update_detector();
 }
 
-void FormGainCalibration::on_pushRemovePeak_clicked()
-{
-  std::set<double> chosen_peaks;
-  double last_sel = -1;
-  for (auto &q : fit_data1_.peaks_)
-    if (q.second.selected) {
-      chosen_peaks.insert(q.second.center);
-      last_sel = q.first;
-    }
-
-  fit_data1_.remove_peaks(chosen_peaks);
-
-  for (auto &q : fit_data1_.peaks_)
-    if (q.first > last_sel) {
-      q.second.selected = true;
-      break;
-    }
-
-  update_peaks();
-  emit peaks_changed(true);
-}
-
 void FormGainCalibration::on_pushCalibGain_clicked()
 {
-  int total = fit_data1_.peaks_.size();
-  if (total != fit_data2_.peaks_.size())
+  int total = fit_data1_.peaks().size();
+  if (total != fit_data2_.peaks().size())
   {
     //make invisible?
     return;
   }
 
   std::vector<double> x, y;
-  for (auto &q : fit_data2_.peaks_)
+  for (auto &q : fit_data2_.peaks())
     x.push_back(q.first);
-  for (auto &q : fit_data1_.peaks_)
+  for (auto &q : fit_data1_.peaks())
     y.push_back(q.first);
 
   Polynomial p = Polynomial(x, y, ui->spinPolyOrder->value());
@@ -240,39 +214,39 @@ void FormGainCalibration::on_pushCalibGain_clicked()
   plot_calib();
 }
 
-void FormGainCalibration::on_pushCull_clicked()
-{
-  //while (cull_mismatch()) {}
+//void FormGainCalibration::on_pushCull_clicked()
+//{
+//  //while (cull_mismatch()) {}
 
-  std::set<double> to_remove;
+//  std::set<double> to_remove;
 
-  for (auto &q: fit_data1_.peaks_) {
-    double nrg = q.second.energy;
-    bool has = false;
-    for (auto &p : fit_data2_.peaks_)
-      if (std::abs(p.second.energy - nrg) < ui->doubleCullDelta->value())
-        has = true;
-    if (!has)
-      to_remove.insert(q.first);
-  }
-  for (auto &q : to_remove)
-    fit_data1_.remove_peaks(to_remove);
+//  for (auto &q: fit_data1_.peaks()) {
+//    double nrg = q.second.energy;
+//    bool has = false;
+//    for (auto &p : fit_data2_.peaks())
+//      if (std::abs(p.second.energy - nrg) < ui->doubleCullDelta->value())
+//        has = true;
+//    if (!has)
+//      to_remove.insert(q.first);
+//  }
+//  for (auto &q : to_remove)
+//    fit_data1_.remove_peaks(to_remove);
 
-  for (auto &q: fit_data2_.peaks_) {
-    double nrg = q.second.energy;
-    bool has = false;
-    for (auto &p : fit_data1_.peaks_)
-      if (std::abs(p.second.energy - nrg) < ui->doubleCullDelta->value())
-        has = true;
-    if (!has)
-      to_remove.insert(q.first);
-  }
-  for (auto &q : to_remove)
-    fit_data2_.remove_peaks(to_remove);
+//  for (auto &q: fit_data2_.peaks()) {
+//    double nrg = q.second.energy;
+//    bool has = false;
+//    for (auto &p : fit_data1_.peaks())
+//      if (std::abs(p.second.energy - nrg) < ui->doubleCullDelta->value())
+//        has = true;
+//    if (!has)
+//      to_remove.insert(q.first);
+//  }
+//  for (auto &q : to_remove)
+//    fit_data2_.remove_peaks(to_remove);
 
-  plot_calib();
-  emit peaks_changed(true);
-}
+//  plot_calib();
+//  emit peaks_changed(true);
+//}
 
 void FormGainCalibration::on_pushSymmetrize_clicked()
 {
