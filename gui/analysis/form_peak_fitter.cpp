@@ -38,7 +38,7 @@ FormPeakFitter::FormPeakFitter(QSettings &settings, Gamma::Fitter &fit, QWidget 
 
   ui->tablePeaks->verticalHeader()->hide();
   ui->tablePeaks->setColumnCount(10);
-  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fw(gaus)", "A(gaus)", "cps(gaus)", "fw(S4)", "A(S4)", "%err(S4)", "cps(S4)", "CQI"});
+  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fw(hyp)", "A(hyp)", "cps(hyp)", "fw(S4)", "A(S4)", "%err(S4)", "cps(S4)", "CQI"});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tablePeaks->setEditTriggers(QTableView::NoEditTriggers);
@@ -174,13 +174,9 @@ void FormPeakFitter::select_in_table() {
   ui->tablePeaks->blockSignals(true);
   this->blockSignals(true);
   ui->tablePeaks->clearSelection();
-  int i = 0;
-  for (auto &q : fit_data_.peaks()) {
-    if (selected_peaks_.count(q.second.center) > 0) {
+  for (int i=0; i < ui->tablePeaks->rowCount(); ++i)
+    if (selected_peaks_.count(ui->tablePeaks->item(i, 0)->data(Qt::EditRole).toDouble()))
       ui->tablePeaks->selectRow(i);
-    }
-    ++i;
-  }
   ui->tablePeaks->blockSignals(false);
   this->blockSignals(false);
 }

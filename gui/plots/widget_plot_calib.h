@@ -40,6 +40,7 @@ class WidgetPlotCalib : public QWidget
 public:
   explicit WidgetPlotCalib(QWidget *parent = 0);
   ~WidgetPlotCalib();
+  void clear_data();
   void clearGraphs();
   void clearPoints();
 

@@ -62,7 +62,6 @@ private slots:
   void selection_changed_in_table();
   void selection_changed_in_plot();
 
-  void replot_markers();
   void toggle_push();
   void detectorsUpdated() {emit detectorsChanged();}
 
@@ -84,15 +83,19 @@ private:
   Gamma::Fitter &fit_data_;
   std::set<double> selected_peaks_;
   
-  Gamma::Calibration old_fwhm_calibration_;
+  Gamma::Calibration new_fwhm_calibration_;
   AppearanceProfile style_pts, style_fit;
 
   void loadSettings();
   void saveSettings();
   Polynomial fit_calibration();
   double find_outlier();
+
+  void replot_calib();
+  void rebuild_table();
   void add_peak_to_table(const Gamma::Peak &, int);
   void select_in_table();
+  void select_in_plot();
 };
 
 #endif // FORM_FWHM_CALIBRATION_H

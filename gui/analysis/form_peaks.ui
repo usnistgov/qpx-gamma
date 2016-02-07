@@ -411,7 +411,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushMarkerRemove">
+        <widget class="QPushButton" name="pushRemovePeaks">
          <property name="enabled">
           <bool>false</bool>
          </property>

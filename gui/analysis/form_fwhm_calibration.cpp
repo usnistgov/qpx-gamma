@@ -37,15 +37,19 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
 
   loadSettings();
 
-  style_pts.default_pen = QPen(Qt::darkBlue, 7);
-  style_pts.themes["selected"] = QPen(Qt::cyan, 7);
-  style_fit.default_pen = QPen(Qt::blue, 0);
+  QColor point_color;
+  point_color.setHsv(180, 215, 150, 120);
+  style_pts.default_pen = QPen(point_color, 9);
+  QColor selected_color;
+  selected_color.setHsv(225, 255, 230, 210);
+  style_pts.themes["selected"] = QPen(selected_color, 9);
+  style_fit.default_pen = QPen(Qt::darkCyan, 2);
 
   ui->PlotCalib->setLabels("energy", "FWHM");
 
   ui->tableFWHM->verticalHeader()->hide();
-  ui->tableFWHM->setColumnCount(4);
-  ui->tableFWHM->setHorizontalHeaderLabels({"chan", "energy", "fwhm(sum4)", "fwmw (hypermet)", "fwhm (pseudo-Voigt)"});
+  ui->tableFWHM->setColumnCount(6);
+  ui->tableFWHM->setHorizontalHeaderLabels({"chan", "energy", "fwhm(sum4)", "%err (sum4)", "CQI (sum4)", "fwmw(hypermet)"});
   ui->tableFWHM->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tableFWHM->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tableFWHM->setEditTriggers(QTableView::NoEditTriggers);
@@ -94,23 +98,34 @@ void FormFwhmCalibration::saveSettings() {
 }
 
 void FormFwhmCalibration::clear() {
+  new_fwhm_calibration_ = Gamma::Calibration();
   ui->tableFWHM->clearContents();
   ui->tableFWHM->setRowCount(0);
   toggle_push();
-  ui->PlotCalib->setFloatingText("");
-  ui->PlotCalib->clearGraphs();
+  ui->PlotCalib->clear_data();
+  ui->PlotCalib->redraw();
   ui->pushApplyCalib->setEnabled(false);
-
   ui->pushFromDB->setEnabled(false);
 }
 
 void FormFwhmCalibration::newSpectrum() {
-  old_fwhm_calibration_ = fit_data_.fwhm_cali_;
-  replot_markers();
-  toggle_push();
+  new_fwhm_calibration_ = fit_data_.fwhm_cali_;
+  update_data();
 }
 
 void FormFwhmCalibration::update_data() {
+  rebuild_table();
+  replot_calib();
+
+  if (fit_data_.peaks().empty())
+    selected_peaks_.clear();
+
+  select_in_table();
+  select_in_plot();
+  toggle_push();
+}
+
+void FormFwhmCalibration::rebuild_table() {
   ui->tableFWHM->blockSignals(true);
   this->blockSignals(true);
 
@@ -124,35 +139,37 @@ void FormFwhmCalibration::update_data() {
 
   ui->tableFWHM->blockSignals(false);
   this->blockSignals(false);
-
-  select_in_table();
-  
-  toggle_push();
-  replot_markers();
 }
-
 
 void FormFwhmCalibration::update_selection(std::set<double> selected_peaks) {
   bool changed = (selected_peaks_ != selected_peaks);
   selected_peaks_ = selected_peaks;
 
-  if (changed)
+  if (changed) {
     select_in_table();
+    select_in_plot();
+  }
 }
 
 void FormFwhmCalibration::select_in_table() {
   ui->tableFWHM->blockSignals(true);
   this->blockSignals(true);
   ui->tableFWHM->clearSelection();
-  int i = 0;
-  for (auto &q : fit_data_.peaks()) {
-    if (selected_peaks_.count(q.second.center) > 0) {
+  for (int i=0; i < ui->tableFWHM->rowCount(); ++i)
+    if (selected_peaks_.count(ui->tableFWHM->item(i, 0)->data(Qt::EditRole).toDouble()))
       ui->tableFWHM->selectRow(i);
-    }
-    ++i;
-  }
+
   ui->tableFWHM->blockSignals(false);
   this->blockSignals(false);
+}
+
+void FormFwhmCalibration::select_in_plot() {
+  std::set<double> selected_energies;
+  for (auto &p : fit_data_.peaks())
+    if (selected_peaks_.count(p.first))
+      selected_energies.insert(p.second.energy);
+  ui->PlotCalib->set_selected_pts(selected_energies);
+  ui->PlotCalib->redraw();
 }
 
 void FormFwhmCalibration::add_peak_to_table(const Gamma::Peak &p, int row) {
@@ -162,13 +179,13 @@ void FormFwhmCalibration::add_peak_to_table(const Gamma::Peak &p, int row) {
   
   ui->tableFWHM->setItem(row, 1, new QTableWidgetItem( QString::number(p.energy) ));
   ui->tableFWHM->setItem(row, 2, new QTableWidgetItem( QString::number(p.fwhm_sum4) ));
-  ui->tableFWHM->setItem(row, 3, new QTableWidgetItem( QString::number(p.fwhm_hyp) ));
-//  ui->tableFWHM->setItem(row, 4, new QTableWidgetItem( QString::number(p.fwhm_pseudovoigt) ));
+  ui->tableFWHM->setItem(row, 3, new QTableWidgetItem( QString::number(p.sum4_.err) ));
+  ui->tableFWHM->setItem(row, 4, new QTableWidgetItem( QString::number(p.sum4_.currie_quality_indicator) ));
+  ui->tableFWHM->setItem(row, 5, new QTableWidgetItem( QString::number(p.fwhm_hyp) ));
 }
 
-void FormFwhmCalibration::replot_markers() {
-  ui->PlotCalib->setFloatingText("");
-  ui->PlotCalib->clearGraphs();
+void FormFwhmCalibration::replot_calib() {
+  ui->PlotCalib->clear_data();
   QVector<double> xx, yy;
 
   double xmin = std::numeric_limits<double>::max();
@@ -193,40 +210,31 @@ void FormFwhmCalibration::replot_markers() {
 
   if (xx.size() > 0) {
     ui->PlotCalib->addPoints(xx, yy, style_pts);
-    ui->PlotCalib->set_selected_pts(selected_peaks_);
-    if ((fit_data_.fwhm_cali_.coefficients_ != Gamma::Calibration().coefficients_) && (fit_data_.fwhm_cali_.valid())) {
+    if (new_fwhm_calibration_.valid()) {
 
       double step = (xmax-xmin) / 50.0;
       xx.clear(); yy.clear();
 
       for (double x=xmin; x < xmax; x+=step) {
-        double y = fit_data_.fwhm_cali_.transform(x);
+        double y = new_fwhm_calibration_.transform(x);
         xx.push_back(x);
         yy.push_back(y);
       }
 
-      ui->PlotCalib->setFloatingText("FWHM = " + QString::fromStdString(fit_data_.fwhm_cali_.fancy_equation(3, true)));
+      ui->PlotCalib->setFloatingText("FWHM = " + QString::fromStdString(new_fwhm_calibration_.fancy_equation(3, true)));
       ui->PlotCalib->addFit(xx, yy, style_fit);
     }
   }
-
-  ui->tableFWHM->blockSignals(true);
-  this->blockSignals(true);
-  ui->tableFWHM->clearSelection();
-  int i = 0;
-  for (auto &q : fit_data_.peaks()) {
-    if (selected_peaks_.count(q.second.center) > 0) {
-      ui->tableFWHM->selectRow(i);
-    }
-    ++i;
-  }
-  ui->tableFWHM->blockSignals(false);
-  this->blockSignals(false);
 }
 
 void FormFwhmCalibration::selection_changed_in_plot() {
-  selected_peaks_ = ui->PlotCalib->get_selected_pts();
-  replot_markers();
+  std::set<double> selected_energies = ui->PlotCalib->get_selected_pts();
+  selected_peaks_.clear();
+  for (auto &p : fit_data_.peaks())
+    if (selected_energies.count(p.second.energy))
+      selected_peaks_.insert(p.first);
+
+  select_in_table();
   if (isVisible())
     emit selection_changed(selected_peaks_);
   toggle_push();
@@ -236,7 +244,8 @@ void FormFwhmCalibration::selection_changed_in_table() {
   selected_peaks_.clear();
   foreach (QModelIndex i, ui->tableFWHM->selectionModel()->selectedRows())
     selected_peaks_.insert(ui->tableFWHM->item(i.row(), 0)->data(Qt::EditRole).toDouble());
-  replot_markers();
+
+  select_in_plot();
   if (isVisible())
     emit selection_changed(selected_peaks_);
   toggle_push();
@@ -262,14 +271,15 @@ void FormFwhmCalibration::toggle_push() {
     ui->spinTerms->setEnabled(false);
   }
 
-  ui->pushApplyCalib->setEnabled(fit_data_.fwhm_cali_ != old_fwhm_calibration_);
+  ui->pushApplyCalib->setEnabled(fit_data_.fwhm_cali_ != new_fwhm_calibration_);
 }
 
 void FormFwhmCalibration::on_pushFit_clicked()
 {  
   fit_calibration();
   toggle_push();
-  replot_markers();
+  replot_calib();
+  select_in_plot();
 }
 
 Polynomial FormFwhmCalibration::fit_calibration()
@@ -288,12 +298,12 @@ Polynomial FormFwhmCalibration::fit_calibration()
 
   if (p.coeffs_.size()) {
     //    PL_DBG << "Calibration succeeded";
-    fit_data_.fwhm_cali_.type_ = "FWHM";
-    fit_data_.fwhm_cali_.bits_ = fit_data_.metadata_.bits;
-    fit_data_.fwhm_cali_.coefficients_ = p.coeffs_;
-    fit_data_.fwhm_cali_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
-    fit_data_.fwhm_cali_.units_ = "keV";
-    fit_data_.fwhm_cali_.model_ = Gamma::CalibrationModel::polynomial;
+    new_fwhm_calibration_.type_ = "FWHM";
+    new_fwhm_calibration_.bits_ = fit_data_.metadata_.bits;
+    new_fwhm_calibration_.coefficients_ = p.coeffs_;
+    new_fwhm_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
+    new_fwhm_calibration_.units_ = "keV";
+    new_fwhm_calibration_.model_ = Gamma::CalibrationModel::polynomial;
   }
   else
     PL_INFO << "<WFHM calibration> Gamma::Calibration failed";
@@ -310,7 +320,8 @@ void FormFwhmCalibration::on_pushFromDB_clicked()
 {
   Gamma::Detector newdet = detectors_.get(fit_data_.detector_);
   fit_data_.fwhm_cali_ = newdet.fwhm_calibration_;
-  replot_markers();
+  replot_calib();
+  select_in_plot();
   toggle_push();
 }
 

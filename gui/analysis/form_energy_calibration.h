@@ -63,7 +63,6 @@ private slots:
   void selection_changed_in_table();
   void selection_changed_in_plot();
 
-  void replot_markers();
   void toggle_push();
   void isotope_energies_chosen();
   void on_pushApplyCalib_clicked();
@@ -75,8 +74,6 @@ private slots:
   void on_pushDetDB_clicked();
   void on_pushAllmarkers_clicked();
   void on_pushAllEnergies_clicked();
-
-  void remove_peaks();
 
 private:
   Ui::FormEnergyCalibration *ui;
@@ -90,14 +87,17 @@ private:
   Gamma::Fitter &fit_data_;
   std::set<double> selected_peaks_;
 
-  Gamma::Calibration old_calibration_;
+  Gamma::Calibration new_calibration_;
   AppearanceProfile style_fit, style_pts;
 
   void loadSettings();
   void saveSettings();
+
+  void replot_calib();
+  void rebuild_table();
   void add_peak_to_table(const Gamma::Peak &, int, QColor);
   void select_in_table();
-
+  void select_in_plot();
 };
 
 #endif // FORM_CALIBRATION_H

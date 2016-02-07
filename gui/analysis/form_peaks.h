@@ -86,7 +86,7 @@ private slots:
   void toggle_push();
 
   void on_pushAdd_clicked();
-  void on_pushMarkerRemove_clicked();
+  void on_pushRemovePeaks_clicked();
   void on_pushFindPeaks_clicked();
   void on_pushStopFitter_clicked();
 

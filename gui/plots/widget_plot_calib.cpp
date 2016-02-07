@@ -112,6 +112,16 @@ void WidgetPlotCalib::set_scale_type_y(QString sct) {
   build_menu();
 }
 
+void WidgetPlotCalib::clear_data() {
+  x_fit.clear();
+  y_fit.clear();
+  x_pts.clear();
+  y_pts.clear();
+  style_pts.clear();
+  selection_.clear();
+  floating_text_.clear();
+}
+
 void WidgetPlotCalib::clearPoints()
 {
   x_pts.clear();
@@ -146,18 +156,17 @@ void WidgetPlotCalib::redraw() {
     ui->mcaPlot->addGraph();
     int g = ui->mcaPlot->graphCount() - 1;
     ui->mcaPlot->graph(g)->addData(x_pts[k], y_pts[k]);
-    ui->mcaPlot->graph(g)->setPen(QPen(Qt::darkCyan));
-    ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDot, Qt::black, Qt::black, 0));
+    ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle::ssNone);
     ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsNone);
 
     for (int i = 0; i < x_pts[k].size(); ++i) {
       QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
-      crs->setStyle(QCPItemTracer::tsSquare); //tsCirlce?
+      crs->setStyle(QCPItemTracer::tsCircle); //tsCirlce?
       crs->setSize(style_pts[k].default_pen.width());
       crs->setGraph(ui->mcaPlot->graph(g));
       crs->setGraphKey(x_pts[k][i]);
       crs->setInterpolating(true);
-      crs->setPen(QPen(style_pts[k].default_pen.color(), 0));
+      crs->setPen(QPen(style_pts[k].themes["selected"].color(), 0));
       crs->setBrush(style_pts[k].default_pen.color());
       crs->setSelectedPen(QPen(style_pts[k].themes["selected"].color(), 0));
       crs->setSelectedBrush(style_pts[k].themes["selected"].color());
@@ -288,8 +297,6 @@ void WidgetPlotCalib::addFit(const QVector<double>& x, const QVector<double>& y,
     x_fit = x;
     y_fit = y;
   }
-
-  redraw();
 }
 
 void WidgetPlotCalib::addPoints(const QVector<double>& x, const QVector<double>& y, AppearanceProfile style) {
@@ -298,13 +305,10 @@ void WidgetPlotCalib::addPoints(const QVector<double>& x, const QVector<double>&
     y_pts.push_back(y);
     style_pts.push_back(style);
   }
-
-  redraw();
 }
 
 void WidgetPlotCalib::set_selected_pts(std::set<double> sel) {
   selection_ = sel;
-  redraw();
 }
 
 void WidgetPlotCalib::setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2) {
@@ -340,7 +344,6 @@ void WidgetPlotCalib::update_selection() {
 
 void WidgetPlotCalib::setFloatingText(QString txt) {
   floating_text_ = txt;
-  redraw();
 }
 
 void WidgetPlotCalib::optionsChanged(QAction* action) {

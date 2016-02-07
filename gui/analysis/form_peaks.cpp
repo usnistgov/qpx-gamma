@@ -41,6 +41,10 @@ FormPeaks::FormPeaks(QWidget *parent) :
   QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Insert), ui->plot1D);
   connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushAdd_clicked()));
 
+  QShortcut* shortcut2 = new QShortcut(QKeySequence(QKeySequence::Delete), ui->plot1D);
+  connect(shortcut2, SIGNAL(activated()), this, SLOT(on_pushRemovePeaks_clicked()));
+
+
   connect(&thread_fitter_, SIGNAL(fit_updated(Gamma::Fitter)), this, SLOT(fit_updated(Gamma::Fitter)));
   connect(&thread_fitter_, SIGNAL(fitting_done()), this, SLOT(fitting_complete()));
 
@@ -259,6 +263,7 @@ void FormPeaks::update_selection(std::set<double> selected_peaks) {
     ui->plot1D->select_peaks(selected_peaks);
     ui->plot1D->redraw();
   }
+  toggle_push();
 }
 
 std::set<double> FormPeaks::get_selected_peaks() {
@@ -311,12 +316,15 @@ void FormPeaks::on_pushAdd_clicked()
   thread_fitter_.add_peak(range_.l.bin(fit_data_->metadata_.bits), range_.r.bin(fit_data_->metadata_.bits));
 }
 
-void FormPeaks::on_pushMarkerRemove_clicked()
+void FormPeaks::on_pushRemovePeaks_clicked()
 {
   if (fit_data_ == nullptr)
     return;
 
   std::set<double> chosen_peaks = ui->plot1D->get_selected_peaks();
+  if (chosen_peaks.empty())
+    return;
+
   ui->plot1D->clearSelection();
 
   busy_= true;
@@ -351,13 +359,13 @@ void FormPeaks::toggle_push() {
   ui->doubleOverlapWidth->setEnabled(!busy_);
 
   ui->pushAdd->setEnabled(false);
-  ui->pushMarkerRemove->setEnabled(false);
+  ui->pushRemovePeaks->setEnabled(false);
 
   if (busy_)
     return;
 
   ui->pushAdd->setEnabled(range_.visible);
-  ui->pushMarkerRemove->setEnabled(!ui->plot1D->get_selected_peaks().empty());
+  ui->pushRemovePeaks->setEnabled(!ui->plot1D->get_selected_peaks().empty());
 }
 
 void FormPeaks::on_spinSqWidth_editingFinished()
