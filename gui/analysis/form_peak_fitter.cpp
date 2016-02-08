@@ -106,47 +106,24 @@ void FormPeakFitter::update_data() {
 void FormPeakFitter::add_peak_to_table(const Gamma::Peak &p, int row, bool gray) {
   QBrush background(gray ? Qt::lightGray : Qt::white);
 
-  QTableWidgetItem *chn = new QTableWidgetItem(QString::number(p.center));
-  chn->setData(Qt::EditRole, QVariant::fromValue(p.center));
-  chn->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 0, chn);
+  data_to_table(row, 0, p.center, background);
+  data_to_table(row, 1, p.energy, background);
+  data_to_table(row, 2, p.fwhm_hyp, background);
+  data_to_table(row, 3, p.area_hyp, background);
+  data_to_table(row, 4, p.cps_hyp, background);
+  data_to_table(row, 5, p.fwhm_sum4, background);
+  data_to_table(row, 6, p.area_sum4, background);
+  data_to_table(row, 7, p.sum4_.err, background);
+  data_to_table(row, 8, p.cps_sum4, background);
+  data_to_table(row, 9, p.sum4_.currie_quality_indicator, background);
 
-  QTableWidgetItem *nrg = new QTableWidgetItem(QString::number(p.energy));
-  nrg->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 1, nrg);
+}
 
-  QTableWidgetItem *fwhm = new QTableWidgetItem(QString::number(p.fwhm_hyp));
-  fwhm->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 2, fwhm);
-
-  QTableWidgetItem *area_hyp = new QTableWidgetItem(QString::number(p.area_hyp));
-  area_hyp->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 3, area_hyp);
-
-  QTableWidgetItem *cps_hyp = new QTableWidgetItem(QString::number(p.cps_hyp));
-  cps_hyp->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 4, cps_hyp);
-
-  QTableWidgetItem *fwhm4 = new QTableWidgetItem(QString::number(p.fwhm_sum4));
-  fwhm4->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 5, fwhm4);
-
-  QTableWidgetItem *area_net = new QTableWidgetItem(QString::number(p.area_sum4));
-  area_net->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 6, area_net);
-
-  QTableWidgetItem *err = new QTableWidgetItem(QString::number(p.sum4_.err));
-  err->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 7, err);
-
-  QTableWidgetItem *cps_net = new QTableWidgetItem(QString::number(p.cps_sum4));
-  cps_net->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 8, cps_net);
-
-  QTableWidgetItem *CQI = new QTableWidgetItem(QString::number(p.sum4_.currie_quality_indicator));
-  CQI->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 9, CQI);
-
+void FormPeakFitter::data_to_table(int row, int column, double value, QBrush background) {
+  QTableWidgetItem *item = new QTableWidgetItem(QString::number(value));
+  item->setData(Qt::EditRole, QVariant::fromValue(value));
+  item->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, column, item);
 }
 
 void FormPeakFitter::selection_changed_in_table() {
@@ -174,9 +151,19 @@ void FormPeakFitter::select_in_table() {
   ui->tablePeaks->blockSignals(true);
   this->blockSignals(true);
   ui->tablePeaks->clearSelection();
+
+  QItemSelectionModel *selectionModel = ui->tablePeaks->selectionModel();
+  QItemSelection itemSelection = selectionModel->selection();
+
   for (int i=0; i < ui->tablePeaks->rowCount(); ++i)
-    if (selected_peaks_.count(ui->tablePeaks->item(i, 0)->data(Qt::EditRole).toDouble()))
+    if (selected_peaks_.count(ui->tablePeaks->item(i, 0)->data(Qt::EditRole).toDouble())) {
       ui->tablePeaks->selectRow(i);
+      itemSelection.merge(selectionModel->selection(), QItemSelectionModel::Select);
+    }
+
+  selectionModel->clearSelection();
+  selectionModel->select(itemSelection,QItemSelectionModel::Select);
+
   ui->tablePeaks->blockSignals(false);
   this->blockSignals(false);
 }

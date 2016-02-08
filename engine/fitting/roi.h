@@ -49,7 +49,7 @@ struct ROI {
   void add_peak(const std::vector<double> &x, const std::vector<double> &y, uint16_t L, uint16_t R);
   bool add_from_resid(uint16_t centroid_hint = -1);
 
-  void remove_peaks(const std::set<double> &pks);
+  bool remove_peaks(const std::set<double> &pks);
 
   void rebuild();
 

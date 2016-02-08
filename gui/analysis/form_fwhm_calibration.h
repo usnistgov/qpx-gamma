@@ -45,6 +45,7 @@ public:
   ~FormFwhmCalibration();
 
   void newSpectrum();
+  Gamma::Calibration get_new_calibration() {return new_calibration_;}
 
   void clear();
   bool save_close();
@@ -57,6 +58,7 @@ signals:
   void selection_changed(std::set<double> selected_peaks);
   void detectorsChanged();
   void update_detector();
+  void new_fit();
 
 private slots:
   void selection_changed_in_table();
@@ -71,6 +73,8 @@ private slots:
   void on_pushDetDB_clicked();
 
 
+  void on_doubleMaxErr_valueChanged(double arg1);
+
 private:
   Ui::FormFwhmCalibration *ui;
   QSettings &settings_;
@@ -83,19 +87,21 @@ private:
   Gamma::Fitter &fit_data_;
   std::set<double> selected_peaks_;
   
-  Gamma::Calibration new_fwhm_calibration_;
-  AppearanceProfile style_pts, style_fit;
+  Gamma::Calibration new_calibration_;
+  AppearanceProfile style_pts, style_relevant, style_fit;
 
   void loadSettings();
   void saveSettings();
   Polynomial fit_calibration();
-  double find_outlier();
 
   void replot_calib();
   void rebuild_table();
-  void add_peak_to_table(const Gamma::Peak &, int);
   void select_in_table();
   void select_in_plot();
+
+  void add_peak_to_table(const Gamma::Peak &, int, bool);
+  void data_to_table(int row, int column, double value, QBrush background);
+
 };
 
 #endif // FORM_FWHM_CALIBRATION_H

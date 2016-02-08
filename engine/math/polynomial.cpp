@@ -30,10 +30,11 @@
 #include "custom_logger.h"
 #include "qpx_util.h"
 
-Polynomial::Polynomial(std::vector<double> coeffs, double xoffset)
+Polynomial::Polynomial(std::vector<double> coeffs, double xoffset, double rsq)
   :Polynomial()
 {
   xoffset_ = xoffset;
+  rsq_ = rsq;
   int highest = -1;
   for (int i=0; i < coeffs.size(); ++i)
     if (coeffs[i] != 0)
@@ -46,8 +47,9 @@ Polynomial::Polynomial(std::vector<double> &x, std::vector<double> &y, uint16_t 
   :Polynomial()
 {
   std::vector<uint16_t> degrees;
-  for (int i=0; i <= degree; ++i)
+  for (int i=0; i <= degree; ++i) {
     degrees.push_back(i);
+  }
 
   fit(x, y, degrees, xoffset);
 }
@@ -92,11 +94,10 @@ void Polynomial::fit(std::vector<double> &x, std::vector<double> &y,
     definition += "a" + varnames[i] + "*x^" + varnames[i];
   }
 
-
   bool success = true;
 
-  f->execute(definition);
   try {
+    f->execute(definition);
     f->execute("guess MyPoly");
   }
   catch ( ... ) {
@@ -124,7 +125,7 @@ void Polynomial::fit(std::vector<double> &x, std::vector<double> &y,
       coeffs_[q] = lastfn->get_param_value("a" + ss.str());
     }
 
-    rsq = f->get_rsquared(0);
+    rsq_ = f->get_rsquared(0);
   }
 
   delete f;
@@ -190,7 +191,7 @@ std::vector<double> Polynomial::eval(std::vector<double> x) {
   return y;
 }
 
-std::string Polynomial::to_string() {
+std::string Polynomial::to_string(bool with_rsq) {
   std::stringstream ss;
   for (int i=0; i < coeffs_.size(); i++) {
     if (i > 0)
@@ -201,16 +202,20 @@ std::string Polynomial::to_string() {
     if (i > 1)
       ss << "^" << i;
   }
+
+  if (with_rsq)
+    ss << "   rsq=" << rsq_;
+
   return ss.str();
 }
 
 std::string Polynomial::to_UTF8(int precision, bool with_rsq) {
 
   std::string calib_eqn;
-  for (int i=0; i <= coeffs_.size(); i++) {
+  for (int i=0; i < coeffs_.size(); i++) {
     if (i > 0)
       calib_eqn += " + ";
-    calib_eqn += to_str_precision(coeffs_[i]);
+    calib_eqn += to_str_precision(coeffs_[i], precision);
     if (i > 0)
       calib_eqn += "x";
     if (i > 1)
@@ -221,14 +226,14 @@ std::string Polynomial::to_UTF8(int precision, bool with_rsq) {
     calib_eqn += std::string("   r")
         + UTF_superscript(2)
         + std::string("=")
-        + to_str_precision(rsq, 4);
+        + to_str_precision(rsq_, precision);
   
   return calib_eqn;
 }
 
-std::string Polynomial::to_markup(int precision) {
+std::string Polynomial::to_markup(int precision, bool with_rsq) {
   std::string calib_eqn;
-  for (int i=0; i <= coeffs_.size(); i++) {
+  for (int i=0; i < coeffs_.size(); i++) {
     if (i > 0)
       calib_eqn += " + ";
     calib_eqn += to_str_precision(coeffs_[i], precision);
@@ -237,6 +242,11 @@ std::string Polynomial::to_markup(int precision) {
     if (i > 1)
       calib_eqn += "<sup>" + UTF_superscript(i) + "</sup>";
   }
+
+  if (with_rsq)
+    calib_eqn += "   r<sup>2</sup>"
+        + std::string("=")
+        + to_str_precision(rsq_, precision);
 
   return calib_eqn;
 }

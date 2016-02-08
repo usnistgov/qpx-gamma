@@ -80,14 +80,11 @@ void Fitter::clear() {
   nrg_cali_ = Gamma::Calibration();
   fwhm_cali_ = Gamma::Calibration();
   finder_.clear();
-  peaks_.clear();
   regions_.clear();
 }
 
 
-void Fitter::find_peaks() {
-
-  peaks_.clear();
+void Fitter::find_regions() {
   regions_.clear();
 //  PL_DBG << "Fitter: looking for " << filtered.size()  << " peaks";
 
@@ -128,33 +125,29 @@ void Fitter::find_peaks() {
 
   PL_DBG << "<Fitter> Created " << regions_.size() << " regions";
 
-//  int current = 0;
-//  for (auto &q : regions_) {
-//    PL_DBG << "<Fitter> Fitting region " << current << " of " << regions_.size() << "...";
-//    q.auto_fit();
-//    current++;
-//  }
-
-//  remap_peaks();
-
 }
 
-void Fitter::remap_peaks() {
-  peaks_.clear();
+std::map<double, Peak> Fitter::peaks() {
+  std::map<double, Peak> peaks;
   for (auto &q : regions_)
     for (auto &p : q.peaks_) {
-      if (p.second.sum4_.peak_width == 0) {
-        double edge =  p.second.hypermet_.width_ * sqrt(log(2)) * 3;
-        uint32_t edgeL = finder_.find_index(p.second.hypermet_.center_ - edge);
-        uint32_t edgeR = finder_.find_index(p.second.hypermet_.center_ + edge);
-        p.second.sum4_ = SUM4 (finder_.y_, edgeL, edgeR, sum4edge_samples);
-      }
-      p.second.construct(nrg_cali_, metadata_.live_time.total_milliseconds() * 0.001, metadata_.bits);
-      peaks_[p.second.center] = p.second;
+      peaks[p.second.center] = p.second;
     }
-
-  //  PL_DBG << "<Fitter> Mapped " << peaks_.size() << " peaks";
+  return peaks;
 }
+
+void Fitter::remap_region(ROI &region) {
+  for (auto &p : region.peaks_) {
+    if (p.second.sum4_.peak_width == 0) {
+      double edge =  p.second.hypermet_.width_ * sqrt(log(2)) * 3;
+      uint32_t edgeL = finder_.find_index(p.second.hypermet_.center_ - edge);
+      uint32_t edgeR = finder_.find_index(p.second.hypermet_.center_ + edge);
+      p.second.sum4_ = SUM4 (finder_.y_, edgeL, edgeR, sum4edge_samples);
+    }
+    p.second.construct(nrg_cali_, metadata_.live_time.total_milliseconds() * 0.001, metadata_.bits);
+  }
+}
+
 
 void Fitter::add_peak(uint32_t left, uint32_t right) {
 //  PL_DBG << "Add new peak " << left << "-" << right;
@@ -165,6 +158,7 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
 //      PL_DBG << "<Fitter> adding to existing region";
       q.add_peak(finder_.x_, finder_.y_, left, right);
       added = true;
+      remap_region(q);
       break;
     }
   }
@@ -175,20 +169,19 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
     newROI.set_data(finder_.x_, finder_.y_, left, right);
     newROI.auto_fit();
     if (!newROI.peaks_.empty()) {
+      remap_region(newROI);
       PL_DBG << "<Fitter> succeeded making new ROI";
       regions_.push_back(newROI);
       added = true;
     }
   }
-
-  if (added)
-    remap_peaks();
-
 }
 
 void Fitter::remove_peaks(std::set<double> bins) {
-  for (auto &m : regions_)
-    m.remove_peaks(bins);
+  for (auto &m : regions_) {
+    if (m.remove_peaks(bins))
+      remap_region(m);
+  }
 
   std::list<ROI> regions;
   for (auto &r : regions_)
@@ -196,8 +189,15 @@ void Fitter::remove_peaks(std::set<double> bins) {
       regions.push_back(r);
 
   regions_ = regions;
-  remap_peaks();
 }
+
+void Fitter::replace_peak(const Peak& pk) {
+  for (auto &m : regions_)
+    if (m.contains(pk.center)) {
+      m.peaks_[pk.center] = pk; //use function that will rebuild
+    }
+}
+
 
 void Fitter::save_report(std::string filename) {
   std::ofstream file(filename, std::ios::out | std::ios::app);
@@ -254,11 +254,11 @@ void Fitter::save_report(std::string filename) {
 
   file << std::endl;
   file.fill('-');
-  file << std::setw( 15 ) << "center(Gauss)" << "--|" 
-       << std::setw( 15 ) << "energy(Gauss)" << "--|"
-       << std::setw( 15 ) << "FWHM(Gauss)" << "--|"
-       << std::setw( 15 ) << "area(Gauss)" << "--|"
-       << std::setw( 15 ) << "cps(Gauss)"  << "-||"
+  file << std::setw( 15 ) << "center(Hyp)" << "--|"
+       << std::setw( 15 ) << "energy(Hyp)" << "--|"
+       << std::setw( 15 ) << "FWHM(Hyp)" << "--|"
+       << std::setw( 15 ) << "area(Hyp)" << "--|"
+       << std::setw( 15 ) << "cps(Hyp)"  << "-||"
       
        << std::setw( 15 ) << "center(S4)" << "--|" 
        << std::setw( 15 ) << "cntr-var(S4)" << "--|" 
@@ -274,7 +274,7 @@ void Fitter::save_report(std::string filename) {
        << std::setw( 5 ) << "CQI"  << "--|"
        << std::endl;
   file.fill(' ');
-  for (auto &q : peaks_) {
+  for (auto &q : peaks()) {
     file << std::setw( 15 ) << std::setprecision( 10 ) << q.second.center << "  |"
          << std::setw( 15 ) << std::setprecision( 10 ) << q.second.energy << "  |"
          << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_hyp << "  |"

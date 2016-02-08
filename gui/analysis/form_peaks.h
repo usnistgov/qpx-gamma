@@ -63,6 +63,7 @@ public:
 
 public slots:
   void update_selection(std::set<double> selected_peaks);
+  void replace_peaks(std::vector<Gamma::Peak>);
 
 signals:
   void data_changed();

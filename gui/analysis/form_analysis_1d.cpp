@@ -76,6 +76,11 @@ FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   connect(ui->plotSpectrum, SIGNAL(data_changed()), my_fwhm_calibration_, SLOT(update_data()));
   connect(ui->plotSpectrum, SIGNAL(data_changed()), my_peak_fitter_, SLOT(update_data()));
 
+  connect(my_energy_calibration_, SIGNAL(change_peaks(std::vector<Gamma::Peak>)), ui->plotSpectrum, SLOT(replace_peaks(std::vector<Gamma::Peak>)));
+
+  connect(my_energy_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
+  connect(my_fwhm_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
+
   ui->tabs->setCurrentWidget(my_energy_calibration_);
 }
 
@@ -125,6 +130,8 @@ void FormAnalysis1D::clear() {
   my_energy_calibration_->clear();
   my_fwhm_calibration_->clear();
   my_peak_fitter_->clear();
+  new_energy_calibration_ = Gamma::Calibration();
+  new_fwhm_calibration_ = Gamma::Calibration();
 }
 
 
@@ -133,6 +140,9 @@ void FormAnalysis1D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
   my_fwhm_calibration_->clear();
   my_peak_fitter_->clear();
   spectra_ = newset;
+  new_energy_calibration_ = Gamma::Calibration();
+  new_fwhm_calibration_ = Gamma::Calibration();
+
   if (!spectra_) {
     fit_data_.clear();
     ui->plotSpectrum->update_spectrum();
@@ -151,6 +161,9 @@ void FormAnalysis1D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
     my_energy_calibration_->update_data();
     my_fwhm_calibration_->update_data();
     my_peak_fitter_->update_data();
+
+    new_energy_calibration_ = my_energy_calibration_->get_new_calibration();
+    new_fwhm_calibration_ = my_fwhm_calibration_->get_new_calibration();
   }
 
   ui->plotSpectrum->update_spectrum();
@@ -165,11 +178,17 @@ void FormAnalysis1D::update_spectrum() {
   }
 }
 
+void FormAnalysis1D::update_fits() {
+  PL_DBG << "calib fits updated locally";
+  new_energy_calibration_ = my_energy_calibration_->get_new_calibration();
+  new_fwhm_calibration_ = my_fwhm_calibration_->get_new_calibration();
+}
+
 void FormAnalysis1D::update_detector_calibs()
 {
   std::string msg_text("Propagating calibrations ");
-  msg_text +=  "<nobr>" + fit_data_.nrg_cali_.to_string() + "</nobr><br/>"
-               "<nobr>" + fit_data_.fwhm_cali_.to_string() + "</nobr><br/>"
+  msg_text +=  "<nobr>" + new_energy_calibration_.to_string() + "</nobr><br/>"
+               "<nobr>" + new_fwhm_calibration_.to_string() + "</nobr><br/>"
                "<nobr>  to all spectra in current project: </nobr><br/>"
                "<nobr>" + spectra_->identity() + "</nobr>";
 
@@ -211,8 +230,8 @@ void FormAnalysis1D::update_detector_calibs()
     if (modified != Gamma::Detector())
     {
       PL_INFO << "   applying new calibrations for " << modified.name_ << " in detector database";
-      modified.energy_calibrations_.replace(fit_data_.nrg_cali_);
-      modified.fwhm_calibration_ = fit_data_.fwhm_cali_;
+      modified.energy_calibrations_.replace(new_energy_calibration_);
+      modified.fwhm_calibration_ = new_fwhm_calibration_;
       detectors_.replace(modified);
       emit detectorsChanged();
     }
@@ -226,8 +245,8 @@ void FormAnalysis1D::update_detector_calibs()
       for (auto &p : md.detectors) {
         if (p.shallow_equals(fit_data_.detector_)) {
           PL_INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " on " << q->name();
-          p.energy_calibrations_.replace(fit_data_.nrg_cali_);
-          p.fwhm_calibration_ = fit_data_.fwhm_cali_;
+          p.energy_calibrations_.replace(new_energy_calibration_);
+          p.fwhm_calibration_ = new_fwhm_calibration_;
         }
       }
       q->set_detectors(md.detectors);
@@ -238,11 +257,12 @@ void FormAnalysis1D::update_detector_calibs()
     for (auto &p : ri.detectors) {
       if (p.shallow_equals(fit_data_.detector_)) {
         PL_INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " in current project " << spectra_->identity();
-        p.energy_calibrations_.replace(fit_data_.nrg_cali_);
-        p.fwhm_calibration_ = fit_data_.fwhm_cali_;
+        p.energy_calibrations_.replace(new_energy_calibration_);
+        p.fwhm_calibration_ = new_fwhm_calibration_;
       }
     }
     spectra_->setRunInfo(ri);
+    update_spectrum();
   }
 }
 

@@ -273,7 +273,7 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
 //  rebuild();
 //}
 
-void ROI::remove_peaks(const std::set<double> &pks) {
+bool ROI::remove_peaks(const std::set<double> &pks) {
   bool found = false;
   for (auto &q : pks)
     if (remove_peak(q))
@@ -281,6 +281,8 @@ void ROI::remove_peaks(const std::set<double> &pks) {
 
   if (found)
     rebuild();
+
+  return found;
 }
 
 bool ROI::remove_peak(double bin) {

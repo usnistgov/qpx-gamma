@@ -29,8 +29,8 @@
 
 class Polynomial {
 public:
-  Polynomial() : rsq(-1), xoffset_(0) {}
-  Polynomial(std::vector<double> coeffs, double xoffset = 0);
+  Polynomial() : rsq_(-1), xoffset_(0) {}
+  Polynomial(std::vector<double> coeffs, double xoffset = 0, double rsq = 0);
   Polynomial(std::vector<double> &x, std::vector<double> &y, uint16_t degree, double xoffset = 0);
   Polynomial(std::vector<double> &x, std::vector<double> &y, std::vector<uint16_t> &degrees, double xoffset = 0);
 
@@ -38,9 +38,9 @@ public:
 
   Polynomial derivative();
 
-  std::string to_string();
+  std::string to_string(bool with_rsq = false);
   std::string to_UTF8(int precision = -1, bool with_rsq = false);
-  std::string to_markup(int precision = -1);
+  std::string to_markup(int precision = -1, bool with_rsq = false);
   std::string coef_to_string() const;
   void coef_from_string(std::string);
 
@@ -51,7 +51,7 @@ public:
   
   std::vector<double> coeffs_;
   double xoffset_;
-  double rsq;
+  double rsq_;
 };
 
 #endif

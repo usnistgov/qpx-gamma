@@ -45,6 +45,8 @@ public:
   explicit FormEnergyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, Gamma::Fitter&, QWidget *parent = 0);
   ~FormEnergyCalibration();
 
+  Gamma::Calibration get_new_calibration() {return new_calibration_;}
+
   void newSpectrum();
   bool save_close();
 
@@ -56,8 +58,10 @@ public slots:
 
 signals:
   void selection_changed(std::set<double> selected_peaks);
+  void change_peaks(std::vector<Gamma::Peak>);
   void detectorsChanged();
   void update_detector();
+  void new_fit();
 
 private slots:
   void selection_changed_in_table();
@@ -72,8 +76,8 @@ private slots:
   void on_pushFit_clicked();
   void on_pushFromDB_clicked();
   void on_pushDetDB_clicked();
-  void on_pushAllmarkers_clicked();
-  void on_pushAllEnergies_clicked();
+  void on_pushPeaksToNuclide_clicked();
+  void on_pushEnergiesToPeaks_clicked();
 
 private:
   Ui::FormEnergyCalibration *ui;
@@ -95,9 +99,11 @@ private:
 
   void replot_calib();
   void rebuild_table();
-  void add_peak_to_table(const Gamma::Peak &, int, QColor);
   void select_in_table();
   void select_in_plot();
+
+  void add_peak_to_table(const Gamma::Peak &, int, bool);
+  void data_to_table(int row, int column, double value, QBrush background);
 };
 
 #endif // FORM_CALIBRATION_H

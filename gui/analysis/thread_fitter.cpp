@@ -112,8 +112,8 @@ void ThreadFitter::run() {
       for (auto &q : fitter_.regions_) {
         PL_DBG << "<Fitter> Fitting region " << current << " of " << fitter_.regions_.size() << "...";
         q.auto_fit();
+        fitter_.remap_region(q);
         current++;
-        fitter_.remap_peaks();
         emit fit_updated(fitter_);
         if ((action_ == kStop) || terminating_.load())
           break;

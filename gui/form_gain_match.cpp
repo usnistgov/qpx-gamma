@@ -345,7 +345,7 @@ bool FormGainMatch::find_peaks() {
   fitter_ref_.finder_.find_peaks(ui->spinMovAvg->value(), 3.0);
   fitter_ref_.overlap_ = ui->doubleOverlapWidth->value();
   fitter_ref_.sum4edge_samples = ui->spinSum4EdgeW->value();
-  fitter_ref_.find_peaks();
+  fitter_ref_.find_regions();
   for (auto &q : fitter_ref_.peaks())
     if (q.second.area_best > gauss_ref_.area_best)
       gauss_ref_ = q.second;
@@ -354,7 +354,7 @@ bool FormGainMatch::find_peaks() {
   fitter_ref_.finder_.find_peaks(ui->spinMovAvg->value(), 3.0);
   fitter_ref_.overlap_ = ui->doubleOverlapWidth->value();
   fitter_ref_.sum4edge_samples = ui->spinSum4EdgeW->value();
-  fitter_opt_.find_peaks();
+  fitter_opt_.find_regions();
   for (auto &q : fitter_opt_.peaks())
     if (q.second.area_best > gauss_opt_.area_best)
         gauss_opt_ = q.second;

@@ -74,8 +74,11 @@ private:
 
   void loadSettings();
   void saveSettings();
-  void add_peak_to_table(const Gamma::Peak &, int, bool);
   void select_in_table();
+
+  void add_peak_to_table(const Gamma::Peak &, int, bool);
+  void data_to_table(int row, int column, double value, QBrush background);
+
 };
 
 #endif // FORM_PEAK_FITTER_H

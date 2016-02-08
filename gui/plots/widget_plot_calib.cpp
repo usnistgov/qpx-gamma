@@ -117,6 +117,7 @@ void WidgetPlotCalib::clear_data() {
   y_fit.clear();
   x_pts.clear();
   y_pts.clear();
+
   style_pts.clear();
   selection_.clear();
   floating_text_.clear();
@@ -144,6 +145,7 @@ void WidgetPlotCalib::clearGraphs()
 void WidgetPlotCalib::redraw() {
   ui->mcaPlot->clearGraphs();
   ui->mcaPlot->clearItems();
+  ui->mcaPlot->rescaleAxes();
 
   double xmin, xmax;
   double ymin, ymax;
@@ -258,12 +260,10 @@ void WidgetPlotCalib::redraw() {
   if ((scale_type_y_ == "Logarithmic") && (ymin < 0))
     ymin = 0;
 
-  if (this->isVisible()) {
-    ui->mcaPlot->xAxis->setRange(xmin, xmax);
-    ui->mcaPlot->xAxis2->setRange(xmin, xmax);
-    ui->mcaPlot->yAxis->setRange(ymin, ymax);
-    ui->mcaPlot->yAxis2->setRange(ymin, ymax);
-  }
+  ui->mcaPlot->xAxis->setRange(xmin, xmax);
+  ui->mcaPlot->xAxis2->setRange(xmin, xmax);
+  ui->mcaPlot->yAxis->setRange(ymin, ymax);
+  ui->mcaPlot->yAxis2->setRange(ymin, ymax);
 
   ui->mcaPlot->replot();
 }

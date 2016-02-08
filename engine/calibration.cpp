@@ -43,6 +43,7 @@ Calibration::Calibration() {
   units_ = "channels";
   model_ = CalibrationModel::polynomial;
   bits_ = 0;
+  r_squared_ = 0;
 }
 
 bool Calibration::valid() const {
@@ -110,7 +111,7 @@ double Calibration::inverse_transform(double energy, uint16_t bits) const {
 
 std::string Calibration::fancy_equation(int precision, bool with_rsq) {
   if (bits_ && (model_ == CalibrationModel::polynomial))
-    return Polynomial(coefficients_).to_UTF8(precision, with_rsq);
+    return Polynomial(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
   else if (bits_ && (model_ == CalibrationModel::sqrt_poly))
     return SqrtPoly(coefficients_).to_UTF8(precision, with_rsq);
   else if (bits_ && (model_ == CalibrationModel::polylog))

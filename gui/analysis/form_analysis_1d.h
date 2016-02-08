@@ -60,6 +60,7 @@ public slots:
 private slots:
 
   void detectorsUpdated() {emit detectorsChanged();}
+  void update_fits();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -72,9 +73,10 @@ private:
   FormFwhmCalibration *my_fwhm_calibration_;
   FormPeakFitter *my_peak_fitter_;
 
-
   Gamma::Fitter fit_data_;
 
+  Gamma::Calibration new_energy_calibration_;
+  Gamma::Calibration new_fwhm_calibration_;
 
   //from parent
   QString data_directory_;

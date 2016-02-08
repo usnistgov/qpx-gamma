@@ -288,7 +288,7 @@ void FormPeaks::perform_fit() {
   fit_data_->finder_.find_peaks(ui->spinSqWidth->value(),ui->doubleThresh->value());
   fit_data_->overlap_ = ui->doubleOverlapWidth->value();
   fit_data_->sum4edge_samples = ui->spinSum4EdgeW->value();
-  fit_data_->find_peaks();
+  fit_data_->find_regions();
   //  PL_DBG << "number of peaks found " << fit_data_->peaks_.size();
 
   busy_= true;
@@ -332,6 +332,20 @@ void FormPeaks::on_pushRemovePeaks_clicked()
 
   thread_fitter_.set_data(*fit_data_);
   thread_fitter_.remove_peaks(chosen_peaks);
+}
+
+void FormPeaks::replace_peaks(std::vector<Gamma::Peak> pks) {
+  if (pks.empty())
+    return;
+
+  if (fit_data_ == nullptr)
+    return;
+
+  for (auto &p : pks)
+    fit_data_->replace_peak(p);
+
+  replot_all();
+  emit data_changed();
 }
 
 void FormPeaks::fit_updated(Gamma::Fitter fitter) {
@@ -382,16 +396,6 @@ void FormPeaks::on_spinSum4EdgeW_editingFinished()
   fit_data_->sum4edge_samples = ui->spinSum4EdgeW->value();
 }
 
-//void FormPeaks::update_fit(bool content_changed) {
-//  ui->plot1D->setData(fit_data_);
-//  if (content_changed) {
-//    update_spectrum();
-//    replot_all();
-//  } else
-//    replot_markers();
-//  toggle_push();
-//}
-
 void FormPeaks::on_doubleOverlapWidth_editingFinished()
 {
   fit_data_->overlap_ = ui->doubleOverlapWidth->value();
@@ -409,5 +413,6 @@ void FormPeaks::on_doubleThresh_editingFinished()
 
 void FormPeaks::on_pushStopFitter_clicked()
 {
+  ui->pushStopFitter->setEnabled(false);
   thread_fitter_.stop_work();
 }

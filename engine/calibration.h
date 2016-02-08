@@ -74,6 +74,7 @@ class Calibration : public XMLable {
   uint16_t bits_;
   CalibrationModel model_;
   std::vector<double> coefficients_;
+  double r_squared_;
 };
 
 }
