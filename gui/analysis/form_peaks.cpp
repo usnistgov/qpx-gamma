@@ -26,6 +26,96 @@
 #include "gamma_fitter.h"
 #include "qt_util.h"
 
+
+RollbackDialog::RollbackDialog(Gamma::ROI roi, QWidget *parent) :
+  QDialog(parent),
+  roi_(roi)
+{
+  QLabel *label;
+  QFrame* line;
+
+  QVBoxLayout *vl_fit    = new QVBoxLayout();
+  label = new QLabel();
+  label->setFixedHeight(25);
+  label->setText("Fit");
+  vl_fit->addWidget(label);
+
+  QVBoxLayout *vl_peaks = new QVBoxLayout();
+  label = new QLabel();
+  label->setFixedHeight(25);
+  label->setText("# of peaks");
+  vl_peaks->addWidget(label);
+
+  QVBoxLayout *vl_rsq = new QVBoxLayout();
+  label = new QLabel();
+  label->setFixedHeight(25);
+  label->setText("r-squared");
+  vl_rsq->addWidget(label);
+
+  for (int i=0; i < roi_.fits_.size(); ++i) {
+
+    QRadioButton *radio = new QRadioButton();
+    radio->setLayoutDirection(Qt::RightToLeft);
+    radio->setText(QString::number(i));
+    radio->setFixedHeight(25);
+    bool selected = false;
+    if (!roi_.fits_[i].peaks_.empty() && !roi_.peaks_.empty())
+      selected = (roi_.fits_[i].peaks_.begin()->second.hypermet_.rsq_ == roi_.peaks_.begin()->second.hypermet_.rsq_);
+    radio->setChecked(selected);
+    radios_.push_back(radio);
+    vl_fit->addWidget(radio);
+
+    label = new QLabel();
+    label->setFixedHeight(25);
+    label->setText(QString::number(roi_.fits_[i].peaks_.size()));
+    vl_peaks->addWidget(label);
+
+    label = new QLabel();
+    label->setFixedHeight(25);
+    double rsq = 0;
+    if (!roi_.fits_[i].peaks_.empty())
+      rsq = roi_.fits_[i].peaks_.begin()->second.hypermet_.rsq_;
+    label->setText(QString::number(rsq));
+    vl_rsq->addWidget(label);
+
+  }
+
+  QHBoxLayout *hl = new QHBoxLayout();
+  hl->addLayout(vl_fit);
+  hl->addLayout(vl_peaks);
+  hl->addLayout(vl_rsq);
+
+  label = new QLabel();
+  label->setText(QString::fromStdString("<b>ROI at chan=" + std::to_string(roi_.hr_x_nrg.front()) + " rollback to</b>"));
+
+  line = new QFrame();
+  line->setFrameShape(QFrame::HLine);
+  line->setFrameShadow(QFrame::Sunken);
+  line->setFixedHeight(3);
+  line->setLineWidth(1);
+
+  QVBoxLayout *total    = new QVBoxLayout();
+  total->addWidget(label);
+  total->addWidget(line);
+  total->addLayout(hl);
+
+  QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+  connect(buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
+  connect(buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
+  total->addWidget(buttonBox);
+
+  setLayout(total);
+}
+
+int RollbackDialog::get_choice() {
+  int ret = 0;
+  for (int i=0; i < radios_.size(); ++i)
+    if (radios_[i]->isChecked())
+      ret = i;
+  return ret;
+}
+
+
 FormPeaks::FormPeaks(QWidget *parent) :
   QWidget(parent),
   fit_data_(nullptr),
@@ -37,6 +127,9 @@ FormPeaks::FormPeaks(QWidget *parent) :
   connect(ui->plot1D, SIGNAL(clickedLeft(double)), this, SLOT(addRange(double)));
   connect(ui->plot1D, SIGNAL(clickedRight(double)), this, SLOT(removeRange(double)));
   connect(ui->plot1D, SIGNAL(range_moved(double, double)), this, SLOT(range_moved(double, double)));
+
+  connect(ui->plot1D, SIGNAL(refit_ROI(double)), this, SLOT(refit_ROI(double)));
+  connect(ui->plot1D, SIGNAL(rollback_ROI(double)), this, SLOT(rollback_ROI(double)));
 
   QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Insert), ui->plot1D);
   connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushAdd_clicked()));
@@ -155,6 +248,30 @@ void FormPeaks::addRange(double x) {
     c.set_bin(x, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
 
   createRange(c);
+}
+
+void FormPeaks::refit_ROI(double ROI_nrg) {
+  busy_= true;
+  toggle_push();
+
+  thread_fitter_.refit(ROI_nrg);
+}
+
+
+void FormPeaks::rollback_ROI(double ROI_nrg) {
+  for (auto &r : fit_data_->regions_) {
+    if (!r.hr_x_nrg.empty() && (r.hr_x_nrg.front() == ROI_nrg)) {
+      RollbackDialog *editor = new RollbackDialog(r, qobject_cast<QWidget *> (parent()));
+      int ret = editor->exec();
+      if (ret == QDialog::Accepted) {
+        r.rollback(editor->get_choice());
+        fit_data_->remap_region(r);
+        toggle_push();
+        replot_all();
+      }
+    }
+  }
+
 }
 
 void FormPeaks::removeRange(double dummy) {

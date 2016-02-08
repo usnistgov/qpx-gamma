@@ -30,6 +30,7 @@
 #include "isotope.h"
 #include "widget_plot_fit.h"
 #include <QItemSelection>
+#include <QRadioButton>
 #include "spectra_set.h"
 #include "gamma_fitter.h"
 #include "thread_fitter.h"
@@ -37,6 +38,19 @@
 namespace Ui {
 class FormPeaks;
 }
+
+
+class RollbackDialog : public QDialog {
+  Q_OBJECT
+
+public:
+  explicit RollbackDialog(Gamma::ROI setting, QWidget *parent = 0);
+  int get_choice();
+
+private:
+  Gamma::ROI      roi_;
+  std::vector<QRadioButton*> radios_;
+};
 
 class FormPeaks : public QWidget
 {
@@ -77,6 +91,8 @@ private slots:
   void fit_updated(Gamma::Fitter);
   void fitting_complete();
 
+  void refit_ROI(double);
+  void rollback_ROI(double);
 
   void addRange(double);
   void removeRange(double);

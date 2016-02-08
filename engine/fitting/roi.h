@@ -62,6 +62,7 @@ struct ROI {
 
   void rebuild();
   void render();
+  void save_current_fit();
 
   //intrinsic
   Calibration cal_nrg_, cal_fwhm_;

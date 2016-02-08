@@ -267,8 +267,8 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
     }
 
     std::string initial_c = FitykUtil::var_def("c", old[i].center_, old[i].center_ - lateral_slack, old[i].center_ + lateral_slack, i);
-    std::string initial_h = FitykUtil::var_def("h", old[i].height_, old[i].height_*1.0e-10, old[i].height_*1.0e10, i);
-    std::string initial_w = FitykUtil::var_def("w", width_expected,  width_lower, width_upper, i);
+    std::string initial_h = FitykUtil::var_def("h", old[i].height_, old[i].height_*1.0e-5, old[i].height_*1.0e5, i);
+    std::string initial_w = FitykUtil::var_def("w", width_expected, width_lower, width_upper, i);
     std::string initial = "F += Hypermet("
         "$c" + boost::lexical_cast<std::string>(i) + ","
         "$h" + boost::lexical_cast<std::string>(i) + ","

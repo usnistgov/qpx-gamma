@@ -87,6 +87,11 @@ WidgetPlotFit::WidgetPlotFit(QWidget *parent) :
 
   connect(&menuOptions, SIGNAL(triggered(QAction*)), this, SLOT(optionsChanged(QAction*)));
 
+  menuROI.addAction("Rollback...");
+  menuROI.addAction("Refit");
+  connect(&menuROI, SIGNAL(triggered(QAction*)), this, SLOT(changeROI(QAction*)));
+
+
   QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Backspace), ui->mcaPlot);
   connect(shortcut, SIGNAL(activated()), this, SLOT(zoom_out()));
 
@@ -487,6 +492,30 @@ void WidgetPlotFit::plotEnergyLabels() {
   }
 }
 
+void WidgetPlotFit::plotROI_options() {
+  for (auto &r : fit_data_->regions_) {
+    double x = r.hr_x_nrg.front();
+    double y = r.hr_fullfit.front();
+    QCPItemPixmap *overlayButton;
+
+    overlayButton = new QCPItemPixmap(ui->mcaPlot);
+//    overlayButton->setClipToAxisRect(false);
+    overlayButton->setPixmap(QPixmap(":/icons/oxy/32/package_utilities.png"));
+    overlayButton->topLeft->setType(QCPItemPosition::ptPlotCoords);
+    overlayButton->topLeft->setCoords(x, y);
+    overlayButton->bottomRight->setParentAnchor(overlayButton->topLeft);
+    overlayButton->bottomRight->setCoords(16, 16);
+    overlayButton->setScaled(true);
+    overlayButton->setSelectable(false);
+    overlayButton->setProperty("button_name", QString("ROI options"));
+    overlayButton->setProperty("ROI", QVariant::fromValue(x));
+    overlayButton->setProperty("tooltip", QString("Do ROI stuff"));
+    ui->mcaPlot->addItem(overlayButton);
+
+  }
+}
+
+
 void WidgetPlotFit::follow_selection() {
   double min_marker = std::numeric_limits<double>::max();
   double max_marker = - std::numeric_limits<double>::max();
@@ -626,6 +655,9 @@ void WidgetPlotFit::clicked_item(QCPAbstractItem* itm) {
       menuExportFormat.exec(QCursor::pos());
     } else if (name == "reset_scales") {
       zoom_out();
+    } else if (name == "ROI options") {
+      menuROI.setProperty("ROI", pix->property("ROI"));
+      menuROI.exec(QCursor::pos());
     }
   }
 }
@@ -676,6 +708,16 @@ void WidgetPlotFit::optionsChanged(QAction* action) {
   build_menu();
   ui->mcaPlot->replot();
   this->setCursor(Qt::ArrowCursor);
+}
+
+void WidgetPlotFit::changeROI(QAction* action) {
+  QString choice = action->text();
+  double ROI_nrg = menuROI.property("ROI").toDouble();
+  if (choice == "Rollback...") {
+    emit rollback_ROI(ROI_nrg);
+  } else if (choice == "Refit") {
+    emit refit_ROI(ROI_nrg);
+  }
 }
 
 QString WidgetPlotFit::scale_type() {
@@ -833,6 +875,7 @@ void WidgetPlotFit::updateData() {
   plotEnergyLabels();
   plotRange();
   plotButtons();
+  plotROI_options();
 
   calc_visible();
   rescale();
@@ -889,6 +932,12 @@ void WidgetPlotFit::calc_visible() {
     }
   }
 
+  bool plot_back_poly = (visible_roi_ < 4);
+  bool plot_resid_on_back = plot_back_poly;
+  bool plot_peak      = ((visible_roi_ < 4) || (visible_peaks_ < 10));
+  bool plot_back_steps = ((visible_roi_ < 10) || plot_peak);
+  bool plot_fullfit    = ((visible_roi_ < 15) || plot_peak);
+
   this->blockSignals(true);
   for (int i=0; i < ui->mcaPlot->itemCount(); ++i) {
     QCPAbstractItem *q =  ui->mcaPlot->item(i);
@@ -900,15 +949,13 @@ void WidgetPlotFit::calc_visible() {
       if (line->property("chan_value").isValid()) {
         line->setSelected(selected_peaks_.count(line->property("chan_value").toDouble()));
       }
+    } else if (QCPItemPixmap *map = qobject_cast<QCPItemPixmap*>(q)) {
+      if (map->property("ROI").isValid()) {
+        map->setVisible(plot_peak && good_starts.count(map->property("ROI").toDouble()));
+      }
     }
   }
   this->blockSignals(false);
-
-  bool plot_back_poly = (visible_roi_ < 4);
-  bool plot_resid_on_back = plot_back_poly;
-  bool plot_peak      = ((visible_roi_ < 4) || (visible_peaks_ < 10));
-  bool plot_back_steps = ((visible_roi_ < 10) || plot_peak);
-  bool plot_fullfit    = ((visible_roi_ < 15) || plot_peak);
 
   int total = ui->mcaPlot->graphCount();
   for (int i=0; i < total; i++) {

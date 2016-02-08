@@ -101,11 +101,12 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
 
   if (cal_fwhm_.valid() && !peaks_.empty()) {
     rebuild();
+    save_current_fit();
     double prev_rsq = peaks_.begin()->second.hypermet_.rsq_;
     PL_DBG << "    initial rsq = " << prev_rsq;
 //    PL_DBG << "<ROI> Fitting new ROI " << min << "-" << max
 //           << " with " << peaks_.size() << " peaks...";
-    int MAX_ITER = 5;
+    int MAX_ITER = 10;
 
     for (int i=0; i < MAX_ITER; ++i) {
       ROI new_fit = *this;
@@ -120,6 +121,7 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
         PL_DBG << "    not improved. reject refit";
         break;
       }
+      save_current_fit();
       prev_rsq = new_rsq;
       *this = new_fit;
 
@@ -133,6 +135,7 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
 //           << " with " << peaks_.size() << " peaks";
 
     rebuild();
+    save_current_fit();
   }
 
 }
@@ -196,7 +199,7 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
     fitted.center = hyp.center_;
     peaks_[hyp.center_] = fitted;
 
-    rebuild();
+    rebuild();    
     return true;
   }
   else
@@ -238,8 +241,12 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
   uint16_t center_prelim = (L+R) /2; //assume down the middle
 
   if (overlaps(L) && overlaps(R)) {
+    ROI new_fit = *this;
 
-    add_from_resid(center_prelim);
+    if (new_fit.add_from_resid(center_prelim)) {
+      *this = new_fit;
+      save_current_fit();
+    }
 
   } else if (!finder_.x_.empty()) {
     uint32_t min = std::min(static_cast<double>(L), finder_.x_[0]);
@@ -258,7 +265,11 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
     finder_.y_resid_ = make_background();
     finder_.find_peaks(3, 3.0);  //assumes default params!!!
 
-    if (!add_from_resid(center_prelim))
+    ROI new_fit = *this;
+    if (new_fit.add_from_resid(center_prelim)) {
+      *this = new_fit;
+      save_current_fit();
+    } else
       auto_fit(interruptor);
 
   } else {
@@ -298,8 +309,10 @@ bool ROI::remove_peaks(const std::set<double> &pks) {
     if (remove_peak(q))
       found = true;
 
-  if (found)
+  if (found) {
     rebuild();
+    save_current_fit();
+  }
 
   return found;
 }
@@ -312,6 +325,14 @@ bool ROI::remove_peak(double bin) {
   return false;
 }
 
+void ROI::save_current_fit() {
+  Fit current_fit;
+  current_fit.background_ = background_;
+  current_fit.finder_ = finder_;
+  current_fit.peaks_ = peaks_;
+  fits_.push_back(current_fit);
+}
+
 void ROI::rebuild() {
   hr_x.clear();
   hr_x_nrg.clear();
@@ -319,26 +340,13 @@ void ROI::rebuild() {
   hr_back_steps.clear();
   hr_fullfit.clear();
 
-  Fit current_fit;
-  current_fit.background_ = background_;
-  current_fit.finder_ = finder_;
-  current_fit.peaks_ = peaks_;
 
   if (peaks_.empty())
     return;
 
-  Hypermet tallest_h;
-  for (auto &q : peaks_) {
-    if (q.second.hypermet_.height_ > tallest_h.height_)
-      tallest_h = q.second.hypermet_;
-  }
-
   std::vector<Hypermet> old_hype;
-  old_hype.push_back(tallest_h);
-
   for (auto &q : peaks_)
-    if (q.second.hypermet_.center_ != tallest_h.center_)
-      old_hype.push_back(q.second.hypermet_);
+    old_hype.push_back(q.second.hypermet_);
 
   std::vector<Hypermet> hype = Hypermet::fit_multi(finder_.x_, finder_.y_,
                                                    old_hype, background_,
@@ -348,8 +356,6 @@ void ROI::rebuild() {
 
   if (hype.empty())
     return;
-
-  fits_.push_back(current_fit);
 
   for (int i=0; i < hype.size(); ++i) {
     Peak one;

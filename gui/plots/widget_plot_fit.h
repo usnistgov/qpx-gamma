@@ -74,6 +74,9 @@ signals:
   void range_moved(double x, double y);
   void markers_selected();
 
+  void refit_ROI(double);
+  void rollback_ROI(double);
+
 protected slots:
   void plot_mouse_clicked(double x, double y, QMouseEvent *event, bool channels);
   void plot_mouse_press(QMouseEvent*);
@@ -85,7 +88,7 @@ protected slots:
   virtual void plot_rezoom();
   void exportRequested(QAction*);
   void optionsChanged(QAction*);
-
+  void changeROI(QAction*);
 
 protected:
   std::set<double> selected_peaks_;
@@ -115,6 +118,7 @@ protected:
 
   QMenu menuExportFormat;
   QMenu menuOptions;
+  QMenu menuROI;
 
   QString scale_type_;
   QString title_text_;
@@ -131,6 +135,8 @@ protected:
   void plotButtons();
   void plotEnergyLabels();
   void plotRange();
+
+  void plotROI_options();
 
 };
 
