@@ -38,6 +38,7 @@ public:
 
   double evaluate(double x);
   std::vector<double> evaluate_array(std::vector<double> x);
+  double area();
   
   double height_, hwhm_, center_;
   double rsq;

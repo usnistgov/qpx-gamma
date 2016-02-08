@@ -149,14 +149,14 @@ void Fitter::remap_region(ROI &region) {
 }
 
 
-void Fitter::add_peak(uint32_t left, uint32_t right) {
+void Fitter::add_peak(uint32_t left, uint32_t right, boost::atomic<bool>& interruptor) {
 //  PL_DBG << "Add new peak " << left << "-" << right;
 
   bool added = false;
   for (auto &q : regions_) {
     if (q.overlaps(left, right)) {
 //      PL_DBG << "<Fitter> adding to existing region";
-      q.add_peak(finder_.x_, finder_.y_, left, right);
+      q.add_peak(finder_.x_, finder_.y_, left, right, interruptor);
       added = true;
       remap_region(q);
       break;
@@ -167,7 +167,7 @@ void Fitter::add_peak(uint32_t left, uint32_t right) {
     PL_DBG << "<Fitter> making new ROI to add peak manually";
     ROI newROI(nrg_cali_, fwhm_cali_, metadata_.bits);
     newROI.set_data(finder_.x_, finder_.y_, left, right);
-    newROI.auto_fit();
+    newROI.auto_fit(interruptor);
     if (!newROI.peaks_.empty()) {
       remap_region(newROI);
       PL_DBG << "<Fitter> succeeded making new ROI";

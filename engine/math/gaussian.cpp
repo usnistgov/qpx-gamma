@@ -232,6 +232,10 @@ double Gaussian::evaluate(double x) {
   return height_ * exp(-log(2.0)*(pow(((x-center_)/hwhm_),2)));
 }
 
+double Gaussian::area() {
+  return height_ * hwhm_ * sqrt(M_PI / log(2.0));
+}
+
 std::vector<double> Gaussian::evaluate_array(std::vector<double> x) {
   std::vector<double> y;
   for (auto &q : x) {

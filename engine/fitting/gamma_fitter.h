@@ -51,7 +51,7 @@ public:
   void find_regions();
   void remap_region(ROI &);
 
-  void add_peak(uint32_t left, uint32_t right);
+  void add_peak(uint32_t left, uint32_t right, boost::atomic<bool>& interruptor);
   void remove_peaks(std::set<double> bins);
   void replace_peak(const Peak&);
 

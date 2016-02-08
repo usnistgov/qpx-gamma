@@ -99,19 +99,22 @@ void ThreadFitter::remove_peaks(std::set<double> chosen_peaks) {
 void ThreadFitter::stop_work() {
   QMutexLocker locker(&mutex_);
   action_ = kStop; //not thread safe
+  interruptor_.store(true);
 }
 
 void ThreadFitter::run() {
 
   while (!terminating_.load()) {
-    if (action_ != kIdle)
+    if (action_ != kIdle) {
       running_.store(true);
+      interruptor_.store(false);
+    }
 
     if (action_ == kFit) {
       int current = 1;
       for (auto &q : fitter_.regions_) {
-        PL_DBG << "<Fitter> Fitting region " << current << " of " << fitter_.regions_.size() << "...";
-        q.auto_fit();
+        PL_DBG << "<Fitter> Fitting region " << current << " of " << fitter_.regions_.size() << " at E=" << q.hr_x_nrg.front();
+        q.auto_fit(interruptor_);
         fitter_.remap_region(q);
         current++;
         emit fit_updated(fitter_);
@@ -121,7 +124,7 @@ void ThreadFitter::run() {
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kAddPeak) {
-      fitter_.add_peak(left_, right_);
+      fitter_.add_peak(left_, right_, interruptor_);
       emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;

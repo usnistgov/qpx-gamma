@@ -27,6 +27,8 @@
 #include <iostream>
 #include <numeric>
 #include "fityk.h"
+#include "polynomial.h"
+#include "calibration.h"
 
 
 class Hypermet {
@@ -36,30 +38,30 @@ public:
     Rshort_height_(0), Rshort_slope_(0.3),
     Llong_height_(0), Llong_slope_(2.5),
     step_height_(0),
-    xc_(0), xs_(0), xl_(0), x_offset_(0),
-    rsq(-1) {}
+    rsq_(0) {}
 
   Hypermet(double h, double c, double w) : height_(h), center_(c), width_(w),
     Lshort_height_(0), Lshort_slope_(0.3),
     Rshort_height_(0), Rshort_slope_(0.3),
     Llong_height_(0), Llong_slope_(2.5),
     step_height_(0),
-    xc_(0), xs_(0), xl_(0), x_offset_(0),
-    rsq(-1) {}
+    rsq_(0) {}
+
   Hypermet(const std::vector<double> &x, const std::vector<double> &y, double h, double c, double w);
 
   static std::vector<Hypermet> fit_multi(const std::vector<double> &x,
                                          const std::vector<double> &y,
                                          const std::vector<Hypermet> &old,
-                                         bool constrain_to_first);
+                                         Polynomial &background,
+                                         Gamma::Calibration cali_nrg,
+                                         Gamma::Calibration cali_fwhm
+                                         );
 
   double eval_peak(double);
   double eval_step_tail(double);
-  double eval_poly(double);
 
   std::vector<double> peak(std::vector<double> x);
   std::vector<double> step_tail(std::vector<double> x);
-  std::vector<double> poly(std::vector<double> x);
   double area();
 
   double center_, height_, width_,
@@ -67,9 +69,8 @@ public:
         Rshort_height_, Rshort_slope_,
         Llong_height_, Llong_slope_,
         step_height_;
-  double xc_, xs_, xl_, x_offset_;
-  double rsq;
 
+  double rsq_;
 
   static std::string fityk_definition();
   bool extract_params(fityk::Func*);

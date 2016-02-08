@@ -68,36 +68,18 @@ void Polynomial::fit(std::vector<double> &x, std::vector<double> &y,
   if (x.size() != y.size())
     return;
 
-  std::vector<double> x_c, sigma;
+  std::vector<double> sigma;
   sigma.resize(x.size(), 1);
   
-  for (auto &q : x)
-    x_c.push_back(q - xoffset_);
-
   fityk::Fityk *f = new fityk::Fityk;
   f->redir_messages(NULL);
 
-  f->load_data(0, x_c, y, sigma);
-
-  std::string definition = "define MyPoly(";
-  std::vector<std::string> varnames;
-  for (int i=0; i < degrees.size(); ++i) {
-    std::stringstream ss;
-    ss << degrees[i];
-    varnames.push_back(ss.str());
-    definition += (i==0)?"":",";
-    definition += "a" + ss.str() + "=~0";
-  }
-  definition += ") = ";
-  for (int i=0; i<varnames.size(); ++i) {
-    definition += (i==0)?"":"+";
-    definition += "a" + varnames[i] + "*x^" + varnames[i];
-  }
+  f->load_data(0, x, y, sigma);
 
   bool success = true;
 
   try {
-    f->execute(definition);
+    f->execute(fityk_definition(degrees, xoffset));
     f->execute("guess MyPoly");
   }
   catch ( ... ) {
@@ -112,20 +94,10 @@ void Polynomial::fit(std::vector<double> &x, std::vector<double> &y,
   }
 
   if (success) {
-    int highest = 0;
-    for (auto &q : degrees)
-      if (q > highest)
-        highest = q;
-
-    fityk::Func* lastfn = f->all_functions().back();
-    coeffs_.resize(highest + 1, 0);
-    for (auto &q : degrees) {
-      std::stringstream ss;
-      ss << q;
-      coeffs_[q] = lastfn->get_param_value("a" + ss.str());
-    }
-
-    rsq_ = f->get_rsquared(0);
+    if (extract_params(f->all_functions().back(), degrees))
+      rsq_ = f->get_rsquared(0);
+    else
+      PL_DBG << "Polynomial failed to extract fit parameters from Fityk";
   }
 
   delete f;
@@ -141,7 +113,7 @@ double Polynomial::eval(double x) {
 }
 
 Polynomial Polynomial::derivative() {
-  Polynomial new_poly;
+  Polynomial new_poly;  // derivative not true if offset != 0
   new_poly.xoffset_ = xoffset_;
 
   int highest = 0;
@@ -275,4 +247,48 @@ void Polynomial::coef_from_string(std::string coefs) {
     coeffs_[i] = q;
     i++;
   }
+}
+
+std::string Polynomial::fityk_definition(const std::vector<uint16_t> &degrees, double xoffset) {
+  std::string definition = "define MyPoly(";
+  std::vector<std::string> varnames;
+  for (int i=0; i < degrees.size(); ++i) {
+    std::stringstream ss;
+    ss << degrees[i];
+    varnames.push_back(ss.str());
+    definition += (i==0)?"":",";
+    definition += "a" + ss.str() + "=~0";
+  }
+  definition += ") = ";
+  for (int i=0; i<varnames.size(); ++i) {
+    definition += (i==0)?"":"+";
+    definition += "a" + varnames[i] + "*xx^" + varnames[i];
+  }
+  definition += " where xx = (x - " + std::to_string(xoffset) + ")";
+  return definition;
+}
+
+bool Polynomial::extract_params(fityk::Func* func, const std::vector<uint16_t> &degrees) {
+  try {
+    if (func->get_template_name() != "MyPoly")
+      return false;
+
+    int highest = 0;
+    for (auto &q : degrees)
+      if (q > highest)
+        highest = q;
+
+    coeffs_.resize(highest + 1, 0);
+    for (auto &q : degrees) {
+      std::stringstream ss;
+      ss << q;
+      coeffs_[q] = func->get_param_value("a" + ss.str());
+    }
+    //    rsq_ = fityk->get_rsquared(0);
+  }
+  catch ( ... ) {
+    PL_DBG << "Polynomial could not extract parameters from Fityk";
+    return false;
+  }
+  return true;
 }

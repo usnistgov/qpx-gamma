@@ -26,10 +26,11 @@
 #include <vector>
 #include <iostream>
 #include <numeric>
+#include "fityk.h"
 
 class Polynomial {
 public:
-  Polynomial() : rsq_(-1), xoffset_(0) {}
+  Polynomial() : rsq_(0), xoffset_(0) {}
   Polynomial(std::vector<double> coeffs, double xoffset = 0, double rsq = 0);
   Polynomial(std::vector<double> &x, std::vector<double> &y, uint16_t degree, double xoffset = 0);
   Polynomial(std::vector<double> &x, std::vector<double> &y, std::vector<uint16_t> &degrees, double xoffset = 0);
@@ -52,6 +53,10 @@ public:
   std::vector<double> coeffs_;
   double xoffset_;
   double rsq_;
+
+
+  static std::string fityk_definition(const std::vector<uint16_t> &degrees, double xoffset = 0);
+  bool extract_params(fityk::Func*, const std::vector<uint16_t> &degrees);
 };
 
 #endif

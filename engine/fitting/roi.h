@@ -26,8 +26,15 @@
 #include "gamma_peak.h"
 #include "polynomial.h"
 #include "finder.h"
+#include <boost/atomic.hpp>
 
 namespace Gamma {
+
+struct Fit {
+  Finder finder_;
+  std::map<double, Peak> peaks_;
+  Polynomial background_;
+};
 
 
 struct ROI {
@@ -39,31 +46,39 @@ struct ROI {
 
   void set_data(const std::vector<double> &x, const std::vector<double> &y,
                 uint16_t min, uint16_t max);
-  void auto_fit();
+  void auto_fit(boost::atomic<bool>& interruptor);
 
   bool contains(double bin);
   bool overlaps(uint16_t bin);
   bool overlaps(uint16_t Lbin, uint16_t Rbin);
 
   //  void add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y);
-  void add_peak(const std::vector<double> &x, const std::vector<double> &y, uint16_t L, uint16_t R);
-  bool add_from_resid(uint16_t centroid_hint = -1);
+  void add_peak(const std::vector<double> &x, const std::vector<double> &y, uint16_t L, uint16_t R, boost::atomic<bool>& interruptor);
+  bool add_from_resid(int32_t centroid_hint = -1);
 
   bool remove_peaks(const std::set<double> &pks);
 
-  void rebuild();
+  bool rollback(int i);
 
+  void rebuild();
+  void render();
+
+  //intrinsic
+  Calibration cal_nrg_, cal_fwhm_;
+  uint16_t bits_;
+
+  std::vector<Fit> fits_;
+//  Fit current_fit_;
+
+  //per_fit
   Finder finder_;
   std::map<double, Peak> peaks_;
   Polynomial background_;
 
+  //rendition
   std::vector<double> hr_x, hr_x_nrg,
                       hr_background, hr_back_steps,
                       hr_fullfit;
-
-
-  Calibration cal_nrg_, cal_fwhm_;
-  uint16_t bits_;
 
 private:
   std::vector<double> make_background(uint16_t samples = 5);

@@ -55,8 +55,8 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
   ui->PlotCalib->setLabels("energy", "FWHM");
 
   ui->tablePeaks->verticalHeader()->hide();
-  ui->tablePeaks->setColumnCount(6);
-  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fwhm(sum4)", "%err (sum4)", "CQI (sum4)", "fwmw(hypermet)"});
+  ui->tablePeaks->setColumnCount(7);
+  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fwhm(sum4)", "%err (sum4)", "CQI (sum4)", "fwmw(hypermet)", "err(hyp)"});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tablePeaks->setEditTriggers(QTableView::NoEditTriggers);
@@ -196,6 +196,7 @@ void FormFwhmCalibration::add_peak_to_table(const Gamma::Peak &p, int row, bool 
   data_to_table(row, 3, p.sum4_.err, background);
   data_to_table(row, 4, p.sum4_.currie_quality_indicator, background);
   data_to_table(row, 5, p.fwhm_hyp, background);
+  data_to_table(row, 6, (1 - p.hypermet_.rsq_) * 100, background);
 }
 
 void FormFwhmCalibration::data_to_table(int row, int column, double value, QBrush background) {
