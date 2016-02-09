@@ -35,7 +35,7 @@
     </widget>
    </item>
    <item row="0" column="0">
-    <widget class="FormPeaks" name="plotSpectrum" native="true">
+    <widget class="FormFitter" name="plotSpectrum" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
        <horstretch>0</horstretch>
@@ -48,9 +48,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>FormPeaks</class>
+   <class>FormFitter</class>
    <extends>QWidget</extends>
-   <header>form_peaks.h</header>
+   <header>form_fitter.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -472,7 +472,7 @@ void FormEfficiencyCalibration::select_in_table() {
 
 void FormEfficiencyCalibration::selection_changed_in_calib_plot() {
   selected_peaks_ = ui->PlotCalib->get_selected_pts();
-  ui->plotSpectrum->update_selection(ui->PlotCalib->get_selected_pts());
+  ui->plotSpectrum->set_selected_peaks(ui->PlotCalib->get_selected_pts());
   rebuild_table(false);
   toggle_push();
 }
@@ -481,7 +481,7 @@ void FormEfficiencyCalibration::selection_changed_in_table() {
   selected_peaks_.clear();
   foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows())
     selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble());
-  ui->plotSpectrum->update_selection(selected_peaks_);
+  ui->plotSpectrum->set_selected_peaks(selected_peaks_);
   replot_calib();
   toggle_push();
 }

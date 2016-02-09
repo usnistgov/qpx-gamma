@@ -209,7 +209,7 @@ void FormCoincPeaks::selection_changed_in_table() {
   selected_peaks_.clear();
   foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows())
     selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble());
-  ui->plotPeaks->update_selection(selected_peaks_);
+  ui->plotPeaks->set_selected_peaks(selected_peaks_);
   emit peaks_changed(false);
 }
 

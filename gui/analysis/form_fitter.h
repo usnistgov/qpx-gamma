@@ -16,68 +16,83 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      WidgetPlotFit
+ *      FormFitter -
  *
  ******************************************************************************/
 
 
-#ifndef WIDGET_PLOT_FIT_H
-#define WIDGET_PLOT_FIT_H
+#ifndef FORM_FITTER_H
+#define FORM_FITTER_H
 
 #include <QWidget>
 #include "qsquarecustomplot.h"
-#include "marker.h"
-#include <set>
+#include "spectrum1D.h"
+#include "special_delegate.h"
+#include "isotope.h"
+#include <QItemSelection>
+#include <QRadioButton>
+#include "spectra_set.h"
 #include "gamma_fitter.h"
+#include "thread_fitter.h"
+#include "marker.h"
 
 namespace Ui {
-class WidgetPlotFit;
+class FormFitter;
 }
 
-class WidgetPlotFit : public QWidget
+
+class RollbackDialog : public QDialog {
+  Q_OBJECT
+
+public:
+  explicit RollbackDialog(Gamma::ROI setting, QWidget *parent = 0);
+  int get_choice();
+
+private:
+  Gamma::ROI      roi_;
+  std::vector<QRadioButton*> radios_;
+};
+
+class FormFitter : public QWidget
 {
   Q_OBJECT
 
 public:
-  explicit WidgetPlotFit(QWidget *parent = 0);
-  ~WidgetPlotFit();
-  virtual void clearGraphs();
+  explicit FormFitter(QWidget *parent = 0);
+  ~FormFitter();
 
-  void clearSelection();
+  void clear();
 
-  void redraw();
+  void setFit(Gamma::Fitter *fit);
+  void update_spectrum(QString title = QString());
+  void updateData();
+
   void reset_scales();
-
-  void tight_x();
-  void rescale();
-
-  void setTitle(QString title);
-
   void set_scale_type(QString);
   QString scale_type();
 
-  void select_peaks(const std::set<double> &peaks);
+  void clearSelection();
   std::set<double> get_selected_peaks();
 
+  void make_range(Marker);
   void set_range(Range);
-  void setData(Gamma::Fitter* fit);
-  void updateData();
 
+  void perform_fit();
+
+  void loadSettings(QSettings &settings_);
+  void saveSettings(QSettings &settings_);
 
 public slots:
-  void zoom_out();
+  void set_selected_peaks(std::set<double> selected_peaks);
+  void replace_peaks(std::vector<Gamma::Peak>);
 
 signals:
 
-  void clickedLeft(double);
-  void clickedRight(double);
-  void range_moved(double x, double y);
-  void markers_selected();
+  void peak_selection_changed(std::set<double> selected_peaks);
+  void range_changed(Range range);
+  void data_changed();
 
-  void refit_ROI(double);
-  void rollback_ROI(double);
-
-protected slots:
+private slots:
   void plot_mouse_clicked(double x, double y, QMouseEvent *event, bool channels);
   void plot_mouse_press(QMouseEvent*);
   void plot_mouse_release(QMouseEvent*);
@@ -89,20 +104,52 @@ protected slots:
   void exportRequested(QAction*);
   void optionsChanged(QAction*);
   void changeROI(QAction*);
+  void zoom_out();
 
-protected:
+
+
+  void fit_updated(Gamma::Fitter);
+  void fitting_complete();
+
+  void refit_ROI(double);
+  void rollback_ROI(double);
+
+  void createRange(Coord);
+
+  void replot_all();
+  void toggle_push();
+
+  void add_peak();
+
+  void on_pushRemovePeaks_clicked();
+  void on_pushFindPeaks_clicked();
+  void on_pushStopFitter_clicked();
+
+  void on_spinSqWidth_editingFinished();
+  void on_doubleOverlapWidth_editingFinished();
+  void on_spinSum4EdgeW_editingFinished();
+  void on_doubleThresh_editingFinished();
+
+private:
+  Ui::FormFitter *ui;
+
+  //data from selected spectrum
+  Gamma::Fitter *fit_data_;
   std::set<double> selected_peaks_;
 
-  Gamma::Fitter *fit_data_;
+  Range range_;
+
+  bool busy_;
+
+  ThreadFitter thread_fitter_;
+
+
 
   void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
   void calc_y_bounds(double lower, double upper);
 
   void build_menu();
 
-  Ui::WidgetPlotFit *ui;
-
-  Range my_range_;
   QCPItemTracer* edge_trc1;
   QCPItemTracer* edge_trc2;
 
@@ -135,9 +182,10 @@ protected:
   void plotButtons();
   void plotEnergyLabels();
   void plotRange();
+  void plotTitle();
 
   void plotROI_options();
-
+  void plotROI_range();
 };
 
-#endif // WIDGET_PLOST1D_H
+#endif // FORM_CALIBRATION_H

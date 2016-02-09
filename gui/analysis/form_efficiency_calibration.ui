@@ -19,7 +19,7 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
-    <widget class="FormPeaks" name="plotSpectrum" native="true">
+    <widget class="FormFitter" name="plotSpectrum" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
        <horstretch>0</horstretch>
@@ -565,21 +565,21 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>FormPeaks</class>
+   <class>FormFitter</class>
    <extends>QWidget</extends>
-   <header>form_peaks.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>SelectorWidget</class>
-   <extends>QWidget</extends>
-   <header>widget_selector.h</header>
+   <header>form_fitter.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>WidgetPlotCalib</class>
    <extends>QWidget</extends>
    <header>widget_plot_calib.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SelectorWidget</class>
+   <extends>QWidget</extends>
+   <header>widget_selector.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>

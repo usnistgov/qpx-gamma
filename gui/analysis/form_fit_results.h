@@ -16,33 +16,33 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FormPeakFitter - 
+ *      FormFitResults -
  *
  ******************************************************************************/
 
 
-#ifndef FORM_PEAK_FITTER_H
-#define FORM_PEAK_FITTER_H
+#ifndef FORM_FIT_RESULTS_H
+#define FORM_FIT_RESULTS_H
 
 #include <QWidget>
 #include "spectrum1D.h"
 #include "special_delegate.h"
-#include "widget_plot_fit.h"
 #include <QItemSelection>
+#include <QSettings>
 #include "spectrum.h"
 #include "gamma_fitter.h"
 
 namespace Ui {
-class FormPeakFitter;
+class FormFitResults;
 }
 
-class FormPeakFitter : public QWidget
+class FormFitResults : public QWidget
 {
   Q_OBJECT
 
 public:
-  explicit FormPeakFitter(QSettings &settings, Gamma::Fitter&, QWidget *parent = 0);
-  ~FormPeakFitter();
+  explicit FormFitResults(QSettings &settings, Gamma::Fitter&, QWidget *parent = 0);
+  ~FormFitResults();
 
   void clear();
   bool save_close();
@@ -62,7 +62,7 @@ private slots:
   void on_pushSaveReport_clicked();
 
 private:
-  Ui::FormPeakFitter *ui;
+  Ui::FormFitResults *ui;
   QSettings &settings_;
 
   //from parent

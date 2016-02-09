@@ -30,7 +30,7 @@
 #include "spectra_set.h"
 #include "form_energy_calibration.h"
 #include "form_fwhm_calibration.h"
-#include "form_peak_fitter.h"
+#include "form_fit_results.h"
 
 namespace Ui {
 class FormAnalysis1D;
@@ -69,9 +69,9 @@ private:
   Ui::FormAnalysis1D *ui;
   QSettings &settings_;
 
-  FormEnergyCalibration *my_energy_calibration_;
-  FormFwhmCalibration *my_fwhm_calibration_;
-  FormPeakFitter *my_peak_fitter_;
+  FormEnergyCalibration *form_energy_calibration_;
+  FormFwhmCalibration *form_fwhm_calibration_;
+  FormFitResults *form_fit_results_;
 
   Gamma::Fitter fit_data_;
 

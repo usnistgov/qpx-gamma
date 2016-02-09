@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>FormPeakFitter</class>
- <widget class="QWidget" name="FormPeakFitter">
+ <class>FormFitResults</class>
+ <widget class="QWidget" name="FormFitResults">
   <property name="geometry">
    <rect>
     <x>0</x>

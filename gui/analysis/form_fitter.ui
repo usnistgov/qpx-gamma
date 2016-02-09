@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>FormPeaks</class>
- <widget class="QWidget" name="FormPeaks">
+ <class>FormFitter</class>
+ <widget class="QWidget" name="FormFitter">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -36,7 +36,7 @@
       <number>3</number>
      </property>
      <item>
-      <widget class="WidgetPlotFit" name="plot1D" native="true">
+      <widget class="QSquareCustomPlot" name="plot" native="true">
        <property name="sizePolicy">
         <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
          <horstretch>0</horstretch>
@@ -370,47 +370,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushAdd">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>32</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Add peak</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/icons/oxy/16/flag.png</normaloff>:/icons/oxy/16/flag.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>18</width>
-           <height>18</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QPushButton" name="pushRemovePeaks">
          <property name="enabled">
           <bool>false</bool>
@@ -459,10 +418,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>WidgetPlotFit</class>
+   <class>QSquareCustomPlot</class>
    <extends>QWidget</extends>
-   <header>widget_plot_fit.h</header>
-   <container>1</container>
+   <header>qsquarecustomplot.h</header>
   </customwidget>
  </customwidgets>
  <resources>

@@ -14,7 +14,7 @@
    <string>Coincidence Peaks</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -47,7 +47,7 @@
     </widget>
    </item>
    <item row="0" column="0">
-    <widget class="FormPeaks" name="plotPeaks" native="true">
+    <widget class="FormFitter" name="plotPeaks" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
        <horstretch>0</horstretch>
@@ -60,14 +60,12 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>FormPeaks</class>
+   <class>FormFitter</class>
    <extends>QWidget</extends>
-   <header>form_peaks.h</header>
+   <header>form_fitter.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="../resources/qpxres.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

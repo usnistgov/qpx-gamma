@@ -41,47 +41,47 @@ FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLableDB<Gamma::Detector>& 
 
   //connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
 
-  my_energy_calibration_ = new FormEnergyCalibration(settings_, detectors_, fit_data_);
-  ui->tabs->addTab(my_energy_calibration_, "Energy calibration");
-  connect(my_energy_calibration_, SIGNAL(detectorsChanged()), this, SLOT(detectorsUpdated()));
-  connect(my_energy_calibration_, SIGNAL(update_detector()), this, SLOT(update_detector_calibs()));
+  form_energy_calibration_ = new FormEnergyCalibration(settings_, detectors_, fit_data_);
+  ui->tabs->addTab(form_energy_calibration_, "Energy calibration");
+  connect(form_energy_calibration_, SIGNAL(detectorsChanged()), this, SLOT(detectorsUpdated()));
+  connect(form_energy_calibration_, SIGNAL(update_detector()), this, SLOT(update_detector_calibs()));
 
-  my_fwhm_calibration_ = new FormFwhmCalibration(settings_, detectors_, fit_data_);
-  ui->tabs->addTab(my_fwhm_calibration_, "FWHM calibration");
-  connect(my_fwhm_calibration_, SIGNAL(detectorsChanged()), this, SLOT(detectorsUpdated()));
-  connect(my_fwhm_calibration_, SIGNAL(update_detector()), this, SLOT(update_detector_calibs()));
+  form_fwhm_calibration_ = new FormFwhmCalibration(settings_, detectors_, fit_data_);
+  ui->tabs->addTab(form_fwhm_calibration_, "FWHM calibration");
+  connect(form_fwhm_calibration_, SIGNAL(detectorsChanged()), this, SLOT(detectorsUpdated()));
+  connect(form_fwhm_calibration_, SIGNAL(update_detector()), this, SLOT(update_detector_calibs()));
 
-  my_peak_fitter_ = new FormPeakFitter(settings_, fit_data_);
-  ui->tabs->addTab(my_peak_fitter_, "Peak integration");
-  connect(my_peak_fitter_, SIGNAL(save_peaks_request()), this, SLOT(save_report()));
+  form_fit_results_ = new FormFitResults(settings_, fit_data_);
+  ui->tabs->addTab(form_fit_results_, "Peak integration");
+  connect(form_fit_results_, SIGNAL(save_peaks_request()), this, SLOT(save_report()));
 
 
-  connect(my_energy_calibration_, SIGNAL(selection_changed(std::set<double>)), my_fwhm_calibration_, SLOT(update_selection(std::set<double>)));
-  connect(my_energy_calibration_, SIGNAL(selection_changed(std::set<double>)), my_peak_fitter_, SLOT(update_selection(std::set<double>)));
-  connect(my_energy_calibration_, SIGNAL(selection_changed(std::set<double>)), ui->plotSpectrum, SLOT(update_selection(std::set<double>)));
+  connect(form_energy_calibration_, SIGNAL(selection_changed(std::set<double>)), form_fwhm_calibration_, SLOT(update_selection(std::set<double>)));
+  connect(form_energy_calibration_, SIGNAL(selection_changed(std::set<double>)), form_fit_results_, SLOT(update_selection(std::set<double>)));
+  connect(form_energy_calibration_, SIGNAL(selection_changed(std::set<double>)), ui->plotSpectrum, SLOT(set_selected_peaks(std::set<double>)));
 
-  connect(my_fwhm_calibration_, SIGNAL(selection_changed(std::set<double>)), my_energy_calibration_, SLOT(update_selection(std::set<double>)));
-  connect(my_fwhm_calibration_, SIGNAL(selection_changed(std::set<double>)), my_peak_fitter_, SLOT(update_selection(std::set<double>)));
-  connect(my_fwhm_calibration_, SIGNAL(selection_changed(std::set<double>)), ui->plotSpectrum, SLOT(update_selection(std::set<double>)));
+  connect(form_fwhm_calibration_, SIGNAL(selection_changed(std::set<double>)), form_energy_calibration_, SLOT(update_selection(std::set<double>)));
+  connect(form_fwhm_calibration_, SIGNAL(selection_changed(std::set<double>)), form_fit_results_, SLOT(update_selection(std::set<double>)));
+  connect(form_fwhm_calibration_, SIGNAL(selection_changed(std::set<double>)), ui->plotSpectrum, SLOT(set_selected_peaks(std::set<double>)));
 
-  connect(my_peak_fitter_, SIGNAL(selection_changed(std::set<double>)), my_fwhm_calibration_, SLOT(update_selection(std::set<double>)));
-  connect(my_peak_fitter_, SIGNAL(selection_changed(std::set<double>)), my_energy_calibration_, SLOT(update_selection(std::set<double>)));
-  connect(my_peak_fitter_, SIGNAL(selection_changed(std::set<double>)), ui->plotSpectrum, SLOT(update_selection(std::set<double>)));
+  connect(form_fit_results_, SIGNAL(selection_changed(std::set<double>)), form_fwhm_calibration_, SLOT(update_selection(std::set<double>)));
+  connect(form_fit_results_, SIGNAL(selection_changed(std::set<double>)), form_energy_calibration_, SLOT(update_selection(std::set<double>)));
+  connect(form_fit_results_, SIGNAL(selection_changed(std::set<double>)), ui->plotSpectrum, SLOT(set_selected_peaks(std::set<double>)));
 
-  connect(ui->plotSpectrum, SIGNAL(selection_changed(std::set<double>)), my_fwhm_calibration_, SLOT(update_selection(std::set<double>)));
-  connect(ui->plotSpectrum, SIGNAL(selection_changed(std::set<double>)), my_energy_calibration_, SLOT(update_selection(std::set<double>)));
-  connect(ui->plotSpectrum, SIGNAL(selection_changed(std::set<double>)), my_peak_fitter_, SLOT(update_selection(std::set<double>)));
+  connect(ui->plotSpectrum, SIGNAL(peak_selection_changed(std::set<double>)), form_fwhm_calibration_, SLOT(update_selection(std::set<double>)));
+  connect(ui->plotSpectrum, SIGNAL(peak_selection_changed(std::set<double>)), form_energy_calibration_, SLOT(update_selection(std::set<double>)));
+  connect(ui->plotSpectrum, SIGNAL(peak_selection_changed(std::set<double>)), form_fit_results_, SLOT(update_selection(std::set<double>)));
 
-  connect(ui->plotSpectrum, SIGNAL(data_changed()), my_energy_calibration_, SLOT(update_data()));
-  connect(ui->plotSpectrum, SIGNAL(data_changed()), my_fwhm_calibration_, SLOT(update_data()));
-  connect(ui->plotSpectrum, SIGNAL(data_changed()), my_peak_fitter_, SLOT(update_data()));
+  connect(ui->plotSpectrum, SIGNAL(data_changed()), form_energy_calibration_, SLOT(update_data()));
+  connect(ui->plotSpectrum, SIGNAL(data_changed()), form_fwhm_calibration_, SLOT(update_data()));
+  connect(ui->plotSpectrum, SIGNAL(data_changed()), form_fit_results_, SLOT(update_data()));
 
-  connect(my_energy_calibration_, SIGNAL(change_peaks(std::vector<Gamma::Peak>)), ui->plotSpectrum, SLOT(replace_peaks(std::vector<Gamma::Peak>)));
+  connect(form_energy_calibration_, SIGNAL(change_peaks(std::vector<Gamma::Peak>)), ui->plotSpectrum, SLOT(replace_peaks(std::vector<Gamma::Peak>)));
 
-  connect(my_energy_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
-  connect(my_fwhm_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
+  connect(form_energy_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
+  connect(form_fwhm_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
 
-  ui->tabs->setCurrentWidget(my_energy_calibration_);
+  ui->tabs->setCurrentWidget(form_energy_calibration_);
 }
 
 FormAnalysis1D::~FormAnalysis1D()
@@ -90,12 +90,12 @@ FormAnalysis1D::~FormAnalysis1D()
 }
 
 void FormAnalysis1D::closeEvent(QCloseEvent *event) {
-  if (!my_energy_calibration_->save_close()) {
+  if (!form_energy_calibration_->save_close()) {
     event->ignore();
     return;
   }
 
-  if (!my_fwhm_calibration_->save_close()) {
+  if (!form_fwhm_calibration_->save_close()) {
     event->ignore();
     return;
   }
@@ -127,18 +127,18 @@ void FormAnalysis1D::saveSettings() {
 void FormAnalysis1D::clear() {
   fit_data_.clear();
   ui->plotSpectrum->update_spectrum();
-  my_energy_calibration_->clear();
-  my_fwhm_calibration_->clear();
-  my_peak_fitter_->clear();
+  form_energy_calibration_->clear();
+  form_fwhm_calibration_->clear();
+  form_fit_results_->clear();
   new_energy_calibration_ = Gamma::Calibration();
   new_fwhm_calibration_ = Gamma::Calibration();
 }
 
 
 void FormAnalysis1D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
-  my_energy_calibration_->clear();
-  my_fwhm_calibration_->clear();
-  my_peak_fitter_->clear();
+  form_energy_calibration_->clear();
+  form_fwhm_calibration_->clear();
+  form_fit_results_->clear();
   spectra_ = newset;
   new_energy_calibration_ = Gamma::Calibration();
   new_fwhm_calibration_ = Gamma::Calibration();
@@ -155,15 +155,15 @@ void FormAnalysis1D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
     fit_data_.clear();
     fit_data_.setData(spectrum);
 
-    my_energy_calibration_->newSpectrum();
-    my_fwhm_calibration_->newSpectrum();
+    form_energy_calibration_->newSpectrum();
+    form_fwhm_calibration_->newSpectrum();
 
-    my_energy_calibration_->update_data();
-    my_fwhm_calibration_->update_data();
-    my_peak_fitter_->update_data();
+    form_energy_calibration_->update_data();
+    form_fwhm_calibration_->update_data();
+    form_fit_results_->update_data();
 
-    new_energy_calibration_ = my_energy_calibration_->get_new_calibration();
-    new_fwhm_calibration_ = my_fwhm_calibration_->get_new_calibration();
+    new_energy_calibration_ = form_energy_calibration_->get_new_calibration();
+    new_fwhm_calibration_ = form_fwhm_calibration_->get_new_calibration();
   }
 
   ui->plotSpectrum->update_spectrum();
@@ -180,8 +180,8 @@ void FormAnalysis1D::update_spectrum() {
 
 void FormAnalysis1D::update_fits() {
   PL_DBG << "calib fits updated locally";
-  new_energy_calibration_ = my_energy_calibration_->get_new_calibration();
-  new_fwhm_calibration_ = my_fwhm_calibration_->get_new_calibration();
+  new_energy_calibration_ = form_energy_calibration_->get_new_calibration();
+  new_fwhm_calibration_ = form_fwhm_calibration_->get_new_calibration();
 }
 
 void FormAnalysis1D::update_detector_calibs()

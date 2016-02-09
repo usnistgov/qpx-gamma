@@ -28,7 +28,8 @@
 #include "spectrum1D.h"
 #include "special_delegate.h"
 #include "isotope.h"
-#include "widget_plot_fit.h"
+#include "marker.h"
+#include <QSettings>
 #include <QItemSelection>
 #include "spectra_set.h"
 #include "gamma_fitter.h"
