@@ -68,8 +68,7 @@ public:
   void updateData();
 
   void reset_scales();
-  void set_scale_type(QString);
-  QString scale_type();
+
 
   void clearSelection();
   std::set<double> get_selected_peaks();
@@ -113,13 +112,16 @@ private slots:
 
   void refit_ROI(double);
   void rollback_ROI(double);
+  void delete_ROI(double);
 
   void createRange(Coord);
+  void createROI_bounds_range(double);
 
   void replot_all();
   void toggle_push();
 
   void add_peak();
+  void adjust_roi_bounds();
 
   void on_pushRemovePeaks_clicked();
   void on_pushFindPeaks_clicked();
@@ -129,6 +131,9 @@ private slots:
   void on_doubleOverlapWidth_editingFinished();
   void on_spinSum4EdgeW_editingFinished();
   void on_doubleThresh_editingFinished();
+
+
+  void on_pushShowSUM4_clicked();
 
 private:
   Ui::FormFitter *ui;
@@ -186,6 +191,9 @@ private:
 
   void plotROI_options();
   void plotROI_range();
+
+  void set_scale_type(QString);
+  QString scale_type();
 };
 
 #endif // FORM_CALIBRATION_H

@@ -98,44 +98,42 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
   }
 
   //    PL_DBG << "preliminary peaks " << peaks_.size();
+  rebuild();
+  save_current_fit();
+  iterative_fit(interruptor);
 
-  if (cal_fwhm_.valid() && !peaks_.empty()) {
-    rebuild();
-    save_current_fit();
-    double prev_rsq = peaks_.begin()->second.hypermet_.rsq_;
-    PL_DBG << "    initial rsq = " << prev_rsq;
-//    PL_DBG << "<ROI> Fitting new ROI " << min << "-" << max
-//           << " with " << peaks_.size() << " peaks...";
-    int MAX_ITER = 10;
+}
 
-    for (int i=0; i < MAX_ITER; ++i) {
-      ROI new_fit = *this;
+void ROI::iterative_fit(boost::atomic<bool>& interruptor) {
+  if (!cal_fwhm_.valid() || peaks_.empty())
+    return;
 
-      if (!new_fit.add_from_resid(-1)) {
-        PL_DBG << "    failed add from resid";
-        break;
-      }
-      double new_rsq = new_fit.peaks_.begin()->second.hypermet_.rsq_;
-      PL_DBG << "    new rsq = " << new_rsq;
-      if (new_rsq <= prev_rsq) {
-        PL_DBG << "    not improved. reject refit";
-        break;
-      }
-      save_current_fit();
-      prev_rsq = new_rsq;
-      *this = new_fit;
+  double prev_rsq = peaks_.begin()->second.hypermet_.rsq_;
+  PL_DBG << "    initial rsq = " << prev_rsq;
 
-      if (interruptor.load()) {
-        PL_DBG << "    fit ROI interrupter by client";
-        break;
-      }
+  int MAX_ITER = 10;
+
+  for (int i=0; i < MAX_ITER; ++i) {
+    ROI new_fit = *this;
+
+    if (!new_fit.add_from_resid(-1)) {
+      PL_DBG << "    failed add from resid";
+      break;
     }
-  } else {
-//    PL_DBG << "<ROI> Fitting new ROI " << min << "-" << max
-//           << " with " << peaks_.size() << " peaks";
+    double new_rsq = new_fit.peaks_.begin()->second.hypermet_.rsq_;
+    PL_DBG << "    new rsq = " << new_rsq;
+    if (new_rsq <= prev_rsq) {
+      PL_DBG << "    not improved. reject refit";
+      break;
+    }
+    new_fit.save_current_fit();
+    prev_rsq = new_rsq;
+    *this = new_fit;
 
-    rebuild();
-    save_current_fit();
+    if (interruptor.load()) {
+      PL_DBG << "    fit ROI interrupter by client";
+      break;
+    }
   }
 
 }
@@ -226,6 +224,44 @@ bool ROI::overlaps(uint16_t Lbin, uint16_t Rbin) {
     return true;
   return false;
 }
+
+void ROI::adjust_bounds(const std::vector<double> &x, const std::vector<double> &y,
+                        uint16_t L, uint16_t R,
+                        boost::atomic<bool>& interruptor)
+{
+  if (x.size() != y.size())
+    return;
+
+  if ((L >= x.size()) || (R >= x.size()))
+    return;
+
+  PL_DBG << "Adjusting ROI bounds";
+
+  std::vector<double> x_local, y_local;
+  for (uint16_t i = L; i <= R; ++i) {
+    x_local.push_back(x[i]);
+    y_local.push_back(y[i]);
+  }
+
+  finder_.setData(x_local, y_local);
+  init_background();
+
+  std::map<double, Peak> peaks;
+  for (auto &p : peaks_) {
+    if ((p.first > x_local[0]) &&
+        (p.first < x_local[x_local.size() - 1]))
+    peaks[p.first] = p.second;
+  }
+
+  PL_DBG << "ROI adjustment keeps " << peaks.size() << " of " << peaks_.size() << " existing peaks";
+  peaks_ = peaks;
+  render();
+
+  rebuild();
+  save_current_fit();
+  iterative_fit(interruptor);
+}
+
 
 
 void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,

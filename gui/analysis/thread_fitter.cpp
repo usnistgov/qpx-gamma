@@ -96,6 +96,22 @@ void ThreadFitter::refit(double target_ROI) {
     start(HighPriority);
 }
 
+void ThreadFitter::adjust_roi_bounds(double target_ROI, uint32_t L, uint32_t R) {
+  if (running_.load()) {
+    PL_WARN << "Fitter busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  action_ = kAdjustROI;
+  target_ROI_ = target_ROI;
+  left_ = L;
+  right_ = R;
+  if (!isRunning())
+    start(HighPriority);
+}
+
+
 void ThreadFitter::remove_peaks(std::set<double> chosen_peaks) {
   if (running_.load()) {
     PL_WARN << "Fitter busy";
@@ -149,6 +165,16 @@ void ThreadFitter::run() {
       action_ = kIdle;
     } else if (action_ == kAddPeak) {
       fitter_.add_peak(left_, right_, interruptor_);
+      emit fit_updated(fitter_);
+      emit fitting_done();
+      action_ = kIdle;
+    } else if (action_ == kAdjustROI) {
+      for (auto &r : fitter_.regions_) {
+        if (!r.hr_x_nrg.empty() && (r.hr_x_nrg.front() == target_ROI_)) {
+          fitter_.adj_bounds(r, left_, right_, interruptor_);
+          break;
+        }
+      }
       emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;

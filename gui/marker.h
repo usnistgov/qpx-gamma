@@ -108,6 +108,7 @@ struct Marker {
 
 struct Range {
   bool visible;
+  QVariant purpose;
   AppearanceProfile base, top;
   Coord center, l, r;
 };

@@ -136,6 +136,14 @@ std::map<double, Peak> Fitter::peaks() {
   return peaks;
 }
 
+void Fitter::delete_ROI(double start_energy) {
+  std::list<ROI> regions;
+  for (auto &r : regions_)
+    if (!r.hr_x_nrg.empty() && (r.hr_x_nrg[0] != start_energy))
+      regions.push_back(r);
+  regions_ = regions;
+}
+
 void Fitter::remap_region(ROI &region) {
   for (auto &p : region.peaks_) {
     if (p.second.sum4_.peak_width == 0) {
@@ -146,6 +154,14 @@ void Fitter::remap_region(ROI &region) {
     }
     p.second.construct(nrg_cali_, metadata_.live_time.total_milliseconds() * 0.001, metadata_.bits);
   }
+}
+
+void Fitter::adj_bounds(ROI &target, uint32_t left, uint32_t right, boost::atomic<bool>& interruptor) {
+  ROI temproi = target;
+  temproi.adjust_bounds(finder_.x_, finder_.y_, left, right, interruptor);
+  remap_region(temproi);
+  if (!temproi.hr_x.empty())
+    target = temproi;
 }
 
 

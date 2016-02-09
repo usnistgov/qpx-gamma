@@ -27,7 +27,7 @@
 #include <QMutex>
 #include "gamma_fitter.h"
 
-enum FitterAction {kFit, kStop, kIdle, kAddPeak, kRemovePeaks, kRefit};
+enum FitterAction {kFit, kStop, kIdle, kAddPeak, kRemovePeaks, kRefit, kAdjustROI};
 
 class ThreadFitter : public QThread
 {
@@ -43,6 +43,7 @@ public:
   void stop_work();
   void refit(double target_ROI);
   void add_peak(uint32_t L, uint32_t R);
+  void adjust_roi_bounds(double target_ROI, uint32_t L, uint32_t R);
   void remove_peaks(std::set<double> chosen_peaks);
 
 signals:

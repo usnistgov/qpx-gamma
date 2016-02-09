@@ -52,7 +52,10 @@ public:
   void remap_region(ROI &);
 
   void add_peak(uint32_t left, uint32_t right, boost::atomic<bool>& interruptor);
+  void adj_bounds(ROI &target, uint32_t left, uint32_t right, boost::atomic<bool>& interruptor);
+
   void remove_peaks(std::set<double> bins);
+  void delete_ROI(double start_energy);
   void replace_peak(const Peak&);
 
   void save_report(std::string filename);

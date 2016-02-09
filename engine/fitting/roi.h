@@ -54,6 +54,8 @@ struct ROI {
 
   //  void add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y);
   void add_peak(const std::vector<double> &x, const std::vector<double> &y, uint16_t L, uint16_t R, boost::atomic<bool>& interruptor);
+  void adjust_bounds(const std::vector<double> &x, const std::vector<double> &y, uint16_t L, uint16_t R, boost::atomic<bool>& interruptor);
+
   bool add_from_resid(int32_t centroid_hint = -1);
 
   bool remove_peaks(const std::set<double> &pks);
@@ -85,6 +87,8 @@ private:
   std::vector<double> make_background(uint16_t samples = 5);
   void init_background(uint16_t samples = 5);
   bool remove_peak(double bin);
+  void iterative_fit(boost::atomic<bool>& interruptor);
+
 };
 
 

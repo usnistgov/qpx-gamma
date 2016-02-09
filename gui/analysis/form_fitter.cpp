@@ -37,14 +37,8 @@ RollbackDialog::RollbackDialog(Gamma::ROI roi, QWidget *parent) :
   QVBoxLayout *vl_fit    = new QVBoxLayout();
   label = new QLabel();
   label->setFixedHeight(25);
-  label->setText("Fit");
+  label->setText("Fit with # of peaks");
   vl_fit->addWidget(label);
-
-  QVBoxLayout *vl_peaks = new QVBoxLayout();
-  label = new QLabel();
-  label->setFixedHeight(25);
-  label->setText("# of peaks");
-  vl_peaks->addWidget(label);
 
   QVBoxLayout *vl_rsq = new QVBoxLayout();
   label = new QLabel();
@@ -55,8 +49,8 @@ RollbackDialog::RollbackDialog(Gamma::ROI roi, QWidget *parent) :
   for (int i=0; i < roi_.fits_.size(); ++i) {
 
     QRadioButton *radio = new QRadioButton();
-    radio->setLayoutDirection(Qt::RightToLeft);
-    radio->setText(QString::number(i));
+    radio->setLayoutDirection(Qt::LeftToRight);
+    radio->setText(QString::number(roi_.fits_[i].peaks_.size()));
     radio->setFixedHeight(25);
     bool selected = false;
     if (!roi_.fits_[i].peaks_.empty() && !roi_.peaks_.empty())
@@ -64,11 +58,6 @@ RollbackDialog::RollbackDialog(Gamma::ROI roi, QWidget *parent) :
     radio->setChecked(selected);
     radios_.push_back(radio);
     vl_fit->addWidget(radio);
-
-    label = new QLabel();
-    label->setFixedHeight(25);
-    label->setText(QString::number(roi_.fits_[i].peaks_.size()));
-    vl_peaks->addWidget(label);
 
     label = new QLabel();
     label->setFixedHeight(25);
@@ -82,7 +71,6 @@ RollbackDialog::RollbackDialog(Gamma::ROI roi, QWidget *parent) :
 
   QHBoxLayout *hl = new QHBoxLayout();
   hl->addLayout(vl_fit);
-  hl->addLayout(vl_peaks);
   hl->addLayout(vl_rsq);
 
   label = new QLabel();
@@ -173,10 +161,11 @@ FormFitter::FormFitter(QWidget *parent) :
 
   connect(&menuOptions, SIGNAL(triggered(QAction*)), this, SLOT(optionsChanged(QAction*)));
 
-  menuROI.addAction("Rollback...");
+  menuROI.addAction("History...");
+  menuROI.addAction("Adjust bounds");
   menuROI.addAction("Refit");
+  menuROI.addAction("Delete");
   connect(&menuROI, SIGNAL(triggered(QAction*)), this, SLOT(changeROI(QAction*)));
-
 
   QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Backspace), ui->plot);
   connect(shortcut, SIGNAL(activated()), this, SLOT(zoom_out()));
@@ -216,9 +205,9 @@ void FormFitter::setFit(Gamma::Fitter* fit) {
 
 void FormFitter::loadSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
-  ui->spinSqWidth->setValue(settings_.value("square_width", 3).toInt());
+  ui->spinSqWidth->setValue(settings_.value("square_width", 4).toInt());
   ui->spinSum4EdgeW->setValue(settings_.value("sum4_edge_width", 3).toInt());
-  ui->doubleOverlapWidth->setValue(settings_.value("overlap_width", 2.70).toDouble());
+  ui->doubleOverlapWidth->setValue(settings_.value("overlap_width", 1.00).toDouble());
   ui->doubleThresh->setValue(settings_.value("peak_threshold", 3.0).toDouble());
   this->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
   settings_.endGroup();
@@ -307,7 +296,15 @@ void FormFitter::rollback_ROI(double ROI_nrg) {
       }
     }
   }
+}
 
+void FormFitter::delete_ROI(double ROI_nrg) {
+  if (fit_data_ == nullptr)
+    return;
+
+  fit_data_->delete_ROI(ROI_nrg);
+  toggle_push();
+  replot_all();
 }
 
 void FormFitter::make_range(Marker marker) {
@@ -331,6 +328,7 @@ void FormFitter::createRange(Coord c) {
     return;
   
   range_.visible = true;
+  range_.base.default_pen = QPen(Qt::darkGreen);
 
   double x = c.bin(fit_data_->metadata_.bits);
 
@@ -348,6 +346,7 @@ void FormFitter::createRange(Coord c) {
   range_.center.set_bin(x, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
   range_.l.set_bin(ch_l, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
   range_.r.set_bin(ch_r, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
+  range_.purpose = QString("range");
 
   selected_peaks_.clear();
   plotRange();
@@ -421,8 +420,33 @@ void FormFitter::add_peak()
   toggle_push();
 
   thread_fitter_.set_data(*fit_data_);
-  thread_fitter_.add_peak(range_.l.bin(fit_data_->metadata_.bits), range_.r.bin(fit_data_->metadata_.bits));
+  thread_fitter_.add_peak(
+        fit_data_->finder_.find_index(range_.l.bin(fit_data_->metadata_.bits)),
+        fit_data_->finder_.find_index(range_.r.bin(fit_data_->metadata_.bits))
+        );
 }
+
+void FormFitter::adjust_roi_bounds() {
+  PL_DBG << "Change roi bounds";
+  if (!range_.visible)
+    return;
+
+  if (range_.l.energy() >= range_.r.energy())
+    return;
+
+  range_.visible = false;
+  plotRange();
+  ui->plot->replot();
+  busy_= true;
+  toggle_push();
+
+  thread_fitter_.set_data(*fit_data_);
+  thread_fitter_.adjust_roi_bounds(range_.center.energy(),
+                                   fit_data_->finder_.find_index(range_.l.bin(fit_data_->metadata_.bits)),
+                                   fit_data_->finder_.find_index(range_.r.bin(fit_data_->metadata_.bits))
+                                   );
+}
+
 
 void FormFitter::on_pushRemovePeaks_clicked()
 {
@@ -780,14 +804,14 @@ void FormFitter::plotRange() {
 
   if (fit_level > 0) {
       DraggableTracer *ar1 = new DraggableTracer(ui->plot, edge_trc1, 12);
-      ar1->setPen(QPen(Qt::darkGreen, 1));
+      ar1->setPen(QPen(range_.base.default_pen.color(), 1));
       ar1->setProperty("tracer", QVariant::fromValue(1));
       ar1->setSelectable(true);
       ar1->set_limits(minx, maxx);
       ui->plot->addItem(ar1);
 
       DraggableTracer *ar2 = new DraggableTracer(ui->plot, edge_trc2, 12);
-      ar2->setPen(QPen(Qt::darkGreen, 1));
+      ar2->setPen(QPen(range_.base.default_pen.color(), 1));
       ar2->setProperty("tracer", QVariant::fromValue(1));
       ar2->setSelectable(true);
       ar2->set_limits(minx, maxx);
@@ -800,7 +824,7 @@ void FormFitter::plotRange() {
       line->start->setCoords(0, 0);
       line->end->setParentAnchor(edge_trc2->position);
       line->end->setCoords(0, 0);
-      line->setPen(QPen(Qt::darkGreen, 2, Qt::DashLine));
+      line->setPen(QPen(range_.base.default_pen.color(), 2, Qt::DashLine));
       ui->plot->addItem(line);
 
       QCPItemTracer* higher = edge_trc1;
@@ -808,15 +832,21 @@ void FormFitter::plotRange() {
         higher = edge_trc2;
 
       QCPItemPixmap *overlayButton = new QCPItemPixmap(ui->plot);
-      overlayButton->setPixmap(QPixmap(":/icons/oxy/22/edit_add.png"));
       overlayButton->bottomRight->setParentAnchor(higher->position);
       overlayButton->bottomRight->setCoords(11, -20);
       overlayButton->topLeft->setParentAnchor(overlayButton->bottomRight);
       overlayButton->topLeft->setCoords(-22, -22);
       overlayButton->setScaled(true);
       overlayButton->setSelectable(false);
-      overlayButton->setProperty("button_name", QString("add peak"));
-      overlayButton->setProperty("tooltip", QString("Add peak"));
+      if (range_.purpose.toString() == "range") {
+        overlayButton->setPixmap(QPixmap(":/icons/oxy/22/edit_add.png"));
+        overlayButton->setProperty("button_name", QString("add peak"));
+        overlayButton->setProperty("tooltip", QString("Add peak"));
+      } else {
+        overlayButton->setPixmap(QPixmap(":/icons/oxy/22/flag_red.png"));
+        overlayButton->setProperty("button_name", QString("roi bounds"));
+        overlayButton->setProperty("tooltip", QString("Select ROI bounds"));
+      }
       ui->plot->addItem(overlayButton);
   }
 }
@@ -1042,6 +1072,45 @@ void FormFitter::plot_mouse_clicked(double x, double y, QMouseEvent* event, bool
   }
 }
 
+void FormFitter::createROI_bounds_range(double nrg) {
+  if (fit_data_ == nullptr)
+    return;
+
+  bool found = false;
+  double left = nrg, right = nrg;
+  for (auto &r : fit_data_->regions_) {
+    if (!r.hr_x_nrg.empty() && (r.hr_x_nrg[0] == nrg)) {
+      right = r.hr_x_nrg[r.hr_x_nrg.size() - 1];
+      found = true;
+      break;
+    }
+  }
+
+  if (!true)
+    return;
+
+  Coord c;
+  if (fit_data_->nrg_cali_.valid())
+    c.set_energy(nrg, fit_data_->nrg_cali_);
+  else
+    c.set_bin(nrg, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
+
+  range_.visible = true;
+  range_.base.default_pen = QPen(Qt::red);
+  range_.center.set_energy(nrg, fit_data_->nrg_cali_);
+  range_.l.set_energy(left, fit_data_->nrg_cali_);
+  range_.r.set_energy(right, fit_data_->nrg_cali_);
+  range_.purpose = QVariant::fromValue(nrg);
+
+  selected_peaks_.clear();
+  plotRange();
+  calc_visible();
+  ui->plot->replot();
+  toggle_push();
+
+  emit peak_selection_changed(selected_peaks_);
+}
+
 
 void FormFitter::selection_changed() {
   selected_peaks_.clear();
@@ -1094,6 +1163,8 @@ void FormFitter::clicked_item(QCPAbstractItem* itm) {
     } else if (name == "ROI options") {
       menuROI.setProperty("ROI", pix->property("ROI"));
       menuROI.exec(QCursor::pos());
+    } else if (name == "roi bounds") {
+      adjust_roi_bounds();
     } else if (name == "add peak") {
       add_peak();
     }
@@ -1174,10 +1245,14 @@ void FormFitter::optionsChanged(QAction* action) {
 void FormFitter::changeROI(QAction* action) {
   QString choice = action->text();
   double ROI_nrg = menuROI.property("ROI").toDouble();
-  if (choice == "Rollback...") {
+  if (choice == "History...") {
     rollback_ROI(ROI_nrg);
+  } else if (choice == "Adjust bounds") {
+    createROI_bounds_range(ROI_nrg);
   } else if (choice == "Refit") {
     refit_ROI(ROI_nrg);
+  } else if (choice == "Delete") {
+    delete_ROI(ROI_nrg);
   }
 }
 
@@ -1288,7 +1363,7 @@ void FormFitter::updateData() {
 //      QPen pen = p.second.flagged ? flagged : peak;
       addGraph(xx, yy, peak, false, q.bits_, "Individual peak");
 
-      if (p.second.sum4_.peak_width > 0) {
+      if (ui->pushShowSUM4->isChecked() && (p.second.sum4_.peak_width > 0)) {
         addEdge(p.second.sum4_.LB(), sum4edge);
 
         if (!p.second.sum4_.bx.empty()) {
@@ -1392,7 +1467,7 @@ void FormFitter::calc_visible() {
   bool plot_resid_on_back = plot_back_poly;
   bool plot_peak      = ((visible_roi_ < 4) || (visible_peaks_ < 10));
   bool plot_back_steps = ((visible_roi_ < 10) || plot_peak);
-  bool plot_fullfit    = ((visible_roi_ < 15) || plot_peak);
+  bool plot_fullfit    = (visible_roi_ < 15);
 
   this->blockSignals(true);
   for (int i=0; i < ui->plot->itemCount(); ++i) {
@@ -1407,7 +1482,7 @@ void FormFitter::calc_visible() {
       }
     } else if (QCPItemPixmap *map = qobject_cast<QCPItemPixmap*>(q)) {
       if (map->property("ROI").isValid()) {
-        map->setVisible(plot_peak && good_starts.count(map->property("ROI").toDouble()));
+        map->setVisible((visible_roi_ < 10) && good_starts.count(map->property("ROI").toDouble()));
       }
     }
   }
@@ -1416,7 +1491,7 @@ void FormFitter::calc_visible() {
   int total = ui->plot->graphCount();
   for (int i=0; i < total; i++) {
     if (ui->plot->graph(i)->name() == "Region fit")
-      ui->plot->graph(i)->setVisible(plot_fullfit &&
+      ui->plot->graph(i)->setVisible((visible_roi_ < 15) &&
                                         (good_starts.count(ui->plot->graph(i)->property("start").toDouble()) > 0));
     else if (ui->plot->graph(i)->name() == "Background steps")
       ui->plot->graph(i)->setVisible(plot_back_steps &&
@@ -1437,4 +1512,9 @@ void FormFitter::calc_visible() {
       ui->plot->graph(i)->setVisible(plot_peak &&
                                         (good_starts.count(ui->plot->graph(i)->property("start").toDouble()) > 0));
   }
+}
+
+void FormFitter::on_pushShowSUM4_clicked()
+{
+  replot_all();
 }
