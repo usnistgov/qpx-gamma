@@ -29,29 +29,28 @@
 #include "fityk.h"
 #include "polynomial.h"
 #include "calibration.h"
+#include "fit_param.h"
 
 
 class Hypermet {
 public:
-  Hypermet() : height_(0), center_(0), width_(0),
-    Lshort_height_(0), Lshort_slope_(0.3),
-    Rshort_height_(0), Rshort_slope_(0.3),
-    Llong_height_(0), Llong_slope_(2.5),
-    step_height_(0),
-    rsq_(0) {}
+  Hypermet() :
+    Hypermet(0,0,0)
+  {}
 
-  Hypermet(double h, double c, double w) : height_(h), center_(c), width_(w),
-    Lshort_height_(0), Lshort_slope_(0.3),
-    Rshort_height_(0), Rshort_slope_(0.3),
-    Llong_height_(0), Llong_slope_(2.5),
-    step_height_(0),
+  Hypermet(double h, double c, double w) :
+    height_("hh", h), center_("cc", c), width_("ww", w),
+    Lshort_height_("lshort_h", 1.0e-10, 1.0e-10, 0.75), Lshort_slope_("lshort_s", 0.5, 0.3, 2),
+    Rshort_height_("rshort_h", 1.0e-10, 1.0e-10, 0.75), Rshort_slope_("rshort_s", 0.5, 0.3, 2),
+    Llong_height_("llong_h", 0, 0, 0.015), Llong_slope_("llong_s", 2.5, 2.5, 50),
+    step_height_("step_h", 1.0e-10, 1.0e-10, 0.75),
     rsq_(0) {}
 
   Hypermet(const std::vector<double> &x, const std::vector<double> &y, double h, double c, double w);
 
   static std::vector<Hypermet> fit_multi(const std::vector<double> &x,
                                          const std::vector<double> &y,
-                                         const std::vector<Hypermet> &old,
+                                         std::vector<Hypermet> old,
                                          Polynomial &background,
                                          Gamma::Calibration cali_nrg,
                                          Gamma::Calibration cali_fwhm
@@ -64,16 +63,16 @@ public:
   std::vector<double> step_tail(std::vector<double> x);
   double area();
 
-  double center_, height_, width_,
-        Lshort_height_, Lshort_slope_,
-        Rshort_height_, Rshort_slope_,
-        Llong_height_, Llong_slope_,
-        step_height_;
+  FitParam center_, height_, width_,
+           Lshort_height_, Lshort_slope_,
+           Rshort_height_, Rshort_slope_,
+           Llong_height_, Llong_slope_,
+           step_height_;
 
   double rsq_;
 
   static std::string fityk_definition();
-  bool extract_params(fityk::Func*);
+  bool extract_params(fityk::Fityk*, fityk::Func*);
 };
 
 #endif

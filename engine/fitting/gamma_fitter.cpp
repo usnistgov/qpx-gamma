@@ -147,9 +147,9 @@ void Fitter::delete_ROI(double start_energy) {
 void Fitter::remap_region(ROI &region) {
   for (auto &p : region.peaks_) {
     if (p.second.sum4_.peak_width == 0) {
-      double edge =  p.second.hypermet_.width_ * sqrt(log(2)) * 3;
-      uint32_t edgeL = finder_.find_index(p.second.hypermet_.center_ - edge);
-      uint32_t edgeR = finder_.find_index(p.second.hypermet_.center_ + edge);
+      double edge =  p.second.hypermet_.width_.val * sqrt(log(2)) * 3;
+      uint32_t edgeL = finder_.find_index(p.second.hypermet_.center_.val - edge);
+      uint32_t edgeR = finder_.find_index(p.second.hypermet_.center_.val + edge);
       p.second.sum4_ = SUM4 (finder_.y_, edgeL, edgeR, sum4edge_samples);
     }
     p.second.construct(nrg_cali_, metadata_.live_time.total_milliseconds() * 0.001, metadata_.bits);

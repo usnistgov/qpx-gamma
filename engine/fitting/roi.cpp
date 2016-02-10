@@ -85,15 +85,12 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
         )
     {
       //        PL_DBG << "I like this peak at " << gaussian.center_ << " fw " << gaussian.hwhm_ * 2;
-      Hypermet hyp;
-      hyp.center_ = gaussian.center_;
-      hyp.height_ = gaussian.height_;
-      hyp.width_ = gaussian.hwhm_ / sqrt(log(2));
+      Hypermet hyp(gaussian.height_, gaussian.center_, gaussian.hwhm_ / sqrt(log(2)));
 
       Peak fitted;
       fitted.hypermet_ = hyp;
-      fitted.center = hyp.center_;
-      peaks_[hyp.center_] = fitted;
+      fitted.center = hyp.center_.val;
+      peaks_[hyp.center_.val] = fitted;
     }
   }
 
@@ -187,15 +184,12 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
       )
   {
 //    PL_DBG << "<ROI> new peak accepted";
-    Hypermet hyp;
-    hyp.center_ = gaussian.center_;
-    hyp.height_ = gaussian.height_;
-    hyp.width_ = gaussian.hwhm_ / sqrt(log(2));
+    Hypermet hyp(gaussian.height_, gaussian.center_, gaussian.hwhm_ / sqrt(log(2)));
 
     Peak fitted;
     fitted.hypermet_ = hyp;
-    fitted.center = hyp.center_;
-    peaks_[hyp.center_] = fitted;
+    fitted.center = hyp.center_.val;
+    peaks_[hyp.center_.val] = fitted;
 
     rebuild();    
     return true;
@@ -396,7 +390,7 @@ void ROI::rebuild() {
   for (int i=0; i < hype.size(); ++i) {
     Peak one;
     one.hypermet_ = hype[i];
-    one.center = hype[i].center_;
+    one.center = hype[i].center_.val;
     peaks_[one.center] = one;
   }
 

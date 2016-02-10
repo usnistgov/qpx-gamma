@@ -22,6 +22,7 @@
 
 #include "fityk_util.h"
 #include <boost/lexical_cast.hpp>
+#include "custom_logger.h"
 
 std::string FitykUtil::var_def(std::string name,
                                       double val, double min, double max,
@@ -34,5 +35,19 @@ std::string FitykUtil::var_def(std::string name,
   ret += boost::lexical_cast<std::string>(val) +
          " [" + boost::lexical_cast<std::string>(min) +
           ":" + boost::lexical_cast<std::string>(max) + "]";
+  return ret;
+}
+
+double FitykUtil::get_err(fityk::Fityk* f,
+                          std::string funcname,
+                          std::string varname)
+{
+  std::string command = "%" + funcname + "." + varname + ".error";
+  PL_DBG << "<FitykUtil> " << command;
+  double ret = std::numeric_limits<double>::infinity();
+  try {
+    ret = f->calculate_expr(command);
+  } catch (...) {
+  }
   return ret;
 }

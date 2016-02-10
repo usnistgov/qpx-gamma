@@ -16,23 +16,47 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      FitykUtil -
+ *      FitParam -
  *
  ******************************************************************************/
 
-#ifndef FITYK_UTIL_H
-#define FITYK_UTIL_H
+#ifndef FIT_PARAM_H
+#define FIT_PARAM_H
 
 #include "fityk.h"
 #include <string>
+#include <limits>
 
-class FitykUtil {
+class FitParam {
+
 public:
-  static std::string var_def(std::string name, double val, double min, double max, int idx = -1);
+  FitParam(std::string name, double v) :
+    FitParam(name, v,
+             std::numeric_limits<double>::min(),
+             std::numeric_limits<double>::max())
+  {}
 
-  static double get_err(fityk::Fityk* f,
-                        std::string funcname,
-                        std::string varname);
+  FitParam(std::string name, double v, double lower, double upper) :
+    name_(name),
+    val(v),
+    uncert(std::numeric_limits<double>::infinity()),
+    lbound(lower),
+    ubound(upper)
+  {}
+
+  std::string name() {return name_;}
+
+  const std::string def_bounds();
+  bool extract(fityk::Fityk* f, fityk::Func* func);
+
+  double val, uncert, lbound, ubound;
+
+private:
+  std::string name_;
+
+  double get_err(fityk::Fityk* f,
+                 std::string funcname);
+
 };
 
 #endif

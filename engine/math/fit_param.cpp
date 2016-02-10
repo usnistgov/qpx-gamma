@@ -20,19 +20,35 @@
  *
  ******************************************************************************/
 
-#ifndef FITYK_UTIL_H
-#define FITYK_UTIL_H
+#include "fit_param.h"
+#include <boost/lexical_cast.hpp>
+#include "custom_logger.h"
 
-#include "fityk.h"
-#include <string>
+const std::string FitParam::def_bounds() {
 
-class FitykUtil {
-public:
-  static std::string var_def(std::string name, double val, double min, double max, int idx = -1);
+  std::string ret = "~";
+  ret += boost::lexical_cast<std::string>(val) +
+         " [" + boost::lexical_cast<std::string>(lbound) +
+          ":" + boost::lexical_cast<std::string>(ubound) + "]";
+  return ret;
+}
 
-  static double get_err(fityk::Fityk* f,
-                        std::string funcname,
-                        std::string varname);
-};
+double FitParam::get_err(fityk::Fityk* f,
+                          std::string funcname)
+{
+  std::string command = "%" + funcname + "." + name_ + ".error";
+//  PL_DBG << "<FitParam> " << command;
+  return f->calculate_expr(command);
+}
 
-#endif
+bool FitParam::extract(fityk::Fityk* f, fityk::Func* func)
+{
+  try {
+    val = func->get_param_value(name_);
+    uncert = get_err(f, func->name);
+//    PL_DBG << "<FitParam> " << name_ << " = " << val << " +/- " << uncert;
+  } catch (...) {
+    return false;
+  }
+  return true;
+}

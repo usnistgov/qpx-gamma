@@ -27,7 +27,7 @@ namespace Gamma {
 
 void Peak::construct(Calibration cali_nrg, double live_seconds, uint16_t bits) {
 
-  center = hypermet_.center_;
+  center = hypermet_.center_.val;
   energy = cali_nrg.transform(center, bits);
 
 //  center = sum4_.centroid;
@@ -40,8 +40,8 @@ void Peak::construct(Calibration cali_nrg, double live_seconds, uint16_t bits) {
   R = sum4_.centroid + sum4_.fwhm / 2;
   fwhm_sum4 = cali_nrg.transform(R, bits) - cali_nrg.transform(L, bits);
 
-  L = hypermet_.center_ - hypermet_.width_ * sqrt(log(2));
-  R = hypermet_.center_ + hypermet_.width_ * sqrt(log(2));
+  L = hypermet_.center_.val - hypermet_.width_.val * sqrt(log(2));
+  R = hypermet_.center_.val + hypermet_.width_.val * sqrt(log(2));
   fwhm_hyp = cali_nrg.transform(R, bits) - cali_nrg.transform(L, bits);
 
   area_hyp = hypermet_.area();

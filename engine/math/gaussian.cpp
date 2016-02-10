@@ -28,6 +28,7 @@
 
 #include "fityk_util.h"
 #include "custom_logger.h"
+#include "custom_timer.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -99,6 +100,12 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
       center_ = lastfn->get_param_value("center");
       height_ = lastfn->get_param_value("height");
       hwhm_   = lastfn->get_param_value("hwhm");
+
+//      CustomTimer timer(true);
+//      PL_DBG << "c uncert =" << FitykUtil::get_err(f, lastfn->name, "center");
+//      PL_DBG << "h uncert =" << FitykUtil::get_err(f, lastfn->name, "height");
+//      PL_DBG << "w uncert =" << FitykUtil::get_err(f, lastfn->name, "hwhm");
+//      PL_DBG << "Time to retrieve uncerts " << timer.ms() << " ms";
 //      PL_DBG << "Gaussian fit as c=" << center_ << " h=" << height_ << " w=" << hwhm_;
     }
     rsq = f->get_rsquared(0);
