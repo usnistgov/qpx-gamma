@@ -45,7 +45,7 @@ bool FitParam::extract(fityk::Fityk* f, fityk::Func* func)
 {
   try {
     val = func->get_param_value(name_);
-    uncert = get_err(f, func->name);
+//    uncert = get_err(f, func->name);
 //    PL_DBG << "<FitParam> " << name_ << " = " << val << " +/- " << uncert;
   } catch (...) {
     return false;

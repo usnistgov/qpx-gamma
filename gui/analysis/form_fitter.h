@@ -123,6 +123,8 @@ private slots:
   void add_peak();
   void adjust_roi_bounds();
 
+  void adjust_sum4_bounds();
+
   void on_pushRemovePeaks_clicked();
   void on_pushFindPeaks_clicked();
   void on_pushStopFitter_clicked();
@@ -131,9 +133,6 @@ private slots:
   void on_doubleOverlapWidth_editingFinished();
   void on_spinSum4EdgeW_editingFinished();
   void on_doubleThresh_editingFinished();
-
-
-  void on_pushShowSUM4_clicked();
 
 private:
   Ui::FormFitter *ui;
@@ -163,6 +162,7 @@ private:
   double miny, maxy;
 
   bool mouse_pressed_;
+  bool hold_selection_;
 
   double minx_zoom, maxx_zoom;
 
@@ -179,9 +179,8 @@ private:
   void calc_visible();
   void add_bounds(const QVector<double>& x, const QVector<double>& y);
   void addGraph(const QVector<double>& x, const QVector<double>& y, QPen appearance,
-                int fittable = 0, int32_t bits = 0,
-                QString name = QString());
-  void addEdge(Gamma::SUM4Edge edge, QPen pen);
+                int fittable = 0, QString name = QString(), double peak_chan = -1);
+  void addEdge(Gamma::SUM4Edge edge, QPen pen, double peak_chan);
 
   void follow_selection();
   void plotButtons();
@@ -191,6 +190,10 @@ private:
 
   void plotROI_options();
   void plotROI_range();
+
+  void plotSUM4_options();
+
+  void makeSUM4_range(double peak_chan, int edge = 0);
 
   void set_scale_type(QString);
   QString scale_type();

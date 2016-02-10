@@ -326,7 +326,10 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
 
   if (success) {
 //      try {
-//    f->execute("set fitting_method = mpfit");
+//    f->execute("info errors");
+//    f->execute("info state > nl.fit");
+
+//    f->execute("set fitting_method = levenberg_marquardt");
 //    f->execute("fit 1");
 //    f->execute("info errors");
 //    } catch ( ... ) {
@@ -346,6 +349,8 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
         background.extract_params(q, {0,1,2});
       }
     }
+
+//    f->execute("info state > lm.fit");
   }
 
   delete f;

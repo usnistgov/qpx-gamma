@@ -70,6 +70,10 @@ public:
        uint32_t left, uint32_t right,
        uint16_t samples);
 
+  SUM4(const std::vector<double> &y,
+       uint32_t left, uint32_t right,
+       SUM4Edge LB, SUM4Edge RB);
+
   SUM4Edge LB() const {return LB_;}
   SUM4Edge RB() const {return RB_;}
 

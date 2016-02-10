@@ -140,6 +140,7 @@ FormFitter::FormFitter(QWidget *parent) :
 
   force_rezoom_ = false;
   mouse_pressed_ = false;
+  hold_selection_ = false;
 
   edge_trc1 = nullptr;
   edge_trc2 = nullptr;
@@ -427,7 +428,6 @@ void FormFitter::add_peak()
 }
 
 void FormFitter::adjust_roi_bounds() {
-  PL_DBG << "Change roi bounds";
   if (!range_.visible)
     return;
 
@@ -447,6 +447,60 @@ void FormFitter::adjust_roi_bounds() {
                                    );
 }
 
+void FormFitter::adjust_sum4_bounds() {
+  if (!range_.visible)
+    return;
+
+  Gamma::Peak pk = fit_data_->peaks().at(range_.center.bin(fit_data_->metadata_.bits));
+  uint32_t L = fit_data_->finder_.find_index(range_.l.bin(fit_data_->metadata_.bits));
+  uint32_t R = fit_data_->finder_.find_index(range_.r.bin(fit_data_->metadata_.bits));
+
+  if (L > R) {
+    uint32_t T = L;
+    L = R;
+    R = T;
+  }
+
+  selected_peaks_.insert(pk.center);
+  calc_visible();
+
+  if ((L == R) || !fit_data_->peaks().count(range_.center.bin(fit_data_->metadata_.bits))) {
+    range_.visible = false;
+    plotRange();
+    ui->plot->replot();
+    toggle_push();
+    return;
+  }
+
+  Gamma::SUM4Edge edge(fit_data_->finder_.y_, L, R);
+
+  if (range_.purpose.toString() == "SUM4 L") {
+    Gamma::SUM4 new_sum4(fit_data_->finder_.y_, pk.sum4_.Lpeak, pk.sum4_.Rpeak, edge, pk.sum4_.RB());
+    pk.sum4_ = new_sum4;
+  } else if (range_.purpose.toString() == "SUM4 R") {
+    Gamma::SUM4 new_sum4(fit_data_->finder_.y_, pk.sum4_.Lpeak, pk.sum4_.Rpeak, pk.sum4_.LB(), edge);
+    pk.sum4_ = new_sum4;
+  } else if (range_.purpose.toString() == "SUM4") {
+    Gamma::SUM4 new_sum4(fit_data_->finder_.y_, L, R, pk.sum4_.LB(), pk.sum4_.RB());
+    pk.sum4_ = new_sum4;
+  }
+
+  pk.construct(fit_data_->nrg_cali_,
+               fit_data_->metadata_.live_time.total_milliseconds() * 0.001,
+               fit_data_->metadata_.bits);
+
+  range_.visible = false;
+  hold_selection_ = true;
+
+  fit_data_->replace_peak(pk);
+  replot_all();
+  selected_peaks_.clear();
+  selected_peaks_.insert(pk.center);
+  calc_visible();
+
+  emit data_changed();
+  emit peak_selection_changed(selected_peaks_);
+}
 
 void FormFitter::on_pushRemovePeaks_clicked()
 {
@@ -614,8 +668,7 @@ void FormFitter::set_range(Range rng) {
 }
 
 void FormFitter::addGraph(const QVector<double>& x, const QVector<double>& y,
-                             QPen appearance, int fittable, int32_t bits,
-                             QString name) {
+                             QPen appearance, int fittable, QString name, double peak_chan) {
   if (x.empty() || y.empty() || (x.size() != y.size()))
     return;
 
@@ -624,9 +677,9 @@ void FormFitter::addGraph(const QVector<double>& x, const QVector<double>& y,
   ui->plot->graph(g)->addData(x, y);
   ui->plot->graph(g)->setPen(appearance);
   ui->plot->graph(g)->setProperty("fittable", QVariant::fromValue(fittable));
-  ui->plot->graph(g)->setProperty("bits", QVariant::fromValue(bits));
   ui->plot->graph(g)->setName(name);
   ui->plot->graph(g)->setProperty("start", QVariant::fromValue(x.front()));
+  ui->plot->graph(g)->setProperty("peak_chan", QVariant::fromValue(peak_chan));
 
   if (fittable > 0) {
     ui->plot->graph(g)->setBrush(QBrush());
@@ -741,6 +794,9 @@ void FormFitter::plotRange() {
     else if (ui->plot->item(i)->property("button_name").isValid() &&
              (ui->plot->item(i)->property("button_name").toString() == "add peak"))
       to_remove.push_back(ui->plot->item(i));
+    else if (ui->plot->item(i)->property("button_name").isValid() &&
+             (ui->plot->item(i)->property("button_name").toString() == "roi bounds"))
+      to_remove.push_back(ui->plot->item(i));
   }
   for (auto &q : to_remove)
     ui->plot->removeItem(q);
@@ -842,6 +898,18 @@ void FormFitter::plotRange() {
         overlayButton->setPixmap(QPixmap(":/icons/oxy/22/edit_add.png"));
         overlayButton->setProperty("button_name", QString("add peak"));
         overlayButton->setProperty("tooltip", QString("Add peak"));
+      } else if (range_.purpose.toString() == "SUM4") {
+        overlayButton->setPixmap(QPixmap(":/icons/oxy/22/flag_yellow.png"));
+        overlayButton->setProperty("button_name", QString("SUM4 adjust"));
+        overlayButton->setProperty("tooltip", QString("Select SUM4 bounds"));
+      } else if (range_.purpose.toString() == "SUM4 L") {
+        overlayButton->setPixmap(QPixmap(":/icons/oxy/22/flag_yellow.png"));
+        overlayButton->setProperty("button_name", QString("SUM4L adjust"));
+        overlayButton->setProperty("tooltip", QString("Select SUM4 left edge bounds"));
+      } else if (range_.purpose.toString() == "SUM4 R") {
+        overlayButton->setPixmap(QPixmap(":/icons/oxy/22/flag_yellow.png"));
+        overlayButton->setProperty("button_name", QString("SUM4R adjust"));
+        overlayButton->setProperty("tooltip", QString("Select SUM4 right edge bounds"));
       } else {
         overlayButton->setPixmap(QPixmap(":/icons/oxy/22/flag_red.png"));
         overlayButton->setProperty("button_name", QString("roi bounds"));
@@ -862,7 +930,7 @@ void FormFitter::plotEnergyLabels() {
       double max = std::numeric_limits<double>::lowest();
       for (int i=0; i < ui->plot->graphCount(); i++) {
 
-        if (!ui->plot->graph(i)->property("fittable").toBool())
+        if (ui->plot->graph(i)->property("fittable").toInt() != 1)
           continue;
 
         if ((ui->plot->graph(i)->data()->firstKey() >= q.second.energy)
@@ -948,7 +1016,6 @@ void FormFitter::plotROI_options() {
     ui->plot->addItem(overlayButton);
   }
 }
-
 
 void FormFitter::follow_selection() {
   double min_marker = std::numeric_limits<double>::max();
@@ -1089,12 +1156,6 @@ void FormFitter::createROI_bounds_range(double nrg) {
   if (!true)
     return;
 
-  Coord c;
-  if (fit_data_->nrg_cali_.valid())
-    c.set_energy(nrg, fit_data_->nrg_cali_);
-  else
-    c.set_bin(nrg, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
-
   range_.visible = true;
   range_.base.default_pen = QPen(Qt::red);
   range_.center.set_energy(nrg, fit_data_->nrg_cali_);
@@ -1113,16 +1174,19 @@ void FormFitter::createROI_bounds_range(double nrg) {
 
 
 void FormFitter::selection_changed() {
-  selected_peaks_.clear();
-  for (auto &q : ui->plot->selectedItems())
-    if (QCPItemText *txt = qobject_cast<QCPItemText*>(q)) {
-      if (txt->property("chan_value").isValid())
-        selected_peaks_.insert(txt->property("chan_value").toDouble());
-    } else if (QCPItemLine *line = qobject_cast<QCPItemLine*>(q)) {
-      if (line->property("chan_value").isValid())
-        selected_peaks_.insert(line->property("chan_value").toDouble());
-    }
+  if (!hold_selection_) {
+    selected_peaks_.clear();
+    for (auto &q : ui->plot->selectedItems())
+      if (QCPItemText *txt = qobject_cast<QCPItemText*>(q)) {
+        if (txt->property("chan_value").isValid())
+          selected_peaks_.insert(txt->property("chan_value").toDouble());
+      } else if (QCPItemLine *line = qobject_cast<QCPItemLine*>(q)) {
+        if (line->property("chan_value").isValid())
+          selected_peaks_.insert(line->property("chan_value").toDouble());
+      }
+  }
 
+  hold_selection_ = false;
   calc_visible();
 
   if (!selected_peaks_.empty()) {
@@ -1152,6 +1216,8 @@ void FormFitter::clicked_plottable(QCPAbstractPlottable *plt) {
 
 void FormFitter::clicked_item(QCPAbstractItem* itm) {
   if (QCPItemPixmap *pix = qobject_cast<QCPItemPixmap*>(itm)) {
+    if (!pix->visible())
+      return;
     //    QPoint p = this->mapFromGlobal(QCursor::pos());
     QString name = pix->property("button_name").toString();
     if (name == "options") {
@@ -1160,6 +1226,12 @@ void FormFitter::clicked_item(QCPAbstractItem* itm) {
       menuExportFormat.exec(QCursor::pos());
     } else if (name == "reset_scales") {
       zoom_out();
+    } else if (name == "SUM4") {
+      makeSUM4_range(pix->property("SUM4").toDouble(), 0);
+    } else if (name == "SUM4 L") {
+      makeSUM4_range(pix->property("SUM4").toDouble(), -1);
+    } else if (name == "SUM4 R") {
+      makeSUM4_range(pix->property("SUM4").toDouble(), 1);
     } else if (name == "ROI options") {
       menuROI.setProperty("ROI", pix->property("ROI"));
       menuROI.exec(QCursor::pos());
@@ -1167,8 +1239,59 @@ void FormFitter::clicked_item(QCPAbstractItem* itm) {
       adjust_roi_bounds();
     } else if (name == "add peak") {
       add_peak();
+    } else if (name == "SUM4 adjust") {
+      adjust_sum4_bounds();
+    } else if (name == "SUM4L adjust") {
+      adjust_sum4_bounds();
+    } else if (name == "SUM4R adjust") {
+      adjust_sum4_bounds();
     }
   }
+}
+
+void FormFitter::makeSUM4_range(double peak_chan, int edge)
+{
+  if (fit_data_ == nullptr)
+    return;
+
+  if (!fit_data_->peaks().count(peak_chan))
+    return;
+
+  Gamma::Peak pk = fit_data_->peaks().at(peak_chan);
+
+  int32_t L = pk.sum4_.Lpeak;
+  int32_t R = pk.sum4_.Rpeak;
+  QString purpose("SUM4");
+
+  if (edge == -1) {
+    L = pk.sum4_.LB().start();
+    R = pk.sum4_.LB().end();
+    purpose = "SUM4 L";
+  }
+  if (edge == 1) {
+    L = pk.sum4_.RB().start();
+    R = pk.sum4_.RB().end();
+    purpose = "SUM4 R";
+  }
+
+  double left = fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[L], fit_data_->metadata_.bits);
+  double right = fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[R], fit_data_->metadata_.bits);
+
+  range_.visible = true;
+  range_.base.default_pen = QPen(Qt::darkYellow);
+  range_.center.set_bin(pk.center, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
+  range_.l.set_energy(left, fit_data_->nrg_cali_);
+  range_.r.set_energy(right, fit_data_->nrg_cali_);
+  range_.purpose = purpose;
+
+  selected_peaks_.clear();
+  plotRange();
+  calc_visible();
+  ui->plot->replot();
+  toggle_push();
+
+  emit peak_selection_changed(selected_peaks_);
+
 }
 
 void FormFitter::zoom_out() {
@@ -1184,7 +1307,7 @@ void FormFitter::plot_mouse_press(QMouseEvent*) {
   connect(ui->plot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(plot_mouse_release(QMouseEvent*)));
   connect(ui->plot, SIGNAL(plottableClick(QCPAbstractPlottable*,QMouseEvent*)), this, SLOT(clicked_plottable(QCPAbstractPlottable*)));
   connect(ui->plot, SIGNAL(clickedAbstractItem(QCPAbstractItem*)), this, SLOT(clicked_item(QCPAbstractItem*)));
-  connect(ui->plot, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
+//  connect(ui->plot, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
 
   force_rezoom_ = false;
   mouse_pressed_ = true;
@@ -1194,6 +1317,8 @@ void FormFitter::plot_mouse_release(QMouseEvent*) {
   connect(ui->plot, SIGNAL(mouse_clicked(double,double,QMouseEvent*,bool)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*,bool)));
   connect(ui->plot, SIGNAL(beforeReplot()), this, SLOT(plot_rezoom()));
   connect(ui->plot, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(plot_mouse_press(QMouseEvent*)));
+  connect(ui->plot, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
+
   mouse_pressed_ = false;
 
   force_rezoom_ = true;
@@ -1346,7 +1471,7 @@ void FormFitter::updateData() {
   xx = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_, fit_data_->metadata_.bits));
   yy = QVector<double>::fromStdVector(fit_data_->finder_.y_);
 
-  addGraph(xx, yy, main_graph, 1, fit_data_->metadata_.bits, "Data");
+  addGraph(xx, yy, main_graph, 1, "Data");
   add_bounds(xx, yy);
 
   for (auto &q : fit_data_->regions_) {
@@ -1354,17 +1479,18 @@ void FormFitter::updateData() {
 
     yy = QVector<double>::fromStdVector(q.hr_fullfit);
     trim_log_lower(yy);
-    addGraph(xx, yy, full_fit, false, q.bits_, "Region fit");
+    addGraph(xx, yy, full_fit, false, "Region fit");
     add_bounds(xx, yy);
 
     for (auto & p : q.peaks_) {
       yy = QVector<double>::fromStdVector(p.second.hr_fullfit_);
       trim_log_lower(yy);
 //      QPen pen = p.second.flagged ? flagged : peak;
-      addGraph(xx, yy, peak, false, q.bits_, "Individual peak");
+      addGraph(xx, yy, peak, false, "Individual peak", p.first);
 
-      if (ui->pushShowSUM4->isChecked() && (p.second.sum4_.peak_width > 0)) {
-        addEdge(p.second.sum4_.LB(), sum4edge);
+      if (p.second.sum4_.peak_width > 0) {
+        addEdge(p.second.sum4_.LB(), sum4edge, p.first);
+        addEdge(p.second.sum4_.RB(), sum4edge, p.first);
 
         if (!p.second.sum4_.bx.empty()) {
           std::vector<double> x_sum4;
@@ -1372,10 +1498,9 @@ void FormFitter::updateData() {
             x_sum4.push_back(fit_data_->finder_.x_[i]);
           addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x_sum4, fit_data_->metadata_.bits)),
                                QVector<double>::fromStdVector(p.second.sum4_.by),
-                               sum4back, false, fit_data_->metadata_.bits, "SUM4 background");
+                               sum4back, -1, "SUM4 background", p.first);
         }
 
-        addEdge(p.second.sum4_.RB(), sum4edge);
       }
     }
 
@@ -1383,17 +1508,17 @@ void FormFitter::updateData() {
 
       yy = QVector<double>::fromStdVector(q.hr_background);
       trim_log_lower(yy);
-      addGraph(xx, yy, back_poly, false, q.bits_, "Background poly");
+      addGraph(xx, yy, back_poly, false, "Background poly");
       add_bounds(xx, yy);
 
       yy = QVector<double>::fromStdVector(q.hr_back_steps);
       trim_log_lower(yy);
-      addGraph(xx, yy, back_with_steps, false, q.bits_, "Background steps");
+      addGraph(xx, yy, back_with_steps, false, "Background steps");
 
       xx = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.finder_.x_, fit_data_->metadata_.bits));
       yy = QVector<double>::fromStdVector(q.finder_.y_resid_on_background_);
 //      trim_log_lower(yy); //maybe not?
-      addGraph(xx, yy, resid, 2, q.bits_, "Residuals");
+      addGraph(xx, yy, resid, 2, "Residuals");
 //      add_bounds(xx, yy);
     }
 
@@ -1405,6 +1530,7 @@ void FormFitter::updateData() {
   plotRange();
   plotButtons();
   plotROI_options();
+  plotSUM4_options();
 
   calc_visible();
   force_rezoom_ = true;
@@ -1412,7 +1538,60 @@ void FormFitter::updateData() {
   ui->plot->replot();
 }
 
-void FormFitter::addEdge(Gamma::SUM4Edge edge, QPen pen) {
+void FormFitter::plotSUM4_options() {
+  for (auto &r : fit_data_->regions_) {
+    for (auto &p : r.peaks_) {
+      QCPItemPixmap *overlayButton;
+
+      double x = fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[p.second.sum4_.bx.front()], fit_data_->metadata_.bits);
+      double y = p.second.sum4_.by.front();
+      overlayButton = new QCPItemPixmap(ui->plot);
+      overlayButton->setPixmap(QPixmap(":/icons/oxy/22/system_switch_user.png"));
+      overlayButton->bottomRight->setType(QCPItemPosition::ptPlotCoords);
+      overlayButton->bottomRight->setCoords(x, y);
+      overlayButton->topLeft->setParentAnchor(overlayButton->bottomRight);
+      overlayButton->topLeft->setCoords(22, -22);
+      overlayButton->setScaled(true);
+      overlayButton->setSelectable(false);
+      overlayButton->setProperty("button_name", QString("SUM4"));
+      overlayButton->setProperty("SUM4", QVariant::fromValue(p.first));
+      overlayButton->setProperty("tooltip", QString("Do SUM4 stuff"));
+      ui->plot->addItem(overlayButton);
+
+      x = fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[p.second.sum4_.LB().start()], fit_data_->metadata_.bits);
+      y = p.second.sum4_.LB().average();
+      overlayButton = new QCPItemPixmap(ui->plot);
+      overlayButton->setPixmap(QPixmap(":/icons/oxy/22/system_switch_user.png"));
+      overlayButton->bottomRight->setType(QCPItemPosition::ptPlotCoords);
+      overlayButton->bottomRight->setCoords(x, y);
+      overlayButton->topLeft->setParentAnchor(overlayButton->bottomRight);
+      overlayButton->topLeft->setCoords(22, -22);
+      overlayButton->setScaled(true);
+      overlayButton->setSelectable(false);
+      overlayButton->setProperty("button_name", QString("SUM4 L"));
+      overlayButton->setProperty("SUM4", QVariant::fromValue(p.first));
+      overlayButton->setProperty("tooltip", QString("Do SUM4 LB stuff"));
+      ui->plot->addItem(overlayButton);
+
+      x = fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[p.second.sum4_.RB().start()], fit_data_->metadata_.bits);
+      y = p.second.sum4_.RB().average();
+      overlayButton = new QCPItemPixmap(ui->plot);
+      overlayButton->setPixmap(QPixmap(":/icons/oxy/22/system_switch_user.png"));
+      overlayButton->bottomRight->setType(QCPItemPosition::ptPlotCoords);
+      overlayButton->bottomRight->setCoords(x, y);
+      overlayButton->topLeft->setParentAnchor(overlayButton->bottomRight);
+      overlayButton->topLeft->setCoords(22, -22);
+      overlayButton->setScaled(true);
+      overlayButton->setSelectable(false);
+      overlayButton->setProperty("button_name", QString("SUM4 R"));
+      overlayButton->setProperty("SUM4", QVariant::fromValue(p.first));
+      overlayButton->setProperty("tooltip", QString("Do SUM4 RB stuff"));
+      ui->plot->addItem(overlayButton);
+    }
+  }
+}
+
+void FormFitter::addEdge(Gamma::SUM4Edge edge, QPen pen, double peak_chan) {
   std::vector<double> x_edge, y_edge;
   for (int i = edge.start(); i <= edge.end(); ++i) {
     x_edge.push_back(fit_data_->finder_.x_[i]);
@@ -1425,7 +1604,7 @@ void FormFitter::addEdge(Gamma::SUM4Edge edge, QPen pen) {
 
   addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x_edge, fit_data_->metadata_.bits)),
                        QVector<double>::fromStdVector(y_edge),
-                       pen, false, fit_data_->metadata_.bits, "SUM4 edge");
+                       pen, -1, "SUM4 edge", peak_chan);
 }
 
 
@@ -1444,6 +1623,8 @@ void FormFitter::calc_visible() {
   if (fit_data_ == nullptr)
     return;
 
+  bool sum4_visible = (selected_peaks_.size() == 1);
+
   for (auto &q : fit_data_->regions_) {
     if (q.hr_x_nrg.empty() ||
         (q.hr_x_nrg.front() > maxx_zoom) ||
@@ -1453,14 +1634,6 @@ void FormFitter::calc_visible() {
     visible_peaks_ += q.peaks_.size();
     good_starts.insert(q.hr_x_nrg.front()); //for all parts of fit
     good_starts.insert(q.cal_nrg_.transform(q.finder_.x_.front(), q.bits_)); //for residues
-    for (auto &p : q.peaks_) {
-      if ((selected_peaks_.count(p.second.center) > 0) && (p.second.sum4_.peak_width > 0)) {
-        good_starts.insert(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[p.second.sum4_.LB().start()], fit_data_->metadata_.bits));
-        good_starts.insert(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[p.second.sum4_.RB().start()], fit_data_->metadata_.bits));
-        if (!p.second.sum4_.bx.empty())
-          good_starts.insert(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[p.second.sum4_.bx.front()], fit_data_->metadata_.bits));
-      }
-    }
   }
 
   bool plot_back_poly = (visible_roi_ < 4);
@@ -1481,40 +1654,34 @@ void FormFitter::calc_visible() {
         line->setSelected(selected_peaks_.count(line->property("chan_value").toDouble()));
       }
     } else if (QCPItemPixmap *map = qobject_cast<QCPItemPixmap*>(q)) {
-      if (map->property("ROI").isValid()) {
-        map->setVisible((visible_roi_ < 10) && good_starts.count(map->property("ROI").toDouble()));
+      if (map->property("ROI").isValid() && !range_.visible) {
+        map->setVisible((visible_roi_ < 10) && good_starts.count(map->property("ROI").toDouble()) && selected_peaks_.empty());
+      } else if (map->property("SUM4").isValid()) {
+        map->setVisible(sum4_visible && selected_peaks_.count(map->property("SUM4").toDouble()));
       }
+
     }
   }
   this->blockSignals(false);
 
   int total = ui->plot->graphCount();
   for (int i=0; i < total; i++) {
-    if (ui->plot->graph(i)->name() == "Region fit")
-      ui->plot->graph(i)->setVisible((visible_roi_ < 15) &&
-                                        (good_starts.count(ui->plot->graph(i)->property("start").toDouble()) > 0));
-    else if (ui->plot->graph(i)->name() == "Background steps")
-      ui->plot->graph(i)->setVisible(plot_back_steps &&
-                                        (good_starts.count(ui->plot->graph(i)->property("start").toDouble()) > 0));
-    else if (ui->plot->graph(i)->name() == "Background poly")
-      ui->plot->graph(i)->setVisible(plot_back_poly &&
-                                        (good_starts.count(ui->plot->graph(i)->property("start").toDouble()) > 0));
-    else if (ui->plot->graph(i)->name() == "Individual peak")
-      ui->plot->graph(i)->setVisible(plot_peak &&
-                                        (good_starts.count(ui->plot->graph(i)->property("start").toDouble()) > 0));
-    else if (ui->plot->graph(i)->name() == "Residuals")
-      ui->plot->graph(i)->setVisible(plot_resid_on_back &&
-                                        (good_starts.count(ui->plot->graph(i)->property("start").toDouble()) > 0));
-    else if (ui->plot->graph(i)->name() == "SUM4 edge")
-      ui->plot->graph(i)->setVisible(plot_peak &&
-                                        (good_starts.count(ui->plot->graph(i)->property("start").toDouble()) > 0));
-    else if (ui->plot->graph(i)->name() == "SUM4 background")
-      ui->plot->graph(i)->setVisible(plot_peak &&
-                                        (good_starts.count(ui->plot->graph(i)->property("start").toDouble()) > 0));
+    QCPGraph *graph = ui->plot->graph(i);
+    bool good_start = good_starts.count(graph->property("start").toDouble());
+    if (graph->name() == "Region fit")
+      graph->setVisible((visible_roi_ < 15) && good_start);
+    else if (graph->name() == "Background steps")
+      graph->setVisible(plot_back_steps && good_start);
+    else if (graph->name() == "Background poly")
+      graph->setVisible(plot_back_poly && good_start);
+    else if (graph->name() == "Individual peak")
+      graph->setVisible(plot_peak && good_start);
+    else if (graph->name() == "Residuals")
+      graph->setVisible(plot_resid_on_back && good_start);
+    else if (graph->name() == "SUM4 edge")
+      graph->setVisible(sum4_visible && selected_peaks_.count(graph->property("peak_chan").toDouble()));
+    else if (graph->name() == "SUM4 background")
+      graph->setVisible(sum4_visible && selected_peaks_.count(graph->property("peak_chan").toDouble()));
   }
 }
 
-void FormFitter::on_pushShowSUM4_clicked()
-{
-  replot_all();
-}

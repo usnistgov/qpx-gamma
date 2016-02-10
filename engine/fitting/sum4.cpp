@@ -106,6 +106,27 @@ SUM4::SUM4(const std::vector<double> &y,
   recalc(y);
 }
 
+SUM4::SUM4(const std::vector<double> &y,
+           uint32_t left, uint32_t right,
+           SUM4Edge LB, SUM4Edge RB)
+  : SUM4()
+{
+  if (y.empty()
+      || (left > right)
+      || (left >= y.size())
+      || (right >= y.size())
+      || (LB.average() <= 0)
+      || (RB.average() <= 0))
+    return;
+
+  LB_ = LB;
+  RB_ = RB;
+  Lpeak = left;
+  Rpeak = right;
+  recalc(y);
+}
+
+
 void SUM4::recalc(const std::vector<double> &y)
 {
   peak_width = Rpeak - Lpeak + 1;

@@ -229,7 +229,7 @@ void ROI::adjust_bounds(const std::vector<double> &x, const std::vector<double> 
   if ((L >= x.size()) || (R >= x.size()))
     return;
 
-  PL_DBG << "Adjusting ROI bounds";
+//  PL_DBG << "Adjusting ROI bounds";
 
   std::vector<double> x_local, y_local;
   for (uint16_t i = L; i <= R; ++i) {
@@ -247,7 +247,7 @@ void ROI::adjust_bounds(const std::vector<double> &x, const std::vector<double> 
     peaks[p.first] = p.second;
   }
 
-  PL_DBG << "ROI adjustment keeps " << peaks.size() << " of " << peaks_.size() << " existing peaks";
+//  PL_DBG << "ROI adjustment keeps " << peaks.size() << " of " << peaks_.size() << " existing peaks";
   peaks_ = peaks;
   render();
 

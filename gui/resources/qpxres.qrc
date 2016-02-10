@@ -69,5 +69,7 @@
         <file>oxy/22/applications_systemg.png</file>
         <file>oxy/22/edit_add.png</file>
         <file>oxy/22/flag_red.png</file>
+        <file>oxy/22/system_switch_user.png</file>
+        <file>oxy/22/flag_yellow.png</file>
     </qresource>
 </RCC>

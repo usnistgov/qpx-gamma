@@ -150,7 +150,7 @@ void Fitter::remap_region(ROI &region) {
       double edge =  p.second.hypermet_.width_.val * sqrt(log(2)) * 3;
       uint32_t edgeL = finder_.find_index(p.second.hypermet_.center_.val - edge);
       uint32_t edgeR = finder_.find_index(p.second.hypermet_.center_.val + edge);
-      p.second.sum4_ = SUM4 (finder_.y_, edgeL, edgeR, sum4edge_samples);
+      p.second.sum4_ = SUM4(finder_.y_, edgeL, edgeR, sum4edge_samples);
     }
     p.second.construct(nrg_cali_, metadata_.live_time.total_milliseconds() * 0.001, metadata_.bits);
   }
@@ -211,6 +211,7 @@ void Fitter::replace_peak(const Peak& pk) {
   for (auto &m : regions_)
     if (m.contains(pk.center)) {
       m.peaks_[pk.center] = pk; //use function that will rebuild
+//      PL_DBG << "replacing " << pk.center;
     }
 }
 
