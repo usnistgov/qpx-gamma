@@ -287,8 +287,10 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
     o.height_.lbound = o.height_.val * 1e-5;
     o.height_.ubound = o.height_.val * 1e5;
 
+    o.width_.val = width_expected;
     o.width_.lbound = width_lower;
     o.width_.ubound = width_upper;
+
 
 
     std::string initial_c = "$c" + boost::lexical_cast<std::string>(i) + " = " +
