@@ -318,12 +318,15 @@ bool Setting::compare(const Setting &other, Gamma::Match flags) const {
   if ((flags & Match::id) && (id_ != other.id_))
     match = false;
   if (flags & Match::indices) {
-    match = false;
-    for (auto &q : other.indices)
+    bool mt = false;
+    for (auto &q : other.indices) {
       if (indices.count(q) > 0) {
-        match = true;
+        mt = true;
         break;
       }
+    }
+    if (!mt)
+      match = false;
   }
   if ((flags & Match::name) && (other.id_ != metadata.name))
     match = false;

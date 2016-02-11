@@ -41,9 +41,9 @@ FormIntegration2D::FormIntegration2D(QSettings &settings, QWidget *parent) :
   ui->plotGateY->setFit(&fit_y_);
   ui->plotGateDiagonal->setFit(&fit_d_);
 
-  connect(ui->plotGateX, SIGNAL(peak_available()), this, SLOT(gated_fits_updated()));
-  connect(ui->plotGateY, SIGNAL(peak_available()), this, SLOT(gated_fits_updated()));
-  connect(ui->plotGateDiagonal, SIGNAL(peak_available()), this, SLOT(gated_fits_updated()));
+  connect(ui->plotGateX, SIGNAL(peak_selection_changed(std::set<double>)), this, SLOT(gated_fits_updated(std::set<double>)));
+  connect(ui->plotGateY, SIGNAL(peak_selection_changed(std::set<double>)), this, SLOT(gated_fits_updated(std::set<double>)));
+  connect(ui->plotGateDiagonal, SIGNAL(peak_selection_changed(std::set<double>)), this, SLOT(gated_fits_updated(std::set<double>)));
 
   //loadSettings();
 
@@ -467,7 +467,7 @@ void FormIntegration2D::make_gates() {
   ui->plotGateY->update_spectrum();
   if (ui->pushShowDiagonal->isChecked())
     ui->plotGateDiagonal->update_spectrum();
-  gated_fits_updated();
+  gated_fits_updated(std::set<double>());
 }
 
 
@@ -477,7 +477,7 @@ void FormIntegration2D::on_pushShowDiagonal_clicked()
   make_gates();
 }
 
-void FormIntegration2D::gated_fits_updated() {
+void FormIntegration2D::gated_fits_updated(std::set<double> dummy) {
   ui->pushCentroidX->setEnabled(false);
   ui->pushCentroidY->setEnabled(false);
   ui->pushCentroidXY->setEnabled(false);

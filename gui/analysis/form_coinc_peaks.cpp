@@ -45,7 +45,7 @@ FormCoincPeaks::FormCoincPeaks(QWidget *parent) :
   connect(ui->tablePeaks, SIGNAL(itemSelectionChanged()), this, SLOT(selection_changed_in_table()));
 
   connect(ui->plotPeaks, SIGNAL(range_changed(Range)), this, SLOT(change_range(Range)));
-  connect(ui->plotPeaks, SIGNAL(selection_changed(std::set<double>)), this, SLOT(update_selection(std::set<double>)));
+  connect(ui->plotPeaks, SIGNAL(peak_selection_changed(std::set<double>)), this, SLOT(update_selection(std::set<double>)));
   connect(ui->plotPeaks, SIGNAL(data_changed()), this, SLOT(update_data()));
 
 //  QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tablePeaks);

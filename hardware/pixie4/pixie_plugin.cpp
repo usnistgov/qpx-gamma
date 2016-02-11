@@ -193,15 +193,19 @@ bool Plugin::read_settings_bulk(Gamma::Setting &set) const {
       for (auto &k : q.branches.my_data_) {
         k.metadata.writable = (!(status_ & DeviceStatus::booted) && setting_definitions_.count(k.id_) && setting_definitions_.at(k.id_).writable);
         if (k.metadata.setting_type == Gamma::SettingType::stem) {
-          uint16_t modnum = k.metadata.address;
-          if (modnum < 0)
+          int16_t modnum = k.metadata.address;
+          if ((modnum < 0) || (modnum >= channel_indices_.size())) {
+            PL_WARN << "<PixiePlugin> module address out of bounds, ignoring branch " << modnum;
             continue;
+          }
           int filterrange = module_parameter_values_[modnum * N_MODULE_PAR + i_mod("FILTER_RANGE")];
           for (auto &p : k.branches.my_data_) {
             if (p.metadata.setting_type == Gamma::SettingType::stem) {
-              uint16_t channum = p.metadata.address;
-              if (channum < 0)
+              int16_t channum = p.metadata.address;
+              if ((channum < 0) || (channum >= NUMBER_OF_CHANNELS)) {
+                PL_WARN << "<PixiePlugin> channel address out of bounds, ignoring branch " << channum;
                 continue;
+              }
               for (auto &o : p.branches.my_data_) {
                 if (o.metadata.setting_type == Gamma::SettingType::floating) {
                   o.value_dbl = channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
@@ -356,6 +360,9 @@ void Plugin::rebuild_structure(Gamma::Setting &set) {
       q.resize(NUMBER_OF_CHANNELS, -1);
 
 //  }
+}
+
+void Plugin::reindex_modules(Gamma::Setting &set) {
 
   int ma = 0;
   for (auto &m : set.branches.my_data_) {
@@ -372,11 +379,13 @@ void Plugin::rebuild_structure(Gamma::Setting &set) {
           if (c.indices.size() > 0)
             new_set.insert(*c.indices.begin());
           c.metadata.address = ca;
+//          PL_DBG << "<PixiePlugin> ca = " << c.metadata.address;
           ca++;
         }
       }
       m.indices = new_set;
       m.metadata.address = ma;
+//      PL_DBG << "<PixiePlugin> ma = " << m.metadata.address;
       ma++;
     }
   }
@@ -430,11 +439,13 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
       if (!(status_ & DeviceStatus::booted))
         rebuild_structure(q);
 
+      reindex_modules(q);
+
       for (auto &k : q.branches.my_data_) {
 
         if (k.metadata.setting_type == Gamma::SettingType::stem) {
-          uint16_t modnum = k.metadata.address;
-          if (modnum >= channel_indices_.size()) {
+          int16_t modnum = k.metadata.address;
+          if ((modnum < 0) || (modnum >= channel_indices_.size())) {
             PL_WARN << "<PixiePlugin> module address out of bounds, ignoring branch " << modnum;
             continue;
           }
@@ -443,8 +454,8 @@ bool Plugin::write_settings_bulk(Gamma::Setting &set) {
               p.indices = k.indices;
 
             if (p.metadata.setting_type == Gamma::SettingType::stem) {
-              uint16_t channum = p.metadata.address;
-              if (channum >= NUMBER_OF_CHANNELS) {
+              int16_t channum = p.metadata.address;
+              if ((channum < 0) || (channum >= NUMBER_OF_CHANNELS)) {
                 PL_WARN << "<PixiePlugin> channel address out of bounds, ignoring branch " << channum;
                 continue;
               }

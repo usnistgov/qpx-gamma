@@ -113,7 +113,7 @@ private slots:
 
   void on_pushShowDiagonal_clicked();
 
-  void gated_fits_updated();
+  void gated_fits_updated(std::set<double>);
 
   void on_pushCentroidX_clicked();
 

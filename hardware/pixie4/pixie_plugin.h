@@ -90,6 +90,7 @@ protected:
 
   //CONVENIENCE FUNCTIONS//
   void rebuild_structure(Gamma::Setting &set);
+  void reindex_modules(Gamma::Setting &set);
   void fill_stats(std::list<StatsUpdate>&, uint8_t module);
   void reset_counters_next_run();
 
