@@ -97,6 +97,7 @@ private slots:
   void plot_mouse_release(QMouseEvent*);
   void clicked_plottable(QCPAbstractPlottable *);
   void clicked_item(QCPAbstractItem *);
+  void switch_scale_type();
 
   void selection_changed();
   virtual void plot_rezoom();
@@ -124,8 +125,8 @@ private slots:
   void adjust_roi_bounds();
 
   void adjust_sum4_bounds();
+  void delete_selected_peaks();
 
-  void on_pushRemovePeaks_clicked();
   void on_pushFindPeaks_clicked();
   void on_pushStopFitter_clicked();
 

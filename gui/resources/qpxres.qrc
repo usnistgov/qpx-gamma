@@ -72,4 +72,7 @@
         <file>oxy/22/system_switch_user.png</file>
         <file>oxy/22/flag_yellow.png</file>
     </qresource>
+    <qresource prefix="/">
+        <file>loader.gif</file>
+    </qresource>
 </RCC>

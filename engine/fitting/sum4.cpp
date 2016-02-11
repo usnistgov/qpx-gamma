@@ -163,8 +163,8 @@ void SUM4::recalc(const std::vector<double> &y)
     currie_quality_indicator = -1;
 
   //by default, linear
-  double slope = (RB_.average() - LB_.average()) / peak_width;
-  background_ = Polynomial({LB_.average(), slope}, Lpeak);
+  double slope = (RB_.average() - LB_.average()) / (RB_.start() - LB_.end()) ;
+  background_ = Polynomial({LB_.average(), slope}, LB_.end());
 
   bx.resize(peak_width);
   by.resize(peak_width);

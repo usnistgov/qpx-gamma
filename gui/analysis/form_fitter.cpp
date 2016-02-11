@@ -25,6 +25,7 @@
 #include "ui_form_fitter.h"
 #include "gamma_fitter.h"
 #include "qt_util.h"
+#include "qcp_overlay_button.h"
 
 
 RollbackDialog::RollbackDialog(Gamma::ROI roi, QWidget *parent) :
@@ -168,23 +169,31 @@ FormFitter::FormFitter(QWidget *parent) :
   menuROI.addAction("Delete");
   connect(&menuROI, SIGNAL(triggered(QAction*)), this, SLOT(changeROI(QAction*)));
 
-  QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Backspace), ui->plot);
+  QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
   connect(shortcut, SIGNAL(activated()), this, SLOT(zoom_out()));
-
-  build_menu();
-  plotButtons();
-
-
 
   QShortcut *shortcut2 = new QShortcut(QKeySequence(Qt::Key_Insert), this);
   connect(shortcut2, SIGNAL(activated()), this, SLOT(add_peak()));
 
   QShortcut* shortcut3 = new QShortcut(QKeySequence(QKeySequence::Delete), this);
-  connect(shortcut3, SIGNAL(activated()), this, SLOT(on_pushRemovePeaks_clicked()));
+  connect(shortcut3, SIGNAL(activated()), this, SLOT(delete_selected_peaks()));
+
+  QShortcut* shortcut4 = new QShortcut(QKeySequence(QKeySequence(Qt::Key_L)), this);
+  connect(shortcut4, SIGNAL(activated()), this, SLOT(switch_scale_type()));
 
 
   connect(&thread_fitter_, SIGNAL(fit_updated(Gamma::Fitter)), this, SLOT(fit_updated(Gamma::Fitter)));
   connect(&thread_fitter_, SIGNAL(fitting_done()), this, SLOT(fitting_complete()));
+
+  build_menu();
+  plotButtons();
+
+  QMovie *movie = new QMovie(":/loader.gif");
+  ui->labelMovie->setMovie(movie);
+  ui->labelMovie->show();
+  movie->start();
+  ui->labelMovie->setVisible(false);
+
 
   busy_ = false;
   thread_fitter_.start();
@@ -210,7 +219,7 @@ void FormFitter::loadSettings(QSettings &settings_) {
   ui->spinSum4EdgeW->setValue(settings_.value("sum4_edge_width", 3).toInt());
   ui->doubleOverlapWidth->setValue(settings_.value("overlap_width", 1.00).toDouble());
   ui->doubleThresh->setValue(settings_.value("peak_threshold", 3.0).toDouble());
-  this->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
+  set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
   settings_.endGroup();
 }
 
@@ -220,7 +229,7 @@ void FormFitter::saveSettings(QSettings &settings_) {
   settings_.setValue("sum4_edge_width", ui->spinSum4EdgeW->value());
   settings_.setValue("peak_threshold", ui->doubleThresh->value());
   settings_.setValue("overlap_width", ui->doubleOverlapWidth->value());
-  settings_.setValue("scale_type", this->scale_type());
+  settings_.setValue("scale_type", scale_type_);
   settings_.endGroup();
 }
 
@@ -277,6 +286,9 @@ void FormFitter::replot_all() {
 }
 
 void FormFitter::refit_ROI(double ROI_nrg) {
+  if (busy_ || (fit_data_ == nullptr))
+    return;
+
   busy_= true;
   toggle_push();
 
@@ -285,6 +297,9 @@ void FormFitter::refit_ROI(double ROI_nrg) {
 
 
 void FormFitter::rollback_ROI(double ROI_nrg) {
+  if (busy_ || (fit_data_ == nullptr))
+    return;
+
   for (auto &r : fit_data_->regions_) {
     if (!r.hr_x_nrg.empty() && (r.hr_x_nrg.front() == ROI_nrg)) {
       RollbackDialog *editor = new RollbackDialog(r, qobject_cast<QWidget *> (parent()));
@@ -300,7 +315,7 @@ void FormFitter::rollback_ROI(double ROI_nrg) {
 }
 
 void FormFitter::delete_ROI(double ROI_nrg) {
-  if (fit_data_ == nullptr)
+  if (busy_ || (fit_data_ == nullptr))
     return;
 
   fit_data_->delete_ROI(ROI_nrg);
@@ -325,7 +340,7 @@ void FormFitter::make_range(Marker marker) {
 }
 
 void FormFitter::createRange(Coord c) {
-  if (fit_data_ == nullptr)
+  if (busy_ || (fit_data_ == nullptr))
     return;
   
   range_.visible = true;
@@ -379,16 +394,12 @@ std::set<double> FormFitter::get_selected_peaks() {
 
 void FormFitter::on_pushFindPeaks_clicked()
 {
-  busy_= true;
-  toggle_push();
   perform_fit();
-
-//  emit peaks_changed(true);
 }
 
 
 void FormFitter::perform_fit() {
-  if (fit_data_ == nullptr)
+  if (busy_ || (fit_data_ == nullptr))
     return;
 
   fit_data_->finder_.find_peaks(ui->spinSqWidth->value(),ui->doubleThresh->value());
@@ -401,6 +412,7 @@ void FormFitter::perform_fit() {
   toggle_push();
   replot_all();
 
+  ui->labelMovie->setVisible(true);
   thread_fitter_.set_data(*fit_data_);
   thread_fitter_.fit_peaks();
 
@@ -420,6 +432,7 @@ void FormFitter::add_peak()
   busy_= true;
   toggle_push();
 
+  ui->labelMovie->setVisible(true);
   thread_fitter_.set_data(*fit_data_);
   thread_fitter_.add_peak(
         fit_data_->finder_.find_index(range_.l.bin(fit_data_->metadata_.bits)),
@@ -440,6 +453,7 @@ void FormFitter::adjust_roi_bounds() {
   busy_= true;
   toggle_push();
 
+  ui->labelMovie->setVisible(true);
   thread_fitter_.set_data(*fit_data_);
   thread_fitter_.adjust_roi_bounds(range_.center.energy(),
                                    fit_data_->finder_.find_index(range_.l.bin(fit_data_->metadata_.bits)),
@@ -502,26 +516,27 @@ void FormFitter::adjust_sum4_bounds() {
   emit peak_selection_changed(selected_peaks_);
 }
 
-void FormFitter::on_pushRemovePeaks_clicked()
+void FormFitter::delete_selected_peaks()
 {
-  if (fit_data_ == nullptr)
+  if (busy_ || (fit_data_ == nullptr))
     return;
 
   std::set<double> chosen_peaks = this->get_selected_peaks();
   if (chosen_peaks.empty())
     return;
 
-  this->clearSelection();
+  clearSelection();
 
   busy_= true;
   toggle_push();
 
+  ui->labelMovie->setVisible(true);
   thread_fitter_.set_data(*fit_data_);
   thread_fitter_.remove_peaks(chosen_peaks);
 }
 
 void FormFitter::replace_peaks(std::vector<Gamma::Peak> pks) {
-  if (pks.empty())
+  if (busy_ || (fit_data_ == nullptr))
     return;
 
   if (fit_data_ == nullptr)
@@ -542,7 +557,10 @@ void FormFitter::fit_updated(Gamma::Fitter fitter) {
 }
 
 void FormFitter::fitting_complete() {
+  ui->labelMovie->setVisible(false);
   busy_= false;
+  calc_visible();
+  ui->plot->replot();
   toggle_push();
   emit data_changed();
 }
@@ -558,12 +576,6 @@ void FormFitter::toggle_push() {
   ui->doubleThresh->setEnabled(!busy_);
   ui->doubleOverlapWidth->setEnabled(!busy_);
 
-  ui->pushRemovePeaks->setEnabled(false);
-
-  if (busy_)
-    return;
-
-  ui->pushRemovePeaks->setEnabled(!this->get_selected_peaks().empty());
 }
 
 void FormFitter::on_spinSqWidth_editingFinished()
@@ -887,35 +899,37 @@ void FormFitter::plotRange() {
       if (edge_trc2->position->value() > edge_trc1->position->value())
         higher = edge_trc2;
 
-      QCPItemPixmap *overlayButton = new QCPItemPixmap(ui->plot);
-      overlayButton->bottomRight->setParentAnchor(higher->position);
-      overlayButton->bottomRight->setCoords(11, -20);
-      overlayButton->topLeft->setParentAnchor(overlayButton->bottomRight);
-      overlayButton->topLeft->setCoords(-22, -22);
-      overlayButton->setScaled(true);
-      overlayButton->setSelectable(false);
+      QCPOverlayButton *newButton;
+
       if (range_.purpose.toString() == "range") {
-        overlayButton->setPixmap(QPixmap(":/icons/oxy/22/edit_add.png"));
-        overlayButton->setProperty("button_name", QString("add peak"));
-        overlayButton->setProperty("tooltip", QString("Add peak"));
+        newButton = new QCPOverlayButton(ui->plot,
+                        QPixmap(":/icons/oxy/22/edit_add.png"),
+                        "add peak", "Add peak",
+                        Qt::AlignTop | Qt::AlignLeft);
       } else if (range_.purpose.toString() == "SUM4") {
-        overlayButton->setPixmap(QPixmap(":/icons/oxy/22/flag_yellow.png"));
-        overlayButton->setProperty("button_name", QString("SUM4 adjust"));
-        overlayButton->setProperty("tooltip", QString("Select SUM4 bounds"));
+        newButton = new QCPOverlayButton(ui->plot,
+                        QPixmap(":/icons/oxy/22/flag_yellow.png"),
+                        "SUM4 adjust", "Adjust SUM4 bounds",
+                        Qt::AlignTop | Qt::AlignLeft);
       } else if (range_.purpose.toString() == "SUM4 L") {
-        overlayButton->setPixmap(QPixmap(":/icons/oxy/22/flag_yellow.png"));
-        overlayButton->setProperty("button_name", QString("SUM4L adjust"));
-        overlayButton->setProperty("tooltip", QString("Select SUM4 left edge bounds"));
+        newButton = new QCPOverlayButton(ui->plot,
+                        QPixmap(":/icons/oxy/22/flag_yellow.png"),
+                        "SUM4L adjust", "Adjust SUM4 bounds",
+                        Qt::AlignTop | Qt::AlignLeft);
       } else if (range_.purpose.toString() == "SUM4 R") {
-        overlayButton->setPixmap(QPixmap(":/icons/oxy/22/flag_yellow.png"));
-        overlayButton->setProperty("button_name", QString("SUM4R adjust"));
-        overlayButton->setProperty("tooltip", QString("Select SUM4 right edge bounds"));
+        newButton = new QCPOverlayButton(ui->plot,
+                        QPixmap(":/icons/oxy/22/flag_yellow.png"),
+                        "SUM4R adjust", "Adjust SUM4 bounds",
+                        Qt::AlignTop | Qt::AlignLeft);
       } else {
-        overlayButton->setPixmap(QPixmap(":/icons/oxy/22/flag_red.png"));
-        overlayButton->setProperty("button_name", QString("roi bounds"));
-        overlayButton->setProperty("tooltip", QString("Select ROI bounds"));
+        newButton = new QCPOverlayButton(ui->plot,
+                        QPixmap(":/icons/oxy/22/flag_red.png"),
+                        "roi bounds", "Adjust region bounds",
+                        Qt::AlignTop | Qt::AlignLeft);
       }
-      ui->plot->addItem(overlayButton);
+      newButton->bottomRight->setParentAnchor(higher->position);
+      newButton->bottomRight->setCoords(11, -20);
+      ui->plot->addItem(newButton);
   }
 }
 
@@ -1000,20 +1014,17 @@ void FormFitter::plotROI_options() {
   for (auto &r : fit_data_->regions_) {
     double x = r.hr_x_nrg.front();
     double y = r.hr_fullfit.front();
-    QCPItemPixmap *overlayButton;
 
-    overlayButton = new QCPItemPixmap(ui->plot);
-    overlayButton->setPixmap(QPixmap(":/icons/oxy/22/applications_systemg.png"));
-    overlayButton->topLeft->setType(QCPItemPosition::ptPlotCoords);
-    overlayButton->topLeft->setCoords(x, y);
-    overlayButton->bottomRight->setParentAnchor(overlayButton->topLeft);
-    overlayButton->bottomRight->setCoords(22, 22);
-    overlayButton->setScaled(true);
-    overlayButton->setSelectable(false);
-    overlayButton->setProperty("button_name", QString("ROI options"));
-    overlayButton->setProperty("ROI", QVariant::fromValue(x));
-    overlayButton->setProperty("tooltip", QString("Do ROI stuff"));
-    ui->plot->addItem(overlayButton);
+    QCPOverlayButton *newButton = new QCPOverlayButton(ui->plot,
+          QPixmap(":/icons/oxy/22/applications_systemg.png"),
+          "ROI options", "Do ROI stuff",
+          Qt::AlignTop | Qt::AlignLeft
+          );
+
+    newButton->topLeft->setType(QCPItemPosition::ptPlotCoords);
+    newButton->topLeft->setCoords(x, y);
+    newButton->setProperty("ROI", QVariant::fromValue(x));
+    ui->plot->addItem(newButton);
   }
 }
 
@@ -1065,54 +1076,51 @@ void FormFitter::follow_selection() {
 }
 
 void FormFitter::plotButtons() {
-  QCPItemPixmap *overlayButton;
+  QCPOverlayButton *overlayButton;
+  QCPOverlayButton *newButton;
 
-  overlayButton = new QCPItemPixmap(ui->plot);
-  overlayButton->setClipToAxisRect(false);
-  overlayButton->setPixmap(QPixmap(":/icons/oxy/16/view_fullscreen.png"));
-  overlayButton->topLeft->setType(QCPItemPosition::ptAbsolute);
-  overlayButton->topLeft->setCoords(5, 5);
-  overlayButton->bottomRight->setParentAnchor(overlayButton->topLeft);
-  overlayButton->bottomRight->setCoords(16, 16);
-  overlayButton->setScaled(true);
-  overlayButton->setSelectable(false);
-  overlayButton->setProperty("button_name", QString("reset_scales"));
-  overlayButton->setProperty("tooltip", QString("Reset plot scales"));
-  ui->plot->addItem(overlayButton);
+  newButton = new QCPOverlayButton(ui->plot,
+        QPixmap(":/icons/oxy/16/view_fullscreen.png"),
+        "reset_scales", "Reset plot scales",
+        Qt::AlignBottom | Qt::AlignRight);
+  newButton->setClipToAxisRect(false);
+  newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
+  newButton->topLeft->setCoords(5, 5);
+  ui->plot->addItem(newButton);
+  overlayButton = newButton;
 
   if (!menuOptions.isEmpty()) {
-    QCPItemPixmap *newButton = new QCPItemPixmap(ui->plot);
+    newButton = new QCPOverlayButton(ui->plot,
+          QPixmap(":/icons/oxy/16/view_statistics.png"),
+          "options", "Style options",
+          Qt::AlignBottom | Qt::AlignRight);
     newButton->setClipToAxisRect(false);
-    newButton->setPixmap(QPixmap(":/icons/oxy/16/view_statistics.png"));
-    newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
     newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
     newButton->topLeft->setCoords(0, 5);
-    newButton->bottomRight->setParentAnchor(newButton->topLeft);
-    newButton->bottomRight->setCoords(16, 16);
-    newButton->setScaled(false);
-    newButton->setSelectable(false);
-    newButton->setProperty("button_name", QString("options"));
-    newButton->setProperty("tooltip", QString("Style options"));
     ui->plot->addItem(newButton);
     overlayButton = newButton;
   }
 
-  if (true) {
-    QCPItemPixmap *newButton = new QCPItemPixmap(ui->plot);
-    newButton->setClipToAxisRect(false);
-    newButton->setPixmap(QPixmap(":/icons/oxy/16/document_save.png"));
-    newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
-    newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
-    newButton->topLeft->setCoords(0, 5);
-    newButton->bottomRight->setParentAnchor(newButton->topLeft);
-    newButton->bottomRight->setCoords(16, 16);
-    newButton->setScaled(true);
-    newButton->setSelectable(false);
-    newButton->setProperty("button_name", QString("export"));
-    newButton->setProperty("tooltip", QString("Export plot"));
-    ui->plot->addItem(newButton);
-    overlayButton = newButton;
-  }
+  newButton = new QCPOverlayButton(ui->plot,
+        QPixmap(":/icons/oxy/16/document_save.png"),
+        "export", "Export plot",
+        Qt::AlignBottom | Qt::AlignRight);
+  newButton->setClipToAxisRect(false);
+  newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
+  newButton->topLeft->setCoords(0, 5);
+  ui->plot->addItem(newButton);
+  overlayButton = newButton;
+
+  newButton = new QCPOverlayButton(ui->plot,
+        QPixmap(":/icons/oxy/16/editdelete.png"),
+        "delete peaks", "Delete selected peaks",
+        Qt::AlignBottom | Qt::AlignRight);
+  newButton->setClipToAxisRect(false);
+  newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
+  newButton->topLeft->setCoords(0, 5);
+  ui->plot->addItem(newButton);
+  overlayButton = newButton;
+
 }
 
 
@@ -1215,37 +1223,38 @@ void FormFitter::clicked_plottable(QCPAbstractPlottable *plt) {
 }
 
 void FormFitter::clicked_item(QCPAbstractItem* itm) {
-  if (QCPItemPixmap *pix = qobject_cast<QCPItemPixmap*>(itm)) {
-    if (!pix->visible())
-      return;
-    //    QPoint p = this->mapFromGlobal(QCursor::pos());
-    QString name = pix->property("button_name").toString();
-    if (name == "options") {
-      menuOptions.exec(QCursor::pos());
-    } else if (name == "export") {
-      menuExportFormat.exec(QCursor::pos());
-    } else if (name == "reset_scales") {
-      zoom_out();
-    } else if (name == "SUM4") {
-      makeSUM4_range(pix->property("SUM4").toDouble(), 0);
-    } else if (name == "SUM4 L") {
-      makeSUM4_range(pix->property("SUM4").toDouble(), -1);
-    } else if (name == "SUM4 R") {
-      makeSUM4_range(pix->property("SUM4").toDouble(), 1);
-    } else if (name == "ROI options") {
-      menuROI.setProperty("ROI", pix->property("ROI"));
-      menuROI.exec(QCursor::pos());
-    } else if (name == "roi bounds") {
-      adjust_roi_bounds();
-    } else if (name == "add peak") {
-      add_peak();
-    } else if (name == "SUM4 adjust") {
-      adjust_sum4_bounds();
-    } else if (name == "SUM4L adjust") {
-      adjust_sum4_bounds();
-    } else if (name == "SUM4R adjust") {
-      adjust_sum4_bounds();
-    }
+  if (QCPOverlayButton *button = qobject_cast<QCPOverlayButton*>(itm)) {
+      if (button->name() == "export")
+        menuExportFormat.exec(QCursor::pos());
+      else if (button->name() == "reset_scales")
+        zoom_out();
+      else if (button->name() == "options")
+        menuOptions.exec(QCursor::pos());
+      else if (button->name() == "SUM4")
+        makeSUM4_range(button->property("SUM4").toDouble(), 0);
+      else if (button->name() == "SUM4 L")
+        makeSUM4_range(button->property("SUM4").toDouble(), -1);
+      else if (button->name() == "SUM4 R")
+        makeSUM4_range(button->property("SUM4").toDouble(), 1);
+      else if (button->name() == "ROI options")
+      {
+        if (!busy_) {
+          menuROI.setProperty("ROI", button->property("ROI"));
+          menuROI.exec(QCursor::pos());
+        }
+      }
+      else if (button->name() == "roi bounds")
+        adjust_roi_bounds();
+      else if (button->name() == "add peak")
+        add_peak();
+      else if (button->name() == "delete peaks")
+        delete_selected_peaks();
+      else if (button->name() == "SUM4 adjust")
+        adjust_sum4_bounds();
+      else if (button->name() == "SUM4L adjust")
+        adjust_sum4_bounds();
+      else if (button->name() == "SUM4R adjust")
+        adjust_sum4_bounds();
   }
 }
 
@@ -1383,6 +1392,13 @@ void FormFitter::changeROI(QAction* action) {
 
 QString FormFitter::scale_type() {
   return scale_type_;
+}
+
+void FormFitter::switch_scale_type() {
+  if (scale_type_ == "Linear")
+    set_scale_type("Logarithmic");
+  else
+    set_scale_type("Linear");
 }
 
 void FormFitter::set_scale_type(QString sct) {
@@ -1541,52 +1557,46 @@ void FormFitter::updateData() {
 void FormFitter::plotSUM4_options() {
   for (auto &r : fit_data_->regions_) {
     for (auto &p : r.peaks_) {
-      QCPItemPixmap *overlayButton;
+      QCPOverlayButton *newButton;
 
       double x = fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[p.second.sum4_.bx.front()], fit_data_->metadata_.bits);
       double y = p.second.sum4_.by.front();
-      overlayButton = new QCPItemPixmap(ui->plot);
-      overlayButton->setPixmap(QPixmap(":/icons/oxy/22/system_switch_user.png"));
-      overlayButton->bottomRight->setType(QCPItemPosition::ptPlotCoords);
-      overlayButton->bottomRight->setCoords(x, y);
-      overlayButton->topLeft->setParentAnchor(overlayButton->bottomRight);
-      overlayButton->topLeft->setCoords(22, -22);
-      overlayButton->setScaled(true);
-      overlayButton->setSelectable(false);
-      overlayButton->setProperty("button_name", QString("SUM4"));
-      overlayButton->setProperty("SUM4", QVariant::fromValue(p.first));
-      overlayButton->setProperty("tooltip", QString("Do SUM4 stuff"));
-      ui->plot->addItem(overlayButton);
+
+      newButton = new QCPOverlayButton(ui->plot,
+            QPixmap(":/icons/oxy/22/system_switch_user.png"),
+            "SUM4", "Do sum4 stuff",
+            Qt::AlignTop | Qt::AlignLeft
+            );
+      newButton->bottomRight->setType(QCPItemPosition::ptPlotCoords);
+      newButton->bottomRight->setCoords(x, y);
+      newButton->setProperty("SUM4", QVariant::fromValue(p.first));
+      ui->plot->addItem(newButton);
+
 
       x = fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[p.second.sum4_.LB().start()], fit_data_->metadata_.bits);
       y = p.second.sum4_.LB().average();
-      overlayButton = new QCPItemPixmap(ui->plot);
-      overlayButton->setPixmap(QPixmap(":/icons/oxy/22/system_switch_user.png"));
-      overlayButton->bottomRight->setType(QCPItemPosition::ptPlotCoords);
-      overlayButton->bottomRight->setCoords(x, y);
-      overlayButton->topLeft->setParentAnchor(overlayButton->bottomRight);
-      overlayButton->topLeft->setCoords(22, -22);
-      overlayButton->setScaled(true);
-      overlayButton->setSelectable(false);
-      overlayButton->setProperty("button_name", QString("SUM4 L"));
-      overlayButton->setProperty("SUM4", QVariant::fromValue(p.first));
-      overlayButton->setProperty("tooltip", QString("Do SUM4 LB stuff"));
-      ui->plot->addItem(overlayButton);
+      newButton = new QCPOverlayButton(ui->plot,
+            QPixmap(":/icons/oxy/22/system_switch_user.png"),
+            "SUM4 L", "Do sum4 LB stuff",
+            Qt::AlignTop | Qt::AlignLeft
+            );
+      newButton->bottomRight->setType(QCPItemPosition::ptPlotCoords);
+      newButton->bottomRight->setCoords(x, y);
+      newButton->setProperty("SUM4", QVariant::fromValue(p.first));
+      ui->plot->addItem(newButton);
 
       x = fit_data_->nrg_cali_.transform(fit_data_->finder_.x_[p.second.sum4_.RB().start()], fit_data_->metadata_.bits);
       y = p.second.sum4_.RB().average();
-      overlayButton = new QCPItemPixmap(ui->plot);
-      overlayButton->setPixmap(QPixmap(":/icons/oxy/22/system_switch_user.png"));
-      overlayButton->bottomRight->setType(QCPItemPosition::ptPlotCoords);
-      overlayButton->bottomRight->setCoords(x, y);
-      overlayButton->topLeft->setParentAnchor(overlayButton->bottomRight);
-      overlayButton->topLeft->setCoords(22, -22);
-      overlayButton->setScaled(true);
-      overlayButton->setSelectable(false);
-      overlayButton->setProperty("button_name", QString("SUM4 R"));
-      overlayButton->setProperty("SUM4", QVariant::fromValue(p.first));
-      overlayButton->setProperty("tooltip", QString("Do SUM4 RB stuff"));
-      ui->plot->addItem(overlayButton);
+      newButton = new QCPOverlayButton(ui->plot,
+            QPixmap(":/icons/oxy/22/system_switch_user.png"),
+            "SUM4 R", "Do sum4 RB stuff",
+            Qt::AlignTop | Qt::AlignLeft
+            );
+      newButton->bottomRight->setType(QCPItemPosition::ptPlotCoords);
+      newButton->bottomRight->setCoords(x, y);
+      newButton->setProperty("SUM4", QVariant::fromValue(p.first));
+      ui->plot->addItem(newButton);
+
     }
   }
 }
@@ -1653,11 +1663,18 @@ void FormFitter::calc_visible() {
       if (line->property("chan_value").isValid()) {
         line->setSelected(selected_peaks_.count(line->property("chan_value").toDouble()));
       }
-    } else if (QCPItemPixmap *map = qobject_cast<QCPItemPixmap*>(q)) {
-      if (map->property("ROI").isValid() && !range_.visible) {
-        map->setVisible((visible_roi_ < 10) && good_starts.count(map->property("ROI").toDouble()) && selected_peaks_.empty());
-      } else if (map->property("SUM4").isValid()) {
-        map->setVisible(sum4_visible && selected_peaks_.count(map->property("SUM4").toDouble()));
+    } else if (QCPOverlayButton *button = qobject_cast<QCPOverlayButton*>(q)) {
+      if (button->property("ROI").isValid()) {
+        button->setVisible((visible_roi_ < 10)
+                           && good_starts.count(button->property("ROI").toDouble()) && selected_peaks_.empty()
+                           && !range_.visible
+                           && !busy_);
+      } else if (button->property("SUM4").isValid()) {
+        button->setVisible(sum4_visible
+                           && selected_peaks_.count(button->property("SUM4").toDouble())
+                           && !busy_);
+      } else if (button->name() == "delete peaks") {
+        button->setVisible(!selected_peaks_.empty() && !busy_);
       }
 
     }
