@@ -123,7 +123,7 @@ void Fitter::find_regions() {
   newROI.set_data(finder_.x_, finder_.y_, L, R);
   regions_.push_back(newROI);
 
-  PL_DBG << "<Fitter> Created " << regions_.size() << " regions";
+//  PL_DBG << "<Fitter> Created " << regions_.size() << " regions";
 
 }
 

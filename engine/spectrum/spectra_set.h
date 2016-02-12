@@ -47,6 +47,7 @@ class SpectraSet {
   //populate one of these ways
   void set_spectra(const XMLableDB<Spectrum::Template>&);
   void add_spectrum(Spectrum::Spectrum* newSpectrum);
+  void add_spectrum(Spectrum::Template spectrum);
 
   void import_spn(std::string file_name);
 

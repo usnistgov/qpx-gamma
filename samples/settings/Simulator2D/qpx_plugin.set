@@ -4,18 +4,39 @@
 		<branch address="0" id="Simulator2D/Source file" />
 		<branch address="1" id="Simulator2D/Source spectrum" />
 		<branch address="2" id="Simulator2D/Resolution" />
-		<branch address="3" id="Simulator2D/Dest1" />
-		<branch address="4" id="Simulator2D/Dest2" />
 		<branch address="5" id="Simulator2D/CoincThresh" />
 		<branch address="6" id="Simulator2D/ScaleRate" />
 		<branch address="7" id="Simulator2D/SpillInterval" />
+		<branch address="8" id="Simulator2D/Gain0" />
+		<branch address="9" id="Simulator2D/Gain1" />
 	</SettingMeta>
 	<SettingMeta id="Simulator2D/Source file" type="file_path" name="Source file" writable="true" unit="Qpx project (*.qpx)" />
 	<SettingMeta id="Simulator2D/Source spectrum" type="int_menu" name="Source spectrum" writable="true" />
-	<SettingMeta id="Simulator2D/Resolution" type="integer" name="Resolution" writable="true" step="1" minimum="4" maximum="16" unit="bits"/>
-	<SettingMeta id="Simulator2D/Dest1" type="integer" name="Destination channel 1" writable="true" step="1" minimum="0" maximum="42"/>
-	<SettingMeta id="Simulator2D/Dest2" type="integer" name="Destination channel 2" writable="true" step="1" minimum="0" maximum="42"/>
-	<SettingMeta id="Simulator2D/CoincThresh" type="integer" name="Coincidence threshold" writable="true" step="1" minimum="1" maximum="1000000" unit="ticks"/>
+	<SettingMeta id="Simulator2D/Resolution" type="integer" name="Resolution" writable="true" minimum="4" maximum="16" unit="bits"/>
+	<SettingMeta id="Simulator2D/CoincThresh" type="integer" name="Coincidence threshold" writable="true" minimum="1" maximum="1000000" unit="ticks"/>
 	<SettingMeta id="Simulator2D/ScaleRate" type="floating" name="Scale event rate" writable="true" step="0.001" minimum="0.001" maximum="1000000"/>
-	<SettingMeta id="Simulator2D/SpillInterval" type="integer" name="Interval between spills" writable="true" step="1" minimum="1" maximum="3600" unit="s" />
+	<SettingMeta id="Simulator2D/SpillInterval" type="integer" name="Interval between spills" writable="true" minimum="1" maximum="3600" unit="s" />
+	
+	<SettingMeta id="VME/IsegVHS/Channel" type="stem" name="Channel" address="1" writable="true" saveworthy="false" max_indices="1">
+		<branch address="0" id="VME/IsegVHS/Channel/Status" />
+		<branch address="1" id="VME/IsegVHS/Channel/OnOff" />
+		<branch address="2" id="VME/IsegVHS/Channel/ChannelStatus" />
+		<branch address="3" id="VME/IsegVHS/Channel/ChannelControl" />
+		<branch address="4" id="VME/IsegVHS/Channel/ChannelEventStatus" />
+		<branch address="5" id="VME/IsegVHS/Channel/ChannelEventMask" />
+		<branch address="6" id="VME/IsegVHS/Channel/VoltageSet" />
+		<branch address="7" id="VME/IsegVHS/Channel/CurrentSetOrTrip" />
+		<branch address="8" id="VME/IsegVHS/Channel/VoltageMeasure" />
+		<branch address="9" id="VME/IsegVHS/Channel/CurrentMeasure" />
+		<branch address="10" id="VME/IsegVHS/Channel/VoltageBoundsIlkMaxSet" />
+		<branch address="11" id="VME/IsegVHS/Channel/CurrentBoundsIlkMaxSet" />
+		<branch address="12" id="VME/IsegVHS/Channel/VoltageNominalMaxSet" />
+		<branch address="13" id="VME/IsegVHS/Channel/CurrentNominalMaxSet" />
+		<branch address="14" id="VME/IsegVHS/Channel/VoltageIlkMinSet" />
+		<branch address="15" id="VME/IsegVHS/Channel/CurrentIlkMinSet" />
+	</SettingMeta>
+	
+	<SettingMeta id="Simulator2D/Gain0" type="floating" name="Virtual gain" address="-1" writable="true" unit="%" step="0.1" minimum="1" maximum="100000" flags="gain" max_indices="1"/>
+	<SettingMeta id="Simulator2D/Gain1" type="floating" name="Virtual gain" address="-1" writable="true" unit="%" step="0.1" minimum="1" maximum="100000" flags="gain" max_indices="1"/>
+
 </Simulator2D>

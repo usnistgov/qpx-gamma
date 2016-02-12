@@ -142,7 +142,7 @@ void ThreadFitter::run() {
     if (action_ == kFit) {
       int current = 1;
       for (auto &q : fitter_.regions_) {
-        PL_DBG << "<Fitter> Fitting region " << current << " of " << fitter_.regions_.size() << " at E=" << q.hr_x_nrg.front();
+//        PL_DBG << "<Fitter> Fitting region " << current << " of " << fitter_.regions_.size() << " at E=" << q.hr_x_nrg.front();
         q.auto_fit(interruptor_);
         fitter_.remap_region(q);
         current++;

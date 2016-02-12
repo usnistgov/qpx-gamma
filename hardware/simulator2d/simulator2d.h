@@ -84,6 +84,7 @@ protected:
 
   Spill get_spill();
 
+  double gain0_, gain1_;
 
 
   boost::random::discrete_distribution<> dist_;

@@ -68,6 +68,7 @@ public:
   void updateData();
 
   void reset_scales();
+  bool busy() { return busy_; }
 
 
   void clearSelection();
@@ -100,7 +101,7 @@ private slots:
   void switch_scale_type();
 
   void selection_changed();
-  virtual void plot_rezoom();
+  void plot_rezoom(bool force = false);
   void exportRequested(QAction*);
   void optionsChanged(QAction*);
   void changeROI(QAction*);
@@ -118,7 +119,6 @@ private slots:
   void createRange(Coord);
   void createROI_bounds_range(double);
 
-  void replot_all();
   void toggle_push();
 
   void add_peak();
@@ -158,7 +158,6 @@ private:
   QCPItemTracer* edge_trc1;
   QCPItemTracer* edge_trc2;
 
-  bool force_rezoom_;
   double minx, maxx;
   double miny, maxy;
 

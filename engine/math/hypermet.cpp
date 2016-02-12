@@ -63,7 +63,7 @@ Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y, d
   Hypermet(h, c, w) {
   std::vector<double> sigma;
     for (auto &q : y) {
-      sigma.push_back(1/sqrt(q));
+      sigma.push_back(sqrt(q));
     }
 //  sigma.resize(x.size(), 1);
 
@@ -178,7 +178,7 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
 
   std::vector<double> sigma;
   for (auto &q : y) {
-    sigma.push_back(1/sqrt(q));
+    sigma.push_back(sqrt(q));
   }
 
   bool success = true;

@@ -59,15 +59,14 @@ private slots:
 
   void on_pushMatchGain_clicked();
 
-  bool find_peaks();
+  void update_fits();
+  void update_peak_selection(std::set<double>);
 
   void on_pushStop_clicked();
   void do_post_processing();
   void do_run();
 
   void toggle_push(bool, Qpx::DeviceStatus);
-
-  void on_pushFindPeaks_clicked();
 
   void on_comboTarget_currentIndexChanged(int index);
 
@@ -76,8 +75,6 @@ private slots:
 private:
   void loadSettings();
   void saveSettings();
-
-  void plot_one_spectrum(Gamma::Fitter &sp, std::map<double, double> &minima, std::map<double, double> &maxima);
 
   Ui::FormGainMatch *ui;
 
@@ -106,7 +103,7 @@ private:
   std::string current_setting_;
 
   Gamma::Fitter fitter_ref_, fitter_opt_;
-  Gamma::Peak gauss_ref_, gauss_opt_;
+  Gamma::Peak peak_ref_, peak_opt_;
 
 };
 

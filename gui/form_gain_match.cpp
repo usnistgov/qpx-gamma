@@ -42,7 +42,6 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
   this->setWindowTitle("Gain matching");
 
   loadSettings();
-  connect(&gm_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
 
   if (Qpx::Spectrum::Template *temp = Qpx::Spectrum::Factory::getInstance().create_template("1D")) {
     reference_   = *temp;
@@ -66,9 +65,13 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
   ap_reference_.default_pen = QPen(Qt::blue, 0);
   ap_optimized_.default_pen = QPen(Qt::red, 0);
 
-  style_fit.default_pen = QPen(Qt::darkBlue, 0);
-  style_pts.default_pen = QPen(Qt::blue, 7);
-  style_pts.themes["selected"] = QPen(Qt::red, 7);
+  QColor point_color;
+  point_color.setHsv(180, 215, 150, 120);
+  style_pts.default_pen = QPen(point_color, 9);
+  QColor selected_color;
+  selected_color.setHsv(225, 255, 230, 210);
+  style_pts.themes["selected"] = QPen(selected_color, 9);
+  style_fit.default_pen = QPen(Qt::darkCyan, 2);
 
   ui->PlotCalib->setLabels("gain", "peak center bin");
 
@@ -85,7 +88,17 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
   //connect(ui->tableResults, SIGNAL(itemSelectionChanged()), this, SLOT(resultChosen()));
 
   connect(&gm_plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
+  connect(&gm_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
+  connect(ui->plotOpt, SIGNAL(peak_selection_changed(std::set<double>)),
+          this, SLOT(update_peak_selection(std::set<double>)));
+  connect(ui->plotRef, SIGNAL(peak_selection_changed(std::set<double>)),
+          this, SLOT(update_peak_selection(std::set<double>)));
+  connect(ui->plotOpt, SIGNAL(data_changed()), this, SLOT(update_fits()));
+  connect(ui->plotRef, SIGNAL(data_changed()), this, SLOT(update_fits()));
 
+
+  ui->plotOpt->setFit(&fitter_opt_);
+  ui->plotRef->setFit(&fitter_ref_);
 
   update_settings();
 
@@ -178,33 +191,8 @@ void FormGainMatch::do_run()
 {
   ui->pushStop->setEnabled(true);
   my_run_ = true;
-  emit toggleIO(false);
-
-  bits = ui->spinBits->value();
-
-  gm_spectra_.clear();
-  reference_.bits = bits;
-  int refchan = ui->comboReference->currentData().toInt();
-  reference_.add_pattern.resize(refchan + 1, 0);
-  reference_.add_pattern[refchan] = 1;
-  reference_.match_pattern.resize(refchan + 1, 0);
-  reference_.match_pattern[refchan] = 1;
-
-  optimizing_.bits = bits;
   int optchan = ui->comboTarget->currentData().toInt();
-  optimizing_.add_pattern.resize(optchan + 1, 0);
-  optimizing_.add_pattern[optchan] = 1;
-  optimizing_.match_pattern.resize(optchan + 1, 0);
-  optimizing_.match_pattern[optchan] = 1;
-
-  XMLableDB<Qpx::Spectrum::Template> db("SpectrumTemplates");
-  db.add(reference_);
-  db.add(optimizing_);
-
-  gm_plot_thread_.start();
-
-  gm_spectra_.set_spectra(db);
-  ui->plot->clearGraphs();
+  emit toggleIO(false);
 
   Gamma::Setting gain_setting(current_setting_);
   gain_setting.indices.clear();
@@ -214,23 +202,60 @@ void FormGainMatch::do_run()
   gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
   double old_gain = gain_setting.value_dbl;
 
+
+  bits = ui->spinBits->value();
+
+  if (gm_spectra_.empty()) {
+    reference_.bits = bits;
+    int refchan = ui->comboReference->currentData().toInt();
+    reference_.add_pattern.resize(refchan + 1, 0);
+    reference_.add_pattern[refchan] = 1;
+    reference_.match_pattern.resize(refchan + 1, 0);
+    reference_.match_pattern[refchan] = 1;
+    gm_spectra_.add_spectrum(reference_);
+  } else {
+    gm_spectra_.delete_spectrum("Optimizing");
+  }
+
+  Gamma::Setting set_gain("Gain");
+  set_gain.value_dbl = old_gain;
+  Gamma::Setting set_pass("Pass");
+  set_pass.value_int = current_pass;
+  optimizing_.generic_attributes.replace(set_gain);
+  optimizing_.generic_attributes.replace(set_pass);
+  optimizing_.bits = bits;
+  optimizing_.add_pattern.resize(optchan + 1, 0);
+  optimizing_.add_pattern[optchan] = 1;
+  optimizing_.match_pattern.resize(optchan + 1, 0);
+  optimizing_.match_pattern[optchan] = 1;
+  gm_spectra_.add_spectrum(optimizing_);
+
+
+  gm_plot_thread_.start();
+
+  fitter_ref_.setData(gm_spectra_.by_name("Reference"));
+  fitter_opt_.setData(gm_spectra_.by_name("Optimizing"));
+  ui->plotRef->update_spectrum();
+  ui->plotOpt->update_spectrum();
+
+
   gains.push_back(old_gain);
   peaks_.push_back(Gamma::Peak());
+  ui->tableResults->setRowCount(peaks_.size());
 
   gm_runner_thread_.do_run(gm_spectra_, gm_interruptor_, 0);
 }
 
 void FormGainMatch::run_completed() {
   if (my_run_) {
-    gm_spectra_.clear();
     gm_spectra_.terminate();
     gm_plot_thread_.wait();
-    gauss_ref_.area_best = 0;
-    gauss_opt_.area_best = 0;
+    peak_ref_.area_best = 0;
+    peak_opt_.area_best = 0;
     //replot_markers();
 
     if (!gm_runner_thread_.terminating()) {
-      PL_INFO << "[Gain matching] Completed pass # " << current_pass;
+      PL_INFO << "<FormGainMatch> Completed pass # " << current_pass;
       current_pass++;
       do_post_processing();
     } else {
@@ -242,32 +267,33 @@ void FormGainMatch::run_completed() {
 }
 
 void FormGainMatch::do_post_processing() {
-  PL_DBG << "[Gain matching] Gain post-processing...";
 
-  update_plots();
+//  update_plots();
 
   double old_gain = gains.back();
-  double delta = gauss_opt_.center - gauss_ref_.center;
+  double delta = peak_opt_.center - peak_ref_.center;
 
-  deltas.push_back(gauss_opt_.center);
+  deltas.push_back(peak_opt_.center);
 
   double new_gain = old_gain;
-  if (gauss_opt_.center < gauss_ref_.center)
+  if (peak_opt_.center < peak_ref_.center)
     new_gain += ui->doubleSpinDeltaV->value();
-  else if (gauss_opt_.center > gauss_ref_.center)
+  else if (peak_opt_.center > peak_ref_.center)
     new_gain -= ui->doubleSpinDeltaV->value();
 
   if (gains.size() > 1) {
     Polynomial p = Polynomial(gains, deltas, 2);
-    double predict = p.eval_inverse(gauss_ref_.center/*, ui->doubleThreshold->value() / 4.0*/);
-    PL_INFO << "[Gain matching] for next pass, predicted gain = " << predict;
-    new_gain = predict;
+    double predict = p.eval_inverse(peak_ref_.center/*, ui->doubleThreshold->value() / 4.0*/);
+    if (!std::isnan(predict)) {
+      new_gain = predict;
+    }
+
 
     QVector<double> xx = QVector<double>::fromStdVector(gains);
     QVector<double> yy = QVector<double>::fromStdVector(deltas);
 
-    xx.push_back(predict);
-    yy.push_back(gauss_ref_.center);
+    xx.push_back(new_gain);
+    yy.push_back(peak_ref_.center);
 
     double xmin = std::numeric_limits<double>::max();
     double xmax = - std::numeric_limits<double>::max();
@@ -283,15 +309,8 @@ void FormGainMatch::do_post_processing() {
     xmax += x_margin;
     xmin -= x_margin;
 
-    ui->PlotCalib->clearGraphs();
-
-    PL_DBG << "gain response will plot " << xx.size() << " points";
-
+    ui->PlotCalib->clear_data();
     ui->PlotCalib->addPoints(xx, yy, style_pts);
-
-    std::set<double> chosen_peaks_chan;
-    chosen_peaks_chan.insert(predict);
-    ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
 
 
     xx.clear();
@@ -303,16 +322,15 @@ void FormGainMatch::do_post_processing() {
       xx.push_back(i);
       yy.push_back(p.eval(i));
     }
-    PL_DBG << "gain response will plot " << xx.size() << " for curve";
-
 
     ui->PlotCalib->addFit(xx, yy, style_fit);
     ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(p.to_UTF8(3, true)));
+    ui->PlotCalib->redraw();
 
   }
 
   if (std::abs(delta) < ui->doubleThreshold->value()) {
-    PL_INFO << "[Gain matching] gain matching complete";
+    PL_INFO << "<FormGainMatch> gain matching complete";
     ui->pushStop->setEnabled(false);
     my_run_ = false;
     emit toggleIO(true);
@@ -333,59 +351,106 @@ void FormGainMatch::do_post_processing() {
   new_gain = gain_setting.value_dbl;
 
 
-  PL_INFO << "[Gain matching] gain changed from " << std::fixed << std::setprecision(6)
+  PL_INFO << "<FormGainMatch> gain changed from " << std::fixed << std::setprecision(6)
           << old_gain << " to " << new_gain;
 
   QThread::sleep(2);
   do_run();
 }
 
-bool FormGainMatch::find_peaks() {
-  gauss_ref_ = Gamma::Peak();
-  fitter_ref_.finder_.find_peaks(ui->spinMovAvg->value(), 3.0);
-  fitter_ref_.overlap_ = ui->doubleOverlapWidth->value();
-  fitter_ref_.sum4edge_samples = ui->spinSum4EdgeW->value();
-  fitter_ref_.find_regions();
-  for (auto &q : fitter_ref_.peaks())
-    if (q.second.area_best > gauss_ref_.area_best)
-      gauss_ref_ = q.second;
-
-  gauss_opt_ = Gamma::Peak();
-  fitter_ref_.finder_.find_peaks(ui->spinMovAvg->value(), 3.0);
-  fitter_ref_.overlap_ = ui->doubleOverlapWidth->value();
-  fitter_ref_.sum4edge_samples = ui->spinSum4EdgeW->value();
-  fitter_opt_.find_regions();
-  for (auto &q : fitter_opt_.peaks())
-    if (q.second.area_best > gauss_opt_.area_best)
-        gauss_opt_ = q.second;
-
-  peaks_[peaks_.size() - 1] = gauss_opt_;
-
-  return (gauss_ref_.area_best && gauss_opt_.area_best);
-}
-
-void FormGainMatch::plot_one_spectrum(Gamma::Fitter &sp, std::map<double, double> &minima, std::map<double, double> &maxima) {
-
-  for (int i=0; i < sp.finder_.y_.size(); ++i) {
-    double yy = sp.finder_.y_[i];
-    if (!minima.count(i) || (minima[i] > yy))
-      minima[i] = yy;
-    if (!maxima.count(i) || (maxima[i] < yy))
-      maxima[i] = yy;
+void FormGainMatch::update_fits() {
+  if (!ui->plotRef->busy()) {
+    std::set<double> selref = ui->plotRef->get_selected_peaks();
+    std::set<double> newselr;
+    for (auto &p : fitter_ref_.peaks()) {
+      for (auto &s : selref)
+        if (abs(p.second.center - s) < 2) {
+          newselr.insert(p.second.center);
+//          PL_DBG << "match selr " << p.second.center;
+        }
+    }
+//    PL_DBG << "refsel close enough " << newsel.size();
+    ui->plotRef->set_selected_peaks(newselr);
   }
 
-  AppearanceProfile profile;
-  profile.default_pen = QPen(QColor::fromRgba(sp.metadata_.appearance), 1);
-  ui->plot->addGraph(QVector<double>::fromStdVector(sp.finder_.x_),
-                     QVector<double>::fromStdVector(sp.finder_.y_),
-                     profile, sp.metadata_.bits);
+  if (!ui->plotOpt->busy()) {
+    std::set<double> selopt = ui->plotOpt->get_selected_peaks();
+    std::set<double> newselo;
+    for (auto &p : fitter_opt_.peaks()) {
+      for (auto &s : selopt)
+        if (abs(p.second.center - s) < 2) {
+          newselo.insert(p.second.center);
+//          PL_DBG << "match selo " << p.second.center;
+        }
+    }
+//    PL_DBG << "optsel close enough " << newsel.size();
+    ui->plotOpt->set_selected_peaks(newselo);
+  }
+
+  update_peak_selection(std::set<double>());
+}
+
+
+void FormGainMatch::update_peak_selection(std::set<double> dummy) {
+  peak_ref_ = Gamma::Peak();
+  peak_opt_ = Gamma::Peak();
+
+  std::set<double> selref = ui->plotRef->get_selected_peaks();
+  std::set<double> selopt = ui->plotOpt->get_selected_peaks();
+
+  if ((selref.size() != 1) || (selopt.size() != 1))
+    return;
+
+//  PL_DBG << "Have one peak each";
+
+  if (fitter_ref_.peaks().count(*selref.begin()))
+    peak_ref_ = fitter_ref_.peaks().at(*selref.begin());
+  if (fitter_opt_.peaks().count(*selopt.begin()))
+    peak_opt_ = fitter_opt_.peaks().at(*selopt.begin());
+
+  if ((peak_ref_.area_best == 0) || (peak_opt_.area_best == 0))
+    return;
+
+
+  Gamma::Setting set_gain("Gain");
+  Gamma::Setting set_pass("Pass");
+  double gain = fitter_opt_.metadata_.attributes.get(set_gain).value_dbl;
+  int    pass = fitter_opt_.metadata_.attributes.get(set_pass).value_int;
+
+  peaks_[pass] = peak_opt_;
+
+  if (peaks_.size()) {
+
+    QTableWidgetItem *st = new QTableWidgetItem(QString::number(gains[pass]));
+    st->setFlags(st->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(pass, 0, st);
+
+    QTableWidgetItem *ctr = new QTableWidgetItem(QString::number(peaks_[pass].center));
+    ctr->setFlags(ctr->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(pass, 1, ctr);
+
+    QTableWidgetItem *fw = new QTableWidgetItem(QString::number(peaks_[pass].fwhm_sum4));
+    fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(pass, 2, fw);
+
+    QTableWidgetItem *area = new QTableWidgetItem(QString::number(peaks_[pass].area_best));
+    area->setFlags(area->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(pass, 3, area);
+
+    QTableWidgetItem *err = new QTableWidgetItem(QString::number(peaks_[pass].sum4_.err));
+    err->setFlags(err->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(pass, 4, err);
+  }
+
+
+  if ((pass == current_pass) && (peaks_.back().sum4_.err < ui->doubleError->value()))
+    gm_interruptor_.store(true);
+
 }
 
 
 void FormGainMatch::update_plots() {
-
   bool have_data = false;
-  bool have_peaks = false;
 
   for (auto &q: gm_spectra_.by_type("1D")) {
     Qpx::Spectrum::Metadata md;
@@ -402,67 +467,17 @@ void FormGainMatch::update_plots() {
     }
   }
 
-  if (have_data)
-    have_peaks = find_peaks();
-
-  ui->tableResults->setRowCount(peaks_.size());
-
-  if (peaks_.size()) {
-    int current_spec = peaks_.size() - 1;
-
-    QTableWidgetItem *st = new QTableWidgetItem(QString::number(gains[current_spec]));
-    st->setFlags(st->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(current_spec, 0, st);
-
-    QTableWidgetItem *ctr = new QTableWidgetItem(QString::number(peaks_[current_spec].center));
-    ctr->setFlags(ctr->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(current_spec, 1, ctr);
-
-    QTableWidgetItem *fw = new QTableWidgetItem(QString::number(peaks_[current_spec].fwhm_sum4));
-    fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(current_spec, 2, fw);
-
-    QTableWidgetItem *area = new QTableWidgetItem(QString::number(peaks_[current_spec].area_best));
-    area->setFlags(area->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(current_spec, 3, area);
-
-    QTableWidgetItem *err = new QTableWidgetItem(QString::number(peaks_[current_spec].sum4_.err));
-    err->setFlags(err->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(current_spec, 4, err);
+  if (have_data) {
+//    PL_DBG << "Have data!";
+    if (!ui->plotRef->busy()) {
+      ui->plotRef->updateData();
+      ui->plotRef->perform_fit();
+    }
+    if (!ui->plotOpt->busy()) {
+      ui->plotOpt->updateData();
+      ui->plotOpt->perform_fit();
+    }
   }
-
-
-  if (ui->plot->isVisible()) {
-    this->setCursor(Qt::WaitCursor);
-
-    std::map<double, double> minima, maxima;
-
-    ui->plot->clearGraphs();
-
-    plot_one_spectrum(fitter_ref_, minima, maxima);
-    plot_one_spectrum(fitter_opt_, minima, maxima);
-
-    ui->plot->setLabels("channel", "count");
-
-//    if (gauss_ref_.height) {
-//      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.hr_x_), QVector<double>::fromStdVector(gauss_ref_.hr_fullfit_hypermet_), ap_reference_);
-//      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_ref_.hr_x_), QVector<double>::fromStdVector(gauss_ref_.hr_baseline_h_), ap_reference_);
-//    }
-
-//    if (gauss_opt_.height) {
-//      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.hr_x_), QVector<double>::fromStdVector(gauss_opt_.hr_fullfit_hypermet_), ap_optimized_);
-//      ui->plot->addGraph(QVector<double>::fromStdVector(gauss_opt_.hr_x_), QVector<double>::fromStdVector(gauss_opt_.hr_baseline_h_), ap_optimized_);
-//    }
-
-
-    ui->plot->setYBounds(minima, maxima);
-    ui->plot->replot_markers();
-    ui->plot->redraw();
-  }
-
-
-  if (have_peaks && !peaks_.empty() && (peaks_.back().sum4_.err < ui->doubleError->value()))
-    gm_interruptor_.store(true);
 
   this->setCursor(Qt::ArrowCursor);
 }
@@ -486,20 +501,15 @@ void FormGainMatch::on_pushMatchGain_clicked()
   ui->PlotCalib->clearGraphs();
 
   current_pass = 0;
+  gm_spectra_.clear();
+  fitter_ref_.clear();
+  fitter_opt_.clear();
   do_run();
 }
 
 void FormGainMatch::on_pushStop_clicked()
 {
-  PL_INFO << "Acquisition interrupted by user";
   gm_interruptor_.store(true);
-}
-
-void FormGainMatch::on_pushFindPeaks_clicked()
-{
-  bool have_peaks = find_peaks();
-  if (have_peaks && !peaks_.empty() && (peaks_.back().sum4_.err < ui->doubleError->value()))
-    gm_interruptor_.store(true);
 }
 
 void FormGainMatch::on_comboTarget_currentIndexChanged(int index)

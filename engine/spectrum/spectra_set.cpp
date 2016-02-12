@@ -187,6 +187,18 @@ void SpectraSet::add_spectrum(Spectrum::Spectrum* newSpectrum) {
   // cond_.notify_one();
 }
 
+void SpectraSet::add_spectrum(Spectrum::Template spectrum) {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  Spectrum::Spectrum* newSpectrum = Spectrum::Factory::getInstance().create_from_template(spectrum);
+  if (newSpectrum != nullptr)
+    my_spectra_.push_back(newSpectrum);
+  changed_ = true;
+  ready_ = true;
+  newdata_ = false;
+  terminating_ = false;
+  // cond_.notify_one();
+}
+
 void SpectraSet::delete_spectrum(std::string name) {
   std::list<Spectrum::Spectrum*>::iterator it = my_spectra_.begin();
 

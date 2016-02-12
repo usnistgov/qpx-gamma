@@ -139,7 +139,6 @@ FormFitter::FormFitter(QWidget *parent) :
   miny = std::numeric_limits<double>::max();
   maxy = - std::numeric_limits<double>::max();
 
-  force_rezoom_ = false;
   mouse_pressed_ = false;
   hold_selection_ = false;
 
@@ -210,7 +209,7 @@ FormFitter::~FormFitter()
 void FormFitter::setFit(Gamma::Fitter* fit) {
   fit_data_ = fit;
   update_spectrum();
-  replot_all();
+  updateData();
 }
 
 void FormFitter::loadSettings(QSettings &settings_) {
@@ -234,7 +233,16 @@ void FormFitter::saveSettings(QSettings &settings_) {
 }
 
 void FormFitter::clear() {
+  if (!fit_data_ || busy_)
+    return;
+
   //PL_DBG << "FormFitter::clear()";
+
+  minx = std::numeric_limits<double>::max();
+  maxx = - std::numeric_limits<double>::max();
+  miny = std::numeric_limits<double>::max();
+  maxy = - std::numeric_limits<double>::max();
+
   ui->plot->clearGraphs();
   ui->plot->clearItems();
   minima_.clear();
@@ -246,12 +254,12 @@ void FormFitter::clear() {
 }
 
 void FormFitter::update_spectrum(QString title) {
-  if (fit_data_ == nullptr)
+  if (!fit_data_ || busy_)
     return;
 
   if (fit_data_->metadata_.resolution == 0) {
     clear();
-    replot_all();
+    updateData();
     return;
   }
 
@@ -265,25 +273,11 @@ void FormFitter::update_spectrum(QString title) {
   if (fit_data_->peaks().empty())
     fit_data_->finder_.find_peaks(ui->spinSqWidth->value(), ui->doubleThresh->value());
 
-  replot_all();
+  updateData();
   toggle_push();
+  minx_zoom = 0; maxx_zoom = 0;
 }
 
-
-void FormFitter::replot_all() {
-  if (fit_data_ == nullptr)
-    return;
-
-  //PL_DBG << "FormFitter::replot_all()";
-
-  this->blockSignals(true);
-  this->blockSignals(true);
-
-  this->updateData();
-
-  this->blockSignals(false);
-  this->blockSignals(false);
-}
 
 void FormFitter::refit_ROI(double ROI_nrg) {
   if (busy_ || (fit_data_ == nullptr))
@@ -308,7 +302,7 @@ void FormFitter::rollback_ROI(double ROI_nrg) {
         r.rollback(editor->get_choice());
         fit_data_->remap_region(r);
         toggle_push();
-        replot_all();
+        updateData();
       }
     }
   }
@@ -320,7 +314,7 @@ void FormFitter::delete_ROI(double ROI_nrg) {
 
   fit_data_->delete_ROI(ROI_nrg);
   toggle_push();
-  replot_all();
+  updateData();
 }
 
 void FormFitter::make_range(Marker marker) {
@@ -410,7 +404,7 @@ void FormFitter::perform_fit() {
 
   busy_= true;
   toggle_push();
-  replot_all();
+  updateData();
 
   ui->labelMovie->setVisible(true);
   thread_fitter_.set_data(*fit_data_);
@@ -507,7 +501,7 @@ void FormFitter::adjust_sum4_bounds() {
   hold_selection_ = true;
 
   fit_data_->replace_peak(pk);
-  replot_all();
+  updateData();
   selected_peaks_.clear();
   selected_peaks_.insert(pk.center);
   calc_visible();
@@ -545,14 +539,14 @@ void FormFitter::replace_peaks(std::vector<Gamma::Peak> pks) {
   for (auto &p : pks)
     fit_data_->replace_peak(p);
 
-  replot_all();
+  updateData();
   emit data_changed();
 }
 
 void FormFitter::fit_updated(Gamma::Fitter fitter) {
   *fit_data_ = fitter;
   toggle_push();
-  replot_all();
+  updateData();;
   emit data_changed();
 }
 
@@ -584,7 +578,7 @@ void FormFitter::on_spinSqWidth_editingFinished()
     return;
 
   fit_data_->finder_.find_peaks(ui->spinSqWidth->value(), ui->doubleThresh->value());
-  replot_all();
+  updateData();
 }
 
 void FormFitter::on_spinSum4EdgeW_editingFinished()
@@ -604,7 +598,7 @@ void FormFitter::on_doubleThresh_editingFinished()
     return;
 
   fit_data_->finder_.find_peaks(ui->spinSqWidth->value(), ui->doubleThresh->value());
-  replot_all();
+  updateData();
 }
 
 void FormFitter::on_pushStopFitter_clicked()
@@ -707,14 +701,15 @@ void FormFitter::addGraph(const QVector<double>& x, const QVector<double>& y,
     minx = x[0];
     //PL_DBG << "new minx " << minx;
     ui->plot->xAxis->rescale();
+    ui->plot->xAxis->rescale();
   }
   if (x[x.size() - 1] > maxx) {
     maxx = x[x.size() - 1];
-    ui->plot->xAxis->rescale();
+//    ui->plot->xAxis->rescale();
   }
 }
 
-void FormFitter::plot_rezoom() {
+void FormFitter::plot_rezoom(bool force) {
   if (mouse_pressed_)
     return;
 
@@ -726,14 +721,12 @@ void FormFitter::plot_rezoom() {
   double upperc = ui->plot->xAxis->range().upper;
   double lowerc = ui->plot->xAxis->range().lower;
 
-  if (!force_rezoom_ && (lowerc == minx_zoom) && (upperc == maxx_zoom))
+  if (!force && (lowerc == minx_zoom) && (upperc == maxx_zoom))
     return;
 
   minx_zoom = lowerc;
   maxx_zoom = upperc;
   calc_visible();
-
-  force_rezoom_ = false;
 
   calc_y_bounds(lowerc, upperc);
 
@@ -1305,8 +1298,7 @@ void FormFitter::makeSUM4_range(double peak_chan, int edge)
 
 void FormFitter::zoom_out() {
   ui->plot->rescaleAxes();
-  force_rezoom_ = true;
-  plot_rezoom();
+  plot_rezoom(true);
   ui->plot->replot();
 
 }
@@ -1318,7 +1310,6 @@ void FormFitter::plot_mouse_press(QMouseEvent*) {
   connect(ui->plot, SIGNAL(clickedAbstractItem(QCPAbstractItem*)), this, SLOT(clicked_item(QCPAbstractItem*)));
 //  connect(ui->plot, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
 
-  force_rezoom_ = false;
   mouse_pressed_ = true;
 }
 
@@ -1330,8 +1321,7 @@ void FormFitter::plot_mouse_release(QMouseEvent*) {
 
   mouse_pressed_ = false;
 
-  force_rezoom_ = true;
-  plot_rezoom();
+  plot_rezoom(true);
 
   if ((edge_trc1 != nullptr) || (edge_trc2 != nullptr)) {
     double l = edge_trc1->graphKey();
@@ -1549,8 +1539,7 @@ void FormFitter::updateData() {
   plotSUM4_options();
 
   calc_visible();
-  force_rezoom_ = true;
-  plot_rezoom();
+  plot_rezoom(true);
   ui->plot->replot();
 }
 

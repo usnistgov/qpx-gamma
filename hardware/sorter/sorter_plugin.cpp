@@ -347,6 +347,7 @@ Spill SorterPlugin::get_spill() {
     }
     one_spill.stats.push_back(this_spill);
     spills2_.push_back(this_spill);
+    spills2_.back().lab_time += boost::posix_time::seconds(10); //hack
     spills_.pop_front();
 
     while (!spills_.empty()
@@ -355,6 +356,7 @@ Spill SorterPlugin::get_spill() {
 //      PL_DBG << "<SorterPlugin> adding to update ch=" << one_spill.stats.back().channel << " another update ch=" << callback->spills_.front().channel;
       one_spill.stats.push_back(spills_.front());
       spills2_.push_back(spills_.front());
+      spills2_.back().lab_time += boost::posix_time::seconds(10); //hack
       spills_.pop_front();
     }
 

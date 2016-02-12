@@ -45,6 +45,8 @@ Simulator2D::Simulator2D() {
   chan0_ = 0;
   chan1_ = 1;
   coinc_thresh_ = 3;
+  gain0_ = 1;
+  gain1_ = 1;
 }
 
 bool Simulator2D::die() {
@@ -117,10 +119,16 @@ bool Simulator2D::read_settings_bulk(Gamma::Setting &set) const {
         q.value_int = bits_;
       else if ((q.metadata.setting_type == Gamma::SettingType::floating) && (q.id_ == "Simulator2D/ScaleRate"))
         q.value_dbl = scale_rate_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/Dest1"))
-        q.value_int = chan0_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/Dest2"))
-        q.value_int = chan1_;
+      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/Gain0")) {
+        q.value_dbl = gain0_;
+        q.indices.clear();
+        q.indices.insert(chan0_);
+      }
+      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/Gain1")) {
+        q.value_dbl = gain1_;
+        q.indices.clear();
+        q.indices.insert(chan1_);
+      }
       else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/CoincThresh"))
         q.value_int = coinc_thresh_;
       else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "Simulator2D/Source file"))
@@ -152,10 +160,18 @@ bool Simulator2D::write_settings_bulk(Gamma::Setting &set) {
       spill_interval_ = q.value_int;
     else if (q.id_ == "Simulator2D/Resolution")
       bits_ = q.value_int;
-    else if (q.id_ == "Simulator2D/Dest1")
-      chan0_ = q.value_int;
-    else if (q.id_ == "Simulator2D/Dest2")
-      chan1_ = q.value_int;
+    else if (q.id_ == "Simulator2D/Gain0") {
+      gain0_ = q.value_dbl;
+      chan0_ = -1;
+      for (auto &i : q.indices)
+        chan0_ = i;
+    }
+    else if (q.id_ == "Simulator2D/Gain1") {
+      gain1_ = q.value_dbl;
+      chan1_ = -1;
+      for (auto &i : q.indices)
+        chan1_ = i;
+    }
     else if (q.id_ == "Simulator2D/CoincThresh")
       coinc_thresh_ = q.value_int;
     else if (q.id_ == "Simulator2D/ScaleRate")
@@ -169,7 +185,7 @@ bool Simulator2D::write_settings_bulk(Gamma::Setting &set) {
 
         for (auto &q: temp_set->spectra(2, -1)) {
           Qpx::Spectrum::Metadata md = q->metadata();
-          PL_DBG << "Spectrum available: " << md.name << " t:" << md.type << " r:" << md.bits;
+          PL_DBG << "<Simulator2D> Spectrum available: " << md.name << " t:" << md.type << " r:" << md.bits;
           spectra_.push_back(md.name);
         }
 
@@ -198,30 +214,31 @@ bool Simulator2D::boot() {
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 
   Qpx::SpectraSet* temp_set = new Qpx::SpectraSet;
+  PL_INFO << "<Simulator2D> Reading data from " << source_file_;
   temp_set->read_xml(source_file_, true);
 
   Spectrum::Spectrum* spectrum = temp_set->by_name(source_spectrum_);
 
   if (spectrum == nullptr) {
-    PL_DBG << "<Simulator2D> Success could not find spectrum " << source_spectrum_;
+    PL_DBG << "<Simulator2D> Could not find spectrum " << source_spectrum_;
     delete temp_set;
     return false;
   }
 
   Spectrum::Metadata md = spectrum->metadata();
-  PL_DBG << "Will use " << md.name << " t:" << md.type << " r:" << md.bits;
+  PL_INFO << "<Simulator2D> Will use " << md.name << " type:" << md.type << " bits:" << md.bits;
 
 
   int source_res = md.bits;
 
-  PL_DBG << " source total events coinc " << md.total_count;
+  PL_DBG << "<Simulator2D> source total events coinc " << md.total_count;
 
   settings = temp_set->runInfo().state;
   detectors = md.detectors;
   lab_time = md.real_time.total_milliseconds() * 0.001;
 
   if (lab_time == 0.0) {
-    PL_WARN << "Lab time = 0. Cannot create simulation.";
+    PL_WARN << "<Simulator2D> Lab time = 0. Cannot create simulation.";
     delete temp_set;
     return false;
   }
@@ -230,14 +247,14 @@ bool Simulator2D::boot() {
 
   time_factor = settings.get_setting(Gamma::Setting("Pixie4/System/module/TOTAL_TIME"), Gamma::Match::id).value_dbl / lab_time;
   OCR = static_cast<double>(count_) / lab_time;
-  PL_DBG << "total count=" << count_ << " time_factor=" << time_factor << " OCR=" << OCR;
+  PL_DBG << "<Simulator2D> total count=" << count_ << " time_factor=" << time_factor << " OCR=" << OCR;
 
   int adjust_bits = source_res - bits_;
 
   shift_by_ = 16 - bits_;
   resolution_ = pow(2, bits_);
 
-  PL_INFO << " building matrix for simulation res=" << resolution_ << " shift="  << shift_by_;
+  PL_INFO << "<Simulator2D>  building matrix for simulation res=" << resolution_ << " shift="  << shift_by_;
   std::vector<double> distribution(resolution_*resolution_, 0.0);   //optimize somehow
 
   std::unique_ptr<std::list<Qpx::Spectrum::Entry>> spec_list(spectrum->get_spectrum({{0,spectrum->resolution()},{0,spectrum->resolution()}}));
@@ -247,7 +264,7 @@ bool Simulator2D::boot() {
                  + (it.first[1] >> adjust_bits)]
         =  static_cast<double>(it.second) / static_cast<double> (count_);
 
-  PL_INFO << " creating discrete distribution for simulation";
+  PL_INFO << "<Simulator2D>  creating discrete distribution for simulation";
   dist_ = boost::random::discrete_distribution<>(distribution);
 
   if (shift_by_) {
@@ -285,7 +302,7 @@ void Simulator2D::get_all_settings() {
 
 
 void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* spill_queue) {
-  PL_DBG << "<SorterPlugin> Start run worker";
+  PL_DBG << "<Simulator2D> Start run worker";
 
 
   bool timeout = false;
@@ -297,6 +314,8 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
 
   Spill one_spill;
 
+
+  PL_DBG << "<Simulator2D> gains " << callback->gain0_ << " " << callback->gain1_;
 
   std::set<int> starts_signalled;
 
@@ -337,13 +356,13 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
 
         if (en1 > 0) {
           h.channel = callback->chan0_;
-          h.energy = en1;
+          h.energy = round(en1 * callback->gain0_ * 0.01);
           one_spill.hits.push_back(h);
         }
 
         if (en2 > 0) {
           h.channel = callback->chan1_;
-          h.energy = en2;
+          h.energy = round(en2 * callback->gain1_ * 0.01);
           one_spill.hits.push_back(h);
         }
 
@@ -372,7 +391,7 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
 
   callback->run_status_.store(3);
 
-  PL_DBG << "<SorterPlugin> Stop run worker";
+  PL_DBG << "<Simulator2D> Stop run worker";
 }
 
 
