@@ -143,7 +143,7 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
 
   if (real > 0) {
     dead = (real - live) * 100.0 / real;
-    rate_total = md.total_count.convert_to<double>() / real;
+    rate_total = md.total_count.convert_to<double>() / live; // total count rate corrected for dead time
   }
 
   QString infoText =
@@ -185,7 +185,7 @@ void FormPlot1D::update_plot() {
     if (q)
       md = q->metadata();
 
-    double livetime = md.live_time.total_milliseconds() / 0.001;
+    double livetime = md.live_time.total_milliseconds() * 0.001;
     double rescale  = md.rescale_factor.convert_to<double>();
 
     if (md.visible && (md.resolution > 0) && (md.total_count > 0)) {
