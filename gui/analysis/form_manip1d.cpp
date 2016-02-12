@@ -300,7 +300,7 @@ void FormManip1D::update_plot() {
     if (q)
       md = q->metadata();
 
-    double livetime = md.live_time.total_milliseconds() / 0.001;
+    double livetime = md.live_time.total_milliseconds() * 0.001;
     double rescale  = md.rescale_factor.convert_to<double>();
 
     if (md.visible && (md.resolution > 0) && (md.total_count > 0)) {

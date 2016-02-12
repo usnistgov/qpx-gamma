@@ -302,14 +302,14 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
 
   std::vector<double> calibration;
 
-  PL_DBG << "xylib.blocks =  " << newdata->get_block_count();
+//  PL_DBG << "xylib.blocks =  " << newdata->get_block_count();
   for (int i=0; i < newdata->get_block_count(); i++) {
     calibration.clear();
 
     for (uint32_t j=0; j < newdata->get_block(i)->meta.size(); j++) {
       std::string key = newdata->get_block(i)->meta.get_key(j);
       std::string value = newdata->get_block(i)->meta.get(key);
-      PL_DBG << "xylib.meta " << key << " = " << value;
+//      PL_DBG << "xylib.meta " << key << " = " << value;
       if (key.substr(0, 12) == "energy calib")
         calibration.push_back(boost::lexical_cast<double>(value));
       if (key == "description")
@@ -324,21 +324,25 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
         iss.imbue(std::locale(std::locale::classic(), tif));
         iss >> metadata_.start_time;
       }
-      if (key == "real time (s)")
-        metadata_.real_time = boost::posix_time::duration_from_string(value);
-      if (key == "live time (s)")
-        metadata_.live_time = boost::posix_time::duration_from_string(value);
+      if (key == "real time (s)") {
+        double RT = boost::lexical_cast<double>(value) * 1000;
+        metadata_.real_time = boost::posix_time::milliseconds(RT);
+      }
+      if (key == "live time (s)") {
+        double LT = boost::lexical_cast<double>(value) * 1000;
+        metadata_.live_time = boost::posix_time::milliseconds(LT);
+      }
     }
 
     double tempcount = 0.0;
     int column = newdata->get_block(i)->get_column_count();
-    PL_DBG << "xylib.columns = " << column;
+//    PL_DBG << "xylib.columns = " << column;
 //    if (ext == "vms")
 //      column--;
 
     if (column == 2) {
 
-      PL_DBG << "xylib.points = " << newdata->get_block(i)->get_point_count();
+//      PL_DBG << "xylib.points = " << newdata->get_block(i)->get_point_count();
       for (int k = 0; k < newdata->get_block(i)->get_point_count(); k++) {
         double data = newdata->get_block(i)->get_column(column).get_value(k);
         PreciseFloat nr(data);

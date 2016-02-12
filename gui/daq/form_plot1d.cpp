@@ -430,7 +430,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
     return;
 
   PreciseFloat max = md.max_count;
-  double livetime = md.live_time.total_milliseconds() / 0.001;
+  double livetime = md.live_time.total_milliseconds() * 0.001;
 
   if (moving.visible) {
     Gamma::Calibration cal;
@@ -450,7 +450,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
     if (q) {
       Qpx::Spectrum::Metadata mdt = q->metadata();
       PreciseFloat mc = mdt.max_count;
-      double lt = mdt.live_time.total_milliseconds() / 0.001;
+      double lt = mdt.live_time.total_milliseconds() * 0.001;
 
       if (moving.visible) {
         Gamma::Calibration cal;
