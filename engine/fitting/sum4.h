@@ -32,9 +32,11 @@ namespace Gamma {
 class SUM4Edge {
   uint32_t start_, end_;
   double sum_, w_, avg_, variance_;
+  double min_, max_, midpoint_;
 
 public:
-  SUM4Edge() : start_(0), end_(0), sum_(0), w_(0), avg_(0), variance_(0) {}
+  SUM4Edge() : start_(0), end_(0), sum_(0), w_(0), avg_(0), variance_(0),
+               midpoint_(0), min_(0), max_(0) {}
   SUM4Edge(const std::vector<double> &y,
            uint32_t left, uint32_t right);
 
@@ -44,6 +46,10 @@ public:
   double width()    const {return w_;}
   double average()  const {return avg_;}
   double variance() const {return variance_;}
+
+  double min()      const {return min_;}
+  double max()      const {return max_;}
+  double midpoint() const {return midpoint_;}
 
 };
 

@@ -39,9 +39,17 @@ SUM4Edge::SUM4Edge(const std::vector<double> &y, uint32_t left, uint32_t right)
   end_   = right;
 
   w_ = right - left + 1;
+  midpoint_ = left + (w_ * 0.5);
 
-  for (int i=left; i <= right; ++i)
+
+  min_ = std::numeric_limits<double>::max();
+  max_ = std::numeric_limits<double>::min();
+
+  for (int i=left; i <= right; ++i) {
     sum_ += y[i];
+    min_ = std::min(min_, y[i]);
+    max_ = std::max(max_, y[i]);
+  }
 
   avg_ = sum_ / w_;
 

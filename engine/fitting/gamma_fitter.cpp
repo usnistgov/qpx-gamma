@@ -91,6 +91,9 @@ void Fitter::find_regions() {
   if (finder_.filtered.empty())
     return;
 
+  std::vector<int32_t> Ls;
+  std::vector<int32_t> Rs;
+
   int32_t L = finder_.lefts[0];
   int32_t R = finder_.rights[0];
   for (int i=1; i < finder_.filtered.size(); ++i) {
@@ -106,11 +109,10 @@ void Fitter::find_regions() {
 //      PL_DBG << "postcat ROI " << L << " " << R;
     } else {
 //      PL_DBG << "<Fitter> Creating ROI " << L << "-" << R;
-      ROI newROI(nrg_cali_, fwhm_cali_, metadata_.bits);
       L -= margin; if (L < 0) L = 0;
       R += margin; if (R >= finder_.x_.size()) R = finder_.x_.size() - 1;
-      newROI.set_data(finder_.x_, finder_.y_, L, R);
-      regions_.push_back(newROI);
+      Ls.push_back(L);
+      Rs.push_back(R);
       L = finder_.lefts[i];
       R = finder_.rights[i];
     }
@@ -119,10 +121,23 @@ void Fitter::find_regions() {
   if (fwhm_cali_.valid() && nrg_cali_.valid())
     margin = overlap_ * fwhm_cali_.transform(nrg_cali_.transform(R, metadata_.bits));
   R += margin; if (R >= finder_.x_.size()) R = finder_.x_.size() - 1;
-  ROI newROI(nrg_cali_, fwhm_cali_, metadata_.bits);
-  newROI.set_data(finder_.x_, finder_.y_, L, R);
-  regions_.push_back(newROI);
+  Ls.push_back(L);
+  Rs.push_back(R);
 
+  //extend limits of ROI to edges of neighbor ROIs (grab more background)
+  if (Ls.size() > 2) {
+    for (int i=0; (i+1) < Ls.size(); ++i) {
+      int32_t Rthis = Rs[i];
+      Rs[i] = Ls[i+1] - 1;
+      Ls[i+1] = Rthis + 1;
+    }
+  }
+
+  for (int i=0; i < Ls.size(); ++i) {
+    ROI newROI(nrg_cali_, fwhm_cali_, metadata_.bits);
+    newROI.set_data(finder_.x_, finder_.y_, Ls[i], Rs[i]);
+    regions_.push_back(newROI);
+  }
 //  PL_DBG << "<Fitter> Created " << regions_.size() << " regions";
 
 }
@@ -144,13 +159,34 @@ void Fitter::delete_ROI(double start_energy) {
   regions_ = regions;
 }
 
+ROI* Fitter::parent_of(double center) {
+  ROI *parent = nullptr;
+  for (auto &m : regions_)
+    if (m.contains(center)) {
+      parent = &m;
+      break;
+    }
+  return parent;
+}
+
+
+ROI* Fitter::region_at_nrg(double nrg) {
+  ROI *ret = nullptr;
+  for (auto &m : regions_)
+    if (!m.hr_x_nrg.empty() && (m.hr_x_nrg.front() == nrg)) {
+      ret = &m;
+      break;
+    }
+  return ret;
+}
+
 void Fitter::remap_region(ROI &region) {
   for (auto &p : region.peaks_) {
     if (p.second.sum4_.peak_width == 0) {
       double edge =  p.second.hypermet_.width_.val * sqrt(log(2)) * 3;
-      uint32_t edgeL = finder_.find_index(p.second.hypermet_.center_.val - edge);
-      uint32_t edgeR = finder_.find_index(p.second.hypermet_.center_.val + edge);
-      p.second.sum4_ = SUM4(finder_.y_, edgeL, edgeR, sum4edge_samples);
+      uint32_t edgeL = region.finder_.find_index(p.second.hypermet_.center_.val - edge);
+      uint32_t edgeR = region.finder_.find_index(p.second.hypermet_.center_.val + edge);
+      p.second.sum4_ = SUM4(region.finder_.y_, edgeL, edgeR, region.LB(), region.RB());
     }
     p.second.construct(nrg_cali_, metadata_.live_time.total_milliseconds() * 0.001, metadata_.bits);
   }
@@ -198,13 +234,6 @@ void Fitter::remove_peaks(std::set<double> bins) {
     if (m.remove_peaks(bins))
       remap_region(m);
   }
-
-  std::list<ROI> regions;
-  for (auto &r : regions_)
-    if (!r.peaks_.empty())
-      regions.push_back(r);
-
-  regions_ = regions;
 }
 
 void Fitter::replace_peak(const Peak& pk) {

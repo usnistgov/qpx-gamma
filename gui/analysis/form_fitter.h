@@ -141,6 +141,7 @@ private:
   //data from selected spectrum
   Gamma::Fitter *fit_data_;
   std::set<double> selected_peaks_;
+  double selected_roi_;
 
   Range range_;
 
@@ -180,7 +181,7 @@ private:
   void add_bounds(const QVector<double>& x, const QVector<double>& y);
   void addGraph(const QVector<double>& x, const QVector<double>& y, QPen appearance,
                 int fittable = 0, QString name = QString(), double peak_chan = -1);
-  void addEdge(Gamma::SUM4Edge edge, QPen pen, double peak_chan);
+  void addEdge(Gamma::SUM4Edge edge, std::vector<double> &x, QPen pen, double roi);
 
   void follow_selection();
   void plotButtons();
@@ -189,11 +190,11 @@ private:
   void plotTitle();
 
   void plotROI_options();
-  void plotROI_range();
+//  void plotROI_range();
 
   void plotSUM4_options();
 
-  void makeSUM4_range(double peak_chan, int edge = 0);
+  void makeSUM4_range(double roi, double peak_chan, int edge = 0);
 
   void set_scale_type(QString);
   QString scale_type();

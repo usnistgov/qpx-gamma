@@ -50,6 +50,8 @@ public:
 
   void find_regions();
   void remap_region(ROI &);
+  ROI *parent_of(double center);
+  ROI *region_at_nrg(double nrg);
 
   void add_peak(uint32_t left, uint32_t right, boost::atomic<bool>& interruptor);
   void adj_bounds(ROI &target, uint32_t left, uint32_t right, boost::atomic<bool>& interruptor);

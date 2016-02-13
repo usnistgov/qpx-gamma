@@ -62,6 +62,11 @@ struct ROI {
 
   bool rollback(int i);
 
+  SUM4Edge LB() const {return LB_;}
+  SUM4Edge RB() const {return RB_;}
+  void set_LB(SUM4Edge);
+  void set_RB(SUM4Edge);
+
   void rebuild();
   void render();
   void save_current_fit();
@@ -84,8 +89,10 @@ struct ROI {
                       hr_fullfit;
 
 private:
-  std::vector<double> make_background(uint16_t samples = 5);
-  void init_background(uint16_t samples = 5);
+  SUM4Edge LB_, RB_;
+
+  std::vector<double> remove_background();
+  void init_background(uint16_t samples = 10);
   bool remove_peak(double bin);
   void iterative_fit(boost::atomic<bool>& interruptor);
 

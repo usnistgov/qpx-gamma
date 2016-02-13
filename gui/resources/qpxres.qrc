@@ -71,6 +71,14 @@
         <file>oxy/22/flag_red.png</file>
         <file>oxy/22/system_switch_user.png</file>
         <file>oxy/22/flag_yellow.png</file>
+        <file>oxy/22/flag_black.png</file>
+        <file>oxy/22/flag_blue.png</file>
+        <file>oxy/22/flag_green.png</file>
+        <file>oxy/22/document_save.png</file>
+        <file>oxy/22/editdelete.png</file>
+        <file>oxy/22/view_fullscreen.png</file>
+        <file>oxy/22/games_difficult.png</file>
+        <file>oxy/22/view_statistics.png</file>
     </qresource>
     <qresource prefix="/">
         <file>loader.gif</file>

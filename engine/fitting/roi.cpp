@@ -63,8 +63,9 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
   if (finder_.filtered.empty())
     return;
 
-  init_background();
-  std::vector<double> y_nobkg = make_background();
+  if ((LB_.width() == 0) || (RB_.width() == 0))
+    init_background();
+  std::vector<double> y_nobkg = remove_background();
 
   //  PL_DBG << "ROI finder found " << finder_.filtered.size();
 
@@ -292,7 +293,7 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
     render();
 
     init_background();
-    finder_.y_resid_ = make_background();
+    finder_.y_resid_ = remove_background();
     finder_.find_peaks(3, 3.0);  //assumes default params!!!
 
     ROI new_fit = *this;
@@ -438,7 +439,7 @@ void ROI::render() {
   finder_.setFit(lowres_fullfit, lowres_backsteps);
 }
 
-std::vector<double> ROI::make_background(uint16_t samples) {
+std::vector<double> ROI::remove_background() {
   std::vector<double> y_background = background_.eval(finder_.x_);
 
   std::vector<double> y_nobkg(finder_.x_.size());
@@ -448,39 +449,55 @@ std::vector<double> ROI::make_background(uint16_t samples) {
   return y_nobkg;
 }
 
+void ROI::set_LB(SUM4Edge lb) {
+  if (lb.width() < 1)
+    return;
+  LB_ = lb;
+  rebuild();
+  save_current_fit();
+}
+
+void ROI::set_RB(SUM4Edge rb) {
+  if (rb.width() < 1)
+    return;
+  RB_ = rb;
+  rebuild();
+  save_current_fit();
+}
+
+
 void ROI::init_background(uint16_t samples) {
   background_ = Polynomial();
 
-  if (finder_.x_.size() < samples)
-    return;
 
-  double min_L = finder_.y_[0];
-  double avg_L = 0;
-  for (int i=0; i < samples; ++i) {
-    min_L = std::min(min_L, finder_.y_[i]);
-    avg_L += finder_.y_[i];
+  int32_t LBend = 0;
+  int32_t RBstart = finder_.y_.size() - 1;
+
+  if ((samples > 0) && (finder_.y_.size() > samples*3)) {
+    LBend += samples;
+    RBstart -= samples;
   }
-  avg_L /= samples;
 
-  double min_R = finder_.y_[finder_.y_.size()-1];
-  double avg_R = 0;
-  for (int i=finder_.y_.size()-1; i >= finder_.y_.size()-samples; --i) {
-    min_R = std::min(min_R, finder_.y_[i]);
-    avg_R += finder_.y_[i];
+  LB_ = SUM4Edge(finder_.y_, 0, LBend);
+  RB_ = SUM4Edge(finder_.y_, RBstart, finder_.y_.size() - 1);
+
+  //by default, linear
+  double run = RB_.start() - LB_.end();
+  double offset = LB_.end();
+
+  if (RB_.average() < LB_.average()) {
+    run = RB_.start() - LB_.start();
+    offset = LB_.start();
   }
-  avg_R /= samples;
 
-  double run = finder_.x_[finder_.x_.size()-1] - finder_.x_[0];
+  if (RB_.average() > LB_.average()) {
+    run = RB_.end() - LB_.end();
+    offset = LB_.end();
+  }
 
-  double rise = min_R - min_L;
-//  double rise = avg_R - avg_L;
+  double slope = (RB_.average() - LB_.average()) / (run) ; //mid?
+  background_ = Polynomial({LB_.average(), slope}, finder_.x_[offset]);
 
-  double slope = rise / run;
-  double base = min_L;
-  double offset = finder_.x_[0];
-
-  background_.coeffs_ = std::vector<double>({base, slope});
-  background_.xoffset_ = offset;
 }
 
 bool ROI::rollback(int i) {
