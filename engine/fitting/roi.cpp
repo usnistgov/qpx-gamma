@@ -109,9 +109,7 @@ void ROI::iterative_fit(boost::atomic<bool>& interruptor) {
   double prev_rsq = peaks_.begin()->second.hypermet_.rsq_;
   PL_DBG << "    initial rsq = " << prev_rsq;
 
-  int MAX_ITER = 5;
-
-  for (int i=0; i < MAX_ITER; ++i) {
+  for (int i=0; i < settings_.resid_max_iterations; ++i) {
     ROI new_fit = *this;
 
     if (!new_fit.add_from_resid(-1)) {

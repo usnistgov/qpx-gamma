@@ -33,20 +33,6 @@ void Finder::setData(const std::vector<double> &x, const std::vector<double> &y)
     x_ = x;
     y_resid_on_background_ = y_resid_ = y_ = y;
 
-    fw_theoretical_nrg.clear();
-    fw_theoretical_bin.clear();
-    if (settings_.cali_fwhm_.valid() && settings_.cali_nrg_.valid()) {
-      for (int i=0; i < x_.size(); ++i) {
-        double nrg = settings_.cali_nrg_.transform(x_[i], settings_.bits_);
-        fw_theoretical_nrg.push_back(nrg);
-        double fw = settings_.cali_fwhm_.transform(nrg);
-        double L = settings_.cali_nrg_.inverse_transform(nrg - fw/2, settings_.bits_);
-        double R = settings_.cali_nrg_.inverse_transform(nrg + fw/2, settings_.bits_);
-        double wchan = R-L;
-        fw_theoretical_bin.push_back(wchan);
-      }
-    }
-
     calc_kon();
     find_peaks();
   }
@@ -86,6 +72,20 @@ void Finder::clear() {
 
 
 void Finder::calc_kon() {
+  fw_theoretical_nrg.clear();
+  fw_theoretical_bin.clear();
+  if (settings_.cali_fwhm_.valid() && settings_.cali_nrg_.valid()) {
+    for (int i=0; i < x_.size(); ++i) {
+      double nrg = settings_.cali_nrg_.transform(x_[i], settings_.bits_);
+      fw_theoretical_nrg.push_back(nrg);
+      double fw = settings_.cali_fwhm_.transform(nrg);
+      double L = settings_.cali_nrg_.inverse_transform(nrg - fw/2, settings_.bits_);
+      double R = settings_.cali_nrg_.inverse_transform(nrg + fw/2, settings_.bits_);
+      double wchan = R-L;
+      fw_theoretical_bin.push_back(wchan);
+    }
+  }
+
   uint16_t width = settings_.KON_width;
 
   if (width < 2)
@@ -234,6 +234,15 @@ uint16_t Finder::left_edge(uint16_t idx) {
   if (x_conv.empty() || idx >= x_conv.size())
     return 0;
 
+  if (!fw_theoretical_bin.empty()) {
+    double width = floor(fw_theoretical_bin[idx]);
+    double goal = x_[idx] - width * settings_.ROI_extend_peaks / 2;
+    while ((idx > 0) && (x_[idx] > goal))
+      idx--;
+    return idx;
+  }
+
+
   double sigma = settings_.KON_sigma_spectrum;
   if (y_resid_ != y_) {
 //    PL_DBG << "<Finder> Using sigma resid";
@@ -258,6 +267,14 @@ uint16_t Finder::left_edge(uint16_t idx) {
 uint16_t Finder::right_edge(uint16_t idx) {
   if (x_conv.empty() || idx >= x_conv.size())
     return 0;
+
+  if (!fw_theoretical_bin.empty()) {
+    double width = floor(fw_theoretical_bin[idx]);
+    double goal = x_[idx] + width * settings_.ROI_extend_peaks / 2;
+    while ((idx < x_.size()) && (x_[idx] < goal))
+      idx++;
+    return idx;
+  }
 
   double sigma = settings_.KON_sigma_spectrum;
   if (y_resid_ != y_) {

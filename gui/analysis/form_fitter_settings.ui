@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
@@ -20,10 +20,10 @@
    <string>Form</string>
   </property>
   <property name="windowIcon">
-   <iconset>
-    <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
+   <iconset resource="../resources/qpxres.qrc">
+    <normaloff>:/icons/qpx.xpm</normaloff>:/icons/qpx.xpm</iconset>
   </property>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>9</x>
@@ -33,6 +33,9 @@
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_4">
+    <property name="sizeConstraint">
+     <enum>QLayout::SetFixedSize</enum>
+    </property>
     <item>
      <layout class="QVBoxLayout" name="verticalLayout_3">
       <item>
@@ -379,6 +382,9 @@
              </item>
              <item>
               <widget class="QSpinBox" name="spinRegionMaxPeaks">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>70</width>
@@ -616,6 +622,9 @@
              </item>
              <item>
               <widget class="QSpinBox" name="spinSmallMaxAmplitude">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>70</width>
@@ -643,6 +652,9 @@
            </item>
            <item row="1" column="0">
             <widget class="QCheckBox" name="checkResidAuto">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="minimumSize">
               <size>
                <width>0</width>
@@ -686,6 +698,9 @@
              </item>
              <item>
               <widget class="QSpinBox" name="spinResidMinAmplitude">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>70</width>
@@ -710,6 +725,9 @@
            </item>
            <item row="4" column="0">
             <widget class="QCheckBox" name="checkSmallSimplify">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="minimumSize">
               <size>
                <width>0</width>
@@ -753,6 +771,9 @@
              </item>
              <item>
               <widget class="QSpinBox" name="spinFitterMaxIterations">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>70</width>
@@ -809,6 +830,9 @@
           <layout class="QGridLayout" name="gridLayout_3">
            <item row="0" column="0">
             <widget class="QCheckBox" name="checkStepEnable">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="minimumSize">
               <size>
                <width>0</width>
@@ -1013,6 +1037,9 @@
            </item>
            <item row="2" column="0">
             <widget class="QCheckBox" name="checkTailEnable">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="minimumSize">
               <size>
                <width>0</width>
@@ -1078,6 +1105,9 @@
              </item>
              <item>
               <widget class="QDoubleSpinBox" name="doubleMinTailAmp">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>130</width>
@@ -1131,6 +1161,9 @@
              </item>
              <item>
               <widget class="QDoubleSpinBox" name="doubleInitTailAmp">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>130</width>
@@ -1184,6 +1217,9 @@
              </item>
              <item>
               <widget class="QDoubleSpinBox" name="doubleMaxTailAmp">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>70</width>
@@ -1263,6 +1299,9 @@
              </item>
              <item>
               <widget class="QDoubleSpinBox" name="doubleMinTailSlope">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>130</width>
@@ -1316,6 +1355,9 @@
              </item>
              <item>
               <widget class="QDoubleSpinBox" name="doubleInitTailSlope">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>130</width>
@@ -1369,6 +1411,9 @@
              </item>
              <item>
               <widget class="QDoubleSpinBox" name="doubleMaxTailSlope">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>70</width>
@@ -1402,6 +1447,9 @@
            </item>
            <item row="5" column="0">
             <widget class="QCheckBox" name="checkEnableLskew">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="minimumSize">
               <size>
                <width>0</width>
@@ -1791,6 +1839,9 @@
            </item>
            <item row="8" column="0">
             <widget class="QCheckBox" name="checkEnableRskew">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="minimumSize">
               <size>
                <width>0</width>
@@ -2210,6 +2261,9 @@
              </item>
              <item>
               <widget class="QDoubleSpinBox" name="doubleLateralSlack">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>70</width>
@@ -2243,6 +2297,9 @@
            </item>
            <item row="1" column="0">
             <widget class="QCheckBox" name="checkWidthCommon">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="minimumSize">
               <size>
                <width>0</width>
@@ -2308,6 +2365,9 @@
              </item>
              <item>
               <widget class="QDoubleSpinBox" name="doubleMinWidthCommon">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>70</width>
@@ -2361,6 +2421,9 @@
              </item>
              <item>
               <widget class="QDoubleSpinBox" name="doubleMaxWidthCommon">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>70</width>
@@ -2440,6 +2503,9 @@
              </item>
              <item>
               <widget class="QDoubleSpinBox" name="doubleMinWidthVariable">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>70</width>
@@ -2493,6 +2559,9 @@
              </item>
              <item>
               <widget class="QDoubleSpinBox" name="doubleMaxWidthVariable">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>70</width>
@@ -2526,6 +2595,9 @@
            </item>
            <item row="4" column="0">
             <widget class="QCheckBox" name="checkWidthAt511">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="minimumSize">
               <size>
                <width>0</width>
@@ -2566,6 +2638,9 @@
              </item>
              <item>
               <widget class="QSpinBox" name="spinWidthAt511Tolerance">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>70</width>
@@ -2599,6 +2674,8 @@
    </layout>
   </widget>
  </widget>
- <resources/>
+ <resources>
+  <include location="../resources/qpxres.qrc"/>
+ </resources>
  <connections/>
 </ui>

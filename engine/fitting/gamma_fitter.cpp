@@ -103,6 +103,7 @@ void Fitter::find_regions() {
     double margin = 0;
     if (!finder_.fw_theoretical_bin.empty())
       margin = settings_.ROI_extend_background * finder_.fw_theoretical_bin[R];
+    PL_DBG << "Margin = " << margin;
 
     if (finder_.lefts[i] < (R + 2 * margin) ) {
 //      PL_DBG << "cat ROI " << L << " " << R << " " << finder_.lefts[i] << " " << finder_.rights[i];

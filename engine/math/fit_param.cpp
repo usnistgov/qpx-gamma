@@ -57,7 +57,7 @@ FitSettings::FitSettings()
   : override_ (false)
   , bits_ (0)
 
-  , finder_cutoff_kev(0)
+  , finder_cutoff_kev(100)
 
   , KON_width (4.0)
   , KON_sigma_spectrum (3.0)
@@ -65,7 +65,7 @@ FitSettings::FitSettings()
 
   , ROI_max_peaks (10)
   , ROI_extend_peaks (3.5)
-  , ROI_extend_background (1.25)
+  , ROI_extend_background (0.6)
 
   , background_edge_samples(5)
 

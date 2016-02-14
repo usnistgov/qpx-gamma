@@ -160,7 +160,7 @@
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/icons/oxy/16/alacarte.png</normaloff>:/icons/oxy/16/alacarte.png</iconset>
+           <normaloff>:/icons/oxy/16/applications_systemg.png</normaloff>:/icons/oxy/16/applications_systemg.png</iconset>
          </property>
          <property name="iconSize">
           <size>

@@ -876,12 +876,12 @@ void FormFitter::plotRange() {
                         Qt::AlignTop | Qt::AlignLeft);
       } else if (range_.purpose.toString() == "ROI back L") {
         newButton = new QCPOverlayButton(ui->plot,
-                        QPixmap(":/icons/oxy/22/flag_yellow.png"),
+                        QPixmap(":/icons/oxy/22/flag_blue.png"),
                         "ROI back L adjust", "Adjust SUM4 bounds",
                         Qt::AlignTop | Qt::AlignLeft);
       } else if (range_.purpose.toString() == "ROI back R") {
         newButton = new QCPOverlayButton(ui->plot,
-                        QPixmap(":/icons/oxy/22/flag_yellow.png"),
+                        QPixmap(":/icons/oxy/22/flag_blue.png"),
                         "ROI back R adjust", "Adjust SUM4 bounds",
                         Qt::AlignTop | Qt::AlignLeft);
       } else {
