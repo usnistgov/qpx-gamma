@@ -52,3 +52,52 @@ bool FitParam::extract(fityk::Fityk* f, fityk::Func* func)
   }
   return true;
 }
+
+FitSettings::FitSettings()
+  : override_ (false)
+  , bits_ (0)
+
+  , finder_cutoff_kev(0)
+
+  , KON_width (4.0)
+  , KON_sigma_spectrum (3.0)
+  , KON_sigma_resid (3.0)
+
+  , ROI_max_peaks (10)
+  , ROI_extend_peaks (3.5)
+  , ROI_extend_background (1.25)
+
+  , background_edge_samples(5)
+
+  , resid_auto (true)
+  , resid_max_iterations (5)
+  , resid_min_amplitude  (5.0)
+
+  , small_simplify (true)
+  , small_max_amplitude (500)
+
+  , step_enable (true)
+  , step_amplitude ("step_h", 1.0e-10, 1.0e-10, 0.75)
+
+  , tail_enable (false)
+  , tail_amplitude ("tail_h", 1.0e-10, 1.0e-10, 0.015)
+  , tail_slope ("tail_s", 2.75, 2.5, 50)
+
+  , lateral_slack(0.5)
+
+  , width_common (true)
+  , width_common_bounds ("w", 1.0, 0.7, 1.3)
+  , width_variable_bounds ("w", 1.0, 0.7, 4)
+  , width_at_511_variable (true)
+  , width_at_511_tolerance (5.0)
+
+  , Lskew_enable (true)
+  , Lskew_amplitude ("lskew_h", 1.0e-10, 1.0e-10, 0.75)
+  , Lskew_slope ("lskew_s", 0.5, 0.3, 2)
+
+  , Rskew_enable (true)
+  , Rskew_amplitude ("rskew_h", 1.0e-10, 1.0e-10, 0.75)
+  , Rskew_slope ("rskew_s", 0.5, 0.3, 2)
+
+  , fitter_max_iter (300)
+{}

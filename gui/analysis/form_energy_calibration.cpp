@@ -119,7 +119,7 @@ void FormEnergyCalibration::clear() {
 }
 
 void FormEnergyCalibration::newSpectrum() {
-  new_calibration_ = fit_data_.nrg_cali_;
+  new_calibration_ = fit_data_.settings().cali_nrg_;
   update_data();
 }
 
@@ -272,7 +272,7 @@ void FormEnergyCalibration::toggle_push() {
   else
     ui->pushFromDB->setEnabled(false);
 
-  ui->pushApplyCalib->setEnabled(fit_data_.nrg_cali_ != new_calibration_);
+  ui->pushApplyCalib->setEnabled(fit_data_.settings().cali_nrg_ != new_calibration_);
 }
 
 void FormEnergyCalibration::on_pushFit_clicked()
@@ -319,10 +319,11 @@ void FormEnergyCalibration::on_pushApplyCalib_clicked()
 void FormEnergyCalibration::on_pushFromDB_clicked()
 {
   Gamma::Detector newdet = detectors_.get(fit_data_.detector_);
-  fit_data_.nrg_cali_ = newdet.energy_calibrations_.get(new_calibration_);
+  new_calibration_ = newdet.energy_calibrations_.get(new_calibration_);
   replot_calib();
   select_in_plot();
   toggle_push();
+  emit new_fit();
 }
 
 void FormEnergyCalibration::on_pushDetDB_clicked()

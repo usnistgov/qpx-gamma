@@ -31,6 +31,10 @@
 namespace Gamma {
 
 struct Fit {
+  Fit (Finder f) :
+    finder_(f)
+  {}
+
   Finder finder_;
   std::map<double, Peak> peaks_;
   Polynomial background_;
@@ -38,11 +42,11 @@ struct Fit {
 
 
 struct ROI {
-  ROI(const Calibration &nrg, const Calibration &fw, uint16_t bits)
-    : cal_nrg_ (nrg)
-    , cal_fwhm_ (fw)
-    , bits_(bits)
-  {}
+  ROI(FitSettings fs)
+    : settings_(fs)
+  {
+    finder_.settings_ = settings_;
+  }
 
   void set_data(const std::vector<double> &x, const std::vector<double> &y,
                 uint16_t min, uint16_t max);
@@ -72,8 +76,7 @@ struct ROI {
   void save_current_fit();
 
   //intrinsic
-  Calibration cal_nrg_, cal_fwhm_;
-  uint16_t bits_;
+  FitSettings settings_;
 
   std::vector<Fit> fits_;
 //  Fit current_fit_;

@@ -34,12 +34,20 @@ namespace Gamma {
 class Fitter {
   
 public:
-  Fitter()
-      : overlap_(4.0)
-      , activity_scale_factor_(1.0)
-      , sum4edge_samples(3)
-  {}
-  
+  Fitter() :
+    activity_scale_factor_(1.0)
+  {
+    finder_.settings_ = settings_;
+  }
+
+  const FitSettings &settings() {
+    return settings_;
+  }
+
+  void apply_settings(FitSettings settings);
+//  void apply_energy_calibration(Calibration cal);
+//  void apply_fwhm_calibration(Calibration cal);
+
   Fitter(Qpx::Spectrum::Spectrum *spectrum)
       : Fitter()
   {setData(spectrum);}
@@ -68,18 +76,15 @@ public:
 
   Finder finder_;
 
-  std::string sample_name_;
-  double activity_scale_factor_; //should be in spectrum?
-
-  uint16_t sum4edge_samples;
-
   Qpx::Spectrum::Metadata metadata_;
   Gamma::Detector detector_; //need this? metadata?
+  std::string sample_name_;
+  double activity_scale_factor_; //should be in spectrum?
   
   std::list<ROI> regions_;
 
-  Calibration nrg_cali_, fwhm_cali_; //need these? metadata?
-  double overlap_;
+private:
+  FitSettings settings_;
 
 };
 

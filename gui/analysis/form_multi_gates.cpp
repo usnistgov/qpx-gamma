@@ -309,8 +309,8 @@ void FormMultiGates::on_pushApprove_clicked()
     newgate.centroid_chan = q.second.center;
     newgate.centroid_nrg  = q.second.energy;
     newgate.width_chan    = std::round(q.second.fwhm_hyp * ui->doubleGateOn->value());
-    newgate.width_nrg     = data.nrg_cali_.transform(newgate.centroid_chan + newgate.width_chan / 2)
-        - data.nrg_cali_.transform(newgate.centroid_chan - newgate.width_chan / 2);
+    newgate.width_nrg     = data.settings().cali_nrg_.transform(newgate.centroid_chan + newgate.width_chan / 2)
+        - data.settings().cali_nrg_.transform(newgate.centroid_chan - newgate.width_chan / 2);
     if (index_of(newgate.centroid_chan, true) < 0)
       gates_.push_back(newgate);
     //else
@@ -335,15 +335,15 @@ void FormMultiGates::on_pushDistill_clicked()
   for (auto &q : gates_) {
     Gamma::Gate gate = q;
     if (gate.centroid_chan != -1) {
-      box.y_c.set_bin(gate.centroid_chan, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
-      box.y1.set_bin(gate.centroid_chan - (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
-      box.y2.set_bin(gate.centroid_chan + (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+      box.y_c.set_bin(gate.centroid_chan, gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
+      box.y1.set_bin(gate.centroid_chan - (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
+      box.y2.set_bin(gate.centroid_chan + (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
 
       for (auto &p : gate.fit_data_.peaks()) {
         Gamma::Peak peak = p.second;
-        box.x_c.set_bin(peak.center, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
-        box.x1.set_bin(peak.center - (peak.fwhm_hyp * 0.5 * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
-        box.x2.set_bin(peak.center + (peak.fwhm_hyp * 0.5 * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+        box.x_c.set_bin(peak.center, gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
+        box.x1.set_bin(peak.center - (peak.fwhm_hyp * 0.5 * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
+        box.x2.set_bin(peak.center + (peak.fwhm_hyp * 0.5 * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
         all_boxes_.push_back(box);
       }
     }
@@ -413,8 +413,8 @@ void FormMultiGates::remake_gate(bool force) {
   if (gate.centroid_chan == -1) {
     width = res;
     gate.width_chan = res;
-    xx.pos.set_bin(res / 2, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
-    yy.pos.set_bin(res / 2, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+    xx.pos.set_bin(res / 2, gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
+    yy.pos.set_bin(res / 2, gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
 
     xmin = 0;
     xmax = res - 1;
@@ -427,8 +427,8 @@ void FormMultiGates::remake_gate(bool force) {
     ymin = yc_ - (width / 2); if (ymin < 0) ymin = 0;
     ymax = yc_ + (width / 2); if (ymax >= res) ymax = res - 1;
 
-    xx.pos.set_bin(res / 2, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
-    yy.pos.set_bin(yc_, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+    xx.pos.set_bin(res / 2, gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
+    yy.pos.set_bin(yc_, gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
   }
 
   xx.visible = false;
@@ -515,14 +515,14 @@ void FormMultiGates::update_peaks(bool content_changed) {
   current_peaks_.clear();
   double width = current_gate().width_chan / 2;
   if (yc_ < 0) {
-    range2d.y_c.set_bin(res / 2, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
-    range2d.y1.set_bin(res / 2 - width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
-    range2d.y2.set_bin(res / 2 + width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+    range2d.y_c.set_bin(res / 2, fit_data_.metadata_.bits, fit_data_.settings().cali_nrg_);
+    range2d.y1.set_bin(res / 2 - width, fit_data_.metadata_.bits, fit_data_.settings().cali_nrg_);
+    range2d.y2.set_bin(res / 2 + width, fit_data_.metadata_.bits, fit_data_.settings().cali_nrg_);
     range2d.labelfloat = true;
   } else {
-    range2d.y_c.set_bin(yc_, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
-    range2d.y1.set_bin(yc_ - width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
-    range2d.y2.set_bin(yc_ + width, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+    range2d.y_c.set_bin(yc_, fit_data_.metadata_.bits, fit_data_.settings().cali_nrg_);
+    range2d.y1.set_bin(yc_ - width, fit_data_.metadata_.bits, fit_data_.settings().cali_nrg_);
+    range2d.y2.set_bin(yc_ + width, fit_data_.metadata_.bits, fit_data_.settings().cali_nrg_);
     range2d.labelfloat = false;
   }
 
@@ -535,9 +535,9 @@ void FormMultiGates::update_peaks(bool content_changed) {
   for (auto &q : fit_data_.peaks()) {
     box.visible = true;
     box.selected = ui->gatedSpectrum->get_selected_peaks().count(q.first);
-    box.x_c.set_bin(q.second.center, fit_data_.metadata_.bits, fit_data_.nrg_cali_);
-    box.x1.set_bin(q.second.center - (q.second.fwhm_hyp * 0.5 * width_factor()), fit_data_.metadata_.bits, fit_data_.nrg_cali_);
-    box.x2.set_bin(q.second.center + (q.second.fwhm_hyp * 0.5 * width_factor()), fit_data_.metadata_.bits, fit_data_.nrg_cali_);
+    box.x_c.set_bin(q.second.center, fit_data_.metadata_.bits, fit_data_.settings().cali_nrg_);
+    box.x1.set_bin(q.second.center - (q.second.fwhm_hyp * 0.5 * width_factor()), fit_data_.metadata_.bits, fit_data_.settings().cali_nrg_);
+    box.x2.set_bin(q.second.center + (q.second.fwhm_hyp * 0.5 * width_factor()), fit_data_.metadata_.bits, fit_data_.settings().cali_nrg_);
 
     box.horizontal = false;
     box.vertical = true;
@@ -555,13 +555,13 @@ void FormMultiGates::update_peaks(bool content_changed) {
   Gamma::Gate gate;
   gate.fit_data_ = fit_data_;
   gate.centroid_chan = yc_;
-  gate.centroid_nrg = fit_data_.nrg_cali_.transform(yc_);
+  gate.centroid_nrg = fit_data_.settings().cali_nrg_.transform(yc_);
   if (yc_ >= 0) {
     gate.width_chan = current_gate().width_chan;
-    gate.width_nrg = fit_data_.nrg_cali_.transform(ymax_) - fit_data_.nrg_cali_.transform(ymin_);
+    gate.width_nrg = fit_data_.settings().cali_nrg_.transform(ymax_) - fit_data_.settings().cali_nrg_.transform(ymin_);
   } else {
     gate.width_chan = res;
-    gate.width_nrg = fit_data_.nrg_cali_.transform(res) - fit_data_.nrg_cali_.transform(0);
+    gate.width_nrg = fit_data_.settings().cali_nrg_.transform(res) - fit_data_.settings().cali_nrg_.transform(0);
   }
   update_current_gate(gate);
 }

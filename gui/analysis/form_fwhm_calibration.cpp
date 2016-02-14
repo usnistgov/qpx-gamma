@@ -114,7 +114,7 @@ void FormFwhmCalibration::clear() {
 }
 
 void FormFwhmCalibration::newSpectrum() {
-  new_calibration_ = fit_data_.fwhm_cali_;
+  new_calibration_ = fit_data_.settings().cali_fwhm_;
   update_data();
 }
 
@@ -294,7 +294,7 @@ void FormFwhmCalibration::toggle_push() {
     ui->spinTerms->setEnabled(false);
   }
 
-  ui->pushApplyCalib->setEnabled(fit_data_.fwhm_cali_ != new_calibration_);
+  ui->pushApplyCalib->setEnabled(fit_data_.settings().cali_fwhm_ != new_calibration_);
 }
 
 void FormFwhmCalibration::on_pushFit_clicked()
@@ -342,10 +342,11 @@ void FormFwhmCalibration::on_pushApplyCalib_clicked()
 void FormFwhmCalibration::on_pushFromDB_clicked()
 {
   Gamma::Detector newdet = detectors_.get(fit_data_.detector_);
-  fit_data_.fwhm_cali_ = newdet.fwhm_calibration_;
+  new_calibration_ = newdet.fwhm_calibration_;
   replot_calib();
   select_in_plot();
   toggle_push();
+  emit new_fit();
 }
 
 void FormFwhmCalibration::on_pushDetDB_clicked()

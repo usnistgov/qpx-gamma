@@ -499,9 +499,9 @@ void FormIntegration2D::on_pushCentroidX_clicked()
       int32_t current = current_idx();
       if ((current >= 0) && (current < peaks_.size())) {
         MarkerBox2D peak = peaks_[current].area[1][1];
-        peak.x_c.set_bin(q.second.center, fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-        peak.x1.set_bin(fit_x_.finder_.x_[q.second.sum4_.Lpeak], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-        peak.x2.set_bin(fit_x_.finder_.x_[q.second.sum4_.Rpeak], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+        peak.x_c.set_bin(q.second.center, fit_x_.metadata_.bits, fit_x_.settings().cali_nrg_);
+        peak.x1.set_bin(fit_x_.finder_.x_[q.second.sum4_.Lpeak], fit_x_.metadata_.bits, fit_x_.settings().cali_nrg_);
+        peak.x2.set_bin(fit_x_.finder_.x_[q.second.sum4_.Rpeak], fit_x_.metadata_.bits, fit_x_.settings().cali_nrg_);
 
         peaks_[current].area[1][1] = peak;
 
@@ -515,11 +515,11 @@ void FormIntegration2D::on_pushCentroidX_clicked()
         peaks_[current].area[2][1].x1 = peak.x1;
         peaks_[current].area[2][1].x2 = peak.x2;
 
-        peaks_[current].area[1][0].x1.set_bin(fit_x_.finder_.x_[q.second.sum4_.LB().start()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-        peaks_[current].area[1][0].x2.set_bin(fit_x_.finder_.x_[q.second.sum4_.LB().end()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+        peaks_[current].area[1][0].x1.set_bin(fit_x_.finder_.x_[q.second.sum4_.LB().start()], fit_x_.metadata_.bits, fit_x_.settings().cali_nrg_);
+        peaks_[current].area[1][0].x2.set_bin(fit_x_.finder_.x_[q.second.sum4_.LB().end()], fit_x_.metadata_.bits, fit_x_.settings().cali_nrg_);
 
-        peaks_[current].area[1][2].x1.set_bin(fit_x_.finder_.x_[q.second.sum4_.RB().start()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-        peaks_[current].area[1][2].x2.set_bin(fit_x_.finder_.x_[q.second.sum4_.RB().end()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+        peaks_[current].area[1][2].x1.set_bin(fit_x_.finder_.x_[q.second.sum4_.RB().start()], fit_x_.metadata_.bits, fit_x_.settings().cali_nrg_);
+        peaks_[current].area[1][2].x2.set_bin(fit_x_.finder_.x_[q.second.sum4_.RB().end()], fit_x_.metadata_.bits, fit_x_.settings().cali_nrg_);
 
 
         rebuild_table(true);
@@ -537,9 +537,9 @@ void FormIntegration2D::on_pushCentroidY_clicked()
       int32_t current = current_idx();
       if ((current >= 0) && (current < peaks_.size())) {
         MarkerBox2D peak = peaks_[current].area[1][1];
-        peak.y_c.set_bin(q.second.center, fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-        peak.y1.set_bin(fit_y_.finder_.x_[q.second.sum4_.Lpeak], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-        peak.y2.set_bin(fit_y_.finder_.x_[q.second.sum4_.Rpeak], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+        peak.y_c.set_bin(q.second.center, fit_y_.metadata_.bits, fit_y_.settings().cali_nrg_);
+        peak.y1.set_bin(fit_y_.finder_.x_[q.second.sum4_.Lpeak], fit_y_.metadata_.bits, fit_y_.settings().cali_nrg_);
+        peak.y2.set_bin(fit_y_.finder_.x_[q.second.sum4_.Rpeak], fit_y_.metadata_.bits, fit_y_.settings().cali_nrg_);
 
         peaks_[current].area[1][1] = peak;
 
@@ -553,11 +553,11 @@ void FormIntegration2D::on_pushCentroidY_clicked()
         peaks_[current].area[1][2].y1 = peak.y1;
         peaks_[current].area[1][2].y2 = peak.y2;
 
-        peaks_[current].area[0][1].y1.set_bin(fit_y_.finder_.x_[q.second.sum4_.LB().start()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-        peaks_[current].area[0][1].y2.set_bin(fit_y_.finder_.x_[q.second.sum4_.LB().end()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+        peaks_[current].area[0][1].y1.set_bin(fit_y_.finder_.x_[q.second.sum4_.LB().start()], fit_y_.metadata_.bits, fit_y_.settings().cali_nrg_);
+        peaks_[current].area[0][1].y2.set_bin(fit_y_.finder_.x_[q.second.sum4_.LB().end()], fit_y_.metadata_.bits, fit_y_.settings().cali_nrg_);
 
-        peaks_[current].area[2][1].y1.set_bin(fit_y_.finder_.x_[q.second.sum4_.RB().start()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-        peaks_[current].area[2][1].y2.set_bin(fit_y_.finder_.x_[q.second.sum4_.RB().end()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+        peaks_[current].area[2][1].y1.set_bin(fit_y_.finder_.x_[q.second.sum4_.RB().start()], fit_y_.metadata_.bits, fit_y_.settings().cali_nrg_);
+        peaks_[current].area[2][1].y2.set_bin(fit_y_.finder_.x_[q.second.sum4_.RB().end()], fit_y_.metadata_.bits, fit_y_.settings().cali_nrg_);
 
         rebuild_table(true);
         emit peak_selected();
@@ -614,16 +614,16 @@ void FormIntegration2D::on_pushAddPeak2d_clicked()
 
   if (foundx) {
     PL_DBG << "foundx";
-    newpeak.x_c.set_bin(xx.center, fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-    newpeak.x1.set_bin(fit_x_.finder_.x_[xx.sum4_.Lpeak], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-    newpeak.x2.set_bin(fit_x_.finder_.x_[xx.sum4_.Rpeak], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+    newpeak.x_c.set_bin(xx.center, fit_x_.metadata_.bits, fit_x_.settings().cali_nrg_);
+    newpeak.x1.set_bin(fit_x_.finder_.x_[xx.sum4_.Lpeak], fit_x_.metadata_.bits, fit_x_.settings().cali_nrg_);
+    newpeak.x2.set_bin(fit_x_.finder_.x_[xx.sum4_.Rpeak], fit_x_.metadata_.bits, fit_x_.settings().cali_nrg_);
   }
 
   if (foundy) {
     PL_DBG << "foundy";
-    newpeak.y_c.set_bin(yy.center, fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-    newpeak.y1.set_bin(fit_y_.finder_.x_[yy.sum4_.Lpeak], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-    newpeak.y2.set_bin(fit_y_.finder_.x_[yy.sum4_.Rpeak], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+    newpeak.y_c.set_bin(yy.center, fit_y_.metadata_.bits, fit_y_.settings().cali_nrg_);
+    newpeak.y1.set_bin(fit_y_.finder_.x_[yy.sum4_.Lpeak], fit_y_.metadata_.bits, fit_y_.settings().cali_nrg_);
+    newpeak.y2.set_bin(fit_y_.finder_.x_[yy.sum4_.Rpeak], fit_y_.metadata_.bits, fit_y_.settings().cali_nrg_);
   }
 
   pk.area[1][1] = newpeak;
@@ -636,23 +636,23 @@ void FormIntegration2D::on_pushAddPeak2d_clicked()
     bckg.x1 = newpeak.x1;
     bckg.x2 = newpeak.x2;
 
-    bckg.y1.set_bin(fit_y_.finder_.x_[yy.sum4_.LB().start()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-    bckg.y2.set_bin(fit_y_.finder_.x_[yy.sum4_.LB().end()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+    bckg.y1.set_bin(fit_y_.finder_.x_[yy.sum4_.LB().start()], fit_y_.metadata_.bits, fit_y_.settings().cali_nrg_);
+    bckg.y2.set_bin(fit_y_.finder_.x_[yy.sum4_.LB().end()], fit_y_.metadata_.bits, fit_y_.settings().cali_nrg_);
     pk.area[0][1] = bckg;
 
-    bckg.y1.set_bin(fit_y_.finder_.x_[yy.sum4_.RB().start()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
-    bckg.y2.set_bin(fit_y_.finder_.x_[yy.sum4_.RB().end()], fit_y_.metadata_.bits, fit_y_.nrg_cali_);
+    bckg.y1.set_bin(fit_y_.finder_.x_[yy.sum4_.RB().start()], fit_y_.metadata_.bits, fit_y_.settings().cali_nrg_);
+    bckg.y2.set_bin(fit_y_.finder_.x_[yy.sum4_.RB().end()], fit_y_.metadata_.bits, fit_y_.settings().cali_nrg_);
     pk.area[2][1] = bckg;
 
     bckg.y1 = newpeak.y1;
     bckg.y2 = newpeak.y2;
 
-    bckg.x1.set_bin(fit_x_.finder_.x_[xx.sum4_.LB().start()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-    bckg.x2.set_bin(fit_x_.finder_.x_[xx.sum4_.LB().end()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+    bckg.x1.set_bin(fit_x_.finder_.x_[xx.sum4_.LB().start()], fit_x_.metadata_.bits, fit_x_.settings().cali_nrg_);
+    bckg.x2.set_bin(fit_x_.finder_.x_[xx.sum4_.LB().end()], fit_x_.metadata_.bits, fit_x_.settings().cali_nrg_);
     pk.area[1][0] = bckg;
 
-    bckg.x1.set_bin(fit_x_.finder_.x_[xx.sum4_.RB().start()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
-    bckg.x2.set_bin(fit_x_.finder_.x_[xx.sum4_.RB().end()], fit_x_.metadata_.bits, fit_x_.nrg_cali_);
+    bckg.x1.set_bin(fit_x_.finder_.x_[xx.sum4_.RB().start()], fit_x_.metadata_.bits, fit_x_.settings().cali_nrg_);
+    bckg.x2.set_bin(fit_x_.finder_.x_[xx.sum4_.RB().end()], fit_x_.metadata_.bits, fit_x_.settings().cali_nrg_);
     pk.area[1][2] = bckg;
   }
 

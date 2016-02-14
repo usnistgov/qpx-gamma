@@ -26,7 +26,7 @@
 #include "gamma_fitter.h"
 #include "qt_util.h"
 #include "qcp_overlay_button.h"
-
+#include "form_fitter_settings.h"
 
 RollbackDialog::RollbackDialog(Gamma::ROI roi, QWidget *parent) :
   QDialog(parent),
@@ -217,20 +217,12 @@ void FormFitter::setFit(Gamma::Fitter* fit) {
 
 void FormFitter::loadSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
-  ui->spinSqWidth->setValue(settings_.value("square_width", 4).toInt());
-  ui->spinSum4EdgeW->setValue(settings_.value("sum4_edge_width", 3).toInt());
-  ui->doubleOverlapWidth->setValue(settings_.value("overlap_width", 1.00).toDouble());
-  ui->doubleThresh->setValue(settings_.value("peak_threshold", 3.0).toDouble());
   set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
   settings_.endGroup();
 }
 
 void FormFitter::saveSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
-  settings_.setValue("square_width", ui->spinSqWidth->value());
-  settings_.setValue("sum4_edge_width", ui->spinSum4EdgeW->value());
-  settings_.setValue("peak_threshold", ui->doubleThresh->value());
-  settings_.setValue("overlap_width", ui->doubleOverlapWidth->value());
   settings_.setValue("scale_type", scale_type_);
   settings_.endGroup();
 }
@@ -270,11 +262,7 @@ void FormFitter::update_spectrum(QString title) {
     title = "Spectrum=" + QString::fromStdString(fit_data_->metadata_.name) + "  Detector=" + QString::fromStdString(fit_data_->detector_.name_);
   title_text_ = title;
 
-
   reset_scales();
-
-  if (fit_data_->peaks().empty())
-    fit_data_->finder_.find_peaks(ui->spinSqWidth->value(), ui->doubleThresh->value());
 
   updateData();
   toggle_push();
@@ -289,6 +277,7 @@ void FormFitter::refit_ROI(double ROI_nrg) {
   busy_= true;
   toggle_push();
 
+  thread_fitter_.set_data(*fit_data_);
   thread_fitter_.refit(ROI_nrg);
 }
 
@@ -344,7 +333,7 @@ void FormFitter::createRange(Coord c) {
   range_.visible = true;
   range_.base.default_pen = QPen(Qt::darkGreen);
 
-  double x = c.bin(fit_data_->metadata_.bits);
+  double x = c.bin(fit_data_->settings().bits_);
 
   uint16_t ch = static_cast<uint16_t>(x);
   uint16_t ch_l = fit_data_->finder_.find_left(ch);
@@ -357,9 +346,9 @@ void FormFitter::createRange(Coord c) {
     }
   }
 
-  range_.center.set_bin(x, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
-  range_.l.set_bin(ch_l, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
-  range_.r.set_bin(ch_r, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
+  range_.center.set_bin(x, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
+  range_.l.set_bin(ch_l, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
+  range_.r.set_bin(ch_r, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
   range_.purpose = QString("range");
 
   selected_peaks_.clear();
@@ -401,9 +390,8 @@ void FormFitter::perform_fit() {
   if (busy_ || (fit_data_ == nullptr))
     return;
 
-  fit_data_->finder_.find_peaks(ui->spinSqWidth->value(),ui->doubleThresh->value());
-  fit_data_->overlap_ = ui->doubleOverlapWidth->value();
-  fit_data_->sum4edge_samples = ui->spinSum4EdgeW->value();
+  fit_data_->finder_.settings_ = fit_data_->settings();
+  fit_data_->finder_.find_peaks();
   fit_data_->find_regions();
   //  PL_DBG << "number of peaks found " << fit_data_->peaks_.size();
 
@@ -411,7 +399,6 @@ void FormFitter::perform_fit() {
   toggle_push();
   updateData();
 
-  ui->labelMovie->setVisible(true);
   thread_fitter_.set_data(*fit_data_);
   thread_fitter_.fit_peaks();
 
@@ -431,11 +418,10 @@ void FormFitter::add_peak()
   busy_= true;
   toggle_push();
 
-  ui->labelMovie->setVisible(true);
   thread_fitter_.set_data(*fit_data_);
   thread_fitter_.add_peak(
-        fit_data_->finder_.find_index(range_.l.bin(fit_data_->metadata_.bits)),
-        fit_data_->finder_.find_index(range_.r.bin(fit_data_->metadata_.bits))
+        fit_data_->finder_.find_index(range_.l.bin(fit_data_->settings().bits_)),
+        fit_data_->finder_.find_index(range_.r.bin(fit_data_->settings().bits_))
         );
 }
 
@@ -452,11 +438,10 @@ void FormFitter::adjust_roi_bounds() {
   busy_= true;
   toggle_push();
 
-  ui->labelMovie->setVisible(true);
   thread_fitter_.set_data(*fit_data_);
   thread_fitter_.adjust_roi_bounds(range_.center.energy(),
-                                   fit_data_->finder_.find_index(range_.l.bin(fit_data_->metadata_.bits)),
-                                   fit_data_->finder_.find_index(range_.r.bin(fit_data_->metadata_.bits))
+                                   fit_data_->finder_.find_index(range_.l.bin(fit_data_->settings().bits_)),
+                                   fit_data_->finder_.find_index(range_.r.bin(fit_data_->settings().bits_))
                                    );
 }
 
@@ -467,7 +452,7 @@ void FormFitter::adjust_sum4_bounds() {
   Gamma::ROI *parent_region;
 
   if (range_.purpose.toString() == "SUM4")
-    parent_region = fit_data_->parent_of(range_.center.bin(fit_data_->metadata_.bits));
+    parent_region = fit_data_->parent_of(range_.center.bin(fit_data_->settings().bits_));
   else {
     parent_region = fit_data_->region_at_nrg(range_.center.energy());
     PL_DBG << "adjust ROI back " << range_.center.energy() << " " << parent_region;
@@ -476,8 +461,8 @@ void FormFitter::adjust_sum4_bounds() {
   if (!parent_region)
     return;
 
-  uint32_t L = parent_region->finder_.find_index(range_.l.bin(fit_data_->metadata_.bits));
-  uint32_t R = parent_region->finder_.find_index(range_.r.bin(fit_data_->metadata_.bits));
+  uint32_t L = parent_region->finder_.find_index(range_.l.bin(fit_data_->settings().bits_));
+  uint32_t R = parent_region->finder_.find_index(range_.r.bin(fit_data_->settings().bits_));
 
   if (L > R) {
     uint32_t T = L;
@@ -506,12 +491,12 @@ void FormFitter::adjust_sum4_bounds() {
     fit_data_->remap_region(*parent_region);
     //should be in fitter thread
   } else if (range_.purpose.toString() == "SUM4") {
-    Gamma::Peak pk = parent_region->peaks_.at(range_.center.bin(fit_data_->metadata_.bits));
+    Gamma::Peak pk = parent_region->peaks_.at(range_.center.bin(fit_data_->settings().bits_));
     Gamma::SUM4 new_sum4(parent_region->finder_.y_, L, R, parent_region->LB(), parent_region->RB());
     pk.sum4_ = new_sum4;
-    pk.construct(fit_data_->nrg_cali_,
+    pk.construct(fit_data_->settings().cali_nrg_,
                  fit_data_->metadata_.live_time.total_milliseconds() * 0.001,
-                 fit_data_->metadata_.bits);
+                 fit_data_->settings().bits_);
     fit_data_->replace_peak(pk);
     selected_peaks_.clear();
     selected_peaks_.insert(pk.center);
@@ -542,7 +527,6 @@ void FormFitter::delete_selected_peaks()
   busy_= true;
   toggle_push();
 
-  ui->labelMovie->setVisible(true);
   thread_fitter_.set_data(*fit_data_);
   thread_fitter_.remove_peaks(chosen_peaks);
 }
@@ -569,7 +553,6 @@ void FormFitter::fit_updated(Gamma::Fitter fitter) {
 }
 
 void FormFitter::fitting_complete() {
-  ui->labelMovie->setVisible(false);
   busy_= false;
   calc_visible();
   ui->plot->replot();
@@ -583,40 +566,8 @@ void FormFitter::toggle_push() {
 
   ui->pushStopFitter->setEnabled(busy_);
   ui->pushFindPeaks->setEnabled(!busy_);
-  ui->spinSqWidth->setEnabled(!busy_);
-  ui->spinSum4EdgeW->setEnabled(!busy_);
-  ui->doubleThresh->setEnabled(!busy_);
-  ui->doubleOverlapWidth->setEnabled(!busy_);
-
-}
-
-void FormFitter::on_spinSqWidth_editingFinished()
-{
-  if (fit_data_ == nullptr)
-    return;
-
-  fit_data_->finder_.find_peaks(ui->spinSqWidth->value(), ui->doubleThresh->value());
-  updateData();
-}
-
-void FormFitter::on_spinSum4EdgeW_editingFinished()
-{
-  fit_data_->sum4edge_samples = ui->spinSum4EdgeW->value();
-}
-
-void FormFitter::on_doubleOverlapWidth_editingFinished()
-{
-  fit_data_->overlap_ = ui->doubleOverlapWidth->value();
-}
-
-
-void FormFitter::on_doubleThresh_editingFinished()
-{
-  if (fit_data_ == nullptr)
-    return;
-
-  fit_data_->finder_.find_peaks(ui->spinSqWidth->value(), ui->doubleThresh->value());
-  updateData();
+  ui->pushSettings->setEnabled(!busy_);
+  ui->labelMovie->setVisible(busy_);
 }
 
 void FormFitter::on_pushStopFitter_clicked()
@@ -1045,7 +996,7 @@ void FormFitter::follow_selection() {
   double max_marker = - std::numeric_limits<double>::max();
 
   for (auto &q : selected_peaks_) {
-    double nrg = fit_data_->nrg_cali_.transform(q);
+    double nrg = fit_data_->settings().cali_nrg_.transform(q);
     if (nrg > max_marker)
       max_marker = nrg;
     if (nrg < min_marker)
@@ -1153,10 +1104,10 @@ void FormFitter::plot_mouse_clicked(double x, double y, QMouseEvent* event, bool
     if (fit_data_ == nullptr)
       return;
     Coord c;
-    if (fit_data_->nrg_cali_.valid())
-      c.set_energy(x, fit_data_->nrg_cali_);
+    if (fit_data_->settings().cali_nrg_.valid())
+      c.set_energy(x, fit_data_->settings().cali_nrg_);
     else
-      c.set_bin(x, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
+      c.set_bin(x, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
     createRange(c);
   }
 }
@@ -1180,9 +1131,9 @@ void FormFitter::createROI_bounds_range(double nrg) {
 
   range_.visible = true;
   range_.base.default_pen = QPen(Qt::red);
-  range_.center.set_energy(nrg, fit_data_->nrg_cali_);
-  range_.l.set_energy(left, fit_data_->nrg_cali_);
-  range_.r.set_energy(right, fit_data_->nrg_cali_);
+  range_.center.set_energy(nrg, fit_data_->settings().cali_nrg_);
+  range_.l.set_energy(left, fit_data_->settings().cali_nrg_);
+  range_.r.set_energy(right, fit_data_->settings().cali_nrg_);
   range_.purpose = QVariant::fromValue(nrg);
 
   selected_peaks_.clear();
@@ -1299,29 +1250,29 @@ void FormFitter::makeSUM4_range(double roi, double peak_chan, int edge)
     R = parent_region->LB().end();
     purpose = "ROI back L";
     range_.base.default_pen = QPen(Qt::darkMagenta);
-    range_.center.set_energy(roi, fit_data_->nrg_cali_);
+    range_.center.set_energy(roi, fit_data_->settings().cali_nrg_);
   } else if (edge == 1) {
     L = parent_region->RB().start();
     R = parent_region->RB().end();
     purpose = "ROI back R";
     range_.base.default_pen = QPen(Qt::darkMagenta);
-    range_.center.set_energy(roi, fit_data_->nrg_cali_);
+    range_.center.set_energy(roi, fit_data_->settings().cali_nrg_);
   } else if (edge == 0) {
     Gamma::Peak pk = fit_data_->peaks().at(peak_chan);
     L = pk.sum4_.Lpeak;
     R = pk.sum4_.Rpeak;
     purpose = "SUM4";
     range_.base.default_pen = QPen(Qt::darkYellow);
-    range_.center.set_bin(pk.center, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
+    range_.center.set_bin(pk.center, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
   }
 
-  double left = fit_data_->nrg_cali_.transform(parent_region->finder_.x_[L], fit_data_->metadata_.bits);
-  double right = fit_data_->nrg_cali_.transform(parent_region->finder_.x_[R], fit_data_->metadata_.bits);
+  double left = fit_data_->settings().cali_nrg_.transform(parent_region->finder_.x_[L], fit_data_->settings().bits_);
+  double right = fit_data_->settings().cali_nrg_.transform(parent_region->finder_.x_[R], fit_data_->settings().bits_);
 
   range_.visible = true;
 
-  range_.l.set_energy(left, fit_data_->nrg_cali_);
-  range_.r.set_energy(right, fit_data_->nrg_cali_);
+  range_.l.set_energy(left, fit_data_->settings().cali_nrg_);
+  range_.r.set_energy(right, fit_data_->settings().cali_nrg_);
   range_.purpose = purpose;
 
 //  selected_peaks_.clear();
@@ -1371,12 +1322,12 @@ void FormFitter::plot_mouse_release(QMouseEvent*) {
       r = t;
     }
 
-    if (fit_data_->nrg_cali_.valid()) {
-      range_.l.set_energy(l, fit_data_->nrg_cali_);
-      range_.r.set_energy(r, fit_data_->nrg_cali_);
+    if (fit_data_->settings().cali_nrg_.valid()) {
+      range_.l.set_energy(l, fit_data_->settings().cali_nrg_);
+      range_.r.set_energy(r, fit_data_->settings().cali_nrg_);
     } else {
-      range_.l.set_bin(l, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
-      range_.r.set_bin(r, fit_data_->metadata_.bits, fit_data_->nrg_cali_);
+      range_.l.set_bin(l, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
+      range_.r.set_bin(r, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
     }
 
     plotRange();
@@ -1511,12 +1462,12 @@ void FormFitter::updateData() {
 
   minima_.clear(); maxima_.clear();
 
-  ui->plot->xAxis->setLabel(QString::fromStdString(fit_data_->nrg_cali_.units_));
+  ui->plot->xAxis->setLabel(QString::fromStdString(fit_data_->settings().cali_nrg_.units_));
   ui->plot->yAxis->setLabel("count");
 
   QVector<double> xx, yy;
 
-  xx = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(fit_data_->finder_.x_, fit_data_->metadata_.bits));
+  xx = QVector<double>::fromStdVector(fit_data_->settings().cali_nrg_.transform(fit_data_->finder_.x_, fit_data_->settings().bits_));
   yy = QVector<double>::fromStdVector(fit_data_->finder_.y_);
 
   addGraph(xx, yy, main_graph, 1, "Data");
@@ -1547,7 +1498,7 @@ void FormFitter::updateData() {
           std::vector<double> x_sum4;
           for (auto &i : p.second.sum4_.bx)
             x_sum4.push_back(q.finder_.x_[i]);
-          addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x_sum4, fit_data_->metadata_.bits)),
+          addGraph(QVector<double>::fromStdVector(fit_data_->settings().cali_nrg_.transform(x_sum4, fit_data_->settings().bits_)),
                                QVector<double>::fromStdVector(p.second.sum4_.by),
                                sum4back, -1, "SUM4 background", p.first);
         }
@@ -1566,7 +1517,7 @@ void FormFitter::updateData() {
       trim_log_lower(yy);
       addGraph(xx, yy, back_with_steps, false, "Background steps");
 
-      xx = QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(q.finder_.x_, fit_data_->metadata_.bits));
+      xx = QVector<double>::fromStdVector(fit_data_->settings().cali_nrg_.transform(q.finder_.x_, fit_data_->settings().bits_));
       yy = QVector<double>::fromStdVector(q.finder_.y_resid_on_background_);
 //      trim_log_lower(yy); //maybe not?
       addGraph(xx, yy, resid, 2, "Residuals");
@@ -1594,7 +1545,7 @@ void FormFitter::plotSUM4_options() {
 
     double region = r.hr_x_nrg.front();
 
-    double x = fit_data_->nrg_cali_.transform(r.finder_.x_[r.LB().start()], fit_data_->metadata_.bits);
+    double x = fit_data_->settings().cali_nrg_.transform(r.finder_.x_[r.LB().start()], fit_data_->settings().bits_);
     double y = r.LB().average();
 
     newButton = new QCPOverlayButton(ui->plot,
@@ -1607,7 +1558,7 @@ void FormFitter::plotSUM4_options() {
     newButton->setProperty("ROI", QVariant::fromValue(region));
     ui->plot->addItem(newButton);
 
-    x = fit_data_->nrg_cali_.transform(r.finder_.x_[r.RB().start()], fit_data_->metadata_.bits);
+    x = fit_data_->settings().cali_nrg_.transform(r.finder_.x_[r.RB().start()], fit_data_->settings().bits_);
     y = r.RB().average();
     newButton = new QCPOverlayButton(ui->plot,
           QPixmap(":/icons/oxy/22/system_switch_user.png"),
@@ -1621,7 +1572,7 @@ void FormFitter::plotSUM4_options() {
 
     for (auto &p : r.peaks_) {
 
-      x = fit_data_->nrg_cali_.transform(r.finder_.x_[p.second.sum4_.bx.front()], fit_data_->metadata_.bits);
+      x = fit_data_->settings().cali_nrg_.transform(r.finder_.x_[p.second.sum4_.bx.front()], fit_data_->settings().bits_);
       y = p.second.sum4_.by.front();
 
       newButton = new QCPOverlayButton(ui->plot,
@@ -1648,7 +1599,7 @@ void FormFitter::addEdge(Gamma::SUM4Edge edge, std::vector<double> &x, QPen pen,
     y_edge.push_back(edge.average());
   }
 
-  addGraph(QVector<double>::fromStdVector(fit_data_->nrg_cali_.transform(x_edge, fit_data_->metadata_.bits)),
+  addGraph(QVector<double>::fromStdVector(fit_data_->settings().cali_nrg_.transform(x_edge, fit_data_->settings().bits_)),
                        QVector<double>::fromStdVector(y_edge),
                        pen, -1, "SUM4 edge", roi);
 }
@@ -1679,7 +1630,7 @@ void FormFitter::calc_visible() {
     visible_roi_++;
     visible_peaks_ += q.peaks_.size();
     good_starts.insert(q.hr_x_nrg.front()); //for all parts of fit
-    good_starts.insert(q.cal_nrg_.transform(q.finder_.x_.front(), q.bits_)); //for residues
+    good_starts.insert(q.settings_.cali_nrg_.transform(q.finder_.x_.front(), q.settings_.bits_)); //for residues
   }
 
   bool plot_back_poly = (visible_roi_ < 4);
@@ -1746,3 +1697,19 @@ void FormFitter::calc_visible() {
   }
 }
 
+
+void FormFitter::on_pushSettings_clicked()
+{
+  if (!fit_data_)
+    return;
+
+  FitSettings fs = fit_data_->settings();
+  FormFitterSettings *FitterSettings = new FormFitterSettings(fs, this);
+  FitterSettings->setWindowTitle("Fitter settings");
+  int ret = FitterSettings->exec();
+
+  if (ret == QDialog::Accepted) {
+    fit_data_->apply_settings(fs);
+    updateData();
+  }
+}

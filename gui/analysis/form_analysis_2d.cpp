@@ -167,8 +167,8 @@ void FormAnalysis2D::update_peaks() {
     //PL_DBG << "remake gate c=" << gate.centroid_chan << " w=" << gate.width_chan;
 
     if (gate.centroid_chan != -1) {
-        xx.pos.set_bin(res / 2, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
-      yy.pos.set_bin(gate.centroid_chan, gate.fit_data_.metadata_.bits, gate.fit_data_.nrg_cali_);
+        xx.pos.set_bin(res / 2, gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
+      yy.pos.set_bin(gate.centroid_chan, gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
       yy.visible = true;
     }
 

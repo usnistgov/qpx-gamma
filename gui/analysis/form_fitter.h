@@ -129,11 +129,7 @@ private slots:
 
   void on_pushFindPeaks_clicked();
   void on_pushStopFitter_clicked();
-
-  void on_spinSqWidth_editingFinished();
-  void on_doubleOverlapWidth_editingFinished();
-  void on_spinSum4EdgeW_editingFinished();
-  void on_doubleThresh_editingFinished();
+  void on_pushSettings_clicked();
 
 private:
   Ui::FormFitter *ui;

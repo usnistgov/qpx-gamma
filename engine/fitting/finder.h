@@ -25,28 +25,19 @@
 
 #include <vector>
 #include <cinttypes>
+#include "fit_param.h"
 
 namespace Gamma {
 
 class Finder {
 
-private:
-  static constexpr uint16_t default_width  = 3;
-  static constexpr double   default_thresh = 3.0;
-  
 public:
-  Finder(uint16_t width = default_width, double thresh = default_thresh) :
-      square_width_(default_width),
-      threshold_(default_thresh)
-  {}
-
 
   void clear();
   
   void setData(const std::vector<double> &x, const std::vector<double> &y);
   void setFit(const std::vector<double> &y_fit, const std::vector<double> &y_background);
   void find_peaks();
-  void find_peaks(uint16_t width, double thresh);
 
   uint16_t find_left(uint16_t chan);
   uint16_t find_right(uint16_t chan);
@@ -55,14 +46,15 @@ public:
   //DATA
 
   std::vector<double> x_, y_, y_fit_, y_resid_, y_resid_on_background_;
+  std::vector<double> fw_theoretical_nrg;
+  std::vector<double> fw_theoretical_bin;
   std::vector<double> x_kon, x_conv;
 
   std::vector<uint16_t> prelim, filtered, lefts, rights;
 
-private:
-  uint16_t square_width_;
-  double threshold_;
+  FitSettings settings_;
 
+private:
   void calc_kon();
 
   uint16_t left_edge(uint16_t idx);

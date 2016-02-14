@@ -58,7 +58,7 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
 
   peaks_.clear();
   finder_.y_resid_ = finder_.y_;
-  finder_.find_peaks(3, 3.0);  //assumes default params!!!
+  finder_.find_peaks();  //assumes default params!!!
 
   if (finder_.filtered.empty())
     return;
@@ -103,7 +103,7 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
 }
 
 void ROI::iterative_fit(boost::atomic<bool>& interruptor) {
-  if (!cal_fwhm_.valid() || peaks_.empty())
+  if (!settings_.cali_fwhm_.valid() || peaks_.empty())
     return;
 
   double prev_rsq = peaks_.begin()->second.hypermet_.rsq_;
@@ -294,7 +294,7 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
 
     init_background();
     finder_.y_resid_ = remove_background();
-    finder_.find_peaks(3, 3.0);  //assumes default params!!!
+    finder_.find_peaks();  //assumes default params!!!
 
     ROI new_fit = *this;
     if (new_fit.add_from_resid(center_prelim)) {
@@ -357,9 +357,8 @@ bool ROI::remove_peak(double bin) {
 }
 
 void ROI::save_current_fit() {
-  Fit current_fit;
+  Fit current_fit(finder_);
   current_fit.background_ = background_;
-  current_fit.finder_ = finder_;
   current_fit.peaks_ = peaks_;
   fits_.push_back(current_fit);
 }
@@ -381,7 +380,7 @@ void ROI::rebuild() {
 
   std::vector<Hypermet> hype = Hypermet::fit_multi(finder_.x_, finder_.y_,
                                                    old_hype, background_,
-                                                   cal_nrg_, cal_fwhm_);
+                                                   settings_.cali_nrg_, settings_.cali_fwhm_);
 
   peaks_.clear();
 
@@ -408,7 +407,7 @@ void ROI::render() {
   hr_background = background_.eval(hr_x);
   hr_back_steps = hr_background;
   hr_fullfit    = hr_background;
-  hr_x_nrg = cal_nrg_.transform(hr_x, bits_);
+  hr_x_nrg = settings_.cali_nrg_.transform(hr_x, settings_.bits_);
 
   std::vector<double> lowres_backsteps = background_.eval(finder_.x_);
   std::vector<double> lowres_fullfit = background_.eval(finder_.x_);

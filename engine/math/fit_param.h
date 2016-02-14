@@ -24,6 +24,7 @@
 #define FIT_PARAM_H
 
 #include "fityk.h"
+#include "calibration.h"
 #include <string>
 #include <limits>
 
@@ -57,6 +58,61 @@ private:
   double get_err(fityk::Fityk* f,
                  std::string funcname);
 
+};
+
+class FitSettings {
+public:
+  bool override_;
+
+  double finder_cutoff_kev;
+
+  uint16_t KON_width;
+  double   KON_sigma_spectrum;
+  double   KON_sigma_resid;
+
+  uint16_t ROI_max_peaks;
+  double   ROI_extend_peaks;
+  double   ROI_extend_background;
+
+  uint16_t background_edge_samples;
+
+  bool     resid_auto;
+  uint16_t resid_max_iterations;
+  uint64_t resid_min_amplitude;
+
+  bool     small_simplify;
+  uint64_t small_max_amplitude;
+
+  bool     step_enable;
+  FitParam step_amplitude;
+
+  bool     tail_enable;
+  FitParam tail_amplitude;
+  FitParam tail_slope;
+
+  double   lateral_slack;
+
+  bool     width_common;
+  FitParam width_common_bounds;
+  FitParam width_variable_bounds;
+  bool     width_at_511_variable;
+  double   width_at_511_tolerance;
+
+  bool     Lskew_enable;
+  FitParam Lskew_amplitude;
+  FitParam Lskew_slope;
+
+  bool     Rskew_enable;
+  FitParam Rskew_amplitude;
+  FitParam Rskew_slope;
+
+  uint16_t fitter_max_iter;
+
+  //specific to spectrum
+  Gamma::Calibration cali_nrg_, cali_fwhm_;
+  uint16_t bits_;
+
+  FitSettings();
 };
 
 #endif

@@ -32,6 +32,21 @@ void Finder::setData(const std::vector<double> &x, const std::vector<double> &y)
   if (x.size() == y.size()) {
     x_ = x;
     y_resid_on_background_ = y_resid_ = y_ = y;
+
+    fw_theoretical_nrg.clear();
+    fw_theoretical_bin.clear();
+    if (settings_.cali_fwhm_.valid() && settings_.cali_nrg_.valid()) {
+      for (int i=0; i < x_.size(); ++i) {
+        double nrg = settings_.cali_nrg_.transform(x_[i], settings_.bits_);
+        fw_theoretical_nrg.push_back(nrg);
+        double fw = settings_.cali_fwhm_.transform(nrg);
+        double L = settings_.cali_nrg_.inverse_transform(nrg - fw/2, settings_.bits_);
+        double R = settings_.cali_nrg_.inverse_transform(nrg + fw/2, settings_.bits_);
+        double wchan = R-L;
+        fw_theoretical_bin.push_back(wchan);
+      }
+    }
+
     calc_kon();
     find_peaks();
   }
@@ -71,41 +86,68 @@ void Finder::clear() {
 
 
 void Finder::calc_kon() {
-  if (square_width_ < 2)
-    square_width_ = 2;
+  uint16_t width = settings_.KON_width;
 
-  int shift = square_width_ / 2;
+  if (width < 2)
+    width = 2;
+
+  double sigma = settings_.KON_sigma_spectrum;
+  if (y_resid_ != y_) {
+//    PL_DBG << "<Finder> Using sigma resid";
+    sigma = settings_.KON_sigma_resid;
+  }
+
+
+//  PL_DBG << "<Finder> width " << settings_.KON_width;
+
+  int start = width;
+  int end = x_.size() - 1 - 2 * width;
+  int shift = width / 2;
+
+  if (!fw_theoretical_bin.empty()) {
+    for (int i=0; i < fw_theoretical_bin.size(); ++i)
+      if (ceil(fw_theoretical_bin[i]) < i) {
+        start = i;
+        break;
+      }
+    for (int i=fw_theoretical_bin.size() -1 ; i >= 0; --i)
+      if (2 * ceil(fw_theoretical_bin[i]) + i + 1 < fw_theoretical_bin.size()) {
+        end = i;
+        break;
+      }
+  }
+
 
   x_kon.resize(y_resid_.size(), 0);
   x_conv.resize(y_resid_.size(), 0);
   prelim.clear();
 
-  for (int j = square_width_; (j+2*square_width_+1) < y_resid_.size(); ++j) {
+  for (int j = start; j < end; ++j) {
+
+    if (!fw_theoretical_bin.empty()) {
+      width = floor(fw_theoretical_bin[j]);
+      shift = width / 2;
+    }
+
     double kon = 0;
     double avg = 0;
-    for (int i=j; i <= (j+square_width_+1); ++i) {
-      kon += 2*y_resid_[i] - y_resid_[i-square_width_] - y_resid_[i+square_width_];
+    for (int i=j; i <= (j+width+1); ++i) {
+      kon += 2*y_resid_[i] - y_resid_[i-width] - y_resid_[i+width];
       avg += y_resid_[i];
     }
-    avg = avg / square_width_;
+    avg = avg / width;
     x_kon[j + shift] = kon;
-    x_conv[j + shift] = kon / sqrt(6* square_width_ * avg);
+    x_conv[j + shift] = kon / sqrt(6* width * avg);
 
-    if (x_conv[j + shift] > threshold_)
+    if (x_conv[j + shift] > sigma)
       prelim.push_back(j + shift);
   }
 
 }
 
 
-void Finder::find_peaks(uint16_t width, double thresh) {
-  square_width_ = width;
-  threshold_ = thresh;
-  calc_kon();
-  find_peaks();
-}
-
 void Finder::find_peaks() {
+  calc_kon();
   filtered.clear();
   lefts.clear();
   rights.clear();
@@ -133,6 +175,7 @@ void Finder::find_peaks() {
   for (int i=0; i < filtered.size(); ++i) {
     lefts[i]  = left_edge(lefts[i]);
     rights[i] = right_edge(rights[i]);
+//    PL_DBG << "<Finder> Peak " << lefts[i] << "-"  << filtered[i] << "-"  << rights[i];
   }
 }
 
@@ -142,7 +185,13 @@ uint16_t Finder::find_left(uint16_t chan) {
 
   //assume x is monotone increasing
 
-  double edge_threshold = -0.5 * threshold_;
+  double sigma = settings_.KON_sigma_spectrum;
+  if (y_resid_ != y_) {
+//    PL_DBG << "<Finder> Using sigma resid";
+    sigma = settings_.KON_sigma_resid;
+  }
+
+  double edge_threshold = -0.5 * sigma;
 
   if ((chan < x_[0]) || (chan >= x_[x_.size()-1]))
     return 0;
@@ -159,9 +208,15 @@ uint16_t Finder::find_right(uint16_t chan) {
   if (x_.empty())
     return 0;
 
+  double sigma = settings_.KON_sigma_spectrum;
+  if (y_resid_ != y_) {
+//    PL_DBG << "<Finder> Using sigma resid";
+    sigma = settings_.KON_sigma_resid;
+  }
+
   //assume x is monotone increasing
 
-  double edge_threshold = -0.5 * threshold_;
+  double edge_threshold = -0.5 * sigma;
 
   if ((chan < x_[0]) || (chan >= x_[x_.size()-1]))
     return x_.size() - 1;
@@ -179,7 +234,13 @@ uint16_t Finder::left_edge(uint16_t idx) {
   if (x_conv.empty() || idx >= x_conv.size())
     return 0;
 
-  double edge_threshold = -0.5 * threshold_;
+  double sigma = settings_.KON_sigma_spectrum;
+  if (y_resid_ != y_) {
+//    PL_DBG << "<Finder> Using sigma resid";
+    sigma = settings_.KON_sigma_resid;
+  }
+
+  double edge_threshold = -0.5 * sigma;
 
   while ((idx > 0) && (x_conv[idx] >= 0))
     idx--;
@@ -198,7 +259,13 @@ uint16_t Finder::right_edge(uint16_t idx) {
   if (x_conv.empty() || idx >= x_conv.size())
     return 0;
 
-  double edge_threshold = -0.5 * threshold_;
+  double sigma = settings_.KON_sigma_spectrum;
+  if (y_resid_ != y_) {
+//    PL_DBG << "<Finder> Using sigma resid";
+    sigma = settings_.KON_sigma_resid;
+  }
+
+  double edge_threshold = -0.5 * sigma;
 
   while ((idx < x_conv.size()) && (x_conv[idx] >= 0))
     idx++;
