@@ -35,25 +35,26 @@
 class Hypermet {
 public:
   Hypermet() :
-    Hypermet(0,0,0)
+    Hypermet(0,0,0, FitSettings())
   {}
 
-  Hypermet(double h, double c, double w) :
+  Hypermet(double h, double c, double w, FitSettings settings) :
     height_("hh", h), center_("cc", c), width_("ww", w),
-    Lshort_height_("lshort_h", 1.0e-10, 1.0e-10, 0.75), Lshort_slope_("lshort_s", 0.5, 0.3, 2),
-    Rshort_height_("rshort_h", 1.0e-10, 1.0e-10, 0.75), Rshort_slope_("rshort_s", 0.5, 0.3, 2),
-    Llong_height_("llong_h", 0, 0, 0.015), Llong_slope_("llong_s", 2.5, 2.5, 50),
-    step_height_("step_h", 1.0e-10, 1.0e-10, 0.75),
+    Lskew_amplitude(settings.Lskew_amplitude), Lskew_slope(settings.Lskew_slope),
+    Rskew_amplitude(settings.Rskew_amplitude), Rskew_slope(settings.Rskew_slope),
+    tail_amplitude(settings.tail_amplitude), tail_slope(settings.tail_slope),
+    step_amplitude(settings.step_amplitude),
     rsq_(0) {}
 
-  Hypermet(const std::vector<double> &x, const std::vector<double> &y, double h, double c, double w);
+  Hypermet(const std::vector<double> &x, const std::vector<double> &y,
+           double h, double c, double w,
+           FitSettings settings);
 
   static std::vector<Hypermet> fit_multi(const std::vector<double> &x,
                                          const std::vector<double> &y,
                                          std::vector<Hypermet> old,
                                          Polynomial &background,
-                                         Gamma::Calibration cali_nrg,
-                                         Gamma::Calibration cali_fwhm
+                                         FitSettings settings
                                          );
 
   double eval_peak(double);
@@ -64,10 +65,10 @@ public:
   double area();
 
   FitParam center_, height_, width_,
-           Lshort_height_, Lshort_slope_,
-           Rshort_height_, Rshort_slope_,
-           Llong_height_, Llong_slope_,
-           step_height_;
+           Lskew_amplitude, Lskew_slope,
+           Rskew_amplitude, Rskew_slope,
+           tail_amplitude, tail_slope,
+           step_amplitude;
 
   double rsq_;
 

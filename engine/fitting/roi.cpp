@@ -86,7 +86,8 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
         )
     {
       //        PL_DBG << "I like this peak at " << gaussian.center_ << " fw " << gaussian.hwhm_ * 2;
-      Hypermet hyp(gaussian.height_, gaussian.center_, gaussian.hwhm_ / sqrt(log(2)));
+      Hypermet hyp(gaussian.height_, gaussian.center_, gaussian.hwhm_ / sqrt(log(2)),
+                   settings_);
 
       Peak fitted;
       fitted.hypermet_ = hyp;
@@ -98,7 +99,8 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
   //    PL_DBG << "preliminary peaks " << peaks_.size();
   rebuild();
   save_current_fit();
-  iterative_fit(interruptor);
+  if (settings_.resid_auto)
+    iterative_fit(interruptor);
 
 }
 
@@ -175,6 +177,9 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
                                                  finder_.y_resid_.begin() + finder_.rights[target_peak] + 1);
   Gaussian gaussian(x_pk, y_pk);
 
+  if ((centroid_hint == -1) && (gaussian.height_ < settings_.resid_min_amplitude))
+    return false;
+
   if (
       (gaussian.height_ > 0) &&
       (gaussian.hwhm_ > 0) &&
@@ -183,7 +188,8 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
       )
   {
 //    PL_DBG << "<ROI> new peak accepted";
-    Hypermet hyp(gaussian.height_, gaussian.center_, gaussian.hwhm_ / sqrt(log(2)));
+    Hypermet hyp(gaussian.height_, gaussian.center_, gaussian.hwhm_ / sqrt(log(2)),
+                 settings_);
 
     Peak fitted;
     fitted.hypermet_ = hyp;
@@ -378,7 +384,7 @@ void ROI::rebuild() {
 
   std::vector<Hypermet> hype = Hypermet::fit_multi(finder_.x_, finder_.y_,
                                                    old_hype, background_,
-                                                   settings_.cali_nrg_, settings_.cali_fwhm_);
+                                                   settings_);
 
   peaks_.clear();
 

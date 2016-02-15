@@ -39,18 +39,18 @@ bool Hypermet::extract_params(fityk::Fityk* f, fityk::Func* func) {
     center_.extract(f, func);
     height_.extract(f, func);
     width_.extract(f, func);
-    Lshort_height_.extract(f, func);
-    Lshort_slope_.extract(f, func);
-    Rshort_height_.extract(f, func);
-    Rshort_slope_.extract(f, func);
-//    Llong_height_ = func->get_param_value("llong_h");
-//    Llong_slope_ = func->get_param_value("llong_s");
-    step_height_.extract(f, func);
+    Lskew_amplitude.extract(f, func);
+    Lskew_slope.extract(f, func);
+    Rskew_amplitude.extract(f, func);
+    Rskew_slope.extract(f, func);
+//    tail_amplitude = func->get_param_value("tail_h");
+//    tail_slope = func->get_param_value("tail_s");
+    step_amplitude.extract(f, func);
 //        PL_DBG << "Hypermet fit as  c=" << center_ << " h=" << height_ << " w=" << width_
-//               << " lsh=" << Lshort_height_ << " lss=" << Lshort_slope_
-//               << " rsh=" << Rshort_height_ << " rss=" << Rshort_slope_
-//               << " llh=" << Llong_height_ << " lls=" << Llong_slope_
-//               << " steph=" << step_height_;
+//               << " lsh=" << Lskew_amplitude << " lss=" << Lskew_slope
+//               << " rsh=" << Rskew_amplitude << " rss=" << Rskew_slope
+//               << " llh=" << tail_amplitude << " lls=" << tail_slope
+//               << " steph=" << step_amplitude;
   }
   catch ( ... ) {
     PL_DBG << "Hypermet could not extract parameters from Fityk";
@@ -59,8 +59,10 @@ bool Hypermet::extract_params(fityk::Fityk* f, fityk::Func* func) {
   return true;
 }
 
-Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y, double h, double c, double w):
-  Hypermet(h, c, w) {
+Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y,
+                   double h, double c, double w,
+                    FitSettings settings):
+  Hypermet(h, c, w, settings) {
   std::vector<double> sigma;
     for (auto &q : y) {
       sigma.push_back(sqrt(q));
@@ -108,16 +110,16 @@ Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y, d
   std::string initial_h = "$h = " + height_.def_bounds();
   std::string initial_w = "$w = " + width_.def_bounds();
 
-  std::string initial_lsh = "$lsh = " + Lshort_height_.def_bounds();
-  std::string initial_lss = "$lss = " + Lshort_slope_.def_bounds();
+  std::string initial_lsh = "$lsh = " + Lskew_amplitude.def_bounds();
+  std::string initial_lss = "$lss = " + Lskew_slope.def_bounds();
 
-  std::string initial_rsh = "$rsh = " + Rshort_height_.def_bounds();
-  std::string initial_rss = "$rss = " + Rshort_slope_.def_bounds();
+  std::string initial_rsh = "$rsh = " + Rskew_amplitude.def_bounds();
+  std::string initial_rss = "$rss = " + Rskew_slope.def_bounds();
 
 //  std::string initial_llh = FitykUtil::var_def("llh", 0.0000, 0, 0.015);
 //  std::string initial_lls = FitykUtil::var_def("lls", 2.5, 2.5, 50);
 
-  std::string initial_step = "$step = " + step_height_.def_bounds();
+  std::string initial_step = "$step = " + step_amplitude.def_bounds();
 
   std::string initial = "F += Hypermet($c,$h,$w,$lsh,$lss,$rsh,$rss,$step)";
 
@@ -168,10 +170,8 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
                                           const std::vector<double> &y,
                                           std::vector<Hypermet> old,
                                           Polynomial &background,
-                                          Gamma::Calibration cali_nrg,
-                                          Gamma::Calibration cali_fwhm
-                                          ) {
-
+                                          FitSettings settings)
+{
   std::vector<Hypermet> results;
   if (old.empty())
     return results;
@@ -217,16 +217,16 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
   std::string initial_xc = FitykUtil::var_def("sxc", xc, 0, 0);
 
 
-  std::string initial_lsh = "$lsh = " + old[0].Lshort_height_.def_bounds();
-  std::string initial_lss = "$lss = " + old[0].Lshort_slope_.def_bounds();
+  std::string initial_lsh = "$lsh = " + old[0].Lskew_amplitude.def_bounds();
+  std::string initial_lss = "$lss = " + old[0].Lskew_slope.def_bounds();
 
-  std::string initial_rsh = "$rsh = " + old[0].Rshort_height_.def_bounds();
-  std::string initial_rss = "$rss = " + old[0].Rshort_slope_.def_bounds();
+  std::string initial_rsh = "$rsh = " + old[0].Rskew_amplitude.def_bounds();
+  std::string initial_rss = "$rss = " + old[0].Rskew_slope.def_bounds();
 
 //  std::string initial_llh = FitykUtil::var_def("llh", 0.0000, 0, 0.015);
 //  std::string initial_lls = FitykUtil::var_def("lls", 2.5, 2.5, 50);
 
-  std::string initial_step = "$step = " + old[0].step_height_.def_bounds();
+  std::string initial_step = "$step = " + old[0].step_amplitude.def_bounds();
 
   //  PL_DBG << initial_lsh;
   //  PL_DBG << initial_lss;
@@ -259,10 +259,10 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
   for (auto &o : old) {
     double width_expected = o.width_.val;
 
-    if (cali_fwhm.valid() && cali_nrg.valid()) {
-      double fwhm_expected = cali_fwhm.transform(cali_nrg.transform(o.center_.val));
-      double L = cali_nrg.inverse_transform(cali_nrg.transform(o.center_.val) - fwhm_expected/2);
-      double R = cali_nrg.inverse_transform(cali_nrg.transform(o.center_.val) + fwhm_expected/2);
+    if (settings.cali_fwhm_.valid() && settings.cali_nrg_.valid()) {
+      double fwhm_expected = settings.cali_fwhm_.transform(settings.cali_nrg_.transform(o.center_.val));
+      double L = settings.cali_nrg_.inverse_transform(settings.cali_nrg_.transform(o.center_.val) - fwhm_expected/2);
+      double R = settings.cali_nrg_.inverse_transform(settings.cali_nrg_.transform(o.center_.val) + fwhm_expected/2);
       width_expected = (R - L) / (2* sqrt(log(2)));
     }
 
@@ -383,16 +383,16 @@ double Hypermet::eval_peak(double x) {
   double gaussian = exp(- pow(xc/width_.val, 2) );
 
   double left_short = 0;
-  double lexp = exp(pow(0.5*width_.val/Lshort_slope_.val, 2) + xc/Lshort_slope_.val);
-  if ((Lshort_slope_.val != 0) && !isinf(lexp))
-    left_short = Lshort_height_.val * lexp *
-        erfc( 0.5*width_.val/Lshort_slope_.val + xc/width_.val);
+  double lexp = exp(pow(0.5*width_.val/Lskew_slope.val, 2) + xc/Lskew_slope.val);
+  if ((Lskew_slope.val != 0) && !isinf(lexp))
+    left_short = Lskew_amplitude.val * lexp *
+        erfc( 0.5*width_.val/Lskew_slope.val + xc/width_.val);
 
   double right_short = 0;
-  double rexp = exp(pow(0.5*width_.val/Rshort_slope_.val, 2) - xc/Rshort_slope_.val);
-  if ((Rshort_slope_.val != 0) && !isinf(rexp))
-    right_short = Rshort_height_.val * rexp *
-      erfc( 0.5*width_.val/Rshort_slope_.val  - xc/width_.val);
+  double rexp = exp(pow(0.5*width_.val/Rskew_slope.val, 2) - xc/Rskew_slope.val);
+  if ((Rskew_slope.val != 0) && !isinf(rexp))
+    right_short = Rskew_amplitude.val * rexp *
+      erfc( 0.5*width_.val/Rskew_slope.val  - xc/width_.val);
 
   double ret = height_.val * (gaussian + 0.5 * (left_short + right_short) );
 
@@ -406,12 +406,12 @@ double Hypermet::eval_step_tail(double x) {
 
   double xc = x - center_.val;
 
-  double step = step_height_.val * erfc( xc/width_.val );
+  double step = step_amplitude.val * erfc( xc/width_.val );
 
   double left_long = 0;
-//  double left_long = Llong_height_ * 0.5 *
-//      exp( /*pow(0.5*width_/Llong_slope_, 2) +*/ xc/width_) *
-//      erfc( 0.5*width_/Llong_slope_ +  xc/width_ );
+//  double left_long = tail_amplitude * 0.5 *
+//      exp( /*pow(0.5*width_/tail_slope, 2) +*/ xc/width_) *
+//      erfc( 0.5*width_/tail_slope +  xc/width_ );
 
   return height_.val * 0.5 * (step + left_long);
 }
@@ -433,6 +433,6 @@ std::vector<double> Hypermet::step_tail(std::vector<double> x) {
 double Hypermet::area() {
   return height_.val * width_.val * sqrt(M_PI) *
       (1 +
-       Lshort_height_.val * width_.val * Lshort_slope_.val +
-       Rshort_height_.val * width_.val * Rshort_slope_.val);
+       Lskew_amplitude.val * width_.val * Lskew_slope.val +
+       Rskew_amplitude.val * width_.val * Rskew_slope.val);
 }

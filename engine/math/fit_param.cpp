@@ -86,8 +86,8 @@ FitSettings::FitSettings()
   , lateral_slack(0.5)
 
   , width_common (true)
-  , width_common_bounds ("w", 1.0, 0.7, 1.3)
-  , width_variable_bounds ("w", 1.0, 0.7, 4)
+  , width_common_bounds ("ww", 1.0, 0.7, 1.3)
+  , width_variable_bounds ("ww", 1.0, 0.7, 4)
   , width_at_511_variable (true)
   , width_at_511_tolerance (5.0)
 
