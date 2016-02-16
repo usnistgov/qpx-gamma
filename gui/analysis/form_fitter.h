@@ -176,7 +176,7 @@ private:
   void calc_visible();
   void add_bounds(const QVector<double>& x, const QVector<double>& y);
   void addGraph(const QVector<double>& x, const QVector<double>& y, QPen appearance,
-                int fittable = 0, QString name = QString(), double peak_chan = -1);
+                double bin, int fittable = 0, QString name = QString());
   void addEdge(Gamma::SUM4Edge edge, std::vector<double> &x, QPen pen, double roi);
 
   void follow_selection();
@@ -189,6 +189,8 @@ private:
 //  void plotROI_range();
 
   void plotSUM4_options();
+
+  void peak_info(double bin);
 
   void makeSUM4_range(double roi, double peak_chan, int edge = 0);
 

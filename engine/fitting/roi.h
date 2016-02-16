@@ -37,12 +37,12 @@ struct Fit {
 
   Finder finder_;
   std::map<double, Peak> peaks_;
-  Polynomial background_;
+  PolyBounded background_;
 };
 
 
 struct ROI {
-  ROI(FitSettings fs)
+  ROI(FitSettings fs = FitSettings())
     : settings_(fs)
   {
     finder_.settings_ = settings_;
@@ -84,7 +84,7 @@ struct ROI {
   //per_fit
   Finder finder_;
   std::map<double, Peak> peaks_;
-  Polynomial background_;
+  PolyBounded background_;
 
   //rendition
   std::vector<double> hr_x, hr_x_nrg,
@@ -95,7 +95,7 @@ private:
   SUM4Edge LB_, RB_;
 
   std::vector<double> remove_background();
-  void init_background(uint16_t samples = 10);
+  void init_background();
   bool remove_peak(double bin);
   void iterative_fit(boost::atomic<bool>& interruptor);
 

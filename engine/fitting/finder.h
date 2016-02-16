@@ -25,7 +25,7 @@
 
 #include <vector>
 #include <cinttypes>
-#include "fit_param.h"
+#include "fit_settings.h"
 
 namespace Gamma {
 

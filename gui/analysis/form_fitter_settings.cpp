@@ -49,16 +49,17 @@ FormFitterSettings::FormFitterSettings(FitSettings &fs, QWidget *parent) :
   ui->checkResidAuto->setChecked(fit_settings_.resid_auto);
   ui->spinResidMaxIterations->setValue(fit_settings_.resid_max_iterations);
   ui->spinResidMinAmplitude->setValue(fit_settings_.resid_min_amplitude);
+  ui->doubleResidTooClose->setValue(fit_settings_.resid_too_close);
 
   ui->checkSmallSimplify->setChecked(fit_settings_.small_simplify);
   ui->spinSmallMaxAmplitude->setValue(fit_settings_.small_max_amplitude);
 
-  ui->checkStepEnable->setChecked(fit_settings_.step_enable);
+  ui->checkStepEnable->setChecked(fit_settings_.step_amplitude.enabled);
   ui->doubleMinStep->setValue(fit_settings_.step_amplitude.lbound);
   ui->doubleMaxStep->setValue(fit_settings_.step_amplitude.ubound);
   ui->doubleInitStep->setValue(fit_settings_.step_amplitude.val);
 
-  ui->checkTailEnable->setChecked(fit_settings_.tail_enable);
+  ui->checkTailEnable->setChecked(fit_settings_.tail_amplitude.enabled);
   ui->doubleMinTailAmp->setValue(fit_settings_.tail_amplitude.lbound);
   ui->doubleMaxTailAmp->setValue(fit_settings_.tail_amplitude.ubound);
   ui->doubleInitTailAmp->setValue(fit_settings_.tail_amplitude.val);
@@ -66,7 +67,7 @@ FormFitterSettings::FormFitterSettings(FitSettings &fs, QWidget *parent) :
   ui->doubleMaxTailSlope->setValue(fit_settings_.tail_slope.ubound);
   ui->doubleInitTailSlope->setValue(fit_settings_.tail_slope.val);
 
-  ui->checkEnableLskew->setChecked(fit_settings_.Lskew_enable);
+  ui->checkEnableLskew->setChecked(fit_settings_.Lskew_amplitude.enabled);
   ui->doubleMinLskewAmp->setValue(fit_settings_.Lskew_amplitude.lbound);
   ui->doubleMaxLskewAmp->setValue(fit_settings_.Lskew_amplitude.ubound);
   ui->doubleInitLskewAmp->setValue(fit_settings_.Lskew_amplitude.val);
@@ -74,7 +75,7 @@ FormFitterSettings::FormFitterSettings(FitSettings &fs, QWidget *parent) :
   ui->doubleMaxLskewSlope->setValue(fit_settings_.Lskew_slope.ubound);
   ui->doubleInitLskewSlope->setValue(fit_settings_.Lskew_slope.val);
 
-  ui->checkEnableRskew->setChecked(fit_settings_.Rskew_enable);
+  ui->checkEnableRskew->setChecked(fit_settings_.Rskew_amplitude.enabled);
   ui->doubleMinRskewAmp->setValue(fit_settings_.Rskew_amplitude.lbound);
   ui->doubleMaxRskewAmp->setValue(fit_settings_.Rskew_amplitude.ubound);
   ui->doubleInitRskewAmp->setValue(fit_settings_.Rskew_amplitude.val);
@@ -97,9 +98,6 @@ FormFitterSettings::FormFitterSettings(FitSettings &fs, QWidget *parent) :
 
 void FormFitterSettings::on_buttonBox_accepted()
 {
-  PL_DBG << "fitter settings accept";
-
-
   fit_settings_.finder_cutoff_kev = ui->spinFinderCutoffKeV->value();
 
   fit_settings_.KON_width = ui->spinKONwidth->value();
@@ -115,16 +113,17 @@ void FormFitterSettings::on_buttonBox_accepted()
   fit_settings_.resid_auto = ui->checkResidAuto->isChecked();
   fit_settings_.resid_max_iterations = ui->spinResidMaxIterations->value();
   fit_settings_.resid_min_amplitude = ui->spinResidMinAmplitude->value();
+  fit_settings_.resid_too_close = ui->doubleResidTooClose->value();
 
   fit_settings_.small_simplify = ui->checkSmallSimplify->isChecked();
   fit_settings_.small_max_amplitude = ui->spinSmallMaxAmplitude->value();
 
-  fit_settings_.step_enable = ui->checkStepEnable->isChecked();
+  fit_settings_.step_amplitude.enabled = ui->checkStepEnable->isChecked();
   fit_settings_.step_amplitude.lbound = ui->doubleMinStep->value();
   fit_settings_.step_amplitude.ubound = ui->doubleMaxStep->value();
   fit_settings_.step_amplitude.val = ui->doubleInitStep->value();
 
-  fit_settings_.tail_enable = ui->checkTailEnable->isChecked();
+  fit_settings_.tail_amplitude.enabled = ui->checkTailEnable->isChecked();
   fit_settings_.tail_amplitude.lbound = ui->doubleMinTailAmp->value();
   fit_settings_.tail_amplitude.ubound = ui->doubleMaxTailAmp->value();
   fit_settings_.tail_amplitude.val = ui->doubleInitTailAmp->value();
@@ -132,7 +131,7 @@ void FormFitterSettings::on_buttonBox_accepted()
   fit_settings_.tail_slope.ubound = ui->doubleMaxTailSlope->value();
   fit_settings_.tail_slope.val = ui->doubleInitTailSlope->value();
 
-  fit_settings_.Lskew_enable = ui->checkEnableLskew->isChecked();
+  fit_settings_.Lskew_amplitude.enabled = ui->checkEnableLskew->isChecked();
   fit_settings_.Lskew_amplitude.lbound = ui->doubleMinLskewAmp->value();
   fit_settings_.Lskew_amplitude.ubound = ui->doubleMaxLskewAmp->value();
   fit_settings_.Lskew_amplitude.val = ui->doubleInitLskewAmp->value();
@@ -140,7 +139,7 @@ void FormFitterSettings::on_buttonBox_accepted()
   fit_settings_.Lskew_slope.ubound = ui->doubleMaxLskewSlope->value();
   fit_settings_.Lskew_slope.val = ui->doubleInitLskewSlope->value();
 
-  fit_settings_.Rskew_enable = ui->checkEnableRskew->isChecked();
+  fit_settings_.Rskew_amplitude.enabled = ui->checkEnableRskew->isChecked();
   fit_settings_.Rskew_amplitude.lbound = ui->doubleMinRskewAmp->value();
   fit_settings_.Rskew_amplitude.ubound = ui->doubleMaxRskewAmp->value();
   fit_settings_.Rskew_amplitude.val = ui->doubleInitRskewAmp->value();
@@ -210,14 +209,12 @@ FormFitterSettings::~FormFitterSettings()
 }
 
 void FormFitterSettings::closeEvent(QCloseEvent *event) {
-  PL_DBG << "fitter settings reject by close";
   event->accept();
 }
 
 
 void FormFitterSettings::on_buttonBox_rejected()
 {
-  PL_DBG << "fitter settings reject";
   reject();
 }
 

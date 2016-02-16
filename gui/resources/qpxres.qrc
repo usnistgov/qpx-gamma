@@ -80,6 +80,7 @@
         <file>oxy/22/games_difficult.png</file>
         <file>oxy/22/view_statistics.png</file>
         <file>oxy/16/applications_systemg.png</file>
+        <file>oxy/22/help_about.png</file>
     </qresource>
     <qresource prefix="/">
         <file>loader.gif</file>

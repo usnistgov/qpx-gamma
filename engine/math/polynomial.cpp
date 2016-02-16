@@ -26,9 +26,240 @@
 #include <iomanip>
 #include <numeric>
 #include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 #include "fityk.h"
 #include "custom_logger.h"
 #include "qpx_util.h"
+
+
+PolyBounded::PolyBounded() :
+  xoffset_("xoffset", 0),
+  rsq_(0)
+{}
+
+PolyBounded::PolyBounded(Polynomial p):
+  xoffset_("xoffset", p.xoffset_),
+  rsq_(p.rsq_)
+{
+  for (int i=0; i < p.coeffs_.size(); ++i)
+    coeffs_[i] = FitParam("a" + boost::lexical_cast<std::string>(i), p.coeffs_[i]);
+}
+
+void PolyBounded::add_coeff(int degree, double lbound, double ubound)
+{
+  double mid = (lbound + ubound) / 2;
+  add_coeff(degree, lbound, ubound, mid);
+}
+
+void PolyBounded::add_coeff(int degree, double lbound, double ubound, double initial)
+{
+  if (lbound > ubound)
+    return;
+  coeffs_[degree] = FitParam("a" + boost::lexical_cast<std::string>(degree),
+                             initial, lbound, ubound);
+}
+
+
+Polynomial PolyBounded::to_simple() const {
+  int max = 0;
+  for (auto &c : coeffs_)
+    if (c.first > max)
+      max = c.first;
+  std::vector<double> coeffs(max + 1);
+  for (auto &c : coeffs_)
+    coeffs[c.first] =  c.second.val;
+  return Polynomial(coeffs, xoffset_.val, rsq_);
+}
+
+std::string PolyBounded::to_string() const {
+  std::string ret = "PolyBounded = ";
+  std::string vars;
+  int i = 0;
+  for (auto &c : coeffs_) {
+    if (i > 0)
+      ret += " + ";
+    ret += c.second.name();
+    if (c.first > 0)
+      ret += "*(x-xoffset)";
+    if (c.first > 1)
+      ret += "^" + c.first;
+    i++;
+    vars += "     " + c.second.to_string() + "\n";
+  }
+  vars += "     " + xoffset_.to_string();
+
+  ret += "   rsq=" + boost::lexical_cast<std::string>(rsq_) + "    where:\n" +  vars;
+
+  return ret;
+}
+
+
+std::string PolyBounded::fityk_definition() {
+  std::string declaration = "define PolyBounded(";
+  std::string definition  = " = ";
+  int i = 0;
+  for (auto &c : coeffs_) {
+    if (i > 0) {
+      declaration += ", ";
+      definition += " + ";
+    }
+    declaration += c.second.name();
+    definition  += c.second.name();
+    if (c.first > 0)
+      definition += "*xx";
+    if (c.first > 1)
+      definition += "^" + c.first;
+    i++;
+  }
+  declaration += ")";
+  definition  += " where xx = (x - " + std::to_string(xoffset_.val) + ")";
+
+  return declaration + definition;
+}
+
+bool PolyBounded::extract_params(fityk::Func* func) {
+  try {
+    if (func->get_template_name() != "MyPoly")
+      return false;
+
+    for (auto &c : coeffs_) {
+      coeffs_[c.first].val = func->get_param_value(c.second.name());
+    }
+    //    rsq_ = fityk->get_rsquared(0);
+  }
+  catch ( ... ) {
+    PL_DBG << "PolyBounded could not extract parameters from Fityk";
+    return false;
+  }
+  return true;
+}
+
+
+double PolyBounded::eval(double x) {
+  double x_adjusted = x - xoffset_.val;
+  double result = 0.0;
+  for (auto &c : coeffs_)
+    result += c.second.val * pow(x_adjusted, c.first);
+  return result;
+}
+
+std::vector<double> PolyBounded::eval(std::vector<double> x) {
+  std::vector<double> y;
+  for (auto &q : x)
+    y.push_back(eval(q));
+  return y;
+}
+
+PolyBounded PolyBounded::derivative() {
+  PolyBounded new_poly;  // derivative not true if offset != 0
+  new_poly.xoffset_ = xoffset_;
+
+  for (auto &c : coeffs_) {
+    if (c.first != 0) {
+      new_poly.add_coeff(c.first - 1, c.second.lbound * c.first, c.second.ubound * c.first, c.second.val * c.first);
+    }
+  }
+
+  return new_poly;
+}
+
+double PolyBounded::eval_inverse(double y, double e) {
+  int i=0;
+  double x0 = xoffset_.val;
+  PolyBounded deriv = derivative();
+  double x1 = x0 + (y - eval(x0)) / (deriv.eval(x0));
+  while( i<=100 && std::abs(x1-x0) > e)
+  {
+    x0 = x1;
+    x1 = x0 + (y - eval(x0)) / (deriv.eval(x0));
+    i++;
+  }
+
+  double x_adjusted = x1 - xoffset_.val;
+
+  if(std::abs(x1-x0) <= e)
+    return x_adjusted;
+
+  else
+  {
+    PL_WARN <<"Maximum iteration reached in polynomial inverse evaluation";
+    return nan("");
+  }
+}
+
+bool PolyBounded::add_self(fityk::Fityk *f, int function_num) const {
+  try {
+    std::string add = " F += PolyBounded(";
+    int i = 0;
+    for (auto &c : coeffs_) {
+      if (i > 0)
+        add += ",";
+      add += c.second.fityk_name(function_num);
+
+      f->execute(c.second.def_var(function_num));
+//      PL_DBG << c.second.def_var(function_num);
+      i++;
+    }
+    add += ")";
+//    PL_DBG << add;
+    f->execute(add);
+  }
+  catch ( ... ) {
+    PL_DBG << "PolyBounded fit failed to add self";
+    return false;
+  }
+  return true;
+}
+
+void PolyBounded::fit(std::vector<double> &x, std::vector<double> &y, std::vector<double> &y_sigma) {
+  if ((x.size() != y.size()) || (y.size() != y_sigma.size()))
+    return;
+
+  fityk::Fityk *f = new fityk::Fityk;
+  f->redir_messages(NULL);
+  f->load_data(0, x, y, y_sigma);
+
+  bool success = true;
+
+  try {
+    f->execute("set fitting_method = nlopt_lbfgs");
+//    f->execute("set fitting_method = levenberg_marquardt");
+  } catch ( ... ) {
+    success = false;
+    PL_DBG << "PolyBounded fit failed to set fitter";
+  }
+
+  try {
+    f->execute(fityk_definition());
+    PL_DBG << fityk_definition();
+  }
+  catch ( ... ) {
+    success = false;
+    PL_DBG << "PolyBounded fit failed to define self";
+  }
+
+  if (!add_self(f))
+    success = false;
+
+  try {
+    f->execute("fit");
+  }
+  catch ( ... ) {
+    success = false;
+  }
+
+  if (success) {
+    if (extract_params(f->all_functions().back()))
+      rsq_ = f->get_rsquared(0);
+    else
+      PL_DBG << "Polynomial failed to extract fit parameters from Fityk";
+  }
+
+  delete f;
+}
+
+
+
 
 Polynomial::Polynomial(std::vector<double> coeffs, double xoffset, double rsq)
   :Polynomial()

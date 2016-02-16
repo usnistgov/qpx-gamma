@@ -24,7 +24,15 @@
 #include <boost/lexical_cast.hpp>
 #include "custom_logger.h"
 
-const std::string FitParam::def_bounds() {
+
+std::string FitParam::fityk_name(int function_num) const {
+  std::string ret  = "$" + name_ + "_";
+  if (function_num > -1)
+    ret += boost::lexical_cast<std::string>(function_num);
+  return ret;
+}
+
+std::string FitParam::def_bounds() const {
 
   std::string ret = "~";
   ret += boost::lexical_cast<std::string>(val) +
@@ -32,6 +40,12 @@ const std::string FitParam::def_bounds() {
           ":" + boost::lexical_cast<std::string>(ubound) + "]";
   return ret;
 }
+
+std::string FitParam::def_var(int function_num) const {
+  std::string ret  = fityk_name(function_num) + " = " + def_bounds();
+  return ret;
+}
+
 
 double FitParam::get_err(fityk::Fityk* f,
                           std::string funcname)
@@ -53,51 +67,25 @@ bool FitParam::extract(fityk::Fityk* f, fityk::Func* func)
   return true;
 }
 
-FitSettings::FitSettings()
-  : override_ (false)
-  , bits_ (0)
+std::string FitParam::to_string() const {
+  std::string ret = name_ + " = " + boost::lexical_cast<std::string>(val) +
+      "\u00B1" + boost::lexical_cast<std::string>(uncert) +
+      " [" + boost::lexical_cast<std::string>(lbound) +
+       ":" + boost::lexical_cast<std::string>(ubound) + "]";
+  return ret;
+}
 
-  , finder_cutoff_kev(100)
+FitParam FitParam::enforce_policy() {
+  FitParam ret = *this;
+  if (!ret.enabled) {
+    ret.lbound = 0;
+    ret.ubound = 0;
+    ret.val = 0;
+  }
+  if (ret.fixed) {
+    ret.lbound = ret.ubound = ret.val;
+  }
+  return ret;
+}
 
-  , KON_width (4.0)
-  , KON_sigma_spectrum (3.0)
-  , KON_sigma_resid (3.0)
 
-  , ROI_max_peaks (10)
-  , ROI_extend_peaks (3.5)
-  , ROI_extend_background (0.6)
-
-  , background_edge_samples(5)
-
-  , resid_auto (true)
-  , resid_max_iterations (5)
-  , resid_min_amplitude  (5.0)
-
-  , small_simplify (true)
-  , small_max_amplitude (500)
-
-  , step_enable (true)
-  , step_amplitude ("step_h", 1.0e-10, 1.0e-10, 0.75)
-
-  , tail_enable (false)
-  , tail_amplitude ("tail_h", 1.0e-10, 1.0e-10, 0.015)
-  , tail_slope ("tail_s", 2.75, 2.5, 50)
-
-  , lateral_slack(0.5)
-
-  , width_common (true)
-  , width_common_bounds ("ww", 1.0, 0.7, 1.3)
-  , width_variable_bounds ("ww", 1.0, 0.7, 4)
-  , width_at_511_variable (true)
-  , width_at_511_tolerance (5.0)
-
-  , Lskew_enable (true)
-  , Lskew_amplitude ("lskew_h", 1.0e-10, 1.0e-10, 0.75)
-  , Lskew_slope ("lskew_s", 0.5, 0.3, 2)
-
-  , Rskew_enable (true)
-  , Rskew_amplitude ("rskew_h", 1.0e-10, 1.0e-10, 0.75)
-  , Rskew_slope ("rskew_s", 0.5, 0.3, 2)
-
-  , fitter_max_iter (300)
-{}

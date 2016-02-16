@@ -29,40 +29,38 @@
 #include "fityk.h"
 #include "polynomial.h"
 #include "calibration.h"
-#include "fit_param.h"
+#include "fit_settings.h"
+#include "gaussian.h"
 
 
 class Hypermet {
 public:
   Hypermet() :
-    Hypermet(0,0,0, FitSettings())
+    Hypermet(Gaussian(), FitSettings())
   {}
 
-  Hypermet(double h, double c, double w, FitSettings settings) :
-    height_("hh", h), center_("cc", c), width_("ww", w),
-    Lskew_amplitude(settings.Lskew_amplitude), Lskew_slope(settings.Lskew_slope),
-    Rskew_amplitude(settings.Rskew_amplitude), Rskew_slope(settings.Rskew_slope),
-    tail_amplitude(settings.tail_amplitude), tail_slope(settings.tail_slope),
-    step_amplitude(settings.step_amplitude),
-    rsq_(0) {}
+
+  Hypermet(Gaussian gauss, FitSettings settings);
 
   Hypermet(const std::vector<double> &x, const std::vector<double> &y,
-           double h, double c, double w,
+           Gaussian gauss,
            FitSettings settings);
 
   static std::vector<Hypermet> fit_multi(const std::vector<double> &x,
                                          const std::vector<double> &y,
                                          std::vector<Hypermet> old,
-                                         Polynomial &background,
+                                         PolyBounded &background,
                                          FitSettings settings
                                          );
+
+  std::string to_string() const;
 
   double eval_peak(double);
   double eval_step_tail(double);
 
   std::vector<double> peak(std::vector<double> x);
   std::vector<double> step_tail(std::vector<double> x);
-  double area();
+  double area() const;
 
   FitParam center_, height_, width_,
            Lskew_amplitude, Lskew_slope,

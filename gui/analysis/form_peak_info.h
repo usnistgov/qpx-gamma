@@ -20,25 +20,25 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_FITTER_SETTINGS_H
-#define FORM_FITTER_SETTINGS_H
+#ifndef FORM_PEAK_INFO_H
+#define FORM_PEAK_INFO_H
 
 #include <QDialog>
 #include <QCloseEvent>
-#include "fit_settings.h"
+#include "hypermet.h"
 
 
 namespace Ui {
-class FormFitterSettings;
+class FormPeakInfo;
 }
 
-class FormFitterSettings : public QDialog
+class FormPeakInfo : public QDialog
 {
   Q_OBJECT
 
 public:
-  explicit FormFitterSettings(FitSettings &fs, QWidget *parent = 0);
-  ~FormFitterSettings();
+  explicit FormPeakInfo(Hypermet &hm, QWidget *parent = 0);
+  ~FormPeakInfo();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -65,9 +65,9 @@ private slots:
   void on_doubleMaxStep_valueChanged(double arg1);
 
 private:
-  Ui::FormFitterSettings *ui;
+  Ui::FormPeakInfo *ui;
 
-  FitSettings &fit_settings_;
+  Hypermet &hm_;
 
   void enforce_bounds();
 };

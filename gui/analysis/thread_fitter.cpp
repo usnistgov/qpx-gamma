@@ -143,8 +143,8 @@ void ThreadFitter::run() {
       int current = 1;
       for (auto &q : fitter_.regions_) {
 //        PL_DBG << "<Fitter> Fitting region " << current << " of " << fitter_.regions_.size() << " at E=" << q.hr_x_nrg.front();
-        q.auto_fit(interruptor_);
-        fitter_.remap_region(q);
+        q.second.auto_fit(interruptor_);
+        fitter_.remap_region(q.second);
         current++;
         emit fit_updated(fitter_);
         if ((action_ == kStop) || terminating_.load())
@@ -153,12 +153,10 @@ void ThreadFitter::run() {
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kRefit) {
-      for (auto &r : fitter_.regions_) {
-        if (!r.hr_x_nrg.empty() && (r.hr_x_nrg.front() == target_ROI_)) {
-          r.auto_fit(interruptor_);
-          fitter_.remap_region(r);
-          break;
-        }
+      if (fitter_.regions_.count(target_ROI_)) {
+        fitter_.regions_[target_ROI_].rebuild();
+        if (fitter_.regions_[target_ROI_].settings_.resid_auto)
+          fitter_.remap_region(fitter_.regions_[target_ROI_]);
       }
       emit fit_updated(fitter_);
       emit fitting_done();
@@ -169,12 +167,8 @@ void ThreadFitter::run() {
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kAdjustROI) {
-      for (auto &r : fitter_.regions_) {
-        if (!r.hr_x_nrg.empty() && (r.hr_x_nrg.front() == target_ROI_)) {
-          fitter_.adj_bounds(r, left_, right_, interruptor_);
-          break;
-        }
-      }
+      if (fitter_.regions_.count(target_ROI_))
+        fitter_.adj_bounds(fitter_.regions_[target_ROI_], left_, right_, interruptor_);
       emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;

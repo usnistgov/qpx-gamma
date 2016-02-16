@@ -86,8 +86,7 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
         )
     {
       //        PL_DBG << "I like this peak at " << gaussian.center_ << " fw " << gaussian.hwhm_ * 2;
-      Hypermet hyp(gaussian.height_, gaussian.center_, gaussian.hwhm_ / sqrt(log(2)),
-                   settings_);
+      Hypermet hyp(gaussian, settings_);
 
       Peak fitted;
       fitted.hypermet_ = hyp;
@@ -98,10 +97,13 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
 
   //    PL_DBG << "preliminary peaks " << peaks_.size();
   rebuild();
-  save_current_fit();
   if (settings_.resid_auto)
     iterative_fit(interruptor);
 
+//  PL_DBG << "ROI fit complete with: ";
+//  for (auto &p : peaks_) {
+//    PL_DBG << "  " << p.second.hypermet_.to_string();
+//  }
 }
 
 void ROI::iterative_fit(boost::atomic<bool>& interruptor) {
@@ -140,7 +142,7 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
   if (finder_.filtered.empty())
     return false;
 
-  int target_peak = 0;
+  int target_peak = -1;
   if (centroid_hint == -1) {
     double biggest = 0;
     for (int j=0; j < finder_.filtered.size(); ++j) {
@@ -149,11 +151,23 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
       std::vector<double> y_pk = std::vector<double>(finder_.y_resid_.begin() + finder_.lefts[j],
                                                      finder_.y_resid_.begin() + finder_.rights[j] + 1);
       Gaussian gaussian(x_pk, y_pk);
-      if (
+      bool too_close = false;
+
+      double lateral_slack = settings_.resid_too_close * gaussian.hwhm_ * 2;
+      for (auto &p : peaks_) {
+        if ((p.second.center > (gaussian.center_ - lateral_slack)) && (p.second.center < (gaussian.center_ + lateral_slack)))
+          too_close = true;
+      }
+
+      if (too_close)
+        PL_DBG << "Too close at " << settings_.cali_nrg_.transform(gaussian.center_, settings_.bits_);
+
+      if ( !too_close &&
           (gaussian.height_ > 0) &&
           (gaussian.hwhm_ > 0) &&
           (finder_.x_[finder_.lefts[j]] < gaussian.center_) &&
           (gaussian.center_ < finder_.x_[finder_.rights[j]]) &&
+          (gaussian.height_ > settings_.resid_min_amplitude) &&
           (gaussian.area() > biggest)
         )
       {
@@ -171,14 +185,16 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
       }
   }
 
+  if (target_peak == -1) {
+    PL_DBG << "No valid peak found in resids";
+    return false;
+  }
+
   std::vector<double> x_pk = std::vector<double>(finder_.x_.begin() + finder_.lefts[target_peak],
                                                  finder_.x_.begin() + finder_.rights[target_peak] + 1);
   std::vector<double> y_pk = std::vector<double>(finder_.y_resid_.begin() + finder_.lefts[target_peak],
                                                  finder_.y_resid_.begin() + finder_.rights[target_peak] + 1);
   Gaussian gaussian(x_pk, y_pk);
-
-  if ((centroid_hint == -1) && (gaussian.height_ < settings_.resid_min_amplitude))
-    return false;
 
   if (
       (gaussian.height_ > 0) &&
@@ -188,8 +204,7 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
       )
   {
 //    PL_DBG << "<ROI> new peak accepted";
-    Hypermet hyp(gaussian.height_, gaussian.center_, gaussian.hwhm_ / sqrt(log(2)),
-                 settings_);
+    Hypermet hyp(gaussian, settings_);
 
     Peak fitted;
     fitted.hypermet_ = hyp;
@@ -257,8 +272,8 @@ void ROI::adjust_bounds(const std::vector<double> &x, const std::vector<double> 
   render();
 
   rebuild();
-  save_current_fit();
-  iterative_fit(interruptor);
+  if (settings_.resid_auto)
+    iterative_fit(interruptor);
 }
 
 
@@ -346,7 +361,6 @@ bool ROI::remove_peaks(const std::set<double> &pks) {
 
   if (found) {
     rebuild();
-    save_current_fit();
   }
 
   return found;
@@ -399,6 +413,7 @@ void ROI::rebuild() {
   }
 
   render();
+  save_current_fit();
 }
 
 void ROI::render() {
@@ -457,7 +472,6 @@ void ROI::set_LB(SUM4Edge lb) {
     return;
   LB_ = lb;
   rebuild();
-  save_current_fit();
 }
 
 void ROI::set_RB(SUM4Edge rb) {
@@ -465,16 +479,17 @@ void ROI::set_RB(SUM4Edge rb) {
     return;
   RB_ = rb;
   rebuild();
-  save_current_fit();
 }
 
 
-void ROI::init_background(uint16_t samples) {
-  background_ = Polynomial();
+void ROI::init_background() {
+  background_ = PolyBounded();
 
 
   int32_t LBend = 0;
   int32_t RBstart = finder_.y_.size() - 1;
+
+  uint16_t samples = settings_.background_edge_samples;
 
   if ((samples > 0) && (finder_.y_.size() > samples*3)) {
     LBend += samples;
@@ -486,21 +501,28 @@ void ROI::init_background(uint16_t samples) {
 
   //by default, linear
   double run = RB_.start() - LB_.end();
-  double offset = LB_.end();
+
+  background_.xoffset_.val = finder_.x_[LB_.start()];
+  background_.add_coeff(0, LB_.min(), LB_.max(), LB_.average());
+
+  double minslope = 0, maxslope = 0;
+  if (LB_.average() < RB_.average()) {
+    run = RB_.end() - LB_.end();
+    background_.xoffset_.val = finder_.x_[LB_.end()];
+    minslope = (RB_.min() - LB_.max()) / (RB_.end() - LB_.start());
+    maxslope = (RB_.max() - LB_.min()) / (RB_.start() - LB_.end());
+  }
+
 
   if (RB_.average() < LB_.average()) {
     run = RB_.start() - LB_.start();
-    offset = LB_.start();
+    background_.xoffset_.val = finder_.x_[LB_.start()];
+    minslope = (RB_.min() - LB_.max()) / (RB_.start() - LB_.end());
+    maxslope = (RB_.max() - LB_.min()) / (RB_.end() - LB_.start());
   }
 
-  if (RB_.average() > LB_.average()) {
-    run = RB_.end() - LB_.end();
-    offset = LB_.end();
-  }
-
-  double slope = (RB_.average() - LB_.average()) / (run) ; //mid?
-  background_ = Polynomial({LB_.average(), slope}, finder_.x_[offset]);
-
+  double slope = (RB_.average() - LB_.average()) / (run) ;
+  background_.add_coeff(1, minslope, maxslope, slope);
 }
 
 bool ROI::rollback(int i) {

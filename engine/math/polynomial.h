@@ -26,7 +26,9 @@
 #include <vector>
 #include <iostream>
 #include <numeric>
+#include <map>
 #include "fityk.h"
+#include "fit_param.h"
 
 class Polynomial {
 public:
@@ -57,6 +59,34 @@ public:
 
   static std::string fityk_definition(const std::vector<uint16_t> &degrees, double xoffset = 0);
   bool extract_params(fityk::Func*, const std::vector<uint16_t> &degrees);
+};
+
+class PolyBounded {
+public:
+  PolyBounded();
+  PolyBounded(Polynomial p);
+
+  void add_coeff(int degree, double lbound, double ubound);
+  void add_coeff(int degree, double lbound, double ubound, double initial);
+
+  void fit(std::vector<double> &x, std::vector<double> &y, std::vector<double> &y_sigma);
+  bool add_self(fityk::Fityk *f, int function_num = -1) const;
+
+  std::string fityk_definition();
+  bool extract_params(fityk::Func*);
+
+  Polynomial to_simple() const;
+  std::string to_string() const;
+
+  double eval(double x);
+  std::vector<double> eval(std::vector<double> x);
+
+  PolyBounded derivative();
+  double eval_inverse(double y, double e = 0.2);
+
+  std::map<int, FitParam> coeffs_;
+  FitParam xoffset_;
+  double rsq_;
 };
 
 #endif

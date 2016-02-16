@@ -149,7 +149,7 @@ void Fitter::find_regions() {
   for (int i=0; i < Ls.size(); ++i) {
     ROI newROI(settings_);
     newROI.set_data(finder_.x_, finder_.y_, Ls[i], Rs[i]);
-    regions_.push_back(newROI);
+    regions_[newROI.finder_.x_.front()] = newROI;
   }
 //  PL_DBG << "<Fitter> Created " << regions_.size() << " regions";
 
@@ -158,40 +158,29 @@ void Fitter::find_regions() {
 std::map<double, Peak> Fitter::peaks() {
   std::map<double, Peak> peaks;
   for (auto &q : regions_)
-    for (auto &p : q.peaks_) {
+    for (auto &p : q.second.peaks_) {
       peaks[p.second.center] = p.second;
     }
   return peaks;
 }
 
-void Fitter::delete_ROI(double start_energy) {
-  std::list<ROI> regions;
-  for (auto &r : regions_)
-    if (!r.hr_x_nrg.empty() && (r.hr_x_nrg[0] != start_energy))
-      regions.push_back(r);
-  regions_ = regions;
+void Fitter::delete_ROI(double bin) {
+  if (regions_.count(bin)) {
+    auto it = regions_.find(bin);
+    regions_.erase(it);
+  }
 }
 
-ROI* Fitter::parent_of(double center) {
+ROI *Fitter::parent_of(double center) {
   ROI *parent = nullptr;
   for (auto &m : regions_)
-    if (m.contains(center)) {
-      parent = &m;
+    if (m.second.contains(center)) {
+      parent = &m.second;
       break;
     }
   return parent;
 }
 
-
-ROI* Fitter::region_at_nrg(double nrg) {
-  ROI *ret = nullptr;
-  for (auto &m : regions_)
-    if (!m.hr_x_nrg.empty() && (m.hr_x_nrg.front() == nrg)) {
-      ret = &m;
-      break;
-    }
-  return ret;
-}
 
 void Fitter::remap_region(ROI &region) {
   for (auto &p : region.peaks_) {
@@ -219,11 +208,11 @@ void Fitter::add_peak(uint32_t left, uint32_t right, boost::atomic<bool>& interr
 
   bool added = false;
   for (auto &q : regions_) {
-    if (q.overlaps(left, right)) {
+    if (q.second.overlaps(left, right)) {
 //      PL_DBG << "<Fitter> adding to existing region";
-      q.add_peak(finder_.x_, finder_.y_, left, right, interruptor);
+      q.second.add_peak(finder_.x_, finder_.y_, left, right, interruptor);
       added = true;
-      remap_region(q);
+      remap_region(q.second);
       break;
     }
   }
@@ -236,7 +225,7 @@ void Fitter::add_peak(uint32_t left, uint32_t right, boost::atomic<bool>& interr
     if (!newROI.peaks_.empty()) {
       remap_region(newROI);
       PL_DBG << "<Fitter> succeeded making new ROI";
-      regions_.push_back(newROI);
+      regions_[newROI.finder_.x_.front()] = newROI;
       added = true;
     }
   }
@@ -244,15 +233,16 @@ void Fitter::add_peak(uint32_t left, uint32_t right, boost::atomic<bool>& interr
 
 void Fitter::remove_peaks(std::set<double> bins) {
   for (auto &m : regions_) {
-    if (m.remove_peaks(bins))
-      remap_region(m);
+    if (m.second.remove_peaks(bins))
+      remap_region(m.second);
   }
 }
 
 void Fitter::replace_peak(const Peak& pk) {
   for (auto &m : regions_)
-    if (m.contains(pk.center)) {
-      m.peaks_[pk.center] = pk; //use function that will rebuild
+    if (m.second.contains(pk.center)) {
+      m.second.peaks_[pk.center] = pk;
+      m.second.render(); //was it hm or sum4 that was replaced?
 //      PL_DBG << "replacing " << pk.center;
     }
 }
