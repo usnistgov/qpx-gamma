@@ -230,6 +230,7 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
 
   try {
     f->execute("set fitting_method = nlopt_lbfgs");
+//    f->execute("set fitting_method = mpfit");
 //    f->execute("set fitting_method = levenberg_marquardt");
   } catch ( ... ) {
     success = false;
@@ -279,7 +280,7 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
     PL_DBG << "Hypermet: multifit failed to set up initial globals";
   }
 
-
+  bool can_uncert = true;
 
   int i=0;
   for (auto &o : old) {
@@ -341,10 +342,22 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
       PL_DBG << "Hypermet multifit failed to set up initial locals for peak " << i;
       success = false;
     }
+
+    if (!o.Lskew_amplitude.enabled || !o.Rskew_amplitude.enabled ||
+        !o.tail_amplitude.enabled || !o.step_amplitude.enabled)
+      can_uncert = false;
+
     i++;
   }
   try {
     f->execute("fit " + boost::lexical_cast<std::string>(settings.fitter_max_iter));
+    if (can_uncert) {
+      f->execute("set fitting_method = mpfit");
+//    f->execute("set fitting_method = levenberg_marquardt");
+      f->execute("fit");
+//    f->execute("fit " + boost::lexical_cast<std::string>(settings.fitter_max_iter));
+//    PL_DBG << "refit with mp done";
+    }
   }
   catch ( ... ) {
     PL_DBG << "Hypermet multifit failed to fit";
@@ -356,9 +369,6 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
 //    f->execute("info errors");
 //    f->execute("info state > nl.fit");
 
-//    f->execute("set fitting_method = levenberg_marquardt");
-//    f->execute("fit 1");
-//    f->execute("info errors");
 //    } catch ( ... ) {
 //      PL_DBG << "Hypermet multifit failed to do error thing";
 //      success = false;
@@ -376,11 +386,16 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
       }
     }
 
+
+//        f->execute("info errors");
+
 //    f->execute("info state > lm.fit");
   }
 
   delete f;
 
+  if (!success)
+    old.clear();
   return old;
 }
 

@@ -111,21 +111,22 @@ void ROI::iterative_fit(boost::atomic<bool>& interruptor) {
     return;
 
   double prev_rsq = peaks_.begin()->second.hypermet_.rsq_;
-  PL_DBG << "    initial rsq = " << prev_rsq;
+  PL_DBG << "  initial rsq = " << prev_rsq;
 
   for (int i=0; i < settings_.resid_max_iterations; ++i) {
     ROI new_fit = *this;
 
     if (!new_fit.add_from_resid(-1)) {
-      PL_DBG << "    failed add from resid";
+//      PL_DBG << "    failed add from resid";
       break;
     }
     double new_rsq = new_fit.peaks_.begin()->second.hypermet_.rsq_;
-    PL_DBG << "    new rsq = " << new_rsq;
-    if (new_rsq <= prev_rsq) {
+    if ((new_rsq <= prev_rsq) || std::isnan(new_rsq)) {
       PL_DBG << "    not improved. reject refit";
       break;
-    }
+    } else
+      PL_DBG << "    new rsq = " << new_rsq;
+
     new_fit.save_current_fit();
     prev_rsq = new_rsq;
     *this = new_fit;
@@ -159,8 +160,8 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
           too_close = true;
       }
 
-      if (too_close)
-        PL_DBG << "Too close at " << settings_.cali_nrg_.transform(gaussian.center_, settings_.bits_);
+//      if (too_close)
+//        PL_DBG << "Too close at " << settings_.cali_nrg_.transform(gaussian.center_, settings_.bits_);
 
       if ( !too_close &&
           (gaussian.height_ > 0) &&
@@ -186,7 +187,7 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
   }
 
   if (target_peak == -1) {
-    PL_DBG << "No valid peak found in resids";
+//    PL_DBG << "No valid peak found in resids";
     return false;
   }
 
@@ -272,8 +273,8 @@ void ROI::adjust_bounds(const std::vector<double> &x, const std::vector<double> 
   render();
 
   rebuild();
-  if (settings_.resid_auto)
-    iterative_fit(interruptor);
+//  if (settings_.resid_auto)
+//    iterative_fit(interruptor);
 }
 
 

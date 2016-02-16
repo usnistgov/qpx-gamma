@@ -59,7 +59,7 @@ bool FitParam::extract(fityk::Fityk* f, fityk::Func* func)
 {
   try {
     val = func->get_param_value(name_);
-//    uncert = get_err(f, func->name);
+    uncert = get_err(f, func->name);
 //    PL_DBG << "<FitParam> " << name_ << " = " << val << " +/- " << uncert;
   } catch (...) {
     return false;
@@ -78,9 +78,9 @@ std::string FitParam::to_string() const {
 FitParam FitParam::enforce_policy() {
   FitParam ret = *this;
   if (!ret.enabled) {
-    ret.lbound = 0;
-    ret.ubound = 0;
-    ret.val = 0;
+//    ret.lbound = 0;
+    ret.ubound = ret.lbound;
+    ret.val = ret.lbound;
   }
   if (ret.fixed) {
     ret.lbound = ret.ubound = ret.val;

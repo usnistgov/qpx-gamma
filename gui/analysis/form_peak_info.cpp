@@ -34,11 +34,19 @@ FormPeakInfo::FormPeakInfo(Hypermet &hm, QWidget *parent) :
 //  ui->labelCaliEnergy->setText(QString::fromStdString(hm_.cali_nrg_.to_string()));
 //  ui->labelCaliFWHM->setText(QString::fromStdString(hm_.cali_fwhm_.to_string()));
 
+  ui->labelCenter->setText(QString::number(hm_.center_.val) + "\u00B1" + QString::number(hm_.center_.uncert));
+  ui->labelHeight->setText(QString::number(hm_.height_.val) + "\u00B1" + QString::number(hm_.height_.uncert));
+  ui->labelWidth->setText(QString::number(hm_.width_.val) + "\u00B1" + QString::number(hm_.width_.uncert));
+
+
+  ui->labelStep->setText("\u00B1" + QString::number(hm_.step_amplitude.uncert));
   ui->checkStepEnable->setChecked(hm_.step_amplitude.enabled);
   ui->doubleMinStep->setValue(hm_.step_amplitude.lbound);
   ui->doubleMaxStep->setValue(hm_.step_amplitude.ubound);
   ui->doubleInitStep->setValue(hm_.step_amplitude.val);
 
+  ui->labelTailH->setText("\u00B1" + QString::number(hm_.tail_amplitude.uncert));
+  ui->labelTailS->setText("\u00B1" + QString::number(hm_.tail_slope.uncert));
   ui->checkTailEnable->setChecked(hm_.tail_amplitude.enabled);
   ui->doubleMinTailAmp->setValue(hm_.tail_amplitude.lbound);
   ui->doubleMaxTailAmp->setValue(hm_.tail_amplitude.ubound);
@@ -47,6 +55,8 @@ FormPeakInfo::FormPeakInfo(Hypermet &hm, QWidget *parent) :
   ui->doubleMaxTailSlope->setValue(hm_.tail_slope.ubound);
   ui->doubleInitTailSlope->setValue(hm_.tail_slope.val);
 
+  ui->labelLskewH->setText("\u00B1" + QString::number(hm_.Lskew_amplitude.uncert));
+  ui->labelLskewS->setText("\u00B1" + QString::number(hm_.Lskew_slope.uncert));
   ui->checkEnableLskew->setChecked(hm_.Lskew_amplitude.enabled);
   ui->doubleMinLskewAmp->setValue(hm_.Lskew_amplitude.lbound);
   ui->doubleMaxLskewAmp->setValue(hm_.Lskew_amplitude.ubound);
@@ -55,6 +65,8 @@ FormPeakInfo::FormPeakInfo(Hypermet &hm, QWidget *parent) :
   ui->doubleMaxLskewSlope->setValue(hm_.Lskew_slope.ubound);
   ui->doubleInitLskewSlope->setValue(hm_.Lskew_slope.val);
 
+  ui->labelRskewH->setText("\u00B1" + QString::number(hm_.Rskew_amplitude.uncert));
+  ui->labelRskewS->setText("\u00B1" + QString::number(hm_.Rskew_slope.uncert));
   ui->checkEnableRskew->setChecked(hm_.Rskew_amplitude.enabled);
   ui->doubleMinRskewAmp->setValue(hm_.Rskew_amplitude.lbound);
   ui->doubleMaxRskewAmp->setValue(hm_.Rskew_amplitude.ubound);

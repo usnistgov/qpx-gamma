@@ -36,12 +36,12 @@ FitSettings::FitSettings()
   , ROI_extend_peaks (3.5)
   , ROI_extend_background (0.6)
 
-  , background_edge_samples(5)
+  , background_edge_samples(7)
 
   , resid_auto (true)
   , resid_max_iterations (5)
   , resid_min_amplitude  (5.0)
-  , resid_too_close (0.1)
+  , resid_too_close (0.2)
 
   , small_simplify (true)
   , small_max_amplitude (500)
@@ -68,7 +68,7 @@ FitSettings::FitSettings()
   , fitter_max_iter (3000)
 {
   step_amplitude.enabled = true;
-  tail_amplitude.enabled = false;
+  tail_amplitude.enabled = true;
   Lskew_amplitude.enabled = true;
   Rskew_amplitude.enabled = true;
 }

@@ -1748,7 +1748,7 @@ void FormFitter::peak_info(double bin)
     return;
 
 
-  PL_DBG << "Peak info for " << fit_data_->peaks().at(bin).energy;
+//  PL_DBG << "Peak info for " << fit_data_->peaks().at(bin).energy;
 
   Hypermet hm = fit_data_->peaks().at(bin).hypermet_;
   FormPeakInfo *peakInfo = new FormPeakInfo(hm, this);
