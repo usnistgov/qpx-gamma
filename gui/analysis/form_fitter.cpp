@@ -1091,7 +1091,7 @@ void FormFitter::plotButtons() {
         Qt::AlignBottom | Qt::AlignRight);
   newButton->setClipToAxisRect(false);
   newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
-  newButton->topLeft->setCoords(0, 5);
+  newButton->topLeft->setCoords(0, 32);
   ui->plot->addItem(newButton);
   overlayButton = newButton;
 

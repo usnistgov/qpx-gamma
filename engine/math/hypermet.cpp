@@ -214,9 +214,8 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
                                           PolyBounded &background,
                                           FitSettings settings)
 {
-  std::vector<Hypermet> results;
   if (old.empty())
-    return results;
+    return old;
 
   std::vector<double> sigma;
   for (auto &q : y) {
@@ -366,13 +365,12 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
 //    }
 
     std::vector<fityk::Func*> fns = f->all_functions();
+    int i = 0;
     for (auto &q : fns) {
       if (q->get_template_name() == "Hypermet") {
-        Hypermet one;
-        one.extract_params(f, q);
-        one.rsq_ = f->get_rsquared(0);
-        if (one.width_.val > 0)
-          results.push_back(one);
+        old[i].extract_params(f, q);
+        old[i].rsq_ = f->get_rsquared(0);
+        i++;
       } else if (q->get_template_name() == "PolyBounded") {
         background.extract_params(q);
       }
@@ -383,7 +381,7 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
 
   delete f;
 
-  return results;
+  return old;
 }
 
 double Hypermet::eval_peak(double x) {
