@@ -56,7 +56,7 @@ public:
 class SUM4 {
 
   SUM4Edge LB_, RB_;
-  Polynomial background_;
+  PolyBounded background_;
 
 public:
   double background_area, background_variance;
@@ -72,18 +72,16 @@ public:
 
   SUM4();
 
-  SUM4(const std::vector<double> &y,
+  SUM4(const std::vector<double> &x,
+       const std::vector<double> &y,
        uint32_t left, uint32_t right,
-       uint16_t samples);
-
-  SUM4(const std::vector<double> &y,
-       uint32_t left, uint32_t right,
+       PolyBounded background,
        SUM4Edge LB, SUM4Edge RB);
 
   SUM4Edge LB() const {return LB_;}
   SUM4Edge RB() const {return RB_;}
 
-  void recalc(const std::vector<double> &y);
+  void recalc(const std::vector<double> &x, const std::vector<double> &y);
 
 };
 

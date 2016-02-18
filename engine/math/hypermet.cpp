@@ -351,13 +351,13 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
   }
   try {
     f->execute("fit " + boost::lexical_cast<std::string>(settings.fitter_max_iter));
-    if (can_uncert) {
-      f->execute("set fitting_method = mpfit");
-//    f->execute("set fitting_method = levenberg_marquardt");
-      f->execute("fit");
-//    f->execute("fit " + boost::lexical_cast<std::string>(settings.fitter_max_iter));
-//    PL_DBG << "refit with mp done";
-    }
+//    if (can_uncert) {
+//      f->execute("set fitting_method = mpfit");
+////    f->execute("set fitting_method = levenberg_marquardt");
+//      f->execute("fit");
+////    f->execute("fit " + boost::lexical_cast<std::string>(settings.fitter_max_iter));
+////    PL_DBG << "refit with mp done";
+//    }
   }
   catch ( ... ) {
     PL_DBG << "Hypermet multifit failed to fit";

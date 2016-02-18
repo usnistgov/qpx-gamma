@@ -72,54 +72,14 @@ SUM4::SUM4()
 {}
 
 
-
-SUM4::SUM4(const std::vector<double> &y,
+SUM4::SUM4(const std::vector<double> &x, const std::vector<double> &y,
            uint32_t left, uint32_t right,
-           uint16_t samples)
-    :SUM4()
-{
-
-  if (y.empty()
-      || (left > right)
-      || (left >= y.size())
-      || (right >= y.size())
-      || (samples >= y.size()))
-    return;
-
-  Lpeak = left;
-  Rpeak = right;
-
-  int32_t LBend = left - 1;
-  if (LBend < 0)
-    LBend = 0;
-
-  int32_t RBstart = right + 1;
-  if (RBstart >= y.size())
-    RBstart = y.size() - 1;
-
-  int32_t LBstart = LBend - samples;
-  if (LBstart < 0)
-    LBstart = 0;
-
-  int32_t RBend = RBstart + samples;
-  if (RBend >= y.size())
-    RBend = y.size() - 1;
-
-  LB_ = SUM4Edge(y, LBstart, LBend);
-  RB_ = SUM4Edge(y, RBstart, RBend);
-
-//  PL_DBG << "<SUM4> edgel " << LB_.start() << "-" << LB_.end();
-//  PL_DBG << "<SUM4> edger " << RB_.start() << "-" << RB_.end();
-
-  recalc(y);
-}
-
-SUM4::SUM4(const std::vector<double> &y,
-           uint32_t left, uint32_t right,
+           PolyBounded background,
            SUM4Edge LB, SUM4Edge RB)
   : SUM4()
 {
   if (y.empty()
+      || (y.size() != x.size())
       || (left > right)
       || (left >= y.size())
       || (right >= y.size())
@@ -131,15 +91,16 @@ SUM4::SUM4(const std::vector<double> &y,
   RB_ = RB;
   Lpeak = left;
   Rpeak = right;
-  recalc(y);
+  background_ = background;
+  recalc(x, y);
 }
 
 
-void SUM4::recalc(const std::vector<double> &y)
+void SUM4::recalc(const std::vector<double> &x, const std::vector<double> &y)
 {
   peak_width = Rpeak - Lpeak + 1;
 
-  background_area = peak_width * (LB_.average() + RB_.average()) / 2.0;
+  background_area = peak_width * (background_.eval(x[Rpeak]) + background_.eval(x[Lpeak])) / 2.0;
 
   double gross_area(0);
   for (int i=Lpeak; i <=Rpeak; ++i)
@@ -170,22 +131,18 @@ void SUM4::recalc(const std::vector<double> &y)
   else
     currie_quality_indicator = -1;
 
-  //by default, linear
-  double slope = (RB_.average() - LB_.average()) / (RB_.start() - LB_.end()) ;
-  background_ = Polynomial({LB_.average(), slope}, LB_.end());
-
   bx.resize(peak_width);
   by.resize(peak_width);
 
   double sumYnet(0), CsumYnet(0), C2sumYnet(0);
   for (int32_t i = Lpeak; i <= Rpeak; ++i) {
-    double B_chan  = background_.eval(i);
+    double B_chan  = background_.eval(x[i]);
     double yn = y[i] - B_chan;
     sumYnet += yn;
     CsumYnet += i * yn;
     C2sumYnet += pow(i, 2) * yn;
 
-    bx[i-Lpeak] = i;
+    bx[i-Lpeak] = x[i];
     by[i-Lpeak] = B_chan;
   }
 

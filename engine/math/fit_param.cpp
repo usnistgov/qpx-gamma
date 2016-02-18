@@ -78,12 +78,12 @@ std::string FitParam::to_string() const {
 FitParam FitParam::enforce_policy() {
   FitParam ret = *this;
   if (!ret.enabled) {
-//    ret.lbound = 0;
     ret.ubound = ret.lbound;
+    ret.lbound = 0;
     ret.val = ret.lbound;
-  }
-  if (ret.fixed) {
-    ret.lbound = ret.ubound = ret.val;
+  } else if (ret.fixed) {
+    ret.ubound = ret.val + ret.lbound  * 0.01;
+    ret.lbound = ret.val - ret.lbound  * 0.01;
   }
   return ret;
 }

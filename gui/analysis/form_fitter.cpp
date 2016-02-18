@@ -350,6 +350,9 @@ void FormFitter::createRange(Coord c) {
   range_.l.set_bin(ch_l, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
   range_.r.set_bin(ch_r, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
   range_.purpose = QString("range");
+  range_.latch_to.clear();
+  range_.latch_to.push_back("Residuals");
+  range_.latch_to.push_back("Data");
 
   selected_peaks_.clear();
   selected_roi_ = -1;
@@ -492,7 +495,7 @@ void FormFitter::adjust_sum4_bounds() {
     //should be in fitter thread
   } else if (range_.purpose.toString() == "SUM4") {
     Gamma::Peak pk = parent_region->peaks_.at(range_.center.bin(fit_data_->settings().bits_));
-    Gamma::SUM4 new_sum4(parent_region->finder_.y_, L, R, parent_region->LB(), parent_region->RB());
+    Gamma::SUM4 new_sum4(parent_region->finder_.x_, parent_region->finder_.y_, L, R, parent_region->background_, parent_region->LB(), parent_region->RB());
     pk.sum4_ = new_sum4;
     pk.construct(fit_data_->settings().cali_nrg_,
                  fit_data_->metadata_.live_time.total_milliseconds() * 0.001,
@@ -644,7 +647,7 @@ void FormFitter::set_range(Range rng) {
 }
 
 void FormFitter::addGraph(const QVector<double>& x, const QVector<double>& y,
-                             QPen appearance, double bin, int fittable, QString name) {
+                             QPen appearance, double bin, QString name) {
   if (x.empty() || y.empty() || (x.size() != y.size()))
     return;
 
@@ -652,11 +655,10 @@ void FormFitter::addGraph(const QVector<double>& x, const QVector<double>& y,
   int g = ui->plot->graphCount() - 1;
   ui->plot->graph(g)->addData(x, y);
   ui->plot->graph(g)->setPen(appearance);
-  ui->plot->graph(g)->setProperty("fittable", QVariant::fromValue(fittable));
   ui->plot->graph(g)->setName(name);
   ui->plot->graph(g)->setProperty("bin", QVariant::fromValue(bin));
 
-  if (fittable > 0) {
+  if ((name == "Residuals") || (name == "Data")) {
     ui->plot->graph(g)->setBrush(QBrush());
     ui->plot->graph(g)->setLineStyle(QCPGraph::lsStepCenter);
     ui->plot->graph(g)->setScatterStyle(QCPScatterStyle::ssNone);
@@ -777,37 +779,36 @@ void FormFitter::plotRange() {
 
   edge_trc1 = nullptr;
   edge_trc2 = nullptr;
-  int fit_level = 0;
 
   if (range_.visible) {
 
-    double pos_l = 0, pos_c = 0, pos_r = 0;
+    double pos_l = 0, pos_r = 0;
     pos_l = range_.l.energy();
-    pos_c = range_.center.energy();
     pos_r = range_.r.energy();
 
     if (pos_l < pos_r) {
 
-      int top_idx = -1;
-      for (int i=0; i < ui->plot->graphCount(); i++) {
+      int idx = -1;
 
-        int level = ui->plot->graph(i)->property("fittable").toInt();
+      for (auto &q : range_.latch_to) {
+        for (int i=0; i < ui->plot->graphCount(); i++) {
+          if ((ui->plot->graph(i)->data()->firstKey() > pos_l)
+              || (pos_r > ui->plot->graph(i)->data()->lastKey()))
+            continue;
 
-        if (level < fit_level)
-          continue;
-
-        if ((ui->plot->graph(i)->data()->firstKey() > pos_l)
-            || (pos_r > ui->plot->graph(i)->data()->lastKey()))
-          continue;
-
-        fit_level = level;
-        top_idx = i;
+          if (ui->plot->graph(i)->name() == q ) {
+            idx = i;
+            break;
+          }
+        }
+        if (idx != -1)
+          break;
       }
 
-      if (top_idx >= 0) {
+      if (idx >= 0) {
         edge_trc1 = new QCPItemTracer(ui->plot);
         edge_trc1->setStyle(QCPItemTracer::tsNone);
-        edge_trc1->setGraph(ui->plot->graph(top_idx));
+        edge_trc1->setGraph(ui->plot->graph(idx));
         edge_trc1->setGraphKey(pos_l);
         edge_trc1->setInterpolating(true);
         edge_trc1->setProperty("tracer", QVariant::fromValue(0));
@@ -816,7 +817,7 @@ void FormFitter::plotRange() {
 
         edge_trc2 = new QCPItemTracer(ui->plot);
         edge_trc2->setStyle(QCPItemTracer::tsNone);
-        edge_trc2->setGraph(ui->plot->graph(top_idx));
+        edge_trc2->setGraph(ui->plot->graph(idx));
         edge_trc2->setGraphKey(pos_r);
         edge_trc2->setInterpolating(true);
         edge_trc2->setProperty("tracer", QVariant::fromValue(0));
@@ -824,15 +825,12 @@ void FormFitter::plotRange() {
         edge_trc2->updatePosition();
 
       } else
-        fit_level = 0;
-    } else {
-      //      PL_DBG << "<FormFitter> bad range";
+        range_.visible = false;
+    } else
       range_.visible = false;
-      //emit range_changed(range_);
-    }
   }
 
-  if (fit_level > 0) {
+  if (range_.visible) {
       DraggableTracer *ar1 = new DraggableTracer(ui->plot, edge_trc1, 12);
       ar1->setPen(QPen(range_.base.default_pen.color(), 1));
       ar1->setProperty("tracer", QVariant::fromValue(1));
@@ -861,7 +859,7 @@ void FormFitter::plotRange() {
       if (edge_trc2->position->value() > edge_trc1->position->value())
         higher = edge_trc2;
 
-      QCPOverlayButton *newButton;
+      QCPOverlayButton *newButton = nullptr;
 
       if (range_.purpose.toString() == "range") {
         newButton = new QCPOverlayButton(ui->plot,
@@ -883,15 +881,18 @@ void FormFitter::plotRange() {
                         QPixmap(":/icons/oxy/22/flag_blue.png"),
                         "ROI back R adjust", "Adjust SUM4 bounds",
                         Qt::AlignTop | Qt::AlignLeft);
-      } else {
+      } else if (range_.purpose.toString() == "ROI bounds") {
         newButton = new QCPOverlayButton(ui->plot,
                         QPixmap(":/icons/oxy/22/flag_red.png"),
                         "roi bounds", "Adjust region bounds",
                         Qt::AlignTop | Qt::AlignLeft);
       }
-      newButton->bottomRight->setParentAnchor(higher->position);
-      newButton->bottomRight->setCoords(11, -20);
-      ui->plot->addItem(newButton);
+
+      if (newButton) {
+        newButton->bottomRight->setParentAnchor(higher->position);
+        newButton->bottomRight->setCoords(11, -20);
+        ui->plot->addItem(newButton);
+      }
   }
 }
 
@@ -905,7 +906,7 @@ void FormFitter::plotEnergyLabels() {
     double max = std::numeric_limits<double>::lowest();
     for (int i=0; i < ui->plot->graphCount(); i++) {
 
-      if (ui->plot->graph(i)->property("fittable").toInt() != 1)
+      if (ui->plot->graph(i)->name() != "Individual peak")
         continue;
 
       if ((ui->plot->graph(i)->data()->firstKey() >= q.second.energy)
@@ -1142,7 +1143,10 @@ void FormFitter::createROI_bounds_range(double bin) {
   range_.center.set_bin(bin, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
   range_.l.set_bin(left, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
   range_.r.set_bin(right, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
-  range_.purpose = QVariant::fromValue(bin);
+  range_.purpose = QString("ROI bounds");
+  range_.latch_to.clear();
+//  range_.latch_to.push_back("Background poly");
+  range_.latch_to.push_back("Data");
 
   selected_peaks_.clear();
   selected_roi_ = -1;
@@ -1255,18 +1259,22 @@ void FormFitter::makeSUM4_range(double roi, double peak_chan, int edge)
   int32_t R = 0;
   QString purpose;
 
+  range_.latch_to.clear();
+
   if (edge == -1) {
     L = parent_region.LB().start();
     R = parent_region.LB().end();
     purpose = "ROI back L";
     range_.base.default_pen = QPen(Qt::darkMagenta);
     range_.center.set_bin(roi, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
+    range_.latch_to.push_back("Data");
   } else if (edge == 1) {
     L = parent_region.RB().start();
     R = parent_region.RB().end();
     purpose = "ROI back R";
     range_.base.default_pen = QPen(Qt::darkMagenta);
     range_.center.set_bin(roi, fit_data_->settings().bits_,fit_data_->settings().cali_nrg_);
+    range_.latch_to.push_back("Data");
   } else if (edge == 0) {
     Gamma::Peak pk = fit_data_->peaks().at(peak_chan);
     L = pk.sum4_.Lpeak;
@@ -1274,6 +1282,7 @@ void FormFitter::makeSUM4_range(double roi, double peak_chan, int edge)
     purpose = "SUM4";
     range_.base.default_pen = QPen(Qt::darkYellow);
     range_.center.set_bin(pk.center, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
+    range_.latch_to.push_back("Background poly");
   }
 
   double left = fit_data_->settings().cali_nrg_.transform(parent_region.finder_.x_[L], fit_data_->settings().bits_);
@@ -1480,7 +1489,7 @@ void FormFitter::updateData() {
   xx = QVector<double>::fromStdVector(fit_data_->settings().cali_nrg_.transform(fit_data_->finder_.x_, fit_data_->settings().bits_));
   yy = QVector<double>::fromStdVector(fit_data_->finder_.y_);
 
-  addGraph(xx, yy, main_graph, -1, 1, "Data");
+  addGraph(xx, yy, main_graph, -1, "Data");
   add_bounds(xx, yy);
 
   for (auto &q : fit_data_->regions_) {
@@ -1488,7 +1497,7 @@ void FormFitter::updateData() {
 
     yy = QVector<double>::fromStdVector(q.second.hr_fullfit);
     trim_log_lower(yy);
-    addGraph(xx, yy, full_fit, q.first, false, "Region fit");
+    addGraph(xx, yy, full_fit, q.first, "Region fit");
     add_bounds(xx, yy);
 
     if (!xx.empty()) {
@@ -1500,17 +1509,14 @@ void FormFitter::updateData() {
       yy = QVector<double>::fromStdVector(p.second.hr_fullfit_);
       trim_log_lower(yy);
 //      QPen pen = p.second.flagged ? flagged : peak;
-      addGraph(xx, yy, peak, p.first, false, "Individual peak");
+      addGraph(xx, yy, peak, p.first, "Individual peak");
 
       if (p.second.sum4_.peak_width > 0) {
 
         if (!p.second.sum4_.bx.empty()) {
-          std::vector<double> x_sum4;
-          for (auto &i : p.second.sum4_.bx)
-            x_sum4.push_back(q.second.finder_.x_[i]);
-          addGraph(QVector<double>::fromStdVector(fit_data_->settings().cali_nrg_.transform(x_sum4, fit_data_->settings().bits_)),
+          addGraph(QVector<double>::fromStdVector(fit_data_->settings().cali_nrg_.transform(p.second.sum4_.bx, fit_data_->settings().bits_)),
                                QVector<double>::fromStdVector(p.second.sum4_.by),
-                               sum4back, p.first, -1, "SUM4 background");
+                               sum4back, p.first, "SUM4 background");
         }
 
       }
@@ -1520,17 +1526,17 @@ void FormFitter::updateData() {
 
       yy = QVector<double>::fromStdVector(q.second.hr_background);
       trim_log_lower(yy);
-      addGraph(xx, yy, back_poly, q.first, false, "Background poly");
+      addGraph(xx, yy, back_poly, q.first, "Background poly");
       add_bounds(xx, yy);
 
       yy = QVector<double>::fromStdVector(q.second.hr_back_steps);
       trim_log_lower(yy);
-      addGraph(xx, yy, back_with_steps, q.first, false, "Background steps");
+      addGraph(xx, yy, back_with_steps, q.first, "Background steps");
 
       xx = QVector<double>::fromStdVector(fit_data_->settings().cali_nrg_.transform(q.second.finder_.x_, fit_data_->settings().bits_));
       yy = QVector<double>::fromStdVector(q.second.finder_.y_resid_on_background_);
 //      trim_log_lower(yy); //maybe not?
-      addGraph(xx, yy, resid, q.first, 2, "Residuals");
+      addGraph(xx, yy, resid, q.first, "Residuals");
 //      add_bounds(xx, yy);
     }
 
@@ -1580,7 +1586,7 @@ void FormFitter::plotSUM4_options() {
 
     for (auto &p : r.second.peaks_) {
 
-      x = fit_data_->settings().cali_nrg_.transform(r.second.finder_.x_[p.second.sum4_.bx.front()], fit_data_->settings().bits_);
+      x = fit_data_->settings().cali_nrg_.transform(p.second.sum4_.bx.front(), fit_data_->settings().bits_);
       y = p.second.sum4_.by.front();
 
       newButton = new QCPOverlayButton(ui->plot,
@@ -1607,7 +1613,7 @@ void FormFitter::addEdge(Gamma::SUM4Edge edge, std::vector<double> &x, QPen pen,
 
   addGraph(QVector<double>::fromStdVector(fit_data_->settings().cali_nrg_.transform(x_edge, fit_data_->settings().bits_)),
                        QVector<double>::fromStdVector(y_edge),
-                       pen, roi, -1, "SUM4 edge");
+                       pen, roi, "SUM4 edge");
 }
 
 

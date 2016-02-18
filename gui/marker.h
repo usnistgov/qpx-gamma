@@ -109,6 +109,7 @@ struct Marker {
 struct Range {
   bool visible;
   QVariant purpose;
+  QStringList latch_to;
   AppearanceProfile base, top;
   Coord center, l, r;
 };

@@ -176,7 +176,7 @@ private:
   void calc_visible();
   void add_bounds(const QVector<double>& x, const QVector<double>& y);
   void addGraph(const QVector<double>& x, const QVector<double>& y, QPen appearance,
-                double bin, int fittable = 0, QString name = QString());
+                double bin, QString name = QString());
   void addEdge(Gamma::SUM4Edge edge, std::vector<double> &x, QPen pen, double roi);
 
   void follow_selection();

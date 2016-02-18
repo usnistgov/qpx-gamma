@@ -188,7 +188,7 @@ void Fitter::remap_region(ROI &region) {
       double edge =  p.second.hypermet_.width_.val * sqrt(log(2)) * 3;
       uint32_t edgeL = region.finder_.find_index(p.second.hypermet_.center_.val - edge);
       uint32_t edgeR = region.finder_.find_index(p.second.hypermet_.center_.val + edge);
-      p.second.sum4_ = SUM4(region.finder_.y_, edgeL, edgeR, region.LB(), region.RB());
+      p.second.sum4_ = SUM4(region.finder_.x_, region.finder_.y_, edgeL, edgeR, region.background_, region.LB(), region.RB());
     }
     p.second.construct(settings_.cali_nrg_, metadata_.live_time.total_milliseconds() * 0.001, settings_.bits_);
   }
@@ -346,7 +346,6 @@ void Fitter::save_report(std::string filename) {
          << std::setw( 15 ) << std::setprecision( 10 ) << q.second.area_hyp << "  |"
          << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_hyp << " ||";
 
-    if (!q.second.sum4_.fwhm > 0) {
       file << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.centroid << "  |"
            << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.centroid_variance << "  |"
            << std::setw( 7 ) << std::setprecision( 10 ) << q.second.sum4_.Lpeak << "  |"
@@ -360,7 +359,6 @@ void Fitter::save_report(std::string filename) {
            << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.err << "  |"
            << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_sum4 << "  |"
            << std::setw( 5 ) << std::setprecision( 10 ) << q.second.sum4_.currie_quality_indicator << "  |";
-    }
 
     file << std::endl;
   }
