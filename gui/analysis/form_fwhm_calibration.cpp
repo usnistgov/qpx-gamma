@@ -25,6 +25,7 @@
 #include "ui_form_fwhm_calibration.h"
 #include "gamma_fitter.h"
 #include "qt_util.h"
+#include "sqrt_poly.h"
 
 FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::Detector>& dets, Gamma::Fitter& fit, QWidget *parent) :
   QWidget(parent),
@@ -55,8 +56,8 @@ FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::D
   ui->PlotCalib->setLabels("energy", "FWHM");
 
   ui->tablePeaks->verticalHeader()->hide();
-  ui->tablePeaks->setColumnCount(7);
-  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fwhm(sum4)", "%err (sum4)", "CQI (sum4)", "fwmw(hypermet)", "err(hyp)"});
+  ui->tablePeaks->setColumnCount(8);
+  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fwhm(s4)", "w %err(s4)", "CQI (s4)", "fwmw(hyp)", "w %err(hyp)", "fit %err(hyp)"});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tablePeaks->setEditTriggers(QTableView::NoEditTriggers);
@@ -88,7 +89,8 @@ void FormFwhmCalibration::loadSettings() {
 
   settings_.beginGroup("FWHM_calibration");
   ui->spinTerms->setValue(settings_.value("fit_function_terms", 2).toInt());
-  ui->doubleMaxErr->setValue(settings_.value("max_err", 1).toDouble());
+  ui->doubleMaxFitErr->setValue(settings_.value("max_fit_err", 1).toDouble());
+  ui->doubleMaxWidthErr->setValue(settings_.value("max_width_err", 5).toDouble());
 
   settings_.endGroup();
 
@@ -98,7 +100,8 @@ void FormFwhmCalibration::saveSettings() {
 
   settings_.beginGroup("FWHM_calibration");
   settings_.setValue("fit_function_terms", ui->spinTerms->value());
-  settings_.setValue("max_err", ui->doubleMaxErr->value());
+  settings_.setValue("max_fit_err", ui->doubleMaxFitErr->value());
+  settings_.setValue("max_width_err", ui->doubleMaxWidthErr->value());
   settings_.endGroup();
 }
 
@@ -138,7 +141,8 @@ void FormFwhmCalibration::rebuild_table() {
   ui->tablePeaks->setRowCount(fit_data_.peaks().size());
   int i=0;
   for (auto &q : fit_data_.peaks()) {
-    bool significant = ((q.second.sum4_.currie_quality_indicator == 1) && (q.second.sum4_.peak_area.err() < ui->doubleMaxErr->value()));
+    bool significant = (( (1 - q.second.hypermet_.rsq_) * 100 < ui->doubleMaxFitErr->value())
+                        && (q.second.hypermet_.width_.err() < ui->doubleMaxWidthErr->value()));
     add_peak_to_table(q.second, i, significant);
     ++i;
   }
@@ -196,7 +200,8 @@ void FormFwhmCalibration::add_peak_to_table(const Gamma::Peak &p, int row, bool 
   data_to_table(row, 3, p.sum4_.peak_area.err(), background);
   data_to_table(row, 4, p.sum4_.currie_quality_indicator, background);
   data_to_table(row, 5, p.fwhm_hyp, background);
-  data_to_table(row, 6, (1 - p.hypermet_.rsq_) * 100, background);
+  data_to_table(row, 6, p.hypermet_.width_.err(), background);
+  data_to_table(row, 7, (1 - p.hypermet_.rsq_) * 100, background);
 }
 
 void FormFwhmCalibration::data_to_table(int row, int column, double value, QBrush background) {
@@ -208,8 +213,8 @@ void FormFwhmCalibration::data_to_table(int row, int column, double value, QBrus
 
 void FormFwhmCalibration::replot_calib() {
   ui->PlotCalib->clear_data();
-  QVector<double> xx_relevant, yy_relevant;
-  QVector<double> xx, yy;
+  QVector<double> xx_relevant, yy_relevant, yy_relevant_sigma;
+  QVector<double> xx, yy, yy_sigma;
 
   double xmin = std::numeric_limits<double>::max();
   double xmax = - std::numeric_limits<double>::max();
@@ -217,13 +222,17 @@ void FormFwhmCalibration::replot_calib() {
   for (auto &q : fit_data_.peaks()) {
     double x = q.second.energy;
     double y = q.second.fwhm_hyp;
+    double sigma = q.second.hypermet_.width_.uncert * 2 * sqrt(log(2));
 
-    if ((q.second.sum4_.currie_quality_indicator == 1) && (q.second.sum4_.peak_area.err() < ui->doubleMaxErr->value())) {
+    if (( (1 - q.second.hypermet_.rsq_) * 100 < ui->doubleMaxFitErr->value())
+        && (q.second.hypermet_.width_.err() < ui->doubleMaxWidthErr->value())) {
       xx_relevant.push_back(x);
       yy_relevant.push_back(y);
+      yy_relevant_sigma.push_back(sigma);
     } else {
       xx.push_back(x);
       yy.push_back(y);
+      yy_sigma.push_back(0);
     }
 
     if (x < xmin)
@@ -237,8 +246,8 @@ void FormFwhmCalibration::replot_calib() {
   xmin -= x_margin;
 
   if (xx.size() > 0) {
-    ui->PlotCalib->addPoints(xx, yy, style_pts);
-    ui->PlotCalib->addPoints(xx_relevant, yy_relevant, style_relevant);
+    ui->PlotCalib->addPoints(xx, yy, yy_sigma, style_pts);
+    ui->PlotCalib->addPoints(xx_relevant, yy_relevant, yy_relevant_sigma, style_relevant);
     if (new_calibration_.valid()) {
 
       double step = (xmax-xmin) / 50.0;
@@ -306,32 +315,36 @@ void FormFwhmCalibration::on_pushFit_clicked()
   emit new_fit();
 }
 
-Polynomial FormFwhmCalibration::fit_calibration()
+void FormFwhmCalibration::fit_calibration()
 {
-  std::vector<double> xx, yy;
+  std::vector<double> xx, yy, yy_sigma;
   for (auto &q : fit_data_.peaks()) {
-    if ((q.second.sum4_.currie_quality_indicator == 1) && (q.second.sum4_.peak_area.err() < ui->doubleMaxErr->value())) {
+    if (( (1 - q.second.hypermet_.rsq_) * 100 < ui->doubleMaxFitErr->value())
+        && (q.second.hypermet_.width_.err() < ui->doubleMaxWidthErr->value())) {
       xx.push_back(q.second.energy);
       yy.push_back(q.second.fwhm_hyp);
+      yy_sigma.push_back(q.second.hypermet_.width_.uncert * 2 * sqrt(log(2)));
     }
   }
 
+  SqrtPoly p;
+  for (int i=0; i <= ui->spinTerms->value(); ++i)
+    p.add_coeff(i, -30, 30, 1);
 
-  Polynomial p = Polynomial(xx, yy, ui->spinTerms->value());
+  p.fit(xx, yy, yy_sigma);
 
   if (p.coeffs_.size()) {
     new_calibration_.type_ = "FWHM";
     new_calibration_.bits_ = fit_data_.metadata_.bits;
-    new_calibration_.coefficients_ = p.coeffs_;
+    new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.r_squared_ = p.rsq_;
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "keV";
-    new_calibration_.model_ = Gamma::CalibrationModel::polynomial;
+    new_calibration_.model_ = Gamma::CalibrationModel::sqrt_poly;
   }
   else
     PL_INFO << "<WFHM calibration> Gamma::Calibration failed";
 
-  return p;
 }
 
 void FormFwhmCalibration::on_pushApplyCalib_clicked()
@@ -357,7 +370,13 @@ void FormFwhmCalibration::on_pushDetDB_clicked()
   det_widget->exec();
 }
 
-void FormFwhmCalibration::on_doubleMaxErr_valueChanged(double arg1)
+void FormFwhmCalibration::on_doubleMaxFitErr_valueChanged(double arg1)
+{
+  replot_calib();
+  select_in_plot();
+}
+
+void FormFwhmCalibration::on_doubleMaxWidthErr_valueChanged(double arg1)
 {
   replot_calib();
   select_in_plot();

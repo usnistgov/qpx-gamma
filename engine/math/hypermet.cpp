@@ -382,7 +382,7 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
         old[i].rsq_ = f->get_rsquared(0);
         i++;
       } else if (q->get_template_name() == "PolyBounded") {
-        background.extract_params(q);
+        background.extract_params(f, q);
       }
     }
 

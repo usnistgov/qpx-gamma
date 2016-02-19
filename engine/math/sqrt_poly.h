@@ -23,38 +23,22 @@
 #ifndef SQRT_POLY_H
 #define SQRT_POLY_H
 
-#include <vector>
-#include <iostream>
-#include <numeric>
-#include <map>
+#include "coef_function.h"
 
 
-class SqrtPoly {
+class SqrtPoly : public CoefFunction {
 public:
-  SqrtPoly() : rsq(-1) {}
-  SqrtPoly(std::vector<double> coeffs); //deprecate
-  SqrtPoly(std::map<uint16_t, double> coeffs);
+  SqrtPoly() {}
+  SqrtPoly(std::vector<double> coeffs, double uncert, double rsq) :
+    CoefFunction(coeffs, uncert, rsq) {}
 
-  SqrtPoly(std::vector<double> &x, std::vector<double> &y, uint16_t degree);
-
-  SqrtPoly(std::vector<double> &x, std::vector<double> &y, std::vector<uint16_t> &degrees);
-  void fit(std::vector<double> &x, std::vector<double> &y, std::vector<uint16_t> &degrees);
-
-  //output
-  std::string to_string();
-  std::string to_UTF8(int precision = -1, bool with_rsq = false);
-  std::string to_markup(int precision = -1);
-  std::string coef_to_string() const;
-  void coef_from_string(std::string);
-
-  double eval(double x);
-  double eval_deriv(double x);
-  std::vector<double> eval(std::vector<double> x);
-
-  //  double inverse_evaluate(double y, double e = 0.2);
-  
-  std::map<uint16_t, double> coeffs_;
-  double rsq;
+  std::string type() const override {return "SqrtPoly";}
+  std::string fityk_definition() override;
+  std::string to_string() const override;
+  std::string to_UTF8(int precision = -1, bool with_rsq = false) override;
+  std::string to_markup(int precision = -1, bool with_rsq = false) override;
+  double eval(double x)  override;
+  double derivative(double x) override;
 
 };
 

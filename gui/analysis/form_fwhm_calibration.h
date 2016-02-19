@@ -73,7 +73,8 @@ private slots:
   void on_pushDetDB_clicked();
 
 
-  void on_doubleMaxErr_valueChanged(double arg1);
+  void on_doubleMaxFitErr_valueChanged(double arg1);
+  void on_doubleMaxWidthErr_valueChanged(double arg1);
 
 private:
   Ui::FormFwhmCalibration *ui;
@@ -92,7 +93,7 @@ private:
 
   void loadSettings();
   void saveSettings();
-  Polynomial fit_calibration();
+  void fit_calibration();
 
   void replot_calib();
   void rebuild_table();

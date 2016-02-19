@@ -351,9 +351,10 @@ void FormOptimization::resultChosen() {
 
   QVector<double> xx = QVector<double>::fromStdVector(setting_values_);
   QVector<double> yy = QVector<double>::fromStdVector(setting_fwhm_);
+  QVector<double> yy_sigma(yy.size(), 0);
 
   ui->PlotCalib->clearGraphs();
-  ui->PlotCalib->addPoints(xx, yy, style_pts);
+  ui->PlotCalib->addPoints(xx, yy, yy_sigma, style_pts);
 
   std::set<double> chosen_peaks_chan;
 

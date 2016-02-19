@@ -281,8 +281,14 @@ void FormGainMatch::do_post_processing() {
   else if (peak_opt_.center > peak_ref_.center)
     new_gain -= ui->doubleSpinDeltaV->value();
 
+  std::vector<double> sigmas(deltas.size(), 1);
+
   if (gains.size() > 1) {
-    Polynomial p = Polynomial(gains, deltas, 2);
+    PolyBounded p;
+    p.add_coeff(0, -50, 50, 1);
+    p.add_coeff(1, -50, 50, 1);
+    p.add_coeff(2, -50, 50, 1);
+    p.fit(gains, deltas, sigmas);
     double predict = p.eval_inverse(peak_ref_.center/*, ui->doubleThreshold->value() / 4.0*/);
     if (!std::isnan(predict)) {
       new_gain = predict;
@@ -291,6 +297,7 @@ void FormGainMatch::do_post_processing() {
 
     QVector<double> xx = QVector<double>::fromStdVector(gains);
     QVector<double> yy = QVector<double>::fromStdVector(deltas);
+    QVector<double> yy_sigma(yy.size(), 0);
 
     xx.push_back(new_gain);
     yy.push_back(peak_ref_.center);
@@ -310,7 +317,7 @@ void FormGainMatch::do_post_processing() {
     xmin -= x_margin;
 
     ui->PlotCalib->clear_data();
-    ui->PlotCalib->addPoints(xx, yy, style_pts);
+    ui->PlotCalib->addPoints(xx, yy, yy_sigma, style_pts);
 
 
     xx.clear();

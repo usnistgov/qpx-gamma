@@ -192,7 +192,9 @@ void FormEnergyCalibration::replot_calib() {
   xmin -= x_margin;
 
   if (xx.size()) {
-    ui->PlotCalib->addPoints(xx, yy, style_pts);
+    QVector<double> yy_sigma(yy.size(), 0);
+
+    ui->PlotCalib->addPoints(xx, yy, yy_sigma, style_pts);
     ui->PlotCalib->set_selected_pts(selected_peaks_);
     if (new_calibration_.valid()) {
 
@@ -204,7 +206,7 @@ void FormEnergyCalibration::replot_calib() {
         yy.push_back(new_calibration_.transform(i));
       }
       ui->PlotCalib->addFit(xx, yy, style_fit);
-      ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(new_calibration_.fancy_equation(4, true)));
+      ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(new_calibration_.fancy_equation(6, true)));
     }
   }
 }
@@ -287,12 +289,24 @@ void FormEnergyCalibration::on_pushFit_clicked()
     i++;
   }
 
-  Polynomial p = Polynomial(x, y, ui->spinTerms->value());
+
+  std::vector<double> sigmas(y.size(), 1);
+
+  PolyBounded p;
+  p.add_coeff(0, -50, 50, 1);
+  for (int i=1; i <= ui->spinTerms->value(); ++i) {
+    if (i==1)
+      p.add_coeff(i, -5, 5, 1);
+    else
+      p.add_coeff(i, -5, 5, 0);
+  }
+
+  p.fit(x,y,sigmas);
 
   if (p.coeffs_.size()) {
     new_calibration_.type_ = "Energy";
     new_calibration_.bits_ = fit_data_.metadata_.bits;
-    new_calibration_.coefficients_ = p.coeffs_;
+    new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.r_squared_ = p.rsq_;
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "keV";

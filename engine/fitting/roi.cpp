@@ -430,13 +430,13 @@ void ROI::render() {
   hr_fullfit.clear();
   for (double i = 0; i < finder_.x_.size(); i += 0.25)
     hr_x.push_back(finder_.x_[0] + i);
-  hr_background = background_.eval(hr_x);
+  hr_background = background_.eval_array(hr_x);
   hr_back_steps = hr_background;
   hr_fullfit    = hr_background;
   hr_x_nrg = settings_.cali_nrg_.transform(hr_x, settings_.bits_);
 
-  std::vector<double> lowres_backsteps = background_.eval(finder_.x_);
-  std::vector<double> lowres_fullfit = background_.eval(finder_.x_);
+  std::vector<double> lowres_backsteps = background_.eval_array(finder_.x_);
+  std::vector<double> lowres_fullfit = background_.eval_array(finder_.x_);
 
   for (auto &p : peaks_) {
     for (int32_t j = 0; j < static_cast<int32_t>(hr_x.size()); ++j) {
@@ -465,7 +465,7 @@ void ROI::render() {
 }
 
 std::vector<double> ROI::remove_background() {
-  std::vector<double> y_background = background_.eval(finder_.x_);
+  std::vector<double> y_background = background_.eval_array(finder_.x_);
 
   std::vector<double> y_nobkg(finder_.x_.size());
   for (int32_t i = 0; i < static_cast<int32_t>(finder_.y_.size()); ++i)

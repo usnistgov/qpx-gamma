@@ -378,8 +378,10 @@ void FormEfficiencyCalibration::replot_calib() {
           xmax = x;
       }
 
+      QVector<double> yy_sigma(yy.size(), 0);
+
       style_pts.default_pen = QPen(color, 7);
-      ui->PlotCalib->addPoints(xx, yy, style_pts);
+      ui->PlotCalib->addPoints(xx, yy, yy_sigma, style_pts);
     }
   }
 
@@ -546,12 +548,25 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
     }
   }
 
-  PolyLog p = PolyLog(xx, yy, ui->spinTerms->value());
+//  PolyLog p = PolyLog(xx, yy, ui->spinTerms->value());
+
+  std::vector<double> sigmas(yy.size(), 1);
+
+  PolyLog p;
+  p.add_coeff(0, -50, 50, 1);
+  for (int i=1; i <= ui->spinTerms->value(); ++i) {
+    if (i==1)
+      p.add_coeff(i, -50, 50, 1);
+    else
+      p.add_coeff(i, -50, 50, 0);
+  }
+
+  p.fit(xx,yy,sigmas);
 
   if (p.coeffs_.size()) {
     new_calibration_.type_ = "Efficiency";
     new_calibration_.bits_ = fit_data_.metadata_.bits;
-    new_calibration_.coefficients_ = p.coeffs_;
+    new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
     new_calibration_.model_ = Gamma::CalibrationModel::polylog;
@@ -639,12 +654,25 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
     }
   }
 
-  LogInverse p = LogInverse(xx, yy, ui->spinTerms->value());
+//  LogInverse p = LogInverse(xx, yy, ui->spinTerms->value());
+
+  std::vector<double> sigmas(yy.size(), 1);
+
+  LogInverse p;
+  p.add_coeff(0, -50, 50, 1);
+  for (int i=1; i <= ui->spinTerms->value(); ++i) {
+    if (i==1)
+      p.add_coeff(i, -50, 50, 1);
+    else
+      p.add_coeff(i, -50, 50, 0);
+  }
+
+  p.fit(xx,yy,sigmas);
 
   if (p.coeffs_.size()) {
     new_calibration_.type_ = "Efficiency";
     new_calibration_.bits_ = fit_data_.metadata_.bits;
-    new_calibration_.coefficients_ = p.coeffs_;
+    new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
     new_calibration_.model_ = Gamma::CalibrationModel::loginverse;

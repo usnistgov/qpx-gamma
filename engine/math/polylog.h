@@ -23,40 +23,21 @@
 #ifndef POLYLOG_H
 #define POLYLOG_H
 
-#include <vector>
-#include <iostream>
-#include <numeric>
+#include "coef_function.h"
 
-
-class PolyLog {
+class PolyLog : public CoefFunction {
 public:
-  PolyLog() : degree_(-1), xoffset_(0.0), rsq(-1) {}
-  PolyLog(std::vector<double> coeffs, double center = 0);
+  PolyLog() {}
+  PolyLog(std::vector<double> coeffs, double uncert, double rsq) :
+    CoefFunction(coeffs, uncert, rsq) {}
 
-  PolyLog(std::vector<double> &x, std::vector<double> &y,
-             uint16_t degree, double center=0);
-  PolyLog(std::vector<double> &x, std::vector<double> &y,
-             std::vector<uint16_t> &degrees, double center=0);
-
-  void fit(std::vector<double> &x, std::vector<double> &y,
-      std::vector<uint16_t> &degrees, double center=0);
-
-  //PolyLog derivative();
-
-  std::string to_string();
-  std::string to_UTF8(int precision = -1, bool with_rsq = false);
-  std::string to_markup();
-  std::string coef_to_string() const;
-  void coef_from_string(std::string);
-
-  double evaluate(double x);
-//  double inverse_evaluate(double y, double e = 0.2);
-  std::vector<double> evaluate_array(std::vector<double> x);
-  
-  std::vector<double> coeffs_;
-  double xoffset_;
-  int degree_;
-  double rsq;
+  std::string type() const override {return "PolyLog";}
+  std::string fityk_definition() override;
+  std::string to_string() const override;
+  std::string to_UTF8(int precision = -1, bool with_rsq = false) override;
+  std::string to_markup(int precision = -1, bool with_rsq = false) override;
+  double eval(double x)  override;
+  double derivative(double x) override;
 
 };
 

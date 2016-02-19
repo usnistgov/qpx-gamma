@@ -37,7 +37,7 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Max %err</string>
+          <string>Max fit %err</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -45,7 +45,45 @@
         </widget>
        </item>
        <item>
-        <widget class="QDoubleSpinBox" name="doubleMaxErr">
+        <widget class="QDoubleSpinBox" name="doubleMaxFitErr">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximum">
+          <double>50.000000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>0.100000000000000</double>
+         </property>
+         <property name="value">
+          <double>2.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_4">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Max fwhm %err</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QDoubleSpinBox" name="doubleMaxWidthErr">
          <property name="enabled">
           <bool>true</bool>
          </property>
@@ -135,7 +173,7 @@
           </size>
          </property>
          <property name="text">
-          <string>Polynomial order = </string>
+          <string>Order = </string>
          </property>
         </widget>
        </item>
@@ -166,10 +204,10 @@
           <number>1</number>
          </property>
          <property name="maximum">
-          <number>10</number>
+          <number>2</number>
          </property>
          <property name="value">
-          <number>2</number>
+          <number>1</number>
          </property>
         </widget>
        </item>

@@ -155,7 +155,7 @@ void FormGainCalibration::plot_calib() {
     ui->pushCalibGain->setEnabled(true);
     ui->spinPolyOrder->setEnabled(true);
 
-    ui->plotCalib->addPoints(xx, yy, style_pts);
+    ui->plotCalib->addPoints(xx, yy, QVector<double>(yy.size(), 0), style_pts);
     if ((gain_match_cali_.to_ == detector1_.name_) && gain_match_cali_.valid()) {
 
       double step = (xmax-xmin) / 50.0;
@@ -197,10 +197,18 @@ void FormGainCalibration::on_pushCalibGain_clicked()
   for (auto &q : fit_data1_.peaks())
     y.push_back(q.first);
 
-  Polynomial p = Polynomial(x, y, ui->spinPolyOrder->value());
+
+  std::vector<double> sigmas(y.size(), 1);
+
+  PolyBounded p;
+  p.add_coeff(0, -50, 50, 1);
+  for (int i=1; i <= ui->spinPolyOrder->value(); ++i)
+    p.add_coeff(i, -5, 5, 1);
+
+  p.fit(x,y,sigmas);
 
   if (p.coeffs_.size()) {
-    gain_match_cali_.coefficients_ = p.coeffs_;
+    gain_match_cali_.coefficients_ = p.coeffs();
     gain_match_cali_.to_ = detector1_.name_;
     gain_match_cali_.bits_ = fit_data2_.metadata_.bits;
     gain_match_cali_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?

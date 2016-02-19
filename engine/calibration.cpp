@@ -55,13 +55,13 @@ double Calibration::transform(double chan) const {
     return chan;
   
   if (bits_ && (model_ == CalibrationModel::polynomial))
-    return Polynomial(coefficients_).eval(chan);
+    return PolyBounded(coefficients_, 0, r_squared_).eval(chan);
   else if (bits_ && (model_ == CalibrationModel::sqrt_poly))
-    return SqrtPoly(coefficients_).eval(chan);
+    return SqrtPoly(coefficients_, 0, r_squared_).eval(chan);
   else if (bits_ && (model_ == CalibrationModel::polylog))
-    return PolyLog(coefficients_).evaluate(chan);
+    return PolyLog(coefficients_, 0, r_squared_).eval(chan);
   else if (bits_ && (model_ == CalibrationModel::loginverse))
-    return LogInverse(coefficients_).evaluate(chan);
+    return LogInverse(coefficients_, 0, r_squared_).eval(chan);
   else if (bits_ && (model_ == CalibrationModel::effit))
     return Effit(coefficients_).evaluate(chan);
   else
@@ -73,7 +73,7 @@ double Calibration::inverse_transform(double energy) const {
     return energy;
 
   if (bits_ && (model_ == CalibrationModel::polynomial))
-    return Polynomial(coefficients_).eval_inverse(energy);
+    return PolyBounded(coefficients_, 0, r_squared_).eval_inverse(energy);
 //  else if (bits_ && (model_ == CalibrationModel::polylog))
 //    return PolyLog(coefficients_).inverse_evaluate(energy);
   else
@@ -111,13 +111,13 @@ double Calibration::inverse_transform(double energy, uint16_t bits) const {
 
 std::string Calibration::fancy_equation(int precision, bool with_rsq) {
   if (bits_ && (model_ == CalibrationModel::polynomial))
-    return Polynomial(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
+    return PolyBounded(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
   else if (bits_ && (model_ == CalibrationModel::sqrt_poly))
-    return SqrtPoly(coefficients_).to_UTF8(precision, with_rsq);
+    return SqrtPoly(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
   else if (bits_ && (model_ == CalibrationModel::polylog))
-    return PolyLog(coefficients_).to_UTF8(precision, with_rsq);
+    return PolyLog(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
   else if (bits_ && (model_ == CalibrationModel::loginverse))
-    return LogInverse(coefficients_).to_UTF8(precision, with_rsq);
+    return LogInverse(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
   else if (bits_ && (model_ == CalibrationModel::effit))
     return Effit(coefficients_).to_UTF8(precision, with_rsq);
   else

@@ -117,6 +117,7 @@ void WidgetPlotCalib::clear_data() {
   y_fit.clear();
   x_pts.clear();
   y_pts.clear();
+  y_pts_sigma.clear();
 
   style_pts.clear();
   selection_.clear();
@@ -127,6 +128,7 @@ void WidgetPlotCalib::clearPoints()
 {
   x_pts.clear();
   y_pts.clear();
+  y_pts_sigma.clear();
   style_pts.clear();
   selection_.clear();
 }
@@ -137,6 +139,7 @@ void WidgetPlotCalib::clearGraphs()
   y_fit.clear();
   x_pts.clear();
   y_pts.clear();
+  y_pts_sigma.clear();
   style_pts.clear();
   selection_.clear();
   redraw();
@@ -157,9 +160,14 @@ void WidgetPlotCalib::redraw() {
   for (int k=0; k < x_pts.size(); ++k) {
     ui->mcaPlot->addGraph();
     int g = ui->mcaPlot->graphCount() - 1;
-    ui->mcaPlot->graph(g)->addData(x_pts[k], y_pts[k]);
-    ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle::ssNone);
+    QPen pen(style_pts[k].themes["selected"].color(), 0);
+
+    ui->mcaPlot->graph(g)->setPen(pen);
     ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsNone);
+    ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDot, 0));
+    ui->mcaPlot->graph(g)->setErrorType(QCPGraph::etValue);
+    ui->mcaPlot->graph(g)->setErrorPen(pen);
+    ui->mcaPlot->graph(g)->setDataValueError(x_pts[k], y_pts[k], y_pts_sigma[k]);
 
     for (int i = 0; i < x_pts[k].size(); ++i) {
       QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
@@ -299,10 +307,11 @@ void WidgetPlotCalib::addFit(const QVector<double>& x, const QVector<double>& y,
   }
 }
 
-void WidgetPlotCalib::addPoints(const QVector<double>& x, const QVector<double>& y, AppearanceProfile style) {
+void WidgetPlotCalib::addPoints(const QVector<double>& x, const QVector<double>& y, const QVector<double>& y_sigma, AppearanceProfile style) {
   if (!x.empty() && (x.size() == y.size())) {
     x_pts.push_back(x);
     y_pts.push_back(y);
+    y_pts_sigma.push_back(y_sigma);
     style_pts.push_back(style);
   }
 }
