@@ -60,7 +60,7 @@ public:
 
   std::vector<double> peak(std::vector<double> x);
   std::vector<double> step_tail(std::vector<double> x);
-  double area() const;
+  FitParam area() const;
 
   FitParam center_, height_, width_,
            Lskew_amplitude, Lskew_slope,

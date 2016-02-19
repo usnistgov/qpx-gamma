@@ -91,6 +91,8 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
       Peak fitted;
       fitted.hypermet_ = hyp;
       fitted.center = hyp.center_.val;
+
+
       peaks_[hyp.center_.val] = fitted;
     }
   }
@@ -409,7 +411,11 @@ void ROI::rebuild() {
   for (int i=0; i < hype.size(); ++i) {
     Peak one;
     one.hypermet_ = hype[i];
-    one.center = hype[i].center_.val;
+    double edge =  hype[i].width_.val * sqrt(log(2)) * 3; //use const from settings
+    uint32_t edgeL = finder_.find_index(hype[i].center_.val - edge);
+    uint32_t edgeR = finder_.find_index(hype[i].center_.val + edge);
+    one.sum4_ = SUM4(finder_.x_, finder_.y_, edgeL, edgeR, background_, LB_, RB_);
+    one.construct(settings_);
     peaks_[one.center] = one;
   }
 

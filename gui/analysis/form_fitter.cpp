@@ -292,7 +292,6 @@ void FormFitter::rollback_ROI(double ROI_bin) {
     int ret = editor->exec();
     if (ret == QDialog::Accepted) {
       fit_data_->regions_[ROI_bin].rollback(editor->get_choice());
-      fit_data_->remap_region(fit_data_->regions_[ROI_bin]);
       toggle_push();
       updateData();
     }
@@ -486,20 +485,16 @@ void FormFitter::adjust_sum4_bounds() {
   if (range_.purpose.toString() == "ROI back L") {
     PL_DBG << "adjusting L back";
     parent_region->set_LB(edge);
-    fit_data_->remap_region(*parent_region);
     //should be in fitter thread
   } else if (range_.purpose.toString() == "ROI back R") {
     PL_DBG << "adjusting R back";
     parent_region->set_RB(edge);
-    fit_data_->remap_region(*parent_region);
     //should be in fitter thread
   } else if (range_.purpose.toString() == "SUM4") {
     Gamma::Peak pk = parent_region->peaks_.at(range_.center.bin(fit_data_->settings().bits_));
     Gamma::SUM4 new_sum4(parent_region->finder_.x_, parent_region->finder_.y_, L, R, parent_region->background_, parent_region->LB(), parent_region->RB());
     pk.sum4_ = new_sum4;
-    pk.construct(fit_data_->settings().cali_nrg_,
-                 fit_data_->metadata_.live_time.total_milliseconds() * 0.001,
-                 fit_data_->settings().bits_);
+    pk.construct(fit_data_->settings());
     fit_data_->replace_peak(pk);
     selected_peaks_.clear();
     selected_peaks_.insert(pk.center);

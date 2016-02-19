@@ -39,18 +39,12 @@ public:
       , energy(0)
       , fwhm_sum4(0)
       , fwhm_hyp (0)
-      , area_sum4(0.0)
-      , area_hyp(0.0)
-      , cps_sum4(0.0)
-      , cps_hyp(0.0)
-      , area_best(0.0)
-      , cps_best(0.0)
       , intensity_theoretical_(0.0)
       , efficiency_relative_(0.0)
   {}
 
 
-  void construct(Calibration cali_nrg, double live_seconds, uint16_t bits);
+  void construct(FitSettings fs);
 
   std::vector<double> hr_peak_, hr_fullfit_;
 
@@ -59,9 +53,9 @@ public:
 
   double center, energy, fwhm_sum4, fwhm_hyp;
 
-  double area_sum4, area_hyp;
-  double cps_sum4, cps_hyp;
-  double area_best, cps_best;
+  FitParam area_sum4, area_hyp, area_best;
+  double cps_sum4, cps_hyp, cps_best;
+
   double intensity_theoretical_, efficiency_relative_;
   
 

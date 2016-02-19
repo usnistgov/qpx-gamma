@@ -74,6 +74,7 @@ public:
   //specific to spectrum
   Gamma::Calibration cali_nrg_, cali_fwhm_;
   uint16_t bits_;
+  boost::posix_time::time_duration real_time ,live_time;
 
   FitSettings();
 };

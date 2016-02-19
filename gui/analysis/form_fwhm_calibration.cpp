@@ -138,7 +138,7 @@ void FormFwhmCalibration::rebuild_table() {
   ui->tablePeaks->setRowCount(fit_data_.peaks().size());
   int i=0;
   for (auto &q : fit_data_.peaks()) {
-    bool significant = ((q.second.sum4_.currie_quality_indicator == 1) && (q.second.sum4_.err < ui->doubleMaxErr->value()));
+    bool significant = ((q.second.sum4_.currie_quality_indicator == 1) && (q.second.sum4_.peak_area.err() < ui->doubleMaxErr->value()));
     add_peak_to_table(q.second, i, significant);
     ++i;
   }
@@ -193,7 +193,7 @@ void FormFwhmCalibration::add_peak_to_table(const Gamma::Peak &p, int row, bool 
   data_to_table(row, 0, p.center, background);
   data_to_table(row, 1, p.energy, background);
   data_to_table(row, 2, p.fwhm_sum4, background);
-  data_to_table(row, 3, p.sum4_.err, background);
+  data_to_table(row, 3, p.sum4_.peak_area.err(), background);
   data_to_table(row, 4, p.sum4_.currie_quality_indicator, background);
   data_to_table(row, 5, p.fwhm_hyp, background);
   data_to_table(row, 6, (1 - p.hypermet_.rsq_) * 100, background);
@@ -218,7 +218,7 @@ void FormFwhmCalibration::replot_calib() {
     double x = q.second.energy;
     double y = q.second.fwhm_hyp;
 
-    if ((q.second.sum4_.currie_quality_indicator == 1) && (q.second.sum4_.err < ui->doubleMaxErr->value())) {
+    if ((q.second.sum4_.currie_quality_indicator == 1) && (q.second.sum4_.peak_area.err() < ui->doubleMaxErr->value())) {
       xx_relevant.push_back(x);
       yy_relevant.push_back(y);
     } else {
@@ -310,7 +310,7 @@ Polynomial FormFwhmCalibration::fit_calibration()
 {
   std::vector<double> xx, yy;
   for (auto &q : fit_data_.peaks()) {
-    if ((q.second.sum4_.currie_quality_indicator == 1) && (q.second.sum4_.err < ui->doubleMaxErr->value())) {
+    if ((q.second.sum4_.currie_quality_indicator == 1) && (q.second.sum4_.peak_area.err() < ui->doubleMaxErr->value())) {
       xx.push_back(q.second.energy);
       yy.push_back(q.second.fwhm_hyp);
     }

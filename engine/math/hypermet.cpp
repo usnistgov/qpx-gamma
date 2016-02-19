@@ -73,7 +73,7 @@ bool Hypermet::extract_params(fityk::Fityk* f, fityk::Func* func) {
 
 std::string Hypermet::to_string() const {
   std::string ret = "Hypermet ";
-  ret += "   area=" + boost::lexical_cast<std::string>(area())
+  ret += "   area=" + area().val_uncert(10)
        + "   rsq=" + boost::lexical_cast<std::string>(rsq_) + "    where:\n";
 
   ret += "     " + center_.to_string() + "\n";
@@ -452,9 +452,11 @@ std::vector<double> Hypermet::step_tail(std::vector<double> x) {
   return y;
 }
 
-double Hypermet::area() const {
-  return height_.val * width_.val * sqrt(M_PI) *
+FitParam Hypermet::area() const {
+  FitParam ret("PeakArea", 0);
+  ret.val = height_.val * width_.val * sqrt(M_PI) *
       (1 +
        Lskew_amplitude.val * width_.val * Lskew_slope.val +
        Rskew_amplitude.val * width_.val * Rskew_slope.val);
+  return ret;
 }

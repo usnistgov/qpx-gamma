@@ -57,7 +57,6 @@ public:
   void setData(Qpx::Spectrum::Spectrum *spectrum);
 
   void find_regions();
-  void remap_region(ROI &);
   ROI *parent_of(double center);
 
   void add_peak(uint32_t left, uint32_t right, boost::atomic<bool>& interruptor);

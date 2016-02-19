@@ -58,16 +58,12 @@ SUM4Edge::SUM4Edge(const std::vector<double> &y, uint32_t left, uint32_t right)
 
 SUM4::SUM4()
     :peak_width(0)
-    ,background_area(0)
-    ,background_variance(0)
-    ,peak_area(0)
-    ,peak_variance(0)
-    ,err(0)
+    ,background_area("BackgroundArea", 0)
+    ,peak_area("PeakArea",0)
     ,Lpeak(0)
     ,Rpeak(0)
     ,currie_quality_indicator(-1)
-    ,centroid(0)
-    ,centroid_variance(0)
+    ,centroid("Centroid", 0)
     ,fwhm(0)
 {}
 
@@ -100,33 +96,32 @@ void SUM4::recalc(const std::vector<double> &x, const std::vector<double> &y)
 {
   peak_width = Rpeak - Lpeak + 1;
 
-  background_area = peak_width * (background_.eval(x[Rpeak]) + background_.eval(x[Lpeak])) / 2.0;
+  background_area.val = peak_width * (background_.eval(x[Rpeak]) + background_.eval(x[Lpeak])) / 2.0;
 
   double gross_area(0);
   for (int i=Lpeak; i <=Rpeak; ++i)
     gross_area += y[i];
 
-  peak_area = gross_area - background_area;
+  peak_area.val = gross_area - background_area.val;
 
-  background_variance = pow((peak_width / 2.0), 2) * (LB_.variance() + RB_.variance());
-  peak_variance = gross_area + background_variance;
+  double background_variance = pow((peak_width / 2.0), 2) * (LB_.variance() + RB_.variance());
+  double peak_variance = gross_area + background_variance;
 
-  //uncertainty = sqrt(peak_variance);
-
-  err = 100 * sqrt(peak_variance) / peak_area;
+  peak_area.uncert = sqrt(peak_variance);
+  background_area.uncert = sqrt(background_variance);
 
   double currieLQ(0), currieLD(0), currieLC(0);
   currieLQ = 50 * (1 + sqrt(1 + background_variance / 12.5));
   currieLD = 2.71 + 4.65 * sqrt(background_variance);
   currieLC = 2.33 * sqrt(background_variance);
 
-  if (peak_area > currieLQ)
+  if (peak_area.val > currieLQ)
     currie_quality_indicator = 1;
-  else if (peak_area > currieLD)
+  else if (peak_area.val > currieLD)
     currie_quality_indicator = 2;
-  else if (peak_area > currieLC)
+  else if (peak_area.val > currieLC)
     currie_quality_indicator = 3;
-  else if (peak_area > 0)
+  else if (peak_area.val > 0)
     currie_quality_indicator = 4;
   else
     currie_quality_indicator = -1;
@@ -148,8 +143,9 @@ void SUM4::recalc(const std::vector<double> &x, const std::vector<double> &y)
 
 //  PL_DBG << "<SUM4> bx " << bx[0] << "-" << bx[bx.size() -1];
 
-  centroid = CsumYnet / sumYnet;
-  centroid_variance = (C2sumYnet / sumYnet) - pow(centroid, 2);
+  centroid.val = CsumYnet / sumYnet;
+  double centroid_variance = (C2sumYnet / sumYnet) - pow(centroid.val, 2);
+  centroid.uncert = sqrt(centroid_variance);
   fwhm = 2.0 * sqrt(centroid_variance * log(4));
 }
 

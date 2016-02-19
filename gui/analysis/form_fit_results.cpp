@@ -109,11 +109,11 @@ void FormFitResults::add_peak_to_table(const Gamma::Peak &p, int row, bool gray)
   data_to_table(row, 0, p.center, background);
   data_to_table(row, 1, p.energy, background);
   data_to_table(row, 2, p.fwhm_hyp, background);
-  data_to_table(row, 3, p.area_hyp, background);
+  data_to_table(row, 3, p.area_hyp.val, background);
   data_to_table(row, 4, p.cps_hyp, background);
   data_to_table(row, 5, p.fwhm_sum4, background);
-  data_to_table(row, 6, p.area_sum4, background);
-  data_to_table(row, 7, p.sum4_.err, background);
+  data_to_table(row, 6, p.area_sum4.val, background);
+  data_to_table(row, 7, p.sum4_.peak_area.err(), background);
   data_to_table(row, 8, p.cps_sum4, background);
   data_to_table(row, 9, p.sum4_.currie_quality_indicator, background);
 

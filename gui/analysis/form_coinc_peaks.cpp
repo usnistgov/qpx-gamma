@@ -186,8 +186,8 @@ void FormCoincPeaks::add_peak_to_table(const Gamma::Peak &p, int row, QColor bck
   fwhm->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 2, fwhm);
 
-  if (p.area_sum4 != 0) {
-    QTableWidgetItem *area_net = new QTableWidgetItem(QString::number(p.area_sum4));
+  if (p.area_sum4.val != 0) {
+    QTableWidgetItem *area_net = new QTableWidgetItem(QString::number(p.area_sum4.val));
     area_net->setData(Qt::BackgroundRole, background);
     ui->tablePeaks->setItem(row, 3, area_net);
 
@@ -195,7 +195,7 @@ void FormCoincPeaks::add_peak_to_table(const Gamma::Peak &p, int row, QColor bck
 //    cps_net->setData(Qt::BackgroundRole, background);
 //    ui->tablePeaks->setItem(row, 5, cps_net);
   } else {
-    QTableWidgetItem *area_gauss = new QTableWidgetItem(QString::number(p.area_hyp));
+    QTableWidgetItem *area_gauss = new QTableWidgetItem(QString::number(p.area_hyp.val));
     area_gauss->setData(Qt::BackgroundRole, background);
     ui->tablePeaks->setItem(row, 3, area_gauss);
 

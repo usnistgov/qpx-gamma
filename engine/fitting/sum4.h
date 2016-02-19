@@ -59,15 +59,19 @@ class SUM4 {
   PolyBounded background_;
 
 public:
-  double background_area, background_variance;
+
+  FitParam background_area;
+//  double background_area, background_variance;
   std::vector<double> bx, by;
 
   int32_t Lpeak, Rpeak;
   double peak_width;
-  double peak_area, peak_variance;
-  double centroid, centroid_variance;
+  FitParam peak_area;
+  //double peak_area, peak_variance;
+  FitParam centroid;
+//  double centroid, centroid_variance;
   double fwhm;
-  double err;
+//  double err;
   int currie_quality_indicator;
 
   SUM4();

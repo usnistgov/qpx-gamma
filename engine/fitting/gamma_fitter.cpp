@@ -49,6 +49,9 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
     if (detector_.fwhm_calibration_.valid())
       settings_.cali_fwhm_ = detector_.fwhm_calibration_;
 
+    settings_.live_time = md.live_time;
+    settings_.real_time = md.real_time;
+
     std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_dump = std::move(spectrum->get_spectrum({{0, md.resolution}}));
     std::vector<double> x;
     std::vector<double> y;
@@ -182,22 +185,9 @@ ROI *Fitter::parent_of(double center) {
 }
 
 
-void Fitter::remap_region(ROI &region) {
-  for (auto &p : region.peaks_) {
-    if (p.second.sum4_.peak_width == 0) {
-      double edge =  p.second.hypermet_.width_.val * sqrt(log(2)) * 3;
-      uint32_t edgeL = region.finder_.find_index(p.second.hypermet_.center_.val - edge);
-      uint32_t edgeR = region.finder_.find_index(p.second.hypermet_.center_.val + edge);
-      p.second.sum4_ = SUM4(region.finder_.x_, region.finder_.y_, edgeL, edgeR, region.background_, region.LB(), region.RB());
-    }
-    p.second.construct(settings_.cali_nrg_, metadata_.live_time.total_milliseconds() * 0.001, settings_.bits_);
-  }
-}
-
 void Fitter::adj_bounds(ROI &target, uint32_t left, uint32_t right, boost::atomic<bool>& interruptor) {
   ROI temproi = target;
   temproi.adjust_bounds(finder_.x_, finder_.y_, left, right, interruptor);
-  remap_region(temproi);
   if (!temproi.hr_x.empty())
     target = temproi;
 }
@@ -212,7 +202,6 @@ void Fitter::add_peak(uint32_t left, uint32_t right, boost::atomic<bool>& interr
 //      PL_DBG << "<Fitter> adding to existing region";
       q.second.add_peak(finder_.x_, finder_.y_, left, right, interruptor);
       added = true;
-      remap_region(q.second);
       break;
     }
   }
@@ -223,7 +212,6 @@ void Fitter::add_peak(uint32_t left, uint32_t right, boost::atomic<bool>& interr
     newROI.set_data(finder_.x_, finder_.y_, left, right);
     newROI.auto_fit(interruptor);
     if (!newROI.peaks_.empty()) {
-      remap_region(newROI);
       PL_DBG << "<Fitter> succeeded making new ROI";
       regions_[newROI.finder_.x_.front()] = newROI;
       added = true;
@@ -233,8 +221,9 @@ void Fitter::add_peak(uint32_t left, uint32_t right, boost::atomic<bool>& interr
 
 void Fitter::remove_peaks(std::set<double> bins) {
   for (auto &m : regions_) {
-    if (m.second.remove_peaks(bins))
-      remap_region(m.second);
+    if (m.second.remove_peaks(bins)) {
+
+    }
   }
 }
 
@@ -322,43 +311,37 @@ void Fitter::save_report(std::string filename) {
   file << std::setw( 15 ) << "center(Hyp)" << "--|"
        << std::setw( 15 ) << "energy(Hyp)" << "--|"
        << std::setw( 15 ) << "FWHM(Hyp)" << "--|"
-       << std::setw( 15 ) << "area(Hyp)" << "--|"
-       << std::setw( 15 ) << "cps(Hyp)"  << "-||"
+       << std::setw( 25 ) << "area(Hyp)" << "--|"
+       << std::setw( 16 ) << "cps(Hyp)"  << "-||"
       
-       << std::setw( 15 ) << "center(S4)" << "--|" 
-       << std::setw( 15 ) << "cntr-var(S4)" << "--|" 
-       << std::setw( 7 ) << "L" << "--|"
-       << std::setw( 7 ) << "R" << "--|"
+       << std::setw( 25 ) << "center(S4)" << "--|"
+       << std::setw( 15 ) << "cntr-err(S4)" << "--|"
        << std::setw( 15 ) << "FWHM(S4)" << "--|"
-       << std::setw( 15 ) << "bckg-area(S4)" << "--|"
-       << std::setw( 15 ) << "bckg-var(S4)" << "--|"
-       << std::setw( 15 ) << "net-area(S4)" << "--|"
-       << std::setw( 15 ) << "net-var(S4)" << "--|"
-       << std::setw( 15 ) << "%err(S4)" << "--|"      
+       << std::setw( 25 ) << "bckg-area(S4)" << "--|"
+       << std::setw( 15 ) << "bckg-err(S4)" << "--|"
+       << std::setw( 25 ) << "area(S4)" << "--|"
+       << std::setw( 15 ) << "area-err(S4)" << "--|"
        << std::setw( 15 ) << "cps(S4)"  << "--|"
        << std::setw( 5 ) << "CQI"  << "--|"
        << std::endl;
   file.fill(' ');
   for (auto &q : peaks()) {
-    file << std::setw( 15 ) << std::setprecision( 10 ) << q.second.center << "  |"
-         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.energy << "  |"
-         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_hyp << "  |"
-         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.area_hyp << "  |"
-         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_hyp << " ||";
+    file << std::setw( 16 ) << std::setprecision( 10 ) << q.second.center << " | "
+         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.energy << " | "
+         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_hyp << " | "
+         << std::setw( 26 ) << q.second.hypermet_.area().val_uncert(10) << " | "
+         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_hyp << " || ";
 
-      file << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.centroid << "  |"
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.centroid_variance << "  |"
-           << std::setw( 7 ) << std::setprecision( 10 ) << q.second.sum4_.Lpeak << "  |"
-           << std::setw( 7 ) << std::setprecision( 10 ) << q.second.sum4_.Rpeak << "  |"
+      file << std::setw( 26 ) << q.second.sum4_.centroid.val_uncert(10) << " | "
+           << std::setw( 15 ) << q.second.sum4_.centroid.err(10) << " | "
 
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_sum4 << "  |"
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.background_area << "  |"
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.background_variance << "  |"
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.area_sum4 << "  |"
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.peak_variance << "  |"
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.sum4_.err << "  |"
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_sum4 << "  |"
-           << std::setw( 5 ) << std::setprecision( 10 ) << q.second.sum4_.currie_quality_indicator << "  |";
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_sum4 << " | "
+           << std::setw( 26 ) << q.second.sum4_.background_area.val_uncert(10) << " | "
+           << std::setw( 15 ) << q.second.sum4_.background_area.err(10) << " | "
+           << std::setw( 26 ) << q.second.sum4_.peak_area.val_uncert(10) << " | "
+           << std::setw( 15 ) << q.second.sum4_.peak_area.err(10) << " | "
+           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_sum4 << " | "
+           << std::setw( 5 ) << std::setprecision( 10 ) << q.second.sum4_.currie_quality_indicator << " |";
 
     file << std::endl;
   }

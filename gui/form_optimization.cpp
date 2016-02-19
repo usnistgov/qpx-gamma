@@ -286,7 +286,7 @@ bool FormOptimization::find_peaks() {
     peaks_[peaks_.size() - 1] = Gamma::Peak();
 
     for (auto &q : fitter_opt_.peaks())
-      if (q.second.area_best > peaks_[peaks_.size() - 1].area_best)
+      if (q.second.area_best.val > peaks_[peaks_.size() - 1].area_best.val)
           peaks_[peaks_.size() - 1] = q.second;
 
     return fitter_opt_.peaks().size();
@@ -328,11 +328,11 @@ void FormOptimization::update_plots() {
       fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
       ui->tableResults->setItem(current_spec, 2, fw);
 
-      QTableWidgetItem *area = new QTableWidgetItem(QString::number(peaks_[current_spec].area_best));
+      QTableWidgetItem *area = new QTableWidgetItem(QString::number(peaks_[current_spec].area_best.val));
       area->setFlags(area->flags() ^ Qt::ItemIsEditable);
       ui->tableResults->setItem(current_spec, 3, area);
 
-      QTableWidgetItem *err = new QTableWidgetItem(QString::number(peaks_[current_spec].sum4_.err));
+      QTableWidgetItem *err = new QTableWidgetItem(QString::number(peaks_[current_spec].sum4_.peak_area.err()));
       err->setFlags(err->flags() ^ Qt::ItemIsEditable);
       ui->tableResults->setItem(current_spec, 4, err);
   }
@@ -340,7 +340,7 @@ void FormOptimization::update_plots() {
   if (ui->plotSpectrum->isVisible())
     ui->plotSpectrum->update_spectrum();
 
-  if (have_peaks && !peaks_.empty() && (peaks_.back().sum4_.err < ui->doubleError->value()))
+  if (have_peaks && !peaks_.empty() && (peaks_.back().sum4_.peak_area.err() < ui->doubleError->value()))
     interruptor_.store(true);
 
   resultChosen();

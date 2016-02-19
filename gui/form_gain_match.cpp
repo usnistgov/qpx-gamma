@@ -250,8 +250,8 @@ void FormGainMatch::run_completed() {
   if (my_run_) {
     gm_spectra_.terminate();
     gm_plot_thread_.wait();
-    peak_ref_.area_best = 0;
-    peak_opt_.area_best = 0;
+    peak_ref_.area_best = FitParam();
+    peak_opt_.area_best = FitParam();
     //replot_markers();
 
     if (!gm_runner_thread_.terminating()) {
@@ -408,7 +408,7 @@ void FormGainMatch::update_peak_selection(std::set<double> dummy) {
   if (fitter_opt_.peaks().count(*selopt.begin()))
     peak_opt_ = fitter_opt_.peaks().at(*selopt.begin());
 
-  if ((peak_ref_.area_best == 0) || (peak_opt_.area_best == 0))
+  if ((peak_ref_.area_best.val == 0) || (peak_opt_.area_best.val == 0))
     return;
 
 
@@ -433,17 +433,17 @@ void FormGainMatch::update_peak_selection(std::set<double> dummy) {
     fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
     ui->tableResults->setItem(pass, 2, fw);
 
-    QTableWidgetItem *area = new QTableWidgetItem(QString::number(peaks_[pass].area_best));
+    QTableWidgetItem *area = new QTableWidgetItem(QString::number(peaks_[pass].area_best.val));
     area->setFlags(area->flags() ^ Qt::ItemIsEditable);
     ui->tableResults->setItem(pass, 3, area);
 
-    QTableWidgetItem *err = new QTableWidgetItem(QString::number(peaks_[pass].sum4_.err));
+    QTableWidgetItem *err = new QTableWidgetItem(QString::number(peaks_[pass].sum4_.peak_area.err()));
     err->setFlags(err->flags() ^ Qt::ItemIsEditable);
     ui->tableResults->setItem(pass, 4, err);
   }
 
 
-  if ((pass == current_pass) && (peaks_.back().sum4_.err < ui->doubleError->value()))
+  if ((pass == current_pass) && (peaks_.back().sum4_.peak_area.err() < ui->doubleError->value()))
     gm_interruptor_.store(true);
 
 }

@@ -23,7 +23,8 @@
 #include "fit_param.h"
 #include <boost/lexical_cast.hpp>
 #include "custom_logger.h"
-
+#include <iomanip>
+#include <numeric>
 
 std::string FitParam::fityk_name(int function_num) const {
   std::string ret  = "$" + name_ + "_";
@@ -74,6 +75,29 @@ std::string FitParam::to_string() const {
        ":" + boost::lexical_cast<std::string>(ubound) + "]";
   return ret;
 }
+
+std::string FitParam::val_uncert(uint16_t precision) const
+{
+  std::stringstream ss;
+  ss << std::setprecision( precision ) << val << " \u00B1 " << uncert;
+  return ss.str();
+}
+
+double FitParam::err() const
+{
+  double ret = std::numeric_limits<double>::infinity();
+  if (val != 0)
+    ret = uncert / val * 100.0;
+  return ret;
+}
+
+std::string FitParam::err(uint16_t precision) const
+{
+  std::stringstream ss;
+  ss << std::setprecision( precision ) << err() << "%";
+  return ss.str();
+}
+
 
 FitParam FitParam::enforce_policy() {
   FitParam ret = *this;

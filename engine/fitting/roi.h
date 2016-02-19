@@ -64,6 +64,8 @@ struct ROI {
 
   bool remove_peaks(const std::set<double> &pks);
 
+  void iterative_fit(boost::atomic<bool>& interruptor);
+
   bool rollback(int i);
 
   SUM4Edge LB() const {return LB_;}
@@ -97,7 +99,6 @@ private:
   std::vector<double> remove_background();
   void init_background();
   bool remove_peak(double bin);
-  void iterative_fit(boost::atomic<bool>& interruptor);
 
 };
 

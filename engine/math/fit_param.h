@@ -60,6 +60,9 @@ public:
   bool extract(fityk::Fityk* f, fityk::Func* func);
 
   std::string to_string() const;
+  std::string val_uncert(uint16_t precision) const;
+  std::string err(uint16_t precision) const;
+  double err() const;
 
   double val, uncert, lbound, ubound;
   bool enabled, fixed;

@@ -25,10 +25,10 @@
 namespace Gamma {
 
 
-void Peak::construct(Calibration cali_nrg, double live_seconds, uint16_t bits) {
+void Peak::construct(FitSettings fs) {
 
   center = hypermet_.center_.val;
-  energy = cali_nrg.transform(center, bits);
+  energy = fs.cali_nrg_.transform(center, fs.bits_);
 
 //  center = sum4_.centroid;
 //  energy = cali_nrg.transform(center, bits);
@@ -36,13 +36,13 @@ void Peak::construct(Calibration cali_nrg, double live_seconds, uint16_t bits) {
 
   double L, R;
 
-  L = sum4_.centroid - sum4_.fwhm / 2;
-  R = sum4_.centroid + sum4_.fwhm / 2;
-  fwhm_sum4 = cali_nrg.transform(R, bits) - cali_nrg.transform(L, bits);
+  L = sum4_.centroid.val - sum4_.fwhm / 2;
+  R = sum4_.centroid.val + sum4_.fwhm / 2;
+  fwhm_sum4 = fs.cali_nrg_.transform(R, fs.bits_) - fs.cali_nrg_.transform(L, fs.bits_);
 
   L = hypermet_.center_.val - hypermet_.width_.val * sqrt(log(2));
   R = hypermet_.center_.val + hypermet_.width_.val * sqrt(log(2));
-  fwhm_hyp = cali_nrg.transform(R, bits) - cali_nrg.transform(L, bits);
+  fwhm_hyp = fs.cali_nrg_.transform(R, fs.bits_) - fs.cali_nrg_.transform(L, fs.bits_);
 
   area_hyp = hypermet_.area();
   area_sum4 = sum4_.peak_area;
@@ -56,12 +56,16 @@ void Peak::construct(Calibration cali_nrg, double live_seconds, uint16_t bits) {
 //    area_best_ = area_net_;
 //  }
 
+  cps_best = cps_hyp = cps_sum4 = 0;
+
+  double live_seconds = fs.live_time.total_milliseconds() * 0.001;
+
   if (live_seconds > 0) {
-    cps_hyp  = area_hyp / live_seconds;
-    cps_sum4 = area_sum4 / live_seconds;
+    cps_hyp  = area_hyp.val / live_seconds;
+    cps_sum4 = area_sum4.val / live_seconds;
+    cps_best = cps_hyp;
   }
 
-  cps_best = cps_hyp;
 }
 
 

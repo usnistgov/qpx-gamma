@@ -144,7 +144,6 @@ void ThreadFitter::run() {
       for (auto &q : fitter_.regions_) {
         PL_DBG << "<Fitter> Fitting region " << current << " of " << fitter_.regions_.size() << " at E=" << q.first;
         q.second.auto_fit(interruptor_);
-        fitter_.remap_region(q.second);
         current++;
         emit fit_updated(fitter_);
         if ((action_ == kStop) || terminating_.load())
@@ -156,7 +155,7 @@ void ThreadFitter::run() {
       if (fitter_.regions_.count(target_ROI_)) {
         fitter_.regions_[target_ROI_].rebuild();
         if (fitter_.regions_[target_ROI_].settings_.resid_auto)
-          fitter_.remap_region(fitter_.regions_[target_ROI_]);
+          fitter_.regions_[target_ROI_].iterative_fit(interruptor_);
       }
       emit fit_updated(fitter_);
       emit fitting_done();

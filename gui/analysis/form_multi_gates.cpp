@@ -305,7 +305,7 @@ void FormMultiGates::on_pushApprove_clicked()
 
   for (auto &q : data.peaks()) {
     Gamma::Gate newgate;
-    newgate.cps           = q.second.area_best / (data.metadata_.live_time.total_milliseconds() / 1000);
+    newgate.cps           = q.second.area_best.val / (data.metadata_.live_time.total_milliseconds() / 1000);
     newgate.centroid_chan = q.second.center;
     newgate.centroid_nrg  = q.second.energy;
     newgate.width_chan    = std::round(q.second.fwhm_hyp * ui->doubleGateOn->value());
