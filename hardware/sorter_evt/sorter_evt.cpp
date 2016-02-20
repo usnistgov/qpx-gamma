@@ -39,6 +39,8 @@
 
 #include "qpx_util.h"
 
+#include "MADC32_module.h"
+
 namespace Qpx {
 
 static DeviceRegistrar<SorterEVT> registrar("SorterEVT");
@@ -54,6 +56,8 @@ SorterEVT::SorterEVT() {
 
   loop_data_ = false;
   override_timestamps_= false;
+  bad_buffers_rep_ = false;
+  bad_buffers_dbg_ = false;
 }
 
 bool SorterEVT::die() {
@@ -128,6 +132,10 @@ bool SorterEVT::read_settings_bulk(Gamma::Setting &set) const {
         q.value_int = loop_data_;
       else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "SorterEVT/Override pause"))
         q.value_int = override_pause_;
+      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "SorterEVT/Bad_buffers_report"))
+        q.value_int = bad_buffers_rep_;
+      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "SorterEVT/Bad_buffers_output"))
+        q.value_int = bad_buffers_dbg_;
       else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "SorterEVT/Pause"))
         q.value_int = pause_ms_;
       else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "SorterEVT/Source file")) {
@@ -153,6 +161,10 @@ bool SorterEVT::write_settings_bulk(Gamma::Setting &set) {
       loop_data_ = q.value_int;
     else if (q.id_ == "SorterEVT/Override pause")
       override_pause_ = q.value_int;
+    else if (q.id_ == "SorterEVT/Bad_buffers_report")
+      bad_buffers_rep_ = q.value_int;
+    else if (q.id_ == "SorterEVT/Bad_buffers_output")
+      bad_buffers_dbg_ = q.value_int;
     else if (q.id_ == "SorterEVT/Pause")
       pause_ms_ = q.value_int;
     else if (q.id_ == "SorterEVT/Source file")
@@ -209,10 +221,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
 
   uint64_t count = 0;
   uint64_t events = 0;
-
-  uint64_t headers = 0;
-  uint64_t footers = 0;
-  uint64_t junk = 0;
+  uint64_t lost_events = 0;
 
   CRingItem* item;
   CRingItemFactory  fact;
@@ -224,8 +233,10 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
     one_spill = Spill();
 
     bool done = false;
+    std::list<uint32_t> prev_MADC_data;
+    std::string prev_pattern;
 
-    while ((!done) && (item = callback->evt_file->getItem()) != NULL)  {
+    while ( /*(count < 8000) &&*/ (!done) && (item = callback->evt_file->getItem()) != NULL)  {
       count++;
 
       switch (item->type()) {
@@ -310,85 +321,60 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
                 MADC_data.push_back(lower | (upper << 16));
               }
 
-//              std::ostringstream out2;
-//              int j=0;
-//              for (auto &q : MADC_data) {
-//                out2 << itobin(q) << "   ";
-//                j++;
-//                if ( (j % 6) == 0)
-//                  out2 << std::endl;
-//              }
-//              PL_DBG << "Made " << MADC_data.size() << " 32-bit words:\n"  << out2.str();
+              std::string madc_pattern;
+              std::list<Hit> hits = Qpx::MADC32::parse(MADC_data, events, madc_pattern);
 
-              uint32_t header_m   = 0xff008000; // Header Mask
-              uint32_t header_c   = 0x40000000; // Header Compare
-
-              uint32_t footer_m   = 0xc0000000; // Footer Mask
-              uint32_t footer_c   = 0xc0000000; // Footer Compare
-
-              uint32_t evt_mask = 0xffe04000; // event header mask
-              uint32_t evt_c    = 0x04000000; // event compare
-
-              uint32_t det_mask = 0x001f0000; // Detector mask
-              uint32_t nrg_mask = 0x00001fff; // Energy mask
-              uint32_t ovrfl_c  = 0x00004000; // Overflow compare
-
-              uint32_t junk_c  = 0xffffffff; // Overflow compare
-
-              int upshift = 0;
-              while (!MADC_data.empty()) {
-                uint32_t word = MADC_data.front();
-                MADC_data.pop_front();
-                if (word == junk_c) {
-                  junk++;
-                } else if ((word & header_m) == header_c) {
-                  uint32_t module = ((word & 0x00ff0000) >> 16);
-                  uint32_t resolution = ((word & 0x00007000) >> 12);
-                  uint32_t words_f = (word & 0x00000fff);
-                  if ((resolution == 4) || (resolution == 3))
-                    upshift = 3;
-                  else if ((resolution == 1) || (resolution == 2))
-                    upshift = 4;
-                  else if (resolution == 0)
-                    upshift = 5;
-//                  PL_DBG << "  MADC header module=" << module << "  resolution=" << resolution
-//                         << "  words=" << words_f << "  upshift=" << upshift;
-                  headers++;
-
-                } else if ((word & footer_m) == footer_c) {
-                  footers++;
-//                  PL_DBG << "  MADC footer: " << itobin(word);
-                } else if ((word & evt_mask) == evt_c) {
-                  int chan_nr = (word & det_mask) >> 16;
-                  uint16_t nrg = (word & nrg_mask);
-                  bool overflow = ((word & ovrfl_c) != 0);
-//                  PL_DBG << "  MADC hit detector=" << chan_nr << "  energy=" << nrg << "  overflow=" << overflow;
-
-                  if (!starts_signalled.count(chan_nr)) {
-                    StatsUpdate udt;
-                    udt.channel = chan_nr;
-                    udt.lab_time = time_start;
-                    udt.stats_type = StatsType::start;
-//                    udt.fast_peaks = pEvent->getEventCount();
-//                    udt.live_time = pEvent->getTimeOffset();
-//                    udt.real_time = pEvent->getTimeOffset();
-                    Spill extra_spill;
-                    extra_spill.stats.push_back(udt);
-                    spill_queue->enqueue(new Spill(extra_spill));
-
-                    starts_signalled.insert(chan_nr);
-                  }
-
-                  Hit one_hit;
-                  one_hit.channel   = chan_nr;
-                  one_hit.energy    = nrg << upshift;
-                  one_hit.timestamp.time = events * 5;
-                  one_spill.hits.push_back(one_hit);
-                  events++;
-                } else {
-                  PL_DBG << "Unrecognized data in buffer";
+              for (auto &h : hits) {
+                if (!starts_signalled.count(h.channel)) {
+                  StatsUpdate udt;
+                  udt.channel = h.channel;
+                  udt.lab_time = time_start;
+                  udt.stats_type = StatsType::start;
+                  //udt.fast_peaks = pEvent->getEventCount();
+                  //udt.live_time = pEvent->getTimeOffset();
+                  //udt.real_time = pEvent->getTimeOffset();
+                  Spill extra_spill;
+                  extra_spill.stats.push_back(udt);
+                  spill_queue->enqueue(new Spill(extra_spill));
+                  starts_signalled.insert(h.channel);
                 }
               }
+
+
+              bool buffer_problem = false;
+
+              size_t n_h = std::count(madc_pattern.begin(), madc_pattern.end(), 'H');
+              size_t n_e = std::count(madc_pattern.begin(), madc_pattern.end(), 'E');
+              size_t n_f = std::count(madc_pattern.begin(), madc_pattern.end(), 'F');
+              size_t n_j = std::count(madc_pattern.begin(), madc_pattern.end(), 'J');
+
+              if (n_j > 1) {
+                if (callback->bad_buffers_rep_)
+                  PL_DBG << "MADC32 parse has multiple junk words, pattern: " << madc_pattern << " after previous " << prev_pattern;
+                buffer_problem = true;
+              }
+              if (n_e != hits.size()) {
+                if (callback->bad_buffers_rep_)
+                  PL_DBG << "MADC32 parse has mismatch in number of retrieved events, pattern: " << madc_pattern << " after previous " << prev_pattern;
+                buffer_problem = true;
+                lost_events += n_e;
+              }
+              if (n_h != n_f) {
+                if (callback->bad_buffers_rep_)
+                  PL_DBG << "MADC32 parse has mismatch in header and footer, pattern: " << madc_pattern << " after previous " << prev_pattern;
+                buffer_problem = true;
+              }
+
+              if (callback->bad_buffers_dbg_ && buffer_problem) {
+                PL_DBG << "  " << buffer_to_string(MADC_data);
+              }
+
+
+
+              one_spill.hits.splice(one_spill.hits.end(), hits);
+
+              prev_MADC_data = MADC_data;
+              prev_pattern = madc_pattern;
 
 
             } else
@@ -399,13 +385,17 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
         break;
       }
 
+      default: {
+        PL_DBG << "Unexpected ring buffer item type " << item->type();
+      }
+
       }
 
       delete item;
     }
 
-    PL_DBG << "<SorterEVT> Processed " << count << " entries total hits = " << events
-           << "  headers="  << headers << "  footers=" << footers << "  junk=" << junk;
+    PL_DBG << "<SorterEVT> Processed " << count << "  cumulative hits = " << events
+           << "   hits lost in bad buffers = " << lost_events << " (" << 100.0*lost_events/(events + lost_events) << "%)";
 
 
 
@@ -429,7 +419,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
 //    }
     spill_queue->enqueue(new Spill(one_spill));
 
-    timeout = (callback->run_status_.load() == 2);
+    timeout = (callback->run_status_.load() == 2) /*|| (count > 8000)*/;
     if (item == NULL)
       break;
   }
@@ -445,7 +435,17 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
 
 }
 
-
+std::string SorterEVT::buffer_to_string(const std::list<uint32_t>& buffer) {
+  std::ostringstream out2;
+  int j=0;
+  for (auto &q : buffer) {
+    if (j && ( (j % 4) == 0))
+      out2 << std::endl;
+    out2 << itobin32(q) << "   ";
+    j++;
+  }
+  return out2.str();
+}
 
 Spill SorterEVT::get_spill() {
   Spill one_spill;

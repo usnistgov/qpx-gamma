@@ -40,6 +40,7 @@ public:
   void addReadout(VmeStack& stack, int style) override;
   bool daq_init();
 
+  static std::list<Hit> parse(std::list<uint32_t> data, uint64_t &evts, std::string &madc_pattern);
 
 private:
   //no copying

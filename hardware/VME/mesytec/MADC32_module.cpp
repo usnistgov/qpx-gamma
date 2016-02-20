@@ -174,4 +174,89 @@ void MADC32::addReadout(VmeStack& stack, int style = 0)
   }
 }
 
+std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, std::string &madc_pattern)
+{
+  std::list<Hit> hits;
+
+  uint64_t events = 0;
+
+  uint64_t headers = 0;
+  uint64_t footers = 0;
+  uint64_t junk = 0;
+
+  uint32_t header_m   = 0xff008000; // Header Mask
+  uint32_t header_c   = 0x40000000; // Header Compare
+
+  uint32_t footer_m   = 0xc0000000; // Footer Mask
+  uint32_t footer_c   = 0xc0000000; // Footer Compare
+
+  uint32_t evt_mask = 0xffe04000; // event header mask
+  uint32_t evt_c    = 0x04000000; // event compare
+
+  uint32_t det_mask = 0x001f0000; // Detector mask
+  uint32_t nrg_mask = 0x00001fff; // Energy mask
+  uint32_t ovrfl_c  = 0x00004000; // Overflow compare
+
+  uint32_t junk_c  = 0xffffffff; // Overflow compare
+
+  int upshift = 0;
+
+  madc_pattern.clear();
+
+  for (auto &word : data) {
+    if (word == junk_c) {
+      madc_pattern += "J";
+//      junk++;
+    } else if ((word & header_m) == header_c) {
+      uint32_t module = ((word & 0x00ff0000) >> 16);
+      uint32_t resolution = ((word & 0x00007000) >> 12);
+      uint32_t words_f = (word & 0x00000fff);
+      if ((resolution == 4) || (resolution == 3))
+        upshift = 3;
+      else if ((resolution == 1) || (resolution == 2))
+        upshift = 4;
+      else if (resolution == 0)
+        upshift = 5;
+//                  PL_DBG << "  MADC header module=" << module << "  resolution=" << resolution
+//                         << "  words=" << words_f << "  upshift=" << upshift;
+      headers++;
+      madc_pattern += "H";
+
+    } else if ((word & footer_m) == footer_c) {
+      madc_pattern += "F";
+
+      footers++;
+//                  PL_DBG << "  MADC footer: " << itobin(word);
+    } else if ((word & evt_mask) == evt_c) {
+      int chan_nr = (word & det_mask) >> 16;
+      uint16_t nrg = (word & nrg_mask);
+      bool overflow = ((word & ovrfl_c) != 0);
+//                  PL_DBG << "  MADC hit detector=" << chan_nr << "  energy=" << nrg << "  overflow=" << overflow;
+
+
+      Hit one_hit;
+      one_hit.channel   = chan_nr;
+      one_hit.energy    = nrg << upshift;
+      one_hit.timestamp.time = (evts + events) * 5;
+      hits.push_back(one_hit);
+      events++;
+      madc_pattern += "E";
+
+    } else {
+      madc_pattern += "?";
+
+//      PL_DBG << "Unrecognized data in buffer";
+    }
+  }
+
+//  PL_DBG << "<MADC32> parsed " << madc_pattern;
+
+  if ((headers != 1) || (headers != footers))
+    hits.clear();
+  else
+    evts += events;
+
+  return hits;
+}
+
 }

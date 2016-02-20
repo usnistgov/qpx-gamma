@@ -71,8 +71,12 @@ protected:
   bool loop_data_;
   bool override_pause_;
   bool override_timestamps_;
+  bool bad_buffers_rep_;
+  bool bad_buffers_dbg_;
   int  pause_ms_;
   std::string source_file_;
+
+  static std::string buffer_to_string(const std::list<uint32_t>&);
 
   Spill get_spill();
 

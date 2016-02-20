@@ -26,6 +26,7 @@
 
 #include <string>
 #include <sstream>
+#include "custom_logger.h"
 
 const std::vector<std::string> k_UTF_superscripts = {
   "\u2070", "\u00B9", "\u00B2",
@@ -55,8 +56,7 @@ inline std::string UTF_superscript(uint16_t value) {
 inline std::string itobin16 (uint16_t bin)
 {
   std::stringstream ss;
-  int k=0;
-  for (k = 15; k >= 0; --k) {
+  for (int k = 0; k < 16; ++k) {
     if (bin & 0x8000)
       ss << "1";
     else
@@ -68,16 +68,16 @@ inline std::string itobin16 (uint16_t bin)
 
 inline std::string itobin32 (uint32_t bin)
 {
-  uint16_t lo = bin && 0x0000FFFF;
-  uint32_t hi = (bin >> 16) && 0x0000FFFF;
+  uint16_t lo = bin & 0x0000FFFF;
+  uint16_t hi = (bin >> 16) & 0x0000FFFF;
 
   return (itobin16(hi) + " " + itobin16(lo));
 }
 
 inline std::string itobin64 (uint64_t bin)
 {
-  uint32_t lo = bin && 0x00000000FFFFFFFF;
-  uint32_t hi = (bin >> 32) && 0x00000000FFFFFFFF;
+  uint32_t lo = bin & 0x00000000FFFFFFFF;
+  uint32_t hi = (bin >> 32) & 0x00000000FFFFFFFF;
 
   return (itobin32(hi) + " " + itobin32(lo));
 }
