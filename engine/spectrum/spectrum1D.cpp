@@ -148,6 +148,8 @@ bool Spectrum1D::_read_file(std::string name, std::string format) {
     return read_n42(name);
   else if (format == "ava")
     return read_ava(name);
+  else if (format == "dat")
+    return read_dat(name);
   else if (format == "spe") {
     if (read_spe_radware(name))
       return true;
@@ -645,6 +647,62 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
 
   metadata_.detectors.resize(1);
   metadata_.detectors[0] = det;
+
+  init_from_file(name);
+
+//  metadata_.match_pattern.resize(detnum+1);
+//  metadata_.match_pattern[detnum] = 1;
+
+//  metadata_.add_pattern.resize(detnum+1);
+//  metadata_.add_pattern[detnum] = 1;
+
+  return true;
+}
+
+bool Spectrum1D::read_dat(std::string name) {
+  std::ifstream myfile(name, std::ios::in);
+  if (!myfile)
+    return false;
+
+  std::string line, token;
+  std::list<Entry> entry_list;
+
+  while (myfile.rdbuf()->in_avail()) {
+    std::getline(myfile, line);
+    std::stringstream ss(line);
+    uint32_t k1, k2;
+    ss >> k1 >> k2;
+
+    Entry new_entry;
+    new_entry.first.resize(1);
+    new_entry.first[0] = k1;
+    new_entry.second = k2;
+    entry_list.push_back(new_entry);
+    if (k2 > metadata_.max_count)
+          metadata_.max_count = k2;
+    if ((k2 > 0) && (k1 > metadata_.max_chan))
+       metadata_.max_chan = k1;
+  }
+
+  //PL_DBG << "entry list is " << entry_list.size();
+
+  metadata_.bits = log2(metadata_.max_chan);
+  if (pow(2, metadata_.bits) < entry_list.size())
+    metadata_.bits++;
+  metadata_.resolution = pow(2, metadata_.bits);
+  shift_by_ = 16 - metadata_.bits;
+  metadata_.max_chan = entry_list.size() - 1;
+
+  spectrum_.clear();
+  spectrum_.resize(metadata_.resolution, 0);
+  metadata_.max_count = 0;
+
+  for (auto &q : entry_list) {
+    spectrum_[q.first[0]] = q.second;
+    metadata_.total_count += q.second;
+  }
+
+  metadata_.detectors.resize(1);
 
   init_from_file(name);
 

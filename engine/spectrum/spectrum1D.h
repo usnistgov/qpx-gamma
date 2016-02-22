@@ -36,7 +36,7 @@ public:
   static Template get_template() {
     Template new_temp = Spectrum::get_template();
     new_temp.type = "1D";
-    new_temp.input_types = {"cnf", "tka", "n42", "ava", "spe", "Spe", "CNF", "N42", "mca"};
+    new_temp.input_types = {"cnf", "tka", "n42", "ava", "spe", "Spe", "CNF", "N42", "mca", "dat"};
     new_temp.output_types = {"n42", "tka", "spe"};
     new_temp.description = "Traditional MCA spectrum";
 
@@ -99,6 +99,7 @@ protected:
   bool read_tka(std::string);
   bool read_n42(std::string);
   bool read_ava(std::string);
+  bool read_dat(std::string);
   bool read_spe_radware(std::string);
   bool read_spe_gammavision(std::string);
 

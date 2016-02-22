@@ -227,6 +227,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
   CRingItemFactory  fact;
 
   boost::posix_time::ptime time_start;
+  boost::posix_time::ptime ts;
 
   while (!timeout) {
 
@@ -255,7 +256,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
         CRingStateChangeItem* pEvent = reinterpret_cast<CRingStateChangeItem*>(fact.createRingItem(*item));
         if (pEvent) {
 
-          boost::posix_time::ptime ts = boost::posix_time::from_time_t(pEvent->getTimestamp());
+          ts = boost::posix_time::from_time_t(pEvent->getTimestamp());
   //        PL_DBG << "State :" << pEvent->toString();
           PL_DBG << "State  ts=" << boost::posix_time::to_iso_extended_string(ts)
                  << "  elapsed=" << pEvent->getElapsedTime()
@@ -279,7 +280,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
         CRingPhysicsEventCountItem* pEvent = reinterpret_cast<CRingPhysicsEventCountItem*>(fact.createRingItem(*item));
         if (pEvent) {
   //        PL_DBG << "Physics counts: " << pEvent->toString();
-          boost::posix_time::ptime ts = boost::posix_time::from_time_t(pEvent->getTimestamp());
+          ts = boost::posix_time::from_time_t(pEvent->getTimestamp());
 //          PL_DBG << "State  ts=" << boost::posix_time::to_iso_extended_string(ts)
 //                 << "  elapsed=" << pEvent->getTimeOffset()
 //                 << "  total_events=" << pEvent->getEventCount();
@@ -423,6 +424,8 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
     if (item == NULL)
       break;
   }
+
+  one_spill.hits.clear();
 
   for (auto &q : one_spill.stats)
     q.stats_type = StatsType::stop;
