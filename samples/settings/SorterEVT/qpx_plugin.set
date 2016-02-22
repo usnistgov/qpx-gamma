@@ -1,15 +1,17 @@
 <?xml version="1.0"?>
 <SorterEVTEVT>
 	<SettingMeta id="SorterEVT" type="stem" name="SorterEVT" writable="false" saveworthy="true">
-		<branch address="0" id="SorterEVT/Source file" />
-		<branch address="1" id="SorterEVT/Loop data" />
-		<branch address="2" id="SorterEVT/Override pause" />
-		<branch address="3" id="SorterEVT/Pause" />
-		<branch address="4" id="SorterEVT/Override timestamps" />
-		<branch address="5" id="SorterEVT/Bad_buffers_report" />
-		<branch address="6" id="SorterEVT/Bad_buffers_output" />
+
+		<branch address="1" id="SorterEVT/Source dir" />
+		<branch address="2" id="SorterEVT/Loop data" />
+		<branch address="3" id="SorterEVT/Override pause" />
+		<branch address="4" id="SorterEVT/Pause" />
+		<branch address="5" id="SorterEVT/Override timestamps" />
+		<branch address="6" id="SorterEVT/Bad_buffers_report" />
+		<branch address="7" id="SorterEVT/Bad_buffers_output" />
 	</SettingMeta>
 	<SettingMeta id="SorterEVT/Source file" type="file_path" name="Source file" writable="true" unit="List mode output (*.evt)" />
+	<SettingMeta id="SorterEVT/Source dir" type="dir_path" name="Source directory" writable="true" />
 	<SettingMeta id="SorterEVT/Loop data" type="boolean" name="Loop data" writable="true" />
 	<SettingMeta id="SorterEVT/Override pause" type="boolean" name="Override pause" writable="true" />
 	<SettingMeta id="SorterEVT/Pause" type="integer" name="Pause" writable="true" step="50" minimum="0" maximum="5000000" unit="ms" />

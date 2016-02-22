@@ -74,13 +74,17 @@ protected:
   bool bad_buffers_rep_;
   bool bad_buffers_dbg_;
   int  pause_ms_;
-  std::string source_file_;
+
+  std::string source_dir_;
+  std::list<std::string> files_;
+  uint64_t expected_rbuf_items_;
 
   static std::string buffer_to_string(const std::list<uint32_t>&);
 
   Spill get_spill();
 
-  CFileDataSource *evt_file;
+  static CFileDataSource *open_EVT_file(std::string);
+  static uint64_t num_of_evts(CFileDataSource *);
 
 };
 

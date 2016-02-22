@@ -50,9 +50,8 @@ SorterEVT::SorterEVT() {
 
   runner_ = nullptr;
 
-  evt_file = nullptr;
-
   run_status_.store(0);
+  expected_rbuf_items_ = 0;
 
   loop_data_ = false;
   override_timestamps_= false;
@@ -61,9 +60,8 @@ SorterEVT::SorterEVT() {
 }
 
 bool SorterEVT::die() {
-  if (evt_file != nullptr)
-    delete evt_file;
-
+  files_.clear();
+  expected_rbuf_items_ = 0;
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 //  for (auto &q : set.branches.my_data_) {
 //    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "SorterEVT/Source file"))
@@ -138,8 +136,8 @@ bool SorterEVT::read_settings_bulk(Gamma::Setting &set) const {
         q.value_int = bad_buffers_dbg_;
       else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "SorterEVT/Pause"))
         q.value_int = pause_ms_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "SorterEVT/Source file")) {
-        q.value_text = source_file_;
+      else if ((q.metadata.setting_type == Gamma::SettingType::dir_path) && (q.id_ == "SorterEVT/Source dir")) {
+        q.value_text = source_dir_;
         q.metadata.writable = !(status_ & DeviceStatus::booted);
       }
     }
@@ -167,8 +165,8 @@ bool SorterEVT::write_settings_bulk(Gamma::Setting &set) {
       bad_buffers_dbg_ = q.value_int;
     else if (q.id_ == "SorterEVT/Pause")
       pause_ms_ = q.value_int;
-    else if (q.id_ == "SorterEVT/Source file")
-      source_file_ = q.value_text;
+    else if (q.id_ == "SorterEVT/Source dir")
+      source_dir_ = q.value_text;
   }
   return true;
 }
@@ -181,20 +179,47 @@ bool SorterEVT::boot() {
 
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 
+  files_.clear();
+
   //does file exist?
 
-  std::string filename("file://");
-  filename += source_file_;
+  namespace fs = boost::filesystem;
+  fs::path someDir(source_dir_);
+  fs::directory_iterator end_iter;
+  std::set<std::string> files_prelim;
 
-  try { URL url(filename); }
-  catch (...) { PL_ERR << "<SorterEVT> could not parse URL"; return false; }
+  if ( fs::exists(someDir) && fs::is_directory(someDir))
+  {
+    for( fs::directory_iterator dir_iter(someDir) ; dir_iter != end_iter ; ++dir_iter)
+    {
+      if (fs::is_regular_file(dir_iter->status()) )
+      {
+//        PL_DBG << "Looking at  " << dir_iter->path().extension().string();
+        if (boost::algorithm::to_lower_copy(dir_iter->path().extension().string()) == ".evt") {
+//          PL_DBG << "File is evt:  " << dir_iter->path().string();
+          files_prelim.insert(dir_iter->path().string());
+        }
+      }
+    }
+  }
 
-  URL url(filename);
+  CFileDataSource* cfds;
+  expected_rbuf_items_ = 0;
+  for (auto &q : files_prelim) {
+//    PL_DBG << "checking " << q;
+    uint64_t cts = 0;
+    if (((cfds = open_EVT_file(q)) != nullptr) && (cts = num_of_evts(cfds))) {
+      delete cfds;
+      files_.push_back(q);
+      PL_INFO << "<SorterEVT> Queued up file " << q << " with " << cts << " ring buffer items";
+      expected_rbuf_items_ += cts;
+    }
+  }
 
-  //catch exception
-  evt_file = new CFileDataSource(url, std::vector<uint16_t>());
+  if (files_.empty())
+    return false;
 
-  PL_DBG << "<SorterEVT> opened file data source successfully";
+  PL_INFO << "<SorterEVT> successfully queued up EVT files for sorting";
 
   status_ = DeviceStatus::loaded | DeviceStatus::booted | DeviceStatus::can_run;
 //  for (auto &q : set.branches.my_data_) {
@@ -203,6 +228,37 @@ bool SorterEVT::boot() {
 //  }
 
   return true;
+}
+
+uint64_t SorterEVT::num_of_evts(CFileDataSource *evtfile) {
+  if (evtfile == nullptr)
+    return 0;
+
+  uint64_t count = 0;
+  CRingItem* item;
+  while ((item = evtfile->getItem()) != NULL)  {
+    count++;
+    delete item;
+  }
+
+  return count;
+}
+
+
+CFileDataSource* SorterEVT::open_EVT_file(std::string file) {
+  std::string filename("file://");
+  filename += file;
+
+  try { URL url(filename); }
+  catch (...) { PL_ERR << "<SorterEVT> could not parse URL"; return nullptr; }
+
+  URL url(filename);
+
+  CFileDataSource* evtfile;
+  try { evtfile = new CFileDataSource(url, std::vector<uint16_t>()); }
+  catch (...) { PL_ERR << "<SorterEVT> could not open EVT file"; return nullptr; }
+
+  return evtfile;
 }
 
 
@@ -223,13 +279,30 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
   uint64_t events = 0;
   uint64_t lost_events = 0;
 
-  CRingItem* item;
+  CFileDataSource* evt_file = nullptr;
+  CRingItem* item = nullptr;
   CRingItemFactory  fact;
 
   boost::posix_time::ptime time_start;
   boost::posix_time::ptime ts;
 
-  while (!timeout) {
+  int filenr = 0;
+
+  for (auto &file : callback->files_) {
+    if (timeout)
+      break;
+
+    PL_DBG << "<SorterEVT> Now processing " << file;
+
+    evt_file = open_EVT_file(file);
+    if (evt_file == nullptr) {
+      PL_ERR << "<SorterEVT> Could not open " << file << ". Aborting.";
+      break;
+    }
+
+    filenr ++;
+
+    while (!timeout) {
 
     one_spill = Spill();
 
@@ -237,7 +310,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
     std::list<uint32_t> prev_MADC_data;
     std::string prev_pattern;
 
-    while ( /*(count < 8000) &&*/ (!done) && (item = callback->evt_file->getItem()) != NULL)  {
+    while ( /*(count < 8000) &&*/ (!done) && (item = evt_file->getItem()) != NULL)  {
       count++;
 
       switch (item->type()) {
@@ -395,8 +468,10 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
       delete item;
     }
 
-    PL_DBG << "<SorterEVT> Processed " << count << "  cumulative hits = " << events
-           << "   hits lost in bad buffers = " << lost_events << " (" << 100.0*lost_events/(events + lost_events) << "%)";
+    PL_DBG << "<SorterEVT> Processed [" << filenr << "/" << callback->files_.size() << "] "
+           << (100.0 * count / callback->expected_rbuf_items_) << "%  cumulative hits = " << events
+           << "   hits lost in bad buffers = " << lost_events
+           << " (" << 100.0*lost_events/(events + lost_events) << "%)";
 
 
 
@@ -423,6 +498,10 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
     timeout = (callback->run_status_.load() == 2) /*|| (count > 8000)*/;
     if (item == NULL)
       break;
+    }
+
+
+    delete evt_file;
   }
 
   one_spill.hits.clear();
