@@ -227,7 +227,8 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, std::stri
       madc_pattern += "F";
       uint32_t timestamp = word & footer_time_m;
       for (auto &h : hits)
-        h.timestamp.time = timestamp * 5;
+        h.timestamp.time_native = timestamp * 5;
+
 
       footers++;
 //      PL_DBG << "  MADC timestamp: " << itobin32(timestamp);
@@ -241,7 +242,10 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, std::stri
       Hit one_hit;
       one_hit.channel   = chan_nr;
       one_hit.energy    = nrg << upshift;
-      one_hit.timestamp.time = (evts + events) * 5;
+      one_hit.timestamp.time_native = (evts + events) * 5;
+      one_hit.timestamp.timebase_divider = 75;
+      one_hit.timestamp.timebase_multiplier = 1000;
+
       hits.push_back(one_hit);
       events++;
       madc_pattern += "E";

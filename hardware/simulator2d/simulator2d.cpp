@@ -350,7 +350,10 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
         }
 
         Hit h;
-        h.timestamp.time = t;
+        h.timestamp.time_native = t;
+        h.timestamp.timebase_divider = 75;
+        h.timestamp.timebase_multiplier = 1000;
+
 
 //        PL_DBG << "evt " << en1 << "x" << en2;
 

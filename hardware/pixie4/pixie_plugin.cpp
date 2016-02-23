@@ -1444,8 +1444,8 @@ void Plugin::worker_parse (Plugin* callback, SynchronizedQueue<Spill*>* in_queue
                   one_hit.energy       = buff16[idx++];
                 else
                   idx++;
-                one_hit.XIA_PSA        = buff16[idx++];
-                one_hit.user_PSA       = buff16[idx++];
+                one_hit.extras["XIA_PSA"]  = buff16[idx++];
+                one_hit.extras["user_PSA"] = buff16[idx++];
                 idx += 3;
                 hi                     = buff16[idx++]; //not always!
                 one_hit.trace = std::vector<uint16_t>
@@ -1458,8 +1458,8 @@ void Plugin::worker_parse (Plugin* callback, SynchronizedQueue<Spill*>* in_queue
                   one_hit.energy       = buff16[idx++];
                 else
                   idx++;
-                one_hit.XIA_PSA        = buff16[idx++];
-                one_hit.user_PSA       = buff16[idx++];
+                one_hit.extras["XIA_PSA"]  = buff16[idx++];
+                one_hit.extras["user_PSA"] = buff16[idx++];
                 idx += 3;
                 hi                     = buff16[idx++];
               } else if (task_b == 0x0002) {
@@ -1468,8 +1468,8 @@ void Plugin::worker_parse (Plugin* callback, SynchronizedQueue<Spill*>* in_queue
                   one_hit.energy       = buff16[idx++];
                 else
                   idx++;
-                one_hit.XIA_PSA        = buff16[idx++];
-                one_hit.user_PSA       = buff16[idx++];
+                one_hit.extras["XIA_PSA"]  = buff16[idx++];
+                one_hit.extras["user_PSA"] = buff16[idx++];
               } else if (task_b == 0x0003) {
                 chan_trig_time         = buff16[idx++];
                 if (pattern[i+8])
@@ -1485,7 +1485,9 @@ void Plugin::worker_parse (Plugin* callback, SynchronizedQueue<Spill*>* in_queue
               if ((task_b == 0x0000) || (task_b == 0x0001))
                 hi = chan_time_hi;
               lo = chan_trig_time;
-              one_hit.timestamp.time = (hi << 32) + (mi << 16) + lo;
+              one_hit.timestamp.time_native = (hi << 32) + (mi << 16) + lo;
+              one_hit.timestamp.timebase_divider = 75;
+              one_hit.timestamp.timebase_multiplier = 1000;
 
               if ((buf_module < channel_indices.size()) &&
                   (i < channel_indices[buf_module].size()) &&

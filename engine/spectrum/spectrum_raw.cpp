@@ -171,10 +171,10 @@ void SpectrumRaw::hit_bin(const Event &newEvent) {
 
   for (auto &q : all_hits) {
     file_bin_.write((char*)&q.channel, sizeof(q.channel));
-    uint16_t time_hy = (q.timestamp.time >> 48) & 0x000000000000FFFF;
-    uint16_t time_hi = (q.timestamp.time >> 32) & 0x000000000000FFFF;
-    uint16_t time_mi = (q.timestamp.time >> 16) & 0x000000000000FFFF;
-    uint16_t time_lo = q.timestamp.time & 0x000000000000FFFF;
+    uint16_t time_hy = (q.timestamp.time_native >> 48) & 0x000000000000FFFF;
+    uint16_t time_hi = (q.timestamp.time_native >> 32) & 0x000000000000FFFF;
+    uint16_t time_mi = (q.timestamp.time_native >> 16) & 0x000000000000FFFF;
+    uint16_t time_lo = q.timestamp.time_native & 0x000000000000FFFF;
     file_bin_.write((char*)&time_hy, sizeof(time_hy));
     file_bin_.write((char*)&time_hi, sizeof(time_hi));
     file_bin_.write((char*)&time_mi, sizeof(time_mi));

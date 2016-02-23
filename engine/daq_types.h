@@ -29,7 +29,7 @@
 #define DAQ_TYPES
 
 #include <array>
-#include <bitset>
+#include <unordered_map>
 #include <boost/date_time.hpp>
 #include "generic_setting.h"
 #include "detector.h"
@@ -39,19 +39,33 @@
 namespace Qpx {
 
 struct TimeStamp {
-  uint64_t time;
+  uint64_t time_native;
+  double timebase_multiplier;
+  double timebase_divider;
 
   TimeStamp() {
-    time = 0;
+    time_native = 0;
+    timebase_multiplier = 0;
+    timebase_divider = 1;
   }
 
+  double to_nanosec() const;
+//  boost::posix_time::time_duration to_posix_time() {
+//    return boost::posix_time::nanosec(to_nanosec());
+//  }
+
   double operator-(const TimeStamp other) const {
-    return (static_cast<double>(time) - static_cast<double>(other.time));
+    return (to_nanosec() - other.to_nanosec());
   }
-  bool operator<(const TimeStamp other) const {return (time < other.time);}
-  bool operator>(const TimeStamp other) const {return (time > other.time);}
-  bool operator==(const TimeStamp other) const {return (time == other.time);}
-  bool operator!=(const TimeStamp other) const {return (time != other.time);}
+
+  bool same_base(const TimeStamp other) const {
+    return ((timebase_divider == other.timebase_divider) && (timebase_multiplier == other.timebase_multiplier));
+  }
+
+  bool operator<(const TimeStamp other) const;
+  bool operator>(const TimeStamp other) const;
+  bool operator==(const TimeStamp other) const;
+  bool operator!=(const TimeStamp other) const;
 
 };
 
@@ -60,17 +74,15 @@ struct Hit : public XMLable {
   int16_t channel;
   TimeStamp timestamp;
 
-  uint16_t energy,
-           XIA_PSA,
-           user_PSA;
+  uint16_t energy;
+
+  std::unordered_map<std::string, uint16_t> extras;
 
   std::vector<uint16_t> trace;
   
   inline Hit() {
     channel = -1;
     energy = 0;
-    XIA_PSA = 0;
-    user_PSA = 0;
   }
 
   boost::posix_time::time_duration to_posix_time();
@@ -88,8 +100,7 @@ struct Hit : public XMLable {
     if (channel != other.channel) return false;
     if (timestamp != other.timestamp) return false;
     if (energy != other.energy) return false;
-    if (XIA_PSA != other.XIA_PSA) return false;
-    if (user_PSA != other.user_PSA) return false;
+    if (extras != other.extras) return false;
     if (trace != other.trace) return false;
     return true;
   }

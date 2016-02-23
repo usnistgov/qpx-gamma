@@ -30,47 +30,66 @@
 
 namespace Qpx {
 
-boost::posix_time::time_duration Hit::to_posix_time() {
-  //converts Pixie ticks to posix duration
-  //this is not working well...
-  /*uint64_t result = evt_time_lo;
-  result += evt_time_hi * 65536;      //pow(2,16)
-  result += buf_time_hi * 4294967296; //pow(2,32)
-  result = result * 1000 / 75;
-  boost::posix_time::time_duration answer =
-      boost::posix_time::seconds(result / 1000000000) +
-      boost::posix_time::milliseconds((result % 1000000000) / 1000000) +
-      boost::posix_time::microseconds((result % 1000000) / 1000);
-  //        + boost::posix_time::nanoseconds(result % 1000);*/
-  boost::posix_time::time_duration answer = boost::posix_time::microseconds(timestamp.time / 75);
-  return answer;
+double TimeStamp::to_nanosec() const {
+  if (timebase_divider == 0)
+    return 0;
+  else
+    return time_native * timebase_multiplier / timebase_divider;
 }
 
 void Hit::to_xml(pugi::xml_node &root) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
   node.append_attribute("channel").set_value(std::to_string(channel).c_str());
   node.append_attribute("energy").set_value(std::to_string(energy).c_str());
-  node.append_attribute("XIA_PSA").set_value(std::to_string(XIA_PSA).c_str());
-  node.append_attribute("user_PSA").set_value(std::to_string(user_PSA).c_str());
+  //extras?
 }
+
+bool TimeStamp::operator<(const TimeStamp other) const {
+  if (same_base((other)))
+    return (time_native < other.time_native);
+  else
+    return (to_nanosec() < other.to_nanosec());
+}
+
+bool TimeStamp::operator>(const TimeStamp other) const {
+  if (same_base((other)))
+    return (time_native > other.time_native);
+  else
+    return (to_nanosec() > other.to_nanosec());
+}
+
+bool TimeStamp::operator==(const TimeStamp other) const {
+  if (same_base((other)))
+    return (time_native == other.time_native);
+  else
+    return (to_nanosec() == other.to_nanosec());
+}
+
+bool TimeStamp::operator!=(const TimeStamp other) const {
+  if (same_base((other)))
+    return (time_native != other.time_native);
+  else
+    return (to_nanosec() != other.to_nanosec());
+}
+
 
 std::string Hit::to_string() const {
   std::stringstream ss;
-  ss << "[ch" << channel << "|t" << timestamp.time << "|e" << energy << "]";
+  ss << "[ch" << channel << "|t" << timestamp.to_nanosec() << "|e" << energy << "]";
   return ss.str();
 }
 
 bool Event::in_window(const TimeStamp &ts) const {
 //  PL_DBG << "comparing " << ts.time << " on [" << lower_time.time << "," << upper_time.time << "] w:" << window;
-  if ((ts.time == lower_time.time) || (ts.time == upper_time.time)) {
+  if ((ts == lower_time) || (ts == upper_time)) {
 //    PL_DBG << "T1";
     return true;
   }
-  else if ((ts.time > lower_time.time) && ((ts.time - lower_time.time) < window)) {
+  else if ((ts > lower_time) && ((ts - lower_time) < window)) {
 //    PL_DBG << "T2";
     return true;
   }
-  if ((ts.time < upper_time.time) && ((upper_time.time - ts.time) < window)) {
+  if ((ts < upper_time) && ((upper_time - ts) < window)) {
 //    PL_DBG << "T3";
     return true;
   }
@@ -79,16 +98,16 @@ bool Event::in_window(const TimeStamp &ts) const {
 }
 
 void Event::addHit(const Hit &newhit) {
-  if (lower_time.time > newhit.timestamp.time)
+  if (lower_time > newhit.timestamp)
     lower_time = newhit.timestamp;
-  if (upper_time.time < newhit.timestamp.time)
+  if (upper_time < newhit.timestamp)
     upper_time = newhit.timestamp;
   hit[newhit.channel] = newhit;
 }
 
 std::string Event::to_string() const {
   std::stringstream ss;
-  ss << "EVT[t" << lower_time.time << ":" << upper_time.time << "w" << window << "]";
+  ss << "EVT[t" << lower_time.to_nanosec() << ":" << upper_time.to_nanosec() << "w" << window << "]";
   for (auto &q : hit)
     ss << " " << q.first << "=" << q.second.to_string();
   return ss.str();

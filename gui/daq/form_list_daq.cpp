@@ -226,7 +226,7 @@ QVariant TableListData::data(const QModelIndex &index, int role) const
       return det;
     }
     case 1:
-      return QString::fromStdString(to_simple_string(mystuff->hits[row].to_posix_time() * time_factor_));
+      return QString::number(mystuff->hits[row].timestamp.to_nanosec() * time_factor_);
 //    case 2:
 //      return QVariant::fromValue(QpxPattern(mystuff->hits[index.row()].pattern, false));
     case 2:
