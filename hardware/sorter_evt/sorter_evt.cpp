@@ -57,6 +57,8 @@ SorterEVT::SorterEVT() {
   override_timestamps_= false;
   bad_buffers_rep_ = false;
   bad_buffers_dbg_ = false;
+  terminate_premature_ = false;
+  max_rbuf_evts_ = 0;
 }
 
 bool SorterEVT::die() {
@@ -136,6 +138,10 @@ bool SorterEVT::read_settings_bulk(Gamma::Setting &set) const {
         q.value_int = bad_buffers_dbg_;
       else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "SorterEVT/Pause"))
         q.value_int = pause_ms_;
+      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "SorterEVT/Cutoff"))
+        q.value_int = terminate_premature_;
+      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "SorterEVT/Cutoff number"))
+        q.value_int = max_rbuf_evts_;
       else if ((q.metadata.setting_type == Gamma::SettingType::dir_path) && (q.id_ == "SorterEVT/Source dir")) {
         q.value_text = source_dir_;
         q.metadata.writable = !(status_ & DeviceStatus::booted);
@@ -165,6 +171,10 @@ bool SorterEVT::write_settings_bulk(Gamma::Setting &set) {
       bad_buffers_dbg_ = q.value_int;
     else if (q.id_ == "SorterEVT/Pause")
       pause_ms_ = q.value_int;
+    else if (q.id_ == "SorterEVT/Cutoff")
+      terminate_premature_ = q.value_int;
+    else if (q.id_ == "SorterEVT/Cutoff number")
+      max_rbuf_evts_ = q.value_int;
     else if (q.id_ == "SorterEVT/Source dir")
       source_dir_ = q.value_text;
   }
@@ -310,7 +320,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
     std::list<uint32_t> prev_MADC_data;
     std::string prev_pattern;
 
-    while ( /*(count < 8000) &&*/ (!done) && (item = evt_file->getItem()) != NULL)  {
+    while ( (!callback->terminate_premature_ || (count < callback->max_rbuf_evts_)) && (!done) && (item = evt_file->getItem()) != NULL)  {
       count++;
 
       switch (item->type()) {
@@ -495,7 +505,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
 //    }
     spill_queue->enqueue(new Spill(one_spill));
 
-    timeout = (callback->run_status_.load() == 2) /*|| (count > 8000)*/;
+    timeout = (callback->run_status_.load() == 2) || (callback->terminate_premature_ && (count >= callback->max_rbuf_evts_));
     if (item == NULL)
       break;
     }

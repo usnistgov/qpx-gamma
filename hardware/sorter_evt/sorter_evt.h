@@ -75,6 +75,9 @@ protected:
   bool bad_buffers_dbg_;
   int  pause_ms_;
 
+  bool terminate_premature_;
+  uint32_t max_rbuf_evts_;
+
   std::string source_dir_;
   std::list<std::string> files_;
   uint64_t expected_rbuf_items_;

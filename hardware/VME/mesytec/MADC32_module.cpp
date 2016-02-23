@@ -187,8 +187,9 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, std::stri
   uint32_t header_m   = 0xff008000; // Header Mask
   uint32_t header_c   = 0x40000000; // Header Compare
 
-  uint32_t footer_m   = 0xc0000000; // Footer Mask
-  uint32_t footer_c   = 0xc0000000; // Footer Compare
+  uint32_t footer_m      = 0xc0000000; // Footer Mask
+  uint32_t footer_c      = 0xc0000000; // Footer Compare
+  uint32_t footer_time_m = 0x3fffffff; // Mask for timestamp in footer
 
   uint32_t evt_mask = 0xffe04000; // event header mask
   uint32_t evt_c    = 0x04000000; // event compare
@@ -224,9 +225,12 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, std::stri
 
     } else if ((word & footer_m) == footer_c) {
       madc_pattern += "F";
+      uint32_t timestamp = word & footer_time_m;
+      for (auto &h : hits)
+        h.timestamp.time = timestamp * 5;
 
       footers++;
-//                  PL_DBG << "  MADC footer: " << itobin(word);
+//      PL_DBG << "  MADC timestamp: " << itobin32(timestamp);
     } else if ((word & evt_mask) == evt_c) {
       int chan_nr = (word & det_mask) >> 16;
       uint16_t nrg = (word & nrg_mask);
