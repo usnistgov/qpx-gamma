@@ -49,16 +49,6 @@ public:
     file_setting.metadata.description = "path to temp output directory";
     new_temp.generic_attributes.add(file_setting);
 
-    Gamma::Setting format_setting;
-    format_setting.id_ = "format";
-    format_setting.metadata.setting_type = Gamma::SettingType::int_menu;
-    format_setting.metadata.writable = true;
-    format_setting.metadata.description = "output file format";
-    format_setting.value_int = 1;
-    format_setting.metadata.int_menu_items[0] = "binary";
-    format_setting.metadata.int_menu_items[1] = "human readable";
-    new_temp.generic_attributes.add(format_setting);
-    
     return new_temp;
   }
   
@@ -82,7 +72,6 @@ protected:
   bool init_text();
   bool init_bin();
 
-  void hit_text(const Event&);
   void hit_bin(const Event&);
 
   void stats_text(const StatsUpdate&);
@@ -103,7 +92,6 @@ protected:
   pugi::xml_document xml_doc_;
   pugi::xml_node xml_root_;
 
-  int format_;
   bool with_hit_pattern_;
   uint64_t events_this_spill_, total_events_;
 };

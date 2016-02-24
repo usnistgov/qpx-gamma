@@ -50,9 +50,7 @@ struct TimeStamp {
   }
 
   double to_nanosec() const;
-//  boost::posix_time::time_duration to_posix_time() {
-//    return boost::posix_time::nanosec(to_nanosec());
-//  }
+  std::string to_string() const;
 
   double operator-(const TimeStamp other) const {
     return (to_nanosec() - other.to_nanosec());
@@ -64,40 +62,32 @@ struct TimeStamp {
 
   bool operator<(const TimeStamp other) const;
   bool operator>(const TimeStamp other) const;
+  bool operator<=(const TimeStamp other) const;
+  bool operator>=(const TimeStamp other) const;
   bool operator==(const TimeStamp other) const;
   bool operator!=(const TimeStamp other) const;
 
 };
 
-struct Hit : public XMLable {
+struct Hit {
 
-  int16_t channel;
+  int16_t   source_channel;
   TimeStamp timestamp;
-
-  uint16_t energy;
-
+  uint16_t  energy;
   std::unordered_map<std::string, uint16_t> extras;
-
   std::vector<uint16_t> trace;
   
   inline Hit() {
-    channel = -1;
+    source_channel = -1;
     energy = 0;
   }
 
-  boost::posix_time::time_duration to_posix_time();
-
-  void from_xml(const pugi::xml_node &) override {}
-  void to_xml(pugi::xml_node &) const override;
-
-
   std::string to_string() const;
-  std::string xml_element_name() const override {return "Hit";}
 
   bool operator<(const Hit other) const {return (timestamp < other.timestamp);}
   bool operator>(const Hit other) const {return (timestamp > other.timestamp);}
   bool operator==(const Hit other) const {
-    if (channel != other.channel) return false;
+    if (source_channel != other.source_channel) return false;
     if (timestamp != other.timestamp) return false;
     if (energy != other.energy) return false;
     if (extras != other.extras) return false;
@@ -105,26 +95,27 @@ struct Hit : public XMLable {
     return true;
   }
   bool operator!=(const Hit other) const { return !operator==(other); }
-  bool shallow_equals(const Hit& other) const {return (timestamp == other.timestamp);}
 };
 
 struct Event {
-  TimeStamp lower_time, upper_time;
-  double window;
-  std::map<int16_t, Hit> hit;
+  TimeStamp              lower_time;
+  double                 window_ns;
+  std::map<int16_t, Hit> hits;
 
-  bool in_window(const TimeStamp& ts) const;
-  void addHit(const Hit &newhit);
+  bool in_window(const Hit& h) const;
+  bool past_due(const Hit& h) const;
+  bool addHit(const Hit &newhit);
+
   std::string to_string() const;
 
   inline Event() {
-    window = 0.0;
+    window_ns = 0.0;
   }
 
   inline Event(const Hit &newhit, double win) {
-    lower_time = upper_time = newhit.timestamp;
-    hit[newhit.channel] = newhit;
-    window = win;
+    lower_time = newhit.timestamp;
+    hits[newhit.source_channel] = newhit;
+    window_ns = win;
   }
 };
 
@@ -134,8 +125,10 @@ enum StatsType {
 
 struct StatsUpdate : public XMLable {
   StatsType stats_type;
-  int16_t channel;
-  uint64_t events_in_spill;
+  int16_t   source_channel;
+  Hit       model_hit;
+
+  uint64_t  events_in_spill;
 
   //per module
   double total_time,
@@ -149,7 +142,7 @@ struct StatsUpdate : public XMLable {
   
   inline StatsUpdate()
       : stats_type(StatsType::running)
-      , channel(-1)
+      , source_channel(-1)
       , total_time(0.0)
       , event_rate(0.0)
       , events_in_spill(0)
@@ -164,7 +157,9 @@ struct StatsUpdate : public XMLable {
   bool operator<(const StatsUpdate other) const {return (lab_time < other.lab_time);}
   bool operator==(const StatsUpdate other) const;
   bool operator!=(const StatsUpdate other) const {return !operator ==(other);}
-  bool shallow_equals(const StatsUpdate& other) const {return ((lab_time == other.lab_time) && (channel == other.channel));}
+  bool shallow_equals(const StatsUpdate& other) const {
+    return ((lab_time == other.lab_time) && (source_channel == other.source_channel));
+  }
 
   void from_xml(const pugi::xml_node &) override;
   void to_xml(pugi::xml_node &) const override;

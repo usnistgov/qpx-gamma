@@ -230,8 +230,11 @@ bool SorterPlugin::boot() {
     if (name == StatsUpdate().xml_element_name()) {
       StatsUpdate stats;
       stats.from_xml(child);
-      if (stats != StatsUpdate())
+      if (stats != StatsUpdate()) {
+        stats.model_hit.timestamp.timebase_multiplier = 1000;
+        stats.model_hit.timestamp.timebase_divider    = 75;
         spills_.push_back(stats);
+      }
     } else if (name == RunInfo().xml_element_name()) {
       RunInfo info;
       info.from_xml(child);
@@ -293,9 +296,9 @@ void SorterPlugin::worker_run(SorterPlugin* callback, SynchronizedQueue<Spill*>*
     }
 
     for (auto &q : one_spill.stats) {
-      if (!starts_signalled.count(q.channel)) {
+      if (!starts_signalled.count(q.source_channel)) {
         q.stats_type = StatsType::start;
-        starts_signalled.insert(q.channel);
+        starts_signalled.insert(q.source_channel);
       }
     }
     spill_queue->enqueue(new Spill(one_spill));
@@ -333,7 +336,7 @@ Spill SorterPlugin::get_spill() {
     while ((one_spill.hits.size() < this_spill.events_in_spill) && (file_bin_.tellg() < bin_end_)) {
       Hit one_event;
       file_bin_.read(reinterpret_cast<char*>(event_entry), 12);
-      one_event.channel = event_entry[0];
+      one_event.source_channel = event_entry[0];
       //      PL_DBG << "event chan " << chan;
       uint64_t time_hi = event_entry[2];
       uint64_t time_mi = event_entry[3];

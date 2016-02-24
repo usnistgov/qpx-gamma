@@ -119,8 +119,8 @@ void Spectrum1D::addHit(const Hit& newHit) {
 
 void Spectrum1D::addEvent(const Event& newEvent) {
   for (int16_t i = 0; i < metadata_.add_pattern.size(); i++)
-    if ((metadata_.add_pattern[i]) && (newEvent.hit.count(i) > 0))
-      this->addHit(newEvent.hit.at(i));
+    if ((metadata_.add_pattern[i]) && (newEvent.hits.count(i) > 0))
+      this->addHit(newEvent.hits.at(i));
 }
 
 bool Spectrum1D::_write_file(std::string dir, std::string format) const {

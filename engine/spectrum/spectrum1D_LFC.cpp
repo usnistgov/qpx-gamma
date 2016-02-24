@@ -68,8 +68,8 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
 {
   Spectrum1D::addStats(newStats);
 
-  if ((newStats.channel < 0) || (newStats.channel >= metadata_.add_pattern.size())
-      || (newStats.channel != my_channel_))
+  if ((newStats.source_channel < 0) || (newStats.source_channel >= metadata_.add_pattern.size())
+      || (newStats.source_channel != my_channel_))
     return;
 
   if (time1_ == StatsUpdate()) {

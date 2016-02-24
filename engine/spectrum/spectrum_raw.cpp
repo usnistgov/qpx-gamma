@@ -40,7 +40,6 @@ SpectrumRaw::~SpectrumRaw() {
 bool SpectrumRaw::initialize() {
   Spectrum::initialize();
 
-  format_ = get_attr("format").value_int;
   file_dir_ = get_attr("file_dir").value_text;
   with_hit_pattern_ = get_attr("with_pattern").value_int;
   PL_DBG << "trying to create " << file_dir_;
@@ -50,10 +49,7 @@ bool SpectrumRaw::initialize() {
 
   metadata_.type = my_type();
 
-  if (format_ == 0)
-    return init_bin();
-  if (format_ == 1)
-    return init_text();
+  return init_bin();
 }
 
 bool SpectrumRaw::init_text() {
@@ -107,33 +103,24 @@ std::unique_ptr<std::list<Entry>> SpectrumRaw::_get_spectrum(std::initializer_li
 }
 
 void SpectrumRaw::addEvent(const Event& newEvent) {
-  if (format_ == 0)
-    hit_bin(newEvent);
-  else if (format_ == 1)
-    hit_text(newEvent);
+  hit_bin(newEvent);
 }
 
 void SpectrumRaw::addStats(const StatsUpdate& stats) {
-  if (format_ == 0) {
-    //override, because coincident events have been split (one for each channel)
-    StatsUpdate stats_override = stats;
-    stats_override.events_in_spill = events_this_spill_;
-    total_events_ += events_this_spill_;
-    events_this_spill_ = 0;
-    stats_text(stats_override);
-  } else if (format_ == 1)
-    stats_text(stats);
+  //override, because coincident events have been split (one for each channel)
+  StatsUpdate stats_override = stats;
+  stats_override.events_in_spill = events_this_spill_;
+  total_events_ += events_this_spill_;
+  events_this_spill_ = 0;
+  stats_text(stats_override);
 }
 
 void SpectrumRaw::addRun(const RunInfo& run) {
-  if (format_ == 0) {
-    //override, because coincident events have been split (one for each channel)
-    RunInfo run_override = run;
-    run_override.total_events = total_events_;
-    total_events_ = 0;
-    run_text(run_override);
-  } else if (format_ == 1)
-    run_text(run);
+  //override, because coincident events have been split (one for each channel)
+  RunInfo run_override = run;
+  run_override.total_events = total_events_;
+  total_events_ = 0;
+  run_text(run_override);
 }
 
 void SpectrumRaw::_closeAcquisition() {
@@ -151,26 +138,16 @@ void SpectrumRaw::_closeAcquisition() {
 }
 
 
-void SpectrumRaw::hit_text(const Event &newEvent) {
-  if (!open_xml_)
-    return;
-
-  //make hits ordered
-
-  for (auto &q: newEvent.hit)
-    q.second.to_xml(xml_root_);
-}
-
 void SpectrumRaw::hit_bin(const Event &newEvent) {
   if (!open_bin_)
     return;
 
   std::multiset<Hit> all_hits;
-  for (auto &q : newEvent.hit)
+  for (auto &q : newEvent.hits)
     all_hits.insert(q.second);
 
   for (auto &q : all_hits) {
-    file_bin_.write((char*)&q.channel, sizeof(q.channel));
+    file_bin_.write((char*)&q.source_channel, sizeof(q.source_channel));
     uint16_t time_hy = (q.timestamp.time_native >> 48) & 0x000000000000FFFF;
     uint16_t time_hi = (q.timestamp.time_native >> 32) & 0x000000000000FFFF;
     uint16_t time_mi = (q.timestamp.time_native >> 16) & 0x000000000000FFFF;

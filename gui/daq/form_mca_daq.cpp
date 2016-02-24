@@ -272,7 +272,7 @@ void FormMcaDaq::update_plots() {
   }
 
   //ui->statusBar->showMessage("Spectra acquisition in progress...");
-  //PL_DBG << "Gui-side plotting " << guiside.ms() << " ms";
+//  PL_DBG << "<FormMcaDaq> Gui-side plotting " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
 }
 

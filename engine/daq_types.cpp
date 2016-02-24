@@ -37,12 +37,12 @@ double TimeStamp::to_nanosec() const {
     return time_native * timebase_multiplier / timebase_divider;
 }
 
-void Hit::to_xml(pugi::xml_node &root) const {
-  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
-  node.append_attribute("channel").set_value(std::to_string(channel).c_str());
-  node.append_attribute("energy").set_value(std::to_string(energy).c_str());
-  //extras?
+std::string TimeStamp::to_string() const {
+  std::stringstream ss;
+  ss << time_native << "x(" << timebase_multiplier << "/" << timebase_divider << ")";
+  return ss.str();
 }
+
 
 bool TimeStamp::operator<(const TimeStamp other) const {
   if (same_base((other)))
@@ -56,6 +56,20 @@ bool TimeStamp::operator>(const TimeStamp other) const {
     return (time_native > other.time_native);
   else
     return (to_nanosec() > other.to_nanosec());
+}
+
+bool TimeStamp::operator<=(const TimeStamp other) const {
+  if (same_base((other)))
+    return (time_native <= other.time_native);
+  else
+    return (to_nanosec() <= other.to_nanosec());
+}
+
+bool TimeStamp::operator>=(const TimeStamp other) const {
+  if (same_base((other)))
+    return (time_native >= other.time_native);
+  else
+    return (to_nanosec() >= other.to_nanosec());
 }
 
 bool TimeStamp::operator==(const TimeStamp other) const {
@@ -75,40 +89,31 @@ bool TimeStamp::operator!=(const TimeStamp other) const {
 
 std::string Hit::to_string() const {
   std::stringstream ss;
-  ss << "[ch" << channel << "|t" << timestamp.to_nanosec() << "|e" << energy << "]";
+  ss << "[ch" << source_channel << "|t" << timestamp.to_string() << "|e" << energy << "]";
   return ss.str();
 }
 
-bool Event::in_window(const TimeStamp &ts) const {
-//  PL_DBG << "comparing " << ts.time << " on [" << lower_time.time << "," << upper_time.time << "] w:" << window;
-  if ((ts == lower_time) || (ts == upper_time)) {
-//    PL_DBG << "T1";
-    return true;
-  }
-  else if ((ts > lower_time) && ((ts - lower_time) < window)) {
-//    PL_DBG << "T2";
-    return true;
-  }
-  if ((ts < upper_time) && ((upper_time - ts) < window)) {
-//    PL_DBG << "T3";
-    return true;
-  }
-//  PL_DBG << "F";
-  return false;
+bool Event::in_window(const Hit& h) const {
+  return (h.timestamp >= lower_time) && ((h.timestamp - lower_time) <= window_ns);
 }
 
-void Event::addHit(const Hit &newhit) {
+bool Event::past_due(const Hit& h) const {
+  return (h.timestamp >= lower_time) && ((h.timestamp - lower_time) > window_ns);
+}
+
+bool Event::addHit(const Hit &newhit) {
+  if (hits.count(newhit.source_channel))
+    return false;
   if (lower_time > newhit.timestamp)
     lower_time = newhit.timestamp;
-  if (upper_time < newhit.timestamp)
-    upper_time = newhit.timestamp;
-  hit[newhit.channel] = newhit;
+  hits[newhit.source_channel] = newhit;
+  return true;
 }
 
 std::string Event::to_string() const {
   std::stringstream ss;
-  ss << "EVT[t" << lower_time.to_nanosec() << ":" << upper_time.to_nanosec() << "w" << window << "]";
-  for (auto &q : hit)
+  ss << "EVT[t" << lower_time.to_string() << "w" << window_ns << "]";
+  for (auto &q : hits)
     ss << " " << q.first << "=" << q.second.to_string();
   return ss.str();
 }
@@ -133,7 +138,7 @@ StatsUpdate StatsUpdate::operator-(const StatsUpdate other) const {
 bool StatsUpdate::operator==(const StatsUpdate other) const {
   if (stats_type != other.stats_type)
     return false;
-  if (channel != other.channel)
+  if (source_channel != other.source_channel)
     return false;
   if (total_time != other.total_time)
     return false;
@@ -164,7 +169,7 @@ StatsUpdate StatsUpdate::operator+(const StatsUpdate other) const {
 
 void StatsUpdate::to_xml(pugi::xml_node &root) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
-  node.append_attribute("channel").set_value(std::to_string(channel).c_str());
+  node.append_attribute("channel").set_value(std::to_string(source_channel).c_str());
   node.append_attribute("lab_time").set_value(boost::posix_time::to_iso_extended_string(lab_time).c_str());
   node.append_attribute("events_in_spill").set_value(std::to_string(events_in_spill).c_str());
   node.append_attribute("total_time").set_value(std::to_string(total_time).c_str());
@@ -190,7 +195,7 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
     iss >> lab_time;
   }
 
-  channel = node.attribute("channel").as_int();
+  source_channel = node.attribute("channel").as_int();
   events_in_spill = node.attribute("events_in_spill").as_ullong();
   total_time = node.attribute("total_time").as_double();
   event_rate = node.attribute("event_rate").as_double();

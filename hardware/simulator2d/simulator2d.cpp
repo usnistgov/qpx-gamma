@@ -131,6 +131,10 @@ bool Simulator2D::read_settings_bulk(Gamma::Setting &set) const {
       }
       else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/CoincThresh"))
         q.value_int = coinc_thresh_;
+      else if ((q.metadata.setting_type == Gamma::SettingType::floating) && (q.id_ == "Simulator2D/TimebaseMult"))
+        q.value_dbl = model_hit.timestamp.timebase_multiplier;
+      else if ((q.metadata.setting_type == Gamma::SettingType::floating) && (q.id_ == "Simulator2D/TimebaseDiv"))
+        q.value_dbl = model_hit.timestamp.timebase_divider;
       else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "Simulator2D/Source file"))
         q.value_text = source_file_;
       else if ((q.metadata.setting_type == Gamma::SettingType::int_menu) && (q.id_ == "Simulator2D/Source spectrum")) {
@@ -174,6 +178,10 @@ bool Simulator2D::write_settings_bulk(Gamma::Setting &set) {
     }
     else if (q.id_ == "Simulator2D/CoincThresh")
       coinc_thresh_ = q.value_int;
+    else if (q.id_ == "Simulator2D/TimebaseMult")
+      model_hit.timestamp.timebase_multiplier = q.value_dbl;
+    else if (q.id_ == "Simulator2D/TimebaseDiv")
+      model_hit.timestamp.timebase_divider = q.value_dbl;
     else if (q.id_ == "Simulator2D/ScaleRate")
       scale_rate_ = q.value_dbl;
     else if (q.id_ == "Simulator2D/Source file") {
@@ -323,9 +331,9 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
   moving_stats.stats_type = StatsType::start;
   moving_stats.lab_time = boost::posix_time::microsec_clock::local_time();
 
-  moving_stats.channel = callback->chan0_;
+  moving_stats.source_channel = callback->chan0_;
   one_spill.stats.push_back(moving_stats);
-  moving_stats.channel = callback->chan1_;
+  moving_stats.source_channel = callback->chan1_;
   one_spill.stats.push_back(moving_stats);
 
   spill_queue->enqueue(new Spill(one_spill));
@@ -349,27 +357,24 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
           en2 += callback->refined_dist_(callback->gen);
         }
 
-        Hit h;
+        Hit h = callback->model_hit;
         h.timestamp.time_native = t;
-        h.timestamp.timebase_divider = 75;
-        h.timestamp.timebase_multiplier = 1000;
-
 
 //        PL_DBG << "evt " << en1 << "x" << en2;
 
         if (en1 > 0) {
-          h.channel = callback->chan0_;
+          h.source_channel = callback->chan0_;
           h.energy = round(en1 * callback->gain0_ * 0.01);
           one_spill.hits.push_back(h);
         }
 
         if (en2 > 0) {
-          h.channel = callback->chan1_;
+          h.source_channel = callback->chan1_;
           h.energy = round(en2 * callback->gain1_ * 0.01);
           one_spill.hits.push_back(h);
         }
 
-        t += callback->coinc_thresh_;
+        t += callback->coinc_thresh_ + 1;
       }
     }
 
@@ -378,9 +383,9 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
     moving_stats.lab_time = boost::posix_time::microsec_clock::local_time();
     moving_stats.event_rate = one_run.event_rate;
 
-    moving_stats.channel = callback->chan0_;
+    moving_stats.source_channel = callback->chan0_;
     one_spill.stats.push_back(moving_stats);
-    moving_stats.channel = callback->chan1_;
+    moving_stats.source_channel = callback->chan1_;
     one_spill.stats.push_back(moving_stats);
 
     spill_queue->enqueue(new Spill(one_spill));
@@ -388,8 +393,10 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
     timeout = (callback->run_status_.load() == 2);
   }
 
-  for (auto &q : one_spill.stats)
+  one_spill.hits.clear();
+  for (auto &q : one_spill.stats) {
       q.stats_type = StatsType::stop;
+  }
   spill_queue->enqueue(new Spill(one_spill));
 
   callback->run_status_.store(3);
@@ -407,6 +414,8 @@ Spill Simulator2D::get_spill() {
 
 StatsUpdate Simulator2D::getBlock(double duration) {
   StatsUpdate newBlock;
+  newBlock.model_hit = model_hit;
+
   double fraction;
 
   newBlock.total_time = duration * time_factor;

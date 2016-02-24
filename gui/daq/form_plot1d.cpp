@@ -235,7 +235,7 @@ void FormPlot1D::update_plot() {
 
   spectrumDetails(SelectorItem());
 
-  //PL_DBG << "<Plot1D> plotting took " << guiside.ms() << " ms";
+//  PL_DBG << "<Plot1D> plotting took " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
 }
 

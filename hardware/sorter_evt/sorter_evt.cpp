@@ -370,7 +370,10 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
 
           for (auto &q : starts_signalled) {
             StatsUpdate udt;
-            udt.channel = q;
+            udt.model_hit.timestamp.timebase_multiplier = 1000;
+            udt.model_hit.timestamp.timebase_divider    = 75;
+
+            udt.source_channel = q;
             udt.lab_time = ts;
             udt.fast_peaks = pEvent->getEventCount();
             udt.live_time = pEvent->getTimeOffset();
@@ -409,9 +412,12 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
               std::list<Hit> hits = Qpx::MADC32::parse(MADC_data, events, madc_pattern);
 
               for (auto &h : hits) {
-                if (!starts_signalled.count(h.channel)) {
+                if (!starts_signalled.count(h.source_channel)) {
                   StatsUpdate udt;
-                  udt.channel = h.channel;
+                  udt.model_hit.timestamp.timebase_multiplier = 1000;
+                  udt.model_hit.timestamp.timebase_divider    = 75;
+
+                  udt.source_channel = h.source_channel;
                   udt.lab_time = time_start;
                   udt.stats_type = StatsType::start;
                   //udt.fast_peaks = pEvent->getEventCount();
@@ -420,7 +426,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
                   Spill extra_spill;
                   extra_spill.stats.push_back(udt);
                   spill_queue->enqueue(new Spill(extra_spill));
-                  starts_signalled.insert(h.channel);
+                  starts_signalled.insert(h.source_channel);
                 }
               }
 

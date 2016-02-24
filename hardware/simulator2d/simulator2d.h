@@ -105,6 +105,8 @@ protected:
   StatsUpdate getBlock(double duration);
   bool valid() {return valid_;}
 
+  Hit model_hit;
+
 
 
 

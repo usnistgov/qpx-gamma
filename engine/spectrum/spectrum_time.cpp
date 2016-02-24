@@ -115,8 +115,8 @@ void SpectrumTime::_add_bulk(const Entry& e) {
 void SpectrumTime::addStats(const StatsUpdate& newStats)
 {
 
-  if ((newStats.channel >= 0) && (newStats.channel < metadata_.add_pattern.size())
-      && (metadata_.add_pattern[newStats.channel] == 1)) {
+  if ((newStats.source_channel >= 0) && (newStats.source_channel < metadata_.add_pattern.size())
+      && (metadata_.add_pattern[newStats.source_channel] == 1)) {
 
     PreciseFloat rt = 0;
     PreciseFloat tot_time = 0;

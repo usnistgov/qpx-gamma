@@ -553,6 +553,9 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
                         SpectraSet* spectra) {
 
+  CustomTimer presort_timer;
+  uint64_t presort_compares(0), presort_hits(0), presort_cycles(0);
+
   std::vector<int> queue_status;
   queue_status.resize(detectors_.size(), 0);
   // 0 = unused, 1 = empty, 2 = data
@@ -566,13 +569,13 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
     in_spill = data_queue->dequeue();
     if (in_spill != nullptr) {
       for (auto &q : in_spill->stats) {
-        if (q.channel >= queue_status.size())
-          queue_status.resize(q.channel);
-        if ((q.channel >= 0) && (q.channel < queue_status.size())) {
+        if (q.source_channel >= queue_status.size())
+          queue_status.resize(q.source_channel);
+        if ((q.source_channel >= 0) && (q.source_channel < queue_status.size())) {
           if (!in_spill->hits.empty())
-            queue_status[q.channel] = 2;
+            queue_status[q.source_channel] = 2;
           else
-            queue_status[q.channel] = 1;
+            queue_status[q.source_channel] = 1;
         }
       }
       current_spills.push_back(in_spill);
@@ -593,8 +596,8 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
         for (auto i = current_spills.begin(); i != current_spills.end(); i++) {
           if (!(*i)->hits.empty())
             for (auto &q : (*i)->stats) {
-              if ((q.channel >= 0) && (q.channel < queue_status.size()))
-                queue_status[q.channel] = 2;
+              if ((q.source_channel >= 0) && (q.source_channel < queue_status.size()))
+                queue_status[q.source_channel] = 2;
             }
         }
       } else {
@@ -610,26 +613,40 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
       }
 
 
+      presort_cycles++;
+      presort_timer.start();
       while (!empty) {
         Hit oldest;
         for (auto &q : current_spills) {
           if (q->hits.empty()) {
             empty = true;
             break;
-          } else if ((oldest == Hit()) || (q->hits.front().timestamp < oldest.timestamp))
+          } else if ((oldest == Hit()) || (q->hits.front().timestamp < oldest.timestamp)) {
             oldest = q->hits.front();
+            presort_compares++;
+          }
         }
         if (!empty) {
+          presort_hits++;
           out_spill->hits.push_back(oldest);
           for (auto &q : current_spills)
             if ((!q->hits.empty()) && (q->hits.front().timestamp == oldest.timestamp)) {
               q->hits.pop_front();
+              presort_compares++;
               break;
             }
         }
         if (current_spills.empty())
           empty = true;
       }
+      presort_timer.stop();
+
+//      PL_INFO << "<Engine> Presort pushed " << presort_hits << " hits, "
+//                               " time/hit: " << presort_timer.us()/presort_hits << "us, "
+//                               " time/cycle: " << presort_timer.us()/presort_cycles  << "us, "
+//                               " compares/hit: " << double(presort_compares)/double(presort_hits) << ", "
+//                               " hits/cyle: " << double(presort_hits)/double(presort_cycles) << ", "
+//                               " compares/cycle: " << double(presort_compares)/double(presort_cycles);
 
       bool noempties = false;
       while (!noempties) {

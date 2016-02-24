@@ -148,8 +148,10 @@ void Plugin::fill_stats(std::list<StatsUpdate> &all_stats, uint8_t module) {
 
   stats.event_rate = get_mod("EVENT_RATE", Module(module));
   stats.total_time = get_mod("TOTAL_TIME", Module(module));
+  stats.model_hit.timestamp.timebase_multiplier = 1000;
+  stats.model_hit.timestamp.timebase_divider    = 75;
   for (int i=0; i<NUMBER_OF_CHANNELS; ++i) {
-    stats.channel    = channel_indices_[module][i];
+    stats.source_channel    = channel_indices_[module][i];
     stats.fast_peaks = get_chan("FAST_PEAKS", Channel(i), Module(module));
     stats.live_time  = get_chan("LIVE_TIME", Channel(i), Module(module));
     stats.ftdt       = get_chan("FTDT", Channel(i), Module(module));
@@ -1430,7 +1432,7 @@ void Plugin::worker_parse (Plugin* callback, SynchronizedQueue<Spill*>* in_queue
 
           for (int i=0; i < NUMBER_OF_CHANNELS; i++) {
             if (pattern[i]) {
-              one_hit.channel = i;
+              one_hit.source_channel = i;
               uint64_t hi = buf_timehi;
               uint64_t mi = evt_time_hi;
               uint64_t lo = evt_time_lo;
@@ -1492,7 +1494,7 @@ void Plugin::worker_parse (Plugin* callback, SynchronizedQueue<Spill*>* in_queue
               if ((buf_module < channel_indices.size()) &&
                   (i < channel_indices[buf_module].size()) &&
                   (channel_indices[buf_module][i] >= 0))
-                one_hit.channel = channel_indices[buf_module][i];
+                one_hit.source_channel = channel_indices[buf_module][i];
               //else one_hit.channel will = -1, which is invalid
 
               ordered.insert(one_hit);

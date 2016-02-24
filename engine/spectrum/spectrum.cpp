@@ -27,6 +27,7 @@
 #include "spectrum.h"
 #include "custom_logger.h"
 #include "xmlable.h"
+#include "custom_timer.h"
 
 namespace Qpx {
 namespace Spectrum {
@@ -50,7 +51,7 @@ Template Spectrum::get_template() {
   coinc_window.metadata.minimum = 0;
   coinc_window.metadata.step = 1;
   coinc_window.metadata.maximum = 1000000;
-  coinc_window.metadata.unit = "ticks";
+  coinc_window.metadata.unit = "ns";
   coinc_window.metadata.description = "Coincidence window";
   coinc_window.metadata.writable = true;
   coinc_window.value_dbl = 3.0;
@@ -119,6 +120,9 @@ void Spectrum::addSpill(const Spill& one_spill) {
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
 
+  CustomTimer addspill_timer(true);
+  uint64_t hits = one_spill.hits.size();
+
   for (auto &q : one_spill.hits)
     this->pushHit(q);
 
@@ -138,6 +142,10 @@ void Spectrum::addSpill(const Spill& one_spill) {
   if (one_spill.run != RunInfo())
     this->addRun(one_spill.run);
 
+  addspill_timer.stop();
+//  PL_DBG << "<" << metadata_.name << "> added " << hits << " hits in "
+//         << addspill_timer.ms() << " ms at " << addspill_timer.us() / hits << " us/hit";
+
 //  PL_DBG << "<" << metadata_.name << "> left in backlog " << backlog.size();
 }
 
@@ -146,11 +154,11 @@ void Spectrum::pushHit(const Hit& newhit)
   if (newhit.energy < cutoff_logic_)
     return;
 
-  if (newhit.channel < 0)
+  if (newhit.source_channel < 0)
     return;
 
-  bool ignore_match = ((newhit.channel < metadata_.match_pattern.size()) && (metadata_.match_pattern[newhit.channel] == 0));
-  bool ignore_add = ((newhit.channel < metadata_.add_pattern.size()) && (metadata_.add_pattern[newhit.channel] == 0));
+  bool ignore_match = ((newhit.source_channel < metadata_.match_pattern.size()) && (metadata_.match_pattern[newhit.source_channel] == 0));
+  bool ignore_add = ((newhit.source_channel < metadata_.add_pattern.size()) && (metadata_.add_pattern[newhit.source_channel] == 0));
 
   if (ignore_add && ignore_match)
     return;
@@ -158,53 +166,36 @@ void Spectrum::pushHit(const Hit& newhit)
 
   bool appended = false;
   bool pileup = false;
-  if (backlog.empty()) {
+  if (backlog.empty() || backlog.back().past_due(newhit))
     backlog.push_back(Event(newhit, coinc_window_));
-//    PL_DBG << "add to empty";
-  } else if (!backlog.back().in_window(newhit.timestamp)) {
-    backlog.push_back(Event(newhit, coinc_window_));
-//    PL_DBG << "add out of window";
-  } else {
+  else {
     for (auto &q : backlog) {
-      if (q.in_window(newhit.timestamp)) {
-        if ((q.hit.count(newhit.channel) == 0) && !appended) {
-//          PL_DBG << "coinc 1";
-          q.addHit(newhit);
+      if (q.in_window(newhit)) {
+        if (q.addHit(newhit)) {
+          if (appended)
+            PL_DBG << "<" << metadata_.name << "> hit " << newhit.to_string() << " coincident with more than one other hit (counted >=2 times)";
           appended = true;
-        } else if ((q.hit.count(newhit.channel) == 0) && appended) {
-          q.addHit(newhit);
-          PL_DBG << "<" << metadata_.name << "> hit " << newhit.to_string() << " coincident with more than one other hit (counted >=2 times)";
         } else {
-          PL_DBG << "<" << metadata_.name << "> pileup hit " << newhit.to_string() << " with " << q.to_string() << " already has " << q.hit[newhit.channel].to_string();
-          //PL_DBG << "Logical pileup detected. Event may be discarded";
+          PL_DBG << "<" << metadata_.name << "> pileup hit " << newhit.to_string() << " with " << q.to_string() << " already has " << q.hits[newhit.source_channel].to_string();
           pileup = true;
         }
-      } /*else
-        break;*/
+      } else if (q.past_due(newhit))
+        break;
     }
 
     if (!appended && !pileup) {
       backlog.push_back(Event(newhit, coinc_window_));
-//      PL_DBG << "append fresh";
+      PL_DBG << "append fresh";
     }
   }
 
-  if (!backlog.empty()) {
-    Event evt = backlog.front();
-    while ((newhit.timestamp - evt.upper_time) > (coinc_window_*2)) {
-//      PL_DBG << "in while loop";
-
-      if (validateEvent(evt)) {
-//        PL_DBG << "validated " << evt.to_string();
-        recent_count_++;
-        metadata_.total_count++;
-        this->addEvent(evt);
-      }
-      backlog.pop_front();
-      if (!backlog.empty())
-        evt = backlog.front();
-      else
-        break;
+  Event evt;
+  while (!backlog.empty() && (evt = backlog.front()).past_due(newhit)) {
+    backlog.pop_front();
+    if (validateEvent(evt)) {
+      recent_count_++;
+      metadata_.total_count++;
+      this->addEvent(evt);
     }
   }
 
@@ -221,8 +212,8 @@ void Spectrum::closeAcquisition() {
 bool Spectrum::validateEvent(const Event& newEvent) const {
   bool addit = true;
   for (int i = 0; i < metadata_.match_pattern.size(); i++)
-    if (((metadata_.match_pattern[i] == 1) && (newEvent.hit.count(i) == 0)) ||
-        ((metadata_.match_pattern[i] == -1) && (newEvent.hit.count(i) > 0)))
+    if (((metadata_.match_pattern[i] == 1) && (newEvent.hits.count(i) == 0)) ||
+        ((metadata_.match_pattern[i] == -1) && (newEvent.hits.count(i) > 0)))
       addit = false;
   return addit;
 }
@@ -235,15 +226,15 @@ std::map<int, std::list<StatsUpdate>> Spectrum::get_stats() {
 void Spectrum::addStats(const StatsUpdate& newBlock) {
   //private; no lock required
 
-  if ((newBlock.channel >= 0)
-      && (newBlock.channel < metadata_.add_pattern.size())
-      && (newBlock.channel < metadata_.match_pattern.size())
-      && (metadata_.add_pattern[newBlock.channel] || metadata_.match_pattern[newBlock.channel])) {
+  if ((newBlock.source_channel >= 0)
+      && (newBlock.source_channel < metadata_.add_pattern.size())
+      && (newBlock.source_channel < metadata_.match_pattern.size())
+      && (metadata_.add_pattern[newBlock.source_channel] || metadata_.match_pattern[newBlock.source_channel])) {
     //PL_DBG << "Spectrum " << metadata_.name << " received update for chan " << newBlock.channel;
-    bool chan_new = (stats_list_.count(newBlock.channel) == 0);
+    bool chan_new = (stats_list_.count(newBlock.source_channel) == 0);
     bool new_start = (newBlock.stats_type == StatsType::start);
-    if (!chan_new && new_start && (stats_list_[newBlock.channel].back().stats_type == StatsType::running))
-      stats_list_[newBlock.channel].back().stats_type = StatsType::stop;
+    if (!chan_new && new_start && (stats_list_[newBlock.source_channel].back().stats_type == StatsType::running))
+      stats_list_[newBlock.source_channel].back().stats_type = StatsType::stop;
 
     if (metadata_.recent_end.lab_time.is_not_a_date_time())
       metadata_.recent_start = newBlock;
@@ -255,18 +246,18 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
 //    PL_DBG << "<Spectrum> \"" << metadata_.name << "\" recent count_ = " << recent_count_;
     recent_count_ = 0;
 
-    if (!chan_new && (stats_list_[newBlock.channel].back().stats_type == StatsType::running))
-      stats_list_[newBlock.channel].pop_back();
+    if (!chan_new && (stats_list_[newBlock.source_channel].back().stats_type == StatsType::running))
+      stats_list_[newBlock.source_channel].pop_back();
 
-    stats_list_[newBlock.channel].push_back(newBlock);
+    stats_list_[newBlock.source_channel].push_back(newBlock);
 
     if (!chan_new) {
-      StatsUpdate start = stats_list_[newBlock.channel].front();
+      StatsUpdate start = stats_list_[newBlock.source_channel].front();
 
       boost::posix_time::time_duration rt ,lt;
       boost::posix_time::time_duration real ,live;
 
-      for (auto &q : stats_list_[newBlock.channel]) {
+      for (auto &q : stats_list_[newBlock.source_channel]) {
         if (q.stats_type == StatsType::start) {
           real += rt;
           live += lt;
@@ -291,14 +282,14 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
         }
       }
 
-      if (stats_list_[newBlock.channel].back().stats_type != StatsType::start) {
+      if (stats_list_[newBlock.source_channel].back().stats_type != StatsType::start) {
         real += rt;
         live += lt;
 //        PL_DBG << "<Spectrum> \"" << metadata_.name << "\" RT + "
 //               << rt << " = " << real << "   LT + " << lt << " = " << live;
       }
-      real_times_[newBlock.channel] = real;
-      live_times_[newBlock.channel] = live;
+      real_times_[newBlock.source_channel] = real;
+      live_times_[newBlock.source_channel] = live;
 
       metadata_.live_time = metadata_.real_time = real;
       for (auto &q : real_times_)

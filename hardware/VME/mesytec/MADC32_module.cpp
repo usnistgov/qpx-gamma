@@ -240,7 +240,7 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, std::stri
 
 
       Hit one_hit;
-      one_hit.channel   = chan_nr;
+      one_hit.source_channel   = chan_nr;
       one_hit.energy    = nrg << upshift;
       one_hit.timestamp.time_native = (evts + events) * 5;
       one_hit.timestamp.timebase_divider = 75;

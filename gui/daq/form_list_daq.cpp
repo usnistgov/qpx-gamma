@@ -122,7 +122,7 @@ void FormListDaq::displayTraces()
   uint32_t trace_length = list_data_->hits[chosen_trace].trace.size();
   if (trace_length > 0) {
     QVector<double> x(trace_length), y(trace_length);
-    int chan = list_data_->hits[chosen_trace].channel;
+    int chan = list_data_->hits[chosen_trace].source_channel;
     Gamma::Detector this_det;
 
     if ((chan > -1) && (chan < list_data_->run.detectors.size()))
@@ -215,7 +215,7 @@ QVariant TableListData::data(const QModelIndex &index, int role) const
 {
   int col = index.column();
   int row = index.row();
-  int chan = mystuff->hits[row].channel;
+  int chan = mystuff->hits[row].source_channel;
   if (role == Qt::DisplayRole)
   {
     switch (col) {
