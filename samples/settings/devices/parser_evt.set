@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<ParserEVTEVT>
+	<SettingMeta id="ParserEVT" type="stem" name="ParserEVT" writable="false" saveworthy="true">
+
+		<branch address="1" id="ParserEVT/Source dir" />
+		<branch address="2" id="ParserEVT/Loop data" />
+		<branch address="3" id="ParserEVT/Override pause" />
+		<branch address="4" id="ParserEVT/Pause" />
+		<branch address="5" id="ParserEVT/Override timestamps" />
+		<branch address="6" id="ParserEVT/Bad_buffers_report" />
+		<branch address="7" id="ParserEVT/Bad_buffers_output" />
+		<branch address="8" id="ParserEVT/Cutoff" />
+		<branch address="9" id="ParserEVT/Cutoff number" />
+	</SettingMeta>
+	<SettingMeta id="ParserEVT/Source file" type="file_path" name="Source file" writable="true" unit="List mode output (*.evt)" />
+	<SettingMeta id="ParserEVT/Source dir" type="dir_path" name="Source directory" writable="true" />
+	<SettingMeta id="ParserEVT/Loop data" type="boolean" name="Loop data" writable="true" />
+	<SettingMeta id="ParserEVT/Override pause" type="boolean" name="Override pause" writable="true" />
+	<SettingMeta id="ParserEVT/Pause" type="integer" name="Pause" writable="true" step="50" minimum="0" maximum="5000000" unit="ms" />
+	<SettingMeta id="ParserEVT/Override timestamps" type="boolean" name="Override timestamps" writable="true" />
+	<SettingMeta id="ParserEVT/Bad_buffers_report" type="boolean" name="Report on bad buffers" writable="true" />
+	<SettingMeta id="ParserEVT/Bad_buffers_output" type="boolean" name="Output bad buffers as binary" writable="true" />
+	<SettingMeta id="ParserEVT/Cutoff" type="boolean" name="Terminate prematurely" writable="true" />
+	<SettingMeta id="ParserEVT/Cutoff number" type="integer" name="Maximum number of ringbuffer events" writable="true" step="5" minimum="0" maximum="500" />
+</ParserEVTEVT>

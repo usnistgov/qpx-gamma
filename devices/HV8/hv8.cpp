@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-#include "hv8_plugin.h"
+#include "hv8.h"
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>

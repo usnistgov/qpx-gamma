@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<SpectrumTemplates>
+	<SpectrumTemplate Type="1D">
+		<Name>ch0</Name>
+		<Appearance>2159854619</Appearance>
+		<Visible>1</Visible>
+		<Resolution>14</Resolution>
+		<MatchPattern>1 0 0 0</MatchPattern>
+		<AddPattern>1 0 0 0</AddPattern>
+		<Attributes>
+			<Setting id="ignore_zero" type="boolean" index="-1" value="true">
+				<SettingMeta id="" type="boolean" address="0" writable="true" description="Ignore zero-energy events" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" index="-1" value="3">
+				<SettingMeta id="" type="floating" address="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ticks" description="Coincidence window" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>co0</Name>
+		<Appearance>2151866658</Appearance>
+		<Visible>1</Visible>
+		<Resolution>14</Resolution>
+		<MatchPattern>1 1 0 0</MatchPattern>
+		<AddPattern>1 0 0 0</AddPattern>
+		<Attributes>
+			<Setting id="ignore_zero" type="boolean" index="-1" value="true">
+				<SettingMeta id="" type="boolean" address="0" writable="true" description="Ignore zero-energy events" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" index="-1" value="3">
+				<SettingMeta id="" type="floating" address="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ticks" description="Coincidence window" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>ch1</Name>
+		<Appearance>2162774283</Appearance>
+		<Visible>1</Visible>
+		<Resolution>14</Resolution>
+		<MatchPattern>0 1 0 0</MatchPattern>
+		<AddPattern>0 1 0 0</AddPattern>
+		<Attributes>
+			<Setting id="ignore_zero" type="boolean" index="-1" value="true">
+				<SettingMeta id="" type="boolean" address="0" writable="true" description="Ignore zero-energy events" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" index="-1" value="3">
+				<SettingMeta id="" type="floating" address="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ticks" description="Coincidence window" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>co1</Name>
+		<Appearance>2160068773</Appearance>
+		<Visible>1</Visible>
+		<Resolution>14</Resolution>
+		<MatchPattern>1 1 0 0</MatchPattern>
+		<AddPattern>0 1 0 0</AddPattern>
+		<Attributes>
+			<Setting id="ignore_zero" type="boolean" index="-1" value="true">
+				<SettingMeta id="" type="boolean" address="0" writable="true" description="Ignore zero-energy events" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" index="-1" value="3">
+				<SettingMeta id="" type="floating" address="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ticks" description="Coincidence window" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="2D">
+		<Name>co01</Name>
+		<Appearance>4278222976</Appearance>
+		<Visible>1</Visible>
+		<Resolution>12</Resolution>
+		<MatchPattern>1 1 0 0</MatchPattern>
+		<AddPattern>1 1 0 0</AddPattern>
+		<Attributes>
+			<Setting id="ignore_zero" type="boolean" index="-1" value="true">
+				<SettingMeta id="" type="boolean" address="0" writable="true" description="Ignore zero-energy events" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" index="-1" value="3">
+				<SettingMeta id="" type="floating" address="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ticks" description="Coincidence window" />
+			</Setting>
+			<Setting id="buffered" type="boolean" index="-1" value="false">
+				<SettingMeta id="" type="boolean" address="0" writable="true" unit="T/F" description="Buffered output for efficient plotting (more memory)" />
+			</Setting>
+			<Setting id="symmetrized" type="boolean" index="-1" value="false">
+				<SettingMeta id="" type="boolean" address="0" writable="false" unit="T/F" description="Matrix is symmetrized" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+</SpectrumTemplates>

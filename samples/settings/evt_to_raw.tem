@@ -1,0 +1,215 @@
+<?xml version="1.0"?>
+<SpectrumTemplates>
+	<SpectrumTemplate Type="1D">
+		<Name>mca0</Name>
+		<Appearance>2159621925</Appearance>
+		<Visible>1</Visible>
+		<Resolution>13</Resolution>
+		<MatchPattern>1 0 0 0 0 0 0 0 0 0 0 0</MatchPattern>
+		<AddPattern>1 0 0 0 0 0 0 0 0 0 0 0</AddPattern>
+		<Attributes>
+			<Setting id="cutoff_logic" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="3">
+				<SettingMeta id="" type="floating" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ticks" description="Coincidence window" />
+			</Setting>
+			<Setting id="cutoff_bin" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>mca1</Name>
+		<Appearance>2147832535</Appearance>
+		<Visible>0</Visible>
+		<Resolution>13</Resolution>
+		<MatchPattern>0 1 0 0 0 0 0 0 0 0 0 0</MatchPattern>
+		<AddPattern>0 1 0 0 0 0 0 0 0 0 0 0</AddPattern>
+		<Attributes>
+			<Setting id="cutoff_logic" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="3">
+				<SettingMeta id="" type="floating" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ticks" description="Coincidence window" />
+			</Setting>
+			<Setting id="cutoff_bin" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>mca2</Name>
+		<Appearance>2158432469</Appearance>
+		<Visible>0</Visible>
+		<Resolution>13</Resolution>
+		<MatchPattern>0 0 1 0 0 0 0 0 0 0 0 0</MatchPattern>
+		<AddPattern>0 0 1 0 0 0 0 0 0 0 0 0</AddPattern>
+		<Attributes>
+			<Setting id="cutoff_logic" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="3">
+				<SettingMeta id="" type="floating" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ticks" description="Coincidence window" />
+			</Setting>
+			<Setting id="cutoff_bin" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>mca3</Name>
+		<Appearance>2161380211</Appearance>
+		<Visible>1</Visible>
+		<Resolution>13</Resolution>
+		<MatchPattern>0 0 0 0 1 0 0 0 0 0 0 0</MatchPattern>
+		<AddPattern>0 0 0 0 1 0 0 0 0 0 0 0</AddPattern>
+		<Attributes>
+			<Setting id="cutoff_logic" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="3">
+				<SettingMeta id="" type="floating" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ticks" description="Coincidence window" />
+			</Setting>
+			<Setting id="cutoff_bin" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>mca4</Name>
+		<Appearance>2148449332</Appearance>
+		<Visible>0</Visible>
+		<Resolution>13</Resolution>
+		<MatchPattern>0 0 0 0 0 1 0 0 0 0 0 0</MatchPattern>
+		<AddPattern>0 0 0 0 0 1 0 0 0 0 0 0</AddPattern>
+		<Attributes>
+			<Setting id="cutoff_logic" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="3">
+				<SettingMeta id="" type="floating" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ticks" description="Coincidence window" />
+			</Setting>
+			<Setting id="cutoff_bin" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>mca5</Name>
+		<Appearance>2160880141</Appearance>
+		<Visible>0</Visible>
+		<Resolution>13</Resolution>
+		<MatchPattern>0 0 0 0 0 0 1 0 0 0 0 0</MatchPattern>
+		<AddPattern>0 0 0 0 0 0 1 0 0 0 0 0</AddPattern>
+		<Attributes>
+			<Setting id="cutoff_logic" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="3">
+				<SettingMeta id="" type="floating" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ticks" description="Coincidence window" />
+			</Setting>
+			<Setting id="cutoff_bin" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>mca6</Name>
+		<Appearance>2150951030</Appearance>
+		<Visible>1</Visible>
+		<Resolution>13</Resolution>
+		<MatchPattern>0 0 0 0 0 0 0 0 1 0 0 0</MatchPattern>
+		<AddPattern>0 0 0 0 0 0 0 0 1 0 0 0</AddPattern>
+		<Attributes>
+			<Setting id="cutoff_logic" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="3">
+				<SettingMeta id="" type="floating" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ticks" description="Coincidence window" />
+			</Setting>
+			<Setting id="cutoff_bin" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>mca7</Name>
+		<Appearance>2149694221</Appearance>
+		<Visible>0</Visible>
+		<Resolution>13</Resolution>
+		<MatchPattern>0 0 0 0 0 0 0 0 0 1 0 0</MatchPattern>
+		<AddPattern>0 0 0 0 0 0 0 0 0 1 0 0</AddPattern>
+		<Attributes>
+			<Setting id="cutoff_logic" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="3">
+				<SettingMeta id="" type="floating" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ticks" description="Coincidence window" />
+			</Setting>
+			<Setting id="cutoff_bin" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="1D">
+		<Name>mca9</Name>
+		<Appearance>2148087760</Appearance>
+		<Visible>0</Visible>
+		<Resolution>13</Resolution>
+		<MatchPattern>0 0 0 0 0 0 0 0 0 0 1 0</MatchPattern>
+		<AddPattern>0 0 0 0 0 0 0 0 0 0 1 0</AddPattern>
+		<Attributes>
+			<Setting id="cutoff_logic" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="3">
+				<SettingMeta id="" type="floating" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ticks" description="Coincidence window" />
+			</Setting>
+			<Setting id="cutoff_bin" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="0" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="2D">
+		<Name>co01</Name>
+		<Appearance>2148992970</Appearance>
+		<Visible>1</Visible>
+		<Resolution>13</Resolution>
+		<MatchPattern>1 1 0 0 0 0 0 0 0 0 0 0</MatchPattern>
+		<AddPattern>1 1 0 0 0 0 0 0 0 0 0 0</AddPattern>
+		<Attributes>
+			<Setting id="cutoff_logic" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="50">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ns" description="Coincidence window" />
+			</Setting>
+			<Setting id="buffered" type="boolean" value="true">
+				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="true" unit="T/F" description="Buffered output for efficient plotting (more memory)" />
+			</Setting>
+			<Setting id="symmetrized" type="boolean" value="false">
+				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="false" unit="T/F" description="Matrix is symmetrized" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+	<SpectrumTemplate Type="Raw">
+		<Name>raw</Name>
+		<Appearance>2156777479</Appearance>
+		<Visible>0</Visible>
+		<Resolution>14</Resolution>
+		<MatchPattern>0 0 0 0 0 0 0 0 0 0 0 0</MatchPattern>
+		<AddPattern>1 1 1 1 1 1 1 1 1 1 1 1</AddPattern>
+		<Attributes>
+			<Setting id="cutoff_logic" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" />
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="50">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ns" description="Coincidence window" />
+			</Setting>
+			<Setting id="file_dir" type="dir_path" value="/home/mgs/qpx/data">
+				<SettingMeta id="" type="dir_path" address="-1" max_indices="0" writable="true" description="path to temp output directory" />
+			</Setting>
+		</Attributes>
+	</SpectrumTemplate>
+</SpectrumTemplates>

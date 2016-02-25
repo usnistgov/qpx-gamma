@@ -16,7 +16,7 @@
 		<Setting id="Detector" type="detector" indices="10" value="none" />
 		<Setting id="Detector" type="detector" indices="11" value="none" />
 	</Setting>
-	<Setting id="VME" type="stem" reference="/VME/qpx_plugin.set">
+	<Setting id="VME" type="stem" reference="/devices/VmUsb.set">
 		<Setting id="VME/ControllerID" type="text" value="VmUsb" />
 		<Setting id="VME/Registers" type="stem">
 			<Setting id="VME/Registers/GlobalMode" type="binary" value="0" />

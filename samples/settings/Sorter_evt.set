@@ -16,11 +16,15 @@
 		<Setting id="Detector" type="detector" indices="10" value="none" />
 		<Setting id="Detector" type="detector" indices="11" value="none" />
 	</Setting>
-	<Setting id="SorterEVT" type="stem" reference="/SorterEVT/qpx_plugin.set">
-		<Setting id="SorterEVT/Source file" type="file_path" value="/home/mgs/qpx/data/EVT/20160106/run-0000-00.evt" />
-		<Setting id="SorterEVT/Loop data" type="boolean" value="false" />
-		<Setting id="SorterEVT/Override pause" type="boolean" value="true" />
-		<Setting id="SorterEVT/Pause" type="integer" value="3000" />
-		<Setting id="SorterEVT/Override timestamps" type="boolean" value="false" />
+	<Setting id="ParserEVT" type="stem" reference="/devices/parser_evt.set">
+		<Setting id="ParserEVT/Source dir" type="dir_path" value="/home/mgs/qpx/data/EVT/run11" />
+		<Setting id="ParserEVT/Loop data" type="boolean" value="false" />
+		<Setting id="ParserEVT/Override pause" type="boolean" value="true" />
+		<Setting id="ParserEVT/Pause" type="integer" value="1500" />
+		<Setting id="ParserEVT/Override timestamps" type="boolean" value="false" />
+		<Setting id="ParserEVT/Bad_buffers_report" type="boolean" value="true" />
+		<Setting id="ParserEVT/Bad_buffers_output" type="boolean" value="true" />
+		<Setting id="ParserEVT/Cutoff" type="boolean" value="false" />
+		<Setting id="ParserEVT/Cutoff number" type="integer" value="0" />
 	</Setting>
 </Setting>

@@ -12,7 +12,7 @@
 		<Setting id="Detector" type="detector" indices="6" value="none" />
 		<Setting id="Detector" type="detector" indices="7" value="none" />
 	</Setting>
-	<Setting id="HV8" type="stem" reference="/HV8/qpx_plugin.set">
+	<Setting id="HV8" type="stem" reference="/devices/hv8.set">
 		<Setting id="HV8/PortName" type="file_path" value="/dev/ttyUSB0" />
 		<Setting id="HV8/BaudRate" type="int_menu" value="19200" />
 		<Setting id="HV8/CharacterSize" type="integer" value="8" />
@@ -32,7 +32,7 @@
 			<Setting id="HV8/Channels/Voltage" type="floating" indices="7" value="0" />
 		</Setting>
 	</Setting>
-	<Setting id="Pixie4" type="stem" reference="/XIA/qpx_plugin.set">
+	<Setting id="Pixie4" type="stem" reference="/devices/pixie4.set">
 		<Setting id="Pixie4/Run settings" type="stem">
 			<Setting id="Pixie4/Run settings/Run type" type="int_menu" value="259" />
 			<Setting id="Pixie4/Run settings/Poll interval" type="integer" value="400" />

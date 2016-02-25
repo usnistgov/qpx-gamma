@@ -93,6 +93,36 @@ std::string DigitizedVal::to_string() const {
 }
 
 
+void Hit::write_bin(std::ofstream &outfile, bool extras) const {
+  outfile.write((char*)&source_channel, sizeof(source_channel));
+  uint16_t time_hy = (timestamp.time_native >> 48) & 0x000000000000FFFF;
+  uint16_t time_hi = (timestamp.time_native >> 32) & 0x000000000000FFFF;
+  uint16_t time_mi = (timestamp.time_native >> 16) & 0x000000000000FFFF;
+  uint16_t time_lo =  timestamp.time_native        & 0x000000000000FFFF;
+  outfile.write((char*)&time_hy, sizeof(time_hy));
+  outfile.write((char*)&time_hi, sizeof(time_hi));
+  outfile.write((char*)&time_mi, sizeof(time_mi));
+  outfile.write((char*)&time_lo, sizeof(time_lo));
+  uint16_t nrg = energy.val(energy.bits());
+  outfile.write((char*)&nrg, sizeof(nrg));
+}
+
+void Hit::read_bin(std::ifstream &infile, std::map<int16_t, Hit> &model_hits, bool extras) {
+  uint16_t entry[6];
+  infile.read(reinterpret_cast<char*>(entry), 12);
+  int16_t channel = reinterpret_cast<int16_t&>(entry[0]);
+  *this = model_hits[channel];
+
+  source_channel = channel;
+  uint64_t time_hy = entry[1];
+  uint64_t time_hi = entry[2];
+  uint64_t time_mi = entry[3];
+  uint64_t time_lo = entry[4];
+  uint64_t timestamp = (time_hy << 48) + (time_hi << 32) + (time_mi << 16) + time_lo;
+  this->timestamp.time_native = timestamp;
+  energy.set_val(entry[5]);
+}
+
 std::string Hit::to_string() const {
   std::stringstream ss;
   ss << "[ch" << source_channel << "|t" << timestamp.to_string() << "|e" << energy.to_string() << "]";

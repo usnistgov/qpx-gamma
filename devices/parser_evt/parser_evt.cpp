@@ -16,11 +16,11 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::SorterEVT
+ *      Qpx::ParserEVT
  *
  ******************************************************************************/
 
-#include "sorter_evt.h"
+#include "parser_evt.h"
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
@@ -43,9 +43,9 @@
 
 namespace Qpx {
 
-static DeviceRegistrar<SorterEVT> registrar("SorterEVT");
+static DeviceRegistrar<ParserEVT> registrar("ParserEVT");
 
-SorterEVT::SorterEVT() {
+ParserEVT::ParserEVT() {
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 
   runner_ = nullptr;
@@ -61,12 +61,12 @@ SorterEVT::SorterEVT() {
   max_rbuf_evts_ = 0;
 }
 
-bool SorterEVT::die() {
+bool ParserEVT::die() {
   files_.clear();
   expected_rbuf_items_ = 0;
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
   //  for (auto &q : set.branches.my_data_) {
-  //    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "SorterEVT/Source file"))
+  //    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "ParserEVT/Source file"))
   //      q.metadata.writable = true;
   //  }
 
@@ -74,7 +74,7 @@ bool SorterEVT::die() {
 }
 
 
-SorterEVT::~SorterEVT() {
+ParserEVT::~ParserEVT() {
   daq_stop();
   if (runner_ != nullptr) {
     runner_->detach();
@@ -83,7 +83,7 @@ SorterEVT::~SorterEVT() {
   die();
 }
 
-bool SorterEVT::daq_start(SynchronizedQueue<Spill*>* out_queue) {
+bool ParserEVT::daq_start(SynchronizedQueue<Spill*>* out_queue) {
   if (run_status_.load() > 0)
     return false;
 
@@ -97,7 +97,7 @@ bool SorterEVT::daq_start(SynchronizedQueue<Spill*>* out_queue) {
   return true;
 }
 
-bool SorterEVT::daq_stop() {
+bool ParserEVT::daq_stop() {
   if (run_status_.load() == 0)
     return false;
 
@@ -115,7 +115,7 @@ bool SorterEVT::daq_stop() {
   return true;
 }
 
-bool SorterEVT::daq_running() {
+bool ParserEVT::daq_running() {
   if (run_status_.load() == 3)
     daq_stop();
   return (run_status_.load() > 0);
@@ -123,26 +123,26 @@ bool SorterEVT::daq_running() {
 
 
 
-bool SorterEVT::read_settings_bulk(Gamma::Setting &set) const {
+bool ParserEVT::read_settings_bulk(Gamma::Setting &set) const {
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
-      if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "SorterEVT/Override timestamps"))
+      if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserEVT/Override timestamps"))
         q.value_int = override_timestamps_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "SorterEVT/Loop data"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserEVT/Loop data"))
         q.value_int = loop_data_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "SorterEVT/Override pause"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserEVT/Override pause"))
         q.value_int = override_pause_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "SorterEVT/Bad_buffers_report"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserEVT/Bad_buffers_report"))
         q.value_int = bad_buffers_rep_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "SorterEVT/Bad_buffers_output"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserEVT/Bad_buffers_output"))
         q.value_int = bad_buffers_dbg_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "SorterEVT/Pause"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "ParserEVT/Pause"))
         q.value_int = pause_ms_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "SorterEVT/Cutoff"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserEVT/Cutoff"))
         q.value_int = terminate_premature_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "SorterEVT/Cutoff number"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserEVT/Cutoff number"))
         q.value_int = max_rbuf_evts_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::dir_path) && (q.id_ == "SorterEVT/Source dir")) {
+      else if ((q.metadata.setting_type == Gamma::SettingType::dir_path) && (q.id_ == "ParserEVT/Source dir")) {
         q.value_text = source_dir_;
         q.metadata.writable = !(status_ & DeviceStatus::booted);
       }
@@ -152,38 +152,38 @@ bool SorterEVT::read_settings_bulk(Gamma::Setting &set) const {
 }
 
 
-bool SorterEVT::write_settings_bulk(Gamma::Setting &set) {
+bool ParserEVT::write_settings_bulk(Gamma::Setting &set) {
   set.enrich(setting_definitions_);
 
   if (set.id_ != device_name())
     return false;
 
   for (auto &q : set.branches.my_data_) {
-    if (q.id_ == "SorterEVT/Override timestamps")
+    if (q.id_ == "ParserEVT/Override timestamps")
       override_timestamps_ = q.value_int;
-    else if (q.id_ == "SorterEVT/Loop data")
+    else if (q.id_ == "ParserEVT/Loop data")
       loop_data_ = q.value_int;
-    else if (q.id_ == "SorterEVT/Override pause")
+    else if (q.id_ == "ParserEVT/Override pause")
       override_pause_ = q.value_int;
-    else if (q.id_ == "SorterEVT/Bad_buffers_report")
+    else if (q.id_ == "ParserEVT/Bad_buffers_report")
       bad_buffers_rep_ = q.value_int;
-    else if (q.id_ == "SorterEVT/Bad_buffers_output")
+    else if (q.id_ == "ParserEVT/Bad_buffers_output")
       bad_buffers_dbg_ = q.value_int;
-    else if (q.id_ == "SorterEVT/Pause")
+    else if (q.id_ == "ParserEVT/Pause")
       pause_ms_ = q.value_int;
-    else if (q.id_ == "SorterEVT/Cutoff")
+    else if (q.id_ == "ParserEVT/Cutoff")
       terminate_premature_ = q.value_int;
-    else if (q.id_ == "SorterEVT/Cutoff number")
+    else if (q.id_ == "ParserEVT/Cutoff number")
       max_rbuf_evts_ = q.value_int;
-    else if (q.id_ == "SorterEVT/Source dir")
+    else if (q.id_ == "ParserEVT/Source dir")
       source_dir_ = q.value_text;
   }
   return true;
 }
 
-bool SorterEVT::boot() {
+bool ParserEVT::boot() {
   if (!(status_ & DeviceStatus::can_boot)) {
-    PL_WARN << "<SorterEVT> Cannot boot Sorter. Failed flag check (can_boot == 0)";
+    PL_WARN << "<ParserEVT> Cannot boot Sorter. Failed flag check (can_boot == 0)";
     return false;
   }
 
@@ -206,7 +206,7 @@ bool SorterEVT::boot() {
           std::string name = std::string(child.name());
           if (name == "File") {
             std::string filename(child.attribute("path").value());
-            PL_INFO << "<SorterEVT> Queued up file " << filename << " from XML manifest";
+            PL_INFO << "<ParserEVT> Queued up file " << filename << " from XML manifest";
             files_.push_back(filename);
           } else if (name == "Total") {
             expected_rbuf_items_ = child.attribute("RingBufferItems").as_ullong();
@@ -245,7 +245,7 @@ bool SorterEVT::boot() {
       if (((cfds = open_EVT_file(q)) != nullptr) && (cts = num_of_evts(cfds))) {
         delete cfds;
         files_.push_back(q);
-        PL_INFO << "<SorterEVT> Queued up file " << q << " with " << cts << " ring buffer items";
+        PL_INFO << "<ParserEVT> Queued up file " << q << " with " << cts << " ring buffer items";
         expected_rbuf_items_ += cts;
       }
     }
@@ -265,19 +265,19 @@ bool SorterEVT::boot() {
   }
 
 
-  PL_INFO << "<SorterEVT> successfully queued up EVT files for sorting with "
+  PL_INFO << "<ParserEVT> successfully queued up EVT files for sorting with "
           << expected_rbuf_items_ << " total ring buffer items";
 
   status_ = DeviceStatus::loaded | DeviceStatus::booted | DeviceStatus::can_run;
   //  for (auto &q : set.branches.my_data_) {
-  //    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "SorterEVT/Source file"))
+  //    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "ParserEVT/Source file"))
   //      q.metadata.writable = false;
   //  }
 
   return true;
 }
 
-uint64_t SorterEVT::num_of_evts(CFileDataSource *evtfile) {
+uint64_t ParserEVT::num_of_evts(CFileDataSource *evtfile) {
   if (evtfile == nullptr)
     return 0;
 
@@ -292,31 +292,31 @@ uint64_t SorterEVT::num_of_evts(CFileDataSource *evtfile) {
 }
 
 
-CFileDataSource* SorterEVT::open_EVT_file(std::string file) {
+CFileDataSource* ParserEVT::open_EVT_file(std::string file) {
   std::string filename("file://");
   filename += file;
 
   try { URL url(filename); }
-  catch (...) { PL_ERR << "<SorterEVT> could not parse URL"; return nullptr; }
+  catch (...) { PL_ERR << "<ParserEVT> could not parse URL"; return nullptr; }
 
   URL url(filename);
 
   CFileDataSource* evtfile;
   try { evtfile = new CFileDataSource(url, std::vector<uint16_t>()); }
-  catch (...) { PL_ERR << "<SorterEVT> could not open EVT file"; return nullptr; }
+  catch (...) { PL_ERR << "<ParserEVT> could not open EVT file"; return nullptr; }
 
   return evtfile;
 }
 
 
-void SorterEVT::get_all_settings() {
+void ParserEVT::get_all_settings() {
   if (status_ & DeviceStatus::booted) {
   }
 }
 
 
-void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill_queue) {
-  PL_DBG << "<SorterEVT> Start run worker";
+void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill_queue) {
+  PL_DBG << "<ParserEVT> Start run worker";
 
   Spill one_spill;
   bool timeout = false;
@@ -340,11 +340,11 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
     if (timeout)
       break;
 
-    PL_DBG << "<SorterEVT> Now processing " << file;
+    PL_DBG << "<ParserEVT> Now processing " << file;
 
     evt_file = open_EVT_file(file);
     if (evt_file == nullptr) {
-      PL_ERR << "<SorterEVT> Could not open " << file << ". Aborting.";
+      PL_ERR << "<ParserEVT> Could not open " << file << ". Aborting.";
       break;
     }
 
@@ -417,7 +417,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
               udt.live_time = pEvent->getTimeOffset();
               udt.total_time = pEvent->getTimeOffset();
 
-              //            PL_DBG << "<SorterEVT> " << udt.to_string();
+              //            PL_DBG << "<ParserEVT> " << udt.to_string();
 
               one_spill.stats.push_back(udt);
               done = true;
@@ -480,18 +480,18 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
 
               if (n_j > 1) {
                 if (callback->bad_buffers_rep_)
-                  PL_DBG << "<SorterEVT> MADC32 parse has multiple junk words, pattern: " << madc_pattern << " after previous " << prev_pattern;
+                  PL_DBG << "<ParserEVT> MADC32 parse has multiple junk words, pattern: " << madc_pattern << " after previous " << prev_pattern;
                 buffer_problem = true;
               }
               if (n_e != hits.size()) {
                 if (callback->bad_buffers_rep_)
-                  PL_DBG << "<SorterEVT> MADC32 parse has mismatch in number of retrieved events, pattern: " << madc_pattern << " after previous " << prev_pattern;
+                  PL_DBG << "<ParserEVT> MADC32 parse has mismatch in number of retrieved events, pattern: " << madc_pattern << " after previous " << prev_pattern;
                 buffer_problem = true;
                 lost_events += n_e;
               }
               if (n_h != n_f) {
                 if (callback->bad_buffers_rep_)
-                  PL_DBG << "<SorterEVT> MADC32 parse has mismatch in header and footer, pattern: " << madc_pattern << " after previous " << prev_pattern;
+                  PL_DBG << "<ParserEVT> MADC32 parse has mismatch in header and footer, pattern: " << madc_pattern << " after previous " << prev_pattern;
                 buffer_problem = true;
               }
 
@@ -508,7 +508,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
 
 
             } else
-              PL_DBG << "<SorterEVT> Header indicates " << expected_words << " expected 16-bit words, but does not match body size = " << (words - 1);
+              PL_DBG << "<ParserEVT> Header indicates " << expected_words << " expected 16-bit words, but does not match body size = " << (words - 1);
 
             delete pEvent;
           }
@@ -516,7 +516,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
         }
 
         default: {
-          PL_DBG << "<SorterEVT> Unexpected ring buffer item type " << item->type();
+          PL_DBG << "<ParserEVT> Unexpected ring buffer item type " << item->type();
         }
 
         }
@@ -524,7 +524,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
         delete item;
       }
 
-      PL_DBG << "<SorterEVT> Processed [" << filenr << "/" << callback->files_.size() << "] "
+      PL_DBG << "<ParserEVT> Processed [" << filenr << "/" << callback->files_.size() << "] "
              << (100.0 * count / callback->expected_rbuf_items_) << "%  cumulative hits = " << events
              << "   hits lost in bad buffers = " << lost_events
              << " (" << 100.0*lost_events/(events + lost_events) << "%)";//"  last time_upper = " << (last_time & 0xffffffffc0000000);
@@ -560,7 +560,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
     delete evt_file;
   }
 
-  PL_DBG << "<SorterEVT> before stop  hits = " << one_spill.hits.size();
+  PL_DBG << "<ParserEVT> before stop  hits = " << one_spill.hits.size();
 
   one_spill = Spill();
   for (auto &q : starts_signalled) {
@@ -575,11 +575,11 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
 
   callback->run_status_.store(3);
 
-  PL_DBG << "<SorterEVT> Stop run worker";
+  PL_DBG << "<ParserEVT> Stop run worker";
 
 }
 
-std::string SorterEVT::buffer_to_string(const std::list<uint32_t>& buffer) {
+std::string ParserEVT::buffer_to_string(const std::list<uint32_t>& buffer) {
   std::ostringstream out2;
   int j=0;
   for (auto &q : buffer) {
@@ -591,7 +591,7 @@ std::string SorterEVT::buffer_to_string(const std::list<uint32_t>& buffer) {
   return out2.str();
 }
 
-Spill SorterEVT::get_spill() {
+Spill ParserEVT::get_spill() {
   Spill one_spill;
 
   return one_spill;

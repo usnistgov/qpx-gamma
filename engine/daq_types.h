@@ -125,6 +125,9 @@ struct Hit {
 
   std::string to_string() const;
 
+  void write_bin(std::ofstream &outfile, bool extras = false) const;
+  void read_bin(std::ifstream &infile, std::map<int16_t, Hit> &model_hits, bool extras = false);
+
   bool operator<(const Hit other) const {return (timestamp < other.timestamp);}
   bool operator>(const Hit other) const {return (timestamp > other.timestamp);}
   bool operator==(const Hit other) const {

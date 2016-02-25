@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-#include "pixie_plugin.h"
+#include "pixie4.h"
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>

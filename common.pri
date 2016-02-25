@@ -79,6 +79,6 @@ win32 {
     error( "Couldn't find the engine.pri file!" )
 }
 
-! include( $$PWD/hardware/hardware.pri ) {
+! include( $$PWD/devices/devices.pri ) {
     error( "Couldn't find the harware.pri file!" )
 }

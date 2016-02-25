@@ -16,11 +16,11 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::SorterPlugin
+ *      Qpx::ParserRaw
  *
  ******************************************************************************/
 
-#include "sorter_plugin.h"
+#include "parser_raw.h"
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
@@ -30,9 +30,9 @@
 
 namespace Qpx {
 
-static DeviceRegistrar<SorterPlugin> registrar("Sorter");
+static DeviceRegistrar<ParserRaw> registrar("ParserRaw");
 
-SorterPlugin::SorterPlugin() {
+ParserRaw::ParserRaw() {
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 
   runner_ = nullptr;
@@ -43,7 +43,7 @@ SorterPlugin::SorterPlugin() {
   override_timestamps_= false;
 }
 
-bool SorterPlugin::die() {
+bool ParserRaw::die() {
   if ((status_ & DeviceStatus::booted) != 0)
     file_bin_.close();
 
@@ -58,7 +58,7 @@ bool SorterPlugin::die() {
 
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 //  for (auto &q : set.branches.my_data_) {
-//    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "Sorter/Source file"))
+//    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "ParserRaw/Source file"))
 //      q.metadata.writable = true;
 //  }
 
@@ -66,7 +66,7 @@ bool SorterPlugin::die() {
 }
 
 
-SorterPlugin::~SorterPlugin() {
+ParserRaw::~ParserRaw() {
   daq_stop();
   if (runner_ != nullptr) {
     runner_->detach();
@@ -75,7 +75,7 @@ SorterPlugin::~SorterPlugin() {
   die();
 }
 
-bool SorterPlugin::daq_start(SynchronizedQueue<Spill*>* out_queue) {
+bool ParserRaw::daq_start(SynchronizedQueue<Spill*>* out_queue) {
   if (run_status_.load() > 0)
     return false;
 
@@ -89,7 +89,7 @@ bool SorterPlugin::daq_start(SynchronizedQueue<Spill*>* out_queue) {
   return true;
 }
 
-bool SorterPlugin::daq_stop() {
+bool ParserRaw::daq_stop() {
   if (run_status_.load() == 0)
     return false;
 
@@ -107,7 +107,7 @@ bool SorterPlugin::daq_stop() {
   return true;
 }
 
-bool SorterPlugin::daq_running() {
+bool ParserRaw::daq_running() {
   if (run_status_.load() == 3)
     daq_stop();
   return (run_status_.load() > 0);
@@ -115,28 +115,28 @@ bool SorterPlugin::daq_running() {
 
 
 
-bool SorterPlugin::read_settings_bulk(Gamma::Setting &set) const {
+bool ParserRaw::read_settings_bulk(Gamma::Setting &set) const {
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
-      if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "Sorter/Override timestamps"))
+      if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserRaw/Override timestamps"))
         q.value_int = override_timestamps_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "Sorter/Loop data"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserRaw/Loop data"))
         q.value_int = loop_data_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "Sorter/Override pause"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserRaw/Override pause"))
         q.value_int = override_pause_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Sorter/Pause"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "ParserRaw/Pause"))
         q.value_int = pause_ms_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "Sorter/Source file")) {
+      else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "ParserRaw/Source file")) {
         q.value_text = source_file_;
         q.metadata.writable = !(status_ & DeviceStatus::booted);
       }
-      else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "Sorter/Binary file"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "ParserRaw/Binary file"))
         q.value_text = source_file_bin_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Sorter/StatsUpdates"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "ParserRaw/StatsUpdates"))
         q.value_int = spills_.size();
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Sorter/Hits"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "ParserRaw/Hits"))
         q.value_int = (bin_end_ - bin_begin_) / 12;
-      else if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "Sorter/StartTime"))
+      else if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "ParserRaw/StartTime"))
         q.value_text = boost::posix_time::to_iso_extended_string(start_.time_start);
     }
   }
@@ -144,30 +144,30 @@ bool SorterPlugin::read_settings_bulk(Gamma::Setting &set) const {
 }
 
 
-bool SorterPlugin::write_settings_bulk(Gamma::Setting &set) {
+bool ParserRaw::write_settings_bulk(Gamma::Setting &set) {
   set.enrich(setting_definitions_);
 
   if (set.id_ != device_name())
     return false;
 
   for (auto &q : set.branches.my_data_) {
-    if (q.id_ == "Sorter/Override timestamps")
+    if (q.id_ == "ParserRaw/Override timestamps")
       override_timestamps_ = q.value_int;
-    else if (q.id_ == "Sorter/Loop data")
+    else if (q.id_ == "ParserRaw/Loop data")
       loop_data_ = q.value_int;
-    else if (q.id_ == "Sorter/Override pause")
+    else if (q.id_ == "ParserRaw/Override pause")
       override_pause_ = q.value_int;
-    else if (q.id_ == "Sorter/Pause")
+    else if (q.id_ == "ParserRaw/Pause")
       pause_ms_ = q.value_int;
-    else if (q.id_ == "Sorter/Source file")
+    else if (q.id_ == "ParserRaw/Source file")
       source_file_ = q.value_text;
   }
   return true;
 }
 
-bool SorterPlugin::boot() {
+bool ParserRaw::boot() {
   if (!(status_ & DeviceStatus::can_boot)) {
-    PL_WARN << "<SorterPlugin> Cannot boot Sorter. Failed flag check (can_boot == 0)";
+    PL_WARN << "<ParserRaw> Cannot boot Sorter. Failed flag check (can_boot == 0)";
     return false;
   }
 
@@ -176,13 +176,13 @@ bool SorterPlugin::boot() {
   pugi::xml_document doc;
 
   if (!doc.load_file(source_file_.c_str())) {
-    PL_WARN << "<SorterPlugin> Could not parse XML in " << source_file_;
+    PL_WARN << "<ParserRaw> Could not parse XML in " << source_file_;
     return false;
   }
 
   pugi::xml_node root = doc.first_child();
   if (!root || (std::string(root.name()) != "QpxListData")) {
-    PL_WARN << "<SorterPlugin> Bad root ID in " << source_file_;
+    PL_WARN << "<ParserRaw> Bad root ID in " << source_file_;
     return false;
   }
 
@@ -191,7 +191,7 @@ bool SorterPlugin::boot() {
   boost::filesystem::path path = meta.remove_filename();
 
   if (!boost::filesystem::is_directory(meta)) {
-    PL_DBG << "<SorterPlugin> Bad path for list mode data";
+    PL_DBG << "<ParserRaw> Bad path for list mode data";
     return false;
   }
 
@@ -200,17 +200,17 @@ bool SorterPlugin::boot() {
   file_bin_.open(bin_path.string(), std::ofstream::in | std::ofstream::binary);
 
   if (!file_bin_.is_open()) {
-    PL_DBG << "<SorterPlugin> Could not open binary " << bin_path.string();
+    PL_DBG << "<ParserRaw> Could not open binary " << bin_path.string();
     return false;
   }
 
   if (!file_bin_.good()) {
     file_bin_.close();
-    PL_DBG << "<SorterPlugin> Could not open binary " << bin_path.string();
+    PL_DBG << "<ParserRaw> Could not open binary " << bin_path.string();
     return false;
   }
 
-  PL_DBG << "<SorterPlugin> Success opening binary " << bin_path.string();
+  PL_DBG << "<ParserRaw> Success opening binary " << bin_path.string();
 
   file_bin_.seekg (0, std::ios::beg);
   bin_begin_ = file_bin_.tellg();
@@ -246,14 +246,14 @@ bool SorterPlugin::boot() {
 }
 
 
-void SorterPlugin::get_all_settings() {
+void ParserRaw::get_all_settings() {
   if (status_ & DeviceStatus::booted) {
   }
 }
 
 
-void SorterPlugin::worker_run(SorterPlugin* callback, SynchronizedQueue<Spill*>* spill_queue) {
-  PL_DBG << "<SorterPlugin> Start run worker";
+void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill_queue) {
+  PL_DBG << "<ParserRaw> Start run worker";
 
   Spill one_spill;
 
@@ -279,7 +279,7 @@ void SorterPlugin::worker_run(SorterPlugin* callback, SynchronizedQueue<Spill*>*
         StatsUpdate prevstats = one_spill.stats.front();
         if ((prevstats != StatsUpdate()) && (newstats != StatsUpdate()) && (newstats.lab_time > prevstats.lab_time)) {
           boost::posix_time::time_duration dif = newstats.lab_time - prevstats.lab_time;
-          //        PL_DBG << "<SorterPlugin> Pause for " << dif.total_seconds();
+          //        PL_DBG << "<ParserRaw> Pause for " << dif.total_seconds();
           boost::this_thread::sleep(dif);
         }
       }
@@ -303,20 +303,20 @@ void SorterPlugin::worker_run(SorterPlugin* callback, SynchronizedQueue<Spill*>*
   spill_queue->enqueue(new Spill(one_spill));
 
   if (callback->spills_.empty()) {
-    PL_DBG << "<SorterPlugin> Out of spills. Premature termination";
+    PL_DBG << "<ParserRaw> Out of spills. Premature termination";
   }
 
   callback->run_status_.store(3);
 
-  PL_DBG << "<SorterPlugin> Stop run worker";
+  PL_DBG << "<ParserRaw> Stop run worker";
 
 }
 
 
 
-Spill SorterPlugin::get_spill() {
+Spill ParserRaw::get_spill() {
   Spill one_spill;
-  std::map<int, Hit> model_hits;
+  std::map<int16_t, Hit> model_hits;
 
   if (!spills_.empty()) {
     StatsUpdate this_stats = spills_.front();
@@ -325,8 +325,8 @@ Spill SorterPlugin::get_spill() {
     spills2_.back().lab_time += boost::posix_time::seconds(10); //hack
     spills_.pop_front();
     while (!spills_.empty()
-           && (spills_.front().lab_time == one_spill.stats.back().lab_time)) {
-//      PL_DBG << "<SorterPlugin> adding to update ch=" << one_spill.stats.back().channel << " another update ch=" << callback->spills_.front().channel;
+           && (spills_.front().lab_time == one_spill.stats.back().lab_time))
+    {
       one_spill.stats.push_back(spills_.front());
       spills2_.push_back(spills_.front());
       spills2_.back().lab_time += boost::posix_time::seconds(10); //hack
@@ -336,42 +336,28 @@ Spill SorterPlugin::get_spill() {
     for (auto &s : one_spill.stats)
       model_hits[s.source_channel] = s.model_hit;
 
-    uint16_t event_entry[6];
     //      PL_DBG << "<Sorter> will produce no of events " << spills_.front().events_in_spill;
-    while ((one_spill.hits.size() < this_stats.events_in_spill) && (file_bin_.tellg() < bin_end_)) {
-      file_bin_.read(reinterpret_cast<char*>(event_entry), 12);
-      int16_t channel = reinterpret_cast<int16_t&>(event_entry[0]);
-      Hit one_event = model_hits[channel];
-
-      one_event.source_channel = channel;
-      //      PL_DBG << "event chan " << chan;
-      uint64_t time_hy = event_entry[1];
-      uint64_t time_hi = event_entry[2];
-      uint64_t time_mi = event_entry[3];
-      uint64_t time_lo = event_entry[4];
-      uint64_t timestamp = (time_hy << 48) + (time_hi << 32) + (time_mi << 16) + time_lo;
-      one_event.timestamp.time_native = timestamp;
-      one_event.energy.set_val(event_entry[5]);
-      //PL_DBG << "event created chan=" << one_event.channel << " time=" << one_event.timestamp.time << " energy=" << one_event.energy;
-      //file_bin_.seekg(10, std::ios::cur);
-
+    while ((one_spill.hits.size() < this_stats.events_in_spill) && (file_bin_.tellg() < bin_end_))
+    {
+      Hit one_event;
+      one_event.read_bin(file_bin_, model_hits);
       one_spill.hits.push_back(one_event);
     }
 
   }
 
-  PL_DBG << "<SorterPlugin> made events " << one_spill.hits.size()
+  PL_DBG << "<ParserRaw> made events " << one_spill.hits.size()
          << " and " << one_spill.stats.size() << " stats updates";
 
   if (loop_data_) {
     if (spills_.empty() && (!spills2_.empty())) {
       spills_ = spills2_;
       spills2_.clear();
-      PL_DBG << "<SorterPlugin> rewinding spills";
+      PL_DBG << "<ParserRaw> rewinding spills";
     }
 
     if (file_bin_.tellg() == bin_end_) {
-      PL_DBG << "<SorterPlugin> rewinding binary";
+      PL_DBG << "<ParserRaw> rewinding binary";
       file_bin_.seekg (0, std::ios::beg);
     }
   }

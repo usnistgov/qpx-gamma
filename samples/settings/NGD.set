@@ -8,7 +8,7 @@
 		<Setting id="Detector" type="detector" indices="2" value="none" />
 		<Setting id="Detector" type="detector" indices="3" value="none" />
 	</Setting>
-	<Setting id="Pixie4" type="stem" reference="/XIA/qpx_plugin.set">
+	<Setting id="Pixie4" type="stem" reference="/devices/pixie4.set">
 		<Setting id="Pixie4/Run settings" type="stem">
 			<Setting id="Pixie4/Run settings/Run type" type="int_menu" value="259" />
 			<Setting id="Pixie4/Run settings/Poll interval" type="integer" value="400" />

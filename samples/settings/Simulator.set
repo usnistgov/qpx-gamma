@@ -8,14 +8,16 @@
 		<Setting id="Detector" type="detector" indices="2" value="none" />
 		<Setting id="Detector" type="detector" indices="3" value="none" />
 	</Setting>
-	<Setting id="Simulator2D" type="stem" reference="/Simulator2D/qpx_plugin.set">
-		<Setting id="Simulator2D/Source file" type="file_path" value="/home/mgs/qpxdata/projects/Co60_24h_16bit.qpx" />
+	<Setting id="Simulator2D" type="stem" reference="/devices/simulator2d.set">
+		<Setting id="Simulator2D/Source file" type="file_path" value="/home/mgs/qpx/data/projects/Eu152_6h.qpx" />
 		<Setting id="Simulator2D/Source spectrum" type="int_menu" value="0" />
 		<Setting id="Simulator2D/Resolution" type="integer" value="13" />
-		<Setting id="Simulator2D/Dest1" type="integer" value="0" />
-		<Setting id="Simulator2D/Dest2" type="integer" value="1" />
 		<Setting id="Simulator2D/CoincThresh" type="integer" value="5" />
-		<Setting id="Simulator2D/ScaleRate" type="floating" value="1" />
-		<Setting id="Simulator2D/SpillInterval" type="integer" value="5" />
+		<Setting id="Simulator2D/ScaleRate" type="floating" value="100" />
+		<Setting id="Simulator2D/SpillInterval" type="integer" value="15" />
+		<Setting id="Simulator2D/Gain0" type="floating" indices="0" value="100" />
+		<Setting id="Simulator2D/Gain1" type="floating" indices="1" value="100" />
+		<Setting id="Simulator2D/TimebaseMult" type="floating" value="1000" />
+		<Setting id="Simulator2D/TimebaseDiv" type="floating" value="75" />
 	</Setting>
 </Setting>
