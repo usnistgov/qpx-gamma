@@ -65,10 +65,10 @@ bool SorterEVT::die() {
   files_.clear();
   expected_rbuf_items_ = 0;
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
-//  for (auto &q : set.branches.my_data_) {
-//    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "SorterEVT/Source file"))
-//      q.metadata.writable = true;
-//  }
+  //  for (auto &q : set.branches.my_data_) {
+  //    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "SorterEVT/Source file"))
+  //      q.metadata.writable = true;
+  //  }
 
   return true;
 }
@@ -269,10 +269,10 @@ bool SorterEVT::boot() {
           << expected_rbuf_items_ << " total ring buffer items";
 
   status_ = DeviceStatus::loaded | DeviceStatus::booted | DeviceStatus::can_run;
-//  for (auto &q : set.branches.my_data_) {
-//    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "SorterEVT/Source file"))
-//      q.metadata.writable = false;
-//  }
+  //  for (auto &q : set.branches.my_data_) {
+  //    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "SorterEVT/Source file"))
+  //      q.metadata.writable = false;
+  //  }
 
   return true;
 }
@@ -352,85 +352,86 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
 
     while (!timeout) {
 
-    one_spill = Spill();
+      one_spill = Spill();
 
-    bool done = false;
-    std::list<uint32_t> prev_MADC_data;
-    std::string prev_pattern;
+      bool done = false;
+      std::list<uint32_t> prev_MADC_data;
+      std::string prev_pattern;
 
-    while ( (!callback->terminate_premature_ || (count < callback->max_rbuf_evts_)) && (!done) && (item = evt_file->getItem()) != NULL)  {
-      count++;
+      while ( (!callback->terminate_premature_ || (count < callback->max_rbuf_evts_))
+              && (!done) && ((item = evt_file->getItem()) != NULL) )  {
+        count++;
 
-      switch (item->type()) {
+        switch (item->type()) {
 
-      case RING_FORMAT: {
-        CDataFormatItem* pEvent = reinterpret_cast<CDataFormatItem*>(fact.createRingItem(*item));
-        if (pEvent) {
-          //PL_DBG << "Ring format: " << pEvent->toString();
-          delete pEvent;
-        }
-        break;
-      }
-      case END_RUN:
-      case BEGIN_RUN:
-      {
-        CRingStateChangeItem* pEvent = reinterpret_cast<CRingStateChangeItem*>(fact.createRingItem(*item));
-        if (pEvent) {
-
-          ts = boost::posix_time::from_time_t(pEvent->getTimestamp());
-  //        PL_DBG << "State :" << pEvent->toString();
-          PL_DBG << "State  ts=" << boost::posix_time::to_iso_extended_string(ts)
-                 << "  elapsed=" << pEvent->getElapsedTime()
-                 << "  run#=" << pEvent->getRunNumber()
-                 << "  barrier=" << pEvent->getBarrierType();
-
-          if (pEvent->getBarrierType() == 1) {
-            time_start = ts;
-            starts_signalled.clear();
-          } else if (pEvent->getBarrierType() == 2) {
-            done = true;
+        case RING_FORMAT: {
+          CDataFormatItem* pEvent = reinterpret_cast<CDataFormatItem*>(fact.createRingItem(*item));
+          if (pEvent) {
+            //PL_DBG << "Ring format: " << pEvent->toString();
+            delete pEvent;
           }
-
-          delete pEvent;
+          break;
         }
-        break;
-      }
+        case END_RUN:
+        case BEGIN_RUN:
+        {
+          CRingStateChangeItem* pEvent = reinterpret_cast<CRingStateChangeItem*>(fact.createRingItem(*item));
+          if (pEvent) {
 
-      case PHYSICS_EVENT_COUNT:
-      {
-        CRingPhysicsEventCountItem* pEvent = reinterpret_cast<CRingPhysicsEventCountItem*>(fact.createRingItem(*item));
-        if (pEvent) {
-  //        PL_DBG << "Physics counts: " << pEvent->toString();
-          ts = boost::posix_time::from_time_t(pEvent->getTimestamp());
-//          PL_DBG << "State  ts=" << boost::posix_time::to_iso_extended_string(ts)
-//                 << "  elapsed=" << pEvent->getTimeOffset()
-//                 << "  total_events=" << pEvent->getEventCount();
+            ts = boost::posix_time::from_time_t(pEvent->getTimestamp());
+            //        PL_DBG << "State :" << pEvent->toString();
+            PL_DBG << "State  ts=" << boost::posix_time::to_iso_extended_string(ts)
+                   << "  elapsed=" << pEvent->getElapsedTime()
+                   << "  run#=" << pEvent->getRunNumber()
+                   << "  barrier=" << pEvent->getBarrierType();
 
-          for (auto &q : starts_signalled) {
-            StatsUpdate udt;
-            udt.model_hit = MADC32::model_hit();
+            if (pEvent->getBarrierType() == 1) {
+              time_start = ts;
+              starts_signalled.clear();
+            } else if (pEvent->getBarrierType() == 2) {
+              done = true;
+            }
 
-            udt.source_channel = q;
-            udt.lab_time = ts;
-            udt.fast_peaks = pEvent->getEventCount();
-            udt.live_time = pEvent->getTimeOffset();
-            udt.total_time = pEvent->getTimeOffset();
-
-//            PL_DBG << "<SorterEVT> " << udt.to_string();
-
-            one_spill.stats.push_back(udt);
-            done = true;
+            delete pEvent;
           }
-
-          delete pEvent;
+          break;
         }
-        break;
-      }
+
+        case PHYSICS_EVENT_COUNT:
+        {
+          CRingPhysicsEventCountItem* pEvent = reinterpret_cast<CRingPhysicsEventCountItem*>(fact.createRingItem(*item));
+          if (pEvent) {
+            //        PL_DBG << "Physics counts: " << pEvent->toString();
+            ts = boost::posix_time::from_time_t(pEvent->getTimestamp());
+            //          PL_DBG << "State  ts=" << boost::posix_time::to_iso_extended_string(ts)
+            //                 << "  elapsed=" << pEvent->getTimeOffset()
+            //                 << "  total_events=" << pEvent->getEventCount();
+
+            for (auto &q : starts_signalled) {
+              StatsUpdate udt;
+              udt.model_hit = MADC32::model_hit();
+
+              udt.source_channel = q;
+              udt.lab_time = ts;
+              udt.fast_peaks = pEvent->getEventCount();
+              udt.live_time = pEvent->getTimeOffset();
+              udt.total_time = pEvent->getTimeOffset();
+
+              //            PL_DBG << "<SorterEVT> " << udt.to_string();
+
+              one_spill.stats.push_back(udt);
+              done = true;
+            }
+
+            delete pEvent;
+          }
+          break;
+        }
 
 
-      case PHYSICS_EVENT: {
-        CPhysicsEventItem* pEvent = reinterpret_cast<CPhysicsEventItem*>(fact.createRingItem(*item));
-        if (pEvent) {
+        case PHYSICS_EVENT: {
+          CPhysicsEventItem* pEvent = reinterpret_cast<CPhysicsEventItem*>(fact.createRingItem(*item));
+          if (pEvent) {
 
             uint32_t  bytes = pEvent->getBodySize();
             uint32_t  words = bytes/sizeof(uint16_t);
@@ -509,61 +510,67 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
             } else
               PL_DBG << "<SorterEVT> Header indicates " << expected_words << " expected 16-bit words, but does not match body size = " << (words - 1);
 
-          delete pEvent;
+            delete pEvent;
+          }
+          break;
         }
+
+        default: {
+          PL_DBG << "<SorterEVT> Unexpected ring buffer item type " << item->type();
+        }
+
+        }
+
+        delete item;
+      }
+
+      PL_DBG << "<SorterEVT> Processed [" << filenr << "/" << callback->files_.size() << "] "
+             << (100.0 * count / callback->expected_rbuf_items_) << "%  cumulative hits = " << events
+             << "   hits lost in bad buffers = " << lost_events
+             << " (" << 100.0*lost_events/(events + lost_events) << "%)";//"  last time_upper = " << (last_time & 0xffffffffc0000000);
+
+
+
+      if (callback->override_timestamps_) {
+        for (auto &q : one_spill.stats)
+          q.lab_time = boost::posix_time::microsec_clock::local_time();
+        // livetime and realtime are not changed accordingly
+      }
+
+      if (callback->override_pause_) {
+        boost::this_thread::sleep(boost::posix_time::milliseconds(callback->pause_ms_));
+      } else {
+
+      }
+
+      //    for (auto &q : one_spill.stats) {
+      //      if (!starts_signalled.count(q.channel)) {
+      //        q.stats_type = StatsType::start;
+      //        starts_signalled.insert(q.channel);
+      //      }
+      //    }
+      spill_queue->enqueue(new Spill(one_spill));
+
+      timeout = (callback->run_status_.load() == 2) || (callback->terminate_premature_ && (count >= callback->max_rbuf_evts_));
+      if (item == NULL)
         break;
-      }
-
-      default: {
-        PL_DBG << "<SorterEVT> Unexpected ring buffer item type " << item->type();
-      }
-
-      }
-
-      delete item;
-    }
-
-    PL_DBG << "<SorterEVT> Processed [" << filenr << "/" << callback->files_.size() << "] "
-           << (100.0 * count / callback->expected_rbuf_items_) << "%  cumulative hits = " << events
-           << "   hits lost in bad buffers = " << lost_events
-           << " (" << 100.0*lost_events/(events + lost_events) << "%)";//"  last time_upper = " << (last_time & 0xffffffffc0000000);
-
-
-
-    if (callback->override_timestamps_) {
-      for (auto &q : one_spill.stats)
-        q.lab_time = boost::posix_time::microsec_clock::local_time();
-      // livetime and realtime are not changed accordingly
-    }
-
-    if (callback->override_pause_) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(callback->pause_ms_));
-    } else {
-
-    }
-
-//    for (auto &q : one_spill.stats) {
-//      if (!starts_signalled.count(q.channel)) {
-//        q.stats_type = StatsType::start;
-//        starts_signalled.insert(q.channel);
-//      }
-//    }
-    spill_queue->enqueue(new Spill(one_spill));
-
-    timeout = (callback->run_status_.load() == 2) || (callback->terminate_premature_ && (count >= callback->max_rbuf_evts_));
-    if (item == NULL)
-      break;
     }
 
 
     delete evt_file;
   }
 
-  one_spill.hits.clear();
+  PL_DBG << "<SorterEVT> before stop  hits = " << one_spill.hits.size();
 
-  for (auto &q : one_spill.stats)
-    q.stats_type = StatsType::stop;
-
+  one_spill = Spill();
+  for (auto &q : starts_signalled) {
+    StatsUpdate udt;
+    udt.stats_type = StatsType::stop;
+    udt.model_hit = MADC32::model_hit();
+    udt.source_channel = q;
+    udt.lab_time = ts;
+    one_spill.stats.push_back(udt);
+  }
   spill_queue->enqueue(new Spill(one_spill));
 
   callback->run_status_.store(3);

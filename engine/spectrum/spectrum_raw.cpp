@@ -82,10 +82,6 @@ bool SpectrumRaw::init_bin() {
 
   PL_DBG << "binary is good";
 
-  xml_root_.append_child("BinaryOut");
-  xml_root_.last_child().append_child("FileName").append_child(pugi::node_pcdata).set_value(file_name_bin_.c_str());
-  xml_root_.last_child().append_child("FileFormat").append_child(pugi::node_pcdata).set_value("CHANNEL_NUMBER  TIME_HI  TIME_MID  TIME_LOW  ENERGY");
-
   open_bin_ = true;
   return true;
 
@@ -125,13 +121,13 @@ void SpectrumRaw::addRun(const RunInfo& run) {
 
 void SpectrumRaw::_closeAcquisition() {
   if (open_xml_) {
-    PL_DBG << "<SpectrumRaw> writing " << file_name_txt_ << " for " << metadata_.name;
+    PL_DBG << "<SpectrumRaw> writing " << file_name_txt_ << " for \"" << metadata_.name << "\"";
     if (!xml_doc_.save_file(file_name_txt_.c_str()))
       PL_ERR << "<SpectrumRaw> Failed to save " << file_name_txt_;
     open_xml_ = false;
   }
   if (open_bin_) {
-    PL_DBG << "<SpectrumRaw> closing " << file_name_bin_ << " for " << metadata_.name;
+    PL_DBG << "<SpectrumRaw> closing " << file_name_bin_ << " for \"" << metadata_.name << "\"";
     file_bin_.close();
     open_bin_ = false;
   }
@@ -156,7 +152,8 @@ void SpectrumRaw::hit_bin(const Event &newEvent) {
     file_bin_.write((char*)&time_hi, sizeof(time_hi));
     file_bin_.write((char*)&time_mi, sizeof(time_mi));
     file_bin_.write((char*)&time_lo, sizeof(time_lo));
-    file_bin_.write((char*)&q.energy, sizeof(q.energy));
+    uint16_t nrg = q.energy.val(q.energy.bits());
+    file_bin_.write((char*)&nrg, sizeof(nrg));
     events_this_spill_++;
   }
 }

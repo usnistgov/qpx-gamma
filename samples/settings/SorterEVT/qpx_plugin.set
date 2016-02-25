@@ -9,6 +9,8 @@
 		<branch address="5" id="SorterEVT/Override timestamps" />
 		<branch address="6" id="SorterEVT/Bad_buffers_report" />
 		<branch address="7" id="SorterEVT/Bad_buffers_output" />
+		<branch address="8" id="SorterEVT/Cutoff" />
+		<branch address="9" id="SorterEVT/Cutoff number" />
 	</SettingMeta>
 	<SettingMeta id="SorterEVT/Source file" type="file_path" name="Source file" writable="true" unit="List mode output (*.evt)" />
 	<SettingMeta id="SorterEVT/Source dir" type="dir_path" name="Source directory" writable="true" />
@@ -18,4 +20,6 @@
 	<SettingMeta id="SorterEVT/Override timestamps" type="boolean" name="Override timestamps" writable="true" />
 	<SettingMeta id="SorterEVT/Bad_buffers_report" type="boolean" name="Report on bad buffers" writable="true" />
 	<SettingMeta id="SorterEVT/Bad_buffers_output" type="boolean" name="Output bad buffers as binary" writable="true" />
+	<SettingMeta id="SorterEVT/Cutoff" type="boolean" name="Terminate prematurely" writable="true" />
+	<SettingMeta id="SorterEVT/Cutoff number" type="integer" name="Maximum number of ringbuffer events" writable="true" step="5" minimum="0" maximum="500" />
 </SorterEVTEVT>

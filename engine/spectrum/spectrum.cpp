@@ -206,7 +206,7 @@ void Spectrum::closeAcquisition() {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  _closeAcquisition();
+  this->_closeAcquisition();
 }
 
 

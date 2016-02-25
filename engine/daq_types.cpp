@@ -197,18 +197,28 @@ std::string StatsUpdate::to_string() const
 
 void StatsUpdate::to_xml(pugi::xml_node &root) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+
+  std::string type = "run";
+  if (stats_type == StatsType::start)
+    type = "start";
+  else if (stats_type == StatsType::stop)
+    type = "stop";
+
+  node.append_attribute("type").set_value(type.c_str());
+
   node.append_attribute("channel").set_value(std::to_string(source_channel).c_str());
   node.append_attribute("lab_time").set_value(boost::posix_time::to_iso_extended_string(lab_time).c_str());
   node.append_attribute("events_in_spill").set_value(std::to_string(events_in_spill).c_str());
+  node.append_attribute("timebase_mult").set_value(std::to_string(model_hit.timestamp.timebase_multiplier).c_str());
+  node.append_attribute("timebase_div").set_value(std::to_string(model_hit.timestamp.timebase_divider).c_str());
+  node.append_attribute("energy_bits").set_value(std::to_string(model_hit.energy.bits()).c_str());
+
   node.append_attribute("total_time").set_value(std::to_string(total_time).c_str());
   node.append_attribute("event_rate").set_value(std::to_string(event_rate).c_str());
   node.append_attribute("fast_peaks").set_value(std::to_string(fast_peaks).c_str());
   node.append_attribute("live_time").set_value(std::to_string(live_time).c_str());
   node.append_attribute("ftdt").set_value(std::to_string(ftdt).c_str());
   node.append_attribute("sfdt").set_value(std::to_string(sfdt).c_str());
-
-  node.append_attribute("timebase_mult").set_value(std::to_string(model_hit.timestamp.timebase_multiplier).c_str());
-  node.append_attribute("timebase_div").set_value(std::to_string(model_hit.timestamp.timebase_divider).c_str());
 }
 
 
@@ -226,8 +236,20 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
     iss >> lab_time;
   }
 
+  std::string type(node.attribute("type").value());
+  if (type == "start")
+    stats_type = StatsType::start;
+  else if (type == "stop")
+    stats_type = StatsType::stop;
+  else
+    stats_type = StatsType::running;
+
   source_channel = node.attribute("channel").as_int();
   events_in_spill = node.attribute("events_in_spill").as_ullong();
+  model_hit.energy = DigitizedVal(0, node.attribute("energy_bits").as_int());
+  model_hit.timestamp.timebase_multiplier = node.attribute("timebase_mult").as_double();
+  model_hit.timestamp.timebase_divider    = node.attribute("timebase_div").as_double();
+
   total_time = node.attribute("total_time").as_double();
   event_rate = node.attribute("event_rate").as_double();
   fast_peaks = node.attribute("fast_peaks").as_double();
@@ -235,8 +257,6 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
   ftdt = node.attribute("ftdt").as_double();
   sfdt = node.attribute("sfdt").as_double();
 
-  model_hit.timestamp.timebase_multiplier = node.attribute("timebase_mult").as_double();
-  model_hit.timestamp.timebase_divider    = node.attribute("timebase_div").as_double();
 }
 
 // to convert Pixie time to lab time

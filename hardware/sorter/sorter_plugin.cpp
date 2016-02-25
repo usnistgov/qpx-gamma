@@ -186,13 +186,6 @@ bool SorterPlugin::boot() {
     return false;
   }
 
-  if (!root.child("BinaryOut")) {
-    PL_WARN << "<SorterPlugin> No reference to binary file in " << source_file_;
-    return false;
-  }
-
-  std::string file_name_bin = std::string(root.child("BinaryOut").child_value("FileName"));
-
   boost::filesystem::path meta(source_file_);
   meta.make_preferred();
   boost::filesystem::path path = meta.remove_filename();
@@ -202,7 +195,7 @@ bool SorterPlugin::boot() {
     return false;
   }
 
-  boost::filesystem::path bin_path = path / file_name_bin;
+  boost::filesystem::path bin_path = path / "qpx_out.bin";
 
   file_bin_.open(bin_path.string(), std::ofstream::in | std::ofstream::binary);
 
@@ -230,11 +223,8 @@ bool SorterPlugin::boot() {
     if (name == StatsUpdate().xml_element_name()) {
       StatsUpdate stats;
       stats.from_xml(child);
-      if (stats != StatsUpdate()) {
-        stats.model_hit.timestamp.timebase_multiplier = 1000;
-        stats.model_hit.timestamp.timebase_divider    = 75;
+      if (stats != StatsUpdate())
         spills_.push_back(stats);
-      }
     } else if (name == RunInfo().xml_element_name()) {
       RunInfo info;
       info.from_xml(child);
@@ -295,12 +285,12 @@ void SorterPlugin::worker_run(SorterPlugin* callback, SynchronizedQueue<Spill*>*
       }
     }
 
-    for (auto &q : one_spill.stats) {
-      if (!starts_signalled.count(q.source_channel)) {
-        q.stats_type = StatsType::start;
-        starts_signalled.insert(q.source_channel);
-      }
-    }
+//    for (auto &q : one_spill.stats) {
+//      if (!starts_signalled.count(q.source_channel)) {
+//        q.stats_type = StatsType::start;
+//        starts_signalled.insert(q.source_channel);
+//      }
+//    }
     spill_queue->enqueue(new Spill(one_spill));
 
     timeout = (callback->run_status_.load() == 2);
@@ -308,6 +298,7 @@ void SorterPlugin::worker_run(SorterPlugin* callback, SynchronizedQueue<Spill*>*
 
   for (auto &q : one_spill.stats)
     q.stats_type = StatsType::stop;
+  one_spill.hits.clear();
 
   spill_queue->enqueue(new Spill(one_spill));
 
@@ -325,39 +316,15 @@ void SorterPlugin::worker_run(SorterPlugin* callback, SynchronizedQueue<Spill*>*
 
 Spill SorterPlugin::get_spill() {
   Spill one_spill;
+  std::map<int, Hit> model_hits;
 
   if (!spills_.empty()) {
-
-    StatsUpdate this_spill = spills_.front();
-
-
-    uint16_t event_entry[6];
-    //      PL_DBG << "<Sorter> will produce no of events " << spills_.front().events_in_spill;
-    while ((one_spill.hits.size() < this_spill.events_in_spill) && (file_bin_.tellg() < bin_end_)) {
-      Hit one_event;
-      file_bin_.read(reinterpret_cast<char*>(event_entry), 12);
-      one_event.source_channel = event_entry[0];
-      //      PL_DBG << "event chan " << chan;
-      uint64_t time_hi = event_entry[2];
-      uint64_t time_mi = event_entry[3];
-      uint64_t time_lo = event_entry[4];
-      one_event.timestamp.time_native = (time_hi << 32) + (time_mi << 16) + time_lo;
-      one_event.timestamp.timebase_divider = 75;
-      one_event.timestamp.timebase_multiplier = 1000;
-
-      one_event.energy.set_val(event_entry[5]);
-      //PL_DBG << "event created chan=" << one_event.channel << " time=" << one_event.timestamp.time << " energy=" << one_event.energy;
-      //file_bin_.seekg(10, std::ios::cur);
-
-      one_spill.hits.push_back(one_event);
-    }
-    one_spill.stats.push_back(this_spill);
-    spills2_.push_back(this_spill);
+    StatsUpdate this_stats = spills_.front();
+    one_spill.stats.push_back(this_stats);
+    spills2_.push_back(this_stats);
     spills2_.back().lab_time += boost::posix_time::seconds(10); //hack
     spills_.pop_front();
-
     while (!spills_.empty()
-           && (spills_.front().events_in_spill == 0)
            && (spills_.front().lab_time == one_spill.stats.back().lab_time)) {
 //      PL_DBG << "<SorterPlugin> adding to update ch=" << one_spill.stats.back().channel << " another update ch=" << callback->spills_.front().channel;
       one_spill.stats.push_back(spills_.front());
@@ -366,9 +333,35 @@ Spill SorterPlugin::get_spill() {
       spills_.pop_front();
     }
 
+    for (auto &s : one_spill.stats)
+      model_hits[s.source_channel] = s.model_hit;
+
+    uint16_t event_entry[6];
+    //      PL_DBG << "<Sorter> will produce no of events " << spills_.front().events_in_spill;
+    while ((one_spill.hits.size() < this_stats.events_in_spill) && (file_bin_.tellg() < bin_end_)) {
+      file_bin_.read(reinterpret_cast<char*>(event_entry), 12);
+      int16_t channel = reinterpret_cast<int16_t&>(event_entry[0]);
+      Hit one_event = model_hits[channel];
+
+      one_event.source_channel = channel;
+      //      PL_DBG << "event chan " << chan;
+      uint64_t time_hy = event_entry[1];
+      uint64_t time_hi = event_entry[2];
+      uint64_t time_mi = event_entry[3];
+      uint64_t time_lo = event_entry[4];
+      uint64_t timestamp = (time_hy << 48) + (time_hi << 32) + (time_mi << 16) + time_lo;
+      one_event.timestamp.time_native = timestamp;
+      one_event.energy.set_val(event_entry[5]);
+      //PL_DBG << "event created chan=" << one_event.channel << " time=" << one_event.timestamp.time << " energy=" << one_event.energy;
+      //file_bin_.seekg(10, std::ios::cur);
+
+      one_spill.hits.push_back(one_event);
+    }
+
   }
 
-//  PL_DBG << "<SorterPlugin> made events " << one_spill.hits.size();
+  PL_DBG << "<SorterPlugin> made events " << one_spill.hits.size()
+         << " and " << one_spill.stats.size() << " stats updates";
 
   if (loop_data_) {
     if (spills_.empty() && (!spills2_.empty())) {
