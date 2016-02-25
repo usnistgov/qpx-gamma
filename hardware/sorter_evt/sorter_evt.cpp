@@ -190,46 +190,83 @@ bool SorterEVT::boot() {
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 
   files_.clear();
-
-  //does file exist?
+  expected_rbuf_items_ = 0;
 
   namespace fs = boost::filesystem;
-  fs::path someDir(source_dir_);
-  fs::directory_iterator end_iter;
-  std::set<std::string> files_prelim;
 
-  if ( fs::exists(someDir) && fs::is_directory(someDir))
-  {
-    for( fs::directory_iterator dir_iter(someDir) ; dir_iter != end_iter ; ++dir_iter)
-    {
-      if (fs::is_regular_file(dir_iter->status()) )
-      {
-//        PL_DBG << "Looking at  " << dir_iter->path().extension().string();
-        if (boost::algorithm::to_lower_copy(dir_iter->path().extension().string()) == ".evt") {
-//          PL_DBG << "File is evt:  " << dir_iter->path().string();
-          files_prelim.insert(dir_iter->path().string());
+  fs::path manifest_file(source_dir_);
+  manifest_file /= "evt_manifest.xml";
+
+  if (fs::is_regular_file(manifest_file)) {
+    pugi::xml_document doc;
+    if (doc.load_file(manifest_file.string().c_str())) {
+      pugi::xml_node root = doc.first_child();
+      if (root && (std::string(root.name()) == "EvtManifest")) {
+        for (pugi::xml_node child : root.children()) {
+          std::string name = std::string(child.name());
+          if (name == "File") {
+            std::string filename(child.attribute("path").value());
+            PL_INFO << "<SorterEVT> Queued up file " << filename << " from XML manifest";
+            files_.push_back(filename);
+          } else if (name == "Total") {
+            expected_rbuf_items_ = child.attribute("RingBufferItems").as_ullong();
+          }
         }
       }
     }
   }
 
-  CFileDataSource* cfds;
-  expected_rbuf_items_ = 0;
-  for (auto &q : files_prelim) {
-//    PL_DBG << "checking " << q;
-    uint64_t cts = 0;
-    if (((cfds = open_EVT_file(q)) != nullptr) && (cts = num_of_evts(cfds))) {
-      delete cfds;
-      files_.push_back(q);
-      PL_INFO << "<SorterEVT> Queued up file " << q << " with " << cts << " ring buffer items";
-      expected_rbuf_items_ += cts;
+  if (files_.empty() || (expected_rbuf_items_ == 0)) {
+
+    fs::path someDir(source_dir_);
+    fs::directory_iterator end_iter;
+    std::set<std::string> files_prelim;
+
+    if ( fs::exists(someDir) && fs::is_directory(someDir))
+    {
+      for( fs::directory_iterator dir_iter(someDir); dir_iter != end_iter; ++dir_iter)
+      {
+        if ( fs::is_regular_file(dir_iter->status()) )
+        {
+          //        PL_DBG << "Looking at  " << dir_iter->path().extension().string();
+          if (boost::algorithm::to_lower_copy(dir_iter->path().extension().string()) == ".evt") {
+            //        PL_DBG << "File is evt:  " << dir_iter->path().string();
+            files_prelim.insert(dir_iter->path().string());
+          }
+        }
+      }
     }
+
+    CFileDataSource* cfds;
+    expected_rbuf_items_ = 0;
+    for (auto &q : files_prelim) {
+      //    PL_DBG << "checking " << q;
+      uint64_t cts = 0;
+      if (((cfds = open_EVT_file(q)) != nullptr) && (cts = num_of_evts(cfds))) {
+        delete cfds;
+        files_.push_back(q);
+        PL_INFO << "<SorterEVT> Queued up file " << q << " with " << cts << " ring buffer items";
+        expected_rbuf_items_ += cts;
+      }
+    }
+
+    if (files_.empty())
+      return false;
+
+    pugi::xml_document xml_doc;
+    pugi::xml_node xml_root = xml_doc.append_child("EvtManifest");
+    for (auto &q : files_) {
+      xml_root.append_child("File");
+      xml_root.last_child().append_attribute("path").set_value(q.c_str());
+    }
+    xml_root.append_child("Total");
+    xml_root.last_child().append_attribute("RingBufferItems").set_value(std::to_string(expected_rbuf_items_).c_str());
+    xml_doc.save_file(manifest_file.string().c_str());
   }
 
-  if (files_.empty())
-    return false;
 
-  PL_INFO << "<SorterEVT> successfully queued up EVT files for sorting";
+  PL_INFO << "<SorterEVT> successfully queued up EVT files for sorting with "
+          << expected_rbuf_items_ << " total ring buffer items";
 
   status_ = DeviceStatus::loaded | DeviceStatus::booted | DeviceStatus::can_run;
 //  for (auto &q : set.branches.my_data_) {
