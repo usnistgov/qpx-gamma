@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Plugin
+ *      Qpx::Pixie4
  *
  ******************************************************************************/
 
@@ -37,13 +37,13 @@ const uint32_t list_mem_len32 = 16 * max_buf_len;
 const uint32_t list_mem_len16 = 2 * list_mem_len32;
 
 
-class Plugin : public DaqDevice {
+class Pixie4 : public DaqDevice {
   
 public:
 
-  Plugin();
-//  Plugin(std::string file);
-  ~Plugin();
+  Pixie4();
+//  Pixie4(std::string file);
+  ~Pixie4();
 
   static std::string plugin_name() {return "Pixie4";}
   std::string device_name() const override {return plugin_name();}
@@ -62,8 +62,8 @@ public:
 
 private:
   //no copying
-  void operator=(Plugin const&);
-  Plugin(const Plugin&);
+  void operator=(Pixie4 const&);
+  Pixie4(const Pixie4&);
 
 protected:
   //setup
@@ -85,8 +85,8 @@ protected:
   boost::thread *parser_;
   SynchronizedQueue<Spill*>* raw_queue_;
 
-  static void worker_parse(Plugin* callback, SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue);
-  static void worker_run_dbl(Plugin* callback, SynchronizedQueue<Spill*>* spill_queue);
+  static void worker_parse(Pixie4* callback, SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue);
+  static void worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_queue);
 
   //CONVENIENCE FUNCTIONS//
   void rebuild_structure(Gamma::Setting &set);
@@ -164,6 +164,7 @@ protected:
   void boot_err(int32_t);
   bool control_err(int32_t);
 
+  static Hit model_hit();
 };
 
 }

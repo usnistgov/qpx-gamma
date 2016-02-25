@@ -69,17 +69,58 @@ struct TimeStamp {
 
 };
 
+class DigitizedVal {
+public:
+
+  DigitizedVal()   {
+    val_ = 0;
+    bits_ = 16;
+  }
+
+  DigitizedVal(uint16_t v, uint16_t b) {
+    val_ = v;
+    bits_ = b;
+  }
+
+  void set_val(uint16_t v) {
+    val_ = v;
+  }
+
+  std::string to_string() const;
+
+  uint16_t bits() const { return bits_; }
+
+  uint16_t val(uint16_t bits) const {
+    if (bits == bits_)
+      return val_;
+    else if (bits < bits_)
+      return val_ >> (bits_ - bits);
+    else
+      return val_ << (bits - bits_);
+  }
+
+  bool operator==(const DigitizedVal other) const {
+    if (val_ != other.val_) return false;
+    if (bits_ != other.bits_) return false;
+    return true;
+  }
+  bool operator!=(const DigitizedVal other) const { return !operator==(other); }
+
+private:
+  uint16_t  val_;
+  uint16_t  bits_;
+};
+
 struct Hit {
 
-  int16_t   source_channel;
-  TimeStamp timestamp;
-  uint16_t  energy;
+  int16_t       source_channel;
+  TimeStamp     timestamp;
+  DigitizedVal  energy;
   std::unordered_map<std::string, uint16_t> extras;
   std::vector<uint16_t> trace;
   
   inline Hit() {
     source_channel = -1;
-    energy = 0;
   }
 
   std::string to_string() const;
@@ -104,6 +145,7 @@ struct Event {
 
   bool in_window(const Hit& h) const;
   bool past_due(const Hit& h) const;
+  bool antecedent(const Hit& h) const;
   bool addHit(const Hit &newhit);
 
   std::string to_string() const;
@@ -151,6 +193,8 @@ struct StatsUpdate : public XMLable {
       , ftdt(0.0)
       , sfdt(0.0)
   {}
+
+  std::string to_string() const;
 
   StatsUpdate operator-(const StatsUpdate) const;
   StatsUpdate operator+(const StatsUpdate) const;

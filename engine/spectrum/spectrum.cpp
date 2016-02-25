@@ -54,7 +54,7 @@ Template Spectrum::get_template() {
   coinc_window.metadata.unit = "ns";
   coinc_window.metadata.description = "Coincidence window";
   coinc_window.metadata.writable = true;
-  coinc_window.value_dbl = 3.0;
+  coinc_window.value_dbl = 50;
   new_temp.generic_attributes.add(coinc_window);
 
   return new_temp;
@@ -103,7 +103,6 @@ bool Spectrum::from_template(const Template& newtemplate) {
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   
   metadata_.bits = newtemplate.bits;
-  shift_by_ = 16 - metadata_.bits;
   metadata_.resolution = pow(2,metadata_.bits);
   metadata_.name = newtemplate.name_;
   metadata_.appearance = newtemplate.appearance;
@@ -151,7 +150,7 @@ void Spectrum::addSpill(const Spill& one_spill) {
 
 void Spectrum::pushHit(const Hit& newhit)
 {
-  if (newhit.energy < cutoff_logic_)
+  if (newhit.energy.val(metadata_.bits) < cutoff_logic_)
     return;
 
   if (newhit.source_channel < 0)
@@ -181,6 +180,8 @@ void Spectrum::pushHit(const Hit& newhit)
         }
       } else if (q.past_due(newhit))
         break;
+      else if (q.antecedent(newhit))
+        PL_DBG << "<" << metadata_.name << "> antecedent hit " << newhit.to_string() << ". Something wrong with presorter or daq_device?";
     }
 
     if (!appended && !pileup) {
@@ -593,7 +594,6 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
   if ((!metadata_.bits) || (metadata_.total_count == 0))
     return false;
 
-  shift_by_ = 16 - metadata_.bits;
   metadata_.resolution = pow(2, metadata_.bits);
   metadata_.match_pattern.clear();
   metadata_.add_pattern.clear();

@@ -105,7 +105,7 @@ void Spectrum1D::_add_bulk(const Entry& e) {
 }
 
 void Spectrum1D::addHit(const Hit& newHit) {
-  uint16_t en = newHit.energy >> shift_by_;
+  uint16_t en = newHit.energy.val(metadata_.bits);
   if (en < cutoff_bin_)
     return;
 
@@ -268,7 +268,6 @@ bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compressio
   if (pow(2, metadata_.bits) < i)
     metadata_.bits++;
   metadata_.resolution = pow(2, metadata_.bits);
-  shift_by_ = 16 - metadata_.bits;
   metadata_.max_chan = i;
 
   spectrum_.clear();
@@ -366,7 +365,6 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
   if (pow(2, metadata_.bits) < metadata_.resolution)
     metadata_.bits++;
   spectrum_.resize(metadata_.resolution, 0);
-  shift_by_ = 16 - metadata_.bits;
   metadata_.max_count = 0;
 
   metadata_.detectors.resize(1);
@@ -485,7 +483,6 @@ bool Spectrum1D::read_spe_radware(std::string name) {
   if (pow(2, metadata_.bits) < i)
     metadata_.bits++;
   metadata_.resolution = pow(2, metadata_.bits);
-  shift_by_ = 16 - metadata_.bits;
   metadata_.max_chan = i;
 
   spectrum_.clear();
@@ -621,7 +618,6 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
   if (pow(2, metadata_.bits) < entry_list.size())
     metadata_.bits++;
   metadata_.resolution = pow(2, metadata_.bits);
-  shift_by_ = 16 - metadata_.bits;
   metadata_.max_chan = entry_list.size() - 1;
 
   spectrum_.clear();
@@ -690,7 +686,6 @@ bool Spectrum1D::read_dat(std::string name) {
   if (pow(2, metadata_.bits) < entry_list.size())
     metadata_.bits++;
   metadata_.resolution = pow(2, metadata_.bits);
-  shift_by_ = 16 - metadata_.bits;
   metadata_.max_chan = entry_list.size() - 1;
 
   spectrum_.clear();

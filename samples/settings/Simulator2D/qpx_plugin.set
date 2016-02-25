@@ -9,6 +9,8 @@
 		<branch address="7" id="Simulator2D/SpillInterval" />
 		<branch address="8" id="Simulator2D/Gain0" />
 		<branch address="9" id="Simulator2D/Gain1" />
+		<branch address="10" id="Simulator2D/TimebaseMult" />
+		<branch address="11" id="Simulator2D/TimebaseDiv" />
 	</SettingMeta>
 	<SettingMeta id="Simulator2D/Source file" type="file_path" name="Source file" writable="true" unit="Qpx project (*.qpx)" />
 	<SettingMeta id="Simulator2D/Source spectrum" type="int_menu" name="Source spectrum" writable="true" />
@@ -38,5 +40,7 @@
 	
 	<SettingMeta id="Simulator2D/Gain0" type="floating" name="Virtual gain" address="-1" writable="true" unit="%" step="0.1" minimum="1" maximum="100000" flags="gain" max_indices="1"/>
 	<SettingMeta id="Simulator2D/Gain1" type="floating" name="Virtual gain" address="-1" writable="true" unit="%" step="0.1" minimum="1" maximum="100000" flags="gain" max_indices="1"/>
+	<SettingMeta id="Simulator2D/TimebaseMult" type="floating" name="Timebase multiplier" writable="true" unit="ns" step="1" minimum="1" maximum="100000" />
+	<SettingMeta id="Simulator2D/TimebaseDiv" type="floating" name="Timebase divisor" writable="true" step="1" minimum="1" maximum="100000" />
 
 </Simulator2D>

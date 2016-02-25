@@ -364,13 +364,13 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
 
         if (en1 > 0) {
           h.source_channel = callback->chan0_;
-          h.energy = round(en1 * callback->gain0_ * 0.01);
+          h.energy.set_val(round(en1 * callback->gain0_ * 0.01));
           one_spill.hits.push_back(h);
         }
 
         if (en2 > 0) {
           h.source_channel = callback->chan1_;
-          h.energy = round(en2 * callback->gain1_ * 0.01);
+          h.energy.set_val(round(en2 * callback->gain1_ * 0.01));
           one_spill.hits.push_back(h);
         }
 

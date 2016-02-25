@@ -174,7 +174,15 @@ void MADC32::addReadout(VmeStack& stack, int style = 0)
   }
 }
 
-std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, std::string &madc_pattern)
+Hit MADC32::model_hit() {
+  Hit h;
+  h.energy = DigitizedVal(0, 13);
+  h.timestamp.timebase_multiplier = 50;
+  h.timestamp.timebase_divider = 1;
+  return h;
+}
+
+std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, uint64_t &last_time, std::string &madc_pattern)
 {
   std::list<Hit> hits;
 
@@ -204,6 +212,8 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, std::stri
 
   madc_pattern.clear();
 
+  Hit one_hit = model_hit();
+
   for (auto &word : data) {
     if (word == junk_c) {
       madc_pattern += "J";
@@ -213,11 +223,11 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, std::stri
       uint32_t resolution = ((word & 0x00007000) >> 12);
       uint32_t words_f = (word & 0x00000fff);
       if ((resolution == 4) || (resolution == 3))
-        upshift = 3;
+        one_hit.energy = DigitizedVal(0, 13);
       else if ((resolution == 1) || (resolution == 2))
-        upshift = 4;
+        one_hit.energy = DigitizedVal(0, 12);
       else if (resolution == 0)
-        upshift = 5;
+        one_hit.energy = DigitizedVal(0, 11);
 //                  PL_DBG << "  MADC header module=" << module << "  resolution=" << resolution
 //                         << "  words=" << words_f << "  upshift=" << upshift;
       headers++;
@@ -225,9 +235,17 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, std::stri
 
     } else if ((word & footer_m) == footer_c) {
       madc_pattern += "F";
-      uint32_t timestamp = word & footer_time_m;
+      uint64_t timestamp = word & footer_time_m;
+      uint64_t time_upper = last_time & 0xffffffffc0000000;
+      uint64_t last_time_lower = last_time & 0x000000003fffffff;
+      if (timestamp < last_time_lower) {
+        time_upper += 0x40000000;
+        PL_DBG << "<MADC32> time rollover";
+      }
+      last_time = timestamp | time_upper;
+
       for (auto &h : hits)
-        h.timestamp.time_native = timestamp * 5;
+        h.timestamp.time_native = last_time;
 
 
       footers++;
@@ -239,12 +257,8 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, std::stri
 //                  PL_DBG << "  MADC hit detector=" << chan_nr << "  energy=" << nrg << "  overflow=" << overflow;
 
 
-      Hit one_hit;
       one_hit.source_channel   = chan_nr;
-      one_hit.energy    = nrg << upshift;
-      one_hit.timestamp.time_native = (evts + events) * 5;
-      one_hit.timestamp.timebase_divider = 75;
-      one_hit.timestamp.timebase_multiplier = 1000;
+      one_hit.energy.set_val(nrg);
 
       hits.push_back(one_hit);
       events++;

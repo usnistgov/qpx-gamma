@@ -231,10 +231,11 @@ QVariant TableListData::data(const QModelIndex &index, int role) const
 //      return QVariant::fromValue(QpxPattern(mystuff->hits[index.row()].pattern, false));
     case 2:
       Gamma::Calibration cal;
-      double energy = mystuff->hits[row].energy;
+      Qpx::DigitizedVal en = mystuff->hits[row].energy;
+      double energy = en.val(en.bits());
       if ((chan > -1) && (chan < dets_.size())) {
-        cal = dets_[chan].best_calib(16);
-        energy = cal.transform(energy, 16);
+        cal = dets_[chan].best_calib(en.bits());
+        energy = cal.transform(energy, en.bits());
       }
       return QString::number(energy) + QString::fromStdString(cal.units_);
     }

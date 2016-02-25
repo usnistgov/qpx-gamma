@@ -288,6 +288,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
   uint64_t count = 0;
   uint64_t events = 0;
   uint64_t lost_events = 0;
+  uint64_t last_time = 0;
 
   CFileDataSource* evt_file = nullptr;
   CRingItem* item = nullptr;
@@ -370,14 +371,16 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
 
           for (auto &q : starts_signalled) {
             StatsUpdate udt;
-            udt.model_hit.timestamp.timebase_multiplier = 1000;
-            udt.model_hit.timestamp.timebase_divider    = 75;
+            udt.model_hit = MADC32::model_hit();
 
             udt.source_channel = q;
             udt.lab_time = ts;
             udt.fast_peaks = pEvent->getEventCount();
             udt.live_time = pEvent->getTimeOffset();
             udt.total_time = pEvent->getTimeOffset();
+
+//            PL_DBG << "<SorterEVT> " << udt.to_string();
+
             one_spill.stats.push_back(udt);
             done = true;
           }
@@ -409,13 +412,12 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
               }
 
               std::string madc_pattern;
-              std::list<Hit> hits = Qpx::MADC32::parse(MADC_data, events, madc_pattern);
+              std::list<Hit> hits = Qpx::MADC32::parse(MADC_data, events, last_time, madc_pattern);
 
               for (auto &h : hits) {
                 if (!starts_signalled.count(h.source_channel)) {
                   StatsUpdate udt;
-                  udt.model_hit.timestamp.timebase_multiplier = 1000;
-                  udt.model_hit.timestamp.timebase_divider    = 75;
+                  udt.model_hit = MADC32::model_hit();
 
                   udt.source_channel = h.source_channel;
                   udt.lab_time = time_start;
@@ -440,18 +442,18 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
 
               if (n_j > 1) {
                 if (callback->bad_buffers_rep_)
-                  PL_DBG << "MADC32 parse has multiple junk words, pattern: " << madc_pattern << " after previous " << prev_pattern;
+                  PL_DBG << "<SorterEVT> MADC32 parse has multiple junk words, pattern: " << madc_pattern << " after previous " << prev_pattern;
                 buffer_problem = true;
               }
               if (n_e != hits.size()) {
                 if (callback->bad_buffers_rep_)
-                  PL_DBG << "MADC32 parse has mismatch in number of retrieved events, pattern: " << madc_pattern << " after previous " << prev_pattern;
+                  PL_DBG << "<SorterEVT> MADC32 parse has mismatch in number of retrieved events, pattern: " << madc_pattern << " after previous " << prev_pattern;
                 buffer_problem = true;
                 lost_events += n_e;
               }
               if (n_h != n_f) {
                 if (callback->bad_buffers_rep_)
-                  PL_DBG << "MADC32 parse has mismatch in header and footer, pattern: " << madc_pattern << " after previous " << prev_pattern;
+                  PL_DBG << "<SorterEVT> MADC32 parse has mismatch in header and footer, pattern: " << madc_pattern << " after previous " << prev_pattern;
                 buffer_problem = true;
               }
 
@@ -468,7 +470,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
 
 
             } else
-              PL_DBG << "Header indicates " << expected_words << " expected 16-bit words, but does not match body size = " << (words - 1);
+              PL_DBG << "<SorterEVT> Header indicates " << expected_words << " expected 16-bit words, but does not match body size = " << (words - 1);
 
           delete pEvent;
         }
@@ -476,7 +478,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
       }
 
       default: {
-        PL_DBG << "Unexpected ring buffer item type " << item->type();
+        PL_DBG << "<SorterEVT> Unexpected ring buffer item type " << item->type();
       }
 
       }
@@ -487,7 +489,7 @@ void SorterEVT::worker_run(SorterEVT* callback, SynchronizedQueue<Spill*>* spill
     PL_DBG << "<SorterEVT> Processed [" << filenr << "/" << callback->files_.size() << "] "
            << (100.0 * count / callback->expected_rbuf_items_) << "%  cumulative hits = " << events
            << "   hits lost in bad buffers = " << lost_events
-           << " (" << 100.0*lost_events/(events + lost_events) << "%)";
+           << " (" << 100.0*lost_events/(events + lost_events) << "%)";//"  last time_upper = " << (last_time & 0xffffffffc0000000);
 
 
 

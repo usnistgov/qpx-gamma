@@ -194,8 +194,6 @@ protected:
   int32_t cutoff_logic_;
   double coinc_window_;
 
-  uint8_t shift_by_;
-
   std::vector<std::vector<double> > energies_;
   
   std::map<int, std::list<StatsUpdate>> stats_list_;

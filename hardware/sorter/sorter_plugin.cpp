@@ -345,7 +345,7 @@ Spill SorterPlugin::get_spill() {
       one_event.timestamp.timebase_divider = 75;
       one_event.timestamp.timebase_multiplier = 1000;
 
-      one_event.energy = event_entry[5];
+      one_event.energy.set_val(event_entry[5]);
       //PL_DBG << "event created chan=" << one_event.channel << " time=" << one_event.timestamp.time << " energy=" << one_event.energy;
       //file_bin_.seekg(10, std::ios::cur);
 

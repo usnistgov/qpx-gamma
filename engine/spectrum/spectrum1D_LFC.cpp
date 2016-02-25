@@ -48,7 +48,7 @@ bool Spectrum1D_LFC::initialize() {
     if (metadata_.add_pattern[i] == 1)
       my_channel_ = i;
 
-  metadata_.resolution = pow(2, 16 - shift_by_);
+  metadata_.resolution = pow(2, metadata_.bits);
   channels_all_.resize(metadata_.resolution,0);
   channels_run_.resize(metadata_.resolution,0);
 
@@ -60,7 +60,7 @@ bool Spectrum1D_LFC::initialize() {
 
 void Spectrum1D_LFC::addHit(const Hit& newHit)
 {
-    channels_run_[ (newHit.energy >> shift_by_) ] ++;
+    channels_run_[ newHit.energy.val(metadata_.bits) ] ++;
     count_current_++;
 }
 

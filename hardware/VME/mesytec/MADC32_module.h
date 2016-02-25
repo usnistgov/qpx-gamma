@@ -40,7 +40,8 @@ public:
   void addReadout(VmeStack& stack, int style) override;
   bool daq_init();
 
-  static std::list<Hit> parse(std::list<uint32_t> data, uint64_t &evts, std::string &madc_pattern);
+  static std::list<Hit> parse(std::list<uint32_t> data, uint64_t &evts, uint64_t &last_time, std::string &madc_pattern);
+  static Hit model_hit();
 
 private:
   //no copying

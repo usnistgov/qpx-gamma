@@ -47,7 +47,7 @@ bool Spectrum2D::initialize() {
     return false;
   }
   
-  metadata_.resolution = pow(2, 16 - shift_by_);
+  metadata_.resolution = pow(2, metadata_.bits);
   metadata_.dimensions = 2;
 //  energies_.resize(2);
   pattern_.resize(2, 0);
@@ -197,9 +197,9 @@ void Spectrum2D::addEvent(const Event& newEvent) {
   uint16_t chan1_en = 0;
   uint16_t chan2_en = 0;
   if (newEvent.hits.count(pattern_[0]))
-    chan1_en = newEvent.hits.at(pattern_[0]).energy >> shift_by_;
+    chan1_en = newEvent.hits.at(pattern_[0]).energy.val(metadata_.bits);
   if (newEvent.hits.count(pattern_[1]))
-    chan2_en = newEvent.hits.at(pattern_[1]).energy >> shift_by_;
+    chan2_en = newEvent.hits.at(pattern_[1]).energy.val(metadata_.bits);
   spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] += 1;
   if (buffered_)
     temp_spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] =
@@ -236,7 +236,7 @@ void Spectrum2D::write_m(std::string name) const {
   //matlab script
   std::ofstream myfile(name, std::ios::out | std::ios::app);
   myfile << "%=========Qpx 2d spectrum=========" << std::endl
-         << "%  Bit precision: " << (16-shift_by_) << std::endl
+         << "%  Bit precision: " << metadata_.bits << std::endl
          << "%  Channels     : " << metadata_.resolution << std::endl
          << "%  Total events : " << metadata_.total_count << std::endl
          << "clear;" << std::endl;
@@ -307,9 +307,7 @@ bool Spectrum2D:: read_m4b(std::string name) {
     }
   }
   metadata_.bits = 12;
-  shift_by_ = 4;
   metadata_.max_chan = 4095;
-
 
   metadata_.detectors.resize(2);
   metadata_.detectors[0].name_ = "unknown1";
@@ -343,7 +341,6 @@ bool Spectrum2D:: read_mat(std::string name) {
     }
   }
   metadata_.bits = 12;
-  shift_by_ = 4;
   metadata_.max_chan = 4095;
 
   metadata_.detectors.resize(2);

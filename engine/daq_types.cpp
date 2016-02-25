@@ -86,10 +86,16 @@ bool TimeStamp::operator!=(const TimeStamp other) const {
     return (to_nanosec() != other.to_nanosec());
 }
 
+std::string DigitizedVal::to_string() const {
+  std::stringstream ss;
+  ss << val_ << "(" << bits_ << "b)";
+  return ss.str();
+}
+
 
 std::string Hit::to_string() const {
   std::stringstream ss;
-  ss << "[ch" << source_channel << "|t" << timestamp.to_string() << "|e" << energy << "]";
+  ss << "[ch" << source_channel << "|t" << timestamp.to_string() << "|e" << energy.to_string() << "]";
   return ss.str();
 }
 
@@ -99,6 +105,10 @@ bool Event::in_window(const Hit& h) const {
 
 bool Event::past_due(const Hit& h) const {
   return (h.timestamp >= lower_time) && ((h.timestamp - lower_time) > window_ns);
+}
+
+bool Event::antecedent(const Hit& h) const {
+  return (h.timestamp < lower_time);
 }
 
 bool Event::addHit(const Hit &newhit) {
@@ -167,6 +177,24 @@ StatsUpdate StatsUpdate::operator+(const StatsUpdate other) const {
   return answer;
 }
 
+std::string StatsUpdate::to_string() const
+{
+  std::stringstream ss;
+  ss << "Stats::";
+  if (stats_type == StatsType::start)
+    ss << "START(";
+  else if (stats_type == StatsType::stop)
+    ss << "STOP(";
+  else
+    ss << "RUN(";
+  ss << "ch" << source_channel;
+  ss << "|evts" << events_in_spill;
+  ss << "|labtm" << boost::posix_time::to_iso_extended_string(lab_time);
+  ss << "|devtm" << total_time;
+  ss << ")";
+  return ss.str();
+}
+
 void StatsUpdate::to_xml(pugi::xml_node &root) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
   node.append_attribute("channel").set_value(std::to_string(source_channel).c_str());
@@ -178,6 +206,9 @@ void StatsUpdate::to_xml(pugi::xml_node &root) const {
   node.append_attribute("live_time").set_value(std::to_string(live_time).c_str());
   node.append_attribute("ftdt").set_value(std::to_string(ftdt).c_str());
   node.append_attribute("sfdt").set_value(std::to_string(sfdt).c_str());
+
+  node.append_attribute("timebase_mult").set_value(std::to_string(model_hit.timestamp.timebase_multiplier).c_str());
+  node.append_attribute("timebase_div").set_value(std::to_string(model_hit.timestamp.timebase_divider).c_str());
 }
 
 
@@ -203,6 +234,9 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
   live_time = node.attribute("live_time").as_double();
   ftdt = node.attribute("ftdt").as_double();
   sfdt = node.attribute("sfdt").as_double();
+
+  model_hit.timestamp.timebase_multiplier = node.attribute("timebase_mult").as_double();
+  model_hit.timestamp.timebase_divider    = node.attribute("timebase_div").as_double();
 }
 
 // to convert Pixie time to lab time
