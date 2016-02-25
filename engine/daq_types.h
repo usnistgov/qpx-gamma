@@ -259,9 +259,9 @@ struct Spill {
 
 
   std::vector<uint32_t>  data;  //as is from device, unparsed
-  std::list<Qpx::Hit>    hits;  //parsed
-  std::list<StatsUpdate> stats;
-  RunInfo                run; //make this not pointer
+  std::list<Qpx::Hit>    hits;  //as parsed
+  std::map<int16_t, StatsUpdate> stats;
+  RunInfo                run;
 };
 
 struct ListData {

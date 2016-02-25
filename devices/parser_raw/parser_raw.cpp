@@ -255,7 +255,7 @@ void ParserRaw::get_all_settings() {
 void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill_queue) {
   PL_DBG << "<ParserRaw> Start run worker";
 
-  Spill one_spill;
+  Spill one_spill, prevspill;
 
   bool timeout = false;
 
@@ -263,20 +263,21 @@ void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill
 
   while ((!callback->spills_.empty()) && (!timeout)) {
 
+    prevspill = one_spill;
     one_spill = callback->get_spill();
 
     if (callback->override_timestamps_) {
       for (auto &q : one_spill.stats)
-        q.lab_time = boost::posix_time::microsec_clock::local_time();
+        q.second.lab_time = boost::posix_time::microsec_clock::local_time();
       // livetime and realtime are not changed accordingly
     }
 
     if (callback->override_pause_) {
       boost::this_thread::sleep(boost::posix_time::milliseconds(callback->pause_ms_));
     } else {
-      if (!one_spill.stats.empty() && (!callback->spills_.empty())) {
-        StatsUpdate newstats = callback->spills_.front();
-        StatsUpdate prevstats = one_spill.stats.front();
+      if (!one_spill.stats.empty() && !prevspill.stats.empty()) {
+        StatsUpdate newstats = one_spill.stats.begin()->second;
+        StatsUpdate prevstats = prevspill.stats.begin()->second;
         if ((prevstats != StatsUpdate()) && (newstats != StatsUpdate()) && (newstats.lab_time > prevstats.lab_time)) {
           boost::posix_time::time_duration dif = newstats.lab_time - prevstats.lab_time;
           //        PL_DBG << "<ParserRaw> Pause for " << dif.total_seconds();
@@ -297,7 +298,7 @@ void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill
   }
 
   for (auto &q : one_spill.stats)
-    q.stats_type = StatsType::stop;
+    q.second.stats_type = StatsType::stop;
   one_spill.hits.clear();
 
   spill_queue->enqueue(new Spill(one_spill));
@@ -318,33 +319,33 @@ Spill ParserRaw::get_spill() {
   Spill one_spill;
   std::map<int16_t, Hit> model_hits;
 
-  if (!spills_.empty()) {
-    StatsUpdate this_stats = spills_.front();
-    one_spill.stats.push_back(this_stats);
-    spills2_.push_back(this_stats);
+  StatsUpdate this_stats;
+  uint64_t hits_to_get = 0;
+
+  while (!spills_.empty())
+  {
+    if (one_spill.stats.empty() || (spills_.front().lab_time == this_stats.lab_time))
+      this_stats = spills_.front();
+    else
+      break;
+    hits_to_get += this_stats.events_in_spill;
+    one_spill.stats[this_stats.source_channel] = this_stats;
+    spills2_.push_back(spills_.front());
     spills2_.back().lab_time += boost::posix_time::seconds(10); //hack
     spills_.pop_front();
-    while (!spills_.empty()
-           && (spills_.front().lab_time == one_spill.stats.back().lab_time))
-    {
-      one_spill.stats.push_back(spills_.front());
-      spills2_.push_back(spills_.front());
-      spills2_.back().lab_time += boost::posix_time::seconds(10); //hack
-      spills_.pop_front();
-    }
-
-    for (auto &s : one_spill.stats)
-      model_hits[s.source_channel] = s.model_hit;
-
-    //      PL_DBG << "<Sorter> will produce no of events " << spills_.front().events_in_spill;
-    while ((one_spill.hits.size() < this_stats.events_in_spill) && (file_bin_.tellg() < bin_end_))
-    {
-      Hit one_event;
-      one_event.read_bin(file_bin_, model_hits);
-      one_spill.hits.push_back(one_event);
-    }
-
   }
+
+  for (auto &s : one_spill.stats)
+    model_hits[s.second.source_channel] = s.second.model_hit;
+
+  //      PL_DBG << "<Sorter> will produce no of events " << spills_.front().events_in_spill;
+  while ((one_spill.hits.size() < hits_to_get) && (file_bin_.tellg() < bin_end_))
+  {
+    Hit one_event;
+    one_event.read_bin(file_bin_, model_hits);
+    one_spill.hits.push_back(one_event);
+  }
+
 
   PL_DBG << "<ParserRaw> made events " << one_spill.hits.size()
          << " and " << one_spill.stats.size() << " stats updates";

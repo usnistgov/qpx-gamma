@@ -151,7 +151,7 @@ bool Pixie4::daq_running() {
   return (run_status_.load() > 0);
 }
 
-void Pixie4::fill_stats(std::list<StatsUpdate> &all_stats, uint8_t module) {
+void Pixie4::fill_stats(std::map<int16_t, StatsUpdate> &all_stats, uint8_t module) {
   StatsUpdate stats;
 
   stats.event_rate = get_mod("EVENT_RATE", Module(module));
@@ -163,7 +163,7 @@ void Pixie4::fill_stats(std::list<StatsUpdate> &all_stats, uint8_t module) {
     stats.live_time  = get_chan("LIVE_TIME", Channel(i), Module(module));
     stats.ftdt       = get_chan("FTDT", Channel(i), Module(module));
     stats.sfdt       = get_chan("SFDT", Channel(i), Module(module));
-    all_stats.push_back(stats);
+    all_stats[stats.source_channel] = stats;
     //PL_DBG << "stats chan " << stats.channel;
   }
 }
@@ -1307,8 +1307,8 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
   for (int i=0; i < callback->channel_indices_.size(); i++)
     callback->fill_stats(fetched_spill.stats, i);
   for (auto &q : fetched_spill.stats) {
-    q.lab_time = session_start_time;
-    q.stats_type = StatsType::start;
+    q.second.lab_time = session_start_time;
+    q.second.stats_type = StatsType::start;
   }
   spill_queue->enqueue(new Spill(fetched_spill));
 
@@ -1356,9 +1356,9 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
       //      PL_DBG << "<Pixie4> fetched spill for mod " << q;
       callback->fill_stats(fetched_spill.stats, q);
       for (auto &p : fetched_spill.stats) {
-        p.lab_time = block_time;
+        p.second.lab_time = block_time;
         if (timeout)
-          p.stats_type = StatsType::stop;
+          p.second.stats_type = StatsType::stop;
       }
       spill_queue->enqueue(new Spill(fetched_spill));
     }
@@ -1377,8 +1377,8 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
   for (int i=0; i < callback->channel_indices_.size(); i++)
     callback->fill_stats(fetched_spill.stats, i);
   for (auto &q : fetched_spill.stats) {
-    q.lab_time = block_time;
-    q.stats_type = StatsType::stop;
+    q.second.lab_time = block_time;
+    q.second.stats_type = StatsType::stop;
   }
   spill_queue->enqueue(new Spill(fetched_spill));
 

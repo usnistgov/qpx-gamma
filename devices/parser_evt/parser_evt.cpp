@@ -419,7 +419,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
               //            PL_DBG << "<ParserEVT> " << udt.to_string();
 
-              one_spill.stats.push_back(udt);
+              one_spill.stats[q] = udt;
               done = true;
             }
 
@@ -464,7 +464,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
                   //udt.live_time = pEvent->getTimeOffset();
                   //udt.real_time = pEvent->getTimeOffset();
                   Spill extra_spill;
-                  extra_spill.stats.push_back(udt);
+                  extra_spill.stats[h.source_channel] = udt;
                   spill_queue->enqueue(new Spill(extra_spill));
                   starts_signalled.insert(h.source_channel);
                 }
@@ -533,7 +533,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
       if (callback->override_timestamps_) {
         for (auto &q : one_spill.stats)
-          q.lab_time = boost::posix_time::microsec_clock::local_time();
+          q.second.lab_time = boost::posix_time::microsec_clock::local_time();
         // livetime and realtime are not changed accordingly
       }
 
@@ -569,7 +569,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
     udt.model_hit = MADC32::model_hit();
     udt.source_channel = q;
     udt.lab_time = ts;
-    one_spill.stats.push_back(udt);
+    one_spill.stats[q] = udt;
   }
   spill_queue->enqueue(new Spill(one_spill));
 

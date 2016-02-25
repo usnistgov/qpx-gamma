@@ -556,26 +556,20 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
   CustomTimer presort_timer;
   uint64_t presort_compares(0), presort_hits(0), presort_cycles(0);
 
-  std::vector<int> queue_status;
-  queue_status.resize(detectors_.size(), 0);
-  // 0 = unused, 1 = empty, 2 = data
+  std::map<int16_t, bool> queue_status;
+  // false = empty, true = data, else unused
 
   std::list<Spill*> current_spills;
 
   PL_DBG << "<Engine> Spectra builder thread initiated";
-  Spill* in_spill;
-  Spill* out_spill;
+  Spill* in_spill  = nullptr;
+  Spill* out_spill = nullptr;
   while (true) {
     in_spill = data_queue->dequeue();
     if (in_spill != nullptr) {
       for (auto &q : in_spill->stats) {
-        if (q.source_channel >= queue_status.size())
-          queue_status.resize(q.source_channel);
-        if ((q.source_channel >= 0) && (q.source_channel < queue_status.size())) {
-          if (!in_spill->hits.empty())
-            queue_status[q.source_channel] = 2;
-          else
-            queue_status[q.source_channel] = 1;
+        if (q.second.source_channel >= 0) {
+          queue_status[q.second.source_channel] = !in_spill->hits.empty();
         }
       }
       current_spills.push_back(in_spill);
@@ -591,24 +585,21 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
       empty = queue_status.empty();
       if (in_spill != nullptr) {
         for (auto &q : queue_status)
-          if (q != 0)
-            q = 1;
+          q.second = false;
         for (auto i = current_spills.begin(); i != current_spills.end(); i++) {
           if (!(*i)->hits.empty())
             for (auto &q : (*i)->stats) {
-              if ((q.source_channel >= 0) && (q.source_channel < queue_status.size()))
-                queue_status[q.source_channel] = 2;
+              if (q.second.source_channel >= 0)
+                queue_status[q.second.source_channel] = true;
             }
         }
       } else {
         for (auto &q : queue_status)
-          if (q != 0)
-            q = 2;        
+          q.second = true;
       }
 
       for (auto q : queue_status) {
-//        PL_DBG << "<Engine: worker_MCA> qstatus " << q;
-        if (q == 1)
+        if (!q.second)
           empty = true;
       }
 

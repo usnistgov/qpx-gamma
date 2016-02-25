@@ -332,9 +332,9 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
   moving_stats.lab_time = boost::posix_time::microsec_clock::local_time();
 
   moving_stats.source_channel = callback->chan0_;
-  one_spill.stats.push_back(moving_stats);
+  one_spill.stats[callback->chan0_] = moving_stats;
   moving_stats.source_channel = callback->chan1_;
-  one_spill.stats.push_back(moving_stats);
+  one_spill.stats[callback->chan1_] = moving_stats;
 
   spill_queue->enqueue(new Spill(one_spill));
 
@@ -384,9 +384,9 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
     moving_stats.event_rate = one_run.event_rate;
 
     moving_stats.source_channel = callback->chan0_;
-    one_spill.stats.push_back(moving_stats);
+    one_spill.stats[callback->chan0_] = moving_stats;
     moving_stats.source_channel = callback->chan1_;
-    one_spill.stats.push_back(moving_stats);
+    one_spill.stats[callback->chan1_] = moving_stats;
 
     spill_queue->enqueue(new Spill(one_spill));
 
@@ -394,9 +394,9 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
   }
 
   one_spill.hits.clear();
-  for (auto &q : one_spill.stats) {
-      q.stats_type = StatsType::stop;
-  }
+  for (auto &q : one_spill.stats)
+      q.second.stats_type = StatsType::stop;
+
   spill_queue->enqueue(new Spill(one_spill));
 
   callback->run_status_.store(3);

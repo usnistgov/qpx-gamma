@@ -126,7 +126,7 @@ void Spectrum::addSpill(const Spill& one_spill) {
     this->pushHit(q);
 
   for (auto &q : one_spill.stats) {
-    if (q.stats_type == StatsType::stop) {
+    if (q.second.stats_type == StatsType::stop) {
 //      PL_DBG << "<" << metadata_.name << "> final RunInfo received, dumping backlog of events " << backlog.size();
       while (!backlog.empty()) {
         recent_count_++;
@@ -135,7 +135,7 @@ void Spectrum::addSpill(const Spill& one_spill) {
         backlog.pop_front();
       }
     }
-    this->addStats(q);
+    this->addStats(q.second);
   }
 
   if (one_spill.run != RunInfo())
