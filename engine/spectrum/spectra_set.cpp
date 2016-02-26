@@ -236,7 +236,7 @@ void SpectraSet::add_spill(Spill* one_spill) {
   for (auto &q: my_spectra_)
     q->addSpill(*one_spill);
 
-  if (!one_spill->run.time_start.is_not_a_date_time())
+  if (one_spill->run != RunInfo())
     run_info_ = one_spill->run;
 
   if ((!one_spill->stats.empty())

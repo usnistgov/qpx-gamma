@@ -234,6 +234,10 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
     //PL_DBG << "Spectrum " << metadata_.name << " received update for chan " << newBlock.channel;
     bool chan_new = (stats_list_.count(newBlock.source_channel) == 0);
     bool new_start = (newBlock.stats_type == StatsType::start);
+
+    if (new_start && metadata_.start_time.is_not_a_date_time())
+      metadata_.start_time = newBlock.lab_time;
+
     if (!chan_new && new_start && (stats_list_[newBlock.source_channel].back().stats_type == StatsType::running))
       stats_list_[newBlock.source_channel].back().stats_type = StatsType::stop;
 
@@ -312,10 +316,6 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
 
 void Spectrum::addRun(const RunInfo& run_info) {
   //private; no lock required
-
-  if (metadata_.start_time.is_not_a_date_time() && (!run_info.time_start.is_not_a_date_time())) {
-    metadata_.start_time = run_info.time_start;
-  }
 
  if (run_info.detectors.size() > 0)
     this->_set_detectors(run_info.detectors);
@@ -551,8 +551,11 @@ void Spectrum::to_xml(pugi::xml_node &root) const {
     patterndata << static_cast<short>(q) << " ";
   node.append_child("AddPattern").append_child(pugi::node_pcdata).set_value(boost::algorithm::trim_copy(patterndata.str()).c_str());
 
+  node.append_child("StartTime").append_child(pugi::node_pcdata).set_value(boost::posix_time::to_iso_extended_string(metadata_.start_time).c_str());
+
   node.append_child("RealTime").append_child(pugi::node_pcdata).set_value(to_simple_string(metadata_.real_time).c_str());
   node.append_child("LiveTime").append_child(pugi::node_pcdata).set_value(to_simple_string(metadata_.live_time).c_str());
+  node.append_child("RescaleFactor").append_child(pugi::node_pcdata).set_value(metadata_.rescale_factor.str().c_str());
 
   if (metadata_.attributes.size())
     metadata_.attributes.to_xml(node);
@@ -573,6 +576,10 @@ void Spectrum::to_xml(pugi::xml_node &root) const {
 bool Spectrum::from_xml(const pugi::xml_node &node) {
   if (std::string(node.name()) != "Spectrum")
     return false;
+
+  boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
+  tif->set_iso_extended_format();
+  std::stringstream iss;
 
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
@@ -610,12 +617,20 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
     metadata_.add_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
   }
 
+  if (node.child("StartTime")) {
+    iss << node.child_value("StartTime");
+    iss.imbue(std::locale(std::locale::classic(), tif));
+    iss >> metadata_.start_time;
+  }
+
   if (node.child("RealTime"))
     metadata_.real_time = boost::posix_time::duration_from_string(node.child_value("RealTime"));
   if (node.child("LiveTime"))
     metadata_.live_time = boost::posix_time::duration_from_string(node.child_value("LiveTime"));
 
   metadata_.attributes.from_xml(node.child(metadata_.attributes.xml_element_name().c_str()));
+
+  metadata_.rescale_factor = PreciseFloat(node.child_value("RescaleFactor"));
 
   if (node.child("Detectors")) {
     metadata_.detectors.clear();

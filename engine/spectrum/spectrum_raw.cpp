@@ -112,11 +112,7 @@ void SpectrumRaw::addStats(const StatsUpdate& stats) {
 }
 
 void SpectrumRaw::addRun(const RunInfo& run) {
-  //override, because coincident events have been split (one for each channel)
-  RunInfo run_override = run;
-  run_override.total_events = total_events_;
-  total_events_ = 0;
-  run_text(run_override);
+  run_text(run);
 }
 
 void SpectrumRaw::_closeAcquisition() {

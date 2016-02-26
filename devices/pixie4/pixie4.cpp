@@ -1517,9 +1517,6 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
       //spill->stats->events_in_spill = spill_events;
       all_events += spill_events;
     }
-    if (spill->run != RunInfo()) {
-      spill->run.total_events = all_events;
-    }
     spill->data.clear();
     out_queue->enqueue(spill);
     parse_timer.stop();

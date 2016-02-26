@@ -136,8 +136,10 @@ bool ParserRaw::read_settings_bulk(Gamma::Setting &set) const {
         q.value_int = spills_.size();
       else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "ParserRaw/Hits"))
         q.value_int = (bin_end_ - bin_begin_) / 12;
-      else if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "ParserRaw/StartTime"))
-        q.value_text = boost::posix_time::to_iso_extended_string(start_.time_start);
+      else if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "ParserRaw/StartTime")) {
+        if (!spills_.empty())
+          q.value_text = boost::posix_time::to_iso_extended_string(spills_.front().lab_time);
+      }
     }
   }
   return true;
@@ -228,10 +230,8 @@ bool ParserRaw::boot() {
     } else if (name == RunInfo().xml_element_name()) {
       RunInfo info;
       info.from_xml(child);
-      if (!info.time_start.is_not_a_date_time())
-        start_ = info;
-      if (!info.time_stop.is_not_a_date_time())
-        end_ = info;
+      if (!info.time.is_not_a_date_time())
+        start_ = end_ = info;
     }
   }
 

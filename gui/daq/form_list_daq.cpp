@@ -269,7 +269,7 @@ void TableListData::eat_list(Qpx::ListData* stuff) {
   mystuff = stuff;
   if (stuff != nullptr) {
     dets_ = mystuff->run.detectors;
-    time_factor_ = stuff->run.time_scale_factor();
+    time_factor_ = 1; //wrong!
   }
 }
 

@@ -289,23 +289,8 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
 
 }
 
-// to convert Pixie time to lab time
-double RunInfo::time_scale_factor() const {
-  double tot = state.get_setting(Gamma::Setting("Pixie4/System/module/TOTAL_TIME"), Gamma::Match::id).value_dbl;
-  //PL_DBG << "total time " << tot;
-  if (time_stop.is_not_a_date_time() ||
-      time_start.is_not_a_date_time() ||
-      (tot <= 0.0))
-    return 1.0;
-  else
-    return (time_stop - time_start).total_microseconds() /
-        (1000000 * tot);
-}
-
 bool RunInfo::operator== (const RunInfo& other) const {
-  if (time_start != other.time_start) return false;
-  if (time_stop != other.time_stop) return false;
-  if (total_events != other.total_events) return false;
+  if (time != other.time) return false;
   if (detectors != other.detectors) return false;
   if (state != other.state) return false;
   return true;
@@ -313,9 +298,7 @@ bool RunInfo::operator== (const RunInfo& other) const {
 
 void RunInfo::to_xml(pugi::xml_node &root, bool with_settings) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
-  node.append_attribute("time_start").set_value(boost::posix_time::to_iso_extended_string(time_start).c_str());
-  node.append_attribute("time_stop").set_value(boost::posix_time::to_iso_extended_string(time_stop).c_str());
-  node.append_attribute("total_events").set_value(std::to_string(total_events).c_str());
+  node.append_attribute("time").set_value(boost::posix_time::to_iso_extended_string(time).c_str());
   if (with_settings) {
     state.to_xml(node);
     if (!detectors.empty()) {
@@ -330,26 +313,15 @@ void RunInfo::from_xml(const pugi::xml_node &node) {
   if (std::string(node.name()) != xml_element_name())
     return;
 
-  total_events = node.attribute("Name").as_ullong();
-
   boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
   tif->set_iso_extended_format();
   std::stringstream iss;
 
-  if (node.attribute("time_start")) {
-    iss << node.attribute("time_start").value();
+  if (node.attribute("time")) {
+    iss << node.attribute("time").value();
     iss.imbue(std::locale(std::locale::classic(), tif));
-    iss >> time_start;
+    iss >> time;
   }
-
-  iss.str(std::string());
-  if (node.attribute("time_stop")) {
-    iss << node.attribute("time_stop").value();
-    iss.imbue(std::locale(std::locale::classic(), tif));
-    iss >> time_stop;
-  }
-
-  total_events = node.attribute("total_events").as_ullong();
 
   state.from_xml(node.child(state.xml_element_name().c_str()));
 

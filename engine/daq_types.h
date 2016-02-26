@@ -218,24 +218,17 @@ struct StatsUpdate : public XMLable {
 struct RunInfo : public XMLable {
   Gamma::Setting state;
   std::vector<Gamma::Detector> detectors;
-  uint64_t total_events;
-  boost::posix_time::ptime time_start, time_stop;
+  boost::posix_time::ptime time;
 
   inline RunInfo()
-      : total_events(0)
-      //      , time_start(boost::posix_time::second_clock::local_time())
-      //      , time_stop(boost::posix_time::second_clock::local_time())
   {}
-
-  // to convert Pixie time to lab time
-  double time_scale_factor() const;
 
   void from_xml(const pugi::xml_node &) override;
   void to_xml(pugi::xml_node &, bool with_settings = true) const;
   void to_xml(pugi::xml_node &node) const override {to_xml(node, true);}
 
   std::string xml_element_name() const override {return "RunInfo";}
-  bool shallow_equals(const RunInfo& other) const {return (time_start == other.time_start);}
+  bool shallow_equals(const RunInfo& other) const {return (time == other.time);}
   bool operator!= (const RunInfo& other) const {return !(operator==(other));}
   bool operator== (const RunInfo& other) const;
 
