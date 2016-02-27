@@ -10,6 +10,7 @@
 		<branch address="6" id="ParserRaw/StatsUpdates" />
 		<branch address="7" id="ParserRaw/Hits" />
 		<branch address="8" id="ParserRaw/StartTime" />
+		<branch address="9" id="ParserRaw/RunDuration" />
 	</SettingMeta>
 	<SettingMeta id="ParserRaw/Source file" type="file_path" name="Source file" writable="true" unit="List mode output (*.txt)" />
 	<SettingMeta id="ParserRaw/Loop data" type="boolean" name="Loop data" writable="true" />
@@ -19,5 +20,7 @@
 	<SettingMeta id="ParserRaw/Binary file" type="file_path" name="Binary file" writable="false" unit="Qpx binary out (*.bin)" />
 	<SettingMeta id="ParserRaw/StatsUpdates" type="integer" name="Number of stats updates" writable="false" />
 	<SettingMeta id="ParserRaw/Hits" type="integer" name="Number of hits" writable="false" />
-	<SettingMeta id="ParserRaw/StartTime" type="text" name="Start timestamp" writable="false" />
+	<SettingMeta id="ParserRaw/StartTime" type="time" name="Start timestamp" writable="false" />
+	<SettingMeta id="ParserRaw/RunDuration" type="time_duration" name="Run duration" writable="false" />
+	<SettingMeta id="ParserRaw/Precious" type="floating_precise" name="My precious" writable="true" step="50" minimum="0" maximum="5000000" unit="ms" />
 </ParserRaw>

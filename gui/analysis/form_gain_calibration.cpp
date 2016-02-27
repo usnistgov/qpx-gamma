@@ -211,7 +211,7 @@ void FormGainCalibration::on_pushCalibGain_clicked()
     gain_match_cali_.coefficients_ = p.coeffs();
     gain_match_cali_.to_ = detector1_.name_;
     gain_match_cali_.bits_ = fit_data2_.metadata_.bits;
-    gain_match_cali_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
+    gain_match_cali_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     gain_match_cali_.model_ = Gamma::CalibrationModel::polynomial;
     ui->plotCalib->setFloatingText(QString::fromStdString(p.to_UTF8(3, true)));
     fit_data2_.detector_.gain_match_calibrations_.replace(gain_match_cali_);

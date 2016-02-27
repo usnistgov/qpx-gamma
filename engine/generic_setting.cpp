@@ -23,6 +23,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 #include "generic_setting.h"
+#include "qpx_util.h"
 
 namespace Gamma {
 
@@ -37,8 +38,14 @@ SettingType to_type(const std::string &type) {
     return SettingType::pattern;
   else if (type == "floating")
     return SettingType::floating;
+  else if (type == "floating_precise")
+    return SettingType::floating_precise;
   else if (type == "text")
     return SettingType::text;
+  else if (type == "time")
+    return SettingType::time;
+  else if (type == "time_duration")
+    return SettingType::time_duration;
   else if (type == "detector")
     return SettingType::detector;
   else if (type == "file_path")
@@ -68,10 +75,16 @@ std::string to_string(SettingType type) {
     return "pattern";
   else if (type == SettingType::floating)
     return "floating";
+  else if (type == SettingType::floating_precise)
+    return "floating_precise";
   else if (type == SettingType::text)
     return "text";
   else if (type == SettingType::detector)
     return "detector";
+  else if (type == SettingType::time)
+    return "time";
+  else if (type == SettingType::time_duration)
+    return "time_duration";
   else if (type == SettingType::file_path)
     return "file_path";
   else if (type == SettingType::dir_path)
@@ -159,7 +172,9 @@ void SettingMeta::to_xml(pugi::xml_node &node) const {
   if ((setting_type == SettingType::binary) || (setting_type == SettingType::pattern))
     child.append_attribute("word_size").set_value(maximum);
 
-  if ((setting_type == SettingType::integer) || (setting_type == SettingType::floating)) {
+  if ((setting_type == SettingType::integer)
+      || (setting_type == SettingType::floating)
+      || (setting_type == SettingType::floating_precise)) {
     child.append_attribute("step").set_value(step);
     child.append_attribute("minimum").set_value(minimum);
     child.append_attribute("maximum").set_value(maximum);
@@ -214,6 +229,91 @@ void SettingMeta::menu_to_node(pugi::xml_node &node, const std::string &element_
   }
 }
 
+std::string Setting::val_to_string() const
+{
+  std::stringstream ss;
+  if (metadata.setting_type == SettingType::boolean) {
+    if (value_int != 0)
+      ss << "true";
+    else
+      ss << "false";
+  }
+  else if ((metadata.setting_type == SettingType::integer) ||
+           (metadata.setting_type == SettingType::int_menu) ||
+           (metadata.setting_type == SettingType::indicator) )
+    ss << std::to_string(value_int);
+  else if (metadata.setting_type == SettingType::binary)
+//    ss << itohex64(value_int);
+    ss << std::to_string(value_int);
+  else if (metadata.setting_type == SettingType::floating)
+    ss << std::setprecision(std::numeric_limits<double>::max_digits10) << value_dbl;
+  else if (metadata.setting_type == SettingType::floating_precise)
+    ss << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << value_precise;
+  else if ((metadata.setting_type == SettingType::text) ||
+           (metadata.setting_type == SettingType::detector) ||
+           (metadata.setting_type == SettingType::file_path) ||
+           (metadata.setting_type == SettingType::dir_path))
+    ss << value_text;
+  else if (metadata.setting_type == SettingType::time)
+    ss << boost::posix_time::to_iso_extended_string(value_time);
+  else if (metadata.setting_type == SettingType::time_duration)
+    ss << boost::posix_time::to_simple_string(value_duration);
+  return ss.str();
+}
+
+std::string Setting::val_to_pretty_string() const {
+  std::string ret = val_to_string();
+  if ((metadata.setting_type == SettingType::int_menu) && metadata.int_menu_items.count(value_int))
+    ret = metadata.int_menu_items.at(value_int);
+  else if ((metadata.setting_type == SettingType::indicator) && metadata.int_menu_items.count(value_int))
+    ret = get_setting(Gamma::Setting(metadata.int_menu_items.at(value_int)), Gamma::Match::id).metadata.name;
+  else if (metadata.setting_type == Gamma::SettingType::binary) {
+    int size = metadata.maximum;
+    if (size > 32)
+      ret = "0x" + itohex64(value_int);
+    else if (size > 16)
+      ret = "0x" + itohex32(value_int);
+    else
+      ret = "0x" + itohex16(value_int);
+  } else if (metadata.setting_type == Gamma::SettingType::stem)
+    ret = value_text;
+  return ret;
+}
+
+
+void Setting::val_from_node(const pugi::xml_node &node)
+{
+  if (metadata.setting_type == SettingType::boolean)
+    value_int = node.attribute("value").as_bool();
+  else if ((metadata.setting_type == SettingType::integer) ||
+           (metadata.setting_type == SettingType::int_menu) ||
+           (metadata.setting_type == SettingType::pattern) ||
+           (metadata.setting_type == SettingType::indicator) )
+    value_int = node.attribute("value").as_llong();
+  else if (metadata.setting_type == SettingType::binary)
+    value_int = node.attribute("value").as_llong();
+//    ss << itohex64(value_int);
+  else if (metadata.setting_type == SettingType::floating)
+    value_dbl = node.attribute("value").as_double();
+  else if (metadata.setting_type == SettingType::floating_precise)
+    value_precise = PreciseFloat(node.attribute("value").value());
+  else if ((metadata.setting_type == SettingType::text) ||
+           (metadata.setting_type == SettingType::detector) ||
+           (metadata.setting_type == SettingType::file_path) ||
+           (metadata.setting_type == SettingType::dir_path))
+    value_text = std::string(node.attribute("value").value());
+  else if (metadata.setting_type == SettingType::time) {
+    boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
+    tif->set_iso_extended_format();
+    std::stringstream iss;
+    iss << node.attribute("value").value();
+    iss.imbue(std::locale(std::locale::classic(), tif));
+    iss >> value_time;
+  }
+  else if (metadata.setting_type == SettingType::time_duration)
+    value_duration = boost::posix_time::duration_from_string(node.attribute("value").value());
+}
+
 void Setting::from_xml(const pugi::xml_node &node) {
   metadata.setting_type = to_type(std::string(node.attribute("type").value()));
 
@@ -231,26 +331,7 @@ void Setting::from_xml(const pugi::xml_node &node) {
     indices.insert(boost::lexical_cast<int32_t>(numero));
   }
 
-  if (metadata.setting_type == SettingType::boolean)
-    value_int = node.attribute("value").as_bool();
-
-  else if ((metadata.setting_type == SettingType::integer) ||
-           (metadata.setting_type == SettingType::binary) ||
-           (metadata.setting_type == SettingType::int_menu) ||
-           (metadata.setting_type == SettingType::indicator) ||
-           (metadata.setting_type == SettingType::pattern))
-    value_int = node.attribute("value").as_llong();
-
-  else if (metadata.setting_type == SettingType::floating)
-    value_dbl = node.attribute("value").as_double();
-
-  else if ((metadata.setting_type == SettingType::text) ||
-           (metadata.setting_type == SettingType::detector) ||
-           (metadata.setting_type == SettingType::file_path) ||
-           (metadata.setting_type == SettingType::dir_path))
-    value_text = std::string(node.attribute("value").value());
-
-  else if (metadata.setting_type == SettingType::stem) {
+  if (metadata.setting_type == SettingType::stem) {
     branches.clear();
     value_text = std::string(node.attribute("reference").value());
     for (pugi::xml_node child : node.children()) {
@@ -258,7 +339,8 @@ void Setting::from_xml(const pugi::xml_node &node) {
       if (newset != Setting())
         branches.add_a(newset);
     }
-  }
+  } else
+    val_from_node(node);
 
   if (node.child(metadata.xml_element_name().c_str()))
     metadata.from_xml(node.child(metadata.xml_element_name().c_str()));
@@ -282,31 +364,13 @@ void Setting::to_xml(pugi::xml_node &node, bool with_metadata) const {
       child.append_attribute("indices").set_value(indices_string.c_str());
   }
 
-  if (metadata.setting_type == SettingType::boolean)
-    child.append_attribute("value").set_value(static_cast<bool>(value_int));
-
-  else if ((metadata.setting_type == SettingType::integer) ||
-           (metadata.setting_type == SettingType::binary) ||
-           (metadata.setting_type == SettingType::int_menu) ||
-           (metadata.setting_type == SettingType::indicator) ||
-           (metadata.setting_type == SettingType::pattern))
-    child.append_attribute("value").set_value(std::to_string(value_int).c_str());
-
-  else if (metadata.setting_type == SettingType::floating)
-    child.append_attribute("value").set_value(value_dbl);
-
-  else if ((metadata.setting_type == SettingType::text) ||
-           (metadata.setting_type == SettingType::detector) ||
-           (metadata.setting_type == SettingType::file_path) ||
-           (metadata.setting_type == SettingType::dir_path))
-    child.append_attribute("value").set_value(value_text.c_str());
-
-  else if (metadata.setting_type == SettingType::stem) {
+  if (metadata.setting_type == SettingType::stem) {
     if (!value_text.empty())
       child.append_attribute("reference").set_value(value_text.c_str());
     for (auto &q : branches.my_data_)
       q.to_xml(child);
-  }
+  } else
+    child.append_attribute("value").set_value(val_to_string().c_str());
 
   if (metadata.meaningful())
     metadata.to_xml(child);
@@ -438,6 +502,11 @@ void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_de
           value_dbl = meta.maximum;
         if (value_dbl < meta.minimum)
           value_dbl = meta.minimum;
+      } else if (meta.setting_type == Gamma::SettingType::floating_precise) {
+        if (value_precise > meta.maximum)
+          value_precise = meta.maximum;
+        if (value_precise < meta.minimum)
+          value_precise = meta.minimum;
       }
     }
   }

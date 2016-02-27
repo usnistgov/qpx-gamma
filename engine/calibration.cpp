@@ -38,7 +38,7 @@
 namespace Gamma {
 
 Calibration::Calibration() {
-  calib_date_ = boost::posix_time::microsec_clock::local_time();
+  calib_date_ = boost::posix_time::microsec_clock::universal_time();
   type_ = "Energy";
   units_ = "channels";
   model_ = CalibrationModel::polynomial;

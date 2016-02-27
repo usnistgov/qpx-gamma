@@ -134,7 +134,7 @@ public:
   }
   
   void remove(int i) {
-    if (i < size()) {
+    if ((i >= 0) && (i < size())) {
       typename std::list<T>::iterator it = std::next(my_data_.begin(), i);
       my_data_.erase(it);
     }
@@ -148,7 +148,7 @@ public:
   }
   
   T get(int i) const {
-    if (i < size()) {
+    if ((i >= 0) && (i < size())) {
       typename std::list<T>::const_iterator it = std::next(my_data_.begin(), i);
       return *it;
     }
@@ -156,14 +156,14 @@ public:
   }
   
   void up(int i) {
-    if (i && (i < size())) {
+    if ((i > 0) && (i < size())) {
       typename std::list<T>::iterator it = std::next(my_data_.begin(), i-1);
       std::swap( *it, *std::next( it ) );
     }
   }
     
   void down(int i) {
-    if ((i+1) < size()) {
+    if ((i >= 0) && ((i+1) < size())) {
       typename std::list<T>::iterator it = std::next(my_data_.begin(), i);
       std::swap( *it, *std::next( it ) );
     }

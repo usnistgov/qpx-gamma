@@ -27,8 +27,15 @@
 #include <string>
 #include <map>
 #include <set>
+#include <boost/date_time.hpp>
+#include <boost/multiprecision/cpp_dec_float.hpp>
+
 #include "pugixml.hpp"
 #include "xmlable.h"
+
+#define QPX_FLOAT_PRECISION 16
+
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<QPX_FLOAT_PRECISION> > PreciseFloat;
 
 
 namespace Gamma {
@@ -41,10 +48,10 @@ enum class SettingType : int {none,
                               floating_precise,
                               text,
                               int_menu,
-                              detector,
+                              detector, // does not scale
                               time,
                               time_duration,
-                              pattern,
+                              pattern, // unimplemented
                               file_path,
                               dir_path,
                               binary,
@@ -140,9 +147,13 @@ struct Setting : public XMLable {
 
   std::set<int32_t> indices;
 
-  int64_t           value_int;
-  std::string       value_text;
-  double            value_dbl;
+  int64_t                          value_int;
+  std::string                      value_text;
+  double                           value_dbl;
+  boost::posix_time::ptime         value_time;
+  boost::posix_time::time_duration value_duration;
+  PreciseFloat                     value_precise;
+
 
   XMLableDB<Setting> branches;
 
@@ -168,24 +179,35 @@ struct Setting : public XMLable {
 
   bool operator!= (const Setting& other) const {return !operator==(other);}
   bool operator== (const Setting& other) const {
-    if (id_ != other.id_) return false;
-    if (value_dbl != other.value_dbl) return false;
-    if (value_int != other.value_int) return false;
-    if (indices != other.indices) return false;
-    if (value_text != other.value_text) return false;
-    if (branches != other.branches) return false;
+    if (id_            != other.id_) return false;
+    if (indices        != other.indices) return false;
+    if (value_dbl      != other.value_dbl) return false;
+    if (value_int      != other.value_int) return false;
+    if (value_text     != other.value_text) return false;
+    if (value_time     != other.value_time) return false;
+    if (value_duration != other.value_duration) return false;
+    if (value_precise  != other.value_precise) return false;
+    if (branches       != other.branches) return false;
 //    if (metadata != other.metadata) return false;
     return true;
   }
 
+  std::string val_to_string() const;
+  std::string val_to_pretty_string() const;
+  void val_from_node(const pugi::xml_node &node);
+
   friend std::ostream & operator << (std::ostream &os, Setting s) {
-      os << s.id_ << "(a" << s.metadata.address << ")="
-         << s.value_int  << "/"
-         << s.value_dbl  << "/"
-         << s.value_text << std::endl;
-      for (auto &q : s.branches.my_data_)
-        os << "__" << q;
-      return os;
+    os << s.id_;
+    if (s.indices.size()) {
+      os << " { ";
+      for (auto &q : s.indices)
+        os << q << " ";
+      os << "}";
+    }
+    os << " = " << s.val_to_string() << std::endl;
+    for (auto &q : s.branches.my_data_)
+      os << "_" << q;
+    return os;
   }
   
   void from_xml(const pugi::xml_node &node) override;

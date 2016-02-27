@@ -338,7 +338,7 @@ void FormFwhmCalibration::fit_calibration()
     new_calibration_.bits_ = fit_data_.metadata_.bits;
     new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.r_squared_ = p.rsq_;
-    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
+    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "keV";
     new_calibration_.model_ = Gamma::CalibrationModel::sqrt_poly;
   }

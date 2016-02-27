@@ -24,6 +24,8 @@
 #include "table_settings.h"
 #include "special_delegate.h"
 #include <boost/algorithm/string.hpp>
+#include <QDateTime>
+#include "qt_util.h"
 
 TableChanSettings::TableChanSettings(QObject *parent) {
   show_read_only_ = true;
@@ -60,214 +62,118 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
   int row = index.row();
   int col = index.column();
 
-  if (row == 0) {
-    if (col == 0) {
-      if ((role == Qt::DisplayRole) || (role == Qt::EditRole))
-        return "<===detector===>";
-      else if (role == Qt::FontRole) {
-        QFont regularfont;
-        regularfont.setPointSize(10);
-        return regularfont;
-      } else if (role == Qt::ForegroundRole) {
+  if (role == Qt::ForegroundRole)
+  {
+    if (row == 0) {
+      if (col == 0) {
         QBrush brush(Qt::black);
         return brush;
       }
+    } else if ((col <= (channels_.size()+2)) && (!channels_.empty()) && (!consolidated_list_.branches.empty())) {
+      Gamma::Setting item = consolidated_list_.branches.get(row-1);
+      if (item.metadata.writable) {
+        QBrush brush(Qt::black);
+        return brush;
+      } else {
+        QBrush brush(Qt::darkGray);
+        return brush;
+      }
     }
-    else if (col <= channels_.size()) {
-      if (role == Qt::EditRole) {
+    else
+      return QVariant();
+  }
+
+  else if (role == Qt::FontRole)
+  {
+    QFont font;
+    font.setPointSize(10);
+    if ((col == 0) && (row != 0))
+      font.setBold(true);
+    else if (col > channels_.size())
+      font.setItalic(true);
+    return font;
+  }
+
+
+  else if (role == Qt::DisplayRole)
+  {
+    if (row == 0) {
+      if (col == 0) {
+        return "<===detector===>";
+      } else if (col <= channels_.size()) {
         Gamma::Setting det;
         det.metadata.setting_type = Gamma::SettingType::detector;
         det.value_text = channels_[col-1].name_;
+        det.indices.insert(col-1);
         return QVariant::fromValue(det);
-      } else if (role == Qt::DisplayRole)
-        return QString::fromStdString(channels_[col-1].name_);
-      else if (role == Qt::ForegroundRole) {
-        QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::red, Qt::blue};
-        QBrush brush(palette[(col-1) % palette.size()]);
-        return brush;
-      } else if (role == Qt::FontRole) {
-        QFont boldfont;
-        boldfont.setBold(true);
-        boldfont.setPointSize(10);
-        return boldfont;
-      }
-    }
-  } else if ((col == 0) && (channels_.size() > 0)) {
-    Gamma::Setting item = consolidated_list_.branches.get(row-1);
-    if ((role == Qt::DisplayRole) || (role == Qt::EditRole)) {
-      std::vector<std::string> tokens;
-      boost::algorithm::split(tokens, item.id_, boost::algorithm::is_any_of("/"));
-      std::string name;
-//      if (tokens.size() > 2)
-//        name = tokens[0] + "/../" + tokens[tokens.size() - 1];
-//      else
-        name = item.id_;
-      return QString::fromStdString(name);
-    } else if (role == Qt::ForegroundRole) {
-      if (item.metadata.writable) {
-        QBrush brush(Qt::black);
-        return brush;
-      } else {
-        QBrush brush(Qt::darkGray);
-        return brush;
-      }
-    } else if (role == Qt::FontRole) {
-      QFont boldfont;
-      boldfont.setBold(true);
-      boldfont.setPointSize(10);
-      return boldfont;
-    }
-  } else if ((col == (channels_.size()+1)) && (!channels_.empty()) && (!consolidated_list_.branches.empty())) {
-    Gamma::Setting item = consolidated_list_.branches.get(row-1);
-    if ((role == Qt::DisplayRole) && preferred_units_.count(item.id_))
-      return QString::fromStdString(preferred_units_.at(item.id_));
-    else if  ((role == Qt::EditRole) && preferred_units_.count(item.id_)) {
-      UnitConverter uc;
-      Gamma::Setting st("unit");
-      st.metadata.setting_type = Gamma::SettingType::int_menu;
-      if (item.metadata.minimum)
-        st.metadata.int_menu_items = uc.make_ordered_map(item.metadata.unit, item.metadata.minimum, item.metadata.maximum);
-      else
-        st.metadata.int_menu_items = uc.make_ordered_map(item.metadata.unit, item.metadata.step, item.metadata.maximum);
-      for (auto &q : st.metadata.int_menu_items)
-        if (q.second == preferred_units_.at(item.id_))
-          st.value_int = q.first;
-      return QVariant::fromValue(st);
-    }
-    else if (role == Qt::ForegroundRole) {
-      if (item.metadata.writable) {
-        QBrush brush(Qt::black);
-        return brush;
-      } else {
-        QBrush brush(Qt::darkGray);
-        return brush;
-      }
-    } else if (role == Qt::FontRole) {
-      QFont italicfont;
-      italicfont.setItalic(true);
-      italicfont.setPointSize(10);
-      return italicfont;
-    }
-  } else if ((col == (channels_.size()+2)) && (!channels_.empty()) && (!consolidated_list_.branches.empty())) {
-    Gamma::Setting item = consolidated_list_.branches.get(row-1);
-    if ((role == Qt::DisplayRole) || (role == Qt::EditRole)) {
-      return QString::fromStdString(item.metadata.description);
-    } else if (role == Qt::ForegroundRole) {
-      if (item.metadata.writable) {
-        QBrush brush(Qt::black);
-        return brush;
-      } else {
-        QBrush brush(Qt::darkGray);
-        return brush;
-      }
-    } else if (role == Qt::FontRole) {
-      QFont italicfont;
-      italicfont.setItalic(true);
-      italicfont.setPointSize(10);
-      return italicfont;
-    }
-  } else if (col <= channels_.size()) {
-    Gamma::Setting item = consolidated_list_.branches.get(row-1);
-    item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
-    //item.indices.clear();
-    //item.indices.insert(col-1);
-    if (item == Gamma::Setting())
-      return QVariant();
-    if (role == Qt::EditRole) {
-      if ((item.metadata.setting_type == Gamma::SettingType::floating)
-          && preferred_units_.count(item.id_)
-          && (item.metadata.unit != preferred_units_.at(item.id_))) {
-            std::string to_units = preferred_units_.at(item.id_);
-            UnitConverter uc;
-            item.value_dbl = uc.convert_units(item.value_dbl, item.metadata.unit, to_units).convert_to<double>();
-            item.metadata.minimum = uc.convert_units(item.metadata.minimum, item.metadata.unit, to_units).convert_to<double>();
-            item.metadata.step = uc.convert_units(item.metadata.step, item.metadata.unit, to_units).convert_to<double>();
-            item.metadata.maximum = uc.convert_units(item.metadata.maximum, item.metadata.unit, to_units).convert_to<double>();
-          }
-      return QVariant::fromValue(item);
-    }
-    else if (role == Qt::ForegroundRole) {
-      if (item.metadata.setting_type == Gamma::SettingType::indicator) {
-        QBrush brush(Qt::white);
-        return brush;
-      } else if (item.metadata.writable) {
-        QBrush brush(Qt::black);
-        return brush;
-      } else {
-        QBrush brush(Qt::darkGray);
-        return brush;
-      }
-    } else if (role == Qt::BackgroundColorRole) {
-      if (item.metadata.setting_type == Gamma::SettingType::indicator)
-        return QColor::fromRgba(item.get_setting(Gamma::Setting(item.metadata.int_menu_items.at(item.value_int)), Gamma::Match::id).metadata.address);
-      else
+      } else
         return QVariant();
-    } else if (role == Qt::FontRole) {
-      if (item.metadata.setting_type == Gamma::SettingType::indicator) {
-        QFont boldfont;
-        boldfont.setBold(true);
-        boldfont.setPointSize(11);
-        return boldfont;
-      } else {
-        QFont regularfont;
-        regularfont.setPointSize(10);
-        return regularfont;
-      }
-    } else if (role == Qt::DisplayRole) {
-      if (item.metadata.setting_type == Gamma::SettingType::integer)
-        return QVariant::fromValue(item.value_int);
-      else if (item.metadata.setting_type == Gamma::SettingType::binary) {
-        QString hex = QString::number(item.value_int, 16).toUpper();
-        int size = item.metadata.maximum;
-        int tot = (size / 4);
-        if ((size % 4) > 0)
-          tot++;
-        int dif = tot - hex.length();
-        while (dif > 0) {
-          hex = QString("0") + hex;
-          dif--;
+    } else {
+      Gamma::Setting item = consolidated_list_.branches.get(row-1);
+      if (col == 0)
+        return QString::fromStdString(item.id_);
+      else if ((col == (channels_.size()+1)) && preferred_units_.count(item.id_))
+        return QString::fromStdString(preferred_units_.at(item.id_));
+      else if (col == (channels_.size()+2))
+        return QString::fromStdString(item.metadata.description);
+      else if (col <= channels_.size()) {
+        item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
+        if (item != Gamma::Setting()) {
+          if (item.metadata.setting_type == Gamma::SettingType::floating) {
+            double val = item.value_dbl;
+            if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
+              UnitConverter uc;
+              val = uc.convert_units(val, item.metadata.unit, preferred_units_.at(item.id_)).convert_to<double>();
+            }
+            return QVariant::fromValue(val);
+          } else
+            return QVariant::fromValue(item);
         }
-        hex = QString("0x") + hex;
-        return hex;
-      } else if (item.metadata.setting_type == Gamma::SettingType::floating) {
-        double val = item.value_dbl;
-        if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
-          UnitConverter uc;
-          val = uc.convert_units(val, item.metadata.unit, preferred_units_.at(item.id_)).convert_to<double>();
-        }
-        return QVariant::fromValue(val);
-      } else if (item.metadata.setting_type == Gamma::SettingType::int_menu)
-        if (item.metadata.int_menu_items.count(item.value_int) > 0)
-          return QString::fromStdString(item.metadata.int_menu_items.at(item.value_int));
-        else
-          return QVariant();
-      else if (item.metadata.setting_type == Gamma::SettingType::indicator) {
-              if (item.metadata.int_menu_items.count(item.value_int) > 0)
-                return QString::fromStdString(
-                      item.get_setting(Gamma::Setting(item.metadata.int_menu_items.at(item.value_int)), Gamma::Match::id).metadata.name
-                      );
-              else
-                return QVariant();
-      }
-      else if (item.metadata.setting_type == Gamma::SettingType::boolean)
-        if (item.value_int)
-          return "T";
-        else
-          return "F";
-      else if (item.metadata.setting_type == Gamma::SettingType::text)
-        return QString::fromStdString(item.value_text);
-      else if (item.metadata.setting_type == Gamma::SettingType::command)
-        return QVariant::fromValue(item);
-      else if (item.metadata.setting_type == Gamma::SettingType::file_path)
-        return QString::fromStdString(item.value_text);
-      else if (item.metadata.setting_type == Gamma::SettingType::dir_path)
-        return QString::fromStdString(item.value_text);
-      else if (item.metadata.setting_type == Gamma::SettingType::detector)
-        return QString::fromStdString(item.value_text);
-      else
-        return QVariant::fromValue(item.value_dbl);
+      } else
+        return QVariant();
     }
   }
+
+  else if (role == Qt::EditRole) {
+    if ((row == 0) && (col > 0) && (col <= channels_.size())) {
+      Gamma::Setting det;
+      det.metadata.setting_type = Gamma::SettingType::detector;
+      det.value_text = channels_[col-1].name_;
+      return QVariant::fromValue(det);
+    } else if (row != 0) {
+      Gamma::Setting item = consolidated_list_.branches.get(row-1);
+      if ((col == (channels_.size()+1)) && preferred_units_.count(item.id_)) {
+        UnitConverter uc;
+        Gamma::Setting st("unit");
+        st.metadata.setting_type = Gamma::SettingType::int_menu;
+        if (item.metadata.minimum)
+          st.metadata.int_menu_items = uc.make_ordered_map(item.metadata.unit, item.metadata.minimum, item.metadata.maximum);
+        else
+          st.metadata.int_menu_items = uc.make_ordered_map(item.metadata.unit, item.metadata.step, item.metadata.maximum);
+        for (auto &q : st.metadata.int_menu_items)
+          if (q.second == preferred_units_.at(item.id_))
+            st.value_int = q.first;
+        return QVariant::fromValue(st);
+      } else if (col <= channels_.size()) {
+        item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
+        if (item == Gamma::Setting())
+          return QVariant();
+        if ((item.metadata.setting_type == Gamma::SettingType::floating)
+            && preferred_units_.count(item.id_)
+            && (item.metadata.unit != preferred_units_.at(item.id_))) {
+          std::string to_units = preferred_units_.at(item.id_);
+        UnitConverter uc;
+        item.value_dbl = uc.convert_units(item.value_dbl, item.metadata.unit, to_units).convert_to<double>();
+        item.metadata.minimum = uc.convert_units(item.metadata.minimum, item.metadata.unit, to_units).convert_to<double>();
+        item.metadata.step = uc.convert_units(item.metadata.step, item.metadata.unit, to_units).convert_to<double>();
+        item.metadata.maximum = uc.convert_units(item.metadata.maximum, item.metadata.unit, to_units).convert_to<double>();
+        }
+        return QVariant::fromValue(item);
+      } else
+        return QVariant();
+    }
+  }
+
   return QVariant();
 }
 
@@ -335,8 +241,9 @@ Qt::ItemFlags TableChanSettings::flags(const QModelIndex &index) const
   int col = index.column();
 
   if ((col > 0) && (col <= (channels_.size() + 2)) && (!consolidated_list_.branches.empty())) {
-    if (row == 0)
+    if ((row == 0) && (col <= channels_.size()))
       return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
+
     Gamma::Setting item = consolidated_list_.branches.get(row-1);
 
     if (col == (channels_.size() + 1)) {
@@ -408,12 +315,29 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
             }
         item.value_dbl = val;
       }
+      else if ((item.metadata.setting_type == Gamma::SettingType::floating_precise)
+          && (value.type() == QVariant::Double)) {
+        long double val = value.toDouble();
+        if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
+              std::string to_units = preferred_units_.at(item.id_);
+              UnitConverter uc;
+              val = uc.convert_units(val, preferred_units_.at(item.id_), item.metadata.unit).convert_to<long double>();
+            }
+        item.value_precise = val;
+      }
       else if (((item.metadata.setting_type == Gamma::SettingType::text)
                 || (item.metadata.setting_type == Gamma::SettingType::file_path)
                 || (item.metadata.setting_type == Gamma::SettingType::dir_path)
                 || (item.metadata.setting_type == Gamma::SettingType::detector) )
           && (value.type() == QVariant::String))
         item.value_text = value.toString().toStdString();
+      else if ((item.metadata.setting_type == Gamma::SettingType::time)
+          && (value.type() == QVariant::DateTime))
+        item.value_time = fromQDateTime(value.toDateTime());
+      else if ((item.metadata.setting_type == Gamma::SettingType::time_duration)
+          && (value.canConvert(QMetaType::LongLong)))
+        item.value_duration = boost::posix_time::seconds(value.toLongLong());
+
       emit setting_changed(col-1, item);
       return true;
     } else {

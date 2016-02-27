@@ -23,6 +23,7 @@
 #include "form_system_settings.h"
 #include "ui_form_system_settings.h"
 #include "widget_detectors.h"
+#include "binary_checklist.h"
 #include <QMessageBox>
 
 FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::Detector>& detectors, QSettings& settings, QWidget *parent) :

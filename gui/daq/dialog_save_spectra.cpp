@@ -123,7 +123,7 @@ DialogSaveSpectra::DialogSaveSpectra(Qpx::SpectraSet& newset, QString outdir, QW
   ui->typesWidget->initialize(my_set_->types());
 
   root_dir_ = outdir;
-  std::string timenow = boost::posix_time::to_iso_string(boost::posix_time::second_clock::local_time());
+  std::string timenow = boost::posix_time::to_iso_string(boost::posix_time::second_clock::universal_time());
 
   if (my_set_->identity() != "New project")
     ui->lineName->setText(QString("Qpx_") + QString::fromStdString(my_set_->identity()));

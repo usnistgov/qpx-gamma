@@ -1297,7 +1297,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
   }
 
   fetched_spill = Spill();
-  session_start_time = boost::posix_time::microsec_clock::local_time();
+  session_start_time = boost::posix_time::microsec_clock::universal_time();
 
   if(!callback->start_run(Module::all))
     return;
@@ -1327,7 +1327,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
       timeout = (callback->run_status_.load() == 2);
     };
 
-    block_time = boost::posix_time::microsec_clock::local_time();
+    block_time = boost::posix_time::microsec_clock::universal_time();
 
     if (timeout) {
       callback->stop_run(Module::all);
@@ -1370,7 +1370,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
 
 
   fetched_spill = Spill();
-  block_time = boost::posix_time::microsec_clock::local_time();
+  block_time = boost::posix_time::microsec_clock::universal_time();
 
   callback->get_mod_stats(Module::all);
   callback->get_chan_stats(Channel::all, Module::all);

@@ -533,7 +533,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
       if (callback->override_timestamps_) {
         for (auto &q : one_spill.stats)
-          q.second.lab_time = boost::posix_time::microsec_clock::local_time();
+          q.second.lab_time = boost::posix_time::microsec_clock::universal_time();
         // livetime and realtime are not changed accordingly
       }
 

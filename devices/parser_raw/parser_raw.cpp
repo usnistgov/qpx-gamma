@@ -136,9 +136,13 @@ bool ParserRaw::read_settings_bulk(Gamma::Setting &set) const {
         q.value_int = spills_.size();
       else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "ParserRaw/Hits"))
         q.value_int = (bin_end_ - bin_begin_) / 12;
-      else if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "ParserRaw/StartTime")) {
+      else if ((q.metadata.setting_type == Gamma::SettingType::time) && (q.id_ == "ParserRaw/StartTime")) {
         if (!spills_.empty())
-          q.value_text = boost::posix_time::to_iso_extended_string(spills_.front().lab_time);
+          q.value_time = spills_.front().lab_time;
+      }
+      else if ((q.metadata.setting_type == Gamma::SettingType::time_duration) && (q.id_ == "ParserRaw/RunDuration")) {
+        if (!spills_.empty())
+          q.value_duration = spills_.back().lab_time - spills_.front().lab_time;
       }
     }
   }
@@ -268,7 +272,7 @@ void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill
 
     if (callback->override_timestamps_) {
       for (auto &q : one_spill.stats)
-        q.second.lab_time = boost::posix_time::microsec_clock::local_time();
+        q.second.lab_time = boost::posix_time::microsec_clock::universal_time();
       // livetime and realtime are not changed accordingly
     }
 

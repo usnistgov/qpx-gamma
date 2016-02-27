@@ -22,19 +22,14 @@
  ******************************************************************************/
 
 
-#ifndef QPX_SPECIAL_DELEGATE_H_
-#define QPX_SPECIAL_DELEGATE_H_
+#ifndef QPX_BINARY_CHECKLIST_H_
+#define QPX_BINARY_CHECKLIST_H_
 
-#include <QStyledItemDelegate>
 #include <QDialog>
 #include <QCheckBox>
 #include <QDoubleSpinBox>
 #include <QComboBox>
-#include "widget_pattern.h"
-#include "detector.h"
-
-Q_DECLARE_METATYPE(Gamma::Detector)
-Q_DECLARE_METATYPE(Gamma::Setting)
+#include "generic_setting.h"
 
 class BinaryChecklist : public QDialog {
   Q_OBJECT
@@ -54,31 +49,6 @@ private:
   std::vector<QDoubleSpinBox*>  spins_;
   std::vector<QComboBox*> menus_;
 
-};
-
-class QpxSpecialDelegate : public QStyledItemDelegate
-{
-    Q_OBJECT
-public:
-    QpxSpecialDelegate(QObject *parent = 0): QStyledItemDelegate(parent), detectors_("Detectors") {}
-    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const Q_DECL_OVERRIDE;
-    QSize sizeHint(const QStyleOptionViewItem &option,
-                   const QModelIndex &index) const Q_DECL_OVERRIDE;
-
-    QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option,
-                          const QModelIndex &index) const Q_DECL_OVERRIDE;
-    void setEditorData(QWidget *editor, const QModelIndex &index) const Q_DECL_OVERRIDE;
-    void setModelData(QWidget *editor, QAbstractItemModel *model,
-                      const QModelIndex &index) const Q_DECL_OVERRIDE;
-    void eat_detectors(const XMLableDB<Gamma::Detector>&);
-
-signals:
-    void begin_editing() const;
-    void ask_execute(Gamma::Setting command, QModelIndex index) const;
-    void ask_binary(Gamma::Setting command, QModelIndex index) const;
-
-private:
-    XMLableDB<Gamma::Detector> detectors_;
 };
 
 #endif

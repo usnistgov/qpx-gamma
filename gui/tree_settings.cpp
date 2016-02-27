@@ -24,6 +24,8 @@
 #include "tree_settings.h"
 #include "widget_pattern.h"
 #include "qpx_util.h"
+#include "qt_util.h"
+#include <QDateTime>
 
 Q_DECLARE_METATYPE(Gamma::Setting)
 
@@ -144,68 +146,7 @@ QVariant TreeItem::display_data(int column) const
   }
   else if ((column == 2) && (itemData.metadata.setting_type != Gamma::SettingType::none) && (itemData.metadata.setting_type != Gamma::SettingType::stem))
   {
-    if (itemData.metadata.setting_type == Gamma::SettingType::integer)
-      return QVariant::fromValue(itemData.value_int);
-    else if (itemData.metadata.setting_type == Gamma::SettingType::binary) {
-      QString hex = QString::number(itemData.value_int, 16).toUpper();
-      int size = itemData.metadata.maximum;
-      int tot = (size / 4);
-      if ((size % 4) > 0)
-        tot++;
-      int dif = tot - hex.length();
-      while (dif > 0) {
-        hex = QString("0") + hex;
-        dif--;
-      }
-      hex = QString("0x") + hex;
-      return hex;
-    } else if (itemData.metadata.setting_type == Gamma::SettingType::floating)
-      return QVariant::fromValue(itemData.value_dbl);
-    else if (itemData.metadata.setting_type == Gamma::SettingType::int_menu) {
-      if (itemData.metadata.int_menu_items.count(itemData.value_int) > 0)
-        return QString::fromStdString(itemData.metadata.int_menu_items.at(itemData.value_int));
-      else
-        return QVariant();
-    }
-    else if (itemData.metadata.setting_type == Gamma::SettingType::indicator) {
-      if (itemData.metadata.int_menu_items.count(itemData.value_int) > 0)
-        return QString::fromStdString(
-              itemData.get_setting(Gamma::Setting(itemData.metadata.int_menu_items.at(itemData.value_int)), Gamma::Match::id).metadata.name
-              );
-      else
-        return QVariant();
-    }
-    else if (itemData.metadata.setting_type == Gamma::SettingType::boolean)
-      if (itemData.value_int)
-        return "T";
-      else
-        return "F";
-    else if (itemData.metadata.setting_type == Gamma::SettingType::pattern) {
-      std::bitset<64> set(itemData.value_int);
-      QVector<int16_t> pat(itemData.metadata.maximum);
-      for (int i=0; i < itemData.metadata.maximum; ++i)
-          pat[i] = set[i];
-      QpxPattern pattern(pat, 20, false, 8);
-      return QVariant::fromValue(pattern);
-    }
-    else if (itemData.metadata.setting_type == Gamma::SettingType::text) {
-      QString text = QString::fromStdString(itemData.value_text);
-      if (text.size() > 24)
-        text = QString::fromStdString(itemData.value_text.substr(0,24) + "...");
-      return text;
-    }
-    else if (itemData.metadata.setting_type == Gamma::SettingType::file_path)
-      return QString::fromStdString(itemData.value_text);
-    else if (itemData.metadata.setting_type == Gamma::SettingType::dir_path)
-      return QString::fromStdString(itemData.value_text);
-    else if (itemData.metadata.setting_type == Gamma::SettingType::detector)
-      return QString::fromStdString(itemData.value_text);
-    else if (itemData.metadata.setting_type == Gamma::SettingType::stem)
-      return QString::fromStdString(itemData.value_text);
-    else if (itemData.metadata.setting_type == Gamma::SettingType::command)
-      return QVariant::fromValue(itemData);
-    else
-      return QVariant::fromValue(itemData.value_dbl);
+    return QVariant::fromValue(itemData);
   }
   else if (column == 3)
     return QString::fromStdString(itemData.metadata.unit);
@@ -355,6 +296,9 @@ bool TreeItem::setData(int column, const QVariant &value)
   else if ((itemData.metadata.setting_type == Gamma::SettingType::floating)
       && (value.type() == QVariant::Double))
     itemData.value_dbl = value.toDouble();
+  else if ((itemData.metadata.setting_type == Gamma::SettingType::floating_precise)
+      && (value.type() == QVariant::Double))
+    itemData.value_precise = value.toDouble();
   else if ((itemData.metadata.setting_type == Gamma::SettingType::text)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
@@ -365,9 +309,14 @@ bool TreeItem::setData(int column, const QVariant &value)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
   else if ((itemData.metadata.setting_type == Gamma::SettingType::detector)
-      && (value.type() == QVariant::String)) {
+      && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
-  }
+  else if ((itemData.metadata.setting_type == Gamma::SettingType::time)
+      && (value.type() == QVariant::DateTime))
+    itemData.value_time = fromQDateTime(value.toDateTime());
+  else if ((itemData.metadata.setting_type == Gamma::SettingType::time_duration)
+      && (value.canConvert(QMetaType::LongLong)))
+    itemData.value_duration = boost::posix_time::seconds(value.toLongLong());
   else
     return false;
 
@@ -416,31 +365,12 @@ QVariant TreeSettings::data(const QModelIndex &index, int role) const
   else if (role == Qt::ForegroundRole) {
     if (item->edit_data(2).canConvert<Gamma::Setting>()) {
       Gamma::Setting set = qvariant_cast<Gamma::Setting>(item->edit_data(2));
-      if ((col == 2) && (set.metadata.setting_type == Gamma::SettingType::detector)) {
-        QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::red, Qt::blue};
-        QBrush brush(palette[(row - 1) % palette.size()]);
-        return brush;
-      } else if ((col == 2) && (set.metadata.setting_type == Gamma::SettingType::indicator)) {
-        QBrush brush(Qt::white);
-        return brush;
-      } else if ((col == 2) && (!set.metadata.writable)) {
-        QBrush brush(Qt::darkGray);
-        return brush;
-      } else if ((col == 1) && (set.metadata.max_indices < 1)) {
+      if ((col == 1) && (set.metadata.max_indices < 1)) {
         QBrush brush(Qt::darkGray);
         return brush;
       } else {
         QBrush brush(Qt::black);
         return brush;
-      }
-    }
-  } else if (role == Qt::BackgroundColorRole) {
-    if (item->edit_data(col).canConvert<Gamma::Setting>()) {
-      Gamma::Setting set = qvariant_cast<Gamma::Setting>(item->edit_data(col));
-      if (set.metadata.setting_type == Gamma::SettingType::indicator) {
-        return QColor::fromRgba(
-              set.get_setting(Gamma::Setting(set.metadata.int_menu_items.at(set.value_int)), Gamma::Match::id).metadata.address
-              );
       }
     }
   }

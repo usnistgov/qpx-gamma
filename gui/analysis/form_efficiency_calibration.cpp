@@ -567,7 +567,7 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
     new_calibration_.type_ = "Efficiency";
     new_calibration_.bits_ = fit_data_.metadata_.bits;
     new_calibration_.coefficients_ = p.coeffs();
-    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
+    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
     new_calibration_.model_ = Gamma::CalibrationModel::polylog;
     PL_DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
@@ -673,7 +673,7 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
     new_calibration_.type_ = "Efficiency";
     new_calibration_.bits_ = fit_data_.metadata_.bits;
     new_calibration_.coefficients_ = p.coeffs();
-    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
+    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
     new_calibration_.model_ = Gamma::CalibrationModel::loginverse;
     PL_DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
@@ -719,7 +719,7 @@ void FormEfficiencyCalibration::on_pushFitEffit_clicked()
     new_calibration_.type_ = "Efficiency";
     new_calibration_.bits_ = fit_data_.metadata_.bits;
     new_calibration_.coefficients_ = p.coeffs();
-    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::local_time();  //spectrum timestamp instead?
+    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
     new_calibration_.model_ = Gamma::CalibrationModel::effit;
     PL_DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();

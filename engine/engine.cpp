@@ -432,7 +432,7 @@ void Engine::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>& 
   save_optimization();
   spill->run.state = pull_settings();
   spill->run.detectors = get_detectors();
-  spill->run.time = boost::posix_time::microsec_clock::local_time();
+  spill->run.time = boost::posix_time::microsec_clock::universal_time();
   parsedQueue.enqueue(spill);
 
   if (daq_start(&parsedQueue))
@@ -468,7 +468,7 @@ void Engine::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>& 
   save_optimization();
   spill->run.state = pull_settings();
   spill->run.detectors = get_detectors();
-  spill->run.time = boost::posix_time::microsec_clock::local_time();
+  spill->run.time = boost::posix_time::microsec_clock::universal_time();
   parsedQueue.enqueue(spill);
 
   wait_ms(500);
@@ -502,7 +502,7 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
   save_optimization();
   result->run.state = pull_settings();
   result->run.detectors = get_detectors();
-  result->run.time = boost::posix_time::microsec_clock::local_time();
+  result->run.time = boost::posix_time::microsec_clock::universal_time();
 
   SynchronizedQueue<Spill*> parsedQueue;
 
@@ -530,7 +530,7 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   delete anouncement_timer;
 
-  result->run.time = boost::posix_time::microsec_clock::local_time();
+  result->run.time = boost::posix_time::microsec_clock::universal_time();
 
   wait_ms(500);
 

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>172</width>
+    <width>169</width>
     <height>35</height>
    </rect>
   </property>
@@ -46,9 +46,12 @@
      <property name="frameShadow">
       <enum>QFrame::Sunken</enum>
      </property>
+     <property name="lineWidth">
+      <number>0</number>
+     </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="spacing">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="leftMargin">
        <number>0</number>
@@ -73,6 +76,9 @@
            <font>
             <pointsize>7</pointsize>
            </font>
+          </property>
+          <property name="lineWidth">
+           <number>0</number>
           </property>
           <property name="text">
            <string>days</string>
@@ -125,6 +131,9 @@
            <font>
             <pointsize>7</pointsize>
            </font>
+          </property>
+          <property name="lineWidth">
+           <number>0</number>
           </property>
           <property name="text">
            <string>hours</string>
@@ -181,6 +190,9 @@
             <pointsize>7</pointsize>
            </font>
           </property>
+          <property name="lineWidth">
+           <number>0</number>
+          </property>
           <property name="text">
            <string>mins</string>
           </property>
@@ -236,6 +248,9 @@
             <pointsize>7</pointsize>
            </font>
           </property>
+          <property name="lineWidth">
+           <number>0</number>
+          </property>
           <property name="text">
            <string>secs</string>
           </property>
@@ -268,6 +283,9 @@
           </property>
           <property name="buttonSymbols">
            <enum>QAbstractSpinBox::NoButtons</enum>
+          </property>
+          <property name="prefix">
+           <string/>
           </property>
           <property name="minimum">
            <number>-1</number>

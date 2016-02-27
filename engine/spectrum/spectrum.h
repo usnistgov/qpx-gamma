@@ -34,7 +34,6 @@
 #include <memory>
 #include <initializer_list>
 #include <boost/thread.hpp>
-#include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -42,9 +41,6 @@
 #include "spectrum_template.h"
 #include "detector.h"
 #include "custom_logger.h"
-
-//put this somewhere else?
-typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<16> > PreciseFloat;
 
 namespace Qpx {
 namespace Spectrum {
