@@ -29,7 +29,7 @@
 #include "form_fitter_settings.h"
 #include "form_peak_info.h"
 
-RollbackDialog::RollbackDialog(Gamma::ROI roi, QWidget *parent) :
+RollbackDialog::RollbackDialog(Qpx::ROI roi, QWidget *parent) :
   QDialog(parent),
   roi_(roi)
 {
@@ -185,7 +185,7 @@ FormFitter::FormFitter(QWidget *parent) :
   connect(shortcut4, SIGNAL(activated()), this, SLOT(switch_scale_type()));
 
 
-  connect(&thread_fitter_, SIGNAL(fit_updated(Gamma::Fitter)), this, SLOT(fit_updated(Gamma::Fitter)));
+  connect(&thread_fitter_, SIGNAL(fit_updated(Qpx::Fitter)), this, SLOT(fit_updated(Qpx::Fitter)));
   connect(&thread_fitter_, SIGNAL(fitting_done()), this, SLOT(fitting_complete()));
 
   build_menu();
@@ -210,7 +210,7 @@ FormFitter::~FormFitter()
   delete ui;
 }
 
-void FormFitter::setFit(Gamma::Fitter* fit) {
+void FormFitter::setFit(Qpx::Fitter* fit) {
   fit_data_ = fit;
   update_spectrum();
   updateData();
@@ -451,7 +451,7 @@ void FormFitter::adjust_sum4_bounds() {
   if (!range_.visible)
     return;
 
-  Gamma::ROI *parent_region = nullptr;
+  Qpx::ROI *parent_region = nullptr;
 
   if (range_.purpose.toString() == "SUM4")
     parent_region = fit_data_->parent_of(range_.center.bin(fit_data_->settings().bits_));
@@ -480,7 +480,7 @@ void FormFitter::adjust_sum4_bounds() {
     return;
   }
 
-  Gamma::SUM4Edge edge(parent_region->finder_.y_, L, R);
+  Qpx::SUM4Edge edge(parent_region->finder_.y_, L, R);
 
   if (range_.purpose.toString() == "ROI back L") {
     PL_DBG << "adjusting L back";
@@ -491,8 +491,8 @@ void FormFitter::adjust_sum4_bounds() {
     parent_region->set_RB(edge);
     //should be in fitter thread
   } else if (range_.purpose.toString() == "SUM4") {
-    Gamma::Peak pk = parent_region->peaks_.at(range_.center.bin(fit_data_->settings().bits_));
-    Gamma::SUM4 new_sum4(parent_region->finder_.x_, parent_region->finder_.y_, L, R, parent_region->background_, parent_region->LB(), parent_region->RB());
+    Qpx::Peak pk = parent_region->peaks_.at(range_.center.bin(fit_data_->settings().bits_));
+    Qpx::SUM4 new_sum4(parent_region->finder_.x_, parent_region->finder_.y_, L, R, parent_region->background_, parent_region->LB(), parent_region->RB());
     pk.sum4_ = new_sum4;
     pk.construct(fit_data_->settings());
     fit_data_->replace_peak(pk);
@@ -529,7 +529,7 @@ void FormFitter::delete_selected_peaks()
   thread_fitter_.remove_peaks(chosen_peaks);
 }
 
-void FormFitter::replace_peaks(std::vector<Gamma::Peak> pks) {
+void FormFitter::replace_peaks(std::vector<Qpx::Peak> pks) {
   if (busy_ || (fit_data_ == nullptr))
     return;
 
@@ -543,7 +543,7 @@ void FormFitter::replace_peaks(std::vector<Gamma::Peak> pks) {
   emit data_changed();
 }
 
-void FormFitter::fit_updated(Gamma::Fitter fitter) {
+void FormFitter::fit_updated(Qpx::Fitter fitter) {
   *fit_data_ = fitter;
   toggle_push();
   updateData();;
@@ -1126,7 +1126,7 @@ void FormFitter::createROI_bounds_range(double bin) {
   if (!fit_data_->regions_.count(bin))
     return;
 
-  const Gamma::ROI &r = fit_data_->regions_.at(bin);
+  const Qpx::ROI &r = fit_data_->regions_.at(bin);
   if (r.finder_.x_.empty())
     return;
 
@@ -1248,7 +1248,7 @@ void FormFitter::makeSUM4_range(double roi, double peak_chan, int edge)
   if (!fit_data_->regions_.count(roi))
     return;
 
-  const Gamma::ROI &parent_region = fit_data_->regions_.at(roi);
+  const Qpx::ROI &parent_region = fit_data_->regions_.at(roi);
 
   int32_t L = 0;
   int32_t R = 0;
@@ -1271,7 +1271,7 @@ void FormFitter::makeSUM4_range(double roi, double peak_chan, int edge)
     range_.center.set_bin(roi, fit_data_->settings().bits_,fit_data_->settings().cali_nrg_);
     range_.latch_to.push_back("Data");
   } else if (edge == 0) {
-    Gamma::Peak pk = fit_data_->peaks().at(peak_chan);
+    Qpx::Peak pk = fit_data_->peaks().at(peak_chan);
     L = pk.sum4_.Lpeak;
     R = pk.sum4_.Rpeak;
     purpose = "SUM4";
@@ -1599,7 +1599,7 @@ void FormFitter::plotSUM4_options() {
   }
 }
 
-void FormFitter::addEdge(Gamma::SUM4Edge edge, std::vector<double> &x, QPen pen, double roi) {
+void FormFitter::addEdge(Qpx::SUM4Edge edge, std::vector<double> &x, QPen pen, double roi) {
   std::vector<double> x_edge, y_edge;
   for (int i = edge.start(); i <= edge.end(); ++i) {
     x_edge.push_back(x[i]);
@@ -1744,7 +1744,7 @@ void FormFitter::peak_info(double bin)
   if (!fit_data_)
     return;
 
-  Gamma::ROI *parent_region = fit_data_->parent_of(bin);
+  Qpx::ROI *parent_region = fit_data_->parent_of(bin);
   if (!parent_region || !fit_data_->peaks().count(bin))
     return;
 
@@ -1757,7 +1757,7 @@ void FormFitter::peak_info(double bin)
   int ret = peakInfo->exec();
 
   if (ret == QDialog::Accepted) {
-    Gamma::Peak pk = fit_data_->peaks().at(bin);
+    Qpx::Peak pk = fit_data_->peaks().at(bin);
 //    if (pk.hypermet_ == hm)
 //      return;
 

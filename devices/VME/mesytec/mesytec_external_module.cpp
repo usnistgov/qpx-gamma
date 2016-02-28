@@ -85,18 +85,18 @@ void MesytecExternal::disconnect() {
   modnum_ = 0;
 }
 
-bool MesytecExternal::read_settings_bulk(Gamma::Setting &set) const {
+bool MesytecExternal::read_settings_bulk(Qpx::Setting &set) const {
   if (set.id_ != device_name())
     return false;
 
   for (auto &k : set.branches.my_data_) {
-    if (k.metadata.setting_type != Gamma::SettingType::stem)
+    if (k.metadata.setting_type != Qpx::SettingType::stem)
     {
       if (!read_setting(k)) {/*PL_DBG << "Could not read " << k.id_;*/}
     }
     else  {
       for (auto &p : k.branches.my_data_) {
-        if (k.metadata.setting_type != Gamma::SettingType::stem) {
+        if (k.metadata.setting_type != Qpx::SettingType::stem) {
           if (!read_setting(p)) {/*PL_DBG << "Could not read " << p.id_;*/}
         }
       }
@@ -106,7 +106,7 @@ bool MesytecExternal::read_settings_bulk(Gamma::Setting &set) const {
   return true;
 }
 
-bool MesytecExternal::write_settings_bulk(Gamma::Setting &set) {
+bool MesytecExternal::write_settings_bulk(Qpx::Setting &set) {
   if (set.id_ != device_name())
     return false;
 
@@ -115,15 +115,15 @@ bool MesytecExternal::write_settings_bulk(Gamma::Setting &set) {
   this->rebuild_structure(set);
 
   for (auto &k : set.branches.my_data_) {
-    if (k.metadata.setting_type != Gamma::SettingType::stem) {
-      Gamma::Setting s = k;
+    if (k.metadata.setting_type != Qpx::SettingType::stem) {
+      Qpx::Setting s = k;
       if (k.metadata.writable && read_setting(s) && (s != k)) {
         if (!write_setting(k)) {/*PL_DBG << "Could not write " << k.id_;*/}
       }
     } else {
       for (auto &p : k.branches.my_data_) {
-        if (k.metadata.setting_type != Gamma::SettingType::stem) {
-          Gamma::Setting s = p;
+        if (k.metadata.setting_type != Qpx::SettingType::stem) {
+          Qpx::Setting s = p;
           if (p.metadata.writable && read_setting(s) && (s != p)) {
             if (!write_setting(p)) {/*PL_DBG << "Could not write " << p.id_;*/}
           }
@@ -134,18 +134,18 @@ bool MesytecExternal::write_settings_bulk(Gamma::Setting &set) {
   return true;
 }
 
-bool MesytecExternal::read_setting(Gamma::Setting& set) const {
-  if (set.metadata.setting_type == Gamma::SettingType::command)
+bool MesytecExternal::read_setting(Qpx::Setting& set) const {
+  if (set.metadata.setting_type == Qpx::SettingType::command)
     set.metadata.writable =  ((status_ & DeviceStatus::booted) != 0);
 
   if (!(status_ & Qpx::DeviceStatus::booted))
     return false;
 
-  if ((set.metadata.setting_type == Gamma::SettingType::binary)
-      || (set.metadata.setting_type == Gamma::SettingType::command)
-      || (set.metadata.setting_type == Gamma::SettingType::integer)
-      || (set.metadata.setting_type == Gamma::SettingType::boolean)
-      || (set.metadata.setting_type == Gamma::SettingType::int_menu))
+  if ((set.metadata.setting_type == Qpx::SettingType::binary)
+      || (set.metadata.setting_type == Qpx::SettingType::command)
+      || (set.metadata.setting_type == Qpx::SettingType::integer)
+      || (set.metadata.setting_type == Qpx::SettingType::boolean)
+      || (set.metadata.setting_type == Qpx::SettingType::int_menu))
   {
     uint16_t val;
     if (controller_->RC_read(modnum_, set.metadata.address, val)) {
@@ -156,15 +156,15 @@ bool MesytecExternal::read_setting(Gamma::Setting& set) const {
   return false;
 }
 
-bool MesytecExternal::write_setting(Gamma::Setting& set) {
+bool MesytecExternal::write_setting(Qpx::Setting& set) {
   if (!(status_ & Qpx::DeviceStatus::booted))
     return false;
 
-  if ((set.metadata.setting_type == Gamma::SettingType::binary)
-      || (set.metadata.setting_type == Gamma::SettingType::command)
-      || (set.metadata.setting_type == Gamma::SettingType::integer)
-      || (set.metadata.setting_type == Gamma::SettingType::boolean)
-      || (set.metadata.setting_type == Gamma::SettingType::int_menu))
+  if ((set.metadata.setting_type == Qpx::SettingType::binary)
+      || (set.metadata.setting_type == Qpx::SettingType::command)
+      || (set.metadata.setting_type == Qpx::SettingType::integer)
+      || (set.metadata.setting_type == Qpx::SettingType::boolean)
+      || (set.metadata.setting_type == Qpx::SettingType::int_menu))
   {
     return controller_->RC_write(modnum_, set.metadata.address, set.value_int);
   }

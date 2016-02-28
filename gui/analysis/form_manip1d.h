@@ -89,7 +89,7 @@ private:
   void spectrumDetails(std::string id);
 
   Marker moving;
-  Gamma::Calibration calib_;
+  Qpx::Calibration calib_;
 
   Ui::FormManip1D *ui;
 

@@ -39,8 +39,8 @@ public:
   static std::string plugin_name() {return "VME/IsegVHS";}
   std::string device_name() const override {return plugin_name();}
 
-  bool write_settings_bulk(Gamma::Setting &set) override;
-  bool read_settings_bulk(Gamma::Setting &set) const override;
+  bool write_settings_bulk(Qpx::Setting &set) override;
+  bool read_settings_bulk(Qpx::Setting &set) const override;
   void get_all_settings() override;
 
   //VmeModule
@@ -58,9 +58,9 @@ private:
   QpxIsegVHSPlugin(const QpxIsegVHSPlugin&);
 
 protected:
-  void rebuild_structure(Gamma::Setting &set);
-  bool read_setting(Gamma::Setting& set) const;
-  bool write_setting(Gamma::Setting& set);
+  void rebuild_structure(Qpx::Setting &set);
+  bool read_setting(Qpx::Setting& set) const;
+  bool write_setting(Qpx::Setting& set);
 
   uint16_t readShort(int address) const;
   void    writeShort(int address, uint16_t data);

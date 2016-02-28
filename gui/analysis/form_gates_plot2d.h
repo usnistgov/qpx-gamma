@@ -103,7 +103,7 @@ private:
 
   //scaling
   int bits;
-  Gamma::Calibration calib_x_, calib_y_;
+  Qpx::Calibration calib_x_, calib_y_;
 };
 
 #endif // WIDGET_PLOT2D_H

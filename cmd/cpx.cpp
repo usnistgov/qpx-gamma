@@ -263,16 +263,16 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
     return false;
   }
 
-  std::vector<Gamma::Detector> dets = engine_.get_detectors();
+  std::vector<Qpx::Detector> dets = engine_.get_detectors();
 
-  XMLableDB<Gamma::Detector> detectors_("Detectors");
+  XMLableDB<Qpx::Detector> detectors_("Detectors");
   detectors_.read_xml(data_dir + "/default_detectors.det");
   if (detectors_.empty()) {
     PL_ERR << "<cpx> bad detector db";
     return false;
   }
 
-  std::map<int, Gamma::Detector> update;
+  std::map<int, Qpx::Detector> update;
   for (int i=0; i < dets.size(); ++i)
     if (detectors_.has_a(dets[i]))
       update[i] = detectors_.get(dets[i]);

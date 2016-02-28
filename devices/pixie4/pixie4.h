@@ -48,8 +48,8 @@ public:
   static std::string plugin_name() {return "Pixie4";}
   std::string device_name() const override {return plugin_name();}
 
-  bool write_settings_bulk(Gamma::Setting &set) override;
-  bool read_settings_bulk(Gamma::Setting &set) const override;
+  bool write_settings_bulk(Qpx::Setting &set) override;
+  bool read_settings_bulk(Qpx::Setting &set) const override;
   void get_all_settings() override;
   bool boot() override;
   bool die() override {status_ = DeviceStatus::loaded | DeviceStatus::can_boot; return true;}
@@ -89,8 +89,8 @@ protected:
   static void worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_queue);
 
   //CONVENIENCE FUNCTIONS//
-  void rebuild_structure(Gamma::Setting &set);
-  void reindex_modules(Gamma::Setting &set);
+  void rebuild_structure(Qpx::Setting &set);
+  void reindex_modules(Qpx::Setting &set);
   void fill_stats(std::map<int16_t, StatsUpdate>&, uint8_t module);
   void reset_counters_next_run();
 

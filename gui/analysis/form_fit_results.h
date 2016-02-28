@@ -41,7 +41,7 @@ class FormFitResults : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormFitResults(QSettings &settings, Gamma::Fitter&, QWidget *parent = 0);
+  explicit FormFitResults(QSettings &settings, Qpx::Fitter&, QWidget *parent = 0);
   ~FormFitResults();
 
   void clear();
@@ -69,14 +69,14 @@ private:
   QString data_directory_;
   QString settings_directory_;
 
-  Gamma::Fitter &fit_data_;
+  Qpx::Fitter &fit_data_;
   std::set<double> selected_peaks_;
 
   void loadSettings();
   void saveSettings();
   void select_in_table();
 
-  void add_peak_to_table(const Gamma::Peak &, int, bool);
+  void add_peak_to_table(const Qpx::Peak &, int, bool);
   void data_to_table(int row, int column, double value, QBrush background);
 
 };

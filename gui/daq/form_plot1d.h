@@ -41,7 +41,7 @@ public:
   ~FormPlot1D();
 
   void setSpectra(Qpx::SpectraSet& new_set);
-  void setDetDB(XMLableDB<Gamma::Detector>& detDB);
+  void setDetDB(XMLableDB<Qpx::Detector>& detDB);
 
   void updateUI();
 
@@ -97,9 +97,9 @@ private:
 
   Ui::FormPlot1D *ui;
 
-  Gamma::Calibration calib_;
+  Qpx::Calibration calib_;
 
-  XMLableDB<Gamma::Detector> * detectors_;
+  XMLableDB<Qpx::Detector> * detectors_;
 
   Qpx::SpectraSet *mySpectra;
   SelectorWidget *spectraSelector;

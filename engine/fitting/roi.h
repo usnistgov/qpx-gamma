@@ -16,19 +16,19 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::ROI
+ *      Qpx::ROI
  *
  ******************************************************************************/
 
-#ifndef GAMMA_ROI_H
-#define GAMMA_ROI_H
+#ifndef QPX_ROI_H
+#define QPX_ROI_H
 
 #include "gamma_peak.h"
 #include "polynomial.h"
 #include "finder.h"
 #include <boost/atomic.hpp>
 
-namespace Gamma {
+namespace Qpx {
 
 struct Fit {
   Fit (Finder f) :

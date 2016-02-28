@@ -33,7 +33,7 @@ namespace Spectrum {
 
 static Registrar<SpectrumTime> registrar("Time");
 
-void SpectrumTime::_set_detectors(const std::vector<Gamma::Detector>& dets) {
+void SpectrumTime::_set_detectors(const std::vector<Qpx::Detector>& dets) {
   metadata_.detectors.clear();
 
   if (dets.size() == 1)
@@ -42,7 +42,7 @@ void SpectrumTime::_set_detectors(const std::vector<Gamma::Detector>& dets) {
     int total = metadata_.add_pattern.size();
     if (dets.size() < total)
       total = dets.size();
-    metadata_.detectors.resize(1, Gamma::Detector());
+    metadata_.detectors.resize(1, Qpx::Detector());
 
     for (int i=0; i < total; ++i) {
       if (metadata_.add_pattern[i]) {

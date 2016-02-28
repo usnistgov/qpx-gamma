@@ -16,16 +16,16 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::Gates
+ *      Qpx::Gates
  *
  ******************************************************************************/
 
-#ifndef GAMMA_GATES_H
-#define GAMMA_GATES_H
+#ifndef QPX_GATES_H
+#define QPX_GATES_H
 
 #include "gamma_fitter.h"
 
-namespace Gamma {
+namespace Qpx {
 
 class Gate {
 

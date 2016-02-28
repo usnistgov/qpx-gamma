@@ -39,7 +39,7 @@ class FormDaqSettings : public QDialog
   Q_OBJECT
 
 public:
-  explicit FormDaqSettings(Gamma::Setting tree, QWidget *parent = 0);
+  explicit FormDaqSettings(Qpx::Setting tree, QWidget *parent = 0);
   ~FormDaqSettings();
 
 protected:
@@ -49,7 +49,7 @@ protected:
 private:
   Ui::FormDaqSettings *ui;
 
-  Gamma::Setting      dev_settings_;
+  Qpx::Setting      dev_settings_;
   TreeSettings        tree_settings_model_;
   QpxSpecialDelegate  tree_delegate_;
 

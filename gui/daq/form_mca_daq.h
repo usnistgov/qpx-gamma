@@ -42,7 +42,7 @@ class FormMcaDaq : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormMcaDaq(ThreadRunner&, QSettings&, XMLableDB<Gamma::Detector>&, std::vector<Gamma::Detector>&, QWidget *parent = 0);
+  explicit FormMcaDaq(ThreadRunner&, QSettings&, XMLableDB<Qpx::Detector>&, std::vector<Qpx::Detector>&, QWidget *parent = 0);
 
   void replot();
   ~FormMcaDaq();
@@ -103,8 +103,8 @@ private:
   Ui::FormMcaDaq *ui;
   QSettings                  &settings_;
   ThreadRunner               &runner_thread_;
-  XMLableDB<Gamma::Detector> &detectors_;
-  std::vector<Gamma::Detector> &current_dets_;
+  XMLableDB<Qpx::Detector> &detectors_;
+  std::vector<Qpx::Detector> &current_dets_;
 
   QString data_directory_;    //data directory
   QString settings_directory_;

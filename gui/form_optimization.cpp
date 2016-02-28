@@ -27,7 +27,7 @@
 #include "fityk.h"
 #include "qt_util.h"
 
-FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
+FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XMLableDB<Qpx::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormOptimization),
   opt_runner_thread_(thread),
@@ -122,7 +122,7 @@ void FormOptimization::update_settings() {
   ui->comboTarget->clear();
 
   //should come from other thread?
-  std::vector<Gamma::Detector> chans = Qpx::Engine::getInstance().get_detectors();
+  std::vector<Qpx::Detector> chans = Qpx::Engine::getInstance().get_detectors();
 
   for (int i=0; i < chans.size(); ++i) {
     QString text = "[" + QString::number(i) + "] "
@@ -183,7 +183,7 @@ void FormOptimization::on_pushStart_clicked()
 {
 
   spectra_.clear();
-  fitter_opt_ = Gamma::Fitter();
+  fitter_opt_ = Qpx::Fitter();
   peaks_.clear();
   setting_values_.clear();
   setting_fwhm_.clear();
@@ -235,20 +235,20 @@ void FormOptimization::do_run()
 
   current_spectra_.clear();
   current_spectra_.set_spectra(db);
-  peaks_.push_back(Gamma::Peak());
-  spectra_.push_back(Gamma::Fitter());
+  peaks_.push_back(Qpx::Peak());
+  spectra_.push_back(Qpx::Fitter());
 
   ui->plotSpectrum->update_spectrum();
 
-  Gamma::Setting set(current_setting_);
+  Qpx::Setting set(current_setting_);
   set.indices.clear();
   set.indices.insert(optchan);
 
   set.value_dbl = val_current;
-  Qpx::Engine::getInstance().set_setting(set, Gamma::Match::id | Gamma::Match::indices);
+  Qpx::Engine::getInstance().set_setting(set, Qpx::Match::id | Qpx::Match::indices);
   QThread::sleep(1);
   Qpx::Engine::getInstance().get_all_settings();
-  set = Qpx::Engine::getInstance().pull_settings().get_setting(set, Gamma::Match::id | Gamma::Match::indices);
+  set = Qpx::Engine::getInstance().pull_settings().get_setting(set, Qpx::Match::id | Qpx::Match::indices);
   setting_values_.push_back(set.value_dbl);
   setting_fwhm_.push_back(0);
   emit settings_changed();
@@ -283,7 +283,7 @@ bool FormOptimization::find_peaks() {
 
     ui->plotSpectrum->perform_fit();
 
-    peaks_[peaks_.size() - 1] = Gamma::Peak();
+    peaks_[peaks_.size() - 1] = Qpx::Peak();
 
     for (auto &q : fitter_opt_.peaks())
       if (q.second.area_best.val > peaks_[peaks_.size() - 1].area_best.val)
@@ -372,7 +372,7 @@ void FormOptimization::on_comboTarget_currentIndexChanged(int index)
 {
   int optchan = ui->comboTarget->currentData().toInt();
 
-  std::vector<Gamma::Detector> chans = Qpx::Engine::getInstance().get_detectors();
+  std::vector<Qpx::Detector> chans = Qpx::Engine::getInstance().get_detectors();
 
   ui->comboSetting->clear();
   if (optchan < chans.size()) {
@@ -390,11 +390,11 @@ void FormOptimization::on_comboSetting_activated(const QString &arg1)
   int optchan = ui->comboTarget->currentData().toInt();
   current_setting_ = ui->comboSetting->currentText().toStdString();
 
-  Gamma::Setting set(current_setting_);
+  Qpx::Setting set(current_setting_);
   set.indices.clear();
   set.indices.insert(optchan);
 
-  set = Qpx::Engine::getInstance().pull_settings().get_setting(set, Gamma::Match::id | Gamma::Match::indices);
+  set = Qpx::Engine::getInstance().pull_settings().get_setting(set, Qpx::Match::id | Qpx::Match::indices);
 
   ui->doubleSpinStart->setValue(set.metadata.minimum);
   ui->doubleSpinEnd->setValue(set.metadata.maximum);

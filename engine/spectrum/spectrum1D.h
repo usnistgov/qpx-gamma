@@ -40,9 +40,9 @@ public:
     new_temp.output_types = {"n42", "tka", "spe"};
     new_temp.description = "Traditional MCA spectrum";
 
-    Gamma::Setting cutoff_bin;
+    Qpx::Setting cutoff_bin;
     cutoff_bin.id_ = "cutoff_bin";
-    cutoff_bin.metadata.setting_type = Gamma::SettingType::integer;
+    cutoff_bin.metadata.setting_type = Qpx::SettingType::integer;
     cutoff_bin.metadata.description = "Hits rejected below minimum energy (affects binning only)";
     cutoff_bin.metadata.writable = true;
     cutoff_bin.metadata.minimum = 0;
@@ -56,7 +56,7 @@ public:
 
 protected:
   std::string my_type() const override {return "1D";}
-  XMLableDB<Gamma::Setting> default_settings() const override {return this->get_template().generic_attributes; }
+  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().generic_attributes; }
 
   //1D is ok with all patterns
   bool initialize() override {
@@ -74,7 +74,7 @@ protected:
   PreciseFloat _get_count(std::initializer_list<uint16_t> list) const;
   std::unique_ptr<std::list<Entry>> _get_spectrum(std::initializer_list<Pair> list);
   void _add_bulk(const Entry&) override;
-  void _set_detectors(const std::vector<Gamma::Detector>& dets) override;
+  void _set_detectors(const std::vector<Qpx::Detector>& dets) override;
 
   //event processing
   void addEvent(const Event&) override;

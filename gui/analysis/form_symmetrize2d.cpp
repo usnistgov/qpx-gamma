@@ -28,7 +28,7 @@
 #include <QInputDialog>
 #include "qpx_util.h"
 
-FormSymmetrize2D::FormSymmetrize2D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent) :
+FormSymmetrize2D::FormSymmetrize2D(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormSymmetrize2D),
   detectors_(newDetDB),
@@ -165,8 +165,8 @@ void FormSymmetrize2D::initialize() {
       Qpx::Spectrum::Metadata md = spectrum->metadata();
       res = md.resolution;
 
-      detector1_ = Gamma::Detector();
-      detector2_ = Gamma::Detector();
+      detector1_ = Qpx::Detector();
+      detector2_ = Qpx::Detector();
 
       if (md.detectors.size() > 1) {
         detector1_ = md.detectors[0];
@@ -179,13 +179,13 @@ void FormSymmetrize2D::initialize() {
       PL_DBG << "det1 " << detector1_.name_;
       PL_DBG << "det2 " << detector2_.name_;
 
-      if (detector1_.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits)))
-        nrg_calibration1_ = detector1_.energy_calibrations_.get(Gamma::Calibration("Energy", md.bits));
+      if (detector1_.energy_calibrations_.has_a(Qpx::Calibration("Energy", md.bits)))
+        nrg_calibration1_ = detector1_.energy_calibrations_.get(Qpx::Calibration("Energy", md.bits));
 
-      if (detector2_.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits)))
-        nrg_calibration2_ = detector2_.energy_calibrations_.get(Gamma::Calibration("Energy", md.bits));
+      if (detector2_.energy_calibrations_.has_a(Qpx::Calibration("Energy", md.bits)))
+        nrg_calibration2_ = detector2_.energy_calibrations_.get(Qpx::Calibration("Energy", md.bits));
 
-      bool symmetrized = (md.attributes.get(Gamma::Setting("symmetrized")).value_int != 0);
+      bool symmetrized = (md.attributes.get(Qpx::Setting("symmetrized")).value_int != 0);
     }
   }
 
@@ -346,7 +346,7 @@ void FormSymmetrize2D::apply_gain_calibration()
   msgBox.setIcon(QMessageBox::Question);
   int ret = msgBox.exec();
 
-  Gamma::Detector modified;
+  Qpx::Detector modified;
 
   if (ret == QMessageBox::Yes) {
     if (!detectors_.has_a(detector2_)) {
@@ -363,13 +363,13 @@ void FormSymmetrize2D::apply_gain_calibration()
         modified.name_ = text.toStdString();
         if (detectors_.has_a(modified)) {
           QMessageBox::warning(this, "Already exists", "Detector " + text + " already exists. Will not save to database.", QMessageBox::Ok);
-          modified = Gamma::Detector();
+          modified = Qpx::Detector();
         }
       }
     } else
       modified = detectors_.get(detector2_);
 
-    if (modified != Gamma::Detector())
+    if (modified != Qpx::Detector())
     {
       PL_INFO << "   applying new gain_match calibrations for " << modified.name_ << " in detector database";
       modified.gain_match_calibrations_.replace(gain_match_cali_);
@@ -392,7 +392,7 @@ void FormSymmetrize2D::apply_gain_calibration()
       q->set_detectors(md.detectors);
     }
 
-    std::vector<Gamma::Detector> detectors = spectra_->runInfo().detectors;
+    std::vector<Qpx::Detector> detectors = spectra_->runInfo().detectors;
     for (auto &p : detectors) {
       if (p.shallow_equals(detector2_)) {
         PL_INFO << "   applying new calibrations for " << detector2_.name_ << " in current project " << spectra_->identity();
@@ -431,11 +431,11 @@ void FormSymmetrize2D::clear() {
   res = 0;
 
   current_spectrum_.clear();
-  detector1_ = Gamma::Detector();
-  nrg_calibration1_ = Gamma::Calibration();
+  detector1_ = Qpx::Detector();
+  nrg_calibration1_ = Qpx::Calibration();
 
-  detector2_ = Gamma::Detector();
-  nrg_calibration2_ = Gamma::Calibration();
+  detector2_ = Qpx::Detector();
+  nrg_calibration2_ = Qpx::Calibration();
 
   if (my_gain_calibration_->isVisible())
     my_gain_calibration_->clear();

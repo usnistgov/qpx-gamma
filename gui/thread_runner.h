@@ -52,10 +52,10 @@ public:
     void do_initialize(QString, bool boot);
     void do_boot();
     void do_shutdown();
-    void do_push_settings(const Gamma::Setting &tree);
-    void do_set_setting(const Gamma::Setting &item, Gamma::Match match);
-    void do_set_detector(int, Gamma::Detector);
-    void do_set_detectors(std::map<int, Gamma::Detector>);
+    void do_push_settings(const Qpx::Setting &tree);
+    void do_set_setting(const Qpx::Setting &item, Qpx::Match match);
+    void do_set_detector(int, Qpx::Detector);
+    void do_set_detectors(std::map<int, Qpx::Detector>);
 
     void do_list(boost::atomic<bool>&, uint64_t timeout);
     void do_run(Qpx::SpectraSet&, boost::atomic<bool>&, uint64_t timeout);
@@ -71,7 +71,7 @@ signals:
     void bootComplete();
     void runComplete();
     void listComplete(Qpx::ListData*);
-    void settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus);
+    void settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus);
     void oscilReadOut(std::vector<Qpx::Trace>);
 
 protected:
@@ -94,11 +94,11 @@ private:
 
     uint64_t timeout_;
 
-    std::map<int, Gamma::Detector> detectors_;
-    Gamma::Detector det_;
+    std::map<int, Qpx::Detector> detectors_;
+    Qpx::Detector det_;
     int chan_;
-    Gamma::Setting tree_, one_setting_;
-    Gamma::Match match_conditions_;
+    Qpx::Setting tree_, one_setting_;
+    Qpx::Match match_conditions_;
 
     QString file_;
     bool flag_;

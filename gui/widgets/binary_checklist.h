@@ -35,8 +35,8 @@ class BinaryChecklist : public QDialog {
   Q_OBJECT
 
 public:
-  explicit BinaryChecklist(Gamma::Setting setting, QWidget *parent = 0);
-  Gamma::Setting get_setting() {return setting_;}
+  explicit BinaryChecklist(Qpx::Setting setting, QWidget *parent = 0);
+  Qpx::Setting get_setting() {return setting_;}
 
 private slots:
   void change_setting();
@@ -44,7 +44,7 @@ private slots:
 private:
 //  Ui::FormDaqSettings *ui;
 
-  Gamma::Setting      setting_;
+  Qpx::Setting      setting_;
   std::vector<QCheckBox*> boxes_;
   std::vector<QDoubleSpinBox*>  spins_;
   std::vector<QComboBox*> menus_;

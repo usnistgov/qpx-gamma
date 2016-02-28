@@ -39,7 +39,7 @@ class FormSymmetrize2D : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormSymmetrize2D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent = 0);
+  explicit FormSymmetrize2D(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
   ~FormSymmetrize2D();
 
   void setSpectrum(Qpx::SpectraSet *newset, QString spectrum);
@@ -75,18 +75,18 @@ private:
   Qpx::Spectrum::Spectrum *gate_x;
   Qpx::Spectrum::Spectrum *gate_y;
 
-  Gamma::Fitter fit_data_, fit_data_2_;
+  Qpx::Fitter fit_data_, fit_data_2_;
   int res;
 
   double live_seconds;
 
-  Gamma::Detector detector1_;
-  Gamma::Detector detector2_;
+  Qpx::Detector detector1_;
+  Qpx::Detector detector2_;
 
-  Gamma::Calibration nrg_calibration1_;
-  Gamma::Calibration nrg_calibration2_;
+  Qpx::Calibration nrg_calibration1_;
+  Qpx::Calibration nrg_calibration2_;
 
-  Gamma::Calibration gain_match_cali_;
+  Qpx::Calibration gain_match_cali_;
 
   AppearanceProfile style_pts, style_fit;
 
@@ -100,7 +100,7 @@ private:
   Qpx::SpectraSet *spectra_;
   QString current_spectrum_;
 
-  XMLableDB<Gamma::Detector> &detectors_;
+  XMLableDB<Qpx::Detector> &detectors_;
 
   bool initialized;
 

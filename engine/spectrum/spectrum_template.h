@@ -65,7 +65,7 @@ class Template : public XMLable {
   std::vector<int16_t> match_pattern, add_pattern;
   uint32_t appearance;
   bool visible;
-  XMLableDB<Gamma::Setting> generic_attributes;
+  XMLableDB<Qpx::Setting> generic_attributes;
 
   //this stuff from factory
   std::string type, description;

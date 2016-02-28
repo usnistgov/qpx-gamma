@@ -16,12 +16,12 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::Peak
+ *      Qpx::Peak
  *
  ******************************************************************************/
 
-#ifndef GAMMA_PEAK_H
-#define GAMMA_PEAK_H
+#ifndef QPX_PEAK_H
+#define QPX_PEAK_H
 
 #include <vector>
 #include <set>
@@ -30,7 +30,7 @@
 #include "detector.h"
 #include "sum4.h"
 
-namespace Gamma {
+namespace Qpx {
 
 class Peak {
 public:

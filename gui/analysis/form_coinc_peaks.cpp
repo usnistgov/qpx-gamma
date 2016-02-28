@@ -84,7 +84,7 @@ FormCoincPeaks::~FormCoincPeaks()
 //  emit peaks_changed(true);
 //}
 
-void FormCoincPeaks::setFit(Gamma::Fitter* fit) {
+void FormCoincPeaks::setFit(Qpx::Fitter* fit) {
   fit_data_ = fit;
   ui->plotPeaks->setFit(fit);
   update_data();
@@ -166,7 +166,7 @@ void FormCoincPeaks::update_table(bool contents_changed) {
 }
 
 
-void FormCoincPeaks::add_peak_to_table(const Gamma::Peak &p, int row, QColor bckg) {
+void FormCoincPeaks::add_peak_to_table(const Qpx::Peak &p, int row, QColor bckg) {
   QBrush background(bckg);
 
   QTableWidgetItem *center = new QTableWidgetItem(QString::number(p.center));

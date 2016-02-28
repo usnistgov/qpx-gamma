@@ -58,7 +58,7 @@ bool ParserRaw::die() {
 
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 //  for (auto &q : set.branches.my_data_) {
-//    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "ParserRaw/Source file"))
+//    if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserRaw/Source file"))
 //      q.metadata.writable = true;
 //  }
 
@@ -115,32 +115,32 @@ bool ParserRaw::daq_running() {
 
 
 
-bool ParserRaw::read_settings_bulk(Gamma::Setting &set) const {
+bool ParserRaw::read_settings_bulk(Qpx::Setting &set) const {
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
-      if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserRaw/Override timestamps"))
+      if ((q.metadata.setting_type == Qpx::SettingType::boolean) && (q.id_ == "ParserRaw/Override timestamps"))
         q.value_int = override_timestamps_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserRaw/Loop data"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::boolean) && (q.id_ == "ParserRaw/Loop data"))
         q.value_int = loop_data_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserRaw/Override pause"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::boolean) && (q.id_ == "ParserRaw/Override pause"))
         q.value_int = override_pause_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "ParserRaw/Pause"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "ParserRaw/Pause"))
         q.value_int = pause_ms_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "ParserRaw/Source file")) {
+      else if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserRaw/Source file")) {
         q.value_text = source_file_;
         q.metadata.writable = !(status_ & DeviceStatus::booted);
       }
-      else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "ParserRaw/Binary file"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserRaw/Binary file"))
         q.value_text = source_file_bin_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "ParserRaw/StatsUpdates"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "ParserRaw/StatsUpdates"))
         q.value_int = spills_.size();
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "ParserRaw/Hits"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "ParserRaw/Hits"))
         q.value_int = (bin_end_ - bin_begin_) / 12;
-      else if ((q.metadata.setting_type == Gamma::SettingType::time) && (q.id_ == "ParserRaw/StartTime")) {
+      else if ((q.metadata.setting_type == Qpx::SettingType::time) && (q.id_ == "ParserRaw/StartTime")) {
         if (!spills_.empty())
           q.value_time = spills_.front().lab_time;
       }
-      else if ((q.metadata.setting_type == Gamma::SettingType::time_duration) && (q.id_ == "ParserRaw/RunDuration")) {
+      else if ((q.metadata.setting_type == Qpx::SettingType::time_duration) && (q.id_ == "ParserRaw/RunDuration")) {
         if (!spills_.empty())
           q.value_duration = spills_.back().lab_time - spills_.front().lab_time;
       }
@@ -150,7 +150,7 @@ bool ParserRaw::read_settings_bulk(Gamma::Setting &set) const {
 }
 
 
-bool ParserRaw::write_settings_bulk(Gamma::Setting &set) {
+bool ParserRaw::write_settings_bulk(Qpx::Setting &set) {
   set.enrich(setting_definitions_);
 
   if (set.id_ != device_name())

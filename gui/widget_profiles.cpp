@@ -64,7 +64,7 @@ QVariant TableProfiles::data(const QModelIndex &index, int role) const
     case 0:
       return QString::fromStdString(profiles_[row].value_text);
     case 1:
-      return QString::fromStdString(profiles_[row].get_setting(Gamma::Setting("Profile description"), Gamma::Match::id).value_text);
+      return QString::fromStdString(profiles_[row].get_setting(Qpx::Setting("Profile description"), Qpx::Match::id).value_text);
     }
   }
   return QVariant();
@@ -162,13 +162,13 @@ void WidgetProfiles::update_profiles()
       continue;
     }
 
-    pugi::xml_node root = doc.child(Gamma::Setting().xml_element_name().c_str());
+    pugi::xml_node root = doc.child(Qpx::Setting().xml_element_name().c_str());
     if (!root) {
       PL_DBG << "<WidgetProfiles> Profile root element invalid in " << path;
       continue;
     }
 
-    Gamma::Setting tree(root);
+    Qpx::Setting tree(root);
     tree.value_text = path;
     profiles_.push_back(tree);
   }
@@ -223,7 +223,7 @@ void WidgetProfiles::on_pushDelete_clicked()
 }
 
 
-void WidgetProfiles::addNewDet(Gamma::Detector newDetector) {
+void WidgetProfiles::addNewDet(Qpx::Detector newDetector) {
 //  detectors_->add(newDetector);
 //  detectors_->replace(newDetector);
   selection_model_.reset();

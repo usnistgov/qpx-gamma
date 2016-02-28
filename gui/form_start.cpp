@@ -25,7 +25,7 @@
 
 FormStart::FormStart(ThreadRunner &thread,
                      QSettings &settings,
-                     XMLableDB<Gamma::Detector> &detectors,
+                     XMLableDB<Qpx::Detector> &detectors,
                      QString profile,
                      bool boot,
                      QWidget *parent)
@@ -38,8 +38,8 @@ FormStart::FormStart(ThreadRunner &thread,
 {
   this->setWindowTitle("Settings");
 
-  connect(&thread, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)),
-          this, SLOT(update(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)));
+  connect(&thread, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus)),
+          this, SLOT(update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus)));
 
   formOscilloscope = new FormOscilloscope(runner_thread_, settings);
   connect(formOscilloscope, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
@@ -73,7 +73,7 @@ FormStart::~FormStart()
   //  delete ui;
 }
 
-void FormStart::update(Gamma::Setting tree, std::vector<Gamma::Detector> dets, Qpx::DeviceStatus status) {
+void FormStart::update(Qpx::Setting tree, std::vector<Qpx::Detector> dets, Qpx::DeviceStatus status) {
   bool oscil = (status & Qpx::DeviceStatus::can_oscil);
   if (oscil) {
     formOscilloscope->setVisible(true);

@@ -16,12 +16,12 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::DaqDevice abstract class
+ *      Qpx::DaqDevice abstract class
  *
  ******************************************************************************/
 
-#ifndef GAMMA_DAQ_DEVICE
-#define GAMMA_DAQ_DEVICE
+#ifndef QPX_DAQ_DEVICE
+#define QPX_DAQ_DEVICE
 
 #include "generic_setting.h"
 #include "synchronized_queue.h"
@@ -60,8 +60,8 @@ public:
   virtual bool boot() {return false;}
   virtual bool die() {status_ = DeviceStatus(0); return true;}
 
-  virtual bool write_settings_bulk(Gamma::Setting &set) {return false;}
-  virtual bool read_settings_bulk(Gamma::Setting &set) const {return false;}
+  virtual bool write_settings_bulk(Qpx::Setting &set) {return false;}
+  virtual bool read_settings_bulk(Qpx::Setting &set) const {return false;}
   virtual void get_all_settings() {}
 
   virtual std::map<int, std::vector<uint16_t>> oscilloscope() {return std::map<int, std::vector<uint16_t>>();}
@@ -79,7 +79,7 @@ private:
 
 protected:
   DeviceStatus                              status_;
-  std::map<std::string, Gamma::SettingMeta> setting_definitions_;
+  std::map<std::string, Qpx::SettingMeta> setting_definitions_;
   std::string                               profile_path_;
 
 };

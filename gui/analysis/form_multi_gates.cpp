@@ -132,7 +132,7 @@ int32_t FormMultiGates::index_of(double centroid, bool fuzzy) {
 }
 
 
-void FormMultiGates::update_current_gate(Gamma::Gate gate) {
+void FormMultiGates::update_current_gate(Qpx::Gate gate) {
   int32_t index = index_of(gate.centroid_chan, false);
   //PL_DBG << "update current gate " << index;
 
@@ -183,14 +183,14 @@ int32_t FormMultiGates::current_idx() {
   return current_gate_;
 }
 
-Gamma::Gate FormMultiGates::current_gate() {
+Qpx::Gate FormMultiGates::current_gate() {
   uint32_t  current_gate_ = current_idx();
 
   if (current_gate_ < 0)
-    return Gamma::Gate();
+    return Qpx::Gate();
   if (current_gate_ >= gates_.size()) {
     current_gate_ = -1;
-    return Gamma::Gate();
+    return Qpx::Gate();
   } else
     return gates_[current_gate_];
 }
@@ -298,13 +298,13 @@ void FormMultiGates::on_pushApprove_clicked()
 
 
   gates_[current_gate_].approved = true;
-  Gamma::Fitter data = gates_[current_gate_].fit_data_;
+  Qpx::Fitter data = gates_[current_gate_].fit_data_;
 
   if (!data.peaks().size())
     return;
 
   for (auto &q : data.peaks()) {
-    Gamma::Gate newgate;
+    Qpx::Gate newgate;
     newgate.cps           = q.second.area_best.val / (data.metadata_.live_time.total_milliseconds() / 1000);
     newgate.centroid_chan = q.second.center;
     newgate.centroid_nrg  = q.second.energy;
@@ -333,14 +333,14 @@ void FormMultiGates::on_pushDistill_clicked()
   box.mark_center = true;
 
   for (auto &q : gates_) {
-    Gamma::Gate gate = q;
+    Qpx::Gate gate = q;
     if (gate.centroid_chan != -1) {
       box.y_c.set_bin(gate.centroid_chan, gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
       box.y1.set_bin(gate.centroid_chan - (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
       box.y2.set_bin(gate.centroid_chan + (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
 
       for (auto &p : gate.fit_data_.peaks()) {
-        Gamma::Peak peak = p.second;
+        Qpx::Peak peak = p.second;
         box.x_c.set_bin(peak.center, gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
         box.x1.set_bin(peak.center - (peak.fwhm_hyp * 0.5 * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
         box.x2.set_bin(peak.center + (peak.fwhm_hyp * 0.5 * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
@@ -392,7 +392,7 @@ void FormMultiGates::remake_gate(bool force) {
   double ymin = 0;
   double ymax = res - 1;
 
-  Gamma::Gate gate = current_gate();
+  Qpx::Gate gate = current_gate();
   //PL_DBG << "gates remake gate c=" << gate.centroid_chan << " w=" << gate.width_chan;
 
   if (gates_.empty()) {
@@ -552,7 +552,7 @@ void FormMultiGates::update_peaks(bool content_changed) {
   //    ui->plotMatrix->set_range_x(range2d);
   //    ui->plotMatrix->replot_markers();
 
-  Gamma::Gate gate;
+  Qpx::Gate gate;
   gate.fit_data_ = fit_data_;
   gate.centroid_chan = yc_;
   gate.centroid_nrg = fit_data_.settings().cali_nrg_.transform(yc_);
@@ -614,7 +614,7 @@ TableGates::TableGates(QObject *parent) :
 {
 }
 
-void TableGates::set_data(std::vector<Gamma::Gate> gates)
+void TableGates::set_data(std::vector<Qpx::Gate> gates)
 {
   //std::reverse(gates_.begin(),gates_.end());
   emit layoutAboutToBeChanged();
@@ -641,7 +641,7 @@ QVariant TableGates::data(const QModelIndex &index, int role) const
   int col = index.column();
   int row = index.row();
 
-  Gamma::Gate gate = gates_[row];
+  Qpx::Gate gate = gates_[row];
 
   if ((role == Qt::DisplayRole) || (role == Qt::EditRole))
   {

@@ -41,7 +41,7 @@ class FormOptimization : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormOptimization(ThreadRunner&, QSettings&, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
+  explicit FormOptimization(ThreadRunner&, QSettings&, XMLableDB<Qpx::Detector>&, QWidget *parent = 0);
   void update_settings();
   ~FormOptimization();
 
@@ -84,7 +84,7 @@ private:
   Qpx::Spectrum::Template        optimizing_;
 
   ThreadRunner         &opt_runner_thread_;
-  XMLableDB<Gamma::Detector> &detectors_;
+  XMLableDB<Qpx::Detector> &detectors_;
   QSettings &settings_;
 
   ThreadPlotSignal     opt_plot_thread_;
@@ -96,13 +96,13 @@ private:
 
   int bits;
 
-  Gamma::Fitter fitter_opt_;
-  std::vector<Gamma::Fitter> spectra_;
+  Qpx::Fitter fitter_opt_;
+  std::vector<Qpx::Fitter> spectra_;
 
   AppearanceProfile style_pts;
 
   std::string current_setting_;
-  std::vector<Gamma::Peak> peaks_;
+  std::vector<Qpx::Peak> peaks_;
   std::vector<double> setting_values_;
   std::vector<double> setting_fwhm_;
 };

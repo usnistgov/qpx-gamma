@@ -74,7 +74,7 @@ FormPlot1D::~FormPlot1D()
   delete ui;
 }
 
-void FormPlot1D::setDetDB(XMLableDB<Gamma::Detector>& detDB) {
+void FormPlot1D::setDetDB(XMLableDB<Qpx::Detector>& detDB) {
   detectors_ = &detDB;
 }
 
@@ -126,13 +126,13 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
     rate_inst = md.recent_count / recent_time;
 //  PL_DBG << "<Plot1D> instant rate for \"" << md.name << "\"  " << md.recent_count << "/" << recent_time << " = " << rate_inst;
   double rate_total = 0;
-  Gamma::Detector det = Gamma::Detector();
+  Qpx::Detector det = Qpx::Detector();
   if (!md.detectors.empty())
     det = md.detectors[0];
 
   QString detstr("Detector: ");
   detstr += QString::fromStdString(det.name_);
-  if (det.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits)))
+  if (det.energy_calibrations_.has_a(Qpx::Calibration("Energy", md.bits)))
     detstr += " [ENRG]";
   else if (det.highest_res_calib().valid())
     detstr += " (enrg)";
@@ -177,7 +177,7 @@ void FormPlot1D::update_plot() {
 
   std::map<double, double> minima, maxima;
 
-  calib_ = Gamma::Calibration();
+  calib_ = Qpx::Calibration();
 
   ui->mcaPlot->clearGraphs();
   for (auto &q: mySpectra->spectra(1, -1)) {
@@ -197,10 +197,10 @@ void FormPlot1D::update_plot() {
       std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
           std::move(q->get_spectrum({{0, x.size()}}));
 
-      Gamma::Detector detector = Gamma::Detector();
+      Qpx::Detector detector = Qpx::Detector();
       if (!md.detectors.empty())
         detector = md.detectors[0];
-      Gamma::Calibration temp_calib = detector.best_calib(md.bits);
+      Qpx::Calibration temp_calib = detector.best_calib(md.bits);
 
       if (temp_calib.bits_ > calib_.bits_)
         calib_ = temp_calib;
@@ -433,7 +433,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
   double livetime = md.live_time.total_milliseconds() * 0.001;
 
   if (moving.visible) {
-    Gamma::Calibration cal;
+    Qpx::Calibration cal;
     if (!md.detectors.empty())
       cal = md.detectors[0].best_calib(md.bits);
 
@@ -453,7 +453,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
       double lt = mdt.live_time.total_milliseconds() * 0.001;
 
       if (moving.visible) {
-        Gamma::Calibration cal;
+        Qpx::Calibration cal;
         if (!mdt.detectors.empty())
           cal = mdt.detectors[0].best_calib(mdt.bits);
 

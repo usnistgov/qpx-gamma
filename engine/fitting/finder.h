@@ -16,18 +16,18 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::Finder
+ *      Qpx::Finder
  *
  ******************************************************************************/
 
-#ifndef GAMMA_FINDER_H
-#define GAMMA_FINDER_H
+#ifndef QPX_FINDER_H
+#define QPX_FINDER_H
 
 #include <vector>
 #include <cinttypes>
 #include "fit_settings.h"
 
-namespace Gamma {
+namespace Qpx {
 
 class Finder {
 

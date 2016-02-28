@@ -42,10 +42,10 @@ class TableCalibrations : public QAbstractTableModel
 {
   Q_OBJECT
 private:
-  XMLableDB<Gamma::Calibration> &myDB;
+  XMLableDB<Qpx::Calibration> &myDB;
   bool gain_;
 public:
-  TableCalibrations(XMLableDB<Gamma::Calibration>& db, bool gain, QObject *parent = 0): myDB(db), QAbstractTableModel(parent), gain_(gain) {}
+  TableCalibrations(XMLableDB<Qpx::Calibration>& db, bool gain, QObject *parent = 0): myDB(db), QAbstractTableModel(parent), gain_(gain) {}
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
   int columnCount(const QModelIndex &parent = QModelIndex()) const;
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -59,7 +59,7 @@ class DialogDetector : public QDialog
 {
   Q_OBJECT
 public:
-  explicit DialogDetector(Gamma::Detector, QDir, bool, QWidget *parent = 0);
+  explicit DialogDetector(Qpx::Detector, QDir, bool, QWidget *parent = 0);
   ~DialogDetector();
 
 private slots:
@@ -79,13 +79,13 @@ private slots:
   void on_pushClearEfficiency_clicked();
 
 signals:
-  void newDetReady(Gamma::Detector);
+  void newDetReady(Qpx::Detector);
 
 private:
   void updateDisplay();
 
   Ui::DialogDetector *ui;
-  Gamma::Detector my_detector_;
+  Qpx::Detector my_detector_;
   QDir root_dir_;
   QString mca_formats_;
 
@@ -101,10 +101,10 @@ class TableDetectors : public QAbstractTableModel
 {
   Q_OBJECT
 private:
-  XMLableDB<Gamma::Detector> *myDB;
+  XMLableDB<Qpx::Detector> *myDB;
 public:
   TableDetectors(QObject *parent = 0): QAbstractTableModel(parent) {}
-  void setDB(XMLableDB<Gamma::Detector>& db) {myDB = &db;}
+  void setDB(XMLableDB<Qpx::Detector>& db) {myDB = &db;}
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
   int columnCount(const QModelIndex &parent = QModelIndex()) const;
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -123,7 +123,7 @@ public:
   explicit WidgetDetectors(QWidget *parent = 0);
   ~WidgetDetectors();
 
-  void setData(XMLableDB<Gamma::Detector> &newdb, QString outdir);
+  void setData(XMLableDB<Qpx::Detector> &newdb, QString outdir);
 
 signals:
   void detectorsUpdated();
@@ -131,7 +131,7 @@ signals:
 private:
   Ui::WidgetDetectors *ui;
 
-  XMLableDB<Gamma::Detector> *detectors_;
+  XMLableDB<Qpx::Detector> *detectors_;
   TableDetectors table_model_;
   QItemSelectionModel selection_model_;
 
@@ -144,7 +144,7 @@ private slots:
   void on_pushImport_clicked();
   void on_pushExport_clicked();
 
-  void addNewDet(Gamma::Detector);
+  void addNewDet(Qpx::Detector);
   void on_pushSetDefault_clicked();
   void on_pushGetDefault_clicked();
   void selection_changed(QItemSelection,QItemSelection);

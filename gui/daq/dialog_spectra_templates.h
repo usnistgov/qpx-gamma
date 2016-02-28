@@ -62,7 +62,7 @@ class DialogSpectrumTemplate : public QDialog
   Q_OBJECT
 public:
   explicit DialogSpectrumTemplate(Qpx::Spectrum::Template,
-                                  std::vector<Gamma::Detector>,
+                                  std::vector<Qpx::Detector>,
                                   bool, QWidget *parent = 0);
   ~DialogSpectrumTemplate();
 
@@ -92,7 +92,7 @@ private:
 
   QpxSpecialDelegate      special_delegate_;
   TableSpectrumAttrs         table_model_;
-  std::vector<Gamma::Detector> current_dets_;
+  std::vector<Qpx::Detector> current_dets_;
 };
 
 class DialogSpectraTemplates : public QDialog
@@ -101,7 +101,7 @@ class DialogSpectraTemplates : public QDialog
 
 public:
   explicit DialogSpectraTemplates(XMLableDB<Qpx::Spectrum::Template> &newdb,
-                                  std::vector<Gamma::Detector> current_dets,
+                                  std::vector<Qpx::Detector> current_dets,
                                   QString savedir, QWidget *parent = 0);
   ~DialogSpectraTemplates();
 
@@ -115,7 +115,7 @@ private:
   QItemSelectionModel selection_model_;
 
   QString root_dir_;
-  std::vector<Gamma::Detector> current_dets_;
+  std::vector<Qpx::Detector> current_dets_;
 
 private slots:
   void add_template(Qpx::Spectrum::Template);

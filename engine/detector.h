@@ -16,14 +16,14 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::Calibration defines calibration with units and math model
- *      Gamma::Detector defines detector with name, calibration, DSP parameters
+ *      Qpx::Calibration defines calibration with units and math model
+ *      Qpx::Detector defines detector with name, calibration, DSP parameters
  *
  ******************************************************************************/
 
 
-#ifndef GAMMA_DETECTOR
-#define GAMMA_DETECTOR
+#ifndef QPX_DETECTOR
+#define QPX_DETECTOR
 
 #include <vector>
 #include <string>
@@ -31,7 +31,7 @@
 #include "calibration.h"
 #include "generic_setting.h"
 
-namespace Gamma {
+namespace Qpx {
 
 class Detector : public XMLable {
  public:

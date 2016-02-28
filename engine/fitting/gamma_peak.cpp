@@ -16,13 +16,13 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::Peak
+ *      Qpx::Peak
  *
  ******************************************************************************/
 
 #include "gamma_peak.h"
 
-namespace Gamma {
+namespace Qpx {
 
 
 void Peak::construct(FitSettings fs) {

@@ -64,7 +64,7 @@ private slots:
   void on_pushHideAll_clicked();
 
 public slots:
-  void updateMenu(std::vector<Gamma::Detector>);
+  void updateMenu(std::vector<Qpx::Detector>);
   
 private:
   Ui::FormOscilloscope *ui;

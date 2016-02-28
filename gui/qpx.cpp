@@ -54,19 +54,19 @@ qpx::qpx(QWidget *parent) :
   runner_thread_()
 {
   qRegisterMetaType<std::vector<Qpx::Trace>>("std::vector<Qpx::Trace>");
-  qRegisterMetaType<std::vector<Gamma::Detector>>("std::vector<Gamma::Detector>");
+  qRegisterMetaType<std::vector<Qpx::Detector>>("std::vector<Qpx::Detector>");
   qRegisterMetaType<Qpx::ListData>("Qpx::ListData");
-  qRegisterMetaType<Gamma::Setting>("Gamma::Setting");
-  qRegisterMetaType<Gamma::Calibration>("Gamma::Calibration");
+  qRegisterMetaType<Qpx::Setting>("Qpx::Setting");
+  qRegisterMetaType<Qpx::Calibration>("Qpx::Calibration");
   qRegisterMetaType<Qpx::DeviceStatus>("Qpx::DeviceStatus");
-  qRegisterMetaType<Gamma::Fitter>("Gamma::Fitter");
+  qRegisterMetaType<Qpx::Fitter>("Qpx::Fitter");
 
   CustomLogger::initLogger(&qpx_stream_, "qpx_%N.log");
   ui->setupUi(this);
   connect(&my_emitter_, SIGNAL(writeLine(QString)), this, SLOT(add_log_text(QString)));
 
-  connect(&runner_thread_, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)),
-          this, SLOT(update_settings(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)));
+  connect(&runner_thread_, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus)),
+          this, SLOT(update_settings(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus)));
 
   loadSettings();
 
@@ -215,7 +215,7 @@ void qpx::updateStatusText(QString text) {
   ui->statusBar->showMessage(text);
 }
 
-void qpx::update_settings(Gamma::Setting sets, std::vector<Gamma::Detector> channels, Qpx::DeviceStatus status) {
+void qpx::update_settings(Qpx::Setting sets, std::vector<Qpx::Detector> channels, Qpx::DeviceStatus status) {
   px_status_ = status;
   current_dets_ = channels;
   toggleIO(true);

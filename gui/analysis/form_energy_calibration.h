@@ -42,10 +42,10 @@ class FormEnergyCalibration : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormEnergyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, Gamma::Fitter&, QWidget *parent = 0);
+  explicit FormEnergyCalibration(QSettings &settings, XMLableDB<Qpx::Detector>&, Qpx::Fitter&, QWidget *parent = 0);
   ~FormEnergyCalibration();
 
-  Gamma::Calibration get_new_calibration() {return new_calibration_;}
+  Qpx::Calibration get_new_calibration() {return new_calibration_;}
 
   void newSpectrum();
   bool save_close();
@@ -58,7 +58,7 @@ public slots:
 
 signals:
   void selection_changed(std::set<double> selected_peaks);
-  void change_peaks(std::vector<Gamma::Peak>);
+  void change_peaks(std::vector<Qpx::Peak>);
   void detectorsChanged();
   void update_detector();
   void new_fit();
@@ -87,11 +87,11 @@ private:
   QString data_directory_;
   QString settings_directory_;
 
-  XMLableDB<Gamma::Detector> &detectors_;
-  Gamma::Fitter &fit_data_;
+  XMLableDB<Qpx::Detector> &detectors_;
+  Qpx::Fitter &fit_data_;
   std::set<double> selected_peaks_;
 
-  Gamma::Calibration new_calibration_;
+  Qpx::Calibration new_calibration_;
   AppearanceProfile style_fit, style_pts;
 
   void loadSettings();
@@ -102,7 +102,7 @@ private:
   void select_in_table();
   void select_in_plot();
 
-  void add_peak_to_table(const Gamma::Peak &, int, bool);
+  void add_peak_to_table(const Qpx::Peak &, int, bool);
   void data_to_table(int row, int column, double value, QBrush background);
 };
 

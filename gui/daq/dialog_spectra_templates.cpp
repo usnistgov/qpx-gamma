@@ -29,7 +29,7 @@
 #include <QMessageBox>
 
 DialogSpectrumTemplate::DialogSpectrumTemplate(Qpx::Spectrum::Template newTemplate,
-                                               std::vector<Gamma::Detector> current_dets,
+                                               std::vector<Qpx::Detector> current_dets,
                                                bool edit, QWidget *parent) :
   QDialog(parent),
   current_dets_(current_dets),
@@ -305,7 +305,7 @@ Qt::ItemFlags TableSpectraTemplates::flags(const QModelIndex &index) const
 
 
 DialogSpectraTemplates::DialogSpectraTemplates(XMLableDB<Qpx::Spectrum::Template> &newdb,
-                                               std::vector<Gamma::Detector> current_dets,
+                                               std::vector<Qpx::Detector> current_dets,
                                                QString savedir, QWidget *parent) :
   QDialog(parent),
   ui(new Ui::DialogSpectraTemplates),

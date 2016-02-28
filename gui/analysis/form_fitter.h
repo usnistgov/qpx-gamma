@@ -45,11 +45,11 @@ class RollbackDialog : public QDialog {
   Q_OBJECT
 
 public:
-  explicit RollbackDialog(Gamma::ROI setting, QWidget *parent = 0);
+  explicit RollbackDialog(Qpx::ROI setting, QWidget *parent = 0);
   int get_choice();
 
 private:
-  Gamma::ROI      roi_;
+  Qpx::ROI      roi_;
   std::vector<QRadioButton*> radios_;
 };
 
@@ -63,7 +63,7 @@ public:
 
   void clear();
 
-  void setFit(Gamma::Fitter *fit);
+  void setFit(Qpx::Fitter *fit);
   void update_spectrum(QString title = QString());
   void updateData();
 
@@ -84,7 +84,7 @@ public:
 
 public slots:
   void set_selected_peaks(std::set<double> selected_peaks);
-  void replace_peaks(std::vector<Gamma::Peak>);
+  void replace_peaks(std::vector<Qpx::Peak>);
 
 signals:
 
@@ -109,7 +109,7 @@ private slots:
 
 
 
-  void fit_updated(Gamma::Fitter);
+  void fit_updated(Qpx::Fitter);
   void fitting_complete();
 
   void refit_ROI(double);
@@ -135,7 +135,7 @@ private:
   Ui::FormFitter *ui;
 
   //data from selected spectrum
-  Gamma::Fitter *fit_data_;
+  Qpx::Fitter *fit_data_;
   std::set<double> selected_peaks_;
   double selected_roi_;
 
@@ -177,7 +177,7 @@ private:
   void add_bounds(const QVector<double>& x, const QVector<double>& y);
   void addGraph(const QVector<double>& x, const QVector<double>& y, QPen appearance,
                 double bin, QString name = QString());
-  void addEdge(Gamma::SUM4Edge edge, std::vector<double> &x, QPen pen, double roi);
+  void addEdge(Qpx::SUM4Edge edge, std::vector<double> &x, QPen pen, double roi);
 
   void follow_selection();
   void plotButtons();

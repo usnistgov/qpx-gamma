@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::Setting exactly what it says
+ *      Setting exactly what it says
  *
  ******************************************************************************/
 
@@ -25,7 +25,7 @@
 #include "generic_setting.h"
 #include "qpx_util.h"
 
-namespace Gamma {
+namespace Qpx {
 
 SettingType to_type(const std::string &type) {
   if (type == "boolean")
@@ -249,6 +249,8 @@ std::string Setting::val_to_string() const
     ss << std::setprecision(std::numeric_limits<double>::max_digits10) << value_dbl;
   else if (metadata.setting_type == SettingType::floating_precise)
     ss << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << value_precise;
+  else if (metadata.setting_type == SettingType::pattern)
+    ss << value_pattern.to_string();
   else if ((metadata.setting_type == SettingType::text) ||
            (metadata.setting_type == SettingType::detector) ||
            (metadata.setting_type == SettingType::file_path) ||
@@ -266,8 +268,8 @@ std::string Setting::val_to_pretty_string() const {
   if ((metadata.setting_type == SettingType::int_menu) && metadata.int_menu_items.count(value_int))
     ret = metadata.int_menu_items.at(value_int);
   else if ((metadata.setting_type == SettingType::indicator) && metadata.int_menu_items.count(value_int))
-    ret = get_setting(Gamma::Setting(metadata.int_menu_items.at(value_int)), Gamma::Match::id).metadata.name;
-  else if (metadata.setting_type == Gamma::SettingType::binary) {
+    ret = get_setting(Setting(metadata.int_menu_items.at(value_int)), Match::id).metadata.name;
+  else if (metadata.setting_type == SettingType::binary) {
     int size = metadata.maximum;
     if (size > 32)
       ret = "0x" + itohex64(value_int);
@@ -275,7 +277,7 @@ std::string Setting::val_to_pretty_string() const {
       ret = "0x" + itohex32(value_int);
     else
       ret = "0x" + itohex16(value_int);
-  } else if (metadata.setting_type == Gamma::SettingType::stem)
+  } else if (metadata.setting_type == SettingType::stem)
     ret = value_text;
   return ret;
 }
@@ -287,9 +289,10 @@ void Setting::val_from_node(const pugi::xml_node &node)
     value_int = node.attribute("value").as_bool();
   else if ((metadata.setting_type == SettingType::integer) ||
            (metadata.setting_type == SettingType::int_menu) ||
-           (metadata.setting_type == SettingType::pattern) ||
            (metadata.setting_type == SettingType::indicator) )
     value_int = node.attribute("value").as_llong();
+  else if (metadata.setting_type == SettingType::pattern)
+    value_pattern = Pattern(node.attribute("value").value());
   else if (metadata.setting_type == SettingType::binary)
     value_int = node.attribute("value").as_llong();
 //    ss << itohex64(value_int);
@@ -297,6 +300,8 @@ void Setting::val_from_node(const pugi::xml_node &node)
     value_dbl = node.attribute("value").as_double();
   else if (metadata.setting_type == SettingType::floating_precise)
     value_precise = PreciseFloat(node.attribute("value").value());
+  else if (metadata.setting_type == SettingType::pattern)
+    value_pattern = Pattern(node.attribute("value").value());
   else if ((metadata.setting_type == SettingType::text) ||
            (metadata.setting_type == SettingType::detector) ||
            (metadata.setting_type == SettingType::file_path) ||
@@ -377,7 +382,7 @@ void Setting::to_xml(pugi::xml_node &node, bool with_metadata) const {
 }
 
 
-bool Setting::compare(const Setting &other, Gamma::Match flags) const {
+bool Setting::compare(const Setting &other, Match flags) const {
   bool match = true;
   if ((flags & Match::id) && (id_ != other.id_))
     match = false;
@@ -399,12 +404,12 @@ bool Setting::compare(const Setting &other, Gamma::Match flags) const {
   return match;
 }
 
-bool Setting::push_one_setting(const Gamma::Setting &setting, Gamma::Setting& root, Match flags){
+bool Setting::push_one_setting(const Setting &setting, Setting& root, Match flags){
   if (root.compare(setting, flags)) {
       root = setting;
       return true;
-  } else if ((root.metadata.setting_type == Gamma::SettingType::stem)
-             || (root.metadata.setting_type == Gamma::SettingType::indicator)) {
+  } else if ((root.metadata.setting_type == SettingType::stem)
+             || (root.metadata.setting_type == SettingType::indicator)) {
     for (auto &q : root.branches.my_data_)
       if (push_one_setting(setting, q, flags))
         return true;
@@ -413,12 +418,12 @@ bool Setting::push_one_setting(const Gamma::Setting &setting, Gamma::Setting& ro
 }
 
 
-bool Setting::retrieve_one_setting(Gamma::Setting &det, const Gamma::Setting& root, Match flags) const {
+bool Setting::retrieve_one_setting(Setting &det, const Setting& root, Match flags) const {
   if (root.compare(det, flags)) {
       det = root;
       return true;
-  } else if ((root.metadata.setting_type == Gamma::SettingType::stem)
-             || (root.metadata.setting_type == Gamma::SettingType::indicator)) {
+  } else if ((root.metadata.setting_type == SettingType::stem)
+             || (root.metadata.setting_type == SettingType::indicator)) {
     for (auto &q : root.branches.my_data_)
       if (retrieve_one_setting(det, q, flags))
         return true;
@@ -426,20 +431,20 @@ bool Setting::retrieve_one_setting(Gamma::Setting &det, const Gamma::Setting& ro
   return false;
 }
 
-Gamma::Setting Setting::get_setting(Gamma::Setting address, Match flags) const {
-  Gamma::Setting addy(address);
+Setting Setting::get_setting(Setting address, Match flags) const {
+  Setting addy(address);
   if (retrieve_one_setting(addy, *this, flags))
     return addy;
   else
-    return Gamma::Setting();
+    return Setting();
 }
 
-void Setting::delete_one_setting(const Gamma::Setting &det, Gamma::Setting& root, Match flags) {
-  Gamma::Setting truncated = root;
+void Setting::delete_one_setting(const Setting &det, Setting& root, Match flags) {
+  Setting truncated = root;
   truncated.branches.clear();
   for (auto &q : root.branches.my_data_) {
     if (!q.compare(det, flags)) {
-      if (q.metadata.setting_type == Gamma::SettingType::stem) {
+      if (q.metadata.setting_type == SettingType::stem) {
         delete_one_setting(det, q, flags);
         if (!q.branches.empty())
           truncated.branches.add_a(q);
@@ -450,26 +455,26 @@ void Setting::delete_one_setting(const Gamma::Setting &det, Gamma::Setting& root
   root = truncated;
 }
 
-void Setting::del_setting(Gamma::Setting address, Match flags) {
-  Gamma::Setting addy(address);
+void Setting::del_setting(Setting address, Match flags) {
+  Setting addy(address);
   delete_one_setting(addy, *this, flags);
 }
 
 
-void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_definitions, bool impose_limits) {
+void Setting::enrich(const std::map<std::string, SettingMeta> &setting_definitions, bool impose_limits) {
   if (setting_definitions.count(id_) > 0) {
-    Gamma::SettingMeta meta = setting_definitions.at(id_);
+    SettingMeta meta = setting_definitions.at(id_);
     metadata = meta;
-    if (((meta.setting_type == Gamma::SettingType::indicator) || (meta.setting_type == Gamma::SettingType::binary) ||
-        (meta.setting_type == Gamma::SettingType::stem)) && !meta.int_menu_items.empty()) {
-      XMLableDB<Gamma::Setting> br = branches;
+    if (((meta.setting_type == SettingType::indicator) || (meta.setting_type == SettingType::binary) ||
+        (meta.setting_type == SettingType::stem)) && !meta.int_menu_items.empty()) {
+      XMLableDB<Setting> br = branches;
       branches.clear();
       for (auto &q : meta.int_menu_items) {
         if (setting_definitions.count(q.second) > 0) {
-          Gamma::SettingMeta newmeta = setting_definitions.at(q.second);
+          SettingMeta newmeta = setting_definitions.at(q.second);
           bool added = false;
           for (int i=0; i < br.size(); ++i) {
-            Gamma::Setting newset = br.get(i);
+            Setting newset = br.get(i);
             if (newset.id_ == newmeta.id_) {
               newset.enrich(setting_definitions, impose_limits);
               branches.add_a(newset);
@@ -477,7 +482,7 @@ void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_de
             }
           }
           if (!added && (q.first != 666)) {
-            Gamma::Setting newset = Gamma::Setting(newmeta);
+            Setting newset = Setting(newmeta);
             newset.indices = indices;
             newset.enrich(setting_definitions, impose_limits);
             branches.add_a(newset);
@@ -486,23 +491,23 @@ void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_de
       }
       for (int i=0; i < br.size(); ++i) {
         if (setting_definitions.count(br.get(i).id_) == 0) {
-          Gamma::Setting newset = br.get(i);
+          Setting newset = br.get(i);
           newset.metadata.visible = false;
           branches.add_a(newset);
         }
       }
     } else if (impose_limits) {
-      if (meta.setting_type == Gamma::SettingType::integer) {
+      if (meta.setting_type == SettingType::integer) {
         if (value_int > meta.maximum)
           value_int = meta.maximum;
         if (value_int < meta.minimum)
           value_int = meta.minimum;
-      } else if (meta.setting_type == Gamma::SettingType::floating) {
+      } else if (meta.setting_type == SettingType::floating) {
         if (value_dbl > meta.maximum)
           value_dbl = meta.maximum;
         if (value_dbl < meta.minimum)
           value_dbl = meta.minimum;
-      } else if (meta.setting_type == Gamma::SettingType::floating_precise) {
+      } else if (meta.setting_type == SettingType::floating_precise) {
         if (value_precise > meta.maximum)
           value_precise = meta.maximum;
         if (value_precise < meta.minimum)
@@ -513,26 +518,26 @@ void Setting::enrich(const std::map<std::string, Gamma::SettingMeta> &setting_de
 }
 
 void Setting::condense() {
-  XMLableDB<Gamma::Setting> oldbranches = branches;
+  XMLableDB<Setting> oldbranches = branches;
   branches.clear();
   for (int i=0; i < oldbranches.size(); ++i) {
-    Gamma::Setting setting = oldbranches.get(i);
+    Setting setting = oldbranches.get(i);
     if (setting.metadata.setting_type == SettingType::stem) {
       setting.condense();
       branches.add_a(setting);
     } else if (metadata.saveworthy
                && setting.metadata.writable
-               && (setting.metadata.setting_type != Gamma::SettingType::command)) {
+               && (setting.metadata.setting_type != SettingType::command)) {
       branches.add_a(setting);
     }
   }
 }
 
 void Setting::cull_invisible() {
-  XMLableDB<Gamma::Setting> oldbranches = branches;
+  XMLableDB<Setting> oldbranches = branches;
   branches.clear();
   for (int i=0; i < oldbranches.size(); ++i) {
-    Gamma::Setting setting = oldbranches.get(i);
+    Setting setting = oldbranches.get(i);
     if (setting.metadata.visible)
       if (setting.metadata.setting_type == SettingType::stem) {
         setting.cull_invisible();
@@ -544,10 +549,10 @@ void Setting::cull_invisible() {
 }
 
 void Setting::cull_readonly() {
-  XMLableDB<Gamma::Setting> oldbranches = branches;
+  XMLableDB<Setting> oldbranches = branches;
   branches.clear();
   for (int i=0; i < oldbranches.size(); ++i) {
-    Gamma::Setting setting = oldbranches.get(i);
+    Setting setting = oldbranches.get(i);
     if (setting.metadata.setting_type == SettingType::stem) {
       setting.cull_readonly();
       if (!setting.branches.empty())

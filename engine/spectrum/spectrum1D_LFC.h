@@ -41,9 +41,9 @@ public:
     new_temp.input_types = {};
     new_temp.description = "One detector loss-free spectrum";
     
-    Gamma::Setting t_sample;
+    Qpx::Setting t_sample;
     t_sample.id_ = "time_sample";
-    t_sample.metadata.setting_type = Gamma::SettingType::floating;
+    t_sample.metadata.setting_type = Qpx::SettingType::floating;
     t_sample.metadata.unit = "seconds";
     t_sample.value_dbl = 20.0;
     t_sample.metadata.minimum = 0;
@@ -58,7 +58,7 @@ public:
 
 protected:
   std::string my_type() const override {return "LFC1D";}
-  XMLableDB<Gamma::Setting> default_settings() const override {return this->get_template().generic_attributes; }
+  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().generic_attributes; }
   bool initialize() override;
   
   void addStats(const StatsUpdate&) override;

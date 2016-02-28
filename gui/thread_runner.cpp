@@ -36,7 +36,7 @@ ThreadRunner::ThreadRunner(QObject *parent) :
   file_ = "";
   xdt_ = 0.0;
   flag_ = false;
-  match_conditions_ = Gamma::Match::id;
+  match_conditions_ = Qpx::Match::id;
   idle_refresh_.store(false);
   idle_refresh_frequency_.store(1);
   start(HighPriority);
@@ -139,7 +139,7 @@ void ThreadRunner::do_shutdown() {
     start(HighPriority);
 }
 
-void ThreadRunner::do_push_settings(const Gamma::Setting &tree) {
+void ThreadRunner::do_push_settings(const Qpx::Setting &tree) {
   if (running_.load()) {
     PL_WARN << "Runner busy";
     return;
@@ -152,7 +152,7 @@ void ThreadRunner::do_push_settings(const Gamma::Setting &tree) {
     start(HighPriority);
 }
 
-void ThreadRunner::do_set_setting(const Gamma::Setting &item, Gamma::Match match) {
+void ThreadRunner::do_set_setting(const Qpx::Setting &item, Qpx::Match match) {
   if (running_.load()) {
     PL_WARN << "Runner busy";
     return;
@@ -166,7 +166,7 @@ void ThreadRunner::do_set_setting(const Gamma::Setting &item, Gamma::Match match
     start(HighPriority);
 }
 
-void ThreadRunner::do_set_detector(int chan, Gamma::Detector det) {
+void ThreadRunner::do_set_detector(int chan, Qpx::Detector det) {
   if (running_.load()) {
     PL_WARN << "Runner busy";
     return;
@@ -180,7 +180,7 @@ void ThreadRunner::do_set_detector(int chan, Gamma::Detector det) {
     start(HighPriority);
 }
 
-void ThreadRunner::do_set_detectors(std::map<int, Gamma::Detector> dets) {
+void ThreadRunner::do_set_detectors(std::map<int, Qpx::Detector> dets) {
   if (running_.load()) {
     PL_WARN << "Runner busy";
     return;
@@ -318,14 +318,14 @@ void ThreadRunner::run()
       action_ = kOscil;
       //emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kOscil) {
-        std::vector<Gamma::Detector> dets = engine_.get_detectors();
+        std::vector<Qpx::Detector> dets = engine_.get_detectors();
 
-        Gamma::Setting set = Gamma::Setting("XDT");
+        Qpx::Setting set = Qpx::Setting("XDT");
         for (int i=0; i < dets.size(); i++) {
           set.indices.clear();
           set.indices.insert(i);
           set.value_dbl = xdt_;
-          engine_.set_setting(set, Gamma::Match::name | Gamma::Match::indices);
+          engine_.set_setting(set, Qpx::Match::name | Qpx::Match::indices);
         }
         std::vector<Qpx::Trace> traces = engine_.oscilloscope();
 

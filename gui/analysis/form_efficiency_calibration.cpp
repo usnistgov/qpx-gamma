@@ -33,7 +33,7 @@
 #include "log_inverse.h"
 #include "effit.h"
 
-FormEfficiencyCalibration::FormEfficiencyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent) :
+FormEfficiencyCalibration::FormEfficiencyCalibration(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormEfficiencyCalibration),
   detectors_(newDetDB),
@@ -153,10 +153,10 @@ void FormEfficiencyCalibration::setDetector(Qpx::SpectraSet *newset, QString det
 }
 
 void FormEfficiencyCalibration::setSpectrum(QString name) {
-  if (!fit_data_.metadata_.name.empty()) //should be ==Gamma::Setting()
+  if (!fit_data_.metadata_.name.empty()) //should be ==Qpx::Setting()
     peak_sets_[fit_data_.metadata_.name] = fit_data_;
 
-  fit_data_ = Gamma::Fitter();
+  fit_data_ = Qpx::Fitter();
 
   Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(name.toStdString());
 
@@ -179,7 +179,7 @@ void FormEfficiencyCalibration::setSpectrum(QString name) {
     ui->doubleScaleFactor->setEnabled(true);
   } else {
     spectrum = nullptr;
-    fit_data_ = Gamma::Fitter();
+    fit_data_ = Qpx::Fitter();
     ui->plotSpectrum->update_spectrum();
     ui->doubleScaleFactor->setEnabled(false);
   }
@@ -203,7 +203,7 @@ void FormEfficiencyCalibration::update_data() {
     for (auto &p : ui->isotopes->current_isotope_gammas()) {
       double diff = abs(q.second.energy - p.energy);
       if (diff < ui->doubleEpsilonE->value()) {
-        Gamma::Peak pk = q.second; //BROKEN
+        Qpx::Peak pk = q.second; //BROKEN
 //        pk.flagged = true;
         pk.intensity_theoretical_ = p.abundance;
         pk.efficiency_relative_ = (pk.cps_best / pk.intensity_theoretical_);
@@ -224,7 +224,7 @@ void FormEfficiencyCalibration::update_data() {
     }
   }
 
-  if (!fit_data_.metadata_.name.empty()) //should be ==Gamma::Setting()
+  if (!fit_data_.metadata_.name.empty()) //should be ==Qpx::Setting()
     peak_sets_[fit_data_.metadata_.name] = fit_data_;
 
 //  ui->plotSpectrum->update_fit(contents_changed);
@@ -249,10 +249,10 @@ void FormEfficiencyCalibration::update_detector_calibs()
   msgBox.setIcon(QMessageBox::Question);
   int ret = msgBox.exec();
 
-  Gamma::Detector modified;
+  Qpx::Detector modified;
 
   if (ret == QMessageBox::Yes) {
-    if (!detectors_.has_a(Gamma::Detector(current_detector_))) {
+    if (!detectors_.has_a(Qpx::Detector(current_detector_))) {
       bool ok;
       QString text = QInputDialog::getText(this, "New Detector",
                                            "Detector name:", QLineEdit::Normal,
@@ -263,16 +263,16 @@ void FormEfficiencyCalibration::update_detector_calibs()
         return;
 
       if (!text.isEmpty()) {
-        modified = Gamma::Detector(current_detector_);
+        modified = Qpx::Detector(current_detector_);
         if (detectors_.has_a(modified)) {
           QMessageBox::warning(this, "Already exists", "Detector " + text + " already exists. Will not save to database.", QMessageBox::Ok);
-          modified = Gamma::Detector();
+          modified = Qpx::Detector();
         }
       }
     } else
-      modified = detectors_.get(Gamma::Detector(current_detector_));
+      modified = detectors_.get(Qpx::Detector(current_detector_));
 
-    if (modified != Gamma::Detector())
+    if (modified != Qpx::Detector())
     {
       PL_INFO << "   applying new calibrations for " << modified.name_ << " in detector database";
       modified.efficiency_calibration_ = new_calibration_;
@@ -313,7 +313,7 @@ void FormEfficiencyCalibration::spectrumDetails(SelectorItem item)
   setSpectrum(item.text);
 }
 
-void FormEfficiencyCalibration::add_peak_to_table(const Gamma::Peak &p, int row, QColor bckg) {
+void FormEfficiencyCalibration::add_peak_to_table(const Qpx::Peak &p, int row, QColor bckg) {
   QBrush background(bckg);
 
   QTableWidgetItem *chn = new QTableWidgetItem( QString::number(p.center) );
@@ -515,7 +515,7 @@ void FormEfficiencyCalibration::toggle_push() {
   ui->pushFitEffit->setEnabled(points_for_calib > 1);
   ui->spinTerms->setEnabled(points_for_calib > 1);
 
-  if (new_calibration_ != Gamma::Calibration())
+  if (new_calibration_ != Qpx::Calibration())
     ui->pushApplyCalib->setEnabled(true);
   else
     ui->pushApplyCalib->setEnabled(false);
@@ -569,11 +569,11 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
     new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
-    new_calibration_.model_ = Gamma::CalibrationModel::polylog;
+    new_calibration_.model_ = Qpx::CalibrationModel::polylog;
     PL_DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
   }
   else
-    PL_INFO << "<Efficiency calibration> Gamma::Calibration failed";
+    PL_INFO << "<Efficiency calibration> Qpx::Calibration failed";
 
   replot_calib();
   toggle_push();
@@ -612,7 +612,7 @@ void FormEfficiencyCalibration::on_doubleEpsilonE_editingFinished()
 void FormEfficiencyCalibration::on_doubleScaleFactor_editingFinished()
 {
   fit_data_.activity_scale_factor_ = ui->doubleScaleFactor->value();
-  if (!fit_data_.metadata_.name.empty()) //should be ==Gamma::Setting()
+  if (!fit_data_.metadata_.name.empty()) //should be ==Qpx::Setting()
     peak_sets_[fit_data_.metadata_.name] = fit_data_;
   replot_calib();
 }
@@ -620,7 +620,7 @@ void FormEfficiencyCalibration::on_doubleScaleFactor_editingFinished()
 void FormEfficiencyCalibration::on_doubleScaleFactor_valueChanged(double arg1)
 {
   fit_data_.activity_scale_factor_ = ui->doubleScaleFactor->value();
-  if (!fit_data_.metadata_.name.empty()) //should be ==Gamma::Setting()
+  if (!fit_data_.metadata_.name.empty()) //should be ==Qpx::Setting()
     peak_sets_[fit_data_.metadata_.name] = fit_data_;
   replot_calib();
 }
@@ -675,11 +675,11 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
     new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
-    new_calibration_.model_ = Gamma::CalibrationModel::loginverse;
+    new_calibration_.model_ = Qpx::CalibrationModel::loginverse;
     PL_DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
   }
   else
-    PL_INFO << "<Efficiency calibration> Gamma::Calibration failed";
+    PL_INFO << "<Efficiency calibration> Qpx::Calibration failed";
 
   replot_calib();
   toggle_push();
@@ -721,7 +721,7 @@ void FormEfficiencyCalibration::on_pushFitEffit_clicked()
     new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
-    new_calibration_.model_ = Gamma::CalibrationModel::effit;
+    new_calibration_.model_ = Qpx::CalibrationModel::effit;
     PL_DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
 
   replot_calib();

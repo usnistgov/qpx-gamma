@@ -42,9 +42,9 @@ public:
     //    new_temp.output_types = {""};
     new_temp.description = "Custom gated list mode to file. Please provide path and name for valid and accessible file.";
 
-    Gamma::Setting file_setting;
+    Qpx::Setting file_setting;
     file_setting.id_ = "file_dir";
-    file_setting.metadata.setting_type = Gamma::SettingType::dir_path;
+    file_setting.metadata.setting_type = Qpx::SettingType::dir_path;
     file_setting.metadata.writable = true;
     file_setting.metadata.description = "path to temp output directory";
     new_temp.generic_attributes.add(file_setting);
@@ -55,7 +55,7 @@ public:
 
 protected:
   std::string my_type() const override {return "Raw";}
-  XMLableDB<Gamma::Setting> default_settings() const override {return this->get_template().generic_attributes; }
+  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().generic_attributes; }
 
   //1D is ok with all patterns
   bool initialize() override;

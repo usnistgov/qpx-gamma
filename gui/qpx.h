@@ -75,8 +75,8 @@ private:
   QString                       settings_directory_;    //settings directory
   QString                       data_directory_;        //data directory
   QSettings                     settings_;
-  XMLableDB<Gamma::Detector>    detectors_;
-  std::vector<Gamma::Detector>  current_dets_;
+  XMLableDB<Qpx::Detector>    detectors_;
+  std::vector<Qpx::Detector>  current_dets_;
   ThreadRunner                  runner_thread_;
 
   FormStart* main_tab_;
@@ -98,7 +98,7 @@ protected:
   void closeEvent(QCloseEvent*);
 
 private slots:
-  void update_settings(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus);
+  void update_settings(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus);
   void toggleIO(bool);
   void updateStatusText(QString);
 

@@ -35,8 +35,8 @@ class TableChanSettings : public QAbstractTableModel
 {
     Q_OBJECT
 private:
-    std::vector<Gamma::Detector> channels_;
-    Gamma::Setting consolidated_list_;
+    std::vector<Qpx::Detector> channels_;
+    Qpx::Setting consolidated_list_;
     std::map<std::string, std::string> preferred_units_;
     bool show_read_only_;
 
@@ -51,11 +51,11 @@ public:
     Qt::ItemFlags flags(const QModelIndex & index) const;
     bool setData(const QModelIndex & index, const QVariant & value, int role = Qt::EditRole);
 
-    void update(const std::vector<Gamma::Detector> &settings);
+    void update(const std::vector<Qpx::Detector> &settings);
     void set_show_read_only(bool show_ro);
 
 signals:
-    void setting_changed(int chan, Gamma::Setting setting);
+    void setting_changed(int chan, Qpx::Setting setting);
     void detector_chosen(int chan, std::string name);
 
 };

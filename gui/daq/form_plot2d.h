@@ -44,7 +44,7 @@ public:
 
   void setSpectra(Qpx::SpectraSet& new_set, QString spectrum = QString());
 
-  void setDetDB(XMLableDB<Gamma::Detector>& detDB);
+  void setDetDB(XMLableDB<Qpx::Detector>& detDB);
 
 
   void updateUI();
@@ -99,7 +99,7 @@ private:
   Ui::FormPlot2D *ui;
   Qpx::SpectraSet *mySpectra;
 
-  XMLableDB<Gamma::Detector> * detectors_;
+  XMLableDB<Qpx::Detector> * detectors_;
 
 
   //plot identity
@@ -113,7 +113,7 @@ private:
 
   //scaling
   int bits;
-  Gamma::Calibration calib_x_, calib_y_;
+  Qpx::Calibration calib_x_, calib_y_;
 
   QMenu *crop_menu_;
   QLabel *crop_label_;

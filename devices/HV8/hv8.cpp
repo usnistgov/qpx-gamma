@@ -51,12 +51,12 @@ QpxHV8Plugin::~QpxHV8Plugin() {
 }
 
 
-bool QpxHV8Plugin::read_settings_bulk(Gamma::Setting &set) const {
+bool QpxHV8Plugin::read_settings_bulk(Qpx::Setting &set) const {
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
-      if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "HV8/Channels")) {
+      if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "HV8/Channels")) {
         for (auto &k : q.branches.my_data_) {
-          if ((k.metadata.setting_type == Gamma::SettingType::floating) && (k.metadata.address > -1) && (k.metadata.address < voltages.size()))
+          if ((k.metadata.setting_type == Qpx::SettingType::floating) && (k.metadata.address > -1) && (k.metadata.address < voltages.size()))
             k.value_dbl = voltages[k.metadata.address];
         }
       } else if ((q.id_ != "HV8/ResponseTimeout") && (q.id_ != "HV8/ResponseAttempts")) {
@@ -67,12 +67,12 @@ bool QpxHV8Plugin::read_settings_bulk(Gamma::Setting &set) const {
   return true;
 }
 
-void QpxHV8Plugin::rebuild_structure(Gamma::Setting &set) {
+void QpxHV8Plugin::rebuild_structure(Qpx::Setting &set) {
   for (auto &k : set.branches.my_data_) {
-    if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "HV8/Channels")) {
+    if ((k.metadata.setting_type == Qpx::SettingType::stem) && (k.id_ == "HV8/Channels")) {
 
 
-      Gamma::Setting temp("HV8/Channels/Voltage");
+      Qpx::Setting temp("HV8/Channels/Voltage");
       temp.enrich(setting_definitions_, true);
       while (k.branches.size() < 8)
         k.branches.my_data_.push_back(temp);
@@ -102,7 +102,7 @@ void QpxHV8Plugin::rebuild_structure(Gamma::Setting &set) {
   }
 }
 
-bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
+bool QpxHV8Plugin::write_settings_bulk(Qpx::Setting &set) {
   set.enrich(setting_definitions_, true);
 
   if (set.id_ != device_name())
@@ -111,13 +111,13 @@ bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
   rebuild_structure(set);
 
   for (auto &q : set.branches.my_data_) {
-    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "HV8/PortName"))
+    if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "HV8/PortName"))
       portname = q.value_text;
-    else if ((q.metadata.setting_type == Gamma::SettingType::int_menu) && (q.id_ == "HV8/BaudRate"))
+    else if ((q.metadata.setting_type == Qpx::SettingType::int_menu) && (q.id_ == "HV8/BaudRate"))
       baudrate = q.value_int;
-    else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "HV8/CharacterSize"))
+    else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "HV8/CharacterSize"))
       charactersize = boost::asio::serial_port_base::character_size(q.value_int);
-    else if ((q.metadata.setting_type == Gamma::SettingType::int_menu) && (q.id_ == "HV8/Parity")) {
+    else if ((q.metadata.setting_type == Qpx::SettingType::int_menu) && (q.id_ == "HV8/Parity")) {
       if (q.value_int == 2)
         parity = boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::odd);
       else if (q.value_int == 3)
@@ -125,7 +125,7 @@ bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
       else
         parity = boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::none);
     }
-    else if ((q.metadata.setting_type == Gamma::SettingType::int_menu) && (q.id_ == "HV8/StopBits")) {
+    else if ((q.metadata.setting_type == Qpx::SettingType::int_menu) && (q.id_ == "HV8/StopBits")) {
       if (q.value_int == 2)
         stopbits = boost::asio::serial_port_base::stop_bits(boost::asio::serial_port_base::stop_bits::onepointfive);
       else if (q.value_int == 3)
@@ -133,7 +133,7 @@ bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
       else
         stopbits = boost::asio::serial_port_base::stop_bits(boost::asio::serial_port_base::stop_bits::one);
     }
-    else if ((q.metadata.setting_type == Gamma::SettingType::int_menu) && (q.id_ == "HV8/FlowControl")) {
+    else if ((q.metadata.setting_type == Qpx::SettingType::int_menu) && (q.id_ == "HV8/FlowControl")) {
       if (q.value_int == 2)
         flowcontrol = boost::asio::serial_port_base::flow_control(boost::asio::serial_port_base::flow_control::software);
       else if (q.value_int == 3)
@@ -141,11 +141,11 @@ bool QpxHV8Plugin::write_settings_bulk(Gamma::Setting &set) {
       else
         flowcontrol = boost::asio::serial_port_base::flow_control(boost::asio::serial_port_base::flow_control::none);
     }
-    else if ((q.metadata.setting_type == Gamma::SettingType::floating) && (q.id_ == "HV8/ResponseTimeout"))
+    else if ((q.metadata.setting_type == Qpx::SettingType::floating) && (q.id_ == "HV8/ResponseTimeout"))
       timeout_ = q.value_dbl;
-    else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "HV8/ResponseAttemps"))
+    else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "HV8/ResponseAttemps"))
       attempts_ = q.value_int;
-    else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "HV8/Channels")) {
+    else if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "HV8/Channels")) {
       for (auto &k : q.branches.my_data_) {
         if (k.value_dbl != voltages[k.metadata.address])
           set_voltage(k.metadata.address, k.value_dbl);

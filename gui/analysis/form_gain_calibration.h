@@ -37,7 +37,7 @@ class FormGainCalibration : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormGainCalibration(QSettings &settings, XMLableDB<Gamma::Detector>&, Gamma::Fitter&, Gamma::Fitter&, QWidget *parent = 0);
+  explicit FormGainCalibration(QSettings &settings, XMLableDB<Qpx::Detector>&, Qpx::Fitter&, Qpx::Fitter&, QWidget *parent = 0);
   ~FormGainCalibration();
 
   void newSpectrum();
@@ -66,18 +66,18 @@ private:
   QString data_directory_;
   QString settings_directory_;
 
-  XMLableDB<Gamma::Detector> &detectors_;
+  XMLableDB<Qpx::Detector> &detectors_;
 
-  Gamma::Fitter &fit_data1_;
-  Gamma::Fitter &fit_data2_;
+  Qpx::Fitter &fit_data1_;
+  Qpx::Fitter &fit_data2_;
 
-  Gamma::Detector detector1_;
-  Gamma::Detector detector2_;
-  Gamma::Calibration nrg_calibration1_;
-  Gamma::Calibration nrg_calibration2_;
+  Qpx::Detector detector1_;
+  Qpx::Detector detector2_;
+  Qpx::Calibration nrg_calibration1_;
+  Qpx::Calibration nrg_calibration2_;
 
 
-  Gamma::Calibration gain_match_cali_;
+  Qpx::Calibration gain_match_cali_;
   AppearanceProfile style_pts, style_fit;
 
   void loadSettings();

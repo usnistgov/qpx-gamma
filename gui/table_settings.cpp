@@ -70,7 +70,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
         return brush;
       }
     } else if ((col <= (channels_.size()+2)) && (!channels_.empty()) && (!consolidated_list_.branches.empty())) {
-      Gamma::Setting item = consolidated_list_.branches.get(row-1);
+      Qpx::Setting item = consolidated_list_.branches.get(row-1);
       if (item.metadata.writable) {
         QBrush brush(Qt::black);
         return brush;
@@ -101,15 +101,15 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       if (col == 0) {
         return "<===detector===>";
       } else if (col <= channels_.size()) {
-        Gamma::Setting det;
-        det.metadata.setting_type = Gamma::SettingType::detector;
+        Qpx::Setting det;
+        det.metadata.setting_type = Qpx::SettingType::detector;
         det.value_text = channels_[col-1].name_;
         det.indices.insert(col-1);
         return QVariant::fromValue(det);
       } else
         return QVariant();
     } else {
-      Gamma::Setting item = consolidated_list_.branches.get(row-1);
+      Qpx::Setting item = consolidated_list_.branches.get(row-1);
       if (col == 0)
         return QString::fromStdString(item.id_);
       else if ((col == (channels_.size()+1)) && preferred_units_.count(item.id_))
@@ -117,9 +117,9 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       else if (col == (channels_.size()+2))
         return QString::fromStdString(item.metadata.description);
       else if (col <= channels_.size()) {
-        item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
-        if (item != Gamma::Setting()) {
-          if (item.metadata.setting_type == Gamma::SettingType::floating) {
+        item = channels_[col-1].settings_.get_setting(item, Qpx::Match::id);
+        if (item != Qpx::Setting()) {
+          if (item.metadata.setting_type == Qpx::SettingType::floating) {
             double val = item.value_dbl;
             if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
               UnitConverter uc;
@@ -136,16 +136,16 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
 
   else if (role == Qt::EditRole) {
     if ((row == 0) && (col > 0) && (col <= channels_.size())) {
-      Gamma::Setting det;
-      det.metadata.setting_type = Gamma::SettingType::detector;
+      Qpx::Setting det;
+      det.metadata.setting_type = Qpx::SettingType::detector;
       det.value_text = channels_[col-1].name_;
       return QVariant::fromValue(det);
     } else if (row != 0) {
-      Gamma::Setting item = consolidated_list_.branches.get(row-1);
+      Qpx::Setting item = consolidated_list_.branches.get(row-1);
       if ((col == (channels_.size()+1)) && preferred_units_.count(item.id_)) {
         UnitConverter uc;
-        Gamma::Setting st("unit");
-        st.metadata.setting_type = Gamma::SettingType::int_menu;
+        Qpx::Setting st("unit");
+        st.metadata.setting_type = Qpx::SettingType::int_menu;
         if (item.metadata.minimum)
           st.metadata.int_menu_items = uc.make_ordered_map(item.metadata.unit, item.metadata.minimum, item.metadata.maximum);
         else
@@ -155,10 +155,10 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
             st.value_int = q.first;
         return QVariant::fromValue(st);
       } else if (col <= channels_.size()) {
-        item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
-        if (item == Gamma::Setting())
+        item = channels_[col-1].settings_.get_setting(item, Qpx::Match::id);
+        if (item == Qpx::Setting())
           return QVariant();
-        if ((item.metadata.setting_type == Gamma::SettingType::floating)
+        if ((item.metadata.setting_type == Qpx::SettingType::floating)
             && preferred_units_.count(item.id_)
             && (item.metadata.unit != preferred_units_.at(item.id_))) {
           std::string to_units = preferred_units_.at(item.id_);
@@ -206,7 +206,7 @@ QVariant TableChanSettings::headerData(int section, Qt::Orientation orientation,
   return QVariant();
 }
 
-void TableChanSettings::update(const std::vector<Gamma::Detector> &settings) {
+void TableChanSettings::update(const std::vector<Qpx::Detector> &settings) {
   channels_ = settings;
   if (!show_read_only_) {
     for (int i=0; i < settings.size(); ++i) {
@@ -218,7 +218,7 @@ void TableChanSettings::update(const std::vector<Gamma::Detector> &settings) {
     }
   }
 
-  consolidated_list_ = Gamma::Setting();
+  consolidated_list_ = Qpx::Setting();
   for (auto &q : channels_) {
     for (auto &p : q.settings_.branches.my_data_) {
       consolidated_list_.branches.add(p);
@@ -244,7 +244,7 @@ Qt::ItemFlags TableChanSettings::flags(const QModelIndex &index) const
     if ((row == 0) && (col <= channels_.size()))
       return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
 
-    Gamma::Setting item = consolidated_list_.branches.get(row-1);
+    Qpx::Setting item = consolidated_list_.branches.get(row-1);
 
     if (col == (channels_.size() + 1)) {
        if (preferred_units_.count(item.id_) && scalable_units_.count(UnitConverter().strip_unit(item.metadata.unit)))
@@ -254,13 +254,13 @@ Qt::ItemFlags TableChanSettings::flags(const QModelIndex &index) const
     } else if (col == (channels_.size() + 2))
       return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
 
-    item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
+    item = channels_[col-1].settings_.get_setting(item, Qpx::Match::id);
 
-    if (item == Gamma::Setting())
+    if (item == Qpx::Setting())
       return QAbstractTableModel::flags(index);
     else if (item.metadata.writable)
       return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
-    else if (item.metadata.setting_type == Gamma::SettingType::binary)
+    else if (item.metadata.setting_type == Qpx::SettingType::binary)
       return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
     else
       return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
@@ -274,7 +274,7 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
 
   if (role == Qt::EditRole)
     if ((row > 0) && (col <= (channels_.size()+2))) {
-      Gamma::Setting item = consolidated_list_.branches.get(row-1);
+      Qpx::Setting item = consolidated_list_.branches.get(row-1);
 
       if (col == (channels_.size()+1)) {
         if (preferred_units_.count(item.id_)) {
@@ -292,20 +292,20 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
           return false;
       }
 
-      item = channels_[col-1].settings_.get_setting(item, Gamma::Match::id);
-      if (item == Gamma::Setting())
+      item = channels_[col-1].settings_.get_setting(item, Qpx::Match::id);
+      if (item == Qpx::Setting())
         return false;
 
-      if (((item.metadata.setting_type == Gamma::SettingType::integer)
-           || (item.metadata.setting_type == Gamma::SettingType::int_menu)
-           || (item.metadata.setting_type == Gamma::SettingType::binary)
-           || (item.metadata.setting_type == Gamma::SettingType::command))
+      if (((item.metadata.setting_type == Qpx::SettingType::integer)
+           || (item.metadata.setting_type == Qpx::SettingType::int_menu)
+           || (item.metadata.setting_type == Qpx::SettingType::binary)
+           || (item.metadata.setting_type == Qpx::SettingType::command))
           && (value.canConvert(QMetaType::LongLong)))
         item.value_int = value.toLongLong();
-      else if ((item.metadata.setting_type == Gamma::SettingType::boolean)
+      else if ((item.metadata.setting_type == Qpx::SettingType::boolean)
           && (value.type() == QVariant::Bool))
         item.value_int = value.toBool();
-      else if ((item.metadata.setting_type == Gamma::SettingType::floating)
+      else if ((item.metadata.setting_type == Qpx::SettingType::floating)
           && (value.type() == QVariant::Double)) {
         double val = value.toDouble();
         if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
@@ -315,7 +315,7 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
             }
         item.value_dbl = val;
       }
-      else if ((item.metadata.setting_type == Gamma::SettingType::floating_precise)
+      else if ((item.metadata.setting_type == Qpx::SettingType::floating_precise)
           && (value.type() == QVariant::Double)) {
         long double val = value.toDouble();
         if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
@@ -325,16 +325,16 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
             }
         item.value_precise = val;
       }
-      else if (((item.metadata.setting_type == Gamma::SettingType::text)
-                || (item.metadata.setting_type == Gamma::SettingType::file_path)
-                || (item.metadata.setting_type == Gamma::SettingType::dir_path)
-                || (item.metadata.setting_type == Gamma::SettingType::detector) )
+      else if (((item.metadata.setting_type == Qpx::SettingType::text)
+                || (item.metadata.setting_type == Qpx::SettingType::file_path)
+                || (item.metadata.setting_type == Qpx::SettingType::dir_path)
+                || (item.metadata.setting_type == Qpx::SettingType::detector) )
           && (value.type() == QVariant::String))
         item.value_text = value.toString().toStdString();
-      else if ((item.metadata.setting_type == Gamma::SettingType::time)
+      else if ((item.metadata.setting_type == Qpx::SettingType::time)
           && (value.type() == QVariant::DateTime))
         item.value_time = fromQDateTime(value.toDateTime());
-      else if ((item.metadata.setting_type == Gamma::SettingType::time_duration)
+      else if ((item.metadata.setting_type == Qpx::SettingType::time_duration)
           && (value.canConvert(QMetaType::LongLong)))
         item.value_duration = boost::posix_time::seconds(value.toLongLong());
 

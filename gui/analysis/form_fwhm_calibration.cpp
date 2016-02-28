@@ -27,7 +27,7 @@
 #include "qt_util.h"
 #include "sqrt_poly.h"
 
-FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Gamma::Detector>& dets, Gamma::Fitter& fit, QWidget *parent) :
+FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Qpx::Detector>& dets, Qpx::Fitter& fit, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormFwhmCalibration),
   settings_(settings),
@@ -106,7 +106,7 @@ void FormFwhmCalibration::saveSettings() {
 }
 
 void FormFwhmCalibration::clear() {
-  new_calibration_ = Gamma::Calibration();
+  new_calibration_ = Qpx::Calibration();
   ui->tablePeaks->clearContents();
   ui->tablePeaks->setRowCount(0);
   toggle_push();
@@ -191,7 +191,7 @@ void FormFwhmCalibration::select_in_plot() {
   ui->PlotCalib->redraw();
 }
 
-void FormFwhmCalibration::add_peak_to_table(const Gamma::Peak &p, int row, bool gray) {
+void FormFwhmCalibration::add_peak_to_table(const Qpx::Peak &p, int row, bool gray) {
   QBrush background(gray ? Qt::lightGray : Qt::white);
 
   data_to_table(row, 0, p.center, background);
@@ -340,10 +340,10 @@ void FormFwhmCalibration::fit_calibration()
     new_calibration_.r_squared_ = p.rsq_;
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "keV";
-    new_calibration_.model_ = Gamma::CalibrationModel::sqrt_poly;
+    new_calibration_.model_ = Qpx::CalibrationModel::sqrt_poly;
   }
   else
-    PL_INFO << "<WFHM calibration> Gamma::Calibration failed";
+    PL_INFO << "<WFHM calibration> Qpx::Calibration failed";
 
 }
 
@@ -354,7 +354,7 @@ void FormFwhmCalibration::on_pushApplyCalib_clicked()
 
 void FormFwhmCalibration::on_pushFromDB_clicked()
 {
-  Gamma::Detector newdet = detectors_.get(fit_data_.detector_);
+  Qpx::Detector newdet = detectors_.get(fit_data_.detector_);
   new_calibration_ = newdet.fwhm_calibration_;
   replot_calib();
   select_in_plot();

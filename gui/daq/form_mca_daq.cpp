@@ -30,8 +30,8 @@
 #include "qt_util.h"
 
 
-FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Gamma::Detector>& detectors,
-                       std::vector<Gamma::Detector>& current_dets, QWidget *parent) :
+FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Qpx::Detector>& detectors,
+                       std::vector<Qpx::Detector>& current_dets, QWidget *parent) :
   QWidget(parent),
   settings_(settings),
   spectra_templates_("SpectrumTemplates"),

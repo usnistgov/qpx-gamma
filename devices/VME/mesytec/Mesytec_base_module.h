@@ -44,8 +44,8 @@ public:
 
   bool boot() override;
   bool die() override;
-  bool write_settings_bulk(Gamma::Setting &set) override;
-  bool read_settings_bulk(Gamma::Setting &set) const override;
+  bool write_settings_bulk(Qpx::Setting &set) override;
+  bool read_settings_bulk(Qpx::Setting &set) const override;
 
   //VmeModule
   uint32_t baseAddressSpaceLength() const override { return MESYTEC_ADDRESS_SPACE_LENGTH; }
@@ -70,9 +70,9 @@ protected:
 
   std::map<std::string, MesytecExternal*> ext_modules_;
 
-  virtual void rebuild_structure(Gamma::Setting &set) {}
-  bool read_setting(Gamma::Setting& set) const;
-  bool write_setting(Gamma::Setting& set);
+  virtual void rebuild_structure(Qpx::Setting &set) {}
+  bool read_setting(Qpx::Setting& set) const;
+  bool write_setting(Qpx::Setting& set);
 
   uint16_t readShort(int address) const;
   void    writeShort(int address, uint16_t data) const;  //const?

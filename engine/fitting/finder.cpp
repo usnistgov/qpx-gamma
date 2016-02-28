@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::Finder
+ *      Qpx::Finder
  *
  ******************************************************************************/
 
@@ -24,7 +24,7 @@
 #include <cmath>
 #include "finder.h"
 
-namespace Gamma {
+namespace Qpx {
 
 void Finder::setData(const std::vector<double> &x, const std::vector<double> &y)
 {

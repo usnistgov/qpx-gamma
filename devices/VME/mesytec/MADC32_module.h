@@ -49,7 +49,7 @@ private:
   MADC32(const MADC32&);
 
 protected:
-  void rebuild_structure(Gamma::Setting &set) override;
+  void rebuild_structure(Qpx::Setting &set) override;
 
 };
 

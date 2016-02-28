@@ -35,9 +35,9 @@ namespace Spectrum {
 Template Spectrum::get_template() {
   Template new_temp;
 
-  Gamma::Setting ignore_zero;
+  Qpx::Setting ignore_zero;
   ignore_zero.id_ = "cutoff_logic";
-  ignore_zero.metadata.setting_type = Gamma::SettingType::integer;
+  ignore_zero.metadata.setting_type = Qpx::SettingType::integer;
   ignore_zero.metadata.description = "Hits rejected below minimum energy (affects coincidence logic and binning)";
   ignore_zero.metadata.writable = true;
   ignore_zero.metadata.minimum = 0;
@@ -45,9 +45,9 @@ Template Spectrum::get_template() {
   ignore_zero.metadata.maximum = 1000000;
   new_temp.generic_attributes.add(ignore_zero);
 
-  Gamma::Setting coinc_window;
+  Qpx::Setting coinc_window;
   coinc_window.id_ = "coinc_window";
-  coinc_window.metadata.setting_type = Gamma::SettingType::floating;
+  coinc_window.metadata.setting_type = Qpx::SettingType::floating;
   coinc_window.metadata.minimum = 0;
   coinc_window.metadata.step = 1;
   coinc_window.metadata.maximum = 1000000;
@@ -331,7 +331,7 @@ std::vector<double> Spectrum::energies(uint8_t chan) const {
     return std::vector<double>();
 }
   
-void Spectrum::set_detectors(const std::vector<Gamma::Detector>& dets) {
+void Spectrum::set_detectors(const std::vector<Qpx::Detector>& dets) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
@@ -347,13 +347,13 @@ void Spectrum::reset_changed() {
   metadata_.changed = false;
 }
 
-void Spectrum::_set_detectors(const std::vector<Gamma::Detector>& dets) {
+void Spectrum::_set_detectors(const std::vector<Qpx::Detector>& dets) {
   //private; no lock required
 //  PL_DBG << "<Spectrum> _set_detectors";
 
   metadata_.detectors.clear();
 
-  //metadata_.detectors.resize(metadata_.dimensions, Gamma::Detector());
+  //metadata_.detectors.resize(metadata_.dimensions, Qpx::Detector());
   recalc_energies();
 }
 
@@ -366,9 +366,9 @@ void Spectrum::recalc_energies() {
 
   for (int i=0; i < metadata_.detectors.size(); ++i) {
     energies_[i].resize(metadata_.resolution, 0.0);
-     Gamma::Calibration this_calib;
-    if (metadata_.detectors[i].energy_calibrations_.has_a(Gamma::Calibration("Energy", metadata_.bits)))
-      this_calib = metadata_.detectors[i].energy_calibrations_.get(Gamma::Calibration("Energy", metadata_.bits));
+     Qpx::Calibration this_calib;
+    if (metadata_.detectors[i].energy_calibrations_.has_a(Qpx::Calibration("Energy", metadata_.bits)))
+      this_calib = metadata_.detectors[i].energy_calibrations_.get(Qpx::Calibration("Energy", metadata_.bits));
     else
       this_calib = metadata_.detectors[i].highest_res_calib();
     for (uint32_t j=0; j<metadata_.resolution; j++)
@@ -376,8 +376,8 @@ void Spectrum::recalc_energies() {
   }
 }
 
-Gamma::Setting Spectrum::get_attr(std::string setting) const {
-  return metadata_.attributes.get(Gamma::Setting(setting));
+Qpx::Setting Spectrum::get_attr(std::string setting) const {
+  return metadata_.attributes.get(Qpx::Setting(setting));
 }
 
 
@@ -496,7 +496,7 @@ void Spectrum::set_description(std::string newdesc) {
   metadata_.description = newdesc;
 }
 
-void Spectrum::set_generic_attr(Gamma::Setting setting) {
+void Spectrum::set_generic_attr(Qpx::Setting setting) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
@@ -563,7 +563,7 @@ void Spectrum::to_xml(pugi::xml_node &root) const {
   if (metadata_.detectors.size()) {
     pugi::xml_node child = node.append_child("Detectors");
     for (auto q : metadata_.detectors) {
-      q.settings_ = Gamma::Setting();
+      q.settings_ = Qpx::Setting();
       q.to_xml(child);
     }
   }
@@ -635,7 +635,7 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
   if (node.child("Detectors")) {
     metadata_.detectors.clear();
     for (auto &q : node.child("Detectors").children()) {
-      Gamma::Detector det;
+      Qpx::Detector det;
       det.from_xml(q);
       metadata_.detectors.push_back(det);
     }

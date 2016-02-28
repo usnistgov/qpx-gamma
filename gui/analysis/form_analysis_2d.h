@@ -40,7 +40,7 @@ class FormAnalysis2D : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent = 0);
+  explicit FormAnalysis2D(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
   ~FormAnalysis2D();
 
   void setSpectrum(Qpx::SpectraSet *newset, QString spectrum);
@@ -87,7 +87,7 @@ private:
   QString current_spectrum_;
   MarkerBox2D range2d;
 
-  XMLableDB<Gamma::Detector> &detectors_;
+  XMLableDB<Qpx::Detector> &detectors_;
 
   bool initialized;
 

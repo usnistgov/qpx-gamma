@@ -31,7 +31,7 @@
 #include <bitset>
 
 
-BinaryChecklist::BinaryChecklist(Gamma::Setting setting, QWidget *parent) :
+BinaryChecklist::BinaryChecklist(Qpx::Setting setting, QWidget *parent) :
   QDialog(parent),
   setting_(setting)
 {
@@ -70,7 +70,7 @@ BinaryChecklist::BinaryChecklist(Gamma::Setting setting, QWidget *parent) :
     bool visible = setting_.metadata.int_menu_items.count(i) || showall;
 
     bool is_branch = false;
-    Gamma::Setting sub;
+    Qpx::Setting sub;
     if (exists)
       for (auto &q : setting_.branches.my_data_)
         if (q.id_ == setting_.metadata.int_menu_items[i]) {
@@ -78,8 +78,8 @@ BinaryChecklist::BinaryChecklist(Gamma::Setting setting, QWidget *parent) :
           sub = q;
         }
 
-    bool is_int = (is_branch && (sub.metadata.setting_type == Gamma::SettingType::integer));
-    bool is_menu = (is_branch && (sub.metadata.setting_type == Gamma::SettingType::int_menu));
+    bool is_int = (is_branch && (sub.metadata.setting_type == Qpx::SettingType::integer));
+    bool is_menu = (is_branch && (sub.metadata.setting_type == Qpx::SettingType::int_menu));
 
     label = new QLabel();
     label->setFixedHeight(25);

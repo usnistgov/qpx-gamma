@@ -23,7 +23,7 @@
 #include "form_daq_settings.h"
 #include "ui_form_daq_settings.h"
 
-FormDaqSettings::FormDaqSettings(Gamma::Setting tree, QWidget *parent) :
+FormDaqSettings::FormDaqSettings(Qpx::Setting tree, QWidget *parent) :
   QDialog(parent),
   dev_settings_(tree),
   ui(new Ui::FormDaqSettings)

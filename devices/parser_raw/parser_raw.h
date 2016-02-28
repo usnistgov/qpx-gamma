@@ -41,8 +41,8 @@ public:
   static std::string plugin_name() {return "ParserRaw";}
   std::string device_name() const override {return plugin_name();}
 
-  bool write_settings_bulk(Gamma::Setting &set) override;
-  bool read_settings_bulk(Gamma::Setting &set) const override;
+  bool write_settings_bulk(Qpx::Setting &set) override;
+  bool read_settings_bulk(Qpx::Setting &set) const override;
   void get_all_settings() override;
   bool boot() override;
   bool die() override;

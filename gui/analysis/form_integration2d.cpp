@@ -127,7 +127,7 @@ void FormIntegration2D::make_range(Marker x, Marker y) {
 
   range_.x_c = x.pos;
   range_.y_c = y.pos;
-  Gamma::Calibration f1, f2, e1, e2;
+  Qpx::Calibration f1, f2, e1, e2;
 
   if (md_.detectors.size() > 1) {
     //PL_DBG << "dets2";
@@ -578,7 +578,7 @@ void FormIntegration2D::on_pushAddPeak2d_clicked()
   PL_DBG << "adding new 2d peak";
   ui->pushAddPeak2d->setEnabled(false);
 
-  Gamma::Peak xx, yy;
+  Qpx::Peak xx, yy;
   bool foundx(false), foundy(false);
 
   std::set<double> selected_x = ui->plotGateX->get_selected_peaks();

@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::Fitter
+ *      Qpx::Fitter
  *
  ******************************************************************************/
 
@@ -25,7 +25,7 @@
 #include <algorithm>
 #include "custom_logger.h"
 
-namespace Gamma {
+namespace Qpx {
 
 void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
 {
@@ -42,8 +42,8 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
     if (!md.detectors.empty())
       detector_ = md.detectors[0];
 
-    if (detector_.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits)))
-      settings_.cali_nrg_ = detector_.energy_calibrations_.get(Gamma::Calibration("Energy", md.bits));
+    if (detector_.energy_calibrations_.has_a(Qpx::Calibration("Energy", md.bits)))
+      settings_.cali_nrg_ = detector_.energy_calibrations_.get(Qpx::Calibration("Energy", md.bits));
     //best?
 
     if (detector_.fwhm_calibration_.valid())
@@ -81,10 +81,10 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
 }
 
 void Fitter::clear() {
-  detector_ = Gamma::Detector();
+  detector_ = Qpx::Detector();
   metadata_ = Qpx::Spectrum::Metadata();
-  settings_.cali_nrg_ = Gamma::Calibration();
-  settings_.cali_fwhm_ = Gamma::Calibration();
+  settings_.cali_nrg_ = Qpx::Calibration();
+  settings_.cali_fwhm_ = Qpx::Calibration();
   finder_.clear();
   regions_.clear();
 }
@@ -303,7 +303,7 @@ void Fitter::save_report(std::string filename) {
 
   file.fill(' ');
   file << "========================================================" << std::endl;
-  file << "===========QPX Gamma::Fitter analysis results===========" << std::endl;
+  file << "===========QPX Qpx::Fitter analysis results===========" << std::endl;
   file << "========================================================" << std::endl;
 
   file << std::endl;

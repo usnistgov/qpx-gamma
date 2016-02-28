@@ -27,7 +27,7 @@
 #include "qt_util.h"
 #include <QInputDialog>
 
-FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent) :
+FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormAnalysis1D),
   detectors_(newDetDB),
@@ -76,7 +76,7 @@ FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLableDB<Gamma::Detector>& 
   connect(ui->plotSpectrum, SIGNAL(data_changed()), form_fwhm_calibration_, SLOT(update_data()));
   connect(ui->plotSpectrum, SIGNAL(data_changed()), form_fit_results_, SLOT(update_data()));
 
-  connect(form_energy_calibration_, SIGNAL(change_peaks(std::vector<Gamma::Peak>)), ui->plotSpectrum, SLOT(replace_peaks(std::vector<Gamma::Peak>)));
+  connect(form_energy_calibration_, SIGNAL(change_peaks(std::vector<Qpx::Peak>)), ui->plotSpectrum, SLOT(replace_peaks(std::vector<Qpx::Peak>)));
 
   connect(form_energy_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
   connect(form_fwhm_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
@@ -130,8 +130,8 @@ void FormAnalysis1D::clear() {
   form_energy_calibration_->clear();
   form_fwhm_calibration_->clear();
   form_fit_results_->clear();
-  new_energy_calibration_ = Gamma::Calibration();
-  new_fwhm_calibration_ = Gamma::Calibration();
+  new_energy_calibration_ = Qpx::Calibration();
+  new_fwhm_calibration_ = Qpx::Calibration();
 }
 
 
@@ -140,8 +140,8 @@ void FormAnalysis1D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
   form_fwhm_calibration_->clear();
   form_fit_results_->clear();
   spectra_ = newset;
-  new_energy_calibration_ = Gamma::Calibration();
-  new_fwhm_calibration_ = Gamma::Calibration();
+  new_energy_calibration_ = Qpx::Calibration();
+  new_fwhm_calibration_ = Qpx::Calibration();
 
   if (!spectra_) {
     fit_data_.clear();
@@ -203,7 +203,7 @@ void FormAnalysis1D::update_detector_calibs()
   msgBox.setIcon(QMessageBox::Question);
   int ret = msgBox.exec();
 
-  Gamma::Detector modified;
+  Qpx::Detector modified;
 
   if (ret == QMessageBox::Yes) {
     if (!detectors_.has_a(fit_data_.detector_)) {
@@ -221,13 +221,13 @@ void FormAnalysis1D::update_detector_calibs()
         modified.name_ = text.toStdString();
         if (detectors_.has_a(modified)) {
           QMessageBox::warning(this, "Already exists", "Detector " + text + " already exists. Will not save to database.", QMessageBox::Ok);
-          modified = Gamma::Detector();
+          modified = Qpx::Detector();
         }
       }
     } else
       modified = detectors_.get(fit_data_.detector_);
 
-    if (modified != Gamma::Detector())
+    if (modified != Qpx::Detector())
     {
       PL_INFO << "   applying new calibrations for " << modified.name_ << " in detector database";
       modified.energy_calibrations_.replace(new_energy_calibration_);

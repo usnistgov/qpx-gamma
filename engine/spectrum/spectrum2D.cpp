@@ -89,21 +89,21 @@ bool Spectrum2D::check_symmetrization() {
       break;
     }
   }
-  Gamma::Setting symset = get_attr("symmetrized");
+  Qpx::Setting symset = get_attr("symmetrized");
   symset.value_int = symmetrical;
   metadata_.attributes.replace(symset);
   return symmetrical;
 }
 
 
-void Spectrum2D::_set_detectors(const std::vector<Gamma::Detector>& dets) {
+void Spectrum2D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
   metadata_.detectors.clear();
 
   if (dets.size() >= 2) {
     int total = metadata_.add_pattern.size();
     if (dets.size() < total)
       total = dets.size();
-    metadata_.detectors.resize(metadata_.dimensions, Gamma::Detector());
+    metadata_.detectors.resize(metadata_.dimensions, Qpx::Detector());
 
     int j=0;
     for (int i=0; i < total; ++i) {
@@ -311,12 +311,12 @@ bool Spectrum2D:: read_m4b(std::string name) {
 
   metadata_.detectors.resize(2);
   metadata_.detectors[0].name_ = "unknown1";
-  metadata_.detectors[0].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
+  metadata_.detectors[0].energy_calibrations_.add(Qpx::Calibration("Energy", metadata_.bits));
   if (check_symmetrization())
     metadata_.detectors[1] = metadata_.detectors[0];
   else {
     metadata_.detectors[1].name_ = "unknown2";
-    metadata_.detectors[1].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
+    metadata_.detectors[1].energy_calibrations_.add(Qpx::Calibration("Energy", metadata_.bits));
   }
 
   init_from_file(name);
@@ -345,12 +345,12 @@ bool Spectrum2D:: read_mat(std::string name) {
 
   metadata_.detectors.resize(2);
   metadata_.detectors[0].name_ = "unknown1";
-  metadata_.detectors[0].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
+  metadata_.detectors[0].energy_calibrations_.add(Qpx::Calibration("Energy", metadata_.bits));
   if (check_symmetrization())
     metadata_.detectors[1] = metadata_.detectors[0];
   else {
     metadata_.detectors[1].name_ = "unknown2";
-    metadata_.detectors[1].energy_calibrations_.add(Gamma::Calibration("Energy", metadata_.bits));
+    metadata_.detectors[1].energy_calibrations_.add(Qpx::Calibration("Energy", metadata_.bits));
   }
 
   init_from_file(name);

@@ -42,7 +42,7 @@ class FormStart : public QWidget
 public:
   explicit FormStart(ThreadRunner &thread,
                      QSettings &settings,
-                     XMLableDB<Gamma::Detector> &detectors,
+                     XMLableDB<Qpx::Detector> &detectors,
                      QString profile,
                      bool boot,
                      QWidget *parent = 0);
@@ -60,7 +60,7 @@ signals:
   void list_view_requested();
 
 private slots:
-  void update(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus);
+  void update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus);
   void toggle_push(bool, Qpx::DeviceStatus);
   void toggleIO_(bool);
   void updateStatusText(QString);
@@ -83,7 +83,7 @@ private:
 
   QString profile_path_;
 
-  XMLableDB<Gamma::Detector>  &detectors_;
+  XMLableDB<Qpx::Detector>  &detectors_;
 
   ThreadRunner        &runner_thread_;
 

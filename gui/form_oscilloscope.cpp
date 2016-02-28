@@ -70,7 +70,7 @@ void FormOscilloscope::saveSettings() {
   settings_.endGroup();
 }
 
-void FormOscilloscope::updateMenu(std::vector<Gamma::Detector> dets) {
+void FormOscilloscope::updateMenu(std::vector<Qpx::Detector> dets) {
   QVector<SelectorItem> my_channels = ui->selectorChannels->items();
 
   bool changed = false;
@@ -119,7 +119,7 @@ void FormOscilloscope::channelDetails(SelectorItem item) {
   int i = item.data.toInt();
   QString text;
   if ((i > -1) && (i < traces_.size())) {
-    Gamma::Detector det = traces_[i].detector;
+    Qpx::Detector det = traces_[i].detector;
     text += QString::fromStdString(det.name_);
     text += " (" + QString::fromStdString(det.type_) + ")";
   }
@@ -145,7 +145,7 @@ void FormOscilloscope::oscil_complete(std::vector<Qpx::Trace> traces) {
 
   traces_ = traces;
 
-  std::vector<Gamma::Detector> dets;
+  std::vector<Qpx::Detector> dets;
   for (auto &q : traces) {
     dets.push_back(q.detector);
   }
@@ -176,7 +176,7 @@ void FormOscilloscope::replot() {
       if (!trace_length)
         continue;
 
-      double xinterval = traces_[i].detector.settings_.get_setting(Gamma::Setting("XDT"), Gamma::Match::name).value_dbl;
+      double xinterval = traces_[i].detector.settings_.get_setting(Qpx::Setting("XDT"), Qpx::Match::name).value_dbl;
 
       xdt = xinterval;
 
@@ -186,7 +186,7 @@ void FormOscilloscope::replot() {
       for (int i=0; i < trace_length; ++i)
         xx.push_back(i*xinterval);
 
-      Gamma::Calibration calib = traces_[i].detector.highest_res_calib();
+      Qpx::Calibration calib = traces_[i].detector.highest_res_calib();
       unit = QString::fromStdString(calib.units_);
 
       QVector<double> yy;

@@ -42,7 +42,7 @@ Engine::Engine() {
   total_det_num_.name = "Total detectors";
   total_det_num_.writable = true;
   total_det_num_.visible = true;
-  total_det_num_.setting_type = Gamma::SettingType::integer;
+  total_det_num_.setting_type = Qpx::SettingType::integer;
   total_det_num_.minimum = 1;
   total_det_num_.maximum = 42;
   total_det_num_.step = 1;
@@ -52,7 +52,7 @@ Engine::Engine() {
   single_det_.writable = true;
   single_det_.saveworthy = true;
   single_det_.visible = true;
-  single_det_.setting_type = Gamma::SettingType::detector;
+  single_det_.setting_type = Qpx::SettingType::detector;
 }
 
 
@@ -67,17 +67,17 @@ void Engine::initialize(std::string profile) {
     return;
   PL_DBG << "<Engine> Loading device settings " << profile_path_;
 
-  pugi::xml_node root = doc.child(Gamma::Setting().xml_element_name().c_str());
+  pugi::xml_node root = doc.child(Qpx::Setting().xml_element_name().c_str());
   if (!root)
     return;
 
-  Gamma::Setting tree(root);
+  Qpx::Setting tree(root);
 
-  //tree.metadata.setting_type = Gamma::SettingType::stem;
+  //tree.metadata.setting_type = Qpx::SettingType::stem;
   tree.metadata.saveworthy = true;
 
-  Gamma::Setting descr = tree.get_setting(Gamma::Setting("Profile description"), Gamma::Match::id);
-  descr.metadata.setting_type = Gamma::SettingType::text;
+  Qpx::Setting descr = tree.get_setting(Qpx::Setting("Profile description"), Qpx::Match::id);
+  descr.metadata.setting_type = Qpx::SettingType::text;
   descr.metadata.writable = true;
   tree.branches.replace(descr);
 
@@ -117,7 +117,7 @@ Engine::~Engine() {
   if (!profile_path_.empty()) {
     get_all_settings();
 
-    Gamma::Setting dev_settings = pull_settings();
+    Qpx::Setting dev_settings = pull_settings();
     dev_settings.condense();
     dev_settings.strip_metadata();
 
@@ -137,11 +137,11 @@ Engine::~Engine() {
     }  
 }
 
-Gamma::Setting Engine::pull_settings() const {
+Qpx::Setting Engine::pull_settings() const {
   return settings_tree_;
 }
 
-void Engine::push_settings(const Gamma::Setting& newsettings) {
+void Engine::push_settings(const Qpx::Setting& newsettings) {
   //PL_INFO << "settings pushed";
 
   settings_tree_ = newsettings;
@@ -154,10 +154,10 @@ bool Engine::read_settings_bulk(){
     if (set.id_ == "Detectors") {
 
       //set.metadata.step = 2; //to always save
-      Gamma::Setting totaldets(total_det_num_);
+      Qpx::Setting totaldets(total_det_num_);
       totaldets.value_int = detectors_.size();
 
-      Gamma::Setting det(single_det_);
+      Qpx::Setting det(single_det_);
 
       set.branches.clear();
       set.branches.add_a(totaldets);
@@ -193,8 +193,8 @@ bool Engine::write_settings_bulk(){
   return true;
 }
 
-void Engine::rebuild_structure(Gamma::Setting &set) {
-  Gamma::Setting totaldets = set.get_setting(Gamma::Setting("Total detectors"), Gamma::Match::id);
+void Engine::rebuild_structure(Qpx::Setting &set) {
+  Qpx::Setting totaldets = set.get_setting(Qpx::Setting("Total detectors"), Qpx::Match::id);
   int oldtotal = detectors_.size();
   int newtotal = totaldets.value_int;
   if (newtotal < 0)
@@ -288,20 +288,20 @@ bool Engine::daq_running() {
   return running;
 }
 
-//bool Engine::write_detector(const Gamma::Setting &set) {
-//  if (set.metadata.setting_type != Gamma::SettingType::detector)
+//bool Engine::write_detector(const Qpx::Setting &set) {
+//  if (set.metadata.setting_type != Qpx::SettingType::detector)
 //    return false;
 
 //  if ((set.index < 0) || (set.index >= detectors_.size()))
 //    return false;
 
 //  if (detectors_[set.index].name_ != set.value_text)
-//    detectors_[set.index] = Gamma::Detector(set.value_text);
+//    detectors_[set.index] = Qpx::Detector(set.value_text);
 
 //  return true;
 //}
 
-void Engine::set_detector(int ch, Gamma::Detector det) {
+void Engine::set_detector(int ch, Qpx::Detector det) {
   if (ch < 0 || ch >= detectors_.size())
     return;
   detectors_[ch] = det;
@@ -327,14 +327,14 @@ void Engine::save_optimization() {
 
   for (int i = start; i <= stop; i++) {
     //PL_DBG << "Saving optimization channel " << i << " settings for " << detectors_[i].name_;
-    detectors_[i].settings_ = Gamma::Setting();
+    detectors_[i].settings_ = Qpx::Setting();
     detectors_[i].settings_.indices.insert(i);
-    save_det_settings(detectors_[i].settings_, settings_tree_, Gamma::Match::indices);
+    save_det_settings(detectors_[i].settings_, settings_tree_, Qpx::Match::indices);
     if (detectors_[i].settings_.branches.size() > 0) {
-      detectors_[i].settings_.metadata.setting_type = Gamma::SettingType::stem;
+      detectors_[i].settings_.metadata.setting_type = Qpx::SettingType::stem;
       detectors_[i].settings_.id_ = "Optimization";
     } else {
-      detectors_[i].settings_.metadata.setting_type = Gamma::SettingType::none;
+      detectors_[i].settings_.metadata.setting_type = Qpx::SettingType::none;
       detectors_[i].settings_.id_.clear();
     }
 
@@ -353,36 +353,36 @@ void Engine::load_optimization() {
 void Engine::load_optimization(int i) {
   if ((i < 0) || (i >= detectors_.size()))
     return;
-  if (detectors_[i].settings_.metadata.setting_type == Gamma::SettingType::stem) {
+  if (detectors_[i].settings_.metadata.setting_type == Qpx::SettingType::stem) {
     detectors_[i].settings_.indices.clear();
     detectors_[i].settings_.indices.insert(i);
     for (auto &q : detectors_[i].settings_.branches.my_data_) {
       q.indices.clear();
       q.indices.insert(i);
-      load_det_settings(q, settings_tree_, Gamma::Match::id | Gamma::Match::indices);
+      load_det_settings(q, settings_tree_, Qpx::Match::id | Qpx::Match::indices);
     }
   }
 }
 
 
-void Engine::save_det_settings(Gamma::Setting& result, const Gamma::Setting& root, Gamma::Match flags) const {
-  if (root.metadata.setting_type == Gamma::SettingType::stem) {
+void Engine::save_det_settings(Qpx::Setting& result, const Qpx::Setting& root, Qpx::Match flags) const {
+  if (root.metadata.setting_type == Qpx::SettingType::stem) {
     for (auto &q : root.branches.my_data_)
       save_det_settings(result, q, flags);
     //PL_DBG << "maybe created stem " << stem << "/" << root.name;
-  } else if ((root.metadata.setting_type != Gamma::SettingType::detector) && root.compare(result, flags))
+  } else if ((root.metadata.setting_type != Qpx::SettingType::detector) && root.compare(result, flags))
   {
-    Gamma::Setting set(root);
+    Qpx::Setting set(root);
     //set.indices.clear();
     result.branches.add(set);
     //PL_DBG << "saved setting " << stem << "/" << root.name;
   }
 }
 
-void Engine::load_det_settings(Gamma::Setting det, Gamma::Setting& root, Gamma::Match flags) {
-  if ((root.metadata.setting_type == Gamma::SettingType::none) || det.id_.empty())
+void Engine::load_det_settings(Qpx::Setting det, Qpx::Setting& root, Qpx::Match flags) {
+  if ((root.metadata.setting_type == Qpx::SettingType::none) || det.id_.empty())
     return;
-  if (root.metadata.setting_type == Gamma::SettingType::stem) {
+  if (root.metadata.setting_type == Qpx::SettingType::stem) {
     //PL_DBG << "comparing stem for " << det.name << " vs " << root.name;
     for (auto &q : root.branches.my_data_)
       load_det_settings(det, q, flags);
@@ -394,7 +394,7 @@ void Engine::load_det_settings(Gamma::Setting det, Gamma::Setting& root, Gamma::
   }
 }
 
-void Engine::set_setting(Gamma::Setting address, Gamma::Match flags) {
+void Engine::set_setting(Qpx::Setting address, Qpx::Match flags) {
   settings_tree_.push_one_setting(address, settings_tree_, flags);
   write_settings_bulk();
   read_settings_bulk();

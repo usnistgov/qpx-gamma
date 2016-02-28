@@ -30,7 +30,7 @@
 #include "spectra_set.h"
 #include <boost/algorithm/string.hpp>
 
-DialogDetector::DialogDetector(Gamma::Detector mydet, QDir rd, bool editName, QWidget *parent) :
+DialogDetector::DialogDetector(Qpx::Detector mydet, QDir rd, bool editName, QWidget *parent) :
   root_dir_(rd),
   my_detector_(mydet),
   table_nrgs_(my_detector_.energy_calibrations_, false),
@@ -100,7 +100,7 @@ DialogDetector::~DialogDetector()
 }
 
 void DialogDetector::updateDisplay() {
-  if (my_detector_.name_ != Gamma::Detector().name_)
+  if (my_detector_.name_ != Qpx::Detector().name_)
     ui->lineName->setText(QString::fromStdString(my_detector_.name_));
   else
     ui->lineName->clear();
@@ -141,7 +141,7 @@ void DialogDetector::on_comboType_currentIndexChanged(const QString &arg1)
 
 void DialogDetector::on_buttonBox_accepted()
 {
-  if (my_detector_.name_ == Gamma::Detector().name_) {
+  if (my_detector_.name_ == Qpx::Detector().name_) {
     QMessageBox msgBox;
     msgBox.setText("Please give it a proper name");
     msgBox.exec();
@@ -176,9 +176,9 @@ void DialogDetector::on_pushRead1D_clicked()
 
   Qpx::Spectrum::Spectrum* newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_file(fileName.toStdString());
   if (newSpectrum != nullptr) {
-    std::vector<Gamma::Detector> dets = newSpectrum->metadata().detectors;
+    std::vector<Qpx::Detector> dets = newSpectrum->metadata().detectors;
     for (auto &q : dets)
-      if (q != Gamma::Detector()) {
+      if (q != Qpx::Detector()) {
         PL_INFO << "Looking at calibrations from detector " << q.name_;
         for (auto &p : q.energy_calibrations_.my_data_) {
           if (p.bits_) {
@@ -231,13 +231,13 @@ void DialogDetector::on_pushRemoveGain_clicked()
 
 void DialogDetector::on_pushClearFWHM_clicked()
 {
-  my_detector_.fwhm_calibration_ = Gamma::Calibration();
+  my_detector_.fwhm_calibration_ = Qpx::Calibration();
   updateDisplay();
 }
 
 void DialogDetector::on_pushClearEfficiency_clicked()
 {
-  my_detector_.efficiency_calibration_ = Gamma::Calibration();
+  my_detector_.efficiency_calibration_ = Qpx::Calibration();
   updateDisplay();
 }
 
@@ -430,7 +430,7 @@ WidgetDetectors::WidgetDetectors(QWidget *parent) :
 
 }
 
-void WidgetDetectors::setData(XMLableDB<Gamma::Detector> &newdb, QString outdir) {
+void WidgetDetectors::setData(XMLableDB<Qpx::Detector> &newdb, QString outdir) {
   table_model_.setDB(newdb);
   detectors_ = &newdb;
   root_dir_  = outdir;
@@ -468,8 +468,8 @@ void WidgetDetectors::toggle_push() {
 
 void WidgetDetectors::on_pushNew_clicked()
 {
-  DialogDetector* newDet = new DialogDetector(Gamma::Detector(), QDir(root_dir_), true, this);
-  connect(newDet, SIGNAL(newDetReady(Gamma::Detector)), this, SLOT(addNewDet(Gamma::Detector)));
+  DialogDetector* newDet = new DialogDetector(Qpx::Detector(), QDir(root_dir_), true, this);
+  connect(newDet, SIGNAL(newDetReady(Qpx::Detector)), this, SLOT(addNewDet(Qpx::Detector)));
   newDet->exec();
 }
 
@@ -481,7 +481,7 @@ void WidgetDetectors::on_pushEdit_clicked()
   int i = ixl.front().row();
 
   DialogDetector* newDet = new DialogDetector(detectors_->get(i), QDir(root_dir_), false, this);
-  connect(newDet, SIGNAL(newDetReady(Gamma::Detector)), this, SLOT(addNewDet(Gamma::Detector)));
+  connect(newDet, SIGNAL(newDetReady(Qpx::Detector)), this, SLOT(addNewDet(Qpx::Detector)));
   newDet->exec();
 }
 
@@ -526,7 +526,7 @@ void WidgetDetectors::on_pushExport_clicked()
   }
 }
 
-void WidgetDetectors::addNewDet(Gamma::Detector newDetector) {
+void WidgetDetectors::addNewDet(Qpx::Detector newDetector) {
   detectors_->add(newDetector);
   detectors_->replace(newDetector);
   selection_model_.reset();

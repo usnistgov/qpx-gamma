@@ -120,8 +120,8 @@ bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destin
     return false;
   }
 
-  Gamma::Detector detector1;
-  Gamma::Detector detector2;
+  Qpx::Detector detector1;
+  Qpx::Detector detector2;
 
   if (md.detectors.size() > 1) {
     detector1 = md.detectors[0];
@@ -131,7 +131,7 @@ bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destin
     return false;
   }
 
-  Gamma::Calibration gain_match_cali = detector2.get_gain_match(md.bits, detector1.name_);
+  Qpx::Calibration gain_match_cali = detector2.get_gain_match(md.bits, detector1.name_);
 
   if (gain_match_cali.to_ == detector1.name_)
     PL_INFO << "<symmetrize> using gain match calibration from " << detector2.name_ << " to " << detector1.name_ << " " << gain_match_cali.to_string();
@@ -181,8 +181,8 @@ bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destin
 
   for (auto &p : md.detectors) {
     if (p.shallow_equals(detector1) || p.shallow_equals(detector2)) {
-      p = Gamma::Detector(detector1.name_ + std::string("*") + detector2.name_);
-      p.energy_calibrations_.add(detector1.energy_calibrations_.get(Gamma::Calibration("Energy", md.bits)));
+      p = Qpx::Detector(detector1.name_ + std::string("*") + detector2.name_);
+      p.energy_calibrations_.add(detector1.energy_calibrations_.get(Qpx::Calibration("Energy", md.bits)));
     }
   }
 

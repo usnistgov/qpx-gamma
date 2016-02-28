@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::DaqDevice abstract class
+ *      Qpx::DaqDevice abstract class
  *
  ******************************************************************************/
 
@@ -35,9 +35,9 @@ namespace Qpx {
       return false;
 
     for (pugi::xml_node node : root.children()) {
-      if (node.name() && (std::string(node.name()) == Gamma::SettingMeta().xml_element_name())) {
-        Gamma::SettingMeta newset(node);
-        if (newset != Gamma::SettingMeta())
+      if (node.name() && (std::string(node.name()) == SettingMeta().xml_element_name())) {
+        SettingMeta newset(node);
+        if (newset != SettingMeta())
           setting_definitions_[newset.id_] = newset;
       }
     }

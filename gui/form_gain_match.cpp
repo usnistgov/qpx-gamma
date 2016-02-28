@@ -27,7 +27,7 @@
 #include "fityk.h"
 
 
-FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableDB<Gamma::Detector>& detectors, QWidget *parent) :
+FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableDB<Qpx::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormGainMatch),
   gm_runner_thread_(thread),
@@ -115,7 +115,7 @@ void FormGainMatch::update_settings() {
   ui->comboTarget->clear();
 
   //should come from other thread?
-  std::vector<Gamma::Detector> chans = Qpx::Engine::getInstance().get_detectors();
+  std::vector<Qpx::Detector> chans = Qpx::Engine::getInstance().get_detectors();
 
   for (int i=0; i < chans.size(); ++i) {
     QString text = "[" + QString::number(i) + "] "
@@ -194,12 +194,12 @@ void FormGainMatch::do_run()
   int optchan = ui->comboTarget->currentData().toInt();
   emit toggleIO(false);
 
-  Gamma::Setting gain_setting(current_setting_);
+  Qpx::Setting gain_setting(current_setting_);
   gain_setting.indices.clear();
   gain_setting.indices.insert(optchan);
 
   Qpx::Engine::getInstance().get_all_settings();
-  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
+  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Qpx::Match::id | Qpx::Match::indices);
   double old_gain = gain_setting.value_dbl;
 
 
@@ -217,9 +217,9 @@ void FormGainMatch::do_run()
     gm_spectra_.delete_spectrum("Optimizing");
   }
 
-  Gamma::Setting set_gain("Gain");
+  Qpx::Setting set_gain("Gain");
   set_gain.value_dbl = old_gain;
-  Gamma::Setting set_pass("Pass");
+  Qpx::Setting set_pass("Pass");
   set_pass.value_int = current_pass;
   optimizing_.generic_attributes.replace(set_gain);
   optimizing_.generic_attributes.replace(set_pass);
@@ -240,7 +240,7 @@ void FormGainMatch::do_run()
 
 
   gains.push_back(old_gain);
-  peaks_.push_back(Gamma::Peak());
+  peaks_.push_back(Qpx::Peak());
   ui->tableResults->setRowCount(peaks_.size());
 
   gm_runner_thread_.do_run(gm_spectra_, gm_interruptor_, 0);
@@ -345,16 +345,16 @@ void FormGainMatch::do_post_processing() {
   }
 
   int optchan = ui->comboTarget->currentData().toInt();
-  Gamma::Setting gain_setting(current_setting_);
+  Qpx::Setting gain_setting(current_setting_);
   gain_setting.indices.clear();
   gain_setting.indices.insert(optchan);
 
-  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
+  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Qpx::Match::id | Qpx::Match::indices);
   gain_setting.value_dbl = new_gain;
 
-  Qpx::Engine::getInstance().set_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
+  Qpx::Engine::getInstance().set_setting(gain_setting, Qpx::Match::id | Qpx::Match::indices);
   QThread::sleep(2);
-  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
+  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Qpx::Match::id | Qpx::Match::indices);
   new_gain = gain_setting.value_dbl;
 
 
@@ -399,8 +399,8 @@ void FormGainMatch::update_fits() {
 
 
 void FormGainMatch::update_peak_selection(std::set<double> dummy) {
-  peak_ref_ = Gamma::Peak();
-  peak_opt_ = Gamma::Peak();
+  peak_ref_ = Qpx::Peak();
+  peak_opt_ = Qpx::Peak();
 
   std::set<double> selref = ui->plotRef->get_selected_peaks();
   std::set<double> selopt = ui->plotOpt->get_selected_peaks();
@@ -419,8 +419,8 @@ void FormGainMatch::update_peak_selection(std::set<double> dummy) {
     return;
 
 
-  Gamma::Setting set_gain("Gain");
-  Gamma::Setting set_pass("Pass");
+  Qpx::Setting set_gain("Gain");
+  Qpx::Setting set_pass("Pass");
   double gain = fitter_opt_.metadata_.attributes.get(set_gain).value_dbl;
   int    pass = fitter_opt_.metadata_.attributes.get(set_pass).value_int;
 
@@ -523,7 +523,7 @@ void FormGainMatch::on_comboTarget_currentIndexChanged(int index)
 {
   int optchan = ui->comboTarget->currentData().toInt();
 
-  std::vector<Gamma::Detector> chans = Qpx::Engine::getInstance().get_detectors();
+  std::vector<Qpx::Detector> chans = Qpx::Engine::getInstance().get_detectors();
 
   ui->comboSetting->clear();
   if (optchan < chans.size()) {
@@ -542,12 +542,12 @@ void FormGainMatch::on_comboSetting_activated(int index)
   int optchan = ui->comboTarget->currentData().toInt();
   current_setting_ = ui->comboSetting->currentText().toStdString();
 
-  Gamma::Setting gain_setting(current_setting_);
+  Qpx::Setting gain_setting(current_setting_);
   gain_setting.indices.clear();
   gain_setting.indices.insert(optchan);
 
 
-  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Gamma::Match::id | Gamma::Match::indices);
+  gain_setting = Qpx::Engine::getInstance().pull_settings().get_setting(gain_setting, Qpx::Match::id | Qpx::Match::indices);
 
   ui->doubleSpinDeltaV->setValue(gain_setting.metadata.step * 10);
 }

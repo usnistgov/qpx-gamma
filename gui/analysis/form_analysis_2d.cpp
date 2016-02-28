@@ -28,7 +28,7 @@
 #include <QInputDialog>
 
 
-FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent) :
+FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormAnalysis2D),
   detectors_(newDetDB),
@@ -137,7 +137,7 @@ void FormAnalysis2D::initialize() {
       ui->plotMatrix->setSpectra(*spectra_, current_spectrum_);
       ui->plotMatrix->update_plot();
 
-      bool symmetrized = (md.attributes.get(Gamma::Setting("symmetrized")).value_int != 0);
+      bool symmetrized = (md.attributes.get(Qpx::Setting("symmetrized")).value_int != 0);
     }
   }
 
@@ -163,7 +163,7 @@ void FormAnalysis2D::update_peaks() {
   yy.visible = false;
 
   if (my_gates_->isVisible()) {
-    Gamma::Gate gate = my_gates_->current_gate();
+    Qpx::Gate gate = my_gates_->current_gate();
     //PL_DBG << "remake gate c=" << gate.centroid_chan << " w=" << gate.width_chan;
 
     if (gate.centroid_chan != -1) {

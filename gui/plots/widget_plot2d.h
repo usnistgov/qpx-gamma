@@ -40,7 +40,7 @@ public:
   ~WidgetPlot2D();
 
   void update_plot(uint64_t size, std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data);
-  void set_axes(Gamma::Calibration cal_x, Gamma::Calibration cal_y, int bits);
+  void set_axes(Qpx::Calibration cal_x, Qpx::Calibration cal_y, int bits);
   void refresh();
   void replot_markers();
   void reset_content();
@@ -105,7 +105,7 @@ private:
   bool show_labels_, antialiased_;
 
   //scaling
-  Gamma::Calibration calib_x_, calib_y_;
+  Qpx::Calibration calib_x_, calib_y_;
   int bits_;
 
   void build_menu();

@@ -44,17 +44,17 @@ public:
     new_temp.input_types = {"m4b", "mat"};
     new_temp.description = "2-dimensional coincidence matrix";
 
-    Gamma::Setting buf;
+    Qpx::Setting buf;
     buf.id_ = "buffered";
-    buf.metadata.setting_type = Gamma::SettingType::boolean;
+    buf.metadata.setting_type = Qpx::SettingType::boolean;
     buf.metadata.unit = "T/F";
     buf.metadata.description = "Buffered output for efficient plotting (more memory)";
     buf.metadata.writable = true;
     new_temp.generic_attributes.add(buf);
 
-    Gamma::Setting sym;
+    Qpx::Setting sym;
     sym.id_ = "symmetrized";
-    sym.metadata.setting_type = Gamma::SettingType::boolean;
+    sym.metadata.setting_type = Qpx::SettingType::boolean;
     sym.metadata.unit = "T/F";
     sym.metadata.description = "Matrix is symmetrized";
     sym.metadata.writable = false;
@@ -72,11 +72,11 @@ protected:
   void init_from_file(std::string filename);
 
   std::string my_type() const override {return "2D";}
-  XMLableDB<Gamma::Setting> default_settings() const override {return this->get_template().generic_attributes; }
+  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().generic_attributes; }
 
   PreciseFloat _get_count(std::initializer_list<uint16_t> list ) const;
   std::unique_ptr<EntryList> _get_spectrum(std::initializer_list<Pair> list);
-  void _set_detectors(const std::vector<Gamma::Detector>& dets) override;
+  void _set_detectors(const std::vector<Qpx::Detector>& dets) override;
 
   void addEvent(const Event&) override;
   void _add_bulk(const Entry&) override;

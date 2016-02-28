@@ -42,9 +42,9 @@ class TableProfiles : public QAbstractTableModel
 {
   Q_OBJECT
 private:
-  std::vector<Gamma::Setting> &profiles_;
+  std::vector<Qpx::Setting> &profiles_;
 public:
-  TableProfiles(std::vector<Gamma::Setting>& pf, QObject *parent = 0): QAbstractTableModel(parent), profiles_(pf) {}
+  TableProfiles(std::vector<Qpx::Setting>& pf, QObject *parent = 0): QAbstractTableModel(parent), profiles_(pf) {}
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
   int columnCount(const QModelIndex &parent = QModelIndex()) const;
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -71,7 +71,7 @@ private:
 
   QSettings &settings_;
 
-  std::vector<Gamma::Setting> profiles_;
+  std::vector<Qpx::Setting> profiles_;
 
   TableProfiles table_model_;
   QItemSelectionModel selection_model_;
@@ -85,7 +85,7 @@ private slots:
   void on_pushEdit_clicked();
   void on_pushDelete_clicked();
 
-  void addNewDet(Gamma::Detector);
+  void addNewDet(Qpx::Detector);
   void selection_changed(QItemSelection,QItemSelection);
   void selection_double_clicked(QModelIndex);
   void toggle_push();

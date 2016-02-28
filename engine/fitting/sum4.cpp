@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::SUM4
+ *      Qpx::SUM4
  *
  ******************************************************************************/
 
@@ -24,7 +24,7 @@
 #include <cmath>
 #include "custom_logger.h"
 
-namespace Gamma {
+namespace Qpx {
 
 SUM4Edge::SUM4Edge(const std::vector<double> &y, uint32_t left, uint32_t right)
   : SUM4Edge()

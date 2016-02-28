@@ -43,7 +43,7 @@ struct Trace {
   int index;
   std::vector<uint16_t> data;
   double timescale;
-  Gamma::Detector detector;
+  Qpx::Detector detector;
 };
 
 
@@ -69,21 +69,21 @@ public:
   void getMca(uint64_t timeout, SpectraSet &spectra, boost::atomic<bool> &interruptor);
 
   //detectors
-  std::vector<Gamma::Detector> get_detectors() const {return detectors_;}
-  void set_detector(int, Gamma::Detector);
+  std::vector<Qpx::Detector> get_detectors() const {return detectors_;}
+  void set_detector(int, Qpx::Detector);
 
   void save_optimization();
   void load_optimization();
   void load_optimization(int);
 
-  void set_setting(Gamma::Setting address, Gamma::Match flags);
+  void set_setting(Qpx::Setting address, Qpx::Match flags);
 
   /////SETTINGS/////
-  Gamma::Setting pull_settings() const;
-  void push_settings(const Gamma::Setting&);
+  Qpx::Setting pull_settings() const;
+  void push_settings(const Qpx::Setting&);
   bool write_settings_bulk();
   bool read_settings_bulk();
-//  bool write_detector(const Gamma::Setting &set);
+//  bool write_detector(const Qpx::Setting &set);
   
   void get_all_settings();
   
@@ -101,14 +101,14 @@ protected:
 
   std::map<std::string, DaqDevice*> devices_;  //use shared pointer instead
 
-  Gamma::Setting settings_tree_;
-  Gamma::SettingMeta total_det_num_, single_det_;
+  Qpx::Setting settings_tree_;
+  Qpx::SettingMeta total_det_num_, single_det_;
 
-  std::vector<Gamma::Detector> detectors_;
+  std::vector<Qpx::Detector> detectors_;
 
-  void save_det_settings(Gamma::Setting&, const Gamma::Setting&, Gamma::Match flags) const;
-  void load_det_settings(Gamma::Setting, Gamma::Setting&, Gamma::Match flags);
-  void rebuild_structure(Gamma::Setting &set);
+  void save_det_settings(Qpx::Setting&, const Qpx::Setting&, Qpx::Match flags) const;
+  void load_det_settings(Qpx::Setting, Qpx::Setting&, Qpx::Match flags);
+  void rebuild_structure(Qpx::Setting &set);
 
   //threads
   void worker_MCA(SynchronizedQueue<Spill*>* data_queue, SpectraSet* spectra);

@@ -33,7 +33,7 @@ namespace Spectrum {
 
 static Registrar<Spectrum1D> registrar("1D");
 
-void Spectrum1D::_set_detectors(const std::vector<Gamma::Detector>& dets) {
+void Spectrum1D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
   metadata_.detectors.clear();
 
   if (dets.size() == 1)
@@ -42,7 +42,7 @@ void Spectrum1D::_set_detectors(const std::vector<Gamma::Detector>& dets) {
     int total = metadata_.add_pattern.size();
     if (dets.size() < total)
       total = dets.size();
-    metadata_.detectors.resize(1, Gamma::Detector());
+    metadata_.detectors.resize(1, Qpx::Detector());
 
     for (int i=0; i < total; ++i) {
       if (metadata_.add_pattern[i]) {
@@ -368,9 +368,9 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
   metadata_.max_count = 0;
 
   metadata_.detectors.resize(1);
-  metadata_.detectors[0] = Gamma::Detector();
+  metadata_.detectors[0] = Qpx::Detector();
   metadata_.detectors[0].name_ = "unknown";
-  Gamma::Calibration new_calib("Energy", metadata_.bits);
+  Qpx::Calibration new_calib("Energy", metadata_.bits);
   new_calib.coefficients_ = calibration;
   new_calib.units_ = "keV";
   metadata_.detectors[0].energy_calibrations_.add(new_calib);
@@ -398,7 +398,7 @@ bool Spectrum1D::read_tka(std::string name) {
     return false;
 
   metadata_.detectors.resize(1);
-  metadata_.detectors[0] = Gamma::Detector();
+  metadata_.detectors[0] = Qpx::Detector();
   metadata_.detectors[0].name_ = "unknown";
   
   init_from_file(name);
@@ -494,7 +494,7 @@ bool Spectrum1D::read_spe_radware(std::string name) {
   }
 
   metadata_.detectors.resize(1);
-  metadata_.detectors[0] = Gamma::Detector();
+  metadata_.detectors[0] = Qpx::Detector();
   metadata_.detectors[0].name_ = "unknown";
 
   init_from_file(name);
@@ -630,14 +630,14 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
   }
 
 
-  Gamma::Calibration enc("Energy", metadata_.bits, "keV");
+  Qpx::Calibration enc("Energy", metadata_.bits, "keV");
   enc.coef_from_string(mcacal);
 
-  Gamma::Calibration fwc("FWHM", metadata_.bits, "keV");
+  Qpx::Calibration fwc("FWHM", metadata_.bits, "keV");
   fwc.coef_from_string(shapecal);
 
 
-  Gamma::Detector det(detname);
+  Qpx::Detector det(detname);
   det.energy_calibrations_.add(enc);
   det.fwhm_calibration_ = fwc;
 
@@ -767,7 +767,7 @@ bool Spectrum1D::read_n42(std::string filename) {
   if (!this->channels_from_string(channeldata, true)) //assume compressed
     return false;
 
-  Gamma::Detector newdet;
+  Qpx::Detector newdet;
   newdet.name_ = "unknown";
   if (node.attribute("Detector"))
     newdet.name_ = std::string(node.attribute("Detector").value());
@@ -776,7 +776,7 @@ bool Spectrum1D::read_n42(std::string filename) {
 
   //have more claibrations? fwhm,etc..
   if (node.child("Calibration")) {
-    Gamma::Calibration newcalib;
+    Qpx::Calibration newcalib;
     newcalib.from_xml(node.child("Calibration"));
     newcalib.bits_ = metadata_.bits;
     newdet.energy_calibrations_.add(newcalib);
@@ -841,16 +841,16 @@ bool Spectrum1D::read_ava(std::string filename) {
   if(!this->channels_from_string(channeldata, false))
     return false;
 
-  Gamma::Detector newdet;
+  Qpx::Detector newdet;
   for (auto &q : root.children("calibration_details")) {
     if ((std::string(q.attribute("type").value()) != "energy") ||
         !q.child("model"))
       continue;
 
-    Gamma::Calibration newcalib("Energy", metadata_.bits);
+    Qpx::Calibration newcalib("Energy", metadata_.bits);
 
     if (std::string(q.child("model").attribute("type").value()) == "polynomial")
-      newcalib.model_ = Gamma::CalibrationModel::polynomial;
+      newcalib.model_ = Qpx::CalibrationModel::polynomial;
 
     std::vector<double> encalib;
     for (auto &p : q.child("model").children("coefficient")) {
@@ -889,9 +889,9 @@ void Spectrum1D::write_n42(std::string filename) const {
   pugi::xml_node root = doc.append_child();
 
   std::stringstream durationdata;
-  Gamma::Calibration myCalibration;
-  if (metadata_.detectors[0].energy_calibrations_.has_a(Gamma::Calibration("Energy", metadata_.bits)))
-    myCalibration = metadata_.detectors[0].energy_calibrations_.get(Gamma::Calibration("Energy", metadata_.bits));
+  Qpx::Calibration myCalibration;
+  if (metadata_.detectors[0].energy_calibrations_.has_a(Qpx::Calibration("Energy", metadata_.bits)))
+    myCalibration = metadata_.detectors[0].energy_calibrations_.get(Qpx::Calibration("Energy", metadata_.bits));
   else if ((metadata_.detectors[0].energy_calibrations_.size() == 1) &&
            (metadata_.detectors[0].energy_calibrations_.get(0).valid()))
     myCalibration = metadata_.detectors[0].energy_calibrations_.get(0);

@@ -120,13 +120,13 @@ bool QpxVmePlugin::daq_running() {
 }
 
 
-bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
+bool QpxVmePlugin::read_settings_bulk(Qpx::Setting &set) const {
   if (set.id_ != device_name())
     return false;
 
   for (auto &q : set.branches.my_data_) {
-    if (q.metadata.setting_type == Gamma::SettingType::stem) {
-      if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "VME/ControllerID")) {
+    if (q.metadata.setting_type == Qpx::SettingType::stem) {
+      if ((q.metadata.setting_type == Qpx::SettingType::text) && (q.id_ == "VME/ControllerID")) {
         q.metadata.writable = (!(status_ & DeviceStatus::booted));
       } else if (modules_.count(q.id_) && modules_.at(q.id_)) {
         modules_.at(q.id_)->read_settings_bulk(q);
@@ -145,12 +145,12 @@ bool QpxVmePlugin::read_settings_bulk(Gamma::Setting &set) const {
   return true;
 }
 
-void QpxVmePlugin::rebuild_structure(Gamma::Setting &set) {
+void QpxVmePlugin::rebuild_structure(Qpx::Setting &set) {
 
 }
 
 
-bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
+bool QpxVmePlugin::write_settings_bulk(Qpx::Setting &set) {
   if (set.id_ != device_name())
     return false;
 
@@ -165,10 +165,10 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
     device_types.insert(q);
 
   for (auto &q : set.branches.my_data_) {
-    if ((q.metadata.setting_type == Gamma::SettingType::text) && (q.id_ == "VME/ControllerID")) {
+    if ((q.metadata.setting_type == Qpx::SettingType::text) && (q.id_ == "VME/ControllerID")) {
       if (!(status_ & DeviceStatus::booted))
         controller_name_ = q.value_text;
-    } else if (q.metadata.setting_type == Gamma::SettingType::stem) {
+    } else if (q.metadata.setting_type == Qpx::SettingType::stem) {
 //      PL_DBG << "<VmePlugin> looking at " << q.id_;
       if (modules_.count(q.id_) && modules_[q.id_]) {
         modules_[q.id_]->write_settings_bulk(q);
@@ -183,7 +183,7 @@ bool QpxVmePlugin::write_settings_bulk(Gamma::Setting &set) {
             if (controller_ && (controller_->readIrqMask() != k.value_int))
               controller_->writeIrqMask(k.value_int);
           } else {
-            Gamma::Setting s = k;
+            Qpx::Setting s = k;
             if (s.metadata.writable && read_register(s) && (s != k)) {
               PL_DBG << "VmUsb register write " << k.id_;
               write_register(k);
@@ -291,7 +291,7 @@ void QpxVmePlugin::get_all_settings() {
 }
 
 
-bool QpxVmePlugin::read_register(Gamma::Setting& set) const {
+bool QpxVmePlugin::read_register(Qpx::Setting& set) const {
   if (!(status_ & Qpx::DeviceStatus::booted))
     return false;
   if (set.metadata.address < 0)
@@ -299,9 +299,9 @@ bool QpxVmePlugin::read_register(Gamma::Setting& set) const {
 
   int wordsize = 0;
 
-  if ((set.metadata.setting_type == Gamma::SettingType::binary)
-       || (set.metadata.setting_type == Gamma::SettingType::integer)
-       || (set.metadata.setting_type == Gamma::SettingType::int_menu))
+  if ((set.metadata.setting_type == Qpx::SettingType::binary)
+       || (set.metadata.setting_type == Qpx::SettingType::integer)
+       || (set.metadata.setting_type == Qpx::SettingType::int_menu))
   {
     if (set.metadata.flags.count("u32")) {
       long data = controller_->readRegister(set.metadata.address);
@@ -319,7 +319,7 @@ bool QpxVmePlugin::read_register(Gamma::Setting& set) const {
   return false;
 }
 
-bool QpxVmePlugin::write_register(Gamma::Setting& set) {
+bool QpxVmePlugin::write_register(Qpx::Setting& set) {
   if (!(status_ & Qpx::DeviceStatus::booted))
     return false;
 
@@ -328,9 +328,9 @@ bool QpxVmePlugin::write_register(Gamma::Setting& set) {
 
   int wordsize = 0;
 
-  if ((set.metadata.setting_type == Gamma::SettingType::binary)
-       || (set.metadata.setting_type == Gamma::SettingType::integer)
-       || (set.metadata.setting_type == Gamma::SettingType::int_menu))
+  if ((set.metadata.setting_type == Qpx::SettingType::binary)
+       || (set.metadata.setting_type == Qpx::SettingType::integer)
+       || (set.metadata.setting_type == Qpx::SettingType::int_menu))
   {
     if (set.metadata.flags.count("u32")) {
       long data = set.value_int;

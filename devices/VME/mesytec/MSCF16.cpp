@@ -38,15 +38,15 @@ MSCF16::~MSCF16() {
   die();
 }
 
-void MSCF16::rebuild_structure(Gamma::Setting &set) {
-  Gamma::Setting group("VME/MesytecRC/MSCF16/Group");
+void MSCF16::rebuild_structure(Qpx::Setting &set) {
+  Qpx::Setting group("VME/MesytecRC/MSCF16/Group");
   group.enrich(setting_definitions_, true);
-  Gamma::Setting chan("VME/MesytecRC/MSCF16/Channel");
+  Qpx::Setting chan("VME/MesytecRC/MSCF16/Channel");
   chan.enrich(setting_definitions_, true);
 
-  std::vector<Gamma::Setting> groups;
+  std::vector<Qpx::Setting> groups;
   for (auto &k : set.branches.my_data_)
-    if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/MesytecRC/MSCF16/Group"))
+    if ((k.metadata.setting_type == Qpx::SettingType::stem) && (k.id_ == "VME/MesytecRC/MSCF16/Group"))
       groups.push_back(k);
 
   while (groups.size() < 4)
@@ -56,12 +56,12 @@ void MSCF16::rebuild_structure(Gamma::Setting &set) {
 
   int i=0;
   for (auto &gr : groups) {
-    std::vector<Gamma::Setting> channels;
+    std::vector<Qpx::Setting> channels;
     std::set<int32_t> indices;
 
     gr.metadata.name += " " + std::to_string(i+1);
     for (auto &k : gr.branches.my_data_) {
-      if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/MesytecRC/MSCF16/Channel"))
+      if ((k.metadata.setting_type == Qpx::SettingType::stem) && (k.id_ == "VME/MesytecRC/MSCF16/Channel"))
         channels.push_back(k);
       else
         k.metadata.address += i;
@@ -98,7 +98,7 @@ void MSCF16::rebuild_structure(Gamma::Setting &set) {
     gr.indices = indices;
 
     for (auto &k : gr.branches.my_data_) {
-      if (k.metadata.setting_type != Gamma::SettingType::stem)
+      if (k.metadata.setting_type != Qpx::SettingType::stem)
         k.indices = indices;
     }
 

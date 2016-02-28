@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::Calibration defines calibration with units and math model
+ *      Qpx::Calibration defines calibration with units and math model
  *
  ******************************************************************************/
 
@@ -35,7 +35,7 @@
 #include "effit.h"
 #include "sqrt_poly.h"
 
-namespace Gamma {
+namespace Qpx {
 
 Calibration::Calibration() {
   calib_date_ = boost::posix_time::microsec_clock::universal_time();

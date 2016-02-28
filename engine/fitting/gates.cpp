@@ -16,14 +16,14 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::Fitter
+ *      Qpx::Fitter
  *
  ******************************************************************************/
 
 #include "gates.h"
 #include "custom_logger.h"
 
-namespace Gamma {
+namespace Qpx {
 
 
 

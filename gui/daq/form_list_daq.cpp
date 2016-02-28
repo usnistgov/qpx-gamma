@@ -123,12 +123,12 @@ void FormListDaq::displayTraces()
   if (trace_length > 0) {
     QVector<double> x(trace_length), y(trace_length);
     int chan = list_data_->hits[chosen_trace].source_channel;
-    Gamma::Detector this_det;
+    Qpx::Detector this_det;
 
     if ((chan > -1) && (chan < list_data_->run.detectors.size()))
       this_det = list_data_->run.detectors[chan];
 
-    Gamma::Calibration this_calibration = this_det.best_calib(16);
+    Qpx::Calibration this_calibration = this_det.best_calib(16);
 
     for (std::size_t j=0; j<trace_length; j++) {
       x[j] = j;
@@ -230,7 +230,7 @@ QVariant TableListData::data(const QModelIndex &index, int role) const
 //    case 2:
 //      return QVariant::fromValue(QpxPattern(mystuff->hits[index.row()].pattern, false));
     case 2:
-      Gamma::Calibration cal;
+      Qpx::Calibration cal;
       Qpx::DigitizedVal en = mystuff->hits[row].energy;
       double energy = en.val(en.bits());
       if ((chan > -1) && (chan < dets_.size())) {

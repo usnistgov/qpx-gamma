@@ -40,7 +40,7 @@ class FormGainMatch : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormGainMatch(ThreadRunner&, QSettings&, XMLableDB<Gamma::Detector>&, QWidget *parent = 0);
+  explicit FormGainMatch(ThreadRunner&, QSettings&, XMLableDB<Qpx::Detector>&, QWidget *parent = 0);
   void update_settings();
   ~FormGainMatch();
 
@@ -82,14 +82,14 @@ private:
   Qpx::Spectrum::Template reference_, optimizing_;
 
   ThreadRunner         &gm_runner_thread_;
-  XMLableDB<Gamma::Detector> &detectors_;
+  XMLableDB<Qpx::Detector> &detectors_;
   QSettings &settings_;
 
   ThreadPlotSignal     gm_plot_thread_;
   boost::atomic<bool>  gm_interruptor_;
 
   std::vector<double> gains, deltas;
-  std::vector<Gamma::Peak> peaks_;
+  std::vector<Qpx::Peak> peaks_;
 
   bool my_run_;
 
@@ -102,8 +102,8 @@ private:
 
   std::string current_setting_;
 
-  Gamma::Fitter fitter_ref_, fitter_opt_;
-  Gamma::Peak peak_ref_, peak_opt_;
+  Qpx::Fitter fitter_ref_, fitter_opt_;
+  Qpx::Peak peak_ref_, peak_opt_;
 
 };
 

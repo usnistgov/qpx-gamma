@@ -40,7 +40,7 @@ class FormEfficiencyCalibration : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormEfficiencyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent = 0);
+  explicit FormEfficiencyCalibration(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
   ~FormEfficiencyCalibration();
 
   void setDetector(Qpx::SpectraSet *newset, QString detector);
@@ -97,11 +97,11 @@ private:
   Ui::FormEfficiencyCalibration *ui;
   QSettings &settings_;
 
-  std::map<std::string, Gamma::Fitter> peak_sets_;
+  std::map<std::string, Qpx::Fitter> peak_sets_;
   std::set<double> selected_peaks_;
   std::set<double> falgged_peaks_;
 
-  Gamma::Fitter fit_data_;
+  Qpx::Fitter fit_data_;
 
   QString mca_load_formats_;  //valid mca file formats that can be opened
 
@@ -112,15 +112,15 @@ private:
   Qpx::SpectraSet          *spectra_;
   std::string current_detector_;
 
-  XMLableDB<Gamma::Detector> &detectors_;
+  XMLableDB<Qpx::Detector> &detectors_;
 
 
   void loadSettings();
   void saveSettings();
 
-  Gamma::Calibration new_calibration_;
+  Qpx::Calibration new_calibration_;
   AppearanceProfile style_fit, style_pts;
-  void add_peak_to_table(const Gamma::Peak &, int, QColor);
+  void add_peak_to_table(const Qpx::Peak &, int, QColor);
   void select_in_table();
 };
 

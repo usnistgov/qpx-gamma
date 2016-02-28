@@ -27,28 +27,28 @@
 #include "qt_util.h"
 #include <QDateTime>
 
-Q_DECLARE_METATYPE(Gamma::Setting)
+Q_DECLARE_METATYPE(Qpx::Setting)
 
-TreeItem::TreeItem(const Gamma::Setting &data, TreeItem *parent)
+TreeItem::TreeItem(const Qpx::Setting &data, TreeItem *parent)
 {
   parentItem = parent;
   itemData = data;
 
-  if (itemData.metadata.setting_type == Gamma::SettingType::stem) {
+  if (itemData.metadata.setting_type == Qpx::SettingType::stem) {
     childItems.resize(itemData.branches.size());
     for (int i=0; i < itemData.branches.size(); ++i)
       childItems[i] = new TreeItem(itemData.branches.get(i), this);
   }
 }
 
-bool TreeItem::eat_data(const Gamma::Setting &data) {
+bool TreeItem::eat_data(const Qpx::Setting &data) {
   itemData = data;
 
-  if (itemData.metadata.setting_type == Gamma::SettingType::stem) {
+  if (itemData.metadata.setting_type == Qpx::SettingType::stem) {
     if (itemData.branches.size() != childItems.size())
       return false;
     for (int i=0; i < itemData.branches.size(); ++i) {
-      Gamma::Setting s = itemData.branches.get(i);
+      Qpx::Setting s = itemData.branches.get(i);
       if (childItems[i]->itemData.id_ != s.id_)
         return false;
       if (!childItems[i]->eat_data(itemData.branches.get(i)))
@@ -68,7 +68,7 @@ bool TreeItem::eat_data(const Gamma::Setting &data) {
         childItems[i] = new TreeItem(itemData.branches.get(i), this);
     } else {
       for (int i=0; i < itemData.branches.size(); ++i) {
-        Gamma::Setting s = itemData.branches.get(i);
+        Qpx::Setting s = itemData.branches.get(i);
         if (childItems[i]->itemData.id_ == s.id_)
           childItems[i]->eat_data(itemData.branches.get(i));
         else {
@@ -144,7 +144,7 @@ QVariant TreeItem::display_data(int column) const
     }
     return QVariant();
   }
-  else if ((column == 2) && (itemData.metadata.setting_type != Gamma::SettingType::none) && (itemData.metadata.setting_type != Gamma::SettingType::stem))
+  else if ((column == 2) && (itemData.metadata.setting_type != Qpx::SettingType::none) && (itemData.metadata.setting_type != Qpx::SettingType::stem))
   {
     return QVariant::fromValue(itemData);
   }
@@ -184,9 +184,9 @@ bool TreeItem::is_editable(int column) const
 {
   if ((column == 1)  && (itemData.metadata.max_indices > 0))
     return true;
-  else if ((column != 2)  || (itemData.metadata.setting_type == Gamma::SettingType::stem))
+  else if ((column != 2)  || (itemData.metadata.setting_type == Qpx::SettingType::stem))
     return false;
-  else if (itemData.metadata.setting_type == Gamma::SettingType::binary)
+  else if (itemData.metadata.setting_type == Qpx::SettingType::binary)
     return true;
   else
     return ((column == 2) && (itemData.metadata.writable));
@@ -202,13 +202,13 @@ bool TreeItem::is_editable(int column) const
 
   std::string name = itemData.name;
   int start = itemData.branches.size();
-  Gamma::SettingType type = Gamma::SettingType::integer;
+  Qpx::SettingType type = Qpx::SettingType::integer;
   if (start) {
     name = itemData.branches.get(0).name;
     type = itemData.branches.get(0).metadata.setting_type;
   }
   for (int row = start; row < (start + count); ++row) {
-    Gamma::Setting newsetting;
+    Qpx::Setting newsetting;
     newsetting.name = name;
     newsetting.metadata.setting_type = type;
     itemData.branches.add(newsetting);
@@ -226,8 +226,8 @@ TreeItem *TreeItem::parent()
   return parentItem;
 }
 
-Gamma::Setting TreeItem::rebuild() {
-  Gamma::Setting root = itemData;
+Qpx::Setting TreeItem::rebuild() {
+  Qpx::Setting root = itemData;
 
   root.branches.clear();
   for (int i=0; i < childCount(); i++)
@@ -282,39 +282,39 @@ bool TreeItem::setData(int column, const QVariant &value)
     return false;
 
 
-  if (((itemData.metadata.setting_type == Gamma::SettingType::integer) ||
-       (itemData.metadata.setting_type == Gamma::SettingType::binary) ||
-       (itemData.metadata.setting_type == Gamma::SettingType::int_menu) ||
-       (itemData.metadata.setting_type == Gamma::SettingType::command))
+  if (((itemData.metadata.setting_type == Qpx::SettingType::integer) ||
+       (itemData.metadata.setting_type == Qpx::SettingType::binary) ||
+       (itemData.metadata.setting_type == Qpx::SettingType::int_menu) ||
+       (itemData.metadata.setting_type == Qpx::SettingType::command))
       && (value.canConvert(QMetaType::LongLong))) {
     //PL_DBG << "int = " << value.toLongLong();
     itemData.value_int = value.toLongLong();
   }
-  else if ((itemData.metadata.setting_type == Gamma::SettingType::boolean)
+  else if ((itemData.metadata.setting_type == Qpx::SettingType::boolean)
       && (value.type() == QVariant::Bool))
     itemData.value_int = value.toBool();
-  else if ((itemData.metadata.setting_type == Gamma::SettingType::floating)
+  else if ((itemData.metadata.setting_type == Qpx::SettingType::floating)
       && (value.type() == QVariant::Double))
     itemData.value_dbl = value.toDouble();
-  else if ((itemData.metadata.setting_type == Gamma::SettingType::floating_precise)
+  else if ((itemData.metadata.setting_type == Qpx::SettingType::floating_precise)
       && (value.type() == QVariant::Double))
     itemData.value_precise = value.toDouble();
-  else if ((itemData.metadata.setting_type == Gamma::SettingType::text)
+  else if ((itemData.metadata.setting_type == Qpx::SettingType::text)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
-  else if ((itemData.metadata.setting_type == Gamma::SettingType::file_path)
+  else if ((itemData.metadata.setting_type == Qpx::SettingType::file_path)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
-  else if ((itemData.metadata.setting_type == Gamma::SettingType::dir_path)
+  else if ((itemData.metadata.setting_type == Qpx::SettingType::dir_path)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
-  else if ((itemData.metadata.setting_type == Gamma::SettingType::detector)
+  else if ((itemData.metadata.setting_type == Qpx::SettingType::detector)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
-  else if ((itemData.metadata.setting_type == Gamma::SettingType::time)
+  else if ((itemData.metadata.setting_type == Qpx::SettingType::time)
       && (value.type() == QVariant::DateTime))
     itemData.value_time = fromQDateTime(value.toDateTime());
-  else if ((itemData.metadata.setting_type == Gamma::SettingType::time_duration)
+  else if ((itemData.metadata.setting_type == Qpx::SettingType::time_duration)
       && (value.canConvert(QMetaType::LongLong)))
     itemData.value_duration = boost::posix_time::seconds(value.toLongLong());
   else
@@ -331,7 +331,7 @@ bool TreeItem::setData(int column, const QVariant &value)
 TreeSettings::TreeSettings(QObject *parent)
   : QAbstractItemModel(parent)
 {
-  rootItem = new TreeItem(Gamma::Setting());
+  rootItem = new TreeItem(Qpx::Setting());
   show_read_only_ = true;
 }
 
@@ -363,8 +363,8 @@ QVariant TreeSettings::data(const QModelIndex &index, int role) const
   else if (role == Qt::EditRole)
     return item->edit_data(col);
   else if (role == Qt::ForegroundRole) {
-    if (item->edit_data(2).canConvert<Gamma::Setting>()) {
-      Gamma::Setting set = qvariant_cast<Gamma::Setting>(item->edit_data(2));
+    if (item->edit_data(2).canConvert<Qpx::Setting>()) {
+      Qpx::Setting set = qvariant_cast<Qpx::Setting>(item->edit_data(2));
       if ((col == 1) && (set.metadata.max_indices < 1)) {
         QBrush brush(Qt::darkGray);
         return brush;
@@ -473,8 +473,8 @@ QModelIndex TreeSettings::parent(const QModelIndex &index) const
   //PL_DBG << parentItem;
 
   //PL_DBG << "Index r" << index.row() << " c" << index.column() << " d=";
-//  if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
-//    Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+//  if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
+//    Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
 //    PL_DBG << "id=" << set.id_;
 //  }
 
@@ -513,11 +513,11 @@ bool TreeSettings::setData(const QModelIndex &index, const QVariant &value, int 
 
   if (result) {
     if (index.column() == 2) {
-      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+      Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
       data_ = rootItem->rebuild();
 
       emit dataChanged(index, index);
-      if (set.metadata.setting_type == Gamma::SettingType::detector)
+      if (set.metadata.setting_type == Qpx::SettingType::detector)
         emit detector_chosen(index.row() - 1, set.value_text);
       else
         emit tree_changed();
@@ -530,7 +530,7 @@ bool TreeSettings::setData(const QModelIndex &index, const QVariant &value, int 
   return result;
 }
 
-const Gamma::Setting & TreeSettings::get_tree() {
+const Qpx::Setting & TreeSettings::get_tree() {
   return data_;
 }
 
@@ -551,7 +551,7 @@ bool TreeSettings::setHeaderData(int section, Qt::Orientation orientation,
 }
 
 
-void TreeSettings::update(const Gamma::Setting &data) {
+void TreeSettings::update(const Qpx::Setting &data) {
   data_ = data;
   data_.cull_invisible();
   if (!show_read_only_) {

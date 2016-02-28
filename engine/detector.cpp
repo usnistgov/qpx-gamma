@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::Detector defines detector with name, calibration, DSP parameters
+ *      Qpx::Detector defines detector with name, calibration, DSP parameters
  *
  ******************************************************************************/
 
@@ -28,15 +28,15 @@
 #include "detector.h"
 #include "custom_logger.h"
 
-namespace Gamma {
+namespace Qpx {
 
 ////////////////////
 // Detector ////////
 ////////////////////
 
 Calibration Detector::best_calib(int bits) const {
-  if (energy_calibrations_.has_a(Gamma::Calibration("Energy", bits)))
-     return energy_calibrations_.get(Gamma::Calibration("Energy", bits));
+  if (energy_calibrations_.has_a(Calibration("Energy", bits)))
+     return energy_calibrations_.get(Calibration("Energy", bits));
   else
     return highest_res_calib();
 }

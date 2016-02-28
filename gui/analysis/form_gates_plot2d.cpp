@@ -245,8 +245,8 @@ void FormGatesPlot2D::update_plot() {
     if (bits != newbits)
       bits = newbits;
 
-    Gamma::Detector detector_x_;
-    Gamma::Detector detector_y_;
+    Qpx::Detector detector_x_;
+    Qpx::Detector detector_y_;
     if (md.detectors.size() > 1) {
       detector_x_ = md.detectors[0];
       detector_y_ = md.detectors[1];

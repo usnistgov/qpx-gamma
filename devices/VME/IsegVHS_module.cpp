@@ -56,14 +56,14 @@ QpxIsegVHSPlugin::~QpxIsegVHSPlugin() {
 }
 
 
-bool QpxIsegVHSPlugin::read_settings_bulk(Gamma::Setting &set) const {
+bool QpxIsegVHSPlugin::read_settings_bulk(Qpx::Setting &set) const {
   if (set.id_ != device_name())
     return false;
 
   double voltage_max = 0;
   double current_max = 0;
   for (auto &k : set.branches.my_data_) {
-    if (k.metadata.setting_type != Gamma::SettingType::stem) {
+    if (k.metadata.setting_type != Qpx::SettingType::stem) {
       if (!read_setting(k)) {}
       //          PL_DBG << "Could not read " << k.id_;
       if (k.id_ == "VME/IsegVHS/VoltageMax") {
@@ -76,12 +76,12 @@ bool QpxIsegVHSPlugin::read_settings_bulk(Gamma::Setting &set) const {
       }
     } else {
       for (auto &p : k.branches.my_data_) {
-        if (p.metadata.setting_type != Gamma::SettingType::stem) {
+        if (p.metadata.setting_type != Qpx::SettingType::stem) {
           if (!read_setting(p)) {}
           //              PL_DBG << "Could not read " << p.id_;
         } else {
           for (auto &q : p.branches.my_data_) {
-            if (q.metadata.setting_type != Gamma::SettingType::stem) {
+            if (q.metadata.setting_type != Qpx::SettingType::stem) {
               if (!read_setting(q)) {}
               //              PL_DBG << "Could not read " << p.id_;
             }
@@ -89,7 +89,7 @@ bool QpxIsegVHSPlugin::read_settings_bulk(Gamma::Setting &set) const {
 
           for (auto &q : p.branches.my_data_) {
             if (q.id_ == "VME/IsegVHS/Channel/Status") {
-              Gamma::Setting status = p.get_setting(Gamma::Setting("VME/IsegVHS/Channel/ChannelStatus"), Gamma::Match::id);
+              Qpx::Setting status = p.get_setting(Qpx::Setting("VME/IsegVHS/Channel/ChannelStatus"), Qpx::Match::id);
               if (status.value_int & 0x0010)
                 q.value_int = 1;
               else if (status.value_int & 0x0008)
@@ -97,11 +97,11 @@ bool QpxIsegVHSPlugin::read_settings_bulk(Gamma::Setting &set) const {
               else
                 q.value_int = 0;
             } else if (q.id_ == "VME/IsegVHS/Channel/VoltageSet") {
-              Gamma::Setting nominal = p.get_setting(Gamma::Setting("VME/IsegVHS/Channel/VoltageNominalMaxSet"), Gamma::Match::id);
+              Qpx::Setting nominal = p.get_setting(Qpx::Setting("VME/IsegVHS/Channel/VoltageNominalMaxSet"), Qpx::Match::id);
               q.metadata.maximum = nominal.value_dbl;// * voltage_max;
               //                  PL_DBG << "Volatge bounds "  << nominal.value_dbl << " " << p.metadata.maximum;
             } else if (q.id_ == "VME/IsegVHS/Channel/CurrentSetOrTrip") {
-              Gamma::Setting nominal = p.get_setting(Gamma::Setting("VME/IsegVHS/Channel/CurrentNominalMaxSet"), Gamma::Match::id);
+              Qpx::Setting nominal = p.get_setting(Qpx::Setting("VME/IsegVHS/Channel/CurrentNominalMaxSet"), Qpx::Match::id);
               q.metadata.maximum = nominal.value_dbl;// * current_max;
               //                  PL_DBG << "Current bounds "  << nominal.value_dbl << " " << p.metadata.maximum;
             }
@@ -115,11 +115,11 @@ bool QpxIsegVHSPlugin::read_settings_bulk(Gamma::Setting &set) const {
   return true;
 }
 
-void QpxIsegVHSPlugin::rebuild_structure(Gamma::Setting &set) {
+void QpxIsegVHSPlugin::rebuild_structure(Qpx::Setting &set) {
   for (auto &k : set.branches.my_data_) {
-    if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channels")) {
+    if ((k.metadata.setting_type == Qpx::SettingType::stem) && (k.id_ == "VME/IsegVHS/Channels")) {
 
-      Gamma::Setting temp("VME/IsegVHS/Channel");
+      Qpx::Setting temp("VME/IsegVHS/Channel");
       temp.enrich(setting_definitions_, true);
 
       while (k.branches.size() < 12)
@@ -155,7 +155,7 @@ void QpxIsegVHSPlugin::rebuild_structure(Gamma::Setting &set) {
 }
 
 
-bool QpxIsegVHSPlugin::write_settings_bulk(Gamma::Setting &set) {
+bool QpxIsegVHSPlugin::write_settings_bulk(Qpx::Setting &set) {
   if (set.id_ != device_name())
     return false;
 
@@ -164,8 +164,8 @@ bool QpxIsegVHSPlugin::write_settings_bulk(Gamma::Setting &set) {
   rebuild_structure(set);
 
   for (auto &k : set.branches.my_data_) {
-    if (k.metadata.setting_type != Gamma::SettingType::stem) {
-      Gamma::Setting s = k;
+    if (k.metadata.setting_type != Qpx::SettingType::stem) {
+      Qpx::Setting s = k;
       if (k.metadata.writable && read_setting(s) && (s != k)) {
         //          PL_DBG << "writing " << k.id_;
         if (!write_setting(k)) {}
@@ -173,8 +173,8 @@ bool QpxIsegVHSPlugin::write_settings_bulk(Gamma::Setting &set) {
       }
     } else {
       for (auto &p : k.branches.my_data_) {
-        if (p.metadata.setting_type != Gamma::SettingType::stem) {
-          Gamma::Setting s = p;
+        if (p.metadata.setting_type != Qpx::SettingType::stem) {
+          Qpx::Setting s = p;
           if (p.metadata.writable && read_setting(s) && (s != p)) {
             //              PL_DBG << "writing " << p.id_;
             if (!write_setting(p)) {}
@@ -182,10 +182,10 @@ bool QpxIsegVHSPlugin::write_settings_bulk(Gamma::Setting &set) {
           }
         } else {
           for (auto &q : p.branches.my_data_) {
-              if ((q.metadata.setting_type == Gamma::SettingType::command) && (q.value_int != 0)) {
+              if ((q.metadata.setting_type == Qpx::SettingType::command) && (q.value_int != 0)) {
               if (q.id_ == "VME/IsegVHS/Channel/OnOff") {
                 q.value_int = 0;
-                Gamma::Setting ctrl = p.get_setting(Gamma::Setting("VME/IsegVHS/Channel/ChannelControl"), Gamma::Match::id);
+                Qpx::Setting ctrl = p.get_setting(Qpx::Setting("VME/IsegVHS/Channel/ChannelControl"), Qpx::Match::id);
                 ctrl.value_int  ^= 0x0008;
                 if (!write_setting(ctrl)) {}
               }
@@ -194,8 +194,8 @@ bool QpxIsegVHSPlugin::write_settings_bulk(Gamma::Setting &set) {
 
 
           for (auto &q : p.branches.my_data_) {
-            if (q.metadata.setting_type != Gamma::SettingType::stem) {
-              Gamma::Setting s = q;
+            if (q.metadata.setting_type != Qpx::SettingType::stem) {
+              Qpx::Setting s = q;
               if (q.metadata.writable && read_setting(s) && (s != q)) {
                 //              PL_DBG << "writing " << p.id_;
                 if (!write_setting(q)) {}
@@ -215,8 +215,8 @@ bool QpxIsegVHSPlugin::write_settings_bulk(Gamma::Setting &set) {
 void QpxIsegVHSPlugin::get_all_settings() {
 }
 
-bool QpxIsegVHSPlugin::read_setting(Gamma::Setting& set) const {
-  if (set.metadata.setting_type == Gamma::SettingType::command)
+bool QpxIsegVHSPlugin::read_setting(Qpx::Setting& set) const {
+  if (set.metadata.setting_type == Qpx::SettingType::command)
     set.metadata.writable =  ((status_ & DeviceStatus::booted) != 0);
 
   if (!(status_ & Qpx::DeviceStatus::booted))
@@ -225,14 +225,14 @@ bool QpxIsegVHSPlugin::read_setting(Gamma::Setting& set) const {
   if (set.metadata.address < 0)
     return false;
 
-  if (set.metadata.setting_type == Gamma::SettingType::floating) {
+  if (set.metadata.setting_type == Qpx::SettingType::floating) {
     set.value_dbl = readFloat(m_baseAddress + set.metadata.address);
     return true;
   }
-  else if ((set.metadata.setting_type == Gamma::SettingType::binary)
-            || (set.metadata.setting_type == Gamma::SettingType::integer)
-            || (set.metadata.setting_type == Gamma::SettingType::boolean)
-             || (set.metadata.setting_type == Gamma::SettingType::int_menu)) {
+  else if ((set.metadata.setting_type == Qpx::SettingType::binary)
+            || (set.metadata.setting_type == Qpx::SettingType::integer)
+            || (set.metadata.setting_type == Qpx::SettingType::boolean)
+             || (set.metadata.setting_type == Qpx::SettingType::int_menu)) {
     if (set.metadata.flags.count("u32"))
       set.value_int = readLong(m_baseAddress + set.metadata.address);
     else if (set.metadata.flags.count("u16"))
@@ -246,20 +246,20 @@ bool QpxIsegVHSPlugin::read_setting(Gamma::Setting& set) const {
   return false;
 }
 
-bool QpxIsegVHSPlugin::write_setting(Gamma::Setting& set) {
+bool QpxIsegVHSPlugin::write_setting(Qpx::Setting& set) {
   if (!(status_ & Qpx::DeviceStatus::booted))
     return false;
 
   if (set.metadata.address < 0)
     return false;
 
-  if (set.metadata.setting_type == Gamma::SettingType::floating) {
+  if (set.metadata.setting_type == Qpx::SettingType::floating) {
     writeFloat(m_baseAddress + set.metadata.address, set.value_dbl);
     return true;
-  } else if ((set.metadata.setting_type == Gamma::SettingType::binary)
-           || (set.metadata.setting_type == Gamma::SettingType::integer)
-           || (set.metadata.setting_type == Gamma::SettingType::boolean)
-           || (set.metadata.setting_type == Gamma::SettingType::int_menu))
+  } else if ((set.metadata.setting_type == Qpx::SettingType::binary)
+           || (set.metadata.setting_type == Qpx::SettingType::integer)
+           || (set.metadata.setting_type == Qpx::SettingType::boolean)
+           || (set.metadata.setting_type == Qpx::SettingType::int_menu))
   {
     if (set.metadata.flags.count("u32"))
       writeLong(m_baseAddress + set.metadata.address, set.value_int);
@@ -384,14 +384,14 @@ bool QpxIsegVHSPlugin::connected() const
   if (!m_controller)
     return false;
 
-  Gamma::Setting vendID(this->device_name() + "/VendorID");
+  Qpx::Setting vendID(this->device_name() + "/VendorID");
   vendID.enrich(setting_definitions_);
   read_setting(vendID);
 
   if (vendID.value_int != ISEG_VENDOR_ID)
     return false;
 
-  Gamma::Setting devClass(this->device_name() + "/DeviceClass");
+  Qpx::Setting devClass(this->device_name() + "/DeviceClass");
   devClass.enrich(setting_definitions_);
   read_setting(devClass);
 
@@ -403,7 +403,7 @@ std::string QpxIsegVHSPlugin::firmwareName() const
   if (!m_controller)
     return std::string();
 
-  Gamma::Setting fwaddress(this->device_name() + "/FirmwareRelease");
+  Qpx::Setting fwaddress(this->device_name() + "/FirmwareRelease");
   fwaddress.enrich(setting_definitions_);
   read_setting(fwaddress);
 

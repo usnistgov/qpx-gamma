@@ -16,14 +16,14 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::ROI
+ *      Qpx::ROI
  *
  ******************************************************************************/
 
 #include "roi.h"
 #include "gaussian.h"
 
-namespace Gamma {
+namespace Qpx {
 
 void ROI::set_data(const std::vector<double> &x, const std::vector<double> &y,
                    uint16_t min, uint16_t max) {

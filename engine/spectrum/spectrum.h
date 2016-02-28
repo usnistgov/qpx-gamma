@@ -57,7 +57,7 @@ struct Metadata {
   uint32_t resolution, appearance;
   bool visible;
   std::vector<int16_t> match_pattern, add_pattern;
-  XMLableDB<Gamma::Setting> attributes;
+  XMLableDB<Qpx::Setting> attributes;
   PreciseFloat total_count;
   uint16_t     max_chan;
   PreciseFloat max_count;
@@ -68,7 +68,7 @@ struct Metadata {
 
   boost::posix_time::time_duration real_time ,live_time;
   boost::posix_time::ptime  start_time;
-  std::vector<Gamma::Detector> detectors;
+  std::vector<Qpx::Detector> detectors;
 
   bool changed;
 
@@ -115,7 +115,7 @@ public:
   std::vector<double> energies(uint8_t chan = 0) const;
   
   //set and get detectors
-  void set_detectors(const std::vector<Gamma::Detector>& dets);
+  void set_detectors(const std::vector<Qpx::Detector>& dets);
 
   //feed acquired data to spectrum
   void addSpill(const Spill&);
@@ -139,7 +139,7 @@ public:
   void set_appearance(uint32_t newapp);
   void set_start_time(boost::posix_time::ptime newtime);
   void set_description(std::string newdesc);
-  void set_generic_attr(Gamma::Setting setting);
+  void set_generic_attr(Qpx::Setting setting);
   void set_real_time(boost::posix_time::time_duration);
   void set_live_time(boost::posix_time::time_duration);
   void set_rescale_factor(PreciseFloat);
@@ -172,11 +172,11 @@ protected:
   virtual bool validateEvent(const Event&) const; //has default behavior
   virtual void _closeAcquisition() {}
 
-  virtual void _set_detectors(const std::vector<Gamma::Detector>& dets); //has default behavior
+  virtual void _set_detectors(const std::vector<Qpx::Detector>& dets); //has default behavior
 
   void recalc_energies();
-  Gamma::Setting get_attr(std::string name) const;
-  virtual XMLableDB<Gamma::Setting> default_settings() const = 0;
+  Qpx::Setting get_attr(std::string name) const;
+  virtual XMLableDB<Qpx::Setting> default_settings() const = 0;
 
   //////////////////////////////
   ///////member variables///////

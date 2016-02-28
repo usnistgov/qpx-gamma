@@ -26,7 +26,7 @@
 #include "binary_checklist.h"
 #include <QMessageBox>
 
-FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::Detector>& detectors, QSettings& settings, QWidget *parent) :
+FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Qpx::Detector>& detectors, QSettings& settings, QWidget *parent) :
   QWidget(parent),
   runner_thread_(thread),
   detectors_(detectors),
@@ -37,8 +37,8 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   ui(new Ui::FormSystemSettings)
 {
   ui->setupUi(this);
-  connect(&runner_thread_, SIGNAL(settingsUpdated(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)),
-          this, SLOT(update(Gamma::Setting, std::vector<Gamma::Detector>, Qpx::DeviceStatus)));
+  connect(&runner_thread_, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus)),
+          this, SLOT(update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus)));
   connect(&runner_thread_, SIGNAL(bootComplete()), this, SLOT(post_boot()));
 
   current_status_ = Qpx::DeviceStatus::dead;
@@ -51,8 +51,8 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   viewTreeSettings->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
   tree_delegate_.eat_detectors(detectors_);
   connect(&tree_delegate_, SIGNAL(begin_editing()), this, SLOT(begin_editing()));
-  connect(&tree_delegate_, SIGNAL(ask_execute(Gamma::Setting, QModelIndex)), this, SLOT(ask_execute_tree(Gamma::Setting, QModelIndex)));
-  connect(&tree_delegate_, SIGNAL(ask_binary(Gamma::Setting, QModelIndex)), this, SLOT(ask_binary_tree(Gamma::Setting, QModelIndex)));
+  connect(&tree_delegate_, SIGNAL(ask_execute(Qpx::Setting, QModelIndex)), this, SLOT(ask_execute_tree(Qpx::Setting, QModelIndex)));
+  connect(&tree_delegate_, SIGNAL(ask_binary(Qpx::Setting, QModelIndex)), this, SLOT(ask_binary_tree(Qpx::Setting, QModelIndex)));
   connect(&tree_delegate_, SIGNAL(closeEditor(QWidget*,QAbstractItemDelegate::EndEditHint)), this, SLOT(stop_editing(QWidget*,QAbstractItemDelegate::EndEditHint)));
 
   viewTableSettings = new QTableView(this);
@@ -65,14 +65,14 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   table_settings_model_.update(channels_);
   viewTableSettings->show();
   connect(&table_settings_delegate_, SIGNAL(begin_editing()), this, SLOT(begin_editing()));
-  connect(&table_settings_delegate_, SIGNAL(ask_execute(Gamma::Setting, QModelIndex)), this, SLOT(ask_execute_table(Gamma::Setting, QModelIndex)));
-  connect(&table_settings_delegate_, SIGNAL(ask_binary(Gamma::Setting, QModelIndex)), this, SLOT(ask_binary_table(Gamma::Setting, QModelIndex)));
+  connect(&table_settings_delegate_, SIGNAL(ask_execute(Qpx::Setting, QModelIndex)), this, SLOT(ask_execute_table(Qpx::Setting, QModelIndex)));
+  connect(&table_settings_delegate_, SIGNAL(ask_binary(Qpx::Setting, QModelIndex)), this, SLOT(ask_binary_table(Qpx::Setting, QModelIndex)));
   connect(&table_settings_delegate_, SIGNAL(closeEditor(QWidget*,QAbstractItemDelegate::EndEditHint)), this, SLOT(stop_editing(QWidget*,QAbstractItemDelegate::EndEditHint)));
 
   connect(&tree_settings_model_, SIGNAL(tree_changed()), this, SLOT(push_settings()));
   connect(&tree_settings_model_, SIGNAL(detector_chosen(int, std::string)), this, SLOT(chose_detector(int,std::string)));
 
-  connect(&table_settings_model_, SIGNAL(setting_changed(int, Gamma::Setting)), this, SLOT(push_from_table(int, Gamma::Setting)));
+  connect(&table_settings_model_, SIGNAL(setting_changed(int, Qpx::Setting)), this, SLOT(push_from_table(int, Qpx::Setting)));
   connect(&table_settings_model_, SIGNAL(detector_chosen(int, std::string)), this, SLOT(chose_detector(int,std::string)));
 
   detectorOptions.addAction("Apply saved settings", this, SLOT(apply_detector_presets()));
@@ -84,7 +84,7 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Gamma::De
   loadSettings();
 }
 
-void FormSystemSettings::update(const Gamma::Setting &tree, const std::vector<Gamma::Detector> &channels, Qpx::DeviceStatus status) {
+void FormSystemSettings::update(const Qpx::Setting &tree, const std::vector<Qpx::Detector> &channels, Qpx::DeviceStatus status) {
 
   bool can_run = ((status & Qpx::DeviceStatus::can_run) != 0);
   bool can_gain_match = false;
@@ -139,7 +139,7 @@ void FormSystemSettings::push_settings() {
   runner_thread_.do_push_settings(dev_settings_);
 }
 
-void FormSystemSettings::ask_binary_tree(Gamma::Setting set, QModelIndex index) {
+void FormSystemSettings::ask_binary_tree(Qpx::Setting set, QModelIndex index) {
   if (set.metadata.int_menu_items.empty())
     return;
 
@@ -153,7 +153,7 @@ void FormSystemSettings::ask_binary_tree(Gamma::Setting set, QModelIndex index) 
   editing_ = false;
 }
 
-void FormSystemSettings::ask_binary_table(Gamma::Setting set, QModelIndex index) {
+void FormSystemSettings::ask_binary_table(Qpx::Setting set, QModelIndex index) {
   if (set.metadata.int_menu_items.empty())
     return;
 
@@ -167,7 +167,7 @@ void FormSystemSettings::ask_binary_table(Gamma::Setting set, QModelIndex index)
   editing_ = false;
 }
 
-void FormSystemSettings::ask_execute_table(Gamma::Setting command, QModelIndex index) {
+void FormSystemSettings::ask_execute_table(Qpx::Setting command, QModelIndex index) {
   editing_ = true;
 
   QMessageBox *editor = new QMessageBox(qobject_cast<QWidget *> (parent()));
@@ -182,7 +182,7 @@ void FormSystemSettings::ask_execute_table(Gamma::Setting command, QModelIndex i
 }
 
 
-void FormSystemSettings::ask_execute_tree(Gamma::Setting command, QModelIndex index) {
+void FormSystemSettings::ask_execute_tree(Qpx::Setting command, QModelIndex index) {
   editing_ = true;
 
   QMessageBox *editor = new QMessageBox(qobject_cast<QWidget *> (parent()));
@@ -196,19 +196,19 @@ void FormSystemSettings::ask_execute_tree(Gamma::Setting command, QModelIndex in
   editing_ = false;
 }
 
-void FormSystemSettings::push_from_table(int chan, Gamma::Setting setting) {
+void FormSystemSettings::push_from_table(int chan, Qpx::Setting setting) {
   editing_ = false;
 
   //setting.indices.insert(chan);
 
   emit statusText("Updating settings...");
   emit toggleIO(false);
-  runner_thread_.do_set_setting(setting, Gamma::Match::id | Gamma::Match::indices);
+  runner_thread_.do_set_setting(setting, Qpx::Match::id | Qpx::Match::indices);
 }
 
 void FormSystemSettings::chose_detector(int chan, std::string name) {
   editing_ = false;
-  Gamma::Detector det = detectors_.get(Gamma::Detector(name));
+  Qpx::Detector det = detectors_.get(Qpx::Detector(name));
   PL_DBG << "det " <<  det.name_ << " with cali " << det.energy_calibrations_.size() << " has sets " << det.settings_.branches.size();
   for (auto &q : det.settings_.branches.my_data_) {
     q.indices.clear();
@@ -295,15 +295,15 @@ void FormSystemSettings::chan_settings_to_det_DB() {
   for (auto &q : channels_) {
     if (q.name_ == "none")
       continue;
-    Gamma::Detector det = detectors_.get(q);
-    if (det != Gamma::Detector()) {
+    Qpx::Detector det = detectors_.get(q);
+    if (det != Qpx::Detector()) {
       for (auto &p : q.settings_.branches.my_data_) {
         if (p.metadata.writable) {
           det.settings_.branches.replace(p);
         }
       }
       if (!det.settings_.branches.empty())
-        det.settings_.metadata.setting_type = Gamma::SettingType::stem;
+        det.settings_.metadata.setting_type = Qpx::SettingType::stem;
       det.settings_.strip_metadata();
       detectors_.replace(det);
     }
@@ -338,7 +338,7 @@ void FormSystemSettings::apply_detector_presets()
   emit statusText("Applying detector optimizations...");
   emit toggleIO(false);
 
-  std::map<int, Gamma::Detector> update;
+  std::map<int, Qpx::Detector> update;
   for (int i=0; i < channels_.size(); ++i)
     if (detectors_.has_a(channels_[i]))
       update[i] = detectors_.get(channels_[i]);

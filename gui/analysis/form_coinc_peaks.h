@@ -47,7 +47,7 @@ public:
   explicit FormCoincPeaks(QWidget *parent = 0);
   ~FormCoincPeaks();
 
-  void setFit(Gamma::Fitter *);
+  void setFit(Qpx::Fitter *);
 
   void update_spectrum();
 
@@ -76,13 +76,13 @@ private:
   Ui::FormCoincPeaks *ui;
 
   //data from selected spectrum
-  Gamma::Fitter *fit_data_;
+  Qpx::Fitter *fit_data_;
   ThreadFitter thread_fitter_;
 
   std::set<double> selected_peaks_;
 
   void update_table(bool);
-  void add_peak_to_table(const Gamma::Peak &, int, QColor);
+  void add_peak_to_table(const Qpx::Peak &, int, QColor);
 };
 
 #endif

@@ -358,8 +358,8 @@ void SpectraSet::import_spn(std::string file_name) {
   myfile.seekg (0, myfile.beg);
 
 
-  Gamma::Detector det("unknown");
-  det.energy_calibrations_.add(Gamma::Calibration("Energy", 12));
+  Qpx::Detector det("unknown");
+  det.energy_calibrations_.add(Qpx::Calibration("Energy", 12));
 
   Qpx::Spill spill;
   spill.run.detectors.push_back(det);

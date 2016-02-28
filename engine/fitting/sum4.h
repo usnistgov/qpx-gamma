@@ -16,18 +16,18 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::SUM4
+ *      Qpx::SUM4
  *
  ******************************************************************************/
 
-#ifndef GAMMA_SUM4_H
-#define GAMMA_SUM4_H
+#ifndef QPX_SUM4_H
+#define QPX_SUM4_H
 
 #include <vector>
 #include <cstdint>
 #include "polynomial.h"
 
-namespace Gamma {
+namespace Qpx {
 
 class SUM4Edge {
   uint32_t start_, end_;

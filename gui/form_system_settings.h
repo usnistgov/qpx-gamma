@@ -44,13 +44,13 @@ class FormSystemSettings : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormSystemSettings(ThreadRunner&, XMLableDB<Gamma::Detector>&, QSettings&, QWidget *parent = 0);
-  Gamma::Setting get_tree() {return dev_settings_;}
+  explicit FormSystemSettings(ThreadRunner&, XMLableDB<Qpx::Detector>&, QSettings&, QWidget *parent = 0);
+  Qpx::Setting get_tree() {return dev_settings_;}
   ~FormSystemSettings();
 
 public slots:
   void refresh();
-  void update(const Gamma::Setting &tree, const std::vector<Gamma::Detector> &channelsupdate, Qpx::DeviceStatus);
+  void update(const Qpx::Setting &tree, const std::vector<Qpx::Detector> &channelsupdate, Qpx::DeviceStatus);
 
 signals:
   void toggleIO(bool);
@@ -75,13 +75,13 @@ private slots:
 
 
   void push_settings();
-  void push_from_table(int chan, Gamma::Setting setting);
+  void push_from_table(int chan, Qpx::Setting setting);
   void chose_detector(int chan, std::string name);
 
-  void ask_binary_tree(Gamma::Setting, QModelIndex index);
-  void ask_execute_tree(Gamma::Setting, QModelIndex index);
-  void ask_binary_table(Gamma::Setting, QModelIndex index);
-  void ask_execute_table(Gamma::Setting, QModelIndex index);
+  void ask_binary_tree(Qpx::Setting, QModelIndex index);
+  void ask_execute_tree(Qpx::Setting, QModelIndex index);
+  void ask_binary_table(Qpx::Setting, QModelIndex index);
+  void ask_execute_table(Qpx::Setting, QModelIndex index);
 
   void on_checkShowRO_clicked();
   void on_bootButton_clicked();
@@ -100,7 +100,7 @@ private:
 
   Qpx::DeviceStatus current_status_;
 
-  XMLableDB<Gamma::Detector>            &detectors_;
+  XMLableDB<Qpx::Detector>            &detectors_;
   QString data_directory_;
   QString settings_directory_;
 
@@ -108,8 +108,8 @@ private:
   QSettings           &settings_;
   bool editing_;
 
-  Gamma::Setting               dev_settings_;
-  std::vector<Gamma::Detector> channels_;
+  Qpx::Setting               dev_settings_;
+  std::vector<Qpx::Detector> channels_;
 
   QTableView*         viewTableSettings;
   TableChanSettings   table_settings_model_;

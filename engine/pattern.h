@@ -16,32 +16,55 @@
  *      Martin Shetty (NIST)
  *
  * Description:
+ *      Types for organizing data aquired from device
+ *        Qpx::Pattern        
  *
  ******************************************************************************/
 
-#ifndef TABLE_SPECTRUM_ATTRS_H_
-#define TABLE_SPECTRUM_ATTRS_H_
+#ifndef PATTERN_H
+#define PATTERN_H
 
-#include <QAbstractTableModel>
-#include "generic_setting.h"
+#include <vector>
+#include <string>
+#include <cstdint>
+#include <stddef.h>
+#include "event.h"
 
-class TableSpectrumAttrs : public QAbstractTableModel
-{
-    Q_OBJECT
+namespace Qpx {
+
+class Pattern {
 private:
-    XMLableDB<Qpx::Setting> *generic_attributes;
+  std::vector<bool> gates_;
+  size_t threshold_;
 
 public:
-    TableSpectrumAttrs(QObject *parent = 0);
-    int rowCount(const QModelIndex &parent = QModelIndex()) const;
-    int columnCount(const QModelIndex &parent = QModelIndex()) const;
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const;
-    Qt::ItemFlags flags(const QModelIndex & index) const;
-    bool setData(const QModelIndex & index, const QVariant & value, int role);
+  inline Pattern()
+      : threshold_(0)
+  {}
 
-    void eat(XMLableDB<Qpx::Setting> *generic_attr);
-    void update();
+  inline Pattern(const std::string &s) {
+    from_string(s);
+  }
+
+  void resize(size_t);
+  std::vector<bool> gates() const { return gates_; }
+  size_t threshold() const { return threshold_; }
+  void set_gates(std::vector<bool>);
+  void set_theshold(size_t);
+
+  bool validate(const Event &e) const;
+
+  std::string to_string() const;
+  void from_string(std::string s);
+
+  std::string gates_to_string() const;
+  std::vector<bool> gates_from_string(std::string s);
+
+  bool operator==(const Pattern other) const;
+  bool operator!=(const Pattern other) const {return !operator ==(other);}
+
 };
+
+}
 
 #endif

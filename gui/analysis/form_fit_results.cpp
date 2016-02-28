@@ -26,7 +26,7 @@
 #include "gamma_fitter.h"
 #include "qt_util.h"
 
-FormFitResults::FormFitResults(QSettings &settings, Gamma::Fitter &fit, QWidget *parent) :
+FormFitResults::FormFitResults(QSettings &settings, Qpx::Fitter &fit, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormFitResults),
   fit_data_(fit),
@@ -103,7 +103,7 @@ void FormFitResults::update_data() {
   toggle_push();
 }
 
-void FormFitResults::add_peak_to_table(const Gamma::Peak &p, int row, bool gray) {
+void FormFitResults::add_peak_to_table(const Qpx::Peak &p, int row, bool gray) {
   QBrush background(gray ? Qt::lightGray : Qt::white);
 
   data_to_table(row, 0, p.center, background);

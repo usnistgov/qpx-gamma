@@ -26,7 +26,7 @@
 #include "gamma_fitter.h"
 #include "qt_util.h"
 
-FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Gamma::Detector>& dets, Gamma::Fitter &fit, QWidget *parent) :
+FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Qpx::Detector>& dets, Qpx::Fitter &fit, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormEnergyCalibration),
   settings_(settings),
@@ -108,7 +108,7 @@ void FormEnergyCalibration::saveSettings() {
 }
 
 void FormEnergyCalibration::clear() {
-  new_calibration_ = Gamma::Calibration();
+  new_calibration_ = Qpx::Calibration();
   ui->tablePeaks->clearContents();
   ui->tablePeaks->setRowCount(0);
   toggle_push();
@@ -310,10 +310,10 @@ void FormEnergyCalibration::on_pushFit_clicked()
     new_calibration_.r_squared_ = p.rsq_;
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "keV";
-    new_calibration_.model_ = Gamma::CalibrationModel::polynomial;
+    new_calibration_.model_ = Qpx::CalibrationModel::polynomial;
   }
   else
-    PL_INFO << "<Energy calibration> Gamma::Calibration failed";
+    PL_INFO << "<Energy calibration> Qpx::Calibration failed";
 
   replot_calib();
   select_in_plot();
@@ -332,7 +332,7 @@ void FormEnergyCalibration::on_pushApplyCalib_clicked()
 
 void FormEnergyCalibration::on_pushFromDB_clicked()
 {
-  Gamma::Detector newdet = detectors_.get(fit_data_.detector_);
+  Qpx::Detector newdet = detectors_.get(fit_data_.detector_);
   new_calibration_ = newdet.energy_calibrations_.get(new_calibration_);
   replot_calib();
   select_in_plot();
@@ -363,7 +363,7 @@ void FormEnergyCalibration::on_pushEnergiesToPeaks_clicked()
   std::sort(gammas.begin(), gammas.end());
 
 
-  std::vector<Gamma::Peak> to_change;
+  std::vector<Qpx::Peak> to_change;
   double last_sel = -1;
   for (auto &q : fit_data_.peaks())
     if (selected_peaks_.count(q.first)) {
@@ -390,7 +390,7 @@ void FormEnergyCalibration::on_pushEnergiesToPeaks_clicked()
   emit selection_changed(selected_peaks_);
 }
 
-void FormEnergyCalibration::add_peak_to_table(const Gamma::Peak &p, int row, bool gray) {
+void FormEnergyCalibration::add_peak_to_table(const Qpx::Peak &p, int row, bool gray) {
   QBrush background(gray ? Qt::lightGray : Qt::white);
 
   data_to_table(row, 0, p.center, background);

@@ -16,20 +16,20 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::Calibration defines calibration with units and math model
+ *      Qpx::Calibration defines calibration with units and math model
  *
  ******************************************************************************/
 
 
-#ifndef GAMMA_CALIBRATION
-#define GAMMA_CALIBRATION
+#ifndef QPX_CALIBRATION
+#define QPX_CALIBRATION
 
 #include <vector>
 #include <string>
 #include <boost/date_time.hpp>
 #include "xmlable.h"
 
-namespace Gamma {
+namespace Qpx {
 
 enum class CalibrationModel : int {none = 0, polynomial = 1, polylog = 2, loginverse = 3, effit = 4, sqrt_poly = 5};
 

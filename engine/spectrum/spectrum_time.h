@@ -39,9 +39,9 @@ public:
     new_temp.type = "Time";
     new_temp.description = "Time-domain log of activity";
 
-    Gamma::Setting format_setting;
+    Qpx::Setting format_setting;
     format_setting.id_ = "co-domain";
-    format_setting.metadata.setting_type = Gamma::SettingType::int_menu;
+    format_setting.metadata.setting_type = Qpx::SettingType::int_menu;
     format_setting.metadata.writable = true;
     format_setting.metadata.description = "Choice of dependent variable";
     format_setting.value_int = 0;
@@ -55,7 +55,7 @@ public:
 
 protected:
   std::string my_type() const override {return "Time";}
-  XMLableDB<Gamma::Setting> default_settings() const override {return this->get_template().generic_attributes; }
+  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().generic_attributes; }
 
   //1D is ok with all patterns
   bool initialize() override {
@@ -71,7 +71,7 @@ protected:
   PreciseFloat _get_count(std::initializer_list<uint16_t> list) const;
   std::unique_ptr<std::list<Entry>> _get_spectrum(std::initializer_list<Pair> list);
   void _add_bulk(const Entry&) override;
-  void _set_detectors(const std::vector<Gamma::Detector>& dets) override;
+  void _set_detectors(const std::vector<Qpx::Detector>& dets) override;
 
   //event processing
   void addEvent(const Event&) override {}

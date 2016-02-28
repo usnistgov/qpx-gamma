@@ -563,7 +563,7 @@ void WidgetPlot2D::update_plot(uint64_t size, std::shared_ptr<Qpx::Spectrum::Ent
   replot_markers();
 }
 
-void WidgetPlot2D::set_axes(Gamma::Calibration cal_x, Gamma::Calibration cal_y, int bits) {
+void WidgetPlot2D::set_axes(Qpx::Calibration cal_x, Qpx::Calibration cal_y, int bits) {
   calib_x_ = cal_x;
   calib_y_ = cal_y;
   bits_ = bits;

@@ -43,10 +43,10 @@ class TableGates : public QAbstractTableModel
   Q_OBJECT
 
 private:
-  std::vector<Gamma::Gate> gates_;
+  std::vector<Qpx::Gate> gates_;
 
 public:
-  void set_data(std::vector<Gamma::Gate> gates);
+  void set_data(std::vector<Qpx::Gate> gates);
 
   explicit TableGates(QObject *parent = 0);
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
@@ -80,8 +80,8 @@ public:
   void change_width(int width);
   void make_range(Marker);
 
-  void update_current_gate(Gamma::Gate);
-  Gamma::Gate current_gate();
+  void update_current_gate(Qpx::Gate);
+  Qpx::Gate current_gate();
   std::list<MarkerBox2D> boxes() {return all_boxes_;}
   std::list<MarkerBox2D> current_peaks() {return current_peaks_;}
 
@@ -128,7 +128,7 @@ private:
   QString current_spectrum_;
   Qpx::Spectrum::Template *tempx;
   Qpx::Spectrum::Spectrum *gate_x;
-  Gamma::Fitter fit_data_;
+  Qpx::Fitter fit_data_;
   int res;
   MarkerBox2D range2d;
   double xmin_, xmax_, ymin_, ymax_, xc_, yc_;
@@ -140,7 +140,7 @@ private:
   TableGates table_model_;
   QSortFilterProxyModel sortModel;
 
-  std::vector<Gamma::Gate> gates_;
+  std::vector<Qpx::Gate> gates_;
 
   //from parent
   QString data_directory_;

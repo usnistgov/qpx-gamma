@@ -83,7 +83,7 @@ FormPlot2D::~FormPlot2D()
   delete ui;
 }
 
-void FormPlot2D::setDetDB(XMLableDB<Gamma::Detector>& detDB) {
+void FormPlot2D::setDetDB(XMLableDB<Qpx::Detector>& detDB) {
   detectors_ = &detDB;
 }
 
@@ -314,7 +314,7 @@ void FormPlot2D::update_plot(bool force) {
     {
 //      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
-      Gamma::Setting sym = md.attributes.get(Gamma::Setting("symmetrized"));
+      Qpx::Setting sym = md.attributes.get(Qpx::Setting("symmetrized"));
 
       //PL_DBG << "Sym :" << sym.id_ << "=" << sym.value_int;
 
@@ -332,8 +332,8 @@ void FormPlot2D::update_plot(bool force) {
         if (bits != newbits)
           bits = newbits;
 
-        Gamma::Detector detector_x_;
-        Gamma::Detector detector_y_;
+        Qpx::Detector detector_x_;
+        Qpx::Detector detector_y_;
         if (md.detectors.size() > 1) {
           detector_x_ = md.detectors[0];
           detector_y_ = md.detectors[1];

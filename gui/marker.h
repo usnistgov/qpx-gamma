@@ -40,7 +40,7 @@ class Coord {
 public:
   Coord() : bits_(-1), energy_(nan("")), bin_(nan("")) {}
 
-  void set_energy(double nrg, Gamma::Calibration cali) {
+  void set_energy(double nrg, Qpx::Calibration cali) {
     bin_ = nan("");
     bits_ = 0;
     energy_ = nrg;
@@ -50,7 +50,7 @@ public:
     }
   }
 
-  void set_bin(double bin, uint16_t bits, Gamma::Calibration cali) {
+  void set_bin(double bin, uint16_t bits, Qpx::Calibration cali) {
     bin_ = bin;
     bits_ = bits;
     energy_ = nan("");

@@ -40,8 +40,8 @@ public:
   static std::string plugin_name() {return "HV8";}
   std::string device_name() const override {return plugin_name();}
 
-  bool write_settings_bulk(Gamma::Setting &set) override;
-  bool read_settings_bulk(Gamma::Setting &set) const override;
+  bool write_settings_bulk(Qpx::Setting &set) override;
+  bool read_settings_bulk(Qpx::Setting &set) const override;
   void get_all_settings() override;
   bool boot() override;
   bool die() override;
@@ -54,7 +54,7 @@ private:
   void set_voltage(int, double);
 
 protected:
-  void rebuild_structure(Gamma::Setting &set);
+  void rebuild_structure(Qpx::Setting &set);
 
   bool get_prompt(uint16_t attempts);
 

@@ -39,7 +39,7 @@ class TableListData : public QAbstractTableModel
 private:
     Qpx::ListData* mystuff;
     double time_factor_;
-    std::vector<Gamma::Detector> dets_;
+    std::vector<Qpx::Detector> dets_;
 
 public:
     TableListData(QObject *parent = 0);

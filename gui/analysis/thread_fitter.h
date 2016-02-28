@@ -37,7 +37,7 @@ public:
   void terminate();
 
   void begin();
-  void set_data(const Gamma::Fitter &data);
+  void set_data(const Qpx::Fitter &data);
 
   void fit_peaks();
   void stop_work();
@@ -47,14 +47,14 @@ public:
   void remove_peaks(std::set<double> chosen_peaks);
 
 signals:
-  void fit_updated(Gamma::Fitter data);
+  void fit_updated(Qpx::Fitter data);
   void fitting_done();
 
 protected:
   void run();
 
 private:
-  Gamma::Fitter fitter_;
+  Qpx::Fitter fitter_;
 
   QMutex mutex_;
   FitterAction action_;

@@ -38,7 +38,7 @@ class dialog_spectrum : public QDialog
     Q_OBJECT
 
 public:
-    explicit dialog_spectrum(Qpx::Spectrum::Spectrum &spec, XMLableDB<Gamma::Detector>& detDB, QWidget *parent = 0);
+    explicit dialog_spectrum(Qpx::Spectrum::Spectrum &spec, XMLableDB<Qpx::Detector>& detDB, QWidget *parent = 0);
     ~dialog_spectrum();
 
 
@@ -56,7 +56,7 @@ private slots:
     void det_selection_changed(QItemSelection,QItemSelection);
 
     void on_pushDetEdit_clicked();
-    void changeDet(Gamma::Detector);
+    void changeDet(Qpx::Detector);
 
     void on_pushDetRename_clicked();
 
@@ -85,15 +85,15 @@ private:
     QpxSpecialDelegate      special_delegate_;
     TableSpectrumAttrs         table_model_;
 
-    XMLableDB<Gamma::Detector> &detectors_;
+    XMLableDB<Qpx::Detector> &detectors_;
 
-    XMLableDB<Gamma::Detector> spectrum_detectors_;
+    XMLableDB<Qpx::Detector> spectrum_detectors_;
     TableDetectors det_table_model_;
     QItemSelectionModel det_selection_model_;
 
     Qpx::Spectrum::Metadata md_;
 
-    XMLableDB<Gamma::Setting> attributes_;
+    XMLableDB<Qpx::Setting> attributes_;
     bool changed_;
 
     void updateData();

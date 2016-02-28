@@ -21,7 +21,7 @@
 
 #include "table_spectrum_attrs.h"
 
-Q_DECLARE_METATYPE(Gamma::Setting)
+Q_DECLARE_METATYPE(Qpx::Setting)
 
 TableSpectrumAttrs::TableSpectrumAttrs(QObject *parent)
   : QAbstractTableModel(parent)
@@ -50,11 +50,11 @@ QVariant TableSpectrumAttrs::data(const QModelIndex &index, int role) const
       return QString::fromStdString(generic_attributes->get(row).id_);
     case 1:
     {
-      Gamma::SettingType type = generic_attributes->get(row).metadata.setting_type;
+      Qpx::SettingType type = generic_attributes->get(row).metadata.setting_type;
 
-      if (type == Gamma::SettingType::integer)
+      if (type == Qpx::SettingType::integer)
         return QVariant::fromValue(generic_attributes->get(row).value_int);
-      else if (type == Gamma::SettingType::binary) {
+      else if (type == Qpx::SettingType::binary) {
         QString hex = QString::number(generic_attributes->get(row).value_int, 16).toUpper();
         int size = generic_attributes->get(row).metadata.maximum;
         int tot = (size / 4);
@@ -68,23 +68,23 @@ QVariant TableSpectrumAttrs::data(const QModelIndex &index, int role) const
         hex = QString("0x") + hex;
         return hex;
       }
-      else if (type == Gamma::SettingType::floating)
+      else if (type == Qpx::SettingType::floating)
         return QVariant::fromValue(generic_attributes->get(row).value_dbl);
-      else if (type == Gamma::SettingType::int_menu) {
+      else if (type == Qpx::SettingType::int_menu) {
         if (generic_attributes->get(row).metadata.int_menu_items.count(generic_attributes->get(row).value_int) > 0)
           return QString::fromStdString(generic_attributes->get(row).metadata.int_menu_items.at(generic_attributes->get(row).value_int));
         else
           return QVariant();
       }
-      else if (type == Gamma::SettingType::boolean)
+      else if (type == Qpx::SettingType::boolean)
         if (generic_attributes->get(row).value_int)
           return "T";
         else
           return "F";
-      else if ((type == Gamma::SettingType::text)
-               || (type == Gamma::SettingType::file_path)
-               || (type == Gamma::SettingType::dir_path)
-               || (type == Gamma::SettingType::detector))
+      else if ((type == Qpx::SettingType::text)
+               || (type == Qpx::SettingType::file_path)
+               || (type == Qpx::SettingType::dir_path)
+               || (type == Qpx::SettingType::detector))
         return QString::fromStdString(generic_attributes->get(row).value_text);
       else
         return QVariant::fromValue(generic_attributes->get(row));
@@ -128,7 +128,7 @@ QVariant TableSpectrumAttrs::headerData(int section, Qt::Orientation orientation
   return QVariant();
 }
 
-void TableSpectrumAttrs::eat(XMLableDB<Gamma::Setting> *generic_attr) {
+void TableSpectrumAttrs::eat(XMLableDB<Qpx::Setting> *generic_attr) {
   generic_attributes = generic_attr;
 }
 
@@ -156,22 +156,22 @@ bool TableSpectrumAttrs::setData(const QModelIndex & index, const QVariant & val
 
   if (role == Qt::EditRole)
     if (col == 1) {
-      Gamma::Setting setting = generic_attributes->get(row);
-      Gamma::SettingType type = setting.metadata.setting_type;
+      Qpx::Setting setting = generic_attributes->get(row);
+      Qpx::SettingType type = setting.metadata.setting_type;
 
-      if (((type == Gamma::SettingType::integer) || (type == Gamma::SettingType::int_menu) || (type == Gamma::SettingType::binary))
+      if (((type == Qpx::SettingType::integer) || (type == Qpx::SettingType::int_menu) || (type == Qpx::SettingType::binary))
           && (value.canConvert(QMetaType::LongLong)))
         setting.value_int = value.toLongLong();
-      else if ((type == Gamma::SettingType::boolean)
+      else if ((type == Qpx::SettingType::boolean)
           && (value.type() == QVariant::Bool))
         setting.value_int = value.toBool();
-      else if ((type == Gamma::SettingType::floating)
+      else if ((type == Qpx::SettingType::floating)
           && (value.type() == QVariant::Double))
         setting.value_dbl = value.toDouble();
-      else if (((type == Gamma::SettingType::text)
-                || (type == Gamma::SettingType::detector)
-                || (type == Gamma::SettingType::dir_path)
-                || (type == Gamma::SettingType::file_path))
+      else if (((type == Qpx::SettingType::text)
+                || (type == Qpx::SettingType::detector)
+                || (type == Qpx::SettingType::dir_path)
+                || (type == Qpx::SettingType::file_path))
           && (value.type() == QVariant::String))
         setting.value_text = value.toString().toStdString();
       else

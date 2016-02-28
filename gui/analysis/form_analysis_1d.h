@@ -41,7 +41,7 @@ class FormAnalysis1D : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormAnalysis1D(QSettings &settings, XMLableDB<Gamma::Detector>& newDetDB, QWidget *parent = 0);
+  explicit FormAnalysis1D(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
   ~FormAnalysis1D();
 
   void setSpectrum(Qpx::SpectraSet *newset, QString spectrum);
@@ -73,17 +73,17 @@ private:
   FormFwhmCalibration *form_fwhm_calibration_;
   FormFitResults *form_fit_results_;
 
-  Gamma::Fitter fit_data_;
+  Qpx::Fitter fit_data_;
 
-  Gamma::Calibration new_energy_calibration_;
-  Gamma::Calibration new_fwhm_calibration_;
+  Qpx::Calibration new_energy_calibration_;
+  Qpx::Calibration new_fwhm_calibration_;
 
   //from parent
   QString data_directory_;
   QString settings_directory_;
   Qpx::SpectraSet *spectra_;
 
-  XMLableDB<Gamma::Detector> &detectors_;
+  XMLableDB<Qpx::Detector> &detectors_;
 
 
   void loadSettings();

@@ -42,7 +42,7 @@ MTDC32::~MTDC32() {
 }
 
 
-void MTDC32::rebuild_structure(Gamma::Setting &set) {
+void MTDC32::rebuild_structure(Qpx::Setting &set) {
 
 }
 

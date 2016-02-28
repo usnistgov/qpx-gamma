@@ -255,13 +255,13 @@ void FormManip1D::spectrumDetails(std::string id)
   double live = md.live_time.total_milliseconds() * 0.001;
   double dead = 100;
   double rate = 0;
-  Gamma::Detector det = Gamma::Detector();
+  Qpx::Detector det = Qpx::Detector();
   if (!md.detectors.empty())
     det = md.detectors[0];
 
   QString detstr("Detector: ");
   detstr += QString::fromStdString(det.name_);
-  if (det.energy_calibrations_.has_a(Gamma::Calibration("Energy", md.bits)))
+  if (det.energy_calibrations_.has_a(Qpx::Calibration("Energy", md.bits)))
     detstr += " [ENRG]";
   else if (det.highest_res_calib().valid())
     detstr += " (enrg)";
@@ -292,7 +292,7 @@ void FormManip1D::update_plot() {
 
   std::map<double, double> minima, maxima;
 
-  calib_ = Gamma::Calibration();
+  calib_ = Qpx::Calibration();
 
   ui->mcaPlot->clearGraphs();
   for (auto &q: mySpectra->spectra(1, -1)) {
@@ -311,10 +311,10 @@ void FormManip1D::update_plot() {
       std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
           std::move(q->get_spectrum({{0, y.size()}}));
 
-      Gamma::Detector detector = Gamma::Detector();
+      Qpx::Detector detector = Qpx::Detector();
       if (!md.detectors.empty())
         detector = md.detectors[0];
-      Gamma::Calibration temp_calib = detector.best_calib(md.bits);
+      Qpx::Calibration temp_calib = detector.best_calib(md.bits);
 
       if (temp_calib.bits_ > calib_.bits_)
         calib_ = temp_calib;

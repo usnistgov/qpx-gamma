@@ -34,10 +34,10 @@
 class TreeItem
 {
 public:
-    explicit TreeItem(const Gamma::Setting &data, TreeItem *parent = 0);
+    explicit TreeItem(const Qpx::Setting &data, TreeItem *parent = 0);
     ~TreeItem();
 
-    bool eat_data(const Gamma::Setting &data);
+    bool eat_data(const Qpx::Setting &data);
 
     TreeItem *child(int number);
     int childCount() const;
@@ -50,11 +50,11 @@ public:
 //    bool removeChildren(int position, int count);
     int childNumber() const;
     bool setData(int column, const QVariant &value);
-    Gamma::Setting rebuild();
+    Qpx::Setting rebuild();
 
 private:
     QVector<TreeItem*> childItems;
-    Gamma::Setting itemData;
+    Qpx::Setting itemData;
     TreeItem *parentItem;
 };
 
@@ -64,7 +64,7 @@ class TreeSettings : public QAbstractItemModel
   Q_OBJECT
 
 private:
-  Gamma::Setting data_;
+  Qpx::Setting data_;
   TreeItem *getItem(const QModelIndex &index) const;
   bool show_read_only_;
 
@@ -92,8 +92,8 @@ public:
 //  bool insertRows(int position, int rows, const QModelIndex &parent = QModelIndex()) Q_DECL_OVERRIDE;
 //  bool removeRows(int position, int rows, const QModelIndex &parent = QModelIndex()) Q_DECL_OVERRIDE;
 
-  const Gamma::Setting & get_tree();
-  void update(const Gamma::Setting &data);
+  const Qpx::Setting & get_tree();
+  void update(const Qpx::Setting &data);
 
 signals:
   void tree_changed();

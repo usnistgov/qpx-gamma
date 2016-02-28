@@ -175,33 +175,33 @@ void Pixie4::fill_stats(std::map<int16_t, StatsUpdate> &all_stats, uint8_t modul
   }*/
 
 
-bool Pixie4::read_settings_bulk(Gamma::Setting &set) const {
+bool Pixie4::read_settings_bulk(Qpx::Setting &set) const {
   if (set.id_ != device_name())
     return false;
 
   for (auto &q : set.branches.my_data_) {
-    if (set.metadata.setting_type == Gamma::SettingType::command)
+    if (set.metadata.setting_type == Qpx::SettingType::command)
       set.metadata.writable =  ((status_ & DeviceStatus::booted) != 0);
 
-    if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
+    if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
       for (auto &k : q.branches.my_data_) {
-        if ((k.metadata.setting_type == Gamma::SettingType::int_menu) && (k.id_ == "Pixie4/Run type"))
+        if ((k.metadata.setting_type == Qpx::SettingType::int_menu) && (k.id_ == "Pixie4/Run type"))
           k.value_int = run_type_;
-        if ((k.metadata.setting_type == Gamma::SettingType::integer) && (k.id_ == "Pixie4/Poll interval"))
+        if ((k.metadata.setting_type == Qpx::SettingType::integer) && (k.id_ == "Pixie4/Poll interval"))
           k.value_int = run_poll_interval_ms_;
       }
-    } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Files")) {
+    } else if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "Pixie4/Files")) {
       for (auto &k : q.branches.my_data_) {
         k.metadata.writable = !(status_ & DeviceStatus::booted);
-        if ((k.metadata.setting_type == Gamma::SettingType::dir_path) && (k.id_ == "Pixie4/Files/XIA_path"))
+        if ((k.metadata.setting_type == Qpx::SettingType::dir_path) && (k.id_ == "Pixie4/Files/XIA_path"))
           k.value_text = XIA_file_directory_;
-        else if ((k.metadata.setting_type == Gamma::SettingType::file_path) && (k.metadata.address > 0) && (k.metadata.address < 8))
+        else if ((k.metadata.setting_type == Qpx::SettingType::file_path) && (k.metadata.address > 0) && (k.metadata.address < 8))
           k.value_text = boot_files_[k.metadata.address - 1];
       }
-    } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/System")) {
+    } else if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "Pixie4/System")) {
       for (auto &k : q.branches.my_data_) {
         k.metadata.writable = (!(status_ & DeviceStatus::booted) && setting_definitions_.count(k.id_) && setting_definitions_.at(k.id_).writable);
-        if (k.metadata.setting_type == Gamma::SettingType::stem) {
+        if (k.metadata.setting_type == Qpx::SettingType::stem) {
           int16_t modnum = k.metadata.address;
           if ((modnum < 0) || (modnum >= channel_indices_.size())) {
             PL_WARN << "<Pixie4> module address out of bounds, ignoring branch " << modnum;
@@ -209,14 +209,14 @@ bool Pixie4::read_settings_bulk(Gamma::Setting &set) const {
           }
           int filterrange = module_parameter_values_[modnum * N_MODULE_PAR + i_mod("FILTER_RANGE")];
           for (auto &p : k.branches.my_data_) {
-            if (p.metadata.setting_type == Gamma::SettingType::stem) {
+            if (p.metadata.setting_type == Qpx::SettingType::stem) {
               int16_t channum = p.metadata.address;
               if ((channum < 0) || (channum >= NUMBER_OF_CHANNELS)) {
                 PL_WARN << "<Pixie4> channel address out of bounds, ignoring branch " << channum;
                 continue;
               }
               for (auto &o : p.branches.my_data_) {
-                if (o.metadata.setting_type == Gamma::SettingType::floating) {
+                if (o.metadata.setting_type == Qpx::SettingType::floating) {
                   o.value_dbl = channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
                   if (o.metadata.name == "ENERGY_RISETIME") {
                     o.metadata.step = static_cast<double>(pow(2, filterrange)) / 75.0 ;
@@ -230,28 +230,28 @@ bool Pixie4::read_settings_bulk(Gamma::Setting &set) const {
                     //                      PL_DBG << "flattop " << o.metadata.minimum << "-" << o.metadata.step << "-" << o.metadata.maximum;
                   }
                 }
-                else if ((o.metadata.setting_type == Gamma::SettingType::integer)
-                         || (o.metadata.setting_type == Gamma::SettingType::boolean)
-                         || (o.metadata.setting_type == Gamma::SettingType::int_menu)
-                         || (o.metadata.setting_type == Gamma::SettingType::binary))
+                else if ((o.metadata.setting_type == Qpx::SettingType::integer)
+                         || (o.metadata.setting_type == Qpx::SettingType::boolean)
+                         || (o.metadata.setting_type == Qpx::SettingType::int_menu)
+                         || (o.metadata.setting_type == Qpx::SettingType::binary))
                   o.value_int = channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR];
               }
             }
-            else if (p.metadata.setting_type == Gamma::SettingType::floating)
+            else if (p.metadata.setting_type == Qpx::SettingType::floating)
               p.value_dbl = module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address];
-            else if ((p.metadata.setting_type == Gamma::SettingType::integer)
-                     || (p.metadata.setting_type == Gamma::SettingType::boolean)
-                     || (p.metadata.setting_type == Gamma::SettingType::int_menu)
-                     || (p.metadata.setting_type == Gamma::SettingType::binary))
+            else if ((p.metadata.setting_type == Qpx::SettingType::integer)
+                     || (p.metadata.setting_type == Qpx::SettingType::boolean)
+                     || (p.metadata.setting_type == Qpx::SettingType::int_menu)
+                     || (p.metadata.setting_type == Qpx::SettingType::binary))
               p.value_int = module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address];
           }
         }
-        else if (k.metadata.setting_type == Gamma::SettingType::floating)
+        else if (k.metadata.setting_type == Qpx::SettingType::floating)
           k.value_dbl = system_parameter_values_[k.metadata.address];
-        else if ((k.metadata.setting_type == Gamma::SettingType::integer)
-                 || (k.metadata.setting_type == Gamma::SettingType::boolean)
-                 || (k.metadata.setting_type == Gamma::SettingType::int_menu)
-                 || (k.metadata.setting_type == Gamma::SettingType::binary))
+        else if ((k.metadata.setting_type == Qpx::SettingType::integer)
+                 || (k.metadata.setting_type == Qpx::SettingType::boolean)
+                 || (k.metadata.setting_type == Qpx::SettingType::int_menu)
+                 || (k.metadata.setting_type == Qpx::SettingType::binary))
           k.value_int = system_parameter_values_[k.metadata.address];
       }
     }
@@ -259,20 +259,20 @@ bool Pixie4::read_settings_bulk(Gamma::Setting &set) const {
   return true;
 }
 
-void Pixie4::rebuild_structure(Gamma::Setting &set) {
-  Gamma::Setting maxmod("Pixie4/System/MAX_NUMBER_MODULES");
-  maxmod = set.get_setting(maxmod, Gamma::Match::id);
+void Pixie4::rebuild_structure(Qpx::Setting &set) {
+  Qpx::Setting maxmod("Pixie4/System/MAX_NUMBER_MODULES");
+  maxmod = set.get_setting(maxmod, Qpx::Match::id);
 
-  Gamma::Setting totmod("Pixie4/System/NUMBER_MODULES");
-  totmod = set.get_setting(totmod, Gamma::Match::id);
+  Qpx::Setting totmod("Pixie4/System/NUMBER_MODULES");
+  totmod = set.get_setting(totmod, Qpx::Match::id);
 
-  Gamma::Setting slot("Pixie4/System/SLOT_WAVE");
+  Qpx::Setting slot("Pixie4/System/SLOT_WAVE");
   slot.enrich(setting_definitions_, true);
 
-  Gamma::Setting chan("Pixie4/System/module/channel");
+  Qpx::Setting chan("Pixie4/System/module/channel");
   chan.enrich(setting_definitions_, true);
 
-  Gamma::Setting mod("Pixie4/System/module");
+  Qpx::Setting mod("Pixie4/System/module");
   mod.enrich(setting_definitions_, true);
   for (int j=0; j < NUMBER_OF_CHANNELS; ++j) {
     chan.metadata.address = j;
@@ -294,7 +294,7 @@ void Pixie4::rebuild_structure(Gamma::Setting &set) {
   }
 
   int newtot = 0;
-  std::vector<Gamma::Setting> old_slots;
+  std::vector<Qpx::Setting> old_slots;
   for (auto &q : set.branches.my_data_) {
     if (q.id_ == "Pixie4/System/SLOT_WAVE") {
       old_slots.push_back(q);
@@ -338,7 +338,7 @@ void Pixie4::rebuild_structure(Gamma::Setting &set) {
   //if (hardware_changed) PL_DBG << "hardware changed";
 
 //  if (newtot != oldtot) {
-    std::vector<Gamma::Setting> old_modules;
+    std::vector<Qpx::Setting> old_modules;
 
     int actualmods = 0;
     for (auto &q : set.branches.my_data_) {
@@ -371,7 +371,7 @@ void Pixie4::rebuild_structure(Gamma::Setting &set) {
 //  }
 }
 
-void Pixie4::reindex_modules(Gamma::Setting &set) {
+void Pixie4::reindex_modules(Qpx::Setting &set) {
 
   int ma = 0;
   for (auto &m : set.branches.my_data_) {
@@ -401,14 +401,14 @@ void Pixie4::reindex_modules(Gamma::Setting &set) {
 }
 
 
-bool Pixie4::write_settings_bulk(Gamma::Setting &set) {
+bool Pixie4::write_settings_bulk(Qpx::Setting &set) {
   if (set.id_ != device_name())
     return false;
 
   set.enrich(setting_definitions_);
 
   for (auto &q : set.branches.my_data_) {
-    if ((q.metadata.setting_type == Gamma::SettingType::command) && (q.value_int == 1)) {
+    if ((q.metadata.setting_type == Qpx::SettingType::command) && (q.value_int == 1)) {
       q.value_int = 0;
       if (q.id_ == "Pixie4/Measure baselines")
         return control_measure_baselines(Module::all);
@@ -418,9 +418,9 @@ bool Pixie4::write_settings_bulk(Gamma::Setting &set) {
         return control_find_tau(Module::all);
       else if (q.id_ == "Pixie4/Compute BLCUT")
         return control_compute_BLcut();
-    } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Files") && !(status_ & DeviceStatus::booted)) {
+    } else if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "Pixie4/Files") && !(status_ & DeviceStatus::booted)) {
       for (auto &k : q.branches.my_data_) {
-        if ((k.metadata.setting_type == Gamma::SettingType::dir_path) && (k.id_ == "Pixie4/Files/XIA_path")) {
+        if ((k.metadata.setting_type == Qpx::SettingType::dir_path) && (k.id_ == "Pixie4/Files/XIA_path")) {
           if (XIA_file_directory_ != k.value_text) {
             if (!XIA_file_directory_.empty()) {
               XIA_file_directory_ = k.value_text;
@@ -434,17 +434,17 @@ bool Pixie4::write_settings_bulk(Gamma::Setting &set) {
             } else
               XIA_file_directory_ = k.value_text;
           }
-        } else if ((k.metadata.setting_type == Gamma::SettingType::file_path) && (k.metadata.address > 0) && (k.metadata.address < 8))
+        } else if ((k.metadata.setting_type == Qpx::SettingType::file_path) && (k.metadata.address > 0) && (k.metadata.address < 8))
           boot_files_[k.metadata.address - 1] = k.value_text;
       }
-    } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
+    } else if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
       for (auto &k : q.branches.my_data_) {
         if (k.id_ == "Pixie4/Run settings/Run type")
           run_type_ = k.value_int;
         else if (k.id_ == "Pixie4/Run settings/Poll interval")
           run_poll_interval_ms_ = k.value_int;
       }
-    } else if ((q.metadata.setting_type == Gamma::SettingType::stem) && (q.id_ == "Pixie4/System")) {
+    } else if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "Pixie4/System")) {
       if (!(status_ & DeviceStatus::booted))
         rebuild_structure(q);
 
@@ -452,17 +452,17 @@ bool Pixie4::write_settings_bulk(Gamma::Setting &set) {
 
       for (auto &k : q.branches.my_data_) {
 
-        if (k.metadata.setting_type == Gamma::SettingType::stem) {
+        if (k.metadata.setting_type == Qpx::SettingType::stem) {
           int16_t modnum = k.metadata.address;
           if ((modnum < 0) || (modnum >= channel_indices_.size())) {
             PL_WARN << "<Pixie4> module address out of bounds, ignoring branch " << modnum;
             continue;
           }
           for (auto &p : k.branches.my_data_) {
-            if (p.metadata.setting_type != Gamma::SettingType::stem)
+            if (p.metadata.setting_type != Qpx::SettingType::stem)
               p.indices = k.indices;
 
-            if (p.metadata.setting_type == Gamma::SettingType::stem) {
+            if (p.metadata.setting_type == Qpx::SettingType::stem) {
               int16_t channum = p.metadata.address;
               if ((channum < 0) || (channum >= NUMBER_OF_CHANNELS)) {
                 PL_WARN << "<Pixie4> channel address out of bounds, ignoring branch " << channum;
@@ -478,34 +478,34 @@ bool Pixie4::write_settings_bulk(Gamma::Setting &set) {
                 o.indices.clear();
                 o.indices.insert(det);
 
-                if (o.metadata.writable && (o.metadata.setting_type == Gamma::SettingType::floating) && (channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value_dbl)) {
+                if (o.metadata.writable && (o.metadata.setting_type == Qpx::SettingType::floating) && (channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value_dbl)) {
                   channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value_dbl;
                   write_chan(o.metadata.name.c_str(), modnum, channum);
-                } else if (o.metadata.writable && ((o.metadata.setting_type == Gamma::SettingType::integer)
-                                                   || (o.metadata.setting_type == Gamma::SettingType::boolean)
-                                                   || (o.metadata.setting_type == Gamma::SettingType::int_menu)
-                                                   || (o.metadata.setting_type == Gamma::SettingType::binary))
+                } else if (o.metadata.writable && ((o.metadata.setting_type == Qpx::SettingType::integer)
+                                                   || (o.metadata.setting_type == Qpx::SettingType::boolean)
+                                                   || (o.metadata.setting_type == Qpx::SettingType::int_menu)
+                                                   || (o.metadata.setting_type == Qpx::SettingType::binary))
                            && (channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] != o.value_int)) {
                   channel_parameter_values_[o.metadata.address + modnum * N_CHANNEL_PAR * NUMBER_OF_CHANNELS + channum * N_CHANNEL_PAR] = o.value_int;
                   write_chan(o.metadata.name.c_str(), modnum, channum);
                 }
               }
-            } else if (p.metadata.writable && (p.metadata.setting_type == Gamma::SettingType::floating) && (module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] != p.value_dbl)) {
+            } else if (p.metadata.writable && (p.metadata.setting_type == Qpx::SettingType::floating) && (module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] != p.value_dbl)) {
               module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] = p.value_dbl;
               write_mod(p.metadata.name.c_str(), modnum);
-            } else if (p.metadata.writable && ((p.metadata.setting_type == Gamma::SettingType::integer)
-                                               || (p.metadata.setting_type == Gamma::SettingType::boolean)
-                                               || (p.metadata.setting_type == Gamma::SettingType::int_menu)
-                                               || (p.metadata.setting_type == Gamma::SettingType::binary))
+            } else if (p.metadata.writable && ((p.metadata.setting_type == Qpx::SettingType::integer)
+                                               || (p.metadata.setting_type == Qpx::SettingType::boolean)
+                                               || (p.metadata.setting_type == Qpx::SettingType::int_menu)
+                                               || (p.metadata.setting_type == Qpx::SettingType::binary))
                        && (module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] != p.value_int)) {
               module_parameter_values_[modnum * N_MODULE_PAR +  p.metadata.address] = p.value_int;
               write_mod(p.metadata.name.c_str(), modnum);
             }
           }
-        } else if (((k.metadata.setting_type == Gamma::SettingType::integer)
-                                           || (k.metadata.setting_type == Gamma::SettingType::boolean)
-                                           || (k.metadata.setting_type == Gamma::SettingType::int_menu)
-                                           || (k.metadata.setting_type == Gamma::SettingType::binary))
+        } else if (((k.metadata.setting_type == Qpx::SettingType::integer)
+                                           || (k.metadata.setting_type == Qpx::SettingType::boolean)
+                                           || (k.metadata.setting_type == Qpx::SettingType::int_menu)
+                                           || (k.metadata.setting_type == Qpx::SettingType::binary))
                    && (system_parameter_values_[k.metadata.address] != k.value_int)) {
           system_parameter_values_[k.metadata.address] = k.value_int;
           write_sys(k.metadata.name.c_str());

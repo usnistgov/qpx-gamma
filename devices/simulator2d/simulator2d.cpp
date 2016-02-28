@@ -53,7 +53,7 @@ bool Simulator2D::die() {
 
   status_ = DeviceStatus::loaded; // | DeviceStatus::can_boot;
 //  for (auto &q : set.branches.my_data_) {
-//    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "Simulator2D/Source file"))
+//    if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "Simulator2D/Source file"))
 //      q.metadata.writable = true;
 //  }
 
@@ -110,34 +110,34 @@ bool Simulator2D::daq_running() {
 
 
 
-bool Simulator2D::read_settings_bulk(Gamma::Setting &set) const {
+bool Simulator2D::read_settings_bulk(Qpx::Setting &set) const {
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
-      if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/SpillInterval"))
+      if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "Simulator2D/SpillInterval"))
         q.value_int = spill_interval_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/Resolution"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "Simulator2D/Resolution"))
         q.value_int = bits_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::floating) && (q.id_ == "Simulator2D/ScaleRate"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::floating) && (q.id_ == "Simulator2D/ScaleRate"))
         q.value_dbl = scale_rate_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/Gain0")) {
+      else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "Simulator2D/Gain0")) {
         q.value_dbl = gain0_;
         q.indices.clear();
         q.indices.insert(chan0_);
       }
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/Gain1")) {
+      else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "Simulator2D/Gain1")) {
         q.value_dbl = gain1_;
         q.indices.clear();
         q.indices.insert(chan1_);
       }
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "Simulator2D/CoincThresh"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "Simulator2D/CoincThresh"))
         q.value_int = coinc_thresh_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::floating) && (q.id_ == "Simulator2D/TimebaseMult"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::floating) && (q.id_ == "Simulator2D/TimebaseMult"))
         q.value_dbl = model_hit.timestamp.timebase_multiplier;
-      else if ((q.metadata.setting_type == Gamma::SettingType::floating) && (q.id_ == "Simulator2D/TimebaseDiv"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::floating) && (q.id_ == "Simulator2D/TimebaseDiv"))
         q.value_dbl = model_hit.timestamp.timebase_divider;
-      else if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "Simulator2D/Source file"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "Simulator2D/Source file"))
         q.value_text = source_file_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::int_menu) && (q.id_ == "Simulator2D/Source spectrum")) {
+      else if ((q.metadata.setting_type == Qpx::SettingType::int_menu) && (q.id_ == "Simulator2D/Source spectrum")) {
         q.metadata.int_menu_items.clear();
         q.value_int = 0;
 
@@ -154,7 +154,7 @@ bool Simulator2D::read_settings_bulk(Gamma::Setting &set) const {
 }
 
 
-bool Simulator2D::write_settings_bulk(Gamma::Setting &set) {
+bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
 
   if (set.id_ != device_name())
     return false;
@@ -253,7 +253,7 @@ bool Simulator2D::boot() {
 
   count_ = md.total_count;
 
-  time_factor = settings.get_setting(Gamma::Setting("Pixie4/System/module/TOTAL_TIME"), Gamma::Match::id).value_dbl / lab_time;
+  time_factor = settings.get_setting(Qpx::Setting("Pixie4/System/module/TOTAL_TIME"), Qpx::Match::id).value_dbl / lab_time;
   OCR = static_cast<double>(count_) / lab_time;
   PL_DBG << "<Simulator2D> total count=" << count_ << " time_factor=" << time_factor << " OCR=" << OCR;
 
@@ -293,9 +293,9 @@ bool Simulator2D::boot() {
 
   status_ = DeviceStatus::loaded | DeviceStatus::booted | DeviceStatus::can_run;
 //  for (auto &q : set.branches.my_data_) {
-//    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "Simulator2D/Source file"))
+//    if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "Simulator2D/Source file"))
 //      q.metadata.writable = false;
-//    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "Simulator2D/Source spectrum"))
+//    if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "Simulator2D/Source spectrum"))
 //      q.metadata.writable = false;
 //  }
 
@@ -429,10 +429,10 @@ StatsUpdate Simulator2D::getBlock(double duration) {
 
   //one channel only, find by indices?
   //  for (int i = 0; i<2; i++) {
-    newBlock.fast_peaks = settings.get_setting(Gamma::Setting("FAST_PEAKS"), Gamma::Match::name).value_dbl * fraction;
-    newBlock.live_time  = settings.get_setting(Gamma::Setting("LIVE_TIME"), Gamma::Match::name).value_dbl * fraction;
-    newBlock.ftdt       = settings.get_setting(Gamma::Setting("FTDT"), Gamma::Match::name).value_dbl * fraction;
-    newBlock.sfdt       = settings.get_setting(Gamma::Setting("SFDT"), Gamma::Match::name).value_dbl * fraction;
+    newBlock.fast_peaks = settings.get_setting(Qpx::Setting("FAST_PEAKS"), Qpx::Match::name).value_dbl * fraction;
+    newBlock.live_time  = settings.get_setting(Qpx::Setting("LIVE_TIME"), Qpx::Match::name).value_dbl * fraction;
+    newBlock.ftdt       = settings.get_setting(Qpx::Setting("FTDT"), Qpx::Match::name).value_dbl * fraction;
+    newBlock.sfdt       = settings.get_setting(Qpx::Setting("SFDT"), Qpx::Match::name).value_dbl * fraction;
     //  }
 
 

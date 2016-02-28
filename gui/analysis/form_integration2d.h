@@ -145,7 +145,7 @@ private:
   int32_t index_of(double, double);
   int32_t current_idx();
 
-  Gamma::Fitter fit_x_, fit_y_, fit_d_;
+  Qpx::Fitter fit_x_, fit_y_, fit_d_;
 
   void rebuild_table(bool contents_changed);
   void make_gates();

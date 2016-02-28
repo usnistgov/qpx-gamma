@@ -51,30 +51,30 @@ MADC32::~MADC32() {
 bool MADC32::daq_init() {
 
   //for scaler
-  Gamma::Setting reset_counters("VME/MADC32/reset_ctr_ab");
+  Qpx::Setting reset_counters("VME/MADC32/reset_ctr_ab");
   reset_counters.enrich(setting_definitions_, true);
   m_controller->write16(m_baseAddress + reset_counters.metadata.address, AddressModifier::A32_UserData, (uint16_t)2);
 
   //the rest
-  Gamma::Setting reset("VME/MADC32/readout_reset");
+  Qpx::Setting reset("VME/MADC32/readout_reset");
   reset.enrich(setting_definitions_, true);
   m_controller->write16(m_baseAddress + reset.metadata.address, AddressModifier::A32_UserData, (uint16_t)1);
 
-  Gamma::Setting freset("VME/MADC32/FIFO_reset");
+  Qpx::Setting freset("VME/MADC32/FIFO_reset");
   freset.enrich(setting_definitions_, true);
   m_controller->write16(m_baseAddress + freset.metadata.address, AddressModifier::A32_UserData, (uint16_t)0);
 
-  Gamma::Setting st("VME/MADC32/start_acq");
+  Qpx::Setting st("VME/MADC32/start_acq");
   st.enrich(setting_definitions_, true);
   m_controller->write16(m_baseAddress + st.metadata.address, AddressModifier::A32_UserData, (uint16_t)1);
 
 }
 
-void MADC32::rebuild_structure(Gamma::Setting &set) {
+void MADC32::rebuild_structure(Qpx::Setting &set) {
   for (auto &k : set.branches.my_data_) {
-    if ((k.metadata.setting_type == Gamma::SettingType::stem) && (k.id_ == "VME/MADC32/ChannelThresholds")) {
+    if ((k.metadata.setting_type == Qpx::SettingType::stem) && (k.id_ == "VME/MADC32/ChannelThresholds")) {
 
-      Gamma::Setting temp("VME/MADC32/Threshold");
+      Qpx::Setting temp("VME/MADC32/Threshold");
       temp.enrich(setting_definitions_, true);
 
       while (k.branches.size() < 32)
@@ -124,16 +124,16 @@ void MADC32::addReadout(VmeStack& stack, int style = 0)
   } else if (style == 1) {
     //scaler
 
-    Gamma::Setting busy_time_lo("VME/MADC32/adc_busy_time_lo");
+    Qpx::Setting busy_time_lo("VME/MADC32/adc_busy_time_lo");
     busy_time_lo.enrich(setting_definitions_, true);
 
-    Gamma::Setting busy_time_hi("VME/MADC32/adc_busy_time_hi");
+    Qpx::Setting busy_time_hi("VME/MADC32/adc_busy_time_hi");
     busy_time_hi.enrich(setting_definitions_, true);
 
-    Gamma::Setting time_0("VME/MADC32/time_0");
+    Qpx::Setting time_0("VME/MADC32/time_0");
     time_0.enrich(setting_definitions_, true);
 
-    Gamma::Setting time_1("VME/MADC32/time_1");
+    Qpx::Setting time_1("VME/MADC32/time_1");
     time_1.enrich(setting_definitions_, true);
 
     stack.addRead16((uint32_t)(m_baseAddress + busy_time_lo.metadata.address), AddressModifier::A32_UserData);
@@ -144,7 +144,7 @@ void MADC32::addReadout(VmeStack& stack, int style = 0)
 
     // reset the time for incremental scalers....
 
-    Gamma::Setting reset_counters("VME/MADC32/reset_ctr_ab");
+    Qpx::Setting reset_counters("VME/MADC32/reset_ctr_ab");
     reset_counters.enrich(setting_definitions_, true);
 
     stack.addWrite16((uint32_t)(m_baseAddress + reset_counters.metadata.address), AddressModifier::A32_UserData, (uint16_t)2);

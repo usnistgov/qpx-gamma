@@ -66,7 +66,7 @@ bool ParserEVT::die() {
   expected_rbuf_items_ = 0;
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
   //  for (auto &q : set.branches.my_data_) {
-  //    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "ParserEVT/Source file"))
+  //    if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserEVT/Source file"))
   //      q.metadata.writable = true;
   //  }
 
@@ -123,26 +123,26 @@ bool ParserEVT::daq_running() {
 
 
 
-bool ParserEVT::read_settings_bulk(Gamma::Setting &set) const {
+bool ParserEVT::read_settings_bulk(Qpx::Setting &set) const {
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
-      if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserEVT/Override timestamps"))
+      if ((q.metadata.setting_type == Qpx::SettingType::boolean) && (q.id_ == "ParserEVT/Override timestamps"))
         q.value_int = override_timestamps_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserEVT/Loop data"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::boolean) && (q.id_ == "ParserEVT/Loop data"))
         q.value_int = loop_data_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserEVT/Override pause"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::boolean) && (q.id_ == "ParserEVT/Override pause"))
         q.value_int = override_pause_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserEVT/Bad_buffers_report"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::boolean) && (q.id_ == "ParserEVT/Bad_buffers_report"))
         q.value_int = bad_buffers_rep_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserEVT/Bad_buffers_output"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::boolean) && (q.id_ == "ParserEVT/Bad_buffers_output"))
         q.value_int = bad_buffers_dbg_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::integer) && (q.id_ == "ParserEVT/Pause"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "ParserEVT/Pause"))
         q.value_int = pause_ms_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserEVT/Cutoff"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::boolean) && (q.id_ == "ParserEVT/Cutoff"))
         q.value_int = terminate_premature_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::boolean) && (q.id_ == "ParserEVT/Cutoff number"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::boolean) && (q.id_ == "ParserEVT/Cutoff number"))
         q.value_int = max_rbuf_evts_;
-      else if ((q.metadata.setting_type == Gamma::SettingType::dir_path) && (q.id_ == "ParserEVT/Source dir")) {
+      else if ((q.metadata.setting_type == Qpx::SettingType::dir_path) && (q.id_ == "ParserEVT/Source dir")) {
         q.value_text = source_dir_;
         q.metadata.writable = !(status_ & DeviceStatus::booted);
       }
@@ -152,7 +152,7 @@ bool ParserEVT::read_settings_bulk(Gamma::Setting &set) const {
 }
 
 
-bool ParserEVT::write_settings_bulk(Gamma::Setting &set) {
+bool ParserEVT::write_settings_bulk(Qpx::Setting &set) {
   set.enrich(setting_definitions_);
 
   if (set.id_ != device_name())
@@ -270,7 +270,7 @@ bool ParserEVT::boot() {
 
   status_ = DeviceStatus::loaded | DeviceStatus::booted | DeviceStatus::can_run;
   //  for (auto &q : set.branches.my_data_) {
-  //    if ((q.metadata.setting_type == Gamma::SettingType::file_path) && (q.id_ == "ParserEVT/Source file"))
+  //    if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserEVT/Source file"))
   //      q.metadata.writable = false;
   //  }
 

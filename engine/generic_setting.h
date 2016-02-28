@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::Setting exactly what it says
+ *      Setting exactly what it says
  *
  ******************************************************************************/
 
@@ -29,6 +29,7 @@
 #include <set>
 #include <boost/date_time.hpp>
 #include <boost/multiprecision/cpp_dec_float.hpp>
+#include "pattern.h"
 
 #include "pugixml.hpp"
 #include "xmlable.h"
@@ -38,7 +39,7 @@
 typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<QPX_FLOAT_PRECISION> > PreciseFloat;
 
 
-namespace Gamma {
+namespace Qpx {
 
 enum class SettingType : int {none,
                               stem,
@@ -51,7 +52,7 @@ enum class SettingType : int {none,
                               detector, // does not scale
                               time,
                               time_duration,
-                              pattern, // unimplemented
+                              pattern,
                               file_path,
                               dir_path,
                               binary,
@@ -153,6 +154,7 @@ struct Setting : public XMLable {
   boost::posix_time::ptime         value_time;
   boost::posix_time::time_duration value_duration;
   PreciseFloat                     value_precise;
+  Pattern                          value_pattern;
 
 
   XMLableDB<Setting> branches;
@@ -175,7 +177,7 @@ struct Setting : public XMLable {
   bool shallow_equals(const Setting& other) const {
     return (id_ == other.id_);
   }
-  bool compare(const Setting &other, Gamma::Match flags) const;
+  bool compare(const Setting &other, Match flags) const;
 
   bool operator!= (const Setting& other) const {return !operator==(other);}
   bool operator== (const Setting& other) const {
@@ -187,6 +189,7 @@ struct Setting : public XMLable {
     if (value_time     != other.value_time) return false;
     if (value_duration != other.value_duration) return false;
     if (value_precise  != other.value_precise) return false;
+    if (value_pattern  != other.value_pattern) return false;
     if (branches       != other.branches) return false;
 //    if (metadata != other.metadata) return false;
     return true;
@@ -214,18 +217,18 @@ struct Setting : public XMLable {
   void to_xml(pugi::xml_node &node, bool with_metadata) const;
   void to_xml(pugi::xml_node &node) const override {this->to_xml(node, false);}
 
-  Gamma::Setting get_setting(Gamma::Setting address, Match flags) const;
-  bool retrieve_one_setting(Gamma::Setting&, const Gamma::Setting&, Match flags) const;
-  bool push_one_setting(const Gamma::Setting &setting, Gamma::Setting& root, Match flags);
+  Setting get_setting(Setting address, Match flags) const;
+  bool retrieve_one_setting(Setting&, const Setting&, Match flags) const;
+  bool push_one_setting(const Setting &setting, Setting& root, Match flags);
 
-  void del_setting(Gamma::Setting address, Match flags);
-  void delete_one_setting(const Gamma::Setting&, Gamma::Setting&, Match flags);
+  void del_setting(Setting address, Match flags);
+  void delete_one_setting(const Setting&, Setting&, Match flags);
 
   void condense();
   void cull_invisible();
   void cull_readonly();
   void strip_metadata();
-  void enrich(const std::map<std::string, Gamma::SettingMeta> &, bool impose_limits = false);
+  void enrich(const std::map<std::string, SettingMeta> &, bool impose_limits = false);
 
 };
 

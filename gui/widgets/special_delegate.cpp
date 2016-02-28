@@ -57,37 +57,39 @@ void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
   } else if (index.data().type() == QVariant::Color) {
     QColor thisColor = qvariant_cast<QColor>(index.data());
     painter->fillRect(option.rect, thisColor);
-  } else if (index.data().canConvert<Gamma::Setting>()) {
-    Gamma::Setting itemData = qvariant_cast<Gamma::Setting>(index.data());
-    if (itemData.metadata.setting_type == Gamma::SettingType::command) {
+  } else if (index.data().canConvert<Qpx::Setting>()) {
+    Qpx::Setting itemData = qvariant_cast<Qpx::Setting>(index.data());
+    if (itemData.metadata.setting_type == Qpx::SettingType::command) {
       QStyleOptionButton button;
       button.rect = option.rect;
       button.text = QString::fromStdString(itemData.metadata.name);
       if (itemData.metadata.writable)
         button.state = QStyle::State_Enabled;
       QApplication::style()->drawControl( QStyle::CE_PushButton, &button, painter);
-    } else if (itemData.metadata.setting_type == Gamma::SettingType::pattern) {
-      std::bitset<64> set(itemData.value_int);
-      QVector<int16_t> pat(itemData.metadata.maximum);
-      for (int i=0; i < itemData.metadata.maximum; ++i)
-        pat[i] = set[i];
+    } else if (itemData.metadata.setting_type == Qpx::SettingType::pattern) {
+      if (itemData.metadata.maximum > itemData.value_pattern.gates().size())
+        itemData.value_pattern.resize(itemData.metadata.maximum);
+      std::vector<bool> gates = itemData.value_pattern.gates();
+      QVector<int16_t> pat(gates.size());
+      for (int i=0; i < gates.size(); ++i)
+        pat[i] = gates[i];
       QpxPattern pattern(pat, 20, false, 8);
       if (option.state & QStyle::State_Selected)
         painter->fillRect(option.rect, option.palette.highlight());
       pattern.paint(painter, option.rect, option.palette);
-    } else if ((itemData.metadata.setting_type == Gamma::SettingType::dir_path) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::text) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::integer) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::int_menu) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::binary) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::floating) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::detector) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::indicator) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::time) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::time_duration) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::floating_precise) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::boolean) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::file_path)) {
+    } else if ((itemData.metadata.setting_type == Qpx::SettingType::dir_path) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::text) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::integer) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::int_menu) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::binary) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::floating) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::detector) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::indicator) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::time) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::time_duration) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::floating_precise) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::boolean) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::file_path)) {
 
       int flags = Qt::TextWordWrap | Qt::AlignVCenter;
 
@@ -98,10 +100,10 @@ void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
 
       painter->save();
 
-      if (itemData.metadata.setting_type == Gamma::SettingType::indicator) {
+      if (itemData.metadata.setting_type == Qpx::SettingType::indicator) {
         QColor bkgCol = QColor::fromRgba(
-                      itemData.get_setting(Gamma::Setting(
-                                             itemData.metadata.int_menu_items.at(itemData.value_int)), Gamma::Match::id)
+                      itemData.get_setting(Qpx::Setting(
+                                             itemData.metadata.int_menu_items.at(itemData.value_int)), Qpx::Match::id)
               .metadata.address
                       );
         painter->fillRect(option.rect, bkgCol);
@@ -110,7 +112,7 @@ void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
         f.setBold(true);
         painter->setFont(f);
         flags |= Qt::AlignCenter;
-      } else if (itemData.metadata.setting_type == Gamma::SettingType::detector) {
+      } else if (itemData.metadata.setting_type == Qpx::SettingType::detector) {
         QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::red, Qt::blue};
         uint16_t index = 0;
         if (itemData.indices.size())
@@ -151,16 +153,16 @@ QSize QpxSpecialDelegate::sizeHint(const QStyleOptionViewItem &option,
   if (index.data().canConvert<QpxPattern>()) {
     QpxPattern qpxPattern = qvariant_cast<QpxPattern>(index.data());
     return qpxPattern.sizeHint();
-  } else if (index.data().canConvert<Gamma::Setting>()) {
-    Gamma::Setting itemData = qvariant_cast<Gamma::Setting>(index.data());
-    if (itemData.metadata.setting_type == Gamma::SettingType::pattern) {
+  } else if (index.data().canConvert<Qpx::Setting>()) {
+    Qpx::Setting itemData = qvariant_cast<Qpx::Setting>(index.data());
+    if (itemData.metadata.setting_type == Qpx::SettingType::pattern) {
       std::bitset<64> set(itemData.value_int);
       QVector<int16_t> pat(itemData.metadata.maximum);
       for (int i=0; i < itemData.metadata.maximum; ++i)
         pat[i] = set[i];
       QpxPattern pattern(pat, 20, false, 8);
       return pattern.sizeHint();
-    } else if (itemData.metadata.setting_type == Gamma::SettingType::time) {
+    } else if (itemData.metadata.setting_type == Qpx::SettingType::time) {
       QDateTimeEdit editor;
       editor.setCalendarPopup(true);
       editor.setTimeSpec(Qt::UTC);
@@ -168,23 +170,23 @@ QSize QpxSpecialDelegate::sizeHint(const QStyleOptionViewItem &option,
       QSize sz = editor.sizeHint();
       sz.setWidth(sz.width() + 20);
       return sz;
-    } else if (itemData.metadata.setting_type == Gamma::SettingType::time_duration) {
+    } else if (itemData.metadata.setting_type == Qpx::SettingType::time_duration) {
       TimeDurationWidget editor;
       return editor.sizeHint();
-    } else if ((itemData.metadata.setting_type == Gamma::SettingType::dir_path) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::text) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::integer) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::int_menu) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::binary) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::floating) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::detector) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::command) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::time) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::time_duration) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::floating_precise) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::indicator) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::boolean) ||
-               (itemData.metadata.setting_type == Gamma::SettingType::file_path)) {
+    } else if ((itemData.metadata.setting_type == Qpx::SettingType::dir_path) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::text) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::integer) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::int_menu) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::binary) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::floating) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::detector) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::command) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::time) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::time_duration) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::floating_precise) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::indicator) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::boolean) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::file_path)) {
 
       std::string raw_txt = itemData.val_to_pretty_string();
       if (raw_txt.size() > 32)
@@ -210,35 +212,35 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
 {
   emit begin_editing();
 
-  if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
-    Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
-    if ((set.metadata.setting_type == Gamma::SettingType::floating)
-        || (set.metadata.setting_type == Gamma::SettingType::floating_precise))
+  if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
+    Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
+    if ((set.metadata.setting_type == Qpx::SettingType::floating)
+        || (set.metadata.setting_type == Qpx::SettingType::floating_precise))
     {
       QDoubleSpinBox *editor = new QDoubleSpinBox(parent);
       return editor;
-    } else if (set.metadata.setting_type == Gamma::SettingType::integer) {
+    } else if (set.metadata.setting_type == Qpx::SettingType::integer) {
       QSpinBox *editor = new QSpinBox(parent);
       return editor;
-    } else if (set.metadata.setting_type == Gamma::SettingType::binary) {
+    } else if (set.metadata.setting_type == Qpx::SettingType::binary) {
       emit ask_binary(set, index);
       return nullptr;
-    } else if ((set.metadata.setting_type == Gamma::SettingType::command) && (set.metadata.writable))  {
+    } else if ((set.metadata.setting_type == Qpx::SettingType::command) && (set.metadata.writable))  {
       emit ask_execute(set, index);
       return nullptr;
-    } else if (set.metadata.setting_type == Gamma::SettingType::text) {
+    } else if (set.metadata.setting_type == Qpx::SettingType::text) {
       QLineEdit *editor = new QLineEdit(parent);
       return editor;
-    } else if (set.metadata.setting_type == Gamma::SettingType::time) {
+    } else if (set.metadata.setting_type == Qpx::SettingType::time) {
       QDateTimeEdit *editor = new QDateTimeEdit(parent);
       editor->setCalendarPopup(true);
       editor->setTimeSpec(Qt::UTC);
       editor->setDisplayFormat("yyyy-MM-dd HH:mm:ss.zzz");
       return editor;
-    } else if (set.metadata.setting_type == Gamma::SettingType::time_duration) {
+    } else if (set.metadata.setting_type == Qpx::SettingType::time_duration) {
       TimeDurationWidget *editor = new TimeDurationWidget(parent);
       return editor;
-    } else if (set.metadata.setting_type == Gamma::SettingType::pattern) {
+    } else if (set.metadata.setting_type == Qpx::SettingType::pattern) {
       std::bitset<64> bset(set.value_int);
       QVector<int16_t> pat(set.metadata.maximum);
       for (int i=0; i < set.metadata.maximum; ++i)
@@ -247,7 +249,7 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
       QpxPatternEditor *editor = new QpxPatternEditor(parent);
       editor->setQpxPattern(pattern);
       return editor;
-    } else if (set.metadata.setting_type == Gamma::SettingType::detector) {
+    } else if (set.metadata.setting_type == Qpx::SettingType::detector) {
       QComboBox *editor = new QComboBox(parent);
       editor->addItem(QString("none"), QString("none"));
       for (int i=0; i < detectors_.size(); i++) {
@@ -255,23 +257,23 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
         editor->addItem(name, name);
       }
       return editor;
-    } else if (set.metadata.setting_type == Gamma::SettingType::boolean) {
+    } else if (set.metadata.setting_type == Qpx::SettingType::boolean) {
       QCheckBox *editor = new QCheckBox(parent);
       return editor;
-    } else if (set.metadata.setting_type == Gamma::SettingType::file_path) {
+    } else if (set.metadata.setting_type == Qpx::SettingType::file_path) {
       QFileDialog *editor = new QFileDialog(parent, QString("Chose File"),
                                             QFileInfo(QString::fromStdString(set.value_text)).dir().absolutePath(),
                                             QString::fromStdString(set.metadata.unit));
       editor->setFileMode(QFileDialog::ExistingFile);
 
       return editor;
-    } else if (set.metadata.setting_type == Gamma::SettingType::dir_path) {
+    } else if (set.metadata.setting_type == Qpx::SettingType::dir_path) {
       QFileDialog *editor = new QFileDialog(parent, QString("Chose Directory"),
                                             QFileInfo(QString::fromStdString(set.value_text)).dir().absolutePath());
       editor->setFileMode(QFileDialog::Directory);
 
       return editor;
-    } else if (set.metadata.setting_type == Gamma::SettingType::int_menu) {
+    } else if (set.metadata.setting_type == Qpx::SettingType::int_menu) {
       QComboBox *editor = new QComboBox(parent);
       for (auto &q : set.metadata.int_menu_items)
         editor->addItem(QString::fromStdString(q.second), QVariant::fromValue(q.first));
@@ -293,9 +295,9 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
 void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &index ) const
 {
   if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
-      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
-      if (set.metadata.setting_type == Gamma::SettingType::detector) {
+    if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
+      Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
+      if (set.metadata.setting_type == Qpx::SettingType::detector) {
         int cbIndex = cb->findText(QString::fromStdString(set.value_text));
         if(cbIndex >= 0)
           cb->setCurrentIndex(cbIndex);
@@ -306,38 +308,38 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
       }
     }
   } else if (QDoubleSpinBox *sb = qobject_cast<QDoubleSpinBox *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
-      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+    if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
+      Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
       sb->setRange(set.metadata.minimum, set.metadata.maximum);
       sb->setSingleStep(set.metadata.step);
       sb->setDecimals(6); //generalize
-      if (set.metadata.setting_type == Gamma::SettingType::floating_precise)
+      if (set.metadata.setting_type == Qpx::SettingType::floating_precise)
         sb->setValue(set.value_precise.convert_to<long double>());
       else
         sb->setValue(set.value_dbl);
     } else
         sb->setValue(index.data(Qt::EditRole).toDouble());
   } else if (QSpinBox *sb = qobject_cast<QSpinBox *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
-      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+    if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
+      Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
       sb->setRange(static_cast<int64_t>(set.metadata.minimum), static_cast<int64_t>(set.metadata.maximum));
       sb->setSingleStep(static_cast<int64_t>(set.metadata.step));
       sb->setValue(static_cast<int64_t>(set.value_int));
     } else
       sb->setValue(index.data(Qt::EditRole).toInt());
   } else if (QDateTimeEdit *dte = qobject_cast<QDateTimeEdit *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
-      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+    if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
+      Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
       dte->setDateTime(fromBoostPtime(set.value_time));
     }
   } else if (TimeDurationWidget *dte = qobject_cast<TimeDurationWidget *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
-      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+    if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
+      Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
       dte->set_total_seconds(set.value_duration.total_seconds());
     }
   } else if (QLineEdit *le = qobject_cast<QLineEdit *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
-      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+    if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
+      Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
       le->setText(QString::fromStdString(set.value_text));
     } else if (index.data(Qt::EditRole).canConvert(QMetaType::QVariantList)) {
       QVariantList qlist = index.data(Qt::EditRole).toList();
@@ -351,8 +353,8 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
     } else
       le->setText(index.data(Qt::EditRole).toString());
   } else if (QCheckBox *cb = qobject_cast<QCheckBox *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
-      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+    if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
+      Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
       cb->setChecked(set.value_int);
     } else
       cb->setChecked(index.data(Qt::EditRole).toBool());
@@ -364,8 +366,8 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
 void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *model, const QModelIndex &index ) const
 {
   if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Gamma::Setting>()) {
-      Gamma::Setting set = qvariant_cast<Gamma::Setting>(index.data(Qt::EditRole));
+    if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
+      Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
       if (cb->currentData().type() == QMetaType::Int)
         model->setData(index, QVariant::fromValue(cb->currentData().toInt()), Qt::EditRole);
       else if (cb->currentData().type() == QMetaType::Double)
@@ -393,7 +395,7 @@ void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *mod
     QStyledItemDelegate::setModelData(editor, model, index);
 }
 
-void QpxSpecialDelegate::eat_detectors(const XMLableDB<Gamma::Detector> &detectors) {
+void QpxSpecialDelegate::eat_detectors(const XMLableDB<Qpx::Detector> &detectors) {
   detectors_ = detectors;
 }
 

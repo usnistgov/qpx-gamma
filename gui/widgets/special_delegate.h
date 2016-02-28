@@ -33,8 +33,8 @@
 #include "widget_pattern.h"
 #include "detector.h"
 
-Q_DECLARE_METATYPE(Gamma::Detector)
-Q_DECLARE_METATYPE(Gamma::Setting)
+Q_DECLARE_METATYPE(Qpx::Detector)
+Q_DECLARE_METATYPE(Qpx::Setting)
 
 class QpxSpecialDelegate : public QStyledItemDelegate
 {
@@ -50,17 +50,17 @@ public:
     void setEditorData(QWidget *editor, const QModelIndex &index) const Q_DECL_OVERRIDE;
     void setModelData(QWidget *editor, QAbstractItemModel *model,
                       const QModelIndex &index) const Q_DECL_OVERRIDE;
-    void eat_detectors(const XMLableDB<Gamma::Detector>&);
+    void eat_detectors(const XMLableDB<Qpx::Detector>&);
     void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option,
                               const QModelIndex &index) const Q_DECL_OVERRIDE;
 
 signals:
     void begin_editing() const;
-    void ask_execute(Gamma::Setting command, QModelIndex index) const;
-    void ask_binary(Gamma::Setting command, QModelIndex index) const;
+    void ask_execute(Qpx::Setting command, QModelIndex index) const;
+    void ask_binary(Qpx::Setting command, QModelIndex index) const;
 
 private:
-    XMLableDB<Gamma::Detector> detectors_;
+    XMLableDB<Qpx::Detector> detectors_;
 };
 
 #endif

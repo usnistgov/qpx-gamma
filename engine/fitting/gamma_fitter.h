@@ -16,12 +16,12 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Gamma::Fitter
+ *      Qpx::Fitter
  *
  ******************************************************************************/
 
-#ifndef GAMMA_FITTER_H
-#define GAMMA_FITTER_H
+#ifndef QPX_FITTER_H
+#define QPX_FITTER_H
 
 #include "gamma_peak.h"
 #include "roi.h"
@@ -29,7 +29,7 @@
 #include "spectrum.h"
 #include "finder.h"
 
-namespace Gamma {
+namespace Qpx {
 
 class Fitter {
   
@@ -75,7 +75,7 @@ public:
   Finder finder_;
 
   Qpx::Spectrum::Metadata metadata_;
-  Gamma::Detector detector_; //need this? metadata?
+  Qpx::Detector detector_; //need this? metadata?
   std::string sample_name_;
   double activity_scale_factor_; //should be in spectrum?
   

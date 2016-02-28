@@ -26,7 +26,7 @@
 #include <QInputDialog>
 #include <QMessageBox>
 
-dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, XMLableDB<Gamma::Detector>& detDB, QWidget *parent) :
+dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, XMLableDB<Qpx::Detector>& detDB, QWidget *parent) :
   QDialog(parent),
   my_spectrum_(spec),
   det_selection_model_(&det_table_model_),
@@ -171,7 +171,7 @@ void dialog_spectrum::toggle_push()
     ui->pushDetEdit->setEnabled(unlocked);
     ui->pushDetRename->setEnabled(unlocked);
     ui->pushDetToDB->setEnabled(unlocked);
-    Gamma::Detector det = md_.detectors[i];
+    Qpx::Detector det = md_.detectors[i];
     if (unlocked && detectors_.has_a(det))
       ui->pushDetFromDB->setEnabled(true);
   }
@@ -235,11 +235,11 @@ void dialog_spectrum::on_pushDetEdit_clicked()
   int i = ixl.front().row();
 
   DialogDetector* newDet = new DialogDetector(spectrum_detectors_.get(i), QDir("~/"), false, this);
-  connect(newDet, SIGNAL(newDetReady(Gamma::Detector)), this, SLOT(changeDet(Gamma::Detector)));
+  connect(newDet, SIGNAL(newDetReady(Qpx::Detector)), this, SLOT(changeDet(Qpx::Detector)));
   newDet->exec();
 }
 
-void dialog_spectrum::changeDet(Gamma::Detector newDetector) {
+void dialog_spectrum::changeDet(Qpx::Detector newDetector) {
   QModelIndexList ixl = ui->tableDetectors->selectionModel()->selectedRows();
   if (ixl.empty())
     return;
@@ -305,7 +305,7 @@ void dialog_spectrum::on_pushDetFromDB_clicked()
   int i = ixl.front().row();
 
   if (i < md_.detectors.size()) {
-    Gamma::Detector newdet = detectors_.get(md_.detectors[i]);
+    Qpx::Detector newdet = detectors_.get(md_.detectors[i]);
     md_.detectors[i] = newdet;
     my_spectrum_.set_detectors(md_.detectors);
     changed_ = true;
@@ -321,7 +321,7 @@ void dialog_spectrum::on_pushDetToDB_clicked()
   int i = ixl.front().row();
 
   if (i < md_.detectors.size()) {
-    Gamma::Detector newdet = md_.detectors[i];
+    Qpx::Detector newdet = md_.detectors[i];
 
     if (!detectors_.has_a(newdet)) {
       bool ok;
