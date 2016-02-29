@@ -353,7 +353,7 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
 void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *model, const QModelIndex &index ) const
 {
   if (QpxPatternEditor *pe = qobject_cast<QpxPatternEditor *>(editor)) {
-    model->setData(index, QVariant::fromValue(pe->pattern_q()), Qt::EditRole);
+    model->setData(index, QVariant::fromValue(pe->pattern()), Qt::EditRole);
   } else if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
       Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));

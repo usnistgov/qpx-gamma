@@ -29,24 +29,6 @@
 #include "custom_logger.h"
 
 
-void QpxPatternEditor::set_pattern(QVector<int16_t> pattern, double size, bool tristate, int wrap)
-{
-  threshold_ = 0;
-  pattern_ = pattern;
-  tristate_ = tristate;
-  size_ = size;
-  if (wrap > pattern.size())
-    wrap = pattern.size();
-  wrap_ = wrap;
-  if (wrap > 0)
-    rows_ = (pattern.size() / wrap_) + ((pattern.size() % wrap_) > 0);
-  else
-    rows_ = 0;
-
-  outer = QRectF(2, 2, size_ - 4, size_ - 4);
-  inner = QRectF(4, 4, size_ - 8, size_ - 8);
-}
-
 void QpxPatternEditor::set_pattern(Qpx::Pattern pattern, double size, int wrap)
 {
   threshold_ = pattern.threshold();
@@ -56,7 +38,6 @@ void QpxPatternEditor::set_pattern(Qpx::Pattern pattern, double size, int wrap)
       pattern_.push_back(1);
     else
       pattern_.push_back(0);
-  tristate_ = false;
   size_ = size;
   if (wrap > pattern_.size())
     wrap = pattern_.size();
@@ -70,19 +51,16 @@ void QpxPatternEditor::set_pattern(Qpx::Pattern pattern, double size, int wrap)
   inner = QRectF(4, 4, size_ - 8, size_ - 8);
 }
 
-Qpx::Pattern QpxPatternEditor::pattern_q() const {
+Qpx::Pattern QpxPatternEditor::pattern() const {
   Qpx::Pattern pt;
-  std::vector<bool> gts;
-  for (auto &t: pattern_)
-    gts.push_back(t != 0);
-  pt.set_gates(gts);
+  pt.set_gates(pattern_);
   pt.set_theshold(threshold_);
   return pt;
 }
 
 int QpxPatternEditor::flagAtPosition(int x, int y)
 {
-  if (sizeHint().width() == 0)
+  if ((sizeHint().width() == 0) || (wrap_ <= 0))
     return -1;
 
   int flag_x = (x - 40) / ((sizeHint().width() - 40) / wrap_);
@@ -97,10 +75,7 @@ int QpxPatternEditor::flagAtPosition(int x, int y)
 
 void QpxPatternEditor::setFlag(int count) {
   if ((count > -1) && (count < pattern_.size())) {
-    int new_value = (pattern_[count] + 1);
-    if (new_value > 1)
-      new_value = tristate_ ? -1 : 0;
-    pattern_[count] = new_value;
+    pattern_[count] = !pattern_[count];
   }
 }
 
@@ -115,12 +90,13 @@ void QpxPatternEditor::paint(QPainter *painter, const QRect &rect,
   painter->save();
 
   size_t tally = 0;
-  for (auto &t : pattern_)
+  for (auto t : pattern_)
     if (t != 0)
       tally++;
 
   bool enabled = this->isEnabled();
-  bool valid = (threshold_ > 0) && (threshold_ <= tally);
+  bool irrelevant = (threshold_ == 0);
+  bool valid = (threshold_ <= tally);
 
   painter->setRenderHint(QPainter::Antialiasing, true);
   painter->setRenderHint(QPainter::TextAntialiasing, true);
@@ -136,13 +112,12 @@ void QpxPatternEditor::paint(QPainter *painter, const QRect &rect,
   int yOffset = (rect.height() - (size_*rows_)) / 2;
   painter->translate(rect.x() + 40, rect.y() + yOffset);
 
-  QColor on_color = tristate_ ? Qt::green : Qt::cyan;
-  if (!enabled)
-    on_color = tristate_ ? Qt::darkGreen : Qt::darkCyan;
-  if (!tristate_ && !valid)
+  QColor on_color = enabled ? Qt::cyan : Qt::darkCyan;
+  if (irrelevant)
+    on_color = enabled ? Qt::green : Qt::darkGreen;
+  if (!valid)
     on_color = enabled ? Qt::red : Qt::darkRed;
   QColor border = enabled ? Qt::black : Qt::darkGray;
-  QColor off_color = enabled ? Qt::red : Qt::darkRed;
   QColor text_color = enabled ? Qt::black : Qt::lightGray;
 
   for (int i = 0; i < rows_; ++i) {
@@ -156,10 +131,8 @@ void QpxPatternEditor::paint(QPainter *painter, const QRect &rect,
         painter->setBrush(border);
         painter->drawEllipse(outer);
 
-        if (pattern_[flag] == 1)
+        if (pattern_[flag])
           painter->setBrush(on_color);
-        else if (pattern_[flag] == -1)
-          painter->setBrush(off_color);
         else
           painter->setBrush(palette.background());
 

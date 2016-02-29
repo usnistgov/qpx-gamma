@@ -29,107 +29,7 @@
       <string>NAME</string>
      </property>
      <layout class="QGridLayout" name="gridLayout">
-      <item row="5" column="0">
-       <widget class="QGroupBox" name="groupBox_2">
-        <property name="font">
-         <font>
-          <pointsize>10</pointsize>
-         </font>
-        </property>
-        <property name="title">
-         <string>Coincidence patterns</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_2">
-         <item row="0" column="0">
-          <layout class="QHBoxLayout" name="horizontalLayout_10">
-           <item>
-            <layout class="QVBoxLayout" name="verticalLayout_2">
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_2">
-               <item>
-                <widget class="QLabel" name="label_5">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>50</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string>Match</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QpxPatternEditor" name="patternMatch" native="true">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>150</width>
-                   <height>30</height>
-                  </size>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_3">
-               <item>
-                <widget class="QLabel" name="label_6">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>50</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string>Add</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QpxPatternEditor" name="patternAdd" native="true">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>150</width>
-                   <height>30</height>
-                  </size>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-            </layout>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="12" column="0">
+      <item row="11" column="0">
        <widget class="QTableView" name="tableDetectors"/>
       </item>
       <item row="3" column="0">
@@ -206,7 +106,7 @@
         </item>
        </layout>
       </item>
-      <item row="14" column="0">
+      <item row="13" column="0">
        <widget class="QTableView" name="tableGenericAttrs"/>
       </item>
       <item row="2" column="0">
@@ -221,7 +121,7 @@
         </property>
        </widget>
       </item>
-      <item row="13" column="0">
+      <item row="12" column="0">
        <widget class="QLabel" name="label_13">
         <property name="font">
          <font>
@@ -233,7 +133,7 @@
         </property>
        </widget>
       </item>
-      <item row="10" column="0">
+      <item row="9" column="0">
        <layout class="QHBoxLayout" name="horizontalLayout_5">
         <property name="sizeConstraint">
          <enum>QLayout::SetMinimumSize</enum>
@@ -370,7 +270,7 @@
         </property>
        </widget>
       </item>
-      <item row="6" column="0">
+      <item row="5" column="0">
        <widget class="QGroupBox" name="groupBox_4">
         <property name="font">
          <font>
@@ -950,12 +850,6 @@
    <class>TimeDurationWidget</class>
    <extends>QWidget</extends>
    <header>time_duration_widget.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>QpxPatternEditor</class>
-   <extends>QWidget</extends>
-   <header>widget_pattern.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>

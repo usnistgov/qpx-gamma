@@ -56,10 +56,8 @@ bool SpectrumRaw::init_text() {
   file_name_txt_ = file_dir_ + "/qpx_out.txt";
   xml_root_ = xml_doc_.append_child("QpxListData");
 
-  std::stringstream ss;
-  for (auto &q : metadata_.match_pattern)
-    ss << q << " ";
-  xml_root_.append_child("MatchPattern").append_child(pugi::node_pcdata).set_value(boost::algorithm::trim_copy(ss.str()).c_str());
+  if (metadata_.attributes.size())
+    metadata_.attributes.to_xml(xml_root_);
 
   open_xml_ = true;
   return true;

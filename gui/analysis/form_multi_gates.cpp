@@ -63,8 +63,15 @@ FormMultiGates::FormMultiGates(QSettings &settings, QWidget *parent) :
 
   tempx = Qpx::Spectrum::Factory::getInstance().create_template("1D");
   tempx->visible = true;
-  tempx->match_pattern = std::vector<int16_t>({1,1});
-  tempx->add_pattern = std::vector<int16_t>({1,0});
+  Qpx::Setting pattern;
+  pattern = tempx->generic_attributes.get(Qpx::Setting("pattern_coinc"));
+  pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
+  pattern.value_pattern.set_theshold(2);
+  tempx->generic_attributes.replace(pattern);
+  pattern = tempx->generic_attributes.get(Qpx::Setting("pattern_add"));
+  pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
+  pattern.value_pattern.set_theshold(1);
+  tempx->generic_attributes.replace(pattern);
 
   res = 0;
   xmin_ = 0;

@@ -34,19 +34,16 @@ namespace Spectrum {
 static Registrar<SpectrumTime> registrar("Time");
 
 void SpectrumTime::_set_detectors(const std::vector<Qpx::Detector>& dets) {
-  metadata_.detectors.clear();
+  metadata_.detectors.resize(metadata_.dimensions, Qpx::Detector());
 
-  if (dets.size() == 1)
+  if (dets.size() == metadata_.dimensions)
     metadata_.detectors = dets;
-  if (dets.size() >= 1) {
-    int total = metadata_.add_pattern.size();
-    if (dets.size() < total)
-      total = dets.size();
-    metadata_.detectors.resize(1, Qpx::Detector());
+  if (dets.size() >= metadata_.dimensions) {
 
-    for (int i=0; i < total; ++i) {
-      if (metadata_.add_pattern[i]) {
+    for (int i=0; i < dets.size(); ++i) {
+      if (pattern_add_.relevant(i)) {
         metadata_.detectors[0] = dets[i];
+        break;
       }
     }
   }
@@ -98,25 +95,21 @@ std::unique_ptr<std::list<Entry>> SpectrumTime::_get_spectrum(std::initializer_l
 }
 
 void SpectrumTime::_add_bulk(const Entry& e) {
-  int sz = metadata_.add_pattern.size();
-  if (e.first.size() < sz)
-    sz = e.first.size();
-  for (int i = 0; i < sz; ++i)
-    if (metadata_.add_pattern[i] && (e.first[i] < spectrum_.size())) {
-      /*PreciseFloat nr = (spectrum_[e.first[i]] += e.second);
+  for (int i = 0; i < e.first.size(); ++i)
+    if (pattern_add_.relevant(i) && (e.first[i] < spectrum_.size())) {
+//      PreciseFloat nr = (spectrum_[e.first[i]] += e.second);
 
-      if (nr > metadata_.max_count)
-        metadata_.max_count = nr;
+//      if (nr > metadata_.max_count)
+//        metadata_.max_count = nr;
 
-      metadata_.total_count += e.second;*/
+//      metadata_.total_count += e.second;
     }
 }
 
 void SpectrumTime::addStats(const StatsUpdate& newStats)
 {
 
-  if ((newStats.source_channel >= 0) && (newStats.source_channel < metadata_.add_pattern.size())
-      && (metadata_.add_pattern[newStats.source_channel] == 1)) {
+  if (pattern_add_.relevant(newStats.source_channel)) {
 
     PreciseFloat rt = 0;
     PreciseFloat tot_time = 0;

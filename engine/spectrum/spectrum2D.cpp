@@ -38,8 +38,9 @@ bool Spectrum2D::initialize() {
   //match pattern can be whatever
   
   int adds = 0;
-  for (auto &q : metadata_.add_pattern)
-    if (q == 1)
+  std::vector<bool> gts = pattern_add_.gates();
+  for (int i=0; i < gts.size(); ++i)
+    if (gts[i])
       adds++;
 
   if (adds != 2) {
@@ -54,8 +55,8 @@ bool Spectrum2D::initialize() {
   buffered_ = (get_attr("buffered").value_int != 0);
 
   adds = 0;
-  for (int i=0; i < metadata_.add_pattern.size(); i++) {
-    if (metadata_.add_pattern[i] == 1) {
+  for (int i=0; i < gts.size(); ++i) {
+    if (gts[i]) {
       pattern_[adds] = i;
       adds++;
     }
@@ -67,10 +68,33 @@ bool Spectrum2D::initialize() {
 }
 
 void Spectrum2D::init_from_file(std::string filename) {
-  metadata_.match_pattern.resize(2, 0);
-  metadata_.add_pattern.resize(2, 1);
-  metadata_.add_pattern[0] = 1;
-  metadata_.add_pattern[1] = 1;
+  pattern_coinc_.resize(2);
+  pattern_coinc_.set_gates(std::vector<bool>({true, true}));
+
+  pattern_anti_.resize(2);
+  pattern_anti_.set_gates(std::vector<bool>({false, false}));
+
+  pattern_add_.resize(2);
+  pattern_add_.set_gates(std::vector<bool>({true, true}));
+
+  Qpx::Setting pattern;
+  pattern = metadata_.attributes.get(Qpx::Setting("pattern_coinc"));
+  pattern.value_pattern = pattern_coinc_;
+  metadata_.attributes.replace(pattern);
+
+  pattern = metadata_.attributes.get(Qpx::Setting("pattern_anti"));
+  pattern.value_pattern = pattern_anti_;
+  metadata_.attributes.replace(pattern);
+
+  pattern = metadata_.attributes.get(Qpx::Setting("pattern_add"));
+  pattern.value_pattern = pattern_add_;
+  metadata_.attributes.replace(pattern);
+
+
+//  metadata_.match_pattern.resize(2, 0);
+//  metadata_.add_pattern.resize(2, 1);
+//  metadata_.add_pattern[0] = 1;
+//  metadata_.add_pattern[1] = 1;
   metadata_.name = boost::filesystem::path(filename).filename().string();
   std::replace( metadata_.name.begin(), metadata_.name.end(), '.', '_');
   metadata_.visible = true;
@@ -97,21 +121,18 @@ bool Spectrum2D::check_symmetrization() {
 
 
 void Spectrum2D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
-  metadata_.detectors.clear();
+  metadata_.detectors.resize(metadata_.dimensions, Qpx::Detector());
 
-  if (dets.size() >= 2) {
-    int total = metadata_.add_pattern.size();
-    if (dets.size() < total)
-      total = dets.size();
-    metadata_.detectors.resize(metadata_.dimensions, Qpx::Detector());
-
+  if (dets.size() == metadata_.dimensions)
+    metadata_.detectors = dets;
+  else if (dets.size() > metadata_.dimensions) {
     int j=0;
-    for (int i=0; i < total; ++i) {
-      if (metadata_.add_pattern[i]) {
+    for (int i=0; i < dets.size(); ++i) {
+      if (pattern_add_.relevant(i)) {
         metadata_.detectors[j] = dets[i];
         j++;
         if (j >= metadata_.dimensions)
-          j = metadata_.dimensions - 1;
+          break;
       }
     }
   }

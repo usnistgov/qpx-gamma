@@ -20,6 +20,9 @@
  ******************************************************************************/
 
 #include "table_spectrum_attrs.h"
+#include "qt_util.h"
+#include "widget_pattern.h"
+#include <QDateTime>
 
 Q_DECLARE_METATYPE(Qpx::Setting)
 
@@ -50,44 +53,13 @@ QVariant TableSpectrumAttrs::data(const QModelIndex &index, int role) const
       return QString::fromStdString(generic_attributes->get(row).id_);
     case 1:
     {
-      Qpx::SettingType type = generic_attributes->get(row).metadata.setting_type;
+      Qpx::Setting setting = generic_attributes->get(row);
+      Qpx::SettingType type = setting.metadata.setting_type;
 
-      if (type == Qpx::SettingType::integer)
-        return QVariant::fromValue(generic_attributes->get(row).value_int);
-      else if (type == Qpx::SettingType::binary) {
-        QString hex = QString::number(generic_attributes->get(row).value_int, 16).toUpper();
-        int size = generic_attributes->get(row).metadata.maximum;
-        int tot = (size / 4);
-        if ((size % 4) > 0)
-          tot++;
-        int dif = tot - hex.length();
-        while (dif > 0) {
-          hex = QString("0") + hex;
-          dif--;
-        }
-        hex = QString("0x") + hex;
-        return hex;
-      }
-      else if (type == Qpx::SettingType::floating)
-        return QVariant::fromValue(generic_attributes->get(row).value_dbl);
-      else if (type == Qpx::SettingType::int_menu) {
-        if (generic_attributes->get(row).metadata.int_menu_items.count(generic_attributes->get(row).value_int) > 0)
-          return QString::fromStdString(generic_attributes->get(row).metadata.int_menu_items.at(generic_attributes->get(row).value_int));
-        else
-          return QVariant();
-      }
-      else if (type == Qpx::SettingType::boolean)
-        if (generic_attributes->get(row).value_int)
-          return "T";
-        else
-          return "F";
-      else if ((type == Qpx::SettingType::text)
-               || (type == Qpx::SettingType::file_path)
-               || (type == Qpx::SettingType::dir_path)
-               || (type == Qpx::SettingType::detector))
-        return QString::fromStdString(generic_attributes->get(row).value_text);
+      if ((type != Qpx::SettingType::none) && (type != Qpx::SettingType::stem))
+        return QVariant::fromValue(setting);
       else
-        return QVariant::fromValue(generic_attributes->get(row));
+        return QVariant();
     }
     case 2:
       return QString::fromStdString(generic_attributes->get(row).metadata.unit);
@@ -159,25 +131,52 @@ bool TableSpectrumAttrs::setData(const QModelIndex & index, const QVariant & val
       Qpx::Setting setting = generic_attributes->get(row);
       Qpx::SettingType type = setting.metadata.setting_type;
 
-      if (((type == Qpx::SettingType::integer) || (type == Qpx::SettingType::int_menu) || (type == Qpx::SettingType::binary))
-          && (value.canConvert(QMetaType::LongLong)))
+      if (((type == Qpx::SettingType::integer) ||
+           (type == Qpx::SettingType::binary) ||
+           (type == Qpx::SettingType::int_menu) ||
+           (type == Qpx::SettingType::command))
+          && (value.canConvert(QMetaType::LongLong))) {
+        //PL_DBG << "int = " << value.toLongLong();
         setting.value_int = value.toLongLong();
+      }
       else if ((type == Qpx::SettingType::boolean)
           && (value.type() == QVariant::Bool))
         setting.value_int = value.toBool();
       else if ((type == Qpx::SettingType::floating)
           && (value.type() == QVariant::Double))
         setting.value_dbl = value.toDouble();
-      else if (((type == Qpx::SettingType::text)
-                || (type == Qpx::SettingType::detector)
-                || (type == Qpx::SettingType::dir_path)
-                || (type == Qpx::SettingType::file_path))
+      else if ((type == Qpx::SettingType::floating_precise)
+          && (value.type() == QVariant::Double))
+        setting.value_precise = value.toDouble();
+      else if ((type == Qpx::SettingType::text)
           && (value.type() == QVariant::String))
         setting.value_text = value.toString().toStdString();
+      else if ((type == Qpx::SettingType::file_path)
+          && (value.type() == QVariant::String))
+        setting.value_text = value.toString().toStdString();
+      else if ((type == Qpx::SettingType::pattern)
+          && (value.canConvert<Qpx::Pattern>())) {
+        Qpx::Pattern qpxPattern = qvariant_cast<Qpx::Pattern>(value);
+        setting.value_pattern = qpxPattern;
+      }
+      else if ((type == Qpx::SettingType::dir_path)
+          && (value.type() == QVariant::String))
+        setting.value_text = value.toString().toStdString();
+      else if ((type == Qpx::SettingType::detector)
+          && (value.type() == QVariant::String))
+        setting.value_text = value.toString().toStdString();
+      else if ((type == Qpx::SettingType::time)
+          && (value.type() == QVariant::DateTime))
+        setting.value_time = fromQDateTime(value.toDateTime());
+      else if ((type == Qpx::SettingType::time_duration)
+          && (value.canConvert(QMetaType::LongLong)))
+        setting.value_duration = boost::posix_time::seconds(value.toLongLong());
       else
         return false;
+
       generic_attributes->replace(setting);
       return true;
+
     }
   return false;
 }

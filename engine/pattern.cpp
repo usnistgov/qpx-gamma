@@ -45,10 +45,43 @@ void Pattern::set_theshold(size_t sz) {
     threshold_ = gates_.size();
 }
 
+bool Pattern::relevant(int16_t chan) const
+{
+  if ((chan < 0) || (chan >= gates_.size()))
+    return false;
+  return gates_[chan];
+}
+
 bool Pattern::validate(const Event &e) const
 {
-  bool ret = false;
-  return ret;
+  if (threshold_ == 0)
+    return true;
+  size_t matches = 0;
+  for (auto &h : e.hits) {
+    if ((h.first < 0) || (h.first >= gates_.size()))
+      continue;
+    else if (gates_[h.first])
+      matches++;
+    if (matches == threshold_)
+      break;
+  }
+  return (matches == threshold_);
+}
+
+bool Pattern::antivalidate(const Event &e) const
+{
+  if (threshold_ == 0)
+    return true;
+  size_t matches = threshold_;
+  for (auto &h : e.hits) {
+    if ((h.first < 0) || (h.first >= gates_.size()))
+      continue;
+    else if (gates_[h.first])
+      matches--;
+    if (matches < threshold_)
+      break;
+  }
+  return (matches == threshold_);
 }
 
 bool Pattern::operator==(const Pattern other) const {

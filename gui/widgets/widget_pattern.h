@@ -43,18 +43,13 @@ class QpxPatternEditor : public QWidget
 public:
   QpxPatternEditor(QWidget *parent = 0);
 
-  QpxPatternEditor(QVector<int16_t> pattern = QVector<int16_t>(), double size = 25, bool tristate = false, int wrap = 0)
-  {set_pattern(pattern, size, tristate, wrap);}
-
-  QpxPatternEditor(Qpx::Pattern pattern /*= Qpx::Pattern()*/, double size = 25, int wrap = 0)
+  QpxPatternEditor(Qpx::Pattern pattern = Qpx::Pattern(), double size = 25, int wrap = 0)
   {set_pattern(pattern, size, wrap);}
 
-  void set_pattern(QVector<int16_t> pattern = QVector<int16_t>(), double size = 25, bool tristate = false, int wrap = 0);
-  void set_pattern(Qpx::Pattern pattern /*= Qpx::Pattern()*/, double size = 25, int wrap = 0);
+  void set_pattern(Qpx::Pattern pattern = Qpx::Pattern(), double size = 25, int wrap = 0);
 
   QSize sizeHint() const Q_DECL_OVERRIDE;
-  QVector<int16_t> const& pattern() const {return pattern_;}
-  Qpx::Pattern pattern_q() const;
+  Qpx::Pattern pattern() const;
 
   void paint(QPainter *painter, const QRect &rect,
              const QPalette &palette) const;
@@ -70,9 +65,9 @@ private:
   void setFlag(int count);
 
   QRectF outer, inner;
-  QVector<int16_t> pattern_;
+  std::vector<bool> pattern_;
   size_t threshold_;
-  bool tristate_;
+
   double size_;
   int wrap_, rows_;
 };

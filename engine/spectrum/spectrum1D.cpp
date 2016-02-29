@@ -34,19 +34,16 @@ namespace Spectrum {
 static Registrar<Spectrum1D> registrar("1D");
 
 void Spectrum1D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
-  metadata_.detectors.clear();
+  metadata_.detectors.resize(metadata_.dimensions, Qpx::Detector());
 
-  if (dets.size() == 1)
+  if (dets.size() == metadata_.dimensions)
     metadata_.detectors = dets;
-  if (dets.size() >= 1) {
-    int total = metadata_.add_pattern.size();
-    if (dets.size() < total)
-      total = dets.size();
-    metadata_.detectors.resize(1, Qpx::Detector());
+  if (dets.size() >= metadata_.dimensions) {
 
-    for (int i=0; i < total; ++i) {
-      if (metadata_.add_pattern[i]) {
+    for (int i=0; i < dets.size(); ++i) {
+      if (pattern_add_.relevant(i)) {
         metadata_.detectors[0] = dets[i];
+        break;
       }
     }
   }
@@ -90,11 +87,8 @@ std::unique_ptr<std::list<Entry>> Spectrum1D::_get_spectrum(std::initializer_lis
 }
 
 void Spectrum1D::_add_bulk(const Entry& e) {
-  int sz = metadata_.add_pattern.size();
-  if (e.first.size() < sz)
-    sz = e.first.size();
-  for (int i = 0; i < sz; ++i)
-    if (metadata_.add_pattern[i] && (e.first[i] < spectrum_.size())) {
+  for (int i = 0; i < e.first.size(); ++i)
+    if (pattern_add_.relevant(i) && (e.first[i] < spectrum_.size())) {
       PreciseFloat nr = (spectrum_[e.first[i]] += e.second);
 
       if (nr > metadata_.max_count)
@@ -118,9 +112,9 @@ void Spectrum1D::addHit(const Hit& newHit) {
 }
 
 void Spectrum1D::addEvent(const Event& newEvent) {
-  for (int16_t i = 0; i < metadata_.add_pattern.size(); i++)
-    if ((metadata_.add_pattern[i]) && (newEvent.hits.count(i) > 0))
-      this->addHit(newEvent.hits.at(i));
+  for (auto &h : newEvent.hits)
+    if (pattern_add_.relevant(h.first))
+      this->addHit(h.second);
 }
 
 bool Spectrum1D::_write_file(std::string dir, std::string format) const {
@@ -164,11 +158,34 @@ bool Spectrum1D::_read_file(std::string name, std::string format) {
     return false;
 }
 
-void Spectrum1D::init_from_file(std::string filename) { 
-  metadata_.match_pattern.resize(1, 1);
-  metadata_.add_pattern.resize(1, 1);
-  metadata_.match_pattern[0] = 1;
-  metadata_.add_pattern[0] = 1;
+void Spectrum1D::init_from_file(std::string filename) {
+
+  pattern_coinc_.resize(1);
+  pattern_coinc_.set_gates(std::vector<bool>({true}));
+
+  pattern_anti_.resize(1);
+  pattern_anti_.set_gates(std::vector<bool>({false}));
+
+  pattern_add_.resize(1);
+  pattern_add_.set_gates(std::vector<bool>({true}));
+
+  Qpx::Setting pattern;
+  pattern = metadata_.attributes.get(Qpx::Setting("pattern_coinc"));
+  pattern.value_pattern = pattern_coinc_;
+  metadata_.attributes.replace(pattern);
+
+  pattern = metadata_.attributes.get(Qpx::Setting("pattern_anti"));
+  pattern.value_pattern = pattern_anti_;
+  metadata_.attributes.replace(pattern);
+
+  pattern = metadata_.attributes.get(Qpx::Setting("pattern_add"));
+  pattern.value_pattern = pattern_add_;
+  metadata_.attributes.replace(pattern);
+
+//  metadata_.match_pattern.resize(1, 1);
+//  metadata_.add_pattern.resize(1, 1);
+//  metadata_.match_pattern[0] = 1;
+//  metadata_.add_pattern[0] = 1;
   metadata_.name = boost::filesystem::path(filename).filename().string();
   std::replace( metadata_.name.begin(), metadata_.name.end(), '.', '_');
   metadata_.visible = true;

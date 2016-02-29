@@ -57,10 +57,40 @@ Template Spectrum::get_template() {
   coinc_window.value_dbl = 50;
   new_temp.generic_attributes.add(coinc_window);
 
+  Qpx::Setting pattern_coinc;
+  pattern_coinc.id_ = "pattern_coinc";
+  pattern_coinc.metadata.setting_type = Qpx::SettingType::pattern;
+  pattern_coinc.metadata.maximum = 1;
+  pattern_coinc.metadata.description = "Coincidence pattern";
+  pattern_coinc.metadata.writable = true;
+  new_temp.generic_attributes.add(pattern_coinc);
+
+  Qpx::Setting pattern_anti;
+  pattern_anti.id_ = "pattern_anti";
+  pattern_anti.metadata.setting_type = Qpx::SettingType::pattern;
+  pattern_anti.metadata.maximum = 1;
+  pattern_anti.metadata.description = "Anti-coindicence pattern";
+  pattern_anti.metadata.writable = true;
+  new_temp.generic_attributes.add(pattern_anti);
+
+  Qpx::Setting pattern_add;
+  pattern_add.id_ = "pattern_add";
+  pattern_add.metadata.setting_type = Qpx::SettingType::pattern;
+  pattern_add.metadata.maximum = 1;
+  pattern_add.metadata.description = "Add pattern";
+  pattern_add.metadata.writable = true;
+  new_temp.generic_attributes.add(pattern_add);
+
   return new_temp;
 }
 
 bool Spectrum::initialize() {
+  pattern_coinc_ = get_attr("pattern_coinc").value_pattern;
+
+  pattern_anti_ = get_attr("pattern_anti").value_pattern;
+
+  pattern_add_ = get_attr("pattern_add").value_pattern;
+
   cutoff_logic_ = get_attr("cutoff_logic").value_int;
 
   coinc_window_ = get_attr("coinc_window").value_dbl;
@@ -107,8 +137,8 @@ bool Spectrum::from_template(const Template& newtemplate) {
   metadata_.name = newtemplate.name_;
   metadata_.appearance = newtemplate.appearance;
   metadata_.visible = newtemplate.visible;
-  metadata_.match_pattern = newtemplate.match_pattern;
-  metadata_.add_pattern = newtemplate.add_pattern;
+//  metadata_.match_pattern = newtemplate.match_pattern;
+//  metadata_.add_pattern = newtemplate.add_pattern;
   metadata_.attributes = newtemplate.generic_attributes;
 
   return (this->initialize());
@@ -156,12 +186,12 @@ void Spectrum::pushHit(const Hit& newhit)
   if (newhit.source_channel < 0)
     return;
 
-  bool ignore_match = ((newhit.source_channel < metadata_.match_pattern.size()) && (metadata_.match_pattern[newhit.source_channel] == 0));
-  bool ignore_add = ((newhit.source_channel < metadata_.add_pattern.size()) && (metadata_.add_pattern[newhit.source_channel] == 0));
-
-  if (ignore_add && ignore_match)
+  if (!(pattern_coinc_.relevant(newhit.source_channel) ||
+      pattern_anti_.relevant(newhit.source_channel) ||
+      pattern_add_.relevant(newhit.source_channel)))
     return;
-//  PL_DBG << "Processing " << newhit.to_string();
+
+  //  PL_DBG << "Processing " << newhit.to_string();
 
   bool appended = false;
   bool pileup = false;
@@ -211,12 +241,11 @@ void Spectrum::closeAcquisition() {
 
 
 bool Spectrum::validateEvent(const Event& newEvent) const {
-  bool addit = true;
-  for (int i = 0; i < metadata_.match_pattern.size(); i++)
-    if (((metadata_.match_pattern[i] == 1) && (newEvent.hits.count(i) == 0)) ||
-        ((metadata_.match_pattern[i] == -1) && (newEvent.hits.count(i) > 0)))
-      addit = false;
-  return addit;
+  if (!pattern_coinc_.validate(newEvent))
+    return false;
+  if (!pattern_anti_.antivalidate(newEvent))
+    return false;
+  return true;
 }
 
 std::map<int, std::list<StatsUpdate>> Spectrum::get_stats() {
@@ -227,10 +256,9 @@ std::map<int, std::list<StatsUpdate>> Spectrum::get_stats() {
 void Spectrum::addStats(const StatsUpdate& newBlock) {
   //private; no lock required
 
-  if ((newBlock.source_channel >= 0)
-      && (newBlock.source_channel < metadata_.add_pattern.size())
-      && (newBlock.source_channel < metadata_.match_pattern.size())
-      && (metadata_.add_pattern[newBlock.source_channel] || metadata_.match_pattern[newBlock.source_channel])) {
+  if (pattern_coinc_.relevant(newBlock.source_channel) ||
+      pattern_anti_.relevant(newBlock.source_channel) ||
+      pattern_add_.relevant(newBlock.source_channel)) {
     //PL_DBG << "Spectrum " << metadata_.name << " received update for chan " << newBlock.channel;
     bool chan_new = (stats_list_.count(newBlock.source_channel) == 0);
     bool new_start = (newBlock.stats_type == StatsType::start);
@@ -541,15 +569,15 @@ void Spectrum::to_xml(pugi::xml_node &root) const {
   if (!metadata_.description.empty())
     node.append_child("Description").append_child(pugi::node_pcdata).set_value(metadata_.description.c_str());
 
-  std::stringstream patterndata;
-  for (auto &q: metadata_.match_pattern)
-    patterndata << static_cast<short>(q) << " ";
-  node.append_child("MatchPattern").append_child(pugi::node_pcdata).set_value(boost::algorithm::trim_copy(patterndata.str()).c_str());
+//  std::stringstream patterndata;
+//  for (auto &q: metadata_.match_pattern)
+//    patterndata << static_cast<short>(q) << " ";
+//  node.append_child("MatchPattern").append_child(pugi::node_pcdata).set_value(boost::algorithm::trim_copy(patterndata.str()).c_str());
 
-  patterndata.str(std::string()); //clear it
-  for (auto &q: metadata_.add_pattern)
-    patterndata << static_cast<short>(q) << " ";
-  node.append_child("AddPattern").append_child(pugi::node_pcdata).set_value(boost::algorithm::trim_copy(patterndata.str()).c_str());
+//  patterndata.str(std::string()); //clear it
+//  for (auto &q: metadata_.add_pattern)
+//    patterndata << static_cast<short>(q) << " ";
+//  node.append_child("AddPattern").append_child(pugi::node_pcdata).set_value(boost::algorithm::trim_copy(patterndata.str()).c_str());
 
   node.append_child("StartTime").append_child(pugi::node_pcdata).set_value(boost::posix_time::to_iso_extended_string(metadata_.start_time).c_str());
 
@@ -577,6 +605,10 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
   if (std::string(node.name()) != "Spectrum")
     return false;
 
+  //retroactive attributrion of params in current version?
+  Template t = this->get_template();
+  metadata_.attributes = t.generic_attributes;
+
   boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
   tif->set_iso_extended_format();
   std::stringstream iss;
@@ -602,20 +634,77 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
     return false;
 
   metadata_.resolution = pow(2, metadata_.bits);
-  metadata_.match_pattern.clear();
-  metadata_.add_pattern.clear();
 
-  std::stringstream pattern_match(node.child_value("MatchPattern"));
-  while (pattern_match.rdbuf()->in_avail()) {
-    pattern_match >> numero;
-    metadata_.match_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
+  std::vector<int16_t> match_pattern;
+  std::vector<int16_t> add_pattern;
+
+  //backwards compat
+  if (node.child("MatchPattern")) {
+    std::stringstream pattern_match(node.child_value("MatchPattern"));
+    while (pattern_match.rdbuf()->in_avail()) {
+      pattern_match >> numero;
+      match_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
+    }
+
+    pattern_coinc_.resize(match_pattern.size());
+    pattern_anti_.resize(match_pattern.size());
+
+    std::vector<bool> gts_co(match_pattern.size(), false);
+    std::vector<bool> gts_a(match_pattern.size(), false);
+    size_t thresh_co(0), thresh_a(0);
+
+    for (int i = 0; i < match_pattern.size(); ++i) {
+      if (match_pattern[i] > 0) {
+        gts_co[i] = true;
+        thresh_co++;
+      }
+      if (match_pattern[i] < 0) {
+        gts_a[i] = true;
+        thresh_a++;
+      }
+    }
+
+    pattern_coinc_.set_gates(gts_co);
+    pattern_coinc_.set_theshold(thresh_co);
+    pattern_anti_.set_gates(gts_a);
+    pattern_anti_.set_theshold(thresh_a);
   }
 
-  std::stringstream pattern_add(node.child_value("AddPattern"));
-  while (pattern_add.rdbuf()->in_avail()) {
-    pattern_add >> numero;
-    metadata_.add_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
+  //backwards compat
+  if (node.child("AddPattern")) {
+    std::stringstream pattern_add(node.child_value("AddPattern"));
+    while (pattern_add.rdbuf()->in_avail()) {
+      pattern_add >> numero;
+      add_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
+    }
+
+    pattern_add_.resize(add_pattern.size());
+    std::vector<bool> gts(add_pattern.size(), false);
+    size_t thresh(0);
+
+    for (int i = 0; i < add_pattern.size(); ++i) {
+      if (add_pattern[i] != 0) {
+        gts[i] = true;
+        thresh++;
+      }
+    }
+
+    pattern_add_.set_gates(gts);
+    pattern_add_.set_theshold(thresh);
   }
+
+  Qpx::Setting pattern;
+  pattern = metadata_.attributes.get(Qpx::Setting("pattern_coinc"));
+  pattern.value_pattern = pattern_coinc_;
+  metadata_.attributes.replace(pattern);
+
+  pattern = metadata_.attributes.get(Qpx::Setting("pattern_anti"));
+  pattern.value_pattern = pattern_anti_;
+  metadata_.attributes.replace(pattern);
+
+  pattern = metadata_.attributes.get(Qpx::Setting("pattern_add"));
+  pattern.value_pattern = pattern_add_;
+  metadata_.attributes.replace(pattern);
 
   if (node.child("StartTime")) {
     iss << node.child_value("StartTime");
@@ -630,7 +719,8 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
 
   metadata_.attributes.from_xml(node.child(metadata_.attributes.xml_element_name().c_str()));
 
-  metadata_.rescale_factor = PreciseFloat(node.child_value("RescaleFactor"));
+  if (node.child("RescaleFactor"))
+    metadata_.rescale_factor = PreciseFloat(node.child_value("RescaleFactor"));
 
   if (node.child("Detectors")) {
     metadata_.detectors.clear();

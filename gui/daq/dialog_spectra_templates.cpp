@@ -60,8 +60,24 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Qpx::Spectrum::Template newTempla
     Qpx::Spectrum::Template *newtemp = Qpx::Spectrum::Factory::getInstance().create_template(ui->comboType->currentText().toStdString());
     if (newtemp != nullptr) {
       myTemplate = *newtemp;
-      myTemplate.match_pattern.resize(current_dets_.size());
-      myTemplate.add_pattern.resize(current_dets_.size());
+      size_t sz = current_dets_.size();
+
+      Qpx::Setting pattern;
+
+      pattern = myTemplate.generic_attributes.get(Qpx::Setting("pattern_coinc"));
+      pattern.value_pattern.resize(sz);
+      myTemplate.generic_attributes.replace(pattern);
+
+      pattern = myTemplate.generic_attributes.get(Qpx::Setting("pattern_anti"));
+      pattern.value_pattern.resize(sz);
+      myTemplate.generic_attributes.replace(pattern);
+
+      pattern = myTemplate.generic_attributes.get(Qpx::Setting("pattern_add"));
+      pattern.value_pattern.resize(sz);
+      myTemplate.generic_attributes.replace(pattern);
+
+      myTemplate.match_pattern.resize(sz);
+      myTemplate.add_pattern.resize(sz);
     } else
       PL_WARN << "Problem with spectrum type. Factory cannot make template for " << ui->comboType->currentText().toStdString();
     myTemplate.appearance = generateColor().rgba();
@@ -71,6 +87,7 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Qpx::Spectrum::Template newTempla
   ui->tableGenericAttrs->setModel(&table_model_);
   ui->tableGenericAttrs->setItemDelegate(&special_delegate_);
   ui->tableGenericAttrs->verticalHeader()->hide();
+  ui->tableGenericAttrs->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->tableGenericAttrs->horizontalHeader()->setStretchLastSection(true);
   ui->tableGenericAttrs->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->tableGenericAttrs->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -92,13 +109,7 @@ void DialogSpectrumTemplate::updateData() {
 
   ui->colPicker->setCurrentColor(QColor::fromRgba(myTemplate.appearance));
 
-  ui->patternMatch->set_pattern(QVector<int16_t>::fromStdVector(myTemplate.match_pattern), 25, true, 16);
-  ui->patternAdd->set_pattern(QVector<int16_t>::fromStdVector(myTemplate.add_pattern), 25, false, 16);
-
   ui->spinDets->setValue(myTemplate.match_pattern.size());
-
-  ui->patternMatch->setMinimumSize(ui->patternMatch->sizeHint());
-  ui->patternAdd->setMinimumSize(ui->patternAdd->sizeHint());
 
   QString descr = QString::fromStdString(myTemplate.description) + "\n";
   if (myTemplate.output_types.size()) {
@@ -112,8 +123,6 @@ void DialogSpectrumTemplate::updateData() {
 
   ui->labelDescription->setText(descr);
   table_model_.update();
-  ui->patternAdd->update();
-  ui->patternMatch->update();
 }
 
 DialogSpectrumTemplate::~DialogSpectrumTemplate()
@@ -123,9 +132,6 @@ DialogSpectrumTemplate::~DialogSpectrumTemplate()
 
 void DialogSpectrumTemplate::on_buttonBox_accepted()
 {
-  myTemplate.match_pattern = ui->patternMatch->pattern().toStdVector();
-  myTemplate.add_pattern = ui->patternAdd->pattern().toStdVector();
-
   if (myTemplate.name_ == Qpx::Spectrum::Template().name_) {
     QMessageBox msgBox;
     msgBox.setText("Please give it a proper name");
@@ -197,6 +203,19 @@ void DialogSpectrumTemplate::on_pushRandColor_clicked()
 
 void DialogSpectrumTemplate::on_spinDets_valueChanged(int arg1)
 {
+  Qpx::Setting pattern;
+  pattern = myTemplate.generic_attributes.get(Qpx::Setting("pattern_coinc"));
+  pattern.value_pattern.resize(arg1);
+  myTemplate.generic_attributes.replace(pattern);
+
+  pattern = myTemplate.generic_attributes.get(Qpx::Setting("pattern_anti"));
+  pattern.value_pattern.resize(arg1);
+  myTemplate.generic_attributes.replace(pattern);
+
+  pattern = myTemplate.generic_attributes.get(Qpx::Setting("pattern_add"));
+  pattern.value_pattern.resize(arg1);
+  myTemplate.generic_attributes.replace(pattern);
+
   myTemplate.add_pattern.resize(arg1);
   myTemplate.match_pattern.resize(arg1);
   updateData();

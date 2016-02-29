@@ -35,19 +35,19 @@ static Registrar<Spectrum1D_LFC> registrar("LFC1D");
 bool Spectrum1D_LFC::initialize() {
   //add pattern must have exactly one channel
   int adds = 0;
-  for (auto &q : metadata_.add_pattern)
-    if (q == 1)
+  std::vector<bool> gts = pattern_add_.gates();
+  for (int i=0; i < gts.size(); ++i) {
+    if (gts[i]) {
       adds++;
+      my_channel_ = i;
+    }
+  }
 
   if (adds != 1) {
     PL_WARN << "Invalid 1D_LFC spectrum requested (only 1 channel allowed)";
     return false;
   }
   
-  for (int i=0; i < metadata_.add_pattern.size(); i++)
-    if (metadata_.add_pattern[i] == 1)
-      my_channel_ = i;
-
   metadata_.resolution = pow(2, metadata_.bits);
   channels_all_.resize(metadata_.resolution,0);
   channels_run_.resize(metadata_.resolution,0);
@@ -68,8 +68,7 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
 {
   Spectrum1D::addStats(newStats);
 
-  if ((newStats.source_channel < 0) || (newStats.source_channel >= metadata_.add_pattern.size())
-      || (newStats.source_channel != my_channel_))
+  if (newStats.source_channel != my_channel_)
     return;
 
   if (time1_ == StatsUpdate()) {

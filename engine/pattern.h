@@ -52,7 +52,9 @@ public:
   void set_gates(std::vector<bool>);
   void set_theshold(size_t);
 
+  bool relevant(int16_t) const;
   bool validate(const Event &e) const;
+  bool antivalidate(const Event &e) const;
 
   std::string to_string() const;
   void from_string(std::string s);

@@ -56,7 +56,7 @@ struct Metadata {
   uint16_t dimensions, bits;
   uint32_t resolution, appearance;
   bool visible;
-  std::vector<int16_t> match_pattern, add_pattern;
+//  std::vector<int16_t> match_pattern, add_pattern;
   XMLableDB<Qpx::Setting> attributes;
   PreciseFloat total_count;
   uint16_t     max_chan;
@@ -197,6 +197,8 @@ protected:
   std::map<int, boost::posix_time::time_duration> live_times_;
   std::list<Event> backlog;
   uint64_t recent_count_;
+
+  Pattern pattern_coinc_, pattern_anti_, pattern_add_;
 };
 
 

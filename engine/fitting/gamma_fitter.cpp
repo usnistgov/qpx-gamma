@@ -259,15 +259,15 @@ void Fitter::save_report(std::string filename) {
   file << "========================================================" << std::endl;
   file << "Bits: " << settings_.bits_ << "    Resolution: " << metadata_.resolution << std::endl;
 
-  file << "Match pattern:  ";
-  for (auto &q : metadata_.match_pattern)
-    file << q << " ";
-  file << std::endl;
+//  file << "Match pattern:  ";
+//  for (auto &q : metadata_.match_pattern)
+//    file << q << " ";
+//  file << std::endl;
   
-  file << "Add pattern:    ";
-  for (auto &q : metadata_.add_pattern)
-    file << q << " ";
-  file << std::endl;
+//  file << "Add pattern:    ";
+//  for (auto &q : metadata_.add_pattern)
+//    file << q << " ";
+//  file << std::endl;
 
   file << "Spectrum type: " << metadata_.type << std::endl;
 
