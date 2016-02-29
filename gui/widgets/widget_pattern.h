@@ -31,47 +31,50 @@
 #include <QStyledItemDelegate>
 #include <vector>
 #include <bitset>
+#include "pattern.h"
 #include "custom_logger.h"
 #include "daq_types.h"
 
-class QpxPattern
-{
-public:
-
-    explicit QpxPattern(QVector<int16_t> pattern = QVector<int16_t>(), double size = 25, bool tristate = false, int wrap = 0);
-
-    void paint(QPainter *painter, const QRect &rect,
-               const QPalette &palette, bool enabled = true) const;
-    QSize sizeHint() const;
-    int flagAtPosition(int x, int y);
-    void setFlag(int count);
-    QVector<int16_t> const& pattern() const {return pattern_;}
-
-private:
-    QRectF outer, inner;
-    QVector<int16_t> pattern_;
-    bool tristate_;
-    double size_;
-    int wrap_, rows_;
-};
-
-Q_DECLARE_METATYPE(QpxPattern)
+Q_DECLARE_METATYPE(Qpx::Pattern)
 
 class QpxPatternEditor : public QWidget
 {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    QpxPatternEditor(QWidget *parent = 0);
-    QSize sizeHint() const Q_DECL_OVERRIDE;
-    void setQpxPattern(const QpxPattern &qpxPattern) { myQpxPattern = qpxPattern; }
-    QpxPattern qpxPattern() { return myQpxPattern; }
+  QpxPatternEditor(QWidget *parent = 0);
+
+  QpxPatternEditor(QVector<int16_t> pattern = QVector<int16_t>(), double size = 25, bool tristate = false, int wrap = 0)
+  {set_pattern(pattern, size, tristate, wrap);}
+
+  QpxPatternEditor(Qpx::Pattern pattern /*= Qpx::Pattern()*/, double size = 25, int wrap = 0)
+  {set_pattern(pattern, size, wrap);}
+
+  void set_pattern(QVector<int16_t> pattern = QVector<int16_t>(), double size = 25, bool tristate = false, int wrap = 0);
+  void set_pattern(Qpx::Pattern pattern /*= Qpx::Pattern()*/, double size = 25, int wrap = 0);
+
+  QSize sizeHint() const Q_DECL_OVERRIDE;
+  QVector<int16_t> const& pattern() const {return pattern_;}
+  Qpx::Pattern pattern_q() const;
+
+  void paint(QPainter *painter, const QRect &rect,
+             const QPalette &palette) const;
 
 protected:
-    void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
-    void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
+  void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
+  void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
+  void wheelEvent(QWheelEvent *event) Q_DECL_OVERRIDE;
 
 private:
-    QpxPattern myQpxPattern;
+
+  int flagAtPosition(int x, int y);
+  void setFlag(int count);
+
+  QRectF outer, inner;
+  QVector<int16_t> pattern_;
+  size_t threshold_;
+  bool tristate_;
+  double size_;
+  int wrap_, rows_;
 };
 
 #endif

@@ -100,8 +100,8 @@ void dialog_spectrum::updateData() {
   ui->lineBits->setText(QString::number(static_cast<int>(md_.bits)));
   ui->lineChannels->setText(QString::number(md_.resolution));
   ui->colPicker->setCurrentColor(QColor::fromRgba(md_.appearance));
-  ui->patternMatch->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(md_.match_pattern), 25, true, 16));
-  ui->patternAdd->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(md_.add_pattern), 25, false, 16));
+  ui->patternMatch->set_pattern(QVector<int16_t>::fromStdVector(md_.match_pattern), 25, true, 16);
+  ui->patternAdd->set_pattern(QVector<int16_t>::fromStdVector(md_.add_pattern), 25, false, 16);
   ui->patternMatch->setMinimumSize(ui->patternMatch->sizeHint());
   ui->patternAdd->setMinimumSize(ui->patternAdd->sizeHint());
   ui->doubleRescaleFactor->setValue(md_.rescale_factor.convert_to<double>());

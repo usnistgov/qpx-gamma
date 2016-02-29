@@ -305,6 +305,11 @@ bool TreeItem::setData(int column, const QVariant &value)
   else if ((itemData.metadata.setting_type == Qpx::SettingType::file_path)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
+  else if ((itemData.metadata.setting_type == Qpx::SettingType::pattern)
+      && (value.canConvert<Qpx::Pattern>())) {
+    Qpx::Pattern qpxPattern = qvariant_cast<Qpx::Pattern>(value);
+    itemData.value_pattern = qpxPattern;
+  }
   else if ((itemData.metadata.setting_type == Qpx::SettingType::dir_path)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();

@@ -29,8 +29,9 @@
 #include "custom_logger.h"
 
 
-QpxPattern::QpxPattern(QVector<int16_t> pattern, double size, bool tristate, int wrap)
+void QpxPatternEditor::set_pattern(QVector<int16_t> pattern, double size, bool tristate, int wrap)
 {
+  threshold_ = 0;
   pattern_ = pattern;
   tristate_ = tristate;
   size_ = size;
@@ -46,24 +47,55 @@ QpxPattern::QpxPattern(QVector<int16_t> pattern, double size, bool tristate, int
   inner = QRectF(4, 4, size_ - 8, size_ - 8);
 }
 
-QSize QpxPattern::sizeHint() const
+void QpxPatternEditor::set_pattern(Qpx::Pattern pattern, double size, int wrap)
 {
-  return QSize(wrap_ * size_, rows_ * size_);
+  threshold_ = pattern.threshold();
+  pattern_.clear();
+  for (auto k : pattern.gates())
+    if (k)
+      pattern_.push_back(1);
+    else
+      pattern_.push_back(0);
+  tristate_ = false;
+  size_ = size;
+  if (wrap > pattern_.size())
+    wrap = pattern_.size();
+  wrap_ = wrap;
+  if (wrap > 0)
+    rows_ = (pattern_.size() / wrap_) + ((pattern_.size() % wrap_) > 0);
+  else
+    rows_ = 0;
+
+  outer = QRectF(2, 2, size_ - 4, size_ - 4);
+  inner = QRectF(4, 4, size_ - 8, size_ - 8);
 }
 
-int QpxPattern::flagAtPosition(int x, int y)
+Qpx::Pattern QpxPatternEditor::pattern_q() const {
+  Qpx::Pattern pt;
+  std::vector<bool> gts;
+  for (auto &t: pattern_)
+    gts.push_back(t != 0);
+  pt.set_gates(gts);
+  pt.set_theshold(threshold_);
+  return pt;
+}
+
+int QpxPatternEditor::flagAtPosition(int x, int y)
 {
-  int flag_x = (x / (sizeHint().width() / wrap_));
-  int flag_y = (y / (sizeHint().height() / rows_));
+  if (sizeHint().width() == 0)
+    return -1;
+
+  int flag_x = (x - 40) / ((sizeHint().width() - 40) / wrap_);
+  int flag_y = y / (sizeHint().height() / rows_);
   int flag = flag_y * wrap_ + flag_x;
 
-  if (flag < 0 || flag > pattern_.size() || (flag_x >= wrap_) || (flag_y >= rows_))
+  if (flag < 0 || flag > pattern_.size() || (x < 40) || (flag_x >= wrap_) || (flag_y >= rows_))
     return -1;
 
   return flag;
 }
 
-void QpxPattern::setFlag(int count) {
+void QpxPatternEditor::setFlag(int count) {
   if ((count > -1) && (count < pattern_.size())) {
     int new_value = (pattern_[count] + 1);
     if (new_value > 1)
@@ -72,21 +104,43 @@ void QpxPattern::setFlag(int count) {
   }
 }
 
-void QpxPattern::paint(QPainter *painter, const QRect &rect,
-                       const QPalette &palette, bool enabled) const
+QSize QpxPatternEditor::sizeHint() const
+{
+  return QSize(wrap_ * size_ + 40, rows_ * size_);
+}
+
+void QpxPatternEditor::paint(QPainter *painter, const QRect &rect,
+                       const QPalette &palette) const
 {
   painter->save();
 
+  size_t tally = 0;
+  for (auto &t : pattern_)
+    if (t != 0)
+      tally++;
+
+  bool enabled = this->isEnabled();
+  bool valid = (threshold_ > 0) && (threshold_ <= tally);
+
   painter->setRenderHint(QPainter::Antialiasing, true);
   painter->setRenderHint(QPainter::TextAntialiasing, true);
-  painter->setPen(Qt::NoPen);
 
+  int flags = Qt::TextWordWrap | Qt::AlignVCenter;
+  if (enabled)
+    painter->setPen(palette.color(QPalette::Active, QPalette::Text));
+  else
+    painter->setPen(palette.color(QPalette::Disabled, QPalette::Text));
+  painter->drawText(rect, flags, " " + QString::number(threshold_) + " of ");
+
+  painter->setPen(Qt::NoPen);
   int yOffset = (rect.height() - (size_*rows_)) / 2;
-  painter->translate(rect.x(), rect.y() + yOffset);
+  painter->translate(rect.x() + 40, rect.y() + yOffset);
 
   QColor on_color = tristate_ ? Qt::green : Qt::cyan;
   if (!enabled)
     on_color = tristate_ ? Qt::darkGreen : Qt::darkCyan;
+  if (!tristate_ && !valid)
+    on_color = enabled ? Qt::red : Qt::darkRed;
   QColor border = enabled ? Qt::black : Qt::darkGray;
   QColor off_color = enabled ? Qt::red : Qt::darkRed;
   QColor text_color = enabled ? Qt::black : Qt::lightGray;
@@ -133,28 +187,38 @@ QpxPatternEditor::QpxPatternEditor(QWidget *parent)
 {
   setMouseTracking(true);
   setAutoFillBackground(true);
-}
-
-QSize QpxPatternEditor::sizeHint() const
-{
-  return myQpxPattern.sizeHint();
+  set_pattern();
 }
 
 void QpxPatternEditor::paintEvent(QPaintEvent *)
 {
   QPainter painter(this);
-  myQpxPattern.paint(&painter, rect(), this->palette(), isEnabled());
+  paint(&painter, rect(), this->palette());
 }
 
 
 void QpxPatternEditor::mouseReleaseEvent(QMouseEvent *event)
 {
-  int flag = myQpxPattern.flagAtPosition(event->x(), event->y());
+  int flag = flagAtPosition(event->x(), event->y());
 
   if (isEnabled() && (flag != -1)) {
-    myQpxPattern.setFlag(flag);
+    setFlag(flag);
     update();
   }
-
 }
+
+void QpxPatternEditor::wheelEvent(QWheelEvent *event)
+{
+  if (!event->angleDelta().isNull()) {
+    if (event->angleDelta().y() > 0)
+      threshold_++;
+    else if (threshold_ > 0)
+      threshold_--;
+    if (threshold_ > pattern_.size())
+      threshold_ = pattern_.size();
+    update();
+  }
+  event->accept();
+}
+
 

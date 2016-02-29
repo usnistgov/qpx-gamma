@@ -36,6 +36,7 @@
 #include <QDialogButtonBox>
 #include <QMessageBox>
 #include <QDateTimeEdit>
+#include <QPushButton>
 #include "time_duration_widget.h"
 
 #include <QApplication>
@@ -49,12 +50,12 @@ void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
     return;
   }
 
-  if (index.data().canConvert<QpxPattern>()) {
+  /*if (index.data().canConvert<QpxPattern>()) {
     QpxPattern qpxPattern = qvariant_cast<QpxPattern>(index.data());
     if (option.state & QStyle::State_Selected)
       painter->fillRect(option.rect, option.palette.highlight());
     qpxPattern.paint(painter, option.rect, option.palette);
-  } else if (index.data().type() == QVariant::Color) {
+  } else*/ if (index.data().type() == QVariant::Color) {
     QColor thisColor = qvariant_cast<QColor>(index.data());
     painter->fillRect(option.rect, thisColor);
   } else if (index.data().canConvert<Qpx::Setting>()) {
@@ -67,16 +68,11 @@ void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
         button.state = QStyle::State_Enabled;
       QApplication::style()->drawControl( QStyle::CE_PushButton, &button, painter);
     } else if (itemData.metadata.setting_type == Qpx::SettingType::pattern) {
-      if (itemData.metadata.maximum > itemData.value_pattern.gates().size())
-        itemData.value_pattern.resize(itemData.metadata.maximum);
-      std::vector<bool> gates = itemData.value_pattern.gates();
-      QVector<int16_t> pat(gates.size());
-      for (int i=0; i < gates.size(); ++i)
-        pat[i] = gates[i];
-      QpxPattern pattern(pat, 20, false, 8);
+      QpxPatternEditor pat(itemData.value_pattern, 20, 8);
+      pat.setEnabled(itemData.metadata.writable);
       if (option.state & QStyle::State_Selected)
         painter->fillRect(option.rect, option.palette.highlight());
-      pattern.paint(painter, option.rect, option.palette);
+      pat.paint(painter, option.rect, option.palette);
     } else if ((itemData.metadata.setting_type == Qpx::SettingType::dir_path) ||
                (itemData.metadata.setting_type == Qpx::SettingType::text) ||
                (itemData.metadata.setting_type == Qpx::SettingType::integer) ||
@@ -102,10 +98,10 @@ void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
 
       if (itemData.metadata.setting_type == Qpx::SettingType::indicator) {
         QColor bkgCol = QColor::fromRgba(
-                      itemData.get_setting(Qpx::Setting(
-                                             itemData.metadata.int_menu_items.at(itemData.value_int)), Qpx::Match::id)
+              itemData.get_setting(Qpx::Setting(
+                                     itemData.metadata.int_menu_items.at(itemData.value_int)), Qpx::Match::id)
               .metadata.address
-                      );
+              );
         painter->fillRect(option.rect, bkgCol);
         painter->setPen(QPen(Qt::white, 3));
         QFont f = painter->font();
@@ -145,23 +141,16 @@ void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
 QSize QpxSpecialDelegate::sizeHint(const QStyleOptionViewItem &option,
                                    const QModelIndex &index) const
 {
-//  if (option.state & QStyle::State_Editing) {
-//    return QStyledItemDelegate::sizeHint(option, index);
-//    PL_DBG << "hint editing";
-//  }
 
-  if (index.data().canConvert<QpxPattern>()) {
+  /*if (index.data().canConvert<QpxPattern>()) {
     QpxPattern qpxPattern = qvariant_cast<QpxPattern>(index.data());
     return qpxPattern.sizeHint();
-  } else if (index.data().canConvert<Qpx::Setting>()) {
+  } else*/ if (index.data().canConvert<Qpx::Setting>()) {
     Qpx::Setting itemData = qvariant_cast<Qpx::Setting>(index.data());
-    if (itemData.metadata.setting_type == Qpx::SettingType::pattern) {
-      std::bitset<64> set(itemData.value_int);
-      QVector<int16_t> pat(itemData.metadata.maximum);
-      for (int i=0; i < itemData.metadata.maximum; ++i)
-        pat[i] = set[i];
-      QpxPattern pattern(pat, 20, false, 8);
-      return pattern.sizeHint();
+    if (itemData.metadata.setting_type == Qpx::SettingType::command) {
+      QPushButton button;
+      button.setText(QString::fromStdString(itemData.metadata.name));
+      return button.sizeHint();
     } else if (itemData.metadata.setting_type == Qpx::SettingType::time) {
       QDateTimeEdit editor;
       editor.setCalendarPopup(true);
@@ -170,6 +159,9 @@ QSize QpxSpecialDelegate::sizeHint(const QStyleOptionViewItem &option,
       QSize sz = editor.sizeHint();
       sz.setWidth(sz.width() + 20);
       return sz;
+    } else if (itemData.metadata.setting_type == Qpx::SettingType::pattern) {
+      QpxPatternEditor pattern(itemData.value_pattern, 20, 8);
+      return pattern.sizeHint();
     } else if (itemData.metadata.setting_type == Qpx::SettingType::time_duration) {
       TimeDurationWidget editor;
       return editor.sizeHint();
@@ -241,13 +233,8 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
       TimeDurationWidget *editor = new TimeDurationWidget(parent);
       return editor;
     } else if (set.metadata.setting_type == Qpx::SettingType::pattern) {
-      std::bitset<64> bset(set.value_int);
-      QVector<int16_t> pat(set.metadata.maximum);
-      for (int i=0; i < set.metadata.maximum; ++i)
-        pat[i] = bset[i];
-      QpxPattern pattern(pat, 20, false, 8);
       QpxPatternEditor *editor = new QpxPatternEditor(parent);
-      editor->setQpxPattern(pattern);
+      editor->set_pattern(set.value_pattern, 20, 8);
       return editor;
     } else if (set.metadata.setting_type == Qpx::SettingType::detector) {
       QComboBox *editor = new QComboBox(parent);
@@ -318,7 +305,7 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
       else
         sb->setValue(set.value_dbl);
     } else
-        sb->setValue(index.data(Qt::EditRole).toDouble());
+      sb->setValue(index.data(Qt::EditRole).toDouble());
   } else if (QSpinBox *sb = qobject_cast<QSpinBox *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
       Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
@@ -365,7 +352,9 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
 
 void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *model, const QModelIndex &index ) const
 {
-  if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
+  if (QpxPatternEditor *pe = qobject_cast<QpxPatternEditor *>(editor)) {
+    model->setData(index, QVariant::fromValue(pe->pattern_q()), Qt::EditRole);
+  } else if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
       Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
       if (cb->currentData().type() == QMetaType::Int)

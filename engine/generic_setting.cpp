@@ -465,7 +465,8 @@ void Setting::enrich(const std::map<std::string, SettingMeta> &setting_definitio
   if (setting_definitions.count(id_) > 0) {
     SettingMeta meta = setting_definitions.at(id_);
     metadata = meta;
-    if (((meta.setting_type == SettingType::indicator) || (meta.setting_type == SettingType::binary) ||
+    if (((meta.setting_type == SettingType::indicator) ||
+         (meta.setting_type == SettingType::binary) ||
         (meta.setting_type == SettingType::stem)) && !meta.int_menu_items.empty()) {
       XMLableDB<Setting> br = branches;
       branches.clear();
@@ -512,6 +513,9 @@ void Setting::enrich(const std::map<std::string, SettingMeta> &setting_definitio
           value_precise = meta.maximum;
         if (value_precise < meta.minimum)
           value_precise = meta.minimum;
+      } else if (meta.setting_type == SettingType::pattern) {
+        if (value_pattern.gates().size() != meta.maximum)
+          value_pattern.resize(meta.maximum);
       }
     }
   }

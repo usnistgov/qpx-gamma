@@ -92,8 +92,8 @@ void DialogSpectrumTemplate::updateData() {
 
   ui->colPicker->setCurrentColor(QColor::fromRgba(myTemplate.appearance));
 
-  ui->patternMatch->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(myTemplate.match_pattern), 25, true, 16));
-  ui->patternAdd->setQpxPattern(QpxPattern(QVector<int16_t>::fromStdVector(myTemplate.add_pattern), 25, false, 16));
+  ui->patternMatch->set_pattern(QVector<int16_t>::fromStdVector(myTemplate.match_pattern), 25, true, 16);
+  ui->patternAdd->set_pattern(QVector<int16_t>::fromStdVector(myTemplate.add_pattern), 25, false, 16);
 
   ui->spinDets->setValue(myTemplate.match_pattern.size());
 
@@ -123,8 +123,8 @@ DialogSpectrumTemplate::~DialogSpectrumTemplate()
 
 void DialogSpectrumTemplate::on_buttonBox_accepted()
 {
-  myTemplate.match_pattern = ui->patternMatch->qpxPattern().pattern().toStdVector();
-  myTemplate.add_pattern = ui->patternAdd->qpxPattern().pattern().toStdVector();
+  myTemplate.match_pattern = ui->patternMatch->pattern().toStdVector();
+  myTemplate.add_pattern = ui->patternAdd->pattern().toStdVector();
 
   if (myTemplate.name_ == Qpx::Spectrum::Template().name_) {
     QMessageBox msgBox;
@@ -238,10 +238,10 @@ QVariant TableSpectraTemplates::data(const QModelIndex &index, int role) const
       return QString::number(templates_.get(row).bits);
     case 3:
       return QString::number(pow(2,templates_.get(row).bits));
-    case 4:
-      return QVariant::fromValue(QpxPattern(QVector<int16_t>::fromStdVector(templates_.get(row).match_pattern), 20, true, 16));
-    case 5:
-      return QVariant::fromValue(QpxPattern(QVector<int16_t>::fromStdVector(templates_.get(row).add_pattern), 20, false, 16));
+//    case 4:
+//      return QVariant::fromValue(QpxPattern(QVector<int16_t>::fromStdVector(templates_.get(row).match_pattern), 20, true, 16));
+//    case 5:
+//      return QVariant::fromValue(QpxPattern(QVector<int16_t>::fromStdVector(templates_.get(row).add_pattern), 20, false, 16));
     case 6:
       return QColor::fromRgba(templates_.get(row).appearance);
     case 7:

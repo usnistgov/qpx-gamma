@@ -88,10 +88,10 @@ QVariant TableSpectra1D::data(const QModelIndex &index, int role) const
       return QString::number(data_[row].bits);
     case 4:
       return QString::number(pow(2,data_[row].bits));
-    case 5:
-      return QVariant::fromValue(QpxPattern(QVector<int16_t>::fromStdVector(data_[row].match_pattern), 20, true, 16));
-    case 6:
-      return QVariant::fromValue(QpxPattern(QVector<int16_t>::fromStdVector(data_[row].add_pattern), 20, false, 16));
+//    case 5:
+//      return QVariant::fromValue(QpxPattern(QVector<int16_t>::fromStdVector(data_[row].match_pattern), 20, true, 16));
+//    case 6:
+//      return QVariant::fromValue(QpxPattern(QVector<int16_t>::fromStdVector(data_[row].add_pattern), 20, false, 16));
     case 7:
       return QColor::fromRgba(data_[row].appearance);
     case 8:
