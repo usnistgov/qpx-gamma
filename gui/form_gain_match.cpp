@@ -278,7 +278,7 @@ void FormGainMatch::run_completed() {
 //    peak_opt_.area_best = FitParam();
     //replot_markers();
 
-    if (!gm_runner_thread_.terminating()) {
+    if (current_pass >= 0) {
       PL_INFO << "<FormGainMatch> Completed pass # " << current_pass;
       current_pass++;
       do_post_processing();
@@ -296,6 +296,8 @@ void FormGainMatch::do_post_processing() {
 
   double old_gain = gains.back();
   double delta = peak_opt_.center - peak_ref_.center;
+
+  PL_DBG << "delta " << delta << " = " << peak_opt_.center << " - " << peak_ref_.center;
 
   deltas.push_back(peak_opt_.center);
 
@@ -397,10 +399,10 @@ void FormGainMatch::update_fits() {
       for (auto &s : selref)
         if (abs(p.second.center - s) < 2) {
           newselr.insert(p.second.center);
-//          PL_DBG << "match selr " << p.second.center;
+          PL_DBG << "match sel ref " << p.second.center;
         }
     }
-//    PL_DBG << "refsel close enough " << newsel.size();
+//    PL_DBG << "refsel close enough " << newselr.size();
     ui->plotRef->set_selected_peaks(newselr);
   }
 
@@ -411,10 +413,10 @@ void FormGainMatch::update_fits() {
       for (auto &s : selopt)
         if (abs(p.second.center - s) < 2) {
           newselo.insert(p.second.center);
-//          PL_DBG << "match selo " << p.second.center;
+          PL_DBG << "match sel opt " << p.second.center;
         }
     }
-//    PL_DBG << "optsel close enough " << newsel.size();
+//    PL_DBG << "optsel close enough " << newselo.size();
     ui->plotOpt->set_selected_peaks(newselo);
   }
 
@@ -423,25 +425,23 @@ void FormGainMatch::update_fits() {
 
 
 void FormGainMatch::update_peak_selection(std::set<double> dummy) {
-  peak_ref_ = Qpx::Peak();
-  peak_opt_ = Qpx::Peak();
-
   std::set<double> selref = ui->plotRef->get_selected_peaks();
   std::set<double> selopt = ui->plotOpt->get_selected_peaks();
 
   if ((selref.size() != 1) || (selopt.size() != 1))
     return;
 
-//  PL_DBG << "Have one peak each";
-
   if (fitter_ref_.peaks().count(*selref.begin()))
     peak_ref_ = fitter_ref_.peaks().at(*selref.begin());
   if (fitter_opt_.peaks().count(*selopt.begin()))
     peak_opt_ = fitter_opt_.peaks().at(*selopt.begin());
 
+  PL_DBG << "Have one peak each " << peak_ref_.center << " " << peak_opt_.center ;
+
   if ((peak_ref_.area_best.val == 0) || (peak_opt_.area_best.val == 0))
     return;
 
+//  PL_DBG << "1";
 
   Qpx::Setting set_gain("Gain");
   Qpx::Setting set_pass("Pass");
@@ -519,6 +519,9 @@ void FormGainMatch::on_pushMatchGain_clicked()
   deltas.clear();
   peaks_.clear();
 
+  peak_ref_ = Qpx::Peak();
+  peak_opt_ = Qpx::Peak();
+
   current_setting_ = ui->comboSetting->currentText().toStdString();
 
   ui->tableResults->clear();
@@ -540,6 +543,7 @@ void FormGainMatch::on_pushMatchGain_clicked()
 
 void FormGainMatch::on_pushStop_clicked()
 {
+  current_pass = -1;
   gm_interruptor_.store(true);
 }
 

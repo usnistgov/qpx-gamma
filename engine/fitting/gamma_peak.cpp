@@ -47,7 +47,7 @@ void Peak::construct(FitSettings fs) {
   area_hyp = hypermet_.area();
   area_sum4 = sum4_.peak_area;
 
-  area_best = area_hyp;
+  area_best = area_sum4;
 
   //  if (sum4_.currie_quality_indicator == 1)
 //  {
