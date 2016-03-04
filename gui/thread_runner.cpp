@@ -34,7 +34,6 @@ ThreadRunner::ThreadRunner(QObject *parent) :
   interruptor_ = nullptr;
   action_ = kNone;
   file_ = "";
-  xdt_ = 0.0;
   flag_ = false;
   match_conditions_ = Qpx::Match::id;
   idle_refresh_.store(false);
@@ -206,14 +205,13 @@ void ThreadRunner::do_optimize() {
     start(HighPriority);
 }
 
-void ThreadRunner::do_oscil(double xdt) {
+void ThreadRunner::do_oscil() {
   if (running_.load()) {
     PL_WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
   terminating_.store(false);
-  xdt_ = xdt;
   action_ = kOscil;
   if (!isRunning())
     start(HighPriority);
@@ -318,22 +316,10 @@ void ThreadRunner::run()
       action_ = kOscil;
       //emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kOscil) {
-        std::vector<Qpx::Detector> dets = engine_.get_detectors();
-
-        Qpx::Setting set = Qpx::Setting("XDT");
-        for (int i=0; i < dets.size(); i++) {
-          set.indices.clear();
-          set.indices.insert(i);
-          set.value_dbl = xdt_;
-          engine_.set_setting(set, Qpx::Match::name | Qpx::Match::indices);
-        }
         std::vector<Qpx::Trace> traces = engine_.oscilloscope();
-
         engine_.get_all_settings();
         engine_.save_optimization();
-
         action_ = kNone;
-
         emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
         if (!traces.empty())
           emit oscilReadOut(traces);

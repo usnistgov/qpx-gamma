@@ -208,10 +208,22 @@ void FormGainMatch::do_run()
   if (gm_spectra_.empty()) {
     reference_.bits = bits;
     int refchan = ui->comboReference->currentData().toInt();
-    reference_.add_pattern.resize(refchan + 1, 0);
-    reference_.add_pattern[refchan] = 1;
-    reference_.match_pattern.resize(refchan + 1, 0);
-    reference_.match_pattern[refchan] = 1;
+
+    std::vector<bool> match_pattern(refchan + 1, false),
+                      add_pattern(refchan + 1, false);
+    add_pattern[refchan] = true;
+    match_pattern[refchan] = true;
+
+    Qpx::Setting pattern;
+    pattern = reference_.generic_attributes.get(Qpx::Setting("pattern_coinc"));
+    pattern.value_pattern.set_gates(match_pattern);
+    pattern.value_pattern.set_theshold(1);
+    reference_.generic_attributes.replace(pattern);
+    pattern = reference_.generic_attributes.get(Qpx::Setting("pattern_add"));
+    pattern.value_pattern.set_gates(add_pattern);
+    pattern.value_pattern.set_theshold(1);
+    reference_.generic_attributes.replace(pattern);
+
     gm_spectra_.add_spectrum(reference_);
   } else {
     gm_spectra_.delete_spectrum("Optimizing");
@@ -221,15 +233,27 @@ void FormGainMatch::do_run()
   set_gain.value_dbl = old_gain;
   Qpx::Setting set_pass("Pass");
   set_pass.value_int = current_pass;
+  optimizing_.bits = bits;
   optimizing_.generic_attributes.replace(set_gain);
   optimizing_.generic_attributes.replace(set_pass);
-  optimizing_.bits = bits;
-  optimizing_.add_pattern.resize(optchan + 1, 0);
-  optimizing_.add_pattern[optchan] = 1;
-  optimizing_.match_pattern.resize(optchan + 1, 0);
-  optimizing_.match_pattern[optchan] = 1;
-  gm_spectra_.add_spectrum(optimizing_);
 
+  std::vector<bool> match_pattern(optchan + 1, false),
+                    add_pattern(optchan + 1, false);
+  add_pattern[optchan] = true;
+  match_pattern[optchan] = true;
+
+  Qpx::Setting pattern;
+  pattern = optimizing_.generic_attributes.get(Qpx::Setting("pattern_coinc"));
+  pattern.value_pattern.set_gates(match_pattern);
+  pattern.value_pattern.set_theshold(1);
+  optimizing_.generic_attributes.replace(pattern);
+  pattern = optimizing_.generic_attributes.get(Qpx::Setting("pattern_add"));
+  pattern.value_pattern.set_gates(add_pattern);
+  pattern.value_pattern.set_theshold(1);
+  optimizing_.generic_attributes.replace(pattern);
+
+
+  gm_spectra_.add_spectrum(optimizing_);
 
   gm_plot_thread_.start();
 
@@ -250,8 +274,8 @@ void FormGainMatch::run_completed() {
   if (my_run_) {
     gm_spectra_.terminate();
     gm_plot_thread_.wait();
-    peak_ref_.area_best = FitParam();
-    peak_opt_.area_best = FitParam();
+//    peak_ref_.area_best = FitParam();
+//    peak_opt_.area_best = FitParam();
     //replot_markers();
 
     if (!gm_runner_thread_.terminating()) {

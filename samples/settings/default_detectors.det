@@ -5,63 +5,63 @@
 		<Type>HPGe</Type>
 		<Calibrations>
 			<Calibration Type="Energy" EnergyUnits="keV" ResolutionBits="14">
-				<CalibrationCreationDate>2015-10-03T19:27:19.764145</CalibrationCreationDate>
+				<CalibrationCreationDate>2014-12-11T12:29:17.556280</CalibrationCreationDate>
 				<Equation Model="Polynomial">
 					<Coefficients>-0.506 0.2502 1.057e-08</Coefficients>
 				</Equation>
 			</Calibration>
 		</Calibrations>
 		<Calibration Type="FWHM" ResolutionBits="14">
-			<CalibrationCreationDate>2015-10-03T19:27:27.104524</CalibrationCreationDate>
+			<CalibrationCreationDate>2016-02-10T18:04:11.330328</CalibrationCreationDate>
 			<Equation Model="Polynomial">
-				<Coefficients>2.70862 0.000247523 5.6395e-08</Coefficients>
+				<Coefficients>2.64223 0.000385269</Coefficients>
 			</Equation>
 		</Calibration>
-		<Setting id="Optimization" type="stem" index="-1">
-			<Setting id="Pixie4/System/module/MODULE_CSRA" type="binary" index="0" value="0" />
-			<Setting id="Pixie4/System/module/MODULE_CSRB" type="binary" index="0" value="0" />
-			<Setting id="Pixie4/System/module/MAX_EVENTS" type="integer" index="0" value="0" />
-			<Setting id="Pixie4/System/module/COINCIDENCE_PATTERN" type="binary" index="0" value="0" />
-			<Setting id="Pixie4/System/module/ACTUAL_COINCIDENCE_WAIT" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/SYNCH_WAIT" type="boolean" index="0" value="false" />
-			<Setting id="Pixie4/System/module/IN_SYNCH" type="boolean" index="0" value="false" />
-			<Setting id="Pixie4/System/module/RUN_TYPE" type="int_menu" index="0" value="0" />
-			<Setting id="Pixie4/System/module/FILTER_RANGE" type="int_menu" index="0" value="0" />
-			<Setting id="Pixie4/System/module/MODULEPATTERN" type="binary" index="0" value="0" />
-			<Setting id="Pixie4/System/module/NNSHAREPATTERN" type="integer" index="0" value="0" />
-			<Setting id="Pixie4/System/module/DBLBUFCSR" type="binary" index="0" value="0" />
-			<Setting id="Pixie4/System/module/MODULE_CSRC" type="binary" index="0" value="0" />
-			<Setting id="Pixie4/System/module/XET_DELAY" type="integer" index="0" value="0" />
-			<Setting id="Pixie4/System/module/PDM_MASKA" type="integer" index="0" value="0" />
-			<Setting id="Pixie4/System/module/PDM_MASKB" type="integer" index="0" value="0" />
-			<Setting id="Pixie4/System/module/PDM_MASKC" type="integer" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRA" type="binary" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRB" type="binary" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/ENERGY_RISETIME" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/ENERGY_FLATTOP" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/TRIGGER_RISETIME" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/TRIGGER_FLATTOP" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/TRIGGER_THRESHOLD" type="integer" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/VGAIN" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/VOFFSET" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/TRACE_LENGTH" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/TRACE_DELAY" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/PSA_START" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/PSA_END" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/EMIN" type="integer" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/BINFACTOR" type="integer" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/TAU" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/BLCUT" type="integer" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/XDT" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/BASELINE_PERCENT" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/CFD_THRESHOLD" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/INTEGRATOR" type="int_menu" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRC" type="binary" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/GATE_WINDOW" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/GATE_DELAY" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/COINC_DELAY" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/PSM_TEMP_AVG_LEN" type="floating" index="0" value="0" />
-			<Setting id="Pixie4/System/module/channel/PSM_GAIN_CORR" type="floating" index="0" value="0" />
+		<Setting id="Optimization" type="stem">
+			<Setting id="Pixie4/System/module/MODULE_CSRA" type="binary" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/MODULE_CSRB" type="binary" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/MAX_EVENTS" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/COINCIDENCE_PATTERN" type="binary" indices="0 1 2 3" value="65534" />
+			<Setting id="Pixie4/System/module/ACTUAL_COINCIDENCE_WAIT" type="floating" indices="0 1 2 3" value="13.333333333333334" />
+			<Setting id="Pixie4/System/module/SYNCH_WAIT" type="boolean" indices="0 1 2 3" value="true" />
+			<Setting id="Pixie4/System/module/IN_SYNCH" type="boolean" indices="0 1 2 3" value="true" />
+			<Setting id="Pixie4/System/module/RUN_TYPE" type="int_menu" indices="0 1 2 3" value="259" />
+			<Setting id="Pixie4/System/module/FILTER_RANGE" type="int_menu" indices="0 1 2 3" value="4" />
+			<Setting id="Pixie4/System/module/MODULEPATTERN" type="binary" indices="0 1 2 3" value="32" />
+			<Setting id="Pixie4/System/module/NNSHAREPATTERN" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/DBLBUFCSR" type="binary" indices="0 1 2 3" value="1" />
+			<Setting id="Pixie4/System/module/MODULE_CSRC" type="binary" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/XET_DELAY" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/PDM_MASKA" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/PDM_MASKB" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/PDM_MASKC" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRA" type="binary" indices="0" value="52" />
+			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRB" type="binary" indices="0" value="0" />
+			<Setting id="Pixie4/System/module/channel/ENERGY_RISETIME" type="floating" indices="0" value="10.880000000000001" />
+			<Setting id="Pixie4/System/module/channel/ENERGY_FLATTOP" type="floating" indices="0" value="1.0666666666666667" />
+			<Setting id="Pixie4/System/module/channel/TRIGGER_RISETIME" type="floating" indices="0" value="0.080000000000000002" />
+			<Setting id="Pixie4/System/module/channel/TRIGGER_FLATTOP" type="floating" indices="0" value="0.080000000000000002" />
+			<Setting id="Pixie4/System/module/channel/TRIGGER_THRESHOLD" type="integer" indices="0" value="25" />
+			<Setting id="Pixie4/System/module/channel/VGAIN" type="floating" indices="0" value="4.4493255615234375" />
+			<Setting id="Pixie4/System/module/channel/VOFFSET" type="floating" indices="0" value="0.247802734375" />
+			<Setting id="Pixie4/System/module/channel/TRACE_LENGTH" type="floating" indices="0" value="1" />
+			<Setting id="Pixie4/System/module/channel/TRACE_DELAY" type="floating" indices="0" value="0.50666666666666671" />
+			<Setting id="Pixie4/System/module/channel/PSA_START" type="floating" indices="0" value="0" />
+			<Setting id="Pixie4/System/module/channel/PSA_END" type="floating" indices="0" value="0" />
+			<Setting id="Pixie4/System/module/channel/EMIN" type="integer" indices="0" value="0" />
+			<Setting id="Pixie4/System/module/channel/BINFACTOR" type="integer" indices="0" value="1" />
+			<Setting id="Pixie4/System/module/channel/TAU" type="floating" indices="0" value="54.899261474609375" />
+			<Setting id="Pixie4/System/module/channel/BLCUT" type="integer" indices="0" value="18" />
+			<Setting id="Pixie4/System/module/channel/XDT" type="floating" indices="0" value="0.053333333333333337" />
+			<Setting id="Pixie4/System/module/channel/BASELINE_PERCENT" type="floating" indices="0" value="10" />
+			<Setting id="Pixie4/System/module/channel/CFD_THRESHOLD" type="floating" indices="0" value="25" />
+			<Setting id="Pixie4/System/module/channel/INTEGRATOR" type="int_menu" indices="0" value="0" />
+			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRC" type="binary" indices="0" value="0" />
+			<Setting id="Pixie4/System/module/channel/GATE_WINDOW" type="floating" indices="0" value="0.013333333333333334" />
+			<Setting id="Pixie4/System/module/channel/GATE_DELAY" type="floating" indices="0" value="0.013333333333333334" />
+			<Setting id="Pixie4/System/module/channel/COINC_DELAY" type="floating" indices="0" value="0" />
+			<Setting id="Pixie4/System/module/channel/PSM_TEMP_AVG_LEN" type="floating" indices="0" value="1" />
+			<Setting id="Pixie4/System/module/channel/PSM_GAIN_CORR" type="floating" indices="0" value="10" />
 		</Setting>
 	</Detector>
 	<Detector>
@@ -89,51 +89,169 @@
 				<Coefficients>2.48417 0.000373441</Coefficients>
 			</Equation>
 		</Calibration>
-		<Setting id="Optimization" type="stem" index="-1">
-			<Setting id="Pixie4/System/module/MODULE_CSRA" type="binary" index="1" value="0" />
-			<Setting id="Pixie4/System/module/MODULE_CSRB" type="binary" index="1" value="0" />
-			<Setting id="Pixie4/System/module/MAX_EVENTS" type="integer" index="1" value="0" />
-			<Setting id="Pixie4/System/module/COINCIDENCE_PATTERN" type="binary" index="1" value="0" />
-			<Setting id="Pixie4/System/module/ACTUAL_COINCIDENCE_WAIT" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/SYNCH_WAIT" type="boolean" index="1" value="false" />
-			<Setting id="Pixie4/System/module/IN_SYNCH" type="boolean" index="1" value="false" />
-			<Setting id="Pixie4/System/module/RUN_TYPE" type="int_menu" index="1" value="0" />
-			<Setting id="Pixie4/System/module/FILTER_RANGE" type="int_menu" index="1" value="0" />
-			<Setting id="Pixie4/System/module/MODULEPATTERN" type="binary" index="1" value="0" />
-			<Setting id="Pixie4/System/module/NNSHAREPATTERN" type="integer" index="1" value="0" />
-			<Setting id="Pixie4/System/module/DBLBUFCSR" type="binary" index="1" value="0" />
-			<Setting id="Pixie4/System/module/MODULE_CSRC" type="binary" index="1" value="0" />
-			<Setting id="Pixie4/System/module/XET_DELAY" type="integer" index="1" value="0" />
-			<Setting id="Pixie4/System/module/PDM_MASKA" type="integer" index="1" value="0" />
-			<Setting id="Pixie4/System/module/PDM_MASKB" type="integer" index="1" value="0" />
-			<Setting id="Pixie4/System/module/PDM_MASKC" type="integer" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRA" type="binary" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRB" type="binary" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/ENERGY_RISETIME" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/ENERGY_FLATTOP" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/TRIGGER_RISETIME" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/TRIGGER_FLATTOP" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/TRIGGER_THRESHOLD" type="integer" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/VGAIN" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/VOFFSET" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/TRACE_LENGTH" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/TRACE_DELAY" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/PSA_START" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/PSA_END" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/EMIN" type="integer" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/BINFACTOR" type="integer" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/TAU" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/BLCUT" type="integer" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/XDT" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/BASELINE_PERCENT" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/CFD_THRESHOLD" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/INTEGRATOR" type="int_menu" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRC" type="binary" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/GATE_WINDOW" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/GATE_DELAY" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/COINC_DELAY" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/PSM_TEMP_AVG_LEN" type="floating" index="1" value="0" />
-			<Setting id="Pixie4/System/module/channel/PSM_GAIN_CORR" type="floating" index="1" value="0" />
+		<Setting id="Optimization" type="stem">
+			<Setting id="Pixie4/System/module/MODULE_CSRA" type="binary" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/MODULE_CSRB" type="binary" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/MAX_EVENTS" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/COINCIDENCE_PATTERN" type="binary" indices="0 1 2 3" value="65534" />
+			<Setting id="Pixie4/System/module/ACTUAL_COINCIDENCE_WAIT" type="floating" indices="0 1 2 3" value="13.333333333333334" />
+			<Setting id="Pixie4/System/module/SYNCH_WAIT" type="boolean" indices="0 1 2 3" value="true" />
+			<Setting id="Pixie4/System/module/IN_SYNCH" type="boolean" indices="0 1 2 3" value="true" />
+			<Setting id="Pixie4/System/module/RUN_TYPE" type="int_menu" indices="0 1 2 3" value="259" />
+			<Setting id="Pixie4/System/module/FILTER_RANGE" type="int_menu" indices="0 1 2 3" value="4" />
+			<Setting id="Pixie4/System/module/MODULEPATTERN" type="binary" indices="0 1 2 3" value="32" />
+			<Setting id="Pixie4/System/module/NNSHAREPATTERN" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/DBLBUFCSR" type="binary" indices="0 1 2 3" value="1" />
+			<Setting id="Pixie4/System/module/MODULE_CSRC" type="binary" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/XET_DELAY" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/PDM_MASKA" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/PDM_MASKB" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/PDM_MASKC" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRA" type="binary" indices="1" value="52" />
+			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRB" type="binary" indices="1" value="0" />
+			<Setting id="Pixie4/System/module/channel/ENERGY_RISETIME" type="floating" indices="1" value="10.880000000000001" />
+			<Setting id="Pixie4/System/module/channel/ENERGY_FLATTOP" type="floating" indices="1" value="1.0666666666666667" />
+			<Setting id="Pixie4/System/module/channel/TRIGGER_RISETIME" type="floating" indices="1" value="0.080000000000000002" />
+			<Setting id="Pixie4/System/module/channel/TRIGGER_FLATTOP" type="floating" indices="1" value="0.080000000000000002" />
+			<Setting id="Pixie4/System/module/channel/TRIGGER_THRESHOLD" type="integer" indices="1" value="25" />
+			<Setting id="Pixie4/System/module/channel/VGAIN" type="floating" indices="1" value="4.2031578063964838" />
+			<Setting id="Pixie4/System/module/channel/VOFFSET" type="floating" indices="1" value="0.223388671875" />
+			<Setting id="Pixie4/System/module/channel/TRACE_LENGTH" type="floating" indices="1" value="1" />
+			<Setting id="Pixie4/System/module/channel/TRACE_DELAY" type="floating" indices="1" value="0.50666666666666671" />
+			<Setting id="Pixie4/System/module/channel/PSA_START" type="floating" indices="1" value="0" />
+			<Setting id="Pixie4/System/module/channel/PSA_END" type="floating" indices="1" value="0" />
+			<Setting id="Pixie4/System/module/channel/EMIN" type="integer" indices="1" value="0" />
+			<Setting id="Pixie4/System/module/channel/BINFACTOR" type="integer" indices="1" value="1" />
+			<Setting id="Pixie4/System/module/channel/TAU" type="floating" indices="1" value="59.816085815429688" />
+			<Setting id="Pixie4/System/module/channel/BLCUT" type="integer" indices="1" value="15" />
+			<Setting id="Pixie4/System/module/channel/XDT" type="floating" indices="1" value="0.053333333333333337" />
+			<Setting id="Pixie4/System/module/channel/BASELINE_PERCENT" type="floating" indices="1" value="10" />
+			<Setting id="Pixie4/System/module/channel/CFD_THRESHOLD" type="floating" indices="1" value="25" />
+			<Setting id="Pixie4/System/module/channel/INTEGRATOR" type="int_menu" indices="1" value="0" />
+			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRC" type="binary" indices="1" value="0" />
+			<Setting id="Pixie4/System/module/channel/GATE_WINDOW" type="floating" indices="1" value="0.013333333333333334" />
+			<Setting id="Pixie4/System/module/channel/GATE_DELAY" type="floating" indices="1" value="0.013333333333333334" />
+			<Setting id="Pixie4/System/module/channel/COINC_DELAY" type="floating" indices="1" value="0" />
+			<Setting id="Pixie4/System/module/channel/PSM_TEMP_AVG_LEN" type="floating" indices="1" value="1" />
+			<Setting id="Pixie4/System/module/channel/PSM_GAIN_CORR" type="floating" indices="1" value="10" />
 		</Setting>
+	</Detector>
+	<Detector>
+		<Name>Homer</Name>
+		<Type>HPGe</Type>
+		<Setting id="Optimization" type="stem">
+			<Setting id="Pixie4/System/module/MODULE_CSRA" type="binary" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/MODULE_CSRB" type="binary" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/MAX_EVENTS" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/COINCIDENCE_PATTERN" type="binary" indices="0 1 2 3" value="65534" />
+			<Setting id="Pixie4/System/module/ACTUAL_COINCIDENCE_WAIT" type="floating" indices="0 1 2 3" value="13.333333333333334" />
+			<Setting id="Pixie4/System/module/SYNCH_WAIT" type="boolean" indices="0 1 2 3" value="true" />
+			<Setting id="Pixie4/System/module/IN_SYNCH" type="boolean" indices="0 1 2 3" value="true" />
+			<Setting id="Pixie4/System/module/RUN_TYPE" type="int_menu" indices="0 1 2 3" value="259" />
+			<Setting id="Pixie4/System/module/FILTER_RANGE" type="int_menu" indices="0 1 2 3" value="4" />
+			<Setting id="Pixie4/System/module/MODULEPATTERN" type="binary" indices="0 1 2 3" value="32" />
+			<Setting id="Pixie4/System/module/NNSHAREPATTERN" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/DBLBUFCSR" type="binary" indices="0 1 2 3" value="1" />
+			<Setting id="Pixie4/System/module/MODULE_CSRC" type="binary" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/XET_DELAY" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/PDM_MASKA" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/PDM_MASKB" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/PDM_MASKC" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRA" type="binary" indices="2" value="20" />
+			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRB" type="binary" indices="2" value="0" />
+			<Setting id="Pixie4/System/module/channel/ENERGY_RISETIME" type="floating" indices="2" value="10.026666666666667" />
+			<Setting id="Pixie4/System/module/channel/ENERGY_FLATTOP" type="floating" indices="2" value="1.0666666666666667" />
+			<Setting id="Pixie4/System/module/channel/TRIGGER_RISETIME" type="floating" indices="2" value="0.080000000000000002" />
+			<Setting id="Pixie4/System/module/channel/TRIGGER_FLATTOP" type="floating" indices="2" value="0.080000000000000002" />
+			<Setting id="Pixie4/System/module/channel/TRIGGER_THRESHOLD" type="integer" indices="2" value="25" />
+			<Setting id="Pixie4/System/module/channel/VGAIN" type="floating" indices="2" value="12.374382019042969" />
+			<Setting id="Pixie4/System/module/channel/VOFFSET" type="floating" indices="2" value="-0.1062774658203125" />
+			<Setting id="Pixie4/System/module/channel/TRACE_LENGTH" type="floating" indices="2" value="1" />
+			<Setting id="Pixie4/System/module/channel/TRACE_DELAY" type="floating" indices="2" value="0.50666666666666671" />
+			<Setting id="Pixie4/System/module/channel/PSA_START" type="floating" indices="2" value="0" />
+			<Setting id="Pixie4/System/module/channel/PSA_END" type="floating" indices="2" value="0" />
+			<Setting id="Pixie4/System/module/channel/EMIN" type="integer" indices="2" value="0" />
+			<Setting id="Pixie4/System/module/channel/BINFACTOR" type="integer" indices="2" value="1" />
+			<Setting id="Pixie4/System/module/channel/TAU" type="floating" indices="2" value="0.04998779296875" />
+			<Setting id="Pixie4/System/module/channel/BLCUT" type="integer" indices="2" value="48" />
+			<Setting id="Pixie4/System/module/channel/XDT" type="floating" indices="2" value="2.04" />
+			<Setting id="Pixie4/System/module/channel/BASELINE_PERCENT" type="floating" indices="2" value="10" />
+			<Setting id="Pixie4/System/module/channel/CFD_THRESHOLD" type="floating" indices="2" value="25" />
+			<Setting id="Pixie4/System/module/channel/INTEGRATOR" type="int_menu" indices="2" value="0" />
+			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRC" type="binary" indices="2" value="0" />
+			<Setting id="Pixie4/System/module/channel/GATE_WINDOW" type="floating" indices="2" value="0.013333333333333334" />
+			<Setting id="Pixie4/System/module/channel/GATE_DELAY" type="floating" indices="2" value="0.013333333333333334" />
+			<Setting id="Pixie4/System/module/channel/COINC_DELAY" type="floating" indices="2" value="3200" />
+			<Setting id="Pixie4/System/module/channel/PSM_TEMP_AVG_LEN" type="floating" indices="2" value="1" />
+			<Setting id="Pixie4/System/module/channel/PSM_GAIN_CORR" type="floating" indices="2" value="10" />
+		</Setting>
+	</Detector>
+	<Detector>
+		<Name>HomerBGO</Name>
+		<Type>BGO</Type>
+		<Setting id="Optimization" type="stem">
+			<Setting id="Pixie4/System/module/MODULE_CSRA" type="binary" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/MODULE_CSRB" type="binary" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/MAX_EVENTS" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/COINCIDENCE_PATTERN" type="binary" indices="0 1 2 3" value="65534" />
+			<Setting id="Pixie4/System/module/ACTUAL_COINCIDENCE_WAIT" type="floating" indices="0 1 2 3" value="13.333333333333334" />
+			<Setting id="Pixie4/System/module/SYNCH_WAIT" type="boolean" indices="0 1 2 3" value="true" />
+			<Setting id="Pixie4/System/module/IN_SYNCH" type="boolean" indices="0 1 2 3" value="true" />
+			<Setting id="Pixie4/System/module/RUN_TYPE" type="int_menu" indices="0 1 2 3" value="259" />
+			<Setting id="Pixie4/System/module/FILTER_RANGE" type="int_menu" indices="0 1 2 3" value="4" />
+			<Setting id="Pixie4/System/module/MODULEPATTERN" type="binary" indices="0 1 2 3" value="32" />
+			<Setting id="Pixie4/System/module/NNSHAREPATTERN" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/DBLBUFCSR" type="binary" indices="0 1 2 3" value="1" />
+			<Setting id="Pixie4/System/module/MODULE_CSRC" type="binary" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/XET_DELAY" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/PDM_MASKA" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/PDM_MASKB" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/PDM_MASKC" type="integer" indices="0 1 2 3" value="0" />
+			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRA" type="binary" indices="3" value="52" />
+			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRB" type="binary" indices="3" value="0" />
+			<Setting id="Pixie4/System/module/channel/ENERGY_RISETIME" type="floating" indices="3" value="11.946666666666667" />
+			<Setting id="Pixie4/System/module/channel/ENERGY_FLATTOP" type="floating" indices="3" value="2.3466666666666667" />
+			<Setting id="Pixie4/System/module/channel/TRIGGER_RISETIME" type="floating" indices="3" value="0.080000000000000002" />
+			<Setting id="Pixie4/System/module/channel/TRIGGER_FLATTOP" type="floating" indices="3" value="0.080000000000000002" />
+			<Setting id="Pixie4/System/module/channel/TRIGGER_THRESHOLD" type="integer" indices="3" value="25" />
+			<Setting id="Pixie4/System/module/channel/VGAIN" type="floating" indices="3" value="2.9999576568603517" />
+			<Setting id="Pixie4/System/module/channel/VOFFSET" type="floating" indices="3" value="0.2832794189453125" />
+			<Setting id="Pixie4/System/module/channel/TRACE_LENGTH" type="floating" indices="3" value="4" />
+			<Setting id="Pixie4/System/module/channel/TRACE_DELAY" type="floating" indices="3" value="0.49333333333333335" />
+			<Setting id="Pixie4/System/module/channel/PSA_START" type="floating" indices="3" value="0" />
+			<Setting id="Pixie4/System/module/channel/PSA_END" type="floating" indices="3" value="0" />
+			<Setting id="Pixie4/System/module/channel/EMIN" type="integer" indices="3" value="0" />
+			<Setting id="Pixie4/System/module/channel/BINFACTOR" type="integer" indices="3" value="1" />
+			<Setting id="Pixie4/System/module/channel/TAU" type="floating" indices="3" value="57.709182739257812" />
+			<Setting id="Pixie4/System/module/channel/BLCUT" type="integer" indices="3" value="15" />
+			<Setting id="Pixie4/System/module/channel/XDT" type="floating" indices="3" value="2.04" />
+			<Setting id="Pixie4/System/module/channel/BASELINE_PERCENT" type="floating" indices="3" value="10" />
+			<Setting id="Pixie4/System/module/channel/CFD_THRESHOLD" type="floating" indices="3" value="25" />
+			<Setting id="Pixie4/System/module/channel/INTEGRATOR" type="int_menu" indices="3" value="3" />
+			<Setting id="Pixie4/System/module/channel/CHANNEL_CSRC" type="binary" indices="3" value="0" />
+			<Setting id="Pixie4/System/module/channel/GATE_WINDOW" type="floating" indices="3" value="0.013333333333333334" />
+			<Setting id="Pixie4/System/module/channel/GATE_DELAY" type="floating" indices="3" value="0.013333333333333334" />
+			<Setting id="Pixie4/System/module/channel/COINC_DELAY" type="floating" indices="3" value="0" />
+			<Setting id="Pixie4/System/module/channel/PSM_TEMP_AVG_LEN" type="floating" indices="3" value="1" />
+			<Setting id="Pixie4/System/module/channel/PSM_GAIN_CORR" type="floating" indices="3" value="10" />
+		</Setting>
+	</Detector>
+	<Detector>
+		<Name>unknown</Name>
+		<Type></Type>
+		<Calibrations>
+			<Calibration Type="Energy" EnergyUnits="keV" ResolutionBits="14">
+				<CalibrationCreationDate>2016-02-10T18:04:41.240200</CalibrationCreationDate>
+				<Equation Model="Polynomial">
+					<Coefficients>-0.422413 0.249778 7.32964e-09 0 0 0</Coefficients>
+				</Equation>
+			</Calibration>
+		</Calibrations>
+		<Calibration Type="FWHM" ResolutionBits="14">
+			<CalibrationCreationDate>2016-02-10T18:05:14.354367</CalibrationCreationDate>
+			<Equation Model="Polynomial">
+				<Coefficients>2.51546 0.00037936</Coefficients>
+			</Equation>
+		</Calibration>
 	</Detector>
 </Detectors>

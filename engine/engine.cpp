@@ -96,7 +96,7 @@ void Engine::initialize(std::string profile) {
       DaqDevice* device = DeviceFactory::getInstance().create_type(q.id_, dev_settings.string());
       if (device != nullptr) {
         PL_DBG << "<Engine> Success loading " << device->device_name();
-        devices_[q.id_] = device;
+        devices_[q.id_] = std::unique_ptr<DaqDevice>(device);
       }
     }
   }
@@ -130,11 +130,6 @@ Engine::~Engine() {
       PL_ERR << "<Engine> Failed to save device settings";
   }
 
-  for (auto &q : devices_)
-    if (q.second != nullptr) {
-      PL_DBG << "<Engine> Destroying device " << q.first;
-      delete q.second;
-    }  
 }
 
 Qpx::Setting Engine::pull_settings() const {

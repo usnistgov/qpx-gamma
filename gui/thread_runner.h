@@ -61,7 +61,7 @@ public:
     void do_run(Qpx::SpectraSet&, boost::atomic<bool>&, uint64_t timeout);
 
     void do_optimize();
-    void do_oscil(double xdt);
+    void do_oscil();
     void do_refresh_settings();
     void terminate();
     bool terminating();
@@ -89,8 +89,6 @@ private:
     Qpx::SpectraSet* spectra_;
     boost::atomic<bool>* interruptor_;
     boost::atomic<bool> terminating_;
-
-    double xdt_;
 
     uint64_t timeout_;
 
