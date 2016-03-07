@@ -39,7 +39,6 @@ class FormOscilloscope : public QWidget
 
 public:
   explicit FormOscilloscope(ThreadRunner&, QSettings&, QWidget *parent = 0);
-  double xdt();
   ~FormOscilloscope();
 
 signals:

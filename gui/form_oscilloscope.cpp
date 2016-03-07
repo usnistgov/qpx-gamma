@@ -60,13 +60,11 @@ void FormOscilloscope::closeEvent(QCloseEvent *event) {
 
 void FormOscilloscope::loadSettings() {
   settings_.beginGroup("Oscilloscope");
-  ui->doubleSpinXDT->setValue(settings_.value("xdt", 0.5).toDouble());
   settings_.endGroup();
 }
 
 void FormOscilloscope::saveSettings() {
   settings_.beginGroup("Oscilloscope");
-  settings_.setValue("xdt", ui->doubleSpinXDT->value());
   settings_.endGroup();
 }
 
@@ -106,11 +104,6 @@ void FormOscilloscope::updateMenu(std::vector<Qpx::Detector> dets) {
   }
 }
 
-double FormOscilloscope::xdt() {
-  return ui->doubleSpinXDT->value();
-}
-
-
 void FormOscilloscope::channelToggled(SelectorItem) {
   replot();
 }
@@ -129,14 +122,13 @@ void FormOscilloscope::channelDetails(SelectorItem item) {
 void FormOscilloscope::toggle_push(bool enable, Qpx::DeviceStatus status) {
   bool online = (status & Qpx::DeviceStatus::can_oscil);
   ui->pushOscilRefresh->setEnabled(enable && online);
-  ui->doubleSpinXDT->setEnabled(enable && online);
 }
 
 void FormOscilloscope::on_pushOscilRefresh_clicked()
 {
   emit statusText("Getting traces...");
   emit toggleIO(false);
-  runner_thread_.do_oscil(ui->doubleSpinXDT->value());
+  runner_thread_.do_oscil();
 }
 
 void FormOscilloscope::oscil_complete(std::vector<Qpx::Trace> traces) {
@@ -180,7 +172,7 @@ void FormOscilloscope::replot() {
 
       xdt = xinterval;
 
-      PL_DBG << "trace " << i << " length " << trace_length << " xdt " << xdt;
+//      PL_DBG << "trace " << i << " length " << trace_length << " xdt " << xdt;
 
       QVector<double> xx;
       for (int i=0; i < trace_length; ++i)
@@ -198,7 +190,7 @@ void FormOscilloscope::replot() {
       }
 
       if ((i < my_channels.size()) && (my_channels[i].visible)) {
-        PL_DBG << "will plot trace " << i;
+//        PL_DBG << "will plot trace " << i;
         AppearanceProfile profile;
         profile.default_pen = QPen(my_channels[i].color, 1);
         ui->widgetPlot->addGraph(xx, yy, profile);
@@ -217,7 +209,6 @@ void FormOscilloscope::replot() {
   }
 
   ui->widgetPlot->setLabels("time (\u03BCs)", "energy (" + unit + ")");
-  ui->doubleSpinXDT->setValue(xdt);
 
   ui->widgetPlot->rescale();
   ui->widgetPlot->redraw();

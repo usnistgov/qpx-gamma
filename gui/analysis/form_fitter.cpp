@@ -1581,6 +1581,9 @@ void FormFitter::plotSUM4_options() {
 
     for (auto &p : r.second.peaks_) {
 
+      if (p.second.sum4_.bx.empty())
+        continue;
+
       x = fit_data_->settings().cali_nrg_.transform(p.second.sum4_.bx.front(), fit_data_->settings().bits_);
       y = p.second.sum4_.by.front();
 

@@ -140,44 +140,6 @@
       </spacer>
      </item>
      <item>
-      <widget class="QLabel" name="label">
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>25</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>XDT</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QDoubleSpinBox" name="doubleSpinXDT">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>25</height>
-        </size>
-       </property>
-       <property name="decimals">
-        <number>6</number>
-       </property>
-       <property name="minimum">
-        <double>0.053333000000000</double>
-       </property>
-       <property name="maximum">
-        <double>873.773332999999980</double>
-       </property>
-       <property name="singleStep">
-        <double>0.013333000000000</double>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QPushButton" name="pushOscilRefresh">
        <property name="enabled">
         <bool>false</bool>

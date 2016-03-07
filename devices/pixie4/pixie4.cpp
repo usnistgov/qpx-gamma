@@ -405,19 +405,21 @@ bool Pixie4::write_settings_bulk(Qpx::Setting &set) {
   if (set.id_ != device_name())
     return false;
 
+  bool ret = true;
+
   set.enrich(setting_definitions_);
 
   for (auto &q : set.branches.my_data_) {
     if ((q.metadata.setting_type == Qpx::SettingType::command) && (q.value_int == 1)) {
       q.value_int = 0;
       if (q.id_ == "Pixie4/Measure baselines")
-        return control_measure_baselines(Module::all);
+        ret = control_measure_baselines(Module::all);
       else if (q.id_ == "Pixie4/Adjust offsets")
-        return control_adjust_offsets(Module::all);
+        ret = control_adjust_offsets(Module::all);
       else if (q.id_ == "Pixie4/Compute Tau")
-        return control_find_tau(Module::all);
+        ret = control_find_tau(Module::all);
       else if (q.id_ == "Pixie4/Compute BLCUT")
-        return control_compute_BLcut();
+        ret = control_compute_BLcut();
     } else if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "Pixie4/Files") && !(status_ & DeviceStatus::booted)) {
       for (auto &k : q.branches.my_data_) {
         if ((k.metadata.setting_type == Qpx::SettingType::dir_path) && (k.id_ == "Pixie4/Files/XIA_path")) {
@@ -513,7 +515,7 @@ bool Pixie4::write_settings_bulk(Qpx::Setting &set) {
       }
     }
   }
-  return true;
+  return ret;
 }
 
 bool Pixie4::boot() {

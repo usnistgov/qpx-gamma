@@ -99,7 +99,7 @@ protected:
   DeviceStatus aggregate_status_, intrinsic_status_;
   mutable boost::mutex mutex_;
 
-  std::map<std::string, DaqDevice*> devices_;  //use shared pointer instead
+  std::map<std::string, std::unique_ptr<DaqDevice>> devices_;  //use shared pointer instead
 
   Qpx::Setting settings_tree_;
   Qpx::SettingMeta total_det_num_, single_det_;
