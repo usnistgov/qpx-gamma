@@ -43,7 +43,6 @@ public:
 
 
 private slots:
-    void on_pushRandColor_clicked();
     void on_pushLock_clicked();
 
     void on_buttonBox_rejected();

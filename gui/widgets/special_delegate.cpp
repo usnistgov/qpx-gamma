@@ -38,27 +38,24 @@
 #include <QDateTimeEdit>
 #include <QPushButton>
 #include "time_duration_widget.h"
+#include "qtcolorpicker.h"
 
 #include <QApplication>
 
 void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                                const QModelIndex &index) const
 {
-
-  if ((option.state & QStyle::State_Selected) && !(option.state & QStyle::State_HasFocus)) {
+  if (index.data().type() == QVariant::Color) {
+    QColor thisColor = qvariant_cast<QColor>(index.data());
+    painter->fillRect(option.rect, thisColor);
+    return;
+  } else if ((option.state & QStyle::State_Selected) && !(option.state & QStyle::State_HasFocus)) {
     QStyledItemDelegate::paint(painter, option, index);
     return;
   }
 
-  /*if (index.data().canConvert<QpxPattern>()) {
-    QpxPattern qpxPattern = qvariant_cast<QpxPattern>(index.data());
-    if (option.state & QStyle::State_Selected)
-      painter->fillRect(option.rect, option.palette.highlight());
-    qpxPattern.paint(painter, option.rect, option.palette);
-  } else*/ if (index.data().type() == QVariant::Color) {
-    QColor thisColor = qvariant_cast<QColor>(index.data());
-    painter->fillRect(option.rect, thisColor);
-  } else if (index.data().canConvert<Qpx::Setting>()) {
+
+  if (index.data().canConvert<Qpx::Setting>()) {
     Qpx::Setting itemData = qvariant_cast<Qpx::Setting>(index.data());
     if (itemData.metadata.setting_type == Qpx::SettingType::command) {
       QStyleOptionButton button;
@@ -73,6 +70,9 @@ void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
       if (option.state & QStyle::State_Selected)
         painter->fillRect(option.rect, option.palette.highlight());
       pat.paint(painter, option.rect, option.palette);
+    } else if (itemData.metadata.setting_type == Qpx::SettingType::color) {
+      QColor thisColor(QString::fromStdString(itemData.value_text));
+      painter->fillRect(option.rect, thisColor);
     } else if ((itemData.metadata.setting_type == Qpx::SettingType::dir_path) ||
                (itemData.metadata.setting_type == Qpx::SettingType::text) ||
                (itemData.metadata.setting_type == Qpx::SettingType::integer) ||
@@ -142,10 +142,7 @@ QSize QpxSpecialDelegate::sizeHint(const QStyleOptionViewItem &option,
                                    const QModelIndex &index) const
 {
 
-  /*if (index.data().canConvert<QpxPattern>()) {
-    QpxPattern qpxPattern = qvariant_cast<QpxPattern>(index.data());
-    return qpxPattern.sizeHint();
-  } else*/ if (index.data().canConvert<Qpx::Setting>()) {
+  if (index.data().canConvert<Qpx::Setting>()) {
     Qpx::Setting itemData = qvariant_cast<Qpx::Setting>(index.data());
     if (itemData.metadata.setting_type == Qpx::SettingType::command) {
       QPushButton button;
@@ -172,6 +169,7 @@ QSize QpxSpecialDelegate::sizeHint(const QStyleOptionViewItem &option,
                (itemData.metadata.setting_type == Qpx::SettingType::binary) ||
                (itemData.metadata.setting_type == Qpx::SettingType::floating) ||
                (itemData.metadata.setting_type == Qpx::SettingType::detector) ||
+               (itemData.metadata.setting_type == Qpx::SettingType::color) ||
                (itemData.metadata.setting_type == Qpx::SettingType::command) ||
                (itemData.metadata.setting_type == Qpx::SettingType::time) ||
                (itemData.metadata.setting_type == Qpx::SettingType::time_duration) ||
@@ -222,6 +220,9 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
       return nullptr;
     } else if (set.metadata.setting_type == Qpx::SettingType::text) {
       QLineEdit *editor = new QLineEdit(parent);
+      return editor;
+    } else if (set.metadata.setting_type == Qpx::SettingType::color) {
+      QtColorPicker *editor = new QtColorPicker(parent);
       return editor;
     } else if (set.metadata.setting_type == Qpx::SettingType::time) {
       QDateTimeEdit *editor = new QDateTimeEdit(parent);
@@ -324,6 +325,13 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
       Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
       dte->set_total_seconds(set.value_duration.total_seconds());
     }
+  } else if (QtColorPicker *cp = qobject_cast<QtColorPicker *>(editor)) {
+    if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
+      Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
+      cp->setCurrentColor(QString::fromStdString(set.value_text));
+      cp->setMoreColors(32);
+//      cp->clickit();
+    }
   } else if (QLineEdit *le = qobject_cast<QLineEdit *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
       Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
@@ -374,6 +382,8 @@ void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *mod
     model->setData(index, dte->dateTime(), Qt::EditRole);
   else if (TimeDurationWidget *dte = qobject_cast<TimeDurationWidget *>(editor))
     model->setData(index, QVariant::fromValue(dte->total_seconds()), Qt::EditRole);
+  else if (QtColorPicker *cp = qobject_cast<QtColorPicker *>(editor))
+    model->setData(index, cp->currentColor().name(QColor::HexArgb), Qt::EditRole);
   else if (QCheckBox *cb = qobject_cast<QCheckBox *>(editor))
     model->setData(index, QVariant::fromValue(cb->isChecked()), Qt::EditRole);
   else if (QFileDialog *fd = qobject_cast<QFileDialog *>(editor)) {

@@ -48,6 +48,7 @@ enum class SettingType : int {none,
                               floating,
                               floating_precise,
                               text,
+                              color,
                               int_menu,
                               detector, // does not scale
                               time,

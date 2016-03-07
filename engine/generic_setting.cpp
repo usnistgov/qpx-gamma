@@ -42,6 +42,8 @@ SettingType to_type(const std::string &type) {
     return SettingType::floating_precise;
   else if (type == "text")
     return SettingType::text;
+  else if (type == "color")
+    return SettingType::color;
   else if (type == "time")
     return SettingType::time;
   else if (type == "time_duration")
@@ -79,6 +81,8 @@ std::string to_string(SettingType type) {
     return "floating_precise";
   else if (type == SettingType::text)
     return "text";
+  else if (type == SettingType::color)
+    return "color";
   else if (type == SettingType::detector)
     return "detector";
   else if (type == SettingType::time)
@@ -252,6 +256,7 @@ std::string Setting::val_to_string() const
   else if (metadata.setting_type == SettingType::pattern)
     ss << value_pattern.to_string();
   else if ((metadata.setting_type == SettingType::text) ||
+           (metadata.setting_type == SettingType::color) ||
            (metadata.setting_type == SettingType::detector) ||
            (metadata.setting_type == SettingType::file_path) ||
            (metadata.setting_type == SettingType::dir_path))
@@ -304,6 +309,7 @@ void Setting::val_from_node(const pugi::xml_node &node)
     value_pattern = Pattern(node.attribute("value").value());
   else if ((metadata.setting_type == SettingType::text) ||
            (metadata.setting_type == SettingType::detector) ||
+           (metadata.setting_type == SettingType::color) ||
            (metadata.setting_type == SettingType::file_path) ||
            (metadata.setting_type == SettingType::dir_path))
     value_text = std::string(node.attribute("value").value());

@@ -195,12 +195,6 @@ void DialogSpectrumTemplate::on_comboType_activated(const QString &arg1)
     PL_WARN << "Problem with spectrum type. Factory refuses to make template for " << arg1.toStdString();
 }
 
-void DialogSpectrumTemplate::on_pushRandColor_clicked()
-{
-  myTemplate.appearance = generateColor().rgba();
-  ui->colPicker->setCurrentColor(QColor::fromRgba(myTemplate.appearance));
-}
-
 void DialogSpectrumTemplate::on_spinDets_valueChanged(int arg1)
 {
   Qpx::Setting pattern;

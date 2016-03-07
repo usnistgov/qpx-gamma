@@ -171,13 +171,6 @@ void dialog_spectrum::toggle_push()
   }
 }
 
-void dialog_spectrum::on_pushRandColor_clicked()
-{
-  my_spectrum_.set_appearance(generateColor().rgba());
-  changed_ = true;
-  updateData();
-}
-
 void dialog_spectrum::setNewColor(QColor col) {
   my_spectrum_.set_appearance(col.rgba());
   changed_ = true;

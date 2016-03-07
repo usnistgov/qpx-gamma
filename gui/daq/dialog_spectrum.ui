@@ -695,41 +695,6 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushRandColor">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>44</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>44</width>
-            <height>32</height>
-           </size>
-          </property>
-          <property name="toolTip">
-           <string>Randomize color</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="../resources/qpxres.qrc">
-            <normaloff>:/icons/oxy/16/roll.png</normaloff>:/icons/oxy/16/roll.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item>
          <widget class="QPushButton" name="pushLock">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
@@ -847,15 +812,15 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>TimeDurationWidget</class>
-   <extends>QWidget</extends>
-   <header>time_duration_widget.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>QtColorPicker</class>
    <extends>QWidget</extends>
    <header>qtcolorpicker.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>TimeDurationWidget</class>
+   <extends>QWidget</extends>
+   <header>time_duration_widget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

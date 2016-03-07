@@ -73,7 +73,7 @@
 
 class ColorPickerPopup;
 
-class QT_QTCOLORPICKER_EXPORT QtColorPicker : public QPushButton
+class QT_QTCOLORPICKER_EXPORT QtColorPicker : public QWidget
 {
     Q_OBJECT
 
@@ -81,9 +81,11 @@ class QT_QTCOLORPICKER_EXPORT QtColorPicker : public QPushButton
 
 public:
     QtColorPicker(QWidget *parent = 0,
-                  int columns = -1, bool enableColorDialog = true, bool enableText = false);
+                  int columns = -1, bool enableColorDialog = true, bool enableRand = true);
 
     ~QtColorPicker();
+
+    QSize sizeHint() const Q_DECL_OVERRIDE;
 
     void insertColor(const QColor &color, const QString &text = QString::null, int index = -1);
 
@@ -95,9 +97,10 @@ public:
     bool colorDialogEnabled() const;
 
     void setStandardColors();
-    void setTextEnabled(bool enabled);
+    void setMoreColors(int num = 1);
+    void clickit();
 
-    static QColor getColor(const QPoint &pos, bool allowCustomColors = true);
+    static QColor getColor(const QPoint &pos, bool allowCustomColors = true, bool allowRand = true, int random_extras = 10);
 
 public Q_SLOTS:
     void setCurrentColor(const QColor &col);
@@ -107,6 +110,8 @@ Q_SIGNALS:
 
 protected:
     void paintEvent(QPaintEvent *e);
+    void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
+    void mousePressEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
 
 private Q_SLOTS:
     void buttonPressed(bool toggled);
@@ -116,9 +121,9 @@ private:
     ColorPickerPopup *popup;
     QColor col;
     bool withColorDialog;
+    bool withRandButton;
     bool dirty;
     bool firstInserted;
-    bool withText;
 };
 
 #endif

@@ -146,7 +146,10 @@ QVariant TreeItem::display_data(int column) const
   }
   else if ((column == 2) && (itemData.metadata.setting_type != Qpx::SettingType::none) && (itemData.metadata.setting_type != Qpx::SettingType::stem))
   {
-    return QVariant::fromValue(itemData);
+    if (itemData.metadata.setting_type == Qpx::SettingType::color)
+      return QColor(QString::fromStdString(itemData.value_text));
+    else
+      return QVariant::fromValue(itemData);
   }
   else if (column == 3)
     return QString::fromStdString(itemData.metadata.unit);
@@ -302,6 +305,11 @@ bool TreeItem::setData(int column, const QVariant &value)
   else if ((itemData.metadata.setting_type == Qpx::SettingType::text)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
+  else if ((itemData.metadata.setting_type == Qpx::SettingType::color)
+      && (value.type() == QVariant::String)) {
+    itemData.value_text = value.toString().toStdString();
+    PL_DBG << "newcol " << itemData.value_text ;
+  }
   else if ((itemData.metadata.setting_type == Qpx::SettingType::file_path)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
