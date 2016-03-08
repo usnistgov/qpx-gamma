@@ -306,10 +306,8 @@ bool TreeItem::setData(int column, const QVariant &value)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
   else if ((itemData.metadata.setting_type == Qpx::SettingType::color)
-      && (value.type() == QVariant::String)) {
+      && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();
-    PL_DBG << "newcol " << itemData.value_text ;
-  }
   else if ((itemData.metadata.setting_type == Qpx::SettingType::file_path)
       && (value.type() == QVariant::String))
     itemData.value_text = value.toString().toStdString();

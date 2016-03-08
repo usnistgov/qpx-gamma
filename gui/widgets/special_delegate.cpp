@@ -37,8 +37,8 @@
 #include <QMessageBox>
 #include <QDateTimeEdit>
 #include <QPushButton>
+#include <QColorDialog>
 #include "time_duration_widget.h"
-#include "qtcolorpicker.h"
 
 #include <QApplication>
 
@@ -47,6 +47,13 @@ void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
 {
   if (index.data().type() == QVariant::Color) {
     QColor thisColor = qvariant_cast<QColor>(index.data());
+    painter->fillRect(option.rect, thisColor);
+    return;
+  } if ((index.data().canConvert<Qpx::Setting>()) &&
+        (qvariant_cast<Qpx::Setting>(index.data()).metadata.setting_type == Qpx::SettingType::color))
+  {
+    Qpx::Setting itemData = qvariant_cast<Qpx::Setting>(index.data());
+    QColor thisColor(QString::fromStdString(itemData.value_text));
     painter->fillRect(option.rect, thisColor);
     return;
   } else if ((option.state & QStyle::State_Selected) && !(option.state & QStyle::State_HasFocus)) {
@@ -222,7 +229,8 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
       QLineEdit *editor = new QLineEdit(parent);
       return editor;
     } else if (set.metadata.setting_type == Qpx::SettingType::color) {
-      QtColorPicker *editor = new QtColorPicker(parent);
+      QtColorPicker *editor = new QtColorPicker(parent, -1, true, 42);
+      connect(editor, SIGNAL(get_custom_color(QtColorPicker *)), this, SLOT(get_color_from_dialog(QtColorPicker *)));
       return editor;
     } else if (set.metadata.setting_type == Qpx::SettingType::time) {
       QDateTimeEdit *editor = new QDateTimeEdit(parent);
@@ -329,7 +337,7 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
     if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
       Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
       cp->setCurrentColor(QString::fromStdString(set.value_text));
-      cp->setMoreColors(32);
+//      cp->setMoreColors(32);
 //      cp->clickit();
     }
   } else if (QLineEdit *le = qobject_cast<QLineEdit *>(editor)) {
@@ -401,4 +409,15 @@ void QpxSpecialDelegate::eat_detectors(const XMLableDB<Qpx::Detector> &detectors
 void QpxSpecialDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
   editor->setGeometry(option.rect);
+}
+
+void QpxSpecialDelegate::get_color_from_dialog(QtColorPicker *ed) {
+  this->blockSignals(true);
+  bool ok;
+  QRgb rgb = QColorDialog::getRgba(ed->currentColor().rgba(), &ok, ed);
+  if (ok) {
+    QColor col = QColor::fromRgba(rgb);
+    ed->setCurrentColor(col);
+  }
+  this->blockSignals(false);
 }

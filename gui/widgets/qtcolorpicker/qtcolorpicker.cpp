@@ -204,7 +204,7 @@ class ColorPickerPopup : public QFrame
   Q_OBJECT
 
 public:
-  ColorPickerPopup(int width, bool withColorDialog, bool withRandButton,
+  ColorPickerPopup(int width, bool withColorDialog, int withRandExtras,
                    QWidget *parent = 0);
   ~ColorPickerPopup();
 
@@ -221,6 +221,7 @@ public:
 signals:
   void selected(const QColor &);
   void hid();
+  void get_custom();
 
 public slots:
   void getColorFromDialog();
@@ -247,6 +248,7 @@ private:
 
   int lastPos;
   int cols;
+  int random_extras;
   QColor lastSel;
 };
 
@@ -273,8 +275,8 @@ QSize QtColorPicker::sizeHint() const
     \sa QFrame
 */
 QtColorPicker::QtColorPicker(QWidget *parent,
-                             int cols, bool enableColorDialog, bool enableRand)
-  : QWidget(parent), popup(0), withColorDialog(enableColorDialog), withRandButton(enableRand)
+                             int cols, bool enableColorDialog, int random_extras)
+  : QWidget(parent), popup(0), withColorDialog(enableColorDialog), withRandomExtras(random_extras)
 {
   setFocusPolicy(Qt::StrongFocus);
   setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -283,13 +285,13 @@ QtColorPicker::QtColorPicker(QWidget *parent,
 
   // Create and set icon
   col = Qt::black;
-  dirty = true;
 
   // Create color grid popup and connect to it.
-  popup = new ColorPickerPopup(cols, withColorDialog, withRandButton, this);
+  popup = new ColorPickerPopup(cols, withColorDialog, withRandomExtras, this);
   connect(popup, SIGNAL(selected(const QColor &)),
           SLOT(setCurrentColor(const QColor &)));
   connect(popup, SIGNAL(hid()), SLOT(popupClosed()));
+  connect(popup, SIGNAL(get_custom()), SLOT(getCustom()));
 
 //  // Connect this push button's pressed() signal.
 //  connect(this, SIGNAL(toggled(bool)), SLOT(buttonPressed(bool)));
@@ -362,12 +364,9 @@ void QtColorPicker::buttonPressed(bool toggled)
 */
 void QtColorPicker::paintEvent(QPaintEvent *e)
 {
-//  if (dirty) {
-    QPainter painter(this);
-    painter.fillRect(rect(), col);
+  QPainter painter(this);
+  painter.fillRect(rect(), col);
 
-    dirty = false;
-//  }
 //  QWidget::paintEvent(e);
 }
 
@@ -378,6 +377,20 @@ void QtColorPicker::paintEvent(QPaintEvent *e)
 void QtColorPicker::popupClosed()
 {
   setFocus();
+}
+
+void QtColorPicker::getCustom()
+{
+  emit get_custom_color(this);
+  return;
+
+  bool ok;
+  QRgb rgb = QColorDialog::getRgba(col.rgba(), &ok, parentWidget());
+  if (!ok)
+    return;
+
+  QColor col = QColor::fromRgba(rgb);
+  setCurrentColor(col);
 }
 
 /*!
@@ -460,8 +473,6 @@ void QtColorPicker::setCurrentColor(const QColor &color)
 
   col = color;
 
-  dirty = true;
-
   popup->hide();
   repaint();
 
@@ -519,37 +530,28 @@ bool QtColorPicker::colorDialogEnabled() const
         }
     \endcode
 */
-QColor QtColorPicker::getColor(const QPoint &point, bool allowCustomColors, bool allowRand, int random_extras)
+QColor QtColorPicker::getColor(const QPoint &point, bool allowCustomColors, int random_extras)
 {
-  ColorPickerPopup popup(-1, allowCustomColors, allowRand);
+  ColorPickerPopup popup(-1, allowCustomColors, random_extras);
 
-  popup.insertColor(Qt::black, tr("Black"), 0);
-  popup.insertColor(Qt::white, tr("White"), 1);
-  popup.insertColor(Qt::red, tr("Red"), 2);
-  popup.insertColor(Qt::darkRed, tr("Dark red"), 3);
-  popup.insertColor(Qt::green, tr("Green"), 4);
-  popup.insertColor(Qt::darkGreen, tr("Dark green"), 5);
-  popup.insertColor(Qt::blue, tr("Blue"), 6);
-  popup.insertColor(Qt::darkBlue, tr("Dark blue"), 7);
-  popup.insertColor(Qt::cyan, tr("Cyan"), 8);
-  popup.insertColor(Qt::darkCyan, tr("Dark cyan"), 9);
-  popup.insertColor(Qt::magenta, tr("Magenta"), 10);
-  popup.insertColor(Qt::darkMagenta, tr("Dark magenta"), 11);
-  popup.insertColor(Qt::yellow, tr("Yellow"), 12);
-  popup.insertColor(Qt::darkYellow, tr("Dark yellow"), 13);
-  popup.insertColor(Qt::gray, tr("Gray"), 14);
-  popup.insertColor(Qt::darkGray, tr("Dark gray"), 15);
-  popup.insertColor(Qt::lightGray, tr("Light gray"), 16);
-
-  for (int i=0; i < random_extras; ++i) {
-    int H = rand() % 359;
-    int S = rand() % 64 + 191;
-    int V = rand() % 54 + 181;
-    int A = 128;
-
-    QColor col = QColor::fromHsv(H, S, V, A);
-
-    popup.insertColor(col, tr("Custom"), -1);
+  if (random_extras <= 0) {
+    popup.insertColor(Qt::black, tr("Black"), 0);
+    popup.insertColor(Qt::white, tr("White"), 1);
+    popup.insertColor(Qt::red, tr("Red"), 2);
+    popup.insertColor(Qt::darkRed, tr("Dark red"), 3);
+    popup.insertColor(Qt::green, tr("Green"), 4);
+    popup.insertColor(Qt::darkGreen, tr("Dark green"), 5);
+    popup.insertColor(Qt::blue, tr("Blue"), 6);
+    popup.insertColor(Qt::darkBlue, tr("Dark blue"), 7);
+    popup.insertColor(Qt::cyan, tr("Cyan"), 8);
+    popup.insertColor(Qt::darkCyan, tr("Dark cyan"), 9);
+    popup.insertColor(Qt::magenta, tr("Magenta"), 10);
+    popup.insertColor(Qt::darkMagenta, tr("Dark magenta"), 11);
+    popup.insertColor(Qt::yellow, tr("Yellow"), 12);
+    popup.insertColor(Qt::darkYellow, tr("Dark yellow"), 13);
+    popup.insertColor(Qt::gray, tr("Gray"), 14);
+    popup.insertColor(Qt::darkGray, tr("Dark gray"), 15);
+    popup.insertColor(Qt::lightGray, tr("Light gray"), 16);
   }
 
   popup.move(point);
@@ -561,9 +563,9 @@ QColor QtColorPicker::getColor(const QPoint &point, bool allowCustomColors, bool
 
     Constructs the popup widget.
 */
-ColorPickerPopup::ColorPickerPopup(int width, bool withColorDialog, bool withRandButton,
+ColorPickerPopup::ColorPickerPopup(int width, bool withColorDialog, int withRandExtras,
                                    QWidget *parent)
-  : QFrame(parent, Qt::Popup)
+  : QFrame(parent, Qt::Popup), random_extras(withRandExtras)
 {
   setFrameStyle(QFrame::StyledPanel);
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
@@ -582,7 +584,7 @@ ColorPickerPopup::ColorPickerPopup(int width, bool withColorDialog, bool withRan
     moreButton = 0;
   }
 
-  if (withRandButton) {
+  if (withRandExtras > 0) {
     randButton = new QPushButton(this);
     randButton->setFixedWidth(24);
     randButton->setFixedHeight(21);
@@ -596,6 +598,17 @@ ColorPickerPopup::ColorPickerPopup(int width, bool withColorDialog, bool withRan
   eventLoop = 0;
   grid = 0;
   regenerateGrid();
+
+  for (int i=0; i < random_extras; ++i) {
+    int H = rand() % 359;
+    int S = rand() % 64 + 191;
+    int V = rand() % 54 + 181;
+    int A = 128;
+
+    QColor col = QColor::fromHsv(H, S, V, A);
+
+    insertColor(col, tr("Custom"), -1);
+  }
 }
 
 
@@ -939,6 +952,8 @@ void ColorPickerPopup::regenerateGrid()
 */
 void ColorPickerPopup::getColorFromDialog()
 {
+  emit get_custom();
+  return;
   bool ok;
   QRgb rgb = QColorDialog::getRgba(lastSel.rgba(), &ok, parentWidget());
   if (!ok)
@@ -952,15 +967,32 @@ void ColorPickerPopup::getColorFromDialog()
 
 void ColorPickerPopup::randColor()
 {
-  int H = rand() % 359;
-  int S = rand() % 64 + 191;
-  int V = rand() % 54 + 181;
-  int A = 128;
+  items.clear();
+  widgetAt.clear();
+  delete grid;
+  grid = 0;
+  QColor prevsel = lastSel;
+  lastSel = QColor();
+//  lastPos = 0;
+  cols = -1;
+//  regenerateGrid();
+  QColor col;
+  for (int i=0; i < random_extras; ++i) {
+    int H = rand() % 359;
+    int S = rand() % 64 + 191;
+    int V = rand() % 54 + 181;
+    int A = 128;
 
-  QColor col = QColor::fromHsv(H, S, V, A);
-  insertColor(col, tr("Custom"), -1);
-  lastSel = col;
-  emit selected(col);
+    col = QColor::fromHsv(H, S, V, A);
+
+    insertColor(col, tr("Custom"), -1);
+  }
+
+  insertColor(prevsel, tr("Custom"), -1);
+
+  lastSel = prevsel;
+  regenerateGrid();
+  emit selected(prevsel);
 }
 
 /*!

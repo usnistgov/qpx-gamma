@@ -11,6 +11,7 @@
 		<branch address="7" id="ParserRaw/Hits" />
 		<branch address="8" id="ParserRaw/StartTime" />
 		<branch address="9" id="ParserRaw/RunDuration" />
+		<branch address="10" id="ParserRaw/Color" />
 	</SettingMeta>
 	<SettingMeta id="ParserRaw/Source file" type="file_path" name="Source file" writable="true" unit="List mode output (*.txt)" />
 	<SettingMeta id="ParserRaw/Loop data" type="boolean" name="Loop data" writable="true" />
@@ -23,4 +24,6 @@
 	<SettingMeta id="ParserRaw/StartTime" type="time" name="Start timestamp" writable="false" />
 	<SettingMeta id="ParserRaw/RunDuration" type="time_duration" name="Run duration" writable="false" />
 	<SettingMeta id="ParserRaw/Precious" type="floating_precise" name="My precious" writable="true" step="50" minimum="0" maximum="5000000" unit="ms" />
+	<SettingMeta id="ParserRaw/Patty" type="pattern" name="My pattern" writable="true" word_size="8"/>
+	<SettingMeta id="ParserRaw/Color" type="color" name="My color" writable="true" />
 </ParserRaw>

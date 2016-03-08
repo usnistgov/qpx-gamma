@@ -81,7 +81,7 @@ class QT_QTCOLORPICKER_EXPORT QtColorPicker : public QWidget
 
 public:
     QtColorPicker(QWidget *parent = 0,
-                  int columns = -1, bool enableColorDialog = true, bool enableRand = true);
+                  int columns = -1, bool enableColorDialog = true, int random_extras = 20);
 
     ~QtColorPicker();
 
@@ -100,13 +100,15 @@ public:
     void setMoreColors(int num = 1);
     void clickit();
 
-    static QColor getColor(const QPoint &pos, bool allowCustomColors = true, bool allowRand = true, int random_extras = 10);
+    static QColor getColor(const QPoint &pos, bool allowCustomColors = true,
+                           int random_extras = 20);
 
 public Q_SLOTS:
     void setCurrentColor(const QColor &col);
 
 Q_SIGNALS:
     void colorChanged(const QColor &);
+    void get_custom_color(QtColorPicker *);
 
 protected:
     void paintEvent(QPaintEvent *e);
@@ -116,13 +118,13 @@ protected:
 private Q_SLOTS:
     void buttonPressed(bool toggled);
     void popupClosed();
+    void getCustom();
 
 private:
     ColorPickerPopup *popup;
     QColor col;
     bool withColorDialog;
-    bool withRandButton;
-    bool dirty;
+    int  withRandomExtras;
     bool firstInserted;
 };
 

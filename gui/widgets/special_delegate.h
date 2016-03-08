@@ -32,6 +32,7 @@
 #include <QComboBox>
 #include "widget_pattern.h"
 #include "detector.h"
+#include "qtcolorpicker.h"
 
 Q_DECLARE_METATYPE(Qpx::Detector)
 Q_DECLARE_METATYPE(Qpx::Setting)
@@ -53,6 +54,9 @@ public:
     void eat_detectors(const XMLableDB<Qpx::Detector>&);
     void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option,
                               const QModelIndex &index) const Q_DECL_OVERRIDE;
+
+private slots:
+    void get_color_from_dialog(QtColorPicker *);
 
 signals:
     void begin_editing() const;
