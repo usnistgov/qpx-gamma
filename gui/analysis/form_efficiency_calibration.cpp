@@ -293,8 +293,8 @@ void FormEfficiencyCalibration::update_spectra() {
     if (!md.detectors.empty() && (md.detectors.front().name_ == current_detector_)) {
       SelectorItem new_spectrum;
       new_spectrum.text = QString::fromStdString(md.name);
-      new_spectrum.color = QColor::fromRgba(md.appearance);
-      new_spectrum.visible = md.visible;
+      new_spectrum.color = QColor(QString::fromStdString(md.attributes.get(Qpx::Setting("appearance")).value_text));
+      new_spectrum.visible = md.attributes.get(Qpx::Setting("visible")).value_int;
       items.push_back(new_spectrum);
     }
   }

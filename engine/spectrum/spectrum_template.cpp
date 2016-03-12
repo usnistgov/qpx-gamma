@@ -24,6 +24,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include "spectrum_template.h"
+#include "qpx_util.h"
 
 namespace Qpx {
 namespace Spectrum {
@@ -33,21 +34,9 @@ void Template::to_xml(pugi::xml_node &root) const {
 
   node.append_attribute("Type").set_value(type.c_str());
   node.append_child("Name").append_child(pugi::node_pcdata).set_value(name_.c_str());
-  node.append_child("Appearance").append_child(pugi::node_pcdata).set_value(std::to_string(appearance).c_str());
-  node.append_child("Visible").append_child(pugi::node_pcdata).set_value(std::to_string(visible).c_str());
   node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(bits).c_str());
 
-//  std::stringstream patterndata;
-//  for (auto &q: match_pattern)
-//    patterndata << static_cast<short>(q) << " ";
-//  node.append_child("MatchPattern").append_child(pugi::node_pcdata).set_value(boost::algorithm::trim_copy(patterndata.str()).c_str());
-
-//  patterndata.str(std::string()); //clear it
-//  for (auto &q: add_pattern)
-//    patterndata << static_cast<short>(q) << " ";
-//  node.append_child("AddPattern").append_child(pugi::node_pcdata).set_value(boost::algorithm::trim_copy(patterndata.str()).c_str());
-
-  if (generic_attributes.size())
+  if (generic_attributes.branches.size())
     generic_attributes.to_xml(node);
 }
 
@@ -57,26 +46,11 @@ void Template::from_xml(const pugi::xml_node &node) {
 
   type = std::string(node.attribute("Type").value());
   name_ = std::string(node.child_value("Name"));
-
   bits = boost::lexical_cast<short>(node.child_value("Resolution"));
-  appearance = boost::lexical_cast<uint32_t>(node.child_value("Appearance"));
-  visible = boost::lexical_cast<bool>(node.child_value("Visible"));
 
-//  std::string numero;
+  if (node.child(generic_attributes.xml_element_name().c_str()))
+    generic_attributes.from_xml(node.child(generic_attributes.xml_element_name().c_str()));
 
-//  std::stringstream pattern_match(node.child_value("MatchPattern"));
-//  while (pattern_match.rdbuf()->in_avail()) {
-//    pattern_match >> numero;
-//    match_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
-//  }
-
-//  std::stringstream pattern_add(node.child_value("AddPattern"));
-//  while (pattern_add.rdbuf()->in_avail()) {
-//    pattern_add >> numero;
-//    add_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
-//  }
-
-  generic_attributes.from_xml(node.child(generic_attributes.xml_element_name().c_str()));
 }
 
 }

@@ -51,14 +51,14 @@ public:
     t_sample.metadata.maximum = 3600.0;
     t_sample.metadata.description = "minimum \u0394t before compensating";
     t_sample.metadata.writable = true;
-    new_temp.generic_attributes.add(t_sample);
+    new_temp.generic_attributes.branches.add(t_sample);
     
     return new_temp;
   }
 
 protected:
   std::string my_type() const override {return "LFC1D";}
-  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().generic_attributes; }
+  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().generic_attributes.branches; }
   bool initialize() override;
   
   void addStats(const StatsUpdate&) override;

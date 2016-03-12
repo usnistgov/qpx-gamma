@@ -31,6 +31,7 @@ dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, XMLableDB<Qpx::D
   my_spectrum_(spec),
   det_selection_model_(&det_table_model_),
   changed_(false),
+  attr_model_(this),
   detectors_(detDB),
   spectrum_detectors_("Detectors"),
   attributes_("Attributes"),
@@ -41,29 +42,21 @@ dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, XMLableDB<Qpx::D
   ui->durationLive->setVisible(false);
   ui->durationReal->setVisible(false);
 
-  ui->colPicker->setStandardColors();
-  connect(ui->colPicker, SIGNAL(colorChanged(QColor)), this, SLOT(setNewColor(QColor)));
-
   connect(&det_selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(det_selection_changed(QItemSelection,QItemSelection)));
 
   connect(ui->durationLive, SIGNAL(editingFinished()), this, SLOT(durationLiveChanged()));
   connect(ui->durationReal, SIGNAL(editingFinished()), this, SLOT(durationRealChanged()));
 
+  connect(&attr_model_, SIGNAL(tree_changed()), this, SLOT(push_settings()));
+
   md_ = my_spectrum_.metadata();
 
   attributes_ = md_.attributes;
 
-  table_model_.eat(&attributes_);
-  ui->tableGenericAttrs->setModel(&table_model_);
-  ui->tableGenericAttrs->setItemDelegate(&special_delegate_);
-  ui->tableGenericAttrs->verticalHeader()->hide();
-  ui->tableGenericAttrs->horizontalHeader()->setStretchLastSection(true);
-  ui->tableGenericAttrs->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-  ui->tableGenericAttrs->setSelectionMode(QAbstractItemView::NoSelection);
-  ui->tableGenericAttrs->setEditTriggers(QAbstractItemView::NoEditTriggers);
-  ui->tableGenericAttrs->show();
-
+  ui->treeAttribs->setModel(&attr_model_);
+  ui->treeAttribs->setItemDelegate(&attr_delegate_);
+  ui->treeAttribs->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
   det_table_model_.setDB(spectrum_detectors_);
 
@@ -77,8 +70,6 @@ dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, XMLableDB<Qpx::D
   ui->tableDetectors->show();
 
   updateData();
-
-  ui->tableGenericAttrs->resizeColumnsToContents();
 }
 
 dialog_spectrum::~dialog_spectrum()
@@ -97,7 +88,6 @@ void dialog_spectrum::updateData() {
   ui->lineType->setText(QString::fromStdString(my_spectrum_.type()));
   ui->lineBits->setText(QString::number(static_cast<int>(md_.bits)));
   ui->lineChannels->setText(QString::number(md_.resolution));
-  ui->colPicker->setCurrentColor(QColor::fromRgba(md_.appearance));
   ui->doubleRescaleFactor->setValue(md_.rescale_factor.convert_to<double>());
 
   ui->durationLive->set_total_seconds(md_.live_time.total_seconds());
@@ -115,7 +105,11 @@ void dialog_spectrum::updateData() {
     spectrum_detectors_.add_a(q);
   det_table_model_.update();
 
-  table_model_.update();
+  Qpx::Setting st;
+  st.metadata.setting_type = Qpx::SettingType::stem;
+  st.branches = md_.attributes;
+
+  attr_model_.update(st);
   open_close_locks();
 }
 
@@ -133,18 +127,22 @@ void dialog_spectrum::open_close_locks() {
   ui->lineRealTime->setVisible(!lockit);
 
   if (!lockit) {
-    ui->tableGenericAttrs->clearSelection();
-    ui->tableGenericAttrs->setSelectionMode(QAbstractItemView::NoSelection);
-    ui->tableGenericAttrs->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->treeAttribs->clearSelection();
+    ui->treeAttribs->setSelectionMode(QAbstractItemView::NoSelection);
+    ui->treeAttribs->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->tableDetectors->clearSelection();
     ui->tableDetectors->setSelectionMode(QAbstractItemView::NoSelection);
   } else {
-    ui->tableGenericAttrs->setSelectionMode(QAbstractItemView::SingleSelection);
-    ui->tableGenericAttrs->setEditTriggers(QAbstractItemView::AllEditTriggers);
+    ui->treeAttribs->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->treeAttribs->setEditTriggers(QAbstractItemView::AllEditTriggers);
     ui->tableDetectors->setSelectionMode(QAbstractItemView::SingleSelection);
     changed_ = true;
   }
   toggle_push();
+}
+
+void dialog_spectrum::push_settings() {
+  my_spectrum_.set_generic_attrs(attr_model_.get_tree().branches);
 }
 
 void dialog_spectrum::toggle_push()
@@ -169,12 +167,6 @@ void dialog_spectrum::toggle_push()
     if (unlocked && detectors_.has_a(det))
       ui->pushDetFromDB->setEnabled(true);
   }
-}
-
-void dialog_spectrum::setNewColor(QColor col) {
-  my_spectrum_.set_appearance(col.rgba());
-  changed_ = true;
-  updateData();
 }
 
 void dialog_spectrum::durationLiveChanged() {

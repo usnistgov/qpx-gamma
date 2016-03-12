@@ -132,7 +132,7 @@ bool Spectrum1D::_write_file(std::string dir, std::string format) const {
 }
 
 bool Spectrum1D::_read_file(std::string name, std::string format) {
-  metadata_.attributes = get_template().generic_attributes;
+  metadata_.attributes = get_template().generic_attributes.branches;
 
   PL_DBG << "Will try to make " << format;
 
@@ -188,8 +188,6 @@ void Spectrum1D::init_from_file(std::string filename) {
 //  metadata_.add_pattern[0] = 1;
   metadata_.name = boost::filesystem::path(filename).filename().string();
   std::replace( metadata_.name.begin(), metadata_.name.end(), '.', '_');
-  metadata_.visible = true;
-  metadata_.appearance = 4278190335;  //randomize?
 
   initialize();
   recalc_energies();

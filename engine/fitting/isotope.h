@@ -26,6 +26,7 @@
 
 #include <list>
 #include <string>
+#include <sstream>
 #include <iomanip>
 #include "xmlable.h"
 

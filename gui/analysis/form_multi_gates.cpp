@@ -62,16 +62,16 @@ FormMultiGates::FormMultiGates(QSettings &settings, QWidget *parent) :
   connect(ui->gatedSpectrum, SIGNAL(range_changed(Range)), this, SLOT(range_changed_in_plot(Range)));
 
   tempx = Qpx::Spectrum::Factory::getInstance().create_template("1D");
-  tempx->visible = true;
+  //tempx->visible = true;
   Qpx::Setting pattern;
-  pattern = tempx->generic_attributes.get(Qpx::Setting("pattern_coinc"));
+  pattern = tempx->generic_attributes.branches.get(Qpx::Setting("pattern_coinc"));
   pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
   pattern.value_pattern.set_theshold(2);
-  tempx->generic_attributes.replace(pattern);
-  pattern = tempx->generic_attributes.get(Qpx::Setting("pattern_add"));
+  tempx->generic_attributes.branches.replace(pattern);
+  pattern = tempx->generic_attributes.branches.get(Qpx::Setting("pattern_add"));
   pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
   pattern.value_pattern.set_theshold(1);
-  tempx->generic_attributes.replace(pattern);
+  tempx->generic_attributes.branches.replace(pattern);
 
   res = 0;
   xmin_ = 0;
@@ -593,7 +593,10 @@ void FormMultiGates::on_pushAddGatedSpectrum_clicked()
       PL_WARN << "Spectrum " << gate_x->name() << " already exists.";
     else
     {
-      gate_x->set_appearance(generateColor().rgba());
+      Qpx::Setting app = gate_x->metadata().attributes.get(Qpx::Setting("appearance"));
+      app.value_text = generateColor().name(QColor::HexArgb).toStdString();
+      gate_x->set_generic_attr(app);
+
       spectra_->add_spectrum(gate_x);
       gate_x = nullptr;
       success = true;

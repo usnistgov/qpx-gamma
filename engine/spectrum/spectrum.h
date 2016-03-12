@@ -54,9 +54,7 @@ struct Metadata {
  public:
   std::string name, description, type;
   uint16_t dimensions, bits;
-  uint32_t resolution, appearance;
-  bool visible;
-//  std::vector<int16_t> match_pattern, add_pattern;
+  uint32_t resolution;
   XMLableDB<Qpx::Setting> attributes;
   PreciseFloat total_count;
   uint16_t     max_chan;
@@ -74,7 +72,7 @@ struct Metadata {
 
  Metadata() : bits(0), dimensions(0), resolution(0), attributes("Attributes"),
     name("uninitialized_spectrum"), total_count(0.0), max_chan(0), max_count(0), rescale_factor(1),
-    appearance(0), visible(false), recent_count(0), changed(false) {}
+    recent_count(0), changed(false) {}
 };
 
 
@@ -135,11 +133,10 @@ public:
   std::map<int, std::list<StatsUpdate>> get_stats();
 
   //change properties - use carefully...
-  void set_visible(bool);
-  void set_appearance(uint32_t newapp);
   void set_start_time(boost::posix_time::ptime newtime);
   void set_description(std::string newdesc);
   void set_generic_attr(Qpx::Setting setting);
+  void set_generic_attrs(XMLableDB<Qpx::Setting> settings);
   void set_real_time(boost::posix_time::time_duration);
   void set_live_time(boost::posix_time::time_duration);
   void set_rescale_factor(PreciseFloat);

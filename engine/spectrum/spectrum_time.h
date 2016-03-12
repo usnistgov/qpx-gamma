@@ -47,7 +47,7 @@ public:
     format_setting.value_int = 0;
     format_setting.metadata.int_menu_items[0] = "event rate";
     format_setting.metadata.int_menu_items[1] = "% dead-time";
-    new_temp.generic_attributes.add(format_setting);
+    new_temp.generic_attributes.branches.add(format_setting);
 
     return new_temp;
   }
@@ -55,7 +55,7 @@ public:
 
 protected:
   std::string my_type() const override {return "Time";}
-  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().generic_attributes; }
+  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().generic_attributes.branches; }
 
   //1D is ok with all patterns
   bool initialize() override {

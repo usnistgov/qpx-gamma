@@ -88,18 +88,14 @@ QVariant TableSpectra1D::data(const QModelIndex &index, int role) const
       return QString::number(data_[row].bits);
     case 4:
       return QString::number(pow(2,data_[row].bits));
-//    case 5:
-//      return QVariant::fromValue(QpxPattern(QVector<int16_t>::fromStdVector(data_[row].match_pattern), 20, true, 16));
-//    case 6:
-//      return QVariant::fromValue(QpxPattern(QVector<int16_t>::fromStdVector(data_[row].add_pattern), 20, false, 16));
+    case 5:
+      return QVariant::fromValue(data_[row].attributes.get(Qpx::Setting("pattern_coinc")));
+    case 6:
+      return QVariant::fromValue(data_[row].attributes.get(Qpx::Setting("pattern_add")));
     case 7:
-      return QColor::fromRgba(data_[row].appearance);
+      return QVariant::fromValue(data_[row].attributes.get(Qpx::Setting("appearance")));
     case 8:
-      if (data_[row].visible)
-        return QString("yes");
-      else
-        return QString("no");
-
+      return QVariant::fromValue(data_[row].attributes.get(Qpx::Setting("visible")));
     }
 
   }
@@ -303,7 +299,8 @@ void FormManip1D::update_plot() {
     double livetime = md.live_time.total_milliseconds() * 0.001;
     double rescale  = md.rescale_factor.convert_to<double>();
 
-    if (md.visible && (md.resolution > 0) && (md.total_count > 0)) {
+    if (md.attributes.get(Qpx::Setting("visible")).value_int
+        && (md.resolution > 0) && (md.total_count > 0)) {
 
       QVector<double> x(md.resolution);
       QVector<double> y(md.resolution);
@@ -335,7 +332,7 @@ void FormManip1D::update_plot() {
       }
 
       AppearanceProfile profile;
-      profile.default_pen = QPen(QColor::fromRgba(md.appearance), 1);
+      profile.default_pen = QPen(QColor(QString::fromStdString(md.attributes.get(Qpx::Setting("appearance")).value_text)), 1);
       ui->mcaPlot->addGraph(x, y, profile, md.bits);
 
     }

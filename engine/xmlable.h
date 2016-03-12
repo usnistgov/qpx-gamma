@@ -21,15 +21,13 @@
  *
  ******************************************************************************/
 
-#ifndef XMLABLE2_H
-#define XMLABLE2_H
+#ifndef XMLABLE_H
+#define XMLABLE_H
 
 #include <string>
 #include <list>
 #include <vector>
-#include <boost/type_traits.hpp>
 #include "pugixml.hpp"
-#include "custom_logger.h"
 
 class XMLable {
  public:

@@ -37,7 +37,10 @@ namespace Spectrum {
 class Template : public XMLable {
  public:
   Template(): //default appearance is blue in RGBA
-  type("invalid"), name_("noname"), generic_attributes("Attributes"), bits(14), appearance(4278190335), visible(false) {}
+  type("invalid"), name_("noname"), generic_attributes("Attributes"), bits(14)
+  {
+    generic_attributes.metadata.setting_type = SettingType::stem;
+  }
 
   std::string xml_element_name() const override {return "SpectrumTemplate";}
   Template(std::string name) : Template() {name_ = name;}
@@ -51,21 +54,13 @@ class Template : public XMLable {
     if (name_ != other.name_) return false;
     if (type != other.type) return false; //assume other type info same
     if (bits != other.bits) return false;
-    if (match_pattern != other.match_pattern) return false;
-    if (add_pattern != other.add_pattern) return false;
-    //appearance and visibility are trivial
-    //    if (appearance != other.appearance) return false;
-    //    if (visible != other.visible) return false;
     if (generic_attributes != other.generic_attributes) return false;
     return true;
   }
   
   std::string name_;
   uint8_t bits;
-  std::vector<int16_t> match_pattern, add_pattern;
-  uint32_t appearance;
-  bool visible;
-  XMLableDB<Qpx::Setting> generic_attributes;
+  Qpx::Setting generic_attributes;
 
   //this stuff from factory
   std::string type, description;

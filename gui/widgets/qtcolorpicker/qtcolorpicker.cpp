@@ -988,10 +988,10 @@ void ColorPickerPopup::randColor()
     insertColor(col, tr("Custom"), -1);
   }
 
-  insertColor(prevsel, tr("Custom"), -1);
+//  insertColor(prevsel, tr("Custom"), -1);
 
-  lastSel = prevsel;
-  regenerateGrid();
+//  lastSel = prevsel;
+//  regenerateGrid();
   emit selected(prevsel);
 }
 

@@ -97,8 +97,6 @@ void Spectrum2D::init_from_file(std::string filename) {
 //  metadata_.add_pattern[1] = 1;
   metadata_.name = boost::filesystem::path(filename).filename().string();
   std::replace( metadata_.name.begin(), metadata_.name.end(), '.', '_');
-  metadata_.visible = true;
-  metadata_.appearance = 4278190335;  //randomize?
   initialize();
   recalc_energies();
 }

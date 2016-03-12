@@ -30,8 +30,9 @@
 #include <QItemSelectionModel>
 #include "spectrum.h"
 #include "special_delegate.h"
-#include "table_spectrum_attrs.h"
 #include "qt_util.h"
+#include "tree_settings.h"
+#include "special_delegate.h"
 
 namespace Ui {
 class DialogSpectraTemplates;
@@ -72,9 +73,7 @@ signals:
 private slots:
   void on_buttonBox_accepted();
   void on_lineName_editingFinished();
-  void on_checkBox_clicked();
   void on_spinBits_valueChanged(int arg1);
-  void colorChanged(const QColor &col);
 
   void on_buttonBox_rejected();
 
@@ -88,8 +87,8 @@ private:
   Ui::DialogSpectrumTemplate *ui;
   Qpx::Spectrum::Template myTemplate;
 
-  QpxSpecialDelegate      special_delegate_;
-  TableSpectrumAttrs         table_model_;
+  TreeSettings               attr_model_;
+  QpxSpecialDelegate         attr_delegate_;
   std::vector<Qpx::Detector> current_dets_;
 };
 

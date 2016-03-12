@@ -58,20 +58,20 @@ FormSymmetrize2D::FormSymmetrize2D(QSettings &settings, XMLableDB<Qpx::Detector>
   connect(ui->plotSpectrum2, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
 
   tempx = Qpx::Spectrum::Factory::getInstance().create_template("1D");
-  tempx->visible = true;
+//  tempx->visible = true;
   tempx->name_ = "tempx";
   Qpx::Setting pattern;
-  pattern = tempx->generic_attributes.get(Qpx::Setting("pattern_coinc"));
+  pattern = tempx->generic_attributes.branches.get(Qpx::Setting("pattern_coinc"));
   pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
   pattern.value_pattern.set_theshold(2);
-  tempx->generic_attributes.replace(pattern);
-  pattern = tempx->generic_attributes.get(Qpx::Setting("pattern_add"));
+  tempx->generic_attributes.branches.replace(pattern);
+  pattern = tempx->generic_attributes.branches.get(Qpx::Setting("pattern_add"));
   pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
   pattern.value_pattern.set_theshold(1);
-  tempx->generic_attributes.replace(pattern);
+  tempx->generic_attributes.branches.replace(pattern);
 
   tempy = Qpx::Spectrum::Factory::getInstance().create_template("1D");
-  tempy->visible = true;
+//  tempy->visible = true;
   tempy->name_ = "tempy";
 
 
@@ -128,14 +128,14 @@ void FormSymmetrize2D::make_gated_spectra() {
     tempy->bits = md.bits;
     tempy->name_ = detector2_.name_ + "[" + to_str_precision(nrg_calibration1_.transform(0), 0) + "," + to_str_precision(nrg_calibration1_.transform(adjrange), 0) + "]";
     Qpx::Setting pattern;
-    pattern = tempy->generic_attributes.get(Qpx::Setting("pattern_coinc"));
+    pattern = tempy->generic_attributes.branches.get(Qpx::Setting("pattern_coinc"));
     pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
     pattern.value_pattern.set_theshold(2);
-    tempy->generic_attributes.replace(pattern);
-    pattern = tempy->generic_attributes.get(Qpx::Setting("pattern_add"));
+    tempy->generic_attributes.branches.replace(pattern);
+    pattern = tempy->generic_attributes.branches.get(Qpx::Setting("pattern_add"));
     pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
     pattern.value_pattern.set_theshold(1);
-    tempy->generic_attributes.replace(pattern);
+    tempy->generic_attributes.branches.replace(pattern);
 
 
     if (gate_x != nullptr)
@@ -238,7 +238,10 @@ void FormSymmetrize2D::on_pushAddGatedSpectra_clicked()
       PL_WARN << "Spectrum " << gate_x->name() << " already exists.";
     else
     {
-      gate_x->set_appearance(generateColor().rgba());
+      Qpx::Setting app = gate_x->metadata().attributes.get(Qpx::Setting("appearance"));
+      app.value_text = generateColor().name(QColor::HexArgb).toStdString();
+      gate_x->set_generic_attr(app);
+
       spectra_->add_spectrum(gate_x);
       gate_x = nullptr;
       success = true;
@@ -250,7 +253,10 @@ void FormSymmetrize2D::on_pushAddGatedSpectra_clicked()
       PL_WARN << "Spectrum " << gate_y->name() << " already exists.";
     else
     {
-      gate_y->set_appearance(generateColor().rgba());
+      Qpx::Setting app = gate_y->metadata().attributes.get(Qpx::Setting("appearance"));
+      app.value_text = generateColor().name(QColor::HexArgb).toStdString();
+      gate_y->set_generic_attr(app);
+
       spectra_->add_spectrum(gate_y);
       gate_y = nullptr;
       success = true;
@@ -309,13 +315,13 @@ void FormSymmetrize2D::symmetrize()
     }
 
     Qpx::Spectrum::Template *temp_sym = Qpx::Spectrum::Factory::getInstance().create_template(md.type); //assume 2D?
-    temp_sym->visible = false;
+//    temp_sym->visible = false;
     temp_sym->name_ = fold_spec_name.toStdString();
-    temp_sym->generic_attributes.replace(pattern);
+    temp_sym->generic_attributes.branches.replace(pattern);
     pattern = md.attributes.get(Qpx::Setting("pattern_coinc"));
     pattern.value_pattern.set_gates(gts);
     pattern.value_pattern.set_theshold(2);
-    temp_sym->generic_attributes.replace(pattern);
+    temp_sym->generic_attributes.branches.replace(pattern);
     temp_sym->bits = md.bits;
 
     Qpx::Spectrum::Spectrum* destination = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp_sym);

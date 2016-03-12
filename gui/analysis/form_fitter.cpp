@@ -1451,7 +1451,7 @@ void FormFitter::updateData() {
     return;
 
   QColor plotcolor;
-  plotcolor.setHsv(QColor::fromRgba(fit_data_->metadata_.appearance).hsvHue(), 48, 160);
+  plotcolor.setHsv(QColor(QString::fromStdString(fit_data_->metadata_.attributes.get(Qpx::Setting("appearance")).value_text)).hsvHue(), 48, 160);
   QPen main_graph = QPen(plotcolor, 1);
 
   QPen back_poly = QPen(Qt::darkGray, 1);

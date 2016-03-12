@@ -195,6 +195,14 @@ void RunInfo::from_xml(const pugi::xml_node &node) {
     iss >> time;
   }
 
+  //backwards compat
+  if (node.attribute("time_start")) {
+    iss << node.attribute("time_start").value();
+    iss.imbue(std::locale(std::locale::classic(), tif));
+    iss >> time;
+  }
+
+
   state.from_xml(node.child(state.xml_element_name().c_str()));
 
   if (node.child("Detectors")) {

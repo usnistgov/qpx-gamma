@@ -433,12 +433,17 @@ void FormMcaDaq::projectImport()
 
     if (ext == "spn") {
       spectra_.import_spn(fileNames.at(i).toStdString());
-      for (auto &q : spectra_.spectra())
-        q->set_appearance(generateColor().rgba());
+      for (auto &q : spectra_.spectra()) {
+        Qpx::Setting app = q->metadata().attributes.get(Qpx::Setting("appearance"));
+        app.value_text = generateColor().name(QColor::HexArgb).toStdString();
+        q->set_generic_attr(app);
+      }
     } else {
       Qpx::Spectrum::Spectrum* newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_file(fileNames.at(i).toStdString());
       if (newSpectrum != nullptr) {
-        newSpectrum->set_appearance(generateColor().rgba());
+        Qpx::Setting app = newSpectrum->metadata().attributes.get(Qpx::Setting("appearance"));
+        app.value_text = generateColor().name(QColor::HexArgb).toStdString();
+        newSpectrum->set_generic_attr(app);
         spectra_.add_spectrum(newSpectrum);
       } else {
         PL_INFO << "Spectrum construction did not succeed.";

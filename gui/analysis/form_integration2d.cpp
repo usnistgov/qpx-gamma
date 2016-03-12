@@ -432,46 +432,46 @@ void FormIntegration2D::make_gates() {
   Qpx::Spectrum::Spectrum *gate;
 
   temp = Qpx::Spectrum::Factory::getInstance().create_template("1D");
-  temp->visible = true;
+//  temp->visible = true;
   temp->name_ = "temp";
   temp->bits = md_.bits;
 
   Qpx::Setting pattern;
-  pattern = temp->generic_attributes.get(Qpx::Setting("pattern_coinc"));
+  pattern = temp->generic_attributes.branches.get(Qpx::Setting("pattern_coinc"));
   pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
   pattern.value_pattern.set_theshold(2);
-  temp->generic_attributes.replace(pattern);
-  pattern = temp->generic_attributes.get(Qpx::Setting("pattern_add"));
+  temp->generic_attributes.branches.replace(pattern);
+  pattern = temp->generic_attributes.branches.get(Qpx::Setting("pattern_add"));
   pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
   pattern.value_pattern.set_theshold(1);
-  temp->generic_attributes.replace(pattern);
+  temp->generic_attributes.branches.replace(pattern);
   gate = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp);
   Qpx::Spectrum::slice_rectangular(source_spectrum, gate, {{xmin, xmax}, {ymin, ymax}}, spectra_->runInfo());
   fit_x_.setData(gate);
   delete gate;
 
-  pattern = temp->generic_attributes.get(Qpx::Setting("pattern_coinc"));
+  pattern = temp->generic_attributes.branches.get(Qpx::Setting("pattern_coinc"));
   pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
   pattern.value_pattern.set_theshold(2);
-  temp->generic_attributes.replace(pattern);
-  pattern = temp->generic_attributes.get(Qpx::Setting("pattern_add"));
+  temp->generic_attributes.branches.replace(pattern);
+  pattern = temp->generic_attributes.branches.get(Qpx::Setting("pattern_add"));
   pattern.value_pattern.set_gates(std::vector<bool>({0,1}));
   pattern.value_pattern.set_theshold(1);
-  temp->generic_attributes.replace(pattern);
+  temp->generic_attributes.branches.replace(pattern);
   gate = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp);
   Qpx::Spectrum::slice_rectangular(source_spectrum, gate, {{xmin, xmax}, {ymin, ymax}}, spectra_->runInfo());
   fit_y_.setData(gate);
   delete gate;
 
   if (ui->pushShowDiagonal->isChecked()) {
-    pattern = temp->generic_attributes.get(Qpx::Setting("pattern_coinc"));
+    pattern = temp->generic_attributes.branches.get(Qpx::Setting("pattern_coinc"));
     pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
     pattern.value_pattern.set_theshold(1);
-    temp->generic_attributes.replace(pattern);
-    pattern = temp->generic_attributes.get(Qpx::Setting("pattern_add"));
+    temp->generic_attributes.branches.replace(pattern);
+    pattern = temp->generic_attributes.branches.get(Qpx::Setting("pattern_add"));
     pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
     pattern.value_pattern.set_theshold(1);
-    temp->generic_attributes.replace(pattern);
+    temp->generic_attributes.branches.replace(pattern);
     gate = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp);
     Qpx::Spectrum::slice_diagonal(source_spectrum, gate, peak.x_c.bin(md_.bits), peak.y_c.bin(md_.bits), xwidth, xmin, xmax, spectra_->runInfo());
     fit_d_.setData(gate);

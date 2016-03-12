@@ -129,11 +129,14 @@ void FormPlot2D::choose_spectrum(SelectorItem item)
     return;
   std::list<Qpx::Spectrum::Spectrum*> spectra = mySpectra->spectra(2, -1);
 
-  for (auto &q : spectra)
+  for (auto &q : spectra) {
+    Qpx::Setting vis = q->metadata().attributes.get(Qpx::Setting("visible"));
     if (q->name() == id.toStdString())
-      q->set_visible(true);
+      vis.value_int = true;
     else
-      q->set_visible(false);
+      vis.value_int = false;
+    q->set_generic_attr(vis);
+  }
 
   //name_2d = arg1;
   update_plot(true);
@@ -152,12 +155,12 @@ void FormPlot2D::updateUI()
       md = q->metadata();
 
     names.insert(md.name);
-    if (md.visible)
+    if (md.attributes.get(Qpx::Setting("visible")).value_int)
       newname = md.name;
 
     SelectorItem new_spectrum;
     new_spectrum.text = QString::fromStdString(md.name);
-    new_spectrum.color = QColor::fromRgba(md.appearance);
+    new_spectrum.color = QColor(QString::fromStdString(md.attributes.get(Qpx::Setting("appearance")).value_text));
     items.push_back(new_spectrum);
   }
 
@@ -414,11 +417,14 @@ void FormPlot2D::spectrumDetailsDelete()
   QString name = ui->spectrumSelector->selected().text;
   std::list<Qpx::Spectrum::Spectrum*> spectra = mySpectra->spectra(2, -1);
 
-  for (auto &q : spectra)
+  for (auto &q : spectra) {
+    Qpx::Setting vis = q->metadata().attributes.get(Qpx::Setting("visible"));
     if (q->name() == name.toStdString())
-      q->set_visible(true);
+      vis.value_int = true;
     else
-      q->set_visible(false);
+      vis.value_int = false;
+    q->set_generic_attr(vis);
+  }
 
   update_plot(true);
 }

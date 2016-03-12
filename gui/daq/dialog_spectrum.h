@@ -25,7 +25,7 @@
 #include <QDialog>
 #include "spectrum.h"
 #include "special_delegate.h"
-#include "table_spectrum_attrs.h"
+#include "tree_settings.h"
 #include "widget_detectors.h"
 
 
@@ -51,13 +51,14 @@ private slots:
 
     void on_lineDescription_editingFinished();
 
-    void setNewColor(QColor);
     void det_selection_changed(QItemSelection,QItemSelection);
 
     void on_pushDetEdit_clicked();
     void changeDet(Qpx::Detector);
 
     void on_pushDetRename_clicked();
+
+    void push_settings();
 
     void on_pushDelete_clicked();
 
@@ -81,8 +82,8 @@ private:
     Ui::dialog_spectrum *ui;
     Qpx::Spectrum::Spectrum &my_spectrum_;
 
-    QpxSpecialDelegate      special_delegate_;
-    TableSpectrumAttrs         table_model_;
+    TreeSettings               attr_model_;
+    QpxSpecialDelegate         attr_delegate_;
 
     XMLableDB<Qpx::Detector> &detectors_;
 

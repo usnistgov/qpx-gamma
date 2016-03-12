@@ -87,7 +87,9 @@ void FormPlot1D::setSpectra(Qpx::SpectraSet& new_set) {
 void FormPlot1D::spectrumLooksChanged(SelectorItem item) {
   Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(item.text.toStdString());
   if (someSpectrum != nullptr) {
-    someSpectrum->set_visible(item.visible);
+    Qpx::Setting vis = someSpectrum->metadata().attributes.get(Qpx::Setting("visible"));
+    vis.value_int = item.visible;
+    someSpectrum->set_generic_attr(vis);
   }
   mySpectra->activate();
 }
@@ -188,7 +190,8 @@ void FormPlot1D::update_plot() {
     double livetime = md.live_time.total_milliseconds() * 0.001;
     double rescale  = md.rescale_factor.convert_to<double>();
 
-    if (md.visible && (md.resolution > 0) && (md.total_count > 0)) {
+    if (md.attributes.get(Qpx::Setting("visible")).value_int
+        && (md.resolution > 0) && (md.total_count > 0)) {
 
 
       QVector<double> x = QVector<double>::fromStdVector(q->energies(0));
@@ -218,7 +221,7 @@ void FormPlot1D::update_plot() {
       }
 
       AppearanceProfile profile;
-      profile.default_pen = QPen(QColor::fromRgba(md.appearance), 1);
+      profile.default_pen = QPen(QColor(QString::fromStdString(md.attributes.get(Qpx::Setting("appearance")).value_text)), 1);
       ui->mcaPlot->addGraph(x, y, profile, md.bits);
 
     }
@@ -280,8 +283,8 @@ void FormPlot1D::updateUI()
 
     SelectorItem new_spectrum;
     new_spectrum.text = QString::fromStdString(md.name);
-    new_spectrum.color = QColor::fromRgba(md.appearance);
-    new_spectrum.visible = md.visible;
+    new_spectrum.color = QColor(QString::fromStdString(md.attributes.get(Qpx::Setting("appearance")).value_text));
+    new_spectrum.visible = md.attributes.get(Qpx::Setting("visible")).value_int;
     items.push_back(new_spectrum);
   }
 
@@ -373,8 +376,14 @@ void FormPlot1D::showAll()
 {
   spectraSelector->show_all();
   QVector<SelectorItem> items = spectraSelector->items();
-  for (auto &q : items)
-    mySpectra->by_name(q.text.toStdString())->set_visible(true);
+  for (auto &q : items) {
+    Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(q.text.toStdString());
+    if (!someSpectrum)
+      continue;
+    Qpx::Setting vis = someSpectrum->metadata().attributes.get(Qpx::Setting("visible"));
+    vis.value_int = true;
+    someSpectrum->set_generic_attr(vis);
+  }
   mySpectra->activate();
 }
 
@@ -382,15 +391,28 @@ void FormPlot1D::hideAll()
 {
   spectraSelector->hide_all();
   QVector<SelectorItem> items = spectraSelector->items();
-  for (auto &q : items)
-    mySpectra->by_name(q.text.toStdString())->set_visible(false);
+  for (auto &q : items) {
+    Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(q.text.toStdString());
+    if (!someSpectrum)
+      continue;
+    Qpx::Setting vis = someSpectrum->metadata().attributes.get(Qpx::Setting("visible"));
+    vis.value_int = false;
+    someSpectrum->set_generic_attr(vis);
+  }
   mySpectra->activate();
 }
 
 void FormPlot1D::randAll()
 {
-  for (auto &q : mySpectra->spectra())
-    q->set_appearance(generateColor().rgba());
+  QVector<SelectorItem> items = spectraSelector->items();
+  for (auto &q : items) {
+    Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(q.text.toStdString());
+    if (!someSpectrum)
+      continue;
+    Qpx::Setting app = someSpectrum->metadata().attributes.get(Qpx::Setting("appearance"));
+    app.value_text = generateColor().name(QColor::HexArgb).toStdString();
+    someSpectrum->set_generic_attr(app);
+  }
 
   updateUI();
 }

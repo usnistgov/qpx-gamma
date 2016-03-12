@@ -22,6 +22,7 @@
 
 #include "roi.h"
 #include "gaussian.h"
+#include "custom_logger.h"
 
 namespace Qpx {
 
