@@ -166,9 +166,10 @@ void FormEfficiencyCalibration::setSpectrum(QString name) {
       ui->isotopes->set_current_isotope(QString::fromStdString(fit_data_.sample_name_));
     }  else {
       Qpx::Spectrum::Metadata md = spectrum->metadata();
-      if (!md.description.empty()) {
+      Qpx::Setting descr = md.attributes.get(Qpx::Setting("description"));
+      if (!descr.value_text.empty()) {
         //find among data
-        ui->isotopes->set_current_isotope(QString::fromStdString(md.description));
+        ui->isotopes->set_current_isotope(QString::fromStdString(descr.value_text));
       }
 
       fit_data_.clear();

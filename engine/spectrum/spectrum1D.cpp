@@ -328,8 +328,11 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
 //      PL_DBG << "xylib.meta " << key << " = " << value;
       if (key.substr(0, 12) == "energy calib")
         calibration.push_back(boost::lexical_cast<double>(value));
-      if (key == "description")
-        metadata_.description = value;
+      if (key == "description") {
+        Setting descr = get_attr("description");
+        descr.value_text = value;
+        metadata_.attributes.replace(descr);
+      }
       if (key == "date and time") {
         std::stringstream iss;
         iss.str(value);
@@ -338,15 +341,21 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
         boost::posix_time::time_input_facet
             *tif(new boost::posix_time::time_input_facet("%Y-%m-%d %H:%M:%S"));
         iss.imbue(std::locale(std::locale::classic(), tif));
-        iss >> metadata_.start_time;
+        Setting start_time = get_attr("start_time");
+        iss >> start_time.value_time;
+        metadata_.attributes.replace(start_time);
       }
       if (key == "real time (s)") {
         double RT = boost::lexical_cast<double>(value) * 1000;
-        metadata_.real_time = boost::posix_time::milliseconds(RT);
+        Setting real_time = get_attr("real_time");
+        real_time.value_duration = boost::posix_time::milliseconds(RT);
+        metadata_.attributes.replace(real_time);
       }
       if (key == "live time (s)") {
+        Setting live_time = get_attr("live_time");
         double LT = boost::lexical_cast<double>(value) * 1000;
-        metadata_.live_time = boost::posix_time::milliseconds(LT);
+        live_time.value_duration = boost::posix_time::milliseconds(LT);
+        metadata_.attributes.replace(live_time);
       }
     }
 
@@ -403,11 +412,16 @@ bool Spectrum1D::read_tka(std::string name) {
   double timed;
   
   myfile >> data;
+  Setting live_time = get_attr("live_time");
   timed = boost::lexical_cast<double>(trim_copy(data)) * 1000.0;
-  metadata_.live_time = boost::posix_time::milliseconds(timed);
+  live_time.value_duration = boost::posix_time::milliseconds(timed);
+  metadata_.attributes.replace(live_time);
+
   myfile >> data;
+  Setting real_time = get_attr("real_time");
   timed = boost::lexical_cast<double>(trim_copy(data)) * 1000.0;
-  metadata_.real_time = boost::posix_time::milliseconds(timed);
+  real_time.value_duration = boost::posix_time::milliseconds(timed);
+  metadata_.attributes.replace(real_time);
 
   if(!this->channels_from_string(myfile, false))
     return false;
@@ -578,10 +592,17 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
       std::getline(myfile, line);
       boost::algorithm::trim(line);
       std::stringstream ss(line);
+
       ss >> time;
-      metadata_.live_time = boost::posix_time::seconds(time);
+      Setting live_time = get_attr("live_time");
+      live_time.value_duration = boost::posix_time::seconds(time);
+      metadata_.attributes.replace(live_time);
+
       ss >> time;
-      metadata_.real_time = boost::posix_time::seconds(time);
+      Setting real_time = get_attr("real_time");
+      real_time.value_duration = boost::posix_time::seconds(time);
+      metadata_.attributes.replace(real_time);
+
       line.clear();
     } else if (line == "$DATE_MEA:") {
       std::getline(myfile, line);
@@ -589,7 +610,9 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
       boost::posix_time::time_input_facet
           *tif(new boost::posix_time::time_input_facet("%m/%d/%Y %H:%M:%S"));
       iss.imbue(std::locale(std::locale::classic(), tif));
-      iss >> metadata_.start_time;
+      Setting start_time = get_attr("start_time");
+      iss >> start_time.value_time;
+      metadata_.attributes.replace(start_time);
       line.clear();
     } else if (line == "$ENER_FIT:") {
       std::getline(myfile, enerfit);
@@ -752,7 +775,9 @@ bool Spectrum1D::read_n42(std::string filename) {
   if (!time.empty()) {
     iss << time;
     iss.imbue(std::locale(std::locale::classic(), tif));
-    iss >> metadata_.start_time;
+    Setting start_time = get_attr("start_time");
+    iss >> start_time.value_time;
+    metadata_.attributes.replace(start_time);
   }
 
   time = std::string(node.child_value("RealTime"));
@@ -761,7 +786,9 @@ bool Spectrum1D::read_n42(std::string filename) {
     if (time.size() > 3)
       time = time.substr(2, time.size()-3); //to trim PTnnnS to nnn
     double rt_ms = boost::lexical_cast<double>(time) * 1000.0;
-    metadata_.real_time = boost::posix_time::milliseconds(rt_ms);
+    Setting real_time = get_attr("real_time");
+    real_time.value_duration = boost::posix_time::milliseconds(rt_ms);
+    metadata_.attributes.replace(real_time);
   }
 
   time = std::string(node.child_value("LiveTime"));
@@ -770,7 +797,9 @@ bool Spectrum1D::read_n42(std::string filename) {
     if (time.size() > 3)
       time = time.substr(2, time.size()-3); //to trim PTnnnS to nnn
     double lt_ms = boost::lexical_cast<double>(time) * 1000.0;
-    metadata_.live_time = boost::posix_time::milliseconds(lt_ms);
+    Setting live_time = get_attr("live_time");
+    live_time.value_duration = boost::posix_time::milliseconds(lt_ms);
+    metadata_.attributes.replace(live_time);
   }
 
   std::string this_data(node.child_value("ChannelData"));
@@ -830,20 +859,26 @@ bool Spectrum1D::read_ava(std::string filename) {
     if (day.size() == 1)
       day = "0" + day; 
     std::string inp = year + "-" + month + "-" + day + " " + time;
-    iss.str(inp);  
-    iss >> metadata_.start_time;
+    iss.str(inp);
+    Setting start_time = get_attr("start_time");
+    iss >> start_time.value_time;
+    metadata_.attributes.replace(start_time);
   }
 
   std::string RealTime(node.attribute("elapsed_real").value()); boost::algorithm::trim(RealTime);
   if (!RealTime.empty()) {
     double rt_ms = boost::lexical_cast<double>(RealTime) * 1000.0;
-    metadata_.real_time = boost::posix_time::milliseconds(rt_ms);
+    Setting real_time = get_attr("real_time");
+    real_time.value_duration = boost::posix_time::milliseconds(rt_ms);
+    metadata_.attributes.replace(real_time);
   }
 
   std::string LiveTime(node.attribute("elapsed_live").value()); boost::algorithm::trim(LiveTime);
   if (!LiveTime.empty()) {
     double lt_ms = boost::lexical_cast<double>(LiveTime) * 1000.0;
-    metadata_.live_time = boost::posix_time::milliseconds(lt_ms);
+    Setting live_time = get_attr("live_time");
+    live_time.value_duration = boost::posix_time::milliseconds(lt_ms);
+    metadata_.attributes.replace(live_time);
   }
 
   std::string this_data(root.child_value("spectrum"));
@@ -891,8 +926,8 @@ void Spectrum1D::write_tka(std::string name) const {
   std::ofstream myfile(name, std::ios::out | std::ios::app);
   //  myfile.precision(2);
   //  myfile << std::fixed;
-  myfile << (metadata_.live_time.total_milliseconds() * 0.001) << std::endl
-         << (metadata_.real_time.total_milliseconds() * 0.001) << std::endl;
+  myfile << (get_attr("live_time").value_duration.total_milliseconds() * 0.001) << std::endl
+         << (get_attr("real_time").value_duration.total_milliseconds() * 0.001) << std::endl;
       
   for (uint32_t i = 0; i < range; i++)
     myfile << spectrum_[i] << std::endl;
@@ -924,15 +959,15 @@ void Spectrum1D::write_n42(std::string filename) const {
     node.append_child("DetectorType").append_child(pugi::node_pcdata).set_value(metadata_.detectors[0].type_.c_str());
   }
 
-  durationdata << to_iso_extended_string(metadata_.start_time) << "-5:00"; //fix this hack
+  durationdata << to_iso_extended_string(get_attr("start_time").value_time) << "-5:00"; //fix this hack
   node.append_child("StartTime").append_child(pugi::node_pcdata).set_value(durationdata.str().c_str());
       
   durationdata.str(std::string()); //clear it
-  durationdata << "PT" << (metadata_.real_time.total_milliseconds() * 0.001) << "S";
+  durationdata << "PT" << (get_attr("real_time").value_duration.total_milliseconds() * 0.001) << "S";
   node.append_child("RealTime").append_child(pugi::node_pcdata).set_value(durationdata.str().c_str());
 
   durationdata.str(std::string()); //clear it
-  durationdata << "PT" << (metadata_.live_time.total_milliseconds() * 0.001) << "S";
+  durationdata << "PT" << (get_attr("live_time").value_duration.total_milliseconds() * 0.001) << "S";
   node.append_child("LiveTime").append_child(pugi::node_pcdata).set_value(durationdata.str().c_str());
 
   if (myCalibration.valid())

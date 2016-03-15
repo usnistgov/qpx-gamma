@@ -172,7 +172,7 @@ void FormIntegration2D::update_current_peak(MarkerBox2D peak) {
 //  if ((index != -1) && (peaks_[index].approved))
 //    gate.approved = true;
 
-  double livetime = md_.live_time.total_seconds();
+  double livetime = md_.attributes.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
   PL_DBG << "update current peak " << peak.x_c.energy()  << " x " << peak.y_c.energy();
   if (livetime == 0)
     livetime = 10000;

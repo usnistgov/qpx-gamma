@@ -47,10 +47,6 @@ private slots:
 
     void on_buttonBox_rejected();
 
-    void on_dateTimeStart_editingFinished();
-
-    void on_lineDescription_editingFinished();
-
     void det_selection_changed(QItemSelection,QItemSelection);
 
     void on_pushDetEdit_clicked();
@@ -62,12 +58,7 @@ private slots:
 
     void on_pushDelete_clicked();
 
-    void durationLiveChanged();
-    void durationRealChanged();
-
     void on_pushAnalyse_clicked();
-
-    void on_doubleRescaleFactor_valueChanged(double arg1);
 
     void on_pushDetFromDB_clicked();
 

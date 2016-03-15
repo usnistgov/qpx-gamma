@@ -52,26 +52,26 @@ typedef std::pair<uint32_t, uint32_t> Pair;
 
 struct Metadata {
  public:
-  std::string name, description, type;
+  std::string name, type;
   uint16_t dimensions, bits;
   uint32_t resolution;
   XMLableDB<Qpx::Setting> attributes;
   PreciseFloat total_count;
   uint16_t     max_chan;
   PreciseFloat max_count;
-  PreciseFloat rescale_factor;
+//  PreciseFloat rescale_factor;
 
   uint64_t recent_count;
   StatsUpdate recent_start, recent_end;
 
-  boost::posix_time::time_duration real_time ,live_time;
-  boost::posix_time::ptime  start_time;
+//  boost::posix_time::time_duration real_time ,live_time;
+//  boost::posix_time::ptime  start_time;
   std::vector<Qpx::Detector> detectors;
 
   bool changed;
 
  Metadata() : bits(0), dimensions(0), resolution(0), attributes("Attributes"),
-    name("uninitialized_spectrum"), total_count(0.0), max_chan(0), max_count(0), rescale_factor(1),
+    name("uninitialized_spectrum"), total_count(0.0), max_chan(0), max_count(0),
     recent_count(0), changed(false) {}
 };
 
@@ -133,13 +133,8 @@ public:
   std::map<int, std::list<StatsUpdate>> get_stats();
 
   //change properties - use carefully...
-  void set_start_time(boost::posix_time::ptime newtime);
-  void set_description(std::string newdesc);
   void set_generic_attr(Qpx::Setting setting);
   void set_generic_attrs(XMLableDB<Qpx::Setting> settings);
-  void set_real_time(boost::posix_time::time_duration);
-  void set_live_time(boost::posix_time::time_duration);
-  void set_rescale_factor(PreciseFloat);
   void reset_changed();
 
 protected:

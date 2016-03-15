@@ -39,14 +39,9 @@ dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, XMLableDB<Qpx::D
 {
   ui->setupUi(this);
   ui->labelWarning->setVisible(false);
-  ui->durationLive->setVisible(false);
-  ui->durationReal->setVisible(false);
 
   connect(&det_selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(det_selection_changed(QItemSelection,QItemSelection)));
-
-  connect(ui->durationLive, SIGNAL(editingFinished()), this, SLOT(durationLiveChanged()));
-  connect(ui->durationReal, SIGNAL(editingFinished()), this, SLOT(durationRealChanged()));
 
   connect(&attr_model_, SIGNAL(tree_changed()), this, SLOT(push_settings()));
 
@@ -84,21 +79,12 @@ void dialog_spectrum::det_selection_changed(QItemSelection, QItemSelection) {
 void dialog_spectrum::updateData() {
   md_ = my_spectrum_.metadata();
 
-  ui->groupSpectrum->setTitle(QString::fromStdString(md_.name));
+  ui->labelName->setText(QString::fromStdString(md_.name));
   ui->lineType->setText(QString::fromStdString(my_spectrum_.type()));
   ui->lineBits->setText(QString::number(static_cast<int>(md_.bits)));
   ui->lineChannels->setText(QString::number(md_.resolution));
-  ui->doubleRescaleFactor->setValue(md_.rescale_factor.convert_to<double>());
 
-  ui->durationLive->set_total_seconds(md_.live_time.total_seconds());
-  ui->durationReal->set_total_seconds(md_.real_time.total_seconds());
-  ui->lineLiveTime->setText(QString::fromStdString(to_simple_string(md_.live_time)));
-  ui->lineRealTime->setText(QString::fromStdString(to_simple_string(md_.real_time)));
   ui->lineTotalCount->setText(QString::number(md_.total_count.convert_to<double>()));
-
-  ui->dateTimeStart->setDateTime(fromBoostPtime(md_.start_time));
-
-  ui->lineDescription->setText(QString::fromStdString(md_.description));
 
   spectrum_detectors_.clear();
   for (auto &q: md_.detectors)
@@ -116,15 +102,7 @@ void dialog_spectrum::updateData() {
 void dialog_spectrum::open_close_locks() {
   bool lockit = !ui->pushLock->isChecked();
   ui->labelWarning->setVisible(lockit);
-  ui->dateTimeStart->setEnabled(lockit);
   ui->pushDelete->setEnabled(lockit);
-  ui->durationLive->setEnabled(lockit);
-  ui->durationReal->setEnabled(lockit);
-
-  ui->durationLive->setVisible(lockit);
-  ui->durationReal->setVisible(lockit);
-  ui->lineLiveTime->setVisible(!lockit);
-  ui->lineRealTime->setVisible(!lockit);
 
   if (!lockit) {
     ui->treeAttribs->clearSelection();
@@ -169,18 +147,6 @@ void dialog_spectrum::toggle_push()
   }
 }
 
-void dialog_spectrum::durationLiveChanged() {
-  my_spectrum_.set_live_time(boost::posix_time::seconds(ui->durationLive->total_seconds()));
-  changed_ = true;
-  updateData();
-}
-
-void dialog_spectrum::durationRealChanged() {
-  my_spectrum_.set_real_time(boost::posix_time::seconds(ui->durationReal->total_seconds()));
-  changed_ = true;
-  updateData();
-}
-
 void dialog_spectrum::on_pushLock_clicked()
 {
   open_close_locks();
@@ -190,20 +156,6 @@ void dialog_spectrum::on_buttonBox_rejected()
 {
   emit finished(changed_);
   accept();
-}
-
-void dialog_spectrum::on_dateTimeStart_editingFinished()
-{
-  my_spectrum_.set_start_time(fromQDateTime(ui->dateTimeStart->dateTime()));
-  changed_ = true;
-  updateData();
-}
-
-void dialog_spectrum::on_lineDescription_editingFinished()
-{
-  my_spectrum_.set_description(ui->lineDescription->text().toStdString());
-  changed_ = true;
-  updateData();
 }
 
 void dialog_spectrum::on_pushDetEdit_clicked()
@@ -267,13 +219,6 @@ void dialog_spectrum::on_pushAnalyse_clicked()
 {
   emit analyse();
   accept();
-}
-
-void dialog_spectrum::on_doubleRescaleFactor_valueChanged(double arg1)
-{
-  my_spectrum_.set_rescale_factor(PreciseFloat(arg1));
-  changed_ = true;
-  updateData();
 }
 
 void dialog_spectrum::on_pushDetFromDB_clicked()

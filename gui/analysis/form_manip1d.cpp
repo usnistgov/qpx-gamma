@@ -247,8 +247,8 @@ void FormManip1D::spectrumDetails(std::string id)
   }
 
   std::string type = someSpectrum->type();
-  double real = md.real_time.total_milliseconds() * 0.001;
-  double live = md.live_time.total_milliseconds() * 0.001;
+  double real = md.attributes.get(Qpx::Setting("real_time")).value_duration.total_milliseconds() * 0.001;
+  double live = md.attributes.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
   double dead = 100;
   double rate = 0;
   Qpx::Detector det = Qpx::Detector();
@@ -296,8 +296,8 @@ void FormManip1D::update_plot() {
     if (q)
       md = q->metadata();
 
-    double livetime = md.live_time.total_milliseconds() * 0.001;
-    double rescale  = md.rescale_factor.convert_to<double>();
+//    double livetime = md.attributes.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+    double rescale  = md.attributes.get(Qpx::Setting("resacale")).value_precise.convert_to<double>();
 
     if (md.attributes.get(Qpx::Setting("visible")).value_int
         && (md.resolution > 0) && (md.total_count > 0)) {

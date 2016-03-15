@@ -121,7 +121,11 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
         spectrum_[i] = channels_all_[i];
       channels_run_[i] = 0.0;
     }
-    metadata_.live_time = metadata_.real_time; //think about this...
+    Setting real_time = get_attr("real_time");
+    Setting live_time = get_attr("live_time");
+    live_time.value_duration = real_time.value_duration;
+    metadata_.attributes.replace(live_time);
+
     count_current_ = 0;
   } else {
     for (uint32_t i = 0; i < metadata_.resolution; i++) {
@@ -139,7 +143,11 @@ void Spectrum1D_LFC::addRun(const RunInfo& run_info) {
   metadata_.total_count = 0.0;
   for (auto &q : spectrum_)
     metadata_.total_count += q;
-  metadata_.live_time = metadata_.real_time; //think about this...
+  Setting real_time = get_attr("real_time");
+  Setting live_time = get_attr("live_time");
+  live_time.value_duration = real_time.value_duration;
+  metadata_.attributes.replace(live_time);
+  //think about this...
 }
 
 }}

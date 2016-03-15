@@ -49,8 +49,8 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
     if (detector_.fwhm_calibration_.valid())
       settings_.cali_fwhm_ = detector_.fwhm_calibration_;
 
-    settings_.live_time = md.live_time;
-    settings_.real_time = md.real_time;
+    settings_.live_time = md.attributes.get(Qpx::Setting("live_time")).value_duration;
+    settings_.real_time = md.attributes.get(Qpx::Setting("real_time")).value_duration;
 
     std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_dump = std::move(spectrum->get_spectrum({{0, md.resolution}}));
     std::vector<double> x;
@@ -286,9 +286,9 @@ void Fitter::save_report(std::string filename) {
   file << "========================================================" << std::endl;
   file << std::endl;
 
-  file << "Acquisition start time:  " << boost::posix_time::to_iso_extended_string(metadata_.start_time) << std::endl;
-  double rt = metadata_.real_time.total_seconds();
-  double lt = metadata_.live_time.total_seconds();
+  file << "Acquisition start time:  " << boost::posix_time::to_iso_extended_string(metadata_.attributes.get(Qpx::Setting("start_time")).value_time) << std::endl;
+  double lt = settings_.live_time.total_milliseconds() * 0.001;
+  double rt = settings_.real_time.total_milliseconds() * 0.001;
   file << "Live time(s):   " << lt << std::endl;
   file << "Real time(s):   " << rt << std::endl;
   if ((lt < rt) && (rt > 0))
