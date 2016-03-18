@@ -300,10 +300,10 @@ void FormManip1D::update_plot() {
     double rescale  = md.attributes.get(Qpx::Setting("resacale")).value_precise.convert_to<double>();
 
     if (md.attributes.get(Qpx::Setting("visible")).value_int
-        && (md.resolution > 0) && (md.total_count > 0)) {
+        && (md.bits > 0) && (md.total_count > 0)) {
 
-      QVector<double> x(md.resolution);
-      QVector<double> y(md.resolution);
+      QVector<double> x(pow(2,md.bits));
+      QVector<double> y(pow(2,md.bits));
 
       std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
           std::move(q->get_spectrum({{0, y.size()}}));

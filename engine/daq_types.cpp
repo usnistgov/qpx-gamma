@@ -27,6 +27,7 @@
 
 #include "daq_types.h"
 #include <boost/algorithm/string.hpp>
+#include "qpx_util.h"
 
 namespace Qpx {
 
@@ -128,15 +129,8 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
   if (std::string(node.name()) != xml_element_name())
     return;
 
-  boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
-  tif->set_iso_extended_format();
-  std::stringstream iss;
-
-  if (node.attribute("lab_time")) {
-    iss << node.attribute("lab_time").value();
-    iss.imbue(std::locale(std::locale::classic(), tif));
-    iss >> lab_time;
-  }
+  if (node.attribute("lab_time"))
+    lab_time = from_iso_extended(node.attribute("lab_time").value());
 
   std::string type(node.attribute("type").value());
   if (type == "start")
@@ -189,19 +183,10 @@ void RunInfo::from_xml(const pugi::xml_node &node) {
   tif->set_iso_extended_format();
   std::stringstream iss;
 
-  if (node.attribute("time")) {
-    iss << node.attribute("time").value();
-    iss.imbue(std::locale(std::locale::classic(), tif));
-    iss >> time;
-  }
-
-  //backwards compat
-  if (node.attribute("time_start")) {
-    iss << node.attribute("time_start").value();
-    iss.imbue(std::locale(std::locale::classic(), tif));
-    iss >> time;
-  }
-
+  if (node.attribute("time"))
+    time = from_iso_extended(node.attribute("time").value());
+  else if (node.attribute("time_start"))
+    time = from_iso_extended(node.attribute("time_start").value());  //backwards compat
 
   state.from_xml(node.child(state.xml_element_name().c_str()));
 

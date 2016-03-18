@@ -54,25 +54,17 @@ struct Metadata {
  public:
   std::string name, type;
   uint16_t dimensions, bits;
-  uint32_t resolution;
   XMLableDB<Qpx::Setting> attributes;
   PreciseFloat total_count;
   uint16_t     max_chan;
-  PreciseFloat max_count;
-//  PreciseFloat rescale_factor;
 
-  uint64_t recent_count;
-  StatsUpdate recent_start, recent_end;
-
-//  boost::posix_time::time_duration real_time ,live_time;
-//  boost::posix_time::ptime  start_time;
   std::vector<Qpx::Detector> detectors;
 
   bool changed;
 
- Metadata() : bits(0), dimensions(0), resolution(0), attributes("Attributes"),
-    name("uninitialized_spectrum"), total_count(0.0), max_chan(0), max_count(0),
-    recent_count(0), changed(false) {}
+ Metadata() : bits(0), dimensions(0), attributes("Attributes"),
+    name("uninitialized_spectrum"), total_count(0.0), max_chan(0),
+    changed(false) {}
 };
 
 
@@ -128,7 +120,6 @@ public:
   std::string type() const;
   uint16_t dimensions() const;
   uint16_t bits() const;
-  uint32_t resolution() const;
 
   std::map<int, std::list<StatsUpdate>> get_stats();
 
@@ -188,7 +179,9 @@ protected:
   std::map<int, boost::posix_time::time_duration> real_times_;
   std::map<int, boost::posix_time::time_duration> live_times_;
   std::list<Event> backlog;
+
   uint64_t recent_count_;
+  StatsUpdate recent_start_, recent_end_;
 
   Pattern pattern_coinc_, pattern_anti_, pattern_add_;
 };

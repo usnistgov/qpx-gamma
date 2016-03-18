@@ -313,7 +313,7 @@ void FormPlot2D::update_plot(bool force) {
       md = some_spectrum->metadata();
 
 
-    if ((md.total_count > 0) && (md.dimensions == 2) && (adjrange = static_cast<uint32_t>(md.resolution * zoom_2d)) )
+    if ((md.total_count > 0) && (md.dimensions == 2) && (adjrange = pow(2,md.bits) * zoom_2d))
     {
 //      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 

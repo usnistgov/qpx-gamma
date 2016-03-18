@@ -34,6 +34,7 @@
 #include "log_inverse.h"
 #include "effit.h"
 #include "sqrt_poly.h"
+#include "qpx_util.h"
 
 namespace Qpx {
 
@@ -202,10 +203,6 @@ void Calibration::to_xml(pugi::xml_node &root) const {
 
 
 void Calibration::from_xml(const pugi::xml_node &node) {
-  boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
-  tif->set_iso_extended_format();
-  std::stringstream iss;
-
   type_ = std::string(node.attribute("Type").value());
 
   if (type_ == "Energy")
@@ -215,9 +212,8 @@ void Calibration::from_xml(const pugi::xml_node &node) {
 
   bits_ = node.attribute("ResolutionBits").as_int();
 
-  iss << std::string(node.child_value("CalibrationCreationDate"));
-  iss.imbue(std::locale(std::locale::classic(), tif));
-  iss >> calib_date_;
+  if (node.child_value("CalibrationCreationDate"))
+    calib_date_ = from_iso_extended(node.child_value("CalibrationCreationDate"));
 
   std::string model_str = std::string(node.child("Equation").attribute("Model").value());
   if (model_str == "Polynomial")

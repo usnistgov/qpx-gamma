@@ -331,7 +331,7 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
   } else if (TimeDurationWidget *dte = qobject_cast<TimeDurationWidget *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
       Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
-      dte->set_total_seconds(set.value_duration.total_seconds());
+      dte->set_duration(set.value_duration);
     }
   } else if (QtColorPicker *cp = qobject_cast<QtColorPicker *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
@@ -389,7 +389,7 @@ void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *mod
   else if (QDateTimeEdit *dte = qobject_cast<QDateTimeEdit *>(editor))
     model->setData(index, dte->dateTime(), Qt::EditRole);
   else if (TimeDurationWidget *dte = qobject_cast<TimeDurationWidget *>(editor))
-    model->setData(index, QVariant::fromValue(dte->total_seconds()), Qt::EditRole);
+    model->setData(index, QVariant::fromValue(dte->get_duration()), Qt::EditRole);
   else if (QtColorPicker *cp = qobject_cast<QtColorPicker *>(editor))
     model->setData(index, cp->currentColor().name(QColor::HexArgb), Qt::EditRole);
   else if (QCheckBox *cb = qobject_cast<QCheckBox *>(editor))

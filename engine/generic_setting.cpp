@@ -106,6 +106,65 @@ std::string to_string(SettingType type) {
 }
 
 
+SettingMeta::SettingMeta()
+  : setting_type(SettingType::none)
+  , writable(false)
+  , visible(true)
+  , saveworthy(true)
+  , address(-1)
+  , minimum(0)
+  , maximum(0)
+  , step(0)
+  , max_indices(0)
+{}
+
+
+SettingMeta::SettingMeta(const pugi::xml_node &node)
+  : SettingMeta()
+{
+  this->from_xml(node);
+}
+
+bool SettingMeta::shallow_equals(const SettingMeta& other) const
+{
+  return (id_ == other.id_);
+}
+
+bool SettingMeta::operator!= (const SettingMeta& other) const
+{
+  return !operator==(other);
+}
+
+bool SettingMeta::operator== (const SettingMeta& other) const
+{
+  if (id_ != other.id_) return false;
+  if (name != other.name) return false;
+  if (unit != other.unit) return false;
+  if (minimum != other.minimum) return false;
+  if (maximum != other.maximum) return false;
+  if (step != other.step) return false;
+  if (writable != other.writable) return false;
+  if (description != other.description) return false;
+  if (address != other.address) return false;
+  if (int_menu_items != other.int_menu_items) return false;
+  if (flags != other.flags) return false;
+  return true;
+}
+
+SettingMeta SettingMeta::stripped() const
+{
+  SettingMeta s;
+  s.id_ == id_;
+  s.setting_type = setting_type;
+  return s;
+}
+
+bool SettingMeta::meaningful() const
+{
+  return (operator!=(this->stripped()));
+}
+
+
 void SettingMeta::from_xml(const pugi::xml_node &node) {
   setting_type = to_type(std::string(node.attribute("type").value()));
   if (setting_type == SettingType::none)
@@ -233,6 +292,84 @@ void SettingMeta::menu_to_node(pugi::xml_node &node, const std::string &element_
   }
 }
 
+
+
+Setting::Setting()
+  : branches("branches")
+  , value_dbl(0.0)
+  , value_int(0)
+{}
+
+Setting::Setting(const pugi::xml_node &node)
+  : Setting()
+{
+  this->from_xml(node);
+}
+
+Setting::Setting(std::string id)
+  : Setting()
+{
+  id_ = id;
+}
+
+Setting::Setting(SettingMeta meta)
+  : Setting()
+{
+  id_ = meta.id_;
+  metadata = meta;
+}
+
+bool Setting::compare(const Setting &other, Match flags) const {
+  bool match = true;
+  if ((flags & Match::id) && (id_ != other.id_))
+    match = false;
+  if (flags & Match::indices) {
+    bool mt = false;
+    for (auto &q : other.indices) {
+      if (indices.count(q) > 0) {
+        mt = true;
+        break;
+      }
+    }
+    if (!mt)
+      match = false;
+  }
+  if ((flags & Match::name) && (other.id_ != metadata.name))
+    match = false;
+  if ((flags & Match::address) && (metadata.address != other.metadata.address))
+    match = false;
+  return match;
+}
+
+bool Setting::shallow_equals(const Setting& other) const
+{
+  return compare(other, Match::id);
+}
+
+bool Setting::operator!= (const Setting& other) const
+{
+  return !operator==(other);
+}
+
+bool Setting::operator== (const Setting& other) const
+{
+  if (id_            != other.id_) return false;
+  if (indices        != other.indices) return false;
+  if (value_dbl      != other.value_dbl) return false;
+  if (value_int      != other.value_int) return false;
+  if (value_text     != other.value_text) return false;
+  if (value_time     != other.value_time) return false;
+  if (value_duration != other.value_duration) return false;
+  if (value_precise  != other.value_precise) return false;
+  if (value_pattern  != other.value_pattern) return false;
+  if (branches       != other.branches) return false;
+//    if (metadata != other.metadata) return false;
+  return true;
+}
+
+
+
+
 std::string Setting::val_to_string() const
 {
   std::stringstream ss;
@@ -305,22 +442,14 @@ void Setting::val_from_node(const pugi::xml_node &node)
     value_dbl = node.attribute("value").as_double();
   else if (metadata.setting_type == SettingType::floating_precise)
     value_precise = PreciseFloat(node.attribute("value").value());
-  else if (metadata.setting_type == SettingType::pattern)
-    value_pattern = Pattern(node.attribute("value").value());
   else if ((metadata.setting_type == SettingType::text) ||
            (metadata.setting_type == SettingType::detector) ||
            (metadata.setting_type == SettingType::color) ||
            (metadata.setting_type == SettingType::file_path) ||
            (metadata.setting_type == SettingType::dir_path))
     value_text = std::string(node.attribute("value").value());
-  else if (metadata.setting_type == SettingType::time) {
-    boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
-    tif->set_iso_extended_format();
-    std::stringstream iss;
-    iss << node.attribute("value").value();
-    iss.imbue(std::locale(std::locale::classic(), tif));
-    iss >> value_time;
-  }
+  else if (metadata.setting_type == SettingType::time)
+    value_time = from_iso_extended(node.attribute("value").value());
   else if (metadata.setting_type == SettingType::time_duration)
     value_duration = boost::posix_time::duration_from_string(node.attribute("value").value());
 }
@@ -387,37 +516,26 @@ void Setting::to_xml(pugi::xml_node &node, bool with_metadata) const {
     metadata.to_xml(child);
 }
 
-
-bool Setting::compare(const Setting &other, Match flags) const {
-  bool match = true;
-  if ((flags & Match::id) && (id_ != other.id_))
-    match = false;
-  if (flags & Match::indices) {
-    bool mt = false;
-    for (auto &q : other.indices) {
-      if (indices.count(q) > 0) {
-        mt = true;
-        break;
-      }
-    }
-    if (!mt)
-      match = false;
-  }
-  if ((flags & Match::name) && (other.id_ != metadata.name))
-    match = false;
-  if ((flags & Match::address) && (metadata.address != other.metadata.address))
-    match = false;
-  return match;
+void Setting::set_value(const Setting &other)
+{
+  value_int = other.value_int;
+  value_text = other.value_text;
+  value_dbl = other.value_dbl;
+  value_time = other.value_time;
+  value_duration = other.value_duration;
+  value_precise = other.value_precise;
+  value_pattern = other.value_pattern;
 }
 
-bool Setting::push_one_setting(const Setting &setting, Setting& root, Match flags){
-  if (root.compare(setting, flags)) {
-      root = setting;
+
+bool Setting::set_setting_r(const Setting &setting, Match flags){
+  if (this->compare(setting, flags)) {
+      this->set_value(setting);
       return true;
-  } else if ((root.metadata.setting_type == SettingType::stem)
-             || (root.metadata.setting_type == SettingType::indicator)) {
-    for (auto &q : root.branches.my_data_)
-      if (push_one_setting(setting, q, flags))
+  } else if ((this->metadata.setting_type == SettingType::stem)
+             || (this->metadata.setting_type == SettingType::indicator)) {
+    for (auto &q : this->branches.my_data_)
+      if (q.set_setting_r(setting, flags))
         return true;
   }
   return false;
@@ -488,7 +606,7 @@ void Setting::enrich(const std::map<std::string, SettingMeta> &setting_definitio
               added = true;
             }
           }
-          if (!added && (q.first != 666)) {
+          if (!added && (q.first != 666)) { //hack, eliminate this
             Setting newset = Setting(newmeta);
             newset.indices = indices;
             newset.enrich(setting_definitions, impose_limits);
@@ -577,6 +695,21 @@ void Setting::strip_metadata() {
     q.strip_metadata();
   metadata = metadata.stripped();
 }
+
+std::ostream& operator << (std::ostream &os, const Setting &s) {
+  os << s.id_;
+  if (s.indices.size()) {
+    os << " { ";
+    for (auto &q : s.indices)
+      os << q << " ";
+    os << "}";
+  }
+  os << " = " << s.val_to_pretty_string() << std::endl;
+  for (auto &q : s.branches.my_data_)
+    os << "_" << q;
+  return os;
+}
+
 
 
 }

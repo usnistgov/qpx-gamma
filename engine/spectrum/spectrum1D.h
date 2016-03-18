@@ -64,7 +64,7 @@ protected:
 
     metadata_.type = my_type();
     metadata_.dimensions = 1;
-    spectrum_.resize(metadata_.resolution, 0);
+    spectrum_.resize(pow(2, metadata_.bits), 0);
 
     Spectrum::initialize();
 

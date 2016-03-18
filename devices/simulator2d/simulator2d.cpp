@@ -265,7 +265,8 @@ bool Simulator2D::boot() {
   PL_INFO << "<Simulator2D>  building matrix for simulation res=" << resolution_ << " shift="  << shift_by_;
   std::vector<double> distribution(resolution_*resolution_, 0.0);   //optimize somehow
 
-  std::unique_ptr<std::list<Qpx::Spectrum::Entry>> spec_list(spectrum->get_spectrum({{0,spectrum->resolution()},{0,spectrum->resolution()}}));
+  uint32_t res = pow(2, spectrum->metadata().bits);
+  std::unique_ptr<std::list<Qpx::Spectrum::Entry>> spec_list(spectrum->get_spectrum({{0,res},{0,res}}));
 
   for (auto it : *spec_list)
     distribution[(it.first[0] >> adjust_bits) * resolution_

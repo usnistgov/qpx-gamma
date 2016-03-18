@@ -49,6 +49,56 @@ void TimeDurationWidget::set_total_seconds(uint64_t secs) {
   ui->spinDays->setValue(total_hours / 24);
 }
 
+void TimeDurationWidget::set_duration(boost::posix_time::time_duration duration)
+{
+  uint64_t total_ms = duration.total_milliseconds();
+  ui->spin_ms->setValue(total_ms % 1000);
+  uint64_t total_seconds = total_ms / 1000;
+  ui->spinS->setValue(total_seconds % 60);
+  uint64_t total_minutes = total_seconds / 60;
+  ui->spinM->setValue(total_minutes % 60);
+  uint64_t total_hours = total_minutes / 60;
+  ui->spinH->setValue(total_hours % 24);
+  ui->spinDays->setValue(total_hours / 24);
+}
+
+boost::posix_time::time_duration TimeDurationWidget::get_duration() const
+{
+  boost::posix_time::time_duration ret = boost::posix_time::milliseconds(
+    ui->spin_ms->value() + 1000 *
+        (ui->spinS->value() + 60 *
+         (ui->spinM->value() + 60 *
+          (ui->spinH->value() + 24 *
+           ui->spinDays->value()
+           )
+          )
+         )
+        );
+  return ret;
+}
+
+
+void TimeDurationWidget::on_spin_ms_valueChanged(int new_value)
+{
+  if (new_value >= 1000) {
+    int secs = static_cast<int>(new_value) / 1000;
+    int leftover = new_value - (secs * 1000);
+    ui->spinS->setValue(ui->spinS->value() + secs);
+    if (ui->spinDays->value() != ui->spinDays->maximum())
+      ui->spin_ms->setValue(leftover);
+    else
+      ui->spin_ms->setValue(0);
+  } else if (new_value < 0) {
+    if ((ui->spinS->value() > 0) || (ui->spinM->value() > 0) || (ui->spinH->value() > 0)  || (ui->spinDays->value() > 0)) {
+      ui->spinS->setValue(ui->spinS->value() - 1);
+      ui->spin_ms->setValue(1000 + new_value);
+    } else {
+      ui->spin_ms->setValue(0);
+    }
+  }
+}
+
+
 void TimeDurationWidget::on_spinS_valueChanged(int new_value)
 {
   if (new_value >= 60) {
@@ -124,6 +174,11 @@ void TimeDurationWidget::on_spinM_editingFinished()
 }
 
 void TimeDurationWidget::on_spinS_editingFinished()
+{
+  emit editingFinished();
+}
+
+void TimeDurationWidget::on_spin_ms_editingFinished()
 {
   emit editingFinished();
 }

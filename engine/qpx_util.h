@@ -26,7 +26,7 @@
 
 #include <string>
 #include <sstream>
-#include "custom_logger.h"
+#include <boost/date_time/local_time/local_time.hpp>
 
 const std::vector<std::string> k_UTF_superscripts = {
   "\u2070", "\u00B9", "\u00B2",
@@ -105,6 +105,32 @@ inline std::string itohex16 (uint16_t bin)
   stream << std::uppercase << std::setfill ('0') << std::setw(sizeof(uint16_t)*2)
          << std::hex << bin;
   return stream.str();
+}
+
+inline boost::posix_time::ptime from_iso_extended(std::string str)
+{
+  boost::posix_time::ptime tm;
+  if (str.empty())
+    return tm;
+  boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
+  tif->set_iso_extended_format();
+  std::stringstream iss(str);
+  iss.imbue(std::locale(std::locale::classic(), tif));
+  iss >> tm;
+  return tm;
+}
+
+inline boost::posix_time::ptime from_custom_format(std::string str, std::string format)
+{
+  boost::posix_time::ptime tm;
+  if (str.empty())
+    return tm;
+  boost::posix_time::time_input_facet
+      *tif(new boost::posix_time::time_input_facet(format));
+  std::stringstream iss(str);
+  iss.imbue(std::locale(std::locale::classic(), tif));
+  iss >> tm;
+  return tm;
 }
 
 #endif

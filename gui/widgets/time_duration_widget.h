@@ -24,6 +24,7 @@
 #define TIME_DURATION_WIDGET_H_
 
 #include <QDialog>
+#include <boost/date_time.hpp>
 #include "qt_util.h"
 
 
@@ -42,6 +43,9 @@ public:
   uint64_t total_seconds();
   void set_total_seconds(uint64_t secs);
 
+  void set_duration(boost::posix_time::time_duration duration);
+  boost::posix_time::time_duration get_duration() const;
+
 signals:
   void editingFinished();
 
@@ -49,11 +53,13 @@ private slots:
   void on_spinM_valueChanged(int);
   void on_spinH_valueChanged(int);
   void on_spinS_valueChanged(int);
+  void on_spin_ms_valueChanged(int arg1);
 
   void on_spinDays_editingFinished();
   void on_spinH_editingFinished();
   void on_spinM_editingFinished();
   void on_spinS_editingFinished();
+  void on_spin_ms_editingFinished();
 
 private:
   Ui::TimeDurationWidget *ui;

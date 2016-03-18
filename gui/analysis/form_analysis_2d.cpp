@@ -129,9 +129,9 @@ void FormAnalysis2D::initialize() {
     PL_DBG << "<Analysis2D> initializing to " << current_spectrum_.toStdString();
     Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(current_spectrum_.toStdString());
 
-    if (spectrum && spectrum->resolution()) {
+    if (spectrum && spectrum->bits()) {
       Qpx::Spectrum::Metadata md = spectrum->metadata();
-      res = md.resolution;
+      res = pow(2,md.bits);
 
       ui->plotMatrix->reset_content();
       ui->plotMatrix->setSpectra(*spectra_, current_spectrum_);

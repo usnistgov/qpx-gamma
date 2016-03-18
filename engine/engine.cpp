@@ -390,7 +390,7 @@ void Engine::load_det_settings(Qpx::Setting det, Qpx::Setting& root, Qpx::Match 
 }
 
 void Engine::set_setting(Qpx::Setting address, Qpx::Match flags) {
-  settings_tree_.push_one_setting(address, settings_tree_, flags);
+  settings_tree_.set_setting_r(address, flags);
   write_settings_bulk();
   read_settings_bulk();
 }

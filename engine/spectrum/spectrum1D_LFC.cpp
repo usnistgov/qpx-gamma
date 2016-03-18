@@ -48,9 +48,8 @@ bool Spectrum1D_LFC::initialize() {
     return false;
   }
   
-  metadata_.resolution = pow(2, metadata_.bits);
-  channels_all_.resize(metadata_.resolution,0);
-  channels_run_.resize(metadata_.resolution,0);
+  channels_all_.resize(pow(2, metadata_.bits),0);
+  channels_run_.resize(pow(2, metadata_.bits),0);
 
   time_sample_ = get_attr("time_sample").value_dbl;
 
@@ -115,7 +114,8 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
            << " fast_peaks_compensated=" << fast_peaks_compensated
            << " true_count=" << count_current_;
 
-    for (uint32_t i = 0; i < metadata_.resolution; i++) {
+    uint32_t res = pow(2, metadata_.bits);
+    for (uint32_t i = 0; i < res; i++) {
       channels_all_[i] += fast_peaks_compensated * channels_run_[i] / count_current_;
       if (channels_all_[i] > 0.0)
         spectrum_[i] = channels_all_[i];
@@ -128,7 +128,8 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
 
     count_current_ = 0;
   } else {
-    for (uint32_t i = 0; i < metadata_.resolution; i++) {
+    uint32_t res = pow(2, metadata_.bits);
+    for (uint32_t i = 0; i < res; i++) {
       if ((channels_run_[i] > 0.0) || (channels_all_[i] > 0.0))
         spectrum_[i] = channels_run_[i] + channels_all_[i].convert_to<uint64_t>();
     }

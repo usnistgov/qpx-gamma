@@ -121,13 +121,17 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   std::string type = someSpectrum->type();
   double real = md.attributes.get(Qpx::Setting("real_time")).value_duration.total_milliseconds() * 0.001;
   double live = md.attributes.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
-  double dead = 100;
-  double rate_inst = 0;
-  double recent_time = (md.recent_end.lab_time - md.recent_start.lab_time).total_milliseconds() * 0.001;
-  if (recent_time > 0)
-    rate_inst = md.recent_count / recent_time;
-//  PL_DBG << "<Plot1D> instant rate for \"" << md.name << "\"  " << md.recent_count << "/" << recent_time << " = " << rate_inst;
+
   double rate_total = 0;
+  if (live > 0)
+    rate_total = md.total_count.convert_to<double>() / live; // total count rate corrected for dead time
+
+  double dead = 100;
+  if (real > 0)
+    dead = (real - live) * 100.0 / real;
+
+  double rate_inst = md.attributes.get(Qpx::Setting("instant_rate")).value_dbl;
+
   Qpx::Detector det = Qpx::Detector();
   if (!md.detectors.empty())
     det = md.detectors[0];
@@ -142,11 +146,6 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
     detstr += " [FWHM]";
   if (det.efficiency_calibration_.valid())
     detstr += " [EFF]";
-
-  if (real > 0) {
-    dead = (real - live) * 100.0 / real;
-    rate_total = md.total_count.convert_to<double>() / live; // total count rate corrected for dead time
-  }
 
   QString infoText =
       "<nobr>" + id + "(" + QString::fromStdString(type) + ", " + QString::number(md.bits) + "bits)</nobr><br/>"
@@ -191,7 +190,7 @@ void FormPlot1D::update_plot() {
     double rescale  = md.attributes.get(Qpx::Setting("rescale")).value_precise.convert_to<double>();
 
     if (md.attributes.get(Qpx::Setting("visible")).value_int
-        && (md.resolution > 0) && (md.total_count > 0)) {
+        && (md.bits > 0) && (md.total_count > 0)) {
 
 
       QVector<double> x = QVector<double>::fromStdVector(q->energies(0));
@@ -443,24 +442,21 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
   QString id = spectraSelector->selected().text;
   Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(id.toStdString());
 
-  Qpx::Spectrum::Metadata md;
 
-  if (someSpectrum)
-    md = someSpectrum->metadata();
 
-  if (id.isEmpty() || (someSpectrum == nullptr))
+  if (id.isEmpty() || (someSpectrum == nullptr) || !moving.visible)
     return;
 
-  PreciseFloat max = md.max_count;
+  Qpx::Spectrum::Metadata md = someSpectrum->metadata();
+
+
   double livetime = md.attributes.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
 
-  if (moving.visible) {
-    Qpx::Calibration cal;
-    if (!md.detectors.empty())
-      cal = md.detectors[0].best_calib(md.bits);
+  Qpx::Calibration cal;
+  if (!md.detectors.empty())
+    cal = md.detectors[0].best_calib(md.bits);
 
-    max = someSpectrum->get_count({std::round(cal.inverse_transform(moving.pos.energy()))});
-  }
+  PreciseFloat max = someSpectrum->get_count({std::round(cal.inverse_transform(moving.pos.energy()))});
 
   if (ui->pushPerLive->isChecked() && (livetime != 0))
     max = max / livetime;
@@ -471,16 +467,13 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
   for (auto &q: mySpectra->spectra(1, -1))
     if (q) {
       Qpx::Spectrum::Metadata mdt = q->metadata();
-      PreciseFloat mc = mdt.max_count;
       double lt = mdt.attributes.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
 
-      if (moving.visible) {
-        Qpx::Calibration cal;
-        if (!mdt.detectors.empty())
-          cal = mdt.detectors[0].best_calib(mdt.bits);
+      Qpx::Calibration cal;
+      if (!mdt.detectors.empty())
+        cal = mdt.detectors[0].best_calib(mdt.bits);
 
-        mc = q->get_count({std::round(cal.inverse_transform(moving.pos.energy()))});
-      }
+      PreciseFloat mc = q->get_count({std::round(cal.inverse_transform(moving.pos.energy()))});
 
       if (ui->pushPerLive->isChecked() && (lt != 0))
         mc = mc / lt;

@@ -36,6 +36,8 @@
 
 Q_DECLARE_METATYPE(Qpx::Detector)
 Q_DECLARE_METATYPE(Qpx::Setting)
+Q_DECLARE_METATYPE(boost::posix_time::time_duration)
+
 
 class QpxSpecialDelegate : public QStyledItemDelegate
 {

@@ -28,6 +28,7 @@
 #include <QDateTime>
 
 Q_DECLARE_METATYPE(Qpx::Setting)
+Q_DECLARE_METATYPE(boost::posix_time::time_duration)
 
 TreeItem::TreeItem(const Qpx::Setting &data, TreeItem *parent)
 {
@@ -326,8 +327,8 @@ bool TreeItem::setData(int column, const QVariant &value)
       && (value.type() == QVariant::DateTime))
     itemData.value_time = fromQDateTime(value.toDateTime());
   else if ((itemData.metadata.setting_type == Qpx::SettingType::time_duration)
-      && (value.canConvert(QMetaType::LongLong)))
-    itemData.value_duration = boost::posix_time::seconds(value.toLongLong());
+      && (value.canConvert<boost::posix_time::time_duration>()))
+    itemData.value_duration = qvariant_cast<boost::posix_time::time_duration>(value);
   else
     return false;
 

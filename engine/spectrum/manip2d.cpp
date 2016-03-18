@@ -140,7 +140,7 @@ bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destin
     return false;
   }
 
-  uint32_t adjrange = static_cast<uint32_t>(md.resolution);
+  uint32_t adjrange = pow(2, md.bits);
 
   boost::random::mt19937 gen;
   boost::random::uniform_real_distribution<> dist(-0.5, 0.5);

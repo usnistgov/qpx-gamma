@@ -121,7 +121,7 @@ void FormSymmetrize2D::make_gated_spectra() {
 
   if ((md.total_count > 0) && (md.dimensions == 2))
   {
-    uint32_t adjrange = static_cast<uint32_t>(md.resolution) - 1;
+    uint32_t adjrange = pow(2,md.bits) - 1;
 
     tempx->bits = md.bits;
     tempx->name_ = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(0), 0) + "," + to_str_precision(nrg_calibration2_.transform(adjrange), 0) + "]";
@@ -175,9 +175,9 @@ void FormSymmetrize2D::initialize() {
     PL_DBG << "<Analysis2D> initializing to " << current_spectrum_.toStdString();
     Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(current_spectrum_.toStdString());
 
-    if (spectrum && spectrum->resolution()) {
+    if (spectrum && spectrum->bits()) {
       Qpx::Spectrum::Metadata md = spectrum->metadata();
-      res = md.resolution;
+      res = pow(2,md.bits);
 
       detector1_ = Qpx::Detector();
       detector2_ = Qpx::Detector();

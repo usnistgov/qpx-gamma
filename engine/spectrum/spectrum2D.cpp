@@ -48,7 +48,6 @@ bool Spectrum2D::initialize() {
     return false;
   }
   
-  metadata_.resolution = pow(2, metadata_.bits);
   metadata_.dimensions = 2;
 //  energies_.resize(2);
   pattern_.resize(2, 0);
@@ -139,7 +138,7 @@ void Spectrum2D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
 }
 
 void Spectrum2D::_add_bulk(const Entry& e) {
-  if ((e.first.size() == 2) && (e.first[0] < metadata_.resolution) && (e.first[1] < metadata_.resolution)) {
+  if (e.first.size() == 2) {
     spectrum_[std::pair<uint16_t,uint16_t>(e.first[0], e.first[1])] += e.second;
     metadata_.total_count += e.second;
   }
@@ -151,9 +150,6 @@ PreciseFloat Spectrum2D::_get_count(std::initializer_list<uint16_t> list) const 
 
   std::vector<uint16_t> coords(list.begin(), list.end());
 
-  if ((coords[0] >= metadata_.resolution) || (coords[1] >= metadata_.resolution))
-    return 0;
-  
   std::pair<uint16_t,uint16_t> point(coords[0], coords[1]);
 
   if (spectrum_.count(point))
@@ -166,7 +162,7 @@ std::unique_ptr<EntryList> Spectrum2D::_get_spectrum(std::initializer_list<Pair>
   int min0, min1, max0, max1;
   if (list.size() != 2) {
     min0 = min1 = 0;
-    max0 = max1 = metadata_.resolution;
+    max0 = max1 = pow(2, metadata_.bits);
   } else {
     Pair range0 = *list.begin(), range1 = *(list.begin()+1);
     min0 = range0.first; max0 = range0.second;
@@ -256,7 +252,6 @@ void Spectrum2D::write_m(std::string name) const {
   std::ofstream myfile(name, std::ios::out | std::ios::app);
   myfile << "%=========Qpx 2d spectrum=========" << std::endl
          << "%  Bit precision: " << metadata_.bits << std::endl
-         << "%  Channels     : " << metadata_.resolution << std::endl
          << "%  Total events : " << metadata_.total_count << std::endl
          << "clear;" << std::endl;
   for (auto it = spectrum_.begin(); it != spectrum_.end(); ++it)

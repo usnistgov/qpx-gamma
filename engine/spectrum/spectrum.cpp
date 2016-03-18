@@ -128,6 +128,15 @@ Template Spectrum::get_template() {
   real_time.metadata.writable = true;
   new_temp.generic_attributes.branches.add(real_time);
 
+  Qpx::Setting inst_rate;
+  inst_rate.id_ = "instant_rate";
+  inst_rate.metadata.setting_type = Qpx::SettingType::floating;
+  inst_rate.metadata.unit = "cps";
+  inst_rate.metadata.description = "Instant count rate";
+  inst_rate.metadata.writable = false;
+  inst_rate.value_dbl = 0;
+  new_temp.generic_attributes.branches.add(inst_rate);
+
   Qpx::Setting descr;
   descr.id_ = "description";
   descr.metadata.setting_type = Qpx::SettingType::text;
@@ -140,13 +149,9 @@ Template Spectrum::get_template() {
 
 bool Spectrum::initialize() {
   pattern_coinc_ = get_attr("pattern_coinc").value_pattern;
-
   pattern_anti_ = get_attr("pattern_anti").value_pattern;
-
   pattern_add_ = get_attr("pattern_add").value_pattern;
-
   cutoff_logic_ = get_attr("cutoff_logic").value_int;
-
   coinc_window_ = get_attr("coinc_window").value_dbl;
 
   if (coinc_window_ < 0)
@@ -187,7 +192,6 @@ bool Spectrum::from_template(const Template& newtemplate) {
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   
   metadata_.bits = newtemplate.bits;
-  metadata_.resolution = pow(2,metadata_.bits);
   metadata_.name = newtemplate.name_;
   metadata_.attributes = newtemplate.generic_attributes.branches;
 
@@ -200,7 +204,6 @@ void Spectrum::addSpill(const Spill& one_spill) {
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
 
   CustomTimer addspill_timer(true);
-  uint64_t hits = one_spill.hits.size();
 
   for (auto &q : one_spill.hits)
     this->pushHit(q);
@@ -322,14 +325,20 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
     if (!chan_new && new_start && (stats_list_[newBlock.source_channel].back().stats_type == StatsType::running))
       stats_list_[newBlock.source_channel].back().stats_type = StatsType::stop;
 
-    if (metadata_.recent_end.lab_time.is_not_a_date_time())
-      metadata_.recent_start = newBlock;
+    if (recent_end_.lab_time.is_not_a_date_time())
+      recent_start_ = newBlock;
     else
-      metadata_.recent_start = metadata_.recent_end;
+      recent_start_ = recent_end_;
 
-    metadata_.recent_end = newBlock;
-    metadata_.recent_count = recent_count_;
-//    PL_DBG << "<Spectrum> \"" << metadata_.name << "\" recent count_ = " << recent_count_;
+    recent_end_ = newBlock;
+
+    Setting rate = get_attr("instant_rate");
+    rate.value_dbl = 0;
+    double recent_time = (recent_end_.lab_time - recent_start_.lab_time).total_milliseconds() * 0.001;
+    if (recent_time > 0)
+      rate.value_dbl = recent_count_ / recent_time;
+    metadata_.attributes.replace(rate);
+
     recent_count_ = 0;
 
     if (!chan_new && (stats_list_[newBlock.source_channel].back().stats_type == StatsType::running))
@@ -458,13 +467,16 @@ void Spectrum::recalc_energies() {
     return;
 
   for (int i=0; i < metadata_.detectors.size(); ++i) {
-    energies_[i].resize(metadata_.resolution, 0.0);
-     Qpx::Calibration this_calib;
+    uint32_t res = pow(2,metadata_.bits);
+
+    Qpx::Calibration this_calib;
     if (metadata_.detectors[i].energy_calibrations_.has_a(Qpx::Calibration("Energy", metadata_.bits)))
       this_calib = metadata_.detectors[i].energy_calibrations_.get(Qpx::Calibration("Energy", metadata_.bits));
     else
       this_calib = metadata_.detectors[i].highest_res_calib();
-    for (uint32_t j=0; j<metadata_.resolution; j++)
+
+    energies_[i].resize(res, 0.0);
+    for (uint32_t j=0; j<res; j++)
       energies_[i][j] = this_calib.transform(j, metadata_.bits);
   }
 }
@@ -515,11 +527,6 @@ std::string Spectrum::type() const {
 uint16_t Spectrum::dimensions() const {
   boost::shared_lock<boost::shared_mutex> lock(mutex_);
   return metadata_.dimensions;
-}
-
-uint32_t Spectrum::resolution() const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  return metadata_.resolution;
 }
 
 std::string Spectrum::name() const {
@@ -585,7 +592,7 @@ void Spectrum::to_xml(pugi::xml_node &root) const {
     }
   }
 
-  if ((metadata_.resolution > 0) && (metadata_.total_count > 0))
+  if ((metadata_.bits > 0) && (metadata_.total_count > 0))
     node.append_child("ChannelData").append_child(pugi::node_pcdata).set_value(this->_channels_to_xml().c_str());
 }
 
@@ -597,10 +604,6 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
   //retroactive attributrion of params in current version?
   Template t = this->get_template();
   metadata_.attributes = t.generic_attributes.branches;
-
-  boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
-  tif->set_iso_extended_format();
-  std::stringstream iss;
 
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
@@ -617,8 +620,6 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
 
   if ((!metadata_.bits) || (metadata_.total_count == 0))
     return false;
-
-  metadata_.resolution = pow(2, metadata_.bits);
 
   //backwards compat
   if (node.child("MatchPattern")) {
@@ -693,10 +694,8 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
 
 
   if (node.child("StartTime")) {
-    iss << node.child_value("StartTime");
-    iss.imbue(std::locale(std::locale::classic(), tif));
     Setting start_time = get_attr("start_time");
-    iss >> start_time.value_time;
+    start_time.value_time = from_iso_extended(node.child_value("StartTime"));
     metadata_.attributes.replace(start_time);
   }
 

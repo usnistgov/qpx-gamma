@@ -336,7 +336,7 @@ void FormIntegration2D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
   current_spectrum_ = name;
   Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(current_spectrum_.toStdString());
 
-  if (spectrum && spectrum->resolution()) {
+  if (spectrum && spectrum->bits()) {
     md_ = spectrum->metadata();
     if (!peaks_.empty()) {
       ui->tableGateList->selectRow(0);
@@ -409,7 +409,7 @@ void FormIntegration2D::make_gates() {
   md_ = source_spectrum->metadata();
   double margin = 2;
 
-  uint32_t adjrange = static_cast<uint32_t>(md_.resolution) - 1;
+  uint32_t adjrange = pow(2,md_.bits) - 1;
 
   double xwidth = peak.x2.bin(md_.bits) - peak.x1.bin(md_.bits);
   double ywidth = peak.y2.bin(md_.bits) - peak.y1.bin(md_.bits);

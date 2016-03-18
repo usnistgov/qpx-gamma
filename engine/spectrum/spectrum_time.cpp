@@ -23,7 +23,6 @@
 
 #include <fstream>
 #include <boost/algorithm/string.hpp>
-#include <boost/date_time/local_time/local_time.hpp>
 #include <boost/filesystem.hpp>
 #include "spectrum_time.h"
 #include "xylib.h"
@@ -97,11 +96,7 @@ std::unique_ptr<std::list<Entry>> SpectrumTime::_get_spectrum(std::initializer_l
 void SpectrumTime::_add_bulk(const Entry& e) {
   for (int i = 0; i < e.first.size(); ++i)
     if (pattern_add_.relevant(i) && (e.first[i] < spectrum_.size())) {
-//      PreciseFloat nr = (spectrum_[e.first[i]] += e.second);
-
-//      if (nr > metadata_.max_count)
-//        metadata_.max_count = nr;
-
+//      spectrum_[e.first[i]] += e.second;
 //      metadata_.total_count += e.second;
     }
 }
@@ -148,13 +143,9 @@ void SpectrumTime::addStats(const StatsUpdate& newStats)
       seconds_.push_back(tot_time.convert_to<double>());
       updates_.push_back(newStats);
 
-      metadata_.resolution = seconds_.size();
       metadata_.max_chan = seconds_.size() - 1;
 
       spectrum_.push_back(count);
-
-      if (count > metadata_.max_count)
-        metadata_.max_count = count;
 
       energies_[0].clear();
       for (auto &q : seconds_)
@@ -189,11 +180,9 @@ uint16_t SpectrumTime::_channels_from_xml(const std::string& thisData){
   channeldata.str(thisData);
 
   spectrum_.clear();
-  spectrum_.resize(metadata_.resolution, 0);
   seconds_.clear();
-  seconds_.resize(metadata_.resolution, 0);
 
-  metadata_.max_count = 0;
+  std::list<PreciseFloat> sp, secs;
 
   uint16_t i = 0;
   std::string numero;
@@ -203,9 +192,7 @@ uint16_t SpectrumTime::_channels_from_xml(const std::string& thisData){
       break;
 
     PreciseFloat nr(numero);
-    spectrum_[i] = nr;
-    if (nr > metadata_.max_count)
-      metadata_.max_count = nr;
+    sp.push_back(nr);
     i++;
   }
 
@@ -214,9 +201,15 @@ uint16_t SpectrumTime::_channels_from_xml(const std::string& thisData){
     channeldata >> numero;
 
     PreciseFloat nr(numero);
-    seconds_[i] = nr;
+    secs.push_back(nr);
     i++;
   }
+
+  if (sp.size() && (sp.size() == secs.size())) {
+    spectrum_ = std::vector<PreciseFloat>(sp.begin(), sp.end());
+    seconds_  = std::vector<PreciseFloat>(secs.begin(), secs.end());
+  } else
+    i = 0;
 
   metadata_.max_chan = i;
   return metadata_.max_chan;

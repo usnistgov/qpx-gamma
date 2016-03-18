@@ -230,7 +230,7 @@ void FormGatesPlot2D::update_plot() {
   if (some_spectrum)
     md = some_spectrum->metadata();
 
-  if ((md.total_count > 0) && (md.dimensions == 2) && (adjrange = md.resolution) )
+  if ((md.total_count > 0) && (md.dimensions == 2) && (adjrange = pow(2,md.bits)) )
   {
     //      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 

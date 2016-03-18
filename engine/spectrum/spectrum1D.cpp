@@ -23,10 +23,10 @@
 
 #include <fstream>
 #include <boost/algorithm/string.hpp>
-#include <boost/date_time/local_time/local_time.hpp>
 #include <boost/filesystem.hpp>
 #include "spectrum1D.h"
 #include "xylib.h"
+#include "qpx_util.h"
 
 namespace Qpx {
 namespace Spectrum {
@@ -56,7 +56,7 @@ PreciseFloat Spectrum1D::_get_count(std::initializer_list<uint16_t> list) const 
     return 0;
   
   uint32_t chan = *list.begin();
-  if (chan >= metadata_.resolution)
+  if (chan >= spectrum_.size())
     return 0;
   else
     return spectrum_[chan];
@@ -66,7 +66,7 @@ std::unique_ptr<std::list<Entry>> Spectrum1D::_get_spectrum(std::initializer_lis
   int min, max;
   if (list.size() != 1) {
     min = 0;
-    max = metadata_.resolution;
+    max = pow(2, metadata_.bits);
   } else {
     Pair range = *list.begin();
     min = range.first;
@@ -89,11 +89,7 @@ std::unique_ptr<std::list<Entry>> Spectrum1D::_get_spectrum(std::initializer_lis
 void Spectrum1D::_add_bulk(const Entry& e) {
   for (int i = 0; i < e.first.size(); ++i)
     if (pattern_add_.relevant(i) && (e.first[i] < spectrum_.size())) {
-      PreciseFloat nr = (spectrum_[e.first[i]] += e.second);
-
-      if (nr > metadata_.max_count)
-        metadata_.max_count = nr;
-
+      spectrum_[e.first[i]] += e.second;
       metadata_.total_count += e.second;
     }
 }
@@ -103,9 +99,7 @@ void Spectrum1D::addHit(const Hit& newHit) {
   if (en < cutoff_bin_)
     return;
 
-  PreciseFloat nr = ++spectrum_[en];
-  if (nr > metadata_.max_count)
-    metadata_.max_count = nr;
+  ++spectrum_[en];
 
   if (en > metadata_.max_chan)
     metadata_.max_chan = en;
@@ -197,7 +191,7 @@ std::string Spectrum1D::_channels_to_xml() const {
   std::stringstream channeldata;
 
   PreciseFloat z_count = 0;
-  for (uint32_t i = 0; i < metadata_.resolution; i++)
+  for (uint32_t i = 0; i < metadata_.max_chan; i++)
     if (spectrum_[i])
       if (z_count == 0)
         channeldata << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << spectrum_[i] << " ";
@@ -217,9 +211,7 @@ uint16_t Spectrum1D::_channels_from_xml(const std::string& thisData){
   channeldata.str(thisData);
 
   spectrum_.clear();
-  spectrum_.resize(metadata_.resolution, 0);
-
-  metadata_.max_count = 0;
+  spectrum_.resize(pow(2, metadata_.bits), 0);
 
   uint16_t i = 0;
   std::string numero, numero_z;
@@ -231,8 +223,6 @@ uint16_t Spectrum1D::_channels_from_xml(const std::string& thisData){
     } else {
       PreciseFloat nr(numero);
       spectrum_[i] = nr;
-      if (nr > metadata_.max_count)
-        metadata_.max_count = nr;
       i++;
     }
   }
@@ -282,19 +272,14 @@ bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compressio
   metadata_.bits = log2(i);
   if (pow(2, metadata_.bits) < i)
     metadata_.bits++;
-  metadata_.resolution = pow(2, metadata_.bits);
   metadata_.max_chan = i;
 
   spectrum_.clear();
-  spectrum_.resize(metadata_.resolution, 0);
-  metadata_.max_count = 0;
+  spectrum_.resize(pow(2, metadata_.bits), 0);
       
   for (auto &q : entry_list) {
     spectrum_[q.first[0]] = q.second;
     metadata_.total_count += q.second;
-    if (q.second > metadata_.max_count)
-      metadata_.max_count = q.second;
-
   }
 
   return true;
@@ -338,11 +323,8 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
         iss.str(value);
         std::string week;
         iss >> week;
-        boost::posix_time::time_input_facet
-            *tif(new boost::posix_time::time_input_facet("%Y-%m-%d %H:%M:%S"));
-        iss.imbue(std::locale(std::locale::classic(), tif));
         Setting start_time = get_attr("start_time");
-        iss >> start_time.value_time;
+        start_time.value_time = from_custom_format(iss.str(), "%Y-%m-%d %H:%M:%S");
         metadata_.attributes.replace(start_time);
       }
       if (key == "real time (s)") {
@@ -374,9 +356,6 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
 
         spectrum_.push_back(PreciseFloat(data));
 
-        if (nr > metadata_.max_count)
-          metadata_.max_count = nr;
-
         tempcount += data;
       }
     }
@@ -384,12 +363,11 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
 
   }
 
-  metadata_.resolution = spectrum_.size();
-  metadata_.bits = log2(metadata_.resolution);
-  if (pow(2, metadata_.bits) < metadata_.resolution)
+  uint32_t resolution = spectrum_.size();
+  metadata_.bits = log2(resolution);
+  if (pow(2, metadata_.bits) < resolution)
     metadata_.bits++;
-  spectrum_.resize(metadata_.resolution, 0);
-  metadata_.max_count = 0;
+  spectrum_.resize(pow(2, metadata_.bits), 0);
 
   metadata_.detectors.resize(1);
   metadata_.detectors[0] = Qpx::Detector();
@@ -468,7 +446,7 @@ bool Spectrum1D::read_spe_radware(std::string name) {
   if ((dim1*dim2) > length)
     return false;
 
-  metadata_.resolution = dim1*dim2;
+  uint32_t resolution = dim1*dim2;
 
   myfile.seekg (28, myfile.beg);
 
@@ -477,18 +455,17 @@ bool Spectrum1D::read_spe_radware(std::string name) {
     return false;
 
   myfile.read ((char*)&val, sizeof(uint32_t));
-  if (val != metadata_.resolution *4)
+  if (val != resolution *4)
     return false;
 
   spectrum_.clear();
   metadata_.total_count = 0;
   metadata_.max_chan = 0;
-  metadata_.max_count = 0;
 
   std::list<Entry> entry_list;
   float one;
   int i=0;
-  while ((myfile.tellg() != length) && (i < metadata_.resolution)) {
+  while ((myfile.tellg() != length) && (i < resolution)) {
     myfile.read ((char*)&one, sizeof(float));
     Entry new_entry;
     new_entry.first.resize(1);
@@ -497,8 +474,6 @@ bool Spectrum1D::read_spe_radware(std::string name) {
     entry_list.push_back(new_entry);
     if (one > 0)
       metadata_.max_chan = i;
-    if (one > metadata_.max_count)
-      metadata_.max_count = one;
     i++;
   }
 
@@ -511,11 +486,11 @@ bool Spectrum1D::read_spe_radware(std::string name) {
   metadata_.bits = log2(i);
   if (pow(2, metadata_.bits) < i)
     metadata_.bits++;
-  metadata_.resolution = pow(2, metadata_.bits);
+  resolution = pow(2, metadata_.bits);
   metadata_.max_chan = i;
 
   spectrum_.clear();
-  spectrum_.resize(metadata_.resolution, 0);
+  spectrum_.resize(pow(2, metadata_.bits), 0);
 
   for (auto &q : entry_list) {
     spectrum_[q.first[0]] = q.second;
@@ -606,12 +581,8 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
       line.clear();
     } else if (line == "$DATE_MEA:") {
       std::getline(myfile, line);
-      std::stringstream iss(line);
-      boost::posix_time::time_input_facet
-          *tif(new boost::posix_time::time_input_facet("%m/%d/%Y %H:%M:%S"));
-      iss.imbue(std::locale(std::locale::classic(), tif));
       Setting start_time = get_attr("start_time");
-      iss >> start_time.value_time;
+      start_time.value_time = from_custom_format(line, "%m/%d/%Y %H:%M:%S");
       metadata_.attributes.replace(start_time);
       line.clear();
     } else if (line == "$ENER_FIT:") {
@@ -640,8 +611,6 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
         PreciseFloat nr(token);
         new_entry.second = nr;
         entry_list.push_back(new_entry);
-        if (nr > metadata_.max_count)
-          metadata_.max_count = nr;
         if (nr > 0)
           metadata_.max_chan = i;
       }
@@ -655,12 +624,10 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
   metadata_.bits = log2(entry_list.size());
   if (pow(2, metadata_.bits) < entry_list.size())
     metadata_.bits++;
-  metadata_.resolution = pow(2, metadata_.bits);
   metadata_.max_chan = entry_list.size() - 1;
 
   spectrum_.clear();
-  spectrum_.resize(metadata_.resolution, 0);
-  metadata_.max_count = 0;
+  spectrum_.resize(pow(2, metadata_.bits), 0);
 
   for (auto &q : entry_list) {
     spectrum_[q.first[0]] = q.second;
@@ -712,8 +679,6 @@ bool Spectrum1D::read_dat(std::string name) {
     new_entry.first[0] = k1;
     new_entry.second = k2;
     entry_list.push_back(new_entry);
-    if (k2 > metadata_.max_count)
-          metadata_.max_count = k2;
     if ((k2 > 0) && (k1 > metadata_.max_chan))
        metadata_.max_chan = k1;
   }
@@ -723,12 +688,10 @@ bool Spectrum1D::read_dat(std::string name) {
   metadata_.bits = log2(metadata_.max_chan);
   if (pow(2, metadata_.bits) < entry_list.size())
     metadata_.bits++;
-  metadata_.resolution = pow(2, metadata_.bits);
   metadata_.max_chan = entry_list.size() - 1;
 
   spectrum_.clear();
-  spectrum_.resize(metadata_.resolution, 0);
-  metadata_.max_count = 0;
+  spectrum_.resize(pow(2, metadata_.bits), 0);
 
   for (auto &q : entry_list) {
     spectrum_[q.first[0]] = q.second;
@@ -773,10 +736,8 @@ bool Spectrum1D::read_n42(std::string filename) {
 
   std::string time(node.child_value("StartTime"));
   if (!time.empty()) {
-    iss << time;
-    iss.imbue(std::locale(std::locale::classic(), tif));
     Setting start_time = get_attr("start_time");
-    iss >> start_time.value_time;
+    start_time.value_time = from_iso_extended(time);
     metadata_.attributes.replace(start_time);
   }
 
@@ -922,7 +883,7 @@ bool Spectrum1D::read_ava(std::string filename) {
 }
 
 void Spectrum1D::write_tka(std::string name) const {
-  uint32_t range = (metadata_.resolution - 2);
+  uint32_t range = (pow(2, metadata_.bits) - 2);
   std::ofstream myfile(name, std::ios::out | std::ios::app);
   //  myfile.precision(2);
   //  myfile << std::fixed;
@@ -973,7 +934,7 @@ void Spectrum1D::write_n42(std::string filename) const {
   if (myCalibration.valid())
     myCalibration.to_xml(node);
 
-  if ((metadata_.resolution > 0) && (metadata_.total_count > 0)) {
+  if ((metadata_.bits > 0) && (metadata_.total_count > 0)) {
     node.append_child("ChannelData").append_attribute("Compression").set_value("CountedZeroes");
     node.last_child().append_child(pugi::node_pcdata).set_value(this->_channels_to_xml().c_str());
   }
@@ -998,7 +959,7 @@ void Spectrum1D::write_spe(std::string filename) const {
     cname.resize(8);
   myfile.write ((char*)cname.data(), 8*sizeof(char));
 
-  uint32_t dim1 = metadata_.resolution;
+  uint32_t dim1 = pow(2, metadata_.bits);
   uint32_t dim2 = 1;
   myfile.write ((char*)&dim1, sizeof(uint32_t));
   myfile.write ((char*)&dim2, sizeof(uint32_t));
@@ -1007,12 +968,12 @@ void Spectrum1D::write_spe(std::string filename) const {
 
   myfile.write ((char*)&val, sizeof(uint32_t));
 
-  val = metadata_.resolution *4;
+  val = dim1 *4;
   myfile.write ((char*)&val, sizeof(uint32_t));
 
 
   float one = 0.0;
-  for (int i=0; i < metadata_.resolution; ++i) {
+  for (int i=0; i < dim1; ++i) {
     one = 0.0;
     if (i < spectrum_.size())
       one = spectrum_[i].convert_to<double>();

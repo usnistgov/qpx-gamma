@@ -160,7 +160,7 @@ void FormEfficiencyCalibration::setSpectrum(QString name) {
 
   Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(name.toStdString());
 
-  if (spectrum && spectrum->resolution()) {
+  if (spectrum && spectrum->bits()) {
     if (peak_sets_.count(name.toStdString())) {
       fit_data_ = peak_sets_.at(name.toStdString());
       ui->isotopes->set_current_isotope(QString::fromStdString(fit_data_.sample_name_));

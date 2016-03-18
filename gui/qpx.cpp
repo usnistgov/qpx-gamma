@@ -60,6 +60,7 @@ qpx::qpx(QWidget *parent) :
   qRegisterMetaType<Qpx::Calibration>("Qpx::Calibration");
   qRegisterMetaType<Qpx::DeviceStatus>("Qpx::DeviceStatus");
   qRegisterMetaType<Qpx::Fitter>("Qpx::Fitter");
+  qRegisterMetaType<boost::posix_time::time_duration>("boost::posix_time::time_duration");
 
   CustomLogger::initLogger(&qpx_stream_, "qpx_%N.log");
   ui->setupUi(this);

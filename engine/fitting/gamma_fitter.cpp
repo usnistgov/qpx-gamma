@@ -32,7 +32,7 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
 //  clear();
   if (spectrum != nullptr) {
     Qpx::Spectrum::Metadata md = spectrum->metadata();
-    if ((md.dimensions != 1) || (md.resolution <= 0) || (md.total_count <= 0))
+    if ((md.bits != 1) || (md.bits <= 0) || (md.total_count <= 0))
       return;
 
     metadata_ = md;
@@ -52,7 +52,7 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
     settings_.live_time = md.attributes.get(Qpx::Setting("live_time")).value_duration;
     settings_.real_time = md.attributes.get(Qpx::Setting("real_time")).value_duration;
 
-    std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_dump = std::move(spectrum->get_spectrum({{0, md.resolution}}));
+    std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_dump = std::move(spectrum->get_spectrum({{0, pow(2,md.bits)}}));
     std::vector<double> x;
     std::vector<double> y;
 
@@ -257,7 +257,7 @@ void Fitter::save_report(std::string filename) {
   std::ofstream file(filename, std::ios::out | std::ios::app);
   file << "Spectrum \"" << metadata_.name << "\"" << std::endl;
   file << "========================================================" << std::endl;
-  file << "Bits: " << settings_.bits_ << "    Resolution: " << metadata_.resolution << std::endl;
+  file << "Bits: " << settings_.bits_ << "    Resolution: " << pow(2,metadata_.bits) << std::endl;
 
 //  file << "Match pattern:  ";
 //  for (auto &q : metadata_.match_pattern)

@@ -151,7 +151,7 @@ void FormAnalysis1D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
 
   Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(name.toStdString());
 
-  if (spectrum && spectrum->resolution()) {
+  if (spectrum && spectrum->bits()) {
     fit_data_.clear();
     fit_data_.setData(spectrum);
 
@@ -172,7 +172,7 @@ void FormAnalysis1D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
 void FormAnalysis1D::update_spectrum() {
   if (this->isVisible()) {
     Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(fit_data_.metadata_.name);
-    if (spectrum && spectrum->resolution())
+    if (spectrum && spectrum->bits())
       fit_data_.setData(spectrum);
     ui->plotSpectrum->update_spectrum();
   }
