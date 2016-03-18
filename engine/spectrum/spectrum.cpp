@@ -41,14 +41,14 @@ Template Spectrum::get_template() {
   vis.metadata.setting_type = Qpx::SettingType::boolean;
   vis.metadata.description = "Plot visible";
   vis.metadata.writable = true;
-  new_temp.generic_attributes.branches.add(vis);
+  new_temp.attributes.branches.add(vis);
 
   Qpx::Setting app;
   app.id_ = "appearance";
   app.metadata.setting_type = Qpx::SettingType::color;
   app.metadata.description = "Plot appearance";
   app.metadata.writable = true;
-  new_temp.generic_attributes.branches.add(app);
+  new_temp.attributes.branches.add(app);
 
   Qpx::Setting ignore_zero;
   ignore_zero.id_ = "cutoff_logic";
@@ -58,7 +58,7 @@ Template Spectrum::get_template() {
   ignore_zero.metadata.minimum = 0;
   ignore_zero.metadata.step = 1;
   ignore_zero.metadata.maximum = 1000000;
-  new_temp.generic_attributes.branches.add(ignore_zero);
+  new_temp.attributes.branches.add(ignore_zero);
 
   Qpx::Setting coinc_window;
   coinc_window.id_ = "coinc_window";
@@ -70,7 +70,7 @@ Template Spectrum::get_template() {
   coinc_window.metadata.description = "Coincidence window";
   coinc_window.metadata.writable = true;
   coinc_window.value_dbl = 50;
-  new_temp.generic_attributes.branches.add(coinc_window);
+  new_temp.attributes.branches.add(coinc_window);
 
   Qpx::Setting pattern_coinc;
   pattern_coinc.id_ = "pattern_coinc";
@@ -78,7 +78,7 @@ Template Spectrum::get_template() {
   pattern_coinc.metadata.maximum = 1;
   pattern_coinc.metadata.description = "Coincidence pattern";
   pattern_coinc.metadata.writable = true;
-  new_temp.generic_attributes.branches.add(pattern_coinc);
+  new_temp.attributes.branches.add(pattern_coinc);
 
   Qpx::Setting pattern_anti;
   pattern_anti.id_ = "pattern_anti";
@@ -86,7 +86,7 @@ Template Spectrum::get_template() {
   pattern_anti.metadata.maximum = 1;
   pattern_anti.metadata.description = "Anti-coindicence pattern";
   pattern_anti.metadata.writable = true;
-  new_temp.generic_attributes.branches.add(pattern_anti);
+  new_temp.attributes.branches.add(pattern_anti);
 
   Qpx::Setting pattern_add;
   pattern_add.id_ = "pattern_add";
@@ -94,7 +94,7 @@ Template Spectrum::get_template() {
   pattern_add.metadata.maximum = 1;
   pattern_add.metadata.description = "Add pattern";
   pattern_add.metadata.writable = true;
-  new_temp.generic_attributes.branches.add(pattern_add);
+  new_temp.attributes.branches.add(pattern_add);
 
   Qpx::Setting rescale;
   rescale.id_ = "rescale";
@@ -105,28 +105,28 @@ Template Spectrum::get_template() {
   rescale.metadata.maximum = 1e10;
   rescale.metadata.step = 1;
   rescale.value_precise = 1;
-  new_temp.generic_attributes.branches.add(rescale);
+  new_temp.attributes.branches.add(rescale);
 
   Qpx::Setting start_time;
   start_time.id_ = "start_time";
   start_time.metadata.setting_type = Qpx::SettingType::time;
   start_time.metadata.description = "Start time";
-  start_time.metadata.writable = true;
-  new_temp.generic_attributes.branches.add(start_time);
+  start_time.metadata.writable = false;
+  new_temp.attributes.branches.add(start_time);
 
   Qpx::Setting live_time;
   live_time.id_ = "live_time";
   live_time.metadata.setting_type = Qpx::SettingType::time_duration;
   live_time.metadata.description = "Live time";
-  live_time.metadata.writable = true;
-  new_temp.generic_attributes.branches.add(live_time);
+  live_time.metadata.writable = false;
+  new_temp.attributes.branches.add(live_time);
 
   Qpx::Setting real_time;
   real_time.id_ = "real_time";
   real_time.metadata.setting_type = Qpx::SettingType::time_duration;
   real_time.metadata.description = "Real time";
-  real_time.metadata.writable = true;
-  new_temp.generic_attributes.branches.add(real_time);
+  real_time.metadata.writable = false;
+  new_temp.attributes.branches.add(real_time);
 
   Qpx::Setting inst_rate;
   inst_rate.id_ = "instant_rate";
@@ -135,14 +135,14 @@ Template Spectrum::get_template() {
   inst_rate.metadata.description = "Instant count rate";
   inst_rate.metadata.writable = false;
   inst_rate.value_dbl = 0;
-  new_temp.generic_attributes.branches.add(inst_rate);
+  new_temp.attributes.branches.add(inst_rate);
 
   Qpx::Setting descr;
   descr.id_ = "description";
   descr.metadata.setting_type = Qpx::SettingType::text;
   descr.metadata.description = "Description";
   descr.metadata.writable = true;
-  new_temp.generic_attributes.branches.add(descr);
+  new_temp.attributes.branches.add(descr);
 
   return new_temp;
 }
@@ -193,7 +193,7 @@ bool Spectrum::from_template(const Template& newtemplate) {
   
   metadata_.bits = newtemplate.bits;
   metadata_.name = newtemplate.name_;
-  metadata_.attributes = newtemplate.generic_attributes.branches;
+  metadata_.attributes = newtemplate.attributes.branches;
 
   return (this->initialize());
 }
@@ -603,7 +603,7 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
 
   //retroactive attributrion of params in current version?
   Template t = this->get_template();
-  metadata_.attributes = t.generic_attributes.branches;
+  metadata_.attributes = t.attributes.branches;
 
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())

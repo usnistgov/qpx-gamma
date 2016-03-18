@@ -48,7 +48,7 @@ public:
     cutoff_bin.metadata.minimum = 0;
     cutoff_bin.metadata.step = 1;
     cutoff_bin.metadata.maximum = 1000000;
-    new_temp.generic_attributes.branches.add(cutoff_bin);
+    new_temp.attributes.branches.add(cutoff_bin);
 
     return new_temp;
   }
@@ -56,7 +56,7 @@ public:
 
 protected:
   std::string my_type() const override {return "1D";}
-  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().generic_attributes.branches; }
+  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().attributes.branches; }
 
   //1D is ok with all patterns
   bool initialize() override {

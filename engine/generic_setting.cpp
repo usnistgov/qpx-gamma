@@ -398,8 +398,12 @@ std::string Setting::val_to_string() const
            (metadata.setting_type == SettingType::file_path) ||
            (metadata.setting_type == SettingType::dir_path))
     ss << value_text;
-  else if (metadata.setting_type == SettingType::time)
-    ss << boost::posix_time::to_iso_extended_string(value_time);
+  else if (metadata.setting_type == SettingType::time) {
+    if (value_time.is_not_a_date_time())
+      ss << "INVALID";
+    else
+      ss << boost::posix_time::to_iso_extended_string(value_time);
+  }
   else if (metadata.setting_type == SettingType::time_duration)
     ss << boost::posix_time::to_simple_string(value_duration);
   return ss.str();

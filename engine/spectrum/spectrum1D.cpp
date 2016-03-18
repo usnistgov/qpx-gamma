@@ -126,7 +126,7 @@ bool Spectrum1D::_write_file(std::string dir, std::string format) const {
 }
 
 bool Spectrum1D::_read_file(std::string name, std::string format) {
-  metadata_.attributes = get_template().generic_attributes.branches;
+  metadata_.attributes = get_template().attributes.branches;
 
   PL_DBG << "Will try to make " << format;
 

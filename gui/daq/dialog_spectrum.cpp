@@ -64,6 +64,8 @@ dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, XMLableDB<Qpx::D
   ui->tableDetectors->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->tableDetectors->show();
 
+  attr_model_.set_show_address_(false);
+
   updateData();
 }
 
@@ -104,15 +106,13 @@ void dialog_spectrum::open_close_locks() {
   ui->labelWarning->setVisible(lockit);
   ui->pushDelete->setEnabled(lockit);
 
+  ui->treeAttribs->clearSelection();
+  ui->tableDetectors->clearSelection();
   if (!lockit) {
-    ui->treeAttribs->clearSelection();
-    ui->treeAttribs->setSelectionMode(QAbstractItemView::NoSelection);
-    ui->treeAttribs->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    ui->tableDetectors->clearSelection();
+    attr_model_.set_edit_read_only(false);
     ui->tableDetectors->setSelectionMode(QAbstractItemView::NoSelection);
   } else {
-    ui->treeAttribs->setSelectionMode(QAbstractItemView::SingleSelection);
-    ui->treeAttribs->setEditTriggers(QAbstractItemView::AllEditTriggers);
+    attr_model_.set_edit_read_only(true);
     ui->tableDetectors->setSelectionMode(QAbstractItemView::SingleSelection);
     changed_ = true;
   }

@@ -70,12 +70,13 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Qpx::Spectrum::Template newTempla
     } else
       PL_WARN << "Problem with spectrum type. Factory cannot make template for " << ui->comboType->currentText().toStdString();
 
-    Qpx::Setting app = myTemplate.generic_attributes.branches.get(Qpx::Setting("appearance"));
+    Qpx::Setting app = myTemplate.attributes.branches.get(Qpx::Setting("appearance"));
     app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-    myTemplate.generic_attributes.branches.replace(app);
+    myTemplate.attributes.branches.replace(app);
   }
 
-  attr_model_.update(myTemplate.generic_attributes);
+  attr_model_.set_show_address_(false);
+  attr_model_.update(myTemplate.attributes);
 
   updateData();
 }
@@ -91,7 +92,7 @@ void DialogSpectrumTemplate::updateData() {
 
   QString descr = QString::fromStdString(myTemplate.description) + "\n";
   if (myTemplate.output_types.size()) {
-    descr += "\nOutput file types: ";
+    descr += "\t\tOutput file types: ";
     for (auto &q : myTemplate.output_types) {
       descr += "*." + QString::fromStdString(q);
       if (q != myTemplate.output_types.back())
@@ -100,7 +101,7 @@ void DialogSpectrumTemplate::updateData() {
   }
 
   ui->labelDescription->setText(descr);
-  attr_model_.update(myTemplate.generic_attributes);
+  attr_model_.update(myTemplate.attributes);
 }
 
 DialogSpectrumTemplate::~DialogSpectrumTemplate()
@@ -116,7 +117,7 @@ void DialogSpectrumTemplate::on_buttonBox_accepted()
     msgBox.exec();
   } else {
     PL_INFO << "Type requested " << myTemplate.type;
-    myTemplate.generic_attributes = attr_model_.get_tree();
+    myTemplate.attributes = attr_model_.get_tree();
     Qpx::Spectrum::Spectrum *newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_template(myTemplate);
     if (newSpectrum == nullptr) {
       QMessageBox msgBox;
@@ -155,8 +156,12 @@ void DialogSpectrumTemplate::on_comboType_activated(const QString &arg1)
     //keep these from previous
     myTemplate.bits = ui->spinBits->value();
     myTemplate.name_ = ui->lineName->text().toStdString();
-//    myTemplate.match_pattern.resize(current_dets_.size());
-//    myTemplate.add_pattern.resize(current_dets_.size());
+
+    for (auto &a : myTemplate.attributes.branches.my_data_)
+      if (a.metadata.setting_type == Qpx::SettingType::color)
+        a.value_text = generateColor().name(QColor::HexArgb).toStdString();
+
+    on_spinDets_valueChanged(ui->spinDets->value());
     updateData();
   } else
     PL_WARN << "Problem with spectrum type. Factory refuses to make template for " << arg1.toStdString();
@@ -164,18 +169,9 @@ void DialogSpectrumTemplate::on_comboType_activated(const QString &arg1)
 
 void DialogSpectrumTemplate::on_spinDets_valueChanged(int arg1)
 {
-  Qpx::Setting pattern;
-  pattern = myTemplate.generic_attributes.branches.get(Qpx::Setting("pattern_coinc"));
-  pattern.value_pattern.resize(arg1);
-  myTemplate.generic_attributes.branches.replace(pattern);
-
-  pattern = myTemplate.generic_attributes.branches.get(Qpx::Setting("pattern_anti"));
-  pattern.value_pattern.resize(arg1);
-  myTemplate.generic_attributes.branches.replace(pattern);
-
-  pattern = myTemplate.generic_attributes.branches.get(Qpx::Setting("pattern_add"));
-  pattern.value_pattern.resize(arg1);
-  myTemplate.generic_attributes.branches.replace(pattern);
+  for (auto &a : myTemplate.attributes.branches.my_data_)
+    if (a.metadata.setting_type == Qpx::SettingType::pattern)
+      a.value_pattern.resize(arg1);
 
   updateData();
 }
@@ -217,15 +213,15 @@ QVariant TableSpectraTemplates::data(const QModelIndex &index, int role) const
     case 3:
       return QString::number(pow(2,templates_.get(row).bits));
     case 4:
-      return QVariant::fromValue(templates_.get(row).generic_attributes.branches.get(Qpx::Setting("pattern_coinc")));
+      return QVariant::fromValue(templates_.get(row).attributes.branches.get(Qpx::Setting("pattern_coinc")));
     case 5:
-      return QVariant::fromValue(templates_.get(row).generic_attributes.branches.get(Qpx::Setting("pattern_anti")));
+      return QVariant::fromValue(templates_.get(row).attributes.branches.get(Qpx::Setting("pattern_anti")));
     case 6:
-      return QVariant::fromValue(templates_.get(row).generic_attributes.branches.get(Qpx::Setting("pattern_add")));
+      return QVariant::fromValue(templates_.get(row).attributes.branches.get(Qpx::Setting("pattern_add")));
     case 7:
-      return QVariant::fromValue(templates_.get(row).generic_attributes.branches.get(Qpx::Setting("appearance")));
+      return QVariant::fromValue(templates_.get(row).attributes.branches.get(Qpx::Setting("appearance")));
     case 8:
-      return QVariant::fromValue(templates_.get(row).generic_attributes.branches.get(Qpx::Setting("visible")));
+      return QVariant::fromValue(templates_.get(row).attributes.branches.get(Qpx::Setting("visible")));
     }
 
   }
@@ -386,9 +382,6 @@ void DialogSpectraTemplates::on_pushExport_clicked()
 void DialogSpectraTemplates::on_pushNew_clicked()
 {
   Qpx::Spectrum::Template new_template;
-//  new_template.appearance = generateColor().rgba();
-//  new_template.match_pattern.resize(current_dets_.size());
-//  new_template.add_pattern.resize(current_dets_.size());
   DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(new_template, current_dets_, false, this);
   connect(newDialog, SIGNAL(templateReady(Qpx::Spectrum::Template)), this, SLOT(add_template(Qpx::Spectrum::Template)));
   newDialog->exec();

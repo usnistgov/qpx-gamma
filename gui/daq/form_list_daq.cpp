@@ -55,6 +55,9 @@ FormListDaq::FormListDaq(ThreadRunner &thread, QSettings &settings, QWidget *par
   ui->listOutputView->show();
   connect(&list_selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(list_selection_changed(QItemSelection,QItemSelection)));
+
+  ui->timeDuration->set_us_enabled(false);
+
 }
 
 void FormListDaq::loadSettings() {

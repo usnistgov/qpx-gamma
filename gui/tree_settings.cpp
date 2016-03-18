@@ -341,10 +341,11 @@ bool TreeItem::setData(int column, const QVariant &value)
 
 
 TreeSettings::TreeSettings(QObject *parent)
-  : QAbstractItemModel(parent)
+  : QAbstractItemModel(parent), show_address_(true)
 {
   rootItem = new TreeItem(Qpx::Setting());
   show_read_only_ = true;
+  edit_read_only_ = false;
 }
 
 TreeSettings::~TreeSettings()
@@ -352,13 +353,24 @@ TreeSettings::~TreeSettings()
   delete rootItem;
 }
 
+void TreeSettings::set_edit_read_only(bool edit_ro) {
+  edit_read_only_ = edit_ro;
+}
+
 void TreeSettings::set_show_read_only(bool show_ro) {
   show_read_only_ = show_ro;
 }
 
+void TreeSettings::set_show_address_(bool show_ad) {
+  show_address_ = show_ad;
+}
+
 int TreeSettings::columnCount(const QModelIndex & /* parent */) const
 {
-  return rootItem->columnCount();
+  if (show_address_)
+    return rootItem->columnCount();
+  else
+    return rootItem->columnCount() - 1;
 }
 
 QVariant TreeSettings::data(const QModelIndex &index, int role) const
@@ -370,8 +382,11 @@ QVariant TreeSettings::data(const QModelIndex &index, int role) const
   int row = index.row();
   int col = index.column();
 
-  if (role == Qt::DisplayRole)
+  if (role == Qt::DisplayRole) {
+    if (!show_address_ && (col == 4))
+      col = 5;
     return item->display_data(col);
+  }
   else if (role == Qt::EditRole)
     return item->edit_data(col);
   else if (role == Qt::ForegroundRole) {
@@ -396,7 +411,9 @@ Qt::ItemFlags TreeSettings::flags(const QModelIndex &index) const
     return 0;
 
   TreeItem *item = getItem(index);
-  if (item->is_editable(index.column()))
+  if (edit_read_only_ && (index.column() == 2))
+    return Qt::ItemIsEditable | QAbstractItemModel::flags(index);
+  else if (item->is_editable(index.column()))
     return Qt::ItemIsEditable | QAbstractItemModel::flags(index);
   else
     return QAbstractItemModel::flags(index);

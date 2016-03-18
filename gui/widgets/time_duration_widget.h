@@ -46,6 +46,8 @@ public:
   void set_duration(boost::posix_time::time_duration duration);
   boost::posix_time::time_duration get_duration() const;
 
+  void set_us_enabled(bool use);
+
 signals:
   void editingFinished();
 
@@ -63,6 +65,7 @@ private slots:
 
 private:
   Ui::TimeDurationWidget *ui;
+  bool us_enabled_;
 
 };
 

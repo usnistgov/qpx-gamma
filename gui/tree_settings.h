@@ -66,9 +66,11 @@ class TreeSettings : public QAbstractItemModel
 private:
   Qpx::Setting data_;
   TreeItem *getItem(const QModelIndex &index) const;
-  bool show_read_only_;
-
   TreeItem *rootItem;
+
+  bool show_read_only_;
+  bool show_address_;
+  bool edit_read_only_;
 
 public:  
   explicit TreeSettings(QObject *parent = 0);
@@ -87,7 +89,9 @@ public:
   bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
   bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
 
+  void set_edit_read_only(bool edit_ro);
   void set_show_read_only(bool show_ro);
+  void set_show_address_(bool show_ad);
 
 //  bool insertRows(int position, int rows, const QModelIndex &parent = QModelIndex()) Q_DECL_OVERRIDE;
 //  bool removeRows(int position, int rows, const QModelIndex &parent = QModelIndex()) Q_DECL_OVERRIDE;

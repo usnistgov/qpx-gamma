@@ -52,21 +52,21 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
   current_pass = 0;
 
   QColor col;
-  Qpx::Setting vis = reference_.generic_attributes.branches.get(Qpx::Setting("visible"));
-  Qpx::Setting app = reference_.generic_attributes.branches.get(Qpx::Setting("appearance"));
+  Qpx::Setting vis = reference_.attributes.branches.get(Qpx::Setting("visible"));
+  Qpx::Setting app = reference_.attributes.branches.get(Qpx::Setting("appearance"));
   vis.value_int = true;
 
   reference_.name_ = "Reference";
   col.setHsv(QColor(Qt::blue).hsvHue(), 48, 160);
   app.value_text = col.name().toStdString();
-  reference_.generic_attributes.branches.replace(vis);
-  reference_.generic_attributes.branches.replace(app);
+  reference_.attributes.branches.replace(vis);
+  reference_.attributes.branches.replace(app);
 
   optimizing_.name_ = "Optimizing";
   col.setHsv(QColor(Qt::red).hsvHue(), 48, 160);
   app.value_text = col.name().toStdString();
-  optimizing_.generic_attributes.branches.replace(vis);
-  optimizing_.generic_attributes.branches.replace(app);
+  optimizing_.attributes.branches.replace(vis);
+  optimizing_.attributes.branches.replace(app);
 
   ap_reference_.default_pen = QPen(Qt::blue, 0);
   ap_optimized_.default_pen = QPen(Qt::red, 0);
@@ -221,14 +221,14 @@ void FormGainMatch::do_run()
     match_pattern[refchan] = true;
 
     Qpx::Setting pattern;
-    pattern = reference_.generic_attributes.branches.get(Qpx::Setting("pattern_coinc"));
+    pattern = reference_.attributes.branches.get(Qpx::Setting("pattern_coinc"));
     pattern.value_pattern.set_gates(match_pattern);
     pattern.value_pattern.set_theshold(1);
-    reference_.generic_attributes.branches.replace(pattern);
-    pattern = reference_.generic_attributes.branches.get(Qpx::Setting("pattern_add"));
+    reference_.attributes.branches.replace(pattern);
+    pattern = reference_.attributes.branches.get(Qpx::Setting("pattern_add"));
     pattern.value_pattern.set_gates(add_pattern);
     pattern.value_pattern.set_theshold(1);
-    reference_.generic_attributes.branches.replace(pattern);
+    reference_.attributes.branches.replace(pattern);
 
     gm_spectra_.add_spectrum(reference_);
   } else {
@@ -240,8 +240,8 @@ void FormGainMatch::do_run()
   Qpx::Setting set_pass("Pass");
   set_pass.value_int = current_pass;
   optimizing_.bits = bits;
-  optimizing_.generic_attributes.branches.replace(set_gain);
-  optimizing_.generic_attributes.branches.replace(set_pass);
+  optimizing_.attributes.branches.replace(set_gain);
+  optimizing_.attributes.branches.replace(set_pass);
 
   std::vector<bool> match_pattern(optchan + 1, false),
                     add_pattern(optchan + 1, false);
@@ -249,14 +249,14 @@ void FormGainMatch::do_run()
   match_pattern[optchan] = true;
 
   Qpx::Setting pattern;
-  pattern = optimizing_.generic_attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern = optimizing_.attributes.branches.get(Qpx::Setting("pattern_coinc"));
   pattern.value_pattern.set_gates(match_pattern);
   pattern.value_pattern.set_theshold(1);
-  optimizing_.generic_attributes.branches.replace(pattern);
-  pattern = optimizing_.generic_attributes.branches.get(Qpx::Setting("pattern_add"));
+  optimizing_.attributes.branches.replace(pattern);
+  pattern = optimizing_.attributes.branches.get(Qpx::Setting("pattern_add"));
   pattern.value_pattern.set_gates(add_pattern);
   pattern.value_pattern.set_theshold(1);
-  optimizing_.generic_attributes.branches.replace(pattern);
+  optimizing_.attributes.branches.replace(pattern);
 
 
   gm_spectra_.add_spectrum(optimizing_);

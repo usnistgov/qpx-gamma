@@ -36,8 +36,8 @@ void Template::to_xml(pugi::xml_node &root) const {
   node.append_child("Name").append_child(pugi::node_pcdata).set_value(name_.c_str());
   node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(bits).c_str());
 
-  if (generic_attributes.branches.size())
-    generic_attributes.to_xml(node);
+  if (attributes.branches.size())
+    attributes.to_xml(node);
 }
 
 void Template::from_xml(const pugi::xml_node &node) {
@@ -48,8 +48,8 @@ void Template::from_xml(const pugi::xml_node &node) {
   name_ = std::string(node.child_value("Name"));
   bits = boost::lexical_cast<short>(node.child_value("Resolution"));
 
-  if (node.child(generic_attributes.xml_element_name().c_str()))
-    generic_attributes.from_xml(node.child(generic_attributes.xml_element_name().c_str()));
+  if (node.child(attributes.xml_element_name().c_str()))
+    attributes.from_xml(node.child(attributes.xml_element_name().c_str()));
 
 }
 

@@ -50,7 +50,7 @@ public:
     buf.metadata.unit = "T/F";
     buf.metadata.description = "Buffered output for efficient plotting (more memory)";
     buf.metadata.writable = true;
-    new_temp.generic_attributes.branches.add(buf);
+    new_temp.attributes.branches.add(buf);
 
     Qpx::Setting sym;
     sym.id_ = "symmetrized";
@@ -59,7 +59,7 @@ public:
     sym.metadata.description = "Matrix is symmetrized";
     sym.metadata.writable = false;
     sym.value_int = 0;
-    new_temp.generic_attributes.branches.add(sym);
+    new_temp.attributes.branches.add(sym);
 
 
     return new_temp;
@@ -72,7 +72,7 @@ protected:
   void init_from_file(std::string filename);
 
   std::string my_type() const override {return "2D";}
-  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().generic_attributes.branches; }
+  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().attributes.branches; }
 
   PreciseFloat _get_count(std::initializer_list<uint16_t> list ) const;
   std::unique_ptr<EntryList> _get_spectrum(std::initializer_list<Pair> list);

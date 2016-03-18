@@ -26,6 +26,7 @@
 
 TimeDurationWidget::TimeDurationWidget(QWidget *parent) :
   QWidget(parent),
+  us_enabled_(true),
   ui(new Ui::TimeDurationWidget)
 {
   ui->setupUi(this);
@@ -34,6 +35,13 @@ TimeDurationWidget::TimeDurationWidget(QWidget *parent) :
 TimeDurationWidget::~TimeDurationWidget()
 {
   delete ui;
+}
+
+void TimeDurationWidget::set_us_enabled(bool use)
+{
+  us_enabled_ = use;
+  ui->label_us->setVisible(use);
+  ui->spin_ms->setVisible(use);
 }
 
 uint64_t TimeDurationWidget::total_seconds() {
@@ -51,9 +59,9 @@ void TimeDurationWidget::set_total_seconds(uint64_t secs) {
 
 void TimeDurationWidget::set_duration(boost::posix_time::time_duration duration)
 {
-  uint64_t total_ms = duration.total_milliseconds();
-  ui->spin_ms->setValue(total_ms % 1000);
-  uint64_t total_seconds = total_ms / 1000;
+  uint64_t total_ms = duration.total_microseconds();
+  ui->spin_ms->setValue(total_ms % 1000000);
+  uint64_t total_seconds = total_ms / 1000000;
   ui->spinS->setValue(total_seconds % 60);
   uint64_t total_minutes = total_seconds / 60;
   ui->spinM->setValue(total_minutes % 60);
@@ -64,8 +72,8 @@ void TimeDurationWidget::set_duration(boost::posix_time::time_duration duration)
 
 boost::posix_time::time_duration TimeDurationWidget::get_duration() const
 {
-  boost::posix_time::time_duration ret = boost::posix_time::milliseconds(
-    ui->spin_ms->value() + 1000 *
+  boost::posix_time::time_duration ret = boost::posix_time::microseconds(
+    ui->spin_ms->value() + 1000000 *
         (ui->spinS->value() + 60 *
          (ui->spinM->value() + 60 *
           (ui->spinH->value() + 24 *
@@ -80,9 +88,9 @@ boost::posix_time::time_duration TimeDurationWidget::get_duration() const
 
 void TimeDurationWidget::on_spin_ms_valueChanged(int new_value)
 {
-  if (new_value >= 1000) {
-    int secs = static_cast<int>(new_value) / 1000;
-    int leftover = new_value - (secs * 1000);
+  if (new_value >= 1000000) {
+    int secs = static_cast<int>(new_value) / 1000000;
+    int leftover = new_value - (secs * 1000000);
     ui->spinS->setValue(ui->spinS->value() + secs);
     if (ui->spinDays->value() != ui->spinDays->maximum())
       ui->spin_ms->setValue(leftover);
@@ -91,7 +99,7 @@ void TimeDurationWidget::on_spin_ms_valueChanged(int new_value)
   } else if (new_value < 0) {
     if ((ui->spinS->value() > 0) || (ui->spinM->value() > 0) || (ui->spinH->value() > 0)  || (ui->spinDays->value() > 0)) {
       ui->spinS->setValue(ui->spinS->value() - 1);
-      ui->spin_ms->setValue(1000 + new_value);
+      ui->spin_ms->setValue(1000000 + new_value);
     } else {
       ui->spin_ms->setValue(0);
     }

@@ -47,7 +47,7 @@ public:
     file_setting.metadata.setting_type = Qpx::SettingType::dir_path;
     file_setting.metadata.writable = true;
     file_setting.metadata.description = "path to temp output directory";
-    new_temp.generic_attributes.branches.add(file_setting);
+    new_temp.attributes.branches.add(file_setting);
 
     return new_temp;
   }
@@ -55,7 +55,7 @@ public:
 
 protected:
   std::string my_type() const override {return "Raw";}
-  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().generic_attributes.branches; }
+  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().attributes.branches; }
 
   //1D is ok with all patterns
   bool initialize() override;

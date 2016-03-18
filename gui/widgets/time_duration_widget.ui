@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>209</width>
+    <width>242</width>
     <height>35</height>
    </rect>
   </property>
@@ -303,7 +303,7 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QLabel" name="label_5">
+         <widget class="QLabel" name="label_us">
           <property name="font">
            <font>
             <pointsize>7</pointsize>
@@ -313,7 +313,7 @@
            <number>0</number>
           </property>
           <property name="text">
-           <string>.msecs</string>
+           <string>.usecs</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
@@ -352,10 +352,13 @@
            <number>-1</number>
           </property>
           <property name="maximum">
-           <number>1000</number>
+           <number>1000000</number>
           </property>
           <property name="singleStep">
-           <number>50</number>
+           <number>50000</number>
+          </property>
+          <property name="displayIntegerBase">
+           <number>10</number>
           </property>
          </widget>
         </item>

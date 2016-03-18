@@ -92,6 +92,8 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Qpx:
 
   this->setWindowTitle(QString::fromStdString(spectra_.identity()));
 
+  ui->timeDuration->set_us_enabled(false);
+
   plot_thread_.start();
 }
 

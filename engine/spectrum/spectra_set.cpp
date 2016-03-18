@@ -367,14 +367,14 @@ void SpectraSet::import_spn(std::string file_name) {
   Qpx::Spectrum::Template *temp = Qpx::Spectrum::Factory::getInstance().create_template("1D");
   temp->bits = 12;
   Qpx::Setting pattern;
-  pattern = temp->generic_attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern = temp->attributes.branches.get(Qpx::Setting("pattern_coinc"));
   pattern.value_pattern.set_gates(std::vector<bool>({1}));
   pattern.value_pattern.set_theshold(1);
-  temp->generic_attributes.branches.replace(pattern);
-  pattern = temp->generic_attributes.branches.get(Qpx::Setting("pattern_add"));
+  temp->attributes.branches.replace(pattern);
+  pattern = temp->attributes.branches.get(Qpx::Setting("pattern_add"));
   pattern.value_pattern.set_gates(std::vector<bool>({1}));
   pattern.value_pattern.set_theshold(1);
-  temp->generic_attributes.branches.replace(pattern);
+  temp->attributes.branches.replace(pattern);
 
   uint32_t one;
   int spectra_count = 0;

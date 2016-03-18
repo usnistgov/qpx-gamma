@@ -49,9 +49,9 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   }
 
   optimizing_.name_ = "Optimizing";
-  Qpx::Setting vis = optimizing_.generic_attributes.branches.get(Qpx::Setting("visible"));
+  Qpx::Setting vis = optimizing_.attributes.branches.get(Qpx::Setting("visible"));
   vis.value_int = true;
-  optimizing_.generic_attributes.branches.replace(vis);
+  optimizing_.attributes.branches.replace(vis);
 
   style_pts.default_pen = QPen(Qt::darkBlue, 7);
   style_pts.themes["selected"] = QPen(Qt::red, 7);
@@ -233,14 +233,14 @@ void FormOptimization::do_run()
   match_pattern[optchan] = true;
 
   Qpx::Setting pattern;
-  pattern = optimizing_.generic_attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern = optimizing_.attributes.branches.get(Qpx::Setting("pattern_coinc"));
   pattern.value_pattern.set_gates(match_pattern);
   pattern.value_pattern.set_theshold(1);
-  optimizing_.generic_attributes.branches.replace(pattern);
-  pattern = optimizing_.generic_attributes.branches.get(Qpx::Setting("pattern_add"));
+  optimizing_.attributes.branches.replace(pattern);
+  pattern = optimizing_.attributes.branches.get(Qpx::Setting("pattern_add"));
   pattern.value_pattern.set_gates(add_pattern);
   pattern.value_pattern.set_theshold(1);
-  optimizing_.generic_attributes.branches.replace(pattern);
+  optimizing_.attributes.branches.replace(pattern);
 
 
 //  optimizing_.add_pattern.resize(optchan + 1, 0);
