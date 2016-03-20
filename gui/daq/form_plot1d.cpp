@@ -478,7 +478,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
       if (ui->pushPerLive->isChecked() && (lt != 0))
         mc = mc / lt;
 
-      Qpx::Setting rescale = md.attributes.get(Qpx::Setting("live_time"));
+      Qpx::Setting rescale = md.attributes.get(Qpx::Setting("rescale"));
       if (mc != 0)
         rescale.value_precise = PreciseFloat(max / mc);
       else
@@ -492,7 +492,7 @@ void FormPlot1D::on_pushRescaleReset_clicked()
 {
   for (auto &q: mySpectra->spectra(1, -1))
     if (q) {
-      Qpx::Setting rescale = q->metadata().attributes.get(Qpx::Setting("live_time"));
+      Qpx::Setting rescale = q->metadata().attributes.get(Qpx::Setting("rescale"));
       rescale.value_precise = 1;
       q->set_generic_attr(rescale);
     }

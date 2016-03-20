@@ -57,8 +57,6 @@ bool StatsUpdate::operator==(const StatsUpdate other) const {
     return false;
   if (events_in_spill != other.events_in_spill)
     return false;
-  if (event_rate != other.event_rate)
-    return false;
   if (fast_peaks != other.fast_peaks)
     return false;
   return true;
@@ -117,7 +115,6 @@ void StatsUpdate::to_xml(pugi::xml_node &root) const {
   node.append_attribute("energy_bits").set_value(std::to_string(model_hit.energy.bits()).c_str());
 
   node.append_attribute("total_time").set_value(std::to_string(total_time).c_str());
-  node.append_attribute("event_rate").set_value(std::to_string(event_rate).c_str());
   node.append_attribute("fast_peaks").set_value(std::to_string(fast_peaks).c_str());
   node.append_attribute("live_time").set_value(std::to_string(live_time).c_str());
   node.append_attribute("ftdt").set_value(std::to_string(ftdt).c_str());
@@ -147,7 +144,6 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
   model_hit.timestamp.timebase_divider    = node.attribute("timebase_div").as_double();
 
   total_time = node.attribute("total_time").as_double();
-  event_rate = node.attribute("event_rate").as_double();
   fast_peaks = node.attribute("fast_peaks").as_double();
   live_time = node.attribute("live_time").as_double();
   ftdt = node.attribute("ftdt").as_double();

@@ -382,7 +382,6 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
     moving_stats = moving_stats + one_run;
     moving_stats.stats_type = StatsType::running;
     moving_stats.lab_time = boost::posix_time::microsec_clock::universal_time();
-    moving_stats.event_rate = one_run.event_rate;
 
     moving_stats.source_channel = callback->chan0_;
     one_spill.stats[callback->chan0_] = moving_stats;
@@ -420,7 +419,6 @@ StatsUpdate Simulator2D::getBlock(double duration) {
   double fraction;
 
   newBlock.total_time = duration * time_factor;
-  newBlock.event_rate = duration * OCR;
 
   if (lab_time == 0.0)
     fraction = duration;

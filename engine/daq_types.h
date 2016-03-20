@@ -45,11 +45,10 @@ struct StatsUpdate : public XMLable {
   int16_t   source_channel;
   Hit       model_hit;
 
-  uint64_t  events_in_spill;
+  uint64_t  events_in_spill; //deprecate??
 
-  //per module
+  //deprecate?
   double total_time,
-    event_rate,
     fast_peaks,
     live_time,
     ftdt,
@@ -61,7 +60,6 @@ struct StatsUpdate : public XMLable {
       : stats_type(StatsType::running)
       , source_channel(-1)
       , total_time(0.0)
-      , event_rate(0.0)
       , events_in_spill(0)
       , fast_peaks(0.0)
       , live_time(0.0)

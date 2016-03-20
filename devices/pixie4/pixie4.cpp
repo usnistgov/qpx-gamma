@@ -154,7 +154,6 @@ bool Pixie4::daq_running() {
 void Pixie4::fill_stats(std::map<int16_t, StatsUpdate> &all_stats, uint8_t module) {
   StatsUpdate stats;
 
-  stats.event_rate = get_mod("EVENT_RATE", Module(module));
   stats.total_time = get_mod("TOTAL_TIME", Module(module));
   stats.model_hit = model_hit();
   for (int i=0; i<NUMBER_OF_CHANNELS; ++i) {
