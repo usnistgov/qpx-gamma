@@ -219,8 +219,6 @@ void Spectrum2D::addEvent(const Event& newEvent) {
   if (buffered_)
     temp_spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] =
         spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)];
-  if (chan1_en > metadata_.max_chan) metadata_.max_chan = chan1_en;
-  if (chan2_en > metadata_.max_chan) metadata_.max_chan = chan2_en;
   //metadata_.total_count++;
 }
 
@@ -308,7 +306,6 @@ bool Spectrum2D:: read_m4b(std::string name) {
 
   spectrum_.clear();
   metadata_.total_count = 0;
-//  metadata_.max_chan = 0;
 //  uint16_t max_i =0;
 
   uint32_t one;
@@ -321,7 +318,6 @@ bool Spectrum2D:: read_m4b(std::string name) {
     }
   }
   metadata_.bits = 12;
-  metadata_.max_chan = 4095;
 
   metadata_.detectors.resize(2);
   metadata_.detectors[0].name_ = "unknown1";
@@ -342,7 +338,6 @@ bool Spectrum2D:: read_mat(std::string name) {
 
   spectrum_.clear();
   metadata_.total_count = 0;
-//  metadata_.max_chan = 0;
 //  uint16_t max_i =0;
 
   uint16_t one;
@@ -355,7 +350,6 @@ bool Spectrum2D:: read_mat(std::string name) {
     }
   }
   metadata_.bits = 12;
-  metadata_.max_chan = 4095;
 
   metadata_.detectors.resize(2);
   metadata_.detectors[0].name_ = "unknown1";
@@ -398,15 +392,14 @@ uint16_t Spectrum2D::_channels_from_xml(const std::string& thisData){
   channeldata.str(thisData);
 
   spectrum_.clear();
-  metadata_.max_chan = 0;
 
-  uint16_t i = 0, j = 0, max_i = 0;
+  uint16_t i = 0, j = 0, max_i = 0, max_j = 0;
   std::string numero, numero_z;
   while (channeldata.rdbuf()->in_avail()) {
     channeldata >> numero;
     if (numero == "+") {
       channeldata >> numero_z;
-      if (j > metadata_.max_chan) metadata_.max_chan = j;
+      if (j > max_j) max_j = j;
       i += boost::lexical_cast<uint16_t>(numero_z);
       j=0;
       if (j) max_i = i;
@@ -418,9 +411,7 @@ uint16_t Spectrum2D::_channels_from_xml(const std::string& thisData){
       j++;
     }
   }
-  if (max_i > metadata_.max_chan)
-    metadata_.max_chan = max_i;
-  return metadata_.max_chan;
+  return std::max(max_j, max_i);
 }
 
 }}

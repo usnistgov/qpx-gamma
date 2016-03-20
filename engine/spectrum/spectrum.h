@@ -56,14 +56,13 @@ struct Metadata {
   uint16_t dimensions, bits;
   XMLableDB<Qpx::Setting> attributes;
   PreciseFloat total_count;
-  uint16_t     max_chan;
 
   std::vector<Qpx::Detector> detectors;
 
   bool changed;
 
  Metadata() : bits(0), dimensions(0), attributes("Attributes"),
-    name("uninitialized_spectrum"), total_count(0.0), max_chan(0),
+    name("uninitialized_spectrum"), total_count(0.0),
     changed(false) {}
 };
 

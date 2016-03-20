@@ -61,6 +61,7 @@ protected:
   //1D is ok with all patterns
   bool initialize() override {
     cutoff_bin_ = get_attr("cutoff_bin").value_int;
+    maxchan_ = 0;
 
     metadata_.type = my_type();
     metadata_.dimensions = 1;
@@ -105,6 +106,7 @@ protected:
 
   std::vector<PreciseFloat> spectrum_;
   int32_t cutoff_bin_;
+  uint16_t maxchan_;
 };
 
 }}

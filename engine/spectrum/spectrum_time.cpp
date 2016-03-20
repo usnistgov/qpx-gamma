@@ -143,8 +143,6 @@ void SpectrumTime::addStats(const StatsUpdate& newStats)
       seconds_.push_back(tot_time.convert_to<double>());
       updates_.push_back(newStats);
 
-      metadata_.max_chan = seconds_.size() - 1;
-
       spectrum_.push_back(count);
 
       energies_[0].clear();
@@ -211,8 +209,7 @@ uint16_t SpectrumTime::_channels_from_xml(const std::string& thisData){
   } else
     i = 0;
 
-  metadata_.max_chan = i;
-  return metadata_.max_chan;
+  return i;
 }
 
 

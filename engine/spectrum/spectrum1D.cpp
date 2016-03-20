@@ -101,8 +101,8 @@ void Spectrum1D::addHit(const Hit& newHit) {
 
   ++spectrum_[en];
 
-  if (en > metadata_.max_chan)
-    metadata_.max_chan = en;
+  if (en > maxchan_)
+    maxchan_ = en;
 }
 
 void Spectrum1D::addEvent(const Event& newEvent) {
@@ -191,7 +191,7 @@ std::string Spectrum1D::_channels_to_xml() const {
   std::stringstream channeldata;
 
   PreciseFloat z_count = 0;
-  for (uint32_t i = 0; i < metadata_.max_chan; i++)
+  for (uint32_t i = 0; i < maxchan_; i++)
     if (spectrum_[i])
       if (z_count == 0)
         channeldata << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << spectrum_[i] << " ";
@@ -226,8 +226,8 @@ uint16_t Spectrum1D::_channels_from_xml(const std::string& thisData){
       i++;
     }
   }
-  metadata_.max_chan = i;
-  return metadata_.max_chan;
+  maxchan_ = i;
+  return maxchan_;
 }
 
 
@@ -272,7 +272,7 @@ bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compressio
   metadata_.bits = log2(i);
   if (pow(2, metadata_.bits) < i)
     metadata_.bits++;
-  metadata_.max_chan = i;
+  maxchan_ = i;
 
   spectrum_.clear();
   spectrum_.resize(pow(2, metadata_.bits), 0);
@@ -460,7 +460,7 @@ bool Spectrum1D::read_spe_radware(std::string name) {
 
   spectrum_.clear();
   metadata_.total_count = 0;
-  metadata_.max_chan = 0;
+  maxchan_ = 0;
 
   std::list<Entry> entry_list;
   float one;
@@ -473,7 +473,7 @@ bool Spectrum1D::read_spe_radware(std::string name) {
     new_entry.second = one;
     entry_list.push_back(new_entry);
     if (one > 0)
-      metadata_.max_chan = i;
+      maxchan_ = i;
     i++;
   }
 
@@ -487,7 +487,7 @@ bool Spectrum1D::read_spe_radware(std::string name) {
   if (pow(2, metadata_.bits) < i)
     metadata_.bits++;
   resolution = pow(2, metadata_.bits);
-  metadata_.max_chan = i;
+  maxchan_ = i;
 
   spectrum_.clear();
   spectrum_.resize(pow(2, metadata_.bits), 0);
@@ -612,7 +612,7 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
         new_entry.second = nr;
         entry_list.push_back(new_entry);
         if (nr > 0)
-          metadata_.max_chan = i;
+          maxchan_ = i;
       }
       line.clear();
     } else
@@ -624,7 +624,7 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
   metadata_.bits = log2(entry_list.size());
   if (pow(2, metadata_.bits) < entry_list.size())
     metadata_.bits++;
-  metadata_.max_chan = entry_list.size() - 1;
+  maxchan_ = entry_list.size() - 1;
 
   spectrum_.clear();
   spectrum_.resize(pow(2, metadata_.bits), 0);
@@ -679,16 +679,16 @@ bool Spectrum1D::read_dat(std::string name) {
     new_entry.first[0] = k1;
     new_entry.second = k2;
     entry_list.push_back(new_entry);
-    if ((k2 > 0) && (k1 > metadata_.max_chan))
-       metadata_.max_chan = k1;
+    if ((k2 > 0) && (k1 > maxchan_))
+       maxchan_ = k1;
   }
 
   //PL_DBG << "entry list is " << entry_list.size();
 
-  metadata_.bits = log2(metadata_.max_chan);
+  metadata_.bits = log2(maxchan_);
   if (pow(2, metadata_.bits) < entry_list.size())
     metadata_.bits++;
-  metadata_.max_chan = entry_list.size() - 1;
+  maxchan_ = entry_list.size() - 1;
 
   spectrum_.clear();
   spectrum_.resize(pow(2, metadata_.bits), 0);
