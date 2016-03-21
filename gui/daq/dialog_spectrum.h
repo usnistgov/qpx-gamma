@@ -84,7 +84,6 @@ private:
 
     Qpx::Spectrum::Metadata md_;
 
-    XMLableDB<Qpx::Setting> attributes_;
     bool changed_;
 
     void updateData();

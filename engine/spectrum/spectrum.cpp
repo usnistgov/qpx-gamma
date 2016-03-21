@@ -33,8 +33,31 @@
 namespace Qpx {
 namespace Spectrum {
 
-Template Spectrum::get_template() {
-  Template new_temp;
+void Metadata::to_xml(pugi::xml_node &root) const {
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+
+  node.append_attribute("Type").set_value(type.c_str());
+  node.append_child("Name").append_child(pugi::node_pcdata).set_value(name.c_str());
+  node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(bits).c_str());
+
+  if (attributes.branches.size())
+    attributes.to_xml(node);
+}
+
+void Metadata::from_xml(const pugi::xml_node &node) {
+  if (std::string(node.name()) != xml_element_name())
+    return;
+
+  type = std::string(node.attribute("Type").value());
+  name = std::string(node.child_value("Name"));
+  bits = boost::lexical_cast<short>(node.child_value("Resolution"));
+
+  if (node.child(attributes.xml_element_name().c_str()))
+    attributes.from_xml(node.child(attributes.xml_element_name().c_str()));
+}
+
+Metadata Spectrum::get_prototype() {
+  Metadata new_temp;
 
   Qpx::Setting vis;
   vis.id_ = "visible";
@@ -186,14 +209,14 @@ void Spectrum::add_bulk(const Entry& e) {
     this->_add_bulk(e);
 }
 
-bool Spectrum::from_template(const Template& newtemplate) {
+bool Spectrum::from_prototype(const Metadata& newtemplate) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   
   metadata_.bits = newtemplate.bits;
-  metadata_.name = newtemplate.name_;
-  metadata_.attributes = newtemplate.attributes.branches;
+  metadata_.name = newtemplate.name;
+  metadata_.attributes = newtemplate.attributes;
 
   return (this->initialize());
 }
@@ -319,7 +342,7 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
     Setting start_time = get_attr("start_time");
     if (new_start && start_time.value_time.is_not_a_date_time()) {
       start_time.value_time = newBlock.lab_time;
-      metadata_.attributes.replace(start_time);
+      metadata_.attributes.branches.replace(start_time);
     }
 
     if (!chan_new && new_start && (stats_list_[newBlock.source_channel].back().stats_type == StatsType::running))
@@ -337,7 +360,7 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
     double recent_time = (recent_end_.lab_time - recent_start_.lab_time).total_milliseconds() * 0.001;
     if (recent_time > 0)
       rate.value_dbl = recent_count_ / recent_time;
-    metadata_.attributes.replace(rate);
+    metadata_.attributes.branches.replace(rate);
 
     recent_count_ = 0;
 
@@ -398,8 +421,8 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
         if (q.second.total_milliseconds() < live_time.value_duration.total_milliseconds())
           live_time.value_duration = q.second;
 
-      metadata_.attributes.replace(live_time);
-      metadata_.attributes.replace(real_time);
+      metadata_.attributes.branches.replace(live_time);
+      metadata_.attributes.branches.replace(real_time);
 
 //      PL_DBG << "<Spectrum> \"" << metadata_.name << "\"  ********* "
 //             << "RT = " << to_simple_string(metadata_.real_time)
@@ -420,7 +443,7 @@ void Spectrum::addRun(const RunInfo& run_info) {
  Setting start_time = get_attr("start_time");
  if (start_time.value_time.is_not_a_date_time() && (!run_info.time.is_not_a_date_time())) {
    start_time.value_time = run_info.time;
-   metadata_.attributes.replace(start_time);
+   metadata_.attributes.branches.replace(start_time);
  }
 }
 
@@ -482,7 +505,7 @@ void Spectrum::recalc_energies() {
 }
 
 Qpx::Setting Spectrum::get_attr(std::string setting) const {
-  return metadata_.attributes.get(Qpx::Setting(setting));
+  return metadata_.attributes.branches.get(Qpx::Setting(setting));
 }
 
 
@@ -542,20 +565,15 @@ uint16_t Spectrum::bits() const {
 
 //change stuff
 
-void Spectrum::set_generic_attr(Qpx::Setting setting) {
+void Spectrum::set_generic_attr(Qpx::Setting setting, Match match) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  for (auto &q : metadata_.attributes.my_data_) {
-    if ((q.id_ == setting.id_) && (q.metadata.writable)) {
-      if (q != setting)
-        metadata_.changed = true;
-      q = setting;
-    }
-  }
+  metadata_.attributes.set_setting_r(setting, match);
+  metadata_.changed = true;
 }
 
-void Spectrum::set_generic_attrs(XMLableDB<Qpx::Setting> settings) {
+void Spectrum::set_generic_attrs(Qpx::Setting settings) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
@@ -581,7 +599,7 @@ void Spectrum::to_xml(pugi::xml_node &root) const {
   node.append_child("TotalEvents").append_child(pugi::node_pcdata).set_value(metadata_.total_count.str().c_str());
   node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(metadata_.bits).c_str());
 
-  if (metadata_.attributes.size())
+  if (metadata_.attributes.branches.size())
     metadata_.attributes.to_xml(node);
 
   if (metadata_.detectors.size()) {
@@ -601,13 +619,18 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
   if (std::string(node.name()) != "Spectrum")
     return false;
 
-  //retroactive attributrion of params in current version?
-  Template t = this->get_template();
-  metadata_.attributes = t.attributes.branches;
-
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
+
+  //retroactive attributrion of params in current version?
+  Metadata t = this->get_prototype();
+  metadata_.attributes = t.attributes;
+
+  if (node.child(metadata_.attributes.xml_element_name().c_str()))
+    metadata_.attributes.from_xml(node.child(metadata_.attributes.xml_element_name().c_str()));
+  else if (node.child("Attributes"))
+    metadata_.attributes.branches.from_xml(node.child("Attributes"));
 
   std::string numero;
 
@@ -654,13 +677,13 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
     pattern_anti_.set_theshold(thresh_a);
 
     Qpx::Setting pattern;
-    pattern = metadata_.attributes.get(Qpx::Setting("pattern_coinc"));
+    pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_coinc"));
     pattern.value_pattern = pattern_coinc_;
-    metadata_.attributes.replace(pattern);
+    metadata_.attributes.branches.replace(pattern);
 
-    pattern = metadata_.attributes.get(Qpx::Setting("pattern_anti"));
+    pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_anti"));
     pattern.value_pattern = pattern_anti_;
-    metadata_.attributes.replace(pattern);
+    metadata_.attributes.branches.replace(pattern);
   }
 
   //backwards compat
@@ -687,36 +710,33 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
     pattern_add_.set_theshold(thresh);
 
     Qpx::Setting pattern;
-    pattern = metadata_.attributes.get(Qpx::Setting("pattern_add"));
+    pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_add"));
     pattern.value_pattern = pattern_add_;
-    metadata_.attributes.replace(pattern);
+    metadata_.attributes.branches.replace(pattern);
   }
-
 
   if (node.child("StartTime")) {
     Setting start_time = get_attr("start_time");
     start_time.value_time = from_iso_extended(node.child_value("StartTime"));
-    metadata_.attributes.replace(start_time);
+    metadata_.attributes.branches.replace(start_time);
   }
 
   if (node.child("RealTime")) {
     Setting real_time = get_attr("real_time");
     real_time.value_duration = boost::posix_time::duration_from_string(node.child_value("RealTime"));
-    metadata_.attributes.replace(real_time);
+    metadata_.attributes.branches.replace(real_time);
   }
 
   if (node.child("LiveTime")) {
     Setting live_time = get_attr("live_time");
     live_time.value_duration = boost::posix_time::duration_from_string(node.child_value("LiveTime"));
-    metadata_.attributes.replace(live_time);
+    metadata_.attributes.branches.replace(live_time);
   }
-
-  metadata_.attributes.from_xml(node.child(metadata_.attributes.xml_element_name().c_str()));
 
   if (node.child("RescaleFactor")) {
     Setting rescale = get_attr("rescale");
     rescale.value_precise = PreciseFloat(node.child_value("RescaleFactor"));
-    metadata_.attributes.replace(rescale);
+    metadata_.attributes.branches.replace(rescale);
   }
 
   if (node.child("Detectors")) {
@@ -735,15 +755,15 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
 
   if (node.child("Appearance")) {
     uint32_t col = boost::lexical_cast<unsigned int>(std::string(node.child_value("Appearance")));
-    Qpx::Setting app = metadata_.attributes.get(Qpx::Setting("appearance"));
+    Qpx::Setting app = metadata_.attributes.branches.get(Qpx::Setting("appearance"));
     app.value_text = "#" + itohex32(col);
-    metadata_.attributes.replace(app);
+    metadata_.attributes.branches.replace(app);
   }
 
   if (node.child("Visible")) {
-    Qpx::Setting vis = metadata_.attributes.get(Qpx::Setting("visible"));
+    Qpx::Setting vis = metadata_.attributes.branches.get(Qpx::Setting("visible"));
     vis.value_int = boost::lexical_cast<bool>(std::string(node.child_value("Visible")));
-    metadata_.attributes.replace(vis);
+    metadata_.attributes.branches.replace(vis);
   }
 
 

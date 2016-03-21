@@ -172,7 +172,7 @@ void FormIntegration2D::update_current_peak(MarkerBox2D peak) {
 //  if ((index != -1) && (peaks_[index].approved))
 //    gate.approved = true;
 
-  double livetime = md_.attributes.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  double livetime = md_.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
   PL_DBG << "update current peak " << peak.x_c.energy()  << " x " << peak.y_c.energy();
   if (livetime == 0)
     livetime = 10000;
@@ -428,12 +428,12 @@ void FormIntegration2D::make_gates() {
   if (ymax > adjrange)
     ymax = adjrange;
 
-  Qpx::Spectrum::Template *temp;
+  Qpx::Spectrum::Metadata *temp;
   Qpx::Spectrum::Spectrum *gate;
 
-  temp = Qpx::Spectrum::Factory::getInstance().create_template("1D");
+  temp = Qpx::Spectrum::Factory::getInstance().create_prototype("1D");
 //  temp->visible = true;
-  temp->name_ = "temp";
+  temp->name = "temp";
   temp->bits = md_.bits;
 
   Qpx::Setting pattern;
@@ -445,7 +445,7 @@ void FormIntegration2D::make_gates() {
   pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
   pattern.value_pattern.set_theshold(1);
   temp->attributes.branches.replace(pattern);
-  gate = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp);
+  gate = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*temp);
   Qpx::Spectrum::slice_rectangular(source_spectrum, gate, {{xmin, xmax}, {ymin, ymax}}, spectra_->runInfo());
   fit_x_.setData(gate);
   delete gate;
@@ -458,7 +458,7 @@ void FormIntegration2D::make_gates() {
   pattern.value_pattern.set_gates(std::vector<bool>({0,1}));
   pattern.value_pattern.set_theshold(1);
   temp->attributes.branches.replace(pattern);
-  gate = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp);
+  gate = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*temp);
   Qpx::Spectrum::slice_rectangular(source_spectrum, gate, {{xmin, xmax}, {ymin, ymax}}, spectra_->runInfo());
   fit_y_.setData(gate);
   delete gate;
@@ -472,7 +472,7 @@ void FormIntegration2D::make_gates() {
     pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
     pattern.value_pattern.set_theshold(1);
     temp->attributes.branches.replace(pattern);
-    gate = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp);
+    gate = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*temp);
     Qpx::Spectrum::slice_diagonal(source_spectrum, gate, peak.x_c.bin(md_.bits), peak.y_c.bin(md_.bits), xwidth, xmin, xmax, spectra_->runInfo());
     fit_d_.setData(gate);
     delete gate;

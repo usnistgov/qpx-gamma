@@ -55,7 +55,7 @@ bool SpectrumRaw::init_text() {
   file_name_txt_ = file_dir_ + "/qpx_out.txt";
   xml_root_ = xml_doc_.append_child("QpxListData");
 
-  if (metadata_.attributes.size())
+  if (metadata_.attributes.branches.size())
     metadata_.attributes.to_xml(xml_root_);
 
   open_xml_ = true;

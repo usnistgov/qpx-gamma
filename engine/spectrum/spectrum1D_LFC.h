@@ -35,11 +35,11 @@ class Spectrum1D_LFC : public Spectrum1D
 public:
   Spectrum1D_LFC() {}
 
-  static Template get_template() {
-    Template new_temp = Spectrum1D::get_template();
+  static Metadata get_prototype() {
+    Metadata new_temp = Spectrum1D::get_prototype();
     new_temp.type = "LFC1D";
     new_temp.input_types = {};
-    new_temp.description = "One detector loss-free spectrum";
+    new_temp.type_description = "One detector loss-free spectrum";
     
     Qpx::Setting t_sample;
     t_sample.id_ = "time_sample";
@@ -58,7 +58,7 @@ public:
 
 protected:
   std::string my_type() const override {return "LFC1D";}
-  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().attributes.branches; }
+  Qpx::Setting default_settings() const override {return this->get_prototype().attributes; }
   bool initialize() override;
   
   void addStats(const StatsUpdate&) override;

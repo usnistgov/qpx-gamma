@@ -81,7 +81,7 @@ private:
   Ui::FormOptimization *ui;
 
   Qpx::SpectraSet current_spectra_;
-  Qpx::Spectrum::Template        optimizing_;
+  Qpx::Spectrum::Metadata        optimizing_;
 
   ThreadRunner         &opt_runner_thread_;
   XMLableDB<Qpx::Detector> &detectors_;

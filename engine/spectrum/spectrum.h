@@ -38,7 +38,6 @@
 #include <boost/algorithm/string.hpp>
 
 #include "daq_types.h"
-#include "spectrum_template.h"
 #include "detector.h"
 #include "custom_logger.h"
 
@@ -50,20 +49,42 @@ typedef std::list<Entry> EntryList;
 typedef std::pair<uint32_t, uint32_t> Pair;
 
 
-struct Metadata {
+struct Metadata : public XMLable {
  public:
-  std::string name, type;
-  uint16_t dimensions, bits;
-  XMLableDB<Qpx::Setting> attributes;
-  PreciseFloat total_count;
+  //user sets these in prototype
+  std::string name;
+  uint16_t bits;
+  Qpx::Setting attributes;
 
+  //take care of these...
+  bool changed;
+  uint16_t dimensions;
+  PreciseFloat total_count;
   std::vector<Qpx::Detector> detectors;
 
-  bool changed;
+  //this stuff from factory
+  std::string type, type_description;
+  std::list<std::string> input_types;
+  std::list<std::string> output_types;
 
- Metadata() : bits(0), dimensions(0), attributes("Attributes"),
-    name("uninitialized_spectrum"), total_count(0.0),
-    changed(false) {}
+ Metadata() : bits(14), dimensions(0), attributes("Options"), type("invalid"),
+    name("generic_spectrum"), total_count(0.0), changed(false)
+    { attributes.metadata.setting_type = SettingType::stem; }
+
+ std::string xml_element_name() const override {return "SpectrumMetadata";}
+
+ void to_xml(pugi::xml_node &node) const override;
+ void from_xml(const pugi::xml_node &node) override;
+
+ bool shallow_equals(const Metadata& other) const {return (name == other.name);}
+ bool operator!= (const Metadata& other) const {return !operator==(other);}
+ bool operator== (const Metadata& other) const {
+   if (name != other.name) return false;
+   if (type != other.type) return false; //assume other type info same
+   if (bits != other.bits) return false;
+   if (attributes != other.attributes) return false;
+   return true;
+ }
 };
 
 
@@ -72,10 +93,10 @@ class Spectrum
 public:
   //constructs invalid spectrum by default. Make private?
   Spectrum(): recent_count_(0), cutoff_logic_(0), coinc_window_(0) {}
-  static Template get_template();
+  static Metadata get_prototype();
 
   //named constructors, used by factory
-  bool from_template(const Template&);
+  bool from_prototype(const Metadata&);
   bool from_xml(const pugi::xml_node &);
 
   //get count for specific MCA channel in spectrum
@@ -123,8 +144,8 @@ public:
   std::map<int, std::list<StatsUpdate>> get_stats();
 
   //change properties - use carefully...
-  void set_generic_attr(Qpx::Setting setting);
-  void set_generic_attrs(XMLableDB<Qpx::Setting> settings);
+  void set_generic_attr(Setting setting, Match match = Match::id | Match::indices);
+  void set_generic_attrs(Setting settings);
   void reset_changed();
 
 protected:
@@ -158,7 +179,7 @@ protected:
 
   void recalc_energies();
   Qpx::Setting get_attr(std::string name) const;
-  virtual XMLableDB<Qpx::Setting> default_settings() const = 0;
+  virtual Qpx::Setting default_settings() const = 0;
 
   //////////////////////////////
   ///////member variables///////
@@ -203,11 +224,11 @@ class Factory {
     return instance;
   }
 
-  Spectrum* create_from_template(const Template& tem)
+  Spectrum* create_from_prototype(const Metadata& tem)
   {
     Spectrum* instance = create_type(tem.type);
     if (instance != nullptr) {
-      bool success = instance->from_template(tem);
+      bool success = instance->from_prototype(tem);
       if (success)
         return instance;
       else {
@@ -257,20 +278,20 @@ class Factory {
     }    
   }
 
-  Template* create_template(std::string type)
+  Metadata* create_prototype(std::string type)
   {
-    auto it = templates.find(type);
-    if(it != templates.end())
-      return new Template(it->second);
+    auto it = prototypes.find(type);
+    if(it != prototypes.end())
+      return new Metadata(it->second);
     else
       return nullptr;
   }
 
-  void register_type(Template tt, std::function<Spectrum*(void)> typeConstructor)
+  void register_type(Metadata tt, std::function<Spectrum*(void)> typeConstructor)
   {
     PL_INFO << "<Spectrum::Factory> registering spectrum type '" << tt.type << "'";
     constructors[tt.type] = typeConstructor;
-    templates[tt.type] = tt;
+    prototypes[tt.type] = tt;
     for (auto &q : tt.input_types)
       ext_to_type[q] = tt.type;
   }
@@ -285,7 +306,7 @@ class Factory {
  private:
   std::map<std::string, std::function<Spectrum*(void)>> constructors;
   std::map<std::string, std::string> ext_to_type;
-  std::map<std::string, Template> templates;
+  std::map<std::string, Metadata> prototypes;
 
   //singleton assurance
   Factory() {}
@@ -298,7 +319,7 @@ class Registrar {
 public:
   Registrar(std::string)
   {
-    Factory::getInstance().register_type(T::get_template(),
+    Factory::getInstance().register_type(T::get_prototype(),
                                          [](void) -> Spectrum * { return new T();});
   }
 };

@@ -70,7 +70,7 @@ private:
   Ui::FormSymmetrize2D *ui;
   QSettings &settings_;
 
-  Qpx::Spectrum::Template *tempx, *tempy;
+  Qpx::Spectrum::Metadata *tempx, *tempy;
 
   Qpx::Spectrum::Spectrum *gate_x;
   Qpx::Spectrum::Spectrum *gate_y;

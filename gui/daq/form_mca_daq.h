@@ -111,7 +111,7 @@ private:
 
   QString mca_load_formats_;  //valid mca file formats that can be opened
 
-  XMLableDB<Qpx::Spectrum::Template>  spectra_templates_;
+  XMLableDB<Qpx::Spectrum::Metadata>  spectra_templates_;
   Qpx::SpectraSet                     spectra_;
 
   ThreadPlotSignal                plot_thread_;

@@ -36,13 +36,13 @@ class Spectrum2D : public Spectrum
 public:
   Spectrum2D() {}
 
-  static Template get_template() {
-    Template new_temp = Spectrum::get_template();
+  static Metadata get_prototype() {
+    Metadata new_temp = Spectrum::get_prototype();
 
     new_temp.type = "2D";
     new_temp.output_types = {"m", "m4b", "mat"};
     new_temp.input_types = {"m4b", "mat"};
-    new_temp.description = "2-dimensional coincidence matrix";
+    new_temp.type_description = "2-dimensional coincidence matrix";
 
     Qpx::Setting buf;
     buf.id_ = "buffered";
@@ -72,7 +72,7 @@ protected:
   void init_from_file(std::string filename);
 
   std::string my_type() const override {return "2D";}
-  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().attributes.branches; }
+  Qpx::Setting default_settings() const override {return this->get_prototype().attributes; }
 
   PreciseFloat _get_count(std::initializer_list<uint16_t> list ) const;
   std::unique_ptr<EntryList> _get_spectrum(std::initializer_list<Pair> list);

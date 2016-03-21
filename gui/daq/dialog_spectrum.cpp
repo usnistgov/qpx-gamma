@@ -34,7 +34,6 @@ dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, XMLableDB<Qpx::D
   attr_model_(this),
   detectors_(detDB),
   spectrum_detectors_("Detectors"),
-  attributes_("Attributes"),
   ui(new Ui::dialog_spectrum)
 {
   ui->setupUi(this);
@@ -46,8 +45,6 @@ dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, XMLableDB<Qpx::D
   connect(&attr_model_, SIGNAL(tree_changed()), this, SLOT(push_settings()));
 
   md_ = my_spectrum_.metadata();
-
-  attributes_ = md_.attributes;
 
   ui->treeAttribs->setModel(&attr_model_);
   ui->treeAttribs->setItemDelegate(&attr_delegate_);
@@ -93,11 +90,7 @@ void dialog_spectrum::updateData() {
     spectrum_detectors_.add_a(q);
   det_table_model_.update();
 
-  Qpx::Setting st;
-  st.metadata.setting_type = Qpx::SettingType::stem;
-  st.branches = md_.attributes;
-
-  attr_model_.update(st);
+  attr_model_.update(md_.attributes);
   open_close_locks();
 }
 
@@ -120,7 +113,7 @@ void dialog_spectrum::open_close_locks() {
 }
 
 void dialog_spectrum::push_settings() {
-  my_spectrum_.set_generic_attrs(attr_model_.get_tree().branches);
+  my_spectrum_.set_generic_attrs(attr_model_.get_tree());
 }
 
 void dialog_spectrum::toggle_push()

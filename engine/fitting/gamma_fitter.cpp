@@ -49,8 +49,8 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
     if (detector_.fwhm_calibration_.valid())
       settings_.cali_fwhm_ = detector_.fwhm_calibration_;
 
-    settings_.live_time = md.attributes.get(Qpx::Setting("live_time")).value_duration;
-    settings_.real_time = md.attributes.get(Qpx::Setting("real_time")).value_duration;
+    settings_.live_time = md.attributes.branches.get(Qpx::Setting("live_time")).value_duration;
+    settings_.real_time = md.attributes.branches.get(Qpx::Setting("real_time")).value_duration;
 
     std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_dump = std::move(spectrum->get_spectrum({{0, pow(2,md.bits)}}));
     std::vector<double> x;
@@ -271,10 +271,9 @@ void Fitter::save_report(std::string filename) {
 
   file << "Spectrum type: " << metadata_.type << std::endl;
 
-  if (!metadata_.attributes.empty()) {
+  if (!metadata_.attributes.branches.empty()) {
     file << "Attributes" << std::endl;
-    for (auto &q : metadata_.attributes.my_data_)
-      file << "   " << q.id_ << " = " << q.value_dbl << std::endl; //other types?
+    file << metadata_.attributes;
   }
 
   if (!metadata_.detectors.empty()) {
@@ -286,7 +285,7 @@ void Fitter::save_report(std::string filename) {
   file << "========================================================" << std::endl;
   file << std::endl;
 
-  file << "Acquisition start time:  " << boost::posix_time::to_iso_extended_string(metadata_.attributes.get(Qpx::Setting("start_time")).value_time) << std::endl;
+  file << "Acquisition start time:  " << boost::posix_time::to_iso_extended_string(metadata_.attributes.branches.get(Qpx::Setting("start_time")).value_time) << std::endl;
   double lt = settings_.live_time.total_milliseconds() * 0.001;
   double rt = settings_.real_time.total_milliseconds() * 0.001;
   file << "Live time(s):   " << lt << std::endl;

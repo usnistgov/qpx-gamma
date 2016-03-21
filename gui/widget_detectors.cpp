@@ -46,7 +46,7 @@ DialogDetector::DialogDetector(Qpx::Detector mydet, QDir rd, bool editName, QWid
   std::vector<std::string> spectypes = Qpx::Spectrum::Factory::getInstance().types();
   QStringList filetypes;
   for (auto &q : spectypes) {
-    Qpx::Spectrum::Template* type_template = Qpx::Spectrum::Factory::getInstance().create_template(q);
+    Qpx::Spectrum::Metadata* type_template = Qpx::Spectrum::Factory::getInstance().create_prototype(q);
     if (!type_template->input_types.empty())
       filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types) + ")");
     delete type_template;

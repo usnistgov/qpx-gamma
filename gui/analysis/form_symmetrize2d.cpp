@@ -57,9 +57,9 @@ FormSymmetrize2D::FormSymmetrize2D(QSettings &settings, XMLableDB<Qpx::Detector>
   connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
   connect(ui->plotSpectrum2, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
 
-  tempx = Qpx::Spectrum::Factory::getInstance().create_template("1D");
+  tempx = Qpx::Spectrum::Factory::getInstance().create_prototype("1D");
 //  tempx->visible = true;
-  tempx->name_ = "tempx";
+  tempx->name = "tempx";
   Qpx::Setting pattern;
   pattern = tempx->attributes.branches.get(Qpx::Setting("pattern_coinc"));
   pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
@@ -70,9 +70,9 @@ FormSymmetrize2D::FormSymmetrize2D(QSettings &settings, XMLableDB<Qpx::Detector>
   pattern.value_pattern.set_theshold(1);
   tempx->attributes.branches.replace(pattern);
 
-  tempy = Qpx::Spectrum::Factory::getInstance().create_template("1D");
+  tempy = Qpx::Spectrum::Factory::getInstance().create_prototype("1D");
 //  tempy->visible = true;
-  tempy->name_ = "tempy";
+  tempy->name = "tempy";
 
 
   res = 0;
@@ -124,9 +124,9 @@ void FormSymmetrize2D::make_gated_spectra() {
     uint32_t adjrange = pow(2,md.bits) - 1;
 
     tempx->bits = md.bits;
-    tempx->name_ = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(0), 0) + "," + to_str_precision(nrg_calibration2_.transform(adjrange), 0) + "]";
+    tempx->name = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(0), 0) + "," + to_str_precision(nrg_calibration2_.transform(adjrange), 0) + "]";
     tempy->bits = md.bits;
-    tempy->name_ = detector2_.name_ + "[" + to_str_precision(nrg_calibration1_.transform(0), 0) + "," + to_str_precision(nrg_calibration1_.transform(adjrange), 0) + "]";
+    tempy->name = detector2_.name_ + "[" + to_str_precision(nrg_calibration1_.transform(0), 0) + "," + to_str_precision(nrg_calibration1_.transform(adjrange), 0) + "]";
     Qpx::Setting pattern;
     pattern = tempy->attributes.branches.get(Qpx::Setting("pattern_coinc"));
     pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
@@ -140,7 +140,7 @@ void FormSymmetrize2D::make_gated_spectra() {
 
     if (gate_x != nullptr)
       delete gate_x;
-    gate_x = Qpx::Spectrum::Factory::getInstance().create_from_template(*tempx);
+    gate_x = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*tempx);
 
     //if?
     Qpx::Spectrum::slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {0, adjrange}}, spectra_->runInfo());
@@ -152,7 +152,7 @@ void FormSymmetrize2D::make_gated_spectra() {
 
     if (gate_y != nullptr)
       delete gate_y;
-    gate_y = Qpx::Spectrum::Factory::getInstance().create_from_template(*tempy);
+    gate_y = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*tempy);
 
     Qpx::Spectrum::slice_rectangular(source_spectrum, gate_y, {{0, adjrange}, {0, adjrange}}, spectra_->runInfo());
 
@@ -199,7 +199,7 @@ void FormSymmetrize2D::initialize() {
       if (detector2_.energy_calibrations_.has_a(Qpx::Calibration("Energy", md.bits)))
         nrg_calibration2_ = detector2_.energy_calibrations_.get(Qpx::Calibration("Energy", md.bits));
 
-      bool symmetrized = (md.attributes.get(Qpx::Setting("symmetrized")).value_int != 0);
+      bool symmetrized = (md.attributes.branches.get(Qpx::Setting("symmetrized")).value_int != 0);
     }
   }
 
@@ -238,7 +238,7 @@ void FormSymmetrize2D::on_pushAddGatedSpectra_clicked()
       PL_WARN << "Spectrum " << gate_x->name() << " already exists.";
     else
     {
-      Qpx::Setting app = gate_x->metadata().attributes.get(Qpx::Setting("appearance"));
+      Qpx::Setting app = gate_x->metadata().attributes.branches.get(Qpx::Setting("appearance"));
       app.value_text = generateColor().name(QColor::HexArgb).toStdString();
       gate_x->set_generic_attr(app);
 
@@ -253,7 +253,7 @@ void FormSymmetrize2D::on_pushAddGatedSpectra_clicked()
       PL_WARN << "Spectrum " << gate_y->name() << " already exists.";
     else
     {
-      Qpx::Setting app = gate_y->metadata().attributes.get(Qpx::Setting("appearance"));
+      Qpx::Setting app = gate_y->metadata().attributes.branches.get(Qpx::Setting("appearance"));
       app.value_text = generateColor().name(QColor::HexArgb).toStdString();
       gate_y->set_generic_attr(app);
 
@@ -300,7 +300,7 @@ void FormSymmetrize2D::symmetrize()
 
     std::vector<uint16_t> chans;
     Qpx::Setting pattern;
-    pattern = md.attributes.get(Qpx::Setting("pattern_add"));
+    pattern = md.attributes.branches.get(Qpx::Setting("pattern_add"));
     std::vector<bool> gts = pattern.value_pattern.gates();
 
     for (int i=0; i < gts.size(); ++i) {
@@ -314,17 +314,17 @@ void FormSymmetrize2D::symmetrize()
       return;
     }
 
-    Qpx::Spectrum::Template *temp_sym = Qpx::Spectrum::Factory::getInstance().create_template(md.type); //assume 2D?
+    Qpx::Spectrum::Metadata *temp_sym = Qpx::Spectrum::Factory::getInstance().create_prototype(md.type); //assume 2D?
 //    temp_sym->visible = false;
-    temp_sym->name_ = fold_spec_name.toStdString();
+    temp_sym->name = fold_spec_name.toStdString();
     temp_sym->attributes.branches.replace(pattern);
-    pattern = md.attributes.get(Qpx::Setting("pattern_coinc"));
+    pattern = md.attributes.branches.get(Qpx::Setting("pattern_coinc"));
     pattern.value_pattern.set_gates(gts);
     pattern.value_pattern.set_theshold(2);
     temp_sym->attributes.branches.replace(pattern);
     temp_sym->bits = md.bits;
 
-    Qpx::Spectrum::Spectrum* destination = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp_sym);
+    Qpx::Spectrum::Spectrum* destination = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*temp_sym);
     delete temp_sym;
 
     if (destination == nullptr) {

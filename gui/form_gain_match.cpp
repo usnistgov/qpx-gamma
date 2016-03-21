@@ -43,7 +43,7 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
 
   loadSettings();
 
-  if (Qpx::Spectrum::Template *temp = Qpx::Spectrum::Factory::getInstance().create_template("1D")) {
+  if (Qpx::Spectrum::Metadata *temp = Qpx::Spectrum::Factory::getInstance().create_prototype("1D")) {
     reference_   = *temp;
     optimizing_  = *temp;
     delete temp;
@@ -56,13 +56,13 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
   Qpx::Setting app = reference_.attributes.branches.get(Qpx::Setting("appearance"));
   vis.value_int = true;
 
-  reference_.name_ = "Reference";
+  reference_.name = "Reference";
   col.setHsv(QColor(Qt::blue).hsvHue(), 48, 160);
   app.value_text = col.name().toStdString();
   reference_.attributes.branches.replace(vis);
   reference_.attributes.branches.replace(app);
 
-  optimizing_.name_ = "Optimizing";
+  optimizing_.name = "Optimizing";
   col.setHsv(QColor(Qt::red).hsvHue(), 48, 160);
   app.value_text = col.name().toStdString();
   optimizing_.attributes.branches.replace(vis);
@@ -451,8 +451,8 @@ void FormGainMatch::update_peak_selection(std::set<double> dummy) {
 
   Qpx::Setting set_gain("Gain");
   Qpx::Setting set_pass("Pass");
-  double gain = fitter_opt_.metadata_.attributes.get(set_gain).value_dbl;
-  int    pass = fitter_opt_.metadata_.attributes.get(set_pass).value_int;
+  double gain = fitter_opt_.metadata_.attributes.branches.get(set_gain).value_dbl;
+  int    pass = fitter_opt_.metadata_.attributes.branches.get(set_pass).value_int;
 
   peaks_[pass] = peak_opt_;
 

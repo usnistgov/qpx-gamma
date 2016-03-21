@@ -130,7 +130,7 @@ void FormPlot2D::choose_spectrum(SelectorItem item)
   std::list<Qpx::Spectrum::Spectrum*> spectra = mySpectra->spectra(2, -1);
 
   for (auto &q : spectra) {
-    Qpx::Setting vis = q->metadata().attributes.get(Qpx::Setting("visible"));
+    Qpx::Setting vis = q->metadata().attributes.branches.get(Qpx::Setting("visible"));
     if (q->name() == id.toStdString())
       vis.value_int = true;
     else
@@ -155,12 +155,12 @@ void FormPlot2D::updateUI()
       md = q->metadata();
 
     names.insert(md.name);
-    if (md.attributes.get(Qpx::Setting("visible")).value_int)
+    if (md.attributes.branches.get(Qpx::Setting("visible")).value_int)
       newname = md.name;
 
     SelectorItem new_spectrum;
     new_spectrum.text = QString::fromStdString(md.name);
-    new_spectrum.color = QColor(QString::fromStdString(md.attributes.get(Qpx::Setting("appearance")).value_text));
+    new_spectrum.color = QColor(QString::fromStdString(md.attributes.branches.get(Qpx::Setting("appearance")).value_text));
     items.push_back(new_spectrum);
   }
 
@@ -317,7 +317,7 @@ void FormPlot2D::update_plot(bool force) {
     {
 //      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
-      Qpx::Setting sym = md.attributes.get(Qpx::Setting("symmetrized"));
+      Qpx::Setting sym = md.attributes.branches.get(Qpx::Setting("symmetrized"));
 
       //PL_DBG << "Sym :" << sym.id_ << "=" << sym.value_int;
 
@@ -418,7 +418,7 @@ void FormPlot2D::spectrumDetailsDelete()
   std::list<Qpx::Spectrum::Spectrum*> spectra = mySpectra->spectra(2, -1);
 
   for (auto &q : spectra) {
-    Qpx::Setting vis = q->metadata().attributes.get(Qpx::Setting("visible"));
+    Qpx::Setting vis = q->metadata().attributes.branches.get(Qpx::Setting("visible"));
     if (q->name() == name.toStdString())
       vis.value_int = true;
     else

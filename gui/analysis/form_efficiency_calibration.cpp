@@ -80,7 +80,7 @@ FormEfficiencyCalibration::FormEfficiencyCalibration(QSettings &settings, XMLabl
   std::vector<std::string> spectypes = Qpx::Spectrum::Factory::getInstance().types();
   QStringList filetypes;
   for (auto &q : spectypes) {
-    Qpx::Spectrum::Template* type_template = Qpx::Spectrum::Factory::getInstance().create_template("1D");
+    Qpx::Spectrum::Metadata* type_template = Qpx::Spectrum::Factory::getInstance().create_prototype("1D");
     if (!type_template->input_types.empty())
       filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types) + ")");
     delete type_template;
@@ -166,7 +166,7 @@ void FormEfficiencyCalibration::setSpectrum(QString name) {
       ui->isotopes->set_current_isotope(QString::fromStdString(fit_data_.sample_name_));
     }  else {
       Qpx::Spectrum::Metadata md = spectrum->metadata();
-      Qpx::Setting descr = md.attributes.get(Qpx::Setting("description"));
+      Qpx::Setting descr = md.attributes.branches.get(Qpx::Setting("description"));
       if (!descr.value_text.empty()) {
         //find among data
         ui->isotopes->set_current_isotope(QString::fromStdString(descr.value_text));
@@ -294,8 +294,8 @@ void FormEfficiencyCalibration::update_spectra() {
     if (!md.detectors.empty() && (md.detectors.front().name_ == current_detector_)) {
       SelectorItem new_spectrum;
       new_spectrum.text = QString::fromStdString(md.name);
-      new_spectrum.color = QColor(QString::fromStdString(md.attributes.get(Qpx::Setting("appearance")).value_text));
-      new_spectrum.visible = md.attributes.get(Qpx::Setting("visible")).value_int;
+      new_spectrum.color = QColor(QString::fromStdString(md.attributes.branches.get(Qpx::Setting("appearance")).value_text));
+      new_spectrum.visible = md.attributes.branches.get(Qpx::Setting("visible")).value_int;
       items.push_back(new_spectrum);
     }
   }

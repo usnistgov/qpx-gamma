@@ -34,13 +34,13 @@ public:
   SpectrumRaw() : open_bin_(false), open_xml_(false), events_this_spill_(0) {}
   ~SpectrumRaw();
 
-  static Template get_template() {
-    Template new_temp = Spectrum::get_template();
+  static Metadata get_prototype() {
+    Metadata new_temp = Spectrum::get_prototype();
 
     new_temp.type = "Raw";
     //    new_temp.input_types = {""};
     //    new_temp.output_types = {""};
-    new_temp.description = "Custom gated list mode to file. Please provide path and name for valid and accessible file.";
+    new_temp.type_description = "Custom gated list mode to file. Please provide path and name for valid and accessible file.";
 
     Qpx::Setting file_setting;
     file_setting.id_ = "file_dir";
@@ -55,7 +55,7 @@ public:
 
 protected:
   std::string my_type() const override {return "Raw";}
-  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().attributes.branches; }
+  Qpx::Setting default_settings() const override {return this->get_prototype().attributes; }
 
   //1D is ok with all patterns
   bool initialize() override;

@@ -187,9 +187,9 @@ void SpectraSet::add_spectrum(Spectrum::Spectrum* newSpectrum) {
   // cond_.notify_one();
 }
 
-void SpectraSet::add_spectrum(Spectrum::Template spectrum) {
+void SpectraSet::add_spectrum(Spectrum::Metadata spectrum) {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  Spectrum::Spectrum* newSpectrum = Spectrum::Factory::getInstance().create_from_template(spectrum);
+  Spectrum::Spectrum* newSpectrum = Spectrum::Factory::getInstance().create_from_prototype(spectrum);
   if (newSpectrum != nullptr)
     my_spectra_.push_back(newSpectrum);
   changed_ = true;
@@ -212,13 +212,13 @@ void SpectraSet::delete_spectrum(std::string name) {
   }
 }
 
-void SpectraSet::set_spectra(const XMLableDB<Spectrum::Template>& newdb) {
+void SpectraSet::set_spectra(const XMLableDB<Spectrum::Metadata>& newdb) {
   boost::unique_lock<boost::mutex> lock(mutex_);  
   clear_helper();
   int numofspectra = newdb.size();
 
   for (int i=0; i < numofspectra; i++) {
-    Spectrum::Spectrum* newSpectrum = Spectrum::Factory::getInstance().create_from_template(newdb.get(i));
+    Spectrum::Spectrum* newSpectrum = Spectrum::Factory::getInstance().create_from_prototype(newdb.get(i));
     if (newSpectrum != nullptr) {
       my_spectra_.push_back(newSpectrum);
     }
@@ -364,7 +364,7 @@ void SpectraSet::import_spn(std::string file_name) {
   Qpx::Spill spill;
   spill.run.detectors.push_back(det);
 
-  Qpx::Spectrum::Template *temp = Qpx::Spectrum::Factory::getInstance().create_template("1D");
+  Qpx::Spectrum::Metadata *temp = Qpx::Spectrum::Factory::getInstance().create_prototype("1D");
   temp->bits = 12;
   Qpx::Setting pattern;
   pattern = temp->attributes.branches.get(Qpx::Setting("pattern_coinc"));
@@ -392,8 +392,8 @@ void SpectraSet::import_spn(std::string file_name) {
     }
     if ((totalcount == 0) || data.empty())
       continue;
-    temp->name_ = boost::filesystem::path(file_name).filename().string() + "[" + std::to_string(spectra_count) + "]";
-    Qpx::Spectrum::Spectrum *spectrum = Qpx::Spectrum::Factory::getInstance().create_from_template(*temp);
+    temp->name = boost::filesystem::path(file_name).filename().string() + "[" + std::to_string(spectra_count) + "]";
+    Qpx::Spectrum::Spectrum *spectrum = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*temp);
     for (int i=0; i < data.size(); ++i) {
       Spectrum::Entry entry;
       entry.first.resize(1, 0);

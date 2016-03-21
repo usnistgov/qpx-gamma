@@ -79,7 +79,7 @@ private:
   Ui::FormGainMatch *ui;
 
   Qpx::SpectraSet    gm_spectra_;
-  Qpx::Spectrum::Template reference_, optimizing_;
+  Qpx::Spectrum::Metadata reference_, optimizing_;
 
   ThreadRunner         &gm_runner_thread_;
   XMLableDB<Qpx::Detector> &detectors_;

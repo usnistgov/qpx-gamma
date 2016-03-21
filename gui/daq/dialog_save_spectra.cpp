@@ -52,7 +52,7 @@ void WidgetSaveTypes::initialize(std::vector<std::string> types) {
   file_formats.resize(spectrum_types.size());
   selections.resize(spectrum_types.size());
   for (std::size_t i = 0; i < spectrum_types.size(); i++) {
-    Qpx::Spectrum::Template* type_template = Qpx::Spectrum::Factory::getInstance().create_template(spectrum_types[i]);
+    Qpx::Spectrum::Metadata* type_template = Qpx::Spectrum::Factory::getInstance().create_prototype(spectrum_types[i]);
     file_formats[i] = std::vector<std::string>(type_template->output_types.begin(), type_template->output_types.end());
     selections[i].resize(file_formats[i].size(), false);
     max_formats_ = std::max(max_formats_, static_cast<int>(file_formats[i].size()));
@@ -177,7 +177,7 @@ void DialogSaveSpectra::on_buttonBox_accepted()
       if (ui->typesWidget->selections[i][j]) {
         PL_INFO << "Saving " << ui->typesWidget->spectrum_types[i] << " spectra as " << ui->typesWidget->file_formats[i][j];
         for (auto &q : thistype) {
-          if ((!ui->checkVisibleOnly->isChecked()) || q->metadata().attributes.get(Qpx::Setting("visible")).value_int)
+          if ((!ui->checkVisibleOnly->isChecked()) || q->metadata().attributes.branches.get(Qpx::Setting("visible")).value_int)
             q->write_file(dir.string(), ui->typesWidget->file_formats[i][j]);
         }
       }

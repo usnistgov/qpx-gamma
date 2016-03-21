@@ -61,7 +61,7 @@ FormMultiGates::FormMultiGates(QSettings &settings, QWidget *parent) :
   connect(ui->gatedSpectrum , SIGNAL(peaks_changed(bool)), this, SLOT(peaks_changed_in_plot(bool)));
   connect(ui->gatedSpectrum, SIGNAL(range_changed(Range)), this, SLOT(range_changed_in_plot(Range)));
 
-  tempx = Qpx::Spectrum::Factory::getInstance().create_template("1D");
+  tempx = Qpx::Spectrum::Factory::getInstance().create_prototype("1D");
   //tempx->visible = true;
   Qpx::Setting pattern;
   pattern = tempx->attributes.branches.get(Qpx::Setting("pattern_coinc"));
@@ -147,7 +147,7 @@ void FormMultiGates::update_current_gate(Qpx::Gate gate) {
   if ((index != -1) && (gates_[index].approved))
     gate.approved = true;
 
-  double livetime = gate.fit_data_.metadata_.attributes.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  double livetime = gate.fit_data_.metadata_.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
   //PL_DBG << "update current gate " << gate.centroid_chan << " with LT = " << livetime;
   if (livetime == 0)
     livetime = 10000;
@@ -312,7 +312,7 @@ void FormMultiGates::on_pushApprove_clicked()
 
   for (auto &q : data.peaks()) {
     Qpx::Gate newgate;
-    newgate.cps           = q.second.area_best.val / (data.metadata_.attributes.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001);
+    newgate.cps           = q.second.area_best.val / (data.metadata_.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001);
     newgate.centroid_chan = q.second.center;
     newgate.centroid_nrg  = q.second.energy;
     newgate.width_chan    = std::round(q.second.fwhm_hyp * ui->doubleGateOn->value());
@@ -492,12 +492,12 @@ void FormMultiGates::make_gated_spectra() {
 
     tempx->bits = md.bits;
     //    tempx->name_ = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(ymin_), 0) + "," + to_str_precision(nrg_calibration2_.transform(ymax_), 0) + "]";
-    tempx->name_ = md.detectors[0].name_ + "[" + to_str_precision(md.detectors[1].best_calib(md.bits).transform(ymin_, md.bits), 0) + ","
+    tempx->name = md.detectors[0].name_ + "[" + to_str_precision(md.detectors[1].best_calib(md.bits).transform(ymin_, md.bits), 0) + ","
         + to_str_precision(md.detectors[1].best_calib(md.bits).transform(ymax_, md.bits), 0) + "]";
 
     if (gate_x != nullptr)
       delete gate_x;
-    gate_x = Qpx::Spectrum::Factory::getInstance().create_from_template(*tempx);
+    gate_x = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*tempx);
 
     //if?
     Qpx::Spectrum::slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {ymin_, ymax_}}, spectra_->runInfo());
@@ -593,7 +593,7 @@ void FormMultiGates::on_pushAddGatedSpectrum_clicked()
       PL_WARN << "Spectrum " << gate_x->name() << " already exists.";
     else
     {
-      Qpx::Setting app = gate_x->metadata().attributes.get(Qpx::Setting("appearance"));
+      Qpx::Setting app = gate_x->metadata().attributes.branches.get(Qpx::Setting("appearance"));
       app.value_text = generateColor().name(QColor::HexArgb).toStdString();
       gate_x->set_generic_attr(app);
 

@@ -137,7 +137,7 @@ void FormAnalysis2D::initialize() {
       ui->plotMatrix->setSpectra(*spectra_, current_spectrum_);
       ui->plotMatrix->update_plot();
 
-      bool symmetrized = (md.attributes.get(Qpx::Setting("symmetrized")).value_int != 0);
+      bool symmetrized = (md.attributes.branches.get(Qpx::Setting("symmetrized")).value_int != 0);
     }
   }
 

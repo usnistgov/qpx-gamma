@@ -87,7 +87,7 @@ void FormPlot1D::setSpectra(Qpx::SpectraSet& new_set) {
 void FormPlot1D::spectrumLooksChanged(SelectorItem item) {
   Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(item.text.toStdString());
   if (someSpectrum != nullptr) {
-    Qpx::Setting vis = someSpectrum->metadata().attributes.get(Qpx::Setting("visible"));
+    Qpx::Setting vis = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("visible"));
     vis.value_int = item.visible;
     someSpectrum->set_generic_attr(vis);
   }
@@ -119,8 +119,8 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   }
 
   std::string type = someSpectrum->type();
-  double real = md.attributes.get(Qpx::Setting("real_time")).value_duration.total_milliseconds() * 0.001;
-  double live = md.attributes.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  double real = md.attributes.branches.get(Qpx::Setting("real_time")).value_duration.total_milliseconds() * 0.001;
+  double live = md.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
 
   double rate_total = 0;
   if (live > 0)
@@ -130,7 +130,7 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   if (real > 0)
     dead = (real - live) * 100.0 / real;
 
-  double rate_inst = md.attributes.get(Qpx::Setting("instant_rate")).value_dbl;
+  double rate_inst = md.attributes.branches.get(Qpx::Setting("instant_rate")).value_dbl;
 
   Qpx::Detector det = Qpx::Detector();
   if (!md.detectors.empty())
@@ -186,10 +186,10 @@ void FormPlot1D::update_plot() {
     if (q)
       md = q->metadata();
 
-    double livetime = md.attributes.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
-    double rescale  = md.attributes.get(Qpx::Setting("rescale")).value_precise.convert_to<double>();
+    double livetime = md.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+    double rescale  = md.attributes.branches.get(Qpx::Setting("rescale")).value_precise.convert_to<double>();
 
-    if (md.attributes.get(Qpx::Setting("visible")).value_int
+    if (md.attributes.branches.get(Qpx::Setting("visible")).value_int
         && (md.bits > 0) && (md.total_count > 0)) {
 
 
@@ -220,7 +220,7 @@ void FormPlot1D::update_plot() {
       }
 
       AppearanceProfile profile;
-      profile.default_pen = QPen(QColor(QString::fromStdString(md.attributes.get(Qpx::Setting("appearance")).value_text)), 1);
+      profile.default_pen = QPen(QColor(QString::fromStdString(md.attributes.branches.get(Qpx::Setting("appearance")).value_text)), 1);
       ui->mcaPlot->addGraph(x, y, profile, md.bits);
 
     }
@@ -282,8 +282,8 @@ void FormPlot1D::updateUI()
 
     SelectorItem new_spectrum;
     new_spectrum.text = QString::fromStdString(md.name);
-    new_spectrum.color = QColor(QString::fromStdString(md.attributes.get(Qpx::Setting("appearance")).value_text));
-    new_spectrum.visible = md.attributes.get(Qpx::Setting("visible")).value_int;
+    new_spectrum.color = QColor(QString::fromStdString(md.attributes.branches.get(Qpx::Setting("appearance")).value_text));
+    new_spectrum.visible = md.attributes.branches.get(Qpx::Setting("visible")).value_int;
     items.push_back(new_spectrum);
   }
 
@@ -379,7 +379,7 @@ void FormPlot1D::showAll()
     Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(q.text.toStdString());
     if (!someSpectrum)
       continue;
-    Qpx::Setting vis = someSpectrum->metadata().attributes.get(Qpx::Setting("visible"));
+    Qpx::Setting vis = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("visible"));
     vis.value_int = true;
     someSpectrum->set_generic_attr(vis);
   }
@@ -394,7 +394,7 @@ void FormPlot1D::hideAll()
     Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(q.text.toStdString());
     if (!someSpectrum)
       continue;
-    Qpx::Setting vis = someSpectrum->metadata().attributes.get(Qpx::Setting("visible"));
+    Qpx::Setting vis = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("visible"));
     vis.value_int = false;
     someSpectrum->set_generic_attr(vis);
   }
@@ -408,7 +408,7 @@ void FormPlot1D::randAll()
     Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(q.text.toStdString());
     if (!someSpectrum)
       continue;
-    Qpx::Setting app = someSpectrum->metadata().attributes.get(Qpx::Setting("appearance"));
+    Qpx::Setting app = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("appearance"));
     app.value_text = generateColor().name(QColor::HexArgb).toStdString();
     someSpectrum->set_generic_attr(app);
   }
@@ -450,7 +450,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
   Qpx::Spectrum::Metadata md = someSpectrum->metadata();
 
 
-  double livetime = md.attributes.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  double livetime = md.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
 
   Qpx::Calibration cal;
   if (!md.detectors.empty())
@@ -467,7 +467,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
   for (auto &q: mySpectra->spectra(1, -1))
     if (q) {
       Qpx::Spectrum::Metadata mdt = q->metadata();
-      double lt = mdt.attributes.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+      double lt = mdt.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
 
       Qpx::Calibration cal;
       if (!mdt.detectors.empty())
@@ -478,7 +478,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
       if (ui->pushPerLive->isChecked() && (lt != 0))
         mc = mc / lt;
 
-      Qpx::Setting rescale = md.attributes.get(Qpx::Setting("rescale"));
+      Qpx::Setting rescale = md.attributes.branches.get(Qpx::Setting("rescale"));
       if (mc != 0)
         rescale.value_precise = PreciseFloat(max / mc);
       else
@@ -492,7 +492,7 @@ void FormPlot1D::on_pushRescaleReset_clicked()
 {
   for (auto &q: mySpectra->spectra(1, -1))
     if (q) {
-      Qpx::Setting rescale = q->metadata().attributes.get(Qpx::Setting("rescale"));
+      Qpx::Setting rescale = q->metadata().attributes.branches.get(Qpx::Setting("rescale"));
       rescale.value_precise = 1;
       q->set_generic_attr(rescale);
     }

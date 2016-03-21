@@ -33,12 +33,12 @@ class Spectrum1D : public Spectrum
 public:
   Spectrum1D() : cutoff_bin_(0) {}
 
-  static Template get_template() {
-    Template new_temp = Spectrum::get_template();
+  static Metadata get_prototype() {
+    Metadata new_temp = Spectrum::get_prototype();
     new_temp.type = "1D";
     new_temp.input_types = {"cnf", "tka", "n42", "ava", "spe", "Spe", "CNF", "N42", "mca", "dat"};
     new_temp.output_types = {"n42", "tka", "spe"};
-    new_temp.description = "Traditional MCA spectrum";
+    new_temp.type_description = "Traditional MCA spectrum";
 
     Qpx::Setting cutoff_bin;
     cutoff_bin.id_ = "cutoff_bin";
@@ -56,7 +56,7 @@ public:
 
 protected:
   std::string my_type() const override {return "1D";}
-  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().attributes.branches; }
+  Qpx::Setting default_settings() const override {return this->get_prototype().attributes; }
 
   //1D is ok with all patterns
   bool initialize() override {

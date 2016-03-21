@@ -59,7 +59,7 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Qpx:
   std::vector<std::string> spectypes = Qpx::Spectrum::Factory::getInstance().types();
   QStringList filetypes;
   for (auto &q : spectypes) {
-    Qpx::Spectrum::Template* type_template = Qpx::Spectrum::Factory::getInstance().create_template(q);
+    Qpx::Spectrum::Metadata* type_template = Qpx::Spectrum::Factory::getInstance().create_prototype(q);
     if (!type_template->input_types.empty())
       filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types) + ")");
     delete type_template;
@@ -436,14 +436,14 @@ void FormMcaDaq::projectImport()
     if (ext == "spn") {
       spectra_.import_spn(fileNames.at(i).toStdString());
       for (auto &q : spectra_.spectra()) {
-        Qpx::Setting app = q->metadata().attributes.get(Qpx::Setting("appearance"));
+        Qpx::Setting app = q->metadata().attributes.branches.get(Qpx::Setting("appearance"));
         app.value_text = generateColor().name(QColor::HexArgb).toStdString();
         q->set_generic_attr(app);
       }
     } else {
       Qpx::Spectrum::Spectrum* newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_file(fileNames.at(i).toStdString());
       if (newSpectrum != nullptr) {
-        Qpx::Setting app = newSpectrum->metadata().attributes.get(Qpx::Setting("appearance"));
+        Qpx::Setting app = newSpectrum->metadata().attributes.branches.get(Qpx::Setting("appearance"));
         app.value_text = generateColor().name(QColor::HexArgb).toStdString();
         newSpectrum->set_generic_attr(app);
         spectra_.add_spectrum(newSpectrum);

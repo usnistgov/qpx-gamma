@@ -43,12 +43,12 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   //loadSettings();
   connect(&opt_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
 
-  if (Qpx::Spectrum::Template *temp = Qpx::Spectrum::Factory::getInstance().create_template("1D")) {
+  if (Qpx::Spectrum::Metadata *temp = Qpx::Spectrum::Factory::getInstance().create_prototype("1D")) {
     optimizing_  = *temp;
     delete temp;
   }
 
-  optimizing_.name_ = "Optimizing";
+  optimizing_.name = "Optimizing";
   Qpx::Setting vis = optimizing_.attributes.branches.get(Qpx::Setting("visible"));
   vis.value_int = true;
   optimizing_.attributes.branches.replace(vis);
@@ -249,7 +249,7 @@ void FormOptimization::do_run()
 //  optimizing_.match_pattern[optchan] = 1;
 //  optimizing_.appearance = generateColor().rgba();
 
-  XMLableDB<Qpx::Spectrum::Template> db("SpectrumTemplates");
+  XMLableDB<Qpx::Spectrum::Metadata> db("SpectrumTemplates");
   db.add(optimizing_);
 
   current_spectra_.clear();

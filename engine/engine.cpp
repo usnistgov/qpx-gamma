@@ -413,7 +413,10 @@ void Engine::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>& 
     return;
   }
 
-  PL_INFO << "<Engine> Multithreaded spectra acquisition scheduled for " << timeout << " seconds";
+  if (timeout > 0)
+    PL_INFO << "<Engine> Spectra acquisition scheduled for " << timeout << " seconds";
+  else
+    PL_INFO << "<Engine> Spectra acquisition indefinite run";
 
   CustomTimer *anouncement_timer = nullptr;
   double secs_between_anouncements = 5;
@@ -485,10 +488,13 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
     return nullptr;
   }
 
+  if (timeout > 0)
+    PL_INFO << "<Engine> List mode acquisition scheduled for " << timeout << " seconds";
+  else
+    PL_INFO << "<Engine> List mode acquisition indefinite run";
+
   Spill* one_spill;
   ListData* result = new ListData;
-
-  PL_INFO << "<Engine> Multithreaded list mode acquisition scheduled for " << timeout << " seconds";
 
   CustomTimer *anouncement_timer = nullptr;
   double secs_between_anouncements = 5;
@@ -659,7 +665,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
       break;
   }
 
-  PL_DBG << "<Engine> Spectra builder thread terminating";
+  PL_INFO << "<Engine> Spectra builder thread terminating";
 
   spectra->closeAcquisition();
 }

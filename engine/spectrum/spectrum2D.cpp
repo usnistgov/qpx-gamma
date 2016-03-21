@@ -77,17 +77,17 @@ void Spectrum2D::init_from_file(std::string filename) {
   pattern_add_.set_gates(std::vector<bool>({true, true}));
 
   Qpx::Setting pattern;
-  pattern = metadata_.attributes.get(Qpx::Setting("pattern_coinc"));
+  pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_coinc"));
   pattern.value_pattern = pattern_coinc_;
-  metadata_.attributes.replace(pattern);
+  metadata_.attributes.branches.replace(pattern);
 
-  pattern = metadata_.attributes.get(Qpx::Setting("pattern_anti"));
+  pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_anti"));
   pattern.value_pattern = pattern_anti_;
-  metadata_.attributes.replace(pattern);
+  metadata_.attributes.branches.replace(pattern);
 
-  pattern = metadata_.attributes.get(Qpx::Setting("pattern_add"));
+  pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_add"));
   pattern.value_pattern = pattern_add_;
-  metadata_.attributes.replace(pattern);
+  metadata_.attributes.branches.replace(pattern);
 
 
 //  metadata_.match_pattern.resize(2, 0);
@@ -112,7 +112,7 @@ bool Spectrum2D::check_symmetrization() {
   }
   Qpx::Setting symset = get_attr("symmetrized");
   symset.value_int = symmetrical;
-  metadata_.attributes.replace(symset);
+  metadata_.attributes.branches.replace(symset);
   return symmetrical;
 }
 

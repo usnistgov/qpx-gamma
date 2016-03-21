@@ -124,7 +124,7 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
     Setting real_time = get_attr("real_time");
     Setting live_time = get_attr("live_time");
     live_time.value_duration = real_time.value_duration;
-    metadata_.attributes.replace(live_time);
+    metadata_.attributes.branches.replace(live_time);
 
     count_current_ = 0;
   } else {
@@ -147,7 +147,7 @@ void Spectrum1D_LFC::addRun(const RunInfo& run_info) {
   Setting real_time = get_attr("real_time");
   Setting live_time = get_attr("live_time");
   live_time.value_duration = real_time.value_duration;
-  metadata_.attributes.replace(live_time);
+  metadata_.attributes.branches.replace(live_time);
   //think about this...
 }
 

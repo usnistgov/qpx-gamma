@@ -28,7 +28,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
-DialogSpectrumTemplate::DialogSpectrumTemplate(Qpx::Spectrum::Template newTemplate,
+DialogSpectrumTemplate::DialogSpectrumTemplate(Qpx::Spectrum::Metadata newTemplate,
                                                std::vector<Qpx::Detector> current_dets,
                                                bool edit, QWidget *parent) :
   QDialog(parent),
@@ -54,15 +54,15 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Qpx::Spectrum::Template newTempla
     myTemplate = newTemplate;
     ui->lineName->setEnabled(false);
     ui->comboType->setEnabled(false);
-    Qpx::Spectrum::Template *newtemp = Qpx::Spectrum::Factory::getInstance().create_template(newTemplate.type);
+    Qpx::Spectrum::Metadata *newtemp = Qpx::Spectrum::Factory::getInstance().create_prototype(newTemplate.type);
     if (newtemp != nullptr) {
-      myTemplate.description = newtemp->description;
+      myTemplate.type_description = newtemp->type_description;
       myTemplate.input_types = newtemp->input_types;
       myTemplate.output_types = newtemp->output_types;
     } else
       PL_WARN << "Problem with spectrum type. Factory cannot make template for " << newTemplate.type;
   } else {
-    Qpx::Spectrum::Template *newtemp = Qpx::Spectrum::Factory::getInstance().create_template(ui->comboType->currentText().toStdString());
+    Qpx::Spectrum::Metadata *newtemp = Qpx::Spectrum::Factory::getInstance().create_prototype(ui->comboType->currentText().toStdString());
     if (newtemp != nullptr) {
       myTemplate = *newtemp;
       size_t sz = current_dets_.size();
@@ -83,14 +83,14 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Qpx::Spectrum::Template newTempla
 
 void DialogSpectrumTemplate::updateData() {
 
-  ui->lineName->setText(QString::fromStdString(myTemplate.name_));
+  ui->lineName->setText(QString::fromStdString(myTemplate.name));
   ui->comboType->setCurrentText(QString::fromStdString(myTemplate.type));
   ui->spinBits->setValue(myTemplate.bits);
   ui->lineChannels->setText(QString::number(pow(2,myTemplate.bits)));
 
 //  ui->spinDets->setValue(myTemplate.match_pattern.size());
 
-  QString descr = QString::fromStdString(myTemplate.description) + "\n";
+  QString descr = QString::fromStdString(myTemplate.type_description) + "\n";
   if (myTemplate.output_types.size()) {
     descr += "\t\tOutput file types: ";
     for (auto &q : myTemplate.output_types) {
@@ -111,14 +111,14 @@ DialogSpectrumTemplate::~DialogSpectrumTemplate()
 
 void DialogSpectrumTemplate::on_buttonBox_accepted()
 {
-  if (myTemplate.name_ == Qpx::Spectrum::Template().name_) {
+  if (myTemplate.name == Qpx::Spectrum::Metadata().name) {
     QMessageBox msgBox;
     msgBox.setText("Please give it a proper name");
     msgBox.exec();
   } else {
     PL_INFO << "Type requested " << myTemplate.type;
     myTemplate.attributes = attr_model_.get_tree();
-    Qpx::Spectrum::Spectrum *newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_template(myTemplate);
+    Qpx::Spectrum::Spectrum *newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_prototype(myTemplate);
     if (newSpectrum == nullptr) {
       QMessageBox msgBox;
       msgBox.setText("Failed to create spectrum from template. Check requirements.");
@@ -138,7 +138,7 @@ void DialogSpectrumTemplate::on_buttonBox_rejected()
 
 void DialogSpectrumTemplate::on_lineName_editingFinished()
 {
-  myTemplate.name_ = ui->lineName->text().toStdString();
+  myTemplate.name = ui->lineName->text().toStdString();
 }
 
 void DialogSpectrumTemplate::on_spinBits_valueChanged(int arg1)
@@ -149,13 +149,13 @@ void DialogSpectrumTemplate::on_spinBits_valueChanged(int arg1)
 
 void DialogSpectrumTemplate::on_comboType_activated(const QString &arg1)
 {
-  Qpx::Spectrum::Template *newtemp = Qpx::Spectrum::Factory::getInstance().create_template(arg1.toStdString());
+  Qpx::Spectrum::Metadata *newtemp = Qpx::Spectrum::Factory::getInstance().create_prototype(arg1.toStdString());
   if (newtemp != nullptr) {
     myTemplate = *newtemp;
 
     //keep these from previous
     myTemplate.bits = ui->spinBits->value();
-    myTemplate.name_ = ui->lineName->text().toStdString();
+    myTemplate.name = ui->lineName->text().toStdString();
 
     for (auto &a : myTemplate.attributes.branches.my_data_)
       if (a.metadata.setting_type == Qpx::SettingType::color)
@@ -180,7 +180,7 @@ void DialogSpectrumTemplate::on_spinDets_valueChanged(int arg1)
 
 
 
-TableSpectraTemplates::TableSpectraTemplates(XMLableDB<Qpx::Spectrum::Template>& templates, QObject *parent)
+TableSpectraTemplates::TableSpectraTemplates(XMLableDB<Qpx::Spectrum::Metadata>& templates, QObject *parent)
   : QAbstractTableModel(parent),
     templates_(templates)
 {
@@ -205,7 +205,7 @@ QVariant TableSpectraTemplates::data(const QModelIndex &index, int role) const
   {
     switch (col) {
     case 0:
-      return QString::fromStdString(templates_.get(row).name_);
+      return QString::fromStdString(templates_.get(row).name);
     case 1:
       return QString::fromStdString(templates_.get(row).type);
     case 2:
@@ -279,7 +279,7 @@ Qt::ItemFlags TableSpectraTemplates::flags(const QModelIndex &index) const
 
 
 
-DialogSpectraTemplates::DialogSpectraTemplates(XMLableDB<Qpx::Spectrum::Template> &newdb,
+DialogSpectraTemplates::DialogSpectraTemplates(XMLableDB<Qpx::Spectrum::Metadata> &newdb,
                                                std::vector<Qpx::Detector> current_dets,
                                                QString savedir, QWidget *parent) :
   QDialog(parent),
@@ -381,9 +381,9 @@ void DialogSpectraTemplates::on_pushExport_clicked()
 
 void DialogSpectraTemplates::on_pushNew_clicked()
 {
-  Qpx::Spectrum::Template new_template;
+  Qpx::Spectrum::Metadata new_template;
   DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(new_template, current_dets_, false, this);
-  connect(newDialog, SIGNAL(templateReady(Qpx::Spectrum::Template)), this, SLOT(add_template(Qpx::Spectrum::Template)));
+  connect(newDialog, SIGNAL(templateReady(Qpx::Spectrum::Metadata)), this, SLOT(add_template(Qpx::Spectrum::Metadata)));
   newDialog->exec();
 }
 
@@ -394,7 +394,7 @@ void DialogSpectraTemplates::on_pushEdit_clicked()
     return;
   int i = ixl.front().row();
   DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(templates_.get(i), current_dets_, true, this);
-  connect(newDialog, SIGNAL(templateReady(Qpx::Spectrum::Template)), this, SLOT(change_template(Qpx::Spectrum::Template)));
+  connect(newDialog, SIGNAL(templateReady(Qpx::Spectrum::Metadata)), this, SLOT(change_template(Qpx::Spectrum::Metadata)));
   newDialog->exec();
 }
 
@@ -408,24 +408,23 @@ void DialogSpectraTemplates::on_pushDelete_clicked()
   if (ixl.empty())
     return;
 
-  std::vector<std::string> names;
+  std::list<Qpx::Spectrum::Metadata> torem;
 
   for (auto &ix : ixl) {
     int i = ix.row();
-    names.push_back(templates_.get(i).name_);
+    torem.push_back(templates_.get(i));
   }
 
-  for (auto &q : names) {
-    Qpx::Spectrum::Template t(q);
-    templates_.remove_a(t);
-  }
+  for (auto &q : torem)
+    templates_.remove_a(q);
+
   selection_model_.reset();
   table_model_.update();
   toggle_push();
 }
 
 
-void DialogSpectraTemplates::add_template(Qpx::Spectrum::Template newTemplate) {
+void DialogSpectraTemplates::add_template(Qpx::Spectrum::Metadata newTemplate) {
   //notify if duplicate
   templates_.add(newTemplate);
   selection_model_.reset();
@@ -433,7 +432,7 @@ void DialogSpectraTemplates::add_template(Qpx::Spectrum::Template newTemplate) {
   toggle_push();
 }
 
-void DialogSpectraTemplates::change_template(Qpx::Spectrum::Template newTemplate) {
+void DialogSpectraTemplates::change_template(Qpx::Spectrum::Metadata newTemplate) {
   templates_.replace(newTemplate);
   selection_model_.reset();
   table_model_.update();

@@ -323,7 +323,7 @@ bool Setting::compare(const Setting &other, Match flags) const {
   bool match = true;
   if ((flags & Match::id) && (id_ != other.id_))
     match = false;
-  if (flags & Match::indices) {
+  if ((flags & Match::indices) && other.indices.size()) {
     bool mt = false;
     for (auto &q : other.indices) {
       if (indices.count(q) > 0) {

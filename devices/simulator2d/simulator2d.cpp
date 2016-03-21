@@ -243,7 +243,7 @@ bool Simulator2D::boot() {
 
   settings = temp_set->runInfo().state;
   detectors = md.detectors;
-  lab_time = md.attributes.get(Qpx::Setting("real_time")).value_duration.total_milliseconds() * 0.001;
+  lab_time = md.attributes.branches.get(Qpx::Setting("real_time")).value_duration.total_milliseconds() * 0.001;
 
   if (lab_time == 0.0) {
     PL_WARN << "<Simulator2D> Lab time = 0. Cannot create simulation.";

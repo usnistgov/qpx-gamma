@@ -126,7 +126,7 @@ private:
 
   Qpx::SpectraSet *spectra_;
   QString current_spectrum_;
-  Qpx::Spectrum::Template *tempx;
+  Qpx::Spectrum::Metadata *tempx;
   Qpx::Spectrum::Spectrum *gate_x;
   Qpx::Fitter fit_data_;
   int res;

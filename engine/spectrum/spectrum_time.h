@@ -33,11 +33,11 @@ class SpectrumTime : public Spectrum
 public:
   SpectrumTime() : codomain(0) {}
 
-  static Template get_template() {
-    Template new_temp = Spectrum::get_template();
+  static Metadata get_prototype() {
+    Metadata new_temp = Spectrum::get_prototype();
 
     new_temp.type = "Time";
-    new_temp.description = "Time-domain log of activity";
+    new_temp.type_description = "Time-domain log of activity";
 
     Qpx::Setting format_setting;
     format_setting.id_ = "co-domain";
@@ -55,7 +55,7 @@ public:
 
 protected:
   std::string my_type() const override {return "Time";}
-  XMLableDB<Qpx::Setting> default_settings() const override {return this->get_template().attributes.branches; }
+  Qpx::Setting default_settings() const override {return this->get_prototype().attributes; }
 
   //1D is ok with all patterns
   bool initialize() override {
