@@ -22,10 +22,10 @@
 
 #include "form_optimization.h"
 #include "ui_form_optimization.h"
-#include "spectrum1D.h"
 #include "custom_logger.h"
 #include "fityk.h"
 #include "qt_util.h"
+#include "spectrum_factory.h"
 
 FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XMLableDB<Qpx::Detector>& detectors, QWidget *parent) :
   QWidget(parent),

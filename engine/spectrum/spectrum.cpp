@@ -56,121 +56,123 @@ void Metadata::from_xml(const pugi::xml_node &node) {
     attributes.from_xml(node.child(attributes.xml_element_name().c_str()));
 }
 
-Metadata Spectrum::get_prototype() {
-  Metadata new_temp;
-  populate_options(new_temp.attributes);
-  return new_temp;
-}
-
-void Spectrum::populate_options(Setting &set)
+Spectrum::Spectrum()
+  : recent_count_(0)
+  , cutoff_logic_(0)
+  , coinc_window_(0)
 {
-  Qpx::Setting vis;
+  Setting vis;
   vis.id_ = "visible";
-  vis.metadata.setting_type = Qpx::SettingType::boolean;
+  vis.metadata.setting_type = SettingType::boolean;
   vis.metadata.description = "Plot visible";
   vis.metadata.writable = true;
-  set.branches.add(vis);
+  metadata_.attributes.branches.add(vis);
 
-  Qpx::Setting app;
+  Setting app;
   app.id_ = "appearance";
-  app.metadata.setting_type = Qpx::SettingType::color;
+  app.metadata.setting_type = SettingType::color;
   app.metadata.description = "Plot appearance";
   app.metadata.writable = true;
-  set.branches.add(app);
+  metadata_.attributes.branches.add(app);
 
-  Qpx::Setting ignore_zero;
-  ignore_zero.id_ = "cutoff_logic";
-  ignore_zero.metadata.setting_type = Qpx::SettingType::integer;
-  ignore_zero.metadata.description = "Hits rejected below minimum energy (affects coincidence logic and binning)";
-  ignore_zero.metadata.writable = true;
-  ignore_zero.metadata.minimum = 0;
-  ignore_zero.metadata.step = 1;
-  ignore_zero.metadata.maximum = 1000000;
-  set.branches.add(ignore_zero);
-
-  Qpx::Setting coinc_window;
-  coinc_window.id_ = "coinc_window";
-  coinc_window.metadata.setting_type = Qpx::SettingType::floating;
-  coinc_window.metadata.minimum = 0;
-  coinc_window.metadata.step = 1;
-  coinc_window.metadata.maximum = 1000000;
-  coinc_window.metadata.unit = "ns";
-  coinc_window.metadata.description = "Coincidence window";
-  coinc_window.metadata.writable = true;
-  coinc_window.value_dbl = 50;
-  set.branches.add(coinc_window);
-
-  Qpx::Setting pattern_coinc;
-  pattern_coinc.id_ = "pattern_coinc";
-  pattern_coinc.metadata.setting_type = Qpx::SettingType::pattern;
-  pattern_coinc.metadata.maximum = 1;
-  pattern_coinc.metadata.description = "Coincidence pattern";
-  pattern_coinc.metadata.writable = true;
-  set.branches.add(pattern_coinc);
-
-  Qpx::Setting pattern_anti;
-  pattern_anti.id_ = "pattern_anti";
-  pattern_anti.metadata.setting_type = Qpx::SettingType::pattern;
-  pattern_anti.metadata.maximum = 1;
-  pattern_anti.metadata.description = "Anti-coindicence pattern";
-  pattern_anti.metadata.writable = true;
-  set.branches.add(pattern_anti);
-
-  Qpx::Setting pattern_add;
-  pattern_add.id_ = "pattern_add";
-  pattern_add.metadata.setting_type = Qpx::SettingType::pattern;
-  pattern_add.metadata.maximum = 1;
-  pattern_add.metadata.description = "Add pattern";
-  pattern_add.metadata.writable = true;
-  set.branches.add(pattern_add);
-
-  Qpx::Setting rescale;
+  Setting rescale;
   rescale.id_ = "rescale";
-  rescale.metadata.setting_type = Qpx::SettingType::floating_precise;
+  rescale.metadata.setting_type = SettingType::floating_precise;
   rescale.metadata.description = "Rescale factor";
   rescale.metadata.writable = true;
   rescale.metadata.minimum = 0;
   rescale.metadata.maximum = 1e10;
   rescale.metadata.step = 1;
   rescale.value_precise = 1;
-  set.branches.add(rescale);
+  metadata_.attributes.branches.add(rescale);
 
-  Qpx::Setting start_time;
+  Setting descr;
+  descr.id_ = "description";
+  descr.metadata.setting_type = SettingType::text;
+  descr.metadata.description = "Description";
+  descr.metadata.writable = true;
+  metadata_.attributes.branches.add(descr);
+
+  Setting ignore_zero;
+  ignore_zero.id_ = "cutoff_logic";
+  ignore_zero.metadata.setting_type = SettingType::integer;
+  ignore_zero.metadata.description = "Hits rejected below minimum energy (affects coincidence logic and binning)";
+  ignore_zero.metadata.writable = true;
+  ignore_zero.metadata.flags.insert("preset");
+  ignore_zero.metadata.minimum = 0;
+  ignore_zero.metadata.step = 1;
+  ignore_zero.metadata.maximum = 1000000;
+  metadata_.attributes.branches.add(ignore_zero);
+
+  Setting coinc_window;
+  coinc_window.id_ = "coinc_window";
+  coinc_window.metadata.setting_type = SettingType::floating;
+  coinc_window.metadata.minimum = 0;
+  coinc_window.metadata.step = 1;
+  coinc_window.metadata.maximum = 1000000;
+  coinc_window.metadata.unit = "ns";
+  coinc_window.metadata.description = "Coincidence window";
+  coinc_window.metadata.writable = true;
+  coinc_window.metadata.flags.insert("preset");
+  coinc_window.value_dbl = 50;
+  metadata_.attributes.branches.add(coinc_window);
+
+  Setting pattern_coinc;
+  pattern_coinc.id_ = "pattern_coinc";
+  pattern_coinc.metadata.setting_type = SettingType::pattern;
+  pattern_coinc.metadata.maximum = 1;
+  pattern_coinc.metadata.description = "Coincidence pattern";
+  pattern_coinc.metadata.writable = true;
+  pattern_coinc.metadata.flags.insert("preset");
+  metadata_.attributes.branches.add(pattern_coinc);
+
+  Setting pattern_anti;
+  pattern_anti.id_ = "pattern_anti";
+  pattern_anti.metadata.setting_type = SettingType::pattern;
+  pattern_anti.metadata.maximum = 1;
+  pattern_anti.metadata.description = "Anti-coindicence pattern";
+  pattern_anti.metadata.writable = true;
+  pattern_anti.metadata.flags.insert("preset");
+  metadata_.attributes.branches.add(pattern_anti);
+
+  Setting pattern_add;
+  pattern_add.id_ = "pattern_add";
+  pattern_add.metadata.setting_type = SettingType::pattern;
+  pattern_add.metadata.maximum = 1;
+  pattern_add.metadata.description = "Add pattern";
+  pattern_add.metadata.writable = true;
+  pattern_add.metadata.flags.insert("preset");
+  metadata_.attributes.branches.add(pattern_add);
+
+  Setting start_time;
   start_time.id_ = "start_time";
-  start_time.metadata.setting_type = Qpx::SettingType::time;
+  start_time.metadata.setting_type = SettingType::time;
   start_time.metadata.description = "Start time";
   start_time.metadata.writable = false;
-  set.branches.add(start_time);
+  metadata_.attributes.branches.add(start_time);
 
-  Qpx::Setting live_time;
+  Setting live_time;
   live_time.id_ = "live_time";
-  live_time.metadata.setting_type = Qpx::SettingType::time_duration;
+  live_time.metadata.setting_type = SettingType::time_duration;
   live_time.metadata.description = "Live time";
   live_time.metadata.writable = false;
-  set.branches.add(live_time);
+  metadata_.attributes.branches.add(live_time);
 
-  Qpx::Setting real_time;
+  Setting real_time;
   real_time.id_ = "real_time";
-  real_time.metadata.setting_type = Qpx::SettingType::time_duration;
+  real_time.metadata.setting_type = SettingType::time_duration;
   real_time.metadata.description = "Real time";
   real_time.metadata.writable = false;
-  set.branches.add(real_time);
+  metadata_.attributes.branches.add(real_time);
 
-  Qpx::Setting inst_rate;
+  Setting inst_rate;
   inst_rate.id_ = "instant_rate";
-  inst_rate.metadata.setting_type = Qpx::SettingType::floating;
+  inst_rate.metadata.setting_type = SettingType::floating;
   inst_rate.metadata.unit = "cps";
   inst_rate.metadata.description = "Instant count rate";
   inst_rate.metadata.writable = false;
   inst_rate.value_dbl = 0;
-  set.branches.add(inst_rate);
-
-  Qpx::Setting descr;
-  descr.id_ = "description";
-  descr.metadata.setting_type = Qpx::SettingType::text;
-  descr.metadata.description = "Description";
-  descr.metadata.writable = true;
-  set.branches.add(descr);
+  metadata_.attributes.branches.add(inst_rate);
 }
 
 bool Spectrum::initialize() {
@@ -179,6 +181,8 @@ bool Spectrum::initialize() {
   pattern_add_ = get_attr("pattern_add").value_pattern;
   cutoff_logic_ = get_attr("cutoff_logic").value_int;
   coinc_window_ = get_attr("coinc_window").value_dbl;
+
+  metadata_.attributes.enable_if_flag(false, "preset");
 
   if (coinc_window_ < 0)
     coinc_window_ = 0;
@@ -216,8 +220,14 @@ bool Spectrum::from_prototype(const Metadata& newtemplate) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  
-  metadata_ = newtemplate;
+
+  if ((metadata_.type() != newtemplate.type()) ||
+      (this->my_type() != newtemplate.type()))
+    return false;
+
+  metadata_.name = newtemplate.name;
+  metadata_.bits = newtemplate.bits;
+  metadata_.attributes = newtemplate.attributes;
   return (this->initialize());
 }
 
@@ -504,11 +514,9 @@ void Spectrum::recalc_energies() {
   }
 }
 
-Qpx::Setting Spectrum::get_attr(std::string setting) const {
-  return metadata_.attributes.branches.get(Qpx::Setting(setting));
+Setting Spectrum::get_attr(std::string setting) const {
+  return metadata_.attributes.branches.get(Setting(setting));
 }
-
-
 
 bool Spectrum::write_file(std::string dir, std::string format) const {
   boost::shared_lock<boost::shared_mutex> lock(mutex_);
@@ -519,7 +527,6 @@ bool Spectrum::read_file(std::string name, std::string format) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  metadata_.attributes = this->default_settings();
   return _read_file(name, format);
 }
 
@@ -565,7 +572,7 @@ uint16_t Spectrum::bits() const {
 
 //change stuff
 
-void Spectrum::set_generic_attr(Qpx::Setting setting, Match match) {
+void Spectrum::set_generic_attr(Setting setting, Match match) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
@@ -573,7 +580,7 @@ void Spectrum::set_generic_attr(Qpx::Setting setting, Match match) {
   metadata_.changed = true;
 }
 
-void Spectrum::set_generic_attrs(Qpx::Setting settings) {
+void Spectrum::set_generic_attrs(Setting settings) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
@@ -605,7 +612,7 @@ void Spectrum::to_xml(pugi::xml_node &root) const {
   if (metadata_.detectors.size()) {
     pugi::xml_node child = node.append_child("Detectors");
     for (auto q : metadata_.detectors) {
-      q.settings_ = Qpx::Setting();
+      q.settings_ = Setting();
       q.to_xml(child);
     }
   }
@@ -622,10 +629,6 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
-
-  //retroactive attributrion of params in current version?
-  Metadata t = this->get_prototype();
-  metadata_.attributes = t.attributes;
 
   if (node.child(metadata_.attributes.xml_element_name().c_str()))
     metadata_.attributes.from_xml(node.child(metadata_.attributes.xml_element_name().c_str()));
@@ -676,12 +679,12 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
     pattern_anti_.set_gates(gts_a);
     pattern_anti_.set_theshold(thresh_a);
 
-    Qpx::Setting pattern;
-    pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+    Setting pattern;
+    pattern = metadata_.attributes.branches.get(Setting("pattern_coinc"));
     pattern.value_pattern = pattern_coinc_;
     metadata_.attributes.branches.replace(pattern);
 
-    pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_anti"));
+    pattern = metadata_.attributes.branches.get(Setting("pattern_anti"));
     pattern.value_pattern = pattern_anti_;
     metadata_.attributes.branches.replace(pattern);
   }
@@ -709,8 +712,8 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
     pattern_add_.set_gates(gts);
     pattern_add_.set_theshold(thresh);
 
-    Qpx::Setting pattern;
-    pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_add"));
+    Setting pattern;
+    pattern = metadata_.attributes.branches.get(Setting("pattern_add"));
     pattern.value_pattern = pattern_add_;
     metadata_.attributes.branches.replace(pattern);
   }
@@ -755,13 +758,13 @@ bool Spectrum::from_xml(const pugi::xml_node &node) {
 
   if (node.child("Appearance")) {
     uint32_t col = boost::lexical_cast<unsigned int>(std::string(node.child_value("Appearance")));
-    Qpx::Setting app = metadata_.attributes.branches.get(Qpx::Setting("appearance"));
+    Setting app = metadata_.attributes.branches.get(Setting("appearance"));
     app.value_text = "#" + itohex32(col);
     metadata_.attributes.branches.replace(app);
   }
 
   if (node.child("Visible")) {
-    Qpx::Setting vis = metadata_.attributes.branches.get(Qpx::Setting("visible"));
+    Setting vis = metadata_.attributes.branches.get(Setting("visible"));
     vis.value_int = boost::lexical_cast<bool>(std::string(node.child_value("Visible")));
     metadata_.attributes.branches.replace(vis);
   }

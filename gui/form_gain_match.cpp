@@ -22,10 +22,9 @@
 
 #include "form_gain_match.h"
 #include "ui_form_gain_match.h"
-#include "spectrum1D.h"
 #include "custom_logger.h"
 #include "fityk.h"
-
+#include "spectrum_factory.h"
 
 FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableDB<Qpx::Detector>& detectors, QWidget *parent) :
   QWidget(parent),

@@ -20,6 +20,7 @@
  *
  ******************************************************************************/
 
+#include "spectrum_factory.h"
 #include "form_multi_gates.h"
 #include "widget_detectors.h"
 #include "ui_form_multi_gates.h"

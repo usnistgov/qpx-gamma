@@ -25,6 +25,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include "spectrum1D.h"
+#include "spectrum_factory.h"
 #include "xylib.h"
 #include "qpx_util.h"
 
@@ -33,9 +34,14 @@ namespace Spectrum {
 
 static Registrar<Spectrum1D> registrar("1D");
 
-void Spectrum1D::populate_options(Setting &set)
+Spectrum1D::Spectrum1D()
+  : cutoff_bin_(0)
 {
-  Spectrum::populate_options(set);
+  Setting base_options = metadata_.attributes;
+  metadata_ = Metadata("1D", "Traditional MCA spectrum", 1,
+  {"cnf", "tka", "n42", "ava", "spe", "Spe", "CNF", "N42", "mca", "dat"},
+  {"n42", "tka", "spe"});
+  metadata_.attributes = base_options;
 
   Qpx::Setting cutoff_bin;
   cutoff_bin.id_ = "cutoff_bin";
@@ -45,7 +51,8 @@ void Spectrum1D::populate_options(Setting &set)
   cutoff_bin.metadata.minimum = 0;
   cutoff_bin.metadata.step = 1;
   cutoff_bin.metadata.maximum = 1000000;
-  set.branches.add(cutoff_bin);
+  cutoff_bin.metadata.flags.insert("preset");
+  metadata_.attributes.branches.add(cutoff_bin);
 }
 
 void Spectrum1D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
@@ -141,9 +148,7 @@ bool Spectrum1D::_write_file(std::string dir, std::string format) const {
 }
 
 bool Spectrum1D::_read_file(std::string name, std::string format) {
-  metadata_.attributes = get_prototype().attributes;
-
-  PL_DBG << "Will try to make " << format;
+//  PL_DBG << "Will try to make " << format;
 
   if (format == "tka")
     return read_tka(name);

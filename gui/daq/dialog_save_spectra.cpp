@@ -22,7 +22,7 @@
  ******************************************************************************/
 
 
-#include "spectrum.h"
+#include "spectrum_factory.h"
 #include <algorithm>
 #include <QPaintEvent>
 #include <QPainter>

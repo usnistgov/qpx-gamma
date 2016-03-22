@@ -33,21 +33,11 @@ namespace Spectrum {
 class Spectrum1D_LFC : public Spectrum1D
 {
 public:
-  Spectrum1D_LFC() {}
-
-  static Metadata get_prototype() {
-    Metadata temp1d = Spectrum1D::get_prototype();
-    Metadata new_temp("LFC1D", "One detector loss-free spectrum", 1,
-                      temp1d.input_types(), temp1d.output_types());
-    populate_options(new_temp.attributes);
-    return new_temp;
-  }
+  Spectrum1D_LFC();
 
 protected:
   std::string my_type() const override {return "LFC1D";}
-  Qpx::Setting default_settings() const override {return this->get_prototype().attributes; }
   bool initialize() override;
-  static void populate_options(Setting &);
   
   void addStats(const StatsUpdate&) override;
   void addRun(const RunInfo&) override;

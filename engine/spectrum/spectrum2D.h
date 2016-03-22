@@ -34,25 +34,15 @@ namespace Spectrum {
 class Spectrum2D : public Spectrum
 {
 public:
-  Spectrum2D() {}
-
-  static Metadata get_prototype() {
-    Metadata new_temp("2D", "2-dimensional coincidence matrix", 2,
-                      {"m", "m4b", "mat"},
-                      {"m4b", "mat"});
-    populate_options(new_temp.attributes);
-    return new_temp;
-  }
+  Spectrum2D();
   
 protected:
   typedef std::map<std::pair<uint16_t,uint16_t>, PreciseFloat> SpectrumMap2D;
   
-  static void populate_options(Setting &);
   bool initialize() override;
   void init_from_file(std::string filename);
 
   std::string my_type() const override {return "2D";}
-  Qpx::Setting default_settings() const override {return this->get_prototype().attributes; }
 
   PreciseFloat _get_count(std::initializer_list<uint16_t> list ) const;
   std::unique_ptr<EntryList> _get_spectrum(std::initializer_list<Pair> list);

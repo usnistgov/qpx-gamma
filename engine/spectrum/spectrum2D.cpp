@@ -24,6 +24,7 @@
 
 #include <fstream>
 #include "spectrum2D.h"
+#include "spectrum_factory.h"
 #include "custom_logger.h"
 #include "custom_timer.h"
 
@@ -32,9 +33,13 @@ namespace Spectrum {
 
 static Registrar<Spectrum2D> registrar("2D");
 
-void Spectrum2D::populate_options(Setting &set)
+Spectrum2D::Spectrum2D()
 {
-  Spectrum::populate_options(set);
+  Setting base_options = metadata_.attributes;
+  metadata_ = Metadata("2D", "2-dimensional coincidence matrix", 2,
+                    {"m", "m4b", "mat"},
+                    {"m4b", "mat"});
+  metadata_.attributes = base_options;
 
   Qpx::Setting buf;
   buf.id_ = "buffered";
@@ -42,7 +47,8 @@ void Spectrum2D::populate_options(Setting &set)
   buf.metadata.unit = "T/F";
   buf.metadata.description = "Buffered output for efficient plotting (more memory)";
   buf.metadata.writable = true;
-  set.branches.add(buf);
+  buf.metadata.flags.insert("preset");
+  metadata_.attributes.branches.add(buf);
 
   Qpx::Setting sym;
   sym.id_ = "symmetrized";
@@ -51,8 +57,9 @@ void Spectrum2D::populate_options(Setting &set)
   sym.metadata.description = "Matrix is symmetrized";
   sym.metadata.writable = false;
   sym.value_int = 0;
-  set.branches.add(sym);
+  metadata_.attributes.branches.add(sym);
 }
+
 
 bool Spectrum2D::initialize() {
   Spectrum::initialize();

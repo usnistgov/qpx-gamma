@@ -665,7 +665,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
       break;
   }
 
-  PL_INFO << "<Engine> Spectra builder thread terminating";
+  PL_INFO << "<Engine> Spectra builder terminating";
 
   spectra->closeAcquisition();
 }

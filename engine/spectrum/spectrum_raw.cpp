@@ -26,22 +26,30 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include "spectrum_raw.h"
+#include "spectrum_factory.h"
 
 namespace Qpx {
 namespace Spectrum {
 
 static Registrar<SpectrumRaw> registrar("Raw");
 
-void SpectrumRaw::populate_options(Setting &set)
+SpectrumRaw::SpectrumRaw()
+  : open_bin_(false)
+  , open_xml_(false)
+  , events_this_spill_(0)
 {
-  Spectrum::populate_options(set);
+  Setting base_options = metadata_.attributes;
+  metadata_ = Metadata("Raw", "Custom gated list mode to file. Please provide path and name for valid and accessible file", 0,
+                    {}, {});
+  metadata_.attributes = base_options;
 
   Qpx::Setting file_setting;
   file_setting.id_ = "file_dir";
   file_setting.metadata.setting_type = Qpx::SettingType::dir_path;
   file_setting.metadata.writable = true;
+  file_setting.metadata.flags.insert("preset");
   file_setting.metadata.description = "path to temp output directory";
-  set.branches.add(file_setting);
+  metadata_.attributes.branches.add(file_setting);
 }
 
 SpectrumRaw::~SpectrumRaw() {

@@ -57,7 +57,7 @@ struct Metadata : public XMLable {
   std::list<std::string> input_types_;
   std::list<std::string> output_types_;
 
-public:
+ public:
   //user sets these in prototype
   std::string name;
   uint16_t bits;
@@ -116,9 +116,7 @@ public:
 class Spectrum
 {
 public:
-  //constructs invalid spectrum by default. Make private?
-  Spectrum(): recent_count_(0), cutoff_logic_(0), coinc_window_(0) {}
-  static Metadata get_prototype();
+  Spectrum();
 
   //named constructors, used by factory
   bool from_prototype(const Metadata&);
@@ -204,8 +202,6 @@ protected:
 
   void recalc_energies();
   Setting get_attr(std::string name) const;
-  virtual Setting default_settings() const = 0;
-  static void populate_options(Setting &);
 
   //////////////////////////////
   ///////member variables///////
@@ -231,125 +227,6 @@ protected:
 
   Pattern pattern_coinc_, pattern_anti_, pattern_add_;
 };
-
-
-class Factory {
- public:
-  static Factory& getInstance()
-  {
-    static Factory singleton_instance;
-    return singleton_instance;
-  }
-  
-  Spectrum* create_type(std::string type)
-  {
-    Spectrum *instance = nullptr;
-    auto it = constructors.find(type);
-    if(it != constructors.end())
-      instance = it->second();
-    return instance;
-  }
-
-  Spectrum* create_from_prototype(const Metadata& tem)
-  {
-    Spectrum* instance = create_type(tem.type());
-    if (instance != nullptr) {
-      bool success = instance->from_prototype(tem);
-      if (success)
-        return instance;
-      else {
-        delete instance;
-        return nullptr;
-      }
-    }
-  }
-
-  Spectrum* create_from_xml(const pugi::xml_node &root)
-  {
-    if (std::string(root.name()) != "Spectrum")
-      return nullptr;
-    if (!root.attribute("type"))
-      return nullptr;
-
-    Spectrum* instance = create_type(std::string(root.attribute("type").value()));
-    if (instance != nullptr) {
-      bool success = instance->from_xml(root);
-      if (success)
-        return instance;
-      else {
-        delete instance;
-        return nullptr;
-      }
-    }
-  }
-
-  Spectrum* create_from_file(std::string filename)
-  {
-    std::string ext(boost::filesystem::extension(filename));
-    if (ext.size())
-      ext = ext.substr(1, ext.size()-1);
-    boost::algorithm::to_lower(ext);
-    Spectrum *instance = nullptr;
-    auto it = ext_to_type.find(ext);
-    if (it != ext_to_type.end())
-      instance = create_type(it->second);;
-    if (instance != nullptr) {
-      bool success = instance->read_file(filename, ext);
-      if (success)
-        return instance;
-      else {
-        delete instance;
-        return nullptr;
-      }
-    }    
-  }
-
-  Metadata* create_prototype(std::string type)
-  {
-    auto it = prototypes.find(type);
-    if(it != prototypes.end())
-      return new Metadata(it->second);
-    else
-      return nullptr;
-  }
-
-  void register_type(Metadata tt, std::function<Spectrum*(void)> typeConstructor)
-  {
-    PL_INFO << "<Spectrum::Factory> registering spectrum type '" << tt.type() << "'";
-    constructors[tt.type()] = typeConstructor;
-    prototypes[tt.type()] = tt;
-    for (auto &q : tt.input_types())
-      ext_to_type[q] = tt.type();
-  }
-
-  const std::vector<std::string> types() {
-    std::vector<std::string> all_types;
-    for (auto &q : constructors)
-      all_types.push_back(q.first);
-    return all_types;
-  }
-
- private:
-  std::map<std::string, std::function<Spectrum*(void)>> constructors;
-  std::map<std::string, std::string> ext_to_type;
-  std::map<std::string, Metadata> prototypes;
-
-  //singleton assurance
-  Factory() {}
-  Factory(Factory const&);
-  void operator=(Factory const&);
-};
-
-template<class T>
-class Registrar {
-public:
-  Registrar(std::string)
-  {
-    Factory::getInstance().register_type(T::get_prototype(),
-                                         [](void) -> Spectrum * { return new T();});
-  }
-};
-
 
 }}
 

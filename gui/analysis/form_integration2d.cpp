@@ -20,6 +20,7 @@
  *
  ******************************************************************************/
 
+#include "spectrum_factory.h"
 #include "form_integration2d.h"
 #include "widget_detectors.h"
 #include "ui_form_integration2d.h"

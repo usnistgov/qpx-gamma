@@ -22,6 +22,7 @@
  *
  ******************************************************************************/
 
+#include "spectrum_factory.h"
 #include "dialog_spectra_templates.h"
 #include "ui_dialog_spectra_templates.h"
 #include "ui_dialog_spectrum_template.h"
@@ -92,7 +93,8 @@ void DialogSpectrumTemplate::updateData() {
   ui->spinBits->setValue(myTemplate.bits);
   ui->lineChannels->setText(QString::number(pow(2,myTemplate.bits)));
 
-  QString descr = QString::fromStdString(myTemplate.type_description()) + "\n";
+  QString descr = "[dim:" + QString::number(myTemplate.dimensions()) + "] " + QString::fromStdString(myTemplate.type_description()) + "\n";
+
   if (myTemplate.output_types().size()) {
     descr += "\t\tOutput file types: ";
     for (auto &q : myTemplate.output_types()) {

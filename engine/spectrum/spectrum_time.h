@@ -31,20 +31,10 @@ namespace Spectrum {
 class SpectrumTime : public Spectrum
 {
 public:
-  SpectrumTime() : codomain(0) {}
-
-  static Metadata get_prototype() {
-    Metadata new_temp("Time", "Time-domain log of activity", 1,
-                      {}, {});
-    populate_options(new_temp.attributes);
-    return new_temp;
-  }
+  SpectrumTime();
   
-
 protected:
   std::string my_type() const override {return "Time";}
-  Qpx::Setting default_settings() const override {return this->get_prototype().attributes; }
-  static void populate_options(Setting &);
 
   //1D is ok with all patterns
   bool initialize() override {

@@ -23,6 +23,7 @@
 
 
 #include "spectrum1D_LFC.h"
+#include "spectrum_factory.h"
 #include "custom_logger.h"
 
 namespace Qpx {
@@ -30,9 +31,13 @@ namespace Spectrum {
 
 static Registrar<Spectrum1D_LFC> registrar("LFC1D");
 
-void Spectrum1D_LFC::populate_options(Setting &set)
+Spectrum1D_LFC::Spectrum1D_LFC()
+  : Spectrum1D()
 {
-  Spectrum1D::populate_options(set);
+  Setting base_options = metadata_.attributes;
+  metadata_ = Metadata("LFC1D", "One detector loss-free spectrum", 1,
+                       {}, metadata_.output_types());
+  metadata_.attributes = base_options;
 
   Qpx::Setting t_sample;
   t_sample.id_ = "time_sample";
@@ -44,7 +49,8 @@ void Spectrum1D_LFC::populate_options(Setting &set)
   t_sample.metadata.maximum = 3600.0;
   t_sample.metadata.description = "minimum \u0394t before compensating";
   t_sample.metadata.writable = true;
-  set.branches.add(t_sample);
+  t_sample.metadata.flags.insert("preset");
+  metadata_.attributes.branches.add(t_sample);
 }
 
 bool Spectrum1D_LFC::initialize() {

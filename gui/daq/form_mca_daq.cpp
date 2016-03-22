@@ -20,6 +20,7 @@
  *
  ******************************************************************************/
 
+#include "spectrum_factory.h"
 #include "form_mca_daq.h"
 #include "ui_form_mca_daq.h"
 #include "dialog_spectra_templates.h"

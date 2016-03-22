@@ -118,7 +118,8 @@ void QpxPatternEditor::paint(QPainter *painter, const QRect &rect,
   if (!valid)
     on_color = enabled ? Qt::red : Qt::darkRed;
   QColor border = enabled ? Qt::black : Qt::darkGray;
-  QColor text_color = enabled ? Qt::black : Qt::lightGray;
+  QColor text_color_rel = enabled ? Qt::black : Qt::lightGray;
+  QColor text_color_irrel = enabled ? Qt::black : Qt::darkGray;
 
   for (int i = 0; i < rows_; ++i) {
     painter->translate(0, i * size_);
@@ -138,8 +139,11 @@ void QpxPatternEditor::paint(QPainter *painter, const QRect &rect,
 
         painter->drawEllipse(inner);
 
+        if (pattern_[flag])
+          painter->setPen(QPen(text_color_rel, 1));
+        else
+          painter->setPen(QPen(text_color_irrel, 1));
 
-        painter->setPen(QPen(text_color, 1));
         painter->setFont(QFont("Helvetica", std::floor(8.0*(size_/25.0)), QFont::Bold));
         painter->drawText(outer, Qt::AlignCenter, QString::number(flag));
       }

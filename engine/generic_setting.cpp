@@ -665,6 +665,15 @@ void Setting::condense() {
   }
 }
 
+void Setting::enable_if_flag(bool enable, std::string flag)
+{
+  if (metadata.flags.count(flag))
+    metadata.writable = enable;
+  if (metadata.setting_type == SettingType::stem)
+    for (auto &q : branches.my_data_)
+      q.enable_if_flag(enable, flag);
+}
+
 void Setting::cull_invisible() {
   XMLableDB<Setting> oldbranches = branches;
   branches.clear();

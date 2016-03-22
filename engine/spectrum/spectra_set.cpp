@@ -26,6 +26,7 @@
 #include <boost/date_time/date_facet.hpp>
 #include <set>
 #include "spectra_set.h"
+#include "spectrum_factory.h"
 #include "custom_logger.h"
 
 namespace Qpx {

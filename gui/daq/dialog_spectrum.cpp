@@ -93,6 +93,19 @@ void dialog_spectrum::updateData() {
     spectrum_detectors_.add_a(q);
   det_table_model_.update();
 
+  QString descr = "[dim:" + QString::number(md_.dimensions()) + "] " + QString::fromStdString(md_.type_description()) + "\n";
+
+  if (md_.output_types().size()) {
+    descr += "\t\tOutput file types: ";
+    for (auto &q : md_.output_types()) {
+      descr += "*." + QString::fromStdString(q);
+      if (q != md_.output_types().back())
+        descr += ", ";
+    }
+  }
+
+  ui->labelDescription->setText(descr);
+
   attr_model_.update(md_.attributes);
   open_close_locks();
 }

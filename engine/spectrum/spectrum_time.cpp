@@ -23,28 +23,32 @@
 
 #include <fstream>
 #include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
 #include "spectrum_time.h"
-#include "xylib.h"
+#include "spectrum_factory.h"
 
 namespace Qpx {
 namespace Spectrum {
 
 static Registrar<SpectrumTime> registrar("Time");
 
-void SpectrumTime::populate_options(Setting &set)
+SpectrumTime::SpectrumTime()
+  : codomain(0)
 {
-  Spectrum::populate_options(set);
+  Setting base_options = metadata_.attributes;
+  metadata_ = Metadata("Time", "Time-domain log of activity", 1,
+                    {}, {});
+  metadata_.attributes = base_options;
 
   Qpx::Setting format_setting;
   format_setting.id_ = "co-domain";
   format_setting.metadata.setting_type = Qpx::SettingType::int_menu;
   format_setting.metadata.writable = true;
+  format_setting.metadata.flags.insert("preset");
   format_setting.metadata.description = "Choice of dependent variable";
   format_setting.value_int = 0;
   format_setting.metadata.int_menu_items[0] = "event rate";
   format_setting.metadata.int_menu_items[1] = "% dead-time";
-  set.branches.add(format_setting);
+  metadata_.attributes.branches.add(format_setting);
 }
 
 void SpectrumTime::_set_detectors(const std::vector<Qpx::Detector>& dets) {

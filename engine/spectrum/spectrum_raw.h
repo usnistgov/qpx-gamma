@@ -31,21 +31,11 @@ namespace Spectrum {
 class SpectrumRaw : public Spectrum
 {
 public:
-  SpectrumRaw() : open_bin_(false), open_xml_(false), events_this_spill_(0) {}
+  SpectrumRaw();
   ~SpectrumRaw();
-
-  static Metadata get_prototype() {
-    Metadata new_temp("Raw", "Custom gated list mode to file. Please provide path and name for valid and accessible file", 0,
-                      {}, {});
-    populate_options(new_temp.attributes);
-    return new_temp;
-  }
-  
 
 protected:
   std::string my_type() const override {return "Raw";}
-  Qpx::Setting default_settings() const override {return this->get_prototype().attributes; }
-  static void populate_options(Setting &);
 
   //1D is ok with all patterns
   bool initialize() override;

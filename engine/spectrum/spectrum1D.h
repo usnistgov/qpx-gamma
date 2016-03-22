@@ -31,21 +31,10 @@ namespace Spectrum {
 class Spectrum1D : public Spectrum
 {
 public:
-  Spectrum1D() : cutoff_bin_(0) {}
-
-  static Metadata get_prototype() {
-    Metadata new_temp("1D", "Traditional MCA spectrum", 1,
-                      {"cnf", "tka", "n42", "ava", "spe", "Spe", "CNF", "N42", "mca", "dat"},
-                      {"n42", "tka", "spe"});
-    populate_options(new_temp.attributes);
-    return new_temp;
-  }
-  
+  Spectrum1D();
 
 protected:
   std::string my_type() const override {return "1D";}
-  Qpx::Setting default_settings() const override {return this->get_prototype().attributes; }
-  static void populate_options(Setting &);
 
   //1D is ok with all patterns
   bool initialize() override {

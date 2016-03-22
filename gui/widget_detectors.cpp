@@ -28,6 +28,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include "spectra_set.h"
+#include "spectrum_factory.h"
 #include <boost/algorithm/string.hpp>
 
 DialogDetector::DialogDetector(Qpx::Detector mydet, QDir rd, bool editName, QWidget *parent) :

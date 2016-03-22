@@ -22,6 +22,7 @@
 
 #include "form_symmetrize2d.h"
 #include "ui_form_symmetrize2d.h"
+#include "spectrum_factory.h"
 #include "gamma_fitter.h"
 #include "qt_util.h"
 #include "manip2d.h"

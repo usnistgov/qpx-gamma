@@ -20,6 +20,8 @@
  *
  ******************************************************************************/
 
+#include "spectrum_factory.h"
+
 #include "form_efficiency_calibration.h"
 #include "widget_detectors.h"
 #include "ui_form_efficiency_calibration.h"
