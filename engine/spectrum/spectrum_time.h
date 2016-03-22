@@ -34,21 +34,9 @@ public:
   SpectrumTime() : codomain(0) {}
 
   static Metadata get_prototype() {
-    Metadata new_temp = Spectrum::get_prototype();
-
-    new_temp.type = "Time";
-    new_temp.type_description = "Time-domain log of activity";
-
-    Qpx::Setting format_setting;
-    format_setting.id_ = "co-domain";
-    format_setting.metadata.setting_type = Qpx::SettingType::int_menu;
-    format_setting.metadata.writable = true;
-    format_setting.metadata.description = "Choice of dependent variable";
-    format_setting.value_int = 0;
-    format_setting.metadata.int_menu_items[0] = "event rate";
-    format_setting.metadata.int_menu_items[1] = "% dead-time";
-    new_temp.attributes.branches.add(format_setting);
-
+    Metadata new_temp("Time", "Time-domain log of activity", 1,
+                      {}, {});
+    populate_options(new_temp.attributes);
     return new_temp;
   }
   
@@ -56,15 +44,12 @@ public:
 protected:
   std::string my_type() const override {return "Time";}
   Qpx::Setting default_settings() const override {return this->get_prototype().attributes; }
+  static void populate_options(Setting &);
 
   //1D is ok with all patterns
   bool initialize() override {
     Spectrum::initialize();
     codomain = get_attr("co-domain").value_int;
-
-    metadata_.type = my_type();
-    metadata_.dimensions = 1;
-
     return true;
   }
 

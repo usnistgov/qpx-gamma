@@ -269,7 +269,7 @@ void Fitter::save_report(std::string filename) {
 //    file << q << " ";
 //  file << std::endl;
 
-  file << "Spectrum type: " << metadata_.type << std::endl;
+  file << "Spectrum type: " << metadata_.type() << std::endl;
 
   if (!metadata_.attributes.branches.empty()) {
     file << "Attributes" << std::endl;

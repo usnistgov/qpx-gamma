@@ -119,7 +119,7 @@ void FormSymmetrize2D::make_gated_spectra() {
 
   //  PL_DBG << "Coincidence gate x[" << xmin_ << "-" << xmax_ << "]   y[" << ymin_ << "-" << ymax_ << "]";
 
-  if ((md.total_count > 0) && (md.dimensions == 2))
+  if ((md.total_count > 0) && (md.dimensions() == 2))
   {
     uint32_t adjrange = pow(2,md.bits) - 1;
 
@@ -314,7 +314,7 @@ void FormSymmetrize2D::symmetrize()
       return;
     }
 
-    Qpx::Spectrum::Metadata *temp_sym = Qpx::Spectrum::Factory::getInstance().create_prototype(md.type); //assume 2D?
+    Qpx::Spectrum::Metadata *temp_sym = Qpx::Spectrum::Factory::getInstance().create_prototype(md.type()); //assume 2D?
 //    temp_sym->visible = false;
     temp_sym->name = fold_spec_name.toStdString();
     temp_sym->attributes.branches.replace(pattern);

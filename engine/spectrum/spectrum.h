@@ -50,7 +50,14 @@ typedef std::pair<uint32_t, uint32_t> Pair;
 
 
 struct Metadata : public XMLable {
- public:
+ private:
+  //this stuff from factory
+  std::string type_, type_description_;
+  uint16_t dimensions_;
+  std::list<std::string> input_types_;
+  std::list<std::string> output_types_;
+
+public:
   //user sets these in prototype
   std::string name;
   uint16_t bits;
@@ -58,17 +65,35 @@ struct Metadata : public XMLable {
 
   //take care of these...
   bool changed;
-  uint16_t dimensions;
   PreciseFloat total_count;
   std::vector<Qpx::Detector> detectors;
 
-  //this stuff from factory
-  std::string type, type_description;
-  std::list<std::string> input_types;
-  std::list<std::string> output_types;
+  std::string type() const {return type_;}
+  std::string type_description() const {return type_description_;}
+  uint16_t dimensions() const {return dimensions_;}
+  std::list<std::string> input_types() const {return input_types_;}
+  std::list<std::string> output_types() const {return output_types_;}
 
- Metadata() : bits(14), dimensions(0), attributes("Options"), type("invalid"),
-    name("generic_spectrum"), total_count(0.0), changed(false)
+  Metadata()
+    : type_("invalid")
+    , dimensions_(0)
+    , bits(14)
+    , attributes("Options")
+    , total_count(0.0)
+    , changed(false)
+    { attributes.metadata.setting_type = SettingType::stem; }
+
+  Metadata(std::string tp, std::string descr, uint16_t dim,
+           std::list<std::string> itypes, std::list<std::string> otypes)
+    : type_(tp)
+    , type_description_(descr)
+    , dimensions_(dim)
+    , input_types_(itypes)
+    , output_types_(otypes)
+    , bits(14)
+    , attributes("Options")
+    , total_count(0.0)
+    , changed(false)
     { attributes.metadata.setting_type = SettingType::stem; }
 
  std::string xml_element_name() const override {return "SpectrumMetadata";}
@@ -80,7 +105,7 @@ struct Metadata : public XMLable {
  bool operator!= (const Metadata& other) const {return !operator==(other);}
  bool operator== (const Metadata& other) const {
    if (name != other.name) return false;
-   if (type != other.type) return false; //assume other type info same
+   if (type_ != other.type_) return false; //assume other type info same
    if (bits != other.bits) return false;
    if (attributes != other.attributes) return false;
    return true;
@@ -178,8 +203,9 @@ protected:
   virtual void _set_detectors(const std::vector<Qpx::Detector>& dets); //has default behavior
 
   void recalc_energies();
-  Qpx::Setting get_attr(std::string name) const;
-  virtual Qpx::Setting default_settings() const = 0;
+  Setting get_attr(std::string name) const;
+  virtual Setting default_settings() const = 0;
+  static void populate_options(Setting &);
 
   //////////////////////////////
   ///////member variables///////
@@ -226,7 +252,7 @@ class Factory {
 
   Spectrum* create_from_prototype(const Metadata& tem)
   {
-    Spectrum* instance = create_type(tem.type);
+    Spectrum* instance = create_type(tem.type());
     if (instance != nullptr) {
       bool success = instance->from_prototype(tem);
       if (success)
@@ -289,11 +315,11 @@ class Factory {
 
   void register_type(Metadata tt, std::function<Spectrum*(void)> typeConstructor)
   {
-    PL_INFO << "<Spectrum::Factory> registering spectrum type '" << tt.type << "'";
-    constructors[tt.type] = typeConstructor;
-    prototypes[tt.type] = tt;
-    for (auto &q : tt.input_types)
-      ext_to_type[q] = tt.type;
+    PL_INFO << "<Spectrum::Factory> registering spectrum type '" << tt.type() << "'";
+    constructors[tt.type()] = typeConstructor;
+    prototypes[tt.type()] = tt;
+    for (auto &q : tt.input_types())
+      ext_to_type[q] = tt.type();
   }
 
   const std::vector<std::string> types() {

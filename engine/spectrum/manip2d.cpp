@@ -36,7 +36,7 @@ bool slice_diagonal(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* de
 
   Qpx::Spectrum::Metadata md = source->metadata();
 
-  if ((md.total_count > 0) && (md.dimensions == 2))
+  if ((md.total_count > 0) && (md.dimensions() == 2))
   {
     Qpx::Spill spill;
     spill.run = info;
@@ -69,7 +69,7 @@ bool slice_rectangular(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum*
 
   Qpx::Spectrum::Metadata md = source->metadata();
 
-  if ((md.total_count > 0) && (md.dimensions == 2))
+  if ((md.total_count > 0) && (md.dimensions() == 2))
   {
     Qpx::Spill spill;
     spill.run = info;
@@ -115,7 +115,7 @@ bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destin
 
   Qpx::Spectrum::Metadata md = source->metadata();
 
-  if ((md.total_count == 0) || (md.dimensions != 2)) {
+  if ((md.total_count == 0) || (md.dimensions() != 2)) {
     PL_WARN << "<symmetrize> " << md.name << " has no events or is not 2d";
     return false;
   }

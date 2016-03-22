@@ -83,7 +83,7 @@ QVariant TableSpectra1D::data(const QModelIndex &index, int role) const
     case 1:
       return QString::fromStdString(data_[row].name);
     case 2:
-      return QString::fromStdString(data_[row].type);
+      return QString::fromStdString(data_[row].type());
     case 3:
       return QString::number(data_[row].bits);
     case 4:

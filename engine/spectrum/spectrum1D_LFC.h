@@ -36,23 +36,10 @@ public:
   Spectrum1D_LFC() {}
 
   static Metadata get_prototype() {
-    Metadata new_temp = Spectrum1D::get_prototype();
-    new_temp.type = "LFC1D";
-    new_temp.input_types = {};
-    new_temp.type_description = "One detector loss-free spectrum";
-    
-    Qpx::Setting t_sample;
-    t_sample.id_ = "time_sample";
-    t_sample.metadata.setting_type = Qpx::SettingType::floating;
-    t_sample.metadata.unit = "seconds";
-    t_sample.value_dbl = 20.0;
-    t_sample.metadata.minimum = 0;
-    t_sample.metadata.step = 1;
-    t_sample.metadata.maximum = 3600.0;
-    t_sample.metadata.description = "minimum \u0394t before compensating";
-    t_sample.metadata.writable = true;
-    new_temp.attributes.branches.add(t_sample);
-    
+    Metadata temp1d = Spectrum1D::get_prototype();
+    Metadata new_temp("LFC1D", "One detector loss-free spectrum", 1,
+                      temp1d.input_types(), temp1d.output_types());
+    populate_options(new_temp.attributes);
     return new_temp;
   }
 
@@ -60,6 +47,7 @@ protected:
   std::string my_type() const override {return "LFC1D";}
   Qpx::Setting default_settings() const override {return this->get_prototype().attributes; }
   bool initialize() override;
+  static void populate_options(Setting &);
   
   void addStats(const StatsUpdate&) override;
   void addRun(const RunInfo&) override;

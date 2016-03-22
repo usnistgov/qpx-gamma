@@ -47,8 +47,8 @@ DialogDetector::DialogDetector(Qpx::Detector mydet, QDir rd, bool editName, QWid
   QStringList filetypes;
   for (auto &q : spectypes) {
     Qpx::Spectrum::Metadata* type_template = Qpx::Spectrum::Factory::getInstance().create_prototype(q);
-    if (!type_template->input_types.empty())
-      filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types) + ")");
+    if (!type_template->input_types().empty())
+      filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types()) + ")");
     delete type_template;
   }
   mca_formats_ = catFileTypes(filetypes);

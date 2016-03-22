@@ -33,12 +33,27 @@ namespace Spectrum {
 
 static Registrar<Spectrum1D> registrar("1D");
 
-void Spectrum1D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
-  metadata_.detectors.resize(metadata_.dimensions, Qpx::Detector());
+void Spectrum1D::populate_options(Setting &set)
+{
+  Spectrum::populate_options(set);
 
-  if (dets.size() == metadata_.dimensions)
+  Qpx::Setting cutoff_bin;
+  cutoff_bin.id_ = "cutoff_bin";
+  cutoff_bin.metadata.setting_type = Qpx::SettingType::integer;
+  cutoff_bin.metadata.description = "Hits rejected below minimum energy (affects binning only)";
+  cutoff_bin.metadata.writable = true;
+  cutoff_bin.metadata.minimum = 0;
+  cutoff_bin.metadata.step = 1;
+  cutoff_bin.metadata.maximum = 1000000;
+  set.branches.add(cutoff_bin);
+}
+
+void Spectrum1D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
+  metadata_.detectors.resize(metadata_.dimensions(), Qpx::Detector());
+
+  if (dets.size() == metadata_.dimensions())
     metadata_.detectors = dets;
-  if (dets.size() >= metadata_.dimensions) {
+  if (dets.size() >= metadata_.dimensions()) {
 
     for (int i=0; i < dets.size(); ++i) {
       if (pattern_add_.relevant(i)) {

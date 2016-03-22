@@ -486,7 +486,7 @@ void FormMultiGates::make_gated_spectra() {
 
   //  PL_DBG << "Coincidence gate x[" << xmin_ << "-" << xmax_ << "]   y[" << ymin_ << "-" << ymax_ << "]";
 
-  if ((md.total_count > 0) && (md.dimensions == 2))
+  if ((md.total_count > 0) && (md.dimensions() == 2))
   {
     uint32_t adjrange = pow(2,md.bits) - 1;
 

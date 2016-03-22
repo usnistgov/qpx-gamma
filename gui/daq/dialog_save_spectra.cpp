@@ -53,7 +53,8 @@ void WidgetSaveTypes::initialize(std::vector<std::string> types) {
   selections.resize(spectrum_types.size());
   for (std::size_t i = 0; i < spectrum_types.size(); i++) {
     Qpx::Spectrum::Metadata* type_template = Qpx::Spectrum::Factory::getInstance().create_prototype(spectrum_types[i]);
-    file_formats[i] = std::vector<std::string>(type_template->output_types.begin(), type_template->output_types.end());
+    std::list<std::string> otypes = type_template->output_types();
+    file_formats[i] = std::vector<std::string>(otypes.begin(), otypes.end());
     selections[i].resize(file_formats[i].size(), false);
     max_formats_ = std::max(max_formats_, static_cast<int>(file_formats[i].size()));
     delete type_template;

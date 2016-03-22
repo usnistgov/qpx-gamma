@@ -32,6 +32,18 @@ namespace Spectrum {
 
 static Registrar<SpectrumRaw> registrar("Raw");
 
+void SpectrumRaw::populate_options(Setting &set)
+{
+  Spectrum::populate_options(set);
+
+  Qpx::Setting file_setting;
+  file_setting.id_ = "file_dir";
+  file_setting.metadata.setting_type = Qpx::SettingType::dir_path;
+  file_setting.metadata.writable = true;
+  file_setting.metadata.description = "path to temp output directory";
+  set.branches.add(file_setting);
+}
+
 SpectrumRaw::~SpectrumRaw() {
   _closeAcquisition();
 }
@@ -45,8 +57,6 @@ bool SpectrumRaw::initialize() {
   if (file_dir_.empty())
     return false;
   PL_DBG << "raw: file dir not empty";
-
-  metadata_.type = my_type();
 
   return init_bin();
 }

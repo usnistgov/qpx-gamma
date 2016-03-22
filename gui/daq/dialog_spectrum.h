@@ -64,6 +64,8 @@ private slots:
 
     void on_pushDetToDB_clicked();
 
+    void on_spinDets_valueChanged(int arg1);
+
 signals:
     void finished(bool);
     void delete_spectrum();

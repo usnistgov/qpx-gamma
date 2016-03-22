@@ -36,7 +36,7 @@ namespace Spectrum {
 void Metadata::to_xml(pugi::xml_node &root) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
-  node.append_attribute("Type").set_value(type.c_str());
+  node.append_attribute("Type").set_value(type_.c_str());
   node.append_child("Name").append_child(pugi::node_pcdata).set_value(name.c_str());
   node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(bits).c_str());
 
@@ -48,7 +48,7 @@ void Metadata::from_xml(const pugi::xml_node &node) {
   if (std::string(node.name()) != xml_element_name())
     return;
 
-  type = std::string(node.attribute("Type").value());
+  type_ = std::string(node.attribute("Type").value());
   name = std::string(node.child_value("Name"));
   bits = boost::lexical_cast<short>(node.child_value("Resolution"));
 
@@ -58,20 +58,25 @@ void Metadata::from_xml(const pugi::xml_node &node) {
 
 Metadata Spectrum::get_prototype() {
   Metadata new_temp;
+  populate_options(new_temp.attributes);
+  return new_temp;
+}
 
+void Spectrum::populate_options(Setting &set)
+{
   Qpx::Setting vis;
   vis.id_ = "visible";
   vis.metadata.setting_type = Qpx::SettingType::boolean;
   vis.metadata.description = "Plot visible";
   vis.metadata.writable = true;
-  new_temp.attributes.branches.add(vis);
+  set.branches.add(vis);
 
   Qpx::Setting app;
   app.id_ = "appearance";
   app.metadata.setting_type = Qpx::SettingType::color;
   app.metadata.description = "Plot appearance";
   app.metadata.writable = true;
-  new_temp.attributes.branches.add(app);
+  set.branches.add(app);
 
   Qpx::Setting ignore_zero;
   ignore_zero.id_ = "cutoff_logic";
@@ -81,7 +86,7 @@ Metadata Spectrum::get_prototype() {
   ignore_zero.metadata.minimum = 0;
   ignore_zero.metadata.step = 1;
   ignore_zero.metadata.maximum = 1000000;
-  new_temp.attributes.branches.add(ignore_zero);
+  set.branches.add(ignore_zero);
 
   Qpx::Setting coinc_window;
   coinc_window.id_ = "coinc_window";
@@ -93,7 +98,7 @@ Metadata Spectrum::get_prototype() {
   coinc_window.metadata.description = "Coincidence window";
   coinc_window.metadata.writable = true;
   coinc_window.value_dbl = 50;
-  new_temp.attributes.branches.add(coinc_window);
+  set.branches.add(coinc_window);
 
   Qpx::Setting pattern_coinc;
   pattern_coinc.id_ = "pattern_coinc";
@@ -101,7 +106,7 @@ Metadata Spectrum::get_prototype() {
   pattern_coinc.metadata.maximum = 1;
   pattern_coinc.metadata.description = "Coincidence pattern";
   pattern_coinc.metadata.writable = true;
-  new_temp.attributes.branches.add(pattern_coinc);
+  set.branches.add(pattern_coinc);
 
   Qpx::Setting pattern_anti;
   pattern_anti.id_ = "pattern_anti";
@@ -109,7 +114,7 @@ Metadata Spectrum::get_prototype() {
   pattern_anti.metadata.maximum = 1;
   pattern_anti.metadata.description = "Anti-coindicence pattern";
   pattern_anti.metadata.writable = true;
-  new_temp.attributes.branches.add(pattern_anti);
+  set.branches.add(pattern_anti);
 
   Qpx::Setting pattern_add;
   pattern_add.id_ = "pattern_add";
@@ -117,7 +122,7 @@ Metadata Spectrum::get_prototype() {
   pattern_add.metadata.maximum = 1;
   pattern_add.metadata.description = "Add pattern";
   pattern_add.metadata.writable = true;
-  new_temp.attributes.branches.add(pattern_add);
+  set.branches.add(pattern_add);
 
   Qpx::Setting rescale;
   rescale.id_ = "rescale";
@@ -128,28 +133,28 @@ Metadata Spectrum::get_prototype() {
   rescale.metadata.maximum = 1e10;
   rescale.metadata.step = 1;
   rescale.value_precise = 1;
-  new_temp.attributes.branches.add(rescale);
+  set.branches.add(rescale);
 
   Qpx::Setting start_time;
   start_time.id_ = "start_time";
   start_time.metadata.setting_type = Qpx::SettingType::time;
   start_time.metadata.description = "Start time";
   start_time.metadata.writable = false;
-  new_temp.attributes.branches.add(start_time);
+  set.branches.add(start_time);
 
   Qpx::Setting live_time;
   live_time.id_ = "live_time";
   live_time.metadata.setting_type = Qpx::SettingType::time_duration;
   live_time.metadata.description = "Live time";
   live_time.metadata.writable = false;
-  new_temp.attributes.branches.add(live_time);
+  set.branches.add(live_time);
 
   Qpx::Setting real_time;
   real_time.id_ = "real_time";
   real_time.metadata.setting_type = Qpx::SettingType::time_duration;
   real_time.metadata.description = "Real time";
   real_time.metadata.writable = false;
-  new_temp.attributes.branches.add(real_time);
+  set.branches.add(real_time);
 
   Qpx::Setting inst_rate;
   inst_rate.id_ = "instant_rate";
@@ -158,16 +163,14 @@ Metadata Spectrum::get_prototype() {
   inst_rate.metadata.description = "Instant count rate";
   inst_rate.metadata.writable = false;
   inst_rate.value_dbl = 0;
-  new_temp.attributes.branches.add(inst_rate);
+  set.branches.add(inst_rate);
 
   Qpx::Setting descr;
   descr.id_ = "description";
   descr.metadata.setting_type = Qpx::SettingType::text;
   descr.metadata.description = "Description";
   descr.metadata.writable = true;
-  new_temp.attributes.branches.add(descr);
-
-  return new_temp;
+  set.branches.add(descr);
 }
 
 bool Spectrum::initialize() {
@@ -186,14 +189,14 @@ bool Spectrum::initialize() {
 
 PreciseFloat Spectrum::get_count(std::initializer_list<uint16_t> list ) const {
   boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  if (list.size() != this->metadata_.dimensions)
+  if (list.size() != this->metadata_.dimensions())
     return 0;
   return this->_get_count(list);
 }
 
 std::unique_ptr<std::list<Entry>> Spectrum::get_spectrum(std::initializer_list<Pair> list) {
   boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  if (list.size() != this->metadata_.dimensions)
+  if (list.size() != this->metadata_.dimensions())
     return 0; //wtf???
   else {
     //    std::vector<Pair> ranges(list.begin(), list.end());
@@ -203,7 +206,7 @@ std::unique_ptr<std::list<Entry>> Spectrum::get_spectrum(std::initializer_list<P
 
 void Spectrum::add_bulk(const Entry& e) {
   boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  if (metadata_.dimensions < 1)
+  if (metadata_.dimensions() < 1)
     return;
   else
     this->_add_bulk(e);
@@ -214,10 +217,7 @@ bool Spectrum::from_prototype(const Metadata& newtemplate) {
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   
-  metadata_.bits = newtemplate.bits;
-  metadata_.name = newtemplate.name;
-  metadata_.attributes = newtemplate.attributes;
-
+  metadata_ = newtemplate;
   return (this->initialize());
 }
 
@@ -450,7 +450,7 @@ void Spectrum::addRun(const RunInfo& run_info) {
 std::vector<double> Spectrum::energies(uint8_t chan) const {
   boost::shared_lock<boost::shared_mutex> lock(mutex_);
   
-  if (chan < metadata_.dimensions)
+  if (chan < energies_.size())
     return energies_[chan];
   else
     return std::vector<double>();
@@ -478,14 +478,14 @@ void Spectrum::_set_detectors(const std::vector<Qpx::Detector>& dets) {
 
   metadata_.detectors.clear();
 
-  //metadata_.detectors.resize(metadata_.dimensions, Qpx::Detector());
+  //metadata_.detectors.resize(metadata_.dimensions(), Qpx::Detector());
   recalc_energies();
 }
 
 void Spectrum::recalc_energies() {
   //private; no lock required
 
-  energies_.resize(metadata_.dimensions);
+  energies_.resize(metadata_.dimensions());
   if (energies_.size() != metadata_.detectors.size())
     return;
 
@@ -549,7 +549,7 @@ std::string Spectrum::type() const {
 
 uint16_t Spectrum::dimensions() const {
   boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  return metadata_.dimensions;
+  return metadata_.dimensions();
 }
 
 std::string Spectrum::name() const {

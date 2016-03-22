@@ -63,6 +63,9 @@ dialog_spectrum::dialog_spectrum(Qpx::Spectrum::Spectrum &spec, XMLableDB<Qpx::D
 
   attr_model_.set_show_address_(false);
 
+  Qpx::Setting pat = md_.attributes.branches.get(Qpx::Setting("pattern_add"));
+  ui->spinDets->setValue(pat.value_pattern.gates().size());
+
   updateData();
 }
 
@@ -76,10 +79,10 @@ void dialog_spectrum::det_selection_changed(QItemSelection, QItemSelection) {
 }
 
 void dialog_spectrum::updateData() {
-  md_ = my_spectrum_.metadata();
+//  md_ = my_spectrum_.metadata();
 
   ui->labelName->setText(QString::fromStdString(md_.name));
-  ui->lineType->setText(QString::fromStdString(my_spectrum_.type()));
+  ui->lineType->setText(QString::fromStdString(md_.type()));
   ui->lineBits->setText(QString::number(static_cast<int>(md_.bits)));
   ui->lineChannels->setText(QString::number(pow(2,md_.bits)));
 
@@ -98,6 +101,7 @@ void dialog_spectrum::open_close_locks() {
   bool lockit = !ui->pushLock->isChecked();
   ui->labelWarning->setVisible(lockit);
   ui->pushDelete->setEnabled(lockit);
+  ui->spinDets->setEnabled(lockit);
 
   ui->treeAttribs->clearSelection();
   ui->tableDetectors->clearSelection();
@@ -113,7 +117,8 @@ void dialog_spectrum::open_close_locks() {
 }
 
 void dialog_spectrum::push_settings() {
-  my_spectrum_.set_generic_attrs(attr_model_.get_tree());
+  md_.attributes = attr_model_.get_tree();
+  changed_ = true;
 }
 
 void dialog_spectrum::toggle_push()
@@ -147,6 +152,11 @@ void dialog_spectrum::on_pushLock_clicked()
 
 void dialog_spectrum::on_buttonBox_rejected()
 {
+  if (changed_) {
+    my_spectrum_.set_generic_attrs(md_.attributes);
+    my_spectrum_.set_detectors(md_.detectors);
+  }
+
   emit finished(changed_);
   accept();
 }
@@ -171,7 +181,6 @@ void dialog_spectrum::changeDet(Qpx::Detector newDetector) {
 
   if (i < md_.detectors.size()) {
     md_.detectors[i] = newDetector;
-    my_spectrum_.set_detectors(md_.detectors);
     changed_ = true;
     updateData();
   }
@@ -192,7 +201,6 @@ void dialog_spectrum::on_pushDetRename_clicked()
   if (ok && !text.isEmpty()) {
     if (i < md_.detectors.size()) {
       md_.detectors[i].name_ = text.toStdString();
-      my_spectrum_.set_detectors(md_.detectors);
       changed_ = true;
       updateData();
     }
@@ -224,7 +232,6 @@ void dialog_spectrum::on_pushDetFromDB_clicked()
   if (i < md_.detectors.size()) {
     Qpx::Detector newdet = detectors_.get(md_.detectors[i]);
     md_.detectors[i] = newdet;
-    my_spectrum_.set_detectors(md_.detectors);
     changed_ = true;
     updateData();
   }
@@ -264,7 +271,6 @@ void dialog_spectrum::on_pushDetToDB_clicked()
             detectors_.replace(newdet);
             if (md_.detectors[i].name_ != newdet.name_) {
               md_.detectors[i] = newdet;
-              my_spectrum_.set_detectors(md_.detectors);
               changed_ = true;
               updateData();
             }
@@ -282,4 +288,18 @@ void dialog_spectrum::on_pushDetToDB_clicked()
         detectors_.replace(newdet);
     }
   }
+}
+
+void dialog_spectrum::on_spinDets_valueChanged(int arg1)
+{
+  if (!ui->spinDets->isEnabled())
+    return;
+
+  for (auto &a : md_.attributes.branches.my_data_)
+    if (a.metadata.setting_type == Qpx::SettingType::pattern) {
+      a.value_pattern.resize(arg1);
+      changed_ = true;
+    }
+
+  updateData();
 }

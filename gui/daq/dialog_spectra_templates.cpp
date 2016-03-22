@@ -54,13 +54,17 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Qpx::Spectrum::Metadata newTempla
     myTemplate = newTemplate;
     ui->lineName->setEnabled(false);
     ui->comboType->setEnabled(false);
-    Qpx::Spectrum::Metadata *newtemp = Qpx::Spectrum::Factory::getInstance().create_prototype(newTemplate.type);
+    Qpx::Spectrum::Metadata *newtemp = Qpx::Spectrum::Factory::getInstance().create_prototype(newTemplate.type());
     if (newtemp != nullptr) {
-      myTemplate.type_description = newtemp->type_description;
-      myTemplate.input_types = newtemp->input_types;
-      myTemplate.output_types = newtemp->output_types;
+      newtemp->name = myTemplate.name;
+      newtemp->bits = myTemplate.bits;
+      newtemp->attributes = myTemplate.attributes;
+      myTemplate = *newtemp;
+      Qpx::Setting pat = myTemplate.attributes.branches.get(Qpx::Setting("pattern_add"));
+      ui->spinDets->setValue(pat.value_pattern.gates().size());
+      delete newtemp;
     } else
-      PL_WARN << "Problem with spectrum type. Factory cannot make template for " << newTemplate.type;
+      PL_WARN << "Problem with spectrum type. Factory cannot make template for " << newTemplate.type();
   } else {
     Qpx::Spectrum::Metadata *newtemp = Qpx::Spectrum::Factory::getInstance().create_prototype(ui->comboType->currentText().toStdString());
     if (newtemp != nullptr) {
@@ -84,18 +88,16 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Qpx::Spectrum::Metadata newTempla
 void DialogSpectrumTemplate::updateData() {
 
   ui->lineName->setText(QString::fromStdString(myTemplate.name));
-  ui->comboType->setCurrentText(QString::fromStdString(myTemplate.type));
+  ui->comboType->setCurrentText(QString::fromStdString(myTemplate.type()));
   ui->spinBits->setValue(myTemplate.bits);
   ui->lineChannels->setText(QString::number(pow(2,myTemplate.bits)));
 
-//  ui->spinDets->setValue(myTemplate.match_pattern.size());
-
-  QString descr = QString::fromStdString(myTemplate.type_description) + "\n";
-  if (myTemplate.output_types.size()) {
+  QString descr = QString::fromStdString(myTemplate.type_description()) + "\n";
+  if (myTemplate.output_types().size()) {
     descr += "\t\tOutput file types: ";
-    for (auto &q : myTemplate.output_types) {
+    for (auto &q : myTemplate.output_types()) {
       descr += "*." + QString::fromStdString(q);
-      if (q != myTemplate.output_types.back())
+      if (q != myTemplate.output_types().back())
         descr += ", ";
     }
   }
@@ -116,7 +118,7 @@ void DialogSpectrumTemplate::on_buttonBox_accepted()
     msgBox.setText("Please give it a proper name");
     msgBox.exec();
   } else {
-    PL_INFO << "Type requested " << myTemplate.type;
+    PL_INFO << "Type requested " << myTemplate.type();
     myTemplate.attributes = attr_model_.get_tree();
     Qpx::Spectrum::Spectrum *newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_prototype(myTemplate);
     if (newSpectrum == nullptr) {
@@ -169,6 +171,9 @@ void DialogSpectrumTemplate::on_comboType_activated(const QString &arg1)
 
 void DialogSpectrumTemplate::on_spinDets_valueChanged(int arg1)
 {
+  if (!ui->spinDets->isEnabled())
+    return;
+
   for (auto &a : myTemplate.attributes.branches.my_data_)
     if (a.metadata.setting_type == Qpx::SettingType::pattern)
       a.value_pattern.resize(arg1);
@@ -207,7 +212,7 @@ QVariant TableSpectraTemplates::data(const QModelIndex &index, int role) const
     case 0:
       return QString::fromStdString(templates_.get(row).name);
     case 1:
-      return QString::fromStdString(templates_.get(row).type);
+      return QString::fromStdString(templates_.get(row).type());
     case 2:
       return QString::number(templates_.get(row).bits);
     case 3:

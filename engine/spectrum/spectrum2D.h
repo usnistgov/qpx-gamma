@@ -37,37 +37,17 @@ public:
   Spectrum2D() {}
 
   static Metadata get_prototype() {
-    Metadata new_temp = Spectrum::get_prototype();
-
-    new_temp.type = "2D";
-    new_temp.output_types = {"m", "m4b", "mat"};
-    new_temp.input_types = {"m4b", "mat"};
-    new_temp.type_description = "2-dimensional coincidence matrix";
-
-    Qpx::Setting buf;
-    buf.id_ = "buffered";
-    buf.metadata.setting_type = Qpx::SettingType::boolean;
-    buf.metadata.unit = "T/F";
-    buf.metadata.description = "Buffered output for efficient plotting (more memory)";
-    buf.metadata.writable = true;
-    new_temp.attributes.branches.add(buf);
-
-    Qpx::Setting sym;
-    sym.id_ = "symmetrized";
-    sym.metadata.setting_type = Qpx::SettingType::boolean;
-    sym.metadata.unit = "T/F";
-    sym.metadata.description = "Matrix is symmetrized";
-    sym.metadata.writable = false;
-    sym.value_int = 0;
-    new_temp.attributes.branches.add(sym);
-
-
+    Metadata new_temp("2D", "2-dimensional coincidence matrix", 2,
+                      {"m", "m4b", "mat"},
+                      {"m4b", "mat"});
+    populate_options(new_temp.attributes);
     return new_temp;
   }
   
 protected:
   typedef std::map<std::pair<uint16_t,uint16_t>, PreciseFloat> SpectrumMap2D;
   
+  static void populate_options(Setting &);
   bool initialize() override;
   void init_from_file(std::string filename);
 

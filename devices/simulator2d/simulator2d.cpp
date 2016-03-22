@@ -193,7 +193,7 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
 
         for (auto &q: temp_set->spectra(2, -1)) {
           Qpx::Spectrum::Metadata md = q->metadata();
-          PL_DBG << "<Simulator2D> Spectrum available: " << md.name << " t:" << md.type << " r:" << md.bits;
+          PL_DBG << "<Simulator2D> Spectrum available: " << md.name << " t:" << md.type() << " r:" << md.bits;
           spectra_.push_back(md.name);
         }
 
@@ -234,7 +234,7 @@ bool Simulator2D::boot() {
   }
 
   Spectrum::Metadata md = spectrum->metadata();
-  PL_INFO << "<Simulator2D> Will use " << md.name << " type:" << md.type << " bits:" << md.bits;
+  PL_INFO << "<Simulator2D> Will use " << md.name << " type:" << md.type() << " bits:" << md.bits;
 
 
   int source_res = md.bits;

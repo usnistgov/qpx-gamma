@@ -60,8 +60,8 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Qpx:
   QStringList filetypes;
   for (auto &q : spectypes) {
     Qpx::Spectrum::Metadata* type_template = Qpx::Spectrum::Factory::getInstance().create_prototype(q);
-    if (!type_template->input_types.empty())
-      filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types) + ")");
+    if (!type_template->input_types().empty())
+      filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types()) + ")");
     delete type_template;
   }
   mca_load_formats_ = catFileTypes(filetypes) + ";;Radware spn (*.spn)";

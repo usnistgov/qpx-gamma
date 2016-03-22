@@ -35,20 +35,9 @@ public:
   ~SpectrumRaw();
 
   static Metadata get_prototype() {
-    Metadata new_temp = Spectrum::get_prototype();
-
-    new_temp.type = "Raw";
-    //    new_temp.input_types = {""};
-    //    new_temp.output_types = {""};
-    new_temp.type_description = "Custom gated list mode to file. Please provide path and name for valid and accessible file.";
-
-    Qpx::Setting file_setting;
-    file_setting.id_ = "file_dir";
-    file_setting.metadata.setting_type = Qpx::SettingType::dir_path;
-    file_setting.metadata.writable = true;
-    file_setting.metadata.description = "path to temp output directory";
-    new_temp.attributes.branches.add(file_setting);
-
+    Metadata new_temp("Raw", "Custom gated list mode to file. Please provide path and name for valid and accessible file", 0,
+                      {}, {});
+    populate_options(new_temp.attributes);
     return new_temp;
   }
   
@@ -56,6 +45,7 @@ public:
 protected:
   std::string my_type() const override {return "Raw";}
   Qpx::Setting default_settings() const override {return this->get_prototype().attributes; }
+  static void populate_options(Setting &);
 
   //1D is ok with all patterns
   bool initialize() override;

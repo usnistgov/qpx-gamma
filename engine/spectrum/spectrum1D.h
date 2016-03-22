@@ -34,22 +34,10 @@ public:
   Spectrum1D() : cutoff_bin_(0) {}
 
   static Metadata get_prototype() {
-    Metadata new_temp = Spectrum::get_prototype();
-    new_temp.type = "1D";
-    new_temp.input_types = {"cnf", "tka", "n42", "ava", "spe", "Spe", "CNF", "N42", "mca", "dat"};
-    new_temp.output_types = {"n42", "tka", "spe"};
-    new_temp.type_description = "Traditional MCA spectrum";
-
-    Qpx::Setting cutoff_bin;
-    cutoff_bin.id_ = "cutoff_bin";
-    cutoff_bin.metadata.setting_type = Qpx::SettingType::integer;
-    cutoff_bin.metadata.description = "Hits rejected below minimum energy (affects binning only)";
-    cutoff_bin.metadata.writable = true;
-    cutoff_bin.metadata.minimum = 0;
-    cutoff_bin.metadata.step = 1;
-    cutoff_bin.metadata.maximum = 1000000;
-    new_temp.attributes.branches.add(cutoff_bin);
-
+    Metadata new_temp("1D", "Traditional MCA spectrum", 1,
+                      {"cnf", "tka", "n42", "ava", "spe", "Spe", "CNF", "N42", "mca", "dat"},
+                      {"n42", "tka", "spe"});
+    populate_options(new_temp.attributes);
     return new_temp;
   }
   
@@ -57,14 +45,13 @@ public:
 protected:
   std::string my_type() const override {return "1D";}
   Qpx::Setting default_settings() const override {return this->get_prototype().attributes; }
+  static void populate_options(Setting &);
 
   //1D is ok with all patterns
   bool initialize() override {
     cutoff_bin_ = get_attr("cutoff_bin").value_int;
     maxchan_ = 0;
 
-    metadata_.type = my_type();
-    metadata_.dimensions = 1;
     spectrum_.resize(pow(2, metadata_.bits), 0);
 
     Spectrum::initialize();

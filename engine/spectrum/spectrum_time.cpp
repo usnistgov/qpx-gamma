@@ -32,12 +32,27 @@ namespace Spectrum {
 
 static Registrar<SpectrumTime> registrar("Time");
 
-void SpectrumTime::_set_detectors(const std::vector<Qpx::Detector>& dets) {
-  metadata_.detectors.resize(metadata_.dimensions, Qpx::Detector());
+void SpectrumTime::populate_options(Setting &set)
+{
+  Spectrum::populate_options(set);
 
-  if (dets.size() == metadata_.dimensions)
+  Qpx::Setting format_setting;
+  format_setting.id_ = "co-domain";
+  format_setting.metadata.setting_type = Qpx::SettingType::int_menu;
+  format_setting.metadata.writable = true;
+  format_setting.metadata.description = "Choice of dependent variable";
+  format_setting.value_int = 0;
+  format_setting.metadata.int_menu_items[0] = "event rate";
+  format_setting.metadata.int_menu_items[1] = "% dead-time";
+  set.branches.add(format_setting);
+}
+
+void SpectrumTime::_set_detectors(const std::vector<Qpx::Detector>& dets) {
+  metadata_.detectors.resize(metadata_.dimensions(), Qpx::Detector());
+
+  if (dets.size() == metadata_.dimensions())
     metadata_.detectors = dets;
-  if (dets.size() >= metadata_.dimensions) {
+  if (dets.size() >= metadata_.dimensions()) {
 
     for (int i=0; i < dets.size(); ++i) {
       if (pattern_add_.relevant(i)) {

@@ -32,6 +32,28 @@ namespace Spectrum {
 
 static Registrar<Spectrum2D> registrar("2D");
 
+void Spectrum2D::populate_options(Setting &set)
+{
+  Spectrum::populate_options(set);
+
+  Qpx::Setting buf;
+  buf.id_ = "buffered";
+  buf.metadata.setting_type = Qpx::SettingType::boolean;
+  buf.metadata.unit = "T/F";
+  buf.metadata.description = "Buffered output for efficient plotting (more memory)";
+  buf.metadata.writable = true;
+  set.branches.add(buf);
+
+  Qpx::Setting sym;
+  sym.id_ = "symmetrized";
+  sym.metadata.setting_type = Qpx::SettingType::boolean;
+  sym.metadata.unit = "T/F";
+  sym.metadata.description = "Matrix is symmetrized";
+  sym.metadata.writable = false;
+  sym.value_int = 0;
+  set.branches.add(sym);
+}
+
 bool Spectrum2D::initialize() {
   Spectrum::initialize();
   //make add pattern has exactly 2 channels
@@ -48,7 +70,6 @@ bool Spectrum2D::initialize() {
     return false;
   }
   
-  metadata_.dimensions = 2;
 //  energies_.resize(2);
   pattern_.resize(2, 0);
   buffered_ = (get_attr("buffered").value_int != 0);
@@ -60,8 +81,6 @@ bool Spectrum2D::initialize() {
       adds++;
     }
   }
-
-  metadata_.type = my_type();
 
   return true;
 }
@@ -118,17 +137,17 @@ bool Spectrum2D::check_symmetrization() {
 
 
 void Spectrum2D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
-  metadata_.detectors.resize(metadata_.dimensions, Qpx::Detector());
+  metadata_.detectors.resize(metadata_.dimensions(), Qpx::Detector());
 
-  if (dets.size() == metadata_.dimensions)
+  if (dets.size() == metadata_.dimensions())
     metadata_.detectors = dets;
-  else if (dets.size() > metadata_.dimensions) {
+  else if (dets.size() > metadata_.dimensions()) {
     int j=0;
     for (int i=0; i < dets.size(); ++i) {
       if (pattern_add_.relevant(i)) {
         metadata_.detectors[j] = dets[i];
         j++;
-        if (j >= metadata_.dimensions)
+        if (j >= metadata_.dimensions())
           break;
       }
     }
