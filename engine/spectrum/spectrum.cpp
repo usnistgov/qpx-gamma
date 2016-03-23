@@ -56,10 +56,44 @@ void Metadata::from_xml(const pugi::xml_node &node) {
     attributes.from_xml(node.child(attributes.xml_element_name().c_str()));
 }
 
+void Metadata::set_det_limit(uint16_t limit)
+{
+  if (limit < 1)
+    limit = 1;
+
+  for (auto &a : attributes.branches.my_data_)
+    if (a.metadata.setting_type == Qpx::SettingType::pattern) {
+      if (a.value_pattern.gates().size() != limit)
+        changed = true;
+      a.value_pattern.resize(limit);
+    } else if (a.metadata.setting_type == Qpx::SettingType::stem) {
+      Setting prototype;
+      for (auto &p : a.branches.my_data_)
+        if (p.indices.count(-1))
+          prototype = p;
+      if (prototype.metadata.setting_type == Qpx::SettingType::stem) {
+        a.indices.clear();
+        a.branches.clear();
+        prototype.metadata.visible = false;
+        a.branches.add(prototype);
+        prototype.metadata.visible = true;
+        for (int i=0; i < limit; ++i) {
+          prototype.indices.clear();
+          prototype.indices.insert(i);
+          for (auto &p : prototype.branches.my_data_)
+            p.indices = prototype.indices;
+          a.branches.add_a(prototype);
+//          a.indices.insert(i);
+        }
+      }
+    }
+}
+
+
 Spectrum::Spectrum()
   : recent_count_(0)
-  , cutoff_logic_(0)
   , coinc_window_(0)
+  , max_delay_(0)
 {
   Setting vis;
   vis.id_ = "visible";
@@ -93,6 +127,15 @@ Spectrum::Spectrum()
   descr.metadata.writable = true;
   metadata_.attributes.branches.add(descr);
 
+  Setting dets;
+  dets.id_ = "per_detector";
+  dets.metadata.setting_type = SettingType::stem;
+
+  Setting det;
+  det.id_ = "detector";
+  det.indices.insert(-1);
+  det.metadata.setting_type = SettingType::stem;
+
   Setting ignore_zero;
   ignore_zero.id_ = "cutoff_logic";
   ignore_zero.metadata.setting_type = SettingType::integer;
@@ -102,7 +145,22 @@ Spectrum::Spectrum()
   ignore_zero.metadata.minimum = 0;
   ignore_zero.metadata.step = 1;
   ignore_zero.metadata.maximum = 1000000;
-  metadata_.attributes.branches.add(ignore_zero);
+  det.branches.add(ignore_zero);
+
+  Setting delay;
+  delay.id_ = "delay_ns";
+  delay.metadata.setting_type = SettingType::floating;
+  delay.metadata.description = "Digital delay (applied before coincidence logic)";
+  delay.metadata.unit = "ns";
+  delay.metadata.writable = true;
+  delay.metadata.flags.insert("preset");
+  delay.metadata.minimum = 0;
+  delay.metadata.step = 1;
+  delay.metadata.maximum = 1000000000;
+  det.branches.add(delay);
+
+  dets.branches.add(det);
+  metadata_.attributes.branches.add(dets);
 
   Setting coinc_window;
   coinc_window.id_ = "coinc_window";
@@ -179,8 +237,26 @@ bool Spectrum::initialize() {
   pattern_coinc_ = get_attr("pattern_coinc").value_pattern;
   pattern_anti_ = get_attr("pattern_anti").value_pattern;
   pattern_add_ = get_attr("pattern_add").value_pattern;
-  cutoff_logic_ = get_attr("cutoff_logic").value_int;
   coinc_window_ = get_attr("coinc_window").value_dbl;
+
+  Setting perdet = get_attr("per_detector");
+  cutoff_logic_.resize(perdet.branches.size());
+  delay_ns_.resize(perdet.branches.size());
+  for (auto &d : perdet.branches.my_data_) {
+    int idx = -1;
+    if (d.indices.size())
+      idx = *d.indices.begin();
+    if (idx >= cutoff_logic_.size()) {
+      cutoff_logic_.resize(idx + 1);
+      delay_ns_.resize(idx + 1);
+    }
+    if (idx >= 0) {
+      cutoff_logic_[idx] = d.get_setting(Setting("cutoff_logic"), Match::id).value_int;
+      delay_ns_[idx]     = d.get_setting(Setting("cutoff_logic"), Match::id).value_dbl;
+      if (delay_ns_[idx] > max_delay_)
+        max_delay_ = delay_ns_[idx];
+    }
+  }
 
   metadata_.attributes.enable_if_flag(false, "preset");
 
@@ -266,7 +342,8 @@ void Spectrum::addSpill(const Spill& one_spill) {
 
 void Spectrum::pushHit(const Hit& newhit)
 {
-  if (newhit.energy.val(metadata_.bits) < cutoff_logic_)
+  if ((newhit.source_channel < cutoff_logic_.size())
+      && (newhit.energy.val(metadata_.bits) < cutoff_logic_[newhit.source_channel]))
     return;
 
   if (newhit.source_channel < 0)
@@ -279,10 +356,14 @@ void Spectrum::pushHit(const Hit& newhit)
 
   //  PL_DBG << "Processing " << newhit.to_string();
 
+  Hit hit = newhit;
+  if (hit.source_channel < delay_ns_.size())
+    hit.timestamp.delay(delay_ns_[hit.source_channel]);
+
   bool appended = false;
   bool pileup = false;
   if (backlog.empty() || backlog.back().past_due(newhit))
-    backlog.push_back(Event(newhit, coinc_window_));
+    backlog.push_back(Event(newhit, coinc_window_, max_delay_));
   else {
     for (auto &q : backlog) {
       if (q.in_window(newhit)) {
@@ -301,7 +382,7 @@ void Spectrum::pushHit(const Hit& newhit)
     }
 
     if (!appended && !pileup) {
-      backlog.push_back(Event(newhit, coinc_window_));
+      backlog.push_back(Event(newhit, coinc_window_, max_delay_));
       PL_DBG << "append fresh";
     }
   }

@@ -36,6 +36,11 @@ double TimeStamp::to_nanosec() const {
     return time_native * timebase_multiplier / timebase_divider;
 }
 
+void TimeStamp::delay(double ns)
+{
+  time_native += std::ceil(ns * timebase_divider / timebase_multiplier);
+}
+
 std::string TimeStamp::to_string() const {
   std::stringstream ss;
   ss << time_native << "x(" << timebase_multiplier << "/" << timebase_divider << ")";
@@ -133,7 +138,7 @@ bool Event::in_window(const Hit& h) const {
 }
 
 bool Event::past_due(const Hit& h) const {
-  return (h.timestamp >= lower_time) && ((h.timestamp - lower_time) > window_ns);
+  return (h.timestamp >= lower_time) && ((h.timestamp - lower_time) > max_delay_ns);
 }
 
 bool Event::antecedent(const Hit& h) const {

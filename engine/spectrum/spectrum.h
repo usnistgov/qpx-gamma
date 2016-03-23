@@ -73,6 +73,7 @@ struct Metadata : public XMLable {
   uint16_t dimensions() const {return dimensions_;}
   std::list<std::string> input_types() const {return input_types_;}
   std::list<std::string> output_types() const {return output_types_;}
+  void set_det_limit(uint16_t limit);
 
   Metadata()
     : type_("invalid")
@@ -212,7 +213,10 @@ protected:
 
   Metadata metadata_;
 
-  int32_t cutoff_logic_;
+  std::vector<int32_t> cutoff_logic_;
+  std::vector<double>  delay_ns_;
+  double max_delay_;
+
   double coinc_window_;
 
   std::vector<std::vector<double> > energies_;

@@ -298,6 +298,7 @@ Setting::Setting()
   : branches("branches")
   , value_dbl(0.0)
   , value_int(0)
+  , value_precise(0)
 {}
 
 Setting::Setting(const pugi::xml_node &node)

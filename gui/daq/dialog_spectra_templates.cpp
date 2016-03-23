@@ -175,11 +175,7 @@ void DialogSpectrumTemplate::on_spinDets_valueChanged(int arg1)
 {
   if (!ui->spinDets->isEnabled())
     return;
-
-  for (auto &a : myTemplate.attributes.branches.my_data_)
-    if (a.metadata.setting_type == Qpx::SettingType::pattern)
-      a.value_pattern.resize(arg1);
-
+  myTemplate.set_det_limit(arg1);
   updateData();
 }
 

@@ -43,6 +43,7 @@ struct TimeStamp {
 
   double to_nanosec() const;
   std::string to_string() const;
+  void delay(double ns);
 
   double operator-(const TimeStamp other) const {
     return (to_nanosec() - other.to_nanosec());
@@ -136,6 +137,7 @@ struct Hit {
 struct Event {
   TimeStamp              lower_time;
   double                 window_ns;
+  double                 max_delay_ns;
   std::map<int16_t, Hit> hits;
 
   bool in_window(const Hit& h) const;
@@ -147,12 +149,14 @@ struct Event {
 
   inline Event() {
     window_ns = 0.0;
+    max_delay_ns = 0.0;
   }
 
-  inline Event(const Hit &newhit, double win) {
+  inline Event(const Hit &newhit, double win, double max_delay) {
     lower_time = newhit.timestamp;
     hits[newhit.source_channel] = newhit;
     window_ns = win;
+    max_delay_ns = max_delay;
   }
 };
 

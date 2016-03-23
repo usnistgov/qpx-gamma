@@ -308,11 +308,8 @@ void dialog_spectrum::on_spinDets_valueChanged(int arg1)
   if (!ui->spinDets->isEnabled())
     return;
 
-  for (auto &a : md_.attributes.branches.my_data_)
-    if (a.metadata.setting_type == Qpx::SettingType::pattern) {
-      a.value_pattern.resize(arg1);
-      changed_ = true;
-    }
-
+  md_.set_det_limit(arg1);
+  if (md_.changed)
+    changed_ = true;
   updateData();
 }
