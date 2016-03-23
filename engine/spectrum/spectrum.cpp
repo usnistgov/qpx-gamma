@@ -362,33 +362,33 @@ void Spectrum::pushHit(const Hit& newhit)
 
   bool appended = false;
   bool pileup = false;
-  if (backlog.empty() || backlog.back().past_due(newhit))
-    backlog.push_back(Event(newhit, coinc_window_, max_delay_));
+  if (backlog.empty() || backlog.back().past_due(hit))
+    backlog.push_back(Event(hit, coinc_window_, max_delay_));
   else {
     for (auto &q : backlog) {
-      if (q.in_window(newhit)) {
-        if (q.addHit(newhit)) {
+      if (q.in_window(hit)) {
+        if (q.addHit(hit)) {
           if (appended)
-            PL_DBG << "<" << metadata_.name << "> hit " << newhit.to_string() << " coincident with more than one other hit (counted >=2 times)";
+            PL_DBG << "<" << metadata_.name << "> hit " << hit.to_string() << " coincident with more than one other hit (counted >=2 times)";
           appended = true;
         } else {
-          PL_DBG << "<" << metadata_.name << "> pileup hit " << newhit.to_string() << " with " << q.to_string() << " already has " << q.hits[newhit.source_channel].to_string();
+          PL_DBG << "<" << metadata_.name << "> pileup hit " << hit.to_string() << " with " << q.to_string() << " already has " << q.hits[hit.source_channel].to_string();
           pileup = true;
         }
-      } else if (q.past_due(newhit))
+      } else if (q.past_due(hit))
         break;
-      else if (q.antecedent(newhit))
-        PL_DBG << "<" << metadata_.name << "> antecedent hit " << newhit.to_string() << ". Something wrong with presorter or daq_device?";
+      else if (q.antecedent(hit))
+        PL_DBG << "<" << metadata_.name << "> antecedent hit " << hit.to_string() << ". Something wrong with presorter or daq_device?";
     }
 
     if (!appended && !pileup) {
-      backlog.push_back(Event(newhit, coinc_window_, max_delay_));
+      backlog.push_back(Event(hit, coinc_window_, max_delay_));
       PL_DBG << "append fresh";
     }
   }
 
   Event evt;
-  while (!backlog.empty() && (evt = backlog.front()).past_due(newhit)) {
+  while (!backlog.empty() && (evt = backlog.front()).past_due(hit)) {
     backlog.pop_front();
     if (validateEvent(evt)) {
       recent_count_++;
