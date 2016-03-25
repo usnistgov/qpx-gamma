@@ -37,7 +37,7 @@ struct TimeStamp {
 
   TimeStamp() {
     time_native = 0;
-    timebase_multiplier = 0;
+    timebase_multiplier = 1;
     timebase_divider = 1;
   }
 

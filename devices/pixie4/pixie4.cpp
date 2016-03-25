@@ -81,8 +81,8 @@ Pixie4::~Pixie4() {
 Hit Pixie4::model_hit() {
   Hit h;
   h.energy = DigitizedVal(0, 16);
-  h.timestamp.timebase_multiplier = 50;
-  h.timestamp.timebase_divider = 1;
+  h.timestamp.timebase_multiplier = 1000;
+  h.timestamp.timebase_divider = 75;
   return h;
 }
 
