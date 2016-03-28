@@ -36,15 +36,13 @@ namespace Qpx {
 // and timestamp would require duration output type
 StatsUpdate StatsUpdate::operator-(const StatsUpdate other) const {
   StatsUpdate answer;
-  answer.fast_peaks = fast_peaks - other.fast_peaks;
-  answer.live_time  = live_time - other.live_time;
-  answer.ftdt       = ftdt - other.ftdt;
-  answer.sfdt       = sfdt - other.sfdt;
-  answer.total_time = total_time - other.total_time;
-  answer.events_in_spill = events_in_spill - other.events_in_spill;
-  //event rate?
+  if (source_channel != other.source_channel)
+    return answer;
+
   //labtime?
-  //channel?
+  for (auto &i : items)
+    if (other.items.count(i.first))
+      answer.items[i.first] = i.second - other.items.at(i.first);
   return answer;
 }
 
@@ -53,28 +51,24 @@ bool StatsUpdate::operator==(const StatsUpdate other) const {
     return false;
   if (source_channel != other.source_channel)
     return false;
-  if (total_time != other.total_time)
-    return false;
   if (events_in_spill != other.events_in_spill)
     return false;
-  if (fast_peaks != other.fast_peaks)
+  if (items != other.items)
     return false;
   return true;
 }
 
 // stacks two, adding up all variables
-// except rate wouldn't make sense, neither does timestamp
+// except timestamp wouldn't make sense
 StatsUpdate StatsUpdate::operator+(const StatsUpdate other) const {
   StatsUpdate answer;
-  answer.fast_peaks = fast_peaks + other.fast_peaks;
-  answer.live_time  = live_time + other.live_time;
-  answer.ftdt       = ftdt + other.ftdt;
-  answer.sfdt       = sfdt + other.sfdt;
-  answer.total_time = total_time + other.total_time;
-  answer.events_in_spill = events_in_spill + other.events_in_spill;
-  //event rate?
+  if (source_channel != other.source_channel)
+    return answer;
+
   //labtime?
-  //channel?
+  for (auto &i : items)
+    if (other.items.count(i.first))
+      answer.items[i.first] = i.second + other.items.at(i.first);
   return answer;
 }
 
@@ -89,9 +83,7 @@ std::string StatsUpdate::to_string() const
   else
     ss << "RUN(";
   ss << "ch" << source_channel;
-  ss << "|evts" << events_in_spill;
   ss << "|labtm" << boost::posix_time::to_iso_extended_string(lab_time);
-  ss << "|devtm" << total_time;
   ss << ")";
   return ss.str();
 }
@@ -114,15 +106,20 @@ void StatsUpdate::to_xml(pugi::xml_node &root) const {
   node.append_attribute("timebase_div").set_value(std::to_string(model_hit.timestamp.timebase_divider).c_str());
   node.append_attribute("energy_bits").set_value(std::to_string(model_hit.energy.bits()).c_str());
 
-  node.append_attribute("total_time").set_value(std::to_string(total_time).c_str());
-  node.append_attribute("fast_peaks").set_value(std::to_string(fast_peaks).c_str());
-  node.append_attribute("live_time").set_value(std::to_string(live_time).c_str());
-  node.append_attribute("ftdt").set_value(std::to_string(ftdt).c_str());
-  node.append_attribute("sfdt").set_value(std::to_string(sfdt).c_str());
+  if (items.size()) {
+     pugi::xml_node its = node.append_child("Items");
+     for (auto &i : items) {
+       std::stringstream ss;
+       ss << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << i.second;
+       its.append_attribute(i.first.c_str()).set_value(ss.str().c_str());
+     }
+  }
 }
 
 
 void StatsUpdate::from_xml(const pugi::xml_node &node) {
+  items.clear();
+
   if (std::string(node.name()) != xml_element_name())
     return;
 
@@ -143,14 +140,16 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
   model_hit.timestamp.timebase_multiplier = node.attribute("timebase_mult").as_double();
   model_hit.timestamp.timebase_divider    = node.attribute("timebase_div").as_double();
 
-  total_time = node.attribute("total_time").as_double();
-  fast_peaks = node.attribute("fast_peaks").as_double();
-  live_time = node.attribute("live_time").as_double();
-  ftdt = node.attribute("ftdt").as_double();
-  sfdt = node.attribute("sfdt").as_double();
-
+  if (node.child("Items")) {
+    for (auto &i : node.child("Items").attributes()) {
+      std::string item_name(i.name());
+      PreciseFloat value(i.value());
+      items[item_name] = value;
+    }
+  }
 }
 
+//DEPRECATE
 bool RunInfo::operator== (const RunInfo& other) const {
   if (time != other.time) return false;
   if (detectors != other.detectors) return false;
@@ -158,6 +157,7 @@ bool RunInfo::operator== (const RunInfo& other) const {
   return true;
 }
 
+//DEPRECATE
 void RunInfo::to_xml(pugi::xml_node &root, bool with_settings) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
   node.append_attribute("time").set_value(boost::posix_time::to_iso_extended_string(time).c_str());
@@ -171,13 +171,10 @@ void RunInfo::to_xml(pugi::xml_node &root, bool with_settings) const {
   }
 }
 
+//DEPRECATE
 void RunInfo::from_xml(const pugi::xml_node &node) {
   if (std::string(node.name()) != xml_element_name())
     return;
-
-  boost::posix_time::time_input_facet *tif = new boost::posix_time::time_input_facet;
-  tif->set_iso_extended_format();
-  std::stringstream iss;
 
   if (node.attribute("time"))
     time = from_iso_extended(node.attribute("time").value());
@@ -185,6 +182,97 @@ void RunInfo::from_xml(const pugi::xml_node &node) {
     time = from_iso_extended(node.attribute("time_start").value());  //backwards compat
 
   state.from_xml(node.child(state.xml_element_name().c_str()));
+
+  if (node.child("Detectors")) {
+    detectors.clear();
+    for (auto &q : node.child("Detectors").children()) {
+      Qpx::Detector det;
+      det.from_xml(q);
+      detectors.push_back(det);
+    }
+  }
+
+}
+
+bool Spill::operator==(const Spill other) const {
+  if (time != other.time)
+    return false;
+  if (stats != other.stats)
+    return false;
+  if (detectors != other.detectors)
+    return false;
+  if (state != other.state)
+    return false;
+  if (data != other.data)
+    return false;
+  if (hits.size() != other.hits.size())
+    return false;
+  return true;
+}
+
+bool Spill::empty()
+{
+  if (!stats.empty())
+    return false;
+  if (!detectors.empty())
+    return false;
+  if (state != Setting())
+    return false;
+  if (!data.empty())
+    return false;
+  if (!hits.empty())
+    return false;
+  return true;
+}
+
+void Spill::to_xml(pugi::xml_node &root, bool with_settings) const {
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+  node.append_attribute("time").set_value(boost::posix_time::to_iso_extended_string(time).c_str());
+  node.append_attribute("bytes_raw_data").set_value(std::to_string(data.size() * sizeof(uint32_t)).c_str());
+  node.append_attribute("number_of_hits").set_value(std::to_string(hits.size()).c_str());
+
+  if (stats.size()) {
+    pugi::xml_node statsnode = node.append_child("Stats");
+    for (auto &s : stats)
+      s.second.to_xml(statsnode);
+  }
+
+  if (with_settings) {
+    if (!state.branches.empty())
+      state.to_xml(node);
+    if (!detectors.empty()) {
+      pugi::xml_node child = node.append_child("Detectors");
+      std::vector<Qpx::Detector> dets = detectors;
+      for (auto q : dets) {
+        q.settings_.strip_metadata();
+//        q.settings_ = Setting();
+        q.to_xml(child);
+      }
+    }
+  }
+}
+
+void Spill::from_xml(const pugi::xml_node &node) {
+  if (std::string(node.name()) != xml_element_name())
+    return;
+
+  data.clear();
+  hits.clear();
+
+  if (node.attribute("time"))
+    time = from_iso_extended(node.attribute("time").value());
+
+  if (node.child(state.xml_element_name().c_str()))
+    state.from_xml(node.child(state.xml_element_name().c_str()));
+
+  if (node.child("Stats")) {
+    stats.clear();
+    for (auto &q : node.child("Stats").children()) {
+      StatsUpdate st;
+      st.from_xml(q);
+      stats[st.source_channel] = st;
+    }
+  }
 
   if (node.child("Detectors")) {
     detectors.clear();

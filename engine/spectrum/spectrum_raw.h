@@ -46,7 +46,6 @@ protected:
   //event processing
   void addEvent(const Event&) override;
   void addStats(const StatsUpdate&) override;
-  void addRun(const RunInfo&) override;
   void _closeAcquisition() override;
 
   bool init_text();
@@ -57,8 +56,6 @@ protected:
   void stats_text(const StatsUpdate&);
   //void stats_bin(const StatsUpdate&);
 
-  void run_text(const RunInfo&);
-  //void run_bin(const RunInfo&);
 
   std::string _channels_to_xml() const override {return "written to file";}
   uint16_t _channels_from_xml(const std::string&) override {return 0;}

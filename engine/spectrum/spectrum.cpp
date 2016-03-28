@@ -318,6 +318,7 @@ void Spectrum::addSpill(const Spill& one_spill) {
     this->pushHit(q);
 
   for (auto &q : one_spill.stats) {
+    //what if multiple sources not synced?
     if (q.second.stats_type == StatsType::stop) {
 //      PL_DBG << "<" << metadata_.name << "> final RunInfo received, dumping backlog of events " << backlog.size();
       while (!backlog.empty()) {
@@ -330,8 +331,14 @@ void Spectrum::addSpill(const Spill& one_spill) {
     this->addStats(q.second);
   }
 
-  if (one_spill.run != RunInfo())
-    this->addRun(one_spill.run);
+  if (!one_spill.detectors.empty())
+    this->_set_detectors(one_spill.detectors);
+
+  Setting start_time = get_attr("start_time");
+  if (start_time.value_time.is_not_a_date_time() && (!one_spill.time.is_not_a_date_time())) {
+    start_time.value_time = one_spill.time;
+    metadata_.attributes.branches.replace(start_time);
+  }
 
   addspill_timer.stop();
 //  PL_DBG << "<" << metadata_.name << "> added " << hits << " hits in "
@@ -471,22 +478,15 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
           real += rt;
           live += lt;
           start = q;
-//          PL_DBG << "<Spectrum> \"" << metadata_.name << "\" RT + "
-//                 << rt << " = " << real << "   LT + " << lt << " = " << live;
-//          PL_DBG << "<Spectrum> \"" << metadata_.name << "\" FROM "
-//                 << boost::posix_time::to_iso_extended_string(start.lab_time);
         } else {
           lt = rt = q.lab_time - start.lab_time;
           StatsUpdate diff = q - start;
-//          PL_DBG << "<Spectrum> \"" << metadata_.name << "\" TOTAL_TIME " << q.total_time << "-" << start.total_time
-//                 << " = " << diff.total_time;
-          if (diff.total_time > 0) {
-            double scale_factor = rt.total_microseconds() / diff.total_time;
-            double this_time_unscaled = diff.live_time - diff.sfdt;
-            lt = boost::posix_time::microseconds(static_cast<long>(this_time_unscaled * scale_factor));
-//            PL_DBG << "<Spectrum> \"" << metadata_.name << "\" TO "
-//                   << boost::posix_time::to_iso_extended_string(q.lab_time)
-//                   << "  RT = " << rt << "   LT = " << lt;
+          PreciseFloat scale_factor = 1;
+          if (diff.items.count("native_time") && (diff.items.at("native_time") > 0))
+            scale_factor = rt.total_microseconds() / diff.items["native_time"];
+          if (diff.items.count("live_time")) {
+            PreciseFloat scaled_live = diff.items.at("live_time") * scale_factor;
+            lt = boost::posix_time::microseconds(scaled_live.convert_to<long>());
           }
         }
       }
@@ -521,21 +521,6 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
 
     }
   }
-}
-
-
-void Spectrum::addRun(const RunInfo& run_info) {
-  //private; no lock required
-
- if (run_info.detectors.size() > 0)
-    this->_set_detectors(run_info.detectors);
-
- //backwards compat
- Setting start_time = get_attr("start_time");
- if (start_time.value_time.is_not_a_date_time() && (!run_info.time.is_not_a_date_time())) {
-   start_time.value_time = run_info.time;
-   metadata_.attributes.branches.replace(start_time);
- }
 }
 
 std::vector<double> Spectrum::energies(uint8_t chan) const {

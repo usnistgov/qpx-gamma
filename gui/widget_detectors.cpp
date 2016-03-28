@@ -160,9 +160,13 @@ void DialogDetector::on_pushReadOpti_clicked()
 
   Qpx::SpectraSet optiSource;
   optiSource.read_xml(fileName.toStdString(), false);
-  for (auto &q : optiSource.runInfo().detectors)
-    if (q.name_ == my_detector_.name_)
-      my_detector_ = q;
+  std::set<Qpx::Spill> spills = optiSource.spills();
+  if (spills.size()) {
+    Qpx::Spill sp = *spills.begin();
+    for (auto &q : sp.detectors)
+      if (q.name_ == my_detector_.name_)
+        my_detector_ = q;
+  }
   updateDisplay();
 }
 

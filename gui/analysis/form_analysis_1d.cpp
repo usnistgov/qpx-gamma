@@ -253,15 +253,18 @@ void FormAnalysis1D::update_detector_calibs()
     }
 
 
-    Qpx::RunInfo ri = spectra_->runInfo();
-    for (auto &p : ri.detectors) {
+    std::set<Qpx::Spill> spills = spectra_->spills();
+    Qpx::Spill sp;
+    if (spills.size())
+      sp = *spills.end();
+    for (auto &p : sp.detectors) {
       if (p.shallow_equals(fit_data_.detector_)) {
         PL_INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " in current project " << spectra_->identity();
         p.energy_calibrations_.replace(new_energy_calibration_);
         p.fwhm_calibration_ = new_fwhm_calibration_;
       }
     }
-    spectra_->setRunInfo(ri);
+    spectra_->add_spill(&sp);
     update_spectrum();
   }
 }

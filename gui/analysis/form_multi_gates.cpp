@@ -501,7 +501,7 @@ void FormMultiGates::make_gated_spectra() {
     gate_x = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*tempx);
 
     //if?
-    Qpx::Spectrum::slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {ymin_, ymax_}}, spectra_->runInfo());
+    Qpx::Spectrum::slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {ymin_, ymax_}});
 
     fit_data_.clear();
     fit_data_.setData(gate_x);

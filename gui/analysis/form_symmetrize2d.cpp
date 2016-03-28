@@ -144,7 +144,7 @@ void FormSymmetrize2D::make_gated_spectra() {
     gate_x = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*tempx);
 
     //if?
-    Qpx::Spectrum::slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {0, adjrange}}, spectra_->runInfo());
+    Qpx::Spectrum::slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {0, adjrange}});
 
     fit_data_.clear();
     fit_data_.setData(gate_x);
@@ -155,7 +155,7 @@ void FormSymmetrize2D::make_gated_spectra() {
       delete gate_y;
     gate_y = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*tempy);
 
-    Qpx::Spectrum::slice_rectangular(source_spectrum, gate_y, {{0, adjrange}, {0, adjrange}}, spectra_->runInfo());
+    Qpx::Spectrum::slice_rectangular(source_spectrum, gate_y, {{0, adjrange}, {0, adjrange}});
 
     fit_data_2_.clear();
     fit_data_2_.setData(gate_y);
@@ -334,7 +334,7 @@ void FormSymmetrize2D::symmetrize()
       return;
     }
 
-    if (Qpx::Spectrum::symmetrize(source_spectrum, destination, spectra_->runInfo())) {
+    if (Qpx::Spectrum::symmetrize(source_spectrum, destination)) {
       spectra_->add_spectrum(destination);
       setSpectrum(spectra_, fold_spec_name);
       reset();
@@ -416,16 +416,18 @@ void FormSymmetrize2D::apply_gain_calibration()
       q->set_detectors(md.detectors);
     }
 
-    std::vector<Qpx::Detector> detectors = spectra_->runInfo().detectors;
-    for (auto &p : detectors) {
+    std::set<Qpx::Spill> spills = spectra_->spills();
+    Qpx::Spill sp;
+    if (spills.size())
+      sp = *spills.end();
+
+    for (auto &p : sp.detectors) {
       if (p.shallow_equals(detector2_)) {
         PL_INFO << "   applying new calibrations for " << detector2_.name_ << " in current project " << spectra_->identity();
         p.gain_match_calibrations_.replace(gain_match_cali_);
       }
     }
-    Qpx::RunInfo ri = spectra_->runInfo();
-    ri.detectors = detectors;
-    spectra_->setRunInfo(ri);
+    spectra_->add_spill(&sp);
   }
 }
 

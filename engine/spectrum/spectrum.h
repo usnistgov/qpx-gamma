@@ -195,7 +195,6 @@ protected:
   virtual void pushHit(const Hit&);           //has default behavior
   virtual void addEvent(const Event&) = 0;
   virtual void addStats(const StatsUpdate&);  //has default behavior
-  virtual void addRun(const RunInfo&);        //has default behavior
   virtual bool validateEvent(const Event&) const; //has default behavior
   virtual void _closeAcquisition() {}
 

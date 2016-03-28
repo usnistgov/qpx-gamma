@@ -263,16 +263,15 @@ void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill
 
   bool timeout = false;
 
-  std::set<int> starts_signalled;
-
   while ((!callback->spills_.empty()) && (!timeout)) {
 
     prevspill = one_spill;
     one_spill = callback->get_spill();
 
     if (callback->override_timestamps_) {
+      one_spill.time = boost::posix_time::microsec_clock::universal_time();
       for (auto &q : one_spill.stats)
-        q.second.lab_time = boost::posix_time::microsec_clock::universal_time();
+        q.second.lab_time = one_spill.time;
       // livetime and realtime are not changed accordingly
     }
 

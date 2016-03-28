@@ -29,9 +29,9 @@
 namespace Qpx {
 namespace Spectrum {
 
-bool slice_rectangular(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destination, std::initializer_list<Pair> bounds, Qpx::RunInfo info);
-bool slice_diagonal(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx, Qpx::RunInfo info);
-bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destination, Qpx::RunInfo info);
+bool slice_rectangular(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destination, std::initializer_list<Pair> bounds);
+bool slice_diagonal(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx);
+bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destination);
 
 PreciseFloat sum_with_neighbors(Qpx::Spectrum::Spectrum* source, uint16_t x, uint16_t y);
 PreciseFloat sum_diag(Qpx::Spectrum::Spectrum* source, uint16_t x, uint16_t y, uint16_t width);

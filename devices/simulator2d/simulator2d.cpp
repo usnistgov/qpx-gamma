@@ -241,7 +241,9 @@ bool Simulator2D::boot() {
 
   PL_DBG << "<Simulator2D> source total events coinc " << md.total_count;
 
-  settings = temp_set->runInfo().state;
+  std::set<Spill> spills = temp_set->spills();
+  if (spills.size())
+    settings = spills.begin()->state;
   detectors = md.detectors;
   lab_time = md.attributes.branches.get(Qpx::Setting("real_time")).value_duration.total_milliseconds() * 0.001;
 
@@ -418,7 +420,7 @@ StatsUpdate Simulator2D::getBlock(double duration) {
 
   double fraction;
 
-  newBlock.total_time = duration * time_factor;
+  newBlock.items["native_time"] = duration * time_factor;
 
   if (lab_time == 0.0)
     fraction = duration;
@@ -428,10 +430,13 @@ StatsUpdate Simulator2D::getBlock(double duration) {
 
   //one channel only, find by indices?
   //  for (int i = 0; i<2; i++) {
-    newBlock.fast_peaks = settings.get_setting(Qpx::Setting("FAST_PEAKS"), Qpx::Match::name).value_dbl * fraction;
-    newBlock.live_time  = settings.get_setting(Qpx::Setting("LIVE_TIME"), Qpx::Match::name).value_dbl * fraction;
-    newBlock.ftdt       = settings.get_setting(Qpx::Setting("FTDT"), Qpx::Match::name).value_dbl * fraction;
-    newBlock.sfdt       = settings.get_setting(Qpx::Setting("SFDT"), Qpx::Match::name).value_dbl * fraction;
+    newBlock.items["trigger_count"] = settings.get_setting(Qpx::Setting("FAST_PEAKS"), Qpx::Match::name).value_dbl * fraction;
+    double live_time  = settings.get_setting(Qpx::Setting("LIVE_TIME"), Qpx::Match::name).value_dbl * fraction;
+    double ftdt       = settings.get_setting(Qpx::Setting("FTDT"), Qpx::Match::name).value_dbl * fraction;
+    double sfdt       = settings.get_setting(Qpx::Setting("SFDT"), Qpx::Match::name).value_dbl * fraction;
+
+    newBlock.items["live_time"] = live_time - sfdt;
+    newBlock.items["live_trigger"] = live_time - ftdt;
     //  }
 
 

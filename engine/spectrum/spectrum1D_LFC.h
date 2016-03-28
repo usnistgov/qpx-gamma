@@ -40,7 +40,6 @@ protected:
   bool initialize() override;
   
   void addStats(const StatsUpdate&) override;
-  void addRun(const RunInfo&) override;
 
   void addHit(const Hit&) override;
 

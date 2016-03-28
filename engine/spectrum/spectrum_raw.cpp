@@ -126,10 +126,6 @@ void SpectrumRaw::addStats(const StatsUpdate& stats) {
   stats_text(stats_override);
 }
 
-void SpectrumRaw::addRun(const RunInfo& run) {
-  run_text(run);
-}
-
 void SpectrumRaw::_closeAcquisition() {
   if (open_xml_) {
     PL_DBG << "<SpectrumRaw> writing " << file_name_txt_ << " for \"" << metadata_.name << "\"";
@@ -164,14 +160,6 @@ void SpectrumRaw::stats_text(const StatsUpdate& stats) {
     return;
   stats.to_xml(xml_root_);
 }
-
-
-void SpectrumRaw::run_text(const RunInfo& run) {
-  if (!open_xml_)
-    return;
-  run.to_xml(xml_root_, true);
-}
-
 
 
 }}

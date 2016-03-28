@@ -413,13 +413,13 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
               udt.source_channel = q;
               udt.lab_time = ts;
-              udt.fast_peaks = pEvent->getEventCount();
-              udt.live_time = pEvent->getTimeOffset();
-              udt.total_time = pEvent->getTimeOffset();
+
+              udt.items["native_time"] = pEvent->getTimeOffset();
 
               //            PL_DBG << "<ParserEVT> " << udt.to_string();
 
               one_spill.stats[q] = udt;
+              one_spill.time = ts;
               done = true;
             }
 
@@ -460,9 +460,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
                   udt.source_channel = h.source_channel;
                   udt.lab_time = time_start;
                   udt.stats_type = StatsType::start;
-                  //udt.fast_peaks = pEvent->getEventCount();
-                  //udt.live_time = pEvent->getTimeOffset();
-                  //udt.real_time = pEvent->getTimeOffset();
+
                   Spill extra_spill;
                   extra_spill.stats[h.source_channel] = udt;
                   spill_queue->enqueue(new Spill(extra_spill));
@@ -532,8 +530,9 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
 
       if (callback->override_timestamps_) {
+        one_spill.time = boost::posix_time::microsec_clock::universal_time();
         for (auto &q : one_spill.stats)
-          q.second.lab_time = boost::posix_time::microsec_clock::universal_time();
+          q.second.lab_time = one_spill.time;
         // livetime and realtime are not changed accordingly
       }
 
@@ -563,6 +562,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
   PL_DBG << "<ParserEVT> before stop  hits = " << one_spill.hits.size();
 
   one_spill = Spill();
+  one_spill.time = ts;
   for (auto &q : starts_signalled) {
     StatsUpdate udt;
     udt.stats_type = StatsType::stop;

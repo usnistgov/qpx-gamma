@@ -44,27 +44,17 @@ struct StatsUpdate : public XMLable {
   StatsType stats_type;
   int16_t   source_channel;
   Hit       model_hit;
+  std::unordered_map<std::string, PreciseFloat> items;
+
 
   uint64_t  events_in_spill; //deprecate??
-
-  //deprecate?
-  double total_time,
-    fast_peaks,
-    live_time,
-    ftdt,
-    sfdt;
 
   boost::posix_time::ptime lab_time;  //timestamp at end of spill
   
   inline StatsUpdate()
       : stats_type(StatsType::running)
       , source_channel(-1)
-      , total_time(0.0)
       , events_in_spill(0)
-      , fast_peaks(0.0)
-      , live_time(0.0)
-      , ftdt(0.0)
-      , sfdt(0.0)
   {}
 
   std::string to_string() const;
@@ -85,6 +75,8 @@ struct StatsUpdate : public XMLable {
 
 };
 
+
+//DEPRECATE!!!
 struct RunInfo : public XMLable {
   Qpx::Setting state;
   std::vector<Qpx::Detector> detectors;
@@ -105,26 +97,34 @@ struct RunInfo : public XMLable {
 };
 
 
-struct Spill {
-  inline Spill()/*: spill_number(0)*/ {}
-  bool operator==(const Spill other) const {
-    if (stats != other.stats)
-      return false;
-    if (run != other.run)
-      return false;
-    if (data != other.data)
-      return false;
-    if (hits.size() != other.hits.size())
-      return false;
-    return true;
+struct Spill : public XMLable {
+  inline Spill()
+  {
+    time = boost::posix_time::microsec_clock::universal_time();
   }
+
+  std::string xml_element_name() const override {return "Spill";}
+  bool shallow_equals(const RunInfo& other) const {return (time == other.time);}
+
+  bool operator==(const Spill other) const;
+  bool operator<(const Spill other) const  {return (time < other.time);}
   bool operator!=(const Spill other) const {return !operator ==(other);}
 
+  bool empty();
+
+  void from_xml(const pugi::xml_node &) override;
+  void to_xml(pugi::xml_node &, bool with_settings = true) const;
+  void to_xml(pugi::xml_node &node) const override {to_xml(node, true);}
+
+  boost::posix_time::ptime time;
 
   std::vector<uint32_t>  data;  //as is from device, unparsed
   std::list<Qpx::Hit>    hits;  //as parsed
   std::map<int16_t, StatsUpdate> stats;
-  RunInfo                run;
+
+  Qpx::Setting state;
+  std::vector<Qpx::Detector> detectors;
+
 };
 
 struct ListData {

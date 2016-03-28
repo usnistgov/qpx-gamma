@@ -154,14 +154,16 @@ bool Pixie4::daq_running() {
 void Pixie4::fill_stats(std::map<int16_t, StatsUpdate> &all_stats, uint8_t module) {
   StatsUpdate stats;
 
-  stats.total_time = get_mod("TOTAL_TIME", Module(module));
+  stats.items["native_time"] = get_mod("TOTAL_TIME", Module(module));
   stats.model_hit = model_hit();
   for (int i=0; i<NUMBER_OF_CHANNELS; ++i) {
     stats.source_channel    = channel_indices_[module][i];
-    stats.fast_peaks = get_chan("FAST_PEAKS", Channel(i), Module(module));
-    stats.live_time  = get_chan("LIVE_TIME", Channel(i), Module(module));
-    stats.ftdt       = get_chan("FTDT", Channel(i), Module(module));
-    stats.sfdt       = get_chan("SFDT", Channel(i), Module(module));
+    stats.items["trigger_count"] = get_chan("FAST_PEAKS", Channel(i), Module(module));
+    double live_time  = get_chan("LIVE_TIME", Channel(i), Module(module));
+    double ftdt       = get_chan("FTDT", Channel(i), Module(module));
+    double sfdt       = get_chan("SFDT", Channel(i), Module(module));
+    stats.items["live_time"] = live_time - sfdt;
+    stats.items["live_trigger"] = live_time - ftdt;
     all_stats[stats.source_channel] = stats;
     //PL_DBG << "stats chan " << stats.channel;
   }
@@ -1288,7 +1290,6 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
   std::bitset<32> csr;
   bool timeout = false;
   Spill fetched_spill;
-  boost::posix_time::ptime session_start_time, block_time;
 
   for (int i=0; i < callback->channel_indices_.size(); i++) {
     if (!callback->clear_EM(i))
@@ -1298,7 +1299,6 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
   }
 
   fetched_spill = Spill();
-  session_start_time = boost::posix_time::microsec_clock::universal_time();
 
   if(!callback->start_run(Module::all))
     return;
@@ -1308,7 +1308,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
   for (int i=0; i < callback->channel_indices_.size(); i++)
     callback->fill_stats(fetched_spill.stats, i);
   for (auto &q : fetched_spill.stats) {
-    q.second.lab_time = session_start_time;
+    q.second.lab_time = fetched_spill.time;
     q.second.stats_type = StatsType::start;
   }
   spill_queue->enqueue(new Spill(fetched_spill));
@@ -1328,7 +1328,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
       timeout = (callback->run_status_.load() == 2);
     };
 
-    block_time = boost::posix_time::microsec_clock::universal_time();
+    fetched_spill.time = boost::posix_time::microsec_clock::universal_time();
 
     if (timeout) {
       callback->stop_run(Module::all);
@@ -1357,7 +1357,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
       //      PL_DBG << "<Pixie4> fetched spill for mod " << q;
       callback->fill_stats(fetched_spill.stats, q);
       for (auto &p : fetched_spill.stats) {
-        p.second.lab_time = block_time;
+        p.second.lab_time = fetched_spill.time;
         if (timeout)
           p.second.stats_type = StatsType::stop;
       }
@@ -1371,14 +1371,13 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
 
 
   fetched_spill = Spill();
-  block_time = boost::posix_time::microsec_clock::universal_time();
 
   callback->get_mod_stats(Module::all);
   callback->get_chan_stats(Channel::all, Module::all);
   for (int i=0; i < callback->channel_indices_.size(); i++)
     callback->fill_stats(fetched_spill.stats, i);
   for (auto &q : fetched_spill.stats) {
-    q.second.lab_time = block_time;
+    q.second.lab_time = fetched_spill.time;
     q.second.stats_type = StatsType::stop;
   }
   spill_queue->enqueue(new Spill(fetched_spill));
@@ -1514,8 +1513,6 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
 
         };
       }
-      //FIX THIS!!!
-      //spill->stats->events_in_spill = spill_events;
       all_events += spill_events;
     }
     spill->data.clear();

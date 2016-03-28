@@ -607,7 +607,13 @@ void FormMcaDaq::on_pushForceRefresh_clicked()
 
 void FormMcaDaq::on_pushDetails_clicked()
 {
-  FormDaqSettings *DaqInfo = new FormDaqSettings(spectra_.runInfo().state, this);
+  //HACK
+  std::set<Qpx::Spill> spills = spectra_.spills();
+  Qpx::Setting set;
+  if (spills.size())
+    set = spills.begin()->state;
+
+  FormDaqSettings *DaqInfo = new FormDaqSettings(set, this);
   DaqInfo->setWindowTitle("System settings at the time of acquisition");
   DaqInfo->exec();
 }

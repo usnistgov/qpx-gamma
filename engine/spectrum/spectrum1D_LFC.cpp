@@ -96,8 +96,7 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
     return;
   }
 
-  double d_lab_time  = (newStats.lab_time - time1_.lab_time).total_microseconds() / 1000000;
-
+  PreciseFloat d_lab_time  = (newStats.lab_time - time1_.lab_time).total_microseconds() * 0.000001;
 
   //NO MORE SPILL NUMBERS. MUST IDENTIFY LAST SPILL!!!!
   if (d_lab_time > time_sample_) {
@@ -105,27 +104,23 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
     StatsUpdate diff = time2_ - time1_;
     time1_ = time2_;
 
-    PL_TRC << "LFC update chan[" << my_channel_ << "]"
-           << " device_time=" << diff.total_time
-           << " lab_time=" << d_lab_time
-           << " live_time=" << diff.live_time
-           << " ftdt=" << diff.ftdt
-           << " fast_peaks=" << diff.fast_peaks
-           << " FAST_LIVE(live_time-ftdt)=" << (diff.live_time - diff.ftdt);
+    PreciseFloat scale_factor = 1;
+    if (diff.items.count("native_time") && (diff.items.at("native_time") > 0))
+      scale_factor = d_lab_time / diff.items.at("native_time");
 
-    
-    if (diff.total_time == 0.0)
-      return;
-    double scale_factor = d_lab_time / diff.total_time;
-    double fast_scaled  = (diff.live_time - diff.ftdt) * scale_factor;// * 1000000;
+    PreciseFloat live = d_lab_time;
+    if (diff.items.count("live_trigger"))
+      live = diff.items.at(("live_trigger"));
+    else if (diff.items.count("live_time"))
+      live = diff.items.at(("live_time"));
 
-    PL_TRC << "LFC update chan[" << my_channel_ << "]"
-           << " scale_factor=" << scale_factor
-           << " fast_scaled=" << fast_scaled;
-     
-    if (fast_scaled == 0.0)
-      return;
-    double fast_peaks_compensated = diff.fast_peaks * d_lab_time / fast_scaled;
+    PreciseFloat fast_scaled  = live * scale_factor;
+
+    PreciseFloat fast_peaks_compensated = count_current_;
+
+    if ((fast_scaled > 0) && diff.items.count("trigger_count"))
+      fast_peaks_compensated = diff.items.at("trigger_count") * d_lab_time / fast_scaled;
+
     time1_ = time2_;
   
     count_total_ += fast_peaks_compensated;
@@ -157,19 +152,6 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
     metadata_.total_count += count_current_;
     time2_ = newStats;
   }
-}
-
-void Spectrum1D_LFC::addRun(const RunInfo& run_info) {
-  addStats(time2_);
-  Spectrum1D::addRun(run_info);
-  metadata_.total_count = 0.0;
-  for (auto &q : spectrum_)
-    metadata_.total_count += q;
-  Setting real_time = get_attr("real_time");
-  Setting live_time = get_attr("live_time");
-  live_time.value_duration = real_time.value_duration;
-  metadata_.attributes.branches.replace(live_time);
-  //think about this...
 }
 
 }}

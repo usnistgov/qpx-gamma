@@ -76,10 +76,9 @@ class SpectraSet {
 
   bool changed();
 
-  RunInfo runInfo() const {
-    boost::unique_lock<boost::mutex> lock(mutex_); return run_info_;
+  std::set<Spill> spills() const {
+    boost::unique_lock<boost::mutex> lock(mutex_); return spills_;
   }
-  void setRunInfo(const RunInfo &);
   
   //get spectra -- may not be thread-safe
   Spectrum::Spectrum* by_name(std::string name);
@@ -96,7 +95,7 @@ class SpectraSet {
 
   //data
   std::list<Spectrum::Spectrum*> my_spectra_;
-  RunInfo run_info_;
+  std::set<Spill> spills_;
 
   std::string identity_;
   bool        changed_;

@@ -50,7 +50,7 @@ void SpectraSet::clear() {
 
 void SpectraSet::clear_helper() {
   //private, no lock needed
-  if (!my_spectra_.empty())
+  if (!my_spectra_.empty() || !spills_.empty())
     changed_ = true;
 
   if (!my_spectra_.empty())
@@ -58,8 +58,9 @@ void SpectraSet::clear_helper() {
       if (q != nullptr)
         delete q;
     }
+
   my_spectra_.clear();
-  run_info_ = RunInfo();
+  spills_.clear();
 }
 
 void SpectraSet::closeAcquisition() {
@@ -91,13 +92,6 @@ bool SpectraSet::new_data() {
   bool ret = newdata_;
   newdata_ = false;
   return ret;  
-}
-
-void SpectraSet::setRunInfo(const RunInfo &ri) {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  run_info_ = ri;
-  changed_ = true;
-  //notify?
 }
 
 bool SpectraSet::changed() {
@@ -237,13 +231,15 @@ void SpectraSet::add_spill(Spill* one_spill) {
   for (auto &q: my_spectra_)
     q->addSpill(*one_spill);
 
-  if (one_spill->run != RunInfo())
-    run_info_ = one_spill->run;
+  if (!one_spill->detectors.empty()
+      || !one_spill->state.branches.empty())
+    spills_.insert(*one_spill);
 
   if ((!one_spill->stats.empty())
        || (!one_spill->hits.empty())
        || (!one_spill->data.empty())
-       || (one_spill->run != RunInfo()))
+       || (!one_spill->state.branches.empty())
+       || (!one_spill->detectors.empty()))
       changed_ = true;
 
   
@@ -271,13 +267,17 @@ void SpectraSet::write_xml(std::string file_name) {
   pugi::xml_node root = doc.append_child();
   root.set_name("QpxAcquisition");
 
-  run_info_.state.strip_metadata();
-  run_info_.to_xml(root, true);
+  if (!spills_.empty()) {
+    pugi::xml_node spillsnode = root.append_child("Spills");
+    for (auto &s :spills_)
+      s.to_xml(spillsnode, true);
+  }
 
-  pugi::xml_node spectranode = root.append_child("Spectra");
-
-  for (auto &q : my_spectra_)
-    q->to_xml(spectranode);
+  if (!my_spectra_.empty()) {
+    pugi::xml_node spectranode = root.append_child("Spectra");
+    for (auto &q : my_spectra_)
+      q->to_xml(spectranode);
+  }
 
   doc.save_file(file_name.c_str());
 
@@ -307,15 +307,32 @@ void SpectraSet::read_xml(std::string file_name, bool with_spectra, bool with_fu
   if (!root)
     return;
 
-  run_info_.from_xml(root.child(run_info_.xml_element_name().c_str()));
+  if (root.child("Spills")) {
+    for (auto &s : root.child("Spills").children()) {
+      Spill sp;
+      sp.from_xml(s);
+      if (!sp.empty())
+        spills_.insert(sp);
+    }
+  }
+
+  //backwards compat
+  RunInfo ri;
+  if (root.child(ri.xml_element_name().c_str())) {
+    ri.from_xml(root.child(ri.xml_element_name().c_str()));
+    Spill sp;
+    if (!ri.time.is_not_a_date_time()) {
+      sp.time = ri.time;
+      sp.detectors = ri.detectors;
+      sp.state = ri.state;
+      spills_.insert(sp);
+    }
+  }
 
   if (!with_spectra)
     return;
 
   if (root.child("Spectra")) {
-
-    Spill fake_spill;
-    fake_spill.run = run_info_;
 
     for (pugi::xml_node &child : root.child("Spectra").children()) {
       if (child.child("ChannelData") && !with_full_spectra)
@@ -326,7 +343,8 @@ void SpectraSet::read_xml(std::string file_name, bool with_spectra, bool with_fu
       if (new_spectrum == nullptr)
         PL_INFO << "Could not parse spectrum";
       else {
-        new_spectrum->addSpill(fake_spill);
+        for (auto &s : spills_)
+          new_spectrum->addSpill(s);
         my_spectra_.push_back(new_spectrum);
       }
     }
@@ -362,8 +380,8 @@ void SpectraSet::import_spn(std::string file_name) {
   Qpx::Detector det("unknown");
   det.energy_calibrations_.add(Qpx::Calibration("Energy", 12));
 
-  Qpx::Spill spill;
-  spill.run.detectors.push_back(det);
+  std::vector<Detector> dets;
+  dets.push_back(det);
 
   Qpx::Spectrum::Metadata *temp = Qpx::Spectrum::Factory::getInstance().create_prototype("1D");
   temp->bits = 12;
@@ -395,6 +413,7 @@ void SpectraSet::import_spn(std::string file_name) {
       continue;
     temp->name = boost::filesystem::path(file_name).filename().string() + "[" + std::to_string(spectra_count) + "]";
     Qpx::Spectrum::Spectrum *spectrum = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*temp);
+    spectrum->set_detectors(dets);
     for (int i=0; i < data.size(); ++i) {
       Spectrum::Entry entry;
       entry.first.resize(1, 0);
@@ -402,7 +421,6 @@ void SpectraSet::import_spn(std::string file_name) {
       entry.second = data[i];
       spectrum->add_bulk(entry);
     }
-    spectrum->addSpill(spill);
     my_spectra_.push_back(spectrum);
     spectra_count++;
   }
