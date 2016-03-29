@@ -35,6 +35,7 @@ static SinkRegistrar<Spectrum1D> registrar("1D");
 
 Spectrum1D::Spectrum1D()
   : cutoff_bin_(0)
+  , maxchan_(0)
 {
   Setting base_options = metadata_.attributes;
   metadata_ = Metadata("1D", "Traditional MCA spectrum", 1,
@@ -77,7 +78,6 @@ bool Spectrum1D::initialize()
   Spectrum::initialize();
 
   cutoff_bin_ = get_attr("cutoff_bin").value_int;
-  maxchan_ = 0;
 
   spectrum_.resize(pow(2, metadata_.bits), 0);
 

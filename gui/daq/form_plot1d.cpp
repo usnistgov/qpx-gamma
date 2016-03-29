@@ -201,7 +201,7 @@ void FormPlot1D::update_plot() {
       std::shared_ptr<Qpx::EntryList> spectrum_data =
           std::move(q->get_spectrum({{0, x.size()}}));
 
-      PL_DBG << "Will plot " << md.name << "  size " << x.size() << "  sz " << spectrum_data->size();
+//      PL_DBG << "Will plot " << md.name << "  size " << x.size() << "  sz " << spectrum_data->size();
 
       Qpx::Detector detector = Qpx::Detector();
       if (!md.detectors.empty())

@@ -140,10 +140,6 @@ public:
   bool write_file(std::string dir, std::string format) const;
   bool read_file(std::string name, std::string format);
 
-  //for custom saving (implemented in strategies below)
-  std::string channels_to_xml() const;
-  uint16_t channels_from_xml(const std::string& str);
-  
   //retrieve pre-calculated energies for a given channel
   std::vector<double> energies(uint8_t chan = 0) const;
   

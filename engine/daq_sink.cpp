@@ -262,19 +262,6 @@ bool Sink::read_file(std::string name, std::string format) {
   return _read_file(name, format);
 }
 
-std::string Sink::channels_to_xml() const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  return _channels_to_xml();
-}
-
-uint16_t Sink::channels_from_xml(const std::string& str) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
-  while (!uniqueLock.try_lock())
-    boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  return _channels_from_xml(str);
-}
-
-
 //accessors for various properties
 Metadata Sink::metadata() const {
   boost::shared_lock<boost::shared_mutex> lock(mutex_);
