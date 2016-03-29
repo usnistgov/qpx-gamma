@@ -77,7 +77,6 @@ protected:
   std::list<StatsUpdate> spills_;
   std::list<StatsUpdate> spills2_;
 
-  RunInfo start_, end_;
   std::ifstream  file_bin_;
   std::streampos bin_begin_, bin_end_;
 

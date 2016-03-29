@@ -16,104 +16,86 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Spectrum::Spectrum generic spectrum type.
+ *      Qpx::Sink::Sink generic Sink type.
  *                       All public methods are thread-safe.
  *                       When deriving override protected methods.
  *
  ******************************************************************************/
 
-#include "spectrum_factory.h"
+#include "daq_sink_factory.h"
 #include "custom_logger.h"
 
 namespace Qpx {
-namespace Spectrum {
 
-Spectrum* Factory::create_type(std::string type)
+std::shared_ptr<Sink> SinkFactory::create_type(std::string type)
 {
-  Spectrum *instance = nullptr;
   auto it = constructors.find(type);
   if(it != constructors.end())
-    instance = it->second();
-  return instance;
+    return std::shared_ptr<Sink>(it->second());
+  else
+    return std::shared_ptr<Sink>();
 }
 
-Spectrum* Factory::create_from_prototype(const Metadata& tem)
+std::shared_ptr<Sink> SinkFactory::create_from_prototype(const Metadata& tem)
 {
-  Spectrum* instance = create_type(tem.type());
-  if (instance != nullptr) {
-    bool success = instance->from_prototype(tem);
-    if (success)
-      return instance;
-    else {
-      delete instance;
-      return nullptr;
-    }
-  }
+  std::shared_ptr<Sink> instance = create_type(tem.type());
+  if (instance && instance->from_prototype(tem));
+    return instance;
+  return std::shared_ptr<Sink>();
 }
 
-Spectrum* Factory::create_from_xml(const pugi::xml_node &root)
+std::shared_ptr<Sink> SinkFactory::create_from_xml(const pugi::xml_node &root)
 {
-  if (std::string(root.name()) != "Spectrum")
-    return nullptr;
+  if (std::string(root.name()) != "Spectrum")               //GENERALIZE
+    return std::shared_ptr<Sink>();
   if (!root.attribute("type"))
-    return nullptr;
+    return std::shared_ptr<Sink>();
 
-  Spectrum* instance = create_type(std::string(root.attribute("type").value()));
-  if (instance != nullptr) {
-    bool success = instance->from_xml(root);
-    if (success)
-      return instance;
-    else {
-      delete instance;
-      return nullptr;
-    }
-  }
+  std::shared_ptr<Sink> instance = create_type(std::string(root.attribute("type").value()));
+  if (instance && instance->from_xml(root))
+    return instance;
+
+  return std::shared_ptr<Sink>();
 }
 
-Spectrum* Factory::create_from_file(std::string filename)
+std::shared_ptr<Sink> SinkFactory::create_from_file(std::string filename)
 {
   std::string ext(boost::filesystem::extension(filename));
   if (ext.size())
     ext = ext.substr(1, ext.size()-1);
   boost::algorithm::to_lower(ext);
-  Spectrum *instance = nullptr;
   auto it = ext_to_type.find(ext);
+  std::shared_ptr<Sink> instance;
   if (it != ext_to_type.end())
-    instance = create_type(it->second);;
-  if (instance != nullptr) {
-    bool success = instance->read_file(filename, ext);
-    if (success)
-      return instance;
-    else {
-      delete instance;
-      return nullptr;
-    }
-  }
+    instance = std::shared_ptr<Sink>(create_type(it->second));
+  if (instance && instance->read_file(filename, ext))
+    return instance;
+  return std::shared_ptr<Sink>();
 }
 
-Metadata* Factory::create_prototype(std::string type)
+Metadata SinkFactory::create_prototype(std::string type)
 {
   auto it = prototypes.find(type);
   if(it != prototypes.end())
-    return new Metadata(it->second);
+    return it->second;
   else
-    return nullptr;
+    return Metadata();
 }
 
-void Factory::register_type(Metadata tt, std::function<Spectrum*(void)> typeConstructor)
+void SinkFactory::register_type(Metadata tt, std::function<Sink*(void)> typeConstructor)
 {
-  PL_INFO << "<Spectrum::Factory> registering spectrum type '" << tt.type() << "'";
+  PL_INFO << "<SinkFactory> registering sink type '" << tt.type() << "'";
   constructors[tt.type()] = typeConstructor;
   prototypes[tt.type()] = tt;
   for (auto &q : tt.input_types())
     ext_to_type[q] = tt.type();
 }
 
-const std::vector<std::string> Factory::types() {
+const std::vector<std::string> SinkFactory::types() {
   std::vector<std::string> all_types;
   for (auto &q : constructors)
     all_types.push_back(q.first);
   return all_types;
 }
 
-}}
+}

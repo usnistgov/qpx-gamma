@@ -52,7 +52,7 @@ void FormGatesPlot2D::set_range_x(MarkerBox2D range) {
   ui->coincPlot->set_range_x(range);
 }
 
-void FormGatesPlot2D::setSpectra(Qpx::SpectraSet& new_set, QString spectrum) {
+void FormGatesPlot2D::setSpectra(Qpx::Project& new_set, QString spectrum) {
   mySpectra = &new_set;
   name_2d = spectrum;
 
@@ -224,9 +224,9 @@ void FormGatesPlot2D::update_plot() {
   this->setCursor(Qt::WaitCursor);
   CustomTimer guiside(true);
 
-  Qpx::Spectrum::Spectrum* some_spectrum = mySpectra->by_name(name_2d.toStdString());
+  std::shared_ptr<Qpx::Sink> some_spectrum = mySpectra->by_name(name_2d.toStdString());
 
-  Qpx::Spectrum::Metadata md;
+  Qpx::Metadata md;
   if (some_spectrum)
     md = some_spectrum->metadata();
 
@@ -234,7 +234,7 @@ void FormGatesPlot2D::update_plot() {
   {
     //      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
-    std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
+    std::shared_ptr<Qpx::EntryList> spectrum_data =
         std::move(some_spectrum->get_spectrum({{0, adjrange}, {0, adjrange}}));
     ui->coincPlot->update_plot(adjrange, spectrum_data);
 

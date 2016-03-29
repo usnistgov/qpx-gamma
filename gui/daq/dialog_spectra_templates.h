@@ -44,10 +44,10 @@ class TableSpectraTemplates : public QAbstractTableModel
 {
   Q_OBJECT
 private:
-  XMLableDB<Qpx::Spectrum::Metadata> &templates_;
+  XMLableDB<Qpx::Metadata> &templates_;
 
 public:
-  TableSpectraTemplates(XMLableDB<Qpx::Spectrum::Metadata>& templates, QObject *parent = 0);
+  TableSpectraTemplates(XMLableDB<Qpx::Metadata>& templates, QObject *parent = 0);
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
   int columnCount(const QModelIndex &parent = QModelIndex()) const;
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -62,13 +62,13 @@ class DialogSpectrumTemplate : public QDialog
 {
   Q_OBJECT
 public:
-  explicit DialogSpectrumTemplate(Qpx::Spectrum::Metadata,
+  explicit DialogSpectrumTemplate(Qpx::Metadata,
                                   std::vector<Qpx::Detector>,
                                   bool, QWidget *parent = 0);
   ~DialogSpectrumTemplate();
 
 signals:
-  void templateReady(Qpx::Spectrum::Metadata);
+  void templateReady(Qpx::Metadata);
 
 private slots:
   void on_buttonBox_accepted();
@@ -85,7 +85,7 @@ private:
   void updateData();
 
   Ui::DialogSpectrumTemplate *ui;
-  Qpx::Spectrum::Metadata myTemplate;
+  Qpx::Metadata myTemplate;
 
   TreeSettings               attr_model_;
   QpxSpecialDelegate         attr_delegate_;
@@ -97,7 +97,7 @@ class DialogSpectraTemplates : public QDialog
   Q_OBJECT
 
 public:
-  explicit DialogSpectraTemplates(XMLableDB<Qpx::Spectrum::Metadata> &newdb,
+  explicit DialogSpectraTemplates(XMLableDB<Qpx::Metadata> &newdb,
                                   std::vector<Qpx::Detector> current_dets,
                                   QString savedir, QWidget *parent = 0);
   ~DialogSpectraTemplates();
@@ -105,7 +105,7 @@ public:
 private:
   Ui::DialogSpectraTemplates *ui;
 
-  XMLableDB<Qpx::Spectrum::Metadata> &templates_;
+  XMLableDB<Qpx::Metadata> &templates_;
 
   QpxSpecialDelegate      special_delegate_;
   TableSpectraTemplates         table_model_;
@@ -115,8 +115,8 @@ private:
   std::vector<Qpx::Detector> current_dets_;
 
 private slots:
-  void add_template(Qpx::Spectrum::Metadata);
-  void change_template(Qpx::Spectrum::Metadata);
+  void add_template(Qpx::Metadata);
+  void change_template(Qpx::Metadata);
 
   void on_pushImport_clicked();
   void on_pushExport_clicked();

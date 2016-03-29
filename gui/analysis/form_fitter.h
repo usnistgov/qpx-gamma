@@ -31,7 +31,7 @@
 #include "isotope.h"
 #include <QItemSelection>
 #include <QRadioButton>
-#include "spectra_set.h"
+#include "project.h"
 #include "gamma_fitter.h"
 #include "thread_fitter.h"
 #include "marker.h"

@@ -27,7 +27,7 @@
 #include <QWidget>
 #include <QSettings>
 #include "spectrum1D.h"
-#include "spectra_set.h"
+#include "project.h"
 #include "form_energy_calibration.h"
 #include "form_fwhm_calibration.h"
 #include "form_fit_results.h"
@@ -44,7 +44,7 @@ public:
   explicit FormAnalysis1D(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
   ~FormAnalysis1D();
 
-  void setSpectrum(Qpx::SpectraSet *newset, QString spectrum);
+  void setSpectrum(Qpx::Project *newset, QString spectrum);
 
   void clear();
 
@@ -81,7 +81,7 @@ private:
   //from parent
   QString data_directory_;
   QString settings_directory_;
-  Qpx::SpectraSet *spectra_;
+  Qpx::Project *spectra_;
 
   XMLableDB<Qpx::Detector> &detectors_;
 

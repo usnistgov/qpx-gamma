@@ -23,7 +23,7 @@
 #define FORM_PLOT2D_H
 
 #include <QWidget>
-#include <spectra_set.h>
+#include <project.h>
 #include "qsquarecustomplot.h"
 #include "qtcolorpicker.h"
 #include "widget_selector.h"
@@ -42,7 +42,7 @@ public:
   explicit FormPlot2D(QWidget *parent = 0);
   ~FormPlot2D();
 
-  void setSpectra(Qpx::SpectraSet& new_set, QString spectrum = QString());
+  void setSpectra(Qpx::Project& new_set, QString spectrum = QString());
 
   void setDetDB(XMLableDB<Qpx::Detector>& detDB);
 
@@ -97,7 +97,7 @@ private:
 
   //gui stuff
   Ui::FormPlot2D *ui;
-  Qpx::SpectraSet *mySpectra;
+  Qpx::Project *mySpectra;
 
   XMLableDB<Qpx::Detector> * detectors_;
 

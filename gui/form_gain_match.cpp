@@ -24,7 +24,7 @@
 #include "ui_form_gain_match.h"
 #include "custom_logger.h"
 #include "fityk.h"
-#include "spectrum_factory.h"
+#include "daq_sink_factory.h"
 
 FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableDB<Qpx::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
@@ -42,11 +42,9 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableD
 
   loadSettings();
 
-  if (Qpx::Spectrum::Metadata *temp = Qpx::Spectrum::Factory::getInstance().create_prototype("1D")) {
-    reference_   = *temp;
-    optimizing_  = *temp;
-    delete temp;
-  }
+  Qpx::Metadata temp = Qpx::SinkFactory::getInstance().create_prototype("1D");
+  reference_   = temp;
+  optimizing_  = temp;
 
   current_pass = 0;
 
@@ -489,7 +487,7 @@ void FormGainMatch::update_plots() {
   bool have_data = false;
 
   for (auto &q: gm_spectra_.by_type("1D")) {
-    Qpx::Spectrum::Metadata md;
+    Qpx::Metadata md;
     if (q)
       md = q->metadata();
 

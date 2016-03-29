@@ -30,7 +30,7 @@
 #include <QWidget>
 #include <QSettings>
 #include "marker.h"
-#include "spectra_set.h"
+#include "project.h"
 #include "gamma_fitter.h"
 
 namespace Ui {
@@ -74,7 +74,7 @@ public:
   explicit FormIntegration2D(QSettings &settings, QWidget *parent = 0);
   ~FormIntegration2D();
 
-  void setSpectrum(Qpx::SpectraSet *newset, QString name);
+  void setSpectrum(Qpx::Project *newset, QString name);
   void setPeaks(std::list<MarkerBox2D> pks);
 
   std::list<MarkerBox2D> peaks();
@@ -125,9 +125,9 @@ private:
   Ui::FormIntegration2D *ui;
   QSettings &settings_;
 
-  Qpx::SpectraSet *spectra_;
+  Qpx::Project *spectra_;
   QString current_spectrum_;
-  Qpx::Spectrum::Metadata md_;
+  Qpx::Metadata md_;
 
   //double current_gate_;
 

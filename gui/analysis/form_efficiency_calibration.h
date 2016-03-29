@@ -27,7 +27,7 @@
 #include <QWidget>
 #include <QSettings>
 #include "spectrum1D.h"
-#include "spectra_set.h"
+#include "project.h"
 #include "form_energy_calibration.h"
 #include "widget_selector.h"
 
@@ -43,7 +43,7 @@ public:
   explicit FormEfficiencyCalibration(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
   ~FormEfficiencyCalibration();
 
-  void setDetector(Qpx::SpectraSet *newset, QString detector);
+  void setDetector(Qpx::Project *newset, QString detector);
   void clear();
 
 signals:
@@ -109,7 +109,7 @@ private:
   QString data_directory_;
   QString settings_directory_;
 
-  Qpx::SpectraSet          *spectra_;
+  Qpx::Project          *spectra_;
   std::string current_detector_;
 
   XMLableDB<Qpx::Detector> &detectors_;

@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Spectrum::SpectrumRaw to output custom list mode to file
+ *      Qpx::SinkRaw to output custom list mode to file
  *
  ******************************************************************************/
 
@@ -26,12 +26,11 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include "spectrum_raw.h"
-#include "spectrum_factory.h"
+#include "daq_sink_factory.h"
 
 namespace Qpx {
-namespace Spectrum {
 
-static Registrar<SpectrumRaw> registrar("Raw");
+static SinkRegistrar<SpectrumRaw> registrar("Raw");
 
 SpectrumRaw::SpectrumRaw()
   : open_bin_(false)
@@ -161,5 +160,4 @@ void SpectrumRaw::stats_text(const StatsUpdate& stats) {
   stats.to_xml(xml_root_);
 }
 
-
-}}
+}

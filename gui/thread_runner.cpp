@@ -83,7 +83,7 @@ void ThreadRunner::do_list(boost::atomic<bool> &interruptor, uint64_t timeout)
 }
 
 
-void ThreadRunner::do_run(Qpx::SpectraSet &spectra, boost::atomic<bool> &interruptor, uint64_t timeout)
+void ThreadRunner::do_run(Qpx::Project &spectra, boost::atomic<bool> &interruptor, uint64_t timeout)
 {
   if (running_.load()) {
     PL_WARN << "Runner busy";

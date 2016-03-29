@@ -135,7 +135,7 @@ void FormAnalysis1D::clear() {
 }
 
 
-void FormAnalysis1D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
+void FormAnalysis1D::setSpectrum(Qpx::Project *newset, QString name) {
   form_energy_calibration_->clear();
   form_fwhm_calibration_->clear();
   form_fit_results_->clear();
@@ -149,7 +149,7 @@ void FormAnalysis1D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
     return;
   }
 
-  Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(name.toStdString());
+  std::shared_ptr<Qpx::Sink>spectrum = spectra_->by_name(name.toStdString());
 
   if (spectrum && spectrum->bits()) {
     fit_data_.clear();
@@ -171,7 +171,7 @@ void FormAnalysis1D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
 
 void FormAnalysis1D::update_spectrum() {
   if (this->isVisible()) {
-    Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(fit_data_.metadata_.name);
+    std::shared_ptr<Qpx::Sink>spectrum = spectra_->by_name(fit_data_.metadata_.name);
     if (spectrum && spectrum->bits())
       fit_data_.setData(spectrum);
     ui->plotSpectrum->update_spectrum();
@@ -241,7 +241,7 @@ void FormAnalysis1D::update_detector_calibs()
     for (auto &q : spectra_->spectra()) {
       if (q == nullptr)
         continue;
-      Qpx::Spectrum::Metadata md = q->metadata();
+      Qpx::Metadata md = q->metadata();
       for (auto &p : md.detectors) {
         if (p.shallow_equals(fit_data_.detector_)) {
           PL_INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " on " << q->name();

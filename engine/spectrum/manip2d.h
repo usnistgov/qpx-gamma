@@ -23,19 +23,17 @@
 #ifndef SPECTRUM_MANIP2D_H
 #define SPECTRUM_MANIP2D_H
 
-#include "spectrum.h"
+#include "daq_sink.h"
 #include "custom_logger.h"
 
 namespace Qpx {
-namespace Spectrum {
 
-bool slice_rectangular(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destination, std::initializer_list<Pair> bounds);
-bool slice_diagonal(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx);
-bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destination);
+bool slice_rectangular(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination, std::initializer_list<Pair> bounds);
+bool slice_diagonal(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx);
+bool symmetrize(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination);
 
-PreciseFloat sum_with_neighbors(Qpx::Spectrum::Spectrum* source, uint16_t x, uint16_t y);
-PreciseFloat sum_diag(Qpx::Spectrum::Spectrum* source, uint16_t x, uint16_t y, uint16_t width);
+PreciseFloat sum_with_neighbors(std::shared_ptr<Sink> source, uint16_t x, uint16_t y);
+PreciseFloat sum_diag(std::shared_ptr<Sink> source, uint16_t x, uint16_t y, uint16_t width);
 
-}
 }
 #endif

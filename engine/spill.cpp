@@ -25,7 +25,7 @@
  *
  ******************************************************************************/
 
-#include "daq_types.h"
+#include "spill.h"
 #include <boost/algorithm/string.hpp>
 #include "qpx_util.h"
 
@@ -147,51 +147,6 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
       items[item_name] = value;
     }
   }
-}
-
-//DEPRECATE
-bool RunInfo::operator== (const RunInfo& other) const {
-  if (time != other.time) return false;
-  if (detectors != other.detectors) return false;
-  if (state != other.state) return false;
-  return true;
-}
-
-//DEPRECATE
-void RunInfo::to_xml(pugi::xml_node &root, bool with_settings) const {
-  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
-  node.append_attribute("time").set_value(boost::posix_time::to_iso_extended_string(time).c_str());
-  if (with_settings) {
-    state.to_xml(node);
-    if (!detectors.empty()) {
-      pugi::xml_node child = node.append_child("Detectors");
-      for (auto q : detectors)
-        q.to_xml(child);
-    }
-  }
-}
-
-//DEPRECATE
-void RunInfo::from_xml(const pugi::xml_node &node) {
-  if (std::string(node.name()) != xml_element_name())
-    return;
-
-  if (node.attribute("time"))
-    time = from_iso_extended(node.attribute("time").value());
-  else if (node.attribute("time_start"))
-    time = from_iso_extended(node.attribute("time_start").value());  //backwards compat
-
-  state.from_xml(node.child(state.xml_element_name().c_str()));
-
-  if (node.child("Detectors")) {
-    detectors.clear();
-    for (auto &q : node.child("Detectors").children()) {
-      Qpx::Detector det;
-      det.from_xml(q);
-      detectors.push_back(det);
-    }
-  }
-
 }
 
 bool Spill::operator==(const Spill other) const {

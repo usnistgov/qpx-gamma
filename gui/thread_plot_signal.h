@@ -24,13 +24,13 @@
 #define THREAD_PLOT_SIGNAL_H_
 
 #include <QThread>
-#include "spectra_set.h"
+#include "project.h"
 
 class ThreadPlotSignal : public QThread
 {
     Q_OBJECT
 public:
-    explicit ThreadPlotSignal(Qpx::SpectraSet& spectra, QObject *parent = 0) :
+    explicit ThreadPlotSignal(Qpx::Project& spectra, QObject *parent = 0) :
         QThread(parent), spectra_(&spectra) {}
 
     void begin() {
@@ -50,7 +50,7 @@ protected:
     }
 
 private:
-    Qpx::SpectraSet* spectra_;
+    Qpx::Project* spectra_;
 };
 
 #endif

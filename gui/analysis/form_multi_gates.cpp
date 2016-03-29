@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-#include "spectrum_factory.h"
+#include "daq_sink_factory.h"
 #include "form_multi_gates.h"
 #include "widget_detectors.h"
 #include "ui_form_multi_gates.h"
@@ -62,17 +62,17 @@ FormMultiGates::FormMultiGates(QSettings &settings, QWidget *parent) :
   connect(ui->gatedSpectrum , SIGNAL(peaks_changed(bool)), this, SLOT(peaks_changed_in_plot(bool)));
   connect(ui->gatedSpectrum, SIGNAL(range_changed(Range)), this, SLOT(range_changed_in_plot(Range)));
 
-  tempx = Qpx::Spectrum::Factory::getInstance().create_prototype("1D");
-  //tempx->visible = true;
+  tempx = Qpx::SinkFactory::getInstance().create_prototype("1D");
+  //tempx.visible = true;
   Qpx::Setting pattern;
-  pattern = tempx->attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern = tempx.attributes.branches.get(Qpx::Setting("pattern_coinc"));
   pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
   pattern.value_pattern.set_theshold(2);
-  tempx->attributes.branches.replace(pattern);
-  pattern = tempx->attributes.branches.get(Qpx::Setting("pattern_add"));
+  tempx.attributes.branches.replace(pattern);
+  pattern = tempx.attributes.branches.get(Qpx::Setting("pattern_add"));
   pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
   pattern.value_pattern.set_theshold(1);
-  tempx->attributes.branches.replace(pattern);
+  tempx.attributes.branches.replace(pattern);
 
   res = 0;
   xmin_ = 0;
@@ -456,15 +456,15 @@ void FormMultiGates::remake_gate(bool force) {
   update_peaks(true);
 }
 
-void FormMultiGates::setSpectrum(Qpx::SpectraSet *newset, QString name) {
+void FormMultiGates::setSpectrum(Qpx::Project *newset, QString name) {
   PL_DBG << "gates set spectrum";
   clear();
   spectra_ = newset;
   current_spectrum_ = name;
-  Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(current_spectrum_.toStdString());
+  std::shared_ptr<Qpx::Sink>spectrum = spectra_->by_name(current_spectrum_.toStdString());
 
   if (spectrum && spectrum->bits()) {
-    Qpx::Spectrum::Metadata md = spectrum->metadata();
+    Qpx::Metadata md = spectrum->metadata();
     res = pow(2,md.bits);
     remake_gate(true);
     if (!gates_.empty()) {
@@ -477,13 +477,13 @@ void FormMultiGates::setSpectrum(Qpx::SpectraSet *newset, QString name) {
 }
 
 void FormMultiGates::make_gated_spectra() {
-  Qpx::Spectrum::Spectrum* source_spectrum = spectra_->by_name(current_spectrum_.toStdString());
+  std::shared_ptr<Qpx::Sink> source_spectrum = spectra_->by_name(current_spectrum_.toStdString());
   if (source_spectrum == nullptr)
     return;
 
   this->setCursor(Qt::WaitCursor);
 
-  Qpx::Spectrum::Metadata md = source_spectrum->metadata();
+  Qpx::Metadata md = source_spectrum->metadata();
 
   //  PL_DBG << "Coincidence gate x[" << xmin_ << "-" << xmax_ << "]   y[" << ymin_ << "-" << ymax_ << "]";
 
@@ -491,17 +491,15 @@ void FormMultiGates::make_gated_spectra() {
   {
     uint32_t adjrange = pow(2,md.bits) - 1;
 
-    tempx->bits = md.bits;
-    //    tempx->name_ = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(ymin_), 0) + "," + to_str_precision(nrg_calibration2_.transform(ymax_), 0) + "]";
-    tempx->name = md.detectors[0].name_ + "[" + to_str_precision(md.detectors[1].best_calib(md.bits).transform(ymin_, md.bits), 0) + ","
+    tempx.bits = md.bits;
+    //    tempx.name_ = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(ymin_), 0) + "," + to_str_precision(nrg_calibration2_.transform(ymax_), 0) + "]";
+    tempx.name = md.detectors[0].name_ + "[" + to_str_precision(md.detectors[1].best_calib(md.bits).transform(ymin_, md.bits), 0) + ","
         + to_str_precision(md.detectors[1].best_calib(md.bits).transform(ymax_, md.bits), 0) + "]";
 
-    if (gate_x != nullptr)
-      delete gate_x;
-    gate_x = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*tempx);
+    gate_x = Qpx::SinkFactory::getInstance().create_from_prototype(tempx);
 
     //if?
-    Qpx::Spectrum::slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {ymin_, ymax_}});
+    Qpx::slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {ymin_, ymax_}});
 
     fit_data_.clear();
     fit_data_.setData(gate_x);

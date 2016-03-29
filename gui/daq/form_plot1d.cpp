@@ -79,13 +79,13 @@ void FormPlot1D::setDetDB(XMLableDB<Qpx::Detector>& detDB) {
 }
 
 
-void FormPlot1D::setSpectra(Qpx::SpectraSet& new_set) {
+void FormPlot1D::setSpectra(Qpx::Project& new_set) {
   mySpectra = &new_set;
   updateUI();
 }
 
 void FormPlot1D::spectrumLooksChanged(SelectorItem item) {
-  Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(item.text.toStdString());
+  std::shared_ptr<Qpx::Sink>someSpectrum = mySpectra->by_name(item.text.toStdString());
   if (someSpectrum != nullptr) {
     Qpx::Setting vis = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("visible"));
     vis.value_int = item.visible;
@@ -103,11 +103,14 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
 {
 
   QString id = spectraSelector->selected().text;
-  Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(id.toStdString());
+  std::shared_ptr<Qpx::Sink> someSpectrum = mySpectra->by_name(id.toStdString());
 
-  Qpx::Spectrum::Metadata md;
+  Qpx::Metadata md;
 
-  ui->pushRescaleToThisMax->setEnabled(someSpectrum);
+  if (someSpectrum)
+    ui->pushRescaleToThisMax->setEnabled(true);
+  else
+    ui->pushRescaleToThisMax->setEnabled(false);
 
   if (someSpectrum)
     md = someSpectrum->metadata();
@@ -174,7 +177,7 @@ void FormPlot1D::reset_content() {
 void FormPlot1D::update_plot() {
 
   this->setCursor(Qt::WaitCursor);
-  CustomTimer guiside(true);
+//  CustomTimer guiside(true);
 
   std::map<double, double> minima, maxima;
 
@@ -182,7 +185,7 @@ void FormPlot1D::update_plot() {
 
   ui->mcaPlot->clearGraphs();
   for (auto &q: mySpectra->spectra(1, -1)) {
-    Qpx::Spectrum::Metadata md;
+    Qpx::Metadata md;
     if (q)
       md = q->metadata();
 
@@ -192,12 +195,13 @@ void FormPlot1D::update_plot() {
     if (md.attributes.branches.get(Qpx::Setting("visible")).value_int
         && (md.bits > 0) && (md.total_count > 0)) {
 
-
       QVector<double> x = QVector<double>::fromStdVector(q->energies(0));
       QVector<double> y(x.size());
 
-      std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
+      std::shared_ptr<Qpx::EntryList> spectrum_data =
           std::move(q->get_spectrum({{0, x.size()}}));
+
+      PL_DBG << "Will plot " << md.name << "  size " << x.size() << "  sz " << spectrum_data->size();
 
       Qpx::Detector detector = Qpx::Detector();
       if (!md.detectors.empty())
@@ -243,7 +247,7 @@ void FormPlot1D::update_plot() {
 
 void FormPlot1D::on_pushFullInfo_clicked()
 {
-  Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(spectraSelector->selected().text.toStdString());
+  std::shared_ptr<Qpx::Sink> someSpectrum = mySpectra->by_name(spectraSelector->selected().text.toStdString());
   if (someSpectrum == nullptr)
     return;
 
@@ -273,7 +277,7 @@ void FormPlot1D::updateUI()
   QSet<QString> dets;
 
   for (auto &q : mySpectra->spectra(1, -1)) {
-    Qpx::Spectrum::Metadata md;
+    Qpx::Metadata md;
     if (q != nullptr)
       md = q->metadata();
 
@@ -376,7 +380,7 @@ void FormPlot1D::showAll()
   spectraSelector->show_all();
   QVector<SelectorItem> items = spectraSelector->items();
   for (auto &q : items) {
-    Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(q.text.toStdString());
+    std::shared_ptr<Qpx::Sink>someSpectrum = mySpectra->by_name(q.text.toStdString());
     if (!someSpectrum)
       continue;
     Qpx::Setting vis = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("visible"));
@@ -391,7 +395,7 @@ void FormPlot1D::hideAll()
   spectraSelector->hide_all();
   QVector<SelectorItem> items = spectraSelector->items();
   for (auto &q : items) {
-    Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(q.text.toStdString());
+    std::shared_ptr<Qpx::Sink>someSpectrum = mySpectra->by_name(q.text.toStdString());
     if (!someSpectrum)
       continue;
     Qpx::Setting vis = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("visible"));
@@ -405,7 +409,7 @@ void FormPlot1D::randAll()
 {
   QVector<SelectorItem> items = spectraSelector->items();
   for (auto &q : items) {
-    Qpx::Spectrum::Spectrum *someSpectrum = mySpectra->by_name(q.text.toStdString());
+    std::shared_ptr<Qpx::Sink>someSpectrum = mySpectra->by_name(q.text.toStdString());
     if (!someSpectrum)
       continue;
     Qpx::Setting app = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("appearance"));
@@ -440,14 +444,14 @@ void FormPlot1D::on_pushPerLive_clicked()
 void FormPlot1D::on_pushRescaleToThisMax_clicked()
 {
   QString id = spectraSelector->selected().text;
-  Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(id.toStdString());
+  std::shared_ptr<Qpx::Sink> someSpectrum = mySpectra->by_name(id.toStdString());
 
 
 
   if (id.isEmpty() || (someSpectrum == nullptr) || !moving.visible)
     return;
 
-  Qpx::Spectrum::Metadata md = someSpectrum->metadata();
+  Qpx::Metadata md = someSpectrum->metadata();
 
 
   double livetime = md.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
@@ -466,7 +470,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
 
   for (auto &q: mySpectra->spectra(1, -1))
     if (q) {
-      Qpx::Spectrum::Metadata mdt = q->metadata();
+      Qpx::Metadata mdt = q->metadata();
       double lt = mdt.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
 
       Qpx::Calibration cal;

@@ -39,7 +39,7 @@ public:
   explicit WidgetPlot2D(QWidget *parent = 0);
   ~WidgetPlot2D();
 
-  void update_plot(uint64_t size, std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data);
+  void update_plot(uint64_t size, std::shared_ptr<Qpx::EntryList> spectrum_data);
   void set_axes(Qpx::Calibration cal_x, Qpx::Calibration cal_y, int bits);
   void refresh();
   void replot_markers();

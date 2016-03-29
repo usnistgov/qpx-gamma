@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Spectrum::Spectrum1D_LFC for loss-free counting by statistical
+ *      Qpx::Sink1D_LFC for loss-free counting by statistical
  *      extrapolation from a preset minimum time sample.
  *
  ******************************************************************************/
@@ -28,7 +28,6 @@
 #include "spectrum1D.h"
 
 namespace Qpx {
-namespace Spectrum {
 
 class Spectrum1D_LFC : public Spectrum1D
 {
@@ -54,5 +53,5 @@ protected:
 };
 
 
-}}
+}
 #endif // SPECTRUM_LFC_H

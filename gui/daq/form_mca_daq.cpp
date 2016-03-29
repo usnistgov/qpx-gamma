@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-#include "spectrum_factory.h"
+#include "daq_sink_factory.h"
 #include "form_mca_daq.h"
 #include "ui_form_mca_daq.h"
 #include "dialog_spectra_templates.h"
@@ -57,13 +57,12 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Qpx:
   connect(&runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
 
   //file formats for opening mca spectra
-  std::vector<std::string> spectypes = Qpx::Spectrum::Factory::getInstance().types();
+  std::vector<std::string> spectypes = Qpx::SinkFactory::getInstance().types();
   QStringList filetypes;
   for (auto &q : spectypes) {
-    Qpx::Spectrum::Metadata* type_template = Qpx::Spectrum::Factory::getInstance().create_prototype(q);
-    if (!type_template->input_types().empty())
-      filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types()) + ")");
-    delete type_template;
+    Qpx::Metadata type_template = Qpx::SinkFactory::getInstance().create_prototype(q);
+    if (!type_template.input_types().empty())
+      filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template.input_types()) + ")");
   }
   mca_load_formats_ = catFileTypes(filetypes) + ";;Radware spn (*.spn)";
 
@@ -442,7 +441,7 @@ void FormMcaDaq::projectImport()
         q->set_generic_attr(app);
       }
     } else {
-      Qpx::Spectrum::Spectrum* newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_file(fileNames.at(i).toStdString());
+      std::shared_ptr<Qpx::Sink> newSpectrum = Qpx::SinkFactory::getInstance().create_from_file(fileNames.at(i).toStdString());
       if (newSpectrum != nullptr) {
         Qpx::Setting app = newSpectrum->metadata().attributes.branches.get(Qpx::Setting("appearance"));
         app.value_text = generateColor().name(QColor::HexArgb).toStdString();

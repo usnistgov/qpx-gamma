@@ -106,7 +106,7 @@ void FormAnalysis2D::configure_UI() {
 
 }
 
-void FormAnalysis2D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
+void FormAnalysis2D::setSpectrum(Qpx::Project *newset, QString name) {
   clear();
   spectra_ = newset;
   current_spectrum_ = name;
@@ -127,10 +127,10 @@ void FormAnalysis2D::initialize() {
   if (spectra_) {
 
     PL_DBG << "<Analysis2D> initializing to " << current_spectrum_.toStdString();
-    Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(current_spectrum_.toStdString());
+    std::shared_ptr<Qpx::Sink>spectrum = spectra_->by_name(current_spectrum_.toStdString());
 
     if (spectrum && spectrum->bits()) {
-      Qpx::Spectrum::Metadata md = spectrum->metadata();
+      Qpx::Metadata md = spectrum->metadata();
       res = pow(2,md.bits);
 
       ui->plotMatrix->reset_content();

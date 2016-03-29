@@ -25,7 +25,7 @@
 #include "custom_logger.h"
 #include "fityk.h"
 #include "qt_util.h"
-#include "spectrum_factory.h"
+#include "daq_sink_factory.h"
 
 FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XMLableDB<Qpx::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
@@ -43,10 +43,7 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
   //loadSettings();
   connect(&opt_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
 
-  if (Qpx::Spectrum::Metadata *temp = Qpx::Spectrum::Factory::getInstance().create_prototype("1D")) {
-    optimizing_  = *temp;
-    delete temp;
-  }
+  optimizing_  = Qpx::SinkFactory::getInstance().create_prototype("1D");
 
   optimizing_.name = "Optimizing";
   Qpx::Setting vis = optimizing_.attributes.branches.get(Qpx::Setting("visible"));
@@ -249,7 +246,7 @@ void FormOptimization::do_run()
 //  optimizing_.match_pattern[optchan] = 1;
 //  optimizing_.appearance = generateColor().rgba();
 
-  XMLableDB<Qpx::Spectrum::Metadata> db("SpectrumTemplates");
+  XMLableDB<Qpx::Metadata> db("SpectrumTemplates");
   db.add(optimizing_);
 
   current_spectra_.clear();
@@ -317,7 +314,7 @@ void FormOptimization::update_plots() {
   bool have_peaks = false;
 
   for (auto &q: current_spectra_.by_type("1D")) {
-    Qpx::Spectrum::Metadata md;
+    Qpx::Metadata md;
     if (q)
       md = q->metadata();
 

@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::SpectraSet container class for managing simultaneous
+ *      Qpx::Project container class for managing simultaneous
  *      acquisition and output of spectra. Thread-safe, contingent
  *      upon stored spectra types being thread-safe.
  *
@@ -25,45 +25,73 @@
 #include <boost/date_time.hpp>
 #include <boost/date_time/date_facet.hpp>
 #include <set>
-#include "spectra_set.h"
-#include "spectrum_factory.h"
+#include "project.h"
+#include "daq_sink_factory.h"
 #include "custom_logger.h"
+#include "qpx_util.h"
 
 namespace Qpx {
 
-SpectraSet::~SpectraSet() {
+
+//DEPRECATE!!!
+struct RunInfo {
+  Qpx::Setting state;
+  std::vector<Qpx::Detector> detectors;
+  boost::posix_time::ptime time;
+
+  inline RunInfo()
+  {}
+
+  void from_xml(const pugi::xml_node &node) {
+    if (node.attribute("time"))
+      time = from_iso_extended(node.attribute("time").value());
+    else if (node.attribute("time_start"))
+      time = from_iso_extended(node.attribute("time_start").value());
+
+    if (node.child(state.xml_element_name().c_str()))
+      state.from_xml(node.child(state.xml_element_name().c_str()));
+
+    if (node.child("Detectors")) {
+      detectors.clear();
+      for (auto &q : node.child("Detectors").children()) {
+        Qpx::Detector det;
+        det.from_xml(q);
+        detectors.push_back(det);
+      }
+    }
+  }
+};
+
+
+
+
+Project::~Project() {
   terminate();
   clear_helper();
 }
 
-void SpectraSet::terminate() {
+void Project::terminate() {
   ready_ = true;
   terminating_ = true;
   cond_.notify_one();
 }
 
-void SpectraSet::clear() {
+void Project::clear() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
   cond_.notify_one();
 }
 
-void SpectraSet::clear_helper() {
+void Project::clear_helper() {
   //private, no lock needed
   if (!my_spectra_.empty() || !spills_.empty())
     changed_ = true;
-
-  if (!my_spectra_.empty())
-    for (auto &q: my_spectra_) {
-      if (q != nullptr)
-        delete q;
-    }
 
   my_spectra_.clear();
   spills_.clear();
 }
 
-void SpectraSet::closeAcquisition() {
+void Project::closeAcquisition() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   if (!my_spectra_.empty())
     for (auto &q: my_spectra_) {
@@ -72,13 +100,13 @@ void SpectraSet::closeAcquisition() {
     }
 }
 
-void SpectraSet::activate() {
+void Project::activate() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   ready_ = true;  
   cond_.notify_one();
 }
 
-bool SpectraSet::wait_ready() {
+bool Project::wait_ready() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   while (!ready_)
     cond_.wait(lock);
@@ -87,14 +115,14 @@ bool SpectraSet::wait_ready() {
 }
 
 
-bool SpectraSet::new_data() {
+bool Project::new_data() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   bool ret = newdata_;
   newdata_ = false;
   return ret;  
 }
 
-bool SpectraSet::changed() {
+bool Project::changed() {
   boost::unique_lock<boost::mutex> lock(mutex_);
 
   for (auto &q : my_spectra_)
@@ -105,12 +133,12 @@ bool SpectraSet::changed() {
 }
 
 
-bool SpectraSet::empty() const {
+bool Project::empty() const {
   boost::unique_lock<boost::mutex> lock(mutex_);
   return my_spectra_.empty();  
 }
 
-std::vector<std::string> SpectraSet::types() const {
+std::vector<std::string> Project::types() const {
   boost::unique_lock<boost::mutex> lock(mutex_);
   std::set<std::string> my_types;
   for (auto &q: my_spectra_)
@@ -119,7 +147,7 @@ std::vector<std::string> SpectraSet::types() const {
   return output;
 }
 
-std::set<uint32_t> SpectraSet::resolutions(uint16_t dim) const {
+std::set<uint32_t> Project::resolutions(uint16_t dim) const {
   boost::unique_lock<boost::mutex> lock(mutex_);
   std::set<uint32_t> haveres;
   for (auto &q: my_spectra_)
@@ -128,7 +156,7 @@ std::set<uint32_t> SpectraSet::resolutions(uint16_t dim) const {
   return haveres;
 }
 
-Spectrum::Spectrum* SpectraSet::by_name(std::string name) {
+std::shared_ptr<Sink> Project::by_name(std::string name) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   //threadsafe so long as Spectrum implemented as thread-safe
 
@@ -139,14 +167,14 @@ Spectrum::Spectrum* SpectraSet::by_name(std::string name) {
   return nullptr;
 }
 
-std::list<Spectrum::Spectrum*> SpectraSet::spectra(int32_t dim, int32_t res) {
+std::list<std::shared_ptr<Sink>> Project::spectra(int32_t dim, int32_t res) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   //threadsafe so long as Spectrum implemented as thread-safe
   
   if ((dim == -1) && (res == -1))
     return my_spectra_;
 
-  std::list<Spectrum::Spectrum*> results;
+  std::list<std::shared_ptr<Sink>> results;
   for (auto &q: my_spectra_)
     if (((q->dimensions() == dim) && (q->bits() == res)) ||
         ((q->dimensions() == dim) && (res == -1)) ||
@@ -155,11 +183,11 @@ std::list<Spectrum::Spectrum*> SpectraSet::spectra(int32_t dim, int32_t res) {
   return results;
 }
 
-std::list<Spectrum::Spectrum*> SpectraSet::by_type(std::string reqType) {
+std::list<std::shared_ptr<Sink>> Project::by_type(std::string reqType) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   //threadsafe so long as Spectrum implemented as thread-safe
   
-  std::list<Spectrum::Spectrum*> results;
+  std::list<std::shared_ptr<Sink>> results;
   for (auto &q: my_spectra_)
     if (q->type() == reqType)
       results.push_back(q);
@@ -170,7 +198,7 @@ std::list<Spectrum::Spectrum*> SpectraSet::by_type(std::string reqType) {
 
 //client should activate replot after loading all files, as loading multiple
 // spectra might create a long queue of plot update signals
-void SpectraSet::add_spectrum(Spectrum::Spectrum* newSpectrum) {
+void Project::add_spectrum(std::shared_ptr<Sink> newSpectrum) {
   if (newSpectrum == nullptr)
     return;
   boost::unique_lock<boost::mutex> lock(mutex_);  
@@ -182,9 +210,9 @@ void SpectraSet::add_spectrum(Spectrum::Spectrum* newSpectrum) {
   // cond_.notify_one();
 }
 
-void SpectraSet::add_spectrum(Spectrum::Metadata spectrum) {
+void Project::add_spectrum(Metadata spectrum) {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  Spectrum::Spectrum* newSpectrum = Spectrum::Factory::getInstance().create_from_prototype(spectrum);
+  std::shared_ptr<Sink> newSpectrum = Qpx::SinkFactory::getInstance().create_from_prototype(spectrum);
   if (newSpectrum != nullptr)
     my_spectra_.push_back(newSpectrum);
   changed_ = true;
@@ -194,8 +222,8 @@ void SpectraSet::add_spectrum(Spectrum::Metadata spectrum) {
   // cond_.notify_one();
 }
 
-void SpectraSet::delete_spectrum(std::string name) {
-  std::list<Spectrum::Spectrum*>::iterator it = my_spectra_.begin();
+void Project::delete_spectrum(std::string name) {
+  std::list<std::shared_ptr<Sink>>::iterator it = my_spectra_.begin();
 
   while (it != my_spectra_.end()) {
     if ((*it)->name() == name) {
@@ -207,13 +235,13 @@ void SpectraSet::delete_spectrum(std::string name) {
   }
 }
 
-void SpectraSet::set_spectra(const XMLableDB<Spectrum::Metadata>& newdb) {
+void Project::set_spectra(const XMLableDB<Metadata>& newdb) {
   boost::unique_lock<boost::mutex> lock(mutex_);  
   clear_helper();
   int numofspectra = newdb.size();
 
   for (int i=0; i < numofspectra; i++) {
-    Spectrum::Spectrum* newSpectrum = Spectrum::Factory::getInstance().create_from_prototype(newdb.get(i));
+    std::shared_ptr<Sink> newSpectrum = Qpx::SinkFactory::getInstance().create_from_prototype(newdb.get(i));
     if (newSpectrum != nullptr) {
       my_spectra_.push_back(newSpectrum);
     }
@@ -225,7 +253,7 @@ void SpectraSet::set_spectra(const XMLableDB<Spectrum::Metadata>& newdb) {
   cond_.notify_one();
 }
 
-void SpectraSet::add_spill(Spill* one_spill) {
+void Project::add_spill(Spill* one_spill) {
   boost::unique_lock<boost::mutex> lock(mutex_);  
 
   for (auto &q: my_spectra_)
@@ -249,23 +277,23 @@ void SpectraSet::add_spill(Spill* one_spill) {
 }
 
 
-void SpectraSet::save() {
+void Project::save() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   if (/*changed_ && */(identity_ != "New project"))
     write_xml(identity_);
 }
 
 
-void SpectraSet::save_as(std::string file_name) {
+void Project::save_as(std::string file_name) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   write_xml(file_name);
 }
 
-void SpectraSet::write_xml(std::string file_name) {
+void Project::write_xml(std::string file_name) {
 
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child();
-  root.set_name("QpxAcquisition");
+  root.set_name("QpxProject");
 
   if (!spills_.empty()) {
     pugi::xml_node spillsnode = root.append_child("Spills");
@@ -294,7 +322,7 @@ void SpectraSet::write_xml(std::string file_name) {
 
 }
 
-void SpectraSet::read_xml(std::string file_name, bool with_spectra, bool with_full_spectra) {
+void Project::read_xml(std::string file_name, bool with_spectra, bool with_full_spectra) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
 
@@ -303,7 +331,11 @@ void SpectraSet::read_xml(std::string file_name, bool with_spectra, bool with_fu
   if (!doc.load_file(file_name.c_str()))
     return;
 
-  pugi::xml_node root = doc.child("QpxAcquisition");
+  pugi::xml_node root;
+  if (doc.child("QpxProject"))
+   root = doc.child("QpxProject");
+  else if (doc.child("QpxAcquisition"))  //backwards compat
+   root = doc.child("QpxAcquisition");
   if (!root)
     return;
 
@@ -318,8 +350,8 @@ void SpectraSet::read_xml(std::string file_name, bool with_spectra, bool with_fu
 
   //backwards compat
   RunInfo ri;
-  if (root.child(ri.xml_element_name().c_str())) {
-    ri.from_xml(root.child(ri.xml_element_name().c_str()));
+  if (root.child("RunInfo")) {
+    ri.from_xml(root.child("RunInfo"));
     Spill sp;
     if (!ri.time.is_not_a_date_time()) {
       sp.time = ri.time;
@@ -338,8 +370,8 @@ void SpectraSet::read_xml(std::string file_name, bool with_spectra, bool with_fu
       if (child.child("ChannelData") && !with_full_spectra)
         child.remove_child("ChannelData");
 
-      Spectrum::Spectrum* new_spectrum
-          = Spectrum::Factory::getInstance().create_from_xml(child);
+      std::shared_ptr<Sink> new_spectrum
+          = Qpx::SinkFactory::getInstance().create_from_xml(child);
       if (new_spectrum == nullptr)
         PL_INFO << "Could not parse spectrum";
       else {
@@ -359,7 +391,7 @@ void SpectraSet::read_xml(std::string file_name, bool with_spectra, bool with_fu
   cond_.notify_one();
 }
 
-void SpectraSet::import_spn(std::string file_name) {
+void Project::import_spn(std::string file_name) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   //clear_helper();
 
@@ -383,17 +415,17 @@ void SpectraSet::import_spn(std::string file_name) {
   std::vector<Detector> dets;
   dets.push_back(det);
 
-  Qpx::Spectrum::Metadata *temp = Qpx::Spectrum::Factory::getInstance().create_prototype("1D");
-  temp->bits = 12;
+  Qpx::Metadata temp = Qpx::SinkFactory::getInstance().create_prototype("1D");
+  temp.bits = 12;
   Qpx::Setting pattern;
-  pattern = temp->attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern = temp.attributes.branches.get(Qpx::Setting("pattern_coinc"));
   pattern.value_pattern.set_gates(std::vector<bool>({1}));
   pattern.value_pattern.set_theshold(1);
-  temp->attributes.branches.replace(pattern);
-  pattern = temp->attributes.branches.get(Qpx::Setting("pattern_add"));
+  temp.attributes.branches.replace(pattern);
+  pattern = temp.attributes.branches.get(Qpx::Setting("pattern_add"));
   pattern.value_pattern.set_gates(std::vector<bool>({1}));
   pattern.value_pattern.set_theshold(1);
-  temp->attributes.branches.replace(pattern);
+  temp.attributes.branches.replace(pattern);
 
   uint32_t one;
   int spectra_count = 0;
@@ -411,11 +443,11 @@ void SpectraSet::import_spn(std::string file_name) {
     }
     if ((totalcount == 0) || data.empty())
       continue;
-    temp->name = boost::filesystem::path(file_name).filename().string() + "[" + std::to_string(spectra_count) + "]";
-    Qpx::Spectrum::Spectrum *spectrum = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*temp);
+    temp.name = boost::filesystem::path(file_name).filename().string() + "[" + std::to_string(spectra_count) + "]";
+    std::shared_ptr<Sink> spectrum = Qpx::SinkFactory::getInstance().create_from_prototype(temp);
     spectrum->set_detectors(dets);
     for (int i=0; i < data.size(); ++i) {
-      Spectrum::Entry entry;
+      Entry entry;
       entry.first.resize(1, 0);
       entry.first[0] = i;
       entry.second = data[i];
@@ -424,8 +456,6 @@ void SpectraSet::import_spn(std::string file_name) {
     my_spectra_.push_back(spectrum);
     spectra_count++;
   }
-
-  delete temp;
 
   changed_ = true;
 //  identity_ = file_name;

@@ -33,7 +33,7 @@
 #include "generic_setting.h"  //make full use of this!!!
 #include "daq_device.h"
 #include "synchronized_queue.h"
-#include "spectra_set.h"
+#include "project.h"
 
 #include "custom_timer.h"
 
@@ -66,7 +66,7 @@ public:
   DeviceStatus status() {return aggregate_status_;}
 
   ListData* getList(uint64_t timeout, boost::atomic<bool>& inturruptor);
-  void getMca(uint64_t timeout, SpectraSet &spectra, boost::atomic<bool> &interruptor);
+  void getMca(uint64_t timeout, Project &spectra, boost::atomic<bool> &interruptor);
 
   //detectors
   std::vector<Qpx::Detector> get_detectors() const {return detectors_;}
@@ -111,7 +111,7 @@ protected:
   void rebuild_structure(Qpx::Setting &set);
 
   //threads
-  void worker_MCA(SynchronizedQueue<Spill*>* data_queue, SpectraSet* spectra);
+  void worker_MCA(SynchronizedQueue<Spill*>* data_queue, Project* spectra);
 
 private:
 

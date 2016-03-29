@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Spectrum::SpectrumTime one-dimensional spectrum
+ *      Qpx::SinkTime one-dimensional spectrum
  *
  ******************************************************************************/
 
@@ -24,12 +24,11 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include "spectrum_time.h"
-#include "spectrum_factory.h"
+#include "daq_sink_factory.h"
 
 namespace Qpx {
-namespace Spectrum {
 
-static Registrar<SpectrumTime> registrar("Time");
+static SinkRegistrar<SpectrumTime> registrar("Time");
 
 SpectrumTime::SpectrumTime()
   : codomain(0)
@@ -232,4 +231,4 @@ uint16_t SpectrumTime::_channels_from_xml(const std::string& thisData){
 }
 
 
-}}
+}

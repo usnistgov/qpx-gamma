@@ -541,7 +541,7 @@ void WidgetPlot2D::replot_markers() {
   ui->coincPlot->replot();
 }
 
-void WidgetPlot2D::update_plot(uint64_t size, std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data) {
+void WidgetPlot2D::update_plot(uint64_t size, std::shared_ptr<Qpx::EntryList> spectrum_data) {
   //  PL_DBG << "updating 2d";
 
 //  ui->coincPlot->clearGraphs();

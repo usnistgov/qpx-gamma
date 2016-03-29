@@ -25,7 +25,7 @@
 
 #include "generic_setting.h"
 #include "synchronized_queue.h"
-#include "daq_types.h"
+#include "spill.h"
 
 namespace Qpx {
 

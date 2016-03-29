@@ -17,66 +17,65 @@
  *
  * Description:
  *
- *      Qpx::Spectrum::Factory creates spectra of appropriate type
+ *      Qpx::Sink::Factory creates spectra of appropriate type
  *                               by type name, from template, or
  *                               from file.
  *
- *      Qpx::Spectrum::Registrar for registering new spectrum types.
+ *      Qpx::Sink::Registrar for registering new Sink types.
  *
  ******************************************************************************/
 
-#ifndef SPECTRUM_FACTORY_H
-#define SPECTRUM_FACTORY_H
+#ifndef SINK_FACTORY_H
+#define SINK_FACTORY_H
 
 #include <memory>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "spectrum.h"
+#include "daq_sink.h"
 
 namespace Qpx {
-namespace Spectrum {
 
-class Factory {
+class SinkFactory {
  public:
-  static Factory& getInstance()
+  static SinkFactory& getInstance()
   {
-    static Factory singleton_instance;
+    static SinkFactory singleton_instance;
     return singleton_instance;
   }
 
-  void register_type(Metadata tt, std::function<Spectrum*(void)> typeConstructor);
+  void register_type(Metadata tt, std::function<Sink*(void)> typeConstructor);
   const std::vector<std::string> types();
   
-  Spectrum* create_type(std::string type);
-  Spectrum* create_from_prototype(const Metadata& tem);
-  Spectrum* create_from_xml(const pugi::xml_node &root);
-  Spectrum* create_from_file(std::string filename);
+  std::shared_ptr<Sink> create_type(std::string type);
+  std::shared_ptr<Sink> create_from_prototype(const Metadata& tem);
+  std::shared_ptr<Sink> create_from_xml(const pugi::xml_node &root);
+  std::shared_ptr<Sink> create_from_file(std::string filename);
 
-  Metadata* create_prototype(std::string type);
+  Metadata create_prototype(std::string type);
 
  private:
-  std::map<std::string, std::function<Spectrum*(void)>> constructors;
+  std::map<std::string, std::function<Sink*(void)>> constructors;
   std::map<std::string, std::string> ext_to_type;
   std::map<std::string, Metadata> prototypes;
 
   //singleton assurance
-  Factory() {}
-  Factory(Factory const&);
-  void operator=(Factory const&);
+  SinkFactory() {}
+  SinkFactory(SinkFactory const&);
+  void operator=(SinkFactory const&);
 };
 
 template<class T>
-class Registrar {
+class SinkRegistrar {
 public:
-  Registrar(std::string)
+  SinkRegistrar(std::string)
   {
-    Factory::getInstance().register_type(T().metadata(),
-                                         [](void) -> Spectrum * { return new T();});
+    SinkFactory::getInstance().register_type(T().metadata(),
+                                         [](void) -> Sink * { return new T();});
   }
 };
 
 
-}}
+}
 
-#endif // SPECTRUM_H
+#endif

@@ -22,7 +22,7 @@ private:
   bool run_mca(std::vector<std::string> &tokens);
   bool save_qpx(std::vector<std::string> &tokens);
 
-  Qpx::SpectraSet   spectra_;
+  Qpx::Project   spectra_;
   Qpx::Engine       &engine_;
   boost::atomic<bool> interruptor_;
 };

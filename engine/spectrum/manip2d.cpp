@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Spectrum::Manip2d set of functions for transforming spectra
+ *      Manip2d set of functions for transforming spectra
  *
  ******************************************************************************/
 
@@ -26,15 +26,14 @@
 #include <boost/random/uniform_real.hpp>
 
 namespace Qpx {
-namespace Spectrum {
 
-bool slice_diagonal(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx) {
+bool slice_diagonal(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx) {
   if (source == nullptr)
     return false;
   if (destination == nullptr)
     return false;
 
-  Qpx::Spectrum::Metadata md = source->metadata();
+  Metadata md = source->metadata();
 
   if ((md.total_count > 0) && (md.dimensions() == 2))
   {
@@ -47,7 +46,7 @@ bool slice_diagonal(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* de
     int tot = xc + yc;
     for (int i=0; i < tot; ++i) {
       if ((i >= minx) && (i < maxx)) {
-        Qpx::Spectrum::Entry entry({i}, sum_diag(source, i, tot-i, diag_width));
+        Entry entry({i}, sum_diag(source, i, tot-i, diag_width));
         destination->add_bulk(entry);
       }
     }
@@ -58,19 +57,19 @@ bool slice_diagonal(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* de
 }
 
 
-bool slice_rectangular(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destination, std::initializer_list<Pair> bounds) {
+bool slice_rectangular(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination, std::initializer_list<Pair> bounds) {
   if (source == nullptr)
     return false;
   if (destination == nullptr)
     return false;
 
-  Qpx::Spectrum::Metadata md = source->metadata();
+  Metadata md = source->metadata();
 
   if ((md.total_count > 0) && (md.dimensions() == 2))
   {
     destination->set_detectors(md.detectors);
 
-    std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data = std::move(source->get_spectrum(bounds));
+    std::shared_ptr<EntryList> spectrum_data = std::move(source->get_spectrum(bounds));
     for (auto it : *spectrum_data)
       destination->add_bulk(it);
 
@@ -79,7 +78,7 @@ bool slice_rectangular(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum*
   return (destination->metadata().total_count > 0);
 }
 
-PreciseFloat sum_with_neighbors(Qpx::Spectrum::Spectrum* source, uint16_t x, uint16_t y)
+PreciseFloat sum_with_neighbors(std::shared_ptr<Sink> source, uint16_t x, uint16_t y)
 {
   PreciseFloat ans = 0;
   ans += source->get_count({x,y}) + 0.25 * (source->get_count({x+1,y}) + source->get_count({x,y+1}));
@@ -90,7 +89,7 @@ PreciseFloat sum_with_neighbors(Qpx::Spectrum::Spectrum* source, uint16_t x, uin
   return ans;
 }
 
-PreciseFloat sum_diag(Qpx::Spectrum::Spectrum* source, uint16_t x, uint16_t y, uint16_t width)
+PreciseFloat sum_diag(std::shared_ptr<Sink> source, uint16_t x, uint16_t y, uint16_t width)
 {
   PreciseFloat ans = sum_with_neighbors(source, x, y);
   int w = (width-1)/2;
@@ -99,7 +98,7 @@ PreciseFloat sum_diag(Qpx::Spectrum::Spectrum* source, uint16_t x, uint16_t y, u
   return ans;
 }
 
-bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destination)
+bool symmetrize(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination)
 {
   if (source == nullptr)
     return false;
@@ -107,15 +106,15 @@ bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destin
     return false;
 
 
-  Qpx::Spectrum::Metadata md = source->metadata();
+  Metadata md = source->metadata();
 
   if ((md.total_count == 0) || (md.dimensions() != 2)) {
     PL_WARN << "<symmetrize> " << md.name << " has no events or is not 2d";
     return false;
   }
 
-  Qpx::Detector detector1;
-  Qpx::Detector detector2;
+  Detector detector1;
+  Detector detector2;
 
   if (md.detectors.size() > 1) {
     detector1 = md.detectors[0];
@@ -125,7 +124,7 @@ bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destin
     return false;
   }
 
-  Qpx::Calibration gain_match_cali = detector2.get_gain_match(md.bits, detector1.name_);
+  Calibration gain_match_cali = detector2.get_gain_match(md.bits, detector1.name_);
 
   if (gain_match_cali.to_ == detector1.name_)
     PL_INFO << "<symmetrize> using gain match calibration from " << detector2.name_ << " to " << detector1.name_ << " " << gain_match_cali.to_string();
@@ -140,7 +139,7 @@ bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destin
   boost::random::uniform_real_distribution<> dist(-0.5, 0.5);
 
   uint16_t e2 = 0;
-  std::unique_ptr<std::list<Qpx::Spectrum::Entry>> spectrum_data = std::move(source->get_spectrum({{0, adjrange}, {0, adjrange}}));
+  std::unique_ptr<std::list<Entry>> spectrum_data = std::move(source->get_spectrum({{0, adjrange}, {0, adjrange}}));
   for (auto it : *spectrum_data) {
     PreciseFloat count = it.second;
 
@@ -175,8 +174,8 @@ bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destin
 
   for (auto &p : md.detectors) {
     if (p.shallow_equals(detector1) || p.shallow_equals(detector2)) {
-      p = Qpx::Detector(detector1.name_ + std::string("*") + detector2.name_);
-      p.energy_calibrations_.add(detector1.energy_calibrations_.get(Qpx::Calibration("Energy", md.bits)));
+      p = Detector(detector1.name_ + std::string("*") + detector2.name_);
+      p.energy_calibrations_.add(detector1.energy_calibrations_.get(Calibration("Energy", md.bits)));
     }
   }
 
@@ -186,5 +185,4 @@ bool symmetrize(Qpx::Spectrum::Spectrum* source, Qpx::Spectrum::Spectrum* destin
 }
 
 
-}
 }

@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Spectrum::Spectrum generic spectrum type.
+ *      Qpx::Sink generic spectrum type.
  *                       All public methods are thread-safe.
  *                       When deriving override protected methods.
  *
@@ -31,101 +31,13 @@
 #include "qpx_util.h"
 
 namespace Qpx {
-namespace Spectrum {
-
-void Metadata::to_xml(pugi::xml_node &root) const {
-  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
-
-  node.append_attribute("Type").set_value(type_.c_str());
-  node.append_child("Name").append_child(pugi::node_pcdata).set_value(name.c_str());
-  node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(bits).c_str());
-
-  if (attributes.branches.size())
-    attributes.to_xml(node);
-}
-
-void Metadata::from_xml(const pugi::xml_node &node) {
-  if (std::string(node.name()) != xml_element_name())
-    return;
-
-  type_ = std::string(node.attribute("Type").value());
-  name = std::string(node.child_value("Name"));
-  bits = boost::lexical_cast<short>(node.child_value("Resolution"));
-
-  if (node.child(attributes.xml_element_name().c_str()))
-    attributes.from_xml(node.child(attributes.xml_element_name().c_str()));
-}
-
-void Metadata::set_det_limit(uint16_t limit)
-{
-  if (limit < 1)
-    limit = 1;
-
-  for (auto &a : attributes.branches.my_data_)
-    if (a.metadata.setting_type == Qpx::SettingType::pattern) {
-      if (a.value_pattern.gates().size() != limit)
-        changed = true;
-      a.value_pattern.resize(limit);
-    } else if (a.metadata.setting_type == Qpx::SettingType::stem) {
-      Setting prototype;
-      for (auto &p : a.branches.my_data_)
-        if (p.indices.count(-1))
-          prototype = p;
-      if (prototype.metadata.setting_type == Qpx::SettingType::stem) {
-        a.indices.clear();
-        a.branches.clear();
-        prototype.metadata.visible = false;
-        a.branches.add(prototype);
-        prototype.metadata.visible = true;
-        for (int i=0; i < limit; ++i) {
-          prototype.indices.clear();
-          prototype.indices.insert(i);
-          for (auto &p : prototype.branches.my_data_)
-            p.indices = prototype.indices;
-          a.branches.add_a(prototype);
-//          a.indices.insert(i);
-        }
-      }
-    }
-}
-
 
 Spectrum::Spectrum()
-  : recent_count_(0)
+  : Sink()
+  , recent_count_(0)
   , coinc_window_(0)
   , max_delay_(0)
 {
-  Setting vis;
-  vis.id_ = "visible";
-  vis.metadata.setting_type = SettingType::boolean;
-  vis.metadata.description = "Plot visible";
-  vis.metadata.writable = true;
-  metadata_.attributes.branches.add(vis);
-
-  Setting app;
-  app.id_ = "appearance";
-  app.metadata.setting_type = SettingType::color;
-  app.metadata.description = "Plot appearance";
-  app.metadata.writable = true;
-  metadata_.attributes.branches.add(app);
-
-  Setting rescale;
-  rescale.id_ = "rescale";
-  rescale.metadata.setting_type = SettingType::floating_precise;
-  rescale.metadata.description = "Rescale factor";
-  rescale.metadata.writable = true;
-  rescale.metadata.minimum = 0;
-  rescale.metadata.maximum = 1e10;
-  rescale.metadata.step = 1;
-  rescale.value_precise = 1;
-  metadata_.attributes.branches.add(rescale);
-
-  Setting descr;
-  descr.id_ = "description";
-  descr.metadata.setting_type = SettingType::text;
-  descr.metadata.description = "Description";
-  descr.metadata.writable = true;
-  metadata_.attributes.branches.add(descr);
 
   Setting dets;
   dets.id_ = "per_detector";
@@ -202,13 +114,6 @@ Spectrum::Spectrum()
   pattern_add.metadata.flags.insert("preset");
   metadata_.attributes.branches.add(pattern_add);
 
-  Setting start_time;
-  start_time.id_ = "start_time";
-  start_time.metadata.setting_type = SettingType::time;
-  start_time.metadata.description = "Start time";
-  start_time.metadata.writable = false;
-  metadata_.attributes.branches.add(start_time);
-
   Setting live_time;
   live_time.id_ = "live_time";
   live_time.metadata.setting_type = SettingType::time_duration;
@@ -234,10 +139,14 @@ Spectrum::Spectrum()
 }
 
 bool Spectrum::initialize() {
+  Sink::initialize();
+
   pattern_coinc_ = get_attr("pattern_coinc").value_pattern;
   pattern_anti_ = get_attr("pattern_anti").value_pattern;
   pattern_add_ = get_attr("pattern_add").value_pattern;
   coinc_window_ = get_attr("coinc_window").value_dbl;
+  if (coinc_window_ < 0)
+    coinc_window_ = 0;
 
   Setting perdet = get_attr("per_detector");
   cutoff_logic_.resize(perdet.branches.size());
@@ -258,94 +167,9 @@ bool Spectrum::initialize() {
     }
   }
 
-  metadata_.attributes.enable_if_flag(false, "preset");
-
-  if (coinc_window_ < 0)
-    coinc_window_ = 0;
-
-  return false;
+  return false; //still too abstract
 }
 
-
-PreciseFloat Spectrum::get_count(std::initializer_list<uint16_t> list ) const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  if (list.size() != this->metadata_.dimensions())
-    return 0;
-  return this->_get_count(list);
-}
-
-std::unique_ptr<std::list<Entry>> Spectrum::get_spectrum(std::initializer_list<Pair> list) {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  if (list.size() != this->metadata_.dimensions())
-    return 0; //wtf???
-  else {
-    //    std::vector<Pair> ranges(list.begin(), list.end());
-    return this->_get_spectrum(list);
-  }
-}
-
-void Spectrum::add_bulk(const Entry& e) {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  if (metadata_.dimensions() < 1)
-    return;
-  else
-    this->_add_bulk(e);
-}
-
-bool Spectrum::from_prototype(const Metadata& newtemplate) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
-  while (!uniqueLock.try_lock())
-    boost::this_thread::sleep_for(boost::chrono::seconds{1});
-
-  if ((metadata_.type() != newtemplate.type()) ||
-      (this->my_type() != newtemplate.type()))
-    return false;
-
-  metadata_.name = newtemplate.name;
-  metadata_.bits = newtemplate.bits;
-  metadata_.attributes = newtemplate.attributes;
-  return (this->initialize());
-}
-
-void Spectrum::addSpill(const Spill& one_spill) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
-  while (!uniqueLock.try_lock())
-    boost::this_thread::sleep_for(boost::chrono::seconds{1});
-
-  CustomTimer addspill_timer(true);
-
-  for (auto &q : one_spill.hits)
-    this->pushHit(q);
-
-  for (auto &q : one_spill.stats) {
-    //what if multiple sources not synced?
-    if (q.second.stats_type == StatsType::stop) {
-//      PL_DBG << "<" << metadata_.name << "> final RunInfo received, dumping backlog of events " << backlog.size();
-      while (!backlog.empty()) {
-        recent_count_++;
-        metadata_.total_count++;
-        this->addEvent(backlog.front());
-        backlog.pop_front();
-      }
-    }
-    this->addStats(q.second);
-  }
-
-  if (!one_spill.detectors.empty())
-    this->_set_detectors(one_spill.detectors);
-
-  Setting start_time = get_attr("start_time");
-  if (start_time.value_time.is_not_a_date_time() && (!one_spill.time.is_not_a_date_time())) {
-    start_time.value_time = one_spill.time;
-    metadata_.attributes.branches.replace(start_time);
-  }
-
-  addspill_timer.stop();
-//  PL_DBG << "<" << metadata_.name << "> added " << hits << " hits in "
-//         << addspill_timer.ms() << " ms at " << addspill_timer.us() / hits << " us/hit";
-
-//  PL_DBG << "<" << metadata_.name << "> left in backlog " << backlog.size();
-}
 
 void Spectrum::pushHit(const Hit& newhit)
 {
@@ -406,13 +230,6 @@ void Spectrum::pushHit(const Hit& newhit)
 
 }
 
-void Spectrum::closeAcquisition() {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
-  while (!uniqueLock.try_lock())
-    boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  this->_closeAcquisition();
-}
-
 
 bool Spectrum::validateEvent(const Event& newEvent) const {
   if (!pattern_coinc_.validate(newEvent))
@@ -421,11 +238,6 @@ bool Spectrum::validateEvent(const Event& newEvent) const {
     return false;
   return true;
 }
-
-std::map<int, std::list<StatsUpdate>> Spectrum::get_stats() {
-  return stats_list_;
-}
-
 
 void Spectrum::addStats(const StatsUpdate& newBlock) {
   //private; no lock required
@@ -522,40 +334,17 @@ void Spectrum::addStats(const StatsUpdate& newBlock) {
     }
   }
 }
-
-std::vector<double> Spectrum::energies(uint8_t chan) const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
   
-  if (chan < energies_.size())
-    return energies_[chan];
-  else
-    return std::vector<double>();
-}
-  
-void Spectrum::set_detectors(const std::vector<Qpx::Detector>& dets) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
-  while (!uniqueLock.try_lock())
-    boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  
-  this->_set_detectors(dets);
-  metadata_.changed = true;
-}
-
-void Spectrum::reset_changed() {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
-  while (!uniqueLock.try_lock())
-    boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  metadata_.changed = false;
-}
-
 void Spectrum::_set_detectors(const std::vector<Qpx::Detector>& dets) {
   //private; no lock required
 //  PL_DBG << "<Spectrum> _set_detectors";
 
   metadata_.detectors.clear();
 
+  //FIX THIS!!!!
+
   //metadata_.detectors.resize(metadata_.dimensions(), Qpx::Detector());
-  recalc_energies();
+  this->recalc_energies();
 }
 
 void Spectrum::recalc_energies() {
@@ -580,269 +369,4 @@ void Spectrum::recalc_energies() {
   }
 }
 
-Setting Spectrum::get_attr(std::string setting) const {
-  return metadata_.attributes.branches.get(Setting(setting));
 }
-
-bool Spectrum::write_file(std::string dir, std::string format) const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  return _write_file(dir, format);
-}
-
-bool Spectrum::read_file(std::string name, std::string format) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
-  while (!uniqueLock.try_lock())
-    boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  return _read_file(name, format);
-}
-
-std::string Spectrum::channels_to_xml() const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  return _channels_to_xml();
-}
-
-uint16_t Spectrum::channels_from_xml(const std::string& str) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
-  while (!uniqueLock.try_lock())
-    boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  return _channels_from_xml(str);
-}
-
-
-//accessors for various properties
-Metadata Spectrum::metadata() const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  return metadata_;  
-}
-
-std::string Spectrum::type() const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  return my_type();
-}
-
-uint16_t Spectrum::dimensions() const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  return metadata_.dimensions();
-}
-
-std::string Spectrum::name() const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  return metadata_.name;
-}
-
-uint16_t Spectrum::bits() const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-  return metadata_.bits;
-}
-
-
-//change stuff
-
-void Spectrum::set_generic_attr(Setting setting, Match match) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
-  while (!uniqueLock.try_lock())
-    boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  metadata_.attributes.set_setting_r(setting, match);
-  metadata_.changed = true;
-}
-
-void Spectrum::set_generic_attrs(Setting settings) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
-  while (!uniqueLock.try_lock())
-    boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  metadata_.attributes = settings;
-  metadata_.changed = true;
-}
-
-
-
-
-/////////////////////
-//Save and load//////
-/////////////////////
-
-void Spectrum::to_xml(pugi::xml_node &root) const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
-
-  pugi::xml_node node = root.append_child("Spectrum");
-
-  node.append_attribute("type").set_value(this->my_type().c_str());
-
-  node.append_child("Name").append_child(pugi::node_pcdata).set_value(metadata_.name.c_str());
-  node.append_child("TotalEvents").append_child(pugi::node_pcdata).set_value(metadata_.total_count.str().c_str());
-  node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(metadata_.bits).c_str());
-
-  if (metadata_.attributes.branches.size())
-    metadata_.attributes.to_xml(node);
-
-  if (metadata_.detectors.size()) {
-    pugi::xml_node child = node.append_child("Detectors");
-    for (auto q : metadata_.detectors) {
-      q.settings_ = Setting();
-      q.to_xml(child);
-    }
-  }
-
-  if ((metadata_.bits > 0) && (metadata_.total_count > 0))
-    node.append_child("ChannelData").append_child(pugi::node_pcdata).set_value(this->_channels_to_xml().c_str());
-}
-
-
-bool Spectrum::from_xml(const pugi::xml_node &node) {
-  if (std::string(node.name()) != "Spectrum")
-    return false;
-
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
-  while (!uniqueLock.try_lock())
-    boost::this_thread::sleep_for(boost::chrono::seconds{1});
-
-  if (node.child(metadata_.attributes.xml_element_name().c_str()))
-    metadata_.attributes.from_xml(node.child(metadata_.attributes.xml_element_name().c_str()));
-  else if (node.child("Attributes"))
-    metadata_.attributes.branches.from_xml(node.child("Attributes"));
-
-  std::string numero;
-
-  if (!node.child("Name"))
-    return false;
-  metadata_.name = std::string(node.child_value("Name"));
-
-  metadata_.total_count = PreciseFloat(node.child_value("TotalEvents"));
-  metadata_.bits = boost::lexical_cast<short>(std::string(node.child_value("Resolution")));
-
-  if ((!metadata_.bits) || (metadata_.total_count == 0))
-    return false;
-
-  //backwards compat
-  if (node.child("MatchPattern")) {
-    std::vector<int16_t> match_pattern;
-    std::stringstream pattern_match(node.child_value("MatchPattern"));
-    while (pattern_match.rdbuf()->in_avail()) {
-      pattern_match >> numero;
-      match_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
-    }
-
-    pattern_coinc_.resize(match_pattern.size());
-    pattern_anti_.resize(match_pattern.size());
-
-    std::vector<bool> gts_co(match_pattern.size(), false);
-    std::vector<bool> gts_a(match_pattern.size(), false);
-    size_t thresh_co(0), thresh_a(0);
-
-    for (int i = 0; i < match_pattern.size(); ++i) {
-      if (match_pattern[i] > 0) {
-        gts_co[i] = true;
-        thresh_co++;
-      }
-      if (match_pattern[i] < 0) {
-        gts_a[i] = true;
-        thresh_a++;
-      }
-    }
-
-    pattern_coinc_.set_gates(gts_co);
-    pattern_coinc_.set_theshold(thresh_co);
-    pattern_anti_.set_gates(gts_a);
-    pattern_anti_.set_theshold(thresh_a);
-
-    Setting pattern;
-    pattern = metadata_.attributes.branches.get(Setting("pattern_coinc"));
-    pattern.value_pattern = pattern_coinc_;
-    metadata_.attributes.branches.replace(pattern);
-
-    pattern = metadata_.attributes.branches.get(Setting("pattern_anti"));
-    pattern.value_pattern = pattern_anti_;
-    metadata_.attributes.branches.replace(pattern);
-  }
-
-  //backwards compat
-  if (node.child("AddPattern")) {
-    std::vector<int16_t> add_pattern;
-    std::stringstream pattern_add(node.child_value("AddPattern"));
-    while (pattern_add.rdbuf()->in_avail()) {
-      pattern_add >> numero;
-      add_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
-    }
-
-    pattern_add_.resize(add_pattern.size());
-    std::vector<bool> gts(add_pattern.size(), false);
-    size_t thresh(0);
-
-    for (int i = 0; i < add_pattern.size(); ++i) {
-      if (add_pattern[i] != 0) {
-        gts[i] = true;
-        thresh++;
-      }
-    }
-
-    pattern_add_.set_gates(gts);
-    pattern_add_.set_theshold(thresh);
-
-    Setting pattern;
-    pattern = metadata_.attributes.branches.get(Setting("pattern_add"));
-    pattern.value_pattern = pattern_add_;
-    metadata_.attributes.branches.replace(pattern);
-  }
-
-  if (node.child("StartTime")) {
-    Setting start_time = get_attr("start_time");
-    start_time.value_time = from_iso_extended(node.child_value("StartTime"));
-    metadata_.attributes.branches.replace(start_time);
-  }
-
-  if (node.child("RealTime")) {
-    Setting real_time = get_attr("real_time");
-    real_time.value_duration = boost::posix_time::duration_from_string(node.child_value("RealTime"));
-    metadata_.attributes.branches.replace(real_time);
-  }
-
-  if (node.child("LiveTime")) {
-    Setting live_time = get_attr("live_time");
-    live_time.value_duration = boost::posix_time::duration_from_string(node.child_value("LiveTime"));
-    metadata_.attributes.branches.replace(live_time);
-  }
-
-  if (node.child("RescaleFactor")) {
-    Setting rescale = get_attr("rescale");
-    rescale.value_precise = PreciseFloat(node.child_value("RescaleFactor"));
-    metadata_.attributes.branches.replace(rescale);
-  }
-
-  if (node.child("Detectors")) {
-    metadata_.detectors.clear();
-    for (auto &q : node.child("Detectors").children()) {
-      Qpx::Detector det;
-      det.from_xml(q);
-      metadata_.detectors.push_back(det);
-    }
-  }
-
-  std::string this_data(node.child_value("ChannelData"));
-  boost::algorithm::trim(this_data);
-  this->_channels_from_xml(this_data);
-
-
-  if (node.child("Appearance")) {
-    uint32_t col = boost::lexical_cast<unsigned int>(std::string(node.child_value("Appearance")));
-    Setting app = metadata_.attributes.branches.get(Setting("appearance"));
-    app.value_text = "#" + itohex32(col);
-    metadata_.attributes.branches.replace(app);
-  }
-
-  if (node.child("Visible")) {
-    Setting vis = metadata_.attributes.branches.get(Setting("visible"));
-    vis.value_int = boost::lexical_cast<bool>(std::string(node.child_value("Visible")));
-    metadata_.attributes.branches.replace(vis);
-  }
-
-
-  bool ret = this->initialize();
-
-  if (ret)
-   this->recalc_energies();
-
-  return ret;
-}
-
-
-}}

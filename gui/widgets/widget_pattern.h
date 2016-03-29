@@ -33,7 +33,6 @@
 #include <bitset>
 #include "pattern.h"
 #include "custom_logger.h"
-#include "daq_types.h"
 
 Q_DECLARE_METATYPE(Qpx::Pattern)
 

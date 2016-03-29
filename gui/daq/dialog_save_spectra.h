@@ -28,7 +28,7 @@
 #include <vector>
 #include <unordered_map>
 #include <QDialog>
-#include "spectra_set.h"
+#include "project.h"
 
 
 class WidgetSaveTypes : public QWidget
@@ -65,7 +65,7 @@ class DialogSaveSpectra : public QDialog
     Q_OBJECT
 
 public:
-    explicit DialogSaveSpectra(Qpx::SpectraSet&, QString, QWidget *parent = 0);
+    explicit DialogSaveSpectra(Qpx::Project&, QString, QWidget *parent = 0);
     ~DialogSaveSpectra();
 
 private slots:
@@ -77,7 +77,7 @@ private:
     Ui::DialogSaveSpectra *ui;
     QString root_dir_;
     std::string total_dir_;
-    Qpx::SpectraSet *my_set_;
+    Qpx::Project *my_set_;
 };
 
 #endif // DIALOGSAVESPECTRA_H

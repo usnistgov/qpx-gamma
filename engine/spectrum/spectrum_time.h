@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Spectrum::SpectrumTime one-dimensional spectrum
+ *      Qpx::SinkTime one-dimensional spectrum
  *
  ******************************************************************************/
 
@@ -26,7 +26,6 @@
 #include "spectrum.h"
 
 namespace Qpx {
-namespace Spectrum {
 
 class SpectrumTime : public Spectrum
 {
@@ -63,6 +62,6 @@ protected:
   std::vector<StatsUpdate>  updates_;
 };
 
-}}
+}
 
 #endif // SpectrumTime_H

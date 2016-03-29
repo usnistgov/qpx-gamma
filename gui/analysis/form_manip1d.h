@@ -27,7 +27,7 @@
 #include <QItemSelectionModel>
 #include "special_delegate.h"
 
-#include <spectra_set.h>
+#include <project.h>
 #include "qsquarecustomplot.h"
 #include "widget_plot_multi1d.h"
 
@@ -42,14 +42,14 @@ private:
 
   std::vector<std::string> letters_;
 
-  Qpx::SpectraSet *spectra_;
+  Qpx::Project *spectra_;
   std::vector<std::string> var_names_;
-  std::vector<Qpx::Spectrum::Metadata> data_;
+  std::vector<Qpx::Metadata> data_;
 
   std::string make_var_name(int i);
 
 public:
-  TableSpectra1D(Qpx::SpectraSet *spectra, QObject *parent = 0);
+  TableSpectra1D(Qpx::Project *spectra, QObject *parent = 0);
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
   int columnCount(const QModelIndex &parent = QModelIndex()) const;
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -64,7 +64,7 @@ class FormManip1D : public QDialog
   Q_OBJECT
 
 public:
-  explicit FormManip1D(Qpx::SpectraSet& new_set, QWidget *parent = 0);
+  explicit FormManip1D(Qpx::Project& new_set, QWidget *parent = 0);
   ~FormManip1D();
 
   void updateUI();
@@ -93,7 +93,7 @@ private:
 
   Ui::FormManip1D *ui;
 
-  Qpx::SpectraSet *mySpectra;
+  Qpx::Project *mySpectra;
 
   QpxSpecialDelegate     special_delegate_;
   TableSpectra1D         table_model_;

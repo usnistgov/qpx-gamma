@@ -25,7 +25,7 @@
 
 #include <QWidget>
 #include <QSettings>
-#include "spectra_set.h"
+#include "project.h"
 #include "spectrum1D.h"
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
@@ -80,8 +80,8 @@ private:
 
   Ui::FormOptimization *ui;
 
-  Qpx::SpectraSet current_spectra_;
-  Qpx::Spectrum::Metadata        optimizing_;
+  Qpx::Project current_spectra_;
+  Qpx::Metadata        optimizing_;
 
   ThreadRunner         &opt_runner_thread_;
   XMLableDB<Qpx::Detector> &detectors_;

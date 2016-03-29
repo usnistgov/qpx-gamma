@@ -23,7 +23,7 @@
 #define FORM_PLOT1D_H
 
 #include <QWidget>
-#include <spectra_set.h>
+#include <project.h>
 #include "qsquarecustomplot.h"
 #include "widget_selector.h"
 #include "widget_plot_multi1d.h"
@@ -40,7 +40,7 @@ public:
   explicit FormPlot1D(QWidget *parent = 0);
   ~FormPlot1D();
 
-  void setSpectra(Qpx::SpectraSet& new_set);
+  void setSpectra(Qpx::Project& new_set);
   void setDetDB(XMLableDB<Qpx::Detector>& detDB);
 
   void updateUI();
@@ -101,7 +101,7 @@ private:
 
   XMLableDB<Qpx::Detector> * detectors_;
 
-  Qpx::SpectraSet *mySpectra;
+  Qpx::Project *mySpectra;
   SelectorWidget *spectraSelector;
 
   Marker moving, markx, marky;

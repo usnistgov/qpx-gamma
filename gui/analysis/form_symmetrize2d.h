@@ -27,7 +27,7 @@
 #include <QWidget>
 #include <QSettings>
 #include "spectrum1D.h"
-#include "spectra_set.h"
+#include "project.h"
 #include "form_gain_calibration.h"
 
 namespace Ui {
@@ -42,7 +42,7 @@ public:
   explicit FormSymmetrize2D(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
   ~FormSymmetrize2D();
 
-  void setSpectrum(Qpx::SpectraSet *newset, QString spectrum);
+  void setSpectrum(Qpx::Project *newset, QString spectrum);
   void clear();
   void reset();
 
@@ -70,10 +70,10 @@ private:
   Ui::FormSymmetrize2D *ui;
   QSettings &settings_;
 
-  Qpx::Spectrum::Metadata *tempx, *tempy;
+  Qpx::Metadata tempx, tempy;
 
-  Qpx::Spectrum::Spectrum *gate_x;
-  Qpx::Spectrum::Spectrum *gate_y;
+  std::shared_ptr<Qpx::Sink>gate_x;
+  std::shared_ptr<Qpx::Sink>gate_y;
 
   Qpx::Fitter fit_data_, fit_data_2_;
   int res;
@@ -97,7 +97,7 @@ private:
   QString data_directory_;
   QString settings_directory_;
 
-  Qpx::SpectraSet *spectra_;
+  Qpx::Project *spectra_;
   QString current_spectrum_;
 
   XMLableDB<Qpx::Detector> &detectors_;

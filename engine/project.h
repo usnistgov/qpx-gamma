@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::SpectraSet container class for managing simultaneous
+ *      Qpx::Project container class for managing simultaneous
  *      acquisition and output of spectra. Thread-safe, contingent
  *      upon stored spectra types being thread-safe.
  *
@@ -33,11 +33,11 @@
 
 namespace Qpx {
 
-class SpectraSet {
+class Project {
  public:
-  SpectraSet(): ready_(false), newdata_(false), terminating_(false), changed_(false),
+  Project(): ready_(false), newdata_(false), terminating_(false), changed_(false),
     identity_("New project") {}
-  ~SpectraSet();
+  ~Project();
 
   ////control//////
   void clear();
@@ -45,9 +45,9 @@ class SpectraSet {
   void terminate();   //explicitly in case other threads waiting for cond var
 
   //populate one of these ways
-  void set_spectra(const XMLableDB<Spectrum::Metadata>&);
-  void add_spectrum(Spectrum::Spectrum* newSpectrum);
-  void add_spectrum(Spectrum::Metadata spectrum);
+  void set_spectra(const XMLableDB<Metadata>&);
+  void add_spectrum(std::shared_ptr<Sink> newSpectrum);
+  void add_spectrum(Metadata spectrum);
 
   void import_spn(std::string file_name);
 
@@ -81,9 +81,9 @@ class SpectraSet {
   }
   
   //get spectra -- may not be thread-safe
-  Spectrum::Spectrum* by_name(std::string name);
-  std::list<Spectrum::Spectrum*> spectra(int32_t dim = -1, int32_t res = -1);
-  std::list<Spectrum::Spectrum*> by_type(std::string reqType);
+  std::shared_ptr<Sink> by_name(std::string name);
+  std::list<std::shared_ptr<Sink>> spectra(int32_t dim = -1, int32_t res = -1);
+  std::list<std::shared_ptr<Sink>> by_type(std::string reqType);
 
 
  private:
@@ -94,7 +94,7 @@ class SpectraSet {
   bool ready_, terminating_, newdata_;
 
   //data
-  std::list<Spectrum::Spectrum*> my_spectra_;
+  std::list<std::shared_ptr<Sink>> my_spectra_;
   std::set<Spill> spills_;
 
   std::string identity_;

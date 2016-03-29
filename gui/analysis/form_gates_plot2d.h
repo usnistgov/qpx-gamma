@@ -23,7 +23,7 @@
 #define FORM_GATES_PLOT2D_H
 
 #include <QWidget>
-#include <spectra_set.h>
+#include <project.h>
 #include "qsquarecustomplot.h"
 #include "qtcolorpicker.h"
 #include "widget_selector.h"
@@ -42,7 +42,7 @@ public:
   explicit FormGatesPlot2D(QWidget *parent = 0);
   ~FormGatesPlot2D();
 
-  void setSpectra(Qpx::SpectraSet& new_set, QString spectrum = QString());
+  void setSpectra(Qpx::Project& new_set, QString spectrum = QString());
 
   void update_plot();
   void refresh();
@@ -87,7 +87,7 @@ private:
 
   //gui stuff
   Ui::FormGatesPlot2D *ui;
-  Qpx::SpectraSet *mySpectra;
+  Qpx::Project *mySpectra;
 
   //plot identity
   QString name_2d;

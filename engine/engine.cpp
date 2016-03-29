@@ -404,7 +404,7 @@ void Engine::get_all_settings() {
   read_settings_bulk();
 }
 
-void Engine::getMca(uint64_t timeout, SpectraSet& spectra, boost::atomic<bool>& interruptor) {
+void Engine::getMca(uint64_t timeout, Project& spectra, boost::atomic<bool>& interruptor) {
 
   boost::unique_lock<boost::mutex> lock(mutex_);
 
@@ -550,7 +550,7 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 //////ASSUME YOU KNOW WHAT YOU'RE DOING WITH THREADS/////
 
 void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
-                        SpectraSet* spectra) {
+                        Project* spectra) {
 
   CustomTimer presort_timer;
   uint64_t presort_compares(0), presort_hits(0), presort_cycles(0);

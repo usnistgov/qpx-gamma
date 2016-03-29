@@ -25,7 +25,7 @@
 #include "custom_timer.h"
 
 
-TableSpectra1D::TableSpectra1D(Qpx::SpectraSet *spectra, QObject *parent)
+TableSpectra1D::TableSpectra1D(Qpx::Project *spectra, QObject *parent)
   : QAbstractTableModel(parent),
     spectra_(spectra)
 {
@@ -40,7 +40,7 @@ TableSpectra1D::TableSpectra1D(Qpx::SpectraSet *spectra, QObject *parent)
   if (spectra_ != nullptr) {
     int i = 0;
     for (auto &q : spectra_->spectra(1, -1)) {
-      Qpx::Spectrum::Metadata md;
+      Qpx::Metadata md;
       if (q)
         md = q->metadata();
 
@@ -141,7 +141,7 @@ void TableSpectra1D::update() {
   if (spectra_ != nullptr) {
     int i=0;
     for (auto &q : spectra_->spectra(1, -1)) {
-      Qpx::Spectrum::Metadata md;
+      Qpx::Metadata md;
       if (q)
         md = q->metadata();
       var_names_.push_back(make_var_name(i));
@@ -166,7 +166,7 @@ Qt::ItemFlags TableSpectra1D::flags(const QModelIndex &index) const
 
 
 
-FormManip1D::FormManip1D(Qpx::SpectraSet& new_set, QWidget *parent) :
+FormManip1D::FormManip1D(Qpx::Project& new_set, QWidget *parent) :
   QDialog(parent),
   mySpectra(&new_set),
   table_model_(&new_set, this),
@@ -234,9 +234,9 @@ FormManip1D::~FormManip1D()
 
 void FormManip1D::spectrumDetails(std::string id)
 {
-  Qpx::Spectrum::Spectrum* someSpectrum = mySpectra->by_name(id);
+  std::shared_ptr<Qpx::Sink> someSpectrum = mySpectra->by_name(id);
 
-  Qpx::Spectrum::Metadata md;
+  Qpx::Metadata md;
 
   if (someSpectrum)
     md = someSpectrum->metadata();
@@ -292,7 +292,7 @@ void FormManip1D::update_plot() {
 
   ui->mcaPlot->clearGraphs();
   for (auto &q: mySpectra->spectra(1, -1)) {
-    Qpx::Spectrum::Metadata md;
+    Qpx::Metadata md;
     if (q)
       md = q->metadata();
 
@@ -305,7 +305,7 @@ void FormManip1D::update_plot() {
       QVector<double> x(pow(2,md.bits));
       QVector<double> y(pow(2,md.bits));
 
-      std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_data =
+      std::shared_ptr<Qpx::EntryList> spectrum_data =
           std::move(q->get_spectrum({{0, y.size()}}));
 
       Qpx::Detector detector = Qpx::Detector();

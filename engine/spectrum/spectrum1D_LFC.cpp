@@ -16,20 +16,19 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Spectrum::Spectrum1D_LFC for loss-free counting by statistical
+ *      Qpx::Sink1D_LFC for loss-free counting by statistical
  *      extrapolation.
  *
  ******************************************************************************/
 
 
 #include "spectrum1D_LFC.h"
-#include "spectrum_factory.h"
+#include "daq_sink_factory.h"
 #include "custom_logger.h"
 
 namespace Qpx {
-namespace Spectrum {
 
-static Registrar<Spectrum1D_LFC> registrar("LFC1D");
+static SinkRegistrar<Spectrum1D_LFC> registrar("LFC1D");
 
 Spectrum1D_LFC::Spectrum1D_LFC()
   : Spectrum1D()
@@ -154,4 +153,4 @@ void Spectrum1D_LFC::addStats(const StatsUpdate& newStats)
   }
 }
 
-}}
+}

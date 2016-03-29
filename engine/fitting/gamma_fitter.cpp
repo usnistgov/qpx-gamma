@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Fitter
+ *      Fitter
  *
  ******************************************************************************/
 
@@ -27,11 +27,11 @@
 
 namespace Qpx {
 
-void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
+void Fitter::setData(std::shared_ptr<Sink> spectrum)
 {
 //  clear();
   if (spectrum != nullptr) {
-    Qpx::Spectrum::Metadata md = spectrum->metadata();
+    Metadata md = spectrum->metadata();
     if ((md.bits != 1) || (md.bits <= 0) || (md.total_count <= 0))
       return;
 
@@ -42,17 +42,17 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
     if (!md.detectors.empty())
       detector_ = md.detectors[0];
 
-    if (detector_.energy_calibrations_.has_a(Qpx::Calibration("Energy", md.bits)))
-      settings_.cali_nrg_ = detector_.energy_calibrations_.get(Qpx::Calibration("Energy", md.bits));
+    if (detector_.energy_calibrations_.has_a(Calibration("Energy", md.bits)))
+      settings_.cali_nrg_ = detector_.energy_calibrations_.get(Calibration("Energy", md.bits));
     //best?
 
     if (detector_.fwhm_calibration_.valid())
       settings_.cali_fwhm_ = detector_.fwhm_calibration_;
 
-    settings_.live_time = md.attributes.branches.get(Qpx::Setting("live_time")).value_duration;
-    settings_.real_time = md.attributes.branches.get(Qpx::Setting("real_time")).value_duration;
+    settings_.live_time = md.attributes.branches.get(Setting("live_time")).value_duration;
+    settings_.real_time = md.attributes.branches.get(Setting("real_time")).value_duration;
 
-    std::shared_ptr<Qpx::Spectrum::EntryList> spectrum_dump = std::move(spectrum->get_spectrum({{0, pow(2,md.bits)}}));
+    std::shared_ptr<EntryList> spectrum_dump = std::move(spectrum->get_spectrum({{0, pow(2,md.bits)}}));
     std::vector<double> x;
     std::vector<double> y;
 
@@ -81,10 +81,10 @@ void Fitter::setData(Qpx::Spectrum::Spectrum* spectrum)
 }
 
 void Fitter::clear() {
-  detector_ = Qpx::Detector();
-  metadata_ = Qpx::Spectrum::Metadata();
-  settings_.cali_nrg_ = Qpx::Calibration();
-  settings_.cali_fwhm_ = Qpx::Calibration();
+  detector_ = Detector();
+  metadata_ = Metadata();
+  settings_.cali_nrg_ = Calibration();
+  settings_.cali_fwhm_ = Calibration();
   finder_.clear();
   regions_.clear();
 }
@@ -285,7 +285,7 @@ void Fitter::save_report(std::string filename) {
   file << "========================================================" << std::endl;
   file << std::endl;
 
-  file << "Acquisition start time:  " << boost::posix_time::to_iso_extended_string(metadata_.attributes.branches.get(Qpx::Setting("start_time")).value_time) << std::endl;
+  file << "Acquisition start time:  " << boost::posix_time::to_iso_extended_string(metadata_.attributes.branches.get(Setting("start_time")).value_time) << std::endl;
   double lt = settings_.live_time.total_milliseconds() * 0.001;
   double rt = settings_.real_time.total_milliseconds() * 0.001;
   file << "Live time(s):   " << lt << std::endl;
@@ -302,7 +302,7 @@ void Fitter::save_report(std::string filename) {
 
   file.fill(' ');
   file << "========================================================" << std::endl;
-  file << "===========QPX Qpx::Fitter analysis results===========" << std::endl;
+  file << "===========QPX Fitter analysis results===========" << std::endl;
   file << "========================================================" << std::endl;
 
   file << std::endl;

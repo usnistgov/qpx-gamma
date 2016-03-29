@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Spectrum::SpectrumRaw to output custom list mode to file
+ *      Qpx::SinkRaw to output custom list mode to file
  *
  ******************************************************************************/
 
@@ -26,7 +26,6 @@
 #include "spectrum.h"
 
 namespace Qpx {
-namespace Spectrum {
 
 class SpectrumRaw : public Spectrum
 {
@@ -73,6 +72,6 @@ protected:
   uint64_t events_this_spill_, total_events_;
 };
 
-}}
+}
 
 #endif // SPECTRUM1D_H

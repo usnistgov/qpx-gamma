@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Fitter
+ *      Fitter
  *
  ******************************************************************************/
 
@@ -48,13 +48,13 @@ public:
 //  void apply_energy_calibration(Calibration cal);
 //  void apply_fwhm_calibration(Calibration cal);
 
-  Fitter(Qpx::Spectrum::Spectrum *spectrum)
+  Fitter(std::shared_ptr<Sink> spectrum)
       : Fitter()
   {setData(spectrum);}
 
   void clear();
   
-  void setData(Qpx::Spectrum::Spectrum *spectrum);
+  void setData(std::shared_ptr<Sink> spectrum);
 
   void find_regions();
   ROI *parent_of(double center);
@@ -74,8 +74,8 @@ public:
 
   Finder finder_;
 
-  Qpx::Spectrum::Metadata metadata_;
-  Qpx::Detector detector_; //need this? metadata?
+  Metadata metadata_;
+  Detector detector_; //need this? metadata?
   std::string sample_name_;
   double activity_scale_factor_; //should be in spectrum?
   

@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Spectrum::Spectrum1D one-dimensional spectrum
+ *      Qpx::Sink1D one-dimensional spectrum
  *
  ******************************************************************************/
 
@@ -26,7 +26,6 @@
 #include "spectrum.h"
 
 namespace Qpx {
-namespace Spectrum {
 
 class Spectrum1D : public Spectrum
 {
@@ -36,17 +35,7 @@ public:
 protected:
   std::string my_type() const override {return "1D";}
 
-  //1D is ok with all patterns
-  bool initialize() override {
-    cutoff_bin_ = get_attr("cutoff_bin").value_int;
-    maxchan_ = 0;
-
-    spectrum_.resize(pow(2, metadata_.bits), 0);
-
-    Spectrum::initialize();
-
-    return true;
-  }
+  bool initialize() override;
 
   PreciseFloat _get_count(std::initializer_list<uint16_t> list) const;
   std::unique_ptr<std::list<Entry>> _get_spectrum(std::initializer_list<Pair> list);
@@ -85,6 +74,6 @@ protected:
   uint16_t maxchan_;
 };
 
-}}
+}
 
 #endif // SPECTRUM1D_H

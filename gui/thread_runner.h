@@ -32,7 +32,7 @@
 #include <boost/atomic.hpp>
 
 #include "engine.h"
-#include "spectra_set.h"
+#include "project.h"
 
 enum RunnerAction {kBoot, kShutdown, kPushSettings, kSetSetting, kSetDetector, kSetDetectors,
     kList, kMCA, kOscil, kInitialize, kSettingsRefresh, kOptimize, kTerminate, kNone
@@ -58,7 +58,7 @@ public:
     void do_set_detectors(std::map<int, Qpx::Detector>);
 
     void do_list(boost::atomic<bool>&, uint64_t timeout);
-    void do_run(Qpx::SpectraSet&, boost::atomic<bool>&, uint64_t timeout);
+    void do_run(Qpx::Project&, boost::atomic<bool>&, uint64_t timeout);
 
     void do_optimize();
     void do_oscil();
@@ -86,7 +86,7 @@ private:
     boost::atomic<int> idle_refresh_frequency_;
 
 
-    Qpx::SpectraSet* spectra_;
+    Qpx::Project* spectra_;
     boost::atomic<bool>* interruptor_;
     boost::atomic<bool> terminating_;
 

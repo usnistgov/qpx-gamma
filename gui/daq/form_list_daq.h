@@ -25,7 +25,7 @@
 
 #include <QWidget>
 #include <QSettings>
-#include "daq_types.h"
+#include "spill.h"
 #include "thread_runner.h"
 #include "special_delegate.h"
 

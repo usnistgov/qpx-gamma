@@ -25,7 +25,7 @@
 
 #include <QWidget>
 #include <QSettings>
-#include "spectra_set.h"
+#include "project.h"
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
 #include "widget_plot_multi1d.h"
@@ -78,8 +78,8 @@ private:
 
   Ui::FormGainMatch *ui;
 
-  Qpx::SpectraSet    gm_spectra_;
-  Qpx::Spectrum::Metadata reference_, optimizing_;
+  Qpx::Project    gm_spectra_;
+  Qpx::Metadata reference_, optimizing_;
 
   ThreadRunner         &gm_runner_thread_;
   XMLableDB<Qpx::Detector> &detectors_;

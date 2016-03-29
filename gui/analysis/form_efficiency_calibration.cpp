@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-#include "spectrum_factory.h"
+#include "daq_sink_factory.h"
 
 #include "form_efficiency_calibration.h"
 #include "widget_detectors.h"
@@ -79,13 +79,12 @@ FormEfficiencyCalibration::FormEfficiencyCalibration(QSettings &settings, XMLabl
 
 
   //file formats for opening mca spectra
-  std::vector<std::string> spectypes = Qpx::Spectrum::Factory::getInstance().types();
+  std::vector<std::string> spectypes = Qpx::SinkFactory::getInstance().types();
   QStringList filetypes;
   for (auto &q : spectypes) {
-    Qpx::Spectrum::Metadata* type_template = Qpx::Spectrum::Factory::getInstance().create_prototype("1D");
-    if (!type_template->input_types().empty())
-      filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types()) + ")");
-    delete type_template;
+    Qpx::Metadata type_template = Qpx::SinkFactory::getInstance().create_prototype("1D");
+    if (!type_template.input_types().empty())
+      filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template.input_types()) + ")");
   }
   mca_load_formats_ = catFileTypes(filetypes);
 
@@ -143,7 +142,7 @@ void FormEfficiencyCalibration::saveSettings() {
 }
 
 
-void FormEfficiencyCalibration::setDetector(Qpx::SpectraSet *newset, QString detector) {
+void FormEfficiencyCalibration::setDetector(Qpx::Project *newset, QString detector) {
 //  my_peak_fitter_->clear();
 
   current_detector_ = detector.toStdString();
@@ -160,14 +159,14 @@ void FormEfficiencyCalibration::setSpectrum(QString name) {
 
   fit_data_ = Qpx::Fitter();
 
-  Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(name.toStdString());
+  std::shared_ptr<Qpx::Sink>spectrum = spectra_->by_name(name.toStdString());
 
   if (spectrum && spectrum->bits()) {
     if (peak_sets_.count(name.toStdString())) {
       fit_data_ = peak_sets_.at(name.toStdString());
       ui->isotopes->set_current_isotope(QString::fromStdString(fit_data_.sample_name_));
     }  else {
-      Qpx::Spectrum::Metadata md = spectrum->metadata();
+      Qpx::Metadata md = spectrum->metadata();
       Qpx::Setting descr = md.attributes.branches.get(Qpx::Setting("description"));
       if (!descr.value_text.empty()) {
         //find among data
@@ -289,7 +288,7 @@ void FormEfficiencyCalibration::update_spectra() {
   QVector<SelectorItem> items;
 
   for (auto &q : spectra_->spectra(1, -1)) {
-    Qpx::Spectrum::Metadata md;
+    Qpx::Metadata md;
     if (q != nullptr)
       md = q->metadata();
 

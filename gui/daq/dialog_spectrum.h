@@ -38,7 +38,7 @@ class dialog_spectrum : public QDialog
     Q_OBJECT
 
 public:
-    explicit dialog_spectrum(Qpx::Spectrum::Spectrum &spec, XMLableDB<Qpx::Detector>& detDB, QWidget *parent = 0);
+    explicit dialog_spectrum(Qpx::Sink &spec, XMLableDB<Qpx::Detector>& detDB, QWidget *parent = 0);
     ~dialog_spectrum();
 
 
@@ -73,7 +73,7 @@ signals:
 
 private:
     Ui::dialog_spectrum *ui;
-    Qpx::Spectrum::Spectrum &my_spectrum_;
+    Qpx::Sink &my_spectrum_;
 
     TreeSettings               attr_model_;
     QpxSpecialDelegate         attr_delegate_;
@@ -84,7 +84,7 @@ private:
     TableDetectors det_table_model_;
     QItemSelectionModel det_selection_model_;
 
-    Qpx::Spectrum::Metadata md_;
+    Qpx::Metadata md_;
 
     bool changed_;
 

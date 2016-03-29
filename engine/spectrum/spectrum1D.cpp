@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Spectrum::Spectrum1D one-dimensional spectrum
+ *      Qpx::Sink1D one-dimensional spectrum
  *
  ******************************************************************************/
 
@@ -25,14 +25,13 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include "spectrum1D.h"
-#include "spectrum_factory.h"
+#include "daq_sink_factory.h"
 #include "xylib.h"
 #include "qpx_util.h"
 
 namespace Qpx {
-namespace Spectrum {
 
-static Registrar<Spectrum1D> registrar("1D");
+static SinkRegistrar<Spectrum1D> registrar("1D");
 
 Spectrum1D::Spectrum1D()
   : cutoff_bin_(0)
@@ -71,6 +70,18 @@ void Spectrum1D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
   }
 
   this->recalc_energies();
+}
+
+bool Spectrum1D::initialize()
+{
+  Spectrum::initialize();
+
+  cutoff_bin_ = get_attr("cutoff_bin").value_int;
+  maxchan_ = 0;
+
+  spectrum_.resize(pow(2, metadata_.bits), 0);
+
+  return true;
 }
 
 PreciseFloat Spectrum1D::_get_count(std::initializer_list<uint16_t> list) const {
@@ -1004,4 +1015,4 @@ void Spectrum1D::write_spe(std::string filename) const {
   myfile.close();
 }
 
-}}
+}

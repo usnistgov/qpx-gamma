@@ -31,7 +31,7 @@
 #include "marker.h"
 #include <QSettings>
 #include <QItemSelection>
-#include "spectra_set.h"
+#include "project.h"
 #include "gamma_fitter.h"
 #include "thread_fitter.h"
 

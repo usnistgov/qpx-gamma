@@ -72,28 +72,6 @@ struct StatsUpdate : public XMLable {
   void to_xml(pugi::xml_node &) const override;
 
   std::string xml_element_name() const override {return "StatsUpdate";}
-
-};
-
-
-//DEPRECATE!!!
-struct RunInfo : public XMLable {
-  Qpx::Setting state;
-  std::vector<Qpx::Detector> detectors;
-  boost::posix_time::ptime time;
-
-  inline RunInfo()
-  {}
-
-  void from_xml(const pugi::xml_node &) override;
-  void to_xml(pugi::xml_node &, bool with_settings = true) const;
-  void to_xml(pugi::xml_node &node) const override {to_xml(node, true);}
-
-  std::string xml_element_name() const override {return "RunInfo";}
-  bool shallow_equals(const RunInfo& other) const {return (time == other.time);}
-  bool operator!= (const RunInfo& other) const {return !(operator==(other));}
-  bool operator== (const RunInfo& other) const;
-
 };
 
 
@@ -104,7 +82,7 @@ struct Spill : public XMLable {
   }
 
   std::string xml_element_name() const override {return "Spill";}
-  bool shallow_equals(const RunInfo& other) const {return (time == other.time);}
+  bool shallow_equals(const Spill& other) const {return (time == other.time);}
 
   bool operator==(const Spill other) const;
   bool operator<(const Spill other) const  {return (time < other.time);}
@@ -127,9 +105,10 @@ struct Spill : public XMLable {
 
 };
 
+//DEPRECATE
 struct ListData {
   std::vector<Qpx::Hit> hits;
-  Qpx::RunInfo run;
+  Spill run;
 };
 
 }

@@ -25,7 +25,7 @@
 
 #include <QWidget>
 #include <QSettings>
-#include "spectra_set.h"
+#include "project.h"
 #include "thread_runner.h"
 #include "thread_plot_signal.h"
 #include "form_analysis_1d.h"
@@ -111,8 +111,8 @@ private:
 
   QString mca_load_formats_;  //valid mca file formats that can be opened
 
-  XMLableDB<Qpx::Spectrum::Metadata>  spectra_templates_;
-  Qpx::SpectraSet                     spectra_;
+  XMLableDB<Qpx::Metadata>  spectra_templates_;
+  Qpx::Project                     spectra_;
 
   ThreadPlotSignal                plot_thread_;
   boost::atomic<bool>             interruptor_;

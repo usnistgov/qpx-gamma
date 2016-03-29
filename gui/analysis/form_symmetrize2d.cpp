@@ -22,7 +22,7 @@
 
 #include "form_symmetrize2d.h"
 #include "ui_form_symmetrize2d.h"
-#include "spectrum_factory.h"
+#include "daq_sink_factory.h"
 #include "gamma_fitter.h"
 #include "qt_util.h"
 #include "manip2d.h"
@@ -58,22 +58,22 @@ FormSymmetrize2D::FormSymmetrize2D(QSettings &settings, XMLableDB<Qpx::Detector>
   connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
   connect(ui->plotSpectrum2, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
 
-  tempx = Qpx::Spectrum::Factory::getInstance().create_prototype("1D");
-//  tempx->visible = true;
-  tempx->name = "tempx";
+  tempx = Qpx::SinkFactory::getInstance().create_prototype("1D");
+//  tempx.visible = true;
+  tempx.name = "tempx";
   Qpx::Setting pattern;
-  pattern = tempx->attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern = tempx.attributes.branches.get(Qpx::Setting("pattern_coinc"));
   pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
   pattern.value_pattern.set_theshold(2);
-  tempx->attributes.branches.replace(pattern);
-  pattern = tempx->attributes.branches.get(Qpx::Setting("pattern_add"));
+  tempx.attributes.branches.replace(pattern);
+  pattern = tempx.attributes.branches.get(Qpx::Setting("pattern_add"));
   pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
   pattern.value_pattern.set_theshold(1);
-  tempx->attributes.branches.replace(pattern);
+  tempx.attributes.branches.replace(pattern);
 
-  tempy = Qpx::Spectrum::Factory::getInstance().create_prototype("1D");
-//  tempy->visible = true;
-  tempy->name = "tempy";
+  tempy = Qpx::SinkFactory::getInstance().create_prototype("1D");
+//  tempy.visible = true;
+  tempy.name = "tempy";
 
 
   res = 0;
@@ -97,7 +97,7 @@ void FormSymmetrize2D::configure_UI() {
 
 
 
-void FormSymmetrize2D::setSpectrum(Qpx::SpectraSet *newset, QString name) {
+void FormSymmetrize2D::setSpectrum(Qpx::Project *newset, QString name) {
   clear();
   spectra_ = newset;
   current_spectrum_ = name;
@@ -110,13 +110,13 @@ void FormSymmetrize2D::reset() {
 }
 
 void FormSymmetrize2D::make_gated_spectra() {
-  Qpx::Spectrum::Spectrum* source_spectrum = spectra_->by_name(current_spectrum_.toStdString());
+  std::shared_ptr<Qpx::Sink> source_spectrum = spectra_->by_name(current_spectrum_.toStdString());
   if (source_spectrum == nullptr)
     return;
 
   this->setCursor(Qt::WaitCursor);
 
-  Qpx::Spectrum::Metadata md = source_spectrum->metadata();
+  Qpx::Metadata md = source_spectrum->metadata();
 
   //  PL_DBG << "Coincidence gate x[" << xmin_ << "-" << xmax_ << "]   y[" << ymin_ << "-" << ymax_ << "]";
 
@@ -124,38 +124,32 @@ void FormSymmetrize2D::make_gated_spectra() {
   {
     uint32_t adjrange = pow(2,md.bits) - 1;
 
-    tempx->bits = md.bits;
-    tempx->name = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(0), 0) + "," + to_str_precision(nrg_calibration2_.transform(adjrange), 0) + "]";
-    tempy->bits = md.bits;
-    tempy->name = detector2_.name_ + "[" + to_str_precision(nrg_calibration1_.transform(0), 0) + "," + to_str_precision(nrg_calibration1_.transform(adjrange), 0) + "]";
+    tempx.bits = md.bits;
+    tempx.name = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(0), 0) + "," + to_str_precision(nrg_calibration2_.transform(adjrange), 0) + "]";
+    tempy.bits = md.bits;
+    tempy.name = detector2_.name_ + "[" + to_str_precision(nrg_calibration1_.transform(0), 0) + "," + to_str_precision(nrg_calibration1_.transform(adjrange), 0) + "]";
     Qpx::Setting pattern;
-    pattern = tempy->attributes.branches.get(Qpx::Setting("pattern_coinc"));
+    pattern = tempy.attributes.branches.get(Qpx::Setting("pattern_coinc"));
     pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
     pattern.value_pattern.set_theshold(2);
-    tempy->attributes.branches.replace(pattern);
-    pattern = tempy->attributes.branches.get(Qpx::Setting("pattern_add"));
+    tempy.attributes.branches.replace(pattern);
+    pattern = tempy.attributes.branches.get(Qpx::Setting("pattern_add"));
     pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
     pattern.value_pattern.set_theshold(1);
-    tempy->attributes.branches.replace(pattern);
+    tempy.attributes.branches.replace(pattern);
 
-
-    if (gate_x != nullptr)
-      delete gate_x;
-    gate_x = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*tempx);
+    gate_x = Qpx::SinkFactory::getInstance().create_from_prototype(tempx);
 
     //if?
-    Qpx::Spectrum::slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {0, adjrange}});
+    Qpx::slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {0, adjrange}});
 
     fit_data_.clear();
     fit_data_.setData(gate_x);
     ui->plotSpectrum->update_spectrum();
 
+    gate_y = Qpx::SinkFactory::getInstance().create_from_prototype(tempy);
 
-    if (gate_y != nullptr)
-      delete gate_y;
-    gate_y = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*tempy);
-
-    Qpx::Spectrum::slice_rectangular(source_spectrum, gate_y, {{0, adjrange}, {0, adjrange}});
+    Qpx::slice_rectangular(source_spectrum, gate_y, {{0, adjrange}, {0, adjrange}});
 
     fit_data_2_.clear();
     fit_data_2_.setData(gate_y);
@@ -174,10 +168,10 @@ void FormSymmetrize2D::initialize() {
   if (spectra_) {
 
     PL_DBG << "<Analysis2D> initializing to " << current_spectrum_.toStdString();
-    Qpx::Spectrum::Spectrum *spectrum = spectra_->by_name(current_spectrum_.toStdString());
+    std::shared_ptr<Qpx::Sink>spectrum = spectra_->by_name(current_spectrum_.toStdString());
 
     if (spectrum && spectrum->bits()) {
-      Qpx::Spectrum::Metadata md = spectrum->metadata();
+      Qpx::Metadata md = spectrum->metadata();
       res = pow(2,md.bits);
 
       detector1_ = Qpx::Detector();
@@ -288,7 +282,7 @@ void FormSymmetrize2D::symmetrize()
       return;
     }
 
-    Qpx::Spectrum::Spectrum* source_spectrum = spectra_->by_name(current_spectrum_.toStdString());
+    std::shared_ptr<Qpx::Sink> source_spectrum = spectra_->by_name(current_spectrum_.toStdString());
     if (source_spectrum == nullptr) {
       this->setCursor(Qt::ArrowCursor);
       return;
@@ -297,7 +291,7 @@ void FormSymmetrize2D::symmetrize()
     //gain_match_cali_ = fit_data_2_.detector_.get_gain_match(fit_data_2_.metadata_.bits, fit_data_.detector_.name_);
     //compare with source and replace?
 
-    Qpx::Spectrum::Metadata md = source_spectrum->metadata();
+    Qpx::Metadata md = source_spectrum->metadata();
 
     std::vector<uint16_t> chans;
     Qpx::Setting pattern;
@@ -315,18 +309,17 @@ void FormSymmetrize2D::symmetrize()
       return;
     }
 
-    Qpx::Spectrum::Metadata *temp_sym = Qpx::Spectrum::Factory::getInstance().create_prototype(md.type()); //assume 2D?
-//    temp_sym->visible = false;
-    temp_sym->name = fold_spec_name.toStdString();
-    temp_sym->attributes.branches.replace(pattern);
+    Qpx::Metadata temp_sym = Qpx::SinkFactory::getInstance().create_prototype(md.type()); //assume 2D?
+//    temp_sym.visible = false;
+    temp_sym.name = fold_spec_name.toStdString();
+    temp_sym.attributes.branches.replace(pattern);
     pattern = md.attributes.branches.get(Qpx::Setting("pattern_coinc"));
     pattern.value_pattern.set_gates(gts);
     pattern.value_pattern.set_theshold(2);
-    temp_sym->attributes.branches.replace(pattern);
-    temp_sym->bits = md.bits;
+    temp_sym.attributes.branches.replace(pattern);
+    temp_sym.bits = md.bits;
 
-    Qpx::Spectrum::Spectrum* destination = Qpx::Spectrum::Factory::getInstance().create_from_prototype(*temp_sym);
-    delete temp_sym;
+    std::shared_ptr<Qpx::Sink> destination = Qpx::SinkFactory::getInstance().create_from_prototype(temp_sym);
 
     if (destination == nullptr) {
       PL_WARN << "<Analysis2D> " << fold_spec_name.toStdString() << " could not be created";
@@ -334,7 +327,7 @@ void FormSymmetrize2D::symmetrize()
       return;
     }
 
-    if (Qpx::Spectrum::symmetrize(source_spectrum, destination)) {
+    if (Qpx::symmetrize(source_spectrum, destination)) {
       spectra_->add_spectrum(destination);
       setSpectrum(spectra_, fold_spec_name);
       reset();
@@ -342,7 +335,6 @@ void FormSymmetrize2D::symmetrize()
       emit spectraChanged();
     } else {
       PL_WARN << "<Analysis2D> could not symmetrize " << md.name;
-      delete destination;
       this->setCursor(Qt::ArrowCursor);
       return;
     }
@@ -406,7 +398,7 @@ void FormSymmetrize2D::apply_gain_calibration()
     for (auto &q : spectra_->spectra()) {
       if (q == nullptr)
         continue;
-      Qpx::Spectrum::Metadata md = q->metadata();
+      Qpx::Metadata md = q->metadata();
       for (auto &p : md.detectors) {
         if (p.shallow_equals(detector2_)) {
           PL_INFO << "   applying new calibrations for " << detector2_.name_ << " on " << q->name();
@@ -469,15 +461,5 @@ void FormSymmetrize2D::clear() {
 
 FormSymmetrize2D::~FormSymmetrize2D()
 {
-  if (tempx != nullptr)
-    delete tempx;
-  if (tempy != nullptr)
-    delete tempy;
-
-  if (gate_x != nullptr)
-    delete gate_x;
-  if (gate_y != nullptr)
-    delete gate_y;
-
   delete ui;
 }

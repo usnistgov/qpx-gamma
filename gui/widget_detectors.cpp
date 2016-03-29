@@ -27,8 +27,8 @@
 #include "ui_dialog_detector.h"
 #include <QFileDialog>
 #include <QMessageBox>
-#include "spectra_set.h"
-#include "spectrum_factory.h"
+#include "project.h"
+#include "daq_sink_factory.h"
 #include <boost/algorithm/string.hpp>
 
 DialogDetector::DialogDetector(Qpx::Detector mydet, QDir rd, bool editName, QWidget *parent) :
@@ -44,13 +44,12 @@ DialogDetector::DialogDetector(Qpx::Detector mydet, QDir rd, bool editName, QWid
   ui->setupUi(this);
 
   //file formats, should be in detector db widget
-  std::vector<std::string> spectypes = Qpx::Spectrum::Factory::getInstance().types();
+  std::vector<std::string> spectypes = Qpx::SinkFactory::getInstance().types();
   QStringList filetypes;
   for (auto &q : spectypes) {
-    Qpx::Spectrum::Metadata* type_template = Qpx::Spectrum::Factory::getInstance().create_prototype(q);
-    if (!type_template->input_types().empty())
-      filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template->input_types()) + ")");
-    delete type_template;
+    Qpx::Metadata type_template = Qpx::SinkFactory::getInstance().create_prototype(q);
+    if (!type_template.input_types().empty())
+      filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template.input_types()) + ")");
   }
   mca_formats_ = catFileTypes(filetypes);
 
@@ -158,7 +157,7 @@ void DialogDetector::on_pushReadOpti_clicked()
   if (!validateFile(this, fileName, false))
     return;
 
-  Qpx::SpectraSet optiSource;
+  Qpx::Project optiSource;
   optiSource.read_xml(fileName.toStdString(), false);
   std::set<Qpx::Spill> spills = optiSource.spills();
   if (spills.size()) {
@@ -179,7 +178,7 @@ void DialogDetector::on_pushRead1D_clicked()
 
   this->setCursor(Qt::WaitCursor);
 
-  Qpx::Spectrum::Spectrum* newSpectrum = Qpx::Spectrum::Factory::getInstance().create_from_file(fileName.toStdString());
+  std::shared_ptr<Qpx::Sink> newSpectrum = Qpx::SinkFactory::getInstance().create_from_file(fileName.toStdString());
   if (newSpectrum != nullptr) {
     std::vector<Qpx::Detector> dets = newSpectrum->metadata().detectors;
     for (auto &q : dets)
@@ -192,12 +191,9 @@ void DialogDetector::on_pushRead1D_clicked()
           }
         }
       }
-    delete newSpectrum;
     updateDisplay();
-  } else {
+  } else
     PL_INFO << "Spectrum construction did not succeed. Aborting";
-    delete newSpectrum;
-  }
 
   this->setCursor(Qt::ArrowCursor);
 }

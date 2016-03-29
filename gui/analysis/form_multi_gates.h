@@ -31,7 +31,7 @@
 #include <QSettings>
 #include "gates.h"
 #include "marker.h"
-#include "spectra_set.h"
+#include "project.h"
 
 namespace Ui {
 class FormMultiGates;
@@ -74,7 +74,7 @@ public:
   explicit FormMultiGates(QSettings &settings, QWidget *parent = 0);
   ~FormMultiGates();
 
-  void setSpectrum(Qpx::SpectraSet *newset, QString name);
+  void setSpectrum(Qpx::Project *newset, QString name);
 
   void remake_gate(bool); //private?
   void change_width(int width);
@@ -124,10 +124,10 @@ private:
   QSettings &settings_;
 
 
-  Qpx::SpectraSet *spectra_;
+  Qpx::Project *spectra_;
   QString current_spectrum_;
-  Qpx::Spectrum::Metadata *tempx;
-  Qpx::Spectrum::Spectrum *gate_x;
+  Qpx::Metadata tempx;
+  std::shared_ptr<Qpx::Sink>gate_x;
   Qpx::Fitter fit_data_;
   int res;
   MarkerBox2D range2d;

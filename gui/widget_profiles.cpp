@@ -26,7 +26,7 @@
 #include "ui_widget_profiles.h"
 #include <QFileDialog>
 #include <QMessageBox>
-#include "spectra_set.h"
+#include "project.h"
 #include <boost/algorithm/string.hpp>
 
 //void DialogProfile::on_pushReadOpti_clicked()
@@ -36,7 +36,7 @@
 //  if (!validateFile(this, fileName, false))
 //    return;
 
-//  Qpx::SpectraSet optiSource;
+//  Qpx::Project optiSource;
 //  optiSource.read_xml(fileName.toStdString(), false);
 //  for (auto &q : optiSource.runInfo().detectors)
 //    if (q.name_ == my_detector_.name_)

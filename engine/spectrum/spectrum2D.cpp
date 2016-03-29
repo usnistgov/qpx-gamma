@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Spectrum::Spectrum2D spectrum type for true coincidence with
+ *      Qpx::Sink2D spectrum type for true coincidence with
  *      two dimensions of energy.
  *
  ******************************************************************************/
@@ -24,14 +24,13 @@
 
 #include <fstream>
 #include "spectrum2D.h"
-#include "spectrum_factory.h"
+#include "daq_sink_factory.h"
 #include "custom_logger.h"
 #include "custom_timer.h"
 
 namespace Qpx {
-namespace Spectrum {
 
-static Registrar<Spectrum2D> registrar("2D");
+static SinkRegistrar<Spectrum2D> registrar("2D");
 
 Spectrum2D::Spectrum2D()
 {
@@ -440,4 +439,4 @@ uint16_t Spectrum2D::_channels_from_xml(const std::string& thisData){
   return std::max(max_j, max_i);
 }
 
-}}
+}

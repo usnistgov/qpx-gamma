@@ -199,7 +199,7 @@ bool Cpx::templates(std::vector<std::string> &tokens) {
   }
   std::string file(tokens[0]);
 
-  XMLableDB<Qpx::Spectrum::Metadata>  spectra_templates_("SpectrumTemplates");
+  XMLableDB<Qpx::Metadata>  spectra_templates_("SpectrumTemplates");
   spectra_templates_.read_xml(file);
   if (spectra_templates_.empty()) {
     PL_ERR << "<cpx> bad template file " << file;

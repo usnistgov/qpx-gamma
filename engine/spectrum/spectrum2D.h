@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Spectrum::Spectrum2D spectrum type for true coincidence with
+ *      Qpx::Sink2D spectrum type for true coincidence with
  *      two dimensions of energy.
  *
  ******************************************************************************/
@@ -29,7 +29,6 @@
 #include <unordered_map>
 
 namespace Qpx {
-namespace Spectrum {
 
 class Spectrum2D : public Spectrum
 {
@@ -77,6 +76,6 @@ protected:
   bool check_symmetrization();
 };
 
-}}
+}
 
 #endif

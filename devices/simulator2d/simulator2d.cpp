@@ -27,7 +27,7 @@
 #include "custom_logger.h"
 #include "custom_timer.h"
 
-#include "spectra_set.h"
+#include "project.h"
 
 
 namespace Qpx {
@@ -186,13 +186,13 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
       scale_rate_ = q.value_dbl;
     else if (q.id_ == "Simulator2D/Source file") {
       if (q.value_text != source_file_) {
-        Qpx::SpectraSet* temp_set = new Qpx::SpectraSet;
+        Qpx::Project* temp_set = new Qpx::Project;
         temp_set->read_xml(q.value_text, true, false);
 
         spectra_.clear();
 
         for (auto &q: temp_set->spectra(2, -1)) {
-          Qpx::Spectrum::Metadata md = q->metadata();
+          Qpx::Metadata md = q->metadata();
           PL_DBG << "<Simulator2D> Spectrum available: " << md.name << " t:" << md.type() << " r:" << md.bits;
           spectra_.push_back(md.name);
         }
@@ -221,11 +221,11 @@ bool Simulator2D::boot() {
 
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 
-  Qpx::SpectraSet* temp_set = new Qpx::SpectraSet;
+  Qpx::Project* temp_set = new Qpx::Project;
   PL_INFO << "<Simulator2D> Reading data from " << source_file_;
   temp_set->read_xml(source_file_, true);
 
-  Spectrum::Spectrum* spectrum = temp_set->by_name(source_spectrum_);
+  std::shared_ptr<Sink> spectrum = temp_set->by_name(source_spectrum_);
 
   if (spectrum == nullptr) {
     PL_DBG << "<Simulator2D> Could not find spectrum " << source_spectrum_;
@@ -233,7 +233,7 @@ bool Simulator2D::boot() {
     return false;
   }
 
-  Spectrum::Metadata md = spectrum->metadata();
+  Metadata md = spectrum->metadata();
   PL_INFO << "<Simulator2D> Will use " << md.name << " type:" << md.type() << " bits:" << md.bits;
 
 
@@ -268,7 +268,7 @@ bool Simulator2D::boot() {
   std::vector<double> distribution(resolution_*resolution_, 0.0);   //optimize somehow
 
   uint32_t res = pow(2, spectrum->metadata().bits);
-  std::unique_ptr<std::list<Qpx::Spectrum::Entry>> spec_list(spectrum->get_spectrum({{0,res},{0,res}}));
+  std::unique_ptr<std::list<Qpx::Entry>> spec_list(spectrum->get_spectrum({{0,res},{0,res}}));
 
   for (auto it : *spec_list)
     distribution[(it.first[0] >> adjust_bits) * resolution_

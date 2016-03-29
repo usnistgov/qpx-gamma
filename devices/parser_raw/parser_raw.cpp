@@ -53,8 +53,6 @@ bool ParserRaw::die() {
   spills2_.clear();
   bin_begin_ = 0;
   bin_end_ = 0;
-  start_ = RunInfo();
-  end_ = RunInfo();
 
   status_ = DeviceStatus::loaded | DeviceStatus::can_boot;
 //  for (auto &q : set.branches.my_data_) {
@@ -231,11 +229,6 @@ bool ParserRaw::boot() {
       stats.from_xml(child);
       if (stats != StatsUpdate())
         spills_.push_back(stats);
-    } else if (name == RunInfo().xml_element_name()) {
-      RunInfo info;
-      info.from_xml(child);
-      if (!info.time.is_not_a_date_time())
-        start_ = end_ = info;
     }
   }
 

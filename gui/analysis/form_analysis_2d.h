@@ -27,7 +27,7 @@
 #include <QWidget>
 #include <QSettings>
 #include "spectrum1D.h"
-#include "spectra_set.h"
+#include "project.h"
 #include "form_multi_gates.h"
 #include "form_integration2d.h"
 
@@ -43,7 +43,7 @@ public:
   explicit FormAnalysis2D(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
   ~FormAnalysis2D();
 
-  void setSpectrum(Qpx::SpectraSet *newset, QString spectrum);
+  void setSpectrum(Qpx::Project *newset, QString spectrum);
   void clear();
   void reset();
 
@@ -83,7 +83,7 @@ private:
   QString data_directory_;
   QString settings_directory_;
 
-  Qpx::SpectraSet *spectra_;
+  Qpx::Project *spectra_;
   QString current_spectrum_;
   MarkerBox2D range2d;
 
