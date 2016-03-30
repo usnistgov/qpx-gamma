@@ -23,10 +23,10 @@
 #define DIALOG_SPECTRUM_H
 
 #include <QDialog>
-#include "spectrum.h"
 #include "special_delegate.h"
 #include "tree_settings.h"
 #include "widget_detectors.h"
+#include "daq_sink.h"
 
 
 namespace Ui {

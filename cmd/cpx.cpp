@@ -1,4 +1,5 @@
 #include "custom_logger.h"
+#include <boost/algorithm/string.hpp>
 #include "cpx.h"
 
 const int MAX_CHARS_PER_LINE = 512;

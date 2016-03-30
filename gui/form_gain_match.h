@@ -66,7 +66,7 @@ private slots:
   void do_post_processing();
   void do_run();
 
-  void toggle_push(bool, Qpx::DeviceStatus);
+  void toggle_push(bool, Qpx::SourceStatus);
 
   void on_comboTarget_currentIndexChanged(int index);
 

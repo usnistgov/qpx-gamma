@@ -135,7 +135,7 @@ void FormPlot2D::choose_spectrum(SelectorItem item)
       vis.value_int = true;
     else
       vis.value_int = false;
-    q->set_generic_attr(vis);
+    q->set_option(vis);
   }
 
   //name_2d = arg1;
@@ -324,7 +324,7 @@ void FormPlot2D::update_plot(bool force) {
       ui->pushSymmetrize->setEnabled(sym.value_int == 0);
 
       std::shared_ptr<Qpx::EntryList> spectrum_data =
-          std::move(some_spectrum->get_spectrum({{0, adjrange}, {0, adjrange}}));
+          std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
       ui->coincPlot->update_plot(adjrange, spectrum_data);
 
       if (rescale2d || force || (name_2d != newname)) {
@@ -423,7 +423,7 @@ void FormPlot2D::spectrumDetailsDelete()
       vis.value_int = true;
     else
       vis.value_int = false;
-    q->set_generic_attr(vis);
+    q->set_option(vis);
   }
 
   update_plot(true);

@@ -31,11 +31,8 @@
 #ifndef QPX_SINK_H
 #define QPX_SINK_H
 
-#include <memory>
 #include <initializer_list>
 #include <boost/thread.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
 
 #include "spill.h"
 #include "detector.h"
@@ -122,93 +119,76 @@ public:
   bool from_prototype(const Metadata&);
   bool from_xml(const pugi::xml_node &);
 
-  //get count for specific MCA channel in spectrum
-  //list takes as many parameters as there are dimensions
-  //implemented in children by _get_count
-  PreciseFloat get_count(std::initializer_list<uint16_t> list = {}) const;
-  
-  //optimized retrieval of whole spectrum as list of Entries (typedef above)
-  //parameters take dimensions_ number of ranges of minimum (inclusive) and maximum (exclusive)
-  //implemented in children by _get_spectrum and _get_spectrum_update
-  std::unique_ptr<EntryList> get_spectrum(std::initializer_list<Pair> list = {});
-  void add_bulk(const Entry&);
-
-  //full save with custom format
   void to_xml(pugi::xml_node &) const;
+
+  //data acquisition
+  void push_spill(const Spill&);
+  void flush();
+
+  //get count at coordinates in n-dimensional list
+  PreciseFloat data(std::initializer_list<uint16_t> list = {}) const;
+
+  //optimized retrieval of bulk data as list of Entries
+  //parameters take dimensions_ number of ranges of minimum (inclusive) and maximum (exclusive)
+  std::unique_ptr<EntryList> data_range(std::initializer_list<Pair> list = {});
+  void append(const Entry&);
+
+  //retrieve axis-values for given dimension (can be precalculated energies)
+  std::vector<double> axis_values(uint16_t dimension) const;
 
   //export to some format (factory keeps track of file types)
   bool write_file(std::string dir, std::string format) const;
   bool read_file(std::string name, std::string format);
 
-  //retrieve pre-calculated energies for a given channel
-  std::vector<double> energies(uint8_t chan = 0) const;
-  
-  //set and get detectors
-  void set_detectors(const std::vector<Qpx::Detector>& dets);
-
-  //feed acquired data to spectrum
-  void addSpill(const Spill&);
-  void closeAcquisition(); //must call this after completing
-
-  ///////////////////////////////////////////////
-  ///////accessors for various properties////////
-  ///////////////////////////////////////////////
+  //Metadata
   Metadata metadata() const;
-  
+
+  //Convenience functions for most common metadata
   std::string name() const;
   std::string type() const;
   uint16_t dimensions() const;
   uint16_t bits() const;
 
-//  std::map<int, std::list<StatsUpdate>> get_stats();
-
-  //change properties - use carefully...
-  void set_generic_attr(Setting setting, Match match = Match::id | Match::indices);
-  void set_generic_attrs(Setting settings);
+  //Change metadata
+  void set_option(Setting setting, Match match = Match::id | Match::indices);
+  void set_options(Setting settings);
+  void set_detectors(const std::vector<Qpx::Detector>& dets);
   void reset_changed();
 
 protected:
-  ////////////////////////////////////////
-  ////////////////////////////////////////
-  //////////THIS IS THE MEAT//////////////
-  //implement these to make custom types//
-  ////////////////////////////////////////
+  //////////////////////////////////////////
+  //////////////////////////////////////////
+  //////////THIS IS THE MEAT////////////////
+  ///implement these to make custom types///
+  //////////////////////////////////////////
   
-  virtual std::string my_type() const {return "INVALID";}
-  virtual bool initialize();
+  virtual std::string my_type() const = 0;
+  virtual bool _initialize();
 
+  virtual void _set_detectors(const std::vector<Qpx::Detector>& dets) = 0;
+  virtual void _push_hit(const Hit&) = 0;
+  virtual void _push_stats(const StatsUpdate&) = 0;
+  virtual void _flush() {}
+
+  virtual PreciseFloat _data(std::initializer_list<uint16_t>) const = 0;
+  virtual std::unique_ptr<std::list<Entry>> _data_range(std::initializer_list<Pair>) = 0;
+  virtual void _append(const Entry&) {}
+
+  virtual std::string _data_to_xml() const = 0;
+  virtual uint16_t _data_from_xml(const std::string&) = 0;
   virtual bool _write_file(std::string, std::string) const {return false;}
   virtual bool _read_file(std::string, std::string) {return false;}
 
-  virtual PreciseFloat _get_count(std::initializer_list<uint16_t>) const = 0;
-  virtual std::unique_ptr<std::list<Entry>> _get_spectrum(std::initializer_list<Pair>) = 0;
-  virtual void _add_bulk(const Entry&) {}
-
-  virtual std::string _channels_to_xml() const = 0;
-  virtual uint16_t _channels_from_xml(const std::string&) = 0;
-
-  virtual void pushHit(const Hit&) = 0;
-  virtual void addStats(const StatsUpdate&) = 0;
-  virtual void _closeAcquisition() {}
-
-  virtual void _set_detectors(const std::vector<Qpx::Detector>& dets) = 0;
-
-  virtual void recalc_energies() = 0;
+  virtual void _recalc_axes() = 0;
   Setting get_attr(std::string name) const;
-
-  //////////////////////////////
-  ///////member variables///////
-  //////////////////////////////
   
-  mutable boost::shared_mutex mutex_;
-  mutable boost::mutex u_mutex_;
-
   Metadata metadata_;
+  std::vector<std::vector<double> > axes_;
 
-  std::vector<std::vector<double> > energies_;
-  
+  mutable boost::shared_mutex shared_mutex_;
+  mutable boost::mutex unique_mutex_;
 };
 
 }
 
-#endif // SPECTRUM_H
+#endif

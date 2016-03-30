@@ -74,7 +74,7 @@ private slots:
   void on_pushListStop_clicked();
   void list_completed(Qpx::ListData*);
   void list_selection_changed(QItemSelection,QItemSelection);
-  void toggle_push(bool online, Qpx::DeviceStatus);
+  void toggle_push(bool online, Qpx::SourceStatus);
 
 protected:
   void closeEvent(QCloseEvent*);

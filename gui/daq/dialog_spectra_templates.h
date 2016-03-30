@@ -28,11 +28,11 @@
 #include <QDialog>
 #include <QAbstractTableModel>
 #include <QItemSelectionModel>
-#include "spectrum.h"
 #include "special_delegate.h"
 #include "qt_util.h"
 #include "tree_settings.h"
 #include "special_delegate.h"
+#include "daq_sink.h"
 
 namespace Ui {
 class DialogSpectraTemplates;

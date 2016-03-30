@@ -25,11 +25,7 @@
 #ifndef SPECTRA_SET_H
 #define SPECTRA_SET_H
 
-#include <string>
-#include <list>
-#include <boost/thread.hpp>
-#include "detector.h"
-#include "spectrum.h"
+#include "daq_sink.h"
 
 namespace Qpx {
 
@@ -60,7 +56,7 @@ class Project {
 
   //acquisition feeds events to all spectra
   void add_spill(Spill* one_spill);
-  void closeAcquisition();
+  void flush();
 
   //status inquiry
   bool wait_ready(); //wait for cond variable

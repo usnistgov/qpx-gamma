@@ -24,6 +24,7 @@
 #include "dialog_spectrum.h"
 #include "custom_timer.h"
 #include "form_manip1d.h"
+#include "boost/algorithm/string.hpp"
 
 FormPlot1D::FormPlot1D(QWidget *parent) :
   QWidget(parent),
@@ -89,7 +90,7 @@ void FormPlot1D::spectrumLooksChanged(SelectorItem item) {
   if (someSpectrum != nullptr) {
     Qpx::Setting vis = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("visible"));
     vis.value_int = item.visible;
-    someSpectrum->set_generic_attr(vis);
+    someSpectrum->set_option(vis);
   }
   mySpectra->activate();
 }
@@ -195,11 +196,11 @@ void FormPlot1D::update_plot() {
     if (md.attributes.branches.get(Qpx::Setting("visible")).value_int
         && (md.bits > 0) && (md.total_count > 0)) {
 
-      QVector<double> x = QVector<double>::fromStdVector(q->energies(0));
+      QVector<double> x = QVector<double>::fromStdVector(q->axis_values(0));
       QVector<double> y(x.size());
 
       std::shared_ptr<Qpx::EntryList> spectrum_data =
-          std::move(q->get_spectrum({{0, x.size()}}));
+          std::move(q->data_range({{0, x.size()}}));
 
 //      PL_DBG << "Will plot " << md.name << "  size " << x.size() << "  sz " << spectrum_data->size();
 
@@ -385,7 +386,7 @@ void FormPlot1D::showAll()
       continue;
     Qpx::Setting vis = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("visible"));
     vis.value_int = true;
-    someSpectrum->set_generic_attr(vis);
+    someSpectrum->set_option(vis);
   }
   mySpectra->activate();
 }
@@ -400,7 +401,7 @@ void FormPlot1D::hideAll()
       continue;
     Qpx::Setting vis = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("visible"));
     vis.value_int = false;
-    someSpectrum->set_generic_attr(vis);
+    someSpectrum->set_option(vis);
   }
   mySpectra->activate();
 }
@@ -414,7 +415,7 @@ void FormPlot1D::randAll()
       continue;
     Qpx::Setting app = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("appearance"));
     app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-    someSpectrum->set_generic_attr(app);
+    someSpectrum->set_option(app);
   }
 
   updateUI();
@@ -460,7 +461,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
   if (!md.detectors.empty())
     cal = md.detectors[0].best_calib(md.bits);
 
-  PreciseFloat max = someSpectrum->get_count({std::round(cal.inverse_transform(moving.pos.energy()))});
+  PreciseFloat max = someSpectrum->data({std::round(cal.inverse_transform(moving.pos.energy()))});
 
   if (ui->pushPerLive->isChecked() && (livetime != 0))
     max = max / livetime;
@@ -477,7 +478,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
       if (!mdt.detectors.empty())
         cal = mdt.detectors[0].best_calib(mdt.bits);
 
-      PreciseFloat mc = q->get_count({std::round(cal.inverse_transform(moving.pos.energy()))});
+      PreciseFloat mc = q->data({std::round(cal.inverse_transform(moving.pos.energy()))});
 
       if (ui->pushPerLive->isChecked() && (lt != 0))
         mc = mc / lt;
@@ -487,7 +488,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
         rescale.value_precise = PreciseFloat(max / mc);
       else
         rescale.value_precise = 0;
-      q->set_generic_attr(rescale);
+      q->set_option(rescale);
     }
   updateUI();
 }
@@ -498,7 +499,7 @@ void FormPlot1D::on_pushRescaleReset_clicked()
     if (q) {
       Qpx::Setting rescale = q->metadata().attributes.branches.get(Qpx::Setting("rescale"));
       rescale.value_precise = 1;
-      q->set_generic_attr(rescale);
+      q->set_option(rescale);
     }
   updateUI();
 }

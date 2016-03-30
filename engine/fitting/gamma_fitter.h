@@ -25,8 +25,7 @@
 
 #include "gamma_peak.h"
 #include "roi.h"
-#include "detector.h"
-#include "spectrum.h"
+#include "daq_sink.h"
 #include "finder.h"
 
 namespace Qpx {

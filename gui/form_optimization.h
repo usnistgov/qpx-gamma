@@ -26,7 +26,6 @@
 #include <QWidget>
 #include <QSettings>
 #include "project.h"
-#include "spectrum1D.h"
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
 #include "gamma_fitter.h"
@@ -68,7 +67,7 @@ private slots:
   void do_post_processing();
   void do_run();
 
-  void toggle_push(bool, Qpx::DeviceStatus);
+  void toggle_push(bool, Qpx::SourceStatus);
 
   void on_comboTarget_currentIndexChanged(int index);
 

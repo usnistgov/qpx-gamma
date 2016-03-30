@@ -81,7 +81,7 @@ private:
 
   FormStart* main_tab_;
   bool gui_enabled_;
-  Qpx::DeviceStatus px_status_;
+  Qpx::SourceStatus px_status_;
 
   //helper functions
   void saveSettings();
@@ -90,7 +90,7 @@ private:
   void reorder_tabs();
 
 signals:
-  void toggle_push(bool, Qpx::DeviceStatus);
+  void toggle_push(bool, Qpx::SourceStatus);
   void settings_changed();
   void update_dets();
 
@@ -98,7 +98,7 @@ protected:
   void closeEvent(QCloseEvent*);
 
 private slots:
-  void update_settings(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus);
+  void update_settings(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus);
   void toggleIO(bool);
   void updateStatusText(QString);
 

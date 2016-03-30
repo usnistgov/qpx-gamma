@@ -15,8 +15,10 @@
 #include <stdlib.h>
 #include <algorithm>
 
+#ifndef DISABLE_XYLIB
 #include <xylib/xylib.h>
 #include <xylib/cache.h>
+#endif
 
 using std::string;
 using std::vector;
@@ -237,6 +239,7 @@ static string tr_opt(string options)
 int Data::count_blocks(const string& filename,
                        const string& format, const string& options)
 {
+  #ifndef DISABLE_XYLIB
     try {
         shared_ptr<const xylib::DataSet> xyds(xylib::cached_load_file(filename,
                                                      format, tr_opt(options)));
@@ -244,12 +247,16 @@ int Data::count_blocks(const string& filename,
     } catch (const std::runtime_error& e) {
         throw ExecuteError(e.what());
     }
+  #else
+  return 0;
+  #endif
 }
 
 int Data::count_columns(const string& filename,
                         const string& format, const string& options,
                         int first_block)
 {
+  #ifndef DISABLE_XYLIB
     try {
         shared_ptr<const xylib::DataSet> xyds(xylib::cached_load_file(filename,
                                                      format, tr_opt(options)));
@@ -257,10 +264,15 @@ int Data::count_columns(const string& filename,
     } catch (const std::runtime_error& e) {
         throw ExecuteError(e.what());
     }
+  #else
+  return 0;
+  #endif
 }
 
 void Data::verify_options(const xylib::DataSet* ds, const string& options)
 {
+  #ifndef DISABLE_XYLIB
+
     std::string::size_type start_pos = options.find_first_not_of(" \t");
     std::string::size_type pos = start_pos;
     while (pos != std::string::npos) {
@@ -272,11 +284,14 @@ void Data::verify_options(const xylib::DataSet* ds, const string& options)
                              string(ds->fi->name) + ": " + word);
         start_pos = pos+1;
     }
+  #endif
 }
 
 
 void Data::load_file(const LoadSpec& spec)
 {
+  #ifndef DISABLE_XYLIB
+
     if (spec.path.empty())
         return;
 
@@ -351,6 +366,7 @@ void Data::load_file(const LoadSpec& spec)
 
     spec_ = spec;
     post_load();
+  #endif
 }
 
 

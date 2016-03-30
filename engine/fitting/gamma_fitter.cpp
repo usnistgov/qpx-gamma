@@ -52,7 +52,7 @@ void Fitter::setData(std::shared_ptr<Sink> spectrum)
     settings_.live_time = md.attributes.branches.get(Setting("live_time")).value_duration;
     settings_.real_time = md.attributes.branches.get(Setting("real_time")).value_duration;
 
-    std::shared_ptr<EntryList> spectrum_dump = std::move(spectrum->get_spectrum({{0, pow(2,md.bits)}}));
+    std::shared_ptr<EntryList> spectrum_dump = std::move(spectrum->data_range({{0, pow(2,md.bits)}}));
     std::vector<double> x;
     std::vector<double> y;
 

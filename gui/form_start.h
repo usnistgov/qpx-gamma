@@ -52,7 +52,7 @@ public:
 signals:
   void toggleIO(bool);
   void statusText(QString);
-  void toggle_push_(bool, Qpx::DeviceStatus);
+  void toggle_push_(bool, Qpx::SourceStatus);
   void refresh();
   void update_dets();
   void optimization_requested();
@@ -60,8 +60,8 @@ signals:
   void list_view_requested();
 
 private slots:
-  void update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus);
-  void toggle_push(bool, Qpx::DeviceStatus);
+  void update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus);
+  void toggle_push(bool, Qpx::SourceStatus);
   void toggleIO_(bool);
   void updateStatusText(QString);
   void settings_updated();

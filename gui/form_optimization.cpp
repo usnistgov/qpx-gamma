@@ -165,9 +165,9 @@ void FormOptimization::closeEvent(QCloseEvent *event) {
   event->accept();
 }
 
-void FormOptimization::toggle_push(bool enable, Qpx::DeviceStatus status) {
-  bool online = (status & Qpx::DeviceStatus::can_run);
-  bool offline = online || (status & Qpx::DeviceStatus::loaded);
+void FormOptimization::toggle_push(bool enable, Qpx::SourceStatus status) {
+  bool online = (status & Qpx::SourceStatus::can_run);
+  bool offline = online || (status & Qpx::SourceStatus::loaded);
 
   ui->pushStart->setEnabled(enable && online && !my_run_);
   ui->comboSetting->setEnabled(enable);

@@ -78,8 +78,8 @@ void FormListDaq::saveSettings() {
   settings_.endGroup();
 }
 
-void FormListDaq::toggle_push(bool enable, Qpx::DeviceStatus status) {
-  bool online = (status & Qpx::DeviceStatus::can_run);
+void FormListDaq::toggle_push(bool enable, Qpx::SourceStatus status) {
+  bool online = (status & Qpx::SourceStatus::can_run);
   ui->pushListStart->setEnabled(enable && online);
   ui->timeDuration->setEnabled(enable && online);
 }

@@ -25,11 +25,9 @@
 #define FORM_FIT_RESULTS_H
 
 #include <QWidget>
-#include "spectrum1D.h"
 #include "special_delegate.h"
 #include <QItemSelection>
 #include <QSettings>
-#include "spectrum.h"
 #include "gamma_fitter.h"
 
 namespace Ui {

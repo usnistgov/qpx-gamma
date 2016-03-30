@@ -22,9 +22,6 @@
  *
  ******************************************************************************/
 
-#include <boost/date_time.hpp>
-#include <boost/date_time/date_facet.hpp>
-#include <set>
 #include "project.h"
 #include "daq_sink_factory.h"
 #include "custom_logger.h"
@@ -91,12 +88,12 @@ void Project::clear_helper() {
   spills_.clear();
 }
 
-void Project::closeAcquisition() {
+void Project::flush() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   if (!my_spectra_.empty())
     for (auto &q: my_spectra_) {
       //PL_DBG << "closing " << q->name();
-      q->closeAcquisition();
+      q->flush();
     }
 }
 
@@ -257,7 +254,7 @@ void Project::add_spill(Spill* one_spill) {
   boost::unique_lock<boost::mutex> lock(mutex_);  
 
   for (auto &q: my_spectra_)
-    q->addSpill(*one_spill);
+    q->push_spill(*one_spill);
 
   if (!one_spill->detectors.empty()
       || !one_spill->state.branches.empty())
@@ -395,7 +392,7 @@ void Project::read_xml(std::string file_name, bool with_spectra, bool with_full_
         PL_INFO << "Could not parse spectrum";
       else {
         for (auto &s : spills_)
-          new_spectrum->addSpill(s);
+          new_spectrum->push_spill(s);
         my_spectra_.push_back(new_spectrum);
       }
     }
@@ -470,7 +467,7 @@ void Project::import_spn(std::string file_name) {
       entry.first.resize(1, 0);
       entry.first[0] = i;
       entry.second = data[i];
-      spectrum->add_bulk(entry);
+      spectrum->append(entry);
     }
     my_spectra_.push_back(spectrum);
     spectra_count++;

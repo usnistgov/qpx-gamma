@@ -50,7 +50,7 @@ public:
 
 public slots:
   void refresh();
-  void update(const Qpx::Setting &tree, const std::vector<Qpx::Detector> &channelsupdate, Qpx::DeviceStatus);
+  void update(const Qpx::Setting &tree, const std::vector<Qpx::Detector> &channelsupdate, Qpx::SourceStatus);
 
 signals:
   void toggleIO(bool);
@@ -70,7 +70,7 @@ private slots:
   void stop_editing(QWidget*,QAbstractItemDelegate::EndEditHint);
   void on_pushSettingsRefresh_clicked();
 
-  void toggle_push(bool enable, Qpx::DeviceStatus status);
+  void toggle_push(bool enable, Qpx::SourceStatus status);
   void post_boot();
 
 
@@ -98,7 +98,7 @@ private slots:
 private:
   Ui::FormSystemSettings *ui;
 
-  Qpx::DeviceStatus current_status_;
+  Qpx::SourceStatus current_status_;
 
   XMLableDB<Qpx::Detector>            &detectors_;
   QString data_directory_;

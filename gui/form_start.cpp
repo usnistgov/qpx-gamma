@@ -38,12 +38,12 @@ FormStart::FormStart(ThreadRunner &thread,
 {
   this->setWindowTitle("Settings");
 
-  connect(&thread, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus)),
-          this, SLOT(update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus)));
+  connect(&thread, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)),
+          this, SLOT(update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)));
 
   formOscilloscope = new FormOscilloscope(runner_thread_, settings);
   connect(formOscilloscope, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
-  connect(this, SIGNAL(toggle_push_(bool,Qpx::DeviceStatus)), formOscilloscope, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
+  connect(this, SIGNAL(toggle_push_(bool,Qpx::SourceStatus)), formOscilloscope, SLOT(toggle_push(bool,Qpx::SourceStatus)));
   formOscilloscope->setVisible(false);
 
   formSettings = new FormSystemSettings(runner_thread_, detectors_, settings_);
@@ -54,7 +54,7 @@ FormStart::FormStart(ThreadRunner &thread,
   connect(formSettings, SIGNAL(list_view_requested()), this, SLOT(request_list_view()));
 
   connect(this, SIGNAL(refresh()), formSettings, SLOT(update()));
-  connect(this, SIGNAL(toggle_push_(bool,Qpx::DeviceStatus)), formSettings, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
+  connect(this, SIGNAL(toggle_push_(bool,Qpx::SourceStatus)), formSettings, SLOT(toggle_push(bool,Qpx::SourceStatus)));
   connect(this, SIGNAL(update_dets()), formSettings, SLOT(updateDetDB()));
 
   QHBoxLayout *lo = new QHBoxLayout();
@@ -73,8 +73,8 @@ FormStart::~FormStart()
   //  delete ui;
 }
 
-void FormStart::update(Qpx::Setting tree, std::vector<Qpx::Detector> dets, Qpx::DeviceStatus status) {
-  bool oscil = (status & Qpx::DeviceStatus::can_oscil);
+void FormStart::update(Qpx::Setting tree, std::vector<Qpx::Detector> dets, Qpx::SourceStatus status) {
+  bool oscil = (status & Qpx::SourceStatus::can_oscil);
   if (oscil) {
     formOscilloscope->setVisible(true);
     formOscilloscope->updateMenu(dets);
@@ -106,7 +106,7 @@ void FormStart::toggleIO_(bool enable) {
   emit toggleIO(enable);
 }
 
-void FormStart::toggle_push(bool enable, Qpx::DeviceStatus live) {
+void FormStart::toggle_push(bool enable, Qpx::SourceStatus live) {
   emit toggle_push_(enable, live);
 }
 

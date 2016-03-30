@@ -58,7 +58,7 @@ qpx::qpx(QWidget *parent) :
   qRegisterMetaType<Qpx::ListData>("Qpx::ListData");
   qRegisterMetaType<Qpx::Setting>("Qpx::Setting");
   qRegisterMetaType<Qpx::Calibration>("Qpx::Calibration");
-  qRegisterMetaType<Qpx::DeviceStatus>("Qpx::DeviceStatus");
+  qRegisterMetaType<Qpx::SourceStatus>("Qpx::SourceStatus");
   qRegisterMetaType<Qpx::Fitter>("Qpx::Fitter");
   qRegisterMetaType<boost::posix_time::time_duration>("boost::posix_time::time_duration");
 
@@ -66,8 +66,8 @@ qpx::qpx(QWidget *parent) :
   ui->setupUi(this);
   connect(&my_emitter_, SIGNAL(writeLine(QString)), this, SLOT(add_log_text(QString)));
 
-  connect(&runner_thread_, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus)),
-          this, SLOT(update_settings(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus)));
+  connect(&runner_thread_, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)),
+          this, SLOT(update_settings(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)));
 
   loadSettings();
 
@@ -75,7 +75,7 @@ qpx::qpx(QWidget *parent) :
   ui->statusBar->showMessage("Offline");
 
   gui_enabled_ = true;
-  px_status_ = Qpx::DeviceStatus(0);
+  px_status_ = Qpx::SourceStatus(0);
 
   QPushButton *tb = new QPushButton();
   tb->setIcon(QIcon(":/icons/oxy/16/filenew.png"));
@@ -156,7 +156,7 @@ void qpx::profile_chosen(QString profile, bool boot) {
   main_tab_ = new FormStart(runner_thread_, settings_, detectors_, profile, boot, this);
   ui->qpxTabs->addTab(main_tab_, main_tab_->windowTitle());
   connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::SourceStatus)));
   connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(settings_updated()));
   connect(this, SIGNAL(update_dets()), main_tab_, SLOT(detectors_updated()));
   connect(main_tab_, SIGNAL(optimization_requested()), this, SLOT(open_optimization()));
@@ -216,7 +216,7 @@ void qpx::updateStatusText(QString text) {
   ui->statusBar->showMessage(text);
 }
 
-void qpx::update_settings(Qpx::Setting sets, std::vector<Qpx::Detector> channels, Qpx::DeviceStatus status) {
+void qpx::update_settings(Qpx::Setting sets, std::vector<Qpx::Detector> channels, Qpx::SourceStatus status) {
   px_status_ = status;
   current_dets_ = channels;
   toggleIO(true);
@@ -225,7 +225,7 @@ void qpx::update_settings(Qpx::Setting sets, std::vector<Qpx::Detector> channels
 void qpx::toggleIO(bool enable) {
   gui_enabled_ = enable;
 
-  if (enable && (px_status_ & Qpx::DeviceStatus::booted))
+  if (enable && (px_status_ & Qpx::SourceStatus::booted))
     ui->statusBar->showMessage("Online");
   else if (enable)
     ui->statusBar->showMessage("Offline");
@@ -307,7 +307,7 @@ void qpx::openNewProject()
   connect(newSpectraForm, SIGNAL(requestClose(QWidget*)), this, SLOT(closeTab(QWidget*)));
 
   connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::SourceStatus)));
 
   addClosableTab(newSpectraForm, "Close project");
   ui->qpxTabs->setCurrentWidget(newSpectraForm);
@@ -353,7 +353,7 @@ void qpx::open_list()
 
   connect(newListForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(newListForm, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newListForm, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), newListForm, SLOT(toggle_push(bool,Qpx::SourceStatus)));
 
   ui->qpxTabs->setCurrentWidget(newListForm);
 
@@ -375,7 +375,7 @@ void qpx::open_optimization()
   connect(newOpt, SIGNAL(settings_changed()), this, SLOT(update_settings()));
 
   connect(newOpt, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newOpt, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), newOpt, SLOT(toggle_push(bool,Qpx::SourceStatus)));
 
   ui->qpxTabs->setCurrentWidget(newOpt);
   reorder_tabs();
@@ -395,7 +395,7 @@ void qpx::open_gain_matching()
   connect(newGain, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
 
   connect(newGain, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::DeviceStatus)), newGain, SLOT(toggle_push(bool,Qpx::DeviceStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), newGain, SLOT(toggle_push(bool,Qpx::SourceStatus)));
 
   ui->qpxTabs->setCurrentWidget(newGain);
   reorder_tabs();

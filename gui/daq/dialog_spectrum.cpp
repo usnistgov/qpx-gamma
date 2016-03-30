@@ -166,7 +166,7 @@ void dialog_spectrum::on_pushLock_clicked()
 void dialog_spectrum::on_buttonBox_rejected()
 {
   if (changed_) {
-    my_spectrum_.set_generic_attrs(md_.attributes);
+    my_spectrum_.set_options(md_.attributes);
     my_spectrum_.set_detectors(md_.detectors);
   }
 

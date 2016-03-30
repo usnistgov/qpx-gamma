@@ -26,7 +26,6 @@
 
 #include <QWidget>
 #include <QSettings>
-#include "spectrum1D.h"
 #include "project.h"
 #include "form_multi_gates.h"
 #include "form_integration2d.h"

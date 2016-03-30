@@ -24,7 +24,7 @@
 
 #include <QWidget>
 #include "qsquarecustomplot.h"
-#include "spectrum.h"
+#include "daq_sink.h"
 #include "marker.h"
 
 namespace Ui {

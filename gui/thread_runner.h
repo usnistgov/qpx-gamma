@@ -71,7 +71,7 @@ signals:
     void bootComplete();
     void runComplete();
     void listComplete(Qpx::ListData*);
-    void settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus);
+    void settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus);
     void oscilReadOut(std::vector<Qpx::Trace>);
 
 protected:
@@ -101,7 +101,7 @@ private:
     QString file_;
     bool flag_;
 
-    Qpx::DeviceStatus recent_status_;
+    Qpx::SourceStatus recent_status_;
 };
 
 #endif

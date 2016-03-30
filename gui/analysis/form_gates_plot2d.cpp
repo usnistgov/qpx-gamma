@@ -235,7 +235,7 @@ void FormGatesPlot2D::update_plot() {
     //      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
     std::shared_ptr<Qpx::EntryList> spectrum_data =
-        std::move(some_spectrum->get_spectrum({{0, adjrange}, {0, adjrange}}));
+        std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
     ui->coincPlot->update_plot(adjrange, spectrum_data);
 
     //        PL_DBG << "rescaling 2d";

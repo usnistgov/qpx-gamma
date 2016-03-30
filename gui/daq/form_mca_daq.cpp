@@ -210,8 +210,8 @@ void FormMcaDaq::saveSettings() {
   settings_.endGroup();
 }
 
-void FormMcaDaq::toggle_push(bool enable, Qpx::DeviceStatus status) {
-  bool online = (status & Qpx::DeviceStatus::can_run);
+void FormMcaDaq::toggle_push(bool enable, Qpx::SourceStatus status) {
+  bool online = (status & Qpx::SourceStatus::can_run);
   bool nonempty = !spectra_.empty();
 
   ui->pushMcaStart->setEnabled(enable && online && !my_run_);
@@ -438,14 +438,14 @@ void FormMcaDaq::projectImport()
       for (auto &q : spectra_.spectra()) {
         Qpx::Setting app = q->metadata().attributes.branches.get(Qpx::Setting("appearance"));
         app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-        q->set_generic_attr(app);
+        q->set_option(app);
       }
     } else {
       std::shared_ptr<Qpx::Sink> newSpectrum = Qpx::SinkFactory::getInstance().create_from_file(fileNames.at(i).toStdString());
       if (newSpectrum != nullptr) {
         Qpx::Setting app = newSpectrum->metadata().attributes.branches.get(Qpx::Setting("appearance"));
         app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-        newSpectrum->set_generic_attr(app);
+        newSpectrum->set_option(app);
         spectra_.add_spectrum(newSpectrum);
       } else {
         PL_INFO << "Spectrum construction did not succeed.";

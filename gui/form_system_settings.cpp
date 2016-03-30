@@ -37,11 +37,11 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Qpx::Dete
   ui(new Ui::FormSystemSettings)
 {
   ui->setupUi(this);
-  connect(&runner_thread_, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus)),
-          this, SLOT(update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::DeviceStatus)));
+  connect(&runner_thread_, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)),
+          this, SLOT(update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)));
   connect(&runner_thread_, SIGNAL(bootComplete()), this, SLOT(post_boot()));
 
-  current_status_ = Qpx::DeviceStatus::dead;
+  current_status_ = Qpx::SourceStatus::dead;
   tree_settings_model_.update(dev_settings_);
 
   viewTreeSettings = new QTreeView(this);
@@ -84,9 +84,9 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Qpx::Dete
   loadSettings();
 }
 
-void FormSystemSettings::update(const Qpx::Setting &tree, const std::vector<Qpx::Detector> &channels, Qpx::DeviceStatus status) {
+void FormSystemSettings::update(const Qpx::Setting &tree, const std::vector<Qpx::Detector> &channels, Qpx::SourceStatus status) {
 
-  bool can_run = ((status & Qpx::DeviceStatus::can_run) != 0);
+  bool can_run = ((status & Qpx::SourceStatus::can_run) != 0);
   bool can_gain_match = false;
   bool can_optimize = false;
   for (auto &q : channels_)
@@ -233,9 +233,9 @@ void FormSystemSettings::closeEvent(QCloseEvent *event) {
   event->accept();
 }
 
-void FormSystemSettings::toggle_push(bool enable, Qpx::DeviceStatus status) {
-  bool online = (status & Qpx::DeviceStatus::booted);
-  bool offline = (status & Qpx::DeviceStatus::loaded);
+void FormSystemSettings::toggle_push(bool enable, Qpx::SourceStatus status) {
+  bool online = (status & Qpx::SourceStatus::booted);
+  bool offline = (status & Qpx::SourceStatus::loaded);
 
   ui->pushSettingsRefresh->setEnabled(enable && online);
 
@@ -258,8 +258,8 @@ void FormSystemSettings::toggle_push(bool enable, Qpx::DeviceStatus status) {
     ui->bootButton->setIcon(QIcon(":/icons/boot16.png"));
   }
 
-  if ((current_status_ & Qpx::DeviceStatus::booted) &&
-      !(status & Qpx::DeviceStatus::booted))
+  if ((current_status_ & Qpx::SourceStatus::booted) &&
+      !(status & Qpx::SourceStatus::booted))
     chan_settings_to_det_DB();
 
   current_status_ = status;
@@ -282,7 +282,7 @@ void FormSystemSettings::loadSettings() {
 }
 
 void FormSystemSettings::saveSettings() {
-  if (current_status_ & Qpx::DeviceStatus::booted)
+  if (current_status_ & Qpx::SourceStatus::booted)
     chan_settings_to_det_DB();
 
   settings_.beginGroup("Program");

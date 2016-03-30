@@ -31,7 +31,7 @@
 
 #include "detector.h"
 #include "generic_setting.h"  //make full use of this!!!
-#include "daq_device.h"
+#include "daq_source.h"
 #include "synchronized_queue.h"
 #include "project.h"
 
@@ -63,7 +63,7 @@ public:
   void initialize(std::string settings_file);
   bool boot();
   bool die();
-  DeviceStatus status() {return aggregate_status_;}
+  SourceStatus status() {return aggregate_status_;}
 
   ListData* getList(uint64_t timeout, boost::atomic<bool>& inturruptor);
   void getMca(uint64_t timeout, Project &spectra, boost::atomic<bool> &interruptor);
@@ -96,10 +96,10 @@ public:
 
 protected:
   std::string profile_path_;
-  DeviceStatus aggregate_status_, intrinsic_status_;
+  SourceStatus aggregate_status_, intrinsic_status_;
   mutable boost::mutex mutex_;
 
-  std::map<std::string, std::unique_ptr<DaqDevice>> devices_;  //use shared pointer instead
+  std::map<std::string, std::unique_ptr<Source>> devices_;  //use shared pointer instead
 
   Qpx::Setting settings_tree_;
   Qpx::SettingMeta total_det_num_, single_det_;

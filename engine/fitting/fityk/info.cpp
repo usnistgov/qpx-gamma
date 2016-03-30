@@ -11,7 +11,10 @@
 #include <ctype.h>
 #include <string.h>
 
+#ifndef DISABLE_XYLIB
 #include <xylib/xylib.h> //get_version()
+#endif
+
 #include <boost/version.hpp> // BOOST_VERSION
 extern "C" {
 #ifndef DISABLE_LUA
@@ -153,7 +156,9 @@ string build_info()
         "\nBoost " + S(BOOST_VERSION / 100000)
                    + "." + S(BOOST_VERSION / 100 % 1000)
                    + "." + S(BOOST_VERSION % 100)
+#ifndef DISABLE_XYLIB
         + "\nxylib " + xylib_get_version()
+#endif
         + "\n" + embedded_lua_version()
 #if HAVE_LIBNLOPT
         + "\nNLopt " + S(nl_ver[0]) + "." + S(nl_ver[1]) + "." + S(nl_ver[2])

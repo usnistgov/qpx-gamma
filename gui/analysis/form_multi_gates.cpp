@@ -594,7 +594,7 @@ void FormMultiGates::on_pushAddGatedSpectrum_clicked()
     {
       Qpx::Setting app = gate_x->metadata().attributes.branches.get(Qpx::Setting("appearance"));
       app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-      gate_x->set_generic_attr(app);
+      gate_x->set_option(app);
 
       spectra_->add_spectrum(gate_x);
       gate_x = nullptr;

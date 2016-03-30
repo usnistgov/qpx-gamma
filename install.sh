@@ -1,7 +1,7 @@
 #!/bin/bash
-qmake
+./prep.sh
 make release
-SOURCEDIR=./samples/*
+SOURCEDIR=./data/*
 DESTDIR=$HOME/qpx
 mkdir $DESTDIR
 cp -ur $SOURCEDIR $DESTDIR

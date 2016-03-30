@@ -119,8 +119,8 @@ void FormOscilloscope::channelDetails(SelectorItem item) {
   ui->widgetPlot->setTitle(text);
 }
 
-void FormOscilloscope::toggle_push(bool enable, Qpx::DeviceStatus status) {
-  bool online = (status & Qpx::DeviceStatus::can_oscil);
+void FormOscilloscope::toggle_push(bool enable, Qpx::SourceStatus status) {
+  bool online = (status & Qpx::SourceStatus::can_oscil);
   ui->pushOscilRefresh->setEnabled(enable && online);
 }
 

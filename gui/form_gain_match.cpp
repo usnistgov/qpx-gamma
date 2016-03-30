@@ -181,8 +181,8 @@ void FormGainMatch::closeEvent(QCloseEvent *event) {
   event->accept();
 }
 
-void FormGainMatch::toggle_push(bool enable, Qpx::DeviceStatus status) {
-  bool online = (status & Qpx::DeviceStatus::can_run);
+void FormGainMatch::toggle_push(bool enable, Qpx::SourceStatus status) {
+  bool online = (status & Qpx::SourceStatus::can_run);
   ui->pushMatchGain->setEnabled(enable && online && !my_run_);
 
   ui->comboReference->setEnabled(enable);

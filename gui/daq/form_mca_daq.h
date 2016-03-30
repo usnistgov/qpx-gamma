@@ -60,7 +60,7 @@ protected:
   void closeEvent(QCloseEvent*);
 
 public slots:
-  void toggle_push(bool, Qpx::DeviceStatus);
+  void toggle_push(bool, Qpx::SourceStatus);
 
 private slots:
   void on_pushMcaStart_clicked();

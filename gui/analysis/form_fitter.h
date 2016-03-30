@@ -26,13 +26,10 @@
 
 #include <QWidget>
 #include "qsquarecustomplot.h"
-#include "spectrum1D.h"
 #include "special_delegate.h"
-#include "isotope.h"
 #include <QItemSelection>
 #include <QRadioButton>
 #include "project.h"
-#include "gamma_fitter.h"
 #include "thread_fitter.h"
 #include "marker.h"
 

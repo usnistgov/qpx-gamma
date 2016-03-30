@@ -23,6 +23,7 @@
 #include "ui_form_manip1d.h"
 #include "dialog_spectrum.h"
 #include "custom_timer.h"
+#include "boost/algorithm/string.hpp"
 
 
 TableSpectra1D::TableSpectra1D(Qpx::Project *spectra, QObject *parent)
@@ -306,7 +307,7 @@ void FormManip1D::update_plot() {
       QVector<double> y(pow(2,md.bits));
 
       std::shared_ptr<Qpx::EntryList> spectrum_data =
-          std::move(q->get_spectrum({{0, y.size()}}));
+          std::move(q->data_range({{0, y.size()}}));
 
       Qpx::Detector detector = Qpx::Detector();
       if (!md.detectors.empty())

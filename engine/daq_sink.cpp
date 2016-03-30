@@ -22,12 +22,10 @@
  *
  ******************************************************************************/
 
-#include <fstream>
 #include <boost/algorithm/string.hpp>
 #include "daq_sink.h"
 #include "custom_logger.h"
-#include "xmlable.h"
-#include "custom_timer.h"
+//#include "custom_timer.h"
 #include "qpx_util.h"
 
 namespace Qpx {
@@ -131,39 +129,39 @@ Sink::Sink()
   metadata_.attributes.branches.add(start_time);
 }
 
-bool Sink::initialize() {
+bool Sink::_initialize() {
   metadata_.attributes.enable_if_flag(false, "preset");
   return false; //abstract sink indicates failure to init
 }
 
 
-PreciseFloat Sink::get_count(std::initializer_list<uint16_t> list ) const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+PreciseFloat Sink::data(std::initializer_list<uint16_t> list ) const {
+  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   if (list.size() != this->metadata_.dimensions())
     return 0;
-  return this->_get_count(list);
+  return this->_data(list);
 }
 
-std::unique_ptr<std::list<Entry>> Sink::get_spectrum(std::initializer_list<Pair> list) {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+std::unique_ptr<std::list<Entry>> Sink::data_range(std::initializer_list<Pair> list) {
+  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   if (list.size() != this->metadata_.dimensions())
     return 0; //wtf???
   else {
     //    std::vector<Pair> ranges(list.begin(), list.end());
-    return this->_get_spectrum(list);
+    return this->_data_range(list);
   }
 }
 
-void Sink::add_bulk(const Entry& e) {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+void Sink::append(const Entry& e) {
+  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   if (metadata_.dimensions() < 1)
     return;
   else
-    this->_add_bulk(e);
+    this->_append(e);
 }
 
 bool Sink::from_prototype(const Metadata& newtemplate) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+  boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
 
@@ -174,21 +172,21 @@ bool Sink::from_prototype(const Metadata& newtemplate) {
   metadata_.name = newtemplate.name;
   metadata_.bits = newtemplate.bits;
   metadata_.attributes = newtemplate.attributes;
-  return (this->initialize());
+  return (this->_initialize());
 }
 
-void Sink::addSpill(const Spill& one_spill) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+void Sink::push_spill(const Spill& one_spill) {
+  boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
 
 //  CustomTimer addspill_timer(true);
 
   for (auto &q : one_spill.hits)
-    this->pushHit(q);
+    this->_push_hit(q);
 
   for (auto &q : one_spill.stats)
-    this->addStats(q.second);
+    this->_push_stats(q.second);
 
   if (!one_spill.detectors.empty())
     this->_set_detectors(one_spill.detectors);
@@ -206,32 +204,25 @@ void Sink::addSpill(const Spill& one_spill) {
 //  PL_DBG << "<" << metadata_.name << "> left in backlog " << backlog.size();
 }
 
-void Sink::closeAcquisition() {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+void Sink::flush() {
+  boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  this->_closeAcquisition();
+  this->_flush();
 }
 
 
-//std::map<int, std::list<StatsUpdate>> Sink::get_stats() {
-//  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
-//  while (!uniqueLock.try_lock())
-//    boost::this_thread::sleep_for(boost::chrono::seconds{1});
-//  return stats_list_;
-//}
-
-std::vector<double> Sink::energies(uint8_t chan) const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+std::vector<double> Sink::axis_values(uint16_t dimension) const {
+  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   
-  if (chan < energies_.size())
-    return energies_[chan];
+  if (dimension < axes_.size())
+    return axes_[dimension];
   else
     return std::vector<double>();
 }
   
 void Sink::set_detectors(const std::vector<Qpx::Detector>& dets) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+  boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   
@@ -240,7 +231,7 @@ void Sink::set_detectors(const std::vector<Qpx::Detector>& dets) {
 }
 
 void Sink::reset_changed() {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+  boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   metadata_.changed = false;
@@ -251,12 +242,12 @@ Setting Sink::get_attr(std::string setting) const {
 }
 
 bool Sink::write_file(std::string dir, std::string format) const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   return _write_file(dir, format);
 }
 
 bool Sink::read_file(std::string name, std::string format) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+  boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   return _read_file(name, format);
@@ -264,43 +255,43 @@ bool Sink::read_file(std::string name, std::string format) {
 
 //accessors for various properties
 Metadata Sink::metadata() const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   return metadata_;  
 }
 
 std::string Sink::type() const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   return my_type();
 }
 
 uint16_t Sink::dimensions() const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   return metadata_.dimensions();
 }
 
 std::string Sink::name() const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   return metadata_.name;
 }
 
 uint16_t Sink::bits() const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   return metadata_.bits;
 }
 
 
 //change stuff
 
-void Sink::set_generic_attr(Setting setting, Match match) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+void Sink::set_option(Setting setting, Match match) {
+  boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   metadata_.attributes.set_setting_r(setting, match);
   metadata_.changed = true;
 }
 
-void Sink::set_generic_attrs(Setting settings) {
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+void Sink::set_options(Setting settings) {
+  boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   metadata_.attributes = settings;
@@ -315,9 +306,9 @@ void Sink::set_generic_attrs(Setting settings) {
 /////////////////////
 
 void Sink::to_xml(pugi::xml_node &root) const {
-  boost::shared_lock<boost::shared_mutex> lock(mutex_);
+  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
 
-  pugi::xml_node node = root.append_child("Spectrum");
+  pugi::xml_node node = root.append_child("QpxSink");
 
   node.append_attribute("type").set_value(this->my_type().c_str());
 
@@ -337,7 +328,7 @@ void Sink::to_xml(pugi::xml_node &root) const {
   }
 
   if ((metadata_.bits > 0) && (metadata_.total_count > 0))
-    node.append_child("ChannelData").append_child(pugi::node_pcdata).set_value(this->_channels_to_xml().c_str());
+    node.append_child("ChannelData").append_child(pugi::node_pcdata).set_value(this->_data_to_xml().c_str());
 }
 
 
@@ -345,7 +336,7 @@ bool Sink::from_xml(const pugi::xml_node &node) {
 //  if (std::string(node.name()) != "Spectrum")
 //    return false;
 
-  boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
+  boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
 
@@ -477,7 +468,7 @@ bool Sink::from_xml(const pugi::xml_node &node) {
 
   std::string this_data(node.child_value("ChannelData"));
   boost::algorithm::trim(this_data);
-  this->_channels_from_xml(this_data);
+  this->_data_from_xml(this_data);
 
 
   if (node.child("Appearance")) {
@@ -494,10 +485,10 @@ bool Sink::from_xml(const pugi::xml_node &node) {
   }
 
 
-  bool ret = this->initialize();
+  bool ret = this->_initialize();
 
   if (ret)
-   this->recalc_energies();
+   this->_recalc_axes();
 
   return ret;
 }

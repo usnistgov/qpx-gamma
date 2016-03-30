@@ -25,11 +25,9 @@
 #define FORM_FWHM_CALIBRATION_H
 
 #include <QWidget>
-#include "spectrum1D.h"
 #include "special_delegate.h"
 #include "widget_plot_calib.h"
 #include <QItemSelection>
-#include "spectrum.h"
 #include "gamma_fitter.h"
 
 namespace Ui {

@@ -25,7 +25,6 @@
 #define FORM_COINC_PEAKS_H
 
 #include <QWidget>
-#include "spectrum1D.h"
 #include "special_delegate.h"
 #include "isotope.h"
 #include "marker.h"
