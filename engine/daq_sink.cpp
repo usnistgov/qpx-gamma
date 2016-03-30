@@ -342,8 +342,8 @@ void Sink::to_xml(pugi::xml_node &root) const {
 
 
 bool Sink::from_xml(const pugi::xml_node &node) {
-  if (std::string(node.name()) != "Spectrum")
-    return false;
+//  if (std::string(node.name()) != "Spectrum")
+//    return false;
 
   boost::unique_lock<boost::mutex> uniqueLock(u_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())

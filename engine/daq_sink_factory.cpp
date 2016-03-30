@@ -46,10 +46,12 @@ std::shared_ptr<Sink> SinkFactory::create_from_prototype(const Metadata& tem)
 
 std::shared_ptr<Sink> SinkFactory::create_from_xml(const pugi::xml_node &root)
 {
-  if (std::string(root.name()) != "Spectrum")               //GENERALIZE
-    return std::shared_ptr<Sink>();
+//  if (std::string(root.name()) != "Spectrum")               //GENERALIZE
+//    return std::shared_ptr<Sink>();
   if (!root.attribute("type"))
     return std::shared_ptr<Sink>();
+
+//  PL_DBG << "<SinkFactory> making " << root.attribute("type").value();
 
   std::shared_ptr<Sink> instance = create_type(std::string(root.attribute("type").value()));
   if (instance && instance->from_xml(root))

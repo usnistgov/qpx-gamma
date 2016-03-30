@@ -357,8 +357,27 @@ void Project::read_xml(std::string file_name, bool with_spectra, bool with_full_
       sp.time = ri.time;
       sp.detectors = ri.detectors;
       sp.state = ri.state;
+      if (sp.detectors.empty())
+        sp.detectors.resize(16, Detector("unknown"));
       spills_.insert(sp);
     }
+  } else if (root.child("Run")) {
+    ri.from_xml(root.child("Run"));
+    Spill sp;
+    if (!ri.time.is_not_a_date_time()) {
+      sp.time = ri.time;
+      sp.detectors = ri.detectors;
+      sp.state = ri.state;
+      if (sp.detectors.empty())
+        sp.detectors.resize(16, Detector("unknown"));
+      spills_.insert(sp);
+    }
+  }
+
+  if (spills_.empty()) { //backwrds compat
+    Spill sp;
+    sp.detectors.resize(16, Detector("unknown"));
+    spills_.insert(sp);
   }
 
   if (!with_spectra)
@@ -372,7 +391,7 @@ void Project::read_xml(std::string file_name, bool with_spectra, bool with_full_
 
       std::shared_ptr<Sink> new_spectrum
           = Qpx::SinkFactory::getInstance().create_from_xml(child);
-      if (new_spectrum == nullptr)
+      if (!new_spectrum)
         PL_INFO << "Could not parse spectrum";
       else {
         for (auto &s : spills_)

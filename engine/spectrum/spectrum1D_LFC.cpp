@@ -53,6 +53,9 @@ Spectrum1D_LFC::Spectrum1D_LFC()
 }
 
 bool Spectrum1D_LFC::initialize() {
+  if (!Spectrum1D::initialize())
+    return false;
+
   //add pattern must have exactly one channel
   int adds = 0;
   std::vector<bool> gts = pattern_add_.gates();
@@ -73,7 +76,7 @@ bool Spectrum1D_LFC::initialize() {
 
   time_sample_ = get_attr("time_sample").value_dbl;
 
-  return Spectrum1D::initialize();
+  return true;
 }
 
 

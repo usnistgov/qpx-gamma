@@ -123,7 +123,7 @@ void qpx::closeEvent(QCloseEvent *event) {
   }
 
 
-  for (int i = ui->qpxTabs->count() - 1; i >= 0; --i) {
+  for (int i = ui->qpxTabs->count() - 2; i >= 0; --i) {
     if (ui->qpxTabs->widget(i) != main_tab_) {
     ui->qpxTabs->setCurrentIndex(i);
     if (!ui->qpxTabs->widget(i)->close()) {
