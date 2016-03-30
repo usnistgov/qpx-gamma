@@ -94,10 +94,10 @@ void Engine::initialize(std::string profile) {
   for (auto &q : tree.branches.my_data_) {
     if (q.id_ != "Detectors") {
       boost::filesystem::path dev_settings = path / q.value_text;
-      Source* device = SourceFactory::getInstance().create_type(q.id_, dev_settings.string());
-      if (device != nullptr) {
+      std::shared_ptr<Source> device = SourceFactory::getInstance().create_type(q.id_, dev_settings.string());
+      if (device) {
         PL_DBG << "<Engine> Success loading " << device->device_name();
-        devices_[q.id_] = std::unique_ptr<Source>(device);
+        devices_[q.id_] = device;
       }
     }
   }

@@ -153,8 +153,6 @@ bool MesytecVME::boot() {
 
 bool MesytecVME::die() {
 
-  for (auto &q : ext_modules_)
-    delete q.second;
   ext_modules_.clear();
 
   VmeModule::die();
@@ -215,7 +213,7 @@ bool MesytecVME::write_settings_bulk(Qpx::Setting &set) {
       ext_modules_[k.id_]->write_settings_bulk(k);
     } else if (device_types.count(k.id_) && (k.id_.size() > 14) && (k.id_.substr(0,14) == "VME/MesytecRC/")) {
       boost::filesystem::path dev_settings = path / k.value_text;
-      ext_modules_[k.id_] = dynamic_cast<MesytecExternal*>(SourceFactory::getInstance().create_type(k.id_, dev_settings.string()));
+      ext_modules_[k.id_] = std::dynamic_pointer_cast<MesytecExternal>(SourceFactory::getInstance().create_type(k.id_, dev_settings.string()));
       PL_DBG << "<" << this->device_name() << ">added module " << k.id_ << " with settings at " << dev_settings.string();
       ext_modules_[k.id_]->write_settings_bulk(k);
     } else {

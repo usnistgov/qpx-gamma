@@ -23,6 +23,7 @@
 #ifndef QPX_DAQ_SOURCE_FACTORY
 #define QPX_DAQ_SOURCE_FACTORY
 
+#include <memory>
 #include "daq_source.h"
 
 namespace Qpx {
@@ -35,7 +36,7 @@ public:
     return singleton_instance;
   }
 
-  Source* create_type(std::string type, std::string file);
+  std::shared_ptr<Source> create_type(std::string type, std::string file);
   void register_type(std::string name, std::function<Source*(void)> typeConstructor);
   const std::vector<std::string> types();
 

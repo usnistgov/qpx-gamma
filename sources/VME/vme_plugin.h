@@ -68,7 +68,7 @@ protected:
   std::string controller_name_;
   VmeController *controller_;
 
-  std::map<std::string, VmeModule*> modules_;
+  std::map<std::string, std::shared_ptr<VmeModule>> modules_;
 
   //Multithreading
   boost::atomic<int> run_status_;

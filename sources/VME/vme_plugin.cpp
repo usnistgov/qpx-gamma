@@ -176,7 +176,7 @@ bool QpxVmePlugin::write_settings_bulk(Qpx::Setting &set) {
         modules_[q.id_]->write_settings_bulk(q);
       } else if (device_types.count(q.id_) && (q.id_.size() > 4) && (q.id_.substr(0,4) == "VME/")) {
         boost::filesystem::path dev_settings = path / q.value_text;
-        modules_[q.id_] = dynamic_cast<VmeModule*>(SourceFactory::getInstance().create_type(q.id_, dev_settings.string()));
+        modules_[q.id_] = std::dynamic_pointer_cast<VmeModule>(SourceFactory::getInstance().create_type(q.id_, dev_settings.string()));
         PL_DBG << "<VmePlugin> added module " << q.id_ << " with settings at " << dev_settings.string();
         modules_[q.id_]->write_settings_bulk(q);
       } else if (q.id_ == "VME/Registers") {
@@ -276,8 +276,6 @@ bool QpxVmePlugin::die() {
     delete raw_queue_;
   }
 
-  for (auto &q : modules_)
-    delete q.second;
   modules_.clear();
 
   if (controller_ != nullptr) {

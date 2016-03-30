@@ -68,7 +68,7 @@ private:
 protected:
   uint16_t module_firmware_code_;
 
-  std::map<std::string, MesytecExternal*> ext_modules_;
+  std::map<std::string, std::shared_ptr<MesytecExternal>> ext_modules_;
 
   virtual void rebuild_structure(Qpx::Setting &set) {}
   bool read_setting(Qpx::Setting& set) const;
