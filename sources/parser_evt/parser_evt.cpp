@@ -382,15 +382,27 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
             ts = boost::posix_time::from_time_t(pEvent->getTimestamp());
             //        PL_DBG << "State :" << pEvent->toString();
-            PL_DBG << "State  ts=" << boost::posix_time::to_iso_extended_string(ts)
+            PL_DBG << "<ParserEVT> State  ts=" << boost::posix_time::to_iso_extended_string(ts)
                    << "  elapsed=" << pEvent->getElapsedTime()
                    << "  run#=" << pEvent->getRunNumber()
-                   << "  barrier=" << pEvent->getBarrierType();
+                   << "  barrier=" << pEvent->getBarrierType()
+                   << "  cumulative hits = " << events;
 
             if (pEvent->getBarrierType() == 1) {
               time_start = ts;
               starts_signalled.clear();
             } else if (pEvent->getBarrierType() == 2) {
+
+              for (auto &q : starts_signalled) {
+                StatsUpdate udt;
+                udt.stats_type = StatsType::stop;
+                udt.model_hit = MADC32::model_hit();
+                udt.source_channel = q;
+                udt.lab_time = ts;
+//                udt.items["native_time"] = pEvent->getTimeOffset();
+                one_spill.stats[q] = udt;
+                one_spill.time = ts;
+              }
               done = true;
             }
 
@@ -416,15 +428,14 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
               udt.source_channel = q;
               udt.lab_time = ts;
 
-              udt.items["native_time"] = pEvent->getTimeOffset();
+//              udt.items["native_time"] = pEvent->getTimeOffset();
 
               //            PL_DBG << "<ParserEVT> " << udt.to_string();
 
               one_spill.stats[q] = udt;
               one_spill.time = ts;
-              done = true;
             }
-
+            done = true;
             delete pEvent;
           }
           break;
@@ -464,6 +475,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
                   udt.stats_type = StatsType::start;
 
                   Spill extra_spill;
+                  extra_spill.time = time_start;
                   extra_spill.stats[h.source_channel] = udt;
                   spill_queue->enqueue(new Spill(extra_spill));
                   starts_signalled.insert(h.source_channel);
@@ -527,7 +539,8 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
       PL_DBG << "<ParserEVT> Processed [" << filenr << "/" << callback->files_.size() << "] "
              << (100.0 * count / callback->expected_rbuf_items_) << "%  cumulative hits = " << events
              << "   hits lost in bad buffers = " << lost_events
-             << " (" << 100.0*lost_events/(events + lost_events) << "%)";//"  last time_upper = " << (last_time & 0xffffffffc0000000);
+             << " (" << 100.0*lost_events/(events + lost_events) << "%)"
+             << " recent timestamp = " << boost::posix_time::to_iso_extended_string(ts) ;//"  last time_upper = " << (last_time & 0xffffffffc0000000);
 
 
 
@@ -550,9 +563,13 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
       //        starts_signalled.insert(q.channel);
       //      }
       //    }
+//      PL_DBG << "about to enqueue spill with hits " << one_spill.hits.size() << " ts= " << boost::posix_time::to_iso_extended_string(ts)
+//             << " and stats updates " << one_spill.stats.size();
       spill_queue->enqueue(new Spill(one_spill));
 
-      timeout = (callback->run_status_.load() == 2) || (callback->terminate_premature_ && (count >= callback->max_rbuf_evts_));
+      timeout = (callback->run_status_.load() == 2)
+          || (callback->terminate_premature_ && (count >= callback->max_rbuf_evts_))
+          || (count >= callback->expected_rbuf_items_);
       if (item == NULL)
         break;
     }
@@ -563,17 +580,19 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
   PL_DBG << "<ParserEVT> before stop  hits = " << one_spill.hits.size();
 
-  one_spill = Spill();
-  one_spill.time = ts;
-  for (auto &q : starts_signalled) {
-    StatsUpdate udt;
-    udt.stats_type = StatsType::stop;
-    udt.model_hit = MADC32::model_hit();
-    udt.source_channel = q;
-    udt.lab_time = ts;
-    one_spill.stats[q] = udt;
+  if (one_spill.stats.empty() || (one_spill.stats.begin()->second.stats_type != StatsType::stop)) {
+    one_spill.time = ts;
+    for (auto &q : starts_signalled) {
+      StatsUpdate udt;
+      udt.stats_type = StatsType::stop;
+      udt.model_hit = MADC32::model_hit();
+      udt.source_channel = q;
+      udt.lab_time = ts;
+      one_spill.stats[q] = udt;
+      //    PL_DBG << "Sending stop at ts= " << boost::posix_time::to_iso_extended_string(ts) << " with evts " << one_spill.hits.size();
+    }
+    spill_queue->enqueue(new Spill(one_spill));
   }
-  spill_queue->enqueue(new Spill(one_spill));
 
   callback->run_status_.store(3);
 

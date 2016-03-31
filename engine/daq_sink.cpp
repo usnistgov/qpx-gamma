@@ -179,14 +179,11 @@ void Sink::push_spill(const Spill& one_spill) {
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  this->_push_spill(one_spill);
+}
 
+void Sink::_push_spill(const Spill& one_spill) {
 //  CustomTimer addspill_timer(true);
-
-  for (auto &q : one_spill.hits)
-    this->_push_hit(q);
-
-  for (auto &q : one_spill.stats)
-    this->_push_stats(q.second);
 
   if (!one_spill.detectors.empty())
     this->_set_detectors(one_spill.detectors);
@@ -196,6 +193,12 @@ void Sink::push_spill(const Spill& one_spill) {
     start_time.value_time = one_spill.time;
     metadata_.attributes.branches.replace(start_time);
   }
+
+  for (auto &q : one_spill.hits)
+    this->_push_hit(q);
+
+  for (auto &q : one_spill.stats)
+    this->_push_stats(q.second);
 
 //  addspill_timer.stop();
 //  PL_DBG << "<" << metadata_.name << "> added " << hits << " hits in "

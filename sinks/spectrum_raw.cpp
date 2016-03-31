@@ -33,7 +33,8 @@ static SinkRegistrar<SpectrumRaw> registrar("Raw");
 SpectrumRaw::SpectrumRaw()
   : open_bin_(false)
   , open_xml_(false)
-  , events_this_spill_(0)
+  , hits_this_spill_(0)
+  , total_hits_(0)
 {
   Setting base_options = metadata_.attributes;
   metadata_ = Metadata("Raw", "Custom gated list mode to file. Please provide path and name for valid and accessible file", 0,
@@ -57,7 +58,6 @@ bool SpectrumRaw::_initialize() {
   Spectrum::_initialize();
 
   file_dir_ = get_attr("file_dir").value_text;
-  with_hit_pattern_ = get_attr("with_pattern").value_int;
   PL_DBG << "trying to create " << file_dir_;
   if (file_dir_.empty())
     return false;
@@ -67,7 +67,7 @@ bool SpectrumRaw::_initialize() {
 }
 
 bool SpectrumRaw::init_text() {
-  file_name_txt_ = file_dir_ + "/qpx_out.txt";
+  file_name_txt_ = file_dir_ + "/qpx_out.xml";
   xml_root_ = xml_doc_.append_child("QpxListData");
 
   if (metadata_.attributes.branches.size())
@@ -96,32 +96,36 @@ bool SpectrumRaw::init_bin() {
 
   open_bin_ = true;
   return true;
-
-  /*  std::string header("qpx_list/");
-  out_file_.write(header.data(), header.size());
-  if (with_hit_pattern_) {
-    std::string hp("with_pattern/");
-    out_file_.write(hp.data(), hp.size());
-  } */
-}
-
-std::unique_ptr<std::list<Entry>> SpectrumRaw::_data_range(std::initializer_list<Pair> list) {
-  std::unique_ptr<std::list<Entry>> result(new std::list<Entry>);
-  return result;
 }
 
 void SpectrumRaw::addEvent(const Event& newEvent) {
-  hit_bin(newEvent);
+  if (!open_bin_)
+    return;
+
+  std::multiset<Hit> all_hits;
+  for (auto &q : newEvent.hits)
+    all_hits.insert(q.second);
+
+  for (auto &q : all_hits) {
+    q.write_bin(file_bin_);
+    hits_this_spill_++;
+  }
 }
 
-void SpectrumRaw::_push_stats(const StatsUpdate& stats) {
-  //override, because coincident events have been split (one for each channel)
-  StatsUpdate stats_override = stats;
-  stats_override.events_in_spill = events_this_spill_;
-  total_events_ += events_this_spill_;
-  events_this_spill_ = 0;
-  stats_text(stats_override);
+void SpectrumRaw::_push_spill(const Spill& one_spill) {
+  Spectrum::_push_spill(one_spill);
+
+  if (!open_xml_)
+    return;
+
+  Spill copy = one_spill;
+  copy.hits.resize(hits_this_spill_);
+  total_hits_ += hits_this_spill_;
+  hits_this_spill_ = 0;
+
+  copy.to_xml(xml_root_, true);
 }
+
 
 void SpectrumRaw::_flush() {
   if (open_xml_) {
@@ -135,27 +139,6 @@ void SpectrumRaw::_flush() {
     file_bin_.close();
     open_bin_ = false;
   }
-}
-
-
-void SpectrumRaw::hit_bin(const Event &newEvent) {
-  if (!open_bin_)
-    return;
-
-  std::multiset<Hit> all_hits;
-  for (auto &q : newEvent.hits)
-    all_hits.insert(q.second);
-
-  for (auto &q : all_hits) {
-    q.write_bin(file_bin_);
-    events_this_spill_++;
-  }
-}
-
-void SpectrumRaw::stats_text(const StatsUpdate& stats) {
-  if (!open_xml_)
-    return;
-  stats.to_xml(xml_root_);
 }
 
 }

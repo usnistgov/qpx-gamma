@@ -74,8 +74,8 @@ protected:
   std::string source_file_bin_;
 
 
-  std::list<StatsUpdate> spills_;
-  std::list<StatsUpdate> spills2_;
+  std::list<Spill> spills_;
+  std::list<Spill> spills2_;
 
   std::ifstream  file_bin_;
   std::streampos bin_begin_, bin_end_;

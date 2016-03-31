@@ -46,15 +46,11 @@ struct StatsUpdate : public XMLable {
   Hit       model_hit;
   std::unordered_map<std::string, PreciseFloat> items;
 
-
-  uint64_t  events_in_spill; //deprecate??
-
   boost::posix_time::ptime lab_time;  //timestamp at end of spill
   
   inline StatsUpdate()
       : stats_type(StatsType::running)
       , source_channel(-1)
-      , events_in_spill(0)
   {}
 
   std::string to_string() const;

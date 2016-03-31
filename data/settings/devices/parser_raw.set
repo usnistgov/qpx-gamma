@@ -7,23 +7,19 @@
 		<branch address="3" id="ParserRaw/Pause" />
 		<branch address="4" id="ParserRaw/Override timestamps" />
 		<branch address="5" id="ParserRaw/Binary file" />
-		<branch address="6" id="ParserRaw/StatsUpdates" />
+		<branch address="6" id="ParserRaw/Spills" />
 		<branch address="7" id="ParserRaw/Hits" />
 		<branch address="8" id="ParserRaw/StartTime" />
 		<branch address="9" id="ParserRaw/RunDuration" />
-		<branch address="10" id="ParserRaw/Color" />
 	</SettingMeta>
-	<SettingMeta id="ParserRaw/Source file" type="file_path" name="Source file" writable="true" unit="List mode output (*.txt)" />
+	<SettingMeta id="ParserRaw/Source file" type="file_path" name="Source file" writable="true" unit="List mode output (*.xml)" />
 	<SettingMeta id="ParserRaw/Loop data" type="boolean" name="Loop data" writable="true" />
 	<SettingMeta id="ParserRaw/Override pause" type="boolean" name="Override pause" writable="true" />
 	<SettingMeta id="ParserRaw/Pause" type="integer" name="Pause" writable="true" step="50" minimum="0" maximum="5000000" unit="ms" />
 	<SettingMeta id="ParserRaw/Override timestamps" type="boolean" name="Override timestamps" writable="true" />
 	<SettingMeta id="ParserRaw/Binary file" type="file_path" name="Binary file" writable="false" unit="Qpx binary out (*.bin)" />
-	<SettingMeta id="ParserRaw/StatsUpdates" type="integer" name="Number of stats updates" writable="false" />
+	<SettingMeta id="ParserRaw/Spills" type="integer" name="Number of spills" writable="false" />
 	<SettingMeta id="ParserRaw/Hits" type="integer" name="Number of hits" writable="false" />
-	<SettingMeta id="ParserRaw/StartTime" type="time" name="Start timestamp" writable="false" />
-	<SettingMeta id="ParserRaw/RunDuration" type="time_duration" name="Run duration" writable="false" />
-	<SettingMeta id="ParserRaw/Precious" type="floating_precise" name="My precious" writable="true" step="50" minimum="0" maximum="5000000" unit="ms" />
-	<SettingMeta id="ParserRaw/Patty" type="pattern" name="My pattern" writable="true" word_size="8"/>
-	<SettingMeta id="ParserRaw/Color" type="color" name="My color" writable="true" />
+	<SettingMeta id="ParserRaw/StartTime" type="time" name="Start timestamp" writable="true" />
+	<SettingMeta id="ParserRaw/RunDuration" type="time_duration" name="Run duration" writable="true" />
 </ParserRaw>

@@ -166,12 +166,14 @@ protected:
   virtual bool _initialize();
 
   virtual void _set_detectors(const std::vector<Qpx::Detector>& dets) = 0;
+  virtual void _push_spill(const Spill&);
   virtual void _push_hit(const Hit&) = 0;
   virtual void _push_stats(const StatsUpdate&) = 0;
   virtual void _flush() {}
 
-  virtual PreciseFloat _data(std::initializer_list<uint16_t>) const = 0;
-  virtual std::unique_ptr<std::list<Entry>> _data_range(std::initializer_list<Pair>) = 0;
+  virtual PreciseFloat _data(std::initializer_list<uint16_t>) const {return 0;}
+  virtual std::unique_ptr<std::list<Entry>> _data_range(std::initializer_list<Pair>)
+    { return std::unique_ptr<std::list<Entry>>(new std::list<Entry>); }
   virtual void _append(const Entry&) {}
 
   virtual std::string _data_to_xml() const = 0;

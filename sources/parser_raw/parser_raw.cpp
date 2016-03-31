@@ -137,11 +137,11 @@ bool ParserRaw::read_settings_bulk(Qpx::Setting &set) const {
         q.value_int = (bin_end_ - bin_begin_) / 12;
       else if ((q.metadata.setting_type == Qpx::SettingType::time) && (q.id_ == "ParserRaw/StartTime")) {
         if (!spills_.empty())
-          q.value_time = spills_.front().lab_time;
+          q.value_time = spills_.front().time;
       }
       else if ((q.metadata.setting_type == Qpx::SettingType::time_duration) && (q.id_ == "ParserRaw/RunDuration")) {
         if (!spills_.empty())
-          q.value_duration = spills_.back().lab_time - spills_.front().lab_time;
+          q.value_duration = spills_.back().time - spills_.front().time;
       }
     }
   }
@@ -225,11 +225,11 @@ bool ParserRaw::boot() {
 
   for (pugi::xml_node child : root.children()) {
     std::string name = std::string(child.name());
-    if (name == StatsUpdate().xml_element_name()) {
-      StatsUpdate stats;
-      stats.from_xml(child);
-      if (stats != StatsUpdate())
-        spills_.push_back(stats);
+    if (name == Spill().xml_element_name()) {
+      Spill spill;
+      spill.from_xml(child);
+      if (spill != Spill())
+        spills_.push_back(spill);
     }
   }
 
@@ -272,11 +272,9 @@ void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill
     if (callback->override_pause_) {
       boost::this_thread::sleep(boost::posix_time::milliseconds(callback->pause_ms_));
     } else {
-      if (!one_spill.stats.empty() && !prevspill.stats.empty()) {
-        StatsUpdate newstats = one_spill.stats.begin()->second;
-        StatsUpdate prevstats = prevspill.stats.begin()->second;
-        if ((prevstats != StatsUpdate()) && (newstats != StatsUpdate()) && (newstats.lab_time > prevstats.lab_time)) {
-          boost::posix_time::time_duration dif = newstats.lab_time - prevstats.lab_time;
+      if ((one_spill != Spill()) && (prevspill != Spill())) {
+        if (one_spill.time > prevspill.time) {
+          boost::posix_time::time_duration dif = one_spill.time - prevspill.time;
           //        PL_DBG << "<ParserRaw> Pause for " << dif.total_seconds();
           boost::this_thread::sleep(dif);
         }
@@ -316,20 +314,16 @@ Spill ParserRaw::get_spill() {
   Spill one_spill;
   std::map<int16_t, Hit> model_hits;
 
-  StatsUpdate this_stats;
   uint64_t hits_to_get = 0;
 
-  while (!spills_.empty())
+  if (!spills_.empty())
   {
-    if (one_spill.stats.empty() || (spills_.front().lab_time == this_stats.lab_time))
-      this_stats = spills_.front();
-    else
-      break;
-    hits_to_get += this_stats.events_in_spill;
-    one_spill.stats[this_stats.source_channel] = this_stats;
-    spills2_.push_back(spills_.front());
-    spills2_.back().lab_time += boost::posix_time::seconds(10); //hack
+    one_spill = spills_.front();
+    hits_to_get += one_spill.hits.size();
+    spills2_.push_back(one_spill);
+    spills2_.back().time += boost::posix_time::seconds(10); //hack
     spills_.pop_front();
+    one_spill.hits.clear();
   }
 
   for (auto &s : one_spill.stats)
@@ -338,9 +332,9 @@ Spill ParserRaw::get_spill() {
   //      PL_DBG << "<Sorter> will produce no of events " << spills_.front().events_in_spill;
   while ((one_spill.hits.size() < hits_to_get) && (file_bin_.tellg() < bin_end_))
   {
-    Hit one_event;
-    one_event.read_bin(file_bin_, model_hits);
-    one_spill.hits.push_back(one_event);
+    Hit one_hit;
+    one_hit.read_bin(file_bin_, model_hits);
+    one_spill.hits.push_back(one_hit);
   }
 
 

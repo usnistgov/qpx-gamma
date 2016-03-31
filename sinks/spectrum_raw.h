@@ -39,22 +39,19 @@ protected:
   //1D is ok with all patterns
   bool _initialize() override;
 
-  PreciseFloat _data(std::initializer_list<uint16_t> list) const {return 0;}
-  std::unique_ptr<std::list<Entry>> _data_range(std::initializer_list<Pair> list);
+  PreciseFloat _data(std::initializer_list<uint16_t> list) const
+    { return Sink::_data(list);}
+  std::unique_ptr<std::list<Entry>> _data_range(std::initializer_list<Pair> range)
+    { return Sink::_data_range(range); }
 
   //event processing
+  void _push_spill(const Spill&) override;
+
   void addEvent(const Event&) override;
-  void _push_stats(const StatsUpdate&) override;
   void _flush() override;
 
   bool init_text();
   bool init_bin();
-
-  void hit_bin(const Event&);
-
-  void stats_text(const StatsUpdate&);
-  //void stats_bin(const StatsUpdate&);
-
 
   std::string _data_to_xml() const override {return "written to file";}
   uint16_t _data_from_xml(const std::string&) override {return 0;}
@@ -68,8 +65,7 @@ protected:
   pugi::xml_document xml_doc_;
   pugi::xml_node xml_root_;
 
-  bool with_hit_pattern_;
-  uint64_t events_this_spill_, total_events_;
+  uint64_t hits_this_spill_, total_hits_;
 };
 
 }

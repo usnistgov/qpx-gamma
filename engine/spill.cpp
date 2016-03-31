@@ -51,8 +51,6 @@ bool StatsUpdate::operator==(const StatsUpdate other) const {
     return false;
   if (source_channel != other.source_channel)
     return false;
-  if (events_in_spill != other.events_in_spill)
-    return false;
   if (items != other.items)
     return false;
   return true;
@@ -101,7 +99,6 @@ void StatsUpdate::to_xml(pugi::xml_node &root) const {
 
   node.append_attribute("channel").set_value(std::to_string(source_channel).c_str());
   node.append_attribute("lab_time").set_value(boost::posix_time::to_iso_extended_string(lab_time).c_str());
-  node.append_attribute("events_in_spill").set_value(std::to_string(events_in_spill).c_str());
   node.append_attribute("timebase_mult").set_value(std::to_string(model_hit.timestamp.timebase_multiplier).c_str());
   node.append_attribute("timebase_div").set_value(std::to_string(model_hit.timestamp.timebase_divider).c_str());
   node.append_attribute("energy_bits").set_value(std::to_string(model_hit.energy.bits()).c_str());
@@ -135,7 +132,6 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
     stats_type = StatsType::running;
 
   source_channel = node.attribute("channel").as_int();
-  events_in_spill = node.attribute("events_in_spill").as_ullong();
   model_hit.energy = DigitizedVal(0, node.attribute("energy_bits").as_int());
   model_hit.timestamp.timebase_multiplier = node.attribute("timebase_mult").as_double();
   model_hit.timestamp.timebase_divider    = node.attribute("timebase_div").as_double();
@@ -216,6 +212,9 @@ void Spill::from_xml(const pugi::xml_node &node) {
 
   if (node.attribute("time"))
     time = from_iso_extended(node.attribute("time").value());
+
+  if (node.attribute("number_of_hits"))
+    hits.resize(node.attribute("number_of_hits").as_uint());
 
   if (node.child(state.xml_element_name().c_str()))
     state.from_xml(node.child(state.xml_element_name().c_str()));

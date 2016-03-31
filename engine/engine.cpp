@@ -431,7 +431,6 @@ void Engine::getMca(uint64_t timeout, Project& spectra, boost::atomic<bool>& int
   save_optimization();
   spill->state = pull_settings();
   spill->detectors = get_detectors();
-  spill->time = boost::posix_time::microsec_clock::universal_time();
   parsedQueue.enqueue(spill);
 
   if (daq_start(&parsedQueue))
@@ -466,8 +465,6 @@ void Engine::getMca(uint64_t timeout, Project& spectra, boost::atomic<bool>& int
   get_all_settings();
   save_optimization();
   spill->state = pull_settings();
-  spill->detectors = get_detectors();
-  spill->time = boost::posix_time::microsec_clock::universal_time();
   parsedQueue.enqueue(spill);
 
   wait_ms(500);
@@ -504,7 +501,6 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
   save_optimization();
   result->run.state = pull_settings();
   result->run.detectors = get_detectors();
-  result->run.time = boost::posix_time::microsec_clock::universal_time();
 
   SynchronizedQueue<Spill*> parsedQueue;
 
@@ -557,9 +553,9 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
   uint64_t presort_compares(0), presort_hits(0), presort_cycles(0);
 
   std::map<int16_t, bool> queue_status;
-  // false = empty, true = data, else unused
+  // for each input channel (detector) false = empty, true = data
 
-  std::list<Spill*> current_spills;
+  std::multiset<Spill*> current_spills;
 
   PL_DBG << "<Engine> Spectra builder thread initiated";
   Spill* in_spill  = nullptr;
@@ -569,13 +565,15 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
     if (in_spill != nullptr) {
       for (auto &q : in_spill->stats) {
         if (q.second.source_channel >= 0) {
-          queue_status[q.second.source_channel] = !in_spill->hits.empty();
+          queue_status[q.second.source_channel] = (!in_spill->hits.empty() || (q.second.stats_type == StatsType::stop));
         }
       }
-      current_spills.push_back(in_spill);
+      current_spills.insert(in_spill);
     }
 
-//    PL_DBG << "<Engine: worker_MCA> spill backlog " << current_spills.size();
+//    if (in_spill)
+//      PL_DBG << "<Engine: worker_MCA> spill backlog " << current_spills.size()
+//             << " at arrival of " << boost::posix_time::to_iso_extended_string(in_spill->time);
 
     bool empty = false;
     while (!empty) {
@@ -587,11 +585,11 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
         for (auto &q : queue_status)
           q.second = false;
         for (auto i = current_spills.begin(); i != current_spills.end(); i++) {
-          if (!(*i)->hits.empty())
-            for (auto &q : (*i)->stats) {
-              if (q.second.source_channel >= 0)
-                queue_status[q.second.source_channel] = true;
-            }
+          for (auto &q : (*i)->stats) {
+            if ((q.second.source_channel >= 0) &&
+                (!(*i)->hits.empty() || (q.second.stats_type == StatsType::stop) ))
+              queue_status[q.second.source_channel] = true;
+          }
         }
       } else {
         for (auto &q : queue_status)
@@ -632,7 +630,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
       }
       presort_timer.stop();
 
-//      PL_INFO << "<Engine> Presort pushed " << presort_hits << " hits, "
+//      PL_DBG << "<Engine> Presort pushed " << presort_hits << " hits, ";
 //                               " time/hit: " << presort_timer.us()/presort_hits << "us, "
 //                               " time/cycle: " << presort_timer.us()/presort_cycles  << "us, "
 //                               " compares/hit: " << double(presort_compares)/double(presort_hits) << ", "
