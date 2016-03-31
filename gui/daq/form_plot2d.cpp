@@ -139,6 +139,7 @@ void FormPlot2D::choose_spectrum(SelectorItem item)
   }
 
   //name_2d = arg1;
+  ui->coincPlot->reset_content();
   update_plot(true);
 }
 

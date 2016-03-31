@@ -214,7 +214,7 @@ void WidgetPlot2D::reset_content() {
   colorMap->clearData();
   boxes_.clear();
   labels_.clear();
-  replot_markers();
+//  replot_markers();
 }
 
 void WidgetPlot2D::refresh()

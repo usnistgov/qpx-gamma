@@ -130,7 +130,9 @@ void SpectrumTime::_push_stats(const StatsUpdate& newStats)
 
   if (pattern_add_.relevant(newStats.source_channel)) {
 
-    PreciseFloat rt = 0;
+    PreciseFloat real = 0;
+    PreciseFloat live = 0;
+    PreciseFloat percent_dead = 0;
     PreciseFloat tot_time = 0;
 
     if (!updates_.empty()) {
@@ -142,8 +144,26 @@ void SpectrumTime::_push_stats(const StatsUpdate& newStats)
       } else
         counts_.push_back(recent_count_);
 
-      rt       = (newStats.lab_time - updates_.back().lab_time).total_milliseconds()  * 0.001;
+      boost::posix_time::time_duration rt ,lt;
+      lt = rt = newStats.lab_time - updates_.back().lab_time;
+
+      StatsUpdate diff = newStats - updates_.back();
+      PreciseFloat scale_factor = 1;
+      if (diff.items.count("native_time") && (diff.items.at("native_time") > 0))
+        scale_factor = rt.total_microseconds() / diff.items["native_time"];
+
+      if (diff.items.count("live_time")) {
+        PreciseFloat scaled_live = diff.items.at("live_time") * scale_factor;
+        lt = boost::posix_time::microseconds(scaled_live.convert_to<long>());
+      }
+
+      real     = rt.total_milliseconds()  * 0.001;
       tot_time = (newStats.lab_time - updates_.front().lab_time).total_milliseconds() * 0.001;
+
+      live = lt.total_milliseconds() * 0.001;
+
+      percent_dead = (real - live) / real * 100;
+
     } else
       counts_.push_back(recent_count_);
 
@@ -154,14 +174,10 @@ void SpectrumTime::_push_stats(const StatsUpdate& newStats)
 
       if (codomain == 0) {
         count = counts_.back();
-        if (rt > 0)
-          count /= rt;
+        if (live > 0)
+          count /= live;
       } else if (codomain == 1) {
-        //should be % dead-time, unimplemented
-
-        count = counts_.back();
-        if (rt > 0)
-          count /= rt;
+        count = percent_dead;
       }
 
       seconds_.push_back(tot_time.convert_to<double>());

@@ -321,6 +321,8 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
   PL_DBG << "<ParserEVT> Start run worker";
 
   Spill one_spill;
+  Spill extra_spill;
+
   bool timeout = false;
   std::set<int> starts_signalled;
 
@@ -474,10 +476,8 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
                   udt.lab_time = time_start;
                   udt.stats_type = StatsType::start;
 
-                  Spill extra_spill;
                   extra_spill.time = time_start;
                   extra_spill.stats[h.source_channel] = udt;
-                  spill_queue->enqueue(new Spill(extra_spill));
                   starts_signalled.insert(h.source_channel);
                 }
               }
@@ -565,6 +565,10 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
       //    }
 //      PL_DBG << "about to enqueue spill with hits " << one_spill.hits.size() << " ts= " << boost::posix_time::to_iso_extended_string(ts)
 //             << " and stats updates " << one_spill.stats.size();
+      if (!extra_spill.stats.empty())
+        spill_queue->enqueue(new Spill(extra_spill));
+      extra_spill = Spill();
+
       spill_queue->enqueue(new Spill(one_spill));
 
       timeout = (callback->run_status_.load() == 2)

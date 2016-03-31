@@ -131,7 +131,7 @@ bool ParserRaw::read_settings_bulk(Qpx::Setting &set) const {
       }
       else if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserRaw/Binary file"))
         q.value_text = source_file_bin_;
-      else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "ParserRaw/StatsUpdates"))
+      else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "ParserRaw/Spills"))
         q.value_int = spills_.size();
       else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "ParserRaw/Hits"))
         q.value_int = (bin_end_ - bin_begin_) / 12;
