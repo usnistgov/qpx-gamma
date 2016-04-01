@@ -38,7 +38,8 @@ double TimeStamp::to_nanosec() const {
 
 void TimeStamp::delay(double ns)
 {
-  time_native += std::ceil(ns * timebase_divider / timebase_multiplier);
+  if (ns > 0)
+    time_native += std::ceil(ns * timebase_divider / timebase_multiplier);
 }
 
 std::string TimeStamp::to_string() const {

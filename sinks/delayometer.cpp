@@ -60,17 +60,17 @@ void Delayometer::_set_detectors(const std::vector<Qpx::Detector>& dets) {
   axes_.resize(1);
   axes_[0].clear();
   for (auto &q : ns_)
-    axes_[0].push_back(q);
+    axes_[0].push_back(q.second.convert_to<double>());
 }
 
 bool Delayometer::_initialize()
 {
   Spectrum::_initialize();
 
-  int64_t max = std::ceil(max_delay_ + coinc_window_);
-  ns_.clear();
-  for (int64_t i= -max; i <= max; ++i)
-    ns_.push_back(i);
+//  int64_t max = std::ceil(max_delay_);
+//  ns_.clear();
+//  for (int64_t i= -max; i <= max; ++i)
+//    ns_[i] = i;
 
   return true;
 }
@@ -82,32 +82,34 @@ PreciseFloat Delayometer::_data(std::initializer_list<uint16_t> list) const {
   uint32_t chan = *list.begin();
   if (chan >= ns_.size())
     return 0;
-  else if (spectrum_.count(ns_[chan]))
-    return spectrum_.at(ns_[chan]);
+  else if (spectrum_.count(chan))
+    return spectrum_.at(chan);
   else
     return 0;
 }
 
 std::unique_ptr<std::list<Entry>> Delayometer::_data_range(std::initializer_list<Pair> list) {
-  int min, max;
-  if (list.size() != 1) {
-    min = 0;
-    max = ns_.size();
-  } else {
-    Pair range = *list.begin();
-    min = range.first;
-    max = range.second;
-  }
+//  int min, max;
+//  if (list.size() != 1) {
+//    min = 0;
+//    max = spectrum_.size();
+//  } else {
+//    Pair range = *list.begin();
+//    min = range.first;
+//    max = range.second;
+//  }
 
-  //in range?
+//  //in range?
   
   std::unique_ptr<std::list<Entry>> result(new std::list<Entry>);
-  for (int i=min; i < max; i++) {
+  int i = 0;
+  for (auto &q : spectrum_) {
     Entry newentry;
     newentry.first.resize(1, 0);
     newentry.first[0] = i;
-    newentry.second = spectrum_[ns_[i]];
+    newentry.second = q.second;
     result->push_back(newentry);
+    i++;
   }
   return result;
 }
@@ -144,12 +146,14 @@ void Delayometer::_push_hit(const Hit& newhit)
           recent_count_++;
           metadata_.total_count++;
           this->addEvent(copy);
-        }
+        } else
+          PL_DBG << "<" << metadata_.name << "> not validated " << q.to_string();
       }
 //      else
 //        PL_DBG << "<" << metadata_.name << "> pileup hit " << newhit.to_string() << " with " << q.to_string() << " already has " << q.hits[newhit.source_channel].to_string();
-    } else if (q.past_due(newhit))
-      break;
+    }
+//    else if (q.past_due(newhit))
+//      break;
     else if (q.antecedent(newhit))
       PL_DBG << "<" << metadata_.name << "> antecedent hit " << newhit.to_string() << ". Something wrong with presorter or daq_device?";
   }
@@ -170,9 +174,51 @@ void Delayometer::addEvent(const Event& newEvent) {
       b = h.second;
   }
 
-  int32_t diff = b.timestamp.to_nanosec() - a.timestamp.to_nanosec();
+//  double df = std::abs(b.timestamp - a.timestamp);
+//  if ((df > 0) && (df < 18000))
+//    PL_DBG << " d " << b.timestamp - a.timestamp;
+
+  TimeStamp res;
+  if (a.timestamp.timebase_divider > b.timestamp.timebase_divider)
+    res = a.timestamp;
+  else if ((a.timestamp.timebase_divider == b.timestamp.timebase_divider)
+           && (b.timestamp.timebase_multiplier < b.timestamp.timebase_multiplier))
+    res = a.timestamp;
+  else
+    res = b.timestamp;
+
+  if (!timebase.same_base(res)) {
+    timebase = res;
+
+    double max_ns = std::ceil(max_delay_);
+    int64_t max_native = std::ceil(max_ns * timebase.timebase_divider / timebase.timebase_multiplier);
+
+    for (int64_t i= -max_native; i <= max_native; ++i) {
+      ns_[i] = i * timebase.timebase_multiplier / timebase.timebase_divider;
+      if (!spectrum_.count(i))
+        spectrum_[i] = 0;
+    }
+
+    axes_.resize(1);
+    axes_[0].clear();
+    for (auto &q : ns_)
+      axes_[0].push_back(q.second.convert_to<double>());
+  }
+
+  int64_t diff = std::round((b.timestamp - a.timestamp) * timebase.timebase_divider / timebase.timebase_multiplier);
 
   spectrum_[diff]++;
+
+  if (!ns_.count(diff)) {
+    ns_[diff] = diff * timebase.timebase_multiplier / timebase.timebase_divider;
+
+    axes_.resize(1);
+    axes_[0].clear();
+    for (auto &q : ns_)
+      axes_[0].push_back(q.second.convert_to<double>());
+
+  }
+
   if (diff > maxchan_)
     maxchan_ = diff;
 }

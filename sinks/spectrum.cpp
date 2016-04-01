@@ -143,6 +143,7 @@ bool Spectrum::_initialize() {
   if (coinc_window_ < 0)
     coinc_window_ = 0;
 
+  max_delay_ = 0;
   Setting perdet = get_attr("per_detector");
   cutoff_logic_.resize(perdet.branches.size());
   delay_ns_.resize(perdet.branches.size());
@@ -156,11 +157,13 @@ bool Spectrum::_initialize() {
     }
     if (idx >= 0) {
       cutoff_logic_[idx] = d.get_setting(Setting("cutoff_logic"), Match::id).value_int;
-      delay_ns_[idx]     = d.get_setting(Setting("cutoff_logic"), Match::id).value_dbl;
+      delay_ns_[idx]     = d.get_setting(Setting("delay_ns"), Match::id).value_dbl;
       if (delay_ns_[idx] > max_delay_)
         max_delay_ = delay_ns_[idx];
     }
   }
+  max_delay_ += coinc_window_;
+   PL_DBG << "<" << metadata_.name << "> coinc " << coinc_window_ << " max delay " << max_delay_;
 
   return false; //still too abstract
 }
@@ -209,7 +212,7 @@ void Spectrum::_push_hit(const Hit& newhit)
 
     if (!appended && !pileup) {
       backlog.push_back(Event(hit, coinc_window_, max_delay_));
-      PL_DBG << "append fresh";
+//      PL_DBG << "append fresh";
     }
   }
 

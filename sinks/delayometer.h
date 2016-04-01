@@ -50,10 +50,11 @@ protected:
   std::string _data_to_xml() const override;
   uint16_t _data_from_xml(const std::string&) override;
 
-  std::map<int32_t, PreciseFloat> spectrum_;
-  std::vector<int64_t> ns_;
+  std::map<int64_t, PreciseFloat> spectrum_;
+  std::map<int64_t, PreciseFloat> ns_;
 
-  uint16_t maxchan_;
+  double maxchan_;
+  TimeStamp timebase;
 };
 
 }
