@@ -329,7 +329,6 @@ void qpx::addClosableTab(QWidget* widget, QString tooltip) {
 
 void qpx::closeTab(QWidget* w) {
   int idx = ui->qpxTabs->indexOf(w);
-  PL_DBG << "requested tab close " << idx;
   tabCloseRequested(idx);
 }
 

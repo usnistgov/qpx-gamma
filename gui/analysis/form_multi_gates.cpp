@@ -59,7 +59,10 @@ FormMultiGates::FormMultiGates(QSettings &settings, QWidget *parent) :
   ui->tableGateList->show();
 
   ui->gatedSpectrum->setFit(&fit_data_);
-  connect(ui->gatedSpectrum , SIGNAL(peaks_changed(bool)), this, SLOT(peaks_changed_in_plot(bool)));
+  connect(ui->gatedSpectrum , SIGNAL(peaks_changed()), this, SLOT(peaks_changed_in_plot()));
+  connect(ui->gatedSpectrum , SIGNAL(peak_selection_changed(std::set<double>)),
+          this, SLOT(peak_selection_changed(std::set<double>)));
+
   connect(ui->gatedSpectrum, SIGNAL(range_changed(Range)), this, SLOT(range_changed_in_plot(Range)));
 
   tempx = Qpx::SinkFactory::getInstance().create_prototype("1D");
@@ -95,8 +98,14 @@ void FormMultiGates::range_changed_in_plot(Range range) {
   emit range_changed(range2d);
 }
 
-void FormMultiGates::peaks_changed_in_plot(bool content_changed) {
-  update_peaks(content_changed);
+void FormMultiGates::peaks_changed_in_plot() {
+  update_peaks(true);
+  emit gate_selected();
+}
+
+void FormMultiGates::peak_selection_changed(std::set<double> sel)
+{
+  update_peaks(false);
   emit gate_selected();
 }
 
@@ -478,7 +487,7 @@ void FormMultiGates::setSpectrum(Qpx::Project *newset, QString name) {
 
 void FormMultiGates::make_gated_spectra() {
   std::shared_ptr<Qpx::Sink> source_spectrum = spectra_->by_name(current_spectrum_.toStdString());
-  if (source_spectrum == nullptr)
+  if (!source_spectrum)
     return;
 
   this->setCursor(Qt::WaitCursor);
@@ -516,7 +525,7 @@ void FormMultiGates::update_peaks(bool content_changed) {
   //update sums
 
   if (content_changed)
-    ui->gatedSpectrum->update_data();
+    ui->gatedSpectrum->update_spectrum();
 
   current_peaks_.clear();
   double width = current_gate().width_chan / 2;
@@ -587,8 +596,8 @@ void FormMultiGates::on_pushAddGatedSpectrum_clicked()
   this->setCursor(Qt::WaitCursor);
   bool success = false;
 
-  if ((gate_x != nullptr) && (gate_x->metadata().total_count > 0)) {
-    if (spectra_->by_name(gate_x->name()) != nullptr)
+  if (gate_x && (gate_x->metadata().total_count > 0)) {
+    if (!spectra_->by_name(gate_x->name()))
       PL_WARN << "Spectrum " << gate_x->name() << " already exists.";
     else
     {
@@ -597,7 +606,6 @@ void FormMultiGates::on_pushAddGatedSpectrum_clicked()
       gate_x->set_option(app);
 
       spectra_->add_spectrum(gate_x);
-      gate_x = nullptr;
       success = true;
     }
   }

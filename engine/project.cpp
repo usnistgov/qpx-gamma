@@ -391,8 +391,12 @@ void Project::read_xml(std::string file_name, bool with_spectra, bool with_full_
       if (!new_spectrum)
         PL_INFO << "Could not parse spectrum";
       else {
-        for (auto &s : spills_)
-          new_spectrum->push_spill(s);
+        for (auto &s : spills_) {
+          Spill sp = s;
+          if (!new_spectrum->metadata().detectors.empty()) //backwards compat
+            sp.detectors.clear();
+          new_spectrum->push_spill(sp);
+        }
         my_spectra_.push_back(new_spectrum);
       }
     }

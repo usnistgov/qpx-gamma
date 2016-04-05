@@ -38,11 +38,15 @@ FormGainCalibration::FormGainCalibration(QSettings &settings, XMLableDB<Qpx::Det
 
   loadSettings();
 
-  style_pts.default_pen = QPen(Qt::darkBlue, 7);
-  style_pts.themes["selected"] = QPen(Qt::cyan, 7);
-  style_fit.default_pen = QPen(Qt::blue, 0);
+  QColor point_color;
+  point_color.setHsv(180, 215, 150, 120);
+  style_pts.default_pen = QPen(point_color, 9);
+  QColor selected_color;
+  selected_color.setHsv(225, 255, 230, 210);
+  style_pts.themes["selected"] = QPen(selected_color, 9);
+  style_fit.default_pen = QPen(Qt::darkCyan, 2);
 
-  connect(ui->plotCalib, SIGNAL(selection_changed()), this, SLOT(selection_changed_in_plot()));
+//  connect(ui->plotCalib, SIGNAL(selection_changed()), this, SLOT(selection_changed_in_plot()));
 
   //QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tableFWHM);
   //connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushRemovePeak_clicked()));
@@ -155,6 +159,7 @@ void FormGainCalibration::plot_calib() {
     ui->pushCalibGain->setEnabled(true);
     ui->spinPolyOrder->setEnabled(true);
 
+
     ui->plotCalib->addPoints(xx, yy, QVector<double>(yy.size(), 0), style_pts);
     if ((gain_match_cali_.to_ == detector1_.name_) && gain_match_cali_.valid()) {
 
@@ -168,6 +173,7 @@ void FormGainCalibration::plot_calib() {
       ui->plotCalib->addFit(xx, yy, style_fit);
     }
   }
+  ui->plotCalib->redraw();
 }
 
 void FormGainCalibration::selection_changed_in_plot() {

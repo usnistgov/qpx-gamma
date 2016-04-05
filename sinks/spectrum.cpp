@@ -163,7 +163,7 @@ bool Spectrum::_initialize() {
     }
   }
   max_delay_ += coinc_window_;
-   PL_DBG << "<" << metadata_.name << "> coinc " << coinc_window_ << " max delay " << max_delay_;
+//   PL_DBG << "<" << metadata_.name << "> coinc " << coinc_window_ << " max delay " << max_delay_;
 
   return false; //still too abstract
 }

@@ -487,11 +487,13 @@ bool Sink::from_xml(const pugi::xml_node &node) {
     metadata_.attributes.branches.replace(vis);
   }
 
-
   bool ret = this->_initialize();
 
   if (ret)
    this->_recalc_axes();
+
+//  for (auto &det : this->metadata_.detectors)
+//    PL_DBG << "det2 " << this->metadata_.name << " " << det.name_;
 
   return ret;
 }

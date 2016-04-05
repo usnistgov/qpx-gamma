@@ -116,25 +116,25 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
   }
 
   if (my_analysis_ != nullptr) {
-    PL_DBG << "will kill assoc analysis1D";
+//    PL_DBG << "will kill assoc analysis1D";
     my_analysis_->close(); //assume always successful
     emit requestClose(my_analysis_);
   }
 
   if (my_analysis_2d_ != nullptr) {
-    PL_DBG << "will kill assoc analysis2D";
+//    PL_DBG << "will kill assoc analysis2D";
     my_analysis_2d_->close(); //assume always successful
     emit requestClose(my_analysis_2d_);
   }
 
   if (my_symmetrization_2d_!= nullptr) {
-    PL_DBG << "will kill assoc sym2D";
+//    PL_DBG << "will kill assoc sym2D";
     my_symmetrization_2d_->close(); //assume always successful
     emit requestClose(my_symmetrization_2d_);
   }
 
   if (my_eff_cal_ != nullptr) {
-    PL_DBG << "will kill assoc effcal";
+//    PL_DBG << "will kill assoc effcal";
     my_eff_cal_->close(); //assume always successful
     emit requestClose(my_eff_cal_);
   }

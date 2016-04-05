@@ -114,8 +114,9 @@ private slots:
   void update_peaks(bool);
 
   void range_changed_in_plot(Range);
-  void peaks_changed_in_plot(bool);
 
+  void peaks_changed_in_plot();
+  void peak_selection_changed(std::set<double> sel);
 
   void on_pushAddGatedSpectrum_clicked();
 

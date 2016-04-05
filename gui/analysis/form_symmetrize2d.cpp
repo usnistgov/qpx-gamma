@@ -50,31 +50,19 @@ FormSymmetrize2D::FormSymmetrize2D(QSettings &settings, XMLableDB<Qpx::Detector>
   my_gain_calibration_ = new FormGainCalibration(settings_, detectors_, fit_data_, fit_data_2_, this);
   my_gain_calibration_->hide();
   //my_gain_calibration_->blockSignals(true);
-  connect(my_gain_calibration_, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
+//  connect(my_gain_calibration_, SIGNAL(peaks_changed()), this, SLOT(update_peaks()));
+//  connect(my_gain_calibration_, SIGNAL(peak_selection_changed(std::set<double>))
+//          this, SLOT(peak_selection_changed(std::set<double>)));
   connect(my_gain_calibration_, SIGNAL(update_detector()), this, SLOT(apply_gain_calibration()));
   connect(my_gain_calibration_, SIGNAL(symmetrize_requested()), this, SLOT(symmetrize()));
   ui->tabs->addTab(my_gain_calibration_, "Gain calibration");
 
-  connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
-  connect(ui->plotSpectrum2, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
-
-  tempx = Qpx::SinkFactory::getInstance().create_prototype("1D");
-//  tempx.visible = true;
-  tempx.name = "tempx";
-  Qpx::Setting pattern;
-  pattern = tempx.attributes.branches.get(Qpx::Setting("pattern_coinc"));
-  pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
-  pattern.value_pattern.set_theshold(2);
-  tempx.attributes.branches.replace(pattern);
-  pattern = tempx.attributes.branches.get(Qpx::Setting("pattern_add"));
-  pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
-  pattern.value_pattern.set_theshold(1);
-  tempx.attributes.branches.replace(pattern);
-
-  tempy = Qpx::SinkFactory::getInstance().create_prototype("1D");
-//  tempy.visible = true;
-  tempy.name = "tempy";
-
+  connect(ui->plotSpectrum, SIGNAL(peaks_changed()), this, SLOT(update_peaks()));
+  connect(ui->plotSpectrum, SIGNAL(peak_selection_changed(std::set<double>)),
+          this, SLOT(peak_selection_changed(std::set<double>)));
+  connect(ui->plotSpectrum2, SIGNAL(peaks_changed()), this, SLOT(update_peaks()));
+  connect(ui->plotSpectrum2, SIGNAL(peak_selection_changed(std::set<double>)),
+          this, SLOT(peak_selection_changed(std::set<double>)));
 
   res = 0;
 
@@ -111,7 +99,7 @@ void FormSymmetrize2D::reset() {
 
 void FormSymmetrize2D::make_gated_spectra() {
   std::shared_ptr<Qpx::Sink> source_spectrum = spectra_->by_name(current_spectrum_.toStdString());
-  if (source_spectrum == nullptr)
+  if (!source_spectrum)
     return;
 
   this->setCursor(Qt::WaitCursor);
@@ -124,17 +112,25 @@ void FormSymmetrize2D::make_gated_spectra() {
   {
     uint32_t adjrange = pow(2,md.bits) - 1;
 
+    Qpx::Metadata tempx = Qpx::SinkFactory::getInstance().create_prototype("1D");
     tempx.bits = md.bits;
-    tempx.name = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(0), 0) + "," + to_str_precision(nrg_calibration2_.transform(adjrange), 0) + "]";
-    tempy.bits = md.bits;
-    tempy.name = detector2_.name_ + "[" + to_str_precision(nrg_calibration1_.transform(0), 0) + "," + to_str_precision(nrg_calibration1_.transform(adjrange), 0) + "]";
+
     Qpx::Setting pattern;
-    pattern = tempy.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+    pattern = tempx.attributes.branches.get(Qpx::Setting("pattern_coinc"));
     pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
     pattern.value_pattern.set_theshold(2);
-    tempy.attributes.branches.replace(pattern);
-    pattern = tempy.attributes.branches.get(Qpx::Setting("pattern_add"));
+    tempx.attributes.branches.replace(pattern);
+
+    pattern = tempx.attributes.branches.get(Qpx::Setting("pattern_add"));
     pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
+    pattern.value_pattern.set_theshold(1);
+    tempx.attributes.branches.replace(pattern);
+
+
+    Qpx::Metadata  tempy = tempx;
+
+    pattern = tempy.attributes.branches.get(Qpx::Setting("pattern_add"));
+    pattern.value_pattern.set_gates(std::vector<bool>({0,1}));
     pattern.value_pattern.set_theshold(1);
     tempy.attributes.branches.replace(pattern);
 
@@ -208,15 +204,19 @@ void FormSymmetrize2D::showEvent( QShowEvent* event ) {
   QTimer::singleShot(50, this, SLOT(initialize()));
 }
 
-void FormSymmetrize2D::update_peaks(bool content_changed) {
+void FormSymmetrize2D::update_peaks() {
   //update sums
-  if (content_changed) {
-    ui->plotSpectrum2->update_data();
-    ui->plotSpectrum->update_data();
-  }
+//  if (content_changed) {
+//    ui->plotSpectrum2->update_data();
+//    ui->plotSpectrum->update_data();
+//  }
 
   if (my_gain_calibration_)
     my_gain_calibration_->newSpectrum();
+}
+
+void FormSymmetrize2D::peak_selection_changed(std::set<double> selected_peaks)
+{
 }
 
 void FormSymmetrize2D::update_gates(Marker xx, Marker yy) {
@@ -228,8 +228,8 @@ void FormSymmetrize2D::on_pushAddGatedSpectra_clicked()
   this->setCursor(Qt::WaitCursor);
   bool success = false;
 
-  if ((gate_x != nullptr) && (gate_x->metadata().total_count > 0)) {
-    if (spectra_->by_name(gate_x->name()) != nullptr)
+  if (gate_x && (gate_x->metadata().total_count > 0)) {
+    if (!spectra_->by_name(gate_x->name()))
       PL_WARN << "Spectrum " << gate_x->name() << " already exists.";
     else
     {
@@ -238,13 +238,12 @@ void FormSymmetrize2D::on_pushAddGatedSpectra_clicked()
       gate_x->set_option(app);
 
       spectra_->add_spectrum(gate_x);
-      gate_x = nullptr;
       success = true;
     }
   }
 
-  if ((gate_y != nullptr) && (gate_y->metadata().total_count > 0)) {
-    if (spectra_->by_name(gate_y->name()) != nullptr)
+  if (gate_y && (gate_y->metadata().total_count > 0)) {
+    if (!spectra_->by_name(gate_y->name()))
       PL_WARN << "Spectrum " << gate_y->name() << " already exists.";
     else
     {
@@ -253,7 +252,6 @@ void FormSymmetrize2D::on_pushAddGatedSpectra_clicked()
       gate_y->set_option(app);
 
       spectra_->add_spectrum(gate_y);
-      gate_y = nullptr;
       success = true;
     }
   }
@@ -276,14 +274,14 @@ void FormSymmetrize2D::symmetrize()
                                        fold_spec_name,
                                        &ok);
   if (ok && !text.isEmpty()) {
-    if (spectra_->by_name(fold_spec_name.toStdString()) != nullptr) {
+    if (spectra_->by_name(fold_spec_name.toStdString())) {
       PL_WARN << "Spectrum " << fold_spec_name.toStdString() << " already exists. Aborting symmetrization";
       this->setCursor(Qt::ArrowCursor);
       return;
     }
 
     std::shared_ptr<Qpx::Sink> source_spectrum = spectra_->by_name(current_spectrum_.toStdString());
-    if (source_spectrum == nullptr) {
+    if (!source_spectrum) {
       this->setCursor(Qt::ArrowCursor);
       return;
     }
@@ -321,7 +319,7 @@ void FormSymmetrize2D::symmetrize()
 
     std::shared_ptr<Qpx::Sink> destination = Qpx::SinkFactory::getInstance().create_from_prototype(temp_sym);
 
-    if (destination == nullptr) {
+    if (!destination) {
       PL_WARN << "<Analysis2D> " << fold_spec_name.toStdString() << " could not be created";
       this->setCursor(Qt::ArrowCursor);
       return;
@@ -396,7 +394,7 @@ void FormSymmetrize2D::apply_gain_calibration()
 
   if (ret != QMessageBox::Abort) {
     for (auto &q : spectra_->spectra()) {
-      if (q == nullptr)
+      if (!q)
         continue;
       Qpx::Metadata md = q->metadata();
       for (auto &p : md.detectors) {
@@ -408,18 +406,18 @@ void FormSymmetrize2D::apply_gain_calibration()
       q->set_detectors(md.detectors);
     }
 
-    std::set<Qpx::Spill> spills = spectra_->spills();
-    Qpx::Spill sp;
-    if (spills.size())
-      sp = *spills.end();
+//    std::set<Qpx::Spill> spills = spectra_->spills();
+//    Qpx::Spill sp;
+//    if (spills.size())
+//      sp = *spills.rbegin();
 
-    for (auto &p : sp.detectors) {
-      if (p.shallow_equals(detector2_)) {
-        PL_INFO << "   applying new calibrations for " << detector2_.name_ << " in current project " << spectra_->identity();
-        p.gain_match_calibrations_.replace(gain_match_cali_);
-      }
-    }
-    spectra_->add_spill(&sp);
+//    for (auto &p : sp.detectors) {
+//      if (p.shallow_equals(detector2_)) {
+//        PL_INFO << "   applying new calibrations for " << detector2_.name_ << " in current project " << spectra_->identity();
+//        p.gain_match_calibrations_.replace(gain_match_cali_);
+//      }
+//    }
+//    spectra_->add_spill(&sp);
   }
 }
 

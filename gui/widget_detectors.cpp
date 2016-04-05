@@ -161,7 +161,7 @@ void DialogDetector::on_pushReadOpti_clicked()
   optiSource.read_xml(fileName.toStdString(), false);
   std::set<Qpx::Spill> spills = optiSource.spills();
   if (spills.size()) {
-    Qpx::Spill sp = *spills.begin();
+    Qpx::Spill sp = *spills.rbegin();
     for (auto &q : sp.detectors)
       if (q.name_ == my_detector_.name_)
         my_detector_ = q;

@@ -30,9 +30,9 @@ namespace Qpx {
 void Fitter::setData(std::shared_ptr<Sink> spectrum)
 {
 //  clear();
-  if (spectrum != nullptr) {
+  if (spectrum) {
     Metadata md = spectrum->metadata();
-    if ((md.bits != 1) || (md.bits <= 0) || (md.total_count <= 0))
+    if ((md.dimensions() != 1) || (md.bits <= 0) || (md.total_count <= 0))
       return;
 
     metadata_ = md;

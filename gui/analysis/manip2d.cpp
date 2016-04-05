@@ -181,6 +181,10 @@ bool symmetrize(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination)
 
   destination->set_detectors(md.detectors);
 
+  Qpx::Setting app = md.attributes.branches.get(Qpx::Setting("symmetrized"));
+  app.value_int = true;
+  destination->set_option(app);
+
   return (destination->metadata().total_count > 0);
 }
 

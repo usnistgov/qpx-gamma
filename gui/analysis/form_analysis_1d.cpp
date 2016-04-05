@@ -152,6 +152,7 @@ void FormAnalysis1D::setSpectrum(Qpx::Project *newset, QString name) {
   std::shared_ptr<Qpx::Sink>spectrum = spectra_->by_name(name.toStdString());
 
   if (spectrum && spectrum->bits()) {
+
     fit_data_.clear();
     fit_data_.setData(spectrum);
 
@@ -252,19 +253,18 @@ void FormAnalysis1D::update_detector_calibs()
       q->set_detectors(md.detectors);
     }
 
-
-    std::set<Qpx::Spill> spills = spectra_->spills();
-    Qpx::Spill sp;
-    if (spills.size())
-      sp = *spills.end();
-    for (auto &p : sp.detectors) {
-      if (p.shallow_equals(fit_data_.detector_)) {
-        PL_INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " in current project " << spectra_->identity();
-        p.energy_calibrations_.replace(new_energy_calibration_);
-        p.fwhm_calibration_ = new_fwhm_calibration_;
-      }
-    }
-    spectra_->add_spill(&sp);
+//    std::set<Qpx::Spill> spills = spectra_->spills();
+//    Qpx::Spill sp;
+//    if (spills.size())
+//      sp = *spills.rbegin();
+//    for (auto &p : sp.detectors) {
+//      if (p.shallow_equals(fit_data_.detector_)) {
+//        PL_INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " in current project " << spectra_->identity();
+//        p.energy_calibrations_.replace(new_energy_calibration_);
+//        p.fwhm_calibration_ = new_fwhm_calibration_;
+//      }
+//    }
+//    spectra_->add_spill(&sp);
     update_spectrum();
   }
 }

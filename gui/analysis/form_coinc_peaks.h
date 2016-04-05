@@ -59,17 +59,16 @@ public:
 
 public slots:
   void update_selection(std::set<double> selected_peaks);
-  void update_data();
 
 signals:
-  void peaks_changed(bool content_changed);
+  void peaks_changed();
+  void peak_selection_changed(std::set<double> selected_peaks);
   void range_changed(Range range);
 
 private slots:
   void change_range(Range range);
-;
-
   void selection_changed_in_table();
+  void update_peaks();
 
 private:
   Ui::FormCoincPeaks *ui;

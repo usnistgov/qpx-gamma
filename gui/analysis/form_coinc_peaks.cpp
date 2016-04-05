@@ -46,7 +46,7 @@ FormCoincPeaks::FormCoincPeaks(QWidget *parent) :
 
   connect(ui->plotPeaks, SIGNAL(range_changed(Range)), this, SLOT(change_range(Range)));
   connect(ui->plotPeaks, SIGNAL(peak_selection_changed(std::set<double>)), this, SLOT(update_selection(std::set<double>)));
-  connect(ui->plotPeaks, SIGNAL(data_changed()), this, SLOT(update_data()));
+  connect(ui->plotPeaks, SIGNAL(data_changed()), this, SLOT(update_peaks()));
 
 //  QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tablePeaks);
 //  connect(shortcut, SIGNAL(activated()), this, SLOT(remove_peak()));
@@ -87,7 +87,7 @@ FormCoincPeaks::~FormCoincPeaks()
 void FormCoincPeaks::setFit(Qpx::Fitter* fit) {
   fit_data_ = fit;
   ui->plotPeaks->setFit(fit);
-  update_data();
+  ui->plotPeaks->update_spectrum();
 }
 
 std::set<double> FormCoincPeaks::get_selected_peaks() {
@@ -118,13 +118,12 @@ void FormCoincPeaks::update_spectrum() {
   ui->plotPeaks->update_spectrum();
 
   if (!fit_data_->peaks().empty())
-    update_data();
-  emit peaks_changed(true);
+    update_table(true);
 }
 
-void FormCoincPeaks::update_data() {
-  ui->plotPeaks->update_spectrum();
+void FormCoincPeaks::update_peaks() {
   update_table(true);
+  emit peaks_changed();
 }
 
 void FormCoincPeaks::update_selection(std::set<double> selected_peaks) {
@@ -133,7 +132,7 @@ void FormCoincPeaks::update_selection(std::set<double> selected_peaks) {
 
   if (changed) {
     update_table(false);
-    emit peaks_changed(false);
+    emit peak_selection_changed(selected_peaks);
   }
 }
 
@@ -210,7 +209,7 @@ void FormCoincPeaks::selection_changed_in_table() {
   foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows())
     selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble());
   ui->plotPeaks->set_selected_peaks(selected_peaks_);
-  emit peaks_changed(false);
+  emit peak_selection_changed(selected_peaks_);
 }
 
 

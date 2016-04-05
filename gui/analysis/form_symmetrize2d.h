@@ -54,7 +54,9 @@ public slots:
 
 private slots:
   void update_gates(Marker, Marker);
-  void update_peaks(bool);
+  void update_peaks();
+  void peak_selection_changed(std::set<double> selected_peaks);
+
   void detectorsUpdated() {emit detectorsChanged();}
   void on_pushAddGatedSpectra_clicked();
   void initialize();
@@ -68,8 +70,6 @@ protected:
 private:
   Ui::FormSymmetrize2D *ui;
   QSettings &settings_;
-
-  Qpx::Metadata tempx, tempy;
 
   std::shared_ptr<Qpx::Sink>gate_x;
   std::shared_ptr<Qpx::Sink>gate_y;
