@@ -20,61 +20,29 @@
 #define Q_MARKER_H
 
 #include "detector.h"
+#include "roi.h"
 #include <QPen>
 #include <QMap>
+#include <QVariant>
 
 struct AppearanceProfile {
   QMap<QString, QPen> themes;
   QPen default_pen;
 
   AppearanceProfile() : default_pen(Qt::gray, 1, Qt::SolidLine) {}
-  QPen get_pen(QString theme) {
-    if (themes.count(theme))
-      return themes[theme];
-    else
-      return default_pen;
-  }
+  QPen get_pen(QString theme);
 };
 
 class Coord {
 public:
   Coord() : bits_(-1), energy_(nan("")), bin_(nan("")) {}
 
-  void set_energy(double nrg, Qpx::Calibration cali) {
-    bin_ = nan("");
-    bits_ = 0;
-    energy_ = nrg;
-    if (!isnan(nrg)) {
-      bits_ = cali.bits_;
-      bin_ = cali.inverse_transform(nrg);
-    }
-  }
-
-  void set_bin(double bin, uint16_t bits, Qpx::Calibration cali) {
-    bin_ = bin;
-    bits_ = bits;
-    energy_ = nan("");
-    if (!isnan(bin)/* && cali.valid()*/)
-      energy_ = cali.transform(bin_, bits_);
-  }
-
-  double energy() const {
-    return energy_;
-  }
+  void set_energy(double nrg, Qpx::Calibration cali);
+  void set_bin(double bin, uint16_t bits, Qpx::Calibration cali);
 
   uint16_t bits() const {return bits_;}
-
-  double bin(const uint16_t to_bits) const {
-    if (!to_bits || !bits_)
-      return nan("");
-
-    if (bits_ > to_bits)
-      return bin_ / pow(2, bits_ - to_bits);
-    if (bits_ < to_bits)
-      return bin_ * pow(2, to_bits - bits_);
-    else
-      return bin_;
-  }
+  double energy() const;
+  double bin(const uint16_t to_bits) const;
 
   bool operator!= (const Coord& other) const { return (!operator==(other)); }
   bool operator== (const Coord& other) const {
@@ -147,7 +115,16 @@ struct MarkerBox2D {
 };
 
 struct Peak2D {
+  Peak2D() {}
+  Peak2D(Qpx::ROI &x_roi, Qpx::ROI &y_roi, double x_center, double y_center);
+
+  void adjust_x(Qpx::ROI &roi, double center);
+  void adjust_y(Qpx::ROI &roi, double center);
+  void adjust_diag_x(Qpx::ROI &roi, double center);
+  void adjust_diag_y(Qpx::ROI &roi, double center);
+
   MarkerBox2D area[3][3];
+  Qpx::ROI x, y, dx, dy;
   bool approved;
 };
 

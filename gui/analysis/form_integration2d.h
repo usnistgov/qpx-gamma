@@ -104,22 +104,15 @@ protected:
 
 private slots:
   void selection_changed(QItemSelection,QItemSelection);
-  void on_pushRemove_clicked();
-  void on_doubleGateOn_editingFinished();
-  void update_range(Range);
-  void update_peaks(bool);
-
-  void on_pushAddPeak2d_clicked();
-
-  void on_pushShowDiagonal_clicked();
-
   void gated_fits_updated(std::set<double>);
 
   void on_pushCentroidX_clicked();
-
   void on_pushCentroidY_clicked();
-
   void on_pushCentroidXY_clicked();
+  void on_pushRemove_clicked();
+  void on_doubleGateOn_editingFinished();
+  void on_pushAddPeak2d_clicked();
+  void on_pushShowDiagonal_clicked();
 
 private:
   Ui::FormIntegration2D *ui;
@@ -145,7 +138,9 @@ private:
   int32_t index_of(double, double);
   int32_t current_idx();
 
-  Qpx::Fitter fit_x_, fit_y_, fit_d_;
+  double gate_width_;
+
+  Qpx::Fitter fit_x_, fit_y_;
 
   void rebuild_table(bool contents_changed);
   void make_gates();

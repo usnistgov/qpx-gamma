@@ -84,5 +84,18 @@
     </qresource>
     <qresource prefix="/">
         <file>loader.gif</file>
+        <file>sounds/laser1.wav</file>
+        <file>sounds/laser2.wav</file>
+        <file>sounds/laser3.wav</file>
+        <file>sounds/laser4.wav</file>
+        <file>sounds/laser5.wav</file>
+        <file>sounds/laser6.wav</file>
+        <file>sounds/laser7.wav</file>
+        <file>sounds/laser8.wav</file>
+        <file>sounds/laser9.wav</file>
+        <file>sounds/laser10.wav</file>
+        <file>sounds/laser11.wav</file>
+        <file>sounds/laser12.wav</file>
+        <file>sounds/laser13.wav</file>
     </qresource>
 </RCC>

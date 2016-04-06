@@ -158,9 +158,8 @@ void FormMultiGates::update_current_gate(Qpx::Gate gate) {
     gate.approved = true;
 
   double livetime = gate.fit_data_.metadata_.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
-  //PL_DBG << "update current gate " << gate.centroid_chan << " with LT = " << livetime;
-  if (livetime == 0)
-    livetime = 10000;
+  if (livetime <= 0)
+    livetime = 100;
   gate.cps = gate.fit_data_.metadata_.total_count.convert_to<double>() / livetime;
 
   if (gate.centroid_chan == -1) {
@@ -322,7 +321,10 @@ void FormMultiGates::on_pushApprove_clicked()
 
   for (auto &q : data.peaks()) {
     Qpx::Gate newgate;
-    newgate.cps           = q.second.area_best.val / (data.metadata_.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001);
+    double livetime = data.metadata_.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+    if (livetime <= 0)
+      livetime = 100;
+    newgate.cps           = q.second.area_best.val / livetime;
     newgate.centroid_chan = q.second.center;
     newgate.centroid_nrg  = q.second.energy;
     newgate.width_chan    = std::round(q.second.fwhm_hyp * ui->doubleGateOn->value());
@@ -466,7 +468,6 @@ void FormMultiGates::remake_gate(bool force) {
 }
 
 void FormMultiGates::setSpectrum(Qpx::Project *newset, QString name) {
-  PL_DBG << "gates set spectrum";
   clear();
   spectra_ = newset;
   current_spectrum_ = name;

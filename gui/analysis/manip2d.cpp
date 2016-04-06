@@ -27,7 +27,28 @@
 
 namespace Qpx {
 
-bool slice_diagonal(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx) {
+bool slice_rectangular(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination, std::initializer_list<Pair> bounds) {
+  if (source == nullptr)
+    return false;
+  if (destination == nullptr)
+    return false;
+
+  Metadata md = source->metadata();
+
+  if ((md.total_count > 0) && (md.dimensions() == 2))
+  {
+    destination->set_detectors(md.detectors);
+
+    std::shared_ptr<EntryList> spectrum_data = std::move(source->data_range(bounds));
+    for (auto it : *spectrum_data)
+      destination->append(it);
+
+  }
+
+  return (destination->metadata().total_count > 0);
+}
+
+bool slice_diagonal_x(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx) {
   if (source == nullptr)
     return false;
   if (destination == nullptr)
@@ -56,8 +77,7 @@ bool slice_diagonal(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destinat
   return (destination->metadata().total_count > 0);
 }
 
-
-bool slice_rectangular(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination, std::initializer_list<Pair> bounds) {
+bool slice_diagonal_y(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t miny, uint32_t maxy) {
   if (source == nullptr)
     return false;
   if (destination == nullptr)
@@ -69,14 +89,32 @@ bool slice_rectangular(std::shared_ptr<Sink> source, std::shared_ptr<Sink> desti
   {
     destination->set_detectors(md.detectors);
 
-    std::shared_ptr<EntryList> spectrum_data = std::move(source->data_range(bounds));
-    for (auto it : *spectrum_data)
-      destination->append(it);
+    int diag_width = std::round(std::sqrt((width*width)/2.0));
+    if ((diag_width % 2) == 0)
+      diag_width++;
+
+    int tot = xc + yc;
+    for (int i=0; i < tot; ++i) {
+      if ((i >= miny) && (i < maxy)) {
+        Entry entry({i}, sum_diag(source, tot-i, i, diag_width));
+        destination->append(entry);
+      }
+    }
 
   }
 
   return (destination->metadata().total_count > 0);
 }
+
+PreciseFloat sum_diag(std::shared_ptr<Sink> source, uint16_t x, uint16_t y, uint16_t width)
+{
+  PreciseFloat ans = sum_with_neighbors(source, x, y);
+  int w = (width-1)/2;
+  for (int i=1; i < w; ++i)
+    ans += sum_with_neighbors(source, x-i, y-i) + sum_with_neighbors(source, x+i, y+i);
+  return ans;
+}
+
 
 PreciseFloat sum_with_neighbors(std::shared_ptr<Sink> source, uint16_t x, uint16_t y)
 {
@@ -86,15 +124,6 @@ PreciseFloat sum_with_neighbors(std::shared_ptr<Sink> source, uint16_t x, uint16
     ans += 0.25 * source->data({x-1,y});
   if (y != 0)
     ans += 0.25 * source->data({x,y-1});
-  return ans;
-}
-
-PreciseFloat sum_diag(std::shared_ptr<Sink> source, uint16_t x, uint16_t y, uint16_t width)
-{
-  PreciseFloat ans = sum_with_neighbors(source, x, y);
-  int w = (width-1)/2;
-  for (int i=1; i < w; ++i)
-    ans += sum_with_neighbors(source, x-i, y-i) + sum_with_neighbors(source, x+i, y+i);
   return ans;
 }
 

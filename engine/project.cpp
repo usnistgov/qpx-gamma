@@ -395,6 +395,10 @@ void Project::read_xml(std::string file_name, bool with_spectra, bool with_full_
           Spill sp = s;
           if (!new_spectrum->metadata().detectors.empty()) //backwards compat
             sp.detectors.clear();
+          else {
+            for (auto &d : sp.detectors)
+              d.energy_calibrations_.add(Qpx::Calibration("Energy", new_spectrum->metadata().bits));
+          }
           new_spectrum->push_spill(sp);
         }
         my_spectra_.push_back(new_spectrum);

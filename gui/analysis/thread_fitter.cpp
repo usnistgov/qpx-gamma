@@ -32,7 +32,6 @@ ThreadFitter::ThreadFitter(QObject *parent) :
   start(HighPriority);
 }
 
-
 void ThreadFitter::terminate() {
   terminating_.store(true);
   wait();
@@ -149,8 +148,8 @@ void ThreadFitter::run() {
         if ((action_ == kStop) || terminating_.load())
           break;
       }
-      emit fitting_done();
       action_ = kIdle;
+      emit fitting_done();
     } else if (action_ == kRefit) {
       if (fitter_.regions_.count(target_ROI_)) {
         fitter_.regions_[target_ROI_].rebuild();

@@ -113,6 +113,8 @@ FormFitter::FormFitter(QWidget *parent) :
 {
   ui->setupUi(this);
 
+  player = new QMediaPlayer(this);
+
   ui->plot->setInteraction(QCP::iSelectItems, true);
   ui->plot->setInteraction(QCP::iRangeDrag, true);
   ui->plot->yAxis->axisRect()->setRangeDrag(Qt::Horizontal);
@@ -212,7 +214,7 @@ FormFitter::~FormFitter()
 
 void FormFitter::setFit(Qpx::Fitter* fit) {
   fit_data_ = fit;
-  update_spectrum();
+  update_spectrum(title_text_);
   updateData();
 }
 
@@ -259,9 +261,12 @@ void FormFitter::update_spectrum(QString title) {
     return;
   }
 
-  if (title.isEmpty())
-    title = "Spectrum=" + QString::fromStdString(fit_data_->metadata_.name) + "  Detector=" + QString::fromStdString(fit_data_->detector_.name_);
+//  if (title.isEmpty())
+//    title = "Spectrum=" + QString::fromStdString(fit_data_->metadata_.name) + "  Detector=" + QString::fromStdString(fit_data_->detector_.name_);
   title_text_ = title;
+
+  if (fit_data_->peaks().empty())
+    selected_peaks_.clear();
 
   reset_scales();
 
@@ -365,6 +370,7 @@ void FormFitter::createRange(Coord c) {
 }
 
 void FormFitter::set_selected_peaks(std::set<double> selected_peaks) {
+
   bool changed = (selected_peaks_ != selected_peaks);
   selected_peaks_ = selected_peaks;
 
@@ -544,6 +550,13 @@ void FormFitter::replace_peaks(std::vector<Qpx::Peak> pks) {
 }
 
 void FormFitter::fit_updated(Qpx::Fitter fitter) {
+//  if (player->state() != QMediaPlayer::PlayingState) {
+//    player->setMedia(QUrl("qrc:/sounds/laser6.wav"));
+//    player->setVolume(100);
+//    player->setPosition(0);
+//    player->play();
+////    while (player->state() == QMediaPlayer::PlayingState) {}
+//  }
   *fit_data_ = fitter;
   toggle_push();
   updateData();;
@@ -551,6 +564,15 @@ void FormFitter::fit_updated(Qpx::Fitter fitter) {
 }
 
 void FormFitter::fitting_complete() {
+//  while (player->state() == QMediaPlayer::PlayingState)
+//    player->stop();
+
+//  player->setMedia(QUrl("qrc:/sounds/laser12.wav"));
+//  player->setVolume(100);
+//  player->setPosition(0);
+//  player->play();
+////    while (player->state() == QMediaPlayer::PlayingState) {}
+
   busy_= false;
   calc_visible();
   ui->plot->replot();
@@ -600,6 +622,7 @@ void FormFitter::clearSelection()
 {
   range_.visible = false;
   selected_peaks_.clear();
+
   selected_roi_ = -1;
   plotRange();
   calc_visible();
@@ -618,9 +641,9 @@ void FormFitter::plotTitle() {
   if (!title_text_.isEmpty()) {
     QCPItemText *floatingText = new QCPItemText(ui->plot);
     ui->plot->addItem(floatingText);
-    floatingText->setPositionAlignment(Qt::AlignTop|Qt::AlignHCenter);
+    floatingText->setPositionAlignment(Qt::AlignTop|Qt::AlignRight);
     floatingText->position->setType(QCPItemPosition::ptAxisRectRatio);
-    floatingText->position->setCoords(0.5, 0); // place position at center/top of axis rect
+    floatingText->position->setCoords(1, 0); // place position at center/top of axis rect
     floatingText->setText(title_text_);
     floatingText->setProperty("floating text", true);
     floatingText->setFont(QFont("Helvetica", 10));
@@ -1098,6 +1121,7 @@ void FormFitter::plot_mouse_clicked(double x, double y, QMouseEvent* event, bool
   if (event->button() == Qt::RightButton) {
     range_.visible = false;
     selected_peaks_.clear();
+
     selected_roi_ = -1;
 
     plotRange();
@@ -1544,6 +1568,7 @@ void FormFitter::updateData() {
   plotButtons();
   plotROI_options();
   plotSUM4_options();
+  plotTitle();
 
   calc_visible();
   plot_rezoom(true);

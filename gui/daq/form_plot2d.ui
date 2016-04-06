@@ -180,14 +180,14 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>Details / analysis</string>
+          <string>Symmetrize</string>
          </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
           <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/icons/oxy/16/preferences_web_browser_cache.png</normaloff>:/icons/oxy/16/preferences_web_browser_cache.png</iconset>
+           <normaloff>:/icons/oxy/16/applications_systemg.png</normaloff>:/icons/oxy/16/applications_systemg.png</iconset>
          </property>
          <property name="iconSize">
           <size>

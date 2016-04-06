@@ -67,6 +67,7 @@ private:
   boost::atomic<bool> terminating_;
 
   boost::atomic<bool> interruptor_;
+
 };
 
 #endif

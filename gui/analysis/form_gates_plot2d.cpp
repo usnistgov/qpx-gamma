@@ -118,7 +118,7 @@ void FormGatesPlot2D::replot_markers() {
     label.selectable = q.selectable;
     label.selected = q.selected;
 
-    if ((q.horizontal) && (q.vertical)) {
+    if (q.horizontal && q.vertical) {
       label.x = q.x2;
       label.y = q.y2;
       label.vertical = false;
@@ -162,14 +162,14 @@ void FormGatesPlot2D::replot_markers() {
   gate.visible = y_marker.visible;
   gate.x1.set_bin(0, bits, calib_x_);
   gate.x2.set_bin(adjrange, bits, calib_x_);
-  gate.y1.set_bin(y_marker.pos.bin(bits) - width, bits, calib_x_);
-  gate.y2.set_bin(y_marker.pos.bin(bits) + width, bits, calib_x_);
+  gate.y1.set_bin(y_marker.pos.bin(bits) - width - 0.5, bits, calib_x_);
+  gate.y2.set_bin(y_marker.pos.bin(bits) + width + 0.5, bits, calib_x_);
   gatey = gate;
   boxes.push_back(gate);
 
   gate.visible = x_marker.visible;
-  gate.x1.set_bin(x_marker.pos.bin(bits) - width, bits, calib_x_);
-  gate.x2.set_bin(x_marker.pos.bin(bits) + width, bits, calib_x_);
+  gate.x1.set_bin(x_marker.pos.bin(bits) - width - 0.5, bits, calib_x_);
+  gate.x2.set_bin(x_marker.pos.bin(bits) + width + 0.5, bits, calib_x_);
   gate.y1.set_bin(0, bits, calib_x_);
   gate.y2.set_bin(adjrange, bits, calib_x_);
   gatex = gate;
@@ -276,6 +276,8 @@ void FormGatesPlot2D::markers_moved(Marker x, Marker y) {
     replot_markers();
   }
 
+//  PL_DBG << "<GatesPlot2D> markers moved";
+
   emit markers_set(x, y);
 }
 
@@ -313,6 +315,8 @@ void FormGatesPlot2D::on_spinGateWidth_editingFinished()
     ui->spinGateWidth->setValue(width*2 + 1);
 
   replot_markers();
+//  PL_DBG << "<GatesPlot2D> spingates";
+
   emit markers_set(x_marker, y_marker);
 }
 

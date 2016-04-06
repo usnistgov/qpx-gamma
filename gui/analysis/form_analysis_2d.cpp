@@ -192,9 +192,10 @@ void FormAnalysis2D::update_gates(Marker xx, Marker yy) {
     else
       my_gates_->make_range(xx);
   } else if (form_integration_->isVisible()) {
-    if (ui->plotMatrix->gate_width() != my_gates_->current_gate().width_chan)
-      PL_DBG << "spin change on peaks, unimplemented";
-    else
+    PL_DBG << "udtgates";
+//    if (ui->plotMatrix->gate_width() != my_gates_->current_gate().width_chan)
+//      PL_DBG << "spin change on peaks, unimplemented";
+//    else
       form_integration_->make_range(xx, yy);
   }
 }

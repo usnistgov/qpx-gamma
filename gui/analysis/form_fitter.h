@@ -29,6 +29,8 @@
 #include "special_delegate.h"
 #include <QItemSelection>
 #include <QRadioButton>
+#include <QtMultimedia>
+
 #include "project.h"
 #include "thread_fitter.h"
 #include "marker.h"
@@ -168,6 +170,8 @@ private:
 
   QString scale_type_;
   QString title_text_;
+
+  QMediaPlayer *player;
 
   void trim_log_lower(QVector<double> &array);
   void calc_visible();
