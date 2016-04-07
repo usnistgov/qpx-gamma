@@ -31,7 +31,9 @@
 #include "daq_sink_factory.h"
 #include <boost/algorithm/string.hpp>
 
-DialogDetector::DialogDetector(Qpx::Detector mydet, QDir rd, bool editName, QWidget *parent) :
+using namespace Qpx;
+
+DialogDetector::DialogDetector(Detector mydet, QDir rd, bool editName, QWidget *parent) :
   root_dir_(rd),
   my_detector_(mydet),
   table_nrgs_(my_detector_.energy_calibrations_, false),
@@ -44,10 +46,10 @@ DialogDetector::DialogDetector(Qpx::Detector mydet, QDir rd, bool editName, QWid
   ui->setupUi(this);
 
   //file formats, should be in detector db widget
-  std::vector<std::string> spectypes = Qpx::SinkFactory::getInstance().types();
+  std::vector<std::string> spectypes = SinkFactory::getInstance().types();
   QStringList filetypes;
   for (auto &q : spectypes) {
-    Qpx::Metadata type_template = Qpx::SinkFactory::getInstance().create_prototype(q);
+    Metadata type_template = SinkFactory::getInstance().create_prototype(q);
     if (!type_template.input_types().empty())
       filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template.input_types()) + ")");
   }
@@ -100,7 +102,7 @@ DialogDetector::~DialogDetector()
 }
 
 void DialogDetector::updateDisplay() {
-  if (my_detector_.name_ != Qpx::Detector().name_)
+  if (my_detector_.name_ != Detector().name_)
     ui->lineName->setText(QString::fromStdString(my_detector_.name_));
   else
     ui->lineName->clear();
@@ -141,7 +143,7 @@ void DialogDetector::on_comboType_currentIndexChanged(const QString &arg1)
 
 void DialogDetector::on_buttonBox_accepted()
 {
-  if (my_detector_.name_ == Qpx::Detector().name_) {
+  if (my_detector_.name_ == Detector().name_) {
     QMessageBox msgBox;
     msgBox.setText("Please give it a proper name");
     msgBox.exec();
@@ -157,11 +159,11 @@ void DialogDetector::on_pushReadOpti_clicked()
   if (!validateFile(this, fileName, false))
     return;
 
-  Qpx::Project optiSource;
+  Project optiSource;
   optiSource.read_xml(fileName.toStdString(), false);
-  std::set<Qpx::Spill> spills = optiSource.spills();
+  std::set<Spill> spills = optiSource.spills();
   if (spills.size()) {
-    Qpx::Spill sp = *spills.rbegin();
+    Spill sp = *spills.rbegin();
     for (auto &q : sp.detectors)
       if (q.name_ == my_detector_.name_)
         my_detector_ = q;
@@ -178,11 +180,11 @@ void DialogDetector::on_pushRead1D_clicked()
 
   this->setCursor(Qt::WaitCursor);
 
-  std::shared_ptr<Qpx::Sink> newSpectrum = Qpx::SinkFactory::getInstance().create_from_file(fileName.toStdString());
+  SinkPtr newSpectrum = SinkFactory::getInstance().create_from_file(fileName.toStdString());
   if (newSpectrum != nullptr) {
-    std::vector<Qpx::Detector> dets = newSpectrum->metadata().detectors;
+    std::vector<Detector> dets = newSpectrum->metadata().detectors;
     for (auto &q : dets)
-      if (q != Qpx::Detector()) {
+      if (q != Detector()) {
         PL_INFO << "Looking at calibrations from detector " << q.name_;
         for (auto &p : q.energy_calibrations_.my_data_) {
           if (p.bits_) {
@@ -232,13 +234,13 @@ void DialogDetector::on_pushRemoveGain_clicked()
 
 void DialogDetector::on_pushClearFWHM_clicked()
 {
-  my_detector_.fwhm_calibration_ = Qpx::Calibration();
+  my_detector_.fwhm_calibration_ = Calibration();
   updateDisplay();
 }
 
 void DialogDetector::on_pushClearEfficiency_clicked()
 {
-  my_detector_.efficiency_calibration_ = Qpx::Calibration();
+  my_detector_.efficiency_calibration_ = Calibration();
   updateDisplay();
 }
 
@@ -431,7 +433,7 @@ WidgetDetectors::WidgetDetectors(QWidget *parent) :
 
 }
 
-void WidgetDetectors::setData(XMLableDB<Qpx::Detector> &newdb, QString outdir) {
+void WidgetDetectors::setData(XMLableDB<Detector> &newdb, QString outdir) {
   table_model_.setDB(newdb);
   detectors_ = &newdb;
   root_dir_  = outdir;
@@ -469,8 +471,8 @@ void WidgetDetectors::toggle_push() {
 
 void WidgetDetectors::on_pushNew_clicked()
 {
-  DialogDetector* newDet = new DialogDetector(Qpx::Detector(), QDir(root_dir_), true, this);
-  connect(newDet, SIGNAL(newDetReady(Qpx::Detector)), this, SLOT(addNewDet(Qpx::Detector)));
+  DialogDetector* newDet = new DialogDetector(Detector(), QDir(root_dir_), true, this);
+  connect(newDet, SIGNAL(newDetReady(Detector)), this, SLOT(addNewDet(Detector)));
   newDet->exec();
 }
 
@@ -482,7 +484,7 @@ void WidgetDetectors::on_pushEdit_clicked()
   int i = ixl.front().row();
 
   DialogDetector* newDet = new DialogDetector(detectors_->get(i), QDir(root_dir_), false, this);
-  connect(newDet, SIGNAL(newDetReady(Qpx::Detector)), this, SLOT(addNewDet(Qpx::Detector)));
+  connect(newDet, SIGNAL(newDetReady(Detector)), this, SLOT(addNewDet(Detector)));
   newDet->exec();
 }
 
@@ -527,7 +529,7 @@ void WidgetDetectors::on_pushExport_clicked()
   }
 }
 
-void WidgetDetectors::addNewDet(Qpx::Detector newDetector) {
+void WidgetDetectors::addNewDet(Detector newDetector) {
   detectors_->add(newDetector);
   detectors_->replace(newDetector);
   selection_model_.reset();

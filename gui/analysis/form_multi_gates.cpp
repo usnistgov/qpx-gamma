@@ -30,6 +30,8 @@
 #include "manip2d.h"
 #include "qpx_util.h"
 
+using namespace Qpx;
+
 FormMultiGates::FormMultiGates(QSettings &settings, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormMultiGates),
@@ -37,7 +39,8 @@ FormMultiGates::FormMultiGates(QSettings &settings, QWidget *parent) :
   settings_(settings),
   table_model_(this),
   sortModel(this),
-  gate_x(nullptr)
+  gate_x(nullptr),
+  current_spectrum_(0)
 {
   ui->setupUi(this);
 
@@ -65,14 +68,14 @@ FormMultiGates::FormMultiGates(QSettings &settings, QWidget *parent) :
 
   connect(ui->gatedSpectrum, SIGNAL(range_changed(Range)), this, SLOT(range_changed_in_plot(Range)));
 
-  tempx = Qpx::SinkFactory::getInstance().create_prototype("1D");
+  tempx = SinkFactory::getInstance().create_prototype("1D");
   //tempx.visible = true;
-  Qpx::Setting pattern;
-  pattern = tempx.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  Setting pattern;
+  pattern = tempx.attributes.branches.get(Setting("pattern_coinc"));
   pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
   pattern.value_pattern.set_theshold(2);
   tempx.attributes.branches.replace(pattern);
-  pattern = tempx.attributes.branches.get(Qpx::Setting("pattern_add"));
+  pattern = tempx.attributes.branches.get(Setting("pattern_add"));
   pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
   pattern.value_pattern.set_theshold(1);
   tempx.attributes.branches.replace(pattern);
@@ -149,7 +152,7 @@ int32_t FormMultiGates::index_of(double centroid, bool fuzzy) {
 }
 
 
-void FormMultiGates::update_current_gate(Qpx::Gate gate) {
+void FormMultiGates::update_current_gate(Gate gate) {
   int32_t index = index_of(gate.centroid_chan, false);
   //PL_DBG << "update current gate " << index;
 
@@ -157,7 +160,7 @@ void FormMultiGates::update_current_gate(Qpx::Gate gate) {
   if ((index != -1) && (gates_[index].approved))
     gate.approved = true;
 
-  double livetime = gate.fit_data_.metadata_.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  double livetime = gate.fit_data_.metadata_.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
   if (livetime <= 0)
     livetime = 100;
   gate.cps = gate.fit_data_.metadata_.total_count.convert_to<double>() / livetime;
@@ -199,14 +202,14 @@ int32_t FormMultiGates::current_idx() {
   return current_gate_;
 }
 
-Qpx::Gate FormMultiGates::current_gate() {
+Gate FormMultiGates::current_gate() {
   uint32_t  current_gate_ = current_idx();
 
   if (current_gate_ < 0)
-    return Qpx::Gate();
+    return Gate();
   if (current_gate_ >= gates_.size()) {
     current_gate_ = -1;
-    return Qpx::Gate();
+    return Gate();
   } else
     return gates_[current_gate_];
 }
@@ -314,14 +317,14 @@ void FormMultiGates::on_pushApprove_clicked()
 
 
   gates_[current_gate_].approved = true;
-  Qpx::Fitter data = gates_[current_gate_].fit_data_;
+  Fitter data = gates_[current_gate_].fit_data_;
 
   if (!data.peaks().size())
     return;
 
   for (auto &q : data.peaks()) {
-    Qpx::Gate newgate;
-    double livetime = data.metadata_.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+    Gate newgate;
+    double livetime = data.metadata_.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
     if (livetime <= 0)
       livetime = 100;
     newgate.cps           = q.second.area_best.val / livetime;
@@ -352,14 +355,14 @@ void FormMultiGates::on_pushDistill_clicked()
   box.mark_center = true;
 
   for (auto &q : gates_) {
-    Qpx::Gate gate = q;
+    Gate gate = q;
     if (gate.centroid_chan != -1) {
       box.y_c.set_bin(gate.centroid_chan, gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
       box.y1.set_bin(gate.centroid_chan - (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
       box.y2.set_bin(gate.centroid_chan + (gate.width_chan / 2.0), gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
 
       for (auto &p : gate.fit_data_.peaks()) {
-        Qpx::Peak peak = p.second;
+        Peak peak = p.second;
         box.x_c.set_bin(peak.center, gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
         box.x1.set_bin(peak.center - (peak.fwhm_hyp * 0.5 * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
         box.x2.set_bin(peak.center + (peak.fwhm_hyp * 0.5 * ui->doubleGateOn->value()), gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
@@ -411,7 +414,7 @@ void FormMultiGates::remake_gate(bool force) {
   double ymin = 0;
   double ymax = res - 1;
 
-  Qpx::Gate gate = current_gate();
+  Gate gate = current_gate();
   //PL_DBG << "gates remake gate c=" << gate.centroid_chan << " w=" << gate.width_chan;
 
   if (gates_.empty()) {
@@ -467,14 +470,14 @@ void FormMultiGates::remake_gate(bool force) {
   update_peaks(true);
 }
 
-void FormMultiGates::setSpectrum(Qpx::Project *newset, QString name) {
+void FormMultiGates::setSpectrum(Project *newset, int64_t idx) {
   clear();
   spectra_ = newset;
-  current_spectrum_ = name;
-  std::shared_ptr<Qpx::Sink>spectrum = spectra_->by_name(current_spectrum_.toStdString());
+  current_spectrum_ = idx;
+  SinkPtr spectrum = spectra_->get_sink(idx);
 
   if (spectrum && spectrum->bits()) {
-    Qpx::Metadata md = spectrum->metadata();
+    Metadata md = spectrum->metadata();
     res = pow(2,md.bits);
     remake_gate(true);
     if (!gates_.empty()) {
@@ -487,13 +490,13 @@ void FormMultiGates::setSpectrum(Qpx::Project *newset, QString name) {
 }
 
 void FormMultiGates::make_gated_spectra() {
-  std::shared_ptr<Qpx::Sink> source_spectrum = spectra_->by_name(current_spectrum_.toStdString());
+  SinkPtr source_spectrum = spectra_->get_sink(current_spectrum_);
   if (!source_spectrum)
     return;
 
   this->setCursor(Qt::WaitCursor);
 
-  Qpx::Metadata md = source_spectrum->metadata();
+  Metadata md = source_spectrum->metadata();
 
   //  PL_DBG << "Coincidence gate x[" << xmin_ << "-" << xmax_ << "]   y[" << ymin_ << "-" << ymax_ << "]";
 
@@ -506,10 +509,10 @@ void FormMultiGates::make_gated_spectra() {
     tempx.name = md.detectors[0].name_ + "[" + to_str_precision(md.detectors[1].best_calib(md.bits).transform(ymin_, md.bits), 0) + ","
         + to_str_precision(md.detectors[1].best_calib(md.bits).transform(ymax_, md.bits), 0) + "]";
 
-    gate_x = Qpx::SinkFactory::getInstance().create_from_prototype(tempx);
+    gate_x = SinkFactory::getInstance().create_from_prototype(tempx);
 
     //if?
-    Qpx::slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {ymin_, ymax_}});
+    slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {ymin_, ymax_}});
 
     fit_data_.clear();
     fit_data_.setData(gate_x);
@@ -568,7 +571,7 @@ void FormMultiGates::update_peaks(bool content_changed) {
   //    ui->plotMatrix->set_range_x(range2d);
   //    ui->plotMatrix->replot_markers();
 
-  Qpx::Gate gate;
+  Gate gate;
   gate.fit_data_ = fit_data_;
   gate.centroid_chan = yc_;
   gate.centroid_nrg = fit_data_.settings().cali_nrg_.transform(yc_);
@@ -598,17 +601,12 @@ void FormMultiGates::on_pushAddGatedSpectrum_clicked()
   bool success = false;
 
   if (gate_x && (gate_x->metadata().total_count > 0)) {
-    if (!spectra_->by_name(gate_x->name()))
-      PL_WARN << "Spectrum " << gate_x->name() << " already exists.";
-    else
-    {
-      Qpx::Setting app = gate_x->metadata().attributes.branches.get(Qpx::Setting("appearance"));
-      app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-      gate_x->set_option(app);
+    Setting app = gate_x->metadata().attributes.branches.get(Setting("appearance"));
+    app.value_text = generateColor().name(QColor::HexArgb).toStdString();
+    gate_x->set_option(app);
 
-      spectra_->add_spectrum(gate_x);
-      success = true;
-    }
+    spectra_->add_sink(gate_x);
+    success = true;
   }
 
   if (success) {
@@ -632,7 +630,7 @@ TableGates::TableGates(QObject *parent) :
 {
 }
 
-void TableGates::set_data(std::vector<Qpx::Gate> gates)
+void TableGates::set_data(std::vector<Gate> gates)
 {
   //std::reverse(gates_.begin(),gates_.end());
   emit layoutAboutToBeChanged();
@@ -659,7 +657,7 @@ QVariant TableGates::data(const QModelIndex &index, int role) const
   int col = index.column();
   int row = index.row();
 
-  Qpx::Gate gate = gates_[row];
+  Gate gate = gates_[row];
 
   if ((role == Qt::DisplayRole) || (role == Qt::EditRole))
   {

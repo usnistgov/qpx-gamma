@@ -79,9 +79,9 @@ private slots:
   void on_pushEnable2d_clicked();
   void on_pushForceRefresh_clicked();
 
-  void reqAnal(QString);
-  void reqAnal2D(QString);
-  void reqSym2D(QString);
+  void reqAnal(int64_t);
+  void reqAnal2D(int64_t);
+  void reqSym2D(int64_t);
   void reqEffCal(QString);
 
   void analysis_destroyed();

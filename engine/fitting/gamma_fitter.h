@@ -47,13 +47,13 @@ public:
 //  void apply_energy_calibration(Calibration cal);
 //  void apply_fwhm_calibration(Calibration cal);
 
-  Fitter(std::shared_ptr<Sink> spectrum)
+  Fitter(SinkPtr spectrum)
       : Fitter()
   {setData(spectrum);}
 
   void clear();
   
-  void setData(std::shared_ptr<Sink> spectrum);
+  void setData(SinkPtr spectrum);
 
   void find_regions();
   ROI *parent_of(double center);

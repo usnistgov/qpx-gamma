@@ -285,6 +285,14 @@ uint16_t Sink::bits() const {
 
 //change stuff
 
+void Sink::set_name(std::string newname) {
+  boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
+  while (!uniqueLock.try_lock())
+    boost::this_thread::sleep_for(boost::chrono::seconds{1});
+  metadata_.name = newname;
+  metadata_.changed = true;
+}
+
 void Sink::set_option(Setting setting, Match match) {
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())

@@ -81,7 +81,7 @@ void dialog_spectrum::det_selection_changed(QItemSelection, QItemSelection) {
 void dialog_spectrum::updateData() {
 //  md_ = my_spectrum_.metadata();
 
-  ui->labelName->setText(QString::fromStdString(md_.name));
+  ui->lineName->setText(QString::fromStdString(md_.name));
   ui->lineType->setText(QString::fromStdString(md_.type()));
   ui->lineBits->setText(QString::number(static_cast<int>(md_.bits)));
   ui->lineChannels->setText(QString::number(pow(2,md_.bits)));
@@ -165,9 +165,13 @@ void dialog_spectrum::on_pushLock_clicked()
 
 void dialog_spectrum::on_buttonBox_rejected()
 {
+  if (md_.name != ui->lineName->text().toStdString())
+    changed_ = true;
+
   if (changed_) {
     my_spectrum_.set_options(md_.attributes);
     my_spectrum_.set_detectors(md_.detectors);
+    my_spectrum_.set_name(ui->lineName->text().toStdString());
   }
 
   emit finished(changed_);
@@ -195,7 +199,12 @@ void dialog_spectrum::changeDet(Qpx::Detector newDetector) {
   if (i < md_.detectors.size()) {
     md_.detectors[i] = newDetector;
     changed_ = true;
-    updateData();
+
+    spectrum_detectors_.clear();
+    for (auto &q: md_.detectors)
+      spectrum_detectors_.add_a(q);
+    det_table_model_.update();
+    open_close_locks();
   }
 }
 
@@ -215,7 +224,12 @@ void dialog_spectrum::on_pushDetRename_clicked()
     if (i < md_.detectors.size()) {
       md_.detectors[i].name_ = text.toStdString();
       changed_ = true;
-      updateData();
+
+      spectrum_detectors_.clear();
+      for (auto &q: md_.detectors)
+        spectrum_detectors_.add_a(q);
+      det_table_model_.update();
+      open_close_locks();
     }
   }
 }
@@ -246,7 +260,12 @@ void dialog_spectrum::on_pushDetFromDB_clicked()
     Qpx::Detector newdet = detectors_.get(md_.detectors[i]);
     md_.detectors[i] = newdet;
     changed_ = true;
-    updateData();
+
+    spectrum_detectors_.clear();
+    for (auto &q: md_.detectors)
+      spectrum_detectors_.add_a(q);
+    det_table_model_.update();
+    open_close_locks();
   }
 }
 
@@ -285,7 +304,7 @@ void dialog_spectrum::on_pushDetToDB_clicked()
             if (md_.detectors[i].name_ != newdet.name_) {
               md_.detectors[i] = newdet;
               changed_ = true;
-              updateData();
+//              updateData();
             }
           }
         } else
@@ -311,5 +330,8 @@ void dialog_spectrum::on_spinDets_valueChanged(int arg1)
   md_.set_det_limit(arg1);
   if (md_.changed)
     changed_ = true;
-  updateData();
+
+  attr_model_.update(md_.attributes);
+  open_close_locks();
 }
+

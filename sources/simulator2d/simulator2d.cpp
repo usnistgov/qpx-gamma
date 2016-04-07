@@ -139,15 +139,11 @@ bool Simulator2D::read_settings_bulk(Qpx::Setting &set) const {
       else if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "Simulator2D/Source file"))
         q.value_text = source_file_;
       else if ((q.metadata.setting_type == Qpx::SettingType::int_menu) && (q.id_ == "Simulator2D/Source spectrum")) {
-        q.metadata.int_menu_items.clear();
-        q.value_int = 0;
-
-        for (int i=0; i < spectra_.size(); ++i) {
-          q.metadata.int_menu_items[i] = spectra_[i];
-          if (spectra_[i] == source_spectrum_)
-            q.value_int = i;
-        }
-
+        q.metadata.int_menu_items = spectra_names_;
+        if (spectra_names_.count(source_spectrum_))
+          q.value_int = source_spectrum_;
+        else
+          q.value_int = 0;
       }
     }
   }
@@ -187,26 +183,27 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
       scale_rate_ = q.value_dbl;
     else if (q.id_ == "Simulator2D/Source file") {
       if (q.value_text != source_file_) {
-        Qpx::Project* temp_set = new Qpx::Project;
-        temp_set->read_xml(q.value_text, true, false);
+        Qpx::Project temp_set;
+        temp_set.read_xml(q.value_text, true, false);
 
-        spectra_.clear();
+        spectra_names_.clear();
 
-        for (auto &q: temp_set->spectra(2, -1)) {
-          Qpx::Metadata md = q->metadata();
+        for (auto &q: temp_set.get_sinks(2, -1)) {
+          Qpx::Metadata md = q.second->metadata();
           PL_DBG << "<Simulator2D> Spectrum available: " << md.name << " t:" << md.type() << " r:" << md.bits;
-          spectra_.push_back(md.name);
+          spectra_names_[q.first] = md.name;
         }
 
-        if (!spectra_.empty())
+        if (!spectra_names_.empty())
           status_ = status_ | SourceStatus::can_boot;
-
-        delete temp_set;
       }
       source_file_ = q.value_text;
     }
-    else if (q.id_ == "Simulator2D/Source spectrum")
-      source_spectrum_ = q.metadata.int_menu_items[q.value_int];
+    else if (q.id_ == "Simulator2D/Source spectrum") {
+      if (!spectra_names_.count(q.value_int))
+        q.value_int = 0;
+      source_spectrum_ = q.value_int;
+    }
   }
 
   set.enrich(setting_definitions_);
@@ -222,15 +219,14 @@ bool Simulator2D::boot() {
 
   status_ = SourceStatus::loaded | SourceStatus::can_boot;
 
-  Qpx::Project* temp_set = new Qpx::Project;
+  Qpx::Project temp_set;
   PL_INFO << "<Simulator2D> Reading data from " << source_file_;
-  temp_set->read_xml(source_file_, true);
+  temp_set.read_xml(source_file_, true);
 
-  std::shared_ptr<Sink> spectrum = temp_set->by_name(source_spectrum_);
+  SinkPtr spectrum = temp_set.get_sink(source_spectrum_);
 
   if (spectrum == nullptr) {
-    PL_DBG << "<Simulator2D> Could not find spectrum " << source_spectrum_;
-    delete temp_set;
+    PL_DBG << "<Simulator2D> Could not find spectrum " << spectra_names_.at(source_spectrum_);
     return false;
   }
 
@@ -242,7 +238,7 @@ bool Simulator2D::boot() {
 
   PL_DBG << "<Simulator2D> source total events coinc " << md.total_count;
 
-  std::set<Spill> spills = temp_set->spills();
+  std::set<Spill> spills = temp_set.spills();
   if (spills.size())
     settings = spills.begin()->state;
   detectors = md.detectors;
@@ -250,7 +246,6 @@ bool Simulator2D::boot() {
 
   if (lab_time == 0.0) {
     PL_WARN << "<Simulator2D> Lab time = 0. Cannot create simulation.";
-    delete temp_set;
     return false;
   }
 
@@ -287,13 +282,6 @@ bool Simulator2D::boot() {
   }
   valid_ = true;
 
-
-
-
-
-
-
-  delete temp_set;
 
   status_ = SourceStatus::loaded | SourceStatus::booted | SourceStatus::can_run;
 //  for (auto &q : set.branches.my_data_) {

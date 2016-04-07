@@ -30,9 +30,10 @@
 #include "form_daq_settings.h"
 #include "qt_util.h"
 
+using namespace Qpx;
 
-FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Qpx::Detector>& detectors,
-                       std::vector<Qpx::Detector>& current_dets, QWidget *parent) :
+FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Detector>& detectors,
+                       std::vector<Detector>& current_dets, QWidget *parent) :
   QWidget(parent),
   settings_(settings),
   spectra_templates_("SpectrumTemplates"),
@@ -57,10 +58,10 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Qpx:
   connect(&runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
 
   //file formats for opening mca spectra
-  std::vector<std::string> spectypes = Qpx::SinkFactory::getInstance().types();
+  std::vector<std::string> spectypes = SinkFactory::getInstance().types();
   QStringList filetypes;
   for (auto &q : spectypes) {
-    Qpx::Metadata type_template = Qpx::SinkFactory::getInstance().create_prototype(q);
+    Metadata type_template = SinkFactory::getInstance().create_prototype(q);
     if (!type_template.input_types().empty())
       filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template.input_types()) + ")");
   }
@@ -68,7 +69,7 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Qpx:
 
   //1d
   ui->Plot1d->setSpectra(spectra_);
-  connect(ui->Plot1d, SIGNAL(requestAnalysis(QString)), this, SLOT(reqAnal(QString)));
+  connect(ui->Plot1d, SIGNAL(requestAnalysis(int64_t)), this, SLOT(reqAnal(int64_t)));
   connect(ui->Plot1d, SIGNAL(requestEffCal(QString)), this, SLOT(reqEffCal(QString)));
   connect(&plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
   ui->Plot1d->setDetDB(detectors_);
@@ -77,8 +78,8 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Qpx:
   ui->Plot2d->setSpectra(spectra_);
   connect(ui->Plot1d, SIGNAL(marker_set(Marker)), ui->Plot2d, SLOT(set_marker(Marker)));
   connect(ui->Plot2d, SIGNAL(markers_set(Marker,Marker)), ui->Plot1d, SLOT(set_markers2d(Marker,Marker)));
-  connect(ui->Plot2d, SIGNAL(requestAnalysis(QString)), this, SLOT(reqAnal2D(QString)));
-  connect(ui->Plot2d, SIGNAL(requestSymmetrize(QString)), this, SLOT(reqSym2D(QString)));
+  connect(ui->Plot2d, SIGNAL(requestAnalysis(int64_t)), this, SLOT(reqAnal2D(int64_t)));
+  connect(ui->Plot2d, SIGNAL(requestSymmetrize(int64_t)), this, SLOT(reqSym2D(int64_t)));
   ui->Plot2d->setDetDB(detectors_);
 
   menuLoad.addAction(QIcon(":/icons/oxy/16/document_open.png"), "Open qpx project", this, SLOT(projectOpen()));
@@ -210,8 +211,8 @@ void FormMcaDaq::saveSettings() {
   settings_.endGroup();
 }
 
-void FormMcaDaq::toggle_push(bool enable, Qpx::SourceStatus status) {
-  bool online = (status & Qpx::SourceStatus::can_run);
+void FormMcaDaq::toggle_push(bool enable, SourceStatus status) {
+  bool online = (status & SourceStatus::can_run);
   bool nonempty = !spectra_.empty();
 
   ui->pushMcaStart->setEnabled(enable && online && !my_run_);
@@ -357,7 +358,7 @@ void FormMcaDaq::start_DAQ() {
 
   if (spectra_.empty()) {
     clearGraphs();
-    spectra_.set_spectra(spectra_templates_);
+    spectra_.set_prototypes(spectra_templates_);
     newProject();
   }
 //  spectra_.activate();
@@ -435,18 +436,18 @@ void FormMcaDaq::projectImport()
 
     if (ext == "spn") {
       spectra_.import_spn(fileNames.at(i).toStdString());
-      for (auto &q : spectra_.spectra()) {
-        Qpx::Setting app = q->metadata().attributes.branches.get(Qpx::Setting("appearance"));
+      for (auto &q : spectra_.get_sinks()) {
+        Setting app = q.second->metadata().attributes.branches.get(Setting("appearance"));
         app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-        q->set_option(app);
+        q.second->set_option(app);
       }
     } else {
-      std::shared_ptr<Qpx::Sink> newSpectrum = Qpx::SinkFactory::getInstance().create_from_file(fileNames.at(i).toStdString());
+      SinkPtr newSpectrum = SinkFactory::getInstance().create_from_file(fileNames.at(i).toStdString());
       if (newSpectrum != nullptr) {
-        Qpx::Setting app = newSpectrum->metadata().attributes.branches.get(Qpx::Setting("appearance"));
+        Setting app = newSpectrum->metadata().attributes.branches.get(Setting("appearance"));
         app.value_text = generateColor().name(QColor::HexArgb).toStdString();
         newSpectrum->set_option(app);
-        spectra_.add_spectrum(newSpectrum);
+        spectra_.add_sink(newSpectrum);
       } else {
         PL_INFO << "Spectrum construction did not succeed.";
       }
@@ -502,7 +503,11 @@ void FormMcaDaq::run_completed() {
 }
 
 
-void FormMcaDaq::reqAnal(QString name) {
+void FormMcaDaq::reqAnal(int64_t idx) {
+  SinkPtr selected = spectra_.get_sink(idx);
+  if (!selected)
+    return;
+
   this->setCursor(Qt::WaitCursor);
 
   if (my_analysis_ == nullptr) {
@@ -510,8 +515,9 @@ void FormMcaDaq::reqAnal(QString name) {
     connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_, SLOT(update_spectrum()));
     connect(my_analysis_, SIGNAL(destroyed()), this, SLOT(analysis_destroyed()));
   }
-  my_analysis_->setWindowTitle("1D: " + name);
-  my_analysis_->setSpectrum(&spectra_, name);
+
+  my_analysis_->setWindowTitle("1D: " + QString::fromStdString(selected->name()));
+  my_analysis_->setSpectrum(&spectra_, idx);
   emit requestAnalysis(my_analysis_);
 
   this->setCursor(Qt::ArrowCursor);
@@ -522,7 +528,11 @@ void FormMcaDaq::analysis_destroyed() {
   my_analysis_ = nullptr;
 }
 
-void FormMcaDaq::reqAnal2D(QString name) {
+void FormMcaDaq::reqAnal2D(int64_t idx) {
+  SinkPtr selected = spectra_.get_sink(idx);
+  if (!selected)
+    return;
+
   this->setCursor(Qt::WaitCursor);
 
   if (my_analysis_2d_ == nullptr) {
@@ -531,15 +541,20 @@ void FormMcaDaq::reqAnal2D(QString name) {
     connect(my_analysis_2d_, SIGNAL(destroyed()), this, SLOT(analysis2d_destroyed()));
     connect(my_analysis_2d_, SIGNAL(spectraChanged()), this, SLOT(updateSpectraUI()));
   }
-  my_analysis_2d_->setWindowTitle("2D: " + name);
-  my_analysis_2d_->setSpectrum(&spectra_, name);
+
+  my_analysis_2d_->setWindowTitle("2D: " + QString::fromStdString(selected->name()));
+  my_analysis_2d_->setSpectrum(&spectra_, idx);
   my_analysis_2d_->reset();
   emit requestAnalysis2D(my_analysis_2d_);
 
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormMcaDaq::reqSym2D(QString name) {
+void FormMcaDaq::reqSym2D(int64_t idx) {
+  SinkPtr selected = spectra_.get_sink(idx);
+  if (!selected)
+    return;
+
   this->setCursor(Qt::WaitCursor);
 
   if (my_symmetrization_2d_ == nullptr) {
@@ -548,8 +563,8 @@ void FormMcaDaq::reqSym2D(QString name) {
     connect(my_symmetrization_2d_, SIGNAL(destroyed()), this, SLOT(sym2d_destroyed()));
     connect(my_symmetrization_2d_, SIGNAL(spectraChanged()), this, SLOT(updateSpectraUI()));
   }
-  my_symmetrization_2d_->setWindowTitle("2D: " + name);
-  my_symmetrization_2d_->setSpectrum(&spectra_, name);
+  my_symmetrization_2d_->setWindowTitle("SYM: " + QString::fromStdString(selected->name()));
+  my_symmetrization_2d_->setSpectrum(&spectra_, idx);
   my_symmetrization_2d_->reset();
   emit requestSymmetriza2D(my_symmetrization_2d_);
 
@@ -607,8 +622,8 @@ void FormMcaDaq::on_pushForceRefresh_clicked()
 void FormMcaDaq::on_pushDetails_clicked()
 {
   //HACK
-  std::set<Qpx::Spill> spills = spectra_.spills();
-  Qpx::Setting set;
+  std::set<Spill> spills = spectra_.spills();
+  Setting set;
   if (spills.size())
     set = spills.begin()->state;
 

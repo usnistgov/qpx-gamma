@@ -27,7 +27,7 @@
 
 namespace Qpx {
 
-void Fitter::setData(std::shared_ptr<Sink> spectrum)
+void Fitter::setData(SinkPtr spectrum)
 {
 //  clear();
   if (spectrum) {

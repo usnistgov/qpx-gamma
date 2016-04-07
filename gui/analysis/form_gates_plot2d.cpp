@@ -24,9 +24,12 @@
 #include "dialog_spectrum.h"
 #include "custom_timer.h"
 
+using namespace Qpx;
+
 FormGatesPlot2D::FormGatesPlot2D(QWidget *parent) :
   QWidget(parent),
-  ui(new Ui::FormGatesPlot2D)
+  ui(new Ui::FormGatesPlot2D),
+  current_spectrum_(0)
 {
   ui->setupUi(this);
 
@@ -52,9 +55,9 @@ void FormGatesPlot2D::set_range_x(MarkerBox2D range) {
   ui->coincPlot->set_range_x(range);
 }
 
-void FormGatesPlot2D::setSpectra(Qpx::Project& new_set, QString spectrum) {
+void FormGatesPlot2D::setSpectra(Project& new_set, int64_t idx) {
   mySpectra = &new_set;
-  name_2d = spectrum;
+  current_spectrum_ = idx;
 
   //  update_plot();
 }
@@ -83,7 +86,7 @@ void FormGatesPlot2D::reset_content() {
   //PL_DBG << "reset content";
   ui->coincPlot->reset_content();
   ui->coincPlot->refresh();
-  name_2d.clear();
+  current_spectrum_ = 0;
   x_marker.visible = false;
   y_marker.visible = false;
   replot_markers();
@@ -224,9 +227,9 @@ void FormGatesPlot2D::update_plot() {
   this->setCursor(Qt::WaitCursor);
   CustomTimer guiside(true);
 
-  std::shared_ptr<Qpx::Sink> some_spectrum = mySpectra->by_name(name_2d.toStdString());
+  SinkPtr some_spectrum = mySpectra->get_sink(current_spectrum_);
 
-  Qpx::Metadata md;
+  Metadata md;
   if (some_spectrum)
     md = some_spectrum->metadata();
 
@@ -234,19 +237,16 @@ void FormGatesPlot2D::update_plot() {
   {
     //      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
-    std::shared_ptr<Qpx::EntryList> spectrum_data =
+    std::shared_ptr<EntryList> spectrum_data =
         std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
     ui->coincPlot->update_plot(adjrange, spectrum_data);
-
-    //        PL_DBG << "rescaling 2d";
-    name_2d = name_2d;
 
     int newbits = some_spectrum->bits();
     if (bits != newbits)
       bits = newbits;
 
-    Qpx::Detector detector_x_;
-    Qpx::Detector detector_y_;
+    Detector detector_x_;
+    Detector detector_y_;
     if (md.detectors.size() > 1) {
       detector_x_ = md.detectors[0];
       detector_y_ = md.detectors[1];
@@ -265,7 +265,7 @@ void FormGatesPlot2D::update_plot() {
   replot_markers();
 
 
-  PL_DBG << "<Plot2D> plotting took " << guiside.ms() << " ms";
+//  PL_DBG << "<Plot2D> plotting took " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
 }
 

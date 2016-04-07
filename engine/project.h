@@ -22,8 +22,8 @@
  *
  ******************************************************************************/
 
-#ifndef SPECTRA_SET_H
-#define SPECTRA_SET_H
+#ifndef QPX_PROJECT_H
+#define QPX_PROJECT_H
 
 #include "daq_sink.h"
 
@@ -31,8 +31,12 @@ namespace Qpx {
 
 class Project {
  public:
-  Project(): ready_(false), newdata_(false), terminating_(false), changed_(false),
-    identity_("New project") {}
+  Project()
+    : ready_(false), newdata_(false), terminating_(false), changed_(false)
+    , identity_("New project")
+    , current_index_(0)
+  {}
+
   ~Project();
 
   ////control//////
@@ -41,20 +45,20 @@ class Project {
   void terminate();   //explicitly in case other threads waiting for cond var
 
   //populate one of these ways
-  void set_spectra(const XMLableDB<Metadata>&);
-  void add_spectrum(std::shared_ptr<Sink> newSpectrum);
-  void add_spectrum(Metadata spectrum);
+  void set_prototypes(const XMLableDB<Metadata>&);
+  int64_t add_sink(SinkPtr sink);
+  int64_t add_sink(Metadata prototype);
 
   void import_spn(std::string file_name);
 
   void save();
   void save_as(std::string file_name);
 
-  void read_xml(std::string file_name, bool with_spectra = true, bool with_full_spectra = true);
+  void read_xml(std::string file_name, bool with_sinks = true, bool with_full_sinks = true);
 
-  void delete_spectrum(std::string name);
+  void delete_sink(int64_t idx);
 
-  //acquisition feeds events to all spectra
+  //acquisition feeds events to all sinks
   void add_spill(Spill* one_spill);
   void flush();
 
@@ -76,10 +80,10 @@ class Project {
     boost::unique_lock<boost::mutex> lock(mutex_); return spills_;
   }
   
-  //get spectra -- may not be thread-safe
-  std::shared_ptr<Sink> by_name(std::string name);
-  std::list<std::shared_ptr<Sink>> spectra(int32_t dim = -1, int32_t res = -1);
-  std::list<std::shared_ptr<Sink>> by_type(std::string reqType);
+  //get sinks
+  SinkPtr get_sink(int64_t idx);
+  std::map<int64_t, SinkPtr> get_sinks(int32_t dimensions = -1, int32_t bits = -1);
+  std::map<int64_t, SinkPtr> get_sinks(std::string type);
 
 
  private:
@@ -88,9 +92,10 @@ class Project {
   mutable boost::mutex mutex_;
   boost::condition_variable cond_;
   bool ready_, terminating_, newdata_;
+  int64_t current_index_;
 
   //data
-  std::list<std::shared_ptr<Sink>> my_spectra_;
+  std::map<int64_t, SinkPtr> sinks_;
   std::set<Spill> spills_;
 
   std::string identity_;

@@ -74,7 +74,7 @@ public:
   explicit FormIntegration2D(QSettings &settings, QWidget *parent = 0);
   ~FormIntegration2D();
 
-  void setSpectrum(Qpx::Project *newset, QString name);
+  void setSpectrum(Qpx::Project *newset, int64_t idx);
   void setPeaks(std::list<MarkerBox2D> pks);
 
   std::list<MarkerBox2D> peaks();
@@ -119,7 +119,7 @@ private:
   QSettings &settings_;
 
   Qpx::Project *spectra_;
-  QString current_spectrum_;
+  int64_t current_spectrum_;
   Qpx::Metadata md_;
 
   //double current_gate_;

@@ -36,7 +36,7 @@ CONFIG(debug, debug|release) {
 
 INSTALLS += target icon desktop
 
-QT += core gui multimedia multimediawidgets
+QT += core gui multimedia
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
 unix {

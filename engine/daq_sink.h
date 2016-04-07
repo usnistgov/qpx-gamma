@@ -150,6 +150,7 @@ public:
   uint16_t bits() const;
 
   //Change metadata
+  void set_name(std::string newname);
   void set_option(Setting setting, Match match = Match::id | Match::indices);
   void set_options(Setting settings);
   void set_detectors(const std::vector<Qpx::Detector>& dets);
@@ -190,6 +191,8 @@ protected:
   mutable boost::shared_mutex shared_mutex_;
   mutable boost::mutex unique_mutex_;
 };
+
+typedef std::shared_ptr<Sink> SinkPtr;
 
 }
 

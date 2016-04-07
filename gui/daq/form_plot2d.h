@@ -42,7 +42,7 @@ public:
   explicit FormPlot2D(QWidget *parent = 0);
   ~FormPlot2D();
 
-  void setSpectra(Qpx::Project& new_set, QString spectrum = QString());
+  void setSpectra(Qpx::Project& new_set);
 
   void setDetDB(XMLableDB<Qpx::Detector>& detDB);
 
@@ -75,8 +75,8 @@ public slots:
 
 signals:
   void markers_set(Marker x, Marker y);
-  void requestAnalysis(QString);
-  void requestSymmetrize(QString);
+  void requestAnalysis(int64_t idx);
+  void requestSymmetrize(int64_t idx);
 
 private slots:
   void spectrumDetailsDelete();
@@ -101,9 +101,7 @@ private:
 
   XMLableDB<Qpx::Detector> * detectors_;
 
-
   //plot identity
-  QString name_2d;
   double zoom_2d, new_zoom;
   uint32_t adjrange;
 

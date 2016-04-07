@@ -42,7 +42,7 @@ public:
   explicit FormGatesPlot2D(QWidget *parent = 0);
   ~FormGatesPlot2D();
 
-  void setSpectra(Qpx::Project& new_set, QString spectrum = QString());
+  void setSpectra(Qpx::Project& new_set, int64_t idx);
 
   void update_plot();
   void refresh();
@@ -90,7 +90,8 @@ private:
   Qpx::Project *mySpectra;
 
   //plot identity
-  QString name_2d;
+  int64_t current_spectrum_;
+
   uint32_t adjrange;
 
   //markers

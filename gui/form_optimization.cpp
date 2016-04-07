@@ -250,7 +250,7 @@ void FormOptimization::do_run()
   db.add(optimizing_);
 
   current_spectra_.clear();
-  current_spectra_.set_spectra(db);
+  current_spectra_.set_prototypes(db);
   peaks_.push_back(Qpx::Peak());
   spectra_.push_back(Qpx::Fitter());
 
@@ -313,14 +313,14 @@ void FormOptimization::update_plots() {
   bool have_data = false;
   bool have_peaks = false;
 
-  for (auto &q: current_spectra_.by_type("1D")) {
+  for (auto &q: current_spectra_.get_sinks()) {
     Qpx::Metadata md;
-    if (q)
-      md = q->metadata();
+    if (q.second)
+      md = q.second->metadata();
 
     if (md.total_count > 0) {
       have_data = true;
-      fitter_opt_.setData(q);
+      fitter_opt_.setData(q.second);
     }
   }
 

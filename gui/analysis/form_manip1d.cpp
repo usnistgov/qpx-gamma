@@ -25,8 +25,9 @@
 #include "custom_timer.h"
 #include "boost/algorithm/string.hpp"
 
+using namespace Qpx;
 
-TableSpectra1D::TableSpectra1D(Qpx::Project *spectra, QObject *parent)
+TableSpectra1D::TableSpectra1D(Project *spectra, QObject *parent)
   : QAbstractTableModel(parent),
     spectra_(spectra)
 {
@@ -40,10 +41,10 @@ TableSpectra1D::TableSpectra1D(Qpx::Project *spectra, QObject *parent)
 
   if (spectra_ != nullptr) {
     int i = 0;
-    for (auto &q : spectra_->spectra(1, -1)) {
-      Qpx::Metadata md;
-      if (q)
-        md = q->metadata();
+    for (auto &q : spectra_->get_sinks(1, -1)) {
+      Metadata md;
+      if (q.second)
+        md = q.second->metadata();
 
       var_names_.push_back(make_var_name(i));
       data_.push_back(md);
@@ -90,13 +91,13 @@ QVariant TableSpectra1D::data(const QModelIndex &index, int role) const
     case 4:
       return QString::number(pow(2,data_[row].bits));
     case 5:
-      return QVariant::fromValue(data_[row].attributes.branches.get(Qpx::Setting("pattern_coinc")));
+      return QVariant::fromValue(data_[row].attributes.branches.get(Setting("pattern_coinc")));
     case 6:
-      return QVariant::fromValue(data_[row].attributes.branches.get(Qpx::Setting("pattern_add")));
+      return QVariant::fromValue(data_[row].attributes.branches.get(Setting("pattern_add")));
     case 7:
-      return QVariant::fromValue(data_[row].attributes.branches.get(Qpx::Setting("appearance")));
+      return QVariant::fromValue(data_[row].attributes.branches.get(Setting("appearance")));
     case 8:
-      return QVariant::fromValue(data_[row].attributes.branches.get(Qpx::Setting("visible")));
+      return QVariant::fromValue(data_[row].attributes.branches.get(Setting("visible")));
     }
 
   }
@@ -141,10 +142,10 @@ void TableSpectra1D::update() {
   data_.clear();
   if (spectra_ != nullptr) {
     int i=0;
-    for (auto &q : spectra_->spectra(1, -1)) {
-      Qpx::Metadata md;
-      if (q)
-        md = q->metadata();
+    for (auto &q : spectra_->get_sinks(1, -1)) {
+      Metadata md;
+      if (q.second)
+        md = q.second->metadata();
       var_names_.push_back(make_var_name(i));
       data_.push_back(md);
       ++i;
@@ -167,7 +168,7 @@ Qt::ItemFlags TableSpectra1D::flags(const QModelIndex &index) const
 
 
 
-FormManip1D::FormManip1D(Qpx::Project& new_set, QWidget *parent) :
+FormManip1D::FormManip1D(Project& new_set, QWidget *parent) :
   QDialog(parent),
   mySpectra(&new_set),
   table_model_(&new_set, this),
@@ -235,9 +236,9 @@ FormManip1D::~FormManip1D()
 
 void FormManip1D::spectrumDetails(std::string id)
 {
-  std::shared_ptr<Qpx::Sink> someSpectrum = mySpectra->by_name(id);
+  SinkPtr someSpectrum = mySpectra->get_sink(0);
 
-  Qpx::Metadata md;
+  Metadata md;
 
   if (someSpectrum)
     md = someSpectrum->metadata();
@@ -248,17 +249,17 @@ void FormManip1D::spectrumDetails(std::string id)
   }
 
   std::string type = someSpectrum->type();
-  double real = md.attributes.branches.get(Qpx::Setting("real_time")).value_duration.total_milliseconds() * 0.001;
-  double live = md.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  double real = md.attributes.branches.get(Setting("real_time")).value_duration.total_milliseconds() * 0.001;
+  double live = md.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
   double dead = 100;
   double rate = 0;
-  Qpx::Detector det = Qpx::Detector();
+  Detector det = Detector();
   if (!md.detectors.empty())
     det = md.detectors[0];
 
   QString detstr("Detector: ");
   detstr += QString::fromStdString(det.name_);
-  if (det.energy_calibrations_.has_a(Qpx::Calibration("Energy", md.bits)))
+  if (det.energy_calibrations_.has_a(Calibration("Energy", md.bits)))
     detstr += " [ENRG]";
   else if (det.highest_res_calib().valid())
     detstr += " (enrg)";
@@ -289,30 +290,30 @@ void FormManip1D::update_plot() {
 
   std::map<double, double> minima, maxima;
 
-  calib_ = Qpx::Calibration();
+  calib_ = Calibration();
 
   ui->mcaPlot->clearGraphs();
-  for (auto &q: mySpectra->spectra(1, -1)) {
-    Qpx::Metadata md;
-    if (q)
-      md = q->metadata();
+  for (auto &q: mySpectra->get_sinks(1, -1)) {
+    Metadata md;
+    if (q.second)
+      md = q.second->metadata();
 
-//    double livetime = md.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
-    double rescale  = md.attributes.branches.get(Qpx::Setting("rescale")).value_precise.convert_to<double>();
+//    double livetime = md.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+    double rescale  = md.attributes.branches.get(Setting("rescale")).value_precise.convert_to<double>();
 
-    if (md.attributes.branches.get(Qpx::Setting("visible")).value_int
+    if (md.attributes.branches.get(Setting("visible")).value_int
         && (md.bits > 0) && (md.total_count > 0)) {
 
       QVector<double> x(pow(2,md.bits));
       QVector<double> y(pow(2,md.bits));
 
-      std::shared_ptr<Qpx::EntryList> spectrum_data =
-          std::move(q->data_range({{0, y.size()}}));
+      std::shared_ptr<EntryList> spectrum_data =
+          std::move(q.second->data_range({{0, y.size()}}));
 
-      Qpx::Detector detector = Qpx::Detector();
+      Detector detector = Detector();
       if (!md.detectors.empty())
         detector = md.detectors[0];
-      Qpx::Calibration temp_calib = detector.best_calib(md.bits);
+      Calibration temp_calib = detector.best_calib(md.bits);
 
       if (temp_calib.bits_ > calib_.bits_)
         calib_ = temp_calib;
@@ -333,7 +334,7 @@ void FormManip1D::update_plot() {
       }
 
       AppearanceProfile profile;
-      profile.default_pen = QPen(QColor(QString::fromStdString(md.attributes.branches.get(Qpx::Setting("appearance")).value_text)), 1);
+      profile.default_pen = QPen(QColor(QString::fromStdString(md.attributes.branches.get(Setting("appearance")).value_text)), 1);
       ui->mcaPlot->addGraph(x, y, profile, md.bits);
 
     }

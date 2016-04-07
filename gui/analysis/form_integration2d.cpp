@@ -29,12 +29,15 @@
 #include <QCloseEvent>
 #include "manip2d.h"
 
+using namespace Qpx;
+
 FormIntegration2D::FormIntegration2D(QSettings &settings, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormIntegration2D),
   settings_(settings),
   table_model_(this),
-  sortModel(this)
+  sortModel(this),
+  current_spectrum_(0)
 {
   ui->setupUi(this);
 
@@ -121,7 +124,7 @@ void FormIntegration2D::make_range(Marker x, Marker y) {
 
   range_.x_c = x.pos;
   range_.y_c = y.pos;
-  Qpx::Calibration f1, f2, e1, e2;
+  Calibration f1, f2, e1, e2;
 
   if (md_.detectors.size() > 1) {
     //PL_DBG << "dets2";
@@ -166,7 +169,7 @@ void FormIntegration2D::update_current_peak(MarkerBox2D peak) {
   //  if ((index != -1) && (peaks_[index].approved))
   //    gate.approved = true;
 
-  double livetime = md_.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  double livetime = md_.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
   PL_DBG << "update current peak " << peak.x_c.energy()  << " x " << peak.y_c.energy();
   if (livetime == 0)
     livetime = 10000;
@@ -287,7 +290,7 @@ void FormIntegration2D::saveSettings() {
 
 void FormIntegration2D::clear() {
   peaks_.clear();
-  md_ = Qpx::Metadata();
+  md_ = Metadata();
   rebuild_table(true);
 
   emit peak_selected();
@@ -327,11 +330,11 @@ void FormIntegration2D::on_doubleGateOn_editingFinished()
   }
 }
 
-void FormIntegration2D::setSpectrum(Qpx::Project *newset, QString name) {
+void FormIntegration2D::setSpectrum(Project *newset, int64_t idx) {
   clear();
   spectra_ = newset;
-  current_spectrum_ = name;
-  std::shared_ptr<Qpx::Sink>spectrum = spectra_->by_name(current_spectrum_.toStdString());
+  current_spectrum_ = idx;
+  SinkPtr spectrum = spectra_->get_sink(idx);
 
   if (spectrum && spectrum->bits()) {
     md_ = spectrum->metadata();
@@ -391,8 +394,8 @@ void FormIntegration2D::make_gates() {
 
   if (peak.visible) {
 
-    std::shared_ptr<Qpx::Sink> source_spectrum = spectra_->by_name(current_spectrum_.toStdString());
-    if (source_spectrum == nullptr)
+    SinkPtr source_spectrum = spectra_->get_sink(current_spectrum_);
+    if (!source_spectrum)
       return;
 
     md_ = source_spectrum->metadata();
@@ -417,58 +420,58 @@ void FormIntegration2D::make_gates() {
     if (ymax > adjrange)
       ymax = adjrange;
 
-    Qpx::Metadata temp;
-    std::shared_ptr<Qpx::Sink>gate;
+    Metadata temp;
+    SinkPtr gate;
 
-    temp = Qpx::SinkFactory::getInstance().create_prototype("1D");
+    temp = SinkFactory::getInstance().create_prototype("1D");
     //  temp.visible = true;
     temp.name = "temp";
     temp.bits = md_.bits;
 
-    Qpx::Setting pattern;
+    Setting pattern;
 
     if (!ui->pushShowDiagonal->isChecked()) {
 
-      pattern = temp.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+      pattern = temp.attributes.branches.get(Setting("pattern_coinc"));
       pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
       pattern.value_pattern.set_theshold(2);
       temp.attributes.branches.replace(pattern);
-      pattern = temp.attributes.branches.get(Qpx::Setting("pattern_add"));
+      pattern = temp.attributes.branches.get(Setting("pattern_add"));
       pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
       pattern.value_pattern.set_theshold(1);
       temp.attributes.branches.replace(pattern);
-      gate = Qpx::SinkFactory::getInstance().create_from_prototype(temp);
-      Qpx::slice_rectangular(source_spectrum, gate, {{xmin, xmax}, {ymin, ymax}});
+      gate = SinkFactory::getInstance().create_from_prototype(temp);
+      slice_rectangular(source_spectrum, gate, {{xmin, xmax}, {ymin, ymax}});
       fit_x_.setData(gate);
 
-      pattern = temp.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+      pattern = temp.attributes.branches.get(Setting("pattern_coinc"));
       pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
       pattern.value_pattern.set_theshold(2);
       temp.attributes.branches.replace(pattern);
-      pattern = temp.attributes.branches.get(Qpx::Setting("pattern_add"));
+      pattern = temp.attributes.branches.get(Setting("pattern_add"));
       pattern.value_pattern.set_gates(std::vector<bool>({0,1}));
       pattern.value_pattern.set_theshold(1);
       temp.attributes.branches.replace(pattern);
-      gate = Qpx::SinkFactory::getInstance().create_from_prototype(temp);
-      Qpx::slice_rectangular(source_spectrum, gate, {{xmin, xmax}, {ymin, ymax}});
+      gate = SinkFactory::getInstance().create_from_prototype(temp);
+      slice_rectangular(source_spectrum, gate, {{xmin, xmax}, {ymin, ymax}});
       fit_y_.setData(gate);
 
     } else  {
 
-      pattern = temp.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+      pattern = temp.attributes.branches.get(Setting("pattern_coinc"));
       pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
       pattern.value_pattern.set_theshold(1);
       temp.attributes.branches.replace(pattern);
-      pattern = temp.attributes.branches.get(Qpx::Setting("pattern_add"));
+      pattern = temp.attributes.branches.get(Setting("pattern_add"));
       pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
       pattern.value_pattern.set_theshold(1);
       temp.attributes.branches.replace(pattern);
-      gate = Qpx::SinkFactory::getInstance().create_from_prototype(temp);
-      Qpx::slice_diagonal_x(source_spectrum, gate, peak.x_c.bin(md_.bits), peak.y_c.bin(md_.bits), (xwidth + ywidth) / 2, xmin, xmax);
+      gate = SinkFactory::getInstance().create_from_prototype(temp);
+      slice_diagonal_x(source_spectrum, gate, peak.x_c.bin(md_.bits), peak.y_c.bin(md_.bits), (xwidth + ywidth) / 2, xmin, xmax);
       fit_x_.setData(gate);
 
-      gate = Qpx::SinkFactory::getInstance().create_from_prototype(temp);
-      Qpx::slice_diagonal_y(source_spectrum, gate, peak.x_c.bin(md_.bits), peak.y_c.bin(md_.bits), (xwidth + ywidth) / 2, ymin, ymax);
+      gate = SinkFactory::getInstance().create_from_prototype(temp);
+      slice_diagonal_y(source_spectrum, gate, peak.x_c.bin(md_.bits), peak.y_c.bin(md_.bits), (xwidth + ywidth) / 2, ymin, ymax);
       fit_y_.setData(gate);
 
     }
@@ -543,7 +546,7 @@ void FormIntegration2D::on_pushCentroidX_clicked()
 
   PL_DBG << "a1";
 
-  Qpx::ROI *roi = fit_x_.parent_of(center);
+  ROI *roi = fit_x_.parent_of(center);
 
   if (!roi)
     return;
@@ -578,7 +581,7 @@ void FormIntegration2D::on_pushCentroidY_clicked()
   else
     return;
 
-  Qpx::ROI *roi = fit_y_.parent_of(center);
+  ROI *roi = fit_y_.parent_of(center);
 
   if (!roi)
     return;
@@ -627,8 +630,8 @@ void FormIntegration2D::on_pushAddPeak2d_clicked()
   else
     return;
 
-  Qpx::ROI *xx_roi = fit_x_.parent_of(c_x);
-  Qpx::ROI *yy_roi = fit_y_.parent_of(c_y);
+  ROI *xx_roi = fit_x_.parent_of(c_x);
+  ROI *yy_roi = fit_y_.parent_of(c_y);
 
   if (!xx_roi || !yy_roi)
     return;

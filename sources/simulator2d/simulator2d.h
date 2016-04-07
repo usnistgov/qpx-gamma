@@ -71,7 +71,7 @@ protected:
   boost::thread *runner_;
 
   std::string source_file_;
-  std::string source_spectrum_;
+  uint64_t source_spectrum_;
   int     bits_;
   int     spill_interval_;
   double  scale_rate_;
@@ -79,7 +79,7 @@ protected:
   int     chan1_;
   int     coinc_thresh_;
 
-  std::vector<std::string> spectra_;
+  std::map<int32_t, std::string> spectra_names_;
 
   Spill get_spill();
 

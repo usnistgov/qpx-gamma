@@ -29,7 +29,7 @@
 #include "special_delegate.h"
 #include <QItemSelection>
 #include <QRadioButton>
-#include <QtMultimedia>
+#include <QMediaPlayer>
 
 #include "project.h"
 #include "thread_fitter.h"

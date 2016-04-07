@@ -81,19 +81,20 @@ void Project::clear() {
 
 void Project::clear_helper() {
   //private, no lock needed
-  if (!my_spectra_.empty() || !spills_.empty())
+  if (!sinks_.empty() || !spills_.empty())
     changed_ = true;
 
-  my_spectra_.clear();
+  sinks_.clear();
   spills_.clear();
+  current_index_ = 0;
 }
 
 void Project::flush() {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  if (!my_spectra_.empty())
-    for (auto &q: my_spectra_) {
+  if (!sinks_.empty())
+    for (auto &q: sinks_) {
       //PL_DBG << "closing " << q->name();
-      q->flush();
+      q.second->flush();
     }
 }
 
@@ -122,8 +123,8 @@ bool Project::new_data() {
 bool Project::changed() {
   boost::unique_lock<boost::mutex> lock(mutex_);
 
-  for (auto &q : my_spectra_)
-    if (q->metadata().changed)
+  for (auto &q : sinks_)
+    if (q.second->metadata().changed)
       changed_ = true;
 
   return changed_;
@@ -132,14 +133,14 @@ bool Project::changed() {
 
 bool Project::empty() const {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  return my_spectra_.empty();  
+  return sinks_.empty();
 }
 
 std::vector<std::string> Project::types() const {
   boost::unique_lock<boost::mutex> lock(mutex_);
   std::set<std::string> my_types;
-  for (auto &q: my_spectra_)
-    my_types.insert(q->type());
+  for (auto &q: sinks_)
+    my_types.insert(q.second->type());
   std::vector<std::string> output(my_types.begin(), my_types.end());
   return output;
 }
@@ -147,114 +148,119 @@ std::vector<std::string> Project::types() const {
 std::set<uint32_t> Project::resolutions(uint16_t dim) const {
   boost::unique_lock<boost::mutex> lock(mutex_);
   std::set<uint32_t> haveres;
-  for (auto &q: my_spectra_)
-    if (q->dimensions() == dim)
-      haveres.insert(q->bits());
+  for (auto &q: sinks_)
+    if (q.second->dimensions() == dim)
+      haveres.insert(q.second->bits());
   return haveres;
 }
 
-std::shared_ptr<Sink> Project::by_name(std::string name) {
+SinkPtr Project::get_sink(int64_t idx) {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  //threadsafe so long as Spectrum implemented as thread-safe
+  //threadsafe so long as sink implemented as thread-safe
 
-  if (!my_spectra_.empty())
-    for (auto &q: my_spectra_)
-      if (q->name() == name)
-        return q;
-  return nullptr;
+  if (sinks_.count(idx))
+    return sinks_.at(idx);
+  else
+    return nullptr;
 }
 
-std::list<std::shared_ptr<Sink>> Project::spectra(int32_t dim, int32_t res) {
+std::map<int64_t, SinkPtr> Project::get_sinks(int32_t dimensions, int32_t bits) {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  //threadsafe so long as Spectrum implemented as thread-safe
+  //threadsafe so long as sink implemented as thread-safe
   
-  if ((dim == -1) && (res == -1))
-    return my_spectra_;
+  if ((dimensions == -1) && (bits == -1))
+    return sinks_;
 
-  std::list<std::shared_ptr<Sink>> results;
-  for (auto &q: my_spectra_)
-    if (((q->dimensions() == dim) && (q->bits() == res)) ||
-        ((q->dimensions() == dim) && (res == -1)) ||
-        ((dim == -1) && (q->bits() == res)))
-      results.push_back(q);
-  return results;
+  std::map<int64_t, SinkPtr> ret;
+  for (auto &q: sinks_)
+    if (((q.second->dimensions() == dimensions) && (q.second->bits() == bits)) ||
+        ((q.second->dimensions() == dimensions) && (bits == -1)) ||
+        ((dimensions == -1) && (q.second->bits() == bits)))
+      ret.insert(q);
+  return ret;
 }
 
-std::list<std::shared_ptr<Sink>> Project::by_type(std::string reqType) {
+std::map<int64_t, SinkPtr> Project::get_sinks(std::string type) {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  //threadsafe so long as Spectrum implemented as thread-safe
+  //threadsafe so long as sink implemented as thread-safe
   
-  std::list<std::shared_ptr<Sink>> results;
-  for (auto &q: my_spectra_)
-    if (q->type() == reqType)
-      results.push_back(q);
-  return results;
+  std::map<int64_t, SinkPtr> ret;
+  for (auto &q: sinks_)
+    if (q.second->type() == type)
+      ret.insert(q);
+  return ret;
 }
 
 
 
 //client should activate replot after loading all files, as loading multiple
-// spectra might create a long queue of plot update signals
-void Project::add_spectrum(std::shared_ptr<Sink> newSpectrum) {
-  if (newSpectrum == nullptr)
-    return;
+// sink might create a long queue of plot update signals
+int64_t Project::add_sink(SinkPtr sink) {
+  if (!sink)
+    return 0;
   boost::unique_lock<boost::mutex> lock(mutex_);  
-  my_spectra_.push_back(newSpectrum);
+  sinks_[++current_index_] = sink;
   changed_ = true;
   ready_ = true;
   newdata_ = true;
   terminating_ = false;
   // cond_.notify_one();
+  return current_index_;
 }
 
-void Project::add_spectrum(Metadata spectrum) {
+int64_t Project::add_sink(Metadata prototype) {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  std::shared_ptr<Sink> newSpectrum = Qpx::SinkFactory::getInstance().create_from_prototype(spectrum);
-  if (newSpectrum != nullptr)
-    my_spectra_.push_back(newSpectrum);
+  SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_prototype(prototype);
+  if (!sink)
+    return 0;
+  sinks_[++current_index_] = sink;
   changed_ = true;
   ready_ = true;
   newdata_ = false;
   terminating_ = false;
   // cond_.notify_one();
+  return current_index_;
 }
 
-void Project::delete_spectrum(std::string name) {
-  std::list<std::shared_ptr<Sink>>::iterator it = my_spectra_.begin();
+void Project::delete_sink(int64_t idx) {
+  boost::unique_lock<boost::mutex> lock(mutex_);
 
-  while (it != my_spectra_.end()) {
-    if ((*it)->name() == name) {
-      my_spectra_.erase(it);
-      changed_ = true;
-      return;
-    }
-    it++;
-  }
+  if (!sinks_.count(idx))
+    return;
+
+  sinks_.erase(idx);
+  changed_ = true;
+  ready_ = true;
+  newdata_ = false;
+  terminating_ = false;
+  // cond_.notify_one();
+
+  if (sinks_.empty())
+    current_index_ = 0;
 }
 
-void Project::set_spectra(const XMLableDB<Metadata>& newdb) {
+void Project::set_prototypes(const XMLableDB<Metadata>& prototypes) {
   boost::unique_lock<boost::mutex> lock(mutex_);  
   clear_helper();
-  int numofspectra = newdb.size();
 
-  for (int i=0; i < numofspectra; i++) {
-    std::shared_ptr<Sink> newSpectrum = Qpx::SinkFactory::getInstance().create_from_prototype(newdb.get(i));
-    if (newSpectrum != nullptr) {
-      my_spectra_.push_back(newSpectrum);
-    }
+  for (int i=0; i < prototypes.size(); i++) {
+    SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_prototype(prototypes.get(i));
+    if (sink)
+      sinks_[++current_index_] = sink;
   }
 
   changed_ = true;
-
-  ready_ = true; terminating_ = false; newdata_ = false;
+  ready_ = true;
+  terminating_ = false;
+  newdata_ = false;
   cond_.notify_one();
 }
 
 void Project::add_spill(Spill* one_spill) {
   boost::unique_lock<boost::mutex> lock(mutex_);  
 
-  for (auto &q: my_spectra_)
-    q->push_spill(*one_spill);
+  for (auto &q: sinks_)
+    q.second->push_spill(*one_spill);
 
   if (!one_spill->detectors.empty()
       || !one_spill->state.branches.empty())
@@ -298,16 +304,16 @@ void Project::write_xml(std::string file_name) {
       s.to_xml(spillsnode, true);
   }
 
-  if (!my_spectra_.empty()) {
-    pugi::xml_node spectranode = root.append_child("Spectra");
-    for (auto &q : my_spectra_)
-      q->to_xml(spectranode);
+  if (!sinks_.empty()) {
+    pugi::xml_node sinks_node = root.append_child("Spectra");
+    for (auto &q : sinks_)
+      q.second->to_xml(sinks_node);
   }
 
   doc.save_file(file_name.c_str());
 
-  for (auto &q : my_spectra_)
-    q->reset_changed();
+  for (auto &q : sinks_)
+    q.second->reset_changed();
 
   changed_ = false;
   identity_ = file_name;
@@ -319,7 +325,7 @@ void Project::write_xml(std::string file_name) {
 
 }
 
-void Project::read_xml(std::string file_name, bool with_spectra, bool with_full_spectra) {
+void Project::read_xml(std::string file_name, bool with_sinks, bool with_full_sinks) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
 
@@ -377,31 +383,31 @@ void Project::read_xml(std::string file_name, bool with_spectra, bool with_full_
     spills_.insert(sp);
   }
 
-  if (!with_spectra)
+  if (!with_sinks)
     return;
 
   if (root.child("Spectra")) {
 
     for (pugi::xml_node &child : root.child("Spectra").children()) {
-      if (child.child("ChannelData") && !with_full_spectra)
+      if (child.child("ChannelData") && !with_full_sinks)
         child.remove_child("ChannelData");
 
-      std::shared_ptr<Sink> new_spectrum
+      SinkPtr sink
           = Qpx::SinkFactory::getInstance().create_from_xml(child);
-      if (!new_spectrum)
+      if (!sink)
         PL_INFO << "Could not parse spectrum";
       else {
         for (auto &s : spills_) {
           Spill sp = s;
-          if (!new_spectrum->metadata().detectors.empty()) //backwards compat
+          if (!sink->metadata().detectors.empty()) //backwards compat
             sp.detectors.clear();
           else {
             for (auto &d : sp.detectors)
-              d.energy_calibrations_.add(Qpx::Calibration("Energy", new_spectrum->metadata().bits));
+              d.energy_calibrations_.add(Qpx::Calibration("Energy", sink->metadata().bits));
           }
-          new_spectrum->push_spill(sp);
+          sink->push_spill(sp);
         }
-        my_spectra_.push_back(new_spectrum);
+        sinks_[++current_index_] = sink;
       }
     }
   }
@@ -456,7 +462,7 @@ void Project::import_spn(std::string file_name) {
   while (myfile.tellg() != length) {
   //for (int j=0; j<150; ++j) {
     std::vector<uint32_t> data;
-    uint64_t totalcount = 0;
+    int64_t totalcount = 0;
 //    uint32_t header;
 //    myfile.read ((char*)&header, sizeof(uint32_t));
 //    PL_DBG << "header " << header;
@@ -467,8 +473,8 @@ void Project::import_spn(std::string file_name) {
     }
     if ((totalcount == 0) || data.empty())
       continue;
-    temp.name = boost::filesystem::path(file_name).filename().string() + "[" + std::to_string(spectra_count) + "]";
-    std::shared_ptr<Sink> spectrum = Qpx::SinkFactory::getInstance().create_from_prototype(temp);
+    temp.name = boost::filesystem::path(file_name).filename().string() + "[" + std::to_string(spectra_count++) + "]";
+    SinkPtr spectrum = Qpx::SinkFactory::getInstance().create_from_prototype(temp);
     spectrum->set_detectors(dets);
     for (int i=0; i < data.size(); ++i) {
       Entry entry;
@@ -477,8 +483,7 @@ void Project::import_spn(std::string file_name) {
       entry.second = data[i];
       spectrum->append(entry);
     }
-    my_spectra_.push_back(spectrum);
-    spectra_count++;
+    sinks_[++current_index_] = spectrum;
   }
 
   changed_ = true;

@@ -60,7 +60,7 @@ public slots:
 
 signals:
   void marker_set(Marker n);
-  void requestAnalysis(QString);
+  void requestAnalysis(int64_t);
   void requestEffCal(QString);
 
 private slots:

@@ -24,6 +24,8 @@
 #include "dialog_spectrum.h"
 #include "custom_timer.h"
 
+using namespace Qpx;
+
 FormPlot2D::FormPlot2D(QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormPlot2D)
@@ -83,7 +85,7 @@ FormPlot2D::~FormPlot2D()
   delete ui;
 }
 
-void FormPlot2D::setDetDB(XMLableDB<Qpx::Detector>& detDB) {
+void FormPlot2D::setDetDB(XMLableDB<Detector>& detDB) {
   detectors_ = &detDB;
 }
 
@@ -100,12 +102,9 @@ void FormPlot2D::crop_changed() {
     mySpectra->activate();
 }
 
-void FormPlot2D::setSpectra(Qpx::Project& new_set, QString spectrum) {
+void FormPlot2D::setSpectra(Project& new_set) {
 //  PL_DBG << "setSpectra with " << spectrum.toStdString();
   mySpectra = &new_set;
-
-  name_2d = spectrum;
-
   updateUI();
 }
 
@@ -114,7 +113,6 @@ void FormPlot2D::reset_content() {
   //PL_DBG << "reset content";
   ui->coincPlot->reset_content();
   ui->coincPlot->refresh();
-  name_2d.clear();
   x_marker.visible = false;
   y_marker.visible = false;
   ext_marker.visible = false;
@@ -123,19 +121,14 @@ void FormPlot2D::reset_content() {
 
 void FormPlot2D::choose_spectrum(SelectorItem item)
 {
-  QString id = ui->spectrumSelector->selected().text;
+  SelectorItem itm = ui->spectrumSelector->selected();
 
-  if (id == name_2d)
-    return;
-  std::list<std::shared_ptr<Qpx::Sink>> spectra = mySpectra->spectra(2, -1);
+  std::map<int64_t, SinkPtr> spectra = mySpectra->get_sinks(2, -1);
 
   for (auto &q : spectra) {
-    Qpx::Setting vis = q->metadata().attributes.branches.get(Qpx::Setting("visible"));
-    if (q->name() == id.toStdString())
-      vis.value_int = true;
-    else
-      vis.value_int = false;
-    q->set_option(vis);
+    Setting vis = q.second->metadata().attributes.branches.get(Setting("visible"));
+    vis.value_int = (q.first == itm.data.toLongLong());
+    q.second->set_option(vis);
   }
 
   //name_2d = arg1;
@@ -147,32 +140,17 @@ void FormPlot2D::updateUI()
 {
   QVector<SelectorItem> items;
 
-  std::string newname;
-  std::set<std::string> names;
-
-  for (auto &q : mySpectra->spectra(2, -1)) {
-    Qpx::Metadata md;
-    if (q != nullptr)
-      md = q->metadata();
-
-    names.insert(md.name);
-    if (md.attributes.branches.get(Qpx::Setting("visible")).value_int)
-      newname = md.name;
+  for (auto &q : mySpectra->get_sinks(2, -1)) {
+    Metadata md;
+    if (q.second)
+      md = q.second->metadata();
 
     SelectorItem new_spectrum;
+    new_spectrum.visible = md.attributes.branches.get(Setting("visible")).value_int;
     new_spectrum.text = QString::fromStdString(md.name);
-    new_spectrum.color = QColor(QString::fromStdString(md.attributes.branches.get(Qpx::Setting("appearance")).value_text));
+    new_spectrum.data = QVariant::fromValue(q.first);
+    new_spectrum.color = QColor(QString::fromStdString(md.attributes.branches.get(Setting("appearance")).value_text));
     items.push_back(new_spectrum);
-  }
-
-  if (newname.empty() && !names.empty())
-    newname = *names.begin();
-
-  if (names.count(name_2d.toStdString()))
-    newname = name_2d.toStdString();
-
-  for (auto &q : items) {
-    q.visible = (q.text.toStdString() == newname);
   }
 
   ui->spectrumSelector->setItems(items);
@@ -301,15 +279,14 @@ void FormPlot2D::update_plot(bool force) {
 
     ui->pushSymmetrize->setEnabled(false);
 
-    QString newname = ui->spectrumSelector->selected().text;
-    //PL_DBG << "<Plot2D> getting " << newname.toStdString();
+    SelectorItem itm = ui->spectrumSelector->selected();
 
-    std::shared_ptr<Qpx::Sink> some_spectrum = mySpectra->by_name(newname.toStdString());
+    SinkPtr some_spectrum = mySpectra->get_sink(itm.data.toLongLong());
 
-    ui->pushDetails->setEnabled((some_spectrum != nullptr));
+    ui->pushDetails->setEnabled(some_spectrum && true);
     zoom_2d = new_zoom;
 
-    Qpx::Metadata md;
+    Metadata md;
     if (some_spectrum)
       md = some_spectrum->metadata();
 
@@ -318,26 +295,26 @@ void FormPlot2D::update_plot(bool force) {
     {
 //      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
-      Qpx::Setting sym = md.attributes.branches.get(Qpx::Setting("symmetrized"));
+      Setting sym = md.attributes.branches.get(Setting("symmetrized"));
 
       //PL_DBG << "Sym :" << sym.id_ << "=" << sym.value_int;
 
       ui->pushSymmetrize->setEnabled(sym.value_int == 0);
 
-      std::shared_ptr<Qpx::EntryList> spectrum_data =
+      std::shared_ptr<EntryList> spectrum_data =
           std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
       ui->coincPlot->update_plot(adjrange, spectrum_data);
 
-      if (rescale2d || force || (name_2d != newname)) {
+      if (rescale2d || force /*|| (name_2d != newname)*/) {
 //        PL_DBG << "rescaling 2d";
-        name_2d = newname;
+//        name_2d = newname;
 
         int newbits = some_spectrum->bits();
         if (bits != newbits)
           bits = newbits;
 
-        Qpx::Detector detector_x_;
-        Qpx::Detector detector_y_;
+        Detector detector_x_;
+        Detector detector_y_;
         if (md.detectors.size() > 1) {
           detector_x_ = md.detectors[0];
           detector_y_ = md.detectors[1];
@@ -389,8 +366,8 @@ void FormPlot2D::set_markers(Marker x, Marker y) {
 
 void FormPlot2D::on_pushDetails_clicked()
 {
-  std::shared_ptr<Qpx::Sink> someSpectrum = mySpectra->by_name(name_2d.toStdString());
-  if (someSpectrum == nullptr)
+  SinkPtr someSpectrum = mySpectra->get_sink(ui->spectrumSelector->selected().data.toLongLong());
+  if (!someSpectrum)
     return;
 
   if (detectors_ == nullptr)
@@ -411,23 +388,22 @@ void FormPlot2D::spectrumDetailsClosed(bool changed) {
 
 void FormPlot2D::spectrumDetailsDelete()
 {
-  mySpectra->delete_spectrum(name_2d.toStdString());
-
+  mySpectra->delete_sink(ui->spectrumSelector->selected().data.toLongLong());
   updateUI();
 
-  QString name = ui->spectrumSelector->selected().text;
-  std::list<std::shared_ptr<Qpx::Sink>> spectra = mySpectra->spectra(2, -1);
+//  QString name = ui->spectrumSelector->selected().text;
+//  std::list<SinkPtr> spectra = mySpectra->spectra(2, -1);
 
-  for (auto &q : spectra) {
-    Qpx::Setting vis = q->metadata().attributes.branches.get(Qpx::Setting("visible"));
-    if (q->name() == name.toStdString())
-      vis.value_int = true;
-    else
-      vis.value_int = false;
-    q->set_option(vis);
-  }
+//  for (auto &q : spectra) {
+//    Setting vis = q->metadata().attributes.branches.get(Setting("visible"));
+//    if (q->name() == name.toStdString())
+//      vis.value_int = true;
+//    else
+//      vis.value_int = false;
+//    q->set_option(vis);
+//  }
 
-  update_plot(true);
+//  update_plot(true);
 }
 
 void FormPlot2D::set_zoom(double zm) {
@@ -444,7 +420,7 @@ double FormPlot2D::zoom() {
 
 void FormPlot2D::analyse()
 {
-  emit requestAnalysis(name_2d);
+  emit requestAnalysis(ui->spectrumSelector->selected().data.toLongLong());
 }
 
 void FormPlot2D::set_scale_type(QString st) {
@@ -473,5 +449,5 @@ bool FormPlot2D::show_legend() {
 
 void FormPlot2D::on_pushSymmetrize_clicked()
 {
-  emit requestSymmetrize(name_2d);
+  emit requestSymmetrize(ui->spectrumSelector->selected().data.toLongLong());
 }

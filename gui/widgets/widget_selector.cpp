@@ -157,6 +157,7 @@ void SelectorWidget::mouseReleaseEvent(QMouseEvent *event)
   int flag = flagAt(event->x(), event->y());
 
   if (event->button()==Qt::LeftButton) {
+    bool changed = (selected_ == flag);
     selected_ = flag;
     if (only_one_) {
       for (auto &q : my_items_)
@@ -165,7 +166,7 @@ void SelectorWidget::mouseReleaseEvent(QMouseEvent *event)
         my_items_[flag].visible = true;
     }
     update();
-    if ((flag > -1) && (flag < my_items_.size()))
+    if ((flag > -1) && (flag < my_items_.size()) && changed)
       emit itemSelected(my_items_[flag]);
     else
       emit itemSelected(SelectorItem());

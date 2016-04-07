@@ -43,7 +43,7 @@ public:
   ~FormEfficiencyCalibration();
 
   void setDetector(Qpx::Project *newset, QString detector);
-  void clear();
+//  void clear();
 
 signals:
   void calibrationComplete();
@@ -60,7 +60,7 @@ private slots:
   void update_spectra();
   void detectorsUpdated() {emit detectorsChanged();}
 
-  void setSpectrum(QString spectrum);
+  void setSpectrum(int64_t idx);
   void spectrumLooksChanged(SelectorItem);
   void spectrumDetails(SelectorItem);
 
@@ -96,7 +96,7 @@ private:
   Ui::FormEfficiencyCalibration *ui;
   QSettings &settings_;
 
-  std::map<std::string, Qpx::Fitter> peak_sets_;
+  std::map<int64_t, Qpx::Fitter> peak_sets_;
   std::set<double> selected_peaks_;
   std::set<double> falgged_peaks_;
 
@@ -109,6 +109,7 @@ private:
   QString settings_directory_;
 
   Qpx::Project          *spectra_;
+  int64_t     current_spectrum_;
   std::string current_detector_;
 
   XMLableDB<Qpx::Detector> &detectors_;

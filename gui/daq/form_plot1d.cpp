@@ -26,6 +26,8 @@
 #include "form_manip1d.h"
 #include "boost/algorithm/string.hpp"
 
+using namespace Qpx;
+
 FormPlot1D::FormPlot1D(QWidget *parent) :
   QWidget(parent),
   detectors_(nullptr),
@@ -75,20 +77,20 @@ FormPlot1D::~FormPlot1D()
   delete ui;
 }
 
-void FormPlot1D::setDetDB(XMLableDB<Qpx::Detector>& detDB) {
+void FormPlot1D::setDetDB(XMLableDB<Detector>& detDB) {
   detectors_ = &detDB;
 }
 
 
-void FormPlot1D::setSpectra(Qpx::Project& new_set) {
+void FormPlot1D::setSpectra(Project& new_set) {
   mySpectra = &new_set;
   updateUI();
 }
 
 void FormPlot1D::spectrumLooksChanged(SelectorItem item) {
-  std::shared_ptr<Qpx::Sink>someSpectrum = mySpectra->by_name(item.text.toStdString());
-  if (someSpectrum != nullptr) {
-    Qpx::Setting vis = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("visible"));
+  SinkPtr someSpectrum = mySpectra->get_sink(item.data.toLongLong());
+  if (someSpectrum) {
+    Setting vis = someSpectrum->metadata().attributes.branches.get(Setting("visible"));
     vis.value_int = item.visible;
     someSpectrum->set_option(vis);
   }
@@ -102,11 +104,11 @@ void FormPlot1D::spectrumDoubleclicked(SelectorItem item)
 
 void FormPlot1D::spectrumDetails(SelectorItem item)
 {
+  SelectorItem itm = spectraSelector->selected();
 
-  QString id = spectraSelector->selected().text;
-  std::shared_ptr<Qpx::Sink> someSpectrum = mySpectra->by_name(id.toStdString());
+  SinkPtr someSpectrum = mySpectra->get_sink(itm.data.toLongLong());
 
-  Qpx::Metadata md;
+  Metadata md;
 
   if (someSpectrum)
     ui->pushRescaleToThisMax->setEnabled(true);
@@ -116,15 +118,15 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   if (someSpectrum)
     md = someSpectrum->metadata();
 
-  if (id.isEmpty() || (someSpectrum == nullptr)) {
+  if (!someSpectrum) {
     ui->labelSpectrumInfo->setText("<html><head/><body><p>Left-click: see statistics here<br/>Right click: toggle visibility<br/>Double click: details / analysis</p></body></html>");
     ui->pushFullInfo->setEnabled(false);
     return;
   }
 
   std::string type = someSpectrum->type();
-  double real = md.attributes.branches.get(Qpx::Setting("real_time")).value_duration.total_milliseconds() * 0.001;
-  double live = md.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  double real = md.attributes.branches.get(Setting("real_time")).value_duration.total_milliseconds() * 0.001;
+  double live = md.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
 
   double rate_total = 0;
   if (live > 0)
@@ -134,15 +136,15 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   if (real > 0)
     dead = (real - live) * 100.0 / real;
 
-  double rate_inst = md.attributes.branches.get(Qpx::Setting("instant_rate")).value_dbl;
+  double rate_inst = md.attributes.branches.get(Setting("instant_rate")).value_dbl;
 
-  Qpx::Detector det = Qpx::Detector();
+  Detector det = Detector();
   if (!md.detectors.empty())
     det = md.detectors[0];
 
   QString detstr("Detector: ");
   detstr += QString::fromStdString(det.name_);
-  if (det.energy_calibrations_.has_a(Qpx::Calibration("Energy", md.bits)))
+  if (det.energy_calibrations_.has_a(Calibration("Energy", md.bits)))
     detstr += " [ENRG]";
   else if (det.highest_res_calib().valid())
     detstr += " (enrg)";
@@ -152,7 +154,7 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
     detstr += " [EFF]";
 
   QString infoText =
-      "<nobr>" + id + "(" + QString::fromStdString(type) + ", " + QString::number(md.bits) + "bits)</nobr><br/>"
+      "<nobr>" + itm.text + "(" + QString::fromStdString(type) + ", " + QString::number(md.bits) + "bits)</nobr><br/>"
       "<nobr>" + detstr + "</nobr><br/>"
       "<nobr>Count: " + QString::number(md.total_count.convert_to<double>()) + "</nobr><br/>"
       "<nobr>Rate (inst/total): " + QString::number(rate_inst) + "cps / " + QString::number(rate_total) + "cps</nobr><br/>"
@@ -182,32 +184,32 @@ void FormPlot1D::update_plot() {
 
   std::map<double, double> minima, maxima;
 
-  calib_ = Qpx::Calibration();
+  calib_ = Calibration();
 
   ui->mcaPlot->clearGraphs();
-  for (auto &q: mySpectra->spectra(1, -1)) {
-    Qpx::Metadata md;
-    if (q)
-      md = q->metadata();
+  for (auto &q: mySpectra->get_sinks(1, -1)) {
+    Metadata md;
+    if (q.second)
+      md = q.second->metadata();
 
-    double livetime = md.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
-    double rescale  = md.attributes.branches.get(Qpx::Setting("rescale")).value_precise.convert_to<double>();
+    double livetime = md.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+    double rescale  = md.attributes.branches.get(Setting("rescale")).value_precise.convert_to<double>();
 
-    if (md.attributes.branches.get(Qpx::Setting("visible")).value_int
+    if (md.attributes.branches.get(Setting("visible")).value_int
         && (md.bits > 0) && (md.total_count > 0)) {
 
-      QVector<double> x = QVector<double>::fromStdVector(q->axis_values(0));
+      QVector<double> x = QVector<double>::fromStdVector(q.second->axis_values(0));
       QVector<double> y(x.size());
 
-      std::shared_ptr<Qpx::EntryList> spectrum_data =
-          std::move(q->data_range({{0, x.size()}}));
+      std::shared_ptr<EntryList> spectrum_data =
+          std::move(q.second->data_range({{0, x.size()}}));
 
 //      PL_DBG << "Will plot " << md.name << "  size " << x.size() << "  sz " << spectrum_data->size();
 
-      Qpx::Detector detector = Qpx::Detector();
+      Detector detector = Detector();
       if (!md.detectors.empty())
         detector = md.detectors[0];
-      Qpx::Calibration temp_calib = detector.best_calib(md.bits);
+      Calibration temp_calib = detector.best_calib(md.bits);
 
       if (temp_calib.bits_ > calib_.bits_)
         calib_ = temp_calib;
@@ -225,7 +227,7 @@ void FormPlot1D::update_plot() {
       }
 
       AppearanceProfile profile;
-      profile.default_pen = QPen(QColor(QString::fromStdString(md.attributes.branches.get(Qpx::Setting("appearance")).value_text)), 1);
+      profile.default_pen = QPen(QColor(QString::fromStdString(md.attributes.branches.get(Setting("appearance")).value_text)), 1);
       ui->mcaPlot->addGraph(x, y, profile, md.bits);
 
     }
@@ -247,9 +249,9 @@ void FormPlot1D::update_plot() {
 }
 
 void FormPlot1D::on_pushFullInfo_clicked()
-{
-  std::shared_ptr<Qpx::Sink> someSpectrum = mySpectra->by_name(spectraSelector->selected().text.toStdString());
-  if (someSpectrum == nullptr)
+{  
+  SinkPtr someSpectrum = mySpectra->get_sink(spectraSelector->selected().data.toLongLong());
+  if (!someSpectrum)
     return;
 
   if (detectors_ == nullptr)
@@ -264,9 +266,7 @@ void FormPlot1D::on_pushFullInfo_clicked()
 
 void FormPlot1D::spectrumDetailsDelete()
 {
-  std::string name = spectraSelector->selected().text.toStdString();
-
-  mySpectra->delete_spectrum(name);
+  mySpectra->delete_sink(spectraSelector->selected().data.toLongLong());
 
   updateUI();
 }
@@ -277,18 +277,19 @@ void FormPlot1D::updateUI()
   QVector<SelectorItem> items;
   QSet<QString> dets;
 
-  for (auto &q : mySpectra->spectra(1, -1)) {
-    Qpx::Metadata md;
-    if (q != nullptr)
-      md = q->metadata();
+  for (auto &q : mySpectra->get_sinks(1, -1)) {
+    Metadata md;
+    if (q.second != nullptr)
+      md = q.second->metadata();
 
     if (!md.detectors.empty())
       dets.insert(QString::fromStdString(md.detectors.front().name_));
 
     SelectorItem new_spectrum;
     new_spectrum.text = QString::fromStdString(md.name);
-    new_spectrum.color = QColor(QString::fromStdString(md.attributes.branches.get(Qpx::Setting("appearance")).value_text));
-    new_spectrum.visible = md.attributes.branches.get(Qpx::Setting("visible")).value_int;
+    new_spectrum.data = QVariant::fromValue(q.first);
+    new_spectrum.color = QColor(QString::fromStdString(md.attributes.branches.get(Setting("appearance")).value_text));
+    new_spectrum.visible = md.attributes.branches.get(Setting("visible")).value_int;
     items.push_back(new_spectrum);
   }
 
@@ -327,7 +328,7 @@ void FormPlot1D::effCalRequested(QAction* choice) {
 
 void FormPlot1D::analyse()
 {
-  emit requestAnalysis(spectraSelector->selected().text);
+  emit requestAnalysis(spectraSelector->selected().data.toLongLong());
 }
 
 void FormPlot1D::addMovingMarker(double x) {
@@ -381,10 +382,10 @@ void FormPlot1D::showAll()
   spectraSelector->show_all();
   QVector<SelectorItem> items = spectraSelector->items();
   for (auto &q : items) {
-    std::shared_ptr<Qpx::Sink>someSpectrum = mySpectra->by_name(q.text.toStdString());
+    SinkPtr someSpectrum = mySpectra->get_sink(q.data.toLongLong());
     if (!someSpectrum)
       continue;
-    Qpx::Setting vis = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("visible"));
+    Setting vis = someSpectrum->metadata().attributes.branches.get(Setting("visible"));
     vis.value_int = true;
     someSpectrum->set_option(vis);
   }
@@ -396,10 +397,10 @@ void FormPlot1D::hideAll()
   spectraSelector->hide_all();
   QVector<SelectorItem> items = spectraSelector->items();
   for (auto &q : items) {
-    std::shared_ptr<Qpx::Sink>someSpectrum = mySpectra->by_name(q.text.toStdString());
+    SinkPtr someSpectrum = mySpectra->get_sink(q.data.toLongLong());
     if (!someSpectrum)
       continue;
-    Qpx::Setting vis = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("visible"));
+    Setting vis = someSpectrum->metadata().attributes.branches.get(Setting("visible"));
     vis.value_int = false;
     someSpectrum->set_option(vis);
   }
@@ -410,10 +411,10 @@ void FormPlot1D::randAll()
 {
   QVector<SelectorItem> items = spectraSelector->items();
   for (auto &q : items) {
-    std::shared_ptr<Qpx::Sink>someSpectrum = mySpectra->by_name(q.text.toStdString());
+    SinkPtr someSpectrum = mySpectra->get_sink(q.data.toLongLong());
     if (!someSpectrum)
       continue;
-    Qpx::Setting app = someSpectrum->metadata().attributes.branches.get(Qpx::Setting("appearance"));
+    Setting app = someSpectrum->metadata().attributes.branches.get(Setting("appearance"));
     app.value_text = generateColor().name(QColor::HexArgb).toStdString();
     someSpectrum->set_option(app);
   }
@@ -444,20 +445,18 @@ void FormPlot1D::on_pushPerLive_clicked()
 
 void FormPlot1D::on_pushRescaleToThisMax_clicked()
 {
-  QString id = spectraSelector->selected().text;
-  std::shared_ptr<Qpx::Sink> someSpectrum = mySpectra->by_name(id.toStdString());
+  SelectorItem itm = spectraSelector->selected();
+  SinkPtr someSpectrum = mySpectra->get_sink(itm.data.toLongLong());
 
-
-
-  if (id.isEmpty() || (someSpectrum == nullptr) || !moving.visible)
+  if (!someSpectrum || !moving.visible)
     return;
 
-  Qpx::Metadata md = someSpectrum->metadata();
+  Metadata md = someSpectrum->metadata();
 
 
-  double livetime = md.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  double livetime = md.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
 
-  Qpx::Calibration cal;
+  Calibration cal;
   if (!md.detectors.empty())
     cal = md.detectors[0].best_calib(md.bits);
 
@@ -469,37 +468,37 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
   if (max == 0)
     return;
 
-  for (auto &q: mySpectra->spectra(1, -1))
-    if (q) {
-      Qpx::Metadata mdt = q->metadata();
-      double lt = mdt.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  for (auto &q: mySpectra->get_sinks(1, -1))
+    if (q.second) {
+      Metadata mdt = q.second->metadata();
+      double lt = mdt.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
 
-      Qpx::Calibration cal;
+      Calibration cal;
       if (!mdt.detectors.empty())
         cal = mdt.detectors[0].best_calib(mdt.bits);
 
-      PreciseFloat mc = q->data({std::round(cal.inverse_transform(moving.pos.energy()))});
+      PreciseFloat mc = q.second->data({std::round(cal.inverse_transform(moving.pos.energy()))});
 
       if (ui->pushPerLive->isChecked() && (lt != 0))
         mc = mc / lt;
 
-      Qpx::Setting rescale = md.attributes.branches.get(Qpx::Setting("rescale"));
+      Setting rescale = md.attributes.branches.get(Setting("rescale"));
       if (mc != 0)
         rescale.value_precise = PreciseFloat(max / mc);
       else
         rescale.value_precise = 0;
-      q->set_option(rescale);
+      q.second->set_option(rescale);
     }
   updateUI();
 }
 
 void FormPlot1D::on_pushRescaleReset_clicked()
 {
-  for (auto &q: mySpectra->spectra(1, -1))
-    if (q) {
-      Qpx::Setting rescale = q->metadata().attributes.branches.get(Qpx::Setting("rescale"));
+  for (auto &q: mySpectra->get_sinks(1, -1))
+    if (q.second) {
+      Setting rescale = q.second->metadata().attributes.branches.get(Setting("rescale"));
       rescale.value_precise = 1;
-      q->set_option(rescale);
+      q.second->set_option(rescale);
     }
   updateUI();
 }
@@ -511,8 +510,7 @@ void FormPlot1D::on_pushManip1D_clicked()
 }
 
 void FormPlot1D::deleteSelected() {
-  SelectorItem item = spectraSelector->selected();
-  mySpectra->delete_spectrum(item.text.toStdString());
+  mySpectra->delete_sink(spectraSelector->selected().data.toLongLong());
   updateUI();
 }
 
@@ -520,7 +518,7 @@ void FormPlot1D::deleteShown() {
   QVector<SelectorItem> items = spectraSelector->items();
   for (auto &q : items)
     if (q.visible)
-      mySpectra->delete_spectrum(q.text.toStdString());
+      mySpectra->delete_sink(q.data.toLongLong());
   updateUI();
 }
 
@@ -528,6 +526,6 @@ void FormPlot1D::deleteHidden() {
   QVector<SelectorItem> items = spectraSelector->items();
   for (auto &q : items)
     if (!q.visible)
-      mySpectra->delete_spectrum(q.text.toStdString());
+      mySpectra->delete_sink(q.data.toLongLong());
   updateUI();
 }

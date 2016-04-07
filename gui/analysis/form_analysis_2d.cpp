@@ -27,8 +27,9 @@
 #include "manip2d.h"
 #include <QInputDialog>
 
+using namespace Qpx;
 
-FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent) :
+FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormAnalysis2D),
   detectors_(newDetDB),
@@ -106,12 +107,12 @@ void FormAnalysis2D::configure_UI() {
 
 }
 
-void FormAnalysis2D::setSpectrum(Qpx::Project *newset, QString name) {
+void FormAnalysis2D::setSpectrum(Project *newset, int64_t idx) {
   clear();
   spectra_ = newset;
-  current_spectrum_ = name;
-  my_gates_->setSpectrum(newset, name);
-  form_integration_->setSpectrum(newset, name);
+  current_spectrum_ = idx;
+  my_gates_->setSpectrum(newset, idx);
+  form_integration_->setSpectrum(newset, idx);
 }
 
 void FormAnalysis2D::reset() {
@@ -126,18 +127,17 @@ void FormAnalysis2D::initialize() {
 
   if (spectra_) {
 
-    PL_DBG << "<Analysis2D> initializing to " << current_spectrum_.toStdString();
-    std::shared_ptr<Qpx::Sink>spectrum = spectra_->by_name(current_spectrum_.toStdString());
+    SinkPtr spectrum = spectra_->get_sink(current_spectrum_);
 
     if (spectrum && spectrum->bits()) {
-      Qpx::Metadata md = spectrum->metadata();
+      Metadata md = spectrum->metadata();
       res = pow(2,md.bits);
 
       ui->plotMatrix->reset_content();
       ui->plotMatrix->setSpectra(*spectra_, current_spectrum_);
       ui->plotMatrix->update_plot();
 
-      bool symmetrized = (md.attributes.branches.get(Qpx::Setting("symmetrized")).value_int != 0);
+      bool symmetrized = (md.attributes.branches.get(Setting("symmetrized")).value_int != 0);
     }
   }
 
@@ -163,7 +163,7 @@ void FormAnalysis2D::update_peaks() {
   yy.visible = false;
 
   if (my_gates_->isVisible()) {
-    Qpx::Gate gate = my_gates_->current_gate();
+    Gate gate = my_gates_->current_gate();
     //PL_DBG << "remake gate c=" << gate.centroid_chan << " w=" << gate.width_chan;
 
     if (gate.centroid_chan != -1) {
@@ -245,7 +245,7 @@ void FormAnalysis2D::clear() {
 
   ui->plotMatrix->reset_content();
 
-  current_spectrum_.clear();
+  current_spectrum_ = 0;
 
   if (my_gates_)
     my_gates_->clear();

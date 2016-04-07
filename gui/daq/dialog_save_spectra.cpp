@@ -34,6 +34,8 @@
 #include "custom_logger.h"
 #include "custom_timer.h"
 
+using namespace Qpx;
+
 WidgetSaveTypes::WidgetSaveTypes(QWidget *parent)
   : QWidget(parent),
     max_formats_(0)
@@ -52,7 +54,7 @@ void WidgetSaveTypes::initialize(std::vector<std::string> types) {
   file_formats.resize(spectrum_types.size());
   selections.resize(spectrum_types.size());
   for (std::size_t i = 0; i < spectrum_types.size(); i++) {
-    Qpx::Metadata type_template = Qpx::SinkFactory::getInstance().create_prototype(spectrum_types[i]);
+    Metadata type_template = SinkFactory::getInstance().create_prototype(spectrum_types[i]);
     std::list<std::string> otypes = type_template.output_types();
     file_formats[i] = std::vector<std::string>(otypes.begin(), otypes.end());
     selections[i].resize(file_formats[i].size(), false);
@@ -113,7 +115,7 @@ void WidgetSaveTypes::mouseReleaseEvent(QMouseEvent *event)
 
 ////Dialog///////////////
 
-DialogSaveSpectra::DialogSaveSpectra(Qpx::Project& newset, QString outdir, QWidget *parent) :
+DialogSaveSpectra::DialogSaveSpectra(Project& newset, QString outdir, QWidget *parent) :
   QDialog(parent),
   ui(new Ui::DialogSaveSpectra)
 {
@@ -172,13 +174,13 @@ void DialogSaveSpectra::on_buttonBox_accepted()
   CustomTimer filetime(true);
 
   for (std::size_t i = 0; i < ui->typesWidget->spectrum_types.size(); i ++) {
-    std::list<std::shared_ptr<Qpx::Sink>> thistype = my_set_->by_type(ui->typesWidget->spectrum_types[i]);
+    std::map<int64_t, SinkPtr> thistype = my_set_->get_sinks(ui->typesWidget->spectrum_types[i]);
     for (std::size_t j = 0; j < ui->typesWidget->file_formats[i].size(); j++) {
       if (ui->typesWidget->selections[i][j]) {
         PL_INFO << "Saving " << ui->typesWidget->spectrum_types[i] << " spectra as " << ui->typesWidget->file_formats[i][j];
         for (auto &q : thistype) {
-          if ((!ui->checkVisibleOnly->isChecked()) || q->metadata().attributes.branches.get(Qpx::Setting("visible")).value_int)
-            q->write_file(dir.string(), ui->typesWidget->file_formats[i][j]);
+          if ((!ui->checkVisibleOnly->isChecked()) || q.second->metadata().attributes.branches.get(Setting("visible")).value_int)
+            q.second->write_file(dir.string(), ui->typesWidget->file_formats[i][j]);
         }
       }
     }

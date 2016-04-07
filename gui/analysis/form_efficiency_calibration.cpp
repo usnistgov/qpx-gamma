@@ -35,11 +35,14 @@
 #include "log_inverse.h"
 #include "effit.h"
 
-FormEfficiencyCalibration::FormEfficiencyCalibration(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent) :
+using namespace Qpx;
+
+FormEfficiencyCalibration::FormEfficiencyCalibration(QSettings &settings, XMLableDB<Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormEfficiencyCalibration),
   detectors_(newDetDB),
-  settings_(settings)
+  settings_(settings),
+  current_spectrum_(0)
 {
   ui->setupUi(this);
   this->setWindowTitle("Efficiency calib");
@@ -79,10 +82,10 @@ FormEfficiencyCalibration::FormEfficiencyCalibration(QSettings &settings, XMLabl
 
 
   //file formats for opening mca spectra
-  std::vector<std::string> spectypes = Qpx::SinkFactory::getInstance().types();
+  std::vector<std::string> spectypes = SinkFactory::getInstance().types();
   QStringList filetypes;
   for (auto &q : spectypes) {
-    Qpx::Metadata type_template = Qpx::SinkFactory::getInstance().create_prototype("1D");
+    Metadata type_template = SinkFactory::getInstance().create_prototype("1D");
     if (!type_template.input_types().empty())
       filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template.input_types()) + ")");
   }
@@ -142,7 +145,7 @@ void FormEfficiencyCalibration::saveSettings() {
 }
 
 
-void FormEfficiencyCalibration::setDetector(Qpx::Project *newset, QString detector) {
+void FormEfficiencyCalibration::setDetector(Project *newset, QString detector) {
 //  my_peak_fitter_->clear();
 
   current_detector_ = detector.toStdString();
@@ -153,21 +156,22 @@ void FormEfficiencyCalibration::setDetector(Qpx::Project *newset, QString detect
   update_spectra();
 }
 
-void FormEfficiencyCalibration::setSpectrum(QString name) {
-  if (!fit_data_.metadata_.name.empty()) //should be ==Qpx::Setting()
-    peak_sets_[fit_data_.metadata_.name] = fit_data_;
+void FormEfficiencyCalibration::setSpectrum(int64_t idx) {
+  if (!fit_data_.finder_.x_.empty()) //should be ==Setting()
+    peak_sets_[current_spectrum_] = fit_data_;
 
-  fit_data_ = Qpx::Fitter();
-
-  std::shared_ptr<Qpx::Sink>spectrum = spectra_->by_name(name.toStdString());
+  SinkPtr spectrum = spectra_->get_sink(idx);
 
   if (spectrum && spectrum->bits()) {
-    if (peak_sets_.count(name.toStdString())) {
-      fit_data_ = peak_sets_.at(name.toStdString());
+    fit_data_ = Fitter();
+    current_spectrum_ = idx;
+
+    if (peak_sets_.count(idx)) {
+      fit_data_ = peak_sets_.at(idx);
       ui->isotopes->set_current_isotope(QString::fromStdString(fit_data_.sample_name_));
     }  else {
-      Qpx::Metadata md = spectrum->metadata();
-      Qpx::Setting descr = md.attributes.branches.get(Qpx::Setting("description"));
+      Metadata md = spectrum->metadata();
+      Setting descr = md.attributes.branches.get(Setting("description"));
       if (!descr.value_text.empty()) {
         //find among data
         ui->isotopes->set_current_isotope(QString::fromStdString(descr.value_text));
@@ -175,13 +179,13 @@ void FormEfficiencyCalibration::setSpectrum(QString name) {
 
       fit_data_.clear();
       fit_data_.setData(spectrum);
-      peak_sets_[name.toStdString()] = fit_data_;
+      peak_sets_[idx] = fit_data_;
     }
     ui->doubleScaleFactor->setValue(fit_data_.activity_scale_factor_);
     ui->doubleScaleFactor->setEnabled(true);
   } else {
-    spectrum = nullptr;
-    fit_data_ = Qpx::Fitter();
+    current_spectrum_ = 0;
+    fit_data_ = Fitter();
     ui->plotSpectrum->update_spectrum();
     ui->doubleScaleFactor->setEnabled(false);
   }
@@ -205,7 +209,7 @@ void FormEfficiencyCalibration::update_data() {
     for (auto &p : ui->isotopes->current_isotope_gammas()) {
       double diff = abs(q.second.energy - p.energy);
       if (diff < ui->doubleEpsilonE->value()) {
-        Qpx::Peak pk = q.second; //BROKEN
+        Peak pk = q.second; //BROKEN
 //        pk.flagged = true;
         pk.intensity_theoretical_ = p.abundance;
         pk.efficiency_relative_ = (pk.cps_best / pk.intensity_theoretical_);
@@ -226,8 +230,8 @@ void FormEfficiencyCalibration::update_data() {
     }
   }
 
-  if (!fit_data_.metadata_.name.empty()) //should be ==Qpx::Setting()
-    peak_sets_[fit_data_.metadata_.name] = fit_data_;
+  if (!fit_data_.finder_.x_.empty()) //should be ==Setting()
+    peak_sets_[current_spectrum_] = fit_data_;
 
 //  ui->plotSpectrum->update_fit(contents_changed);
   replot_calib();
@@ -251,10 +255,10 @@ void FormEfficiencyCalibration::update_detector_calibs()
   msgBox.setIcon(QMessageBox::Question);
   int ret = msgBox.exec();
 
-  Qpx::Detector modified;
+  Detector modified;
 
   if (ret == QMessageBox::Yes) {
-    if (!detectors_.has_a(Qpx::Detector(current_detector_))) {
+    if (!detectors_.has_a(Detector(current_detector_))) {
       bool ok;
       QString text = QInputDialog::getText(this, "New Detector",
                                            "Detector name:", QLineEdit::Normal,
@@ -265,16 +269,16 @@ void FormEfficiencyCalibration::update_detector_calibs()
         return;
 
       if (!text.isEmpty()) {
-        modified = Qpx::Detector(current_detector_);
+        modified = Detector(current_detector_);
         if (detectors_.has_a(modified)) {
           QMessageBox::warning(this, "Already exists", "Detector " + text + " already exists. Will not save to database.", QMessageBox::Ok);
-          modified = Qpx::Detector();
+          modified = Detector();
         }
       }
     } else
-      modified = detectors_.get(Qpx::Detector(current_detector_));
+      modified = detectors_.get(Detector(current_detector_));
 
-    if (modified != Qpx::Detector())
+    if (modified != Detector())
     {
       PL_INFO << "   applying new calibrations for " << modified.name_ << " in detector database";
       modified.efficiency_calibration_ = new_calibration_;
@@ -287,23 +291,23 @@ void FormEfficiencyCalibration::update_detector_calibs()
 void FormEfficiencyCalibration::update_spectra() {
   QVector<SelectorItem> items;
 
-  for (auto &q : spectra_->spectra(1, -1)) {
-    Qpx::Metadata md;
-    if (q != nullptr)
-      md = q->metadata();
+  for (auto &q : spectra_->get_sinks(1, -1)) {
+    Metadata md;
+    if (q.second)
+      md = q.second->metadata();
 
     if (!md.detectors.empty() && (md.detectors.front().name_ == current_detector_)) {
       SelectorItem new_spectrum;
       new_spectrum.text = QString::fromStdString(md.name);
-      new_spectrum.color = QColor(QString::fromStdString(md.attributes.branches.get(Qpx::Setting("appearance")).value_text));
-      new_spectrum.visible = md.attributes.branches.get(Qpx::Setting("visible")).value_int;
+      new_spectrum.color = QColor(QString::fromStdString(md.attributes.branches.get(Setting("appearance")).value_text));
+      new_spectrum.visible = md.attributes.branches.get(Setting("visible")).value_int;
       items.push_back(new_spectrum);
     }
   }
 
   ui->spectrumSelector->setItems(items);
 
-  setSpectrum(ui->spectrumSelector->selected().text);
+  setSpectrum(ui->spectrumSelector->selected().data.toLongLong());
 }
 
 void FormEfficiencyCalibration::spectrumLooksChanged(SelectorItem item) {
@@ -312,10 +316,10 @@ void FormEfficiencyCalibration::spectrumLooksChanged(SelectorItem item) {
 
 void FormEfficiencyCalibration::spectrumDetails(SelectorItem item)
 {
-  setSpectrum(item.text);
+  setSpectrum(item.data.toLongLong());
 }
 
-void FormEfficiencyCalibration::add_peak_to_table(const Qpx::Peak &p, int row, QColor bckg) {
+void FormEfficiencyCalibration::add_peak_to_table(const Peak &p, int row, QColor bckg) {
   QBrush background(bckg);
 
   QTableWidgetItem *chn = new QTableWidgetItem( QString::number(p.center) );
@@ -517,7 +521,7 @@ void FormEfficiencyCalibration::toggle_push() {
   ui->pushFitEffit->setEnabled(points_for_calib > 1);
   ui->spinTerms->setEnabled(points_for_calib > 1);
 
-  if (new_calibration_ != Qpx::Calibration())
+  if (new_calibration_ != Calibration())
     ui->pushApplyCalib->setEnabled(true);
   else
     ui->pushApplyCalib->setEnabled(false);
@@ -571,11 +575,11 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
     new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
-    new_calibration_.model_ = Qpx::CalibrationModel::polylog;
+    new_calibration_.model_ = CalibrationModel::polylog;
     PL_DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
   }
   else
-    PL_INFO << "<Efficiency calibration> Qpx::Calibration failed";
+    PL_INFO << "<Efficiency calibration> Calibration failed";
 
   replot_calib();
   toggle_push();
@@ -614,16 +618,16 @@ void FormEfficiencyCalibration::on_doubleEpsilonE_editingFinished()
 void FormEfficiencyCalibration::on_doubleScaleFactor_editingFinished()
 {
   fit_data_.activity_scale_factor_ = ui->doubleScaleFactor->value();
-  if (!fit_data_.metadata_.name.empty()) //should be ==Qpx::Setting()
-    peak_sets_[fit_data_.metadata_.name] = fit_data_;
+  if (!fit_data_.finder_.x_.empty()) //should be ==Setting()
+    peak_sets_[current_spectrum_] = fit_data_;
   replot_calib();
 }
 
 void FormEfficiencyCalibration::on_doubleScaleFactor_valueChanged(double arg1)
 {
   fit_data_.activity_scale_factor_ = ui->doubleScaleFactor->value();
-  if (!fit_data_.metadata_.name.empty()) //should be ==Qpx::Setting()
-    peak_sets_[fit_data_.metadata_.name] = fit_data_;
+  if (!fit_data_.finder_.x_.empty()) //should be ==Setting()
+    peak_sets_[current_spectrum_] = fit_data_;
   replot_calib();
 }
 
@@ -677,11 +681,11 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
     new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
-    new_calibration_.model_ = Qpx::CalibrationModel::loginverse;
+    new_calibration_.model_ = CalibrationModel::loginverse;
     PL_DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
   }
   else
-    PL_INFO << "<Efficiency calibration> Qpx::Calibration failed";
+    PL_INFO << "<Efficiency calibration> Calibration failed";
 
   replot_calib();
   toggle_push();
@@ -723,7 +727,7 @@ void FormEfficiencyCalibration::on_pushFitEffit_clicked()
     new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
-    new_calibration_.model_ = Qpx::CalibrationModel::effit;
+    new_calibration_.model_ = CalibrationModel::effit;
     PL_DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
 
   replot_calib();

@@ -47,10 +47,10 @@ class SinkFactory {
   void register_type(Metadata tt, std::function<Sink*(void)> typeConstructor);
   const std::vector<std::string> types();
   
-  std::shared_ptr<Sink> create_type(std::string type);
-  std::shared_ptr<Sink> create_from_prototype(const Metadata& tem);
-  std::shared_ptr<Sink> create_from_xml(const pugi::xml_node &root);
-  std::shared_ptr<Sink> create_from_file(std::string filename);
+  SinkPtr create_type(std::string type);
+  SinkPtr create_from_prototype(const Metadata& tem);
+  SinkPtr create_from_xml(const pugi::xml_node &root);
+  SinkPtr create_from_file(std::string filename);
 
   Metadata create_prototype(std::string type);
 

@@ -44,27 +44,18 @@ public:
 
 private slots:
     void on_pushLock_clicked();
-
     void on_buttonBox_rejected();
-
-    void det_selection_changed(QItemSelection,QItemSelection);
-
     void on_pushDetEdit_clicked();
-    void changeDet(Qpx::Detector);
-
     void on_pushDetRename_clicked();
+    void on_pushDelete_clicked();
+    void on_pushAnalyse_clicked();
+    void on_pushDetFromDB_clicked();
+    void on_pushDetToDB_clicked();
+    void on_spinDets_valueChanged(int arg1);
 
     void push_settings();
-
-    void on_pushDelete_clicked();
-
-    void on_pushAnalyse_clicked();
-
-    void on_pushDetFromDB_clicked();
-
-    void on_pushDetToDB_clicked();
-
-    void on_spinDets_valueChanged(int arg1);
+    void changeDet(Qpx::Detector);
+    void det_selection_changed(QItemSelection,QItemSelection);
 
 signals:
     void finished(bool);

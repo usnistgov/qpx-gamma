@@ -74,7 +74,7 @@ public:
   explicit FormMultiGates(QSettings &settings, QWidget *parent = 0);
   ~FormMultiGates();
 
-  void setSpectrum(Qpx::Project *newset, QString name);
+  void setSpectrum(Qpx::Project *newset, int64_t idx);
 
   void remake_gate(bool); //private?
   void change_width(int width);
@@ -126,9 +126,9 @@ private:
 
 
   Qpx::Project *spectra_;
-  QString current_spectrum_;
+  int64_t current_spectrum_;
   Qpx::Metadata tempx;
-  std::shared_ptr<Qpx::Sink>gate_x;
+  Qpx::SinkPtr gate_x;
   Qpx::Fitter fit_data_;
   int res;
   MarkerBox2D range2d;

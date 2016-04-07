@@ -41,7 +41,7 @@ public:
   explicit FormSymmetrize2D(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
   ~FormSymmetrize2D();
 
-  void setSpectrum(Qpx::Project *newset, QString spectrum);
+  void setSpectrum(Qpx::Project *newset, int64_t idx);
   void clear();
   void reset();
 
@@ -71,8 +71,8 @@ private:
   Ui::FormSymmetrize2D *ui;
   QSettings &settings_;
 
-  std::shared_ptr<Qpx::Sink>gate_x;
-  std::shared_ptr<Qpx::Sink>gate_y;
+  Qpx::SinkPtr gate_x;
+  Qpx::SinkPtr gate_y;
 
   Qpx::Fitter fit_data_, fit_data_2_;
   int res;
@@ -97,7 +97,7 @@ private:
   QString settings_directory_;
 
   Qpx::Project *spectra_;
-  QString current_spectrum_;
+  int64_t current_spectrum_;
 
   XMLableDB<Qpx::Detector> &detectors_;
 

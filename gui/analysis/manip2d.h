@@ -28,15 +28,15 @@
 
 namespace Qpx {
 
-bool slice_rectangular(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination, std::initializer_list<Pair> bounds);
-bool slice_diagonal_x(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx);
-bool slice_diagonal_y(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx);
+bool slice_rectangular(SinkPtr source, SinkPtr destination, std::initializer_list<Pair> bounds);
+bool slice_diagonal_x(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx);
+bool slice_diagonal_y(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx);
 
 
-bool symmetrize(std::shared_ptr<Sink> source, std::shared_ptr<Sink> destination);
+bool symmetrize(SinkPtr source, SinkPtr destination);
 
-PreciseFloat sum_with_neighbors(std::shared_ptr<Sink> source, uint16_t x, uint16_t y);
-PreciseFloat sum_diag(std::shared_ptr<Sink> source, uint16_t x, uint16_t y, uint16_t width);
+PreciseFloat sum_with_neighbors(SinkPtr source, uint16_t x, uint16_t y);
+PreciseFloat sum_diag(SinkPtr source, uint16_t x, uint16_t y, uint16_t width);
 
 }
 #endif

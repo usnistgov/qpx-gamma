@@ -43,7 +43,7 @@ public:
   explicit FormAnalysis1D(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
   ~FormAnalysis1D();
 
-  void setSpectrum(Qpx::Project *newset, QString spectrum);
+  void setSpectrum(Qpx::Project *newset, int64_t idx);
 
   void clear();
 
@@ -81,6 +81,7 @@ private:
   QString data_directory_;
   QString settings_directory_;
   Qpx::Project *spectra_;
+  int64_t current_spectrum_;
 
   XMLableDB<Qpx::Detector> &detectors_;
 

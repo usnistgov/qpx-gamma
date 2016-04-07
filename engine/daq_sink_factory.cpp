@@ -27,52 +27,52 @@
 
 namespace Qpx {
 
-std::shared_ptr<Sink> SinkFactory::create_type(std::string type)
+SinkPtr SinkFactory::create_type(std::string type)
 {
   auto it = constructors.find(type);
   if(it != constructors.end())
-    return std::shared_ptr<Sink>(it->second());
+    return SinkPtr(it->second());
   else
-    return std::shared_ptr<Sink>();
+    return SinkPtr();
 }
 
-std::shared_ptr<Sink> SinkFactory::create_from_prototype(const Metadata& tem)
+SinkPtr SinkFactory::create_from_prototype(const Metadata& tem)
 {
-  std::shared_ptr<Sink> instance = create_type(tem.type());
+  SinkPtr instance = create_type(tem.type());
   if (instance && instance->from_prototype(tem));
     return instance;
-  return std::shared_ptr<Sink>();
+  return SinkPtr();
 }
 
-std::shared_ptr<Sink> SinkFactory::create_from_xml(const pugi::xml_node &root)
+SinkPtr SinkFactory::create_from_xml(const pugi::xml_node &root)
 {
 //  if (std::string(root.name()) != "Spectrum")               //GENERALIZE
-//    return std::shared_ptr<Sink>();
+//    return SinkPtr();
   if (!root.attribute("type"))
-    return std::shared_ptr<Sink>();
+    return SinkPtr();
 
 //  PL_DBG << "<SinkFactory> making " << root.attribute("type").value();
 
-  std::shared_ptr<Sink> instance = create_type(std::string(root.attribute("type").value()));
+  SinkPtr instance = create_type(std::string(root.attribute("type").value()));
   if (instance && instance->from_xml(root))
     return instance;
 
-  return std::shared_ptr<Sink>();
+  return SinkPtr();
 }
 
-std::shared_ptr<Sink> SinkFactory::create_from_file(std::string filename)
+SinkPtr SinkFactory::create_from_file(std::string filename)
 {
   std::string ext(boost::filesystem::extension(filename));
   if (ext.size())
     ext = ext.substr(1, ext.size()-1);
   boost::algorithm::to_lower(ext);
   auto it = ext_to_type.find(ext);
-  std::shared_ptr<Sink> instance;
+  SinkPtr instance;
   if (it != ext_to_type.end())
-    instance = std::shared_ptr<Sink>(create_type(it->second));
+    instance = SinkPtr(create_type(it->second));
   if (instance && instance->read_file(filename, ext))
     return instance;
-  return std::shared_ptr<Sink>();
+  return SinkPtr();
 }
 
 Metadata SinkFactory::create_prototype(std::string type)

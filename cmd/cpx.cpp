@@ -6,6 +6,8 @@ const int MAX_CHARS_PER_LINE = 512;
 const int MAX_TOKENS_PER_LINE = 20;
 const char* const DELIMITER = " ";
 
+using namespace Qpx;
+
 int main(int argc, char *argv[])
 {
   //user input
@@ -200,7 +202,7 @@ bool Cpx::templates(std::vector<std::string> &tokens) {
   }
   std::string file(tokens[0]);
 
-  XMLableDB<Qpx::Metadata>  spectra_templates_("SpectrumTemplates");
+  XMLableDB<Metadata>  spectra_templates_("SpectrumTemplates");
   spectra_templates_.read_xml(file);
   if (spectra_templates_.empty()) {
     PL_ERR << "<cpx> bad template file " << file;
@@ -208,7 +210,7 @@ bool Cpx::templates(std::vector<std::string> &tokens) {
   }
   PL_INFO << "<cpx> loading templates from " << file;
   spectra_.clear();
-  spectra_.set_spectra(spectra_templates_);
+  spectra_.set_prototypes(spectra_templates_);
   return true;
 }
 
@@ -264,16 +266,16 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
     return false;
   }
 
-  std::vector<Qpx::Detector> dets = engine_.get_detectors();
+  std::vector<Detector> dets = engine_.get_detectors();
 
-  XMLableDB<Qpx::Detector> detectors_("Detectors");
+  XMLableDB<Detector> detectors_("Detectors");
   detectors_.read_xml(data_dir + "/default_detectors.det");
   if (detectors_.empty()) {
     PL_ERR << "<cpx> bad detector db";
     return false;
   }
 
-  std::map<int, Qpx::Detector> update;
+  std::map<int, Detector> update;
   for (int i=0; i < dets.size(); ++i)
     if (detectors_.has_a(dets[i]))
       update[i] = detectors_.get(dets[i]);
