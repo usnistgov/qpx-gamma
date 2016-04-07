@@ -28,12 +28,13 @@
 
 namespace Qpx {
 
-bool slice_rectangular(SinkPtr source, SinkPtr destination, std::initializer_list<Pair> bounds);
+SinkPtr slice_rectangular(SinkPtr source, std::initializer_list<Pair> bounds, bool det1);
+
 bool slice_diagonal_x(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx);
 bool slice_diagonal_y(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx);
 
 
-bool symmetrize(SinkPtr source, SinkPtr destination);
+SinkPtr make_symmetrized(SinkPtr source);
 
 PreciseFloat sum_with_neighbors(SinkPtr source, uint16_t x, uint16_t y);
 PreciseFloat sum_diag(SinkPtr source, uint16_t x, uint16_t y, uint16_t width);

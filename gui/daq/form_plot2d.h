@@ -98,6 +98,7 @@ private:
   //gui stuff
   Ui::FormPlot2D *ui;
   Qpx::Project *mySpectra;
+  int64_t current_spectrum_;
 
   XMLableDB<Qpx::Detector> * detectors_;
 

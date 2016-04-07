@@ -420,43 +420,25 @@ void FormIntegration2D::make_gates() {
     if (ymax > adjrange)
       ymax = adjrange;
 
-    Metadata temp;
     SinkPtr gate;
-
-    temp = SinkFactory::getInstance().create_prototype("1D");
-    //  temp.visible = true;
-    temp.name = "temp";
-    temp.bits = md_.bits;
-
-    Setting pattern;
 
     if (!ui->pushShowDiagonal->isChecked()) {
 
-      pattern = temp.attributes.branches.get(Setting("pattern_coinc"));
-      pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
-      pattern.value_pattern.set_theshold(2);
-      temp.attributes.branches.replace(pattern);
-      pattern = temp.attributes.branches.get(Setting("pattern_add"));
-      pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
-      pattern.value_pattern.set_theshold(1);
-      temp.attributes.branches.replace(pattern);
-      gate = SinkFactory::getInstance().create_from_prototype(temp);
-      slice_rectangular(source_spectrum, gate, {{xmin, xmax}, {ymin, ymax}});
+      gate = slice_rectangular(source_spectrum, {{xmin, xmax}, {ymin, ymax}}, true);
       fit_x_.setData(gate);
 
-      pattern = temp.attributes.branches.get(Setting("pattern_coinc"));
-      pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
-      pattern.value_pattern.set_theshold(2);
-      temp.attributes.branches.replace(pattern);
-      pattern = temp.attributes.branches.get(Setting("pattern_add"));
-      pattern.value_pattern.set_gates(std::vector<bool>({0,1}));
-      pattern.value_pattern.set_theshold(1);
-      temp.attributes.branches.replace(pattern);
-      gate = SinkFactory::getInstance().create_from_prototype(temp);
-      slice_rectangular(source_spectrum, gate, {{xmin, xmax}, {ymin, ymax}});
+      gate = slice_rectangular(source_spectrum, {{xmin, xmax}, {ymin, ymax}}, false);
       fit_y_.setData(gate);
 
     } else  {
+
+      Metadata temp;
+      temp = SinkFactory::getInstance().create_prototype("1D");
+      //  temp.visible = true;
+      temp.name = "temp";
+      temp.bits = md_.bits;
+
+      Setting pattern;
 
       pattern = temp.attributes.branches.get(Setting("pattern_coinc"));
       pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
@@ -513,9 +495,7 @@ void FormIntegration2D::on_pushShowDiagonal_clicked()
 
 void FormIntegration2D::gated_fits_updated(std::set<double> dummy) {
 
-  ui->pushCentroidX->setEnabled(false);
-  ui->pushCentroidY->setEnabled(false);
-  ui->pushCentroidXY->setEnabled(false);
+  ui->pushAdjust->setEnabled(false);
   ui->pushAddPeak2d->setEnabled(false);
 
   bool xgood = ((ui->plotGateX->get_selected_peaks().size() == 1) ||
@@ -525,14 +505,12 @@ void FormIntegration2D::gated_fits_updated(std::set<double> dummy) {
                 (fit_y_.peaks().size() == 1));
 
   if (current_idx() >= 0) {
-    ui->pushCentroidX->setEnabled(xgood);
-    ui->pushCentroidY->setEnabled(ygood);
-    ui->pushCentroidXY->setEnabled(xgood && ygood);
+    ui->pushAdjust->setEnabled(xgood || ygood);
   } else
     ui->pushAddPeak2d->setEnabled(xgood && ygood && !ui->pushShowDiagonal->isChecked());
 }
 
-void FormIntegration2D::on_pushCentroidX_clicked()
+void FormIntegration2D::adjust_x()
 {
   double center;
 
@@ -544,21 +522,15 @@ void FormIntegration2D::on_pushCentroidX_clicked()
   else
     return;
 
-  PL_DBG << "a1";
-
   ROI *roi = fit_x_.parent_of(center);
 
   if (!roi)
     return;
 
-  PL_DBG << "a2";
-
   int32_t current = current_idx();
 
   if ((current < 0) || (current >= peaks_.size()))
       return;
-
-  PL_DBG << "a3";
 
   if (!ui->pushShowDiagonal->isChecked())
     peaks_[current].adjust_x(*roi, center);
@@ -569,7 +541,7 @@ void FormIntegration2D::on_pushCentroidX_clicked()
   emit peak_selected();
 }
 
-void FormIntegration2D::on_pushCentroidY_clicked()
+void FormIntegration2D::adjust_y()
 {
   double center;
 
@@ -601,11 +573,11 @@ void FormIntegration2D::on_pushCentroidY_clicked()
   emit peak_selected();
 }
 
-void FormIntegration2D::on_pushCentroidXY_clicked()
+void FormIntegration2D::on_pushAdjust_clicked()
 {
-  on_pushCentroidX_clicked();
-  on_pushCentroidY_clicked();
-  on_pushCentroidX_clicked();
+  adjust_x();
+  adjust_y();
+  adjust_x();
   //redundant refreshes and signals from above calls
 }
 

@@ -106,9 +106,7 @@ private slots:
   void selection_changed(QItemSelection,QItemSelection);
   void gated_fits_updated(std::set<double>);
 
-  void on_pushCentroidX_clicked();
-  void on_pushCentroidY_clicked();
-  void on_pushCentroidXY_clicked();
+  void on_pushAdjust_clicked();
   void on_pushRemove_clicked();
   void on_doubleGateOn_editingFinished();
   void on_pushAddPeak2d_clicked();
@@ -144,6 +142,9 @@ private:
 
   void rebuild_table(bool contents_changed);
   void make_gates();
+
+  void adjust_x();
+  void adjust_y();
 };
 
 #endif // FORM_MULTI_GATES_H

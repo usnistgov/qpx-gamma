@@ -28,7 +28,8 @@ using namespace Qpx;
 
 FormPlot2D::FormPlot2D(QWidget *parent) :
   QWidget(parent),
-  ui(new Ui::FormPlot2D)
+  ui(new Ui::FormPlot2D),
+  current_spectrum_(0)
 {
   ui->setupUi(this);
 
@@ -116,6 +117,7 @@ void FormPlot2D::reset_content() {
   x_marker.visible = false;
   y_marker.visible = false;
   ext_marker.visible = false;
+  current_spectrum_ = 0;
   replot_markers();
 }
 
@@ -123,11 +125,16 @@ void FormPlot2D::choose_spectrum(SelectorItem item)
 {
   SelectorItem itm = ui->spectrumSelector->selected();
 
+  if (itm.data.toLongLong() == current_spectrum_)
+    return;
+
+  current_spectrum_ = itm.data.toLongLong();
+
   std::map<int64_t, SinkPtr> spectra = mySpectra->get_sinks(2, -1);
 
   for (auto &q : spectra) {
     Setting vis = q.second->metadata().attributes.branches.get(Setting("visible"));
-    vis.value_int = (q.first == itm.data.toLongLong());
+    vis.value_int = (q.first == current_spectrum_);
     q.second->set_option(vis);
   }
 
@@ -382,6 +389,7 @@ void FormPlot2D::on_pushDetails_clicked()
 
 void FormPlot2D::spectrumDetailsClosed(bool changed) {
   if (changed) {
+    updateUI();
     //replot?
   }
 }

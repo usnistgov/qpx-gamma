@@ -127,7 +127,6 @@ private:
 
   Qpx::Project *spectra_;
   int64_t current_spectrum_;
-  Qpx::Metadata tempx;
   Qpx::SinkPtr gate_x;
   Qpx::Fitter fit_data_;
   int res;

@@ -115,45 +115,17 @@ void FormSymmetrize2D::make_gated_spectra() {
   {
     uint32_t adjrange = pow(2,md.bits) - 1;
 
-    Metadata tempx = SinkFactory::getInstance().create_prototype("1D");
-    tempx.bits = md.bits;
-
-    Setting pattern;
-    pattern = tempx.attributes.branches.get(Setting("pattern_coinc"));
-    pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
-    pattern.value_pattern.set_theshold(2);
-    tempx.attributes.branches.replace(pattern);
-
-    pattern = tempx.attributes.branches.get(Setting("pattern_add"));
-    pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
-    pattern.value_pattern.set_theshold(1);
-    tempx.attributes.branches.replace(pattern);
-
-
-    Metadata  tempy = tempx;
-
-    pattern = tempy.attributes.branches.get(Setting("pattern_add"));
-    pattern.value_pattern.set_gates(std::vector<bool>({0,1}));
-    pattern.value_pattern.set_theshold(1);
-    tempy.attributes.branches.replace(pattern);
-
-    gate_x = SinkFactory::getInstance().create_from_prototype(tempx);
-
-    //if?
-    slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {0, adjrange}});
+    gate_x = slice_rectangular(source_spectrum, {{0, adjrange}, {0, adjrange}}, true);
 
     fit_data_.clear();
     fit_data_.setData(gate_x);
     ui->plotSpectrum->update_spectrum();
 
-    gate_y = SinkFactory::getInstance().create_from_prototype(tempy);
-
-    slice_rectangular(source_spectrum, gate_y, {{0, adjrange}, {0, adjrange}});
+    gate_y = slice_rectangular(source_spectrum, {{0, adjrange}, {0, adjrange}}, false);
 
     fit_data_2_.clear();
     fit_data_2_.setData(gate_y);
     ui->plotSpectrum2->update_spectrum();
-
 
 //    ui->plotMatrix->refresh();
   }
@@ -259,74 +231,33 @@ void FormSymmetrize2D::symmetrize()
 {
   this->setCursor(Qt::WaitCursor);
 
-  QString fold_spec_name = current_spectrum_ + "_sym";
-  bool ok;
-  QString text = QInputDialog::getText(this, "New spectrum name",
-                                       "Spectrum name:", QLineEdit::Normal,
-                                       fold_spec_name,
-                                       &ok);
-  if (ok && !text.isEmpty()) {
-    SinkPtr source_spectrum = spectra_->get_sink(current_spectrum_);
-    if (!source_spectrum) {
-      this->setCursor(Qt::ArrowCursor);
-      return;
-    }
+  SinkPtr source_spectrum = spectra_->get_sink(current_spectrum_);
+  if (!source_spectrum) {
+    this->setCursor(Qt::ArrowCursor);
+    return;
+  }
 
-    //gain_match_cali_ = fit_data_2_.detector_.get_gain_match(fit_data_2_.metadata_.bits, fit_data_.detector_.name_);
-    //compare with source and replace?
+  //gain_match_cali_ = fit_data_2_.detector_.get_gain_match(fit_data_2_.metadata_.bits, fit_data_.detector_.name_);
+  //compare with source and replace?
 
-    Metadata md = source_spectrum->metadata();
+  SinkPtr destination = make_symmetrized(source_spectrum);
 
-    std::vector<uint16_t> chans;
-    Setting pattern;
-    pattern = md.attributes.branches.get(Setting("pattern_add"));
-    std::vector<bool> gts = pattern.value_pattern.gates();
-
-    for (int i=0; i < gts.size(); ++i) {
-      if (gts[i])
-        chans.push_back(i);
-    }
-
-    if (chans.size() != 2) {
-      PL_WARN << "<FormSymmetrize2D> " << md.name << " does not have 2 channels in pattern";
-      this->setCursor(Qt::ArrowCursor);
-      return;
-    }
-
-    Metadata temp_sym = SinkFactory::getInstance().create_prototype(md.type()); //assume 2D?
-//    temp_sym.visible = false;
-    temp_sym.name = fold_spec_name.toStdString();
-    temp_sym.attributes.branches.replace(pattern);
-    pattern = md.attributes.branches.get(Setting("pattern_coinc"));
-    pattern.value_pattern.set_gates(gts);
-    pattern.value_pattern.set_theshold(2);
-    temp_sym.attributes.branches.replace(pattern);
-    temp_sym.bits = md.bits;
-
-    SinkPtr destination = SinkFactory::getInstance().create_from_prototype(temp_sym);
-
-    if (!destination) {
-      PL_WARN << "<FormSymmetrize2D> " << fold_spec_name.toStdString() << " could not be created";
-      this->setCursor(Qt::ArrowCursor);
-      return;
-    }
-
-    if (Qpx::symmetrize(source_spectrum, destination)) {
-      int64_t idx = spectra_->add_sink(destination);
-      if (idx) {
+  if (destination) {
+    destination->set_name(destination->name() + "-sym");
+    int64_t idx = spectra_->add_sink(destination);
+    if (idx) {
       setSpectrum(spectra_, idx);
       reset();
       initialize();
       emit spectraChanged();
-      } else
-        PL_WARN << "<FormSymmetrize2D> could not add symmetrized spectrum to project " << md.name;
-    } else {
-      PL_WARN << "<FormSymmetrize2D> could not symmetrize " << md.name;
-      this->setCursor(Qt::ArrowCursor);
-      return;
-    }
-
+    } else
+      PL_WARN << "<FormSymmetrize2D> could not add symmetrized spectrum to project " << destination->name();
+  } else {
+    PL_WARN << "<FormSymmetrize2D> could not symmetrize " << destination->name();
+    this->setCursor(Qt::ArrowCursor);
+    return;
   }
+
   this->setCursor(Qt::ArrowCursor);
 }
 

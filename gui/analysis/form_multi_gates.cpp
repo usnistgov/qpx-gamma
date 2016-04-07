@@ -68,18 +68,6 @@ FormMultiGates::FormMultiGates(QSettings &settings, QWidget *parent) :
 
   connect(ui->gatedSpectrum, SIGNAL(range_changed(Range)), this, SLOT(range_changed_in_plot(Range)));
 
-  tempx = SinkFactory::getInstance().create_prototype("1D");
-  //tempx.visible = true;
-  Setting pattern;
-  pattern = tempx.attributes.branches.get(Setting("pattern_coinc"));
-  pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
-  pattern.value_pattern.set_theshold(2);
-  tempx.attributes.branches.replace(pattern);
-  pattern = tempx.attributes.branches.get(Setting("pattern_add"));
-  pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
-  pattern.value_pattern.set_theshold(1);
-  tempx.attributes.branches.replace(pattern);
-
   res = 0;
   xmin_ = 0;
   xmax_ = 0;
@@ -504,15 +492,12 @@ void FormMultiGates::make_gated_spectra() {
   {
     uint32_t adjrange = pow(2,md.bits) - 1;
 
-    tempx.bits = md.bits;
-    //    tempx.name_ = detector1_.name_ + "[" + to_str_precision(nrg_calibration2_.transform(ymin_), 0) + "," + to_str_precision(nrg_calibration2_.transform(ymax_), 0) + "]";
-    tempx.name = md.detectors[0].name_ + "[" + to_str_precision(md.detectors[1].best_calib(md.bits).transform(ymin_, md.bits), 0) + ","
-        + to_str_precision(md.detectors[1].best_calib(md.bits).transform(ymax_, md.bits), 0) + "]";
 
-    gate_x = SinkFactory::getInstance().create_from_prototype(tempx);
-
-    //if?
-    slice_rectangular(source_spectrum, gate_x, {{0, adjrange}, {ymin_, ymax_}});
+    gate_x = slice_rectangular(source_spectrum, {{0, adjrange}, {ymin_, ymax_}}, true);
+    gate_x->set_name(md.detectors[0].name_ +
+        "[" + to_str_precision(md.detectors[1].best_calib(md.bits).transform(ymin_, md.bits), 0)
+        + "," +
+        to_str_precision(md.detectors[1].best_calib(md.bits).transform(ymax_, md.bits), 0) + "]");
 
     fit_data_.clear();
     fit_data_.setData(gate_x);

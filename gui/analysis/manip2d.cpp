@@ -24,28 +24,53 @@
 #include "custom_logger.h"
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_real.hpp>
+#include "daq_sink_factory.h"
 
 namespace Qpx {
 
-bool slice_rectangular(SinkPtr source, SinkPtr destination, std::initializer_list<Pair> bounds) {
-  if (source == nullptr)
-    return false;
-  if (destination == nullptr)
-    return false;
+SinkPtr slice_rectangular(SinkPtr source, std::initializer_list<Pair> bounds, bool det1) {
+  if (!source)
+    return nullptr;
 
   Metadata md = source->metadata();
+  if ((md.total_count <= 0) || (md.dimensions() != 2))
+    return nullptr;
 
-  if ((md.total_count > 0) && (md.dimensions() == 2))
-  {
-    destination->set_detectors(md.detectors);
 
-    std::shared_ptr<EntryList> spectrum_data = std::move(source->data_range(bounds));
-    for (auto it : *spectrum_data)
-      destination->append(it);
+  Metadata temp = SinkFactory::getInstance().create_prototype("1D");
+  temp.name = md.name + " projection";
 
-  }
+  //GENERALIZE!!!
 
-  return (destination->metadata().total_count > 0);
+  Setting pattern;
+
+  pattern = temp.attributes.branches.get(Setting("pattern_coinc"));
+  pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
+  pattern.value_pattern.set_theshold(2);
+  temp.attributes.branches.replace(pattern);
+
+  pattern = temp.attributes.branches.get(Setting("pattern_add"));
+  if (det1)
+    pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
+  else
+    pattern.value_pattern.set_gates(std::vector<bool>({0,1}));
+  pattern.value_pattern.set_theshold(1);
+  temp.attributes.branches.replace(pattern);
+
+  SinkPtr ret = SinkFactory::getInstance().create_from_prototype(temp);
+  if (!ret)
+    return nullptr;
+
+  ret->set_detectors(md.detectors);
+
+  std::shared_ptr<EntryList> spectrum_data = std::move(source->data_range(bounds));
+  for (auto it : *spectrum_data)
+    ret->append(it);
+
+  if (ret->metadata().total_count > 0)
+    return ret;
+  else
+    return nullptr;
 }
 
 bool slice_diagonal_x(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx) {
@@ -127,19 +152,43 @@ PreciseFloat sum_with_neighbors(SinkPtr source, uint16_t x, uint16_t y)
   return ans;
 }
 
-bool symmetrize(SinkPtr source, SinkPtr destination)
+SinkPtr make_symmetrized(SinkPtr source)
 {
-  if (source == nullptr)
-    return false;
-  if (destination == nullptr)
-    return false;
-
+  if (!source)
+    return nullptr;
 
   Metadata md = source->metadata();
 
-  if ((md.total_count == 0) || (md.dimensions() != 2)) {
-    PL_WARN << "<symmetrize> " << md.name << " has no events or is not 2d";
-    return false;
+  if ((md.total_count <= 0) || (md.dimensions() != 2)) {
+    PL_WARN << "<::MakeSymmetrize> " << md.name << " has no events or is not 2d";
+    return nullptr;
+  }
+
+  std::vector<uint16_t> chans;
+  Setting pattern;
+  pattern = md.attributes.branches.get(Setting("pattern_add"));
+  std::vector<bool> gts = pattern.value_pattern.gates();
+
+  for (int i=0; i < gts.size(); ++i) {
+    if (gts[i])
+      chans.push_back(i);
+  }
+
+  if (chans.size() != 2) {
+    PL_WARN << "<::MakeSymmetrize> " << md.name << " does not have 2 channels in add pattern";
+    return nullptr;
+  }
+
+  pattern = md.attributes.branches.get(Setting("pattern_coinc"));
+  pattern.value_pattern.set_gates(gts);
+  pattern.value_pattern.set_theshold(2);
+  md.attributes.branches.replace(pattern);
+
+  SinkPtr ret = SinkFactory::getInstance().create_from_prototype(md); //assume 2D?
+
+  if (!ret) {
+    PL_WARN << "<::MakeSymmetrize> symmetrization of " << md.name << " could not be created";
+    return nullptr;
   }
 
   Detector detector1;
@@ -149,16 +198,16 @@ bool symmetrize(SinkPtr source, SinkPtr destination)
     detector1 = md.detectors[0];
     detector2 = md.detectors[1];
   } else {
-    PL_WARN << "<symmetrize> " << md.name << " does not have 2 detector definitions";
+    PL_WARN << "<::MakeSymmetrize> " << md.name << " does not have 2 detector definitions";
     return false;
   }
 
   Calibration gain_match_cali = detector2.get_gain_match(md.bits, detector1.name_);
 
   if (gain_match_cali.to_ == detector1.name_)
-    PL_INFO << "<symmetrize> using gain match calibration from " << detector2.name_ << " to " << detector1.name_ << " " << gain_match_cali.to_string();
+    PL_INFO << "<::MakeSymmetrize> using gain match calibration from " << detector2.name_ << " to " << detector1.name_ << " " << gain_match_cali.to_string();
   else {
-    PL_WARN << "<symmetrize> no appropriate gain match calibration";
+    PL_WARN << "<::MakeSymmetrize> no appropriate gain match calibration";
     return false;
   }
 
@@ -191,12 +240,12 @@ bool symmetrize(SinkPtr source, SinkPtr destination)
       it.first[0] = e1;
       it.first[1] = e2;
 
-      destination->append(it);
+      ret->append(it);
 
       it.first[0] = e2;
       it.first[1] = e1;
 
-      destination->append(it);
+      ret->append(it);
 
     }
   }
@@ -208,13 +257,16 @@ bool symmetrize(SinkPtr source, SinkPtr destination)
     }
   }
 
-  destination->set_detectors(md.detectors);
+  ret->set_detectors(md.detectors);
 
   Qpx::Setting app = md.attributes.branches.get(Qpx::Setting("symmetrized"));
   app.value_int = true;
-  destination->set_option(app);
+  ret->set_option(app);
 
-  return (destination->metadata().total_count > 0);
+  if (ret->metadata().total_count > 0)
+    return ret;
+  else
+    return nullptr;
 }
 
 
