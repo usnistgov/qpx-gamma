@@ -63,24 +63,19 @@ public:
 
   std::list<MarkerBox2D> get_selected_boxes();
 
-  int gate_width();
-  void set_gate_width(int);
   void set_gates_visible(bool vertical, bool horizontal, bool diagonal);
   void set_gates_movable(bool);
 
 public slots:
-  void set_markers(Marker x, Marker y);
+  void set_marker(MarkerBox2D m);
 
 signals:
-  void markers_set(Marker x, Marker y);
+  void marker_set(MarkerBox2D m);
   void stuff_selected();
 
 private slots:
   //void clicked_plottable(QCPAbstractPlottable*);
   void selection_changed();
-
-  void on_spinGateWidth_valueChanged(int arg1);
-  void on_spinGateWidth_editingFinished();
   void markers_moved(Marker x, Marker y);
 
 private:
@@ -95,8 +90,7 @@ private:
   uint32_t adjrange;
 
   //markers
-  Marker my_marker, //template(style)
-    x_marker, y_marker; //actual data
+  MarkerBox2D my_marker_;
   bool gate_vertical_, gate_horizontal_, gate_diagonal_, gates_movable_, show_boxes_;
 
   std::list<MarkerBox2D> boxes_;

@@ -50,7 +50,7 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Detector>& newDetD
   connect(form_integration_, SIGNAL(peak_selected()), this, SLOT(update_peaks()));
   connect(form_integration_, SIGNAL(range_changed(MarkerBox2D)), this, SLOT(update_range(MarkerBox2D)));
 
-  connect(ui->plotMatrix, SIGNAL(markers_set(Marker,Marker)), this, SLOT(update_gates(Marker,Marker)));
+  connect(ui->plotMatrix, SIGNAL(marker_set(MarkerBox2D)), this, SLOT(update_gates(MarkerBox2D)));
   connect(ui->plotMatrix, SIGNAL(stuff_selected()), this, SLOT(matrix_selection()));
 
   ui->tabs->addTab(my_gates_, "Gates");
@@ -72,8 +72,8 @@ void FormAnalysis2D::take_boxes() {
 
 
 void FormAnalysis2D::update_range(MarkerBox2D range) {
-  range2d = range;
-  update_peaks();
+  ui->plotMatrix->set_range_x(range);
+  ui->plotMatrix->replot_markers();
 }
 
 
@@ -158,51 +158,36 @@ void FormAnalysis2D::showEvent( QShowEvent* event ) {
 }
 
 void FormAnalysis2D::update_peaks() {
-  Marker xx, yy;
-  xx.visible = false;
-  yy.visible = false;
-
   if (my_gates_->isVisible()) {
-    Gate gate = my_gates_->current_gate();
-    //PL_DBG << "remake gate c=" << gate.centroid_chan << " w=" << gate.width_chan;
-
-    if (gate.centroid_chan != -1) {
-        xx.pos.set_bin(res / 2, gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
-      yy.pos.set_bin(gate.centroid_chan, gate.fit_data_.metadata_.bits, gate.fit_data_.settings().cali_nrg_);
-      yy.visible = true;
-    }
-
-    ui->plotMatrix->set_gate_width(static_cast<uint16_t>(gate.width_chan));
+    MarkerBox2D box = my_gates_->current_gate().constraints;
+    ui->plotMatrix->set_marker(box);
     ui->plotMatrix->set_boxes(my_gates_->current_peaks());
   } else if (form_integration_->isVisible()) {
+
     ui->plotMatrix->set_boxes(form_integration_->peaks());
-//    range2d = MarkerBox2D();
   }
 
-  ui->plotMatrix->set_range_x(range2d);
-  ui->plotMatrix->set_markers(xx, yy);
   ui->plotMatrix->replot_markers();
 }
 
-void FormAnalysis2D::update_gates(Marker xx, Marker yy) {
-  //PL_DBG << "FormAnalysis2D::update_gates";
-  if (my_gates_->isVisible()) {
-    if (ui->plotMatrix->gate_width() != my_gates_->current_gate().width_chan)
-      my_gates_->change_width(ui->plotMatrix->gate_width());
-    else
-      my_gates_->make_range(xx);
-  } else if (form_integration_->isVisible()) {
-    PL_DBG << "udtgates";
-//    if (ui->plotMatrix->gate_width() != my_gates_->current_gate().width_chan)
-//      PL_DBG << "spin change on peaks, unimplemented";
-//    else
-      form_integration_->make_range(xx, yy);
-  }
+void FormAnalysis2D::update_gates(MarkerBox2D box) {
+  Marker xx;
+  xx.visible = box.visible;
+  xx.pos = box.x_c;
+
+  Marker yy;
+  yy.visible = box.visible;
+  yy.pos = box.y_c;
+
+//  PL_DBG << "marker from matrix " << xx.pos.energy() << " " << yy.pos.energy();
+
+  if (my_gates_->isVisible())
+    my_gates_->make_range(xx);
+  else if (form_integration_->isVisible())
+    form_integration_->make_range(xx, yy);
 }
 
 void FormAnalysis2D::closeEvent(QCloseEvent *event) {
-//  ui->plotSpectrum->saveSettings(settings_);
-
   saveSettings();
   event->accept();
 }
@@ -217,7 +202,6 @@ void FormAnalysis2D::loadSettings() {
   ui->plotMatrix->set_gradient(settings_.value("gradient", "Hot").toString());
   ui->plotMatrix->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
   ui->plotMatrix->set_show_legend(settings_.value("show_legend", false).toBool());
-  ui->plotMatrix->set_gate_width(settings_.value("gate_width", 10).toInt());
   settings_.endGroup();
 
   if (my_gates_)
@@ -236,7 +220,6 @@ void FormAnalysis2D::saveSettings() {
   settings_.setValue("gradient", ui->plotMatrix->gradient());
   settings_.setValue("scale_type", ui->plotMatrix->scale_type());
   settings_.setValue("show_legend", ui->plotMatrix->show_legend());
-  settings_.setValue("gate_width", ui->plotMatrix->gate_width());
   settings_.endGroup();
 }
 
@@ -260,5 +243,6 @@ FormAnalysis2D::~FormAnalysis2D()
 
 void FormAnalysis2D::on_tabs_currentChanged(int index)
 {
+  ui->plotMatrix->set_marker(MarkerBox2D());
   update_peaks();
 }

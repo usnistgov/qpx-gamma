@@ -24,15 +24,21 @@
 #define QPX_GATES_H
 
 #include "gamma_fitter.h"
+#include "marker.h"
 
 namespace Qpx {
 
 class Gate {
 
 public:
-  Gate() : centroid_chan(0), centroid_nrg(0), width_chan(0), width_nrg(0), cps(0), approved(false) {}
+  Gate()
+    : cps(0)
+    , approved(false)
+  {}
 
-  double centroid_chan, centroid_nrg, width_chan, width_nrg, cps;
+  MarkerBox2D constraints;
+
+  double cps;
   bool approved;
   Fitter fit_data_;
 

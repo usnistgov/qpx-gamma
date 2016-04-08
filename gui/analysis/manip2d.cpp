@@ -39,6 +39,7 @@ SinkPtr slice_rectangular(SinkPtr source, std::initializer_list<Pair> bounds, bo
 
   Metadata temp = SinkFactory::getInstance().create_prototype("1D");
   temp.name = md.name + " projection";
+  temp.bits = md.bits;
 
   //GENERALIZE!!!
 

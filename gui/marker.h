@@ -35,7 +35,7 @@ struct AppearanceProfile {
 
 class Coord {
 public:
-  Coord() : bits_(-1), energy_(nan("")), bin_(nan("")) {}
+  Coord() : bits_(0), energy_(nan("")), bin_(nan("")) {}
 
   void set_energy(double nrg, Qpx::Calibration cali);
   void set_bin(double bin, uint16_t bits, Qpx::Calibration cali);
@@ -92,8 +92,17 @@ struct MarkerLabel2D {
 };
 
 struct MarkerBox2D {
-  MarkerBox2D() : visible(false), selected(false), selectable (true), horizontal(false), vertical(false),
-    mark_center(false), labelfloat(false) {}
+  MarkerBox2D()
+    : visible(false)
+    , selected(false)
+    , selectable (true)
+    , horizontal(false)
+    , vertical(false)
+    , mark_center(false)
+    , labelfloat(false)
+    , integral(0)
+  {}
+
   bool operator== (const MarkerBox2D& other) const {
     if (x1 != other.x1) return false;
     if (x2 != other.x2) return false;

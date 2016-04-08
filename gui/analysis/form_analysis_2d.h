@@ -55,7 +55,7 @@ public slots:
 
 private slots:
   void take_boxes();
-  void update_gates(Marker, Marker);
+  void update_gates(MarkerBox2D);
   void update_peaks();
   void detectorsUpdated() {emit detectorsChanged();}
   void initialize();
@@ -84,7 +84,6 @@ private:
 
   Qpx::Project *spectra_;
   int64_t current_spectrum_;
-  MarkerBox2D range2d;
 
   XMLableDB<Qpx::Detector> &detectors_;
 

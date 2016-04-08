@@ -38,6 +38,9 @@ FormGatesPlot2D::FormGatesPlot2D(QWidget *parent) :
 
   adjrange = 0;
 
+  my_marker_.selectable = false;
+  my_marker_.selected = false;
+
   bits = 0;
 }
 
@@ -87,17 +90,8 @@ void FormGatesPlot2D::reset_content() {
   ui->coincPlot->reset_content();
   ui->coincPlot->refresh();
   current_spectrum_ = 0;
-  x_marker.visible = false;
-  y_marker.visible = false;
+  my_marker_.visible = false;
   replot_markers();
-}
-
-void FormGatesPlot2D::set_gate_width(int w) {
-  ui->spinGateWidth->setValue(w);
-}
-
-int FormGatesPlot2D::gate_width() {
-  return ui->spinGateWidth->value();
 }
 
 void FormGatesPlot2D::refresh()
@@ -114,8 +108,6 @@ void FormGatesPlot2D::replot_markers() {
 
   if (show_boxes_)
     boxes = boxes_;
-
-  int width = ui->spinGateWidth->value() / 2;
 
   for (auto &q : boxes) {
     label.selectable = q.selectable;
@@ -150,72 +142,43 @@ void FormGatesPlot2D::replot_markers() {
     }
   }
 
-  MarkerBox2D gate, gatex, gatey;
-  gate.selectable = false;
-  gate.selected = false;
-
-  if (!ui->spinGateWidth->isVisible())
-    width = 0;
-
-  //PL_DBG << "FormGatesPlot2D marker width = " << width;
-
-  gate.x_c = x_marker.pos;
-  gate.y_c = y_marker.pos;
-
-  gate.visible = y_marker.visible;
-  gate.x1.set_bin(0, bits, calib_x_);
-  gate.x2.set_bin(adjrange, bits, calib_x_);
-  gate.y1.set_bin(y_marker.pos.bin(bits) - width - 0.5, bits, calib_x_);
-  gate.y2.set_bin(y_marker.pos.bin(bits) + width + 0.5, bits, calib_x_);
-  gatey = gate;
-  boxes.push_back(gate);
-
-  gate.visible = x_marker.visible;
-  gate.x1.set_bin(x_marker.pos.bin(bits) - width - 0.5, bits, calib_x_);
-  gate.x2.set_bin(x_marker.pos.bin(bits) + width + 0.5, bits, calib_x_);
-  gate.y1.set_bin(0, bits, calib_x_);
-  gate.y2.set_bin(adjrange, bits, calib_x_);
-  gatex = gate;
-  boxes.push_back(gate);
-
+  boxes.push_back(my_marker_);
 
   label.selectable = false;
   label.selected = false;
   label.vertical = false;
 
-  if (y_marker.visible && x_marker.visible) {
+  if (my_marker_.visible && my_marker_.horizontal && my_marker_.vertical) {
     label.vfloat = false;
     label.hfloat = false;
-    label.x = gatex.x2;
-    label.y = gatey.y_c;
+    label.x = my_marker_.x2;
+    label.y = my_marker_.y_c;
     label.vertical = false;
-    label.text = QString::number(y_marker.pos.energy());
+    label.text = QString::number(my_marker_.y_c.energy());
     labels.push_back(label);
 
-    label.x = gatex.x_c;
-    label.y = gatey.y2;
+    label.x = my_marker_.x_c;
+    label.y = my_marker_.y2;
     label.vertical = true;
-    label.text = QString::number(x_marker.pos.energy());
+    label.text = QString::number(my_marker_.x_c.energy());
     labels.push_back(label);
-  } else if (y_marker.visible) {
+  } else if (my_marker_.visible && my_marker_.horizontal) {
     label.vfloat = false;
     label.hfloat = true;
-    label.x = gatex.x2;
-    label.y = gatey.y_c;
+    label.x = my_marker_.x2;
+    label.y = my_marker_.y_c;
     label.vertical = false;
-    label.text = QString::number(y_marker.pos.energy());
+    label.text = QString::number(my_marker_.y_c.energy());
     labels.push_back(label);
-  } else if (x_marker.visible) {
+  } else if (my_marker_.visible && my_marker_.vertical) {
     label.vfloat = true;
     label.hfloat = false;
-    label.x = gatex.x_c;
-    label.y = gatey.y2;
+    label.x = my_marker_.x_c;
+    label.y = my_marker_.y2;
     label.vertical = true;
-    label.text = QString::number(x_marker.pos.energy());
+    label.text = QString::number(my_marker_.x_c.energy());
     labels.push_back(label);
   }
-
-
 
   ui->coincPlot->set_boxes(boxes);
   ui->coincPlot->set_labels(labels);
@@ -270,32 +233,24 @@ void FormGatesPlot2D::update_plot() {
 }
 
 void FormGatesPlot2D::markers_moved(Marker x, Marker y) {
+  MarkerBox2D m = my_marker_;
+  m.visible = x.visible || y.visible;
+  m.x_c = x.pos;
+  m.y_c = y.pos;
+
   if (gates_movable_) {
-    x_marker = x;
-    y_marker = y;
+    my_marker_ = m;
     replot_markers();
   }
 
-//  PL_DBG << "<GatesPlot2D> markers moved";
-
-  emit markers_set(x, y);
+  emit marker_set(m);
 }
 
-void FormGatesPlot2D::set_markers(Marker x, Marker y) {
-  x_marker = x;
-  y_marker = y;
-
+void FormGatesPlot2D::set_marker(MarkerBox2D m) {
+  my_marker_ = m;
+  my_marker_.selectable = false;
+  my_marker_.selected = false;
   replot_markers();
-}
-
-void FormGatesPlot2D::on_spinGateWidth_valueChanged(int arg1)
-{
-  /*int width = ui->spinGateWidth->value() / 2;
-  if ((ui->spinGateWidth->value() % 2) == 0)
-    ui->spinGateWidth->setValue(width*2 + 1);*/
-
-  replot_markers();
-  //emit markers_set(x_marker, y_marker);
 }
 
 void FormGatesPlot2D::set_gates_visible(bool vertical, bool horizontal, bool diagonal)
@@ -305,19 +260,6 @@ void FormGatesPlot2D::set_gates_visible(bool vertical, bool horizontal, bool dia
   gate_diagonal_ = diagonal;
 
   replot_markers();
-}
-
-
-void FormGatesPlot2D::on_spinGateWidth_editingFinished()
-{
-  int width = ui->spinGateWidth->value() / 2;
-  if ((ui->spinGateWidth->value() % 2) == 0)
-    ui->spinGateWidth->setValue(width*2 + 1);
-
-  replot_markers();
-//  PL_DBG << "<GatesPlot2D> spingates";
-
-  emit markers_set(x_marker, y_marker);
 }
 
 void FormGatesPlot2D::set_scale_type(QString st) {

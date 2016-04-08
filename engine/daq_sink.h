@@ -129,7 +129,7 @@ public:
   PreciseFloat data(std::initializer_list<uint16_t> list = {}) const;
 
   //optimized retrieval of bulk data as list of Entries
-  //parameters take dimensions_ number of ranges of minimum (inclusive) and maximum (exclusive)
+  //parameters take dimensions_number of ranges (inclusive)
   std::unique_ptr<EntryList> data_range(std::initializer_list<Pair> list = {});
   void append(const Entry&);
 

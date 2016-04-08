@@ -43,6 +43,7 @@ void Coord::set_bin(double bin, uint16_t bits, Qpx::Calibration cali) {
   energy_ = nan("");
   if (!isnan(bin)/* && cali.valid()*/)
     energy_ = cali.transform(bin_, bits_);
+//  PL_DBG << "made pos bin" << bin_ << " bits" << bits_ << " nrg" << energy_;
 }
 
 double Coord::energy() const {
@@ -51,7 +52,7 @@ double Coord::energy() const {
 
 double Coord::bin(const uint16_t to_bits) const {
   if (!to_bits || !bits_)
-    return nan("");
+    return bin_;
 
   if (bits_ > to_bits)
     return bin_ / pow(2, bits_ - to_bits);
@@ -82,8 +83,10 @@ void Peak2D::adjust_x(Qpx::ROI &roi, double center)
   newpeak.selected = true;
 
   newpeak.x_c.set_bin(pk.center, roi.settings_.bits_, roi.settings_.cali_nrg_);
-  newpeak.x1.set_bin(pk.sum4_.bx[0], roi.settings_.bits_, roi.settings_.cali_nrg_);
-  newpeak.x2.set_bin(pk.sum4_.bx[pk.sum4_.bx.size()-1], roi.settings_.bits_, roi.settings_.cali_nrg_);
+  newpeak.x1.set_bin(pk.sum4_.bx[0] - 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
+  newpeak.x2.set_bin(pk.sum4_.bx[pk.sum4_.bx.size()-1] + 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
 
   area[1][1] = newpeak;
 
@@ -93,12 +96,16 @@ void Peak2D::adjust_x(Qpx::ROI &roi, double center)
   bckg.y1 = newpeak.y1;
   bckg.y2 = newpeak.y2;
 
-  bckg.x1.set_bin(roi.finder_.x_[pk.sum4_.LB().start()], roi.settings_.bits_, roi.settings_.cali_nrg_);
-  bckg.x2.set_bin(roi.finder_.x_[pk.sum4_.LB().end()], roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.x1.set_bin(roi.finder_.x_[pk.sum4_.LB().start()] - 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.x2.set_bin(roi.finder_.x_[pk.sum4_.LB().end()] + 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
   area[0][1] = bckg;
 
-  bckg.x1.set_bin(roi.finder_.x_[pk.sum4_.RB().start()], roi.settings_.bits_, roi.settings_.cali_nrg_);
-  bckg.x2.set_bin(roi.finder_.x_[pk.sum4_.RB().end()], roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.x1.set_bin(roi.finder_.x_[pk.sum4_.RB().start()] - 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.x2.set_bin(roi.finder_.x_[pk.sum4_.RB().end()] + 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
   area[2][1] = bckg;
 }
 
@@ -123,8 +130,10 @@ void Peak2D::adjust_y(Qpx::ROI &roi, double center)
   newpeak.selected = true;
 
   newpeak.y_c.set_bin(pk.center, roi.settings_.bits_, roi.settings_.cali_nrg_);
-  newpeak.y1.set_bin(pk.sum4_.bx[0], roi.settings_.bits_, roi.settings_.cali_nrg_);
-  newpeak.y2.set_bin(pk.sum4_.bx[pk.sum4_.bx.size()-1], roi.settings_.bits_, roi.settings_.cali_nrg_);
+  newpeak.y1.set_bin(pk.sum4_.bx[0] - 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
+  newpeak.y2.set_bin(pk.sum4_.bx[pk.sum4_.bx.size()-1] + 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
 
   area[1][1] = newpeak;
 
@@ -134,12 +143,16 @@ void Peak2D::adjust_y(Qpx::ROI &roi, double center)
   bckg.x1 = newpeak.x1;
   bckg.x2 = newpeak.x2;
 
-  bckg.y1.set_bin(roi.finder_.x_[pk.sum4_.LB().start()], roi.settings_.bits_, roi.settings_.cali_nrg_);
-  bckg.y2.set_bin(roi.finder_.x_[pk.sum4_.LB().end()], roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.y1.set_bin(roi.finder_.x_[pk.sum4_.LB().start()] - 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.y2.set_bin(roi.finder_.x_[pk.sum4_.LB().end()] + 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
   area[1][0] = bckg;
 
-  bckg.y1.set_bin(roi.finder_.x_[pk.sum4_.RB().start()], roi.settings_.bits_, roi.settings_.cali_nrg_);
-  bckg.y2.set_bin(roi.finder_.x_[pk.sum4_.RB().end()], roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.y1.set_bin(roi.finder_.x_[pk.sum4_.RB().start()] - 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.y2.set_bin(roi.finder_.x_[pk.sum4_.RB().end()] + 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
   area[1][2] = bckg;
 }
 
@@ -160,26 +173,34 @@ void Peak2D::adjust_diag_x(Qpx::ROI &roi, double center)
 
   bckg.y1 = area[0][0].y1;
   bckg.y2 = area[0][0].y2;
-  bckg.x1.set_bin(roi.finder_.x_[pk.sum4_.LB().start()], roi.settings_.bits_, roi.settings_.cali_nrg_);
-  bckg.x2.set_bin(roi.finder_.x_[pk.sum4_.LB().end()], roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.x1.set_bin(roi.finder_.x_[pk.sum4_.LB().start()] - 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.x2.set_bin(roi.finder_.x_[pk.sum4_.LB().end()] + 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
   area[0][0] = bckg;
 
   bckg.y1 = area[0][2].y1;
   bckg.y2 = area[0][2].y2;
-  bckg.x1.set_bin(roi.finder_.x_[pk.sum4_.LB().start()], roi.settings_.bits_, roi.settings_.cali_nrg_);
-  bckg.x2.set_bin(roi.finder_.x_[pk.sum4_.LB().end()], roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.x1.set_bin(roi.finder_.x_[pk.sum4_.LB().start()] - 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.x2.set_bin(roi.finder_.x_[pk.sum4_.LB().end()] + 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
   area[0][2] = bckg;
 
   bckg.y1 = area[2][0].y1;
   bckg.y2 = area[2][0].y2;
-  bckg.x1.set_bin(roi.finder_.x_[pk.sum4_.RB().start()], roi.settings_.bits_, roi.settings_.cali_nrg_);
-  bckg.x2.set_bin(roi.finder_.x_[pk.sum4_.RB().end()], roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.x1.set_bin(roi.finder_.x_[pk.sum4_.RB().start()] - 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.x2.set_bin(roi.finder_.x_[pk.sum4_.RB().end()] + 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
   area[2][0] = bckg;
 
   bckg.y1 = area[2][2].y1;
   bckg.y2 = area[2][2].y2;
-  bckg.x1.set_bin(roi.finder_.x_[pk.sum4_.RB().start()], roi.settings_.bits_, roi.settings_.cali_nrg_);
-  bckg.x2.set_bin(roi.finder_.x_[pk.sum4_.RB().end()], roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.x1.set_bin(roi.finder_.x_[pk.sum4_.RB().start()] - 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.x2.set_bin(roi.finder_.x_[pk.sum4_.RB().end()] + 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
   area[2][2] = bckg;
 }
 
@@ -200,26 +221,34 @@ void Peak2D::adjust_diag_y(Qpx::ROI &roi, double center)
 
   bckg.x1 = area[0][0].x1;
   bckg.x2 = area[0][0].x2;
-  bckg.y1.set_bin(roi.finder_.x_[pk.sum4_.LB().start()], roi.settings_.bits_, roi.settings_.cali_nrg_);
-  bckg.y2.set_bin(roi.finder_.x_[pk.sum4_.LB().end()], roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.y1.set_bin(roi.finder_.x_[pk.sum4_.LB().start()] - 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.y2.set_bin(roi.finder_.x_[pk.sum4_.LB().end()] + 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
   area[0][0] = bckg;
 
   bckg.x1 = area[0][2].x1;
   bckg.x2 = area[0][2].x2;
-  bckg.y1.set_bin(roi.finder_.x_[pk.sum4_.RB().start()], roi.settings_.bits_, roi.settings_.cali_nrg_);
-  bckg.y2.set_bin(roi.finder_.x_[pk.sum4_.RB().end()], roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.y1.set_bin(roi.finder_.x_[pk.sum4_.RB().start()] - 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.y2.set_bin(roi.finder_.x_[pk.sum4_.RB().end()] + 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
   area[0][2] = bckg;
 
   bckg.x1 = area[2][0].x1;
   bckg.x2 = area[2][0].x2;
-  bckg.y1.set_bin(roi.finder_.x_[pk.sum4_.LB().start()], roi.settings_.bits_, roi.settings_.cali_nrg_);
-  bckg.y2.set_bin(roi.finder_.x_[pk.sum4_.LB().end()], roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.y1.set_bin(roi.finder_.x_[pk.sum4_.LB().start()] - 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.y2.set_bin(roi.finder_.x_[pk.sum4_.LB().end()] + 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
   area[2][0] = bckg;
 
   bckg.x1 = area[2][2].x1;
   bckg.x2 = area[2][2].x2;
-  bckg.y1.set_bin(roi.finder_.x_[pk.sum4_.RB().start()], roi.settings_.bits_, roi.settings_.cali_nrg_);
-  bckg.y2.set_bin(roi.finder_.x_[pk.sum4_.RB().end()], roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.y1.set_bin(roi.finder_.x_[pk.sum4_.RB().start()] - 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
+  bckg.y2.set_bin(roi.finder_.x_[pk.sum4_.RB().end()] + 0.5,
+      roi.settings_.bits_, roi.settings_.cali_nrg_);
   area[2][2] = bckg;
 }
 
@@ -250,12 +279,16 @@ Peak2D::Peak2D(Qpx::ROI &x_roi, Qpx::ROI &y_roi, double x_center, double y_cente
   newpeak.selected = true;
 
   newpeak.x_c.set_bin(xx.center, x_roi.settings_.bits_, x_roi.settings_.cali_nrg_);
-  newpeak.x1.set_bin(xx.sum4_.bx[0], x_roi.settings_.bits_, x_roi.settings_.cali_nrg_);
-  newpeak.x2.set_bin(xx.sum4_.bx[xx.sum4_.bx.size()-1], x_roi.settings_.bits_, x_roi.settings_.cali_nrg_);
+  newpeak.x1.set_bin(xx.sum4_.bx[0] - 0.5,
+      x_roi.settings_.bits_, x_roi.settings_.cali_nrg_);
+  newpeak.x2.set_bin(xx.sum4_.bx[xx.sum4_.bx.size()-1] + 0.5,
+      x_roi.settings_.bits_, x_roi.settings_.cali_nrg_);
 
   newpeak.y_c.set_bin(yy.center, y_roi.settings_.bits_, y_roi.settings_.cali_nrg_);
-  newpeak.y1.set_bin(yy.sum4_.bx[0], y_roi.settings_.bits_, y_roi.settings_.cali_nrg_);
-  newpeak.y2.set_bin(yy.sum4_.bx[yy.sum4_.bx.size()-1], y_roi.settings_.bits_, y_roi.settings_.cali_nrg_);
+  newpeak.y1.set_bin(yy.sum4_.bx[0] - 0.5,
+      y_roi.settings_.bits_, y_roi.settings_.cali_nrg_);
+  newpeak.y2.set_bin(yy.sum4_.bx[yy.sum4_.bx.size()-1] + 0.5,
+      y_roi.settings_.bits_, y_roi.settings_.cali_nrg_);
 
   area[1][1] = newpeak;
 

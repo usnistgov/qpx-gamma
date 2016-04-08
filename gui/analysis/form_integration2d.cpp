@@ -136,19 +136,19 @@ void FormIntegration2D::make_range(Marker x, Marker y) {
   //  PL_DBG << "making 2d marker, calibs valid " << f1.valid() << " " << f2.valid();
 
   if (f1.valid()) {
-    range_.x1.set_energy(x.pos.energy() - f1.transform(x.pos.energy()) * gate_width_, e1);
-    range_.x2.set_energy(x.pos.energy() + f1.transform(x.pos.energy()) * gate_width_, e1);
+    range_.x1.set_energy(x.pos.energy() - f1.transform(x.pos.energy()) * gate_width_ * 0.5, e1);
+    range_.x2.set_energy(x.pos.energy() + f1.transform(x.pos.energy()) * gate_width_ * 0.5, e1);
   } else {
-    range_.x1.set_energy(x.pos.energy() - gate_width_, e1);
-    range_.x2.set_energy(x.pos.energy() + gate_width_, e1);
+    range_.x1.set_energy(x.pos.energy() - gate_width_ * 2, e1);
+    range_.x2.set_energy(x.pos.energy() + gate_width_ * 2, e1);
   }
 
   if (f2.valid()) {
-    range_.y1.set_energy(y.pos.energy() - f2.transform(y.pos.energy()) * gate_width_, e2);
-    range_.y2.set_energy(y.pos.energy() + f2.transform(y.pos.energy()) * gate_width_, e2);
+    range_.y1.set_energy(y.pos.energy() - f2.transform(y.pos.energy()) * gate_width_ * 0.5, e2);
+    range_.y2.set_energy(y.pos.energy() + f2.transform(y.pos.energy()) * gate_width_ * 0.5, e2);
   } else {
-    range_.y1.set_energy(y.pos.energy() - gate_width_, e2);
-    range_.y2.set_energy(y.pos.energy() + gate_width_, e2);
+    range_.y1.set_energy(y.pos.energy() - gate_width_ * 2, e2);
+    range_.y2.set_energy(y.pos.energy() + gate_width_ * 2, e2);
   }
 
   range_.visible = (x.visible || y.visible);
@@ -229,7 +229,6 @@ void FormIntegration2D::selection_changed(QItemSelection selected, QItemSelectio
   int32_t current = current_idx();
   if ((current >= 0) && (current < peaks_.size())) {
     peaks_[current].area[1][1].selected = true;
-    PL_DBG << "selchg";
     make_gates();
   }
   //PL_DBG << "gates " << peaks_.size() << " selections " << indexes.size();

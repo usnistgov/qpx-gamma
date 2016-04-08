@@ -132,6 +132,7 @@ void FormCoincPeaks::update_selection(std::set<double> selected_peaks) {
 
   if (changed) {
     update_table(false);
+    ui->plotPeaks->set_selected_peaks(selected_peaks_);
     emit peak_selection_changed(selected_peaks);
   }
 }

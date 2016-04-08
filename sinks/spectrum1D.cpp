@@ -105,10 +105,13 @@ std::unique_ptr<std::list<Entry>> Spectrum1D::_data_range(std::initializer_list<
     max = range.second;
   }
 
+  if (max >= spectrum_.size())
+    max = spectrum_.size() - 1;
+
   //in range?
   
   std::unique_ptr<std::list<Entry>> result(new std::list<Entry>);
-  for (int i=min; i < max; i++) {
+  for (int i=min; i <= max; i++) {
     Entry newentry;
     newentry.first.resize(1, 0);
     newentry.first[0] = i;

@@ -76,8 +76,6 @@ public:
 
   void setSpectrum(Qpx::Project *newset, int64_t idx);
 
-  void remake_gate(bool); //private?
-  void change_width(int width);
   void make_range(Marker);
 
   void update_current_gate(Qpx::Gate);
@@ -109,8 +107,7 @@ private slots:
   void on_pushRemove_clicked();
   void on_pushDistill_clicked();
   void on_doubleGateOn_editingFinished();
-  void on_doubleOverlaps_editingFinished();
-  void update_range(Range);
+//  void update_range(Range);
   void update_peaks(bool);
 
   void range_changed_in_plot(Range);
@@ -127,15 +124,11 @@ private:
 
   Qpx::Project *spectra_;
   int64_t current_spectrum_;
+  Qpx::Metadata md_;
+  int res_;
+
   Qpx::SinkPtr gate_x;
   Qpx::Fitter fit_data_;
-  int res;
-  MarkerBox2D range2d;
-  double xmin_, xmax_, ymin_, ymax_, xc_, yc_;
-
-
-
-  //double current_gate_;
 
   TableGates table_model_;
   QSortFilterProxyModel sortModel;
@@ -154,8 +147,7 @@ private:
   int32_t current_idx();
 
   void rebuild_table(bool contents_changed);
-  void make_gated_spectra();
-
+  void make_gate();
 
 };
 

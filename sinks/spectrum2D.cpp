@@ -200,7 +200,7 @@ std::unique_ptr<EntryList> Spectrum2D::_data_range(std::initializer_list<Pair> l
   if (buffered_ && !temp_spectrum_.empty()) {
     for (auto it : temp_spectrum_) {
       int co0 = it.first.first, co1 = it.first.second;
-      if ((min0 <= co0) && (co0 < max0) && (min1 <= co1) && (co1 < max1)) {
+      if ((min0 <= co0) && (co0 <= max0) && (min1 <= co1) && (co1 <= max1)) {
         Entry newentry;
         newentry.first.resize(2, 0);
         newentry.first[0] = co0;
@@ -212,7 +212,7 @@ std::unique_ptr<EntryList> Spectrum2D::_data_range(std::initializer_list<Pair> l
   } else {
     for (auto it : spectrum_) {
       int co0 = it.first.first, co1 = it.first.second;
-      if ((min0 <= co0) && (co0 < max0) && (min1 <= co1) && (co1 < max1)) {
+      if ((min0 <= co0) && (co0 <= max0) && (min1 <= co1) && (co1 <= max1)) {
         Entry newentry;
         newentry.first.resize(2, 0);
         newentry.first[0] = co0;

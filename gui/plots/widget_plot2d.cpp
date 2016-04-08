@@ -276,21 +276,28 @@ void WidgetPlot2D::replot_markers() {
       xc = q.x_c.energy();
       x1 = q.x1.energy();
       x2 = q.x2.energy();
+//      PL_DBG << "box x nrg";
     } else {
       xc = q.x_c.bin(bits_);
       x1 = q.x1.bin(bits_);
       x2 = q.x2.bin(bits_);
+//      PL_DBG << "box x bin " << bits_ << " from " << q.x_c.bits();
     }
 
     if (calib_y_.valid()) {
       yc = q.y_c.energy();
       y1 = q.y1.energy();
       y2 = q.y2.energy();
+//      PL_DBG << "box y nrg";
     } else {
       yc = q.y_c.bin(bits_);
       y1 = q.y1.bin(bits_);
       y2 = q.y2.bin(bits_);
+//      PL_DBG << "box x bin " << bits_ << " from " << q.y_c.bits();
     }
+
+//    PL_DBG << "box x " << x1 << "-" << xc << "-" << x2;
+//    PL_DBG << "box y " << y1 << "-" << yc << "-" << y2;
 
     box->setProperty("chan_x", q.x_c.bin(bits_));
     box->setProperty("chan_y", q.y_c.bin(bits_));

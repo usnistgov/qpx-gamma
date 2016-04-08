@@ -102,6 +102,8 @@ void SUM4::recalc(const std::vector<double> &x, const std::vector<double> &y)
   for (int i=Lpeak; i <=Rpeak; ++i)
     gross_area += y[i];
 
+  //make gross area with uncert as full param
+
   peak_area.val = gross_area - background_area.val;
 
   double background_variance = pow((peak_width / 2.0), 2) * (LB_.variance() + RB_.variance());
