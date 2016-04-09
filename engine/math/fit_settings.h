@@ -41,6 +41,7 @@ public:
   double   ROI_extend_background;
 
   uint16_t background_edge_samples;
+  bool     sum4_only;
 
   bool     resid_auto;
   uint16_t resid_max_iterations;

@@ -37,6 +37,7 @@ FitSettings::FitSettings()
   , ROI_extend_background (0.6)
 
   , background_edge_samples(7)
+  , sum4_only(false)
 
   , resid_auto (true)
   , resid_max_iterations (5)

@@ -58,7 +58,7 @@ public:
   void find_regions();
   ROI *parent_of(double center);
 
-  void add_peak(uint32_t left, uint32_t right, boost::atomic<bool>& interruptor);
+  void add_peak(double left, double right, boost::atomic<bool>& interruptor);
   void adj_bounds(ROI &target, uint32_t left, uint32_t right, boost::atomic<bool>& interruptor);
 
   void remove_peaks(std::set<double> bins);

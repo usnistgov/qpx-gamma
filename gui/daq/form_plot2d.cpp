@@ -29,7 +29,7 @@ using namespace Qpx;
 FormPlot2D::FormPlot2D(QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormPlot2D),
-  current_spectrum_(0)
+  current_spectrum_(-1)
 {
   ui->setupUi(this);
 
@@ -107,6 +107,7 @@ void FormPlot2D::setSpectra(Project& new_set) {
 //  PL_DBG << "setSpectra with " << spectrum.toStdString();
   mySpectra = &new_set;
   updateUI();
+  current_spectrum_ = ui->spectrumSelector->selected().data.toLongLong();
 }
 
 
@@ -117,7 +118,7 @@ void FormPlot2D::reset_content() {
   x_marker.visible = false;
   y_marker.visible = false;
   ext_marker.visible = false;
-  current_spectrum_ = 0;
+  current_spectrum_ = -1;
   replot_markers();
 }
 

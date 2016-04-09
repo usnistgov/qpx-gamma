@@ -94,6 +94,8 @@ void Fitter::find_regions() {
   regions_.clear();
 //  PL_DBG << "Fitter: looking for " << filtered.size()  << " peaks";
 
+  finder_.find_peaks();
+
   if (finder_.filtered.empty())
     return;
 
@@ -151,8 +153,9 @@ void Fitter::find_regions() {
 
   for (int i=0; i < Ls.size(); ++i) {
     ROI newROI(settings_);
-    newROI.set_data(finder_.x_, finder_.y_, Ls[i], Rs[i]);
-    regions_[newROI.finder_.x_.front()] = newROI;
+    newROI.set_data(finder_.x_, finder_.y_, finder_.x_[Ls[i]], finder_.x_[Rs[i]]);
+    if (!newROI.finder_.x_.empty())
+      regions_[newROI.finder_.x_.front()] = newROI;
   }
 //  PL_DBG << "<Fitter> Created " << regions_.size() << " regions";
 
@@ -188,35 +191,31 @@ ROI *Fitter::parent_of(double center) {
 void Fitter::adj_bounds(ROI &target, uint32_t left, uint32_t right, boost::atomic<bool>& interruptor) {
   ROI temproi = target;
   temproi.adjust_bounds(finder_.x_, finder_.y_, left, right, interruptor);
-  if (!temproi.hr_x.empty())
-    target = temproi;
+  if (!temproi.hr_x.empty()) {
+    delete_ROI(target.finder_.x_.front());
+    regions_[temproi.finder_.x_.front()] = temproi;
+  }
 }
 
 
-void Fitter::add_peak(uint32_t left, uint32_t right, boost::atomic<bool>& interruptor) {
-//  PL_DBG << "Add new peak " << left << "-" << right;
+void Fitter::add_peak(double left, double right, boost::atomic<bool>& interruptor) {
+  if (finder_.x_.empty())
+    return;
 
-  bool added = false;
   for (auto &q : regions_) {
     if (q.second.overlaps(left, right)) {
-//      PL_DBG << "<Fitter> adding to existing region";
       q.second.add_peak(finder_.x_, finder_.y_, left, right, interruptor);
-      added = true;
-      break;
+      return;
     }
   }
 
-  if (!added) {
-    PL_DBG << "<Fitter> making new ROI to add peak manually";
-    ROI newROI(settings_);
-    newROI.set_data(finder_.x_, finder_.y_, left, right);
-    newROI.auto_fit(interruptor);
-    if (!newROI.peaks_.empty()) {
-      PL_DBG << "<Fitter> succeeded making new ROI";
-      regions_[newROI.finder_.x_.front()] = newROI;
-      added = true;
-    }
-  }
+//  PL_DBG << "<Fitter> making new ROI to add peak manually " << left << " " << right;
+  ROI newROI(settings_);
+  newROI.set_data(finder_.x_, finder_.y_, left, right);
+//  newROI.add_peak(finder_.x_, finder_.y_, left, right, interruptor);
+  newROI.auto_fit(interruptor);
+  if (newROI.finder_.x_.size())
+    regions_[newROI.finder_.x_.front()] = newROI;
 }
 
 void Fitter::remove_peaks(std::set<double> bins) {

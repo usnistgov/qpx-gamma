@@ -122,8 +122,9 @@ private slots:
 
   void add_peak();
   void adjust_roi_bounds();
+  void adjust_sum4();
+  void adjust_background();
 
-  void adjust_sum4_bounds();
   void delete_selected_peaks();
 
   void on_pushFindPeaks_clicked();
@@ -192,6 +193,7 @@ private:
   void plotSUM4_options();
 
   void peak_info(double bin);
+  void roi_settings(double roi);
 
   void makeSUM4_range(double roi, double peak_chan, int edge = 0);
 

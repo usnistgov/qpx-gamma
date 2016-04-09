@@ -64,6 +64,8 @@ private slots:
   void on_doubleMinStep_valueChanged(double arg1);
   void on_doubleMaxStep_valueChanged(double arg1);
 
+  void on_checkOnlySum4_clicked();
+
 private:
   Ui::FormFitterSettings *ui;
 

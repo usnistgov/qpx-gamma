@@ -37,7 +37,9 @@ struct Fit {
 
   Finder finder_;
   std::map<double, Peak> peaks_;
+  SUM4Edge  LB_, RB_;
   PolyBounded background_;
+  PolyBounded sum4_background_;
 };
 
 
@@ -49,15 +51,15 @@ struct ROI {
   }
 
   void set_data(const std::vector<double> &x, const std::vector<double> &y,
-                uint16_t min, uint16_t max);
+                double min, double max);
   void auto_fit(boost::atomic<bool>& interruptor);
 
   bool contains(double bin);
-  bool overlaps(uint16_t bin);
-  bool overlaps(uint16_t Lbin, uint16_t Rbin);
+  bool overlaps(double bin);
+  bool overlaps(double Lbin, double Rbin);
 
   //  void add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y);
-  void add_peak(const std::vector<double> &x, const std::vector<double> &y, uint16_t L, uint16_t R, boost::atomic<bool>& interruptor);
+  void add_peak(const std::vector<double> &x, const std::vector<double> &y, double L, double R, boost::atomic<bool>& interruptor);
   void adjust_bounds(const std::vector<double> &x, const std::vector<double> &y, uint16_t L, uint16_t R, boost::atomic<bool>& interruptor);
 
   bool add_from_resid(int32_t centroid_hint = -1);
@@ -86,12 +88,14 @@ struct ROI {
   //per_fit
   Finder finder_;
   std::map<double, Peak> peaks_;
+
   PolyBounded background_;
+  PolyBounded sum4_background_;
 
   //rendition
   std::vector<double> hr_x, hr_x_nrg,
                       hr_background, hr_back_steps,
-                      hr_fullfit;
+                      hr_fullfit, hr_sum4_background_;
 
 private:
   SUM4Edge LB_, RB_;
@@ -99,6 +103,7 @@ private:
   std::vector<double> remove_background();
   void init_background();
   bool remove_peak(double bin);
+  void make_sum4_background();
 
 };
 

@@ -45,6 +45,7 @@ FormFitterSettings::FormFitterSettings(FitSettings &fs, QWidget *parent) :
   ui->doubleRegionExtendBackground->setValue(fit_settings_.ROI_extend_background);
 
   ui->spinEdgeSamples->setValue(fit_settings_.background_edge_samples);
+  ui->checkOnlySum4->setChecked(fit_settings_.sum4_only);
 
   ui->checkResidAuto->setChecked(fit_settings_.resid_auto);
   ui->spinResidMaxIterations->setValue(fit_settings_.resid_max_iterations);
@@ -94,6 +95,8 @@ FormFitterSettings::FormFitterSettings(FitSettings &fs, QWidget *parent) :
 
   ui->doubleLateralSlack->setValue(fit_settings_.lateral_slack);
   ui->spinFitterMaxIterations->setValue(fit_settings_.fitter_max_iter);
+
+  on_checkOnlySum4_clicked();
 }
 
 void FormFitterSettings::on_buttonBox_accepted()
@@ -109,6 +112,7 @@ void FormFitterSettings::on_buttonBox_accepted()
   fit_settings_.ROI_extend_background = ui->doubleRegionExtendBackground->value();
 
   fit_settings_.background_edge_samples = ui->spinEdgeSamples->value();
+  fit_settings_.sum4_only = ui->checkOnlySum4->isChecked();
 
   fit_settings_.resid_auto = ui->checkResidAuto->isChecked();
   fit_settings_.resid_max_iterations = ui->spinResidMaxIterations->value();
@@ -286,4 +290,17 @@ void FormFitterSettings::on_doubleMinStep_valueChanged(double arg1)
 void FormFitterSettings::on_doubleMaxStep_valueChanged(double arg1)
 {
   enforce_bounds();
+}
+
+void FormFitterSettings::on_checkOnlySum4_clicked()
+{
+  bool enabled = !ui->checkOnlySum4->isChecked();
+
+  ui->boxHypermet->setEnabled(enabled);
+  ui->boxDeconvolution->setEnabled(enabled);
+  ui->spinResidMaxIterations->setEnabled(enabled);
+  ui->spinResidMinAmplitude->setEnabled(enabled);
+  ui->doubleResidTooClose->setEnabled(enabled);
+  ui->spinFitterMaxIterations->setEnabled(enabled);
+  ui->checkResidAuto->setEnabled(enabled);
 }

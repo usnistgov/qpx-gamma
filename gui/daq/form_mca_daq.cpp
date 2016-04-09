@@ -426,6 +426,8 @@ void FormMcaDaq::projectImport()
   //toggle_push(false, false);
   this->setCursor(Qt::WaitCursor);
 
+  int valid_imports = 0;
+
   for (int i=0; i<fileNames.size(); i++) {
     PL_INFO << "Importing from " << fileNames.at(i).toStdString();
 
@@ -443,10 +445,16 @@ void FormMcaDaq::projectImport()
       }
     } else {
       SinkPtr newSpectrum = SinkFactory::getInstance().create_from_file(fileNames.at(i).toStdString());
-      if (newSpectrum != nullptr) {
+      if (newSpectrum) {
         Setting app = newSpectrum->metadata().attributes.branches.get(Setting("appearance"));
         app.value_text = generateColor().name(QColor::HexArgb).toStdString();
         newSpectrum->set_option(app);
+        if (valid_imports < 10) {
+          Setting vis = newSpectrum->metadata().attributes.branches.get(Setting("visible"));
+          vis.value_int = true;
+          newSpectrum->set_option(vis);
+        }
+        valid_imports++;
         spectra_.add_sink(newSpectrum);
       } else {
         PL_INFO << "Spectrum construction did not succeed.";
@@ -524,7 +532,7 @@ void FormMcaDaq::reqAnal(int64_t idx) {
 }
 
 void FormMcaDaq::analysis_destroyed() {
-  PL_DBG << "analysis destroyed";
+//  PL_DBG << "analysis destroyed";
   my_analysis_ = nullptr;
 }
 

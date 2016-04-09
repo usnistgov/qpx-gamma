@@ -78,7 +78,7 @@ FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLableDB<Detector>& newDetD
   connect(ui->plotSpectrum, SIGNAL(data_changed()), form_fwhm_calibration_, SLOT(update_data()));
   connect(ui->plotSpectrum, SIGNAL(data_changed()), form_fit_results_, SLOT(update_data()));
 
-  connect(form_energy_calibration_, SIGNAL(change_peaks(std::vector<Peak>)), ui->plotSpectrum, SLOT(replace_peaks(std::vector<Peak>)));
+  connect(form_energy_calibration_, SIGNAL(change_peaks(std::vector<Qpx::Peak>)), ui->plotSpectrum, SLOT(replace_peaks(std::vector<Qpx::Peak>)));
 
   connect(form_energy_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
   connect(form_fwhm_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
@@ -104,7 +104,7 @@ void FormAnalysis1D::closeEvent(QCloseEvent *event) {
 
   ui->plotSpectrum->saveSettings(settings_);
 
-  PL_DBG << "closing analysis1d";
+//  PL_DBG << "closing analysis1d";
   saveSettings();
   event->accept();
 }

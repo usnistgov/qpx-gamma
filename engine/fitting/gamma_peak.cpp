@@ -27,7 +27,11 @@ namespace Qpx {
 
 void Peak::construct(FitSettings fs) {
 
-  center = hypermet_.center_.val;
+  if (hypermet_.height_.val)
+    center = hypermet_.center_.val;
+  else
+    center = sum4_.centroid.val;
+
   energy = fs.cali_nrg_.transform(center, fs.bits_);
 
 //  center = sum4_.centroid;
@@ -63,7 +67,10 @@ void Peak::construct(FitSettings fs) {
   if (live_seconds > 0) {
     cps_hyp  = area_hyp.val / live_seconds;
     cps_sum4 = area_sum4.val / live_seconds;
-    cps_best = cps_hyp;
+    if (hypermet_.height_.val)
+      cps_best = cps_hyp;
+    else
+      cps_best = cps_sum4;
   }
 
 }

@@ -515,10 +515,10 @@
            <string>Region parameters</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_2">
-           <item row="0" column="0">
-            <layout class="QHBoxLayout" name="horizontalLayout_8">
+           <item row="6" column="0">
+            <layout class="QHBoxLayout" name="horizontalLayout_27">
              <item>
-              <widget class="QLabel" name="label_8">
+              <widget class="QLabel" name="label_50">
                <property name="minimumSize">
                 <size>
                  <width>0</width>
@@ -532,12 +532,12 @@
                 </size>
                </property>
                <property name="text">
-                <string>Initial background samples</string>
+                <string>Residual search min centroid dif (*FW)</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QSpinBox" name="spinEdgeSamples">
+              <widget class="QDoubleSpinBox" name="doubleResidTooClose">
                <property name="minimumSize">
                 <size>
                  <width>70</width>
@@ -550,110 +550,20 @@
                  <height>25</height>
                 </size>
                </property>
+               <property name="decimals">
+                <number>2</number>
+               </property>
                <property name="minimum">
-                <number>1</number>
+                <double>0.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.010000000000000</double>
                </property>
               </widget>
              </item>
             </layout>
            </item>
            <item row="2" column="0">
-            <layout class="QHBoxLayout" name="horizontalLayout_9">
-             <item>
-              <widget class="QLabel" name="label_9">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Residual search max iterations</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="spinResidMaxIterations">
-               <property name="minimumSize">
-                <size>
-                 <width>70</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>70</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>20</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="6" column="0">
-            <layout class="QHBoxLayout" name="horizontalLayout_11">
-             <item>
-              <widget class="QLabel" name="label_11">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Small peak max amplitude</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="spinSmallMaxAmplitude">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>70</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>70</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="minimum">
-                <number>50</number>
-               </property>
-               <property name="maximum">
-                <number>50000</number>
-               </property>
-               <property name="singleStep">
-                <number>10</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="1" column="0">
             <widget class="QCheckBox" name="checkResidAuto">
              <property name="enabled">
               <bool>true</bool>
@@ -678,80 +588,7 @@
              </property>
             </widget>
            </item>
-           <item row="3" column="0">
-            <layout class="QHBoxLayout" name="horizontalLayout_10">
-             <item>
-              <widget class="QLabel" name="label_10">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Residual search minimum amplitude</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="spinResidMinAmplitude">
-               <property name="enabled">
-                <bool>true</bool>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>70</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>70</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>50000</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="5" column="0">
-            <widget class="QCheckBox" name="checkSmallSimplify">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="layoutDirection">
-              <enum>Qt::LeftToRight</enum>
-             </property>
-             <property name="text">
-              <string>Small peak regions w/ simplified parameters</string>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="0">
+           <item row="9" column="0">
             <layout class="QHBoxLayout" name="horizontalLayout_19">
              <item>
               <widget class="QLabel" name="label_40">
@@ -805,10 +642,10 @@
              </item>
             </layout>
            </item>
-           <item row="4" column="0">
-            <layout class="QHBoxLayout" name="horizontalLayout_27">
+           <item row="8" column="0">
+            <layout class="QHBoxLayout" name="horizontalLayout_11">
              <item>
-              <widget class="QLabel" name="label_50">
+              <widget class="QLabel" name="label_11">
                <property name="minimumSize">
                 <size>
                  <width>0</width>
@@ -822,12 +659,15 @@
                 </size>
                </property>
                <property name="text">
-                <string>Residual search min centroid dif (*FW)</string>
+                <string>Small peak max amplitude</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QDoubleSpinBox" name="doubleResidTooClose">
+              <widget class="QSpinBox" name="spinSmallMaxAmplitude">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>70</width>
@@ -840,18 +680,203 @@
                  <height>25</height>
                 </size>
                </property>
-               <property name="decimals">
-                <number>2</number>
-               </property>
                <property name="minimum">
-                <double>0.000000000000000</double>
+                <number>50</number>
+               </property>
+               <property name="maximum">
+                <number>50000</number>
                </property>
                <property name="singleStep">
-                <double>0.010000000000000</double>
+                <number>10</number>
                </property>
               </widget>
              </item>
             </layout>
+           </item>
+           <item row="4" column="0">
+            <layout class="QHBoxLayout" name="horizontalLayout_9">
+             <item>
+              <widget class="QLabel" name="label_9">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Residual search max iterations</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="spinResidMaxIterations">
+               <property name="minimumSize">
+                <size>
+                 <width>70</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>70</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>20</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="5" column="0">
+            <layout class="QHBoxLayout" name="horizontalLayout_10">
+             <item>
+              <widget class="QLabel" name="label_10">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Residual search minimum amplitude</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="spinResidMinAmplitude">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>70</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>70</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>50000</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="0" column="0">
+            <layout class="QHBoxLayout" name="horizontalLayout_8">
+             <item>
+              <widget class="QLabel" name="label_8">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Initial background samples</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="spinEdgeSamples">
+               <property name="minimumSize">
+                <size>
+                 <width>70</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>70</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="minimum">
+                <number>1</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="7" column="0">
+            <widget class="QCheckBox" name="checkSmallSimplify">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::LeftToRight</enum>
+             </property>
+             <property name="text">
+              <string>Small peak regions w/ simplified parameters</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QCheckBox" name="checkOnlySum4">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::LeftToRight</enum>
+             </property>
+             <property name="text">
+              <string>SUM4 only (disable all Hypermet fitting)</string>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -874,7 +899,7 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QGroupBox" name="groupBox_3">
+         <widget class="QGroupBox" name="boxHypermet">
           <property name="title">
            <string>Hypermet peak parameters</string>
           </property>
@@ -2284,7 +2309,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QGroupBox" name="groupBox_4">
+         <widget class="QGroupBox" name="boxDeconvolution">
           <property name="title">
            <string>Deconvolution parameters</string>
           </property>

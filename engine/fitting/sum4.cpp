@@ -146,6 +146,9 @@ void SUM4::recalc(const std::vector<double> &x, const std::vector<double> &y)
 //  PL_DBG << "<SUM4> bx " << bx[0] << "-" << bx[bx.size() -1];
 
   centroid.val = CsumYnet / sumYnet;
+  if ((centroid.val >= 0) && (centroid.val < x.size()))
+    centroid.val = x.at(static_cast<size_t>(centroid.val));
+
   double centroid_variance = (C2sumYnet / sumYnet) - pow(centroid.val, 2);
   centroid.uncert = sqrt(centroid_variance);
   fwhm = 2.0 * sqrt(centroid_variance * log(4));
