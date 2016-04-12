@@ -179,7 +179,6 @@ void WidgetPlotMulti1D::clearExtras()
 {
   //PL_DBG << "WidgetPlotMulti1D::clearExtras()";
   my_markers_.clear();
-  my_range_.visible = false;
   rect.clear();
 }
 
@@ -224,11 +223,6 @@ void WidgetPlotMulti1D::set_block(Marker a, Marker b) {
   rect.resize(2);
   rect[0] = a;
   rect[1] = b;
-}
-
-void WidgetPlotMulti1D::set_range(Range rng) {
-//  PL_DBG << "<WidgetPlotMulti1D> set range";
-  my_range_ = rng;
 }
 
 std::set<double> WidgetPlotMulti1D::get_selected_markers() {
@@ -497,144 +491,6 @@ void WidgetPlotMulti1D::replot_markers() {
 
   }
 
-  if (my_range_.visible) {
-
-    double pos_l = 0, pos_c = 0, pos_r = 0;
-    pos_l = my_range_.l.energy();
-    pos_c = my_range_.center.energy();
-    pos_r = my_range_.r.energy();
-
-    if ((pos_l < /*pos_c) && (pos_c <*/ pos_r)) {
-//      PL_DBG << "<WidgetPlotMulti1D> will plot range";
-
-      int total = ui->mcaPlot->graphCount();
-      for (int i=0; i < total; i++) {
-        if (!ui->mcaPlot->graph(i)->property("fittable").toBool())
-          continue;
-
-        if ((ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssNone) &&
-            (ui->mcaPlot->graph(i)->scatterStyle().shape() != QCPScatterStyle::ssDisc))
-          continue;
-
-        int bits = ui->mcaPlot->graph(i)->property("bits").toInt();
-
-        if (!use_calibrated_) {
-          pos_l = my_range_.l.bin(bits);
-          pos_c = my_range_.center.bin(bits);
-          pos_r = my_range_.r.bin(bits);
-        }
-
-        if ((ui->mcaPlot->graph(i)->data()->firstKey() > pos_l)
-            || (pos_r > ui->mcaPlot->graph(i)->data()->lastKey()))
-          continue;
-
-        QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
-        crs->setStyle(QCPItemTracer::tsNone);
-        crs->setGraph(ui->mcaPlot->graph(i));
-        crs->setGraphKey(pos_c);
-        crs->setInterpolating(true);
-        crs->setSelectable(false);
-        ui->mcaPlot->addItem(crs);
-        crs->updatePosition();
-        //double center_val = crs->positions().first()->value();
-
-        edge_trc1 = new QCPItemTracer(ui->mcaPlot);
-        edge_trc1->setStyle(QCPItemTracer::tsNone);
-        edge_trc1->setGraph(ui->mcaPlot->graph(i));
-        edge_trc1->setGraphKey(pos_l);
-        edge_trc1->setInterpolating(true);
-        ui->mcaPlot->addItem(edge_trc1);
-        edge_trc1->updatePosition();
-
-        edge_trc2 = new QCPItemTracer(ui->mcaPlot);
-        edge_trc2->setStyle(QCPItemTracer::tsNone);
-        edge_trc2->setGraph(ui->mcaPlot->graph(i));
-        edge_trc2->setGraphKey(pos_r);
-        edge_trc2->setInterpolating(true);
-        ui->mcaPlot->addItem(edge_trc2);
-        edge_trc2->updatePosition();
-
-        QPen pen_l = my_range_.base.get_pen(color_theme_);
-        QPen pen_r = my_range_.base.get_pen(color_theme_);
-        DraggableTracer *ar1 = new DraggableTracer(ui->mcaPlot, edge_trc1, 10);
-        pen_l.setWidth(1);
-        ar1->setPen(pen_l);
-        ar1->setSelectable(true);
-        ar1->set_limits(minx - 1, maxx + 1); //exclusive limits
-        ui->mcaPlot->addItem(ar1);
-
-        DraggableTracer *ar2 = new DraggableTracer(ui->mcaPlot, edge_trc2, 10);
-        pen_r.setWidth(1);
-        ar2->setPen(pen_r);
-        ar2->setSelectable(true);
-        ar2->set_limits(minx - 1, maxx + 1); //exclusive limits
-        ui->mcaPlot->addItem(ar2);
-
-        if (my_range_.visible) {
-          QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
-          line->setSelectable(false);
-          line->start->setParentAnchor(edge_trc1->position);
-          line->start->setCoords(0, 0);
-          line->end->setParentAnchor(edge_trc2->position);
-          line->end->setCoords(0, 0);
-          line->setPen(my_range_.base.get_pen(color_theme_));
-          ui->mcaPlot->addItem(line);
-
-          if (edge_trc1->graphKey() < min_marker)
-            min_marker = edge_trc1->graphKey();
-          if (edge_trc2->graphKey() > max_marker)
-            max_marker = edge_trc2->graphKey();
-        }
-
-        if (my_range_.visible) {
-          crs->setPen(my_range_.top.get_pen(color_theme_));
-          crs->setStyle(QCPItemTracer::tsCircle);
-
-          if (my_range_.visible) {
-            QCPItemCurve *ln = new QCPItemCurve(ui->mcaPlot);
-            ln->setSelectable(false);
-            ln->start->setParentAnchor(crs->position);
-            ln->start->setCoords(0, 0);
-            ln->end->setParentAnchor(edge_trc1->position);
-            ln->end->setCoords(0, 0);
-            ln->startDir->setType(QCPItemPosition::ptPlotCoords);
-            ln->startDir->setCoords((crs->position->key() + edge_trc1->position->key()) / 2, crs->position->value());
-            ln->endDir->setType(QCPItemPosition::ptPlotCoords);
-            ln->endDir->setCoords((crs->position->key() + edge_trc1->position->key()) / 2, edge_trc1->position->value());
-
-            ln->setPen(my_range_.top.get_pen(color_theme_));
-            ui->mcaPlot->addItem(ln);
-          }
-
-          if (my_range_.visible) {
-            QCPItemCurve *ln = new QCPItemCurve(ui->mcaPlot);
-            ln->setSelectable(false);
-            ln->start->setParentAnchor(crs->position);
-            ln->start->setCoords(0, 0);
-            ln->end->setParentAnchor(edge_trc2->position);
-            ln->end->setCoords(0, 0);
-            ln->startDir->setType(QCPItemPosition::ptPlotCoords);
-            ln->startDir->setCoords((crs->position->key() + edge_trc2->position->key()) / 2, crs->position->value());
-            ln->endDir->setType(QCPItemPosition::ptPlotCoords);
-            ln->endDir->setCoords((crs->position->key() + edge_trc2->position->key()) / 2, edge_trc2->position->value());
-
-
-            ln->setPen(my_range_.top.get_pen(color_theme_));
-            ui->mcaPlot->addItem(ln);
-          }
-        }
-      }
-
-    } else {
-//      PL_DBG << "<WidgetPlotMulti1D> bad range";
-      my_range_.visible = false;
-      //emit range_moved();
-    }
-  } else {
-//    PL_DBG << "<WidgetPlotMulti1D> range invisible";
-  }
-
-
   if ((rect.size() == 2) && (rect[0].visible) && !maxima_.empty() && !minima_.empty()){
     double upperc = maxima_.rbegin()->first;
     double lowerc = maxima_.begin()->first;
@@ -813,9 +669,6 @@ void WidgetPlotMulti1D::plot_mouse_release(QMouseEvent*) {
   mouse_pressed_ = false;
   plot_rezoom();
   ui->mcaPlot->replot();
-
-  if ((edge_trc1 != nullptr) || (edge_trc2 != nullptr))
-    emit range_moved(edge_trc1->graphKey(), edge_trc2->graphKey());
 }
 
 void WidgetPlotMulti1D::optionsChanged(QAction* action) {

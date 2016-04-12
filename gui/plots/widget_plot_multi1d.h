@@ -69,7 +69,7 @@ public:
   void set_markers(const std::list<Marker>&);
   void set_block(Marker, Marker);
 
-  void set_range(Range);
+//  void set_range(Range);
   std::set<double> get_selected_markers();
 
   void addPoints(const QVector<double>& x, const QVector<double>& y, AppearanceProfile appearance, QCPScatterStyle::ScatterShape);
@@ -85,7 +85,7 @@ signals:
 
   void clickedLeft(double);
   void clickedRight(double);
-  void range_moved(double x, double y);
+//  void range_moved(double x, double y);
   void markers_selected();
 
 protected slots:
@@ -113,7 +113,7 @@ protected:
   std::list<Marker> my_markers_;
   std::vector<Marker> rect;
 
-  Range my_range_;
+//  Range my_range_;
   QCPItemTracer* edge_trc1;
   QCPItemTracer* edge_trc2;
 

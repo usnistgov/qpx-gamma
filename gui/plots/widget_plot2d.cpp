@@ -504,7 +504,7 @@ void WidgetPlot2D::replot_markers() {
   ui->coincPlot->addItem(newButton);
   overlayButton = newButton;
 
-  int margin = 50;
+  /*int margin = 50;
   bool xaxis_changed = false;
   bool yaxis_changed = false;
   double difx_lower = minx - ui->coincPlot->xAxis->range().lower;
@@ -538,6 +538,17 @@ void WidgetPlot2D::replot_markers() {
       ui->coincPlot->yAxis->setRangeUpper(ui->coincPlot->yAxis->range().upper + dify_lower - margin);
     yaxis_changed = true;
   }
+
+  if (xaxis_changed && yaxis_changed) {
+    double xlower = ui->coincPlot->xAxis->range().lower;
+    double xupper = ui->coincPlot->xAxis->range().upper;
+    double ylower = ui->coincPlot->yAxis->range().lower;
+    double yupper = ui->coincPlot->yAxis->range().upper;
+    if ((xupper - xlower) < (yupper - ylower))
+      ui->coincPlot->yAxis->setRangeUpper(ylower + (xupper-xlower));
+    else if ((xupper - xlower) > (yupper - ylower))
+      ui->coincPlot->xAxis->setRangeUpper(xlower + (yupper-ylower));
+  }*/
 
 
 //  if (xaxis_changed) {

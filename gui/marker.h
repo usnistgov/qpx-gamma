@@ -74,14 +74,6 @@ struct Marker {
   Marker() : visible(false), selected(false) {}
 };
 
-struct Range {
-  bool visible;
-  QVariant purpose;
-  QStringList latch_to;
-  AppearanceProfile base, top;
-  Coord center, l, r;
-};
-
 struct MarkerLabel2D {
   MarkerLabel2D() : selected(false), selectable(false), vertical(false), vfloat(false), hfloat(false) {}
 

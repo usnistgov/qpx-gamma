@@ -81,7 +81,7 @@ void FormMultiGates::range_changed_in_plot(Range range) {
 
   range2d.visible = range.visible;
   range2d.vertical = true;
-  range2d.x_c = range.center;
+  range2d.x_c = range.c;
   range2d.x1 = range.l;
   range2d.x2 = range.r;
 //  range2d.labelfloat = (gate.width_chan == res);

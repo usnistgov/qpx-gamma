@@ -32,6 +32,7 @@
 #include "gates.h"
 #include "marker.h"
 #include "project.h"
+#include "form_coinc_peaks.h"
 
 namespace Ui {
 class FormMultiGates;

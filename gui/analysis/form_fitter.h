@@ -39,6 +39,21 @@ namespace Ui {
 class FormFitter;
 }
 
+struct Range {
+  bool visible;
+  QVariantMap properties;
+  QStringList latch_to;
+  AppearanceProfile appearance;
+  Coord l, r, c;
+
+  void setProperty(const char *name, const QVariant &value) {
+    properties[QString(name)] = value;
+  }
+
+  QVariant property(const char *name) const {
+    return properties.value(QString(name));
+  }
+};
 
 class RollbackDialog : public QDialog {
   Q_OBJECT
@@ -177,25 +192,29 @@ private:
   void trim_log_lower(QVector<double> &array);
   void calc_visible();
   void add_bounds(const QVector<double>& x, const QVector<double>& y);
-  void addGraph(const QVector<double>& x, const QVector<double>& y, QPen appearance,
-                double bin, QString name = QString());
-  void addEdge(Qpx::SUM4Edge edge, std::vector<double> &x, QPen pen, double roi);
+  QCPGraph *addGraph(const QVector<double>& x, const QVector<double>& y, QPen appearance,
+                     bool smooth, QString name = QString(),
+                     double region = -1, double peak = -1);
+
+  void plotBackgroundEdge(Qpx::SUM4Edge edge,
+                          std::vector<double> &x,
+                          double region,
+                          QString button_name);
 
   void follow_selection();
   void plotButtons();
-  void plotEnergyLabels();
+  void plotEnergyLabel(double peak_id, double peak_energy, QCPItemTracer *crs);
   void plotRange();
   void plotTitle();
 
-  void plotROI_options();
-//  void plotROI_range();
+  void plotRegion(double region_id, Qpx::ROI &region, QCPGraph *data_graph);
+  void plotPeak(double region_id, double peak_id, Qpx::Peak &peak);
 
-  void plotSUM4_options();
+  void peak_info(double peak);
+  void roi_settings(double region);
 
-  void peak_info(double bin);
-  void roi_settings(double roi);
-
-  void makeSUM4_range(double roi, double peak_chan, int edge = 0);
+  void make_SUM4_range(double region, double peak);
+  void make_background_range(double region, bool left);
 
   void set_scale_type(QString);
   QString scale_type();

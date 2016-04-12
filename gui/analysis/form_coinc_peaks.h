@@ -25,14 +25,9 @@
 #define FORM_COINC_PEAKS_H
 
 #include <QWidget>
-#include "special_delegate.h"
-#include "isotope.h"
-#include "marker.h"
 #include <QSettings>
 #include <QItemSelection>
-#include "project.h"
-#include "gamma_fitter.h"
-#include "thread_fitter.h"
+#include "form_fitter.h"
 
 namespace Ui {
 class FormCoincPeaks;
