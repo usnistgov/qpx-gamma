@@ -112,6 +112,8 @@ private slots:
   void on_pushAddPeak2d_clicked();
   void on_pushShowDiagonal_clicked();
 
+  void on_pushRefelct_clicked();
+
 private:
   Ui::FormIntegration2D *ui;
   QSettings &settings_;

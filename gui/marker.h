@@ -105,6 +105,16 @@ struct MarkerBox2D {
     return true;
   }
 
+  bool intersects(const MarkerBox2D& other) const {
+    return ((x1.energy() < other.x2.energy())
+            && (x2.energy() > other.x1.energy())
+            && (y1.energy() < other.y2.energy())
+            && (y2.energy() > other.y1.energy()));
+  }
+
+  bool northwest() const { return ((x1.energy() < y1.energy()) && (x2.energy() < y2.energy())); }
+  bool southeast() const { return ((x1.energy() > y1.energy()) && (x2.energy() > y2.energy())); }
+
   bool visible;
   bool selected;
   bool selectable;

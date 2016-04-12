@@ -75,6 +75,59 @@ FormIntegration2D::~FormIntegration2D()
 }
 
 void FormIntegration2D::setPeaks(std::list<MarkerBox2D> pks) {
+
+  SinkPtr source_spectrum = spectra_->get_sink(current_spectrum_);
+  if (source_spectrum) {
+    md_ = source_spectrum->metadata();
+    if (md_.attributes.branches.get(Setting("symmetrized")).value_int) {
+      uint32_t res = pow(2, md_.bits);
+      std::list<MarkerBox2D> northwest;
+      std::list<MarkerBox2D> southeast;
+      std::list<MarkerBox2D> diagonal;
+      for (auto &q : pks) {
+        if (q.northwest())
+          northwest.push_back(q);
+        else if (q.southeast())
+          southeast.push_back(q);
+        else
+          diagonal.push_back(q);
+      }
+      PL_DBG << "Sorted into NW=" << northwest.size() << " SE=" << southeast.size()
+             << " DIAG=" << diagonal.size() << " should take up to "
+             << (northwest.size() * southeast.size()) << " tests";
+
+      for (auto &q : northwest) {
+        //reflect
+        MarkerBox2D nw = q;
+        nw.x1 = q.y1;
+        nw.y1 = q.x1;
+        nw.x2 = q.y2;
+        nw.y2 = q.x2;
+        nw.x_c = q.y_c;
+        nw.y_c = q.x_c;
+
+        bool ok = true;
+        for (auto &se : southeast) {
+          if (nw.intersects(se)) {
+            ok = false;
+            break;
+          }
+        }
+        if (ok) {
+          diagonal.push_back(nw);
+        }
+      }
+
+      for (auto &q : southeast)
+        diagonal.push_back(q);
+
+      PL_DBG << "downsized to " << diagonal.size();
+      if (diagonal.size())
+        pks = diagonal;
+    }
+  }
+
+
   peaks_.clear();
   for (auto &q : pks) {
     Peak2D newpeak;
@@ -82,6 +135,14 @@ void FormIntegration2D::setPeaks(std::list<MarkerBox2D> pks) {
     peaks_.push_back(newpeak);
   }
   rebuild_table(true);
+}
+
+void FormIntegration2D::on_pushRefelct_clicked()
+{
+
+
+
+
 }
 
 
@@ -248,7 +309,7 @@ void FormIntegration2D::rebuild_table(bool contents_changed) {
   }
 
   int approved = 0;
-  int peaks = 0;
+
   for (auto &q : peaks_) {
     //    if (q.approved)
     //      approved++;
@@ -257,7 +318,6 @@ void FormIntegration2D::rebuild_table(bool contents_changed) {
   }
 
   ui->labelGates->setText(QString::number(approved) + "/"  + QString::number(peaks_.size() - approved));
-  ui->labelPeaks->setText(QString::number(peaks));
 }
 
 
@@ -778,4 +838,3 @@ void TablePeaks2D::update() {
   emit energiesChanged();
   return true;
 }*/
-
