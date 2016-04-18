@@ -26,7 +26,7 @@
 
 #include <QWidget>
 #include "qsquarecustomplot.h"
-#include "marker.h"
+#include "appearance.h"
 #include <set>
 
 namespace Ui {

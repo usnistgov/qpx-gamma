@@ -176,7 +176,7 @@ void FormEnergyCalibration::replot_calib() {
 
   for (auto &q : fit_data_.peaks()) {
     double x = q.first;
-    double y = q.second.energy;
+    double y = q.second.energy.val;
 
     xx.push_back(x);
     yy.push_back(y);
@@ -222,7 +222,7 @@ void FormEnergyCalibration::rebuild_table() {
   for (auto &p : fit_data_.peaks()) {
     bool close = false;
     for (auto &e : ui->isotopes->current_isotope_gammas())
-      if (abs(p.second.energy - e.energy) < 2.0) {//hardcoded
+      if (abs(p.second.energy.val - e.energy) < 2.0) {//hardcoded
         flagged.insert(e.energy);
         close = true;
       }
@@ -285,7 +285,7 @@ void FormEnergyCalibration::on_pushFit_clicked()
   int i = 0;
   for (auto &q : fit_data_.peaks()) {
     x[i] = q.first;
-    y[i] = q.second.energy;
+    y[i] = q.second.energy.val;
     i++;
   }
 
@@ -353,7 +353,7 @@ void FormEnergyCalibration::on_pushPeaksToNuclide_clicked()
   std::vector<double> gammas;
   for (auto &q : fit_data_.peaks())
     if (selected_peaks_.count(q.first))
-      gammas.push_back(q.second.energy);
+      gammas.push_back(q.second.energy.val);
   ui->isotopes->push_energies(gammas);
 }
 
@@ -393,8 +393,8 @@ void FormEnergyCalibration::on_pushEnergiesToPeaks_clicked()
 void FormEnergyCalibration::add_peak_to_table(const Qpx::Peak &p, int row, bool gray) {
   QBrush background(gray ? Qt::lightGray : Qt::white);
 
-  data_to_table(row, 0, p.center, background);
-  data_to_table(row, 1, p.energy, background);
+  data_to_table(row, 0, p.center.val, background);
+  data_to_table(row, 1, p.energy.val, background);
 }
 
 void FormEnergyCalibration::data_to_table(int row, int column, double value, QBrush background) {

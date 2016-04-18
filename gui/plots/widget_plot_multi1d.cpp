@@ -60,7 +60,6 @@ WidgetPlotMulti1D::WidgetPlotMulti1D(QWidget *parent) :
   force_rezoom_ = false;
   mouse_pressed_ = false;
   use_calibrated_ = false;
-  markers_selectable_ = false;
 
   edge_trc1 = nullptr;
   edge_trc2 = nullptr;
@@ -215,11 +214,11 @@ void WidgetPlotMulti1D::use_calibrated(bool uc) {
   //replot_markers();
 }
 
-void WidgetPlotMulti1D::set_markers(const std::list<Marker>& markers) {
+void WidgetPlotMulti1D::set_markers(const std::list<Marker1D>& markers) {
   my_markers_ = markers;
 }
 
-void WidgetPlotMulti1D::set_block(Marker a, Marker b) {
+void WidgetPlotMulti1D::set_block(Marker1D a, Marker1D b) {
   rect.resize(2);
   rect[0] = a;
   rect[1] = b;
@@ -434,15 +433,6 @@ void WidgetPlotMulti1D::replot_markers() {
     }
     if (top_crs != nullptr) {
       QPen pen = q.appearance.get_pen(color_theme_);
-      QPen selected_pen = q.selected_appearance.get_pen(color_theme_);
-
-      if (q.selected) {
-//        total_markers++;
-        if (top_crs->graphKey() > max_marker)
-          max_marker = top_crs->graphKey();
-        if (top_crs->graphKey() < min_marker)
-          min_marker = top_crs->graphKey();
-      }
 
       QCPItemLine *line = new QCPItemLine(ui->mcaPlot);
       line->start->setParentAnchor(top_crs->position);
@@ -451,13 +441,11 @@ void WidgetPlotMulti1D::replot_markers() {
       line->end->setCoords(0, -2);
       line->setHead(QCPLineEnding(QCPLineEnding::esLineArrow, 7, 7));
       line->setPen(pen);
-      line->setSelectedPen(selected_pen);
+      line->setSelectedPen(pen);
       line->setProperty("true_value", top_crs->graphKey());
       line->setProperty("chan_value", top_crs->property("chan_value"));
       line->setProperty("nrg_value", top_crs->property("nrg_value"));
-      line->setSelectable(markers_selectable_);
-      if (markers_selectable_)
-        line->setSelected(q.selected);
+      line->setSelectable(false);
       ui->mcaPlot->addItem(line);
 
       if (marker_labels_) {
@@ -474,12 +462,10 @@ void WidgetPlotMulti1D::replot_markers() {
         markerText->setFont(QFont("Helvetica", 9));
         markerText->setPen(pen);
         markerText->setColor(pen.color());
-        markerText->setSelectedColor(selected_pen.color());
-        markerText->setSelectedPen(selected_pen);
+        markerText->setSelectedColor(pen.color());
+        markerText->setSelectedPen(pen);
         markerText->setPadding(QMargins(1, 1, 1, 1));
-        markerText->setSelectable(markers_selectable_);
-        if (markers_selectable_)
-          markerText->setSelected(q.selected);
+        markerText->setSelectable(false);
         ui->mcaPlot->addItem(markerText);
       }
     }
@@ -830,9 +816,6 @@ bool WidgetPlotMulti1D::marker_labels() {
   return marker_labels_;
 }
 
-void WidgetPlotMulti1D::set_markers_selectable(bool s) {
-  markers_selectable_ = s;
-}
 
 void WidgetPlotMulti1D::exportRequested(QAction* choice) {
   QString filter = choice->text() + "(*." + choice->text() + ")";

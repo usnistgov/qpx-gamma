@@ -71,7 +71,7 @@
        <property name="maximumSize">
         <size>
          <width>16777215</width>
-         <height>150</height>
+         <height>200</height>
         </size>
        </property>
       </widget>
@@ -278,6 +278,17 @@
           <widget class="QPushButton" name="pushRefelct">
            <property name="text">
             <string>Reflect</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_7">
+         <item>
+          <widget class="QPushButton" name="pushTransitions">
+           <property name="text">
+            <string>Make transitions</string>
            </property>
           </widget>
          </item>

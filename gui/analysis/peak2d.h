@@ -16,63 +16,14 @@
  *
  ******************************************************************************/
 
-#ifndef Q_MARKER_H
-#define Q_MARKER_H
+#ifndef Q_PEAK2D_H
+#define Q_PEAK2D_H
 
-#include "detector.h"
+#include "coord.h"
 #include "roi.h"
-#include <QPen>
-#include <QMap>
-#include <QVariant>
-
-struct AppearanceProfile {
-  QMap<QString, QPen> themes;
-  QPen default_pen;
-
-  AppearanceProfile() : default_pen(Qt::gray, 1, Qt::SolidLine) {}
-  QPen get_pen(QString theme);
-};
-
-class Coord {
-public:
-  Coord() : bits_(0), energy_(nan("")), bin_(nan("")) {}
-
-  void set_energy(double nrg, Qpx::Calibration cali);
-  void set_bin(double bin, uint16_t bits, Qpx::Calibration cali);
-
-  uint16_t bits() const {return bits_;}
-  double energy() const;
-  double bin(const uint16_t to_bits) const;
-
-  bool operator!= (const Coord& other) const { return (!operator==(other)); }
-  bool operator== (const Coord& other) const {
-    if (energy_ != other.energy_) return false;
-    if (bin(bits_) != other.bin(bits_)) return false;
-    return true;
-  }
-
-private:
-  double energy_;
-  double bin_;
-  uint16_t bits_;
-};
-
-struct Marker {
-  bool operator!= (const Marker& other) const { return (!operator==(other)); }
-  bool operator== (const Marker& other) const {
-    if (pos != other.pos) return false;
-    return true;
-  }
-
-  Coord pos;
-
-  AppearanceProfile appearance, selected_appearance;
-
-  bool visible;
-  bool selected;
-
-  Marker() : visible(false), selected(false) {}
-};
+#include <QString>
+#include "daq_sink.h"
+#include "val_uncert.h"
 
 struct MarkerLabel2D {
   MarkerLabel2D() : selected(false), selectable(false), vertical(false), vfloat(false), hfloat(false) {}
@@ -105,6 +56,9 @@ struct MarkerBox2D {
     return true;
   }
 
+  bool operator!= (const MarkerBox2D& other) const
+    { return !operator==(other); }
+
   bool intersects(const MarkerBox2D& other) const {
     return ((x1.energy() < other.x2.energy())
             && (x2.energy() > other.x1.energy())
@@ -115,6 +69,8 @@ struct MarkerBox2D {
   bool northwest() const { return ((x1.energy() < y1.energy()) && (x2.energy() < y2.energy())); }
   bool southeast() const { return ((x1.energy() > y1.energy()) && (x2.energy() > y2.energy())); }
 
+  void integrate(Qpx::SinkPtr spectrum);
+
   bool visible;
   bool selected;
   bool selectable;
@@ -122,11 +78,16 @@ struct MarkerBox2D {
   bool mark_center;
   Coord x1, x2, y1, y2, x_c, y_c;
   double integral;
+  double chan_area;
+  double variance;
   QString label;
 };
 
 struct Peak2D {
-  Peak2D() {}
+  Peak2D() :
+    currie_quality_indicator(-1),
+    approved(false)
+  {}
   Peak2D(Qpx::ROI &x_roi, Qpx::ROI &y_roi, double x_center, double y_center);
 
   void adjust_x(Qpx::ROI &roi, double center);
@@ -134,8 +95,16 @@ struct Peak2D {
   void adjust_diag_x(Qpx::ROI &roi, double center);
   void adjust_diag_y(Qpx::ROI &roi, double center);
 
+  void integrate(Qpx::SinkPtr source);
+
   MarkerBox2D area[3][3];
   Qpx::ROI x, y, dx, dy;
+
+  ValUncert energy_x, energy_y;
+
+  ValUncert gross, xback, yback, dback, net;
+  int currie_quality_indicator;
+
   bool approved;
 };
 

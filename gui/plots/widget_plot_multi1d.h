@@ -26,8 +26,24 @@
 
 #include <QWidget>
 #include "qsquarecustomplot.h"
-#include "marker.h"
 #include <set>
+#include "coord.h"
+#include "appearance.h"
+
+struct Marker1D {
+  bool operator!= (const Marker1D& other) const { return (!operator==(other)); }
+  bool operator== (const Marker1D& other) const {
+    if (pos != other.pos) return false;
+    return true;
+  }
+
+  Coord pos;
+  AppearanceProfile appearance;
+  bool visible;
+
+  Marker1D() : visible(false) {}
+};
+
 
 namespace Ui {
 class WidgetPlotMulti1D;
@@ -58,7 +74,6 @@ public:
   void set_plot_style(QString);
   void set_grid_style(QString);
   void set_marker_labels(bool);
-  void set_markers_selectable(bool);
   QString scale_type();
   QString plot_style();
   QString grid_style();
@@ -66,8 +81,8 @@ public:
 
   void set_visible_options(ShowOptions);
 
-  void set_markers(const std::list<Marker>&);
-  void set_block(Marker, Marker);
+  void set_markers(const std::list<Marker1D>&);
+  void set_block(Marker1D, Marker1D);
 
 //  void set_range(Range);
   std::set<double> get_selected_markers();
@@ -110,8 +125,8 @@ protected:
 
   Ui::WidgetPlotMulti1D *ui;
 
-  std::list<Marker> my_markers_;
-  std::vector<Marker> rect;
+  std::list<Marker1D> my_markers_;
+  std::vector<Marker1D> rect;
 
 //  Range my_range_;
   QCPItemTracer* edge_trc1;
@@ -124,8 +139,6 @@ protected:
   bool use_calibrated_;
   bool marker_labels_;
   bool mouse_pressed_;
-
-  bool markers_selectable_;
 
   double minx_zoom, maxx_zoom;
 

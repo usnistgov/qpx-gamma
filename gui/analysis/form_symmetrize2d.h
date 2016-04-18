@@ -53,7 +53,7 @@ public slots:
   void apply_gain_calibration();
 
 private slots:
-  void update_gates(Marker, Marker);
+//  void update_gates(Coord, Coord);
   void update_peaks();
   void peak_selection_changed(std::set<double> selected_peaks);
 

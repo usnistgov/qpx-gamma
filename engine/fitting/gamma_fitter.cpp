@@ -165,7 +165,7 @@ std::map<double, Peak> Fitter::peaks() {
   std::map<double, Peak> peaks;
   for (auto &q : regions_)
     for (auto &p : q.second.peaks_) {
-      peaks[p.second.center] = p.second;
+      peaks[p.second.center.val] = p.second;
     }
   return peaks;
 }
@@ -228,8 +228,8 @@ void Fitter::remove_peaks(std::set<double> bins) {
 
 void Fitter::replace_peak(const Peak& pk) {
   for (auto &m : regions_)
-    if (m.second.contains(pk.center)) {
-      m.second.peaks_[pk.center] = pk;
+    if (m.second.contains(pk.center.val)) {
+      m.second.peaks_[pk.center.val] = pk;
       m.second.render(); //was it hm or sum4 that was replaced?
 //      PL_DBG << "replacing " << pk.center;
     }
@@ -324,8 +324,8 @@ void Fitter::save_report(std::string filename) {
        << std::endl;
   file.fill(' ');
   for (auto &q : peaks()) {
-    file << std::setw( 16 ) << std::setprecision( 10 ) << q.second.center << " | "
-         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.energy << " | "
+    file << std::setw( 16 ) << std::setprecision( 10 ) << q.second.center.val << " | "
+         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.energy.val << " | "
          << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_hyp << " | "
          << std::setw( 26 ) << q.second.hypermet_.area().val_uncert(10) << " | "
          << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_hyp << " || ";

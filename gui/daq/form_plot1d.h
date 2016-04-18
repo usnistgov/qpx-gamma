@@ -56,10 +56,10 @@ public:
   QString plot_style();
 
 public slots:
-  void set_markers2d(Marker x, Marker y);
+  void set_markers2d(Coord x, Coord y);
 
 signals:
-  void marker_set(Marker n);
+  void marker_set(Coord n);
   void requestAnalysis(int64_t);
   void requestEffCal(QString);
 
@@ -104,7 +104,7 @@ private:
   Qpx::Project *mySpectra;
   SelectorWidget *spectraSelector;
 
-  Marker moving, markx, marky;
+  Marker1D moving, markx, marky;
   QMenu menuColors;
   QMenu menuDelete;
   QMenu menuEffCal;

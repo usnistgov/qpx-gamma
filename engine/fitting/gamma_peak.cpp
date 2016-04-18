@@ -21,22 +21,32 @@
  ******************************************************************************/
 
 #include "gamma_peak.h"
+#include "custom_logger.h"
 
 namespace Qpx {
 
 
 void Peak::construct(FitSettings fs) {
 
-  if (hypermet_.height_.val)
-    center = hypermet_.center_.val;
-  else
-    center = sum4_.centroid.val;
+  if (hypermet_.height_.val) {
+    center.val = hypermet_.center_.val;
+    center.uncert = hypermet_.center_.uncert;
+  } else {
+    center.val = sum4_.centroid.val;
+    center.uncert = sum4_.centroid.uncert;
+  }
 
-  energy = fs.cali_nrg_.transform(center, fs.bits_);
+  if (std::isinf(center.uncert) || std::isnan(center.uncert)) {
+    center.uncert = sum4_.centroid.uncert;
+//    PL_DBG << "overriding peak center uncert with sum4 for " << center.val << " with " << sum4_.centroid.to_string();
+  }
 
-//  center = sum4_.centroid;
-//  energy = cali_nrg.transform(center, bits);
-//  height = gaussian_.height_;
+  energy.val = fs.cali_nrg_.transform(center.val, fs.bits_);
+
+  double emin = fs.cali_nrg_.transform(energy.val - 0.5 * center.uncert, fs.bits_);
+  double emax = fs.cali_nrg_.transform(energy.val + 0.5 * center.uncert, fs.bits_);
+  energy.uncert = emax - emin;
+
 
   double L, R;
 
@@ -52,13 +62,6 @@ void Peak::construct(FitSettings fs) {
   area_sum4 = sum4_.peak_area;
 
   area_best = area_sum4;
-
-  //  if (sum4_.currie_quality_indicator == 1)
-//  {
-//    area_gross_ = sum4_.P_area;
-//    area_bckg_ = sum4_.B_area;
-//    area_best_ = area_net_;
-//  }
 
   cps_best = cps_hyp = cps_sum4 = 0;
 

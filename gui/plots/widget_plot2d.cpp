@@ -45,18 +45,18 @@ WidgetPlot2D::WidgetPlot2D(QWidget *parent) :
   show_labels_ = true;
 
   //color theme setup
-  my_marker.appearance.themes["Grayscale"] = QPen(Qt::cyan, 1);
-  my_marker.appearance.themes["Hot"] = QPen(Qt::cyan, 1);
-  my_marker.appearance.themes["Cold"] = QPen(Qt::yellow, 1);
-  my_marker.appearance.themes["Night"] = QPen(Qt::red, 1);
-  my_marker.appearance.themes["Candy"] = QPen(Qt::red, 1);
-  my_marker.appearance.themes["Geography"] = QPen(Qt::yellow, 1);
-  my_marker.appearance.themes["Ion"] = QPen(Qt::magenta, 1);
-  my_marker.appearance.themes["Thermal"] = QPen(Qt::cyan, 1);
-  my_marker.appearance.themes["Polar"] = QPen(Qt::green, 1);
-  my_marker.appearance.themes["Spectrum"] = QPen(Qt::cyan, 1);
-  my_marker.appearance.themes["Jet"] = QPen(Qt::darkMagenta, 1);
-  my_marker.appearance.themes["Hues"] = QPen(Qt::black, 1);
+  marker_looks.themes["Grayscale"] = QPen(Qt::cyan, 1);
+  marker_looks.themes["Hot"] = QPen(Qt::cyan, 1);
+  marker_looks.themes["Cold"] = QPen(Qt::yellow, 1);
+  marker_looks.themes["Night"] = QPen(Qt::red, 1);
+  marker_looks.themes["Candy"] = QPen(Qt::red, 1);
+  marker_looks.themes["Geography"] = QPen(Qt::yellow, 1);
+  marker_looks.themes["Ion"] = QPen(Qt::magenta, 1);
+  marker_looks.themes["Thermal"] = QPen(Qt::cyan, 1);
+  marker_looks.themes["Polar"] = QPen(Qt::green, 1);
+  marker_looks.themes["Spectrum"] = QPen(Qt::cyan, 1);
+  marker_looks.themes["Jet"] = QPen(Qt::darkMagenta, 1);
+  marker_looks.themes["Hues"] = QPen(Qt::black, 1);
 
   //colormap setup
   ui->coincPlot->setAlwaysSquare(true);
@@ -131,6 +131,11 @@ void WidgetPlot2D::build_menu() {
   }
 }
 
+void WidgetPlot2D::set_antialiased(bool anti) {
+  antialiased_ = anti;
+  colorMap->setInterpolate(antialiased_);
+  build_menu();
+}
 
 void WidgetPlot2D::optionsChanged(QAction* action) {
   this->setCursor(Qt::WaitCursor);
@@ -232,7 +237,7 @@ void WidgetPlot2D::replot_markers() {
 
   ui->coincPlot->clearItems();
 
-  QPen pen = my_marker.appearance.get_pen(current_gradient_);
+  QPen pen = marker_looks.get_pen(current_gradient_);
 
   QColor cc = pen.color();
   cc.setAlpha(169);
@@ -341,6 +346,7 @@ void WidgetPlot2D::replot_markers() {
       lineh->end->setCoords(x2, yc);
       linev->start->setCoords(xc, y1);
       linev->end->setCoords(xc, y2);
+//      PL_DBG << "mark center xc yc " << xc << " " << yc;
       ui->coincPlot->addItem(lineh);
       ui->coincPlot->addItem(linev);
     }
@@ -605,31 +611,17 @@ void WidgetPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event,
 
   bool visible = (event->button() == Qt::LeftButton);
 
-  Marker xt, yt;
+  Coord xt, yt;
 
-  if (channels) {
-//    PL_DBG << "markers chan";
-    xt.pos.set_bin(x, bits_, calib_x_);
-    yt.pos.set_bin(y, bits_, calib_y_);
-//    PL_DBG << "xformed to nrg " << xt.pos.energy() << " " << yt.pos.energy();
-  } else {
-//    PL_DBG << "markers nrg";
-    xt.pos.set_energy(x, calib_x_);
-    yt.pos.set_energy(y, calib_y_);
+  if (visible) {
+    if (channels) {
+      xt.set_bin(x, bits_, calib_x_);
+      yt.set_bin(y, bits_, calib_y_);
+    } else {
+      xt.set_energy(x, calib_x_);
+      yt.set_energy(y, calib_y_);
+    }
   }
-
-//  if (calib_x_.valid())
-//    xt.pos.set_energy(x, calib_x_);
-//  else
-//    xt.pos.set_bin(x, bits_, calib_x_);
-
-//  if (calib_y_.valid())
-//    yt.pos.set_energy(y, calib_y_);
-//  else
-//    yt.pos.set_bin(y, bits_, calib_y_);
-
-  xt.visible = visible;
-  yt.visible = visible;
 
   emit markers_set(xt, yt);
 }

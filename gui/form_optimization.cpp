@@ -336,7 +336,7 @@ void FormOptimization::update_plots() {
       st->setFlags(st->flags() ^ Qt::ItemIsEditable);
       ui->tableResults->setItem(current_spec, 0, st);
 
-      QTableWidgetItem *en = new QTableWidgetItem(QString::number(peaks_[current_spec].energy));
+      QTableWidgetItem *en = new QTableWidgetItem(QString::fromStdString(peaks_[current_spec].energy.to_string()));
       en->setFlags(en->flags() ^ Qt::ItemIsEditable);
       ui->tableResults->setItem(current_spec, 1, en);
 

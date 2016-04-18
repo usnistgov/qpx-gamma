@@ -32,6 +32,7 @@
 #include "detector.h"
 #include "qt_util.h"
 #include "special_delegate.h"
+#include "table_settings.h"
 
 namespace Ui {
 class WidgetDetectors;
@@ -94,6 +95,9 @@ private:
 
   TableCalibrations table_gains_;
   QItemSelectionModel selection_gains_;
+
+  TableChanSettings   table_settings_model_;
+  QpxSpecialDelegate  table_settings_delegate_;
 };
 
 

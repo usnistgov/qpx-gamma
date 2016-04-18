@@ -321,7 +321,7 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
       fitted.sum4_ = SUM4(finder_.x_, finder_.y_, finder_.find_index(L), finder_.find_index(R), sum4_background_, LB_, RB_);
       fitted.center = fitted.sum4_.centroid.val;
       fitted.construct(settings_);
-      peaks_[fitted.center] = fitted;
+      peaks_[fitted.center.val] = fitted;
       render();
       save_current_fit();
     }
@@ -354,7 +354,7 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
       fitted.sum4_ = SUM4(finder_.x_, finder_.y_, finder_.find_index(L), finder_.find_index(R), sum4_background_, LB_, RB_);
       fitted.center = fitted.sum4_.centroid.val;
       fitted.construct(settings_);
-      peaks_[fitted.center] = fitted;
+      peaks_[fitted.center.val] = fitted;
       render();
       save_current_fit();
     }
@@ -445,7 +445,7 @@ void ROI::rebuild() {
                 finder_.find_index(q.second.sum4_.bx[q.second.sum4_.bx.size() - 1]),
                 sum4_background_, LB_, RB_);
       q.second.construct(settings_);
-      new_peaks[q.second.center] = q.second;
+      new_peaks[q.second.center.val] = q.second;
     }
   }
 
@@ -462,7 +462,7 @@ void ROI::rebuild() {
       uint32_t edgeR = finder_.find_index(hype[i].center_.val + edge);
       one.sum4_ = SUM4(finder_.x_, finder_.y_, edgeL, edgeR, sum4_background_, LB_, RB_);
       one.construct(settings_);
-      new_peaks[one.center] = one;
+      new_peaks[one.center.val] = one;
     }
   }
 

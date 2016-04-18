@@ -8,42 +8,26 @@
  * its use by other parties, and makes no guarantees, expressed or implied,
  * about its quality, reliability, or any other characteristic.
  *
- * This software can be redistributed and/or modified freely provided that
- * any derivative works bear some notice that they are derived from it, and
- * any modified versions bear some notice that they have been modified.
- *
  * Author(s):
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Gates
+ *      Marker - for marking a channel or energt in a plot
  *
  ******************************************************************************/
 
-#ifndef QPX_GATES_H
-#define QPX_GATES_H
+#ifndef APPEARANCE_H
+#define APPEARANCE_H
 
-#include "gamma_fitter.h"
-#include "peak2d.h"
+#include <QPen>
+#include <QMap>
 
-namespace Qpx {
+struct AppearanceProfile {
+  QMap<QString, QPen> themes;
+  QPen default_pen;
 
-class Gate {
-
-public:
-  Gate()
-    : cps(0)
-    , approved(false)
-  {}
-
-  MarkerBox2D constraints;
-
-  double cps;
-  bool approved;
-  Fitter fit_data_;
-
+  AppearanceProfile() : default_pen(Qt::gray, 1, Qt::SolidLine) {}
+  QPen get_pen(QString theme);
 };
-
-}
 
 #endif

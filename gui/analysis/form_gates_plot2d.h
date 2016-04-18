@@ -27,7 +27,7 @@
 #include "qsquarecustomplot.h"
 #include "qtcolorpicker.h"
 #include "widget_selector.h"
-#include "marker.h"
+#include "peak2d.h"
 #include <unordered_map>
 
 namespace Ui {
@@ -76,7 +76,7 @@ signals:
 private slots:
   //void clicked_plottable(QCPAbstractPlottable*);
   void selection_changed();
-  void markers_moved(Marker x, Marker y);
+  void markers_moved(Coord x, Coord y);
 
 private:
 

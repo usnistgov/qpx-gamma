@@ -58,12 +58,12 @@ SUM4Edge::SUM4Edge(const std::vector<double> &y, uint32_t left, uint32_t right)
 
 SUM4::SUM4()
     :peak_width(0)
-    ,background_area("BackgroundArea", 0)
-    ,peak_area("PeakArea",0)
+    ,background_area(0)
+    ,peak_area(0)
     ,Lpeak(0)
     ,Rpeak(0)
     ,currie_quality_indicator(-1)
-    ,centroid("Centroid", 0)
+    ,centroid(0)
     ,fwhm(0)
 {}
 
@@ -98,19 +98,20 @@ void SUM4::recalc(const std::vector<double> &x, const std::vector<double> &y)
 
   background_area.val = peak_width * (background_.eval(x[Rpeak]) + background_.eval(x[Lpeak])) / 2.0;
 
-  double gross_area(0);
+  gross_area.val = 0;
   for (int i=Lpeak; i <=Rpeak; ++i)
-    gross_area += y[i];
+    gross_area.val += y[i];
+  gross_area.uncert = sqrt(gross_area.val);
 
   //make gross area with uncert as full param
 
-  peak_area.val = gross_area - background_area.val;
+  peak_area.val = gross_area.val - background_area.val;
 
   double background_variance = pow((peak_width / 2.0), 2) * (LB_.variance() + RB_.variance());
-  double peak_variance = gross_area + background_variance;
-
-  peak_area.uncert = sqrt(peak_variance);
   background_area.uncert = sqrt(background_variance);
+
+  double peak_variance = gross_area.val + background_variance;
+  peak_area.uncert = sqrt(peak_variance);
 
   double currieLQ(0), currieLD(0), currieLC(0);
   currieLQ = 50 * (1 + sqrt(1 + background_variance / 12.5));
@@ -136,8 +137,8 @@ void SUM4::recalc(const std::vector<double> &x, const std::vector<double> &y)
     double B_chan  = background_.eval(x[i]);
     double yn = y[i] - B_chan;
     sumYnet += yn;
-    CsumYnet += i * yn;
-    C2sumYnet += pow(i, 2) * yn;
+    CsumYnet += x[i] * yn;
+    C2sumYnet += pow(x[i], 2) * yn;
 
     bx[i-Lpeak] = x[i];
     by[i-Lpeak] = B_chan;
@@ -150,6 +151,7 @@ void SUM4::recalc(const std::vector<double> &x, const std::vector<double> &y)
     centroid.val = x.at(static_cast<size_t>(centroid.val));
 
   double centroid_variance = (C2sumYnet / sumYnet) - pow(centroid.val, 2);
+//  PL_DBG << "sum4 c2sumy=" << C2sumYnet << " sumy=" << sumYnet << " variance " << centroid_variance;
   centroid.uncert = sqrt(centroid_variance);
   fwhm = 2.0 * sqrt(centroid_variance * log(4));
 }

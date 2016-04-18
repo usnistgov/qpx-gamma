@@ -340,7 +340,7 @@ void FormPlot1D::addMovingMarker(double x) {
     moving.pos.set_bin(x, calib_.bits_, calib_);
 
   moving.visible = true;
-  emit marker_set(moving);
+  emit marker_set(moving.pos);
   replot_markers();
 }
 
@@ -348,24 +348,25 @@ void FormPlot1D::removeMovingMarker(double x) {
   moving.visible = false;
   markx.visible = false;
   marky.visible = false;
-  emit marker_set(moving);
+  emit marker_set(Coord());
   replot_markers();
 }
 
-void FormPlot1D::set_markers2d(Marker x, Marker y) {
-  x.appearance = markx.appearance;
-  y.appearance = marky.appearance;
+void FormPlot1D::set_markers2d(Coord x, Coord y) {
 
-  markx = x; marky = y;
+  markx.pos = x;
+  markx.visible = !x.null();
+  marky.pos = y;
+  marky.visible = !y.null();
 
-  if (!x.visible && !y.visible)
+  if (!markx.visible && !marky.visible)
     moving.visible = false;
 
   replot_markers();
 }
 
 void FormPlot1D::replot_markers() {
-  std::list<Marker> markers;
+  std::list<Marker1D> markers;
 
   markers.push_back(moving);
   markers.push_back(markx);

@@ -34,13 +34,14 @@
 using namespace Qpx;
 
 DialogDetector::DialogDetector(Detector mydet, QDir rd, bool editName, QWidget *parent) :
+  QDialog(parent),
   root_dir_(rd),
   my_detector_(mydet),
   table_nrgs_(my_detector_.energy_calibrations_, false),
   selection_nrgs_(&table_nrgs_),
   table_gains_(my_detector_.gain_match_calibrations_, true),
   selection_gains_(&table_gains_),
-  QDialog(parent),
+  table_settings_model_(this),
   ui(new Ui::DialogDetector)
 {
   ui->setupUi(this);
@@ -87,6 +88,15 @@ DialogDetector::DialogDetector(Detector mydet, QDir rd, bool editName, QWidget *
   ui->tableGainCalibrations->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->tableGainCalibrations->show();
 
+  ui->tableSettings->setModel(&table_settings_model_);
+  ui->tableSettings->setItemDelegate(&table_settings_delegate_);
+  ui->tableSettings->horizontalHeader()->setStretchLastSection(true);
+  ui->tableSettings->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+  table_settings_model_.set_show_read_only(true);
+  ui->tableSettings->setEditTriggers(QAbstractItemView::AllEditTriggers);
+  ui->tableSettings->show();
+
+
   connect(&selection_nrgs_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(selection_changed(QItemSelection,QItemSelection)));
 
@@ -109,10 +119,9 @@ void DialogDetector::updateDisplay() {
 
   ui->comboType->setCurrentText(QString::fromStdString(my_detector_.type_));
 
-  if (my_detector_.settings_.branches.empty())
-    ui->labelOpti->setText("WITHOUT CHANNEL SETTINGS");
-  else
-    ui->labelOpti->setText("WITH CHANNEL SETTINGS");
+  std::vector<Detector> tablesets;
+  tablesets.push_back(my_detector_);
+  table_settings_model_.update(tablesets);
 
 
   if (my_detector_.fwhm_calibration_.valid())
@@ -472,7 +481,7 @@ void WidgetDetectors::toggle_push() {
 void WidgetDetectors::on_pushNew_clicked()
 {
   DialogDetector* newDet = new DialogDetector(Detector(), QDir(root_dir_), true, this);
-  connect(newDet, SIGNAL(newDetReady(Detector)), this, SLOT(addNewDet(Detector)));
+  connect(newDet, SIGNAL(newDetReady(Qpx::Detector)), this, SLOT(addNewDet(Qpx::Detector)));
   newDet->exec();
 }
 
@@ -484,7 +493,7 @@ void WidgetDetectors::on_pushEdit_clicked()
   int i = ixl.front().row();
 
   DialogDetector* newDet = new DialogDetector(detectors_->get(i), QDir(root_dir_), false, this);
-  connect(newDet, SIGNAL(newDetReady(Detector)), this, SLOT(addNewDet(Detector)));
+  connect(newDet, SIGNAL(newDetReady(Qpx::Detector)), this, SLOT(addNewDet(Qpx::Detector)));
   newDet->exec();
 }
 

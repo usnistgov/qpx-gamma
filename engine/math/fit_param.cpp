@@ -112,4 +112,34 @@ FitParam FitParam::enforce_policy() {
   return ret;
 }
 
+FitParam FitParam::operator^(const FitParam &other) const
+{
+  double avg = (val + other.val) * 0.5;
+  double min = avg;
+  double max = avg;
+  if (!std::isnan(uncert)) {
+    min = std::min(avg, val - 0.5 * uncert);
+    max = std::max(avg, val + 0.5 * uncert);
+  }
+  if (!std::isnan(other.uncert)) {
+    min = std::min(avg, other.val - 0.5 * other.uncert);
+    max = std::max(avg, other.val + 0.5 * other.uncert);
+  }
+  FitParam ret;
+  ret.val = avg;
+  ret.uncert = max - min;
+}
+
+bool FitParam::operator%(const FitParam &other) const
+{
+  bool ret = false;
+  if (!std::isnan(uncert) && (std::abs(val - other.val) <= uncert))
+    ret = true;
+  if (!std::isnan(other.uncert) && (std::abs(val - other.val) <= other.uncert))
+    ret = true;
+  return ret;
+}
+
+
+
 

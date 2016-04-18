@@ -171,13 +171,13 @@ void FormAnalysis2D::update_peaks() {
 }
 
 void FormAnalysis2D::update_gates(MarkerBox2D box) {
-  Marker xx;
-  xx.visible = box.visible;
-  xx.pos = box.x_c;
+  Coord xx;
+  if (box.visible)
+    xx = box.x_c;
 
-  Marker yy;
-  yy.visible = box.visible;
-  yy.pos = box.y_c;
+  Coord yy;
+  if (box.visible)
+    yy = box.y_c;
 
 //  PL_DBG << "marker from matrix " << xx.pos.energy() << " " << yy.pos.energy();
 

@@ -310,11 +310,11 @@ void FormGainMatch::do_post_processing() {
 //  update_plots();
 
   double old_gain = gains.back();
-  double delta = peak_opt_.center - peak_ref_.center;
+  double delta = peak_opt_.center.val - peak_ref_.center.val;
 
-  PL_DBG << "delta " << delta << " = " << peak_opt_.center << " - " << peak_ref_.center;
+  PL_DBG << "delta " << delta << " = " << peak_opt_.center.val << " - " << peak_ref_.center.val;
 
-  deltas.push_back(peak_opt_.center);
+  deltas.push_back(peak_opt_.center.val);
 
   double new_gain = old_gain;
   if (peak_opt_.center < peak_ref_.center)
@@ -330,7 +330,7 @@ void FormGainMatch::do_post_processing() {
     p.add_coeff(1, -50, 50, 1);
     p.add_coeff(2, -50, 50, 1);
     p.fit(gains, deltas, sigmas);
-    double predict = p.eval_inverse(peak_ref_.center/*, ui->doubleThreshold->value() / 4.0*/);
+    double predict = p.eval_inverse(peak_ref_.center.val /*, ui->doubleThreshold->value() / 4.0*/);
     if (!std::isnan(predict)) {
       new_gain = predict;
     }
@@ -341,7 +341,7 @@ void FormGainMatch::do_post_processing() {
     QVector<double> yy_sigma(yy.size(), 0);
 
     xx.push_back(new_gain);
-    yy.push_back(peak_ref_.center);
+    yy.push_back(peak_ref_.center.val);
 
     double xmin = std::numeric_limits<double>::max();
     double xmax = - std::numeric_limits<double>::max();
@@ -412,9 +412,9 @@ void FormGainMatch::update_fits() {
     std::set<double> newselr;
     for (auto &p : fitter_ref_.peaks()) {
       for (auto &s : selref)
-        if (abs(p.second.center - s) < 2) {
-          newselr.insert(p.second.center);
-          PL_DBG << "match sel ref " << p.second.center;
+        if (abs(p.second.center.val - s) < 2) {
+          newselr.insert(p.second.center.val);
+          PL_DBG << "match sel ref " << p.second.center.val;
         }
     }
 //    PL_DBG << "refsel close enough " << newselr.size();
@@ -426,9 +426,9 @@ void FormGainMatch::update_fits() {
     std::set<double> newselo;
     for (auto &p : fitter_opt_.peaks()) {
       for (auto &s : selopt)
-        if (abs(p.second.center - s) < 2) {
-          newselo.insert(p.second.center);
-          PL_DBG << "match sel opt " << p.second.center;
+        if (abs(p.second.center.val - s) < 2) {
+          newselo.insert(p.second.center.val);
+          PL_DBG << "match sel opt " << p.second.center.val;
         }
     }
 //    PL_DBG << "optsel close enough " << newselo.size();
@@ -451,7 +451,7 @@ void FormGainMatch::update_peak_selection(std::set<double> dummy) {
   if (fitter_opt_.peaks().count(*selopt.begin()))
     peak_opt_ = fitter_opt_.peaks().at(*selopt.begin());
 
-  PL_DBG << "Have one peak each " << peak_ref_.center << " " << peak_opt_.center ;
+  PL_DBG << "Have one peak each " << peak_ref_.center.to_string() << " " << peak_opt_.center.to_string() ;
 
   if ((peak_ref_.area_best.val == 0) || (peak_opt_.area_best.val == 0))
     return;
@@ -471,7 +471,7 @@ void FormGainMatch::update_peak_selection(std::set<double> dummy) {
     st->setFlags(st->flags() ^ Qt::ItemIsEditable);
     ui->tableResults->setItem(pass, 0, st);
 
-    QTableWidgetItem *ctr = new QTableWidgetItem(QString::number(peaks_[pass].center));
+    QTableWidgetItem *ctr = new QTableWidgetItem(QString::number(peaks_[pass].center.val));
     ctr->setFlags(ctr->flags() ^ Qt::ItemIsEditable);
     ui->tableResults->setItem(pass, 1, ctr);
 

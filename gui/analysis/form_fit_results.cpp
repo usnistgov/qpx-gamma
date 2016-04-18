@@ -106,8 +106,8 @@ void FormFitResults::update_data() {
 void FormFitResults::add_peak_to_table(const Qpx::Peak &p, int row, bool gray) {
   QBrush background(gray ? Qt::lightGray : Qt::white);
 
-  data_to_table(row, 0, p.center, background);
-  data_to_table(row, 1, p.energy, background);
+  data_to_table(row, 0, p.center.val, background);
+  data_to_table(row, 1, p.energy.val, background);
   data_to_table(row, 2, p.fwhm_hyp, background);
   data_to_table(row, 3, p.area_hyp.val, background);
   data_to_table(row, 4, p.cps_hyp, background);

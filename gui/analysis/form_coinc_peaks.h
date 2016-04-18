@@ -44,10 +44,11 @@ public:
   void setFit(Qpx::Fitter *);
 
   void update_spectrum();
+  void perform_fit();
 
   std::set<double> get_selected_peaks();
 
-  void make_range(Marker);
+  void make_range(Coord);
 
   void loadSettings(QSettings &settings_);
   void saveSettings(QSettings &settings_);
@@ -59,11 +60,13 @@ signals:
   void peaks_changed();
   void peak_selection_changed(std::set<double> selected_peaks);
   void range_changed(Range range);
+  void fitting_done();
 
 private slots:
   void change_range(Range range);
   void selection_changed_in_table();
   void update_peaks();
+  void fitting_finished();
 
 private:
   Ui::FormCoincPeaks *ui;

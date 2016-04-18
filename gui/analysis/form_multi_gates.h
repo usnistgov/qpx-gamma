@@ -30,7 +30,6 @@
 #include <QWidget>
 #include <QSettings>
 #include "gates.h"
-#include "marker.h"
 #include "project.h"
 #include "form_coinc_peaks.h"
 
@@ -77,7 +76,7 @@ public:
 
   void setSpectrum(Qpx::Project *newset, int64_t idx);
 
-  void make_range(Marker);
+  void make_range(Coord);
 
   void update_current_gate(Qpx::Gate);
   Qpx::Gate current_gate();
@@ -118,6 +117,10 @@ private slots:
 
   void on_pushAddGatedSpectrum_clicked();
 
+  void on_pushAuto_clicked();
+
+  void fitting_finished();
+
 private:
   Ui::FormMultiGates *ui;
   QSettings &settings_;
@@ -149,6 +152,8 @@ private:
 
   void rebuild_table(bool contents_changed);
   void make_gate();
+
+  bool auto_;
 
 };
 

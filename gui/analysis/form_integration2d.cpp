@@ -180,11 +180,11 @@ int32_t FormIntegration2D::index_of(double px, double py) {
   return -1;
 }
 
-void FormIntegration2D::make_range(Marker x, Marker y) {
+void FormIntegration2D::make_range(Coord x, Coord y) {
   ui->tableGateList->clearSelection();
 
-  range_.x_c = x.pos;
-  range_.y_c = y.pos;
+  range_.x_c = x;
+  range_.y_c = y;
   Calibration f1, f2, e1, e2;
 
   if (md_.detectors.size() > 1) {
@@ -197,22 +197,22 @@ void FormIntegration2D::make_range(Marker x, Marker y) {
   //  PL_DBG << "making 2d marker, calibs valid " << f1.valid() << " " << f2.valid();
 
   if (f1.valid()) {
-    range_.x1.set_energy(x.pos.energy() - f1.transform(x.pos.energy()) * gate_width_ * 0.5, e1);
-    range_.x2.set_energy(x.pos.energy() + f1.transform(x.pos.energy()) * gate_width_ * 0.5, e1);
+    range_.x1.set_energy(x.energy() - f1.transform(x.energy()) * gate_width_ * 0.5, e1);
+    range_.x2.set_energy(x.energy() + f1.transform(x.energy()) * gate_width_ * 0.5, e1);
   } else {
-    range_.x1.set_energy(x.pos.energy() - gate_width_ * 2, e1);
-    range_.x2.set_energy(x.pos.energy() + gate_width_ * 2, e1);
+    range_.x1.set_energy(x.energy() - gate_width_ * 2, e1);
+    range_.x2.set_energy(x.energy() + gate_width_ * 2, e1);
   }
 
   if (f2.valid()) {
-    range_.y1.set_energy(y.pos.energy() - f2.transform(y.pos.energy()) * gate_width_ * 0.5, e2);
-    range_.y2.set_energy(y.pos.energy() + f2.transform(y.pos.energy()) * gate_width_ * 0.5, e2);
+    range_.y1.set_energy(y.energy() - f2.transform(y.energy()) * gate_width_ * 0.5, e2);
+    range_.y2.set_energy(y.energy() + f2.transform(y.energy()) * gate_width_ * 0.5, e2);
   } else {
-    range_.y1.set_energy(y.pos.energy() - gate_width_ * 2, e2);
-    range_.y2.set_energy(y.pos.energy() + gate_width_ * 2, e2);
+    range_.y1.set_energy(y.energy() - gate_width_ * 2, e2);
+    range_.y2.set_energy(y.energy() + gate_width_ * 2, e2);
   }
 
-  range_.visible = (x.visible || y.visible);
+  range_.visible = !(x.null() || y.null());
   //  PL_DBG << "range visible " << range_.visible << " x" << range_.x1.energy() << "-" << range_.x2.energy()
   //         << " y" << range_.y1.energy() << "-" << range_.y2.energy();
 
@@ -306,6 +306,7 @@ void FormIntegration2D::rebuild_table(bool contents_changed) {
 
   if (contents_changed) {
     table_model_.set_data(peaks_);
+    ui->tableGateList->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   }
 
   int approved = 0;
@@ -378,14 +379,7 @@ void FormIntegration2D::on_doubleGateOn_editingFinished()
 {
   if (range_.visible && (gate_width_ != ui->doubleGateOn->value())) {
     gate_width_ =  ui->doubleGateOn->value();
-    PL_DBG << "gateon edited";
-    Marker x;
-    Marker y;
-    x.pos = range_.x_c;
-    y.pos = range_.y_c;
-    x.visible = true;
-    y.visible = true;
-    make_range(x, y);
+    make_range(range_.x_c, range_.y_c);
   }
 }
 
@@ -637,6 +631,20 @@ void FormIntegration2D::on_pushAdjust_clicked()
   adjust_x();
   adjust_y();
   adjust_x();
+
+  int32_t current = current_idx();
+
+  SinkPtr spectrum = spectra_->get_sink(current_spectrum_);
+
+  if ((current < 0) || (current >= peaks_.size()) || !spectrum)
+      return;
+
+  peaks_[current].integrate(spectrum);
+  peaks_[current].approved = true;
+
+  rebuild_table(true);
+  emit peak_selected();
+
   //redundant refreshes and signals from above calls
 }
 
@@ -677,6 +685,15 @@ void FormIntegration2D::on_pushAddPeak2d_clicked()
   ch.push_back(pk.area[1][1]);
   choose_peaks(ch);
 
+  int32_t current = current_idx();
+  SinkPtr spectrum = spectra_->get_sink(current_spectrum_);
+  if ((current >= 0) && (current < peaks_.size()) && spectrum.operator bool() ) {
+    peaks_[current].integrate(spectrum);
+    peaks_[current].approved = true;
+  }
+
+  rebuild_table(true);
+
   //  make_gates(range_);
   emit peak_selected();
 }
@@ -697,6 +714,117 @@ std::list<MarkerBox2D> FormIntegration2D::peaks() {
   }
   return ret;
 }
+
+void FormIntegration2D::on_pushTransitions_clicked()
+{
+
+  std::list<ValUncert> all_energies;
+  int total_approved = 0;
+  for (auto &p : peaks_)
+  {
+    if (!p.approved || (p.currie_quality_indicator < 1)
+        || (p.currie_quality_indicator > 2))
+      continue;
+    total_approved++;
+    all_energies.push_back(p.energy_x);
+    all_energies.push_back(p.energy_y);
+  }
+
+  std::list<std::pair<ValUncert,std::list<ValUncert>>> energies;
+  int duplicates = 0;
+  for (auto &k : all_energies) {
+    int found = 0;
+    for (auto &e: energies) {
+      if (e.first.almost(k)) {
+        e.second.push_back(k);
+        e.first = (ValUncert::merge(e.second));
+        found++;
+      }
+    }
+    if (!found)
+      energies.push_back(std::pair<ValUncert,std::list<ValUncert>>(k, std::list<ValUncert>({k})));
+    if (found > 1)
+      duplicates++;
+  }
+  all_energies.clear();
+  for (auto &e : energies)
+    all_energies.push_back(e.first);
+
+  PL_DBG << "Reduced energies=" << energies.size() << "  duplicates=" << duplicates;
+
+  std::map<ValUncert, Transition> trans_final;
+
+  for (auto &p : peaks_)
+  {
+    if (!p.approved || (p.currie_quality_indicator < 1)
+        || (p.currie_quality_indicator > 2))
+      continue;
+
+    ValUncert e1 = p.energy_x;
+    ValUncert e2 = p.energy_y;
+
+    for (auto &e : all_energies) {
+      if (e.almost(e1))
+        e1 = e;
+      if (e.almost(e2))
+        e2 = e;
+    }
+
+    PL_DBG << "energy1 generalized " << p.energy_x.to_string(6) << " --> " << e1.to_string(6);
+    PL_DBG << "energy2 generalized " << p.energy_y.to_string(6) << " --> " << e2.to_string(6);
+
+    if (!trans_final.count(e1))
+    {
+      PL_DBG << "new transition e1->e2";
+      Transition t1;
+      t1.energy = e1;
+      t1.above.push_back(TransitionNode(e2, p.net));
+      trans_final[e1] = t1;
+    } else {
+      bool has = false;
+      for (auto &to : trans_final[e1].above)
+        if (to.energy.almost(e2))
+          has = true;
+      if (!has) {
+        trans_final[e1].above.push_back(TransitionNode(e2, p.net));
+        PL_DBG << "appending e1->e2";
+      } else
+        PL_DBG << "ignoring duplicate e1->e2";
+    }
+
+    if (!trans_final.count(e2))
+    {
+      PL_DBG << "new transition e2->e1";
+      Transition t2;
+      t2.energy = e2;
+      t2.above.push_back(TransitionNode(e1, p.net));
+      trans_final[e2] = t2;
+    } else {
+      bool has = false;
+      for (auto &to : trans_final[e2].above)
+        if (to.energy.almost(e1))
+          has = true;
+      if (!has) {
+        trans_final[e2].above.push_back(TransitionNode(e1, p.net));
+        PL_DBG << "appending e2->e1";
+      } else
+        PL_DBG << "ignoring duplicate e2->e1";
+    }
+  }
+
+  PL_DBG << "Total=" << peaks_.size() << " approved=" << total_approved
+         << " final_trans.size=" << trans_final.size();
+
+  for (auto &t : trans_final) {
+    PL_DBG << "Transitions from " << t.first.val_uncert(6);
+    for (auto &to : t.second.above)
+      PL_DBG << "    -->" << to.energy.val_uncert(6)
+             << "  (Intensity: " << to.intensity.val_uncert(6) << ")";
+  }
+
+
+}
+
 
 
 
@@ -727,7 +855,7 @@ int TablePeaks2D::rowCount(const QModelIndex & /*parent*/) const
 
 int TablePeaks2D::columnCount(const QModelIndex & /*parent*/) const
 {
-  return 6;
+  return 11;
 }
 
 QVariant TablePeaks2D::data(const QModelIndex &index, int role) const
@@ -745,25 +873,31 @@ QVariant TablePeaks2D::data(const QModelIndex &index, int role) const
     case 1:
       return QVariant::fromValue(peak.y_c.energy());
     case 2:
-      return QVariant::fromValue(peak.x_c.bin(peak.x_c.bits()));
+      return QString::fromStdString(peaks_[row].energy_x.val_uncert(6)) ;
     case 3:
-      return QVariant::fromValue(peak.y_c.bin(peak.y_c.bits()));
+      return QString::fromStdString(peaks_[row].energy_y.val_uncert(6)) ;
     case 4:
-      return QString::number(peak.integral) + " +/- " + QString::number(sqrt(peak.integral));
+      return QString::fromStdString(peaks_[row].xback.val_uncert(6)) ;
     case 5:
+      return QString::fromStdString(peaks_[row].yback.val_uncert(6)) ;
+    case 6:
+      return QString::fromStdString(peaks_[row].dback.val_uncert(6)) ;
+    case 7:
+      return QString::fromStdString(peaks_[row].gross.val_uncert(6)) ;
+    case 8:
+      return QString::fromStdString(peaks_[row].net.val_uncert(6)) + " (" + QString::fromStdString(peaks_[row].net.err(5)) + ")";
+    case 9:
+      return QVariant::fromValue(peaks_[row].currie_quality_indicator);
+    case 10:
       return QVariant::fromValue(peaks_[row].approved);
-      //    case 3:
-      //      return QVariant::fromValue(gate.width_chan);
-      //    case 4:
-      //      return QVariant::fromValue(gate.width_nrg);
-      //    case 5:
-      //      return QVariant::fromValue(gate.fit_data_.peaks().size());
-      //    case 6:
-      //      if (gate.approved)
-      //        return "Yes";
-      //      else
-      //        return "...";
+
     }
+  } else if (role == Qt::BackgroundColorRole) {
+    int cqi = peaks_[row].currie_quality_indicator;
+    if ((cqi < 0) || (cqi > 2))
+      return QBrush(Qt::red);
+    else if (cqi == 2)
+      return QBrush(Qt::yellow);
   }
   return QVariant();
 }
@@ -781,21 +915,24 @@ QVariant TablePeaks2D::headerData(int section, Qt::Orientation orientation, int 
       case 1:
         return QString("Y (nrg)");
       case 2:
-        return QString("X (bin)");
+        return QString("Energy X");
       case 3:
-        return QString("Y (bin)");
+        return QString("Energy Y");
       case 4:
-        return QString("peak area");
+        return QString("xback");
       case 5:
+        return QString("yback");
+      case 6:
+        return QString("dback");
+      case 7:
+        return QString("gross");
+      case 8:
+        return QString("net");
+      case 9:
+        return QString("CQI");
+      case 10:
         return QString("approved?");
-        //      case 3:
-        //        return QString("Width (chan)");
-        //      case 4:
-        //        return QString("Width (keV)");
-        //      case 5:
-        //        return QString("Coincidences");
-        //      case 6:
-        //        return QString("Approved?");
+
       }
     } else if (orientation == Qt::Vertical) {
       return QString::number(section);
@@ -838,3 +975,4 @@ void TablePeaks2D::update() {
   emit energiesChanged();
   return true;
 }*/
+

@@ -452,8 +452,8 @@ std::vector<double> Hypermet::step_tail(std::vector<double> x) {
   return y;
 }
 
-FitParam Hypermet::area() const {
-  FitParam ret("PeakArea", 0);
+ValUncert Hypermet::area() const {
+  ValUncert ret;
   ret.val = height_.val * width_.val * sqrt(M_PI) *
       (1 +
        Lskew_amplitude.val * width_.val * Lskew_slope.val +

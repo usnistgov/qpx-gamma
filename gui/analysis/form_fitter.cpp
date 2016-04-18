@@ -314,9 +314,9 @@ void FormFitter::delete_ROI(double ROI_bin) {
   updateData();
 }
 
-void FormFitter::make_range(Marker marker) {
-  if (marker.visible)
-    createRange(marker.pos);
+void FormFitter::make_range(Coord marker) {
+  if (!marker.null())
+    createRange(marker);
   else {
     range_.visible = false;
     selected_peaks_.clear();
@@ -492,7 +492,7 @@ void FormFitter::adjust_sum4() {
   pk.construct(fit_data_->settings());
   fit_data_->replace_peak(pk);
   selected_peaks_.clear();
-  selected_peaks_.insert(pk.center);
+  selected_peaks_.insert(pk.center.val);
 
   range_.visible = false;
   hold_selection_ = true;
@@ -621,6 +621,7 @@ void FormFitter::fitting_complete() {
   ui->plot->replot();
   toggle_push();
   emit data_changed();
+  emit fitting_done();
 }
 
 void FormFitter::toggle_push() {
@@ -940,7 +941,7 @@ void FormFitter::plotRange() {
                         Qt::AlignTop | Qt::AlignLeft);
       } else if (purpose == "SUM4") {
         newButton = new QCPOverlayButton(ui->plot,
-                        QPixmap(":/icons/oxy/22/flag_yellow.png"),
+                        QPixmap(":/icons/oxy/22/flag_blue.png"),
                         "SUM4 commit", "Adjust SUM4 peak bounds",
                         Qt::AlignTop | Qt::AlignLeft);
       } else if (purpose == "background L") {
@@ -1623,11 +1624,11 @@ void FormFitter::plotRegion(double region_id, Qpx::ROI &region, QCPGraph *data_g
     else
       crs->setGraph(data_graph);
     crs->setInterpolating(true);
-    crs->setGraphKey(p.second.energy);
+    crs->setGraphKey(p.second.energy.val);
     ui->plot->addItem(crs);
     crs->updatePosition();
 
-    plotEnergyLabel(p.first, p.second.energy, crs);
+    plotEnergyLabel(p.first, p.second.energy.val, crs);
     plotPeak(region_id, p.first, p.second);
   }
 
@@ -1747,7 +1748,7 @@ void FormFitter::calc_visible() {
       prime_roi.insert(q.first);
 
     for (auto &p : q.second.peaks_) {
-      if ((p.second.energy >= minx_zoom) && (p.second.energy <= maxx_zoom))
+      if ((p.second.energy.val >= minx_zoom) && (p.second.energy.val <= maxx_zoom))
         good_peak.insert(p.first);
     }
   }
@@ -1944,7 +1945,7 @@ void FormFitter::peak_info(double bin)
 
   Hypermet hm = fit_data_->peaks().at(bin).hypermet_;
   FormPeakInfo *peakInfo = new FormPeakInfo(hm, this);
-  peakInfo->setWindowTitle("Parameters for peak at " + QString::number(fit_data_->peaks().at(bin).energy));
+  peakInfo->setWindowTitle("Parameters for peak at " + QString::number(fit_data_->peaks().at(bin).energy.val));
   int ret = peakInfo->exec();
 
   if (ret == QDialog::Accepted) {
@@ -1958,7 +1959,7 @@ void FormFitter::peak_info(double bin)
     fit_data_->replace_peak(pk);
 
     selected_peaks_.clear();
-    selected_peaks_.insert(pk.center);
+    selected_peaks_.insert(pk.center.val);
 
     hold_selection_ = true;
 

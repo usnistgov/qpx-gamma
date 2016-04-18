@@ -193,9 +193,9 @@ void FormSymmetrize2D::peak_selection_changed(std::set<double> selected_peaks)
 {
 }
 
-void FormSymmetrize2D::update_gates(Marker xx, Marker yy) {
-  make_gated_spectra();
-}
+//void FormSymmetrize2D::update_gates(Marker xx, Marker yy) {
+//  make_gated_spectra();
+//}
 
 void FormSymmetrize2D::on_pushAddGatedSpectra_clicked()
 {

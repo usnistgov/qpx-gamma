@@ -33,7 +33,8 @@
 
 #include "project.h"
 #include "thread_fitter.h"
-#include "marker.h"
+#include "coord.h"
+#include "appearance.h"
 
 namespace Ui {
 class FormFitter;
@@ -88,7 +89,7 @@ public:
   void clearSelection();
   std::set<double> get_selected_peaks();
 
-  void make_range(Marker);
+  void make_range(Coord);
   void set_range(Range);
 
   void perform_fit();
@@ -105,6 +106,7 @@ signals:
   void peak_selection_changed(std::set<double> selected_peaks);
   void range_changed(Range range);
   void data_changed();
+  void fitting_done();
 
 private slots:
   void plot_mouse_clicked(double x, double y, QMouseEvent *event, bool channels);

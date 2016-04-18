@@ -76,8 +76,8 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Dete
 
   //2d
   ui->Plot2d->setSpectra(spectra_);
-  connect(ui->Plot1d, SIGNAL(marker_set(Marker)), ui->Plot2d, SLOT(set_marker(Marker)));
-  connect(ui->Plot2d, SIGNAL(markers_set(Marker,Marker)), ui->Plot1d, SLOT(set_markers2d(Marker,Marker)));
+  connect(ui->Plot1d, SIGNAL(marker_set(Coord)), ui->Plot2d, SLOT(set_marker(Coord)));
+  connect(ui->Plot2d, SIGNAL(markers_set(Coord,Coord)), ui->Plot1d, SLOT(set_markers2d(Coord,Coord)));
   connect(ui->Plot2d, SIGNAL(requestAnalysis(int64_t)), this, SLOT(reqAnal2D(int64_t)));
   connect(ui->Plot2d, SIGNAL(requestSymmetrize(int64_t)), this, SLOT(reqSym2D(int64_t)));
   ui->Plot2d->setDetDB(detectors_);

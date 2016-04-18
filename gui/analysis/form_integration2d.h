@@ -29,9 +29,10 @@
 #include <QItemSelection>
 #include <QWidget>
 #include <QSettings>
-#include "marker.h"
+#include "peak2d.h"
 #include "project.h"
 #include "gamma_fitter.h"
+#include "transition.h"
 
 namespace Ui {
 class FormIntegration2D;
@@ -82,7 +83,7 @@ public:
   void update_current_peak(MarkerBox2D);
 //  MarkerBox2D current_peak();
 
-  void make_range(Marker x, Marker y);
+  void make_range(Coord x, Coord y);
 
   void choose_peaks(std::list<MarkerBox2D>);
 
@@ -98,6 +99,7 @@ signals:
   void peak_selected();
   void boxes_made();
   void range_changed(MarkerBox2D);
+  void transitions(std::map<double, Qpx::Transition>);
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -113,6 +115,8 @@ private slots:
   void on_pushShowDiagonal_clicked();
 
   void on_pushRefelct_clicked();
+
+  void on_pushTransitions_clicked();
 
 private:
   Ui::FormIntegration2D *ui;

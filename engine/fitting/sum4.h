@@ -26,6 +26,7 @@
 #include <vector>
 #include <cstdint>
 #include "polynomial.h"
+#include "val_uncert.h"
 
 namespace Qpx {
 
@@ -60,18 +61,17 @@ class SUM4 {
 
 public:
 
-  FitParam background_area;
-//  double background_area, background_variance;
   std::vector<double> bx, by;
 
   int32_t Lpeak, Rpeak;
   double peak_width;
-  FitParam peak_area;
-  //double peak_area, peak_variance;
-  FitParam centroid;
-//  double centroid, centroid_variance;
   double fwhm;
-//  double err;
+
+  ValUncert gross_area;
+  ValUncert background_area;
+  ValUncert peak_area;
+  ValUncert centroid;
+
   int currie_quality_indicator;
 
   SUM4();

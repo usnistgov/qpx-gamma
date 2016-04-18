@@ -16,63 +16,38 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Peak
+ *      Qpx::Gates
  *
  ******************************************************************************/
 
-#ifndef QPX_PEAK_H
-#define QPX_PEAK_H
+#ifndef QPX_TRANSITION_H
+#define QPX_TRANSITION_H
 
 #include <vector>
-#include <set>
-#include "polynomial.h"
-#include "hypermet.h"
-#include "detector.h"
-#include "sum4.h"
+#include <string>
+#include "val_uncert.h"
 
 namespace Qpx {
 
-class Peak {
+struct TransitionNode {
+  TransitionNode(ValUncert e, ValUncert i) :
+    energy(e), intensity(i) {}
+
+  ValUncert energy;
+  ValUncert intensity;
+};
+
+class Transition {
+
 public:
-  Peak()
-      : center(0)
-      , energy(0)
-      , fwhm_sum4(0)
-      , fwhm_hyp (0)
-      , intensity_theoretical_(0.0)
-      , efficiency_relative_(0.0)
-  {}
 
+  ValUncert energy;
 
-  void construct(FitSettings fs);
+  std::string motivation;
 
-  std::vector<double> hr_peak_, hr_fullfit_;
+  std::list<TransitionNode> above;
+  std::list<TransitionNode> below;
 
-  SUM4 sum4_;
-  Hypermet hypermet_;
-
-  ValUncert center, energy;
-
-  double fwhm_sum4, fwhm_hyp;
-
-  ValUncert area_sum4, area_hyp, area_best;
-  double cps_sum4, cps_hyp, cps_best;
-
-  double intensity_theoretical_, efficiency_relative_;
-  
-
-  bool operator<(const Peak &other) const {
-    return (center < other.center);
-  }
-
-  bool operator==(const Peak &other) const {
-    return (center == other.center);
-  }
-
-  bool operator>(const Peak &other) const {
-    return (center > other.center);
-  }
-  
 };
 
 }

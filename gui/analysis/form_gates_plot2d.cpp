@@ -33,8 +33,10 @@ FormGatesPlot2D::FormGatesPlot2D(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  connect(ui->coincPlot, SIGNAL(markers_set(Marker,Marker)), this, SLOT(markers_moved(Marker,Marker)));
+  connect(ui->coincPlot, SIGNAL(markers_set(Coord,Coord)), this, SLOT(markers_moved(Coord,Coord)));
   connect(ui->coincPlot, SIGNAL(stuff_selected()), this, SLOT(selection_changed()));
+
+  ui->coincPlot->set_antialiased(false);
 
   adjrange = 0;
 
@@ -232,11 +234,11 @@ void FormGatesPlot2D::update_plot() {
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormGatesPlot2D::markers_moved(Marker x, Marker y) {
+void FormGatesPlot2D::markers_moved(Coord x, Coord y) {
   MarkerBox2D m = my_marker_;
-  m.visible = x.visible || y.visible;
-  m.x_c = x.pos;
-  m.y_c = y.pos;
+  m.visible = !(x.null() || y.null());
+  m.x_c = x;
+  m.y_c = y;
 
   if (gates_movable_) {
     my_marker_ = m;

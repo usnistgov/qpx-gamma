@@ -52,6 +52,11 @@ public:
 
   FitParam enforce_policy();
 
+  FitParam operator ^ (const FitParam &other) const;
+  bool operator % (const FitParam &other) const;
+  bool operator == (const FitParam &other) const {return val == other.val;}
+  bool operator < (const FitParam &other) const {return val < other.val;}
+
   std::string name() const {return name_;}
   std::string fityk_name(int function_num) const;
 

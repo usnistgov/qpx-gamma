@@ -27,7 +27,8 @@
 #include "qsquarecustomplot.h"
 #include "qtcolorpicker.h"
 #include "widget_selector.h"
-#include "marker.h"
+#include "coord.h"
+#include "appearance.h"
 #include <unordered_map>
 
 namespace Ui {
@@ -70,11 +71,11 @@ public:
   void set_gates_movable(bool);
 
 public slots:
-  void set_marker(Marker n);
-  void set_markers(Marker x, Marker y);
+  void set_marker(Coord n);
+  void set_markers(Coord x, Coord y);
 
 signals:
-  void markers_set(Marker x, Marker y);
+  void markers_set(Coord x, Coord y);
   void requestAnalysis(int64_t idx);
   void requestSymmetrize(int64_t idx);
 
@@ -84,7 +85,7 @@ private slots:
   void on_pushDetails_clicked();
   void spectrumDetailsClosed(bool);
 
-  void markers_moved(Marker x, Marker y);
+  void markers_moved(Coord x, Coord y);
   void analyse();
 
   void choose_spectrum(SelectorItem item);
@@ -107,8 +108,8 @@ private:
   uint32_t adjrange;
 
   //markers
-  Marker my_marker, //template(style)
-    ext_marker, x_marker, y_marker; //actual data
+  AppearanceProfile my_marker;
+  Coord  ext_marker, x_marker, y_marker; //actual data
 
   //scaling
   int bits;

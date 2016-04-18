@@ -31,6 +31,7 @@
 #include "calibration.h"
 #include "fit_settings.h"
 #include "gaussian.h"
+#include "val_uncert.h"
 
 
 class Hypermet {
@@ -60,7 +61,7 @@ public:
 
   std::vector<double> peak(std::vector<double> x);
   std::vector<double> step_tail(std::vector<double> x);
-  FitParam area() const;
+  ValUncert area() const;
 
   FitParam center_, height_, width_,
            Lskew_amplitude, Lskew_slope,

@@ -381,7 +381,7 @@ void FormManip1D::removeMovingMarker(double x) {
 }
 
 void FormManip1D::replot_markers() {
-  std::list<Marker> markers;
+  std::list<Marker1D> markers;
 
   markers.push_back(moving);
 

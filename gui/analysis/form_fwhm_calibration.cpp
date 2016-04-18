@@ -186,7 +186,7 @@ void FormFwhmCalibration::select_in_plot() {
   std::set<double> selected_energies;
   for (auto &p : fit_data_.peaks())
     if (selected_peaks_.count(p.first))
-      selected_energies.insert(p.second.energy);
+      selected_energies.insert(p.second.energy.val);
   ui->PlotCalib->set_selected_pts(selected_energies);
   ui->PlotCalib->redraw();
 }
@@ -194,8 +194,8 @@ void FormFwhmCalibration::select_in_plot() {
 void FormFwhmCalibration::add_peak_to_table(const Qpx::Peak &p, int row, bool gray) {
   QBrush background(gray ? Qt::lightGray : Qt::white);
 
-  data_to_table(row, 0, p.center, background);
-  data_to_table(row, 1, p.energy, background);
+  data_to_table(row, 0, p.center.val, background);
+  data_to_table(row, 1, p.energy.val, background);
   data_to_table(row, 2, p.fwhm_sum4, background);
   data_to_table(row, 3, p.sum4_.peak_area.err(), background);
   data_to_table(row, 4, p.sum4_.currie_quality_indicator, background);
@@ -220,7 +220,7 @@ void FormFwhmCalibration::replot_calib() {
   double xmax = - std::numeric_limits<double>::max();
 
   for (auto &q : fit_data_.peaks()) {
-    double x = q.second.energy;
+    double x = q.second.energy.val;
     double y = q.second.fwhm_hyp;
     double sigma = q.second.hypermet_.width_.uncert * 2 * sqrt(log(2));
 
@@ -269,7 +269,7 @@ void FormFwhmCalibration::selection_changed_in_plot() {
   std::set<double> selected_energies = ui->PlotCalib->get_selected_pts();
   selected_peaks_.clear();
   for (auto &p : fit_data_.peaks())
-    if (selected_energies.count(p.second.energy))
+    if (selected_energies.count(p.second.energy.val))
       selected_peaks_.insert(p.first);
 
   select_in_table();
@@ -321,7 +321,7 @@ void FormFwhmCalibration::fit_calibration()
   for (auto &q : fit_data_.peaks()) {
     if (( (1 - q.second.hypermet_.rsq_) * 100 < ui->doubleMaxFitErr->value())
         && (q.second.hypermet_.width_.err() < ui->doubleMaxWidthErr->value())) {
-      xx.push_back(q.second.energy);
+      xx.push_back(q.second.energy.val);
       yy.push_back(q.second.fwhm_hyp);
       yy_sigma.push_back(q.second.hypermet_.width_.uncert * 2 * sqrt(log(2)));
     }

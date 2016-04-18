@@ -33,7 +33,7 @@ FormPlot2D::FormPlot2D(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  connect(ui->coincPlot, SIGNAL(markers_set(Marker,Marker)), this, SLOT(markers_moved(Marker,Marker)));
+  connect(ui->coincPlot, SIGNAL(markers_set(Coord,Coord)), this, SLOT(markers_moved(Coord,Coord)));
 
   ui->spectrumSelector->set_only_one(true);
   connect(ui->spectrumSelector, SIGNAL(itemSelected(SelectorItem)), this, SLOT(choose_spectrum(SelectorItem)));
@@ -115,9 +115,9 @@ void FormPlot2D::reset_content() {
   //PL_DBG << "reset content";
   ui->coincPlot->reset_content();
   ui->coincPlot->refresh();
-  x_marker.visible = false;
-  y_marker.visible = false;
-  ext_marker.visible = false;
+  x_marker = Coord();
+  y_marker = Coord();
+  ext_marker = Coord();
   current_spectrum_ = -1;
   replot_markers();
 }
@@ -215,22 +215,22 @@ void FormPlot2D::replot_markers() {
 
   //PL_DBG << "FormPlot2d marker width = " << width;
 
-  gate.x_c = x_marker.pos;
-  gate.y_c = y_marker.pos;
+  gate.x_c = x_marker;
+  gate.y_c = y_marker;
 
-  gate.visible = y_marker.visible;
+  gate.visible = !y_marker.null();
   gate.x1.set_bin(0, bits, calib_x_);
   gate.x2.set_bin(adjrange, bits, calib_x_);
-  gate.y1.set_bin(y_marker.pos.bin(bits), bits, calib_x_);
-  gate.y2.set_bin(y_marker.pos.bin(bits), bits, calib_x_);
+  gate.y1.set_bin(y_marker.bin(bits), bits, calib_y_);
+  gate.y2.set_bin(y_marker.bin(bits), bits, calib_y_);
   gatey = gate;
   boxes.push_back(gate);
 
-  gate.visible = x_marker.visible;
-  gate.x1.set_bin(x_marker.pos.bin(bits), bits, calib_x_);
-  gate.x2.set_bin(x_marker.pos.bin(bits), bits, calib_x_);
-  gate.y1.set_bin(0, bits, calib_x_);
-  gate.y2.set_bin(adjrange, bits, calib_x_);
+  gate.visible = !x_marker.null();
+  gate.x1.set_bin(x_marker.bin(bits), bits, calib_x_);
+  gate.x2.set_bin(x_marker.bin(bits), bits, calib_x_);
+  gate.y1.set_bin(0, bits, calib_y_);
+  gate.y2.set_bin(adjrange, bits, calib_y_);
   gatex = gate;
   boxes.push_back(gate);
 
@@ -251,18 +251,18 @@ void FormPlot2D::replot_markers() {
 //    label.text = QString::number(x_marker.pos.energy());
 //    labels.push_back(label);
 //  }
-  if (y_marker.visible) {
+  if (!y_marker.null()) {
     label.x = gatex.x2;
     label.y = gatey.y_c;
     label.vertical = false;
-    label.text = QString::number(y_marker.pos.energy());
+    label.text = QString::number(y_marker.energy());
     labels.push_back(label);
   }
-  if (x_marker.visible) {
+  if (!x_marker.null()) {
     label.x = gatex.x_c;
     label.y = gatey.y2;
     label.vertical = true;
-    label.text = QString::number(x_marker.pos.energy());
+    label.text = QString::number(x_marker.energy());
     labels.push_back(label);
   }
 
@@ -346,26 +346,27 @@ void FormPlot2D::update_plot(bool force) {
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormPlot2D::markers_moved(Marker x, Marker y) {
+void FormPlot2D::markers_moved(Coord x, Coord y) {
   x_marker = x;
   y_marker = y;
-  ext_marker.visible = ext_marker.visible & x.visible;
+  if (x.null() || y.null())
+    ext_marker = Coord();
   //PL_DBG << "markers changed";
   replot_markers();
 
   emit markers_set(x, y);
 }
 
-void FormPlot2D::set_marker(Marker n) {
+void FormPlot2D::set_marker(Coord n) {
   ext_marker = n;
-  if (!ext_marker.visible) {
-    x_marker.visible = false;
-    y_marker.visible = false;
+  if (n.null()) {
+    x_marker = Coord();
+    y_marker = Coord();
   }
   replot_markers();
 }
 
-void FormPlot2D::set_markers(Marker x, Marker y) {
+void FormPlot2D::set_markers(Coord x, Coord y) {
   x_marker = x;
   y_marker = y;
 

@@ -47,6 +47,7 @@ FormCoincPeaks::FormCoincPeaks(QWidget *parent) :
   connect(ui->plotPeaks, SIGNAL(range_changed(Range)), this, SLOT(change_range(Range)));
   connect(ui->plotPeaks, SIGNAL(peak_selection_changed(std::set<double>)), this, SLOT(update_selection(std::set<double>)));
   connect(ui->plotPeaks, SIGNAL(data_changed()), this, SLOT(update_peaks()));
+  connect(ui->plotPeaks, SIGNAL(fitting_done()), this, SLOT(fitting_finished()));
 
 //  QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tablePeaks);
 //  connect(shortcut, SIGNAL(activated()), this, SLOT(remove_peak()));
@@ -58,6 +59,11 @@ FormCoincPeaks::FormCoincPeaks(QWidget *parent) :
 FormCoincPeaks::~FormCoincPeaks()
 {
   delete ui;
+}
+
+void FormCoincPeaks::perform_fit()
+{
+  ui->plotPeaks->perform_fit();
 }
 
 //void FormCoincPeaks::remove_peak() {
@@ -90,6 +96,11 @@ void FormCoincPeaks::setFit(Qpx::Fitter* fit) {
   ui->plotPeaks->update_spectrum();
 }
 
+void FormCoincPeaks::fitting_finished()
+{
+  emit fitting_done();
+}
+
 std::set<double> FormCoincPeaks::get_selected_peaks() {
   return ui->plotPeaks->get_selected_peaks();
 }
@@ -106,7 +117,7 @@ void FormCoincPeaks::saveSettings(QSettings &settings_) {
   settings_.endGroup();
 }
 
-void FormCoincPeaks::make_range(Marker marker) {
+void FormCoincPeaks::make_range(Coord marker) {
   ui->plotPeaks->make_range(marker);
 }
 
@@ -155,7 +166,7 @@ void FormCoincPeaks::update_table(bool contents_changed) {
   ui->tablePeaks->clearSelection();
   int i = 0;
   for (auto &q : fit_data_->peaks()) {
-    if (selected_peaks_.count(q.second.center) > 0) {
+    if (selected_peaks_.count(q.second.center.val) > 0) {
       ui->tablePeaks->selectRow(i);
     }
     ++i;
@@ -169,8 +180,8 @@ void FormCoincPeaks::update_table(bool contents_changed) {
 void FormCoincPeaks::add_peak_to_table(const Qpx::Peak &p, int row, QColor bckg) {
   QBrush background(bckg);
 
-  QTableWidgetItem *center = new QTableWidgetItem(QString::number(p.center));
-  center->setData(Qt::EditRole, QVariant::fromValue(p.center));
+  QTableWidgetItem *center = new QTableWidgetItem(QString::number(p.center.val));
+  center->setData(Qt::EditRole, QVariant::fromValue(p.center.val));
   center->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 0, center);
 
@@ -178,7 +189,7 @@ void FormCoincPeaks::add_peak_to_table(const Qpx::Peak &p, int row, QColor bckg)
 //  edges->setData(Qt::BackgroundRole, background);
 //  ui->tablePeaks->setItem(row, 1, edges);
 
-  QTableWidgetItem *nrg = new QTableWidgetItem(QString::number(p.energy));
+  QTableWidgetItem *nrg = new QTableWidgetItem(QString::number(p.energy.val));
   nrg->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 1, nrg);
 
@@ -186,23 +197,10 @@ void FormCoincPeaks::add_peak_to_table(const Qpx::Peak &p, int row, QColor bckg)
   fwhm->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 2, fwhm);
 
-  if (p.area_sum4.val != 0) {
-    QTableWidgetItem *area_net = new QTableWidgetItem(QString::number(p.area_sum4.val));
-    area_net->setData(Qt::BackgroundRole, background);
-    ui->tablePeaks->setItem(row, 3, area_net);
+  QTableWidgetItem *area_net = new QTableWidgetItem(QString::number(p.area_best.val));
+  area_net->setData(Qt::BackgroundRole, background);
+  ui->tablePeaks->setItem(row, 3, area_net);
 
-//    QTableWidgetItem *cps_net = new QTableWidgetItem(QString::number(p.cts_per_sec_net_));
-//    cps_net->setData(Qt::BackgroundRole, background);
-//    ui->tablePeaks->setItem(row, 5, cps_net);
-  } else {
-    QTableWidgetItem *area_gauss = new QTableWidgetItem(QString::number(p.area_hyp.val));
-    area_gauss->setData(Qt::BackgroundRole, background);
-    ui->tablePeaks->setItem(row, 3, area_gauss);
-
-//    QTableWidgetItem *cps_gauss = new QTableWidgetItem(QString::number(p.cts_per_sec_gauss_));
-//    cps_gauss->setData(Qt::BackgroundRole, background);
-//    ui->tablePeaks->setItem(row, 5, cps_gauss);
-  }
 }
 
 void FormCoincPeaks::selection_changed_in_table() {

@@ -25,7 +25,8 @@
 #include <QWidget>
 #include "qsquarecustomplot.h"
 #include "daq_sink.h"
-#include "marker.h"
+#include "peak2d.h"
+#include "appearance.h"
 
 namespace Ui {
 class WidgetPlot2D;
@@ -52,6 +53,7 @@ public:
   void set_gradient(QString);
   void set_zoom(double);
   void set_show_legend(bool);
+  void set_antialiased(bool);
   QString scale_type();
   QString gradient();
   double zoom();
@@ -66,7 +68,7 @@ public slots:
   void zoom_out();
 
 signals:
-  void markers_set(Marker x, Marker y);
+  void markers_set(Coord x, Coord y);
   void stuff_selected();
 
 private slots:
@@ -100,7 +102,7 @@ private:
   std::list<MarkerLabel2D> labels_;
   MarkerBox2D range_;
 
-  Marker my_marker;
+  AppearanceProfile marker_looks;
 
   bool show_labels_, antialiased_;
 

@@ -38,6 +38,13 @@
         <enum>QLayout::SetMaximumSize</enum>
        </property>
        <item>
+        <widget class="QPushButton" name="pushAuto">
+         <property name="text">
+          <string>Auto!</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <layout class="QHBoxLayout" name="horizontalLayout_5">
          <item>
           <widget class="QPushButton" name="pushRemove">
