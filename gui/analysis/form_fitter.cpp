@@ -593,6 +593,9 @@ void FormFitter::replace_peaks(std::vector<Qpx::Peak> pks) {
 }
 
 void FormFitter::fit_updated(Qpx::Fitter fitter) {
+//  while (player->state() == QMediaPlayer::PlayingState)
+//    player->stop();
+
 //  if (player->state() != QMediaPlayer::PlayingState) {
 //    player->setMedia(QUrl("qrc:/sounds/laser6.wav"));
 //    player->setVolume(100);
@@ -600,6 +603,7 @@ void FormFitter::fit_updated(Qpx::Fitter fitter) {
 //    player->play();
 ////    while (player->state() == QMediaPlayer::PlayingState) {}
 //  }
+
   *fit_data_ = fitter;
   toggle_push();
   updateData();;
@@ -610,11 +614,13 @@ void FormFitter::fitting_complete() {
 //  while (player->state() == QMediaPlayer::PlayingState)
 //    player->stop();
 
-//  player->setMedia(QUrl("qrc:/sounds/laser12.wav"));
-//  player->setVolume(100);
-//  player->setPosition(0);
-//  player->play();
+//  if (player->state() != QMediaPlayer::PlayingState) {
+//    player->setMedia(QUrl("qrc:/sounds/laser12.wav"));
+//    player->setVolume(100);
+//    player->setPosition(0);
+//    player->play();
 ////    while (player->state() == QMediaPlayer::PlayingState) {}
+//  }
 
   busy_= false;
   calc_visible();
