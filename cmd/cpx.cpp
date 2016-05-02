@@ -250,13 +250,14 @@ bool Cpx::save_qpx(std::vector<std::string> &tokens) {
 }
 
 bool Cpx::boot(std::vector<std::string> &tokens) {
-  if (tokens.size() < 1) {
-    PL_ERR << "<cpx> expected syntax: boot /home/user/qpxdata";
+  if (tokens.size() < 2) {
+    PL_ERR << "<cpx> expected syntax: boot [path/profile.set] [path/settingsdir]";
     return false;
   }
-  std::string data_dir(tokens[0]);
+  std::string profile(tokens[0]);
+  std::string settings_dir(tokens[1]);
 
-  engine_.initialize(data_dir + + "/qpx_settings.set");
+  engine_.initialize(profile, settings_dir);
 
   if (engine_.boot()) {
     engine_.get_all_settings();
@@ -269,7 +270,7 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
   std::vector<Detector> dets = engine_.get_detectors();
 
   XMLableDB<Detector> detectors_("Detectors");
-  detectors_.read_xml(data_dir + "/default_detectors.det");
+  detectors_.read_xml(settings_dir + "/default_detectors.det");
   if (detectors_.empty()) {
     PL_ERR << "<cpx> bad detector db";
     return false;

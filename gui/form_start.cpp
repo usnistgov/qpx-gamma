@@ -23,30 +23,26 @@
 #include "form_start.h"
 #include <QBoxLayout>
 
+
 FormStart::FormStart(ThreadRunner &thread,
-                     QSettings &settings,
                      XMLableDB<Qpx::Detector> &detectors,
-                     QString profile,
-                     bool boot,
                      QWidget *parent)
   : QWidget(parent)
   , runner_thread_(thread)
-  , settings_(settings)
   , detectors_(detectors)
-  , profile_path_(profile)
   , exiting(false)
 {
-  this->setWindowTitle("Settings");
+  this->setWindowTitle("DAQ Settings");
 
   connect(&thread, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)),
           this, SLOT(update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)));
 
-  formOscilloscope = new FormOscilloscope(runner_thread_, settings);
+  formOscilloscope = new FormOscilloscope(runner_thread_);
   connect(formOscilloscope, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
   connect(this, SIGNAL(toggle_push_(bool,Qpx::SourceStatus)), formOscilloscope, SLOT(toggle_push(bool,Qpx::SourceStatus)));
   formOscilloscope->setVisible(false);
 
-  formSettings = new FormSystemSettings(runner_thread_, detectors_, settings_);
+  formSettings = new FormSystemSettings(runner_thread_, detectors_);
   connect(formSettings, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO_(bool)));
   connect(formSettings, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
   connect(formSettings, SIGNAL(gain_matching_requested()), this, SLOT(request_gain_matching()));
@@ -62,15 +58,10 @@ FormStart::FormStart(ThreadRunner &thread,
   lo->addWidget(formSettings);
 
   this->setLayout(lo);
-
-  loadSettings();
-
-  runner_thread_.do_initialize(profile_path_, boot);
 }
 
 FormStart::~FormStart()
 {
-  //  delete ui;
 }
 
 void FormStart::update(Qpx::Setting tree, std::vector<Qpx::Detector> dets, Qpx::SourceStatus status) {
@@ -84,7 +75,6 @@ void FormStart::update(Qpx::Setting tree, std::vector<Qpx::Detector> dets, Qpx::
 
 void FormStart::closeEvent(QCloseEvent *event) {
   if (exiting) {
-    saveSettings();
     formSettings->close();
     formOscilloscope->close();
     event->accept();
@@ -116,17 +106,6 @@ void FormStart::settings_updated() {
 
 void FormStart::detectors_updated() {
   emit update_dets();
-}
-
-void FormStart::loadSettings() {
-  settings_.beginGroup("Program");
-  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
-  settings_.endGroup();
-}
-
-void FormStart::saveSettings() {
-
 }
 
 void FormStart::request_gain_matching() {

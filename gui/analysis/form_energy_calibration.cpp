@@ -25,11 +25,12 @@
 #include "ui_form_energy_calibration.h"
 #include "gamma_fitter.h"
 #include "qt_util.h"
+#include <QSettings>
 
-FormEnergyCalibration::FormEnergyCalibration(QSettings &settings, XMLableDB<Qpx::Detector>& dets, Qpx::Fitter &fit, QWidget *parent) :
+
+FormEnergyCalibration::FormEnergyCalibration(XMLableDB<Qpx::Detector>& dets, Qpx::Fitter &fit, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormEnergyCalibration),
-  settings_(settings),
   detectors_(dets),
   fit_data_(fit)
 {
@@ -84,6 +85,8 @@ bool FormEnergyCalibration::save_close() {
 }
 
 void FormEnergyCalibration::loadSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Program");
   settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
@@ -100,6 +103,7 @@ void FormEnergyCalibration::loadSettings() {
 }
 
 void FormEnergyCalibration::saveSettings() {
+  QSettings settings_;
 
   settings_.beginGroup("Energy_calibration");
   settings_.setValue("fit_function_terms", ui->spinTerms->value());

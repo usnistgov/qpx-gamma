@@ -25,12 +25,13 @@
 #include "ui_form_fit_results.h"
 #include "gamma_fitter.h"
 #include "qt_util.h"
+#include <QSettings>
 
-FormFitResults::FormFitResults(QSettings &settings, Qpx::Fitter &fit, QWidget *parent) :
+
+FormFitResults::FormFitResults(Qpx::Fitter &fit, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormFitResults),
-  fit_data_(fit),
-  settings_(settings)
+  fit_data_(fit)
 {
   ui->setupUi(this);
 
@@ -60,8 +61,9 @@ bool FormFitResults::save_close() {
 }
 
 void FormFitResults::loadSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Program");
-  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
@@ -71,6 +73,7 @@ void FormFitResults::loadSettings() {
 }
 
 void FormFitResults::saveSettings() {
+  QSettings settings_;
 
   settings_.beginGroup("peak_fitter");
   settings_.endGroup();

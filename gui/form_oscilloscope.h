@@ -24,7 +24,6 @@
 #define FORM_OSCILlOSCOPE_H
 
 #include <QWidget>
-#include <QSettings>
 #include "thread_runner.h"
 #include "widget_plot_multi1d.h"
 #include "widget_selector.h"
@@ -38,7 +37,7 @@ class FormOscilloscope : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormOscilloscope(ThreadRunner&, QSettings&, QWidget *parent = 0);
+  explicit FormOscilloscope(ThreadRunner&, QWidget *parent = 0);
   ~FormOscilloscope();
 
 signals:
@@ -70,8 +69,6 @@ private:
   ThreadRunner &runner_thread_;
 
   std::vector<Qpx::Trace> traces_;
-
-  QSettings &settings_;
 
   void loadSettings();
   void saveSettings();

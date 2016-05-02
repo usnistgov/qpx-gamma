@@ -29,13 +29,14 @@
 #include "custom_timer.h"
 #include "form_daq_settings.h"
 #include "qt_util.h"
+#include <QSettings>
+
 
 using namespace Qpx;
 
-FormMcaDaq::FormMcaDaq(ThreadRunner &thread, QSettings &settings, XMLableDB<Detector>& detectors,
+FormMcaDaq::FormMcaDaq(ThreadRunner &thread, XMLableDB<Detector>& detectors,
                        std::vector<Detector>& current_dets, QWidget *parent) :
   QWidget(parent),
-  settings_(settings),
   spectra_templates_("SpectrumTemplates"),
   interruptor_(false),
   spectra_(),
@@ -160,12 +161,14 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
 }
 
 void FormMcaDaq::loadSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Program");
-  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+  profile_directory_ = settings_.value("profile_directory", QDir::homePath() + "/qpx/settings").toString();
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
-  spectra_templates_.read_xml(settings_directory_.toStdString() + "/default_spectra.tem");
+  spectra_templates_.read_xml(profile_directory_.toStdString() + "/default_sinks.tem");
 
   settings_.beginGroup("McaDaq");
   ui->timeDuration->set_total_seconds(settings_.value("run_secs", 60).toULongLong());
@@ -191,6 +194,12 @@ void FormMcaDaq::loadSettings() {
 }
 
 void FormMcaDaq::saveSettings() {
+  QSettings settings_;
+
+  settings_.beginGroup("Program");
+  settings_.setValue("save_directory", data_directory_);
+  settings_.endGroup();
+
   settings_.beginGroup("McaDaq");
   settings_.setValue("run_secs", QVariant::fromValue(ui->timeDuration->total_seconds()));
   settings_.setValue("run_indefinite", ui->toggleIndefiniteRun->isChecked());
@@ -325,7 +334,7 @@ void FormMcaDaq::after_export() {
 void FormMcaDaq::on_pushEditSpectra_clicked()
 {
   DialogSpectraTemplates* newDialog = new DialogSpectraTemplates(spectra_templates_, current_dets_,
-                                                                 settings_directory_, this);
+                                                                 profile_directory_, this);
   newDialog->exec();
 }
 
@@ -341,7 +350,7 @@ void FormMcaDaq::on_pushMcaStart_clicked()
       start_DAQ();
   } else {
     DialogSpectraTemplates* newDialog = new DialogSpectraTemplates(spectra_templates_, current_dets_,
-                                                                   settings_directory_, this);
+                                                                   profile_directory_, this);
     connect(newDialog, SIGNAL(accepted()), this, SLOT(start_DAQ()));
     newDialog->exec();
   }
@@ -473,9 +482,10 @@ void FormMcaDaq::update_data_dir(QString filename) {
   QFileInfo file(filename);
   if (file.absoluteDir().isReadable()) {
     data_directory_ = file.absoluteDir().absolutePath();
-    settings_.beginGroup("Program");
-    settings_.setValue("save_directory", data_directory_);
-    settings_.endGroup();
+//    QSettings settings_;
+//    settings_.beginGroup("Program");
+//    settings_.setValue("save_directory", data_directory_);
+//    settings_.endGroup();
   }
   //propagate to other gui elements?
 }
@@ -519,7 +529,7 @@ void FormMcaDaq::reqAnal(int64_t idx) {
   this->setCursor(Qt::WaitCursor);
 
   if (my_analysis_ == nullptr) {
-    my_analysis_ = new FormAnalysis1D(settings_, detectors_, this);
+    my_analysis_ = new FormAnalysis1D(detectors_, this);
     connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_, SLOT(update_spectrum()));
     connect(my_analysis_, SIGNAL(destroyed()), this, SLOT(analysis_destroyed()));
   }
@@ -544,7 +554,7 @@ void FormMcaDaq::reqAnal2D(int64_t idx) {
   this->setCursor(Qt::WaitCursor);
 
   if (my_analysis_2d_ == nullptr) {
-    my_analysis_2d_ = new FormAnalysis2D(settings_, detectors_);
+    my_analysis_2d_ = new FormAnalysis2D(detectors_);
     //connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_2d_, SLOT(update_spectrum()));
     connect(my_analysis_2d_, SIGNAL(destroyed()), this, SLOT(analysis2d_destroyed()));
     connect(my_analysis_2d_, SIGNAL(spectraChanged()), this, SLOT(updateSpectraUI()));
@@ -566,7 +576,7 @@ void FormMcaDaq::reqSym2D(int64_t idx) {
   this->setCursor(Qt::WaitCursor);
 
   if (my_symmetrization_2d_ == nullptr) {
-    my_symmetrization_2d_ = new FormSymmetrize2D(settings_, detectors_, this);
+    my_symmetrization_2d_ = new FormSymmetrize2D(detectors_, this);
     //connect(&plot_thread_, SIGNAL(plot_ready()), my_symmetrization_2d_, SLOT(update_spectrum()));
     connect(my_symmetrization_2d_, SIGNAL(destroyed()), this, SLOT(sym2d_destroyed()));
     connect(my_symmetrization_2d_, SIGNAL(spectraChanged()), this, SLOT(updateSpectraUI()));
@@ -584,7 +594,7 @@ void FormMcaDaq::reqEffCal(QString name)
   this->setCursor(Qt::WaitCursor);
 
   if (my_eff_cal_ == nullptr) {
-    my_eff_cal_ = new FormEfficiencyCalibration(settings_, detectors_, this);
+    my_eff_cal_ = new FormEfficiencyCalibration(detectors_, this);
     connect(&plot_thread_, SIGNAL(plot_ready()), my_eff_cal_, SLOT(update_spectrum()));
     connect(my_eff_cal_, SIGNAL(destroyed()), this, SLOT(analysis_destroyed()));
   }

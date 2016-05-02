@@ -20,6 +20,7 @@
  *
  ******************************************************************************/
 
+#include <QSettings>
 #include <utility>
 #include <numeric>
 #include <cstdint>
@@ -38,14 +39,11 @@
 #include "form_optimization.h"
 #include "form_gain_match.h"
 
-#include "widget_profiles.h"
-
 #include "qt_util.h"
 
 qpx::qpx(QWidget *parent) :
   QMainWindow(parent),
   ui(new Ui::qpx),
-  settings_("NIST-MML", "qpx"),
   my_emitter_(),
   qpx_stream_(),
   main_tab_(nullptr),
@@ -92,7 +90,18 @@ qpx::qpx(QWidget *parent) :
   connect(ui->qpxTabs->tabBar(), SIGNAL(tabMoved(int,int)), this, SLOT(tabs_moved(int,int)));
   connect(ui->qpxTabs, SIGNAL(currentChanged(int)), this, SLOT(tab_changed(int)));
 
-  QTimer::singleShot(50, this, SLOT(choose_profiles()));
+  main_tab_ = new FormStart(runner_thread_, detectors_, this);
+  ui->qpxTabs->addTab(main_tab_, main_tab_->windowTitle());
+  connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::SourceStatus)));
+  connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(settings_updated()));
+  connect(this, SIGNAL(update_dets()), main_tab_, SLOT(detectors_updated()));
+  connect(main_tab_, SIGNAL(optimization_requested()), this, SLOT(open_optimization()));
+  connect(main_tab_, SIGNAL(gain_matching_requested()), this, SLOT(open_gain_matching()));
+  connect(main_tab_, SIGNAL(list_view_requested()), this, SLOT(open_list()));
+
+  ui->qpxTabs->setCurrentWidget(main_tab_);
+  reorder_tabs();
 }
 
 qpx::~qpx()
@@ -144,29 +153,6 @@ void qpx::closeEvent(QCloseEvent *event) {
   event->accept();
 }
 
-void qpx::choose_profiles() {
-  WidgetProfiles *profiles = new WidgetProfiles(settings_, this);
-  connect(profiles, SIGNAL(profileChosen(QString, bool)), this, SLOT(profile_chosen(QString, bool)));
-  profiles->exec();
-}
-
-void qpx::profile_chosen(QString profile, bool boot) {
-  loadSettings();
-
-  main_tab_ = new FormStart(runner_thread_, settings_, detectors_, profile, boot, this);
-  ui->qpxTabs->addTab(main_tab_, main_tab_->windowTitle());
-  connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::SourceStatus)));
-  connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(settings_updated()));
-  connect(this, SIGNAL(update_dets()), main_tab_, SLOT(detectors_updated()));
-  connect(main_tab_, SIGNAL(optimization_requested()), this, SLOT(open_optimization()));
-  connect(main_tab_, SIGNAL(gain_matching_requested()), this, SLOT(open_gain_matching()));
-  connect(main_tab_, SIGNAL(list_view_requested()), this, SLOT(open_list()));
-
-  ui->qpxTabs->setCurrentWidget(main_tab_);
-  reorder_tabs();
-}
-
 void qpx::tabCloseRequested(int index) {
   if ((index < 0) || (index >= ui->qpxTabs->count()))
       return;
@@ -188,28 +174,25 @@ void qpx::add_log_text(QString line) {
 }
 
 void qpx::loadSettings() {
-  settings_.beginGroup("Program");
-  QRect myrect = settings_.value("position",QRect(20,20,1234,650)).toRect();
-  ui->splitter->restoreState(settings_.value("splitter").toByteArray());
+  QSettings settings;
+  settings.beginGroup("Program");
+  QRect myrect = settings.value("position",QRect(20,20,1234,650)).toRect();
+  ui->splitter->restoreState(settings.value("splitter").toByteArray());
   setGeometry(myrect);
 
-  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
-
-  settings_.endGroup();
-
+  QString settings_directory = settings.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   detectors_.clear();
-  detectors_.read_xml(settings_directory_.toStdString() + "/default_detectors.det");
+  detectors_.read_xml(settings_directory.toStdString() + "/default_detectors.det");
 }
 
 void qpx::saveSettings() {
-  settings_.beginGroup("Program");
-  settings_.setValue("position", this->geometry());
-  settings_.setValue("splitter", ui->splitter->saveState());
-  settings_.setValue("settings_directory", settings_directory_);
-  settings_.endGroup();
+  QSettings settings;
+  settings.beginGroup("Program");
+  settings.setValue("position", this->geometry());
+  settings.setValue("splitter", ui->splitter->saveState());
 
-  detectors_.write_xml(settings_directory_.toStdString() + "/default_detectors.det");
+  QString settings_directory = settings.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+  detectors_.write_xml(settings_directory.toStdString() + "/default_detectors.det");
 }
 
 void qpx::updateStatusText(QString text) {
@@ -299,7 +282,7 @@ void qpx::eff_cal(FormEfficiencyCalibration *formEf) {
 
 void qpx::openNewProject()
 {
-  FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, settings_, detectors_, current_dets_, this);
+  FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, detectors_, current_dets_, this);
   connect(newSpectraForm, SIGNAL(requestAnalysis(FormAnalysis1D*)), this, SLOT(analyze_1d(FormAnalysis1D*)));
   connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
   connect(newSpectraForm, SIGNAL(requestSymmetriza2D(FormSymmetrize2D*)), this, SLOT(symmetrize_2d(FormSymmetrize2D*)));
@@ -347,7 +330,7 @@ void qpx::open_list()
   if (hasTab("List view") || hasTab("List view >>"))
     return;
 
-  FormListDaq *newListForm = new FormListDaq(runner_thread_, settings_, this);
+  FormListDaq *newListForm = new FormListDaq(runner_thread_, this);
   addClosableTab(newListForm, "Close");
 
   connect(newListForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
@@ -367,7 +350,7 @@ void qpx::open_optimization()
   if (hasTab("Optimization") || hasTab("Optimization >>"))
     return;
 
-  FormOptimization *newOpt = new FormOptimization(runner_thread_, settings_, detectors_, this);
+  FormOptimization *newOpt = new FormOptimization(runner_thread_, detectors_, this);
   addClosableTab(newOpt, "Close");
 
   connect(newOpt, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
@@ -388,7 +371,7 @@ void qpx::open_gain_matching()
   if (hasTab("Gain matching") || hasTab("Gain matching >>"))
     return;
 
-  FormGainMatch *newGain = new FormGainMatch(runner_thread_, settings_, detectors_, this);
+  FormGainMatch *newGain = new FormGainMatch(runner_thread_, detectors_, this);
   addClosableTab(newGain, "Close");
 
   connect(newGain, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));

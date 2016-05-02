@@ -25,7 +25,6 @@
 #define FORM_ANALYSIS_2D_H
 
 #include <QWidget>
-#include <QSettings>
 #include "project.h"
 #include "form_multi_gates.h"
 #include "form_integration2d.h"
@@ -39,7 +38,7 @@ class FormAnalysis2D : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormAnalysis2D(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
+  explicit FormAnalysis2D(XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
   ~FormAnalysis2D();
 
   void setSpectrum(Qpx::Project *newset, int64_t idx);
@@ -70,7 +69,6 @@ protected:
 
 private:
   Ui::FormAnalysis2D *ui;
-  QSettings &settings_;
 
 
   int res;
@@ -80,7 +78,6 @@ private:
 
   //from parent
   QString data_directory_;
-  QString settings_directory_;
 
   Qpx::Project *spectra_;
   int64_t current_spectrum_;

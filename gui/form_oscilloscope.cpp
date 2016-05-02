@@ -22,11 +22,12 @@
 
 #include "form_oscilloscope.h"
 #include "ui_form_oscilloscope.h"
+#include <QSettings>
 
-FormOscilloscope::FormOscilloscope(ThreadRunner& thread, QSettings& settings, QWidget *parent) :
+
+FormOscilloscope::FormOscilloscope(ThreadRunner& thread, QWidget *parent) :
   QWidget(parent),
   runner_thread_(thread),
-  settings_(settings),
   ui(new Ui::FormOscilloscope)
 {
   ui->setupUi(this);
@@ -59,11 +60,13 @@ void FormOscilloscope::closeEvent(QCloseEvent *event) {
 
 
 void FormOscilloscope::loadSettings() {
+  QSettings settings_;
   settings_.beginGroup("Oscilloscope");
   settings_.endGroup();
 }
 
 void FormOscilloscope::saveSettings() {
+  QSettings settings_;
   settings_.beginGroup("Oscilloscope");
   settings_.endGroup();
 }

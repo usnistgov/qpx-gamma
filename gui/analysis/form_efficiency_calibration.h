@@ -25,7 +25,6 @@
 #define FORM_EFFICIENCY_CALIBRATION_H
 
 #include <QWidget>
-#include <QSettings>
 #include "project.h"
 #include "form_energy_calibration.h"
 #include "widget_selector.h"
@@ -39,7 +38,7 @@ class FormEfficiencyCalibration : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormEfficiencyCalibration(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
+  explicit FormEfficiencyCalibration(XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
   ~FormEfficiencyCalibration();
 
   void setDetector(Qpx::Project *newset, QString detector);
@@ -94,7 +93,6 @@ protected:
 
 private:
   Ui::FormEfficiencyCalibration *ui;
-  QSettings &settings_;
 
   std::map<int64_t, Qpx::Fitter> peak_sets_;
   std::set<double> selected_peaks_;

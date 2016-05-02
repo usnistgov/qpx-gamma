@@ -84,6 +84,8 @@ protected:
 
 };
 
+typedef std::shared_ptr<Source> SourcePtr;
+
 }
 
 #endif

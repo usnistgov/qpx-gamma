@@ -26,14 +26,15 @@
 #include "gamma_fitter.h"
 #include "qt_util.h"
 #include <QInputDialog>
+#include <QSettings>
+
 
 using namespace Qpx;
 
-FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLableDB<Detector>& newDetDB, QWidget *parent) :
+FormAnalysis1D::FormAnalysis1D(XMLableDB<Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormAnalysis1D),
-  detectors_(newDetDB),
-  settings_(settings)
+  detectors_(newDetDB)
 {
   ui->setupUi(this);
 
@@ -43,17 +44,17 @@ FormAnalysis1D::FormAnalysis1D(QSettings &settings, XMLableDB<Detector>& newDetD
 
   //connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
 
-  form_energy_calibration_ = new FormEnergyCalibration(settings_, detectors_, fit_data_);
+  form_energy_calibration_ = new FormEnergyCalibration(detectors_, fit_data_);
   ui->tabs->addTab(form_energy_calibration_, "Energy calibration");
   connect(form_energy_calibration_, SIGNAL(detectorsChanged()), this, SLOT(detectorsUpdated()));
   connect(form_energy_calibration_, SIGNAL(update_detector()), this, SLOT(update_detector_calibs()));
 
-  form_fwhm_calibration_ = new FormFwhmCalibration(settings_, detectors_, fit_data_);
+  form_fwhm_calibration_ = new FormFwhmCalibration(detectors_, fit_data_);
   ui->tabs->addTab(form_fwhm_calibration_, "FWHM calibration");
   connect(form_fwhm_calibration_, SIGNAL(detectorsChanged()), this, SLOT(detectorsUpdated()));
   connect(form_fwhm_calibration_, SIGNAL(update_detector()), this, SLOT(update_detector_calibs()));
 
-  form_fit_results_ = new FormFitResults(settings_, fit_data_);
+  form_fit_results_ = new FormFitResults(fit_data_);
   ui->tabs->addTab(form_fit_results_, "Peak integration");
   connect(form_fit_results_, SIGNAL(save_peaks_request()), this, SLOT(save_report()));
 
@@ -102,6 +103,7 @@ void FormAnalysis1D::closeEvent(QCloseEvent *event) {
     return;
   }
 
+  QSettings settings_;
   ui->plotSpectrum->saveSettings(settings_);
 
 //  PL_DBG << "closing analysis1d";
@@ -110,8 +112,9 @@ void FormAnalysis1D::closeEvent(QCloseEvent *event) {
 }
 
 void FormAnalysis1D::loadSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Program");
-  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
@@ -119,6 +122,8 @@ void FormAnalysis1D::loadSettings() {
 }
 
 void FormAnalysis1D::saveSettings() {
+  QSettings settings_;
+
 //  settings_.beginGroup("Program");
 //  settings_.setValue("save_directory", data_directory_);
 //  settings_.endGroup();

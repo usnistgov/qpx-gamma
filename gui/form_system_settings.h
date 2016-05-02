@@ -24,7 +24,6 @@
 #define FORM_SYSTEM_SETTINGS_H
 
 #include <QWidget>
-#include <QSettings>
 #include <QCloseEvent>
 #include <QTableView>
 #include <QTreeView>
@@ -44,7 +43,7 @@ class FormSystemSettings : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormSystemSettings(ThreadRunner&, XMLableDB<Qpx::Detector>&, QSettings&, QWidget *parent = 0);
+  explicit FormSystemSettings(ThreadRunner&, XMLableDB<Qpx::Detector>&, QWidget *parent = 0);
   Qpx::Setting get_tree() {return dev_settings_;}
   ~FormSystemSettings();
 
@@ -95,17 +94,19 @@ private slots:
 
   void on_spinRefreshFrequency_valueChanged(int arg1);
 
+  void on_pushChangeProfile_clicked();
+
+  void choose_profiles();
+  void profile_chosen();
+
 private:
   Ui::FormSystemSettings *ui;
 
   Qpx::SourceStatus current_status_;
 
   XMLableDB<Qpx::Detector>            &detectors_;
-  QString data_directory_;
-  QString settings_directory_;
 
   ThreadRunner        &runner_thread_;
-  QSettings           &settings_;
   bool editing_;
 
   Qpx::Setting               dev_settings_;
@@ -124,7 +125,6 @@ private:
   void loadSettings();
   void saveSettings();
   void chan_settings_to_det_DB();
-
 };
 
 #endif // FORM_SYSTEM_SETTINGS_H

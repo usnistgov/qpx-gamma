@@ -28,6 +28,9 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     a.setWindowIcon(QIcon(":/icons/qpx.xpm"));
 
+    QCoreApplication::setOrganizationName("NIST");
+    QCoreApplication::setApplicationName("qpx");
+
     qpx w;
     w.show();
 

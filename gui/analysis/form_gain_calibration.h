@@ -37,7 +37,7 @@ class FormGainCalibration : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormGainCalibration(QSettings &settings, XMLableDB<Qpx::Detector>&, Qpx::Fitter&, Qpx::Fitter&, QWidget *parent = 0);
+  explicit FormGainCalibration(XMLableDB<Qpx::Detector>&, Qpx::Fitter&, Qpx::Fitter&, QWidget *parent = 0);
   ~FormGainCalibration();
 
   void newSpectrum();
@@ -60,11 +60,9 @@ private slots:
 
 private:
   Ui::FormGainCalibration *ui;
-  QSettings &settings_;
 
   //from parent
   QString data_directory_;
-  QString settings_directory_;
 
   XMLableDB<Qpx::Detector> &detectors_;
 

@@ -311,6 +311,7 @@ Setting::Setting(std::string id)
   : Setting()
 {
   id_ = id;
+  metadata.id_ = id;
 }
 
 Setting::Setting(SettingMeta meta)

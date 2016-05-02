@@ -23,14 +23,18 @@
 #include "form_system_settings.h"
 #include "ui_form_system_settings.h"
 #include "widget_detectors.h"
+#include "widget_profiles.h"
 #include "binary_checklist.h"
 #include <QMessageBox>
+#include <QSettings>
+#include <QTimer>
 
-FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Qpx::Detector>& detectors, QSettings& settings, QWidget *parent) :
+FormSystemSettings::FormSystemSettings(ThreadRunner& thread,
+                                       XMLableDB<Qpx::Detector>& detectors,
+                                       QWidget *parent) :
   QWidget(parent),
   runner_thread_(thread),
   detectors_(detectors),
-  settings_(settings),
   tree_settings_model_(this),
   table_settings_model_(this),
   editing_(false),
@@ -82,6 +86,15 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread, XMLableDB<Qpx::Dete
   ui->toolDetectors->setMenu(&detectorOptions);
 
   loadSettings();
+
+  QSettings settings;
+  settings.beginGroup("Program");
+  QString profile_directory = settings.value("profile_directory", "").toString();
+
+  if (!profile_directory.isEmpty())
+    QTimer::singleShot(50, this, SLOT(profile_chosen()));
+  else
+    QTimer::singleShot(50, this, SLOT(choose_profiles()));
 }
 
 void FormSystemSettings::update(const Qpx::Setting &tree, const std::vector<Qpx::Detector> &channels, Qpx::SourceStatus status) {
@@ -238,6 +251,7 @@ void FormSystemSettings::toggle_push(bool enable, Qpx::SourceStatus status) {
   bool offline = (status & Qpx::SourceStatus::loaded);
 
   ui->pushSettingsRefresh->setEnabled(enable && online);
+  ui->pushChangeProfile->setEnabled(enable);
 
   if (enable) {
     viewTableSettings->setEditTriggers(QAbstractItemView::AllEditTriggers);
@@ -266,29 +280,25 @@ void FormSystemSettings::toggle_push(bool enable, Qpx::SourceStatus status) {
 }
 
 void FormSystemSettings::loadSettings() {
-  settings_.beginGroup("Program");
-  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
-
-  ui->checkShowRO->setChecked(settings_.value("settings_table_show_readonly", true).toBool());
+  QSettings settings;
+  settings.beginGroup("Program");
+  ui->checkShowRO->setChecked(settings.value("settings_table_show_readonly", true).toBool());
   on_checkShowRO_clicked();
 
-  if (settings_.value("settings_tab_tree", true).toBool())
+  if (settings.value("settings_tab_tree", true).toBool())
     ui->tabsSettings->setCurrentWidget(viewTreeSettings);
   else
     ui->tabsSettings->setCurrentWidget(viewTableSettings);
-
-  settings_.endGroup();
 }
 
 void FormSystemSettings::saveSettings() {
+  QSettings settings;
   if (current_status_ & Qpx::SourceStatus::booted)
     chan_settings_to_det_DB();
-
-  settings_.beginGroup("Program");
-  settings_.setValue("settings_table_show_readonly", ui->checkShowRO->isChecked());
-  settings_.setValue("settings_tab_tree", (ui->tabsSettings->currentWidget() == viewTreeSettings));
-  settings_.endGroup();
+  settings.beginGroup("Program");
+  settings.setValue("settings_table_show_readonly", ui->checkShowRO->isChecked());
+  settings.setValue("settings_tab_tree", (ui->tabsSettings->currentWidget() == viewTreeSettings));
+  settings.setValue("boot_on_startup", bool(current_status_ & Qpx::SourceStatus::booted));
 }
 
 void FormSystemSettings::chan_settings_to_det_DB() {
@@ -356,8 +366,11 @@ void FormSystemSettings::on_pushSettingsRefresh_clicked()
 
 void FormSystemSettings::open_detector_DB()
 {
+  QSettings settings;
+  settings.beginGroup("Program");
+  QString settings_directory = settings.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   WidgetDetectors *det_widget = new WidgetDetectors(this);
-  det_widget->setData(detectors_, settings_directory_);
+  det_widget->setData(detectors_, settings_directory);
   connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(updateDetDB()));
   det_widget->exec();
 }
@@ -409,4 +422,19 @@ void FormSystemSettings::on_pushOpenListView_clicked()
 void FormSystemSettings::on_spinRefreshFrequency_valueChanged(int arg1)
 {
   runner_thread_.set_idle_refresh_frequency(arg1);
+}
+
+void FormSystemSettings::on_pushChangeProfile_clicked()
+{
+  choose_profiles();
+}
+
+void FormSystemSettings::choose_profiles() {
+  WidgetProfiles *profiles = new WidgetProfiles(this);
+  connect(profiles, SIGNAL(profileChosen()), this, SLOT(profile_chosen()));
+  profiles->exec();
+}
+
+void FormSystemSettings::profile_chosen() {
+  runner_thread_.do_initialize();
 }

@@ -28,13 +28,13 @@
 #include "qt_util.h"
 #include <QCloseEvent>
 #include "manip2d.h"
+#include <QSettings>
 
 using namespace Qpx;
 
-FormIntegration2D::FormIntegration2D(QSettings &settings, QWidget *parent) :
+FormIntegration2D::FormIntegration2D(QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormIntegration2D),
-  settings_(settings),
   table_model_(this),
   sortModel(this),
   current_spectrum_(0)
@@ -323,8 +323,9 @@ void FormIntegration2D::rebuild_table(bool contents_changed) {
 
 
 void FormIntegration2D::loadSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Program");
-  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
@@ -341,6 +342,7 @@ void FormIntegration2D::loadSettings() {
 
 
 void FormIntegration2D::saveSettings() {
+  QSettings settings_;
   settings_.beginGroup("Integration2d");
   settings_.setValue("gate_width", gate_width_);
   ui->plotGateX->saveSettings(settings_); //name these!!!

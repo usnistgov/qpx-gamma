@@ -40,7 +40,7 @@ class FormEnergyCalibration : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormEnergyCalibration(QSettings &settings, XMLableDB<Qpx::Detector>&, Qpx::Fitter&, QWidget *parent = 0);
+  explicit FormEnergyCalibration(XMLableDB<Qpx::Detector>&, Qpx::Fitter&, QWidget *parent = 0);
   ~FormEnergyCalibration();
 
   Qpx::Calibration get_new_calibration() {return new_calibration_;}
@@ -79,7 +79,6 @@ private slots:
 
 private:
   Ui::FormEnergyCalibration *ui;
-  QSettings &settings_;
 
   //from parent
   QString data_directory_;

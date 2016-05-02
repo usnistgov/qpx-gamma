@@ -24,7 +24,6 @@
 #define FORM_MCA_DAQ_H
 
 #include <QWidget>
-#include <QSettings>
 #include "project.h"
 #include "thread_runner.h"
 #include "thread_plot_signal.h"
@@ -42,7 +41,7 @@ class FormMcaDaq : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormMcaDaq(ThreadRunner&, QSettings&, XMLableDB<Qpx::Detector>&, std::vector<Qpx::Detector>&, QWidget *parent = 0);
+  explicit FormMcaDaq(ThreadRunner&, XMLableDB<Qpx::Detector>&, std::vector<Qpx::Detector>&, QWidget *parent = 0);
 
   void replot();
   ~FormMcaDaq();
@@ -101,13 +100,12 @@ private slots:
 
 private:
   Ui::FormMcaDaq *ui;
-  QSettings                  &settings_;
   ThreadRunner               &runner_thread_;
   XMLableDB<Qpx::Detector> &detectors_;
   std::vector<Qpx::Detector> &current_dets_;
 
   QString data_directory_;    //data directory
-  QString settings_directory_;
+  QString profile_directory_;
 
   QString mca_load_formats_;  //valid mca file formats that can be opened
 

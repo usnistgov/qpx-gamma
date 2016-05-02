@@ -27,7 +27,6 @@
 #include <QWidget>
 #include "special_delegate.h"
 #include <QItemSelection>
-#include <QSettings>
 #include "gamma_fitter.h"
 
 namespace Ui {
@@ -39,7 +38,7 @@ class FormFitResults : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormFitResults(QSettings &settings, Qpx::Fitter&, QWidget *parent = 0);
+  explicit FormFitResults(Qpx::Fitter&, QWidget *parent = 0);
   ~FormFitResults();
 
   void clear();
@@ -61,11 +60,9 @@ private slots:
 
 private:
   Ui::FormFitResults *ui;
-  QSettings &settings_;
 
   //from parent
   QString data_directory_;
-  QString settings_directory_;
 
   Qpx::Fitter &fit_data_;
   std::set<double> selected_peaks_;

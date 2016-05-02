@@ -36,7 +36,7 @@ public:
     return singleton_instance;
   }
 
-  std::shared_ptr<Source> create_type(std::string type, std::string file);
+  SourcePtr create_type(std::string type, std::string file);
   void register_type(std::string name, std::function<Source*(void)> typeConstructor);
   const std::vector<std::string> types();
 

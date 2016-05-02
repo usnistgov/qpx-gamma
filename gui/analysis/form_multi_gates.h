@@ -28,7 +28,6 @@
 #include <QSortFilterProxyModel>
 #include <QItemSelection>
 #include <QWidget>
-#include <QSettings>
 #include "gates.h"
 #include "project.h"
 #include "form_coinc_peaks.h"
@@ -71,7 +70,7 @@ class FormMultiGates : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormMultiGates(QSettings &settings, QWidget *parent = 0);
+  explicit FormMultiGates(QWidget *parent = 0);
   ~FormMultiGates();
 
   void setSpectrum(Qpx::Project *newset, int64_t idx);
@@ -123,7 +122,6 @@ private slots:
 
 private:
   Ui::FormMultiGates *ui;
-  QSettings &settings_;
 
 
   Qpx::Project *spectra_;
@@ -141,7 +139,6 @@ private:
 
   //from parent
   QString data_directory_;
-  QString settings_directory_;
 
 
   std::list<MarkerBox2D> all_boxes_;

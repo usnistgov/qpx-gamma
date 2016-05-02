@@ -28,14 +28,14 @@
 #include "manip2d.h"
 #include <QInputDialog>
 #include "qpx_util.h"
+#include <QSettings>
 
 using namespace Qpx;
 
-FormSymmetrize2D::FormSymmetrize2D(QSettings &settings, XMLableDB<Detector>& newDetDB, QWidget *parent) :
+FormSymmetrize2D::FormSymmetrize2D(XMLableDB<Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormSymmetrize2D),
   detectors_(newDetDB),
-  settings_(settings),
   my_gain_calibration_(nullptr),
   gate_x(nullptr),
   gate_y(nullptr),
@@ -50,7 +50,7 @@ FormSymmetrize2D::FormSymmetrize2D(QSettings &settings, XMLableDB<Detector>& new
   ui->plotSpectrum->setFit(&fit_data_);
   ui->plotSpectrum2->setFit(&fit_data_2_);
 
-  my_gain_calibration_ = new FormGainCalibration(settings_, detectors_, fit_data_, fit_data_2_, this);
+  my_gain_calibration_ = new FormGainCalibration(detectors_, fit_data_, fit_data_2_, this);
   my_gain_calibration_->hide();
   //my_gain_calibration_->blockSignals(true);
 //  connect(my_gain_calibration_, SIGNAL(peaks_changed()), this, SLOT(update_peaks()));
@@ -342,6 +342,9 @@ void FormSymmetrize2D::apply_gain_calibration()
 }
 
 void FormSymmetrize2D::closeEvent(QCloseEvent *event) {
+  QSettings settings_;
+
+
   ui->plotSpectrum->saveSettings(settings_);
   ui->plotSpectrum2->saveSettings(settings_);
 
@@ -350,8 +353,9 @@ void FormSymmetrize2D::closeEvent(QCloseEvent *event) {
 }
 
 void FormSymmetrize2D::loadSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Program");
-  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
@@ -360,6 +364,8 @@ void FormSymmetrize2D::loadSettings() {
 }
 
 void FormSymmetrize2D::saveSettings() {
+  QSettings settings_;
+
   ui->plotSpectrum->saveSettings(settings_);
 }
 

@@ -17,7 +17,7 @@
 		<Setting id="Detector" type="detector" indices="11" value="none" />
 	</Setting>
 	<Setting id="ParserEVT" type="stem" reference="/devices/parser_evt.set">
-		<Setting id="ParserEVT/Source dir" type="dir_path" value="/home/mgs/qpx/data/EVT/run11" />
+		<Setting id="ParserEVT/Source dir" type="dir_path" value="/home/bdv/qpx/data/EVT/run11" />
 		<Setting id="ParserEVT/Loop data" type="boolean" value="false" />
 		<Setting id="ParserEVT/Override pause" type="boolean" value="true" />
 		<Setting id="ParserEVT/Pause" type="integer" value="1500" />

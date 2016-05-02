@@ -26,12 +26,13 @@
 #include "fityk.h"
 #include "qt_util.h"
 #include "daq_sink_factory.h"
+#include <QSettings>
 
-FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XMLableDB<Qpx::Detector>& detectors, QWidget *parent) :
+
+FormOptimization::FormOptimization(ThreadRunner& thread, XMLableDB<Qpx::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormOptimization),
   opt_runner_thread_(thread),
-  settings_(settings),
   detectors_(detectors),
   interruptor_(false),
   opt_plot_thread_(current_spectra_),
@@ -81,12 +82,14 @@ FormOptimization::FormOptimization(ThreadRunner& thread, QSettings& settings, XM
 
 
 void FormOptimization::loadSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Optimization");
   ui->spinBits->setValue(settings_.value("bits", 14).toInt());
 //  ui->spinOptChan->setValue(settings_.value("channel", 0).toInt());
   ui->doubleError->setValue(settings_.value("error", 1.0).toDouble());
 
-  ui->comboSetting->setCurrentText(settings_.value("setting_name", QString("ENERGY_RISETIME")).toString());
+  ui->comboSetting->setCurrentText(settings_.value("setting_name", QString("Manual...")).toString());
   ui->doubleSpinStart->setValue(settings_.value("setting_start", 5.97).toDouble());
   ui->doubleSpinDelta->setValue(settings_.value("setting_step", 0.213333).toDouble());
   ui->doubleSpinEnd->setValue(settings_.value("setting_end", 12.37).toDouble());
@@ -97,6 +100,8 @@ void FormOptimization::loadSettings() {
 }
 
 void FormOptimization::saveSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Optimization");
   settings_.setValue("bits", ui->spinBits->value());
 //  settings_.setValue("channel", ui->spinOptChan->value());
@@ -259,12 +264,24 @@ void FormOptimization::do_run()
   Qpx::Setting set(current_setting_);
   set.indices.clear();
   set.indices.insert(optchan);
-
   set.value_dbl = val_current;
-  Qpx::Engine::getInstance().set_setting(set, Qpx::Match::id | Qpx::Match::indices);
-  QThread::sleep(1);
-  Qpx::Engine::getInstance().get_all_settings();
-  set = Qpx::Engine::getInstance().pull_settings().get_setting(set, Qpx::Match::id | Qpx::Match::indices);
+
+  if (current_setting_ == "Manual...")
+  {
+    bool ok;
+    double d = QInputDialog::getDouble(this, QString::fromStdString(current_setting_),
+                                       "Value?=", val_current, -10000, 10000, 2, &ok);
+    if (ok)
+      set.value_dbl = d;
+  }
+  else
+  {
+    Qpx::Engine::getInstance().set_setting(set, Qpx::Match::id | Qpx::Match::indices);
+    QThread::sleep(1);
+    Qpx::Engine::getInstance().get_all_settings();
+    set = Qpx::Engine::getInstance().pull_settings().get_setting(set, Qpx::Match::id | Qpx::Match::indices);
+  }
+
   setting_values_.push_back(set.value_dbl);
   setting_fwhm_.push_back(0);
   emit settings_changed();
@@ -399,12 +416,16 @@ void FormOptimization::on_comboTarget_currentIndexChanged(int index)
       }
     }
   }
+  ui->comboSetting->addItem(QString("Manual..."));
 }
 
 void FormOptimization::on_comboSetting_activated(const QString &arg1)
 {
   int optchan = ui->comboTarget->currentData().toInt();
   current_setting_ = ui->comboSetting->currentText().toStdString();
+
+  if (current_setting_ == "Manual...")
+    return;
 
   Qpx::Setting set(current_setting_);
   set.indices.clear();
@@ -415,5 +436,10 @@ void FormOptimization::on_comboSetting_activated(const QString &arg1)
   ui->doubleSpinStart->setValue(set.metadata.minimum);
   ui->doubleSpinEnd->setValue(set.metadata.maximum);
   ui->doubleSpinDelta->setValue(set.metadata.step);
+
+}
+
+void FormOptimization::on_pushAddCustom_clicked()
+{
 
 }

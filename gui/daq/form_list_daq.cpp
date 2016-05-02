@@ -24,11 +24,12 @@
 #include "ui_form_list_daq.h"
 #include "custom_logger.h"
 #include "qt_util.h"
+#include <QSettings>
 
-FormListDaq::FormListDaq(ThreadRunner &thread, QSettings &settings, QWidget *parent) :
+
+FormListDaq::FormListDaq(ThreadRunner &thread, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormListDaq),
-  settings_(settings),
   runner_thread_(thread),
   list_data_(nullptr),
   interruptor_(false),
@@ -61,8 +62,9 @@ FormListDaq::FormListDaq(ThreadRunner &thread, QSettings &settings, QWidget *par
 }
 
 void FormListDaq::loadSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Program");
-  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
@@ -73,6 +75,8 @@ void FormListDaq::loadSettings() {
 }
 
 void FormListDaq::saveSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("ListDaq");
   settings_.setValue("run_secs", QVariant::fromValue(ui->timeDuration->total_seconds()));
   settings_.endGroup();

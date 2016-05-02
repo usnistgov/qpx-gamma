@@ -37,11 +37,10 @@
 
 using namespace Qpx;
 
-FormEfficiencyCalibration::FormEfficiencyCalibration(QSettings &settings, XMLableDB<Detector>& newDetDB, QWidget *parent) :
+FormEfficiencyCalibration::FormEfficiencyCalibration(XMLableDB<Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormEfficiencyCalibration),
   detectors_(newDetDB),
-  settings_(settings),
   current_spectrum_(0)
 {
   ui->setupUi(this);
@@ -111,14 +110,15 @@ void FormEfficiencyCalibration::closeEvent(QCloseEvent *event) {
   //  event->ignore();
   //  return;
   //}
-
+  QSettings settings_;
   ui->plotSpectrum->saveSettings(settings_);
-
   saveSettings();
   event->accept();
 }
 
 void FormEfficiencyCalibration::loadSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Program");
   settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
@@ -135,6 +135,8 @@ void FormEfficiencyCalibration::loadSettings() {
 }
 
 void FormEfficiencyCalibration::saveSettings() {
+  QSettings settings_;
+
   ui->plotSpectrum->saveSettings(settings_);
 
   settings_.beginGroup("Efficiency_calibration");

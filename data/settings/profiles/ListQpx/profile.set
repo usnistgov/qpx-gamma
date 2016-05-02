@@ -9,10 +9,11 @@
 		<Setting id="Detector" type="detector" indices="3" value="none" />
 	</Setting>
 	<Setting id="ParserRaw" type="stem" reference="/devices/parser_raw.set">
-		<Setting id="ParserRaw/Source file" type="file_path" value="/home/mgs/qpx/data/evt_to_raw/qpx_out.txt" />
+		<Setting id="ParserRaw/Source file" type="file_path" value="/home/bdv/qpx/data/rawtest/qpx_out.txt" />
 		<Setting id="ParserRaw/Loop data" type="boolean" value="false" />
 		<Setting id="ParserRaw/Override pause" type="boolean" value="true" />
 		<Setting id="ParserRaw/Pause" type="integer" value="1500" />
 		<Setting id="ParserRaw/Override timestamps" type="boolean" value="false" />
+		<Setting id="ParserRaw/Color" type="color" value="#72a60de7" />
 	</Setting>
 </Setting>

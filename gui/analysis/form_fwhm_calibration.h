@@ -39,7 +39,7 @@ class FormFwhmCalibration : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormFwhmCalibration(QSettings &settings, XMLableDB<Qpx::Detector>&, Qpx::Fitter&, QWidget *parent = 0);
+  explicit FormFwhmCalibration(XMLableDB<Qpx::Detector>&, Qpx::Fitter&, QWidget *parent = 0);
   ~FormFwhmCalibration();
 
   void newSpectrum();
@@ -76,7 +76,6 @@ private slots:
 
 private:
   Ui::FormFwhmCalibration *ui;
-  QSettings &settings_;
 
   //from parent
   QString data_directory_;

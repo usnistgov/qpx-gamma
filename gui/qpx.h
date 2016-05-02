@@ -24,7 +24,6 @@
 #define qpx_H
 
 #include <QMainWindow>
-#include <QSettings>
 
 #include "custom_logger.h"
 #include "qt_boost_logger.h"
@@ -72,12 +71,9 @@ private:
   LogEmitter        my_emitter_;
   LogStreamBuffer   text_buffer_;
 
-  QString                       settings_directory_;    //settings directory
-  QString                       data_directory_;        //data directory
-  QSettings                     settings_;
   XMLableDB<Qpx::Detector>    detectors_;
   std::vector<Qpx::Detector>  current_dets_;
-  ThreadRunner                  runner_thread_;
+  ThreadRunner                runner_thread_;
 
   FormStart* main_tab_;
   bool gui_enabled_;
@@ -121,9 +117,6 @@ private slots:
   void openNewProject();
 
   bool hasTab(QString);
-
-  void choose_profiles();
-  void profile_chosen(QString, bool);
 
   void open_gain_matching();
   void open_optimization();

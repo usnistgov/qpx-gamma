@@ -28,7 +28,6 @@
 #include <QSortFilterProxyModel>
 #include <QItemSelection>
 #include <QWidget>
-#include <QSettings>
 #include "peak2d.h"
 #include "project.h"
 #include "gamma_fitter.h"
@@ -72,7 +71,7 @@ class FormIntegration2D : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormIntegration2D(QSettings &settings, QWidget *parent = 0);
+  explicit FormIntegration2D(QWidget *parent = 0);
   ~FormIntegration2D();
 
   void setSpectrum(Qpx::Project *newset, int64_t idx);
@@ -120,7 +119,6 @@ private slots:
 
 private:
   Ui::FormIntegration2D *ui;
-  QSettings &settings_;
 
   Qpx::Project *spectra_;
   int64_t current_spectrum_;
@@ -136,7 +134,6 @@ private:
 
   //from parent
   QString data_directory_;
-  QString settings_directory_;
 
   int32_t index_of(MarkerBox2D);
   int32_t index_of(double, double);

@@ -27,10 +27,9 @@
 #include "qt_util.h"
 #include "sqrt_poly.h"
 
-FormFwhmCalibration::FormFwhmCalibration(QSettings &settings, XMLableDB<Qpx::Detector>& dets, Qpx::Fitter& fit, QWidget *parent) :
+FormFwhmCalibration::FormFwhmCalibration(XMLableDB<Qpx::Detector>& dets, Qpx::Fitter& fit, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormFwhmCalibration),
-  settings_(settings),
   fit_data_(fit),
   detectors_(dets)
 {
@@ -81,6 +80,8 @@ bool FormFwhmCalibration::save_close() {
 }
 
 void FormFwhmCalibration::loadSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Program");
   settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
@@ -97,6 +98,7 @@ void FormFwhmCalibration::loadSettings() {
 }
 
 void FormFwhmCalibration::saveSettings() {
+  QSettings settings_;
 
   settings_.beginGroup("FWHM_calibration");
   settings_.setValue("fit_function_terms", ui->spinTerms->value());

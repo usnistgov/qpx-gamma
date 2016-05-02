@@ -24,7 +24,6 @@
 #define FORM_LIST_DAQ_H
 
 #include <QWidget>
-#include <QSettings>
 #include "spill.h"
 #include "thread_runner.h"
 #include "special_delegate.h"
@@ -62,7 +61,7 @@ class FormListDaq : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormListDaq(ThreadRunner&, QSettings&, QWidget *parent = 0);
+  explicit FormListDaq(ThreadRunner&, QWidget *parent = 0);
   ~FormListDaq();
 
 signals:
@@ -82,9 +81,7 @@ protected:
 private:
   Ui::FormListDaq     *ui;
   ThreadRunner        &runner_thread_;
-  QSettings           &settings_;
   QString data_directory_;    //data directory
-  QString settings_directory_;
 
   boost::atomic<bool> interruptor_;
 

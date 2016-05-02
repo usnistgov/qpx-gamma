@@ -25,14 +25,10 @@
 #ifndef WIDGET_PROFILES_H_
 #define WIDGET_PROFILES_H_
 
-#include <QDir>
 #include <QDialog>
-#include <QSettings>
-
 #include <QAbstractTableModel>
 #include <QItemSelectionModel>
-#include "form_daq_settings.h"
-#include "qt_util.h"
+#include "generic_setting.h"
 
 namespace Ui {
 class WidgetProfiles;
@@ -60,32 +56,25 @@ class WidgetProfiles : public QDialog
   Q_OBJECT
 
 public:
-  explicit WidgetProfiles(QSettings &settings, QWidget *parent = 0);
+  explicit WidgetProfiles(QWidget *parent = 0);
   ~WidgetProfiles();
 
 signals:
-  void profileChosen(QString, bool);
+  void profileChosen();
 
 private:
   Ui::WidgetProfiles *ui;
-
-  QSettings &settings_;
 
   std::vector<Qpx::Setting> profiles_;
 
   TableProfiles table_model_;
   QItemSelectionModel selection_model_;
 
-  QString root_dir_;
-
   void update_profiles();
 
 private slots:
-  void on_pushNew_clicked();
   void on_pushEdit_clicked();
-  void on_pushDelete_clicked();
 
-  void addNewDet(Qpx::Detector);
   void selection_changed(QItemSelection,QItemSelection);
   void selection_double_clicked(QModelIndex);
   void toggle_push();

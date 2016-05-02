@@ -49,7 +49,7 @@ public:
     void set_idle_refresh_frequency(int);
 
 
-    void do_initialize(QString, bool boot);
+    void do_initialize();
     void do_boot();
     void do_shutdown();
     void do_push_settings(const Qpx::Setting &tree);
@@ -98,7 +98,6 @@ private:
     Qpx::Setting tree_, one_setting_;
     Qpx::Match match_conditions_;
 
-    QString file_;
     bool flag_;
 
     Qpx::SourceStatus recent_status_;

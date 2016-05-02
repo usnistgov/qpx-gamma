@@ -9,8 +9,8 @@
 		<Setting id="Detector" type="detector" indices="3" value="none" />
 	</Setting>
 	<Setting id="Simulator2D" type="stem" reference="/devices/simulator2d.set">
-		<Setting id="Simulator2D/Source file" type="file_path" value="/home/mgs/qpx/data/projects/Eu152_6h.qpx" />
-		<Setting id="Simulator2D/Source spectrum" type="int_menu" value="0" />
+		<Setting id="Simulator2D/Source file" type="file_path" value="/home/bdv/qpx/data/projects/Eu152_6h.qpx" />
+		<Setting id="Simulator2D/Source spectrum" type="int_menu" value="1" />
 		<Setting id="Simulator2D/Resolution" type="integer" value="13" />
 		<Setting id="Simulator2D/CoincThresh" type="integer" value="5" />
 		<Setting id="Simulator2D/ScaleRate" type="floating" value="100" />

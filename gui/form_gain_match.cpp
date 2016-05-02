@@ -25,14 +25,15 @@
 #include "custom_logger.h"
 #include "fityk.h"
 #include "daq_sink_factory.h"
+#include <QSettings>
+
 
 using namespace Qpx;
 
-FormGainMatch::FormGainMatch(ThreadRunner& thread, QSettings& settings, XMLableDB<Detector>& detectors, QWidget *parent) :
+FormGainMatch::FormGainMatch(ThreadRunner& thread, XMLableDB<Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormGainMatch),
   gm_runner_thread_(thread),
-  settings_(settings),
   detectors_(detectors),
   gm_spectra_(),
   gm_interruptor_(false),
@@ -131,6 +132,8 @@ void FormGainMatch::update_settings() {
 }
 
 void FormGainMatch::loadSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("GainMatching");
   ui->spinBits->setValue(settings_.value("bits", 14).toInt());
 //  ui->spinRefChan->setValue(settings_.value("reference_channel", 0).toInt());
@@ -141,6 +144,8 @@ void FormGainMatch::loadSettings() {
 }
 
 void FormGainMatch::saveSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("GainMatching");
   settings_.setValue("bits", ui->spinBits->value());
 //  settings_.setValue("reference_channel", ui->spinRefChan->value());

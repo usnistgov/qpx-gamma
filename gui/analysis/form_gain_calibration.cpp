@@ -25,11 +25,12 @@
 #include "ui_form_gain_calibration.h"
 #include "gamma_fitter.h"
 #include "qt_util.h"
+#include <QSettings>
 
-FormGainCalibration::FormGainCalibration(QSettings &settings, XMLableDB<Qpx::Detector>& dets, Qpx::Fitter& fit1, Qpx::Fitter& fit2, QWidget *parent) :
+
+FormGainCalibration::FormGainCalibration(XMLableDB<Qpx::Detector>& dets, Qpx::Fitter& fit1, Qpx::Fitter& fit2, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormGainCalibration),
-  settings_(settings),
   fit_data1_(fit1),
   fit_data2_(fit2),
   detectors_(dets)
@@ -80,8 +81,9 @@ FormGainCalibration::~FormGainCalibration()
 }
 
 void FormGainCalibration::loadSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Program");
-  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
@@ -95,6 +97,7 @@ void FormGainCalibration::loadSettings() {
 }
 
 void FormGainCalibration::saveSettings() {
+  QSettings settings_;
 
   settings_.beginGroup("Gain_calibration");
   settings_.setValue("fit_function_terms", ui->spinPolyOrder->value());

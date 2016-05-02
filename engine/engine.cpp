@@ -57,9 +57,9 @@ Engine::Engine() {
 }
 
 
-void Engine::initialize(std::string profile) {
+void Engine::initialize(std::string profile_path, std::string settings_path) {
   //don't allow this twice?
-  profile_path_ = profile;
+  profile_path_ = profile_path;
 
   PL_DBG << "Engine will attempt to initialize with profile at " << profile_path_;
 
@@ -82,19 +82,20 @@ void Engine::initialize(std::string profile) {
   descr.metadata.writable = true;
   tree.branches.replace(descr);
 
-  boost::filesystem::path dir(profile_path_);
-  dir.make_preferred();
-  boost::filesystem::path path = dir.remove_filename();
+  boost::filesystem::path path(settings_path);
 
 //  if (!boost::filesystem::is_directory(path)) {
 //    PL_DBG << "<Engine> Bad profile root directory. Will not proceed with loading device settings";
 //    return;
 //  }
 
+  die();
+  devices_.clear();
+
   for (auto &q : tree.branches.my_data_) {
     if (q.id_ != "Detectors") {
       boost::filesystem::path dev_settings = path / q.value_text;
-      std::shared_ptr<Source> device = SourceFactory::getInstance().create_type(q.id_, dev_settings.string());
+      SourcePtr device = SourceFactory::getInstance().create_type(q.id_, dev_settings.string());
       if (device) {
         PL_DBG << "<Engine> Success loading " << device->device_name();
         devices_[q.id_] = device;

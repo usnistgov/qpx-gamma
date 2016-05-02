@@ -25,7 +25,6 @@
 #define FORM_SYMMETRIZE_2D_H
 
 #include <QWidget>
-#include <QSettings>
 #include "project.h"
 #include "form_gain_calibration.h"
 
@@ -38,7 +37,7 @@ class FormSymmetrize2D : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormSymmetrize2D(QSettings &settings, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
+  explicit FormSymmetrize2D(XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
   ~FormSymmetrize2D();
 
   void setSpectrum(Qpx::Project *newset, int64_t idx);
@@ -69,7 +68,6 @@ protected:
 
 private:
   Ui::FormSymmetrize2D *ui;
-  QSettings &settings_;
 
   Qpx::SinkPtr gate_x;
   Qpx::SinkPtr gate_y;
@@ -94,7 +92,6 @@ private:
 
   //from parent
   QString data_directory_;
-  QString settings_directory_;
 
   Qpx::Project *spectra_;
   int64_t current_spectrum_;

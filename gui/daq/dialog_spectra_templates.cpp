@@ -436,14 +436,14 @@ void DialogSpectraTemplates::change_template(Metadata newTemplate) {
 void DialogSpectraTemplates::on_pushSetDefault_clicked()
 {
   //ask sure?
-  templates_.write_xml(root_dir_.toStdString() + "/default_spectra.tem");
+  templates_.write_xml(root_dir_.toStdString() + "/default_sinks.tem");
 }
 
 void DialogSpectraTemplates::on_pushUseDefault_clicked()
 {
   //ask sure?
   templates_.clear();
-  templates_.read_xml(root_dir_.toStdString() + "/default_spectra.tem");
+  templates_.read_xml(root_dir_.toStdString() + "/default_sinks.tem");
 
   selection_model_.reset();
   table_model_.update();

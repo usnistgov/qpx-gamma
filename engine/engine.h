@@ -22,8 +22,8 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_SETTINGS
-#define QPX_SETTINGS
+#ifndef QPX_ENGINE
+#define QPX_ENGINE
 
 
 #include <boost/thread.hpp>
@@ -60,7 +60,7 @@ public:
 
   ~Engine();
 
-  void initialize(std::string settings_file);
+  void initialize(std::string profile_path, std::string settings_path);
   bool boot();
   bool die();
   SourceStatus status() {return aggregate_status_;}
@@ -99,7 +99,7 @@ protected:
   SourceStatus aggregate_status_, intrinsic_status_;
   mutable boost::mutex mutex_;
 
-  std::map<std::string, std::shared_ptr<Source>> devices_;  //use shared pointer instead
+  std::map<std::string, SourcePtr> devices_;  //use shared pointer instead
 
   Qpx::Setting settings_tree_;
   Qpx::SettingMeta total_det_num_, single_det_;

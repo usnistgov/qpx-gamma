@@ -24,7 +24,6 @@
 #define FORM_OPTIMIZATION_H
 
 #include <QWidget>
-#include <QSettings>
 #include "project.h"
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
@@ -40,7 +39,7 @@ class FormOptimization : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormOptimization(ThreadRunner&, QSettings&, XMLableDB<Qpx::Detector>&, QWidget *parent = 0);
+  explicit FormOptimization(ThreadRunner&, XMLableDB<Qpx::Detector>&, QWidget *parent = 0);
   void update_settings();
   ~FormOptimization();
 
@@ -73,18 +72,19 @@ private slots:
 
   void on_comboSetting_activated(const QString &arg1);
 
+  void on_pushAddCustom_clicked();
+
 private:
   void loadSettings();
   void saveSettings();
 
   Ui::FormOptimization *ui;
 
-  Qpx::Project current_spectra_;
-  Qpx::Metadata        optimizing_;
+  Qpx::Project     current_spectra_;
+  Qpx::Metadata    optimizing_;
 
   ThreadRunner         &opt_runner_thread_;
   XMLableDB<Qpx::Detector> &detectors_;
-  QSettings &settings_;
 
   ThreadPlotSignal     opt_plot_thread_;
   boost::atomic<bool>  interruptor_;

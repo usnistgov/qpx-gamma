@@ -24,7 +24,6 @@
 #define FORM_GAIN_MATCH_H
 
 #include <QWidget>
-#include <QSettings>
 #include "project.h"
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
@@ -40,7 +39,7 @@ class FormGainMatch : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormGainMatch(ThreadRunner&, QSettings&, XMLableDB<Qpx::Detector>&, QWidget *parent = 0);
+  explicit FormGainMatch(ThreadRunner&, XMLableDB<Qpx::Detector>&, QWidget *parent = 0);
   void update_settings();
   ~FormGainMatch();
 
@@ -83,7 +82,6 @@ private:
 
   ThreadRunner         &gm_runner_thread_;
   XMLableDB<Qpx::Detector> &detectors_;
-  QSettings &settings_;
 
   ThreadPlotSignal     gm_plot_thread_;
   boost::atomic<bool>  gm_interruptor_;

@@ -26,31 +26,19 @@
 #include "ui_widget_profiles.h"
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QSettings>
+#include <QDir>
 #include "project.h"
 #include <boost/algorithm/string.hpp>
-
-//void DialogProfile::on_pushReadOpti_clicked()
-//{
-//  QString fileName = QFileDialog::getOpenFileName(this, "Open File", root_dir_.absolutePath(),
-//                                                  "Qpx project file (*.qpx)");
-//  if (!validateFile(this, fileName, false))
-//    return;
-
-//  Qpx::Project optiSource;
-//  optiSource.read_xml(fileName.toStdString(), false);
-//  for (auto &q : optiSource.runInfo().detectors)
-//    if (q.name_ == my_detector_.name_)
-//      my_detector_ = q;
-//  updateDisplay();
-//}
-
+#include "form_daq_settings.h"
+#include "qt_util.h"
 
 
 int TableProfiles::rowCount(const QModelIndex & /*parent*/) const
 {    return profiles_.size(); }
 
 int TableProfiles::columnCount(const QModelIndex & /*parent*/) const
-{    return 2; }
+{    return 1; }
 
 QVariant TableProfiles::data(const QModelIndex &index, int role) const
 {
@@ -62,9 +50,9 @@ QVariant TableProfiles::data(const QModelIndex &index, int role) const
   {
     switch (col) {
     case 0:
-      return QString::fromStdString(profiles_[row].value_text);
-    case 1:
       return QString::fromStdString(profiles_[row].get_setting(Qpx::Setting("Profile description"), Qpx::Match::id).value_text);
+//    case 1:
+//      return QString::fromStdString(profiles_[row].value_text);
     }
   }
   return QVariant();
@@ -78,9 +66,9 @@ QVariant TableProfiles::headerData(int section, Qt::Orientation orientation, int
       switch (section)
       {
       case 0:
-        return "Path";
-      case 1:
         return "Decription";
+//      case 1:
+//        return "Path";
       }
     } else if (orientation == Qt::Vertical) {
       return QString::number(section);
@@ -104,21 +92,13 @@ Qt::ItemFlags TableProfiles::flags(const QModelIndex &index) const
 
 
 
-WidgetProfiles::WidgetProfiles(QSettings &settings, QWidget *parent) :
+WidgetProfiles::WidgetProfiles(QWidget *parent) :
   QDialog(parent),
   table_model_(profiles_),
-  settings_(settings),
   selection_model_(&table_model_),
   ui(new Ui::WidgetProfiles)
 {
   ui->setupUi(this);
-
-  settings_.beginGroup("Program");
-  root_dir_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
-  settings_.endGroup();
-
-  ui->pushDelete->setVisible(false);
-  ui->pushNew->setVisible(false);
 
   update_profiles();
 
@@ -150,11 +130,25 @@ void WidgetProfiles::update_profiles()
   selection_model_.clearSelection();
   profiles_.clear();
 
-  QStringList nameFilter("*.set");
-  QDir directory(root_dir_);
-  QStringList txtFilesAndDirectories = directory.entryList(nameFilter);
-  for (auto &q : txtFilesAndDirectories) {
-    std::string path = root_dir_.toStdString() + "/" + q.toStdString();
+  QSettings settings;
+  settings.beginGroup("Program");
+  QString settings_directory = settings.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+
+  QDir directory(settings_directory + "/profiles");
+  directory.setFilter(QDir::Dirs);
+  QStringList subdirs = directory.entryList();
+  for (auto &q : subdirs) {
+
+    QDir dir2(settings_directory + "/profiles/" + q);
+    QStringList nameFilter("profile.set");
+    QStringList profile_files = dir2.entryList(nameFilter);
+
+    if (profile_files.empty()) {
+      PL_DBG << "<WidgetProfiles> no profile found in " << dir2.absolutePath().toStdString();
+      continue;
+    }
+
+    std::string path = dir2.absolutePath().toStdString() + "/profile.set";
 
     pugi::xml_document doc;
     if (!doc.load_file(path.c_str())) {
@@ -168,10 +162,20 @@ void WidgetProfiles::update_profiles()
       continue;
     }
 
+//    PL_DBG << "<WidgetProfiles> valid profile at " << path;
+
     Qpx::Setting tree(root);
-    tree.value_text = path;
+    tree.value_text = dir2.absolutePath().toStdString();
     profiles_.push_back(tree);
   }
+
+  Qpx::Setting tree("Empty");
+  tree.metadata.setting_type = Qpx::SettingType::stem;
+  Qpx::Setting descr("Profile description");
+  descr.metadata.setting_type = Qpx::SettingType::text;
+  descr.value_text = "Offline analysis mode";
+  tree.branches.add_a(descr);
+  profiles_.push_back(tree);
 
   table_model_.update();
 }
@@ -184,12 +188,8 @@ void WidgetProfiles::toggle_push() {
     ui->pushApply->setEnabled(!selection_model_.selectedIndexes().empty());
     ui->pushApplyBoot->setEnabled(!selection_model_.selectedIndexes().empty());
     ui->pushEdit->setEnabled(!selection_model_.selectedIndexes().empty());
-    ui->pushDelete->setEnabled(!selection_model_.selectedIndexes().empty());
 }
 
-void WidgetProfiles::on_pushNew_clicked()
-{
-}
 
 void WidgetProfiles::on_pushEdit_clicked()
 {
@@ -199,37 +199,23 @@ void WidgetProfiles::on_pushEdit_clicked()
   int i = ixl.front().row();
 
   FormDaqSettings *DaqInfo = new FormDaqSettings(profiles_[i], this);
-  DaqInfo->setWindowTitle("Profile...");
+  DaqInfo->setWindowTitle(QString::fromStdString(profiles_[i].value_text));
   DaqInfo->exec();
 
 }
 
 void WidgetProfiles::selection_double_clicked(QModelIndex idx) {
   int i = idx.row();
-  emit profileChosen(QString::fromStdString(profiles_[i].value_text), true);
+
+  QSettings settings;
+  settings.beginGroup("Program");
+  settings.setValue("profile_directory", QString::fromStdString(profiles_[i].value_text));
+  settings.setValue("boot_on_startup", true);
+
+  emit profileChosen();
   accept();
 }
 
-void WidgetProfiles::on_pushDelete_clicked()
-{
-  QItemSelectionModel *selected = ui->tableProfiles->selectionModel();
-  QModelIndexList rowList = selected->selectedRows();
-  if (rowList.empty())
-    return;
-//  detectors_->remove(rowList.front().row());
-//  selection_model_.reset();
-//  table_model_.update();
-//  toggle_push();
-}
-
-
-void WidgetProfiles::addNewDet(Qpx::Detector newDetector) {
-//  detectors_->add(newDetector);
-//  detectors_->replace(newDetector);
-  selection_model_.reset();
-  table_model_.update();
-  toggle_push();
-}
 
 void WidgetProfiles::on_pushApply_clicked()
 {
@@ -238,7 +224,12 @@ void WidgetProfiles::on_pushApply_clicked()
     return;
   int i = ixl.front().row();
 
-  emit profileChosen(QString::fromStdString(profiles_[i].value_text), false);
+  QSettings settings;
+  settings.beginGroup("Program");
+  settings.setValue("profile_directory", QString::fromStdString(profiles_[i].value_text));
+  settings.setValue("boot_on_startup", false);
+
+  emit profileChosen();
   accept();
 }
 
@@ -249,21 +240,26 @@ void WidgetProfiles::on_pushApplyBoot_clicked()
     return;
   int i = ixl.front().row();
 
-  emit profileChosen(QString::fromStdString(profiles_[i].value_text), true);
+  QSettings settings;
+  settings.beginGroup("Program");
+  settings.setValue("profile_directory", QString::fromStdString(profiles_[i].value_text));
+  settings.setValue("boot_on_startup", true);
+
+  emit profileChosen();
   accept();
 }
 
 void WidgetProfiles::on_OutputDirFind_clicked()
 {
-  QString dirName = QFileDialog::getExistingDirectory(this, "Open Directory", root_dir_,
+  QSettings settings;
+  settings.beginGroup("Program");
+  QString settings_directory = settings.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+
+  QString dirName = QFileDialog::getExistingDirectory(this, "Open Directory", settings_directory,
                                                       QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
   if (!dirName.isEmpty()) {
-    root_dir_ = QDir(dirName).absolutePath();
-
-    settings_.beginGroup("Program");
-    settings_.setValue("settings_directory", root_dir_);
-    settings_.endGroup();
-
+    settings_directory = QDir(dirName).absolutePath();
+    settings.setValue("settings_directory", settings_directory);
     update_profiles();
   }
 }

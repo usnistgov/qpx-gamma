@@ -24,7 +24,6 @@
 #define FORM_START_H
 
 #include <QWidget>
-#include <QSettings>
 #include "custom_logger.h"
 #include "thread_runner.h"
 #include "form_system_settings.h"
@@ -41,10 +40,7 @@ class FormStart : public QWidget
 
 public:
   explicit FormStart(ThreadRunner &thread,
-                     QSettings &settings,
                      XMLableDB<Qpx::Detector> &detectors,
-                     QString profile,
-                     bool boot,
                      QWidget *parent = 0);
   void exit();
   ~FormStart();
@@ -75,16 +71,7 @@ protected:
   void closeEvent(QCloseEvent*);
 
 private:
-  //Ui::FormStart *ui;
-  QSettings &settings_;
-
-  QString data_directory_;
-  QString settings_directory_;
-
-  QString profile_path_;
-
   XMLableDB<Qpx::Detector>  &detectors_;
-
   ThreadRunner        &runner_thread_;
 
   FormSystemSettings*  formSettings;
@@ -92,9 +79,6 @@ private:
 
   bool exiting;
 
-  //helper functions
-  void saveSettings();
-  void loadSettings();
 };
 
 #endif // FORM_START_H

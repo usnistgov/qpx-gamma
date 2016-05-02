@@ -21,6 +21,8 @@
  ******************************************************************************/
 
 #include <boost/thread.hpp>
+#include <QSettings>
+#include <QDir>
 #include "thread_runner.h"
 #include "custom_logger.h"
 
@@ -33,7 +35,6 @@ ThreadRunner::ThreadRunner(QObject *parent) :
   spectra_ = nullptr;
   interruptor_ = nullptr;
   action_ = kNone;
-  file_ = "";
   flag_ = false;
   match_conditions_ = Qpx::Match::id;
   idle_refresh_.store(false);
@@ -99,16 +100,14 @@ void ThreadRunner::do_run(Qpx::Project &spectra, boost::atomic<bool> &interrupto
     start(HighPriority);
 }
 
-void ThreadRunner::do_initialize(QString file, bool boot) {
+void ThreadRunner::do_initialize() {
   if (running_.load()) {
     PL_WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
   terminating_.store(false);
-  flag_ = boot;
   action_ = kInitialize;
-  file_ = file;
   if (!isRunning())
     start(HighPriority);
 }
@@ -252,10 +251,17 @@ void ThreadRunner::run()
       action_ = kSettingsRefresh;
       emit listComplete(newListRun);
     } else if (action_ == kInitialize) {
-      engine_.initialize(file_.toStdString());
-      if (flag_) {
+      QSettings settings;
+      settings.beginGroup("Program");
+      QString settings_directory = settings.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
+      QString profile_directory = settings.value("profile_directory", "").toString();
+      bool boot = settings.value("boot_on_startup", false).toBool();
+
+      if (!profile_directory.isEmpty())
+        engine_.initialize(profile_directory.toStdString() + "/profile.set", settings_directory.toStdString());
+
+      if (boot && !profile_directory.isEmpty()) {
         action_ = kBoot;
-        flag_ = false;
       } else {
         action_ = kNone;
         emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());

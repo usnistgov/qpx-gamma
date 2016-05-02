@@ -29,13 +29,14 @@
 #include <QCloseEvent>
 #include "manip2d.h"
 #include "qpx_util.h"
+#include <QSettings>
+
 
 using namespace Qpx;
 
-FormMultiGates::FormMultiGates(QSettings &settings, QWidget *parent) :
+FormMultiGates::FormMultiGates(QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormMultiGates),
-  settings_(settings),
   table_model_(this),
   sortModel(this),
   gate_x(nullptr),
@@ -251,8 +252,9 @@ void FormMultiGates::rebuild_table(bool contents_changed) {
 
 
 void FormMultiGates::loadSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Program");
-  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
@@ -267,6 +269,8 @@ void FormMultiGates::loadSettings() {
 
 
 void FormMultiGates::saveSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Multi_gates");
   settings_.setValue("gate_on", ui->doubleGateOn->value());
   settings_.setValue("overlaps", ui->doubleOverlaps->value());

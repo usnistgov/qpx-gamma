@@ -24,15 +24,15 @@
 
 namespace Qpx {
 
-std::shared_ptr<Source> SourceFactory::create_type(std::string type, std::string file)
+SourcePtr SourceFactory::create_type(std::string type, std::string file)
 {
-  std::shared_ptr<Source> instance;
+  SourcePtr instance;
   auto it = constructors.find(type);
   if (it != constructors.end())
-    instance = std::shared_ptr<Source>(it->second());
+    instance = SourcePtr(it->second());
   if (instance.operator bool() && instance->load_setting_definitions(file))
     return instance;
-  return std::shared_ptr<Source>();
+  return SourcePtr();
 }
 
 void SourceFactory::register_type(std::string name, std::function<Source*(void)> typeConstructor)

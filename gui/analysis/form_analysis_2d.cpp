@@ -26,14 +26,15 @@
 #include "qt_util.h"
 #include "manip2d.h"
 #include <QInputDialog>
+#include <QSettings>
+
 
 using namespace Qpx;
 
-FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Detector>& newDetDB, QWidget *parent) :
+FormAnalysis2D::FormAnalysis2D(XMLableDB<Detector>& newDetDB, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormAnalysis2D),
   detectors_(newDetDB),
-  settings_(settings),
   my_gates_(nullptr),
   form_integration_(nullptr)
 {
@@ -41,12 +42,12 @@ FormAnalysis2D::FormAnalysis2D(QSettings &settings, XMLableDB<Detector>& newDetD
 
   initialized = false;
 
-  my_gates_ = new FormMultiGates(settings_);
+  my_gates_ = new FormMultiGates();
   connect(my_gates_, SIGNAL(gate_selected()), this, SLOT(update_peaks()));
   connect(my_gates_, SIGNAL(boxes_made()), this, SLOT(take_boxes()));
   connect(my_gates_, SIGNAL(range_changed(MarkerBox2D)), this, SLOT(update_range(MarkerBox2D)));
 
-  form_integration_ = new FormIntegration2D(settings_);
+  form_integration_ = new FormIntegration2D();
   connect(form_integration_, SIGNAL(peak_selected()), this, SLOT(update_peaks()));
   connect(form_integration_, SIGNAL(range_changed(MarkerBox2D)), this, SLOT(update_range(MarkerBox2D)));
 
@@ -193,8 +194,9 @@ void FormAnalysis2D::closeEvent(QCloseEvent *event) {
 }
 
 void FormAnalysis2D::loadSettings() {
+  QSettings settings_;
+
   settings_.beginGroup("Program");
-  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
 
@@ -211,6 +213,8 @@ void FormAnalysis2D::loadSettings() {
 }
 
 void FormAnalysis2D::saveSettings() {
+  QSettings settings_;
+
   if (my_gates_)
     my_gates_->saveSettings();
   if (form_integration_)

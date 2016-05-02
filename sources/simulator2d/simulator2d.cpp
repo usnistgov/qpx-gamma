@@ -226,7 +226,7 @@ bool Simulator2D::boot() {
   SinkPtr spectrum = temp_set.get_sink(source_spectrum_);
 
   if (spectrum == nullptr) {
-    PL_DBG << "<Simulator2D> Could not find spectrum " << spectra_names_.at(source_spectrum_);
+    PL_DBG << "<Simulator2D> Could not find selected spectrum";
     return false;
   }
 

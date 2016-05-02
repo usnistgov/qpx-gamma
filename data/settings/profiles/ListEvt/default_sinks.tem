@@ -1,0 +1,435 @@
+<?xml version="1.0"?>
+<SpectrumTemplates>
+	<SinkMetadata Type="1D">
+		<Name>s1</Name>
+		<Resolution>13</Resolution>
+		<Setting id="Options" type="stem">
+			<Setting id="visible" type="boolean" value="true">
+				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="true" description="Plot visible" />
+			</Setting>
+			<Setting id="appearance" type="color" value="#80bb0193">
+				<SettingMeta id="" type="color" address="-1" max_indices="0" writable="true" description="Plot appearance" />
+			</Setting>
+			<Setting id="rescale" type="floating_precise" value="1">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="10000000000" description="Rescale factor" />
+			</Setting>
+			<Setting id="description" type="text" value="">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" description="Description" />
+			</Setting>
+			<Setting id="start_time" type="time" value="INVALID">
+				<SettingMeta id="" type="time" address="-1" max_indices="0" writable="false" description="Start time" />
+			</Setting>
+			<Setting id="per_detector" type="stem">
+				<Setting id="detector" type="stem" indices="0">
+					<Setting id="cutoff_logic" type="integer" indices="0" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="0" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="1">
+					<Setting id="cutoff_logic" type="integer" indices="1" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="1" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="2">
+					<Setting id="cutoff_logic" type="integer" indices="2" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="2" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="3">
+					<Setting id="cutoff_logic" type="integer" indices="3" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="3" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="4">
+					<Setting id="cutoff_logic" type="integer" indices="4" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="4" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="5">
+					<Setting id="cutoff_logic" type="integer" indices="5" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="5" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="6">
+					<Setting id="cutoff_logic" type="integer" indices="6" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="6" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="7">
+					<Setting id="cutoff_logic" type="integer" indices="7" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="7" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="8">
+					<Setting id="cutoff_logic" type="integer" indices="8" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="8" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="9">
+					<Setting id="cutoff_logic" type="integer" indices="9" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="9" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="10">
+					<Setting id="cutoff_logic" type="integer" indices="10" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="10" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="11">
+					<Setting id="cutoff_logic" type="integer" indices="11" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="11" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="50">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ns" description="Coincidence window" flags="preset" />
+			</Setting>
+			<Setting id="pattern_coinc" type="pattern" value="1+ooooooooooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Coincidence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_anti" type="pattern" value="0oooooooooooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Anti-coindicence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_add" type="pattern" value="1+ooooooooooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Add pattern" flags="preset" />
+			</Setting>
+			<Setting id="live_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Live time" />
+			</Setting>
+			<Setting id="real_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Real time" />
+			</Setting>
+			<Setting id="instant_rate" type="floating" value="0">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="false" step="0" minimum="0" maximum="0" unit="cps" description="Instant count rate" />
+			</Setting>
+			<Setting id="cutoff_bin" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" flags="preset" />
+			</Setting>
+		</Setting>
+	</SinkMetadata>
+	<SinkMetadata Type="1D">
+		<Name>s2</Name>
+		<Resolution>13</Resolution>
+		<Setting id="Options" type="stem">
+			<Setting id="visible" type="boolean" value="true">
+				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="true" description="Plot visible" />
+			</Setting>
+			<Setting id="appearance" type="color" value="#80c5cb13">
+				<SettingMeta id="" type="color" address="-1" max_indices="0" writable="true" description="Plot appearance" />
+			</Setting>
+			<Setting id="rescale" type="floating_precise" value="1">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="10000000000" description="Rescale factor" />
+			</Setting>
+			<Setting id="description" type="text" value="">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" description="Description" />
+			</Setting>
+			<Setting id="start_time" type="time" value="INVALID">
+				<SettingMeta id="" type="time" address="-1" max_indices="0" writable="false" description="Start time" />
+			</Setting>
+			<Setting id="per_detector" type="stem">
+				<Setting id="detector" type="stem" indices="0">
+					<Setting id="cutoff_logic" type="integer" indices="0" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="0" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="1">
+					<Setting id="cutoff_logic" type="integer" indices="1" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="1" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="2">
+					<Setting id="cutoff_logic" type="integer" indices="2" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="2" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="3">
+					<Setting id="cutoff_logic" type="integer" indices="3" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="3" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="4">
+					<Setting id="cutoff_logic" type="integer" indices="4" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="4" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="5">
+					<Setting id="cutoff_logic" type="integer" indices="5" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="5" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="6">
+					<Setting id="cutoff_logic" type="integer" indices="6" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="6" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="7">
+					<Setting id="cutoff_logic" type="integer" indices="7" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="7" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="8">
+					<Setting id="cutoff_logic" type="integer" indices="8" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="8" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="9">
+					<Setting id="cutoff_logic" type="integer" indices="9" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="9" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="10">
+					<Setting id="cutoff_logic" type="integer" indices="10" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="10" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="11">
+					<Setting id="cutoff_logic" type="integer" indices="11" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="11" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="50">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ns" description="Coincidence window" flags="preset" />
+			</Setting>
+			<Setting id="pattern_coinc" type="pattern" value="1o+oooooooooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Coincidence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_anti" type="pattern" value="0oooooooooooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Anti-coindicence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_add" type="pattern" value="1o+oooooooooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Add pattern" flags="preset" />
+			</Setting>
+			<Setting id="live_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Live time" />
+			</Setting>
+			<Setting id="real_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Real time" />
+			</Setting>
+			<Setting id="instant_rate" type="floating" value="0">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="false" step="0" minimum="0" maximum="0" unit="cps" description="Instant count rate" />
+			</Setting>
+			<Setting id="cutoff_bin" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" flags="preset" />
+			</Setting>
+		</Setting>
+	</SinkMetadata>
+	<SinkMetadata Type="2D">
+		<Name>c12</Name>
+		<Resolution>10</Resolution>
+		<Setting id="Options" type="stem">
+			<Setting id="visible" type="boolean" value="false">
+				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="true" description="Plot visible" />
+			</Setting>
+			<Setting id="appearance" type="color" value="#8024cb8b">
+				<SettingMeta id="" type="color" address="-1" max_indices="0" writable="true" description="Plot appearance" />
+			</Setting>
+			<Setting id="rescale" type="floating_precise" value="1">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="10000000000" description="Rescale factor" />
+			</Setting>
+			<Setting id="description" type="text" value="">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" description="Description" />
+			</Setting>
+			<Setting id="start_time" type="time" value="INVALID">
+				<SettingMeta id="" type="time" address="-1" max_indices="0" writable="false" description="Start time" />
+			</Setting>
+			<Setting id="per_detector" type="stem">
+				<Setting id="detector" type="stem" indices="0">
+					<Setting id="cutoff_logic" type="integer" indices="0" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="0" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="1">
+					<Setting id="cutoff_logic" type="integer" indices="1" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="1" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="2">
+					<Setting id="cutoff_logic" type="integer" indices="2" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="2" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="3">
+					<Setting id="cutoff_logic" type="integer" indices="3" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="3" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="4">
+					<Setting id="cutoff_logic" type="integer" indices="4" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="4" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="5">
+					<Setting id="cutoff_logic" type="integer" indices="5" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="5" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="6">
+					<Setting id="cutoff_logic" type="integer" indices="6" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="6" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="7">
+					<Setting id="cutoff_logic" type="integer" indices="7" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="7" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="8">
+					<Setting id="cutoff_logic" type="integer" indices="8" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="8" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="9">
+					<Setting id="cutoff_logic" type="integer" indices="9" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="9" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="10">
+					<Setting id="cutoff_logic" type="integer" indices="10" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="10" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="11">
+					<Setting id="cutoff_logic" type="integer" indices="11" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="11" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="50">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ns" description="Coincidence window" flags="preset" />
+			</Setting>
+			<Setting id="pattern_coinc" type="pattern" value="2++oooooooooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Coincidence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_anti" type="pattern" value="0oooooooooooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Anti-coindicence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_add" type="pattern" value="2++oooooooooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Add pattern" flags="preset" />
+			</Setting>
+			<Setting id="live_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Live time" />
+			</Setting>
+			<Setting id="real_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Real time" />
+			</Setting>
+			<Setting id="instant_rate" type="floating" value="0">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="false" step="0" minimum="0" maximum="0" unit="cps" description="Instant count rate" />
+			</Setting>
+			<Setting id="buffered" type="boolean" value="false">
+				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="true" unit="T/F" description="Buffered output for efficient plotting (more memory)" flags="preset" />
+			</Setting>
+			<Setting id="symmetrized" type="boolean" value="false">
+				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="false" unit="T/F" description="Matrix is symmetrized" />
+			</Setting>
+		</Setting>
+	</SinkMetadata>
+</SpectrumTemplates>
