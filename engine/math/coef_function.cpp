@@ -70,7 +70,7 @@ bool CoefFunction::extract_params(fityk::Fityk* f, fityk::Func* func) {
     //    rsq_ = fityk->get_rsquared(0);
   }
   catch ( ... ) {
-    PL_DBG << "<" << this->type() << "> could not extract parameters from Fityk";
+    DBG << "<" << this->type() << "> could not extract parameters from Fityk";
     return false;
   }
   return true;
@@ -102,7 +102,7 @@ double CoefFunction::eval_inverse(double y, double e) {
 
   else
   {
-    PL_WARN <<"<" << this->type() << "> Maximum iteration reached in CoefFunction inverse evaluation";
+    WARN <<"<" << this->type() << "> Maximum iteration reached in CoefFunction inverse evaluation";
     return nan("");
   }
 }
@@ -122,7 +122,7 @@ bool CoefFunction::add_self(fityk::Fityk *f, int function_num) const {
     f->execute(add);
   }
   catch ( ... ) {
-    PL_DBG << "<" << this->type() << "> fit failed to add self";
+    DBG << "<" << this->type() << "> fit failed to add self";
     return false;
   }
   return true;
@@ -143,7 +143,7 @@ void CoefFunction::fit(std::vector<double> &x, std::vector<double> &y, std::vect
 //    f->execute("set fitting_method = levenberg_marquardt");
   } catch ( ... ) {
     success = false;
-    PL_DBG << "<" << this->type() << "> fit failed to set fitter";
+    DBG << "<" << this->type() << "> fit failed to set fitter";
   }
 
   try {
@@ -151,19 +151,19 @@ void CoefFunction::fit(std::vector<double> &x, std::vector<double> &y, std::vect
   }
   catch ( ... ) {
     success = false;
-    PL_DBG << "<" << this->type() << "> fit failed to define self";
+    DBG << "<" << this->type() << "> fit failed to define self";
   }
 
   if (!add_self(f)) {
     success = false;
-    PL_DBG << "<" << this->type() << "> add self failed";
+    DBG << "<" << this->type() << "> add self failed";
   }
 
   try {
     f->execute("fit");
   }
   catch ( ... ) {
-    PL_DBG << "<" << this->type() << "> Fit failed";
+    DBG << "<" << this->type() << "> Fit failed";
     success = false;
   }
 
@@ -171,7 +171,7 @@ void CoefFunction::fit(std::vector<double> &x, std::vector<double> &y, std::vect
     if (extract_params(f, f->all_functions().back()))
       rsq_ = f->get_rsquared(0);
     else
-      PL_DBG << "<" << this->type() << "> failed to extract fit parameters from Fityk";
+      DBG << "<" << this->type() << "> failed to extract fit parameters from Fityk";
   }
 
   delete f;

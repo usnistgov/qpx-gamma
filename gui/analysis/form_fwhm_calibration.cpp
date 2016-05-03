@@ -345,7 +345,7 @@ void FormFwhmCalibration::fit_calibration()
     new_calibration_.model_ = Qpx::CalibrationModel::sqrt_poly;
   }
   else
-    PL_INFO << "<WFHM calibration> Qpx::Calibration failed";
+    INFO << "<WFHM calibration> Qpx::Calibration failed";
 
 }
 

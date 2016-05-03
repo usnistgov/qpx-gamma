@@ -144,14 +144,14 @@ void SUM4::recalc(const std::vector<double> &x, const std::vector<double> &y)
     by[i-Lpeak] = B_chan;
   }
 
-//  PL_DBG << "<SUM4> bx " << bx[0] << "-" << bx[bx.size() -1];
+//  DBG << "<SUM4> bx " << bx[0] << "-" << bx[bx.size() -1];
 
   centroid.val = CsumYnet / sumYnet;
   if ((centroid.val >= 0) && (centroid.val < x.size()))
     centroid.val = x.at(static_cast<size_t>(centroid.val));
 
   double centroid_variance = (C2sumYnet / sumYnet) - pow(centroid.val, 2);
-//  PL_DBG << "sum4 c2sumy=" << C2sumYnet << " sumy=" << sumYnet << " variance " << centroid_variance;
+//  DBG << "sum4 c2sumy=" << C2sumYnet << " sumy=" << sumYnet << " variance " << centroid_variance;
   centroid.uncert = sqrt(centroid_variance);
   fwhm = 2.0 * sqrt(centroid_variance * log(4));
 }

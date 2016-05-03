@@ -52,7 +52,7 @@ double FitParam::get_err(fityk::Fityk* f,
                           std::string funcname)
 {
   std::string command = "%" + funcname + "." + name_ + ".error";
-//  PL_DBG << "<FitParam> " << command;
+//  DBG << "<FitParam> " << command;
   return f->calculate_expr(command);
 }
 
@@ -61,7 +61,7 @@ bool FitParam::extract(fityk::Fityk* f, fityk::Func* func)
   try {
     val = func->get_param_value(name_);
     uncert = get_err(f, func->name);
-//    PL_DBG << "<FitParam> " << name_ << " = " << val << " +/- " << uncert;
+//    DBG << "<FitParam> " << name_ << " = " << val << " +/- " << uncert;
   } catch (...) {
     return false;
   }

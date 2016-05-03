@@ -58,10 +58,10 @@ bool SpectrumRaw::_initialize() {
   Spectrum::_initialize();
 
   file_dir_ = get_attr("file_dir").value_text;
-  PL_DBG << "trying to create " << file_dir_;
+  DBG << "trying to create " << file_dir_;
   if (file_dir_.empty())
     return false;
-  PL_DBG << "raw: file dir not empty";
+  DBG << "raw: file dir not empty";
 
   return init_bin();
 }
@@ -85,14 +85,14 @@ bool SpectrumRaw::init_bin() {
   if (!file_bin_.is_open())
     return false;
 
-  PL_DBG << "successfully opened binary";
+  DBG << "successfully opened binary";
 
   if (!file_bin_.good() || !init_text()) {
     file_bin_.close();
     return false;
   }
 
-  PL_DBG << "binary is good";
+  DBG << "binary is good";
 
   open_bin_ = true;
   return true;
@@ -129,13 +129,13 @@ void SpectrumRaw::_push_spill(const Spill& one_spill) {
 
 void SpectrumRaw::_flush() {
   if (open_xml_) {
-    PL_DBG << "<SpectrumRaw> writing " << file_name_txt_ << " for \"" << metadata_.name << "\"";
+    DBG << "<SpectrumRaw> writing " << file_name_txt_ << " for \"" << metadata_.name << "\"";
     if (!xml_doc_.save_file(file_name_txt_.c_str()))
-      PL_ERR << "<SpectrumRaw> Failed to save " << file_name_txt_;
+      ERR << "<SpectrumRaw> Failed to save " << file_name_txt_;
     open_xml_ = false;
   }
   if (open_bin_) {
-    PL_DBG << "<SpectrumRaw> closing " << file_name_bin_ << " for \"" << metadata_.name << "\"";
+    DBG << "<SpectrumRaw> closing " << file_name_bin_ << " for \"" << metadata_.name << "\"";
     file_bin_.close();
     open_bin_ = false;
   }

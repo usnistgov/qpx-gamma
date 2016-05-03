@@ -112,7 +112,7 @@ BinaryChecklist::BinaryChecklist(Qpx::Setting setting, QWidget *parent) :
       spin->setSingleStep(sub.metadata.step);
       spin->setMaximum(sub.metadata.minimum + sub.metadata.step * max);
       spin->setValue(sub.metadata.minimum + sub.metadata.step * num);    //sub.metadata.minimum + step*
-      //      PL_DBG << "converted num " << num << " to " << spin->value();
+      //      DBG << "converted num " << num << " to " << spin->value();
       if (sub.metadata.step == 1.0)
         spin->setDecimals(0);
       vl_checks->addWidget(spin);
@@ -226,7 +226,7 @@ void BinaryChecklist::change_setting() {
   for (int i=0; i < spins_.size(); ++i) {
     if (spins_[i]->isVisible() && spins_[i]->isEnabled()) {
       double dbl = (spins_[i]->value() - spins_[i]->minimum()) / spins_[i]->singleStep();
-      //      PL_DBG << "converted dbl " << spins_[i]->value() << " to " << dbl;
+      //      DBG << "converted dbl " << spins_[i]->value() << " to " << dbl;
       int64_t num = static_cast<int64_t>(dbl);
       num = num << i;
       setting_.value_int |= num;

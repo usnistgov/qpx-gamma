@@ -96,7 +96,7 @@ void FormPlot2D::spectrumDoubleclicked(SelectorItem item)
 }
 
 void FormPlot2D::crop_changed() {
-  PL_DBG << "changing zoom";
+  DBG << "changing zoom";
   new_zoom = crop_slider_->value() / 100.0;
   ui->toolCrop->setText(QString::number(crop_slider_->value()) + "% ");
   if (this->isVisible() && (mySpectra != nullptr))
@@ -104,7 +104,7 @@ void FormPlot2D::crop_changed() {
 }
 
 void FormPlot2D::setSpectra(Project& new_set) {
-//  PL_DBG << "setSpectra with " << spectrum.toStdString();
+//  DBG << "setSpectra with " << spectrum.toStdString();
   mySpectra = &new_set;
   updateUI();
   current_spectrum_ = ui->spectrumSelector->selected().data.toLongLong();
@@ -112,7 +112,7 @@ void FormPlot2D::setSpectra(Project& new_set) {
 
 
 void FormPlot2D::reset_content() {
-  //PL_DBG << "reset content";
+  //DBG << "reset content";
   ui->coincPlot->reset_content();
   ui->coincPlot->refresh();
   x_marker = Coord();
@@ -170,7 +170,7 @@ void FormPlot2D::refresh()
 }
 
 void FormPlot2D::replot_markers() {
-  //PL_DBG << "replot markers";
+  //DBG << "replot markers";
 
   std::list<MarkerBox2D> boxes;
   std::list<MarkerLabel2D> labels;
@@ -213,7 +213,7 @@ void FormPlot2D::replot_markers() {
   gate.selected = false;
 
 
-  //PL_DBG << "FormPlot2d marker width = " << width;
+  //DBG << "FormPlot2d marker width = " << width;
 
   gate.x_c = x_marker;
   gate.y_c = y_marker;
@@ -274,7 +274,7 @@ void FormPlot2D::replot_markers() {
 }
 
 void FormPlot2D::update_plot(bool force) {
-//  PL_DBG << "updating 2d";
+//  DBG << "updating 2d";
 
   this->setCursor(Qt::WaitCursor);
   CustomTimer guiside(true);
@@ -283,7 +283,7 @@ void FormPlot2D::update_plot(bool force) {
   bool rescale2d = (zoom_2d != new_zoom);
 
   if (rescale2d || new_data || force) {
-//    PL_DBG << "really updating 2d " << name_2d.toStdString();
+//    DBG << "really updating 2d " << name_2d.toStdString();
 
     ui->pushSymmetrize->setEnabled(false);
 
@@ -301,11 +301,11 @@ void FormPlot2D::update_plot(bool force) {
 
     if ((md.total_count > 0) && (md.dimensions() == 2) && (adjrange = pow(2,md.bits) * zoom_2d))
     {
-//      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
+//      DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
       Setting sym = md.attributes.branches.get(Setting("symmetrized"));
 
-      //PL_DBG << "Sym :" << sym.id_ << "=" << sym.value_int;
+      //DBG << "Sym :" << sym.id_ << "=" << sym.value_int;
 
       ui->pushSymmetrize->setEnabled(sym.value_int == 0);
 
@@ -314,7 +314,7 @@ void FormPlot2D::update_plot(bool force) {
       ui->coincPlot->update_plot(adjrange, spectrum_data);
 
       if (rescale2d || force /*|| (name_2d != newname)*/) {
-//        PL_DBG << "rescaling 2d";
+//        DBG << "rescaling 2d";
 //        name_2d = newname;
 
         int newbits = some_spectrum->bits();
@@ -342,7 +342,7 @@ void FormPlot2D::update_plot(bool force) {
     replot_markers();
   }
 
-  PL_DBG << "<Plot2D> plotting took " << guiside.ms() << " ms";
+  DBG << "<Plot2D> plotting took " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
 }
 
@@ -351,7 +351,7 @@ void FormPlot2D::markers_moved(Coord x, Coord y) {
   y_marker = y;
   if (x.null() || y.null())
     ext_marker = Coord();
-  //PL_DBG << "markers changed";
+  //DBG << "markers changed";
   replot_markers();
 
   emit markers_set(x, y);

@@ -158,15 +158,15 @@ bool QpxHV8Plugin::write_settings_bulk(Qpx::Setting &set) {
 }
 
 void QpxHV8Plugin::set_voltage(int chan, double voltage) {
-  PL_DBG << "<HV8Plugin> Set voltage " << chan << " to " << voltage;
+  DBG << "<HV8Plugin> Set voltage " << chan << " to " << voltage;
 
   if (!port.isOpen()) {
-    PL_DBG << "<HV8Plugin> cannot read settings. Serial port is not open";
+    DBG << "<HV8Plugin> cannot read settings. Serial port is not open";
     return;
   }
 
   if (!get_prompt(attempts_)) {
-    PL_DBG << "<HV8Plugin> cannot write settings. Not logged into HV8";
+    DBG << "<HV8Plugin> cannot write settings. Not logged into HV8";
     return;
   }
 
@@ -178,14 +178,14 @@ void QpxHV8Plugin::set_voltage(int chan, double voltage) {
     if (get_prompt(attempts_)) {
       std::stringstream ss;
       ss << "s " << chan + 1 << "\r";
-//            PL_DBG << "Will write " << ss.str();
+//            DBG << "Will write " << ss.str();
       port.writeString(ss.str());
       boost::this_thread::sleep(boost::posix_time::seconds(timeout_));
 
       if (get_prompt(attempts_)) {
         std::stringstream ss2;
         ss2 << "v " << voltage << "\r";
-//                PL_DBG << "Will write " << ss2.str();
+//                DBG << "Will write " << ss2.str();
         port.writeString(ss2.str());
         boost::this_thread::sleep(boost::posix_time::seconds(timeout_));
 
@@ -209,18 +209,18 @@ bool QpxHV8Plugin::get_prompt(uint16_t attempts) {
   for (int i=0; i < attempts; ++i) {
     std::string lines;
     try { lines = port.readStringUntil(">"); }
-    catch (...) { /*PL_ERR << "<HV8Plugin> could not read line from serial";*/ }
+    catch (...) { /*ERR << "<HV8Plugin> could not read line from serial";*/ }
     boost::algorithm::trim_if(lines, boost::algorithm::is_any_of("\r\n\t "));
     std::vector<std::string> tokens;
     boost::algorithm::split(tokens, lines, boost::algorithm::is_any_of("\r\n\t "));
 
-//    PL_DBG << "lines " << lines;
+//    DBG << "lines " << lines;
 
     std::string line;
     if (!tokens.empty())
       line = tokens[tokens.size() - 1];
 
-//    PL_DBG << "last token " << line;
+//    DBG << "last token " << line;
 
     if (line == "->") {
       success = true;
@@ -242,15 +242,15 @@ bool QpxHV8Plugin::get_prompt(uint16_t attempts) {
 
         std::string line;
         try { line = port.readStringUntil(":"); }
-        catch (...) { /*PL_ERR << "<HV8Plugin> could not read line from serial";*/ }
+        catch (...) { /*ERR << "<HV8Plugin> could not read line from serial";*/ }
         boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
 
         std::vector<std::string> tokens;
         boost::algorithm::split(tokens, line, boost::algorithm::is_any_of("\r\n\t "));
 
-//        PL_DBG << line;
+//        DBG << line;
         if (!tokens.empty() && (tokens[tokens.size() - 1] == "Login:")) {
-//          PL_DBG << "login prompt";
+//          DBG << "login prompt";
           success = true;
           break;
         }
@@ -267,11 +267,11 @@ bool QpxHV8Plugin::get_prompt(uint16_t attempts) {
           port.writeString("HV8\r");
           std::string line;
           try { line = port.readStringUntil(">"); }
-          catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
+          catch (...) { ERR << "<HV8Plugin> could not read line from serial"; }
           boost::algorithm::trim_if(line, boost::algorithm::is_any_of("\r\n\t "));
-          PL_DBG << line;
+          DBG << line;
           if (line == "+>") {
-//            PL_DBG << "logged in";
+//            DBG << "logged in";
             logged = true;
             break;
           }
@@ -285,10 +285,10 @@ bool QpxHV8Plugin::get_prompt(uint16_t attempts) {
 
 
 bool QpxHV8Plugin::boot() noexcept(false) {
-  PL_DBG << "<HV8Plugin> Attempting to boot";
+  DBG << "<HV8Plugin> Attempting to boot";
 
   if (!(status_ & SourceStatus::can_boot)) {
-    PL_WARN << "<HV8Plugin> Cannot boot. Failed flag check (can_boot == 0)";
+    WARN << "<HV8Plugin> Cannot boot. Failed flag check (can_boot == 0)";
     return false;
   }
 
@@ -298,18 +298,18 @@ bool QpxHV8Plugin::boot() noexcept(false) {
     port.open(portname, baudrate, parity, boost::asio::serial_port_base::character_size(charactersize), flowcontrol, stopbits);
     port.setTimeout(boost::posix_time::milliseconds(timeout_ * 1000));
   } catch (...) {
-    PL_ERR << "<HV8Plugin> could not open serial port";
+    ERR << "<HV8Plugin> could not open serial port";
     return false;
   }
 
   if (!port.isOpen()) {
-    PL_DBG << "<HV8Plugin> serial port could not be opened";
+    DBG << "<HV8Plugin> serial port could not be opened";
     return false;
   }
 
 
   if (get_prompt(attempts_)) {
-      PL_DBG << "<HV8Plugin> Logged in. Startup successful";
+      DBG << "<HV8Plugin> Logged in. Startup successful";
       status_ = SourceStatus::loaded | SourceStatus::booted;
       return true;
   } else
@@ -318,7 +318,7 @@ bool QpxHV8Plugin::boot() noexcept(false) {
 }
 
 bool QpxHV8Plugin::die() {
-  PL_DBG << "<HV8Plugin> Disconnecting";
+  DBG << "<HV8Plugin> Disconnecting";
 
   port.close();
 
@@ -331,12 +331,12 @@ void QpxHV8Plugin::get_all_settings() {
     return;
 
   if (!port.isOpen()) {
-    PL_DBG << "<HV8Plugin> cannot read settings. Serial port is not open";
+    DBG << "<HV8Plugin> cannot read settings. Serial port is not open";
     return;
   }
 
   if (!get_prompt(attempts_)) {
-    PL_DBG << "<HV8Plugin> cannot read settings. Not logged into HV8";
+    DBG << "<HV8Plugin> cannot read settings. Not logged into HV8";
     return;
   }
 
@@ -355,16 +355,16 @@ void QpxHV8Plugin::get_all_settings() {
     std::string line;
 
     try { line = port.readStringUntil(">"); }
-    catch (...) { PL_ERR << "<HV8Plugin> could not read line from serial"; }
+    catch (...) { ERR << "<HV8Plugin> could not read line from serial"; }
 
-//        PL_DBG << "will tokenize: " << line << "<end>";
+//        DBG << "will tokenize: " << line << "<end>";
     boost::algorithm::split(tokens, line, boost::algorithm::is_any_of("\r\n"));
 
     //    for (auto &q : tokens) {
-    //      PL_DBG << "token: " << q;
+    //      DBG << "token: " << q;
     //    }
 
-    //    PL_DBG << "tokenized size = " << tokens.size();
+    //    DBG << "tokenized size = " << tokens.size();
     if (tokens.size() > 6) {
       success = true;
       break;
@@ -377,25 +377,25 @@ void QpxHV8Plugin::get_all_settings() {
       q.erase(std::unique(q.begin(), q.end(),
             [](char a, char b) { return a == ' ' && b == ' '; } ), q.end() );
 
-      //PL_DBG << "tokenizing " << q;
+      //DBG << "tokenizing " << q;
       std::vector<std::string> tokens2;
       boost::algorithm::split(tokens2, q, boost::algorithm::is_any_of("\t "));
       if (tokens2.size() > 2) {
 
 
-        //PL_DBG << "tokens2 size " << tokens2.size();
+        //DBG << "tokens2 size " << tokens2.size();
         //for (auto &q : tokens2) {
-        //  PL_DBG << " token: " << q;
+        //  DBG << " token: " << q;
         //}
         int chan = boost::lexical_cast<int>(tokens2[0]);
         double voltage = boost::lexical_cast<double>(tokens2[1]);
-//                PL_DBG << "Voltage for chan " << chan << " reported as " << voltage;
+//                DBG << "Voltage for chan " << chan << " reported as " << voltage;
         if ((chan >= 1) && (chan <= voltages.size()))
           voltages[chan-1] = voltage;
       }
     }
   }
-  PL_DBG << "<HV8> read all voltages";
+  DBG << "<HV8> read all voltages";
 
 }
 

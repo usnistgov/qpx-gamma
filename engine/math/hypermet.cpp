@@ -65,7 +65,7 @@ bool Hypermet::extract_params(fityk::Fityk* f, fityk::Func* func) {
     step_amplitude.extract(f, func);
   }
   catch ( ... ) {
-    PL_DBG << "Hypermet could not extract parameters from Fityk";
+    DBG << "Hypermet could not extract parameters from Fityk";
     return false;
   }
   return true;
@@ -127,14 +127,14 @@ Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y,
         f->execute("set fitting_method = nlopt_lbfgs");
   } catch ( ... ) {
     success = false;
-    PL_DBG << "Hypermet failed to set fitter";
+    DBG << "Hypermet failed to set fitter";
   }
 
   try {
     f->execute(fityk_definition());
   } catch ( ... ) {
     success = false;
-    PL_DBG << "Hypermet failed to define";
+    DBG << "Hypermet failed to define";
   }
 
   double lateral_slack = (x[x.size() -1]  - x[0]) / 5.0;
@@ -165,7 +165,7 @@ Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y,
 
   std::string initial = "F += Hypermet($c,$h,$w,$lsh,$lss,$rsh,$rss,$step)";
 
-  //PL_DBG << "Hypermet initial c=" << center_ << " h=" << height_ << " w=" << width_;
+  //DBG << "Hypermet initial c=" << center_ << " h=" << height_ << " w=" << width_;
 
   try {
     f->execute(initial_h);
@@ -182,14 +182,14 @@ Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y,
 
   } catch ( ... ) {
     success = false;
-    PL_DBG << "Hypermet: failed to set up initial";
+    DBG << "Hypermet: failed to set up initial";
   }
 
   try {
     f->execute("fit");
   }
   catch ( ... ) {
-    PL_DBG << "Hypermet could not fit";
+    DBG << "Hypermet could not fit";
     success = false;
   }
 
@@ -234,7 +234,7 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
 //    f->execute("set fitting_method = levenberg_marquardt");
   } catch ( ... ) {
     success = false;
-    PL_DBG << "Hypermet multifit failed to set fitter";
+    DBG << "Hypermet multifit failed to set fitter";
   }
 
   try {
@@ -242,7 +242,7 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
     f->execute(background.fityk_definition());
   } catch ( ... ) {
     success = false;
-    PL_DBG << "Hypermet multifit failed to define";
+    DBG << "Hypermet multifit failed to define";
   }
 
 
@@ -268,7 +268,7 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
       f->execute(w_common.def_var());
     } catch ( ... ) {
       success = false;
-      PL_DBG << "Hypermet: multifit failed to define w_common";
+      DBG << "Hypermet: multifit failed to define w_common";
     }
   }
 
@@ -277,7 +277,7 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
     background.add_self(f);
   } catch ( ... ) {
     success = false;
-    PL_DBG << "Hypermet: multifit failed to set up initial globals";
+    DBG << "Hypermet: multifit failed to set up initial globals";
   }
 
   bool can_uncert = true;
@@ -339,7 +339,7 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
       f->execute(initial);
     }
     catch ( ... ) {
-      PL_DBG << "Hypermet multifit failed to set up initial locals for peak " << i;
+      DBG << "Hypermet multifit failed to set up initial locals for peak " << i;
       success = false;
     }
 
@@ -356,11 +356,11 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
 ////    f->execute("set fitting_method = levenberg_marquardt");
 //      f->execute("fit");
 ////    f->execute("fit " + boost::lexical_cast<std::string>(settings.fitter_max_iter));
-////    PL_DBG << "refit with mp done";
+////    DBG << "refit with mp done";
 //    }
   }
   catch ( ... ) {
-    PL_DBG << "Hypermet multifit failed to fit";
+    DBG << "Hypermet multifit failed to fit";
     success = false;
   }
 
@@ -370,7 +370,7 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
 //    f->execute("info state > nl.fit");
 
 //    } catch ( ... ) {
-//      PL_DBG << "Hypermet multifit failed to do error thing";
+//      DBG << "Hypermet multifit failed to do error thing";
 //      success = false;
 //    }
 

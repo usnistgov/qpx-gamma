@@ -109,7 +109,7 @@ void FormSymmetrize2D::make_gated_spectra() {
 
   Metadata md = source_spectrum->metadata();
 
-  //  PL_DBG << "Coincidence gate x[" << xmin_ << "-" << xmax_ << "]   y[" << ymin_ << "-" << ymax_ << "]";
+  //  DBG << "Coincidence gate x[" << xmin_ << "-" << xmax_ << "]   y[" << ymin_ << "-" << ymax_ << "]";
 
   if ((md.total_count > 0) && (md.dimensions() == 2))
   {
@@ -155,8 +155,8 @@ void FormSymmetrize2D::initialize() {
         //HACK!!!
       }
 
-      PL_DBG << "det1 " << detector1_.name_;
-      PL_DBG << "det2 " << detector2_.name_;
+      DBG << "det1 " << detector1_.name_;
+      DBG << "det2 " << detector2_.name_;
 
       if (detector1_.energy_calibrations_.has_a(Calibration("Energy", md.bits)))
         nrg_calibration1_ = detector1_.energy_calibrations_.get(Calibration("Energy", md.bits));
@@ -251,9 +251,9 @@ void FormSymmetrize2D::symmetrize()
       initialize();
       emit spectraChanged();
     } else
-      PL_WARN << "<FormSymmetrize2D> could not add symmetrized spectrum to project " << destination->name();
+      WARN << "<FormSymmetrize2D> could not add symmetrized spectrum to project " << destination->name();
   } else {
-    PL_WARN << "<FormSymmetrize2D> could not symmetrize " << destination->name();
+    WARN << "<FormSymmetrize2D> could not symmetrize " << destination->name();
     this->setCursor(Qt::ArrowCursor);
     return;
   }
@@ -305,7 +305,7 @@ void FormSymmetrize2D::apply_gain_calibration()
 
     if (modified != Detector())
     {
-      PL_INFO << "   applying new gain_match calibrations for " << modified.name_ << " in detector database";
+      INFO << "   applying new gain_match calibrations for " << modified.name_ << " in detector database";
       modified.gain_match_calibrations_.replace(gain_match_cali_);
       detectors_.replace(modified);
       emit detectorsChanged();
@@ -319,7 +319,7 @@ void FormSymmetrize2D::apply_gain_calibration()
       Metadata md = q.second->metadata();
       for (auto &p : md.detectors) {
         if (p.shallow_equals(detector2_)) {
-          PL_INFO << "   applying new calibrations for " << detector2_.name_ << " on " << q.second->name();
+          INFO << "   applying new calibrations for " << detector2_.name_ << " on " << q.second->name();
           p.gain_match_calibrations_.replace(gain_match_cali_);
         }
       }
@@ -333,7 +333,7 @@ void FormSymmetrize2D::apply_gain_calibration()
 
 //    for (auto &p : sp.detectors) {
 //      if (p.shallow_equals(detector2_)) {
-//        PL_INFO << "   applying new calibrations for " << detector2_.name_ << " in current project " << spectra_->identity();
+//        INFO << "   applying new calibrations for " << detector2_.name_ << " in current project " << spectra_->identity();
 //        p.gain_match_calibrations_.replace(gain_match_cali_);
 //      }
 //    }

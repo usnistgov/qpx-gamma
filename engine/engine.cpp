@@ -61,31 +61,30 @@ void Engine::initialize(std::string profile_path, std::string settings_path) {
   //don't allow this twice?
   profile_path_ = profile_path;
 
-  PL_DBG << "Engine will attempt to initialize with profile at " << profile_path_;
+  DBG << "<Engine> attempting to initialize profile at " << profile_path_;
+
+  Qpx::Setting tree, descr;
 
   pugi::xml_document doc;
-  if (!doc.load_file(profile_path_.c_str()))
-    return;
-  PL_DBG << "<Engine> Loading device settings " << profile_path_;
+  if (doc.load_file(profile_path_.c_str()))
+  {
+    DBG << "<Engine> Loading device settings " << profile_path_;
+    pugi::xml_node root = doc.child(Qpx::Setting().xml_element_name().c_str());
+    if (root) {
+      tree = Qpx::Setting(root);
+      tree.metadata.saveworthy = true;
+      descr = tree.get_setting(Qpx::Setting("Profile description"), Qpx::Match::id);
+      descr.metadata.setting_type = Qpx::SettingType::text;
+      descr.metadata.writable = true;
+      tree.branches.replace(descr);
+    }
+  }
 
-  pugi::xml_node root = doc.child(Qpx::Setting().xml_element_name().c_str());
-  if (!root)
-    return;
-
-  Qpx::Setting tree(root);
-
-  //tree.metadata.setting_type = Qpx::SettingType::stem;
-  tree.metadata.saveworthy = true;
-
-  Qpx::Setting descr = tree.get_setting(Qpx::Setting("Profile description"), Qpx::Match::id);
-  descr.metadata.setting_type = Qpx::SettingType::text;
-  descr.metadata.writable = true;
-  tree.branches.replace(descr);
 
   boost::filesystem::path path(settings_path);
 
 //  if (!boost::filesystem::is_directory(path)) {
-//    PL_DBG << "<Engine> Bad profile root directory. Will not proceed with loading device settings";
+//    DBG << "<Engine> Bad profile root directory. Will not proceed with loading device settings";
 //    return;
 //  }
 
@@ -97,7 +96,7 @@ void Engine::initialize(std::string profile_path, std::string settings_path) {
       boost::filesystem::path dev_settings = path / q.value_text;
       SourcePtr device = SourceFactory::getInstance().create_type(q.id_, dev_settings.string());
       if (device) {
-        PL_DBG << "<Engine> Success loading " << device->device_name();
+        DBG << "<Engine> Success loading " << device->device_name();
         devices_[q.id_] = device;
       }
     }
@@ -107,7 +106,8 @@ void Engine::initialize(std::string profile_path, std::string settings_path) {
   get_all_settings();
   save_optimization();
 
-  PL_INFO << "<Engine> Welcome to " << descr.value_text;
+  if (!descr.value_text.empty())
+    INFO << "<Engine> Welcome to " << descr.value_text;
 }
 
 Engine::~Engine() {
@@ -127,9 +127,9 @@ Engine::~Engine() {
     dev_settings.to_xml(doc);
 
     if (doc.save_file(profile_path_.c_str()))
-      PL_ERR << "<Engine> Saved settings to " << profile_path_;
+      ERR << "<Engine> Saved settings to " << profile_path_;
     else
-      PL_ERR << "<Engine> Failed to save device settings";
+      ERR << "<Engine> Failed to save device settings";
   }
 
 }
@@ -139,15 +139,15 @@ Qpx::Setting Engine::pull_settings() const {
 }
 
 void Engine::push_settings(const Qpx::Setting& newsettings) {
-  //PL_INFO << "settings pushed";
-
   settings_tree_ = newsettings;
   write_settings_bulk();
+
+//  INFO << "settings pushed branches = " << settings_tree_.branches.size();
 }
 
 bool Engine::read_settings_bulk(){
   for (auto &set : settings_tree_.branches.my_data_) {
-    //PL_INFO << "read bulk "  << set.name;
+    //INFO << "read bulk "  << set.name;
     if (set.id_ == "Detectors") {
 
       //set.metadata.step = 2; //to always save
@@ -170,7 +170,7 @@ bool Engine::read_settings_bulk(){
 
       save_optimization();
     } else if (devices_.count(set.id_)) {
-      //PL_DBG << "read settings bulk > " << set.id_;
+      //DBG << "read settings bulk > " << set.id_;
       devices_[set.id_]->read_settings_bulk(set);
     }
 
@@ -183,7 +183,7 @@ bool Engine::write_settings_bulk(){
     if (set.id_ == "Detectors") {
       rebuild_structure(set);
     } else if (devices_.count(set.id_)) {
-      //PL_DBG << "write settings bulk > " << set.id_;
+      //DBG << "write settings bulk > " << set.id_;
       devices_[set.id_]->write_settings_bulk(set);
     }
   }
@@ -203,17 +203,17 @@ void Engine::rebuild_structure(Qpx::Setting &set) {
 }
 
 bool Engine::boot() {
-  PL_INFO << "<Engine> Booting system...";
+  INFO << "<Engine> Booting system...";
 
   bool success = false;
   for (auto &q : devices_)
     if ((q.second != nullptr) && (q.second->status() & SourceStatus::can_boot)) {
       success |= q.second->boot();
-      //PL_DBG << "daq_start > " << q.second->device_name();
+      //DBG << "daq_start > " << q.second->device_name();
     }
 
   if (success) {
-    PL_INFO << "<Engine> Boot successful.";
+    INFO << "<Engine> Boot successful.";
     //settings_tree_.value_int = 2;
     get_all_settings();
   }
@@ -226,7 +226,7 @@ bool Engine::die() {
   for (auto &q : devices_)
     if ((q.second != nullptr) && (q.second->status() & SourceStatus::booted)) {
       success |= q.second->die();
-      //PL_DBG << "die > " << q.second->device_name();
+      //DBG << "die > " << q.second->device_name();
     }
 
   if (success) {
@@ -242,7 +242,7 @@ std::vector<Trace> Engine::oscilloscope() {
 
   for (auto &q : devices_)
     if ((q.second != nullptr) && (q.second->status() & SourceStatus::can_oscil)) {
-      //PL_DBG << "oscil > " << q.second->device_name();
+      //DBG << "oscil > " << q.second->device_name();
       std::map<int, std::vector<uint16_t>> trc = q.second->oscilloscope();
       for (auto &p : trc) {
         if ((p.first >= 0) && (p.first < detectors_.size())) {
@@ -260,7 +260,7 @@ bool Engine::daq_start(SynchronizedQueue<Spill*>* out_queue) {
   for (auto &q : devices_)
     if ((q.second != nullptr) && (q.second->status() & SourceStatus::can_run)) {
       success |= q.second->daq_start(out_queue);
-      //PL_DBG << "daq_start > " << q.second->device_name();
+      //DBG << "daq_start > " << q.second->device_name();
     }
   return success;
 }
@@ -270,7 +270,7 @@ bool Engine::daq_stop() {
   for (auto &q : devices_)
     if ((q.second != nullptr) && (q.second->status() & SourceStatus::can_run)) {
       success |= q.second->daq_stop();
-      //PL_DBG << "daq_stop > " << q.second->device_name();
+      //DBG << "daq_stop > " << q.second->device_name();
     }
   return success;
 }
@@ -280,7 +280,7 @@ bool Engine::daq_running() {
   for (auto &q : devices_)
     if ((q.second != nullptr) && (q.second->status() & SourceStatus::can_run)) {
       running |= q.second->daq_running();
-      //PL_DBG << "daq_check > " << q.second->device_name();
+      //DBG << "daq_check > " << q.second->device_name();
     }
   return running;
 }
@@ -302,13 +302,13 @@ void Engine::set_detector(int ch, Qpx::Detector det) {
   if (ch < 0 || ch >= detectors_.size())
     return;
   detectors_[ch] = det;
-  //PL_DBG << "set det #" << ch << " to  " << det.name_;
+  //DBG << "set det #" << ch << " to  " << det.name_;
 
   for (auto &set : settings_tree_.branches.my_data_) {
     if (set.id_ == "Detectors") {
       for (auto &q : set.branches.my_data_) {
         if (q.indices.count(ch) > 0) {
-          //    PL_DBG << "set det in tree #" << ch << " to  " << detectors_[ch].name_;
+          //    DBG << "set det in tree #" << ch << " to  " << detectors_[ch].name_;
 
           q.value_text = detectors_[ch].name_;
           load_optimization(ch);
@@ -323,7 +323,7 @@ void Engine::save_optimization() {
   start = 0; stop = detectors_.size() - 1;
 
   for (int i = start; i <= stop; i++) {
-    //PL_DBG << "Saving optimization channel " << i << " settings for " << detectors_[i].name_;
+    //DBG << "Saving optimization channel " << i << " settings for " << detectors_[i].name_;
     detectors_[i].settings_ = Qpx::Setting();
     detectors_[i].settings_.indices.insert(i);
     save_det_settings(detectors_[i].settings_, settings_tree_, Qpx::Match::indices);
@@ -366,13 +366,13 @@ void Engine::save_det_settings(Qpx::Setting& result, const Qpx::Setting& root, Q
   if (root.metadata.setting_type == Qpx::SettingType::stem) {
     for (auto &q : root.branches.my_data_)
       save_det_settings(result, q, flags);
-    //PL_DBG << "maybe created stem " << stem << "/" << root.name;
+    //DBG << "maybe created stem " << stem << "/" << root.name;
   } else if ((root.metadata.setting_type != Qpx::SettingType::detector) && root.compare(result, flags))
   {
     Qpx::Setting set(root);
     //set.indices.clear();
     result.branches.add(set);
-    //PL_DBG << "saved setting " << stem << "/" << root.name;
+    //DBG << "saved setting " << stem << "/" << root.name;
   }
 }
 
@@ -380,11 +380,11 @@ void Engine::load_det_settings(Qpx::Setting det, Qpx::Setting& root, Qpx::Match 
   if ((root.metadata.setting_type == Qpx::SettingType::none) || det.id_.empty())
     return;
   if (root.metadata.setting_type == Qpx::SettingType::stem) {
-    //PL_DBG << "comparing stem for " << det.name << " vs " << root.name;
+    //DBG << "comparing stem for " << det.name << " vs " << root.name;
     for (auto &q : root.branches.my_data_)
       load_det_settings(det, q, flags);
   } else if (root.compare(det, flags)) {
-    //PL_DBG << "applying " << det.name;
+    //DBG << "applying " << det.name;
     root.value_dbl = det.value_dbl;
     root.value_int = det.value_int;
     root.value_text = det.value_text;
@@ -411,14 +411,14 @@ void Engine::getMca(uint64_t timeout, Project& spectra, boost::atomic<bool>& int
   boost::unique_lock<boost::mutex> lock(mutex_);
 
   if (!(aggregate_status_ & SourceStatus::can_run)) {
-    PL_WARN << "<Engine> No devices exist that can perform acquisition";
+    WARN << "<Engine> No devices exist that can perform acquisition";
     return;
   }
 
   if (timeout > 0)
-    PL_INFO << "<Engine> Spectra acquisition scheduled for " << timeout << " seconds";
+    INFO << "<Engine> Spectra acquisition scheduled for " << timeout << " seconds";
   else
-    PL_INFO << "<Engine> Spectra acquisition indefinite run";
+    INFO << "<Engine> Spectra acquisition indefinite run";
 
   CustomTimer *anouncement_timer = nullptr;
   double secs_between_anouncements = 5;
@@ -435,7 +435,7 @@ void Engine::getMca(uint64_t timeout, Project& spectra, boost::atomic<bool>& int
   parsedQueue.enqueue(spill);
 
   if (daq_start(&parsedQueue))
-    PL_DBG << "<Engine> Started device daq threads";
+    DBG << "<Engine> Started device daq threads";
 
   CustomTimer total_timer(timeout, true);
   anouncement_timer = new CustomTimer(true);
@@ -444,19 +444,19 @@ void Engine::getMca(uint64_t timeout, Project& spectra, boost::atomic<bool>& int
     wait_ms(1000);
     if (anouncement_timer->s() > secs_between_anouncements) {
       if (timeout > 0)
-        PL_INFO << "  RUNNING Elapsed: " << total_timer.done()
+        INFO << "  RUNNING Elapsed: " << total_timer.done()
                 << "  ETA: " << total_timer.ETA();
       else
-        PL_INFO << "  RUNNING Elapsed: " << total_timer.done();
+        INFO << "  RUNNING Elapsed: " << total_timer.done();
 
       delete anouncement_timer;
       anouncement_timer = new CustomTimer(true);
     }
     if (interruptor.load() || (timeout && total_timer.timeout())) {
       if (daq_stop())
-        PL_DBG << "<Engine> Stopped device daq threads successfully";
+        DBG << "<Engine> Stopped device daq threads successfully";
       else
-        PL_ERR << "<Engine> Failed to stop device daq threads";
+        ERR << "<Engine> Failed to stop device daq threads";
     }
   }
 
@@ -483,14 +483,14 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
   boost::unique_lock<boost::mutex> lock(mutex_);
 
   if (!(aggregate_status_ & SourceStatus::can_run)) {
-    PL_WARN << "<Engine> No devices exist that can perform acquisition";
+    WARN << "<Engine> No devices exist that can perform acquisition";
     return nullptr;
   }
 
   if (timeout > 0)
-    PL_INFO << "<Engine> List mode acquisition scheduled for " << timeout << " seconds";
+    INFO << "<Engine> List mode acquisition scheduled for " << timeout << " seconds";
   else
-    PL_INFO << "<Engine> List mode acquisition indefinite run";
+    INFO << "<Engine> List mode acquisition indefinite run";
 
   Spill* one_spill;
   ListData* result = new ListData;
@@ -506,7 +506,7 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
   SynchronizedQueue<Spill*> parsedQueue;
 
   if (daq_start(&parsedQueue))
-    PL_DBG << "<Engine> Started device daq threads";
+    DBG << "<Engine> Started device daq threads";
 
   CustomTimer total_timer(timeout, true);
   anouncement_timer = new CustomTimer(true);
@@ -514,16 +514,16 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
   while (daq_running()) {
     wait_ms(1000);
     if (anouncement_timer->s() > secs_between_anouncements) {
-      PL_INFO << "  RUNNING Elapsed: " << total_timer.done()
+      INFO << "  RUNNING Elapsed: " << total_timer.done()
               << "  ETA: " << total_timer.ETA();
       delete anouncement_timer;
       anouncement_timer = new CustomTimer(true);
     }
     if (interruptor.load() || (timeout && total_timer.timeout())) {
       if (daq_stop())
-        PL_DBG << "<Engine> Stopped device daq threads successfully";
+        DBG << "<Engine> Stopped device daq threads successfully";
       else
-        PL_ERR << "<Engine> Failed to stop device daq threads";
+        ERR << "<Engine> Failed to stop device daq threads";
     }
   }
 
@@ -558,7 +558,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
 
   std::multiset<Spill*> current_spills;
 
-  PL_DBG << "<Engine> Spectra builder thread initiated";
+  DBG << "<Engine> Spectra builder thread initiated";
   Spill* in_spill  = nullptr;
   Spill* out_spill = nullptr;
   while (true) {
@@ -573,7 +573,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
     }
 
 //    if (in_spill)
-//      PL_DBG << "<Engine: worker_MCA> spill backlog " << current_spills.size()
+//      DBG << "<Engine: worker_MCA> spill backlog " << current_spills.size()
 //             << " at arrival of " << boost::posix_time::to_iso_extended_string(in_spill->time);
 
     bool empty = false;
@@ -631,7 +631,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
       }
       presort_timer.stop();
 
-//      PL_DBG << "<Engine> Presort pushed " << presort_hits << " hits, ";
+//      DBG << "<Engine> Presort pushed " << presort_hits << " hits, ";
 //                               " time/hit: " << presort_timer.us()/presort_hits << "us, "
 //                               " time/cycle: " << presort_timer.us()/presort_cycles  << "us, "
 //                               " compares/hit: " << double(presort_compares)/double(presort_hits) << ", "
@@ -667,7 +667,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
       break;
   }
 
-  PL_INFO << "<Engine> Spectra builder terminating";
+  INFO << "<Engine> Spectra builder terminating";
 
   spectra->flush();
 }

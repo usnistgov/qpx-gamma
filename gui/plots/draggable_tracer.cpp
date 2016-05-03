@@ -52,17 +52,17 @@ void DraggableTracer::set_limits(double l , double r) {
 
 void DraggableTracer::startMoving(const QPointF &mousePos)
 {
-//  PL_DBG << "started moving";
+//  DBG << "started moving";
 
   connect(parentPlot(), SIGNAL(mouseMove(QMouseEvent*)),
           this, SLOT(onMouseMove(QMouseEvent*)));
 
   if (connect(parentPlot(), SIGNAL(mouseRelease(QMouseEvent*)),
           this, SLOT(stopMov(QMouseEvent*))))
-//    PL_DBG << "connected successfully";
+//    DBG << "connected successfully";
 
 
-//  PL_DBG << "connected";
+//  DBG << "connected";
 
   grip_delta_.setX(parentPlot()->xAxis->coordToPixel(center_tracer_->position->key()) - mousePos.x());
 
@@ -77,7 +77,7 @@ void DraggableTracer::startMoving(const QPointF &mousePos)
 
 void DraggableTracer::stopMov(QMouseEvent* evt)
 {
-//  PL_DBG << "stopped moving";
+//  DBG << "stopped moving";
   disconnect(parentPlot(), SIGNAL(mouseMove(QMouseEvent*)),
              this, SLOT(onMouseMove(QMouseEvent*)));
 

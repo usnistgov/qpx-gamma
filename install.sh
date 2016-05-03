@@ -1,5 +1,6 @@
 #!/bin/bash
-./prep.sh
+make distclean
+./config.sh
 make release
 SOURCEDIR=./data/*
 DESTDIR=$HOME/qpx

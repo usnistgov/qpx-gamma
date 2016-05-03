@@ -229,7 +229,7 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, uint64_t 
         one_hit.energy = DigitizedVal(0, 12);
       else if (resolution == 0)
         one_hit.energy = DigitizedVal(0, 11);
-//                  PL_DBG << "  MADC header module=" << module << "  resolution=" << resolution
+//                  DBG << "  MADC header module=" << module << "  resolution=" << resolution
 //                         << "  words=" << words_f << "  upshift=" << upshift;
       headers++;
       madc_pattern += "H";
@@ -241,7 +241,7 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, uint64_t 
       uint64_t last_time_lower = last_time & 0x000000003fffffff;
       if (timestamp < last_time_lower) {
         time_upper += 0x40000000;
-        PL_DBG << "<MADC32> time rollover";
+        DBG << "<MADC32> time rollover";
       }
       last_time = timestamp | time_upper;
 
@@ -250,12 +250,12 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, uint64_t 
 
 
       footers++;
-//      PL_DBG << "  MADC timestamp: " << itobin32(timestamp);
+//      DBG << "  MADC timestamp: " << itobin32(timestamp);
     } else if ((word & evt_mask) == evt_c) {
       int chan_nr = (word & det_mask) >> 16;
       uint16_t nrg = (word & nrg_mask);
       bool overflow = ((word & ovrfl_c) != 0);
-//                  PL_DBG << "  MADC hit detector=" << chan_nr << "  energy=" << nrg << "  overflow=" << overflow;
+//                  DBG << "  MADC hit detector=" << chan_nr << "  energy=" << nrg << "  overflow=" << overflow;
 
 
       one_hit.source_channel   = chan_nr;
@@ -268,11 +268,11 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, uint64_t 
     } else {
       madc_pattern += "?";
 
-//      PL_DBG << "Unrecognized data in buffer";
+//      DBG << "Unrecognized data in buffer";
     }
   }
 
-//  PL_DBG << "<MADC32> parsed " << madc_pattern;
+//  DBG << "<MADC32> parsed " << madc_pattern;
 
   if ((headers != 1) || (headers != footers))
     hits.clear();

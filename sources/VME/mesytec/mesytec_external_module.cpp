@@ -67,7 +67,7 @@ bool MesytecExternal::connected() const {
   if (!controller_->RC_get_ID(modnum_, status))
     return false;
 
-  PL_DBG << "<" << this->device_name() << "> Mesytec external module at " << modnum_
+  DBG << "<" << this->device_name() << "> Mesytec external module at " << modnum_
          << " has status " << ((status & 1) != 0)
          << " with ID " << (status >> 1);
 
@@ -92,12 +92,12 @@ bool MesytecExternal::read_settings_bulk(Qpx::Setting &set) const {
   for (auto &k : set.branches.my_data_) {
     if (k.metadata.setting_type != Qpx::SettingType::stem)
     {
-      if (!read_setting(k)) {/*PL_DBG << "Could not read " << k.id_;*/}
+      if (!read_setting(k)) {/*DBG << "Could not read " << k.id_;*/}
     }
     else  {
       for (auto &p : k.branches.my_data_) {
         if (k.metadata.setting_type != Qpx::SettingType::stem) {
-          if (!read_setting(p)) {/*PL_DBG << "Could not read " << p.id_;*/}
+          if (!read_setting(p)) {/*DBG << "Could not read " << p.id_;*/}
         }
       }
     }
@@ -118,14 +118,14 @@ bool MesytecExternal::write_settings_bulk(Qpx::Setting &set) {
     if (k.metadata.setting_type != Qpx::SettingType::stem) {
       Qpx::Setting s = k;
       if (k.metadata.writable && read_setting(s) && (s != k)) {
-        if (!write_setting(k)) {/*PL_DBG << "Could not write " << k.id_;*/}
+        if (!write_setting(k)) {/*DBG << "Could not write " << k.id_;*/}
       }
     } else {
       for (auto &p : k.branches.my_data_) {
         if (k.metadata.setting_type != Qpx::SettingType::stem) {
           Qpx::Setting s = p;
           if (p.metadata.writable && read_setting(s) && (s != p)) {
-            if (!write_setting(p)) {/*PL_DBG << "Could not write " << p.id_;*/}
+            if (!write_setting(p)) {/*DBG << "Could not write " << p.id_;*/}
           }
         }
       }

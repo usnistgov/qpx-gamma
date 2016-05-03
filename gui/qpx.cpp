@@ -91,7 +91,9 @@ qpx::qpx(QWidget *parent) :
   connect(ui->qpxTabs, SIGNAL(currentChanged(int)), this, SLOT(tab_changed(int)));
 
   main_tab_ = new FormStart(runner_thread_, detectors_, this);
-  ui->qpxTabs->addTab(main_tab_, main_tab_->windowTitle());
+  ui->qpxTabs->addTab(main_tab_, "DAQ");
+//  ui->qpxTabs->addTab(main_tab_, main_tab_->windowTitle());
+  ui->qpxTabs->setTabIcon(ui->qpxTabs->count() - 1, QIcon(":/icons/oxy/16/applications_systemg.png"));
   connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::SourceStatus)));
   connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(settings_updated()));
@@ -100,7 +102,13 @@ qpx::qpx(QWidget *parent) :
   connect(main_tab_, SIGNAL(gain_matching_requested()), this, SLOT(open_gain_matching()));
   connect(main_tab_, SIGNAL(list_view_requested()), this, SLOT(open_list()));
 
-  ui->qpxTabs->setCurrentWidget(main_tab_);
+  QSettings settings;
+  settings.beginGroup("Program");
+  QString profile_directory = settings.value("profile_directory", "").toString();
+
+  if (!profile_directory.isEmpty())
+    ui->qpxTabs->setCurrentWidget(main_tab_);
+
   reorder_tabs();
 }
 
@@ -216,7 +224,8 @@ void qpx::toggleIO(bool enable) {
     ui->statusBar->showMessage("Busy");
 
   for (int i = 0; i < ui->qpxTabs->count(); ++i)
-    ui->qpxTabs->setTabText(i, ui->qpxTabs->widget(i)->windowTitle());
+    if (ui->qpxTabs->widget(i) != main_tab_)
+      ui->qpxTabs->setTabText(i, ui->qpxTabs->widget(i)->windowTitle());
 
   emit toggle_push(enable, px_status_);
 }

@@ -72,7 +72,7 @@ bool Spectrum2D::_initialize() {
       adds++;
 
   if (adds != 2) {
-    PL_WARN << "Invalid 2D spectrum created (bad add pattern)";
+    WARN << "Invalid 2D spectrum created (bad add pattern)";
     return false;
   }
   
@@ -228,7 +228,7 @@ std::unique_ptr<EntryList> Spectrum2D::_data_range(std::initializer_list<Pair> l
       boost::this_thread::sleep_for(boost::chrono::seconds{1});
     temp_spectrum_.clear(); //assumption about client
   }
-//  PL_DBG << "<Spectrum2D> Making list for " << metadata_.name << " took " << makelist.ms() << "ms filled with "
+//  DBG << "<Spectrum2D> Making list for " << metadata_.name << " took " << makelist.ms() << "ms filled with "
 //         << result->size() << " elements";
   return result;
 }

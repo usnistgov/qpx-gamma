@@ -4239,7 +4239,7 @@ S32 Pixie_Print_MSG (
 	XOPNotice(message);
 #else
 	
-  PL_DBG << "<PixieAPI-native-output> " << message;
+  DBG << "<PixieAPI-native-output> " << message;
   /*FILE *PIXIEmsg = NULL;
 	
 	PIXIEmsg = fopen("PIXIEmsg.txt", "a");

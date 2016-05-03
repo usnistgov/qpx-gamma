@@ -101,13 +101,13 @@ bool MesytecVME::boot() {
       return true;
 
     rc_bus = true;
-    PL_DBG << "<" << this->device_name() << "> Mesytec RC bus configured";
+    DBG << "<" << this->device_name() << "> Mesytec RC bus configured";
 
     bool success = false;
 
     for (auto &q : ext_modules_) {
       if ((q.second) && (!q.second->connected())) {
-        PL_DBG << "<" << this->device_name() << "> Searching for module " << q.first;
+        DBG << "<" << this->device_name() << "> Searching for module " << q.first;
   //      long base_address = 0;
   //      if (q.first == "VME/MADC32")
   //        base_address = 0x20000000;
@@ -116,7 +116,7 @@ bool MesytecVME::boot() {
 
           if (q.second->connected()) {
             q.second->boot(); //disregard return value
-            PL_DBG << "<" << this->device_name() << "> Adding module " << q.first
+            DBG << "<" << this->device_name() << "> Adding module " << q.first
                    << "[" << q.second->modnum()
                    << "] booted=" << (0 != (q.second->status() & SourceStatus::booted));
             success = true;
@@ -167,17 +167,17 @@ bool MesytecVME::read_settings_bulk(Qpx::Setting &set) const {
   for (auto &k : set.branches.my_data_) {
     if (k.metadata.setting_type != Qpx::SettingType::stem)
     {
-      if (!read_setting(k)) {/*PL_DBG << "Could not read " << k.id_;*/}
+      if (!read_setting(k)) {/*DBG << "Could not read " << k.id_;*/}
     }
     else  {
       if (ext_modules_.count(k.id_) && ext_modules_.at(k.id_)) {
-        //          PL_DBG << "read settings bulk " << q.id_;
+        //          DBG << "read settings bulk " << q.id_;
         ext_modules_.at(k.id_)->read_settings_bulk(k);
       } else {
 
         for (auto &p : k.branches.my_data_) {
           if (k.metadata.setting_type != Qpx::SettingType::stem) {
-            if (!read_setting(p)) {/*PL_DBG << "Could not read " << p.id_;*/}
+            if (!read_setting(p)) {/*DBG << "Could not read " << p.id_;*/}
           }
         }
       }
@@ -207,21 +207,21 @@ bool MesytecVME::write_settings_bulk(Qpx::Setting &set) {
     if (k.metadata.setting_type != Qpx::SettingType::stem) {
       Qpx::Setting s = k;
       if (k.metadata.writable && read_setting(s) && (s != k)) {
-        if (!write_setting(k)) {/*PL_DBG << "Could not write " << k.id_;*/}
+        if (!write_setting(k)) {/*DBG << "Could not write " << k.id_;*/}
       }
     } else if ((ext_modules_.count(k.id_) && ext_modules_.at(k.id_))) {
       ext_modules_[k.id_]->write_settings_bulk(k);
     } else if (device_types.count(k.id_) && (k.id_.size() > 14) && (k.id_.substr(0,14) == "VME/MesytecRC/")) {
       boost::filesystem::path dev_settings = path / k.value_text;
       ext_modules_[k.id_] = std::dynamic_pointer_cast<MesytecExternal>(SourceFactory::getInstance().create_type(k.id_, dev_settings.string()));
-      PL_DBG << "<" << this->device_name() << ">added module " << k.id_ << " with settings at " << dev_settings.string();
+      DBG << "<" << this->device_name() << ">added module " << k.id_ << " with settings at " << dev_settings.string();
       ext_modules_[k.id_]->write_settings_bulk(k);
     } else {
       for (auto &p : k.branches.my_data_) {
         if (k.metadata.setting_type != Qpx::SettingType::stem) {
           Qpx::Setting s = p;
           if (p.metadata.writable && read_setting(s) && (s != p)) {
-            if (!write_setting(p)) {/*PL_DBG << "Could not write " << p.id_;*/}
+            if (!write_setting(p)) {/*DBG << "Could not write " << p.id_;*/}
           }
         }
       }

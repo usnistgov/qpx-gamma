@@ -45,7 +45,7 @@ void ThreadFitter::begin() {
 void ThreadFitter::set_data(const Qpx::Fitter &data)
 {
   if (running_.load()) {
-    PL_WARN << "Fitter busy";
+    WARN << "Fitter busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -58,7 +58,7 @@ void ThreadFitter::set_data(const Qpx::Fitter &data)
 
 void ThreadFitter::fit_peaks() {
   if (running_.load()) {
-    PL_WARN << "Fitter busy";
+    WARN << "Fitter busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -70,7 +70,7 @@ void ThreadFitter::fit_peaks() {
 
 void ThreadFitter::add_peak(double L, double R) {
   if (running_.load()) {
-    PL_WARN << "Fitter busy";
+    WARN << "Fitter busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -84,7 +84,7 @@ void ThreadFitter::add_peak(double L, double R) {
 
 void ThreadFitter::refit(double target_ROI) {
   if (running_.load()) {
-    PL_WARN << "Fitter busy";
+    WARN << "Fitter busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -97,7 +97,7 @@ void ThreadFitter::refit(double target_ROI) {
 
 void ThreadFitter::adjust_roi_bounds(double target_ROI, uint32_t L, uint32_t R) {
   if (running_.load()) {
-    PL_WARN << "Fitter busy";
+    WARN << "Fitter busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -112,7 +112,7 @@ void ThreadFitter::adjust_roi_bounds(double target_ROI, uint32_t L, uint32_t R) 
 
 void ThreadFitter::adjust_LB(double target_ROI, uint32_t L, uint32_t R) {
   if (running_.load()) {
-    PL_WARN << "Fitter busy";
+    WARN << "Fitter busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -127,7 +127,7 @@ void ThreadFitter::adjust_LB(double target_ROI, uint32_t L, uint32_t R) {
 
 void ThreadFitter::adjust_RB(double target_ROI, uint32_t L, uint32_t R) {
   if (running_.load()) {
-    PL_WARN << "Fitter busy";
+    WARN << "Fitter busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -143,7 +143,7 @@ void ThreadFitter::adjust_RB(double target_ROI, uint32_t L, uint32_t R) {
 
 void ThreadFitter::remove_peaks(std::set<double> chosen_peaks) {
   if (running_.load()) {
-    PL_WARN << "Fitter busy";
+    WARN << "Fitter busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -171,7 +171,7 @@ void ThreadFitter::run() {
     if (action_ == kFit) {
       int current = 1;
       for (auto &q : fitter_.regions_) {
-        PL_DBG << "<Fitter> Fitting region " << current << " of " << fitter_.regions_.size() << " at E=" << q.first;
+        DBG << "<Fitter> Fitting region " << current << " of " << fitter_.regions_.size() << " at E=" << q.first;
         q.second.auto_fit(interruptor_);
         current++;
         emit fit_updated(fitter_);

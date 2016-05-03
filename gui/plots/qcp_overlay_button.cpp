@@ -32,11 +32,11 @@ QCPOverlayButton::QCPOverlayButton(QCustomPlot *parentPlot,
   setSelectable(false);
 
   if (second_point == (Qt::AlignBottom | Qt::AlignRight)) {
-//    PL_DBG << "Alightning bottom right";
+//    DBG << "Alightning bottom right";
     bottomRight->setParentAnchor(topLeft);
     bottomRight->setCoords(pixmap.width(), pixmap.height());
   } else {
-//    PL_DBG << "Alightning top left";
+//    DBG << "Alightning top left";
     topLeft->setParentAnchor(bottomRight);
     topLeft->setCoords(-pixmap.width(), -pixmap.height());
   }

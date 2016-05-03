@@ -92,7 +92,7 @@ void Fitter::clear() {
 
 void Fitter::find_regions() {
   regions_.clear();
-//  PL_DBG << "Fitter: looking for " << filtered.size()  << " peaks";
+//  DBG << "Fitter: looking for " << filtered.size()  << " peaks";
 
   finder_.find_peaks();
 
@@ -108,19 +108,19 @@ void Fitter::find_regions() {
     double margin = 0;
     if (!finder_.fw_theoretical_bin.empty())
       margin = settings_.ROI_extend_background * finder_.fw_theoretical_bin[R];
-//    PL_DBG << "Margin = " << margin;
+//    DBG << "Margin = " << margin;
 
     if (finder_.lefts[i] < (R + 2 * margin) ) {
-//      PL_DBG << "cat ROI " << L << " " << R << " " << finder_.lefts[i] << " " << finder_.rights[i];
+//      DBG << "cat ROI " << L << " " << R << " " << finder_.lefts[i] << " " << finder_.rights[i];
       L = std::min(L, static_cast<int32_t>(finder_.lefts[i]));
       R = std::max(R, static_cast<int32_t>(finder_.rights[i]));
-//      PL_DBG << "postcat ROI " << L << " " << R;
+//      DBG << "postcat ROI " << L << " " << R;
     } else {
-//      PL_DBG << "<Fitter> Creating ROI " << L << "-" << R;
+//      DBG << "<Fitter> Creating ROI " << L << "-" << R;
       L -= margin; if (L < 0) L = 0;
       R += margin; if (R >= finder_.x_.size()) R = finder_.x_.size() - 1;
       if (settings_.cali_nrg_.transform(R, settings_.bits_) > settings_.finder_cutoff_kev) {
-//        PL_DBG << "<Fitter> region " << L << "-" << R;
+//        DBG << "<Fitter> region " << L << "-" << R;
         Ls.push_back(L);
         Rs.push_back(R);
       }
@@ -157,7 +157,7 @@ void Fitter::find_regions() {
     if (!newROI.finder_.x_.empty())
       regions_[newROI.finder_.x_.front()] = newROI;
   }
-//  PL_DBG << "<Fitter> Created " << regions_.size() << " regions";
+//  DBG << "<Fitter> Created " << regions_.size() << " regions";
 
 }
 
@@ -209,7 +209,7 @@ void Fitter::add_peak(double left, double right, boost::atomic<bool>& interrupto
     }
   }
 
-//  PL_DBG << "<Fitter> making new ROI to add peak manually " << left << " " << right;
+//  DBG << "<Fitter> making new ROI to add peak manually " << left << " " << right;
   ROI newROI(settings_);
   newROI.set_data(finder_.x_, finder_.y_, left, right);
 //  newROI.add_peak(finder_.x_, finder_.y_, left, right, interruptor);
@@ -231,7 +231,7 @@ void Fitter::replace_peak(const Peak& pk) {
     if (m.second.contains(pk.center.val)) {
       m.second.peaks_[pk.center.val] = pk;
       m.second.render(); //was it hm or sum4 that was replaced?
-//      PL_DBG << "replacing " << pk.center;
+//      DBG << "replacing " << pk.center;
     }
 }
 

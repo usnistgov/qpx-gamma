@@ -24,6 +24,5 @@ TEMPLATE = subdirs
 
 SUBDIRS = gui cmd
 
-CONFIG += ordered
-
-CONFIG += debug_and_release
+CONFIG += ordered \
+          debug_and_release

@@ -223,7 +223,7 @@ void TableChanSettings::update(const std::vector<Qpx::Detector> &settings) {
     for (auto &p : q.settings_.branches.my_data_) {
       consolidated_list_.branches.add(p);
       if (!preferred_units_.count(p.id_) && (!p.metadata.unit.empty())) {
-//        PL_DBG << "adding preferred unit for " << p.id_ << " as " << p.metadata.unit;
+//        DBG << "adding preferred unit for " << p.id_ << " as " << p.metadata.unit;
         preferred_units_[p.id_] = p.metadata.unit;
       }
     }

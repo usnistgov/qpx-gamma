@@ -87,14 +87,14 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread,
 
   loadSettings();
 
-  QSettings settings;
-  settings.beginGroup("Program");
-  QString profile_directory = settings.value("profile_directory", "").toString();
+//  QSettings settings;
+//  settings.beginGroup("Program");
+//  QString profile_directory = settings.value("profile_directory", "").toString();
 
-  if (!profile_directory.isEmpty())
+//  if (!profile_directory.isEmpty())
     QTimer::singleShot(50, this, SLOT(profile_chosen()));
-  else
-    QTimer::singleShot(50, this, SLOT(choose_profiles()));
+//  else
+//    QTimer::singleShot(50, this, SLOT(choose_profiles()));
 }
 
 void FormSystemSettings::update(const Qpx::Setting &tree, const std::vector<Qpx::Detector> &channels, Qpx::SourceStatus status) {
@@ -117,12 +117,14 @@ void FormSystemSettings::update(const Qpx::Setting &tree, const std::vector<Qpx:
   //update dets in DB as well?
 
   if (editing_) {
-//    PL_DBG << "<FormSystemSettings> ignoring update";
+//    DBG << "<FormSystemSettings> ignoring update";
     return;
   }
 
   dev_settings_ = tree;
   channels_ = channels;
+
+//  DBG << "tree received " << dev_settings_.branches.size();
 
   viewTreeSettings->clearSelection();
   //viewTableSettings->clearSelection();
@@ -222,7 +224,7 @@ void FormSystemSettings::push_from_table(int chan, Qpx::Setting setting) {
 void FormSystemSettings::chose_detector(int chan, std::string name) {
   editing_ = false;
   Qpx::Detector det = detectors_.get(Qpx::Detector(name));
-  PL_DBG << "det " <<  det.name_ << " with cali " << det.energy_calibrations_.size() << " has sets " << det.settings_.branches.size();
+  DBG << "det " <<  det.name_ << " with cali " << det.energy_calibrations_.size() << " has sets " << det.settings_.branches.size();
   for (auto &q : det.settings_.branches.my_data_) {
     q.indices.clear();
     q.indices.insert(chan);
@@ -392,14 +394,14 @@ void FormSystemSettings::on_bootButton_clicked()
   if (ui->bootButton->text() == "Boot system") {
     emit toggleIO(false);
     emit statusText("Booting...");
-//    PL_INFO << "Booting system...";
+//    INFO << "Booting system...";
 
     runner_thread_.do_boot();
   } else {
     emit toggleIO(false);
     emit statusText("Shutting down...");
 
-//    PL_INFO << "Shutting down";
+//    INFO << "Shutting down";
     runner_thread_.do_shutdown();
   }
 }

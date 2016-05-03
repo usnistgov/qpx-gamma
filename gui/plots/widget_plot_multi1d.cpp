@@ -176,7 +176,7 @@ void WidgetPlotMulti1D::clearGraphs()
 
 void WidgetPlotMulti1D::clearExtras()
 {
-  //PL_DBG << "WidgetPlotMulti1D::clearExtras()";
+  //DBG << "WidgetPlotMulti1D::clearExtras()";
   my_markers_.clear();
   rect.clear();
 }
@@ -230,11 +230,11 @@ std::set<double> WidgetPlotMulti1D::get_selected_markers() {
     if (QCPItemText *txt = qobject_cast<QCPItemText*>(q)) {
       if (txt->property("chan_value").isValid())
         selection.insert(txt->property("chan_value").toDouble());
-      //PL_DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
+      //DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
     } else if (QCPItemLine *line = qobject_cast<QCPItemLine*>(q)) {
       if (line->property("chan_value").isValid())
         selection.insert(line->property("chan_value").toDouble());
-      //PL_DBG << "found selected " << line->property("true_value").toDouble() << " chan=" << line->property("chan_value").toDouble();
+      //DBG << "found selected " << line->property("true_value").toDouble() << " chan=" << line->property("chan_value").toDouble();
     }
 
   return selection;
@@ -265,7 +265,7 @@ void WidgetPlotMulti1D::addGraph(const QVector<double>& x, const QVector<double>
 
   if (x[0] < minx) {
     minx = x[0];
-    //PL_DBG << "new minx " << minx;
+    //DBG << "new minx " << minx;
     ui->mcaPlot->xAxis->rescale();
   }
   if (x[x.size() - 1] > maxx) {
@@ -288,7 +288,7 @@ void WidgetPlotMulti1D::addPoints(const QVector<double>& x, const QVector<double
 
   if (x[0] < minx) {
     minx = x[0];
-    //PL_DBG << "new minx " << minx;
+    //DBG << "new minx " << minx;
     ui->mcaPlot->xAxis->rescale();
   }
   if (x[x.size() - 1] > maxx) {
@@ -319,7 +319,7 @@ void WidgetPlotMulti1D::plot_rezoom() {
 
   calc_y_bounds(lowerc, upperc);
 
-  //PL_DBG << "Rezoom";
+  //DBG << "Rezoom";
 
   if (miny <= 0)
     ui->mcaPlot->yAxis->rescale();
@@ -329,7 +329,7 @@ void WidgetPlotMulti1D::plot_rezoom() {
 }
 
 void WidgetPlotMulti1D::tight_x() {
-  //PL_DBG << "tightning x to " << minx << " " << maxx;
+  //DBG << "tightning x to " << minx << " " << maxx;
   ui->mcaPlot->xAxis->setRangeLower(minx);
   ui->mcaPlot->xAxis->setRangeUpper(maxx);
 }
@@ -404,7 +404,7 @@ void WidgetPlotMulti1D::replot_markers() {
         else
           pos = q.pos.bin(bits);
 
-        //PL_DBG << "Adding crs at " << pos << " on plot " << i;
+        //DBG << "Adding crs at " << pos << " on plot " << i;
 
         if ((ui->mcaPlot->graph(i)->data()->firstKey() >= pos)
             || (pos >= ui->mcaPlot->graph(i)->data()->lastKey()))
@@ -498,7 +498,7 @@ void WidgetPlotMulti1D::replot_markers() {
     double x2 = pos2;
     double y2 = miny;
 
-    //PL_DBG << "will make box x=" << x1 << "-" << x2 << " y=" << y1 << "-" << y2;
+    //DBG << "will make box x=" << x1 << "-" << x2 << " y=" << y1 << "-" << y2;
 
     cprect->topLeft->setCoords(x1, y1);
     cprect->bottomRight->setCoords(x2, y2);
@@ -611,7 +611,7 @@ void WidgetPlotMulti1D::selection_changed() {
 }
 
 void WidgetPlotMulti1D::clicked_plottable(QCPAbstractPlottable *plt) {
-//  PL_INFO << "<WidgetPlotMulti1D> clickedplottable";
+//  INFO << "<WidgetPlotMulti1D> clickedplottable";
 }
 
 void WidgetPlotMulti1D::clicked_item(QCPAbstractItem* itm) {
@@ -825,16 +825,16 @@ void WidgetPlotMulti1D::exportRequested(QAction* choice) {
   if (validateFile(this, fileName, true)) {
     QFileInfo file(fileName);
     if (file.suffix() == "png") {
-//      PL_INFO << "Exporting plot to png " << fileName.toStdString();
+//      INFO << "Exporting plot to png " << fileName.toStdString();
       ui->mcaPlot->savePng(fileName,0,0,1,100);
     } else if (file.suffix() == "jpg") {
-//      PL_INFO << "Exporting plot to jpg " << fileName.toStdString();
+//      INFO << "Exporting plot to jpg " << fileName.toStdString();
       ui->mcaPlot->saveJpg(fileName,0,0,1,100);
     } else if (file.suffix() == "bmp") {
-//      PL_INFO << "Exporting plot to bmp " << fileName.toStdString();
+//      INFO << "Exporting plot to bmp " << fileName.toStdString();
       ui->mcaPlot->saveBmp(fileName);
     } else if (file.suffix() == "pdf") {
-//      PL_INFO << "Exporting plot to pdf " << fileName.toStdString();
+//      INFO << "Exporting plot to pdf " << fileName.toStdString();
       ui->mcaPlot->savePdf(fileName, true);
     }
   }

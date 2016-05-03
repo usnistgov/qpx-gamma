@@ -38,7 +38,7 @@ void Peak::construct(FitSettings fs) {
 
   if (std::isinf(center.uncert) || std::isnan(center.uncert)) {
     center.uncert = sum4_.centroid.uncert;
-//    PL_DBG << "overriding peak center uncert with sum4 for " << center.val << " with " << sum4_.centroid.to_string();
+//    DBG << "overriding peak center uncert with sum4 for " << center.val << " with " << sum4_.centroid.to_string();
   }
 
   energy.val = fs.cali_nrg_.transform(center.val, fs.bits_);

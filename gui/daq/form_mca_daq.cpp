@@ -118,25 +118,25 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
   }
 
   if (my_analysis_ != nullptr) {
-//    PL_DBG << "will kill assoc analysis1D";
+//    DBG << "will kill assoc analysis1D";
     my_analysis_->close(); //assume always successful
     emit requestClose(my_analysis_);
   }
 
   if (my_analysis_2d_ != nullptr) {
-//    PL_DBG << "will kill assoc analysis2D";
+//    DBG << "will kill assoc analysis2D";
     my_analysis_2d_->close(); //assume always successful
     emit requestClose(my_analysis_2d_);
   }
 
   if (my_symmetrization_2d_!= nullptr) {
-//    PL_DBG << "will kill assoc sym2D";
+//    DBG << "will kill assoc sym2D";
     my_symmetrization_2d_->close(); //assume always successful
     emit requestClose(my_symmetrization_2d_);
   }
 
   if (my_eff_cal_ != nullptr) {
-//    PL_DBG << "will kill assoc effcal";
+//    DBG << "will kill assoc effcal";
     my_eff_cal_->close(); //assume always successful
     emit requestClose(my_eff_cal_);
   }
@@ -235,7 +235,7 @@ void FormMcaDaq::toggle_push(bool enable, SourceStatus status) {
 
 void FormMcaDaq::on_pushTimeNow_clicked()
 {
-  PL_INFO << "Time now!";
+  INFO << "Time now!";
 }
 
 void FormMcaDaq::clearGraphs() //rename this
@@ -284,7 +284,7 @@ void FormMcaDaq::update_plots() {
   }
 
   //ui->statusBar->showMessage("Spectra acquisition in progress...");
-//  PL_DBG << "<FormMcaDaq> Gui-side plotting " << guiside.ms() << " ms";
+//  DBG << "<FormMcaDaq> Gui-side plotting " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
 }
 
@@ -309,7 +309,7 @@ void FormMcaDaq::projectSaveAs()
   QString fileName = CustomSaveFileDialog(this, "Save project",
                                           data_directory_, "qpx project file (*.qpx)");
   if (validateFile(this, fileName, true)) {
-    PL_INFO << "Writing project to " << fileName.toStdString();
+    INFO << "Writing project to " << fileName.toStdString();
     this->setCursor(Qt::WaitCursor);
     spectra_.save_as(fileName.toStdString());
     update_plots();
@@ -401,7 +401,7 @@ void FormMcaDaq::projectOpen()
   }
 
   //toggle_push(false, false);
-  PL_INFO << "Reading spectra from file " << fileName.toStdString();
+  INFO << "Reading spectra from file " << fileName.toStdString();
   this->setCursor(Qt::WaitCursor);
   clearGraphs();
 
@@ -438,7 +438,7 @@ void FormMcaDaq::projectImport()
   int valid_imports = 0;
 
   for (int i=0; i<fileNames.size(); i++) {
-    PL_INFO << "Importing from " << fileNames.at(i).toStdString();
+    INFO << "Importing from " << fileNames.at(i).toStdString();
 
     std::string ext(boost::filesystem::extension(fileNames.at(i).toStdString()));
     if (ext.size())
@@ -466,7 +466,7 @@ void FormMcaDaq::projectImport()
         valid_imports++;
         spectra_.add_sink(newSpectrum);
       } else {
-        PL_INFO << "Spectrum construction did not succeed.";
+        INFO << "Spectrum construction did not succeed.";
       }
     }
   }
@@ -504,13 +504,13 @@ void FormMcaDaq::newProject() {
 void FormMcaDaq::on_pushMcaStop_clicked()
 {
   ui->pushMcaStop->setEnabled(false);
-  //PL_INFO << "MCA acquisition interrupted by user";
+  //INFO << "MCA acquisition interrupted by user";
   interruptor_.store(true);
 }
 
 void FormMcaDaq::run_completed() {
   if (my_run_) {
-    //PL_INFO << "FormMcaDaq received signal for run completed";
+    //INFO << "FormMcaDaq received signal for run completed";
     ui->pushMcaStop->setEnabled(false);
     my_run_ = false;
 
@@ -542,7 +542,7 @@ void FormMcaDaq::reqAnal(int64_t idx) {
 }
 
 void FormMcaDaq::analysis_destroyed() {
-//  PL_DBG << "analysis destroyed";
+//  DBG << "analysis destroyed";
   my_analysis_ = nullptr;
 }
 

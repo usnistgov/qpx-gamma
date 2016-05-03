@@ -249,7 +249,7 @@ double PolyBounded::derivative(double x) {
 //    if (extract_params(f->all_functions().back(), degrees))
 //      rsq_ = f->get_rsquared(0);
 //    else
-//      PL_DBG << "Polynomial failed to extract fit parameters from Fityk";
+//      DBG << "Polynomial failed to extract fit parameters from Fityk";
 //  }
 
 //  delete f;
@@ -302,7 +302,7 @@ double PolyBounded::derivative(double x) {
 
 //  else
 //  {
-//    PL_WARN <<"Maximum iteration reached in polynomial inverse evaluation";
+//    WARN <<"Maximum iteration reached in polynomial inverse evaluation";
 //    return nan("");
 //  }
 //}
@@ -439,7 +439,7 @@ double PolyBounded::derivative(double x) {
 //    //    rsq_ = fityk->get_rsquared(0);
 //  }
 //  catch ( ... ) {
-//    PL_DBG << "Polynomial could not extract parameters from Fityk";
+//    DBG << "Polynomial could not extract parameters from Fityk";
 //    return false;
 //  }
 //  return true;

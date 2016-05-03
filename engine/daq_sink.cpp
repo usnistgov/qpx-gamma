@@ -201,10 +201,10 @@ void Sink::_push_spill(const Spill& one_spill) {
     this->_push_stats(q.second);
 
 //  addspill_timer.stop();
-//  PL_DBG << "<" << metadata_.name << "> added " << hits << " hits in "
+//  DBG << "<" << metadata_.name << "> added " << hits << " hits in "
 //         << addspill_timer.ms() << " ms at " << addspill_timer.us() / hits << " us/hit";
 
-//  PL_DBG << "<" << metadata_.name << "> left in backlog " << backlog.size();
+//  DBG << "<" << metadata_.name << "> left in backlog " << backlog.size();
 }
 
 void Sink::flush() {
@@ -501,7 +501,7 @@ bool Sink::from_xml(const pugi::xml_node &node) {
    this->_recalc_axes();
 
 //  for (auto &det : this->metadata_.detectors)
-//    PL_DBG << "det2 " << this->metadata_.name << " " << det.name_;
+//    DBG << "det2 " << this->metadata_.name << " " << det.name_;
 
   return ret;
 }

@@ -51,7 +51,7 @@ SinkPtr SinkFactory::create_from_xml(const pugi::xml_node &root)
   if (!root.attribute("type"))
     return SinkPtr();
 
-//  PL_DBG << "<SinkFactory> making " << root.attribute("type").value();
+//  DBG << "<SinkFactory> making " << root.attribute("type").value();
 
   SinkPtr instance = create_type(std::string(root.attribute("type").value()));
   if (instance && instance->from_xml(root))
@@ -86,7 +86,7 @@ Metadata SinkFactory::create_prototype(std::string type)
 
 void SinkFactory::register_type(Metadata tt, std::function<Sink*(void)> typeConstructor)
 {
-  PL_INFO << "<SinkFactory> registering sink type '" << tt.type() << "'";
+  INFO << "<SinkFactory> registering sink type '" << tt.type() << "'";
   constructors[tt.type()] = typeConstructor;
   prototypes[tt.type()] = tt;
   for (auto &q : tt.input_types())

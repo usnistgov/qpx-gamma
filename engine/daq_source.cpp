@@ -43,11 +43,11 @@ namespace Qpx {
     }
 
     if (!setting_definitions_.empty()) {
-      PL_DBG << "<Source> " << this->device_name() << " retrieved " << setting_definitions_.size() << " setting definitions";
+      DBG << "<Source> " << this->device_name() << " retrieved " << setting_definitions_.size() << " setting definitions";
       profile_path_ = file;
       return true;
     } else {
-      PL_DBG << "<Source> " << this->device_name() << " failed to load setting definitions";
+      DBG << "<Source> " << this->device_name() << " failed to load setting definitions";
       profile_path_.clear();
       return false;
     }

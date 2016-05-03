@@ -62,7 +62,7 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Metadata newTemplate,
       Setting pat = myTemplate.attributes.branches.get(Setting("pattern_add"));
       ui->spinDets->setValue(pat.value_pattern.gates().size());
     } else
-      PL_WARN << "Problem with spectrum type. Factory cannot make template for " << newTemplate.type();
+      WARN << "Problem with spectrum type. Factory cannot make template for " << newTemplate.type();
   } else {
     Metadata newtemp = SinkFactory::getInstance().create_prototype(ui->comboType->currentText().toStdString());
     if (newtemp != Metadata()) {
@@ -70,7 +70,7 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Metadata newTemplate,
       size_t sz = current_dets_.size();
       ui->spinDets->setValue(sz);
     } else
-      PL_WARN << "Problem with spectrum type. Factory cannot make template for " << ui->comboType->currentText().toStdString();
+      WARN << "Problem with spectrum type. Factory cannot make template for " << ui->comboType->currentText().toStdString();
 
     Setting app = myTemplate.attributes.branches.get(Setting("appearance"));
     app.value_text = generateColor().name(QColor::HexArgb).toStdString();
@@ -159,7 +159,7 @@ void DialogSpectrumTemplate::on_comboType_activated(const QString &arg1)
     on_spinDets_valueChanged(ui->spinDets->value());
     updateData();
   } else
-    PL_WARN << "Problem with spectrum type. Factory refuses to make template for " << arg1.toStdString();
+    WARN << "Problem with spectrum type. Factory refuses to make template for " << arg1.toStdString();
 }
 
 void DialogSpectrumTemplate::on_spinDets_valueChanged(int arg1)
@@ -352,7 +352,7 @@ void DialogSpectraTemplates::on_pushImport_clicked()
   QString fileName = QFileDialog::getOpenFileName(this, "Load template spectra",
                                                   root_dir_, "Template set (*.tem)");
   if (validateFile(this, fileName, false)) {
-    PL_INFO << "Reading templates from xml file " << fileName.toStdString();
+    INFO << "Reading templates from xml file " << fileName.toStdString();
     templates_.read_xml(fileName.toStdString());
     selection_model_.reset();
     table_model_.update();
@@ -368,7 +368,7 @@ void DialogSpectraTemplates::on_pushExport_clicked()
   QString fileName = CustomSaveFileDialog(this, "Save template spectra",
                                           root_dir_, "Template set (*.tem)");
   if (validateFile(this, fileName, true)) {
-    PL_INFO << "Writing templates to xml file " << fileName.toStdString();
+    INFO << "Writing templates to xml file " << fileName.toStdString();
     templates_.write_xml(fileName.toStdString());
   }
 }

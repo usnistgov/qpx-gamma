@@ -144,7 +144,7 @@ void WidgetProfiles::update_profiles()
     QStringList profile_files = dir2.entryList(nameFilter);
 
     if (profile_files.empty()) {
-      PL_DBG << "<WidgetProfiles> no profile found in " << dir2.absolutePath().toStdString();
+      DBG << "<WidgetProfiles> no profile found in " << dir2.absolutePath().toStdString();
       continue;
     }
 
@@ -152,17 +152,17 @@ void WidgetProfiles::update_profiles()
 
     pugi::xml_document doc;
     if (!doc.load_file(path.c_str())) {
-      PL_DBG << "<WidgetProfiles> Cannot parse XML in " << path;
+      DBG << "<WidgetProfiles> Cannot parse XML in " << path;
       continue;
     }
 
     pugi::xml_node root = doc.child(Qpx::Setting().xml_element_name().c_str());
     if (!root) {
-      PL_DBG << "<WidgetProfiles> Profile root element invalid in " << path;
+      DBG << "<WidgetProfiles> Profile root element invalid in " << path;
       continue;
     }
 
-//    PL_DBG << "<WidgetProfiles> valid profile at " << path;
+//    DBG << "<WidgetProfiles> valid profile at " << path;
 
     Qpx::Setting tree(root);
     tree.value_text = dir2.absolutePath().toStdString();

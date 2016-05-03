@@ -185,7 +185,7 @@ bool ParserEVT::write_settings_bulk(Qpx::Setting &set) {
 
 bool ParserEVT::boot() {
   if (!(status_ & SourceStatus::can_boot)) {
-    PL_WARN << "<ParserEVT> Cannot boot Sorter. Failed flag check (can_boot == 0)";
+    WARN << "<ParserEVT> Cannot boot Sorter. Failed flag check (can_boot == 0)";
     return false;
   }
 
@@ -208,7 +208,7 @@ bool ParserEVT::boot() {
           std::string name = std::string(child.name());
           if (name == "File") {
             std::string filename(child.attribute("path").value());
-            PL_INFO << "<ParserEVT> Queued up file " << filename << " from XML manifest";
+            INFO << "<ParserEVT> Queued up file " << filename << " from XML manifest";
             files_.push_back(filename);
           } else if (name == "Total") {
             expected_rbuf_items_ = child.attribute("RingBufferItems").as_ullong();
@@ -230,9 +230,9 @@ bool ParserEVT::boot() {
       {
         if ( fs::is_regular_file(dir_iter->status()) )
         {
-          //        PL_DBG << "Looking at  " << dir_iter->path().extension().string();
+          //        DBG << "Looking at  " << dir_iter->path().extension().string();
           if (boost::algorithm::to_lower_copy(dir_iter->path().extension().string()) == ".evt") {
-            //        PL_DBG << "File is evt:  " << dir_iter->path().string();
+            //        DBG << "File is evt:  " << dir_iter->path().string();
             files_prelim.insert(dir_iter->path().string());
           }
         }
@@ -242,12 +242,12 @@ bool ParserEVT::boot() {
     CFileDataSource* cfds;
     expected_rbuf_items_ = 0;
     for (auto &q : files_prelim) {
-      //    PL_DBG << "checking " << q;
+      //    DBG << "checking " << q;
       uint64_t cts = 0;
       if (((cfds = open_EVT_file(q)) != nullptr) && (cts = num_of_evts(cfds))) {
         delete cfds;
         files_.push_back(q);
-        PL_INFO << "<ParserEVT> Queued up file " << q << " with " << cts << " ring buffer items";
+        INFO << "<ParserEVT> Queued up file " << q << " with " << cts << " ring buffer items";
         expected_rbuf_items_ += cts;
       }
     }
@@ -267,7 +267,7 @@ bool ParserEVT::boot() {
   }
 
 
-  PL_INFO << "<ParserEVT> successfully queued up EVT files for sorting with "
+  INFO << "<ParserEVT> successfully queued up EVT files for sorting with "
           << expected_rbuf_items_ << " total ring buffer items";
 
   status_ = SourceStatus::loaded | SourceStatus::booted | SourceStatus::can_run;
@@ -299,13 +299,13 @@ CFileDataSource* ParserEVT::open_EVT_file(std::string file) {
   filename += file;
 
   try { URL url(filename); }
-  catch (...) { PL_ERR << "<ParserEVT> could not parse URL"; return nullptr; }
+  catch (...) { ERR << "<ParserEVT> could not parse URL"; return nullptr; }
 
   URL url(filename);
 
   CFileDataSource* evtfile;
   try { evtfile = new CFileDataSource(url, std::vector<uint16_t>()); }
-  catch (...) { PL_ERR << "<ParserEVT> could not open EVT file"; return nullptr; }
+  catch (...) { ERR << "<ParserEVT> could not open EVT file"; return nullptr; }
 
   return evtfile;
 }
@@ -318,7 +318,7 @@ void ParserEVT::get_all_settings() {
 
 
 void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill_queue) {
-  PL_DBG << "<ParserEVT> Start run worker";
+  DBG << "<ParserEVT> Start run worker";
 
   Spill one_spill;
   Spill extra_spill;
@@ -344,11 +344,11 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
     if (timeout)
       break;
 
-    PL_DBG << "<ParserEVT> Now processing " << file;
+    DBG << "<ParserEVT> Now processing " << file;
 
     evt_file = open_EVT_file(file);
     if (evt_file == nullptr) {
-      PL_ERR << "<ParserEVT> Could not open " << file << ". Aborting.";
+      ERR << "<ParserEVT> Could not open " << file << ". Aborting.";
       break;
     }
 
@@ -371,7 +371,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
         case RING_FORMAT: {
           CDataFormatItem* pEvent = reinterpret_cast<CDataFormatItem*>(fact.createRingItem(*item));
           if (pEvent) {
-            //PL_DBG << "Ring format: " << pEvent->toString();
+            //DBG << "Ring format: " << pEvent->toString();
             delete pEvent;
           }
           break;
@@ -383,8 +383,8 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
           if (pEvent) {
 
             ts = boost::posix_time::from_time_t(pEvent->getTimestamp());
-            //        PL_DBG << "State :" << pEvent->toString();
-            PL_DBG << "<ParserEVT> State  ts=" << boost::posix_time::to_iso_extended_string(ts)
+            //        DBG << "State :" << pEvent->toString();
+            DBG << "<ParserEVT> State  ts=" << boost::posix_time::to_iso_extended_string(ts)
                    << "  elapsed=" << pEvent->getElapsedTime()
                    << "  run#=" << pEvent->getRunNumber()
                    << "  barrier=" << pEvent->getBarrierType()
@@ -417,9 +417,9 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
         {
           CRingPhysicsEventCountItem* pEvent = reinterpret_cast<CRingPhysicsEventCountItem*>(fact.createRingItem(*item));
           if (pEvent) {
-            //        PL_DBG << "Physics counts: " << pEvent->toString();
+            //        DBG << "Physics counts: " << pEvent->toString();
             ts = boost::posix_time::from_time_t(pEvent->getTimestamp());
-            //          PL_DBG << "State  ts=" << boost::posix_time::to_iso_extended_string(ts)
+            //          DBG << "State  ts=" << boost::posix_time::to_iso_extended_string(ts)
             //                 << "  elapsed=" << pEvent->getTimeOffset()
             //                 << "  total_events=" << pEvent->getEventCount();
 
@@ -432,7 +432,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
 //              udt.items["native_time"] = pEvent->getTimeOffset();
 
-              //            PL_DBG << "<ParserEVT> " << udt.to_string();
+              //            DBG << "<ParserEVT> " << udt.to_string();
 
               one_spill.stats[q] = udt;
               one_spill.time = ts;
@@ -454,7 +454,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
             const uint16_t* body  = reinterpret_cast<const uint16_t*>((const_cast<CPhysicsEventItem*>(pEvent))->getBodyPointer());
             uint16_t expected_words = *body;
             if (expected_words == (words - 1)) {
-              //PL_DBG << "Header indicates " << expected_words << " expected 16-bit words. Correct";
+              //DBG << "Header indicates " << expected_words << " expected 16-bit words. Correct";
               body++;
 
               std::list<uint32_t> MADC_data;
@@ -492,23 +492,23 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
               if (n_j > 1) {
                 if (callback->bad_buffers_rep_)
-                  PL_DBG << "<ParserEVT> MADC32 parse has multiple junk words, pattern: " << madc_pattern << " after previous " << prev_pattern;
+                  DBG << "<ParserEVT> MADC32 parse has multiple junk words, pattern: " << madc_pattern << " after previous " << prev_pattern;
                 buffer_problem = true;
               }
               if (n_e != hits.size()) {
                 if (callback->bad_buffers_rep_)
-                  PL_DBG << "<ParserEVT> MADC32 parse has mismatch in number of retrieved events, pattern: " << madc_pattern << " after previous " << prev_pattern;
+                  DBG << "<ParserEVT> MADC32 parse has mismatch in number of retrieved events, pattern: " << madc_pattern << " after previous " << prev_pattern;
                 buffer_problem = true;
                 lost_events += n_e;
               }
               if (n_h != n_f) {
                 if (callback->bad_buffers_rep_)
-                  PL_DBG << "<ParserEVT> MADC32 parse has mismatch in header and footer, pattern: " << madc_pattern << " after previous " << prev_pattern;
+                  DBG << "<ParserEVT> MADC32 parse has mismatch in header and footer, pattern: " << madc_pattern << " after previous " << prev_pattern;
                 buffer_problem = true;
               }
 
               if (callback->bad_buffers_dbg_ && buffer_problem) {
-                PL_DBG << "  " << buffer_to_string(MADC_data);
+                DBG << "  " << buffer_to_string(MADC_data);
               }
 
 
@@ -520,7 +520,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
 
             } else
-              PL_DBG << "<ParserEVT> Header indicates " << expected_words << " expected 16-bit words, but does not match body size = " << (words - 1);
+              DBG << "<ParserEVT> Header indicates " << expected_words << " expected 16-bit words, but does not match body size = " << (words - 1);
 
             delete pEvent;
           }
@@ -528,7 +528,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
         }
 
         default: {
-          PL_DBG << "<ParserEVT> Unexpected ring buffer item type " << item->type();
+          DBG << "<ParserEVT> Unexpected ring buffer item type " << item->type();
         }
 
         }
@@ -536,7 +536,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
         delete item;
       }
 
-      PL_DBG << "<ParserEVT> Processed [" << filenr << "/" << callback->files_.size() << "] "
+      DBG << "<ParserEVT> Processed [" << filenr << "/" << callback->files_.size() << "] "
              << (100.0 * count / callback->expected_rbuf_items_) << "%  cumulative hits = " << events
              << "   hits lost in bad buffers = " << lost_events
              << " (" << 100.0*lost_events/(events + lost_events) << "%)"
@@ -563,7 +563,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
       //        starts_signalled.insert(q.channel);
       //      }
       //    }
-//      PL_DBG << "about to enqueue spill with hits " << one_spill.hits.size() << " ts= " << boost::posix_time::to_iso_extended_string(ts)
+//      DBG << "about to enqueue spill with hits " << one_spill.hits.size() << " ts= " << boost::posix_time::to_iso_extended_string(ts)
 //             << " and stats updates " << one_spill.stats.size();
       if (!extra_spill.stats.empty())
         spill_queue->enqueue(new Spill(extra_spill));
@@ -582,7 +582,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
     delete evt_file;
   }
 
-  PL_DBG << "<ParserEVT> before stop  hits = " << one_spill.hits.size();
+  DBG << "<ParserEVT> before stop  hits = " << one_spill.hits.size();
 
   if (one_spill.stats.empty() || (one_spill.stats.begin()->second.stats_type != StatsType::stop)) {
     one_spill.time = ts;
@@ -593,14 +593,14 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
       udt.source_channel = q;
       udt.lab_time = ts;
       one_spill.stats[q] = udt;
-      //    PL_DBG << "Sending stop at ts= " << boost::posix_time::to_iso_extended_string(ts) << " with evts " << one_spill.hits.size();
+      //    DBG << "Sending stop at ts= " << boost::posix_time::to_iso_extended_string(ts) << " with evts " << one_spill.hits.size();
     }
     spill_queue->enqueue(new Spill(one_spill));
   }
 
   callback->run_status_.store(3);
 
-  PL_DBG << "<ParserEVT> Stop run worker";
+  DBG << "<ParserEVT> Stop run worker";
 
 }
 

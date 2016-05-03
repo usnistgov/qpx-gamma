@@ -43,28 +43,41 @@ HEADERS  += $$files($$PWD/../engine/*.h) \
 
 
 !mac {
-  ! include( $$PWD/pixie4/pixie4.pri ) {
+  
+  contains( DAQ_SOURCES, pixie4 ) {
+    ! include( $$PWD/pixie4/pixie4.pri ) {
       error( "Couldn't find the pixie4.pri file!" )
+    }
   }
 
-  ! include( $$PWD/parser_evt/parser_evt.pri ) {
+  contains( DAQ_SOURCES, parser_evt ) {
+    ! include( $$PWD/parser_evt/parser_evt.pri ) {
      error( "Couldn't find the parser_evt.pri file!" )
+    }
   }
 
-  ! include( $$PWD/VME/vme.pri ) {
+  contains( DAQ_SOURCES, vme ) {
+    ! include( $$PWD/VME/vme.pri ) {
      error( "Couldn't find the vme.pri file!" )
+    }
   }
 
-  ! include( $$PWD/HV8/hv8.pri ) {
+  contains( DAQ_SOURCES, hv8 ) {
+    ! include( $$PWD/HV8/hv8.pri ) {
      error( "Couldn't find the hv8.pri file!" )
+    }
   }
 
 }
 
-! include( $$PWD/parser_raw/parser_raw.pri ) {
+contains( DAQ_SOURCES, parser_raw ) {
+  ! include( $$PWD/parser_raw/parser_raw.pri ) {
     error( "Couldn't find the parser_raw.pri file!" )
+  }
 }
 
-! include( $$PWD/simulator2d/simulator2d.pri ) {
+contains( DAQ_SOURCES, simulator2d ) {
+  ! include( $$PWD/simulator2d/simulator2d.pri ) {
     error( "Couldn't find the simulator2d.pri file!" )
+  }
 }

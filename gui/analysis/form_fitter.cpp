@@ -235,7 +235,7 @@ void FormFitter::clear() {
   if (!fit_data_ || busy_)
     return;
 
-  //PL_DBG << "FormFitter::clear()";
+  //DBG << "FormFitter::clear()";
 
   minx = std::numeric_limits<double>::max();
   maxx = - std::numeric_limits<double>::max();
@@ -403,7 +403,7 @@ void FormFitter::perform_fit() {
 
   fit_data_->finder_.settings_ = fit_data_->settings();
   fit_data_->find_regions();
-  //  PL_DBG << "number of peaks found " << fit_data_->peaks_.size();
+  //  DBG << "number of peaks found " << fit_data_->peaks_.size();
 
   busy_= true;
   toggle_push();
@@ -703,7 +703,7 @@ void FormFitter::plotTitle() {
 }
 
 void FormFitter::set_range(Range rng) {
-  //  PL_DBG << "<FormFitter> set range";
+  //  DBG << "<FormFitter> set range";
   range_ = rng;
   plotRange();
   if (range_.visible) {
@@ -742,7 +742,7 @@ QCPGraph *FormFitter::addGraph(const QVector<double>& x, const QVector<double>& 
 
   if (x[0] < minx) {
     minx = x[0];
-    //PL_DBG << "new minx " << minx;
+    //DBG << "new minx " << minx;
     ui->plot->xAxis->rescale();
     ui->plot->xAxis->rescale();
   }
@@ -775,7 +775,7 @@ void FormFitter::plot_rezoom(bool force) {
 
   calc_y_bounds(lowerc, upperc);
 
-  //PL_DBG << "Rezoom";
+  //DBG << "Rezoom";
 
 //  if (miny <= 0)
 //    ui->plot->yAxis->rescale();
@@ -1224,7 +1224,7 @@ void FormFitter::selection_changed() {
 }
 
 void FormFitter::clicked_plottable(QCPAbstractPlottable *plt) {
-  //  PL_INFO << "<FormFitter> clickedplottable";
+  //  INFO << "<FormFitter> clickedplottable";
 }
 
 void FormFitter::clicked_item(QCPAbstractItem* itm) {
@@ -1468,16 +1468,16 @@ void FormFitter::exportRequested(QAction* choice) {
   if (validateFile(this, fileName, true)) {
     QFileInfo file(fileName);
     if (file.suffix() == "png") {
-      //      PL_INFO << "Exporting plot to png " << fileName.toStdString();
+      //      INFO << "Exporting plot to png " << fileName.toStdString();
       ui->plot->savePng(fileName,0,0,1,100);
     } else if (file.suffix() == "jpg") {
-      //      PL_INFO << "Exporting plot to jpg " << fileName.toStdString();
+      //      INFO << "Exporting plot to jpg " << fileName.toStdString();
       ui->plot->saveJpg(fileName,0,0,1,100);
     } else if (file.suffix() == "bmp") {
-      //      PL_INFO << "Exporting plot to bmp " << fileName.toStdString();
+      //      INFO << "Exporting plot to bmp " << fileName.toStdString();
       ui->plot->saveBmp(fileName);
     } else if (file.suffix() == "pdf") {
-      //      PL_INFO << "Exporting plot to pdf " << fileName.toStdString();
+      //      INFO << "Exporting plot to pdf " << fileName.toStdString();
       ui->plot->savePdf(fileName, true);
     }
   }
@@ -1947,7 +1947,7 @@ void FormFitter::peak_info(double bin)
     return;
 
 
-//  PL_DBG << "Peak info for " << fit_data_->peaks().at(bin).energy;
+//  DBG << "Peak info for " << fit_data_->peaks().at(bin).energy;
 
   Hypermet hm = fit_data_->peaks().at(bin).hypermet_;
   FormPeakInfo *peakInfo = new FormPeakInfo(hm, this);

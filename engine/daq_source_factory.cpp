@@ -37,7 +37,7 @@ SourcePtr SourceFactory::create_type(std::string type, std::string file)
 
 void SourceFactory::register_type(std::string name, std::function<Source*(void)> typeConstructor)
 {
-  PL_INFO << "<SourceFactory> registering source '" << name << "'";
+  INFO << "<SourceFactory> registering source '" << name << "'";
   constructors[name] = typeConstructor;
 }
 

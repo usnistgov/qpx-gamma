@@ -317,7 +317,7 @@ void FormEnergyCalibration::on_pushFit_clicked()
     new_calibration_.model_ = Qpx::CalibrationModel::polynomial;
   }
   else
-    PL_INFO << "<Energy calibration> Qpx::Calibration failed";
+    INFO << "<Energy calibration> Qpx::Calibration failed";
 
   replot_calib();
   select_in_plot();

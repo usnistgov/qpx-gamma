@@ -106,7 +106,7 @@ void FormAnalysis1D::closeEvent(QCloseEvent *event) {
   QSettings settings_;
   ui->plotSpectrum->saveSettings(settings_);
 
-//  PL_DBG << "closing analysis1d";
+//  DBG << "closing analysis1d";
   saveSettings();
   event->accept();
 }
@@ -190,7 +190,7 @@ void FormAnalysis1D::update_spectrum() {
 }
 
 void FormAnalysis1D::update_fits() {
-  PL_DBG << "calib fits updated locally";
+  DBG << "calib fits updated locally";
   new_energy_calibration_ = form_energy_calibration_->get_new_calibration();
   new_fwhm_calibration_ = form_fwhm_calibration_->get_new_calibration();
 }
@@ -240,7 +240,7 @@ void FormAnalysis1D::update_detector_calibs()
 
     if (modified != Detector())
     {
-      PL_INFO << "   applying new calibrations for " << modified.name_ << " in detector database";
+      INFO << "   applying new calibrations for " << modified.name_ << " in detector database";
       modified.energy_calibrations_.replace(new_energy_calibration_);
       modified.fwhm_calibration_ = new_fwhm_calibration_;
       detectors_.replace(modified);
@@ -255,7 +255,7 @@ void FormAnalysis1D::update_detector_calibs()
       Metadata md = q.second->metadata();
       for (auto &p : md.detectors) {
         if (p.shallow_equals(fit_data_.detector_)) {
-          PL_INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " on " << q.second->name();
+          INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " on " << q.second->name();
           p.energy_calibrations_.replace(new_energy_calibration_);
           p.fwhm_calibration_ = new_fwhm_calibration_;
         }
@@ -269,7 +269,7 @@ void FormAnalysis1D::update_detector_calibs()
 //      sp = *spills.rbegin();
 //    for (auto &p : sp.detectors) {
 //      if (p.shallow_equals(fit_data_.detector_)) {
-//        PL_INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " in current project " << spectra_->identity();
+//        INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " in current project " << spectra_->identity();
 //        p.energy_calibrations_.replace(new_energy_calibration_);
 //        p.fwhm_calibration_ = new_fwhm_calibration_;
 //      }
@@ -284,7 +284,7 @@ void FormAnalysis1D::save_report()
   QString fileName = CustomSaveFileDialog(this, "Save analysis report",
                                           data_directory_, "Plain text (*.txt)");
   if (validateFile(this, fileName, true)) {
-    PL_INFO << "Writing report to " << fileName.toStdString();
+    INFO << "Writing report to " << fileName.toStdString();
     fit_data_.save_report(fileName.toStdString());
   }
 }

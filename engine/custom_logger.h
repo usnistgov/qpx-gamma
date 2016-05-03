@@ -66,11 +66,11 @@ BOOST_LOG_ATTRIBUTE_KEYWORD(g_severity, "Severity", CustomLogger::SeverityLevel)
       BOOST_LOG_INLINE_GLOBAL_LOGGER_DEFAULT(g_custom_logger,
                                              boost::log::sources::severity_logger_mt<CustomLogger::SeverityLevel>)
 
-#define PL_TRC BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kTrace)
-#define PL_DBG BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kDebug)
-#define PL_INFO BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kInfo)
-#define PL_WARN BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kWarning)
-#define PL_ERR BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kError)
-#define PL_CRIT BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kCritical)
+#define TRC BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kTrace)
+#define DBG BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kDebug)
+#define INFO BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kInfo)
+#define WARN BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kWarning)
+#define ERR BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kError)
+#define CRIT BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kCritical)
 
 #endif // CUSTOM_LOGGER_H

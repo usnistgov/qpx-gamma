@@ -204,7 +204,7 @@ void FormPlot1D::update_plot() {
       std::shared_ptr<EntryList> spectrum_data =
           std::move(q.second->data_range({{0, x.size()}}));
 
-//      PL_DBG << "Will plot " << md.name << "  size " << x.size() << "  sz " << spectrum_data->size();
+//      DBG << "Will plot " << md.name << "  size " << x.size() << "  sz " << spectrum_data->size();
 
       Detector detector = Detector();
       if (!md.detectors.empty())
@@ -244,7 +244,7 @@ void FormPlot1D::update_plot() {
 
   spectrumDetails(SelectorItem());
 
-//  PL_DBG << "<Plot1D> plotting took " << guiside.ms() << " ms";
+//  DBG << "<Plot1D> plotting took " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
 }
 
@@ -332,7 +332,7 @@ void FormPlot1D::analyse()
 }
 
 void FormPlot1D::addMovingMarker(double x) {
-  PL_INFO << "<Plot1D> marker at " << x;
+  INFO << "<Plot1D> marker at " << x;
 
   if (calib_.valid())
     moving.pos.set_energy(x, calib_);

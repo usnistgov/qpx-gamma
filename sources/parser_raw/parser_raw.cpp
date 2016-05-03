@@ -172,7 +172,7 @@ bool ParserRaw::write_settings_bulk(Qpx::Setting &set) {
 
 bool ParserRaw::boot() {
   if (!(status_ & SourceStatus::can_boot)) {
-    PL_WARN << "<ParserRaw> Cannot boot Sorter. Failed flag check (can_boot == 0)";
+    WARN << "<ParserRaw> Cannot boot Sorter. Failed flag check (can_boot == 0)";
     return false;
   }
 
@@ -181,13 +181,13 @@ bool ParserRaw::boot() {
   pugi::xml_document doc;
 
   if (!doc.load_file(source_file_.c_str())) {
-    PL_WARN << "<ParserRaw> Could not parse XML in " << source_file_;
+    WARN << "<ParserRaw> Could not parse XML in " << source_file_;
     return false;
   }
 
   pugi::xml_node root = doc.first_child();
   if (!root || (std::string(root.name()) != "QpxListData")) {
-    PL_WARN << "<ParserRaw> Bad root ID in " << source_file_;
+    WARN << "<ParserRaw> Bad root ID in " << source_file_;
     return false;
   }
 
@@ -196,7 +196,7 @@ bool ParserRaw::boot() {
   boost::filesystem::path path = meta.remove_filename();
 
   if (!boost::filesystem::is_directory(meta)) {
-    PL_DBG << "<ParserRaw> Bad path for list mode data";
+    DBG << "<ParserRaw> Bad path for list mode data";
     return false;
   }
 
@@ -205,17 +205,17 @@ bool ParserRaw::boot() {
   file_bin_.open(bin_path.string(), std::ofstream::in | std::ofstream::binary);
 
   if (!file_bin_.is_open()) {
-    PL_DBG << "<ParserRaw> Could not open binary " << bin_path.string();
+    DBG << "<ParserRaw> Could not open binary " << bin_path.string();
     return false;
   }
 
   if (!file_bin_.good()) {
     file_bin_.close();
-    PL_DBG << "<ParserRaw> Could not open binary " << bin_path.string();
+    DBG << "<ParserRaw> Could not open binary " << bin_path.string();
     return false;
   }
 
-  PL_DBG << "<ParserRaw> Success opening binary " << bin_path.string();
+  DBG << "<ParserRaw> Success opening binary " << bin_path.string();
 
   file_bin_.seekg (0, std::ios::beg);
   bin_begin_ = file_bin_.tellg();
@@ -251,7 +251,7 @@ void ParserRaw::get_all_settings() {
 
 
 void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill_queue) {
-  PL_DBG << "<ParserRaw> Start run worker";
+  DBG << "<ParserRaw> Start run worker";
 
   Spill one_spill, prevspill;
 
@@ -275,7 +275,7 @@ void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill
       if ((one_spill != Spill()) && (prevspill != Spill())) {
         if (one_spill.time > prevspill.time) {
           boost::posix_time::time_duration dif = one_spill.time - prevspill.time;
-          //        PL_DBG << "<ParserRaw> Pause for " << dif.total_seconds();
+          //        DBG << "<ParserRaw> Pause for " << dif.total_seconds();
           boost::this_thread::sleep(dif);
         }
       }
@@ -299,12 +299,12 @@ void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill
   spill_queue->enqueue(new Spill(one_spill));
 
   if (callback->spills_.empty()) {
-    PL_DBG << "<ParserRaw> Out of spills. Premature termination";
+    DBG << "<ParserRaw> Out of spills. Premature termination";
   }
 
   callback->run_status_.store(3);
 
-  PL_DBG << "<ParserRaw> Stop run worker";
+  DBG << "<ParserRaw> Stop run worker";
 
 }
 
@@ -329,7 +329,7 @@ Spill ParserRaw::get_spill() {
   for (auto &s : one_spill.stats)
     model_hits[s.second.source_channel] = s.second.model_hit;
 
-  //      PL_DBG << "<Sorter> will produce no of events " << spills_.front().events_in_spill;
+  //      DBG << "<Sorter> will produce no of events " << spills_.front().events_in_spill;
   while ((one_spill.hits.size() < hits_to_get) && (file_bin_.tellg() < bin_end_))
   {
     Hit one_hit;
@@ -338,18 +338,18 @@ Spill ParserRaw::get_spill() {
   }
 
 
-  PL_DBG << "<ParserRaw> made events " << one_spill.hits.size()
+  DBG << "<ParserRaw> made events " << one_spill.hits.size()
          << " and " << one_spill.stats.size() << " stats updates";
 
   if (loop_data_) {
     if (spills_.empty() && (!spills2_.empty())) {
       spills_ = spills2_;
       spills2_.clear();
-      PL_DBG << "<ParserRaw> rewinding spills";
+      DBG << "<ParserRaw> rewinding spills";
     }
 
     if (file_bin_.tellg() == bin_end_) {
-      PL_DBG << "<ParserRaw> rewinding binary";
+      DBG << "<ParserRaw> rewinding binary";
       file_bin_.seekg (0, std::ios::beg);
     }
   }

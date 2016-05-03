@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
   }
   
   CustomLogger::initLogger(nullptr, "qpx_%N.log");
-  PL_INFO << "--==cpx console tool for gamma acquisition==--";
+  INFO << "--==cpx console tool for gamma acquisition==--";
 
   std::vector<std::string> cmd_params;
   for (int i=2; i<argc; ++i)
@@ -39,14 +39,14 @@ int main(int argc, char *argv[])
   std::list<CpxLine> program;
 
   if (!parse_file(gabfile, program, cmd_params)) {
-    PL_ERR << "<cpx> parsing failed. Aborting";
+    ERR << "<cpx> parsing failed. Aborting";
     return 1;
   }
 
   Cpx interpreter;
   std::vector<double> variables;
   if (!interpreter.interpret(program, variables)) {
-    PL_ERR << "<cpx> interpreting failed. Aborting";
+    ERR << "<cpx> interpreting failed. Aborting";
     return 1;
   }
 
@@ -83,7 +83,7 @@ bool parse_file(std::ifstream &file, std::list<CpxLine> &program, std::vector<st
         if ((parnr > -1) && (parnr < cmd_params.size()))
           line.params.push_back(cmd_params[parnr]);
         else {
-          PL_ERR << "<cpx> command line option not provided for token " << tokens[j]
+          ERR << "<cpx> command line option not provided for token " << tokens[j]
                  << " for line: " << lines.front();
           return false;
         }
@@ -114,7 +114,7 @@ bool Cpx::interpret(std::list<CpxLine> commands, std::vector<double> variables) 
         else if (varnr > 0)
           j = varnr - 1;
         else {
-          PL_ERR << "<cpx> no variable 0";
+          ERR << "<cpx> no variable 0";
           return false;
         }
           
@@ -126,25 +126,25 @@ bool Cpx::interpret(std::list<CpxLine> commands, std::vector<double> variables) 
           else if ((varnr < 0) && (i > 0))
             line.params[i-1] += val;
           else {
-            PL_ERR << "<cpx> cannot concatenate below token 0";
+            ERR << "<cpx> cannot concatenate below token 0";
             return false;
           }
           
           
         } else {
-          PL_ERR << "<cpx> no variable " << j
+          ERR << "<cpx> no variable " << j
                  << " in  this scope";
           return false;
         }
       }
     }
 
-    PL_INFO << "<cpx> interpreting " << line.command;
+    INFO << "<cpx> interpreting " << line.command;
     boost::this_thread::sleep(boost::posix_time::seconds(2));
     
     bool success=false;
     if (line.command == "end") {
-      PL_INFO << "<cpx> exiting";
+      INFO << "<cpx> exiting";
       return true;      
     }
     else if (line.command == "boot")
@@ -159,13 +159,13 @@ bool Cpx::interpret(std::list<CpxLine> commands, std::vector<double> variables) 
       if (variables.size())
         return true;
       else {
-        PL_ERR << "<cpx> not inside loop";
+        ERR << "<cpx> not inside loop";
         return false;
       }
     }
     else if (line.command == "for") {
       if (line.params.size() < 3) {
-        PL_ERR << "<cpx> not enough parameters provided for FOR";
+        ERR << "<cpx> not enough parameters provided for FOR";
         return false;
       }
       double start = boost::lexical_cast<double>(line.params[0]);
@@ -197,7 +197,7 @@ bool Cpx::interpret(std::list<CpxLine> commands, std::vector<double> variables) 
 
 bool Cpx::templates(std::vector<std::string> &tokens) {
   if (tokens.size() < 1) {
-    PL_ERR << "<cpx> expected syntax: template template_file.tem";
+    ERR << "<cpx> expected syntax: template template_file.tem";
     return false;
   }
   std::string file(tokens[0]);
@@ -205,10 +205,10 @@ bool Cpx::templates(std::vector<std::string> &tokens) {
   XMLableDB<Metadata>  spectra_templates_("SpectrumTemplates");
   spectra_templates_.read_xml(file);
   if (spectra_templates_.empty()) {
-    PL_ERR << "<cpx> bad template file " << file;
+    ERR << "<cpx> bad template file " << file;
     return false;
   }
-  PL_INFO << "<cpx> loading templates from " << file;
+  INFO << "<cpx> loading templates from " << file;
   spectra_.clear();
   spectra_.set_prototypes(spectra_templates_);
   return true;
@@ -216,13 +216,13 @@ bool Cpx::templates(std::vector<std::string> &tokens) {
 
 bool Cpx::run_mca(std::vector<std::string> &tokens) {
   if (tokens.size() < 1) {
-    PL_ERR << "<cpx> expected syntax: run_mca duration";
+    ERR << "<cpx> expected syntax: run_mca duration";
     return false;
   }
 
   uint64_t duration = boost::lexical_cast<uint64_t>(tokens[0]);
   if (duration == 0) {
-    PL_ERR << "<cpx> bad duration";
+    ERR << "<cpx> bad duration";
     return false;
   }
   
@@ -233,25 +233,25 @@ bool Cpx::run_mca(std::vector<std::string> &tokens) {
 
 bool Cpx::save_qpx(std::vector<std::string> &tokens) {
   if (tokens.size() < 1) {
-    PL_ERR << "<cpx> expected syntax: save_qpx filename(.qpx)";
+    ERR << "<cpx> expected syntax: save_qpx filename(.qpx)";
     return false;
   }
   std::string out_name(tokens[0]);
   if (out_name.empty()) {
     //check if exists, if valid
-    PL_ERR << "<cpx> bad output file name provided";
+    ERR << "<cpx> bad output file name provided";
     return false;
   }
 
   std::string full_name = out_name + ".qpx";
-  PL_INFO << "<cpx> writing acquired data to " << full_name;
+  INFO << "<cpx> writing acquired data to " << full_name;
   spectra_.save_as(full_name);
   return true;
 }
 
 bool Cpx::boot(std::vector<std::string> &tokens) {
   if (tokens.size() < 2) {
-    PL_ERR << "<cpx> expected syntax: boot [path/profile.set] [path/settingsdir]";
+    ERR << "<cpx> expected syntax: boot [path/profile.set] [path/settingsdir]";
     return false;
   }
   std::string profile(tokens[0]);
@@ -263,7 +263,7 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
     engine_.get_all_settings();
     engine_.save_optimization();
   } else {
-    PL_ERR << "<cpx> couldn't boot";
+    ERR << "<cpx> couldn't boot";
     return false;
   }
 
@@ -272,7 +272,7 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
   XMLableDB<Detector> detectors_("Detectors");
   detectors_.read_xml(settings_dir + "/default_detectors.det");
   if (detectors_.empty()) {
-    PL_ERR << "<cpx> bad detector db";
+    ERR << "<cpx> bad detector db";
     return false;
   }
 

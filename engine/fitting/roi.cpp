@@ -82,11 +82,11 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
 
     std::vector<double> y_nobkg = remove_background();
 
-    //  PL_DBG << "ROI finder found " << finder_.filtered.size();
+    //  DBG << "ROI finder found " << finder_.filtered.size();
 
 
     for (int i=0; i < finder_.filtered.size(); ++i) {
-      //      PL_DBG << "<ROI> finding peak " << finder_.x_[finder_.lefts[i]] << "-" << finder_.x_[finder_.rights[i]];
+      //      DBG << "<ROI> finding peak " << finder_.x_[finder_.lefts[i]] << "-" << finder_.x_[finder_.rights[i]];
 
       std::vector<double> x_pk = std::vector<double>(finder_.x_.begin() + finder_.lefts[i], finder_.x_.begin() + finder_.rights[i] + 1);
       std::vector<double> y_pk = std::vector<double>(y_nobkg.begin() + finder_.lefts[i], y_nobkg.begin() + finder_.rights[i] + 1);
@@ -100,7 +100,7 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
           (gaussian.center_ < finder_.x_[finder_.rights[i]])
           )
       {
-        //        PL_DBG << "I like this peak at " << gaussian.center_ << " fw " << gaussian.hwhm_ * 2;
+        //        DBG << "I like this peak at " << gaussian.center_ << " fw " << gaussian.hwhm_ * 2;
         Hypermet hyp(gaussian, settings_);
 
         Peak fitted;
@@ -115,15 +115,15 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
       settings_.sum4_only = true;
   }
 
-  //    PL_DBG << "preliminary peaks " << peaks_.size();
+  //    DBG << "preliminary peaks " << peaks_.size();
   rebuild();
 
   if (settings_.resid_auto)
     iterative_fit(interruptor);
 
-//  PL_DBG << "ROI fit complete with: ";
+//  DBG << "ROI fit complete with: ";
 //  for (auto &p : peaks_) {
-//    PL_DBG << "  " << p.second.hypermet_.to_string();
+//    DBG << "  " << p.second.hypermet_.to_string();
 //  }
 }
 
@@ -132,28 +132,28 @@ void ROI::iterative_fit(boost::atomic<bool>& interruptor) {
     return;
 
   double prev_rsq = peaks_.begin()->second.hypermet_.rsq_;
-  PL_DBG << "  initial rsq = " << prev_rsq;
+  DBG << "  initial rsq = " << prev_rsq;
 
   for (int i=0; i < settings_.resid_max_iterations; ++i) {
     ROI new_fit = *this;
 
     if (!new_fit.add_from_resid(-1)) {
-//      PL_DBG << "    failed add from resid";
+//      DBG << "    failed add from resid";
       break;
     }
     double new_rsq = new_fit.peaks_.begin()->second.hypermet_.rsq_;
     if ((new_rsq <= prev_rsq) || std::isnan(new_rsq)) {
-      PL_DBG << "    not improved. reject refit";
+      DBG << "    not improved. reject refit";
       break;
     } else
-      PL_DBG << "    new rsq = " << new_rsq;
+      DBG << "    new rsq = " << new_rsq;
 
     new_fit.save_current_fit();
     prev_rsq = new_rsq;
     *this = new_fit;
 
     if (interruptor.load()) {
-      PL_DBG << "    fit ROI interrupter by client";
+      DBG << "    fit ROI interrupter by client";
       break;
     }
   }
@@ -183,7 +183,7 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
       }
 
 //      if (too_close)
-//        PL_DBG << "Too close at " << settings_.cali_nrg_.transform(gaussian.center_, settings_.bits_);
+//        DBG << "Too close at " << settings_.cali_nrg_.transform(gaussian.center_, settings_.bits_);
 
       if ( !too_close &&
           (gaussian.height_ > 0) &&
@@ -198,7 +198,7 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
         biggest = gaussian.area();
       }
     }
-//    PL_DBG << "    biggest potential add at " << finder_.x_[finder_.filtered[target_peak]] << " with area=" << biggest;
+//    DBG << "    biggest potential add at " << finder_.x_[finder_.filtered[target_peak]] << " with area=" << biggest;
   } else {
 
     //THIS NEVER HAPPENS
@@ -226,7 +226,7 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
       (gaussian.center_ < finder_.x_[finder_.rights[target_peak]])
       )
   {
-//    PL_DBG << "<ROI> new peak accepted";
+//    DBG << "<ROI> new peak accepted";
     Hypermet hyp(gaussian, settings_);
 
     Peak fitted;
@@ -272,7 +272,7 @@ void ROI::adjust_bounds(const std::vector<double> &x, const std::vector<double> 
   if ((L >= x.size()) || (R >= x.size()))
     return;
 
-//  PL_DBG << "Adjusting ROI bounds";
+//  DBG << "Adjusting ROI bounds";
 
   std::vector<double> x_local, y_local;
   for (uint16_t i = L; i <= R; ++i) {
@@ -290,7 +290,7 @@ void ROI::adjust_bounds(const std::vector<double> &x, const std::vector<double> 
     peaks[p.first] = p.second;
   }
 
-//  PL_DBG << "ROI adjustment keeps " << peaks.size() << " of " << peaks_.size() << " existing peaks";
+//  DBG << "ROI adjustment keeps " << peaks.size() << " of " << peaks_.size() << " existing peaks";
   peaks_ = peaks;
   render();
 
@@ -333,7 +333,7 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
     }
     uint16_t min = finder_.find_index(L);
     uint16_t max = finder_.find_index(R);
-//    PL_DBG << "<ROI> aaaadding on exterior " << min << " " << max << " at around " << center_prelim;
+//    DBG << "<ROI> aaaadding on exterior " << min << " " << max << " at around " << center_prelim;
     std::vector<double> x_local, y_local;
     for (uint32_t i = min; i <= max; ++i) {
       x_local.push_back(x[i]);
@@ -365,7 +365,7 @@ void ROI::add_peak(const std::vector<double> &x, const std::vector<double> &y,
       auto_fit(interruptor);
 
   } else {
-    PL_DBG << "<ROI> cannot add to empty ROI";
+    DBG << "<ROI> cannot add to empty ROI";
   }
 
 }

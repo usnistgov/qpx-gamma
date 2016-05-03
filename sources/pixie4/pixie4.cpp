@@ -97,9 +97,9 @@ bool Pixie4::daq_start(SynchronizedQueue<Spill*>* out_queue) {
     delete runner_;
 
   for (int i=0; i < channel_indices_.size(); ++i) {
-    //PL_DBG << "start daq run mod " << i;
+    //DBG << "start daq run mod " << i;
     for (auto &q : channel_indices_[i])
-      //PL_DBG << " chan=" << q;
+      //DBG << " chan=" << q;
     set_mod("RUN_TYPE",    static_cast<double>(run_type_), Module(i));
     set_mod("MAX_EVENTS",  static_cast<double>(0), Module(i));
   }
@@ -166,7 +166,7 @@ void Pixie4::fill_stats(std::map<int16_t, StatsUpdate> &all_stats, uint8_t modul
     stats.items["live_time"] = live_time - sfdt;
     stats.items["live_trigger"] = live_time - ftdt;
     all_stats[stats.source_channel] = stats;
-    //PL_DBG << "stats chan " << stats.channel;
+    //DBG << "stats chan " << stats.channel;
   }
 }
 
@@ -206,7 +206,7 @@ bool Pixie4::read_settings_bulk(Qpx::Setting &set) const {
         if (k.metadata.setting_type == Qpx::SettingType::stem) {
           int16_t modnum = k.metadata.address;
           if ((modnum < 0) || (modnum >= channel_indices_.size())) {
-            PL_WARN << "<Pixie4> module address out of bounds, ignoring branch " << modnum;
+            WARN << "<Pixie4> module address out of bounds, ignoring branch " << modnum;
             continue;
           }
           int filterrange = module_parameter_values_[modnum * N_MODULE_PAR + i_mod("FILTER_RANGE")];
@@ -214,7 +214,7 @@ bool Pixie4::read_settings_bulk(Qpx::Setting &set) const {
             if (p.metadata.setting_type == Qpx::SettingType::stem) {
               int16_t channum = p.metadata.address;
               if ((channum < 0) || (channum >= NUMBER_OF_CHANNELS)) {
-                PL_WARN << "<Pixie4> channel address out of bounds, ignoring branch " << channum;
+                WARN << "<Pixie4> channel address out of bounds, ignoring branch " << channum;
                 continue;
               }
               for (auto &o : p.branches.my_data_) {
@@ -224,12 +224,12 @@ bool Pixie4::read_settings_bulk(Qpx::Setting &set) const {
                     o.metadata.step = static_cast<double>(pow(2, filterrange)) / 75.0 ;
                     o.metadata.minimum = 2 * o.metadata.step;
                     o.metadata.maximum = 124 * o.metadata.step;
-                    //                      PL_DBG << "risetime " << o.metadata.minimum << "-" << o.metadata.step << "-" << o.metadata.maximum;
+                    //                      DBG << "risetime " << o.metadata.minimum << "-" << o.metadata.step << "-" << o.metadata.maximum;
                   } else if (o.metadata.name == "ENERGY_FLATTOP") {
                     o.metadata.step = static_cast<double>(pow(2, filterrange)) / 75.0;
                     o.metadata.minimum = 3 * o.metadata.step;
                     o.metadata.maximum = 125 * o.metadata.step;
-                    //                      PL_DBG << "flattop " << o.metadata.minimum << "-" << o.metadata.step << "-" << o.metadata.maximum;
+                    //                      DBG << "flattop " << o.metadata.minimum << "-" << o.metadata.step << "-" << o.metadata.maximum;
                   }
                 }
                 else if ((o.metadata.setting_type == Qpx::SettingType::integer)
@@ -337,7 +337,7 @@ void Pixie4::rebuild_structure(Qpx::Setting &set) {
       set.branches.add_a(q);
 //  }
 
-  //if (hardware_changed) PL_DBG << "hardware changed";
+  //if (hardware_changed) DBG << "hardware changed";
 
 //  if (newtot != oldtot) {
     std::vector<Qpx::Setting> old_modules;
@@ -390,13 +390,13 @@ void Pixie4::reindex_modules(Qpx::Setting &set) {
           if (c.indices.size() > 0)
             new_set.insert(*c.indices.begin());
           c.metadata.address = ca;
-//          PL_DBG << "<Pixie4> ca = " << c.metadata.address;
+//          DBG << "<Pixie4> ca = " << c.metadata.address;
           ca++;
         }
       }
       m.indices = new_set;
       m.metadata.address = ma;
-//      PL_DBG << "<Pixie4> ma = " << m.metadata.address;
+//      DBG << "<Pixie4> ma = " << m.metadata.address;
       ma++;
     }
   }
@@ -459,7 +459,7 @@ bool Pixie4::write_settings_bulk(Qpx::Setting &set) {
         if (k.metadata.setting_type == Qpx::SettingType::stem) {
           int16_t modnum = k.metadata.address;
           if ((modnum < 0) || (modnum >= channel_indices_.size())) {
-            PL_WARN << "<Pixie4> module address out of bounds, ignoring branch " << modnum;
+            WARN << "<Pixie4> module address out of bounds, ignoring branch " << modnum;
             continue;
           }
           for (auto &p : k.branches.my_data_) {
@@ -469,7 +469,7 @@ bool Pixie4::write_settings_bulk(Qpx::Setting &set) {
             if (p.metadata.setting_type == Qpx::SettingType::stem) {
               int16_t channum = p.metadata.address;
               if ((channum < 0) || (channum >= NUMBER_OF_CHANNELS)) {
-                PL_WARN << "<Pixie4> channel address out of bounds, ignoring branch " << channum;
+                WARN << "<Pixie4> channel address out of bounds, ignoring branch " << channum;
                 continue;
               }
 
@@ -522,7 +522,7 @@ bool Pixie4::write_settings_bulk(Qpx::Setting &set) {
 
 bool Pixie4::boot() {
   if (!(status_ & SourceStatus::can_boot)) {
-    PL_WARN << "<Pixie4> Cannot boot Pixie-4. Failed flag check (can_boot == 0)";
+    WARN << "<Pixie4> Cannot boot Pixie-4. Failed flag check (can_boot == 0)";
     return false;
   }
 
@@ -538,24 +538,24 @@ bool Pixie4::boot() {
     Boot_File_Name_List[i][boot_files_[i].size()] = '\0';
     bool ex = boost::filesystem::exists(boot_files_[i]);
     if (!ex) {
-      PL_ERR << "<Pixie4> Boot file " << boot_files_[i] << " not found";
+      ERR << "<Pixie4> Boot file " << boot_files_[i] << " not found";
       valid_files = false;
     }
   }
 
   if (!valid_files) {
-    PL_ERR << "<Pixie4> Problem with boot files. Boot aborting.";
+    ERR << "<Pixie4> Problem with boot files. Boot aborting.";
     return false;
   }
 
   int max = get_sys("NUMBER_MODULES");
   if (!max) {
-    PL_ERR << "<Pixie4> No valid module slots.";
+    ERR << "<Pixie4> No valid module slots.";
   } else {
-    //PL_DBG << "Number of modules to boot: " << max;
+    //DBG << "Number of modules to boot: " << max;
     read_sys("SLOT_WAVE");
     for (int i=0; i < max; i++)
-      PL_DBG << "<Pixie4> Booting module " << i << " in slot "
+      DBG << "<Pixie4> Booting module " << i << " in slot "
              << system_parameter_values_[i_sys("SLOT_WAVE") + i];
   }
 
@@ -633,14 +633,14 @@ bool Pixie4::start_run(Module mod) {
   bool success = false;
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      //PL_INFO << "Start run for module " << i;
+      //INFO << "Start run for module " << i;
       if (start_run(i))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      //PL_INFO << "Start run for module " << module;
+      //INFO << "Start run for module " << module;
       success = start_run(module);
     }
   }
@@ -651,14 +651,14 @@ bool Pixie4::resume_run(Module mod) {
   bool success = false;
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      //PL_INFO << "Resume run for module " << i;
+      //INFO << "Resume run for module " << i;
       if (resume_run(i))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      //PL_INFO << "Resume run for module " << module;
+      //INFO << "Resume run for module " << module;
       success = resume_run(module);
     }
   }
@@ -669,14 +669,14 @@ bool Pixie4::stop_run(Module mod) {
   bool success = false;
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      //PL_INFO << "Stop run for module " << i;
+      //INFO << "Stop run for module " << i;
       if (stop_run(i))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      //PL_INFO << "Stop run for module " << module;
+      //INFO << "Stop run for module " << module;
       success = stop_run(module);
     }
   }
@@ -691,13 +691,13 @@ bool Pixie4::start_run(uint8_t mod) {
   case 0x10:
     return true;
   case -0x11:
-    PL_ERR << "Start run failed: Invalid Pixie module number";
+    ERR << "Start run failed: Invalid Pixie module number";
     return false;
   case -0x12:
-    PL_ERR << "Start run failed. Try rebooting";
+    ERR << "Start run failed. Try rebooting";
     return false;
   default:
-    PL_ERR << "Start run failed. Unknown error";
+    ERR << "Start run failed. Unknown error";
     return false;
   }
 }
@@ -709,13 +709,13 @@ bool Pixie4::resume_run(uint8_t mod) {
   case 0x20:
     return true;
   case -0x21:
-    PL_ERR << "Resume run failed: Invalid Pixie module number";
+    ERR << "Resume run failed: Invalid Pixie module number";
     return false;
   case -0x22:
-    PL_ERR << "Resume run failed. Try rebooting";
+    ERR << "Resume run failed. Try rebooting";
     return false;
   default:
-    PL_ERR << "Resume run failed. Unknown error";
+    ERR << "Resume run failed. Unknown error";
     return false;
   }
 }
@@ -727,13 +727,13 @@ bool Pixie4::stop_run(uint8_t mod) {
   case 0x30:
     return true;
   case -0x31:
-    PL_ERR << "Stop run failed: Invalid Pixie module number";
+    ERR << "Stop run failed: Invalid Pixie module number";
     return false;
   case -0x32:
-    PL_ERR << "Stop run failed. Try rebooting";
+    ERR << "Stop run failed. Try rebooting";
     return false;
   default:
-    PL_ERR << "Stop run failed. Unknown error";
+    ERR << "Stop run failed. Unknown error";
     return false;
   }
 }
@@ -753,17 +753,17 @@ bool Pixie4::read_EM(uint32_t* data, uint8_t mod) {
   S32 retval = Pixie_Acquire_Data(0x9003, (U32*)data, NULL, mod);
   switch (retval) {
   case -0x93:
-    PL_ERR << "Failure to read list mode section of external memory. Reboot recommended.";
+    ERR << "Failure to read list mode section of external memory. Reboot recommended.";
     return false;
   case -0x95:
-    PL_ERR << "Invalid external memory I/O request. Check run type.";
+    ERR << "Invalid external memory I/O request. Check run type.";
     return false;
   case 0x90:
     return true;
   case 0x0:
     return true; //undocumented by XIA, returns this rather than 0x90 upon success
   default:
-    PL_ERR << "Unexpected error " << std::hex << retval;
+    ERR << "Unexpected error " << std::hex << retval;
     return false;
   }
 }
@@ -817,7 +817,7 @@ bool Pixie4::read_EM_dbl(uint32_t* data, uint8_t mod) {
     // function called after a readout that cleared WCR => run stopped => read other block
   {
     j=1-j;
-    PL_WARN << "<Pixie4> read_EM_dbl: module " << mod <<
+    WARN << "<Pixie4> read_EM_dbl: module " << mod <<
                " csr reports both memory blocks full (block " << 1-j << " older). Run paused (or finished).";
   }
 
@@ -831,7 +831,7 @@ bool Pixie4::read_EM_dbl(uint32_t* data, uint8_t mod) {
 
     if(NumWordsToRead > LIST_MEMORY_LENGTH)
     {
-      PL_ERR << "<Pixie4> read_EM_dbl: invalid word count " << NumWordsToRead;
+      ERR << "<Pixie4> read_EM_dbl: invalid word count " << NumWordsToRead;
       return false;
     }
 
@@ -854,7 +854,7 @@ bool Pixie4::clear_EM(uint8_t mod) {
 //////////////////////////
 
 void Pixie4::set_sys(const std::string& setting, double val) {
-  PL_TRC << "Setting " << setting << " to " << val << " for system";
+  TRC << "Setting " << setting << " to " << val << " for system";
 
   //check bounds
   system_parameter_values_[i_sys(setting.c_str())] = val;
@@ -863,7 +863,7 @@ void Pixie4::set_sys(const std::string& setting, double val) {
 
 
 double Pixie4::get_sys(const std::string& setting) {
-  PL_TRC << "Getting " << setting << " for system";
+  TRC << "Getting " << setting << " for system";
 
   //check bounds
   read_sys(setting.c_str());
@@ -872,7 +872,7 @@ double Pixie4::get_sys(const std::string& setting) {
 
 void Pixie4::get_sys_all() {
 
-  PL_TRC << "Getting all system";
+  TRC << "Getting all system";
   read_sys("ALL_SYSTEM_PARAMETERS");
 }
 
@@ -883,7 +883,7 @@ void Pixie4::get_sys_all() {
 void Pixie4::set_mod(const std::string& setting, double val, Module mod) {
   int module = static_cast<int>(mod);
   if (module > -1) {
-    //PL_INFO << "Setting " << setting << " to " << val << " for module " << module;
+    //INFO << "Setting " << setting << " to " << val << " for module " << module;
     module_parameter_values_[module * N_MODULE_PAR + i_mod(setting.c_str())] = val;
     write_mod(setting.c_str(), module);
   }
@@ -893,7 +893,7 @@ double Pixie4::get_mod(const std::string& setting,
                        Module mod) const {
   int module = static_cast<int>(mod);
   if (module > -1) {
-    PL_TRC << "Getting " << setting << " for module " << module;
+    TRC << "Getting " << setting << " for module " << module;
     return module_parameter_values_[module * N_MODULE_PAR + i_mod(setting.c_str())];
   }
   else
@@ -903,13 +903,13 @@ double Pixie4::get_mod(const std::string& setting,
 void Pixie4::get_mod_all(Module mod) {
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      PL_TRC << "Getting all parameters for module " << i;
+      TRC << "Getting all parameters for module " << i;
       read_mod("ALL_MODULE_PARAMETERS", i);
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      PL_TRC << "Getting all parameters for module " << module;
+      TRC << "Getting all parameters for module " << module;
       read_mod("ALL_MODULE_PARAMETERS", module);
     }
   }
@@ -918,13 +918,13 @@ void Pixie4::get_mod_all(Module mod) {
 void Pixie4::get_mod_stats(Module mod) {
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      PL_TRC << "Getting run statistics for module " << i;
+      TRC << "Getting run statistics for module " << i;
       read_mod("MODULE_RUN_STATISTICS", i);
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      PL_TRC << "Getting run statistics for module " << module;
+      TRC << "Getting run statistics for module " << module;
       read_mod("MODULE_RUN_STATISTICS", module);
     }
   }
@@ -939,7 +939,7 @@ double Pixie4::get_chan(const std::string& setting,
   int mod = static_cast<int>(module);
   int chan = static_cast<int>(channel);
 
-  PL_TRC << "Getting " << setting << " for module " << mod << " channel " << chan;
+  TRC << "Getting " << setting << " for module " << mod << " channel " << chan;
 
   if ((mod > -1) && (chan > -1)) {
     return channel_parameter_values_[i_chan(setting.c_str()) + mod * N_CHANNEL_PAR *
@@ -977,7 +977,7 @@ void Pixie4::get_chan_all(Channel channel, Module module) {
       }
     }
     for (int j=chan_start; j < chan_end; ++j) {
-      PL_TRC << "Getting all parameters for module " << i << " channel " << j;
+      TRC << "Getting all parameters for module " << i << " channel " << j;
       read_chan("ALL_CHANNEL_PARAMETERS", i, j);
     }
   }
@@ -1008,7 +1008,7 @@ void Pixie4::get_chan_stats(Channel channel, Module module) {
         chan_start = chan_end = chan;
     }
     for (int j=chan_start; j < chan_end; ++j) {
-      //PL_DBG << "Getting channel run statistics for module " << i << " channel " << j;
+      //DBG << "Getting channel run statistics for module " << i << " channel " << j;
       read_chan("CHANNEL_RUN_STATISTICS", i, j);
     }
   }
@@ -1087,7 +1087,7 @@ bool Pixie4::read_chan(const char* setting, uint8_t mod, uint8_t chan) {
 }
 
 uint32_t* Pixie4::control_collect_ADC(uint8_t module) {
-  PL_TRC << "<Pixie4> get ADC (oscilloscope) traces";
+  TRC << "<Pixie4> get ADC (oscilloscope) traces";
   ///why is NUMBER_OF_CHANNELS used? Same for multi-module?
   uint32_t* adc_data = new uint32_t[NUMBER_OF_CHANNELS * max_buf_len];
   if (status_ & SourceStatus::can_oscil) {
@@ -1102,22 +1102,22 @@ uint32_t* Pixie4::control_collect_ADC(uint8_t module) {
 }
 
 bool Pixie4::control_set_DAC(uint8_t module) {
-  //PL_INFO << "Pixie Control: set DAC";
+  //INFO << "Pixie Control: set DAC";
   return control_err(Pixie_Acquire_Data(0x0000, NULL, NULL, module));
 }
 
 bool Pixie4::control_connect(uint8_t module) {
-  //PL_INFO << "Pixie Control: connect";
+  //INFO << "Pixie Control: connect";
   return control_err(Pixie_Acquire_Data(0x0001, NULL, NULL, module));
 }
 
 bool Pixie4::control_disconnect(uint8_t module) {
-  //PL_INFO << "Pixie Control: disconnect";
+  //INFO << "Pixie Control: disconnect";
   return control_err(Pixie_Acquire_Data(0x0002, NULL, NULL, module));
 }
 
 bool Pixie4::control_program_Fippi(uint8_t module) {
-  //PL_INFO << "Pixie Control: program Fippi";
+  //INFO << "Pixie Control: program Fippi";
   return control_err(Pixie_Acquire_Data(0x0005, NULL, NULL, module));
 }
 
@@ -1126,14 +1126,14 @@ bool Pixie4::control_measure_baselines(Module mod) {
   if (status_ & SourceStatus::booted) {
     if (mod == Module::all) {
       for (int i=0; i< channel_indices_.size(); ++i) {
-        PL_DBG << "<Pixie4> measure baselines for module " << i;
+        DBG << "<Pixie4> measure baselines for module " << i;
         if (control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, i)))
           success = true;
       }
     } else {
       int module = static_cast<int>(mod);
       if ((module > -1) && (module < channel_indices_.size())) {
-        PL_DBG << "<Pixie4> measure baselines for module " << module;
+        DBG << "<Pixie4> measure baselines for module " << module;
         success = control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, module));
       }
     }
@@ -1142,17 +1142,17 @@ bool Pixie4::control_measure_baselines(Module mod) {
 }
 
 bool Pixie4::control_test_EM_write(uint8_t module) {
-  PL_TRC << "<Pixie4> test EM write";
+  TRC << "<Pixie4> test EM write";
   return control_err(Pixie_Acquire_Data(0x0016, NULL, NULL, module));
 }
 
 bool Pixie4::control_test_HM_write(uint8_t module) {
-  PL_TRC << "<Pixie4> test HM write";
+  TRC << "<Pixie4> test HM write";
   return control_err(Pixie_Acquire_Data(0x001A, NULL, NULL, module));
 }
 
 bool Pixie4::control_compute_BLcut() {
-  PL_TRC << "<Pixie4> compute BLcut";
+  TRC << "<Pixie4> compute BLcut";
   return control_err(Pixie_Acquire_Data(0x0080, NULL, NULL, 0));
 }
 
@@ -1161,14 +1161,14 @@ bool Pixie4::control_find_tau(Module mod) {
   if (status_ & SourceStatus::booted) {
     if (mod == Module::all) {
       for (int i=0; i< channel_indices_.size(); ++i) {
-        PL_DBG << "<Pixie4> find tau for module " << i;
+        DBG << "<Pixie4> find tau for module " << i;
         if (control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, i)))
           success = true;
       }
     } else {
       int module = static_cast<int>(mod);
       if ((module > -1) && (module < channel_indices_.size())) {
-        PL_DBG << "<Pixie4> find tau for module " << module;
+        DBG << "<Pixie4> find tau for module " << module;
         success = control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, module));
       }
     }
@@ -1181,14 +1181,14 @@ bool Pixie4::control_adjust_offsets(Module mod) {
   if (status_ & SourceStatus::booted) {
     if (mod == Module::all) {
       for (int i=0; i< channel_indices_.size(); ++i) {
-        PL_TRC << "<Pixie4> djust offsets for module " << i;
+        TRC << "<Pixie4> djust offsets for module " << i;
         if (control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, i)))
           success = true;
       }
     } else {
       int module = static_cast<int>(mod);
       if ((module > -1) && (module < channel_indices_.size())) {
-        PL_TRC << "<Pixie4> adjust offsets for module " << module;
+        TRC << "<Pixie4> adjust offsets for module " << module;
         success = control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, module));
       }
     }
@@ -1201,19 +1201,19 @@ bool Pixie4::control_err(int32_t err_val) {
   case 0:
     return true;
   case -1:
-    PL_ERR << "<Pixie4> Control command failed: Invalid Pixie modules number. Check ModNum";
+    ERR << "<Pixie4> Control command failed: Invalid Pixie modules number. Check ModNum";
     break;
   case -2:
-    PL_ERR << "<Pixie4> Control command failed: Failure to adjust offsets. Reboot recommended";
+    ERR << "<Pixie4> Control command failed: Failure to adjust offsets. Reboot recommended";
     break;
   case -3:
-    PL_ERR << "<Pixie4> Control command failed: Failure to acquire ADC traces. Reboot recommended";
+    ERR << "<Pixie4> Control command failed: Failure to acquire ADC traces. Reboot recommended";
     break;
   case -4:
-    PL_ERR << "<Pixie4> Control command failed: Failure to start the control task run. Reboot recommended";
+    ERR << "<Pixie4> Control command failed: Failure to start the control task run. Reboot recommended";
     break;
   default:
-    PL_ERR << "<Pixie4> Control comman failed: Unknown error " << err_val;
+    ERR << "<Pixie4> Control comman failed: Unknown error " << err_val;
   }
   return false;
 }
@@ -1223,28 +1223,28 @@ void Pixie4::set_err(int32_t err_val) {
   case 0:
     break;
   case -1:
-    PL_ERR << "<Pixie4> Set/get parameter failed: Null pointer for User_Par_Values";
+    ERR << "<Pixie4> Set/get parameter failed: Null pointer for User_Par_Values";
     break;
   case -2:
-    PL_ERR << "<Pixie4> Set/get parameter failed: Invalid user parameter name";
+    ERR << "<Pixie4> Set/get parameter failed: Invalid user parameter name";
     break;
   case -3:
-    PL_ERR << "<Pixie4> Set/get parameter failed: Invalid user parameter type";
+    ERR << "<Pixie4> Set/get parameter failed: Invalid user parameter type";
     break;
   case -4:
-    PL_ERR << "<Pixie4> Set/get parameter failed: Invalid I/O direction";
+    ERR << "<Pixie4> Set/get parameter failed: Invalid I/O direction";
     break;
   case -5:
-    PL_ERR << "<Pixie4> Set/get parameter failed: Invalid module number";
+    ERR << "<Pixie4> Set/get parameter failed: Invalid module number";
     break;
   case -6:
-    PL_ERR << "<Pixie4> Set/get parameter failed: Invalid channel number";
+    ERR << "<Pixie4> Set/get parameter failed: Invalid channel number";
     break;
   case -42:
-    //PL_ERR << "Set/get parameter failed: Pixie not online";
+    //ERR << "Set/get parameter failed: Pixie not online";
     break;
   default:
-    PL_ERR << "<Pixie4> Set/get parameter failed: Unknown error " << err_val;
+    ERR << "<Pixie4> Set/get parameter failed: Unknown error " << err_val;
   }
 }
 
@@ -1253,38 +1253,38 @@ void Pixie4::boot_err(int32_t err_val) {
   case 0:
     break;
   case -1:
-    PL_ERR << "<Pixie4> Boot failed: unable to scan crate slots. Check PXI slot map.";
+    ERR << "<Pixie4> Boot failed: unable to scan crate slots. Check PXI slot map.";
     break;
   case -2:
-    PL_ERR << "<Pixie4> Boot failed: unable to read communication FPGA (rev. B). Check comFPGA file.";
+    ERR << "<Pixie4> Boot failed: unable to read communication FPGA (rev. B). Check comFPGA file.";
     break;
   case -3:
-    PL_ERR << "<Pixie4> Boot failed: unable to read communication FPGA (rev. C). Check comFPGA file.";
+    ERR << "<Pixie4> Boot failed: unable to read communication FPGA (rev. C). Check comFPGA file.";
     break;
   case -4:
-    PL_ERR << "<Pixie4> Boot failed: unable to read signal processing FPGA config. Check SPFPGA file.";
+    ERR << "<Pixie4> Boot failed: unable to read signal processing FPGA config. Check SPFPGA file.";
     break;
   case -5:
-    PL_ERR << "<Pixie4> Boot failed: unable to read DSP executable code. Check DSP code file.";
+    ERR << "<Pixie4> Boot failed: unable to read DSP executable code. Check DSP code file.";
     break;
   case -6:
-    PL_ERR << "<Pixie4> Boot failed: unable to read DSP parameter values. Check DSP parameter file.";
+    ERR << "<Pixie4> Boot failed: unable to read DSP parameter values. Check DSP parameter file.";
     break;
   case -7:
-    PL_ERR << "<Pixie4> Boot failed: unable to initialize DSP parameter names. Check DSP .var file.";
+    ERR << "<Pixie4> Boot failed: unable to initialize DSP parameter names. Check DSP .var file.";
     break;
   case -8:
-    PL_ERR << "<Pixie4> Boot failed: failed to boot all modules in the system. Check Pixie modules.";
+    ERR << "<Pixie4> Boot failed: failed to boot all modules in the system. Check Pixie modules.";
     break;
   default:
-    PL_ERR << "<Pixie4> Boot failed, undefined error " << err_val;
+    ERR << "<Pixie4> Boot failed, undefined error " << err_val;
   }
 }
 
 
 void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_queue) {
 
-  PL_DBG << "<Pixie4> Double buffered daq runner thread starting";
+  DBG << "<Pixie4> Double buffered daq runner thread starting";
 
   callback->reset_counters_next_run(); //assume new run
 
@@ -1342,7 +1342,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
     }
 
     for (auto &q : mods) {
-      //PL_DBG << "getting stats for mod " << q;
+      //DBG << "getting stats for mod " << q;
       callback->get_mod_stats(Module(q));
       for (int j=0; j < NUMBER_OF_CHANNELS; ++j)
         callback->read_chan("ALL_CHANNEL_PARAMETERS", q, j);
@@ -1355,7 +1355,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
       fetched_spill.data.resize(list_mem_len32, 0);
       if (read_EM_dbl(fetched_spill.data.data(), q))
         success = true;
-      //      PL_DBG << "<Pixie4> fetched spill for mod " << q;
+      //      DBG << "<Pixie4> fetched spill for mod " << q;
       callback->fill_stats(fetched_spill.stats, q);
       for (auto &p : fetched_spill.stats) {
         p.second.lab_time = fetched_spill.time;
@@ -1385,14 +1385,14 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
 
 
   callback->run_status_.store(3);
-  PL_DBG << "<Pixie4> Double buffered daq runner thread completed";
+  DBG << "<Pixie4> Double buffered daq runner thread completed";
 }
 
 
 
 void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue) {
 
-  PL_DBG << "<Pixie4> parser thread starting";
+  DBG << "<Pixie4> parser thread starting";
 
   Spill* spill;
   std::vector<std::vector<int32_t>> channel_indices = callback->channel_indices_;
@@ -1522,9 +1522,9 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
   }
 
   if (cycles == 0)
-    PL_INFO << "<Pixie4> Parser thread stopping. Buffer queue closed without events";
+    INFO << "<Pixie4> Parser thread stopping. Buffer queue closed without events";
   else
-    PL_INFO << "<Pixie4> Parser thread stopping. " << all_events << " events, with avg time/spill: " << parse_timer.us()/cycles << "us";
+    INFO << "<Pixie4> Parser thread stopping. " << all_events << " events, with avg time/spill: " << parse_timer.us()/cycles << "us";
 }
 
 

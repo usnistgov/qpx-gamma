@@ -190,7 +190,7 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
 
         for (auto &q: temp_set.get_sinks(2, -1)) {
           Qpx::Metadata md = q.second->metadata();
-          PL_DBG << "<Simulator2D> Spectrum available: " << md.name << " t:" << md.type() << " r:" << md.bits;
+          DBG << "<Simulator2D> Spectrum available: " << md.name << " t:" << md.type() << " r:" << md.bits;
           spectra_names_[q.first] = md.name;
         }
 
@@ -213,30 +213,30 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
 
 bool Simulator2D::boot() {
   if (!(status_ & SourceStatus::can_boot)) {
-    PL_WARN << "<Simulator2D> Cannot boot Simulator2D. Failed flag check (can_boot == 0)";
+    WARN << "<Simulator2D> Cannot boot Simulator2D. Failed flag check (can_boot == 0)";
     return false;
   }
 
   status_ = SourceStatus::loaded | SourceStatus::can_boot;
 
   Qpx::Project temp_set;
-  PL_INFO << "<Simulator2D> Reading data from " << source_file_;
+  INFO << "<Simulator2D> Reading data from " << source_file_;
   temp_set.read_xml(source_file_, true);
 
   SinkPtr spectrum = temp_set.get_sink(source_spectrum_);
 
   if (spectrum == nullptr) {
-    PL_DBG << "<Simulator2D> Could not find selected spectrum";
+    DBG << "<Simulator2D> Could not find selected spectrum";
     return false;
   }
 
   Metadata md = spectrum->metadata();
-  PL_INFO << "<Simulator2D> Will use " << md.name << " type:" << md.type() << " bits:" << md.bits;
+  INFO << "<Simulator2D> Will use " << md.name << " type:" << md.type() << " bits:" << md.bits;
 
 
   int source_res = md.bits;
 
-  PL_DBG << "<Simulator2D> source total events coinc " << md.total_count;
+  DBG << "<Simulator2D> source total events coinc " << md.total_count;
 
   std::set<Spill> spills = temp_set.spills();
   if (spills.size())
@@ -245,7 +245,7 @@ bool Simulator2D::boot() {
   lab_time = md.attributes.branches.get(Qpx::Setting("real_time")).value_duration.total_milliseconds() * 0.001;
 
   if (lab_time == 0.0) {
-    PL_WARN << "<Simulator2D> Lab time = 0. Cannot create simulation.";
+    WARN << "<Simulator2D> Lab time = 0. Cannot create simulation.";
     return false;
   }
 
@@ -253,14 +253,14 @@ bool Simulator2D::boot() {
 
   time_factor = settings.get_setting(Qpx::Setting("Pixie4/System/module/TOTAL_TIME"), Qpx::Match::id).value_dbl / lab_time;
   OCR = static_cast<double>(count_) / lab_time;
-  PL_DBG << "<Simulator2D> total count=" << count_ << " time_factor=" << time_factor << " OCR=" << OCR;
+  DBG << "<Simulator2D> total count=" << count_ << " time_factor=" << time_factor << " OCR=" << OCR;
 
   int adjust_bits = source_res - bits_;
 
   shift_by_ = 16 - bits_;
   resolution_ = pow(2, bits_);
 
-  PL_INFO << "<Simulator2D>  building matrix for simulation res=" << resolution_ << " shift="  << shift_by_;
+  INFO << "<Simulator2D>  building matrix for simulation res=" << resolution_ << " shift="  << shift_by_;
   std::vector<double> distribution(resolution_*resolution_, 0.0);   //optimize somehow
 
   uint32_t res = pow(2, spectrum->metadata().bits);
@@ -271,7 +271,7 @@ bool Simulator2D::boot() {
                  + (it.first[1] >> adjust_bits)]
         =  static_cast<double>(it.second) / static_cast<double> (count_);
 
-  PL_INFO << "<Simulator2D>  creating discrete distribution for simulation";
+  INFO << "<Simulator2D>  creating discrete distribution for simulation";
   dist_ = boost::random::discrete_distribution<>(distribution);
 
   if (shift_by_) {
@@ -302,7 +302,7 @@ void Simulator2D::get_all_settings() {
 
 
 void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* spill_queue) {
-  PL_DBG << "<Simulator2D> Start run worker";
+  DBG << "<Simulator2D> Start run worker";
 
 
   bool timeout = false;
@@ -315,7 +315,7 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
   Spill one_spill;
 
 
-  PL_DBG << "<Simulator2D> gains " << callback->gain0_ << " " << callback->gain1_;
+  DBG << "<Simulator2D> gains " << callback->gain0_ << " " << callback->gain1_;
 
   std::set<int> starts_signalled;
 
@@ -352,7 +352,7 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
         Hit h = callback->model_hit;
         h.timestamp.time_native = t;
 
-//        PL_DBG << "evt " << en1 << "x" << en2;
+//        DBG << "evt " << en1 << "x" << en2;
 
         if (en1 > 0) {
           h.source_channel = callback->chan0_;
@@ -392,7 +392,7 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
 
   callback->run_status_.store(3);
 
-  PL_DBG << "<Simulator2D> Stop run worker";
+  DBG << "<Simulator2D> Stop run worker";
 }
 
 

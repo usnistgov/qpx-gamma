@@ -46,7 +46,7 @@ ThreadRunner::~ThreadRunner()
 {}
 
 void ThreadRunner::terminate() {
-//  PL_INFO << "runner thread termination requested";
+//  INFO << "runner thread termination requested";
   if (interruptor_)
     interruptor_->store(true);
   terminating_.store(true);
@@ -71,7 +71,7 @@ void ThreadRunner::set_idle_refresh_frequency(int secs) {
 void ThreadRunner::do_list(boost::atomic<bool> &interruptor, uint64_t timeout)
 {
   if (running_.load()) {
-    PL_WARN << "Runner busy";
+    WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -87,7 +87,7 @@ void ThreadRunner::do_list(boost::atomic<bool> &interruptor, uint64_t timeout)
 void ThreadRunner::do_run(Qpx::Project &spectra, boost::atomic<bool> &interruptor, uint64_t timeout)
 {
   if (running_.load()) {
-    PL_WARN << "Runner busy";
+    WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -102,7 +102,7 @@ void ThreadRunner::do_run(Qpx::Project &spectra, boost::atomic<bool> &interrupto
 
 void ThreadRunner::do_initialize() {
   if (running_.load()) {
-    PL_WARN << "Runner busy";
+    WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -115,7 +115,7 @@ void ThreadRunner::do_initialize() {
 
 void ThreadRunner::do_boot() {
   if (running_.load()) {
-    PL_WARN << "Runner busy";
+    WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -127,7 +127,7 @@ void ThreadRunner::do_boot() {
 
 void ThreadRunner::do_shutdown() {
   if (running_.load()) {
-    PL_WARN << "Runner busy";
+    WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -139,7 +139,7 @@ void ThreadRunner::do_shutdown() {
 
 void ThreadRunner::do_push_settings(const Qpx::Setting &tree) {
   if (running_.load()) {
-    PL_WARN << "Runner busy";
+    WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -152,7 +152,7 @@ void ThreadRunner::do_push_settings(const Qpx::Setting &tree) {
 
 void ThreadRunner::do_set_setting(const Qpx::Setting &item, Qpx::Match match) {
   if (running_.load()) {
-    PL_WARN << "Runner busy";
+    WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -166,7 +166,7 @@ void ThreadRunner::do_set_setting(const Qpx::Setting &item, Qpx::Match match) {
 
 void ThreadRunner::do_set_detector(int chan, Qpx::Detector det) {
   if (running_.load()) {
-    PL_WARN << "Runner busy";
+    WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -180,7 +180,7 @@ void ThreadRunner::do_set_detector(int chan, Qpx::Detector det) {
 
 void ThreadRunner::do_set_detectors(std::map<int, Qpx::Detector> dets) {
   if (running_.load()) {
-    PL_WARN << "Runner busy";
+    WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -194,7 +194,7 @@ void ThreadRunner::do_set_detectors(std::map<int, Qpx::Detector> dets) {
 
 void ThreadRunner::do_optimize() {
   if (running_.load()) {
-    PL_WARN << "Runner busy";
+    WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -206,7 +206,7 @@ void ThreadRunner::do_optimize() {
 
 void ThreadRunner::do_oscil() {
   if (running_.load()) {
-    PL_WARN << "Runner busy";
+    WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -218,7 +218,7 @@ void ThreadRunner::do_oscil() {
 
 void ThreadRunner::do_refresh_settings() {
   if (running_.load()) {
-    PL_WARN << "Runner busy";
+    WARN << "Runner busy";
     return;
   }
   QMutexLocker locker(&mutex_);
@@ -257,8 +257,7 @@ void ThreadRunner::run()
       QString profile_directory = settings.value("profile_directory", "").toString();
       bool boot = settings.value("boot_on_startup", false).toBool();
 
-      if (!profile_directory.isEmpty())
-        engine_.initialize(profile_directory.toStdString() + "/profile.set", settings_directory.toStdString());
+      engine_.initialize(profile_directory.toStdString() + "/profile.set", settings_directory.toStdString());
 
       if (boot && !profile_directory.isEmpty()) {
         action_ = kBoot;
@@ -334,7 +333,7 @@ void ThreadRunner::run()
       if (booted && idle_refresh_.load()) {
         action_ = kSettingsRefresh;
         QThread::sleep(idle_refresh_frequency_.load());
-        //PL_DBG << "idle runner will refresh settings";
+        //DBG << "idle runner will refresh settings";
       }
     }
     running_.store(false);

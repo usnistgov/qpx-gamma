@@ -93,12 +93,12 @@ void Finder::calc_kon() {
 
   double sigma = settings_.KON_sigma_spectrum;
   if (y_resid_ != y_) {
-//    PL_DBG << "<Finder> Using sigma resid";
+//    DBG << "<Finder> Using sigma resid";
     sigma = settings_.KON_sigma_resid;
   }
 
 
-//  PL_DBG << "<Finder> width " << settings_.KON_width;
+//  DBG << "<Finder> width " << settings_.KON_width;
 
   int start = width;
   int end = x_.size() - 1 - 2 * width;
@@ -175,7 +175,7 @@ void Finder::find_peaks() {
   for (int i=0; i < filtered.size(); ++i) {
     lefts[i]  = left_edge(lefts[i]);
     rights[i] = right_edge(rights[i]);
-//    PL_DBG << "<Finder> Peak " << lefts[i] << "-"  << filtered[i] << "-"  << rights[i];
+//    DBG << "<Finder> Peak " << lefts[i] << "-"  << filtered[i] << "-"  << rights[i];
   }
 }
 
@@ -187,7 +187,7 @@ uint16_t Finder::find_left(uint16_t chan) {
 
   double sigma = settings_.KON_sigma_spectrum;
   if (y_resid_ != y_) {
-//    PL_DBG << "<Finder> Using sigma resid";
+//    DBG << "<Finder> Using sigma resid";
     sigma = settings_.KON_sigma_resid;
   }
 
@@ -210,7 +210,7 @@ uint16_t Finder::find_right(uint16_t chan) {
 
   double sigma = settings_.KON_sigma_spectrum;
   if (y_resid_ != y_) {
-//    PL_DBG << "<Finder> Using sigma resid";
+//    DBG << "<Finder> Using sigma resid";
     sigma = settings_.KON_sigma_resid;
   }
 
@@ -245,7 +245,7 @@ uint16_t Finder::left_edge(uint16_t idx) {
 
   double sigma = settings_.KON_sigma_spectrum;
   if (y_resid_ != y_) {
-//    PL_DBG << "<Finder> Using sigma resid";
+//    DBG << "<Finder> Using sigma resid";
     sigma = settings_.KON_sigma_resid;
   }
 
@@ -278,7 +278,7 @@ uint16_t Finder::right_edge(uint16_t idx) {
 
   double sigma = settings_.KON_sigma_spectrum;
   if (y_resid_ != y_) {
-//    PL_DBG << "<Finder> Using sigma resid";
+//    DBG << "<Finder> Using sigma resid";
     sigma = settings_.KON_sigma_resid;
   }
 

@@ -136,7 +136,7 @@ void Delayometer::_push_hit(const Hit& newhit)
         pattern_add_.relevant(newhit.source_channel)))
     return;
 
-  //  PL_DBG << "Processing " << newhit.to_string();
+  //  DBG << "Processing " << newhit.to_string();
 
   for (auto &q : backlog) {
     if (q.in_window(newhit)) {
@@ -147,15 +147,15 @@ void Delayometer::_push_hit(const Hit& newhit)
           metadata_.total_count++;
           this->addEvent(copy);
         } else
-          PL_DBG << "<" << metadata_.name << "> not validated " << q.to_string();
+          DBG << "<" << metadata_.name << "> not validated " << q.to_string();
       }
 //      else
-//        PL_DBG << "<" << metadata_.name << "> pileup hit " << newhit.to_string() << " with " << q.to_string() << " already has " << q.hits[newhit.source_channel].to_string();
+//        DBG << "<" << metadata_.name << "> pileup hit " << newhit.to_string() << " with " << q.to_string() << " already has " << q.hits[newhit.source_channel].to_string();
     }
 //    else if (q.past_due(newhit))
 //      break;
     else if (q.antecedent(newhit))
-      PL_DBG << "<" << metadata_.name << "> antecedent hit " << newhit.to_string() << ". Something wrong with presorter or daq_device?";
+      DBG << "<" << metadata_.name << "> antecedent hit " << newhit.to_string() << ". Something wrong with presorter or daq_device?";
   }
 
   backlog.push_back(Event(newhit, coinc_window_, max_delay_));
@@ -176,7 +176,7 @@ void Delayometer::addEvent(const Event& newEvent) {
 
 //  double df = std::abs(b.timestamp - a.timestamp);
 //  if ((df > 0) && (df < 18000))
-//    PL_DBG << " d " << b.timestamp - a.timestamp;
+//    DBG << " d " << b.timestamp - a.timestamp;
 
   TimeStamp res;
   if (a.timestamp.timebase_divider > b.timestamp.timebase_divider)

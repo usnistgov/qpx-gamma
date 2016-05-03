@@ -67,7 +67,7 @@ bool Spectrum1D_LFC::_initialize() {
   }
 
   if (adds != 1) {
-    PL_WARN << "Invalid 1D_LFC spectrum requested (only 1 channel allowed)";
+    WARN << "Invalid 1D_LFC spectrum requested (only 1 channel allowed)";
     return false;
   }
   
@@ -128,7 +128,7 @@ void Spectrum1D_LFC::_push_stats(const StatsUpdate& newStats)
     count_total_ += fast_peaks_compensated;
     metadata_.total_count = count_total_;
 
-    PL_DBG << "<SpectrumLFC1D> '" << metadata_.name << "' update chan[" << my_channel_ << "]"
+    DBG << "<SpectrumLFC1D> '" << metadata_.name << "' update chan[" << my_channel_ << "]"
            << " fast_peaks_compensated=" << fast_peaks_compensated
            << " true_count=" << count_current_;
 

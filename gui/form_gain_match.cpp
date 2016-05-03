@@ -299,7 +299,7 @@ void FormGainMatch::run_completed() {
     //replot_markers();
 
     if (current_pass >= 0) {
-      PL_INFO << "<FormGainMatch> Completed pass # " << current_pass;
+      INFO << "<FormGainMatch> Completed pass # " << current_pass;
       current_pass++;
       do_post_processing();
     } else {
@@ -317,7 +317,7 @@ void FormGainMatch::do_post_processing() {
   double old_gain = gains.back();
   double delta = peak_opt_.center.val - peak_ref_.center.val;
 
-  PL_DBG << "delta " << delta << " = " << peak_opt_.center.val << " - " << peak_ref_.center.val;
+  DBG << "delta " << delta << " = " << peak_opt_.center.val << " - " << peak_ref_.center.val;
 
   deltas.push_back(peak_opt_.center.val);
 
@@ -383,7 +383,7 @@ void FormGainMatch::do_post_processing() {
   }
 
   if (std::abs(delta) < ui->doubleThreshold->value()) {
-    PL_INFO << "<FormGainMatch> gain matching complete";
+    INFO << "<FormGainMatch> gain matching complete";
     ui->pushStop->setEnabled(false);
     my_run_ = false;
     emit toggleIO(true);
@@ -404,7 +404,7 @@ void FormGainMatch::do_post_processing() {
   new_gain = gain_setting.value_dbl;
 
 
-  PL_INFO << "<FormGainMatch> gain changed from " << std::fixed << std::setprecision(6)
+  INFO << "<FormGainMatch> gain changed from " << std::fixed << std::setprecision(6)
           << old_gain << " to " << new_gain;
 
   QThread::sleep(2);
@@ -419,10 +419,10 @@ void FormGainMatch::update_fits() {
       for (auto &s : selref)
         if (abs(p.second.center.val - s) < 2) {
           newselr.insert(p.second.center.val);
-          PL_DBG << "match sel ref " << p.second.center.val;
+          DBG << "match sel ref " << p.second.center.val;
         }
     }
-//    PL_DBG << "refsel close enough " << newselr.size();
+//    DBG << "refsel close enough " << newselr.size();
     ui->plotRef->set_selected_peaks(newselr);
   }
 
@@ -433,10 +433,10 @@ void FormGainMatch::update_fits() {
       for (auto &s : selopt)
         if (abs(p.second.center.val - s) < 2) {
           newselo.insert(p.second.center.val);
-          PL_DBG << "match sel opt " << p.second.center.val;
+          DBG << "match sel opt " << p.second.center.val;
         }
     }
-//    PL_DBG << "optsel close enough " << newselo.size();
+//    DBG << "optsel close enough " << newselo.size();
     ui->plotOpt->set_selected_peaks(newselo);
   }
 
@@ -456,12 +456,12 @@ void FormGainMatch::update_peak_selection(std::set<double> dummy) {
   if (fitter_opt_.peaks().count(*selopt.begin()))
     peak_opt_ = fitter_opt_.peaks().at(*selopt.begin());
 
-  PL_DBG << "Have one peak each " << peak_ref_.center.to_string() << " " << peak_opt_.center.to_string() ;
+  DBG << "Have one peak each " << peak_ref_.center.to_string() << " " << peak_opt_.center.to_string() ;
 
   if ((peak_ref_.area_best.val == 0) || (peak_opt_.area_best.val == 0))
     return;
 
-//  PL_DBG << "1";
+//  DBG << "1";
 
   Setting set_gain("Gain");
   Setting set_pass("Pass");
@@ -519,7 +519,7 @@ void FormGainMatch::update_plots() {
   }
 
   if (have_data) {
-//    PL_DBG << "Have data!";
+//    DBG << "Have data!";
     if (!ui->plotRef->busy()) {
       ui->plotRef->updateData();
       ui->plotRef->perform_fit();

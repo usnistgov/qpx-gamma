@@ -171,13 +171,13 @@ bool QpxVmePlugin::write_settings_bulk(Qpx::Setting &set) {
       if (!(status_ & SourceStatus::booted))
         controller_name_ = q.value_text;
     } else if (q.metadata.setting_type == Qpx::SettingType::stem) {
-//      PL_DBG << "<VmePlugin> looking at " << q.id_;
+//      DBG << "<VmePlugin> looking at " << q.id_;
       if (modules_.count(q.id_) && modules_[q.id_]) {
         modules_[q.id_]->write_settings_bulk(q);
       } else if (device_types.count(q.id_) && (q.id_.size() > 4) && (q.id_.substr(0,4) == "VME/")) {
         boost::filesystem::path dev_settings = path / q.value_text;
         modules_[q.id_] = std::dynamic_pointer_cast<VmeModule>(SourceFactory::getInstance().create_type(q.id_, dev_settings.string()));
-        PL_DBG << "<VmePlugin> added module " << q.id_ << " with settings at " << dev_settings.string();
+        DBG << "<VmePlugin> added module " << q.id_ << " with settings at " << dev_settings.string();
         modules_[q.id_]->write_settings_bulk(q);
       } else if (q.id_ == "VME/Registers") {
         for (auto &k : q.branches.my_data_) {
@@ -187,7 +187,7 @@ bool QpxVmePlugin::write_settings_bulk(Qpx::Setting &set) {
           } else {
             Qpx::Setting s = k;
             if (s.metadata.writable && read_register(s) && (s != k)) {
-              PL_DBG << "VmUsb register write " << k.id_;
+              DBG << "VmUsb register write " << k.id_;
               write_register(k);
             }
           }
@@ -200,10 +200,10 @@ bool QpxVmePlugin::write_settings_bulk(Qpx::Setting &set) {
 
 
 bool QpxVmePlugin::boot() {
-  PL_DBG << "<VmePlugin> Attempting to boot";
+  DBG << "<VmePlugin> Attempting to boot";
 
   if (!(status_ & SourceStatus::can_boot)) {
-    PL_WARN << "<VmePlugin> Cannot boot. Failed flag check (can_boot == 0)";
+    WARN << "<VmePlugin> Cannot boot. Failed flag check (can_boot == 0)";
     return false;
   }
 
@@ -221,12 +221,12 @@ bool QpxVmePlugin::boot() {
   }
 
   if (!controller_->connected()) {
-    PL_WARN << "<VmePlugin> Could not connect to controller " << controller_->controllerName();
+    WARN << "<VmePlugin> Could not connect to controller " << controller_->controllerName();
     delete controller_;
     controller_ = nullptr;
     return false;
   } else {
-    PL_DBG << "<VmePlugin> Connected to controller " << controller_->controllerName()
+    DBG << "<VmePlugin> Connected to controller " << controller_->controllerName()
            << " SN:" << controller_->serialNumber();
     //controller_->clear_registers();
   }
@@ -235,13 +235,13 @@ bool QpxVmePlugin::boot() {
 
   for (auto &q : modules_) {
     if ((q.second) && (!q.second->connected())) {
-      PL_DBG << "<VmePlugin> Searching for module " << q.first;
+      DBG << "<VmePlugin> Searching for module " << q.first;
       for (long base_address = 0; base_address < 0xFFFFFFFF; base_address += q.second->baseAddressSpaceLength()) {
         q.second->connect(controller_, base_address);
 
         if (q.second->connected()) {
           q.second->boot(); //disregard return value
-          PL_DBG << "<VmePlugin> Connected to module " << q.first
+          DBG << "<VmePlugin> Connected to module " << q.first
                  << "[" << q.second->address()
                  << "] firmware=" << q.second->firmwareName()
                  << " booted=" << (0 != (q.second->status() & SourceStatus::booted));
@@ -260,7 +260,7 @@ bool QpxVmePlugin::boot() {
 }
 
 bool QpxVmePlugin::die() {
-  PL_DBG << "<VmePlugin> Disconnecting";
+  DBG << "<VmePlugin> Disconnecting";
 
   daq_stop();
   if (runner_ != nullptr) {
@@ -315,7 +315,7 @@ bool QpxVmePlugin::read_register(Qpx::Setting& set) const {
       return true;
     }
   }
-  PL_DBG << "<VmePlugin> Setting " << set.id_ << " does not have a well defined hardware type";
+  DBG << "<VmePlugin> Setting " << set.id_ << " does not have a well defined hardware type";
   return false;
 }
 
@@ -343,7 +343,7 @@ bool QpxVmePlugin::write_register(Qpx::Setting& set) {
       return true;
     }
   }
-  PL_DBG << "<VmePlugin> Setting " << set.id_ << " does not have a well defined hardware type";
+  DBG << "<VmePlugin> Setting " << set.id_ << " does not have a well defined hardware type";
   return false;
 }
 

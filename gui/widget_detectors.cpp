@@ -194,7 +194,7 @@ void DialogDetector::on_pushRead1D_clicked()
     std::vector<Detector> dets = newSpectrum->metadata().detectors;
     for (auto &q : dets)
       if (q != Detector()) {
-        PL_INFO << "Looking at calibrations from detector " << q.name_;
+        INFO << "Looking at calibrations from detector " << q.name_;
         for (auto &p : q.energy_calibrations_.my_data_) {
           if (p.bits_) {
             my_detector_.energy_calibrations_.add(p);
@@ -204,7 +204,7 @@ void DialogDetector::on_pushRead1D_clicked()
       }
     updateDisplay();
   } else
-    PL_INFO << "Spectrum construction did not succeed. Aborting";
+    INFO << "Spectrum construction did not succeed. Aborting";
 
   this->setCursor(Qt::ArrowCursor);
 }
@@ -519,7 +519,7 @@ void WidgetDetectors::on_pushImport_clicked()
   QString fileName = QFileDialog::getOpenFileName(this, "Load detector settings",
                                                   root_dir_, "Detector settings (*.det)");
   if (validateFile(this, fileName, false)) {
-    PL_INFO << "Reading detector settings from xml file " << fileName.toStdString();
+    INFO << "Reading detector settings from xml file " << fileName.toStdString();
     detectors_->read_xml(fileName.toStdString());
     selection_model_.reset();
     table_model_.update();
@@ -533,7 +533,7 @@ void WidgetDetectors::on_pushExport_clicked()
                                           root_dir_, "Detector settings (*.det)");
   if (validateFile(this, fileName, true)) {
     QFileInfo file(fileName);
-    PL_INFO << "Writing detector settings to xml file " << fileName.toStdString();
+    INFO << "Writing detector settings to xml file " << fileName.toStdString();
     detectors_->write_xml(fileName.toStdString());
   }
 }

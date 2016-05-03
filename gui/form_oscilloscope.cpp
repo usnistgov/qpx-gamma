@@ -175,7 +175,7 @@ void FormOscilloscope::replot() {
 
       xdt = xinterval;
 
-//      PL_DBG << "trace " << i << " length " << trace_length << " xdt " << xdt;
+//      DBG << "trace " << i << " length " << trace_length << " xdt " << xdt;
 
       QVector<double> xx;
       for (int i=0; i < trace_length; ++i)
@@ -193,7 +193,7 @@ void FormOscilloscope::replot() {
       }
 
       if ((i < my_channels.size()) && (my_channels[i].visible)) {
-//        PL_DBG << "will plot trace " << i;
+//        DBG << "will plot trace " << i;
         AppearanceProfile profile;
         profile.default_pen = QPen(my_channels[i].color, 1);
         ui->widgetPlot->addGraph(xx, yy, profile);

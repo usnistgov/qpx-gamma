@@ -151,14 +151,14 @@ void WidgetIsotopes::on_pushSum_clicked()
   for (auto &q : current_gammas_) {
     sum_energy += q;
   }
-  PL_INFO << "sum=" << sum_energy;
+  INFO << "sum=" << sum_energy;
 
   RadTypes::Gamma newgamma;
   newgamma.energy = sum_energy;
   newgamma.abundance = 0.0;
   RadTypes::Isotope modified = isotopes_.get(RadTypes::Isotope(ui->listIsotopes->currentItem()->text().toStdString()));
   modified.gammas.add(newgamma);
-  PL_INFO << "modifying " << modified.name << " to have " << modified.gammas.size() << " gammas";
+  INFO << "modifying " << modified.name << " to have " << modified.gammas.size() << " gammas";
   isotopes_.replace(modified);
   isotopeChosen(QString::fromStdString(modified.name));
 

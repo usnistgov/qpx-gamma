@@ -50,13 +50,13 @@ bool VmUsb2::daq_init() {
   // output fifo..as it appears to sometimes leave crap there.
   // ignore any error status, and use a short timeout:
 
-  PL_DBG << "<VmUsb> Flushing any garbage in the VM-USB fifo...\n";
+  DBG << "<VmUsb> Flushing any garbage in the VM-USB fifo...\n";
 
   char junk[1000];
   size_t moreJunk;
   usbRead(junk, sizeof(junk), &moreJunk, 1*1000); // One second timeout.
 
-  PL_DBG << "<VmUsb> Starting VM-USB initialization\n";
+  DBG << "<VmUsb> Starting VM-USB initialization\n";
 
 
   // Now we can start preparing to read...
@@ -122,7 +122,7 @@ void VmUsb2::write32(uint32_t vmeAddress, AddressModifier am, uint32_t data)
 
   int result = a_vmeWrite32(vmeAddress, am, data);
   if (result < 0)
-    PL_ERR << "vme_write32 failed";
+    ERR << "vme_write32 failed";
 }
 
 void VmUsb2::write16(uint32_t vmeAddress, AddressModifier am, uint16_t data)
@@ -131,7 +131,7 @@ void VmUsb2::write16(uint32_t vmeAddress, AddressModifier am, uint16_t data)
 
   int result = a_vmeWrite16(vmeAddress, am, data);
   if (result < 0)
-    PL_ERR << "vme_write16 failed";
+    ERR << "vme_write16 failed";
 }
 
 void VmUsb2::write8(uint32_t vmeAddress, AddressModifier am, uint8_t data)
@@ -140,7 +140,7 @@ void VmUsb2::write8(uint32_t vmeAddress, AddressModifier am, uint8_t data)
 
   int result = a_vmeWrite8(vmeAddress, am, data);
   if (result < 0)
-    PL_ERR << "vme_write8 failed";
+    ERR << "vme_write8 failed";
 }
 
 
@@ -177,7 +177,7 @@ void VmUsb2::writeIrqMask(uint8_t mask)
   writeRegister(GMODERegister, static_cast<uint32_t>(oldGlobalMode)); // restore the old globalmode.
 
   if (mask != maskValue)
-    PL_DBG << "<VmUsb> write IRQ mask failed: " << (int)mask << "!=" << (int)maskValue;
+    DBG << "<VmUsb> write IRQ mask failed: " << (int)mask << "!=" << (int)maskValue;
 
   m_irqMask = maskValue;
 }
@@ -607,12 +607,12 @@ int VmUsb2::transaction(void* writePacket, size_t writeSize, void* readPacket,  
 {
   int status = usb_bulk_write(m_handle, ENDPOINT_OUT, static_cast<char*>(writePacket), writeSize, m_timeout);
   if (status < 0) {
-    PL_ERR << "<VmUsb> USB bulk write failed, errno=" << -status;
+    ERR << "<VmUsb> USB bulk write failed, errno=" << -status;
     return -1;		// Write failed!!
   }
   status    = usb_bulk_read(m_handle, ENDPOINT_IN, static_cast<char*>(readPacket), readSize, m_timeout);
   if (status < 0) {
-    PL_ERR << "<VmUsb> USB bulk read failed, errno=" << -status;
+    ERR << "<VmUsb> USB bulk read failed, errno=" << -status;
     return -2;
   }
   return status;
@@ -661,11 +661,11 @@ bool VmUsb2::connect(uint16_t target) {
 
   std::vector<struct usb_device*> devices = enumerate();
   if (devices.empty()) {
-    PL_ERR << "<VmUsb> no VmUsb devices found";
+    ERR << "<VmUsb> no VmUsb devices found";
     return false;
   }
   if (target > devices.size()) {
-    PL_ERR << "<VmUsb> target VmUsb device " << target <<
+    ERR << "<VmUsb> target VmUsb device " << target <<
               " out of bounds (tot=" << devices.size() << ")";
     return false;
   }
@@ -673,7 +673,7 @@ bool VmUsb2::connect(uint16_t target) {
   m_device = devices[target];
   m_handle  = usb_open(m_device);
   if (!m_handle) {
-    PL_ERR << "<VmUsb> Unable to open VmUsb device at " << target;
+    ERR << "<VmUsb> Unable to open VmUsb device at " << target;
     return false;
   }
 
@@ -689,7 +689,7 @@ bool VmUsb2::connect(std::string target) {
 
   std::vector<struct usb_device*> devices = enumerate();
   if (devices.empty()) {
-    PL_ERR << "<VmUsb> no VmUsb devices found";
+    ERR << "<VmUsb> no VmUsb devices found";
     return false;
   }
 
@@ -701,14 +701,14 @@ bool VmUsb2::connect(std::string target) {
   }
 
   if (!m_device) {
-    PL_ERR << "The VM-USB with serial number " << target
+    ERR << "The VM-USB with serial number " << target
            << " could not be enumerated";
     return false;
   }
 
   m_handle  = usb_open(m_device);
   if (!m_handle) {
-    PL_ERR << "<VmUsb> Unable to open VmUsb device at " << target;
+    ERR << "<VmUsb> Unable to open VmUsb device at " << target;
     return false;
   }
 
@@ -750,19 +750,19 @@ bool VmUsb2::initVmUsb()
     usb_set_configuration(m_handle, 1);
     int status = usb_claim_interface(m_handle, 0);
     if (status == -EBUSY) {
-      PL_ERR << "<VmUsb> some other process has already claimed device";
+      ERR << "<VmUsb> some other process has already claimed device";
       disconnect();
       return false;
     }
     if (status == -ENOMEM) {
-      PL_ERR << "<VmUsb> claim failed due to lack of memory";
+      ERR << "<VmUsb> claim failed due to lack of memory";
       disconnect();
       return false;
     }
 
     // Errors we don't know about:
     if (status < 0) {
-      PL_ERR << "<VmUsb> failed to claim interface "  << (-status);
+      ERR << "<VmUsb> failed to claim interface "  << (-status);
       disconnect();
       return false;
     }
@@ -788,13 +788,13 @@ bool VmUsb2::initVmUsb()
     }
 
     if (!retriesLeft) {
-      PL_ERR << "<VmUsb> not able to stop data taking VM-USB may need to be power cycled";
+      ERR << "<VmUsb> not able to stop data taking VM-USB may need to be power cycled";
       disconnect();
       return false;
     }
 
     while(usbRead(buffer, sizeof(buffer), &bytesRead) == 0)
-      PL_DBG << "<VmUsb> Flushing VM-USB buffer";
+      DBG << "<VmUsb> Flushing VM-USB buffer";
 
     // Now set the irq mask so that all bits are set..that:
     // - is the only way to ensure the m_irqMask value matches the register.
@@ -803,7 +803,7 @@ bool VmUsb2::initVmUsb()
    // writeIrqMask(0xff);   /* Seems to like to timeout :-( */)
 
   uint32_t fwrel = readRegister(0x00);
-  PL_DBG << "<VmUsb> Connected to VM-USB serial_nr=" << m_serialNumber << " firmware=" << itohex32(fwrel);
+  DBG << "<VmUsb> Connected to VM-USB serial_nr=" << m_serialNumber << " firmware=" << itohex32(fwrel);
   return true;
 }
 

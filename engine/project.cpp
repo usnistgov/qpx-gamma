@@ -93,7 +93,7 @@ void Project::flush() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   if (!sinks_.empty())
     for (auto &q: sinks_) {
-      //PL_DBG << "closing " << q->name();
+      //DBG << "closing " << q->name();
       q.second->flush();
     }
 }
@@ -395,7 +395,7 @@ void Project::read_xml(std::string file_name, bool with_sinks, bool with_full_si
       SinkPtr sink
           = Qpx::SinkFactory::getInstance().create_from_xml(child);
       if (!sink)
-        PL_INFO << "Could not parse spectrum";
+        INFO << "Could not parse spectrum";
       else {
         for (auto &s : spills_) {
           Spill sp = s;
@@ -465,7 +465,7 @@ void Project::import_spn(std::string file_name) {
     int64_t totalcount = 0;
 //    uint32_t header;
 //    myfile.read ((char*)&header, sizeof(uint32_t));
-//    PL_DBG << "header " << header;
+//    DBG << "header " << header;
     for (int i=0; i<4096; ++i) {
       myfile.read ((char*)&one, sizeof(uint32_t));
       data.push_back(one);

@@ -161,7 +161,7 @@ bool Spectrum1D::_write_file(std::string dir, std::string format) const {
 }
 
 bool Spectrum1D::_read_file(std::string name, std::string format) {
-//  PL_DBG << "Will try to make " << format;
+//  DBG << "Will try to make " << format;
 
   if (format == "tka")
     return read_tka(name);
@@ -336,14 +336,14 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
 
   std::vector<double> calibration;
 
-//  PL_DBG << "xylib.blocks =  " << newdata->get_block_count();
+//  DBG << "xylib.blocks =  " << newdata->get_block_count();
   for (int i=0; i < newdata->get_block_count(); i++) {
     calibration.clear();
 
     for (uint32_t j=0; j < newdata->get_block(i)->meta.size(); j++) {
       std::string key = newdata->get_block(i)->meta.get_key(j);
       std::string value = newdata->get_block(i)->meta.get(key);
-//      PL_DBG << "xylib.meta " << key << " = " << value;
+//      DBG << "xylib.meta " << key << " = " << value;
       if (key.substr(0, 12) == "energy calib")
         calibration.push_back(boost::lexical_cast<double>(value));
       if (key == "description") {
@@ -376,13 +376,13 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
 
     double tempcount = 0.0;
     int column = newdata->get_block(i)->get_column_count();
-//    PL_DBG << "xylib.columns = " << column;
+//    DBG << "xylib.columns = " << column;
 //    if (ext == "vms")
 //      column--;
 
     if (column == 2) {
 
-//      PL_DBG << "xylib.points = " << newdata->get_block(i)->get_point_count();
+//      DBG << "xylib.points = " << newdata->get_block(i)->get_point_count();
       for (int k = 0; k < newdata->get_block(i)->get_point_count(); k++) {
         double data = newdata->get_block(i)->get_column(column).get_value(k);
         PreciseFloat nr(data);
@@ -511,7 +511,7 @@ bool Spectrum1D::read_spe_radware(std::string name) {
   }
 
   myfile.read ((char*)&val, sizeof(uint32_t));
-//  PL_DBG << "bytes again = " << val;
+//  DBG << "bytes again = " << val;
 
   myfile.close();
 
@@ -563,17 +563,17 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
   myfile.seekg (0, myfile.beg);
   line.clear();
 
-  PL_DBG << "<Spectrum1D> Reading spe as gammavision";
+  DBG << "<Spectrum1D> Reading spe as gammavision";
 
   while (myfile.rdbuf()->in_avail()) {
     if (line.empty()) {
       std::getline(myfile, line);
       boost::algorithm::trim(line);
     }
-    //PL_DBG << "Line = " << line;
+    //DBG << "Line = " << line;
     if (line == "$SPEC_ID:") {
       std::getline(myfile, metadata_.name);
-      //PL_DBG << "name: " << metadata_.name;
+      //DBG << "name: " << metadata_.name;
       line.clear();
     } else if (line == "$SPEC_REM:") {
       while (myfile.rdbuf()->in_avail()) {
@@ -635,7 +635,7 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
       int k1, k2;
       ss >> k1 >> k2;
 
-      //PL_DBG << "should be " << k2;
+      //DBG << "should be " << k2;
       for (int i=0; i < k2; ++i) {
         myfile >> token;
         Entry new_entry;
@@ -652,7 +652,7 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
       line.clear();
   }
 
-  //PL_DBG << "entry list is " << entry_list.size();
+  //DBG << "entry list is " << entry_list.size();
 
   metadata_.bits = log2(entry_list.size());
   if (pow(2, metadata_.bits) < entry_list.size())
@@ -716,7 +716,7 @@ bool Spectrum1D::read_dat(std::string name) {
        maxchan_ = k1;
   }
 
-  //PL_DBG << "entry list is " << entry_list.size();
+  //DBG << "entry list is " << entry_list.size();
 
   metadata_.bits = log2(maxchan_);
   if (pow(2, metadata_.bits) < entry_list.size())
@@ -973,7 +973,7 @@ void Spectrum1D::write_n42(std::string filename) const {
   }
 
   if (!doc.save_file(filename.c_str()))
-    PL_ERR << "<Spectrum1D> Failed to save " << filename;
+    ERR << "<Spectrum1D> Failed to save " << filename;
 }
 
 void Spectrum1D::write_spe(std::string filename) const {

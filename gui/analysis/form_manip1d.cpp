@@ -351,7 +351,7 @@ void FormManip1D::update_plot() {
 
   //spectrumDetails(SelectorItem());
 
-  PL_DBG << "<Plot1D> plotting took " << guiside.ms() << " ms";
+  DBG << "<Plot1D> plotting took " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
 }
 
@@ -364,7 +364,7 @@ void FormManip1D::updateUI()
 
 
 void FormManip1D::addMovingMarker(double x) {
-  PL_INFO << "<Plot1D> marker at " << x;
+  INFO << "<Plot1D> marker at " << x;
 
   if (calib_.valid())
     moving.pos.set_energy(x, calib_);

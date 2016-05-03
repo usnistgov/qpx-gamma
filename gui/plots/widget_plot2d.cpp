@@ -187,7 +187,7 @@ std::list<MarkerBox2D> WidgetPlot2D::get_selected_boxes() {
       box.x_c.set_bin(b->property("chan_x").toDouble(), bits_, calib_x_);
       box.y_c.set_bin(b->property("chan_y").toDouble(), bits_, calib_y_);
       selection.push_back(box);
-      //PL_DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
+      //DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
     }
   return selection;
 }
@@ -200,7 +200,7 @@ std::list<MarkerLabel2D> WidgetPlot2D::get_selected_labels() {
       label.x.set_bin(b->property("chan_x").toDouble(), bits_, calib_x_);
       label.y.set_bin(b->property("chan_y").toDouble(), bits_, calib_y_);
       selection.push_back(label);
-      //PL_DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
+      //DBG << "found selected " << txt->property("true_value").toDouble() << " chan=" << txt->property("chan_value").toDouble();
     }
   return selection;
 }
@@ -215,7 +215,7 @@ void WidgetPlot2D::set_labels(std::list<MarkerLabel2D> labels) {
 
 
 void WidgetPlot2D::reset_content() {
-  //PL_DBG << "reset content";
+  //DBG << "reset content";
   colorMap->clearData();
   boxes_.clear();
   labels_.clear();
@@ -228,7 +228,7 @@ void WidgetPlot2D::refresh()
 }
 
 void WidgetPlot2D::replot_markers() {
-  //PL_DBG << "replot markers";
+  //DBG << "replot markers";
   double minx = std::numeric_limits<double>::max();
   double maxx = - std::numeric_limits<double>::max();
   double miny = std::numeric_limits<double>::max();
@@ -281,28 +281,28 @@ void WidgetPlot2D::replot_markers() {
       xc = q.x_c.energy();
       x1 = q.x1.energy();
       x2 = q.x2.energy();
-//      PL_DBG << "box x nrg";
+//      DBG << "box x nrg";
     } else {
       xc = q.x_c.bin(bits_);
       x1 = q.x1.bin(bits_);
       x2 = q.x2.bin(bits_);
-//      PL_DBG << "box x bin " << bits_ << " from " << q.x_c.bits();
+//      DBG << "box x bin " << bits_ << " from " << q.x_c.bits();
     }
 
     if (calib_y_.valid()) {
       yc = q.y_c.energy();
       y1 = q.y1.energy();
       y2 = q.y2.energy();
-//      PL_DBG << "box y nrg";
+//      DBG << "box y nrg";
     } else {
       yc = q.y_c.bin(bits_);
       y1 = q.y1.bin(bits_);
       y2 = q.y2.bin(bits_);
-//      PL_DBG << "box x bin " << bits_ << " from " << q.y_c.bits();
+//      DBG << "box x bin " << bits_ << " from " << q.y_c.bits();
     }
 
-//    PL_DBG << "box x " << x1 << "-" << xc << "-" << x2;
-//    PL_DBG << "box y " << y1 << "-" << yc << "-" << y2;
+//    DBG << "box x " << x1 << "-" << xc << "-" << x2;
+//    DBG << "box y " << y1 << "-" << yc << "-" << y2;
 
     box->setProperty("chan_x", q.x_c.bin(bits_));
     box->setProperty("chan_y", q.y_c.bin(bits_));
@@ -346,7 +346,7 @@ void WidgetPlot2D::replot_markers() {
       lineh->end->setCoords(x2, yc);
       linev->start->setCoords(xc, y1);
       linev->end->setCoords(xc, y2);
-//      PL_DBG << "mark center xc yc " << xc << " " << yc;
+//      DBG << "mark center xc yc " << xc << " " << yc;
       ui->coincPlot->addItem(lineh);
       ui->coincPlot->addItem(linev);
     }
@@ -566,7 +566,7 @@ void WidgetPlot2D::replot_markers() {
 }
 
 void WidgetPlot2D::update_plot(uint64_t size, std::shared_ptr<Qpx::EntryList> spectrum_data) {
-  //  PL_DBG << "updating 2d";
+  //  DBG << "updating 2d";
 
 //  ui->coincPlot->clearGraphs();
 //  colorMap->clearData();
@@ -607,7 +607,7 @@ void WidgetPlot2D::plot_2d_mouse_upon(double x, double y) {
 }
 
 void WidgetPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event, bool channels) {
-//  PL_INFO << "<WidgetPlot2D> mouse clicked at " << x << " & " << y << " chans?=" << channels;
+//  INFO << "<WidgetPlot2D> mouse clicked at " << x << " & " << y << " chans?=" << channels;
 
   bool visible = (event->button() == Qt::LeftButton);
 
@@ -717,16 +717,16 @@ void WidgetPlot2D::exportRequested(QAction* choice) {
   if (validateFile(this, fileName, true)) {
     QFileInfo file(fileName);
     if (file.suffix() == "png") {
-      //PL_INFO << "Exporting plot to png " << fileName.toStdString();
+      //INFO << "Exporting plot to png " << fileName.toStdString();
       ui->coincPlot->savePng(fileName,0,0,1,100);
     } else if (file.suffix() == "jpg") {
-      //PL_INFO << "Exporting plot to jpg " << fileName.toStdString();
+      //INFO << "Exporting plot to jpg " << fileName.toStdString();
       ui->coincPlot->saveJpg(fileName,0,0,1,100);
     } else if (file.suffix() == "bmp") {
-      //PL_INFO << "Exporting plot to bmp " << fileName.toStdString();
+      //INFO << "Exporting plot to bmp " << fileName.toStdString();
       ui->coincPlot->saveBmp(fileName);
     } else if (file.suffix() == "pdf") {
-      //PL_INFO << "Exporting plot to pdf " << fileName.toStdString();
+      //INFO << "Exporting plot to pdf " << fileName.toStdString();
       ui->coincPlot->savePdf(fileName, true);
     }
   }

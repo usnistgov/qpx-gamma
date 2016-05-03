@@ -92,7 +92,7 @@ void FormIntegration2D::setPeaks(std::list<MarkerBox2D> pks) {
         else
           diagonal.push_back(q);
       }
-      PL_DBG << "Sorted into NW=" << northwest.size() << " SE=" << southeast.size()
+      DBG << "Sorted into NW=" << northwest.size() << " SE=" << southeast.size()
              << " DIAG=" << diagonal.size() << " should take up to "
              << (northwest.size() * southeast.size()) << " tests";
 
@@ -121,7 +121,7 @@ void FormIntegration2D::setPeaks(std::list<MarkerBox2D> pks) {
       for (auto &q : southeast)
         diagonal.push_back(q);
 
-      PL_DBG << "downsized to " << diagonal.size();
+      DBG << "downsized to " << diagonal.size();
       if (diagonal.size())
         pks = diagonal;
     }
@@ -159,10 +159,10 @@ int32_t FormIntegration2D::index_of(MarkerBox2D pk) {
   if (peaks_.empty())
     return -1;
 
-  //PL_DBG << "indexof checking " << pk.x_c.energy()  << " " << pk.y_c.energy();
+  //DBG << "indexof checking " << pk.x_c.energy()  << " " << pk.y_c.energy();
 
   for (int i=0; i < peaks_.size(); ++i) {
-    //PL_DBG << "   against " << peaks_[i].x_c.energy() << " " << peaks_[i].y_c.energy();
+    //DBG << "   against " << peaks_[i].x_c.energy() << " " << peaks_[i].y_c.energy();
 
     if ((peaks_[i].area[1][1].x_c == pk.x_c) && (peaks_[i].area[1][1].y_c == pk.y_c))
       return i;
@@ -188,13 +188,13 @@ void FormIntegration2D::make_range(Coord x, Coord y) {
   Calibration f1, f2, e1, e2;
 
   if (md_.detectors.size() > 1) {
-    //PL_DBG << "dets2";
+    //DBG << "dets2";
     f1 = md_.detectors[0].fwhm_calibration_;
     f2 = md_.detectors[1].fwhm_calibration_;
     e1 = md_.detectors[0].best_calib(md_.bits);
     e2 = md_.detectors[1].best_calib(md_.bits);
   }
-  //  PL_DBG << "making 2d marker, calibs valid " << f1.valid() << " " << f2.valid();
+  //  DBG << "making 2d marker, calibs valid " << f1.valid() << " " << f2.valid();
 
   if (f1.valid()) {
     range_.x1.set_energy(x.energy() - f1.transform(x.energy()) * gate_width_ * 0.5, e1);
@@ -213,7 +213,7 @@ void FormIntegration2D::make_range(Coord x, Coord y) {
   }
 
   range_.visible = !(x.null() || y.null());
-  //  PL_DBG << "range visible " << range_.visible << " x" << range_.x1.energy() << "-" << range_.x2.energy()
+  //  DBG << "range visible " << range_.visible << " x" << range_.x1.energy() << "-" << range_.x2.energy()
   //         << " y" << range_.y1.energy() << "-" << range_.y2.energy();
 
   make_gates();
@@ -224,24 +224,24 @@ void FormIntegration2D::make_range(Coord x, Coord y) {
 
 void FormIntegration2D::update_current_peak(MarkerBox2D peak) {
   int32_t index = index_of(peak);
-  //PL_DBG << "update current gate " << index;
+  //DBG << "update current gate " << index;
 
 
   //  if ((index != -1) && (peaks_[index].approved))
   //    gate.approved = true;
 
   double livetime = md_.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
-  PL_DBG << "update current peak " << peak.x_c.energy()  << " x " << peak.y_c.energy();
+  DBG << "update current peak " << peak.x_c.energy()  << " x " << peak.y_c.energy();
   if (livetime == 0)
     livetime = 10000;
   //  gate.cps = gate.fit_data_.metadata_.total_count.convert_to<double>() / livetime;
 
   if (index < 0) {
-    PL_DBG << "non-existing peak. ignoring";
+    DBG << "non-existing peak. ignoring";
   } else {
     peaks_[index].area[1][1] = peak;
     //current_gate_ = index;
-    //PL_DBG << "new current gate = " << current_gate_;
+    //DBG << "new current gate = " << current_gate_;
   }
 
   rebuild_table(true);
@@ -252,7 +252,7 @@ int32_t FormIntegration2D::current_idx() {
   QModelIndex index, i;
 
   int32_t  current_gate_ = -1;
-  //  PL_DBG << "will look at " << indexes.size() << " selected indexes";
+  //  DBG << "will look at " << indexes.size() << " selected indexes";
   foreach (index, indexes) {
     int row = index.row();
     i = sortModel.index(row, 0, QModelIndex());
@@ -260,10 +260,10 @@ int32_t FormIntegration2D::current_idx() {
     i = sortModel.index(row, 1, QModelIndex());
     double cy = sortModel.data(i, Qt::EditRole).toDouble();
     int32_t gate_idx = index_of(cx, cy);
-    //    PL_DBG << "selected " << gate_idx << " -> "  << centroid;
+    //    DBG << "selected " << gate_idx << " -> "  << centroid;
     current_gate_ = gate_idx;
   }
-  //  PL_DBG << "now current gate is " << current_gate_;
+  //  DBG << "now current gate is " << current_gate_;
   return current_gate_;
 }
 
@@ -292,7 +292,7 @@ void FormIntegration2D::selection_changed(QItemSelection selected, QItemSelectio
     peaks_[current].area[1][1].selected = true;
     make_gates();
   }
-  //PL_DBG << "gates " << peaks_.size() << " selections " << indexes.size();
+  //DBG << "gates " << peaks_.size() << " selections " << indexes.size();
 
   ui->pushRemove->setEnabled(!indexes.empty());
 
@@ -302,7 +302,7 @@ void FormIntegration2D::selection_changed(QItemSelection selected, QItemSelectio
 }
 
 void FormIntegration2D::rebuild_table(bool contents_changed) {
-  //PL_DBG << "rebuild table";
+  //DBG << "rebuild table";
 
   if (contents_changed) {
     table_model_.set_data(peaks_);
@@ -362,7 +362,7 @@ void FormIntegration2D::on_pushRemove_clicked()
 {
   uint32_t  current_gate_ = current_idx();
 
-  //PL_DBG << "trying to remove " << current_gate_ << " in total of " << peaks_.size();
+  //DBG << "trying to remove " << current_gate_ << " in total of " << peaks_.size();
 
   if (current_gate_ < 0)
     return;
@@ -404,14 +404,14 @@ void FormIntegration2D::choose_peaks(std::list<MarkerBox2D> chpeaks) {
   for (auto &q : peaks_)
     q.area[1][1].selected = false;
 
-  //PL_DBG << "checking selected peaks " << chpeaks.size();
+  //DBG << "checking selected peaks " << chpeaks.size();
 
   int32_t idx = -1;
   for (auto &q : chpeaks) {
     idx = index_of(q);
     if (idx >= 0) {
       peaks_[idx].area[1][1].selected = true;
-      //      PL_DBG << "*";
+      //      DBG << "*";
     }
   }
 
@@ -752,7 +752,7 @@ void FormIntegration2D::on_pushTransitions_clicked()
   for (auto &e : energies)
     all_energies.push_back(e.first);
 
-  PL_DBG << "Reduced energies=" << energies.size() << "  duplicates=" << duplicates;
+  DBG << "Reduced energies=" << energies.size() << "  duplicates=" << duplicates;
 
   std::map<ValUncert, Transition> trans_final;
 
@@ -772,12 +772,12 @@ void FormIntegration2D::on_pushTransitions_clicked()
         e2 = e;
     }
 
-    PL_DBG << "energy1 generalized " << p.energy_x.to_string(6) << " --> " << e1.to_string(6);
-    PL_DBG << "energy2 generalized " << p.energy_y.to_string(6) << " --> " << e2.to_string(6);
+    DBG << "energy1 generalized " << p.energy_x.to_string(6) << " --> " << e1.to_string(6);
+    DBG << "energy2 generalized " << p.energy_y.to_string(6) << " --> " << e2.to_string(6);
 
     if (!trans_final.count(e1))
     {
-      PL_DBG << "new transition e1->e2";
+      DBG << "new transition e1->e2";
       Transition t1;
       t1.energy = e1;
       t1.above.push_back(TransitionNode(e2, p.net));
@@ -789,14 +789,14 @@ void FormIntegration2D::on_pushTransitions_clicked()
           has = true;
       if (!has) {
         trans_final[e1].above.push_back(TransitionNode(e2, p.net));
-        PL_DBG << "appending e1->e2";
+        DBG << "appending e1->e2";
       } else
-        PL_DBG << "ignoring duplicate e1->e2";
+        DBG << "ignoring duplicate e1->e2";
     }
 
     if (!trans_final.count(e2))
     {
-      PL_DBG << "new transition e2->e1";
+      DBG << "new transition e2->e1";
       Transition t2;
       t2.energy = e2;
       t2.above.push_back(TransitionNode(e1, p.net));
@@ -808,19 +808,19 @@ void FormIntegration2D::on_pushTransitions_clicked()
           has = true;
       if (!has) {
         trans_final[e2].above.push_back(TransitionNode(e1, p.net));
-        PL_DBG << "appending e2->e1";
+        DBG << "appending e2->e1";
       } else
-        PL_DBG << "ignoring duplicate e2->e1";
+        DBG << "ignoring duplicate e2->e1";
     }
   }
 
-  PL_DBG << "Total=" << peaks_.size() << " approved=" << total_approved
+  DBG << "Total=" << peaks_.size() << " approved=" << total_approved
          << " final_trans.size=" << trans_final.size();
 
   for (auto &t : trans_final) {
-    PL_DBG << "Transitions from " << t.first.val_uncert(6);
+    DBG << "Transitions from " << t.first.val_uncert(6);
     for (auto &to : t.second.above)
-      PL_DBG << "    -->" << to.energy.val_uncert(6)
+      DBG << "    -->" << to.energy.val_uncert(6)
              << "  (Intensity: " << to.intensity.val_uncert(6) << ")";
   }
 
@@ -851,7 +851,7 @@ void TablePeaks2D::set_data(std::vector<Peak2D> peaks)
 
 int TablePeaks2D::rowCount(const QModelIndex & /*parent*/) const
 {
-  //PL_DBG << "table has " << peaks_.size();
+  //DBG << "table has " << peaks_.size();
   return peaks_.size();
 }
 

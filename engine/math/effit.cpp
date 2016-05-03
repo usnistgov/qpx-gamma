@@ -80,13 +80,13 @@ void Effit::fit(std::vector<double> &x, std::vector<double> &y, double center) {
 //  std::string definition = "define Effit(a=~0,d=~0,e=~0,f=~0) = ((a + xa)^(-20) + (d + e*xb + f*(xb^2))^(-20))^(-0.05) where xa=ln(x/100), xb=ln(x/1000)";
   std::string definition = "define Effit(a=~0,d=~0,e=~0,f=~0) = ((d + e*xb + f*(xb^2))^(-20))^(-0.05) where xb=ln(x/1000)";
 
-  PL_DBG << "Definition: " << definition;
+  DBG << "Definition: " << definition;
 
   try {
     f->execute(definition);
   } catch ( ... ) {
     success = false;
-    PL_DBG << "failed to define Effit";
+    DBG << "failed to define Effit";
   }
 
   try {
@@ -94,7 +94,7 @@ void Effit::fit(std::vector<double> &x, std::vector<double> &y, double center) {
   }
   catch ( ... ) {
     success = false;
-    PL_DBG << "cannot guess Effit";
+    DBG << "cannot guess Effit";
   }
 
   try {
@@ -102,7 +102,7 @@ void Effit::fit(std::vector<double> &x, std::vector<double> &y, double center) {
   }
   catch ( ... ) {
     success = false;
-    PL_DBG << "cannot fit Effit";
+    DBG << "cannot fit Effit";
   }
 
   if (success) {
@@ -130,7 +130,7 @@ double Effit::evaluate(double x) {
   double xb = log((x - xoffset_)/1000);
 //   x= ((A + B*ln(x/100.0) + C*(ln(x/100.0)^2))^(-G) + (D + E*ln(x/1000.0) + F*(ln(x/1000.0)^2))^(1-G))^(1-(1/G))
   double result = pow(pow(A + B*xa + C*xa*xa,-G) + pow(D + E*xb + F*xb*xb,-G), -1.0/G);
-//  PL_DBG << "effit eval =" << exp(result);
+//  DBG << "effit eval =" << exp(result);
   return exp(result);
 }
 
@@ -165,7 +165,7 @@ double Effit::inverse_evaluate(double y, double e) {
 
   else
   {
-    PL_WARN <<"Maximum iteration reached in Effit inverse evaluation";
+    WARN <<"Maximum iteration reached in Effit inverse evaluation";
     return nan("");
   }
 }

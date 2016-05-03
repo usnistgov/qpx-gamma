@@ -161,7 +161,7 @@ SinkPtr make_symmetrized(SinkPtr source)
   Metadata md = source->metadata();
 
   if ((md.total_count <= 0) || (md.dimensions() != 2)) {
-    PL_WARN << "<::MakeSymmetrize> " << md.name << " has no events or is not 2d";
+    WARN << "<::MakeSymmetrize> " << md.name << " has no events or is not 2d";
     return nullptr;
   }
 
@@ -176,7 +176,7 @@ SinkPtr make_symmetrized(SinkPtr source)
   }
 
   if (chans.size() != 2) {
-    PL_WARN << "<::MakeSymmetrize> " << md.name << " does not have 2 channels in add pattern";
+    WARN << "<::MakeSymmetrize> " << md.name << " does not have 2 channels in add pattern";
     return nullptr;
   }
 
@@ -188,7 +188,7 @@ SinkPtr make_symmetrized(SinkPtr source)
   SinkPtr ret = SinkFactory::getInstance().create_from_prototype(md); //assume 2D?
 
   if (!ret) {
-    PL_WARN << "<::MakeSymmetrize> symmetrization of " << md.name << " could not be created";
+    WARN << "<::MakeSymmetrize> symmetrization of " << md.name << " could not be created";
     return nullptr;
   }
 
@@ -199,16 +199,16 @@ SinkPtr make_symmetrized(SinkPtr source)
     detector1 = md.detectors[0];
     detector2 = md.detectors[1];
   } else {
-    PL_WARN << "<::MakeSymmetrize> " << md.name << " does not have 2 detector definitions";
+    WARN << "<::MakeSymmetrize> " << md.name << " does not have 2 detector definitions";
     return false;
   }
 
   Calibration gain_match_cali = detector2.get_gain_match(md.bits, detector1.name_);
 
   if (gain_match_cali.to_ == detector1.name_)
-    PL_INFO << "<::MakeSymmetrize> using gain match calibration from " << detector2.name_ << " to " << detector1.name_ << " " << gain_match_cali.to_string();
+    INFO << "<::MakeSymmetrize> using gain match calibration from " << detector2.name_ << " to " << detector1.name_ << " " << gain_match_cali.to_string();
   else {
-    PL_WARN << "<::MakeSymmetrize> no appropriate gain match calibration";
+    WARN << "<::MakeSymmetrize> no appropriate gain match calibration";
     return false;
   }
 
@@ -222,7 +222,7 @@ SinkPtr make_symmetrized(SinkPtr source)
   for (auto it : *spectrum_data) {
     PreciseFloat count = it.second;
 
-    //PL_DBG << "adding " << it.first[0] << "+" << it.first[1] << "  x" << it.second;
+    //DBG << "adding " << it.first[0] << "+" << it.first[1] << "  x" << it.second;
     double xformed = gain_match_cali.transform(it.first[1]);
     double e1 = it.first[0];
 
@@ -236,7 +236,7 @@ SinkPtr make_symmetrized(SinkPtr source)
       else
         e2 = 0;
 
-      //PL_DBG << xformed << " plus " << plus << " = " << xfp << " round to " << e2;
+      //DBG << xformed << " plus " << plus << " = " << xfp << " round to " << e2;
 
       it.first[0] = e1;
       it.first[1] = e2;

@@ -96,6 +96,10 @@
        <property name="text">
         <string>Change profile</string>
        </property>
+       <property name="icon">
+        <iconset resource="resources/qpxres.qrc">
+         <normaloff>:/icons/oxy/16/system_switch_user.png</normaloff>:/icons/oxy/16/system_switch_user.png</iconset>
+       </property>
       </widget>
      </item>
      <item>

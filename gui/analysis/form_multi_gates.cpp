@@ -151,7 +151,7 @@ int32_t FormMultiGates::index_of(double centroid, bool fuzzy) {
 void FormMultiGates::update_current_gate(Gate gate) {
   Coord center = gate.constraints.y_c;
   int32_t index = index_of(center.bin(center.bits()), false);
-  //PL_DBG << "update current gate " << index;
+  //DBG << "update current gate " << index;
 
 
   if ((index != -1) && (gates_[index].approved))
@@ -171,7 +171,7 @@ void FormMultiGates::update_current_gate(Gate gate) {
     }
     gates_[index] = gate;
   } else if (index < 0) {
-    //PL_DBG << "non-existing gate. ignoring";
+    //DBG << "non-existing gate. ignoring";
   } else {
     gates_[index] = gate;
   }
@@ -228,7 +228,7 @@ void FormMultiGates::selection_changed(QItemSelection selected, QItemSelection d
 }
 
 void FormMultiGates::rebuild_table(bool contents_changed) {
-  //PL_DBG << "rebuild table";
+  //DBG << "rebuild table";
 
   if (contents_changed) {
     table_model_.set_data(gates_);
@@ -336,7 +336,7 @@ void FormMultiGates::on_pushApprove_clicked()
     if (index_of(gate.constraints.y_c.bin(0), true) < 0)
       gates_.push_back(gate);
     //else
-    //PL_DBG << "duplicate. ignoring";
+    //DBG << "duplicate. ignoring";
   }
 
   rebuild_table(true);
@@ -411,7 +411,7 @@ void FormMultiGates::make_gate() {
   uint32_t ymin = std::ceil(gate.constraints.y1.bin(md.bits));
   uint32_t ymax = std::floor(gate.constraints.y2.bin(md.bits));
 
-  PL_DBG << "Coincidence gate x[" << xmin << "-" << xmax << "]   y[" << ymin << "-" << ymax << "]";
+  DBG << "Coincidence gate x[" << xmin << "-" << xmax << "]   y[" << ymin << "-" << ymax << "]";
 
   if ((md.total_count > 0) && (md.dimensions() == 2))
   {
@@ -429,11 +429,11 @@ void FormMultiGates::make_gate() {
         to_str_precision(md.detectors[0].best_calib(md.bits).transform(xmax, md.bits), 0) + "]";
 
     if (gate_x && (gate_x->name() == name)) {
-//      PL_DBG << "same gate";
+//      DBG << "same gate";
     } else {
       gate_x = slice_rectangular(source_spectrum, {{xmin, xmax}, {ymin, ymax}}, true);
       gate_x->set_name(name);
-//      PL_DBG << "made new gate";
+//      DBG << "made new gate";
     }
 
 //    fit_data_.clear();
@@ -466,7 +466,7 @@ void FormMultiGates::setSpectrum(Project *newset, int64_t idx) {
     res_ = pow(2,md_.bits);
     make_gate();
     if (!gates_.empty()) {
-      //PL_DBG << "not empty";
+      //DBG << "not empty";
       ui->tableGateList->selectRow(0);
       ui->gatedSpectrum->update_spectrum();
     }
@@ -598,7 +598,7 @@ void TableGates::set_data(std::vector<Gate> gates)
 
 int TableGates::rowCount(const QModelIndex & /*parent*/) const
 {
-  //PL_DBG << "table has " << gates_.size();
+  //DBG << "table has " << gates_.size();
   return gates_.size();
 }
 

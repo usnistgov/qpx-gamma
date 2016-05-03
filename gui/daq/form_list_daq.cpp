@@ -174,7 +174,7 @@ void FormListDaq::on_pushListStart_clicked()
 void FormListDaq::on_pushListStop_clicked()
 {
   ui->pushListStop->setEnabled(false);
-  PL_INFO << "List acquisition interrupted by user";
+  INFO << "List acquisition interrupted by user";
   interruptor_.store(true);
 }
 

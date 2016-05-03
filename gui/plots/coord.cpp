@@ -35,7 +35,7 @@ void Coord::set_bin(double bin, uint16_t bits, Qpx::Calibration cali) {
   energy_ = nan("");
   if (!isnan(bin)/* && cali.valid()*/)
     energy_ = cali.transform(bin_, bits_);
-//  PL_DBG << "made pos bin" << bin_ << " bits" << bits_ << " nrg" << energy_;
+//  DBG << "made pos bin" << bin_ << " bits" << bits_ << " nrg" << energy_;
 }
 
 double Coord::energy() const {

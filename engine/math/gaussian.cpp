@@ -41,10 +41,10 @@ bool Gaussian::extract_params(fityk::Func* func) {
     center_ = func->get_param_value("cc");
     height_ = func->get_param_value("hh");
     hwhm_   = log(2) * func->get_param_value("ww");
-//        PL_DBG << "Gaussian fit as  c=" << center_ << " h=" << height_ << " w=" << width_;
+//        DBG << "Gaussian fit as  c=" << center_ << " h=" << height_ << " w=" << width_;
   }
   catch ( ... ) {
-    PL_DBG << "Gaussian could not extract parameters from Fityk";
+    DBG << "Gaussian could not extract parameters from Fityk";
     return false;
   }
   return true;
@@ -74,14 +74,14 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
 //      f->execute("set fitting_method = nlopt_lbfgs");
 //    } catch ( ... ) {
 //      success = false;
-//      PL_DBG << "failed to set fitter";
+//      DBG << "failed to set fitter";
 //    }
 
   try {
     f->execute("guess Gaussian");
   }
   catch ( ... ) {
-    PL_DBG << "Gaussian could not guess";
+    DBG << "Gaussian could not guess";
     success = false;
   }
 
@@ -89,7 +89,7 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
     f->execute("fit");
   }
   catch ( ... ) {
-    PL_DBG << "Gaussian could not fit";
+    DBG << "Gaussian could not fit";
     success = false;
   }
 
@@ -102,11 +102,11 @@ Gaussian::Gaussian(const std::vector<double> &x, const std::vector<double> &y):
       hwhm_   = lastfn->get_param_value("hwhm");
 
 //      CustomTimer timer(true);
-//      PL_DBG << "c uncert =" << FitykUtil::get_err(f, lastfn->name, "center");
-//      PL_DBG << "h uncert =" << FitykUtil::get_err(f, lastfn->name, "height");
-//      PL_DBG << "w uncert =" << FitykUtil::get_err(f, lastfn->name, "hwhm");
-//      PL_DBG << "Time to retrieve uncerts " << timer.ms() << " ms";
-//      PL_DBG << "Gaussian fit as c=" << center_ << " h=" << height_ << " w=" << hwhm_;
+//      DBG << "c uncert =" << FitykUtil::get_err(f, lastfn->name, "center");
+//      DBG << "h uncert =" << FitykUtil::get_err(f, lastfn->name, "height");
+//      DBG << "w uncert =" << FitykUtil::get_err(f, lastfn->name, "hwhm");
+//      DBG << "Time to retrieve uncerts " << timer.ms() << " ms";
+//      DBG << "Gaussian fit as c=" << center_ << " h=" << height_ << " w=" << hwhm_;
     }
     rsq = f->get_rsquared(0);
   }
@@ -134,16 +134,16 @@ std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x, const st
         f->execute("set fitting_method = nlopt_lbfgs");
       } catch ( std::string st ) {
         success = false;
-        PL_DBG << "Gaussian multifit failed to set fitter " << st;
+        DBG << "Gaussian multifit failed to set fitter " << st;
       }
 
-  //PL_DBG << "<Gaussian> fitting multiplet [" << x[0] << "-" << x[x.size() - 1] << "]";
+  //DBG << "<Gaussian> fitting multiplet [" << x[0] << "-" << x[x.size() - 1] << "]";
 
   try {
     f->execute(fityk_definition());
   } catch ( ... ) {
     success = false;
-    PL_DBG << "Gaussian multifit failed to define";
+    DBG << "Gaussian multifit failed to define";
   }
 
 
@@ -160,11 +160,11 @@ std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x, const st
         "$h" + boost::lexical_cast<std::string>(i) + ","
         "$w" + boost::lexical_cast<std::string>(i) + ")";
 
-//    PL_DBG << "Gaussian multifit setting up peak " << i;
-//    PL_DBG << initial_c;
-//    PL_DBG << initial_h;
-//    PL_DBG << initial_w;
-//    PL_DBG << initial;
+//    DBG << "Gaussian multifit setting up peak " << i;
+//    DBG << initial_c;
+//    DBG << initial_h;
+//    DBG << initial_w;
+//    DBG << initial;
 
 
     try {
@@ -174,7 +174,7 @@ std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x, const st
       f->execute(initial);
     }
     catch ( ... ) {
-      PL_DBG << "Gaussian multifit failed to set up initial locals for peak " << i;
+      DBG << "Gaussian multifit failed to set up initial locals for peak " << i;
       success = false;
     }
   }
@@ -187,7 +187,7 @@ std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x, const st
 //      f->execute(fn.c_str());
 //    }
 //    catch ( ... ) {
-//      //PL_DBG << "Fytik threw exception a";
+//      //DBG << "Fytik threw exception a";
 //      success = false;
 //    }
 //  }
@@ -196,7 +196,7 @@ std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x, const st
     f->execute("fit");
   }
   catch ( ... ) {
-    PL_DBG << "Gaussian multifit failed to fit";
+    DBG << "Gaussian multifit failed to fit";
     success = false;
   }
 

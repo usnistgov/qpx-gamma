@@ -213,7 +213,7 @@ void FormOptimization::on_pushStart_clicked()
 
 void FormOptimization::on_pushStop_clicked()
 {
-  PL_INFO << "Acquisition interrupted by user";
+  INFO << "Acquisition interrupted by user";
   val_current = val_max + 1;
   interruptor_.store(true);
 }
@@ -292,14 +292,14 @@ void FormOptimization::do_run()
 
 void FormOptimization::run_completed() {
   if (my_run_) {
-    PL_INFO << "<Optimization> Run completed";
+    INFO << "<Optimization> Run completed";
 
     if (val_current < val_max) {
-      PL_INFO << "<Optimization> Completed test " << val_current << " < " << val_max;
+      INFO << "<Optimization> Completed test " << val_current << " < " << val_max;
       val_current += val_d;
       do_run();
     } else {
-      PL_INFO << "<Optimization> Done optimizing";
+      INFO << "<Optimization> Done optimizing";
       my_run_ = false;
       ui->pushStop->setEnabled(false);
       emit toggleIO(true);
@@ -308,7 +308,7 @@ void FormOptimization::run_completed() {
 }
 
 void FormOptimization::do_post_processing() {
-  PL_INFO << "<Optimization> Pos-proc";
+  INFO << "<Optimization> Pos-proc";
 
 }
 

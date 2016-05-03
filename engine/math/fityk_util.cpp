@@ -43,7 +43,7 @@ double FitykUtil::get_err(fityk::Fityk* f,
                           std::string varname)
 {
   std::string command = "%" + funcname + "." + varname + ".error";
-  PL_DBG << "<FitykUtil> " << command;
+  DBG << "<FitykUtil> " << command;
   double ret = std::numeric_limits<double>::infinity();
   try {
     ret = f->calculate_expr(command);

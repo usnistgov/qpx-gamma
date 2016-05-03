@@ -76,7 +76,7 @@ void SpectrumTime::_set_detectors(const std::vector<Qpx::Detector>& dets) {
   for (auto &q : seconds_)
     axes_[0].push_back(q.convert_to<double>());
 
-//  PL_DBG << "<SpectrumTime> _set_detectors";
+//  DBG << "<SpectrumTime> _set_detectors";
 }
 
 PreciseFloat SpectrumTime::_data(std::initializer_list<uint16_t> list) const {
@@ -189,7 +189,7 @@ void SpectrumTime::_push_stats(const StatsUpdate& newStats)
       for (auto &q : seconds_)
         axes_[0].push_back(q.convert_to<double>());
 
-//      PL_DBG << "<SpectrumTime> \"" << metadata_.name << "\" chan " << int(newStats.channel) << " nrgs.size="
+//      DBG << "<SpectrumTime> \"" << metadata_.name << "\" chan " << int(newStats.channel) << " nrgs.size="
 //             << energies_[0].size() << " nrgs.last=" << energies_[0][energies_[0].size()-1]
 //             << " spectrum.size=" << spectrum_.size() << " spectrum.last=" << spectrum_[spectrum_.size()-1].convert_to<double>();
     }

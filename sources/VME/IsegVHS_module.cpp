@@ -67,25 +67,25 @@ bool QpxIsegVHSPlugin::read_settings_bulk(Qpx::Setting &set) const {
   for (auto &k : set.branches.my_data_) {
     if (k.metadata.setting_type != Qpx::SettingType::stem) {
       if (!read_setting(k)) {}
-      //          PL_DBG << "Could not read " << k.id_;
+      //          DBG << "Could not read " << k.id_;
       if (k.id_ == "VME/IsegVHS/VoltageMax") {
         voltage_max = k.value_dbl;
-        //                PL_DBG << "voltage max = " << voltage_max;
+        //                DBG << "voltage max = " << voltage_max;
       }
       if (k.id_ == "VME/IsegVHS/CurrentMax") {
         current_max = k.value_dbl;
-        //                PL_DBG << "current max = " << current_max;
+        //                DBG << "current max = " << current_max;
       }
     } else {
       for (auto &p : k.branches.my_data_) {
         if (p.metadata.setting_type != Qpx::SettingType::stem) {
           if (!read_setting(p)) {}
-          //              PL_DBG << "Could not read " << p.id_;
+          //              DBG << "Could not read " << p.id_;
         } else {
           for (auto &q : p.branches.my_data_) {
             if (q.metadata.setting_type != Qpx::SettingType::stem) {
               if (!read_setting(q)) {}
-              //              PL_DBG << "Could not read " << p.id_;
+              //              DBG << "Could not read " << p.id_;
             }
           }
 
@@ -101,11 +101,11 @@ bool QpxIsegVHSPlugin::read_settings_bulk(Qpx::Setting &set) const {
             } else if (q.id_ == "VME/IsegVHS/Channel/VoltageSet") {
               Qpx::Setting nominal = p.get_setting(Qpx::Setting("VME/IsegVHS/Channel/VoltageNominalMaxSet"), Qpx::Match::id);
               q.metadata.maximum = nominal.value_dbl;// * voltage_max;
-              //                  PL_DBG << "Volatge bounds "  << nominal.value_dbl << " " << p.metadata.maximum;
+              //                  DBG << "Volatge bounds "  << nominal.value_dbl << " " << p.metadata.maximum;
             } else if (q.id_ == "VME/IsegVHS/Channel/CurrentSetOrTrip") {
               Qpx::Setting nominal = p.get_setting(Qpx::Setting("VME/IsegVHS/Channel/CurrentNominalMaxSet"), Qpx::Match::id);
               q.metadata.maximum = nominal.value_dbl;// * current_max;
-              //                  PL_DBG << "Current bounds "  << nominal.value_dbl << " " << p.metadata.maximum;
+              //                  DBG << "Current bounds "  << nominal.value_dbl << " " << p.metadata.maximum;
             }
           }
         }
@@ -169,18 +169,18 @@ bool QpxIsegVHSPlugin::write_settings_bulk(Qpx::Setting &set) {
     if (k.metadata.setting_type != Qpx::SettingType::stem) {
       Qpx::Setting s = k;
       if (k.metadata.writable && read_setting(s) && (s != k)) {
-        //          PL_DBG << "writing " << k.id_;
+        //          DBG << "writing " << k.id_;
         if (!write_setting(k)) {}
-        //            PL_DBG << "Could not write " << k.id_;
+        //            DBG << "Could not write " << k.id_;
       }
     } else {
       for (auto &p : k.branches.my_data_) {
         if (p.metadata.setting_type != Qpx::SettingType::stem) {
           Qpx::Setting s = p;
           if (p.metadata.writable && read_setting(s) && (s != p)) {
-            //              PL_DBG << "writing " << p.id_;
+            //              DBG << "writing " << p.id_;
             if (!write_setting(p)) {}
-            //                PL_DBG << "Could not write " << k.id_;
+            //                DBG << "Could not write " << k.id_;
           }
         } else {
           for (auto &q : p.branches.my_data_) {
@@ -199,9 +199,9 @@ bool QpxIsegVHSPlugin::write_settings_bulk(Qpx::Setting &set) {
             if (q.metadata.setting_type != Qpx::SettingType::stem) {
               Qpx::Setting s = q;
               if (q.metadata.writable && read_setting(s) && (s != q)) {
-                //              PL_DBG << "writing " << p.id_;
+                //              DBG << "writing " << p.id_;
                 if (!write_setting(q)) {}
-                //                PL_DBG << "Could not write " << k.id_;
+                //                DBG << "Could not write " << k.id_;
               }
             }
           }
@@ -240,7 +240,7 @@ bool QpxIsegVHSPlugin::read_setting(Qpx::Setting& set) const {
     else if (set.metadata.flags.count("u16"))
       set.value_int = readShort(m_baseAddress + set.metadata.address);
     else {
-      PL_DBG << "<IsegVHS> Setting " << set.id_ << " does not have a well defined hardware type";
+      DBG << "<IsegVHS> Setting " << set.id_ << " does not have a well defined hardware type";
       return false;
     }
     return true;
@@ -268,7 +268,7 @@ bool QpxIsegVHSPlugin::write_setting(Qpx::Setting& set) {
     else if (set.metadata.flags.count("u16"))
       writeShort(m_baseAddress + set.metadata.address, set.value_int);
     else {
-      PL_DBG << "<IsegVHS> Setting " << set.id_ << " does not have a well defined hardware type";
+      DBG << "<IsegVHS> Setting " << set.id_ << " does not have a well defined hardware type";
       return false;
     }
     return true;

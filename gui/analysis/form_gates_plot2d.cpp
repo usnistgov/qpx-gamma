@@ -88,7 +88,7 @@ void FormGatesPlot2D::set_boxes(std::list<MarkerBox2D> boxes) {
 
 
 void FormGatesPlot2D::reset_content() {
-  //PL_DBG << "reset content";
+  //DBG << "reset content";
   ui->coincPlot->reset_content();
   ui->coincPlot->refresh();
   current_spectrum_ = 0;
@@ -102,7 +102,7 @@ void FormGatesPlot2D::refresh()
 }
 
 void FormGatesPlot2D::replot_markers() {
-  //PL_DBG << "replot markers";
+  //DBG << "replot markers";
 
   std::list<MarkerBox2D> boxes;
   std::list<MarkerLabel2D> labels;
@@ -200,7 +200,7 @@ void FormGatesPlot2D::update_plot() {
 
   if ((md.total_count > 0) && (md.dimensions() == 2) && (adjrange = pow(2,md.bits)) )
   {
-    //      PL_DBG << "really really updating 2d total count = " << some_spectrum->total_count();
+    //      DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
     std::shared_ptr<EntryList> spectrum_data =
         std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
@@ -230,7 +230,7 @@ void FormGatesPlot2D::update_plot() {
   replot_markers();
 
 
-//  PL_DBG << "<Plot2D> plotting took " << guiside.ms() << " ms";
+//  DBG << "<Plot2D> plotting took " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
 }
 

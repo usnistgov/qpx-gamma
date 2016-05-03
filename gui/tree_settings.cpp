@@ -56,10 +56,10 @@ bool TreeItem::eat_data(const Qpx::Setting &data) {
         return false;
     }
   }
-  return true;
+  return (itemData.metadata.setting_type != Qpx::SettingType::none);
 
   /*if (itemData.branches.size() != childItems.size()) {
-      PL_WARN << "Setting branch size mismatch " << itemData.id_;
+      WARN << "Setting branch size mismatch " << itemData.id_;
 //      for (int i=0; i <  childItems.size(); ++i)
 //        delete childItems.takeAt(i);
 
@@ -291,7 +291,7 @@ bool TreeItem::setData(int column, const QVariant &value)
        (itemData.metadata.setting_type == Qpx::SettingType::int_menu) ||
        (itemData.metadata.setting_type == Qpx::SettingType::command))
       && (value.canConvert(QMetaType::LongLong))) {
-    //PL_DBG << "int = " << value.toLongLong();
+    //DBG << "int = " << value.toLongLong();
     itemData.value_int = value.toLongLong();
   }
   else if ((itemData.metadata.setting_type == Qpx::SettingType::boolean)
@@ -499,12 +499,12 @@ QModelIndex TreeSettings::parent(const QModelIndex &index) const
   if (parentItem == 0x0)
     return QModelIndex();
 
-  //PL_DBG << parentItem;
+  //DBG << parentItem;
 
-  //PL_DBG << "Index r" << index.row() << " c" << index.column() << " d=";
+  //DBG << "Index r" << index.row() << " c" << index.column() << " d=";
 //  if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
 //    Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
-//    PL_DBG << "id=" << set.id_;
+//    DBG << "id=" << set.id_;
 //  }
 
   return createIndex(parentItem->childNumber(), 0, parentItem);
@@ -584,12 +584,12 @@ void TreeSettings::update(const Qpx::Setting &data) {
   data_ = data;
   data_.cull_invisible();
   if (!show_read_only_) {
-    //PL_DBG << "Culling read only";
+    //DBG << "Culling read only";
     data_.cull_readonly();
   }
 
   if (!rootItem->eat_data(data_)) {
-//    PL_DBG << "deleting root node";
+//    DBG << "deleting root node";
     beginResetModel();
     delete rootItem;
     rootItem = new TreeItem(data_);

@@ -282,7 +282,7 @@ void FormEfficiencyCalibration::update_detector_calibs()
 
     if (modified != Detector())
     {
-      PL_INFO << "   applying new calibrations for " << modified.name_ << " in detector database";
+      INFO << "   applying new calibrations for " << modified.name_ << " in detector database";
       modified.efficiency_calibration_ = new_calibration_;
       detectors_.replace(modified);
       emit detectorsChanged();
@@ -578,10 +578,10 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
     new_calibration_.model_ = CalibrationModel::polylog;
-    PL_DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
+    DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
   }
   else
-    PL_INFO << "<Efficiency calibration> Calibration failed";
+    INFO << "<Efficiency calibration> Calibration failed";
 
   replot_calib();
   toggle_push();
@@ -684,10 +684,10 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
     new_calibration_.model_ = CalibrationModel::loginverse;
-    PL_DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
+    DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
   }
   else
-    PL_INFO << "<Efficiency calibration> Calibration failed";
+    INFO << "<Efficiency calibration> Calibration failed";
 
   replot_calib();
   toggle_push();
@@ -730,7 +730,7 @@ void FormEfficiencyCalibration::on_pushFitEffit_clicked()
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
     new_calibration_.model_ = CalibrationModel::effit;
-    PL_DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
+    DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
 
   replot_calib();
   toggle_push();
