@@ -23,7 +23,7 @@
 unix {
    LIBS += -lm -ldl -lz \
            -lboost_system -lboost_date_time -lboost_thread -lboost_log \
-           -lboost_filesystem -lboost_log_setup -lboost_timer
+           -lboost_filesystem -lboost_log_setup -lboost_timer -lboost_regex
 }
 
 	 

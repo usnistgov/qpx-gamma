@@ -76,6 +76,9 @@ struct ROI {
   void set_RB(SUM4Edge);
 
   void rebuild();
+  void rebuild_as_hypermet();
+  void rebuild_as_gaussian();
+
   void render();
   void save_current_fit();
 

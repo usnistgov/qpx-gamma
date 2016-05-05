@@ -24,6 +24,7 @@
 #include <boost/algorithm/string.hpp>
 #include "generic_setting.h"
 #include "qpx_util.h"
+#include "custom_logger.h"
 
 namespace Qpx {
 
@@ -304,7 +305,8 @@ Setting::Setting()
 Setting::Setting(const pugi::xml_node &node)
   : Setting()
 {
-  this->from_xml(node);
+  if (node.name() == xml_element_name())
+    this->from_xml(node);
 }
 
 Setting::Setting(std::string id)
@@ -319,6 +321,11 @@ Setting::Setting(SettingMeta meta)
 {
   id_ = meta.id_;
   metadata = meta;
+}
+
+Setting::operator bool() const
+{
+  return ((*this) != Setting());
 }
 
 bool Setting::compare(const Setting &other, Match flags) const {
@@ -365,7 +372,7 @@ bool Setting::operator== (const Setting& other) const
   if (value_precise  != other.value_precise) return false;
   if (value_pattern  != other.value_pattern) return false;
   if (branches       != other.branches) return false;
-//    if (metadata != other.metadata) return false;
+  //    if (metadata != other.metadata) return false;
   return true;
 }
 
@@ -386,7 +393,7 @@ std::string Setting::val_to_string() const
            (metadata.setting_type == SettingType::indicator) )
     ss << std::to_string(value_int);
   else if (metadata.setting_type == SettingType::binary)
-//    ss << itohex64(value_int);
+    //    ss << itohex64(value_int);
     ss << std::to_string(value_int);
   else if (metadata.setting_type == SettingType::floating)
     ss << std::setprecision(std::numeric_limits<double>::max_digits10) << value_dbl;
@@ -443,7 +450,7 @@ void Setting::val_from_node(const pugi::xml_node &node)
     value_pattern = Pattern(node.attribute("value").value());
   else if (metadata.setting_type == SettingType::binary)
     value_int = node.attribute("value").as_llong();
-//    ss << itohex64(value_int);
+  //    ss << itohex64(value_int);
   else if (metadata.setting_type == SettingType::floating)
     value_dbl = node.attribute("value").as_double();
   else if (metadata.setting_type == SettingType::floating_precise)
@@ -510,16 +517,17 @@ void Setting::to_xml(pugi::xml_node &node, bool with_metadata) const {
       child.append_attribute("indices").set_value(indices_string.c_str());
   }
 
-  if (metadata.setting_type == SettingType::stem) {
-    if (!value_text.empty())
-      child.append_attribute("reference").set_value(value_text.c_str());
-    for (auto &q : branches.my_data_)
-      q.to_xml(child);
-  } else
+  if (metadata.setting_type != SettingType::stem)
     child.append_attribute("value").set_value(val_to_string().c_str());
+  else if (!value_text.empty())
+    child.append_attribute("reference").set_value(value_text.c_str());
 
   if (metadata.meaningful())
     metadata.to_xml(child);
+
+  if (metadata.setting_type == SettingType::stem)
+    for (auto &q : branches.my_data_)
+      q.to_xml(child);
 }
 
 void Setting::set_value(const Setting &other)
@@ -536,8 +544,8 @@ void Setting::set_value(const Setting &other)
 
 bool Setting::set_setting_r(const Setting &setting, Match flags){
   if (this->compare(setting, flags)) {
-      this->set_value(setting);
-      return true;
+    this->set_value(setting);
+    return true;
   } else if ((this->metadata.setting_type == SettingType::stem)
              || (this->metadata.setting_type == SettingType::indicator)) {
     for (auto &q : this->branches.my_data_)
@@ -550,8 +558,8 @@ bool Setting::set_setting_r(const Setting &setting, Match flags){
 
 bool Setting::retrieve_one_setting(Setting &det, const Setting& root, Match flags) const {
   if (root.compare(det, flags)) {
-      det = root;
-      return true;
+    det = root;
+    return true;
   } else if ((root.metadata.setting_type == SettingType::stem)
              || (root.metadata.setting_type == SettingType::indicator)) {
     for (auto &q : root.branches.my_data_)
@@ -562,11 +570,14 @@ bool Setting::retrieve_one_setting(Setting &det, const Setting& root, Match flag
 }
 
 Setting Setting::get_setting(Setting address, Match flags) const {
-  Setting addy(address);
-  if (retrieve_one_setting(addy, *this, flags))
-    return addy;
+  if (retrieve_one_setting(address, *this, flags))
+    return address;
   else
     return Setting();
+}
+
+bool Setting::has(Setting address, Match flags) const {
+  return (retrieve_one_setting(address, *this, flags));
 }
 
 void Setting::delete_one_setting(const Setting &det, Setting& root, Match flags) {
@@ -597,7 +608,7 @@ void Setting::enrich(const std::map<std::string, SettingMeta> &setting_definitio
     metadata = meta;
     if (((meta.setting_type == SettingType::indicator) ||
          (meta.setting_type == SettingType::binary) ||
-        (meta.setting_type == SettingType::stem)) && !meta.int_menu_items.empty()) {
+         (meta.setting_type == SettingType::stem)) && !meta.int_menu_items.empty()) {
       XMLableDB<Setting> br = branches;
       branches.clear();
       for (auto &q : meta.int_menu_items) {
@@ -618,7 +629,7 @@ void Setting::enrich(const std::map<std::string, SettingMeta> &setting_definitio
             newset.enrich(setting_definitions, impose_limits);
             branches.add_a(newset);
           }
-        }        
+        }
       }
       for (int i=0; i < br.size(); ++i) {
         if (setting_definitions.count(br.get(i).id_) == 0) {
@@ -686,7 +697,7 @@ void Setting::cull_invisible() {
         setting.cull_invisible();
         if (!setting.branches.empty())
           branches.add_a(setting);
-    } else
+      } else
         branches.add_a(setting);
   }
 }

@@ -45,30 +45,25 @@ public:
 
 signals:
   void toggleIO(bool);
-  void restart_run();
-  void post_proc();
-  void optimization_approved();
 
 protected:
   void closeEvent(QCloseEvent*);
 
 private slots:
+  void toggle_push(bool, Qpx::SourceStatus);
+
   void update_plots();
   void run_completed();
-
-  void on_pushMatchGain_clicked();
-
   void update_fits();
   void update_peak_selection(std::set<double>);
 
-  void on_pushStop_clicked();
-  void do_post_processing();
   void do_run();
+  void do_post_processing();
 
-  void toggle_push(bool, Qpx::SourceStatus);
 
+  void on_pushMatchGain_clicked();
+  void on_pushStop_clicked();
   void on_comboTarget_currentIndexChanged(int index);
-
   void on_comboSetting_activated(int index);
 
 private:
@@ -76,9 +71,9 @@ private:
   void saveSettings();
 
   Ui::FormGainMatch *ui;
+  AppearanceProfile style_fit, style_pts;
 
-  Qpx::Project    gm_spectra_;
-  Qpx::Metadata reference_, optimizing_;
+  Qpx::Project    project_;
 
   ThreadRunner         &gm_runner_thread_;
   XMLableDB<Qpx::Detector> &detectors_;
@@ -91,17 +86,16 @@ private:
 
   bool my_run_;
 
-  AppearanceProfile ap_reference_, ap_optimized_;
+  int current_pass;
 
-  AppearanceProfile style_fit, style_pts;
-
-
-  int bits, current_pass;
-
-  std::string current_setting_;
+  Qpx::Setting current_setting_;
 
   Qpx::Fitter fitter_ref_, fitter_opt_;
   Qpx::Peak peak_ref_, peak_opt_;
+
+  Qpx::Metadata make_prototype(uint16_t bits, uint16_t channel,
+                               int pass_number, Qpx::Setting variable,
+                               std::string name);
 
 };
 

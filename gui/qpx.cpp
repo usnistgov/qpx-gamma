@@ -106,10 +106,12 @@ qpx::qpx(QWidget *parent) :
   settings.beginGroup("Program");
   QString profile_directory = settings.value("profile_directory", "").toString();
 
-  if (!profile_directory.isEmpty())
+  if (profile_directory.isEmpty())
+    openNewProject();
+  else {
     ui->qpxTabs->setCurrentWidget(main_tab_);
-
-  reorder_tabs();
+    reorder_tabs();
+  }
 }
 
 qpx::~qpx()

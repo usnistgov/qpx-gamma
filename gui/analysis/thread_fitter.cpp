@@ -21,7 +21,7 @@
  ******************************************************************************/
 
 #include "thread_fitter.h"
-
+#include "custom_timer.h"
 
 ThreadFitter::ThreadFitter(QObject *parent) :
   QThread(parent),
@@ -170,16 +170,24 @@ void ThreadFitter::run() {
 
     if (action_ == kFit) {
       int current = 1;
+      CustomTimer total_timer(true);
+      std::shared_ptr<CustomTimer> timer(new CustomTimer(true));
       for (auto &q : fitter_.regions_) {
-        DBG << "<Fitter> Fitting region " << current << " of " << fitter_.regions_.size() << " at E=" << q.first;
         q.second.auto_fit(interruptor_);
         current++;
-        emit fit_updated(fitter_);
+        if (timer->s() > 2) {
+          emit fit_updated(fitter_);
+          timer = std::shared_ptr<CustomTimer>(new CustomTimer(true));
+          DBG << "<Fitter> " << current << " of " << fitter_.regions_.size() << " regions completed";
+        }
         if ((action_ == kStop) || terminating_.load())
           break;
       }
-      action_ = kIdle;
+      DBG << "<Fitter> Fitting spectrum was on average " << total_timer.s() / double(fitter_.peaks().size())
+          << " s/peak";
+      emit fit_updated(fitter_);
       emit fitting_done();
+      action_ = kIdle;
     } else if (action_ == kRefit) {
       if (fitter_.regions_.count(target_ROI_)) {
         fitter_.regions_[target_ROI_].rebuild();

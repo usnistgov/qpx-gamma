@@ -55,6 +55,8 @@ FormFitterSettings::FormFitterSettings(FitSettings &fs, QWidget *parent) :
   ui->checkSmallSimplify->setChecked(fit_settings_.small_simplify);
   ui->spinSmallMaxAmplitude->setValue(fit_settings_.small_max_amplitude);
 
+  ui->checkGaussOnly->setChecked(fit_settings_.gaussian_only);
+
   ui->checkStepEnable->setChecked(fit_settings_.step_amplitude.enabled);
   ui->doubleMinStep->setValue(fit_settings_.step_amplitude.lbound);
   ui->doubleMaxStep->setValue(fit_settings_.step_amplitude.ubound);
@@ -97,6 +99,7 @@ FormFitterSettings::FormFitterSettings(FitSettings &fs, QWidget *parent) :
   ui->spinFitterMaxIterations->setValue(fit_settings_.fitter_max_iter);
 
   on_checkOnlySum4_clicked();
+  on_checkGaussOnly_clicked();
 }
 
 void FormFitterSettings::on_buttonBox_accepted()
@@ -121,6 +124,8 @@ void FormFitterSettings::on_buttonBox_accepted()
 
   fit_settings_.small_simplify = ui->checkSmallSimplify->isChecked();
   fit_settings_.small_max_amplitude = ui->spinSmallMaxAmplitude->value();
+
+  fit_settings_.gaussian_only = ui->checkGaussOnly->isChecked();
 
   fit_settings_.step_amplitude.enabled = ui->checkStepEnable->isChecked();
   fit_settings_.step_amplitude.lbound = ui->doubleMinStep->value();
@@ -303,4 +308,38 @@ void FormFitterSettings::on_checkOnlySum4_clicked()
   ui->doubleResidTooClose->setEnabled(enabled);
   ui->spinFitterMaxIterations->setEnabled(enabled);
   ui->checkResidAuto->setEnabled(enabled);
+}
+
+void FormFitterSettings::on_checkGaussOnly_clicked()
+{
+  bool enabled = !ui->checkGaussOnly->isChecked();
+
+  ui->checkStepEnable->setEnabled(enabled);
+  ui->doubleMinStep->setEnabled(enabled);
+  ui->doubleMaxStep->setEnabled(enabled);
+  ui->doubleInitStep->setEnabled(enabled);
+
+  ui->checkTailEnable->setEnabled(enabled);
+  ui->doubleMinTailAmp->setEnabled(enabled);
+  ui->doubleMaxTailAmp->setEnabled(enabled);
+  ui->doubleInitTailAmp->setEnabled(enabled);
+  ui->doubleMinTailSlope->setEnabled(enabled);
+  ui->doubleMaxTailSlope->setEnabled(enabled);
+  ui->doubleInitTailSlope->setEnabled(enabled);
+
+  ui->checkEnableLskew->setEnabled(enabled);
+  ui->doubleMinLskewAmp->setEnabled(enabled);
+  ui->doubleMaxLskewAmp->setEnabled(enabled);
+  ui->doubleInitLskewAmp->setEnabled(enabled);
+  ui->doubleMinLskewSlope->setEnabled(enabled);
+  ui->doubleMaxLskewSlope->setEnabled(enabled);
+  ui->doubleInitLskewSlope->setEnabled(enabled);
+
+  ui->checkEnableRskew->setEnabled(enabled);
+  ui->doubleMinRskewAmp->setEnabled(enabled);
+  ui->doubleMaxRskewAmp->setEnabled(enabled);
+  ui->doubleInitRskewAmp->setEnabled(enabled);
+  ui->doubleMinRskewSlope->setEnabled(enabled);
+  ui->doubleMaxRskewSlope->setEnabled(enabled);
+  ui->doubleInitRskewSlope->setEnabled(enabled);
 }

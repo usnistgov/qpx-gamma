@@ -38,8 +38,8 @@
 		<branch address="15" id="VME/IsegVHS/Channel/CurrentIlkMinSet" />
 	</SettingMeta>
 	
-	<SettingMeta id="Simulator2D/Gain0" type="floating" name="Virtual gain" address="-1" writable="true" unit="%" step="0.1" minimum="1" maximum="100000" flags="gain" max_indices="1"/>
-	<SettingMeta id="Simulator2D/Gain1" type="floating" name="Virtual gain" address="-1" writable="true" unit="%" step="0.1" minimum="1" maximum="100000" flags="gain" max_indices="1"/>
+	<SettingMeta id="Simulator2D/Gain0" type="floating" name="Virtual gain" address="-1" writable="true" unit="%" step="0.1" minimum="1" maximum="100000" flags="gain optimize" max_indices="1"/>
+	<SettingMeta id="Simulator2D/Gain1" type="floating" name="Virtual gain" address="-1" writable="true" unit="%" step="0.1" minimum="1" maximum="100000" flags="gain optimize" max_indices="1"/>
 	<SettingMeta id="Simulator2D/TimebaseMult" type="floating" name="Timebase multiplier" writable="true" unit="ns" step="1" minimum="1" maximum="100000" />
 	<SettingMeta id="Simulator2D/TimebaseDiv" type="floating" name="Timebase divisor" writable="true" step="1" minimum="1" maximum="100000" />
 

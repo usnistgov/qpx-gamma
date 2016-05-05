@@ -91,14 +91,36 @@ std::string Hypermet::to_string() const {
 }
 
 Hypermet::Hypermet(Gaussian gauss, FitSettings settings) :
-  height_("h", gauss.height_), center_("c", gauss.center_), width_("w", gauss.hwhm_ / sqrt(log(2))),
+  height_("h", gauss.height_.val),
+  center_("c", gauss.center_.val),
+  width_("w", gauss.hwhm_.val / sqrt(log(2))),
   Lskew_amplitude(settings.Lskew_amplitude), Lskew_slope(settings.Lskew_slope),
   Rskew_amplitude(settings.Rskew_amplitude), Rskew_slope(settings.Rskew_slope),
   tail_amplitude(settings.tail_amplitude), tail_slope(settings.tail_slope),
   step_amplitude(settings.step_amplitude),
   rsq_(0)
 {
+  if (settings.gaussian_only)
+  {
+    Lskew_amplitude.enabled = false;
+    Rskew_amplitude.enabled = false;
+    tail_amplitude.enabled = false;
+    step_amplitude.enabled = false;
+  }
+}
 
+Gaussian Hypermet::gaussian()
+{
+  Gaussian ret;
+  ret.height_ = height_;
+  ret.center_ = center_;
+  ret.hwhm_ = width_;
+  ret.hwhm_.val *= sqrt(log(2));
+  ret.hwhm_.uncert *= sqrt(log(2));
+  ret.hwhm_.lbound *= sqrt(log(2));
+  ret.hwhm_.ubound *= sqrt(log(2));
+  ret.rsq_ = rsq_;
+  return ret;
 }
 
 Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y,
@@ -277,7 +299,7 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
     background.add_self(f);
   } catch ( ... ) {
     success = false;
-    DBG << "Hypermet: multifit failed to set up initial globals";
+    DBG << "Hypermet: multifit failed to set up common background";
   }
 
   bool can_uncert = true;
@@ -459,4 +481,13 @@ ValUncert Hypermet::area() const {
        Lskew_amplitude.val * width_.val * Lskew_slope.val +
        Rskew_amplitude.val * width_.val * Rskew_slope.val);
   return ret;
+}
+
+bool Hypermet::gaussian_only()
+{
+  return
+    !(step_amplitude.enabled
+      || tail_amplitude.enabled
+      || Lskew_amplitude.enabled
+      || Rskew_amplitude.enabled);
 }

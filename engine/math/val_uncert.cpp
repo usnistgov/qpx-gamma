@@ -43,7 +43,7 @@ double ValUncert::err() const
 {
   double ret = std::numeric_limits<double>::infinity();
   if (!std::isnan(val) && (val != 0))
-    ret = uncert / val * 100.0;
+    ret = uncert / std::abs(val) * 100.0;
   return ret;
 }
 

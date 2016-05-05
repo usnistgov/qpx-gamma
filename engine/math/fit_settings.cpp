@@ -47,10 +47,6 @@ FitSettings::FitSettings()
   , small_simplify (true)
   , small_max_amplitude (500)
 
-  , step_amplitude ("step_h", 1.0e-10, 1.0e-10, 0.75)
-
-  , tail_amplitude ("tail_h", 1.0e-10, 1.0e-10, 0.015)
-  , tail_slope ("tail_s", 2.75, 2.5, 50)
 
   , lateral_slack(0.5)
 
@@ -60,9 +56,12 @@ FitSettings::FitSettings()
   , width_at_511_variable (true)
   , width_at_511_tolerance (5.0)
 
+  , gaussian_only(false)
+  , step_amplitude ("step_h", 1.0e-10, 1.0e-10, 0.75)
+  , tail_amplitude ("tail_h", 1.0e-10, 1.0e-10, 0.015)
+  , tail_slope ("tail_s", 2.75, 2.5, 50)
   , Lskew_amplitude ("lskew_h", 1.0e-10, 1.0e-10, 0.75)
   , Lskew_slope ("lskew_s", 0.5, 0.3, 2)
-
   , Rskew_amplitude ("rskew_h", 1.0e-10, 1.0e-10, 0.75)
   , Rskew_slope ("rskew_s", 0.5, 0.3, 2)
 
@@ -73,3 +72,12 @@ FitSettings::FitSettings()
   Lskew_amplitude.enabled = true;
   Rskew_amplitude.enabled = true;
 }
+
+//bool FitSettings::gaussian_only()
+//{
+//  return
+//    !(step_amplitude.enabled
+//      || tail_amplitude.enabled
+//      || Lskew_amplitude.enabled
+//      || Rskew_amplitude.enabled);
+//}

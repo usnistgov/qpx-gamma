@@ -66,6 +66,8 @@ private slots:
 
   void on_checkOnlySum4_clicked();
 
+  void on_checkGaussOnly_clicked();
+
 private:
   Ui::FormFitterSettings *ui;
 

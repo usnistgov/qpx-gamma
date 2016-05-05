@@ -38,6 +38,15 @@ class FormOptimization : public QWidget
 {
   Q_OBJECT
 
+private:
+  struct DataPoint
+  {
+    Qpx::Fitter spectrum;
+    Qpx::Peak selected_peak;
+    double independent_variable;
+    double dependent_variable;
+  };
+
 public:
   explicit FormOptimization(ThreadRunner&, XMLableDB<Qpx::Detector>&, QWidget *parent = 0);
   void update_settings();
@@ -45,65 +54,67 @@ public:
 
 signals:
   void toggleIO(bool);
-  void restart_run();
-  void post_proc();
-  void optimization_approved();
   void settings_changed();
 
 protected:
   void closeEvent(QCloseEvent*);
 
 private slots:
-  void update_plots();
-  void run_completed();
-
-  void on_pushStart_clicked();
-
-  bool find_peaks();
-  void resultChosen();
-
-  void on_pushStop_clicked();
-  void do_post_processing();
-  void do_run();
-
   void toggle_push(bool, Qpx::SourceStatus);
 
+  void update_plots();
+  void update_fits();
+  void update_peak_selection(std::set<double>);
+  void update_pass_selection();
+
+  void run_completed();
+
+
+  void on_pushStart_clicked();
+  void on_pushStop_clicked();
   void on_comboTarget_currentIndexChanged(int index);
-
   void on_comboSetting_activated(const QString &arg1);
-
+  void on_comboUntil_activated(const QString &arg1);
   void on_pushAddCustom_clicked();
 
 private:
   void loadSettings();
   void saveSettings();
 
-  Ui::FormOptimization *ui;
-
-  Qpx::Project     current_spectra_;
-  Qpx::Metadata    optimizing_;
-
-  ThreadRunner         &opt_runner_thread_;
   XMLableDB<Qpx::Detector> &detectors_;
-
-  ThreadPlotSignal     opt_plot_thread_;
-  boost::atomic<bool>  interruptor_;
-
-  double val_min, val_max, val_d, val_current;
-
-  bool my_run_;
-
-  int bits;
-
-  Qpx::Fitter fitter_opt_;
-  std::vector<Qpx::Fitter> spectra_;
-
+  Ui::FormOptimization *ui;
   AppearanceProfile style_pts;
 
-  std::string current_setting_;
-  std::vector<Qpx::Peak> peaks_;
-  std::vector<double> setting_values_;
-  std::vector<double> setting_fwhm_;
+  ThreadRunner         &opt_runner_thread_;
+  ThreadPlotSignal     opt_plot_thread_;
+  Qpx::Project         project_;
+  boost::atomic<bool>  interruptor_;
+  bool my_run_;
+
+
+  Qpx::Setting manual_settings_;
+  std::map<std::string, Qpx::Setting> all_settings_;
+
+
+  int current_pass_;
+  Qpx::Setting current_setting_;
+
+  int selected_pass_;
+  Qpx::Fitter selected_fitter_;
+
+  std::vector<DataPoint> experiment_;
+
+
+  //helper functions
+
+  void new_run();
+  Qpx::Metadata make_prototype(uint16_t bits, uint16_t channel,
+                               int pass_number, Qpx::Setting variable,
+                               std::string name);
+  void populate_display();
+  void do_post_processing();
+  void eval_dependent(DataPoint &data);
+  bool criterion_satisfied(DataPoint &data);
 };
 
 #endif // FORM_OPTIMIZATION_H

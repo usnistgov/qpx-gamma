@@ -51,11 +51,6 @@ public:
   bool     small_simplify;
   uint64_t small_max_amplitude;
 
-  FitParam step_amplitude;
-
-  FitParam tail_amplitude;
-  FitParam tail_slope;
-
   double   lateral_slack;
 
   bool     width_common;
@@ -64,9 +59,14 @@ public:
   bool     width_at_511_variable;
   double   width_at_511_tolerance;
 
+
+  bool gaussian_only;
+  //hypermet bounds
+  FitParam step_amplitude;
+  FitParam tail_amplitude;
+  FitParam tail_slope;
   FitParam Lskew_amplitude;
   FitParam Lskew_slope;
-
   FitParam Rskew_amplitude;
   FitParam Rskew_slope;
 

@@ -73,6 +73,9 @@ public:
 
   static std::string fityk_definition();
   bool extract_params(fityk::Fityk*, fityk::Func*);
+  bool gaussian_only();
+
+  Gaussian gaussian();
 };
 
 #endif

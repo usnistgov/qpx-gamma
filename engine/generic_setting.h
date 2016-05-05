@@ -142,6 +142,7 @@ struct Setting : public XMLable {
   Setting(std::string id);
   Setting(SettingMeta meta);
 
+  explicit operator bool() const;
   bool shallow_equals(const Setting& other) const;
   bool operator== (const Setting& other) const;
   bool operator!= (const Setting& other) const;
@@ -151,6 +152,7 @@ struct Setting : public XMLable {
   bool set_setting_r(const Setting &setting, Match flags);
   Setting get_setting(Setting address, Match flags) const;
   void del_setting(Setting address, Match flags);
+  bool has(Setting address, Match flags) const;
 
   void condense();
   void enable_if_flag(bool enable, std::string flag);

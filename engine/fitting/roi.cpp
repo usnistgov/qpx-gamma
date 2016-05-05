@@ -23,6 +23,7 @@
 #include "roi.h"
 #include "gaussian.h"
 #include "custom_logger.h"
+#include "custom_timer.h"
 
 namespace Qpx {
 
@@ -94,10 +95,10 @@ void ROI::auto_fit(boost::atomic<bool>& interruptor) {
       Gaussian gaussian(x_pk, y_pk);
 
       if (
-          (gaussian.height_ > 0) &&
-          (gaussian.hwhm_ > 0) &&
-          (finder_.x_[finder_.lefts[i]] < gaussian.center_) &&
-          (gaussian.center_ < finder_.x_[finder_.rights[i]])
+          (gaussian.height_.val > 0) &&
+          (gaussian.hwhm_.val > 0) &&
+          (finder_.x_[finder_.lefts[i]] < gaussian.center_.val) &&
+          (gaussian.center_.val < finder_.x_[finder_.rights[i]])
           )
       {
         //        DBG << "I like this peak at " << gaussian.center_ << " fw " << gaussian.hwhm_ * 2;
@@ -176,9 +177,10 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
       Gaussian gaussian(x_pk, y_pk);
       bool too_close = false;
 
-      double lateral_slack = settings_.resid_too_close * gaussian.hwhm_ * 2;
+      double lateral_slack = settings_.resid_too_close * gaussian.hwhm_.val * 2;
       for (auto &p : peaks_) {
-        if ((p.second.center > (gaussian.center_ - lateral_slack)) && (p.second.center < (gaussian.center_ + lateral_slack)))
+        if ((p.second.center > (gaussian.center_.val - lateral_slack))
+            && (p.second.center < (gaussian.center_.val + lateral_slack)))
           too_close = true;
       }
 
@@ -186,16 +188,16 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
 //        DBG << "Too close at " << settings_.cali_nrg_.transform(gaussian.center_, settings_.bits_);
 
       if ( !too_close &&
-          (gaussian.height_ > 0) &&
-          (gaussian.hwhm_ > 0) &&
-          (finder_.x_[finder_.lefts[j]] < gaussian.center_) &&
-          (gaussian.center_ < finder_.x_[finder_.rights[j]]) &&
-          (gaussian.height_ > settings_.resid_min_amplitude) &&
+          (gaussian.height_.val > 0) &&
+          (gaussian.hwhm_.val > 0) &&
+          (finder_.x_[finder_.lefts[j]] < gaussian.center_.val) &&
+          (gaussian.center_.val < finder_.x_[finder_.rights[j]]) &&
+          (gaussian.height_.val > settings_.resid_min_amplitude) &&
           (gaussian.area() > biggest)
         )
       {
         target_peak = j;
-        biggest = gaussian.area();
+        biggest = gaussian.area().val;
       }
     }
 //    DBG << "    biggest potential add at " << finder_.x_[finder_.filtered[target_peak]] << " with area=" << biggest;
@@ -220,10 +222,10 @@ bool ROI::add_from_resid(int32_t centroid_hint) {
   Gaussian gaussian(x_pk, y_pk);
 
   if (
-      (gaussian.height_ > 0) &&
-      (gaussian.hwhm_ > 0) &&
-      (finder_.x_[finder_.lefts[target_peak]] < gaussian.center_) &&
-      (gaussian.center_ < finder_.x_[finder_.rights[target_peak]])
+      (gaussian.height_.val > 0) &&
+      (gaussian.hwhm_.val > 0) &&
+      (finder_.x_[finder_.lefts[target_peak]] < gaussian.center_.val) &&
+      (gaussian.center_.val < finder_.x_[finder_.rights[target_peak]])
       )
   {
 //    DBG << "<ROI> new peak accepted";
@@ -433,6 +435,26 @@ void ROI::rebuild() {
   hr_back_steps.clear();
   hr_fullfit.clear();
 
+  bool hypermet_fit = false;
+  for (auto &q : peaks_)
+    if (!q.second.hypermet_.gaussian_only()) {
+      hypermet_fit = true;
+      break;
+    }
+
+  if (hypermet_fit)
+    rebuild_as_hypermet();
+  else
+    rebuild_as_gaussian();
+
+  render();
+  save_current_fit();
+}
+
+void ROI::rebuild_as_hypermet()
+{
+  CustomTimer timer(true);
+
   std::map<double, Peak> new_peaks;
 
   std::vector<Hypermet> old_hype;
@@ -467,10 +489,50 @@ void ROI::rebuild() {
   }
 
   peaks_ = new_peaks;
-
-  render();
-  save_current_fit();
+//  DBG << "Hypermet rebuild took " << timer.s() / double(peaks_.size()) << " s/peak";
 }
+
+void ROI::rebuild_as_gaussian()
+{
+  CustomTimer timer(true);
+
+  std::map<double, Peak> new_peaks = peaks_;
+
+  std::vector<Gaussian> old_gauss;
+  for (auto &q : peaks_) {
+    if (q.second.hypermet_.height_.val)
+      old_gauss.push_back(q.second.hypermet_.gaussian());
+    else if (q.second.sum4_.bx.size()) {
+      q.second.sum4_ = SUM4(finder_.x_, finder_.y_,
+                finder_.find_index(q.second.sum4_.bx[0]),
+                finder_.find_index(q.second.sum4_.bx[q.second.sum4_.bx.size() - 1]),
+                sum4_background_, LB_, RB_);
+      q.second.construct(settings_);
+      new_peaks[q.second.center.val] = q.second;
+    }
+  }
+
+  if (old_gauss.size() > 0) {
+    std::vector<Gaussian> gauss = Gaussian::fit_multi(finder_.x_, finder_.y_,
+                                                     old_gauss, background_,
+                                                     settings_);
+
+    for (int i=0; i < gauss.size(); ++i) {
+      Peak one;
+      one.hypermet_ = Hypermet(gauss[i], settings_);
+      double edge =  gauss[i].hwhm_.val * 3; //use const from settings
+      uint32_t edgeL = finder_.find_index(gauss[i].center_.val - edge);
+      uint32_t edgeR = finder_.find_index(gauss[i].center_.val + edge);
+      one.sum4_ = SUM4(finder_.x_, finder_.y_, edgeL, edgeR, sum4_background_, LB_, RB_);
+      one.construct(settings_);
+      new_peaks[one.center.val] = one;
+    }
+  }
+
+  peaks_ = new_peaks;
+//  DBG << "Hypermet rebuild took " << timer.s() / double(peaks_.size()) << " s/peak";
+}
+
 
 void ROI::render() {
   hr_x.clear();

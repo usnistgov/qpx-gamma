@@ -26,25 +26,34 @@
 #include <vector>
 #include <iostream>
 #include <numeric>
+#include "polynomial.h"
 #include "fityk.h"
-
+#include "fit_settings.h"
+#include "val_uncert.h"
 
 class Gaussian {
 public:
-  Gaussian() : height_(0), hwhm_(0), center_(0), rsq(-1) {}
+  Gaussian();
   Gaussian(const std::vector<double> &x, const std::vector<double> &y);
 
-  static std::vector<Gaussian> fit_multi(const std::vector<double> &x, const std::vector<double> &y, const std::vector<Gaussian> &old);
+  static std::vector<Gaussian> fit_multi(const std::vector<double> &x,
+                                         const std::vector<double> &y,
+                                         std::vector<Gaussian> old,
+                                         PolyBounded &background,
+                                         FitSettings settings
+                                         );
+
+  std::string to_string() const;
 
   double evaluate(double x);
   std::vector<double> evaluate_array(std::vector<double> x);
-  double area();
+  ValUncert area() const;
   
-  double height_, hwhm_, center_;
-  double rsq;
+  FitParam height_, hwhm_, center_;
+  double rsq_;
 
   static std::string fityk_definition();
-  bool extract_params(fityk::Func*);
+  bool extract_params(fityk::Fityk*, fityk::Func*);
 };
 
 

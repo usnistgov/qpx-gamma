@@ -35,9 +35,9 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, XMLableDB<Detector>& detector
   ui(new Ui::FormGainMatch),
   gm_runner_thread_(thread),
   detectors_(detectors),
-  gm_spectra_(),
+  project_(),
   gm_interruptor_(false),
-  gm_plot_thread_(gm_spectra_),
+  gm_plot_thread_(project_),
   my_run_(false)
 {
   ui->setupUi(this);
@@ -45,31 +45,7 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, XMLableDB<Detector>& detector
 
   loadSettings();
 
-  Metadata temp = SinkFactory::getInstance().create_prototype("1D");
-  reference_   = temp;
-  optimizing_  = temp;
-
   current_pass = 0;
-
-  QColor col;
-  Setting vis = reference_.attributes.branches.get(Setting("visible"));
-  Setting app = reference_.attributes.branches.get(Setting("appearance"));
-  vis.value_int = true;
-
-  reference_.name = "Reference";
-  col.setHsv(QColor(Qt::blue).hsvHue(), 48, 160);
-  app.value_text = col.name().toStdString();
-  reference_.attributes.branches.replace(vis);
-  reference_.attributes.branches.replace(app);
-
-  optimizing_.name = "Optimizing";
-  col.setHsv(QColor(Qt::red).hsvHue(), 48, 160);
-  app.value_text = col.name().toStdString();
-  optimizing_.attributes.branches.replace(vis);
-  optimizing_.attributes.branches.replace(app);
-
-  ap_reference_.default_pen = QPen(Qt::blue, 0);
-  ap_optimized_.default_pen = QPen(Qt::red, 0);
 
   QColor point_color;
   point_color.setHsv(180, 215, 150, 120);
@@ -169,19 +145,19 @@ void FormGainMatch::closeEvent(QCloseEvent *event) {
     }
   }
 
-  if (!gm_spectra_.empty()) {
+  if (!project_.empty()) {
     int reply = QMessageBox::warning(this, "Gain matching data still open",
                                      "Discard?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
     if (reply == QMessageBox::Yes) {
-      gm_spectra_.clear();
+      project_.clear();
     } else {
       event->ignore();
       return;
     }
   }
 
-  gm_spectra_.terminate();
+  project_.terminate();
   gm_plot_thread_.wait();
   saveSettings();
 
@@ -197,102 +173,104 @@ void FormGainMatch::toggle_push(bool enable, SourceStatus status) {
   ui->spinBits->setEnabled(enable && online);
 }
 
+Qpx::Metadata FormGainMatch::make_prototype(uint16_t bits, uint16_t channel,
+                                               int pass_number, Qpx::Setting variable,
+                                               std::string name)
+{
+  Qpx::Metadata    spectrum_prototype;
+  spectrum_prototype = Qpx::SinkFactory::getInstance().create_prototype("1D");
+  spectrum_prototype.name = name;
+  spectrum_prototype.bits = bits;
+
+  Qpx::Setting vis = spectrum_prototype.attributes.branches.get(Qpx::Setting("visible"));
+  vis.value_int = true;
+  spectrum_prototype.attributes.branches.replace(vis);
+
+
+  Qpx::Setting app = spectrum_prototype.attributes.branches.get(Qpx::Setting("appearance"));
+  QColor col;
+  col.setHsv(QColor(Qt::blue).hsvHue(), 48, 160);
+  app.value_text = col.name().toStdString();
+  spectrum_prototype.attributes.branches.replace(app);
+
+  std::vector<bool> gates(channel + 1, false);
+  gates[channel] = true;
+
+  Qpx::Setting pattern;
+  pattern = spectrum_prototype.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern.value_pattern.set_gates(gates);
+  pattern.value_pattern.set_theshold(1);
+  spectrum_prototype.attributes.branches.replace(pattern);
+  pattern = spectrum_prototype.attributes.branches.get(Qpx::Setting("pattern_add"));
+  pattern.value_pattern.set_gates(gates);
+  pattern.value_pattern.set_theshold(1);
+  spectrum_prototype.attributes.branches.replace(pattern);
+
+  Qpx::Setting set_pass("Pass");
+  set_pass.value_int = pass_number;
+  spectrum_prototype.attributes.branches.replace(set_pass);
+
+  spectrum_prototype.attributes.branches.replace(variable);
+
+  return spectrum_prototype;
+}
+
 void FormGainMatch::do_run()
 {
   ui->pushStop->setEnabled(true);
   my_run_ = true;
-  int optchan = ui->comboTarget->currentData().toInt();
   emit toggleIO(false);
 
-  Setting gain_setting(current_setting_);
-  gain_setting.indices.clear();
-  gain_setting.indices.insert(optchan);
+
+  int optchan = ui->comboTarget->currentData().toInt();
+
+  current_setting_.indices.clear();
+  current_setting_.indices.insert(optchan);
 
   Engine::getInstance().get_all_settings();
-  gain_setting = Engine::getInstance().pull_settings().get_setting(gain_setting, Match::id | Match::indices);
-  double old_gain = gain_setting.value_dbl;
+  current_setting_ = Engine::getInstance().pull_settings().get_setting(current_setting_, Match::id | Match::indices);
 
-
-  bits = ui->spinBits->value();
-
-  if (gm_spectra_.empty()) {
-    reference_.bits = bits;
-    int refchan = ui->comboReference->currentData().toInt();
-
-    std::vector<bool> match_pattern(refchan + 1, false),
-                      add_pattern(refchan + 1, false);
-    add_pattern[refchan] = true;
-    match_pattern[refchan] = true;
-
-    Setting pattern;
-    pattern = reference_.attributes.branches.get(Setting("pattern_coinc"));
-    pattern.value_pattern.set_gates(match_pattern);
-    pattern.value_pattern.set_theshold(1);
-    reference_.attributes.branches.replace(pattern);
-    pattern = reference_.attributes.branches.get(Setting("pattern_add"));
-    pattern.value_pattern.set_gates(add_pattern);
-    pattern.value_pattern.set_theshold(1);
-    reference_.attributes.branches.replace(pattern);
-
-    gm_spectra_.add_sink(reference_);
+  if (project_.empty()) {
+    project_.add_sink(make_prototype(ui->spinBits->value(),
+                                     ui->comboReference->currentData().toInt(),
+                                     0, Setting(),
+                                     "Reference"));
   } else {
-    std::map<int64_t, SinkPtr> sinks = gm_spectra_.get_sinks();
+    std::map<int64_t, SinkPtr> sinks = project_.get_sinks();
     for (auto &q : sinks)
       if (q.second->name() == "Optimizing")
-        gm_spectra_.delete_sink(q.first);
+        project_.delete_sink(q.first);
   }
 
-  Setting set_gain("Gain");
-  set_gain.value_dbl = old_gain;
-  Setting set_pass("Pass");
-  set_pass.value_int = current_pass;
-  optimizing_.bits = bits;
-  optimizing_.attributes.branches.replace(set_gain);
-  optimizing_.attributes.branches.replace(set_pass);
-
-  std::vector<bool> match_pattern(optchan + 1, false),
-                    add_pattern(optchan + 1, false);
-  add_pattern[optchan] = true;
-  match_pattern[optchan] = true;
-
-  Setting pattern;
-  pattern = optimizing_.attributes.branches.get(Setting("pattern_coinc"));
-  pattern.value_pattern.set_gates(match_pattern);
-  pattern.value_pattern.set_theshold(1);
-  optimizing_.attributes.branches.replace(pattern);
-  pattern = optimizing_.attributes.branches.get(Setting("pattern_add"));
-  pattern.value_pattern.set_gates(add_pattern);
-  pattern.value_pattern.set_theshold(1);
-  optimizing_.attributes.branches.replace(pattern);
-
-
-  gm_spectra_.add_sink(optimizing_);
+  project_.add_sink(make_prototype(ui->spinBits->value(), optchan,
+                                   current_pass, current_setting_,
+                                   "Optimizing"));
 
   gm_plot_thread_.start();
 
-  std::map<int64_t, SinkPtr> sinks = gm_spectra_.get_sinks();
+  std::map<int64_t, SinkPtr> sinks = project_.get_sinks();
   for (auto &q : sinks)
     if (q.second->name() == "Reference")
-      fitter_ref_.setData(gm_spectra_.get_sink(q.first));
+      fitter_ref_.setData(project_.get_sink(q.first));
 
   for (auto &q : sinks)
     if (q.second->name() == "Optimizing")
-      fitter_opt_.setData(gm_spectra_.get_sink(q.first));
+      fitter_opt_.setData(project_.get_sink(q.first));
 
   ui->plotRef->update_spectrum();
   ui->plotOpt->update_spectrum();
 
 
-  gains.push_back(old_gain);
+  gains.push_back(current_setting_.value_dbl);
   peaks_.push_back(Peak());
   ui->tableResults->setRowCount(peaks_.size());
 
-  gm_runner_thread_.do_run(gm_spectra_, gm_interruptor_, 0);
+  gm_runner_thread_.do_run(project_, gm_interruptor_, 0);
 }
 
 void FormGainMatch::run_completed() {
   if (my_run_) {
-    gm_spectra_.terminate();
+    project_.terminate();
     gm_plot_thread_.wait();
 //    peak_ref_.area_best = FitParam();
 //    peak_opt_.area_best = FitParam();
@@ -391,17 +369,16 @@ void FormGainMatch::do_post_processing() {
   }
 
   int optchan = ui->comboTarget->currentData().toInt();
-  Setting gain_setting(current_setting_);
-  gain_setting.indices.clear();
-  gain_setting.indices.insert(optchan);
 
-  gain_setting = Engine::getInstance().pull_settings().get_setting(gain_setting, Match::id | Match::indices);
-  gain_setting.value_dbl = new_gain;
+  current_setting_.indices.clear();
+  current_setting_.indices.insert(optchan);
+  current_setting_ = Engine::getInstance().pull_settings().get_setting(current_setting_, Match::id | Match::indices);
+  current_setting_.value_dbl = new_gain;
 
-  Engine::getInstance().set_setting(gain_setting, Match::id | Match::indices);
+  Engine::getInstance().set_setting(current_setting_, Match::id | Match::indices);
   QThread::sleep(2);
-  gain_setting = Engine::getInstance().pull_settings().get_setting(gain_setting, Match::id | Match::indices);
-  new_gain = gain_setting.value_dbl;
+  current_setting_ = Engine::getInstance().pull_settings().get_setting(current_setting_, Match::id | Match::indices);
+  new_gain = current_setting_.value_dbl;
 
 
   INFO << "<FormGainMatch> gain changed from " << std::fixed << std::setprecision(6)
@@ -503,7 +480,7 @@ void FormGainMatch::update_peak_selection(std::set<double> dummy) {
 void FormGainMatch::update_plots() {
   bool have_data = false;
 
-  for (auto &q: gm_spectra_.get_sinks()) {
+  for (auto &q: project_.get_sinks()) {
     Metadata md;
     if (q.second)
       md = q.second->metadata();
@@ -542,10 +519,10 @@ void FormGainMatch::on_pushMatchGain_clicked()
   peak_ref_ = Peak();
   peak_opt_ = Peak();
 
-  current_setting_ = ui->comboSetting->currentText().toStdString();
+  current_setting_ = Setting(ui->comboSetting->currentText().toStdString());
 
   ui->tableResults->clear();
-  ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromStdString(current_setting_), QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromStdString(current_setting_.id_), QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Bin", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("area", QTableWidgetItem::Type));
@@ -555,7 +532,7 @@ void FormGainMatch::on_pushMatchGain_clicked()
   ui->PlotCalib->clearGraphs();
 
   current_pass = 0;
-  gm_spectra_.clear();
+  project_.clear();
   fitter_ref_.clear();
   fitter_opt_.clear();
   do_run();
@@ -588,14 +565,11 @@ void FormGainMatch::on_comboTarget_currentIndexChanged(int index)
 void FormGainMatch::on_comboSetting_activated(int index)
 {
   int optchan = ui->comboTarget->currentData().toInt();
-  current_setting_ = ui->comboSetting->currentText().toStdString();
+  current_setting_ = Setting(ui->comboSetting->currentText().toStdString());
+  current_setting_.indices.clear();
+  current_setting_.indices.insert(optchan);
 
-  Setting gain_setting(current_setting_);
-  gain_setting.indices.clear();
-  gain_setting.indices.insert(optchan);
+  current_setting_ = Engine::getInstance().pull_settings().get_setting(current_setting_, Match::id | Match::indices);
 
-
-  gain_setting = Engine::getInstance().pull_settings().get_setting(gain_setting, Match::id | Match::indices);
-
-  ui->doubleSpinDeltaV->setValue(gain_setting.metadata.step * 10);
+  ui->doubleSpinDeltaV->setValue(current_setting_.metadata.step * 15);
 }

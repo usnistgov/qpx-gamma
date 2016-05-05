@@ -69,6 +69,10 @@ public:
     return (center == other.center);
   }
 
+  bool operator!=(const Peak &other) const {
+    return !(center == other.center);
+  }
+
   bool operator>(const Peak &other) const {
     return (center > other.center);
   }
