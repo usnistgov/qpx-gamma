@@ -25,6 +25,7 @@
 #include "custom_logger.h"
 #include <iomanip>
 #include <numeric>
+#include "qpx_util.h"
 
 std::string FitParam::fityk_name(int function_num) const {
   std::string ret  = "$" + name_ + "_";
@@ -141,5 +142,29 @@ bool FitParam::operator%(const FitParam &other) const
 }
 
 
+void FitParam::to_xml(pugi::xml_node &root) const {
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+
+  node.append_attribute("name").set_value(name_.c_str());
+  node.append_attribute("enabled").set_value(enabled);
+  node.append_attribute("fixed").set_value(fixed);
+
+
+  node.append_attribute("value").set_value(to_max_precision(val).c_str());
+  node.append_attribute("uncert").set_value(to_max_precision(uncert).c_str());
+  node.append_attribute("lbound").set_value(to_max_precision(lbound).c_str());
+  node.append_attribute("ubound").set_value(to_max_precision(ubound).c_str());
+}
+
+void FitParam::from_xml(const pugi::xml_node &node) {
+  name_ = std::string(node.attribute("name").value());
+  enabled = node.attribute("enabled").as_bool(true);
+  fixed = node.attribute("fixed").as_bool(false);
+
+  val = node.attribute("value").as_double(0);
+  uncert = node.attribute("uncert").as_double(std::numeric_limits<double>::infinity());
+  lbound = node.attribute("lbound").as_double(std::numeric_limits<double>::min());
+  ubound = node.attribute("ubound").as_double(std::numeric_limits<double>::max());
+}
 
 

@@ -55,6 +55,8 @@ FormOptimization::FormOptimization(ThreadRunner& thread, XMLableDB<Qpx::Detector
   connect(ui->plotSpectrum, SIGNAL(data_changed()), this, SLOT(update_fits()));
   connect(ui->plotSpectrum, SIGNAL(peak_selection_changed(std::set<double>)),
           this, SLOT(update_peak_selection(std::set<double>)));
+  connect(ui->plotSpectrum, SIGNAL(fitting_done()), this, SLOT(fitting_done()));
+
   //connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
 
   ui->tableResults->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -102,19 +104,25 @@ void FormOptimization::loadSettings() {
     std::string path = profile_directory.toStdString() + "/optimize.set";
     pugi::xml_document doc;
     if (doc.load_file(path.c_str())) {
-      pugi::xml_node root = doc.child(Qpx::Setting().xml_element_name().c_str());
-      if (root)
-        manual_settings_.from_xml(root);
+      pugi::xml_node root = doc.child("Optimizer");
+      if (root.child(manual_settings_.xml_element_name().c_str()))
+        manual_settings_.from_xml(root.child(manual_settings_.xml_element_name().c_str()));
+      FitSettings fs;
+      if (root.child(fs.xml_element_name().c_str())) {
+        fs.from_xml(root.child(fs.xml_element_name().c_str()));
+        selected_fitter_.apply_settings(fs);
+      }
     }
   }
 
   settings_.beginGroup("Optimization");
   ui->spinBits->setValue(settings_.value("bits", 14).toInt());
   //  ui->spinOptChan->setValue(settings_.value("channel", 0).toInt());
+  ui->comboUntil->setCurrentText(settings_.value("criterion", ui->comboUntil->currentText()).toString());
   ui->doubleCriterion->setValue(settings_.value("double_criterion", 1.0).toDouble());
   ui->timeDuration->set_total_seconds(settings_.value("time_criterion", 60).toULongLong());
-  ui->comboUntil->setCurrentText(settings_.value("criterion", ui->comboUntil->currentText()).toString());
   ui->comboCodomain->setCurrentText(settings_.value("co-domain", ui->comboUntil->currentText()).toString());
+  ui->widgetAutoselect->loadSettings(settings_);
 
   ui->plotSpectrum->loadSettings(settings_);
 
@@ -128,11 +136,14 @@ void FormOptimization::saveSettings() {
   QString profile_directory = settings_.value("profile_directory", QDir::homePath() + "/qpx/settings").toString();
   settings_.endGroup();
 
-  if (!profile_directory.isEmpty() && !manual_settings_.branches.empty()) {
+  if (!profile_directory.isEmpty()) {
     std::string path = profile_directory.toStdString() + "/optimize.set";
     pugi::xml_document doc;
     pugi::xml_node root = doc.root();
-    manual_settings_.to_xml(root);
+    pugi::xml_node node = root.append_child("Optimizer");
+    if (!manual_settings_.branches.empty())
+      manual_settings_.to_xml(node);
+    selected_fitter_.settings().to_xml(node);
     doc.save_file(path.c_str());
   }
 
@@ -143,6 +154,7 @@ void FormOptimization::saveSettings() {
   settings_.setValue("time_criterion", QVariant::fromValue(ui->timeDuration->total_seconds()));
   settings_.setValue("criterion", ui->comboUntil->currentText());
   settings_.setValue("co-domain", ui->comboCodomain->currentText());
+  ui->widgetAutoselect->saveSettings(settings_);
 
   ui->plotSpectrum->saveSettings(settings_);
 
@@ -488,7 +500,7 @@ void FormOptimization::update_pass_selection()
   selected_fitter_.apply_settings(fitset);
 
 
-  if (!ui->plotSpectrum->busy()) {
+  if (!ui->plotSpectrum->busy() && (selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
     DBG << "fitter not busy";
     ui->plotSpectrum->updateData();
     if (experiment_.at(selected_pass_).selected_peak != Qpx::Peak()) {
@@ -502,9 +514,44 @@ void FormOptimization::update_pass_selection()
 
 }
 
-void FormOptimization::update_plots() {
-  //  bool have_data = false;
+void FormOptimization::update_fits() {
+  DBG << "<FormOptimization> Reselecting";
+  ui->plotSpectrum->set_selected_peaks(ui->widgetAutoselect->reselect(selected_fitter_.peaks(), ui->plotSpectrum->get_selected_peaks()));
+  update_peak_selection(std::set<double>());
+}
 
+void FormOptimization::fitting_done()
+{
+  if (!ui->plotSpectrum->busy() && (selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+    if (!selected_fitter_.peaks().empty() && (experiment_.at(selected_pass_).selected_peak == Qpx::Peak())) {
+      DBG << "<FormOptimization> Autoselecting";
+      ui->plotSpectrum->set_selected_peaks(ui->widgetAutoselect->autoselect(selected_fitter_.peaks(), ui->plotSpectrum->get_selected_peaks()));
+      update_peak_selection(std::set<double>());
+    }
+  }
+}
+
+void FormOptimization::update_peak_selection(std::set<double> dummy) {
+  Qpx::Metadata md = selected_fitter_.metadata_;
+  Qpx::Setting pass = md.attributes.branches.get(Qpx::Setting("Pass"));
+  if (!pass || (pass.value_int < 0) || (pass.value_int >= experiment_.size()))
+    return;
+
+  std::set<double> selected_peaks = ui->plotSpectrum->get_selected_peaks();
+  if ((selected_peaks.size() != 1) || !selected_fitter_.peaks().count(*selected_peaks.begin()))
+    experiment_[pass.value_int].selected_peak = Qpx::Peak();
+  else
+    experiment_[pass.value_int].selected_peak = selected_fitter_.peaks().at(*selected_peaks.begin());
+
+  eval_dependent(experiment_[pass.value_int]);
+  populate_display();
+
+  if ((pass.value_int == current_pass_) && criterion_satisfied(experiment_[pass.value_int]))
+    interruptor_.store(true);
+}
+
+
+void FormOptimization::update_plots() {
   for (auto &q: project_.get_sinks()) {
     Qpx::Metadata md;
     if (q.second)
@@ -526,30 +573,6 @@ void FormOptimization::update_plots() {
       }
     }
   }
-
-  //  if (have_data && !ui->plotSpectrum->busy()) {
-  //      ui->plotSpectrum->updateData();
-  //      ui->plotSpectrum->perform_fit();
-  //  }
-
-}
-
-void FormOptimization::update_fits() {
-  if (!ui->plotSpectrum->busy()) {
-    std::set<double> selected_peaks = ui->plotSpectrum->get_selected_peaks();
-    std::set<double> newselr;
-    for (auto &p : selected_fitter_.peaks()) {
-      for (auto &s : selected_peaks)
-        if (abs(p.second.center.val - s) < 2) {
-          newselr.insert(p.second.center.val);
-          DBG << "opt select" << p.second.center.val;
-        }
-    }
-    //    DBG << "opt close enough " << newselr.size();
-    ui->plotSpectrum->set_selected_peaks(newselr);
-  }
-
-  update_peak_selection(std::set<double>());
 }
 
 void FormOptimization::eval_dependent(DataPoint &data)
@@ -591,26 +614,6 @@ void FormOptimization::eval_dependent(DataPoint &data)
     return;
   }
   data.dependent_variable = std::numeric_limits<double>::quiet_NaN();
-}
-
-
-void FormOptimization::update_peak_selection(std::set<double> dummy) {
-  Qpx::Metadata md = selected_fitter_.metadata_;
-  Qpx::Setting pass = md.attributes.branches.get(Qpx::Setting("Pass"));
-  if (!pass || (pass.value_int < 0) || (pass.value_int >= experiment_.size()))
-    return;
-
-  std::set<double> selected_peaks = ui->plotSpectrum->get_selected_peaks();
-  if ((selected_peaks.size() != 1) || !selected_fitter_.peaks().count(*selected_peaks.begin()))
-    experiment_[pass.value_int].selected_peak = Qpx::Peak();
-  else
-    experiment_[pass.value_int].selected_peak = selected_fitter_.peaks().at(*selected_peaks.begin());
-
-  eval_dependent(experiment_[pass.value_int]);
-  populate_display();
-
-  if ((pass.value_int == current_pass_) && criterion_satisfied(experiment_[pass.value_int]))
-    interruptor_.store(true);
 }
 
 bool FormOptimization::criterion_satisfied(DataPoint &data)
@@ -774,3 +777,4 @@ void FormOptimization::on_comboUntil_activated(const QString &arg1)
     ui->timeDuration->setVisible(false);
   }
 }
+

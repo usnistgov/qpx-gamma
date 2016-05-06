@@ -46,6 +46,7 @@ unix {
 INCLUDEPATH += $$PWD \
                $$PWD/daq \
                $$PWD/analysis \
+               $$PWD/fitter \
                $$PWD/plots \
                $$PWD/plots/qcustomplot \
                $$PWD/widgets \
@@ -54,6 +55,7 @@ INCLUDEPATH += $$PWD \
 SOURCES += $$files($$PWD/*.cpp) \
            $$files($$PWD/daq/*.cpp) \
            $$files($$PWD/analysis/*.cpp) \
+           $$files($$PWD/fitter/*.cpp) \
            $$files($$PWD/plots/*.cpp) \
            $$files($$PWD/plots/qcustomplot/*.cpp) \
            $$files($$PWD/widgets/*.cpp) \
@@ -62,6 +64,7 @@ SOURCES += $$files($$PWD/*.cpp) \
 HEADERS  += $$files($$PWD/*.h) \
             $$files($$PWD/daq/*.h) \
             $$files($$PWD/analysis/*.h) \
+            $$files($$PWD/fitter/*.h) \
             $$files($$PWD/plots/*.h) \
             $$files($$PWD/plots/qcustomplot/*.h) \
             $$files($$PWD/widgets/*.h) \
@@ -70,6 +73,7 @@ HEADERS  += $$files($$PWD/*.h) \
 FORMS   += $$files($$PWD/*.ui) \
            $$files($$PWD/plots/*.ui) \
            $$files($$PWD/analysis/*.ui) \
+           $$files($$PWD/fitter/*.ui) \
            $$files($$PWD/widgets/*.ui) \
            $$files($$PWD/daq/*.ui)
 

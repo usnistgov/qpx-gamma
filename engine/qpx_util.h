@@ -41,6 +41,13 @@ const std::vector<std::string> k_UTF_subscripts = {
   "\u2089"
 };
 
+inline std::string to_max_precision(double number)
+{
+  std::stringstream ss;
+  ss << std::setprecision(std::numeric_limits<double>::max_digits10) << number;
+  return ss.str();
+}
+
 inline std::string to_str_precision(double number, int precision = -1) {
   std::ostringstream ss;
   if (precision < 0)

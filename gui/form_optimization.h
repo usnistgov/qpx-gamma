@@ -64,6 +64,7 @@ private slots:
 
   void update_plots();
   void update_fits();
+  void fitting_done();
   void update_peak_selection(std::set<double>);
   void update_pass_selection();
 

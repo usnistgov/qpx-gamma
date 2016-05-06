@@ -25,10 +25,10 @@
 
 #include "fit_param.h"
 #include "calibration.h"
+#include "xmlable.h"
 
-class FitSettings {
+class FitSettings : public XMLable {
 public:
-  bool override_;
 
   double finder_cutoff_kev;
 
@@ -39,7 +39,6 @@ public:
   uint16_t ROI_max_peaks;
   double   ROI_extend_peaks;
   double   ROI_extend_background;
-
   uint16_t background_edge_samples;
   bool     sum4_only;
 
@@ -51,17 +50,16 @@ public:
   bool     small_simplify;
   uint64_t small_max_amplitude;
 
-  double   lateral_slack;
-
   bool     width_common;
   FitParam width_common_bounds;
-  FitParam width_variable_bounds;
   bool     width_at_511_variable;
   double   width_at_511_tolerance;
 
-
+  //hypermet
   bool gaussian_only;
-  //hypermet bounds
+  double   lateral_slack;
+  FitParam width_variable_bounds;
+  //variable bounds
   FitParam step_amplitude;
   FitParam tail_amplitude;
   FitParam tail_slope;
@@ -69,7 +67,6 @@ public:
   FitParam Lskew_slope;
   FitParam Rskew_amplitude;
   FitParam Rskew_slope;
-
   uint16_t fitter_max_iter;
 
   //specific to spectrum
@@ -78,6 +75,10 @@ public:
   boost::posix_time::time_duration real_time ,live_time;
 
   FitSettings();
+
+  void to_xml(pugi::xml_node &node) const override;
+  void from_xml(const pugi::xml_node &node) override;
+  std::string xml_element_name() const override {return "FitSettings";}
 };
 
 #endif

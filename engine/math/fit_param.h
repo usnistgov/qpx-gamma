@@ -26,8 +26,9 @@
 #include "fityk.h"
 #include <string>
 #include <limits>
+#include "xmlable.h"
 
-class FitParam {
+class FitParam : public XMLable {
 
 public:
   FitParam() :
@@ -68,6 +69,12 @@ public:
   std::string val_uncert(uint16_t precision) const;
   std::string err(uint16_t precision) const;
   double err() const;
+
+
+  void to_xml(pugi::xml_node &node) const override;
+  void from_xml(const pugi::xml_node &node) override;
+  std::string xml_element_name() const override {return "FitParam";}
+
 
   double val, uncert, lbound, ubound;
   bool enabled, fixed;
