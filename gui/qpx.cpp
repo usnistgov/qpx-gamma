@@ -357,14 +357,10 @@ void qpx::open_list()
 
 void qpx::open_optimization()
 {
-  //limit only one of these
-  if (hasTab("Optimization") || hasTab("Optimization >>"))
-    return;
-
   FormOptimization *newOpt = new FormOptimization(runner_thread_, detectors_, this);
   addClosableTab(newOpt, "Close");
 
-  connect(newOpt, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
+//  connect(newOpt, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
   connect(newOpt, SIGNAL(settings_changed()), this, SLOT(update_settings()));
 
   connect(newOpt, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));

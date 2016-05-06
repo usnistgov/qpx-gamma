@@ -107,6 +107,7 @@ signals:
   void range_changed(Range range);
   void data_changed();
   void fitting_done();
+  void fitter_busy(bool);
 
 private slots:
   void plot_mouse_clicked(double x, double y, QMouseEvent *event, bool channels);

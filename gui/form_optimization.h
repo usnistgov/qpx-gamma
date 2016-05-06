@@ -61,14 +61,16 @@ protected:
 
 private slots:
   void toggle_push(bool, Qpx::SourceStatus);
+  void new_daq_data();
+  void run_completed();
 
-  void update_plots();
+  void fitter_status(bool);
   void update_fits();
   void fitting_done();
   void update_peak_selection(std::set<double>);
-  void update_pass_selection();
 
-  void run_completed();
+  void pass_selected_in_table();
+  void pass_selected_in_plot();
 
 
   void on_pushStart_clicked();
@@ -77,6 +79,8 @@ private slots:
   void on_comboSetting_activated(const QString &arg1);
   void on_comboUntil_activated(const QString &arg1);
   void on_pushAddCustom_clicked();
+
+  void on_pushSaveCsv_clicked();
 
 private:
   void loadSettings();
@@ -116,6 +120,7 @@ private:
   void do_post_processing();
   void eval_dependent(DataPoint &data);
   bool criterion_satisfied(DataPoint &data);
+  void update_name();
 };
 
 #endif // FORM_OPTIMIZATION_H

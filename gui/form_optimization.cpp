@@ -27,6 +27,7 @@
 #include "qt_util.h"
 #include "daq_sink_factory.h"
 #include <QSettings>
+#include "qt_util.h"
 
 #include "UncertainDouble.h"
 
@@ -40,7 +41,7 @@ FormOptimization::FormOptimization(ThreadRunner& thread, XMLableDB<Qpx::Detector
   my_run_(false)
 {
   ui->setupUi(this);
-  this->setWindowTitle("Optimization");
+  this->setWindowTitle("Experiment");
 
   //loadSettings();
   connect(&opt_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
@@ -48,14 +49,19 @@ FormOptimization::FormOptimization(ThreadRunner& thread, XMLableDB<Qpx::Detector
   current_pass_ = 0;
   selected_pass_ = -1;
 
-  style_pts.default_pen = QPen(Qt::darkBlue, 7);
-  style_pts.themes["selected"] = QPen(Qt::red, 7);
+  QColor point_color;
+  point_color.setHsv(180, 215, 150, 120);
+  style_pts.default_pen = QPen(point_color, 10);
+  QColor selected_color;
+  selected_color.setHsv(225, 255, 230, 210);
+  style_pts.themes["selected"] = QPen(selected_color, 10);
 
   ui->plotSpectrum->setFit(&selected_fitter_);
   connect(ui->plotSpectrum, SIGNAL(data_changed()), this, SLOT(update_fits()));
   connect(ui->plotSpectrum, SIGNAL(peak_selection_changed(std::set<double>)),
           this, SLOT(update_peak_selection(std::set<double>)));
   connect(ui->plotSpectrum, SIGNAL(fitting_done()), this, SLOT(fitting_done()));
+  connect(ui->plotSpectrum, SIGNAL(fitter_busy(bool)), this, SLOT(fitter_status(bool)));
 
   //connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
 
@@ -64,9 +70,11 @@ FormOptimization::FormOptimization(ThreadRunner& thread, XMLableDB<Qpx::Detector
   ui->tableResults->horizontalHeader()->setStretchLastSection(true);
   ui->tableResults->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   populate_display();
-  connect(ui->tableResults, SIGNAL(itemSelectionChanged()), this, SLOT(update_pass_selection()));
+  connect(ui->tableResults, SIGNAL(itemSelectionChanged()), this, SLOT(pass_selected_in_table()));
 
-  connect(&opt_plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
+  connect(ui->PlotCalib, SIGNAL(selection_changed()), this, SLOT(pass_selected_in_plot()));
+
+  connect(&opt_plot_thread_, SIGNAL(plot_ready()), this, SLOT(new_daq_data()));
 
   ui->timeDuration->set_us_enabled(false);
   ui->timeDuration->setVisible(false);
@@ -354,6 +362,12 @@ void FormOptimization::new_run()
   opt_runner_thread_.do_run(project_, interruptor_, 0);
 }
 
+void FormOptimization::fitter_status(bool busy)
+{
+  ui->tableResults->setEnabled(!busy);
+  ui->PlotCalib->setEnabled(!busy);
+}
+
 void FormOptimization::run_completed() {
   if (my_run_) {
     project_.terminate();
@@ -379,6 +393,7 @@ void FormOptimization::do_post_processing() {
     new_run();
   } else {
     INFO << "<FormOptimization> Experiment finished";
+    update_name();
     return;
   }
 }
@@ -479,52 +494,97 @@ void FormOptimization::populate_display()
     ui->PlotCalib->setLabels(QString::fromStdString(current_setting_.metadata.name),
                              ui->comboCodomain->currentText());
   }
-  ui->PlotCalib->redraw();
+//  ui->PlotCalib->redraw();
 
   if (experiment_.size() && (experiment_.size() == (old_row_count + 1))) {
     ui->tableResults->selectRow(old_row_count);
-    update_pass_selection();
+    pass_selected_in_table();
+  } else if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+      std::set<double> sel;
+      sel.insert(experiment_.at(selected_pass_).independent_variable);
+      ui->PlotCalib->set_selected_pts(sel);
+      ui->PlotCalib->redraw();
+  }
+  else
+  {
+    ui->PlotCalib->set_selected_pts(std::set<double>());
+    ui->PlotCalib->redraw();
   }
 }
 
-void FormOptimization::update_pass_selection()
+void FormOptimization::pass_selected_in_table()
 {
   selected_pass_ = -1;
   foreach (QModelIndex i, ui->tableResults->selectionModel()->selectedRows())
     selected_pass_ = i.row();
   FitSettings fitset = selected_fitter_.settings();
-  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size()))
+  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
     selected_fitter_ = experiment_.at(selected_pass_).spectrum;
+    std::set<double> sel;
+    sel.insert(experiment_.at(selected_pass_).independent_variable);
+    ui->PlotCalib->set_selected_pts(sel);
+    ui->PlotCalib->redraw();
+  }
   else
+  {
+    ui->PlotCalib->set_selected_pts(std::set<double>());
     selected_fitter_ = Qpx::Fitter();
+    ui->PlotCalib->redraw();
+  }
   selected_fitter_.apply_settings(fitset);
 
 
   if (!ui->plotSpectrum->busy() && (selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
-    DBG << "fitter not busy";
+//    DBG << "fitter not busy";
     ui->plotSpectrum->updateData();
     if (experiment_.at(selected_pass_).selected_peak != Qpx::Peak()) {
       std::set<double> selected;
       selected.insert(experiment_.at(selected_pass_).selected_peak.center.val);
       ui->plotSpectrum->set_selected_peaks(selected);
     }
-    if ((selected_fitter_.metadata_.total_count > 0) && selected_fitter_.peaks().empty())
+    if ((selected_fitter_.metadata_.total_count > 0)
+        && selected_fitter_.peaks().empty()
+        && !ui->plotSpectrum->busy())
       ui->plotSpectrum->perform_fit();
   }
+}
 
+void FormOptimization::pass_selected_in_plot()
+{
+  //allow only one point to be selected!!!
+  std::set<double> selection = ui->PlotCalib->get_selected_pts();
+  if (selection.size() < 1)
+  {
+    ui->tableResults->clearSelection();
+    return;
+  }
+
+  double sel = *selection.begin();
+
+  for (int i=0; i < experiment_.size(); ++i)
+  {
+    if (experiment_.at(i).independent_variable == sel) {
+      ui->tableResults->selectRow(i);
+      pass_selected_in_table();
+      return;
+    }
+  }
 }
 
 void FormOptimization::update_fits() {
-  DBG << "<FormOptimization> Reselecting";
+//  DBG << "<FormOptimization> Reselecting";
   ui->plotSpectrum->set_selected_peaks(ui->widgetAutoselect->reselect(selected_fitter_.peaks(), ui->plotSpectrum->get_selected_peaks()));
+  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size()))
+    experiment_[selected_pass_].spectrum = selected_fitter_;
   update_peak_selection(std::set<double>());
 }
 
 void FormOptimization::fitting_done()
 {
-  if (!ui->plotSpectrum->busy() && (selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+    experiment_[selected_pass_].spectrum = selected_fitter_;
     if (!selected_fitter_.peaks().empty() && (experiment_.at(selected_pass_).selected_peak == Qpx::Peak())) {
-      DBG << "<FormOptimization> Autoselecting";
+//      DBG << "<FormOptimization> Autoselecting";
       ui->plotSpectrum->set_selected_peaks(ui->widgetAutoselect->autoselect(selected_fitter_.peaks(), ui->plotSpectrum->get_selected_peaks()));
       update_peak_selection(std::set<double>());
     }
@@ -550,8 +610,24 @@ void FormOptimization::update_peak_selection(std::set<double> dummy) {
     interruptor_.store(true);
 }
 
+void FormOptimization::update_name()
+{
+  QString name = "Experiment";
+  if (my_run_)
+    name += QString::fromUtf8("  \u25b6");
+//  else if (spectra_.changed())
+//    name += QString::fromUtf8(" \u2731");
 
-void FormOptimization::update_plots() {
+  if (name != this->windowTitle()) {
+    this->setWindowTitle(name);
+    emit toggleIO(true);
+  }
+}
+
+
+void FormOptimization::new_daq_data() {
+  update_name();
+
   for (auto &q: project_.get_sinks()) {
     Qpx::Metadata md;
     if (q.second)
@@ -569,7 +645,11 @@ void FormOptimization::update_plots() {
         if (criterion_satisfied(experiment_[pass.value_int]))
           interruptor_.store(true);
         if (current_pass_ == selected_pass_)
-          update_pass_selection();
+        {
+          pass_selected_in_table();
+          if (!ui->plotSpectrum->busy())
+            ui->plotSpectrum->perform_fit();
+        }
       }
     }
   }
@@ -778,3 +858,36 @@ void FormOptimization::on_comboUntil_activated(const QString &arg1)
   }
 }
 
+void FormOptimization::on_pushSaveCsv_clicked()
+{
+  QSettings settings;
+  settings.beginGroup("Program");
+  QString data_directory = settings.value("save_directory", QDir::homePath() + "/qpx/data").toString();
+  settings.endGroup();
+
+  QString fileName = CustomSaveFileDialog(this, "Save experiment data",
+                                          data_directory, "Comma separated values (*.csv)");
+  if (!validateFile(this, fileName, true))
+    return;
+
+  QFile f( fileName );
+  if( f.open( QIODevice::WriteOnly | QIODevice::Truncate) )
+  {
+      QTextStream ts( &f );
+      QStringList strList;
+      for (int j=0; j< ui->tableResults->columnCount(); j++)
+          strList << ui->tableResults->horizontalHeaderItem(j)->data(Qt::DisplayRole).toString();
+      ts << strList.join(", ") + "\n";
+
+      for (int i=0; i < ui->tableResults->rowCount(); i++)
+      {
+          strList.clear();
+
+          for (int j=0; j< ui->tableResults->columnCount(); j++)
+              strList << ui->tableResults->item(i, j)->data(Qt::DisplayRole).toString();
+
+          ts << strList.join(", ") + "\n";
+      }
+      f.close();
+  }
+}

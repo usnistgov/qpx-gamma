@@ -88,7 +88,6 @@ private slots:
   void apply_detector_presets();
   void open_detector_DB();
   void open_gain_match();
-  void open_optimize();
 
   void on_pushOpenListView_clicked();
 
@@ -98,6 +97,8 @@ private slots:
 
   void choose_profiles();
   void profile_chosen();
+
+  void on_pushExperiment_clicked();
 
 private:
   Ui::FormSystemSettings *ui;

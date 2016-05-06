@@ -638,6 +638,7 @@ void FormFitter::toggle_push() {
   ui->pushFindPeaks->setEnabled(!busy_);
   ui->pushSettings->setEnabled(!busy_);
   ui->labelMovie->setVisible(busy_);
+  emit fitter_busy(busy_);
 }
 
 void FormFitter::on_pushStopFitter_clicked()

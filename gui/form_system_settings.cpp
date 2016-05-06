@@ -82,7 +82,6 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread,
   detectorOptions.addAction("Apply saved settings", this, SLOT(apply_detector_presets()));
   detectorOptions.addAction("Edit detector database", this, SLOT(open_detector_DB()));
   detectorOptions.addAction("Gain matching utility", this, SLOT(open_gain_match()));
-  detectorOptions.addAction("Setting optimization utility", this, SLOT(open_optimize()));
   ui->toolDetectors->setMenu(&detectorOptions);
 
   loadSettings();
@@ -249,10 +248,13 @@ void FormSystemSettings::closeEvent(QCloseEvent *event) {
 }
 
 void FormSystemSettings::toggle_push(bool enable, Qpx::SourceStatus status) {
+//  bool online = (status & Qpx::SourceStatus::can_run);
+
+  //busy status?!?!
   bool online = (status & Qpx::SourceStatus::booted);
-  bool offline = (status & Qpx::SourceStatus::loaded);
 
   ui->pushSettingsRefresh->setEnabled(enable && online);
+  ui->pushExperiment->setEnabled(enable && online);
   ui->pushChangeProfile->setEnabled(enable);
 
   if (enable) {
@@ -411,11 +413,6 @@ void FormSystemSettings::open_gain_match()
   emit gain_matching_requested();
 }
 
-void FormSystemSettings::open_optimize()
-{
-  emit optimization_requested();
-}
-
 void FormSystemSettings::on_pushOpenListView_clicked()
 {
   emit list_view_requested();
@@ -438,5 +435,11 @@ void FormSystemSettings::choose_profiles() {
 }
 
 void FormSystemSettings::profile_chosen() {
+  emit toggleIO(false);
   runner_thread_.do_initialize();
+}
+
+void FormSystemSettings::on_pushExperiment_clicked()
+{
+  emit optimization_requested();
 }
