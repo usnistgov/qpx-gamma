@@ -442,13 +442,13 @@
       <widget class="QLabel" name="label_3">
        <property name="minimumSize">
         <size>
-         <width>40</width>
+         <width>60</width>
          <height>25</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>40</width>
+         <width>69</width>
          <height>16777215</height>
         </size>
        </property>
@@ -458,7 +458,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Bits</string>
+        <string>Resolution</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -478,13 +478,13 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>50</width>
+         <width>70</width>
          <height>0</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>50</width>
+         <width>70</width>
          <height>16777215</height>
         </size>
        </property>

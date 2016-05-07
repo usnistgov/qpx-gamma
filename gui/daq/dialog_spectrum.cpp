@@ -83,7 +83,7 @@ void dialog_spectrum::updateData() {
 
   ui->lineName->setText(QString::fromStdString(md_.name));
   ui->lineType->setText(QString::fromStdString(md_.type()));
-  ui->lineBits->setText(QString::number(static_cast<int>(md_.bits)));
+  ui->lineBits->setText(QString::number(static_cast<int>(md_.bits)) + " bits");
   ui->lineChannels->setText(QString::number(pow(2,md_.bits)));
 
   ui->lineTotalCount->setText(QString::number(md_.total_count.convert_to<double>()));

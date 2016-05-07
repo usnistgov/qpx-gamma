@@ -67,8 +67,7 @@ public:
                                   bool, QWidget *parent = 0);
   ~DialogSpectrumTemplate();
 
-signals:
-  void templateReady(Qpx::Metadata);
+  Qpx::Metadata product() { return myTemplate; }
 
 private slots:
   void on_buttonBox_accepted();
@@ -111,8 +110,6 @@ private:
   std::vector<Qpx::Detector> current_dets_;
 
 private slots:
-  void add_template(Qpx::Metadata);
-  void change_template(Qpx::Metadata);
 
   void on_pushImport_clicked();
   void on_pushExport_clicked();

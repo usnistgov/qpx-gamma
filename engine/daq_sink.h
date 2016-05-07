@@ -107,6 +107,7 @@ struct Metadata : public XMLable {
    if (attributes != other.attributes) return false;
    return true;
  }
+ bool chan_relevant(uint16_t chan) const;
 };
 
 

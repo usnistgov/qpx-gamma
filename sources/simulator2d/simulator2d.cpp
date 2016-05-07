@@ -316,6 +316,8 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
 
 
   DBG << "<Simulator2D> gains " << callback->gain0_ << " " << callback->gain1_;
+  DBG << "<Simulator2D> timebase " << callback->model_hit.timestamp.timebase_multiplier
+      << "/" << callback->model_hit.timestamp.timebase_divider;
 
   std::set<int> starts_signalled;
 

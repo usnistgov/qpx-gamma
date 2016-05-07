@@ -33,7 +33,7 @@ using namespace Qpx;
 
 DialogSpectrumTemplate::DialogSpectrumTemplate(Metadata newTemplate,
                                                std::vector<Detector> current_dets,
-                                               bool edit, QWidget *parent) :
+                                               bool allow_edit_basics, QWidget *parent) :
   QDialog(parent),
   current_dets_(current_dets),
   attr_model_(this),
@@ -50,9 +50,17 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Metadata newTemplate,
 
 //  attr_delegate_.eat_detectors(current_dets_);
 
-  if (edit) {
-    myTemplate = newTemplate;
-    ui->comboType->setEnabled(false);
+  ui->widgetBasics->setVisible(allow_edit_basics);
+
+  myTemplate = newTemplate;
+  if (myTemplate == Metadata()) {
+    myTemplate = SinkFactory::getInstance().create_prototype(ui->comboType->currentText().toStdString());
+    Setting app = myTemplate.attributes.branches.get(Setting("appearance"));
+    app.value_text = generateColor().name(QColor::HexArgb).toStdString();
+    myTemplate.attributes.branches.replace(app);
+    size_t sz = current_dets_.size();
+    ui->spinDets->setValue(sz);
+  } else {
     Metadata newtemp = SinkFactory::getInstance().create_prototype(newTemplate.type());
     if (newtemp != Metadata()) {
       newtemp.name = myTemplate.name;
@@ -61,20 +69,10 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Metadata newTemplate,
       myTemplate = newtemp;
       Setting pat = myTemplate.attributes.branches.get(Setting("pattern_add"));
       ui->spinDets->setValue(pat.value_pattern.gates().size());
-    } else
+    } else {
       WARN << "Problem with spectrum type. Factory cannot make template for " << newTemplate.type();
-  } else {
-    Metadata newtemp = SinkFactory::getInstance().create_prototype(ui->comboType->currentText().toStdString());
-    if (newtemp != Metadata()) {
-      myTemplate = newtemp;
-      size_t sz = current_dets_.size();
-      ui->spinDets->setValue(sz);
-    } else
-      WARN << "Problem with spectrum type. Factory cannot make template for " << ui->comboType->currentText().toStdString();
-
-    Setting app = myTemplate.attributes.branches.get(Setting("appearance"));
-    app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-    myTemplate.attributes.branches.replace(app);
+      reject();
+    }
   }
 
   attr_model_.set_show_address_(false);
@@ -122,10 +120,9 @@ void DialogSpectrumTemplate::on_buttonBox_accepted()
     SinkPtr newSpectrum = SinkFactory::getInstance().create_from_prototype(myTemplate);
     if (newSpectrum == nullptr) {
       QMessageBox msgBox;
-      msgBox.setText("Failed to create spectrum from template. Check requirements.");
+      msgBox.setText("Template does not produce valid sink. Check requirements.");
       msgBox.exec();
     } else {
-      emit(templateReady(myTemplate));
       accept();
     }
   }
@@ -375,10 +372,13 @@ void DialogSpectraTemplates::on_pushExport_clicked()
 
 void DialogSpectraTemplates::on_pushNew_clicked()
 {
-  Metadata new_template;
-  DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(new_template, current_dets_, false, this);
-  connect(newDialog, SIGNAL(templateReady(Qpx::Metadata)), this, SLOT(add_template(Qpx::Metadata)));
-  newDialog->exec();
+  DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(Metadata(), current_dets_, true, this);
+  if (newDialog->exec()) {
+    templates_.add_a(newDialog->product());
+    selection_model_.reset();
+    table_model_.update();
+    toggle_push();
+  }
 }
 
 void DialogSpectraTemplates::on_pushEdit_clicked()
@@ -388,8 +388,13 @@ void DialogSpectraTemplates::on_pushEdit_clicked()
     return;
   int i = ixl.front().row();
   DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(templates_.get(i), current_dets_, true, this);
-  connect(newDialog, SIGNAL(templateReady(Qpx::Metadata)), this, SLOT(change_template(Qpx::Metadata)));
-  newDialog->exec();
+  if (newDialog->exec())
+  {
+    templates_.replace(i, newDialog->product());
+    selection_model_.reset();
+    table_model_.update();
+    toggle_push();
+  }
 }
 
 void DialogSpectraTemplates::selection_double_clicked(QModelIndex idx) {
@@ -412,22 +417,6 @@ void DialogSpectraTemplates::on_pushDelete_clicked()
   for (auto &q : torem)
     templates_.remove_a(q);
 
-  selection_model_.reset();
-  table_model_.update();
-  toggle_push();
-}
-
-
-void DialogSpectraTemplates::add_template(Metadata newTemplate) {
-  //notify if duplicate
-  templates_.add(newTemplate);
-  selection_model_.reset();
-  table_model_.update();
-  toggle_push();
-}
-
-void DialogSpectraTemplates::change_template(Metadata newTemplate) {
-  templates_.replace(newTemplate);
   selection_model_.reset();
   table_model_.update();
   toggle_push();

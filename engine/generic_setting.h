@@ -153,6 +153,8 @@ struct Setting : public XMLable {
   Setting get_setting(Setting address, Match flags) const;
   void del_setting(Setting address, Match flags);
   bool has(Setting address, Match flags) const;
+  std::list<Setting> find_all(const Setting &setting, Match flags) const;
+  void set_all(const std::list<Setting> &settings, Match flags);
 
   void condense();
   void enable_if_flag(bool enable, std::string flag);

@@ -442,7 +442,10 @@ QVariant TreeSettings::headerData(int section, Qt::Orientation orientation,
     else if (section == 3)
       return "units";
     else if (section == 4)
-      return "address";
+      if (show_address_)
+        return "address";
+      else
+        return "notes";
     else if (section == 5)
       return "notes";
 

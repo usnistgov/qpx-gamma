@@ -86,6 +86,16 @@ void Metadata::set_det_limit(uint16_t limit)
     }
 }
 
+bool Metadata::chan_relevant(uint16_t chan) const
+{
+  for (const Setting &s : attributes.branches.my_data_)
+    if ((s.metadata.setting_type == SettingType::pattern) &&
+        (s.value_pattern.relevant(chan)))
+      return true;
+  return false;
+}
+
+
 
 Sink::Sink()
 {

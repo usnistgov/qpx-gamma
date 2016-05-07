@@ -51,7 +51,7 @@ public:
   std::string xml_element_name() const {return xml_name_;}
 
   bool empty() const {return my_data_.empty();}
-  int size() const {return my_data_.size();}
+  size_t size() const {return my_data_.size();}
   void clear() {my_data_.clear();}
 
   bool operator!= (const XMLableDB& other) const {return !operator==(other);}
@@ -112,6 +112,13 @@ public:
     if (!replaced)
       my_data_.push_back(t);
   }
+
+  void replace(size_t i, T t) {
+    if ((i >= 0) && (i < size())) {
+      typename std::list<T>::iterator it = std::next(my_data_.begin(), i);
+      (*it) = t;
+    }
+  }
  
   void remove(const T &t) {  //using deep compare
     typename std::list<T>::iterator it = my_data_.begin();
@@ -131,7 +138,7 @@ public:
     }
   }
   
-  void remove(int i) {
+  void remove(size_t i) {
     if ((i >= 0) && (i < size())) {
       typename std::list<T>::iterator it = std::next(my_data_.begin(), i);
       my_data_.erase(it);
@@ -145,7 +152,7 @@ public:
     return T();    
   }
   
-  T get(int i) const {
+  T get(size_t i) const {
     if ((i >= 0) && (i < size())) {
       typename std::list<T>::const_iterator it = std::next(my_data_.begin(), i);
       return *it;
@@ -153,14 +160,14 @@ public:
     return T();    
   }
   
-  void up(int i) {
+  void up(size_t i) {
     if ((i > 0) && (i < size())) {
       typename std::list<T>::iterator it = std::next(my_data_.begin(), i-1);
       std::swap( *it, *std::next( it ) );
     }
   }
     
-  void down(int i) {
+  void down(size_t i) {
     if ((i >= 0) && ((i+1) < size())) {
       typename std::list<T>::iterator it = std::next(my_data_.begin(), i);
       std::swap( *it, *std::next( it ) );

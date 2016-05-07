@@ -329,11 +329,10 @@ Setting::operator bool() const
 }
 
 bool Setting::compare(const Setting &other, Match flags) const {
-  bool match = true;
   if ((flags & Match::id) && (id_ != other.id_))
-    match = false;
-  if ((flags & Match::indices) && other.indices.size()) {
-    bool mt = false;
+    return false;
+  if (flags & Match::indices) {
+    bool mt = indices.empty() && other.indices.empty();
     for (auto &q : other.indices) {
       if (indices.count(q) > 0) {
         mt = true;
@@ -341,13 +340,13 @@ bool Setting::compare(const Setting &other, Match flags) const {
       }
     }
     if (!mt)
-      match = false;
+      return false;
   }
   if ((flags & Match::name) && (other.id_ != metadata.name))
-    match = false;
+    return false;
   if ((flags & Match::address) && (metadata.address != other.metadata.address))
-    match = false;
-  return match;
+    return false;
+  return true;
 }
 
 bool Setting::shallow_equals(const Setting& other) const
@@ -575,6 +574,29 @@ Setting Setting::get_setting(Setting address, Match flags) const {
   else
     return Setting();
 }
+
+std::list<Setting> Setting::find_all(const Setting &setting, Match flags) const
+{
+  std::list<Setting> result;
+  if (metadata.setting_type == Qpx::SettingType::stem)
+    for (auto &q : branches.my_data_)
+      result.splice(result.end(), q.find_all(setting, flags));
+  else if (compare(setting, flags) && (metadata.setting_type != Qpx::SettingType::detector))
+    result.push_back(*this);
+  return result;
+}
+
+void Setting::set_all(const std::list<Setting> &settings, Match flags)
+{
+  if (metadata.setting_type == Qpx::SettingType::stem)
+    for (auto &q : branches.my_data_)
+      q.set_all(settings, flags);
+  else
+    for (auto &q : settings)
+      if (compare(q, flags) && (metadata.setting_type != Qpx::SettingType::detector))
+        set_value(q);
+}
+
 
 bool Setting::has(Setting address, Match flags) const {
   return (retrieve_one_setting(address, *this, flags));

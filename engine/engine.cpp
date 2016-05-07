@@ -326,10 +326,16 @@ void Engine::save_optimization() {
     //DBG << "Saving optimization channel " << i << " settings for " << detectors_[i].name_;
     detectors_[i].settings_ = Qpx::Setting();
     detectors_[i].settings_.indices.insert(i);
-    save_det_settings(detectors_[i].settings_, settings_tree_, Qpx::Match::indices);
+    detectors_[i].settings_.branches.my_data_ =
+      settings_tree_.find_all(detectors_[i].settings_, Qpx::Match::indices);
     if (detectors_[i].settings_.branches.size() > 0) {
       detectors_[i].settings_.metadata.setting_type = Qpx::SettingType::stem;
       detectors_[i].settings_.id_ = "Optimization";
+      for (auto &q : detectors_[i].settings_.branches.my_data_)
+      {
+        q.indices.clear();
+        q.indices.insert(i);
+      }
     } else {
       detectors_[i].settings_.metadata.setting_type = Qpx::SettingType::none;
       detectors_[i].settings_.id_.clear();
@@ -356,43 +362,14 @@ void Engine::load_optimization(int i) {
     for (auto &q : detectors_[i].settings_.branches.my_data_) {
       q.indices.clear();
       q.indices.insert(i);
-      load_det_settings(q, settings_tree_, Qpx::Match::id | Qpx::Match::indices);
     }
-  }
-}
-
-
-void Engine::save_det_settings(Qpx::Setting& result, const Qpx::Setting& root, Qpx::Match flags) const {
-  if (root.metadata.setting_type == Qpx::SettingType::stem) {
-    for (auto &q : root.branches.my_data_)
-      save_det_settings(result, q, flags);
-    //DBG << "maybe created stem " << stem << "/" << root.name;
-  } else if ((root.metadata.setting_type != Qpx::SettingType::detector) && root.compare(result, flags))
-  {
-    Qpx::Setting set(root);
-    //set.indices.clear();
-    result.branches.add(set);
-    //DBG << "saved setting " << stem << "/" << root.name;
-  }
-}
-
-void Engine::load_det_settings(Qpx::Setting det, Qpx::Setting& root, Qpx::Match flags) {
-  if ((root.metadata.setting_type == Qpx::SettingType::none) || det.id_.empty())
-    return;
-  if (root.metadata.setting_type == Qpx::SettingType::stem) {
-    //DBG << "comparing stem for " << det.name << " vs " << root.name;
-    for (auto &q : root.branches.my_data_)
-      load_det_settings(det, q, flags);
-  } else if (root.compare(det, flags)) {
-    //DBG << "applying " << det.name;
-    root.value_dbl = det.value_dbl;
-    root.value_int = det.value_int;
-    root.value_text = det.value_text;
+    settings_tree_.set_all(detectors_[i].settings_.branches.my_data_, Qpx::Match::id | Qpx::Match::indices);
   }
 }
 
 void Engine::set_setting(Qpx::Setting address, Qpx::Match flags) {
-  settings_tree_.set_setting_r(address, flags);
+  if (settings_tree_.set_setting_r(address, flags))
+    DBG << "Success setting " << address.id_;
   write_settings_bulk();
   read_settings_bulk();
 }

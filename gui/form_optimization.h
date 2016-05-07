@@ -75,12 +75,18 @@ private slots:
 
   void on_pushStart_clicked();
   void on_pushStop_clicked();
+
   void on_comboTarget_currentIndexChanged(int index);
   void on_comboSetting_activated(const QString &arg1);
   void on_comboUntil_activated(const QString &arg1);
-  void on_pushAddCustom_clicked();
-
+  void on_comboSinkType_activated(const QString &arg1);
   void on_pushSaveCsv_clicked();
+
+  void on_pushEditPrototype_clicked();
+
+  void on_pushAddCustom_clicked();
+  void on_pushEditCustom_clicked();
+  void on_pushDeleteCustom_clicked();
 
 private:
   void loadSettings();
@@ -96,8 +102,12 @@ private:
   boost::atomic<bool>  interruptor_;
   bool my_run_;
 
+  std::vector<Qpx::Detector> current_dets_;
+  Qpx::Metadata sink_prototype_;
 
-  Qpx::Setting manual_settings_;
+  std::map<std::string, Qpx::Setting> manual_settings_;
+  std::map<std::string, Qpx::Setting> source_settings_;
+  std::map<std::string, Qpx::Setting> sink_settings_;
   std::map<std::string, Qpx::Setting> all_settings_;
 
 
@@ -112,10 +122,11 @@ private:
 
   //helper functions
 
-  void new_run();
-  Qpx::Metadata make_prototype(uint16_t bits, uint16_t channel,
-                               int pass_number, Qpx::Setting variable,
-                               std::string name);
+  void remake_source_domains();
+  void remake_sink_domains();
+  void remake_domains();
+  void start_new_pass();
+
   void populate_display();
   void do_post_processing();
   void eval_dependent(DataPoint &data);
