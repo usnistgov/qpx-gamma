@@ -105,6 +105,7 @@ private:
   std::vector<Qpx::Detector> current_dets_;
   Qpx::Metadata sink_prototype_;
 
+
   std::map<std::string, Qpx::Setting> manual_settings_;
   std::map<std::string, Qpx::Setting> source_settings_;
   std::map<std::string, Qpx::Setting> sink_settings_;
@@ -127,7 +128,7 @@ private:
   void remake_domains();
   void start_new_pass();
 
-  void populate_display();
+  void display_data();
   void do_post_processing();
   void eval_dependent(DataPoint &data);
   bool criterion_satisfied(DataPoint &data);

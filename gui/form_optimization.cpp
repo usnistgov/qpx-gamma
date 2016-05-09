@@ -44,8 +44,8 @@ FormOptimization::FormOptimization(ThreadRunner& thread, XMLableDB<Qpx::Detector
   ui->setupUi(this);
   this->setWindowTitle("Experiment");
 
-  //loadSettings();
   connect(&opt_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
+  connect(&opt_plot_thread_, SIGNAL(plot_ready()), this, SLOT(new_daq_data()));
 
   ui->pushEditCustom->setVisible(false);
   ui->pushDeleteCustom->setVisible(false);
@@ -67,8 +67,6 @@ FormOptimization::FormOptimization(ThreadRunner& thread, XMLableDB<Qpx::Detector
   connect(ui->plotSpectrum, SIGNAL(fitting_done()), this, SLOT(fitting_done()));
   connect(ui->plotSpectrum, SIGNAL(fitter_busy(bool)), this, SLOT(fitter_status(bool)));
 
-  //connect(ui->plotSpectrum, SIGNAL(peaks_changed(bool)), this, SLOT(update_peaks(bool)));
-
   ui->tableResults->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tableResults->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->tableResults->horizontalHeader()->setStretchLastSection(true);
@@ -77,7 +75,6 @@ FormOptimization::FormOptimization(ThreadRunner& thread, XMLableDB<Qpx::Detector
 
   connect(ui->PlotCalib, SIGNAL(selection_changed()), this, SLOT(pass_selected_in_plot()));
 
-  connect(&opt_plot_thread_, SIGNAL(plot_ready()), this, SLOT(new_daq_data()));
 
   ui->timeDuration->set_us_enabled(false);
   ui->timeDuration->setVisible(false);
@@ -257,6 +254,8 @@ void FormOptimization::toggle_push(bool enable, Qpx::SourceStatus status) {
   ui->spinBits->setEnabled(enable && !my_run_);
   ui->comboCodomain->setEnabled(enable && !my_run_);
   ui->pushAddCustom->setEnabled(enable && !my_run_);
+  ui->comboSinkType->setEnabled(enable && !my_run_);
+  ui->pushEditPrototype->setEnabled(enable && !my_run_);
 }
 
 void FormOptimization::on_pushStart_clicked()
@@ -276,7 +275,7 @@ void FormOptimization::on_pushStart_clicked()
     current_pass_ = 0;
     selected_pass_ = -1;
 
-    populate_display();
+    display_data();
     start_new_pass();
   }
 
@@ -309,14 +308,10 @@ void FormOptimization::start_new_pass()
   }
   else if (source_settings_.count(ui->comboSetting->currentText().toStdString()))
   {
-    DBG << "Source setting i " << current_setting_.id_ << " " <<current_setting_.value_dbl;
-    for (auto & i: current_setting_.indices)
-      DBG << "   indices " << i;
     Qpx::Engine::getInstance().set_setting(current_setting_, Qpx::Match::id | Qpx::Match::indices);
     QThread::sleep(1);
     Qpx::Engine::getInstance().get_all_settings();
     current_setting_.value_dbl = Qpx::Engine::getInstance().pull_settings().get_setting(current_setting_, Qpx::Match::id | Qpx::Match::indices).value_dbl;
-    DBG << "Source setting f " << current_setting_.value_dbl;
   }
   else if (sink_settings_.count(ui->comboSetting->currentText().toStdString()))
   {
@@ -332,7 +327,7 @@ void FormOptimization::start_new_pass()
   my_run_ = true;
   emit toggleIO(false);
 
-  INFO << "<FormOptimization> Starting pass #" << current_pass_
+  INFO << "<FormOptimization> Starting pass #" << (current_pass_ + 1)
        << " with " << ui->comboSetting->currentText().toStdString() << " = "
        << current_setting_.value_dbl;
 
@@ -342,7 +337,6 @@ void FormOptimization::start_new_pass()
   sink_prototype_.attributes.branches.replace(current_setting_);
   project_.clear();
   project_.add_sink(sink_prototype_);
-  ui->plotSpectrum->update_spectrum();
 
   DataPoint newdata;
   newdata.spectrum.apply_settings(selected_fitter_.settings());
@@ -350,7 +344,7 @@ void FormOptimization::start_new_pass()
   newdata.dependent_variable = std::numeric_limits<double>::quiet_NaN();
 
   experiment_.push_back(newdata);
-  populate_display(); //before new data arrives?
+  display_data(); //before new data arrives?
 
   emit settings_changed();
 
@@ -375,7 +369,7 @@ void FormOptimization::run_completed() {
     emit toggleIO(true);
 
     if (current_pass_ >= 0) {
-      INFO << "<FormOptimization> Completed pass #" << current_pass_;
+      INFO << "<FormOptimization> Completed pass #" << (current_pass_ + 1);
       do_post_processing();
     }
   }
@@ -386,9 +380,9 @@ void FormOptimization::do_post_processing() {
   if (current_setting_.value_dbl < current_setting_.metadata.maximum) {
     current_setting_.value_dbl += current_setting_.metadata.step;
     current_pass_++;
-    DBG << "Setting incremented to " << current_setting_.value_dbl;
+    DBG << "<FormOptimization> Setting incremented to " << current_setting_.value_dbl;
 
-    QThread::sleep(2);
+//    QThread::sleep(2);
     start_new_pass();
   } else {
     INFO << "<FormOptimization> Experiment finished";
@@ -397,7 +391,7 @@ void FormOptimization::do_post_processing() {
   }
 }
 
-void FormOptimization::populate_display()
+void FormOptimization::display_data()
 {
   int old_row_count = ui->tableResults->rowCount();
 
@@ -605,7 +599,7 @@ void FormOptimization::update_peak_selection(std::set<double> dummy) {
     experiment_[pass.value_int].selected_peak = selected_fitter_.peaks().at(*selected_peaks.begin());
 
   eval_dependent(experiment_[pass.value_int]);
-  populate_display();
+  display_data();
 
   if ((pass.value_int == current_pass_) && criterion_satisfied(experiment_[pass.value_int]))
     interruptor_.store(true);
@@ -641,7 +635,7 @@ void FormOptimization::new_daq_data() {
       double variable = md.attributes.branches.get(current_setting_).value_dbl;
       experiment_[pass.value_int].independent_variable = variable;
       eval_dependent(experiment_[pass.value_int]);
-      populate_display();
+      display_data();
       if (pass.value_int == current_pass_) {
         if (criterion_satisfied(experiment_[pass.value_int]))
           interruptor_.store(true);
@@ -783,9 +777,8 @@ void FormOptimization::remake_domains()
 void FormOptimization::on_comboSetting_activated(const QString &arg1)
 {
   current_setting_ = Qpx::Setting();
-  if (all_settings_.count(ui->comboSetting->currentText().toStdString())) {
+  if (all_settings_.count(ui->comboSetting->currentText().toStdString()))
     current_setting_ = all_settings_.at( ui->comboSetting->currentText().toStdString() );
-  }
 
   ui->doubleSpinStart->setRange(current_setting_.metadata.minimum, current_setting_.metadata.maximum);
   ui->doubleSpinStart->setSingleStep(current_setting_.metadata.step);

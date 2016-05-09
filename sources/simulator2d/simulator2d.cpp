@@ -280,6 +280,7 @@ bool Simulator2D::boot() {
     refined_dist_ = boost::random::discrete_distribution<>(distri_granular);
     //Not physically accurate, of course
   }
+  clock_ = 0;
   valid_ = true;
 
 
@@ -308,7 +309,6 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
   bool timeout = false;
 
   uint64_t   rate = callback->OCR * callback->scale_rate_;
-  uint64_t   t = 1;
   StatsUpdate moving_stats,
       one_run = callback->getBlock(callback->spill_interval_ * 0.999);
 
@@ -352,7 +352,7 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
         }
 
         Hit h = callback->model_hit;
-        h.timestamp.time_native = t;
+        h.timestamp.time_native = callback->clock_;
 
 //        DBG << "evt " << en1 << "x" << en2;
 
@@ -368,7 +368,7 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
           one_spill.hits.push_back(h);
         }
 
-        t += callback->coinc_thresh_ + 1;
+        callback->clock_ += callback->coinc_thresh_ + 1;
       }
     }
 

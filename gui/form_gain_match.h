@@ -38,6 +38,16 @@ class FormGainMatch : public QWidget
 {
   Q_OBJECT
 
+private:
+  struct DataPoint
+  {
+    Qpx::Fitter spectrum;
+    Qpx::Peak selected_peak;
+    double independent_variable;
+    double dependent_variable;
+    double dep_uncert;
+  };
+
 public:
   explicit FormGainMatch(ThreadRunner&, XMLableDB<Qpx::Detector>&, QWidget *parent = 0);
   void update_settings();
@@ -45,58 +55,99 @@ public:
 
 signals:
   void toggleIO(bool);
+  void settings_changed();
 
 protected:
   void closeEvent(QCloseEvent*);
 
 private slots:
   void toggle_push(bool, Qpx::SourceStatus);
-
-  void update_plots();
+  void new_daq_data();
   void run_completed();
-  void update_fits();
+
+  void fitter_status(bool);
+  void update_fit_ref();
+  void update_fit_opt();
+  void fitting_done_ref();
+  void fitting_done_opt();
   void update_peak_selection(std::set<double>);
 
-  void do_run();
-  void do_post_processing();
+  void pass_selected_in_table();
+  void pass_selected_in_plot();
 
 
-  void on_pushMatchGain_clicked();
+  void on_pushStart_clicked();
   void on_pushStop_clicked();
+
+  void on_comboReference_currentIndexChanged(int index);
   void on_comboTarget_currentIndexChanged(int index);
   void on_comboSetting_activated(int index);
+
+  void on_pushEditPrototypeRef_clicked();
+  void on_pushEditPrototypeOpt_clicked();
+
+
+  void on_pushAddCustom_clicked();
+  void on_pushEditCustom_clicked();
+  void on_pushDeleteCustom_clicked();
+
 
 private:
   void loadSettings();
   void saveSettings();
 
+  XMLableDB<Qpx::Detector> &detectors_;
   Ui::FormGainMatch *ui;
   AppearanceProfile style_fit, style_pts;
 
-  Qpx::Project    project_;
 
   ThreadRunner         &gm_runner_thread_;
-  XMLableDB<Qpx::Detector> &detectors_;
-
   ThreadPlotSignal     gm_plot_thread_;
-  boost::atomic<bool>  gm_interruptor_;
-
-  std::vector<double> gains, deltas;
-  std::vector<Qpx::Peak> peaks_;
-
+  Qpx::Project         project_;
+  boost::atomic<bool>  interruptor_;
   bool my_run_;
 
-  int current_pass;
 
+  std::vector<Qpx::Detector> current_dets_;
+  Qpx::Metadata sink_prototype_ref_;
+  Qpx::Metadata sink_prototype_opt_;
+
+  std::map<std::string, Qpx::Setting> manual_settings_;
+  std::map<std::string, Qpx::Setting> source_settings_;
+  std::map<std::string, Qpx::Setting> all_settings_;
+
+
+  int current_pass_;
   Qpx::Setting current_setting_;
 
-  Qpx::Fitter fitter_ref_, fitter_opt_;
-  Qpx::Peak peak_ref_, peak_opt_;
+  int selected_pass_;
+  Qpx::Fitter fitter_ref_,
+              fitter_opt_;
+
+  Qpx::Peak peak_ref_;
+  PolyBounded response_function_;
+
+  std::vector<DataPoint> experiment_;
+
+
+  //helper functions
+
+  void init_prototypes();
 
   Qpx::Metadata make_prototype(uint16_t bits, uint16_t channel,
-                               int pass_number, Qpx::Setting variable,
                                std::string name);
 
+  void display_data();
+  void remake_source_domains();
+  void remake_domains();
+  void do_post_processing(); //check this
+
+  void eval_dependent(DataPoint &data);
+  bool criterion_satisfied(DataPoint &data);
+
+  void start_new_pass();
+
+  void update_name();
 };
 
 #endif // FORM_OPTIMIZATION_H

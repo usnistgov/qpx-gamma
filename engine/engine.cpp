@@ -213,10 +213,11 @@ bool Engine::boot() {
     }
 
   if (success) {
-    INFO << "<Engine> Boot successful.";
+    INFO << "<Engine> Boot successful";
     //settings_tree_.value_int = 2;
     get_all_settings();
-  }
+  } else
+    INFO << "<Engine> Boot failed";
 
   return success;
 }

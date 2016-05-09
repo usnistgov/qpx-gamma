@@ -27,6 +27,10 @@
 #include "daq_sink_factory.h"
 #include <QSettings>
 
+#include "UncertainDouble.h"
+#include "qt_util.h"
+#include "dialog_spectra_templates.h"
+
 
 using namespace Qpx;
 
@@ -36,53 +40,54 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, XMLableDB<Detector>& detector
   gm_runner_thread_(thread),
   detectors_(detectors),
   project_(),
-  gm_interruptor_(false),
+  interruptor_(false),
   gm_plot_thread_(project_),
   my_run_(false)
 {
   ui->setupUi(this);
   this->setWindowTitle("Gain matching");
 
-  loadSettings();
+  connect(&gm_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
+  connect(&gm_plot_thread_, SIGNAL(plot_ready()), this, SLOT(new_daq_data()));
 
-  current_pass = 0;
+  current_pass_ = 0;
+  selected_pass_ = -1;
 
   QColor point_color;
   point_color.setHsv(180, 215, 150, 120);
-  style_pts.default_pen = QPen(point_color, 9);
+  style_pts.default_pen = QPen(point_color, 10);
   QColor selected_color;
   selected_color.setHsv(225, 255, 230, 210);
-  style_pts.themes["selected"] = QPen(selected_color, 9);
+  style_pts.themes["selected"] = QPen(selected_color, 10);
   style_fit.default_pen = QPen(Qt::darkCyan, 2);
 
-  ui->PlotCalib->setLabels("gain", "peak center bin");
 
-  ui->tableResults->setColumnCount(5);
-  ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem("Setting value", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Bin", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("area", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(4, new QTableWidgetItem("%error", QTableWidgetItem::Type));
+  ui->plotRef->setFit(&fitter_ref_);
+  connect(ui->plotRef, SIGNAL(data_changed()), this, SLOT(update_fit_ref()));
+  connect(ui->plotRef, SIGNAL(peak_selection_changed(std::set<double>)),
+          this, SLOT(update_peak_selection(std::set<double>)));
+  connect(ui->plotRef, SIGNAL(fitting_done()), this, SLOT(fitting_done_ref()));
+  //  connect(ui->plotRef, SIGNAL(fitter_busy(bool)), this, SLOT(fitter_status(bool)));
+
+  ui->plotOpt->setFit(&fitter_opt_);
+  connect(ui->plotOpt, SIGNAL(data_changed()), this, SLOT(update_fit_opt()));
+  connect(ui->plotOpt, SIGNAL(peak_selection_changed(std::set<double>)),
+          this, SLOT(update_peak_selection(std::set<double>)));
+  connect(ui->plotOpt, SIGNAL(fitting_done()), this, SLOT(fitting_done_opt()));
+  connect(ui->plotOpt, SIGNAL(fitter_busy(bool)), this, SLOT(fitter_status(bool)));
+
   ui->tableResults->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tableResults->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->tableResults->horizontalHeader()->setStretchLastSection(true);
   ui->tableResults->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-  //connect(ui->tableResults, SIGNAL(itemSelectionChanged()), this, SLOT(resultChosen()));
+  connect(ui->tableResults, SIGNAL(itemSelectionChanged()), this, SLOT(pass_selected_in_table()));
 
-  connect(&gm_plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
-  connect(&gm_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
-  connect(ui->plotOpt, SIGNAL(peak_selection_changed(std::set<double>)),
-          this, SLOT(update_peak_selection(std::set<double>)));
-  connect(ui->plotRef, SIGNAL(peak_selection_changed(std::set<double>)),
-          this, SLOT(update_peak_selection(std::set<double>)));
-  connect(ui->plotOpt, SIGNAL(data_changed()), this, SLOT(update_fits()));
-  connect(ui->plotRef, SIGNAL(data_changed()), this, SLOT(update_fits()));
+  connect(ui->PlotCalib, SIGNAL(selection_changed()), this, SLOT(pass_selected_in_plot()));
 
 
-  ui->plotOpt->setFit(&fitter_opt_);
-  ui->plotRef->setFit(&fitter_ref_);
-
+  loadSettings();
   update_settings();
+  init_prototypes();
 
   gm_plot_thread_.start();
 }
@@ -97,37 +102,98 @@ void FormGainMatch::update_settings() {
   ui->comboTarget->clear();
 
   //should come from other thread?
-  std::vector<Detector> chans = Engine::getInstance().get_detectors();
+  current_dets_ = Qpx::Engine::getInstance().get_detectors();
 
-  for (int i=0; i < chans.size(); ++i) {
+  for (int i=0; i < current_dets_.size(); ++i) {
     QString text = "[" + QString::number(i) + "] "
-        + QString::fromStdString(chans[i].name_);
+        + QString::fromStdString(current_dets_[i].name_);
     ui->comboReference->addItem(text, QVariant::fromValue(i));
     ui->comboTarget->addItem(text, QVariant::fromValue(i));
   }
+
+  remake_source_domains();
+  remake_domains();
 }
 
 void FormGainMatch::loadSettings() {
   QSettings settings_;
 
+  settings_.beginGroup("Program");
+  QString profile_directory = settings_.value("profile_directory", QDir::homePath() + "/qpx/settings").toString();
+  settings_.endGroup();
+
+  if (!profile_directory.isEmpty()) {
+    Qpx::Setting manset("manual_gain_settings");
+    manset.metadata.setting_type = Qpx::SettingType::stem;
+
+    std::string path = profile_directory.toStdString() + "/gainmatch.set";
+    pugi::xml_document doc;
+    if (doc.load_file(path.c_str())) {
+      pugi::xml_node root = doc.child("GainMatch");
+      if (root.child(manset.xml_element_name().c_str()))
+        manset.from_xml(root.child(manset.xml_element_name().c_str()));
+      FitSettings fs;
+      if (root.child(fs.xml_element_name().c_str())) {
+        fs.from_xml(root.child(fs.xml_element_name().c_str()));
+        fitter_ref_.apply_settings(fs);
+        fitter_opt_.apply_settings(fs);
+      }
+    }
+
+    manual_settings_.clear();
+    for (auto &s : manset.branches.my_data_)
+      manual_settings_["[manual] " + s.id_] = s;
+  }
+
+
   settings_.beginGroup("GainMatching");
   ui->spinBits->setValue(settings_.value("bits", 14).toInt());
-//  ui->spinRefChan->setValue(settings_.value("reference_channel", 0).toInt());
-//  ui->spinOptChan->setValue(settings_.value("optimized_channel", 1).toInt());
+  //  ui->spinRefChan->setValue(settings_.value("reference_channel", 0).toInt());
+  //  ui->spinOptChan->setValue(settings_.value("optimized_channel", 1).toInt());
   ui->doubleError->setValue(settings_.value("error", 1.0).toDouble());
-  ui->doubleSpinDeltaV->setValue(settings_.value("delta_V", 0.000300).toDouble());
+  ui->doubleThreshold->setValue(settings_.value("threshold", 1.0).toDouble());
+  ui->widgetAutoselect->loadSettings(settings_);
+
+  ui->plotRef->loadSettings(settings_);
+  ui->plotOpt->loadSettings(settings_);
+
   settings_.endGroup();
 }
 
 void FormGainMatch::saveSettings() {
   QSettings settings_;
 
+  settings_.beginGroup("Program");
+  QString profile_directory = settings_.value("profile_directory", QDir::homePath() + "/qpx/settings").toString();
+  settings_.endGroup();
+
+  if (!profile_directory.isEmpty()) {
+    std::string path = profile_directory.toStdString() + "/gainmatch.set";
+    pugi::xml_document doc;
+    pugi::xml_node root = doc.root();
+    pugi::xml_node node = root.append_child("GainMatch");
+    if (!manual_settings_.empty()) {
+      Qpx::Setting manset("manual_gain_settings");
+      manset.metadata.setting_type = Qpx::SettingType::stem;
+      for (auto &q : manual_settings_)
+        manset.branches.add_a(q.second);
+      manset.to_xml(node);
+    }
+    fitter_opt_.settings().to_xml(node); //ref separately?
+    doc.save_file(path.c_str());
+  }
+
   settings_.beginGroup("GainMatching");
   settings_.setValue("bits", ui->spinBits->value());
-//  settings_.setValue("reference_channel", ui->spinRefChan->value());
-//  settings_.setValue("optimized_channel", ui->spinOptChan->value());
+  //  settings_.setValue("reference_channel", ui->spinRefChan->value());
+  //  settings_.setValue("optimized_channel", ui->spinOptChan->value());
   settings_.setValue("error", ui->doubleError->value());
-  settings_.setValue("delta_V", ui->doubleSpinDeltaV->value());
+  settings_.setValue("threshold", ui->doubleThreshold->value());
+  ui->widgetAutoselect->saveSettings(settings_);
+
+  ui->plotRef->saveSettings(settings_);
+  ui->plotOpt->saveSettings(settings_);
+
   settings_.endGroup();
 }
 
@@ -166,16 +232,39 @@ void FormGainMatch::closeEvent(QCloseEvent *event) {
 
 void FormGainMatch::toggle_push(bool enable, SourceStatus status) {
   bool online = (status & SourceStatus::can_run);
-  ui->pushMatchGain->setEnabled(enable && online && !my_run_);
+  ui->pushStart->setEnabled(enable && online && !my_run_);
 
-  ui->comboReference->setEnabled(enable);
-  ui->comboTarget->setEnabled(enable);
-  ui->spinBits->setEnabled(enable && online);
+  ui->comboReference->setEnabled(enable && !my_run_);
+  ui->comboTarget->setEnabled(enable && !my_run_);
+
+  ui->doubleSpinStart->setEnabled(enable && !my_run_);
+  ui->doubleSpinDeltaV->setEnabled(enable && !my_run_);
+
+  ui->comboSetting->setEnabled(enable && !my_run_);
+  ui->spinBits->setEnabled(enable && !my_run_);
+  ui->pushAddCustom->setEnabled(enable && !my_run_);
+
+  ui->pushEditPrototypeRef->setEnabled(enable && !my_run_);
+  ui->pushEditPrototypeOpt->setEnabled(enable && !my_run_);
+
 }
 
-Qpx::Metadata FormGainMatch::make_prototype(uint16_t bits, uint16_t channel,
-                                               int pass_number, Qpx::Setting variable,
-                                               std::string name)
+void FormGainMatch::init_prototypes()
+{
+  sink_prototype_ref_ = make_prototype(ui->spinBits->value(),
+                                       ui->comboReference->currentData().toInt(),
+                                       "Reference");
+
+  sink_prototype_opt_ = make_prototype(ui->spinBits->value(),
+                                       ui->comboReference->currentData().toInt(),
+                                       "Optimizing");
+
+  remake_source_domains();
+  remake_domains();
+  on_comboSetting_activated(0);
+}
+
+Qpx::Metadata FormGainMatch::make_prototype(uint16_t bits, uint16_t channel, std::string name)
 {
   Qpx::Metadata    spectrum_prototype;
   spectrum_prototype = Qpx::SinkFactory::getInstance().create_prototype("1D");
@@ -206,35 +295,56 @@ Qpx::Metadata FormGainMatch::make_prototype(uint16_t bits, uint16_t channel,
   pattern.value_pattern.set_theshold(1);
   spectrum_prototype.attributes.branches.replace(pattern);
 
-  Qpx::Setting set_pass("Pass");
-  set_pass.value_int = pass_number;
-  spectrum_prototype.attributes.branches.replace(set_pass);
-
-  spectrum_prototype.attributes.branches.replace(variable);
-
   return spectrum_prototype;
 }
 
-void FormGainMatch::do_run()
+void FormGainMatch::start_new_pass()
 {
+  if (manual_settings_.count(ui->comboSetting->currentText().toStdString()))
+  {
+    bool ok;
+    double d = QInputDialog::getDouble(this, QString::fromStdString(current_setting_.id_),
+                                       "Value?=", current_setting_.value_dbl,
+                                       current_setting_.metadata.minimum,
+                                       current_setting_.metadata.maximum,
+                                       current_setting_.metadata.step,
+                                       &ok);
+    if (ok)
+      current_setting_.value_dbl = d;
+    else
+    {
+      update_name();
+      return;
+    }
+  }
+  else if (source_settings_.count(ui->comboSetting->currentText().toStdString()))
+  {
+    Qpx::Engine::getInstance().set_setting(current_setting_, Qpx::Match::id | Qpx::Match::indices);
+    QThread::sleep(1);
+    Qpx::Engine::getInstance().get_all_settings();
+    current_setting_.value_dbl = Qpx::Engine::getInstance().pull_settings().get_setting(current_setting_, Qpx::Match::id | Qpx::Match::indices).value_dbl;
+  }
+  else
+  {
+    update_name();
+    return;
+  }
+
   ui->pushStop->setEnabled(true);
   my_run_ = true;
   emit toggleIO(false);
 
+  INFO << "<FormGainMatch> Starting pass #" << (current_pass_ + 1)
+       << " with " << ui->comboSetting->currentText().toStdString() << " = "
+       << current_setting_.value_dbl;
 
-  int optchan = ui->comboTarget->currentData().toInt();
-
-  current_setting_.indices.clear();
-  current_setting_.indices.insert(optchan);
-
-  Engine::getInstance().get_all_settings();
-  current_setting_ = Engine::getInstance().pull_settings().get_setting(current_setting_, Match::id | Match::indices);
+  Qpx::Setting set_pass("Pass");
+  set_pass.value_int = current_pass_;
+  sink_prototype_opt_.attributes.branches.replace(set_pass);
+  sink_prototype_opt_.attributes.branches.replace(current_setting_);
 
   if (project_.empty()) {
-    project_.add_sink(make_prototype(ui->spinBits->value(),
-                                     ui->comboReference->currentData().toInt(),
-                                     0, Setting(),
-                                     "Reference"));
+    project_.add_sink(sink_prototype_ref_);
   } else {
     std::map<int64_t, SinkPtr> sinks = project_.get_sinks();
     for (auto &q : sinks)
@@ -242,89 +352,352 @@ void FormGainMatch::do_run()
         project_.delete_sink(q.first);
   }
 
-  project_.add_sink(make_prototype(ui->spinBits->value(), optchan,
-                                   current_pass, current_setting_,
-                                   "Optimizing"));
+  project_.add_sink(sink_prototype_opt_);
+
+  DataPoint newdata;
+  newdata.spectrum.apply_settings(fitter_opt_.settings());
+  newdata.independent_variable = current_setting_.value_dbl;
+  newdata.dependent_variable = std::numeric_limits<double>::quiet_NaN();
+
+  experiment_.push_back(newdata);
+  display_data(); //before new data arrives?
+
+  emit settings_changed();
 
   gm_plot_thread_.start();
+  interruptor_.store(false);
+  gm_runner_thread_.do_run(project_, interruptor_, 0);
 
-  std::map<int64_t, SinkPtr> sinks = project_.get_sinks();
-  for (auto &q : sinks)
-    if (q.second->name() == "Reference")
-      fitter_ref_.setData(project_.get_sink(q.first));
-
-  for (auto &q : sinks)
-    if (q.second->name() == "Optimizing")
-      fitter_opt_.setData(project_.get_sink(q.first));
-
-  ui->plotRef->update_spectrum();
-  ui->plotOpt->update_spectrum();
-
-
-  gains.push_back(current_setting_.value_dbl);
-  peaks_.push_back(Peak());
-  ui->tableResults->setRowCount(peaks_.size());
-
-  gm_runner_thread_.do_run(project_, gm_interruptor_, 0);
 }
 
 void FormGainMatch::run_completed() {
   if (my_run_) {
     project_.terminate();
     gm_plot_thread_.wait();
-//    peak_ref_.area_best = FitParam();
-//    peak_opt_.area_best = FitParam();
-    //replot_markers();
 
-    if (current_pass >= 0) {
-      INFO << "<FormGainMatch> Completed pass # " << current_pass;
-      current_pass++;
+    ui->pushStop->setEnabled(false);
+    my_run_ = false;
+    emit toggleIO(true);
+
+    if (current_pass_ >= 0) {
+      INFO << "<FormGainMatch> Completed pass # " << (current_pass_ + 1);
       do_post_processing();
-    } else {
-      ui->pushStop->setEnabled(false);
-      my_run_ = false;
-      emit toggleIO(true);
     }
   }
 }
 
 void FormGainMatch::do_post_processing() {
 
-//  update_plots();
+  //  new_daq_data();
 
-  double old_gain = gains.back();
-  double delta = peak_opt_.center.val - peak_ref_.center.val;
+  std::vector<double> gains;
+  std::vector<double> positions;
+  std::vector<double> position_sigmas;
 
-  DBG << "delta " << delta << " = " << peak_opt_.center.val << " - " << peak_ref_.center.val;
+  double latest_position = std::numeric_limits<double>::quiet_NaN();
 
-  deltas.push_back(peak_opt_.center.val);
+  for (auto &q : experiment_)
+  {
+    if (!std::isnan(q.dependent_variable)) {
+      gains.push_back(q.independent_variable);
+      positions.push_back(q.dependent_variable);
+      position_sigmas.push_back(q.dep_uncert);
 
-  double new_gain = old_gain;
-  if (peak_opt_.center < peak_ref_.center)
-    new_gain += ui->doubleSpinDeltaV->value();
-  else if (peak_opt_.center > peak_ref_.center)
-    new_gain -= ui->doubleSpinDeltaV->value();
-
-  std::vector<double> sigmas(deltas.size(), 1);
-
-  if (gains.size() > 1) {
-    PolyBounded p;
-    p.add_coeff(0, -50, 50, 1);
-    p.add_coeff(1, -50, 50, 1);
-    p.add_coeff(2, -50, 50, 1);
-    p.fit(gains, deltas, sigmas);
-    double predict = p.eval_inverse(peak_ref_.center.val /*, ui->doubleThreshold->value() / 4.0*/);
-    if (!std::isnan(predict)) {
-      new_gain = predict;
+      latest_position = q.dependent_variable;
     }
+  }
+
+  DBG << "<FormGainMatch> Valid data points " << gains.size() << " latest=" << latest_position
+      << " refgood=" << (peak_ref_ != Qpx::Peak());
+
+  if (!std::isnan(latest_position) && (peak_ref_ != Qpx::Peak())
+      && (std::abs(latest_position - peak_ref_.center.val) < ui->doubleThreshold->value()))
+  {
+    INFO << "<FormGainMatch> Gain matching complete   |"
+         << latest_position << " - " << peak_ref_.center.val
+         << "| < " << ui->doubleThreshold->value();
+    update_name();
+    return;
+  }
+
+  double predicted = std::numeric_limits<double>::quiet_NaN();
+
+  response_function_ = PolyBounded();
+  response_function_.add_coeff(0, -50, 50, 1);
+  response_function_.add_coeff(1, -50, 50, 1);
+  if (gains.size() > 2)
+    response_function_.add_coeff(2, -50, 50, 1);
+  response_function_.fit(gains, positions, position_sigmas);
+  predicted = response_function_.eval_inverse(peak_ref_.center.val /*, ui->doubleThreshold->value() / 4.0*/);
+
+  DBG << "<FormGainMatch> Prediction " << predicted;
+
+  if ((gains.size() < 2) || std::isnan(predicted)){
+    DBG << "<FormGainMatch> not enough data points or bad prediction";
+    if (!std::isnan(latest_position) && (peak_ref_ != Qpx::Peak())
+        && (latest_position > peak_ref_.center.val))
+      current_setting_.value_dbl -= current_setting_.metadata.step;
+    else
+      current_setting_.value_dbl += current_setting_.metadata.step;
+  }
+  else
+  {
+    current_setting_.value_dbl = predicted;
+  }
+
+  DBG << "<FormGainMatch> new value = " << current_setting_.value_dbl;
+
+  current_pass_++;
+//  QThread::sleep(2);
+
+  start_new_pass();
+}
+
+void FormGainMatch::update_fit_ref()
+{
+  ui->plotRef->set_selected_peaks(ui->widgetAutoselect->reselect(fitter_ref_.peaks(), ui->plotRef->get_selected_peaks()));
+  //  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size()))
+  //    experiment_[selected_pass_].spectrum = selected_fitter_;
+  update_peak_selection(std::set<double>());
+}
+
+void FormGainMatch::update_fit_opt()
+{
+  ui->plotOpt->set_selected_peaks(ui->widgetAutoselect->reselect(fitter_opt_.peaks(), ui->plotOpt->get_selected_peaks()));
+  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size()))
+    experiment_[selected_pass_].spectrum = fitter_opt_;
+  update_peak_selection(std::set<double>());
+}
+
+void FormGainMatch::update_peak_selection(std::set<double> dummy) {
+  std::set<double> selected_peaks = ui->plotRef->get_selected_peaks();
+  if ((selected_peaks.size() != 1) || !fitter_ref_.peaks().count(*selected_peaks.begin()))
+    peak_ref_ = Qpx::Peak();
+  else
+    peak_ref_ = fitter_ref_.peaks().at(*selected_peaks.begin());
+
+  Qpx::Metadata md = fitter_opt_.metadata_;
+  Qpx::Setting pass = md.attributes.branches.get(Qpx::Setting("Pass"));
+  if (!pass || (pass.value_int < 0) || (pass.value_int >= experiment_.size()))
+    return;
+
+  selected_peaks = ui->plotOpt->get_selected_peaks();
+  if ((selected_peaks.size() != 1) || !fitter_opt_.peaks().count(*selected_peaks.begin()))
+    experiment_[pass.value_int].selected_peak = Qpx::Peak();
+  else
+    experiment_[pass.value_int].selected_peak = fitter_opt_.peaks().at(*selected_peaks.begin());
 
 
-    QVector<double> xx = QVector<double>::fromStdVector(gains);
-    QVector<double> yy = QVector<double>::fromStdVector(deltas);
-    QVector<double> yy_sigma(yy.size(), 0);
+  eval_dependent(experiment_[pass.value_int]);
+  display_data();
 
-    xx.push_back(new_gain);
-    yy.push_back(peak_ref_.center.val);
+  if ((pass.value_int == current_pass_) && criterion_satisfied(experiment_[pass.value_int]))
+    interruptor_.store(true);
+
+  //  if ((pass == current_pass_) && (peaks_.back().sum4_.peak_area.err() < ui->doubleError->value()))
+  //    interruptor_.store(true);
+
+}
+
+
+void FormGainMatch::new_daq_data() {
+  for (auto &q: project_.get_sinks()) {
+    Metadata md;
+    if (q.second)
+      md = q.second->metadata();
+
+    if (md.total_count > 0) {
+
+      if (md.name == "Reference") {
+        fitter_ref_.setData(q.second); //not busy, etc...?
+        if (!ui->plotRef->busy())
+          ui->plotRef->perform_fit();
+      }
+      else
+      {
+        Qpx::Setting pass = md.attributes.branches.get(Qpx::Setting("Pass"));
+        if (pass && (pass.value_int < experiment_.size())) {
+          experiment_[pass.value_int].spectrum.setData(q.second);
+          double variable = md.attributes.branches.get(current_setting_).value_dbl;
+          experiment_[pass.value_int].independent_variable = variable;
+          eval_dependent(experiment_[pass.value_int]);
+          display_data();
+          if (pass.value_int == current_pass_) {
+            if (criterion_satisfied(experiment_[pass.value_int]))
+              interruptor_.store(true);
+            if (current_pass_ == selected_pass_)
+            {
+              pass_selected_in_table();
+              if (!ui->plotOpt->busy())
+                ui->plotOpt->perform_fit();
+            }
+          }
+        }
+      }
+    }
+  }
+
+}
+
+void FormGainMatch::on_pushStart_clicked()
+{
+  response_function_ = PolyBounded();
+  project_.clear();
+
+  peak_ref_ = Peak();
+  experiment_.clear();
+  FitSettings fitset = fitter_ref_.settings();
+  fitter_ref_ = Qpx::Fitter();
+  fitter_ref_.apply_settings(fitset);
+
+  fitset = fitter_opt_.settings();
+  fitter_opt_ = Qpx::Fitter();
+  fitter_opt_.apply_settings(fitset);
+
+
+  if (all_settings_.count(ui->comboSetting->currentText().toStdString())) {
+    current_setting_ = all_settings_.at(ui->comboSetting->currentText().toStdString());
+
+    current_setting_.value_dbl = ui->doubleSpinStart->value();
+    current_setting_.metadata.step = ui->doubleSpinDeltaV->value();
+
+    current_pass_ = 0;
+    selected_pass_ = -1;
+
+    display_data();
+    start_new_pass();
+  }
+}
+
+void FormGainMatch::on_pushStop_clicked()
+{
+  current_pass_ = -1;
+  interruptor_.store(true);
+}
+
+void FormGainMatch::on_comboReference_currentIndexChanged(int index)
+{
+  uint16_t channel = ui->comboReference->currentData().toInt();
+  sink_prototype_ref_.set_det_limit(current_dets_.size());
+
+  std::vector<bool> gates(current_dets_.size(), false);
+  gates[channel] = true;
+
+  Qpx::Setting pattern;
+  pattern = sink_prototype_ref_.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern.value_pattern.set_gates(gates);
+  pattern.value_pattern.set_theshold(1);
+  sink_prototype_ref_.attributes.branches.replace(pattern);
+  pattern = sink_prototype_ref_.attributes.branches.get(Qpx::Setting("pattern_add"));
+  pattern.value_pattern.set_gates(gates);
+  pattern.value_pattern.set_theshold(1);
+  sink_prototype_ref_.attributes.branches.replace(pattern);
+}
+
+void FormGainMatch::on_comboTarget_currentIndexChanged(int index)
+{
+  uint16_t channel = ui->comboTarget->currentData().toInt();
+  sink_prototype_opt_.set_det_limit(current_dets_.size());
+
+  std::vector<bool> gates(current_dets_.size(), false);
+  gates[channel] = true;
+
+  Qpx::Setting pattern;
+  pattern = sink_prototype_opt_.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern.value_pattern.set_gates(gates);
+  pattern.value_pattern.set_theshold(1);
+  sink_prototype_opt_.attributes.branches.replace(pattern);
+  pattern = sink_prototype_opt_.attributes.branches.get(Qpx::Setting("pattern_add"));
+  pattern.value_pattern.set_gates(gates);
+  pattern.value_pattern.set_theshold(1);
+  sink_prototype_opt_.attributes.branches.replace(pattern);
+
+  remake_source_domains();
+  remake_domains();
+  on_comboSetting_activated(0);
+}
+
+void FormGainMatch::on_comboSetting_activated(int index)
+{
+  current_setting_ = Qpx::Setting();
+  if (all_settings_.count(ui->comboSetting->currentText().toStdString()))
+    current_setting_ = all_settings_.at( ui->comboSetting->currentText().toStdString() );
+
+  ui->doubleSpinStart->setRange(current_setting_.metadata.minimum, current_setting_.metadata.maximum);
+  ui->doubleSpinStart->setSingleStep(current_setting_.metadata.step);
+  ui->doubleSpinStart->setValue(current_setting_.value_dbl);
+  ui->doubleSpinStart->setSuffix(" " + QString::fromStdString(current_setting_.metadata.unit));
+
+  ui->doubleSpinDeltaV->setRange(current_setting_.metadata.step, current_setting_.metadata.maximum - current_setting_.metadata.minimum);
+  ui->doubleSpinDeltaV->setSingleStep(current_setting_.metadata.step);
+  ui->doubleSpinDeltaV->setValue(current_setting_.metadata.step  * 20);
+  ui->doubleSpinDeltaV->setSuffix(" " + QString::fromStdString(current_setting_.metadata.unit));
+
+  bool manual = manual_settings_.count(ui->comboSetting->currentText().toStdString());
+  ui->pushEditCustom->setVisible(manual);
+  ui->pushDeleteCustom->setVisible(manual);
+}
+
+void FormGainMatch::display_data()
+{
+  int old_row_count = ui->tableResults->rowCount();
+
+  ui->tableResults->blockSignals(true);
+
+  if (ui->tableResults->rowCount() != experiment_.size())
+    ui->tableResults->setRowCount(experiment_.size());
+
+  ui->tableResults->setColumnCount(5);
+  ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromStdString(current_setting_.metadata.name), QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Bin", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("area", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(4, new QTableWidgetItem("%error", QTableWidgetItem::Type));
+
+  QVector<double> xx, yy, yy_sigma;
+
+  for (int i = 0; i < experiment_.size(); ++i)
+  {
+    const DataPoint &data = experiment_.at(i);
+
+    QTableWidgetItem *st = new QTableWidgetItem(QString::number(data.independent_variable));
+    st->setFlags(st->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(i, 0, st);
+
+    UncertainDouble nrg = UncertainDouble::from_double(data.selected_peak.center.val,
+                                                       data.selected_peak.center.uncert, 2);
+    QTableWidgetItem *en = new QTableWidgetItem(QString::fromStdString(nrg.to_string(false, true)));
+    en->setFlags(en->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(i, 1, en);
+
+    QTableWidgetItem *fw = new QTableWidgetItem(QString::number(data.selected_peak.fwhm_hyp));
+    fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(i, 2, fw);
+
+    UncertainDouble ar = UncertainDouble::from_double(data.selected_peak.area_best.val,
+                                                      data.selected_peak.area_best.uncert, 2);
+    QTableWidgetItem *area = new QTableWidgetItem(QString::fromStdString(ar.to_string(false, true)));
+    area->setFlags(area->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(i, 3, area);
+
+    QTableWidgetItem *err = new QTableWidgetItem(QString::number(data.selected_peak.sum4_.peak_area.err()));
+    err->setFlags(err->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(i, 4, err);
+
+    if (!std::isnan(data.dependent_variable)) {
+      xx.push_back(data.independent_variable);
+      yy.push_back(data.dependent_variable);
+      if (!std::isnan(data.dep_uncert) && !std::isinf(data.dep_uncert))
+        yy_sigma.push_back(data.dep_uncert);
+      else
+        yy_sigma.push_back(0);
+    }
+  }
+
+  ui->tableResults->blockSignals(false);
+
+  ui->PlotCalib->clearGraphs();
+  if (!xx.isEmpty()) {
 
     double xmin = std::numeric_limits<double>::max();
     double xmax = - std::numeric_limits<double>::max();
@@ -340,236 +713,367 @@ void FormGainMatch::do_post_processing() {
     xmax += x_margin;
     xmin -= x_margin;
 
-    ui->PlotCalib->clear_data();
-    ui->PlotCalib->addPoints(xx, yy, yy_sigma, style_pts);
 
+    ui->PlotCalib->addPoints(xx, yy, yy_sigma, style_pts);
 
     xx.clear();
     yy.clear();
+
 
     double step = (xmax-xmin) / 50.0;
 
     for (double i=xmin; i < xmax; i+=step) {
       xx.push_back(i);
-      yy.push_back(p.eval(i));
+      yy.push_back(response_function_.eval(i));
     }
 
-    ui->PlotCalib->addFit(xx, yy, style_fit);
-    ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(p.to_UTF8(3, true)));
+    std::set<double> chosen_peaks_chan;
+    //if selected insert;
+
+//    if (response_function_ != PolyBounded())
+      ui->PlotCalib->addFit(xx, yy, style_fit);
+
+    ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
+    ui->PlotCalib->setLabels(QString::fromStdString(current_setting_.metadata.name),
+                             "centroid");
+  }
+  //  ui->PlotCalib->redraw();
+
+  if (experiment_.size() && (experiment_.size() == (old_row_count + 1))) {
+    ui->tableResults->selectRow(old_row_count);
+    pass_selected_in_table();
+  } else if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+    std::set<double> sel;
+    sel.insert(experiment_.at(selected_pass_).independent_variable);
+    ui->PlotCalib->set_selected_pts(sel);
     ui->PlotCalib->redraw();
-
   }
-
-  if (std::abs(delta) < ui->doubleThreshold->value()) {
-    INFO << "<FormGainMatch> gain matching complete";
-    ui->pushStop->setEnabled(false);
-    my_run_ = false;
-    emit toggleIO(true);
-    return;
+  else
+  {
+    ui->PlotCalib->set_selected_pts(std::set<double>());
+    ui->PlotCalib->redraw();
   }
-
-  int optchan = ui->comboTarget->currentData().toInt();
-
-  current_setting_.indices.clear();
-  current_setting_.indices.insert(optchan);
-  current_setting_ = Engine::getInstance().pull_settings().get_setting(current_setting_, Match::id | Match::indices);
-  current_setting_.value_dbl = new_gain;
-
-  Engine::getInstance().set_setting(current_setting_, Match::id | Match::indices);
-  QThread::sleep(2);
-  current_setting_ = Engine::getInstance().pull_settings().get_setting(current_setting_, Match::id | Match::indices);
-  new_gain = current_setting_.value_dbl;
-
-
-  INFO << "<FormGainMatch> gain changed from " << std::fixed << std::setprecision(6)
-          << old_gain << " to " << new_gain;
-
-  QThread::sleep(2);
-  do_run();
-}
-
-void FormGainMatch::update_fits() {
-  if (!ui->plotRef->busy()) {
-    std::set<double> selref = ui->plotRef->get_selected_peaks();
-    std::set<double> newselr;
-    for (auto &p : fitter_ref_.peaks()) {
-      for (auto &s : selref)
-        if (abs(p.second.center.val - s) < 2) {
-          newselr.insert(p.second.center.val);
-          DBG << "match sel ref " << p.second.center.val;
-        }
-    }
-//    DBG << "refsel close enough " << newselr.size();
-    ui->plotRef->set_selected_peaks(newselr);
-  }
-
-  if (!ui->plotOpt->busy()) {
-    std::set<double> selopt = ui->plotOpt->get_selected_peaks();
-    std::set<double> newselo;
-    for (auto &p : fitter_opt_.peaks()) {
-      for (auto &s : selopt)
-        if (abs(p.second.center.val - s) < 2) {
-          newselo.insert(p.second.center.val);
-          DBG << "match sel opt " << p.second.center.val;
-        }
-    }
-//    DBG << "optsel close enough " << newselo.size();
-    ui->plotOpt->set_selected_peaks(newselo);
-  }
-
-  update_peak_selection(std::set<double>());
-}
-
-
-void FormGainMatch::update_peak_selection(std::set<double> dummy) {
-  std::set<double> selref = ui->plotRef->get_selected_peaks();
-  std::set<double> selopt = ui->plotOpt->get_selected_peaks();
-
-  if ((selref.size() != 1) || (selopt.size() != 1))
-    return;
-
-  if (fitter_ref_.peaks().count(*selref.begin()))
-    peak_ref_ = fitter_ref_.peaks().at(*selref.begin());
-  if (fitter_opt_.peaks().count(*selopt.begin()))
-    peak_opt_ = fitter_opt_.peaks().at(*selopt.begin());
-
-  DBG << "Have one peak each " << peak_ref_.center.to_string() << " " << peak_opt_.center.to_string() ;
-
-  if ((peak_ref_.area_best.val == 0) || (peak_opt_.area_best.val == 0))
-    return;
-
-//  DBG << "1";
-
-  Setting set_gain("Gain");
-  Setting set_pass("Pass");
-  double gain = fitter_opt_.metadata_.attributes.branches.get(set_gain).value_dbl;
-  int    pass = fitter_opt_.metadata_.attributes.branches.get(set_pass).value_int;
-
-  peaks_[pass] = peak_opt_;
-
-  if (peaks_.size()) {
-
-    QTableWidgetItem *st = new QTableWidgetItem(QString::number(gains[pass]));
-    st->setFlags(st->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(pass, 0, st);
-
-    QTableWidgetItem *ctr = new QTableWidgetItem(QString::number(peaks_[pass].center.val));
-    ctr->setFlags(ctr->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(pass, 1, ctr);
-
-    QTableWidgetItem *fw = new QTableWidgetItem(QString::number(peaks_[pass].fwhm_sum4));
-    fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(pass, 2, fw);
-
-    QTableWidgetItem *area = new QTableWidgetItem(QString::number(peaks_[pass].area_best.val));
-    area->setFlags(area->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(pass, 3, area);
-
-    QTableWidgetItem *err = new QTableWidgetItem(QString::number(peaks_[pass].sum4_.peak_area.err()));
-    err->setFlags(err->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(pass, 4, err);
-  }
-
-
-  if ((pass == current_pass) && (peaks_.back().sum4_.peak_area.err() < ui->doubleError->value()))
-    gm_interruptor_.store(true);
 
 }
 
-
-void FormGainMatch::update_plots() {
-  bool have_data = false;
-
-  for (auto &q: project_.get_sinks()) {
-    Metadata md;
-    if (q.second)
-      md = q.second->metadata();
-
-    if (md.total_count > 0) {
-      have_data = true;
-
-      if (md.name == "Reference")
-        fitter_ref_.setData(q.second);
-      else
-        fitter_opt_.setData(q.second);
-    }
+void FormGainMatch::pass_selected_in_table()
+{
+  selected_pass_ = -1;
+  foreach (QModelIndex i, ui->tableResults->selectionModel()->selectedRows())
+    selected_pass_ = i.row();
+  FitSettings fitset = fitter_opt_.settings();
+  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+    fitter_opt_ = experiment_.at(selected_pass_).spectrum;
+    std::set<double> sel;
+    sel.insert(experiment_.at(selected_pass_).independent_variable);
+    ui->PlotCalib->set_selected_pts(sel);
+    ui->PlotCalib->redraw();
   }
+  else
+  {
+    ui->PlotCalib->set_selected_pts(std::set<double>());
+    fitter_opt_ = Qpx::Fitter();
+    ui->PlotCalib->redraw();
+  }
+  fitter_opt_.apply_settings(fitset);
 
-  if (have_data) {
-//    DBG << "Have data!";
-    if (!ui->plotRef->busy()) {
-      ui->plotRef->updateData();
-      ui->plotRef->perform_fit();
+
+  if (!ui->plotOpt->busy() && (selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+    //    DBG << "fitter not busy";
+    ui->plotOpt->updateData();
+    if (experiment_.at(selected_pass_).selected_peak != Qpx::Peak()) {
+      std::set<double> selected;
+      selected.insert(experiment_.at(selected_pass_).selected_peak.center.val);
+      ui->plotOpt->set_selected_peaks(selected);
     }
-    if (!ui->plotOpt->busy()) {
-      ui->plotOpt->updateData();
+    if ((fitter_opt_.metadata_.total_count > 0)
+        && fitter_opt_.peaks().empty()
+        && !ui->plotOpt->busy())
       ui->plotOpt->perform_fit();
-    }
+  }
+}
+
+void FormGainMatch::pass_selected_in_plot()
+{
+  //allow only one point to be selected!!!
+  std::set<double> selection = ui->PlotCalib->get_selected_pts();
+  if (selection.size() < 1)
+  {
+    ui->tableResults->clearSelection();
+    return;
   }
 
-  this->setCursor(Qt::ArrowCursor);
+  double sel = *selection.begin();
+
+  for (int i=0; i < experiment_.size(); ++i)
+  {
+    if (experiment_.at(i).independent_variable == sel) {
+      ui->tableResults->selectRow(i);
+      pass_selected_in_table();
+      return;
+    }
+  }
 }
 
-void FormGainMatch::on_pushMatchGain_clicked()
+void FormGainMatch::remake_source_domains()
 {
-  gains.clear();
-  deltas.clear();
-  peaks_.clear();
+  source_settings_.clear();
+  if (!ui->comboTarget->count())
+    return;
 
-  peak_ref_ = Peak();
-  peak_opt_ = Peak();
+  int chan = ui->comboTarget->currentData().toInt();
 
-  current_setting_ = Setting(ui->comboSetting->currentText().toStdString());
+  if ((chan < 0) || (chan >= current_dets_.size()))
+    return;
 
-  ui->tableResults->clear();
-  ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromStdString(current_setting_.id_), QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Bin", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("area", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(4, new QTableWidgetItem("%error", QTableWidgetItem::Type));
 
-  ui->PlotCalib->setFloatingText("");
-  ui->PlotCalib->clearGraphs();
+  for (auto &q : current_dets_[chan].settings_.branches.my_data_)
+    if (q.metadata.flags.count("gain") > 0)
+      source_settings_["[DAQ] " + q.id_
+          + " (" + std::to_string(chan) + ":" + current_dets_[chan].name_ + ")"] = q;
 
-  current_pass = 0;
-  project_.clear();
-  fitter_ref_.clear();
-  fitter_opt_.clear();
-  do_run();
 }
 
-void FormGainMatch::on_pushStop_clicked()
-{
-  current_pass = -1;
-  gm_interruptor_.store(true);
-}
 
-void FormGainMatch::on_comboTarget_currentIndexChanged(int index)
+void FormGainMatch::remake_domains()
 {
-  int optchan = ui->comboTarget->currentData().toInt();
 
-  std::vector<Detector> chans = Engine::getInstance().get_detectors();
+  all_settings_.clear();
+
+  for (auto &s : source_settings_)
+  {
+    if (!s.second.metadata.writable || !s.second.metadata.visible)
+      continue;
+
+    if (s.second.metadata.setting_type == Qpx::SettingType::floating)
+      all_settings_[s.first] = s.second;
+    //also allow for integer, floating_precise?
+  }
+
+  for (auto &s : manual_settings_)
+  {
+    if (s.second.metadata.setting_type == Qpx::SettingType::floating)
+      all_settings_[s.first] = s.second;
+  }
 
   ui->comboSetting->clear();
-  if (optchan < chans.size()) {
-    for (auto &q : chans[optchan].settings_.branches.my_data_) {
-      if (q.metadata.flags.count("gain") > 0) {
-        QString text = QString::fromStdString(q.id_);
-        ui->comboSetting->addItem(text);
-      }
-    }
-  }
-
+  for (auto &q : all_settings_)
+    ui->comboSetting->addItem(QString::fromStdString(q.first));
 }
 
-void FormGainMatch::on_comboSetting_activated(int index)
+void FormGainMatch::fitter_status(bool busy)
 {
-  int optchan = ui->comboTarget->currentData().toInt();
-  current_setting_ = Setting(ui->comboSetting->currentText().toStdString());
-  current_setting_.indices.clear();
-  current_setting_.indices.insert(optchan);
+  ui->tableResults->setEnabled(!busy);
+  ui->PlotCalib->setEnabled(!busy);
+}
 
-  current_setting_ = Engine::getInstance().pull_settings().get_setting(current_setting_, Match::id | Match::indices);
+void FormGainMatch::fitting_done_ref()
+{
+  if (!fitter_ref_.peaks().empty() && (peak_ref_ == Qpx::Peak())) {
+    //      DBG << "<FormOptimization> Autoselecting";
+    ui->plotRef->set_selected_peaks(ui->widgetAutoselect->autoselect(fitter_ref_.peaks(), ui->plotRef->get_selected_peaks()));
+    update_peak_selection(std::set<double>());
+  }
+}
 
-  ui->doubleSpinDeltaV->setValue(current_setting_.metadata.step * 15);
+
+void FormGainMatch::fitting_done_opt()
+{
+  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+    experiment_[selected_pass_].spectrum = fitter_opt_;
+    if (!fitter_opt_.peaks().empty() && (experiment_.at(selected_pass_).selected_peak == Qpx::Peak())) {
+      //      DBG << "<FormOptimization> Autoselecting";
+      ui->plotOpt->set_selected_peaks(ui->widgetAutoselect->autoselect(fitter_opt_.peaks(), ui->plotOpt->get_selected_peaks()));
+      update_peak_selection(std::set<double>());
+    }
+  }
+}
+
+
+void FormGainMatch::eval_dependent(DataPoint &data)
+{
+  if (data.selected_peak != Qpx::Peak()) {
+    data.dependent_variable = data.selected_peak.center.val; //with uncert?
+    data.dep_uncert = data.selected_peak.center.uncert; //with uncert?
+  } else {
+    data.dependent_variable = std::numeric_limits<double>::quiet_NaN();
+    data.dep_uncert = std::numeric_limits<double>::quiet_NaN();
+  }
+}
+
+bool FormGainMatch::criterion_satisfied(DataPoint &data)
+{
+  return ((data.selected_peak != Qpx::Peak())
+          && (data.selected_peak.sum4_.peak_area.err() < ui->doubleError->value()));
+}
+
+void FormGainMatch::update_name()
+{
+  QString name = "Gain matching";
+  if (my_run_)
+    name += QString::fromUtf8("  \u25b6");
+  //  else if (spectra_.changed())
+  //    name += QString::fromUtf8(" \u2731");
+
+  if (name != this->windowTitle()) {
+    this->setWindowTitle(name);
+    emit toggleIO(true);
+  }
+}
+
+
+void FormGainMatch::on_pushAddCustom_clicked()
+{
+  bool ok;
+  QString name = QInputDialog::getText(this, "New custom variable",
+                                       "Name:", QLineEdit::Normal, "", &ok);
+  if (ok) {
+    for (auto &s : manual_settings_)
+      if (s.second.id_ == name.toStdString())
+      {
+        QMessageBox::information(this, "Already exists",
+                                 "Manual setting \'" + name + "\'' already exists");
+        return;
+      }
+
+    Qpx::Setting newset(name.toStdString());
+    newset.metadata.name = name.toStdString();
+    newset.metadata.setting_type = Qpx::SettingType::floating;
+    newset.metadata.flags.insert("manual");
+
+    double d = 0;
+
+    d = QInputDialog::getDouble(this, "Minimum",
+                                "Minimum value for " + name + " = ",
+                                0,
+                                std::numeric_limits<double>::min(),
+                                std::numeric_limits<double>::max(),
+                                0.001,
+                                &ok);
+    if (ok)
+      newset.metadata.minimum = d;
+    else
+      return;
+
+    d = QInputDialog::getDouble(this, "Maximum",
+                                "Maximum value for " + name + " = ",
+                                std::max(100.0, newset.metadata.minimum),
+                                newset.metadata.minimum,
+                                std::numeric_limits<double>::max(),
+                                0.001,
+                                &ok);
+    if (ok)
+      newset.metadata.maximum = d;
+    else
+      return;
+
+    d = QInputDialog::getDouble(this, "Step",
+                                "Step value for " + name + " = ",
+                                1,
+                                0,
+                                newset.metadata.maximum - newset.metadata.minimum,
+                                0.001,
+                                &ok);
+    if (ok)
+      newset.metadata.step = d;
+    else
+      return;
+
+
+    manual_settings_["[manual] " + newset.id_] = newset;
+    remake_domains();
+  }
+}
+
+void FormGainMatch::on_pushEditCustom_clicked()
+{
+  QString name = ui->comboSetting->currentText();
+  if (!manual_settings_.count(name.toStdString()))
+    return;
+  Qpx::Setting newset = manual_settings_.at(name.toStdString());
+
+  double d = 0;
+  bool ok;
+
+  d = QInputDialog::getDouble(this, "Minimum",
+                              "Minimum value for " + name + " = ",
+                              newset.metadata.minimum,
+                              std::numeric_limits<double>::min(),
+                              std::numeric_limits<double>::max(),
+                              0.001,
+                              &ok);
+  if (ok)
+    newset.metadata.minimum = d;
+  else
+    return;
+
+  d = QInputDialog::getDouble(this, "Maximum",
+                              "Maximum value for " + name + " = ",
+                              std::max(newset.metadata.maximum, newset.metadata.minimum),
+                              newset.metadata.minimum,
+                              std::numeric_limits<double>::max(),
+                              0.001,
+                              &ok);
+  if (ok)
+    newset.metadata.maximum = d;
+  else
+    return;
+
+  d = QInputDialog::getDouble(this, "Step",
+                              "Step value for " + name + " = ",
+                              newset.metadata.step,
+                              0,
+                              newset.metadata.maximum - newset.metadata.minimum,
+                              0.001,
+                              &ok);
+  if (ok)
+    newset.metadata.step = d;
+  else
+    return;
+
+  manual_settings_[name.toStdString()] = newset;
+  remake_domains();
+  ui->comboSetting->setCurrentText(name);
+  on_comboSetting_activated(0);
+}
+
+void FormGainMatch::on_pushDeleteCustom_clicked()
+{
+  QString name = ui->comboSetting->currentText();
+  if (!manual_settings_.count(name.toStdString()))
+    return;
+
+  int ret = QMessageBox::question(this,
+                                  "Delete setting?",
+                                  "Are you sure you want to delete custom manual setting \'"
+                                  + name + "\'?");
+
+  if (!ret)
+    return;
+
+  manual_settings_.erase(name.toStdString());
+  remake_domains();
+  on_comboSetting_activated(0);
+}
+
+
+
+void FormGainMatch::on_pushEditPrototypeRef_clicked()
+{
+  DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(sink_prototype_ref_, current_dets_, false, this);
+  if (newDialog->exec()) {
+    sink_prototype_ref_ = newDialog->product();
+    remake_source_domains();
+    remake_domains();
+  }
+}
+
+void FormGainMatch::on_pushEditPrototypeOpt_clicked()
+{
+  DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(sink_prototype_opt_, current_dets_, false, this);
+  if (newDialog->exec()) {
+    sink_prototype_opt_ = newDialog->product();
+    remake_source_domains();
+    remake_domains();
+  }
 }

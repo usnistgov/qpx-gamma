@@ -64,7 +64,7 @@
             </size>
            </property>
            <property name="toolTip">
-            <string>Start acquisition</string>
+            <string>Start experiment</string>
            </property>
            <property name="text">
             <string/>
@@ -105,7 +105,7 @@
             </size>
            </property>
            <property name="toolTip">
-            <string>Stop acquisition</string>
+            <string>Stop experiment</string>
            </property>
            <property name="text">
             <string/>
@@ -131,7 +131,7 @@
             </sizepolicy>
            </property>
            <property name="text">
-            <string>Source channel </string>
+            <string>Detector</string>
            </property>
           </widget>
          </item>
@@ -216,7 +216,7 @@
             </sizepolicy>
            </property>
            <property name="text">
-            <string>Sink type</string>
+            <string>Spectrum type</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -400,7 +400,7 @@
             </size>
            </property>
            <property name="toolTip">
-            <string>Add custom setting</string>
+            <string>Add manual setting</string>
            </property>
            <property name="text">
             <string/>
@@ -432,7 +432,7 @@
             </size>
            </property>
            <property name="toolTip">
-            <string>Edit custom setting</string>
+            <string>Edit manual setting</string>
            </property>
            <property name="text">
             <string/>
@@ -464,7 +464,7 @@
             </size>
            </property>
            <property name="toolTip">
-            <string>Delete custom setting</string>
+            <string>Delete manual setting</string>
            </property>
            <property name="text">
             <string/>

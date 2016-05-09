@@ -31,8 +31,8 @@ WidgetFitterAutoselect::WidgetFitterAutoselect(QWidget *parent)
   ui->setupUi(this);
 
   ui->comboAutoMethod->addItem("None");
-  ui->comboAutoMethod->addItem("Max(height)");
   ui->comboAutoMethod->addItem("Max(area)");
+  ui->comboAutoMethod->addItem("Max(height)");
   ui->comboAutoMethod->addItem("Nearest");
 }
 

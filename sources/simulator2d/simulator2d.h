@@ -106,6 +106,8 @@ protected:
 
   Hit model_hit;
 
+  uint64_t clock_;
+
 
 
 
