@@ -297,6 +297,47 @@
           </widget>
          </item>
          <item>
+          <widget class="QPushButton" name="pushClear">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>28</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>28</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Clear data</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="resources/qpxres.qrc">
+             <normaloff>:/icons/oxy/16/editclear.png</normaloff>:/icons/oxy/16/editclear.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>16</width>
+             <height>16</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="pushSaveCsv">
            <property name="enabled">
             <bool>false</bool>
@@ -761,7 +802,7 @@
             </size>
            </property>
            <property name="text">
-            <string>Select peak</string>
+            <string>Peak</string>
            </property>
           </widget>
          </item>
@@ -779,6 +820,22 @@
              <height>25</height>
             </size>
            </property>
+           <widget class="QCheckBox" name="checkAutofit">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>0</y>
+              <width>86</width>
+              <height>22</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Autofit</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
           </widget>
          </item>
         </layout>

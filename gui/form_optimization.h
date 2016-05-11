@@ -80,6 +80,7 @@ private slots:
   void on_comboSetting_activated(const QString &arg1);
   void on_comboUntil_activated(const QString &arg1);
   void on_comboSinkType_activated(const QString &arg1);
+  void on_comboCodomain_activated(const QString &arg1);
   void on_pushSaveCsv_clicked();
 
   void on_pushEditPrototype_clicked();
@@ -87,6 +88,8 @@ private slots:
   void on_pushAddCustom_clicked();
   void on_pushEditCustom_clicked();
   void on_pushDeleteCustom_clicked();
+
+  void on_pushClear_clicked();
 
 private:
   void loadSettings();

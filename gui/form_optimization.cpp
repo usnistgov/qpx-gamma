@@ -92,8 +92,8 @@ FormOptimization::FormOptimization(ThreadRunner& thread, XMLableDB<Qpx::Detector
   ui->comboUntil->addItem("Peak area % error <");
 
   ui->comboCodomain->addItem("FWHM (selected peak)");
-  ui->comboCodomain->addItem("Counts (selected peak)");
-  ui->comboCodomain->addItem("Total count");
+  ui->comboCodomain->addItem("Count rate (selected peak)");
+  ui->comboCodomain->addItem("Count rate (spectrum)");
   ui->comboCodomain->addItem("% dead time");
 
   loadSettings();
@@ -141,6 +141,7 @@ void FormOptimization::loadSettings() {
   ui->doubleCriterion->setValue(settings_.value("double_criterion", 1.0).toDouble());
   ui->timeDuration->set_total_seconds(settings_.value("time_criterion", 60).toULongLong());
   ui->comboCodomain->setCurrentText(settings_.value("co-domain", ui->comboUntil->currentText()).toString());
+  ui->checkAutofit->setChecked(settings_.value("autofit", true).toBool());
   ui->widgetAutoselect->loadSettings(settings_);
 
   ui->plotSpectrum->loadSettings(settings_);
@@ -178,6 +179,7 @@ void FormOptimization::saveSettings() {
   settings_.setValue("time_criterion", QVariant::fromValue(ui->timeDuration->total_seconds()));
   settings_.setValue("criterion", ui->comboUntil->currentText());
   settings_.setValue("co-domain", ui->comboCodomain->currentText());
+  settings_.setValue("autofit", ui->checkAutofit->isChecked());
   ui->widgetAutoselect->saveSettings(settings_);
 
   ui->plotSpectrum->saveSettings(settings_);
@@ -244,18 +246,25 @@ void FormOptimization::closeEvent(QCloseEvent *event) {
 
 void FormOptimization::toggle_push(bool enable, Qpx::SourceStatus status) {
   bool online = (status & Qpx::SourceStatus::can_run);
+  bool empty = experiment_.empty();
+  bool enable_domain_edit = (enable && !my_run_ && empty);
 
   ui->pushStart->setEnabled(enable && online && !my_run_);
-  ui->comboSetting->setEnabled(enable && !my_run_);
-  ui->doubleSpinStart->setEnabled(enable && !my_run_);
+
+  ui->comboSetting->setEnabled(enable_domain_edit);
+  ui->doubleSpinStart->setEnabled(enable_domain_edit);
   ui->doubleSpinDelta->setEnabled(enable);
   ui->doubleSpinEnd->setEnabled(enable);
-  ui->comboTarget->setEnabled(enable && !my_run_);
-  ui->spinBits->setEnabled(enable && !my_run_);
-  ui->comboCodomain->setEnabled(enable && !my_run_);
-  ui->pushAddCustom->setEnabled(enable && !my_run_);
-  ui->comboSinkType->setEnabled(enable && !my_run_);
-  ui->pushEditPrototype->setEnabled(enable && !my_run_);
+  ui->comboTarget->setEnabled(enable_domain_edit);
+  ui->spinBits->setEnabled(enable_domain_edit);
+  ui->pushAddCustom->setEnabled(enable_domain_edit);
+  ui->comboSinkType->setEnabled(enable_domain_edit);
+  ui->pushEditPrototype->setEnabled(enable_domain_edit);
+
+  ui->comboCodomain->setEnabled(enable);
+
+  ui->pushClear->setEnabled(enable && !my_run_ && !empty);
+  ui->pushSaveCsv->setEnabled(enable && !empty);
 }
 
 void FormOptimization::on_pushStart_clicked()
@@ -345,6 +354,8 @@ void FormOptimization::start_new_pass()
 
   experiment_.push_back(newdata);
   display_data(); //before new data arrives?
+  ui->tableResults->selectRow(experiment_.size() - 1);
+  pass_selected_in_table();
 
   emit settings_changed();
 
@@ -400,16 +411,15 @@ void FormOptimization::display_data()
   if (ui->tableResults->rowCount() != experiment_.size())
     ui->tableResults->setRowCount(experiment_.size());
 
-  ui->tableResults->setColumnCount(9);
+  ui->tableResults->setColumnCount(8);
   ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromStdString(current_setting_.metadata.name), QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Total count", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Total cps", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("Real time", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("Live time", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(4, new QTableWidgetItem("% dead", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(5, new QTableWidgetItem("Energy", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(6, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(7, new QTableWidgetItem("area", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(8, new QTableWidgetItem("%error", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("%dead", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(4, new QTableWidgetItem("Energy", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(5, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(6, new QTableWidgetItem("Peak cps", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(7, new QTableWidgetItem("%error", QTableWidgetItem::Type));
 
   QVector<double> xx(experiment_.size());;
   QVector<double> yy(experiment_.size());;
@@ -417,58 +427,64 @@ void FormOptimization::display_data()
 
   for (int i = 0; i < experiment_.size(); ++i)
   {
-    const DataPoint &data = experiment_.at(i);
+    DataPoint &data = experiment_.at(i);
+    eval_dependent(data);
+
+    double real_ms = data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("real_time"), Qpx::Match::id).value_duration.total_milliseconds();
+    double live_ms = data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id).value_duration.total_milliseconds();
 
     QTableWidgetItem *st = new QTableWidgetItem(QString::number(data.independent_variable));
     st->setFlags(st->flags() ^ Qt::ItemIsEditable);
     ui->tableResults->setItem(i, 0, st);
 
     double total_count = data.spectrum.metadata_.total_count.convert_to<double>();
+    if (live_ms > 0)
+      total_count = total_count / live_ms * 1000.0;
     QTableWidgetItem *tc = new QTableWidgetItem(QString::number(total_count));
     tc->setFlags(tc->flags() ^ Qt::ItemIsEditable);
     ui->tableResults->setItem(i, 1, tc);
 
-    Qpx::Setting real = data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("real_time"), Qpx::Match::id);
-    Qpx::Setting live = data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id);
-
-
-    QTableWidgetItem *rt = new QTableWidgetItem(QString::fromStdString(real.val_to_pretty_string()));
-    rt->setFlags(rt->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 2, rt);
-
-    QTableWidgetItem *lt = new QTableWidgetItem(QString::fromStdString(live.val_to_pretty_string()));
-    lt->setFlags(lt->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 3, lt);
-
-    double dead = real.value_duration.total_milliseconds() - live.value_duration.total_milliseconds();
-    if (real.value_duration.total_milliseconds() > 0)
-      dead = dead / real.value_duration.total_milliseconds() * 100.0;
+    double dead = real_ms - live_ms;
+    if (real_ms > 0)
+      dead = dead / real_ms * 100.0;
     else
       dead = 0;
 
+    std::string rtsimple = to_simple_string(data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("real_time"), Qpx::Match::id).value_duration);
+
+    QTableWidgetItem *rt = new QTableWidgetItem(QString::fromStdString(rtsimple));
+    rt->setFlags(rt->flags() ^ Qt::ItemIsEditable);
+    ui->tableResults->setItem(i, 2, rt);
+
     QTableWidgetItem *dt = new QTableWidgetItem(QString::number(dead));
     dt->setFlags(dt->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 4, dt);
+    ui->tableResults->setItem(i, 3, dt);
 
     UncertainDouble nrg = UncertainDouble::from_double(data.selected_peak.energy.val,
                                                        data.selected_peak.energy.uncert, 2);
     QTableWidgetItem *en = new QTableWidgetItem(QString::fromStdString(nrg.to_string(false, true)));
     en->setFlags(en->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 5, en);
+    ui->tableResults->setItem(i, 4, en);
 
     QTableWidgetItem *fw = new QTableWidgetItem(QString::number(data.selected_peak.fwhm_hyp));
     fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 6, fw);
+    ui->tableResults->setItem(i, 5, fw);
 
-    UncertainDouble ar = UncertainDouble::from_double(data.selected_peak.area_best.val,
-                                                      data.selected_peak.area_best.uncert, 2);
+    double ar_val = data.selected_peak.area_best.val;
+    double ar_unc = data.selected_peak.area_best.uncert;
+    if (live_ms > 0) {
+      ar_val = ar_val / live_ms * 1000.0;
+      ar_unc = ar_unc / live_ms * 1000.0;
+    }
+
+    UncertainDouble ar = UncertainDouble::from_double(ar_val, ar_unc, 2);
     QTableWidgetItem *area = new QTableWidgetItem(QString::fromStdString(ar.to_string(false, true)));
     area->setFlags(area->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 7, area);
+    ui->tableResults->setItem(i, 6, area);
 
     QTableWidgetItem *err = new QTableWidgetItem(QString::number(data.selected_peak.sum4_.peak_area.err()));
     err->setFlags(err->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 8, err);
+    ui->tableResults->setItem(i, 7, err);
 
     xx[i] = data.independent_variable;
     yy[i] = data.dependent_variable;
@@ -489,10 +505,7 @@ void FormOptimization::display_data()
   }
   //  ui->PlotCalib->redraw();
 
-  if (experiment_.size() && (experiment_.size() == (old_row_count + 1))) {
-    ui->tableResults->selectRow(old_row_count);
-    pass_selected_in_table();
-  } else if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
     std::set<double> sel;
     sel.insert(experiment_.at(selected_pass_).independent_variable);
     ui->PlotCalib->set_selected_pts(sel);
@@ -503,6 +516,7 @@ void FormOptimization::display_data()
     ui->PlotCalib->set_selected_pts(std::set<double>());
     ui->PlotCalib->redraw();
   }
+
 
   ui->pushSaveCsv->setEnabled(experiment_.size());
 }
@@ -518,28 +532,28 @@ void FormOptimization::pass_selected_in_table()
     std::set<double> sel;
     sel.insert(experiment_.at(selected_pass_).independent_variable);
     ui->PlotCalib->set_selected_pts(sel);
-    ui->PlotCalib->redraw();
   }
   else
   {
-    ui->PlotCalib->set_selected_pts(std::set<double>());
     selected_fitter_ = Qpx::Fitter();
-    ui->PlotCalib->redraw();
+    ui->PlotCalib->set_selected_pts(std::set<double>());
   }
   selected_fitter_.apply_settings(fitset);
+    ui->PlotCalib->redraw();
 
-
-  if (!ui->plotSpectrum->busy() && (selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
-    //    DBG << "fitter not busy";
+  if (!ui->plotSpectrum->busy()) {
     ui->plotSpectrum->updateData();
-    if (experiment_.at(selected_pass_).selected_peak != Qpx::Peak()) {
+    if ((selected_pass_ >= 0)
+        && (selected_pass_ < experiment_.size())
+        && experiment_.at(selected_pass_).selected_peak != Qpx::Peak())
+    {
       std::set<double> selected;
       selected.insert(experiment_.at(selected_pass_).selected_peak.center.val);
       ui->plotSpectrum->set_selected_peaks(selected);
     }
     if ((selected_fitter_.metadata_.total_count > 0)
         && selected_fitter_.peaks().empty()
-        && !ui->plotSpectrum->busy())
+        && ui->checkAutofit->isChecked())
       ui->plotSpectrum->perform_fit();
   }
 }
@@ -653,10 +667,13 @@ void FormOptimization::new_daq_data() {
 void FormOptimization::eval_dependent(DataPoint &data)
 {
   QString codomain = ui->comboCodomain->currentText();
-  if (codomain == "Total count")
+  data.dependent_variable = std::numeric_limits<double>::quiet_NaN();
+  if (codomain == "Count rate (spectrum)")
   {
+    double live_ms = data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id).value_duration.total_milliseconds();
     data.dependent_variable = data.spectrum.metadata_.total_count.convert_to<double>();
-    return;
+    if (live_ms > 0)
+      data.dependent_variable = data.dependent_variable  / live_ms * 1000.0;
   }
   else if (codomain == "% dead time")
   {
@@ -670,25 +687,22 @@ void FormOptimization::eval_dependent(DataPoint &data)
       dead = 0;
 
     data.dependent_variable = dead;
-    return;
   }
   else if (codomain == "FWHM (selected peak)")
   {
     if (data.selected_peak != Qpx::Peak())
       data.dependent_variable = data.selected_peak.fwhm_hyp;
-    else
-      data.dependent_variable = std::numeric_limits<double>::quiet_NaN();
-    return;
   }
-  else if (codomain == "Counts (selected peak)")
+  else if (codomain == "Count rate (selected peak)")
   {
-    if (data.selected_peak != Qpx::Peak())
+    double live_ms = data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id).value_duration.total_milliseconds();
+
+    if (data.selected_peak != Qpx::Peak()) {
       data.dependent_variable = data.selected_peak.area_best.val;
-    else
-      data.dependent_variable = std::numeric_limits<double>::quiet_NaN();
-    return;
+      if (live_ms > 0)
+        data.dependent_variable = data.dependent_variable  / live_ms * 1000.0;
+    }
   }
-  data.dependent_variable = std::numeric_limits<double>::quiet_NaN();
 }
 
 bool FormOptimization::criterion_satisfied(DataPoint &data)
@@ -915,7 +929,7 @@ void FormOptimization::remake_source_domains()
     if (!sink_prototype_.chan_relevant(i))
       continue;
     for (auto &q : current_dets_[i].settings_.branches.my_data_)
-      if (q.metadata.flags.count("optimize") > 0)
+      if (q.metadata.writable && q.metadata.visible && (q.metadata.setting_type == Qpx::SettingType::floating))
         source_settings_["[DAQ] " + q.id_
             + " (" + std::to_string(i) + ":" + current_dets_[i].name_ + ")"] = q;
   }
@@ -1084,4 +1098,21 @@ void FormOptimization::on_pushDeleteCustom_clicked()
   manual_settings_.erase(name.toStdString());
   remake_domains();
   on_comboSetting_activated("");
+}
+
+void FormOptimization::on_pushClear_clicked()
+{
+  experiment_.clear();
+  current_pass_ = -1;
+  selected_pass_ = -1;
+
+  display_data();
+  pass_selected_in_table();
+
+  emit toggleIO(true);
+}
+
+void FormOptimization::on_comboCodomain_activated(const QString &arg1)
+{
+  display_data();
 }
