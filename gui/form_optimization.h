@@ -132,6 +132,8 @@ private:
   void start_new_pass();
 
   void display_data();
+  void add_to_table(int row, int col, QString data);
+
   void do_post_processing();
   void eval_dependent(DataPoint &data);
   bool criterion_satisfied(DataPoint &data);

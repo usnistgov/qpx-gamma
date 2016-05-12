@@ -419,7 +419,9 @@ std::string Setting::val_to_string() const
 
 std::string Setting::val_to_pretty_string() const {
   std::string ret = val_to_string();
-  if ((metadata.setting_type == SettingType::int_menu) && metadata.int_menu_items.count(value_int))
+  if ((metadata.setting_type == SettingType::time_duration) && !value_duration.is_not_a_date_time())
+    ret = very_simple(value_duration);
+  else if ((metadata.setting_type == SettingType::int_menu) && metadata.int_menu_items.count(value_int))
     ret = metadata.int_menu_items.at(value_int);
   else if ((metadata.setting_type == SettingType::indicator) && metadata.int_menu_items.count(value_int))
     ret = get_setting(Setting(metadata.int_menu_items.at(value_int)), Match::id).metadata.name;

@@ -355,6 +355,7 @@ void FormOptimization::start_new_pass()
 
   DataPoint newdata;
   newdata.spectrum.apply_settings(selected_fitter_.settings());
+  newdata.spectrum.clear();
   newdata.independent_variable = current_setting_.number();
   newdata.dependent_variable = std::numeric_limits<double>::quiet_NaN();
 
@@ -408,6 +409,15 @@ void FormOptimization::do_post_processing() {
   }
 }
 
+void FormOptimization::add_to_table(int row, int col, QString data)
+{
+  QTableWidgetItem * item = new QTableWidgetItem(data);
+  item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+  item->setFlags(item->flags() ^ Qt::ItemIsEditable);
+  ui->tableResults->setItem(row, col, item);
+}
+
+
 void FormOptimization::display_data()
 {
   int old_row_count = ui->tableResults->rowCount();
@@ -417,15 +427,16 @@ void FormOptimization::display_data()
   if (ui->tableResults->rowCount() != experiment_.size())
     ui->tableResults->setRowCount(experiment_.size());
 
-  ui->tableResults->setColumnCount(8);
+  ui->tableResults->setColumnCount(9);
   ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromStdString(current_setting_.metadata.name), QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Total cps", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("Real time", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("%dead", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(4, new QTableWidgetItem("Energy", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(5, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(6, new QTableWidgetItem("Peak cps", QTableWidgetItem::Type));
-  ui->tableResults->setHorizontalHeaderItem(7, new QTableWidgetItem("%error", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("Live time", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("Real time", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(4, new QTableWidgetItem("Dead time", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(5, new QTableWidgetItem("Energy", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(6, new QTableWidgetItem("FWHM", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(7, new QTableWidgetItem("Peak cps", QTableWidgetItem::Type));
+  ui->tableResults->setHorizontalHeaderItem(8, new QTableWidgetItem("Peak error", QTableWidgetItem::Type));
 
   QVector<double> xx(experiment_.size());;
   QVector<double> yy(experiment_.size());;
@@ -436,66 +447,39 @@ void FormOptimization::display_data()
     DataPoint &data = experiment_.at(i);
     eval_dependent(data);
 
-    double real_ms = data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("real_time"), Qpx::Match::id).value_duration.total_milliseconds();
-    double live_ms = data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id).value_duration.total_milliseconds();
+    Qpx::Setting rt = data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("real_time"), Qpx::Match::id);
+    Qpx::Setting lt = data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id);
+    double real_ms = rt.value_duration.total_milliseconds();
+    double live_ms = lt.value_duration.total_milliseconds();
 
-    QTableWidgetItem *st = new QTableWidgetItem(QString::number(data.independent_variable));
-    st->setFlags(st->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 0, st);
+    add_to_table(i, 0, QString::number(data.independent_variable));
 
     double total_count = data.spectrum.metadata_.total_count.convert_to<double>();
     if (live_ms > 0)
       total_count = total_count / live_ms * 1000.0;
-    QTableWidgetItem *tc = new QTableWidgetItem(QString::number(total_count));
-    tc->setFlags(tc->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 1, tc);
+    add_to_table(i, 1, QString::number(total_count));
 
-    double dead = real_ms - live_ms;
-    if (real_ms > 0)
-      dead = dead / real_ms * 100.0;
-    else
-      dead = 0;
+    add_to_table(i, 2, QString::fromStdString(lt.val_to_pretty_string()));
+    add_to_table(i, 3, QString::fromStdString(rt.val_to_pretty_string()));
 
-    std::string rtsimple = very_simple(data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("real_time"), Qpx::Match::id).value_duration);
-
-    QTableWidgetItem *rt = new QTableWidgetItem(QString::fromStdString(rtsimple));
-    rt->setFlags(rt->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 2, rt);
-
-    QTableWidgetItem *dt = new QTableWidgetItem(QString::number(dead));
-    dt->setFlags(dt->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 3, dt);
+    UncertainDouble dt = UncertainDouble::from_double(real_ms, real_ms - live_ms, 2);
+    add_to_table(i, 4, QString::fromStdString(dt.error_percent()));
 
     UncertainDouble nrg = UncertainDouble::from_double(data.selected_peak.energy.val,
                                                        data.selected_peak.energy.uncert, 1);
-    QTableWidgetItem *en = new QTableWidgetItem(QString::fromStdString(nrg.to_string(false, true)));
-    en->setFlags(en->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 4, en);
+    add_to_table(i, 5, QString::fromStdString(nrg.to_string(false, true)));
 
     UncertainDouble fwu = UncertainDouble::from_double(data.selected_peak.hypermet_.width_.val * sqrt(log(2)),
                                                        data.selected_peak.hypermet_.width_.uncert * sqrt(log(2)),
                                                        1);
+    add_to_table(i, 6, QString::fromStdString(fwu.to_string(false, true)));
 
-    QTableWidgetItem *fw = new QTableWidgetItem(QString::fromStdString(fwu.to_string(false, true)));
-//    QTableWidgetItem *fw = new QTableWidgetItem(QString::number(data.selected_peak.fwhm_hyp));
-    fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 5, fw);
+    UncertainDouble ar = UncertainDouble::from_double(data.selected_peak.area_best.val,
+                                                      data.selected_peak.area_best.uncert, 1);
+    ar *= 1000.0 / live_ms;
 
-    double ar_val = data.selected_peak.area_best.val;
-    double ar_unc = data.selected_peak.area_best.uncert;
-    if (live_ms > 0) {
-      ar_val = ar_val / live_ms * 1000.0;
-      ar_unc = ar_unc / live_ms * 1000.0;
-    }
-
-    UncertainDouble ar = UncertainDouble::from_double(ar_val, ar_unc, 1);
-    QTableWidgetItem *area = new QTableWidgetItem(QString::fromStdString(ar.to_string(false, true)));
-    area->setFlags(area->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 6, area);
-
-    QTableWidgetItem *err = new QTableWidgetItem(QString::number(data.selected_peak.sum4_.peak_area.err()));
-    err->setFlags(err->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 7, err);
+    add_to_table(i, 7, QString::fromStdString(ar.to_string(false, true)));
+    add_to_table(i, 8, QString::fromStdString(ar.error_percent()));
 
     xx[i] = data.independent_variable;
     yy[i] = data.dependent_variable;

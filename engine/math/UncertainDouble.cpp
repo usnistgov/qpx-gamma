@@ -430,6 +430,65 @@ std::string UncertainDouble::to_string(bool prefix_magn, bool with_uncert) const
   }
 }
 
+std::string UncertainDouble::error_percent() const
+{
+    bool symmetric = (type_ == SymmetricUncertainty) || (upper_sigma_ == lower_sigma_);
+    if (symmetric) {
+      if (!std::isfinite(value_) || !std::isfinite(lower_sigma_) || (value_ == 0))
+        return "?";
+      double error = lower_sigma_ / value_ * 100.0;
+
+      if (error == 0.0)
+        return "-";
+      else if (error < 0.10)
+        return std::to_string(error) + "%";
+      else if (error >= 10)
+        return to_str_decimals(error, 0) + "%";
+      else
+        return to_str_decimals(error, 2) + "%";
+    }
+    else
+    {
+      if (!std::isfinite(value_)
+          || !std::isfinite(lower_sigma_)
+          || !std::isfinite(upper_sigma_)
+          || (value_ == 0))
+        return "?";
+      double lerror = lower_sigma_ / value_ * 100.0;
+      double uerror = upper_sigma_ / value_ * 100.0;
+      std::string low, upp;
+
+      if (lerror == 0.0)
+        ;
+      else if (lerror < 0.10)
+        low = UTF_subscript_dbl(lerror, order_of(lerror) + 2);
+      else if (lerror >= 10)
+        low = UTF_subscript_dbl(lerror, 0);
+      else
+        low = UTF_subscript_dbl(lerror, 2);
+
+      if (uerror == 0.0)
+        ;
+      else if (uerror < 0.10)
+        upp = UTF_subscript_dbl(uerror, order_of(uerror) + 2);
+      else if (uerror >= 10)
+        upp = UTF_subscript_dbl(uerror, 0);
+      else
+        upp = UTF_subscript_dbl(uerror, 2);
+
+      std::string ret;
+      if (!upp.empty())
+        ret += "\u207A" + upp;
+      if (!low.empty())
+        ret += "\u208B" + low;
+
+      if (!ret.empty())
+        return "(" + ret +  ")%";
+      else
+        return "-";
+    }
+}
+
 std::string UncertainDouble::to_markup() const
 {
   std::string ret = to_string(true);

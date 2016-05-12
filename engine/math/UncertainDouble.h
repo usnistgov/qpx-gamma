@@ -59,6 +59,7 @@ public:
 
     std::string to_string(bool prefix_magn, bool with_uncert = true) const;
     std::string to_markup() const; // outputs formatted text
+    std::string error_percent() const;
 
     UncertainDouble & operator*=(double other);
     UncertainDouble & operator+=(const UncertainDouble &other);
