@@ -55,8 +55,8 @@ FormFwhmCalibration::FormFwhmCalibration(XMLableDB<Qpx::Detector>& dets, Qpx::Fi
   ui->PlotCalib->setLabels("energy", "FWHM");
 
   ui->tablePeaks->verticalHeader()->hide();
-  ui->tablePeaks->setColumnCount(8);
-  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fwhm(s4)", "w %err(s4)", "CQI (s4)", "fwmw(hyp)", "w %err(hyp)", "fit %err(hyp)"});
+  ui->tablePeaks->setColumnCount(7);
+  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fwhm", "w %err(s4)", "CQI (s4)", "w %err(hyp)", "fit %err(hyp)"});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tablePeaks->setEditTriggers(QTableView::NoEditTriggers);
@@ -198,12 +198,11 @@ void FormFwhmCalibration::add_peak_to_table(const Qpx::Peak &p, int row, bool gr
 
   data_to_table(row, 0, p.center.val, background);
   data_to_table(row, 1, p.energy.val, background);
-  data_to_table(row, 2, p.fwhm_sum4, background);
+  data_to_table(row, 2, p.fwhm.value(), background);
   data_to_table(row, 3, p.sum4_.peak_area.err(), background);
   data_to_table(row, 4, p.sum4_.currie_quality_indicator, background);
-  data_to_table(row, 5, p.fwhm_hyp, background);
-  data_to_table(row, 6, p.hypermet_.width_.err(), background);
-  data_to_table(row, 7, (1 - p.hypermet_.rsq_) * 100, background);
+  data_to_table(row, 5, p.hypermet_.width_.err(), background);
+  data_to_table(row, 6, (1 - p.hypermet_.rsq_) * 100, background);
 }
 
 void FormFwhmCalibration::data_to_table(int row, int column, double value, QBrush background) {
@@ -223,7 +222,7 @@ void FormFwhmCalibration::replot_calib() {
 
   for (auto &q : fit_data_.peaks()) {
     double x = q.second.energy.val;
-    double y = q.second.fwhm_hyp;
+    double y = q.second.fwhm.value();
     double sigma = q.second.hypermet_.width_.uncert * 2 * sqrt(log(2));
 
     if (( (1 - q.second.hypermet_.rsq_) * 100 < ui->doubleMaxFitErr->value())
@@ -324,8 +323,8 @@ void FormFwhmCalibration::fit_calibration()
     if (( (1 - q.second.hypermet_.rsq_) * 100 < ui->doubleMaxFitErr->value())
         && (q.second.hypermet_.width_.err() < ui->doubleMaxWidthErr->value())) {
       xx.push_back(q.second.energy.val);
-      yy.push_back(q.second.fwhm_hyp);
-      yy_sigma.push_back(q.second.hypermet_.width_.uncert * 2 * sqrt(log(2)));
+      yy.push_back(q.second.fwhm.value());
+      yy_sigma.push_back(q.second.fwhm.lowerUncertainty());
     }
   }
 

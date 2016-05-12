@@ -319,7 +319,7 @@ void FormMultiGates::on_pushApprove_clicked()
     gate.approved = false;
     gate.constraints.labelfloat = true;
 
-    double w = q.second.fwhm_hyp * ui->doubleGateOn->value();
+    double w = q.second.fwhm.value() * ui->doubleGateOn->value();
     double L_nrg = q.second.energy.val - w / 2;
     double R_nrg = q.second.energy.val + w / 2;
     double L_chan = fit_data_.settings().cali_nrg_.inverse_transform(L_nrg, fit_data_.metadata_.bits);
@@ -361,7 +361,7 @@ void FormMultiGates::on_pushDistill_clicked()
 
     for (auto &p : gate.fit_data_.peaks()) {
       Peak &peak = p.second;
-      double w = peak.fwhm_hyp * ui->doubleGateOn->value();
+      double w = peak.fwhm.value() * ui->doubleGateOn->value();
       double L_nrg = peak.energy.val - w / 2;
       double R_nrg = peak.energy.val + w / 2;
       double L_chan = gate.fit_data_.settings().cali_nrg_.inverse_transform(L_nrg, gate.fit_data_.settings().bits_);
@@ -492,7 +492,7 @@ void FormMultiGates::update_peaks(bool content_changed) {
     box.visible = true;
     box.selected = ui->gatedSpectrum->get_selected_peaks().count(peak.center.val);
 
-    double w = peak.fwhm_hyp * ui->doubleGateOn->value();
+    double w = peak.fwhm.value() * ui->doubleGateOn->value();
     double L_nrg = peak.energy.val - w / 2;
     double R_nrg = peak.energy.val + w / 2;
     double L_chan = fit_data_.settings().cali_nrg_.inverse_transform(L_nrg, md_.bits);

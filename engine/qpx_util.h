@@ -282,4 +282,16 @@ inline boost::posix_time::ptime from_custom_format(std::string str, std::string 
   return tm;
 }
 
+inline std::string very_simple(const boost::posix_time::time_duration &duration)
+{
+  uint64_t s = duration.total_seconds();
+  uint64_t min = s / 60;
+  uint64_t h   = min / 60;
+  std::stringstream ss;
+  ss << h << ":"
+     << std::setfill('0') << std::setw(2) << min - (h*60) << ":"
+     << std::setfill('0') << std::setw(2) << s - (min*60);
+  return ss.str();
+}
+
 #endif

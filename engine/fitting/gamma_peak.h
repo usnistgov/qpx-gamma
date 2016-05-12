@@ -29,6 +29,7 @@
 #include "hypermet.h"
 #include "detector.h"
 #include "sum4.h"
+#include "UncertainDouble.h"
 
 namespace Qpx {
 
@@ -37,8 +38,8 @@ public:
   Peak()
       : center(0)
       , energy(0)
-      , fwhm_sum4(0)
-      , fwhm_hyp (0)
+//      , fwhm_sum4(0)
+//      , fwhm_hyp (0)
       , intensity_theoretical_(0.0)
       , efficiency_relative_(0.0)
   {}
@@ -53,7 +54,9 @@ public:
 
   ValUncert center, energy;
 
-  double fwhm_sum4, fwhm_hyp;
+  UncertainDouble fwhm;
+
+//  double fwhm_sum4, fwhm_hyp;
 
   ValUncert area_sum4, area_hyp, area_best;
   double cps_sum4, cps_hyp, cps_best;

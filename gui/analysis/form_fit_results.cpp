@@ -38,8 +38,8 @@ FormFitResults::FormFitResults(Qpx::Fitter &fit, QWidget *parent) :
   loadSettings();
 
   ui->tablePeaks->verticalHeader()->hide();
-  ui->tablePeaks->setColumnCount(10);
-  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fw(hyp)", "A(hyp)", "cps(hyp)", "fw(S4)", "A(S4)", "%err(S4)", "cps(S4)", "CQI"});
+  ui->tablePeaks->setColumnCount(9);
+  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fwhm", "A(hyp)", "cps(hyp)", "A(S4)", "%err(S4)", "cps(S4)", "CQI"});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tablePeaks->setEditTriggers(QTableView::NoEditTriggers);
@@ -111,14 +111,13 @@ void FormFitResults::add_peak_to_table(const Qpx::Peak &p, int row, bool gray) {
 
   data_to_table(row, 0, p.center.val, background);
   data_to_table(row, 1, p.energy.val, background);
-  data_to_table(row, 2, p.fwhm_hyp, background);
+  data_to_table(row, 2, p.fwhm.value(), background);
   data_to_table(row, 3, p.area_hyp.val, background);
   data_to_table(row, 4, p.cps_hyp, background);
-  data_to_table(row, 5, p.fwhm_sum4, background);
-  data_to_table(row, 6, p.area_sum4.val, background);
-  data_to_table(row, 7, p.sum4_.peak_area.err(), background);
-  data_to_table(row, 8, p.cps_sum4, background);
-  data_to_table(row, 9, p.sum4_.currie_quality_indicator, background);
+  data_to_table(row, 5, p.area_sum4.val, background);
+  data_to_table(row, 6, p.sum4_.peak_area.err(), background);
+  data_to_table(row, 7, p.cps_sum4, background);
+  data_to_table(row, 8, p.sum4_.currie_quality_indicator, background);
 
 }
 

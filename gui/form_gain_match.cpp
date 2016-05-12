@@ -670,7 +670,7 @@ void FormGainMatch::display_data()
     en->setFlags(en->flags() ^ Qt::ItemIsEditable);
     ui->tableResults->setItem(i, 1, en);
 
-    QTableWidgetItem *fw = new QTableWidgetItem(QString::number(data.selected_peak.fwhm_hyp));
+    QTableWidgetItem *fw = new QTableWidgetItem(QString::fromStdString(data.selected_peak.fwhm.to_string(false, true)));
     fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
     ui->tableResults->setItem(i, 2, fw);
 

@@ -326,14 +326,14 @@ void Fitter::save_report(std::string filename) {
   for (auto &q : peaks()) {
     file << std::setw( 16 ) << std::setprecision( 10 ) << q.second.center.val << " | "
          << std::setw( 15 ) << std::setprecision( 10 ) << q.second.energy.val << " | "
-         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_hyp << " | "
+//         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_hyp << " | "
          << std::setw( 26 ) << q.second.hypermet_.area().val_uncert(10) << " | "
          << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_hyp << " || ";
 
       file << std::setw( 26 ) << q.second.sum4_.centroid.val_uncert(10) << " | "
            << std::setw( 15 ) << q.second.sum4_.centroid.err(10) << " | "
 
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_sum4 << " | "
+//           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_sum4 << " | "
            << std::setw( 26 ) << q.second.sum4_.background_area.val_uncert(10) << " | "
            << std::setw( 15 ) << q.second.sum4_.background_area.err(10) << " | "
            << std::setw( 26 ) << q.second.sum4_.peak_area.val_uncert(10) << " | "

@@ -32,7 +32,7 @@ class FitParam : public XMLable {
 
 public:
   FitParam() :
-    FitParam("", 0)
+    FitParam("", std::numeric_limits<double>::quiet_NaN())
   {}
 
   FitParam(std::string name, double v) :

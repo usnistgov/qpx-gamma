@@ -113,9 +113,9 @@ SettingMeta::SettingMeta()
   , visible(true)
   , saveworthy(true)
   , address(-1)
-  , minimum(0)
-  , maximum(0)
-  , step(0)
+  , minimum(std::numeric_limits<double>::min())
+  , maximum(std::numeric_limits<double>::max())
+  , step(1)
   , max_indices(0)
 {}
 
@@ -747,17 +747,117 @@ void Setting::strip_metadata() {
 std::ostream& operator << (std::ostream &os, const Setting &s) {
   os << s.id_;
   if (s.indices.size()) {
-    os << " { ";
+    os << " [ ";
     for (auto &q : s.indices)
       os << q << " ";
-    os << "}";
+    os << "]";
   }
   os << " = " << s.val_to_pretty_string() << std::endl;
+  if (s.branches.size())
+    os << "{" << std::endl;
   for (auto &q : s.branches.my_data_)
-    os << "_" << q;
+    os << q;
+  if (s.branches.size())
+    os << "}" << std::endl;
   return os;
 }
 
+//For numerics
+bool Setting::is_numeric()
+{
+  return ((metadata.setting_type == SettingType::integer)
+          || (metadata.setting_type == SettingType::floating)
+          || (metadata.setting_type == SettingType::floating_precise));
+
+}
+
+double Setting::number()
+{
+  if (metadata.setting_type == SettingType::integer)
+    return value_int;
+  else if (metadata.setting_type == SettingType::floating)
+    return value_dbl;
+  else if (metadata.setting_type == SettingType::floating_precise)
+    return value_precise.convert_to<double>();
+  else
+    return std::numeric_limits<double>::quiet_NaN();
+}
+
+void Setting::set_number(double val)
+{
+  if (val > metadata.maximum)
+    val = metadata.maximum;
+  else if (val < metadata.minimum)
+    val = metadata.minimum;
+  if (metadata.setting_type == SettingType::integer)
+    value_int = val;
+  else if (metadata.setting_type == SettingType::floating)
+    value_dbl = val;
+  else if (metadata.setting_type == SettingType::floating_precise)
+    value_precise = val;
+}
+
+// prefix
+Setting& Setting::operator++()
+{
+  if (metadata.setting_type == SettingType::integer)
+  {
+    value_int += metadata.step;
+    if (value_int > metadata.maximum)
+      value_int = metadata.maximum;
+  }
+  else if (metadata.setting_type == SettingType::floating)
+  {
+    value_dbl += metadata.step;
+    if (value_dbl > metadata.maximum)
+      value_dbl = metadata.maximum;
+  }
+  else if (metadata.setting_type == SettingType::floating_precise)
+  {
+    value_precise += metadata.step;
+    if (value_precise > metadata.maximum)
+      value_precise = metadata.maximum;
+  }
+  return *this;
+}
+
+Setting& Setting::operator--()
+{
+  if (metadata.setting_type == SettingType::integer)
+  {
+    value_int -= metadata.step;
+    if (value_int < metadata.minimum)
+      value_int = metadata.minimum;
+  }
+  else if (metadata.setting_type == SettingType::floating)
+  {
+    value_dbl -= metadata.step;
+    if (value_dbl < metadata.minimum)
+      value_dbl = metadata.minimum;
+  }
+  else if (metadata.setting_type == SettingType::floating_precise)
+  {
+    value_precise -= metadata.step;
+    if (value_precise < metadata.minimum)
+      value_precise = metadata.minimum;
+  }
+  return *this;
+}
+
+// postfix
+Setting Setting::operator++(int)
+{
+  Setting tmp(*this);
+  operator++();
+  return tmp;
+}
+
+Setting Setting::operator--(int)
+{
+  Setting tmp(*this);
+  operator--();
+  return tmp;
+}
 
 
 }

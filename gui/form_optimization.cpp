@@ -28,6 +28,7 @@
 #include "daq_sink_factory.h"
 #include <QSettings>
 #include "qt_util.h"
+#include "qpx_util.h"
 #include "dialog_spectra_templates.h"
 
 #include "UncertainDouble.h"
@@ -216,7 +217,7 @@ void FormOptimization::closeEvent(QCloseEvent *event) {
                                      "Terminate?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
     if (reply == QMessageBox::Yes) {
-      current_setting_.value_dbl += current_setting_.metadata.step;
+      current_setting_++;
       QThread::sleep(2);
 
       opt_runner_thread_.terminate();
@@ -249,7 +250,7 @@ void FormOptimization::toggle_push(bool enable, Qpx::SourceStatus status) {
   bool empty = experiment_.empty();
   bool enable_domain_edit = (enable && !my_run_ && empty);
 
-  ui->pushStart->setEnabled(enable && online && !my_run_);
+  ui->pushStart->setEnabled(online && enable_domain_edit);
 
   ui->comboSetting->setEnabled(enable_domain_edit);
   ui->doubleSpinStart->setEnabled(enable_domain_edit);
@@ -258,6 +259,8 @@ void FormOptimization::toggle_push(bool enable, Qpx::SourceStatus status) {
   ui->comboTarget->setEnabled(enable_domain_edit);
   ui->spinBits->setEnabled(enable_domain_edit);
   ui->pushAddCustom->setEnabled(enable_domain_edit);
+  ui->pushEditCustom->setEnabled(enable_domain_edit);
+  ui->pushDeleteCustom->setEnabled(enable_domain_edit);
   ui->comboSinkType->setEnabled(enable_domain_edit);
   ui->pushEditPrototype->setEnabled(enable_domain_edit);
 
@@ -276,7 +279,7 @@ void FormOptimization::on_pushStart_clicked()
   if (all_settings_.count(ui->comboSetting->currentText().toStdString())) {
     current_setting_ = all_settings_.at(ui->comboSetting->currentText().toStdString());
 
-    current_setting_.value_dbl = ui->doubleSpinStart->value();
+    current_setting_.set_number(ui->doubleSpinStart->value());
     current_setting_.metadata.minimum = ui->doubleSpinStart->value();
     current_setting_.metadata.maximum = ui->doubleSpinEnd->value();
     current_setting_.metadata.step = ui->doubleSpinDelta->value();
@@ -292,7 +295,7 @@ void FormOptimization::on_pushStart_clicked()
 
 void FormOptimization::on_pushStop_clicked()
 {
-  current_setting_.value_dbl = current_setting_.metadata.maximum + 1;
+  current_setting_.metadata.maximum = current_setting_.number();
   interruptor_.store(true);
 }
 
@@ -302,13 +305,13 @@ void FormOptimization::start_new_pass()
   {
     bool ok;
     double d = QInputDialog::getDouble(this, QString::fromStdString(current_setting_.id_),
-                                       "Value?=", current_setting_.value_dbl,
+                                       "Value?=", current_setting_.number(),
                                        current_setting_.metadata.minimum,
                                        current_setting_.metadata.maximum,
                                        current_setting_.metadata.step,
                                        &ok);
     if (ok)
-      current_setting_.value_dbl = d;
+      current_setting_.set_number(d);
     else
     {
       update_name();
@@ -320,7 +323,10 @@ void FormOptimization::start_new_pass()
     Qpx::Engine::getInstance().set_setting(current_setting_, Qpx::Match::id | Qpx::Match::indices);
     QThread::sleep(1);
     Qpx::Engine::getInstance().get_all_settings();
-    current_setting_.value_dbl = Qpx::Engine::getInstance().pull_settings().get_setting(current_setting_, Qpx::Match::id | Qpx::Match::indices).value_dbl;
+    double newval = Qpx::Engine::getInstance().pull_settings().get_setting(current_setting_, Qpx::Match::id | Qpx::Match::indices).number();
+    if (newval < current_setting_.number())
+      return;
+    current_setting_.set_number(newval);
   }
   else if (sink_settings_.count(ui->comboSetting->currentText().toStdString()))
   {
@@ -338,7 +344,7 @@ void FormOptimization::start_new_pass()
 
   INFO << "<FormOptimization> Starting pass #" << (current_pass_ + 1)
        << " with " << ui->comboSetting->currentText().toStdString() << " = "
-       << current_setting_.value_dbl;
+       << current_setting_.number();
 
   Qpx::Setting set_pass("Pass");
   set_pass.value_int = current_pass_;
@@ -349,7 +355,7 @@ void FormOptimization::start_new_pass()
 
   DataPoint newdata;
   newdata.spectrum.apply_settings(selected_fitter_.settings());
-  newdata.independent_variable = current_setting_.value_dbl;
+  newdata.independent_variable = current_setting_.number();
   newdata.dependent_variable = std::numeric_limits<double>::quiet_NaN();
 
   experiment_.push_back(newdata);
@@ -388,10 +394,10 @@ void FormOptimization::run_completed() {
 
 void FormOptimization::do_post_processing() {
 
-  if (current_setting_.value_dbl < current_setting_.metadata.maximum) {
-    current_setting_.value_dbl += current_setting_.metadata.step;
+  if (current_setting_.number() < current_setting_.metadata.maximum) {
+    current_setting_++;
     current_pass_++;
-    DBG << "<FormOptimization> Setting incremented to " << current_setting_.value_dbl;
+    DBG << "<FormOptimization> Setting incremented to " << current_setting_.number();
 
 //    QThread::sleep(2);
     start_new_pass();
@@ -450,7 +456,7 @@ void FormOptimization::display_data()
     else
       dead = 0;
 
-    std::string rtsimple = to_simple_string(data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("real_time"), Qpx::Match::id).value_duration);
+    std::string rtsimple = very_simple(data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("real_time"), Qpx::Match::id).value_duration);
 
     QTableWidgetItem *rt = new QTableWidgetItem(QString::fromStdString(rtsimple));
     rt->setFlags(rt->flags() ^ Qt::ItemIsEditable);
@@ -461,12 +467,17 @@ void FormOptimization::display_data()
     ui->tableResults->setItem(i, 3, dt);
 
     UncertainDouble nrg = UncertainDouble::from_double(data.selected_peak.energy.val,
-                                                       data.selected_peak.energy.uncert, 2);
+                                                       data.selected_peak.energy.uncert, 1);
     QTableWidgetItem *en = new QTableWidgetItem(QString::fromStdString(nrg.to_string(false, true)));
     en->setFlags(en->flags() ^ Qt::ItemIsEditable);
     ui->tableResults->setItem(i, 4, en);
 
-    QTableWidgetItem *fw = new QTableWidgetItem(QString::number(data.selected_peak.fwhm_hyp));
+    UncertainDouble fwu = UncertainDouble::from_double(data.selected_peak.hypermet_.width_.val * sqrt(log(2)),
+                                                       data.selected_peak.hypermet_.width_.uncert * sqrt(log(2)),
+                                                       1);
+
+    QTableWidgetItem *fw = new QTableWidgetItem(QString::fromStdString(fwu.to_string(false, true)));
+//    QTableWidgetItem *fw = new QTableWidgetItem(QString::number(data.selected_peak.fwhm_hyp));
     fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
     ui->tableResults->setItem(i, 5, fw);
 
@@ -477,7 +488,7 @@ void FormOptimization::display_data()
       ar_unc = ar_unc / live_ms * 1000.0;
     }
 
-    UncertainDouble ar = UncertainDouble::from_double(ar_val, ar_unc, 2);
+    UncertainDouble ar = UncertainDouble::from_double(ar_val, ar_unc, 1);
     QTableWidgetItem *area = new QTableWidgetItem(QString::fromStdString(ar.to_string(false, true)));
     area->setFlags(area->flags() ^ Qt::ItemIsEditable);
     ui->tableResults->setItem(i, 6, area);
@@ -646,7 +657,7 @@ void FormOptimization::new_daq_data() {
 
     if ((md.total_count > 0) && (pass) && (pass.value_int < experiment_.size())) {
       experiment_[pass.value_int].spectrum.setData(q.second);
-      double variable = md.attributes.branches.get(current_setting_).value_dbl;
+      double variable = md.attributes.branches.get(current_setting_).number();
       experiment_[pass.value_int].independent_variable = variable;
       eval_dependent(experiment_[pass.value_int]);
       display_data();
@@ -656,7 +667,7 @@ void FormOptimization::new_daq_data() {
         if (current_pass_ == selected_pass_)
         {
           pass_selected_in_table();
-          if (!ui->plotSpectrum->busy())
+          if (!ui->plotSpectrum->busy() && ui->checkAutofit->isChecked())
             ui->plotSpectrum->perform_fit();
         }
       }
@@ -691,7 +702,7 @@ void FormOptimization::eval_dependent(DataPoint &data)
   else if (codomain == "FWHM (selected peak)")
   {
     if (data.selected_peak != Qpx::Peak())
-      data.dependent_variable = data.selected_peak.fwhm_hyp;
+      data.dependent_variable = data.selected_peak.fwhm.value();
   }
   else if (codomain == "Count rate (selected peak)")
   {
@@ -721,7 +732,7 @@ bool FormOptimization::criterion_satisfied(DataPoint &data)
   else
   {
     WARN << "<FormOptimize> Bad criterion for DAQ termination";
-    current_setting_.value_dbl = current_setting_.metadata.maximum + 1;
+    current_setting_.metadata.maximum = current_setting_.number();
     return true;
   }
   return false;
@@ -758,30 +769,20 @@ void FormOptimization::remake_domains()
   all_settings_.clear();
 
   for (auto &s : source_settings_)
-  {
-    if (!s.second.metadata.writable || !s.second.metadata.visible)
-      continue;
-
-    if (s.second.metadata.setting_type == Qpx::SettingType::floating)
+    if (s.second.metadata.writable
+        && s.second.metadata.visible
+        && s.second.is_numeric())
       all_settings_[s.first] = s.second;
-    //also allow for integer, floating_precise?
-  }
 
   for (auto &s : sink_settings_)
-  {
-    if (!s.second.metadata.writable || !s.second.metadata.visible)
-      continue;
-
-    if (s.second.metadata.setting_type == Qpx::SettingType::floating)
+    if (s.second.metadata.writable
+        && s.second.metadata.visible
+        && s.second.is_numeric())
       all_settings_[s.first] = s.second;
-    //also allow for integer, floating_precise?
-  }
 
   for (auto &s : manual_settings_)
-  {
-    if (s.second.metadata.setting_type == Qpx::SettingType::floating)
+    if (s.second.is_numeric())
       all_settings_[s.first] = s.second;
-  }
 
   ui->comboSetting->clear();
   for (auto &q : all_settings_)
@@ -929,9 +930,8 @@ void FormOptimization::remake_source_domains()
     if (!sink_prototype_.chan_relevant(i))
       continue;
     for (auto &q : current_dets_[i].settings_.branches.my_data_)
-      if (q.metadata.writable && q.metadata.visible && (q.metadata.setting_type == Qpx::SettingType::floating))
-        source_settings_["[DAQ] " + q.id_
-            + " (" + std::to_string(i) + ":" + current_dets_[i].name_ + ")"] = q;
+      source_settings_["[DAQ] " + q.id_
+          + " (" + std::to_string(i) + ":" + current_dets_[i].name_ + ")"] = q;
   }
 }
 
@@ -1026,6 +1026,7 @@ void FormOptimization::on_pushAddCustom_clicked()
 
     manual_settings_["[manual] " + newset.id_] = newset;
     remake_domains();
+    saveSettings();
   }
 }
 
@@ -1079,6 +1080,7 @@ void FormOptimization::on_pushEditCustom_clicked()
   remake_domains();
   ui->comboSetting->setCurrentText(name);
   on_comboSetting_activated("");
+  saveSettings();
 }
 
 void FormOptimization::on_pushDeleteCustom_clicked()
@@ -1098,6 +1100,7 @@ void FormOptimization::on_pushDeleteCustom_clicked()
   manual_settings_.erase(name.toStdString());
   remake_domains();
   on_comboSetting_activated("");
+  saveSettings();
 }
 
 void FormOptimization::on_pushClear_clicked()

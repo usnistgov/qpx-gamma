@@ -36,7 +36,7 @@ void Peak::construct(FitSettings fs) {
     center.uncert = sum4_.centroid.uncert;
   }
 
-  if (std::isinf(center.uncert) || std::isnan(center.uncert)) {
+  if (!std::isfinite(center.uncert)) {
     center.uncert = sum4_.centroid.uncert;
 //    DBG << "overriding peak center uncert with sum4 for " << center.val << " with " << sum4_.centroid.to_string();
   }
@@ -48,15 +48,24 @@ void Peak::construct(FitSettings fs) {
   energy.uncert = emax - emin;
 
 
-  double L, R;
-
-  L = sum4_.centroid.val - sum4_.fwhm / 2;
-  R = sum4_.centroid.val + sum4_.fwhm / 2;
-  fwhm_sum4 = fs.cali_nrg_.transform(R, fs.bits_) - fs.cali_nrg_.transform(L, fs.bits_);
-
-  L = hypermet_.center_.val - hypermet_.width_.val * sqrt(log(2));
-  R = hypermet_.center_.val + hypermet_.width_.val * sqrt(log(2));
-  fwhm_hyp = fs.cali_nrg_.transform(R, fs.bits_) - fs.cali_nrg_.transform(L, fs.bits_);
+  if (std::isfinite(hypermet_.width_.val))
+  {
+    double L, R, uL, uR;
+    L = hypermet_.center_.val - hypermet_.width_.val * sqrt(log(2));
+    R = hypermet_.center_.val + hypermet_.width_.val * sqrt(log(2));
+    uL = hypermet_.center_.val - (hypermet_.width_.val + hypermet_.width_.uncert) * sqrt(log(2));
+    uR = hypermet_.center_.val + (hypermet_.width_.val + hypermet_.width_.uncert) * sqrt(log(2));
+    fwhm = UncertainDouble::from_double(fs.cali_nrg_.transform(R, fs.bits_) - fs.cali_nrg_.transform(L, fs.bits_),
+                           fs.cali_nrg_.transform(uR, fs.bits_) - fs.cali_nrg_.transform(uL, fs.bits_),
+                           1);
+  } else {
+    double L, R;
+    L = sum4_.centroid.val - sum4_.fwhm / 2;
+    R = sum4_.centroid.val + sum4_.fwhm / 2;
+    fwhm = UncertainDouble::from_double(fs.cali_nrg_.transform(R, fs.bits_) - fs.cali_nrg_.transform(L, fs.bits_),
+                           std::numeric_limits<double>::quiet_NaN(),
+                           1);
+  }
 
   area_hyp = hypermet_.area();
   area_sum4 = sum4_.peak_area;

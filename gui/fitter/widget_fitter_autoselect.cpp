@@ -128,7 +128,7 @@ std::set<double> WidgetFitterAutoselect::reselect(const std::map<double, Qpx::Pe
         selection = p.first;
       }
     }
-    if (abs(selection - prev) < ui->doubleSlack->value() * peaks.at(selection).fwhm_hyp)
+    if (abs(selection - prev) < ui->doubleSlack->value() * peaks.at(selection).fwhm.value())
       newselr.insert(selection);
   }
 

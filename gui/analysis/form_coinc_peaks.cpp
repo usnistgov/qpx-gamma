@@ -193,7 +193,7 @@ void FormCoincPeaks::add_peak_to_table(const Qpx::Peak &p, int row, QColor bckg)
   nrg->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 1, nrg);
 
-  QTableWidgetItem *fwhm = new QTableWidgetItem(QString::number(p.fwhm_hyp));
+  QTableWidgetItem *fwhm = new QTableWidgetItem(QString::fromStdString(p.fwhm.to_string(false, true)));
   fwhm->setData(Qt::BackgroundRole, background);
   ui->tablePeaks->setItem(row, 2, fwhm);
 

@@ -168,6 +168,19 @@ struct Setting : public XMLable {
   void to_xml(pugi::xml_node &node, bool with_metadata) const;
   void to_xml(pugi::xml_node &node) const override {this->to_xml(node, false);}
 
+  //Numerics only (float, integer, floatprecise)
+  bool is_numeric();
+  double number();
+  void set_number(double);
+
+  // prefix
+  Setting& operator++();
+  Setting& operator--();
+
+  // postfix
+  Setting operator++(int);
+  Setting operator--(int);
+
 private:
   std::string val_to_string() const;
   void val_from_node(const pugi::xml_node &node);

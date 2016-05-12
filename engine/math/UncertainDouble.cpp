@@ -26,6 +26,12 @@ UncertainDouble::UncertainDouble(double val, double symmetricSigma, uint16_t sig
   , sign_(s)
   , type_(SymmetricUncertainty)
 {
+  if (!std::isfinite(symmetricSigma))
+    type_ = Approximately;
+  if (!std::isfinite(val)) {
+    sign_ = UndefinedSign;
+    type_ = UndefinedType;
+  }
 }
 
 UncertainDouble UncertainDouble::from_int(int64_t val, double sigma)
@@ -46,7 +52,11 @@ UncertainDouble UncertainDouble::from_double(double val, double sigma,
   int16_t order2 = order_of(sigma);
   int16_t upper = std::max(order1, order2);
   int16_t lower = std::min(order1, order2);
-  uint16_t sigs = upper - lower + sigs_below;
+  if (!std::isfinite(sigma)) {
+    upper = order1;
+    lower = 0;
+  }
+  uint16_t sigs = upper - lower + sigs_below + 1;
   return UncertainDouble (val, sigma, sigs, s);
 }
 
@@ -297,17 +307,18 @@ std::string UncertainDouble::to_string(bool prefix_magn, bool with_uncert) const
     val = std::abs(val);
   }
   else if (sign_ == UndefinedSign) {
-    signprefix = "?";
-    val = std::abs(val);
+    //    signprefix = "?";
+    //    val = std::abs(val);
+    return "?";
   }
   
   switch (type_) {
+
+  //rendering of val make better
   case Systematics:
     return signprefix + to_str_precision(val) + " (sys)";
   case Calculated:
     return signprefix + to_str_precision(val) + " (calc)";
-  case Approximately:
-    return "~" + signprefix + to_str_precision(val);
   case GreaterEqual:
     return "≥" + signprefix + to_str_precision(val);
   case GreaterThan:
@@ -316,13 +327,10 @@ std::string UncertainDouble::to_string(bool prefix_magn, bool with_uncert) const
     return "≤" + signprefix + to_str_precision(val);
   case LessThan:
     return "<" + signprefix + to_str_precision(val);
+  case Approximately:
   case SymmetricUncertainty:
   case AsymmetricUncertainty:
   {
-    // return precise numbers without uncertainty
-    if (upper_sigma_ == 0.0 && lower_sigma_ == 0.0)
-      return signprefix + to_str_precision(val);
-
     bool symmetric = (type_ == SymmetricUncertainty) || (upper_sigma_ == lower_sigma_);
     
     int orderOfValue = order_of(val);
@@ -333,7 +341,10 @@ std::string UncertainDouble::to_string(bool prefix_magn, bool with_uncert) const
     else
       orderOfUncert = std::max(order_of(lower_sigma_), order_of(upper_sigma_));
 
-    bool insiginficant = (orderOfValue - orderOfUncert) > 6;
+    bool showuncert = (type_ != Approximately)
+        && ((orderOfValue - orderOfUncert) <= 6)
+        && (!(upper_sigma_ == 0.0 && lower_sigma_ == 0.0));
+
     bool as_percent = (orderOfValue - orderOfUncert) > 6; //not implemented
     int targetOrder = orderOfValue;
     if (orderOfUncert > orderOfValue)
@@ -346,11 +357,13 @@ std::string UncertainDouble::to_string(bool prefix_magn, bool with_uncert) const
     int decimals = 0;
     if (sigfigs_ > (orderOfValue - exponent))
       decimals = sigfigs_ - (orderOfValue - exponent) - 1;
+    else if (sigfigs_ > orderOfValue)
+      decimals = sigfigs_ - orderOfValue;
 
     std::string val_str = to_str_decimals(value_ / pow(10.0, exponent), decimals);
 
     std::string uncertstr;
-    if (!insiginficant) {
+    if (showuncert) {
       if (symmetric) //symmetrical
       {
         double unc_shifted = lower_sigma_ / pow(10.0, exponent);
@@ -358,7 +371,7 @@ std::string UncertainDouble::to_string(bool prefix_magn, bool with_uncert) const
         if (!decimals)
           unc_str = to_str_precision(unc_shifted);
         else if (unc_shifted < 1.0)
-          unc_str = to_str_precision(unc_shifted / pow(10.0, -decimals));
+          unc_str = to_str_decimals(unc_shifted / pow(10.0, -decimals), 0);
         else
           unc_str = to_str_decimals(unc_shifted, orderOfUncert - exponent + decimals );
         if (!unc_str.empty())
@@ -395,8 +408,9 @@ std::string UncertainDouble::to_string(bool prefix_magn, bool with_uncert) const
         if (!unc_str_l.empty())
           uncertstr += "\u208B" + unc_str_l;
       }
-    } else
-      uncertstr = "~";
+    }
+    else if (!(upper_sigma_ == 0.0 && lower_sigma_ == 0.0))
+      signprefix = signprefix + "~";
 
     std::string result = val_str;
 
@@ -412,7 +426,7 @@ std::string UncertainDouble::to_string(bool prefix_magn, bool with_uncert) const
     return signprefix + result;
   }
   default:
-    return "undefined";
+    return "?";
   }
 }
 
@@ -479,28 +493,3 @@ UncertainDouble::operator double() const
   return value_;
 }
 
-
-
-//QDataStream &operator <<(QDataStream &out, const UncertainDouble &u)
-//{
-//    out << u.value_;
-//    out << u.lower_sigma_;
-//    out << u.upper_sigma_;
-//    out << int(u.sign_);
-//    out << int(u.type_);
-//    return out;
-//}
-
-
-//QDataStream &operator >>(QDataStream &in, UncertainDouble &u)
-//{
-//    in >> u.value_;
-//    in >> u.lower_sigma_;
-//    in >> u.upper_sigma_;
-//    int tmp;
-//    in >> tmp;
-//    u.sign_ = UncertainDouble::Sign(tmp);
-//    in >> tmp;
-//    u.type_ = UncertainDouble::UncertaintyType(tmp);
-//    return in;
-//}
