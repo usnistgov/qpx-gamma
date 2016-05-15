@@ -28,7 +28,7 @@
 #include "special_delegate.h"
 #include "widget_plot_calib.h"
 #include <QItemSelection>
-#include "gamma_fitter.h"
+#include "fitter.h"
 
 namespace Ui {
 class FormFwhmCalibration;
@@ -98,8 +98,6 @@ private:
   void select_in_plot();
 
   void add_peak_to_table(const Qpx::Peak &, int, bool);
-  void data_to_table(int row, int column, double value, QBrush background);
-
 };
 
 #endif // FORM_FWHM_CALIBRATION_H

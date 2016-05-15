@@ -169,3 +169,16 @@ QString catFileTypes(QStringList types) {
   }
   return ret;
 }
+
+void add_to_table(QTableWidget *table,
+                  int row, int col, std::string data,
+                  QVariant value, QBrush background)
+{
+  QTableWidgetItem * item = new QTableWidgetItem(QString::fromStdString(data));
+//  item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+  item->setFlags(item->flags() ^ Qt::ItemIsEditable);
+  item->setData(Qt::UserRole, value);
+  item->setData(Qt::BackgroundRole, background);
+  table->setItem(row, col, item);
+//  DBG << "added " << data << " and " << value.toDouble();
+}

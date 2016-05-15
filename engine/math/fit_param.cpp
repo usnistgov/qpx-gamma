@@ -35,9 +35,8 @@ std::string FitParam::fityk_name(int function_num) const {
 }
 
 std::string FitParam::def_bounds() const {
-
   std::string ret = "~";
-  ret += boost::lexical_cast<std::string>(val) +
+  ret += boost::lexical_cast<std::string>(value.value()) +
          " [" + boost::lexical_cast<std::string>(lbound) +
           ":" + boost::lexical_cast<std::string>(ubound) + "]";
   return ret;
@@ -60,8 +59,8 @@ double FitParam::get_err(fityk::Fityk* f,
 bool FitParam::extract(fityk::Fityk* f, fityk::Func* func)
 {
   try {
-    val = func->get_param_value(name_);
-    uncert = get_err(f, func->name);
+    value = UncertainDouble::from_double(func->get_param_value(name_),
+                                         get_err(f, func->name));
 //    DBG << "<FitParam> " << name_ << " = " << val << " +/- " << uncert;
   } catch (...) {
     return false;
@@ -70,34 +69,33 @@ bool FitParam::extract(fityk::Fityk* f, fityk::Func* func)
 }
 
 std::string FitParam::to_string() const {
-  std::string ret = name_ + " = " + boost::lexical_cast<std::string>(val) +
-      "\u00B1" + boost::lexical_cast<std::string>(uncert) +
+  std::string ret = name_ + " = " + value.to_string() +
       " [" + boost::lexical_cast<std::string>(lbound) +
        ":" + boost::lexical_cast<std::string>(ubound) + "]";
   return ret;
 }
 
-std::string FitParam::val_uncert(uint16_t precision) const
-{
-  std::stringstream ss;
-  ss << std::setprecision( precision ) << val << " \u00B1 " << uncert;
-  return ss.str();
-}
+//std::string FitParam::val_uncert(uint16_t precision) const
+//{
+//  std::stringstream ss;
+//  ss << std::setprecision( precision ) << val << " \u00B1 " << uncert;
+//  return ss.str();
+//}
 
-double FitParam::err() const
-{
-  double ret = std::numeric_limits<double>::infinity();
-  if (val != 0)
-    ret = uncert / val * 100.0;
-  return ret;
-}
+//double FitParam::err() const
+//{
+//  double ret = std::numeric_limits<double>::infinity();
+//  if (val != 0)
+//    ret = uncert / val * 100.0;
+//  return ret;
+//}
 
-std::string FitParam::err(uint16_t precision) const
-{
-  std::stringstream ss;
-  ss << std::setprecision( precision ) << err() << "%";
-  return ss.str();
-}
+//std::string FitParam::err(uint16_t precision) const
+//{
+//  std::stringstream ss;
+//  ss << std::setprecision( precision ) << err() << "%";
+//  return ss.str();
+//}
 
 
 FitParam FitParam::enforce_policy() {
@@ -105,40 +103,34 @@ FitParam FitParam::enforce_policy() {
   if (!ret.enabled) {
     ret.ubound = ret.lbound;
     ret.lbound = 0;
-    ret.val = ret.lbound;
+    ret.value.setValue(ret.lbound);
   } else if (ret.fixed) {
-    ret.ubound = ret.val + ret.lbound  * 0.01;
-    ret.lbound = ret.val - ret.lbound  * 0.01;
+    ret.ubound = ret.value.value() + ret.lbound  * 0.01;
+    ret.lbound = ret.value.value() - ret.lbound  * 0.01;
   }
   return ret;
 }
 
 FitParam FitParam::operator^(const FitParam &other) const
 {
-  double avg = (val + other.val) * 0.5;
+  double avg = (value.value() + other.value.value()) * 0.5;
   double min = avg;
   double max = avg;
-  if (!std::isnan(uncert)) {
-    min = std::min(avg, val - 0.5 * uncert);
-    max = std::max(avg, val + 0.5 * uncert);
+  if (std::isfinite(value.uncertainty())) {
+    min = std::min(avg, value.value() - 0.5 * value.uncertainty());
+    max = std::max(avg, value.value() + 0.5 * value.uncertainty());
   }
-  if (!std::isnan(other.uncert)) {
-    min = std::min(avg, other.val - 0.5 * other.uncert);
-    max = std::max(avg, other.val + 0.5 * other.uncert);
+  if (std::isfinite(other.value.uncertainty())) {
+    min = std::min(avg, other.value.uncertainty() - 0.5 * other.value.uncertainty());
+    max = std::max(avg, other.value.uncertainty() + 0.5 * other.value.uncertainty());
   }
   FitParam ret;
-  ret.val = avg;
-  ret.uncert = max - min;
+  ret.value = UncertainDouble::from_double(avg, max - min);
 }
 
 bool FitParam::operator%(const FitParam &other) const
 {
-  bool ret = false;
-  if (!std::isnan(uncert) && (std::abs(val - other.val) <= uncert))
-    ret = true;
-  if (!std::isnan(other.uncert) && (std::abs(val - other.val) <= other.uncert))
-    ret = true;
-  return ret;
+  return value.almost(other.value);
 }
 
 
@@ -148,23 +140,19 @@ void FitParam::to_xml(pugi::xml_node &root) const {
   node.append_attribute("name").set_value(name_.c_str());
   node.append_attribute("enabled").set_value(enabled);
   node.append_attribute("fixed").set_value(fixed);
-
-
-  node.append_attribute("value").set_value(to_max_precision(val).c_str());
-  node.append_attribute("uncert").set_value(to_max_precision(uncert).c_str());
   node.append_attribute("lbound").set_value(to_max_precision(lbound).c_str());
   node.append_attribute("ubound").set_value(to_max_precision(ubound).c_str());
+  value.to_xml(node);
 }
 
 void FitParam::from_xml(const pugi::xml_node &node) {
   name_ = std::string(node.attribute("name").value());
   enabled = node.attribute("enabled").as_bool(true);
   fixed = node.attribute("fixed").as_bool(false);
-
-  val = node.attribute("value").as_double(0);
-  uncert = node.attribute("uncert").as_double(std::numeric_limits<double>::infinity());
   lbound = node.attribute("lbound").as_double(std::numeric_limits<double>::min());
   ubound = node.attribute("ubound").as_double(std::numeric_limits<double>::max());
+  if (node.child(value.xml_element_name().c_str()))
+    value.from_xml(node.child(value.xml_element_name().c_str()));
 }
 
 

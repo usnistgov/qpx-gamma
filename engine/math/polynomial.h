@@ -24,6 +24,7 @@
 #define POLYNOMIAL_H
 
 #include "coef_function.h"
+#include "xmlable.h"
 
 //class Polynomial {
 //public:
@@ -56,7 +57,7 @@
 //  bool extract_params(fityk::Func*, const std::vector<uint16_t> &degrees);
 //};
 
-class PolyBounded : public CoefFunction {
+class PolyBounded : public CoefFunction, public XMLable {
 public:
   PolyBounded() {}
   PolyBounded(std::vector<double> coeffs, double uncert, double rsq) :
@@ -72,6 +73,10 @@ public:
   std::string to_markup(int precision = -1, bool with_rsq = false) override;
   double eval(double x)  override;
   double derivative(double x) override;
+
+  void to_xml(pugi::xml_node &node) const override;
+  void from_xml(const pugi::xml_node &node) override;
+  std::string xml_element_name() const override {return "PolyBounded";}
 };
 
 #endif

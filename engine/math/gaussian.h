@@ -29,7 +29,6 @@
 #include "polynomial.h"
 #include "fityk.h"
 #include "fit_settings.h"
-#include "val_uncert.h"
 
 class Gaussian {
 public:
@@ -47,7 +46,7 @@ public:
 
   double evaluate(double x);
   std::vector<double> evaluate_array(std::vector<double> x);
-  ValUncert area() const;
+  UncertainDouble area() const;
   
   FitParam height_, hwhm_, center_;
   double rsq_;

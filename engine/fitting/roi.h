@@ -23,10 +23,11 @@
 #ifndef QPX_ROI_H
 #define QPX_ROI_H
 
-#include "gamma_peak.h"
+#include "peak.h"
 #include "polynomial.h"
 #include "finder.h"
 #include <boost/atomic.hpp>
+#include "xmlable.h"
 
 namespace Qpx {
 
@@ -82,23 +83,31 @@ struct ROI {
   void render();
   void save_current_fit();
 
-  //intrinsic
-  FitSettings settings_;
 
+  void to_xml(pugi::xml_node &node) const;
+  void from_xml(const pugi::xml_node &node, const Finder &finder, const FitSettings &parentsettings);
+  std::string xml_element_name() const {return "Region";}
+
+
+  //history
   std::vector<Fit> fits_;
-//  Fit current_fit_;
+  //  Fit current_fit_;
 
-  //per_fit
-  Finder finder_;
-  std::map<double, Peak> peaks_;
-
-  PolyBounded background_;
+  //derived from edges
   PolyBounded sum4_background_;
-
   //rendition
   std::vector<double> hr_x, hr_x_nrg,
                       hr_background, hr_back_steps,
                       hr_fullfit, hr_sum4_background_;
+
+
+  //needs to be forwarded by fitter
+  Finder finder_;
+
+  //save these
+  FitSettings settings_; //from fitter
+  PolyBounded background_;
+  std::map<double, Peak> peaks_;
 
 private:
   SUM4Edge LB_, RB_;

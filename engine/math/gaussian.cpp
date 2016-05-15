@@ -57,10 +57,8 @@ bool Gaussian::extract_params(fityk::Fityk* f, fityk::Func* func) {
     height_.extract(f, func);
     hwhm_.extract(f, func);
 
-    if (func->get_template_name() == "Gauss2") {
-      hwhm_.val *= log(2);
-      hwhm_.uncert *= log(2);
-    }
+    if (func->get_template_name() == "Gauss2")
+      hwhm_.value *= log(2);
 
 //        DBG << "Gaussian fit as  c=" << center_ << " h=" << height_ << " w=" << width_;
   }
@@ -180,19 +178,19 @@ std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x,
 
   if (use_w_common) {
     FitParam w_common = settings.width_common_bounds;
-    double centers_avg;
+    UncertainDouble centers_avg;
     for (auto &p : old)
-      centers_avg += p.center_.val;
+      centers_avg += p.center_.value;
     centers_avg /= old.size();
 
-    double nrg = settings.cali_nrg_.transform(centers_avg);
+    double nrg = settings.cali_nrg_.transform(centers_avg.value());
     double fwhm_expected = settings.cali_fwhm_.transform(nrg);
     double L = settings.cali_nrg_.inverse_transform(nrg - fwhm_expected/2);
     double R = settings.cali_nrg_.inverse_transform(nrg + fwhm_expected/2);
-    w_common.val = (R - L) / (2* sqrt(log(2)));
+    w_common.value.setValue((R - L) / (2* sqrt(log(2))));
 
-    w_common.lbound = w_common.val * w_common.lbound;
-    w_common.ubound = w_common.val * w_common.ubound;
+    w_common.lbound = w_common.value.value() * w_common.lbound;
+    w_common.ubound = w_common.value.value() * w_common.ubound;
 
     try {
       f->execute(w_common.def_var());
@@ -215,29 +213,29 @@ std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x,
   for (auto &o : old) {
 
     if (!use_w_common) {
-      double width_expected = o.hwhm_.val;
+      double width_expected = o.hwhm_.value.value();
 
       if (settings.cali_fwhm_.valid() && settings.cali_nrg_.valid()) {
-        double fwhm_expected = settings.cali_fwhm_.transform(settings.cali_nrg_.transform(o.center_.val));
-        double L = settings.cali_nrg_.inverse_transform(settings.cali_nrg_.transform(o.center_.val) - fwhm_expected/2);
-        double R = settings.cali_nrg_.inverse_transform(settings.cali_nrg_.transform(o.center_.val) + fwhm_expected/2);
+        double fwhm_expected = settings.cali_fwhm_.transform(settings.cali_nrg_.transform(o.center_.value.value()));
+        double L = settings.cali_nrg_.inverse_transform(settings.cali_nrg_.transform(o.center_.value.value()) - fwhm_expected/2);
+        double R = settings.cali_nrg_.inverse_transform(settings.cali_nrg_.transform(o.center_.value.value()) + fwhm_expected/2);
         width_expected = (R - L) / (2* sqrt(log(2)));
       }
 
       o.hwhm_.lbound = width_expected * settings.width_common_bounds.lbound;
       o.hwhm_.ubound = width_expected * settings.width_common_bounds.ubound;
 
-      if ((o.hwhm_.val > o.hwhm_.lbound) && (o.hwhm_.val < o.hwhm_.ubound))
-        width_expected = o.hwhm_.val;
-      o.hwhm_.val = width_expected;
+      if ((o.hwhm_.value.value() > o.hwhm_.lbound) && (o.hwhm_.value.value() < o.hwhm_.ubound))
+        width_expected = o.hwhm_.value.value();
+      o.hwhm_.value.setValue(width_expected);
     }
 
-    o.height_.lbound = o.height_.val * 1e-5;
-    o.height_.ubound = o.height_.val * 1e5;
+    o.height_.lbound = o.height_.value.value() * 1e-5;
+    o.height_.ubound = o.height_.value.value() * 1e5;
 
-    double lateral_slack = settings.lateral_slack * o.hwhm_.val * 2 * sqrt(log(2));
-    o.center_.lbound = o.center_.val - lateral_slack;
-    o.center_.ubound = o.center_.val + lateral_slack;
+    double lateral_slack = settings.lateral_slack * o.hwhm_.value.value() * 2 * sqrt(log(2));
+    o.center_.lbound = o.center_.value.value() - lateral_slack;
+    o.center_.ubound = o.center_.value.value() + lateral_slack;
 
     std::string initial = "F += Gauss2(" +
         o.center_.fityk_name(i) + "," +
@@ -312,12 +310,12 @@ std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x,
 }
 
 double Gaussian::evaluate(double x) {
-  return height_.val * exp(-log(2.0)*(pow(((x-center_.val)/hwhm_.val),2)));
+  return height_.value.value() * exp(-log(2.0)*(pow(((x-center_.value.value())/hwhm_.value.value()),2)));
 }
 
-ValUncert Gaussian::area() const {
-  ValUncert ret;
-  ret.val = height_.val * hwhm_.val * sqrt(M_PI / log(2.0));
+UncertainDouble Gaussian::area() const {
+  UncertainDouble ret;
+  ret = height_.value * hwhm_.value * UncertainDouble::from_double(sqrt(M_PI / log(2.0)), 0);
   return ret;
 }
 

@@ -411,10 +411,10 @@ void FormGainMatch::do_post_processing() {
       << " refgood=" << (peak_ref_ != Qpx::Peak());
 
   if (!std::isnan(latest_position) && (peak_ref_ != Qpx::Peak())
-      && (std::abs(latest_position - peak_ref_.center.val) < ui->doubleThreshold->value()))
+      && (std::abs(latest_position - peak_ref_.center().value()) < ui->doubleThreshold->value()))
   {
     INFO << "<FormGainMatch> Gain matching complete   |"
-         << latest_position << " - " << peak_ref_.center.val
+         << latest_position << " - " << peak_ref_.center().value()
          << "| < " << ui->doubleThreshold->value();
     update_name();
     return;
@@ -428,14 +428,14 @@ void FormGainMatch::do_post_processing() {
   if (gains.size() > 2)
     response_function_.add_coeff(2, -50, 50, 1);
   response_function_.fit(gains, positions, position_sigmas);
-  predicted = response_function_.eval_inverse(peak_ref_.center.val /*, ui->doubleThreshold->value() / 4.0*/);
+  predicted = response_function_.eval_inverse(peak_ref_.center().value() /*, ui->doubleThreshold->value() / 4.0*/);
 
   DBG << "<FormGainMatch> Prediction " << predicted;
 
   if ((gains.size() < 2) || std::isnan(predicted)){
     DBG << "<FormGainMatch> not enough data points or bad prediction";
     if (!std::isnan(latest_position) && (peak_ref_ != Qpx::Peak())
-        && (latest_position > peak_ref_.center.val))
+        && (latest_position > peak_ref_.center().value()))
       current_setting_.value_dbl -= current_setting_.metadata.step;
     else
       current_setting_.value_dbl += current_setting_.metadata.step;
@@ -660,29 +660,11 @@ void FormGainMatch::display_data()
   {
     const DataPoint &data = experiment_.at(i);
 
-    QTableWidgetItem *st = new QTableWidgetItem(QString::number(data.independent_variable));
-    st->setFlags(st->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 0, st);
-
-    UncertainDouble nrg = UncertainDouble::from_double(data.selected_peak.center.val,
-                                                       data.selected_peak.center.uncert, 2);
-    QTableWidgetItem *en = new QTableWidgetItem(QString::fromStdString(nrg.to_string(false, true)));
-    en->setFlags(en->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 1, en);
-
-    QTableWidgetItem *fw = new QTableWidgetItem(QString::fromStdString(data.selected_peak.fwhm.to_string(false, true)));
-    fw->setFlags(fw->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 2, fw);
-
-    UncertainDouble ar = UncertainDouble::from_double(data.selected_peak.area_best.val,
-                                                      data.selected_peak.area_best.uncert, 2);
-    QTableWidgetItem *area = new QTableWidgetItem(QString::fromStdString(ar.to_string(false, true)));
-    area->setFlags(area->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 3, area);
-
-    QTableWidgetItem *err = new QTableWidgetItem(QString::number(data.selected_peak.sum4_.peak_area.err()));
-    err->setFlags(err->flags() ^ Qt::ItemIsEditable);
-    ui->tableResults->setItem(i, 4, err);
+    add_to_table(ui->tableResults, i, 0, std::to_string(data.independent_variable));
+    add_to_table(ui->tableResults, i, 1, data.selected_peak.center().to_string());
+    add_to_table(ui->tableResults, i, 2, data.selected_peak.fwhm().to_string());
+    add_to_table(ui->tableResults, i, 3, data.selected_peak.area_best().to_string());
+    add_to_table(ui->tableResults, i, 4, data.selected_peak.area_best().error_percent());
 
     if (!std::isnan(data.dependent_variable)) {
       xx.push_back(data.independent_variable);
@@ -714,7 +696,7 @@ void FormGainMatch::display_data()
     xmin -= x_margin;
 
 
-    ui->PlotCalib->addPoints(xx, yy, yy_sigma, style_pts);
+    ui->PlotCalib->addPoints(style_pts, xx, yy, QVector<double>(), yy_sigma);
 
     xx.clear();
     yy.clear();
@@ -783,7 +765,7 @@ void FormGainMatch::pass_selected_in_table()
     ui->plotOpt->updateData();
     if (experiment_.at(selected_pass_).selected_peak != Qpx::Peak()) {
       std::set<double> selected;
-      selected.insert(experiment_.at(selected_pass_).selected_peak.center.val);
+      selected.insert(experiment_.at(selected_pass_).selected_peak.center().value());
       ui->plotOpt->set_selected_peaks(selected);
     }
     if ((fitter_opt_.metadata_.total_count > 0)
@@ -893,8 +875,8 @@ void FormGainMatch::fitting_done_opt()
 void FormGainMatch::eval_dependent(DataPoint &data)
 {
   if (data.selected_peak != Qpx::Peak()) {
-    data.dependent_variable = data.selected_peak.center.val; //with uncert?
-    data.dep_uncert = data.selected_peak.center.uncert; //with uncert?
+    data.dependent_variable = data.selected_peak.center().value(); //with uncert?
+    data.dep_uncert = data.selected_peak.center().uncertainty(); //with uncert?
   } else {
     data.dependent_variable = std::numeric_limits<double>::quiet_NaN();
     data.dep_uncert = std::numeric_limits<double>::quiet_NaN();
@@ -904,7 +886,7 @@ void FormGainMatch::eval_dependent(DataPoint &data)
 bool FormGainMatch::criterion_satisfied(DataPoint &data)
 {
   return ((data.selected_peak != Qpx::Peak())
-          && (data.selected_peak.sum4_.peak_area.err() < ui->doubleError->value()));
+          && (data.selected_peak.area_best().error() < ui->doubleError->value()));
 }
 
 void FormGainMatch::update_name()

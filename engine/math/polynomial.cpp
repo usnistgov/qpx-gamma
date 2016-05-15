@@ -81,10 +81,10 @@ std::string PolyBounded::to_UTF8(int precision, bool with_rsq) {
   for (auto &c : coeffs_) {
     if (i > 0)
       calib_eqn += " + ";
-    calib_eqn += to_str_precision(c.second.val, precision);
+    calib_eqn += to_str_precision(c.second.value.value(), precision);
     if (c.first > 0) {
-      if (xoffset_.val)
-        calib_eqn += "(x-" + to_str_precision(xoffset_.val, precision) + ")";
+      if (xoffset_.value.value())
+        calib_eqn += "(x-" + to_str_precision(xoffset_.value.value(), precision) + ")";
       else
         calib_eqn += "x";
     }
@@ -109,10 +109,10 @@ std::string PolyBounded::to_markup(int precision, bool with_rsq) {
   for (auto &c : coeffs_) {
     if (i > 0)
       calib_eqn += " + ";
-    calib_eqn += to_str_precision(c.second.val, precision);
+    calib_eqn += to_str_precision(c.second.value.value(), precision);
     if (c.first > 0) {
-      if (xoffset_.val)
-        calib_eqn += "(x-" + to_str_precision(xoffset_.val, precision) + ")";
+      if (xoffset_.value.value())
+        calib_eqn += "(x-" + to_str_precision(xoffset_.value.value(), precision) + ")";
       else
         calib_eqn += "x";
     }
@@ -148,17 +148,17 @@ std::string PolyBounded::fityk_definition() {
     i++;
   }
   declaration += ")";
-  definition  += " where xx = (x - " + std::to_string(xoffset_.val) + ")";
+  definition  += " where xx = (x - " + std::to_string(xoffset_.value.value()) + ")";
 
   return declaration + definition;
 }
 
 
 double PolyBounded::eval(double x) {
-  double x_adjusted = x - xoffset_.val;
+  double x_adjusted = x - xoffset_.value.value();
   double result = 0.0;
   for (auto &c : coeffs_)
-    result += c.second.val * pow(x_adjusted, c.first);
+    result += c.second.value.value() * pow(x_adjusted, c.first);
   return result;
 }
 
@@ -169,11 +169,49 @@ double PolyBounded::derivative(double x) {
 
   for (auto &c : coeffs_) {
     if (c.first != 0) {
-      new_poly.add_coeff(c.first - 1, c.second.lbound * c.first, c.second.ubound * c.first, c.second.val * c.first);
+      new_poly.add_coeff(c.first - 1, c.second.lbound * c.first, c.second.ubound * c.first, c.second.value.value() * c.first);
     }
   }
 
   return new_poly.eval(x);
+}
+
+void PolyBounded::to_xml(pugi::xml_node &root) const {
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+
+  node.append_attribute("rsq").set_value(to_max_precision(rsq_).c_str());
+  xoffset_.to_xml(node);
+
+  if (coeffs_.size()) {
+    pugi::xml_node terms = node.append_child("Terms");
+    for (auto t : coeffs_)
+    {
+      pugi::xml_node term = terms.append_child("Term");
+      term.append_attribute("order").set_value(t.first);
+      t.second.to_xml(term);
+    }
+  }
+}
+
+
+void PolyBounded::from_xml(const pugi::xml_node &node) {
+  coeffs_.clear();
+
+  rsq_ = node.attribute("rsq").as_double(0);
+  if (node.child(xoffset_.xml_element_name().c_str()))
+    xoffset_.from_xml(node.child(xoffset_.xml_element_name().c_str()));
+
+  if (node.child("Terms")) {
+    for (auto &t : node.child("Terms").children()) {
+      if (std::string(t.name()) == "Term")
+      {
+        int order = t.attribute("order").as_int();
+        FitParam coef;
+        coef.from_xml(t.child(xoffset_.xml_element_name().c_str()));
+        coeffs_[order] = coef;
+      }
+    }
+  }
 }
 
 

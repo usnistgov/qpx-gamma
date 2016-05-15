@@ -86,7 +86,7 @@ std::vector<double> CoefFunction::eval_array(const std::vector<double> &x) {
 
 double CoefFunction::eval_inverse(double y, double e) {
   int i=0;
-  double x0 = xoffset_.val;
+  double x0 = xoffset_.value.value();
   double x1 = x0 + (y - this->eval(x0)) / (this->derivative(x0));
   while( i<=100 && std::abs(x1-x0) > e)
   {
@@ -95,7 +95,7 @@ double CoefFunction::eval_inverse(double y, double e) {
     i++;
   }
 
-  double x_adjusted = x1 - xoffset_.val;
+  double x_adjusted = x1 - xoffset_.value.value();
 
   if(std::abs(x1-x0) <= e)
     return x_adjusted;
@@ -185,6 +185,6 @@ std::vector<double> CoefFunction::coeffs() {
       top = c.first;
   ret.resize(top+1, 0);
   for (auto &c : coeffs_)
-    ret[c.first] = c.second.val;
+    ret[c.first] = c.second.value.value();
   return ret;
 }

@@ -50,7 +50,7 @@ std::string LogInverse::fityk_definition() {
     i++;
   }
   declaration += ")";
-  definition  += ") where xx = 1.0/(x - " + std::to_string(xoffset_.val) + ")";
+  definition  += ") where xx = 1.0/(x - " + std::to_string(xoffset_.value.value()) + ")";
 
   return declaration + definition;
 }
@@ -84,10 +84,10 @@ std::string LogInverse::to_UTF8(int precision, bool with_rsq) {
   for (auto &c : coeffs_) {
     if (i > 0)
       calib_eqn += " + ";
-    calib_eqn += to_str_precision(c.second.val, precision);
+    calib_eqn += to_str_precision(c.second.value.value(), precision);
     if (c.first > 0) {
-      if (xoffset_.val)
-        calib_eqn += "/(x-" + to_str_precision(xoffset_.val, precision) + ")";
+      if (xoffset_.value.value())
+        calib_eqn += "/(x-" + to_str_precision(xoffset_.value.value(), precision) + ")";
       else
         calib_eqn += "/x";
     }
@@ -113,10 +113,10 @@ std::string LogInverse::to_markup(int precision, bool with_rsq) {
   for (auto &c : coeffs_) {
     if (i > 0)
       calib_eqn += " + ";
-    calib_eqn += to_str_precision(c.second.val, precision);
+    calib_eqn += to_str_precision(c.second.value.value(), precision);
     if (c.first > 0) {
-      if (xoffset_.val)
-        calib_eqn += "1/(x-" + to_str_precision(xoffset_.val, precision) + ")";
+      if (xoffset_.value.value())
+        calib_eqn += "1/(x-" + to_str_precision(xoffset_.value.value(), precision) + ")";
       else
         calib_eqn += "1/x";
     }
@@ -135,7 +135,7 @@ std::string LogInverse::to_markup(int precision, bool with_rsq) {
 }
 
 double LogInverse::eval(double x) {
-  double x_adjusted = (x - xoffset_.val);
+  double x_adjusted = (x - xoffset_.value.value());
   if (x_adjusted != 0)
     x_adjusted = 1.0/x_adjusted;
   else
@@ -143,7 +143,7 @@ double LogInverse::eval(double x) {
   double result = 0.0;
 
   for (auto &c : coeffs_)
-    result += c.second.val * pow(x_adjusted, c.first);
+    result += c.second.value.value() * pow(x_adjusted, c.first);
 
   return exp(result);
 }

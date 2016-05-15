@@ -36,6 +36,12 @@ class WidgetPlotCalib;
 class WidgetPlotCalib : public QWidget
 {
   Q_OBJECT
+private:
+  struct PointSet
+  {
+    AppearanceProfile appearance;
+    QVector<double> x, y, x_sigma, y_sigma;
+  };
 
 public:
   explicit WidgetPlotCalib(QWidget *parent = 0);
@@ -52,7 +58,9 @@ public:
   std::set<double> get_selected_pts();
   void set_selected_pts(std::set<double>);
 
-  void addPoints(const QVector<double>& x, const QVector<double>& y, const QVector<double>& y_sigma, AppearanceProfile style);
+  void addPoints(AppearanceProfile style,
+                 const QVector<double>& x, const QVector<double>& y,
+                 const QVector<double>& x_sigma, const QVector<double>& y_sigma);
   void addFit(const QVector<double>& x, const QVector<double>& y, AppearanceProfile style);
 
   void set_scale_type_x(QString);
@@ -76,12 +84,11 @@ private:
 
   Ui::WidgetPlotCalib *ui;
 
-  QVector<double> x_fit, y_fit;
-  QVector<QVector<double>> x_pts, y_pts, y_pts_sigma;
-  std::set<double> selection_;
-
   AppearanceProfile style_fit;
-  QVector<AppearanceProfile> style_pts;
+  QVector<double> x_fit, y_fit;
+  QVector<PointSet> points_;
+
+  std::set<double> selection_;
 
   QString floating_text_;
   QString scale_type_x_;

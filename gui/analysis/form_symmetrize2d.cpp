@@ -23,7 +23,7 @@
 #include "form_symmetrize2d.h"
 #include "ui_form_symmetrize2d.h"
 #include "daq_sink_factory.h"
-#include "gamma_fitter.h"
+#include "fitter.h"
 #include "qt_util.h"
 #include "manip2d.h"
 #include <QInputDialog>

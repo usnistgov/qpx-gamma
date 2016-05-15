@@ -27,6 +27,7 @@
 #include <string>
 #include <limits>
 #include "xmlable.h"
+#include "UncertainDouble.h"
 
 class FitParam : public XMLable {
 
@@ -43,8 +44,7 @@ public:
 
   FitParam(std::string name, double v, double lower, double upper) :
     name_(name),
-    val(v),
-    uncert(std::numeric_limits<double>::infinity()),
+    value(UncertainDouble::from_double(v, std::numeric_limits<double>::quiet_NaN())),
     lbound(lower),
     ubound(upper),
     enabled(true),
@@ -55,8 +55,8 @@ public:
 
   FitParam operator ^ (const FitParam &other) const;
   bool operator % (const FitParam &other) const;
-  bool operator == (const FitParam &other) const {return val == other.val;}
-  bool operator < (const FitParam &other) const {return val < other.val;}
+  bool operator == (const FitParam &other) const {return value == other.value;}
+  bool operator < (const FitParam &other) const {return value < other.value;}
 
   std::string name() const {return name_;}
   std::string fityk_name(int function_num) const;
@@ -66,9 +66,9 @@ public:
   bool extract(fityk::Fityk* f, fityk::Func* func);
 
   std::string to_string() const;
-  std::string val_uncert(uint16_t precision) const;
-  std::string err(uint16_t precision) const;
-  double err() const;
+//  std::string val_uncert(uint16_t precision) const;
+//  std::string err(uint16_t precision) const;
+//  double err() const;
 
 
   void to_xml(pugi::xml_node &node) const override;
@@ -76,7 +76,8 @@ public:
   std::string xml_element_name() const override {return "FitParam";}
 
 
-  double val, uncert, lbound, ubound;
+  UncertainDouble value;
+  double lbound, ubound;
   bool enabled, fixed;
 
 private:

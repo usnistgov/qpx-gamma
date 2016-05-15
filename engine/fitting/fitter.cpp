@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-#include "gamma_fitter.h"
+#include "fitter.h"
 #include <numeric>
 #include <algorithm>
 #include "custom_logger.h"
@@ -165,7 +165,7 @@ std::map<double, Peak> Fitter::peaks() {
   std::map<double, Peak> peaks;
   for (auto &q : regions_)
     for (auto &p : q.second.peaks_) {
-      peaks[p.second.center.val] = p.second;
+      peaks[p.second.center().value()] = p.second;
     }
   return peaks;
 }
@@ -228,8 +228,8 @@ void Fitter::remove_peaks(std::set<double> bins) {
 
 void Fitter::replace_peak(const Peak& pk) {
   for (auto &m : regions_)
-    if (m.second.contains(pk.center.val)) {
-      m.second.peaks_[pk.center.val] = pk;
+    if (m.second.contains(pk.center().value())) {
+      m.second.peaks_[pk.center().value()] = pk;
       m.second.render(); //was it hm or sum4 that was replaced?
 //      DBG << "replacing " << pk.center;
     }
@@ -324,28 +324,57 @@ void Fitter::save_report(std::string filename) {
        << std::endl;
   file.fill(' ');
   for (auto &q : peaks()) {
-    file << std::setw( 16 ) << std::setprecision( 10 ) << q.second.center.val << " | "
-         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.energy.val << " | "
+    file << std::setw( 16 ) << std::setprecision( 10 ) << q.second.center().to_string() << " | "
+         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.energy().to_string() << " | "
 //         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_hyp << " | "
-         << std::setw( 26 ) << q.second.hypermet_.area().val_uncert(10) << " | "
-         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_hyp << " || ";
+         << std::setw( 26 ) << q.second.area_hyp().to_string() << " | "
+//         << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_hyp << " || "
 
-      file << std::setw( 26 ) << q.second.sum4_.centroid.val_uncert(10) << " | "
-           << std::setw( 15 ) << q.second.sum4_.centroid.err(10) << " | "
+//      file << std::setw( 26 ) << q.second.sum4_.centroid.val_uncert(10) << " | "
+//           << std::setw( 15 ) << q.second.sum4_.centroid.err(10) << " | "
 
 //           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.fwhm_sum4 << " | "
-           << std::setw( 26 ) << q.second.sum4_.background_area.val_uncert(10) << " | "
-           << std::setw( 15 ) << q.second.sum4_.background_area.err(10) << " | "
-           << std::setw( 26 ) << q.second.sum4_.peak_area.val_uncert(10) << " | "
-           << std::setw( 15 ) << q.second.sum4_.peak_area.err(10) << " | "
-           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_sum4 << " | "
-           << std::setw( 5 ) << std::setprecision( 10 ) << q.second.sum4_.currie_quality_indicator << " |";
+//           << std::setw( 26 ) << q.second.sum4_.background_area.val_uncert(10) << " | "
+//           << std::setw( 15 ) << q.second.sum4_.background_area.err(10) << " | "
+//           << std::setw( 26 ) << q.second.sum4_.peak_area.val_uncert(10) << " | "
+//           << std::setw( 15 ) << q.second.sum4_.peak_area.err(10) << " | "
+//           << std::setw( 15 ) << std::setprecision( 10 ) << q.second.cps_sum4 << " | "
+           << std::setw( 5 ) << std::setprecision( 10 ) << q.second.good() << " |";
 
     file << std::endl;
   }
   
   file.close();
 }
+
+void Fitter::to_xml(pugi::xml_node &root) const
+{
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+
+  settings_.to_xml(node);
+
+  for (auto &r : regions_)
+    r.second.to_xml(node);
+}
+
+void Fitter::from_xml(const pugi::xml_node &node, SinkPtr spectrum)
+{
+  if (node.child(settings_.xml_element_name().c_str()))
+    settings_.from_xml(node.child(settings_.xml_element_name().c_str()));
+
+  setData(spectrum);
+
+  for (auto &r : node.children())
+  {
+    ROI region;
+    if (std::string(r.name()) == region.xml_element_name())
+    {
+      region.from_xml(r, finder_, settings_);
+      regions_[region.finder_.x_.front()] = region;
+    }
+  }
+}
+
 
 
 }

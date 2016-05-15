@@ -22,6 +22,7 @@
 #define QT_UTIL_H_
 #include <QWidget>
 #include <QFileDialog>
+#include <QTableWidget>
 #include <boost/date_time.hpp>
 
 
@@ -38,5 +39,8 @@ QDateTime fromBoostPtime(boost::posix_time::ptime);
 boost::posix_time::ptime fromQDateTime(QDateTime);
 QString catExtensions(std::list<std::string> exts);
 QString catFileTypes(QStringList types);
+void add_to_table(QTableWidget *table,
+                  int row, int col, std::string data,
+                  QVariant value = QVariant(), QBrush background = QBrush(Qt::white));
 
 #endif

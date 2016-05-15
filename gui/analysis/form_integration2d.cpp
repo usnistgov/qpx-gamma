@@ -24,7 +24,7 @@
 #include "form_integration2d.h"
 #include "widget_detectors.h"
 #include "ui_form_integration2d.h"
-#include "gamma_fitter.h"
+#include "fitter.h"
 #include "qt_util.h"
 #include <QCloseEvent>
 #include "manip2d.h"
@@ -720,7 +720,7 @@ std::list<MarkerBox2D> FormIntegration2D::peaks() {
 void FormIntegration2D::on_pushTransitions_clicked()
 {
 
-  std::list<ValUncert> all_energies;
+  std::list<UncertainDouble> all_energies;
   int total_approved = 0;
   for (auto &p : peaks_)
   {
@@ -732,19 +732,19 @@ void FormIntegration2D::on_pushTransitions_clicked()
     all_energies.push_back(p.energy_y);
   }
 
-  std::list<std::pair<ValUncert,std::list<ValUncert>>> energies;
+  std::list<std::pair<UncertainDouble,std::list<UncertainDouble>>> energies;
   int duplicates = 0;
   for (auto &k : all_energies) {
     int found = 0;
     for (auto &e: energies) {
       if (e.first.almost(k)) {
         e.second.push_back(k);
-        e.first = (ValUncert::merge(e.second));
+        e.first = (UncertainDouble::average(e.second));
         found++;
       }
     }
     if (!found)
-      energies.push_back(std::pair<ValUncert,std::list<ValUncert>>(k, std::list<ValUncert>({k})));
+      energies.push_back(std::pair<UncertainDouble,std::list<UncertainDouble>>(k, std::list<UncertainDouble>({k})));
     if (found > 1)
       duplicates++;
   }
@@ -754,7 +754,7 @@ void FormIntegration2D::on_pushTransitions_clicked()
 
   DBG << "Reduced energies=" << energies.size() << "  duplicates=" << duplicates;
 
-  std::map<ValUncert, Transition> trans_final;
+  std::map<UncertainDouble, Transition> trans_final;
 
   for (auto &p : peaks_)
   {
@@ -762,8 +762,8 @@ void FormIntegration2D::on_pushTransitions_clicked()
         || (p.currie_quality_indicator > 2))
       continue;
 
-    ValUncert e1 = p.energy_x;
-    ValUncert e2 = p.energy_y;
+    UncertainDouble e1 = p.energy_x;
+    UncertainDouble e2 = p.energy_y;
 
     for (auto &e : all_energies) {
       if (e.almost(e1))
@@ -818,10 +818,10 @@ void FormIntegration2D::on_pushTransitions_clicked()
          << " final_trans.size=" << trans_final.size();
 
   for (auto &t : trans_final) {
-    DBG << "Transitions from " << t.first.val_uncert(6);
+    DBG << "Transitions from " << t.first.to_string();
     for (auto &to : t.second.above)
-      DBG << "    -->" << to.energy.val_uncert(6)
-             << "  (Intensity: " << to.intensity.val_uncert(6) << ")";
+      DBG << "    -->" << to.energy.to_string()
+             << "  (Intensity: " << to.intensity.to_string() << ")";
   }
 
 
@@ -875,19 +875,20 @@ QVariant TablePeaks2D::data(const QModelIndex &index, int role) const
     case 1:
       return QVariant::fromValue(peak.y_c.energy());
     case 2:
-      return QString::fromStdString(peaks_[row].energy_x.val_uncert(6)) ;
+      return QString::fromStdString(peaks_[row].energy_x.to_string()) ;
     case 3:
-      return QString::fromStdString(peaks_[row].energy_y.val_uncert(6)) ;
+      return QString::fromStdString(peaks_[row].energy_y.to_string()) ;
     case 4:
-      return QString::fromStdString(peaks_[row].xback.val_uncert(6)) ;
+      return QString::fromStdString(peaks_[row].xback.to_string()) ;
     case 5:
-      return QString::fromStdString(peaks_[row].yback.val_uncert(6)) ;
+      return QString::fromStdString(peaks_[row].yback.to_string()) ;
     case 6:
-      return QString::fromStdString(peaks_[row].dback.val_uncert(6)) ;
+      return QString::fromStdString(peaks_[row].dback.to_string()) ;
     case 7:
-      return QString::fromStdString(peaks_[row].gross.val_uncert(6)) ;
+      return QString::fromStdString(peaks_[row].gross.to_string()) ;
     case 8:
-      return QString::fromStdString(peaks_[row].net.val_uncert(6)) + " (" + QString::fromStdString(peaks_[row].net.err(5)) + ")";
+      return QString::fromStdString(peaks_[row].net.to_string())
+          + " (" + QString::fromStdString(peaks_[row].net.error_percent()) + ")";
     case 9:
       return QVariant::fromValue(peaks_[row].currie_quality_indicator);
     case 10:

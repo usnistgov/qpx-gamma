@@ -23,7 +23,7 @@
 #include "form_coinc_peaks.h"
 #include "widget_detectors.h"
 #include "ui_form_coinc_peaks.h"
-#include "gamma_fitter.h"
+#include "fitter.h"
 #include "qt_util.h"
 
 FormCoincPeaks::FormCoincPeaks(QWidget *parent) :
@@ -34,8 +34,8 @@ FormCoincPeaks::FormCoincPeaks(QWidget *parent) :
   ui->setupUi(this);
 
   ui->tablePeaks->verticalHeader()->hide();
-  ui->tablePeaks->setColumnCount(4);
-  ui->tablePeaks->setHorizontalHeaderLabels({"bin", "energy", "fwhm", "area"});
+  ui->tablePeaks->setColumnCount(3);
+  ui->tablePeaks->setHorizontalHeaderLabels({"energy", "fwhm", "cps"});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tablePeaks->setEditTriggers(QTableView::NoEditTriggers);
@@ -166,7 +166,7 @@ void FormCoincPeaks::update_table(bool contents_changed) {
   ui->tablePeaks->clearSelection();
   int i = 0;
   for (auto &q : fit_data_->peaks()) {
-    if (selected_peaks_.count(q.second.center.val) > 0) {
+    if (selected_peaks_.count(q.second.center().value()) > 0) {
       ui->tablePeaks->selectRow(i);
     }
     ++i;
@@ -180,27 +180,10 @@ void FormCoincPeaks::update_table(bool contents_changed) {
 void FormCoincPeaks::add_peak_to_table(const Qpx::Peak &p, int row, QColor bckg) {
   QBrush background(bckg);
 
-  QTableWidgetItem *center = new QTableWidgetItem(QString::number(p.center.val));
-  center->setData(Qt::EditRole, QVariant::fromValue(p.center.val));
-  center->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 0, center);
-
-//  QTableWidgetItem *edges = new QTableWidgetItem( QString::number(p.x_[p.x_.size() - 1] - p.x_[0]) );
-//  edges->setData(Qt::BackgroundRole, background);
-//  ui->tablePeaks->setItem(row, 1, edges);
-
-  QTableWidgetItem *nrg = new QTableWidgetItem(QString::number(p.energy.val));
-  nrg->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 1, nrg);
-
-  QTableWidgetItem *fwhm = new QTableWidgetItem(QString::fromStdString(p.fwhm.to_string(false, true)));
-  fwhm->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 2, fwhm);
-
-  QTableWidgetItem *area_net = new QTableWidgetItem(QString::number(p.area_best.val));
-  area_net->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, 3, area_net);
-
+  add_to_table(ui->tablePeaks, row, 0, p.energy().to_string(),
+               QVariant::fromValue(p.center().value()), background);
+  add_to_table(ui->tablePeaks, row, 1, p.fwhm().to_string(), QVariant(), background);
+  add_to_table(ui->tablePeaks, row, 2, p.cps_best().to_string(), QVariant(), background);
 }
 
 void FormCoincPeaks::selection_changed_in_table() {

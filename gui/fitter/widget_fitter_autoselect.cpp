@@ -72,8 +72,8 @@ std::set<double> WidgetFitterAutoselect::autoselect(const std::map<double, Qpx::
   {
     double maxheight = peaks.begin()->first;
     for (auto &p : peaks) {
-      if (p.second.hypermet_.height_.val > maxheight) {
-        maxheight = p.second.hypermet_.height_.val;
+      if (p.second.hypermet().height_.value.value() > maxheight) {
+        maxheight = p.second.hypermet().height_.value.value();
         selection = p.first;
       }
     }
@@ -82,8 +82,8 @@ std::set<double> WidgetFitterAutoselect::autoselect(const std::map<double, Qpx::
   {
     double maxarea = peaks.begin()->first;
     for (auto &p : peaks) {
-      if (p.second.area_best.val > maxarea) {
-        maxarea = p.second.area_best.val;
+      if (p.second.area_best().value() > maxarea) {
+        maxarea = p.second.area_best().value();
         selection = p.first;
       }
     }
@@ -97,8 +97,8 @@ std::set<double> WidgetFitterAutoselect::autoselect(const std::map<double, Qpx::
     double prevpeak = *prevsel.begin();
     double delta = std::numeric_limits<double>::max();
     for (auto &p : peaks) {
-      if (abs(p.second.center.val - prevpeak) < delta) {
-        delta = abs(p.second.center.val - prevpeak);
+      if (abs(p.second.center().value() - prevpeak) < delta) {
+        delta = abs(p.second.center().value() - prevpeak);
         selection = p.first;
       }
     }
@@ -123,12 +123,12 @@ std::set<double> WidgetFitterAutoselect::reselect(const std::map<double, Qpx::Pe
     double selection = peaks.begin()->first;
     double delta = std::numeric_limits<double>::max();
     for (auto &p : peaks) {
-      if (abs(p.second.center.val - prev) < delta) {
-        delta = abs(p.second.center.val - prev);
+      if (abs(p.second.center().value() - prev) < delta) {
+        delta = abs(p.second.center().value() - prev);
         selection = p.first;
       }
     }
-    if (abs(selection - prev) < ui->doubleSlack->value() * peaks.at(selection).fwhm.value())
+    if (abs(selection - prev) < ui->doubleSlack->value() * peaks.at(selection).fwhm().value())
       newselr.insert(selection);
   }
 

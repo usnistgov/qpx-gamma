@@ -25,7 +25,7 @@
 
 #include <QThread>
 #include <QMutex>
-#include "gamma_fitter.h"
+#include "fitter.h"
 
 enum FitterAction {kFit, kStop, kIdle, kAddPeak, kRemovePeaks, kRefit,
                    kAdjustROI, kAdjustLB, kAdjustRB};

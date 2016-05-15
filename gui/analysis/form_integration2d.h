@@ -30,7 +30,7 @@
 #include <QWidget>
 #include "peak2d.h"
 #include "project.h"
-#include "gamma_fitter.h"
+#include "fitter.h"
 #include "transition.h"
 
 namespace Ui {

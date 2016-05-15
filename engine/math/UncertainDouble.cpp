@@ -1,3 +1,5 @@
+//Rework this according to http://arxiv.org/abs/physics/0306138v1 !!!
+
 #include "UncertainDouble.h"
 
 #include <iostream>
@@ -10,93 +12,103 @@
 
 UncertainDouble::UncertainDouble()
   : value_(std::numeric_limits<double>::quiet_NaN())
-  , lower_sigma_(std::numeric_limits<double>::quiet_NaN())
-  , upper_sigma_(std::numeric_limits<double>::quiet_NaN())
-  , sign_(UndefinedSign)
-  , type_(UndefinedType)
+  , sigma_(std::numeric_limits<double>::quiet_NaN())
   , sigfigs_(0)
 {
 }
 
-UncertainDouble::UncertainDouble(double val, double symmetricSigma, uint16_t sigf, Sign s)
+UncertainDouble::UncertainDouble(double val, double sigma, uint16_t sigf)
   : value_(val)
-  , lower_sigma_(symmetricSigma)
-  , upper_sigma_(symmetricSigma)
+  , sigma_(std::abs(sigma))
   , sigfigs_(sigf)
-  , sign_(s)
-  , type_(SymmetricUncertainty)
 {
-  if (!std::isfinite(symmetricSigma))
-    type_ = Approximately;
-  if (!std::isfinite(val)) {
-    sign_ = UndefinedSign;
-    type_ = UndefinedType;
-  }
+}
+
+std::string UncertainDouble::debug() const
+{
+  std::stringstream ss;
+  ss << "[" << value_ << "\u00B1" << sigma_ << " sigs=" << sigfigs_;
+  ss << "] ==> " << to_string();
+  return ss.str();
 }
 
 UncertainDouble UncertainDouble::from_int(int64_t val, double sigma)
 {
-  return UncertainDouble (double(val), sigma, order_of(val), SignMagnitudeDefined);
+  return UncertainDouble (double(val), sigma, order_of(val));
 }
 
 UncertainDouble UncertainDouble::from_uint(uint64_t val, double sigma)
 {
-  return UncertainDouble (double(val), sigma, order_of(val), MagnitudeDefined);
+  return UncertainDouble (double(val), sigma, order_of(val));
 }
 
 UncertainDouble UncertainDouble::from_double(double val, double sigma,
-                                             uint16_t sigs_below,
-                                             Sign s)
+                                             uint16_t sigs_below)
 {
-  int16_t order1 = order_of(val);
-  int16_t order2 = order_of(sigma);
+  UncertainDouble ret(val, sigma, 1);
+  ret.autoSigs(sigs_below);
+  return ret;
+}
+
+int UncertainDouble::exponent() const
+{
+  int orderOfValue = order_of(value_);
+  int orderOfUncert= order_of(sigma_);
+  int targetOrder = std::max(orderOfValue, orderOfUncert);
+
+  if ((targetOrder > 5) || (targetOrder < -3))
+    return targetOrder;
+  else
+    return 0;
+}
+
+void UncertainDouble::autoSigs(uint16_t sigs_below)
+{
+  int16_t order1 = order_of(value_);
+  int16_t order2 = order_of(sigma_);
   int16_t upper = std::max(order1, order2);
   int16_t lower = std::min(order1, order2);
-  if (!std::isfinite(sigma)) {
+  if (!std::isfinite(sigma_)) {
     upper = order1;
     lower = 0;
   }
-  uint16_t sigs = upper - lower + sigs_below + 1;
-  return UncertainDouble (val, sigma, sigs, s);
+  sigfigs_ = upper - lower + sigs_below + 1;
+  if (exponent() && sigfigs_ > 4)
+    sigfigs_ = 4;
 }
 
-
-UncertainDouble &UncertainDouble::operator =(const UncertainDouble &other)
+void UncertainDouble::constrainSigs(uint16_t max_sigs)
 {
-  if (this != &other) {
-    value_ = other.value_;
-    lower_sigma_ = other.lower_sigma_;
-    upper_sigma_ = other.upper_sigma_;
-    sign_ = other.sign_;
-    type_ = other.type_;
-    sigfigs_ = other.sigfigs_;
-  }
-  return *this;
+  if (sigfigs_ > max_sigs)
+    sigfigs_ = max_sigs;
 }
+
+//UncertainDouble &UncertainDouble::operator =(const UncertainDouble &other)
+//{
+//  if (this != &other) {
+//    value_ = other.value_;
+//    sigma_ = other.sigma_;
+//    sigfigs_ = other.sigfigs_;
+//  }
+//  return *this;
+//}
 
 double UncertainDouble::value() const
 {
   return value_;
 }
 
-double UncertainDouble::lowerUncertainty() const
+double UncertainDouble::uncertainty() const
 {
-  return lower_sigma_;
+  return sigma_;
 }
 
-double UncertainDouble::upperUncertainty() const
+double UncertainDouble::error() const
 {
-  return upper_sigma_;
-}
-
-UncertainDouble::UncertaintyType UncertainDouble::uncertaintyType() const
-{
-  return type_;
-}
-
-UncertainDouble::Sign UncertainDouble::sign() const
-{
-  return sign_;
+  if (value_ != 0)
+    return std::abs(sigma_ / value_ * 100.0);
+  else
+    return std::numeric_limits<double>::quiet_NaN();
 }
 
 uint16_t UncertainDouble::sigfigs() const
@@ -114,429 +126,174 @@ uint16_t UncertainDouble::sigdec() const
     return 0;
 }
 
-void UncertainDouble::setValue(double val, Sign s)
+void UncertainDouble::setValue(double val)
 {
   value_ = val;
-  sign_ = s;
 }
 
-void UncertainDouble::setUncertainty(double lower, double upper, UncertainDouble::UncertaintyType type)
+void UncertainDouble::setUncertainty(double sigma)
 {
-  lower_sigma_ = lower;
-  upper_sigma_ = upper;
-  type_ = type;
-}
-
-void UncertainDouble::setSymmetricUncertainty(double sigma)
-{
-  setUncertainty(sigma, sigma, SymmetricUncertainty);
-}
-
-void UncertainDouble::setAsymmetricUncertainty(double lowerSigma, double upperSigma)
-{
-  setUncertainty(lowerSigma, upperSigma, AsymmetricUncertainty);
-}
-
-void UncertainDouble::setSign(UncertainDouble::Sign s)
-{
-  sign_ = s;
+  sigma_ = std::abs(sigma);
 }
 
 void UncertainDouble::setSigFigs(uint16_t sig)
 {
   sigfigs_ = sig;
+  if (!sig)
+    sigfigs_ = 1;
 }
 
-bool UncertainDouble::hasFiniteValue() const
+bool UncertainDouble::finite() const
 {
-  if (    sign() != UncertainDouble::MagnitudeDefined &&
-          sign() != UncertainDouble::SignMagnitudeDefined )
-    return false;
-  
-  if (    uncertaintyType() == UncertainDouble::SymmetricUncertainty ||
-          uncertaintyType() == UncertainDouble::AsymmetricUncertainty ||
-          uncertaintyType() == UncertainDouble::Approximately ||
-          uncertaintyType() == UncertainDouble::Calculated ||
-          uncertaintyType() == UncertainDouble::Systematics )
-    return true;
-  return false;
+  return (std::isfinite(value_));
 }
 
-bool UncertainDouble::is_uncert(std::string str)
+std::string UncertainDouble::to_string(bool ommit_tiny) const
 {
-  return (str == "LT" ||
-          str == "GT" ||
-          str == "LE" ||
-          str == "GE" ||
-          str == "AP" ||
-          str == "CA" ||
-          str == "SY");
-}
+  if (!std::isfinite(value_))
+    return "?";
 
+  int orderOfValue = order_of(value_);
+  int orderOfUncert= order_of(sigma_);
+  int exp = exponent();
 
-UncertainDouble UncertainDouble::from_nsdf(std::string val, std::string uncert)
-{
-  boost::trim(val);
-  boost::trim(uncert);
+  int decimals = 0;
+  if (sigfigs_ > (orderOfValue - exp))
+    decimals = sigfigs_ - (orderOfValue - exp) - 1;
+  else if (sigfigs_ > orderOfValue)
+    decimals = sigfigs_ - orderOfValue;
 
-  bool flag_tentative = false;
-  bool flag_theoretical = false;
-  if (boost::contains(val, "(") || boost::contains(val, ")")) //what if sign only?
-  {
-    boost::replace_all(val, "(", "");
-    boost::replace_all(val, ")", "");
-    flag_tentative = true;
-  }
-  else if (boost::contains(val, "[") || boost::contains(val, "]")) //what if sign only?
-  {
-    boost::replace_all(val, "[", "");
-    boost::replace_all(val, "]", "");
-    flag_theoretical = true;
-  }
+  std::string result;
+  if (std::isinf(sigma_))
+    result = "~";
 
-  if (val.empty() || !is_number(val))
-    return UncertainDouble();
-
-  UncertainDouble result(boost::lexical_cast<double>(val), sig_digits(val), UncertainDouble::UndefinedSign);
-  double val_order = get_precision(val);
-
-  if (boost::contains(val, "+") || boost::contains(val, "-"))
-    result.setSign(UncertainDouble::SignMagnitudeDefined);
+  if (ommit_tiny && std::isfinite(sigma_) && ((orderOfValue - orderOfUncert) < -2))
+    result = " . ";
   else
-    result.setSign(UncertainDouble::MagnitudeDefined);
+    result += to_str_decimals(value_ / pow(10.0, exp), decimals);
 
-  // parse uncertainty
-  // symmetric or special case (consider symmetric if not + and - are both contained in string)
-  if ( !( boost::contains(uncert,"+") && boost::contains(uncert, "-"))
-       || flag_tentative ) {
-    if (uncert == "LT")
-      result.setUncertainty(-std::numeric_limits<double>::infinity(), 0.0, UncertainDouble::LessThan);
-    else if (uncert == "GT")
-      result.setUncertainty(0.0, std::numeric_limits<double>::infinity(), UncertainDouble::GreaterThan);
-    else if (uncert == "LE")
-      result.setUncertainty(-std::numeric_limits<double>::infinity(), 0.0, UncertainDouble::LessEqual);
-    else if (uncert == "GE")
-      result.setUncertainty(0.0, std::numeric_limits<double>::infinity(), UncertainDouble::GreaterEqual);
-    else if (uncert == "AP" || uncert.empty() || !is_number(uncert) || flag_tentative)
-      result.setUncertainty(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN(), UncertainDouble::Approximately);
-    else if (uncert == "CA" || flag_theoretical)
-      result.setUncertainty(0.0, 0.0, UncertainDouble::Calculated);
-    else if (uncert == "SY")
-      result.setUncertainty(0.0, 0.0, UncertainDouble::Systematics);
+  if (std::isfinite(sigma_) && (sigma_ != 0.0)) {
+    std::string uncertstr;
+    if (ommit_tiny && ((orderOfValue - orderOfUncert) > 8))
+      uncertstr = "-";
+    else if ( ((orderOfValue - orderOfUncert) < -2)
+         ||((orderOfValue - orderOfUncert) > 6))
+      uncertstr = "HUGE"; //error_percent();
     else {
-      // determine significant figure
-      if (!uncert.empty() && is_number(uncert))
-        result.setSymmetricUncertainty(val_order * boost::lexical_cast<int16_t>(uncert));
+      double unc_shifted = sigma_ / pow(10.0, exp);
+      if (!decimals)
+        uncertstr = to_str_decimals(unc_shifted, 0);
+      else if (unc_shifted < 1.0)
+        uncertstr = to_str_decimals(unc_shifted / pow(10.0, -decimals), 0);
       else
-        result.setUncertainty(std::numeric_limits<double>::quiet_NaN(),
-                              std::numeric_limits<double>::quiet_NaN(),
-                              UncertainDouble::UndefinedType);
-    }
-  }
-  // asymmetric case
-  else {
-    bool inv = false;
-    std::string uposstr, unegstr;
-    boost::regex expr{"^\\+([0-9]+)\\-([0-9]+)$"};
-    boost::regex inv_expr{"^\\-([0-9]+)\\+([0-9]+)$"};
-    boost::smatch what;
-    if (boost::regex_match(uncert, what, expr) && (what.size() == 3))
-    {
-      uposstr = what[1];
-      unegstr = what[2];
-    }
-    else if (boost::regex_match(uncert, what, inv_expr) && (what.size() == 3))
-    {
-      unegstr = what[1];
-      uposstr = what[2];
-      inv = true;
+        uncertstr = to_str_decimals(unc_shifted, orderOfUncert - exp + decimals );
     }
 
-    uint16_t upositive = 0;
-    uint16_t unegative = 0;
-
-    boost::trim(uposstr);
-    boost::trim(unegstr);
-
-    if (!uposstr.empty() && is_number(uposstr))
-      upositive = boost::lexical_cast<int16_t>(uposstr);
-
-    if (!unegstr.empty() && is_number(unegstr))
-      unegative = boost::lexical_cast<int16_t>(unegstr);
-
-    if (inv)
-      DBG << "Inverse asymmetric uncert " << uncert << " expr-> " << uposstr << "," << unegstr
-          << " parsed as " << upositive << "," << unegative;
-
-    // work aournd bad entries with asymmetric uncertainty values of 0.
-    if (upositive == 0.0 || unegative == 0.0)
-    {
-      result.setUncertainty(std::numeric_limits<double>::quiet_NaN(),
-                            std::numeric_limits<double>::quiet_NaN(),
-                            UncertainDouble::Approximately);
-      WARN << "Found asymmetric error of 0 in '"
-           << uncert << "'. Auto-changing to 'approximately'";
-    }
-    else
-      result.setAsymmetricUncertainty(val_order * unegative,
-                                      val_order * upositive);
+    if (!uncertstr.empty())
+      result += "(" + uncertstr + ")";
   }
 
-//  if (result.type_ == AsymmetricUncertainty)
-//    DBG << std::setw(8) << val << std::setw(7) << uncert
-//        << " finite=" << result.hasFiniteValue()
-//        << " has " << result.sigfigs() << " sigfigs " << " order " << val_order
-//        << " parsed as " << result.value_ << "+" << result.upper_sigma_ << "-" << result.lower_sigma_
-//        << " renders " << result.to_string(false)
-//           ;
+  std::string times_ten("\u00D710");
+  if (exp)
+    result += times_ten + UTF_superscript(exp);
 
   return result;
 }
 
-
-std::string UncertainDouble::to_string(bool prefix_magn, bool with_uncert) const
-{
-  std::string plusminus("\u00B1");
-  std::string times_ten("\u00D710");
-
-  std::string signprefix;
-  double val = value_;
-  if (sign_ == MagnitudeDefined) {
-    if (prefix_magn)
-      signprefix = plusminus;
-    val = std::abs(val);
-  }
-  else if (sign_ == UndefinedSign) {
-    //    signprefix = "?";
-    //    val = std::abs(val);
-    return "?";
-  }
-  
-  switch (type_) {
-
-  //rendering of val make better
-  case Systematics:
-    return signprefix + to_str_precision(val) + " (sys)";
-  case Calculated:
-    return signprefix + to_str_precision(val) + " (calc)";
-  case GreaterEqual:
-    return "≥" + signprefix + to_str_precision(val);
-  case GreaterThan:
-    return ">" + signprefix + to_str_precision(val);
-  case LessEqual:
-    return "≤" + signprefix + to_str_precision(val);
-  case LessThan:
-    return "<" + signprefix + to_str_precision(val);
-  case Approximately:
-  case SymmetricUncertainty:
-  case AsymmetricUncertainty:
-  {
-    bool symmetric = (type_ == SymmetricUncertainty) || (upper_sigma_ == lower_sigma_);
-    
-    int orderOfValue = order_of(val);
-    int orderOfUncert;
-
-    if (symmetric)
-      orderOfUncert = order_of(lower_sigma_);
-    else
-      orderOfUncert = std::max(order_of(lower_sigma_), order_of(upper_sigma_));
-
-    bool showuncert = (type_ != Approximately)
-        && ((orderOfValue - orderOfUncert) <= 6)
-        && (!(upper_sigma_ == 0.0 && lower_sigma_ == 0.0));
-
-    bool as_percent = (orderOfValue - orderOfUncert) > 6; //not implemented
-    int targetOrder = orderOfValue;
-    if (orderOfUncert > orderOfValue)
-      targetOrder = orderOfUncert;
-
-    int exponent = 0;
-    if ((targetOrder > 4) || (targetOrder < -3))
-      exponent = targetOrder;
-
-    int decimals = 0;
-    if (sigfigs_ > (orderOfValue - exponent))
-      decimals = sigfigs_ - (orderOfValue - exponent) - 1;
-    else if (sigfigs_ > orderOfValue)
-      decimals = sigfigs_ - orderOfValue;
-
-    std::string val_str = to_str_decimals(value_ / pow(10.0, exponent), decimals);
-
-    std::string uncertstr;
-    if (showuncert) {
-      if (symmetric) //symmetrical
-      {
-        double unc_shifted = lower_sigma_ / pow(10.0, exponent);
-        std::string unc_str;
-        if (!decimals)
-          unc_str = to_str_precision(unc_shifted);
-        else if (unc_shifted < 1.0)
-          unc_str = to_str_decimals(unc_shifted / pow(10.0, -decimals), 0);
-        else
-          unc_str = to_str_decimals(unc_shifted, orderOfUncert - exponent + decimals );
-        if (!unc_str.empty())
-          uncertstr = "(" + unc_str + ")";
-      }
-      else //asymmetrical
-      {
-        double lower_shifted = lower_sigma_ / pow(10.0, exponent);
-        double upper_shifted = upper_sigma_ / pow(10.0, exponent);
-        std::string unc_str_l, unc_str_u;
-        if (decimals == 0) {
-          unc_str_l = UTF_subscript(lower_shifted);
-          unc_str_u = UTF_superscript(upper_shifted);
-        } else {
-          bool unc_move_decimal = true;
-          if (!symmetric && ((lower_shifted >= 1.0) || (upper_shifted >= 1.0)))
-            unc_move_decimal = false;
-          else if (symmetric &&
-                   (lower_shifted >= 1.0))
-            unc_move_decimal = false;
-          if (unc_move_decimal) {
-            unc_str_l = UTF_subscript(lower_shifted / pow(10.0, -decimals)); // to_str_precision(lower_shifted / pow(10.0, -decimals));
-            unc_str_u = UTF_superscript(upper_shifted / pow(10.0, -decimals)); //to_str_precision(upper_shifted / pow(10.0, -decimals));
-          } else {
-            unc_str_l = UTF_subscript_dbl(lower_shifted,
-                                          orderOfUncert - exponent + decimals ); //to_str_decimals(lower_shifted, uncprecision );
-            unc_str_u = UTF_superscript_dbl(upper_shifted,
-                                            orderOfUncert - exponent + decimals );
-          }
-        }
-
-        if (!unc_str_u.empty())
-          uncertstr += "\u207A" + unc_str_u;
-        if (!unc_str_l.empty())
-          uncertstr += "\u208B" + unc_str_l;
-      }
-    }
-    else if (!(upper_sigma_ == 0.0 && lower_sigma_ == 0.0))
-      signprefix = signprefix + "~";
-
-    std::string result = val_str;
-
-    if (with_uncert)
-     result += uncertstr;
-
-    if (exponent)
-      result = "(" + result + ")" + times_ten + UTF_superscript(exponent);
-
-    //    DBG << "(" << value_ << "-" << lower_sigma_ << "+" << upper_sigma_ << ") = "
-    //        << signprefix << result;
-
-    return signprefix + result;
-  }
-  default:
-    return "?";
-  }
-}
-
 std::string UncertainDouble::error_percent() const
 {
-    bool symmetric = (type_ == SymmetricUncertainty) || (upper_sigma_ == lower_sigma_);
-    if (symmetric) {
-      if (!std::isfinite(value_) || !std::isfinite(lower_sigma_) || (value_ == 0))
-        return "?";
-      double error = lower_sigma_ / value_ * 100.0;
+  if (!finite())
+    return "?";
+  if ((sigma_ == 0.0) || !std::isfinite(sigma_))
+    return "-";
+  if (value_ == 0)
+    return "?";
 
-      if (error == 0.0)
-        return "-";
-      else if (error < 0.10)
-        return std::to_string(error) + "%";
-      else if (error >= 10)
-        return to_str_decimals(error, 0) + "%";
-      else
-        return to_str_decimals(error, 2) + "%";
-    }
-    else
-    {
-      if (!std::isfinite(value_)
-          || !std::isfinite(lower_sigma_)
-          || !std::isfinite(upper_sigma_)
-          || (value_ == 0))
-        return "?";
-      double lerror = lower_sigma_ / value_ * 100.0;
-      double uerror = upper_sigma_ / value_ * 100.0;
-      std::string low, upp;
+  double error = std::abs(sigma_ / value_ * 100.0);
 
-      if (lerror == 0.0)
-        ;
-      else if (lerror < 0.10)
-        low = UTF_subscript_dbl(lerror, order_of(lerror) + 2);
-      else if (lerror >= 10)
-        low = UTF_subscript_dbl(lerror, 0);
-      else
-        low = UTF_subscript_dbl(lerror, 2);
-
-      if (uerror == 0.0)
-        ;
-      else if (uerror < 0.10)
-        upp = UTF_subscript_dbl(uerror, order_of(uerror) + 2);
-      else if (uerror >= 10)
-        upp = UTF_subscript_dbl(uerror, 0);
-      else
-        upp = UTF_subscript_dbl(uerror, 2);
-
-      std::string ret;
-      if (!upp.empty())
-        ret += "\u207A" + upp;
-      if (!low.empty())
-        ret += "\u208B" + low;
-
-      if (!ret.empty())
-        return "(" + ret +  ")%";
-      else
-        return "-";
-    }
+  UncertainDouble p(error, 0, 2);
+//  DBG << "perror for " << debug() << " is " << p.debug();
+  if (p.exponent() != 0)
+    return "(" +  p.to_string(false) + ")%";
+  else
+    return p.to_string(false) + "%";
 }
 
-std::string UncertainDouble::to_markup() const
-{
-  std::string ret = to_string(true);
-  boost::replace_all(ret, "(sys)", "<i>(sys)</i>");
-  boost::replace_all(ret, "(calc)", "<i>(calc)</i>");
-  boost::replace_all(ret, "<", "&lt;");
-  boost::replace_all(ret, ">", "&gt;");
-  return ret;
-}
+//std::string UncertainDouble::to_markup() const
+//{
+//  std::string ret = to_string();
+//  boost::replace_all(ret, "<", "&lt;");
+//  boost::replace_all(ret, ">", "&gt;");
+//  return ret;
+//}
 
-UncertainDouble & UncertainDouble::operator*=(double other)
+UncertainDouble & UncertainDouble::operator*=(const UncertainDouble &other)
 {
-  setValue(value() * other);
-  if (other >= 0.0 ||
-      uncertaintyType() == SymmetricUncertainty ||
-      uncertaintyType() == Approximately ||
-      uncertaintyType() == Calculated ||
-      uncertaintyType() == Systematics
-      ) {
-    setUncertainty(lowerUncertainty() * other, upperUncertainty() * other, uncertaintyType());
-  }
-  else { // "other" is always negative in this branch!
-    if (uncertaintyType() == AsymmetricUncertainty)
-      setUncertainty(upperUncertainty() * other, lowerUncertainty() * other, uncertaintyType());
-    else if (uncertaintyType() == LessThan)
-      setUncertainty(lowerUncertainty() * other, upperUncertainty() * other, GreaterThan);
-    else if (uncertaintyType() == LessEqual)
-      setUncertainty(lowerUncertainty() * other, upperUncertainty() * other, GreaterEqual);
-    else if (uncertaintyType() == GreaterThan)
-      setUncertainty(lowerUncertainty() * other, upperUncertainty() * other, LessThan);
-    else if (uncertaintyType() == GreaterEqual)
-      setUncertainty(lowerUncertainty() * other, upperUncertainty() * other, LessEqual);
-    else
-      setUncertainty(lowerUncertainty() * other, upperUncertainty() * other, uncertaintyType());
-  }
+  setSigFigs(std::min(sigfigs(), other.sigfigs()));
+  setValue(value_ * other.value_);
+  if (finite() && other.finite())
+    setUncertainty(sqrt(value_*value_*other.sigma_*other.sigma_
+                        + other.value_*other.value_*sigma_*sigma_));
+  else
+    setUncertainty(std::numeric_limits<double>::quiet_NaN());
   return *this;
 }
 
-UncertainDouble &UncertainDouble::operator +=(const UncertainDouble &other)
+UncertainDouble & UncertainDouble::operator/=(const UncertainDouble &other)
+{
+  setSigFigs(std::min(sigfigs(), other.sigfigs()));
+  setValue(value_ / other.value_);
+  if (finite() && other.finite())
+    setUncertainty(sqrt(value_*value_*other.sigma_*other.sigma_
+                        + other.value_*other.value_*sigma_*sigma_));
+  else
+    setUncertainty(std::numeric_limits<double>::quiet_NaN());
+  return *this;
+}
+
+UncertainDouble & UncertainDouble::operator*=(const double &other)
+{
+  setValue(value_ * other);
+  setUncertainty(std::abs(sigma_ * other));
+  return *this;
+}
+
+UncertainDouble & UncertainDouble::operator/=(const double &other)
+{
+  setValue(value_ / other);
+  setUncertainty(std::abs(sigma_ / other));
+  return *this;
+}
+
+UncertainDouble& UncertainDouble::additive_uncert(const UncertainDouble &other)
+{
+  if (finite() && other.finite())
+    setUncertainty(sqrt(pow(sigma_,2) + pow(other.sigma_,2)));
+  else
+    setUncertainty(std::numeric_limits<double>::quiet_NaN());
+  return *this;
+}
+
+
+UncertainDouble& UncertainDouble::operator +=(const UncertainDouble &other)
 {
   uint16_t sd1 = sigdec();
   uint16_t sd2 = other.sigdec();
-  setValue(value() + other.value());
-  setSigFigs(std::min(sd1, sd2) + order_of(value_) + 1);
-  if (uncertaintyType() == other.uncertaintyType())
-    setUncertainty(lowerUncertainty() + other.lowerUncertainty(), upperUncertainty() + other.upperUncertainty(), uncertaintyType());
-  else
-    setUncertainty(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN(), UndefinedType);
+  setValue(value_ + other.value_);
+  setSigFigs(std::min(sd1, sd2) + order_of(value_) + 1); //what if order negative?
+
+  additive_uncert(other);
+  return *this;
+}
+
+UncertainDouble& UncertainDouble::operator -=(const UncertainDouble &other)
+{
+  uint16_t sd1 = sigdec();
+  uint16_t sd2 = other.sigdec();
+  setValue(value_ - other.value_);
+  setSigFigs(std::min(sd1, sd2) + order_of(value_) + 1); //what if order negative?
+
+  additive_uncert(other);
   return *this;
 }
 
@@ -547,8 +304,92 @@ UncertainDouble UncertainDouble::operator +(const UncertainDouble &other) const
   return result;
 }
 
-UncertainDouble::operator double() const
+UncertainDouble UncertainDouble::operator -(const UncertainDouble &other) const
 {
-  return value_;
+  UncertainDouble result(*this);
+  result -= other;
+  return result;
 }
 
+UncertainDouble UncertainDouble::operator *(const UncertainDouble &other) const
+{
+  UncertainDouble result(*this);
+  result *= other;
+  return result;
+}
+
+UncertainDouble UncertainDouble::operator *(const double &other) const
+{
+  UncertainDouble result(*this);
+  result *= other;
+  return result;
+}
+
+UncertainDouble UncertainDouble::operator /(const UncertainDouble &other) const
+{
+  UncertainDouble result(*this);
+  result /= other;
+  return result;
+}
+
+UncertainDouble UncertainDouble::operator /(const double &other) const
+{
+  UncertainDouble result(*this);
+  result /= other;
+  return result;
+}
+
+
+//UncertainDouble::operator double() const
+//{
+//  return value_;
+//}
+
+bool UncertainDouble::almost(const UncertainDouble &other) const
+{
+  if (value_ == other.value_)
+    return true;
+  double delta = std::abs(value_ - other.value_);
+  if (std::isfinite(sigma_) && (delta <= sigma_))
+    return true;
+  if (std::isfinite(other.sigma_) && (delta <= other.sigma_))
+    return true;
+  return false;
+}
+
+UncertainDouble UncertainDouble::average(const std::list<UncertainDouble> &list)
+{
+  if (list.empty())
+    return UncertainDouble();
+
+  double sum = 0;
+  for (auto& l : list)
+    sum += l.value_;
+  double avg = (sum) / list.size();
+  double min = avg;
+  double max = avg;
+  for (auto& l : list) {
+    if (std::isfinite(l.sigma_)) {
+      min = std::min(min, l.value_ - l.sigma_);
+      max = std::max(max, l.value_ + l.sigma_);
+    }
+  }
+
+  UncertainDouble ret((max + min) * 0.5, (max - min) * 0.5, 1);
+  return ret;
+}
+
+void UncertainDouble::to_xml(pugi::xml_node &root) const {
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+
+  node.append_attribute("value").set_value(to_max_precision(value_).c_str());
+  node.append_attribute("sigma").set_value(to_max_precision(sigma_).c_str());
+  node.append_attribute("sigfigs").set_value(std::to_string(sigfigs_).c_str());
+}
+
+
+void UncertainDouble::from_xml(const pugi::xml_node &node) {
+  value_ = node.attribute("value").as_double(std::numeric_limits<double>::quiet_NaN());
+  sigma_ = node.attribute("sigma").as_double(std::numeric_limits<double>::quiet_NaN());
+  sigfigs_ = node.attribute("sigfigs").as_int(1);
+}

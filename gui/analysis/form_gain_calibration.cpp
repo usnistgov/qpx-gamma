@@ -23,7 +23,7 @@
 #include "form_gain_calibration.h"
 #include "widget_detectors.h"
 #include "ui_form_gain_calibration.h"
-#include "gamma_fitter.h"
+#include "fitter.h"
 #include "qt_util.h"
 #include <QSettings>
 
@@ -163,7 +163,7 @@ void FormGainCalibration::plot_calib() {
     ui->spinPolyOrder->setEnabled(true);
 
 
-    ui->plotCalib->addPoints(xx, yy, QVector<double>(yy.size(), 0), style_pts);
+    ui->plotCalib->addPoints(style_pts, xx, yy, QVector<double>(), QVector<double>());
     if ((gain_match_cali_.to_ == detector1_.name_) && gain_match_cali_.valid()) {
 
       double step = (xmax-xmin) / 50.0;

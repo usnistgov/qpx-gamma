@@ -409,19 +409,8 @@ void FormOptimization::do_post_processing() {
   }
 }
 
-void FormOptimization::add_to_table(int row, int col, QString data)
-{
-  QTableWidgetItem * item = new QTableWidgetItem(data);
-  item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-  item->setFlags(item->flags() ^ Qt::ItemIsEditable);
-  ui->tableResults->setItem(row, col, item);
-}
-
-
 void FormOptimization::display_data()
 {
-  int old_row_count = ui->tableResults->rowCount();
-
   ui->tableResults->blockSignals(true);
 
   if (ui->tableResults->rowCount() != experiment_.size())
@@ -452,34 +441,23 @@ void FormOptimization::display_data()
     double real_ms = rt.value_duration.total_milliseconds();
     double live_ms = lt.value_duration.total_milliseconds();
 
-    add_to_table(i, 0, QString::number(data.independent_variable));
+    add_to_table(ui->tableResults, i, 0, std::to_string(data.independent_variable));
 
     double total_count = data.spectrum.metadata_.total_count.convert_to<double>();
     if (live_ms > 0)
       total_count = total_count / live_ms * 1000.0;
-    add_to_table(i, 1, QString::number(total_count));
+    add_to_table(ui->tableResults, i, 1, std::to_string(total_count));
 
-    add_to_table(i, 2, QString::fromStdString(lt.val_to_pretty_string()));
-    add_to_table(i, 3, QString::fromStdString(rt.val_to_pretty_string()));
+    add_to_table(ui->tableResults, i, 2, lt.val_to_pretty_string());
+    add_to_table(ui->tableResults, i, 3, rt.val_to_pretty_string());
 
     UncertainDouble dt = UncertainDouble::from_double(real_ms, real_ms - live_ms, 2);
-    add_to_table(i, 4, QString::fromStdString(dt.error_percent()));
+    add_to_table(ui->tableResults, i, 4, dt.error_percent());
 
-    UncertainDouble nrg = UncertainDouble::from_double(data.selected_peak.energy.val,
-                                                       data.selected_peak.energy.uncert, 1);
-    add_to_table(i, 5, QString::fromStdString(nrg.to_string(false, true)));
-
-    UncertainDouble fwu = UncertainDouble::from_double(data.selected_peak.hypermet_.width_.val * sqrt(log(2)),
-                                                       data.selected_peak.hypermet_.width_.uncert * sqrt(log(2)),
-                                                       1);
-    add_to_table(i, 6, QString::fromStdString(fwu.to_string(false, true)));
-
-    UncertainDouble ar = UncertainDouble::from_double(data.selected_peak.area_best.val,
-                                                      data.selected_peak.area_best.uncert, 1);
-    ar *= 1000.0 / live_ms;
-
-    add_to_table(i, 7, QString::fromStdString(ar.to_string(false, true)));
-    add_to_table(i, 8, QString::fromStdString(ar.error_percent()));
+    add_to_table(ui->tableResults, i, 5, data.selected_peak.energy().to_string());
+    add_to_table(ui->tableResults, i, 6, data.selected_peak.fwhm().to_string());
+    add_to_table(ui->tableResults, i, 7, data.selected_peak.cps_best().to_string());
+    add_to_table(ui->tableResults, i, 8, data.selected_peak.cps_best().error_percent());
 
     xx[i] = data.independent_variable;
     yy[i] = data.dependent_variable;
@@ -489,7 +467,7 @@ void FormOptimization::display_data()
 
   ui->PlotCalib->clearGraphs();
   if (!xx.isEmpty()) {
-    ui->PlotCalib->addPoints(xx, yy, yy_sigma, style_pts);
+    ui->PlotCalib->addPoints(style_pts, xx, yy, QVector<double>(), yy_sigma);
 
     std::set<double> chosen_peaks_chan;
     //if selected insert;
@@ -543,7 +521,7 @@ void FormOptimization::pass_selected_in_table()
         && experiment_.at(selected_pass_).selected_peak != Qpx::Peak())
     {
       std::set<double> selected;
-      selected.insert(experiment_.at(selected_pass_).selected_peak.center.val);
+      selected.insert(experiment_.at(selected_pass_).selected_peak.center().value());
       ui->plotSpectrum->set_selected_peaks(selected);
     }
     if ((selected_fitter_.metadata_.total_count > 0)
@@ -686,14 +664,16 @@ void FormOptimization::eval_dependent(DataPoint &data)
   else if (codomain == "FWHM (selected peak)")
   {
     if (data.selected_peak != Qpx::Peak())
-      data.dependent_variable = data.selected_peak.fwhm.value();
+      data.dependent_variable = data.selected_peak.fwhm().value();
   }
   else if (codomain == "Count rate (selected peak)")
   {
     double live_ms = data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id).value_duration.total_milliseconds();
 
     if (data.selected_peak != Qpx::Peak()) {
-      data.dependent_variable = data.selected_peak.area_best.val;
+//      DBG << "selpeak area " << data.selected_peak.area_best.to_string() <<
+//             "  cps " << data.selected_peak.cps_best.to_string();
+      data.dependent_variable = data.selected_peak.area_best().value();
       if (live_ms > 0)
         data.dependent_variable = data.dependent_variable  / live_ms * 1000.0;
     }
@@ -712,7 +692,7 @@ bool FormOptimization::criterion_satisfied(DataPoint &data)
     return (md.total_count > ui->doubleCriterion->value());
   else if (ui->comboUntil->currentText() == "Peak area % error <")
     return ((data.selected_peak != Qpx::Peak())
-            && (data.selected_peak.sum4_.peak_area.err() < ui->doubleCriterion->value()));
+            && (data.selected_peak.area_best().error() < ui->doubleCriterion->value()));
   else
   {
     WARN << "<FormOptimize> Bad criterion for DAQ termination";

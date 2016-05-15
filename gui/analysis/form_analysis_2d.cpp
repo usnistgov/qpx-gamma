@@ -22,7 +22,7 @@
 
 #include "form_analysis_2d.h"
 #include "ui_form_analysis_2d.h"
-#include "gamma_fitter.h"
+#include "fitter.h"
 #include "qt_util.h"
 #include "manip2d.h"
 #include <QInputDialog>

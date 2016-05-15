@@ -23,7 +23,7 @@
 #ifndef QPX_GATES_H
 #define QPX_GATES_H
 
-#include "gamma_fitter.h"
+#include "fitter.h"
 #include "peak2d.h"
 
 namespace Qpx {

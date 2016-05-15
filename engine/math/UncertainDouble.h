@@ -1,77 +1,85 @@
+//Rework this according to http://arxiv.org/abs/physics/0306138v1 !!!
+
 #ifndef UNCERTAINDOUBLE_H
 #define UNCERTAINDOUBLE_H
 
 #include <string>
+#include <list>
+#include "xmlable.h"
 
-class UncertainDouble
+class UncertainDouble : public XMLable
 {
 public:
-    enum UncertaintyType {
-        UndefinedType         = 0x0,
-        SymmetricUncertainty  = 0x1,
-        AsymmetricUncertainty = 0x2,
-        LessThan              = 0x3,
-        LessEqual             = 0x4,
-        GreaterThan           = 0x5,
-        GreaterEqual          = 0x6,
-        Approximately         = 0x7,
-        Calculated            = 0x8,
-        Systematics           = 0x9
-    };
 
-    enum Sign {
-        UndefinedSign         = 0x0,
-        MagnitudeDefined      = 0x1,
-        SignDefined           = 0x2,
-        SignMagnitudeDefined  = 0x3
-    };
+  UncertainDouble();
+  UncertainDouble(double val, double sigma, uint16_t sigf);
 
-    UncertainDouble();
-    UncertainDouble(double val, double symmetricSigma, uint16_t sigf, Sign s = SignMagnitudeDefined);
+  static UncertainDouble from_int(int64_t val, double sigma);
+  static UncertainDouble from_uint(uint64_t val, double sigma);
+  static UncertainDouble from_double(double val, double sigma,
+                                     uint16_t sigs_below = 1);
 
-    static UncertainDouble from_int(int64_t val, double sigma);
-    static UncertainDouble from_uint(uint64_t val, double sigma);
-    static UncertainDouble from_double(double val, double sigma,
-                                       uint16_t sigs_below = 2,
-                                       Sign s = SignMagnitudeDefined);
+  static UncertainDouble from_nsdf(std::string val, std::string uncert);
 
-    static UncertainDouble from_nsdf(std::string val, std::string uncert);
-    static bool is_uncert(std::string str);
+//  UncertainDouble & operator=(const UncertainDouble & other);
 
-    UncertainDouble & operator=(const UncertainDouble & other);
+  double value() const;
+  double uncertainty() const;
+  double error() const;
 
-    double value() const;
-    double lowerUncertainty() const;
-    double upperUncertainty() const;
-    UncertaintyType uncertaintyType() const;
-    Sign sign() const;
-    uint16_t sigfigs() const;
-    uint16_t sigdec() const;
+  uint16_t sigfigs() const;
+  uint16_t sigdec() const;
 
-    void setValue(double val, Sign s = SignMagnitudeDefined);
-    void setUncertainty(double lower, double upper, UncertaintyType type);
-    void setSymmetricUncertainty(double sigma);
-    void setAsymmetricUncertainty(double lowerSigma, double upperSigma);
-    void setSign(Sign s);
-    void setSigFigs(uint16_t sig);
+  void setValue(double val);
+  void setUncertainty(double sigma);
+  void setSigFigs(uint16_t sig);
+  void autoSigs(uint16_t sigs_below = 0);
+  void constrainSigs(uint16_t max_sigs = 6);
 
-    bool hasFiniteValue() const;
+  bool finite() const;
 
-    std::string to_string(bool prefix_magn, bool with_uncert = true) const;
-    std::string to_markup() const; // outputs formatted text
-    std::string error_percent() const;
+  std::string to_string(bool ommit_tiny = true) const;
+//  std::string to_markup() const; // outputs formatted text
+  std::string error_percent() const;
 
-    UncertainDouble & operator*=(double other);
-    UncertainDouble & operator+=(const UncertainDouble &other);
-    UncertainDouble operator+(const UncertainDouble &other) const;
-    operator double() const;
+  std::string debug() const;
+
+  UncertainDouble & operator*=(const double &other);
+  UncertainDouble operator*(const double &other) const;
+  UncertainDouble & operator/=(const double &other);
+  UncertainDouble operator/(const double &other) const;
+
+  UncertainDouble & operator*=(const UncertainDouble &other);
+  UncertainDouble operator*(const UncertainDouble &other) const;
+  UncertainDouble & operator/=(const UncertainDouble &other);
+  UncertainDouble operator/(const UncertainDouble &other) const;
+
+  UncertainDouble & operator+=(const UncertainDouble &other);
+  UncertainDouble operator+(const UncertainDouble &other) const;
+  UncertainDouble & operator-=(const UncertainDouble &other);
+  UncertainDouble operator-(const UncertainDouble &other) const;
+
+//  operator double() const;
+
+  bool almost (const UncertainDouble &other) const;
+  bool operator == (const UncertainDouble &other) const {return value() == other.value();}
+  bool operator < (const UncertainDouble &other) const {return value() < other.value();}
+  bool operator > (const UncertainDouble &other) const {return value() > other.value();}
+
+  static UncertainDouble average(const std::list<UncertainDouble> &list);
+
+  void to_xml(pugi::xml_node &node) const override;
+  void from_xml(const pugi::xml_node &node) override;
+  std::string xml_element_name() const override {return "UncertainDouble";}
 
 private:
-    double value_;
-    double lower_sigma_, upper_sigma_;
-    Sign sign_;
-    UncertaintyType type_;
-    uint16_t sigfigs_;
+  double value_;
+  double sigma_;
+  uint16_t sigfigs_;
+
+  UncertainDouble& additive_uncert(const UncertainDouble &other);
+  UncertainDouble& multipli_uncert(const UncertainDouble &other);
+  int exponent() const;
 };
 
 #endif // UNCERTAINDOUBLE_H

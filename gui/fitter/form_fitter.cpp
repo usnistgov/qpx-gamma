@@ -23,7 +23,7 @@
 #include "form_fitter.h"
 #include "widget_detectors.h"
 #include "ui_form_fitter.h"
-#include "gamma_fitter.h"
+#include "fitter.h"
 #include "qt_util.h"
 #include "qcp_overlay_button.h"
 #include "form_fitter_settings.h"
@@ -56,7 +56,7 @@ RollbackDialog::RollbackDialog(Qpx::ROI roi, QWidget *parent) :
     radio->setFixedHeight(25);
     bool selected = false;
     if (!roi_.fits_[i].peaks_.empty() && !roi_.peaks_.empty())
-      selected = (roi_.fits_[i].peaks_.begin()->second.hypermet_.rsq_ == roi_.peaks_.begin()->second.hypermet_.rsq_);
+      selected = (roi_.fits_[i].peaks_.begin()->second.hypermet().rsq_ == roi_.peaks_.begin()->second.hypermet().rsq_);
     radio->setChecked(selected);
     radios_.push_back(radio);
     vl_fit->addWidget(radio);
@@ -65,7 +65,7 @@ RollbackDialog::RollbackDialog(Qpx::ROI roi, QWidget *parent) :
     label->setFixedHeight(25);
     double rsq = 0;
     if (!roi_.fits_[i].peaks_.empty())
-      rsq = roi_.fits_[i].peaks_.begin()->second.hypermet_.rsq_;
+      rsq = roi_.fits_[i].peaks_.begin()->second.hypermet().rsq_;
     label->setText(QString::number(rsq));
     vl_rsq->addWidget(label);
 
@@ -488,11 +488,12 @@ void FormFitter::adjust_sum4() {
 
   Qpx::Peak pk = parent_region.peaks_.at(peak_id);
   Qpx::SUM4 new_sum4(parent_region.finder_.x_, parent_region.finder_.y_, L, R, parent_region.sum4_background_, parent_region.LB(), parent_region.RB());
-  pk.sum4_ = new_sum4;
-  pk.construct(fit_data_->settings());
+  pk = Qpx::Peak(pk.hypermet(), new_sum4, parent_region.settings_);
+//  pk.sum4_ = new_sum4;
+//  pk.construct(fit_data_->settings());
   fit_data_->replace_peak(pk);
   selected_peaks_.clear();
-  selected_peaks_.insert(pk.center.val);
+  selected_peaks_.insert(pk.center().value());
 
   range_.visible = false;
   hold_selection_ = true;
@@ -1287,10 +1288,8 @@ void FormFitter::make_SUM4_range(double region, double peak)
   range_.setProperty("region", QVariant::fromValue(region));
   range_.setProperty("peak", QVariant::fromValue(peak));
 
-  double left = parent_region.finder_.x_[pk.sum4_.Lpeak];
-  double right = parent_region.finder_.x_[pk.sum4_.Rpeak];
-  range_.l.set_bin(left, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
-  range_.r.set_bin(right, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
+  range_.l.set_bin(pk.sum4().left(), fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
+  range_.r.set_bin(pk.sum4().right(), fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
   range_.visible = true;
 
 //  selected_peaks_.clear();
@@ -1319,16 +1318,16 @@ void FormFitter::make_background_range(double roi, bool left)
 
   if (left) {
     range_.setProperty("purpose", "background L");
-    L = parent_region.LB().start();
-    R = parent_region.LB().end();
+    L = parent_region.LB().left();
+    R = parent_region.LB().right();
   } else {
     range_.setProperty("purpose", "background R");
-    L = parent_region.RB().start();
-    R = parent_region.RB().end();
+    L = parent_region.RB().left();
+    R = parent_region.RB().right();
   }
 
-  double l = fit_data_->settings().cali_nrg_.transform(parent_region.finder_.x_[L], fit_data_->settings().bits_);
-  double r = fit_data_->settings().cali_nrg_.transform(parent_region.finder_.x_[R], fit_data_->settings().bits_);
+  double l = fit_data_->settings().cali_nrg_.transform(L, fit_data_->settings().bits_);
+  double r = fit_data_->settings().cali_nrg_.transform(R, fit_data_->settings().bits_);
 
   range_.setProperty("region",  QVariant::fromValue(roi));
   range_.l.set_energy(l, fit_data_->settings().cali_nrg_);
@@ -1631,11 +1630,11 @@ void FormFitter::plotRegion(double region_id, Qpx::ROI &region, QCPGraph *data_g
     else
       crs->setGraph(data_graph);
     crs->setInterpolating(true);
-    crs->setGraphKey(p.second.energy.val);
+    crs->setGraphKey(p.second.energy().value());
     ui->plot->addItem(crs);
     crs->updatePosition();
 
-    plotEnergyLabel(p.first, p.second.energy.val, crs);
+    plotEnergyLabel(p.first, p.second.energy().value(), crs);
     plotPeak(region_id, p.first, p.second);
   }
 
@@ -1646,14 +1645,14 @@ void FormFitter::plotPeak(double region_id, double peak_id, Qpx::Peak &peak)
   QPen pen_sum4_peak     = QPen(Qt::darkYellow, 3);
   QPen pen_sum4_selected = QPen(Qt::darkCyan, 3);
 
-  if (!peak.sum4_.bx.empty()) {
+  if (peak.sum4().peak_width()) {
 
-    double x1 = fit_data_->settings().cali_nrg_.transform(peak.sum4_.bx.front() - 0.5,
+    double x1 = fit_data_->settings().cali_nrg_.transform(peak.sum4().left() - 0.5,
                                                           fit_data_->settings().bits_);
-    double x2 = fit_data_->settings().cali_nrg_.transform(peak.sum4_.bx.back() + 0.5,
+    double x2 = fit_data_->settings().cali_nrg_.transform(peak.sum4().right() + 0.5,
                                                           fit_data_->settings().bits_);
-    double y1 = peak.sum4_.by.front();
-    double y2 = peak.sum4_.by.back();
+    double y1 = fit_data_->finder_.y_.at(fit_data_->finder_.find_index(peak.sum4().left()));
+    double y2 = fit_data_->finder_.y_.at(fit_data_->finder_.find_index(peak.sum4().right()));
 
     QCPItemLine *line = new QCPItemLine(ui->plot);
     line->setSelectable(false);
@@ -1692,9 +1691,9 @@ void FormFitter::plotBackgroundEdge(Qpx::SUM4Edge edge,
   QPen pen_background_edge = QPen(Qt::darkMagenta, 3);
 
 
-  double x1 = fit_data_->settings().cali_nrg_.transform(x[edge.start()] - 0.5,
+  double x1 = fit_data_->settings().cali_nrg_.transform(edge.left() - 0.5,
                                                         fit_data_->settings().bits_);
-  double x2 = fit_data_->settings().cali_nrg_.transform(x[edge.end()] + 0.5,
+  double x2 = fit_data_->settings().cali_nrg_.transform(edge.right() + 0.5,
                                                         fit_data_->settings().bits_);
   double y = edge.average();
 
@@ -1755,7 +1754,7 @@ void FormFitter::calc_visible() {
       prime_roi.insert(q.first);
 
     for (auto &p : q.second.peaks_) {
-      if ((p.second.energy.val >= minx_zoom) && (p.second.energy.val <= maxx_zoom))
+      if ((p.second.energy().value() >= minx_zoom) && (p.second.energy().value() <= maxx_zoom))
         good_peak.insert(p.first);
     }
   }
@@ -1950,9 +1949,9 @@ void FormFitter::peak_info(double bin)
 
 //  DBG << "Peak info for " << fit_data_->peaks().at(bin).energy;
 
-  Hypermet hm = fit_data_->peaks().at(bin).hypermet_;
+  Hypermet hm = fit_data_->peaks().at(bin).hypermet();
   FormPeakInfo *peakInfo = new FormPeakInfo(hm, this);
-  peakInfo->setWindowTitle("Parameters for peak at " + QString::number(fit_data_->peaks().at(bin).energy.val));
+  peakInfo->setWindowTitle("Parameters for peak at " + QString::number(fit_data_->peaks().at(bin).energy().value()));
   int ret = peakInfo->exec();
 
   if (ret == QDialog::Accepted) {
@@ -1960,13 +1959,15 @@ void FormFitter::peak_info(double bin)
 //    if (pk.hypermet_ == hm)
 //      return;
 
-    pk.hypermet_ = hm;
+    pk = Qpx::Peak(hm, pk.sum4(), parent_region->settings_);
+
+//    pk.hypermet_ = hm;
 
     //what if centroid has changed?
     fit_data_->replace_peak(pk);
 
     selected_peaks_.clear();
-    selected_peaks_.insert(pk.center.val);
+    selected_peaks_.insert(pk.center().value());
 
     hold_selection_ = true;
 

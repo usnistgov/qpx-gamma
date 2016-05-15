@@ -60,31 +60,31 @@ FormFitterSettings::FormFitterSettings(FitSettings &fs, QWidget *parent) :
   ui->checkStepEnable->setChecked(fit_settings_.step_amplitude.enabled);
   ui->doubleMinStep->setValue(fit_settings_.step_amplitude.lbound);
   ui->doubleMaxStep->setValue(fit_settings_.step_amplitude.ubound);
-  ui->doubleInitStep->setValue(fit_settings_.step_amplitude.val);
+  ui->doubleInitStep->setValue(fit_settings_.step_amplitude.value.value());
 
   ui->checkTailEnable->setChecked(fit_settings_.tail_amplitude.enabled);
   ui->doubleMinTailAmp->setValue(fit_settings_.tail_amplitude.lbound);
   ui->doubleMaxTailAmp->setValue(fit_settings_.tail_amplitude.ubound);
-  ui->doubleInitTailAmp->setValue(fit_settings_.tail_amplitude.val);
+  ui->doubleInitTailAmp->setValue(fit_settings_.tail_amplitude.value.value());
   ui->doubleMinTailSlope->setValue(fit_settings_.tail_slope.lbound);
   ui->doubleMaxTailSlope->setValue(fit_settings_.tail_slope.ubound);
-  ui->doubleInitTailSlope->setValue(fit_settings_.tail_slope.val);
+  ui->doubleInitTailSlope->setValue(fit_settings_.tail_slope.value.value());
 
   ui->checkEnableLskew->setChecked(fit_settings_.Lskew_amplitude.enabled);
   ui->doubleMinLskewAmp->setValue(fit_settings_.Lskew_amplitude.lbound);
   ui->doubleMaxLskewAmp->setValue(fit_settings_.Lskew_amplitude.ubound);
-  ui->doubleInitLskewAmp->setValue(fit_settings_.Lskew_amplitude.val);
+  ui->doubleInitLskewAmp->setValue(fit_settings_.Lskew_amplitude.value.value());
   ui->doubleMinLskewSlope->setValue(fit_settings_.Lskew_slope.lbound);
   ui->doubleMaxLskewSlope->setValue(fit_settings_.Lskew_slope.ubound);
-  ui->doubleInitLskewSlope->setValue(fit_settings_.Lskew_slope.val);
+  ui->doubleInitLskewSlope->setValue(fit_settings_.Lskew_slope.value.value());
 
   ui->checkEnableRskew->setChecked(fit_settings_.Rskew_amplitude.enabled);
   ui->doubleMinRskewAmp->setValue(fit_settings_.Rskew_amplitude.lbound);
   ui->doubleMaxRskewAmp->setValue(fit_settings_.Rskew_amplitude.ubound);
-  ui->doubleInitRskewAmp->setValue(fit_settings_.Rskew_amplitude.val);
+  ui->doubleInitRskewAmp->setValue(fit_settings_.Rskew_amplitude.value.value());
   ui->doubleMinRskewSlope->setValue(fit_settings_.Rskew_slope.lbound);
   ui->doubleMaxRskewSlope->setValue(fit_settings_.Rskew_slope.ubound);
-  ui->doubleInitRskewSlope->setValue(fit_settings_.Rskew_slope.val);
+  ui->doubleInitRskewSlope->setValue(fit_settings_.Rskew_slope.value.value());
 
   ui->checkWidthCommon->setChecked(fit_settings_.width_common);
   ui->doubleMinWidthCommon->setValue(fit_settings_.width_common_bounds.lbound);
@@ -130,31 +130,31 @@ void FormFitterSettings::on_buttonBox_accepted()
   fit_settings_.step_amplitude.enabled = ui->checkStepEnable->isChecked();
   fit_settings_.step_amplitude.lbound = ui->doubleMinStep->value();
   fit_settings_.step_amplitude.ubound = ui->doubleMaxStep->value();
-  fit_settings_.step_amplitude.val = ui->doubleInitStep->value();
+  fit_settings_.step_amplitude.value.setValue(ui->doubleInitStep->value());
 
   fit_settings_.tail_amplitude.enabled = ui->checkTailEnable->isChecked();
   fit_settings_.tail_amplitude.lbound = ui->doubleMinTailAmp->value();
   fit_settings_.tail_amplitude.ubound = ui->doubleMaxTailAmp->value();
-  fit_settings_.tail_amplitude.val = ui->doubleInitTailAmp->value();
+  fit_settings_.tail_amplitude.value.setValue(ui->doubleInitTailAmp->value());
   fit_settings_.tail_slope.lbound = ui->doubleMinTailSlope->value();
   fit_settings_.tail_slope.ubound = ui->doubleMaxTailSlope->value();
-  fit_settings_.tail_slope.val = ui->doubleInitTailSlope->value();
+  fit_settings_.tail_slope.value.setValue(ui->doubleInitTailSlope->value());
 
   fit_settings_.Lskew_amplitude.enabled = ui->checkEnableLskew->isChecked();
   fit_settings_.Lskew_amplitude.lbound = ui->doubleMinLskewAmp->value();
   fit_settings_.Lskew_amplitude.ubound = ui->doubleMaxLskewAmp->value();
-  fit_settings_.Lskew_amplitude.val = ui->doubleInitLskewAmp->value();
+  fit_settings_.Lskew_amplitude.value.setValue(ui->doubleInitLskewAmp->value());
   fit_settings_.Lskew_slope.lbound = ui->doubleMinLskewSlope->value();
   fit_settings_.Lskew_slope.ubound = ui->doubleMaxLskewSlope->value();
-  fit_settings_.Lskew_slope.val = ui->doubleInitLskewSlope->value();
+  fit_settings_.Lskew_slope.value.setValue(ui->doubleInitLskewSlope->value());
 
   fit_settings_.Rskew_amplitude.enabled = ui->checkEnableRskew->isChecked();
   fit_settings_.Rskew_amplitude.lbound = ui->doubleMinRskewAmp->value();
   fit_settings_.Rskew_amplitude.ubound = ui->doubleMaxRskewAmp->value();
-  fit_settings_.Rskew_amplitude.val = ui->doubleInitRskewAmp->value();
+  fit_settings_.Rskew_amplitude.value.setValue(ui->doubleInitRskewAmp->value());
   fit_settings_.Rskew_slope.lbound = ui->doubleMinRskewSlope->value();
   fit_settings_.Rskew_slope.ubound = ui->doubleMaxRskewSlope->value();
-  fit_settings_.Rskew_slope.val = ui->doubleInitRskewSlope->value();
+  fit_settings_.Rskew_slope.value.setValue(ui->doubleInitRskewSlope->value());
 
   fit_settings_.width_common = ui->checkWidthCommon->isChecked();
   fit_settings_.width_common_bounds.lbound = ui->doubleMinWidthCommon->value();

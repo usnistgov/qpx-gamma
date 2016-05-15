@@ -27,7 +27,7 @@
 #include <QWidget>
 #include "special_delegate.h"
 #include <QItemSelection>
-#include "gamma_fitter.h"
+#include "fitter.h"
 
 namespace Ui {
 class FormFitResults;
@@ -51,12 +51,18 @@ public slots:
 signals:
   void selection_changed(std::set<double> selected_peaks);
   void save_peaks_request();
+  void hack(QString file);
 
 private slots:
   void selection_changed_in_table();
   void toggle_push();
 
   void on_pushSaveReport_clicked();
+
+
+  void on_pushSaveFitter_clicked();
+
+  void on_pushLoadFitter_clicked();
 
 private:
   Ui::FormFitResults *ui;
@@ -72,7 +78,6 @@ private:
   void select_in_table();
 
   void add_peak_to_table(const Qpx::Peak &, int, bool);
-  void data_to_table(int row, int column, double value, QBrush background);
 
 };
 

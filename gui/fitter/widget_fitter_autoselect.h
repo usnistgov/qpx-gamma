@@ -25,7 +25,7 @@
 
 #include <QWidget>
 #include <QSettings>
-#include "gamma_peak.h"
+#include "peak.h"
 
 
 namespace Ui {

@@ -32,18 +32,18 @@ WidgetPlotCalib::WidgetPlotCalib(QWidget *parent) :
 
   setColorScheme(Qt::black, Qt::white, QColor(112, 112, 112), QColor(170, 170, 170));
 
-  ui->mcaPlot->setInteraction(QCP::iSelectItems, true);
-  ui->mcaPlot->setInteraction(QCP::iMultiSelect, true);
+  ui->plot->setInteraction(QCP::iSelectItems, true);
+  ui->plot->setInteraction(QCP::iMultiSelect, true);
 
-  connect(ui->mcaPlot, SIGNAL(selectionChangedByUser()), this, SLOT(update_selection()));
-  connect(ui->mcaPlot, SIGNAL(clickedAbstractItem(QCPAbstractItem*)), this, SLOT(clicked_item(QCPAbstractItem*)));
+  connect(ui->plot, SIGNAL(selectionChangedByUser()), this, SLOT(update_selection()));
+  connect(ui->plot, SIGNAL(clickedAbstractItem(QCPAbstractItem*)), this, SLOT(clicked_item(QCPAbstractItem*)));
 
   scale_type_x_ = "Linear";
   scale_type_y_ = "Linear";
-  ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLinear);
-  ui->mcaPlot->yAxis2->setScaleType(QCPAxis::stLinear);
-  ui->mcaPlot->xAxis->setScaleType(QCPAxis::stLinear);
-  ui->mcaPlot->xAxis2->setScaleType(QCPAxis::stLinear);
+  ui->plot->yAxis->setScaleType(QCPAxis::stLinear);
+  ui->plot->yAxis2->setScaleType(QCPAxis::stLinear);
+  ui->plot->xAxis->setScaleType(QCPAxis::stLinear);
+  ui->plot->xAxis2->setScaleType(QCPAxis::stLinear);
 
   connect(&menuOptions, SIGNAL(triggered(QAction*)), this, SLOT(optionsChanged(QAction*)));
   build_menu();
@@ -95,41 +95,35 @@ QString WidgetPlotCalib::scale_type_y() {
 void WidgetPlotCalib::set_scale_type_x(QString sct) {
   scale_type_x_ = sct;
   if (scale_type_x_ == "Linear")
-    ui->mcaPlot->xAxis->setScaleType(QCPAxis::stLinear);
+    ui->plot->xAxis->setScaleType(QCPAxis::stLinear);
   else if (scale_type_x_ == "Logarithmic")
-    ui->mcaPlot->xAxis->setScaleType(QCPAxis::stLogarithmic);
-  ui->mcaPlot->replot();
+    ui->plot->xAxis->setScaleType(QCPAxis::stLogarithmic);
+  ui->plot->replot();
   build_menu();
 }
 
 void WidgetPlotCalib::set_scale_type_y(QString sct) {
   scale_type_y_ = sct;
   if (scale_type_y_ == "Linear")
-    ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLinear);
+    ui->plot->yAxis->setScaleType(QCPAxis::stLinear);
   else if (scale_type_y_ == "Logarithmic")
-    ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLogarithmic);
-  ui->mcaPlot->replot();
+    ui->plot->yAxis->setScaleType(QCPAxis::stLogarithmic);
+  ui->plot->replot();
   build_menu();
 }
 
 void WidgetPlotCalib::clear_data() {
+  points_.clear();
   x_fit.clear();
   y_fit.clear();
-  x_pts.clear();
-  y_pts.clear();
-  y_pts_sigma.clear();
 
-  style_pts.clear();
   selection_.clear();
   floating_text_.clear();
 }
 
 void WidgetPlotCalib::clearPoints()
 {
-  x_pts.clear();
-  y_pts.clear();
-  y_pts_sigma.clear();
-  style_pts.clear();
+  points_.clear();
   selection_.clear();
 }
 
@@ -137,18 +131,15 @@ void WidgetPlotCalib::clearGraphs()
 {
   x_fit.clear();
   y_fit.clear();
-  x_pts.clear();
-  y_pts.clear();
-  y_pts_sigma.clear();
-  style_pts.clear();
+  points_.clear();
   selection_.clear();
   redraw();
 }
 
 void WidgetPlotCalib::redraw() {
-  ui->mcaPlot->clearGraphs();
-  ui->mcaPlot->clearItems();
-  ui->mcaPlot->rescaleAxes();
+  ui->plot->clearGraphs();
+  ui->plot->clearItems();
+  ui->plot->rescaleAxes();
 
   double xmin, xmax;
   double ymin, ymax;
@@ -157,44 +148,65 @@ void WidgetPlotCalib::redraw() {
   ymin = std::numeric_limits<double>::max();
   ymax = - std::numeric_limits<double>::max();
 
-  for (int k=0; k < x_pts.size(); ++k) {
-    ui->mcaPlot->addGraph();
-    int g = ui->mcaPlot->graphCount() - 1;
-    QPen pen(style_pts[k].themes["selected"].color(), 0);
+  for (const PointSet &p : points_) {
+    if ((p.y.size() != p.x.size()) || p.x.isEmpty())
+      continue;
 
-    ui->mcaPlot->graph(g)->setPen(pen);
-    ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsNone);
-    ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDot, 0));
-    ui->mcaPlot->graph(g)->setErrorType(QCPGraph::etValue);
-    ui->mcaPlot->graph(g)->setErrorPen(pen);
-    ui->mcaPlot->graph(g)->setDataValueError(x_pts[k], y_pts[k], y_pts_sigma[k]);
+    ui->plot->addGraph();
+    int g = ui->plot->graphCount() - 1;
+    QPen pen(p.appearance.themes["selected"].color(), 0);
 
-    for (int i = 0; i < x_pts[k].size(); ++i) {
-      QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
+    ui->plot->graph(g)->setPen(pen);
+    ui->plot->graph(g)->setLineStyle(QCPGraph::lsNone);
+    ui->plot->graph(g)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDot, 0));
+    ui->plot->graph(g)->setErrorPen(pen);
+    if ((p.y_sigma.size() == p.y.size()) && (p.x_sigma.size() == p.x.size()))
+    {
+      ui->plot->graph(g)->setErrorType(QCPGraph::etBoth);
+      ui->plot->graph(g)->setDataBothError(p.x, p.y, p.x_sigma, p.y_sigma);
+    }
+    else if (p.y_sigma.size() == p.y.size())
+    {
+      ui->plot->graph(g)->setErrorType(QCPGraph::etValue);
+      ui->plot->graph(g)->setDataValueError(p.x, p.y, p.y_sigma);
+    }
+    else if (p.x_sigma.size() == p.x.size())
+    {
+      ui->plot->graph(g)->setErrorType(QCPGraph::etKey);
+      ui->plot->graph(g)->setDataKeyError(p.x, p.y, p.x_sigma);
+    }
+    else
+    {
+      ui->plot->graph(g)->setErrorType(QCPGraph::etNone);
+      ui->plot->graph(g)->setData(p.x, p.y);
+    }
+
+    for (int i = 0; i < p.x.size(); ++i) {
+      QCPItemTracer *crs = new QCPItemTracer(ui->plot);
       crs->setStyle(QCPItemTracer::tsCircle); //tsCirlce?
-      crs->setSize(style_pts[k].default_pen.width());
-      crs->setGraph(ui->mcaPlot->graph(g));
-      crs->setGraphKey(x_pts[k][i]);
+      crs->setSize(p.appearance.default_pen.width());
+      crs->setGraph(ui->plot->graph(g));
+      crs->setGraphKey(p.x[i]);
       crs->setInterpolating(true);
-      crs->setPen(QPen(style_pts[k].themes["selected"].color(), 0));
-      crs->setBrush(style_pts[k].default_pen.color());
-      crs->setSelectedPen(QPen(style_pts[k].themes["selected"].color(), 0));
-      crs->setSelectedBrush(style_pts[k].themes["selected"].color());
+      crs->setPen(QPen(p.appearance.themes["selected"].color(), 0));
+      crs->setBrush(p.appearance.default_pen.color());
+      crs->setSelectedPen(QPen(p.appearance.themes["selected"].color(), 0));
+      crs->setSelectedBrush(p.appearance.themes["selected"].color());
       crs->setSelectable(true);
-      crs->setProperty("true_value", x_pts[k][i]);
-      if (selection_.count(x_pts[k][i]) > 0)
+      crs->setProperty("true_value", p.x[i]);
+      if (selection_.count(p.x[i]) > 0)
         crs->setSelected(true);
-      ui->mcaPlot->addItem(crs);
+      ui->plot->addItem(crs);
       crs->updatePosition();
     }
 
-    for (auto &q : x_pts[k]) {
+    for (auto &q : p.x) {
       if (q < xmin)
         xmin = q;
       if (q > xmax)
         xmax = q;
     }
-    for (auto &q : y_pts[k]) {
+    for (auto &q : p.y) {
       if (q < ymin)
         ymin = q;
       if (q > ymax)
@@ -202,18 +214,18 @@ void WidgetPlotCalib::redraw() {
     }
   }
 
-  ui->mcaPlot->rescaleAxes();
+  ui->plot->rescaleAxes();
 
-  xmax = ui->mcaPlot->xAxis->pixelToCoord(ui->mcaPlot->xAxis->coordToPixel(xmax) + 15);
-  xmin = ui->mcaPlot->xAxis->pixelToCoord(ui->mcaPlot->xAxis->coordToPixel(xmin) - 15);
+  xmax = ui->plot->xAxis->pixelToCoord(ui->plot->xAxis->coordToPixel(xmax) + 15);
+  xmin = ui->plot->xAxis->pixelToCoord(ui->plot->xAxis->coordToPixel(xmin) - 15);
 
   if (!x_fit.empty()) {
-    ui->mcaPlot->addGraph();
-    int g = ui->mcaPlot->graphCount() - 1;
-    ui->mcaPlot->graph(g)->addData(x_fit, y_fit);
-    ui->mcaPlot->graph(g)->setPen(style_fit.default_pen);
-    ui->mcaPlot->graph(g)->setLineStyle(QCPGraph::lsLine);
-    ui->mcaPlot->graph(g)->setScatterStyle(QCPScatterStyle::ssNone);
+    ui->plot->addGraph();
+    int g = ui->plot->graphCount() - 1;
+    ui->plot->graph(g)->addData(x_fit, y_fit);
+    ui->plot->graph(g)->setPen(style_fit.default_pen);
+    ui->plot->graph(g)->setLineStyle(QCPGraph::lsLine);
+    ui->plot->graph(g)->setScatterStyle(QCPScatterStyle::ssNone);
 
     for (auto &q : x_fit) {
       if (q < xmin)
@@ -229,14 +241,14 @@ void WidgetPlotCalib::redraw() {
     }
   }
 
-  ui->mcaPlot->rescaleAxes();
+  ui->plot->rescaleAxes();
   
-  ymax = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(ymax) - 60);
-  ymin = ui->mcaPlot->yAxis->pixelToCoord(ui->mcaPlot->yAxis->coordToPixel(ymin) + 15);
+  ymax = ui->plot->yAxis->pixelToCoord(ui->plot->yAxis->coordToPixel(ymax) - 60);
+  ymin = ui->plot->yAxis->pixelToCoord(ui->plot->yAxis->coordToPixel(ymin) + 15);
 
   if (!floating_text_.isEmpty()) {
-    QCPItemText *floatingText = new QCPItemText(ui->mcaPlot);
-    ui->mcaPlot->addItem(floatingText);
+    QCPItemText *floatingText = new QCPItemText(ui->plot);
+    ui->plot->addItem(floatingText);
     floatingText->setPositionAlignment(Qt::AlignTop|Qt::AlignHCenter);
     floatingText->position->setType(QCPItemPosition::ptAxisRectRatio);
     floatingText->position->setCoords(0.5, 0); // place position at center/top of axis rect
@@ -248,7 +260,7 @@ void WidgetPlotCalib::redraw() {
 
   QCPItemPixmap *overlayButton;
 
-  overlayButton = new QCPItemPixmap(ui->mcaPlot);
+  overlayButton = new QCPItemPixmap(ui->plot);
   overlayButton->setClipToAxisRect(false);
   overlayButton->setPixmap(QPixmap(":/icons/oxy/16/view_statistics.png"));
   overlayButton->topLeft->setType(QCPItemPosition::ptAbsolute);
@@ -259,7 +271,7 @@ void WidgetPlotCalib::redraw() {
   overlayButton->setSelectable(false);
   overlayButton->setProperty("button_name", QString("options"));
   overlayButton->setProperty("tooltip", QString("Style options"));
-  ui->mcaPlot->addItem(overlayButton);
+  ui->plot->addItem(overlayButton);
 
 
   if ((scale_type_x_ == "Logarithmic") && (xmin < 1))
@@ -268,12 +280,12 @@ void WidgetPlotCalib::redraw() {
   if ((scale_type_y_ == "Logarithmic") && (ymin < 0))
     ymin = 0;
 
-  ui->mcaPlot->xAxis->setRange(xmin, xmax);
-  ui->mcaPlot->xAxis2->setRange(xmin, xmax);
-  ui->mcaPlot->yAxis->setRange(ymin, ymax);
-  ui->mcaPlot->yAxis2->setRange(ymin, ymax);
+  ui->plot->xAxis->setRange(xmin, xmax);
+  ui->plot->xAxis2->setRange(xmin, xmax);
+  ui->plot->yAxis->setRange(ymin, ymax);
+  ui->plot->yAxis2->setRange(ymin, ymax);
 
-  ui->mcaPlot->replot();
+  ui->plot->replot();
 }
 
 void WidgetPlotCalib::clicked_item(QCPAbstractItem* itm) {
@@ -288,8 +300,8 @@ void WidgetPlotCalib::clicked_item(QCPAbstractItem* itm) {
 
 
 void WidgetPlotCalib::setLabels(QString x, QString y) {
-  ui->mcaPlot->xAxis->setLabel(x);
-  ui->mcaPlot->yAxis->setLabel(y);
+  ui->plot->xAxis->setLabel(x);
+  ui->plot->yAxis->setLabel(y);
 }
 
 std::set<double> WidgetPlotCalib::get_selected_pts() {
@@ -307,12 +319,17 @@ void WidgetPlotCalib::addFit(const QVector<double>& x, const QVector<double>& y,
   }
 }
 
-void WidgetPlotCalib::addPoints(const QVector<double>& x, const QVector<double>& y, const QVector<double>& y_sigma, AppearanceProfile style) {
+void WidgetPlotCalib::addPoints(AppearanceProfile style,
+                                const QVector<double>& x, const QVector<double>& y,
+                                const QVector<double>& x_sigma, const QVector<double>& y_sigma) {
   if (!x.empty() && (x.size() == y.size())) {
-    x_pts.push_back(x);
-    y_pts.push_back(y);
-    y_pts_sigma.push_back(y_sigma);
-    style_pts.push_back(style);
+    PointSet ps;
+    ps.appearance = style;
+    ps.x = x;
+    ps.y = y;
+    ps.x_sigma = x_sigma;
+    ps.y_sigma = y_sigma;
+    points_.push_back(ps);
   }
 }
 
@@ -321,30 +338,30 @@ void WidgetPlotCalib::set_selected_pts(std::set<double> sel) {
 }
 
 void WidgetPlotCalib::setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2) {
-  ui->mcaPlot->xAxis->setBasePen(QPen(fore, 1));
-  ui->mcaPlot->yAxis->setBasePen(QPen(fore, 1));
-  ui->mcaPlot->xAxis->setTickPen(QPen(fore, 1));
-  ui->mcaPlot->yAxis->setTickPen(QPen(fore, 1));
-  ui->mcaPlot->xAxis->setSubTickPen(QPen(fore, 1));
-  ui->mcaPlot->yAxis->setSubTickPen(QPen(fore, 1));
-  ui->mcaPlot->xAxis->setTickLabelColor(fore);
-  ui->mcaPlot->yAxis->setTickLabelColor(fore);
-  ui->mcaPlot->xAxis->setLabelColor(fore);
-  ui->mcaPlot->yAxis->setLabelColor(fore);
-  ui->mcaPlot->xAxis->grid()->setPen(QPen(grid1, 1, Qt::DotLine));
-  ui->mcaPlot->yAxis->grid()->setPen(QPen(grid1, 1, Qt::DotLine));
-  ui->mcaPlot->xAxis->grid()->setSubGridPen(QPen(grid2, 1, Qt::DotLine));
-  ui->mcaPlot->yAxis->grid()->setSubGridPen(QPen(grid2, 1, Qt::DotLine));
-  ui->mcaPlot->xAxis->grid()->setSubGridVisible(true);
-  ui->mcaPlot->yAxis->grid()->setSubGridVisible(true);
-  ui->mcaPlot->xAxis->grid()->setZeroLinePen(Qt::NoPen);
-  ui->mcaPlot->yAxis->grid()->setZeroLinePen(Qt::NoPen);
-  ui->mcaPlot->setBackground(QBrush(back));
+  ui->plot->xAxis->setBasePen(QPen(fore, 1));
+  ui->plot->yAxis->setBasePen(QPen(fore, 1));
+  ui->plot->xAxis->setTickPen(QPen(fore, 1));
+  ui->plot->yAxis->setTickPen(QPen(fore, 1));
+  ui->plot->xAxis->setSubTickPen(QPen(fore, 1));
+  ui->plot->yAxis->setSubTickPen(QPen(fore, 1));
+  ui->plot->xAxis->setTickLabelColor(fore);
+  ui->plot->yAxis->setTickLabelColor(fore);
+  ui->plot->xAxis->setLabelColor(fore);
+  ui->plot->yAxis->setLabelColor(fore);
+  ui->plot->xAxis->grid()->setPen(QPen(grid1, 1, Qt::DotLine));
+  ui->plot->yAxis->grid()->setPen(QPen(grid1, 1, Qt::DotLine));
+  ui->plot->xAxis->grid()->setSubGridPen(QPen(grid2, 1, Qt::DotLine));
+  ui->plot->yAxis->grid()->setSubGridPen(QPen(grid2, 1, Qt::DotLine));
+  ui->plot->xAxis->grid()->setSubGridVisible(true);
+  ui->plot->yAxis->grid()->setSubGridVisible(true);
+  ui->plot->xAxis->grid()->setZeroLinePen(Qt::NoPen);
+  ui->plot->yAxis->grid()->setZeroLinePen(Qt::NoPen);
+  ui->plot->setBackground(QBrush(back));
 }
 
 void WidgetPlotCalib::update_selection() {
   selection_.clear();
-  for (auto &q : ui->mcaPlot->selectedItems())
+  for (auto &q : ui->plot->selectedItems())
     if (QCPItemTracer *txt = qobject_cast<QCPItemTracer*>(q))
       selection_.insert(txt->property("true_value").toDouble());
 
@@ -360,16 +377,16 @@ void WidgetPlotCalib::optionsChanged(QAction* action) {
   QString choice = action->text();
   if (choice == "X linear") {
     scale_type_x_ = "Linear";
-    ui->mcaPlot->xAxis->setScaleType(QCPAxis::stLinear);
+    ui->plot->xAxis->setScaleType(QCPAxis::stLinear);
   } else if (choice == "X logarithmic") {
     scale_type_x_ = "Logarithmic";
-    ui->mcaPlot->xAxis->setScaleType(QCPAxis::stLogarithmic);
+    ui->plot->xAxis->setScaleType(QCPAxis::stLogarithmic);
   } else if (choice == "Y linear") {
     scale_type_y_ = "Linear";
-    ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLinear);
+    ui->plot->yAxis->setScaleType(QCPAxis::stLinear);
   } else if (choice == "Y logarithmic") {
     scale_type_y_ = "Logarithmic";
-    ui->mcaPlot->yAxis->setScaleType(QCPAxis::stLogarithmic);
+    ui->plot->yAxis->setScaleType(QCPAxis::stLogarithmic);
   } else {
     QString filter = action->text() + "(*." + action->text() + ")";
     QString fileName = CustomSaveFileDialog(this, "Export plot",
@@ -378,19 +395,19 @@ void WidgetPlotCalib::optionsChanged(QAction* action) {
     if (validateFile(this, fileName, true)) {
       QFileInfo file(fileName);
       if (file.suffix() == "png") {
-        ui->mcaPlot->savePng(fileName,0,0,1,100);
+        ui->plot->savePng(fileName,0,0,1,100);
       } else if (file.suffix() == "jpg") {
-        ui->mcaPlot->saveJpg(fileName,0,0,1,100);
+        ui->plot->saveJpg(fileName,0,0,1,100);
       } else if (file.suffix() == "bmp") {
-        ui->mcaPlot->saveBmp(fileName);
+        ui->plot->saveBmp(fileName);
       } else if (file.suffix() == "pdf") {
-        ui->mcaPlot->savePdf(fileName, true);
+        ui->plot->savePdf(fileName, true);
       }
     }
 
   }
 
   build_menu();
-  ui->mcaPlot->replot();
+  ui->plot->replot();
   this->setCursor(Qt::ArrowCursor);
 }

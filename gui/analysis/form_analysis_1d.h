@@ -60,6 +60,8 @@ private slots:
   void detectorsUpdated() {emit detectorsChanged();}
   void update_fits();
 
+  void hack(QString file);
+
 protected:
   void closeEvent(QCloseEvent*);
 

@@ -34,67 +34,67 @@ FormPeakInfo::FormPeakInfo(Hypermet &hm, QWidget *parent) :
 //  ui->labelCaliEnergy->setText(QString::fromStdString(hm_.cali_nrg_.to_string()));
 //  ui->labelCaliFWHM->setText(QString::fromStdString(hm_.cali_fwhm_.to_string()));
 
-  ui->labelCenter->setText(QString::number(hm_.center_.val) + " \u00B1 " + QString::number(hm_.center_.uncert));
-  ui->labelCenterPercent->setText(QString::number(hm_.center_.uncert/hm_.center_.val*100) + "%");
-  ui->labelAmplitude->setText(QString::number(hm_.height_.val) + " \u00B1 " + QString::number(hm_.height_.uncert));
-  ui->labelAmplitudePercent->setText(QString::number(hm_.height_.uncert/hm_.height_.val*100) + "%");
-  ui->labelWidth->setText(QString::number(hm_.width_.val) + " \u00B1 " + QString::number(hm_.width_.uncert));
-  ui->labelWidthPercent->setText(QString::number(hm_.width_.uncert/hm_.width_.val*100) + "%");
+  ui->labelCenter->setText(QString::fromStdString(hm_.center_.value.to_string()));
+  ui->labelCenterPercent->setText(QString::fromStdString(hm_.center_.value.error_percent()));
+  ui->labelAmplitude->setText(QString::fromStdString(hm_.height_.value.to_string()));
+  ui->labelAmplitudePercent->setText(QString::fromStdString(hm_.height_.value.error_percent()));
+  ui->labelWidth->setText(QString::fromStdString(hm_.width_.value.to_string()));
+  ui->labelWidthPercent->setText(QString::fromStdString(hm_.width_.value.error_percent()));
 
-  ui->labelStep->setText(QString::number(hm_.step_amplitude.val) + " \u00B1 " + QString::number(hm_.step_amplitude.uncert));
-  ui->labelStepPercent->setText(QString::number(hm_.step_amplitude.uncert/hm_.step_amplitude.val*100) + "%");
+  ui->labelStep->setText(QString::fromStdString(hm_.step_amplitude.value.to_string()));
+  ui->labelStepPercent->setText(QString::fromStdString(hm_.step_amplitude.value.error_percent()));
 
-  ui->labelTailH->setText(QString::number(hm_.tail_amplitude.val) + " \u00B1 " + QString::number(hm_.tail_amplitude.uncert));
-  ui->labelTailHPercent->setText(QString::number(hm_.tail_amplitude.uncert/hm_.tail_amplitude.val*100) + "%");
-  ui->labelTailS->setText(QString::number(hm_.tail_slope.val) + " \u00B1 " + QString::number(hm_.tail_slope.uncert));
-  ui->labelTailSPercent->setText(QString::number(hm_.tail_slope.uncert/hm_.tail_slope.val*100) + "%");
+  ui->labelTailH->setText(QString::fromStdString(hm_.tail_amplitude.value.to_string()));
+  ui->labelTailHPercent->setText(QString::fromStdString(hm_.tail_amplitude.value.error_percent()));
+  ui->labelTailS->setText(QString::fromStdString(hm_.tail_slope.value.to_string()));
+  ui->labelTailSPercent->setText(QString::fromStdString(hm_.tail_slope.value.error_percent()));
 
-  ui->labelLskewH->setText(QString::number(hm_.Lskew_amplitude.val) + " \u00B1 " + QString::number(hm_.Lskew_amplitude.uncert));
-  ui->labelLskewHPercent->setText(QString::number(hm_.Lskew_amplitude.uncert/hm_.Lskew_amplitude.val*100) + "%");
-  ui->labelLskewS->setText(QString::number(hm_.Lskew_slope.val) + " \u00B1 " + QString::number(hm_.Lskew_slope.uncert));
-  ui->labelLskewSPercent->setText(QString::number(hm_.Lskew_slope.uncert/hm_.Lskew_slope.val*100) + "%");
+  ui->labelLskewH->setText(QString::fromStdString(hm_.Lskew_amplitude.value.to_string()));
+  ui->labelLskewHPercent->setText(QString::fromStdString(hm_.Lskew_amplitude.value.error_percent()));
+  ui->labelLskewS->setText(QString::fromStdString(hm_.Lskew_slope.value.to_string()));
+  ui->labelLskewSPercent->setText(QString::fromStdString(hm_.Lskew_slope.value.error_percent()));
 
-  ui->labelRskewH->setText(QString::number(hm_.Rskew_amplitude.val) + " \u00B1 " + QString::number(hm_.Rskew_amplitude.uncert));
-  ui->labelRskewHPercent->setText(QString::number(hm_.Rskew_amplitude.uncert/hm_.Rskew_amplitude.val*100) + "%");
-  ui->labelRskewS->setText(QString::number(hm_.Rskew_slope.val) + " \u00B1 " + QString::number(hm_.Rskew_slope.uncert));
-  ui->labelRskewSPercent->setText(QString::number(hm_.Rskew_slope.uncert/hm_.Rskew_slope.val*100) + "%");
+  ui->labelRskewH->setText(QString::fromStdString(hm_.Rskew_amplitude.value.to_string()));
+  ui->labelRskewHPercent->setText(QString::fromStdString(hm_.Rskew_amplitude.value.error_percent()));
+  ui->labelRskewS->setText(QString::fromStdString(hm_.Rskew_slope.value.to_string()));
+  ui->labelRskewSPercent->setText(QString::fromStdString(hm_.Rskew_slope.value.error_percent()));
 
 
-  ui->doubleCenter->setValue(hm_.center_.val);
-  ui->doubleCenterEpsilon->setValue(hm_.center_.uncert);
-  ui->doubleAmplitude->setValue(hm_.height_.val);
-  ui->doubleAmplitudeEpsilon->setValue(hm_.height_.uncert);
-  ui->doubleWidth->setValue(hm_.width_.val);
-  ui->doubleWidthEpsilon->setValue(hm_.width_.uncert);
+  ui->doubleCenter->setValue(hm_.center_.value.value());
+  ui->doubleCenterEpsilon->setValue(hm_.center_.value.uncertainty());
+  ui->doubleAmplitude->setValue(hm_.height_.value.value());
+  ui->doubleAmplitudeEpsilon->setValue(hm_.height_.value.uncertainty());
+  ui->doubleWidth->setValue(hm_.width_.value.value());
+  ui->doubleWidthEpsilon->setValue(hm_.width_.value.uncertainty());
 
   ui->checkStepEnable->setChecked(hm_.step_amplitude.enabled);
   ui->doubleMinStep->setValue(hm_.step_amplitude.lbound);
   ui->doubleMaxStep->setValue(hm_.step_amplitude.ubound);
-  ui->doubleInitStep->setValue(hm_.step_amplitude.val);
+  ui->doubleInitStep->setValue(hm_.step_amplitude.value.value());
 
   ui->checkTailEnable->setChecked(hm_.tail_amplitude.enabled);
   ui->doubleMinTailAmp->setValue(hm_.tail_amplitude.lbound);
   ui->doubleMaxTailAmp->setValue(hm_.tail_amplitude.ubound);
-  ui->doubleInitTailAmp->setValue(hm_.tail_amplitude.val);
+  ui->doubleInitTailAmp->setValue(hm_.tail_amplitude.value.value());
   ui->doubleMinTailSlope->setValue(hm_.tail_slope.lbound);
   ui->doubleMaxTailSlope->setValue(hm_.tail_slope.ubound);
-  ui->doubleInitTailSlope->setValue(hm_.tail_slope.val);
+  ui->doubleInitTailSlope->setValue(hm_.tail_slope.value.value());
 
   ui->checkEnableLskew->setChecked(hm_.Lskew_amplitude.enabled);
   ui->doubleMinLskewAmp->setValue(hm_.Lskew_amplitude.lbound);
   ui->doubleMaxLskewAmp->setValue(hm_.Lskew_amplitude.ubound);
-  ui->doubleInitLskewAmp->setValue(hm_.Lskew_amplitude.val);
+  ui->doubleInitLskewAmp->setValue(hm_.Lskew_amplitude.value.value());
   ui->doubleMinLskewSlope->setValue(hm_.Lskew_slope.lbound);
   ui->doubleMaxLskewSlope->setValue(hm_.Lskew_slope.ubound);
-  ui->doubleInitLskewSlope->setValue(hm_.Lskew_slope.val);
+  ui->doubleInitLskewSlope->setValue(hm_.Lskew_slope.value.value());
 
   ui->checkEnableRskew->setChecked(hm_.Rskew_amplitude.enabled);
   ui->doubleMinRskewAmp->setValue(hm_.Rskew_amplitude.lbound);
   ui->doubleMaxRskewAmp->setValue(hm_.Rskew_amplitude.ubound);
-  ui->doubleInitRskewAmp->setValue(hm_.Rskew_amplitude.val);
+  ui->doubleInitRskewAmp->setValue(hm_.Rskew_amplitude.value.value());
   ui->doubleMinRskewSlope->setValue(hm_.Rskew_slope.lbound);
   ui->doubleMaxRskewSlope->setValue(hm_.Rskew_slope.ubound);
-  ui->doubleInitRskewSlope->setValue(hm_.Rskew_slope.val);
+  ui->doubleInitRskewSlope->setValue(hm_.Rskew_slope.value.value());
 
 //  ui->checkWidthCommon->setChecked(hm_.width_common);
 //  ui->doubleMinWidthCommon->setValue(hm_.width_common_bounds.lbound);
@@ -108,51 +108,51 @@ FormPeakInfo::FormPeakInfo(Hypermet &hm, QWidget *parent) :
 
 void FormPeakInfo::on_buttonBox_accepted()
 {
-  hm_.center_.val = ui->doubleCenter->value();
-  hm_.center_.uncert = ui->doubleCenterEpsilon->value();
+  hm_.center_.value.setValue(ui->doubleCenter->value());
+  hm_.center_.value.setUncertainty(ui->doubleCenterEpsilon->value());
 
-  hm_.height_.val = ui->doubleAmplitude->value();
-  hm_.height_.uncert = ui->doubleAmplitudeEpsilon->value();
+  hm_.height_.value.setValue(ui->doubleAmplitude->value());
+  hm_.height_.value.setUncertainty(ui->doubleAmplitudeEpsilon->value());
 
-  hm_.width_.val = ui->doubleWidth->value();
-  hm_.width_.uncert = ui->doubleWidthEpsilon->value();
+  hm_.width_.value.setValue(ui->doubleWidth->value());
+  hm_.width_.value.setUncertainty(ui->doubleWidthEpsilon->value());
 
 
   hm_.step_amplitude.enabled = ui->checkStepEnable->isChecked();
   if (hm_.step_amplitude.enabled) {
     hm_.step_amplitude.lbound = ui->doubleMinStep->value();
     hm_.step_amplitude.ubound = ui->doubleMaxStep->value();
-    hm_.step_amplitude.val = ui->doubleInitStep->value();
+    hm_.step_amplitude.value.setValue(ui->doubleInitStep->value());
   }
 
   hm_.tail_amplitude.enabled = ui->checkTailEnable->isChecked();
   if (hm_.tail_amplitude.enabled) {
     hm_.tail_amplitude.lbound = ui->doubleMinTailAmp->value();
     hm_.tail_amplitude.ubound = ui->doubleMaxTailAmp->value();
-    hm_.tail_amplitude.val = ui->doubleInitTailAmp->value();
+    hm_.tail_amplitude.value.setValue(ui->doubleInitTailAmp->value());
     hm_.tail_slope.lbound = ui->doubleMinTailSlope->value();
     hm_.tail_slope.ubound = ui->doubleMaxTailSlope->value();
-    hm_.tail_slope.val = ui->doubleInitTailSlope->value();
+    hm_.tail_slope.value.setValue(ui->doubleInitTailSlope->value());
   }
 
   hm_.Lskew_amplitude.enabled = ui->checkEnableLskew->isChecked();
   if (hm_.Lskew_amplitude.enabled) {
     hm_.Lskew_amplitude.lbound = ui->doubleMinLskewAmp->value();
     hm_.Lskew_amplitude.ubound = ui->doubleMaxLskewAmp->value();
-    hm_.Lskew_amplitude.val = ui->doubleInitLskewAmp->value();
+    hm_.Lskew_amplitude.value.setValue(ui->doubleInitLskewAmp->value());
     hm_.Lskew_slope.lbound = ui->doubleMinLskewSlope->value();
     hm_.Lskew_slope.ubound = ui->doubleMaxLskewSlope->value();
-    hm_.Lskew_slope.val = ui->doubleInitLskewSlope->value();
+    hm_.Lskew_slope.value.setValue(ui->doubleInitLskewSlope->value());
   }
 
   hm_.Rskew_amplitude.enabled = ui->checkEnableRskew->isChecked();
   if (hm_.Rskew_amplitude.enabled) {
     hm_.Rskew_amplitude.lbound = ui->doubleMinRskewAmp->value();
     hm_.Rskew_amplitude.ubound = ui->doubleMaxRskewAmp->value();
-    hm_.Rskew_amplitude.val = ui->doubleInitRskewAmp->value();
+    hm_.Rskew_amplitude.value.setValue(ui->doubleInitRskewAmp->value());
     hm_.Rskew_slope.lbound = ui->doubleMinRskewSlope->value();
     hm_.Rskew_slope.ubound = ui->doubleMaxRskewSlope->value();
-    hm_.Rskew_slope.val = ui->doubleInitRskewSlope->value();
+    hm_.Rskew_slope.value.setValue(ui->doubleInitRskewSlope->value());
   }
 
 //  hm_.width_common = ui->checkWidthCommon->isChecked();

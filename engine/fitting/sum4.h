@@ -26,66 +26,73 @@
 #include <vector>
 #include <cstdint>
 #include "polynomial.h"
-#include "val_uncert.h"
+#include "UncertainDouble.h"
 
 namespace Qpx {
 
 class SUM4Edge {
-  uint32_t start_, end_;
-  double sum_, w_, avg_, variance_;
-  double min_, max_, midpoint_;
+//  uint32_t start_, end_;
+  double Lchan_, Rchan_;
+  double min_, max_;
+  UncertainDouble dsum_, davg_;
 
 public:
-  SUM4Edge() : start_(0), end_(0), sum_(0), w_(0), avg_(0), variance_(0),
-               midpoint_(0), min_(0), max_(0) {}
-  SUM4Edge(const std::vector<double> &y,
+  SUM4Edge();
+  SUM4Edge(const std::vector<double> &x,
+           const std::vector<double> &y,
            uint32_t left, uint32_t right);
 
-  uint32_t start()  const {return start_;}
-  uint32_t end()    const {return end_;}
-  double sum()      const {return sum_;}
-  double width()    const {return w_;}
-  double average()  const {return avg_;}
-  double variance() const {return variance_;}
+//  uint32_t start()  const {return start_;}
+//  uint32_t end()    const {return end_;}
+  double left()  const {return Lchan_;}
+  double right() const {return Rchan_;}
+  double sum()      const {return dsum_.value();}
+  double width()    const;
+  double average()  const {return davg_.value();}
+  double variance() const {return pow(davg_.uncertainty(),2);}
 
   double min()      const {return min_;}
   double max()      const {return max_;}
-  double midpoint() const {return midpoint_;}
-
+  double midpoint() const;
 };
 
 class SUM4 {
 
-  SUM4Edge LB_, RB_;
-  PolyBounded background_;
-
 public:
-
-  std::vector<double> bx, by;
-
-  int32_t Lpeak, Rpeak;
-  double peak_width;
-  double fwhm;
-
-  ValUncert gross_area;
-  ValUncert background_area;
-  ValUncert peak_area;
-  ValUncert centroid;
-
-  int currie_quality_indicator;
-
   SUM4();
-
   SUM4(const std::vector<double> &x,
        const std::vector<double> &y,
-       uint32_t left, uint32_t right,
+       uint32_t Lindex, uint32_t Rindex,
        PolyBounded background,
        SUM4Edge LB, SUM4Edge RB);
 
   SUM4Edge LB() const {return LB_;}
   SUM4Edge RB() const {return RB_;}
 
-  void recalc(const std::vector<double> &x, const std::vector<double> &y);
+  double left()  const {return Lchan_;}
+  double right() const {return Rchan_;}
+
+  double peak_width() const;
+  int    quality() const;
+
+  UncertainDouble gross_area()      const {return gross_area_;}
+  UncertainDouble background_area() const {return background_area_;}
+  UncertainDouble peak_area()       const {return peak_area_;}
+  UncertainDouble centroid()        const {return centroid_;}
+  UncertainDouble fwhm()            const {return fwhm_;}
+
+  static int get_currie_quality_indicator(double peak_net_area, double background_variance);
+
+private:
+  SUM4Edge LB_, RB_;
+  PolyBounded background_;
+  double Lchan_, Rchan_;
+
+  UncertainDouble gross_area_;
+  UncertainDouble background_area_;
+  UncertainDouble peak_area_;
+  UncertainDouble centroid_;
+  UncertainDouble fwhm_;
 
 };
 

@@ -23,7 +23,7 @@
 #include "form_analysis_1d.h"
 #include "widget_detectors.h"
 #include "ui_form_analysis_1d.h"
-#include "gamma_fitter.h"
+#include "fitter.h"
 #include "qt_util.h"
 #include <QInputDialog>
 #include <QSettings>
@@ -83,6 +83,7 @@ FormAnalysis1D::FormAnalysis1D(XMLableDB<Detector>& newDetDB, QWidget *parent) :
 
   connect(form_energy_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
   connect(form_fwhm_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
+  connect(form_fit_results_, SIGNAL(hack(QString)), this, SLOT(hack(QString)));
 
   ui->tabs->setCurrentWidget(form_energy_calibration_);
 }
@@ -286,5 +287,18 @@ void FormAnalysis1D::save_report()
   if (validateFile(this, fileName, true)) {
     INFO << "Writing report to " << fileName.toStdString();
     fit_data_.save_report(fileName.toStdString());
+  }
+}
+
+void FormAnalysis1D::hack(QString file)
+{
+  pugi::xml_document doc;
+  if (doc.load_file(file.toStdString().c_str())) {
+    if (doc.child(fit_data_.xml_element_name().c_str())) {
+      DBG << "will load";
+      fit_data_.from_xml(doc.child(fit_data_.xml_element_name().c_str()),
+                         spectra_->get_sink(current_spectrum_));
+      ui->plotSpectrum->updateData();
+    }
   }
 }

@@ -23,7 +23,7 @@
 #ifndef QPX_FITTER_H
 #define QPX_FITTER_H
 
-#include "gamma_peak.h"
+#include "peak.h"
 #include "roi.h"
 #include "daq_sink.h"
 #include "finder.h"
@@ -69,15 +69,25 @@ public:
 
   std::map<double, Peak> peaks();
 
-  //DATA
 
-  Finder finder_;
+  void to_xml(pugi::xml_node &node) const;
+  void from_xml(const pugi::xml_node &node, SinkPtr spectrum);
+  std::string xml_element_name() const {return "Fitter";}
 
-  Metadata metadata_;
-  Detector detector_; //need this? metadata?
+
+
+  //for efficiency stuff
   std::string sample_name_;
   double activity_scale_factor_; //should be in spectrum?
+
+  Detector detector_; //need this? metadata?
+
   
+  //data from spectrum
+  Finder finder_;
+  Metadata metadata_;
+
+  //actual results
   std::map<double, ROI> regions_;
 
 private:

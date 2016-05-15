@@ -24,7 +24,7 @@
 #include "form_multi_gates.h"
 #include "widget_detectors.h"
 #include "ui_form_multi_gates.h"
-#include "gamma_fitter.h"
+#include "fitter.h"
 #include "qt_util.h"
 #include <QCloseEvent>
 #include "manip2d.h"
@@ -315,20 +315,20 @@ void FormMultiGates::on_pushApprove_clicked()
     double livetime = fit_data_.metadata_.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
     if (livetime <= 0)
       livetime = 100;
-    gate.cps           = q.second.sum4_.gross_area.val; // / livetime;
+    gate.cps           = q.second.sum4().gross_area().value();
     gate.approved = false;
     gate.constraints.labelfloat = true;
 
-    double w = q.second.fwhm.value() * ui->doubleGateOn->value();
-    double L_nrg = q.second.energy.val - w / 2;
-    double R_nrg = q.second.energy.val + w / 2;
+    double w = q.second.fwhm().value() * ui->doubleGateOn->value();
+    double L_nrg = q.second.energy().value() - w / 2;
+    double R_nrg = q.second.energy().value() + w / 2;
     double L_chan = fit_data_.settings().cali_nrg_.inverse_transform(L_nrg, fit_data_.metadata_.bits);
     double R_chan = fit_data_.settings().cali_nrg_.inverse_transform(R_nrg, fit_data_.metadata_.bits);
 
     gate.constraints.x_c.set_bin(res_/2, md_.bits, fit_data_.settings().cali_nrg_);
     gate.constraints.x1.set_bin(-0.5, md_.bits, fit_data_.settings().cali_nrg_);
     gate.constraints.x2.set_bin(res_ - 0.5, md_.bits, fit_data_.settings().cali_nrg_);
-    gate.constraints.y_c.set_bin(q.second.center.val, md_.bits, fit_data_.settings().cali_nrg_);
+    gate.constraints.y_c.set_bin(q.second.center().value(), md_.bits, fit_data_.settings().cali_nrg_);
     gate.constraints.y1.set_bin(std::round(L_chan) - 0.5, md_.bits, fit_data_.settings().cali_nrg_);
     gate.constraints.y2.set_bin(std::round(R_chan) + 0.5, md_.bits, fit_data_.settings().cali_nrg_);
     gate.constraints.visible = true;
@@ -361,13 +361,13 @@ void FormMultiGates::on_pushDistill_clicked()
 
     for (auto &p : gate.fit_data_.peaks()) {
       Peak &peak = p.second;
-      double w = peak.fwhm.value() * ui->doubleGateOn->value();
-      double L_nrg = peak.energy.val - w / 2;
-      double R_nrg = peak.energy.val + w / 2;
+      double w = peak.fwhm().value() * ui->doubleGateOn->value();
+      double L_nrg = peak.energy().value() - w / 2;
+      double R_nrg = peak.energy().value() + w / 2;
       double L_chan = gate.fit_data_.settings().cali_nrg_.inverse_transform(L_nrg, gate.fit_data_.settings().bits_);
       double R_chan = gate.fit_data_.settings().cali_nrg_.inverse_transform(R_nrg, gate.fit_data_.settings().bits_);
 
-      box.x_c.set_bin(peak.center.val, md_.bits, gate.fit_data_.settings().cali_nrg_);
+      box.x_c.set_bin(peak.center().value(), md_.bits, gate.fit_data_.settings().cali_nrg_);
       box.x1.set_bin(std::round(L_chan) - 0.5, md_.bits, gate.fit_data_.settings().cali_nrg_);
       box.x2.set_bin(std::round(R_chan) + 0.5, md_.bits, gate.fit_data_.settings().cali_nrg_);
       all_boxes_.push_back(box);
@@ -490,15 +490,15 @@ void FormMultiGates::update_peaks(bool content_changed) {
     Peak &peak = q.second;
 
     box.visible = true;
-    box.selected = ui->gatedSpectrum->get_selected_peaks().count(peak.center.val);
+    box.selected = ui->gatedSpectrum->get_selected_peaks().count(peak.center().value());
 
-    double w = peak.fwhm.value() * ui->doubleGateOn->value();
-    double L_nrg = peak.energy.val - w / 2;
-    double R_nrg = peak.energy.val + w / 2;
+    double w = peak.fwhm().value() * ui->doubleGateOn->value();
+    double L_nrg = peak.energy().value() - w / 2;
+    double R_nrg = peak.energy().value() + w / 2;
     double L_chan = fit_data_.settings().cali_nrg_.inverse_transform(L_nrg, md_.bits);
     double R_chan = fit_data_.settings().cali_nrg_.inverse_transform(R_nrg, md_.bits);
 
-    box.x_c.set_bin(peak.center.val, md_.bits, fit_data_.settings().cali_nrg_);
+    box.x_c.set_bin(peak.center().value(), md_.bits, fit_data_.settings().cali_nrg_);
     box.x1.set_bin(std::round(L_chan) - 0.5, md_.bits, fit_data_.settings().cali_nrg_);
     box.x2.set_bin(std::round(R_chan) + 0.5, md_.bits, fit_data_.settings().cali_nrg_);
 

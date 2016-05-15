@@ -28,7 +28,7 @@
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
 #include "widget_plot_multi1d.h"
-#include "gamma_fitter.h"
+#include "fitter.h"
 
 namespace Ui {
 class FormGainMatch;

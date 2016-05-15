@@ -179,7 +179,8 @@ void Finder::find_peaks() {
   }
 }
 
-uint16_t Finder::find_left(uint16_t chan) {
+uint16_t Finder::find_left(uint16_t chan) const
+{
   if (x_.empty())
     return 0;
 
@@ -204,7 +205,8 @@ uint16_t Finder::find_left(uint16_t chan) {
   return x_[left_edge(i)];
 }
 
-uint16_t Finder::find_right(uint16_t chan) {
+uint16_t Finder::find_right(uint16_t chan) const
+{
   if (x_.empty())
     return 0;
 
@@ -230,7 +232,8 @@ uint16_t Finder::find_right(uint16_t chan) {
 }
 
 
-uint16_t Finder::left_edge(uint16_t idx) {
+uint16_t Finder::left_edge(uint16_t idx) const
+{
   if (x_conv.empty() || idx >= x_conv.size())
     return 0;
 
@@ -264,7 +267,8 @@ uint16_t Finder::left_edge(uint16_t idx) {
   return idx;
 }
 
-uint16_t Finder::right_edge(uint16_t idx) {
+uint16_t Finder::right_edge(uint16_t idx) const
+{
   if (x_conv.empty() || idx >= x_conv.size())
     return 0;
 
@@ -297,7 +301,8 @@ uint16_t Finder::right_edge(uint16_t idx) {
   return idx;
 }
 
-int32_t Finder::find_index(double chan_val) {
+int32_t Finder::find_index(double chan_val) const
+{
   if (x_.empty())
     return -1;
 

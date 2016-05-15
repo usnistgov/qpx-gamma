@@ -23,7 +23,7 @@
 #include "form_fwhm_calibration.h"
 #include "widget_detectors.h"
 #include "ui_form_fwhm_calibration.h"
-#include "gamma_fitter.h"
+#include "fitter.h"
 #include "qt_util.h"
 #include "sqrt_poly.h"
 
@@ -55,8 +55,8 @@ FormFwhmCalibration::FormFwhmCalibration(XMLableDB<Qpx::Detector>& dets, Qpx::Fi
   ui->PlotCalib->setLabels("energy", "FWHM");
 
   ui->tablePeaks->verticalHeader()->hide();
-  ui->tablePeaks->setColumnCount(7);
-  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fwhm", "w %err(s4)", "CQI (s4)", "w %err(hyp)", "fit %err(hyp)"});
+  ui->tablePeaks->setColumnCount(6);
+  ui->tablePeaks->setHorizontalHeaderLabels({"energy", "err(energy)", "fwhm", "err(fwhm)", "Quality", "fit rsq(hyp)"});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tablePeaks->setEditTriggers(QTableView::NoEditTriggers);
@@ -143,8 +143,8 @@ void FormFwhmCalibration::rebuild_table() {
   ui->tablePeaks->setRowCount(fit_data_.peaks().size());
   int i=0;
   for (auto &q : fit_data_.peaks()) {
-    bool significant = (( (1 - q.second.hypermet_.rsq_) * 100 < ui->doubleMaxFitErr->value())
-                        && (q.second.hypermet_.width_.err() < ui->doubleMaxWidthErr->value()));
+    bool significant = (( (1 - q.second.hypermet().rsq_) * 100 < ui->doubleMaxFitErr->value())
+                        && (q.second.hypermet().width_.value.error() < ui->doubleMaxWidthErr->value()));
     add_peak_to_table(q.second, i, significant);
     ++i;
   }
@@ -172,7 +172,7 @@ void FormFwhmCalibration::select_in_table() {
   QItemSelection itemSelection = selectionModel->selection();
 
   for (int i=0; i < ui->tablePeaks->rowCount(); ++i)
-    if (selected_peaks_.count(ui->tablePeaks->item(i, 0)->data(Qt::EditRole).toDouble())) {
+    if (selected_peaks_.count(ui->tablePeaks->item(i, 0)->data(Qt::UserRole).toDouble())) {
       ui->tablePeaks->selectRow(i);
       itemSelection.merge(selectionModel->selection(), QItemSelectionModel::Select);
     }
@@ -188,7 +188,7 @@ void FormFwhmCalibration::select_in_plot() {
   std::set<double> selected_energies;
   for (auto &p : fit_data_.peaks())
     if (selected_peaks_.count(p.first))
-      selected_energies.insert(p.second.energy.val);
+      selected_energies.insert(p.second.energy().value());
   ui->PlotCalib->set_selected_pts(selected_energies);
   ui->PlotCalib->redraw();
 }
@@ -196,44 +196,42 @@ void FormFwhmCalibration::select_in_plot() {
 void FormFwhmCalibration::add_peak_to_table(const Qpx::Peak &p, int row, bool gray) {
   QBrush background(gray ? Qt::lightGray : Qt::white);
 
-  data_to_table(row, 0, p.center.val, background);
-  data_to_table(row, 1, p.energy.val, background);
-  data_to_table(row, 2, p.fwhm.value(), background);
-  data_to_table(row, 3, p.sum4_.peak_area.err(), background);
-  data_to_table(row, 4, p.sum4_.currie_quality_indicator, background);
-  data_to_table(row, 5, p.hypermet_.width_.err(), background);
-  data_to_table(row, 6, (1 - p.hypermet_.rsq_) * 100, background);
-}
+  add_to_table(ui->tablePeaks, row, 0, p.energy().to_string(),
+               QVariant::fromValue(p.center().value()), background);
+  add_to_table(ui->tablePeaks, row, 1, p.energy().error_percent(), QVariant(), background);
+  add_to_table(ui->tablePeaks, row, 2, p.fwhm().to_string(), QVariant(), background);
+  add_to_table(ui->tablePeaks, row, 3, p.fwhm().error_percent(), QVariant(), background);
+  add_to_table(ui->tablePeaks, row, 4, std::to_string(p.good()),
+               QVariant(), background);
+  UncertainDouble rsq(1, (1 - p.hypermet().rsq_), 2);
+  add_to_table(ui->tablePeaks, row, 5, rsq.error_percent(), QVariant(), background);
 
-void FormFwhmCalibration::data_to_table(int row, int column, double value, QBrush background) {
-  QTableWidgetItem *item = new QTableWidgetItem(QString::number(value));
-  item->setData(Qt::EditRole, QVariant::fromValue(value));
-  item->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, column, item);
 }
 
 void FormFwhmCalibration::replot_calib() {
   ui->PlotCalib->clear_data();
-  QVector<double> xx_relevant, yy_relevant, yy_relevant_sigma;
-  QVector<double> xx, yy, yy_sigma;
+  QVector<double> xx_relevant, yy_relevant,
+      xx_relevant_sigma, yy_relevant_sigma;
+  QVector<double> xx, yy;
 
   double xmin = std::numeric_limits<double>::max();
   double xmax = - std::numeric_limits<double>::max();
 
   for (auto &q : fit_data_.peaks()) {
-    double x = q.second.energy.val;
-    double y = q.second.fwhm.value();
-    double sigma = q.second.hypermet_.width_.uncert * 2 * sqrt(log(2));
+    double x = q.second.energy().value();
+    double y = q.second.fwhm().value();
+    double x_sigma = q.second.energy().uncertainty();
+    double y_sigma = q.second.fwhm().uncertainty();
 
-    if (( (1 - q.second.hypermet_.rsq_) * 100 < ui->doubleMaxFitErr->value())
-        && (q.second.hypermet_.width_.err() < ui->doubleMaxWidthErr->value())) {
+    if (( (1 - q.second.hypermet().rsq_) * 100 < ui->doubleMaxFitErr->value())
+        && (q.second.hypermet().width_.value.error() < ui->doubleMaxWidthErr->value())) {
       xx_relevant.push_back(x);
       yy_relevant.push_back(y);
-      yy_relevant_sigma.push_back(sigma);
+      xx_relevant_sigma.push_back(x_sigma);
+      yy_relevant_sigma.push_back(y_sigma);
     } else {
       xx.push_back(x);
       yy.push_back(y);
-      yy_sigma.push_back(0);
     }
 
     if (x < xmin)
@@ -247,8 +245,8 @@ void FormFwhmCalibration::replot_calib() {
   xmin -= x_margin;
 
   if (xx.size() > 0) {
-    ui->PlotCalib->addPoints(xx, yy, yy_sigma, style_pts);
-    ui->PlotCalib->addPoints(xx_relevant, yy_relevant, yy_relevant_sigma, style_relevant);
+    ui->PlotCalib->addPoints(style_pts, xx, yy, QVector<double>(), QVector<double>());
+    ui->PlotCalib->addPoints(style_relevant, xx_relevant, yy_relevant, xx_relevant_sigma, yy_relevant_sigma);
     if (new_calibration_.valid()) {
 
       double step = (xmax-xmin) / 50.0;
@@ -270,7 +268,7 @@ void FormFwhmCalibration::selection_changed_in_plot() {
   std::set<double> selected_energies = ui->PlotCalib->get_selected_pts();
   selected_peaks_.clear();
   for (auto &p : fit_data_.peaks())
-    if (selected_energies.count(p.second.energy.val))
+    if (selected_energies.count(p.second.energy().value()))
       selected_peaks_.insert(p.first);
 
   select_in_table();
@@ -282,7 +280,7 @@ void FormFwhmCalibration::selection_changed_in_plot() {
 void FormFwhmCalibration::selection_changed_in_table() {
   selected_peaks_.clear();
   foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows())
-    selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble());
+    selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::UserRole).toDouble());
 
   select_in_plot();
   if (isVisible())
@@ -320,11 +318,11 @@ void FormFwhmCalibration::fit_calibration()
 {
   std::vector<double> xx, yy, yy_sigma;
   for (auto &q : fit_data_.peaks()) {
-    if (( (1 - q.second.hypermet_.rsq_) * 100 < ui->doubleMaxFitErr->value())
-        && (q.second.hypermet_.width_.err() < ui->doubleMaxWidthErr->value())) {
-      xx.push_back(q.second.energy.val);
-      yy.push_back(q.second.fwhm.value());
-      yy_sigma.push_back(q.second.fwhm.lowerUncertainty());
+    if (( (1 - q.second.hypermet().rsq_) * 100 < ui->doubleMaxFitErr->value())
+        && (q.second.hypermet().width_.value.error() < ui->doubleMaxWidthErr->value())) {
+      xx.push_back(q.second.energy().value());
+      yy.push_back(q.second.fwhm().value());
+      yy_sigma.push_back(q.second.fwhm().uncertainty());
     }
   }
 

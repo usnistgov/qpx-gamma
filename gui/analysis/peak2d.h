@@ -23,7 +23,6 @@
 #include "roi.h"
 #include <QString>
 #include "daq_sink.h"
-#include "val_uncert.h"
 
 struct MarkerLabel2D {
   MarkerLabel2D() : selected(false), selectable(false), vertical(false), vfloat(false), hfloat(false) {}
@@ -100,9 +99,9 @@ struct Peak2D {
   MarkerBox2D area[3][3];
   Qpx::ROI x, y, dx, dy;
 
-  ValUncert energy_x, energy_y;
+  UncertainDouble energy_x, energy_y;
 
-  ValUncert gross, xback, yback, dback, net;
+  UncertainDouble gross, xback, yback, dback, net;
   int currie_quality_indicator;
 
   bool approved;

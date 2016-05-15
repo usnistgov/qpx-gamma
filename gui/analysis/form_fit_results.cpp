@@ -23,7 +23,7 @@
 #include "form_fit_results.h"
 #include "widget_detectors.h"
 #include "ui_form_fit_results.h"
-#include "gamma_fitter.h"
+#include "fitter.h"
 #include "qt_util.h"
 #include <QSettings>
 
@@ -38,8 +38,10 @@ FormFitResults::FormFitResults(Qpx::Fitter &fit, QWidget *parent) :
   loadSettings();
 
   ui->tablePeaks->verticalHeader()->hide();
-  ui->tablePeaks->setColumnCount(9);
-  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy", "fwhm", "A(hyp)", "cps(hyp)", "A(S4)", "%err(S4)", "cps(S4)", "CQI"});
+  ui->tablePeaks->setColumnCount(7);
+  ui->tablePeaks->setHorizontalHeaderLabels({"energy", "err(energy)", "fwhm", "err(fwhm)",
+                                             "cps(hyp)", /*"err(hyp)",*/ "cps(S4)", "err(S4)"
+                                             /*, "Quality"*/});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui->tablePeaks->setEditTriggers(QTableView::NoEditTriggers);
@@ -109,29 +111,52 @@ void FormFitResults::update_data() {
 void FormFitResults::add_peak_to_table(const Qpx::Peak &p, int row, bool gray) {
   QBrush background(gray ? Qt::lightGray : Qt::white);
 
-  data_to_table(row, 0, p.center.val, background);
-  data_to_table(row, 1, p.energy.val, background);
-  data_to_table(row, 2, p.fwhm.value(), background);
-  data_to_table(row, 3, p.area_hyp.val, background);
-  data_to_table(row, 4, p.cps_hyp, background);
-  data_to_table(row, 5, p.area_sum4.val, background);
-  data_to_table(row, 6, p.sum4_.peak_area.err(), background);
-  data_to_table(row, 7, p.cps_sum4, background);
-  data_to_table(row, 8, p.sum4_.currie_quality_indicator, background);
+  QColor yellow;
+  yellow.setNamedColor("#EBDD8D");
+  QColor orange;
+  orange.setNamedColor("#E4B372");
+  QColor red;
+  red.setNamedColor("#E46D59");
 
-}
+  if (!p.good())
+    background = yellow;
 
-void FormFitResults::data_to_table(int row, int column, double value, QBrush background) {
-  QTableWidgetItem *item = new QTableWidgetItem(QString::number(value));
-  item->setData(Qt::EditRole, QVariant::fromValue(value));
-  item->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, column, item);
+  QBrush eback = background;
+  QBrush wback = background;
+  QBrush s4back = background;
+
+  if (p.sum4().quality() > 3)
+    s4back = red;
+  else if (p.sum4().quality() > 1)
+    s4back = orange;
+
+  if (p.quality_energy() > 2)
+    eback = red;
+  else if (p.quality_energy() > 1)
+    eback = orange;
+
+  if (p.quality_fwhm() > 2)
+    wback = red;
+  else if (p.quality_fwhm() > 1)
+    wback = orange;
+
+  add_to_table(ui->tablePeaks, row, 0, p.energy().to_string(),
+               QVariant::fromValue(p.center().value()), eback);
+  add_to_table(ui->tablePeaks, row, 1, p.energy().error_percent(), QVariant(), eback);
+  add_to_table(ui->tablePeaks, row, 2, p.fwhm().to_string(), QVariant(), wback);
+  add_to_table(ui->tablePeaks, row, 3, p.fwhm().error_percent(), QVariant(), wback);
+  add_to_table(ui->tablePeaks, row, 4, p.cps_hyp().to_string(), QVariant(), background);
+  //  add_to_table(ui->tablePeaks, row, 5, p.cps_hyp.error_percent(), QVariant(), background);
+  add_to_table(ui->tablePeaks, row, 5, p.cps_sum4().to_string(), QVariant(), s4back);
+  add_to_table(ui->tablePeaks, row, 6, p.cps_sum4().error_percent(), QVariant(), s4back);
+  //  add_to_table(ui->tablePeaks, row, 7, std::to_string(p.quality_),
+  //               QVariant(), background);
 }
 
 void FormFitResults::selection_changed_in_table() {
   selected_peaks_.clear();
   foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows())
-    selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble());
+    selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::UserRole).toDouble());
   if (isVisible())
     emit selection_changed(selected_peaks_);
   toggle_push();
@@ -158,7 +183,7 @@ void FormFitResults::select_in_table() {
   QItemSelection itemSelection = selectionModel->selection();
 
   for (int i=0; i < ui->tablePeaks->rowCount(); ++i)
-    if (selected_peaks_.count(ui->tablePeaks->item(i, 0)->data(Qt::EditRole).toDouble())) {
+    if (selected_peaks_.count(ui->tablePeaks->item(i, 0)->data(Qt::UserRole).toDouble())) {
       ui->tablePeaks->selectRow(i);
       itemSelection.merge(selectionModel->selection(), QItemSelectionModel::Select);
     }
@@ -173,4 +198,39 @@ void FormFitResults::select_in_table() {
 void FormFitResults::on_pushSaveReport_clicked()
 {
   emit save_peaks_request();
+}
+
+void FormFitResults::on_pushSaveFitter_clicked()
+{
+  QSettings settings;
+  settings.beginGroup("Program");
+  QString data_directory = settings.value("save_directory", QDir::homePath() + "/qpx/data").toString();
+  settings.endGroup();
+
+
+  QString fileName = CustomSaveFileDialog(this, "Save fit",
+                                          data_directory, "XML (*.xml)");
+  if (!validateFile(this, fileName, true))
+    return;
+
+  pugi::xml_document doc;
+  pugi::xml_node root = doc.root();
+  fit_data_.to_xml(root);
+  doc.save_file(fileName.toStdString().c_str());
+}
+
+void FormFitResults::on_pushLoadFitter_clicked()
+{
+  QSettings settings;
+  settings.beginGroup("Program");
+  QString data_directory = settings.value("save_directory",
+                                          QDir::homePath() + "/qpx/data").toString();
+  settings.endGroup();
+
+  QString fileName = QFileDialog::getOpenFileName(this, "Load fit", data_directory_,
+                                                  "qpx project file (*.xml)");
+  if (!validateFile(this, fileName, false))
+    return;
+
+  emit hack(fileName);
 }

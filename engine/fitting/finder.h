@@ -39,9 +39,9 @@ public:
   void setFit(const std::vector<double> &y_fit, const std::vector<double> &y_background);
   void find_peaks();
 
-  uint16_t find_left(uint16_t chan);
-  uint16_t find_right(uint16_t chan);
-  int32_t find_index(double chan_val);
+  uint16_t find_left(uint16_t chan) const;
+  uint16_t find_right(uint16_t chan) const ;
+  int32_t find_index(double chan_val) const;
 
   //DATA
 
@@ -57,8 +57,8 @@ public:
 private:
   void calc_kon();
 
-  uint16_t left_edge(uint16_t idx);
-  uint16_t right_edge(uint16_t idx);
+  uint16_t left_edge(uint16_t idx) const;
+  uint16_t right_edge(uint16_t idx) const;
 
 };
 

@@ -23,7 +23,7 @@
 #include "form_energy_calibration.h"
 #include "widget_detectors.h"
 #include "ui_form_energy_calibration.h"
-#include "gamma_fitter.h"
+#include "fitter.h"
 #include "qt_util.h"
 #include <QSettings>
 
@@ -50,8 +50,8 @@ FormEnergyCalibration::FormEnergyCalibration(XMLableDB<Qpx::Detector>& dets, Qpx
 
 
   ui->tablePeaks->verticalHeader()->hide();
-  ui->tablePeaks->setColumnCount(2);
-  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "energy"});
+  ui->tablePeaks->setColumnCount(3);
+  ui->tablePeaks->setHorizontalHeaderLabels({"chan", "err(chan)", "energy"});
   ui->tablePeaks->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tablePeaks->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
@@ -158,7 +158,7 @@ void FormEnergyCalibration::select_in_table() {
   QItemSelection itemSelection = selectionModel->selection();
 
   for (int i=0; i < ui->tablePeaks->rowCount(); ++i)
-    if (selected_peaks_.count(ui->tablePeaks->item(i, 0)->data(Qt::EditRole).toDouble())) {
+    if (selected_peaks_.count(ui->tablePeaks->item(i, 0)->data(Qt::UserRole).toDouble())) {
       ui->tablePeaks->selectRow(i);
       itemSelection.merge(selectionModel->selection(), QItemSelectionModel::Select);
     }
@@ -180,7 +180,7 @@ void FormEnergyCalibration::replot_calib() {
 
   for (auto &q : fit_data_.peaks()) {
     double x = q.first;
-    double y = q.second.energy.val;
+    double y = q.second.energy().value();
 
     xx.push_back(x);
     yy.push_back(y);
@@ -198,7 +198,7 @@ void FormEnergyCalibration::replot_calib() {
   if (xx.size()) {
     QVector<double> yy_sigma(yy.size(), 0);
 
-    ui->PlotCalib->addPoints(xx, yy, yy_sigma, style_pts);
+    ui->PlotCalib->addPoints(style_pts, xx, yy, QVector<double>(), yy_sigma);
     ui->PlotCalib->set_selected_pts(selected_peaks_);
     if (new_calibration_.valid()) {
 
@@ -226,7 +226,7 @@ void FormEnergyCalibration::rebuild_table() {
   for (auto &p : fit_data_.peaks()) {
     bool close = false;
     for (auto &e : ui->isotopes->current_isotope_gammas())
-      if (abs(p.second.energy.val - e.energy) < 2.0) {//hardcoded
+      if (abs(p.second.energy().value() - e.energy) < 2.0) {//hardcoded
         flagged.insert(e.energy);
         close = true;
       }
@@ -251,7 +251,7 @@ void FormEnergyCalibration::selection_changed_in_plot() {
 void FormEnergyCalibration::selection_changed_in_table() {
   selected_peaks_.clear();
   foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows())
-    selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble());
+    selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::UserRole).toDouble());
 
   select_in_plot();
   if (isVisible())
@@ -289,7 +289,7 @@ void FormEnergyCalibration::on_pushFit_clicked()
   int i = 0;
   for (auto &q : fit_data_.peaks()) {
     x[i] = q.first;
-    y[i] = q.second.energy.val;
+    y[i] = q.second.energy().value();
     i++;
   }
 
@@ -357,7 +357,7 @@ void FormEnergyCalibration::on_pushPeaksToNuclide_clicked()
   std::vector<double> gammas;
   for (auto &q : fit_data_.peaks())
     if (selected_peaks_.count(q.first))
-      gammas.push_back(q.second.energy.val);
+      gammas.push_back(q.second.energy().value());
   ui->isotopes->push_energies(gammas);
 }
 
@@ -379,7 +379,7 @@ void FormEnergyCalibration::on_pushEnergiesToPeaks_clicked()
     return;
 
   for (int i=0; i<gammas.size(); ++i)
-    to_change[i].energy = gammas[i];
+    to_change[i].override_energy(gammas[i]);
 
   selected_peaks_.clear();
   for (auto &q : fit_data_.peaks())
@@ -397,15 +397,11 @@ void FormEnergyCalibration::on_pushEnergiesToPeaks_clicked()
 void FormEnergyCalibration::add_peak_to_table(const Qpx::Peak &p, int row, bool gray) {
   QBrush background(gray ? Qt::lightGray : Qt::white);
 
-  data_to_table(row, 0, p.center.val, background);
-  data_to_table(row, 1, p.energy.val, background);
-}
+  add_to_table(ui->tablePeaks, row, 0, p.center().to_string(),
+               QVariant::fromValue(p.center().value()), background);
+  add_to_table(ui->tablePeaks, row, 1, p.center().error_percent(), QVariant(), background);
+  add_to_table(ui->tablePeaks, row, 2, p.energy().to_string(), QVariant(), background);
 
-void FormEnergyCalibration::data_to_table(int row, int column, double value, QBrush background) {
-  QTableWidgetItem *item = new QTableWidgetItem(QString::number(value));
-  item->setData(Qt::EditRole, QVariant::fromValue(value));
-  item->setData(Qt::BackgroundRole, background);
-  ui->tablePeaks->setItem(row, column, item);
 }
 
 void FormEnergyCalibration::select_in_plot() {

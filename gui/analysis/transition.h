@@ -25,23 +25,23 @@
 
 #include <vector>
 #include <string>
-#include "val_uncert.h"
+#include "UncertainDouble.h"
 
 namespace Qpx {
 
 struct TransitionNode {
-  TransitionNode(ValUncert e, ValUncert i) :
+  TransitionNode(UncertainDouble e, UncertainDouble i) :
     energy(e), intensity(i) {}
 
-  ValUncert energy;
-  ValUncert intensity;
+  UncertainDouble energy;
+  UncertainDouble intensity;
 };
 
 class Transition {
 
 public:
 
-  ValUncert energy;
+  UncertainDouble energy;
 
   std::string motivation;
 

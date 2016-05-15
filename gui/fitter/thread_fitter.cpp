@@ -211,7 +211,7 @@ void ThreadFitter::run() {
     } else if (action_ == kAdjustLB) {
       if (fitter_.regions_.count(target_ROI_)) {
         Qpx::ROI *parent_region = &fitter_.regions_[target_ROI_];
-        Qpx::SUM4Edge edge(parent_region->finder_.y_, left_, right_);
+        Qpx::SUM4Edge edge(parent_region->finder_.x_, parent_region->finder_.y_, left_, right_);
         parent_region->set_LB(edge);
         emit fit_updated(fitter_);
       }
@@ -220,7 +220,7 @@ void ThreadFitter::run() {
     } else if (action_ == kAdjustRB) {
       if (fitter_.regions_.count(target_ROI_)) {
         Qpx::ROI *parent_region = &fitter_.regions_[target_ROI_];
-        Qpx::SUM4Edge edge(parent_region->finder_.y_, left_, right_);
+        Qpx::SUM4Edge edge(parent_region->finder_.x_, parent_region->finder_.y_, left_, right_);
         parent_region->set_RB(edge);
         emit fit_updated(fitter_);
       }

@@ -31,10 +31,9 @@
 #include "calibration.h"
 #include "fit_settings.h"
 #include "gaussian.h"
-#include "val_uncert.h"
+#include "xmlable.h"
 
-
-class Hypermet {
+class Hypermet : public XMLable {
 public:
   Hypermet() :
     Hypermet(Gaussian(), FitSettings())
@@ -56,26 +55,29 @@ public:
 
   std::string to_string() const;
 
-  double eval_peak(double);
-  double eval_step_tail(double);
+  double eval_peak(double) const;
+  double eval_step_tail(double) const;
 
-  std::vector<double> peak(std::vector<double> x);
-  std::vector<double> step_tail(std::vector<double> x);
-  ValUncert area() const;
+  std::vector<double> peak(std::vector<double> x) const;
+  std::vector<double> step_tail(std::vector<double> x) const;
+  UncertainDouble area() const;
 
   FitParam center_, height_, width_,
            Lskew_amplitude, Lskew_slope,
            Rskew_amplitude, Rskew_slope,
            tail_amplitude, tail_slope,
            step_amplitude;
-
   double rsq_;
 
   static std::string fityk_definition();
   bool extract_params(fityk::Fityk*, fityk::Func*);
-  bool gaussian_only();
+  bool gaussian_only() const;
 
-  Gaussian gaussian();
+  Gaussian gaussian() const;
+
+  void to_xml(pugi::xml_node &node) const override;
+  void from_xml(const pugi::xml_node &node) override;
+  std::string xml_element_name() const override {return "Hypermet";}
 };
 
 #endif

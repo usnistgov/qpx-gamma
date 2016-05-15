@@ -49,7 +49,7 @@ std::string PolyLog::fityk_definition() {
     i++;
   }
   declaration += ")";
-  definition  += ") where xx = log(x - " + std::to_string(xoffset_.val) + ")";
+  definition  += ") where xx = log(x - " + std::to_string(xoffset_.value.value()) + ")";
 
   return declaration + definition;
 }
@@ -83,10 +83,10 @@ std::string PolyLog::to_UTF8(int precision, bool with_rsq) {
   for (auto &c : coeffs_) {
     if (i > 0)
       calib_eqn += " + ";
-    calib_eqn += to_str_precision(c.second.val, precision);
+    calib_eqn += to_str_precision(c.second.value.value(), precision);
     if (c.first > 0) {
-      if (xoffset_.val)
-        calib_eqn += "log(x-" + to_str_precision(xoffset_.val, precision) + ")";
+      if (xoffset_.value.value())
+        calib_eqn += "log(x-" + to_str_precision(xoffset_.value.value(), precision) + ")";
       else
         calib_eqn += "log(x)";
     }
@@ -112,10 +112,10 @@ std::string PolyLog::to_markup(int precision, bool with_rsq) {
   for (auto &c : coeffs_) {
     if (i > 0)
       calib_eqn += " + ";
-    calib_eqn += to_str_precision(c.second.val, precision);
+    calib_eqn += to_str_precision(c.second.value.value(), precision);
     if (c.first > 0) {
-      if (xoffset_.val)
-        calib_eqn += "log(x-" + to_str_precision(xoffset_.val, precision) + ")";
+      if (xoffset_.value.value())
+        calib_eqn += "log(x-" + to_str_precision(xoffset_.value.value(), precision) + ")";
       else
         calib_eqn += "log(x)";
     }
@@ -134,11 +134,11 @@ std::string PolyLog::to_markup(int precision, bool with_rsq) {
 }
 
 double PolyLog::eval(double x) {
-  double x_adjusted = log(x - xoffset_.val);
+  double x_adjusted = log(x - xoffset_.value.value());
   double result = 0.0;
 
   for (auto &c : coeffs_)
-    result += c.second.val * pow(x_adjusted, c.first);
+    result += c.second.value.value() * pow(x_adjusted, c.first);
 
   return exp(result);
 }
