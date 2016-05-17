@@ -31,6 +31,77 @@
 #include "custom_logger.h"
 #include "qpx_util.h"
 
+void Hypermet::set_center(const FitParam &ncenter)
+{
+  center_ = ncenter; //set without changing name?!
+  user_modified_ = true;
+  rsq_ = 0;
+}
+
+void Hypermet::set_height(const FitParam &nheight)
+{
+  height_ = nheight;
+  user_modified_ = true;
+  rsq_ = 0;
+}
+
+void Hypermet::set_width(const FitParam &nwidth)
+{
+  width_ = nwidth;
+  user_modified_ = true;
+  rsq_ = 0;
+}
+
+void Hypermet::set_Lskew_amplitude(const FitParam &nLskew_amplitude)
+{
+  Lskew_amplitude_ = nLskew_amplitude;
+  user_modified_ = true;
+  rsq_ = 0;
+}
+
+void Hypermet::set_Lskew_slope(const FitParam &nLskew_slope)
+{
+  Lskew_slope_ = nLskew_slope;
+  user_modified_ = true;
+  rsq_ = 0;
+}
+
+void Hypermet::set_Rskew_amplitude(const FitParam &nRskew_amplitude)
+{
+  Rskew_amplitude_ = nRskew_amplitude;
+  user_modified_ = true;
+  rsq_ = 0;
+}
+
+void Hypermet::set_Rskew_slope(const FitParam &nRskew_slope)
+{
+  Rskew_slope_ = nRskew_slope;
+  user_modified_ = true;
+  rsq_ = 0;
+}
+
+void Hypermet::set_tail_amplitude(const FitParam &ntail_amplitude)
+{
+  tail_amplitude_ = ntail_amplitude;
+  user_modified_ = true;
+  rsq_ = 0;
+}
+
+void Hypermet::set_tail_slope(const FitParam &ntail_slope)
+{
+  tail_slope_ = ntail_slope;
+  user_modified_ = true;
+  rsq_ = 0;
+}
+
+void Hypermet::set_step_amplitude(const FitParam &nstep_amplitude)
+{
+  step_amplitude_ = nstep_amplitude;
+  user_modified_ = true;
+  rsq_ = 0;
+}
+
+
 
 std::string Hypermet::fityk_definition() {
 
@@ -57,13 +128,13 @@ bool Hypermet::extract_params(fityk::Fityk* f, fityk::Func* func) {
     center_.extract(f, func);
     height_.extract(f, func);
     width_.extract(f, func);
-    Lskew_amplitude.extract(f, func);
-    Lskew_slope.extract(f, func);
-    Rskew_amplitude.extract(f, func);
-    Rskew_slope.extract(f, func);
-    tail_amplitude.extract(f, func);
-    tail_slope.extract(f, func);
-    step_amplitude.extract(f, func);
+    Lskew_amplitude_.extract(f, func);
+    Lskew_slope_.extract(f, func);
+    Rskew_amplitude_.extract(f, func);
+    Rskew_slope_.extract(f, func);
+    tail_amplitude_.extract(f, func);
+    tail_slope_.extract(f, func);
+    step_amplitude_.extract(f, func);
   }
   catch ( ... ) {
     DBG << "Hypermet could not extract parameters from Fityk";
@@ -80,13 +151,13 @@ std::string Hypermet::to_string() const {
   ret += "     " + center_.to_string() + "\n";
   ret += "     " + height_.to_string() + "\n";
   ret += "     " + width_.to_string() + "\n";
-  ret += "     " + Lskew_amplitude.to_string() + "\n";
-  ret += "     " + Lskew_slope.to_string() + "\n";
-  ret += "     " + Rskew_amplitude.to_string() + "\n";
-  ret += "     " + Rskew_slope.to_string() + "\n";
-  ret += "     " + tail_amplitude.to_string() + "\n";
-  ret += "     " + tail_slope.to_string() + "\n";
-  ret += "     " + step_amplitude.to_string();
+  ret += "     " + Lskew_amplitude_.to_string() + "\n";
+  ret += "     " + Lskew_slope_.to_string() + "\n";
+  ret += "     " + Rskew_amplitude_.to_string() + "\n";
+  ret += "     " + Rskew_slope_.to_string() + "\n";
+  ret += "     " + tail_amplitude_.to_string() + "\n";
+  ret += "     " + tail_slope_.to_string() + "\n";
+  ret += "     " + step_amplitude_.to_string();
 
   return ret;
 }
@@ -95,18 +166,19 @@ Hypermet::Hypermet(Gaussian gauss, FitSettings settings) :
   height_("h", gauss.height_.value.value()),
   center_("c", gauss.center_.value.value()),
   width_("w", gauss.hwhm_.value.value() / sqrt(log(2))),
-  Lskew_amplitude(settings.Lskew_amplitude), Lskew_slope(settings.Lskew_slope),
-  Rskew_amplitude(settings.Rskew_amplitude), Rskew_slope(settings.Rskew_slope),
-  tail_amplitude(settings.tail_amplitude), tail_slope(settings.tail_slope),
-  step_amplitude(settings.step_amplitude),
-  rsq_(0)
+  Lskew_amplitude_(settings.Lskew_amplitude), Lskew_slope_(settings.Lskew_slope),
+  Rskew_amplitude_(settings.Rskew_amplitude), Rskew_slope_(settings.Rskew_slope),
+  tail_amplitude_(settings.tail_amplitude), tail_slope_(settings.tail_slope),
+  step_amplitude_(settings.step_amplitude),
+  rsq_(0),
+  user_modified_(false)
 {
   if (settings.gaussian_only)
   {
-    Lskew_amplitude.enabled = false;
-    Rskew_amplitude.enabled = false;
-    tail_amplitude.enabled = false;
-    step_amplitude.enabled = false;
+    Lskew_amplitude_.enabled = false;
+    Rskew_amplitude_.enabled = false;
+    tail_amplitude_.enabled = false;
+    step_amplitude_.enabled = false;
   }
 }
 
@@ -174,16 +246,16 @@ Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y,
   std::string initial_h = "$h = " + height_.def_bounds();
   std::string initial_w = "$w = " + width_.def_bounds();
 
-  std::string initial_lsh = "$lsh = " + Lskew_amplitude.def_bounds();
-  std::string initial_lss = "$lss = " + Lskew_slope.def_bounds();
+  std::string initial_lsh = "$lsh = " + Lskew_amplitude_.def_bounds();
+  std::string initial_lss = "$lss = " + Lskew_slope_.def_bounds();
 
-  std::string initial_rsh = "$rsh = " + Rskew_amplitude.def_bounds();
-  std::string initial_rss = "$rss = " + Rskew_slope.def_bounds();
+  std::string initial_rsh = "$rsh = " + Rskew_amplitude_.def_bounds();
+  std::string initial_rss = "$rss = " + Rskew_slope_.def_bounds();
 
 //  std::string initial_llh = FitykUtil::var_def("llh", 0.0000, 0, 0.015);
 //  std::string initial_lls = FitykUtil::var_def("lls", 2.5, 2.5, 50);
 
-  std::string initial_step = "$step = " + step_amplitude.def_bounds();
+  std::string initial_step = "$step = " + step_amplitude_.def_bounds();
 
   std::string initial = "F += Hypermet($c,$h,$w,$lsh,$lss,$rsh,$rss,$step)";
 
@@ -336,13 +408,13 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
         o.center_.fityk_name(i) + "," +
         o.height_.fityk_name(i) + "," +
         o.width_.fityk_name(use_w_common ? -1 : i)  + "," +
-        o.Lskew_amplitude.fityk_name(i)  + "," +
-        o.Lskew_slope.fityk_name(i)  + "," +
-        o.Rskew_amplitude.fityk_name(i)  + "," +
-        o.Rskew_slope.fityk_name(i)  + "," +
-        o.tail_amplitude.fityk_name(i)  + "," +
-        o.tail_slope.fityk_name(i)  + "," +
-        o.step_amplitude.fityk_name(i)
+        o.Lskew_amplitude_.fityk_name(i)  + "," +
+        o.Lskew_slope_.fityk_name(i)  + "," +
+        o.Rskew_amplitude_.fityk_name(i)  + "," +
+        o.Rskew_slope_.fityk_name(i)  + "," +
+        o.tail_amplitude_.fityk_name(i)  + "," +
+        o.tail_slope_.fityk_name(i)  + "," +
+        o.step_amplitude_.fityk_name(i)
         + ")";
 
     try {
@@ -350,13 +422,13 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
       f->execute(o.height_.def_var(i));
       if (!use_w_common)
         f->execute(o.width_.def_var(i));
-      f->execute(o.Lskew_amplitude.enforce_policy().def_var(i));
-      f->execute(o.Lskew_slope.def_var(i));
-      f->execute(o.Rskew_amplitude.enforce_policy().def_var(i));
-      f->execute(o.Rskew_slope.def_var(i));
-      f->execute(o.tail_amplitude.enforce_policy().def_var(i));
-      f->execute(o.tail_slope.def_var(i));
-      f->execute(o.step_amplitude.enforce_policy().def_var(i));
+      f->execute(o.Lskew_amplitude_.enforce_policy().def_var(i));
+      f->execute(o.Lskew_slope_.def_var(i));
+      f->execute(o.Rskew_amplitude_.enforce_policy().def_var(i));
+      f->execute(o.Rskew_slope_.def_var(i));
+      f->execute(o.tail_amplitude_.enforce_policy().def_var(i));
+      f->execute(o.tail_slope_.def_var(i));
+      f->execute(o.step_amplitude_.enforce_policy().def_var(i));
 
       f->execute(initial);
     }
@@ -365,8 +437,8 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
       success = false;
     }
 
-    if (!o.Lskew_amplitude.enabled || !o.Rskew_amplitude.enabled ||
-        !o.tail_amplitude.enabled || !o.step_amplitude.enabled)
+    if (!o.Lskew_amplitude_.enabled || !o.Rskew_amplitude_.enabled ||
+        !o.tail_amplitude_.enabled || !o.step_amplitude_.enabled)
       can_uncert = false;
 
     i++;
@@ -430,14 +502,14 @@ double Hypermet::eval_peak(double x) const {
   double gaussian = exp(- pow(xc/width_.value.value(), 2) );
 
   double left_short = 0;
-  double lexp = exp(pow(0.5*width_.value.value()/Lskew_slope.value.value(), 2) + xc/Lskew_slope.value.value());
-  if ((Lskew_slope.value.value() != 0) && !isinf(lexp))
-    left_short = Lskew_amplitude.value.value() * lexp * erfc( 0.5*width_.value.value()/Lskew_slope.value.value() + xc/width_.value.value());
+  double lexp = exp(pow(0.5*width_.value.value()/Lskew_slope_.value.value(), 2) + xc/Lskew_slope_.value.value());
+  if ((Lskew_slope_.value.value() != 0) && !isinf(lexp))
+    left_short = Lskew_amplitude_.value.value() * lexp * erfc( 0.5*width_.value.value()/Lskew_slope_.value.value() + xc/width_.value.value());
 
   double right_short = 0;
-  double rexp = exp(pow(0.5*width_.value.value()/Rskew_slope.value.value(), 2) - xc/Rskew_slope.value.value());
-  if ((Rskew_slope.value.value() != 0) && !isinf(rexp))
-    right_short = Rskew_amplitude.value.value() * rexp * erfc( 0.5*width_.value.value()/Rskew_slope.value.value()  - xc/width_.value.value());
+  double rexp = exp(pow(0.5*width_.value.value()/Rskew_slope_.value.value(), 2) - xc/Rskew_slope_.value.value());
+  if ((Rskew_slope_.value.value() != 0) && !isinf(rexp))
+    right_short = Rskew_amplitude_.value.value() * rexp * erfc( 0.5*width_.value.value()/Rskew_slope_.value.value()  - xc/width_.value.value());
 
   double ret = height_.value.value() * (gaussian + 0.5 * (left_short + right_short) );
 
@@ -450,12 +522,12 @@ double Hypermet::eval_step_tail(double x) const {
 
   double xc = x - center_.value.value();
 
-  double step = step_amplitude.value.value() * erfc( xc/width_.value.value() );
+  double step = step_amplitude_.value.value() * erfc( xc/width_.value.value() );
 
   double tail = 0;
-  double lexp = exp(pow(0.5*width_.value.value()/tail_slope.value.value(), 2) + xc/tail_slope.value.value());
-  if ((tail_slope.value.value() != 0) && !isinf(lexp))
-    tail = tail_amplitude.value.value() * lexp * erfc( 0.5*width_.value.value()/tail_slope.value.value() + xc/width_.value.value());
+  double lexp = exp(pow(0.5*width_.value.value()/tail_slope_.value.value(), 2) + xc/tail_slope_.value.value());
+  if ((tail_slope_.value.value() != 0) && !isinf(lexp))
+    tail = tail_amplitude_.value.value() * lexp * erfc( 0.5*width_.value.value()/tail_slope_.value.value() + xc/width_.value.value());
 
   return height_.value.value() * 0.5 * (step + tail);
 }
@@ -478,8 +550,8 @@ UncertainDouble Hypermet::area() const {
   UncertainDouble ret;
   ret = height_.value * width_.value * UncertainDouble::from_double(sqrt(M_PI),0) *
       (UncertainDouble::from_int(1,0) +
-       Lskew_amplitude.value * width_.value * Lskew_slope.value +
-       Rskew_amplitude.value * width_.value * Rskew_slope.value);
+       Lskew_amplitude_.value * width_.value * Lskew_slope_.value +
+       Rskew_amplitude_.value * width_.value * Rskew_slope_.value);
   ret.setUncertainty(std::numeric_limits<double>::infinity());
   return ret;
 }
@@ -487,10 +559,10 @@ UncertainDouble Hypermet::area() const {
 bool Hypermet::gaussian_only() const
 {
   return
-    !(step_amplitude.enabled
-      || tail_amplitude.enabled
-      || Lskew_amplitude.enabled
-      || Rskew_amplitude.enabled);
+    !(step_amplitude_.enabled
+      || tail_amplitude_.enabled
+      || Lskew_amplitude_.enabled
+      || Rskew_amplitude_.enabled);
 }
 
 void Hypermet::to_xml(pugi::xml_node &root) const {
@@ -500,13 +572,13 @@ void Hypermet::to_xml(pugi::xml_node &root) const {
   center_.to_xml(node);
   height_.to_xml(node);
   width_.to_xml(node);
-  Lskew_amplitude.to_xml(node);
-  Lskew_slope.to_xml(node);
-  Rskew_amplitude.to_xml(node);
-  Rskew_slope.to_xml(node);
-  tail_amplitude.to_xml(node);
-  tail_slope.to_xml(node);
-  step_amplitude.to_xml(node);
+  Lskew_amplitude_.to_xml(node);
+  Lskew_slope_.to_xml(node);
+  Rskew_amplitude_.to_xml(node);
+  Rskew_slope_.to_xml(node);
+  tail_amplitude_.to_xml(node);
+  tail_slope_.to_xml(node);
+  step_amplitude_.to_xml(node);
 }
 
 
@@ -522,20 +594,20 @@ void Hypermet::from_xml(const pugi::xml_node &node) {
         height_ = param;
       else if (param.name() == width_.name())
         width_ = param;
-      else if (param.name() == step_amplitude.name())
-        step_amplitude = param;
-      else if (param.name() == tail_amplitude.name())
-        tail_amplitude = param;
-      else if (param.name() == tail_slope.name())
-        tail_slope = param;
-      else if (param.name() == Lskew_amplitude.name())
-        Lskew_amplitude = param;
-      else if (param.name() == Lskew_slope.name())
-        Lskew_slope = param;
-      else if (param.name() == Rskew_amplitude.name())
-        Rskew_amplitude = param;
-      else if (param.name() == Rskew_slope.name())
-        Rskew_slope = param;
+      else if (param.name() == step_amplitude_.name())
+        step_amplitude_ = param;
+      else if (param.name() == tail_amplitude_.name())
+        tail_amplitude_ = param;
+      else if (param.name() == tail_slope_.name())
+        tail_slope_ = param;
+      else if (param.name() == Lskew_amplitude_.name())
+        Lskew_amplitude_ = param;
+      else if (param.name() == Lskew_slope_.name())
+        Lskew_slope_ = param;
+      else if (param.name() == Rskew_amplitude_.name())
+        Rskew_amplitude_ = param;
+      else if (param.name() == Rskew_slope_.name())
+        Rskew_slope_ = param;
     }
   }
 }

@@ -121,7 +121,10 @@ inline uint16_t sig_digits(std::string st)
 
 inline int16_t order_of(double val)
 {
-  return  std::floor(std::log10(std::abs(val)));
+  if (!std::isfinite(val))
+    return 0;
+  else
+    return std::floor(std::log10(std::abs(val)));
 }
 
 inline double get_precision(std::string value)

@@ -16,53 +16,28 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Finder
+ *      FormFitter -
  *
  ******************************************************************************/
 
-#ifndef QPX_FINDER_H
-#define QPX_FINDER_H
 
-#include <vector>
-#include <cinttypes>
-#include "fit_settings.h"
+#ifndef ROLLBACK_DIALOG_H
+#define ROLLBACK_DIALOG_H
 
-namespace Qpx {
+#include <QDialog>
+#include <QRadioButton>
+#include "roi.h"
 
-class Finder {
+class RollbackDialog : public QDialog {
+  Q_OBJECT
 
 public:
-
-  void clear();
-  
-  void setNewData(const std::vector<double> &x, const std::vector<double> &y);
-  bool cloneRange(const Finder &other, double l, double r);
-  void setFit(const std::vector<double> &y_fit, const std::vector<double> &y_background);
-  void find_peaks();
-
-  double find_left(double chan) const;
-  double find_right(double chan) const ;
-  int32_t find_index(double chan_val) const;
-
-  //DATA
-
-  std::vector<double> x_, y_, y_fit_, y_resid_, y_resid_on_background_;
-  std::vector<double> fw_theoretical_nrg;
-  std::vector<double> fw_theoretical_bin;
-  std::vector<double> x_kon, x_conv;
-
-  std::vector<size_t> prelim, filtered, lefts, rights;
-
-  FitSettings settings_;
+  explicit RollbackDialog(Qpx::ROI setting, QWidget *parent = 0);
+  int get_choice();
 
 private:
-  void calc_kon();
-
-  size_t left_edge(size_t idx) const;
-  size_t right_edge(size_t idx) const;
-
+  Qpx::ROI      roi_;
+  std::vector<QRadioButton*> radios_;
 };
-
-}
 
 #endif

@@ -23,7 +23,8 @@
 #include "fit_settings.h"
 
 FitSettings::FitSettings()
-  : bits_ (0)
+  : overriden (false)
+  , bits_ (0)
 
   , finder_cutoff_kev(100)
 

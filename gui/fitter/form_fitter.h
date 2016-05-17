@@ -28,7 +28,6 @@
 #include "qsquarecustomplot.h"
 #include "special_delegate.h"
 #include <QItemSelection>
-#include <QRadioButton>
 #include <QMediaPlayer>
 
 #include "project.h"
@@ -54,18 +53,6 @@ struct Range {
   QVariant property(const char *name) const {
     return properties.value(QString(name));
   }
-};
-
-class RollbackDialog : public QDialog {
-  Q_OBJECT
-
-public:
-  explicit RollbackDialog(Qpx::ROI setting, QWidget *parent = 0);
-  int get_choice();
-
-private:
-  Qpx::ROI      roi_;
-  std::vector<QRadioButton*> radios_;
 };
 
 class FormFitter : public QWidget
@@ -134,12 +121,10 @@ private slots:
   void delete_ROI(double);
 
   void createRange(Coord);
-  void createROI_bounds_range(double);
 
   void toggle_push();
 
   void add_peak();
-  void adjust_roi_bounds();
   void adjust_sum4();
   void adjust_background();
 
@@ -200,7 +185,7 @@ private:
                      double region = -1, double peak = -1);
 
   void plotBackgroundEdge(Qpx::SUM4Edge edge,
-                          std::vector<double> &x,
+                          const std::vector<double> &x,
                           double region,
                           QString button_name);
 
@@ -211,7 +196,7 @@ private:
   void plotTitle();
 
   void plotRegion(double region_id, Qpx::ROI &region, QCPGraph *data_graph);
-  void plotPeak(double region_id, double peak_id, Qpx::Peak &peak);
+  void plotPeak(double region_id, double peak_id, const Qpx::Peak &peak);
 
   void peak_info(double peak);
   void roi_settings(double region);

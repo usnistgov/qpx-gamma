@@ -33,7 +33,7 @@ public:
   void setValue(double val);
   void setUncertainty(double sigma);
   void setSigFigs(uint16_t sig);
-  void autoSigs(uint16_t sigs_below = 0);
+  void autoSigs(uint16_t sigs_below = 1);
   void constrainSigs(uint16_t max_sigs = 6);
 
   bool finite() const;

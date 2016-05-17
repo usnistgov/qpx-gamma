@@ -295,7 +295,6 @@ void FormAnalysis1D::hack(QString file)
   pugi::xml_document doc;
   if (doc.load_file(file.toStdString().c_str())) {
     if (doc.child(fit_data_.xml_element_name().c_str())) {
-      DBG << "will load";
       fit_data_.from_xml(doc.child(fit_data_.xml_element_name().c_str()),
                          spectra_->get_sink(current_spectrum_));
       ui->plotSpectrum->updateData();

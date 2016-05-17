@@ -29,6 +29,7 @@
 
 class FitSettings : public XMLable {
 public:
+  bool overriden;
 
   double finder_cutoff_kev;
 

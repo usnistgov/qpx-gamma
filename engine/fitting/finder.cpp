@@ -23,10 +23,11 @@
 #include <vector>
 #include <cmath>
 #include "finder.h"
+#include "custom_logger.h"
 
 namespace Qpx {
 
-void Finder::setData(const std::vector<double> &x, const std::vector<double> &y)
+void Finder::setNewData(const std::vector<double> &x, const std::vector<double> &y)
 {
   clear();
   if (x.size() == y.size()) {
@@ -36,6 +37,35 @@ void Finder::setData(const std::vector<double> &x, const std::vector<double> &y)
     calc_kon();
     find_peaks();
   }
+}
+
+bool Finder::cloneRange(const Finder &other, double l, double r)
+{
+  if (other.x_.empty()
+      || other.y_.empty()
+      || other.x_.size() != other.y_.size())
+    return false;
+
+  int32_t min = other.find_index(l);
+  int32_t max = other.find_index(r);
+
+  if (min >= other.x_.size())
+      min = other.x_.size() - 1;
+  if (max >= other.x_.size())
+      max = other.x_.size() - 1;
+
+  if (min < 0)
+      min = 0;
+  if (max < 0)
+      max = 0;
+
+  std::vector<double> x_local, y_local;
+  for (int32_t i = min; i < max; ++i) {
+    x_local.push_back(other.x_[i]);
+    y_local.push_back(other.y_[i]);
+  }
+  setNewData(x_local, y_local);
+  return true;
 }
 
 void Finder::setFit(const std::vector<double> &y_fit, const std::vector<double> &y_background)
@@ -157,9 +187,9 @@ void Finder::find_peaks() {
 
   //find edges of contiguous peak areas
   lefts.push_back(prelim[0]);
-  int prev = prelim[0];
+  size_t prev = prelim[0];
   for (int i=0; i < prelim.size(); ++i) {
-    int current = prelim[i];
+    size_t current = prelim[i];
     if ((current - prev) > 1) {
       rights.push_back(prev);
       lefts.push_back(current);
@@ -169,17 +199,17 @@ void Finder::find_peaks() {
   rights.push_back(prev);
 
   //assume center is bentween edges
-  for (int i=0; i < lefts.size(); ++i)
+  for (size_t i=0; i < lefts.size(); ++i)
     filtered.push_back((rights[i] + lefts[i])/2);
 
-  for (int i=0; i < filtered.size(); ++i) {
+  for (size_t i=0; i < filtered.size(); ++i) {
     lefts[i]  = left_edge(lefts[i]);
     rights[i] = right_edge(rights[i]);
 //    DBG << "<Finder> Peak " << lefts[i] << "-"  << filtered[i] << "-"  << rights[i];
   }
 }
 
-uint16_t Finder::find_left(uint16_t chan) const
+double Finder::find_left(double chan) const
 {
   if (x_.empty())
     return 0;
@@ -195,17 +225,16 @@ uint16_t Finder::find_left(uint16_t chan) const
   double edge_threshold = -0.5 * sigma;
 
   if ((chan < x_[0]) || (chan >= x_[x_.size()-1]))
-    return 0;
+    return x_.front();
 
   int i = x_.size()-1;
-
   while ((i > 0) && (x_[i] > chan))
     i--;
 
   return x_[left_edge(i)];
 }
 
-uint16_t Finder::find_right(uint16_t chan) const
+double Finder::find_right(double chan) const
 {
   if (x_.empty())
     return 0;
@@ -221,10 +250,9 @@ uint16_t Finder::find_right(uint16_t chan) const
   double edge_threshold = -0.5 * sigma;
 
   if ((chan < x_[0]) || (chan >= x_[x_.size()-1]))
-    return x_.size() - 1;
+    return x_.back();
 
   int i = 0;
-
   while ((i < x_.size()) && (x_[i] < chan))
     i++;
 
@@ -232,7 +260,7 @@ uint16_t Finder::find_right(uint16_t chan) const
 }
 
 
-uint16_t Finder::left_edge(uint16_t idx) const
+size_t Finder::left_edge(size_t idx) const
 {
   if (x_conv.empty() || idx >= x_conv.size())
     return 0;
@@ -267,7 +295,7 @@ uint16_t Finder::left_edge(uint16_t idx) const
   return idx;
 }
 
-uint16_t Finder::right_edge(uint16_t idx) const
+size_t Finder::right_edge(size_t idx) const
 {
   if (x_conv.empty() || idx >= x_conv.size())
     return 0;

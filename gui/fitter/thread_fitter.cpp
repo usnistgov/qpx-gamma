@@ -90,27 +90,28 @@ void ThreadFitter::refit(double target_ROI) {
   QMutexLocker locker(&mutex_);
   terminating_.store(false);
   action_ = kRefit;
-  target_ROI_ = target_ROI;
+  target_ = target_ROI;
   if (!isRunning())
     start(HighPriority);
 }
 
-void ThreadFitter::adjust_roi_bounds(double target_ROI, uint32_t L, uint32_t R) {
+void ThreadFitter::adjust_SUM4(double target_peak, double left, double right)
+{
   if (running_.load()) {
     WARN << "Fitter busy";
     return;
   }
   QMutexLocker locker(&mutex_);
   terminating_.store(false);
-  action_ = kAdjustROI;
-  target_ROI_ = target_ROI;
-  left_ = L;
-  right_ = R;
+  action_ = kAdjustSUM4;
+  target_ = target_peak;
+  LL = left;
+  RR = right;
   if (!isRunning())
     start(HighPriority);
 }
 
-void ThreadFitter::adjust_LB(double target_ROI, uint32_t L, uint32_t R) {
+void ThreadFitter::adjust_LB(double target_ROI, double L, double R) {
   if (running_.load()) {
     WARN << "Fitter busy";
     return;
@@ -118,14 +119,14 @@ void ThreadFitter::adjust_LB(double target_ROI, uint32_t L, uint32_t R) {
   QMutexLocker locker(&mutex_);
   terminating_.store(false);
   action_ = kAdjustLB;
-  target_ROI_ = target_ROI;
-  left_ = L;
-  right_ = R;
+  target_ = target_ROI;
+  LL = L;
+  RR = R;
   if (!isRunning())
     start(HighPriority);
 }
 
-void ThreadFitter::adjust_RB(double target_ROI, uint32_t L, uint32_t R) {
+void ThreadFitter::adjust_RB(double target_ROI, double L, double R) {
   if (running_.load()) {
     WARN << "Fitter busy";
     return;
@@ -133,9 +134,23 @@ void ThreadFitter::adjust_RB(double target_ROI, uint32_t L, uint32_t R) {
   QMutexLocker locker(&mutex_);
   terminating_.store(false);
   action_ = kAdjustRB;
-  target_ROI_ = target_ROI;
-  left_ = L;
-  right_ = R;
+  target_ = target_ROI;
+  LL = L;
+  RR = R;
+  if (!isRunning())
+    start(HighPriority);
+}
+
+void ThreadFitter::merge_regions(double L, double R) {
+  if (running_.load()) {
+    WARN << "Fitter busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  action_ = kMergeRegions;
+  LL = L;
+  RR = R;
   if (!isRunning())
     start(HighPriority);
 }
@@ -173,6 +188,7 @@ void ThreadFitter::run() {
       CustomTimer total_timer(true);
       std::shared_ptr<CustomTimer> timer(new CustomTimer(true));
       for (auto &q : fitter_.regions_) {
+//        DBG << "Fitting " << q.second.L();
         q.second.auto_fit(interruptor_);
         current++;
         if (timer->s() > 2) {
@@ -189,10 +205,10 @@ void ThreadFitter::run() {
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kRefit) {
-      if (fitter_.regions_.count(target_ROI_)) {
-        fitter_.regions_[target_ROI_].rebuild();
-        if (fitter_.regions_[target_ROI_].settings_.resid_auto)
-          fitter_.regions_[target_ROI_].iterative_fit(interruptor_);
+      if (fitter_.regions_.count(target_)) {
+        fitter_.regions_[target_].rebuild();
+        if (fitter_.regions_[target_].fit_settings().resid_auto)
+          fitter_.regions_[target_].iterative_fit(interruptor_);
       }
       emit fit_updated(fitter_);
       emit fitting_done();
@@ -202,28 +218,27 @@ void ThreadFitter::run() {
       emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;
-    } else if (action_ == kAdjustROI) {
-      if (fitter_.regions_.count(target_ROI_))
-        fitter_.adj_bounds(fitter_.regions_[target_ROI_], left_, right_, interruptor_);
-      emit fit_updated(fitter_);
+    } else if (action_ == kAdjustSUM4) {
+      if (fitter_.adjust_sum4(target_, LL, RR))
+      {
+        //emit newselection somehow?
+        emit fit_updated(fitter_);
+      }
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kAdjustLB) {
-      if (fitter_.regions_.count(target_ROI_)) {
-        Qpx::ROI *parent_region = &fitter_.regions_[target_ROI_];
-        Qpx::SUM4Edge edge(parent_region->finder_.x_, parent_region->finder_.y_, left_, right_);
-        parent_region->set_LB(edge);
+      if (fitter_.adj_LB(target_, LL, RR, interruptor_))
         emit fit_updated(fitter_);
-      }
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kAdjustRB) {
-      if (fitter_.regions_.count(target_ROI_)) {
-        Qpx::ROI *parent_region = &fitter_.regions_[target_ROI_];
-        Qpx::SUM4Edge edge(parent_region->finder_.x_, parent_region->finder_.y_, left_, right_);
-        parent_region->set_RB(edge);
+      if (fitter_.adj_RB(target_, LL, RR, interruptor_))
         emit fit_updated(fitter_);
-      }
+      emit fitting_done();
+      action_ = kIdle;
+    } else if (action_ == kMergeRegions) {
+      if (fitter_.merge_regions(LL, RR, interruptor_))
+        emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kRemovePeaks) {

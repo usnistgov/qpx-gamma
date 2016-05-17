@@ -64,15 +64,15 @@ int UncertainDouble::exponent() const
 
 void UncertainDouble::autoSigs(uint16_t sigs_below)
 {
-  int16_t order1 = order_of(value_);
-  int16_t order2 = order_of(sigma_);
-  int16_t upper = std::max(order1, order2);
-  int16_t lower = std::min(order1, order2);
-  if (!std::isfinite(sigma_)) {
-    upper = order1;
-    lower = 0;
+  if (std::isfinite(sigma_)) {
+    int16_t order1 = order_of(value_);
+    int16_t order2 = order_of(sigma_);
+    int16_t upper = std::max(order1, order2);
+    int16_t lower = std::min(order1, order2);
+    sigfigs_ = upper - lower + sigs_below + 1;
   }
-  sigfigs_ = upper - lower + sigs_below + 1;
+  else
+    sigfigs_ = 1 + sigs_below;
   if (exponent() && sigfigs_ > 4)
     sigfigs_ = 4;
 }

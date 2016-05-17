@@ -143,8 +143,8 @@ void FormFwhmCalibration::rebuild_table() {
   ui->tablePeaks->setRowCount(fit_data_.peaks().size());
   int i=0;
   for (auto &q : fit_data_.peaks()) {
-    bool significant = (( (1 - q.second.hypermet().rsq_) * 100 < ui->doubleMaxFitErr->value())
-                        && (q.second.hypermet().width_.value.error() < ui->doubleMaxWidthErr->value()));
+    bool significant = (( (1 - q.second.hypermet().rsq()) * 100 < ui->doubleMaxFitErr->value())
+                        && (q.second.fwhm().error() < ui->doubleMaxWidthErr->value()));
     add_peak_to_table(q.second, i, significant);
     ++i;
   }
@@ -203,7 +203,7 @@ void FormFwhmCalibration::add_peak_to_table(const Qpx::Peak &p, int row, bool gr
   add_to_table(ui->tablePeaks, row, 3, p.fwhm().error_percent(), QVariant(), background);
   add_to_table(ui->tablePeaks, row, 4, std::to_string(p.good()),
                QVariant(), background);
-  UncertainDouble rsq(1, (1 - p.hypermet().rsq_), 2);
+  UncertainDouble rsq(1, (1 - p.hypermet().rsq()), 2);
   add_to_table(ui->tablePeaks, row, 5, rsq.error_percent(), QVariant(), background);
 
 }
@@ -223,8 +223,8 @@ void FormFwhmCalibration::replot_calib() {
     double x_sigma = q.second.energy().uncertainty();
     double y_sigma = q.second.fwhm().uncertainty();
 
-    if (( (1 - q.second.hypermet().rsq_) * 100 < ui->doubleMaxFitErr->value())
-        && (q.second.hypermet().width_.value.error() < ui->doubleMaxWidthErr->value())) {
+    if (( (1 - q.second.hypermet().rsq()) * 100 < ui->doubleMaxFitErr->value())
+        && (q.second.fwhm().error() < ui->doubleMaxWidthErr->value())) {
       xx_relevant.push_back(x);
       yy_relevant.push_back(y);
       xx_relevant_sigma.push_back(x_sigma);
@@ -318,8 +318,8 @@ void FormFwhmCalibration::fit_calibration()
 {
   std::vector<double> xx, yy, yy_sigma;
   for (auto &q : fit_data_.peaks()) {
-    if (( (1 - q.second.hypermet().rsq_) * 100 < ui->doubleMaxFitErr->value())
-        && (q.second.hypermet().width_.value.error() < ui->doubleMaxWidthErr->value())) {
+    if (( (1 - q.second.hypermet().rsq()) * 100 < ui->doubleMaxFitErr->value())
+        && (q.second.fwhm().error() < ui->doubleMaxWidthErr->value())) {
       xx.push_back(q.second.energy().value());
       yy.push_back(q.second.fwhm().value());
       yy_sigma.push_back(q.second.fwhm().uncertainty());

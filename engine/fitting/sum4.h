@@ -31,7 +31,6 @@
 namespace Qpx {
 
 class SUM4Edge {
-//  uint32_t start_, end_;
   double Lchan_, Rchan_;
   double min_, max_;
   UncertainDouble dsum_, davg_;
@@ -42,8 +41,6 @@ public:
            const std::vector<double> &y,
            uint32_t left, uint32_t right);
 
-//  uint32_t start()  const {return start_;}
-//  uint32_t end()    const {return end_;}
   double left()  const {return Lchan_;}
   double right() const {return Rchan_;}
   double sum()      const {return dsum_.value();}
@@ -85,7 +82,6 @@ public:
 
 private:
   SUM4Edge LB_, RB_;
-  PolyBounded background_;
   double Lchan_, Rchan_;
 
   UncertainDouble gross_area_;

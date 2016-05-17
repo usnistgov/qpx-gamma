@@ -518,15 +518,15 @@ void FormIntegration2D::make_gates() {
   if ((current >= 0) && (current < peaks_.size())) {
     Peak2D pk = peaks_[current];
     if (!ui->pushShowDiagonal->isChecked()) {
-       if (!pk.x.peaks_.empty())
-         fit_x_.regions_[pk.x.finder_.x_.front()] = pk.x;
-       if (!pk.y.peaks_.empty())
-         fit_y_.regions_[pk.y.finder_.x_.front()] = pk.y;
+       if (pk.x.peak_count())
+         fit_x_.regions_[pk.x.L()] = pk.x;
+       if (pk.y.peak_count())
+         fit_y_.regions_[pk.y.L()] = pk.y;
     } else {
-      if (!pk.dx.peaks_.empty())
-        fit_x_.regions_[pk.dx.finder_.x_.front()] = pk.dx;
-      if (!pk.dy.peaks_.empty())
-        fit_y_.regions_[pk.dy.finder_.x_.front()] = pk.dy;
+      if (pk.dx.peak_count())
+        fit_x_.regions_[pk.dx.L()] = pk.dx;
+      if (pk.dy.peak_count())
+        fit_y_.regions_[pk.dy.L()] = pk.dy;
     }
   }
 

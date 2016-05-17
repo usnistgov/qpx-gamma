@@ -106,13 +106,10 @@ SUM4::SUM4(const std::vector<double> &x, const std::vector<double> &y,
       || !RB.width())
     return;
 
-  DBG << "making s4";
-
   LB_ = LB;
   RB_ = RB;
   Lchan_ = x[Lindex];
   Rchan_ = x[Rindex];
-  background_ = background;
 
   gross_area_ = UncertainDouble::from_int(0,0);
   for (size_t i=Lindex; i <=Rindex; ++i)
@@ -120,7 +117,7 @@ SUM4::SUM4(const std::vector<double> &x, const std::vector<double> &y,
 
   double background_variance = pow((peak_width() / 2.0), 2) * (LB_.variance() + RB_.variance());
   background_area_ = UncertainDouble::from_double(
-                    peak_width() * (background_.eval(x[Rindex]) + background_.eval(x[Lindex])) / 2.0,
+                    peak_width() * (background.eval(x[Rindex]) + background.eval(x[Lindex])) / 2.0,
                     sqrt(background_variance), 0);
 
   peak_area_ = gross_area_ - background_area_;

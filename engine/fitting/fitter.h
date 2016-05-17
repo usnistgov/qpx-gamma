@@ -58,8 +58,13 @@ public:
   void find_regions();
   ROI *parent_of(double center);
 
+  std::set<double> relevant_regions(double left, double right);
+
+  bool merge_regions(double left, double right, boost::atomic<bool>& interruptor);
   void add_peak(double left, double right, boost::atomic<bool>& interruptor);
-  void adj_bounds(ROI &target, uint32_t left, uint32_t right, boost::atomic<bool>& interruptor);
+  bool adj_LB(double regionL, double left, double right, boost::atomic<bool>& interruptor);
+  bool adj_RB(double regionL, double left, double right, boost::atomic<bool>& interruptor);
+  bool adjust_sum4(double &peak_center, double left, double right);
 
   void remove_peaks(std::set<double> bins);
   void delete_ROI(double bin);

@@ -75,7 +75,7 @@ void Fitter::setData(SinkPtr spectrum)
     x.resize(x_bound);
     y.resize(x_bound);
 
-    finder_.setData(x, y);
+    finder_.setNewData(x, y);
     apply_settings(settings_);
   }
 }
@@ -99,11 +99,11 @@ void Fitter::find_regions() {
   if (finder_.filtered.empty())
     return;
 
-  std::vector<int32_t> Ls;
-  std::vector<int32_t> Rs;
+  std::vector<size_t> Ls;
+  std::vector<size_t> Rs;
 
-  int32_t L = finder_.lefts[0];
-  int32_t R = finder_.rights[0];
+  size_t L = finder_.lefts[0];
+  size_t R = finder_.rights[0];
   for (int i=1; i < finder_.filtered.size(); ++i) {
     double margin = 0;
     if (!finder_.fw_theoretical_bin.empty())
@@ -112,8 +112,8 @@ void Fitter::find_regions() {
 
     if (finder_.lefts[i] < (R + 2 * margin) ) {
 //      DBG << "cat ROI " << L << " " << R << " " << finder_.lefts[i] << " " << finder_.rights[i];
-      L = std::min(L, static_cast<int32_t>(finder_.lefts[i]));
-      R = std::max(R, static_cast<int32_t>(finder_.rights[i]));
+      L = std::min(L, finder_.lefts[i]);
+      R = std::max(R, finder_.rights[i]);
 //      DBG << "postcat ROI " << L << " " << R;
     } else {
 //      DBG << "<Fitter> Creating ROI " << L << "-" << R;
@@ -153,9 +153,9 @@ void Fitter::find_regions() {
 
   for (int i=0; i < Ls.size(); ++i) {
     ROI newROI(settings_);
-    newROI.set_data(finder_.x_, finder_.y_, finder_.x_[Ls[i]], finder_.x_[Rs[i]]);
-    if (!newROI.finder_.x_.empty())
-      regions_[newROI.finder_.x_.front()] = newROI;
+    newROI.set_data(finder_, finder_.x_[Ls[i]], finder_.x_[Rs[i]]);
+    if (newROI.width())
+      regions_[newROI.L()] = newROI;
   }
 //  DBG << "<Fitter> Created " << regions_.size() << " regions";
 
@@ -164,11 +164,32 @@ void Fitter::find_regions() {
 std::map<double, Peak> Fitter::peaks() {
   std::map<double, Peak> peaks;
   for (auto &q : regions_)
-    for (auto &p : q.second.peaks_) {
-      peaks[p.second.center().value()] = p.second;
+    if (q.second.peak_count()) {
+      std::map<double, Peak> roipeaks(q.second.peaks());
+      peaks.insert(roipeaks.begin(), roipeaks.end());
     }
   return peaks;
 }
+
+std::set<double> Fitter::relevant_regions(double left, double right)
+{
+  std::set<double> ret;
+  for (auto & r : regions_)
+  {
+    if (
+        ((left <= r.second.L()) && (r.second.L() <= right))
+        ||
+        ((left <= r.second.R()) && (r.second.R() <= right))
+        ||
+        r.second.overlaps(left)
+        ||
+        r.second.overlaps(right)
+       )
+      ret.insert(r.second.L());
+  }
+  return ret;
+}
+
 
 void Fitter::delete_ROI(double bin) {
   if (regions_.count(bin)) {
@@ -188,13 +209,59 @@ ROI *Fitter::parent_of(double center) {
 }
 
 
-void Fitter::adj_bounds(ROI &target, uint32_t left, uint32_t right, boost::atomic<bool>& interruptor) {
-  ROI temproi = target;
-  temproi.adjust_bounds(finder_.x_, finder_.y_, left, right, interruptor);
-  if (!temproi.hr_x.empty()) {
-    delete_ROI(target.finder_.x_.front());
-    regions_[temproi.finder_.x_.front()] = temproi;
+bool Fitter::adj_LB(double regionL, double left, double right, boost::atomic<bool>& interruptor) {
+  if (!regions_.count(regionL))
+    return false;
+
+  DBG << "<Fitter> adj LB";
+
+  ROI newroi = regions_[regionL];
+  newroi.adj_LB(finder_, left, right, interruptor);
+  regions_.erase(regionL);
+  regions_[newroi.L()] = newroi;
+}
+
+bool Fitter::adj_RB(double regionL, double left, double right, boost::atomic<bool>& interruptor) {
+  if (!regions_.count(regionL))
+    return false;
+
+  ROI newroi = regions_[regionL];
+  newroi.adj_RB(finder_, left, right, interruptor);
+  regions_.erase(regionL);
+  regions_[newroi.L()] = newroi;
+}
+
+bool Fitter::merge_regions(double left, double right, boost::atomic<bool>& interruptor) {
+  std::set<double> rois = relevant_regions(left, right);
+  double min = std::min(left, right);
+  double max = std::max(left, right);
+
+  for (auto & r : rois)
+  {
+    if (regions_.count(r) && (regions_.at(r).L() < min))
+      min = regions_.at(r).L();
+    if (regions_.count(r) && (regions_.at(r).R() > max))
+      max = regions_.at(r).R();
+    regions_.erase(r);
   }
+
+  ROI newROI(settings_);
+  newROI.set_data(finder_, min, max);
+
+  //add old peaks?
+  newROI.auto_fit(interruptor);
+  if (newROI.width())
+    regions_[newROI.L()] = newROI;
+}
+
+
+bool Fitter::adjust_sum4(double &peak_center, double left, double right)
+{
+  ROI *parent = parent_of(peak_center);
+  if (!parent)
+    return false;
+
+  return parent->adjust_sum4(peak_center, left, right);
 }
 
 
@@ -204,18 +271,18 @@ void Fitter::add_peak(double left, double right, boost::atomic<bool>& interrupto
 
   for (auto &q : regions_) {
     if (q.second.overlaps(left, right)) {
-      q.second.add_peak(finder_.x_, finder_.y_, left, right, interruptor);
+      q.second.add_peak(finder_, left, right, interruptor);
       return;
     }
   }
 
 //  DBG << "<Fitter> making new ROI to add peak manually " << left << " " << right;
   ROI newROI(settings_);
-  newROI.set_data(finder_.x_, finder_.y_, left, right);
+  newROI.set_data(finder_, left, right);
 //  newROI.add_peak(finder_.x_, finder_.y_, left, right, interruptor);
   newROI.auto_fit(interruptor);
-  if (newROI.finder_.x_.size())
-    regions_[newROI.finder_.x_.front()] = newROI;
+  if (newROI.width())
+    regions_[newROI.L()] = newROI;
 }
 
 void Fitter::remove_peaks(std::set<double> bins) {
@@ -228,11 +295,8 @@ void Fitter::remove_peaks(std::set<double> bins) {
 
 void Fitter::replace_peak(const Peak& pk) {
   for (auto &m : regions_)
-    if (m.second.contains(pk.center().value())) {
-      m.second.peaks_[pk.center().value()] = pk;
-      m.second.render(); //was it hm or sum4 that was replaced?
-//      DBG << "replacing " << pk.center;
-    }
+    if (m.second.replace_peak(pk))
+      return;
 }
 
 void Fitter::apply_settings(FitSettings settings) {
@@ -364,13 +428,16 @@ void Fitter::from_xml(const pugi::xml_node &node, SinkPtr spectrum)
 
   setData(spectrum);
 
+  //clear automatically found rois?
+
   for (auto &r : node.children())
   {
     ROI region;
     if (std::string(r.name()) == region.xml_element_name())
     {
       region.from_xml(r, finder_, settings_);
-      regions_[region.finder_.x_.front()] = region;
+      if (region.width())
+        regions_[region.L()] = region;
     }
   }
 }
