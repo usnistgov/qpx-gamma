@@ -28,7 +28,8 @@
 #include "fitter.h"
 
 enum FitterAction {kFit, kStop, kIdle, kAddPeak, kRemovePeaks, kRefit,
-                  kAdjustLB, kAdjustRB, kAdjustSUM4, kMergeRegions};
+                  kAdjustLB, kAdjustRB, kAdjustSUM4, kReplaceHypermet,
+                  kOverrideSettingsROI, kMergeRegions};
 
 class ThreadFitter : public QThread
 {
@@ -48,6 +49,8 @@ public:
   void adjust_LB(double target_ROI, double L, double R);
   void adjust_RB(double target_ROI, double L, double R);
   void adjust_SUM4(double target_peak, double left, double right);
+  void replace_hypermet(double peakID, Hypermet hyp);
+  void override_ROI_settings(double regionID, FitSettings fs);
   void remove_peaks(std::set<double> chosen_peaks);
 
 signals:
@@ -65,11 +68,12 @@ private:
 
   double LL, RR;
   double target_;
+  Hypermet hypermet_;
+  FitSettings settings_;
   std::set<double> chosen_peaks_;
 
   boost::atomic<bool> running_;
   boost::atomic<bool> terminating_;
-
   boost::atomic<bool> interruptor_;
 
 };

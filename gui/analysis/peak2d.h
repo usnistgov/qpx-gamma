@@ -87,12 +87,12 @@ struct Peak2D {
     currie_quality_indicator(-1),
     approved(false)
   {}
-  Peak2D(Qpx::ROI &x_roi, Qpx::ROI &y_roi, double x_center, double y_center);
+  Peak2D(const Qpx::ROI &x_roi, const Qpx::ROI &y_roi, double x_center, double y_center);
 
-  void adjust_x(Qpx::ROI &roi, double center);
-  void adjust_y(Qpx::ROI &roi, double center);
-  void adjust_diag_x(Qpx::ROI &roi, double center);
-  void adjust_diag_y(Qpx::ROI &roi, double center);
+  void adjust_x(const Qpx::ROI &roi, double center);
+  void adjust_y(const Qpx::ROI &roi, double center);
+  void adjust_diag_x(const Qpx::ROI &roi, double center);
+  void adjust_diag_y(const Qpx::ROI &roi, double center);
 
   void integrate(Qpx::SinkPtr source);
 

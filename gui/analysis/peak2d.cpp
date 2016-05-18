@@ -47,7 +47,7 @@ void MarkerBox2D::integrate(Qpx::SinkPtr spectrum)
   variance = integral / pow(chan_area, 2);
 }
 
-void Peak2D::adjust_x(Qpx::ROI &roi, double center)
+void Peak2D::adjust_x(const Qpx::ROI &roi, double center)
 {
   Qpx::Peak pk;
 
@@ -97,7 +97,7 @@ void Peak2D::adjust_x(Qpx::ROI &roi, double center)
   energy_x = pk.energy();
 }
 
-void Peak2D::adjust_y(Qpx::ROI &roi, double center)
+void Peak2D::adjust_y(const Qpx::ROI &roi, double center)
 {
   Qpx::Peak pk;
 
@@ -146,7 +146,7 @@ void Peak2D::adjust_y(Qpx::ROI &roi, double center)
   energy_y = pk.energy();
 }
 
-void Peak2D::adjust_diag_x(Qpx::ROI &roi, double center)
+void Peak2D::adjust_diag_x(const Qpx::ROI &roi, double center)
 {
   Qpx::Peak pk;
 
@@ -194,7 +194,7 @@ void Peak2D::adjust_diag_x(Qpx::ROI &roi, double center)
   area[2][2] = bckg;
 }
 
-void Peak2D::adjust_diag_y(Qpx::ROI &roi, double center)
+void Peak2D::adjust_diag_y(const Qpx::ROI &roi, double center)
 {
   Qpx::Peak pk;
 
@@ -242,7 +242,7 @@ void Peak2D::adjust_diag_y(Qpx::ROI &roi, double center)
   area[2][2] = bckg;
 }
 
-Peak2D::Peak2D(Qpx::ROI &x_roi, Qpx::ROI &y_roi, double x_center, double y_center):
+Peak2D::Peak2D(const Qpx::ROI &x_roi, const Qpx::ROI &y_roi, double x_center, double y_center):
   currie_quality_indicator(-1),
   approved(false)
 {

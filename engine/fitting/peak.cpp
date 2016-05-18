@@ -88,7 +88,6 @@ void Peak::reconstruct(FitSettings fs) {
   cps_best_ = cps_hyp_ = cps_sum4_ = UncertainDouble::from_double(0,0);
 
   double live_seconds = fs.live_time.total_milliseconds() * 0.001;
-//  DBG << "LT = " << live_seconds;
 
   if (live_seconds > 0) {
     cps_hyp_  = area_hyp_ / live_seconds;
@@ -109,7 +108,7 @@ bool Peak::good() const
 
 int Peak::quality_energy() const
 {
-  if (energy_.error() > 100)
+  if (energy_.error() > 50)
     return 3;
   else if (!std::isfinite(energy_.uncertainty()) || !energy_.uncertainty())
     return 2;
@@ -119,7 +118,7 @@ int Peak::quality_energy() const
 
 int Peak::quality_fwhm() const
 {
-  if (fwhm_.error() > 100)
+  if (fwhm_.error() > 50)
     return 3;
   else if (!std::isfinite(fwhm_.uncertainty()) || !fwhm_.uncertainty())
     return 2;

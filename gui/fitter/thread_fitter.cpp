@@ -95,6 +95,21 @@ void ThreadFitter::refit(double target_ROI) {
     start(HighPriority);
 }
 
+void ThreadFitter::override_ROI_settings(double regionID, FitSettings fs)
+ {
+  if (running_.load()) {
+    WARN << "Fitter busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  action_ = kOverrideSettingsROI;
+  target_ = regionID;
+  settings_ = fs;
+  if (!isRunning())
+    start(HighPriority);
+}
+
 void ThreadFitter::adjust_SUM4(double target_peak, double left, double right)
 {
   if (running_.load()) {
@@ -107,6 +122,21 @@ void ThreadFitter::adjust_SUM4(double target_peak, double left, double right)
   target_ = target_peak;
   LL = left;
   RR = right;
+  if (!isRunning())
+    start(HighPriority);
+}
+
+void ThreadFitter::replace_hypermet(double peakID, Hypermet hyp)
+{
+  if (running_.load()) {
+    WARN << "Fitter busy";
+    return;
+  }
+  QMutexLocker locker(&mutex_);
+  terminating_.store(false);
+  action_ = kReplaceHypermet;
+  target_ = peakID;
+  hypermet_ = hyp;
   if (!isRunning())
     start(HighPriority);
 }
@@ -187,14 +217,15 @@ void ThreadFitter::run() {
       int current = 1;
       CustomTimer total_timer(true);
       std::shared_ptr<CustomTimer> timer(new CustomTimer(true));
-      for (auto &q : fitter_.regions_) {
+      for (auto &q : fitter_.regions()) {
 //        DBG << "Fitting " << q.second.L();
-        q.second.auto_fit(interruptor_);
+        fitter_.auto_fit(q.first, interruptor_);
+//        q.second.auto_fit(interruptor_);
         current++;
         if (timer->s() > 2) {
           emit fit_updated(fitter_);
           timer = std::shared_ptr<CustomTimer>(new CustomTimer(true));
-          DBG << "<Fitter> " << current << " of " << fitter_.regions_.size() << " regions completed";
+          DBG << "<Fitter> " << current << " of " << fitter_.region_count() << " regions completed";
         }
         if ((action_ == kStop) || terminating_.load())
           break;
@@ -205,12 +236,8 @@ void ThreadFitter::run() {
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kRefit) {
-      if (fitter_.regions_.count(target_)) {
-        fitter_.regions_[target_].rebuild();
-        if (fitter_.regions_[target_].fit_settings().resid_auto)
-          fitter_.regions_[target_].iterative_fit(interruptor_);
-      }
-      emit fit_updated(fitter_);
+      if (fitter_.refit_region(target_, interruptor_))
+        emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kAddPeak) {
@@ -220,6 +247,14 @@ void ThreadFitter::run() {
       action_ = kIdle;
     } else if (action_ == kAdjustSUM4) {
       if (fitter_.adjust_sum4(target_, LL, RR))
+      {
+        //emit newselection somehow?
+        emit fit_updated(fitter_);
+      }
+      emit fitting_done();
+      action_ = kIdle;
+    } else if (action_ == kReplaceHypermet) {
+      if (fitter_.replace_hypermet(target_, hypermet_))
       {
         //emit newselection somehow?
         emit fit_updated(fitter_);
@@ -236,14 +271,19 @@ void ThreadFitter::run() {
         emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;
+    } else if (action_ == kOverrideSettingsROI) {
+      if (fitter_.override_ROI_settings(target_, settings_, interruptor_))
+        emit fit_updated(fitter_);
+      emit fitting_done();
+      action_ = kIdle;
     } else if (action_ == kMergeRegions) {
       if (fitter_.merge_regions(LL, RR, interruptor_))
         emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kRemovePeaks) {
-      fitter_.remove_peaks(chosen_peaks_);
-      emit fit_updated(fitter_);
+      if (fitter_.remove_peaks(chosen_peaks_, interruptor_))
+        emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;
     } else {

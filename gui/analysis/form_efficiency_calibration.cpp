@@ -159,7 +159,7 @@ void FormEfficiencyCalibration::setDetector(Project *newset, QString detector) {
 }
 
 void FormEfficiencyCalibration::setSpectrum(int64_t idx) {
-  if (!fit_data_.finder_.x_.empty()) //should be ==Setting()
+  if (!fit_data_.finder().empty()) //should be ==Setting()
     peak_sets_[current_spectrum_] = fit_data_;
 
   SinkPtr spectrum = spectra_->get_sink(idx);
@@ -232,7 +232,7 @@ void FormEfficiencyCalibration::update_data() {
     }
   }
 
-  if (!fit_data_.finder_.x_.empty()) //should be ==Setting()
+  if (!fit_data_.finder().empty()) //should be ==Setting()
     peak_sets_[current_spectrum_] = fit_data_;
 
 //  ui->plotSpectrum->update_fit(contents_changed);
@@ -608,7 +608,7 @@ void FormEfficiencyCalibration::on_doubleEpsilonE_editingFinished()
 void FormEfficiencyCalibration::on_doubleScaleFactor_editingFinished()
 {
   fit_data_.activity_scale_factor_ = ui->doubleScaleFactor->value();
-  if (!fit_data_.finder_.x_.empty()) //should be ==Setting()
+  if (!fit_data_.finder().empty()) //should be ==Setting()
     peak_sets_[current_spectrum_] = fit_data_;
   replot_calib();
 }
@@ -616,7 +616,7 @@ void FormEfficiencyCalibration::on_doubleScaleFactor_editingFinished()
 void FormEfficiencyCalibration::on_doubleScaleFactor_valueChanged(double arg1)
 {
   fit_data_.activity_scale_factor_ = ui->doubleScaleFactor->value();
-  if (!fit_data_.finder_.x_.empty()) //should be ==Setting()
+  if (!fit_data_.finder().empty()) //should be ==Setting()
     peak_sets_[current_spectrum_] = fit_data_;
   replot_calib();
 }

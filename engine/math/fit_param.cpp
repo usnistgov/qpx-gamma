@@ -97,6 +97,18 @@ std::string FitParam::to_string() const {
 //  return ss.str();
 //}
 
+bool FitParam::same_bounds_and_policy(const FitParam &other) const
+{
+  if (lbound != other.lbound)
+    return false;
+  if (ubound != other.ubound)
+    return false;
+  if (enabled != other.enabled)
+    return false;
+  if (fixed != other.fixed)
+    return false;
+  return true;
+}
 
 FitParam FitParam::enforce_policy() {
   FitParam ret = *this;
@@ -126,6 +138,7 @@ FitParam FitParam::operator^(const FitParam &other) const
   }
   FitParam ret;
   ret.value = UncertainDouble::from_double(avg, max - min);
+  return ret;
 }
 
 bool FitParam::operator%(const FitParam &other) const

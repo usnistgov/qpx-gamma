@@ -86,7 +86,6 @@ public:
 
 public slots:
   void set_selected_peaks(std::set<double> selected_peaks);
-  void replace_peaks(std::vector<Qpx::Peak>);
 
 signals:
 
@@ -195,7 +194,7 @@ private:
   void plotRange();
   void plotTitle();
 
-  void plotRegion(double region_id, Qpx::ROI &region, QCPGraph *data_graph);
+  void plotRegion(double region_id, const Qpx::ROI &region, QCPGraph *data_graph);
   void plotPeak(double region_id, double peak_id, const Qpx::Peak &peak);
 
   void peak_info(double peak);

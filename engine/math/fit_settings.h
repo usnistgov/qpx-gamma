@@ -76,6 +76,8 @@ public:
   boost::posix_time::time_duration real_time ,live_time;
 
   FitSettings();
+  void clone(FitSettings other);
+  void clear();
 
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;

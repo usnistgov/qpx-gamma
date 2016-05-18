@@ -24,6 +24,7 @@
 #include <QBoxLayout>
 #include <QLabel>
 #include <QDialogButtonBox>
+#include "custom_logger.h"
 
 RollbackDialog::RollbackDialog(Qpx::ROI roi, QWidget *parent) :
   QDialog(parent),
@@ -32,10 +33,16 @@ RollbackDialog::RollbackDialog(Qpx::ROI roi, QWidget *parent) :
   QLabel *label;
   QFrame* line;
 
+  QVBoxLayout *vl_descr    = new QVBoxLayout();
+  label = new QLabel();
+  label->setFixedHeight(25);
+  label->setText("Fit description");
+  vl_descr->addWidget(label);
+
   QVBoxLayout *vl_fit    = new QVBoxLayout();
   label = new QLabel();
   label->setFixedHeight(25);
-  label->setText("Fit with # of peaks");
+  label->setText("# of peaks");
   vl_fit->addWidget(label);
 
   QVBoxLayout *vl_rsq = new QVBoxLayout();
@@ -44,32 +51,45 @@ RollbackDialog::RollbackDialog(Qpx::ROI roi, QWidget *parent) :
   label->setText("r-squared");
   vl_rsq->addWidget(label);
 
-  for (int i=0; i < roi_.fits_.size(); ++i) {
+  QVBoxLayout *vl_s4a = new QVBoxLayout();
+  label = new QLabel();
+  label->setFixedHeight(25);
+  label->setText("sum4 aggregate");
+  vl_s4a->addWidget(label);
+
+  std::vector<Qpx::FitDescription> history = roi_.history();
+  for (int i=0; i < history.size(); ++i) {
 
     QRadioButton *radio = new QRadioButton();
     radio->setLayoutDirection(Qt::LeftToRight);
-    radio->setText(QString::number(roi_.fits_[i].peaks_.size()));
+    radio->setText(QString::fromStdString(history[i].description));
     radio->setFixedHeight(25);
-    bool selected = false;
-    if (roi_.fits_[i].peaks_.empty() && roi_.peak_count())
-      selected = (roi_.fits_[i].peaks_.begin()->second.hypermet().rsq() == roi_.peaks().begin()->second.hypermet().rsq());
-    radio->setChecked(selected);
+    radio->setChecked(i == roi_.current_fit());
     radios_.push_back(radio);
-    vl_fit->addWidget(radio);
+    vl_descr->addWidget(radio);
 
     label = new QLabel();
     label->setFixedHeight(25);
-    double rsq = 0;
-    if (!roi_.fits_[i].peaks_.empty())
-      rsq = roi_.fits_[i].peaks_.begin()->second.hypermet().rsq();
-    label->setText(QString::number(rsq));
+    label->setText(QString::number(history[i].peaknum));
+    vl_fit->addWidget(label);
+
+    label = new QLabel();
+    label->setFixedHeight(25);
+    label->setText(QString::number(history[i].rsq));
     vl_rsq->addWidget(label);
+
+    label = new QLabel();
+    label->setFixedHeight(25);
+    label->setText(QString::number(history[i].sum4aggregate));
+    vl_s4a->addWidget(label);
 
   }
 
   QHBoxLayout *hl = new QHBoxLayout();
+  hl->addLayout(vl_descr);
   hl->addLayout(vl_fit);
   hl->addLayout(vl_rsq);
+  hl->addLayout(vl_s4a);
 
   label = new QLabel();
   label->setText(QString::fromStdString("<b>ROI at chan=" + std::to_string(roi_.hr_x_nrg.front()) + " rollback to</b>"));

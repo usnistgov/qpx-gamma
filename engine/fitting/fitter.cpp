@@ -37,20 +37,20 @@ void Fitter::setData(SinkPtr spectrum)
 
     metadata_ = md;
 
-    settings_.bits_ = md.bits;
+    finder_.settings_.bits_ = md.bits;
 
     if (!md.detectors.empty())
       detector_ = md.detectors[0];
 
     if (detector_.energy_calibrations_.has_a(Calibration("Energy", md.bits)))
-      settings_.cali_nrg_ = detector_.energy_calibrations_.get(Calibration("Energy", md.bits));
+      finder_.settings_.cali_nrg_ = detector_.energy_calibrations_.get(Calibration("Energy", md.bits));
     //best?
 
     if (detector_.fwhm_calibration_.valid())
-      settings_.cali_fwhm_ = detector_.fwhm_calibration_;
+      finder_.settings_.cali_fwhm_ = detector_.fwhm_calibration_;
 
-    settings_.live_time = md.attributes.branches.get(Setting("live_time")).value_duration;
-    settings_.real_time = md.attributes.branches.get(Setting("real_time")).value_duration;
+    finder_.settings_.live_time = md.attributes.branches.get(Setting("live_time")).value_duration;
+    finder_.settings_.real_time = md.attributes.branches.get(Setting("real_time")).value_duration;
 
     std::shared_ptr<EntryList> spectrum_dump = std::move(spectrum->data_range({{0, pow(2,md.bits)}}));
     std::vector<double> x;
@@ -75,16 +75,14 @@ void Fitter::setData(SinkPtr spectrum)
     x.resize(x_bound);
     y.resize(x_bound);
 
-    finder_.setNewData(x, y);
-    apply_settings(settings_);
+    finder_ = Finder(x, y, finder_.settings_);
+    apply_settings(finder_.settings_);
   }
 }
 
 void Fitter::clear() {
   detector_ = Detector();
   metadata_ = Metadata();
-  settings_.cali_nrg_ = Calibration();
-  settings_.cali_fwhm_ = Calibration();
   finder_.clear();
   regions_.clear();
 }
@@ -107,7 +105,7 @@ void Fitter::find_regions() {
   for (int i=1; i < finder_.filtered.size(); ++i) {
     double margin = 0;
     if (!finder_.fw_theoretical_bin.empty())
-      margin = settings_.ROI_extend_background * finder_.fw_theoretical_bin[R];
+      margin = finder_.settings_.ROI_extend_background * finder_.fw_theoretical_bin[R];
 //    DBG << "Margin = " << margin;
 
     if (finder_.lefts[i] < (R + 2 * margin) ) {
@@ -119,7 +117,7 @@ void Fitter::find_regions() {
 //      DBG << "<Fitter> Creating ROI " << L << "-" << R;
       L -= margin; if (L < 0) L = 0;
       R += margin; if (R >= finder_.x_.size()) R = finder_.x_.size() - 1;
-      if (settings_.cali_nrg_.transform(R, settings_.bits_) > settings_.finder_cutoff_kev) {
+      if (settings().cali_nrg_.transform(R, settings().bits_) > settings().finder_cutoff_kev) {
 //        DBG << "<Fitter> region " << L << "-" << R;
         Ls.push_back(L);
         Rs.push_back(R);
@@ -130,7 +128,7 @@ void Fitter::find_regions() {
   }
   double margin = 0;
   if (!finder_.fw_theoretical_bin.empty())
-    margin = settings_.ROI_extend_background * finder_.fw_theoretical_bin[R];
+    margin = finder_.settings_.ROI_extend_background * finder_.fw_theoretical_bin[R];
   R += margin; if (R >= finder_.x_.size()) R = finder_.x_.size() - 1;
   Ls.push_back(L);
   Rs.push_back(R);
@@ -152,13 +150,59 @@ void Fitter::find_regions() {
   }
 
   for (int i=0; i < Ls.size(); ++i) {
-    ROI newROI(settings_);
-    newROI.set_data(finder_, finder_.x_[Ls[i]], finder_.x_[Rs[i]]);
+    ROI newROI(finder_, finder_.x_[Ls[i]], finder_.x_[Rs[i]]);
     if (newROI.width())
-      regions_[newROI.L()] = newROI;
+      regions_[newROI.ID()] = newROI;
   }
 //  DBG << "<Fitter> Created " << regions_.size() << " regions";
 
+}
+
+size_t Fitter::peak_count() const
+{
+  size_t tally;
+  for (auto &r : regions_)
+    tally += r.second.peak_count();
+  return tally;
+}
+
+bool Fitter::contains_peak(double bin) const
+{
+  for (auto &r : regions_)
+    if (r.second.contains(bin))
+      return true;
+  return false;
+}
+
+Peak Fitter::peak(double peakID) const
+{
+  for (auto &r : regions_)
+    if (r.second.contains(peakID))
+      return r.second.peaks().at(peakID);
+  return Peak();
+}
+
+size_t Fitter::region_count() const
+{
+  return regions_.size();
+}
+
+bool Fitter::contains_region(double bin) const {
+  return (regions_.count(bin) > 0);
+}
+
+ROI Fitter::region(double bin) const
+{
+  if (contains_region(bin))
+    return regions_.at(bin);
+  else
+    return ROI();
+}
+
+
+const std::map<double, ROI> &Fitter::regions() const
+{
+  return regions_;
 }
 
 std::map<double, Peak> Fitter::peaks() {
@@ -177,58 +221,115 @@ std::set<double> Fitter::relevant_regions(double left, double right)
   for (auto & r : regions_)
   {
     if (
-        ((left <= r.second.L()) && (r.second.L() <= right))
+        ((left <= r.second.left_bin()) && (r.second.left_bin() <= right))
         ||
-        ((left <= r.second.R()) && (r.second.R() <= right))
+        ((left <= r.second.right_bin()) && (r.second.right_bin() <= right))
         ||
         r.second.overlaps(left)
         ||
         r.second.overlaps(right)
        )
-      ret.insert(r.second.L());
+      ret.insert(r.second.ID());
   }
   return ret;
 }
 
 
-void Fitter::delete_ROI(double bin) {
-  if (regions_.count(bin)) {
-    auto it = regions_.find(bin);
-    regions_.erase(it);
-  }
+bool Fitter::delete_ROI(double regionID) {
+  if (!contains_region(regionID))
+    return false;
+
+  auto it = regions_.find(regionID);
+  regions_.erase(it);
+  render_all();
+  return true;
 }
 
-ROI *Fitter::parent_of(double center) {
+ROI Fitter::parent_region(double peakID) const
+{
+  for (auto &m : regions_)
+    if (m.second.contains(peakID))
+      return m.second;
+  return ROI();
+}
+
+ROI *Fitter::parent_of(double peakID) {
   ROI *parent = nullptr;
   for (auto &m : regions_)
-    if (m.second.contains(center)) {
+    if (m.second.contains(peakID)) {
       parent = &m.second;
       break;
     }
   return parent;
 }
 
-
-bool Fitter::adj_LB(double regionL, double left, double right, boost::atomic<bool>& interruptor) {
-  if (!regions_.count(regionL))
-    return false;
-
-  DBG << "<Fitter> adj LB";
-
-  ROI newroi = regions_[regionL];
-  newroi.adj_LB(finder_, left, right, interruptor);
-  regions_.erase(regionL);
-  regions_[newroi.L()] = newroi;
+void Fitter::render_all()
+{
+  finder_.reset();
+  for (auto &r : regions_)
+    finder_.setFit(r.second.finder().x_,
+                   r.second.finder().y_fit_,
+                   r.second.finder().y_background_);
 }
 
-bool Fitter::adj_RB(double regionL, double left, double right, boost::atomic<bool>& interruptor) {
-  if (!regions_.count(regionL))
+bool Fitter::auto_fit(double regionID,  boost::atomic<bool>& interruptor) {
+  if (!regions_.count(regionID))
     return false;
 
-  ROI newroi = regions_[regionL];
-  newroi.adj_RB(finder_, left, right, interruptor);
-  regions_.erase(regionL);
-  regions_[newroi.L()] = newroi;
+  regions_[regionID].auto_fit(interruptor);
+  render_all();
+  return true;
+}
+
+bool Fitter::refit_region(double regionID, boost::atomic<bool>& interruptor)
+{
+  if (!contains_region(regionID))
+    return false;
+
+  regions_[regionID].refit(interruptor);
+  render_all();
+  return true;
+}
+
+
+bool Fitter::adj_LB(double regionID, double left, double right, boost::atomic<bool>& interruptor) {
+  if (!contains_region(regionID))
+    return false;
+
+  ROI newROI = regions_[regionID];
+  if (!newROI.adjust_LB(finder_, left, right, interruptor))
+    return false;
+  regions_.erase(regionID);
+  regions_[newROI.ID()] = newROI;
+  render_all();
+  return true;
+}
+
+bool Fitter::adj_RB(double regionID, double left, double right, boost::atomic<bool>& interruptor) {
+  if (!contains_region(regionID))
+    return false;
+
+  ROI newROI = regions_[regionID];
+  if (!newROI.adjust_RB(finder_, left, right, interruptor))
+    return false;
+  regions_.erase(regionID);
+  regions_[newROI.ID()] = newROI;
+  render_all();
+  return true;
+}
+
+bool Fitter::override_ROI_settings(double regionID, const FitSettings &fs, boost::atomic<bool>& interruptor)
+{
+  if (!contains_region(regionID))
+    return false;
+
+  if (!regions_[regionID].override_settings(fs, interruptor))
+    return false;
+  //refit?
+
+  render_all();
+  return true;
+
 }
 
 bool Fitter::merge_regions(double left, double right, boost::atomic<bool>& interruptor) {
@@ -238,20 +339,23 @@ bool Fitter::merge_regions(double left, double right, boost::atomic<bool>& inter
 
   for (auto & r : rois)
   {
-    if (regions_.count(r) && (regions_.at(r).L() < min))
-      min = regions_.at(r).L();
-    if (regions_.count(r) && (regions_.at(r).R() > max))
-      max = regions_.at(r).R();
+    if (regions_.count(r) && (regions_.at(r).left_bin() < min))
+      min = regions_.at(r).left_bin();
+    if (regions_.count(r) && (regions_.at(r).right_bin() > max))
+      max = regions_.at(r).right_bin();
     regions_.erase(r);
   }
 
-  ROI newROI(settings_);
-  newROI.set_data(finder_, min, max);
+  ROI newROI(finder_, min, max);
 
   //add old peaks?
   newROI.auto_fit(interruptor);
-  if (newROI.width())
-    regions_[newROI.L()] = newROI;
+  if (!newROI.width())
+    return false;
+
+  regions_[newROI.ID()] = newROI;
+  render_all();
+  return true;
 }
 
 
@@ -264,44 +368,67 @@ bool Fitter::adjust_sum4(double &peak_center, double left, double right)
   return parent->adjust_sum4(peak_center, left, right);
 }
 
+bool Fitter::replace_hypermet(double &peak_center, Hypermet hyp)
+{
+  ROI *parent = parent_of(peak_center);
+  if (!parent)
+    return false;
 
-void Fitter::add_peak(double left, double right, boost::atomic<bool>& interruptor) {
+  if (!parent->replace_hypermet(peak_center, hyp))
+    return false;
+  render_all();
+  return true;
+}
+
+bool Fitter::rollback_ROI(double regionID, size_t point)
+{
+  if (!contains_region(regionID))
+    return false;
+
+  if (!regions_[regionID].rollback(finder_, point))
+    return false;
+
+  render_all();
+  return true;
+}
+
+bool Fitter::add_peak(double left, double right, boost::atomic<bool>& interruptor) {
   if (finder_.x_.empty())
-    return;
+    return false;
 
   for (auto &q : regions_) {
     if (q.second.overlaps(left, right)) {
       q.second.add_peak(finder_, left, right, interruptor);
-      return;
+      render_all();
+      return true;
     }
   }
 
 //  DBG << "<Fitter> making new ROI to add peak manually " << left << " " << right;
-  ROI newROI(settings_);
-  newROI.set_data(finder_, left, right);
+  ROI newROI(finder_, left, right);
 //  newROI.add_peak(finder_.x_, finder_.y_, left, right, interruptor);
   newROI.auto_fit(interruptor);
-  if (newROI.width())
-    regions_[newROI.L()] = newROI;
+  if (!newROI.width())
+    return false;
+
+  regions_[newROI.ID()] = newROI;
+  render_all();
+  return true;
 }
 
-void Fitter::remove_peaks(std::set<double> bins) {
-  for (auto &m : regions_) {
-    if (m.second.remove_peaks(bins)) {
-
-    }
-  }
-}
-
-void Fitter::replace_peak(const Peak& pk) {
+bool Fitter::remove_peaks(std::set<double> bins, boost::atomic<bool>& interruptor) {
+  bool changed = false;
   for (auto &m : regions_)
-    if (m.second.replace_peak(pk))
-      return;
+    if (m.second.remove_peaks(bins, interruptor))
+      changed = true;
+  if (changed)
+    render_all();
+  return changed;
 }
 
 void Fitter::apply_settings(FitSettings settings) {
-  settings_ = settings;
-  finder_.settings_ = settings_;
+  finder_.settings_.clone(settings);
+  //propagate to regions?
   if (regions_.empty())
     finder_.find_peaks();
 }
@@ -320,7 +447,7 @@ void Fitter::save_report(std::string filename) {
   std::ofstream file(filename, std::ios::out | std::ios::app);
   file << "Spectrum \"" << metadata_.name << "\"" << std::endl;
   file << "========================================================" << std::endl;
-  file << "Bits: " << settings_.bits_ << "    Resolution: " << pow(2,metadata_.bits) << std::endl;
+  file << "Bits: " << finder_.settings_.bits_ << "    Resolution: " << pow(2,metadata_.bits) << std::endl;
 
 //  file << "Match pattern:  ";
 //  for (auto &q : metadata_.match_pattern)
@@ -349,8 +476,8 @@ void Fitter::save_report(std::string filename) {
   file << std::endl;
 
   file << "Acquisition start time:  " << boost::posix_time::to_iso_extended_string(metadata_.attributes.branches.get(Setting("start_time")).value_time) << std::endl;
-  double lt = settings_.live_time.total_milliseconds() * 0.001;
-  double rt = settings_.real_time.total_milliseconds() * 0.001;
+  double lt = finder_.settings_.live_time.total_milliseconds() * 0.001;
+  double rt = finder_.settings_.real_time.total_milliseconds() * 0.001;
   file << "Live time(s):   " << lt << std::endl;
   file << "Real time(s):   " << rt << std::endl;
   if ((lt < rt) && (rt > 0))
@@ -415,7 +542,7 @@ void Fitter::to_xml(pugi::xml_node &root) const
 {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
-  settings_.to_xml(node);
+  finder_.settings_.to_xml(node);
 
   for (auto &r : regions_)
     r.second.to_xml(node);
@@ -423,8 +550,8 @@ void Fitter::to_xml(pugi::xml_node &root) const
 
 void Fitter::from_xml(const pugi::xml_node &node, SinkPtr spectrum)
 {
-  if (node.child(settings_.xml_element_name().c_str()))
-    settings_.from_xml(node.child(settings_.xml_element_name().c_str()));
+  if (node.child(finder_.settings_.xml_element_name().c_str()))
+    finder_.settings_.from_xml(node.child(finder_.settings_.xml_element_name().c_str()));
 
   setData(spectrum);
 
@@ -435,11 +562,12 @@ void Fitter::from_xml(const pugi::xml_node &node, SinkPtr spectrum)
     ROI region;
     if (std::string(r.name()) == region.xml_element_name())
     {
-      region.from_xml(r, finder_, settings_);
+      region.from_xml(r, finder_, finder_.settings_);
       if (region.width())
-        regions_[region.L()] = region;
+        regions_[region.ID()] = region;
     }
   }
+  render_all();
 }
 
 

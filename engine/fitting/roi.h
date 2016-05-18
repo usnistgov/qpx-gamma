@@ -31,7 +31,26 @@
 
 namespace Qpx {
 
+struct FitDescription
+{
+  std::string description;
+  int    peaknum;
+  double rsq;
+  double sum4aggregate;
+
+  FitDescription()
+    : peaknum(0), rsq(0), sum4aggregate(0) {}
+};
+
 struct Fit {
+  Fit(const SUM4Edge &lb, const SUM4Edge &rb,
+      const PolyBounded &backg,
+      const std::map<double, Peak> &peaks,
+      const Finder &finder,
+      std::string descr);
+
+  FitDescription description;
+
   std::map<double, Peak> peaks_;
   SUM4Edge  LB_, RB_;
   PolyBounded background_;
@@ -40,66 +59,67 @@ struct Fit {
 
 
 struct ROI {
-  ROI(FitSettings fs = FitSettings())
-  {
-    finder_.settings_ = fs;
-  }
+  ROI() {}
+  ROI(const Finder &parentfinder, double min, double max);
 
-  void set_data(const Finder &parentfinder, double min, double max);
-
-  double L() const;
-  double R() const;
+  //bounds
+  double ID() const;
+  double left_bin() const;
+  double right_bin() const;
   double width() const;
+  double left_nrg() const;  //may return NaN
+  double right_nrg() const; //may return NaN
+
   bool overlaps(double bin) const;
   bool overlaps(double Lbin, double Rbin) const;
   bool overlaps(const ROI& other) const;
 
+  //access peaks
   size_t peak_count() const;
-  bool contains(double bin) const;
+  bool contains(double peakID) const;
+  Peak peak(double peakID) const;
   const std::map<double, Peak> &peaks() const;
 
+  //access other
   SUM4Edge LB() const {return LB_;}
   SUM4Edge RB() const {return RB_;}
   FitSettings fit_settings() const { return finder_.settings_; }
+  const Finder &finder() const { return finder_; }
   PolyBounded sum4_background();
 
-  void override_settings(FitSettings &fs);
+  //access history
+  int current_fit() const;
+  size_t history_size() const;
+  std::vector<FitDescription> history() const;
 
-  void auto_fit(boost::atomic<bool>& interruptor);
-  void iterative_fit(boost::atomic<bool>& interruptor);
+  //manipulation, no optimizer
+  bool rollback(const Finder &parent_finder, size_t i);
+  bool adjust_sum4(double &peakID, double left, double right);
+  bool replace_hypermet(double &peakID, Hypermet hyp);
 
-  //  void add_peaks(const std::set<Peak> &pks, const std::vector<double> &x, const std::vector<double> &y);
-  bool adj_LB(const Finder &parentfinder, double left, double right, boost::atomic<bool>& interruptor);
-  bool adj_RB(const Finder &parentfinder, double left, double right, boost::atomic<bool>& interruptor);
-  void add_peak(const Finder &parentfinder, double left, double right, boost::atomic<bool>& interruptor);
-  bool adjust_sum4(double &peak_center, double left, double right);
-
-  bool replace_peak(const Peak& pk);
-  bool remove_peaks(const std::set<double> &pks);
-  bool rollback(const Finder &parent_finder, int i);
-
-
-  void rebuild();
-
-  void save_current_fit();
+  //manupulation, may invoke optimizer
+  bool auto_fit(boost::atomic<bool>& interruptor);
+  bool refit(boost::atomic<bool>& interruptor);
+  bool adjust_LB(const Finder &parentfinder, double left, double right, boost::atomic<bool>& interruptor);
+  bool adjust_RB(const Finder &parentfinder, double left, double right, boost::atomic<bool>& interruptor);
+  bool add_peak(const Finder &parentfinder, double left, double right, boost::atomic<bool>& interruptor);
+  bool remove_peaks(const std::set<double> &pks, boost::atomic<bool>& interruptor);
+  bool override_settings(const FitSettings &fs, boost::atomic<bool>& interruptor);
 
 
+  //XMLable
   void to_xml(pugi::xml_node &node) const;
   void from_xml(const pugi::xml_node &node, const Finder &finder, const FitSettings &parentsettings);
   std::string xml_element_name() const {return "Region";}
 
-
-  //history
-  std::vector<Fit> fits_;
-  //  Fit current_fit_;
-
-  //rendition
-  std::vector<double> hr_x, hr_x_nrg,
-                      hr_background, hr_back_steps,
-                      hr_fullfit, hr_sum4_background_;
-
-  const Finder &finder() const { return finder_; }
-
+  //as rendered for graphing
+  std::vector<double>
+      hr_x,
+      hr_x_nrg,
+      hr_background,
+      hr_back_steps,
+      hr_fullfit,
+      hr_sum4_background_;
 
 private:
   //intrinsic, these are saved
@@ -107,22 +127,32 @@ private:
   PolyBounded background_;
   std::map<double, Peak> peaks_;
 
+  Finder finder_;           // gets x & y data from fitter
 
-  Finder finder_;           // x & y data needed from fitter
+  //history
+  std::vector<Fit> fits_;
+  int current_fit_;
 
+
+  void set_data(const Finder &parentfinder, double min, double max);
 
   std::vector<double> remove_background();
   void init_edges();
   void init_LB();
   void init_RB();
   void init_background();
+
+  void cull_peaks();
   bool remove_peak(double bin);
 
-  bool add_from_resid(int32_t centroid_hint = -1);
-  void rebuild_as_hypermet();
-  void rebuild_as_gaussian();
-  void cull_peaks();
+  bool add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint = -1);
+  bool rebuild(boost::atomic<bool>& interruptor);
+  bool rebuild_as_hypermet(boost::atomic<bool>& interruptor);
+  bool rebuild_as_gaussian(boost::atomic<bool>& interruptor);
+  void iterative_fit(boost::atomic<bool>& interruptor);
+
   void render();
+  void save_current_fit(std::string description);
 };
 
 

@@ -191,3 +191,22 @@ void FitSettings::from_xml(const pugi::xml_node &node) {
   }
 
 }
+
+void FitSettings::clear()
+{
+  cali_nrg_ = Qpx::Calibration();
+  cali_fwhm_ = Qpx::Calibration();
+  bits_ = 0;
+  real_time = boost::posix_time::not_a_date_time;
+  live_time = boost::posix_time::not_a_date_time;
+}
+void FitSettings::clone(FitSettings other)
+{
+  other.cali_nrg_ = cali_nrg_;
+  other.cali_fwhm_ = cali_fwhm_;
+  other.bits_ = bits_;
+  other.real_time = real_time;
+  other.live_time = live_time;
+  (*this) = other;
+}
+

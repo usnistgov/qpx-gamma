@@ -33,51 +33,59 @@ namespace Qpx {
 class Fitter {
   
 public:
-  Fitter() :
-    activity_scale_factor_(1.0)
-  {
-    finder_.settings_ = settings_;
-  }
+  Fitter() : activity_scale_factor_(1.0) {}
 
-  const FitSettings &settings() {
-    return settings_;
-  }
+  Fitter(SinkPtr spectrum) : Fitter()
+  { setData(spectrum); }
 
+  const FitSettings &settings() { return finder_.settings_; }
   void apply_settings(FitSettings settings);
+  const Finder &finder() const { return finder_; }
 //  void apply_energy_calibration(Calibration cal);
 //  void apply_fwhm_calibration(Calibration cal);
 
-  Fitter(SinkPtr spectrum)
-      : Fitter()
-  {setData(spectrum);}
 
   void clear();
-  
   void setData(SinkPtr spectrum);
-
   void find_regions();
-  ROI *parent_of(double center);
 
-  std::set<double> relevant_regions(double left, double right);
-
-  bool merge_regions(double left, double right, boost::atomic<bool>& interruptor);
-  void add_peak(double left, double right, boost::atomic<bool>& interruptor);
-  bool adj_LB(double regionL, double left, double right, boost::atomic<bool>& interruptor);
-  bool adj_RB(double regionL, double left, double right, boost::atomic<bool>& interruptor);
-  bool adjust_sum4(double &peak_center, double left, double right);
-
-  void remove_peaks(std::set<double> bins);
-  void delete_ROI(double bin);
-  void replace_peak(const Peak&);
-
-  void save_report(std::string filename);
-
+  //access peaks
+  size_t peak_count() const;
+  bool contains_peak(double bin) const;
+  Peak peak(double peakID) const;
   std::map<double, Peak> peaks();
 
+  //access regions
+  size_t region_count() const;
+  bool contains_region(double bin) const;
+  ROI region(double bin) const;
+  const std::map<double, ROI> &regions() const;
+  ROI parent_region(double peakID) const;
+  std::set<double> relevant_regions(double left, double right);
 
+  //manupulation, may invoke optimizer
+  bool auto_fit(double regionID, boost::atomic<bool>& interruptor);
+  bool add_peak(double left, double right, boost::atomic<bool>& interruptor);
+  bool adj_LB(double regionID, double left, double right, boost::atomic<bool>& interruptor);
+  bool adj_RB(double regionID, double left, double right, boost::atomic<bool>& interruptor);
+  bool merge_regions(double left, double right, boost::atomic<bool>& interruptor);
+  bool refit_region(double regionID, boost::atomic<bool>& interruptor);
+  bool override_ROI_settings(double regionID, const FitSettings &fs, boost::atomic<bool>& interruptor);
+  bool remove_peaks(std::set<double> peakIDs, boost::atomic<bool>& interruptor);
+  //manipulation, no optimizer
+  bool adjust_sum4(double &peakID, double left, double right);
+  bool replace_hypermet(double &peakID, Hypermet hyp);
+  bool rollback_ROI(double regionID, size_t point);
+  bool delete_ROI(double regionID);
+
+  //export results
+  void save_report(std::string filename);
+
+  //XMLable
   void to_xml(pugi::xml_node &node) const;
   void from_xml(const pugi::xml_node &node, SinkPtr spectrum);
   std::string xml_element_name() const {return "Fitter";}
+
 
 
 
@@ -85,18 +93,18 @@ public:
   std::string sample_name_;
   double activity_scale_factor_; //should be in spectrum?
 
+  //data from spectrum
+  Metadata metadata_;
   Detector detector_; //need this? metadata?
 
-  
-  //data from spectrum
-  Finder finder_;
-  Metadata metadata_;
-
-  //actual results
-  std::map<double, ROI> regions_;
 
 private:
-  FitSettings settings_;
+  std::map<double, ROI> regions_;
+//  FitSettings settings_;
+  Finder finder_;
+
+  void render_all();
+  ROI *parent_of(double peakID);
 
 };
 

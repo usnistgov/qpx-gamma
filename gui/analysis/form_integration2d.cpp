@@ -515,20 +515,20 @@ void FormIntegration2D::make_gates() {
 
   }
 
-  if ((current >= 0) && (current < peaks_.size())) {
-    Peak2D pk = peaks_[current];
-    if (!ui->pushShowDiagonal->isChecked()) {
-       if (pk.x.peak_count())
-         fit_x_.regions_[pk.x.L()] = pk.x;
-       if (pk.y.peak_count())
-         fit_y_.regions_[pk.y.L()] = pk.y;
-    } else {
-      if (pk.dx.peak_count())
-        fit_x_.regions_[pk.dx.L()] = pk.dx;
-      if (pk.dy.peak_count())
-        fit_y_.regions_[pk.dy.L()] = pk.dy;
-    }
-  }
+//  if ((current >= 0) && (current < peaks_.size())) {
+//    Peak2D pk = peaks_[current];
+//    if (!ui->pushShowDiagonal->isChecked()) {
+//       if (pk.x.peak_count())
+//         fit_x_.regions_[pk.x.L()] = pk.x;
+//       if (pk.y.peak_count())
+//         fit_y_.regions_[pk.y.L()] = pk.y;
+//    } else {
+//      if (pk.dx.peak_count())
+//        fit_x_.regions_[pk.dx.L()] = pk.dx;
+//      if (pk.dy.peak_count())
+//        fit_y_.regions_[pk.dy.L()] = pk.dy;
+//    }
+//  }
 
 
   if (!ui->pushShowDiagonal->isChecked()) {
@@ -577,20 +577,15 @@ void FormIntegration2D::adjust_x()
   else
     return;
 
-  ROI *roi = fit_x_.parent_of(center);
-
-  if (!roi)
-    return;
-
   int32_t current = current_idx();
 
   if ((current < 0) || (current >= peaks_.size()))
       return;
 
   if (!ui->pushShowDiagonal->isChecked())
-    peaks_[current].adjust_x(*roi, center);
+    peaks_[current].adjust_x(fit_x_.parent_region(center), center);
   else
-    peaks_[current].adjust_diag_x(*roi, center);
+    peaks_[current].adjust_diag_x(fit_x_.parent_region(center), center);
 
   rebuild_table(true);
   emit peak_selected();
@@ -608,11 +603,6 @@ void FormIntegration2D::adjust_y()
   else
     return;
 
-  ROI *roi = fit_y_.parent_of(center);
-
-  if (!roi)
-    return;
-
   int32_t current = current_idx();
 
   if ((current < 0) || (current >= peaks_.size()))
@@ -620,9 +610,9 @@ void FormIntegration2D::adjust_y()
 
 
   if (!ui->pushShowDiagonal->isChecked())
-    peaks_[current].adjust_y(*roi, center);
+    peaks_[current].adjust_y(fit_y_.parent_region(center), center);
   else
-    peaks_[current].adjust_diag_y(*roi, center);
+    peaks_[current].adjust_diag_y(fit_y_.parent_region(center), center);
 
   rebuild_table(true);
   emit peak_selected();
@@ -671,13 +661,7 @@ void FormIntegration2D::on_pushAddPeak2d_clicked()
   else
     return;
 
-  ROI *xx_roi = fit_x_.parent_of(c_x);
-  ROI *yy_roi = fit_y_.parent_of(c_y);
-
-  if (!xx_roi || !yy_roi)
-    return;
-
-  Peak2D pk(*xx_roi, *yy_roi, c_x, c_y);
+  Peak2D pk(fit_x_.parent_region(c_x), fit_y_.parent_region(c_y), c_x, c_y);
 
   peaks_.push_back(pk);
 

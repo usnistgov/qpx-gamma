@@ -53,6 +53,8 @@ public:
 
   FitParam enforce_policy();
 
+  bool same_bounds_and_policy(const FitParam &other) const;
+
   FitParam operator ^ (const FitParam &other) const;
   bool operator % (const FitParam &other) const;
   bool operator == (const FitParam &other) const {return value == other.value;}

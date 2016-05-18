@@ -27,16 +27,53 @@
 
 namespace Qpx {
 
+Finder::Finder(const std::vector<double> &x, const std::vector<double> &y, const FitSettings &settings)
+{
+  settings_ = settings;
+  setNewData(x, y);
+}
+
+
 void Finder::setNewData(const std::vector<double> &x, const std::vector<double> &y)
 {
   clear();
   if (x.size() == y.size()) {
     x_ = x;
-    y_resid_on_background_ = y_resid_ = y_ = y;
+    y_ = y;
+    reset();
 
     calc_kon();
     find_peaks();
   }
+}
+
+void Finder::clear() {
+  x_.clear();
+  y_.clear();
+  y_fit_.clear();
+  y_background_.clear();
+  y_resid_.clear();
+  y_resid_on_background_.clear();
+//  settings_.clear();
+
+  prelim.clear();
+  filtered.clear();
+  lefts.clear();
+  rights.clear();
+
+  x_kon.clear();
+  x_conv.clear();
+}
+
+void Finder::reset() {
+  y_resid_on_background_ = y_resid_ = y_;
+  y_fit_.resize(x_.size(), 0);
+  y_background_.resize(x_.size(), 0);
+}
+
+bool Finder::empty() const
+{
+  return x_.empty();
 }
 
 bool Finder::cloneRange(const Finder &other, double l, double r)
@@ -68,38 +105,47 @@ bool Finder::cloneRange(const Finder &other, double l, double r)
   return true;
 }
 
-void Finder::setFit(const std::vector<double> &y_fit, const std::vector<double> &y_background)
+void Finder::setFit(const std::vector<double> &x_fit,
+                    const std::vector<double> &y_fit,
+                    const std::vector<double> &y_background)
 {
-  if (y_fit.size() == y_.size()) {
-    y_fit_ = y_fit;
+  if ((x_fit.size() != y_fit.size())
+      || (x_fit.size() != y_background.size())
+      || (x_fit.empty()))
+    return;
 
-    y_resid_ = y_;
-    y_resid_on_background_ = y_background;
-    for (int i=0; i < y_.size(); ++i) {
-      y_resid_[i] = y_[i] - y_fit_[i];
-      y_resid_on_background_[i] += y_resid_[i];
-    }
+  size_t l = find_index(x_fit.front());
+  size_t r = find_index(x_fit.back());
 
-    calc_kon();
-    find_peaks();
+  if ((r-l+1) != x_fit.size())
+      return;
+
+  for (size_t i=0; i < x_fit.size(); ++i)
+  {
+    y_fit_[l+i] = y_fit[i];
+    y_background_[l+i] = y_background[i];
+    double resid = y_[l+i] - y_fit[i];
+    y_resid_[l+i] = resid;
+    y_resid_on_background_[l+i] = y_background[i] + resid;
   }
+
+  calc_kon();
+  find_peaks();
+
+//  if (y_fit.size() == y_.size()) {
+//    y_fit_ = y_fit;
+
+//    y_resid_ = y_;
+//    y_resid_on_background_ = y_background;
+//    for (int i=0; i < y_.size(); ++i) {
+//      y_resid_[i] = y_[i] - y_fit_[i];
+//      y_resid_on_background_[i] += y_resid_[i];
+//    }
+
+//    calc_kon();
+//    find_peaks();
+//  }
 }
-
-void Finder::clear() {
-  x_.clear();
-  y_.clear();
-  y_fit_.clear();
-  y_resid_.clear();
-
-  prelim.clear();
-  filtered.clear();
-  lefts.clear();
-  rights.clear();
-
-  x_kon.clear();
-  x_conv.clear();
-}
-
 
 void Finder::calc_kon() {
   fw_theoretical_nrg.clear();
