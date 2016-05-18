@@ -235,6 +235,8 @@ void FormFitter::delete_ROI(double ROI_bin) {
   fit_data_->delete_ROI(ROI_bin);
   toggle_push();
   updateData();
+
+  emit data_changed();
 }
 
 void FormFitter::make_range(Coord marker) {
@@ -366,11 +368,16 @@ void FormFitter::adjust_sum4() {
   range_.visible = false;
   plotRange();
   ui->plot->replot();
-  busy_= true;
   toggle_push();
+  if (fit_data_->adjust_sum4(peak_id, left, right))
+  {
+    updateData();
+    selected_peaks_.clear();
+    selected_peaks_.insert(peak_id);
+    set_selected_peaks(selected_peaks_);
 
-  thread_fitter_.set_data(*fit_data_);
-  thread_fitter_.adjust_SUM4(peak_id, left, right);
+    emit data_changed();
+  }
 }
 
 void FormFitter::adjust_background() {
@@ -1767,15 +1774,13 @@ void FormFitter::peak_info(double bin)
   peakInfo->setWindowTitle("Parameters for peak at " + QString::number(fit_data_->peaks().at(bin).energy().value()));
   int ret = peakInfo->exec();
 
-  if (ret == QDialog::Accepted) {
-    range_.visible = false;
-    plotRange();
-    ui->plot->replot();
-    busy_= true;
-    toggle_push();
+  if ((ret == QDialog::Accepted) && fit_data_->replace_hypermet(bin, hm))
+  {
+    updateData();
+    selected_peaks_.clear();
+    selected_peaks_.insert(bin);
+    set_selected_peaks(selected_peaks_);
 
-    thread_fitter_.set_data(*fit_data_);
-    thread_fitter_.replace_hypermet(bin, hm);
-    emit peak_selection_changed(selected_peaks_);
+    emit data_changed();
   }
 }

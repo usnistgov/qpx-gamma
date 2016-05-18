@@ -668,6 +668,7 @@ void ROI::render() {
     }
   }
 
+  finder_.reset();
   finder_.setFit(finder_.x_, lowres_fullfit, lowres_backsteps);
 }
 
@@ -834,94 +835,116 @@ bool ROI::rollback(const Finder &parent_finder, size_t i)
   return true;
 }
 
-void ROI::to_xml(pugi::xml_node &root) const {
+void ROI::to_xml(pugi::xml_node &root, const Finder &parent_finder) {
+  if (fits_.empty())
+    return;
+
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+  node.append_attribute("current_fit").set_value(current_fit_);
 
-  if (finder_.settings_.overriden)
-    finder_.settings_.to_xml(node);
+  int chosenfit = current_fit_;
 
-  pugi::xml_node Ledge = node.append_child("BackgroundLeft");
-  Ledge.append_attribute("left").set_value(LB_.left());
-  Ledge.append_attribute("right").set_value(LB_.right());
+  for (int i=0; i < fits_.size(); ++i)
+  {
+    pugi::xml_node fitnode = node.append_child("Fit");
+    fitnode.append_attribute("description").set_value(fits_[i].description.description.c_str());
+    rollback(parent_finder, i);
 
-  pugi::xml_node Redge = node.append_child("BackgroundRight");
-  Redge.append_attribute("left").set_value(RB_.left());
-  Redge.append_attribute("right").set_value(RB_.right());
+    if (finder_.settings_.overriden)
+      finder_.settings_.to_xml(fitnode);
 
-  background_.to_xml(node);
-  node.last_child().set_name("BackgroundPoly");
+    pugi::xml_node Ledge = fitnode.append_child("BackgroundLeft");
+    Ledge.append_attribute("left").set_value(LB_.left());
+    Ledge.append_attribute("right").set_value(LB_.right());
 
-  if (peaks_.size()) {
-    pugi::xml_node pks = node.append_child("Peaks");
-    for (auto &p : peaks_) {
-      pugi::xml_node pk = pks.append_child("Peaks");
-      if (p.second.sum4().peak_width()) {
-        pugi::xml_node s4 = pk.append_child("SUM4");
-        s4.append_attribute("left").set_value(p.second.sum4().left());
-        s4.append_attribute("right").set_value(p.second.sum4().right());
+    pugi::xml_node Redge = fitnode.append_child("BackgroundRight");
+    Redge.append_attribute("left").set_value(RB_.left());
+    Redge.append_attribute("right").set_value(RB_.right());
+
+    background_.to_xml(fitnode);
+    fitnode.last_child().set_name("BackgroundPoly");
+
+    if (peaks_.size()) {
+      pugi::xml_node pks = fitnode.append_child("Peaks");
+      for (auto &p : peaks_) {
+        pugi::xml_node pk = pks.append_child("Peaks");
+        if (p.second.sum4().peak_width()) {
+          pugi::xml_node s4 = pk.append_child("SUM4");
+          s4.append_attribute("left").set_value(p.second.sum4().left());
+          s4.append_attribute("right").set_value(p.second.sum4().right());
+        }
+        if (p.second.hypermet().height().value.value() > 0)
+          p.second.hypermet().to_xml(pk);
       }
-      if (p.second.hypermet().height().value.value() > 0)
-        p.second.hypermet().to_xml(pk);
     }
   }
+  rollback(parent_finder, chosenfit);
 }
 
 
-void ROI::from_xml(const pugi::xml_node &node, const Finder &finder, const FitSettings &parentsettings)
+void ROI::from_xml(const pugi::xml_node &root, const Finder &finder)
 {
   if (finder.x_.empty() || (finder.x_.size() != finder.y_.size()))
     return;
 
-  SUM4Edge LB, RB;
-  if (node.child("BackgroundLeft")) {
-    double L = node.child("BackgroundLeft").attribute("left").as_double();
-    double R = node.child("BackgroundLeft").attribute("right").as_double();
-    LB = SUM4Edge(finder.x_, finder.y_, finder.find_index(L), finder.find_index(R));
-  }
+  int chosenfit = root.attribute("current_fit").as_int();
 
-  if (node.child("BackgroundRight")) {
-    double L = node.child("BackgroundRight").attribute("left").as_double();
-    double R = node.child("BackgroundRight").attribute("right").as_double();
-    RB = SUM4Edge(finder.x_, finder.y_, finder.find_index(L), finder.find_index(R));
-  }
+  for (auto &node : root.children()) {
+    std::string description(node.attribute("description").value());
 
-  if (!LB.width() || !RB.width())
-    return;
-
-  finder_.settings_ = parentsettings;
-  if (node.child(finder_.settings_.xml_element_name().c_str()))
-    finder_.settings_.from_xml(node.child(finder_.settings_.xml_element_name().c_str()));
-
-  //validate background and edges?
-  set_data(finder, LB.left(), RB.left());
-
-  if (node.child("BackgroundPoly"))
-    background_.from_xml(node.child("BackgroundPoly"));
-
-  PolyBounded sum4back = sum4_background();
-
-  if (node.child("Peaks")) {
-    for (auto &pk : node.child("Peaks").children())
-    {
-      Hypermet hyp;
-      if (pk.child("Hypermet"))
-        hyp.from_xml(pk.child("Hypermet"));
-      SUM4 s4;
-      if (pk.child("SUM4")) {
-        double L = pk.child("SUM4").attribute("left").as_double();
-        double R = pk.child("SUM4").attribute("right").as_double();
-        s4 = SUM4(finder_.x_, finder_.y_,
-                  finder_.find_index(L),
-                  finder_.find_index(R),
-                  sum4back, LB_, RB_);
-      }
-      Peak newpeak(hyp, s4, finder_.settings_);
-      peaks_[newpeak.center().value()] = newpeak;
+    SUM4Edge LB, RB;
+    if (node.child("BackgroundLeft")) {
+      double L = node.child("BackgroundLeft").attribute("left").as_double();
+      double R = node.child("BackgroundLeft").attribute("right").as_double();
+      LB = SUM4Edge(finder.x_, finder.y_, finder.find_index(L), finder.find_index(R));
     }
-  }
 
-  render();
-  save_current_fit("Retrieved from XML");
+    if (node.child("BackgroundRight")) {
+      double L = node.child("BackgroundRight").attribute("left").as_double();
+      double R = node.child("BackgroundRight").attribute("right").as_double();
+      RB = SUM4Edge(finder.x_, finder.y_, finder.find_index(L), finder.find_index(R));
+    }
+
+    if (!LB.width() || !RB.width())
+      return;
+
+    finder_.settings_ = finder.settings_;
+    if (node.child(finder_.settings_.xml_element_name().c_str()))
+      finder_.settings_.from_xml(node.child(finder_.settings_.xml_element_name().c_str()));
+
+    //validate background and edges?
+    set_data(finder, LB.left(), RB.left());
+
+    if (node.child("BackgroundPoly"))
+      background_.from_xml(node.child("BackgroundPoly"));
+
+    PolyBounded sum4back = sum4_background();
+
+    if (node.child("Peaks")) {
+      for (auto &pk : node.child("Peaks").children())
+      {
+        Hypermet hyp;
+        if (pk.child("Hypermet"))
+          hyp.from_xml(pk.child("Hypermet"));
+        SUM4 s4;
+        if (pk.child("SUM4")) {
+          double L = pk.child("SUM4").attribute("left").as_double();
+          double R = pk.child("SUM4").attribute("right").as_double();
+          s4 = SUM4(finder_.x_, finder_.y_,
+                    finder_.find_index(L),
+                    finder_.find_index(R),
+                    sum4back, LB_, RB_);
+        }
+        Peak newpeak(hyp, s4, finder_.settings_);
+        peaks_[newpeak.center().value()] = newpeak;
+      }
+    }
+
+    render();
+    save_current_fit(description);
+    peaks_.clear();
+  }
+  rollback(finder, chosenfit);
 }
 
 void ROI::cull_peaks()

@@ -110,37 +110,6 @@ void ThreadFitter::override_ROI_settings(double regionID, FitSettings fs)
     start(HighPriority);
 }
 
-void ThreadFitter::adjust_SUM4(double target_peak, double left, double right)
-{
-  if (running_.load()) {
-    WARN << "Fitter busy";
-    return;
-  }
-  QMutexLocker locker(&mutex_);
-  terminating_.store(false);
-  action_ = kAdjustSUM4;
-  target_ = target_peak;
-  LL = left;
-  RR = right;
-  if (!isRunning())
-    start(HighPriority);
-}
-
-void ThreadFitter::replace_hypermet(double peakID, Hypermet hyp)
-{
-  if (running_.load()) {
-    WARN << "Fitter busy";
-    return;
-  }
-  QMutexLocker locker(&mutex_);
-  terminating_.store(false);
-  action_ = kReplaceHypermet;
-  target_ = peakID;
-  hypermet_ = hyp;
-  if (!isRunning())
-    start(HighPriority);
-}
-
 void ThreadFitter::adjust_LB(double target_ROI, double L, double R) {
   if (running_.load()) {
     WARN << "Fitter busy";
@@ -243,22 +212,6 @@ void ThreadFitter::run() {
     } else if (action_ == kAddPeak) {
       fitter_.add_peak(LL, RR, interruptor_);
       emit fit_updated(fitter_);
-      emit fitting_done();
-      action_ = kIdle;
-    } else if (action_ == kAdjustSUM4) {
-      if (fitter_.adjust_sum4(target_, LL, RR))
-      {
-        //emit newselection somehow?
-        emit fit_updated(fitter_);
-      }
-      emit fitting_done();
-      action_ = kIdle;
-    } else if (action_ == kReplaceHypermet) {
-      if (fitter_.replace_hypermet(target_, hypermet_))
-      {
-        //emit newselection somehow?
-        emit fit_updated(fitter_);
-      }
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kAdjustLB) {

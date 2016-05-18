@@ -538,14 +538,14 @@ void Fitter::save_report(std::string filename) {
   file.close();
 }
 
-void Fitter::to_xml(pugi::xml_node &root) const
+void Fitter::to_xml(pugi::xml_node &root)
 {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
   finder_.settings_.to_xml(node);
 
   for (auto &r : regions_)
-    r.second.to_xml(node);
+    r.second.to_xml(node, finder_);
 }
 
 void Fitter::from_xml(const pugi::xml_node &node, SinkPtr spectrum)
@@ -562,7 +562,7 @@ void Fitter::from_xml(const pugi::xml_node &node, SinkPtr spectrum)
     ROI region;
     if (std::string(r.name()) == region.xml_element_name())
     {
-      region.from_xml(r, finder_, finder_.settings_);
+      region.from_xml(r, finder_);
       if (region.width())
         regions_[region.ID()] = region;
     }

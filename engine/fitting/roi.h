@@ -108,8 +108,8 @@ struct ROI {
 
 
   //XMLable
-  void to_xml(pugi::xml_node &node) const;
-  void from_xml(const pugi::xml_node &node, const Finder &finder, const FitSettings &parentsettings);
+  void to_xml(pugi::xml_node &node, const Finder &parent_finder);
+  void from_xml(const pugi::xml_node &node, const Finder &finder);
   std::string xml_element_name() const {return "Region";}
 
   //as rendered for graphing

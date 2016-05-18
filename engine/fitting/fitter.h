@@ -82,7 +82,7 @@ public:
   void save_report(std::string filename);
 
   //XMLable
-  void to_xml(pugi::xml_node &node) const;
+  void to_xml(pugi::xml_node &node);
   void from_xml(const pugi::xml_node &node, SinkPtr spectrum);
   std::string xml_element_name() const {return "Fitter";}
 
