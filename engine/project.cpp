@@ -86,6 +86,7 @@ void Project::clear_helper() {
 
   sinks_.clear();
   spills_.clear();
+  fitters_1d_.clear();
   current_index_ = 0;
 }
 
@@ -153,6 +154,31 @@ std::set<uint32_t> Project::resolutions(uint16_t dim) const {
       haveres.insert(q.second->bits());
   return haveres;
 }
+
+bool Project::has_fitter(int64_t idx) const
+{
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  return (fitters_1d_.count(idx) > 0);
+}
+
+Fitter Project::get_fitter(int64_t idx) const
+{
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  if (fitters_1d_.count(idx) > 0)
+    return fitters_1d_.at(idx);
+  else
+    return Fitter();
+}
+
+void Project::update_fitter(int64_t idx, const Fitter &fit)
+{
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  if (!sinks_.count(idx))
+    return;
+  fitters_1d_[idx] = fit;
+  changed_ = true;
+}
+
 
 SinkPtr Project::get_sink(int64_t idx) {
   boost::unique_lock<boost::mutex> lock(mutex_);
@@ -306,8 +332,21 @@ void Project::write_xml(std::string file_name) {
 
   if (!sinks_.empty()) {
     pugi::xml_node sinks_node = root.append_child("Spectra");
-    for (auto &q : sinks_)
+    for (auto &q : sinks_) {
       q.second->to_xml(sinks_node);
+      sinks_node.last_child().append_attribute("idx").set_value(std::to_string(q.first).c_str());
+    }
+  }
+
+  if (fitters_1d_.size())
+  {
+    DBG << "Will save fitters";
+    pugi::xml_node fits_node = root.append_child("Fits1D");
+    for (auto &q : fitters_1d_) {
+      DBG << "saving fit " << q.first;
+      q.second.to_xml(fits_node);
+      fits_node.last_child().append_attribute("idx").set_value(std::to_string(q.first).c_str());
+    }
   }
 
   doc.save_file(file_name.c_str());
@@ -392,6 +431,11 @@ void Project::read_xml(std::string file_name, bool with_sinks, bool with_full_si
       if (child.child("ChannelData") && !with_full_sinks)
         child.remove_child("ChannelData");
 
+      if (child.attribute("idx"))
+        current_index_ = child.attribute("idx").as_llong();
+      else
+        current_index_++; //backwards compat
+
       SinkPtr sink
           = Qpx::SinkFactory::getInstance().create_from_xml(child);
       if (!sink)
@@ -407,8 +451,21 @@ void Project::read_xml(std::string file_name, bool with_sinks, bool with_full_si
           }
           sink->push_spill(sp);
         }
-        sinks_[++current_index_] = sink;
+        sinks_[current_index_] = sink;
       }
+    }
+
+    current_index_++;
+  }
+
+  if (root.child("Fits1D")) {
+    for (pugi::xml_node &child : root.child("Fits1D").children()) {
+      int64_t idx = child.attribute("idx").as_llong();
+      if (!sinks_.count(idx))
+        continue;
+
+      fitters_1d_[idx] = Fitter();
+      fitters_1d_[idx].from_xml(child, sinks_.at(idx));
     }
   }
 

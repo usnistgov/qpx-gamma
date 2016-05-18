@@ -54,13 +54,12 @@ public slots:
   void update_spectrum();
   void update_detector_calibs();
   void save_report();
+  void update_fit();
 
 private slots:
 
   void detectorsUpdated() {emit detectorsChanged();}
   void update_fits();
-
-  void hack(QString file);
 
 protected:
   void closeEvent(QCloseEvent*);

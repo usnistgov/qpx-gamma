@@ -223,6 +223,9 @@ void FormFitter::rollback_ROI(double ROI_bin) {
       fit_data_->rollback_ROI(ROI_bin, editor->get_choice());
       toggle_push();
       updateData();
+
+      emit data_changed();
+      emit fitting_done();
     }
   }
 
@@ -237,6 +240,7 @@ void FormFitter::delete_ROI(double ROI_bin) {
   updateData();
 
   emit data_changed();
+  emit fitting_done();
 }
 
 void FormFitter::make_range(Coord marker) {
@@ -377,6 +381,7 @@ void FormFitter::adjust_sum4() {
     set_selected_peaks(selected_peaks_);
 
     emit data_changed();
+    emit fitting_done();
   }
 }
 
@@ -1782,5 +1787,6 @@ void FormFitter::peak_info(double bin)
     set_selected_peaks(selected_peaks_);
 
     emit data_changed();
+    emit fitting_done();
   }
 }

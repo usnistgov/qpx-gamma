@@ -199,38 +199,3 @@ void FormFitResults::on_pushSaveReport_clicked()
 {
   emit save_peaks_request();
 }
-
-void FormFitResults::on_pushSaveFitter_clicked()
-{
-  QSettings settings;
-  settings.beginGroup("Program");
-  QString data_directory = settings.value("save_directory", QDir::homePath() + "/qpx/data").toString();
-  settings.endGroup();
-
-
-  QString fileName = CustomSaveFileDialog(this, "Save fit",
-                                          data_directory, "XML (*.xml)");
-  if (!validateFile(this, fileName, true))
-    return;
-
-  pugi::xml_document doc;
-  pugi::xml_node root = doc.root();
-  fit_data_.to_xml(root);
-  doc.save_file(fileName.toStdString().c_str());
-}
-
-void FormFitResults::on_pushLoadFitter_clicked()
-{
-  QSettings settings;
-  settings.beginGroup("Program");
-  QString data_directory = settings.value("save_directory",
-                                          QDir::homePath() + "/qpx/data").toString();
-  settings.endGroup();
-
-  QString fileName = QFileDialog::getOpenFileName(this, "Load fit", data_directory_,
-                                                  "qpx project file (*.xml)");
-  if (!validateFile(this, fileName, false))
-    return;
-
-  emit hack(fileName);
-}

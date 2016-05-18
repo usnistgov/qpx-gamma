@@ -51,7 +51,6 @@ public slots:
 signals:
   void selection_changed(std::set<double> selected_peaks);
   void save_peaks_request();
-  void hack(QString file);
 
 private slots:
   void selection_changed_in_table();
@@ -59,10 +58,6 @@ private slots:
 
   void on_pushSaveReport_clicked();
 
-
-  void on_pushSaveFitter_clicked();
-
-  void on_pushLoadFitter_clicked();
 
 private:
   Ui::FormFitResults *ui;

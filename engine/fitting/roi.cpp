@@ -915,6 +915,9 @@ void ROI::from_xml(const pugi::xml_node &root, const Finder &finder)
     //validate background and edges?
     set_data(finder, LB.left(), RB.left());
 
+    LB_ = LB;
+    RB_ = RB;
+
     if (node.child("BackgroundPoly"))
       background_.from_xml(node.child("BackgroundPoly"));
 

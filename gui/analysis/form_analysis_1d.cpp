@@ -78,12 +78,12 @@ FormAnalysis1D::FormAnalysis1D(XMLableDB<Detector>& newDetDB, QWidget *parent) :
   connect(ui->plotSpectrum, SIGNAL(data_changed()), form_energy_calibration_, SLOT(update_data()));
   connect(ui->plotSpectrum, SIGNAL(data_changed()), form_fwhm_calibration_, SLOT(update_data()));
   connect(ui->plotSpectrum, SIGNAL(data_changed()), form_fit_results_, SLOT(update_data()));
+  connect(ui->plotSpectrum, SIGNAL(fitting_done()), this, SLOT(update_fit()));
 
   connect(form_energy_calibration_, SIGNAL(change_peaks(std::vector<Qpx::Peak>)), ui->plotSpectrum, SLOT(replace_peaks(std::vector<Qpx::Peak>)));
 
   connect(form_energy_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
   connect(form_fwhm_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
-  connect(form_fit_results_, SIGNAL(hack(QString)), this, SLOT(hack(QString)));
 
   ui->tabs->setCurrentWidget(form_energy_calibration_);
 }
@@ -167,6 +167,11 @@ void FormAnalysis1D::setSpectrum(Project *newset, int64_t idx) {
     fit_data_.clear();
     fit_data_.setData(spectrum);
 
+    if (spectra_->has_fitter(idx))
+      fit_data_ = spectra_->get_fitter(idx);
+    else
+      fit_data_.setData(spectrum);
+
     form_energy_calibration_->newSpectrum();
     form_fwhm_calibration_->newSpectrum();
 
@@ -194,6 +199,15 @@ void FormAnalysis1D::update_fits() {
   DBG << "calib fits updated locally";
   new_energy_calibration_ = form_energy_calibration_->get_new_calibration();
   new_fwhm_calibration_ = form_fwhm_calibration_->get_new_calibration();
+}
+
+void FormAnalysis1D::update_fit() {
+  if (!spectra_)
+    return;
+  if (!spectra_->get_sink(current_spectrum_))
+    return;
+  spectra_->update_fitter(current_spectrum_, fit_data_);
+  //emit something...
 }
 
 void FormAnalysis1D::update_detector_calibs()
@@ -290,14 +304,3 @@ void FormAnalysis1D::save_report()
   }
 }
 
-void FormAnalysis1D::hack(QString file)
-{
-  pugi::xml_document doc;
-  if (doc.load_file(file.toStdString().c_str())) {
-    if (doc.child(fit_data_.xml_element_name().c_str())) {
-      fit_data_.from_xml(doc.child(fit_data_.xml_element_name().c_str()),
-                         spectra_->get_sink(current_spectrum_));
-      ui->plotSpectrum->updateData();
-    }
-  }
-}

@@ -26,6 +26,7 @@
 #define QPX_PROJECT_H
 
 #include "daq_sink.h"
+#include "fitter.h"
 
 namespace Qpx {
 
@@ -85,6 +86,11 @@ class Project {
   std::map<int64_t, SinkPtr> get_sinks(int32_t dimensions = -1, int32_t bits = -1);
   std::map<int64_t, SinkPtr> get_sinks(std::string type);
 
+  //Fitters
+  bool has_fitter(int64_t) const;
+  Fitter get_fitter(int64_t) const;
+  void update_fitter(int64_t idx, const Fitter &fit);
+
 
  private:
 
@@ -96,6 +102,7 @@ class Project {
 
   //data
   std::map<int64_t, SinkPtr> sinks_;
+  std::map<int64_t, Fitter> fitters_1d_;
   std::set<Spill> spills_;
 
   std::string identity_;
