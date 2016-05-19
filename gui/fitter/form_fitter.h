@@ -106,7 +106,6 @@ private slots:
   void selection_changed();
   void plot_rezoom(bool force = false);
   void exportRequested(QAction*);
-  void optionsChanged(QAction*);
   void changeROI(QAction*);
   void zoom_out();
 
@@ -152,8 +151,6 @@ private:
   void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
   void calc_y_bounds(double lower, double upper);
 
-  void build_menu();
-
   QCPItemTracer* edge_trc1;
   QCPItemTracer* edge_trc2;
 
@@ -168,10 +165,9 @@ private:
   std::map<double, double> minima_, maxima_;
 
   QMenu menuExportFormat;
-  QMenu menuOptions;
   QMenu menuROI;
 
-  QString scale_type_;
+  bool scale_log_;
   QString title_text_;
 
   QMediaPlayer *player;
@@ -203,8 +199,6 @@ private:
   void make_SUM4_range(double region, double peak);
   void make_background_range(double region, bool left);
 
-  void set_scale_type(QString);
-  QString scale_type();
 };
 
 #endif // FORM_CALIBRATION_H

@@ -74,7 +74,7 @@ FormFitter::FormFitter(QWidget *parent) :
   edge_trc1 = nullptr;
   edge_trc2 = nullptr;
 
-  scale_type_ = "Logarithmic";
+  scale_log_ = true;
   ui->plot->yAxis->setScaleType(QCPAxis::stLogarithmic);
   setColorScheme(Qt::black, Qt::white, QColor(112, 112, 112), QColor(170, 170, 170));
 
@@ -88,8 +88,6 @@ FormFitter::FormFitter(QWidget *parent) :
   menuExportFormat.addAction("pdf");
   menuExportFormat.addAction("bmp");
   connect(&menuExportFormat, SIGNAL(triggered(QAction*)), this, SLOT(exportRequested(QAction*)));
-
-  connect(&menuOptions, SIGNAL(triggered(QAction*)), this, SLOT(optionsChanged(QAction*)));
 
   menuROI.addAction("History...");
   menuROI.addAction("Adjust edges");
@@ -114,7 +112,6 @@ FormFitter::FormFitter(QWidget *parent) :
   connect(&thread_fitter_, SIGNAL(fit_updated(Qpx::Fitter)), this, SLOT(fit_updated(Qpx::Fitter)));
   connect(&thread_fitter_, SIGNAL(fitting_done()), this, SLOT(fitting_complete()));
 
-  build_menu();
   plotButtons();
 
   QMovie *movie = new QMovie(":/loader.gif");
@@ -144,13 +141,13 @@ void FormFitter::setFit(Qpx::Fitter* fit) {
 
 void FormFitter::loadSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
-  set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
+  scale_log_ = settings_.value("scale_log", true).toBool();
   settings_.endGroup();
 }
 
 void FormFitter::saveSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
-  settings_.setValue("scale_type", scale_type_);
+  settings_.setValue("scale_log", scale_log_);
   settings_.endGroup();
 }
 
@@ -376,8 +373,8 @@ void FormFitter::adjust_sum4() {
   if (fit_data_->adjust_sum4(peak_id, left, right))
   {
     updateData();
-    selected_peaks_.clear();
-    selected_peaks_.insert(peak_id);
+    std::set<double> selected_peaks;
+    selected_peaks.insert(peak_id);
     set_selected_peaks(selected_peaks_);
 
     emit data_changed();
@@ -406,9 +403,9 @@ void FormFitter::adjust_background() {
   std::set<double> rois;
   QString purpose = range_.property("purpose").toString();
   if (purpose == "background L")
-      rois = fit_data_->relevant_regions(left, fit_data_->region(ROI_id).right_bin());
+    rois = fit_data_->relevant_regions(left, fit_data_->region(ROI_id).right_bin());
   else if (purpose == "background R")
-      rois = fit_data_->relevant_regions(fit_data_->region(ROI_id).left_bin(), right);
+    rois = fit_data_->relevant_regions(fit_data_->region(ROI_id).left_bin(), right);
 
 
   range_.visible = false;
@@ -422,7 +419,7 @@ void FormFitter::adjust_background() {
   }
 
   bool merge = ((rois.size() > 1) &&
-      (QMessageBox::question(this, "Merge?", "Regions overlap. Merge them?") == QMessageBox::Yes));
+                (QMessageBox::question(this, "Merge?", "Regions overlap. Merge them?") == QMessageBox::Yes));
 
   thread_fitter_.set_data(*fit_data_);
   busy_= true;
@@ -518,19 +515,6 @@ void FormFitter::on_pushStopFitter_clicked()
 {
   ui->pushStopFitter->setEnabled(false);
   thread_fitter_.stop_work();
-}
-
-
-void FormFitter::build_menu() {
-  menuOptions.clear();
-  menuOptions.addSeparator();
-  menuOptions.addAction("Linear");
-  menuOptions.addAction("Logarithmic");
-
-  for (auto &q : menuOptions.actions()) {
-    q->setCheckable(true);
-    q->setChecked(q->text() == scale_type_);
-  }
 }
 
 void FormFitter::reset_scales()
@@ -948,7 +932,7 @@ void FormFitter::plotButtons() {
 
   newButton = new QCPOverlayButton(ui->plot,
                                    QPixmap(":/icons/oxy/22/view_fullscreen.png"),
-                                   "reset_scales", "Reset plot scales",
+                                   "reset_scales", "Zoom out",
                                    Qt::AlignBottom | Qt::AlignRight);
   newButton->setClipToAxisRect(false);
   newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
@@ -956,17 +940,17 @@ void FormFitter::plotButtons() {
   ui->plot->addItem(newButton);
   overlayButton = newButton;
 
-  if (!menuOptions.isEmpty()) {
-    newButton = new QCPOverlayButton(ui->plot,
-                                     QPixmap(":/icons/oxy/22/view_statistics.png"),
-                                     "options", "Style options",
-                                     Qt::AlignBottom | Qt::AlignRight);
-    newButton->setClipToAxisRect(false);
-    newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
-    newButton->topLeft->setCoords(0, 5);
-    ui->plot->addItem(newButton);
-    overlayButton = newButton;
-  }
+  newButton = new QCPOverlayButton(ui->plot,
+                                   scale_log_ ? QPixmap(":/icons/oxy/22/games_difficult.png")
+                                              : QPixmap(":/icons/oxy/22/view_statistics.png"),
+                                   "options", "Linear/Log",
+                                   Qt::AlignBottom | Qt::AlignRight);
+
+  newButton->setClipToAxisRect(false);
+  newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
+  newButton->topLeft->setCoords(0, 5);
+  ui->plot->addItem(newButton);
+  overlayButton = newButton;
 
   newButton = new QCPOverlayButton(ui->plot,
                                    QPixmap(":/icons/oxy/22/document_save.png"),
@@ -1070,7 +1054,7 @@ void FormFitter::clicked_item(QCPAbstractItem* itm) {
     else if (button->name() == "reset_scales")
       zoom_out();
     else if (button->name() == "options")
-      menuOptions.exec(QCursor::pos());
+      switch_scale_type();
     else if (button->name() == "SUM4 begin")
       make_SUM4_range(button->property("region").toDouble(), button->property("peak").toDouble());
     else if (button->name() == "background L begin")
@@ -1233,22 +1217,6 @@ void FormFitter::plot_mouse_release(QMouseEvent*) {
   ui->plot->replot();
 }
 
-void FormFitter::optionsChanged(QAction* action) {
-  this->setCursor(Qt::WaitCursor);
-  QString choice = action->text();
-  if (choice == "Linear") {
-    scale_type_ = choice;
-    ui->plot->yAxis->setScaleType(QCPAxis::stLinear);
-  } else if (choice == "Logarithmic") {
-    ui->plot->yAxis->setScaleType(QCPAxis::stLogarithmic);
-    scale_type_ = choice;
-  }
-
-  build_menu();
-  ui->plot->replot();
-  this->setCursor(Qt::ArrowCursor);
-}
-
 void FormFitter::changeROI(QAction* action) {
   QString choice = action->text();
   double region = menuROI.property("region").toDouble();
@@ -1267,27 +1235,29 @@ void FormFitter::changeROI(QAction* action) {
   }
 }
 
-QString FormFitter::scale_type() {
-  return scale_type_;
-}
-
 void FormFitter::switch_scale_type() {
-  if (scale_type_ == "Linear")
-    set_scale_type("Logarithmic");
-  else
-    set_scale_type("Linear");
-}
-
-void FormFitter::set_scale_type(QString sct) {
-  this->setCursor(Qt::WaitCursor);
-  scale_type_ = sct;
-  if (scale_type_ == "Linear")
-    ui->plot->yAxis->setScaleType(QCPAxis::stLinear);
-  else if (scale_type() == "Logarithmic")
+  scale_log_ = !scale_log_;
+  if (scale_log_)
     ui->plot->yAxis->setScaleType(QCPAxis::stLogarithmic);
+  else
+    ui->plot->yAxis->setScaleType(QCPAxis::stLinear);
+
+  for (int i=0; i < ui->plot->itemCount(); ++i) {
+    QCPAbstractItem *q =  ui->plot->item(i);
+    if (QCPOverlayButton *button = qobject_cast<QCPOverlayButton*>(q))
+    {
+      if (button->name() == "options")
+      {
+        if (!scale_log_)
+          button->setPixmap(QPixmap(":/icons/oxy/22/view_statistics.png"));
+        else
+          button->setPixmap(QPixmap(":/icons/oxy/22/games_difficult.png"));
+        break;
+      }
+    }
+  }
+  //  plot_rezoom(true);
   ui->plot->replot();
-  build_menu();
-  this->setCursor(Qt::ArrowCursor);
 }
 
 void FormFitter::exportRequested(QAction* choice) {
@@ -1355,7 +1325,7 @@ void FormFitter::updateData() {
 
   yy = QVector<double>::fromStdVector(fit_data_->finder().y_resid_on_background_);
   addGraph(xx, yy, pen_resid, false, "Residuals");
-//  add_bounds(xx, yy);
+  //  add_bounds(xx, yy);
 
   for (auto &r : fit_data_->regions())
     plotRegion(r.first, r.second, data_graph);
@@ -1782,8 +1752,8 @@ void FormFitter::peak_info(double bin)
   if ((ret == QDialog::Accepted) && fit_data_->replace_hypermet(bin, hm))
   {
     updateData();
-    selected_peaks_.clear();
-    selected_peaks_.insert(bin);
+    std::set<double> selected_peaks;
+    selected_peaks.insert(bin);
     set_selected_peaks(selected_peaks_);
 
     emit data_changed();

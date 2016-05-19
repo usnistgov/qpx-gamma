@@ -70,7 +70,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="resources/qpxres.qrc">
+            <iconset resource="../resources/qpxres.qrc">
              <normaloff>:/icons/oxy/16/1rightarrow.png</normaloff>:/icons/oxy/16/1rightarrow.png</iconset>
            </property>
            <property name="iconSize">
@@ -111,7 +111,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="resources/qpxres.qrc">
+            <iconset resource="../resources/qpxres.qrc">
              <normaloff>:/icons/oxy/16/stop.png</normaloff>:/icons/oxy/16/stop.png</iconset>
            </property>
            <property name="iconSize">
@@ -275,7 +275,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="resources/qpxres.qrc">
+            <iconset resource="../resources/qpxres.qrc">
              <normaloff>:/icons/oxy/16/edit.png</normaloff>:/icons/oxy/16/edit.png</iconset>
            </property>
            <property name="iconSize">
@@ -326,7 +326,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="resources/qpxres.qrc">
+            <iconset resource="../resources/qpxres.qrc">
              <normaloff>:/icons/oxy/16/editclear.png</normaloff>:/icons/oxy/16/editclear.png</iconset>
            </property>
            <property name="iconSize">
@@ -367,7 +367,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="resources/qpxres.qrc">
+            <iconset resource="../resources/qpxres.qrc">
              <normaloff>:/icons/oxy/16/document_save.png</normaloff>:/icons/oxy/16/document_save.png</iconset>
            </property>
            <property name="iconSize">
@@ -447,7 +447,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="resources/qpxres.qrc">
+            <iconset resource="../resources/qpxres.qrc">
              <normaloff>:/icons/oxy/16/edit_add.png</normaloff>:/icons/oxy/16/edit_add.png</iconset>
            </property>
           </widget>
@@ -479,7 +479,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="resources/qpxres.qrc">
+            <iconset resource="../resources/qpxres.qrc">
              <normaloff>:/icons/oxy/16/draw_freehand16.png</normaloff>:/icons/oxy/16/draw_freehand16.png</iconset>
            </property>
           </widget>
@@ -511,7 +511,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="resources/qpxres.qrc">
+            <iconset resource="../resources/qpxres.qrc">
              <normaloff>:/icons/oxy/16/editdelete.png</normaloff>:/icons/oxy/16/editdelete.png</iconset>
            </property>
           </widget>
@@ -899,7 +899,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="resources/qpxres.qrc"/>
+  <include location="../resources/qpxres.qrc"/>
  </resources>
  <connections/>
 </ui>

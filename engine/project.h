@@ -114,5 +114,7 @@ class Project {
 
 };
 
+typedef std::shared_ptr<Project> ProjectPtr;
+
 }
 #endif

@@ -18,6 +18,7 @@
 
 #include "qcp_overlay_button.h"
 #include "custom_logger.h"
+#include <QToolTip>
 
 QCPOverlayButton::QCPOverlayButton(QCustomPlot *parentPlot,
                              QPixmap pixmap,
@@ -40,10 +41,26 @@ QCPOverlayButton::QCPOverlayButton(QCustomPlot *parentPlot,
     topLeft->setParentAnchor(bottomRight);
     topLeft->setCoords(-pixmap.width(), -pixmap.height());
   }
+
+  connect(parentPlot, SIGNAL(mouseMove(QMouseEvent*)), this, SLOT(showTip(QMouseEvent*)));
 }
 
-void QCPOverlayButton::onMouseMove(QMouseEvent *event)
+void QCPOverlayButton::showTip(QMouseEvent *event)
 {
-//  pos_current_ = QPointF(event->localPos().x() + grip_delta_.x(),
-//                            event->localPos().y() + grip_delta_.y());
+  double x = event->pos().x();
+  double y = event->pos().y();
+
+  if ((left->pixelPoint().x() <= x)
+      && (x <= right->pixelPoint().x())
+      && (top->pixelPoint().y() <= y)
+      && (y <= bottom->pixelPoint().y()))
+  {
+    QToolTip::showText(parentPlot()->mapToGlobal(event->pos()), tooltip_);
+  }
 }
+
+//void QCPOverlayButton::set_image(QPixmap img)
+//{
+//  setPixmap(img);
+//}
+

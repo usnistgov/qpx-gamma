@@ -437,9 +437,10 @@ bool ROI::remove_peaks(const std::set<double> &pks, boost::atomic<bool>& interru
   if (!found)
     return false;
 
-  if (!rebuild(interruptor))
+  if (peaks_.size() && !rebuild(interruptor))
     return false;
 
+  render();
   save_current_fit("Peaks removed");
   return true;
 }

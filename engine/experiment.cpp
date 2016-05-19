@@ -8,41 +8,25 @@
  * its use by other parties, and makes no guarantees, expressed or implied,
  * about its quality, reliability, or any other characteristic.
  *
+ * This software can be redistributed and/or modified freely provided that
+ * any derivative works bear some notice that they are derived from it, and
+ * any modified versions bear some notice that they have been modified.
+ *
  * Author(s):
  *      Martin Shetty (NIST)
  *
  * Description:
- *      QCPOverlayButton
+ *      Types for organizing data aquired from Device
+ *        Qpx::Hit        single energy event with coincidence flags
  *
  ******************************************************************************/
 
-#ifndef QCP_OVERLAY_BUTTON
-#define QCP_OVERLAY_BUTTON
+#include "experiment.h"
+#include "custom_logger.h"
+
+namespace Qpx {
 
 
-#include "qcustomplot.h"
 
-class QCPOverlayButton : public QCPItemPixmap
-{
-    Q_OBJECT
-public:
-    explicit QCPOverlayButton(QCustomPlot *parentPlot,
-                           QPixmap pixmap,
-                           QString name,
-                           QString tooltip,
-                           int second_point = (Qt::AlignBottom | Qt::AlignRight)
-                           );
 
-  QString name() {return name_;}
-//  void set_image(QPixmap img);
-
-private slots:
-    void showTip(QMouseEvent *event);
-
-private:
-    QString name_;
-    QString tooltip_;
-
-};
-
-#endif
+}
