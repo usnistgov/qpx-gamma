@@ -49,6 +49,9 @@ public:
 
   QSize sizeHint() const;
 
+  void prepPlotExport(int plotThicken, int fontUpscale, int marginUpscale);
+  void postPlotExport(int plotThicken, int fontUpscale, int marginUpscale);
+
 signals:
   void mouse_upon(double x, double y);
   void mouse_clicked(double x, double y, QMouseEvent* e, bool on_item); //why on_item?

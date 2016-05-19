@@ -16,12 +16,13 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      WidgetPlotCalib - 
+ *      WidgetPlotCalib -
  *
  ******************************************************************************/
 
 #include "widget_plot_calib.h"
 #include "ui_widget_plot_calib.h"
+#include "qcp_overlay_button.h"
 #include "custom_logger.h"
 #include "qt_util.h"
 
@@ -35,18 +36,22 @@ WidgetPlotCalib::WidgetPlotCalib(QWidget *parent) :
   ui->plot->setInteraction(QCP::iSelectItems, true);
   ui->plot->setInteraction(QCP::iMultiSelect, true);
 
+  menuOptions.addAction("png");
+  menuOptions.addAction("jpg");
+  menuOptions.addAction("pdf");
+  menuOptions.addAction("bmp");
+
   connect(ui->plot, SIGNAL(selectionChangedByUser()), this, SLOT(update_selection()));
   connect(ui->plot, SIGNAL(clickedAbstractItem(QCPAbstractItem*)), this, SLOT(clicked_item(QCPAbstractItem*)));
 
-  scale_type_x_ = "Linear";
-  scale_type_y_ = "Linear";
+  scale_log_x_ = false;
+  scale_log_y_ = false;
   ui->plot->yAxis->setScaleType(QCPAxis::stLinear);
   ui->plot->yAxis2->setScaleType(QCPAxis::stLinear);
   ui->plot->xAxis->setScaleType(QCPAxis::stLinear);
   ui->plot->xAxis2->setScaleType(QCPAxis::stLinear);
 
-  connect(&menuOptions, SIGNAL(triggered(QAction*)), this, SLOT(optionsChanged(QAction*)));
-  build_menu();
+  connect(&menuOptions, SIGNAL(triggered(QAction*)), this, SLOT(exportRequested(QAction*)));
 
   redraw();
 }
@@ -56,60 +61,26 @@ WidgetPlotCalib::~WidgetPlotCalib()
   delete ui;
 }
 
-void WidgetPlotCalib::build_menu() {
-  menuOptions.clear();
-
-  menuOptions.addAction("X linear");
-  menuOptions.addAction("X logarithmic");
-  menuOptions.addSeparator();
-  menuOptions.addAction("Y linear");
-  menuOptions.addAction("Y logarithmic");
-  menuOptions.addSeparator();
-  menuOptions.addAction("png");
-  menuOptions.addAction("jpg");
-  menuOptions.addAction("pdf");
-  menuOptions.addAction("bmp");
-
-  for (auto &q : menuOptions.actions()) {
-    q->setCheckable(true);
-    if ((q->text() == "X linear") && (scale_type_x_ == "Linear"))
-      q->setChecked(true);
-    if ((q->text() == "X logarithmic") && (scale_type_x_ == "Logarithmic"))
-      q->setChecked(true);
-    if ((q->text() == "Y linear") && (scale_type_y_ == "Linear"))
-      q->setChecked(true);
-    if ((q->text() == "Y logarithmic") && (scale_type_y_ == "Logarithmic"))
-      q->setChecked(true);
-  }
-
+void WidgetPlotCalib::set_log_x(bool log)
+{
+  scale_log_x_ = log;
+  apply_scale_type_x();
 }
 
-QString WidgetPlotCalib::scale_type_x() {
-  return scale_type_x_;
+void WidgetPlotCalib::set_log_y(bool log)
+{
+  scale_log_y_ = log;
+  apply_scale_type_y();
 }
 
-QString WidgetPlotCalib::scale_type_y() {
-  return scale_type_y_;
+bool WidgetPlotCalib::log_x() const
+{
+  return scale_log_x_;
 }
 
-void WidgetPlotCalib::set_scale_type_x(QString sct) {
-  scale_type_x_ = sct;
-  if (scale_type_x_ == "Linear")
-    ui->plot->xAxis->setScaleType(QCPAxis::stLinear);
-  else if (scale_type_x_ == "Logarithmic")
-    ui->plot->xAxis->setScaleType(QCPAxis::stLogarithmic);
-  ui->plot->replot();
-  build_menu();
-}
-
-void WidgetPlotCalib::set_scale_type_y(QString sct) {
-  scale_type_y_ = sct;
-  if (scale_type_y_ == "Linear")
-    ui->plot->yAxis->setScaleType(QCPAxis::stLinear);
-  else if (scale_type_y_ == "Logarithmic")
-    ui->plot->yAxis->setScaleType(QCPAxis::stLogarithmic);
-  ui->plot->replot();
-  build_menu();
+bool WidgetPlotCalib::log_y() const
+{
+  return scale_log_y_;
 }
 
 void WidgetPlotCalib::clear_data() {
@@ -258,26 +229,12 @@ void WidgetPlotCalib::redraw() {
     floatingText->setColor(Qt::black);
   }
 
-  QCPItemPixmap *overlayButton;
+  plot_buttons();
 
-  overlayButton = new QCPItemPixmap(ui->plot);
-  overlayButton->setClipToAxisRect(false);
-  overlayButton->setPixmap(QPixmap(":/icons/oxy/16/view_statistics.png"));
-  overlayButton->topLeft->setType(QCPItemPosition::ptAbsolute);
-  overlayButton->topLeft->setCoords(5, 5);
-  overlayButton->bottomRight->setParentAnchor(overlayButton->topLeft);
-  overlayButton->bottomRight->setCoords(16, 16);
-  overlayButton->setScaled(true);
-  overlayButton->setSelectable(false);
-  overlayButton->setProperty("button_name", QString("options"));
-  overlayButton->setProperty("tooltip", QString("Style options"));
-  ui->plot->addItem(overlayButton);
-
-
-  if ((scale_type_x_ == "Logarithmic") && (xmin < 1))
+  if (scale_log_x_ && (xmin < 1))
     xmin = 1;
 
-  if ((scale_type_y_ == "Logarithmic") && (ymin < 0))
+  if (scale_log_y_ && (ymin < 0))
     ymin = 0;
 
   ui->plot->xAxis->setRange(xmin, xmax);
@@ -289,11 +246,18 @@ void WidgetPlotCalib::redraw() {
 }
 
 void WidgetPlotCalib::clicked_item(QCPAbstractItem* itm) {
-  if (QCPItemPixmap *pix = qobject_cast<QCPItemPixmap*>(itm)) {
-//    QPoint p = this->mapFromGlobal(QCursor::pos());
-    QString name = pix->property("button_name").toString();
-    if (name == "options") {
+  if (QCPOverlayButton *button = qobject_cast<QCPOverlayButton*>(itm)) {
+    if (button->name() == "export")
       menuOptions.exec(QCursor::pos());
+    else if (button->name() == "scale_type_x")
+    {
+      scale_log_x_ = !scale_log_x_;
+      apply_scale_type_x();
+    }
+    else if (button->name() == "scale_type_y")
+    {
+      scale_log_y_ = !scale_log_y_;
+      apply_scale_type_y();
     }
   }
 }
@@ -372,42 +336,145 @@ void WidgetPlotCalib::setFloatingText(QString txt) {
   floating_text_ = txt;
 }
 
-void WidgetPlotCalib::optionsChanged(QAction* action) {
+void WidgetPlotCalib::exportRequested(QAction* action) {
   this->setCursor(Qt::WaitCursor);
-  QString choice = action->text();
-  if (choice == "X linear") {
-    scale_type_x_ = "Linear";
-    ui->plot->xAxis->setScaleType(QCPAxis::stLinear);
-  } else if (choice == "X logarithmic") {
-    scale_type_x_ = "Logarithmic";
-    ui->plot->xAxis->setScaleType(QCPAxis::stLogarithmic);
-  } else if (choice == "Y linear") {
-    scale_type_y_ = "Linear";
-    ui->plot->yAxis->setScaleType(QCPAxis::stLinear);
-  } else if (choice == "Y logarithmic") {
-    scale_type_y_ = "Logarithmic";
-    ui->plot->yAxis->setScaleType(QCPAxis::stLogarithmic);
-  } else {
-    QString filter = action->text() + "(*." + action->text() + ")";
-    QString fileName = CustomSaveFileDialog(this, "Export plot",
-                                            QStandardPaths::locate(QStandardPaths::HomeLocation, ""),
-                                            filter);
-    if (validateFile(this, fileName, true)) {
-      QFileInfo file(fileName);
-      if (file.suffix() == "png") {
-        ui->plot->savePng(fileName,0,0,1,100);
-      } else if (file.suffix() == "jpg") {
-        ui->plot->saveJpg(fileName,0,0,1,100);
-      } else if (file.suffix() == "bmp") {
-        ui->plot->saveBmp(fileName);
-      } else if (file.suffix() == "pdf") {
-        ui->plot->savePdf(fileName, true);
-      }
-    }
 
+  QString filter = action->text() + "(*." + action->text() + ")";
+  QString fileName = CustomSaveFileDialog(this, "Export plot",
+                                          QStandardPaths::locate(QStandardPaths::HomeLocation, ""),
+                                          filter);
+  if (validateFile(this, fileName, true)) {
+    int fontUpscale = 5;
+
+    ui->plot->prepPlotExport(2, fontUpscale, 20);
+//    plot_rezoom(true);
+    for (size_t i = 0; i < ui->plot->itemCount(); ++i) {
+      QCPAbstractItem* item = ui->plot->item(i);
+      if (QCPOverlayButton *btn = qobject_cast<QCPOverlayButton*>(item))
+        btn->setVisible(false);
+    }
+    ui->plot->replot();
+
+    QFileInfo file(fileName);
+    if (file.suffix() == "png")
+      ui->plot->savePng(fileName,0,0,1,100);
+    else if (file.suffix() == "jpg")
+      ui->plot->saveJpg(fileName,0,0,1,100);
+    else if (file.suffix() == "bmp")
+      ui->plot->saveBmp(fileName);
+    else if (file.suffix() == "pdf")
+      ui->plot->savePdf(fileName, true);
+
+
+    ui->plot->postPlotExport(2, fontUpscale, 20);
+//    plot_rezoom();
+    for (size_t i = 0; i < ui->plot->itemCount(); ++i) {
+      QCPAbstractItem* item = ui->plot->item(i);
+      if (QCPOverlayButton *btn = qobject_cast<QCPOverlayButton*>(item))
+        btn->setVisible(true);
+    }
+    ui->plot->replot();
   }
 
-  build_menu();
-  ui->plot->replot();
   this->setCursor(Qt::ArrowCursor);
+}
+
+void WidgetPlotCalib::plot_buttons()
+{
+  QCPOverlayButton *prevButton;
+  QCPOverlayButton *newButton;
+
+  //  newButton = new QCPOverlayButton(ui->plot,
+  //                                   QPixmap(":/icons/oxy/22/view_fullscreen.png"),
+  //                                   "reset_scales", "Zoom out",
+  //                                   Qt::AlignBottom | Qt::AlignRight);
+  //  newButton->setClipToAxisRect(false);
+  //  newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
+  //  newButton->topLeft->setCoords(5, 5);
+  //  ui->plot->addItem(newButton);
+  //  prevButton = newButton;
+
+  newButton = new QCPOverlayButton(ui->plot,
+                                   scale_log_y_ ? QPixmap(":/icons/oxy/16/games_difficult.png")
+                                                : QPixmap(":/icons/oxy/16/view_statistics.png"),
+                                   "scale_type_y", "Linear/Log Y",
+                                   Qt::AlignBottom | Qt::AlignRight);
+
+  newButton->setClipToAxisRect(false);
+  newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
+  newButton->topLeft->setCoords(0, 5);
+  ui->plot->addItem(newButton);
+  prevButton = newButton;
+
+  newButton = new QCPOverlayButton(ui->plot,
+                                   QPixmap(":/icons/oxy/16/document_save.png"),
+                                   "export", "Export plot",
+                                   Qt::AlignBottom | Qt::AlignRight);
+  newButton->setClipToAxisRect(false);
+  newButton->topLeft->setParentAnchor(prevButton->bottomLeft);
+  newButton->topLeft->setCoords(0, 5);
+  ui->plot->addItem(newButton);
+  prevButton = newButton;
+
+
+  newButton = new QCPOverlayButton(ui->plot,
+                                   scale_log_x_ ? QPixmap(":/icons/oxy/16/games_difficult.png")
+                                                : QPixmap(":/icons/oxy/16/view_statistics.png"),
+                                   "scale_type_x", "Linear/Log X",
+                                   Qt::AlignBottom | Qt::AlignLeft);
+
+  newButton->setClipToAxisRect(false);
+  newButton->bottomRight->setType(QCPItemPosition::ptViewportRatio);
+  newButton->bottomRight->setCoords(1, 1);
+  ui->plot->addItem(newButton);
+  prevButton = newButton;
+
+}
+
+void WidgetPlotCalib::apply_scale_type_y() {
+  if (scale_log_y_)
+    ui->plot->yAxis->setScaleType(QCPAxis::stLogarithmic);
+  else
+    ui->plot->yAxis->setScaleType(QCPAxis::stLinear);
+
+  for (int i=0; i < ui->plot->itemCount(); ++i) {
+    QCPAbstractItem *q =  ui->plot->item(i);
+    if (QCPOverlayButton *button = qobject_cast<QCPOverlayButton*>(q))
+    {
+      if (button->name() == "scale_type_y")
+      {
+        if (!scale_log_y_)
+          button->setPixmap(QPixmap(":/icons/oxy/16/view_statistics.png"));
+        else
+          button->setPixmap(QPixmap(":/icons/oxy/16/games_difficult.png"));
+        break;
+      }
+    }
+  }
+  //  plot_rezoom(true);
+  ui->plot->replot();
+}
+
+void WidgetPlotCalib::apply_scale_type_x() {
+  if (scale_log_x_)
+    ui->plot->xAxis->setScaleType(QCPAxis::stLogarithmic);
+  else
+    ui->plot->xAxis->setScaleType(QCPAxis::stLinear);
+
+  for (int i=0; i < ui->plot->itemCount(); ++i) {
+    QCPAbstractItem *q =  ui->plot->item(i);
+    if (QCPOverlayButton *button = qobject_cast<QCPOverlayButton*>(q))
+    {
+      if (button->name() == "scale_type_x")
+      {
+        if (!scale_log_x_)
+          button->setPixmap(QPixmap(":/icons/oxy/16/view_statistics.png"));
+        else
+          button->setPixmap(QPixmap(":/icons/oxy/16/games_difficult.png"));
+        break;
+      }
+    }
+  }
+  //  plot_rezoom(true);
+  ui->plot->replot();
 }

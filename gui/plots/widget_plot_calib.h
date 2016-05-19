@@ -63,10 +63,10 @@ public:
                  const QVector<double>& x_sigma, const QVector<double>& y_sigma);
   void addFit(const QVector<double>& x, const QVector<double>& y, AppearanceProfile style);
 
-  void set_scale_type_x(QString);
-  void set_scale_type_y(QString);
-  QString scale_type_x();
-  QString scale_type_y();
+  void set_log_x(bool);
+  void set_log_y(bool);
+  bool log_x() const;
+  bool log_y() const;
 
 signals:
   void clickedLeft(double);
@@ -77,7 +77,9 @@ private slots:
   void update_selection();
 
   void clicked_item(QCPAbstractItem*);
-  void optionsChanged(QAction*);
+  void exportRequested(QAction*);
+  void apply_scale_type_x();
+  void apply_scale_type_y();
 
 private:
   void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
@@ -91,12 +93,14 @@ private:
   std::set<double> selection_;
 
   QString floating_text_;
-  QString scale_type_x_;
-  QString scale_type_y_;
+//  QString scale_type_x_;
+//  QString scale_type_y_;
+  bool scale_log_x_;
+  bool scale_log_y_;
 
   QMenu       menuOptions;
 
-  void build_menu();
+  void plot_buttons();
 
 };
 

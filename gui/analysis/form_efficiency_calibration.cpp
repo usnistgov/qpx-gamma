@@ -65,8 +65,8 @@ FormEfficiencyCalibration::FormEfficiencyCalibration(XMLableDB<Detector>& newDet
   connect(ui->tablePeaks, SIGNAL(itemSelectionChanged()), this, SLOT(selection_changed_in_table()));
 
   connect(ui->PlotCalib, SIGNAL(selection_changed()), this, SLOT(selection_changed_in_calib_plot()));
-  ui->PlotCalib->set_scale_type_x("Logarithmic");
-  ui->PlotCalib->set_scale_type_y("Logarithmic");
+  ui->PlotCalib->set_log_x(true);
+  ui->PlotCalib->set_log_y(true);
 
   ui->isotopes->show();
   connect(ui->isotopes, SIGNAL(isotopeSelected()), this, SLOT(isotope_chosen()));

@@ -23,6 +23,7 @@
 
 #include "qsquarecustomplot.h"
 #include "custom_logger.h"
+#include "qcp_overlay_button.h"
 
 void QSquareCustomPlot::setAlwaysSquare(bool sq) {
   square = sq;
@@ -99,11 +100,15 @@ void QSquareCustomPlot::mouseMoveEvent(QMouseEvent *event)  {
   //emit mouse_upon(co_x, co_y);
 
   if (event->buttons() == Qt::NoButton) {
-    DraggableTracer *trc = qobject_cast<DraggableTracer*>(itemAt(event->localPos(), true));
-    if (trc == nullptr)
-      unsetCursor();
-    else
+    DraggableTracer *trc = qobject_cast<DraggableTracer*>(itemAt(event->localPos(), false));
+    QCPOverlayButton *button = qobject_cast<QCPOverlayButton*>(itemAt(event->localPos(), false));
+
+    if (trc && trc->visible())
       setCursor(Qt::SizeHorCursor);
+    else if (button && button->visible())
+      setCursor(Qt::PointingHandCursor);
+    else
+      unsetCursor();
   }
 
   QCustomPlot::mouseMoveEvent(event);
@@ -158,3 +163,118 @@ void QSquareCustomPlot::keyReleaseEvent(QKeyEvent *event)
   }
   QCustomPlot::keyReleaseEvent(event);
 }
+
+void QSquareCustomPlot::prepPlotExport(int plotThicken, int fontUpscale, int marginUpscale)
+{
+//  for (size_t i = 0; i < itemCount(); ++i) {
+//    QCPAbstractItem* item = this->item(i);
+
+//    if (QCPItemLine *line = qobject_cast<QCPItemLine*>(item))
+//    {
+//      QCPLineEnding head = line->head();
+//      QPen pen = line->selectedPen();
+//      head.setWidth(head.width() + fontUpscale);
+//      head.setLength(head.length() + fontUpscale);
+//      line->setHead(head);
+//      line->setPen(pen);
+//      line->start->setCoords(0, -50);
+//      line->end->setCoords(0, -15);
+//    }
+//    else if (QCPItemText *txt = qobject_cast<QCPItemText*>(item))
+//    {
+//      QPen pen = txt->selectedPen();
+//      txt->setPen(pen);
+//      QFont font = txt->font();
+//      font.setPointSize(font.pointSize() + fontUpscale);
+//      txt->setFont(font);
+//      txt->setColor(pen.color());
+//      txt->position->setCoords(0, -50);
+//      txt->setText(
+//            txt->text() + " " + QString::fromStdString(fit_data_->settings().cali_nrg_.units_)
+//            );
+//    }
+//  }
+
+  for (size_t i = 0; i < graphCount(); ++i)
+  {
+    QCPGraph *graph = this->graph(i);
+    QPen pen = graph->pen();
+    pen.setWidth(pen.width() + plotThicken);
+    graph->setPen(pen);
+  }
+
+  QFont xfont = xAxis->labelFont();
+  QFont yfont = yAxis->labelFont();
+  xfont.setPointSize(xfont.pointSize() + fontUpscale);
+  yfont.setPointSize(yfont.pointSize() + fontUpscale);
+  xAxis->setLabelFont(xfont);
+  yAxis->setLabelFont(yfont);
+
+  QFont xtickfont = xAxis->tickLabelFont();
+  QFont ytickfont = yAxis->tickLabelFont();
+  xtickfont.setPointSize(xtickfont.pointSize() + fontUpscale);
+  ytickfont.setPointSize(ytickfont.pointSize() + fontUpscale);
+  xAxis->setTickLabelFont(xtickfont);
+  yAxis->setTickLabelFont(ytickfont);
+
+  xAxis->setPadding(xAxis->padding() + marginUpscale);
+  yAxis->setPadding(yAxis->padding() + marginUpscale);
+}
+
+void QSquareCustomPlot::postPlotExport(int plotThicken, int fontUpscale, int marginUpscale)
+{
+//  for (size_t i = 0; i < itemCount(); ++i) {
+//    QCPAbstractItem* item = item(i);
+
+//    if (QCPItemLine *line = qobject_cast<QCPItemLine*>(item))
+//    {
+//      QCPLineEnding head = line->head();
+//      QPen pen = line->selectedPen();
+//      head.setWidth(head.width() + fontUpscale);
+//      head.setLength(head.length() + fontUpscale);
+//      line->setHead(head);
+//      line->setPen(pen);
+//      line->start->setCoords(0, -50);
+//      line->end->setCoords(0, -15);
+//    }
+//    else if (QCPItemText *txt = qobject_cast<QCPItemText*>(item))
+//    {
+//      QPen pen = txt->selectedPen();
+//      txt->setPen(pen);
+//      QFont font = txt->font();
+//      font.setPointSize(font.pointSize() + fontUpscale);
+//      txt->setFont(font);
+//      txt->setColor(pen.color());
+//      txt->position->setCoords(0, -50);
+//      txt->setText(
+//            txt->text() + " " + QString::fromStdString(fit_data_->settings().cali_nrg_.units_)
+//            );
+//    }
+//  }
+
+  for (size_t i = 0; i < graphCount(); ++i)
+  {
+    QCPGraph *graph = this->graph(i);
+    QPen pen = graph->pen();
+    pen.setWidth(pen.width() - plotThicken);
+    graph->setPen(pen);
+  }
+
+  QFont xfont = xAxis->labelFont();
+  QFont yfont = yAxis->labelFont();
+  xfont.setPointSize(xfont.pointSize() - fontUpscale);
+  yfont.setPointSize(yfont.pointSize() - fontUpscale);
+  xAxis->setLabelFont(xfont);
+  yAxis->setLabelFont(yfont);
+
+  QFont xtickfont = xAxis->tickLabelFont();
+  QFont ytickfont = yAxis->tickLabelFont();
+  xtickfont.setPointSize(xtickfont.pointSize() - fontUpscale);
+  ytickfont.setPointSize(ytickfont.pointSize() - fontUpscale);
+  xAxis->setTickLabelFont(xtickfont);
+  yAxis->setTickLabelFont(ytickfont);
+
+  xAxis->setPadding(xAxis->padding() - marginUpscale);
+  yAxis->setPadding(yAxis->padding() - marginUpscale);
+}
+

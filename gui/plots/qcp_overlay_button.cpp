@@ -34,10 +34,12 @@ QCPOverlayButton::QCPOverlayButton(QCustomPlot *parentPlot,
 
   if (second_point == (Qt::AlignBottom | Qt::AlignRight)) {
 //    DBG << "Alightning bottom right";
+    bottomRight->setType(QCPItemPosition::ptAbsolute);
     bottomRight->setParentAnchor(topLeft);
     bottomRight->setCoords(pixmap.width(), pixmap.height());
   } else {
 //    DBG << "Alightning top left";
+    topLeft->setType(QCPItemPosition::ptAbsolute);
     topLeft->setParentAnchor(bottomRight);
     topLeft->setCoords(-pixmap.width(), -pixmap.height());
   }
@@ -50,7 +52,8 @@ void QCPOverlayButton::showTip(QMouseEvent *event)
   double x = event->pos().x();
   double y = event->pos().y();
 
-  if ((left->pixelPoint().x() <= x)
+  if (visible()
+      && (left->pixelPoint().x() <= x)
       && (x <= right->pixelPoint().x())
       && (top->pixelPoint().y() <= y)
       && (y <= bottom->pixelPoint().y()))

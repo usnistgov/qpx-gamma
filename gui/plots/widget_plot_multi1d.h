@@ -111,7 +111,7 @@ protected slots:
   void clicked_item(QCPAbstractItem *);
 
   void selection_changed();
-  virtual void plot_rezoom();
+  void plot_rezoom();
   void exportRequested(QAction*);
   void optionsChanged(QAction*);
 
@@ -156,6 +156,8 @@ protected:
   int thickness_;
 
   QString title_text_;
+
+  void plotButtons();
 };
 
 #endif // WIDGET_PLOST1D_H

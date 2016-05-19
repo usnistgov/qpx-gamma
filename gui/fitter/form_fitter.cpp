@@ -554,7 +554,7 @@ void FormFitter::plotTitle() {
     floatingText->position->setCoords(1, 0); // place position at center/top of axis rect
     floatingText->setText(title_text_);
     floatingText->setProperty("floating text", true);
-    floatingText->setFont(QFont("Helvetica", 10));
+    floatingText->setFont(QFont("Monospace", 10));
     floatingText->setSelectable(false);
     floatingText->setColor(Qt::black);
   }
@@ -806,17 +806,17 @@ void FormFitter::plotRange() {
     } else if (purpose == "SUM4") {
       newButton = new QCPOverlayButton(ui->plot,
                                        QPixmap(":/icons/oxy/22/flag_blue.png"),
-                                       "SUM4 commit", "Adjust SUM4 peak bounds",
+                                       "SUM4 commit", "Apply",
                                        Qt::AlignTop | Qt::AlignLeft);
     } else if (purpose == "background L") {
       newButton = new QCPOverlayButton(ui->plot,
                                        QPixmap(":/icons/oxy/22/flag_blue.png"),
-                                       "background L commit", "Adjust left background",
+                                       "background L commit", "Apply",
                                        Qt::AlignTop | Qt::AlignLeft);
     } else if (purpose == "background R") {
       newButton = new QCPOverlayButton(ui->plot,
                                        QPixmap(":/icons/oxy/22/flag_blue.png"),
-                                       "background R commit", "Adjust right background",
+                                       "background R commit", "Apply",
                                        Qt::AlignTop | Qt::AlignLeft);
     }
 
@@ -853,9 +853,10 @@ void FormFitter::plotEnergyLabel(double peak_id, double peak_energy, QCPItemTrac
   markerText->position->setCoords(0, -35);
   markerText->setText(QString::number(peak_energy));
   markerText->setTextAlignment(Qt::AlignLeft);
-  markerText->setFont(QFont("Helvetica", 9));
+  markerText->setFont(QFont("Monospace", 12));
   markerText->setPen(pen);
   markerText->setColor(pen.color());
+  markerText->setSelectedFont(QFont("Monospace", 12));
   markerText->setSelectedColor(selected_pen.color());
   markerText->setSelectedPen(selected_pen);
   markerText->setPadding(QMargins(1, 1, 1, 1));
@@ -868,7 +869,7 @@ void FormFitter::plotEnergyLabel(double peak_id, double peak_energy, QCPItemTrac
   //make this optional?
   QCPOverlayButton *newButton = new QCPOverlayButton(ui->plot,
                                                      QPixmap(":/icons/oxy/22/help_about.png"),
-                                                     "peak_info", "Do sum4 stuff",
+                                                     "peak_info", "Peak details",
                                                      Qt::AlignTop | Qt::AlignLeft
                                                      );
   newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
@@ -943,7 +944,7 @@ void FormFitter::plotButtons() {
   newButton = new QCPOverlayButton(ui->plot,
                                    scale_log_ ? QPixmap(":/icons/oxy/22/games_difficult.png")
                                               : QPixmap(":/icons/oxy/22/view_statistics.png"),
-                                   "options", "Linear/Log",
+                                   "scale_type", "Linear/Log",
                                    Qt::AlignBottom | Qt::AlignRight);
 
   newButton->setClipToAxisRect(false);
@@ -964,7 +965,7 @@ void FormFitter::plotButtons() {
 
   newButton = new QCPOverlayButton(ui->plot,
                                    QPixmap(":/icons/oxy/22/editdelete.png"),
-                                   "delete peaks", "Delete selected peaks",
+                                   "delete peaks", "Delete peak(s)",
                                    Qt::AlignBottom | Qt::AlignRight);
   newButton->setClipToAxisRect(false);
   newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
@@ -1053,7 +1054,7 @@ void FormFitter::clicked_item(QCPAbstractItem* itm) {
       menuExportFormat.exec(QCursor::pos());
     else if (button->name() == "reset_scales")
       zoom_out();
-    else if (button->name() == "options")
+    else if (button->name() == "scale_type")
       switch_scale_type();
     else if (button->name() == "SUM4 begin")
       make_SUM4_range(button->property("region").toDouble(), button->property("peak").toDouble());
@@ -1246,7 +1247,7 @@ void FormFitter::switch_scale_type() {
     QCPAbstractItem *q =  ui->plot->item(i);
     if (QCPOverlayButton *button = qobject_cast<QCPOverlayButton*>(q))
     {
-      if (button->name() == "options")
+      if (button->name() == "scale_type")
       {
         if (!scale_log_)
           button->setPixmap(QPixmap(":/icons/oxy/22/view_statistics.png"));
@@ -1266,20 +1267,64 @@ void FormFitter::exportRequested(QAction* choice) {
                                           QStandardPaths::locate(QStandardPaths::HomeLocation, ""),
                                           filter);
   if (validateFile(this, fileName, true)) {
-    QFileInfo file(fileName);
-    if (file.suffix() == "png") {
-      //      INFO << "Exporting plot to png " << fileName.toStdString();
-      ui->plot->savePng(fileName,0,0,1,100);
-    } else if (file.suffix() == "jpg") {
-      //      INFO << "Exporting plot to jpg " << fileName.toStdString();
-      ui->plot->saveJpg(fileName,0,0,1,100);
-    } else if (file.suffix() == "bmp") {
-      //      INFO << "Exporting plot to bmp " << fileName.toStdString();
-      ui->plot->saveBmp(fileName);
-    } else if (file.suffix() == "pdf") {
-      //      INFO << "Exporting plot to pdf " << fileName.toStdString();
-      ui->plot->savePdf(fileName, true);
+
+    int fontUpscale = 5;
+
+    for (size_t i = 0; i < ui->plot->itemCount(); ++i) {
+      QCPAbstractItem* item = ui->plot->item(i);
+
+      if (QCPItemLine *line = qobject_cast<QCPItemLine*>(item))
+      {
+        QCPLineEnding head = line->head();
+        QPen pen = line->selectedPen();
+        head.setWidth(head.width() + fontUpscale);
+        head.setLength(head.length() + fontUpscale);
+        line->setHead(head);
+        line->setPen(pen);
+        line->start->setCoords(0, -50);
+        line->end->setCoords(0, -15);
+      }
+      else if (QCPItemText *txt = qobject_cast<QCPItemText*>(item))
+      {
+        QPen pen = txt->selectedPen();
+        txt->setPen(pen);
+        QFont font = txt->font();
+        font.setPointSize(font.pointSize() + fontUpscale);
+        txt->setFont(font);
+        txt->setColor(pen.color());
+        txt->position->setCoords(0, -50);
+        txt->setText(
+              txt->text() + " " + QString::fromStdString(fit_data_->settings().cali_nrg_.units_)
+              );
+      }
     }
+
+    ui->plot->prepPlotExport(2, fontUpscale, 20);
+
+    plot_rezoom(true);
+
+    for (size_t i = 0; i < ui->plot->itemCount(); ++i) {
+      QCPAbstractItem* item = ui->plot->item(i);
+      if (QCPOverlayButton *btn = qobject_cast<QCPOverlayButton*>(item))
+        btn->setVisible(false);
+    }
+    ui->plot->replot();
+
+
+    QFileInfo file(fileName);
+    if (file.suffix() == "png")
+      ui->plot->savePng(fileName,0,0,1,100);
+    else if (file.suffix() == "jpg")
+      ui->plot->saveJpg(fileName,0,0,1,100);
+    else if (file.suffix() == "bmp")
+      ui->plot->saveBmp(fileName);
+    else if (file.suffix() == "pdf")
+      ui->plot->savePdf(fileName, true);
+
+
+    ui->plot->postPlotExport(2, fontUpscale, 20);
+
+    updateData();
   }
 }
 
@@ -1466,7 +1511,7 @@ void FormFitter::plotPeak(double region_id, double peak_id, const Qpx::Peak &pea
 
     QCPOverlayButton *newButton = new QCPOverlayButton(ui->plot,
                                                        QPixmap(":/icons/oxy/22/system_switch_user.png"),
-                                                       "SUM4 begin", "Do sum4 stuff",
+                                                       "SUM4 begin", "Adjust SUM4 bounds",
                                                        Qt::AlignTop | Qt::AlignLeft
                                                        );
     newButton->bottomRight->setType(QCPItemPosition::ptPlotCoords);
@@ -1507,7 +1552,7 @@ void FormFitter::plotBackgroundEdge(Qpx::SUM4Edge edge,
 
   QCPOverlayButton *newButton = new QCPOverlayButton(ui->plot,
                                                      QPixmap(":/icons/oxy/22/system_switch_user.png"),
-                                                     button_name, "Set background edge",
+                                                     button_name, "Adjust background",
                                                      Qt::AlignTop | Qt::AlignLeft
                                                      );
   newButton->bottomRight->setType(QCPItemPosition::ptPlotCoords);

@@ -82,6 +82,7 @@
         <file>oxy/16/applications_systemg.png</file>
         <file>oxy/22/help_about.png</file>
         <file>oxy/16/system_switch_user.png</file>
+        <file>oxy/16/games_difficult.png</file>
     </qresource>
     <qresource prefix="/">
         <file>loader.gif</file>

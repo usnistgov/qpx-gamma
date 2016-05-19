@@ -24,6 +24,7 @@
 #include "ui_widget_plot_multi1d.h"
 #include "custom_logger.h"
 #include "qt_util.h"
+#include "qcp_overlay_button.h"
 
 WidgetPlotMulti1D::WidgetPlotMulti1D(QWidget *parent) :
   QWidget(parent),
@@ -93,7 +94,7 @@ WidgetPlotMulti1D::WidgetPlotMulti1D(QWidget *parent) :
   build_menu();
 
   replot_markers();
-//  redraw();
+  //  redraw();
 }
 
 WidgetPlotMulti1D::~WidgetPlotMulti1D()
@@ -379,7 +380,7 @@ void WidgetPlotMulti1D::replot_markers() {
   edge_trc2 = nullptr;
   double min_marker = std::numeric_limits<double>::max();
   double max_marker = - std::numeric_limits<double>::max();
-//  int total_markers = 0;
+  //  int total_markers = 0;
 
   for (auto &q : my_markers_) {
     QCPItemTracer *top_crs = nullptr;
@@ -438,7 +439,7 @@ void WidgetPlotMulti1D::replot_markers() {
       line->start->setParentAnchor(top_crs->position);
       line->start->setCoords(0, -30);
       line->end->setParentAnchor(top_crs->position);
-      line->end->setCoords(0, -2);
+      line->end->setCoords(0, -5);
       line->setHead(QCPLineEnding(QCPLineEnding::esLineArrow, 7, 7));
       line->setPen(pen);
       line->setSelectedPen(pen);
@@ -523,54 +524,7 @@ void WidgetPlotMulti1D::replot_markers() {
       floatingText->setColor(Qt::white);
   }
 
-  QCPItemPixmap *overlayButton;
-
-  overlayButton = new QCPItemPixmap(ui->mcaPlot);
-  overlayButton->setClipToAxisRect(false);
-  overlayButton->setPixmap(QPixmap(":/icons/oxy/16/view_fullscreen.png"));
-  overlayButton->topLeft->setType(QCPItemPosition::ptAbsolute);
-  overlayButton->topLeft->setCoords(5, 5);
-  overlayButton->bottomRight->setParentAnchor(overlayButton->topLeft);
-  overlayButton->bottomRight->setCoords(16, 16);
-  overlayButton->setScaled(true);
-  overlayButton->setSelectable(false);
-  overlayButton->setProperty("button_name", QString("reset_scales"));
-  overlayButton->setProperty("tooltip", QString("Reset plot scales"));
-  ui->mcaPlot->addItem(overlayButton);
-
-  if (!menuOptions.isEmpty()) {
-    QCPItemPixmap *newButton = new QCPItemPixmap(ui->mcaPlot);
-    newButton->setClipToAxisRect(false);
-    newButton->setPixmap(QPixmap(":/icons/oxy/16/view_statistics.png"));
-    newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
-    newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
-    newButton->topLeft->setCoords(0, 5);
-    newButton->bottomRight->setParentAnchor(newButton->topLeft);
-    newButton->bottomRight->setCoords(16, 16);
-    newButton->setScaled(false);
-    newButton->setSelectable(false);
-    newButton->setProperty("button_name", QString("options"));
-    newButton->setProperty("tooltip", QString("Style options"));
-    ui->mcaPlot->addItem(newButton);
-    overlayButton = newButton;
-  }
-
-  if (visible_options_ & ShowOptions::save) {
-    QCPItemPixmap *newButton = new QCPItemPixmap(ui->mcaPlot);
-    newButton->setClipToAxisRect(false);
-    newButton->setPixmap(QPixmap(":/icons/oxy/16/document_save.png"));
-    newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
-    newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
-    newButton->topLeft->setCoords(0, 5);
-    newButton->bottomRight->setParentAnchor(newButton->topLeft);
-    newButton->bottomRight->setCoords(16, 16);
-    newButton->setScaled(true);
-    newButton->setSelectable(false);
-    newButton->setProperty("button_name", QString("export"));
-    newButton->setProperty("tooltip", QString("Export plot"));
-    ui->mcaPlot->addItem(newButton);
-    overlayButton = newButton;
-  }
+  plotButtons();
 
   bool xaxis_changed = false;
   double dif_lower = min_marker - ui->mcaPlot->xAxis->range().lower;
@@ -596,13 +550,52 @@ void WidgetPlotMulti1D::replot_markers() {
 
 }
 
+void WidgetPlotMulti1D::plotButtons() {
+  QCPOverlayButton *overlayButton;
+  QCPOverlayButton *newButton;
+
+  newButton = new QCPOverlayButton(ui->mcaPlot,
+                                   QPixmap(":/icons/oxy/22/view_fullscreen.png"),
+                                   "reset_scales", "Zoom out",
+                                   Qt::AlignBottom | Qt::AlignRight);
+  newButton->setClipToAxisRect(false);
+  newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
+  newButton->topLeft->setCoords(5, 5);
+  ui->mcaPlot->addItem(newButton);
+  overlayButton = newButton;
+
+  if (!menuOptions.isEmpty()) {
+    newButton = new QCPOverlayButton(ui->mcaPlot, QPixmap(":/icons/oxy/22/view_statistics.png"),
+                                     "options", "Style options",
+                                     Qt::AlignBottom | Qt::AlignRight);
+
+    newButton->setClipToAxisRect(false);
+    newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
+    newButton->topLeft->setCoords(0, 5);
+    ui->mcaPlot->addItem(newButton);
+    overlayButton = newButton;
+  }
+
+  if (visible_options_ & ShowOptions::save) {
+    newButton = new QCPOverlayButton(ui->mcaPlot,
+                                     QPixmap(":/icons/oxy/22/document_save.png"),
+                                     "export", "Export plot",
+                                     Qt::AlignBottom | Qt::AlignRight);
+    newButton->setClipToAxisRect(false);
+    newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
+    newButton->topLeft->setCoords(0, 5);
+    ui->mcaPlot->addItem(newButton);
+    overlayButton = newButton;
+  }
+}
+
 
 void WidgetPlotMulti1D::plot_mouse_clicked(double x, double y, QMouseEvent* event, bool on_item) {
-    if (event->button() == Qt::RightButton) {
-      emit clickedRight(x);
-    } else if (!on_item) { //tricky
-      emit clickedLeft(x);
-    }
+  if (event->button() == Qt::RightButton) {
+    emit clickedRight(x);
+  } else if (!on_item) { //tricky
+    emit clickedLeft(x);
+  }
 }
 
 
@@ -611,18 +604,20 @@ void WidgetPlotMulti1D::selection_changed() {
 }
 
 void WidgetPlotMulti1D::clicked_plottable(QCPAbstractPlottable *plt) {
-//  INFO << "<WidgetPlotMulti1D> clickedplottable";
+  //  INFO << "<WidgetPlotMulti1D> clickedplottable";
 }
 
 void WidgetPlotMulti1D::clicked_item(QCPAbstractItem* itm) {
-  if (QCPItemPixmap *pix = qobject_cast<QCPItemPixmap*>(itm)) {
-//    QPoint p = this->mapFromGlobal(QCursor::pos());
-    QString name = pix->property("button_name").toString();
-    if (name == "options") {
+  if (!itm->visible())
+    return;
+
+  if (QCPOverlayButton *button = qobject_cast<QCPOverlayButton*>(itm)) {
+    //    QPoint p = this->mapFromGlobal(QCursor::pos());
+    if (button->name() == "options") {
       menuOptions.exec(QCursor::pos());
-    } else if (name == "export") {
+    } else if (button->name() == "export") {
       menuExportFormat.exec(QCursor::pos());
-    } else if (name == "reset_scales") {
+    } else if (button->name() == "reset_scales") {
       zoom_out();
     }
   }
@@ -823,19 +818,94 @@ void WidgetPlotMulti1D::exportRequested(QAction* choice) {
                                           QStandardPaths::locate(QStandardPaths::HomeLocation, ""),
                                           filter);
   if (validateFile(this, fileName, true)) {
-    QFileInfo file(fileName);
-    if (file.suffix() == "png") {
-//      INFO << "Exporting plot to png " << fileName.toStdString();
-      ui->mcaPlot->savePng(fileName,0,0,1,100);
-    } else if (file.suffix() == "jpg") {
-//      INFO << "Exporting plot to jpg " << fileName.toStdString();
-      ui->mcaPlot->saveJpg(fileName,0,0,1,100);
-    } else if (file.suffix() == "bmp") {
-//      INFO << "Exporting plot to bmp " << fileName.toStdString();
-      ui->mcaPlot->saveBmp(fileName);
-    } else if (file.suffix() == "pdf") {
-//      INFO << "Exporting plot to pdf " << fileName.toStdString();
-      ui->mcaPlot->savePdf(fileName, true);
+
+    int fontUpscale = 5;
+
+    for (size_t i = 0; i < ui->mcaPlot->itemCount(); ++i) {
+      QCPAbstractItem* item = ui->mcaPlot->item(i);
+      if (QCPItemLine *line = qobject_cast<QCPItemLine*>(item))
+      {
+        QCPLineEnding head = line->head();
+        QPen pen = line->selectedPen();
+        head.setWidth(head.width() + fontUpscale);
+        head.setLength(head.length() + fontUpscale);
+        line->setHead(head);
+        line->setPen(pen);
+        line->start->setCoords(0, -50);
+        line->end->setCoords(0, -15);
+      }
+      else if (QCPItemText *txt = qobject_cast<QCPItemText*>(item))
+      {
+        QPen pen = txt->selectedPen();
+        txt->setPen(pen);
+        QFont font = txt->font();
+        font.setPointSize(font.pointSize() + fontUpscale);
+        txt->setFont(font);
+        txt->setColor(pen.color());
+        txt->position->setCoords(0, -50);
+      }
     }
+
+    ui->mcaPlot->prepPlotExport(2, fontUpscale, 20);
+    ui->mcaPlot->replot();
+
+    plot_rezoom();
+    for (size_t i = 0; i < ui->mcaPlot->itemCount(); ++i) {
+      QCPAbstractItem* item = ui->mcaPlot->item(i);
+      if (QCPOverlayButton *btn = qobject_cast<QCPOverlayButton*>(item))
+        btn->setVisible(false);
+    }
+
+    ui->mcaPlot->replot();
+
+    QFileInfo file(fileName);
+    if (file.suffix() == "png")
+      ui->mcaPlot->savePng(fileName,0,0,1,100);
+    else if (file.suffix() == "jpg")
+      ui->mcaPlot->saveJpg(fileName,0,0,1,100);
+    else if (file.suffix() == "bmp")
+      ui->mcaPlot->saveBmp(fileName);
+    else if (file.suffix() == "pdf")
+      ui->mcaPlot->savePdf(fileName, true);
+
+
+    for (size_t i = 0; i < ui->mcaPlot->itemCount(); ++i) {
+      QCPAbstractItem* item = ui->mcaPlot->item(i);
+      if (QCPItemLine *line = qobject_cast<QCPItemLine*>(item))
+      {
+        QCPLineEnding head = line->head();
+        QPen pen = line->selectedPen();
+        head.setWidth(head.width() - fontUpscale);
+        head.setLength(head.length() - fontUpscale);
+        line->setHead(head);
+        line->setPen(pen);
+        line->start->setCoords(0, -30);
+        line->end->setCoords(0, -5);
+      }
+      else if (QCPItemText *txt = qobject_cast<QCPItemText*>(item))
+      {
+        QPen pen = txt->selectedPen();
+        txt->setPen(pen);
+        QFont font = txt->font();
+        font.setPointSize(font.pointSize() - fontUpscale);
+        txt->setFont(font);
+        txt->setColor(pen.color());
+        txt->position->setCoords(0, -30);
+      }
+    }
+
+    ui->mcaPlot->postPlotExport(2, fontUpscale, 20);
+    ui->mcaPlot->replot();
+    plot_rezoom();
+    for (size_t i = 0; i < ui->mcaPlot->itemCount(); ++i) {
+      QCPAbstractItem* item = ui->mcaPlot->item(i);
+      if (QCPOverlayButton *btn = qobject_cast<QCPOverlayButton*>(item))
+        btn->setVisible(true);
+    }
+
+    ui->mcaPlot->replot();
+
+
+
   }
 }
