@@ -84,7 +84,7 @@ void ThreadRunner::do_list(boost::atomic<bool> &interruptor, uint64_t timeout)
 }
 
 
-void ThreadRunner::do_run(Qpx::Project &spectra, boost::atomic<bool> &interruptor, uint64_t timeout)
+void ThreadRunner::do_run(Qpx::ProjectPtr spectra, boost::atomic<bool> &interruptor, uint64_t timeout)
 {
   if (running_.load()) {
     WARN << "Runner busy";
@@ -92,7 +92,7 @@ void ThreadRunner::do_run(Qpx::Project &spectra, boost::atomic<bool> &interrupto
   }
   QMutexLocker locker(&mutex_);
   terminating_.store(false);
-  spectra_ = &spectra;
+  spectra_ = spectra;
   interruptor_ = &interruptor;
   timeout_ = timeout;
   action_ = kMCA;
@@ -241,7 +241,7 @@ void ThreadRunner::run()
       Qpx::SourceStatus ds = engine_.status() ^ Qpx::SourceStatus::can_run; //turn off can_run
       emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), ds);
       interruptor_->store(false);
-      engine_.getMca(timeout_, *spectra_, *interruptor_);
+      engine_.getMca(timeout_, spectra_, *interruptor_);
       action_ = kSettingsRefresh;
       emit runComplete();
     } else if (action_ == kList) {

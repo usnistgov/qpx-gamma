@@ -33,26 +33,26 @@
 
 #include "UncertainDouble.h"
 
+#include "dialog_domain.h"
+
+Q_DECLARE_METATYPE(Qpx::TrajectoryNode)
+
 FormOptimization::FormOptimization(ThreadRunner& thread, XMLableDB<Qpx::Detector>& detectors, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormOptimization),
   opt_runner_thread_(thread),
   detectors_(detectors),
   interruptor_(false),
-  opt_plot_thread_(project_),
-  my_run_(false)
+  opt_plot_thread_(),
+  my_run_(false),
+  continue_(false),
+  tree_experiment_model_(this)
 {
   ui->setupUi(this);
   this->setWindowTitle("Experiment");
 
   connect(&opt_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
   connect(&opt_plot_thread_, SIGNAL(plot_ready()), this, SLOT(new_daq_data()));
-
-  ui->pushEditCustom->setVisible(false);
-  ui->pushDeleteCustom->setVisible(false);
-
-  current_pass_ = 0;
-  selected_pass_ = -1;
 
   QColor point_color;
   point_color.setHsv(180, 215, 150, 120);
@@ -77,20 +77,17 @@ FormOptimization::FormOptimization(ThreadRunner& thread, XMLableDB<Qpx::Detector
   connect(ui->PlotCalib, SIGNAL(selection_changed()), this, SLOT(pass_selected_in_plot()));
 
 
-  ui->timeDuration->set_us_enabled(false);
-  ui->timeDuration->setVisible(false);
-  ui->doubleCriterion->setValue(false);
+  ui->treeViewExperiment->setModel(&tree_experiment_model_);
+  ui->treeViewExperiment->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
+  connect(ui->treeViewExperiment->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
+          this, SLOT(item_selected_in_tree(QItemSelection,QItemSelection)));
+
 
   QStringList types;
   for (auto &a : Qpx::SinkFactory::getInstance().types())
     if (Qpx::SinkFactory::getInstance().create_prototype(a).dimensions() == 1)
       types.append(QString::fromStdString(a));
   ui->comboSinkType->addItems(types);
-
-  ui->comboUntil->addItem("Real time >");
-  ui->comboUntil->addItem("Live time >");
-  ui->comboUntil->addItem("Total count >");
-  ui->comboUntil->addItem("Peak area % error <");
 
   ui->comboCodomain->addItem("FWHM (selected peak)");
   ui->comboCodomain->addItem("Count rate (selected peak)");
@@ -101,8 +98,6 @@ FormOptimization::FormOptimization(ThreadRunner& thread, XMLableDB<Qpx::Detector
 
   update_settings();
   on_comboSinkType_activated("");
-
-  opt_plot_thread_.start();
 }
 
 
@@ -114,34 +109,21 @@ void FormOptimization::loadSettings() {
   settings_.endGroup();
 
   if (!profile_directory.isEmpty()) {
-    Qpx::Setting manset("manual_optimization_settings");
-    manset.metadata.setting_type = Qpx::SettingType::stem;
-
     std::string path = profile_directory.toStdString() + "/optimize.set";
     pugi::xml_document doc;
     if (doc.load_file(path.c_str())) {
       pugi::xml_node root = doc.child("Optimizer");
-      if (root.child(manset.xml_element_name().c_str()))
-        manset.from_xml(root.child(manset.xml_element_name().c_str()));
       FitSettings fs;
       if (root.child(fs.xml_element_name().c_str())) {
         fs.from_xml(root.child(fs.xml_element_name().c_str()));
         selected_fitter_.apply_settings(fs);
       }
     }
-
-    manual_settings_.clear();
-    for (auto &s : manset.branches.my_data_)
-      manual_settings_["[manual] " + s.id_] = s;
   }
 
   settings_.beginGroup("Optimization");
   ui->spinBits->setValue(settings_.value("bits", 14).toInt());
-  //  ui->spinOptChan->setValue(settings_.value("channel", 0).toInt());
-  ui->comboUntil->setCurrentText(settings_.value("criterion", ui->comboUntil->currentText()).toString());
-  ui->doubleCriterion->setValue(settings_.value("double_criterion", 1.0).toDouble());
-  ui->timeDuration->set_total_seconds(settings_.value("time_criterion", 60).toULongLong());
-  ui->comboCodomain->setCurrentText(settings_.value("co-domain", ui->comboUntil->currentText()).toString());
+  ui->comboCodomain->setCurrentText(settings_.value("co-domain", ui->comboCodomain->currentText()).toString());
   ui->checkAutofit->setChecked(settings_.value("autofit", true).toBool());
   ui->widgetAutoselect->loadSettings(settings_);
 
@@ -162,23 +144,12 @@ void FormOptimization::saveSettings() {
     pugi::xml_document doc;
     pugi::xml_node root = doc.root();
     pugi::xml_node node = root.append_child("Optimizer");
-    if (!manual_settings_.empty()) {
-      Qpx::Setting manset("manual_optimization_settings");
-      manset.metadata.setting_type = Qpx::SettingType::stem;
-      for (auto &q : manual_settings_)
-        manset.branches.add_a(q.second);
-      manset.to_xml(node);
-    }
     selected_fitter_.settings().to_xml(node);
     doc.save_file(path.c_str());
   }
 
   settings_.beginGroup("Optimization");
   settings_.setValue("bits", ui->spinBits->value());
-  //  settings_.setValue("channel", ui->spinOptChan->value());
-  settings_.setValue("double_criterion", ui->doubleCriterion->value());
-  settings_.setValue("time_criterion", QVariant::fromValue(ui->timeDuration->total_seconds()));
-  settings_.setValue("criterion", ui->comboUntil->currentText());
   settings_.setValue("co-domain", ui->comboCodomain->currentText());
   settings_.setValue("autofit", ui->checkAutofit->isChecked());
   ui->widgetAutoselect->saveSettings(settings_);
@@ -208,7 +179,6 @@ void FormOptimization::update_settings() {
   remake_source_domains();
   remake_sink_domains();
   remake_domains();
-  on_comboUntil_activated(ui->comboUntil->currentText());
 }
 
 void FormOptimization::closeEvent(QCloseEvent *event) {
@@ -217,9 +187,7 @@ void FormOptimization::closeEvent(QCloseEvent *event) {
                                      "Terminate?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
     if (reply == QMessageBox::Yes) {
-      current_setting_++;
-      QThread::sleep(2);
-
+      continue_ = false;
       opt_runner_thread_.terminate();
       opt_runner_thread_.wait();
     } else {
@@ -238,8 +206,8 @@ void FormOptimization::closeEvent(QCloseEvent *event) {
       return;
     }
   }
-  project_.terminate();
-  opt_plot_thread_.wait();
+
+  opt_plot_thread_.terminate_wait();
 
   saveSettings();
   event->accept();
@@ -252,15 +220,8 @@ void FormOptimization::toggle_push(bool enable, Qpx::SourceStatus status) {
 
   ui->pushStart->setEnabled(online && enable_domain_edit);
 
-  ui->comboSetting->setEnabled(enable_domain_edit);
-  ui->doubleSpinStart->setEnabled(enable_domain_edit);
-  ui->doubleSpinDelta->setEnabled(enable);
-  ui->doubleSpinEnd->setEnabled(enable);
   ui->comboTarget->setEnabled(enable_domain_edit);
   ui->spinBits->setEnabled(enable_domain_edit);
-  ui->pushAddCustom->setEnabled(enable_domain_edit);
-  ui->pushEditCustom->setEnabled(enable_domain_edit);
-  ui->pushDeleteCustom->setEnabled(enable_domain_edit);
   ui->comboSinkType->setEnabled(enable_domain_edit);
   ui->pushEditPrototype->setEnabled(enable_domain_edit);
 
@@ -276,136 +237,72 @@ void FormOptimization::on_pushStart_clicked()
   FitSettings fitset = selected_fitter_.settings();
   selected_fitter_ = Qpx::Fitter();
   selected_fitter_.apply_settings(fitset);
-  if (all_settings_.count(ui->comboSetting->currentText().toStdString())) {
-    current_setting_ = all_settings_.at(ui->comboSetting->currentText().toStdString());
 
-    current_setting_.set_number(ui->doubleSpinStart->value());
-    current_setting_.metadata.minimum = ui->doubleSpinStart->value();
-    current_setting_.metadata.maximum = ui->doubleSpinEnd->value();
-    current_setting_.metadata.step = ui->doubleSpinDelta->value();
-
-    current_pass_ = 0;
-    selected_pass_ = -1;
-
-    display_data();
-    start_new_pass();
-  }
-
+  display_data();
+  continue_ = true;
+  start_new_pass();
 }
 
 void FormOptimization::on_pushStop_clicked()
 {
-  current_setting_.metadata.maximum = current_setting_.number();
+  continue_ = false;
   interruptor_.store(true);
 }
 
 void FormOptimization::start_new_pass()
 {
-  if (manual_settings_.count(ui->comboSetting->currentText().toStdString()))
+  std::pair<Qpx::ProjectPtr, uint64_t> pr = get_next_point();
+  tree_experiment_model_.set_root(exp_project_.get_trajectories());
+
+  if (!pr.first || !pr.second)
   {
-    bool ok;
-    double d = QInputDialog::getDouble(this, QString::fromStdString(current_setting_.id_),
-                                       "Value?=", current_setting_.number(),
-                                       current_setting_.metadata.minimum,
-                                       current_setting_.metadata.maximum,
-                                       current_setting_.metadata.step,
-                                       &ok);
-    if (ok)
-      current_setting_.set_number(d);
-    else
-    {
-      update_name();
-      return;
-    }
-  }
-  else if (source_settings_.count(ui->comboSetting->currentText().toStdString()))
-  {
-    Qpx::Engine::getInstance().set_setting(current_setting_, Qpx::Match::id | Qpx::Match::indices);
-    QThread::sleep(1);
-    Qpx::Engine::getInstance().get_all_settings();
-    double newval = Qpx::Engine::getInstance().pull_settings().get_setting(current_setting_, Qpx::Match::id | Qpx::Match::indices).number();
-    if (newval < current_setting_.number())
-      return;
-    current_setting_.set_number(newval);
-  }
-  else if (sink_settings_.count(ui->comboSetting->currentText().toStdString()))
-  {
-    sink_prototype_.attributes.branches.replace(current_setting_);
-  }
-  else
-  {
-    update_name();
+    DBG << "No valid next point. Terminating epxeriment.";
     return;
   }
+
+  DBG << "Good next point " << pr.first.operator bool() << " " << pr.second;
 
   ui->pushStop->setEnabled(true);
   my_run_ = true;
   emit toggleIO(false);
 
-  INFO << "<FormOptimization> Starting pass #" << (current_pass_ + 1)
-       << " with " << ui->comboSetting->currentText().toStdString() << " = "
-       << current_setting_.number();
-
-  Qpx::Setting set_pass("Pass");
-  set_pass.value_int = current_pass_;
-  sink_prototype_.attributes.branches.replace(set_pass);
-  sink_prototype_.attributes.branches.replace(current_setting_);
-  project_.clear();
-  project_.add_sink(sink_prototype_);
+  //  INFO << "<FormOptimization> Starting pass #" << (current_pass_ + 1)
+  //       << " with " << ui->comboSetting->currentText().toStdString() << " = "
+  //       << current_setting_.number();
 
   DataPoint newdata;
   newdata.spectrum.apply_settings(selected_fitter_.settings());
   newdata.spectrum.clear();
-  newdata.independent_variable = current_setting_.number();
+  //  newdata.independent_variable = current_setting_.number();
   newdata.dependent_variable = std::numeric_limits<double>::quiet_NaN();
-
   experiment_.push_back(newdata);
+
   display_data(); //before new data arrives?
-  ui->tableResults->selectRow(experiment_.size() - 1);
-  pass_selected_in_table();
+  //  ui->tableResults->selectRow(experiment_.size() - 1);
+  //  pass_selected_in_table();
 
-  emit settings_changed();
-
-  opt_plot_thread_.start();
   interruptor_.store(false);
-  opt_runner_thread_.do_run(project_, interruptor_, 0);
+  opt_runner_thread_.do_run(pr.first, interruptor_, pr.second);
 }
 
 void FormOptimization::fitter_status(bool busy)
 {
   ui->tableResults->setEnabled(!busy);
   ui->PlotCalib->setEnabled(!busy);
+  ui->treeViewExperiment->setEnabled(!busy);
 }
 
 void FormOptimization::run_completed() {
   if (my_run_) {
-    project_.terminate();
-    opt_plot_thread_.wait();
-
     ui->pushStop->setEnabled(false);
     my_run_ = false;
     emit toggleIO(true);
 
-    if (current_pass_ >= 0) {
-      INFO << "<FormOptimization> Completed pass #" << (current_pass_ + 1);
-      do_post_processing();
+    if (continue_)
+    {
+      INFO << "<FormOptimization> Completed one pass";
+      start_new_pass();
     }
-  }
-}
-
-void FormOptimization::do_post_processing() {
-
-  if (current_setting_.number() < current_setting_.metadata.maximum) {
-    current_setting_++;
-    current_pass_++;
-    DBG << "<FormOptimization> Setting incremented to " << current_setting_.number();
-
-//    QThread::sleep(2);
-    start_new_pass();
-  } else {
-    INFO << "<FormOptimization> Experiment finished";
-    update_name();
-    return;
   }
 }
 
@@ -417,7 +314,7 @@ void FormOptimization::display_data()
     ui->tableResults->setRowCount(experiment_.size());
 
   ui->tableResults->setColumnCount(9);
-  ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromStdString(current_setting_.metadata.name), QTableWidgetItem::Type));
+  //  ui->tableResults->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromStdString(current_setting_.metadata.name), QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(1, new QTableWidgetItem("Total cps", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(2, new QTableWidgetItem("Live time", QTableWidgetItem::Type));
   ui->tableResults->setHorizontalHeaderItem(3, new QTableWidgetItem("Real time", QTableWidgetItem::Type));
@@ -473,18 +370,18 @@ void FormOptimization::display_data()
     //if selected insert;
 
     ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
-    ui->PlotCalib->setLabels(QString::fromStdString(current_setting_.metadata.name),
-                             ui->comboCodomain->currentText());
+    //    ui->PlotCalib->setLabels(QString::fromStdString(current_setting_.metadata.name),
+    //                             ui->comboCodomain->currentText());
   }
   //  ui->PlotCalib->redraw();
 
-  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
-    std::set<double> sel;
-    sel.insert(experiment_.at(selected_pass_).independent_variable);
-    ui->PlotCalib->set_selected_pts(sel);
-    ui->PlotCalib->redraw();
-  }
-  else
+  //  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+  //    std::set<double> sel;
+  //    sel.insert(experiment_.at(selected_pass_).independent_variable);
+  //    ui->PlotCalib->set_selected_pts(sel);
+  //    ui->PlotCalib->redraw();
+  //  }
+  //  else
   {
     ui->PlotCalib->set_selected_pts(std::set<double>());
     ui->PlotCalib->redraw();
@@ -496,23 +393,23 @@ void FormOptimization::display_data()
 
 void FormOptimization::pass_selected_in_table()
 {
-  selected_pass_ = -1;
+  int selected_pass_ = -1;
   foreach (QModelIndex i, ui->tableResults->selectionModel()->selectedRows())
     selected_pass_ = i.row();
-  FitSettings fitset = selected_fitter_.settings();
+  //  FitSettings fitset = selected_fitter_.settings();
   if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
-    selected_fitter_ = experiment_.at(selected_pass_).spectrum;
+    //    selected_fitter_ = experiment_.at(selected_pass_).spectrum;
     std::set<double> sel;
     sel.insert(experiment_.at(selected_pass_).independent_variable);
     ui->PlotCalib->set_selected_pts(sel);
   }
   else
   {
-    selected_fitter_ = Qpx::Fitter();
+    //    selected_fitter_ = Qpx::Fitter();
     ui->PlotCalib->set_selected_pts(std::set<double>());
   }
-  selected_fitter_.apply_settings(fitset);
-    ui->PlotCalib->redraw();
+  //  selected_fitter_.apply_settings(fitset);
+  ui->PlotCalib->redraw();
 
   if (!ui->plotSpectrum->busy()) {
     ui->plotSpectrum->updateData();
@@ -524,10 +421,10 @@ void FormOptimization::pass_selected_in_table()
       selected.insert(experiment_.at(selected_pass_).selected_peak.center().value());
       ui->plotSpectrum->set_selected_peaks(selected);
     }
-    if ((selected_fitter_.metadata_.total_count > 0)
-        && selected_fitter_.peaks().empty()
-        && ui->checkAutofit->isChecked())
-      ui->plotSpectrum->perform_fit();
+    //    if ((selected_fitter_.metadata_.total_count > 0)
+    //        && selected_fitter_.peaks().empty()
+    //        && ui->checkAutofit->isChecked())
+    //      ui->plotSpectrum->perform_fit();
   }
 }
 
@@ -554,42 +451,59 @@ void FormOptimization::pass_selected_in_plot()
 }
 
 void FormOptimization::update_fits() {
-  //  DBG << "<FormOptimization> Reselecting";
-  ui->plotSpectrum->set_selected_peaks(ui->widgetAutoselect->reselect(selected_fitter_.peaks(), ui->plotSpectrum->get_selected_peaks()));
-  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size()))
-    experiment_[selected_pass_].spectrum = selected_fitter_;
+
+  //  ui->plotSpectrum->set_selected_peaks(ui->widgetAutoselect->reselect(selected_fitter_.peaks(), ui->plotSpectrum->get_selected_peaks()));
+  //  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size()))
+  //    experiment_[selected_pass_].spectrum = selected_fitter_;
   update_peak_selection(std::set<double>());
 }
 
 void FormOptimization::fitting_done()
 {
-  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
-    experiment_[selected_pass_].spectrum = selected_fitter_;
-    if (!selected_fitter_.peaks().empty() && (experiment_.at(selected_pass_).selected_peak == Qpx::Peak())) {
-      //      DBG << "<FormOptimization> Autoselecting";
-      ui->plotSpectrum->set_selected_peaks(ui->widgetAutoselect->autoselect(selected_fitter_.peaks(), ui->plotSpectrum->get_selected_peaks()));
-      update_peak_selection(std::set<double>());
-    }
+  Qpx::ProjectPtr p = opt_plot_thread_.current_source();
+
+  if (!p)
+    return;
+
+  for (auto &q: p->get_sinks()) {
+    Qpx::Metadata md;
+    if (q.second)
+      md = q.second->metadata();
+
+    if (md == Qpx::Metadata())
+      continue;
+
+    p->update_fitter(q.first, selected_fitter_);
   }
+
+
+  //  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+  //    experiment_[selected_pass_].spectrum = selected_fitter_;
+  //    if (!selected_fitter_.peaks().empty() && (experiment_.at(selected_pass_).selected_peak == Qpx::Peak())) {
+  //      //      DBG << "<FormOptimization> Autoselecting";
+  //      ui->plotSpectrum->set_selected_peaks(ui->widgetAutoselect->autoselect(selected_fitter_.peaks(), ui->plotSpectrum->get_selected_peaks()));
+  //      update_peak_selection(std::set<double>());
+  //    }
+  //  }
 }
 
 void FormOptimization::update_peak_selection(std::set<double> dummy) {
-  Qpx::Metadata md = selected_fitter_.metadata_;
-  Qpx::Setting pass = md.attributes.branches.get(Qpx::Setting("Pass"));
-  if (!pass || (pass.value_int < 0) || (pass.value_int >= experiment_.size()))
-    return;
+  //  Qpx::Metadata md = selected_fitter_.metadata_;
+  //  Qpx::Setting pass = md.attributes.branches.get(Qpx::Setting("Pass"));
+  //  if (!pass || (pass.value_int < 0) || (pass.value_int >= experiment_.size()))
+  //    return;
 
-  std::set<double> selected_peaks = ui->plotSpectrum->get_selected_peaks();
-  if ((selected_peaks.size() != 1) || !selected_fitter_.peaks().count(*selected_peaks.begin()))
-    experiment_[pass.value_int].selected_peak = Qpx::Peak();
-  else
-    experiment_[pass.value_int].selected_peak = selected_fitter_.peaks().at(*selected_peaks.begin());
+  //  std::set<double> selected_peaks = ui->plotSpectrum->get_selected_peaks();
+  //  if ((selected_peaks.size() != 1) || !selected_fitter_.peaks().count(*selected_peaks.begin()))
+  //    experiment_[pass.value_int].selected_peak = Qpx::Peak();
+  //  else
+  //    experiment_[pass.value_int].selected_peak = selected_fitter_.peaks().at(*selected_peaks.begin());
 
-  eval_dependent(experiment_[pass.value_int]);
-  display_data();
+  //  eval_dependent(experiment_[pass.value_int]);
+  //  display_data();
 
-  if ((pass.value_int == current_pass_) && criterion_satisfied(experiment_[pass.value_int]))
-    interruptor_.store(true);
+  //  if ((pass.value_int == current_pass_) && criterion_satisfied(experiment_[pass.value_int]))
+  //    interruptor_.store(true);
 }
 
 void FormOptimization::update_name()
@@ -610,31 +524,68 @@ void FormOptimization::update_name()
 void FormOptimization::new_daq_data() {
   update_name();
 
-  for (auto &q: project_.get_sinks()) {
-    Qpx::Metadata md;
-    if (q.second)
-      md = q.second->metadata();
+  if (ui->plotSpectrum->busy())
+    return;
 
-    Qpx::Setting pass = md.attributes.branches.get(Qpx::Setting("Pass"));
+  Qpx::ProjectPtr p = opt_plot_thread_.current_source();
 
-    if ((md.total_count > 0) && (pass) && (pass.value_int < experiment_.size())) {
-      experiment_[pass.value_int].spectrum.setData(q.second);
-      double variable = md.attributes.branches.get(current_setting_).number();
-      experiment_[pass.value_int].independent_variable = variable;
-      eval_dependent(experiment_[pass.value_int]);
-      display_data();
-      if (pass.value_int == current_pass_) {
-        if (criterion_satisfied(experiment_[pass.value_int]))
-          interruptor_.store(true);
-        if (current_pass_ == selected_pass_)
-        {
-          pass_selected_in_table();
-          if (!ui->plotSpectrum->busy() && ui->checkAutofit->isChecked())
-            ui->plotSpectrum->perform_fit();
-        }
+  if (p) {
+    for (auto &q: p->get_sinks()) {
+      Qpx::Metadata md;
+      if (q.second)
+        md = q.second->metadata();
+
+      if (md == Qpx::Metadata())
+        continue;
+
+      if (p->has_fitter(q.first))
+      {
+        selected_fitter_ = p->get_fitter(q.first);
+        if (selected_fitter_.metadata_.total_count < md.total_count)
+          selected_fitter_.setData(q.second);
       }
+      else
+      {
+        FitSettings fitset = selected_fitter_.settings();
+        selected_fitter_ = Qpx::Fitter();
+        selected_fitter_.setData(q.second);
+        selected_fitter_.apply_settings(fitset);
+      }
+
+      ui->plotSpectrum->updateData();
+
+      if (!selected_fitter_.peak_count())
+        ui->plotSpectrum->perform_fit();
+
+      return;
+
+      //    if ((md.total_count > 0) && (pass) && (pass.value_int < experiment_.size())) {
+      //      experiment_[pass.value_int].spectrum.setData(q.second);
+      //      double variable = md.attributes.branches.get(current_setting_).number();
+      //      experiment_[pass.value_int].independent_variable = variable;
+      //      eval_dependent(experiment_[pass.value_int]);
+      //      display_data();
+      //      if (pass.value_int == current_pass_) {
+      //        if (criterion_satisfied(experiment_[pass.value_int]))
+      //          interruptor_.store(true);
+      //        if (current_pass_ == selected_pass_)
+      //        {
+      //          pass_selected_in_table();
+      //          if (!ui->plotSpectrum->busy() && ui->checkAutofit->isChecked())
+      //            ui->plotSpectrum->perform_fit();
+      //        }
+      //      }
+      //    }
     }
   }
+
+  FitSettings fitset = selected_fitter_.settings();
+  selected_fitter_ = Qpx::Fitter();
+  selected_fitter_.apply_settings(fitset);
+  ui->plotSpectrum->updateData();
+  return;
+
+
 }
 
 void FormOptimization::eval_dependent(DataPoint &data)
@@ -671,8 +622,8 @@ void FormOptimization::eval_dependent(DataPoint &data)
     double live_ms = data.spectrum.metadata_.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id).value_duration.total_milliseconds();
 
     if (data.selected_peak != Qpx::Peak()) {
-//      DBG << "selpeak area " << data.selected_peak.area_best.to_string() <<
-//             "  cps " << data.selected_peak.cps_best.to_string();
+      //      DBG << "selpeak area " << data.selected_peak.area_best.to_string() <<
+      //             "  cps " << data.selected_peak.cps_best.to_string();
       data.dependent_variable = data.selected_peak.area_best().value();
       if (live_ms > 0)
         data.dependent_variable = data.dependent_variable  / live_ms * 1000.0;
@@ -684,21 +635,21 @@ bool FormOptimization::criterion_satisfied(DataPoint &data)
 {
   Qpx::Metadata md = data.spectrum.metadata_;
 
-  if (ui->comboUntil->currentText() == "Real time >")
-    return md.attributes.get_setting(Qpx::Setting("real_time"), Qpx::Match::id).value_duration > ui->timeDuration->get_duration();
-  else if (ui->comboUntil->currentText() == "Live time >")
-    return md.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id).value_duration > ui->timeDuration->get_duration();
-  else if (ui->comboUntil->currentText() == "Total count >")
-    return (md.total_count > ui->doubleCriterion->value());
-  else if (ui->comboUntil->currentText() == "Peak area % error <")
-    return ((data.selected_peak != Qpx::Peak())
-            && (data.selected_peak.area_best().error() < ui->doubleCriterion->value()));
-  else
-  {
-    WARN << "<FormOptimize> Bad criterion for DAQ termination";
-    current_setting_.metadata.maximum = current_setting_.number();
-    return true;
-  }
+  //  if (ui->comboUntil->currentText() == "Real time >")
+  //    return md.attributes.get_setting(Qpx::Setting("real_time"), Qpx::Match::id).value_duration > ui->timeDuration->get_duration();
+  //  else if (ui->comboUntil->currentText() == "Live time >")
+  //    return md.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id).value_duration > ui->timeDuration->get_duration();
+  //  else if (ui->comboUntil->currentText() == "Total count >")
+  //    return (md.total_count > ui->doubleCriterion->value());
+  //  else if (ui->comboUntil->currentText() == "Peak area % error <")
+  //    return ((data.selected_peak != Qpx::Peak())
+  //            && (data.selected_peak.area_best().error() < ui->doubleCriterion->value()));
+  //  else
+  //  {
+  //    WARN << "<FormOptimize> Bad criterion for DAQ termination";
+  //    current_setting_.metadata.maximum = current_setting_.number();
+  //    return true;
+  //  }
   return false;
 }
 
@@ -721,93 +672,41 @@ void FormOptimization::on_comboTarget_currentIndexChanged(int index)
   pattern.value_pattern.set_theshold(1);
   sink_prototype_.attributes.branches.replace(pattern);
 
+  exp_project_.set_prototype(sink_prototype_);
+
   remake_source_domains();
   remake_sink_domains();
   remake_domains();
-  on_comboSetting_activated("");
 }
 
 void FormOptimization::remake_domains()
 {
-
-  all_settings_.clear();
+  all_domains_.clear();
 
   for (auto &s : source_settings_)
     if (s.second.metadata.writable
         && s.second.metadata.visible
-        && s.second.is_numeric())
-      all_settings_[s.first] = s.second;
+        && s.second.is_numeric()) {
+      Qpx::Domain domain;
+      domain.verbose = s.first;
+      domain.type = Qpx::DomainType::source;
+      domain.value_range = s.second;
+      all_domains_[s.first] = domain;
+    }
 
   for (auto &s : sink_settings_)
     if (s.second.metadata.writable
         && s.second.metadata.visible
         && s.second.is_numeric())
-      all_settings_[s.first] = s.second;
-
-  for (auto &s : manual_settings_)
-    if (s.second.is_numeric())
-      all_settings_[s.first] = s.second;
-
-  ui->comboSetting->clear();
-  for (auto &q : all_settings_)
-    ui->comboSetting->addItem(QString::fromStdString(q.first));
+    {
+      Qpx::Domain domain;
+      domain.verbose = s.first;
+      domain.type = Qpx::DomainType::sink;
+      domain.value_range = s.second;
+      all_domains_[s.first] = domain;
+    }
 }
 
-void FormOptimization::on_comboSetting_activated(const QString &arg1)
-{
-  current_setting_ = Qpx::Setting();
-  if (all_settings_.count(ui->comboSetting->currentText().toStdString()))
-    current_setting_ = all_settings_.at( ui->comboSetting->currentText().toStdString() );
-
-  ui->doubleSpinStart->setRange(current_setting_.metadata.minimum, current_setting_.metadata.maximum);
-  ui->doubleSpinStart->setSingleStep(current_setting_.metadata.step);
-  ui->doubleSpinStart->setValue(current_setting_.metadata.minimum);
-  ui->doubleSpinStart->setSuffix(" " + QString::fromStdString(current_setting_.metadata.unit));
-
-  ui->doubleSpinEnd->setRange(current_setting_.metadata.minimum, current_setting_.metadata.maximum);
-  ui->doubleSpinEnd->setSingleStep(current_setting_.metadata.step);
-  ui->doubleSpinEnd->setValue(current_setting_.metadata.maximum);
-  ui->doubleSpinEnd->setSuffix(" " + QString::fromStdString(current_setting_.metadata.unit));
-
-  ui->doubleSpinDelta->setRange(current_setting_.metadata.step, current_setting_.metadata.maximum - current_setting_.metadata.minimum);
-  ui->doubleSpinDelta->setSingleStep(current_setting_.metadata.step);
-  ui->doubleSpinDelta->setValue(current_setting_.metadata.step);
-  ui->doubleSpinDelta->setSuffix(" " + QString::fromStdString(current_setting_.metadata.unit));
-
-  bool manual = manual_settings_.count(ui->comboSetting->currentText().toStdString());
-  ui->pushEditCustom->setVisible(manual);
-  ui->pushDeleteCustom->setVisible(manual);
-}
-
-void FormOptimization::on_comboUntil_activated(const QString &arg1)
-{
-  if ((arg1 == "Real time >") || (arg1 == "Live time >"))
-  {
-    ui->doubleCriterion->setVisible(false);
-    ui->timeDuration->setVisible(true);
-  }
-  else if (arg1 == "Peak area % error <")
-  {
-    ui->doubleCriterion->setVisible(true);
-    ui->timeDuration->setVisible(false);
-    ui->doubleCriterion->setRange(0.01, 99.99);
-    ui->doubleCriterion->setSingleStep(0.1);
-    ui->doubleCriterion->setDecimals(2);
-  }
-  else if (arg1 == "Total count >")
-  {
-    ui->doubleCriterion->setVisible(true);
-    ui->timeDuration->setVisible(false);
-    ui->doubleCriterion->setRange(1, 10000000);
-    ui->doubleCriterion->setSingleStep(100);
-    ui->doubleCriterion->setDecimals(0);
-  }
-  else
-  {
-    ui->doubleCriterion->setVisible(false);
-    ui->timeDuration->setVisible(false);
-  }
-}
 
 void FormOptimization::on_pushSaveCsv_clicked()
 {
@@ -875,6 +774,8 @@ void FormOptimization::on_comboSinkType_activated(const QString &arg1)
   pattern.value_pattern.set_theshold(1);
   sink_prototype_.attributes.branches.replace(pattern);
 
+  exp_project_.set_prototype(sink_prototype_);
+
   //  Qpx::Setting set_pass("Pass");
   //  set_pass.value_int = pass_number;
   //  sink_prototype_.attributes.branches.replace(set_pass);
@@ -884,7 +785,6 @@ void FormOptimization::on_comboSinkType_activated(const QString &arg1)
   remake_source_domains();
   remake_sink_domains();
   remake_domains();
-  on_comboSetting_activated("");
 }
 
 void FormOptimization::remake_source_domains()
@@ -924,154 +824,18 @@ void FormOptimization::on_pushEditPrototype_clicked()
   DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(sink_prototype_, current_dets_, false, this);
   if (newDialog->exec()) {
     sink_prototype_ = newDialog->product();
+
+    exp_project_.set_prototype(sink_prototype_);
+
     remake_source_domains();
     remake_sink_domains();
     remake_domains();
   }
 }
 
-void FormOptimization::on_pushAddCustom_clicked()
-{
-  bool ok;
-  QString name = QInputDialog::getText(this, "New custom variable",
-                                       "Name:", QLineEdit::Normal, "", &ok);
-  if (ok) {
-    for (auto &s : manual_settings_)
-      if (s.second.id_ == name.toStdString())
-      {
-        QMessageBox::information(this, "Already exists",
-                                 "Manual setting \'" + name + "\'' already exists");
-        return;
-      }
-
-    Qpx::Setting newset(name.toStdString());
-    newset.metadata.name = name.toStdString();
-    newset.metadata.setting_type = Qpx::SettingType::floating;
-    newset.metadata.flags.insert("manual");
-
-    double d = 0;
-
-    d = QInputDialog::getDouble(this, "Minimum",
-                                "Minimum value for " + name + " = ",
-                                0,
-                                std::numeric_limits<double>::min(),
-                                std::numeric_limits<double>::max(),
-                                0.001,
-                                &ok);
-    if (ok)
-      newset.metadata.minimum = d;
-    else
-      return;
-
-    d = QInputDialog::getDouble(this, "Maximum",
-                                "Maximum value for " + name + " = ",
-                                std::max(100.0, newset.metadata.minimum),
-                                newset.metadata.minimum,
-                                std::numeric_limits<double>::max(),
-                                0.001,
-                                &ok);
-    if (ok)
-      newset.metadata.maximum = d;
-    else
-      return;
-
-    d = QInputDialog::getDouble(this, "Step",
-                                "Step value for " + name + " = ",
-                                1,
-                                0,
-                                newset.metadata.maximum - newset.metadata.minimum,
-                                0.001,
-                                &ok);
-    if (ok)
-      newset.metadata.step = d;
-    else
-      return;
-
-
-    manual_settings_["[manual] " + newset.id_] = newset;
-    remake_domains();
-    saveSettings();
-  }
-}
-
-void FormOptimization::on_pushEditCustom_clicked()
-{
-  QString name = ui->comboSetting->currentText();
-  if (!manual_settings_.count(name.toStdString()))
-    return;
-  Qpx::Setting newset = manual_settings_.at(name.toStdString());
-
-  double d = 0;
-  bool ok;
-
-  d = QInputDialog::getDouble(this, "Minimum",
-                              "Minimum value for " + name + " = ",
-                              newset.metadata.minimum,
-                              std::numeric_limits<double>::min(),
-                              std::numeric_limits<double>::max(),
-                              0.001,
-                              &ok);
-  if (ok)
-    newset.metadata.minimum = d;
-  else
-    return;
-
-  d = QInputDialog::getDouble(this, "Maximum",
-                              "Maximum value for " + name + " = ",
-                              std::max(newset.metadata.maximum, newset.metadata.minimum),
-                              newset.metadata.minimum,
-                              std::numeric_limits<double>::max(),
-                              0.001,
-                              &ok);
-  if (ok)
-    newset.metadata.maximum = d;
-  else
-    return;
-
-  d = QInputDialog::getDouble(this, "Step",
-                              "Step value for " + name + " = ",
-                              newset.metadata.step,
-                              0,
-                              newset.metadata.maximum - newset.metadata.minimum,
-                              0.001,
-                              &ok);
-  if (ok)
-    newset.metadata.step = d;
-  else
-    return;
-
-  manual_settings_[name.toStdString()] = newset;
-  remake_domains();
-  ui->comboSetting->setCurrentText(name);
-  on_comboSetting_activated("");
-  saveSettings();
-}
-
-void FormOptimization::on_pushDeleteCustom_clicked()
-{
-  QString name = ui->comboSetting->currentText();
-  if (!manual_settings_.count(name.toStdString()))
-    return;
-
-  int ret = QMessageBox::question(this,
-                      "Delete setting?",
-                      "Are you sure you want to delete custom manual setting \'"
-                      + name + "\'?");
-
-  if (!ret)
-      return;
-
-  manual_settings_.erase(name.toStdString());
-  remake_domains();
-  on_comboSetting_activated("");
-  saveSettings();
-}
-
 void FormOptimization::on_pushClear_clicked()
 {
   experiment_.clear();
-  current_pass_ = -1;
-  selected_pass_ = -1;
 
   display_data();
   pass_selected_in_table();
@@ -1082,4 +846,190 @@ void FormOptimization::on_pushClear_clicked()
 void FormOptimization::on_comboCodomain_activated(const QString &arg1)
 {
   display_data();
+}
+
+void FormOptimization::item_selected_in_tree(QItemSelection,QItemSelection)
+{
+  auto idx = ui->treeViewExperiment->selectionModel()->selectedIndexes();
+  ui->pushAddSubdomain->setEnabled(!idx.empty());
+  ui->pushEditDomain->setEnabled(!idx.empty());
+  ui->pushDeleteDomain->setEnabled(!idx.empty());
+
+  for (auto &i : idx) {
+    if (i.isValid()) {
+      QVariant data = tree_experiment_model_.data(i, Qt::EditRole);
+      if (!data.canConvert<Qpx::TrajectoryNode>())
+        return;
+      Qpx::TrajectoryNode tn = qvariant_cast<Qpx::TrajectoryNode>(data);
+
+      if (tn.data_idx < 0)
+        return;
+      Qpx::ProjectPtr p = exp_project_.get_data(tn.data_idx);
+      if (!p)
+        return;
+
+      INFO << "project good to view with idx = " << tn.data_idx;
+
+      opt_plot_thread_.monitor_source(p);
+      p->activate();
+      return;
+    }
+  }
+}
+
+void FormOptimization::on_pushAddSubdomain_clicked()
+{
+  Qpx::Domain newdomain;
+  DialogDomain diag(newdomain, all_domains_, this);
+  int ret = diag.exec();
+  if (!ret || (newdomain.type == Qpx::DomainType::none))
+    return;
+
+  auto idx = ui->treeViewExperiment->selectionModel()->selectedIndexes();
+
+  Qpx::TrajectoryNode tn;
+  tn.domain = newdomain;
+
+  for (auto &i : idx) {
+    if (i.isValid()) {
+      tree_experiment_model_.push_back(i, tn);
+      return;
+    }
+  }
+
+  //  auto root = tree_experiment_model_.getRoot();
+  //  root->push_back(tn);
+  //  tree_experiment_model_.set_root(root);
+}
+
+void FormOptimization::on_pushDeleteDomain_clicked()
+{
+  auto idx = ui->treeViewExperiment->selectionModel()->selectedIndexes();
+  if (idx.empty())
+    return;
+  for (auto &i : idx) {
+    if (i.isValid()) {
+      tree_experiment_model_.remove_row(i);
+      return;
+    }
+  }
+}
+
+void FormOptimization::on_pushEditDomain_clicked()
+{
+  auto idx = ui->treeViewExperiment->selectionModel()->selectedIndexes();
+
+  for (auto &i : idx) {
+    if (i.isValid()) {
+      QVariant data = tree_experiment_model_.data(i, Qt::EditRole);
+      if (!data.canConvert<Qpx::TrajectoryNode>())
+        return;
+      Qpx::TrajectoryNode tn = qvariant_cast<Qpx::TrajectoryNode>(data);
+
+      if ((tn.data_idx >= 0) || (tn.domain_value != Qpx::Setting()))
+        return;
+
+      DialogDomain diag(tn.domain, all_domains_, this);
+      int ret = diag.exec();
+      if (!ret || (tn.domain.type == Qpx::DomainType::none))
+        return;
+
+      tree_experiment_model_.setData(i, QVariant::fromValue(tn), Qt::EditRole);
+      return;
+    }
+  }
+}
+
+std::pair<Qpx::ProjectPtr, uint64_t> FormOptimization::get_next_point()
+{
+  std::pair<Qpx::DomainType, Qpx::TrajectoryPtr> ret = exp_project_.next_setting();
+  if (!ret.second)
+    return std::pair<Qpx::ProjectPtr, uint64_t>(nullptr,0);
+
+  INFO << "Next setting " << ret.second->type() << " " << ret.second->to_string();
+
+  if (ret.first == Qpx::DomainType::manual)
+  {
+    Qpx::Setting set = ret.second->domain_value;
+    QString text = "Please adjust manual setting \'"
+        + QString::fromStdString(set.id_) + "\' and confirm value: ";
+    bool ok;
+    double d = QInputDialog::getDouble(this,
+                                       "Confirm manual setting",
+                                       text, set.number(),
+                                       set.metadata.minimum,
+                                       set.metadata.maximum,
+                                       set.metadata.step,
+                                       &ok);
+    if (ok)
+      ret.second->domain_value.set_number(d);
+    else
+    {
+      INFO << "Manual abort";
+      update_name();
+      return std::pair<Qpx::ProjectPtr, uint64_t>(nullptr,0);
+    }
+  }
+  else if (ret.first == Qpx::DomainType::source)
+  {
+    Qpx::Engine::getInstance().set_setting(ret.second->domain_value, Qpx::Match::id | Qpx::Match::indices);
+    QThread::sleep(1);
+    Qpx::Engine::getInstance().get_all_settings();
+    double newval = Qpx::Engine::getInstance().pull_settings().get_setting(ret.second->domain_value, Qpx::Match::id | Qpx::Match::indices).number();
+    //    if (newval < current_setting_.number())
+    //      return;
+    ret.second->domain_value.set_number(newval);
+
+    emit settings_changed();
+  }
+
+  if (ret.second->data_idx >= 0)
+    return std::pair<Qpx::ProjectPtr, uint64_t>(exp_project_.get_data(ret.second->data_idx),
+                                                ret.second->domain.criterion);
+  else
+    return get_next_point();
+}
+
+void FormOptimization::on_pushLoadExperiment_clicked()
+{
+  QSettings settings;
+  settings.beginGroup("Program");
+  QString data_directory = settings.value("save_directory", QDir::homePath() + "/qpx/data").toString();
+  settings.endGroup();
+
+  QString fileName = QFileDialog::getOpenFileName(this, "Load experiment",
+                                                  data_directory, "qpx multi-experiment (*.qmx)");
+  if (!validateFile(this, fileName, false))
+    return;
+
+  if (!fileName.isEmpty()) {
+    pugi::xml_document doc;
+    if (doc.load_file(fileName.toStdString().c_str())) {
+      if (doc.child(exp_project_.xml_element_name().c_str()))
+        exp_project_.from_xml(doc.child(exp_project_.xml_element_name().c_str()));
+      exp_project_.set_prototype(sink_prototype_);
+      tree_experiment_model_.set_root(exp_project_.get_trajectories());
+    }
+  }
+}
+
+void FormOptimization::on_pushSaveExperiment_clicked()
+{
+  QSettings settings;
+  settings.beginGroup("Program");
+  QString data_directory = settings.value("save_directory", QDir::homePath() + "/qpx/data").toString();
+  settings.endGroup();
+
+  QString fileName = CustomSaveFileDialog(this, "Save experiment",
+                                          data_directory, "Qpx multi-experiment (*.qmx)");
+  if (!validateFile(this, fileName, true))
+    return;
+
+  if (!fileName.isEmpty()) {
+    pugi::xml_document doc;
+    pugi::xml_node root = doc.root();
+    exp_project_.to_xml(root);
+    doc.save_file(fileName.toStdString().c_str());
+  }
+
 }

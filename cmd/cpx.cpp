@@ -209,8 +209,8 @@ bool Cpx::templates(std::vector<std::string> &tokens) {
     return false;
   }
   INFO << "<cpx> loading templates from " << file;
-  spectra_.clear();
-  spectra_.set_prototypes(spectra_templates_);
+  spectra_->clear();
+  spectra_->set_prototypes(spectra_templates_);
   return true;
 }
 
@@ -245,7 +245,7 @@ bool Cpx::save_qpx(std::vector<std::string> &tokens) {
 
   std::string full_name = out_name + ".qpx";
   INFO << "<cpx> writing acquired data to " << full_name;
-  spectra_.save_as(full_name);
+  spectra_->save_as(full_name);
   return true;
 }
 

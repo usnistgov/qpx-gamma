@@ -29,6 +29,8 @@
 #include "thread_runner.h"
 #include "fitter.h"
 #include "form_fitter.h"
+#include "tree_experiment.h"
+#include "experiment.h"
 
 namespace Ui {
 class FormOptimization;
@@ -77,19 +79,23 @@ private slots:
   void on_pushStop_clicked();
 
   void on_comboTarget_currentIndexChanged(int index);
-  void on_comboSetting_activated(const QString &arg1);
-  void on_comboUntil_activated(const QString &arg1);
   void on_comboSinkType_activated(const QString &arg1);
   void on_comboCodomain_activated(const QString &arg1);
   void on_pushSaveCsv_clicked();
 
   void on_pushEditPrototype_clicked();
 
-  void on_pushAddCustom_clicked();
-  void on_pushEditCustom_clicked();
-  void on_pushDeleteCustom_clicked();
 
   void on_pushClear_clicked();
+
+  void on_pushAddSubdomain_clicked();
+  void on_pushDeleteDomain_clicked();
+  void on_pushEditDomain_clicked();
+
+  void on_pushLoadExperiment_clicked();
+  void on_pushSaveExperiment_clicked();
+
+  void item_selected_in_tree(QItemSelection,QItemSelection);
 
 private:
   void loadSettings();
@@ -101,24 +107,22 @@ private:
 
   ThreadRunner         &opt_runner_thread_;
   ThreadPlotSignal     opt_plot_thread_;
-  Qpx::Project         project_;
+//  Qpx::ProjectPtr      project_;
   boost::atomic<bool>  interruptor_;
   bool my_run_;
+  bool continue_;
 
   std::vector<Qpx::Detector> current_dets_;
   Qpx::Metadata sink_prototype_;
 
-
-  std::map<std::string, Qpx::Setting> manual_settings_;
   std::map<std::string, Qpx::Setting> source_settings_;
   std::map<std::string, Qpx::Setting> sink_settings_;
-  std::map<std::string, Qpx::Setting> all_settings_;
+  std::map<std::string, Qpx::Domain> all_domains_;
 
+  Qpx::ExperimentProject exp_project_;
 
-  int current_pass_;
-  Qpx::Setting current_setting_;
+  TreeExperiment tree_experiment_model_;
 
-  int selected_pass_;
   Qpx::Fitter selected_fitter_;
 
   std::vector<DataPoint> experiment_;
@@ -133,10 +137,11 @@ private:
 
   void display_data();
 
-  void do_post_processing();
   void eval_dependent(DataPoint &data);
   bool criterion_satisfied(DataPoint &data);
   void update_name();
+
+  std::pair<Qpx::ProjectPtr, uint64_t> get_next_point();
 };
 
 #endif // FORM_OPTIMIZATION_H

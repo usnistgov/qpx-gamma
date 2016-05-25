@@ -38,6 +38,7 @@
 #include "form_oscilloscope.h"
 #include "form_optimization.h"
 #include "form_gain_match.h"
+#include "experiment.h"
 
 #include "qt_util.h"
 
@@ -55,6 +56,7 @@ qpx::qpx(QWidget *parent) :
   qRegisterMetaType<std::vector<Qpx::Detector>>("std::vector<Qpx::Detector>");
   qRegisterMetaType<Qpx::ListData>("Qpx::ListData");
   qRegisterMetaType<Qpx::Setting>("Qpx::Setting");
+  qRegisterMetaType<Qpx::TrajectoryNode>("Qpx::TrajectoryNode");
   qRegisterMetaType<Qpx::Calibration>("Qpx::Calibration");
   qRegisterMetaType<Qpx::SourceStatus>("Qpx::SourceStatus");
   qRegisterMetaType<Qpx::Fitter>("Qpx::Fitter");

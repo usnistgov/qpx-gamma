@@ -105,6 +105,9 @@ struct SettingMeta : public XMLable {
   SettingMeta stripped() const;
   bool meaningful() const;
 
+  bool is_numeric() const;
+  std::string value_range() const;
+
   void from_xml(const pugi::xml_node &node);
   void to_xml(pugi::xml_node &node) const;
 
@@ -169,7 +172,7 @@ struct Setting : public XMLable {
   void to_xml(pugi::xml_node &node) const override {this->to_xml(node, false);}
 
   //Numerics only (float, integer, floatprecise)
-  bool is_numeric();
+  bool is_numeric() const;
   double number();
   void set_number(double);
 

@@ -63,20 +63,14 @@ struct RunInfo {
 
 
 Project::~Project() {
-  terminate();
+//  terminate();
   clear_helper();
-}
-
-void Project::terminate() {
-  ready_ = true;
-  terminating_ = true;
-  cond_.notify_one();
 }
 
 void Project::clear() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
-  cond_.notify_one();
+  cond_.notify_all();
 }
 
 void Project::clear_helper() {
@@ -102,7 +96,7 @@ void Project::flush() {
 void Project::activate() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   ready_ = true;  
-  cond_.notify_one();
+  cond_.notify_all();
 }
 
 bool Project::wait_ready() {
@@ -110,7 +104,7 @@ bool Project::wait_ready() {
   while (!ready_)
     cond_.wait(lock);
   ready_ = false;
-  return (!terminating_);
+  return true;
 }
 
 
@@ -229,7 +223,6 @@ int64_t Project::add_sink(SinkPtr sink) {
   changed_ = true;
   ready_ = true;
   newdata_ = true;
-  terminating_ = false;
   // cond_.notify_one();
   return current_index_;
 }
@@ -243,7 +236,6 @@ int64_t Project::add_sink(Metadata prototype) {
   changed_ = true;
   ready_ = true;
   newdata_ = false;
-  terminating_ = false;
   // cond_.notify_one();
   return current_index_;
 }
@@ -258,7 +250,6 @@ void Project::delete_sink(int64_t idx) {
   changed_ = true;
   ready_ = true;
   newdata_ = false;
-  terminating_ = false;
   // cond_.notify_one();
 
   if (sinks_.empty())
@@ -277,9 +268,8 @@ void Project::set_prototypes(const XMLableDB<Metadata>& prototypes) {
 
   changed_ = true;
   ready_ = true;
-  terminating_ = false;
   newdata_ = false;
-  cond_.notify_one();
+  cond_.notify_all();
 }
 
 void Project::add_spill(Spill* one_spill) {
@@ -302,7 +292,7 @@ void Project::add_spill(Spill* one_spill) {
   
   ready_ = true;
   newdata_ = true;
-  cond_.notify_one();
+  cond_.notify_all();
 }
 
 
@@ -319,10 +309,22 @@ void Project::save_as(std::string file_name) {
 }
 
 void Project::write_xml(std::string file_name) {
-
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child();
-  root.set_name("QpxProject");
+
+  to_xml(root);
+
+  doc.save_file(file_name.c_str());
+
+  for (auto &q : sinks_)
+    q.second->reset_changed();
+
+  identity_ = file_name;
+  cond_.notify_all();
+}
+
+void Project::to_xml(pugi::xml_node &root) const {
+  root.set_name(this->xml_element_name().c_str());
 
   if (!spills_.empty()) {
     pugi::xml_node spillsnode = root.append_child("Spills");
@@ -349,37 +351,35 @@ void Project::write_xml(std::string file_name) {
     }
   }
 
-  doc.save_file(file_name.c_str());
-
-  for (auto &q : sinks_)
-    q.second->reset_changed();
-
   changed_ = false;
-  identity_ = file_name;
-
   ready_ = true;
   newdata_ = true;
-  terminating_ = false;
-  cond_.notify_one();
-
 }
 
 void Project::read_xml(std::string file_name, bool with_sinks, bool with_full_sinks) {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  clear_helper();
-
   pugi::xml_document doc;
 
   if (!doc.load_file(file_name.c_str()))
     return;
 
   pugi::xml_node root;
-  if (doc.child("QpxProject"))
-   root = doc.child("QpxProject");
+  if (doc.child(this->xml_element_name().c_str()))
+   root = doc.child(this->xml_element_name().c_str());
   else if (doc.child("QpxAcquisition"))  //backwards compat
    root = doc.child("QpxAcquisition");
   if (!root)
     return;
+
+  from_xml(root);
+
+  identity_ = file_name;
+  cond_.notify_all();
+}
+
+
+void Project::from_xml(const pugi::xml_node &root, bool with_sinks, bool with_full_sinks) {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  clear_helper();
 
   if (root.child("Spills")) {
     for (auto &s : root.child("Spills").children()) {
@@ -470,12 +470,8 @@ void Project::read_xml(std::string file_name, bool with_sinks, bool with_full_si
   }
 
   changed_ = false;
-  identity_ = file_name;
-
   ready_ = true;
   newdata_ = true;
-  terminating_ = false;
-  cond_.notify_one();
 }
 
 void Project::import_spn(std::string file_name) {
@@ -548,8 +544,7 @@ void Project::import_spn(std::string file_name) {
 
   ready_ = true;
   newdata_ = true;
-  terminating_ = false;
-  cond_.notify_one();
+  cond_.notify_all();
 }
 
 }

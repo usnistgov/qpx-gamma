@@ -33,7 +33,7 @@ namespace Qpx {
 class Project {
  public:
   Project()
-    : ready_(false), newdata_(false), terminating_(false), changed_(false)
+    : ready_(false), newdata_(false), changed_(false)
     , identity_("New project")
     , current_index_(0)
   {}
@@ -43,7 +43,6 @@ class Project {
   ////control//////
   void clear();
   void activate();    //force release of cond var
-  void terminate();   //explicitly in case other threads waiting for cond var
 
   //populate one of these ways
   void set_prototypes(const XMLableDB<Metadata>&);
@@ -92,12 +91,17 @@ class Project {
   void update_fitter(int64_t idx, const Fitter &fit);
 
 
+  std::string xml_element_name() const {return "QpxProject";}
+  void to_xml(pugi::xml_node &node) const;
+  void from_xml(const pugi::xml_node &node, bool with_sinks = true, bool with_full_sinks = true);
+
+
  private:
 
   //control
   mutable boost::mutex mutex_;
   boost::condition_variable cond_;
-  bool ready_, terminating_, newdata_;
+  mutable bool ready_, newdata_;
   int64_t current_index_;
 
   //data
@@ -106,7 +110,7 @@ class Project {
   std::set<Spill> spills_;
 
   std::string identity_;
-  bool        changed_;
+  mutable bool        changed_;
 
   //helpers
   void clear_helper();

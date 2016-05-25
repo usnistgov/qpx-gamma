@@ -538,7 +538,7 @@ void Fitter::save_report(std::string filename) {
   file.close();
 }
 
-void Fitter::to_xml(pugi::xml_node &root)
+void Fitter::to_xml(pugi::xml_node &root) const
 {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 

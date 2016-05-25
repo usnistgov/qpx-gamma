@@ -104,6 +104,7 @@ void TimeDurationWidget::on_spin_ms_valueChanged(int new_value)
       ui->spin_ms->setValue(0);
     }
   }
+  emit valueChanged();
 }
 
 
@@ -125,6 +126,7 @@ void TimeDurationWidget::on_spinS_valueChanged(int new_value)
       ui->spinS->setValue(0);
     }
   }
+  emit valueChanged();
 }
 
 void TimeDurationWidget::on_spinM_valueChanged(int new_value)
@@ -144,6 +146,7 @@ void TimeDurationWidget::on_spinM_valueChanged(int new_value)
     } else
       ui->spinM->setValue(0);
   }
+  emit valueChanged();
 }
 
 void TimeDurationWidget::on_spinH_valueChanged(int new_value)
@@ -163,7 +166,7 @@ void TimeDurationWidget::on_spinH_valueChanged(int new_value)
     } else
       ui->spinH->setValue(0);
   }
-
+  emit valueChanged();
 }
 
 void TimeDurationWidget::on_spinDays_editingFinished()

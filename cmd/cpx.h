@@ -9,7 +9,9 @@ bool parse_file(std::ifstream&, std::list<CpxLine> &, std::vector<std::string> &
 
 class Cpx {
 public:
-  Cpx() : engine_(Qpx::Engine::getInstance())
+  Cpx() 
+  : engine_(Qpx::Engine::getInstance())
+  , spectra_ (new Qpx::Project())
   {
     interruptor_.store(false);
   }
@@ -22,7 +24,7 @@ private:
   bool run_mca(std::vector<std::string> &tokens);
   bool save_qpx(std::vector<std::string> &tokens);
 
-  Qpx::Project   spectra_;
+  Qpx::ProjectPtr   spectra_;
   Qpx::Engine       &engine_;
   boost::atomic<bool> interruptor_;
 };

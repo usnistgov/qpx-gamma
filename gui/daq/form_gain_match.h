@@ -103,7 +103,7 @@ private:
 
   ThreadRunner         &gm_runner_thread_;
   ThreadPlotSignal     gm_plot_thread_;
-  Qpx::Project         project_;
+  Qpx::ProjectPtr      project_;
   boost::atomic<bool>  interruptor_;
   bool my_run_;
 

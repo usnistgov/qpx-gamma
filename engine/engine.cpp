@@ -384,9 +384,14 @@ void Engine::get_all_settings() {
   read_settings_bulk();
 }
 
-void Engine::getMca(uint64_t timeout, Project& spectra, boost::atomic<bool>& interruptor) {
+void Engine::getMca(uint64_t timeout, ProjectPtr spectra, boost::atomic<bool>& interruptor) {
 
   boost::unique_lock<boost::mutex> lock(mutex_);
+
+  if (!spectra) {
+    WARN << "<Engine> No reference to valid daq project";
+    return;
+  }
 
   if (!(aggregate_status_ & SourceStatus::can_run)) {
     WARN << "<Engine> No devices exist that can perform acquisition";
@@ -403,7 +408,7 @@ void Engine::getMca(uint64_t timeout, Project& spectra, boost::atomic<bool>& int
 
   SynchronizedQueue<Spill*> parsedQueue;
 
-  boost::thread builder(boost::bind(&Qpx::Engine::worker_MCA, this, &parsedQueue, &spectra));
+  boost::thread builder(boost::bind(&Qpx::Engine::worker_MCA, this, &parsedQueue, spectra));
 
   Spill* spill = new Spill;
   get_all_settings();
@@ -526,7 +531,7 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 //////ASSUME YOU KNOW WHAT YOU'RE DOING WITH THREADS/////
 
 void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
-                        Project* spectra) {
+                        ProjectPtr spectra) {
 
   CustomTimer presort_timer;
   uint64_t presort_compares(0), presort_hits(0), presort_cycles(0);

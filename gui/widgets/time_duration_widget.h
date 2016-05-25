@@ -50,6 +50,7 @@ public:
 
 signals:
   void editingFinished();
+  void valueChanged();
 
 private slots:
   void on_spinM_valueChanged(int);

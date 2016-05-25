@@ -66,7 +66,7 @@ public:
   SourceStatus status() {return aggregate_status_;}
 
   ListData* getList(uint64_t timeout, boost::atomic<bool>& inturruptor);
-  void getMca(uint64_t timeout, Project &spectra, boost::atomic<bool> &interruptor);
+  void getMca(uint64_t timeout, ProjectPtr spectra, boost::atomic<bool> &interruptor);
 
   //detectors
   std::vector<Qpx::Detector> get_detectors() const {return detectors_;}
@@ -111,7 +111,7 @@ protected:
   void rebuild_structure(Qpx::Setting &set);
 
   //threads
-  void worker_MCA(SynchronizedQueue<Spill*>* data_queue, Project* spectra);
+  void worker_MCA(SynchronizedQueue<Spill*>* data_queue, ProjectPtr spectra);
 
 private:
 

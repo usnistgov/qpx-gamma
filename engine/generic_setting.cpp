@@ -271,6 +271,24 @@ void SettingMeta::to_xml(pugi::xml_node &node) const {
   }
 }
 
+std::string SettingMeta::value_range() const
+{
+  if (is_numeric())
+  {
+    std::stringstream ss;
+    ss << "[" << minimum << " \uFF1A " << step << " \uFF1A " << maximum << "]";
+    return ss.str();
+  }
+  else if ((setting_type == SettingType::binary) || (setting_type == SettingType::pattern))
+  {
+    std::stringstream ss;
+    ss << to_string(setting_type) << maximum;
+    return ss.str();
+  }
+  else
+    return to_string(setting_type);
+}
+
 void SettingMeta::populate_menu(const pugi::xml_node &node, const std::string &key_name, const std::string &value_name) {
   int_menu_items.clear();
   for (pugi::xml_node child : node.children()) {
@@ -291,6 +309,13 @@ void SettingMeta::menu_to_node(pugi::xml_node &node, const std::string &element_
     child.append_attribute(key_name.c_str()).set_value(q.first);
     child.append_attribute(value_name.c_str()).set_value(q.second.c_str());
   }
+}
+
+bool SettingMeta::is_numeric() const
+{
+  return ((setting_type == SettingType::integer)
+          || (setting_type == SettingType::floating)
+          || (setting_type == SettingType::floating_precise));
 }
 
 
@@ -765,12 +790,9 @@ std::ostream& operator << (std::ostream &os, const Setting &s) {
 }
 
 //For numerics
-bool Setting::is_numeric()
+bool Setting::is_numeric() const
 {
-  return ((metadata.setting_type == SettingType::integer)
-          || (metadata.setting_type == SettingType::floating)
-          || (metadata.setting_type == SettingType::floating_precise));
-
+  return metadata.is_numeric();
 }
 
 double Setting::number()

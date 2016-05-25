@@ -836,7 +836,8 @@ bool ROI::rollback(const Finder &parent_finder, size_t i)
   return true;
 }
 
-void ROI::to_xml(pugi::xml_node &root, const Finder &parent_finder) {
+void ROI::to_xml(pugi::xml_node &root, const Finder &parent_finder) const
+{
   if (fits_.empty())
     return;
 
@@ -845,29 +846,31 @@ void ROI::to_xml(pugi::xml_node &root, const Finder &parent_finder) {
 
   int chosenfit = current_fit_;
 
-  for (int i=0; i < fits_.size(); ++i)
+  ROI temp(*this);
+
+  for (int i=0; i < temp.fits_.size(); ++i)
   {
     pugi::xml_node fitnode = node.append_child("Fit");
-    fitnode.append_attribute("description").set_value(fits_[i].description.description.c_str());
-    rollback(parent_finder, i);
+    fitnode.append_attribute("description").set_value(temp.fits_[i].description.description.c_str());
+    temp.rollback(parent_finder, i);
 
     if (finder_.settings_.overriden)
       finder_.settings_.to_xml(fitnode);
 
     pugi::xml_node Ledge = fitnode.append_child("BackgroundLeft");
-    Ledge.append_attribute("left").set_value(LB_.left());
-    Ledge.append_attribute("right").set_value(LB_.right());
+    Ledge.append_attribute("left").set_value(temp.LB_.left());
+    Ledge.append_attribute("right").set_value(temp.LB_.right());
 
     pugi::xml_node Redge = fitnode.append_child("BackgroundRight");
-    Redge.append_attribute("left").set_value(RB_.left());
-    Redge.append_attribute("right").set_value(RB_.right());
+    Redge.append_attribute("left").set_value(temp.RB_.left());
+    Redge.append_attribute("right").set_value(temp.RB_.right());
 
-    background_.to_xml(fitnode);
+    temp.background_.to_xml(fitnode);
     fitnode.last_child().set_name("BackgroundPoly");
 
-    if (peaks_.size()) {
+    if (temp.peaks_.size()) {
       pugi::xml_node pks = fitnode.append_child("Peaks");
-      for (auto &p : peaks_) {
+      for (auto &p : temp.peaks_) {
         pugi::xml_node pk = pks.append_child("Peaks");
         if (p.second.sum4().peak_width()) {
           pugi::xml_node s4 = pk.append_child("SUM4");
@@ -879,7 +882,6 @@ void ROI::to_xml(pugi::xml_node &root, const Finder &parent_finder) {
       }
     }
   }
-  rollback(parent_finder, chosenfit);
 }
 
 

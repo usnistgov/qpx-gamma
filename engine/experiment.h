@@ -25,44 +25,43 @@
 #define QPX_EXPERIMENT
 
 #include "project.h"
-#include <set>
-#include <string>
+#include "domain.h"
 
 namespace Qpx {
 
-enum DomainType
-{
-  source, sink, manual
-};
-
-struct Domain
-{
-  DomainType  type;
-  SettingMeta range;
-};
-
-struct DomainPoint
-{
-  Setting domain_value;
-  int64_t data_idx;
-  Domain  subdomain;
-};
-
-struct Trajectory
-{
-  Domain domain_;
-
-  std::list<DomainPoint> points;
-
-};
-
-
 class ExperimentProject
 {
-//  XMLableDB<Qpx::Metadata> base_prototypes;
-  Trajectory root_trajectory;
+public:
+  ExperimentProject() : base_prototypes("SinkPrototypes")
+  {
+    root_trajectory = std::shared_ptr<Qpx::TrajectoryNode>(new Qpx::TrajectoryNode());
+    Qpx::TrajectoryNode tn(root_trajectory);
+    tn.domain.verbose = "root";
+    root_trajectory->push_back(tn);
+    next_idx = 0;
+  }
 
-  std::map<int64_t, ProjectPtr> acquisitions;
+  TrajectoryPtr get_trajectories() const {return root_trajectory;}
+  ProjectPtr get_data(int64_t i) const;
+
+  void set_prototype(Qpx::Metadata ptp) { base_prototypes.clear(); base_prototypes.add(ptp); }
+
+  std::pair<DomainType, TrajectoryPtr> next_setting();
+  ProjectPtr next_project();
+
+  std::string xml_element_name() const {return "QpxExperiment";}
+  void to_xml(pugi::xml_node &node) const;
+  void from_xml(const pugi::xml_node &node);
+
+private:
+  XMLableDB<Qpx::Metadata> base_prototypes;
+  std::shared_ptr<TrajectoryNode> root_trajectory;
+
+  void set_sink_vars_recursive(XMLableDB<Qpx::Metadata>& prototypes, TrajectoryPtr node);
+
+  std::map<int64_t, ProjectPtr> data;
+  int64_t next_idx;
+
 };
 
 

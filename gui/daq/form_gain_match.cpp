@@ -39,9 +39,8 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, XMLableDB<Detector>& detector
   ui(new Ui::FormGainMatch),
   gm_runner_thread_(thread),
   detectors_(detectors),
-  project_(),
+  project_(new Qpx::Project()),
   interruptor_(false),
-  gm_plot_thread_(project_),
   my_run_(false)
 {
   ui->setupUi(this);
@@ -89,7 +88,8 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, XMLableDB<Detector>& detector
   update_settings();
   init_prototypes();
 
-  gm_plot_thread_.start();
+  gm_plot_thread_.monitor_source(project_);
+//  gm_plot_thread_.start();
 }
 
 FormGainMatch::~FormGainMatch()
@@ -211,20 +211,20 @@ void FormGainMatch::closeEvent(QCloseEvent *event) {
     }
   }
 
-  if (!project_.empty()) {
+  if (!project_->empty()) {
     int reply = QMessageBox::warning(this, "Gain matching data still open",
                                      "Discard?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
     if (reply == QMessageBox::Yes) {
-      project_.clear();
+      project_->clear();
     } else {
       event->ignore();
       return;
     }
   }
 
-  project_.terminate();
-  gm_plot_thread_.wait();
+//  project_->terminate();
+  gm_plot_thread_.terminate_wait();
   saveSettings();
 
   event->accept();
@@ -343,16 +343,16 @@ void FormGainMatch::start_new_pass()
   sink_prototype_opt_.attributes.branches.replace(set_pass);
   sink_prototype_opt_.attributes.branches.replace(current_setting_);
 
-  if (project_.empty()) {
-    project_.add_sink(sink_prototype_ref_);
+  if (project_->empty()) {
+    project_->add_sink(sink_prototype_ref_);
   } else {
-    std::map<int64_t, SinkPtr> sinks = project_.get_sinks();
+    std::map<int64_t, SinkPtr> sinks = project_->get_sinks();
     for (auto &q : sinks)
       if (q.second->name() == "Optimizing")
-        project_.delete_sink(q.first);
+        project_->delete_sink(q.first);
   }
 
-  project_.add_sink(sink_prototype_opt_);
+  project_->add_sink(sink_prototype_opt_);
 
   DataPoint newdata;
   newdata.spectrum.apply_settings(fitter_opt_.settings());
@@ -364,7 +364,7 @@ void FormGainMatch::start_new_pass()
 
   emit settings_changed();
 
-  gm_plot_thread_.start();
+//  gm_plot_thread_.start();
   interruptor_.store(false);
   gm_runner_thread_.do_run(project_, interruptor_, 0);
 
@@ -372,8 +372,8 @@ void FormGainMatch::start_new_pass()
 
 void FormGainMatch::run_completed() {
   if (my_run_) {
-    project_.terminate();
-    gm_plot_thread_.wait();
+//    project_->terminate();
+    gm_plot_thread_.terminate_wait();
 
     ui->pushStop->setEnabled(false);
     my_run_ = false;
@@ -501,7 +501,7 @@ void FormGainMatch::update_peak_selection(std::set<double> dummy) {
 
 
 void FormGainMatch::new_daq_data() {
-  for (auto &q: project_.get_sinks()) {
+  for (auto &q: project_->get_sinks()) {
     Metadata md;
     if (q.second)
       md = q.second->metadata();
@@ -542,7 +542,7 @@ void FormGainMatch::new_daq_data() {
 void FormGainMatch::on_pushStart_clicked()
 {
   response_function_ = PolyBounded();
-  project_.clear();
+  project_->clear();
 
   peak_ref_ = Peak();
   experiment_.clear();
