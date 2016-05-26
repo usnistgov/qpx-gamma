@@ -92,10 +92,12 @@ private slots:
   void on_pushDeleteDomain_clicked();
   void on_pushEditDomain_clicked();
 
+  void on_pushNewExperiment_clicked();
   void on_pushLoadExperiment_clicked();
   void on_pushSaveExperiment_clicked();
 
   void item_selected_in_tree(QItemSelection,QItemSelection);
+
 
 private:
   void loadSettings();

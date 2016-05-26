@@ -91,7 +91,7 @@ std::pair<DomainType, TrajectoryPtr> ExperimentProject::next_setting()
     ret = root_trajectory->next_setting();
   if (ret.second && !ret.second->childCount() && (ret.second->domain.type == none))
   {
-    DBG << "Experiment generating new data point with " << base_prototypes.size() << " sinks";
+//    DBG << "Experiment generating new data point with " << base_prototypes.size() << " sinks";
 
     XMLableDB<Qpx::Metadata> prototypes = base_prototypes;
     set_sink_vars_recursive(prototypes, ret.second);
@@ -121,8 +121,8 @@ void ExperimentProject::set_sink_vars_recursive(XMLableDB<Qpx::Metadata>& protot
     {
       if (p.attributes.has(node->domain_value, Qpx::Match::id | Qpx::Match::indices))
       {
-        DBG << "Sink prototype " << p.name << " " << p.type() << " " << " has "
-            << node->domain_value.id_;
+//        DBG << "Sink prototype " << p.name << " " << p.type() << " " << " has "
+//            << node->domain_value.id_;
         p.attributes.set_setting_r(node->domain_value, Qpx::Match::id | Qpx::Match::indices);
       }
     }
@@ -135,6 +135,15 @@ ProjectPtr ExperimentProject::get_data(int64_t i) const
     return data.at(i);
   else
     return nullptr;
+}
+
+void ExperimentProject::delete_data(int64_t i)
+{
+  if (data.count(i))
+  {
+    data.erase(i);
+    DBG << "deleted data " << i;
+  }
 }
 
 ProjectPtr ExperimentProject::next_project()

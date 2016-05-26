@@ -308,8 +308,10 @@ void TrajectoryNode::remove_child(int row)
 
 void TrajectoryNode::replace_child(int row, const TrajectoryNode &t)
 {
-  if ((row >= 0) && (row < branches.size()))
+  if ((row >= 0) && (row < branches.size())) {
     branches[row] = item_t(new TrajectoryNode(self::shared_from_this(), t));
+
+  }
 }
 
 

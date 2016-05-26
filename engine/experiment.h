@@ -43,6 +43,7 @@ public:
 
   TrajectoryPtr get_trajectories() const {return root_trajectory;}
   ProjectPtr get_data(int64_t i) const;
+  void delete_data(int64_t);
 
   void set_prototype(Qpx::Metadata ptp) { base_prototypes.clear(); base_prototypes.add(ptp); }
 

@@ -78,6 +78,9 @@ FormOptimization::FormOptimization(ThreadRunner& thread, XMLableDB<Qpx::Detector
 
 
   ui->treeViewExperiment->setModel(&tree_experiment_model_);
+  ui->treeViewExperiment->setSelectionMode(QAbstractItemView::SingleSelection);
+  ui->treeViewExperiment->setSelectionBehavior(QAbstractItemView::SelectRows);
+  ui->treeViewExperiment->setEditTriggers(QAbstractItemView::NoEditTriggers);
   ui->treeViewExperiment->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
   connect(ui->treeViewExperiment->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(item_selected_in_tree(QItemSelection,QItemSelection)));
@@ -98,6 +101,8 @@ FormOptimization::FormOptimization(ThreadRunner& thread, XMLableDB<Qpx::Detector
 
   update_settings();
   on_comboSinkType_activated("");
+
+  on_pushNewExperiment_clicked();
 }
 
 
@@ -252,7 +257,6 @@ void FormOptimization::on_pushStop_clicked()
 void FormOptimization::start_new_pass()
 {
   std::pair<Qpx::ProjectPtr, uint64_t> pr = get_next_point();
-  tree_experiment_model_.set_root(exp_project_.get_trajectories());
 
   if (!pr.first || !pr.second)
   {
@@ -473,9 +477,9 @@ void FormOptimization::fitting_done()
     if (md == Qpx::Metadata())
       continue;
 
+    selected_fitter_.set_selected_peaks(ui->plotSpectrum->get_selected_peaks());
     p->update_fitter(q.first, selected_fitter_);
   }
-
 
   //  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
   //    experiment_[selected_pass_].spectrum = selected_fitter_;
@@ -485,9 +489,28 @@ void FormOptimization::fitting_done()
   //      update_peak_selection(std::set<double>());
   //    }
   //  }
+
 }
 
 void FormOptimization::update_peak_selection(std::set<double> dummy) {
+  Qpx::ProjectPtr p = opt_plot_thread_.current_source();
+
+  if (!p)
+    return;
+
+  for (auto &q: p->get_sinks()) {
+    Qpx::Metadata md;
+    if (q.second)
+      md = q.second->metadata();
+
+    if (md == Qpx::Metadata())
+      continue;
+
+    selected_fitter_.set_selected_peaks(ui->plotSpectrum->get_selected_peaks());
+    p->update_fitter(q.first, selected_fitter_);
+  }
+
+
   //  Qpx::Metadata md = selected_fitter_.metadata_;
   //  Qpx::Setting pass = md.attributes.branches.get(Qpx::Setting("Pass"));
   //  if (!pass || (pass.value_int < 0) || (pass.value_int >= experiment_.size()))
@@ -553,6 +576,10 @@ void FormOptimization::new_daq_data() {
       }
 
       ui->plotSpectrum->updateData();
+
+      std::set<double> sel = selected_fitter_.get_selected_peaks();
+      if (!sel.empty())
+        ui->plotSpectrum->set_selected_peaks(sel);
 
       if (!selected_fitter_.peak_count())
         ui->plotSpectrum->perform_fit();
@@ -879,27 +906,31 @@ void FormOptimization::item_selected_in_tree(QItemSelection,QItemSelection)
 
 void FormOptimization::on_pushAddSubdomain_clicked()
 {
+  auto idx = ui->treeViewExperiment->selectionModel()->selectedIndexes();
+  if (idx.empty())
+    return;
+  QModelIndex i = idx.front();
+  if (!i.isValid())
+    return;
+
+  QVariant data = tree_experiment_model_.data(i, Qt::EditRole);
+  if (!data.canConvert<Qpx::TrajectoryNode>())
+    return;
+  Qpx::TrajectoryNode tn = qvariant_cast<Qpx::TrajectoryNode>(data);
+
+  if (tn.data_idx >= 0)
+    return;
+
   Qpx::Domain newdomain;
   DialogDomain diag(newdomain, all_domains_, this);
   int ret = diag.exec();
   if (!ret || (newdomain.type == Qpx::DomainType::none))
     return;
 
-  auto idx = ui->treeViewExperiment->selectionModel()->selectedIndexes();
-
-  Qpx::TrajectoryNode tn;
+  tn = Qpx::TrajectoryNode();
   tn.domain = newdomain;
 
-  for (auto &i : idx) {
-    if (i.isValid()) {
-      tree_experiment_model_.push_back(i, tn);
-      return;
-    }
-  }
-
-  //  auto root = tree_experiment_model_.getRoot();
-  //  root->push_back(tn);
-  //  tree_experiment_model_.set_root(root);
+  tree_experiment_model_.push_back(i, tn);
 }
 
 void FormOptimization::on_pushDeleteDomain_clicked()
@@ -907,37 +938,42 @@ void FormOptimization::on_pushDeleteDomain_clicked()
   auto idx = ui->treeViewExperiment->selectionModel()->selectedIndexes();
   if (idx.empty())
     return;
-  for (auto &i : idx) {
-    if (i.isValid()) {
-      tree_experiment_model_.remove_row(i);
-      return;
-    }
-  }
+  QModelIndex i = idx.front();
+  if (!i.isValid())
+    return;
+
+  QVariant data = tree_experiment_model_.data(i, Qt::EditRole);
+  if (!data.canConvert<Qpx::TrajectoryNode>())
+    return;
+  Qpx::TrajectoryNode tn = qvariant_cast<Qpx::TrajectoryNode>(data);
+
+  if (tree_experiment_model_.remove_row(i) && (tn.data_idx >=0))
+    exp_project_.delete_data(tn.data_idx);
 }
 
 void FormOptimization::on_pushEditDomain_clicked()
 {
   auto idx = ui->treeViewExperiment->selectionModel()->selectedIndexes();
+  if (idx.empty())
+    return;
+  QModelIndex i = idx.front();
+  if (!i.isValid())
+    return;
 
-  for (auto &i : idx) {
-    if (i.isValid()) {
-      QVariant data = tree_experiment_model_.data(i, Qt::EditRole);
-      if (!data.canConvert<Qpx::TrajectoryNode>())
-        return;
-      Qpx::TrajectoryNode tn = qvariant_cast<Qpx::TrajectoryNode>(data);
+  QVariant data = tree_experiment_model_.data(i, Qt::EditRole);
+  if (!data.canConvert<Qpx::TrajectoryNode>())
+    return;
+  Qpx::TrajectoryNode tn = qvariant_cast<Qpx::TrajectoryNode>(data);
 
-      if ((tn.data_idx >= 0) || (tn.domain_value != Qpx::Setting()))
-        return;
+  if ((tn.data_idx >= 0) || (tn.domain_value != Qpx::Setting()))
+    return;
 
-      DialogDomain diag(tn.domain, all_domains_, this);
-      int ret = diag.exec();
-      if (!ret || (tn.domain.type == Qpx::DomainType::none))
-        return;
+  DialogDomain diag(tn.domain, all_domains_, this);
+  int ret = diag.exec();
+  if (!ret || (tn.domain.type == Qpx::DomainType::none))
+    return;
 
-      tree_experiment_model_.setData(i, QVariant::fromValue(tn), Qt::EditRole);
-      return;
-    }
-  }
+  tree_experiment_model_.setData(i, QVariant::fromValue(tn), Qt::EditRole);
 }
 
 std::pair<Qpx::ProjectPtr, uint64_t> FormOptimization::get_next_point()
@@ -982,6 +1018,8 @@ std::pair<Qpx::ProjectPtr, uint64_t> FormOptimization::get_next_point()
 
     emit settings_changed();
   }
+
+  tree_experiment_model_.retro_push(ret.second);
 
   if (ret.second->data_idx >= 0)
     return std::pair<Qpx::ProjectPtr, uint64_t>(exp_project_.get_data(ret.second->data_idx),
@@ -1032,4 +1070,11 @@ void FormOptimization::on_pushSaveExperiment_clicked()
     doc.save_file(fileName.toStdString().c_str());
   }
 
+}
+
+void FormOptimization::on_pushNewExperiment_clicked()
+{
+  exp_project_ = Qpx::ExperimentProject();
+  exp_project_.set_prototype(sink_prototype_);
+  tree_experiment_model_.set_root(exp_project_.get_trajectories());
 }

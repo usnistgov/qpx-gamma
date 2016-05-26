@@ -79,7 +79,8 @@ protected:
            && project_->wait_ready())
     {
       emit plot_ready();
-      QThread::sleep(wait_s_.load()); //make flexible
+      if (!terminating_.load())
+        QThread::sleep(wait_s_.load());
     }
 //    DBG << "<ThreadPlot> loop ended";
   }

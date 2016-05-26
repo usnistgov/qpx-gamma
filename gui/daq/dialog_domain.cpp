@@ -55,7 +55,27 @@ DialogDomain::DialogDomain(Qpx::Domain &domain,
   ui->comboUntil->addItem("Live time >");
   ui->comboUntil->addItem("Total count >");
 
+  if (all_domains_.count(domain.verbose))
+    ui->comboSetting->setCurrentText(QString::fromStdString(domain.verbose));
   on_comboSetting_activated("");
+
+  ui->doubleCriterion->setValue(domain.criterion);
+  ui->timeDuration->set_total_seconds(domain.criterion);
+
+  ui->comboUntil->setCurrentText("Real time >");
+  if (domain.criterion_type == Qpx::DomainAdvanceCriterion::realtime)
+    ui->comboUntil->setCurrentText("Real time >");
+  else if (domain.criterion_type == Qpx::DomainAdvanceCriterion::livetime)
+    ui->comboUntil->setCurrentText("Live time >");
+  else if (domain.criterion_type == Qpx::DomainAdvanceCriterion::totalcount)
+    ui->comboUntil->setCurrentText("Total count >");
+
+  ui->doubleSpinStart->setValue(domain.value_range.metadata.minimum);
+  on_doubleSpinStart_editingFinished();
+  ui->doubleSpinEnd->setValue(domain.value_range.metadata.maximum);
+  on_doubleSpinEnd_editingFinished();
+  ui->doubleSpinDelta->setValue(domain.value_range.metadata.step);
+
   on_comboUntil_activated("");
 }
 

@@ -78,6 +78,9 @@ public:
   bool rollback_ROI(double regionID, size_t point);
   bool delete_ROI(double regionID);
 
+  std::set<double> get_selected_peaks() const;
+  void set_selected_peaks(std::set<double> selected_peaks);
+
   //export results
   void save_report(std::string filename);
 
@@ -100,11 +103,13 @@ public:
 
 private:
   std::map<double, ROI> regions_;
-//  FitSettings settings_;
+  std::set<double> selected_peaks_;
   Finder finder_;
 
   void render_all();
   ROI *parent_of(double peakID);
+
+  void filter_selection();
 
 };
 

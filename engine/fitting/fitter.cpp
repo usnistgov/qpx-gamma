@@ -24,6 +24,7 @@
 #include <numeric>
 #include <algorithm>
 #include "custom_logger.h"
+#include "qpx_util.h"
 
 namespace Qpx {
 
@@ -443,6 +444,26 @@ void Fitter::apply_settings(FitSettings settings) {
 //  apply_settings(settings_);
 //}
 
+std::set<double> Fitter::get_selected_peaks() const
+{
+  return selected_peaks_;
+}
+
+void Fitter::set_selected_peaks(std::set<double> selected_peaks)
+{
+  selected_peaks_ = selected_peaks;
+  filter_selection();
+}
+
+void Fitter::filter_selection()
+{
+  std::set<double> sel;
+  for (auto &p : selected_peaks_)
+    if (contains_peak(p))
+      sel.insert(p);
+  selected_peaks_ = sel;
+}
+
 void Fitter::save_report(std::string filename) {
   std::ofstream file(filename, std::ios::out | std::ios::app);
   file << "Spectrum \"" << metadata_.name << "\"" << std::endl;
@@ -542,6 +563,14 @@ void Fitter::to_xml(pugi::xml_node &root) const
 {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
+  if (!selected_peaks_.empty()) {
+    std::stringstream ss;
+    for (auto &p : selected_peaks_)
+      ss << to_max_precision(p) << " ";
+//    std::string reult = ss.str();
+    node.append_attribute("SelectedPeaks").set_value(boost::trim_copy(ss.str()).c_str());
+  }
+
   finder_.settings_.to_xml(node);
 
   for (auto &r : regions_)
@@ -550,6 +579,19 @@ void Fitter::to_xml(pugi::xml_node &root) const
 
 void Fitter::from_xml(const pugi::xml_node &node, SinkPtr spectrum)
 {
+  if (node.attribute("SelectedPeaks"))
+  {
+    std::string list(node.attribute("SelectedPeaks").value());
+    std::stringstream ss;
+    ss.str(list);
+    while (ss.rdbuf()->in_avail())
+    {
+      double n;
+      ss >> n;
+      selected_peaks_.insert(n);
+    }
+  }
+
   if (node.child(finder_.settings_.xml_element_name().c_str()))
     finder_.settings_.from_xml(node.child(finder_.settings_.xml_element_name().c_str()));
 

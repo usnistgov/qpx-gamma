@@ -47,33 +47,33 @@ QVariant TreeExperiment::data(const QModelIndex &index, int role) const
   int col = index.column();
 
   if(!index.isValid())
-      return QVariant();
+    return QVariant();
   ItemPtr item = static_cast<ItemPtr>(index.internalPointer());
   if(item)
   {
-      switch(role)
-      {
-      case Qt::DisplayRole: {
-        if (col == 0)
-          return QString::fromStdString(item->type());
-        else if (col == 1)
-          return QString::fromStdString(item->to_string());
-        else if (col == 2)
-          return QString::fromStdString(item->crit_to_string());
-        else if ((col == 3) && (item->data_idx >= 0))
-          return "(" + QString::number(item->data_idx) + ")";
-        break;
-      }
-      case Qt::EditRole: {
-        return QVariant::fromValue(*item);
-      }
-//      case Qt::DecorationRole:
-//          {
-//              auto it = type2icon.find(item->type_id());
-//              if(it != type2icon.end())
-//                  return it->second;
-//          }
-      }
+    switch(role)
+    {
+    case Qt::DisplayRole: {
+      if (col == 0)
+        return QString::fromStdString(item->type());
+      else if (col == 1)
+        return QString::fromStdString(item->to_string());
+      else if (col == 2)
+        return QString::fromStdString(item->crit_to_string());
+      else if ((col == 3) && (item->data_idx >= 0))
+        return "(" + QString::number(item->data_idx) + ")";
+      break;
+    }
+    case Qt::EditRole: {
+      return QVariant::fromValue(*item);
+    }
+      //      case Qt::DecorationRole:
+      //          {
+      //              auto it = type2icon.find(item->type_id());
+      //              if(it != type2icon.end())
+      //                  return it->second;
+      //          }
+    }
   }
   return QVariant();
 }
@@ -89,7 +89,7 @@ Qt::ItemFlags TreeExperiment::flags(const QModelIndex &index) const
 }
 
 QVariant TreeExperiment::headerData(int section, Qt::Orientation orientation,
-                                  int role) const
+                                    int role) const
 {
   if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
     if (section == 0)
@@ -107,53 +107,78 @@ QVariant TreeExperiment::headerData(int section, Qt::Orientation orientation,
 QModelIndex TreeExperiment::index(int row, int column, const QModelIndex &parent) const
 {
   if(!hasIndex(row, column, parent))
-      return QModelIndex();
+    return QModelIndex();
 
   ItemPtr item = root.get();
   if(parent.isValid())
-      item = static_cast<ItemPtr>(parent.internalPointer());
+    item = static_cast<ItemPtr>(parent.internalPointer());
 
   auto child = item->getChild(row);
   if(child)
-      return createIndex(row,column,(void*)child.get());
+    return createIndex(row,column,(void*)child.get());
   return QModelIndex();
 }
 
 QModelIndex TreeExperiment::parent(const QModelIndex &child) const
 {
   if(!child.isValid())
-      return QModelIndex();
+    return QModelIndex();
   ItemPtr c = static_cast<ItemPtr>(child.internalPointer());
   auto p = c->getParent().get();
   if(p == root.get())
-      return QModelIndex();
+    return QModelIndex();
   return createIndex(p->row(),0,(void*)p);
+}
+
+QModelIndex TreeExperiment::indexOf(Qpx::TrajectoryPtr goal) const
+{
+  std::list<int> trace;
+  Qpx::TrajectoryPtr copy = goal;
+  while (copy && copy->getParent())
+  {
+    trace.push_back(copy->row());
+    copy = copy->getParent();
+  }
+
+  if (trace.empty())
+    return QModelIndex();
+
+  QModelIndex idx;
+  while (!trace.empty() && this->rowCount(idx))
+  {
+    idx = this->index(trace.back(), 0, idx);
+    trace.pop_back();
+  }
+
+  if (idx.isValid() && (static_cast<ItemPtr>(idx.internalPointer()) == goal.get()))
+    return idx;
+  return QModelIndex();
 }
 
 int TreeExperiment::rowCount(const QModelIndex &parent) const
 {
   if(!parent.isValid())
-      return root->childCount();
+    return root->childCount();
   if(parent.column()>0)
-      return 0;
+    return 0;
   ItemPtr p =static_cast<ItemPtr>(parent.internalPointer());
   return p->childCount();
 }
 
 bool TreeExperiment::setHeaderData(int section, Qt::Orientation orientation,
-                                 const QVariant &value, int role)
+                                   const QVariant &value, int role)
 {
-//  if (role != Qt::EditRole || orientation != Qt::Horizontal)
-//    return false;
+  //  if (role != Qt::EditRole || orientation != Qt::Horizontal)
+  //    return false;
 
-//  bool result = rootItem->setData(section, value);
+  //  bool result = rootItem->setData(section, value);
 
-//  if (result) {
-//    emit headerDataChanged(orientation, section, section);
-//    //emit push settings to device
-//  }
+  //  if (result) {
+  //    emit headerDataChanged(orientation, section, section);
+  //    //emit push settings to device
+  //  }
 
-//  return result;
+  //  return result;
 }
 
 
@@ -168,41 +193,62 @@ void TreeExperiment::set_root(std::shared_ptr<Qpx::TrajectoryNode> r)
 
 void TreeExperiment::emplace_back(QModelIndex &index, Qpx::TrajectoryNode&& t)
 {
-    if(!index.isValid())
-        return;
-    ItemPtr item = static_cast<ItemPtr>(index.internalPointer());
-    if(!item)
-        return;
-    beginInsertRows(index,item->childCount(),item->childCount());
-    item->emplace_back(std::forward<Qpx::TrajectoryNode>(t));
-    endInsertRows();
+  if(!index.isValid())
+    return;
+  ItemPtr item = static_cast<ItemPtr>(index.internalPointer());
+  if(!item)
+    return;
+  beginInsertRows(index,item->childCount(),item->childCount());
+  item->emplace_back(std::forward<Qpx::TrajectoryNode>(t));
+  endInsertRows();
 }
 
-void TreeExperiment::push_back(QModelIndex &index, const Qpx::TrajectoryNode& t)
+bool TreeExperiment::retro_push(Qpx::TrajectoryPtr node)
 {
-    if(!index.isValid())
-        return;
-    ItemPtr item = static_cast<ItemPtr>(index.internalPointer());
-    if(!item)
-        return;
-    beginInsertRows(index,item->childCount(),item->childCount());
-    item->push_back(t);
-    endInsertRows();
+  if (!node)
+    return false;
+  QModelIndex parent = indexOf(node->getParent());
+
+  if (!parent.isValid())
+    return false;
+
+  ItemPtr item = static_cast<ItemPtr>(parent.internalPointer());
+  if(!item)
+    return false;
+
+  beginInsertRows(parent,node->row(),node->row());
+  endInsertRows();
+  return true;
 }
 
-void TreeExperiment::remove_row(QModelIndex &index)
+
+bool TreeExperiment::push_back(QModelIndex &index, const Qpx::TrajectoryNode& t)
 {
-    if(!index.isValid())
-        return;
-    QModelIndex paridx = parent(index);
-    if (!paridx.isValid())
-      return;
-    ItemPtr item = static_cast<ItemPtr>(paridx.internalPointer());
-    if (!item)
-      return;
-    beginRemoveRows(paridx, index.row(), index.row());
-    item->remove_child(index.row());
-    endRemoveRows();
+  if(!index.isValid())
+    return false;
+  ItemPtr item = static_cast<ItemPtr>(index.internalPointer());
+  if(!item)
+    return false;
+  beginInsertRows(index,item->childCount(),item->childCount());
+  item->push_back(t);
+  endInsertRows();
+  return true;
+}
+
+bool TreeExperiment::remove_row(QModelIndex &index)
+{
+  if(!index.isValid())
+    return false;
+  QModelIndex paridx = parent(index);
+  if (!paridx.isValid())
+    return false;
+  ItemPtr item = static_cast<ItemPtr>(paridx.internalPointer());
+  if (!item)
+    return false;
+  beginRemoveRows(paridx, index.row(), index.row());
+  item->remove_child(index.row());
+  endRemoveRows();
+  return true;
 }
 
 bool TreeExperiment::setData(const QModelIndex &index, const QVariant &value, int role)
@@ -211,7 +257,7 @@ bool TreeExperiment::setData(const QModelIndex &index, const QVariant &value, in
     return false;
 
   if(!index.isValid())
-      return false;
+    return false;
   QModelIndex paridx = parent(index);
   if (!paridx.isValid())
     return false;
@@ -223,12 +269,19 @@ bool TreeExperiment::setData(const QModelIndex &index, const QVariant &value, in
     return false;
   Qpx::TrajectoryNode tn = qvariant_cast<Qpx::TrajectoryNode>(value);
 
-  beginRemoveRows(paridx, item->childCount(), item->childCount());
-  beginInsertRows(paridx, item->childCount(), item->childCount());
+
+  beginInsertRows(paridx, index.row(), index.row());
   item->replace_child(index.row(), tn);
-  endRemoveRows();
+
+  QModelIndex parparidx = parent(paridx);
+  QVector<int> roles;
+  roles << Qt::DisplayRole;
+  QModelIndex lindex = this->index(index.row(), 0, paridx);
+  QModelIndex rindex = this->index(index.row(), columnCount()-1, paridx);
+  emit dataChanged(lindex, rindex);
+
   endInsertRows();
-//  emit dataChanged(index, index);
+
   return true;
 }
 

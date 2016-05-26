@@ -65,10 +65,13 @@ public:
 
 //  void update(const Qpx::Setting &data);
 
+  QModelIndex indexOf(Qpx::TrajectoryPtr) const;
+  bool retro_push(Qpx::TrajectoryPtr);
+
   std::shared_ptr<Qpx::TrajectoryNode> getRoot()const{return root;}
   void emplace_back(QModelIndex &index, Qpx::TrajectoryNode && t);
-  void push_back(QModelIndex &index, const Qpx::TrajectoryNode &t);
-  void remove_row(QModelIndex &index);
+  bool push_back(QModelIndex &index, const Qpx::TrajectoryNode &t);
+  bool remove_row(QModelIndex &index);
   void set_root(std::shared_ptr<Qpx::TrajectoryNode> r);
 //  void insertIcon(size_t type, QIcon icon){type2icon[type]=icon;}
 
