@@ -44,7 +44,7 @@ void Peak::reconstruct(FitSettings fs) {
     center_ = sum4_.centroid();
 
   if (!std::isfinite(center_.uncertainty())) {
-    DBG << "<Peak> overriding peak center uncert with sum4 for " << center_.to_string() << " with " << sum4_.centroid().to_string();
+//    DBG << "<Peak> overriding peak center uncert with sum4 for " << center_.to_string() << " with " << sum4_.centroid().to_string();
     center_.setUncertainty(sum4_.centroid().uncertainty());
   }
 

@@ -29,6 +29,20 @@
 
 namespace Qpx {
 
+struct DataPoint
+{
+  Metadata spectrum_info;
+  Peak     selected_peak;
+  std::map<std::string, Setting> domains;
+  int64_t idx_proj;
+  int64_t idx_sink;
+  TrajectoryPtr node;
+
+  UncertainDouble independent_variable;
+  UncertainDouble dependent_variable;
+};
+
+
 class ExperimentProject
 {
 public:
@@ -38,17 +52,23 @@ public:
     Qpx::TrajectoryNode tn(root_trajectory);
     tn.domain.verbose = "root";
     root_trajectory->push_back(tn);
-    next_idx = 0;
+    next_idx = 1;
   }
 
   TrajectoryPtr get_trajectories() const {return root_trajectory;}
   ProjectPtr get_data(int64_t i) const;
   void delete_data(int64_t);
 
+  //DEPRECATE
   void set_prototype(Qpx::Metadata ptp) { base_prototypes.clear(); base_prototypes.add(ptp); }
 
+  void set_prototypes(XMLableDB<Qpx::Metadata> ptp) { base_prototypes = ptp; }
+  XMLableDB<Qpx::Metadata> get_prototypes() const { return base_prototypes; }
+
   std::pair<DomainType, TrajectoryPtr> next_setting();
-  ProjectPtr next_project();
+
+  void gather_results();
+  std::vector<DataPoint> results() const {return results_;}
 
   std::string xml_element_name() const {return "QpxExperiment";}
   void to_xml(pugi::xml_node &node) const;
@@ -59,9 +79,13 @@ private:
   std::shared_ptr<TrajectoryNode> root_trajectory;
 
   void set_sink_vars_recursive(XMLableDB<Qpx::Metadata>& prototypes, TrajectoryPtr node);
+  void gather_vars_recursive(DataPoint& dp, TrajectoryPtr node);
+  void find_leafs(std::list<TrajectoryPtr> &list, TrajectoryPtr node);
 
   std::map<int64_t, ProjectPtr> data;
   int64_t next_idx;
+
+  std::vector<DataPoint> results_;
 
 };
 

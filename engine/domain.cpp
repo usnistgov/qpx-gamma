@@ -122,11 +122,11 @@ std::string TrajectoryNode::type() const
 {
   std::string ret;
   if (domain.type != none)
-    ret = boost::to_upper_copy(domain_type_to_string(domain.type)) + " ";
+    ret = "(d) ";
   if (domain_value != Setting())
     ret += "(v) ";
   if (data_idx > -1)
-    ret += "(d) ";
+    ret += "+ ";
 
   if (ret.empty())
     ret = domain.verbose;

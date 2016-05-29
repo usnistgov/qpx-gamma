@@ -48,13 +48,13 @@ void ExperimentProject::to_xml(pugi::xml_node &root) const
       projnode.append_attribute("idx").set_value((long long)a.first);
       a.second->to_xml(projnode);
     }
-
   }
-
 }
+
 
 void ExperimentProject::from_xml(const pugi::xml_node &node)
 {
+  base_prototypes.clear();
   if (node.child(base_prototypes.xml_element_name().c_str()))
     base_prototypes.from_xml(node.child(base_prototypes.xml_element_name().c_str()));
 
@@ -64,7 +64,7 @@ void ExperimentProject::from_xml(const pugi::xml_node &node)
     root_trajectory->from_xml(node.child(TrajectoryNode().xml_element_name().c_str()));
   }
 
-  next_idx = 0;
+  next_idx = 1;
 
   if (node.child("Data"))
   {
@@ -82,7 +82,40 @@ void ExperimentProject::from_xml(const pugi::xml_node &node)
       }
     }
   }
+
+  std::list<TrajectoryPtr> leafs;
+  find_leafs(leafs, root_trajectory);
+  for (auto &l : leafs)
+  {
+    if (!data.count(l->data_idx))
+      continue;
+
+    DataPoint dp;
+    dp.node = l;
+    dp.idx_proj = l->data_idx;
+    gather_vars_recursive(dp, l);
+    for (auto &s : data[l->data_idx]->get_sinks())
+      if (s.second) {
+        dp.idx_sink = s.first;
+        dp.spectrum_info = s.second->metadata();
+        results_.push_back(dp);
+      }
+  }
+
+  gather_results();
 }
+
+void ExperimentProject::find_leafs(std::list<TrajectoryPtr> &list, TrajectoryPtr node)
+{
+  if (!node)
+    return;
+  if ((node->data_idx >= 0) && !node->childCount())
+    list.push_back(node);
+  else
+    for (int i = 0; i < node->childCount(); i++)
+      find_leafs(list, node->getChild(i));
+}
+
 
 std::pair<DomainType, TrajectoryPtr> ExperimentProject::next_setting()
 {
@@ -99,6 +132,18 @@ std::pair<DomainType, TrajectoryPtr> ExperimentProject::next_setting()
     data[next_idx] = ProjectPtr(new Project());
     data[next_idx]->set_prototypes(prototypes);
     ret.second->data_idx = next_idx;
+
+    DataPoint dp;
+    dp.node = ret.second;
+    dp.idx_proj = next_idx;
+    gather_vars_recursive(dp, ret.second);
+    for (auto &s : data[next_idx]->get_sinks())
+      if (s.second) {
+        dp.idx_sink = s.first;
+        dp.spectrum_info = s.second->metadata();
+        results_.push_back(dp);
+      }
+
     next_idx++;
 
   }
@@ -129,6 +174,37 @@ void ExperimentProject::set_sink_vars_recursive(XMLableDB<Qpx::Metadata>& protot
   }
 }
 
+void ExperimentProject::gather_vars_recursive(DataPoint& dp, TrajectoryPtr node)
+{
+  if (!node)
+    return;
+  TrajectoryPtr parent = node->getParent();
+  if (!parent)
+    return;
+  gather_vars_recursive(dp, parent);
+
+//  DBG << "checking domain " << parent->domain.verbose << " " << parent->to_string()
+//      << " child " << node->to_string();
+
+  if (parent->domain.type == Qpx::DomainType::sink) {
+//    DBG << "a";
+    if (dp.spectrum_info.attributes.has(node->domain_value, Qpx::Match::id | Qpx::Match::indices))
+    {
+//      DBG << "b";
+
+      dp.domains[parent->domain.verbose] = node->domain_value;
+    }
+  }
+  else if (parent->domain.type != Qpx::DomainType::none) {
+//    DBG << "c";
+    dp.domains[parent->domain.verbose] = node->domain_value;
+  }
+//  else
+//    DBG << "d";
+
+}
+
+
 ProjectPtr ExperimentProject::get_data(int64_t i) const
 {
   if (data.count(i))
@@ -146,10 +222,28 @@ void ExperimentProject::delete_data(int64_t i)
   }
 }
 
-ProjectPtr ExperimentProject::next_project()
+void ExperimentProject::gather_results()
 {
-
+  for (auto &r : results_)
+  {
+    r.domains.clear();
+    if (r.node)
+      gather_vars_recursive(r, r.node);
+//    DBG << "domains found " << r.domains.size();
+    if (data.count(r.idx_proj) && data.at(r.idx_proj))
+    {
+      if (data.at(r.idx_proj)->has_fitter(r.idx_sink))
+      {
+        Fitter f = data.at(r.idx_proj)->get_fitter(r.idx_sink);
+        r.spectrum_info = f.metadata_;
+        std::set<double> sel = f.get_selected_peaks();
+        if (sel.size() && f.contains_peak(*sel.begin()))
+          r.selected_peak = f.peak(*sel.begin());
+      }
+    }
+  }
 }
+
 
 
 }

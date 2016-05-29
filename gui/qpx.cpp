@@ -36,8 +36,8 @@
 #include "form_mca_daq.h"
 #include "form_system_settings.h"
 #include "form_oscilloscope.h"
-#include "form_optimization.h"
 #include "form_gain_match.h"
+#include "form_experiment.h"
 #include "experiment.h"
 
 #include "qt_util.h"
@@ -359,10 +359,9 @@ void qpx::open_list()
 
 void qpx::open_optimization()
 {
-  FormOptimization *newOpt = new FormOptimization(runner_thread_, detectors_, this);
+  FormExperiment *newOpt = new FormExperiment(runner_thread_, detectors_, this);
   addClosableTab(newOpt, "Close");
 
-//  connect(newOpt, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
   connect(newOpt, SIGNAL(settings_changed()), this, SLOT(update_settings()));
 
   connect(newOpt, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));

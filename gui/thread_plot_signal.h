@@ -97,6 +97,7 @@ private:
     if (project_)
       project_->activate();
     wait();
+    project_ = Qpx::ProjectPtr();
   }
 
 };
