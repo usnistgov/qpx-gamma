@@ -50,6 +50,8 @@ WidgetPlotCalib::WidgetPlotCalib(QWidget *parent) :
   ui->plot->yAxis2->setScaleType(QCPAxis::stLinear);
   ui->plot->xAxis->setScaleType(QCPAxis::stLinear);
   ui->plot->xAxis2->setScaleType(QCPAxis::stLinear);
+  ui->plot->yAxis->setPadding(8);
+  ui->plot->xAxis->setPadding(8);
 
   connect(&menuOptions, SIGNAL(triggered(QAction*)), this, SLOT(exportRequested(QAction*)));
 
@@ -171,18 +173,36 @@ void WidgetPlotCalib::redraw() {
       crs->updatePosition();
     }
 
-    for (auto &q : p.x) {
-      if (q < xmin)
-        xmin = q;
-      if (q > xmax)
-        xmax = q;
+    for (int i=0; i < p.x.size(); ++i)
+    {
+      double min = p.x[i];
+      double max = min;
+      if ((p.x_sigma.size() > i) && std::isfinite(p.x_sigma[i]))
+      {
+        min -= p.x_sigma[i];
+        max += p.x_sigma[i];
+      }
+      if (min < xmin)
+        xmin = min;
+      if (max > xmax)
+        xmax = max;
     }
-    for (auto &q : p.y) {
-      if (q < ymin)
-        ymin = q;
-      if (q > ymax)
-        ymax = q;
+
+    for (int i=0; i < p.y.size(); ++i)
+    {
+      double min = p.y[i];
+      double max = min;
+      if ((p.y_sigma.size() > i) && std::isfinite(p.y_sigma[i]))
+      {
+        min -= p.y_sigma[i];
+        max += p.y_sigma[i];
+      }
+      if (min < ymin)
+        ymin = min;
+      if (max > ymax)
+        ymax = max;
     }
+
   }
 
   ui->plot->rescaleAxes();

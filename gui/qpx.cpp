@@ -359,7 +359,7 @@ void qpx::open_list()
 
 void qpx::open_optimization()
 {
-  FormExperiment *newOpt = new FormExperiment(runner_thread_, detectors_, this);
+  FormExperiment *newOpt = new FormExperiment(runner_thread_, this);
   addClosableTab(newOpt, "Close");
 
   connect(newOpt, SIGNAL(settings_changed()), this, SLOT(update_settings()));

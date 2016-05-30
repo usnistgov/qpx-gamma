@@ -43,4 +43,9 @@ void add_to_table(QTableWidget *table,
                   int row, int col, std::string data,
                   QVariant value = QVariant(), QBrush background = QBrush(Qt::white));
 
+QString path_of_file(QString filename);
+
+
+void clearLayout(QLayout* layout, bool deleteWidgets = true);
+
 #endif

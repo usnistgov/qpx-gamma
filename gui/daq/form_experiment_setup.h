@@ -28,7 +28,6 @@
 #include <QItemSelection>
 #include "experiment.h"
 #include "tree_experiment.h"
-#include "widget_selector.h"
 
 namespace Ui {
 class FormExperimentSetup;
@@ -39,17 +38,19 @@ class FormExperimentSetup : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormExperimentSetup(XMLableDB<Qpx::Detector>&, Qpx::ExperimentProject&, QWidget *parent = 0);
+  explicit FormExperimentSetup(Qpx::ExperimentProject&, QWidget *parent = 0);
   ~FormExperimentSetup();
 
   void update_settings();
   void retro_push(Qpx::TrajectoryPtr);
-
   void update_exp_project();
 
+  void toggle_push(bool);
+
 signals:
+  void prototypesChanged();
   void selectedProject(int64_t);
-  void selectedSink(int64_t);
+  void toggleIO();
 
 private slots:
 
@@ -63,9 +64,6 @@ private slots:
 
   void on_pushEditPrototypes_clicked();
 
-  void spectrumDoubleclicked(SelectorItem item);
-  void choose_spectrum(SelectorItem item);
-
 private:
   Ui::FormExperimentSetup *ui;
 
@@ -73,24 +71,13 @@ private:
 
   TreeExperiment tree_experiment_model_;
 
-  std::map<std::string, Qpx::Domain> all_domains_;
-
-  int64_t current_spectrum_;
-
-//  Qpx::Metadata sink_prototype_;
-
-  //from parent
-  QString data_directory_;
-  QString settings_directory_;
-
-  XMLableDB<Qpx::Detector> &detectors_; //unused!!!
   std::vector<Qpx::Detector> current_dets_;
+  std::map<std::string, Qpx::Domain> all_domains_;
 
   void loadSettings();
   void saveSettings();
 
   void remake_domains();
-  void populate_selector();
 };
 
 #endif // FORM_CALIBRATION_H

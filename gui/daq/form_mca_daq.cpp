@@ -315,7 +315,7 @@ void FormMcaDaq::projectSaveAs()
     update_plots();
   }
 
-  update_data_dir(fileName);
+  data_directory_ = path_of_file(fileName);
 }
 
 void FormMcaDaq::projectExport()
@@ -387,7 +387,7 @@ void FormMcaDaq::projectOpen()
   if (!validateFile(this, fileName, false))
     return;
 
-  update_data_dir(fileName);
+  data_directory_ = path_of_file(fileName);
 
   //save first?
   if (!spectra_->empty()) {
@@ -422,7 +422,7 @@ void FormMcaDaq::projectImport()
   if (fileNames.empty())
     return;
 
-  update_data_dir(fileNames.front());
+  data_directory_ = path_of_file(fileNames.front());
 
   for (int i=0; i<fileNames.size(); i++)
     if (!validateFile(this, fileNames.at(i), false))
@@ -476,18 +476,6 @@ void FormMcaDaq::projectImport()
   emit toggleIO(true);
 
   this->setCursor(Qt::ArrowCursor);
-}
-
-void FormMcaDaq::update_data_dir(QString filename) {
-  QFileInfo file(filename);
-  if (file.absoluteDir().isReadable()) {
-    data_directory_ = file.absoluteDir().absolutePath();
-//    QSettings settings_;
-//    settings_.beginGroup("Program");
-//    settings_.setValue("save_directory", data_directory_);
-//    settings_.endGroup();
-  }
-  //propagate to other gui elements?
 }
 
 void FormMcaDaq::updateSpectraUI() {

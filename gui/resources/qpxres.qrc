@@ -84,6 +84,7 @@
         <file>oxy/16/system_switch_user.png</file>
         <file>oxy/16/games_difficult.png</file>
         <file>oxy/16/document_new.png</file>
+        <file>oxy/16/text_csv.png</file>
     </qresource>
     <qresource prefix="/">
         <file>loader.gif</file>

@@ -55,12 +55,14 @@ public:
     next_idx = 1;
   }
 
+  bool empty() const;
+  bool has_results() const;
+  bool done() const;
+
   TrajectoryPtr get_trajectories() const {return root_trajectory;}
   ProjectPtr get_data(int64_t i) const;
   void delete_data(int64_t);
 
-  //DEPRECATE
-  void set_prototype(Qpx::Metadata ptp) { base_prototypes.clear(); base_prototypes.add(ptp); }
 
   void set_prototypes(XMLableDB<Qpx::Metadata> ptp) { base_prototypes = ptp; }
   XMLableDB<Qpx::Metadata> get_prototypes() const { return base_prototypes; }

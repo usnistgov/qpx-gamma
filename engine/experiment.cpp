@@ -216,10 +216,12 @@ ProjectPtr ExperimentProject::get_data(int64_t i) const
 void ExperimentProject::delete_data(int64_t i)
 {
   if (data.count(i))
-  {
     data.erase(i);
-    DBG << "deleted data " << i;
-  }
+  std::vector<DataPoint> results;
+  for (auto &r : results_)
+    if (r.idx_proj != i)
+      results.push_back(r);
+  results_ = results;
 }
 
 void ExperimentProject::gather_results()
@@ -242,6 +244,42 @@ void ExperimentProject::gather_results()
       }
     }
   }
+}
+
+bool ExperimentProject::empty() const
+{
+  if (!data.empty())
+    return false;
+  if (!root_trajectory)
+    return true;
+  if (root_trajectory->childCount() > 1)
+    return false;
+  if (root_trajectory->childCount() < 1)
+    return true;
+  if (root_trajectory->getChild(0)->childCount())
+    return false;
+  return true;
+}
+
+bool ExperimentProject::has_results() const
+{
+  return results_.size();
+}
+
+bool ExperimentProject::done() const
+{
+  std::pair<DomainType, TrajectoryPtr> ret(none, nullptr);
+  if (root_trajectory)
+    ret = root_trajectory->next_setting();
+  else
+    return false;
+  if (ret.second)
+  {
+    TrajectoryPtr parent = ret.second->getParent();
+    parent->remove_child(ret.second->row());
+    return false;
+  }
+  return true;
 }
 
 

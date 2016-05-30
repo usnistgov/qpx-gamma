@@ -31,6 +31,7 @@
 #include "form_experiment_setup.h"
 #include "form_experiment_1d.h"
 #include "experiment.h"
+#include "widget_selector.h"
 
 namespace Ui {
 class FormExperiment;
@@ -41,7 +42,7 @@ class FormExperiment : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormExperiment(ThreadRunner&, XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
+  explicit FormExperiment(ThreadRunner&, QWidget *parent = 0);
   ~FormExperiment();
 
 signals:
@@ -49,12 +50,10 @@ signals:
   void settings_changed();
 
 public slots:
-  void save_report();
   void toggle_push(bool, Qpx::SourceStatus);
 
 private slots:
   void selectProject(int64_t idx);
-  void selectSink(int64_t idx);
 
   void new_daq_data();
   void run_completed();
@@ -71,12 +70,18 @@ private slots:
   void on_pushStart_clicked();
   void on_pushStop_clicked();
 
+  void populate_selector();
+  void spectrumDoubleclicked(SelectorItem item);
+  void choose_spectrum(SelectorItem item);
+  void toggle_from_setup();
+
 protected:
   void closeEvent(QCloseEvent*);
 
 private:
-  Ui::FormExperiment *ui;
-  XMLableDB<Qpx::Detector> &detectors_;
+  Ui::FormExperiment  *ui;
+  FormExperimentSetup *form_experiment_setup_;
+  FormExperiment1D    *form_experiment_1d_;
 
   ThreadRunner         &runner_thread_;
   ThreadPlotSignal     exp_plot_thread_;
@@ -84,16 +89,13 @@ private:
   bool my_run_;
   bool continue_;
 
+  //to be shared by reference with children
   Qpx::ExperimentProject exp_project_;
-
-  FormExperimentSetup *form_experiment_setup_;
-  FormExperiment1D *form_experiment_1d_;
+  QString data_directory_;
 
   int64_t selected_sink_;
   Qpx::Fitter selected_fitter_;
 
-  //from parent
-  QString data_directory_;
 
   void start_new_pass();
   std::pair<Qpx::ProjectPtr, uint64_t> get_next_point();

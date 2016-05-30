@@ -31,30 +31,34 @@
 
 using namespace Qpx;
 
-FormExperiment::FormExperiment(ThreadRunner& runner, XMLableDB<Detector>& newDetDB, QWidget *parent) :
+FormExperiment::FormExperiment(ThreadRunner& runner, QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormExperiment),
   runner_thread_(runner),
   interruptor_(false),
   my_run_(false),
   continue_(false),
-  selected_sink_(-1),
-  detectors_(newDetDB)
+  selected_sink_(-1)
 {
   ui->setupUi(this);
   this->setWindowTitle("Experiment");
 
   loadSettings();
 
+  ui->spectrumSelector->set_only_one(true);
+  connect(ui->spectrumSelector, SIGNAL(itemSelected(SelectorItem)), this, SLOT(choose_spectrum(SelectorItem)));
+  connect(ui->spectrumSelector, SIGNAL(itemDoubleclicked(SelectorItem)), this, SLOT(spectrumDoubleclicked(SelectorItem)));
+
   connect(&runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
   connect(&exp_plot_thread_, SIGNAL(plot_ready()), this, SLOT(new_daq_data()));
 
-  form_experiment_setup_ = new FormExperimentSetup(detectors_, exp_project_);
+  form_experiment_setup_ = new FormExperimentSetup(exp_project_);
   ui->tabs->addTab(form_experiment_setup_, "Setup");
   connect(form_experiment_setup_, SIGNAL(selectedProject(int64_t)), this, SLOT(selectProject(int64_t)));
-  connect(form_experiment_setup_, SIGNAL(selectedSink(int64_t)), this, SLOT(selectSink(int64_t)));
+  connect(form_experiment_setup_, SIGNAL(prototypesChanged()), this, SLOT(populate_selector()));
+  connect(form_experiment_setup_, SIGNAL(toggleIO()), this, SLOT(toggle_from_setup()));
 
-  form_experiment_1d_ = new FormExperiment1D(detectors_, exp_project_);
+  form_experiment_1d_ = new FormExperiment1D(exp_project_, data_directory_, selected_sink_);
   ui->tabs->addTab(form_experiment_1d_, "Results in 1D");
 
   ui->plotSpectrum->setFit(&selected_fitter_);
@@ -97,11 +101,12 @@ void FormExperiment::closeEvent(QCloseEvent *event) {
 }
 
 void FormExperiment::loadSettings() {
-  QSettings settings_;
+  QSettings settings;
 
-  settings_.beginGroup("Program");
-  QString profile_directory = settings_.value("profile_directory", QDir::homePath() + "/qpx/settings").toString();
-  settings_.endGroup();
+  settings.beginGroup("Program");
+  QString profile_directory = settings.value("profile_directory", QDir::homePath() + "/qpx/settings").toString();
+  data_directory_ = settings.value("save_directory", QDir::homePath() + "/qpx/data").toString();
+  settings.endGroup();
 
   if (!profile_directory.isEmpty()) {
     std::string path = profile_directory.toStdString() + "/optimize.set";
@@ -116,23 +121,18 @@ void FormExperiment::loadSettings() {
     }
   }
 
-  settings_.beginGroup("Experiment");
-  //  ui->spinBits->setValue(settings_.value("bits", 14).toInt());
-  //  ui->comboCodomain->setCurrentText(settings_.value("co-domain", ui->comboCodomain->currentText()).toString());
-  //  ui->checkAutofit->setChecked(settings_.value("autofit", true).toBool());
-  //  ui->widgetAutoselect->loadSettings(settings_);
-
-  ui->plotSpectrum->loadSettings(settings_);
-
-  settings_.endGroup();
+  settings.beginGroup("Experiment");
+  ui->plotSpectrum->loadSettings(settings);
+  settings.endGroup();
 }
 
 void FormExperiment::saveSettings() {
-  QSettings settings_;
+  QSettings settings;
 
-  settings_.beginGroup("Program");
-  QString profile_directory = settings_.value("profile_directory", QDir::homePath() + "/qpx/settings").toString();
-  settings_.endGroup();
+  settings.beginGroup("Program");
+  settings.setValue("save_directory", data_directory_);
+  QString profile_directory = settings.value("profile_directory", QDir::homePath() + "/qpx/settings").toString();
+  settings.endGroup();
 
   if (!profile_directory.isEmpty()) {
     std::string path = profile_directory.toStdString() + "/optimize.set";
@@ -143,27 +143,10 @@ void FormExperiment::saveSettings() {
     doc.save_file(path.c_str());
   }
 
-  settings_.beginGroup("Experiment");
-  //  settings_.setValue("bits", ui->spinBits->value());
-  //  settings_.setValue("co-domain", ui->comboCodomain->currentText());
-  //  settings_.setValue("autofit", ui->checkAutofit->isChecked());
-  //  ui->widgetAutoselect->saveSettings(settings_);
-
-  ui->plotSpectrum->saveSettings(settings_);
-
-  settings_.endGroup();
+  settings.beginGroup("Experiment");
+  ui->plotSpectrum->saveSettings(settings);
+  settings.endGroup();
 }
-
-void FormExperiment::save_report()
-{
-  QString fileName = CustomSaveFileDialog(this, "Save analysis report",
-                                          data_directory_, "Plain text (*.txt)");
-  if (validateFile(this, fileName, true)) {
-    INFO << "Writing report to " << fileName.toStdString();
-    selected_fitter_.save_report(fileName.toStdString());
-  }
-}
-
 
 void FormExperiment::run_completed() {
   if (my_run_) {
@@ -173,7 +156,7 @@ void FormExperiment::run_completed() {
 
     if (continue_)
     {
-      INFO << "<FormOptimization> Completed one pass";
+      INFO << "<FormExperiment> Completed one run";
       start_new_pass();
     }
   }
@@ -241,25 +224,24 @@ void FormExperiment::update_name()
   }
 }
 
+void FormExperiment::toggle_from_setup()
+{
+  emit toggleIO(true);
+}
+
 void FormExperiment::start_new_pass()
 {
   std::pair<Qpx::ProjectPtr, uint64_t> pr = get_next_point();
 
   if (!pr.first || !pr.second)
   {
-    DBG << "No valid next point. Terminating epxeriment.";
+    INFO << "<FormExperiment> No valid next point. Terminating epxeriment.";
     return;
   }
-
-  DBG << "Good next point " << pr.first.operator bool() << " " << pr.second;
 
   ui->pushStop->setEnabled(true);
   my_run_ = true;
   emit toggleIO(false);
-
-  //  INFO << "<FormOptimization> Starting pass #" << (current_pass_ + 1)
-  //       << " with " << ui->comboSetting->currentText().toStdString() << " = "
-  //       << current_setting_.number();
 
   interruptor_.store(false);
   runner_thread_.do_run(pr.first, interruptor_, pr.second);
@@ -271,7 +253,7 @@ std::pair<Qpx::ProjectPtr, uint64_t> FormExperiment::get_next_point()
   if (!ret.second)
     return std::pair<Qpx::ProjectPtr, uint64_t>(nullptr,0);
 
-  INFO << "Next setting " << ret.second->type() << " " << ret.second->to_string();
+  INFO << "<FormExperiment> Next setting " << ret.second->type() << " " << ret.second->to_string();
 
   if (ret.first == Qpx::DomainType::manual)
   {
@@ -290,7 +272,7 @@ std::pair<Qpx::ProjectPtr, uint64_t> FormExperiment::get_next_point()
       ret.second->domain_value.set_number(d);
     else
     {
-      INFO << "Manual abort";
+      INFO << "<FormExperiment> User failed to confirm manual setting. Aborting";
       update_name();
       return std::pair<Qpx::ProjectPtr, uint64_t>(nullptr,0);
     }
@@ -300,6 +282,13 @@ std::pair<Qpx::ProjectPtr, uint64_t> FormExperiment::get_next_point()
     Qpx::Engine::getInstance().set_setting(ret.second->domain_value, Qpx::Match::id | Qpx::Match::indices);
     QThread::sleep(1);
     Qpx::Engine::getInstance().get_all_settings();
+    if (!Qpx::Engine::getInstance().pull_settings().has(ret.second->domain_value, Qpx::Match::id | Qpx::Match::indices))
+    {
+      INFO << "<FormExperiment> Source does not have this setting. Aborting";
+      update_name();
+      return std::pair<Qpx::ProjectPtr, uint64_t>(nullptr,0);
+    }
+
     double newval = Qpx::Engine::getInstance().pull_settings().get_setting(ret.second->domain_value, Qpx::Match::id | Qpx::Match::indices).number();
     //    if (newval < current_setting_.number())
     //      return;
@@ -320,20 +309,17 @@ std::pair<Qpx::ProjectPtr, uint64_t> FormExperiment::get_next_point()
 
 void FormExperiment::toggle_push(bool enable, Qpx::SourceStatus status) {
   bool online = (status & Qpx::SourceStatus::can_run);
-  bool empty = true; //filtered_data_points_.empty();
-  bool enable_domain_edit = (enable && !my_run_ && empty);
+  bool empty = exp_project_.empty();
+  bool done = exp_project_.done();
+  bool hasprototypes = exp_project_.get_prototypes().size();
 
-  ui->pushStart->setEnabled(online && enable_domain_edit);
+  ui->pushStart->setEnabled(online && enable && !my_run_ && !empty && !done && hasprototypes);
 
-  //  ui->comboTarget->setEnabled(enable_domain_edit);
-  //  ui->spinBits->setEnabled(enable_domain_edit);
-  //  ui->comboSinkType->setEnabled(enable_domain_edit);
-  //  ui->pushEditPrototype->setEnabled(enable_domain_edit);
+  ui->pushNewExperiment->setEnabled(enable && !my_run_ && !empty);
+  ui->pushSaveExperiment->setEnabled(enable && !my_run_ && !empty);
+  ui->pushLoadExperiment->setEnabled(enable && !my_run_);
 
-  //  ui->comboCodomain->setEnabled(enable);
-
-  //  ui->pushClear->setEnabled(enable && !my_run_ && !empty);
-  //  ui->pushSaveCsv->setEnabled(enable && !empty);
+  form_experiment_setup_->toggle_push(enable && !my_run_);
 }
 
 
@@ -386,25 +372,20 @@ void FormExperiment::update_peak_selection(std::set<double> dummy) {
 
 void FormExperiment::fitter_status(bool busy)
 {
-  //  ui->tableResults->setEnabled(!busy);
-  //  ui->PlotCalib->setEnabled(!busy);
-  //  ui->treeViewExperiment->setEnabled(!busy);
+  ui->widgetFileOps->setEnabled(!busy);
+  form_experiment_setup_->setEnabled(!busy);
+  ui->spectrumSelector->setEnabled(!busy);
 }
 
 void FormExperiment::selectProject(int64_t idx)
 {
   Qpx::ProjectPtr p = exp_project_.get_data(idx);
-  if (!p)
-    return;
+//  if (!p)
+//    return;
 
   exp_plot_thread_.monitor_source(p);
-  p->activate();
-}
-
-void FormExperiment::selectSink(int64_t idx)
-{
-  selected_sink_ = idx;
   new_daq_data();
+//  p->activate();
 }
 
 void FormExperiment::on_pushNewExperiment_clicked()
@@ -418,19 +399,18 @@ void FormExperiment::on_pushNewExperiment_clicked()
 
   exp_project_.gather_results();
   form_experiment_1d_->update_exp_project();
+  populate_selector();
+  emit toggleIO(true);
 }
 
 void FormExperiment::on_pushLoadExperiment_clicked()
 {
-  QSettings settings;
-  settings.beginGroup("Program");
-  QString data_directory = settings.value("save_directory", QDir::homePath() + "/qpx/data").toString();
-  settings.endGroup();
-
   QString fileName = QFileDialog::getOpenFileName(this, "Load experiment",
-                                                  data_directory, "qpx multi-experiment (*.qmx)");
+                                                  data_directory_, "qpx multi-experiment (*.qmx)");
   if (!validateFile(this, fileName, false))
     return;
+
+  data_directory_ = path_of_file(fileName);
 
   if (!fileName.isEmpty()) {
     pugi::xml_document doc;
@@ -446,21 +426,20 @@ void FormExperiment::on_pushLoadExperiment_clicked()
 
       exp_project_.gather_results();
       form_experiment_1d_->update_exp_project();
+      populate_selector();
+      emit toggleIO(true);
     }
   }
 }
 
 void FormExperiment::on_pushSaveExperiment_clicked()
 {
-  QSettings settings;
-  settings.beginGroup("Program");
-  QString data_directory = settings.value("save_directory", QDir::homePath() + "/qpx/data").toString();
-  settings.endGroup();
-
   QString fileName = CustomSaveFileDialog(this, "Save experiment",
-                                          data_directory, "Qpx multi-experiment (*.qmx)");
+                                          data_directory_, "Qpx multi-experiment (*.qmx)");
   if (!validateFile(this, fileName, true))
     return;
+
+  data_directory_ = path_of_file(fileName);
 
   if (!fileName.isEmpty()) {
     pugi::xml_document doc;
@@ -485,4 +464,45 @@ void FormExperiment::on_pushStop_clicked()
 {
   continue_ = false;
   interruptor_.store(true);
+}
+
+void FormExperiment::choose_spectrum(SelectorItem item)
+{
+  SelectorItem itm = ui->spectrumSelector->selected();
+
+  if (itm.data.toLongLong() == selected_sink_)
+    return;
+
+  selected_sink_ = itm.data.toLongLong();
+  form_experiment_1d_->update_exp_project();
+  new_daq_data();
+}
+
+void FormExperiment::spectrumDoubleclicked(SelectorItem item)
+{
+  //  on_pushDetails_clicked();
+}
+
+void FormExperiment::populate_selector()
+{
+  XMLableDB<Qpx::Metadata> ptp = exp_project_.get_prototypes();
+
+  QString sel;
+  QVector<SelectorItem> items;
+  int i=1;
+  for (auto &md : ptp.my_data_) {
+    SelectorItem new_spectrum;
+    new_spectrum.visible = md.attributes.branches.get(Qpx::Setting("visible")).value_int;
+    new_spectrum.text = QString::fromStdString(md.name);
+    new_spectrum.data = QVariant::fromValue(i);
+    new_spectrum.color = QColor(QString::fromStdString(md.attributes.branches.get(Qpx::Setting("appearance")).value_text));
+    items.push_back(new_spectrum);
+    i++;
+
+    if (sel.isEmpty())
+      sel = new_spectrum.text;
+  }
+
+  ui->spectrumSelector->setItems(items);
+  ui->spectrumSelector->setSelected(sel);
 }

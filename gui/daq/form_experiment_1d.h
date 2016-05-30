@@ -25,9 +25,9 @@
 #define FORM_EXPERIMENT_1D_H
 
 #include <QWidget>
-#include <QItemSelection>
 #include "experiment.h"
 #include "appearance.h"
+#include "experiment_filter.h"
 
 namespace Ui {
 class FormExperiment1D;
@@ -38,39 +38,34 @@ class FormExperiment1D : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormExperiment1D(XMLableDB<Qpx::Detector>&, Qpx::ExperimentProject&, QWidget *parent = 0);
+  explicit FormExperiment1D(Qpx::ExperimentProject&,
+                            QString &data_directory,
+                            int64_t &selected_sink,
+                            QWidget *parent = 0);
   ~FormExperiment1D();
 
-  void update_settings();
   void update_exp_project();
 
 private slots:
-
-  void toggle_push();
-
   void pass_selected_in_table();
   void pass_selected_in_plot();
 
   void on_comboDomain_currentIndexChanged(int index);
-
   void on_comboCodomain_currentIndexChanged(int index);
+  void filter_changed();
 
   void on_pushSaveCsv_clicked();
 
 private:
   Ui::FormExperiment1D *ui;
+
   Qpx::ExperimentProject &exp_project_;
-
-  int64_t current_spectrum_;
-
+  QString                &data_directory_;
+  int64_t                &selected_sink_;
 
   AppearanceProfile style_pts;
 
-  //from parent
-  QString data_directory_;
-  QString settings_directory_;
-
-  XMLableDB<Qpx::Detector> &detectors_; //unused!!!
+  WidgetExperimentFilter *domain_filter_;
 
   std::vector<Qpx::DataPoint> all_data_points_;
   std::vector<Qpx::DataPoint> filtered_data_points_;

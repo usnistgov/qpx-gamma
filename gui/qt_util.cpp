@@ -23,12 +23,14 @@
 #include <QFile>
 #include <QDateTime>
 #include <QMessageBox>
+#include <QLayout>
+#include <QLayoutItem>
 #include "custom_logger.h"
 
 QString CustomSaveFileDialog(QWidget *parent,
-                           const QString &title,
-                           const QString &directory,
-                           const QString &filter) {
+                             const QString &title,
+                             const QString &directory,
+                             const QString &filter) {
 #if defined(Q_WS_WIN) || defined(Q_WS_MAC)
   return QFileDialog::getSaveFileName(parent,
                                       title,
@@ -58,16 +60,16 @@ QString CustomSaveFileDialog(QWidget *parent,
       }
     }
 
-//    QFile file(file_name);
-//    if (file.exists()) {
-//        QMessageBox msgBox;
-//        msgBox.setText("Replace?");
-//        msgBox.setInformativeText("File \'" + file_name + "\' already exists. Replace?");
-//        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
-//        msgBox.setDefaultButton(QMessageBox::Cancel);
-//        if (msgBox.exec() != QMessageBox::Yes)
-//          return QString();
-//    }
+    //    QFile file(file_name);
+    //    if (file.exists()) {
+    //        QMessageBox msgBox;
+    //        msgBox.setText("Replace?");
+    //        msgBox.setInformativeText("File \'" + file_name + "\' already exists. Replace?");
+    //        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
+    //        msgBox.setDefaultButton(QMessageBox::Cancel);
+    //        if (msgBox.exec() != QMessageBox::Yes)
+    //          return QString();
+    //    }
 
     return file_name;
   } else {
@@ -77,31 +79,31 @@ QString CustomSaveFileDialog(QWidget *parent,
 }
 
 bool validateFile(QWidget* parent, QString name, bool write) {
-    QFile file(name);
-    if (name.isEmpty())
-        return false;
+  QFile file(name);
+  if (name.isEmpty())
+    return false;
 
-    if (!write) {
-        if (!file.exists()) {
-            QMessageBox::warning(parent, "Failed", "File does not exist.");
-            return false;
-        }
-        if (!file.open(QIODevice::ReadOnly)) {
-            QMessageBox::warning(parent, "Failed", "Could not open file for reading.");
-            return false;
-        }
-    } else {
-        if (file.exists() && !file.remove()) {
-            QMessageBox::warning(parent, "Failed", "Could not delete file.");
-            return false;
-        }
-        if (!file.open(QIODevice::WriteOnly)) {
-            QMessageBox::warning(parent, "Failed", "Could not open file for writing.");
-            return false;
-        }
+  if (!write) {
+    if (!file.exists()) {
+      QMessageBox::warning(parent, "Failed", "File does not exist.");
+      return false;
     }
-    file.close();
-    return true;
+    if (!file.open(QIODevice::ReadOnly)) {
+      QMessageBox::warning(parent, "Failed", "Could not open file for reading.");
+      return false;
+    }
+  } else {
+    if (file.exists() && !file.remove()) {
+      QMessageBox::warning(parent, "Failed", "Could not delete file.");
+      return false;
+    }
+    if (!file.open(QIODevice::WriteOnly)) {
+      QMessageBox::warning(parent, "Failed", "Could not open file for writing.");
+      return false;
+    }
+  }
+  file.close();
+  return true;
 }
 
 
@@ -114,40 +116,40 @@ QColor generateColor() {
 }
 
 QDateTime fromBoostPtime(boost::posix_time::ptime bpt) {
-    std::string bpt_iso = boost::posix_time::to_iso_extended_string(bpt);
-    std::replace(bpt_iso.begin(), bpt_iso.end(), '-', ' ');
-    std::replace(bpt_iso.begin(), bpt_iso.end(), 'T', ' ');
-    std::replace(bpt_iso.begin(), bpt_iso.end(), ':', ' ');
-    std::replace(bpt_iso.begin(), bpt_iso.end(), '.', ' ');
+  std::string bpt_iso = boost::posix_time::to_iso_extended_string(bpt);
+  std::replace(bpt_iso.begin(), bpt_iso.end(), '-', ' ');
+  std::replace(bpt_iso.begin(), bpt_iso.end(), 'T', ' ');
+  std::replace(bpt_iso.begin(), bpt_iso.end(), ':', ' ');
+  std::replace(bpt_iso.begin(), bpt_iso.end(), '.', ' ');
 
-    std::stringstream iss;
-    iss.str(bpt_iso);
+  std::stringstream iss;
+  iss.str(bpt_iso);
 
-    int year, month, day, hour, minute, second;
-    double ms = 0;
-    iss >> year >> month >> day >> hour >> minute >> second >> ms;
+  int year, month, day, hour, minute, second;
+  double ms = 0;
+  iss >> year >> month >> day >> hour >> minute >> second >> ms;
 
-    while (ms > 999)
-        ms = ms / 10;
-    ms = round(ms);
+  while (ms > 999)
+    ms = ms / 10;
+  ms = round(ms);
 
-    QDate date;
-    date.setDate(year, month, day);
+  QDate date;
+  date.setDate(year, month, day);
 
-    QTime time;
-    time.setHMS(hour, minute, second, static_cast<int>(ms));
+  QTime time;
+  time.setHMS(hour, minute, second, static_cast<int>(ms));
 
-    QDateTime ret;
-    ret.setDate(date);
-    ret.setTime(time);
+  QDateTime ret;
+  ret.setDate(date);
+  ret.setTime(time);
 
-    return ret;
+  return ret;
 }
 
 boost::posix_time::ptime fromQDateTime(QDateTime qdt) {
-    std::string dts = qdt.toString("yyyy-MM-dd hh:mm:ss.zzz").toStdString();
-    boost::posix_time::ptime bpt = boost::posix_time::time_from_string(dts);
-    return bpt;
+  std::string dts = qdt.toString("yyyy-MM-dd hh:mm:ss.zzz").toStdString();
+  boost::posix_time::ptime bpt = boost::posix_time::time_from_string(dts);
+  return bpt;
 }
 
 QString catExtensions(std::list<std::string> exts) {
@@ -175,10 +177,36 @@ void add_to_table(QTableWidget *table,
                   QVariant value, QBrush background)
 {
   QTableWidgetItem * item = new QTableWidgetItem(QString::fromStdString(data));
-//  item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+  //  item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
   item->setFlags(item->flags() ^ Qt::ItemIsEditable);
   item->setData(Qt::UserRole, value);
   item->setData(Qt::BackgroundRole, background);
   table->setItem(row, col, item);
-//  DBG << "added " << data << " and " << value.toDouble();
+  //  DBG << "added " << data << " and " << value.toDouble();
+}
+
+QString path_of_file(QString filename)
+{
+  QString ret;
+  QFileInfo file(filename);
+  if (file.absoluteDir().isReadable())
+    ret = file.absoluteDir().absolutePath();
+  return ret;
+}
+
+void clearLayout(QLayout* layout, bool deleteWidgets)
+{
+  QLayoutItem* item;
+  while (layout->count() && (item = layout->takeAt(0)))
+  {
+    QWidget* widget;
+    if (  (deleteWidgets)
+          && (widget = item->widget())  ) {
+      delete widget;
+    }
+    if (QLayout* childLayout = item->layout()) {
+      clearLayout(childLayout, deleteWidgets);
+    }
+    delete item;
+  }
 }
