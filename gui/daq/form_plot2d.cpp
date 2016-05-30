@@ -311,7 +311,7 @@ void FormPlot2D::update_plot(bool force) {
 
       std::shared_ptr<EntryList> spectrum_data =
           std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
-      ui->coincPlot->update_plot(adjrange, spectrum_data);
+      ui->coincPlot->update_plot(adjrange, adjrange, spectrum_data);
 
       if (rescale2d || force /*|| (name_2d != newname)*/) {
 //        DBG << "rescaling 2d";
@@ -331,7 +331,7 @@ void FormPlot2D::update_plot(bool force) {
         calib_x_ = detector_x_.best_calib(bits);
         calib_y_ = detector_y_.best_calib(bits);
 
-        ui->coincPlot->set_axes(calib_x_, calib_y_, bits);
+        ui->coincPlot->set_axes(calib_x_, calib_y_, bits, "Event count");
       }
 
     } else {

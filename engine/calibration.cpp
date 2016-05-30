@@ -169,6 +169,15 @@ std::string Calibration::to_string()
   return result;
 }
 
+std::string Calibration::axis_name() const
+{
+  std::string ret = type_;
+  if (!units_.empty())
+    ret += " (" + units_ + ")";
+  return ret;
+}
+
+
 
 void Calibration::to_xml(pugi::xml_node &root) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());

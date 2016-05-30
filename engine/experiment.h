@@ -39,6 +39,7 @@ struct DataPoint
   TrajectoryPtr node;
 
   UncertainDouble independent_variable;
+  UncertainDouble independent_variable2;
   UncertainDouble dependent_variable;
 };
 

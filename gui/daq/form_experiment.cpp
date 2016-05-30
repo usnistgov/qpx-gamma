@@ -61,6 +61,9 @@ FormExperiment::FormExperiment(ThreadRunner& runner, QWidget *parent) :
   form_experiment_1d_ = new FormExperiment1D(exp_project_, data_directory_, selected_sink_);
   ui->tabs->addTab(form_experiment_1d_, "Results in 1D");
 
+  form_experiment_2d_ = new FormExperiment2D(exp_project_, data_directory_, selected_sink_);
+  ui->tabs->addTab(form_experiment_2d_, "Results in 2D");
+
   ui->plotSpectrum->setFit(&selected_fitter_);
   connect(ui->plotSpectrum, SIGNAL(data_changed()), this, SLOT(update_fits()));
   connect(ui->plotSpectrum, SIGNAL(peak_selection_changed(std::set<double>)),
@@ -72,6 +75,7 @@ FormExperiment::FormExperiment(ThreadRunner& runner, QWidget *parent) :
   ui->tabs->setCurrentWidget(form_experiment_setup_);
   form_experiment_setup_->update_exp_project();
   form_experiment_1d_->update_exp_project();
+  form_experiment_2d_->update_exp_project();
 }
 
 FormExperiment::~FormExperiment()
@@ -346,6 +350,7 @@ void FormExperiment::fitting_done()
 
   exp_project_.gather_results();
   form_experiment_1d_->update_exp_project();
+  form_experiment_2d_->update_exp_project();
 }
 
 
@@ -367,6 +372,7 @@ void FormExperiment::update_peak_selection(std::set<double> dummy) {
 
   exp_project_.gather_results();
   form_experiment_1d_->update_exp_project();
+  form_experiment_2d_->update_exp_project();
 }
 
 
@@ -399,6 +405,7 @@ void FormExperiment::on_pushNewExperiment_clicked()
 
   exp_project_.gather_results();
   form_experiment_1d_->update_exp_project();
+  form_experiment_2d_->update_exp_project();
   populate_selector();
   emit toggleIO(true);
 }
@@ -426,6 +433,7 @@ void FormExperiment::on_pushLoadExperiment_clicked()
 
       exp_project_.gather_results();
       form_experiment_1d_->update_exp_project();
+      form_experiment_2d_->update_exp_project();
       populate_selector();
       emit toggleIO(true);
     }
@@ -452,6 +460,7 @@ void FormExperiment::on_pushSaveExperiment_clicked()
 void FormExperiment::on_pushStart_clicked()
 {
   form_experiment_1d_->update_exp_project();
+  form_experiment_2d_->update_exp_project();
   FitSettings fitset = selected_fitter_.settings();
   selected_fitter_ = Qpx::Fitter();
   selected_fitter_.apply_settings(fitset);
@@ -475,6 +484,7 @@ void FormExperiment::choose_spectrum(SelectorItem item)
 
   selected_sink_ = itm.data.toLongLong();
   form_experiment_1d_->update_exp_project();
+  form_experiment_2d_->update_exp_project();
   new_daq_data();
 }
 
@@ -505,4 +515,5 @@ void FormExperiment::populate_selector()
 
   ui->spectrumSelector->setItems(items);
   ui->spectrumSelector->setSelected(sel);
+  choose_spectrum(SelectorItem());
 }

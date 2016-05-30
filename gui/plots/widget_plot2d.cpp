@@ -565,14 +565,25 @@ void WidgetPlot2D::replot_markers() {
   ui->coincPlot->replot();
 }
 
-void WidgetPlot2D::update_plot(uint64_t size, std::shared_ptr<Qpx::EntryList> spectrum_data) {
+void WidgetPlot2D::update_plot(uint64_t sizex, uint64_t sizey, std::shared_ptr<Qpx::EntryList> spectrum_data) {
   //  DBG << "updating 2d";
 
 //  ui->coincPlot->clearGraphs();
 //  colorMap->clearData();
+  ui->coincPlot->setAlwaysSquare(sizex == sizey);
+  if (sizex == sizey)
+  {
+    ui->coincPlot->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::MinimumExpanding);
+    ui->verticalLayout->setSizeConstraint(QLayout::SetMaximumSize);
+  }
+  else
+  {
+    ui->coincPlot->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+    ui->verticalLayout->setSizeConstraint(QLayout::SetNoConstraint);
+  }
 
-  if ((size > 0) && (spectrum_data->size())) {
-    colorMap->data()->setSize(size, size);
+  if ((sizex > 0) && (sizey > 0) && (spectrum_data->size())) {
+    colorMap->data()->setSize(sizex, sizey);
     for (auto it : *spectrum_data)
       colorMap->data()->setCell(it.first[0], it.first[1], it.second.convert_to<double>());
     colorMap->rescaleDataRange(true);
@@ -587,15 +598,20 @@ void WidgetPlot2D::update_plot(uint64_t size, std::shared_ptr<Qpx::EntryList> sp
   replot_markers();
 }
 
-void WidgetPlot2D::set_axes(Qpx::Calibration cal_x, Qpx::Calibration cal_y, int bits) {
+void WidgetPlot2D::set_axes(Qpx::Calibration cal_x, Qpx::Calibration cal_y, int bits, QString zlabel) {
+  Z_label_ = zlabel;
+  for (int i=0; i < ui->coincPlot->plotLayout()->elementCount(); i++)
+    if (QCPColorScale *le = qobject_cast<QCPColorScale*>(ui->coincPlot->plotLayout()->elementAt(i)))
+      le->axis()->setLabel(zlabel);
+
   calib_x_ = cal_x;
   calib_y_ = cal_y;
   bits_ = bits;
 
-  colorMap->keyAxis()->setLabel(/*QString::fromStdString(detector_x_.name_) + */ "Energy (" + QString::fromStdString(calib_x_.units_) + ")");
-  colorMap->valueAxis()->setLabel(/*QString::fromStdString(detector_y_.name_) + */ "Energy (" + QString::fromStdString(calib_y_.units_) + ")");
-  colorMap->data()->setRange(QCPRange(0, calib_x_.transform(colorMap->data()->keySize() - 1, bits_)),
-                             QCPRange(0, calib_y_.transform(colorMap->data()->keySize() - 1, bits_)));
+  colorMap->keyAxis()->setLabel(QString::fromStdString(calib_x_.axis_name()));
+  colorMap->valueAxis()->setLabel(QString::fromStdString(calib_y_.axis_name()));
+  colorMap->data()->setRange(QCPRange(calib_x_.transform(0, bits_), calib_x_.transform(colorMap->data()->keySize() - 1, bits_)),
+                             QCPRange(calib_y_.transform(0, bits_), calib_y_.transform(colorMap->data()->valueSize() - 1, bits_)));
   ui->coincPlot->rescaleAxes();
 }
 
@@ -644,7 +660,7 @@ void WidgetPlot2D::toggle_gradient_scale()
     ui->coincPlot->plotLayout()->addElement(0, 1, colorScale);
     colorScale->setType(QCPAxis::atRight);
     colorMap->setColorScale(colorScale);
-    colorScale->axis()->setLabel("Event count");
+    colorScale->axis()->setLabel(Z_label_);
 
     //readjust margins
     QCPMarginGroup *marginGroup = new QCPMarginGroup(ui->coincPlot);

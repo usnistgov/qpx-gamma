@@ -204,7 +204,7 @@ void FormGatesPlot2D::update_plot() {
 
     std::shared_ptr<EntryList> spectrum_data =
         std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
-    ui->coincPlot->update_plot(adjrange, spectrum_data);
+    ui->coincPlot->update_plot(adjrange, adjrange, spectrum_data);
 
     int newbits = some_spectrum->bits();
     if (bits != newbits)
@@ -220,7 +220,7 @@ void FormGatesPlot2D::update_plot() {
     calib_x_ = detector_x_.best_calib(bits);
     calib_y_ = detector_y_.best_calib(bits);
 
-    ui->coincPlot->set_axes(calib_x_, calib_y_, bits);
+    ui->coincPlot->set_axes(calib_x_, calib_y_, bits, "Event count");
 
   } else {
     ui->coincPlot->reset_content();

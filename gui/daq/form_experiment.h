@@ -30,6 +30,7 @@
 #include "thread_plot_signal.h"
 #include "form_experiment_setup.h"
 #include "form_experiment_1d.h"
+#include "form_experiment_2d.h"
 #include "experiment.h"
 #include "widget_selector.h"
 
@@ -82,6 +83,7 @@ private:
   Ui::FormExperiment  *ui;
   FormExperimentSetup *form_experiment_setup_;
   FormExperiment1D    *form_experiment_1d_;
+  FormExperiment2D    *form_experiment_2d_;
 
   ThreadRunner         &runner_thread_;
   ThreadPlotSignal     exp_plot_thread_;

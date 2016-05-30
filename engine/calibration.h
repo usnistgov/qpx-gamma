@@ -65,6 +65,7 @@ class Calibration : public XMLable {
   std::vector<double> transform(std::vector<double>, uint16_t) const;
   std::string coef_to_string() const;
   void coef_from_string(std::string);
+  std::string axis_name() const;
   std::string to_string();
   std::string fancy_equation(int precision = -1, bool with_rsq=false);
 

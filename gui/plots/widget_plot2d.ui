@@ -20,7 +20,7 @@
    <string>WidgetPlot2D</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/qpxres.qrc">
+   <iconset>
     <normaloff>:/new/icons/qpx.xpm</normaloff>:/new/icons/qpx.xpm</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -43,7 +43,7 @@
     <number>3</number>
    </property>
    <item row="0" column="0">
-    <layout class="QVBoxLayout" name="verticalLayout_3">
+    <layout class="QVBoxLayout" name="verticalLayout">
      <property name="sizeConstraint">
       <enum>QLayout::SetMaximumSize</enum>
      </property>
@@ -86,8 +86,6 @@
    <header>qsquarecustomplot.h</header>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="../resources/qpxres.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

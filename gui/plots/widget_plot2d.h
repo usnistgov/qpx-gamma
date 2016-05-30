@@ -40,8 +40,8 @@ public:
   explicit WidgetPlot2D(QWidget *parent = 0);
   ~WidgetPlot2D();
 
-  void update_plot(uint64_t size, std::shared_ptr<Qpx::EntryList> spectrum_data);
-  void set_axes(Qpx::Calibration cal_x, Qpx::Calibration cal_y, int bits);
+  void update_plot(uint64_t sizex, uint64_t sizey, std::shared_ptr<Qpx::EntryList> spectrum_data);
+  void set_axes(Qpx::Calibration cal_x, Qpx::Calibration cal_y, int bits, QString zlabel);
   void refresh();
   void replot_markers();
   void reset_content();
@@ -97,6 +97,8 @@ private:
 
   std::map<QString, QCPAxis::ScaleType> scale_types_;
   QString current_scale_type_;
+
+  QString Z_label_;
 
   std::list<MarkerBox2D> boxes_;
   std::list<MarkerLabel2D> labels_;
