@@ -98,8 +98,18 @@ void FormExperiment::closeEvent(QCloseEvent *event) {
     }
   }
 
-  exp_plot_thread_.terminate_wait();
+  if (exp_project_.changed()) {
+    int reply = QMessageBox::warning(this, "Project contents changed",
+                                     "Discard?",
+                                     QMessageBox::Yes|QMessageBox::Cancel);
+    if (reply != QMessageBox::Yes)
+    {
+      event->ignore();
+      return;
+    }
+  }
 
+  exp_plot_thread_.terminate_wait();
   saveSettings();
   event->accept();
 }
@@ -126,7 +136,9 @@ void FormExperiment::loadSettings() {
   }
 
   settings.beginGroup("Experiment");
+  ui->checkAutofit->setChecked(settings.value("autofit", false).toBool());
   ui->plotSpectrum->loadSettings(settings);
+  ui->widgetAutoselect->loadSettings(settings);
   settings.endGroup();
 }
 
@@ -148,7 +160,9 @@ void FormExperiment::saveSettings() {
   }
 
   settings.beginGroup("Experiment");
+  settings.setValue("autofit", ui->checkAutofit->isChecked());
   ui->plotSpectrum->saveSettings(settings);
+  ui->widgetAutoselect->saveSettings(settings);
   settings.endGroup();
 }
 
@@ -209,9 +223,8 @@ void FormExperiment::new_daq_data() {
   if (!sel.empty())
     ui->plotSpectrum->set_selected_peaks(sel);
 
-  if (!selected_fitter_.peak_count())
+  if (ui->checkAutofit->isChecked() && (selected_fitter_.peak_count() < 1) )
     ui->plotSpectrum->perform_fit();
-
 }
 
 void FormExperiment::update_name()
@@ -219,8 +232,8 @@ void FormExperiment::update_name()
   QString name = "Experiment";
   if (my_run_)
     name += QString::fromUtf8("  \u25b6");
-  //  else if (spectra_.changed())
-  //    name += QString::fromUtf8(" \u2731");
+  else if (exp_project_.changed())
+    name += QString::fromUtf8(" \u2731");
 
   if (name != this->windowTitle()) {
     this->setWindowTitle(name);
@@ -324,15 +337,29 @@ void FormExperiment::toggle_push(bool enable, Qpx::SourceStatus status) {
   ui->pushLoadExperiment->setEnabled(enable && !my_run_);
 
   form_experiment_setup_->toggle_push(enable && !my_run_);
+  update_name();
 }
 
 
 void FormExperiment::update_fits() {
+  ui->plotSpectrum->set_selected_peaks(ui->widgetAutoselect->reselect(selected_fitter_.peaks(), ui->plotSpectrum->get_selected_peaks()));
 
   update_peak_selection(std::set<double>());
 }
 
 void FormExperiment::fitting_done()
+{
+  std::set<double> cursel = selected_fitter_.get_selected_peaks();
+  if (selected_fitter_.peak_count() && (cursel.empty() || (cursel.size() > 1)))
+    ui->plotSpectrum->set_selected_peaks(ui->widgetAutoselect->autoselect(selected_fitter_.peaks(), cursel));
+  save_propagate_fit();
+}
+
+void FormExperiment::update_peak_selection(std::set<double> dummy) {
+  save_propagate_fit();
+}
+
+void FormExperiment::save_propagate_fit()
 {
   Qpx::SinkPtr sink;
 
@@ -343,8 +370,6 @@ void FormExperiment::fitting_done()
   if (!sink)
     return;
 
-  Qpx::Metadata md = sink->metadata();
-
   selected_fitter_.set_selected_peaks(ui->plotSpectrum->get_selected_peaks());
   p->update_fitter(selected_sink_, selected_fitter_);
 
@@ -352,29 +377,6 @@ void FormExperiment::fitting_done()
   form_experiment_1d_->update_exp_project();
   form_experiment_2d_->update_exp_project();
 }
-
-
-void FormExperiment::update_peak_selection(std::set<double> dummy) {
-  Qpx::SinkPtr sink;
-
-  Qpx::ProjectPtr p = exp_plot_thread_.current_source();
-  if (p)
-    sink = p->get_sink(selected_sink_);
-
-  if (!sink)
-    return;
-
-
-  Qpx::Metadata md = sink->metadata();
-
-  selected_fitter_.set_selected_peaks(ui->plotSpectrum->get_selected_peaks());
-  p->update_fitter(selected_sink_, selected_fitter_);
-
-  exp_project_.gather_results();
-  form_experiment_1d_->update_exp_project();
-  form_experiment_2d_->update_exp_project();
-}
-
 
 void FormExperiment::fitter_status(bool busy)
 {
@@ -386,16 +388,24 @@ void FormExperiment::fitter_status(bool busy)
 void FormExperiment::selectProject(int64_t idx)
 {
   Qpx::ProjectPtr p = exp_project_.get_data(idx);
-//  if (!p)
-//    return;
+  //  if (!p)
+  //    return;
 
   exp_plot_thread_.monitor_source(p);
   new_daq_data();
-//  p->activate();
+  //  p->activate();
 }
 
 void FormExperiment::on_pushNewExperiment_clicked()
 {
+  if (exp_project_.changed()) {
+    int reply = QMessageBox::warning(this, "Clear existing?",
+                                     "Project non-empty. Clear data?",
+                                     QMessageBox::Yes|QMessageBox::Cancel);
+    if (reply != QMessageBox::Yes)
+      return;
+  }
+
   selected_sink_ = -1;
   new_daq_data();
   exp_plot_thread_.terminate_wait();
@@ -419,24 +429,33 @@ void FormExperiment::on_pushLoadExperiment_clicked()
 
   data_directory_ = path_of_file(fileName);
 
-  if (!fileName.isEmpty()) {
-    pugi::xml_document doc;
-    if (doc.load_file(fileName.toStdString().c_str())) {
-      if (doc.child(exp_project_.xml_element_name().c_str()))
-        exp_project_.from_xml(doc.child(exp_project_.xml_element_name().c_str()));
+  if (fileName.isEmpty())
+    return;
 
-      selected_sink_ = -1;
-      new_daq_data();
-      exp_plot_thread_.terminate_wait();
+  if (exp_project_.changed()) {
+    int reply = QMessageBox::warning(this, "Clear existing?",
+                                     "Project non-empty. Discard data?",
+                                     QMessageBox::Yes|QMessageBox::Cancel);
+    if (reply != QMessageBox::Yes)
+      return;
+  }
 
-      form_experiment_setup_->update_exp_project();
+  pugi::xml_document doc;
+  if (doc.load_file(fileName.toStdString().c_str())) {
+    if (doc.child(exp_project_.xml_element_name().c_str()))
+      exp_project_.from_xml(doc.child(exp_project_.xml_element_name().c_str()));
 
-      exp_project_.gather_results();
-      form_experiment_1d_->update_exp_project();
-      form_experiment_2d_->update_exp_project();
-      populate_selector();
-      emit toggleIO(true);
-    }
+    selected_sink_ = -1;
+    new_daq_data();
+    exp_plot_thread_.terminate_wait();
+
+    form_experiment_setup_->update_exp_project();
+
+    exp_project_.gather_results();
+    form_experiment_1d_->update_exp_project();
+    form_experiment_2d_->update_exp_project();
+    populate_selector();
+    emit toggleIO(true);
   }
 }
 

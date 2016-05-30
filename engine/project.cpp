@@ -342,10 +342,10 @@ void Project::to_xml(pugi::xml_node &root) const {
 
   if (fitters_1d_.size())
   {
-    DBG << "Will save fitters";
+//    DBG << "Will save fitters";
     pugi::xml_node fits_node = root.append_child("Fits1D");
     for (auto &q : fitters_1d_) {
-      DBG << "saving fit " << q.first;
+//      DBG << "saving fit " << q.first;
       q.second.to_xml(fits_node);
       fits_node.last_child().append_attribute("idx").set_value(std::to_string(q.first).c_str());
     }

@@ -75,7 +75,7 @@ FormExperiment1D::~FormExperiment1D()
 void FormExperiment1D::loadSettings() {
   QSettings settings_;
 
-  settings_.beginGroup("Experiment");
+  settings_.beginGroup("Experiment1d");
   ui->comboDomain->setCurrentText(settings_.value("domain", ui->comboDomain->currentText()).toString());
   ui->comboCodomain->setCurrentText(settings_.value("co-domain", ui->comboCodomain->currentText()).toString());
   settings_.endGroup();
@@ -85,7 +85,7 @@ void FormExperiment1D::saveSettings()
 {
   QSettings settings_;
 
-  settings_.beginGroup("Experiment");
+  settings_.beginGroup("Experiment1d");
   settings_.setValue("domain", ui->comboDomain->currentText());
   settings_.setValue("co-domain", ui->comboCodomain->currentText());
   settings_.endGroup();

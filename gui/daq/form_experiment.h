@@ -25,7 +25,6 @@
 #define FORM_EXPERIMENT_H
 
 #include <QWidget>
-#include "project.h"
 #include "thread_runner.h"
 #include "thread_plot_signal.h"
 #include "form_experiment_setup.h"
@@ -105,6 +104,7 @@ private:
   void loadSettings();
   void saveSettings();
   void update_name();
+  void save_propagate_fit();
 };
 
 #endif // FORM_CALIBRATION_H

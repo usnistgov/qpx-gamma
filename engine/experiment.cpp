@@ -49,6 +49,8 @@ void ExperimentProject::to_xml(pugi::xml_node &root) const
       a.second->to_xml(projnode);
     }
   }
+
+  changed_ = false;
 }
 
 
@@ -103,6 +105,7 @@ void ExperimentProject::from_xml(const pugi::xml_node &node)
   }
 
   gather_results();
+  changed_ = false;
 }
 
 void ExperimentProject::find_leafs(std::list<TrajectoryPtr> &list, TrajectoryPtr node)
@@ -145,6 +148,7 @@ std::pair<DomainType, TrajectoryPtr> ExperimentProject::next_setting()
       }
 
     next_idx++;
+    changed_ = true;
 
   }
   return ret;
@@ -215,8 +219,11 @@ ProjectPtr ExperimentProject::get_data(int64_t i) const
 
 void ExperimentProject::delete_data(int64_t i)
 {
-  if (data.count(i))
-    data.erase(i);
+  if (!data.count(i))
+    return;
+
+  data.erase(i);
+  changed_ = true;
   std::vector<DataPoint> results;
   for (auto &r : results_)
     if (r.idx_proj != i)
@@ -226,6 +233,9 @@ void ExperimentProject::delete_data(int64_t i)
 
 void ExperimentProject::gather_results()
 {
+  if (results_.empty())
+    return;
+
   for (auto &r : results_)
   {
     r.domains.clear();
@@ -282,6 +292,18 @@ bool ExperimentProject::done() const
   return true;
 }
 
+bool ExperimentProject::changed() const {
 
+  for (auto &q : data)
+    if (q.second->changed())
+      changed_ = true;
+
+  return changed_;
+}
+
+void ExperimentProject::notity_tree_change()
+{
+  changed_ = true;
+}
 
 }

@@ -145,18 +145,15 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
     int reply = QMessageBox::warning(this, "Project contents changed",
                                      "Discard?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
-    if (reply == QMessageBox::Yes) {
-      //spectra_->clear();
-    } else {
+    if (reply != QMessageBox::Yes)
+    {
       event->ignore();
       return;
     }
   }
 
-//  spectra_->terminate();
   plot_thread_.terminate_wait();
   saveSettings();
-
   event->accept();
 }
 

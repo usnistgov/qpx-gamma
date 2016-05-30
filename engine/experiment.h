@@ -47,7 +47,7 @@ struct DataPoint
 class ExperimentProject
 {
 public:
-  ExperimentProject() : base_prototypes("SinkPrototypes")
+  ExperimentProject() : base_prototypes("SinkPrototypes"), changed_(false)
   {
     root_trajectory = std::shared_ptr<Qpx::TrajectoryNode>(new Qpx::TrajectoryNode());
     Qpx::TrajectoryNode tn(root_trajectory);
@@ -59,13 +59,14 @@ public:
   bool empty() const;
   bool has_results() const;
   bool done() const;
+  bool changed() const;
+  void notity_tree_change();
 
   TrajectoryPtr get_trajectories() const {return root_trajectory;}
   ProjectPtr get_data(int64_t i) const;
   void delete_data(int64_t);
 
-
-  void set_prototypes(XMLableDB<Qpx::Metadata> ptp) { base_prototypes = ptp; }
+  void set_prototypes(XMLableDB<Qpx::Metadata> ptp) { base_prototypes = ptp; changed_ = true; }
   XMLableDB<Qpx::Metadata> get_prototypes() const { return base_prototypes; }
 
   std::pair<DomainType, TrajectoryPtr> next_setting();
@@ -80,16 +81,17 @@ public:
 private:
   XMLableDB<Qpx::Metadata> base_prototypes;
   std::shared_ptr<TrajectoryNode> root_trajectory;
+  std::map<int64_t, ProjectPtr> data;
+
+  std::vector<DataPoint> results_;
+
+  int64_t       next_idx;
+  std::string   identity_;
+  mutable bool  changed_;
 
   void set_sink_vars_recursive(XMLableDB<Qpx::Metadata>& prototypes, TrajectoryPtr node);
   void gather_vars_recursive(DataPoint& dp, TrajectoryPtr node);
   void find_leafs(std::list<TrajectoryPtr> &list, TrajectoryPtr node);
-
-  std::map<int64_t, ProjectPtr> data;
-  int64_t next_idx;
-
-  std::vector<DataPoint> results_;
-
 };
 
 

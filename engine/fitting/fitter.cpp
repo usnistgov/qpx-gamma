@@ -161,7 +161,7 @@ void Fitter::find_regions() {
 
 size_t Fitter::peak_count() const
 {
-  size_t tally;
+  size_t tally = 0;
   for (auto &r : regions_)
     tally += r.second.peak_count();
   return tally;

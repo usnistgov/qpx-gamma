@@ -309,6 +309,73 @@
       </widget>
      </item>
      <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
+       <property name="spacing">
+        <number>3</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="label_13">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>80</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Peaks</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkAutofit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Autofit</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="WidgetFitterAutoselect" name="widgetAutoselect" native="true">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>25</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
       <widget class="QTabWidget" name="tabs">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
@@ -330,15 +397,21 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>SelectorWidget</class>
-   <extends>QWidget</extends>
-   <header>widget_selector.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>FormFitter</class>
    <extends>QWidget</extends>
    <header>form_fitter.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>WidgetFitterAutoselect</class>
+   <extends>QWidget</extends>
+   <header>widget_fitter_autoselect.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SelectorWidget</class>
+   <extends>QWidget</extends>
+   <header>widget_selector.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

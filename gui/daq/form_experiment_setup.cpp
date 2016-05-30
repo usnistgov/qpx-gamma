@@ -138,6 +138,7 @@ void FormExperimentSetup::on_pushAddSubdomain_clicked()
   tn.domain = newdomain;
 
   tree_experiment_model_.push_back(i, tn);
+  exp_project_.notity_tree_change();
 
   emit toggleIO();
 }
@@ -156,7 +157,7 @@ void FormExperimentSetup::on_pushEditDomain_clicked()
     return;
   Qpx::TrajectoryNode tn = qvariant_cast<Qpx::TrajectoryNode>(data);
 
-  if ((tn.data_idx >= 0) || (tn.domain_value != Qpx::Setting()))
+  if ((tn.data_idx >= 0) || (tn.domain_value != Qpx::Setting()) || (tn.domain.verbose == "root"))
     return;
 
   DialogDomain diag(tn.domain, all_domains_, this);
@@ -165,6 +166,7 @@ void FormExperimentSetup::on_pushEditDomain_clicked()
     return;
 
   tree_experiment_model_.setData(i, QVariant::fromValue(tn), Qt::EditRole);
+  exp_project_.notity_tree_change();
 
   emit toggleIO();
 }
@@ -183,10 +185,14 @@ void FormExperimentSetup::on_pushDeleteDomain_clicked()
     return;
   Qpx::TrajectoryNode tn = qvariant_cast<Qpx::TrajectoryNode>(data);
 
-  if (tree_experiment_model_.remove_row(i) && (tn.data_idx >=0))
-    exp_project_.delete_data(tn.data_idx);
-
-  emit toggleIO();
+  if (tree_experiment_model_.remove_row(i))
+  {
+    if (tn.data_idx >=0)
+      exp_project_.delete_data(tn.data_idx);
+    else
+      exp_project_.notity_tree_change();
+    emit toggleIO();
+  }
 }
 
 
