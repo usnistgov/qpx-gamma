@@ -112,6 +112,8 @@ public:
   bool has_subdomains() const;
   bool is_datapoint(Domain) const;
 
+  double estimated_time(); //const
+
 private:
   static std::string domain_type_to_string(DomainType);
   static DomainType domain_type_from_string(std::string);

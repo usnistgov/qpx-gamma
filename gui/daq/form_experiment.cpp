@@ -203,11 +203,15 @@ void FormExperiment::new_daq_data() {
 
   Qpx::Metadata md = sink->metadata();
 
+  bool refit = false;
   if (p->has_fitter(selected_sink_))
   {
     selected_fitter_ = p->get_fitter(selected_sink_);
     if (selected_fitter_.metadata_.total_count < md.total_count)
+    {
       selected_fitter_.setData(sink);
+      refit = true;
+    }
   }
   else
   {
@@ -223,7 +227,8 @@ void FormExperiment::new_daq_data() {
   if (!sel.empty())
     ui->plotSpectrum->set_selected_peaks(sel);
 
-  if (ui->checkAutofit->isChecked() && (selected_fitter_.peak_count() < 1) )
+  if (ui->checkAutofit->isChecked() &&
+      ((selected_fitter_.peak_count() < 1) || refit))
     ui->plotSpectrum->perform_fit();
 }
 
@@ -296,8 +301,6 @@ std::pair<Qpx::ProjectPtr, uint64_t> FormExperiment::get_next_point()
   }
   else if (ret.first == Qpx::DomainType::source)
   {
-    Qpx::Engine::getInstance().set_setting(ret.second->domain_value, Qpx::Match::id | Qpx::Match::indices);
-    QThread::sleep(1);
     Qpx::Engine::getInstance().get_all_settings();
     if (!Qpx::Engine::getInstance().pull_settings().has(ret.second->domain_value, Qpx::Match::id | Qpx::Match::indices))
     {
@@ -305,10 +308,11 @@ std::pair<Qpx::ProjectPtr, uint64_t> FormExperiment::get_next_point()
       update_name();
       return std::pair<Qpx::ProjectPtr, uint64_t>(nullptr,0);
     }
+    Qpx::Engine::getInstance().set_setting(ret.second->domain_value, Qpx::Match::id | Qpx::Match::indices);
+    QThread::sleep(0.5);
+    Qpx::Engine::getInstance().get_all_settings();
 
     double newval = Qpx::Engine::getInstance().pull_settings().get_setting(ret.second->domain_value, Qpx::Match::id | Qpx::Match::indices).number();
-    //    if (newval < current_setting_.number())
-    //      return;
     ret.second->domain_value.set_number(newval);
 
     emit settings_changed();

@@ -332,6 +332,28 @@ void TrajectoryNode::populate()
     return;
 }
 
+double TrajectoryNode::estimated_time()
+{
+  if (data_idx >= 0)
+    return 0;
+  if (domain_value != Qpx::Setting())
+    return 0;
+
+  double tally = 0;
+  for (auto &b : branches)
+    if (b && (!b->is_datapoint(domain) || (domain.type == Qpx::DomainType::none)))
+      tally += b->estimated_time();
+  if (getParent().operator bool() && !has_subdomains())
+    tally = domain.criterion;
+
+  double numof = 1;
+  if ((domain.type != Qpx::DomainType::none) && (domain.value_range.metadata.step > 0))
+    numof = ((domain.value_range.metadata.maximum - domain.value_range.metadata.minimum)
+      / domain.value_range.metadata.step) + 1;
+
+  return tally*numof;
+}
+
 std::vector<std::shared_ptr<TrajectoryNode>> TrajectoryNode::subdomains()
 {
   std::vector<item_t> ret;
@@ -399,7 +421,6 @@ std::pair<DomainType, std::shared_ptr<TrajectoryNode>> TrajectoryNode::next_sett
       i->domain_value.set_number(i->domain_value.metadata.minimum);
       retval.first = domain.type;
       retval.second = i;
-      branches.push_back(i);
       return retval;
     }
     else if (last->domain_value.number() >= last->domain_value.metadata.maximum)
@@ -411,7 +432,6 @@ std::pair<DomainType, std::shared_ptr<TrajectoryNode>> TrajectoryNode::next_sett
       i->domain_value++;
       retval.first = domain.type;
       retval.second = i;
-      branches.push_back(i);
       return retval;
     }
   }
@@ -424,7 +444,6 @@ std::pair<DomainType, std::shared_ptr<TrajectoryNode>> TrajectoryNode::next_sett
     i->domain.criterion_type = domain.criterion_type;
     i->domain.criterion = domain.criterion;
     retval.first = domain.type;
-    branches.push_back(i);
     retval.second = i;
   }
   else
@@ -439,12 +458,13 @@ std::pair<DomainType, std::shared_ptr<TrajectoryNode>> TrajectoryNode::next_sett
       i->domain.criterion_type = domain.criterion_type;
       i->domain.criterion = domain.criterion;
       retval.first = domain.type;
-      branches.push_back(i);
       retval.second = i;
     }
   }
 
   return retval;
 }
+
+
 
 }

@@ -62,6 +62,10 @@ public:
   bool changed() const;
   void notity_tree_change();
 
+  double estimate_total_time();
+
+  bool push_next_setting(Qpx::TrajectoryPtr node);
+
   TrajectoryPtr get_trajectories() const {return root_trajectory;}
   ProjectPtr get_data(int64_t i) const;
   void delete_data(int64_t);

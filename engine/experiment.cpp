@@ -31,8 +31,8 @@ void ExperimentProject::to_xml(pugi::xml_node &root) const
 {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
-//  if (base_prototypes.empty())
-//    return;
+  //  if (base_prototypes.empty())
+  //    return;
 
   base_prototypes.to_xml(node);
   if (root_trajectory)
@@ -122,24 +122,46 @@ void ExperimentProject::find_leafs(std::list<TrajectoryPtr> &list, TrajectoryPtr
 
 std::pair<DomainType, TrajectoryPtr> ExperimentProject::next_setting()
 {
-  std::pair<DomainType, TrajectoryPtr> ret(none, nullptr);
   if (root_trajectory)
-    ret = root_trajectory->next_setting();
-  if (ret.second && !ret.second->childCount() && (ret.second->domain.type == none))
+    return root_trajectory->next_setting();
+  else
+    return std::pair<DomainType, TrajectoryPtr>(none, nullptr);
+}
+
+bool ExperimentProject::push_next_setting(Qpx::TrajectoryPtr node)
+{
+  if (!node)
+    return false;
+
+  Qpx::TrajectoryPtr parent = node->getParent();
+  if (!parent)
+    return false;
+
+  Qpx::TrajectoryPtr prev;
+  if (parent->childCount())
+    prev = parent->getChild(parent->childCount()-1);
+
+
+  if (prev && (prev->domain_value.number() >= node->domain_value.number()))
   {
-//    DBG << "Experiment generating new data point with " << base_prototypes.size() << " sinks";
+    INFO << "<Experiment> Value hit hard limit " << node->to_string();
+    prev->domain_value.metadata.maximum = prev->domain_value.number();
+    return false;
+  }
+  else if (node && !node->childCount() && (node->domain.type == none))
+  {
 
     XMLableDB<Qpx::Metadata> prototypes = base_prototypes;
-    set_sink_vars_recursive(prototypes, ret.second);
+    set_sink_vars_recursive(prototypes, node);
 
     data[next_idx] = ProjectPtr(new Project());
     data[next_idx]->set_prototypes(prototypes);
-    ret.second->data_idx = next_idx;
+    node->data_idx = next_idx;
 
     DataPoint dp;
-    dp.node = ret.second;
+    dp.node = node;
     dp.idx_proj = next_idx;
-    gather_vars_recursive(dp, ret.second);
+    gather_vars_recursive(dp, node);
     for (auto &s : data[next_idx]->get_sinks())
       if (s.second) {
         dp.idx_sink = s.first;
@@ -148,11 +170,13 @@ std::pair<DomainType, TrajectoryPtr> ExperimentProject::next_setting()
       }
 
     next_idx++;
-    changed_ = true;
-
   }
-  return ret;
+
+  parent->push_back(*node);
+  changed_ = true;
+  return true;
 }
+
 
 void ExperimentProject::set_sink_vars_recursive(XMLableDB<Qpx::Metadata>& prototypes,
                                                 TrajectoryPtr node)
@@ -170,8 +194,6 @@ void ExperimentProject::set_sink_vars_recursive(XMLableDB<Qpx::Metadata>& protot
     {
       if (p.attributes.has(node->domain_value, Qpx::Match::id | Qpx::Match::indices))
       {
-//        DBG << "Sink prototype " << p.name << " " << p.type() << " " << " has "
-//            << node->domain_value.id_;
         p.attributes.set_setting_r(node->domain_value, Qpx::Match::id | Qpx::Match::indices);
       }
     }
@@ -187,27 +209,16 @@ void ExperimentProject::gather_vars_recursive(DataPoint& dp, TrajectoryPtr node)
     return;
   gather_vars_recursive(dp, parent);
 
-//  DBG << "checking domain " << parent->domain.verbose << " " << parent->to_string()
-//      << " child " << node->to_string();
-
   if (parent->domain.type == Qpx::DomainType::sink) {
-//    DBG << "a";
     if (dp.spectrum_info.attributes.has(node->domain_value, Qpx::Match::id | Qpx::Match::indices))
     {
-//      DBG << "b";
-
       dp.domains[parent->domain.verbose] = node->domain_value;
     }
   }
   else if (parent->domain.type != Qpx::DomainType::none) {
-//    DBG << "c";
     dp.domains[parent->domain.verbose] = node->domain_value;
   }
-//  else
-//    DBG << "d";
-
 }
-
 
 ProjectPtr ExperimentProject::get_data(int64_t i) const
 {
@@ -241,7 +252,7 @@ void ExperimentProject::gather_results()
     r.domains.clear();
     if (r.node)
       gather_vars_recursive(r, r.node);
-//    DBG << "domains found " << r.domains.size();
+    //    DBG << "domains found " << r.domains.size();
     if (data.count(r.idx_proj) && data.at(r.idx_proj))
     {
       if (data.at(r.idx_proj)->has_fitter(r.idx_sink))
@@ -292,8 +303,8 @@ bool ExperimentProject::done() const
   return true;
 }
 
-bool ExperimentProject::changed() const {
-
+bool ExperimentProject::changed() const
+{
   for (auto &q : data)
     if (q.second->changed())
       changed_ = true;
@@ -304,6 +315,14 @@ bool ExperimentProject::changed() const {
 void ExperimentProject::notity_tree_change()
 {
   changed_ = true;
+}
+
+double ExperimentProject::estimate_total_time()
+{
+  if (!root_trajectory)
+    return 0;
+  else
+    return root_trajectory->estimated_time();
 }
 
 }

@@ -120,12 +120,12 @@ bool Simulator2D::read_settings_bulk(Qpx::Setting &set) const {
         q.value_int = bits_;
       else if ((q.metadata.setting_type == Qpx::SettingType::floating) && (q.id_ == "Simulator2D/ScaleRate"))
         q.value_dbl = scale_rate_;
-      else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "Simulator2D/Gain0")) {
+      else if ((q.metadata.setting_type == Qpx::SettingType::floating) && (q.id_ == "Simulator2D/Gain0")) {
         q.value_dbl = gain0_;
         q.indices.clear();
         q.indices.insert(chan0_);
       }
-      else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "Simulator2D/Gain1")) {
+      else if ((q.metadata.setting_type == Qpx::SettingType::floating) && (q.id_ == "Simulator2D/Gain1")) {
         q.value_dbl = gain1_;
         q.indices.clear();
         q.indices.insert(chan1_);
@@ -163,6 +163,8 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
       bits_ = q.value_int;
     else if (q.id_ == "Simulator2D/Gain0") {
       gain0_ = q.value_dbl;
+//      if (gain0_ > 100)
+//        gain0_ = 100;
       chan0_ = -1;
       for (auto &i : q.indices)
         chan0_ = i;

@@ -61,7 +61,9 @@ FormExperimentSetup::~FormExperimentSetup()
 
 void FormExperimentSetup::retro_push(Qpx::TrajectoryPtr node)
 {
-  tree_experiment_model_.retro_push(node);
+  if (exp_project_.push_next_setting(node))
+    tree_experiment_model_.retro_push(node);
+//  emit toggleIO();
 }
 
 void FormExperimentSetup::loadSettings() {
@@ -84,6 +86,14 @@ void FormExperimentSetup::update_exp_project()
 
 
 void FormExperimentSetup::toggle_push() {
+  Qpx::Setting time;
+  time.metadata.setting_type = Qpx::SettingType::time_duration;
+  time.value_duration = boost::posix_time::milliseconds(exp_project_.estimate_total_time() * 1000.0);
+
+  ui->labelTime->setText(
+        "Estimated total run time = " + QString::fromStdString(time.val_to_pretty_string())
+        );
+
   bool hasresults = exp_project_.has_results();
 
   auto idx = ui->treeViewExperiment->selectionModel()->selectedIndexes();
