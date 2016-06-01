@@ -50,6 +50,7 @@ FormExperiment::FormExperiment(ThreadRunner& runner, QWidget *parent) :
   connect(ui->spectrumSelector, SIGNAL(itemDoubleclicked(SelectorItem)), this, SLOT(spectrumDoubleclicked(SelectorItem)));
 
   connect(&runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
+
   connect(&exp_plot_thread_, SIGNAL(plot_ready()), this, SLOT(new_daq_data()));
 
   form_experiment_setup_ = new FormExperimentSetup(exp_project_);
@@ -57,6 +58,10 @@ FormExperiment::FormExperiment(ThreadRunner& runner, QWidget *parent) :
   connect(form_experiment_setup_, SIGNAL(selectedProject(int64_t)), this, SLOT(selectProject(int64_t)));
   connect(form_experiment_setup_, SIGNAL(prototypesChanged()), this, SLOT(populate_selector()));
   connect(form_experiment_setup_, SIGNAL(toggleIO()), this, SLOT(toggle_from_setup()));
+
+  connect(&runner_thread_, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)),
+          form_experiment_setup_, SLOT(update_settings(Qpx::Setting,std::vector<Qpx::Detector>,Qpx::SourceStatus)));
+
 
   form_experiment_1d_ = new FormExperiment1D(exp_project_, data_directory_, selected_sink_);
   ui->tabs->addTab(form_experiment_1d_, "Results in 1D");
@@ -76,6 +81,8 @@ FormExperiment::FormExperiment(ThreadRunner& runner, QWidget *parent) :
   form_experiment_setup_->update_exp_project();
   form_experiment_1d_->update_exp_project();
   form_experiment_2d_->update_exp_project();
+
+  runner_thread_.do_refresh_settings();
 }
 
 FormExperiment::~FormExperiment()

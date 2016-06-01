@@ -272,17 +272,6 @@ void FormExperiment2D::display_data()
     ui->PlotCalib->set_axes(ycal, xcal, 1, ui->comboCodomain->currentText());
   }
 
-//  ui->PlotCalib->clearGraphs();
-//  if (!xx.isEmpty()) {
-//    ui->PlotCalib->addPoints(style_pts, xx, yy, xx_sigma, yy_sigma);
-
-//    std::set<double> chosen_peaks_chan;
-//    ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
-//  }
-//  ui->PlotCalib->setLabels(name, ui->comboCodomain->currentText());
-//  ui->PlotCalib->set_selected_pts(std::set<double>());
-//  ui->PlotCalib->redraw();
-
   ui->pushSaveCsv->setEnabled(filtered_data_points_.size());
 }
 

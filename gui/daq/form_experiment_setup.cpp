@@ -50,8 +50,7 @@ FormExperimentSetup::FormExperimentSetup(Qpx::ExperimentProject &project, QWidge
           this, SLOT(item_selected_in_tree(QItemSelection,QItemSelection)));
 
   loadSettings();
-
-  update_settings();
+  remake_domains();
 }
 
 FormExperimentSetup::~FormExperimentSetup()
@@ -107,9 +106,12 @@ void FormExperimentSetup::toggle_push() {
   ui->pushEditDomain->setEnabled(!idx.empty() && !hasresults && (tn.data_idx < 0));
 }
 
-void FormExperimentSetup::update_settings() {
-  //should come from other thread?
-  current_dets_ = Qpx::Engine::getInstance().get_detectors();
+void FormExperimentSetup::update_settings(const Qpx::Setting& tree,
+                                          const std::vector<Qpx::Detector> &dets,
+                                          Qpx::SourceStatus status)
+ {
+  current_dets_ = dets;
+  current_tree_ = tree;
   remake_domains();
 }
 
@@ -203,16 +205,30 @@ void FormExperimentSetup::remake_domains()
   XMLableDB<Qpx::Metadata> tpt = exp_project_.get_prototypes();
 
   std::map<std::string, Qpx::Setting> source_settings;
-  for (uint16_t i=0; i < current_dets_.size(); ++i) {
-    bool relevant = false;
-    for (auto &p : tpt.my_data_)
-      if (p.chan_relevant(i))
-        relevant = true;
-    if (!relevant)
-      continue;
-    for (auto &q : current_dets_[i].settings_.branches.my_data_)
-      source_settings["[DAQ] " + q.id_
-          + " (" + std::to_string(i) + ":" + current_dets_[i].name_ + ")"] = q;
+
+  Qpx::Setting allset, set;
+  allset = current_tree_;
+  allset.cull_invisible();
+  set.branches.my_data_ = allset.find_all(set, Qpx::Match::indices);
+  for (auto &q : set.branches.my_data_)
+    source_settings["[DAQ] " + q.id_] = q;
+
+  for (auto &p : tpt.my_data_) {
+    for (uint16_t i=0; i < current_dets_.size(); ++i) {
+      if (!p.chan_relevant(i))
+        continue;
+      set.indices.clear();
+      set.indices.insert(i);
+      set.branches.my_data_ = allset.find_all(set, Qpx::Match::indices);
+      for (auto &q : set.branches.my_data_)
+      {
+        std::string name = "[DAQ] " + q.id_;
+        if (q.indices.size())
+          name += "  " + q.indices_to_string();// "(" + std::to_string(i) + ":" + current_dets_[i].name_ + ")";
+
+        source_settings[name] = q;
+      }
+    }
   }
 
 
@@ -231,8 +247,13 @@ void FormExperimentSetup::remake_domains()
       set.indices.insert(i);
       set.branches.my_data_ = p.attributes.find_all(set, Qpx::Match::indices);
       for (auto &q : set.branches.my_data_)
-        sink_settings["[" + p.type() + "] " + q.id_
-            + " (" + std::to_string(i) + ":" + current_dets_[i].name_ + ")"] = q;
+      {
+        std::string name = "[" + p.type() + "] " + q.id_;
+        if (q.indices.size())
+          name += "  " + q.indices_to_string();// "(" + std::to_string(i) + ":" + current_dets_[i].name_ + ")";
+
+        sink_settings[name] = q;
+      }
     }
   }
 
@@ -242,7 +263,8 @@ void FormExperimentSetup::remake_domains()
   for (auto &s : source_settings)
     if (s.second.metadata.writable
         && s.second.metadata.visible
-        && s.second.is_numeric()) {
+        && s.second.is_numeric())
+    {
       Qpx::Domain domain;
       domain.verbose = s.first;
       domain.type = Qpx::DomainType::source;

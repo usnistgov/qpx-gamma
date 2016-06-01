@@ -120,30 +120,11 @@ QVariant TreeItem::display_data(int column) const
     return name;
   }
   else if (column == 1) {
-    int max = itemData.metadata.max_indices;
-    int have = 0;
-    if (!itemData.indices.empty() || (max > 0)) {
-       QString append = "  { ";
-       bool valid = false;
-       //better dealing with index = -1
-       for (auto &q : itemData.indices) {
-         append += QString::number(q) += " ";
-         if (q >= 0) {
-           valid = true;
-           have++;
-         }
-       }
-       while (have < max) {
-         valid = true;
-         append += "- ";
-         have++;
-       }
-
-       append += "}";
-       if (valid)
-         return append;
-    }
-    return QVariant();
+    QString ret = QString::fromStdString(itemData.indices_to_string(true));
+    if (ret.size())
+      return "  " + ret + "  ";
+    else
+      return QVariant();
   }
   else if ((column == 2) && (itemData.metadata.setting_type != Qpx::SettingType::none) && (itemData.metadata.setting_type != Qpx::SettingType::stem))
   {

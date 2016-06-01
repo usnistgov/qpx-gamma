@@ -401,6 +401,42 @@ bool Setting::operator== (const Setting& other) const
 }
 
 
+std::string Setting::indices_to_string(bool showblanks) const
+{
+  if (!showblanks && indices.empty())
+    return "";
+
+  int max = metadata.max_indices;
+  bool valid = false;
+  std::string ret;
+
+  if (!indices.empty() || (showblanks && (max > 0))) {
+    int have = 0;
+    ret = "{ ";
+    //better dealing with index = -1
+    for (auto &q : indices)
+    {
+      ret += std::to_string(q) + " ";
+      if (q >= 0) {
+        valid = true;
+        have++;
+      }
+    }
+    if (showblanks) {
+    while (have < max) {
+      valid = true;
+      ret += "- ";
+      have++;
+    }
+    }
+
+    ret += "}";
+  }
+  if (valid)
+    return ret;
+  else
+    return "";
+}
 
 
 std::string Setting::val_to_string() const

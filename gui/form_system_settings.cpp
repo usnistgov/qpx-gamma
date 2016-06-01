@@ -254,7 +254,7 @@ void FormSystemSettings::toggle_push(bool enable, Qpx::SourceStatus status) {
   bool online = (status & Qpx::SourceStatus::booted);
 
   ui->pushSettingsRefresh->setEnabled(enable && online);
-  ui->pushExperiment->setEnabled(enable && online);
+  ui->pushExperiment->setEnabled(enable /*&& online*/);
   ui->pushChangeProfile->setEnabled(enable);
 
   if (enable) {

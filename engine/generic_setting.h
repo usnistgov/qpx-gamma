@@ -167,6 +167,7 @@ struct Setting : public XMLable {
   void enrich(const std::map<std::string, SettingMeta> &, bool impose_limits = false);
 
   std::string val_to_pretty_string() const;
+  std::string indices_to_string(bool showblanks = false) const;
   void from_xml(const pugi::xml_node &node) override;
   void to_xml(pugi::xml_node &node, bool with_metadata) const;
   void to_xml(pugi::xml_node &node) const override {this->to_xml(node, false);}

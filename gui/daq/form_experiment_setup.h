@@ -28,6 +28,7 @@
 #include <QItemSelection>
 #include "experiment.h"
 #include "tree_experiment.h"
+#include "engine.h"
 
 namespace Ui {
 class FormExperimentSetup;
@@ -41,7 +42,6 @@ public:
   explicit FormExperimentSetup(Qpx::ExperimentProject&, QWidget *parent = 0);
   ~FormExperimentSetup();
 
-  void update_settings();
   void retro_push(Qpx::TrajectoryPtr);
   void update_exp_project();
 
@@ -51,6 +51,9 @@ signals:
   void prototypesChanged();
   void selectedProject(int64_t);
   void toggleIO();
+
+public slots:
+  void update_settings(const Qpx::Setting&, const std::vector<Qpx::Detector>&, Qpx::SourceStatus);
 
 private slots:
 
@@ -72,6 +75,8 @@ private:
   TreeExperiment tree_experiment_model_;
 
   std::vector<Qpx::Detector> current_dets_;
+  Qpx::Setting current_tree_;
+
   std::map<std::string, Qpx::Domain> all_domains_;
 
   void loadSettings();
