@@ -262,7 +262,7 @@ bool Simulator2D::boot() {
   shift_by_ = 16 - bits_;
   resolution_ = pow(2, bits_);
 
-  INFO << "<Simulator2D>  building matrix for simulation res=" << resolution_ << " shift="  << shift_by_;
+  INFO << "<Simulator2D> Building matrix for simulation res=" << resolution_ << " shift="  << shift_by_;
   std::vector<double> distribution(resolution_*resolution_, 0.0);   //optimize somehow
 
   uint32_t res = pow(2, spectrum->metadata().bits);
@@ -273,7 +273,7 @@ bool Simulator2D::boot() {
                  + (it.first[1] >> adjust_bits)]
         =  static_cast<double>(it.second) / static_cast<double> (count_);
 
-  INFO << "<Simulator2D>  creating discrete distribution for simulation";
+  INFO << "<Simulator2D> Creating discrete distribution for simulation";
   dist_ = boost::random::discrete_distribution<>(distribution);
 
   if (shift_by_) {
@@ -305,9 +305,6 @@ void Simulator2D::get_all_settings() {
 
 
 void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* spill_queue) {
-  DBG << "<Simulator2D> Start run worker";
-
-
   bool timeout = false;
 
   uint64_t   rate = callback->OCR * callback->scale_rate_;
@@ -316,10 +313,11 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
 
   Spill one_spill;
 
-
-  DBG << "<Simulator2D> gains " << callback->gain0_ << " " << callback->gain1_;
-  DBG << "<Simulator2D> timebase " << callback->model_hit.timestamp.timebase_multiplier
-      << "/" << callback->model_hit.timestamp.timebase_divider;
+  DBG << "<Simulator2D> Start run   "
+      << "  gains " << callback->gain0_ << " " << callback->gain1_
+      << "  timebase " << callback->model_hit.timestamp.timebase_multiplier
+                       << "/" << callback->model_hit.timestamp.timebase_divider << "ns"
+      << "  rate " << rate << " cps";
 
   std::set<int> starts_signalled;
 
@@ -396,7 +394,7 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
 
   callback->run_status_.store(3);
 
-  DBG << "<Simulator2D> Stop run worker";
+//  DBG << "<Simulator2D> Stop run worker";
 }
 
 

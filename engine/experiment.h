@@ -63,6 +63,7 @@ public:
   void notity_tree_change();
 
   double estimate_total_time();
+  double total_real_time();
 
   bool push_next_setting(Qpx::TrajectoryPtr node);
 
@@ -73,7 +74,7 @@ public:
   void set_prototypes(XMLableDB<Qpx::Metadata> ptp) { base_prototypes = ptp; changed_ = true; }
   XMLableDB<Qpx::Metadata> get_prototypes() const { return base_prototypes; }
 
-  std::pair<DomainType, TrajectoryPtr> next_setting();
+  TrajectoryPtr next_setting();
 
   void gather_results();
   std::vector<DataPoint> results() const {return results_;}
@@ -96,6 +97,7 @@ private:
   void set_sink_vars_recursive(XMLableDB<Qpx::Metadata>& prototypes, TrajectoryPtr node);
   void gather_vars_recursive(DataPoint& dp, TrajectoryPtr node);
   void find_leafs(std::list<TrajectoryPtr> &list, TrajectoryPtr node);
+  double tally_real_time(TrajectoryPtr node);
 };
 
 

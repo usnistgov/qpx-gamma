@@ -182,6 +182,7 @@ void FormExperiment::run_completed() {
 
 void FormExperiment::new_daq_data() {
   update_name();
+  display_time();
 
   if (ui->plotSpectrum->busy())
     return;
@@ -249,15 +250,35 @@ void FormExperiment::update_name()
 void FormExperiment::toggle_from_setup()
 {
   emit toggleIO(true);
+  display_time();
 }
 
 void FormExperiment::start_new_pass()
 {
-  std::pair<Qpx::ProjectPtr, uint64_t> pr = get_next_point();
+  Qpx::TrajectoryPtr pr = get_next_point();
+  Qpx::TrajectoryPtr parent;
 
-  if (!pr.first || !pr.second)
+  if (pr)
+    parent = pr->getParent();
+
+  if (!parent || (pr->data_idx < 0))
   {
-    INFO << "<FormExperiment> No valid next point. Terminating epxeriment.";
+    INFO << "<FormExperiment> No valid next point. Terminating experiment.";
+    return;
+  }
+
+  Qpx::ProjectPtr proj = exp_project_.get_data(pr->data_idx);
+  uint64_t duration = parent->domain.criterion;
+
+  if (!proj)
+  {
+    INFO << "<FormExperiment> Experiment failed to provide daq project. Terminating.";
+    return;
+  }
+
+  if (!duration)
+  {
+    INFO << "<FormExperiment> Next run duration = 0. Terminating experiment.";
     return;
   }
 
@@ -266,20 +287,37 @@ void FormExperiment::start_new_pass()
   emit toggleIO(false);
 
   interruptor_.store(false);
-  runner_thread_.do_run(pr.first, interruptor_, pr.second);
+  runner_thread_.do_run(proj, interruptor_, duration);
 }
 
-std::pair<Qpx::ProjectPtr, uint64_t> FormExperiment::get_next_point()
+Qpx::TrajectoryPtr FormExperiment::get_next_point()
 {
-  std::pair<Qpx::DomainType, Qpx::TrajectoryPtr> ret = exp_project_.next_setting();
-  if (!ret.second)
-    return std::pair<Qpx::ProjectPtr, uint64_t>(nullptr,0);
+  Qpx::TrajectoryPtr ret = exp_project_.next_setting();
+  if (!apply_setting(ret))
+    return nullptr;
 
-  INFO << "<FormExperiment> Next setting " << ret.second->type() << " " << ret.second->to_string();
+  form_experiment_setup_->retro_push(ret);
 
-  if (ret.first == Qpx::DomainType::manual)
+  if (ret->data_idx >= 0)
+    return ret;
+  else
+    return get_next_point();
+}
+
+bool FormExperiment::apply_setting(Qpx::TrajectoryPtr node)
+{
+  if (!node)
+    return false;
+
+  Qpx::TrajectoryPtr parent = node->getParent();
+  if (!parent)
+    return false;
+
+  INFO << "<FormExperiment> Applying setting " << node->type() << " " << node->to_string();
+
+  if (parent->domain.type == Qpx::DomainType::manual)
   {
-    Qpx::Setting set = ret.second->domain_value;
+    Qpx::Setting set = node->domain_value;
     QString text = "Please adjust manual setting \'"
         + QString::fromStdString(set.id_) + "\' and confirm value: ";
     bool ok;
@@ -291,41 +329,35 @@ std::pair<Qpx::ProjectPtr, uint64_t> FormExperiment::get_next_point()
                                        set.metadata.step,
                                        &ok);
     if (ok)
-      ret.second->domain_value.set_number(d);
+      node->domain_value.set_number(d);
     else
     {
       INFO << "<FormExperiment> User failed to confirm manual setting. Aborting";
       update_name();
-      return std::pair<Qpx::ProjectPtr, uint64_t>(nullptr,0);
+      return false;
     }
   }
-  else if (ret.first == Qpx::DomainType::source)
+  else if (parent->domain.type == Qpx::DomainType::source)
   {
     Qpx::Engine::getInstance().get_all_settings();
-    if (!Qpx::Engine::getInstance().pull_settings().has(ret.second->domain_value, Qpx::Match::id | Qpx::Match::indices))
+    if (!Qpx::Engine::getInstance().pull_settings().has(node->domain_value, Qpx::Match::id | Qpx::Match::indices))
     {
       INFO << "<FormExperiment> Source does not have this setting. Aborting";
       update_name();
-      return std::pair<Qpx::ProjectPtr, uint64_t>(nullptr,0);
+      return false;
     }
-    Qpx::Engine::getInstance().set_setting(ret.second->domain_value, Qpx::Match::id | Qpx::Match::indices);
+    Qpx::Engine::getInstance().set_setting(node->domain_value, Qpx::Match::id | Qpx::Match::indices);
     QThread::sleep(0.5);
     Qpx::Engine::getInstance().get_all_settings();
 
-    double newval = Qpx::Engine::getInstance().pull_settings().get_setting(ret.second->domain_value, Qpx::Match::id | Qpx::Match::indices).number();
-    ret.second->domain_value.set_number(newval);
+    double newval = Qpx::Engine::getInstance().pull_settings().get_setting(node->domain_value, Qpx::Match::id | Qpx::Match::indices).number();
+    node->domain_value.set_number(newval);
 
     emit settings_changed();
   }
-
-  form_experiment_setup_->retro_push(ret.second);
-
-  if (ret.second->data_idx >= 0)
-    return std::pair<Qpx::ProjectPtr, uint64_t>(exp_project_.get_data(ret.second->data_idx),
-                                                ret.second->domain.criterion);
-  else
-    return get_next_point();
+  return true;
 }
+
 
 
 void FormExperiment::toggle_push(bool enable, Qpx::SourceStatus status) {
@@ -342,6 +374,7 @@ void FormExperiment::toggle_push(bool enable, Qpx::SourceStatus status) {
 
   form_experiment_setup_->toggle_push(enable && !my_run_);
   update_name();
+  display_time();
 }
 
 
@@ -446,6 +479,7 @@ void FormExperiment::on_pushLoadExperiment_clicked()
 
   pugi::xml_document doc;
   if (doc.load_file(fileName.toStdString().c_str())) {
+    this->setCursor(Qt::WaitCursor);
     if (doc.child(exp_project_.xml_element_name().c_str()))
       exp_project_.from_xml(doc.child(exp_project_.xml_element_name().c_str()));
 
@@ -460,6 +494,7 @@ void FormExperiment::on_pushLoadExperiment_clicked()
     form_experiment_2d_->update_exp_project();
     populate_selector();
     emit toggleIO(true);
+    this->setCursor(Qt::ArrowCursor);
   }
 }
 
@@ -473,10 +508,12 @@ void FormExperiment::on_pushSaveExperiment_clicked()
   data_directory_ = path_of_file(fileName);
 
   if (!fileName.isEmpty()) {
+    this->setCursor(Qt::WaitCursor);
     pugi::xml_document doc;
     pugi::xml_node root = doc.root();
     exp_project_.to_xml(root);
     doc.save_file(fileName.toStdString().c_str());
+    this->setCursor(Qt::ArrowCursor);
   }
 }
 
@@ -488,8 +525,30 @@ void FormExperiment::on_pushStart_clicked()
   selected_fitter_ = Qpx::Fitter();
   selected_fitter_.apply_settings(fitset);
 
+
+  if (exp_project_.has_results())
+  {
+    DBG << " <FormExperiment> Setting all settings prior to resuming";
+    Qpx::TrajectoryPtr ret = exp_project_.next_setting();
+    if (!ret)
+      return;
+    if (!apply_all_recursive(ret))
+      return;
+    //maybe add to tree to avoid redundant setting?
+  }
+
   continue_ = true;
   start_new_pass();
+}
+
+bool FormExperiment::apply_all_recursive(Qpx::TrajectoryPtr node)
+{
+  Qpx::TrajectoryPtr parent = node->getParent();
+  if (!parent || (parent->domain.type == Qpx::DomainType::none))
+    return true;
+  if (!apply_all_recursive(parent))
+    return false;
+  return apply_setting(node);
 }
 
 void FormExperiment::on_pushStop_clicked()
@@ -539,4 +598,35 @@ void FormExperiment::populate_selector()
   ui->spectrumSelector->setItems(items);
   ui->spectrumSelector->setSelected(sel);
   choose_spectrum(SelectorItem());
+}
+
+void FormExperiment::display_time()
+{
+  Qpx::Setting time;
+  time.metadata.setting_type = Qpx::SettingType::time_duration;
+
+  double totals = exp_project_.estimate_total_time();
+  double dones = exp_project_.total_real_time();
+  double remaining = std::abs(totals - dones);
+
+  time.value_duration = boost::posix_time::milliseconds(totals * 1000.0);
+  std::string total = time.val_to_pretty_string();
+
+  time.value_duration = boost::posix_time::milliseconds(dones * 1000.0);
+  std::string done = time.val_to_pretty_string();
+
+  time.value_duration = boost::posix_time::milliseconds(remaining * 1000.0);
+  std::string eta = time.val_to_pretty_string();
+
+  std::string all;
+  if (!totals)
+    ;
+  else if ((dones > totals) && continue_)
+    all = "Cumulative time: " + done + "   ETA: -" + eta + " past due";
+  else if (!dones)
+    all = "Estimated total run time = " + total;
+  else
+    all = "Cumulative time: " + done + "   ETA: " + eta;
+
+  ui->labelTime->setText(QString::fromStdString(all));
 }

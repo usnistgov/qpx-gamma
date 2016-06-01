@@ -164,8 +164,8 @@ std::string TrajectoryNode::crit_to_string() const
       Setting st;
       st.metadata.setting_type = SettingType::time_duration;
       st.value_duration = boost::posix_time::seconds(domain.criterion);
-      ret += " for " + st.val_to_pretty_string()
-          + " " + criterion_type_to_string(domain.criterion_type);
+      ret += " for " + st.val_to_pretty_string();
+//          + " " + criterion_type_to_string(domain.criterion_type);
     }
   }
   return ret;
@@ -383,15 +383,15 @@ bool TrajectoryNode::is_datapoint(Domain d) const
 }
 
 
-std::pair<DomainType, std::shared_ptr<TrajectoryNode>> TrajectoryNode::next_setting()
+std::shared_ptr<TrajectoryNode> TrajectoryNode::next_setting()
 {
-  std::pair<DomainType, std::shared_ptr<TrajectoryNode>> retval(none, nullptr);
+  std::shared_ptr<TrajectoryNode> retval;
 
   if (domain.type == none) {
     if (branches.empty())
       return retval;
     for (auto &b : branches)
-      if (b && (retval = b->next_setting()).second)
+      if (b && (retval = b->next_setting()))
         return retval;
   }
 
@@ -401,14 +401,14 @@ std::pair<DomainType, std::shared_ptr<TrajectoryNode>> TrajectoryNode::next_sett
     if (!s)
       continue;
 
-    if ((s->domain.type == none) && (retval = s->next_setting()).second)
+    if ((s->domain.type == none) && (retval = s->next_setting()))
       return retval;
 
     for (auto &b : branches) {
       if (b && b->is_datapoint(domain) && (b->domain == s->domain))
       {
-        std::pair<DomainType, std::shared_ptr<TrajectoryNode>> ret = b->next_setting();
-        if (ret.second)
+        std::shared_ptr<TrajectoryNode> ret = b->next_setting();
+        if (ret)
           return ret;
         last = b;
       }
@@ -419,8 +419,7 @@ std::pair<DomainType, std::shared_ptr<TrajectoryNode>> TrajectoryNode::next_sett
       item_t i = deep_copy(self::shared_from_this(), *s);
       i->domain_value = domain.value_range;
       i->domain_value.set_number(i->domain_value.metadata.minimum);
-      retval.first = domain.type;
-      retval.second = i;
+      retval = i;
       return retval;
     }
     else if (last->domain_value.number() >= last->domain_value.metadata.maximum)
@@ -430,8 +429,7 @@ std::pair<DomainType, std::shared_ptr<TrajectoryNode>> TrajectoryNode::next_sett
       item_t i = deep_copy(self::shared_from_this(), *s);
       i->domain_value = last->domain_value;
       i->domain_value++;
-      retval.first = domain.type;
-      retval.second = i;
+      retval = i;
       return retval;
     }
   }
@@ -441,10 +439,7 @@ std::pair<DomainType, std::shared_ptr<TrajectoryNode>> TrajectoryNode::next_sett
     item_t i = item_t(new TrajectoryNode(self::shared_from_this()));
     i->domain_value = domain.value_range;
     i->domain_value.set_number(i->domain_value.metadata.minimum);
-    i->domain.criterion_type = domain.criterion_type;
-    i->domain.criterion = domain.criterion;
-    retval.first = domain.type;
-    retval.second = i;
+    retval = i;
   }
   else
   {
@@ -455,10 +450,7 @@ std::pair<DomainType, std::shared_ptr<TrajectoryNode>> TrajectoryNode::next_sett
       item_t i = item_t(new TrajectoryNode(self::shared_from_this()));
       i->domain_value = last->domain_value;
       i->domain_value++;
-      i->domain.criterion_type = domain.criterion_type;
-      i->domain.criterion = domain.criterion;
-      retval.first = domain.type;
-      retval.second = i;
+      retval = i;
     }
   }
 

@@ -99,7 +99,7 @@ public:
   void replace_child(int row, const TrajectoryNode &t);
 
   void populate();
-  std::pair<DomainType, std::shared_ptr<TrajectoryNode>> next_setting();
+  std::shared_ptr<TrajectoryNode> next_setting();
 
   std::string xml_element_name() const {return "TrajectoryNode";}
   void to_xml(pugi::xml_node &node) const override;

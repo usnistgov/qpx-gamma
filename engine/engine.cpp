@@ -370,7 +370,9 @@ void Engine::load_optimization(int i) {
 
 void Engine::set_setting(Qpx::Setting address, Qpx::Match flags) {
   if (settings_tree_.set_setting_r(address, flags))
-    DBG << "Success setting " << address.id_;
+  {
+//    DBG << "<Engine> Success setting " << address.id_;
+  }
   write_settings_bulk();
   read_settings_bulk();
 }
@@ -399,9 +401,9 @@ void Engine::getMca(uint64_t timeout, ProjectPtr spectra, boost::atomic<bool>& i
   }
 
   if (timeout > 0)
-    INFO << "<Engine> Spectra acquisition scheduled for " << timeout << " seconds";
+    INFO << "<Engine> Starting acquisition scheduled for " << timeout << " seconds";
   else
-    INFO << "<Engine> Spectra acquisition indefinite run";
+    INFO << "<Engine> Starting acquisition for indefinite run";
 
   CustomTimer *anouncement_timer = nullptr;
   double secs_between_anouncements = 5;
@@ -459,6 +461,7 @@ void Engine::getMca(uint64_t timeout, ProjectPtr spectra, boost::atomic<bool>& i
   wait_ms(500);
 
   builder.join();
+  INFO << "<Engine> Acquisition finished";
 }
 
 ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
@@ -650,7 +653,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
       break;
   }
 
-  INFO << "<Engine> Spectra builder terminating";
+  DBG << "<Engine> Spectra builder terminating";
 
   spectra->flush();
 }

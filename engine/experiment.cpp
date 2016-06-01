@@ -17,7 +17,7 @@
  *
  * Description:
  *      Types for organizing data aquired from Device
- *        Qpx::Hit        single energy event with coincidence flags
+ *        Hit        single energy event with coincidence flags
  *
  ******************************************************************************/
 
@@ -62,7 +62,7 @@ void ExperimentProject::from_xml(const pugi::xml_node &node)
 
   if (node.child(TrajectoryNode().xml_element_name().c_str()))
   {
-    root_trajectory = std::shared_ptr<Qpx::TrajectoryNode>(new Qpx::TrajectoryNode());
+    root_trajectory = std::shared_ptr<TrajectoryNode>(new TrajectoryNode());
     root_trajectory->from_xml(node.child(TrajectoryNode().xml_element_name().c_str()));
   }
 
@@ -120,24 +120,24 @@ void ExperimentProject::find_leafs(std::list<TrajectoryPtr> &list, TrajectoryPtr
 }
 
 
-std::pair<DomainType, TrajectoryPtr> ExperimentProject::next_setting()
+TrajectoryPtr ExperimentProject::next_setting()
 {
   if (root_trajectory)
     return root_trajectory->next_setting();
   else
-    return std::pair<DomainType, TrajectoryPtr>(none, nullptr);
+    return nullptr;
 }
 
-bool ExperimentProject::push_next_setting(Qpx::TrajectoryPtr node)
+bool ExperimentProject::push_next_setting(TrajectoryPtr node)
 {
   if (!node)
     return false;
 
-  Qpx::TrajectoryPtr parent = node->getParent();
+  TrajectoryPtr parent = node->getParent();
   if (!parent)
     return false;
 
-  Qpx::TrajectoryPtr prev;
+  TrajectoryPtr prev;
   if (parent->childCount())
     prev = parent->getChild(parent->childCount()-1);
 
@@ -151,7 +151,7 @@ bool ExperimentProject::push_next_setting(Qpx::TrajectoryPtr node)
   else if (node && !node->childCount() && (node->domain.type == none))
   {
 
-    XMLableDB<Qpx::Metadata> prototypes = base_prototypes;
+    XMLableDB<Metadata> prototypes = base_prototypes;
     set_sink_vars_recursive(prototypes, node);
 
     data[next_idx] = ProjectPtr(new Project());
@@ -178,7 +178,7 @@ bool ExperimentProject::push_next_setting(Qpx::TrajectoryPtr node)
 }
 
 
-void ExperimentProject::set_sink_vars_recursive(XMLableDB<Qpx::Metadata>& prototypes,
+void ExperimentProject::set_sink_vars_recursive(XMLableDB<Metadata>& prototypes,
                                                 TrajectoryPtr node)
 {
   if (!node)
@@ -188,13 +188,13 @@ void ExperimentProject::set_sink_vars_recursive(XMLableDB<Qpx::Metadata>& protot
     return;
   set_sink_vars_recursive(prototypes, parent);
 
-  if (parent->domain.type == Qpx::DomainType::sink)
+  if (parent->domain.type == DomainType::sink)
   {
     for (auto &p : prototypes.my_data_)
     {
-      if (p.attributes.has(node->domain_value, Qpx::Match::id | Qpx::Match::indices))
+      if (p.attributes.has(node->domain_value, Match::id | Match::indices))
       {
-        p.attributes.set_setting_r(node->domain_value, Qpx::Match::id | Qpx::Match::indices);
+        p.attributes.set_setting_r(node->domain_value, Match::id | Match::indices);
       }
     }
   }
@@ -209,13 +209,13 @@ void ExperimentProject::gather_vars_recursive(DataPoint& dp, TrajectoryPtr node)
     return;
   gather_vars_recursive(dp, parent);
 
-  if (parent->domain.type == Qpx::DomainType::sink) {
-    if (dp.spectrum_info.attributes.has(node->domain_value, Qpx::Match::id | Qpx::Match::indices))
+  if (parent->domain.type == DomainType::sink) {
+    if (dp.spectrum_info.attributes.has(node->domain_value, Match::id | Match::indices))
     {
       dp.domains[parent->domain.verbose] = node->domain_value;
     }
   }
-  else if (parent->domain.type != Qpx::DomainType::none) {
+  else if (parent->domain.type != DomainType::none) {
     dp.domains[parent->domain.verbose] = node->domain_value;
   }
 }
@@ -289,18 +289,9 @@ bool ExperimentProject::has_results() const
 
 bool ExperimentProject::done() const
 {
-  std::pair<DomainType, TrajectoryPtr> ret(none, nullptr);
-  if (root_trajectory)
-    ret = root_trajectory->next_setting();
-  else
+  if (!root_trajectory)
     return false;
-  if (ret.second)
-  {
-    TrajectoryPtr parent = ret.second->getParent();
-    parent->remove_child(ret.second->row());
-    return false;
-  }
-  return true;
+  return !(root_trajectory->next_setting()).operator bool();
 }
 
 bool ExperimentProject::changed() const
@@ -323,6 +314,38 @@ double ExperimentProject::estimate_total_time()
     return 0;
   else
     return root_trajectory->estimated_time();
+}
+
+double ExperimentProject::total_real_time()
+{
+  if (!root_trajectory)
+    return 0;
+  else
+    return tally_real_time(root_trajectory);
+}
+
+double ExperimentProject::tally_real_time(TrajectoryPtr node)
+{
+  if (!node)
+    return 0;
+  if (data.count(node->data_idx))
+  {
+    ProjectPtr proj = data.at(node->data_idx);
+    if (!proj)
+      return 0;
+    for (auto &s : proj->get_sinks())
+      if (s.second)
+      {
+        Metadata md = s.second->metadata();
+        return md.attributes.branches.get(Setting("real_time")).value_duration.total_milliseconds() * 0.001;
+      }
+    return 0;
+  }
+
+  double tally = 0;
+  for (int i=0; i < node->childCount(); ++i)
+    tally += tally_real_time(node->getChild(i));
+  return tally;
 }
 
 }

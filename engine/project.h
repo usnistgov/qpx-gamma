@@ -109,8 +109,9 @@ class Project {
   std::map<int64_t, Fitter> fitters_1d_;
   std::set<Spill> spills_;
 
-  std::string identity_;
-  mutable bool        changed_;
+  //saveability
+  std::string   identity_;
+  mutable bool  changed_;
 
   //helpers
   void clear_helper();

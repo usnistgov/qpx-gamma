@@ -99,12 +99,15 @@ private:
 
 
   void start_new_pass();
-  std::pair<Qpx::ProjectPtr, uint64_t> get_next_point();
+  bool apply_setting(Qpx::TrajectoryPtr);
+  bool apply_all_recursive(Qpx::TrajectoryPtr);
+  Qpx::TrajectoryPtr get_next_point();
 
   void loadSettings();
   void saveSettings();
   void update_name();
   void save_propagate_fit();
+  void display_time();
 };
 
 #endif // FORM_CALIBRATION_H

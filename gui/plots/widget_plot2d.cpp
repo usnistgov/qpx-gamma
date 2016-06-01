@@ -64,7 +64,7 @@ WidgetPlot2D::WidgetPlot2D(QWidget *parent) :
   colorMap->clearData();
   ui->coincPlot->addPlottable(colorMap);
   colorMap->setInterpolate(antialiased_);
-  colorMap->setTightBoundary(true); //really?
+  colorMap->setTightBoundary(false);
   ui->coincPlot->axisRect()->setupFullAxesBox();
   ui->coincPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
   ui->coincPlot->setNoAntialiasingOnDrag(true);
