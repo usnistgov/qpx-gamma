@@ -16,49 +16,21 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Module and channel settings UI
+ *      Types for organizing data aquired from Device
+ *        Qpx::Hit        single energy event with coincidence flags
  *
  ******************************************************************************/
 
-#ifndef FORM_DAQ_SETTINGS_H
-#define FORM_DAQ_SETTINGS_H
+#include "digitized_value.h"
+#include <sstream>
 
-#include <QDialog>
-#include <QCloseEvent>
-#include "project.h"
-#include "special_delegate.h"
-#include "tree_settings.h"
+namespace Qpx {
 
-
-namespace Ui {
-class FormDaqSettings;
+std::string DigitizedVal::to_string() const
+{
+  std::stringstream ss;
+  ss << val_ << "(" << bits_ << "b)";
+  return ss.str();
 }
 
-class FormDaqSettings : public QDialog
-{
-  Q_OBJECT
-
-public:
-  explicit FormDaqSettings(Qpx::ProjectPtr project, QWidget *parent = 0);
-  ~FormDaqSettings();
-
-protected:
-  void closeEvent(QCloseEvent*);
-
-private slots:
-  void selectionChanged(int);
-
-private:
-  Ui::FormDaqSettings *ui;
-
-  std::vector<Qpx::Spill> spills_;
-
-//  Qpx::ProjectPtr     project_;
-
-//  Qpx::Setting        dev_settings_;
-  TreeSettings        tree_settings_model_;
-  QpxSpecialDelegate  tree_delegate_;
-
-};
-
-#endif // FORM_DAQ_SETTINGS_H
+}

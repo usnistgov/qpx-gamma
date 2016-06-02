@@ -45,6 +45,10 @@ FormListDaq::FormListDaq(ThreadRunner &thread, QWidget *parent) :
 
   connect(&runner_thread_, SIGNAL(listComplete(Qpx::ListData*)), this, SLOT(list_completed(Qpx::ListData*)));
 
+  ui->tableExtras->setSelectionMode(QAbstractItemView::NoSelection);
+  ui->tableExtras->horizontalHeader()->setStretchLastSection(true);
+  ui->tableExtras->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+
   list_data_model_.eat_list(list_data_);
   ui->listOutputView->setModel(&list_data_model_);
   ui->listOutputView->setSelectionModel(&list_selection_model_);
@@ -126,7 +130,21 @@ void FormListDaq::displayTraces()
     ui->tracePlot->replot(); return;
   }
 
-  uint32_t trace_length = list_data_->hits[chosen_trace].trace.size();
+  Qpx::Hit hit = list_data_->hits.at(chosen_trace);
+  ui->tableExtras->setRowCount(hit.extras.size());
+  ui->tableExtras->setColumnCount(2);
+  ui->tableExtras->setHorizontalHeaderItem(0, new QTableWidgetItem("Name", QTableWidgetItem::Type));
+  ui->tableExtras->setHorizontalHeaderItem(1, new QTableWidgetItem("Value", QTableWidgetItem::Type));
+
+  int i=0;
+  for (auto &e : hit.extras)
+  {
+    add_to_table(ui->tableExtras, i, 0, e.first);
+    add_to_table(ui->tableExtras, i, 1, std::to_string(e.second));
+    i++;
+  }
+
+  uint32_t trace_length = hit.trace.size();
   if (trace_length > 0) {
     QVector<double> x(trace_length), y(trace_length);
     int chan = list_data_->hits[chosen_trace].source_channel;

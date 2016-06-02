@@ -84,6 +84,7 @@ protected:
   Spill get_spill();
 
   double gain0_, gain1_;
+  double timebase_multiplier_, timebase_divider_;
 
 
   boost::random::discrete_distribution<> dist_;
@@ -93,13 +94,11 @@ protected:
   std::array<int,2> channels_;
   uint16_t shift_by_;
   uint64_t resolution_;
-  PreciseFloat count_;
   bool valid_;
 
-  uint64_t OCR;
+  double OCR, lab_time;
   Qpx::Setting settings;
   std::vector<Qpx::Detector> detectors;
-  double lab_time, time_factor;
 
   StatsUpdate getBlock(double duration);
   bool valid() {return valid_;}
@@ -108,8 +107,8 @@ protected:
 
   uint64_t clock_;
 
-
-
+  void push_hit(Spill&, uint16_t, uint16_t);
+  static void make_trace(Hit& h, size_t length, uint16_t baseline);
 
 };
 

@@ -82,8 +82,7 @@ Pixie4::~Pixie4() {
 Hit Pixie4::model_hit() {
   Hit h;
   h.energy = DigitizedVal(0, 16);
-  h.timestamp.timebase_multiplier = 1000;
-  h.timestamp.timebase_divider = 75;
+  h.timestamp = TimeStamp(1000, 75);
   return h;
 }
 
@@ -1495,7 +1494,8 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
               if ((task_b == 0x0000) || (task_b == 0x0001))
                 hi = chan_time_hi;
               lo = chan_trig_time;
-              one_hit.timestamp.time_native = (hi << 32) + (mi << 16) + lo;
+              one_hit.timestamp =
+                  TimeStamp(one_hit.timestamp, (hi << 32) + (mi << 16) + lo);
 
               if ((buf_module < channel_indices.size()) &&
                   (i < channel_indices[buf_module].size()) &&

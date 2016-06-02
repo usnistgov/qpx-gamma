@@ -138,15 +138,29 @@ std::string TrajectoryNode::to_string() const
   std::string ret;
   if (domain_value != Setting())
     ret = (domain_value.metadata.name.empty() ? domain_value.id_ : domain_value.metadata.name)
-        + " = " + domain_value.val_to_pretty_string()
-        + " " + domain_value.metadata.unit + " ";
+        + " " + domain.value_range.indices_to_string();
+//        + " = " + domain_value.val_to_pretty_string()
+//        + " " + domain_value.metadata.unit + " ";
   if (ret.empty() && (domain.type != none)) {
     //    if (!ret.empty())
     //      ret += "\n";
-    ret += domain.verbose + " " + domain.value_range.metadata.value_range();
+    ret += (domain.value_range.metadata.name.empty() ? domain.verbose : domain.value_range.metadata.name)
+        + " " + domain.value_range.indices_to_string();
   }
   return ret;
 }
+
+std::string TrajectoryNode::range_to_string() const
+{
+  if ((domain_value == Setting()) && (domain.type != none))
+    return domain.value_range.metadata.value_range();
+  else if (domain_value != Setting())
+    return " = " + domain_value.val_to_pretty_string()
+           + " " + domain_value.metadata.unit;
+  else
+    return "";
+}
+
 
 std::string TrajectoryNode::crit_to_string() const
 {

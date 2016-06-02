@@ -16,45 +16,72 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Types for organizing data aquired from Device
+ *      Types for organizing data aquired from device
  *        Qpx::Hit        single energy event with coincidence flags
  *
  ******************************************************************************/
 
-#include "event.h"
-//#include "custom_logger.h"
-//#include <boost/algorithm/string.hpp>
-#include <sstream>
+#ifndef QPX_DIGITIZED_VALUE
+#define QPX_DIGITIZED_VALUE
+
+//#include "xmlable.h"
+//#include <cinttypes>
+#include <string>
 
 namespace Qpx {
 
-bool Event::in_window(const Hit& h) const {
-  return (h.timestamp >= lower_time) && ((h.timestamp - lower_time) <= window_ns);
+class DigitizedVal {
+public:
+
+  inline DigitizedVal()
+  {
+    val_ = 0;
+    bits_ = 16;
+  }
+
+  inline DigitizedVal(uint16_t v, uint16_t b)
+  {
+    val_ = v;
+    bits_ = b;
+  }
+
+  inline void set_val(uint16_t v)
+  {
+    val_ = v;
+  }
+
+  inline uint16_t bits() const
+  {
+    return bits_;
+  }
+
+  inline uint16_t val(uint16_t bits) const
+  {
+    if (bits == bits_)
+      return val_;
+    else if (bits < bits_)
+      return val_ >> (bits_ - bits);
+    else
+      return val_ << (bits - bits_);
+  }
+
+  inline bool operator==(const DigitizedVal other) const
+  {
+    return ((val_ == other.val_) && (bits_ == other.bits_));
+  }
+
+  inline bool operator!=(const DigitizedVal other) const
+  {
+    return !operator==(other);
+  }
+
+  std::string to_string() const;
+
+private:
+  uint16_t  val_;
+  uint16_t  bits_;
+};
+
 }
 
-bool Event::past_due(const Hit& h) const {
-  return (h.timestamp >= lower_time) && ((h.timestamp - lower_time) > max_delay_ns);
-}
-
-bool Event::antecedent(const Hit& h) const {
-  return (h.timestamp < lower_time);
-}
-
-bool Event::addHit(const Hit &newhit) {
-  if (hits.count(newhit.source_channel))
-    return false;
-  if (lower_time > newhit.timestamp)
-    lower_time = newhit.timestamp;
-  hits[newhit.source_channel] = newhit;
-  return true;
-}
-
-std::string Event::to_string() const {
-  std::stringstream ss;
-  ss << "EVT[t" << lower_time.to_string() << "w" << window_ns << "]";
-  for (auto &q : hits)
-    ss << " " << q.first << "=" << q.second.to_string();
-  return ss.str();
-}
-
-}
+#endif

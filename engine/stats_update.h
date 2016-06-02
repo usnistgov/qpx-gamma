@@ -24,51 +24,48 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_SPILL
-#define QPX_SPILL
+#ifndef QPX_STATS_UPDATE
+#define QPX_STATS_UPDATE
 
-#include "stats_update.h"
 #include <boost/date_time.hpp>
-#include "generic_setting.h"
-#include "detector.h"
+#include "hit.h"
 #include "xmlable.h"
+#include "generic_setting.h" //only for PreciseFloat
 
 namespace Qpx {
 
-struct Spill : public XMLable {
-  inline Spill()
-  {
-    time = boost::posix_time::microsec_clock::universal_time();
-  }
-
-  std::string xml_element_name() const override {return "Spill";}
-  bool shallow_equals(const Spill& other) const {return (time == other.time);}
-
-  bool operator==(const Spill other) const;
-  bool operator<(const Spill other) const  {return (time < other.time);}
-  bool operator!=(const Spill other) const {return !operator ==(other);}
-
-  bool empty();
-
-  void from_xml(const pugi::xml_node &) override;
-  void to_xml(pugi::xml_node &, bool with_settings = true) const;
-  void to_xml(pugi::xml_node &node) const override {to_xml(node, true);}
-
-  boost::posix_time::ptime time;
-
-  std::vector<uint32_t>  data;  //as is from device, unparsed
-  std::list<Qpx::Hit>    hits;  //as parsed
-  std::map<int16_t, StatsUpdate> stats;
-
-  Qpx::Setting state;
-  std::vector<Qpx::Detector> detectors;
-
+enum StatsType
+{
+  start, running, stop
 };
 
-//DEPRECATE
-struct ListData {
-  std::vector<Qpx::Hit> hits;
-  Spill run;
+struct StatsUpdate : public XMLable {
+  StatsType stats_type;
+  int16_t   source_channel;
+  Hit       model_hit;
+  std::map<std::string, PreciseFloat> items;
+
+  boost::posix_time::ptime lab_time;  //timestamp at end of spill
+  
+  inline StatsUpdate()
+    : stats_type(StatsType::running)
+    , source_channel(-1)
+  {}
+
+  std::string to_string() const;
+
+  StatsUpdate operator-(const StatsUpdate) const;
+  StatsUpdate operator+(const StatsUpdate) const;
+  bool operator<(const StatsUpdate other) const {return (lab_time < other.lab_time);}
+  bool operator==(const StatsUpdate other) const;
+  bool operator!=(const StatsUpdate other) const {return !operator ==(other);}
+  bool shallow_equals(const StatsUpdate& other) const {
+    return ((lab_time == other.lab_time) && (source_channel == other.source_channel));
+  }
+
+  void from_xml(const pugi::xml_node &) override;
+  void to_xml(pugi::xml_node &) const override;
+  std::string xml_element_name() const override {return "StatsUpdate";}
 };
 
 }

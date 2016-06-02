@@ -19,8 +19,8 @@
  *
  ******************************************************************************/
 
-#ifndef DIALOG_SPECTRUM_H
-#define DIALOG_SPECTRUM_H
+#ifndef DialogSpectrum_H
+#define DialogSpectrum_H
 
 #include <QDialog>
 #include "special_delegate.h"
@@ -30,16 +30,19 @@
 
 
 namespace Ui {
-class dialog_spectrum;
+class DialogSpectrum;
 }
 
-class dialog_spectrum : public QDialog
+class DialogSpectrum : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit dialog_spectrum(Qpx::Sink &spec, XMLableDB<Qpx::Detector>& detDB, QWidget *parent = 0);
-    ~dialog_spectrum();
+    explicit DialogSpectrum(Qpx::Sink &spec,
+                             XMLableDB<Qpx::Detector>& detDB,
+                             bool allow_edit,
+                             QWidget *parent = 0);
+    ~DialogSpectrum();
 
 
 private slots:
@@ -63,7 +66,7 @@ signals:
     void analyse();
 
 private:
-    Ui::dialog_spectrum *ui;
+    Ui::DialogSpectrum *ui;
     Qpx::Sink &my_spectrum_;
 
     TreeSettings               attr_model_;
@@ -77,6 +80,7 @@ private:
 
     Qpx::Metadata md_;
 
+    bool allow_edit_;
     bool changed_;
 
     void updateData();
@@ -84,4 +88,4 @@ private:
     void toggle_push();
 };
 
-#endif // DIALOG_SPECTRUM_H
+#endif // DialogSpectrum_H

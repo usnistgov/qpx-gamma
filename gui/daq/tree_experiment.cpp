@@ -38,7 +38,7 @@ TreeExperiment::TreeExperiment(QObject *parent)
 
 int TreeExperiment::columnCount(const QModelIndex & /* parent */) const
 {
-  return 4;
+  return 5;
 }
 
 QVariant TreeExperiment::data(const QModelIndex &index, int role) const
@@ -59,8 +59,10 @@ QVariant TreeExperiment::data(const QModelIndex &index, int role) const
       else if (col == 1)
         return QString::fromStdString(item->to_string());
       else if (col == 2)
+        return QString::fromStdString(item->range_to_string());
+      else if (col == 3)
         return QString::fromStdString(item->crit_to_string());
-      else if ((col == 3) && (item->data_idx >= 0))
+      else if ((col == 4) && (item->data_idx >= 0))
         return "(" + QString::number(item->data_idx) + ")";
       break;
     }
@@ -95,10 +97,12 @@ QVariant TreeExperiment::headerData(int section, Qt::Orientation orientation,
     if (section == 0)
       return "type";
     else if (section == 1)
-      return "values";
+      return "Setting";
     else if (section == 2)
-      return "time";
+      return "value(s)";
     else if (section == 3)
+      return "time";
+    else if (section == 4)
       return "idx";
 
   return QVariant();

@@ -26,6 +26,7 @@
 #include "generic_setting.h"
 #include "synchronized_queue.h"
 #include "spill.h"
+#include "custom_logger.h"
 
 namespace Qpx {
 

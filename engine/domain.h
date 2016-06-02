@@ -69,6 +69,7 @@ public:
 
   std::string type() const;
   std::string to_string() const;
+  std::string range_to_string() const;
   std::string crit_to_string() const;
 
 private:

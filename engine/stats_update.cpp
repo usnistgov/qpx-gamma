@@ -1,0 +1,146 @@
+/*******************************************************************************
+ *
+ * This software was developed at the National Institute of Standards and
+ * Technology (NIST) by employees of the Federal Government in the course
+ * of their official duties. Pursuant to title 17 Section 105 of the
+ * United States Code, this software is not subject to copyright protection
+ * and is in the public domain. NIST assumes no responsibility whatsoever for
+ * its use by other parties, and makes no guarantees, expressed or implied,
+ * about its quality, reliability, or any other characteristic.
+ *
+ * This software can be redistributed and/or modified freely provided that
+ * any derivative works bear some notice that they are derived from it, and
+ * any modified versions bear some notice that they have been modified.
+ *
+ * Author(s):
+ *      Martin Shetty (NIST)
+ *
+ * Description:
+ *      Types for organizing data aquired from Device
+ *        Qpx::Hit        single energy event with coincidence flags
+ *        Qpx::StatsUdate metadata for one spill (memory chunk)
+ *        Qpx::RunInfo    metadata for the whole run
+ *        Qpx::Spill      bundles all data and metadata for a list run
+ *        Qpx::ListData   bundles hits in vector and run metadata
+ *
+ ******************************************************************************/
+
+#include "stats_update.h"
+//#include <boost/algorithm/string.hpp>
+#include "qpx_util.h"
+
+namespace Qpx {
+
+// difference across all variables
+// except rate wouldn't make sense
+// and timestamp would require duration output type
+StatsUpdate StatsUpdate::operator-(const StatsUpdate other) const {
+  StatsUpdate answer;
+  if (source_channel != other.source_channel)
+    return answer;
+
+  //labtime?
+  for (auto &i : items)
+    if (other.items.count(i.first))
+      answer.items[i.first] = i.second - other.items.at(i.first);
+  return answer;
+}
+
+bool StatsUpdate::operator==(const StatsUpdate other) const {
+  if (stats_type != other.stats_type)
+    return false;
+  if (source_channel != other.source_channel)
+    return false;
+  if (items != other.items)
+    return false;
+  return true;
+}
+
+// stacks two, adding up all variables
+// except timestamp wouldn't make sense
+StatsUpdate StatsUpdate::operator+(const StatsUpdate other) const {
+  StatsUpdate answer;
+  if (source_channel != other.source_channel)
+    return answer;
+
+  //labtime?
+  for (auto &i : items)
+    if (other.items.count(i.first))
+      answer.items[i.first] = i.second + other.items.at(i.first);
+  return answer;
+}
+
+std::string StatsUpdate::to_string() const
+{
+  std::stringstream ss;
+  ss << "Stats::";
+  if (stats_type == StatsType::start)
+    ss << "START(";
+  else if (stats_type == StatsType::stop)
+    ss << "STOP(";
+  else
+    ss << "RUN(";
+  ss << "ch" << source_channel;
+  ss << "|labtm" << boost::posix_time::to_iso_extended_string(lab_time);
+  ss << ")";
+  return ss.str();
+}
+
+void StatsUpdate::to_xml(pugi::xml_node &root) const {
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+
+  std::string type = "run";
+  if (stats_type == StatsType::start)
+    type = "start";
+  else if (stats_type == StatsType::stop)
+    type = "stop";
+
+  node.append_attribute("type").set_value(type.c_str());
+  node.append_attribute("channel").set_value(std::to_string(source_channel).c_str());
+  node.append_attribute("lab_time").set_value(boost::posix_time::to_iso_extended_string(lab_time).c_str());
+
+  model_hit.to_xml(node);
+
+  if (items.size()) {
+     pugi::xml_node its = node.append_child("Items");
+     for (auto &i : items) {
+       std::stringstream ss;
+       ss << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << i.second;
+       its.append_attribute(i.first.c_str()).set_value(ss.str().c_str());
+     }
+  }
+}
+
+
+void StatsUpdate::from_xml(const pugi::xml_node &node) {
+  items.clear();
+
+  if (std::string(node.name()) != xml_element_name())
+    return;
+
+  if (node.attribute("lab_time"))
+    lab_time = from_iso_extended(node.attribute("lab_time").value());
+
+  std::string type(node.attribute("type").value());
+  if (type == "start")
+    stats_type = StatsType::start;
+  else if (type == "stop")
+    stats_type = StatsType::stop;
+  else
+    stats_type = StatsType::running;
+
+  source_channel = node.attribute("channel").as_int();
+  if (node.child(model_hit.xml_element_name().c_str()))
+    model_hit.from_xml(node.child(model_hit.xml_element_name().c_str()));
+
+  if (node.child("Items")) {
+    for (auto &i : node.child("Items").attributes()) {
+      std::string item_name(i.name());
+      PreciseFloat value(i.value());
+      items[item_name] = value;
+    }
+  }
+}
+
+
+}

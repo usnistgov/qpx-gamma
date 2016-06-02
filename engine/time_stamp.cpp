@@ -21,40 +21,33 @@
  *
  ******************************************************************************/
 
-#include "event.h"
-//#include "custom_logger.h"
-//#include <boost/algorithm/string.hpp>
+#include "time_stamp.h"
 #include <sstream>
 
 namespace Qpx {
 
-bool Event::in_window(const Hit& h) const {
-  return (h.timestamp >= lower_time) && ((h.timestamp - lower_time) <= window_ns);
-}
-
-bool Event::past_due(const Hit& h) const {
-  return (h.timestamp >= lower_time) && ((h.timestamp - lower_time) > max_delay_ns);
-}
-
-bool Event::antecedent(const Hit& h) const {
-  return (h.timestamp < lower_time);
-}
-
-bool Event::addHit(const Hit &newhit) {
-  if (hits.count(newhit.source_channel))
-    return false;
-  if (lower_time > newhit.timestamp)
-    lower_time = newhit.timestamp;
-  hits[newhit.source_channel] = newhit;
-  return true;
-}
-
-std::string Event::to_string() const {
+std::string TimeStamp::to_string() const {
   std::stringstream ss;
-  ss << "EVT[t" << lower_time.to_string() << "w" << window_ns << "]";
-  for (auto &q : hits)
-    ss << " " << q.first << "=" << q.second.to_string();
+  ss << time_native << "x(" << timebase_multiplier << "/" << timebase_divider << ")";
   return ss.str();
+}
+
+void TimeStamp::from_xml(const pugi::xml_node &node)
+{
+  *this = TimeStamp();
+  if (std::string(node.name()) != xml_element_name())
+    return;
+  if (node.attribute("timebase_mult"))
+    timebase_multiplier = node.attribute("timebase_mult").as_uint(1);
+  if (node.attribute("timebase_div"))
+    timebase_divider    = node.attribute("timebase_div").as_uint(1);
+}
+
+void TimeStamp::to_xml(pugi::xml_node &root) const
+{
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+  node.append_attribute("timebase_mult").set_value(std::to_string(timebase_multiplier).c_str());
+  node.append_attribute("timebase_div").set_value(std::to_string(timebase_divider).c_str());
 }
 
 }

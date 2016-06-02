@@ -178,8 +178,7 @@ void MADC32::addReadout(VmeStack& stack, int style = 0)
 Hit MADC32::model_hit() {
   Hit h;
   h.energy = DigitizedVal(0, 13);
-  h.timestamp.timebase_multiplier = 50;
-  h.timestamp.timebase_divider = 1;
+  h.timestamp = TimeStamp(50, 1);
   return h;
 }
 
@@ -246,7 +245,7 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, uint64_t 
       last_time = timestamp | time_upper;
 
       for (auto &h : hits)
-        h.timestamp.time_native = last_time;
+        h.timestamp = TimeStamp(h.timestamp, last_time);
 
 
       footers++;

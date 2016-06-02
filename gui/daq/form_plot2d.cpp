@@ -382,7 +382,7 @@ void FormPlot2D::on_pushDetails_clicked()
   if (detectors_ == nullptr)
     return;
 
-  dialog_spectrum* newSpecDia = new dialog_spectrum(*someSpectrum, *detectors_, this);
+  DialogSpectrum* newSpecDia = new DialogSpectrum(*someSpectrum, *detectors_, true, this);
   connect(newSpecDia, SIGNAL(finished(bool)), this, SLOT(spectrumDetailsClosed(bool)));
   connect(newSpecDia, SIGNAL(delete_spectrum()), this, SLOT(spectrumDetailsDelete()));
   connect(newSpecDia, SIGNAL(analyse()), this, SLOT(analyse()));

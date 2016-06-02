@@ -73,8 +73,6 @@ private:
   void update_profiles();
 
 private slots:
-  void on_pushEdit_clicked();
-
   void selection_changed(QItemSelection,QItemSelection);
   void selection_double_clicked(QModelIndex);
   void toggle_push();

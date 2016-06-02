@@ -21,39 +21,38 @@
  *
  ******************************************************************************/
 
-#include "event.h"
-//#include "custom_logger.h"
-//#include <boost/algorithm/string.hpp>
+#include "hit.h"
 #include <sstream>
 
 namespace Qpx {
 
-bool Event::in_window(const Hit& h) const {
-  return (h.timestamp >= lower_time) && ((h.timestamp - lower_time) <= window_ns);
+void Hit::from_xml(const pugi::xml_node &node)
+{
+  *this = Hit();
+  if (std::string(node.name()) != xml_element_name())
+    return;
+  source_channel = node.attribute("channel").as_int();
+  energy = DigitizedVal(0, node.attribute("energy_bits").as_int());
+  if (node.child(timestamp.xml_element_name().c_str()))
+    timestamp.from_xml(node.child(timestamp.xml_element_name().c_str()));
+  if (node.attribute("trace_length"))
+    trace.resize(node.attribute("trace_length").as_uint(0), 0);
 }
 
-bool Event::past_due(const Hit& h) const {
-  return (h.timestamp >= lower_time) && ((h.timestamp - lower_time) > max_delay_ns);
+void Hit::to_xml(pugi::xml_node &root) const
+{
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+  node.append_attribute("channel").set_value(std::to_string(source_channel).c_str());
+  node.append_attribute("energy_bits").set_value(std::to_string(energy.bits()).c_str());
+  if (trace.size())
+    node.append_attribute("trace_length").set_value(std::to_string(trace.size()).c_str());
+  timestamp.to_xml(node);
 }
 
-bool Event::antecedent(const Hit& h) const {
-  return (h.timestamp < lower_time);
-}
-
-bool Event::addHit(const Hit &newhit) {
-  if (hits.count(newhit.source_channel))
-    return false;
-  if (lower_time > newhit.timestamp)
-    lower_time = newhit.timestamp;
-  hits[newhit.source_channel] = newhit;
-  return true;
-}
-
-std::string Event::to_string() const {
+std::string Hit::to_string() const
+{
   std::stringstream ss;
-  ss << "EVT[t" << lower_time.to_string() << "w" << window_ns << "]";
-  for (auto &q : hits)
-    ss << " " << q.first << "=" << q.second.to_string();
+  ss << "[ch" << source_channel << "|t" << timestamp.to_string() << "|e" << energy.to_string() << "]";
   return ss.str();
 }
 

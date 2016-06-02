@@ -26,7 +26,10 @@
 #include <QInputDialog>
 #include <QMessageBox>
 
-dialog_spectrum::dialog_spectrum(Qpx::Sink &spec, XMLableDB<Qpx::Detector>& detDB, QWidget *parent) :
+DialogSpectrum::DialogSpectrum(Qpx::Sink &spec,
+                                 XMLableDB<Qpx::Detector>& detDB,
+                                 bool allow_edit,
+                                 QWidget *parent) :
   QDialog(parent),
   my_spectrum_(spec),
   det_selection_model_(&det_table_model_),
@@ -34,10 +37,17 @@ dialog_spectrum::dialog_spectrum(Qpx::Sink &spec, XMLableDB<Qpx::Detector>& detD
   attr_model_(this),
   detectors_(detDB),
   spectrum_detectors_("Detectors"),
-  ui(new Ui::dialog_spectrum)
+  allow_edit_(allow_edit),
+  ui(new Ui::DialogSpectrum)
 {
   ui->setupUi(this);
   ui->labelWarning->setVisible(false);
+
+  ui->pushAnalyse->setVisible(allow_edit_);
+  ui->pushDelete->setVisible(allow_edit_);
+  ui->pushLock->setVisible(allow_edit_);
+  ui->lineName->setEnabled(allow_edit_);
+  ui->treeAttribs->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
   connect(&det_selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(det_selection_changed(QItemSelection,QItemSelection)));
@@ -69,16 +79,16 @@ dialog_spectrum::dialog_spectrum(Qpx::Sink &spec, XMLableDB<Qpx::Detector>& detD
   updateData();
 }
 
-dialog_spectrum::~dialog_spectrum()
+DialogSpectrum::~DialogSpectrum()
 {
   delete ui;
 }
 
-void dialog_spectrum::det_selection_changed(QItemSelection, QItemSelection) {
+void DialogSpectrum::det_selection_changed(QItemSelection, QItemSelection) {
   toggle_push();
 }
 
-void dialog_spectrum::updateData() {
+void DialogSpectrum::updateData() {
 //  md_ = my_spectrum_.metadata();
 
   ui->lineName->setText(QString::fromStdString(md_.name));
@@ -110,7 +120,7 @@ void dialog_spectrum::updateData() {
   open_close_locks();
 }
 
-void dialog_spectrum::open_close_locks() {
+void DialogSpectrum::open_close_locks() {
   bool lockit = !ui->pushLock->isChecked();
   ui->labelWarning->setVisible(lockit);
   ui->pushDelete->setEnabled(lockit);
@@ -129,12 +139,12 @@ void dialog_spectrum::open_close_locks() {
   toggle_push();
 }
 
-void dialog_spectrum::push_settings() {
+void DialogSpectrum::push_settings() {
   md_.attributes = attr_model_.get_tree();
   changed_ = true;
 }
 
-void dialog_spectrum::toggle_push()
+void DialogSpectrum::toggle_push()
 {
   ui->pushDetEdit->setEnabled(false);
   ui->pushDetRename->setEnabled(false);
@@ -158,12 +168,12 @@ void dialog_spectrum::toggle_push()
   }
 }
 
-void dialog_spectrum::on_pushLock_clicked()
+void DialogSpectrum::on_pushLock_clicked()
 {
   open_close_locks();
 }
 
-void dialog_spectrum::on_buttonBox_rejected()
+void DialogSpectrum::on_buttonBox_rejected()
 {
   if (md_.name != ui->lineName->text().toStdString())
     changed_ = true;
@@ -178,7 +188,7 @@ void dialog_spectrum::on_buttonBox_rejected()
   accept();
 }
 
-void dialog_spectrum::on_pushDetEdit_clicked()
+void DialogSpectrum::on_pushDetEdit_clicked()
 {
   QModelIndexList ixl = ui->tableDetectors->selectionModel()->selectedRows();
   if (ixl.empty())
@@ -190,7 +200,7 @@ void dialog_spectrum::on_pushDetEdit_clicked()
   newDet->exec();
 }
 
-void dialog_spectrum::changeDet(Qpx::Detector newDetector) {
+void DialogSpectrum::changeDet(Qpx::Detector newDetector) {
   QModelIndexList ixl = ui->tableDetectors->selectionModel()->selectedRows();
   if (ixl.empty())
     return;
@@ -208,7 +218,7 @@ void dialog_spectrum::changeDet(Qpx::Detector newDetector) {
   }
 }
 
-void dialog_spectrum::on_pushDetRename_clicked()
+void DialogSpectrum::on_pushDetRename_clicked()
 {
   QModelIndexList ixl = ui->tableDetectors->selectionModel()->selectedRows();
   if (ixl.empty())
@@ -234,7 +244,7 @@ void dialog_spectrum::on_pushDetRename_clicked()
   }
 }
 
-void dialog_spectrum::on_pushDelete_clicked()
+void DialogSpectrum::on_pushDelete_clicked()
 {
   int ret = QMessageBox::question(this, "Delete spectrum?", "Are you sure you want to delete this spectrum?");
   if (ret == QMessageBox::Yes) {
@@ -243,13 +253,13 @@ void dialog_spectrum::on_pushDelete_clicked()
   }
 }
 
-void dialog_spectrum::on_pushAnalyse_clicked()
+void DialogSpectrum::on_pushAnalyse_clicked()
 {
   emit analyse();
   accept();
 }
 
-void dialog_spectrum::on_pushDetFromDB_clicked()
+void DialogSpectrum::on_pushDetFromDB_clicked()
 {
   QModelIndexList ixl = ui->tableDetectors->selectionModel()->selectedRows();
   if (ixl.empty())
@@ -269,7 +279,7 @@ void dialog_spectrum::on_pushDetFromDB_clicked()
   }
 }
 
-void dialog_spectrum::on_pushDetToDB_clicked()
+void DialogSpectrum::on_pushDetToDB_clicked()
 {
   QModelIndexList ixl = ui->tableDetectors->selectionModel()->selectedRows();
   if (ixl.empty())
@@ -322,7 +332,7 @@ void dialog_spectrum::on_pushDetToDB_clicked()
   }
 }
 
-void dialog_spectrum::on_spinDets_valueChanged(int arg1)
+void DialogSpectrum::on_spinDets_valueChanged(int arg1)
 {
   if (!ui->spinDets->isEnabled())
     return;

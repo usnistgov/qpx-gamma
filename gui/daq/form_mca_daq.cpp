@@ -624,13 +624,7 @@ void FormMcaDaq::on_pushForceRefresh_clicked()
 
 void FormMcaDaq::on_pushDetails_clicked()
 {
-  //HACK
-  std::set<Spill> spills = spectra_->spills();
-  Setting set;
-  if (spills.size())
-    set = spills.begin()->state;
-
-  FormDaqSettings *DaqInfo = new FormDaqSettings(set, this);
+  FormDaqSettings *DaqInfo = new FormDaqSettings(spectra_, this);
   DaqInfo->setWindowTitle("System settings at the time of acquisition");
   DaqInfo->exec();
 }

@@ -187,21 +187,6 @@ void WidgetProfiles::selection_changed(QItemSelection, QItemSelection) {
 void WidgetProfiles::toggle_push() {
     ui->pushApply->setEnabled(!selection_model_.selectedIndexes().empty());
     ui->pushApplyBoot->setEnabled(!selection_model_.selectedIndexes().empty());
-    ui->pushEdit->setEnabled(!selection_model_.selectedIndexes().empty());
-}
-
-
-void WidgetProfiles::on_pushEdit_clicked()
-{
-  QModelIndexList ixl = ui->tableProfiles->selectionModel()->selectedRows();
-  if (ixl.empty())
-    return;
-  int i = ixl.front().row();
-
-  FormDaqSettings *DaqInfo = new FormDaqSettings(profiles_[i], this);
-  DaqInfo->setWindowTitle(QString::fromStdString(profiles_[i].value_text));
-  DaqInfo->exec();
-
 }
 
 void WidgetProfiles::selection_double_clicked(QModelIndex idx) {

@@ -22,15 +22,27 @@
 
 #include "form_daq_settings.h"
 #include "ui_form_daq_settings.h"
+//#include "qpx_util.h"
 
-FormDaqSettings::FormDaqSettings(Qpx::Setting tree, QWidget *parent) :
+FormDaqSettings::FormDaqSettings(Qpx::ProjectPtr project, QWidget *parent) :
   QDialog(parent),
-  dev_settings_(tree),
+//  project_(project),
   ui(new Ui::FormDaqSettings)
 {
   ui->setupUi(this);
 
-  tree_settings_model_.update(dev_settings_);
+  if (project)
+  {
+    for (auto &s : project->spills())
+    {
+      spills_.push_back(s);
+      ui->listSpills->addItem(QString::fromStdString(boost::posix_time::to_iso_extended_string(s.time)));
+    }
+  }
+
+  connect(ui->listSpills, SIGNAL(currentRowChanged(int)), this, SLOT(selectionChanged(int)));
+
+//  tree_settings_model_.update(dev_settings_);
   ui->treeSettings->setModel(&tree_settings_model_);
   ui->treeSettings->setItemDelegate(&tree_delegate_);
   ui->treeSettings->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
@@ -46,3 +58,12 @@ FormDaqSettings::~FormDaqSettings()
 void FormDaqSettings::closeEvent(QCloseEvent *event) {
   event->accept();
 }
+
+void FormDaqSettings::selectionChanged(int row)
+{
+  if ((row >= 0) && (row < spills_.size()))
+    tree_settings_model_.update(spills_.at(row).state);
+  else
+    tree_settings_model_.update(Qpx::Setting());
+}
+

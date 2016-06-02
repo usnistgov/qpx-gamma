@@ -178,23 +178,24 @@ void Delayometer::addEvent(const Event& newEvent) {
 //  if ((df > 0) && (df < 18000))
 //    DBG << " d " << b.timestamp - a.timestamp;
 
-  TimeStamp res;
-  if (a.timestamp.timebase_divider > b.timestamp.timebase_divider)
-    res = a.timestamp;
-  else if ((a.timestamp.timebase_divider == b.timestamp.timebase_divider)
-           && (b.timestamp.timebase_multiplier < b.timestamp.timebase_multiplier))
-    res = a.timestamp;
-  else
-    res = b.timestamp;
+  TimeStamp common = TimeStamp::common_timebase(a.timestamp, b.timestamp);
+//  TimeStamp res;
+//  if (a.timestamp.timebase_divider > b.timestamp.timebase_divider)
+//    res = a.timestamp;
+//  else if ((a.timestamp.timebase_divider == b.timestamp.timebase_divider)
+//           && (b.timestamp.timebase_multiplier < b.timestamp.timebase_multiplier))
+//    res = a.timestamp;
+//  else
+//    res = b.timestamp;
 
-  if (!timebase.same_base(res)) {
-    timebase = res;
+  if (!timebase.same_base(common)) {
+    timebase = TimeStamp::common_timebase(common, timebase);
 
     double max_ns = std::ceil(max_delay_);
-    int64_t max_native = std::ceil(max_ns * timebase.timebase_divider / timebase.timebase_multiplier);
+    int64_t max_native = timebase.to_native(max_ns);
 
     for (int64_t i= -max_native; i <= max_native; ++i) {
-      ns_[i] = i * timebase.timebase_multiplier / timebase.timebase_divider;
+      ns_[i] = timebase.to_nanosec(i);
       if (!spectrum_.count(i))
         spectrum_[i] = 0;
     }
@@ -205,12 +206,12 @@ void Delayometer::addEvent(const Event& newEvent) {
       axes_[0].push_back(q.second.convert_to<double>());
   }
 
-  int64_t diff = std::round((b.timestamp - a.timestamp) * timebase.timebase_divider / timebase.timebase_multiplier);
+  int64_t diff =  timebase.to_native(std::round((b.timestamp - a.timestamp)));
 
   spectrum_[diff]++;
 
   if (!ns_.count(diff)) {
-    ns_[diff] = diff * timebase.timebase_multiplier / timebase.timebase_divider;
+    ns_[diff] = timebase.to_nanosec(diff);
 
     axes_.resize(1);
     axes_[0].clear();

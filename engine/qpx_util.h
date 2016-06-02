@@ -297,4 +297,17 @@ inline std::string very_simple(const boost::posix_time::time_duration &duration)
   return ss.str();
 }
 
+inline uint32_t lcm(uint32_t a, uint32_t b)
+{
+  uint32_t m(a), n(b);
+
+  while(m!=n)
+    if(m < n)
+      m = m + a;
+    else
+      n = n + b;
+
+  return m;
+}
+
 #endif

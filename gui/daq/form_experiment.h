@@ -75,6 +75,10 @@ private slots:
   void choose_spectrum(SelectorItem item);
   void toggle_from_setup();
 
+  void on_pushRunInfo_clicked();
+
+  void on_pushSinkInfo_clicked();
+
 protected:
   void closeEvent(QCloseEvent*);
 

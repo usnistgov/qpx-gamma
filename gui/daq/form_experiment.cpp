@@ -28,6 +28,8 @@
 #include <QInputDialog>
 #include <QSettings>
 
+#include "form_daq_settings.h"
+#include "dialog_spectrum.h"
 
 using namespace Qpx;
 
@@ -191,14 +193,17 @@ void FormExperiment::new_daq_data() {
   update_name();
   display_time();
 
-  if (ui->plotSpectrum->busy())
-    return;
-
   Qpx::SinkPtr sink;
 
   Qpx::ProjectPtr p = exp_plot_thread_.current_source();
   if (p)
     sink = p->get_sink(selected_sink_);
+
+  ui->pushRunInfo->setEnabled(p.operator bool());
+  ui->pushSinkInfo->setEnabled(sink.operator bool());
+
+  if (ui->plotSpectrum->busy())
+    return;
 
   if (!sink)
   {
@@ -215,11 +220,9 @@ void FormExperiment::new_daq_data() {
   if (p->has_fitter(selected_sink_))
   {
     selected_fitter_ = p->get_fitter(selected_sink_);
+    selected_fitter_.setData(sink);
     if (selected_fitter_.metadata_.total_count < md.total_count)
-    {
-      selected_fitter_.setData(sink);
       refit = true;
-    }
   }
   else
   {
@@ -636,4 +639,37 @@ void FormExperiment::display_time()
     all = "Cumulative time: " + done + "   ETA: " + eta;
 
   ui->labelTime->setText(QString::fromStdString(all));
+}
+
+void FormExperiment::on_pushRunInfo_clicked()
+{
+  if (ui->plotSpectrum->busy())
+    return;
+
+  FormDaqSettings *DaqInfo = new FormDaqSettings(exp_plot_thread_.current_source(), this);
+  DaqInfo->setWindowTitle("System settings at the time of acquisition");
+  DaqInfo->exec();
+}
+
+void FormExperiment::on_pushSinkInfo_clicked()
+{
+  if (ui->plotSpectrum->busy())
+    return;
+
+  Qpx::SinkPtr sink;
+
+  Qpx::ProjectPtr p = exp_plot_thread_.current_source();
+  if (p)
+    sink = p->get_sink(selected_sink_);
+
+  if (sink)
+  {
+    XMLableDB<Qpx::Detector> dets("detectors"); //HACK
+
+    DialogSpectrum* newSpecDia = new DialogSpectrum(*sink, dets, false, this);
+//    connect(newSpecDia, SIGNAL(finished(bool)), this, SLOT(spectrumDetailsClosed(bool)));
+    // should go to new_daq_data
+    newSpecDia->exec();
+
+  }
 }

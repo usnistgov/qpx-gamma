@@ -163,7 +163,7 @@ bool Spectrum::_initialize() {
     }
   }
   max_delay_ += coinc_window_;
-//   DBG << "<" << metadata_.name << "> coinc " << coinc_window_ << " max delay " << max_delay_;
+  //   DBG << "<" << metadata_.name << "> coinc " << coinc_window_ << " max delay " << max_delay_;
 
   return false; //still too abstract
 }
@@ -179,8 +179,8 @@ void Spectrum::_push_hit(const Hit& newhit)
     return;
 
   if (!(pattern_coinc_.relevant(newhit.source_channel) ||
-      pattern_anti_.relevant(newhit.source_channel) ||
-      pattern_add_.relevant(newhit.source_channel)))
+        pattern_anti_.relevant(newhit.source_channel) ||
+        pattern_add_.relevant(newhit.source_channel)))
     return;
 
   //  DBG << "Processing " << newhit.to_string();
@@ -212,7 +212,7 @@ void Spectrum::_push_hit(const Hit& newhit)
 
     if (!appended && !pileup) {
       backlog.push_back(Event(hit, coinc_window_, max_delay_));
-//      DBG << "append fresh";
+      //      DBG << "append fresh";
     }
   }
 
@@ -240,102 +240,107 @@ bool Spectrum::validateEvent(const Event& newEvent) const {
 void Spectrum::_push_stats(const StatsUpdate& newBlock) {
   //private; no lock required
 
-  if (pattern_coinc_.relevant(newBlock.source_channel) ||
-      pattern_anti_.relevant(newBlock.source_channel) ||
-      pattern_add_.relevant(newBlock.source_channel)) {
-    //DBG << "Spectrum " << metadata_.name << " received update for chan " << newBlock.channel;
-    bool chan_new = (stats_list_.count(newBlock.source_channel) == 0);
-    bool new_start = (newBlock.stats_type == StatsType::start);
+  if (!(
+        pattern_coinc_.relevant(newBlock.source_channel) ||
+        pattern_anti_.relevant(newBlock.source_channel) ||
+        pattern_add_.relevant(newBlock.source_channel)
+        ))
+    return;
 
-    Setting start_time = get_attr("start_time");
-    if (new_start && start_time.value_time.is_not_a_date_time()) {
-      start_time.value_time = newBlock.lab_time;
-      metadata_.attributes.branches.replace(start_time);
-    }
+  //DBG << "Spectrum " << metadata_.name << " received update for chan " << newBlock.channel;
+  bool chan_new = (stats_list_.count(newBlock.source_channel) == 0);
+  bool new_start = (newBlock.stats_type == StatsType::start);
 
-    if (!chan_new && new_start && (stats_list_[newBlock.source_channel].back().stats_type == StatsType::running))
-      stats_list_[newBlock.source_channel].back().stats_type = StatsType::stop;
+  Setting start_time = get_attr("start_time");
+  if (new_start && start_time.value_time.is_not_a_date_time()) {
+    start_time.value_time = newBlock.lab_time;
+    metadata_.attributes.branches.replace(start_time);
+  }
 
-    if (recent_end_.lab_time.is_not_a_date_time())
-      recent_start_ = newBlock;
-    else
-      recent_start_ = recent_end_;
+  if (!chan_new
+      && new_start
+      && (stats_list_[newBlock.source_channel].back().stats_type == StatsType::running))
+    stats_list_[newBlock.source_channel].back().stats_type = StatsType::stop;
 
-    recent_end_ = newBlock;
+  if (recent_end_.lab_time.is_not_a_date_time())
+    recent_start_ = newBlock;
+  else
+    recent_start_ = recent_end_;
 
-    Setting rate = get_attr("instant_rate");
-    rate.value_dbl = 0;
-    double recent_time = (recent_end_.lab_time - recent_start_.lab_time).total_milliseconds() * 0.001;
-    if (recent_time > 0)
-      rate.value_dbl = recent_count_ / recent_time;
-    metadata_.attributes.branches.replace(rate);
+  recent_end_ = newBlock;
 
-    recent_count_ = 0;
+  Setting rate = get_attr("instant_rate");
+  rate.value_dbl = 0;
+  double recent_time = (recent_end_.lab_time - recent_start_.lab_time).total_milliseconds() * 0.001;
+  if (recent_time > 0)
+    rate.value_dbl = recent_count_ / recent_time;
+  metadata_.attributes.branches.replace(rate);
 
-    if (!chan_new && (stats_list_[newBlock.source_channel].back().stats_type == StatsType::running))
-      stats_list_[newBlock.source_channel].pop_back();
+  recent_count_ = 0;
 
-    stats_list_[newBlock.source_channel].push_back(newBlock);
+  if (!chan_new && (stats_list_[newBlock.source_channel].back().stats_type == StatsType::running))
+    stats_list_[newBlock.source_channel].pop_back();
 
-    if (!chan_new) {
-      StatsUpdate start = stats_list_[newBlock.source_channel].front();
+  stats_list_[newBlock.source_channel].push_back(newBlock);
 
-      boost::posix_time::time_duration rt ,lt;
-      boost::posix_time::time_duration real ,live;
+  if (!chan_new) {
+    StatsUpdate start = stats_list_[newBlock.source_channel].front();
 
-      for (auto &q : stats_list_[newBlock.source_channel]) {
-        if (q.stats_type == StatsType::start) {
-          real += rt;
-          live += lt;
-          start = q;
-        } else {
-          lt = rt = q.lab_time - start.lab_time;
-          StatsUpdate diff = q - start;
-          PreciseFloat scale_factor = 1;
-          if (diff.items.count("native_time") && (diff.items.at("native_time") > 0))
-            scale_factor = rt.total_microseconds() / diff.items["native_time"];
-          if (diff.items.count("live_time")) {
-            PreciseFloat scaled_live = diff.items.at("live_time") * scale_factor;
-            lt = boost::posix_time::microseconds(scaled_live.convert_to<long>());
-          }
-        }
-      }
+    boost::posix_time::time_duration rt ,lt;
+    boost::posix_time::time_duration real ,live;
 
-      if (stats_list_[newBlock.source_channel].back().stats_type != StatsType::start) {
+    for (auto &q : stats_list_[newBlock.source_channel]) {
+      if (q.stats_type == StatsType::start) {
         real += rt;
         live += lt;
-//        DBG << "<Spectrum> \"" << metadata_.name << "\" RT + "
-//               << rt << " = " << real << "   LT + " << lt << " = " << live;
+        start = q;
+      } else {
+        lt = rt = q.lab_time - start.lab_time;
+        StatsUpdate diff = q - start;
+        PreciseFloat scale_factor = 1;
+        if (diff.items.count("native_time") && (diff.items.at("native_time") > 0))
+          scale_factor = rt.total_microseconds() / diff.items["native_time"];
+        if (diff.items.count("live_time")) {
+          PreciseFloat scaled_live = diff.items.at("live_time") * scale_factor;
+          lt = boost::posix_time::microseconds(scaled_live.convert_to<long>());
+        }
       }
-      real_times_[newBlock.source_channel] = real;
-      live_times_[newBlock.source_channel] = live;
-
-      Setting live_time = get_attr("live_time");
-      Setting real_time = get_attr("real_time");
-
-      live_time.value_duration = real_time.value_duration = real;
-      for (auto &q : real_times_)
-        if (q.second.total_milliseconds() < real_time.value_duration.total_milliseconds())
-          real_time.value_duration = q.second;
-
-      for (auto &q : live_times_)
-        if (q.second.total_milliseconds() < live_time.value_duration.total_milliseconds())
-          live_time.value_duration = q.second;
-
-      metadata_.attributes.branches.replace(live_time);
-      metadata_.attributes.branches.replace(real_time);
-
-//      DBG << "<Spectrum> \"" << metadata_.name << "\"  ********* "
-//             << "RT = " << to_simple_string(metadata_.real_time)
-//             << "   LT = " << to_simple_string(metadata_.live_time) ;
-
     }
+
+    if (stats_list_[newBlock.source_channel].back().stats_type != StatsType::start) {
+      real += rt;
+      live += lt;
+      //        DBG << "<Spectrum> \"" << metadata_.name << "\" RT + "
+      //               << rt << " = " << real << "   LT + " << lt << " = " << live;
+    }
+    real_times_[newBlock.source_channel] = real;
+    live_times_[newBlock.source_channel] = live;
+
+    Setting live_time = get_attr("live_time");
+    Setting real_time = get_attr("real_time");
+
+    live_time.value_duration = real_time.value_duration = real;
+    for (auto &q : real_times_)
+      if (q.second.total_milliseconds() < real_time.value_duration.total_milliseconds())
+        real_time.value_duration = q.second;
+
+    for (auto &q : live_times_)
+      if (q.second.total_milliseconds() < live_time.value_duration.total_milliseconds())
+        live_time.value_duration = q.second;
+
+    metadata_.attributes.branches.replace(live_time);
+    metadata_.attributes.branches.replace(real_time);
+
+    //      DBG << "<Spectrum> \"" << metadata_.name << "\"  ********* "
+    //             << "RT = " << to_simple_string(metadata_.real_time)
+    //             << "   LT = " << to_simple_string(metadata_.live_time) ;
+
   }
 }
-  
+
 void Spectrum::_set_detectors(const std::vector<Qpx::Detector>& dets) {
   //private; no lock required
-//  DBG << "<Spectrum> _set_detectors";
+  //  DBG << "<Spectrum> _set_detectors";
 
   metadata_.detectors.clear();
 
