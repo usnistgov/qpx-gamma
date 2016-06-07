@@ -32,27 +32,69 @@
 #include "time_stamp.h"
 #include "xmlable.h"
 
+
 namespace Qpx {
 
-struct Hit {
+struct HitModel
+{
+public:
+  TimeStamp                       timebase;
+  std::vector<DigitizedVal>       values;
+  std::vector<std::string>        idx_to_name;
+  std::map<std::string, size_t>   name_to_idx;
+  size_t                          tracelength;
 
-  int16_t       source_channel;
-  TimeStamp     timestamp;
-  DigitizedVal  energy;
-  std::map<std::string, uint16_t> extras; //does not save to file
-  std::vector<uint16_t> trace;
+  HitModel() : tracelength(0) {}
+
+  void add_value(std::string name, uint16_t bits)
+  {
+    values.push_back(DigitizedVal(0,bits));
+    idx_to_name.push_back(name);
+    name_to_idx[name] = values.size() - 1;
+  }
+
+  void from_xml(const pugi::xml_node &);
+  void to_xml(pugi::xml_node &) const;
+  std::string xml_element_name() const {return "HitModel";}
+  std::string to_string() const;
+};
+
+
+class Hit {
+public:
+
+  DigitizedVal              energy;
+  std::vector<DigitizedVal> values; //does not save to file
+  std::vector<uint16_t>     trace;
   
   inline Hit()
+    : Hit(-1, TimeStamp())
+  {}
+
+  inline Hit(int16_t sourcechan, const TimeStamp &ts)
+    : source_channel_(sourcechan)
+    , timestamp_(ts)
+  {}
+
+  inline Hit(int16_t sourcechan, const HitModel &model)
+    : source_channel_(sourcechan)
+    , timestamp_(model.timebase)
   {
-    source_channel = -1;
+    values = model.values;
+    trace.resize(model.tracelength);
   }
+
+  inline const int16_t& source_channel() const { return source_channel_; }
+
+  inline const TimeStamp& timestamp() const { return timestamp_; }
+  inline void set_timestamp_native(uint64_t native) { timestamp_ = timestamp_.make(native); }
 
   inline bool operator==(const Hit other) const
   {
-    if (source_channel != other.source_channel) return false;
-    if (timestamp != other.timestamp) return false;
-    if (energy != other.energy) return false;
-    if (extras != other.extras) return false;
+    if (source_channel_ != other.source_channel_) return false;
+    if (timestamp_ != other.timestamp_) return false;
+//    if (energy != other.energy) return false;
+    if (values != other.values) return false;
     if (trace != other.trace) return false;
     return true;
   }
@@ -64,36 +106,46 @@ struct Hit {
 
   inline bool operator<(const Hit other) const
   {
-    return (timestamp < other.timestamp);
+    return (timestamp_ < other.timestamp_);
   }
 
   inline bool operator>(const Hit other) const
   {
-    return (timestamp > other.timestamp);
+    return (timestamp_ > other.timestamp_);
+  }
+
+  inline void delay_ns(double ns)
+  {
+    timestamp_.delay(ns);
   }
 
   inline void write_bin(std::ofstream &outfile) const
   {
-    outfile.write((char*)&source_channel, sizeof(source_channel));
-    timestamp.write_bin(outfile);
-    uint16_t nrg = energy.val(energy.bits());
-    outfile.write((char*)&nrg, sizeof(nrg));
+    outfile.write((char*)&source_channel_, sizeof(source_channel_));
+    timestamp_.write_bin(outfile);
+    for (auto &v : values)
+      v.write_bin(outfile);
+//    uint16_t nrg = energy.val(energy.bits());
+//    outfile.write((char*)&nrg, sizeof(nrg));
     if (trace.size())
       outfile.write((char*)trace.data(), sizeof(uint16_t) * trace.size());
   }
 
-  inline void read_bin(std::ifstream &infile, std::map<int16_t, Hit> &model_hits)
+  inline void read_bin(std::ifstream &infile, const std::map<int16_t, HitModel> &model_hits)
   {
     int16_t channel = -1;
     infile.read(reinterpret_cast<char*>(&channel), sizeof(channel));
     if (!model_hits.count(channel))
       return;
-    *this = model_hits[channel];
-    timestamp.read_bin(infile);
+    *this = Hit(channel, model_hits.at(channel));
+    timestamp_.read_bin(infile);
 
-    uint16_t nrg = 0;
-    infile.read(reinterpret_cast<char*>(&nrg), sizeof(nrg));
-    energy.set_val(nrg);
+    for (auto &v : values)
+      v.read_bin(infile);
+
+//    uint16_t nrg = 0;
+//    infile.read(reinterpret_cast<char*>(&nrg), sizeof(nrg));
+//    energy.set_val(nrg);
     if (trace.size())
       infile.read(reinterpret_cast<char*>(trace.data()), sizeof(uint16_t) * trace.size());
   }
@@ -102,6 +154,10 @@ struct Hit {
   void to_xml(pugi::xml_node &) const;
   std::string xml_element_name() const {return "Hit";}
   std::string to_string() const;
+
+private:
+  int16_t       source_channel_;
+  TimeStamp     timestamp_;
 
 };
 

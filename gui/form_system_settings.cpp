@@ -443,3 +443,8 @@ void FormSystemSettings::on_pushExperiment_clicked()
 {
   emit optimization_requested();
 }
+
+void FormSystemSettings::on_pushOpenRawView_clicked()
+{
+  emit raw_view_requested();
+}

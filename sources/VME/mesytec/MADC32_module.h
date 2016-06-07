@@ -41,7 +41,7 @@ public:
   bool daq_init();
 
   static std::list<Hit> parse(std::list<uint32_t> data, uint64_t &evts, uint64_t &last_time, std::string &madc_pattern);
-  static Hit model_hit();
+  static HitModel model_hit();
 
 private:
   //no copying

@@ -171,23 +171,23 @@ bool Spectrum::_initialize() {
 
 void Spectrum::_push_hit(const Hit& newhit)
 {
-  if ((newhit.source_channel < cutoff_logic_.size())
-      && (newhit.energy.val(metadata_.bits) < cutoff_logic_[newhit.source_channel]))
+  if ((newhit.source_channel() < cutoff_logic_.size())
+      && (newhit.energy.val(metadata_.bits) < cutoff_logic_[newhit.source_channel()]))
     return;
 
-  if (newhit.source_channel < 0)
+  if (newhit.source_channel() < 0)
     return;
 
-  if (!(pattern_coinc_.relevant(newhit.source_channel) ||
-        pattern_anti_.relevant(newhit.source_channel) ||
-        pattern_add_.relevant(newhit.source_channel)))
+  if (!(pattern_coinc_.relevant(newhit.source_channel()) ||
+        pattern_anti_.relevant(newhit.source_channel()) ||
+        pattern_add_.relevant(newhit.source_channel())))
     return;
 
   //  DBG << "Processing " << newhit.to_string();
 
   Hit hit = newhit;
-  if (hit.source_channel < delay_ns_.size())
-    hit.timestamp.delay(delay_ns_[hit.source_channel]);
+  if (hit.source_channel() < delay_ns_.size())
+    hit.delay_ns(delay_ns_[hit.source_channel()]);
 
   bool appended = false;
   bool pileup = false;
@@ -201,7 +201,7 @@ void Spectrum::_push_hit(const Hit& newhit)
             DBG << "<" << metadata_.name << "> hit " << hit.to_string() << " coincident with more than one other hit (counted >=2 times)";
           appended = true;
         } else {
-          DBG << "<" << metadata_.name << "> pileup hit " << hit.to_string() << " with " << q.to_string() << " already has " << q.hits[hit.source_channel].to_string();
+          DBG << "<" << metadata_.name << "> pileup hit " << hit.to_string() << " with " << q.to_string() << " already has " << q.hits[hit.source_channel()].to_string();
           pileup = true;
         }
       } else if (q.past_due(hit))

@@ -28,7 +28,7 @@ namespace Qpx {
 
 std::string TimeStamp::to_string() const {
   std::stringstream ss;
-  ss << time_native << "x(" << timebase_multiplier << "/" << timebase_divider << ")";
+  ss << time_native_ << "x(" << timebase_multiplier_ << "/" << timebase_divider_ << ")";
   return ss.str();
 }
 
@@ -38,16 +38,16 @@ void TimeStamp::from_xml(const pugi::xml_node &node)
   if (std::string(node.name()) != xml_element_name())
     return;
   if (node.attribute("timebase_mult"))
-    timebase_multiplier = node.attribute("timebase_mult").as_uint(1);
+    timebase_multiplier_ = node.attribute("timebase_mult").as_uint(1);
   if (node.attribute("timebase_div"))
-    timebase_divider    = node.attribute("timebase_div").as_uint(1);
+    timebase_divider_    = node.attribute("timebase_div").as_uint(1);
 }
 
 void TimeStamp::to_xml(pugi::xml_node &root) const
 {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
-  node.append_attribute("timebase_mult").set_value(std::to_string(timebase_multiplier).c_str());
-  node.append_attribute("timebase_div").set_value(std::to_string(timebase_divider).c_str());
+  node.append_attribute("timebase_mult").set_value(std::to_string(timebase_multiplier_).c_str());
+  node.append_attribute("timebase_div").set_value(std::to_string(timebase_divider_).c_str());
 }
 
 }

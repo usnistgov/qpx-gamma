@@ -48,6 +48,7 @@ FormStart::FormStart(ThreadRunner &thread,
   connect(formSettings, SIGNAL(gain_matching_requested()), this, SLOT(request_gain_matching()));
   connect(formSettings, SIGNAL(optimization_requested()), this, SLOT(request_optimization()));
   connect(formSettings, SIGNAL(list_view_requested()), this, SLOT(request_list_view()));
+  connect(formSettings, SIGNAL(raw_view_requested()), this, SLOT(request_raw_view()));
 
   connect(this, SIGNAL(refresh()), formSettings, SLOT(update()));
   connect(this, SIGNAL(toggle_push_(bool,Qpx::SourceStatus)), formSettings, SLOT(toggle_push(bool,Qpx::SourceStatus)));
@@ -118,4 +119,8 @@ void FormStart::request_optimization() {
 
 void FormStart::request_list_view() {
   emit list_view_requested();
+}
+
+void FormStart::request_raw_view() {
+  emit raw_view_requested();
 }

@@ -42,7 +42,7 @@ enum StatsType
 struct StatsUpdate : public XMLable {
   StatsType stats_type;
   int16_t   source_channel;
-  Hit       model_hit;
+  HitModel  model_hit;
   std::map<std::string, PreciseFloat> items;
 
   boost::posix_time::ptime lab_time;  //timestamp at end of spill
@@ -62,6 +62,9 @@ struct StatsUpdate : public XMLable {
   bool shallow_equals(const StatsUpdate& other) const {
     return ((lab_time == other.lab_time) && (source_channel == other.source_channel));
   }
+
+  static StatsType type_from_str(std::string);
+  static std::string type_to_str(StatsType);
 
   void from_xml(const pugi::xml_node &) override;
   void to_xml(pugi::xml_node &) const override;

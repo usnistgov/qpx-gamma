@@ -94,6 +94,7 @@ bool SpectrumRaw::init_bin() {
 
   DBG << "binary is good";
 
+  bin_begin_ = file_bin_.tellp();
   open_bin_ = true;
   return true;
 }
@@ -113,17 +114,22 @@ void SpectrumRaw::addEvent(const Event& newEvent) {
 }
 
 void SpectrumRaw::_push_spill(const Spill& one_spill) {
-  Spectrum::_push_spill(one_spill);
-
-  if (!open_xml_)
+  if ((!open_xml_) || (!open_bin_))
     return;
 
+  uint64_t pos = file_bin_.tellp() - bin_begin_;
+
+  Spectrum::_push_spill(one_spill);
+
   Spill copy = one_spill;
-  copy.hits.resize(hits_this_spill_);
+//  copy.hits.resize(hits_this_spill_);
+  copy.hits.clear();
+  copy.to_xml(xml_root_, true);
+  xml_root_.last_child().append_attribute("raw_hit_count").set_value(std::to_string(hits_this_spill_).c_str());
+  xml_root_.last_child().append_attribute("file_offset").set_value(std::to_string(pos).c_str());
+
   total_hits_ += hits_this_spill_;
   hits_this_spill_ = 0;
-
-  copy.to_xml(xml_root_, true);
 }
 
 

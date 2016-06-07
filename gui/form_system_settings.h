@@ -57,6 +57,7 @@ signals:
   void optimization_requested();
   void gain_matching_requested();
   void list_view_requested();
+  void raw_view_requested();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -99,6 +100,8 @@ private slots:
   void profile_chosen();
 
   void on_pushExperiment_clicked();
+
+  void on_pushOpenRawView_clicked();
 
 private:
   Ui::FormSystemSettings *ui;

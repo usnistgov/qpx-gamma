@@ -124,16 +124,16 @@ void Delayometer::_append(const Entry& e) {
 
 void Delayometer::_push_hit(const Hit& newhit)
 {
-  if ((newhit.source_channel < cutoff_logic_.size())
-      && (newhit.energy.val(metadata_.bits) < cutoff_logic_[newhit.source_channel]))
+  if ((newhit.source_channel() < cutoff_logic_.size())
+      && (newhit.energy.val(metadata_.bits) < cutoff_logic_[newhit.source_channel()]))
     return;
 
-  if (newhit.source_channel < 0)
+  if (newhit.source_channel() < 0)
     return;
 
-  if (!(pattern_coinc_.relevant(newhit.source_channel) ||
-        pattern_anti_.relevant(newhit.source_channel) ||
-        pattern_add_.relevant(newhit.source_channel)))
+  if (!(pattern_coinc_.relevant(newhit.source_channel()) ||
+        pattern_anti_.relevant(newhit.source_channel()) ||
+        pattern_add_.relevant(newhit.source_channel())))
     return;
 
   //  DBG << "Processing " << newhit.to_string();
@@ -150,7 +150,7 @@ void Delayometer::_push_hit(const Hit& newhit)
           DBG << "<" << metadata_.name << "> not validated " << q.to_string();
       }
 //      else
-//        DBG << "<" << metadata_.name << "> pileup hit " << newhit.to_string() << " with " << q.to_string() << " already has " << q.hits[newhit.source_channel].to_string();
+//        DBG << "<" << metadata_.name << "> pileup hit " << newhit.to_string() << " with " << q.to_string() << " already has " << q.hits[newhit.source_channel()].to_string();
     }
 //    else if (q.past_due(newhit))
 //      break;
@@ -178,7 +178,7 @@ void Delayometer::addEvent(const Event& newEvent) {
 //  if ((df > 0) && (df < 18000))
 //    DBG << " d " << b.timestamp - a.timestamp;
 
-  TimeStamp common = TimeStamp::common_timebase(a.timestamp, b.timestamp);
+  TimeStamp common = TimeStamp::common_timebase(a.timestamp(), b.timestamp());
 //  TimeStamp res;
 //  if (a.timestamp.timebase_divider > b.timestamp.timebase_divider)
 //    res = a.timestamp;
@@ -206,7 +206,7 @@ void Delayometer::addEvent(const Event& newEvent) {
       axes_[0].push_back(q.second.convert_to<double>());
   }
 
-  int64_t diff =  timebase.to_native(std::round((b.timestamp - a.timestamp)));
+  int64_t diff =  timebase.to_native(std::round((b.timestamp() - a.timestamp())));
 
   spectrum_[diff]++;
 

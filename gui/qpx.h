@@ -121,6 +121,7 @@ private slots:
   void open_gain_matching();
   void open_optimization();
   void open_list();
+  void open_raw();
 
   void tabs_moved(int, int);
   void addClosableTab(QWidget*, QString);

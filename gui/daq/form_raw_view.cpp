@@ -20,29 +20,25 @@
  *
  ******************************************************************************/
 
-#include "form_list_daq.h"
-#include "ui_form_list_daq.h"
+#include "form_raw_view.h"
+#include "ui_form_raw_view.h"
 #include "custom_logger.h"
 #include "qt_util.h"
 #include <QSettings>
 
+#include <boost/filesystem.hpp>
 
-FormListDaq::FormListDaq(ThreadRunner &thread, QWidget *parent) :
+FormRawView::FormRawView(QWidget *parent) :
   QWidget(parent),
-  ui(new Ui::FormListDaq),
-  runner_thread_(thread),
+  ui(new Ui::FormRawView),
   spill_detectors_("Detectors"),
-  attr_model_(this),
-  interruptor_(false),
-  my_run_(false)
+  attr_model_(this)
 {
   ui->setupUi(this);
 
   this->setWindowTitle("List view");
 
   loadSettings();
-
-  connect(&runner_thread_, SIGNAL(listComplete(Qpx::ListData)), this, SLOT(list_completed(Qpx::ListData)));
 
   connect(ui->listSpills, SIGNAL(currentRowChanged(int)), this, SLOT(spillSelectionChanged(int)));
 
@@ -78,8 +74,6 @@ FormListDaq::FormListDaq(ThreadRunner &thread, QWidget *parent) :
   ui->treeAttribs->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
   attr_model_.set_show_address_(false);
 
-  ui->timeDuration->set_us_enabled(false);
-
   ui->treeAttribs->setVisible(false);
   ui->labelState->setVisible(false);
 
@@ -96,52 +90,48 @@ FormListDaq::FormListDaq(ThreadRunner &thread, QWidget *parent) :
   ui->tableHitValues->setVisible(false);
 }
 
-void FormListDaq::loadSettings() {
+void FormRawView::loadSettings() {
   QSettings settings_;
 
-  settings_.beginGroup("ListDaq");
-  ui->timeDuration->set_total_seconds(settings_.value("run_secs", 60).toULongLong());
+
+  settings_.beginGroup("Program");
+  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings_.endGroup();
+
+  //  settings_.beginGroup("ListDaq");
+  //  settings_.endGroup();
 }
 
-void FormListDaq::saveSettings() {
+void FormRawView::saveSettings() {
   QSettings settings_;
 
-  settings_.beginGroup("ListDaq");
-  settings_.setValue("run_secs", QVariant::fromValue(ui->timeDuration->total_seconds()));
+
+  settings_.beginGroup("Program");
+  settings_.setValue("save_directory", data_directory_);
   settings_.endGroup();
+
+  //  settings_.beginGroup("ListDaq");
+  //  settings_.endGroup();
 }
 
-void FormListDaq::toggle_push(bool enable, Qpx::SourceStatus status) {
+void FormRawView::toggle_push(bool enable, Qpx::SourceStatus status) {
   bool online = (status & Qpx::SourceStatus::can_run);
-  ui->pushListStart->setEnabled(enable && online);
-  ui->timeDuration->setEnabled(enable && online);
+
+
 }
 
-FormListDaq::~FormListDaq()
+FormRawView::~FormRawView()
 {
   delete ui;
 }
 
-void FormListDaq::closeEvent(QCloseEvent *event) {
-  if (my_run_ && runner_thread_.running()) {
-    int reply = QMessageBox::warning(this, "Ongoing data acquisition",
-                                     "Terminate?",
-                                     QMessageBox::Yes|QMessageBox::Cancel);
-    if (reply == QMessageBox::Yes) {
-      runner_thread_.terminate();
-      runner_thread_.wait();
-    } else {
-      event->ignore();
-      return;
-    }
-  }
+void FormRawView::closeEvent(QCloseEvent *event) {
 
   saveSettings();
   event->accept();
 }
 
-void FormListDaq::displayHit(int idx)
+void FormRawView::displayHit(int idx)
 {
   ui->tracePlot->clearGraphs();
 
@@ -220,7 +210,7 @@ void FormListDaq::displayHit(int idx)
   ui->tracePlot->replot();
 }
 
-void FormListDaq::displayStats(int idx)
+void FormRawView::displayStats(int idx)
 {
   if ( (idx < 0) || (idx >= stats_.size()))
   {
@@ -250,48 +240,7 @@ void FormListDaq::displayStats(int idx)
   ui->labelStatsInfo->setText(QString::fromStdString(info));
 }
 
-void FormListDaq::on_pushListStart_clicked()
-{
-  emit statusText("List mode acquisition in progress...");
-
-  this->setWindowTitle("List view  \u25b6");
-
-  emit toggleIO(false);
-  ui->pushListStop->setEnabled(true);
-  my_run_ = true;
-
-  uint64_t duration = ui->timeDuration->total_seconds();
-
-  if (duration == 0)
-    return;
-
-  runner_thread_.do_list(interruptor_, duration);
-}
-
-void FormListDaq::on_pushListStop_clicked()
-{
-  ui->pushListStop->setEnabled(false);
-  INFO << "List acquisition interrupted by user";
-  interruptor_.store(true);
-}
-
-void FormListDaq::list_completed(Qpx::ListData newEvents) {
-  if (my_run_) {
-    list_data_ = newEvents;
-
-    ui->listSpills->clear();
-    for (auto &s : list_data_)
-      ui->listSpills->addItem(QString::fromStdString(s->to_string()));
-
-    ui->pushListStop->setEnabled(false);
-    this->setWindowTitle("List view");
-
-    emit toggleIO(true);
-    my_run_ = false;
-  }
-}
-
-void FormListDaq::spillSelectionChanged(int row)
+void FormRawView::spillSelectionChanged(int row)
 {
   this->setCursor(Qt::WaitCursor);
   hits_.clear();
@@ -301,6 +250,7 @@ void FormListDaq::spillSelectionChanged(int row)
   spill_detectors_.clear();
   attr_model_.update(Qpx::Setting());
   ui->tableStats->clearSelection();
+  ui->tableHits->clearSelection();
 
   ui->treeAttribs->setVisible(false);
   ui->labelState->setVisible(false);
@@ -317,54 +267,62 @@ void FormListDaq::spillSelectionChanged(int row)
   ui->labelEventVals->setVisible(false);
   ui->tableHitValues->setVisible(false);
 
-  if ((row >= 0) && (row < list_data_.size()))
+  if ((row >= 0) && (row < spills_.size()))
   {
 
     for (size_t i = 0; i < row; i++)
     {
-      Qpx::SpillPtr sp = list_data_.at(i);
-      if (!sp)
+      if (i >= spills_.size())
         continue;
-      if (sp->detectors.size())
-        for (int di = 0; di < sp->detectors.size(); di++)
+      Qpx::Spill& sp = spills_.at(i);
+      if (sp.detectors.size())
+        for (int di = 0; di < sp.detectors.size(); di++)
         {
           if ((di+1) > dets_.size())
             dets_.resize(di+1);
-          dets_[di] = sp->detectors.at(di);
+          dets_[di] = sp.detectors.at(di);
         }
-      for (auto &stats : sp->stats)
+      for (auto &stats : sp.stats)
       {
-        hitmodels_[stats.first] = stats.second.model_hit;
-//        DBG << "s" << i <<  "c" << stats.first << " = " << stats.second.model_hit.to_string();
+        hitmodels_[stats.second.source_channel] = stats.second.model_hit;
+//        DBG << "spill" << i <<  " chan" << stats.second.source_channel << " = " << stats.second.model_hit.to_string();
       }
     }
 
 
-    Qpx::SpillPtr sp = list_data_.at(row);
-    if (sp)
+
+    Qpx::Spill& sp = spills_.at(row);
+    if (hit_counts_.at(row) > 0)
     {
-      hits_ = std::vector<Qpx::Hit>(sp->hits.begin(), sp->hits.end());
-      stats_ = sp->stats;
-      for (auto &q: sp->detectors)
-        spill_detectors_.add_a(q);
-      det_table_model_.update();
-      attr_model_.update(sp->state);
-
-      ui->treeAttribs->setVisible(sp->state != Qpx::Setting());
-      ui->labelState->setVisible(sp->state != Qpx::Setting());
-
-      ui->tableDetectors->setVisible(sp->detectors.size());
-      ui->labelDetectors->setVisible(sp->detectors.size());
-
-      ui->labelStats->setVisible(stats_.size());
-      ui->tableStats->setVisible(stats_.size());
-      ui->labelStatsInfo->setVisible(stats_.size());
-
-      ui->labelEvents->setVisible(hits_.size());
-      ui->tableHits->setVisible(hits_.size());
-      ui->labelEventVals->setVisible(hits_.size());
-      ui->tableHitValues->setVisible(hits_.size());
+      file_bin_.seekg(bin_offsets_.at(row), std::ios::beg);
+      for (int i = 0; i < hit_counts_.at(row); ++i)
+      {
+        Qpx::Hit one_hit;
+        one_hit.read_bin(file_bin_, hitmodels_);
+        hits_.push_back(one_hit);
+      }
     }
+
+    stats_ = sp.stats;
+    for (auto &q: sp.detectors)
+      spill_detectors_.add_a(q);
+    det_table_model_.update();
+    attr_model_.update(sp.state);
+
+    ui->treeAttribs->setVisible(sp.state != Qpx::Setting());
+    ui->labelState->setVisible(sp.state != Qpx::Setting());
+
+    ui->tableDetectors->setVisible(sp.detectors.size());
+    ui->labelDetectors->setVisible(sp.detectors.size());
+
+    ui->labelStats->setVisible(stats_.size());
+    ui->tableStats->setVisible(stats_.size());
+    ui->labelStatsInfo->setVisible(stats_.size());
+
+    ui->labelEvents->setVisible(hits_.size());
+    ui->tableHits->setVisible(hits_.size());
+    ui->labelEventVals->setVisible(hits_.size());
+    ui->tableHitValues->setVisible(hits_.size());
   }
 
 
@@ -417,16 +375,103 @@ void FormListDaq::spillSelectionChanged(int row)
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormListDaq::hit_selection_changed(QItemSelection, QItemSelection) {
+void FormRawView::hit_selection_changed(QItemSelection, QItemSelection) {
   int idx = -1;
   if (!ui->tableHits->selectionModel()->selectedIndexes().empty())
     idx = ui->tableHits->selectionModel()->selectedIndexes().first().row();
   displayHit(idx);
 }
 
-void FormListDaq::stats_selection_changed(QItemSelection, QItemSelection) {
+void FormRawView::stats_selection_changed(QItemSelection, QItemSelection) {
   int idx = -1;
   if (!ui->tableStats->selectionModel()->selectedIndexes().empty())
     idx = ui->tableStats->selectionModel()->selectedIndexes().first().row();
   displayStats(idx);
+}
+
+void FormRawView::on_pushLoadExperiment_clicked()
+{
+  QString fileName = QFileDialog::getOpenFileName(this, "Load raw", data_directory_, "qpx raw data (*.xml)");
+  if (!validateFile(this, fileName, false))
+    return;
+
+  data_directory_ = path_of_file(fileName);
+
+  spills_.clear();
+  hit_counts_.clear();
+  bin_offsets_.clear();
+  ui->listSpills->clear();
+
+  pugi::xml_document doc;
+
+  if (!doc.load_file(fileName.toStdString().c_str())) {
+    WARN << "<ParserRaw> Could not parse XML in " << fileName.toStdString();
+    return;
+  }
+
+  pugi::xml_node root = doc.first_child();
+  if (!root || (std::string(root.name()) != "QpxListData")) {
+    WARN << "<ParserRaw> Bad root ID in " << fileName.toStdString();
+    return;
+  }
+
+  boost::filesystem::path meta(fileName.toStdString());
+  meta.make_preferred();
+  boost::filesystem::path path = meta.remove_filename();
+
+  if (!boost::filesystem::is_directory(meta)) {
+    DBG << "<ParserRaw> Bad path for list mode data";
+    return;
+  }
+
+  boost::filesystem::path bin_path = path / "qpx_out.bin";
+
+  file_bin_.open(bin_path.string(), std::ofstream::in | std::ofstream::binary);
+
+  if (!file_bin_.is_open()) {
+    DBG << "<ParserRaw> Could not open binary " << bin_path.string();
+    return;
+  }
+
+  if (!file_bin_.good()) {
+    file_bin_.close();
+    DBG << "<ParserRaw> Could not open binary " << bin_path.string();
+    return;
+  }
+
+  DBG << "<ParserRaw> Success opening binary " << bin_path.string();
+
+  file_bin_.seekg (0, std::ios::beg);
+  bin_begin_ = file_bin_.tellg();
+  file_bin_.seekg (0, std::ios::end);
+  bin_end_ = file_bin_.tellg();
+  file_bin_.seekg (0, std::ios::beg);
+
+  for (pugi::xml_node child : root.children()) {
+    std::string name = std::string(child.name());
+    if (name == Qpx::Spill().xml_element_name()) {
+      Qpx::Spill spill;
+      spill.from_xml(child);
+      if (spill != Qpx::Spill()) {
+        spills_.push_back(spill);
+        hit_counts_.push_back(child.attribute("raw_hit_count").as_ullong(0));
+        bin_offsets_.push_back(child.attribute("file_offset").as_ullong(0));
+
+        std::string text = spill.to_string();
+        if (hit_counts_.back() > 0)
+          text += "  [" + std::to_string(hit_counts_.back()) + "]";
+
+        ui->listSpills->addItem(QString::fromStdString(text));
+      }
+    }
+  }
+
+  if (spills_.size() == 0) {
+    file_bin_.close();
+    return;
+  }
+
+  //  source_file_bin_ = bin_path.string();
+  //  status_ = SourceStatus::loaded | SourceStatus::booted | SourceStatus::can_run;
+  //  return true;
 }

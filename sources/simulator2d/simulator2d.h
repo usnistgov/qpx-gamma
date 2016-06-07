@@ -39,7 +39,6 @@ class Simulator2D : public Source {
 public:
 
   Simulator2D();
-//  Simulator2D(std::string file);
   ~Simulator2D();
 
   static std::string plugin_name() {return "Simulator2D";}
@@ -84,7 +83,6 @@ protected:
   Spill get_spill();
 
   double gain0_, gain1_;
-  double timebase_multiplier_, timebase_divider_;
 
 
   boost::random::discrete_distribution<> dist_;
@@ -96,19 +94,18 @@ protected:
   uint64_t resolution_;
   bool valid_;
 
-  double OCR, lab_time;
-  Qpx::Setting settings;
-  std::vector<Qpx::Detector> detectors;
+  double OCR, lab_time, live_time;
+
 
   StatsUpdate getBlock(double duration);
   bool valid() {return valid_;}
 
-  Hit model_hit;
+  HitModel model_hit;
 
   uint64_t clock_;
 
   void push_hit(Spill&, uint16_t, uint16_t);
-  static void make_trace(Hit& h, size_t length, uint16_t baseline);
+  static void make_trace(Hit& h, uint16_t baseline);
 
 };
 

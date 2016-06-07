@@ -20,12 +20,12 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_LIST_DAQ_H
-#define FORM_LIST_DAQ_H
+#ifndef FORM_RAW_VIEW_H
+#define FORM_RAW_VIEW_H
 
 #include <QWidget>
 #include "spill.h"
-#include "thread_runner.h"
+#include "engine.h"
 #include "special_delegate.h"
 #include "widget_detectors.h"
 #include "tree_settings.h"
@@ -35,16 +35,16 @@
 
 
 namespace Ui {
-class FormListDaq;
+class FormRawView;
 }
 
-class FormListDaq : public QWidget
+class FormRawView : public QWidget
 {
   Q_OBJECT
 
 public:
-  explicit FormListDaq(ThreadRunner&, QWidget *parent = 0);
-  ~FormListDaq();
+  explicit FormRawView(QWidget *parent = 0);
+  ~FormRawView();
 
 signals:
   void toggleIO(bool);
@@ -54,36 +54,35 @@ private slots:
   void spillSelectionChanged(int);
   void hit_selection_changed(QItemSelection,QItemSelection);
   void stats_selection_changed(QItemSelection,QItemSelection);
-
-  void on_pushListStart_clicked();
-  void on_pushListStop_clicked();
-  void list_completed(Qpx::ListData);
   void toggle_push(bool online, Qpx::SourceStatus);
+
+  void on_pushLoadExperiment_clicked();
 
 protected:
   void closeEvent(QCloseEvent*);
 
 private:
-  Ui::FormListDaq     *ui;
-  ThreadRunner        &runner_thread_;
+  Ui::FormRawView     *ui;
 
-  boost::atomic<bool> interruptor_;
-
-  Qpx::ListData     list_data_;
+//  Qpx::ListData     list_data_;
+  std::vector<Qpx::Spill> spills_;
+  std::vector<size_t>     hit_counts_;
+  std::vector<uint64_t>   bin_offsets_;
 
   std::vector<Qpx::Hit>      hits_;
   std::vector<Qpx::Detector> dets_;
   std::map<int16_t, Qpx::HitModel> hitmodels_;
-
   std::map<int16_t, Qpx::StatsUpdate> stats_;
-
   XMLableDB<Qpx::Detector> spill_detectors_;
-  TableDetectors det_table_model_;
 
+  TableDetectors det_table_model_;
   TreeSettings               attr_model_;
   QpxSpecialDelegate         attr_delegate_;
 
-  bool my_run_;
+  QString data_directory_;    //data directory
+
+  std::ifstream  file_bin_;
+  std::streampos bin_begin_, bin_end_;
 
   void displayHit(int idx);
   void displayStats(int idx);

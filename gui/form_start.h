@@ -54,6 +54,7 @@ signals:
   void optimization_requested();
   void gain_matching_requested();
   void list_view_requested();
+  void raw_view_requested();
 
 private slots:
   void update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus);
@@ -66,6 +67,7 @@ private slots:
   void request_gain_matching();
   void request_optimization();
   void request_list_view();
+  void request_raw_view();
 
 protected:
   void closeEvent(QCloseEvent*);

@@ -41,7 +41,6 @@ struct Spill : public XMLable {
     time = boost::posix_time::microsec_clock::universal_time();
   }
 
-  std::string xml_element_name() const override {return "Spill";}
   bool shallow_equals(const Spill& other) const {return (time == other.time);}
 
   bool operator==(const Spill other) const;
@@ -50,9 +49,11 @@ struct Spill : public XMLable {
 
   bool empty();
 
+  std::string xml_element_name() const override {return "Spill";}
   void from_xml(const pugi::xml_node &) override;
   void to_xml(pugi::xml_node &, bool with_settings = true) const;
   void to_xml(pugi::xml_node &node) const override {to_xml(node, true);}
+  std::string to_string() const;
 
   boost::posix_time::ptime time;
 
@@ -65,11 +66,8 @@ struct Spill : public XMLable {
 
 };
 
-//DEPRECATE
-struct ListData {
-  std::vector<Qpx::Hit> hits;
-  Spill run;
-};
+typedef std::shared_ptr<Spill> SpillPtr;
+typedef std::vector<SpillPtr> ListData;
 
 }
 

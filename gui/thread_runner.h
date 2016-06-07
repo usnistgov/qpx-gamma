@@ -70,7 +70,7 @@ public:
 signals:
     void bootComplete();
     void runComplete();
-    void listComplete(Qpx::ListData*);
+    void listComplete(Qpx::ListData);
     void settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus);
     void oscilReadOut(std::vector<Qpx::Trace>);
 

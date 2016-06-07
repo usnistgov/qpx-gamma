@@ -29,7 +29,7 @@ namespace Qpx {
 std::string DigitizedVal::to_string() const
 {
   std::stringstream ss;
-  ss << val_ << "(" << bits_ << "b)";
+  ss << val_ << "(" << int(bits_) << "b)";
   return ss.str();
 }
 

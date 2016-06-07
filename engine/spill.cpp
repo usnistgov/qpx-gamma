@@ -122,7 +122,21 @@ void Spill::from_xml(const pugi::xml_node &node) {
       detectors.push_back(det);
     }
   }
-
 }
+
+std::string Spill::to_string() const
+{
+  std::string info = boost::posix_time::to_iso_extended_string(time);
+  if (detectors.size())
+    info += " D" + std::to_string(detectors.size());
+  if (stats.size())
+    info += " S" + std::to_string(stats.size());
+  if (hits.size())
+    info += " [" + std::to_string(hits.size()) + "]";
+  if (data.size())
+    info += " RAW=" + std::to_string(data.size() * sizeof(uint32_t));
+  return info;
+}
+
 
 }

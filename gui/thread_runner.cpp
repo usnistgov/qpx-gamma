@@ -247,7 +247,7 @@ void ThreadRunner::run()
     } else if (action_ == kList) {
       interruptor_->store(false);
       Qpx::SourceStatus ds = engine_.status() ^ Qpx::SourceStatus::can_run; //turn off can_run
-      Qpx::ListData *newListRun = engine_.getList(timeout_, *interruptor_);
+      Qpx::ListData newListRun = engine_.getList(timeout_, *interruptor_);
       action_ = kSettingsRefresh;
       emit listComplete(newListRun);
     } else if (action_ == kInitialize) {

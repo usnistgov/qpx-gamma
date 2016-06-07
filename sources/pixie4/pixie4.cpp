@@ -79,10 +79,12 @@ Pixie4::~Pixie4() {
 
 }
 
-Hit Pixie4::model_hit() {
-  Hit h;
-  h.energy = DigitizedVal(0, 16);
-  h.timestamp = TimeStamp(1000, 75);
+HitModel Pixie4::model_hit() {
+  HitModel h;
+  h.timebase = TimeStamp(1000, 75);
+  h.add_value("energy", 16);
+  h.add_value("XIA_PSA", 16);
+  h.add_value("user_PSA", 16);
   return h;
 }
 
@@ -156,6 +158,7 @@ void Pixie4::fill_stats(std::map<int16_t, StatsUpdate> &all_stats, uint8_t modul
 
   stats.items["native_time"] = get_mod("TOTAL_TIME", Module(module));
   stats.model_hit = model_hit();
+  //tracelength?!?!?!
   for (int i=0; i<NUMBER_OF_CHANNELS; ++i) {
     stats.source_channel    = channel_indices_[module][i];
     stats.items["trigger_count"] = get_chan("FAST_PEAKS", Channel(i), Module(module));
@@ -165,7 +168,6 @@ void Pixie4::fill_stats(std::map<int16_t, StatsUpdate> &all_stats, uint8_t modul
     stats.items["live_time"] = live_time - sfdt;
     stats.items["live_trigger"] = live_time - ftdt;
     all_stats[stats.source_channel] = stats;
-    //DBG << "stats chan " << stats.channel;
   }
 }
 
@@ -1420,7 +1422,7 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
         uint16_t buf_format = buff16[idx++];
         uint16_t buf_timehi = buff16[idx++];
         uint16_t buf_timemi = buff16[idx++];
-        uint16_t buf_timelo = buff16[idx++];
+        idx++; //uint16_t buf_timelo = buff16[idx++]; unused
         uint16_t task_a = (buf_format & 0x0F00);
         uint16_t task_b = (buf_format & 0x000F);
 
@@ -1428,9 +1430,7 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
 
           std::bitset<16> pattern (buff16[idx++]);
 
-          Hit one_hit = model_hit();
-          //          one_hit.run_type  = buf_format;
-          //          one_hit.module    = buf_module;
+//          Hit one_hit = model_hit();
 
           uint16_t evt_time_hi = buff16[idx++];
           uint16_t evt_time_lo = buff16[idx++];
@@ -1439,53 +1439,58 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
 
           for (int i=0; i < NUMBER_OF_CHANNELS; i++) {
             if (pattern[i]) {
-              one_hit.source_channel = i;
               uint64_t hi = buf_timehi;
               uint64_t mi = evt_time_hi;
               uint64_t lo = evt_time_lo;
               uint16_t chan_trig_time = lo;
               uint16_t chan_time_hi   = hi;
 
+              uint16_t energy = 0;
+              uint16_t XIA_PSA = 0;
+              uint16_t user_PSA = 0;
+              std::vector<uint16_t> trace;
+
               if (task_b == 0x0000) {
                 uint16_t trace_len     = buff16[idx++] - 9;
                 chan_trig_time         = buff16[idx++];
                 if (pattern[i+8])
-                  one_hit.energy.set_val(buff16[idx++]);
+                  energy = buff16[idx++];
                 else
                   idx++;
-                one_hit.extras["XIA_PSA"]  = buff16[idx++];
-                one_hit.extras["user_PSA"] = buff16[idx++];
+                XIA_PSA  = buff16[idx++];
+                user_PSA = buff16[idx++];
                 idx += 3;
                 hi                     = buff16[idx++]; //not always!
-                one_hit.trace = std::vector<uint16_t>
+                trace = std::vector<uint16_t>
                     (buff16 + idx, buff16 + idx + trace_len);
                 idx += trace_len;
               } else if (task_b == 0x0001) {
                 idx++;
                 chan_trig_time         = buff16[idx++];
                 if (pattern[i+8])
-                  one_hit.energy.set_val(buff16[idx++]);
+                  energy = buff16[idx++];
                 else
                   idx++;
-                one_hit.extras["XIA_PSA"]  = buff16[idx++];
-                one_hit.extras["user_PSA"] = buff16[idx++];
+                XIA_PSA  = buff16[idx++];
+                user_PSA = buff16[idx++];
                 idx += 3;
                 hi                     = buff16[idx++];
               } else if (task_b == 0x0002) {
                 chan_trig_time         = buff16[idx++];
                 if (pattern[i+8])
-                  one_hit.energy.set_val(buff16[idx++]);
+                  energy = buff16[idx++];
                 else
                   idx++;
-                one_hit.extras["XIA_PSA"]  = buff16[idx++];
-                one_hit.extras["user_PSA"] = buff16[idx++];
+                XIA_PSA  = buff16[idx++];
+                user_PSA = buff16[idx++];
               } else if (task_b == 0x0003) {
                 chan_trig_time         = buff16[idx++];
                 if (pattern[i+8])
-                  one_hit.energy.set_val(buff16[idx++]);
+                  energy = buff16[idx++];
                 else
                   idx++;
               }
+
               //Corrections for overflow, page 30 in Pixie-4 user manual
               if (chan_trig_time > evt_time_lo)
                 mi--;
@@ -1494,14 +1499,25 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
               if ((task_b == 0x0000) || (task_b == 0x0001))
                 hi = chan_time_hi;
               lo = chan_trig_time;
-              one_hit.timestamp =
-                  TimeStamp(one_hit.timestamp, (hi << 32) + (mi << 16) + lo);
+              uint16_t time = (hi << 32) + (mi << 16) + lo;
 
+              int16_t sourcechan = -1;
               if ((buf_module < channel_indices.size()) &&
                   (i < channel_indices[buf_module].size()) &&
                   (channel_indices[buf_module][i] >= 0))
-                one_hit.source_channel = channel_indices[buf_module][i];
-              //else one_hit.channel will = -1, which is invalid
+                sourcechan = channel_indices[buf_module][i];
+
+              if (sourcechan < 0)
+                continue;
+
+              Hit one_hit(sourcechan, model_hit());
+              one_hit.set_timestamp_native(time);
+              one_hit.energy = DigitizedVal(energy, 16);
+              one_hit.trace = trace;
+              one_hit.values[0].set_val(energy);
+              one_hit.values[1].set_val(XIA_PSA);
+              one_hit.values[2].set_val(user_PSA);
+              //set xia psa and user psa
 
               ordered.insert(one_hit);
             }

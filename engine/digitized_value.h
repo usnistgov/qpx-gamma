@@ -27,6 +27,7 @@
 //#include "xmlable.h"
 //#include <cinttypes>
 #include <string>
+#include <fstream>
 
 namespace Qpx {
 
@@ -73,6 +74,16 @@ public:
   inline bool operator!=(const DigitizedVal other) const
   {
     return !operator==(other);
+  }
+
+  inline void write_bin(std::ofstream &outfile) const
+  {
+    outfile.write((char*)&val_, sizeof(val_));
+  }
+
+  inline void read_bin(std::ifstream &infile)
+  {
+    infile.read(reinterpret_cast<char*>(&val_), sizeof(val_));
   }
 
   std::string to_string() const;

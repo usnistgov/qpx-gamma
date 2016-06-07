@@ -31,6 +31,26 @@
 
 namespace Qpx {
 
+StatsType StatsUpdate::type_from_str(std::string type)
+{
+  if (type == "start")
+    return StatsType::start;
+  else if (type == "stop")
+    return StatsType::stop;
+  else
+    return StatsType::running;
+}
+
+std::string StatsUpdate::type_to_str(StatsType type)
+{
+  if (type == StatsType::start)
+    return "start";
+  else if (type == StatsType::stop)
+    return "stop";
+  else
+    return "running";
+}
+
 // difference across all variables
 // except rate wouldn't make sense
 // and timestamp would require duration output type
@@ -73,29 +93,17 @@ StatsUpdate StatsUpdate::operator+(const StatsUpdate other) const {
 std::string StatsUpdate::to_string() const
 {
   std::stringstream ss;
-  ss << "Stats::";
-  if (stats_type == StatsType::start)
-    ss << "START(";
-  else if (stats_type == StatsType::stop)
-    ss << "STOP(";
-  else
-    ss << "RUN(";
-  ss << "ch" << source_channel;
-  ss << "|labtm" << boost::posix_time::to_iso_extended_string(lab_time);
-  ss << ")";
+  ss << "Stats::" << type_to_str(stats_type) << "("
+     << "ch" << source_channel
+     << "@" << boost::posix_time::to_iso_extended_string(lab_time)
+     << ")";
   return ss.str();
 }
 
 void StatsUpdate::to_xml(pugi::xml_node &root) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
-  std::string type = "run";
-  if (stats_type == StatsType::start)
-    type = "start";
-  else if (stats_type == StatsType::stop)
-    type = "stop";
-
-  node.append_attribute("type").set_value(type.c_str());
+  node.append_attribute("type").set_value(type_to_str(stats_type).c_str());
   node.append_attribute("channel").set_value(std::to_string(source_channel).c_str());
   node.append_attribute("lab_time").set_value(boost::posix_time::to_iso_extended_string(lab_time).c_str());
 
@@ -113,7 +121,7 @@ void StatsUpdate::to_xml(pugi::xml_node &root) const {
 
 
 void StatsUpdate::from_xml(const pugi::xml_node &node) {
-  items.clear();
+  *this = StatsUpdate();
 
   if (std::string(node.name()) != xml_element_name())
     return;
@@ -121,13 +129,8 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
   if (node.attribute("lab_time"))
     lab_time = from_iso_extended(node.attribute("lab_time").value());
 
-  std::string type(node.attribute("type").value());
-  if (type == "start")
-    stats_type = StatsType::start;
-  else if (type == "stop")
-    stats_type = StatsType::stop;
-  else
-    stats_type = StatsType::running;
+  if (node.attribute("type").value())
+    stats_type = type_from_str(std::string(node.attribute("type").value()));
 
   source_channel = node.attribute("channel").as_int();
   if (node.child(model_hit.xml_element_name().c_str()))

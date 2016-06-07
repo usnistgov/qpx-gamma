@@ -29,23 +29,23 @@
 namespace Qpx {
 
 bool Event::in_window(const Hit& h) const {
-  return (h.timestamp >= lower_time) && ((h.timestamp - lower_time) <= window_ns);
+  return (h.timestamp() >= lower_time) && ((h.timestamp() - lower_time) <= window_ns);
 }
 
 bool Event::past_due(const Hit& h) const {
-  return (h.timestamp >= lower_time) && ((h.timestamp - lower_time) > max_delay_ns);
+  return (h.timestamp() >= lower_time) && ((h.timestamp() - lower_time) > max_delay_ns);
 }
 
 bool Event::antecedent(const Hit& h) const {
-  return (h.timestamp < lower_time);
+  return (h.timestamp() < lower_time);
 }
 
 bool Event::addHit(const Hit &newhit) {
-  if (hits.count(newhit.source_channel))
+  if (hits.count(newhit.source_channel()))
     return false;
-  if (lower_time > newhit.timestamp)
-    lower_time = newhit.timestamp;
-  hits[newhit.source_channel] = newhit;
+  if (lower_time > newhit.timestamp())
+    lower_time = newhit.timestamp();
+  hits[newhit.source_channel()] = newhit;
   return true;
 }
 

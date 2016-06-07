@@ -65,7 +65,7 @@ public:
   bool die();
   SourceStatus status() {return aggregate_status_;}
 
-  ListData* getList(uint64_t timeout, boost::atomic<bool>& inturruptor);
+  ListData getList(uint64_t timeout, boost::atomic<bool>& inturruptor);
   void getMca(uint64_t timeout, ProjectPtr spectra, boost::atomic<bool> &interruptor);
 
   //detectors

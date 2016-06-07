@@ -455,8 +455,7 @@ void Engine::getMca(uint64_t timeout, ProjectPtr spectra, boost::atomic<bool>& i
 
   wait_ms(500);
   while (parsedQueue.size() > 0)
-    wait_ms(1000);
-  wait_ms(500);
+    wait_ms(500);
   parsedQueue.stop();
   wait_ms(500);
 
@@ -464,13 +463,13 @@ void Engine::getMca(uint64_t timeout, ProjectPtr spectra, boost::atomic<bool>& i
   INFO << "<Engine> Acquisition finished";
 }
 
-ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
+ListData Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   boost::unique_lock<boost::mutex> lock(mutex_);
 
   if (!(aggregate_status_ & SourceStatus::can_run)) {
     WARN << "<Engine> No devices exist that can perform acquisition";
-    return nullptr;
+    return ListData();
   }
 
   if (timeout > 0)
@@ -479,15 +478,23 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
     INFO << "<Engine> List mode acquisition indefinite run";
 
   Spill* one_spill;
-  ListData* result = new ListData;
+  ListData result;
 
   CustomTimer *anouncement_timer = nullptr;
   double secs_between_anouncements = 5;
 
+  one_spill = new Spill;
   get_all_settings();
   save_optimization();
-  result->run.state = pull_settings();
-  result->run.detectors = get_detectors();
+  one_spill->state = pull_settings();
+  one_spill->detectors = get_detectors();
+  result.push_back(SpillPtr(one_spill));
+
+//  parsedQueue.enqueue(spill);
+//  get_all_settings();
+//  save_optimization();
+//  result->run.state = pull_settings();
+//  result->run.detectors = get_detectors();
 
   SynchronizedQueue<Spill*> parsedQueue;
 
@@ -515,15 +522,14 @@ ListData* Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   delete anouncement_timer;
 
-  result->run.time = boost::posix_time::microsec_clock::universal_time();
-
   wait_ms(500);
 
   while (parsedQueue.size() > 0) {
-    one_spill = parsedQueue.dequeue();
-    for (auto &q : one_spill->hits)
-      result->hits.push_back(q);
-    delete one_spill;
+    result.push_back(SpillPtr(parsedQueue.dequeue()));
+//    one_spill = parsedQueue.dequeue();
+//    for (auto &q : one_spill->hits)
+//      result->hits.push_back(q);
+//    delete one_spill;
   }
 
   parsedQueue.stop();
@@ -597,7 +603,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
           if (q->hits.empty()) {
             empty = true;
             break;
-          } else if ((oldest == Hit()) || (q->hits.front().timestamp < oldest.timestamp)) {
+          } else if ((oldest == Hit()) || (q->hits.front().timestamp() < oldest.timestamp())) {
             oldest = q->hits.front();
             presort_compares++;
           }
@@ -606,7 +612,7 @@ void Engine::worker_MCA(SynchronizedQueue<Spill*>* data_queue,
           presort_hits++;
           out_spill->hits.push_back(oldest);
           for (auto &q : current_spills)
-            if ((!q->hits.empty()) && (q->hits.front().timestamp == oldest.timestamp)) {
+            if ((!q->hits.empty()) && (q->hits.front().timestamp() == oldest.timestamp())) {
               q->hits.pop_front();
               presort_compares++;
               break;

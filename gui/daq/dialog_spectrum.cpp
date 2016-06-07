@@ -64,7 +64,6 @@ DialogSpectrum::DialogSpectrum(Qpx::Sink &spec,
 
   ui->tableDetectors->setModel(&det_table_model_);
   ui->tableDetectors->setSelectionModel(&det_selection_model_);
-  ui->tableDetectors->verticalHeader()->hide();
   ui->tableDetectors->horizontalHeader()->setStretchLastSection(true);
   ui->tableDetectors->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->tableDetectors->setSelectionBehavior(QAbstractItemView::SelectRows);

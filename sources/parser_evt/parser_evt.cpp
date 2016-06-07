@@ -468,17 +468,17 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
               std::list<Hit> hits = Qpx::MADC32::parse(MADC_data, events, last_time, madc_pattern);
 
               for (auto &h : hits) {
-                if (!starts_signalled.count(h.source_channel)) {
+                if (!starts_signalled.count(h.source_channel())) {
                   StatsUpdate udt;
                   udt.model_hit = MADC32::model_hit();
 
-                  udt.source_channel = h.source_channel;
+                  udt.source_channel = h.source_channel();
                   udt.lab_time = time_start;
                   udt.stats_type = StatsType::start;
 
                   extra_spill.time = time_start;
-                  extra_spill.stats[h.source_channel] = udt;
-                  starts_signalled.insert(h.source_channel);
+                  extra_spill.stats[h.source_channel()] = udt;
+                  starts_signalled.insert(h.source_channel());
                 }
               }
 

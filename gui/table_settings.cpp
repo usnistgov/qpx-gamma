@@ -42,13 +42,10 @@ void TableChanSettings::set_show_read_only(bool show_ro) {
 
 int TableChanSettings::rowCount(const QModelIndex & /*parent*/) const
 {
-  int num = 0;
-   if ((channels_.size() > 0) && (!consolidated_list_.branches.empty()))
-     num = consolidated_list_.branches.size();
-  if (num)
-    return num + 1;
-  else
-    return 0;
+//  if ((channels_.size() > 0) && (!consolidated_list_.branches.empty()))
+    return consolidated_list_.branches.size() + 1;
+//  else
+//    return 0;
 }
 
 int TableChanSettings::columnCount(const QModelIndex & /*parent*/) const
@@ -162,11 +159,11 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
             && preferred_units_.count(item.id_)
             && (item.metadata.unit != preferred_units_.at(item.id_))) {
           std::string to_units = preferred_units_.at(item.id_);
-        UnitConverter uc;
-        item.value_dbl = uc.convert_units(item.value_dbl, item.metadata.unit, to_units).convert_to<double>();
-        item.metadata.minimum = uc.convert_units(item.metadata.minimum, item.metadata.unit, to_units).convert_to<double>();
-        item.metadata.step = uc.convert_units(item.metadata.step, item.metadata.unit, to_units).convert_to<double>();
-        item.metadata.maximum = uc.convert_units(item.metadata.maximum, item.metadata.unit, to_units).convert_to<double>();
+          UnitConverter uc;
+          item.value_dbl = uc.convert_units(item.value_dbl, item.metadata.unit, to_units).convert_to<double>();
+          item.metadata.minimum = uc.convert_units(item.metadata.minimum, item.metadata.unit, to_units).convert_to<double>();
+          item.metadata.step = uc.convert_units(item.metadata.step, item.metadata.unit, to_units).convert_to<double>();
+          item.metadata.maximum = uc.convert_units(item.metadata.maximum, item.metadata.unit, to_units).convert_to<double>();
         }
         return QVariant::fromValue(item);
       } else
@@ -223,7 +220,7 @@ void TableChanSettings::update(const std::vector<Qpx::Detector> &settings) {
     for (auto &p : q.settings_.branches.my_data_) {
       consolidated_list_.branches.add(p);
       if (!preferred_units_.count(p.id_) && (!p.metadata.unit.empty())) {
-//        DBG << "adding preferred unit for " << p.id_ << " as " << p.metadata.unit;
+        //        DBG << "adding preferred unit for " << p.id_ << " as " << p.metadata.unit;
         preferred_units_[p.id_] = p.metadata.unit;
       }
     }
@@ -247,10 +244,10 @@ Qt::ItemFlags TableChanSettings::flags(const QModelIndex &index) const
     Qpx::Setting item = consolidated_list_.branches.get(row-1);
 
     if (col == (channels_.size() + 1)) {
-       if (preferred_units_.count(item.id_) && scalable_units_.count(UnitConverter().strip_unit(item.metadata.unit)))
-         return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
-       else
-         return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
+      if (preferred_units_.count(item.id_) && scalable_units_.count(UnitConverter().strip_unit(item.metadata.unit)))
+        return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
+      else
+        return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
     } else if (col == (channels_.size() + 2))
       return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
 
@@ -303,39 +300,39 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
           && (value.canConvert(QMetaType::LongLong)))
         item.value_int = value.toLongLong();
       else if ((item.metadata.setting_type == Qpx::SettingType::boolean)
-          && (value.type() == QVariant::Bool))
+               && (value.type() == QVariant::Bool))
         item.value_int = value.toBool();
       else if ((item.metadata.setting_type == Qpx::SettingType::floating)
-          && (value.type() == QVariant::Double)) {
+               && (value.type() == QVariant::Double)) {
         double val = value.toDouble();
         if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
-              std::string to_units = preferred_units_.at(item.id_);
-              UnitConverter uc;
-              val = uc.convert_units(val, preferred_units_.at(item.id_), item.metadata.unit).convert_to<double>();
-            }
+          std::string to_units = preferred_units_.at(item.id_);
+          UnitConverter uc;
+          val = uc.convert_units(val, preferred_units_.at(item.id_), item.metadata.unit).convert_to<double>();
+        }
         item.value_dbl = val;
       }
       else if ((item.metadata.setting_type == Qpx::SettingType::floating_precise)
-          && (value.type() == QVariant::Double)) {
+               && (value.type() == QVariant::Double)) {
         long double val = value.toDouble();
         if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
-              std::string to_units = preferred_units_.at(item.id_);
-              UnitConverter uc;
-              val = uc.convert_units(val, preferred_units_.at(item.id_), item.metadata.unit).convert_to<long double>();
-            }
+          std::string to_units = preferred_units_.at(item.id_);
+          UnitConverter uc;
+          val = uc.convert_units(val, preferred_units_.at(item.id_), item.metadata.unit).convert_to<long double>();
+        }
         item.value_precise = val;
       }
       else if (((item.metadata.setting_type == Qpx::SettingType::text)
                 || (item.metadata.setting_type == Qpx::SettingType::file_path)
                 || (item.metadata.setting_type == Qpx::SettingType::dir_path)
                 || (item.metadata.setting_type == Qpx::SettingType::detector) )
-          && (value.type() == QVariant::String))
+               && (value.type() == QVariant::String))
         item.value_text = value.toString().toStdString();
       else if ((item.metadata.setting_type == Qpx::SettingType::time)
-          && (value.type() == QVariant::DateTime))
+               && (value.type() == QVariant::DateTime))
         item.value_time = fromQDateTime(value.toDateTime());
       else if ((item.metadata.setting_type == Qpx::SettingType::time_duration)
-          && (value.canConvert(QMetaType::LongLong)))
+               && (value.canConvert(QMetaType::LongLong)))
         item.value_duration = boost::posix_time::seconds(value.toLongLong());
 
       emit setting_changed(col-1, item);

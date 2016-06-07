@@ -312,7 +312,7 @@ void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill
 
 Spill ParserRaw::get_spill() {
   Spill one_spill;
-  std::map<int16_t, Hit> model_hits;
+  std::map<int16_t, HitModel> model_hits;
 
   uint64_t hits_to_get = 0;
 

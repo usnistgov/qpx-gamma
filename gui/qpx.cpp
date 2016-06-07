@@ -38,6 +38,7 @@
 #include "form_oscilloscope.h"
 #include "form_gain_match.h"
 #include "form_experiment.h"
+#include "form_raw_view.h"
 #include "experiment.h"
 
 #include "qt_util.h"
@@ -103,6 +104,7 @@ qpx::qpx(QWidget *parent) :
   connect(main_tab_, SIGNAL(optimization_requested()), this, SLOT(open_optimization()));
   connect(main_tab_, SIGNAL(gain_matching_requested()), this, SLOT(open_gain_matching()));
   connect(main_tab_, SIGNAL(list_view_requested()), this, SLOT(open_list()));
+  connect(main_tab_, SIGNAL(raw_view_requested()), this, SLOT(open_raw()));
 
   QSettings settings;
   settings.beginGroup("Program");
@@ -340,10 +342,23 @@ void qpx::tabs_moved(int, int) {
 
 void qpx::open_list()
 {
-  if (hasTab("List view") || hasTab("List view >>"))
-    return;
-
   FormListDaq *newListForm = new FormListDaq(runner_thread_, this);
+  addClosableTab(newListForm, "Close");
+
+  connect(newListForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
+  connect(newListForm, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), newListForm, SLOT(toggle_push(bool,Qpx::SourceStatus)));
+
+  ui->qpxTabs->setCurrentWidget(newListForm);
+
+  reorder_tabs();
+
+  emit toggle_push(gui_enabled_, px_status_);
+}
+
+void qpx::open_raw()
+{
+  FormRawView *newListForm = new FormRawView(this);
   addClosableTab(newListForm, "Close");
 
   connect(newListForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));

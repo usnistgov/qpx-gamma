@@ -61,6 +61,8 @@ protected:
   std::string file_name_txt_;
 
   std::ofstream file_bin_;
+  std::streampos bin_begin_;
+
   bool open_xml_, open_bin_;
   pugi::xml_document xml_doc_;
   pugi::xml_node xml_root_;

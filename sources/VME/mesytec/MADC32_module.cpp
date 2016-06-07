@@ -175,10 +175,10 @@ void MADC32::addReadout(VmeStack& stack, int style = 0)
   }
 }
 
-Hit MADC32::model_hit() {
-  Hit h;
-  h.energy = DigitizedVal(0, 13);
-  h.timestamp = TimeStamp(50, 1);
+HitModel MADC32::model_hit() {
+  HitModel h;
+  h.timebase = TimeStamp(50, 1);
+  h.add_value("energy", 13);
   return h;
 }
 
@@ -212,7 +212,8 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, uint64_t 
 
   madc_pattern.clear();
 
-  Hit one_hit = model_hit();
+//  Hit one_hit = model_hit();
+  DigitizedVal energy;
 
   for (auto &word : data) {
     if (word == junk_c) {
@@ -222,12 +223,13 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, uint64_t 
       uint32_t module = ((word & 0x00ff0000) >> 16);
       uint32_t resolution = ((word & 0x00007000) >> 12);
       uint32_t words_f = (word & 0x00000fff);
+
       if ((resolution == 4) || (resolution == 3))
-        one_hit.energy = DigitizedVal(0, 13);
+        energy = DigitizedVal(0, 13);
       else if ((resolution == 1) || (resolution == 2))
-        one_hit.energy = DigitizedVal(0, 12);
+        energy = DigitizedVal(0, 12);
       else if (resolution == 0)
-        one_hit.energy = DigitizedVal(0, 11);
+        energy = DigitizedVal(0, 11);
 //                  DBG << "  MADC header module=" << module << "  resolution=" << resolution
 //                         << "  words=" << words_f << "  upshift=" << upshift;
       headers++;
@@ -245,7 +247,7 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, uint64_t 
       last_time = timestamp | time_upper;
 
       for (auto &h : hits)
-        h.timestamp = TimeStamp(h.timestamp, last_time);
+        h.set_timestamp_native(last_time);
 
 
       footers++;
@@ -256,9 +258,10 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, uint64_t 
       bool overflow = ((word & ovrfl_c) != 0);
 //                  DBG << "  MADC hit detector=" << chan_nr << "  energy=" << nrg << "  overflow=" << overflow;
 
-
-      one_hit.source_channel   = chan_nr;
-      one_hit.energy.set_val(nrg);
+      energy.set_val(nrg);
+      Hit one_hit(chan_nr, model_hit());
+      one_hit.energy = energy;
+      one_hit.values[0] = energy;
 
       hits.push_back(one_hit);
       events++;

@@ -49,8 +49,8 @@ struct Event {
   }
 
   inline Event(const Hit &newhit, double win, double max_delay) {
-    lower_time = newhit.timestamp;
-    hits[newhit.source_channel] = newhit;
+    lower_time = newhit.timestamp();
+    hits[newhit.source_channel()] = newhit;
     window_ns = win;
     max_delay_ns = std::max(win, max_delay);
   }
