@@ -30,7 +30,7 @@
 #include <boost/atomic.hpp>
 
 #include "detector.h"
-#include "generic_setting.h"  //make full use of this!!!
+#include "generic_setting.h"
 #include "daq_source.h"
 #include "synchronized_queue.h"
 #include "project.h"
@@ -50,7 +50,6 @@ struct Trace {
 class Engine {
   
 public:
-
 
   static Engine& getInstance()
   {
@@ -82,9 +81,7 @@ public:
   Qpx::Setting pull_settings() const;
   void push_settings(const Qpx::Setting&);
   bool write_settings_bulk();
-  bool read_settings_bulk();
-//  bool write_detector(const Qpx::Setting &set);
-  
+  bool read_settings_bulk(); 
   void get_all_settings();
   
 
@@ -99,7 +96,7 @@ protected:
   SourceStatus aggregate_status_, intrinsic_status_;
   mutable boost::mutex mutex_;
 
-  std::map<std::string, SourcePtr> devices_;  //use shared pointer instead
+  std::map<std::string, SourcePtr> devices_;
 
   Qpx::Setting settings_tree_;
   Qpx::SettingMeta total_det_num_, single_det_;

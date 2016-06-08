@@ -22,8 +22,6 @@
  ******************************************************************************/
 
 #include "event.h"
-//#include "custom_logger.h"
-//#include <boost/algorithm/string.hpp>
 #include <sstream>
 
 namespace Qpx {

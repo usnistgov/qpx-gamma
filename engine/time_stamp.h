@@ -161,26 +161,11 @@ public:
   inline void write_bin(std::ofstream &outfile) const
   {
     outfile.write((char*)&time_native_, sizeof(time_native_));
-//    uint16_t time_hy = (time_native_ >> 48) & 0x000000000000FFFF;
-//    uint16_t time_hi = (time_native_ >> 32) & 0x000000000000FFFF;
-//    uint16_t time_mi = (time_native_ >> 16) & 0x000000000000FFFF;
-//    uint16_t time_lo =  time_native_        & 0x000000000000FFFF;
-//    outfile.write((char*)&time_hy, sizeof(time_hy));
-//    outfile.write((char*)&time_hi, sizeof(time_hi));
-//    outfile.write((char*)&time_mi, sizeof(time_mi));
-//    outfile.write((char*)&time_lo, sizeof(time_lo));
   }
 
   inline void read_bin(std::ifstream &infile)
   {
     infile.read(reinterpret_cast<char*>(&time_native_), sizeof(time_native_));
-//    uint16_t entry[4];
-//    infile.read(reinterpret_cast<char*>(entry), sizeof(uint16_t)*4);
-//    uint64_t time_hy = entry[0];
-//    uint64_t time_hi = entry[1];
-//    uint64_t time_mi = entry[2];
-//    uint64_t time_lo = entry[3];
-//    time_native_ = (time_hy << 48) + (time_hi << 32) + (time_mi << 16) + time_lo;
   }
 
   void from_xml(const pugi::xml_node &);

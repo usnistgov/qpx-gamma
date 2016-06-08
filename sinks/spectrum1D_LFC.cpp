@@ -35,7 +35,7 @@ Spectrum1D_LFC::Spectrum1D_LFC()
 {
   Setting base_options = metadata_.attributes;
   metadata_ = Metadata("LFC1D", "One detector loss-free spectrum", 1,
-                       {}, metadata_.output_types());
+  {}, metadata_.output_types());
   metadata_.attributes = base_options;
 
   Qpx::Setting t_sample;
@@ -82,8 +82,9 @@ bool Spectrum1D_LFC::_initialize() {
 
 void Spectrum1D_LFC::addHit(const Hit& newHit)
 {
-    channels_run_[ newHit.energy.val(metadata_.bits) ] ++;
-    count_current_++;
+  uint16_t en = newHit.values.at(energy_idx_.at(newHit.source_channel())).val(metadata_.bits);
+  channels_run_[ en ] ++;
+  count_current_++;
 }
 
 void Spectrum1D_LFC::_push_stats(const StatsUpdate& newStats)
@@ -124,13 +125,13 @@ void Spectrum1D_LFC::_push_stats(const StatsUpdate& newStats)
       fast_peaks_compensated = diff.items.at("trigger_count") * d_lab_time / fast_scaled;
 
     time1_ = time2_;
-  
+
     count_total_ += fast_peaks_compensated;
     metadata_.total_count = count_total_;
 
     DBG << "<SpectrumLFC1D> '" << metadata_.name << "' update chan[" << my_channel_ << "]"
-           << " fast_peaks_compensated=" << fast_peaks_compensated
-           << " true_count=" << count_current_;
+        << " fast_peaks_compensated=" << fast_peaks_compensated
+        << " true_count=" << count_current_;
 
     uint32_t res = pow(2, metadata_.bits);
     for (uint32_t i = 0; i < res; i++) {

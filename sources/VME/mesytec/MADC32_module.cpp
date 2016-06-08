@@ -260,7 +260,7 @@ std::list<Hit> MADC32::parse(std::list<uint32_t> data, uint64_t &evts, uint64_t 
 
       energy.set_val(nrg);
       Hit one_hit(chan_nr, model_hit());
-      one_hit.energy = energy;
+//      one_hit.energy = energy;
       one_hit.values[0] = energy;
 
       hits.push_back(one_hit);

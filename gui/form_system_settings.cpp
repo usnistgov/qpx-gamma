@@ -38,12 +38,22 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread,
   tree_settings_model_(this),
   table_settings_model_(this),
   editing_(false),
+  exiting(false),
   ui(new Ui::FormSystemSettings)
 {
   ui->setupUi(this);
+  ui->formOscilloscope->setVisible(false);
+
+  this->setWindowTitle("DAQ Settings");
+
   connect(&runner_thread_, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)),
           this, SLOT(update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)));
   connect(&runner_thread_, SIGNAL(bootComplete()), this, SLOT(post_boot()));
+
+  connect(&runner_thread_, SIGNAL(oscilReadOut(std::vector<Qpx::Trace>)),
+          ui->formOscilloscope, SLOT(oscil_complete(std::vector<Qpx::Trace>)));
+
+  connect(ui->formOscilloscope, SIGNAL(refresh_oscil()), this, SLOT(refresh_oscil()));
 
   current_status_ = Qpx::SourceStatus::dead;
   tree_settings_model_.update(dev_settings_);
@@ -81,7 +91,6 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread,
 
   detectorOptions.addAction("Apply saved settings", this, SLOT(apply_detector_presets()));
   detectorOptions.addAction("Edit detector database", this, SLOT(open_detector_DB()));
-  detectorOptions.addAction("Gain matching utility", this, SLOT(open_gain_match()));
   ui->toolDetectors->setMenu(&detectorOptions);
 
   loadSettings();
@@ -96,7 +105,17 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread,
 //    QTimer::singleShot(50, this, SLOT(choose_profiles()));
 }
 
+void FormSystemSettings::exit() {
+  exiting = true;
+}
+
 void FormSystemSettings::update(const Qpx::Setting &tree, const std::vector<Qpx::Detector> &channels, Qpx::SourceStatus status) {
+  bool oscil = (status & Qpx::SourceStatus::can_oscil);
+  if (oscil) {
+    ui->formOscilloscope->setVisible(true);
+    ui->formOscilloscope->updateMenu(channels);
+  } else
+    ui->formOscilloscope->setVisible(false);
 
   bool can_run = ((status & Qpx::SourceStatus::can_run) != 0);
   bool can_gain_match = false;
@@ -109,9 +128,6 @@ void FormSystemSettings::update(const Qpx::Setting &tree, const std::vector<Qpx:
         can_optimize = true;
     }
 
-//  ui->pushOpenGainMatch->setEnabled(can_gain_match);
-//  ui->pushOpenOptimize->setEnabled(can_optimize);
-  ui->pushOpenListView->setEnabled(can_run);
 
   //update dets in DB as well?
 
@@ -242,19 +258,24 @@ void FormSystemSettings::refresh() {
 }
 
 void FormSystemSettings::closeEvent(QCloseEvent *event) {
-
-  saveSettings();
-  event->accept();
+  if (exiting) {
+    saveSettings();
+    event->accept();
+  }
+  else
+    event->ignore();
+  return;
 }
 
 void FormSystemSettings::toggle_push(bool enable, Qpx::SourceStatus status) {
+  ui->formOscilloscope->toggle_push(enable, status);
+
 //  bool online = (status & Qpx::SourceStatus::can_run);
 
   //busy status?!?!
   bool online = (status & Qpx::SourceStatus::booted);
 
   ui->pushSettingsRefresh->setEnabled(enable && online);
-  ui->pushExperiment->setEnabled(enable /*&& online*/);
   ui->pushChangeProfile->setEnabled(enable);
 
   if (enable) {
@@ -408,16 +429,6 @@ void FormSystemSettings::on_bootButton_clicked()
   }
 }
 
-void FormSystemSettings::open_gain_match()
-{
-  emit gain_matching_requested();
-}
-
-void FormSystemSettings::on_pushOpenListView_clicked()
-{
-  emit list_view_requested();
-}
-
 void FormSystemSettings::on_spinRefreshFrequency_valueChanged(int arg1)
 {
   runner_thread_.set_idle_refresh_frequency(arg1);
@@ -439,12 +450,9 @@ void FormSystemSettings::profile_chosen() {
   runner_thread_.do_initialize();
 }
 
-void FormSystemSettings::on_pushExperiment_clicked()
+void FormSystemSettings::refresh_oscil()
 {
-  emit optimization_requested();
-}
-
-void FormSystemSettings::on_pushOpenRawView_clicked()
-{
-  emit raw_view_requested();
+  emit statusText("Getting traces...");
+  emit toggleIO(false);
+  runner_thread_.do_oscil();
 }

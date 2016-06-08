@@ -1512,7 +1512,7 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
 
               Hit one_hit(sourcechan, model_hit());
               one_hit.set_timestamp_native(time);
-              one_hit.energy = DigitizedVal(energy, 16);
+//              one_hit.energy = DigitizedVal(energy, 16);
               one_hit.trace = trace;
               one_hit.values[0].set_val(energy);
               one_hit.values[1].set_val(XIA_PSA);

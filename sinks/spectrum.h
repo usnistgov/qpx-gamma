@@ -57,12 +57,15 @@ protected:
 
   std::vector<int32_t> cutoff_logic_;
   std::vector<double>  delay_ns_;
+
   double max_delay_;
   double coinc_window_;
 
   std::map<int, std::list<StatsUpdate>> stats_list_;
   std::map<int, boost::posix_time::time_duration> real_times_;
   std::map<int, boost::posix_time::time_duration> live_times_;
+  std::vector<int> energy_idx_;
+
   std::list<Event> backlog;
 
   uint64_t recent_count_;

@@ -237,9 +237,9 @@ void Spectrum2D::addEvent(const Event& newEvent) {
   uint16_t chan1_en = 0;
   uint16_t chan2_en = 0;
   if (newEvent.hits.count(pattern_[0]))
-    chan1_en = newEvent.hits.at(pattern_[0]).energy.val(metadata_.bits);
+    chan1_en = newEvent.hits.at(pattern_[0]).values.at(energy_idx_.at(pattern_[0])).val(metadata_.bits);
   if (newEvent.hits.count(pattern_[1]))
-    chan2_en = newEvent.hits.at(pattern_[1]).energy.val(metadata_.bits);
+    chan2_en = newEvent.hits.at(pattern_[1]).values.at(energy_idx_.at(pattern_[1])).val(metadata_.bits);
   spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] += 1;
   if (buffered_)
     temp_spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] =

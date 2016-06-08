@@ -62,9 +62,7 @@ public:
 
 class Hit {
 public:
-
-  DigitizedVal              energy;
-  std::vector<DigitizedVal> values; //does not save to file
+  std::vector<DigitizedVal> values;
   std::vector<uint16_t>     trace;
   
   inline Hit()
@@ -93,7 +91,6 @@ public:
   {
     if (source_channel_ != other.source_channel_) return false;
     if (timestamp_ != other.timestamp_) return false;
-//    if (energy != other.energy) return false;
     if (values != other.values) return false;
     if (trace != other.trace) return false;
     return true;
@@ -125,8 +122,6 @@ public:
     timestamp_.write_bin(outfile);
     for (auto &v : values)
       v.write_bin(outfile);
-//    uint16_t nrg = energy.val(energy.bits());
-//    outfile.write((char*)&nrg, sizeof(nrg));
     if (trace.size())
       outfile.write((char*)trace.data(), sizeof(uint16_t) * trace.size());
   }
@@ -143,16 +138,10 @@ public:
     for (auto &v : values)
       v.read_bin(infile);
 
-//    uint16_t nrg = 0;
-//    infile.read(reinterpret_cast<char*>(&nrg), sizeof(nrg));
-//    energy.set_val(nrg);
     if (trace.size())
       infile.read(reinterpret_cast<char*>(trace.data()), sizeof(uint16_t) * trace.size());
   }
 
-  void from_xml(const pugi::xml_node &);
-  void to_xml(pugi::xml_node &) const;
-  std::string xml_element_name() const {return "Hit";}
   std::string to_string() const;
 
 private:

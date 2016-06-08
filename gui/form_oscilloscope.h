@@ -37,28 +37,25 @@ class FormOscilloscope : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormOscilloscope(ThreadRunner&, QWidget *parent = 0);
+  explicit FormOscilloscope(QWidget *parent = 0);
   ~FormOscilloscope();
 
 signals:
-  void toggleIO(bool);
-  void statusText(QString);
+  void refresh_oscil();
 
 protected:
   void closeEvent(QCloseEvent*);
 
-private slots:
-  void on_pushOscilRefresh_clicked();
+public slots:
   void oscil_complete(std::vector<Qpx::Trace>);
-
   void toggle_push(bool, Qpx::SourceStatus);
 
-  void on_doubleSpinXDT_editingFinished();
+private slots:
+  void on_pushOscilRefresh_clicked();
+
   void channelToggled(SelectorItem);
   void channelDetails(SelectorItem);
-
   void on_pushShowAll_clicked();
-
   void on_pushHideAll_clicked();
 
 public slots:
@@ -66,14 +63,9 @@ public slots:
   
 private:
   Ui::FormOscilloscope *ui;
-  ThreadRunner &runner_thread_;
-
   std::vector<Qpx::Trace> traces_;
 
-  void loadSettings();
-  void saveSettings();
   void replot();
-
 };
 
 #endif // FORM_OSCILlOSCOPE_H

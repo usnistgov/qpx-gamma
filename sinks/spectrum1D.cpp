@@ -130,7 +130,7 @@ void Spectrum1D::_append(const Entry& e) {
 }
 
 void Spectrum1D::addHit(const Hit& newHit) {
-  uint16_t en = newHit.energy.val(metadata_.bits);
+  uint16_t en = newHit.values.at(energy_idx_.at(newHit.source_channel())).val(metadata_.bits);
   if (en < cutoff_bin_)
     return;
 

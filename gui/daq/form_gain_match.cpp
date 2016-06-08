@@ -417,6 +417,7 @@ void FormGainMatch::do_post_processing() {
          << latest_position << " - " << peak_ref_.center().value()
          << "| < " << ui->doubleThreshold->value();
     update_name();
+    emit optimization_complete();
     return;
   }
 

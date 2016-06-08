@@ -95,31 +95,6 @@ std::string HitModel::to_string() const
   return ss.str();
 }
 
-
-
-void Hit::from_xml(const pugi::xml_node &node)
-{
-  *this = Hit();
-  if (std::string(node.name()) != xml_element_name())
-    return;
-  source_channel_ = node.attribute("channel").as_int();
-//  energy = DigitizedVal(0, node.attribute("energy_bits").as_int());
-  if (node.child(timestamp_.xml_element_name().c_str()))
-    timestamp_.from_xml(node.child(timestamp_.xml_element_name().c_str()));
-  if (node.attribute("trace_length"))
-    trace.resize(node.attribute("trace_length").as_uint(0), 0);
-}
-
-void Hit::to_xml(pugi::xml_node &root) const
-{
-  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
-  node.append_attribute("channel").set_value(std::to_string(source_channel_).c_str());
-//  node.append_attribute("energy_bits").set_value(std::to_string(energy.bits()).c_str());
-  if (trace.size())
-    node.append_attribute("trace_length").set_value(std::to_string(trace.size()).c_str());
-  timestamp_.to_xml(node);
-}
-
 std::string Hit::to_string() const
 {
   std::stringstream ss;

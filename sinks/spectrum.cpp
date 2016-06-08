@@ -171,8 +171,14 @@ bool Spectrum::_initialize() {
 
 void Spectrum::_push_hit(const Hit& newhit)
 {
+  if ((newhit.source_channel() < 0)
+      || (newhit.source_channel() >= energy_idx_.size())
+      || (energy_idx_.at(newhit.source_channel()) < 0)
+      || (energy_idx_.at(newhit.source_channel()) >= newhit.values.size()))
+    return;
+
   if ((newhit.source_channel() < cutoff_logic_.size())
-      && (newhit.energy.val(metadata_.bits) < cutoff_logic_[newhit.source_channel()]))
+      && (newhit.values.at(energy_idx_.at(newhit.source_channel())).val(metadata_.bits) < cutoff_logic_[newhit.source_channel()]))
     return;
 
   if (newhit.source_channel() < 0)
@@ -250,6 +256,11 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
   //DBG << "Spectrum " << metadata_.name << " received update for chan " << newBlock.channel;
   bool chan_new = (stats_list_.count(newBlock.source_channel) == 0);
   bool new_start = (newBlock.stats_type == StatsType::start);
+
+  if (newBlock.source_channel >= energy_idx_.size())
+    energy_idx_.resize(newBlock.source_channel + 1, -1);
+  if (newBlock.model_hit.name_to_idx.count("energy"))
+    energy_idx_[newBlock.source_channel] = newBlock.model_hit.name_to_idx.at("energy");
 
   Setting start_time = get_attr("start_time");
   if (new_start && start_time.value_time.is_not_a_date_time()) {

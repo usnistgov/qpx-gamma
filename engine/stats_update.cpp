@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "stats_update.h"
-//#include <boost/algorithm/string.hpp>
 #include "qpx_util.h"
 
 namespace Qpx {

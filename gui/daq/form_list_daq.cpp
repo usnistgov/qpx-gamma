@@ -38,7 +38,7 @@ FormListDaq::FormListDaq(ThreadRunner &thread, QWidget *parent) :
 {
   ui->setupUi(this);
 
-  this->setWindowTitle("List view");
+  this->setWindowTitle("List LIVE");
 
   loadSettings();
 
@@ -86,14 +86,14 @@ FormListDaq::FormListDaq(ThreadRunner &thread, QWidget *parent) :
   ui->tableDetectors->setVisible(false);
   ui->labelDetectors->setVisible(false);
 
-  ui->labelStats->setVisible(false);
-  ui->tableStats->setVisible(false);
-  ui->labelStatsInfo->setVisible(false);
+//  ui->labelStats->setVisible(false);
+//  ui->tableStats->setVisible(false);
+//  ui->labelStatsInfo->setVisible(false);
 
-  ui->labelEvents->setVisible(false);
-  ui->tableHits->setVisible(false);
-  ui->labelEventVals->setVisible(false);
-  ui->tableHitValues->setVisible(false);
+//  ui->labelEvents->setVisible(false);
+//  ui->tableHits->setVisible(false);
+//  ui->labelEventVals->setVisible(false);
+//  ui->tableHitValues->setVisible(false);
 }
 
 void FormListDaq::loadSettings() {
@@ -132,6 +132,18 @@ void FormListDaq::closeEvent(QCloseEvent *event) {
       runner_thread_.terminate();
       runner_thread_.wait();
     } else {
+      event->ignore();
+      return;
+    }
+  }
+
+
+  if (!list_data_.empty()) {
+    int reply = QMessageBox::warning(this, "Contents present",
+                                     "Discard?",
+                                     QMessageBox::Yes|QMessageBox::Cancel);
+    if (reply != QMessageBox::Yes)
+    {
       event->ignore();
       return;
     }
@@ -179,10 +191,10 @@ void FormListDaq::displayHit(int idx)
 
       Qpx::Calibration cal;
       if ((i < model.idx_to_name.size()) && (model.idx_to_name.at(i) == "energy"))
-        cal = det.best_calib(hit.energy.bits());
+        cal = det.best_calib(hit.values.at(i).bits());
 
       if (cal.valid()) {
-        double energy = cal.transform(hit.energy.val(hit.energy.bits()), hit.energy.bits());
+        double energy = cal.transform(hit.values.at(i).val(hit.values.at(i).bits()), hit.values.at(i).bits());
         std::string nrg = to_str_decimals(energy, 0);
         if (cal.valid())
           nrg += " " + cal.units_;
@@ -254,7 +266,7 @@ void FormListDaq::on_pushListStart_clicked()
 {
   emit statusText("List mode acquisition in progress...");
 
-  this->setWindowTitle("List view  \u25b6");
+  this->setWindowTitle("List LIVE  \u25b6");
 
   emit toggleIO(false);
   ui->pushListStop->setEnabled(true);
@@ -284,7 +296,7 @@ void FormListDaq::list_completed(Qpx::ListData newEvents) {
       ui->listSpills->addItem(QString::fromStdString(s->to_string()));
 
     ui->pushListStop->setEnabled(false);
-    this->setWindowTitle("List view");
+    this->setWindowTitle("List LIVE");
 
     emit toggleIO(true);
     my_run_ = false;
@@ -308,14 +320,14 @@ void FormListDaq::spillSelectionChanged(int row)
   ui->tableDetectors->setVisible(false);
   ui->labelDetectors->setVisible(false);
 
-  ui->labelStats->setVisible(false);
-  ui->tableStats->setVisible(false);
-  ui->labelStatsInfo->setVisible(false);
+//  ui->labelStats->setVisible(false);
+//  ui->tableStats->setVisible(false);
+//  ui->labelStatsInfo->setVisible(false);
 
-  ui->labelEvents->setVisible(false);
-  ui->tableHits->setVisible(false);
-  ui->labelEventVals->setVisible(false);
-  ui->tableHitValues->setVisible(false);
+//  ui->labelEvents->setVisible(false);
+//  ui->tableHits->setVisible(false);
+//  ui->labelEventVals->setVisible(false);
+//  ui->tableHitValues->setVisible(false);
 
   if ((row >= 0) && (row < list_data_.size()))
   {
@@ -356,14 +368,14 @@ void FormListDaq::spillSelectionChanged(int row)
       ui->tableDetectors->setVisible(sp->detectors.size());
       ui->labelDetectors->setVisible(sp->detectors.size());
 
-      ui->labelStats->setVisible(stats_.size());
-      ui->tableStats->setVisible(stats_.size());
-      ui->labelStatsInfo->setVisible(stats_.size());
+//      ui->labelStats->setVisible(stats_.size());
+//      ui->tableStats->setVisible(stats_.size());
+//      ui->labelStatsInfo->setVisible(stats_.size());
 
-      ui->labelEvents->setVisible(hits_.size());
-      ui->tableHits->setVisible(hits_.size());
-      ui->labelEventVals->setVisible(hits_.size());
-      ui->tableHitValues->setVisible(hits_.size());
+//      ui->labelEvents->setVisible(hits_.size());
+//      ui->tableHits->setVisible(hits_.size());
+//      ui->labelEventVals->setVisible(hits_.size());
+//      ui->tableHitValues->setVisible(hits_.size());
     }
   }
 

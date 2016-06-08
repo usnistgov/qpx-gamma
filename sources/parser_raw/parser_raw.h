@@ -73,9 +73,11 @@ protected:
   std::string source_file_;
   std::string source_file_bin_;
 
-
-  std::list<Spill> spills_;
-  std::list<Spill> spills2_;
+  size_t current_spill_;
+  std::vector<Spill> spills_;
+  std::vector<size_t>     hit_counts_;
+  std::vector<uint64_t>   bin_offsets_;
+  std::map<int16_t, Qpx::HitModel> hitmodels_;
 
   std::ifstream  file_bin_;
   std::streampos bin_begin_, bin_end_;

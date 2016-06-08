@@ -198,12 +198,6 @@ void Sink::_push_spill(const Spill& one_spill) {
   if (!one_spill.detectors.empty())
     this->_set_detectors(one_spill.detectors);
 
-  Setting start_time = get_attr("start_time");
-  if (start_time.value_time.is_not_a_date_time() && (!one_spill.time.is_not_a_date_time())) {
-    start_time.value_time = one_spill.time;
-    metadata_.attributes.branches.replace(start_time);
-  }
-
   for (auto &q : one_spill.hits)
     this->_push_hit(q);
 

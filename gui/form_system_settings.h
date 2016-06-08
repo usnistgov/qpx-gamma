@@ -47,6 +47,8 @@ public:
   Qpx::Setting get_tree() {return dev_settings_;}
   ~FormSystemSettings();
 
+  void exit();
+
 public slots:
   void refresh();
   void update(const Qpx::Setting &tree, const std::vector<Qpx::Detector> &channelsupdate, Qpx::SourceStatus);
@@ -54,10 +56,6 @@ public slots:
 signals:
   void toggleIO(bool);
   void statusText(QString);
-  void optimization_requested();
-  void gain_matching_requested();
-  void list_view_requested();
-  void raw_view_requested();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -73,7 +71,6 @@ private slots:
   void toggle_push(bool enable, Qpx::SourceStatus status);
   void post_boot();
 
-
   void push_settings();
   void push_from_table(int chan, Qpx::Setting setting);
   void chose_detector(int chan, std::string name);
@@ -88,9 +85,6 @@ private slots:
 
   void apply_detector_presets();
   void open_detector_DB();
-  void open_gain_match();
-
-  void on_pushOpenListView_clicked();
 
   void on_spinRefreshFrequency_valueChanged(int arg1);
 
@@ -99,9 +93,8 @@ private slots:
   void choose_profiles();
   void profile_chosen();
 
-  void on_pushExperiment_clicked();
 
-  void on_pushOpenRawView_clicked();
+  void refresh_oscil();
 
 private:
   Ui::FormSystemSettings *ui;
@@ -129,6 +122,8 @@ private:
   void loadSettings();
   void saveSettings();
   void chan_settings_to_det_DB();
+
+  bool exiting;
 };
 
 #endif // FORM_SYSTEM_SETTINGS_H

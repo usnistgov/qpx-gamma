@@ -51,7 +51,6 @@ bool ParserRaw::die() {
   source_file_bin_.clear();
 
   spills_.clear();
-  spills2_.clear();
   bin_begin_ = 0;
   bin_end_ = 0;
 
@@ -225,11 +224,18 @@ bool ParserRaw::boot() {
 
   for (pugi::xml_node child : root.children()) {
     std::string name = std::string(child.name());
-    if (name == Spill().xml_element_name()) {
-      Spill spill;
+    if (name == Qpx::Spill().xml_element_name()) {
+      Qpx::Spill spill;
       spill.from_xml(child);
-      if (spill != Spill())
+      if (spill != Qpx::Spill()) {
         spills_.push_back(spill);
+        hit_counts_.push_back(child.attribute("raw_hit_count").as_ullong(0));
+        bin_offsets_.push_back(child.attribute("file_offset").as_ullong(0));
+
+        std::string text = spill.to_string();
+        if (hit_counts_.back() > 0)
+          text += "  [" + std::to_string(hit_counts_.back()) + "]";
+      }
     }
   }
 
@@ -238,6 +244,7 @@ bool ParserRaw::boot() {
     return false;
   }
 
+  current_spill_ = 0;
   source_file_bin_ = bin_path.string();
   status_ = SourceStatus::loaded | SourceStatus::booted | SourceStatus::can_run;
   return true;
@@ -257,7 +264,7 @@ void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill
 
   bool timeout = false;
 
-  while ((!callback->spills_.empty()) && (!timeout)) {
+  while ((callback->current_spill_ < callback->spills_.size()) && (!timeout)) {
 
     prevspill = one_spill;
     one_spill = callback->get_spill();
@@ -312,48 +319,35 @@ void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill
 
 Spill ParserRaw::get_spill() {
   Spill one_spill;
-  std::map<int16_t, HitModel> model_hits;
 
-  uint64_t hits_to_get = 0;
+  if (spills_.empty() || (current_spill_ >= spills_.size()))
+    return one_spill;
 
-  if (!spills_.empty())
-  {
-    one_spill = spills_.front();
-    hits_to_get += one_spill.hits.size();
-    spills2_.push_back(one_spill);
-    spills2_.back().time += boost::posix_time::seconds(10); //hack
-    spills_.pop_front();
-    one_spill.hits.clear();
-  }
-
-  for (auto &s : one_spill.stats)
-    model_hits[s.second.source_channel] = s.second.model_hit;
+  one_spill = spills_.at(current_spill_);
 
   //      DBG << "<Sorter> will produce no of events " << spills_.front().events_in_spill;
-  while ((one_spill.hits.size() < hits_to_get) && (file_bin_.tellg() < bin_end_))
+  if (hit_counts_.at(current_spill_) > 0)
   {
-    Hit one_hit;
-    one_hit.read_bin(file_bin_, model_hits);
-    one_spill.hits.push_back(one_hit);
+    file_bin_.seekg(bin_offsets_.at(current_spill_), std::ios::beg);
+    for (int i = 0; i < hit_counts_.at(current_spill_); ++i)
+    {
+      Qpx::Hit one_hit;
+      one_hit.read_bin(file_bin_, hitmodels_);
+      one_spill.hits.push_back(one_hit);
+    }
   }
-
 
   DBG << "<ParserRaw> made events " << one_spill.hits.size()
          << " and " << one_spill.stats.size() << " stats updates";
 
   if (loop_data_) {
-    if (spills_.empty() && (!spills2_.empty())) {
-      spills_ = spills2_;
-      spills2_.clear();
-      DBG << "<ParserRaw> rewinding spills";
-    }
 
-    if (file_bin_.tellg() == bin_end_) {
-      DBG << "<ParserRaw> rewinding binary";
-      file_bin_.seekg (0, std::ios::beg);
-    }
   }
 
+  for (auto &s : one_spill.stats)
+    hitmodels_[s.second.source_channel] = s.second.model_hit;
+
+  current_spill_++;
   return one_spill;
 }
 

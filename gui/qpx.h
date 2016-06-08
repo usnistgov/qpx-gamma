@@ -30,7 +30,7 @@
 
 #include "thread_runner.h"
 
-#include "form_start.h"
+#include "form_system_settings.h"
 #include "form_analysis_1d.h"
 #include "form_analysis_2d.h"
 #include "form_symmetrize2d.h"
@@ -75,9 +75,11 @@ private:
   std::vector<Qpx::Detector>  current_dets_;
   ThreadRunner                runner_thread_;
 
-  FormStart* main_tab_;
+  FormSystemSettings* main_tab_;
   bool gui_enabled_;
   Qpx::SourceStatus px_status_;
+
+  QMenu  menuOpen;
 
   //helper functions
   void saveSettings();
@@ -119,7 +121,7 @@ private slots:
   bool hasTab(QString);
 
   void open_gain_matching();
-  void open_optimization();
+  void open_experiment();
   void open_list();
   void open_raw();
 

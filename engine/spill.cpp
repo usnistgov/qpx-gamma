@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "spill.h"
-//#include <boost/algorithm/string.hpp>
 #include "qpx_util.h"
 
 namespace Qpx {
@@ -65,8 +64,8 @@ bool Spill::empty()
 void Spill::to_xml(pugi::xml_node &root, bool with_settings) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
   node.append_attribute("time").set_value(boost::posix_time::to_iso_extended_string(time).c_str());
-  node.append_attribute("bytes_raw_data").set_value(std::to_string(data.size() * sizeof(uint32_t)).c_str());
-  node.append_attribute("number_of_hits").set_value(std::to_string(hits.size()).c_str());
+//  node.append_attribute("bytes_raw_data").set_value(std::to_string(data.size() * sizeof(uint32_t)).c_str());
+//  node.append_attribute("number_of_hits").set_value(std::to_string(hits.size()).c_str());
 
   if (stats.size()) {
     pugi::xml_node statsnode = node.append_child("Stats");
@@ -90,6 +89,8 @@ void Spill::to_xml(pugi::xml_node &root, bool with_settings) const {
 }
 
 void Spill::from_xml(const pugi::xml_node &node) {
+  *this = Spill();
+
   if (std::string(node.name()) != xml_element_name())
     return;
 
@@ -99,8 +100,8 @@ void Spill::from_xml(const pugi::xml_node &node) {
   if (node.attribute("time"))
     time = from_iso_extended(node.attribute("time").value());
 
-  if (node.attribute("number_of_hits"))
-    hits.resize(node.attribute("number_of_hits").as_uint());
+//  if (node.attribute("number_of_hits"))
+//    hits.resize(node.attribute("number_of_hits").as_uint());
 
   if (node.child(state.xml_element_name().c_str()))
     state.from_xml(node.child(state.xml_element_name().c_str()));

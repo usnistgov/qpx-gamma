@@ -39,7 +39,6 @@
 #include "form_gain_match.h"
 #include "form_experiment.h"
 #include "form_raw_view.h"
-#include "experiment.h"
 
 #include "qt_util.h"
 
@@ -78,33 +77,41 @@ qpx::qpx(QWidget *parent) :
   gui_enabled_ = true;
   px_status_ = Qpx::SourceStatus(0);
 
-  QPushButton *tb = new QPushButton();
+  QToolButton *tb = new QToolButton();
   tb->setIcon(QIcon(":/icons/oxy/16/filenew.png"));
-//  tb->setIconSize(QSize(16, 16));
+  tb->setMinimumWidth(35);
+  tb->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Ignored);
   tb->setToolTip("New project");
-  tb->setFlat(true);
-  connect(tb, SIGNAL(clicked()), this, SLOT(openNewProject()));
+  tb->setAutoRaise(true);
+  tb->setPopupMode(QToolButton::InstantPopup);
+  tb->setToolButtonStyle(Qt::ToolButtonIconOnly);
+  tb->setArrowType(Qt::NoArrow);
   // Add empty, not enabled tab to tabWidget
   ui->qpxTabs->addTab(new QLabel("<center>Open new project by clicking \"+\"</center>"), QString());
   ui->qpxTabs->setTabEnabled(0, false);
   // Add tab button to current tab. Button will be enabled, but tab -- not
   ui->qpxTabs->tabBar()->setTabButton(0, QTabBar::RightSide, tb);
 
+  menuOpen.addAction(QIcon(":/icons/oxy/16/filenew.png"), "DAQ project", this, SLOT(openNewProject()));
+  menuOpen.addAction(QIcon(":/icons/oxy/16/filenew.png"), "Hierarchical experiment", this, SLOT(open_experiment()));
+  menuOpen.addAction(QIcon(":/icons/oxy/16/filenew.png"), "List file viewer", this, SLOT(open_raw()));
+  menuOpen.addSeparator();
+  menuOpen.addAction(QIcon(":/icons/oxy/16/filenew.png"), "Live gain matching", this, SLOT(open_gain_matching()));
+  menuOpen.addAction(QIcon(":/icons/oxy/16/filenew.png"), "Live list mode", this, SLOT(open_list()));
+  tb->setMenu(&menuOpen);
+
+
   connect(ui->qpxTabs->tabBar(), SIGNAL(tabMoved(int,int)), this, SLOT(tabs_moved(int,int)));
   connect(ui->qpxTabs, SIGNAL(currentChanged(int)), this, SLOT(tab_changed(int)));
 
-  main_tab_ = new FormStart(runner_thread_, detectors_, this);
+  main_tab_ = new FormSystemSettings(runner_thread_, detectors_, this);
   ui->qpxTabs->addTab(main_tab_, "DAQ");
 //  ui->qpxTabs->addTab(main_tab_, main_tab_->windowTitle());
   ui->qpxTabs->setTabIcon(ui->qpxTabs->count() - 1, QIcon(":/icons/oxy/16/applications_systemg.png"));
   connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::SourceStatus)));
-  connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(settings_updated()));
-  connect(this, SIGNAL(update_dets()), main_tab_, SLOT(detectors_updated()));
-  connect(main_tab_, SIGNAL(optimization_requested()), this, SLOT(open_optimization()));
-  connect(main_tab_, SIGNAL(gain_matching_requested()), this, SLOT(open_gain_matching()));
-  connect(main_tab_, SIGNAL(list_view_requested()), this, SLOT(open_list()));
-  connect(main_tab_, SIGNAL(raw_view_requested()), this, SLOT(open_raw()));
+  connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(refresh()));
+  connect(this, SIGNAL(update_dets()), main_tab_, SLOT(updateDetDB()));
 
   QSettings settings;
   settings.beginGroup("Program");
@@ -372,17 +379,17 @@ void qpx::open_raw()
   emit toggle_push(gui_enabled_, px_status_);
 }
 
-void qpx::open_optimization()
+void qpx::open_experiment()
 {
-  FormExperiment *newOpt = new FormExperiment(runner_thread_, this);
-  addClosableTab(newOpt, "Close");
+  FormExperiment *experiment = new FormExperiment(runner_thread_, this);
+  addClosableTab(experiment, "Close");
 
-  connect(newOpt, SIGNAL(settings_changed()), this, SLOT(update_settings()));
+  connect(experiment, SIGNAL(settings_changed()), this, SLOT(update_settings()));
 
-  connect(newOpt, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), newOpt, SLOT(toggle_push(bool,Qpx::SourceStatus)));
+  connect(experiment, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), experiment, SLOT(toggle_push(bool,Qpx::SourceStatus)));
 
-  ui->qpxTabs->setCurrentWidget(newOpt);
+  ui->qpxTabs->setCurrentWidget(experiment);
   reorder_tabs();
 
   emit toggle_push(gui_enabled_, px_status_);
@@ -397,7 +404,7 @@ void qpx::open_gain_matching()
   FormGainMatch *newGain = new FormGainMatch(runner_thread_, detectors_, this);
   addClosableTab(newGain, "Close");
 
-  connect(newGain, SIGNAL(optimization_approved()), this, SLOT(detectors_updated()));
+  connect(newGain, SIGNAL(optimization_complete()), this, SLOT(detectors_updated()));
 
   connect(newGain, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), newGain, SLOT(toggle_push(bool,Qpx::SourceStatus)));

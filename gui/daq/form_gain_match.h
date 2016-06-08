@@ -56,6 +56,7 @@ public:
 signals:
   void toggleIO(bool);
   void settings_changed();
+  void optimization_complete();
 
 protected:
   void closeEvent(QCloseEvent*);

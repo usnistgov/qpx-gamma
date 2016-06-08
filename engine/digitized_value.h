@@ -24,8 +24,6 @@
 #ifndef QPX_DIGITIZED_VALUE
 #define QPX_DIGITIZED_VALUE
 
-//#include "xmlable.h"
-//#include <cinttypes>
 #include <string>
 #include <fstream>
 

@@ -286,19 +286,6 @@ bool Engine::daq_running() {
   return running;
 }
 
-//bool Engine::write_detector(const Qpx::Setting &set) {
-//  if (set.metadata.setting_type != Qpx::SettingType::detector)
-//    return false;
-
-//  if ((set.index < 0) || (set.index >= detectors_.size()))
-//    return false;
-
-//  if (detectors_[set.index].name_ != set.value_text)
-//    detectors_[set.index] = Qpx::Detector(set.value_text);
-
-//  return true;
-//}
-
 void Engine::set_detector(int ch, Qpx::Detector det) {
   if (ch < 0 || ch >= detectors_.size())
     return;
@@ -490,12 +477,6 @@ ListData Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
   one_spill->detectors = get_detectors();
   result.push_back(SpillPtr(one_spill));
 
-//  parsedQueue.enqueue(spill);
-//  get_all_settings();
-//  save_optimization();
-//  result->run.state = pull_settings();
-//  result->run.detectors = get_detectors();
-
   SynchronizedQueue<Spill*> parsedQueue;
 
   if (daq_start(&parsedQueue))
@@ -522,15 +503,18 @@ ListData Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   delete anouncement_timer;
 
+  one_spill = new Spill;
+  get_all_settings();
+  save_optimization();
+  one_spill->state = pull_settings();
+  parsedQueue.enqueue(one_spill);
+//  result.push_back(SpillPtr(one_spill));
+
   wait_ms(500);
 
-  while (parsedQueue.size() > 0) {
+  while (parsedQueue.size() > 0)
     result.push_back(SpillPtr(parsedQueue.dequeue()));
-//    one_spill = parsedQueue.dequeue();
-//    for (auto &q : one_spill->hits)
-//      result->hits.push_back(q);
-//    delete one_spill;
-  }
+
 
   parsedQueue.stop();
   return result;

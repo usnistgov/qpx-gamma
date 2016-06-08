@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1441</width>
-    <height>753</height>
+    <height>756</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -89,17 +89,17 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>25</height>
+           <height>32</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
            <width>16777215</width>
-           <height>25</height>
+           <height>32</height>
           </size>
          </property>
          <property name="text">
-          <string>run for </string>
+          <string/>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -125,7 +125,7 @@
          <item>
           <widget class="QListWidget" name="listSpills">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+            <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -138,7 +138,7 @@
            </property>
            <property name="maximumSize">
             <size>
-             <width>800</width>
+             <width>300</width>
              <height>16777215</height>
             </size>
            </property>
@@ -243,14 +243,14 @@
      <item>
       <widget class="QLabel" name="labelState">
        <property name="text">
-        <string>System status</string>
+        <string>DAQ system status</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QTreeView" name="treeAttribs">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -263,7 +263,7 @@
        </property>
        <property name="maximumSize">
         <size>
-         <width>800</width>
+         <width>820</width>
          <height>16777215</height>
         </size>
        </property>
@@ -279,7 +279,7 @@
      <item>
       <widget class="QTableView" name="tableDetectors">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -292,7 +292,7 @@
        </property>
        <property name="maximumSize">
         <size>
-         <width>800</width>
+         <width>820</width>
          <height>16777215</height>
         </size>
        </property>

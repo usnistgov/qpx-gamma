@@ -25,9 +25,8 @@
 #include <QSettings>
 
 
-FormOscilloscope::FormOscilloscope(ThreadRunner& thread, QWidget *parent) :
+FormOscilloscope::FormOscilloscope(QWidget *parent) :
   QWidget(parent),
-  runner_thread_(thread),
   ui(new Ui::FormOscilloscope)
 {
   ui->setupUi(this);
@@ -39,13 +38,8 @@ FormOscilloscope::FormOscilloscope(ThreadRunner& thread, QWidget *parent) :
   ui->widgetPlot->setTitle("");
   ui->widgetPlot->setLabels("time (ticks)", "energy/channel");
 
-  loadSettings();
-
-  connect(&runner_thread_, SIGNAL(oscilReadOut(std::vector<Qpx::Trace>)), this, SLOT(oscil_complete(std::vector<Qpx::Trace>)));
-
   connect(ui->selectorChannels, SIGNAL(itemSelected(SelectorItem)), this, SLOT(channelDetails(SelectorItem)));
   connect(ui->selectorChannels, SIGNAL(itemToggled(SelectorItem)), this, SLOT(channelToggled(SelectorItem)));
-
 }
 
 FormOscilloscope::~FormOscilloscope()
@@ -54,22 +48,9 @@ FormOscilloscope::~FormOscilloscope()
 }
 
 void FormOscilloscope::closeEvent(QCloseEvent *event) {
-  saveSettings();
   event->accept();
 }
 
-
-void FormOscilloscope::loadSettings() {
-  QSettings settings_;
-  settings_.beginGroup("Oscilloscope");
-  settings_.endGroup();
-}
-
-void FormOscilloscope::saveSettings() {
-  QSettings settings_;
-  settings_.beginGroup("Oscilloscope");
-  settings_.endGroup();
-}
 
 void FormOscilloscope::updateMenu(std::vector<Qpx::Detector> dets) {
   QVector<SelectorItem> my_channels = ui->selectorChannels->items();
@@ -129,9 +110,7 @@ void FormOscilloscope::toggle_push(bool enable, Qpx::SourceStatus status) {
 
 void FormOscilloscope::on_pushOscilRefresh_clicked()
 {
-  emit statusText("Getting traces...");
-  emit toggleIO(false);
-  runner_thread_.do_oscil();
+  emit refresh_oscil();
 }
 
 void FormOscilloscope::oscil_complete(std::vector<Qpx::Trace> traces) {
@@ -148,8 +127,6 @@ void FormOscilloscope::oscil_complete(std::vector<Qpx::Trace> traces) {
   updateMenu(dets);
 
   replot();
-
-  emit toggleIO(true);
 }
 
 void FormOscilloscope::replot() {
@@ -217,12 +194,6 @@ void FormOscilloscope::replot() {
   ui->widgetPlot->redraw();
 
 }
-
-void FormOscilloscope::on_doubleSpinXDT_editingFinished()
-{
-  on_pushOscilRefresh_clicked();
-}
-
 
 void FormOscilloscope::on_pushShowAll_clicked()
 {

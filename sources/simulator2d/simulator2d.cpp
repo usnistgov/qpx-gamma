@@ -393,8 +393,7 @@ void Simulator2D::push_hit(Spill& one_spill, uint16_t en1, uint16_t en2)
   if (en1 > 0) {
     Hit h(chan0_, model_hit);
     h.set_timestamp_native(clock_);
-    h.energy.set_val(round(en1 * gain0_ * 0.01));
-    h.values[0] = h.energy;
+    h.values[0].set_val(round(en1 * gain0_ * 0.01));
     h.values[1].set_val(rand() % 100);
     make_trace(h, 1000);
     one_spill.hits.push_back(h);
@@ -403,8 +402,7 @@ void Simulator2D::push_hit(Spill& one_spill, uint16_t en1, uint16_t en2)
   if (en2 > 0) {
     Hit h(chan1_, model_hit);
     h.set_timestamp_native(clock_);
-    h.energy.set_val(round(en2 * gain1_ * 0.01));
-    h.values[0] = h.energy;
+    h.values[0].set_val(round(en2 * gain1_ * 0.01));
     h.values[1].set_val(rand() % 100);
     make_trace(h, 1000);
     one_spill.hits.push_back(h);
@@ -415,7 +413,7 @@ void Simulator2D::push_hit(Spill& one_spill, uint16_t en1, uint16_t en2)
 
 void Simulator2D::make_trace(Hit& h, uint16_t baseline)
 {
-  uint16_t en = h.energy.val(h.energy.bits());
+  uint16_t en = h.values.at(0).val(h.values.at(0).bits());
   h.trace = std::vector<uint16_t>(h.trace.size(), baseline);
   size_t start = double(h.trace.size()) * 0.1;
   double slope1 = double(en) / double(start);

@@ -80,14 +80,14 @@ FormRawView::FormRawView(QWidget *parent) :
   ui->tableDetectors->setVisible(false);
   ui->labelDetectors->setVisible(false);
 
-  ui->labelStats->setVisible(false);
-  ui->tableStats->setVisible(false);
-  ui->labelStatsInfo->setVisible(false);
+//  ui->labelStats->setVisible(false);
+//  ui->tableStats->setVisible(false);
+//  ui->labelStatsInfo->setVisible(false);
 
-  ui->labelEvents->setVisible(false);
-  ui->tableHits->setVisible(false);
-  ui->labelEventVals->setVisible(false);
-  ui->tableHitValues->setVisible(false);
+//  ui->labelEvents->setVisible(false);
+//  ui->tableHits->setVisible(false);
+//  ui->labelEventVals->setVisible(false);
+//  ui->tableHitValues->setVisible(false);
 }
 
 void FormRawView::loadSettings() {
@@ -126,6 +126,16 @@ FormRawView::~FormRawView()
 }
 
 void FormRawView::closeEvent(QCloseEvent *event) {
+  if (!spills_.empty()) {
+    int reply = QMessageBox::warning(this, "Contents present",
+                                     "Discard?",
+                                     QMessageBox::Yes|QMessageBox::Cancel);
+    if (reply != QMessageBox::Yes)
+    {
+      event->ignore();
+      return;
+    }
+  }
 
   saveSettings();
   event->accept();
@@ -169,10 +179,10 @@ void FormRawView::displayHit(int idx)
 
       Qpx::Calibration cal;
       if ((i < model.idx_to_name.size()) && (model.idx_to_name.at(i) == "energy"))
-        cal = det.best_calib(hit.energy.bits());
+        cal = det.best_calib(hit.values.at(i).bits());
 
       if (cal.valid()) {
-        double energy = cal.transform(hit.energy.val(hit.energy.bits()), hit.energy.bits());
+        double energy = cal.transform(hit.values.at(i).val(hit.values.at(i).bits()), hit.values.at(i).bits());
         std::string nrg = to_str_decimals(energy, 0);
         if (cal.valid())
           nrg += " " + cal.units_;
@@ -258,14 +268,14 @@ void FormRawView::spillSelectionChanged(int row)
   ui->tableDetectors->setVisible(false);
   ui->labelDetectors->setVisible(false);
 
-  ui->labelStats->setVisible(false);
-  ui->tableStats->setVisible(false);
-  ui->labelStatsInfo->setVisible(false);
+//  ui->labelStats->setVisible(false);
+//  ui->tableStats->setVisible(false);
+//  ui->labelStatsInfo->setVisible(false);
 
-  ui->labelEvents->setVisible(false);
-  ui->tableHits->setVisible(false);
-  ui->labelEventVals->setVisible(false);
-  ui->tableHitValues->setVisible(false);
+//  ui->labelEvents->setVisible(false);
+//  ui->tableHits->setVisible(false);
+//  ui->labelEventVals->setVisible(false);
+//  ui->tableHitValues->setVisible(false);
 
   if ((row >= 0) && (row < spills_.size()))
   {
@@ -315,14 +325,14 @@ void FormRawView::spillSelectionChanged(int row)
     ui->tableDetectors->setVisible(sp.detectors.size());
     ui->labelDetectors->setVisible(sp.detectors.size());
 
-    ui->labelStats->setVisible(stats_.size());
-    ui->tableStats->setVisible(stats_.size());
-    ui->labelStatsInfo->setVisible(stats_.size());
+//    ui->labelStats->setVisible(stats_.size());
+//    ui->tableStats->setVisible(stats_.size());
+//    ui->labelStatsInfo->setVisible(stats_.size());
 
-    ui->labelEvents->setVisible(hits_.size());
-    ui->tableHits->setVisible(hits_.size());
-    ui->labelEventVals->setVisible(hits_.size());
-    ui->tableHitValues->setVisible(hits_.size());
+//    ui->labelEvents->setVisible(hits_.size());
+//    ui->tableHits->setVisible(hits_.size());
+//    ui->labelEventVals->setVisible(hits_.size());
+//    ui->tableHitValues->setVisible(hits_.size());
   }
 
 

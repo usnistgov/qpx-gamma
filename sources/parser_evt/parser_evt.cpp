@@ -403,7 +403,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
                 udt.lab_time = ts;
 //                udt.items["native_time"] = pEvent->getTimeOffset();
                 one_spill.stats[q] = udt;
-                one_spill.time = ts;
+//                one_spill.time = ts;
               }
               done = true;
             }
@@ -435,7 +435,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
               //            DBG << "<ParserEVT> " << udt.to_string();
 
               one_spill.stats[q] = udt;
-              one_spill.time = ts;
+//              one_spill.time = ts;
             }
             done = true;
             delete pEvent;
@@ -476,7 +476,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
                   udt.lab_time = time_start;
                   udt.stats_type = StatsType::start;
 
-                  extra_spill.time = time_start;
+//                  extra_spill.time = time_start;
                   extra_spill.stats[h.source_channel()] = udt;
                   starts_signalled.insert(h.source_channel());
                 }
@@ -545,7 +545,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
 
       if (callback->override_timestamps_) {
-        one_spill.time = boost::posix_time::microsec_clock::universal_time();
+//        one_spill.time = boost::posix_time::microsec_clock::universal_time();
         for (auto &q : one_spill.stats)
           q.second.lab_time = one_spill.time;
         // livetime and realtime are not changed accordingly
@@ -585,7 +585,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
   DBG << "<ParserEVT> before stop  hits = " << one_spill.hits.size();
 
   if (one_spill.stats.empty() || (one_spill.stats.begin()->second.stats_type != StatsType::stop)) {
-    one_spill.time = ts;
+//    one_spill.time = ts;
     for (auto &q : starts_signalled) {
       StatsUpdate udt;
       udt.stats_type = StatsType::stop;
