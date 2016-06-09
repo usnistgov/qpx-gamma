@@ -158,19 +158,19 @@ void FormRawView::displayHit(int idx)
   if (hitmodels_.count(chan))
     model = hitmodels_.at(chan);
 
-  ui->tableHitValues->setRowCount(hit.values.size());
+  ui->tableHitValues->setRowCount(hit.value_count());
   ui->tableHitValues->setColumnCount(3);
   ui->tableHitValues->setHorizontalHeaderItem(0, new QTableWidgetItem("Name", QTableWidgetItem::Type));
   ui->tableHitValues->setHorizontalHeaderItem(1, new QTableWidgetItem("Value", QTableWidgetItem::Type));
   ui->tableHitValues->setHorizontalHeaderItem(2, new QTableWidgetItem("Calibrated", QTableWidgetItem::Type));
 
-  for (int i = 0; i < hit.values.size(); ++i)
+  for (int i = 0; i < hit.value_count(); ++i)
   {
     if (i < model.idx_to_name.size())
       add_to_table(ui->tableHitValues, i, 0, model.idx_to_name.at(i));
     else
       add_to_table(ui->tableHitValues, i, 0, std::to_string(i));
-    add_to_table(ui->tableHitValues, i, 1, hit.values.at(i).to_string());
+    add_to_table(ui->tableHitValues, i, 1, hit.value(i).to_string());
 
 
     if ((chan > -1) && (chan < dets_.size()))
@@ -179,10 +179,10 @@ void FormRawView::displayHit(int idx)
 
       Qpx::Calibration cal;
       if ((i < model.idx_to_name.size()) && (model.idx_to_name.at(i) == "energy"))
-        cal = det.best_calib(hit.values.at(i).bits());
+        cal = det.best_calib(hit.value(i).bits());
 
       if (cal.valid()) {
-        double energy = cal.transform(hit.values.at(i).val(hit.values.at(i).bits()), hit.values.at(i).bits());
+        double energy = cal.transform(hit.value(i).val(hit.value(i).bits()), hit.value(i).bits());
         std::string nrg = to_str_decimals(energy, 0);
         if (cal.valid())
           nrg += " " + cal.units_;
@@ -193,7 +193,7 @@ void FormRawView::displayHit(int idx)
 
   }
 
-  uint32_t trace_length = hit.trace.size();
+  uint32_t trace_length = hit.trace().size();
   if (trace_length > 0) {
     QVector<double> x(trace_length), y(trace_length);
     int chan = hit.source_channel();
@@ -206,7 +206,7 @@ void FormRawView::displayHit(int idx)
 
     for (std::size_t j=0; j<trace_length; j++) {
       x[j] = j;
-      y[j] = this_calibration.transform(hit.trace[j], 16);
+      y[j] = this_calibration.transform(hit.trace().at(j), 16);
     }
 
     ui->tracePlot->addGraph();
@@ -405,12 +405,23 @@ void FormRawView::on_pushLoadExperiment_clicked()
   if (!validateFile(this, fileName, false))
     return;
 
+  if (!spills_.empty()) {
+    int reply = QMessageBox::warning(this, "Contents present",
+                                     "Discard?",
+                                     QMessageBox::Yes|QMessageBox::Cancel);
+    if (reply != QMessageBox::Yes)
+      return;
+  }
+
+  this->setCursor(Qt::WaitCursor);
+
   data_directory_ = path_of_file(fileName);
 
   spills_.clear();
   hit_counts_.clear();
   bin_offsets_.clear();
   ui->listSpills->clear();
+  spillSelectionChanged(-1);
 
   pugi::xml_document doc;
 
@@ -422,6 +433,7 @@ void FormRawView::on_pushLoadExperiment_clicked()
   pugi::xml_node root = doc.first_child();
   if (!root || (std::string(root.name()) != "QpxListData")) {
     WARN << "<ParserRaw> Bad root ID in " << fileName.toStdString();
+    this->setCursor(Qt::ArrowCursor);
     return;
   }
 
@@ -431,6 +443,7 @@ void FormRawView::on_pushLoadExperiment_clicked()
 
   if (!boost::filesystem::is_directory(meta)) {
     DBG << "<ParserRaw> Bad path for list mode data";
+    this->setCursor(Qt::ArrowCursor);
     return;
   }
 
@@ -440,12 +453,14 @@ void FormRawView::on_pushLoadExperiment_clicked()
 
   if (!file_bin_.is_open()) {
     DBG << "<ParserRaw> Could not open binary " << bin_path.string();
+    this->setCursor(Qt::ArrowCursor);
     return;
   }
 
   if (!file_bin_.good()) {
     file_bin_.close();
     DBG << "<ParserRaw> Could not open binary " << bin_path.string();
+    this->setCursor(Qt::ArrowCursor);
     return;
   }
 
@@ -476,12 +491,8 @@ void FormRawView::on_pushLoadExperiment_clicked()
     }
   }
 
-  if (spills_.size() == 0) {
+  if (spills_.size() == 0)
     file_bin_.close();
-    return;
-  }
 
-  //  source_file_bin_ = bin_path.string();
-  //  status_ = SourceStatus::loaded | SourceStatus::booted | SourceStatus::can_run;
-  //  return true;
+  this->setCursor(Qt::ArrowCursor);
 }

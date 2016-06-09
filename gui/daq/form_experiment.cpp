@@ -201,6 +201,7 @@ void FormExperiment::new_daq_data() {
 
   ui->pushRunInfo->setEnabled(p.operator bool());
   ui->pushSinkInfo->setEnabled(sink.operator bool());
+  ui->pushExportProject->setEnabled(p.operator bool());
 
   if (ui->plotSpectrum->busy())
     return;
@@ -672,4 +673,16 @@ void FormExperiment::on_pushSinkInfo_clicked()
     newSpecDia->exec();
 
   }
+}
+
+void FormExperiment::on_pushExportProject_clicked()
+{
+  Qpx::ProjectPtr p = exp_plot_thread_.current_source();
+  if (!p)
+    return;
+
+  Qpx::ProjectPtr newproj(new Qpx::Project(*p));
+//  newproj->mark_changed();
+
+  emit extract_project(newproj);
 }

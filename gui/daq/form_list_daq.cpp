@@ -170,19 +170,19 @@ void FormListDaq::displayHit(int idx)
   if (hitmodels_.count(chan))
     model = hitmodels_.at(chan);
 
-  ui->tableHitValues->setRowCount(hit.values.size());
+  ui->tableHitValues->setRowCount(hit.value_count());
   ui->tableHitValues->setColumnCount(3);
   ui->tableHitValues->setHorizontalHeaderItem(0, new QTableWidgetItem("Name", QTableWidgetItem::Type));
   ui->tableHitValues->setHorizontalHeaderItem(1, new QTableWidgetItem("Value", QTableWidgetItem::Type));
   ui->tableHitValues->setHorizontalHeaderItem(2, new QTableWidgetItem("Calibrated", QTableWidgetItem::Type));
 
-  for (int i = 0; i < hit.values.size(); ++i)
+  for (int i = 0; i < hit.value_count(); ++i)
   {
     if (i < model.idx_to_name.size())
       add_to_table(ui->tableHitValues, i, 0, model.idx_to_name.at(i));
     else
       add_to_table(ui->tableHitValues, i, 0, std::to_string(i));
-    add_to_table(ui->tableHitValues, i, 1, hit.values.at(i).to_string());
+    add_to_table(ui->tableHitValues, i, 1, hit.value(i).to_string());
 
 
     if ((chan > -1) && (chan < dets_.size()))
@@ -191,10 +191,10 @@ void FormListDaq::displayHit(int idx)
 
       Qpx::Calibration cal;
       if ((i < model.idx_to_name.size()) && (model.idx_to_name.at(i) == "energy"))
-        cal = det.best_calib(hit.values.at(i).bits());
+        cal = det.best_calib(hit.value(i).bits());
 
       if (cal.valid()) {
-        double energy = cal.transform(hit.values.at(i).val(hit.values.at(i).bits()), hit.values.at(i).bits());
+        double energy = cal.transform(hit.value(i).val(hit.value(i).bits()), hit.value(i).bits());
         std::string nrg = to_str_decimals(energy, 0);
         if (cal.valid())
           nrg += " " + cal.units_;
@@ -205,7 +205,7 @@ void FormListDaq::displayHit(int idx)
 
   }
 
-  uint32_t trace_length = hit.trace.size();
+  uint32_t trace_length = hit.trace().size();
   if (trace_length > 0) {
     QVector<double> x(trace_length), y(trace_length);
     int chan = hit.source_channel();
@@ -218,7 +218,7 @@ void FormListDaq::displayHit(int idx)
 
     for (std::size_t j=0; j<trace_length; j++) {
       x[j] = j;
-      y[j] = this_calibration.transform(hit.trace[j], 16);
+      y[j] = this_calibration.transform(hit.trace().at(j), 16);
     }
 
     ui->tracePlot->addGraph();
@@ -264,6 +264,16 @@ void FormListDaq::displayStats(int idx)
 
 void FormListDaq::on_pushListStart_clicked()
 {
+  if (!list_data_.empty()) {
+    int reply = QMessageBox::warning(this, "Contents present",
+                                     "Discard?",
+                                     QMessageBox::Yes|QMessageBox::Cancel);
+    if (reply != QMessageBox::Yes)
+      return;
+    my_run_ = true;
+    list_completed(Qpx::ListData());
+  }
+
   emit statusText("List mode acquisition in progress...");
 
   this->setWindowTitle("List LIVE  \u25b6");

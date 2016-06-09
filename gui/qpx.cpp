@@ -60,6 +60,7 @@ qpx::qpx(QWidget *parent) :
   qRegisterMetaType<Qpx::Calibration>("Qpx::Calibration");
   qRegisterMetaType<Qpx::SourceStatus>("Qpx::SourceStatus");
   qRegisterMetaType<Qpx::Fitter>("Qpx::Fitter");
+  qRegisterMetaType<Qpx::ProjectPtr>("Qpx::ProjectPtr");
   qRegisterMetaType<boost::posix_time::time_duration>("boost::posix_time::time_duration");
 
   CustomLogger::initLogger(&qpx_stream_, "qpx_%N.log");
@@ -93,11 +94,11 @@ qpx::qpx(QWidget *parent) :
   ui->qpxTabs->tabBar()->setTabButton(0, QTabBar::RightSide, tb);
 
   menuOpen.addAction(QIcon(":/icons/oxy/16/filenew.png"), "DAQ project", this, SLOT(openNewProject()));
-  menuOpen.addAction(QIcon(":/icons/oxy/16/filenew.png"), "Hierarchical experiment", this, SLOT(open_experiment()));
+  menuOpen.addAction(QIcon(":/icons/oxy/16/filenew.png"), "Structured experiment", this, SLOT(open_experiment()));
   menuOpen.addAction(QIcon(":/icons/oxy/16/filenew.png"), "List file viewer", this, SLOT(open_raw()));
   menuOpen.addSeparator();
-  menuOpen.addAction(QIcon(":/icons/oxy/16/filenew.png"), "Live gain matching", this, SLOT(open_gain_matching()));
   menuOpen.addAction(QIcon(":/icons/oxy/16/filenew.png"), "Live list mode", this, SLOT(open_list()));
+  menuOpen.addAction(QIcon(":/icons/oxy/16/filenew.png"), "Live gain matching", this, SLOT(open_gain_matching()));
   tb->setMenu(&menuOpen);
 
 
@@ -302,9 +303,32 @@ void qpx::eff_cal(FormEfficiencyCalibration *formEf) {
   reorder_tabs();
 }
 
+void qpx::extract_project(Qpx::ProjectPtr proj)
+{
+  if (!proj)
+    return;
+
+  FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, detectors_, current_dets_, proj, this);
+  connect(newSpectraForm, SIGNAL(requestAnalysis(FormAnalysis1D*)), this, SLOT(analyze_1d(FormAnalysis1D*)));
+  connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
+  connect(newSpectraForm, SIGNAL(requestSymmetriza2D(FormSymmetrize2D*)), this, SLOT(symmetrize_2d(FormSymmetrize2D*)));
+  connect(newSpectraForm, SIGNAL(requestEfficiencyCal(FormEfficiencyCalibration*)), this, SLOT(eff_cal(FormEfficiencyCalibration*)));
+  connect(newSpectraForm, SIGNAL(requestClose(QWidget*)), this, SLOT(closeTab(QWidget*)));
+
+  connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::SourceStatus)));
+
+  addClosableTab(newSpectraForm, "Close project");
+  ui->qpxTabs->setCurrentWidget(newSpectraForm);
+  reorder_tabs();
+
+  newSpectraForm->toggle_push(true, px_status_);
+}
+
+
 void qpx::openNewProject()
 {
-  FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, detectors_, current_dets_, this);
+  FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, detectors_, current_dets_, nullptr, this);
   connect(newSpectraForm, SIGNAL(requestAnalysis(FormAnalysis1D*)), this, SLOT(analyze_1d(FormAnalysis1D*)));
   connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
   connect(newSpectraForm, SIGNAL(requestSymmetriza2D(FormSymmetrize2D*)), this, SLOT(symmetrize_2d(FormSymmetrize2D*)));
@@ -388,6 +412,7 @@ void qpx::open_experiment()
 
   connect(experiment, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), experiment, SLOT(toggle_push(bool,Qpx::SourceStatus)));
+  connect(experiment, SIGNAL(extract_project(Qpx::ProjectPtr)), this, SLOT(extract_project(Qpx::ProjectPtr)));
 
   ui->qpxTabs->setCurrentWidget(experiment);
   reorder_tabs();

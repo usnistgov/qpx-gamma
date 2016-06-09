@@ -82,7 +82,7 @@ bool Spectrum1D_LFC::_initialize() {
 
 void Spectrum1D_LFC::addHit(const Hit& newHit)
 {
-  uint16_t en = newHit.values.at(energy_idx_.at(newHit.source_channel())).val(metadata_.bits);
+  uint16_t en = newHit.value(energy_idx_.at(newHit.source_channel())).val(metadata_.bits);
   channels_run_[ en ] ++;
   count_current_++;
 }

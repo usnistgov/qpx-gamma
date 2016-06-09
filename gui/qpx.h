@@ -112,6 +112,7 @@ private slots:
   void analyze_2d(FormAnalysis2D*);
   void symmetrize_2d(FormSymmetrize2D*);
   void eff_cal(FormEfficiencyCalibration*);
+  void extract_project(Qpx::ProjectPtr);
 
   void detectors_updated();
   void update_settings();

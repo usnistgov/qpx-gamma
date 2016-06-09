@@ -113,8 +113,19 @@ struct Metadata : public XMLable {
 
 class Sink
 {
+protected:
+  Metadata metadata_;
+  std::vector<std::vector<double> > axes_;
+
+  mutable boost::shared_mutex shared_mutex_;
+  mutable boost::mutex unique_mutex_;
+
 public:
   Sink();
+  Sink(const Sink& other)
+    : metadata_(other.metadata_)
+    , axes_ (other.axes_) {}
+  virtual Sink* clone() const = 0;
 
   //named constructors, used by factory
   bool from_prototype(const Metadata&);
@@ -185,12 +196,6 @@ protected:
 
   virtual void _recalc_axes() = 0;
   Setting get_attr(std::string name) const;
-  
-  Metadata metadata_;
-  std::vector<std::vector<double> > axes_;
-
-  mutable boost::shared_mutex shared_mutex_;
-  mutable boost::mutex unique_mutex_;
 };
 
 typedef std::shared_ptr<Sink> SinkPtr;

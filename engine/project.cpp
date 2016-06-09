@@ -29,7 +29,6 @@
 
 namespace Qpx {
 
-
 //DEPRECATE!!!
 struct RunInfo {
   Qpx::Setting state;
@@ -59,13 +58,32 @@ struct RunInfo {
   }
 };
 
-
-
-
-Project::~Project() {
-//  terminate();
-  clear_helper();
+Project::Project(const Qpx::Project& other)
+  : Project()
+{
+  ready_ = true;
+  newdata_ = true;
+  changed_ = true;
+  identity_ = other.identity_;
+  current_index_= other.current_index_;
+  sinks_ = other.sinks_;
+  fitters_1d_ = other.fitters_1d_;
+  spills_ = other.spills_;
+  for (auto sink : other.sinks_)
+    sinks_[sink.first] = SinkFactory::getInstance().create_copy(sink.second);
+  DBG << "<Qpx::Project> deep copy performed";
 }
+
+
+//Project Project::deep_copy() const
+//{
+//  Project ret;
+//  ret.current_index_ = current_index_;
+//  ret.spills_ = spills_;
+//  ret.fitters_1d_ = fitters_1d_;
+//  for (auto sink : sinks_)
+//    ret.sinks_[sink.first] = SinkFactory::getInstance().create_copy(sink.second);
+//}
 
 void Project::clear() {
   boost::unique_lock<boost::mutex> lock(mutex_);
@@ -115,7 +133,7 @@ bool Project::new_data() {
   return ret;  
 }
 
-bool Project::changed() {
+bool Project::changed() const {
   boost::unique_lock<boost::mutex> lock(mutex_);
 
   for (auto &q : sinks_)
@@ -125,6 +143,10 @@ bool Project::changed() {
   return changed_;
 }
 
+void Project::mark_changed() {
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  changed_ = true;
+}
 
 bool Project::empty() const {
   boost::unique_lock<boost::mutex> lock(mutex_);

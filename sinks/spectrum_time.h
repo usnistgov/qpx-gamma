@@ -31,6 +31,7 @@ class SpectrumTime : public Spectrum
 {
 public:
   SpectrumTime();
+  SpectrumTime* clone() const override { return new SpectrumTime(*this); }
   
 protected:
   std::string my_type() const override {return "Time";}

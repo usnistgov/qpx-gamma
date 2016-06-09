@@ -36,10 +36,16 @@ SinkPtr SinkFactory::create_type(std::string type)
     return SinkPtr();
 }
 
+SinkPtr SinkFactory::create_copy(SinkPtr other)
+{
+  return SinkPtr(other->clone());
+}
+
+
 SinkPtr SinkFactory::create_from_prototype(const Metadata& tem)
 {
   SinkPtr instance = create_type(tem.type());
-  if (instance && instance->from_prototype(tem));
+  if (instance && instance->from_prototype(tem))
     return instance;
   return SinkPtr();
 }

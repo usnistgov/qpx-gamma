@@ -99,7 +99,7 @@ std::string Hit::to_string() const
 {
   std::stringstream ss;
   ss << "[ch" << source_channel_ << "|t" << timestamp_.to_string();
-  for (auto &v : values)
+  for (auto &v : values_)
     ss << v.to_string();
   ss << "]";
   return ss.str();

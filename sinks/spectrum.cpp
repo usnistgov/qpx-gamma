@@ -172,13 +172,11 @@ bool Spectrum::_initialize() {
 void Spectrum::_push_hit(const Hit& newhit)
 {
   if ((newhit.source_channel() < 0)
-      || (newhit.source_channel() >= energy_idx_.size())
-      || (energy_idx_.at(newhit.source_channel()) < 0)
-      || (energy_idx_.at(newhit.source_channel()) >= newhit.values.size()))
+      || (newhit.source_channel() >= energy_idx_.size()))
     return;
 
   if ((newhit.source_channel() < cutoff_logic_.size())
-      && (newhit.values.at(energy_idx_.at(newhit.source_channel())).val(metadata_.bits) < cutoff_logic_[newhit.source_channel()]))
+      && (newhit.value(energy_idx_.at(newhit.source_channel())).val(metadata_.bits) < cutoff_logic_[newhit.source_channel()]))
     return;
 
   if (newhit.source_channel() < 0)

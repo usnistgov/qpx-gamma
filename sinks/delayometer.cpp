@@ -129,7 +129,7 @@ void Delayometer::_push_hit(const Hit& newhit)
       || (energy_idx_.at(newhit.source_channel()) < 0))
     return;
 
-  DigitizedVal energy = newhit.values.at(energy_idx_.at(newhit.source_channel()));
+  DigitizedVal energy = newhit.value(energy_idx_.at(newhit.source_channel()));
 
   if ((newhit.source_channel() < cutoff_logic_.size())
       && (energy.val(metadata_.bits) < cutoff_logic_[newhit.source_channel()]))

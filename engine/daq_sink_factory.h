@@ -51,6 +51,7 @@ class SinkFactory {
   SinkPtr create_from_prototype(const Metadata& tem);
   SinkPtr create_from_xml(const pugi::xml_node &root);
   SinkPtr create_from_file(std::string filename);
+  SinkPtr create_copy(SinkPtr other);
 
   Metadata create_prototype(std::string type);
 

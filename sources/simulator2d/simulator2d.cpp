@@ -393,8 +393,8 @@ void Simulator2D::push_hit(Spill& one_spill, uint16_t en1, uint16_t en2)
   if (en1 > 0) {
     Hit h(chan0_, model_hit);
     h.set_timestamp_native(clock_);
-    h.values[0].set_val(round(en1 * gain0_ * 0.01));
-    h.values[1].set_val(rand() % 100);
+    h.set_value(0, round(en1 * gain0_ * 0.01));
+    h.set_value(1, rand() % 100);
     make_trace(h, 1000);
     one_spill.hits.push_back(h);
   }
@@ -402,8 +402,8 @@ void Simulator2D::push_hit(Spill& one_spill, uint16_t en1, uint16_t en2)
   if (en2 > 0) {
     Hit h(chan1_, model_hit);
     h.set_timestamp_native(clock_);
-    h.values[0].set_val(round(en2 * gain1_ * 0.01));
-    h.values[1].set_val(rand() % 100);
+    h.set_value(0, round(en2 * gain1_ * 0.01));
+    h.set_value(1, rand() % 100);
     make_trace(h, 1000);
     one_spill.hits.push_back(h);
   }
@@ -413,17 +413,18 @@ void Simulator2D::push_hit(Spill& one_spill, uint16_t en1, uint16_t en2)
 
 void Simulator2D::make_trace(Hit& h, uint16_t baseline)
 {
-  uint16_t en = h.values.at(0).val(h.values.at(0).bits());
-  h.trace = std::vector<uint16_t>(h.trace.size(), baseline);
-  size_t start = double(h.trace.size()) * 0.1;
+  uint16_t en = h.value(0).val(h.value(0).bits());
+  std::vector<uint16_t> trc(h.trace().size(), baseline);
+  size_t start = double(trc.size()) * 0.1;
   double slope1 = double(en) / double(start);
-  double slope2 = - double(en) / double(h.trace.size() * 10);
+  double slope2 = - double(en) / double(trc.size() * 10);
   for (size_t i = 0; i < start; ++i)
-    h.trace[start+i] += i*slope1;
-  for (size_t i = start*2; i < h.trace.size(); ++i)
-    h.trace[i] += en + (i - 2*start) * slope2;
-  for (size_t i=0; i < h.trace.size(); ++i)
-    h.trace[i] += (rand() % baseline) / 5 - baseline/10;
+    trc[start+i] += i*slope1;
+  for (size_t i = start*2; i < trc.size(); ++i)
+    trc[i] += en + (i - 2*start) * slope2;
+  for (size_t i=0; i < trc.size(); ++i)
+    trc[i] += (rand() % baseline) / 5 - baseline/10;
+  h.set_trace(trc);
 }
 
 

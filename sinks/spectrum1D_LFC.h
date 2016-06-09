@@ -33,6 +33,7 @@ class Spectrum1D_LFC : public Spectrum1D
 {
 public:
   Spectrum1D_LFC();
+  Spectrum1D_LFC* clone() const override { return new Spectrum1D_LFC(*this); }
 
 protected:
   std::string my_type() const override {return "LFC1D";}

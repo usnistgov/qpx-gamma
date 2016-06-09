@@ -41,7 +41,11 @@ class FormMcaDaq : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormMcaDaq(ThreadRunner&, XMLableDB<Qpx::Detector>&, std::vector<Qpx::Detector>&, QWidget *parent = 0);
+  explicit FormMcaDaq(ThreadRunner&,
+                      XMLableDB<Qpx::Detector>&,
+                      std::vector<Qpx::Detector>&,
+                      Qpx::ProjectPtr,
+                      QWidget *parent = 0);
 
   void replot();
   ~FormMcaDaq();
@@ -110,7 +114,7 @@ private:
   QString mca_load_formats_;  //valid mca file formats that can be opened
 
   XMLableDB<Qpx::Metadata>  spectra_templates_;
-  Qpx::ProjectPtr                     spectra_;
+  Qpx::ProjectPtr                     project_;
 
   ThreadPlotSignal                plot_thread_;
   boost::atomic<bool>             interruptor_;

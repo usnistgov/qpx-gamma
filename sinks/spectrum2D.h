@@ -34,6 +34,7 @@ class Spectrum2D : public Spectrum
 {
 public:
   Spectrum2D();
+  Spectrum2D* clone() const override { return new Spectrum2D(*this); }
   
 protected:
   typedef std::map<std::pair<uint16_t,uint16_t>, PreciseFloat> SpectrumMap2D;

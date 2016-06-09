@@ -35,11 +35,12 @@
 using namespace Qpx;
 
 FormMcaDaq::FormMcaDaq(ThreadRunner &thread, XMLableDB<Detector>& detectors,
-                       std::vector<Detector>& current_dets, QWidget *parent) :
+                       std::vector<Detector>& current_dets,
+                       Qpx::ProjectPtr proj, QWidget *parent) :
   QWidget(parent),
   spectra_templates_("SpectrumTemplates"),
   interruptor_(false),
-  spectra_(new Qpx::Project()),
+  project_(proj),
   my_analysis_(nullptr),
   my_analysis_2d_(nullptr),
   my_eff_cal_(nullptr),
@@ -52,7 +53,10 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, XMLableDB<Detector>& detectors,
 {
   ui->setupUi(this);
 
-  loadSettings();
+  if (!project_)
+    project_ = Qpx::ProjectPtr(new Qpx::Project());
+  else
+    DBG << "project already exists";
 
   //connect with runner
   connect(&runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
@@ -68,14 +72,14 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, XMLableDB<Detector>& detectors,
   mca_load_formats_ = catFileTypes(filetypes) + ";;Radware spn (*.spn)";
 
   //1d
-  ui->Plot1d->setSpectra(*spectra_);
+  ui->Plot1d->setSpectra(*project_);
   connect(ui->Plot1d, SIGNAL(requestAnalysis(int64_t)), this, SLOT(reqAnal(int64_t)));
   connect(ui->Plot1d, SIGNAL(requestEffCal(QString)), this, SLOT(reqEffCal(QString)));
   connect(&plot_thread_, SIGNAL(plot_ready()), this, SLOT(update_plots()));
   ui->Plot1d->setDetDB(detectors_);
 
   //2d
-  ui->Plot2d->setSpectra(*spectra_);
+  ui->Plot2d->setSpectra(*project_);
   connect(ui->Plot1d, SIGNAL(marker_set(Coord)), ui->Plot2d, SLOT(set_marker(Coord)));
   connect(ui->Plot2d, SIGNAL(markers_set(Coord,Coord)), ui->Plot1d, SLOT(set_markers2d(Coord,Coord)));
   connect(ui->Plot2d, SIGNAL(requestAnalysis(int64_t)), this, SLOT(reqAnal2D(int64_t)));
@@ -91,12 +95,13 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, XMLableDB<Detector>& detectors,
   menuSave.addAction(QIcon(":/icons/oxy/16/document_save_all.png"), "Export spectra...", this, SLOT(projectExport()));
   ui->toolSave->setMenu(&menuSave);
 
-  this->setWindowTitle(QString::fromStdString(spectra_->identity()));
+  this->setWindowTitle(QString::fromStdString(project_->identity()));
 
   ui->timeDuration->set_us_enabled(false);
 
-  plot_thread_.monitor_source(spectra_);
-//  plot_thread_.start();
+  plot_thread_.monitor_source(project_);
+
+  loadSettings();
 }
 
 FormMcaDaq::~FormMcaDaq()
@@ -141,7 +146,7 @@ void FormMcaDaq::closeEvent(QCloseEvent *event) {
     emit requestClose(my_eff_cal_);
   }
 
-  if (spectra_->changed()) {
+  if (project_->changed()) {
     int reply = QMessageBox::warning(this, "Project contents changed",
                                      "Discard?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
@@ -219,7 +224,7 @@ void FormMcaDaq::saveSettings() {
 
 void FormMcaDaq::toggle_push(bool enable, SourceStatus status) {
   bool online = (status & SourceStatus::can_run);
-  bool nonempty = !spectra_->empty();
+  bool nonempty = !project_->empty();
 
   ui->pushMcaStart->setEnabled(enable && online && !my_run_);
 
@@ -237,13 +242,13 @@ void FormMcaDaq::on_pushTimeNow_clicked()
 
 void FormMcaDaq::clearGraphs() //rename this
 {
-  spectra_->clear();
+  project_->clear();
   newProject();
   ui->Plot1d->reset_content();
 
   ui->Plot2d->reset_content(); //is this necessary?
 
-  spectra_->activate();
+  project_->activate();
 }
 
 void FormMcaDaq::update_plots() {
@@ -251,7 +256,7 @@ void FormMcaDaq::update_plots() {
 
   CustomTimer guiside(true);
 
-  QString name = QString::fromStdString(spectra_->identity());
+  QString name = QString::fromStdString(project_->identity());
   if (name != "New project") {
     QStringList slist = name.split("/");
     if (!slist.empty())
@@ -260,7 +265,7 @@ void FormMcaDaq::update_plots() {
 
   if (my_run_)
     name += QString::fromUtf8("  \u25b6");
-  else if (spectra_->changed())
+  else if (project_->changed())
     name += QString::fromUtf8(" \u2731");
 
   if (name != this->windowTitle()) {
@@ -268,7 +273,7 @@ void FormMcaDaq::update_plots() {
     emit toggleIO(true);
   }
 
-  ui->pushEditSpectra->setVisible(spectra_->empty());
+  ui->pushEditSpectra->setVisible(project_->empty());
 
   if (ui->Plot2d->isVisible()) {
     this->setCursor(Qt::WaitCursor);
@@ -288,13 +293,13 @@ void FormMcaDaq::update_plots() {
 
 void FormMcaDaq::projectSave()
 {
-  if (spectra_->changed() && (spectra_->identity() != "New project")) {
+  if (project_->changed() && (project_->identity() != "New project")) {
     int reply = QMessageBox::warning(this, "Save?",
-                                     "Save changes to existing project: " + QString::fromStdString(spectra_->identity()),
+                                     "Save changes to existing project: " + QString::fromStdString(project_->identity()),
                                      QMessageBox::Yes|QMessageBox::Cancel);
     if (reply == QMessageBox::Yes) {
       this->setCursor(Qt::WaitCursor);
-      spectra_->save();
+      project_->save();
       update_plots();
     }
   } else
@@ -308,7 +313,7 @@ void FormMcaDaq::projectSaveAs()
   if (validateFile(this, fileName, true)) {
     INFO << "Writing project to " << fileName.toStdString();
     this->setCursor(Qt::WaitCursor);
-    spectra_->save_as(fileName.toStdString());
+    project_->save_as(fileName.toStdString());
     update_plots();
   }
 
@@ -318,7 +323,7 @@ void FormMcaDaq::projectSaveAs()
 void FormMcaDaq::projectExport()
 {
   this->setCursor(Qt::WaitCursor);
-  DialogSaveSpectra* newDialog = new DialogSaveSpectra(*spectra_, data_directory_);
+  DialogSaveSpectra* newDialog = new DialogSaveSpectra(*project_, data_directory_);
   connect(newDialog, SIGNAL(accepted()), this, SLOT(after_export()));
   connect(newDialog, SIGNAL(rejected()), this, SLOT(after_export()));
   newDialog->exec();
@@ -337,7 +342,7 @@ void FormMcaDaq::on_pushEditSpectra_clicked()
 
 void FormMcaDaq::on_pushMcaStart_clicked()
 {
-  if (!spectra_->empty()) {
+  if (!project_->empty()) {
     int reply = QMessageBox::warning(this, "Continue?",
                                      "Non-empty spectra in project. Acquire and append to existing data?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
@@ -354,7 +359,7 @@ void FormMcaDaq::on_pushMcaStart_clicked()
 }
 
 void FormMcaDaq::start_DAQ() {
-  if (spectra_->empty() && spectra_templates_.empty())
+  if (project_->empty() && spectra_templates_.empty())
     return;
 
   emit statusText("Spectra acquisition in progress...");
@@ -362,19 +367,19 @@ void FormMcaDaq::start_DAQ() {
   emit toggleIO(false);
   ui->pushMcaStop->setEnabled(true);
 
-  if (spectra_->empty()) {
+  if (project_->empty()) {
     clearGraphs();
-    spectra_->set_prototypes(spectra_templates_);
+    project_->set_prototypes(spectra_templates_);
     newProject();
   }
-//  spectra_->activate();
+//  project_->activate();
 
   my_run_ = true;
   ui->Plot1d->reset_content();
   uint64_t duration = ui->timeDuration->total_seconds();
   if (ui->toggleIndefiniteRun->isChecked())
     duration = 0;
-  runner_thread_.do_run(spectra_, interruptor_, duration);
+  runner_thread_.do_run(project_, interruptor_, duration);
 }
 
 
@@ -387,12 +392,12 @@ void FormMcaDaq::projectOpen()
   data_directory_ = path_of_file(fileName);
 
   //save first?
-  if (!spectra_->empty()) {
+  if (!project_->empty()) {
     int reply = QMessageBox::warning(this, "Clear existing?",
                                      "Spectra already open. Clear existing before opening?",
                                      QMessageBox::Yes|QMessageBox::Cancel);
     if (reply == QMessageBox::Yes)
-      spectra_->clear();
+      project_->clear();
     else
       return;
   }
@@ -402,10 +407,10 @@ void FormMcaDaq::projectOpen()
   this->setCursor(Qt::WaitCursor);
   clearGraphs();
 
-  spectra_->read_xml(fileName.toStdString(), true);
+  project_->read_xml(fileName.toStdString(), true);
 
   newProject();
-  spectra_->activate();
+  project_->activate();
 
   emit toggleIO(true);
 
@@ -425,7 +430,7 @@ void FormMcaDaq::projectImport()
     if (!validateFile(this, fileNames.at(i), false))
       return;
 
-  if ((!spectra_->empty()) && (QMessageBox::warning(this, "Append?", "Spectra already open. Append to existing?",
+  if ((!project_->empty()) && (QMessageBox::warning(this, "Append?", "Spectra already open. Append to existing?",
                                                     QMessageBox::Yes|QMessageBox::Cancel) != QMessageBox::Yes))
     return;
 
@@ -443,8 +448,8 @@ void FormMcaDaq::projectImport()
     boost::algorithm::to_lower(ext);
 
     if (ext == "spn") {
-      spectra_->import_spn(fileNames.at(i).toStdString());
-      for (auto &q : spectra_->get_sinks()) {
+      project_->import_spn(fileNames.at(i).toStdString());
+      for (auto &q : project_->get_sinks()) {
         Setting app = q.second->metadata().attributes.branches.get(Setting("appearance"));
         app.value_text = generateColor().name(QColor::HexArgb).toStdString();
         q.second->set_option(app);
@@ -461,14 +466,14 @@ void FormMcaDaq::projectImport()
           newSpectrum->set_option(vis);
         }
         valid_imports++;
-        spectra_->add_sink(newSpectrum);
+        project_->add_sink(newSpectrum);
       } else {
         INFO << "Spectrum construction did not succeed.";
       }
     }
   }
   newProject(); //NOT ALWAYS TRUE!!!
-  spectra_->activate();
+  project_->activate();
 
   emit toggleIO(true);
 
@@ -477,13 +482,13 @@ void FormMcaDaq::projectImport()
 
 void FormMcaDaq::updateSpectraUI() {
   ui->Plot2d->updateUI();
-  ui->Plot1d->setSpectra(*spectra_);
+  ui->Plot1d->setSpectra(*project_);
 }
 
 void FormMcaDaq::newProject() {
-  ui->Plot2d->setSpectra(*spectra_);
+  ui->Plot2d->setSpectra(*project_);
   ui->Plot2d->update_plot(true);
-  ui->Plot1d->setSpectra(*spectra_);
+  ui->Plot1d->setSpectra(*project_);
 }
 
 void FormMcaDaq::on_pushMcaStop_clicked()
@@ -507,7 +512,7 @@ void FormMcaDaq::run_completed() {
 
 
 void FormMcaDaq::reqAnal(int64_t idx) {
-  SinkPtr selected = spectra_->get_sink(idx);
+  SinkPtr selected = project_->get_sink(idx);
   if (!selected)
     return;
 
@@ -520,7 +525,7 @@ void FormMcaDaq::reqAnal(int64_t idx) {
   }
 
   my_analysis_->setWindowTitle("1D: " + QString::fromStdString(selected->name()));
-  my_analysis_->setSpectrum(&(*spectra_), idx);
+  my_analysis_->setSpectrum(&(*project_), idx);
   emit requestAnalysis(my_analysis_);
 
   this->setCursor(Qt::ArrowCursor);
@@ -532,7 +537,7 @@ void FormMcaDaq::analysis_destroyed() {
 }
 
 void FormMcaDaq::reqAnal2D(int64_t idx) {
-  SinkPtr selected = spectra_->get_sink(idx);
+  SinkPtr selected = project_->get_sink(idx);
   if (!selected)
     return;
 
@@ -546,7 +551,7 @@ void FormMcaDaq::reqAnal2D(int64_t idx) {
   }
 
   my_analysis_2d_->setWindowTitle("2D: " + QString::fromStdString(selected->name()));
-  my_analysis_2d_->setSpectrum(&(*spectra_), idx);
+  my_analysis_2d_->setSpectrum(&(*project_), idx);
   my_analysis_2d_->reset();
   emit requestAnalysis2D(my_analysis_2d_);
 
@@ -554,7 +559,7 @@ void FormMcaDaq::reqAnal2D(int64_t idx) {
 }
 
 void FormMcaDaq::reqSym2D(int64_t idx) {
-  SinkPtr selected = spectra_->get_sink(idx);
+  SinkPtr selected = project_->get_sink(idx);
   if (!selected)
     return;
 
@@ -567,7 +572,7 @@ void FormMcaDaq::reqSym2D(int64_t idx) {
     connect(my_symmetrization_2d_, SIGNAL(spectraChanged()), this, SLOT(updateSpectraUI()));
   }
   my_symmetrization_2d_->setWindowTitle("SYM: " + QString::fromStdString(selected->name()));
-  my_symmetrization_2d_->setSpectrum(&(*spectra_), idx);
+  my_symmetrization_2d_->setSpectrum(&(*project_), idx);
   my_symmetrization_2d_->reset();
   emit requestSymmetriza2D(my_symmetrization_2d_);
 
@@ -584,7 +589,7 @@ void FormMcaDaq::reqEffCal(QString name)
     connect(my_eff_cal_, SIGNAL(destroyed()), this, SLOT(analysis_destroyed()));
   }
   my_eff_cal_->setWindowTitle("1D: " + name);
-  my_eff_cal_->setDetector(&(*spectra_), name);
+  my_eff_cal_->setDetector(&(*project_), name);
   emit requestEfficiencyCal(my_eff_cal_);
 
   this->setCursor(Qt::ArrowCursor);
@@ -624,7 +629,7 @@ void FormMcaDaq::on_pushForceRefresh_clicked()
 
 void FormMcaDaq::on_pushDetails_clicked()
 {
-  FormDaqSettings *DaqInfo = new FormDaqSettings(spectra_, this);
+  FormDaqSettings *DaqInfo = new FormDaqSettings(project_, this);
   DaqInfo->setWindowTitle("System settings at the time of acquisition");
   DaqInfo->exec();
 }

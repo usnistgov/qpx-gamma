@@ -43,17 +43,17 @@ public:
 protected:
   
   bool _initialize() override;
-
   void _push_hit(const Hit&) override;
   void _push_stats(const StatsUpdate&) override;
+
+  void _set_detectors(const std::vector<Qpx::Detector>& dets) override;
+  void _recalc_axes() override;
 
   virtual bool validateEvent(const Event&) const;
   virtual void addEvent(const Event&) = 0;
 
-  void _set_detectors(const std::vector<Qpx::Detector>& dets) override;
 
-  void _recalc_axes() override;
-
+protected:
 
   std::vector<int32_t> cutoff_logic_;
   std::vector<double>  delay_ns_;

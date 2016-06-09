@@ -48,6 +48,7 @@ public:
 signals:
   void toggleIO(bool);
   void settings_changed();
+  void extract_project(Qpx::ProjectPtr);
 
 public slots:
   void toggle_push(bool, Qpx::SourceStatus);
@@ -78,6 +79,8 @@ private slots:
   void on_pushRunInfo_clicked();
 
   void on_pushSinkInfo_clicked();
+
+  void on_pushExportProject_clicked();
 
 protected:
   void closeEvent(QCloseEvent*);

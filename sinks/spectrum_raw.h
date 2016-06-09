@@ -29,8 +29,35 @@ namespace Qpx {
 
 class SpectrumRaw : public Spectrum
 {
+protected:
+  std::string file_dir_;
+  std::string file_name_bin_;
+  std::string file_name_txt_;
+
+  std::ofstream file_bin_;
+  std::streampos bin_begin_;
+
+  bool open_xml_, open_bin_;
+  pugi::xml_document xml_doc_;
+  pugi::xml_node xml_root_;
+
+  uint64_t hits_this_spill_, total_hits_;
+
 public:
   SpectrumRaw();
+  SpectrumRaw(const SpectrumRaw&other)
+    : Spectrum(other)
+    , file_dir_(other.file_dir_)
+    , file_name_bin_(other.file_name_bin_)
+    , file_name_txt_(other.file_name_txt_)
+    , hits_this_spill_(0)
+    , total_hits_(0)
+    , open_xml_(false)
+    , open_bin_(false)
+  {}
+
+  SpectrumRaw* clone() const override { return new SpectrumRaw(*this); }
+
   ~SpectrumRaw();
 
 protected:
@@ -55,19 +82,6 @@ protected:
 
   std::string _data_to_xml() const override {return "written to file";}
   uint16_t _data_from_xml(const std::string&) override {return 0;}
-
-  std::string file_dir_;
-  std::string file_name_bin_;
-  std::string file_name_txt_;
-
-  std::ofstream file_bin_;
-  std::streampos bin_begin_;
-
-  bool open_xml_, open_bin_;
-  pugi::xml_document xml_doc_;
-  pugi::xml_node xml_root_;
-
-  uint64_t hits_this_spill_, total_hits_;
 };
 
 }

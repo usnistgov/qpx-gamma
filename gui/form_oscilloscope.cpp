@@ -141,15 +141,15 @@ void FormOscilloscope::replot() {
     for (int i=0; i < traces_.size(); i++) {
       Qpx::Hit trace = traces_.at(i);
 
-      if (!trace.trace.size())
+      if (!trace.trace().size())
         continue;
 
       QVector<double> xx;
       QVector<double> yy;
-      for (int j=0; j < trace.trace.size(); ++j)
+      for (int j=0; j < trace.trace().size(); ++j)
       {
         xx.push_back(trace.timestamp().to_nanosec(j) * 0.001);
-        yy.push_back(trace.trace.at(j));
+        yy.push_back(trace.trace().at(j));
       }
 
       if ((i < my_channels.size()) && (my_channels[i].visible)) {

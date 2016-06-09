@@ -79,12 +79,22 @@ Pixie4::~Pixie4() {
 
 }
 
-HitModel Pixie4::model_hit() {
+HitModel Pixie4::model_hit() const {
   HitModel h;
   h.timebase = TimeStamp(1000, 75);
   h.add_value("energy", 16);
-  h.add_value("XIA_PSA", 16);
-  h.add_value("user_PSA", 16);
+
+  if (run_type_ < 259)
+  {
+    h.add_value("XIA_PSA", 16);
+    h.add_value("user_PSA", 16);
+  }
+
+  if (run_type_ == 256)
+    h.tracelength = 1024;
+  else
+    h.tracelength = 0;
+
   return h;
 }
 
@@ -597,8 +607,11 @@ std::list<Hit> Pixie4::oscilloscope() {
                                                             oscil_data + ((i+1)*max_buf_len));
         if ((i < channel_indices_[m].size()) && (channel_indices_[m][i] >= 0))
         {
-          Hit tr(channel_indices_[m][i], TimeStamp(get_chan("XDT", Channel(i), Module(m)) * 1000, 1));
-          tr.trace = trace;
+          HitModel hm;
+          hm.timebase = TimeStamp(get_chan("XDT", Channel(i), Module(m)) * 1000, 1);
+          hm.tracelength = max_buf_len * 2;
+          Hit tr(channel_indices_[m][i], hm);
+          tr.set_trace(trace);
           result.push_back(tr);
         }
       }
@@ -1406,7 +1419,7 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
 
   uint64_t all_events = 0, cycles = 0;
   CustomTimer parse_timer;
-  HitModel model = model_hit();
+  HitModel model = callback->model_hit();
 
   while ((spill = in_queue->dequeue()) != NULL ) {
     parse_timer.resume();
@@ -1437,8 +1450,6 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
 
           std::bitset<16> pattern (buff16[idx++]);
 
-//          Hit one_hit = model_hit();
-
           uint16_t evt_time_hi = buff16[idx++];
           uint16_t evt_time_lo = buff16[idx++];
 
@@ -1446,67 +1457,6 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
 
           for (int i=0; i < NUMBER_OF_CHANNELS; i++) {
             if (pattern[i]) {
-              uint64_t hi = buf_timehi;
-              uint64_t mi = evt_time_hi;
-              uint64_t lo = evt_time_lo;
-              uint16_t chan_trig_time = lo;
-              uint16_t chan_time_hi   = hi;
-
-              uint16_t energy = 0;
-              uint16_t XIA_PSA = 0;
-              uint16_t user_PSA = 0;
-              std::vector<uint16_t> trace;
-
-              if (task_b == 0x0000) {
-                uint16_t trace_len     = buff16[idx++] - 9;
-                chan_trig_time         = buff16[idx++];
-                if (pattern[i+8])
-                  energy = buff16[idx++];
-                else
-                  idx++;
-                XIA_PSA  = buff16[idx++];
-                user_PSA = buff16[idx++];
-                idx += 3;
-                hi                     = buff16[idx++]; //not always!
-                trace = std::vector<uint16_t>
-                    (buff16 + idx, buff16 + idx + trace_len);
-                idx += trace_len;
-              } else if (task_b == 0x0001) {
-                idx++;
-                chan_trig_time         = buff16[idx++];
-                if (pattern[i+8])
-                  energy = buff16[idx++];
-                else
-                  idx++;
-                XIA_PSA  = buff16[idx++];
-                user_PSA = buff16[idx++];
-                idx += 3;
-                hi                     = buff16[idx++];
-              } else if (task_b == 0x0002) {
-                chan_trig_time         = buff16[idx++];
-                if (pattern[i+8])
-                  energy = buff16[idx++];
-                else
-                  idx++;
-                XIA_PSA  = buff16[idx++];
-                user_PSA = buff16[idx++];
-              } else if (task_b == 0x0003) {
-                chan_trig_time         = buff16[idx++];
-                if (pattern[i+8])
-                  energy = buff16[idx++];
-                else
-                  idx++;
-              }
-
-              //Corrections for overflow, page 30 in Pixie-4 user manual
-              if (chan_trig_time > evt_time_lo)
-                mi--;
-              if (evt_time_hi < buf_timemi)
-                hi++;
-              if ((task_b == 0x0000) || (task_b == 0x0001))
-                hi = chan_time_hi;
-              lo = chan_trig_time;
-              uint16_t time = (hi << 32) + (mi << 16) + lo;
 
               int16_t sourcechan = -1;
               if ((buf_module < channel_indices.size()) &&
@@ -1518,12 +1468,56 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
                 continue;
 
               Hit one_hit(sourcechan, model);
-              one_hit.set_timestamp_native(time);
-              one_hit.trace = trace;
-              one_hit.values[0].set_val(energy);
-              one_hit.values[1].set_val(XIA_PSA);
-              one_hit.values[2].set_val(user_PSA);
 
+              uint64_t hi = buf_timehi;
+              uint64_t mi = evt_time_hi;
+              uint64_t lo = evt_time_lo;
+              uint16_t chan_trig_time = lo;
+              uint16_t chan_time_hi   = hi;
+
+              if (task_b == 0x0000) {
+                uint16_t trace_len  = buff16[idx++] - 9;
+                chan_trig_time      = buff16[idx++];
+                one_hit.set_value(0, buff16[idx++]); //energy
+                one_hit.set_value(1, buff16[idx++]); //XIA_PSA
+                one_hit.set_value(2, buff16[idx++]); //user_PSA
+                idx += 3;
+                hi                  = buff16[idx++]; //not always?
+                one_hit.set_trace(std::vector<uint16_t>(buff16 + idx, buff16 + idx + trace_len));
+                idx += trace_len;
+              } else if (task_b == 0x0001) {
+                idx++;
+                chan_trig_time      = buff16[idx++];
+                one_hit.set_value(0, buff16[idx++]); //energy
+                one_hit.set_value(1, buff16[idx++]); //XIA_PSA
+                one_hit.set_value(2, buff16[idx++]); //user_PSA
+                idx += 3;
+                hi                  = buff16[idx++];
+              } else if (task_b == 0x0002) {
+                chan_trig_time      = buff16[idx++];
+                one_hit.set_value(0, buff16[idx++]); //energy
+                one_hit.set_value(1, buff16[idx++]); //XIA_PSA
+                one_hit.set_value(2, buff16[idx++]); //user_PSA
+              } else if (task_b == 0x0003) {
+                chan_trig_time      = buff16[idx++];
+                one_hit.set_value(0, buff16[idx++]); //energy
+              } else
+                ERR << "<Pixie4> Parsed event type invalid or does not match run type";
+
+              if (!pattern[i+8])
+                one_hit.set_value(0, 0); //energy invalid or approximate
+
+              //Corrections for overflow, page 30 in Pixie-4 user manual
+              if (chan_trig_time > evt_time_lo)
+                mi--;
+              if (evt_time_hi < buf_timemi)
+                hi++;
+              if ((task_b == 0x0000) || (task_b == 0x0001))
+                hi = chan_time_hi;
+              lo = chan_trig_time;
+              uint16_t time = (hi << 32) + (mi << 16) + lo;
+
+              one_hit.set_timestamp_native(time);
               ordered.insert(one_hit);
             }
           }

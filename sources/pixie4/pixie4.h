@@ -164,7 +164,7 @@ protected:
   void boot_err(int32_t);
   bool control_err(int32_t);
 
-  static HitModel model_hit();
+  HitModel model_hit() const;
 };
 
 }

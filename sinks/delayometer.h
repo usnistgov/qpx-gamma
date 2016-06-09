@@ -31,6 +31,7 @@ class Delayometer : public Spectrum
 {
 public:
   Delayometer();
+  Delayometer* clone() const override { return new Delayometer(*this); }
 
 protected:
   std::string my_type() const override {return "Delayometer";}

@@ -31,6 +31,8 @@ class Spectrum1D : public Spectrum
 {
 public:
   Spectrum1D();
+  Spectrum1D* clone() const override { return new Spectrum1D(*this); }
+
 
 protected:
   std::string my_type() const override {return "1D";}
