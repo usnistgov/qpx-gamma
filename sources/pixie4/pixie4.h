@@ -54,7 +54,7 @@ public:
   bool boot() override;
   bool die() override {status_ = SourceStatus::loaded | SourceStatus::can_boot; return true;}
 
-  std::map<int, std::vector<uint16_t>> oscilloscope() override;
+  std::list<Hit> oscilloscope() override;
 
   bool daq_start(SynchronizedQueue<Spill*>* out_queue) override;
   bool daq_stop() override;

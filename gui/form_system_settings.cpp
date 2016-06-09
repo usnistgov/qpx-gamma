@@ -50,8 +50,8 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread,
           this, SLOT(update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)));
   connect(&runner_thread_, SIGNAL(bootComplete()), this, SLOT(post_boot()));
 
-  connect(&runner_thread_, SIGNAL(oscilReadOut(std::vector<Qpx::Trace>)),
-          ui->formOscilloscope, SLOT(oscil_complete(std::vector<Qpx::Trace>)));
+  connect(&runner_thread_, SIGNAL(oscilReadOut(std::vector<Qpx::Hit>)),
+          ui->formOscilloscope, SLOT(oscil_complete(std::vector<Qpx::Hit>)));
 
   connect(ui->formOscilloscope, SIGNAL(refresh_oscil()), this, SLOT(refresh_oscil()));
 

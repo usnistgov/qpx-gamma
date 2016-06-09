@@ -321,13 +321,13 @@ void ThreadRunner::run()
       action_ = kOscil;
       //emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kOscil) {
-        std::vector<Qpx::Trace> traces = engine_.oscilloscope();
+        std::vector<Qpx::Hit> traces = engine_.oscilloscope();
         engine_.get_all_settings();
         engine_.save_optimization();
         action_ = kNone;
-        emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
         if (!traces.empty())
           emit oscilReadOut(traces);
+        emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else {
       bool booted = ((engine_.status() & Qpx::SourceStatus::booted) != 0);
       if (booted && idle_refresh_.load()) {

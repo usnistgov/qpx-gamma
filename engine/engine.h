@@ -39,14 +39,6 @@
 
 namespace Qpx {
 
-struct Trace {
-  int index;
-  std::vector<uint16_t> data;
-  double timescale;
-  Qpx::Detector detector;
-};
-
-
 class Engine {
   
 public:
@@ -83,9 +75,8 @@ public:
   bool write_settings_bulk();
   bool read_settings_bulk(); 
   void get_all_settings();
-  
 
-  std::vector<Trace> oscilloscope();
+  std::vector<Hit> oscilloscope();
   
   bool daq_start(SynchronizedQueue<Spill*>* out_queue);
   bool daq_stop();

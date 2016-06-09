@@ -65,7 +65,7 @@ public:
   virtual bool read_settings_bulk(Qpx::Setting &set) const {return false;}
   virtual void get_all_settings() {}
 
-  virtual std::map<int, std::vector<uint16_t>> oscilloscope() {return std::map<int, std::vector<uint16_t>>();}
+  virtual std::list<Hit> oscilloscope() {return std::list<Hit>();}
 
   virtual bool daq_init() {return true;}
   virtual bool daq_start(SynchronizedQueue<Spill*>* out_queue) {return false;}

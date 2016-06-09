@@ -47,7 +47,7 @@ protected:
   void closeEvent(QCloseEvent*);
 
 public slots:
-  void oscil_complete(std::vector<Qpx::Trace>);
+  void oscil_complete(std::vector<Qpx::Hit>);
   void toggle_push(bool, Qpx::SourceStatus);
 
 private slots:
@@ -63,7 +63,8 @@ public slots:
   
 private:
   Ui::FormOscilloscope *ui;
-  std::vector<Qpx::Trace> traces_;
+  std::vector<Qpx::Hit> traces_;
+  std::vector<Qpx::Detector> channels_;
 
   void replot();
 };

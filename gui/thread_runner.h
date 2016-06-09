@@ -72,7 +72,7 @@ signals:
     void runComplete();
     void listComplete(Qpx::ListData);
     void settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus);
-    void oscilReadOut(std::vector<Qpx::Trace>);
+    void oscilReadOut(std::vector<Qpx::Hit>);
 
 protected:
     void run();

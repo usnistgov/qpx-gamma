@@ -238,20 +238,17 @@ bool Engine::die() {
   return success;
 }
 
-std::vector<Trace> Engine::oscilloscope() {
-  std::vector<Trace> traces(detectors_.size());
+std::vector<Hit> Engine::oscilloscope() {
+  std::vector<Hit> traces;
+  traces.resize(detectors_.size());
 
   for (auto &q : devices_)
     if ((q.second != nullptr) && (q.second->status() & SourceStatus::can_oscil)) {
       //DBG << "oscil > " << q.second->device_name();
-      std::map<int, std::vector<uint16_t>> trc = q.second->oscilloscope();
-      for (auto &p : trc) {
-        if ((p.first >= 0) && (p.first < detectors_.size())) {
-          traces[p.first].data = p.second;
-          traces[p.first].index = p.first;
-          traces[p.first].detector = detectors_[p.first];
-        }
-      }
+      std::list<Hit> trc = q.second->oscilloscope();
+      for (auto &p : trc)
+        if ((p.source_channel() >= 0) && (p.source_channel() < traces.size()))
+          traces[p.source_channel()] = p;
     }
   return traces;
 }

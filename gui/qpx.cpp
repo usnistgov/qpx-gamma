@@ -52,7 +52,7 @@ qpx::qpx(QWidget *parent) :
   text_buffer_(qpx_stream_, my_emitter_),
   runner_thread_()
 {
-  qRegisterMetaType<std::vector<Qpx::Trace>>("std::vector<Qpx::Trace>");
+  qRegisterMetaType<std::vector<Qpx::Hit>>("std::vector<Qpx::Hit>");
   qRegisterMetaType<std::vector<Qpx::Detector>>("std::vector<Qpx::Detector>");
   qRegisterMetaType<Qpx::ListData>("Qpx::ListData");
   qRegisterMetaType<Qpx::Setting>("Qpx::Setting");

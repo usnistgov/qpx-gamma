@@ -53,6 +53,8 @@ void FormOscilloscope::closeEvent(QCloseEvent *event) {
 
 
 void FormOscilloscope::updateMenu(std::vector<Qpx::Detector> dets) {
+  channels_ = dets;
+
   QVector<SelectorItem> my_channels = ui->selectorChannels->items();
 
   bool changed = false;
@@ -96,7 +98,7 @@ void FormOscilloscope::channelDetails(SelectorItem item) {
   int i = item.data.toInt();
   QString text;
   if ((i > -1) && (i < traces_.size())) {
-    Qpx::Detector det = traces_[i].detector;
+    Qpx::Detector det = channels_.at(i);
     text += QString::fromStdString(det.name_);
     text += " (" + QString::fromStdString(det.type_) + ")";
   }
@@ -113,18 +115,13 @@ void FormOscilloscope::on_pushOscilRefresh_clicked()
   emit refresh_oscil();
 }
 
-void FormOscilloscope::oscil_complete(std::vector<Qpx::Trace> traces) {
+void FormOscilloscope::oscil_complete(std::vector<Qpx::Hit> traces) {
   if (!this->isVisible())
     return;
 
   traces_ = traces;
 
-  std::vector<Qpx::Detector> dets;
-  for (auto &q : traces) {
-    dets.push_back(q.detector);
-  }
-
-  updateMenu(dets);
+//  updateMenu(dets);
 
   replot();
 }
@@ -134,7 +131,6 @@ void FormOscilloscope::replot() {
   ui->widgetPlot->reset_scales();
 
   QString unit = "n/a";
-  double xdt = 0.5;
 
   if (!traces_.empty()) {
 
@@ -143,30 +139,17 @@ void FormOscilloscope::replot() {
     std::map<double, double> minima, maxima;
 
     for (int i=0; i < traces_.size(); i++) {
-      uint32_t trace_length = traces_[i].data.size();
+      Qpx::Hit trace = traces_.at(i);
 
-      if (!trace_length)
+      if (!trace.trace.size())
         continue;
 
-      double xinterval = traces_[i].detector.settings_.get_setting(Qpx::Setting("XDT"), Qpx::Match::name).value_dbl;
-
-      xdt = xinterval;
-
-//      DBG << "trace " << i << " length " << trace_length << " xdt " << xdt;
-
       QVector<double> xx;
-      for (int i=0; i < trace_length; ++i)
-        xx.push_back(i*xinterval);
-
-      Qpx::Calibration calib = traces_[i].detector.highest_res_calib();
-      unit = QString::fromStdString(calib.units_);
-
       QVector<double> yy;
-      for (auto it : traces_[i].data) {
-        if (calib.valid())
-          yy.push_back(calib.transform(it, 16));
-        else
-          yy.push_back(it);
+      for (int j=0; j < trace.trace.size(); ++j)
+      {
+        xx.push_back(trace.timestamp().to_nanosec(j) * 0.001);
+        yy.push_back(trace.trace.at(j));
       }
 
       if ((i < my_channels.size()) && (my_channels[i].visible)) {

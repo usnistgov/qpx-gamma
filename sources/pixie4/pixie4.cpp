@@ -585,8 +585,8 @@ bool Pixie4::boot() {
   }
 }
 
-std::map<int, std::vector<uint16_t>> Pixie4::oscilloscope() {
-  std::map<int, std::vector<uint16_t>> result;
+std::list<Hit> Pixie4::oscilloscope() {
+  std::list<Hit> result;
 
   uint32_t* oscil_data;
 
@@ -596,7 +596,11 @@ std::map<int, std::vector<uint16_t>> Pixie4::oscilloscope() {
         std::vector<uint16_t> trace = std::vector<uint16_t>(oscil_data + (i*max_buf_len),
                                                             oscil_data + ((i+1)*max_buf_len));
         if ((i < channel_indices_[m].size()) && (channel_indices_[m][i] >= 0))
-          result[channel_indices_[m][i]] = trace;
+        {
+          Hit tr(channel_indices_[m][i], TimeStamp(get_chan("XDT", Channel(i), Module(m)) * 1000, 1));
+          tr.trace = trace;
+          result.push_back(tr);
+        }
       }
     }
 
@@ -1090,16 +1094,18 @@ bool Pixie4::read_chan(const char* setting, uint8_t mod, uint8_t chan) {
 uint32_t* Pixie4::control_collect_ADC(uint8_t module) {
   TRC << "<Pixie4> get ADC (oscilloscope) traces";
   ///why is NUMBER_OF_CHANNELS used? Same for multi-module?
-  uint32_t* adc_data = new uint32_t[NUMBER_OF_CHANNELS * max_buf_len];
   if (status_ & SourceStatus::can_oscil) {
+    uint32_t* adc_data = new uint32_t[NUMBER_OF_CHANNELS * max_buf_len];
     int32_t retval = Pixie_Acquire_Data(0x0084, (U32*)adc_data, NULL, module);
     if (retval < 0) {
       delete[] adc_data;
       control_err(retval);
       return nullptr;
     }
+    else
+      return adc_data;
   }
-  return adc_data;
+  return nullptr;
 }
 
 bool Pixie4::control_set_DAC(uint8_t module) {
@@ -1400,6 +1406,7 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
 
   uint64_t all_events = 0, cycles = 0;
   CustomTimer parse_timer;
+  HitModel model = model_hit();
 
   while ((spill = in_queue->dequeue()) != NULL ) {
     parse_timer.resume();
@@ -1510,14 +1517,12 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
               if (sourcechan < 0)
                 continue;
 
-              Hit one_hit(sourcechan, model_hit());
+              Hit one_hit(sourcechan, model);
               one_hit.set_timestamp_native(time);
-//              one_hit.energy = DigitizedVal(energy, 16);
               one_hit.trace = trace;
               one_hit.values[0].set_val(energy);
               one_hit.values[1].set_val(XIA_PSA);
               one_hit.values[2].set_val(user_PSA);
-              //set xia psa and user psa
 
               ordered.insert(one_hit);
             }
