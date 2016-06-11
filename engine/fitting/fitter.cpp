@@ -434,6 +434,15 @@ void Fitter::apply_settings(FitSettings settings) {
     finder_.find_peaks();
 }
 
+bool Fitter::override_energy(double peakID, double energy)
+{
+  ROI *parent = parent_of(peakID);
+  if (!parent)
+    return false;
+
+  return parent->override_energy(peakID, energy);
+}
+
 //void Fitter::apply_energy_calibration(Calibration cal) {
 //  settings_.cali_nrg_ = cal;
 //  apply_settings(settings_);

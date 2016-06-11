@@ -67,7 +67,6 @@ public:
 
   void setFit(Qpx::Fitter *fit);
   void update_spectrum(QString title = QString());
-  void updateData();
 
   void reset_scales();
   bool busy() { return busy_; }
@@ -86,6 +85,7 @@ public:
 
 public slots:
   void set_selected_peaks(std::set<double> selected_peaks);
+  void updateData();
 
 signals:
 

@@ -56,7 +56,7 @@ public slots:
 
 signals:
   void selection_changed(std::set<double> selected_peaks);
-  void change_peaks(std::vector<Qpx::Peak>);
+  void change_peaks();
   void detectorsChanged();
   void update_detector();
   void new_fit();

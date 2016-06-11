@@ -233,6 +233,7 @@ void FormMcaDaq::toggle_push(bool enable, SourceStatus status) {
 
   ui->toolOpen->setEnabled(enable && !my_run_);
   ui->toolSave->setEnabled(enable && nonempty && !my_run_);
+  ui->pushDetails->setEnabled(enable && nonempty && !my_run_);
 }
 
 void FormMcaDaq::on_pushTimeNow_clicked()

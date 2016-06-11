@@ -63,11 +63,15 @@ protected:
 
 private:
   Ui::FormRawView     *ui;
+  QString data_directory_;    //data directory
 
-//  Qpx::ListData     list_data_;
+
   std::vector<Qpx::Spill> spills_;
   std::vector<size_t>     hit_counts_;
   std::vector<uint64_t>   bin_offsets_;
+  std::ifstream  file_bin_;
+  std::streampos bin_begin_, bin_end_;
+
 
   std::vector<Qpx::Hit>      hits_;
   std::vector<Qpx::Detector> dets_;
@@ -78,11 +82,6 @@ private:
   TableDetectors det_table_model_;
   TreeSettings               attr_model_;
   QpxSpecialDelegate         attr_delegate_;
-
-  QString data_directory_;    //data directory
-
-  std::ifstream  file_bin_;
-  std::streampos bin_begin_, bin_end_;
 
   void displayHit(int idx);
   void displayStats(int idx);

@@ -1469,7 +1469,8 @@ void FormFitter::plotRegion(double region_id, const Qpx::ROI &region, QCPGraph *
     else
       crs->setGraph(data_graph);
     crs->setInterpolating(true);
-    crs->setGraphKey(p.second.energy().value());
+    double energy = fit_data_->finder().settings_.cali_nrg_.transform(p.first, fit_data_->finder().settings_.bits_);
+    crs->setGraphKey(energy);
     ui->plot->addItem(crs);
     crs->updatePosition();
 

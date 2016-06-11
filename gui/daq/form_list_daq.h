@@ -54,11 +54,11 @@ private slots:
   void spillSelectionChanged(int);
   void hit_selection_changed(QItemSelection,QItemSelection);
   void stats_selection_changed(QItemSelection,QItemSelection);
+  void toggle_push(bool online, Qpx::SourceStatus);
 
   void on_pushListStart_clicked();
   void on_pushListStop_clicked();
   void list_completed(Qpx::ListData);
-  void toggle_push(bool online, Qpx::SourceStatus);
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -66,24 +66,23 @@ protected:
 private:
   Ui::FormListDaq     *ui;
   ThreadRunner        &runner_thread_;
-
+  bool my_run_;
   boost::atomic<bool> interruptor_;
 
-  Qpx::ListData     list_data_;
+
+  Qpx::ListData     list_data_;  
+
 
   std::vector<Qpx::Hit>      hits_;
   std::vector<Qpx::Detector> dets_;
   std::map<int16_t, Qpx::HitModel> hitmodels_;
-
   std::map<int16_t, Qpx::StatsUpdate> stats_;
-
   XMLableDB<Qpx::Detector> spill_detectors_;
-  TableDetectors det_table_model_;
 
+  TableDetectors det_table_model_;
   TreeSettings               attr_model_;
   QpxSpecialDelegate         attr_delegate_;
 
-  bool my_run_;
 
   void displayHit(int idx);
   void displayStats(int idx);

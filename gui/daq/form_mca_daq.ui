@@ -43,6 +43,12 @@
        <property name="spacing">
         <number>3</number>
        </property>
+       <property name="leftMargin">
+        <number>3</number>
+       </property>
+       <property name="rightMargin">
+        <number>3</number>
+       </property>
        <item>
         <widget class="QToolButton" name="toolOpen">
          <property name="sizePolicy">
@@ -143,6 +149,50 @@
          </property>
          <property name="arrowType">
           <enum>Qt::NoArrow</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushDetails">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>35</width>
+           <height>35</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>32</width>
+           <height>35</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>View acquisition settings</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../resources/qpxres.qrc">
+           <normaloff>:/icons/oxy/32/help_about.png</normaloff>:/icons/oxy/32/help_about.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>22</width>
+           <height>22</height>
+          </size>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -397,50 +447,6 @@
           </size>
          </property>
         </spacer>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushDetails">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>35</width>
-           <height>35</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>32</width>
-           <height>35</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>View acquisition settings</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="../resources/qpxres.qrc">
-           <normaloff>:/icons/oxy/32/help_about.png</normaloff>:/icons/oxy/32/help_about.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>22</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="flat">
-          <bool>true</bool>
-         </property>
-        </widget>
        </item>
        <item>
         <widget class="QPushButton" name="pushForceRefresh">

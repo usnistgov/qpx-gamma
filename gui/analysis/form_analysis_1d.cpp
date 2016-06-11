@@ -80,7 +80,9 @@ FormAnalysis1D::FormAnalysis1D(XMLableDB<Detector>& newDetDB, QWidget *parent) :
   connect(ui->plotSpectrum, SIGNAL(data_changed()), form_fit_results_, SLOT(update_data()));
   connect(ui->plotSpectrum, SIGNAL(fitting_done()), this, SLOT(update_fit()));
 
-  connect(form_energy_calibration_, SIGNAL(change_peaks(std::vector<Qpx::Peak>)), ui->plotSpectrum, SLOT(replace_peaks(std::vector<Qpx::Peak>)));
+  connect(form_energy_calibration_, SIGNAL(change_peaks()), form_fwhm_calibration_, SLOT(update_data()));
+  connect(form_energy_calibration_, SIGNAL(change_peaks()), form_fit_results_, SLOT(update_data()));
+  connect(form_energy_calibration_, SIGNAL(change_peaks()), ui->plotSpectrum, SLOT(updateData()));
 
   connect(form_energy_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));
   connect(form_fwhm_calibration_, SIGNAL(new_fit()), this, SLOT(update_fits()));

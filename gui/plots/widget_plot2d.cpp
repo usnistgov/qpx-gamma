@@ -41,7 +41,7 @@ WidgetPlot2D::WidgetPlot2D(QWidget *parent) :
   current_scale_type_ = "Logarithmic";
   show_gradient_scale_ = false;
   bits_ = 0;
-  antialiased_ = true;
+  antialiased_ = false;
   show_labels_ = true;
 
   //color theme setup

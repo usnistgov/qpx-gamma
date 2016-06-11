@@ -305,9 +305,6 @@ void qpx::eff_cal(FormEfficiencyCalibration *formEf) {
 
 void qpx::extract_project(Qpx::ProjectPtr proj)
 {
-  if (!proj)
-    return;
-
   FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, detectors_, current_dets_, proj, this);
   connect(newSpectraForm, SIGNAL(requestAnalysis(FormAnalysis1D*)), this, SLOT(analyze_1d(FormAnalysis1D*)));
   connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
@@ -318,7 +315,7 @@ void qpx::extract_project(Qpx::ProjectPtr proj)
   connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::SourceStatus)));
 
-  addClosableTab(newSpectraForm, "Close project");
+  addClosableTab(newSpectraForm, "Close");
   ui->qpxTabs->setCurrentWidget(newSpectraForm);
   reorder_tabs();
 
@@ -328,21 +325,7 @@ void qpx::extract_project(Qpx::ProjectPtr proj)
 
 void qpx::openNewProject()
 {
-  FormMcaDaq *newSpectraForm = new FormMcaDaq(runner_thread_, detectors_, current_dets_, nullptr, this);
-  connect(newSpectraForm, SIGNAL(requestAnalysis(FormAnalysis1D*)), this, SLOT(analyze_1d(FormAnalysis1D*)));
-  connect(newSpectraForm, SIGNAL(requestAnalysis2D(FormAnalysis2D*)), this, SLOT(analyze_2d(FormAnalysis2D*)));
-  connect(newSpectraForm, SIGNAL(requestSymmetriza2D(FormSymmetrize2D*)), this, SLOT(symmetrize_2d(FormSymmetrize2D*)));
-  connect(newSpectraForm, SIGNAL(requestEfficiencyCal(FormEfficiencyCalibration*)), this, SLOT(eff_cal(FormEfficiencyCalibration*)));
-  connect(newSpectraForm, SIGNAL(requestClose(QWidget*)), this, SLOT(closeTab(QWidget*)));
-
-  connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::SourceStatus)));
-
-  addClosableTab(newSpectraForm, "Close project");
-  ui->qpxTabs->setCurrentWidget(newSpectraForm);
-  reorder_tabs();
-
-  newSpectraForm->toggle_push(true, px_status_);
+  extract_project(nullptr);
 }
 
 void qpx::addClosableTab(QWidget* widget, QString tooltip) {

@@ -367,19 +367,19 @@ void FormEnergyCalibration::on_pushEnergiesToPeaks_clicked()
   std::sort(gammas.begin(), gammas.end());
 
 
-  std::vector<Qpx::Peak> to_change;
+  std::vector<double> peakIDs;
   double last_sel = -1;
   for (auto &q : fit_data_.peaks())
     if (selected_peaks_.count(q.first)) {
-      to_change.push_back(q.second);
+      peakIDs.push_back(q.first);
       last_sel = q.first;
     }
 
-  if (gammas.size() != to_change.size())
+  if (gammas.size() != peakIDs.size())
     return;
 
   for (int i=0; i<gammas.size(); ++i)
-    to_change[i].override_energy(gammas[i]);
+    fit_data_.override_energy(peakIDs.at(i), gammas.at(i));
 
   selected_peaks_.clear();
   for (auto &q : fit_data_.peaks())
@@ -390,7 +390,8 @@ void FormEnergyCalibration::on_pushEnergiesToPeaks_clicked()
 
   ui->isotopes->select_next_energy();
 
-  emit change_peaks(to_change);
+  update_data();
+  emit change_peaks();
   emit selection_changed(selected_peaks_);
 }
 

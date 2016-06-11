@@ -316,6 +316,7 @@ const std::map<double, Peak> &ROI::peaks() const
   return peaks_;
 }
 
+
 bool ROI::adjust_sum4(double &peakID, double left, double right)
 {
   if (!contains(peakID))
@@ -354,6 +355,19 @@ bool ROI::replace_hypermet(double &peakID, Hypermet hyp)
   render();
   save_current_fit("Hypermet adjusted on " + pk.energy().to_string());
   return true;
+}
+
+bool ROI::override_energy(double peakID, double energy)
+{
+  if (!contains(peakID))
+    return false;
+
+   peaks_[peakID].override_energy(energy);
+
+   render();
+   save_current_fit("Peak energy override " + peaks_.at(peakID).center().to_string()
+                    + "->" + peaks_.at(peakID).energy().to_string());
+   return true;
 }
 
 

@@ -96,6 +96,7 @@ struct ROI {
   bool rollback(const Finder &parent_finder, size_t i);
   bool adjust_sum4(double &peakID, double left, double right);
   bool replace_hypermet(double &peakID, Hypermet hyp);
+  bool override_energy(double peakID, double energy);
 
   //manupulation, may invoke optimizer
   bool auto_fit(boost::atomic<bool>& interruptor);
