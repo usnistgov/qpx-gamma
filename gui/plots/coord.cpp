@@ -23,7 +23,7 @@ void Coord::set_energy(double nrg, Qpx::Calibration cali) {
   bin_ = nan("");
   bits_ = 0;
   energy_ = nrg;
-  if (!isnan(nrg)) {
+  if (!std::isnan(nrg)) {
     bits_ = cali.bits_;
     bin_ = cali.inverse_transform(nrg);
   }
@@ -33,7 +33,7 @@ void Coord::set_bin(double bin, uint16_t bits, Qpx::Calibration cali) {
   bin_ = bin;
   bits_ = bits;
   energy_ = nan("");
-  if (!isnan(bin)/* && cali.valid()*/)
+  if (!std::isnan(bin)/* && cali.valid()*/)
     energy_ = cali.transform(bin_, bits_);
 //  DBG << "made pos bin" << bin_ << " bits" << bits_ << " nrg" << energy_;
 }
