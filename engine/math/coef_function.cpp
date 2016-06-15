@@ -31,7 +31,9 @@
 #include "custom_logger.h"
 #include "qpx_util.h"
 
+#ifdef FITTER_CERES_ENABLED
 #include "glog/logging.h"
+#endif
 
 CoefFunction::CoefFunction() :
   xoffset_("xoffset", 0),
