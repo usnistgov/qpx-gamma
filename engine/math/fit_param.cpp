@@ -27,47 +27,6 @@
 #include <numeric>
 #include "qpx_util.h"
 
-std::string FitParam::fityk_name(int function_num) const {
-  std::string ret  = "$" + name_ + "_";
-  if (function_num > -1)
-    ret += boost::lexical_cast<std::string>(function_num);
-  return ret;
-}
-
-std::string FitParam::def_bounds() const {
-  std::string ret = "~";
-  ret += boost::lexical_cast<std::string>(value.value()) +
-         " [" + boost::lexical_cast<std::string>(lbound) +
-          ":" + boost::lexical_cast<std::string>(ubound) + "]";
-  return ret;
-}
-
-std::string FitParam::def_var(int function_num) const {
-  std::string ret  = fityk_name(function_num) + " = " + def_bounds();
-  return ret;
-}
-
-
-double FitParam::get_err(fityk::Fityk* f,
-                          std::string funcname)
-{
-  std::string command = "%" + funcname + "." + name_ + ".error";
-//  DBG << "<FitParam> " << command;
-  return f->calculate_expr(command);
-}
-
-bool FitParam::extract(fityk::Fityk* f, fityk::Func* func)
-{
-  try {
-    value = UncertainDouble::from_double(func->get_param_value(name_),
-                                         get_err(f, func->name));
-//    DBG << "<FitParam> " << name_ << " = " << val << " +/- " << uncert;
-  } catch (...) {
-    return false;
-  }
-  return true;
-}
-
 std::string FitParam::to_string() const {
   std::string ret = name_ + " = " + value.to_string() +
       " [" + boost::lexical_cast<std::string>(lbound) +
@@ -166,6 +125,49 @@ void FitParam::from_xml(const pugi::xml_node &node) {
   ubound = node.attribute("ubound").as_double(std::numeric_limits<double>::max());
   if (node.child(value.xml_element_name().c_str()))
     value.from_xml(node.child(value.xml_element_name().c_str()));
+}
+
+//Fityk implementation
+
+std::string FitParam::fityk_name(int function_num) const {
+  std::string ret  = "$" + name_ + "_";
+  if (function_num > -1)
+    ret += boost::lexical_cast<std::string>(function_num);
+  return ret;
+}
+
+std::string FitParam::def_bounds() const {
+  std::string ret = "~";
+  ret += boost::lexical_cast<std::string>(value.value()) +
+         " [" + boost::lexical_cast<std::string>(lbound) +
+          ":" + boost::lexical_cast<std::string>(ubound) + "]";
+  return ret;
+}
+
+std::string FitParam::def_var(int function_num) const {
+  std::string ret  = fityk_name(function_num) + " = " + def_bounds();
+  return ret;
+}
+
+
+double FitParam::get_err(fityk::Fityk* f,
+                          std::string funcname)
+{
+  std::string command = "%" + funcname + "." + name_ + ".error";
+//  DBG << "<FitParam> " << command;
+  return f->calculate_expr(command);
+}
+
+bool FitParam::extract(fityk::Fityk* f, fityk::Func* func)
+{
+  try {
+    value = UncertainDouble::from_double(func->get_param_value(name_),
+                                         get_err(f, func->name));
+//    DBG << "<FitParam> " << name_ << " = " << val << " +/- " << uncert;
+  } catch (...) {
+    return false;
+  }
+  return true;
 }
 
 

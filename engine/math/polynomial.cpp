@@ -28,7 +28,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include "fityk.h"
-#include "custom_logger.h"
+//#include "custom_logger.h"
 #include "qpx_util.h"
 
 
@@ -130,30 +130,6 @@ std::string PolyBounded::to_markup(int precision, bool with_rsq) {
 }
 
 
-std::string PolyBounded::fityk_definition() {
-  std::string declaration = "define " + type() + "(";
-  std::string definition  = " = ";
-  int i = 0;
-  for (auto &c : coeffs_) {
-    if (i > 0) {
-      declaration += ", ";
-      definition += " + ";
-    }
-    declaration += c.second.name();
-    definition  += c.second.name();
-    if (c.first > 0)
-      definition += "*xx";
-    if (c.first > 1)
-      definition += "^" + std::to_string(c.first);
-    i++;
-  }
-  declaration += ")";
-  definition  += " where xx = (x - " + std::to_string(xoffset_.value.value()) + ")";
-
-  return declaration + definition;
-}
-
-
 double PolyBounded::eval(double x) {
   double x_adjusted = x - xoffset_.value.value();
   double result = 0.0;
@@ -214,6 +190,84 @@ void PolyBounded::from_xml(const pugi::xml_node &node) {
   }
 }
 
+
+//Fityk
+std::string PolyBounded::fityk_definition() {
+  std::string declaration = "define " + type() + "(";
+  std::string definition  = " = ";
+  int i = 0;
+  for (auto &c : coeffs_) {
+    if (i > 0) {
+      declaration += ", ";
+      definition += " + ";
+    }
+    declaration += c.second.name();
+    definition  += c.second.name();
+    if (c.first > 0)
+      definition += "*xx";
+    if (c.first > 1)
+      definition += "^" + std::to_string(c.first);
+    i++;
+  }
+  declaration += ")";
+  definition  += " where xx = (x - " + std::to_string(xoffset_.value.value()) + ")";
+
+  return declaration + definition;
+}
+
+#ifdef FITTER_CERES_ENABLED
+
+//Ceres
+
+
+struct PolyResidual {
+  PolyResidual(double x, double y, std::map<int, double> p)
+      : x_(x), y_(y), p_(p) {}
+
+  template <typename T> bool operator()(const T* const c,
+                                        T* residual) const {
+    T val(0);
+    int i=0;
+    for (auto &c : cc) {
+      val +=
+      residual[0] = T(y_) - c[0] * pow(T(x_), T(p_));
+    }
+    return true;
+  }
+
+ private:
+  const double x_;
+  const double y_;
+  const std::map<int, double> p_;
+};
+
+
+void PolyBounded::add_residual_blocks(ceres::Problem &problem,
+                                      const std::vector<double> &x,
+                                      const std::vector<double> &y,
+                                      std::map<int, double> &cc)
+{
+  if (x.size() != y.size())
+    return;
+
+  for (int i=0; i < x.size(); ++i) {
+    double xx = x.at(i) - xoffset_.value.value();
+
+    problem.AddResidualBlock(
+        new ceres::AutoDiffCostFunction<PolyResidual, 1, 1>(
+            new PolyResidual(xx, y.at(i), cc)),
+        NULL,
+        &c.second);
+//    for (auto &c : cc) {
+//      problem.AddResidualBlock(
+//          new ceres::AutoDiffCostFunction<PolyResidual, 1, 1>(
+//              new PolyResidual(xx, y.at(i), c.first)),
+//          NULL,
+//          &c.second);
+//    }
+  }
+}
+#endif
 
 
 

@@ -238,7 +238,7 @@ void FormMcaDaq::toggle_push(bool enable, SourceStatus status) {
 
 void FormMcaDaq::on_pushTimeNow_clicked()
 {
-  INFO << "Time now!";
+  LINFO << "Time now!";
 }
 
 void FormMcaDaq::clearGraphs() //rename this
@@ -312,7 +312,7 @@ void FormMcaDaq::projectSaveAs()
   QString fileName = CustomSaveFileDialog(this, "Save project",
                                           data_directory_, "qpx project file (*.qpx)");
   if (validateFile(this, fileName, true)) {
-    INFO << "Writing project to " << fileName.toStdString();
+    LINFO << "Writing project to " << fileName.toStdString();
     this->setCursor(Qt::WaitCursor);
     project_->save_as(fileName.toStdString());
     update_plots();
@@ -404,7 +404,7 @@ void FormMcaDaq::projectOpen()
   }
 
   //toggle_push(false, false);
-  INFO << "Reading spectra from file " << fileName.toStdString();
+  LINFO << "Reading spectra from file " << fileName.toStdString();
   this->setCursor(Qt::WaitCursor);
   clearGraphs();
 
@@ -441,7 +441,7 @@ void FormMcaDaq::projectImport()
   int valid_imports = 0;
 
   for (int i=0; i<fileNames.size(); i++) {
-    INFO << "Importing from " << fileNames.at(i).toStdString();
+    LINFO << "Importing from " << fileNames.at(i).toStdString();
 
     std::string ext(boost::filesystem::extension(fileNames.at(i).toStdString()));
     if (ext.size())
@@ -469,7 +469,7 @@ void FormMcaDaq::projectImport()
         valid_imports++;
         project_->add_sink(newSpectrum);
       } else {
-        INFO << "Spectrum construction did not succeed.";
+        LINFO << "Spectrum construction did not succeed.";
       }
     }
   }
@@ -495,13 +495,13 @@ void FormMcaDaq::newProject() {
 void FormMcaDaq::on_pushMcaStop_clicked()
 {
   ui->pushMcaStop->setEnabled(false);
-  //INFO << "MCA acquisition interrupted by user";
+  //LINFO << "MCA acquisition interrupted by user";
   interruptor_.store(true);
 }
 
 void FormMcaDaq::run_completed() {
   if (my_run_) {
-    //INFO << "FormMcaDaq received signal for run completed";
+    //LINFO << "FormMcaDaq received signal for run completed";
     ui->pushMcaStop->setEnabled(false);
     my_run_ = false;
 

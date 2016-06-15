@@ -305,7 +305,16 @@ void FormEnergyCalibration::on_pushFit_clicked()
       p.add_coeff(i, -5, 5, 0);
   }
 
-  p.fit(x,y,sigmas);
+
+  PolyBounded p2 = p;
+
+  p.fit_fityk(x,y,sigmas);
+
+  #ifdef FITTER_CERES_ENABLED
+  p2.fit_ceres(x,y,sigmas);
+  p2 = p;
+  p2.fit_ceres(x,y,sigmas);
+  #endif
 
   if (p.coeffs_.size()) {
     new_calibration_.type_ = "Energy";
@@ -317,7 +326,7 @@ void FormEnergyCalibration::on_pushFit_clicked()
     new_calibration_.model_ = Qpx::CalibrationModel::polynomial;
   }
   else
-    INFO << "<Energy calibration> Qpx::Calibration failed";
+    LINFO << "<Energy calibration> Qpx::Calibration failed";
 
   replot_calib();
   select_in_plot();

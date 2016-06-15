@@ -417,14 +417,14 @@ void FormSystemSettings::on_bootButton_clicked()
   if (ui->bootButton->text() == "Boot system") {
     emit toggleIO(false);
     emit statusText("Booting...");
-//    INFO << "Booting system...";
+//    LINFO << "Booting system...";
 
     runner_thread_.do_boot();
   } else {
     emit toggleIO(false);
     emit statusText("Shutting down...");
 
-//    INFO << "Shutting down";
+//    LINFO << "Shutting down";
     runner_thread_.do_shutdown();
   }
 }

@@ -208,7 +208,7 @@ bool ParserEVT::boot() {
           std::string name = std::string(child.name());
           if (name == "File") {
             std::string filename(child.attribute("path").value());
-            INFO << "<ParserEVT> Queued up file " << filename << " from XML manifest";
+            LINFO << "<ParserEVT> Queued up file " << filename << " from XML manifest";
             files_.push_back(filename);
           } else if (name == "Total") {
             expected_rbuf_items_ = child.attribute("RingBufferItems").as_ullong();
@@ -247,7 +247,7 @@ bool ParserEVT::boot() {
       if (((cfds = open_EVT_file(q)) != nullptr) && (cts = num_of_evts(cfds))) {
         delete cfds;
         files_.push_back(q);
-        INFO << "<ParserEVT> Queued up file " << q << " with " << cts << " ring buffer items";
+        LINFO << "<ParserEVT> Queued up file " << q << " with " << cts << " ring buffer items";
         expected_rbuf_items_ += cts;
       }
     }
@@ -267,7 +267,7 @@ bool ParserEVT::boot() {
   }
 
 
-  INFO << "<ParserEVT> successfully queued up EVT files for sorting with "
+  LINFO << "<ParserEVT> successfully queued up EVT files for sorting with "
           << expected_rbuf_items_ << " total ring buffer items";
 
   status_ = SourceStatus::loaded | SourceStatus::booted | SourceStatus::can_run;

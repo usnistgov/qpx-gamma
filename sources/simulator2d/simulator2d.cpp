@@ -235,7 +235,7 @@ bool Simulator2D::boot() {
   status_ = SourceStatus::loaded | SourceStatus::can_boot;
 
   Qpx::Project temp_set;
-  INFO << "<Simulator2D> Reading data from " << source_file_;
+  LINFO << "<Simulator2D> Reading data from " << source_file_;
   temp_set.read_xml(source_file_, true);
 
   SinkPtr spectrum = temp_set.get_sink(source_spectrum_);
@@ -246,7 +246,7 @@ bool Simulator2D::boot() {
   }
 
   Metadata md = spectrum->metadata();
-  INFO << "<Simulator2D> Will use " << md.name << " type:" << md.type() << " bits:" << md.bits;
+  LINFO << "<Simulator2D> Will use " << md.name << " type:" << md.type() << " bits:" << md.bits;
 
 
   int source_res = md.bits;
@@ -265,7 +265,7 @@ bool Simulator2D::boot() {
   shift_by_ = 16 - bits_;
   resolution_ = pow(2, bits_);
 
-  INFO << "<Simulator2D> Building matrix for simulation from [" << md.name << "]"
+  LINFO << "<Simulator2D> Building matrix for simulation from [" << md.name << "]"
        << " resolution=" << resolution_ << " shift="  << shift_by_
        << " rate=" << OCR << "cps";
   std::vector<double> distribution(resolution_*resolution_, 0.0);   //optimize somehow
@@ -288,7 +288,7 @@ bool Simulator2D::boot() {
           =  static_cast<double>(it.second) / static_cast<double> (md.total_count);
   }
 
-  INFO << "<Simulator2D> Creating discrete distribution for simulation";
+  LINFO << "<Simulator2D> Creating discrete distribution for simulation";
   dist_ = boost::random::discrete_distribution<>(distribution);
 
   if (shift_by_) {

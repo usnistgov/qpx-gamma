@@ -61,11 +61,6 @@ public:
   bool operator < (const FitParam &other) const {return value < other.value;}
 
   std::string name() const {return name_;}
-  std::string fityk_name(int function_num) const;
-
-  std::string def_bounds() const;
-  std::string def_var(int function_num = -1) const;
-  bool extract(fityk::Fityk* f, fityk::Func* func);
 
   std::string to_string() const;
 //  std::string val_uncert(uint16_t precision) const;
@@ -85,8 +80,21 @@ public:
 private:
   std::string name_;
 
+//Fityk implementation
+
+public:
+  std::string fityk_name(int function_num) const;
+  std::string def_bounds() const;
+  std::string def_var(int function_num = -1) const;
+  bool extract(fityk::Fityk* f, fityk::Func* func);
+
+private:
   double get_err(fityk::Fityk* f,
                  std::string funcname);
+
+
+// Ceres implementation
+
 
 };
 

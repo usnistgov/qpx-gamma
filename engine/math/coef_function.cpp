@@ -31,6 +31,8 @@
 #include "custom_logger.h"
 #include "qpx_util.h"
 
+#include "glog/logging.h"
+
 CoefFunction::CoefFunction() :
   xoffset_("xoffset", 0),
   rsq_(0)
@@ -57,25 +59,6 @@ void CoefFunction::add_coeff(int degree, double lbound, double ubound, double in
   coeffs_[degree] = FitParam("a" + boost::lexical_cast<std::string>(degree),
                              initial, lbound, ubound);
 }
-
-
-bool CoefFunction::extract_params(fityk::Fityk* f, fityk::Func* func) {
-  try {
-    if (func->get_template_name() != this->type())
-      return false;
-
-    for (auto &c : coeffs_) {
-      coeffs_[c.first].extract(f, func);
-    }
-    //    rsq_ = fityk->get_rsquared(0);
-  }
-  catch ( ... ) {
-    DBG << "<" << this->type() << "> could not extract parameters from Fityk";
-    return false;
-  }
-  return true;
-}
-
 
 std::vector<double> CoefFunction::eval_array(const std::vector<double> &x) {
   std::vector<double> y;
@@ -107,6 +90,38 @@ double CoefFunction::eval_inverse(double y, double e) {
   }
 }
 
+std::vector<double> CoefFunction::coeffs() {
+  std::vector<double> ret;
+  int top = 0;
+  for (auto &c : coeffs_)
+    if (c.first > top)
+      top = c.first;
+  ret.resize(top+1, 0);
+  for (auto &c : coeffs_)
+    ret[c.first] = c.second.value.value();
+  return ret;
+}
+
+
+// Fityk implementation
+
+bool CoefFunction::extract_params(fityk::Fityk* f, fityk::Func* func) {
+  try {
+    if (func->get_template_name() != this->type())
+      return false;
+
+    for (auto &c : coeffs_) {
+      coeffs_[c.first].extract(f, func);
+    }
+    //    rsq_ = fityk->get_rsquared(0);
+  }
+  catch ( ... ) {
+    DBG << "<" << this->type() << "> could not extract parameters from Fityk";
+    return false;
+  }
+  return true;
+}
+
 bool CoefFunction::add_self(fityk::Fityk *f, int function_num) const {
   try {
     std::string add = " F += " + this->type() + "(";
@@ -128,7 +143,10 @@ bool CoefFunction::add_self(fityk::Fityk *f, int function_num) const {
   return true;
 }
 
-void CoefFunction::fit(std::vector<double> &x, std::vector<double> &y, std::vector<double> &y_sigma) {
+void CoefFunction::fit_fityk(const std::vector<double> &x,
+                             const std::vector<double> &y,
+                             const std::vector<double> &y_sigma)
+{
   if ((x.size() != y.size()) || (y.size() != y_sigma.size()))
     return;
 
@@ -175,16 +193,42 @@ void CoefFunction::fit(std::vector<double> &x, std::vector<double> &y, std::vect
   }
 
   delete f;
+
+  DBG << "Solved (Fityk) as " << this->to_string();
 }
 
-std::vector<double> CoefFunction::coeffs() {
-  std::vector<double> ret;
-  int top = 0;
+#ifdef FITTER_CERES_ENABLED
+void CoefFunction::fit_ceres(const std::vector<double> &x,
+                             const std::vector<double> &y,
+                             const std::vector<double> &y_sigma)
+{
+  if ((x.size() != y.size()) || (y.size() != y_sigma.size()))
+    return;
+
+  std::map<int, double> coefs_ceres;
   for (auto &c : coeffs_)
-    if (c.first > top)
-      top = c.first;
-  ret.resize(top+1, 0);
-  for (auto &c : coeffs_)
-    ret[c.first] = c.second.value.value();
-  return ret;
+    coefs_ceres[c.first] = c.second.value.value();
+
+//  google::InitGoogleLogging("qpx_coef_function");
+
+  ceres::Problem problem;
+  this->add_residual_blocks(problem, x, y, coefs_ceres);
+
+  ceres::Solver::Options options;
+  options.max_num_iterations = 100;
+  options.linear_solver_type = ceres::DENSE_QR;
+  options.minimizer_progress_to_stdout = true;
+
+
+  ceres::Solver::Summary summary;
+  ceres::Solve(options, &problem, &summary);
+  DBG << summary.BriefReport() << "\n";
+  for (auto &c : coefs_ceres)
+  {
+    DBG << c.second << "*x^" << c.first;
+    coeffs_.at(c.first).value.setValue(c.second);
+  }
+
+  DBG << "Solved (Ceres) as " << this->to_string();
 }
+#endif

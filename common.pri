@@ -88,3 +88,6 @@ win32 {
     error( "Couldn't find the sinks.pri file!" )
 }
 
+contains( DAQ_SOURCES, fitter_ceres ) {
+  DEFINES += "FITTER_CERES_ENABLED"
+}

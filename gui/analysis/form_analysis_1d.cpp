@@ -257,7 +257,7 @@ void FormAnalysis1D::update_detector_calibs()
 
     if (modified != Detector())
     {
-      INFO << "   applying new calibrations for " << modified.name_ << " in detector database";
+      LINFO << "   applying new calibrations for " << modified.name_ << " in detector database";
       modified.energy_calibrations_.replace(new_energy_calibration_);
       modified.fwhm_calibration_ = new_fwhm_calibration_;
       detectors_.replace(modified);
@@ -272,7 +272,7 @@ void FormAnalysis1D::update_detector_calibs()
       Metadata md = q.second->metadata();
       for (auto &p : md.detectors) {
         if (p.shallow_equals(fit_data_.detector_)) {
-          INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " on " << q.second->name();
+          LINFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " on " << q.second->name();
           p.energy_calibrations_.replace(new_energy_calibration_);
           p.fwhm_calibration_ = new_fwhm_calibration_;
         }
@@ -286,7 +286,7 @@ void FormAnalysis1D::update_detector_calibs()
 //      sp = *spills.rbegin();
 //    for (auto &p : sp.detectors) {
 //      if (p.shallow_equals(fit_data_.detector_)) {
-//        INFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " in current project " << spectra_->identity();
+//        LINFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " in current project " << spectra_->identity();
 //        p.energy_calibrations_.replace(new_energy_calibration_);
 //        p.fwhm_calibration_ = new_fwhm_calibration_;
 //      }
@@ -301,7 +301,7 @@ void FormAnalysis1D::save_report()
   QString fileName = CustomSaveFileDialog(this, "Save analysis report",
                                           data_directory_, "Plain text (*.txt)");
   if (validateFile(this, fileName, true)) {
-    INFO << "Writing report to " << fileName.toStdString();
+    LINFO << "Writing report to " << fileName.toStdString();
     fit_data_.save_report(fileName.toStdString());
   }
 }

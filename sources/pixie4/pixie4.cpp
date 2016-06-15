@@ -651,14 +651,14 @@ bool Pixie4::start_run(Module mod) {
   bool success = false;
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      //INFO << "Start run for module " << i;
+      //LINFO << "Start run for module " << i;
       if (start_run(i))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      //INFO << "Start run for module " << module;
+      //LINFO << "Start run for module " << module;
       success = start_run(module);
     }
   }
@@ -669,14 +669,14 @@ bool Pixie4::resume_run(Module mod) {
   bool success = false;
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      //INFO << "Resume run for module " << i;
+      //LINFO << "Resume run for module " << i;
       if (resume_run(i))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      //INFO << "Resume run for module " << module;
+      //LINFO << "Resume run for module " << module;
       success = resume_run(module);
     }
   }
@@ -687,14 +687,14 @@ bool Pixie4::stop_run(Module mod) {
   bool success = false;
   if (mod == Module::all) {
     for (int i=0; i< channel_indices_.size(); ++i) {
-      //INFO << "Stop run for module " << i;
+      //LINFO << "Stop run for module " << i;
       if (stop_run(i))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
     if ((module > -1) && (module < channel_indices_.size())) {
-      //INFO << "Stop run for module " << module;
+      //LINFO << "Stop run for module " << module;
       success = stop_run(module);
     }
   }
@@ -901,7 +901,7 @@ void Pixie4::get_sys_all() {
 void Pixie4::set_mod(const std::string& setting, double val, Module mod) {
   int module = static_cast<int>(mod);
   if (module > -1) {
-    //INFO << "Setting " << setting << " to " << val << " for module " << module;
+    //LINFO << "Setting " << setting << " to " << val << " for module " << module;
     module_parameter_values_[module * N_MODULE_PAR + i_mod(setting.c_str())] = val;
     write_mod(setting.c_str(), module);
   }
@@ -1122,22 +1122,22 @@ uint32_t* Pixie4::control_collect_ADC(uint8_t module) {
 }
 
 bool Pixie4::control_set_DAC(uint8_t module) {
-  //INFO << "Pixie Control: set DAC";
+  //LINFO << "Pixie Control: set DAC";
   return control_err(Pixie_Acquire_Data(0x0000, NULL, NULL, module));
 }
 
 bool Pixie4::control_connect(uint8_t module) {
-  //INFO << "Pixie Control: connect";
+  //LINFO << "Pixie Control: connect";
   return control_err(Pixie_Acquire_Data(0x0001, NULL, NULL, module));
 }
 
 bool Pixie4::control_disconnect(uint8_t module) {
-  //INFO << "Pixie Control: disconnect";
+  //LINFO << "Pixie Control: disconnect";
   return control_err(Pixie_Acquire_Data(0x0002, NULL, NULL, module));
 }
 
 bool Pixie4::control_program_Fippi(uint8_t module) {
-  //INFO << "Pixie Control: program Fippi";
+  //LINFO << "Pixie Control: program Fippi";
   return control_err(Pixie_Acquire_Data(0x0005, NULL, NULL, module));
 }
 
@@ -1537,9 +1537,9 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
   }
 
   if (cycles == 0)
-    INFO << "<Pixie4> Parser thread stopping. Buffer queue closed without events";
+    LINFO << "<Pixie4> Parser thread stopping. Buffer queue closed without events";
   else
-    INFO << "<Pixie4> Parser thread stopping. " << all_events << " events, with avg time/spill: " << parse_timer.us()/cycles << "us";
+    LINFO << "<Pixie4> Parser thread stopping. " << all_events << " events, with avg time/spill: " << parse_timer.us()/cycles << "us";
 }
 
 

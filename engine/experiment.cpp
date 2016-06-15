@@ -144,7 +144,7 @@ bool ExperimentProject::push_next_setting(TrajectoryPtr node)
 
   if (prev && (prev->domain_value.number() >= node->domain_value.number()))
   {
-    INFO << "<Experiment> Value hit hard limit " << node->to_string();
+    LINFO << "<Experiment> Value hit hard limit " << node->to_string();
     prev->domain_value.metadata.maximum = prev->domain_value.number();
     return false;
   }

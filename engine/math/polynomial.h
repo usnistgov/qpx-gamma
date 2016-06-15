@@ -67,7 +67,6 @@ public:
 //  Polynomial to_simple() const;
 
   std::string type() const override {return "PolyBounded";}
-  std::string fityk_definition() override;
   std::string to_string() const override;
   std::string to_UTF8(int precision = -1, bool with_rsq = false) override;
   std::string to_markup(int precision = -1, bool with_rsq = false) override;
@@ -77,6 +76,19 @@ public:
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;
   std::string xml_element_name() const override {return "PolyBounded";}
+
+  //Fityk
+  std::string fityk_definition() override;
+
+#ifdef FITTER_CERES_ENABLED
+
+  //Ceres
+  void add_residual_blocks(ceres::Problem &problem,
+                           const std::vector<double> &x,
+                           const std::vector<double> &y,
+                           std::map<int, double> &cc) override;
+#endif
+
 };
 
 #endif

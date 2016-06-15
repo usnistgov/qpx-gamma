@@ -330,7 +330,7 @@ void FormFwhmCalibration::fit_calibration()
   for (int i=0; i <= ui->spinTerms->value(); ++i)
     p.add_coeff(i, -30, 30, 1);
 
-  p.fit(xx, yy, yy_sigma);
+  p.fit_fityk(xx, yy, yy_sigma);
 
   if (p.coeffs_.size()) {
     new_calibration_.type_ = "FWHM";
@@ -342,7 +342,7 @@ void FormFwhmCalibration::fit_calibration()
     new_calibration_.model_ = Qpx::CalibrationModel::sqrt_poly;
   }
   else
-    INFO << "<WFHM calibration> Qpx::Calibration failed";
+    LINFO << "<WFHM calibration> Qpx::Calibration failed";
 
 }
 

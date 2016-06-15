@@ -349,7 +349,7 @@ void DialogSpectraTemplates::on_pushImport_clicked()
   QString fileName = QFileDialog::getOpenFileName(this, "Load template spectra",
                                                   root_dir_, "Template set (*.tem)");
   if (validateFile(this, fileName, false)) {
-    INFO << "Reading templates from xml file " << fileName.toStdString();
+    LINFO << "Reading templates from xml file " << fileName.toStdString();
     templates_.read_xml(fileName.toStdString());
     selection_model_.reset();
     table_model_.update();
@@ -365,7 +365,7 @@ void DialogSpectraTemplates::on_pushExport_clicked()
   QString fileName = CustomSaveFileDialog(this, "Save template spectra",
                                           root_dir_, "Template set (*.tem)");
   if (validateFile(this, fileName, true)) {
-    INFO << "Writing templates to xml file " << fileName.toStdString();
+    LINFO << "Writing templates to xml file " << fileName.toStdString();
     templates_.write_xml(fileName.toStdString());
   }
 }

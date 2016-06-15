@@ -26,7 +26,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 #include "calibration.h"
-#include "custom_logger.h"
+//#include "custom_logger.h"
 #include "xylib.h"
 
 #include "polynomial.h"

@@ -20,13 +20,16 @@
  *
  ******************************************************************************/
 
-#ifndef COEF_FN_H
-#define COEF_FN_H
+#ifndef COEF_FUNCTION_H
+#define COEF_FUNCTION_H
 
 #include <vector>
 #include <map>
 #include "fit_param.h"
 
+#ifdef FITTER_CERES_ENABLED
+#include "ceres/ceres.h"
+#endif
 
 class CoefFunction {
 public:
@@ -36,21 +39,14 @@ public:
   //TO IMPLEMENT IN CHILDREN
 
   virtual std::string type() const = 0;
-  virtual std::string fityk_definition() = 0;
   virtual std::string to_string() const = 0;
   virtual std::string to_UTF8(int precision = -1, bool with_rsq = false) = 0;
   virtual std::string to_markup(int precision = -1, bool with_rsq = false) = 0;
   virtual double eval(double x)  = 0;
   virtual double derivative(double x) = 0;
 
-
   void add_coeff(int degree, double lbound, double ubound);
   void add_coeff(int degree, double lbound, double ubound, double initial);
-
-  void fit(std::vector<double> &x, std::vector<double> &y, std::vector<double> &y_sigma);
-  bool add_self(fityk::Fityk *f, int function_num = -1) const;
-
-  bool extract_params(fityk::Fityk* f, fityk::Func*);
 
   std::vector<double> coeffs();
 
@@ -60,6 +56,27 @@ public:
   std::map<int, FitParam> coeffs_;
   FitParam xoffset_;
   double rsq_;
+
+// Fityk emplementation
+  virtual std::string fityk_definition() = 0;
+  bool add_self(fityk::Fityk *f, int function_num = -1) const;
+  bool extract_params(fityk::Fityk* f, fityk::Func*);
+  void fit_fityk(const std::vector<double> &x,
+                 const std::vector<double> &y,
+                 const std::vector<double> &y_sigma);
+
+#ifdef FITTER_CERES_ENABLED
+// Ceres implementation
+  void fit_ceres(const std::vector<double> &x,
+                 const std::vector<double> &y,
+                 const std::vector<double> &y_sigma);
+
+  virtual void add_residual_blocks(ceres::Problem &problem,
+                                   const std::vector<double> &x,
+                                   const std::vector<double> &y,
+                                   std::map<int, double> &cc) {}
+#endif
+
 };
 
 #endif

@@ -623,7 +623,7 @@ void WidgetPlot2D::plot_2d_mouse_upon(double x, double y) {
 }
 
 void WidgetPlot2D::plot_2d_mouse_clicked(double x, double y, QMouseEvent *event, bool channels) {
-//  INFO << "<WidgetPlot2D> mouse clicked at " << x << " & " << y << " chans?=" << channels;
+//  LINFO << "<WidgetPlot2D> mouse clicked at " << x << " & " << y << " chans?=" << channels;
 
   bool visible = (event->button() == Qt::LeftButton);
 
@@ -733,16 +733,16 @@ void WidgetPlot2D::exportRequested(QAction* choice) {
   if (validateFile(this, fileName, true)) {
     QFileInfo file(fileName);
     if (file.suffix() == "png") {
-      //INFO << "Exporting plot to png " << fileName.toStdString();
+      //LINFO << "Exporting plot to png " << fileName.toStdString();
       ui->coincPlot->savePng(fileName,0,0,1,100);
     } else if (file.suffix() == "jpg") {
-      //INFO << "Exporting plot to jpg " << fileName.toStdString();
+      //LINFO << "Exporting plot to jpg " << fileName.toStdString();
       ui->coincPlot->saveJpg(fileName,0,0,1,100);
     } else if (file.suffix() == "bmp") {
-      //INFO << "Exporting plot to bmp " << fileName.toStdString();
+      //LINFO << "Exporting plot to bmp " << fileName.toStdString();
       ui->coincPlot->saveBmp(fileName);
     } else if (file.suffix() == "pdf") {
-      //INFO << "Exporting plot to pdf " << fileName.toStdString();
+      //LINFO << "Exporting plot to pdf " << fileName.toStdString();
       ui->coincPlot->savePdf(fileName, true);
     }
   }

@@ -282,7 +282,7 @@ void FormEfficiencyCalibration::update_detector_calibs()
 
     if (modified != Detector())
     {
-      INFO << "   applying new calibrations for " << modified.name_ << " in detector database";
+      LINFO << "   applying new calibrations for " << modified.name_ << " in detector database";
       modified.efficiency_calibration_ = new_calibration_;
       detectors_.replace(modified);
       emit detectorsChanged();
@@ -557,7 +557,7 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
       p.add_coeff(i, -50, 50, 0);
   }
 
-  p.fit(xx,yy,sigmas);
+  p.fit_fityk(xx,yy,sigmas);
 
   if (p.coeffs_.size()) {
     new_calibration_.type_ = "Efficiency";
@@ -569,7 +569,7 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
     DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
   }
   else
-    INFO << "<Efficiency calibration> Calibration failed";
+    LINFO << "<Efficiency calibration> Calibration failed";
 
   replot_calib();
   toggle_push();
@@ -663,7 +663,7 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
       p.add_coeff(i, -50, 50, 0);
   }
 
-  p.fit(xx,yy,sigmas);
+  p.fit_fityk(xx,yy,sigmas);
 
   if (p.coeffs_.size()) {
     new_calibration_.type_ = "Efficiency";
@@ -675,7 +675,7 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
     DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
   }
   else
-    INFO << "<Efficiency calibration> Calibration failed";
+    LINFO << "<Efficiency calibration> Calibration failed";
 
   replot_calib();
   toggle_push();

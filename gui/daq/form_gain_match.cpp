@@ -334,7 +334,7 @@ void FormGainMatch::start_new_pass()
   my_run_ = true;
   emit toggleIO(false);
 
-  INFO << "<FormGainMatch> Starting pass #" << (current_pass_ + 1)
+  LINFO << "<FormGainMatch> Starting pass #" << (current_pass_ + 1)
        << " with " << ui->comboSetting->currentText().toStdString() << " = "
        << current_setting_.value_dbl;
 
@@ -380,7 +380,7 @@ void FormGainMatch::run_completed() {
     emit toggleIO(true);
 
     if (current_pass_ >= 0) {
-      INFO << "<FormGainMatch> Completed pass # " << (current_pass_ + 1);
+      LINFO << "<FormGainMatch> Completed pass # " << (current_pass_ + 1);
       do_post_processing();
     }
   }
@@ -413,7 +413,7 @@ void FormGainMatch::do_post_processing() {
   if (!std::isnan(latest_position) && (peak_ref_ != Qpx::Peak())
       && (std::abs(latest_position - peak_ref_.center().value()) < ui->doubleThreshold->value()))
   {
-    INFO << "<FormGainMatch> Gain matching complete   |"
+    LINFO << "<FormGainMatch> Gain matching complete   |"
          << latest_position << " - " << peak_ref_.center().value()
          << "| < " << ui->doubleThreshold->value();
     update_name();
@@ -428,7 +428,7 @@ void FormGainMatch::do_post_processing() {
   response_function_.add_coeff(1, -50, 50, 1);
   if (gains.size() > 2)
     response_function_.add_coeff(2, -50, 50, 1);
-  response_function_.fit(gains, positions, position_sigmas);
+  response_function_.fit_fityk(gains, positions, position_sigmas);
   predicted = response_function_.eval_inverse(peak_ref_.center().value() /*, ui->doubleThreshold->value() / 4.0*/);
 
   DBG << "<FormGainMatch> Prediction " << predicted;

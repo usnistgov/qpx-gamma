@@ -107,7 +107,7 @@ void Engine::initialize(std::string profile_path, std::string settings_path) {
   save_optimization();
 
   if (!descr.value_text.empty())
-    INFO << "<Engine> Welcome to " << descr.value_text;
+    LINFO << "<Engine> Welcome to " << descr.value_text;
 }
 
 Engine::~Engine() {
@@ -142,12 +142,12 @@ void Engine::push_settings(const Qpx::Setting& newsettings) {
   settings_tree_ = newsettings;
   write_settings_bulk();
 
-//  INFO << "settings pushed branches = " << settings_tree_.branches.size();
+//  LINFO << "settings pushed branches = " << settings_tree_.branches.size();
 }
 
 bool Engine::read_settings_bulk(){
   for (auto &set : settings_tree_.branches.my_data_) {
-    //INFO << "read bulk "  << set.name;
+    //LINFO << "read bulk "  << set.name;
     if (set.id_ == "Detectors") {
 
       //set.metadata.step = 2; //to always save
@@ -203,7 +203,7 @@ void Engine::rebuild_structure(Qpx::Setting &set) {
 }
 
 bool Engine::boot() {
-  INFO << "<Engine> Booting system...";
+  LINFO << "<Engine> Booting system...";
 
   bool success = false;
   for (auto &q : devices_)
@@ -213,11 +213,11 @@ bool Engine::boot() {
     }
 
   if (success) {
-    INFO << "<Engine> Boot successful";
+    LINFO << "<Engine> Boot successful";
     //settings_tree_.value_int = 2;
     get_all_settings();
   } else
-    INFO << "<Engine> Boot failed";
+    LINFO << "<Engine> Boot failed";
 
   return success;
 }
@@ -385,9 +385,9 @@ void Engine::getMca(uint64_t timeout, ProjectPtr spectra, boost::atomic<bool>& i
   }
 
   if (timeout > 0)
-    INFO << "<Engine> Starting acquisition scheduled for " << timeout << " seconds";
+    LINFO << "<Engine> Starting acquisition scheduled for " << timeout << " seconds";
   else
-    INFO << "<Engine> Starting acquisition for indefinite run";
+    LINFO << "<Engine> Starting acquisition for indefinite run";
 
   CustomTimer *anouncement_timer = nullptr;
   double secs_between_anouncements = 5;
@@ -413,10 +413,10 @@ void Engine::getMca(uint64_t timeout, ProjectPtr spectra, boost::atomic<bool>& i
     wait_ms(1000);
     if (anouncement_timer->s() > secs_between_anouncements) {
       if (timeout > 0)
-        INFO << "  RUNNING Elapsed: " << total_timer.done()
+        LINFO << "  RUNNING Elapsed: " << total_timer.done()
                 << "  ETA: " << total_timer.ETA();
       else
-        INFO << "  RUNNING Elapsed: " << total_timer.done();
+        LINFO << "  RUNNING Elapsed: " << total_timer.done();
 
       delete anouncement_timer;
       anouncement_timer = new CustomTimer(true);
@@ -444,7 +444,7 @@ void Engine::getMca(uint64_t timeout, ProjectPtr spectra, boost::atomic<bool>& i
   wait_ms(500);
 
   builder.join();
-  INFO << "<Engine> Acquisition finished";
+  LINFO << "<Engine> Acquisition finished";
 }
 
 ListData Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
@@ -457,9 +457,9 @@ ListData Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
   }
 
   if (timeout > 0)
-    INFO << "<Engine> List mode acquisition scheduled for " << timeout << " seconds";
+    LINFO << "<Engine> List mode acquisition scheduled for " << timeout << " seconds";
   else
-    INFO << "<Engine> List mode acquisition indefinite run";
+    LINFO << "<Engine> List mode acquisition indefinite run";
 
   Spill* one_spill;
   ListData result;
@@ -485,7 +485,7 @@ ListData Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
   while (daq_running()) {
     wait_ms(1000);
     if (anouncement_timer->s() > secs_between_anouncements) {
-      INFO << "  RUNNING Elapsed: " << total_timer.done()
+      LINFO << "  RUNNING Elapsed: " << total_timer.done()
               << "  ETA: " << total_timer.ETA();
       delete anouncement_timer;
       anouncement_timer = new CustomTimer(true);

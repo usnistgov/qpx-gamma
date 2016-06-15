@@ -504,14 +504,14 @@ double Hypermet::eval_peak(double x) const {
   double left_short = 0;
   if (Lskew_amplitude_.enabled) {
     double lexp = exp(pow(0.5*width_.value.value()/Lskew_slope_.value.value(), 2) + xc/Lskew_slope_.value.value());
-    if ((Lskew_slope_.value.value() != 0) && !isinf(lexp))
+    if ((Lskew_slope_.value.value() != 0) && !std::isinf(lexp))
       left_short = Lskew_amplitude_.value.value() * lexp * erfc( 0.5*width_.value.value()/Lskew_slope_.value.value() + xc/width_.value.value());
   }
 
   double right_short = 0;
   if (Rskew_amplitude_.enabled) {
     double rexp = exp(pow(0.5*width_.value.value()/Rskew_slope_.value.value(), 2) - xc/Rskew_slope_.value.value());
-    if ((Rskew_slope_.value.value() != 0) && !isinf(rexp))
+    if ((Rskew_slope_.value.value() != 0) && !std::isinf(rexp))
       right_short = Rskew_amplitude_.value.value() * rexp * erfc( 0.5*width_.value.value()/Rskew_slope_.value.value()  - xc/width_.value.value());
   }
 
@@ -533,7 +533,7 @@ double Hypermet::eval_step_tail(double x) const {
   double tail = 0;
   if (tail_amplitude_.enabled) {
     double lexp = exp(pow(0.5*width_.value.value()/tail_slope_.value.value(), 2) + xc/tail_slope_.value.value());
-    if ((tail_slope_.value.value() != 0) && !isinf(lexp))
+    if ((tail_slope_.value.value() != 0) && !std::isinf(lexp))
       tail = tail_amplitude_.value.value() * lexp * erfc( 0.5*width_.value.value()/tail_slope_.value.value() + xc/width_.value.value());
   }
 

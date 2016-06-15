@@ -1042,7 +1042,7 @@ void FormFitter::selection_changed() {
 }
 
 void FormFitter::clicked_plottable(QCPAbstractPlottable *plt) {
-  //  INFO << "<FormFitter> clickedplottable";
+  //  LINFO << "<FormFitter> clickedplottable";
 }
 
 void FormFitter::clicked_item(QCPAbstractItem* itm) {

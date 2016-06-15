@@ -214,7 +214,7 @@ void FormGainCalibration::on_pushCalibGain_clicked()
   for (int i=1; i <= ui->spinPolyOrder->value(); ++i)
     p.add_coeff(i, -5, 5, 1);
 
-  p.fit(x,y,sigmas);
+  p.fit_fityk(x,y,sigmas);
 
   if (p.coeffs_.size()) {
     gain_match_cali_.coefficients_ = p.coeffs();
@@ -226,7 +226,7 @@ void FormGainCalibration::on_pushCalibGain_clicked()
     fit_data2_.detector_.gain_match_calibrations_.replace(gain_match_cali_);
   }
   else
-    INFO << "<Gain match calibration> Calibration failed";
+    LINFO << "<Gain match calibration> Calibration failed";
 
   plot_calib();
 }

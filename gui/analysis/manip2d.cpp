@@ -206,7 +206,7 @@ SinkPtr make_symmetrized(SinkPtr source)
   Calibration gain_match_cali = detector2.get_gain_match(md.bits, detector1.name_);
 
   if (gain_match_cali.to_ == detector1.name_)
-    INFO << "<::MakeSymmetrize> using gain match calibration from " << detector2.name_ << " to " << detector1.name_ << " " << gain_match_cali.to_string();
+    LINFO << "<::MakeSymmetrize> using gain match calibration from " << detector2.name_ << " to " << detector1.name_ << " " << gain_match_cali.to_string();
   else {
     WARN << "<::MakeSymmetrize> no appropriate gain match calibration";
     return false;

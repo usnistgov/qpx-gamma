@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
   }
   
   CustomLogger::initLogger(nullptr, "qpx_%N.log");
-  INFO << "--==cpx console tool for gamma acquisition==--";
+  LINFO << "--==cpx console tool for gamma acquisition==--";
 
   std::vector<std::string> cmd_params;
   for (int i=2; i<argc; ++i)
@@ -139,12 +139,12 @@ bool Cpx::interpret(std::list<CpxLine> commands, std::vector<double> variables) 
       }
     }
 
-    INFO << "<cpx> interpreting " << line.command;
+    LINFO << "<cpx> interpreting " << line.command;
     boost::this_thread::sleep(boost::posix_time::seconds(2));
     
     bool success=false;
     if (line.command == "end") {
-      INFO << "<cpx> exiting";
+      LINFO << "<cpx> exiting";
       return true;      
     }
     else if (line.command == "boot")
@@ -208,7 +208,7 @@ bool Cpx::templates(std::vector<std::string> &tokens) {
     ERR << "<cpx> bad template file " << file;
     return false;
   }
-  INFO << "<cpx> loading templates from " << file;
+  LINFO << "<cpx> loading templates from " << file;
   spectra_->clear();
   spectra_->set_prototypes(spectra_templates_);
   return true;
@@ -244,7 +244,7 @@ bool Cpx::save_qpx(std::vector<std::string> &tokens) {
   }
 
   std::string full_name = out_name + ".qpx";
-  INFO << "<cpx> writing acquired data to " << full_name;
+  LINFO << "<cpx> writing acquired data to " << full_name;
   spectra_->save_as(full_name);
   return true;
 }

@@ -364,7 +364,7 @@ void FormManip1D::updateUI()
 
 
 void FormManip1D::addMovingMarker(double x) {
-  INFO << "<Plot1D> marker at " << x;
+  LINFO << "<Plot1D> marker at " << x;
 
   if (calib_.valid())
     moving.pos.set_energy(x, calib_);

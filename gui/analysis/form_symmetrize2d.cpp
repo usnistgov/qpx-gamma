@@ -305,7 +305,7 @@ void FormSymmetrize2D::apply_gain_calibration()
 
     if (modified != Detector())
     {
-      INFO << "   applying new gain_match calibrations for " << modified.name_ << " in detector database";
+      LINFO << "   applying new gain_match calibrations for " << modified.name_ << " in detector database";
       modified.gain_match_calibrations_.replace(gain_match_cali_);
       detectors_.replace(modified);
       emit detectorsChanged();
@@ -319,7 +319,7 @@ void FormSymmetrize2D::apply_gain_calibration()
       Metadata md = q.second->metadata();
       for (auto &p : md.detectors) {
         if (p.shallow_equals(detector2_)) {
-          INFO << "   applying new calibrations for " << detector2_.name_ << " on " << q.second->name();
+          LINFO << "   applying new calibrations for " << detector2_.name_ << " on " << q.second->name();
           p.gain_match_calibrations_.replace(gain_match_cali_);
         }
       }
@@ -333,7 +333,7 @@ void FormSymmetrize2D::apply_gain_calibration()
 
 //    for (auto &p : sp.detectors) {
 //      if (p.shallow_equals(detector2_)) {
-//        INFO << "   applying new calibrations for " << detector2_.name_ << " in current project " << spectra_->identity();
+//        LINFO << "   applying new calibrations for " << detector2_.name_ << " in current project " << spectra_->identity();
 //        p.gain_match_calibrations_.replace(gain_match_cali_);
 //      }
 //    }

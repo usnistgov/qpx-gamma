@@ -63,12 +63,12 @@ namespace CustomLogger {
 
 BOOST_LOG_ATTRIBUTE_KEYWORD(g_severity, "Severity", CustomLogger::SeverityLevel)
 
-      BOOST_LOG_INLINE_GLOBAL_LOGGER_DEFAULT(g_custom_logger,
-                                             boost::log::sources::severity_logger_mt<CustomLogger::SeverityLevel>)
+BOOST_LOG_INLINE_GLOBAL_LOGGER_DEFAULT(g_custom_logger,
+                                       boost::log::sources::severity_logger_mt<CustomLogger::SeverityLevel>)
 
 #define TRC BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kTrace)
 #define DBG BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kDebug)
-#define INFO BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kInfo)
+#define LINFO BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kInfo)
 #define WARN BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kWarning)
 #define ERR BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kError)
 #define CRIT BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kCritical)

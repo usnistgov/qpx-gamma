@@ -183,7 +183,7 @@ void FormExperiment::run_completed() {
 
     if (continue_)
     {
-      INFO << "<FormExperiment> Completed one run";
+      LINFO << "<FormExperiment> Completed one run";
       start_new_pass();
     }
   }
@@ -274,7 +274,7 @@ void FormExperiment::start_new_pass()
 
   if (!parent || (pr->data_idx < 0))
   {
-    INFO << "<FormExperiment> No valid next point. Terminating experiment.";
+    LINFO << "<FormExperiment> No valid next point. Terminating experiment.";
     return;
   }
 
@@ -283,13 +283,13 @@ void FormExperiment::start_new_pass()
 
   if (!proj)
   {
-    INFO << "<FormExperiment> Experiment failed to provide daq project. Terminating.";
+    LINFO << "<FormExperiment> Experiment failed to provide daq project. Terminating.";
     return;
   }
 
   if (!duration)
   {
-    INFO << "<FormExperiment> Next run duration = 0. Terminating experiment.";
+    LINFO << "<FormExperiment> Next run duration = 0. Terminating experiment.";
     return;
   }
 
@@ -324,7 +324,7 @@ bool FormExperiment::apply_setting(Qpx::TrajectoryPtr node)
   if (!parent)
     return false;
 
-  INFO << "<FormExperiment> Applying setting " << node->type() << " " << node->to_string();
+  LINFO << "<FormExperiment> Applying setting " << node->type() << " " << node->to_string();
 
   if (parent->domain.type == Qpx::DomainType::manual)
   {
@@ -343,7 +343,7 @@ bool FormExperiment::apply_setting(Qpx::TrajectoryPtr node)
       node->domain_value.set_number(d);
     else
     {
-      INFO << "<FormExperiment> User failed to confirm manual setting. Aborting";
+      LINFO << "<FormExperiment> User failed to confirm manual setting. Aborting";
       update_name();
       return false;
     }
@@ -353,7 +353,7 @@ bool FormExperiment::apply_setting(Qpx::TrajectoryPtr node)
     Qpx::Engine::getInstance().get_all_settings();
     if (!Qpx::Engine::getInstance().pull_settings().has(node->domain_value, Qpx::Match::id | Qpx::Match::indices))
     {
-      INFO << "<FormExperiment> Source does not have this setting. Aborting";
+      LINFO << "<FormExperiment> Source does not have this setting. Aborting";
       update_name();
       return false;
     }

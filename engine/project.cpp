@@ -461,7 +461,7 @@ void Project::from_xml(const pugi::xml_node &root, bool with_sinks, bool with_fu
       SinkPtr sink
           = Qpx::SinkFactory::getInstance().create_from_xml(child);
       if (!sink)
-        INFO << "Could not parse spectrum";
+        LINFO << "Could not parse spectrum";
       else {
         for (auto &s : spills_) {
           Spill sp = s;

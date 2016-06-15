@@ -92,7 +92,7 @@ Metadata SinkFactory::create_prototype(std::string type)
 
 void SinkFactory::register_type(Metadata tt, std::function<Sink*(void)> typeConstructor)
 {
-  INFO << "<SinkFactory> registering sink type '" << tt.type() << "'";
+  LINFO << "<SinkFactory> registering sink type '" << tt.type() << "'";
   constructors[tt.type()] = typeConstructor;
   prototypes[tt.type()] = tt;
   for (auto &q : tt.input_types())

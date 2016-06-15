@@ -46,7 +46,7 @@ ThreadRunner::~ThreadRunner()
 {}
 
 void ThreadRunner::terminate() {
-//  INFO << "runner thread termination requested";
+//  LINFO << "runner thread termination requested";
   if (interruptor_)
     interruptor_->store(true);
   terminating_.store(true);

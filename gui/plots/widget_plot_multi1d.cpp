@@ -604,7 +604,7 @@ void WidgetPlotMulti1D::selection_changed() {
 }
 
 void WidgetPlotMulti1D::clicked_plottable(QCPAbstractPlottable *plt) {
-  //  INFO << "<WidgetPlotMulti1D> clickedplottable";
+  //  LINFO << "<WidgetPlotMulti1D> clickedplottable";
 }
 
 void WidgetPlotMulti1D::clicked_item(QCPAbstractItem* itm) {

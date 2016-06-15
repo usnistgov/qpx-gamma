@@ -164,7 +164,7 @@ void DialogSaveSpectra::on_buttonBox_accepted()
 {
   boost::filesystem::path dir(total_dir_);
   if (boost::filesystem::create_directory(dir))
-    INFO << "Created directory " << total_dir_;
+    LINFO << "Created directory " << total_dir_;
   else {
     ERR << "Error creating directory";
     emit accepted();
@@ -177,7 +177,7 @@ void DialogSaveSpectra::on_buttonBox_accepted()
     std::map<int64_t, SinkPtr> thistype = my_set_->get_sinks(ui->typesWidget->spectrum_types[i]);
     for (std::size_t j = 0; j < ui->typesWidget->file_formats[i].size(); j++) {
       if (ui->typesWidget->selections[i][j]) {
-        INFO << "Saving " << ui->typesWidget->spectrum_types[i] << " spectra as " << ui->typesWidget->file_formats[i][j];
+        LINFO << "Saving " << ui->typesWidget->spectrum_types[i] << " spectra as " << ui->typesWidget->file_formats[i][j];
         for (auto &q : thistype) {
           if ((!ui->checkVisibleOnly->isChecked()) || q.second->metadata().attributes.branches.get(Setting("visible")).value_int)
             q.second->write_file(dir.string(), ui->typesWidget->file_formats[i][j]);
@@ -189,7 +189,7 @@ void DialogSaveSpectra::on_buttonBox_accepted()
 
   filetime.stop();
 
-  INFO << "File writing time " << filetime.s() << " sec";
+  LINFO << "File writing time " << filetime.s() << " sec";
   emit accepted();
 }
 

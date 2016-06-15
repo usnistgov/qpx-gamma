@@ -24,6 +24,13 @@ unix {
    LIBS += -lm -ldl -lz \
            -lboost_system -lboost_date_time -lboost_thread -lboost_log \
            -lboost_filesystem -lboost_log_setup -lboost_timer -lboost_regex
+
+  contains( DAQ_SOURCES, fitter_ceres ) {
+    LIBS += -lgflags -lpthread -lglog -lspqr -lcholmod -lccolamd -lcamd -lcolamd -lamd -llapack -lf77blas -latlas \
+           -lceres -lgomp -lglog -lcholmod -lrt -llapack -lf77blas -latlas
+
+  }
+
 }
 
 	 
@@ -31,7 +38,8 @@ INCLUDEPATH += $$PWD \
                $$PWD/spectrum \
                $$PWD/spectrum/xylib \
                $$PWD/pugixml \
-               $$PWD/math
+               $$PWD/math \
+               /usr/include/eigen3
 
 SOURCES += $$files($$PWD/*.cpp) \
            $$files($$PWD/spectrum/*.cpp) \
