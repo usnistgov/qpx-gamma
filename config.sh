@@ -5,7 +5,7 @@ options=(1 "Parser for QPX list output" on    # any option can be set to default
          3 "XIA Pixie-4" off
          4 "Radiation Technologies HV-8" off
          5 "VME (Wiener, Mesytec, Iseg)" off
-         6 "Parser for NSCL *.evt" off)
+         6 "Parser for NSCL *.evt" off
          7 "Ceres solver (fitter, experimental)" off)
 choices=$("${cmd[@]}" "${options[@]}" 2>&1 >/dev/tty)
 clear

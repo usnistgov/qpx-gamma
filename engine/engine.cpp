@@ -304,12 +304,9 @@ void Engine::set_detector(int ch, Qpx::Detector det) {
 }
 
 void Engine::save_optimization() {
-  int start, stop;
-  start = 0; stop = detectors_.size() - 1;
-
-  for (int i = start; i <= stop; i++) {
-    //DBG << "Saving optimization channel " << i << " settings for " << detectors_[i].name_;
-    detectors_[i].settings_ = Qpx::Setting();
+  for (size_t i = 0; i < detectors_.size(); i++) {
+//    DBG << "Saving optimization channel " << i << " settings for " << detectors_[i].name_;
+//    detectors_[i].settings_ = Qpx::Setting();
     detectors_[i].settings_.indices.insert(i);
     detectors_[i].settings_.branches.my_data_ =
       settings_tree_.find_all(detectors_[i].settings_, Qpx::Match::indices);
@@ -331,10 +328,7 @@ void Engine::save_optimization() {
 }
 
 void Engine::load_optimization() {
-  int start, stop;
-  start = 0; stop = detectors_.size() - 1;
-
-  for (int i = start; i <= stop; i++)
+  for (size_t i = 0; i < detectors_.size(); i++)
     load_optimization(i);
 }
 

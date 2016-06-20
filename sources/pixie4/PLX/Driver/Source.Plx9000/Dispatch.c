@@ -354,7 +354,7 @@ Dispatch_IoControl(
     DebugPrintf_Cont(("\n"));
 
     // Get the device extension
-    if (iminor(filp->f_dentry->d_inode) == PLX_MNGMT_INTERFACE)
+    if (iminor(filp->f_path.dentry->d_inode) == PLX_MNGMT_INTERFACE)
     {
         // Management interface node only supports some IOCTLS
         pdx = NULL;
