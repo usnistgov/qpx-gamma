@@ -104,17 +104,14 @@ void Engine::initialize(std::string profile_path, std::string settings_path) {
 
   push_settings(tree);
   get_all_settings();
-  save_optimization();
 
   if (!descr.value_text.empty())
     LINFO << "<Engine> Welcome to " << descr.value_text;
 }
 
 Engine::~Engine() {
-  if (die()) {
+  if (die())
     get_all_settings();
-    save_optimization();
-  }
 
   if (!profile_path_.empty()) {
     get_all_settings();
@@ -131,7 +128,6 @@ Engine::~Engine() {
     else
       ERR << "<Engine> Failed to save device settings";
   }
-
 }
 
 Qpx::Setting Engine::pull_settings() const {
@@ -146,8 +142,8 @@ void Engine::push_settings(const Qpx::Setting& newsettings) {
 }
 
 bool Engine::read_settings_bulk(){
-  for (auto &set : settings_tree_.branches.my_data_) {
-    //LINFO << "read bulk "  << set.name;
+  for (auto &set : settings_tree_.branches.my_data_)
+  {
     if (set.id_ == "Detectors") {
 
       //set.metadata.step = 2; //to always save
@@ -168,13 +164,13 @@ bool Engine::read_settings_bulk(){
         set.branches.add_a(det);
       }
 
-      save_optimization();
     } else if (devices_.count(set.id_)) {
       //DBG << "read settings bulk > " << set.id_;
       devices_[set.id_]->read_settings_bulk(set);
     }
 
   }
+  save_optimization();
   return true;
 }
 
@@ -392,7 +388,6 @@ void Engine::getMca(uint64_t timeout, ProjectPtr spectra, boost::atomic<bool>& i
 
   Spill* spill = new Spill;
   get_all_settings();
-  save_optimization();
   spill->state = pull_settings();
   spill->detectors = get_detectors();
   parsedQueue.enqueue(spill);
@@ -427,7 +422,6 @@ void Engine::getMca(uint64_t timeout, ProjectPtr spectra, boost::atomic<bool>& i
 
   spill = new Spill;
   get_all_settings();
-  save_optimization();
   spill->state = pull_settings();
   parsedQueue.enqueue(spill);
 
@@ -463,7 +457,6 @@ ListData Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   one_spill = new Spill;
   get_all_settings();
-  save_optimization();
   one_spill->state = pull_settings();
   one_spill->detectors = get_detectors();
   result.push_back(SpillPtr(one_spill));
@@ -496,7 +489,6 @@ ListData Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   one_spill = new Spill;
   get_all_settings();
-  save_optimization();
   one_spill->state = pull_settings();
   parsedQueue.enqueue(one_spill);
 //  result.push_back(SpillPtr(one_spill));

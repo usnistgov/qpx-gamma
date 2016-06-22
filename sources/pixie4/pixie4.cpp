@@ -608,8 +608,8 @@ std::list<Hit> Pixie4::oscilloscope() {
         if ((i < channel_indices_[m].size()) && (channel_indices_[m][i] >= 0))
         {
           HitModel hm;
-          hm.timebase = TimeStamp(get_chan("XDT", Channel(i), Module(m)) * 1000, 1);
-          hm.tracelength = max_buf_len * 2;
+          hm.timebase = TimeStamp(get_chan("XDT", Channel(i), Module(m)) * 1000, 1); //us to ns
+          hm.tracelength = max_buf_len;
           Hit tr(channel_indices_[m][i], hm);
           tr.set_trace(trace);
           result.push_back(tr);

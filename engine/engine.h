@@ -49,8 +49,6 @@ public:
     return singleton_instance;
   }
 
-  ~Engine();
-
   void initialize(std::string profile_path, std::string settings_path);
   bool boot();
   bool die();
@@ -63,9 +61,7 @@ public:
   std::vector<Qpx::Detector> get_detectors() const {return detectors_;}
   void set_detector(int, Qpx::Detector);
 
-  void save_optimization();
   void load_optimization();
-  void load_optimization(int);
 
   void set_setting(Qpx::Setting address, Qpx::Match flags);
 
@@ -107,6 +103,10 @@ private:
   Engine();
   Engine(Engine const&);
   void operator=(Engine const&);
+  ~Engine();
+
+  void save_optimization();
+  void load_optimization(int);
 
 };
 

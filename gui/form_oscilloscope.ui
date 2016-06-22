@@ -45,7 +45,7 @@
       <number>3</number>
      </property>
      <property name="sizeConstraint">
-      <enum>QLayout::SetMaximumSize</enum>
+      <enum>QLayout::SetDefaultConstraint</enum>
      </property>
      <item>
       <widget class="QPushButton" name="pushShowAll">
@@ -198,7 +198,7 @@
    <item row="1" column="0">
     <widget class="SelectorWidget" name="selectorChannels" native="true">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>

@@ -259,13 +259,13 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
 
   engine_.initialize(profile, settings_dir);
 
-  if (engine_.boot()) {
-    engine_.get_all_settings();
-    engine_.save_optimization();
-  } else {
+  if (!engine_.boot())
+  {
     ERR << "<cpx> couldn't boot";
     return false;
   }
+
+  engine_.get_all_settings();
 
   std::vector<Detector> dets = engine_.get_detectors();
 
@@ -281,11 +281,10 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
     if (detectors_.has_a(dets[i]))
       update[i] = detectors_.get(dets[i]);
 
-  for (auto &q : update) {
+  for (auto &q : update)
     engine_.set_detector(q.first, q.second);
-    engine_.load_optimization(q.first);
-  }
 
+  engine_.load_optimization();
   engine_.write_settings_bulk();
   engine_.get_all_settings();
 

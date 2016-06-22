@@ -237,7 +237,6 @@ void ThreadRunner::run()
 
     if (action_ == kMCA) {
       engine_.get_all_settings();
-      engine_.save_optimization();
       Qpx::SourceStatus ds = engine_.status() ^ Qpx::SourceStatus::can_run; //turn off can_run
       emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), ds);
       interruptor_->store(false);
@@ -266,18 +265,14 @@ void ThreadRunner::run()
         emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
       }
     } else if (action_ == kBoot) {
-      if (engine_.boot()) {
+      if (engine_.boot())
         engine_.get_all_settings();
-        engine_.save_optimization();
-      }
       action_ = kNone;
       emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
       emit bootComplete();
     } else if (action_ == kShutdown) {
-      if (engine_.die()) {
+      if (engine_.die())
         engine_.get_all_settings();
-        engine_.save_optimization();
-      }
       action_ = kNone;
       emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kOptimize) {
@@ -285,45 +280,38 @@ void ThreadRunner::run()
       action_ = kOscil;
     } else if (action_ == kSettingsRefresh) {
       engine_.get_all_settings();
-      engine_.save_optimization();
       action_ = kNone;
       emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kPushSettings) {
       engine_.push_settings(tree_);
       engine_.get_all_settings();
-      engine_.save_optimization();
       action_ = kNone;
       emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kSetSetting) {
       engine_.set_setting(tree_, match_conditions_);
       engine_.get_all_settings();
-      engine_.save_optimization();
       action_ = kNone;
       emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kSetDetector) {
       engine_.set_detector(chan_, det_);
       engine_.write_settings_bulk();
       engine_.get_all_settings();
-      engine_.save_optimization();
       action_ = kNone;
       emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kSetDetectors) {
-      for (auto &q : detectors_) {
+      for (auto &q : detectors_)
         engine_.set_detector(q.first, q.second);
-        engine_.load_optimization(q.first);
-      }
+      engine_.load_optimization();
       engine_.write_settings_bulk();
 
       //XDT?
 
       //engine_.get_all_settings();
-      //engine_.save_optimization();
       action_ = kOscil;
       //emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else if (action_ == kOscil) {
         std::vector<Qpx::Hit> traces = engine_.oscilloscope();
         engine_.get_all_settings();
-        engine_.save_optimization();
         action_ = kNone;
         if (!traces.empty())
           emit oscilReadOut(traces);
