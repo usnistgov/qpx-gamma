@@ -1,4 +1,11 @@
 #!/bin/bash
+
+PKG_OK=$(dpkg-query -W --showformat='${Status}\n' dialog|grep "install ok installed")
+if [ "" == "$PKG_OK" ]; then
+  echo "Installing dialog"
+  sudo apt-get --force-yes --yes install dialog
+fi
+
 cmd=(dialog --separate-output --checklist "Compile QPX with support for the following data sources:" 22 76 16)
 options=(1 "Parser for QPX list output" on    # any option can be set to default to "on"
          2 "Simulator2D" on
@@ -27,6 +34,11 @@ do
             ;;
         5)
             text="${text} vme"
+            PKG_OK=$(dpkg-query -W --showformat='${Status}\n' libusb-dev|grep "install ok installed")
+            if [ "" == "$PKG_OK" ]; then
+              echo "Installing libusb"
+              sudo apt-get --force-yes --yes install libusb-dev
+            fi
             ;;
         6)
             text="${text} parser_evt"
@@ -40,4 +52,10 @@ done
 echo $text > config.pri
 echo "Preparing makefiles..."
 ./prep.sh
+
+PKG_OK=$(dpkg-query -W --showformat='${Status}\n' libnlopt-dev|grep "install ok installed")
+if [ "" == "$PKG_OK" ]; then
+  echo "Installing libnlopt"
+  sudo apt-get --force-yes --yes install libnlopt-dev
+fi
 

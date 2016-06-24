@@ -223,7 +223,7 @@ else
     endif
 endif
 
-EXTRA_CFLAGS += $(PLX_OPT) $(PLX_INC_DIR) -Wno-error=date-time
+EXTRA_CFLAGS += $(PLX_OPT) $(PLX_INC_DIR)
 
 
 
