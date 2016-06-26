@@ -306,7 +306,7 @@
 	<SettingMeta id="Pixie4/System/module/channel/SFDT" type="floating" name="SFDT" address="34" writable="false" step="0" minimum="0" maximum="0" unit="s" />
 	<SettingMeta id="Pixie4/System/module/channel/TAU" type="floating" name="TAU" address="15" writable="true" step="1" minimum="1.5e-05" maximum="65535" unit="μs" />
 	<SettingMeta id="Pixie4/System/module/channel/TRACE_DELAY" type="floating" name="TRACE_DELAY" address="10" writable="true" step="0.013332999999999999" minimum="0" maximum="13.1936" unit="μs" />
-	<SettingMeta id="Pixie4/System/module/channel/TRACE_LENGTH" type="floating" name="TRACE_LENGTH" address="9" writable="true" step="0.013332999999999999" minimum="0" maximum="13.619199999999999" unit="μs" />
+	<SettingMeta id="Pixie4/System/module/channel/TRACE_LENGTH" type="floating" name="TRACE_LENGTH" address="9" writable="true" step="0.013332999999999999" minimum="0" maximum="13.64" unit="μs" />
 	<SettingMeta id="Pixie4/System/module/channel/TRIGGER_FLATTOP" type="floating" name="TRIGGER_FLATTOP" address="5" writable="true" step="0.050000000000000003" minimum="0" maximum="500" unit="μs" />
 	<SettingMeta id="Pixie4/System/module/channel/TRIGGER_RISETIME" type="floating" name="TRIGGER_RISETIME" address="4" writable="true" step="0.050000000000000003" minimum="0" maximum="500" unit="μs" />
 	<SettingMeta id="Pixie4/System/module/channel/TRIGGER_THRESHOLD" type="integer" name="TRIGGER_THRESHOLD" address="6" writable="true" step="1" minimum="0" maximum="4095" />

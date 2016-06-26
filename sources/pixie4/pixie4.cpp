@@ -104,8 +104,6 @@ bool Pixie4::daq_start(SynchronizedQueue<Spill*>* out_queue) {
 
   run_status_.store(1);
 
-  if (runner_ != nullptr)
-    delete runner_;
 
   for (int i=0; i < channel_indices_.size(); ++i) {
     //DBG << "start daq run mod " << i;
@@ -116,12 +114,14 @@ bool Pixie4::daq_start(SynchronizedQueue<Spill*>* out_queue) {
   }
 
   raw_queue_ = new SynchronizedQueue<Spill*>();
-  runner_ = new boost::thread(&worker_run_dbl, this, raw_queue_);
 
   if (parser_ != nullptr)
     delete parser_;
-
   parser_ = new boost::thread(&worker_parse, this, raw_queue_, out_queue);
+
+  if (runner_ != nullptr)
+    delete runner_;
+  runner_ = new boost::thread(&worker_run_dbl, this, raw_queue_);
 
   return true;
 }
@@ -1339,6 +1339,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
 
     mods.clear();
     while (!timeout && mods.empty()) {
+      DBG << "<Pixie4::runner> waiting";
       for (int i=0; i < callback->channel_indices_.size(); ++i) {
         std::bitset<32> csr = std::bitset<32>(poll_run_dbl(i));
         if (csr[14])
@@ -1352,6 +1353,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
     fetched_spill.time = boost::posix_time::microsec_clock::universal_time();
 
     if (timeout) {
+      DBG << "<Pixie4::runner> timeout true";
       callback->stop_run(Module::all);
       wait_ms(callback->run_poll_interval_ms_);
       for (int i=0; i < callback->channel_indices_.size(); ++i) {
@@ -1361,22 +1363,29 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
       }
     }
 
-    for (auto &q : mods) {
-      //DBG << "getting stats for mod " << q;
-      callback->get_mod_stats(Module(q));
-      for (int j=0; j < NUMBER_OF_CHANNELS; ++j)
-        callback->read_chan("ALL_CHANNEL_PARAMETERS", q, j);
+    if (callback->run_type_ != 256)
+    {
+      for (auto &q : mods) {
+        DBG << "<Pixie4::runner> getting stats for mod " << q;
+        callback->get_mod_stats(Module(q));
+        for (int j=0; j < NUMBER_OF_CHANNELS; ++j)
+          callback->read_chan("ALL_CHANNEL_PARAMETERS", q, j);
+      }
     }
 
 
     bool success = false;
     for (auto &q : mods) {
+      DBG << "<Pixie4::runner> fetching data for mod " << q;
       fetched_spill = Spill();
       fetched_spill.data.resize(list_mem_len32, 0);
       if (read_EM_dbl(fetched_spill.data.data(), q))
+      {
+        DBG << "<Pixie4::runner> success fetching for mod " << q;
         success = true;
-      //      DBG << "<Pixie4> fetched spill for mod " << q;
-      callback->fill_stats(fetched_spill.stats, q);
+      }
+      if (callback->run_type_ != 256)
+        callback->fill_stats(fetched_spill.stats, q);
       for (auto &p : fetched_spill.stats) {
         p.second.lab_time = fetched_spill.time;
         if (timeout)
@@ -1464,9 +1473,6 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
                   (channel_indices[buf_module][i] >= 0))
                 sourcechan = channel_indices[buf_module][i];
 
-              if (sourcechan < 0)
-                continue;
-
               Hit one_hit(sourcechan, model);
 
               uint64_t hi = buf_timehi;
@@ -1478,7 +1484,10 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
               if (task_b == 0x0000) {
                 uint16_t trace_len  = buff16[idx++] - 9;
                 chan_trig_time      = buff16[idx++];
-                one_hit.set_value(0, buff16[idx++]); //energy
+                if (pattern[i+8])
+                  one_hit.set_value(0, buff16[idx++]); //energy
+                else
+                  idx++;
                 one_hit.set_value(1, buff16[idx++]); //XIA_PSA
                 one_hit.set_value(2, buff16[idx++]); //user_PSA
                 idx += 3;
@@ -1488,21 +1497,30 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
               } else if (task_b == 0x0001) {
                 idx++;
                 chan_trig_time      = buff16[idx++];
-                one_hit.set_value(0, buff16[idx++]); //energy
+                if (pattern[i+8])
+                  one_hit.set_value(0, buff16[idx++]); //energy
+                else
+                  idx++;
                 one_hit.set_value(1, buff16[idx++]); //XIA_PSA
                 one_hit.set_value(2, buff16[idx++]); //user_PSA
                 idx += 3;
                 hi                  = buff16[idx++];
               } else if (task_b == 0x0002) {
                 chan_trig_time      = buff16[idx++];
-                one_hit.set_value(0, buff16[idx++]); //energy
+                if (pattern[i+8])
+                  one_hit.set_value(0, buff16[idx++]); //energy
+                else
+                  idx++;
                 one_hit.set_value(1, buff16[idx++]); //XIA_PSA
                 one_hit.set_value(2, buff16[idx++]); //user_PSA
               } else if (task_b == 0x0003) {
                 chan_trig_time      = buff16[idx++];
-                one_hit.set_value(0, buff16[idx++]); //energy
+                if (pattern[i+8])
+                  one_hit.set_value(0, buff16[idx++]); //energy
+                else
+                  idx++;
               } else
-                ERR << "<Pixie4> Parsed event type invalid or does not match run type";
+                ERR << "<Pixie4::parser> Parsed event type invalid or does not match run type";
 
               if (!pattern[i+8])
                 one_hit.set_value(0, 0); //energy invalid or approximate
@@ -1515,10 +1533,16 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
               if ((task_b == 0x0000) || (task_b == 0x0001))
                 hi = chan_time_hi;
               lo = chan_trig_time;
-              uint16_t time = (hi << 32) + (mi << 16) + lo;
+              uint64_t time = (hi << 32) + (mi << 16) + lo;
 
               one_hit.set_timestamp_native(time);
-              ordered.insert(one_hit);
+
+              if (sourcechan >= 0)
+                ordered.insert(one_hit);
+              else
+                DBG << "<Pixie4::parser> bad sourcechan " << i;
+
+
             }
           }
 
