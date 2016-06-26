@@ -1304,7 +1304,7 @@ void Pixie4::boot_err(int32_t err_val) {
 
 void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_queue) {
 
-  DBG << "<Pixie4> Double buffered daq runner thread starting";
+//  DBG << "<Pixie4> Double buffered daq runner thread starting";
 
   callback->reset_counters_next_run(); //assume new run
 
@@ -1339,7 +1339,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
 
     mods.clear();
     while (!timeout && mods.empty()) {
-      DBG << "<Pixie4::runner> waiting";
+//      DBG << "<Pixie4::runner> waiting";
       for (int i=0; i < callback->channel_indices_.size(); ++i) {
         std::bitset<32> csr = std::bitset<32>(poll_run_dbl(i));
         if (csr[14])
@@ -1353,7 +1353,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
     fetched_spill.time = boost::posix_time::microsec_clock::universal_time();
 
     if (timeout) {
-      DBG << "<Pixie4::runner> timeout true";
+//      DBG << "<Pixie4::runner> timeout true";
       callback->stop_run(Module::all);
       wait_ms(callback->run_poll_interval_ms_);
       for (int i=0; i < callback->channel_indices_.size(); ++i) {
@@ -1363,28 +1363,28 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
       }
     }
 
-    if (callback->run_type_ != 256)
-    {
+//    if (callback->run_type_ != 256)
+//    {
       for (auto &q : mods) {
-        DBG << "<Pixie4::runner> getting stats for mod " << q;
+//        DBG << "<Pixie4::runner> getting stats for mod " << q;
         callback->get_mod_stats(Module(q));
         for (int j=0; j < NUMBER_OF_CHANNELS; ++j)
           callback->read_chan("ALL_CHANNEL_PARAMETERS", q, j);
       }
-    }
+//    }
 
 
     bool success = false;
     for (auto &q : mods) {
-      DBG << "<Pixie4::runner> fetching data for mod " << q;
+//      DBG << "<Pixie4::runner> fetching data for mod " << q;
       fetched_spill = Spill();
       fetched_spill.data.resize(list_mem_len32, 0);
       if (read_EM_dbl(fetched_spill.data.data(), q))
       {
-        DBG << "<Pixie4::runner> success fetching for mod " << q;
+//        DBG << "<Pixie4::runner> success fetching for mod " << q;
         success = true;
       }
-      if (callback->run_type_ != 256)
+//      if (callback->run_type_ != 256)
         callback->fill_stats(fetched_spill.stats, q);
       for (auto &p : fetched_spill.stats) {
         p.second.lab_time = fetched_spill.time;
@@ -1414,14 +1414,14 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
 
 
   callback->run_status_.store(3);
-  DBG << "<Pixie4> Double buffered daq runner thread completed";
+//  DBG << "<Pixie4> Double buffered daq runner thread completed";
 }
 
 
 
 void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue, SynchronizedQueue<Spill*>* out_queue) {
 
-  DBG << "<Pixie4> parser thread starting";
+//  DBG << "<Pixie4> parser thread starting";
 
   Spill* spill;
   std::vector<std::vector<int32_t>> channel_indices = callback->channel_indices_;
@@ -1539,8 +1539,8 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
 
               if (sourcechan >= 0)
                 ordered.insert(one_hit);
-              else
-                DBG << "<Pixie4::parser> bad sourcechan " << i;
+//              else
+//                DBG << "<Pixie4::parser> bad sourcechan " << i;
 
 
             }
@@ -1561,9 +1561,9 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
   }
 
   if (cycles == 0)
-    LINFO << "<Pixie4> Parser thread stopping. Buffer queue closed without events";
+    DBG << "<Pixie4::parser> Buffer queue closed without events";
   else
-    LINFO << "<Pixie4> Parser thread stopping. " << all_events << " events, with avg time/spill: " << parse_timer.us()/cycles << "us";
+    DBG << "<Pixie4::parser> Parsed " << all_events << " events, with avg time/spill: " << parse_timer.us()/cycles << "us";
 }
 
 
