@@ -1,10 +1,9 @@
 #!/bin/bash
 
-read -r -p "What version of boost would you like to install?   1." vnum
+read -r -p "What version of boost would you like to install? (default:1.58)   1." vnum
 
 if [ -z "$vnum" ]; then
-  echo No version specified. Exiting.
-  exit
+  vnum="58"
 fi
 
 cl1="1."
