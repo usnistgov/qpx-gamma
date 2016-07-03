@@ -35,6 +35,7 @@ SpectrumRaw::SpectrumRaw()
   , open_xml_(false)
   , hits_this_spill_(0)
   , total_hits_(0)
+  , ignore_patterns_(true)
 {
   Setting base_options = metadata_.attributes;
   metadata_ = Metadata("Raw", "Custom gated list mode to file. Please provide path and name for valid and accessible file", 0,
@@ -57,11 +58,13 @@ SpectrumRaw::~SpectrumRaw() {
 bool SpectrumRaw::_initialize() {
   Spectrum::_initialize();
 
+  ignore_patterns_ = (pattern_coinc_.threshold() < 1) && (pattern_anti_.threshold() < 1);
+
+  DBG << "<SpectrumRaw:" << metadata_.name << "> will ignore patterns";
+
   file_dir_ = get_attr("file_dir").value_text;
-  DBG << "trying to create " << file_dir_;
   if (file_dir_.empty())
     return false;
-  DBG << "raw: file dir not empty";
 
   return init_bin();
 }
@@ -85,14 +88,12 @@ bool SpectrumRaw::init_bin() {
   if (!file_bin_.is_open())
     return false;
 
-  DBG << "successfully opened binary";
-
   if (!file_bin_.good() || !init_text()) {
     file_bin_.close();
     return false;
   }
 
-  DBG << "binary is good";
+  DBG << "<SpectrumRaw:" << metadata_.name << "> binary is good";
 
   bin_begin_ = file_bin_.tellp();
   open_bin_ = true;
@@ -107,11 +108,28 @@ void SpectrumRaw::addEvent(const Event& newEvent) {
   for (auto &q : newEvent.hits)
     all_hits.insert(q.second);
 
-  for (auto &q : all_hits) {
-    q.write_bin(file_bin_);
+  for (auto &q : all_hits)
+    writeHit(q);
+
+}
+
+void SpectrumRaw::_push_hit(const Hit& newhit)
+{
+  if (!ignore_patterns_)
+    Spectrum::_push_hit(newhit);
+  else
+    writeHit(newhit);
+}
+
+void SpectrumRaw::writeHit(const Hit& hit)
+{
+  if (open_bin_ && pattern_add_.relevant(hit.source_channel()))
+  {
+    hit.write_bin(file_bin_);
     hits_this_spill_++;
   }
 }
+
 
 void SpectrumRaw::_push_spill(const Spill& one_spill) {
   if ((!open_xml_) || (!open_bin_))
@@ -122,9 +140,14 @@ void SpectrumRaw::_push_spill(const Spill& one_spill) {
   Spectrum::_push_spill(one_spill);
 
   Spill copy = one_spill;
-//  copy.hits.resize(hits_this_spill_);
   copy.hits.clear();
+  std::map<int16_t, StatsUpdate> stats;
+  for (auto &s : copy.stats)
+    if (pattern_add_.relevant(s.first))
+      stats[s.first] = s.second;
+  copy.stats = stats;
   copy.to_xml(xml_root_, true);
+
   xml_root_.last_child().append_attribute("raw_hit_count").set_value(std::to_string(hits_this_spill_).c_str());
   xml_root_.last_child().append_attribute("file_offset").set_value(std::to_string(pos).c_str());
 
@@ -135,13 +158,13 @@ void SpectrumRaw::_push_spill(const Spill& one_spill) {
 
 void SpectrumRaw::_flush() {
   if (open_xml_) {
-    DBG << "<SpectrumRaw> writing " << file_name_txt_ << " for \"" << metadata_.name << "\"";
+    DBG << "<SpectrumRaw:" << metadata_.name << "> writing " << file_name_txt_ << " for \"" << metadata_.name << "\"";
     if (!xml_doc_.save_file(file_name_txt_.c_str()))
       ERR << "<SpectrumRaw> Failed to save " << file_name_txt_;
     open_xml_ = false;
   }
   if (open_bin_) {
-    DBG << "<SpectrumRaw> closing " << file_name_bin_ << " for \"" << metadata_.name << "\"";
+    DBG << "<SpectrumRaw:" << metadata_.name << "> closing " << file_name_bin_ << " for \"" << metadata_.name << "\"";
     file_bin_.close();
     open_bin_ = false;
   }

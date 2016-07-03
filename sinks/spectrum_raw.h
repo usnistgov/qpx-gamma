@@ -43,6 +43,8 @@ protected:
 
   uint64_t hits_this_spill_, total_hits_;
 
+  bool ignore_patterns_;
+
 public:
   SpectrumRaw();
   SpectrumRaw(const SpectrumRaw&other)
@@ -63,7 +65,6 @@ public:
 protected:
   std::string my_type() const override {return "Raw";}
 
-  //1D is ok with all patterns
   bool _initialize() override;
 
   PreciseFloat _data(std::initializer_list<uint16_t> list) const
@@ -73,12 +74,14 @@ protected:
 
   //event processing
   void _push_spill(const Spill&) override;
+  void _push_hit(const Hit&) override;
 
   void addEvent(const Event&) override;
   void _flush() override;
 
   bool init_text();
   bool init_bin();
+  void writeHit(const Hit&);
 
   std::string _data_to_xml() const override {return "written to file";}
   uint16_t _data_from_xml(const std::string&) override {return 0;}
