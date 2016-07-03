@@ -8,7 +8,7 @@ echo "---------------------------"
 echo " "
 echo "This script will install all necessary dependencies and compile qpx. It has been tested on Ubuntu distributions 14.04 and higher, but no guarantee that all will work as intended."
 echo "You will be asked if you wish to install boost and Qt. At minimum, qpx requires boost 1.58 and full version of Qt 5.5. These are the recommended versions to use."
-echo "You will be asked to enter your password for sudo access a number of times for installing required packages. Other than boost and Qt, only standard ubuntu packages are used."
+echo "You may be asked to enter your password for sudo access a few times for installing required packages. Other than boost and Qt, only standard ubuntu packages are used."
 echo " "
 read -n1 -rsp $'Press any key to continue or Ctrl+C to exit...\n'
 

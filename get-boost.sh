@@ -14,7 +14,7 @@ fp="apt-cache search libboost1.${vnum}-all-dev"
 res=$(eval $fp)
 
 if [ "" != "$res" ]; then
-  fe="sudo apt-get install libboost1.${vnum}-all-dev"
+  fe="sudo apt-get --yes install libboost1.${vnum}-all-dev"
   eval $fe
   exit
 fi
@@ -50,7 +50,7 @@ tar jxf $zlext
 PKG_OK=$(dpkg-query -W --showformat='${Status}\n' build-essential|grep "install ok installed")
 if [ "" == "$PKG_OK" ]; then
   echo "Installing build-essential"
-  sudo apt-get --force-yes --yes install build-essential
+  sudo apt-get --yes install build-essential
 fi
 
 cd $zl
