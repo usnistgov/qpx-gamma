@@ -10,8 +10,17 @@ cl1="1."
 cl2=".0"
 cl=$cl1$vnum$cl2
 
+fp="apt-cache search libboost1.${vnum}-all-dev"
+res=$(eval $fp)
+
+if [ "" != "$res" ]; then
+  fe="sudo apt-get install libboost1.${vnum}-all-dev"
+  eval $fe
+  exit
+fi
+
 if ldconfig -p | grep boost | grep -q $cl; then
-  echo System already has boost $cl.
+  echo System appears to already have  boost $cl.
   exit
 fi
 

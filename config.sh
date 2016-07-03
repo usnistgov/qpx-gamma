@@ -3,7 +3,7 @@
 PKG_OK=$(dpkg-query -W --showformat='${Status}\n' dialog|grep "install ok installed")
 if [ "" == "$PKG_OK" ]; then
   echo "Installing dialog"
-  sudo apt-get --force-yes --yes install dialog
+  sudo apt-get --yes install dialog
 fi
 
 parser_raw="off"
@@ -82,7 +82,7 @@ do
             PKG_OK=$(dpkg-query -W --showformat='${Status}\n' libusb-dev|grep "install ok installed")
             if [ "" == "$PKG_OK" ]; then
               echo "Installing libusb"
-              sudo apt-get --force-yes --yes install libusb-dev
+              sudo apt-get --yes install libusb-dev
             fi
             ;;
         6)
@@ -99,7 +99,7 @@ echo $text > config.pri
 PKG_OK=$(dpkg-query -W --showformat='${Status}\n' libnlopt-dev|grep "install ok installed")
 if [ "" == "$PKG_OK" ]; then
   echo "Installing libnlopt"
-  sudo apt-get --force-yes --yes install libnlopt-dev
+  sudo apt-get --yes install libnlopt-dev
 fi
 
 echo "Preparing makefiles..."

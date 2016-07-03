@@ -15,7 +15,7 @@ read -n1 -rsp $'Press any key to continue or Ctrl+C to exit...\n'
 PKG_OK=$(dpkg-query -W --showformat='${Status}\n' build-essential|grep "install ok installed")
 if [ "" == "$PKG_OK" ]; then
   echo "Installing build-essential"
-  sudo apt-get --force-yes --yes install build-essential
+  sudo apt-get --yes install build-essential
 fi
 
 read -r -p "Install boost? [Y/n]" getboost
@@ -47,7 +47,11 @@ if [[ $getqt =~ ^(yes|y| ) ]]; then
   cfgchooser=${cfgchooser,,} # tolower
 
   if [[ $cfgchooser =~ ^(yes|y| ) ]]; then
-    read -p "Installed version (i.e. 5.5): " qtversion
+    read -p "Installed version (default 5.5): " qtversion
+    if [ -z "$qtversion" ]; then
+      qtversion="5.5"
+    fi
+
     t1="~/Qt/${qtversion}/gcc"
     t2="~/Qt/${qtversion}/gcc"
     if [ `getconf LONG_BIT` = "64" ]
