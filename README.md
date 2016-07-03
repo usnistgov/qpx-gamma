@@ -6,7 +6,6 @@ Developed at NIST. No warranty and no endorsement of specific product. Please re
 ![qpx-gamma](/screenshot.png)
 
 Features:
-* modular multithreaded architecture with multiple data sources and data sinks
 * simultaneous building of multiple spectra (real-time sorting)
 * coincidence matrices with symmetrization, projections, 2D peak search
 * list mode output
@@ -17,6 +16,7 @@ Features:
 * Multiplet deconvolution using Hypermet
 * gain matching (iterative online, and post-acquisition)
 * automatic digitizer setting optimization to minimize FWHM
+* structured experiment automation
 
 Supports:
 * Linux and Mac
@@ -32,16 +32,10 @@ Reads:
 * Gammavision spe
 * NSCLdaq evt
 
-To install, you need:
-* [boost](http://www.boost.org/)
-* [Qt 5](http://www.qt.io/)
-* libnlopt-dev
-* libusb-dev (VmUsb suuport)
+Installing / running:
+* './install.sh' will also download and install [boost](http://www.boost.org/) and [Qt](http://www.qt.io/) dependencies, and copy default configuration and sample data files to ~/qpx/
 * If using Pixie-4, make sure PLX driver is working (driver and installation script included, see /hardware/pixie4/PLX/README)
-* utter the following incantations:
-  - to compile './install.sh' will also put sample data files in ~/qpx/
-  - to run './qpx'
-* to make global, follow it up with 'sudo make install'
+* to run: './qpx' or debug mode 'gdb ./qpxd'
 
 [Upcoming/ToDo](https://trello.com/b/YKb96auO/qpx-todo-list)
 
