@@ -198,7 +198,9 @@ void FormGatesPlot2D::update_plot() {
   if (some_spectrum)
     md = some_spectrum->metadata();
 
-  if ((md.total_count > 0) && (md.dimensions() == 2) && (adjrange = pow(2,md.bits)) )
+  uint16_t newbits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+
+  if ((md.total_count > 0) && (md.dimensions() == 2) && (adjrange = pow(2,newbits)) )
   {
     //      DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
@@ -206,7 +208,6 @@ void FormGatesPlot2D::update_plot() {
         std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
     ui->coincPlot->update_plot(adjrange, adjrange, spectrum_data);
 
-    int newbits = some_spectrum->bits();
     if (bits != newbits)
       bits = newbits;
 

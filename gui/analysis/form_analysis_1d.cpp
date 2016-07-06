@@ -164,8 +164,7 @@ void FormAnalysis1D::setSpectrum(Project *newset, int64_t idx) {
   current_spectrum_ = idx;
   SinkPtr spectrum = spectra_->get_sink(idx);
 
-  if (spectrum && spectrum->bits()) {
-
+  if (spectrum) {
     fit_data_.clear();
     fit_data_.setData(spectrum);
 
@@ -191,7 +190,7 @@ void FormAnalysis1D::setSpectrum(Project *newset, int64_t idx) {
 void FormAnalysis1D::update_spectrum() {
   if (this->isVisible()) {
     SinkPtr spectrum = spectra_->get_sink(current_spectrum_);
-    if (spectrum && spectrum->bits())
+    if (spectrum)
       fit_data_.setData(spectrum);
     ui->plotSpectrum->update_spectrum();
   }

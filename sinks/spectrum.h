@@ -72,6 +72,7 @@ protected:
   StatsUpdate recent_start_, recent_end_;
 
   Pattern pattern_coinc_, pattern_anti_, pattern_add_;
+  uint16_t bits_;
 };
 
 }

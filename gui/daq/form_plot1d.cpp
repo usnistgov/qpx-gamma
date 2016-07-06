@@ -142,9 +142,11 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   if (!md.detectors.empty())
     det = md.detectors[0];
 
+  uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+
   QString detstr("Detector: ");
   detstr += QString::fromStdString(det.name_);
-  if (det.energy_calibrations_.has_a(Calibration("Energy", md.bits)))
+  if (det.energy_calibrations_.has_a(Calibration("Energy", bits)))
     detstr += " [ENRG]";
   else if (det.highest_res_calib().valid())
     detstr += " (enrg)";
@@ -154,7 +156,7 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
     detstr += " [EFF]";
 
   QString infoText =
-      "<nobr>" + itm.text + "(" + QString::fromStdString(type) + ", " + QString::number(md.bits) + "bits)</nobr><br/>"
+      "<nobr>" + itm.text + "(" + QString::fromStdString(type) + ", " + QString::number(bits) + "bits)</nobr><br/>"
       "<nobr>" + detstr + "</nobr><br/>"
       "<nobr>Count: " + QString::number(md.total_count.convert_to<double>()) + "</nobr><br/>"
       "<nobr>Rate (inst/total): " + QString::number(rate_inst) + "cps / " + QString::number(rate_total) + "cps</nobr><br/>"
@@ -187,16 +189,17 @@ void FormPlot1D::update_plot() {
   calib_ = Calibration();
 
   ui->mcaPlot->clearGraphs();
-  for (auto &q: mySpectra->get_sinks(1, -1)) {
+  for (auto &q: mySpectra->get_sinks(1)) {
     Metadata md;
     if (q.second)
       md = q.second->metadata();
 
     double livetime = md.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
     double rescale  = md.attributes.branches.get(Setting("rescale")).value_precise.convert_to<double>();
+    uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
 
     if (md.attributes.branches.get(Setting("visible")).value_int
-        && (md.bits > 0) && (md.total_count > 0)) {
+        && (md.total_count > 0)) {
 
       QVector<double> x = QVector<double>::fromStdVector(q.second->axis_values(0));
       QVector<double> y(x.size());
@@ -209,7 +212,7 @@ void FormPlot1D::update_plot() {
       Detector detector = Detector();
       if (!md.detectors.empty())
         detector = md.detectors[0];
-      Calibration temp_calib = detector.best_calib(md.bits);
+      Calibration temp_calib = detector.best_calib(bits);
 
       if (temp_calib.bits_ > calib_.bits_)
         calib_ = temp_calib;
@@ -228,7 +231,7 @@ void FormPlot1D::update_plot() {
 
       AppearanceProfile profile;
       profile.default_pen = QPen(QColor(QString::fromStdString(md.attributes.branches.get(Setting("appearance")).value_text)), 1);
-      ui->mcaPlot->addGraph(x, y, profile, md.bits);
+      ui->mcaPlot->addGraph(x, y, profile, bits);
 
     }
   }
@@ -277,7 +280,7 @@ void FormPlot1D::updateUI()
   QVector<SelectorItem> items;
   QSet<QString> dets;
 
-  for (auto &q : mySpectra->get_sinks(1, -1)) {
+  for (auto &q : mySpectra->get_sinks(1)) {
     Metadata md;
     if (q.second != nullptr)
       md = q.second->metadata();
@@ -456,10 +459,11 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
 
 
   double livetime = md.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
 
   Calibration cal;
   if (!md.detectors.empty())
-    cal = md.detectors[0].best_calib(md.bits);
+    cal = md.detectors[0].best_calib(bits);
 
   PreciseFloat max = someSpectrum->data({std::round(cal.inverse_transform(moving.pos.energy()))});
 
@@ -469,14 +473,15 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
   if (max == 0)
     return;
 
-  for (auto &q: mySpectra->get_sinks(1, -1))
+  for (auto &q: mySpectra->get_sinks(1))
     if (q.second) {
       Metadata mdt = q.second->metadata();
       double lt = mdt.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+      uint16_t bits = mdt.attributes.branches.get(Qpx::Setting("resolution")).value_int;
 
       Calibration cal;
       if (!mdt.detectors.empty())
-        cal = mdt.detectors[0].best_calib(mdt.bits);
+        cal = mdt.detectors[0].best_calib(bits);
 
       PreciseFloat mc = q.second->data({std::round(cal.inverse_transform(moving.pos.energy()))});
 
@@ -495,7 +500,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
 
 void FormPlot1D::on_pushRescaleReset_clicked()
 {
-  for (auto &q: mySpectra->get_sinks(1, -1))
+  for (auto &q: mySpectra->get_sinks(1))
     if (q.second) {
       Setting rescale = q.second->metadata().attributes.branches.get(Setting("rescale"));
       rescale.value_precise = 1;

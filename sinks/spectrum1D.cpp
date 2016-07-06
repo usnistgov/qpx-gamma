@@ -78,7 +78,7 @@ bool Spectrum1D::_initialize()
 
   cutoff_bin_ = get_attr("cutoff_bin").value_int;
 
-  spectrum_.resize(pow(2, metadata_.bits), 0);
+  spectrum_.resize(pow(2, bits_), 0);
 
   return true;
 }
@@ -98,7 +98,7 @@ std::unique_ptr<std::list<Entry>> Spectrum1D::_data_range(std::initializer_list<
   int min, max;
   if (list.size() != 1) {
     min = 0;
-    max = pow(2, metadata_.bits);
+    max = pow(2, bits_);
   } else {
     Pair range = *list.begin();
     min = range.first;
@@ -130,7 +130,7 @@ void Spectrum1D::_append(const Entry& e) {
 }
 
 void Spectrum1D::addHit(const Hit& newHit) {
-  uint16_t en = newHit.value(energy_idx_.at(newHit.source_channel())).val(metadata_.bits);
+  uint16_t en = newHit.value(energy_idx_.at(newHit.source_channel())).val(bits_);
   if (en < cutoff_bin_)
     return;
 
@@ -243,8 +243,10 @@ uint16_t Spectrum1D::_data_from_xml(const std::string& thisData){
   std::stringstream channeldata;
   channeldata.str(thisData);
 
+  bits_ = get_attr("resolution").value_int;
+
   spectrum_.clear();
-  spectrum_.resize(pow(2, metadata_.bits), 0);
+  spectrum_.resize(pow(2, bits_), 0);
 
   uint16_t i = 0;
   std::string numero, numero_z;
@@ -302,13 +304,17 @@ bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compressio
   if (i == 0)
     return false;
 
-  metadata_.bits = log2(i);
-  if (pow(2, metadata_.bits) < i)
-    metadata_.bits++;
+  bits_ = log2(i);
+  if (pow(2, bits_) < i)
+    bits_++;
   maxchan_ = i;
 
+  Setting res = get_attr("resolution");
+  res.value_int = bits_;
+  metadata_.attributes.branches.replace(res);
+
   spectrum_.clear();
-  spectrum_.resize(pow(2, metadata_.bits), 0);
+  spectrum_.resize(pow(2, bits_), 0);
       
   for (auto &q : entry_list) {
     spectrum_[q.first[0]] = q.second;
@@ -397,15 +403,19 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
   }
 
   uint32_t resolution = spectrum_.size();
-  metadata_.bits = log2(resolution);
-  if (pow(2, metadata_.bits) < resolution)
-    metadata_.bits++;
-  spectrum_.resize(pow(2, metadata_.bits), 0);
+  bits_ = log2(resolution);
+  if (pow(2, bits_) < resolution)
+    bits_++;
+  spectrum_.resize(pow(2, bits_), 0);
+
+  Setting res = get_attr("resolution");
+  res.value_int = bits_;
+  metadata_.attributes.branches.replace(res);
 
   metadata_.detectors.resize(1);
   metadata_.detectors[0] = Qpx::Detector();
   metadata_.detectors[0].name_ = "unknown";
-  Qpx::Calibration new_calib("Energy", metadata_.bits);
+  Qpx::Calibration new_calib("Energy", bits_);
   new_calib.coefficients_ = calibration;
   new_calib.units_ = "keV";
   metadata_.detectors[0].energy_calibrations_.add(new_calib);
@@ -515,15 +525,18 @@ bool Spectrum1D::read_spe_radware(std::string name) {
 
   myfile.close();
 
-
-  metadata_.bits = log2(i);
-  if (pow(2, metadata_.bits) < i)
-    metadata_.bits++;
-  resolution = pow(2, metadata_.bits);
+  bits_ = log2(i);
+  if (pow(2, bits_) < i)
+    bits_++;
+  resolution = pow(2, bits_);
   maxchan_ = i;
 
+  Setting res = get_attr("resolution");
+  res.value_int = bits_;
+  metadata_.attributes.branches.replace(res);
+
   spectrum_.clear();
-  spectrum_.resize(pow(2, metadata_.bits), 0);
+  spectrum_.resize(pow(2, bits_), 0);
 
   for (auto &q : entry_list) {
     spectrum_[q.first[0]] = q.second;
@@ -654,24 +667,27 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
 
   //DBG << "entry list is " << entry_list.size();
 
-  metadata_.bits = log2(entry_list.size());
-  if (pow(2, metadata_.bits) < entry_list.size())
-    metadata_.bits++;
+  bits_ = log2(entry_list.size());
+  if (pow(2, bits_) < entry_list.size())
+    bits_++;
   maxchan_ = entry_list.size() - 1;
 
+  Setting res = get_attr("resolution");
+  res.value_int = bits_;
+  metadata_.attributes.branches.replace(res);
+
   spectrum_.clear();
-  spectrum_.resize(pow(2, metadata_.bits), 0);
+  spectrum_.resize(pow(2, bits_), 0);
 
   for (auto &q : entry_list) {
     spectrum_[q.first[0]] = q.second;
     metadata_.total_count += q.second;
   }
 
-
-  Qpx::Calibration enc("Energy", metadata_.bits, "keV");
+  Qpx::Calibration enc("Energy", bits_, "keV");
   enc.coef_from_string(mcacal);
 
-  Qpx::Calibration fwc("FWHM", metadata_.bits, "keV");
+  Qpx::Calibration fwc("FWHM", bits_, "keV");
   fwc.coef_from_string(shapecal);
 
 
@@ -718,13 +734,17 @@ bool Spectrum1D::read_dat(std::string name) {
 
   //DBG << "entry list is " << entry_list.size();
 
-  metadata_.bits = log2(maxchan_);
-  if (pow(2, metadata_.bits) < entry_list.size())
-    metadata_.bits++;
+  bits_ = log2(maxchan_);
+  if (pow(2, bits_) < entry_list.size())
+    bits_++;
   maxchan_ = entry_list.size() - 1;
 
+  Setting res = get_attr("resolution");
+  res.value_int = bits_;
+  metadata_.attributes.branches.replace(res);
+
   spectrum_.clear();
-  spectrum_.resize(pow(2, metadata_.bits), 0);
+  spectrum_.resize(pow(2, bits_), 0);
 
   for (auto &q : entry_list) {
     spectrum_[q.first[0]] = q.second;
@@ -816,7 +836,7 @@ bool Spectrum1D::read_n42(std::string filename) {
   if (node.child("Calibration")) {
     Qpx::Calibration newcalib;
     newcalib.from_xml(node.child("Calibration"));
-    newcalib.bits_ = metadata_.bits;
+    newcalib.bits_ = bits_;
     newdet.energy_calibrations_.add(newcalib);
   }
 
@@ -891,7 +911,7 @@ bool Spectrum1D::read_ava(std::string filename) {
         !q.child("model"))
       continue;
 
-    Qpx::Calibration newcalib("Energy", metadata_.bits);
+    Qpx::Calibration newcalib("Energy", bits_);
 
     if (std::string(q.child("model").attribute("type").value()) == "polynomial")
       newcalib.model_ = Qpx::CalibrationModel::polynomial;
@@ -916,7 +936,7 @@ bool Spectrum1D::read_ava(std::string filename) {
 }
 
 void Spectrum1D::write_tka(std::string name) const {
-  uint32_t range = (pow(2, metadata_.bits) - 2);
+  uint32_t range = (pow(2, bits_) - 2);
   std::ofstream myfile(name, std::ios::out | std::ios::app);
   //  myfile.precision(2);
   //  myfile << std::fixed;
@@ -934,8 +954,8 @@ void Spectrum1D::write_n42(std::string filename) const {
 
   std::stringstream durationdata;
   Qpx::Calibration myCalibration;
-  if (metadata_.detectors[0].energy_calibrations_.has_a(Qpx::Calibration("Energy", metadata_.bits)))
-    myCalibration = metadata_.detectors[0].energy_calibrations_.get(Qpx::Calibration("Energy", metadata_.bits));
+  if (metadata_.detectors[0].energy_calibrations_.has_a(Qpx::Calibration("Energy", bits_)))
+    myCalibration = metadata_.detectors[0].energy_calibrations_.get(Qpx::Calibration("Energy", bits_));
   else if ((metadata_.detectors[0].energy_calibrations_.size() == 1) &&
            (metadata_.detectors[0].energy_calibrations_.get(0).valid()))
     myCalibration = metadata_.detectors[0].energy_calibrations_.get(0);
@@ -967,7 +987,7 @@ void Spectrum1D::write_n42(std::string filename) const {
   if (myCalibration.valid())
     myCalibration.to_xml(node);
 
-  if ((metadata_.bits > 0) && (metadata_.total_count > 0)) {
+  if (metadata_.total_count > 0) {
     node.append_child("ChannelData").append_attribute("Compression").set_value("CountedZeroes");
     node.last_child().append_child(pugi::node_pcdata).set_value(this->_data_to_xml().c_str());
   }
@@ -992,7 +1012,7 @@ void Spectrum1D::write_spe(std::string filename) const {
     cname.resize(8);
   myfile.write ((char*)cname.data(), 8*sizeof(char));
 
-  uint32_t dim1 = pow(2, metadata_.bits);
+  uint32_t dim1 = pow(2, bits_);
   uint32_t dim2 = 1;
   myfile.write ((char*)&dim1, sizeof(uint32_t));
   myfile.write ((char*)&dim2, sizeof(uint32_t));

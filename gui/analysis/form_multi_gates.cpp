@@ -200,14 +200,16 @@ Gate FormMultiGates::current_gate() {
   if ((idx > -1) && (idx < gates_.size()))
     return gates_[idx];
 
+  uint16_t bits = md_.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+
   Gate gate;
   gate.approved = false;
-  gate.constraints.x_c.set_bin(-1, md_.bits, fit_data_.settings().cali_nrg_);
-  gate.constraints.x1.set_bin(-0.5, md_.bits, fit_data_.settings().cali_nrg_);
-  gate.constraints.x2.set_bin(res_ - 0.5, md_.bits, fit_data_.settings().cali_nrg_);
-  gate.constraints.y_c.set_bin(-1, md_.bits, fit_data_.settings().cali_nrg_);
-  gate.constraints.y1.set_bin(-0.5, md_.bits, fit_data_.settings().cali_nrg_);
-  gate.constraints.y2.set_bin(res_ - 0.5, md_.bits, fit_data_.settings().cali_nrg_);
+  gate.constraints.x_c.set_bin(-1, bits, fit_data_.settings().cali_nrg_);
+  gate.constraints.x1.set_bin(-0.5, bits, fit_data_.settings().cali_nrg_);
+  gate.constraints.x2.set_bin(res_ - 0.5, bits, fit_data_.settings().cali_nrg_);
+  gate.constraints.y_c.set_bin(-1, bits, fit_data_.settings().cali_nrg_);
+  gate.constraints.y1.set_bin(-0.5, bits, fit_data_.settings().cali_nrg_);
+  gate.constraints.y2.set_bin(res_ - 0.5, bits, fit_data_.settings().cali_nrg_);
   gate.constraints.labelfloat = true;
   gate.constraints.visible = false;
   gate.constraints.horizontal = true;
@@ -319,18 +321,20 @@ void FormMultiGates::on_pushApprove_clicked()
     gate.approved = false;
     gate.constraints.labelfloat = true;
 
+    uint16_t bits = md_.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+
     double w = q.second.fwhm().value() * ui->doubleGateOn->value();
     double L_nrg = q.second.energy().value() - w / 2;
     double R_nrg = q.second.energy().value() + w / 2;
-    double L_chan = fit_data_.settings().cali_nrg_.inverse_transform(L_nrg, fit_data_.metadata_.bits);
-    double R_chan = fit_data_.settings().cali_nrg_.inverse_transform(R_nrg, fit_data_.metadata_.bits);
+    double L_chan = fit_data_.settings().cali_nrg_.inverse_transform(L_nrg, fit_data_.settings().bits_);
+    double R_chan = fit_data_.settings().cali_nrg_.inverse_transform(R_nrg, fit_data_.settings().bits_);
 
-    gate.constraints.x_c.set_bin(res_/2, md_.bits, fit_data_.settings().cali_nrg_);
-    gate.constraints.x1.set_bin(-0.5, md_.bits, fit_data_.settings().cali_nrg_);
-    gate.constraints.x2.set_bin(res_ - 0.5, md_.bits, fit_data_.settings().cali_nrg_);
-    gate.constraints.y_c.set_bin(q.second.center().value(), md_.bits, fit_data_.settings().cali_nrg_);
-    gate.constraints.y1.set_bin(std::round(L_chan) - 0.5, md_.bits, fit_data_.settings().cali_nrg_);
-    gate.constraints.y2.set_bin(std::round(R_chan) + 0.5, md_.bits, fit_data_.settings().cali_nrg_);
+    gate.constraints.x_c.set_bin(res_/2, bits, fit_data_.settings().cali_nrg_);
+    gate.constraints.x1.set_bin(-0.5, bits, fit_data_.settings().cali_nrg_);
+    gate.constraints.x2.set_bin(res_ - 0.5, bits, fit_data_.settings().cali_nrg_);
+    gate.constraints.y_c.set_bin(q.second.center().value(), bits, fit_data_.settings().cali_nrg_);
+    gate.constraints.y1.set_bin(std::round(L_chan) - 0.5, bits, fit_data_.settings().cali_nrg_);
+    gate.constraints.y2.set_bin(std::round(R_chan) + 0.5, bits, fit_data_.settings().cali_nrg_);
     gate.constraints.visible = true;
 
     if (index_of(gate.constraints.y_c.bin(0), true) < 0)
@@ -367,9 +371,9 @@ void FormMultiGates::on_pushDistill_clicked()
       double L_chan = gate.fit_data_.settings().cali_nrg_.inverse_transform(L_nrg, gate.fit_data_.settings().bits_);
       double R_chan = gate.fit_data_.settings().cali_nrg_.inverse_transform(R_nrg, gate.fit_data_.settings().bits_);
 
-      box.x_c.set_bin(peak.center().value(), md_.bits, gate.fit_data_.settings().cali_nrg_);
-      box.x1.set_bin(std::round(L_chan) - 0.5, md_.bits, gate.fit_data_.settings().cali_nrg_);
-      box.x2.set_bin(std::round(R_chan) + 0.5, md_.bits, gate.fit_data_.settings().cali_nrg_);
+      box.x_c.set_bin(peak.center().value(), fit_data_.settings().bits_, gate.fit_data_.settings().cali_nrg_);
+      box.x1.set_bin(std::round(L_chan) - 0.5, fit_data_.settings().bits_, gate.fit_data_.settings().cali_nrg_);
+      box.x2.set_bin(std::round(R_chan) + 0.5, fit_data_.settings().bits_, gate.fit_data_.settings().cali_nrg_);
       all_boxes_.push_back(box);
     }
   }
@@ -406,10 +410,10 @@ void FormMultiGates::make_gate() {
 //      - fit_data_.settings().cali_nrg_.transform(gate.centroid_chan - gate.width_chan*0.5, fit_data_.metadata_.bits);
   Metadata md = source_spectrum->metadata();
 
-  uint32_t xmin = std::ceil(gate.constraints.x1.bin(md.bits));
-  uint32_t xmax = std::floor(gate.constraints.x2.bin(md.bits));
-  uint32_t ymin = std::ceil(gate.constraints.y1.bin(md.bits));
-  uint32_t ymax = std::floor(gate.constraints.y2.bin(md.bits));
+  uint32_t xmin = std::ceil(gate.constraints.x1.bin(fit_data_.settings().bits_));
+  uint32_t xmax = std::floor(gate.constraints.x2.bin(fit_data_.settings().bits_));
+  uint32_t ymin = std::ceil(gate.constraints.y1.bin(fit_data_.settings().bits_));
+  uint32_t ymax = std::floor(gate.constraints.y2.bin(fit_data_.settings().bits_));
 
   DBG << "Coincidence gate x[" << xmin << "-" << xmax << "]   y[" << ymin << "-" << ymax << "]";
 
@@ -417,16 +421,16 @@ void FormMultiGates::make_gate() {
   {
     std::string name =
         md.detectors[0].name_ +
-        "[" + to_str_precision(md.detectors[1].best_calib(md.bits).transform(ymin, md.bits), 0)
+        "[" + to_str_precision(md.detectors[1].best_calib(fit_data_.settings().bits_).transform(ymin, fit_data_.settings().bits_), 0)
         + "," +
-        to_str_precision(md.detectors[1].best_calib(md.bits).transform(ymax, md.bits), 0) + "]"
+        to_str_precision(md.detectors[1].best_calib(fit_data_.settings().bits_).transform(ymax, fit_data_.settings().bits_), 0) + "]"
 
         + " x " +
 
         md.detectors[1].name_ +
-        "[" + to_str_precision(md.detectors[0].best_calib(md.bits).transform(xmin, md.bits), 0)
+        "[" + to_str_precision(md.detectors[0].best_calib(fit_data_.settings().bits_).transform(xmin, fit_data_.settings().bits_), 0)
         + "," +
-        to_str_precision(md.detectors[0].best_calib(md.bits).transform(xmax, md.bits), 0) + "]";
+        to_str_precision(md.detectors[0].best_calib(fit_data_.settings().bits_).transform(xmax, fit_data_.settings().bits_), 0) + "]";
 
     if (gate_x && (gate_x->name() == name)) {
 //      DBG << "same gate";
@@ -461,9 +465,10 @@ void FormMultiGates::setSpectrum(Project *newset, int64_t idx) {
   current_spectrum_ = idx;
   SinkPtr spectrum = spectra_->get_sink(idx);
 
-  if (spectrum && spectrum->bits()) {
+  if (spectrum) {
     md_ = spectrum->metadata();
-    res_ = pow(2,md_.bits);
+    uint16_t bits = md_.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+    res_ = pow(2,bits);
     make_gate();
     if (!gates_.empty()) {
       //DBG << "not empty";
@@ -495,12 +500,12 @@ void FormMultiGates::update_peaks(bool content_changed) {
     double w = peak.fwhm().value() * ui->doubleGateOn->value();
     double L_nrg = peak.energy().value() - w / 2;
     double R_nrg = peak.energy().value() + w / 2;
-    double L_chan = fit_data_.settings().cali_nrg_.inverse_transform(L_nrg, md_.bits);
-    double R_chan = fit_data_.settings().cali_nrg_.inverse_transform(R_nrg, md_.bits);
+    double L_chan = fit_data_.settings().cali_nrg_.inverse_transform(L_nrg, fit_data_.settings().bits_);
+    double R_chan = fit_data_.settings().cali_nrg_.inverse_transform(R_nrg, fit_data_.settings().bits_);
 
-    box.x_c.set_bin(peak.center().value(), md_.bits, fit_data_.settings().cali_nrg_);
-    box.x1.set_bin(std::round(L_chan) - 0.5, md_.bits, fit_data_.settings().cali_nrg_);
-    box.x2.set_bin(std::round(R_chan) + 0.5, md_.bits, fit_data_.settings().cali_nrg_);
+    box.x_c.set_bin(peak.center().value(), fit_data_.settings().bits_, fit_data_.settings().cali_nrg_);
+    box.x1.set_bin(std::round(L_chan) - 0.5, fit_data_.settings().bits_, fit_data_.settings().cali_nrg_);
+    box.x2.set_bin(std::round(R_chan) + 0.5, fit_data_.settings().bits_, fit_data_.settings().cali_nrg_);
 
     box.horizontal = false;
     box.vertical = true;
@@ -519,7 +524,7 @@ void FormMultiGates::update_peaks(bool content_changed) {
 void FormMultiGates::choose_peaks(std::list<MarkerBox2D> chpeaks) {
   std::set<double> xs;//, ys;
   for (auto &q : chpeaks) {
-    xs.insert(q.x_c.bin(fit_data_.metadata_.bits));
+    xs.insert(q.x_c.bin(fit_data_.settings().bits_));
 //    ys.insert(q.y_c.bin(fit_data_.metadata_.bits));
   }
   ui->gatedSpectrum->update_selection(xs);

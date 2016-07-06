@@ -162,14 +162,14 @@ std::vector<std::string> Project::types() const {
   return output;
 }
 
-std::set<uint32_t> Project::resolutions(uint16_t dim) const {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  std::set<uint32_t> haveres;
-  for (auto &q: sinks_)
-    if (q.second->dimensions() == dim)
-      haveres.insert(q.second->bits());
-  return haveres;
-}
+//std::set<uint32_t> Project::resolutions(uint16_t dim) const {
+//  boost::unique_lock<boost::mutex> lock(mutex_);
+//  std::set<uint32_t> haveres;
+//  for (auto &q: sinks_)
+//    if (q.second->dimensions() == dim)
+//      haveres.insert(q.second->bits());
+//  return haveres;
+//}
 
 bool Project::has_fitter(int64_t idx) const
 {
@@ -206,18 +206,16 @@ SinkPtr Project::get_sink(int64_t idx) {
     return nullptr;
 }
 
-std::map<int64_t, SinkPtr> Project::get_sinks(int32_t dimensions, int32_t bits) {
+std::map<int64_t, SinkPtr> Project::get_sinks(int32_t dimensions) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   //threadsafe so long as sink implemented as thread-safe
   
-  if ((dimensions == -1) && (bits == -1))
+  if (dimensions == -1)
     return sinks_;
 
   std::map<int64_t, SinkPtr> ret;
   for (auto &q: sinks_)
-    if (((q.second->dimensions() == dimensions) && (q.second->bits() == bits)) ||
-        ((q.second->dimensions() == dimensions) && (bits == -1)) ||
-        ((dimensions == -1) && (q.second->bits() == bits)))
+    if (q.second->dimensions() == dimensions)
       ret.insert(q);
   return ret;
 }
@@ -467,10 +465,10 @@ void Project::from_xml(const pugi::xml_node &root, bool with_sinks, bool with_fu
           Spill sp = s;
           if (!sink->metadata().detectors.empty()) //backwards compat
             sp.detectors.clear();
-          else {
-            for (auto &d : sp.detectors)
-              d.energy_calibrations_.add(Qpx::Calibration("Energy", sink->metadata().bits));
-          }
+//          else {
+//            for (auto &d : sp.detectors)
+//              d.energy_calibrations_.add(Qpx::Calibration("Energy", sink->metadata().bits));
+//          }
           sink->push_spill(sp);
         }
         sinks_[current_index_] = sink;
@@ -521,7 +519,9 @@ void Project::import_spn(std::string file_name) {
   dets.push_back(det);
 
   Qpx::Metadata temp = Qpx::SinkFactory::getInstance().create_prototype("1D");
-  temp.bits = 12;
+  Setting res = temp.attributes.branches.get(Setting("resolution"));
+  res.value_int = 12;
+  temp.attributes.branches.replace(res);
   Qpx::Setting pattern;
   pattern = temp.attributes.branches.get(Qpx::Setting("pattern_coinc"));
   pattern.value_pattern.set_gates(std::vector<bool>({1}));

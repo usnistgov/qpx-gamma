@@ -131,7 +131,7 @@ void FormPlot2D::choose_spectrum(SelectorItem item)
 
   current_spectrum_ = itm.data.toLongLong();
 
-  std::map<int64_t, SinkPtr> spectra = mySpectra->get_sinks(2, -1);
+  std::map<int64_t, SinkPtr> spectra = mySpectra->get_sinks(2);
 
   for (auto &q : spectra) {
     Setting vis = q.second->metadata().attributes.branches.get(Setting("visible"));
@@ -148,7 +148,7 @@ void FormPlot2D::updateUI()
 {
   QVector<SelectorItem> items;
 
-  for (auto &q : mySpectra->get_sinks(2, -1)) {
+  for (auto &q : mySpectra->get_sinks(2)) {
     Metadata md;
     if (q.second)
       md = q.second->metadata();
@@ -298,8 +298,9 @@ void FormPlot2D::update_plot(bool force) {
     if (some_spectrum)
       md = some_spectrum->metadata();
 
+    uint16_t newbits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
 
-    if ((md.total_count > 0) && (md.dimensions() == 2) && (adjrange = pow(2,md.bits) * zoom_2d))
+    if ((md.total_count > 0) && (md.dimensions() == 2) && (adjrange = pow(2,newbits) * zoom_2d))
     {
 //      DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
@@ -317,7 +318,6 @@ void FormPlot2D::update_plot(bool force) {
 //        DBG << "rescaling 2d";
 //        name_2d = newname;
 
-        int newbits = some_spectrum->bits();
         if (bits != newbits)
           bits = newbits;
 

@@ -187,7 +187,7 @@ std::unique_ptr<EntryList> Spectrum2D::_data_range(std::initializer_list<Pair> l
   int min0, min1, max0, max1;
   if (list.size() != 2) {
     min0 = min1 = 0;
-    max0 = max1 = pow(2, metadata_.bits);
+    max0 = max1 = pow(2, bits_);
   } else {
     Pair range0 = *list.begin(), range1 = *(list.begin()+1);
     min0 = range0.first; max0 = range0.second;
@@ -237,9 +237,9 @@ void Spectrum2D::addEvent(const Event& newEvent) {
   uint16_t chan1_en = 0;
   uint16_t chan2_en = 0;
   if (newEvent.hits.count(pattern_[0]))
-    chan1_en = newEvent.hits.at(pattern_[0]).value(energy_idx_.at(pattern_[0])).val(metadata_.bits);
+    chan1_en = newEvent.hits.at(pattern_[0]).value(energy_idx_.at(pattern_[0])).val(bits_);
   if (newEvent.hits.count(pattern_[1]))
-    chan2_en = newEvent.hits.at(pattern_[1]).value(energy_idx_.at(pattern_[1])).val(metadata_.bits);
+    chan2_en = newEvent.hits.at(pattern_[1]).value(energy_idx_.at(pattern_[1])).val(bits_);
   spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] += 1;
   if (buffered_)
     temp_spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] =
@@ -274,7 +274,7 @@ void Spectrum2D::write_m(std::string name) const {
   //matlab script
   std::ofstream myfile(name, std::ios::out | std::ios::app);
   myfile << "%=========Qpx 2d spectrum=========" << std::endl
-         << "%  Bit precision: " << metadata_.bits << std::endl
+         << "%  Bit precision: " << bits_ << std::endl
          << "%  Total events : " << metadata_.total_count << std::endl
          << "clear;" << std::endl;
   for (auto it = spectrum_.begin(); it != spectrum_.end(); ++it)
@@ -342,16 +342,19 @@ bool Spectrum2D:: read_m4b(std::string name) {
         spectrum_[std::pair<uint16_t, uint16_t>(i,j)] = one;
     }
   }
-  metadata_.bits = 12;
+  bits_ = 12;
+  Setting res = get_attr("resolution");
+  res.value_int = bits_;
+  metadata_.attributes.branches.replace(res);
 
   metadata_.detectors.resize(2);
   metadata_.detectors[0].name_ = "unknown1";
-  metadata_.detectors[0].energy_calibrations_.add(Qpx::Calibration("Energy", metadata_.bits));
+  metadata_.detectors[0].energy_calibrations_.add(Qpx::Calibration("Energy", bits_));
   if (check_symmetrization())
     metadata_.detectors[1] = metadata_.detectors[0];
   else {
     metadata_.detectors[1].name_ = "unknown2";
-    metadata_.detectors[1].energy_calibrations_.add(Qpx::Calibration("Energy", metadata_.bits));
+    metadata_.detectors[1].energy_calibrations_.add(Qpx::Calibration("Energy", bits_));
   }
 
   init_from_file(name);
@@ -374,16 +377,19 @@ bool Spectrum2D:: read_mat(std::string name) {
         spectrum_[std::pair<uint16_t, uint16_t>(i,j)] = one;
     }
   }
-  metadata_.bits = 12;
+  bits_ = 12;
+  Setting res = get_attr("resolution");
+  res.value_int = bits_;
+  metadata_.attributes.branches.replace(res);
 
   metadata_.detectors.resize(2);
   metadata_.detectors[0].name_ = "unknown1";
-  metadata_.detectors[0].energy_calibrations_.add(Qpx::Calibration("Energy", metadata_.bits));
+  metadata_.detectors[0].energy_calibrations_.add(Qpx::Calibration("Energy", bits_));
   if (check_symmetrization())
     metadata_.detectors[1] = metadata_.detectors[0];
   else {
     metadata_.detectors[1].name_ = "unknown2";
-    metadata_.detectors[1].energy_calibrations_.add(Qpx::Calibration("Energy", metadata_.bits));
+    metadata_.detectors[1].energy_calibrations_.add(Qpx::Calibration("Energy", bits_));
   }
 
   init_from_file(name);

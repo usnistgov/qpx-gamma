@@ -197,7 +197,7 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
 
         spectra_names_.clear();
 
-        for (auto &q: temp_set.get_sinks(2, -1)) {
+        for (auto &q: temp_set.get_sinks(2)) {
           Qpx::Metadata md = q.second->metadata();
 //          DBG << "<Simulator2D> Spectrum available: " << md.name << " t:" << md.type() << " r:" << md.bits;
           spectra_names_[q.first] = md.name;
@@ -246,10 +246,11 @@ bool Simulator2D::boot() {
   }
 
   Metadata md = spectrum->metadata();
-  LINFO << "<Simulator2D> Will use " << md.name << " type:" << md.type() << " bits:" << md.bits;
+  Setting sres = md.attributes.branches.get(Setting("resolution"));
+  LINFO << "<Simulator2D> Will use " << md.name << " type:" << md.type() << " bits:" << sres.value_int;
 
 
-  int source_res = md.bits;
+  int source_res = sres.value_int;
   lab_time = md.attributes.branches.get(Qpx::Setting("real_time")).value_duration.total_milliseconds() * 0.001;
   live_time = md.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
 
@@ -270,7 +271,7 @@ bool Simulator2D::boot() {
        << " rate=" << OCR << "cps";
   std::vector<double> distribution(resolution_*resolution_, 0.0);   //optimize somehow
 
-  uint32_t res = pow(2, spectrum->metadata().bits);
+  uint32_t res = pow(2, source_res);
   std::unique_ptr<std::list<Qpx::Entry>> spec_list(spectrum->data_range({{0,res},{0,res}}));
 
   if (adjust_bits >= 0)

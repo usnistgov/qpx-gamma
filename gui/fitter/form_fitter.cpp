@@ -176,7 +176,7 @@ void FormFitter::update_spectrum(QString title) {
   if (!fit_data_ || busy_)
     return;
 
-  if (fit_data_->metadata_.bits <= 0) {
+  if (fit_data_->settings().bits_ <= 0) {
     clear();
     updateData();
     return;

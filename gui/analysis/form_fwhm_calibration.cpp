@@ -334,7 +334,7 @@ void FormFwhmCalibration::fit_calibration()
 
   if (p.coeffs_.size()) {
     new_calibration_.type_ = "FWHM";
-    new_calibration_.bits_ = fit_data_.metadata_.bits;
+    new_calibration_.bits_ = fit_data_.settings().bits_; //irrelevant?
     new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.r_squared_ = p.rsq_;
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?

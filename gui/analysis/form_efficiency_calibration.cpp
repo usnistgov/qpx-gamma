@@ -164,7 +164,7 @@ void FormEfficiencyCalibration::setSpectrum(int64_t idx) {
 
   SinkPtr spectrum = spectra_->get_sink(idx);
 
-  if (spectrum && spectrum->bits()) {
+  if (spectrum) {
     fit_data_ = Fitter();
     current_spectrum_ = idx;
 
@@ -293,7 +293,7 @@ void FormEfficiencyCalibration::update_detector_calibs()
 void FormEfficiencyCalibration::update_spectra() {
   QVector<SelectorItem> items;
 
-  for (auto &q : spectra_->get_sinks(1, -1)) {
+  for (auto &q : spectra_->get_sinks(1)) {
     Metadata md;
     if (q.second)
       md = q.second->metadata();
@@ -561,7 +561,7 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
 
   if (p.coeffs_.size()) {
     new_calibration_.type_ = "Efficiency";
-    new_calibration_.bits_ = fit_data_.metadata_.bits;
+    new_calibration_.bits_ = fit_data_.settings().bits_;
     new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
@@ -667,7 +667,7 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
 
   if (p.coeffs_.size()) {
     new_calibration_.type_ = "Efficiency";
-    new_calibration_.bits_ = fit_data_.metadata_.bits;
+    new_calibration_.bits_ = fit_data_.settings().bits_;
     new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
@@ -713,7 +713,7 @@ void FormEfficiencyCalibration::on_pushFitEffit_clicked()
   Effit p = Effit(xx, yy);
 
     new_calibration_.type_ = "Efficiency";
-    new_calibration_.bits_ = fit_data_.metadata_.bits;
+    new_calibration_.bits_ = fit_data_.settings().bits_;
     new_calibration_.coefficients_ = p.coeffs();
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";

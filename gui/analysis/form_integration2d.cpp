@@ -79,8 +79,9 @@ void FormIntegration2D::setPeaks(std::list<MarkerBox2D> pks) {
   SinkPtr source_spectrum = spectra_->get_sink(current_spectrum_);
   if (source_spectrum) {
     md_ = source_spectrum->metadata();
+    uint16_t bits = md_.attributes.branches.get(Qpx::Setting("resolution")).value_int;
     if (md_.attributes.branches.get(Setting("symmetrized")).value_int) {
-      uint32_t res = pow(2, md_.bits);
+      uint32_t res = pow(2, bits);
       std::list<MarkerBox2D> northwest;
       std::list<MarkerBox2D> southeast;
       std::list<MarkerBox2D> diagonal;
@@ -187,12 +188,14 @@ void FormIntegration2D::make_range(Coord x, Coord y) {
   range_.y_c = y;
   Calibration f1, f2, e1, e2;
 
+  uint16_t bits = md_.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+
   if (md_.detectors.size() > 1) {
     //DBG << "dets2";
     f1 = md_.detectors[0].fwhm_calibration_;
     f2 = md_.detectors[1].fwhm_calibration_;
-    e1 = md_.detectors[0].best_calib(md_.bits);
-    e2 = md_.detectors[1].best_calib(md_.bits);
+    e1 = md_.detectors[0].best_calib(bits);
+    e2 = md_.detectors[1].best_calib(bits);
   }
   //  DBG << "making 2d marker, calibs valid " << f1.valid() << " " << f2.valid();
 
@@ -391,7 +394,7 @@ void FormIntegration2D::setSpectrum(Project *newset, int64_t idx) {
   current_spectrum_ = idx;
   SinkPtr spectrum = spectra_->get_sink(idx);
 
-  if (spectrum && spectrum->bits()) {
+  if (spectrum) {
     md_ = spectrum->metadata();
     if (!peaks_.empty()) {
       ui->tableGateList->selectRow(0);
@@ -454,17 +457,18 @@ void FormIntegration2D::make_gates() {
       return;
 
     md_ = source_spectrum->metadata();
+    uint16_t bits = md_.attributes.branches.get(Qpx::Setting("resolution")).value_int;
     double margin = 3;
 
-    uint32_t adjrange = pow(2,md_.bits) - 1;
+    uint32_t adjrange = pow(2,bits) - 1;
 
-    double xwidth = peak.x2.bin(md_.bits) - peak.x1.bin(md_.bits);
-    double ywidth = peak.y2.bin(md_.bits) - peak.y1.bin(md_.bits);
+    double xwidth = peak.x2.bin(bits) - peak.x1.bin(bits);
+    double ywidth = peak.y2.bin(bits) - peak.y1.bin(bits);
 
-    double xmin = peak.x1.bin(md_.bits) - xwidth * margin;
-    double xmax = peak.x2.bin(md_.bits) + xwidth * margin;
-    double ymin = peak.y1.bin(md_.bits) - ywidth * margin;
-    double ymax = peak.y2.bin(md_.bits) + ywidth * margin;
+    double xmin = peak.x1.bin(bits) - xwidth * margin;
+    double xmax = peak.x2.bin(bits) + xwidth * margin;
+    double ymin = peak.y1.bin(bits) - ywidth * margin;
+    double ymax = peak.y2.bin(bits) + ywidth * margin;
 
     if (xmin < 0)
       xmin = 0;
@@ -491,7 +495,8 @@ void FormIntegration2D::make_gates() {
       temp = SinkFactory::getInstance().create_prototype("1D");
       //  temp.visible = true;
       temp.name = "temp";
-      temp.bits = md_.bits;
+      uint16_t bits = md_.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+      temp.attributes.branches.replace(md_.attributes.branches.get(Qpx::Setting("resolution")));
 
       Setting pattern;
 
@@ -504,11 +509,11 @@ void FormIntegration2D::make_gates() {
       pattern.value_pattern.set_theshold(1);
       temp.attributes.branches.replace(pattern);
       gate = SinkFactory::getInstance().create_from_prototype(temp);
-      slice_diagonal_x(source_spectrum, gate, peak.x_c.bin(md_.bits), peak.y_c.bin(md_.bits), (xwidth + ywidth) / 2, xmin, xmax);
+      slice_diagonal_x(source_spectrum, gate, peak.x_c.bin(bits), peak.y_c.bin(bits), (xwidth + ywidth) / 2, xmin, xmax);
       fit_x_.setData(gate);
 
       gate = SinkFactory::getInstance().create_from_prototype(temp);
-      slice_diagonal_y(source_spectrum, gate, peak.x_c.bin(md_.bits), peak.y_c.bin(md_.bits), (xwidth + ywidth) / 2, ymin, ymax);
+      slice_diagonal_y(source_spectrum, gate, peak.x_c.bin(bits), peak.y_c.bin(bits), (xwidth + ywidth) / 2, ymin, ymax);
       fit_y_.setData(gate);
 
     }

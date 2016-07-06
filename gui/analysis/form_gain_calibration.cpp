@@ -54,7 +54,7 @@ FormGainCalibration::FormGainCalibration(XMLableDB<Qpx::Detector>& dets, Qpx::Fi
 }
 
 void FormGainCalibration::newSpectrum() {
-  int bits = fit_data1_.metadata_.bits;
+  int bits = fit_data1_.settings().bits_;
 
   detector1_ = fit_data1_.detector_;
   detector2_ = fit_data2_.detector_;
@@ -219,7 +219,7 @@ void FormGainCalibration::on_pushCalibGain_clicked()
   if (p.coeffs_.size()) {
     gain_match_cali_.coefficients_ = p.coeffs();
     gain_match_cali_.to_ = detector1_.name_;
-    gain_match_cali_.bits_ = fit_data2_.metadata_.bits;
+    gain_match_cali_.bits_ = fit_data2_.settings().bits_;
     gain_match_cali_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     gain_match_cali_.model_ = Qpx::CalibrationModel::polynomial;
     ui->plotCalib->setFloatingText(QString::fromStdString(p.to_UTF8(3, true)));

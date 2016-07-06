@@ -32,7 +32,29 @@ Spectrum::Spectrum()
   , recent_count_(0)
   , coinc_window_(0)
   , max_delay_(0)
+  , bits_(0)
 {
+  Qpx::Setting res;
+  res.id_ = "resolution";
+  res.metadata.setting_type = Qpx::SettingType::int_menu;
+  res.metadata.writable = true;
+  res.metadata.flags.insert("preset");
+  res.metadata.description = "";
+  res.value_int = 14;
+  res.metadata.int_menu_items[4] = "4 bit (16)";
+  res.metadata.int_menu_items[5] = "5 bit (32)";
+  res.metadata.int_menu_items[6] = "6 bit (64)";
+  res.metadata.int_menu_items[7] = "7 bit (128)";
+  res.metadata.int_menu_items[8] = "8 bit (256)";
+  res.metadata.int_menu_items[9] = "9 bit (512)";
+  res.metadata.int_menu_items[10] = "10 bit (1024)";
+  res.metadata.int_menu_items[11] = "11 bit (2048)";
+  res.metadata.int_menu_items[12] = "12 bit (4096)";
+  res.metadata.int_menu_items[13] = "13 bit (8192)";
+  res.metadata.int_menu_items[14] = "14 bit (16384)";
+  res.metadata.int_menu_items[15] = "15 bit (32768)";
+  res.metadata.int_menu_items[16] = "16 bit (65536)";
+  metadata_.attributes.branches.add(res);
 
   Setting dets;
   dets.id_ = "per_detector";
@@ -140,6 +162,7 @@ bool Spectrum::_initialize() {
   pattern_anti_ = get_attr("pattern_anti").value_pattern;
   pattern_add_ = get_attr("pattern_add").value_pattern;
   coinc_window_ = get_attr("coinc_window").value_dbl;
+  bits_ = get_attr("resolution").value_int;
   if (coinc_window_ < 0)
     coinc_window_ = 0;
 
@@ -176,7 +199,7 @@ void Spectrum::_push_hit(const Hit& newhit)
     return;
 
   if ((newhit.source_channel() < cutoff_logic_.size())
-      && (newhit.value(energy_idx_.at(newhit.source_channel())).val(metadata_.bits) < cutoff_logic_[newhit.source_channel()]))
+      && (newhit.value(energy_idx_.at(newhit.source_channel())).val(bits_) < cutoff_logic_[newhit.source_channel()]))
     return;
 
   if (newhit.source_channel() < 0)
@@ -367,17 +390,17 @@ void Spectrum::_recalc_axes() {
     return;
 
   for (int i=0; i < metadata_.detectors.size(); ++i) {
-    uint32_t res = pow(2,metadata_.bits);
+    uint32_t res = pow(2,bits_);
 
     Qpx::Calibration this_calib;
-    if (metadata_.detectors[i].energy_calibrations_.has_a(Qpx::Calibration("Energy", metadata_.bits)))
-      this_calib = metadata_.detectors[i].energy_calibrations_.get(Qpx::Calibration("Energy", metadata_.bits));
+    if (metadata_.detectors[i].energy_calibrations_.has_a(Qpx::Calibration("Energy", bits_)))
+      this_calib = metadata_.detectors[i].energy_calibrations_.get(Qpx::Calibration("Energy", bits_));
     else
       this_calib = metadata_.detectors[i].highest_res_calib();
 
     axes_[i].resize(res, 0.0);
     for (uint32_t j=0; j<res; j++)
-      axes_[i][j] = this_calib.transform(j, metadata_.bits);
+      axes_[i][j] = this_calib.transform(j, bits_);
   }
 }
 

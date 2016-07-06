@@ -130,9 +130,10 @@ void FormAnalysis2D::initialize() {
 
     SinkPtr spectrum = spectra_->get_sink(current_spectrum_);
 
-    if (spectrum && spectrum->bits()) {
+    if (spectrum) {
       Metadata md = spectrum->metadata();
-      res = pow(2,md.bits);
+      uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+      res = pow(2,bits);
 
       ui->plotMatrix->reset_content();
       ui->plotMatrix->setSpectra(*spectra_, current_spectrum_);

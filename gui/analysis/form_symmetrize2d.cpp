@@ -113,7 +113,8 @@ void FormSymmetrize2D::make_gated_spectra() {
 
   if ((md.total_count > 0) && (md.dimensions() == 2))
   {
-    uint32_t adjrange = pow(2,md.bits) - 1;
+    uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+    uint32_t adjrange = pow(2,bits) - 1;
 
     gate_x = slice_rectangular(source_spectrum, {{0, adjrange}, {0, adjrange}}, true);
 
@@ -140,9 +141,10 @@ void FormSymmetrize2D::initialize() {
 
     SinkPtr spectrum = spectra_->get_sink(current_spectrum_);
 
-    if (spectrum && spectrum->bits()) {
+    if (spectrum) {
       Metadata md = spectrum->metadata();
-      res = pow(2,md.bits);
+      uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+      res = pow(2,bits);
 
       detector1_ = Detector();
       detector2_ = Detector();
@@ -158,11 +160,11 @@ void FormSymmetrize2D::initialize() {
       DBG << "det1 " << detector1_.name_;
       DBG << "det2 " << detector2_.name_;
 
-      if (detector1_.energy_calibrations_.has_a(Calibration("Energy", md.bits)))
-        nrg_calibration1_ = detector1_.energy_calibrations_.get(Calibration("Energy", md.bits));
+      if (detector1_.energy_calibrations_.has_a(Calibration("Energy", bits)))
+        nrg_calibration1_ = detector1_.energy_calibrations_.get(Calibration("Energy", bits));
 
-      if (detector2_.energy_calibrations_.has_a(Calibration("Energy", md.bits)))
-        nrg_calibration2_ = detector2_.energy_calibrations_.get(Calibration("Energy", md.bits));
+      if (detector2_.energy_calibrations_.has_a(Calibration("Energy", bits)))
+        nrg_calibration2_ = detector2_.energy_calibrations_.get(Calibration("Energy", bits));
 
       bool symmetrized = (md.attributes.branches.get(Setting("symmetrized")).value_int != 0);
     }
@@ -263,7 +265,7 @@ void FormSymmetrize2D::symmetrize()
 
 void FormSymmetrize2D::apply_gain_calibration()
 {
-  gain_match_cali_ = fit_data_2_.detector_.get_gain_match(fit_data_2_.metadata_.bits, detector1_.name_);
+  gain_match_cali_ = fit_data_2_.detector_.get_gain_match(fit_data_2_.settings().bits_, detector1_.name_);
 
   std::string msg_text("Propagating gain match calibration ");
   msg_text += detector2_.name_ + "->" + gain_match_cali_.to_ + " (" + std::to_string(gain_match_cali_.bits_) + " bits) to all spectra in current project: "

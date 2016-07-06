@@ -33,18 +33,19 @@ void Fitter::setData(SinkPtr spectrum)
 //  clear();
   if (spectrum) {
     Metadata md = spectrum->metadata();
-    if ((md.dimensions() != 1) || (md.bits <= 0) || (md.total_count <= 0))
+    Setting res = md.attributes.branches.get(Setting("resolution"));
+    if ((md.dimensions() != 1) || (res.value_int <= 0) || (md.total_count <= 0))
       return;
 
     metadata_ = md;
 
-    finder_.settings_.bits_ = md.bits;
+    finder_.settings_.bits_ = res.value_int;
 
     if (!md.detectors.empty())
       detector_ = md.detectors[0];
 
-    if (detector_.energy_calibrations_.has_a(Calibration("Energy", md.bits)))
-      finder_.settings_.cali_nrg_ = detector_.energy_calibrations_.get(Calibration("Energy", md.bits));
+    if (detector_.energy_calibrations_.has_a(Calibration("Energy", finder_.settings_.bits_)))
+      finder_.settings_.cali_nrg_ = detector_.energy_calibrations_.get(Calibration("Energy", finder_.settings_.bits_));
     //best?
 
     if (detector_.fwhm_calibration_.valid())
@@ -53,7 +54,7 @@ void Fitter::setData(SinkPtr spectrum)
     finder_.settings_.live_time = md.attributes.branches.get(Setting("live_time")).value_duration;
     finder_.settings_.real_time = md.attributes.branches.get(Setting("real_time")).value_duration;
 
-    std::shared_ptr<EntryList> spectrum_dump = std::move(spectrum->data_range({{0, pow(2,md.bits)}}));
+    std::shared_ptr<EntryList> spectrum_dump = std::move(spectrum->data_range({{0, pow(2,finder_.settings_.bits_)}}));
     std::vector<double> x;
     std::vector<double> y;
 
@@ -477,7 +478,7 @@ void Fitter::save_report(std::string filename) {
   std::ofstream file(filename, std::ios::out | std::ios::app);
   file << "Spectrum \"" << metadata_.name << "\"" << std::endl;
   file << "========================================================" << std::endl;
-  file << "Bits: " << finder_.settings_.bits_ << "    Resolution: " << pow(2,metadata_.bits) << std::endl;
+  file << "Bits: " << finder_.settings_.bits_ << "    Resolution: " << pow(2,finder_.settings_.bits_) << std::endl;
 
 //  file << "Match pattern:  ";
 //  for (auto &q : metadata_.match_pattern)

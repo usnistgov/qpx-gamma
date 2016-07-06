@@ -56,7 +56,7 @@ struct Metadata : public XMLable {
  public:
   //user sets these in prototype
   std::string name;
-  uint16_t bits;
+//  uint16_t bits;
   Qpx::Setting attributes;
 
   //take care of these...
@@ -74,7 +74,7 @@ struct Metadata : public XMLable {
   Metadata()
     : type_("invalid")
     , dimensions_(0)
-    , bits(14)
+//    , bits(14)
     , attributes("Options")
     , total_count(0.0)
     , changed(false)
@@ -87,7 +87,7 @@ struct Metadata : public XMLable {
     , dimensions_(dim)
     , input_types_(itypes)
     , output_types_(otypes)
-    , bits(14)
+//    , bits(14)
     , attributes("Options")
     , total_count(0.0)
     , changed(false)
@@ -103,7 +103,7 @@ struct Metadata : public XMLable {
  bool operator== (const Metadata& other) const {
    if (name != other.name) return false;
    if (type_ != other.type_) return false; //assume other type info same
-   if (bits != other.bits) return false;
+//   if (bits != other.bits) return false;
    if (attributes != other.attributes) return false;
    return true;
  }
@@ -159,7 +159,7 @@ public:
   std::string name() const;
   std::string type() const;
   uint16_t dimensions() const;
-  uint16_t bits() const;
+//  uint16_t bits() const;
 
   //Change metadata
   void set_name(std::string newname);

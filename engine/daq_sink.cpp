@@ -35,7 +35,7 @@ void Metadata::to_xml(pugi::xml_node &root) const {
 
   node.append_attribute("Type").set_value(type_.c_str());
   node.append_child("Name").append_child(pugi::node_pcdata).set_value(name.c_str());
-  node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(bits).c_str());
+//  node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(bits).c_str());
 
   if (attributes.branches.size())
     attributes.to_xml(node);
@@ -47,7 +47,7 @@ void Metadata::from_xml(const pugi::xml_node &node) {
 
   type_ = std::string(node.attribute("Type").value());
   name = std::string(node.child_value("Name"));
-  bits = boost::lexical_cast<short>(node.child_value("Resolution"));
+//  bits = boost::lexical_cast<short>(node.child_value("Resolution"));
 
   if (node.child(attributes.xml_element_name().c_str()))
     attributes.from_xml(node.child(attributes.xml_element_name().c_str()));
@@ -180,7 +180,7 @@ bool Sink::from_prototype(const Metadata& newtemplate) {
     return false;
 
   metadata_.name = newtemplate.name;
-  metadata_.bits = newtemplate.bits;
+//  metadata_.bits = newtemplate.bits;
   metadata_.attributes = newtemplate.attributes;
   return (this->_initialize());
 }
@@ -281,10 +281,10 @@ std::string Sink::name() const {
   return metadata_.name;
 }
 
-uint16_t Sink::bits() const {
-  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
-  return metadata_.bits;
-}
+//uint16_t Sink::bits() const {
+//  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
+//  return metadata_.bits;
+//}
 
 
 //change stuff
@@ -329,7 +329,7 @@ void Sink::to_xml(pugi::xml_node &root) const {
 
   node.append_child("Name").append_child(pugi::node_pcdata).set_value(metadata_.name.c_str());
   node.append_child("TotalEvents").append_child(pugi::node_pcdata).set_value(metadata_.total_count.str().c_str());
-  node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(metadata_.bits).c_str());
+//  node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(metadata_.bits).c_str());
 
   if (metadata_.attributes.branches.size())
     metadata_.attributes.to_xml(node);
@@ -342,7 +342,7 @@ void Sink::to_xml(pugi::xml_node &root) const {
     }
   }
 
-  if ((metadata_.bits > 0) && (metadata_.total_count > 0))
+  if (/*(metadata_.bits > 0) &&*/ (metadata_.total_count > 0))
     node.append_child("ChannelData").append_child(pugi::node_pcdata).set_value(this->_data_to_xml().c_str());
 }
 
@@ -367,10 +367,20 @@ bool Sink::from_xml(const pugi::xml_node &node) {
   metadata_.name = std::string(node.child_value("Name"));
 
   metadata_.total_count = PreciseFloat(node.child_value("TotalEvents"));
-  metadata_.bits = boost::lexical_cast<short>(std::string(node.child_value("Resolution")));
+//  metadata_.bits = boost::lexical_cast<short>(std::string(node.child_value("Resolution")));
 
-  if ((!metadata_.bits) || (metadata_.total_count == 0))
+  if (/*(!metadata_.bits) ||*/ (metadata_.total_count == 0))
     return false;
+
+  //backwards compat
+  if (node.child("Resolution")) {
+    Setting res = metadata_.attributes.branches.get(Setting("resolution"));
+    if (res.metadata.setting_type == SettingType::int_menu)
+    {
+      res.value_int = boost::lexical_cast<short>(std::string(node.child_value("Resolution")));
+      metadata_.attributes.branches.replace(res);
+    }
+  }
 
   //backwards compat
   if (node.child("MatchPattern")) {

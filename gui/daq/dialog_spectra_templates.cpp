@@ -64,7 +64,7 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Metadata newTemplate,
     Metadata newtemp = SinkFactory::getInstance().create_prototype(newTemplate.type());
     if (newtemp != Metadata()) {
       newtemp.name = myTemplate.name;
-      newtemp.bits = myTemplate.bits;
+//      newtemp.bits = myTemplate.bits;
       newtemp.attributes = myTemplate.attributes;
       myTemplate = newtemp;
       Setting pat = myTemplate.attributes.branches.get(Setting("pattern_add"));
@@ -85,8 +85,8 @@ void DialogSpectrumTemplate::updateData() {
 
   ui->lineName->setText(QString::fromStdString(myTemplate.name));
   ui->comboType->setCurrentText(QString::fromStdString(myTemplate.type()));
-  ui->spinBits->setValue(myTemplate.bits);
-  ui->lineChannels->setText(QString::number(pow(2,myTemplate.bits)));
+//  ui->spinBits->setValue(myTemplate.bits);
+//  ui->lineChannels->setText(QString::number(pow(2,myTemplate.bits)));
 
   QString descr = "[dim:" + QString::number(myTemplate.dimensions()) + "] " + QString::fromStdString(myTemplate.type_description()) + "\n";
 
@@ -134,11 +134,11 @@ void DialogSpectrumTemplate::on_buttonBox_rejected()
 }
 
 
-void DialogSpectrumTemplate::on_spinBits_valueChanged(int arg1)
-{
-  myTemplate.bits = arg1;
-  ui->lineChannels->setText(QString::number(pow(2,arg1)));
-}
+//void DialogSpectrumTemplate::on_spinBits_valueChanged(int arg1)
+//{
+//  myTemplate.bits = arg1;
+//  ui->lineChannels->setText(QString::number(pow(2,arg1)));
+//}
 
 void DialogSpectrumTemplate::on_comboType_activated(const QString &arg1)
 {
@@ -147,7 +147,7 @@ void DialogSpectrumTemplate::on_comboType_activated(const QString &arg1)
     myTemplate = newtemp;
 
     //keep these from previous
-    myTemplate.bits = ui->spinBits->value();
+//    myTemplate.bits = ui->spinBits->value();
 
     for (auto &a : myTemplate.attributes.branches.my_data_)
       if (a.metadata.setting_type == SettingType::color)
@@ -184,7 +184,7 @@ int TableSpectraTemplates::rowCount(const QModelIndex & /*parent*/) const
 
 int TableSpectraTemplates::columnCount(const QModelIndex & /*parent*/) const
 {
-  return 9;
+  return 8;
 }
 
 QVariant TableSpectraTemplates::data(const QModelIndex &index, int role) const
@@ -200,18 +200,16 @@ QVariant TableSpectraTemplates::data(const QModelIndex &index, int role) const
     case 1:
       return QString::fromStdString(templates_.get(row).type());
     case 2:
-      return QString::number(templates_.get(row).bits);
+      return QVariant::fromValue(templates_.get(row).attributes.branches.get(Setting("resolution")));
     case 3:
-      return QString::number(pow(2,templates_.get(row).bits));
-    case 4:
       return QVariant::fromValue(templates_.get(row).attributes.branches.get(Setting("pattern_coinc")));
-    case 5:
+    case 4:
       return QVariant::fromValue(templates_.get(row).attributes.branches.get(Setting("pattern_anti")));
-    case 6:
+    case 5:
       return QVariant::fromValue(templates_.get(row).attributes.branches.get(Setting("pattern_add")));
-    case 7:
+    case 6:
       return QVariant::fromValue(templates_.get(row).attributes.branches.get(Setting("appearance")));
-    case 8:
+    case 7:
       return QVariant::fromValue(templates_.get(row).attributes.branches.get(Setting("visible")));
     }
 
@@ -233,16 +231,14 @@ QVariant TableSpectraTemplates::headerData(int section, Qt::Orientation orientat
       case 2:
         return QString("bits");
       case 3:
-        return QString("channels");
-      case 4:
         return QString("coinc");
-      case 5:
+      case 4:
         return QString("anti");
-      case 6:
+      case 5:
         return QString("add");
-      case 7:
+      case 6:
         return QString("appearance");
-      case 8:
+      case 7:
         return QString("default plot");
       }
     } else if (orientation == Qt::Vertical) {

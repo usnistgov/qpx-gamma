@@ -39,8 +39,7 @@ SinkPtr slice_rectangular(SinkPtr source, std::initializer_list<Pair> bounds, bo
 
   Metadata temp = SinkFactory::getInstance().create_prototype("1D");
   temp.name = md.name + " projection";
-  temp.bits = md.bits;
-
+  temp.attributes.branches.replace(md.attributes.branches.get(Qpx::Setting("resolution")));
   //GENERALIZE!!!
 
   Setting pattern;
@@ -203,7 +202,8 @@ SinkPtr make_symmetrized(SinkPtr source)
     return false;
   }
 
-  Calibration gain_match_cali = detector2.get_gain_match(md.bits, detector1.name_);
+  uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+  Calibration gain_match_cali = detector2.get_gain_match(bits, detector1.name_);
 
   if (gain_match_cali.to_ == detector1.name_)
     LINFO << "<::MakeSymmetrize> using gain match calibration from " << detector2.name_ << " to " << detector1.name_ << " " << gain_match_cali.to_string();
@@ -212,7 +212,7 @@ SinkPtr make_symmetrized(SinkPtr source)
     return false;
   }
 
-  uint32_t adjrange = pow(2, md.bits);
+  uint32_t adjrange = pow(2, bits);
 
   boost::random::mt19937 gen;
   boost::random::uniform_real_distribution<> dist(-0.5, 0.5);
@@ -254,7 +254,7 @@ SinkPtr make_symmetrized(SinkPtr source)
   for (auto &p : md.detectors) {
     if (p.shallow_equals(detector1) || p.shallow_equals(detector2)) {
       p = Detector(detector1.name_ + std::string("*") + detector2.name_);
-      p.energy_calibrations_.add(detector1.energy_calibrations_.get(Calibration("Energy", md.bits)));
+      p.energy_calibrations_.add(detector1.energy_calibrations_.get(Calibration("Energy", bits)));
     }
   }
 

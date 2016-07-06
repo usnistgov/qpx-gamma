@@ -86,7 +86,7 @@ public:
 
   //report on contents
   std::vector<std::string> types() const;
-  std::set<uint32_t>      resolutions(uint16_t dim) const;
+//  std::set<uint32_t>      resolutions(uint16_t dim) const;
   std::string identity() const {
     boost::unique_lock<boost::mutex> lock(mutex_); return identity_;
   }
@@ -100,7 +100,7 @@ public:
   
   //get sinks
   SinkPtr get_sink(int64_t idx);
-  std::map<int64_t, SinkPtr> get_sinks(int32_t dimensions = -1, int32_t bits = -1);
+  std::map<int64_t, SinkPtr> get_sinks(int32_t dimensions = -1);
   std::map<int64_t, SinkPtr> get_sinks(std::string type);
 
   //Fitters

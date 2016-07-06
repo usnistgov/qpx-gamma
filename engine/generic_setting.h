@@ -160,7 +160,7 @@ struct Setting : public XMLable {
   void set_all(const std::list<Setting> &settings, Match flags);
 
   void condense();
-  void enable_if_flag(bool enable, std::string flag);
+  void enable_if_flag(bool enable, const std::string &flag);
   void cull_invisible();
   void cull_readonly();
   void strip_metadata();

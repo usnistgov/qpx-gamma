@@ -71,7 +71,7 @@ public:
 
 private slots:
   void on_buttonBox_accepted();
-  void on_spinBits_valueChanged(int arg1);
+//  void on_spinBits_valueChanged(int arg1);
   void on_buttonBox_rejected();
   void on_comboType_activated(const QString &arg1);
   void on_spinDets_valueChanged(int arg1);

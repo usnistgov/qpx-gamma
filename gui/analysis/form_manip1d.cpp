@@ -41,7 +41,7 @@ TableSpectra1D::TableSpectra1D(Project *spectra, QObject *parent)
 
   if (spectra_ != nullptr) {
     int i = 0;
-    for (auto &q : spectra_->get_sinks(1, -1)) {
+    for (auto &q : spectra_->get_sinks(1)) {
       Metadata md;
       if (q.second)
         md = q.second->metadata();
@@ -69,7 +69,7 @@ int TableSpectra1D::rowCount(const QModelIndex & /*parent*/) const
 
 int TableSpectra1D::columnCount(const QModelIndex & /*parent*/) const
 {
-  return 9;
+  return 8;
 }
 
 QVariant TableSpectra1D::data(const QModelIndex &index, int role) const
@@ -87,16 +87,14 @@ QVariant TableSpectra1D::data(const QModelIndex &index, int role) const
     case 2:
       return QString::fromStdString(data_[row].type());
     case 3:
-      return QString::number(data_[row].bits);
+      return QVariant::fromValue(data_[row].attributes.branches.get(Setting("resolution")));
     case 4:
-      return QString::number(pow(2,data_[row].bits));
-    case 5:
       return QVariant::fromValue(data_[row].attributes.branches.get(Setting("pattern_coinc")));
-    case 6:
+    case 5:
       return QVariant::fromValue(data_[row].attributes.branches.get(Setting("pattern_add")));
-    case 7:
+    case 6:
       return QVariant::fromValue(data_[row].attributes.branches.get(Setting("appearance")));
-    case 8:
+    case 7:
       return QVariant::fromValue(data_[row].attributes.branches.get(Setting("visible")));
     }
 
@@ -120,14 +118,12 @@ QVariant TableSpectra1D::headerData(int section, Qt::Orientation orientation, in
       case 3:
         return QString("bits");
       case 4:
-        return QString("channels");
-      case 5:
         return QString("match");
-      case 6:
+      case 5:
         return QString("add");
-      case 7:
+      case 6:
         return QString("appearance");
-      case 8:
+      case 7:
         return QString("plot");
       }
     } else if (orientation == Qt::Vertical) {
@@ -142,7 +138,7 @@ void TableSpectra1D::update() {
   data_.clear();
   if (spectra_ != nullptr) {
     int i=0;
-    for (auto &q : spectra_->get_sinks(1, -1)) {
+    for (auto &q : spectra_->get_sinks(1)) {
       Metadata md;
       if (q.second)
         md = q.second->metadata();
@@ -257,9 +253,11 @@ void FormManip1D::spectrumDetails(std::string id)
   if (!md.detectors.empty())
     det = md.detectors[0];
 
+  uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+
   QString detstr("Detector: ");
   detstr += QString::fromStdString(det.name_);
-  if (det.energy_calibrations_.has_a(Calibration("Energy", md.bits)))
+  if (det.energy_calibrations_.has_a(Calibration("Energy", bits)))
     detstr += " [ENRG]";
   else if (det.highest_res_calib().valid())
     detstr += " (enrg)";
@@ -272,7 +270,7 @@ void FormManip1D::spectrumDetails(std::string id)
   }
 
   QString infoText =
-      "<nobr>" + QString::fromStdString(id) + "(" + QString::fromStdString(type) + ", " + QString::number(md.bits) + "bits)</nobr><br/>"
+      "<nobr>" + QString::fromStdString(id) + "(" + QString::fromStdString(type) + ", " + QString::number(bits) + "bits)</nobr><br/>"
       "<nobr>" + detstr + "</nobr><br/>"
       "<nobr>Count: " + QString::number(md.total_count.convert_to<double>()) + "</nobr><br/>"
       "<nobr>Rate: " + QString::number(rate) + "cps</nobr><br/>"
@@ -293,19 +291,20 @@ void FormManip1D::update_plot() {
   calib_ = Calibration();
 
   ui->mcaPlot->clearGraphs();
-  for (auto &q: mySpectra->get_sinks(1, -1)) {
+  for (auto &q: mySpectra->get_sinks(1)) {
     Metadata md;
     if (q.second)
       md = q.second->metadata();
 
 //    double livetime = md.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
     double rescale  = md.attributes.branches.get(Setting("rescale")).value_precise.convert_to<double>();
+    uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
 
     if (md.attributes.branches.get(Setting("visible")).value_int
-        && (md.bits > 0) && (md.total_count > 0)) {
+        && (bits > 0) && (md.total_count > 0)) {
 
-      QVector<double> x(pow(2,md.bits));
-      QVector<double> y(pow(2,md.bits));
+      QVector<double> x(pow(2,bits));
+      QVector<double> y(pow(2,bits));
 
       std::shared_ptr<EntryList> spectrum_data =
           std::move(q.second->data_range({{0, y.size()}}));
@@ -313,14 +312,14 @@ void FormManip1D::update_plot() {
       Detector detector = Detector();
       if (!md.detectors.empty())
         detector = md.detectors[0];
-      Calibration temp_calib = detector.best_calib(md.bits);
+      Calibration temp_calib = detector.best_calib(bits);
 
       if (temp_calib.bits_ > calib_.bits_)
         calib_ = temp_calib;
 
       int i = 0;
       for (auto it : *spectrum_data) {
-        double xx = temp_calib.transform(i, md.bits);
+        double xx = temp_calib.transform(i, bits);
         double yy = it.second.convert_to<double>() * rescale;
 //        if (ui->pushPerLive->isChecked() && (livetime > 0))
 //          yy = yy / livetime;
@@ -335,7 +334,7 @@ void FormManip1D::update_plot() {
 
       AppearanceProfile profile;
       profile.default_pen = QPen(QColor(QString::fromStdString(md.attributes.branches.get(Setting("appearance")).value_text)), 1);
-      ui->mcaPlot->addGraph(x, y, profile, md.bits);
+      ui->mcaPlot->addGraph(x, y, profile, bits);
 
     }
   }

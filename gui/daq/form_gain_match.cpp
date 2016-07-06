@@ -269,7 +269,10 @@ Qpx::Metadata FormGainMatch::make_prototype(uint16_t bits, uint16_t channel, std
   Qpx::Metadata    spectrum_prototype;
   spectrum_prototype = Qpx::SinkFactory::getInstance().create_prototype("1D");
   spectrum_prototype.name = name;
-  spectrum_prototype.bits = bits;
+
+  Setting res = spectrum_prototype.attributes.branches.get(Qpx::Setting("resolution"));
+  res.value_int = bits;
+  spectrum_prototype.attributes.branches.replace(res);
 
   Qpx::Setting vis = spectrum_prototype.attributes.branches.get(Qpx::Setting("visible"));
   vis.value_int = true;
