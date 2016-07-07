@@ -34,6 +34,23 @@ Spectrum::Spectrum()
   , max_delay_(0)
   , bits_(0)
 {
+  Setting totalct;
+  totalct.id_ = "total_hits";
+  totalct.metadata.setting_type = SettingType::floating_precise;
+  totalct.metadata.description = "Total hit count";
+  totalct.metadata.writable = false;
+  totalct.value_precise = 0;
+  metadata_.attributes.branches.add(totalct);
+
+  Setting totalev;
+  totalev.id_ = "total_events";
+  totalev.metadata.setting_type = SettingType::floating_precise;
+  totalev.metadata.description = "Total time-correlated event count";
+  totalev.metadata.writable = false;
+  totalev.value_precise = 0;
+  metadata_.attributes.branches.add(totalev);
+
+
   Qpx::Setting res;
   res.id_ = "resolution";
   res.metadata.setting_type = Qpx::SettingType::int_menu;
@@ -158,16 +175,16 @@ Spectrum::Spectrum()
 bool Spectrum::_initialize() {
   Sink::_initialize();
 
-  pattern_coinc_ = get_attr("pattern_coinc").value_pattern;
-  pattern_anti_ = get_attr("pattern_anti").value_pattern;
-  pattern_add_ = get_attr("pattern_add").value_pattern;
-  coinc_window_ = get_attr("coinc_window").value_dbl;
-  bits_ = get_attr("resolution").value_int;
+  pattern_coinc_ = metadata_.attributes.get_setting(Setting("pattern_coinc"), Match::id).value_pattern;
+  pattern_anti_ = metadata_.attributes.get_setting(Setting("pattern_anti"), Match::id).value_pattern;
+  pattern_add_ = metadata_.attributes.get_setting(Setting("pattern_add"), Match::id).value_pattern;
+  coinc_window_ = metadata_.attributes.get_setting(Setting("coinc_window"), Match::id).value_dbl;
+  bits_ = metadata_.attributes.get_setting(Setting("resolution"), Match::id).value_int;
   if (coinc_window_ < 0)
     coinc_window_ = 0;
 
   max_delay_ = 0;
-  Setting perdet = get_attr("per_detector");
+  Setting perdet = metadata_.attributes.get_setting(Setting("per_detector"), Match::id);
   cutoff_logic_.resize(perdet.branches.size());
   delay_ns_.resize(perdet.branches.size());
   for (auto &d : perdet.branches.my_data_) {
@@ -248,7 +265,8 @@ void Spectrum::_push_hit(const Hit& newhit)
     backlog.pop_front();
     if (validateEvent(evt)) {
       recent_count_++;
-      metadata_.total_count++;
+      total_hits_++; //should be elsewhere!!! HACK!!
+      total_events_++;
       this->addEvent(evt);
     }
   }
@@ -283,7 +301,7 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
   if (newBlock.model_hit.name_to_idx.count("energy"))
     energy_idx_[newBlock.source_channel] = newBlock.model_hit.name_to_idx.at("energy");
 
-  Setting start_time = get_attr("start_time");
+  Setting start_time = metadata_.attributes.get_setting(Setting("start_time"), Match::id);
   if (new_start && start_time.value_time.is_not_a_date_time()) {
     start_time.value_time = newBlock.lab_time;
     metadata_.attributes.branches.replace(start_time);
@@ -301,7 +319,7 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
 
   recent_end_ = newBlock;
 
-  Setting rate = get_attr("instant_rate");
+  Setting rate = metadata_.attributes.get_setting(Setting("instant_rate"), Match::id);
   rate.value_dbl = 0;
   double recent_time = (recent_end_.lab_time - recent_start_.lab_time).total_milliseconds() * 0.001;
   if (recent_time > 0)
@@ -348,8 +366,8 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
     real_times_[newBlock.source_channel] = real;
     live_times_[newBlock.source_channel] = live;
 
-    Setting live_time = get_attr("live_time");
-    Setting real_time = get_attr("real_time");
+    Setting live_time = metadata_.attributes.get_setting(Setting("live_time"), Match::id);
+    Setting real_time = metadata_.attributes.get_setting(Setting("real_time"), Match::id);
 
     live_time.value_duration = real_time.value_duration = real;
     for (auto &q : real_times_)
@@ -368,6 +386,22 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
     //             << "   LT = " << to_simple_string(metadata_.live_time) ;
 
   }
+
+  Setting res = metadata_.attributes.get_setting(Setting("total_hits"), Match::id);
+  res.value_precise = total_hits_;
+
+  Setting res2 = metadata_.attributes.get_setting(Setting("total_events"), Match::id);
+  res2.value_precise = total_events_;
+}
+
+
+void Spectrum::_flush()
+{
+  Setting res = metadata_.attributes.get_setting(Setting("total_hits"), Match::id);
+  res.value_precise = total_hits_;
+
+  Setting res2 = metadata_.attributes.get_setting(Setting("total_events"), Match::id);
+  res2.value_precise = total_events_;
 }
 
 void Spectrum::_set_detectors(const std::vector<Qpx::Detector>& dets) {

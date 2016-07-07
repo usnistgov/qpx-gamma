@@ -253,6 +253,8 @@ void FormManip1D::spectrumDetails(std::string id)
   if (!md.detectors.empty())
     det = md.detectors[0];
 
+  Qpx::Setting tothits = md.attributes.get_setting(Qpx::Setting("total_hits"), Qpx::Match::id);
+
   uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
 
   QString detstr("Detector: ");
@@ -266,13 +268,13 @@ void FormManip1D::spectrumDetails(std::string id)
 
   if (real > 0) {
     dead = (real - live) * 100.0 / real;
-    rate = md.total_count.convert_to<double>() / real;
+    rate = tothits.value_precise.convert_to<double>() / real;
   }
 
   QString infoText =
       "<nobr>" + QString::fromStdString(id) + "(" + QString::fromStdString(type) + ", " + QString::number(bits) + "bits)</nobr><br/>"
       "<nobr>" + detstr + "</nobr><br/>"
-      "<nobr>Count: " + QString::number(md.total_count.convert_to<double>()) + "</nobr><br/>"
+      "<nobr>Count: " + QString::number(tothits.value_precise.convert_to<double>()) + "</nobr><br/>"
       "<nobr>Rate: " + QString::number(rate) + "cps</nobr><br/>"
       "<nobr>Live:  " + QString::number(live) + "s</nobr><br/>"
       "<nobr>Real:  " + QString::number(real) + "s</nobr><br/>"
@@ -301,7 +303,7 @@ void FormManip1D::update_plot() {
     uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
 
     if (md.attributes.branches.get(Setting("visible")).value_int
-        && (bits > 0) && (md.total_count > 0)) {
+        && (bits > 0)) {
 
       QVector<double> x(pow(2,bits));
       QVector<double> y(pow(2,bits));

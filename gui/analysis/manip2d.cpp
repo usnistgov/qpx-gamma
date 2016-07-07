@@ -33,7 +33,7 @@ SinkPtr slice_rectangular(SinkPtr source, std::initializer_list<Pair> bounds, bo
     return nullptr;
 
   Metadata md = source->metadata();
-  if ((md.total_count <= 0) || (md.dimensions() != 2))
+  if ((md.attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise <= 0) || (md.dimensions() != 2))
     return nullptr;
 
 
@@ -67,7 +67,7 @@ SinkPtr slice_rectangular(SinkPtr source, std::initializer_list<Pair> bounds, bo
   for (auto it : *spectrum_data)
     ret->append(it);
 
-  if (ret->metadata().total_count > 0)
+  if (ret->metadata().attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise > 0)
     return ret;
   else
     return nullptr;
@@ -81,7 +81,7 @@ bool slice_diagonal_x(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t
 
   Metadata md = source->metadata();
 
-  if ((md.total_count > 0) && (md.dimensions() == 2))
+  if ((md.attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise > 0) && (md.dimensions() == 2))
   {
     destination->set_detectors(md.detectors);
 
@@ -99,7 +99,7 @@ bool slice_diagonal_x(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t
 
   }
 
-  return (destination->metadata().total_count > 0);
+  return (destination->metadata().attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise > 0);
 }
 
 bool slice_diagonal_y(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t miny, uint32_t maxy) {
@@ -110,7 +110,7 @@ bool slice_diagonal_y(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t
 
   Metadata md = source->metadata();
 
-  if ((md.total_count > 0) && (md.dimensions() == 2))
+  if ((md.attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise > 0) && (md.dimensions() == 2))
   {
     destination->set_detectors(md.detectors);
 
@@ -128,7 +128,7 @@ bool slice_diagonal_y(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t
 
   }
 
-  return (destination->metadata().total_count > 0);
+  return (destination->metadata().attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise > 0);
 }
 
 PreciseFloat sum_diag(SinkPtr source, uint16_t x, uint16_t y, uint16_t width)
@@ -159,7 +159,7 @@ SinkPtr make_symmetrized(SinkPtr source)
 
   Metadata md = source->metadata();
 
-  if ((md.total_count <= 0) || (md.dimensions() != 2)) {
+  if ((md.attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise <= 0) || (md.dimensions() != 2)) {
     WARN << "<::MakeSymmetrize> " << md.name << " has no events or is not 2d";
     return nullptr;
   }
@@ -264,7 +264,7 @@ SinkPtr make_symmetrized(SinkPtr source)
   app.value_int = true;
   ret->set_option(app);
 
-  if (ret->metadata().total_count > 0)
+  if (ret->metadata().attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise > 0)
     return ret;
   else
     return nullptr;

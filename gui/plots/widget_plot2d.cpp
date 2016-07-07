@@ -44,6 +44,12 @@ WidgetPlot2D::WidgetPlot2D(QWidget *parent) :
   antialiased_ = false;
   show_labels_ = true;
 
+  setColorScheme(Qt::white, Qt::black, QColor(144, 144, 144), QColor(80, 80, 80));
+  ui->coincPlot->xAxis->grid()->setVisible(true);
+  ui->coincPlot->yAxis->grid()->setVisible(true);
+  ui->coincPlot->xAxis->grid()->setSubGridVisible(true);
+  ui->coincPlot->yAxis->grid()->setSubGridVisible(true);
+
   //color theme setup
   marker_looks.themes["Grayscale"] = QPen(Qt::cyan, 1);
   marker_looks.themes["Hot"] = QPen(Qt::cyan, 1);
@@ -746,4 +752,25 @@ void WidgetPlot2D::exportRequested(QAction* choice) {
       ui->coincPlot->savePdf(fileName, true);
     }
   }
+}
+
+void WidgetPlot2D::setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2)
+{
+  ui->coincPlot->xAxis->setBasePen(QPen(fore, 1));
+  ui->coincPlot->yAxis->setBasePen(QPen(fore, 1));
+  ui->coincPlot->xAxis->setTickPen(QPen(fore, 1));
+  ui->coincPlot->yAxis->setTickPen(QPen(fore, 1));
+  ui->coincPlot->xAxis->setSubTickPen(QPen(fore, 1));
+  ui->coincPlot->yAxis->setSubTickPen(QPen(fore, 1));
+  ui->coincPlot->xAxis->setTickLabelColor(fore);
+  ui->coincPlot->yAxis->setTickLabelColor(fore);
+  ui->coincPlot->xAxis->setLabelColor(fore);
+  ui->coincPlot->yAxis->setLabelColor(fore);
+  ui->coincPlot->xAxis->grid()->setPen(QPen(grid1, 1, Qt::DotLine));
+  ui->coincPlot->yAxis->grid()->setPen(QPen(grid1, 1, Qt::DotLine));
+  ui->coincPlot->xAxis->grid()->setSubGridPen(QPen(grid2, 1, Qt::DotLine));
+  ui->coincPlot->yAxis->grid()->setSubGridPen(QPen(grid2, 1, Qt::DotLine));
+  ui->coincPlot->xAxis->grid()->setZeroLinePen(Qt::NoPen);
+  ui->coincPlot->yAxis->grid()->setZeroLinePen(Qt::NoPen);
+  ui->coincPlot->setBackground(QBrush(back));
 }

@@ -74,7 +74,7 @@ bool Spectrum1D_LFC::_initialize() {
   channels_all_.resize(pow(2, bits_),0);
   channels_run_.resize(pow(2, bits_),0);
 
-  time_sample_ = get_attr("time_sample").value_dbl;
+  time_sample_ = metadata_.attributes.get_setting(Setting("time_sample"), Match::id).value_dbl;
 
   return true;
 }
@@ -127,7 +127,7 @@ void Spectrum1D_LFC::_push_stats(const StatsUpdate& newStats)
     time1_ = time2_;
 
     count_total_ += fast_peaks_compensated;
-    metadata_.total_count = count_total_;
+    total_hits_ = count_total_;
 
     DBG << "<SpectrumLFC1D> '" << metadata_.name << "' update chan[" << my_channel_ << "]"
         << " fast_peaks_compensated=" << fast_peaks_compensated
@@ -140,8 +140,8 @@ void Spectrum1D_LFC::_push_stats(const StatsUpdate& newStats)
         spectrum_[i] = channels_all_[i];
       channels_run_[i] = 0.0;
     }
-    Setting real_time = get_attr("real_time");
-    Setting live_time = get_attr("live_time");
+    Setting real_time = metadata_.attributes.get_setting(Setting("real_time"), Match::id);
+    Setting live_time = metadata_.attributes.get_setting(Setting("live_time"), Match::id);
     live_time.value_duration = real_time.value_duration;
     metadata_.attributes.branches.replace(live_time);
 
@@ -152,7 +152,7 @@ void Spectrum1D_LFC::_push_stats(const StatsUpdate& newStats)
       if ((channels_run_[i] > 0.0) || (channels_all_[i] > 0.0))
         spectrum_[i] = channels_run_[i] + channels_all_[i].convert_to<uint64_t>();
     }
-    metadata_.total_count += count_current_;
+    total_hits_ += count_current_;
     time2_ = newStats;
   }
 }

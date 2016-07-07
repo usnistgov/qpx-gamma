@@ -51,7 +51,7 @@ SpectrumTime::SpectrumTime()
 
 bool SpectrumTime::_initialize() {
   Spectrum::_initialize();
-  codomain = get_attr("co-domain").value_int;
+  codomain = metadata_.attributes.get_setting(Setting("co-domain"), Match::id).value_int;
   return true;
 }
 

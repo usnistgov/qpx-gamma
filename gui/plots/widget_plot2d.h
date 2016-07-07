@@ -114,6 +114,8 @@ private:
 
   void build_menu();
   void toggle_gradient_scale();
+
+  void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
 };
 
 #endif // WIDGET_PLOT2D_H

@@ -222,7 +222,8 @@ void FormExperiment::new_daq_data() {
   {
     selected_fitter_ = p->get_fitter(selected_sink_);
     selected_fitter_.setData(sink);
-    if (selected_fitter_.metadata_.total_count < md.total_count)
+    if (selected_fitter_.metadata_.attributes.get_setting(Setting("total_hits"), Match::id).value_precise
+        < md.attributes.get_setting(Setting("total_hits"), Match::id).value_precise)
       refit = true;
   }
   else

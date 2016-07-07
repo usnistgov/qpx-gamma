@@ -45,6 +45,7 @@ protected:
   bool _initialize() override;
   void _push_hit(const Hit&) override;
   void _push_stats(const StatsUpdate&) override;
+  void _flush() override;
 
   void _set_detectors(const std::vector<Qpx::Detector>& dets) override;
   void _recalc_axes() override;
@@ -73,6 +74,9 @@ protected:
 
   Pattern pattern_coinc_, pattern_anti_, pattern_add_;
   uint16_t bits_;
+
+  PreciseFloat total_hits_;
+  PreciseFloat total_events_;
 };
 
 }

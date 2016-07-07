@@ -259,7 +259,8 @@ bool Simulator2D::boot() {
     return false;
   }
 
-  OCR = static_cast<double>(md.total_count) / lab_time;
+  double totevts = md.attributes.get_setting(Setting("total_events"), Match::id).value_precise.convert_to<double>();
+  OCR = totevts / lab_time;
 
   int adjust_bits = source_res - bits_;
 
@@ -279,14 +280,14 @@ bool Simulator2D::boot() {
     for (auto it : *spec_list)
       distribution[(it.first[0] >> adjust_bits) * resolution_
           + (it.first[1] >> adjust_bits)]
-          =  static_cast<double>(it.second) / static_cast<double> (md.total_count);
+          =  static_cast<double>(it.second) / totevts;
   }
   else
   {
     for (auto it : *spec_list)
       distribution[(it.first[0] << (-adjust_bits)) * resolution_
           + (it.first[1] << (-adjust_bits))]
-          =  static_cast<double>(it.second) / static_cast<double> (md.total_count);
+          =  static_cast<double>(it.second) / totevts;
   }
 
   LINFO << "<Simulator2D> Creating discrete distribution for simulation";

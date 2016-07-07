@@ -354,7 +354,8 @@ void WidgetPlotMulti1D::calc_y_bounds(double lower, double upper) {
     miny = 1;*/
 }
 
-void WidgetPlotMulti1D::setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2) {
+void WidgetPlotMulti1D::setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2)
+{
   ui->mcaPlot->xAxis->setBasePen(QPen(fore, 1));
   ui->mcaPlot->yAxis->setBasePen(QPen(fore, 1));
   ui->mcaPlot->xAxis->setTickPen(QPen(fore, 1));

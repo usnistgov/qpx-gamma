@@ -95,7 +95,7 @@ void DialogSpectrum::updateData() {
 //  ui->lineBits->setText(QString::number(static_cast<int>(md_.bits)) + " bits");
 //  ui->lineChannels->setText(QString::number(pow(2,md_.bits)));
 
-  ui->lineTotalCount->setText(QString::number(md_.total_count.convert_to<double>()));
+//  ui->lineTotalCount->setText(QString::number(md_.total_count.convert_to<double>()));
 
   spectrum_detectors_.clear();
   for (auto &q: md_.detectors)
@@ -336,8 +336,10 @@ void DialogSpectrum::on_spinDets_valueChanged(int arg1)
   if (!ui->spinDets->isEnabled())
     return;
 
+  Qpx::Setting pat = md_.attributes.branches.get(Qpx::Setting("pattern_add"));
+
   md_.set_det_limit(arg1);
-  if (md_.changed)
+  if (arg1 != pat.value_pattern.gates().size())
     changed_ = true;
 
   attr_model_.update(md_.attributes);

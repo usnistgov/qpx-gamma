@@ -30,15 +30,60 @@
 
 namespace Qpx {
 
+Metadata::Metadata()
+  : type_("invalid")
+  , dimensions_(0)
+  , attributes("Options")
+{
+  attributes.metadata.setting_type = SettingType::stem;
+}
+
+Metadata::Metadata(std::string tp, std::string descr, uint16_t dim,
+                   std::list<std::string> itypes, std::list<std::string> otypes)
+  : type_(tp)
+  , type_description_(descr)
+  , dimensions_(dim)
+  , input_types_(itypes)
+  , output_types_(otypes)
+  , attributes("Options")
+{
+  attributes.metadata.setting_type = SettingType::stem;
+}
+
+bool Metadata::shallow_equals(const Metadata& other) const
+{
+  return (name == other.name);
+}
+
+bool Metadata::operator!= (const Metadata& other) const
+{
+  return !operator==(other);
+}
+
+bool Metadata::operator== (const Metadata& other) const
+{
+  if (name != other.name) return false;
+  if (type_ != other.type_) return false; //assume other type info same
+  if (attributes != other.attributes) return false;
+  return true;
+}
+
+
 void Metadata::to_xml(pugi::xml_node &root) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
   node.append_attribute("Type").set_value(type_.c_str());
   node.append_child("Name").append_child(pugi::node_pcdata).set_value(name.c_str());
-//  node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(bits).c_str());
 
   if (attributes.branches.size())
     attributes.to_xml(node);
+
+  if (!detectors.empty())
+  {
+    pugi::xml_node detnode = root.append_child("Detectors");
+    for (auto &d : detectors)
+      d.to_xml(detnode);
+  }
 }
 
 void Metadata::from_xml(const pugi::xml_node &node) {
@@ -47,10 +92,18 @@ void Metadata::from_xml(const pugi::xml_node &node) {
 
   type_ = std::string(node.attribute("Type").value());
   name = std::string(node.child_value("Name"));
-//  bits = boost::lexical_cast<short>(node.child_value("Resolution"));
 
   if (node.child(attributes.xml_element_name().c_str()))
     attributes.from_xml(node.child(attributes.xml_element_name().c_str()));
+
+  if (node.child("Detectors")) {
+    detectors.clear();
+    for (auto &q : node.child("Detectors").children()) {
+      Qpx::Detector det;
+      det.from_xml(q);
+      detectors.push_back(det);
+    }
+  }
 }
 
 void Metadata::set_det_limit(uint16_t limit)
@@ -59,11 +112,9 @@ void Metadata::set_det_limit(uint16_t limit)
     limit = 1;
 
   for (auto &a : attributes.branches.my_data_)
-    if (a.metadata.setting_type == Qpx::SettingType::pattern) {
-      if (a.value_pattern.gates().size() != limit)
-        changed = true;
+    if (a.metadata.setting_type == Qpx::SettingType::pattern)
       a.value_pattern.resize(limit);
-    } else if (a.metadata.setting_type == Qpx::SettingType::stem) {
+    else if (a.metadata.setting_type == Qpx::SettingType::stem) {
       Setting prototype;
       for (auto &p : a.branches.my_data_)
         if (p.indices.count(-1))
@@ -80,7 +131,7 @@ void Metadata::set_det_limit(uint16_t limit)
           for (auto &p : prototype.branches.my_data_)
             p.indices = prototype.indices;
           a.branches.add_a(prototype);
-//          a.indices.insert(i);
+          //          a.indices.insert(i);
         }
       }
     }
@@ -180,7 +231,6 @@ bool Sink::from_prototype(const Metadata& newtemplate) {
     return false;
 
   metadata_.name = newtemplate.name;
-//  metadata_.bits = newtemplate.bits;
   metadata_.attributes = newtemplate.attributes;
   return (this->_initialize());
 }
@@ -193,7 +243,7 @@ void Sink::push_spill(const Spill& one_spill) {
 }
 
 void Sink::_push_spill(const Spill& one_spill) {
-//  CustomTimer addspill_timer(true);
+  //  CustomTimer addspill_timer(true);
 
   if (!one_spill.detectors.empty())
     this->_set_detectors(one_spill.detectors);
@@ -204,11 +254,11 @@ void Sink::_push_spill(const Spill& one_spill) {
   for (auto &q : one_spill.stats)
     this->_push_stats(q.second);
 
-//  addspill_timer.stop();
-//  DBG << "<" << metadata_.name << "> added " << hits << " hits in "
-//         << addspill_timer.ms() << " ms at " << addspill_timer.us() / hits << " us/hit";
+  //  addspill_timer.stop();
+  //  DBG << "<" << metadata_.name << "> added " << hits << " hits in "
+  //         << addspill_timer.ms() << " ms at " << addspill_timer.us() / hits << " us/hit";
 
-//  DBG << "<" << metadata_.name << "> left in backlog " << backlog.size();
+  //  DBG << "<" << metadata_.name << "> left in backlog " << backlog.size();
 }
 
 void Sink::flush() {
@@ -219,7 +269,8 @@ void Sink::flush() {
 }
 
 
-std::vector<double> Sink::axis_values(uint16_t dimension) const {
+std::vector<double> Sink::axis_values(uint16_t dimension) const
+{
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   
   if (dimension < axes_.size())
@@ -227,25 +278,27 @@ std::vector<double> Sink::axis_values(uint16_t dimension) const {
   else
     return std::vector<double>();
 }
-  
+
+bool Sink::changed() const
+{
+  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
+  return changed_;
+}
+
 void Sink::set_detectors(const std::vector<Qpx::Detector>& dets) {
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   
   this->_set_detectors(dets);
-  metadata_.changed = true;
+  changed_ = true;
 }
 
 void Sink::reset_changed() {
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
-  metadata_.changed = false;
-}
-
-Setting Sink::get_attr(std::string setting) const {
-  return metadata_.attributes.branches.get(Setting(setting));
+  changed_ = false;
 }
 
 bool Sink::write_file(std::string dir, std::string format) const {
@@ -263,7 +316,7 @@ bool Sink::read_file(std::string name, std::string format) {
 //accessors for various properties
 Metadata Sink::metadata() const {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
-  return metadata_;  
+  return metadata_;
 }
 
 std::string Sink::type() const {
@@ -281,11 +334,6 @@ std::string Sink::name() const {
   return metadata_.name;
 }
 
-//uint16_t Sink::bits() const {
-//  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
-//  return metadata_.bits;
-//}
-
 
 //change stuff
 
@@ -294,7 +342,7 @@ void Sink::set_name(std::string newname) {
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   metadata_.name = newname;
-  metadata_.changed = true;
+  changed_ = true;
 }
 
 void Sink::set_option(Setting setting, Match match) {
@@ -302,7 +350,7 @@ void Sink::set_option(Setting setting, Match match) {
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   metadata_.attributes.set_setting_r(setting, match);
-  metadata_.changed = true;
+  changed_ = true;
 }
 
 void Sink::set_options(Setting settings) {
@@ -310,7 +358,7 @@ void Sink::set_options(Setting settings) {
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   metadata_.attributes = settings;
-  metadata_.changed = true;
+  changed_ = true;
 }
 
 
@@ -323,37 +371,41 @@ void Sink::set_options(Setting settings) {
 void Sink::to_xml(pugi::xml_node &root) const {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
 
-  pugi::xml_node node = root.append_child("QpxSink");
+  pugi::xml_node node = root.append_child("Sink");
 
   node.append_attribute("type").set_value(this->my_type().c_str());
 
-  node.append_child("Name").append_child(pugi::node_pcdata).set_value(metadata_.name.c_str());
-  node.append_child("TotalEvents").append_child(pugi::node_pcdata).set_value(metadata_.total_count.str().c_str());
-//  node.append_child("Resolution").append_child(pugi::node_pcdata).set_value(std::to_string(metadata_.bits).c_str());
+  metadata_.to_xml(node);
 
-  if (metadata_.attributes.branches.size())
-    metadata_.attributes.to_xml(node);
+//  node.append_child("Name").append_child(pugi::node_pcdata).set_value(metadata_.name.c_str());
+//  //  node.append_child("TotalEvents").append_child(pugi::node_pcdata).set_value(metadata_.total_count.str().c_str());
 
-  if (metadata_.detectors.size()) {
-    pugi::xml_node child = node.append_child("Detectors");
-    for (auto q : metadata_.detectors) {
-      q.settings_ = Setting();
-      q.to_xml(child);
-    }
-  }
+//  if (metadata_.attributes.branches.size())
+//    metadata_.attributes.to_xml(node);
 
-  if (/*(metadata_.bits > 0) &&*/ (metadata_.total_count > 0))
-    node.append_child("ChannelData").append_child(pugi::node_pcdata).set_value(this->_data_to_xml().c_str());
+//  if (metadata_.detectors.size()) {
+//    pugi::xml_node child = node.append_child("Detectors");
+//    for (auto q : metadata_.detectors) {
+//      q.settings_ = Setting();
+//      q.to_xml(child);
+//    }
+//  }
+
+  //  if (metadata_.total_count > 0)
+  node.append_child("Data").append_child(pugi::node_pcdata).set_value(this->_data_to_xml().c_str());
 }
 
 
 bool Sink::from_xml(const pugi::xml_node &node) {
-//  if (std::string(node.name()) != "Spectrum")
-//    return false;
+  //  if (std::string(node.name()) != "Spectrum")
+  //    return false;
 
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
+
+  if (node.child(metadata_.xml_element_name().c_str()))
+    metadata_.from_xml(node.child(metadata_.xml_element_name().c_str()));
 
   if (node.child(metadata_.attributes.xml_element_name().c_str()))
     metadata_.attributes.from_xml(node.child(metadata_.attributes.xml_element_name().c_str()));
@@ -362,19 +414,30 @@ bool Sink::from_xml(const pugi::xml_node &node) {
 
   std::string numero;
 
-  if (!node.child("Name"))
-    return false;
-  metadata_.name = std::string(node.child_value("Name"));
+  //back compat
+  if (node.child("Name"))
+    metadata_.name = std::string(node.child_value("Name"));
 
-  metadata_.total_count = PreciseFloat(node.child_value("TotalEvents"));
-//  metadata_.bits = boost::lexical_cast<short>(std::string(node.child_value("Resolution")));
+  //backwards compat
+  if (node.child("TotalEvents")) {
+    Setting res = metadata_.attributes.get_setting(Setting("total_events"), Match::id);
+    if (res.metadata.setting_type == SettingType::floating_precise)
+    {
+      res.value_precise = PreciseFloat(node.child_value("TotalEvents"));
+      metadata_.attributes.branches.replace(res);
+    }
+    Setting res2 = metadata_.attributes.get_setting(Setting("total_hits"), Match::id);
+    if (res2.metadata.setting_type == SettingType::floating_precise)
+    {
+      res2.value_precise = res.value_precise * metadata_.dimensions();
+      metadata_.attributes.branches.replace(res2);
+    }
+  }
 
-  if (/*(!metadata_.bits) ||*/ (metadata_.total_count == 0))
-    return false;
 
   //backwards compat
   if (node.child("Resolution")) {
-    Setting res = metadata_.attributes.branches.get(Setting("resolution"));
+    Setting res = metadata_.attributes.get_setting(Setting("resolution"), Match::id);
     if (res.metadata.setting_type == SettingType::int_menu)
     {
       res.value_int = boost::lexical_cast<short>(std::string(node.child_value("Resolution")));
@@ -453,35 +516,36 @@ bool Sink::from_xml(const pugi::xml_node &node) {
     pattern_add_.set_theshold(thresh);
 
     Setting pattern;
-    pattern = metadata_.attributes.branches.get(Setting("pattern_add"));
+    pattern = metadata_.attributes.get_setting(Setting("pattern_add"), Match::id);
     pattern.value_pattern = pattern_add_;
     metadata_.attributes.branches.replace(pattern);
   }
 
   if (node.child("StartTime")) {
-    Setting start_time = get_attr("start_time");
+    Setting start_time = metadata_.attributes.get_setting(Setting("start_time"), Match::id);
     start_time.value_time = from_iso_extended(node.child_value("StartTime"));
     metadata_.attributes.branches.replace(start_time);
   }
 
   if (node.child("RealTime")) {
-    Setting real_time = get_attr("real_time");
+    Setting real_time = metadata_.attributes.get_setting(Setting("real_time"), Match::id);
     real_time.value_duration = boost::posix_time::duration_from_string(node.child_value("RealTime"));
     metadata_.attributes.branches.replace(real_time);
   }
 
   if (node.child("LiveTime")) {
-    Setting live_time = get_attr("live_time");
+    Setting live_time = metadata_.attributes.get_setting(Setting("live_time"), Match::id);
     live_time.value_duration = boost::posix_time::duration_from_string(node.child_value("LiveTime"));
     metadata_.attributes.branches.replace(live_time);
   }
 
   if (node.child("RescaleFactor")) {
-    Setting rescale = get_attr("rescale");
+    Setting rescale = metadata_.attributes.get_setting(Setting("rescale"), Match::id);
     rescale.value_precise = PreciseFloat(node.child_value("RescaleFactor"));
     metadata_.attributes.branches.replace(rescale);
   }
 
+  //back compat
   if (node.child("Detectors")) {
     metadata_.detectors.clear();
     for (auto &q : node.child("Detectors").children()) {
@@ -491,31 +555,34 @@ bool Sink::from_xml(const pugi::xml_node &node) {
     }
   }
 
-  std::string this_data(node.child_value("ChannelData"));
-  boost::algorithm::trim(this_data);
-  this->_data_from_xml(this_data);
-
-
   if (node.child("Appearance")) {
     uint32_t col = boost::lexical_cast<unsigned int>(std::string(node.child_value("Appearance")));
-    Setting app = metadata_.attributes.branches.get(Setting("appearance"));
+    Setting app = metadata_.attributes.get_setting(Setting("appearance"), Match::id);
     app.value_text = "#" + itohex32(col);
     metadata_.attributes.branches.replace(app);
   }
 
   if (node.child("Visible")) {
-    Setting vis = metadata_.attributes.branches.get(Setting("visible"));
+    Setting vis = metadata_.attributes.get_setting(Setting("visible"), Match::id);
     vis.value_int = boost::lexical_cast<bool>(std::string(node.child_value("Visible")));
     metadata_.attributes.branches.replace(vis);
   }
 
+  std::string this_data;
+  if (node.child("ChannelData"))  //back compat
+    this_data = std::string(node.child_value("ChannelData"));
+  else if (node.child("Data"))   //current
+    this_data = std::string(node.child_value("Data"));
+  boost::algorithm::trim(this_data);
+  this->_data_from_xml(this_data);
+
   bool ret = this->_initialize();
 
   if (ret)
-   this->_recalc_axes();
+    this->_recalc_axes();
 
-//  for (auto &det : this->metadata_.detectors)
-//    DBG << "det2 " << this->metadata_.name << " " << det.name_;
+  //  for (auto &det : this->metadata_.detectors)
+  //    DBG << "det2 " << this->metadata_.name << " " << det.name_;
 
   return ret;
 }

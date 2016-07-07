@@ -151,7 +151,7 @@ void Delayometer::_push_hit(const Hit& newhit)
       if (copy.addHit(newhit)) {
         if (validateEvent(copy)) {
           recent_count_++;
-          metadata_.total_count++;
+          total_events_++;
           this->addEvent(copy);
         } else
           DBG << "<" << metadata_.name << "> not validated " << q.to_string();

@@ -111,7 +111,7 @@ void FormSymmetrize2D::make_gated_spectra() {
 
   //  DBG << "Coincidence gate x[" << xmin_ << "-" << xmax_ << "]   y[" << ymin_ << "-" << ymax_ << "]";
 
-  if ((md.total_count > 0) && (md.dimensions() == 2))
+  if (/*(md.total_count > 0) &&*/ (md.dimensions() == 2))
   {
     uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
     uint32_t adjrange = pow(2,bits) - 1;
@@ -204,7 +204,7 @@ void FormSymmetrize2D::on_pushAddGatedSpectra_clicked()
   this->setCursor(Qt::WaitCursor);
   bool success = false;
 
-  if (gate_x && (gate_x->metadata().total_count > 0)) {
+  if (gate_x /*&& (gate_x->metadata().total_count > 0)*/) {
     Setting app = gate_x->metadata().attributes.branches.get(Setting("appearance"));
     app.value_text = generateColor().name(QColor::HexArgb).toStdString();
     gate_x->set_option(app);
@@ -213,7 +213,7 @@ void FormSymmetrize2D::on_pushAddGatedSpectra_clicked()
     success = true;
   }
 
-  if (gate_y && (gate_y->metadata().total_count > 0)) {
+  if (gate_y /*&& (gate_y->metadata().total_count > 0)*/) {
     Setting app = gate_y->metadata().attributes.branches.get(Setting("appearance"));
     app.value_text = generateColor().name(QColor::HexArgb).toStdString();
     gate_y->set_option(app);

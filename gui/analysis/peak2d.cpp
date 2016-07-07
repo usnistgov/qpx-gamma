@@ -28,7 +28,7 @@ void MarkerBox2D::integrate(Qpx::SinkPtr spectrum)
 
   Qpx::Metadata md = spectrum->metadata();
 
-  if ((md.total_count <= 0) || (md.dimensions() != 2))
+  if (md.dimensions() != 2)
     return;
 
   //bits match?

@@ -78,7 +78,7 @@ bool Spectrum2D::_initialize() {
   
 //  energies_.resize(2);
   pattern_.resize(2, 0);
-  buffered_ = (get_attr("buffered").value_int != 0);
+  buffered_ = (metadata_.attributes.get_setting(Setting("buffered"), Match::id).value_int != 0);
 
   adds = 0;
   for (int i=0; i < gts.size(); ++i) {
@@ -123,6 +123,16 @@ void Spectrum2D::init_from_file(std::string filename) {
   std::replace( metadata_.name.begin(), metadata_.name.end(), '.', '_');
   _initialize();
   _recalc_axes();
+  _flush();
+
+  Qpx::Setting cts;
+  cts = metadata_.attributes.branches.get(Qpx::Setting("total_hits"));
+  cts.value_precise = total_hits_;
+  metadata_.attributes.branches.replace(cts);
+
+  cts = metadata_.attributes.branches.get(Qpx::Setting("total_events"));
+  cts.value_precise = total_events_;
+  metadata_.attributes.branches.replace(cts);
 }
 
 
@@ -135,7 +145,7 @@ bool Spectrum2D::check_symmetrization() {
       break;
     }
   }
-  Qpx::Setting symset = get_attr("symmetrized");
+  Qpx::Setting symset = metadata_.attributes.get_setting(Setting("symmetrized"), Match::id);
   symset.value_int = symmetrical;
   metadata_.attributes.branches.replace(symset);
   return symmetrical;
@@ -165,7 +175,8 @@ void Spectrum2D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
 void Spectrum2D::_append(const Entry& e) {
   if (e.first.size() == 2) {
     spectrum_[std::pair<uint16_t,uint16_t>(e.first[0], e.first[1])] += e.second;
-    metadata_.total_count += e.second;
+    total_events_ += e.second;
+    total_hits_ += (2 * e.second);
   }
 }
 
@@ -275,7 +286,7 @@ void Spectrum2D::write_m(std::string name) const {
   std::ofstream myfile(name, std::ios::out | std::ios::app);
   myfile << "%=========Qpx 2d spectrum=========" << std::endl
          << "%  Bit precision: " << bits_ << std::endl
-         << "%  Total events : " << metadata_.total_count << std::endl
+         << "%  Total events : " << total_events_ << std::endl
          << "clear;" << std::endl;
   for (auto it = spectrum_.begin(); it != spectrum_.end(); ++it)
     myfile << "coinc(" << (it->first.first + 1)
@@ -330,20 +341,21 @@ bool Spectrum2D:: read_m4b(std::string name) {
   std::ifstream myfile(name, std::ios::in | std::ios::binary);
 
   spectrum_.clear();
-  metadata_.total_count = 0;
+  total_events_ = total_hits_ = 0;
 //  uint16_t max_i =0;
 
   uint32_t one;
   for (int i=0; i<4096; ++i) {
     for (int j=0; j<4096; ++j) {
       myfile.read ((char*)&one, sizeof(uint32_t));
-      metadata_.total_count += one;
+      total_events_ += one;
       if (one > 0)
         spectrum_[std::pair<uint16_t, uint16_t>(i,j)] = one;
     }
   }
+  total_hits_ += total_events_ * 2;
   bits_ = 12;
-  Setting res = get_attr("resolution");
+  Setting res = metadata_.attributes.get_setting(Setting("resolution"), Match::id);
   res.value_int = bits_;
   metadata_.attributes.branches.replace(res);
 
@@ -365,20 +377,21 @@ bool Spectrum2D:: read_mat(std::string name) {
   std::ifstream myfile(name, std::ios::in | std::ios::binary);
 
   spectrum_.clear();
-  metadata_.total_count = 0;
+  total_events_ = total_hits_ = 0;
 //  uint16_t max_i =0;
 
   uint16_t one;
   for (int i=0; i<4096; ++i) {
     for (int j=0; j<4096; ++j) {
       myfile.read ((char*)&one, sizeof(uint16_t));
-      metadata_.total_count += one;
+      total_events_ += one;
       if (one > 0)
         spectrum_[std::pair<uint16_t, uint16_t>(i,j)] = one;
     }
   }
+  total_hits_ = 2 * total_events_;
   bits_ = 12;
-  Setting res = get_attr("resolution");
+  Setting res = metadata_.attributes.get_setting(Setting("resolution"), Match::id);
   res.value_int = bits_;
   metadata_.attributes.branches.replace(res);
 

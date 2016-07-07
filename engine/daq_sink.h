@@ -45,69 +45,45 @@ typedef std::list<Entry> EntryList;
 typedef std::pair<uint32_t, uint32_t> Pair;
 
 
-struct Metadata : public XMLable {
- private:
-  //this stuff from factory
-  std::string type_, type_description_;
-  uint16_t dimensions_;
-  std::list<std::string> input_types_;
-  std::list<std::string> output_types_;
+class Metadata : public XMLable {
+public:
+  Metadata();
+  Metadata(std::string tp, std::string descr, uint16_t dim,
+           std::list<std::string> itypes, std::list<std::string> otypes);
 
- public:
   //user sets these in prototype
   std::string name;
-//  uint16_t bits;
   Qpx::Setting attributes;
-
-  //take care of these...
-  bool changed;
-  PreciseFloat total_count;
   std::vector<Qpx::Detector> detectors;
 
+  //read only
   std::string type() const {return type_;}
   std::string type_description() const {return type_description_;}
   uint16_t dimensions() const {return dimensions_;}
   std::list<std::string> input_types() const {return input_types_;}
   std::list<std::string> output_types() const {return output_types_;}
+
+
   void set_det_limit(uint16_t limit);
+  bool chan_relevant(uint16_t chan) const;
 
-  Metadata()
-    : type_("invalid")
-    , dimensions_(0)
-//    , bits(14)
-    , attributes("Options")
-    , total_count(0.0)
-    , changed(false)
-    { attributes.metadata.setting_type = SettingType::stem; }
 
-  Metadata(std::string tp, std::string descr, uint16_t dim,
-           std::list<std::string> itypes, std::list<std::string> otypes)
-    : type_(tp)
-    , type_description_(descr)
-    , dimensions_(dim)
-    , input_types_(itypes)
-    , output_types_(otypes)
-//    , bits(14)
-    , attributes("Options")
-    , total_count(0.0)
-    , changed(false)
-    { attributes.metadata.setting_type = SettingType::stem; }
+  std::string xml_element_name() const override {return "SinkMetadata";}
+  void to_xml(pugi::xml_node &node) const override;
+  void from_xml(const pugi::xml_node &node) override;
 
- std::string xml_element_name() const override {return "SinkMetadata";}
+  bool shallow_equals(const Metadata& other) const;
+  bool operator!= (const Metadata& other) const;
+  bool operator== (const Metadata& other) const;
 
- void to_xml(pugi::xml_node &node) const override;
- void from_xml(const pugi::xml_node &node) override;
+private:
 
- bool shallow_equals(const Metadata& other) const {return (name == other.name);}
- bool operator!= (const Metadata& other) const {return !operator==(other);}
- bool operator== (const Metadata& other) const {
-   if (name != other.name) return false;
-   if (type_ != other.type_) return false; //assume other type info same
-//   if (bits != other.bits) return false;
-   if (attributes != other.attributes) return false;
-   return true;
- }
- bool chan_relevant(uint16_t chan) const;
+  //this stuff from factory, immutable upon initialization
+  std::string type_, type_description_;
+  uint16_t dimensions_;
+  std::list<std::string> input_types_;
+  std::list<std::string> output_types_;
+
 };
 
 
@@ -119,6 +95,7 @@ protected:
 
   mutable boost::shared_mutex shared_mutex_;
   mutable boost::mutex unique_mutex_;
+  bool changed_;
 
 public:
   Sink();
@@ -154,19 +131,19 @@ public:
 
   //Metadata
   Metadata metadata() const;
+  void reset_changed();
+  bool changed() const;
 
   //Convenience functions for most common metadata
   std::string name() const;
   std::string type() const;
   uint16_t dimensions() const;
-//  uint16_t bits() const;
 
   //Change metadata
   void set_name(std::string newname);
   void set_option(Setting setting, Match match = Match::id | Match::indices);
   void set_options(Setting settings);
   void set_detectors(const std::vector<Qpx::Detector>& dets);
-  void reset_changed();
 
 protected:
   //////////////////////////////////////////
@@ -195,7 +172,6 @@ protected:
   virtual bool _read_file(std::string, std::string) {return false;}
 
   virtual void _recalc_axes() = 0;
-  Setting get_attr(std::string name) const;
 };
 
 typedef std::shared_ptr<Sink> SinkPtr;

@@ -200,7 +200,7 @@ void FormGatesPlot2D::update_plot() {
 
   uint16_t newbits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
 
-  if ((md.total_count > 0) && (md.dimensions() == 2) && (adjrange = pow(2,newbits)) )
+  if ((md.dimensions() == 2) && (adjrange = pow(2,newbits)) )
   {
     //      DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 

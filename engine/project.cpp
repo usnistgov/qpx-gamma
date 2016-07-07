@@ -113,7 +113,7 @@ void Project::flush() {
 
 void Project::activate() {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  ready_ = true;  
+  ready_ = true;
   cond_.notify_all();
 }
 
@@ -130,14 +130,14 @@ bool Project::new_data() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   bool ret = newdata_;
   newdata_ = false;
-  return ret;  
+  return ret;
 }
 
 bool Project::changed() const {
   boost::unique_lock<boost::mutex> lock(mutex_);
 
   for (auto &q : sinks_)
-    if (q.second->metadata().changed)
+    if (q.second->changed())
       changed_ = true;
 
   return changed_;
@@ -238,7 +238,7 @@ std::map<int64_t, SinkPtr> Project::get_sinks(std::string type) {
 int64_t Project::add_sink(SinkPtr sink) {
   if (!sink)
     return 0;
-  boost::unique_lock<boost::mutex> lock(mutex_);  
+  boost::unique_lock<boost::mutex> lock(mutex_);
   sinks_[++current_index_] = sink;
   changed_ = true;
   ready_ = true;
@@ -277,7 +277,7 @@ void Project::delete_sink(int64_t idx) {
 }
 
 void Project::set_prototypes(const XMLableDB<Metadata>& prototypes) {
-  boost::unique_lock<boost::mutex> lock(mutex_);  
+  boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
 
   for (int i=0; i < prototypes.size(); i++) {
@@ -293,7 +293,7 @@ void Project::set_prototypes(const XMLableDB<Metadata>& prototypes) {
 }
 
 void Project::add_spill(Spill* one_spill) {
-  boost::unique_lock<boost::mutex> lock(mutex_);  
+  boost::unique_lock<boost::mutex> lock(mutex_);
 
   for (auto &q: sinks_)
     q.second->push_spill(*one_spill);
@@ -303,11 +303,11 @@ void Project::add_spill(Spill* one_spill) {
     spills_.insert(*one_spill);
 
   if ((!one_spill->stats.empty())
-       || (!one_spill->hits.empty())
-       || (!one_spill->data.empty())
-       || (!one_spill->state.branches.empty())
-       || (!one_spill->detectors.empty()))
-      changed_ = true;
+      || (!one_spill->hits.empty())
+      || (!one_spill->data.empty())
+      || (!one_spill->state.branches.empty())
+      || (!one_spill->detectors.empty()))
+    changed_ = true;
 
   
   ready_ = true;
@@ -353,7 +353,7 @@ void Project::to_xml(pugi::xml_node &root) const {
   }
 
   if (!sinks_.empty()) {
-    pugi::xml_node sinks_node = root.append_child("Spectra");
+    pugi::xml_node sinks_node = root.append_child("Sinks");
     for (auto &q : sinks_) {
       q.second->to_xml(sinks_node);
       sinks_node.last_child().append_attribute("idx").set_value(std::to_string(q.first).c_str());
@@ -362,10 +362,10 @@ void Project::to_xml(pugi::xml_node &root) const {
 
   if (fitters_1d_.size())
   {
-//    DBG << "Will save fitters";
+    //    DBG << "Will save fitters";
     pugi::xml_node fits_node = root.append_child("Fits1D");
     for (auto &q : fitters_1d_) {
-//      DBG << "saving fit " << q.first;
+      //      DBG << "saving fit " << q.first;
       q.second.to_xml(fits_node);
       fits_node.last_child().append_attribute("idx").set_value(std::to_string(q.first).c_str());
     }
@@ -384,9 +384,9 @@ void Project::read_xml(std::string file_name, bool with_sinks, bool with_full_si
 
   pugi::xml_node root;
   if (doc.child(this->xml_element_name().c_str()))
-   root = doc.child(this->xml_element_name().c_str());
+    root = doc.child(this->xml_element_name().c_str());
   else if (doc.child("QpxAcquisition"))  //backwards compat
-   root = doc.child("QpxAcquisition");
+    root = doc.child("QpxAcquisition");
   if (!root)
     return;
 
@@ -400,6 +400,31 @@ void Project::read_xml(std::string file_name, bool with_sinks, bool with_full_si
 void Project::from_xml(const pugi::xml_node &root, bool with_sinks, bool with_full_sinks) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
+
+
+  //hackity hack hack HACK HACK !!!!!!!
+  //hackity hack hack HACK HACK !!!!!!!
+  std::map<std::string, Qpx::SettingMeta> setting_definitions_;
+  pugi::xml_document doc;
+  if (doc.load_file("/home/bdv/qpx/settings/devices/pixie4.set"))
+  {
+    pugi::xml_node froot = doc.first_child();
+    if (froot)
+    {
+      //      DBG << "will load metadata";
+      for (pugi::xml_node fnode : froot.children()) {
+        if (fnode.name() && (std::string(fnode.name()) == SettingMeta().xml_element_name())) {
+          SettingMeta newset(fnode);
+          //          DBG << "loading " << newset.id_;
+          if (newset != SettingMeta())
+            setting_definitions_[newset.id_] = newset;
+        }
+      }
+    }
+  }
+  //hackity hack hack HACK HACK !!!!!!!
+  //hackity hack hack HACK HACK !!!!!!!
+
 
   if (root.child("Spills")) {
     for (auto &s : root.child("Spills").children()) {
@@ -420,7 +445,15 @@ void Project::from_xml(const pugi::xml_node &root, bool with_sinks, bool with_fu
       sp.detectors = ri.detectors;
       sp.state = ri.state;
       if (sp.detectors.empty())
-        sp.detectors.resize(16, Detector("unknown"));
+        sp.detectors.resize(4, Detector("unknown"));
+      StatsUpdate su;
+      su.lab_time = sp.time;
+      su.stats_type = StatsType::start;
+      for (int i=0; i < 4; i++)
+      {
+        su.source_channel = i;
+        sp.stats[i] = su;
+      }
       spills_.insert(sp);
     }
   } else if (root.child("Run")) {
@@ -431,52 +464,68 @@ void Project::from_xml(const pugi::xml_node &root, bool with_sinks, bool with_fu
       sp.detectors = ri.detectors;
       sp.state = ri.state;
       if (sp.detectors.empty())
-        sp.detectors.resize(16, Detector("unknown"));
+        sp.detectors.resize(4, Detector("unknown"));
       spills_.insert(sp);
     }
   }
 
   if (spills_.empty()) { //backwrds compat
     Spill sp;
-    sp.detectors.resize(16, Detector("unknown"));
+    sp.detectors.resize(4, Detector("unknown"));
     spills_.insert(sp);
   }
+
+  std::set<Spill> spills;
+  for (auto sp : spills_)
+  {
+    for (auto &s : sp.state.branches.my_data_)
+    {
+      DBG << "Attempting to enrich " << s.id_;
+      s.enrich(setting_definitions_);
+    }
+    spills.insert(sp);
+  }
+  spills_ = spills;
 
   if (!with_sinks)
     return;
 
-  if (root.child("Spectra")) {
+  pugi::xml_node sinksnode;
 
-    for (pugi::xml_node &child : root.child("Spectra").children()) {
-      if (child.child("ChannelData") && !with_full_sinks)
-        child.remove_child("ChannelData");
+  if (root.child("Spectra"))
+    sinksnode = root.child("Spectra"); //backcompat
+  else if (root.child("Sinks"))
+    sinksnode = root.child("Sinks");   //current, ok
 
-      if (child.attribute("idx"))
-        current_index_ = child.attribute("idx").as_llong();
-      else
-        current_index_++; //backwards compat
+  for (pugi::xml_node &child : sinksnode.children()) {
+    if (child.child("ChannelData") && !with_full_sinks)
+      child.remove_child("ChannelData");
 
-      SinkPtr sink
-          = Qpx::SinkFactory::getInstance().create_from_xml(child);
-      if (!sink)
-        LINFO << "Could not parse spectrum";
-      else {
-        for (auto &s : spills_) {
-          Spill sp = s;
-          if (!sink->metadata().detectors.empty()) //backwards compat
-            sp.detectors.clear();
-//          else {
-//            for (auto &d : sp.detectors)
-//              d.energy_calibrations_.add(Qpx::Calibration("Energy", sink->metadata().bits));
-//          }
-          sink->push_spill(sp);
-        }
-        sinks_[current_index_] = sink;
+    if (child.attribute("idx"))
+      current_index_ = child.attribute("idx").as_llong();
+    else
+      current_index_++; //backwards compat
+
+    SinkPtr sink
+        = Qpx::SinkFactory::getInstance().create_from_xml(child);
+    if (!sink)
+      LINFO << "Could not parse spectrum";
+    else {
+      for (auto &s : spills_) {
+        Spill sp = s;
+        if (!sink->metadata().detectors.empty()) //backwards compat
+          sp.detectors.clear();
+        //          else {
+        //            for (auto &d : sp.detectors)
+        //              d.energy_calibrations_.add(Qpx::Calibration("Energy", sink->metadata().bits));
+        //          }
+        sink->push_spill(sp);
       }
+      sinks_[current_index_] = sink;
     }
-
-    current_index_++;
   }
+
+  current_index_++;
 
   if (root.child("Fits1D")) {
     for (pugi::xml_node &child : root.child("Fits1D").children()) {
@@ -506,8 +555,8 @@ void Project::import_spn(std::string file_name) {
   myfile.seekg (0, myfile.end);
   int length = myfile.tellg();
 
-//  if (length < 13)
-//    return;
+  //  if (length < 13)
+  //    return;
 
   myfile.seekg (0, myfile.beg);
 
@@ -535,12 +584,12 @@ void Project::import_spn(std::string file_name) {
   uint32_t one;
   int spectra_count = 0;
   while (myfile.tellg() != length) {
-  //for (int j=0; j<150; ++j) {
+    //for (int j=0; j<150; ++j) {
     std::vector<uint32_t> data;
     int64_t totalcount = 0;
-//    uint32_t header;
-//    myfile.read ((char*)&header, sizeof(uint32_t));
-//    DBG << "header " << header;
+    //    uint32_t header;
+    //    myfile.read ((char*)&header, sizeof(uint32_t));
+    //    DBG << "header " << header;
     for (int i=0; i<4096; ++i) {
       myfile.read ((char*)&one, sizeof(uint32_t));
       data.push_back(one);
@@ -562,7 +611,7 @@ void Project::import_spn(std::string file_name) {
   }
 
   changed_ = true;
-//  identity_ = file_name;
+  //  identity_ = file_name;
 
   ready_ = true;
   newdata_ = true;

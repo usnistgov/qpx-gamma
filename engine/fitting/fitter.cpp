@@ -34,7 +34,7 @@ void Fitter::setData(SinkPtr spectrum)
   if (spectrum) {
     Metadata md = spectrum->metadata();
     Setting res = md.attributes.branches.get(Setting("resolution"));
-    if ((md.dimensions() != 1) || (res.value_int <= 0) || (md.total_count <= 0))
+    if ((md.dimensions() != 1) || (res.value_int <= 0))
       return;
 
     metadata_ = md;
@@ -513,13 +513,13 @@ void Fitter::save_report(std::string filename) {
   file << "Real time(s):   " << rt << std::endl;
   if ((lt < rt) && (rt > 0))
     file << "Dead time(%):   " << (rt-lt)/rt*100 << std::endl;
-  double tc = metadata_.total_count.convert_to<double>();
-  file << "Total count:    " << tc << std::endl;
-  if ((tc > 0) && (lt > 0))
-    file << "Count rate:     " << tc/lt << " cps(total/live)"<< std::endl;
-  if ((tc > 0) && (rt > 0))
-    file << "Count rate:     " << tc/rt << " cps(total/real)"<< std::endl;
-  file << std::endl;
+//  double tc = metadata_.total_count.convert_to<double>();
+//  file << "Total count:    " << tc << std::endl;
+//  if ((tc > 0) && (lt > 0))
+//    file << "Count rate:     " << tc/lt << " cps(total/live)"<< std::endl;
+//  if ((tc > 0) && (rt > 0))
+//    file << "Count rate:     " << tc/rt << " cps(total/real)"<< std::endl;
+//  file << std::endl;
 
   file.fill(' ');
   file << "========================================================" << std::endl;

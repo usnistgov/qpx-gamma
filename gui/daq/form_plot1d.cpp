@@ -128,9 +128,10 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   double real = md.attributes.branches.get(Setting("real_time")).value_duration.total_milliseconds() * 0.001;
   double live = md.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
 
+  Qpx::Setting tothits = md.attributes.get_setting(Qpx::Setting("total_hits"), Qpx::Match::id);
   double rate_total = 0;
   if (live > 0)
-    rate_total = md.total_count.convert_to<double>() / live; // total count rate corrected for dead time
+    rate_total = tothits.value_precise.convert_to<double>() / live; // total count rate corrected for dead time
 
   double dead = 100;
   if (real > 0)
@@ -158,7 +159,7 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   QString infoText =
       "<nobr>" + itm.text + "(" + QString::fromStdString(type) + ", " + QString::number(bits) + "bits)</nobr><br/>"
       "<nobr>" + detstr + "</nobr><br/>"
-      "<nobr>Count: " + QString::number(md.total_count.convert_to<double>()) + "</nobr><br/>"
+      "<nobr>Count: " + QString::number(tothits.value_precise.convert_to<double>()) + "</nobr><br/>"
       "<nobr>Rate (inst/total): " + QString::number(rate_inst) + "cps / " + QString::number(rate_total) + "cps</nobr><br/>"
       "<nobr>Live / real:  " + QString::number(live) + "s / " + QString::number(real) + "s</nobr><br/>"
       "<nobr>Dead:  " + QString::number(dead) + "%</nobr><br/>";
@@ -198,8 +199,7 @@ void FormPlot1D::update_plot() {
     double rescale  = md.attributes.branches.get(Setting("rescale")).value_precise.convert_to<double>();
     uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
 
-    if (md.attributes.branches.get(Setting("visible")).value_int
-        && (md.total_count > 0)) {
+    if (md.attributes.branches.get(Setting("visible")).value_int) {
 
       QVector<double> x = QVector<double>::fromStdVector(q.second->axis_values(0));
       QVector<double> y(x.size());

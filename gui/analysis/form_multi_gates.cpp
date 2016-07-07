@@ -160,7 +160,9 @@ void FormMultiGates::update_current_gate(Gate gate) {
   double livetime = gate.fit_data_.metadata_.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
   if (livetime <= 0)
     livetime = 100;
-  gate.cps = gate.fit_data_.metadata_.total_count.convert_to<double>(); // / livetime;
+
+  Qpx::Setting totevts = gate.fit_data_.metadata_.attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id);
+  gate.cps = totevts.value_precise.convert_to<double>(); // / livetime;
 
   if (gate.constraints.y_c.bin(0) <= -1) {
 
@@ -417,7 +419,7 @@ void FormMultiGates::make_gate() {
 
   DBG << "Coincidence gate x[" << xmin << "-" << xmax << "]   y[" << ymin << "-" << ymax << "]";
 
-  if ((md.total_count > 0) && (md.dimensions() == 2))
+  if (md.dimensions() == 2)
   {
     std::string name =
         md.detectors[0].name_ +
@@ -516,7 +518,8 @@ void FormMultiGates::update_peaks(bool content_changed) {
   double livetime = fit_data_.metadata_.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
   if (livetime <= 0)
     livetime = 100;
-  cgate.cps = fit_data_.metadata_.total_count.convert_to<double>();// / livetime;
+  Qpx::Setting totevts = fit_data_.metadata_.attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id);
+  cgate.cps = totevts.value_precise.convert_to<double>();// / livetime;
 
   update_current_gate(cgate);
 }
@@ -536,7 +539,7 @@ void FormMultiGates::on_pushAddGatedSpectrum_clicked()
   this->setCursor(Qt::WaitCursor);
   bool success = false;
 
-  if (gate_x && (gate_x->metadata().total_count > 0)) {
+  if (gate_x /*&& (gate_x->metadata().total_count > 0)*/) {
     Setting app = gate_x->metadata().attributes.branches.get(Setting("appearance"));
     app.value_text = generateColor().name(QColor::HexArgb).toStdString();
     gate_x->set_option(app);

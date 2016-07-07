@@ -62,7 +62,7 @@ bool SpectrumRaw::_initialize() {
 
   DBG << "<SpectrumRaw:" << metadata_.name << "> will ignore patterns";
 
-  file_dir_ = get_attr("file_dir").value_text;
+  file_dir_ = metadata_.attributes.get_setting(Setting("file_dir"), Match::id).value_text;
   if (file_dir_.empty())
     return false;
 
@@ -157,6 +157,8 @@ void SpectrumRaw::_push_spill(const Spill& one_spill) {
 
 
 void SpectrumRaw::_flush() {
+  Spectrum::_flush();
+
   if (open_xml_) {
     DBG << "<SpectrumRaw:" << metadata_.name << "> writing " << file_name_txt_ << " for \"" << metadata_.name << "\"";
     if (!xml_doc_.save_file(file_name_txt_.c_str()))

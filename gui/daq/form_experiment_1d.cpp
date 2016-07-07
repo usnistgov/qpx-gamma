@@ -173,7 +173,7 @@ void FormExperiment1D::display_data()
 
     add_to_table(ui->tableResults, i, 0, data.independent_variable.to_string());
 
-    double total_count = data.spectrum_info.total_count.convert_to<double>();
+    double total_count = data.spectrum_info.attributes.get_setting(Qpx::Setting("total_hits"), Qpx::Match::id).value_precise.convert_to<double>();
     if (live_ms > 0)
       total_count = total_count / live_ms * 1000.0;
     add_to_table(ui->tableResults, i, 1, std::to_string(total_count));
@@ -249,7 +249,7 @@ void FormExperiment1D::eval_dependent(Qpx::DataPoint &data)
   if (codomain == "Count rate (spectrum)")
   {
     double live_ms = data.spectrum_info.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id).value_duration.total_milliseconds();
-    double total = data.spectrum_info.total_count.convert_to<double>();
+    double total = data.spectrum_info.attributes.get_setting(Qpx::Setting("total_hits"), Qpx::Match::id).value_precise.convert_to<double>();
     if (live_ms > 0)
       total = total / live_ms * 1000.0;
     data.dependent_variable = UncertainDouble::from_double(total, sqrt(total));

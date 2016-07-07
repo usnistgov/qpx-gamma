@@ -89,7 +89,7 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, XMLableDB<Detector>& detector
   init_prototypes();
 
   gm_plot_thread_.monitor_source(project_);
-//  gm_plot_thread_.start();
+  //  gm_plot_thread_.start();
 }
 
 FormGainMatch::~FormGainMatch()
@@ -223,7 +223,7 @@ void FormGainMatch::closeEvent(QCloseEvent *event) {
     }
   }
 
-//  project_->terminate();
+  //  project_->terminate();
   gm_plot_thread_.terminate_wait();
   saveSettings();
 
@@ -338,8 +338,8 @@ void FormGainMatch::start_new_pass()
   emit toggleIO(false);
 
   LINFO << "<FormGainMatch> Starting pass #" << (current_pass_ + 1)
-       << " with " << ui->comboSetting->currentText().toStdString() << " = "
-       << current_setting_.value_dbl;
+        << " with " << ui->comboSetting->currentText().toStdString() << " = "
+        << current_setting_.value_dbl;
 
   Qpx::Setting set_pass("Pass");
   set_pass.value_int = current_pass_;
@@ -367,7 +367,7 @@ void FormGainMatch::start_new_pass()
 
   emit settings_changed();
 
-//  gm_plot_thread_.start();
+  //  gm_plot_thread_.start();
   interruptor_.store(false);
   gm_runner_thread_.do_run(project_, interruptor_, 0);
 
@@ -375,7 +375,7 @@ void FormGainMatch::start_new_pass()
 
 void FormGainMatch::run_completed() {
   if (my_run_) {
-//    project_->terminate();
+    //    project_->terminate();
     gm_plot_thread_.terminate_wait();
 
     ui->pushStop->setEnabled(false);
@@ -417,8 +417,8 @@ void FormGainMatch::do_post_processing() {
       && (std::abs(latest_position - peak_ref_.center().value()) < ui->doubleThreshold->value()))
   {
     LINFO << "<FormGainMatch> Gain matching complete   |"
-         << latest_position << " - " << peak_ref_.center().value()
-         << "| < " << ui->doubleThreshold->value();
+          << latest_position << " - " << peak_ref_.center().value()
+          << "| < " << ui->doubleThreshold->value();
     update_name();
     emit optimization_complete();
     return;
@@ -452,7 +452,7 @@ void FormGainMatch::do_post_processing() {
   DBG << "<FormGainMatch> new value = " << current_setting_.value_dbl;
 
   current_pass_++;
-//  QThread::sleep(2);
+  //  QThread::sleep(2);
 
   start_new_pass();
 }
@@ -510,31 +510,28 @@ void FormGainMatch::new_daq_data() {
     if (q.second)
       md = q.second->metadata();
 
-    if (md.total_count > 0) {
-
-      if (md.name == "Reference") {
-        fitter_ref_.setData(q.second); //not busy, etc...?
-        if (!ui->plotRef->busy())
-          ui->plotRef->perform_fit();
-      }
-      else
-      {
-        Qpx::Setting pass = md.attributes.branches.get(Qpx::Setting("Pass"));
-        if (pass && (pass.value_int < experiment_.size())) {
-          experiment_[pass.value_int].spectrum.setData(q.second);
-          double variable = md.attributes.branches.get(current_setting_).value_dbl;
-          experiment_[pass.value_int].independent_variable = variable;
-          eval_dependent(experiment_[pass.value_int]);
-          display_data();
-          if (pass.value_int == current_pass_) {
-            if (criterion_satisfied(experiment_[pass.value_int]))
-              interruptor_.store(true);
-            if (current_pass_ == selected_pass_)
-            {
-              pass_selected_in_table();
-              if (!ui->plotOpt->busy())
-                ui->plotOpt->perform_fit();
-            }
+    if (md.name == "Reference") {
+      fitter_ref_.setData(q.second); //not busy, etc...?
+      if (!ui->plotRef->busy())
+        ui->plotRef->perform_fit();
+    }
+    else
+    {
+      Qpx::Setting pass = md.attributes.branches.get(Qpx::Setting("Pass"));
+      if (pass && (pass.value_int < experiment_.size())) {
+        experiment_[pass.value_int].spectrum.setData(q.second);
+        double variable = md.attributes.branches.get(current_setting_).value_dbl;
+        experiment_[pass.value_int].independent_variable = variable;
+        eval_dependent(experiment_[pass.value_int]);
+        display_data();
+        if (pass.value_int == current_pass_) {
+          if (criterion_satisfied(experiment_[pass.value_int]))
+            interruptor_.store(true);
+          if (current_pass_ == selected_pass_)
+          {
+            pass_selected_in_table();
+            if (!ui->plotOpt->busy())
+              ui->plotOpt->perform_fit();
           }
         }
       }
@@ -716,8 +713,8 @@ void FormGainMatch::display_data()
     std::set<double> chosen_peaks_chan;
     //if selected insert;
 
-//    if (response_function_ != PolyBounded())
-      ui->PlotCalib->addFit(xx, yy, style_fit);
+    //    if (response_function_ != PolyBounded())
+    ui->PlotCalib->addFit(xx, yy, style_fit);
 
     ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
     ui->PlotCalib->setLabels(QString::fromStdString(current_setting_.metadata.name),
@@ -772,7 +769,7 @@ void FormGainMatch::pass_selected_in_table()
       selected.insert(experiment_.at(selected_pass_).selected_peak.center().value());
       ui->plotOpt->set_selected_peaks(selected);
     }
-    if ((fitter_opt_.metadata_.total_count > 0)
+    if ((fitter_opt_.metadata_.attributes.get_setting(Qpx::Setting("total_hits"), Qpx::Match::id).value_precise > 0)
         && fitter_opt_.peaks().empty()
         && !ui->plotOpt->busy())
       ui->plotOpt->perform_fit();
