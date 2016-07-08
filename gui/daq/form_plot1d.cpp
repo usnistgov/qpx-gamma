@@ -260,11 +260,16 @@ void FormPlot1D::on_pushFullInfo_clicked()
   if (detectors_ == nullptr)
     return;
 
-  DialogSpectrum* newSpecDia = new DialogSpectrum(*someSpectrum, *detectors_, true, this);
-  connect(newSpecDia, SIGNAL(finished(bool)), this, SLOT(spectrumDetailsClosed(bool)));
+  DialogSpectrum* newSpecDia = new DialogSpectrum(someSpectrum->metadata(), std::vector<Qpx::Detector>(), *detectors_, true, false, this);
   connect(newSpecDia, SIGNAL(delete_spectrum()), this, SLOT(spectrumDetailsDelete()));
   connect(newSpecDia, SIGNAL(analyse()), this, SLOT(analyse()));
-  newSpecDia->exec();
+  if (newSpecDia->exec() == QDialog::Accepted)
+  {
+    Qpx::Metadata md = newSpecDia->product();
+    someSpectrum->set_detectors(md.detectors);
+    someSpectrum->set_attributes(md.attributes());
+    updateUI();
+  }
 }
 
 void FormPlot1D::spectrumDetailsDelete()
@@ -316,10 +321,6 @@ void FormPlot1D::updateUI()
 
 
   mySpectra->activate();
-}
-
-void FormPlot1D::spectrumDetailsClosed(bool looks_changed) {
-  updateUI();
 }
 
 void FormPlot1D::effCalRequested(QAction* choice) {

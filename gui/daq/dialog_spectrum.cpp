@@ -19,6 +19,7 @@
  *
  ******************************************************************************/
 
+#include "daq_sink_factory.h"
 #include "dialog_spectrum.h"
 #include "ui_dialog_spectrum.h"
 #include "qt_util.h"
@@ -26,34 +27,40 @@
 #include <QInputDialog>
 #include <QMessageBox>
 
-DialogSpectrum::DialogSpectrum(Qpx::Sink &spec,
-                                 XMLableDB<Qpx::Detector>& detDB,
-                                 bool allow_edit,
-                                 QWidget *parent) :
+using namespace Qpx;
+
+DialogSpectrum::DialogSpectrum(Metadata sink_metadata,
+                               std::vector<Qpx::Detector> current_detectors,
+                               XMLableDB<Qpx::Detector>& detDB,
+                               bool has_sink_parent,
+                               bool allow_edit_type,
+                               QWidget *parent) :
   QDialog(parent),
-  my_spectrum_(spec),
+  sink_metadata_(sink_metadata),
   det_selection_model_(&det_table_model_),
+  current_detectors_(current_detectors),
   changed_(false),
+  has_sink_parent_(has_sink_parent),
   attr_model_(this),
   detectors_(detDB),
   spectrum_detectors_("Detectors"),
-  allow_edit_(allow_edit),
   ui(new Ui::DialogSpectrum)
 {
   ui->setupUi(this);
   ui->labelWarning->setVisible(false);
+  for (auto &q : SinkFactory::getInstance().types())
+    ui->comboType->addItem(QString::fromStdString(q));
 
-  ui->pushAnalyse->setVisible(allow_edit_);
-  ui->pushDelete->setVisible(allow_edit_);
-  ui->pushLock->setVisible(allow_edit_);
-  ui->treeAttribs->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  ui->treeAttribs->setEditTriggers(QAbstractItemView::AllEditTriggers);
+
+  ui->widgetMore->setVisible(has_sink_parent);
+  ui->comboType->setEnabled(allow_edit_type);
+  ui->widgetDetectors->setVisible(!allow_edit_type);
 
   connect(&det_selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(det_selection_changed(QItemSelection,QItemSelection)));
 
   connect(&attr_model_, SIGNAL(tree_changed()), this, SLOT(push_settings()));
-
-  md_ = my_spectrum_.metadata();
 
   ui->treeAttribs->setModel(&attr_model_);
   ui->treeAttribs->setItemDelegate(&attr_delegate_);
@@ -71,8 +78,14 @@ DialogSpectrum::DialogSpectrum(Qpx::Sink &spec,
 
   attr_model_.set_show_address_(false);
 
-  Qpx::Setting pat = md_.get_attribute("pattern_add");
-  ui->spinDets->setValue(pat.value_pattern.gates().size());
+  if (sink_metadata_ == Metadata())
+  {
+    ui->spinDets->setValue(current_detectors_.size());
+    on_comboType_activated(ui->comboType->currentText());
+    Qpx::Setting col = sink_metadata_.get_attribute("appearance");
+    col.value_text = generateColor().name(QColor::HexArgb).toStdString();
+    sink_metadata_.set_attribute(col);
+  }
 
   updateData();
 }
@@ -87,27 +100,30 @@ void DialogSpectrum::det_selection_changed(QItemSelection, QItemSelection) {
 }
 
 void DialogSpectrum::updateData() {
-  ui->lineType->setText(QString::fromStdString(md_.type()));
+  ui->comboType->setCurrentText(QString::fromStdString(sink_metadata_.type()));
 
   spectrum_detectors_.clear();
-  for (auto &q: md_.detectors)
+  for (auto &q: sink_metadata_.detectors)
     spectrum_detectors_.add_a(q);
   det_table_model_.update();
 
-  QString descr = "[dim:" + QString::number(md_.dimensions()) + "] " + QString::fromStdString(md_.type_description()) + "\n";
+  Qpx::Setting pat = sink_metadata_.get_attribute("pattern_add");
+  ui->spinDets->setValue(pat.value_pattern.gates().size());
 
-  if (md_.output_types().size()) {
-    descr += "\t\tOutput file types: ";
-    for (auto &q : md_.output_types()) {
-      descr += "*." + QString::fromStdString(q);
-      if (q != md_.output_types().back())
-        descr += ", ";
-    }
-  }
+  QString descr = "[dim:" + QString::number(sink_metadata_.dimensions()) + "] " + QString::fromStdString(sink_metadata_.type_description()) + "\n";
+
+//  if (sink_metadata_.output_types().size()) {
+//    descr += "\t\tOutput file types: ";
+//    for (auto &q : sink_metadata_.output_types()) {
+//      descr += "*." + QString::fromStdString(q);
+//      if (q != sink_metadata_.output_types().back())
+//        descr += ", ";
+//    }
+//  }
 
   ui->labelDescription->setText(descr);
 
-  attr_model_.update(md_.attributes());
+  attr_model_.update(sink_metadata_.attributes());
   open_close_locks();
 }
 
@@ -115,7 +131,7 @@ void DialogSpectrum::open_close_locks() {
   bool lockit = !ui->pushLock->isChecked();
   ui->labelWarning->setVisible(lockit);
   ui->pushDelete->setEnabled(lockit);
-  ui->spinDets->setEnabled(lockit);
+  ui->spinDets->setEnabled(lockit || !has_sink_parent_);
 
   ui->treeAttribs->clearSelection();
   ui->tableDetectors->clearSelection();
@@ -132,7 +148,7 @@ void DialogSpectrum::open_close_locks() {
 
 void DialogSpectrum::push_settings()
 {
-  md_.overwrite_all_attributes(attr_model_.get_tree());
+  sink_metadata_.overwrite_all_attributes(attr_model_.get_tree());
   changed_ = true;
 }
 
@@ -150,11 +166,11 @@ void DialogSpectrum::toggle_push()
     return;
   int i = ixl.front().row();
 
-  if (i < md_.detectors.size()) {
+  if (i < sink_metadata_.detectors.size()) {
     ui->pushDetEdit->setEnabled(unlocked);
     ui->pushDetRename->setEnabled(unlocked);
     ui->pushDetToDB->setEnabled(unlocked);
-    Qpx::Detector det = md_.detectors[i];
+    Qpx::Detector det = sink_metadata_.detectors[i];
     if (unlocked && detectors_.has_a(det))
       ui->pushDetFromDB->setEnabled(true);
   }
@@ -165,15 +181,28 @@ void DialogSpectrum::on_pushLock_clicked()
   open_close_locks();
 }
 
+void DialogSpectrum::on_buttonBox_accepted()
+{
+  if (!changed_)
+    reject();
+  else
+  {
+    SinkPtr newsink = SinkFactory::getInstance().create_from_prototype(sink_metadata_);
+    if (!newsink)
+    {
+      QMessageBox msgBox;
+      msgBox.setText("Attributes invalid for this type. Check requirements.");
+      msgBox.exec();
+      return;
+    }
+    else
+      accept();
+  }
+}
+
 void DialogSpectrum::on_buttonBox_rejected()
 {
-  if (changed_) {
-    my_spectrum_.set_attributes(md_.attributes());
-    my_spectrum_.set_detectors(md_.detectors);
-  }
-
-  emit finished(changed_);
-  accept();
+  reject();
 }
 
 void DialogSpectrum::on_pushDetEdit_clicked()
@@ -194,12 +223,12 @@ void DialogSpectrum::changeDet(Qpx::Detector newDetector) {
     return;
   int i = ixl.front().row();
 
-  if (i < md_.detectors.size()) {
-    md_.detectors[i] = newDetector;
+  if (i < sink_metadata_.detectors.size()) {
+    sink_metadata_.detectors[i] = newDetector;
     changed_ = true;
 
     spectrum_detectors_.clear();
-    for (auto &q: md_.detectors)
+    for (auto &q: sink_metadata_.detectors)
       spectrum_detectors_.add_a(q);
     det_table_model_.update();
     open_close_locks();
@@ -219,12 +248,12 @@ void DialogSpectrum::on_pushDetRename_clicked()
                                        QString::fromStdString(spectrum_detectors_.get(i).name_),
                                        &ok);
   if (ok && !text.isEmpty()) {
-    if (i < md_.detectors.size()) {
-      md_.detectors[i].name_ = text.toStdString();
+    if (i < sink_metadata_.detectors.size()) {
+      sink_metadata_.detectors[i].name_ = text.toStdString();
       changed_ = true;
 
       spectrum_detectors_.clear();
-      for (auto &q: md_.detectors)
+      for (auto &q: sink_metadata_.detectors)
         spectrum_detectors_.add_a(q);
       det_table_model_.update();
       open_close_locks();
@@ -237,14 +266,14 @@ void DialogSpectrum::on_pushDelete_clicked()
   int ret = QMessageBox::question(this, "Delete spectrum?", "Are you sure you want to delete this spectrum?");
   if (ret == QMessageBox::Yes) {
     emit delete_spectrum();
-    accept();
+    on_buttonBox_rejected();
   }
 }
 
 void DialogSpectrum::on_pushAnalyse_clicked()
 {
   emit analyse();
-  accept();
+  on_buttonBox_rejected();
 }
 
 void DialogSpectrum::on_pushDetFromDB_clicked()
@@ -254,13 +283,13 @@ void DialogSpectrum::on_pushDetFromDB_clicked()
     return;
   int i = ixl.front().row();
 
-  if (i < md_.detectors.size()) {
-    Qpx::Detector newdet = detectors_.get(md_.detectors[i]);
-    md_.detectors[i] = newdet;
+  if (i < sink_metadata_.detectors.size()) {
+    Qpx::Detector newdet = detectors_.get(sink_metadata_.detectors[i]);
+    sink_metadata_.detectors[i] = newdet;
     changed_ = true;
 
     spectrum_detectors_.clear();
-    for (auto &q: md_.detectors)
+    for (auto &q: sink_metadata_.detectors)
       spectrum_detectors_.add_a(q);
     det_table_model_.update();
     open_close_locks();
@@ -274,8 +303,8 @@ void DialogSpectrum::on_pushDetToDB_clicked()
     return;
   int i = ixl.front().row();
 
-  if (i < md_.detectors.size()) {
-    Qpx::Detector newdet = md_.detectors[i];
+  if (i < sink_metadata_.detectors.size()) {
+    Qpx::Detector newdet = sink_metadata_.detectors[i];
 
     if (!detectors_.has_a(newdet)) {
       bool ok;
@@ -299,8 +328,8 @@ void DialogSpectrum::on_pushDetToDB_clicked()
             return;
           else {
             detectors_.replace(newdet);
-            if (md_.detectors[i].name_ != newdet.name_) {
-              md_.detectors[i] = newdet;
+            if (sink_metadata_.detectors[i].name_ != newdet.name_) {
+              sink_metadata_.detectors[i] = newdet;
               changed_ = true;
 //              updateData();
             }
@@ -322,16 +351,27 @@ void DialogSpectrum::on_pushDetToDB_clicked()
 
 void DialogSpectrum::on_spinDets_valueChanged(int arg1)
 {
-  if (!ui->spinDets->isEnabled())
-    return;
+  Qpx::Setting pat = sink_metadata_.get_attribute("pattern_add");
 
-  Qpx::Setting pat = md_.get_attribute("pattern_add");
-
-  md_.set_det_limit(arg1);
+  sink_metadata_.set_det_limit(arg1);
   if (arg1 != pat.value_pattern.gates().size())
     changed_ = true;
 
-  attr_model_.update(md_.attributes());
+  attr_model_.update(sink_metadata_.attributes());
   open_close_locks();
 }
 
+
+void DialogSpectrum::on_comboType_activated(const QString &arg1)
+{
+  Metadata md = SinkFactory::getInstance().create_prototype(arg1.toStdString());
+  if (md != Metadata()) {
+    md.set_attributes(sink_metadata_.attributes());
+
+    sink_metadata_ = md;
+
+    on_spinDets_valueChanged(ui->spinDets->value());
+    updateData();
+  } else
+    WARN << "Problem with spectrum type. Factory cannot make template for " << arg1.toStdString();
+}

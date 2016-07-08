@@ -64,7 +64,6 @@ signals:
   void requestEffCal(QString);
 
 private slots:
-  void spectrumDetailsClosed(bool);
   void spectrumDetailsDelete();
 
   void spectrumLooksChanged(SelectorItem);

@@ -96,11 +96,11 @@ Setting Metadata::attributes() const
 
 void Metadata::set_attributes(const Setting &settings)
 {
-  if ((settings.metadata.setting_type != SettingType::stem) && (attributes_.has(settings, Match::id | Match::indices)))
-    set_attribute(settings);
-  else
+  if (settings.branches.size())
     for (auto &s : settings.branches.my_data_)
       set_attributes(s);
+  else if (attributes_.has(settings, Match::id | Match::indices))
+    set_attribute(settings);
 }
 
 void Metadata::overwrite_all_attributes(const Setting &settings)

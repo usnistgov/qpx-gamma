@@ -83,7 +83,6 @@ private slots:
   void spectrumDetailsDelete();
 
   void on_pushDetails_clicked();
-  void spectrumDetailsClosed(bool);
 
   void markers_moved(Coord x, Coord y);
   void analyse();

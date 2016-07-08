@@ -336,6 +336,7 @@ TreeSettings::~TreeSettings()
 
 void TreeSettings::set_edit_read_only(bool edit_ro) {
   edit_read_only_ = edit_ro;
+  emit layoutChanged();
 }
 
 void TreeSettings::set_show_read_only(bool show_ro) {
@@ -344,6 +345,7 @@ void TreeSettings::set_show_read_only(bool show_ro) {
 
 void TreeSettings::set_show_address_(bool show_ad) {
   show_address_ = show_ad;
+  emit layoutChanged();
 }
 
 int TreeSettings::columnCount(const QModelIndex & /* parent */) const

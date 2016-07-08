@@ -58,34 +58,6 @@ public:
 };
 
 
-class DialogSpectrumTemplate : public QDialog
-{
-  Q_OBJECT
-public:
-  explicit DialogSpectrumTemplate(Qpx::Metadata,
-                                  std::vector<Qpx::Detector>,
-                                  bool, QWidget *parent = 0);
-  ~DialogSpectrumTemplate();
-
-  Qpx::Metadata product() { return myTemplate; }
-
-private slots:
-  void on_buttonBox_accepted();
-  void on_buttonBox_rejected();
-  void on_comboType_activated(const QString &arg1);
-  void on_spinDets_valueChanged(int arg1);
-
-private:
-  void updateData();
-
-  Ui::DialogSpectrumTemplate *ui;
-  Qpx::Metadata myTemplate;
-
-  TreeSettings               attr_model_;
-  QpxSpecialDelegate         attr_delegate_;
-  std::vector<Qpx::Detector> current_dets_;
-};
-
 class DialogSpectraTemplates : public QDialog
 {
   Q_OBJECT

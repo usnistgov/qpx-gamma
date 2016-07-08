@@ -25,128 +25,11 @@
 #include "daq_sink_factory.h"
 #include "dialog_spectra_templates.h"
 #include "ui_dialog_spectra_templates.h"
-#include "ui_dialog_spectrum_template.h"
+#include "dialog_spectrum.h"
 #include <QFileDialog>
 #include <QMessageBox>
 
 using namespace Qpx;
-
-DialogSpectrumTemplate::DialogSpectrumTemplate(Metadata newTemplate,
-                                               std::vector<Detector> current_dets,
-                                               bool allow_edit_basics, QWidget *parent) :
-  QDialog(parent),
-  current_dets_(current_dets),
-  attr_model_(this),
-  ui(new Ui::DialogSpectrumTemplate)
-{
-  ui->setupUi(this);
-  for (auto &q : SinkFactory::getInstance().types())
-    ui->comboType->addItem(QString::fromStdString(q));
-
-  ui->treeAttribs->setModel(&attr_model_);
-  ui->treeAttribs->setItemDelegate(&attr_delegate_);
-  ui->treeAttribs->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-
-//  attr_delegate_.eat_detectors(current_dets_);
-
-  ui->widgetBasics->setVisible(allow_edit_basics);
-
-  myTemplate = newTemplate;
-  if (myTemplate == Metadata()) {
-    myTemplate = SinkFactory::getInstance().create_prototype(ui->comboType->currentText().toStdString());
-    Setting app = myTemplate.get_attribute("appearance");
-    app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-    myTemplate.set_attribute(app);
-    size_t sz = current_dets_.size();
-    ui->spinDets->setValue(sz);
-  } else {
-    Metadata newtemp = SinkFactory::getInstance().create_prototype(newTemplate.type());
-    if (newtemp != Metadata()) {
-      newtemp.set_attributes(myTemplate.attributes());
-      myTemplate = newtemp;
-      Setting pat = myTemplate.get_attribute("pattern_add");
-      ui->spinDets->setValue(pat.value_pattern.gates().size());
-    } else {
-      WARN << "Problem with spectrum type. Factory cannot make template for " << newTemplate.type();
-      reject();
-    }
-  }
-
-  attr_model_.set_show_address_(false);
-  attr_model_.update(myTemplate.attributes());
-
-  updateData();
-}
-
-void DialogSpectrumTemplate::updateData() {
-  ui->comboType->setCurrentText(QString::fromStdString(myTemplate.type()));
-
-  QString descr = "[dim:" + QString::number(myTemplate.dimensions()) + "] " + QString::fromStdString(myTemplate.type_description()) + "\n";
-
-  if (myTemplate.output_types().size()) {
-    descr += "\t\tOutput file types: ";
-    for (auto &q : myTemplate.output_types()) {
-      descr += "*." + QString::fromStdString(q);
-      if (q != myTemplate.output_types().back())
-        descr += ", ";
-    }
-  }
-
-  ui->labelDescription->setText(descr);
-  attr_model_.update(myTemplate.attributes());
-}
-
-DialogSpectrumTemplate::~DialogSpectrumTemplate()
-{
-  delete ui;
-}
-
-void DialogSpectrumTemplate::on_buttonBox_accepted()
-{
-  myTemplate.overwrite_all_attributes(attr_model_.get_tree());
-  SinkPtr newSpectrum = SinkFactory::getInstance().create_from_prototype(myTemplate);
-  if (newSpectrum == nullptr) {
-    QMessageBox msgBox;
-    msgBox.setText("Template does not produce valid sink. Check requirements.");
-    msgBox.exec();
-  } else {
-    accept();
-  }
-}
-
-void DialogSpectrumTemplate::on_buttonBox_rejected()
-{
-  reject();
-}
-
-
-void DialogSpectrumTemplate::on_comboType_activated(const QString &arg1)
-{
-  Metadata newtemp = SinkFactory::getInstance().create_prototype(arg1.toStdString());
-  if (newtemp != Metadata()) {
-    myTemplate = newtemp;
-
-    Qpx::Setting col = myTemplate.get_attribute("appearance");
-    col.value_text = generateColor().name(QColor::HexArgb).toStdString();
-    myTemplate.set_attribute(col);
-
-    on_spinDets_valueChanged(ui->spinDets->value());
-    updateData();
-  } else
-    WARN << "Problem with spectrum type. Factory refuses to make template for " << arg1.toStdString();
-}
-
-void DialogSpectrumTemplate::on_spinDets_valueChanged(int arg1)
-{
-  if (!ui->spinDets->isEnabled())
-    return;
-  myTemplate.set_det_limit(arg1);
-  updateData();
-}
-
-
-
-
 
 TableSpectraTemplates::TableSpectraTemplates(XMLableDB<Metadata>& templates, QObject *parent)
   : QAbstractTableModel(parent),
@@ -345,7 +228,8 @@ void DialogSpectraTemplates::on_pushExport_clicked()
 
 void DialogSpectraTemplates::on_pushNew_clicked()
 {
-  DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(Metadata(), current_dets_, true, this);
+  XMLableDB<Qpx::Detector> fakeDetDB("Detectors");
+  DialogSpectrum* newDialog = new DialogSpectrum(Metadata(), current_dets_, fakeDetDB, false, true, this);
   if (newDialog->exec()) {
     templates_.add_a(newDialog->product());
     selection_model_.reset();
@@ -360,7 +244,8 @@ void DialogSpectraTemplates::on_pushEdit_clicked()
   if (ixl.empty())
     return;
   int i = ixl.front().row();
-  DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(templates_.get(i), current_dets_, true, this);
+  XMLableDB<Qpx::Detector> fakeDetDB("Detectors");
+  DialogSpectrum* newDialog = new DialogSpectrum(templates_.get(i), current_dets_, fakeDetDB, false, true, this);
   if (newDialog->exec())
   {
     templates_.replace(i, newDialog->product());

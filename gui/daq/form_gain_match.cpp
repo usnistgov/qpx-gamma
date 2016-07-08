@@ -29,7 +29,7 @@
 
 #include "UncertainDouble.h"
 #include "qt_util.h"
-#include "dialog_spectra_templates.h"
+#include "dialog_spectrum.h"
 
 
 using namespace Qpx;
@@ -1045,7 +1045,7 @@ void FormGainMatch::on_pushDeleteCustom_clicked()
 
 void FormGainMatch::on_pushEditPrototypeRef_clicked()
 {
-  DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(sink_prototype_ref_, current_dets_, false, this);
+  DialogSpectrum* newDialog = new DialogSpectrum(sink_prototype_ref_, current_dets_, detectors_, false, false, this);
   if (newDialog->exec()) {
     sink_prototype_ref_ = newDialog->product();
     remake_source_domains();
@@ -1055,7 +1055,7 @@ void FormGainMatch::on_pushEditPrototypeRef_clicked()
 
 void FormGainMatch::on_pushEditPrototypeOpt_clicked()
 {
-  DialogSpectrumTemplate* newDialog = new DialogSpectrumTemplate(sink_prototype_opt_, current_dets_, false, this);
+  DialogSpectrum* newDialog = new DialogSpectrum(sink_prototype_opt_, current_dets_, detectors_, false, false, this);
   if (newDialog->exec()) {
     sink_prototype_opt_ = newDialog->product();
     remake_source_domains();

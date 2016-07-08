@@ -668,11 +668,14 @@ void FormExperiment::on_pushSinkInfo_clicked()
   {
     XMLableDB<Qpx::Detector> dets("detectors"); //HACK
 
-    DialogSpectrum* newSpecDia = new DialogSpectrum(*sink, dets, false, this);
-//    connect(newSpecDia, SIGNAL(finished(bool)), this, SLOT(spectrumDetailsClosed(bool)));
-    // should go to new_daq_data
-    newSpecDia->exec();
-
+    DialogSpectrum* newSpecDia = new DialogSpectrum(sink->metadata(), std::vector<Qpx::Detector>(), dets, false, false, this);
+    if (newSpecDia->exec() == QDialog::Accepted)
+    {
+      Qpx::Metadata md = newSpecDia->product();
+      sink->set_detectors(md.detectors);
+      sink->set_attributes(md.attributes());
+//      updateUI();
+    }
   }
 }
 
