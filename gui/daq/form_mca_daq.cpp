@@ -451,20 +451,20 @@ void FormMcaDaq::projectImport()
     if (ext == "spn") {
       project_->import_spn(fileNames.at(i).toStdString());
       for (auto &q : project_->get_sinks()) {
-        Setting app = q.second->metadata().attributes.branches.get(Setting("appearance"));
+        Setting app = q.second->metadata().get_attribute("appearance");
         app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-        q.second->set_option(app);
+        q.second->set_attribute(app);
       }
     } else {
       SinkPtr newSpectrum = SinkFactory::getInstance().create_from_file(fileNames.at(i).toStdString());
       if (newSpectrum) {
-        Setting app = newSpectrum->metadata().attributes.branches.get(Setting("appearance"));
+        Setting app = newSpectrum->metadata().get_attribute("appearance");
         app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-        newSpectrum->set_option(app);
+        newSpectrum->set_attribute(app);
         if (valid_imports < 10) {
-          Setting vis = newSpectrum->metadata().attributes.branches.get(Setting("visible"));
+          Setting vis = newSpectrum->metadata().get_attribute("visible");
           vis.value_int = true;
-          newSpectrum->set_option(vis);
+          newSpectrum->set_attribute(vis);
         }
         valid_imports++;
         project_->add_sink(newSpectrum);
@@ -525,7 +525,7 @@ void FormMcaDaq::reqAnal(int64_t idx) {
     connect(my_analysis_, SIGNAL(destroyed()), this, SLOT(analysis_destroyed()));
   }
 
-  my_analysis_->setWindowTitle("1D: " + QString::fromStdString(selected->name()));
+  my_analysis_->setWindowTitle("1D: " + QString::fromStdString(selected->metadata().get_attribute("name").value_text));
   my_analysis_->setSpectrum(&(*project_), idx);
   emit requestAnalysis(my_analysis_);
 
@@ -551,7 +551,7 @@ void FormMcaDaq::reqAnal2D(int64_t idx) {
     connect(my_analysis_2d_, SIGNAL(spectraChanged()), this, SLOT(updateSpectraUI()));
   }
 
-  my_analysis_2d_->setWindowTitle("2D: " + QString::fromStdString(selected->name()));
+  my_analysis_2d_->setWindowTitle("2D: " + QString::fromStdString(selected->metadata().get_attribute("name").value_text));
   my_analysis_2d_->setSpectrum(&(*project_), idx);
   my_analysis_2d_->reset();
   emit requestAnalysis2D(my_analysis_2d_);
@@ -572,7 +572,7 @@ void FormMcaDaq::reqSym2D(int64_t idx) {
     connect(my_symmetrization_2d_, SIGNAL(destroyed()), this, SLOT(sym2d_destroyed()));
     connect(my_symmetrization_2d_, SIGNAL(spectraChanged()), this, SLOT(updateSpectraUI()));
   }
-  my_symmetrization_2d_->setWindowTitle("SYM: " + QString::fromStdString(selected->name()));
+  my_symmetrization_2d_->setWindowTitle("SYM: " + QString::fromStdString(selected->metadata().get_attribute("name").value_text));
   my_symmetrization_2d_->setSpectrum(&(*project_), idx);
   my_symmetrization_2d_->reset();
   emit requestSymmetriza2D(my_symmetrization_2d_);

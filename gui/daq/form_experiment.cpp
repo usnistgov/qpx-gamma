@@ -222,8 +222,8 @@ void FormExperiment::new_daq_data() {
   {
     selected_fitter_ = p->get_fitter(selected_sink_);
     selected_fitter_.setData(sink);
-    if (selected_fitter_.metadata_.attributes.get_setting(Setting("total_hits"), Match::id).value_precise
-        < md.attributes.get_setting(Setting("total_hits"), Match::id).value_precise)
+    if (selected_fitter_.metadata_.get_attribute("total_hits").value_precise
+        < md.get_attribute("total_hits").value_precise)
       refit = true;
   }
   else
@@ -596,10 +596,10 @@ void FormExperiment::populate_selector()
   int i=1;
   for (auto &md : ptp.my_data_) {
     SelectorItem new_spectrum;
-    new_spectrum.visible = md.attributes.branches.get(Qpx::Setting("visible")).value_int;
-    new_spectrum.text = QString::fromStdString(md.name);
+    new_spectrum.visible = md.get_attribute("visible").value_int;
+    new_spectrum.text = QString::fromStdString(md.get_attribute("name").value_text);
     new_spectrum.data = QVariant::fromValue(i);
-    new_spectrum.color = QColor(QString::fromStdString(md.attributes.branches.get(Qpx::Setting("appearance")).value_text));
+    new_spectrum.color = QColor(QString::fromStdString(md.get_attribute("appearance").value_text));
     items.push_back(new_spectrum);
     i++;
 

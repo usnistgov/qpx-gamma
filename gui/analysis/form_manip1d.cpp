@@ -83,19 +83,19 @@ QVariant TableSpectra1D::data(const QModelIndex &index, int role) const
     case 0:
       return QString::fromStdString(var_names_[row]);
     case 1:
-      return QString::fromStdString(data_[row].name);
+      return QVariant::fromValue(data_[row].get_attribute("name"));
     case 2:
       return QString::fromStdString(data_[row].type());
     case 3:
-      return QVariant::fromValue(data_[row].attributes.branches.get(Setting("resolution")));
+      return QVariant::fromValue(data_[row].get_attribute("resolution"));
     case 4:
-      return QVariant::fromValue(data_[row].attributes.branches.get(Setting("pattern_coinc")));
+      return QVariant::fromValue(data_[row].get_attribute("pattern_coinc"));
     case 5:
-      return QVariant::fromValue(data_[row].attributes.branches.get(Setting("pattern_add")));
+      return QVariant::fromValue(data_[row].get_attribute("pattern_add"));
     case 6:
-      return QVariant::fromValue(data_[row].attributes.branches.get(Setting("appearance")));
+      return QVariant::fromValue(data_[row].get_attribute("appearance"));
     case 7:
-      return QVariant::fromValue(data_[row].attributes.branches.get(Setting("visible")));
+      return QVariant::fromValue(data_[row].get_attribute("visible"));
     }
 
   }
@@ -245,17 +245,17 @@ void FormManip1D::spectrumDetails(std::string id)
   }
 
   std::string type = someSpectrum->type();
-  double real = md.attributes.branches.get(Setting("real_time")).value_duration.total_milliseconds() * 0.001;
-  double live = md.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  double real = md.get_attribute("real_time").value_duration.total_milliseconds() * 0.001;
+  double live = md.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
   double dead = 100;
   double rate = 0;
   Detector det = Detector();
   if (!md.detectors.empty())
     det = md.detectors[0];
 
-  Qpx::Setting tothits = md.attributes.get_setting(Qpx::Setting("total_hits"), Qpx::Match::id);
+  Qpx::Setting tothits = md.get_attribute("total_hits");
 
-  uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+  uint16_t bits = md.get_attribute("resolution").value_int;
 
   QString detstr("Detector: ");
   detstr += QString::fromStdString(det.name_);
@@ -298,11 +298,11 @@ void FormManip1D::update_plot() {
     if (q.second)
       md = q.second->metadata();
 
-//    double livetime = md.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
-    double rescale  = md.attributes.branches.get(Setting("rescale")).value_precise.convert_to<double>();
-    uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+//    double livetime = md.get_attribute("live_time")).value_duration.total_milliseconds() * 0.001;
+    double rescale  = md.get_attribute("rescale").value_precise.convert_to<double>();
+    uint16_t bits = md.get_attribute("resolution").value_int;
 
-    if (md.attributes.branches.get(Setting("visible")).value_int
+    if (md.get_attribute("visible").value_int
         && (bits > 0)) {
 
       QVector<double> x(pow(2,bits));
@@ -335,7 +335,7 @@ void FormManip1D::update_plot() {
       }
 
       AppearanceProfile profile;
-      profile.default_pen = QPen(QColor(QString::fromStdString(md.attributes.branches.get(Setting("appearance")).value_text)), 1);
+      profile.default_pen = QPen(QColor(QString::fromStdString(md.get_attribute("appearance").value_text)), 1);
       ui->mcaPlot->addGraph(x, y, profile, bits);
 
     }

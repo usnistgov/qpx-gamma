@@ -33,10 +33,9 @@ static SinkRegistrar<Spectrum1D_LFC> registrar("LFC1D");
 Spectrum1D_LFC::Spectrum1D_LFC()
   : Spectrum1D()
 {
-  Setting base_options = metadata_.attributes;
+  Setting base_options = metadata_.attributes();
   metadata_ = Metadata("LFC1D", "One detector loss-free spectrum", 1,
   {}, metadata_.output_types());
-  metadata_.attributes = base_options;
 
   Qpx::Setting t_sample;
   t_sample.id_ = "time_sample";
@@ -49,7 +48,9 @@ Spectrum1D_LFC::Spectrum1D_LFC()
   t_sample.metadata.description = "minimum \u0394t before compensating";
   t_sample.metadata.writable = true;
   t_sample.metadata.flags.insert("preset");
-  metadata_.attributes.branches.add(t_sample);
+  base_options.branches.add(t_sample);
+
+  metadata_.overwrite_all_attributes(base_options);
 }
 
 bool Spectrum1D_LFC::_initialize() {
@@ -74,7 +75,7 @@ bool Spectrum1D_LFC::_initialize() {
   channels_all_.resize(pow(2, bits_),0);
   channels_run_.resize(pow(2, bits_),0);
 
-  time_sample_ = metadata_.attributes.get_setting(Setting("time_sample"), Match::id).value_dbl;
+  time_sample_ = metadata_.get_attribute("time_sample").value_dbl;
 
   return true;
 }
@@ -129,7 +130,8 @@ void Spectrum1D_LFC::_push_stats(const StatsUpdate& newStats)
     count_total_ += fast_peaks_compensated;
     total_hits_ = count_total_;
 
-    DBG << "<SpectrumLFC1D> '" << metadata_.name << "' update chan[" << my_channel_ << "]"
+    DBG << "<SpectrumLFC1D> '" << metadata_.get_attribute("name").value_text
+        << "' update chan[" << my_channel_ << "]"
         << " fast_peaks_compensated=" << fast_peaks_compensated
         << " true_count=" << count_current_;
 
@@ -140,10 +142,10 @@ void Spectrum1D_LFC::_push_stats(const StatsUpdate& newStats)
         spectrum_[i] = channels_all_[i];
       channels_run_[i] = 0.0;
     }
-    Setting real_time = metadata_.attributes.get_setting(Setting("real_time"), Match::id);
-    Setting live_time = metadata_.attributes.get_setting(Setting("live_time"), Match::id);
+    Setting real_time = metadata_.get_attribute("real_time");
+    Setting live_time = metadata_.get_attribute("live_time");
     live_time.value_duration = real_time.value_duration;
-    metadata_.attributes.branches.replace(live_time);
+    metadata_.set_attribute(live_time);
 
     count_current_ = 0;
   } else {

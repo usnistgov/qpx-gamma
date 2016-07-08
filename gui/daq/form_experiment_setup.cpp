@@ -235,7 +235,7 @@ void FormExperimentSetup::remake_domains()
   std::map<std::string, Qpx::Setting> sink_settings;
   for (auto &p : tpt.my_data_) {
     Qpx::Setting allset, set;
-    allset = p.attributes;
+    allset = p.attributes();
     allset.cull_invisible();
     set.branches.my_data_ = allset.find_all(set, Qpx::Match::indices);
     for (auto &q : set.branches.my_data_)
@@ -245,7 +245,7 @@ void FormExperimentSetup::remake_domains()
         continue;
       set.indices.clear();
       set.indices.insert(i);
-      set.branches.my_data_ = p.attributes.find_all(set, Qpx::Match::indices);
+      set.branches.my_data_ = p.attributes().find_all(set, Qpx::Match::indices);
       for (auto &q : set.branches.my_data_)
       {
         std::string name = "[" + p.type() + "] " + q.id_;

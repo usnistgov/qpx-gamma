@@ -1346,7 +1346,7 @@ void FormFitter::updateData() {
     return;
 
   QColor color_data;
-  color_data.setHsv(QColor(QString::fromStdString(fit_data_->metadata_.attributes.branches.get(Qpx::Setting("appearance")).value_text)).hsvHue(), 48, 160);
+  color_data.setHsv(QColor(QString::fromStdString(fit_data_->metadata_.get_attribute("appearance").value_text)).hsvHue(), 48, 160);
   QPen pen_data = QPen(color_data, 1);
 
   QPen pen_resid = QPen( Qt::darkGreen, 1);

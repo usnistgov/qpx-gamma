@@ -86,17 +86,12 @@ public:
 
   //report on contents
   std::vector<std::string> types() const;
-//  std::set<uint32_t>      resolutions(uint16_t dim) const;
-  std::string identity() const {
-    boost::unique_lock<boost::mutex> lock(mutex_); return identity_;
-  }
+  std::string identity() const;
 
   bool changed() const;
   void mark_changed();
 
-  std::set<Spill> spills() const {
-    boost::unique_lock<boost::mutex> lock(mutex_); return spills_;
-  }
+  std::set<Spill> spills() const;
   
   //get sinks
   SinkPtr get_sink(int64_t idx);

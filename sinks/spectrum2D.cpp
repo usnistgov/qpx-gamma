@@ -34,11 +34,10 @@ static SinkRegistrar<Spectrum2D> registrar("2D");
 
 Spectrum2D::Spectrum2D()
 {
-  Setting base_options = metadata_.attributes;
+  Setting base_options = metadata_.attributes();
   metadata_ = Metadata("2D", "2-dimensional coincidence matrix", 2,
                     {"m", "m4b", "mat"},
                     {"m4b", "mat"});
-  metadata_.attributes = base_options;
 
   Qpx::Setting buf;
   buf.id_ = "buffered";
@@ -47,7 +46,7 @@ Spectrum2D::Spectrum2D()
   buf.metadata.description = "Buffered output for efficient plotting (more memory)";
   buf.metadata.writable = true;
   buf.metadata.flags.insert("preset");
-  metadata_.attributes.branches.add(buf);
+  base_options.branches.add(buf);
 
   Qpx::Setting sym;
   sym.id_ = "symmetrized";
@@ -56,7 +55,9 @@ Spectrum2D::Spectrum2D()
   sym.metadata.description = "Matrix is symmetrized";
   sym.metadata.writable = false;
   sym.value_int = 0;
-  metadata_.attributes.branches.add(sym);
+  base_options.branches.add(sym);
+
+  metadata_.overwrite_all_attributes(base_options);
 }
 
 
@@ -78,7 +79,7 @@ bool Spectrum2D::_initialize() {
   
 //  energies_.resize(2);
   pattern_.resize(2, 0);
-  buffered_ = (metadata_.attributes.get_setting(Setting("buffered"), Match::id).value_int != 0);
+  buffered_ = (metadata_.get_attribute("buffered").value_int != 0);
 
   adds = 0;
   for (int i=0; i < gts.size(); ++i) {
@@ -102,37 +103,35 @@ void Spectrum2D::init_from_file(std::string filename) {
   pattern_add_.set_gates(std::vector<bool>({true, true}));
 
   Qpx::Setting pattern;
-  pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern = metadata_.get_attribute("pattern_coinc");
   pattern.value_pattern = pattern_coinc_;
-  metadata_.attributes.branches.replace(pattern);
+  metadata_.set_attribute(pattern);
 
-  pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_anti"));
+  pattern = metadata_.get_attribute("pattern_anti");
   pattern.value_pattern = pattern_anti_;
-  metadata_.attributes.branches.replace(pattern);
+  metadata_.set_attribute(pattern);
 
-  pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_add"));
+  pattern = metadata_.get_attribute("pattern_add");
   pattern.value_pattern = pattern_add_;
-  metadata_.attributes.branches.replace(pattern);
+  metadata_.set_attribute(pattern);
 
+  Setting name = metadata_.get_attribute("name");
+  name.value_text = boost::filesystem::path(filename).filename().string();
+  std::replace( name.value_text.begin(), name.value_text.end(), '.', '_');
+  metadata_.set_attribute(name);
 
-//  metadata_.match_pattern.resize(2, 0);
-//  metadata_.add_pattern.resize(2, 1);
-//  metadata_.add_pattern[0] = 1;
-//  metadata_.add_pattern[1] = 1;
-  metadata_.name = boost::filesystem::path(filename).filename().string();
-  std::replace( metadata_.name.begin(), metadata_.name.end(), '.', '_');
   _initialize();
   _recalc_axes();
   _flush();
 
   Qpx::Setting cts;
-  cts = metadata_.attributes.branches.get(Qpx::Setting("total_hits"));
+  cts = metadata_.get_attribute("total_hits");
   cts.value_precise = total_hits_;
-  metadata_.attributes.branches.replace(cts);
+  metadata_.set_attribute(cts);
 
-  cts = metadata_.attributes.branches.get(Qpx::Setting("total_events"));
+  cts = metadata_.get_attribute("total_events");
   cts.value_precise = total_events_;
-  metadata_.attributes.branches.replace(cts);
+  metadata_.set_attribute(cts);
 }
 
 
@@ -145,9 +144,9 @@ bool Spectrum2D::check_symmetrization() {
       break;
     }
   }
-  Qpx::Setting symset = metadata_.attributes.get_setting(Setting("symmetrized"), Match::id);
+  Qpx::Setting symset = metadata_.get_attribute("symmetrized");
   symset.value_int = symmetrical;
-  metadata_.attributes.branches.replace(symset);
+  metadata_.set_attribute(symset);
   return symmetrical;
 }
 
@@ -259,17 +258,20 @@ void Spectrum2D::addEvent(const Event& newEvent) {
 }
 
 bool Spectrum2D::_write_file(std::string dir, std::string format) const {
+  std::string name = metadata_.get_attribute("name").value_text;
+  //change illegal characters
+
   if (format == "m") {
-      write_m(dir + "/" + metadata_.name + ".m");
-      return true;
+    write_m(dir + "/" + name + ".m");
+    return true;
   } else if (format == "mat") {
-      write_mat(dir + "/" + metadata_.name + ".mat");
-      return true;
+    write_mat(dir + "/" + name + ".mat");
+    return true;
   } else if (format == "m4b") {
-      write_m4b(dir + "/" + metadata_.name + ".m4b");
-      return true;
+    write_m4b(dir + "/" + name + ".m4b");
+    return true;
   } else
-      return false;
+    return false;
 }
 
 bool Spectrum2D::_read_file(std::string name, std::string format) {
@@ -355,9 +357,9 @@ bool Spectrum2D:: read_m4b(std::string name) {
   }
   total_hits_ += total_events_ * 2;
   bits_ = 12;
-  Setting res = metadata_.attributes.get_setting(Setting("resolution"), Match::id);
+  Setting res = metadata_.get_attribute("resolution");
   res.value_int = bits_;
-  metadata_.attributes.branches.replace(res);
+  metadata_.set_attribute(res);
 
   metadata_.detectors.resize(2);
   metadata_.detectors[0].name_ = "unknown1";
@@ -391,9 +393,9 @@ bool Spectrum2D:: read_mat(std::string name) {
   }
   total_hits_ = 2 * total_events_;
   bits_ = 12;
-  Setting res = metadata_.attributes.get_setting(Setting("resolution"), Match::id);
+  Setting res = metadata_.get_attribute("resolution");
   res.value_int = bits_;
-  metadata_.attributes.branches.replace(res);
+  metadata_.set_attribute(res);
 
   metadata_.detectors.resize(2);
   metadata_.detectors[0].name_ = "unknown1";

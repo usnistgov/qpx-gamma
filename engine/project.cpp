@@ -75,6 +75,16 @@ Project::Project(const Qpx::Project& other)
 }
 
 
+std::string Project::identity() const
+{
+  boost::unique_lock<boost::mutex> lock(mutex_); return identity_;
+}
+
+std::set<Spill> Project::spills() const
+{
+  boost::unique_lock<boost::mutex> lock(mutex_); return spills_;
+}
+
 //Project Project::deep_copy() const
 //{
 //  Project ret;
@@ -568,18 +578,18 @@ void Project::import_spn(std::string file_name) {
   dets.push_back(det);
 
   Qpx::Metadata temp = Qpx::SinkFactory::getInstance().create_prototype("1D");
-  Setting res = temp.attributes.branches.get(Setting("resolution"));
+  Setting res = temp.get_attribute("resolution");
   res.value_int = 12;
-  temp.attributes.branches.replace(res);
+  temp.set_attribute(res);
   Qpx::Setting pattern;
-  pattern = temp.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern = temp.get_attribute("pattern_coinc");
   pattern.value_pattern.set_gates(std::vector<bool>({1}));
   pattern.value_pattern.set_theshold(1);
-  temp.attributes.branches.replace(pattern);
-  pattern = temp.attributes.branches.get(Qpx::Setting("pattern_add"));
+  temp.set_attribute(pattern);
+  pattern = temp.get_attribute("pattern_add");
   pattern.value_pattern.set_gates(std::vector<bool>({1}));
   pattern.value_pattern.set_theshold(1);
-  temp.attributes.branches.replace(pattern);
+  temp.set_attribute(pattern);
 
   uint32_t one;
   int spectra_count = 0;
@@ -597,7 +607,10 @@ void Project::import_spn(std::string file_name) {
     }
     if ((totalcount == 0) || data.empty())
       continue;
-    temp.name = boost::filesystem::path(file_name).filename().string() + "[" + std::to_string(spectra_count++) + "]";
+    Qpx::Setting name;
+    name = temp.get_attribute("name");
+    name = boost::filesystem::path(file_name).filename().string() + "[" + std::to_string(spectra_count++) + "]";
+    temp.set_attribute(name);
     SinkPtr spectrum = Qpx::SinkFactory::getInstance().create_from_prototype(temp);
     spectrum->set_detectors(dets);
     for (int i=0; i < data.size(); ++i) {

@@ -113,7 +113,7 @@ void FormSymmetrize2D::make_gated_spectra() {
 
   if (/*(md.total_count > 0) &&*/ (md.dimensions() == 2))
   {
-    uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+    uint16_t bits = md.get_attribute("resolution").value_int;
     uint32_t adjrange = pow(2,bits) - 1;
 
     gate_x = slice_rectangular(source_spectrum, {{0, adjrange}, {0, adjrange}}, true);
@@ -143,7 +143,7 @@ void FormSymmetrize2D::initialize() {
 
     if (spectrum) {
       Metadata md = spectrum->metadata();
-      uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+      uint16_t bits = md.get_attribute("resolution").value_int;
       res = pow(2,bits);
 
       detector1_ = Detector();
@@ -166,7 +166,7 @@ void FormSymmetrize2D::initialize() {
       if (detector2_.energy_calibrations_.has_a(Calibration("Energy", bits)))
         nrg_calibration2_ = detector2_.energy_calibrations_.get(Calibration("Energy", bits));
 
-      bool symmetrized = (md.attributes.branches.get(Setting("symmetrized")).value_int != 0);
+      bool symmetrized = (md.get_attribute("symmetrized").value_int != 0);
     }
   }
 
@@ -205,18 +205,18 @@ void FormSymmetrize2D::on_pushAddGatedSpectra_clicked()
   bool success = false;
 
   if (gate_x /*&& (gate_x->metadata().total_count > 0)*/) {
-    Setting app = gate_x->metadata().attributes.branches.get(Setting("appearance"));
+    Setting app = gate_x->metadata().get_attribute("appearance");
     app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-    gate_x->set_option(app);
+    gate_x->set_attribute(app);
 
     spectra_->add_sink(gate_x);
     success = true;
   }
 
   if (gate_y /*&& (gate_y->metadata().total_count > 0)*/) {
-    Setting app = gate_y->metadata().attributes.branches.get(Setting("appearance"));
+    Setting app = gate_y->metadata().get_attribute("appearance");
     app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-    gate_y->set_option(app);
+    gate_y->set_attribute(app);
 
     spectra_->add_sink(gate_y);
     success = true;
@@ -245,7 +245,9 @@ void FormSymmetrize2D::symmetrize()
   SinkPtr destination = make_symmetrized(source_spectrum);
 
   if (destination) {
-    destination->set_name(destination->name() + "-sym");
+    Setting name = destination->metadata().get_attribute("name");
+    name.value_text += "-sym";
+    destination->set_attribute(name);
     int64_t idx = spectra_->add_sink(destination);
     if (idx) {
       setSpectrum(spectra_, idx);
@@ -253,9 +255,9 @@ void FormSymmetrize2D::symmetrize()
       initialize();
       emit spectraChanged();
     } else
-      WARN << "<FormSymmetrize2D> could not add symmetrized spectrum to project " << destination->name();
+      WARN << "<FormSymmetrize2D> could not add symmetrized spectrum to project " << name.value_text;
   } else {
-    WARN << "<FormSymmetrize2D> could not symmetrize " << destination->name();
+    WARN << "<FormSymmetrize2D> could not symmetrize";
     this->setCursor(Qt::ArrowCursor);
     return;
   }
@@ -321,7 +323,8 @@ void FormSymmetrize2D::apply_gain_calibration()
       Metadata md = q.second->metadata();
       for (auto &p : md.detectors) {
         if (p.shallow_equals(detector2_)) {
-          LINFO << "   applying new calibrations for " << detector2_.name_ << " on " << q.second->name();
+          LINFO << "   applying new calibrations for " << detector2_.name_ << " on " << q.second->metadata().get_attribute("name").value_text;
+
           p.gain_match_calibrations_.replace(gain_match_cali_);
         }
       }

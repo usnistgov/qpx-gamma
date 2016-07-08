@@ -36,11 +36,10 @@ Spectrum1D::Spectrum1D()
   : cutoff_bin_(0)
   , maxchan_(0)
 {
-  Setting base_options = metadata_.attributes;
+  Setting base_options = metadata_.attributes();
   metadata_ = Metadata("1D", "Traditional MCA spectrum", 1,
   {"cnf", "tka", "n42", "ava", "spe", "Spe", "CNF", "N42", "mca", "dat"},
   {"n42", "tka", "spe"});
-  metadata_.attributes = base_options;
 
   Qpx::Setting cutoff_bin;
   cutoff_bin.id_ = "cutoff_bin";
@@ -51,7 +50,9 @@ Spectrum1D::Spectrum1D()
   cutoff_bin.metadata.step = 1;
   cutoff_bin.metadata.maximum = 1000000;
   cutoff_bin.metadata.flags.insert("preset");
-  metadata_.attributes.branches.add(cutoff_bin);
+  base_options.branches.add(cutoff_bin);
+
+  metadata_.overwrite_all_attributes(base_options);
 }
 
 void Spectrum1D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
@@ -76,7 +77,7 @@ bool Spectrum1D::_initialize()
 {
   Spectrum::_initialize();
 
-  cutoff_bin_ = metadata_.attributes.get_setting(Setting("cutoff_bin"), Match::id).value_int;
+  cutoff_bin_ = metadata_.get_attribute("cutoff_bin").value_int;
 
   spectrum_.resize(pow(2, bits_), 0);
 
@@ -150,14 +151,16 @@ void Spectrum1D::addEvent(const Event& newEvent) {
 }
 
 bool Spectrum1D::_write_file(std::string dir, std::string format) const {
+  std::string name = metadata_.get_attribute("name").value_text;
+  //change illegal characters
   if (format == "tka") {
-    write_tka(dir + "/" + metadata_.name + ".tka");
+    write_tka(dir + "/" + name + ".tka");
     return true;
   } else if (format == "n42") {
-    write_n42(dir + "/" + metadata_.name + ".n42");
+    write_n42(dir + "/" + name + ".n42");
     return true;
   } else if (format == "spe") {
-    write_spe(dir + "/" + metadata_.name + ".spe");
+    write_spe(dir + "/" + name + ".spe");
     return true;
   } else
     return false;
@@ -200,37 +203,35 @@ void Spectrum1D::init_from_file(std::string filename) {
   pattern_add_.set_gates(std::vector<bool>({true}));
 
   Qpx::Setting pattern;
-  pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern = metadata_.get_attribute("pattern_coinc");
   pattern.value_pattern = pattern_coinc_;
-  metadata_.attributes.branches.replace(pattern);
+  metadata_.set_attribute(pattern);
 
-  pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_anti"));
+  pattern = metadata_.get_attribute("pattern_anti");
   pattern.value_pattern = pattern_anti_;
-  metadata_.attributes.branches.replace(pattern);
+  metadata_.set_attribute(pattern);
 
-  pattern = metadata_.attributes.branches.get(Qpx::Setting("pattern_add"));
+  pattern = metadata_.get_attribute("pattern_add");
   pattern.value_pattern = pattern_add_;
-  metadata_.attributes.branches.replace(pattern);
+  metadata_.set_attribute(pattern);
 
-//  metadata_.match_pattern.resize(1, 1);
-//  metadata_.add_pattern.resize(1, 1);
-//  metadata_.match_pattern[0] = 1;
-//  metadata_.add_pattern[0] = 1;
-  metadata_.name = boost::filesystem::path(filename).filename().string();
-  std::replace( metadata_.name.begin(), metadata_.name.end(), '.', '_');
+  Setting name = metadata_.get_attribute("name");
+  name.value_text = boost::filesystem::path(filename).filename().string();
+  std::replace( name.value_text.begin(), name.value_text.end(), '.', '_');
+  metadata_.set_attribute(name);
 
   _initialize();
   _recalc_axes();
   _flush();
 
   Qpx::Setting cts;
-  cts = metadata_.attributes.branches.get(Qpx::Setting("total_hits"));
+  cts = metadata_.get_attribute("total_hits");
   cts.value_precise = total_hits_;
-  metadata_.attributes.branches.replace(cts);
+  metadata_.set_attribute(cts);
 
-  cts = metadata_.attributes.branches.get(Qpx::Setting("total_events"));
+  cts = metadata_.get_attribute("total_events");
   cts.value_precise = total_events_;
-  metadata_.attributes.branches.replace(cts);
+  metadata_.set_attribute(cts);
 }
 
 std::string Spectrum1D::_data_to_xml() const {
@@ -256,7 +257,7 @@ uint16_t Spectrum1D::_data_from_xml(const std::string& thisData){
   std::stringstream channeldata;
   channeldata.str(thisData);
 
-  bits_ = metadata_.attributes.get_setting(Setting("resolution"), Match::id).value_int;
+  bits_ = metadata_.get_attribute("resolution").value_int;
 
   spectrum_.clear();
   spectrum_.resize(pow(2, bits_), 0);
@@ -322,9 +323,9 @@ bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compressio
     bits_++;
   maxchan_ = i;
 
-  Setting res = metadata_.attributes.get_setting(Setting("resolution"), Match::id);
+  Setting res = metadata_.get_attribute("resolution");
   res.value_int = bits_;
-  metadata_.attributes.branches.replace(res);
+  metadata_.set_attribute(res);
 
   spectrum_.clear();
   spectrum_.resize(pow(2, bits_), 0);
@@ -366,30 +367,30 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
       if (key.substr(0, 12) == "energy calib")
         calibration.push_back(boost::lexical_cast<double>(value));
       if (key == "description") {
-        Setting descr = metadata_.attributes.get_setting(Setting("description"), Match::id);
+        Setting descr = metadata_.get_attribute("description");
         descr.value_text = value;
-        metadata_.attributes.branches.replace(descr);
+        metadata_.set_attribute(descr);
       }
       if (key == "date and time") {
         std::stringstream iss;
         iss.str(value);
         std::string week;
         iss >> week;
-        Setting start_time = metadata_.attributes.get_setting(Setting("start_time"), Match::id);
+        Setting start_time = metadata_.get_attribute("start_time");
         start_time.value_time = from_custom_format(iss.str(), "%Y-%m-%d %H:%M:%S");
-        metadata_.attributes.branches.replace(start_time);
+        metadata_.set_attribute(start_time);
       }
       if (key == "real time (s)") {
         double RT = boost::lexical_cast<double>(value) * 1000;
-        Setting real_time = metadata_.attributes.get_setting(Setting("real_time"), Match::id);
+        Setting real_time = metadata_.get_attribute("real_time");
         real_time.value_duration = boost::posix_time::milliseconds(RT);
-        metadata_.attributes.branches.replace(real_time);
+        metadata_.set_attribute(real_time);
       }
       if (key == "live time (s)") {
-        Setting live_time = metadata_.attributes.get_setting(Setting("live_time"), Match::id);
+        Setting live_time = metadata_.get_attribute("live_time");
         double LT = boost::lexical_cast<double>(value) * 1000;
         live_time.value_duration = boost::posix_time::milliseconds(LT);
-        metadata_.attributes.branches.replace(live_time);
+        metadata_.set_attribute(live_time);
       }
     }
 
@@ -420,9 +421,9 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
     bits_++;
   spectrum_.resize(pow(2, bits_), 0);
 
-  Setting res = metadata_.attributes.get_setting(Setting("resolution"), Match::id);
+  Setting res = metadata_.get_attribute("resolution");
   res.value_int = bits_;
-  metadata_.attributes.branches.replace(res);
+  metadata_.set_attribute(res);
 
   metadata_.detectors.resize(1);
   metadata_.detectors[0] = Qpx::Detector();
@@ -445,16 +446,16 @@ bool Spectrum1D::read_tka(std::string name) {
   double timed;
   
   myfile >> data;
-  Setting live_time = metadata_.attributes.get_setting(Setting("live_time"), Match::id);
+  Setting live_time = metadata_.get_attribute("live_time");
   timed = boost::lexical_cast<double>(trim_copy(data)) * 1000.0;
   live_time.value_duration = boost::posix_time::milliseconds(timed);
-  metadata_.attributes.branches.replace(live_time);
+  metadata_.set_attribute(live_time);
 
   myfile >> data;
-  Setting real_time = metadata_.attributes.get_setting(Setting("real_time"), Match::id);
+  Setting real_time = metadata_.get_attribute("real_time");
   timed = boost::lexical_cast<double>(trim_copy(data)) * 1000.0;
   real_time.value_duration = boost::posix_time::milliseconds(timed);
-  metadata_.attributes.branches.replace(real_time);
+  metadata_.set_attribute(real_time);
 
   if(!this->channels_from_string(myfile, false))
     return false;
@@ -492,7 +493,9 @@ bool Spectrum1D::read_spe_radware(std::string name) {
   char cname[9];
   myfile.read ((char*)&cname, 8*sizeof(char));
   cname[8] = '\0';
-  metadata_.name = std::string(cname);
+  Setting pname = metadata_.get_attribute("name");
+  pname.value_text = std::string(cname);
+  metadata_.set_attribute(pname);
 
   uint32_t dim1, dim2;
   myfile.read ((char*)&dim1, sizeof(uint32_t));
@@ -543,9 +546,9 @@ bool Spectrum1D::read_spe_radware(std::string name) {
   resolution = pow(2, bits_);
   maxchan_ = i;
 
-  Setting res = metadata_.attributes.get_setting(Setting("resolution"), Match::id);
+  Setting res = metadata_.get_attribute("resolution");
   res.value_int = bits_;
-  metadata_.attributes.branches.replace(res);
+  metadata_.set_attribute(res);
 
   spectrum_.clear();
   spectrum_.resize(pow(2, bits_), 0);
@@ -597,11 +600,16 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
       boost::algorithm::trim(line);
     }
     //DBG << "Line = " << line;
-    if (line == "$SPEC_ID:") {
-      std::getline(myfile, metadata_.name);
+    if (line == "$SPEC_ID:")
+    {
+      Setting name = metadata_.get_attribute("name");
+      std::getline(myfile, name.value_text);
+      metadata_.set_attribute(name);
       //DBG << "name: " << metadata_.name;
       line.clear();
-    } else if (line == "$SPEC_REM:") {
+    }
+    else if (line == "$SPEC_REM:")
+    {
       while (myfile.rdbuf()->in_avail()) {
         std::getline(myfile, line);
         boost::algorithm::trim(line);
@@ -628,21 +636,21 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
       std::stringstream ss(line);
 
       ss >> time;
-      Setting live_time = metadata_.attributes.get_setting(Setting("live_time"), Match::id);
+      Setting live_time = metadata_.get_attribute("live_time");
       live_time.value_duration = boost::posix_time::seconds(time);
-      metadata_.attributes.branches.replace(live_time);
+      metadata_.set_attribute(live_time);
 
       ss >> time;
-      Setting real_time = metadata_.attributes.get_setting(Setting("real_time"), Match::id);
+      Setting real_time = metadata_.get_attribute("real_time");
       real_time.value_duration = boost::posix_time::seconds(time);
-      metadata_.attributes.branches.replace(real_time);
+      metadata_.set_attribute(real_time);
 
       line.clear();
     } else if (line == "$DATE_MEA:") {
       std::getline(myfile, line);
-      Setting start_time = metadata_.attributes.get_setting(Setting("start_time"), Match::id);
+      Setting start_time = metadata_.get_attribute("start_time");
       start_time.value_time = from_custom_format(line, "%m/%d/%Y %H:%M:%S");
-      metadata_.attributes.branches.replace(start_time);
+      metadata_.set_attribute(start_time);
       line.clear();
     } else if (line == "$ENER_FIT:") {
       std::getline(myfile, enerfit);
@@ -685,9 +693,9 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
     bits_++;
   maxchan_ = entry_list.size() - 1;
 
-  Setting res = metadata_.attributes.get_setting(Setting("resolution"), Match::id);
+  Setting res = metadata_.get_attribute("resolution");
   res.value_int = bits_;
-  metadata_.attributes.branches.replace(res);
+  metadata_.set_attribute(res);
 
   spectrum_.clear();
   spectrum_.resize(pow(2, bits_), 0);
@@ -753,9 +761,9 @@ bool Spectrum1D::read_dat(std::string name) {
     bits_++;
   maxchan_ = entry_list.size() - 1;
 
-  Setting res = metadata_.attributes.get_setting(Setting("resolution"), Match::id);
+  Setting res = metadata_.get_attribute("resolution");
   res.value_int = bits_;
-  metadata_.attributes.branches.replace(res);
+  metadata_.set_attribute(res);
 
   spectrum_.clear();
   spectrum_.resize(pow(2, bits_), 0);
@@ -804,9 +812,9 @@ bool Spectrum1D::read_n42(std::string filename) {
 
   std::string time(node.child_value("StartTime"));
   if (!time.empty()) {
-    Setting start_time = metadata_.attributes.get_setting(Setting("start_time"), Match::id);
+    Setting start_time = metadata_.get_attribute("start_time");
     start_time.value_time = from_iso_extended(time);
-    metadata_.attributes.branches.replace(start_time);
+    metadata_.set_attribute(start_time);
   }
 
   time = std::string(node.child_value("RealTime"));
@@ -815,9 +823,9 @@ bool Spectrum1D::read_n42(std::string filename) {
     if (time.size() > 3)
       time = time.substr(2, time.size()-3); //to trim PTnnnS to nnn
     double rt_ms = boost::lexical_cast<double>(time) * 1000.0;
-    Setting real_time = metadata_.attributes.get_setting(Setting("real_time"), Match::id);
+    Setting real_time = metadata_.get_attribute("real_time");
     real_time.value_duration = boost::posix_time::milliseconds(rt_ms);
-    metadata_.attributes.branches.replace(real_time);
+    metadata_.set_attribute(real_time);
   }
 
   time = std::string(node.child_value("LiveTime"));
@@ -826,9 +834,9 @@ bool Spectrum1D::read_n42(std::string filename) {
     if (time.size() > 3)
       time = time.substr(2, time.size()-3); //to trim PTnnnS to nnn
     double lt_ms = boost::lexical_cast<double>(time) * 1000.0;
-    Setting live_time = metadata_.attributes.get_setting(Setting("live_time"), Match::id);
+    Setting live_time = metadata_.get_attribute("live_time");
     live_time.value_duration = boost::posix_time::milliseconds(lt_ms);
-    metadata_.attributes.branches.replace(live_time);
+    metadata_.set_attribute(live_time);
   }
 
   std::string this_data(node.child_value("ChannelData"));
@@ -889,25 +897,25 @@ bool Spectrum1D::read_ava(std::string filename) {
       day = "0" + day; 
     std::string inp = year + "-" + month + "-" + day + " " + time;
     iss.str(inp);
-    Setting start_time = metadata_.attributes.get_setting(Setting("start_time"), Match::id);
+    Setting start_time = metadata_.get_attribute("start_time");
     iss >> start_time.value_time;
-    metadata_.attributes.branches.replace(start_time);
+    metadata_.set_attribute(start_time);
   }
 
   std::string RealTime(node.attribute("elapsed_real").value()); boost::algorithm::trim(RealTime);
   if (!RealTime.empty()) {
     double rt_ms = boost::lexical_cast<double>(RealTime) * 1000.0;
-    Setting real_time = metadata_.attributes.get_setting(Setting("real_time"), Match::id);
+    Setting real_time = metadata_.get_attribute("real_time");
     real_time.value_duration = boost::posix_time::milliseconds(rt_ms);
-    metadata_.attributes.branches.replace(real_time);
+    metadata_.set_attribute(real_time);
   }
 
   std::string LiveTime(node.attribute("elapsed_live").value()); boost::algorithm::trim(LiveTime);
   if (!LiveTime.empty()) {
     double lt_ms = boost::lexical_cast<double>(LiveTime) * 1000.0;
-    Setting live_time = metadata_.attributes.get_setting(Setting("live_time"), Match::id);
+    Setting live_time = metadata_.get_attribute("live_time");
     live_time.value_duration = boost::posix_time::milliseconds(lt_ms);
-    metadata_.attributes.branches.replace(live_time);
+    metadata_.set_attribute(live_time);
   }
 
   std::string this_data(root.child_value("spectrum"));
@@ -955,8 +963,8 @@ void Spectrum1D::write_tka(std::string name) const {
   std::ofstream myfile(name, std::ios::out | std::ios::app);
   //  myfile.precision(2);
   //  myfile << std::fixed;
-  myfile << (metadata_.attributes.get_setting(Setting("live_time"), Match::id).value_duration.total_milliseconds() * 0.001) << std::endl
-         << (metadata_.attributes.get_setting(Setting("real_time"), Match::id).value_duration.total_milliseconds() * 0.001) << std::endl;
+  myfile << (metadata_.get_attribute("live_time").value_duration.total_milliseconds() * 0.001) << std::endl
+         << (metadata_.get_attribute("real_time").value_duration.total_milliseconds() * 0.001) << std::endl;
       
   for (uint32_t i = 0; i < range; i++)
     myfile << spectrum_[i] << std::endl;
@@ -988,15 +996,15 @@ void Spectrum1D::write_n42(std::string filename) const {
     node.append_child("DetectorType").append_child(pugi::node_pcdata).set_value(metadata_.detectors[0].type_.c_str());
   }
 
-  durationdata << to_iso_extended_string(metadata_.attributes.get_setting(Setting("start_time"), Match::id).value_time) << "-5:00"; //fix this hack
+  durationdata << to_iso_extended_string(metadata_.get_attribute("start_time").value_time) << "-5:00"; //fix this hack
   node.append_child("StartTime").append_child(pugi::node_pcdata).set_value(durationdata.str().c_str());
       
   durationdata.str(std::string()); //clear it
-  durationdata << "PT" << (metadata_.attributes.get_setting(Setting("real_time"), Match::id).value_duration.total_milliseconds() * 0.001) << "S";
+  durationdata << "PT" << (metadata_.get_attribute("real_time").value_duration.total_milliseconds() * 0.001) << "S";
   node.append_child("RealTime").append_child(pugi::node_pcdata).set_value(durationdata.str().c_str());
 
   durationdata.str(std::string()); //clear it
-  durationdata << "PT" << (metadata_.attributes.get_setting(Setting("live_time"), Match::id).value_duration.total_milliseconds() * 0.001) << "S";
+  durationdata << "PT" << (metadata_.get_attribute("live_time").value_duration.total_milliseconds() * 0.001) << "S";
   node.append_child("LiveTime").append_child(pugi::node_pcdata).set_value(durationdata.str().c_str());
 
   if (myCalibration.valid())
@@ -1022,7 +1030,7 @@ void Spectrum1D::write_spe(std::string filename) const {
   uint32_t val = 24;
   myfile.write((char*)&val, sizeof(uint32_t));
 
-  std::string cname = metadata_.name;
+  std::string cname = metadata_.get_attribute("name").value_text;
   if (cname.size() < 8)
     cname.resize(8);
   myfile.write ((char*)cname.data(), 8*sizeof(char));

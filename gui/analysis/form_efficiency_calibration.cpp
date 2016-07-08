@@ -173,7 +173,7 @@ void FormEfficiencyCalibration::setSpectrum(int64_t idx) {
       ui->isotopes->set_current_isotope(QString::fromStdString(fit_data_.sample_name_));
     }  else {
       Metadata md = spectrum->metadata();
-      Setting descr = md.attributes.branches.get(Setting("description"));
+      Setting descr = md.get_attribute("description");
       if (!descr.value_text.empty()) {
         //find among data
         ui->isotopes->set_current_isotope(QString::fromStdString(descr.value_text));
@@ -300,9 +300,9 @@ void FormEfficiencyCalibration::update_spectra() {
 
     if (!md.detectors.empty() && (md.detectors.front().name_ == current_detector_)) {
       SelectorItem new_spectrum;
-      new_spectrum.text = QString::fromStdString(md.name);
-      new_spectrum.color = QColor(QString::fromStdString(md.attributes.branches.get(Setting("appearance")).value_text));
-      new_spectrum.visible = md.attributes.branches.get(Setting("visible")).value_int;
+      new_spectrum.text = QString::fromStdString(md.get_attribute("name").value_text);
+      new_spectrum.color = QColor(QString::fromStdString(md.get_attribute("appearance").value_text));
+      new_spectrum.visible = md.get_attribute("visible").value_int;
       items.push_back(new_spectrum);
     }
   }
@@ -348,7 +348,7 @@ void FormEfficiencyCalibration::replot_calib() {
     bool visible = false;
     QColor color;
     for (auto &i : items) {
-      if (i.visible && (fit.second.metadata_.name == i.text.toStdString())) {
+      if (i.visible && (fit.second.metadata_.get_attribute("name").value_text == i.text.toStdString())) {
         visible = true;
         color = i.color;
       }
@@ -496,7 +496,7 @@ void FormEfficiencyCalibration::toggle_push() {
     bool visible = false;
 
     for (auto &i : items)
-      if (i.visible && (fit.second.metadata_.name == i.text.toStdString()))
+      if (i.visible && (fit.second.metadata_.get_attribute("name").value_text == i.text.toStdString()))
         visible = true;
 
     if (visible) { //BROKEN
@@ -526,7 +526,7 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
     bool visible = false;
 
     for (auto &i : items)
-      if (i.visible && (fit.second.metadata_.name == i.text.toStdString()))
+      if (i.visible && (fit.second.metadata_.get_attribute("name").value_text == i.text.toStdString()))
         visible = true;
 
     if (visible) {
@@ -630,7 +630,7 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
     bool visible = false;
 
     for (auto &i : items)
-      if (i.visible && (fit.second.metadata_.name == i.text.toStdString()))
+      if (i.visible && (fit.second.metadata_.get_attribute("name").value_text == i.text.toStdString()))
         visible = true;
 
     if (visible) {
@@ -690,7 +690,7 @@ void FormEfficiencyCalibration::on_pushFitEffit_clicked()
     bool visible = false;
 
     for (auto &i : items)
-      if (i.visible && (fit.second.metadata_.name == i.text.toStdString()))
+      if (i.visible && (fit.second.metadata_.get_attribute("name").value_text == i.text.toStdString()))
         visible = true;
 
     if (visible) {

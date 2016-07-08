@@ -37,10 +37,9 @@ SpectrumRaw::SpectrumRaw()
   , total_hits_(0)
   , ignore_patterns_(true)
 {
-  Setting base_options = metadata_.attributes;
+  Setting base_options = metadata_.attributes();
   metadata_ = Metadata("Raw", "Custom gated list mode to file. Please provide path and name for valid and accessible file", 0,
                     {}, {});
-  metadata_.attributes = base_options;
 
   Qpx::Setting file_setting;
   file_setting.id_ = "file_dir";
@@ -48,10 +47,13 @@ SpectrumRaw::SpectrumRaw()
   file_setting.metadata.writable = true;
   file_setting.metadata.flags.insert("preset");
   file_setting.metadata.description = "path to temp output directory";
-  metadata_.attributes.branches.add(file_setting);
+  base_options.branches.add(file_setting);
+
+  metadata_.overwrite_all_attributes(base_options);
 }
 
-SpectrumRaw::~SpectrumRaw() {
+SpectrumRaw::~SpectrumRaw()
+{
   _flush();
 }
 
@@ -60,9 +62,9 @@ bool SpectrumRaw::_initialize() {
 
   ignore_patterns_ = (pattern_coinc_.threshold() < 1) && (pattern_anti_.threshold() < 1);
 
-  DBG << "<SpectrumRaw:" << metadata_.name << "> will ignore patterns";
+  DBG << "<SpectrumRaw:" << metadata_.get_attribute("name").value_text << "> will ignore patterns";
 
-  file_dir_ = metadata_.attributes.get_setting(Setting("file_dir"), Match::id).value_text;
+  file_dir_ = metadata_.get_attribute("file_dir").value_text;
   if (file_dir_.empty())
     return false;
 
@@ -73,8 +75,7 @@ bool SpectrumRaw::init_text() {
   file_name_txt_ = file_dir_ + "/qpx_out.xml";
   xml_root_ = xml_doc_.append_child("QpxListData");
 
-  if (metadata_.attributes.branches.size())
-    metadata_.attributes.to_xml(xml_root_);
+  metadata_.attributes().to_xml(xml_root_);
 
   open_xml_ = true;
   return true;
@@ -93,7 +94,7 @@ bool SpectrumRaw::init_bin() {
     return false;
   }
 
-  DBG << "<SpectrumRaw:" << metadata_.name << "> binary is good";
+  DBG << "<SpectrumRaw:" << metadata_.get_attribute("name").value_text << "> binary is good";
 
   bin_begin_ = file_bin_.tellp();
   open_bin_ = true;
@@ -160,13 +161,13 @@ void SpectrumRaw::_flush() {
   Spectrum::_flush();
 
   if (open_xml_) {
-    DBG << "<SpectrumRaw:" << metadata_.name << "> writing " << file_name_txt_ << " for \"" << metadata_.name << "\"";
+    DBG << "<SpectrumRaw:" << metadata_.get_attribute("name").value_text << "> writing " << file_name_txt_;
     if (!xml_doc_.save_file(file_name_txt_.c_str()))
       ERR << "<SpectrumRaw> Failed to save " << file_name_txt_;
     open_xml_ = false;
   }
   if (open_bin_) {
-    DBG << "<SpectrumRaw:" << metadata_.name << "> closing " << file_name_bin_ << " for \"" << metadata_.name << "\"";
+    DBG << "<SpectrumRaw:" << metadata_.get_attribute("name").value_text << "> closing " << file_name_bin_;
     file_bin_.close();
     open_bin_ = false;
   }

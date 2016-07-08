@@ -179,7 +179,7 @@ void DialogSaveSpectra::on_buttonBox_accepted()
       if (ui->typesWidget->selections[i][j]) {
         LINFO << "Saving " << ui->typesWidget->spectrum_types[i] << " spectra as " << ui->typesWidget->file_formats[i][j];
         for (auto &q : thistype) {
-          if ((!ui->checkVisibleOnly->isChecked()) || q.second->metadata().attributes.branches.get(Setting("visible")).value_int)
+          if ((!ui->checkVisibleOnly->isChecked()) || q.second->metadata().get_attribute("visible").value_int)
             q.second->write_file(dir.string(), ui->typesWidget->file_formats[i][j]);
         }
       }

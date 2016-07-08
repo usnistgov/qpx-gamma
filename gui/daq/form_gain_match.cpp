@@ -268,35 +268,37 @@ Qpx::Metadata FormGainMatch::make_prototype(uint16_t bits, uint16_t channel, std
 {
   Qpx::Metadata    spectrum_prototype;
   spectrum_prototype = Qpx::SinkFactory::getInstance().create_prototype("1D");
-  spectrum_prototype.name = name;
+  Setting nm = spectrum_prototype.get_attribute("name");
+  nm.value_text = name;
+  spectrum_prototype.set_attribute(nm);
 
-  Setting res = spectrum_prototype.attributes.branches.get(Qpx::Setting("resolution"));
+  Setting res = spectrum_prototype.get_attribute("resolution");
   res.value_int = bits;
-  spectrum_prototype.attributes.branches.replace(res);
+  spectrum_prototype.set_attribute(res);
 
-  Qpx::Setting vis = spectrum_prototype.attributes.branches.get(Qpx::Setting("visible"));
+  Qpx::Setting vis = spectrum_prototype.get_attribute("visible");
   vis.value_int = true;
-  spectrum_prototype.attributes.branches.replace(vis);
+  spectrum_prototype.set_attribute(vis);
 
 
-  Qpx::Setting app = spectrum_prototype.attributes.branches.get(Qpx::Setting("appearance"));
+  Qpx::Setting app = spectrum_prototype.get_attribute("appearance");
   QColor col;
   col.setHsv(QColor(Qt::blue).hsvHue(), 48, 160);
   app.value_text = col.name().toStdString();
-  spectrum_prototype.attributes.branches.replace(app);
+  spectrum_prototype.set_attribute(app);
 
   std::vector<bool> gates(channel + 1, false);
   gates[channel] = true;
 
   Qpx::Setting pattern;
-  pattern = spectrum_prototype.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern = spectrum_prototype.get_attribute("pattern_coinc");
   pattern.value_pattern.set_gates(gates);
   pattern.value_pattern.set_theshold(1);
-  spectrum_prototype.attributes.branches.replace(pattern);
-  pattern = spectrum_prototype.attributes.branches.get(Qpx::Setting("pattern_add"));
+  spectrum_prototype.set_attribute(pattern);
+  pattern = spectrum_prototype.get_attribute("pattern_add");
   pattern.value_pattern.set_gates(gates);
   pattern.value_pattern.set_theshold(1);
-  spectrum_prototype.attributes.branches.replace(pattern);
+  spectrum_prototype.set_attribute(pattern);
 
   return spectrum_prototype;
 }
@@ -343,15 +345,15 @@ void FormGainMatch::start_new_pass()
 
   Qpx::Setting set_pass("Pass");
   set_pass.value_int = current_pass_;
-  sink_prototype_opt_.attributes.branches.replace(set_pass);
-  sink_prototype_opt_.attributes.branches.replace(current_setting_);
+  sink_prototype_opt_.set_attribute(set_pass);
+  sink_prototype_opt_.set_attribute(current_setting_);
 
   if (project_->empty()) {
     project_->add_sink(sink_prototype_ref_);
   } else {
     std::map<int64_t, SinkPtr> sinks = project_->get_sinks();
     for (auto &q : sinks)
-      if (q.second->name() == "Optimizing")
+      if (q.second->metadata().get_attribute("name").value_text == "Optimizing")
         project_->delete_sink(q.first);
   }
 
@@ -481,7 +483,7 @@ void FormGainMatch::update_peak_selection(std::set<double> dummy) {
     peak_ref_ = fitter_ref_.peaks().at(*selected_peaks.begin());
 
   Qpx::Metadata md = fitter_opt_.metadata_;
-  Qpx::Setting pass = md.attributes.branches.get(Qpx::Setting("Pass"));
+  Qpx::Setting pass = md.get_attribute("Pass");
   if (!pass || (pass.value_int < 0) || (pass.value_int >= experiment_.size()))
     return;
 
@@ -510,17 +512,17 @@ void FormGainMatch::new_daq_data() {
     if (q.second)
       md = q.second->metadata();
 
-    if (md.name == "Reference") {
+    if (md.get_attribute("name").value_text == "Reference") {
       fitter_ref_.setData(q.second); //not busy, etc...?
       if (!ui->plotRef->busy())
         ui->plotRef->perform_fit();
     }
     else
     {
-      Qpx::Setting pass = md.attributes.branches.get(Qpx::Setting("Pass"));
+      Qpx::Setting pass = md.get_attribute("Pass");
       if (pass && (pass.value_int < experiment_.size())) {
         experiment_[pass.value_int].spectrum.setData(q.second);
-        double variable = md.attributes.branches.get(current_setting_).value_dbl;
+        double variable = md.get_attribute(current_setting_).value_dbl;
         experiment_[pass.value_int].independent_variable = variable;
         eval_dependent(experiment_[pass.value_int]);
         display_data();
@@ -585,14 +587,14 @@ void FormGainMatch::on_comboReference_currentIndexChanged(int index)
   gates[channel] = true;
 
   Qpx::Setting pattern;
-  pattern = sink_prototype_ref_.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern = sink_prototype_ref_.get_attribute("pattern_coinc");
   pattern.value_pattern.set_gates(gates);
   pattern.value_pattern.set_theshold(1);
-  sink_prototype_ref_.attributes.branches.replace(pattern);
-  pattern = sink_prototype_ref_.attributes.branches.get(Qpx::Setting("pattern_add"));
+  sink_prototype_ref_.set_attribute(pattern);
+  pattern = sink_prototype_ref_.get_attribute("pattern_add");
   pattern.value_pattern.set_gates(gates);
   pattern.value_pattern.set_theshold(1);
-  sink_prototype_ref_.attributes.branches.replace(pattern);
+  sink_prototype_ref_.set_attribute(pattern);
 }
 
 void FormGainMatch::on_comboTarget_currentIndexChanged(int index)
@@ -604,14 +606,14 @@ void FormGainMatch::on_comboTarget_currentIndexChanged(int index)
   gates[channel] = true;
 
   Qpx::Setting pattern;
-  pattern = sink_prototype_opt_.attributes.branches.get(Qpx::Setting("pattern_coinc"));
+  pattern = sink_prototype_opt_.get_attribute("pattern_coinc");
   pattern.value_pattern.set_gates(gates);
   pattern.value_pattern.set_theshold(1);
-  sink_prototype_opt_.attributes.branches.replace(pattern);
-  pattern = sink_prototype_opt_.attributes.branches.get(Qpx::Setting("pattern_add"));
+  sink_prototype_opt_.set_attribute(pattern);
+  pattern = sink_prototype_opt_.get_attribute("pattern_add");
   pattern.value_pattern.set_gates(gates);
   pattern.value_pattern.set_theshold(1);
-  sink_prototype_opt_.attributes.branches.replace(pattern);
+  sink_prototype_opt_.set_attribute(pattern);
 
   remake_source_domains();
   remake_domains();
@@ -769,7 +771,7 @@ void FormGainMatch::pass_selected_in_table()
       selected.insert(experiment_.at(selected_pass_).selected_peak.center().value());
       ui->plotOpt->set_selected_peaks(selected);
     }
-    if ((fitter_opt_.metadata_.attributes.get_setting(Qpx::Setting("total_hits"), Qpx::Match::id).value_precise > 0)
+    if ((fitter_opt_.metadata_.get_attribute("total_hits").value_precise > 0)
         && fitter_opt_.peaks().empty()
         && !ui->plotOpt->busy())
       ui->plotOpt->perform_fit();

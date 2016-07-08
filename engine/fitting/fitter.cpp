@@ -33,7 +33,7 @@ void Fitter::setData(SinkPtr spectrum)
 //  clear();
   if (spectrum) {
     Metadata md = spectrum->metadata();
-    Setting res = md.attributes.branches.get(Setting("resolution"));
+    Setting res = md.get_attribute("resolution");
     if ((md.dimensions() != 1) || (res.value_int <= 0))
       return;
 
@@ -51,8 +51,8 @@ void Fitter::setData(SinkPtr spectrum)
     if (detector_.fwhm_calibration_.valid())
       finder_.settings_.cali_fwhm_ = detector_.fwhm_calibration_;
 
-    finder_.settings_.live_time = md.attributes.branches.get(Setting("live_time")).value_duration;
-    finder_.settings_.real_time = md.attributes.branches.get(Setting("real_time")).value_duration;
+    finder_.settings_.live_time = md.get_attribute("live_time").value_duration;
+    finder_.settings_.real_time = md.get_attribute("real_time").value_duration;
 
     std::shared_ptr<EntryList> spectrum_dump = std::move(spectrum->data_range({{0, pow(2,finder_.settings_.bits_)}}));
     std::vector<double> x;
@@ -476,7 +476,7 @@ void Fitter::filter_selection()
 
 void Fitter::save_report(std::string filename) {
   std::ofstream file(filename, std::ios::out | std::ios::app);
-  file << "Spectrum \"" << metadata_.name << "\"" << std::endl;
+  file << "Spectrum \"" << metadata_.get_attribute("name").value_text << "\"" << std::endl;
   file << "========================================================" << std::endl;
   file << "Bits: " << finder_.settings_.bits_ << "    Resolution: " << pow(2,finder_.settings_.bits_) << std::endl;
 
@@ -492,10 +492,10 @@ void Fitter::save_report(std::string filename) {
 
   file << "Spectrum type: " << metadata_.type() << std::endl;
 
-  if (!metadata_.attributes.branches.empty()) {
-    file << "Attributes" << std::endl;
-    file << metadata_.attributes;
-  }
+//  if (!metadata_.attributes.branches.empty()) {
+//    file << "Attributes" << std::endl;
+//    file << metadata_.attributes;
+//  }
 
   if (!metadata_.detectors.empty()) {
     file << "Detectors" << std::endl;
@@ -506,7 +506,7 @@ void Fitter::save_report(std::string filename) {
   file << "========================================================" << std::endl;
   file << std::endl;
 
-  file << "Acquisition start time:  " << boost::posix_time::to_iso_extended_string(metadata_.attributes.branches.get(Setting("start_time")).value_time) << std::endl;
+  file << "Acquisition start time:  " << boost::posix_time::to_iso_extended_string(metadata_.get_attribute("start_time").value_time) << std::endl;
   double lt = finder_.settings_.live_time.total_milliseconds() * 0.001;
   double rt = finder_.settings_.real_time.total_milliseconds() * 0.001;
   file << "Live time(s):   " << lt << std::endl;

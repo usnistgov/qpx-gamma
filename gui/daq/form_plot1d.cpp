@@ -90,9 +90,9 @@ void FormPlot1D::setSpectra(Project& new_set) {
 void FormPlot1D::spectrumLooksChanged(SelectorItem item) {
   SinkPtr someSpectrum = mySpectra->get_sink(item.data.toLongLong());
   if (someSpectrum) {
-    Setting vis = someSpectrum->metadata().attributes.branches.get(Setting("visible"));
+    Setting vis = someSpectrum->metadata().get_attribute("visible");
     vis.value_int = item.visible;
-    someSpectrum->set_option(vis);
+    someSpectrum->set_attribute(vis);
   }
   mySpectra->activate();
 }
@@ -125,10 +125,10 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   }
 
   std::string type = someSpectrum->type();
-  double real = md.attributes.branches.get(Setting("real_time")).value_duration.total_milliseconds() * 0.001;
-  double live = md.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  double real = md.get_attribute("real_time").value_duration.total_milliseconds() * 0.001;
+  double live = md.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
 
-  Qpx::Setting tothits = md.attributes.get_setting(Qpx::Setting("total_hits"), Qpx::Match::id);
+  Qpx::Setting tothits = md.get_attribute("total_hits");
   double rate_total = 0;
   if (live > 0)
     rate_total = tothits.value_precise.convert_to<double>() / live; // total count rate corrected for dead time
@@ -137,13 +137,13 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   if (real > 0)
     dead = (real - live) * 100.0 / real;
 
-  double rate_inst = md.attributes.branches.get(Setting("instant_rate")).value_dbl;
+  double rate_inst = md.get_attribute("instant_rate").value_dbl;
 
   Detector det = Detector();
   if (!md.detectors.empty())
     det = md.detectors[0];
 
-  uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+  uint16_t bits = md.get_attribute("resolution").value_int;
 
   QString detstr("Detector: ");
   detstr += QString::fromStdString(det.name_);
@@ -195,11 +195,11 @@ void FormPlot1D::update_plot() {
     if (q.second)
       md = q.second->metadata();
 
-    double livetime = md.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
-    double rescale  = md.attributes.branches.get(Setting("rescale")).value_precise.convert_to<double>();
-    uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+    double livetime = md.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
+    double rescale  = md.get_attribute("rescale").value_precise.convert_to<double>();
+    uint16_t bits = md.get_attribute("resolution").value_int;
 
-    if (md.attributes.branches.get(Setting("visible")).value_int) {
+    if (md.get_attribute("visible").value_int) {
 
       QVector<double> x = QVector<double>::fromStdVector(q.second->axis_values(0));
       QVector<double> y(x.size());
@@ -230,7 +230,7 @@ void FormPlot1D::update_plot() {
       }
 
       AppearanceProfile profile;
-      profile.default_pen = QPen(QColor(QString::fromStdString(md.attributes.branches.get(Setting("appearance")).value_text)), 1);
+      profile.default_pen = QPen(QColor(QString::fromStdString(md.get_attribute("appearance").value_text)), 1);
       ui->mcaPlot->addGraph(x, y, profile, bits);
 
     }
@@ -289,10 +289,10 @@ void FormPlot1D::updateUI()
       dets.insert(QString::fromStdString(md.detectors.front().name_));
 
     SelectorItem new_spectrum;
-    new_spectrum.text = QString::fromStdString(md.name);
+    new_spectrum.text = QString::fromStdString(md.get_attribute("name").value_text);
     new_spectrum.data = QVariant::fromValue(q.first);
-    new_spectrum.color = QColor(QString::fromStdString(md.attributes.branches.get(Setting("appearance")).value_text));
-    new_spectrum.visible = md.attributes.branches.get(Setting("visible")).value_int;
+    new_spectrum.color = QColor(QString::fromStdString(md.get_attribute("appearance").value_text));
+    new_spectrum.visible = md.get_attribute("visible").value_int;
     items.push_back(new_spectrum);
   }
 
@@ -389,9 +389,9 @@ void FormPlot1D::showAll()
     SinkPtr someSpectrum = mySpectra->get_sink(q.data.toLongLong());
     if (!someSpectrum)
       continue;
-    Setting vis = someSpectrum->metadata().attributes.branches.get(Setting("visible"));
+    Setting vis = someSpectrum->metadata().get_attribute("visible");
     vis.value_int = true;
-    someSpectrum->set_option(vis);
+    someSpectrum->set_attribute(vis);
   }
   mySpectra->activate();
 }
@@ -404,9 +404,9 @@ void FormPlot1D::hideAll()
     SinkPtr someSpectrum = mySpectra->get_sink(q.data.toLongLong());
     if (!someSpectrum)
       continue;
-    Setting vis = someSpectrum->metadata().attributes.branches.get(Setting("visible"));
+    Setting vis = someSpectrum->metadata().get_attribute("visible");
     vis.value_int = false;
-    someSpectrum->set_option(vis);
+    someSpectrum->set_attribute(vis);
   }
   mySpectra->activate();
 }
@@ -418,9 +418,9 @@ void FormPlot1D::randAll()
     SinkPtr someSpectrum = mySpectra->get_sink(q.data.toLongLong());
     if (!someSpectrum)
       continue;
-    Setting app = someSpectrum->metadata().attributes.branches.get(Setting("appearance"));
+    Setting app = someSpectrum->metadata().get_attribute("appearance");
     app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-    someSpectrum->set_option(app);
+    someSpectrum->set_attribute(app);
   }
 
   updateUI();
@@ -458,8 +458,8 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
   Metadata md = someSpectrum->metadata();
 
 
-  double livetime = md.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
-  uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+  double livetime = md.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
+  uint16_t bits = md.get_attribute("resolution").value_int;
 
   Calibration cal;
   if (!md.detectors.empty())
@@ -476,8 +476,8 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
   for (auto &q: mySpectra->get_sinks(1))
     if (q.second) {
       Metadata mdt = q.second->metadata();
-      double lt = mdt.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
-      uint16_t bits = mdt.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+      double lt = mdt.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
+      uint16_t bits = mdt.get_attribute("resolution").value_int;
 
       Calibration cal;
       if (!mdt.detectors.empty())
@@ -488,12 +488,12 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
       if (ui->pushPerLive->isChecked() && (lt != 0))
         mc = mc / lt;
 
-      Setting rescale = md.attributes.branches.get(Setting("rescale"));
+      Setting rescale = md.get_attribute("rescale");
       if (mc != 0)
         rescale.value_precise = PreciseFloat(max / mc);
       else
         rescale.value_precise = 0;
-      q.second->set_option(rescale);
+      q.second->set_attribute(rescale);
     }
   updateUI();
 }
@@ -502,9 +502,9 @@ void FormPlot1D::on_pushRescaleReset_clicked()
 {
   for (auto &q: mySpectra->get_sinks(1))
     if (q.second) {
-      Setting rescale = q.second->metadata().attributes.branches.get(Setting("rescale"));
+      Setting rescale = q.second->metadata().get_attribute("rescale");
       rescale.value_precise = 1;
-      q.second->set_option(rescale);
+      q.second->set_attribute(rescale);
     }
   updateUI();
 }

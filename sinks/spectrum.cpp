@@ -34,13 +34,15 @@ Spectrum::Spectrum()
   , max_delay_(0)
   , bits_(0)
 {
+  Setting attributes = metadata_.attributes();
+
   Setting totalct;
   totalct.id_ = "total_hits";
   totalct.metadata.setting_type = SettingType::floating_precise;
   totalct.metadata.description = "Total hit count";
   totalct.metadata.writable = false;
   totalct.value_precise = 0;
-  metadata_.attributes.branches.add(totalct);
+  attributes.branches.add(totalct);
 
   Setting totalev;
   totalev.id_ = "total_events";
@@ -48,7 +50,7 @@ Spectrum::Spectrum()
   totalev.metadata.description = "Total time-correlated event count";
   totalev.metadata.writable = false;
   totalev.value_precise = 0;
-  metadata_.attributes.branches.add(totalev);
+  attributes.branches.add(totalev);
 
 
   Qpx::Setting res;
@@ -71,7 +73,7 @@ Spectrum::Spectrum()
   res.metadata.int_menu_items[14] = "14 bit (16384)";
   res.metadata.int_menu_items[15] = "15 bit (32768)";
   res.metadata.int_menu_items[16] = "16 bit (65536)";
-  metadata_.attributes.branches.add(res);
+  attributes.branches.add(res);
 
   Setting dets;
   dets.id_ = "per_detector";
@@ -106,7 +108,7 @@ Spectrum::Spectrum()
   det.branches.add(delay);
 
   dets.branches.add(det);
-  metadata_.attributes.branches.add(dets);
+  attributes.branches.add(dets);
 
   Setting coinc_window;
   coinc_window.id_ = "coinc_window";
@@ -119,7 +121,7 @@ Spectrum::Spectrum()
   coinc_window.metadata.writable = true;
   coinc_window.metadata.flags.insert("preset");
   coinc_window.value_dbl = 50;
-  metadata_.attributes.branches.add(coinc_window);
+  attributes.branches.add(coinc_window);
 
   Setting pattern_coinc;
   pattern_coinc.id_ = "pattern_coinc";
@@ -128,7 +130,7 @@ Spectrum::Spectrum()
   pattern_coinc.metadata.description = "Coincidence pattern";
   pattern_coinc.metadata.writable = true;
   pattern_coinc.metadata.flags.insert("preset");
-  metadata_.attributes.branches.add(pattern_coinc);
+  attributes.branches.add(pattern_coinc);
 
   Setting pattern_anti;
   pattern_anti.id_ = "pattern_anti";
@@ -137,7 +139,7 @@ Spectrum::Spectrum()
   pattern_anti.metadata.description = "Anti-coindicence pattern";
   pattern_anti.metadata.writable = true;
   pattern_anti.metadata.flags.insert("preset");
-  metadata_.attributes.branches.add(pattern_anti);
+  attributes.branches.add(pattern_anti);
 
   Setting pattern_add;
   pattern_add.id_ = "pattern_add";
@@ -146,21 +148,21 @@ Spectrum::Spectrum()
   pattern_add.metadata.description = "Add pattern";
   pattern_add.metadata.writable = true;
   pattern_add.metadata.flags.insert("preset");
-  metadata_.attributes.branches.add(pattern_add);
+  attributes.branches.add(pattern_add);
 
   Setting live_time;
   live_time.id_ = "live_time";
   live_time.metadata.setting_type = SettingType::time_duration;
   live_time.metadata.description = "Live time";
   live_time.metadata.writable = false;
-  metadata_.attributes.branches.add(live_time);
+  attributes.branches.add(live_time);
 
   Setting real_time;
   real_time.id_ = "real_time";
   real_time.metadata.setting_type = SettingType::time_duration;
   real_time.metadata.description = "Real time";
   real_time.metadata.writable = false;
-  metadata_.attributes.branches.add(real_time);
+  attributes.branches.add(real_time);
 
   Setting inst_rate;
   inst_rate.id_ = "instant_rate";
@@ -169,22 +171,24 @@ Spectrum::Spectrum()
   inst_rate.metadata.description = "Instant count rate";
   inst_rate.metadata.writable = false;
   inst_rate.value_dbl = 0;
-  metadata_.attributes.branches.add(inst_rate);
+  attributes.branches.add(inst_rate);
+
+  metadata_.overwrite_all_attributes(attributes);
 }
 
 bool Spectrum::_initialize() {
   Sink::_initialize();
 
-  pattern_coinc_ = metadata_.attributes.get_setting(Setting("pattern_coinc"), Match::id).value_pattern;
-  pattern_anti_ = metadata_.attributes.get_setting(Setting("pattern_anti"), Match::id).value_pattern;
-  pattern_add_ = metadata_.attributes.get_setting(Setting("pattern_add"), Match::id).value_pattern;
-  coinc_window_ = metadata_.attributes.get_setting(Setting("coinc_window"), Match::id).value_dbl;
-  bits_ = metadata_.attributes.get_setting(Setting("resolution"), Match::id).value_int;
+  pattern_coinc_ = metadata_.get_attribute("pattern_coinc").value_pattern;
+  pattern_anti_ = metadata_.get_attribute("pattern_anti").value_pattern;
+  pattern_add_ = metadata_.get_attribute("pattern_add").value_pattern;
+  coinc_window_ = metadata_.get_attribute("coinc_window").value_dbl;
+  bits_ = metadata_.get_attribute("resolution").value_int;
   if (coinc_window_ < 0)
     coinc_window_ = 0;
 
   max_delay_ = 0;
-  Setting perdet = metadata_.attributes.get_setting(Setting("per_detector"), Match::id);
+  Setting perdet = metadata_.get_attribute("per_detector");
   cutoff_logic_.resize(perdet.branches.size());
   delay_ns_.resize(perdet.branches.size());
   for (auto &d : perdet.branches.my_data_) {
@@ -242,16 +246,19 @@ void Spectrum::_push_hit(const Hit& newhit)
       if (q.in_window(hit)) {
         if (q.addHit(hit)) {
           if (appended)
-            DBG << "<" << metadata_.name << "> hit " << hit.to_string() << " coincident with more than one other hit (counted >=2 times)";
+            DBG << "<" << metadata_.get_attribute("name").value_text << "> "
+                << "hit " << hit.to_string() << " coincident with more than one other hit (counted >=2 times)";
           appended = true;
         } else {
-          DBG << "<" << metadata_.name << "> pileup hit " << hit.to_string() << " with " << q.to_string() << " already has " << q.hits[hit.source_channel()].to_string();
+          DBG << "<" << metadata_.get_attribute("name").value_text << "> "
+              << "pileup hit " << hit.to_string() << " with " << q.to_string() << " already has " << q.hits[hit.source_channel()].to_string();
           pileup = true;
         }
       } else if (q.past_due(hit))
         break;
       else if (q.antecedent(hit))
-        DBG << "<" << metadata_.name << "> antecedent hit " << hit.to_string() << ". Something wrong with presorter or daq_device?";
+        DBG << "<" << metadata_.get_attribute("name").value_text << "> "
+            << "antecedent hit " << hit.to_string() << ". Something wrong with presorter or daq_device?";
     }
 
     if (!appended && !pileup) {
@@ -301,10 +308,10 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
   if (newBlock.model_hit.name_to_idx.count("energy"))
     energy_idx_[newBlock.source_channel] = newBlock.model_hit.name_to_idx.at("energy");
 
-  Setting start_time = metadata_.attributes.get_setting(Setting("start_time"), Match::id);
+  Setting start_time = metadata_.get_attribute("start_time");
   if (new_start && start_time.value_time.is_not_a_date_time()) {
     start_time.value_time = newBlock.lab_time;
-    metadata_.attributes.branches.replace(start_time);
+    metadata_.set_attribute(start_time);
   }
 
   if (!chan_new
@@ -319,12 +326,12 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
 
   recent_end_ = newBlock;
 
-  Setting rate = metadata_.attributes.get_setting(Setting("instant_rate"), Match::id);
+  Setting rate = metadata_.get_attribute("instant_rate");
   rate.value_dbl = 0;
   double recent_time = (recent_end_.lab_time - recent_start_.lab_time).total_milliseconds() * 0.001;
   if (recent_time > 0)
     rate.value_dbl = recent_count_ / recent_time;
-  metadata_.attributes.branches.replace(rate);
+  metadata_.set_attribute(rate);
 
   recent_count_ = 0;
 
@@ -366,8 +373,8 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
     real_times_[newBlock.source_channel] = real;
     live_times_[newBlock.source_channel] = live;
 
-    Setting live_time = metadata_.attributes.get_setting(Setting("live_time"), Match::id);
-    Setting real_time = metadata_.attributes.get_setting(Setting("real_time"), Match::id);
+    Setting live_time = metadata_.get_attribute("live_time");
+    Setting real_time = metadata_.get_attribute("real_time");
 
     live_time.value_duration = real_time.value_duration = real;
     for (auto &q : real_times_)
@@ -378,8 +385,8 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
       if (q.second.total_milliseconds() < live_time.value_duration.total_milliseconds())
         live_time.value_duration = q.second;
 
-    metadata_.attributes.branches.replace(live_time);
-    metadata_.attributes.branches.replace(real_time);
+    metadata_.set_attribute(live_time);
+    metadata_.set_attribute(real_time);
 
     //      DBG << "<Spectrum> \"" << metadata_.name << "\"  ********* "
     //             << "RT = " << to_simple_string(metadata_.real_time)
@@ -387,20 +394,20 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
 
   }
 
-  Setting res = metadata_.attributes.get_setting(Setting("total_hits"), Match::id);
+  Setting res = metadata_.get_attribute("total_hits");
   res.value_precise = total_hits_;
 
-  Setting res2 = metadata_.attributes.get_setting(Setting("total_events"), Match::id);
+  Setting res2 = metadata_.get_attribute("total_events");
   res2.value_precise = total_events_;
 }
 
 
 void Spectrum::_flush()
 {
-  Setting res = metadata_.attributes.get_setting(Setting("total_hits"), Match::id);
+  Setting res = metadata_.get_attribute("total_hits");
   res.value_precise = total_hits_;
 
-  Setting res2 = metadata_.attributes.get_setting(Setting("total_events"), Match::id);
+  Setting res2 = metadata_.get_attribute("total_events");
   res2.value_precise = total_events_;
 }
 

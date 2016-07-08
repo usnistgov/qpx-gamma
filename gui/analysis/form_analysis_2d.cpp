@@ -132,14 +132,14 @@ void FormAnalysis2D::initialize() {
 
     if (spectrum) {
       Metadata md = spectrum->metadata();
-      uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+      uint16_t bits = md.get_attribute("resolution").value_int;
       res = pow(2,bits);
 
       ui->plotMatrix->reset_content();
       ui->plotMatrix->setSpectra(*spectra_, current_spectrum_);
       ui->plotMatrix->update_plot();
 
-      bool symmetrized = (md.attributes.branches.get(Setting("symmetrized")).value_int != 0);
+      bool symmetrized = (md.get_attribute("symmetrized").value_int != 0);
     }
   }
 

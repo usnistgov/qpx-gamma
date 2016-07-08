@@ -33,29 +33,32 @@ SinkPtr slice_rectangular(SinkPtr source, std::initializer_list<Pair> bounds, bo
     return nullptr;
 
   Metadata md = source->metadata();
-  if ((md.attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise <= 0) || (md.dimensions() != 2))
+  if ((md.get_attribute("total_events").value_precise <= 0) || (md.dimensions() != 2))
     return nullptr;
 
 
   Metadata temp = SinkFactory::getInstance().create_prototype("1D");
-  temp.name = md.name + " projection";
-  temp.attributes.branches.replace(md.attributes.branches.get(Qpx::Setting("resolution")));
+
+  Setting name = md.get_attribute("name");
+  name.value_text += " projection";
+  temp.set_attribute(name);
+
+  temp.set_attribute(md.get_attribute("resolution"));
   //GENERALIZE!!!
 
   Setting pattern;
-
-  pattern = temp.attributes.branches.get(Setting("pattern_coinc"));
+  pattern = temp.get_attribute("pattern_coinc");
   pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
   pattern.value_pattern.set_theshold(2);
-  temp.attributes.branches.replace(pattern);
+  temp.set_attribute(pattern);
 
-  pattern = temp.attributes.branches.get(Setting("pattern_add"));
+  pattern = temp.get_attribute("pattern_add");
   if (det1)
     pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
   else
     pattern.value_pattern.set_gates(std::vector<bool>({0,1}));
   pattern.value_pattern.set_theshold(1);
-  temp.attributes.branches.replace(pattern);
+  temp.set_attribute(pattern);
 
   SinkPtr ret = SinkFactory::getInstance().create_from_prototype(temp);
   if (!ret)
@@ -67,7 +70,7 @@ SinkPtr slice_rectangular(SinkPtr source, std::initializer_list<Pair> bounds, bo
   for (auto it : *spectrum_data)
     ret->append(it);
 
-  if (ret->metadata().attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise > 0)
+  if (ret->metadata().get_attribute("total_events").value_precise > 0)
     return ret;
   else
     return nullptr;
@@ -81,7 +84,7 @@ bool slice_diagonal_x(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t
 
   Metadata md = source->metadata();
 
-  if ((md.attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise > 0) && (md.dimensions() == 2))
+  if ((md.get_attribute("total_events").value_precise > 0) && (md.dimensions() == 2))
   {
     destination->set_detectors(md.detectors);
 
@@ -99,7 +102,7 @@ bool slice_diagonal_x(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t
 
   }
 
-  return (destination->metadata().attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise > 0);
+  return (destination->metadata().get_attribute("total_events").value_precise > 0);
 }
 
 bool slice_diagonal_y(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t miny, uint32_t maxy) {
@@ -110,7 +113,7 @@ bool slice_diagonal_y(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t
 
   Metadata md = source->metadata();
 
-  if ((md.attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise > 0) && (md.dimensions() == 2))
+  if ((md.get_attribute("total_events").value_precise > 0) && (md.dimensions() == 2))
   {
     destination->set_detectors(md.detectors);
 
@@ -128,7 +131,7 @@ bool slice_diagonal_y(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t
 
   }
 
-  return (destination->metadata().attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise > 0);
+  return (destination->metadata().get_attribute("total_events").value_precise > 0);
 }
 
 PreciseFloat sum_diag(SinkPtr source, uint16_t x, uint16_t y, uint16_t width)
@@ -159,14 +162,14 @@ SinkPtr make_symmetrized(SinkPtr source)
 
   Metadata md = source->metadata();
 
-  if ((md.attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise <= 0) || (md.dimensions() != 2)) {
-    WARN << "<::MakeSymmetrize> " << md.name << " has no events or is not 2d";
+  if ((md.get_attribute("total_events").value_precise <= 0) || (md.dimensions() != 2)) {
+    WARN << "<::MakeSymmetrize> " << md.get_attribute("name").value_text << " has no events or is not 2d";
     return nullptr;
   }
 
   std::vector<uint16_t> chans;
   Setting pattern;
-  pattern = md.attributes.branches.get(Setting("pattern_add"));
+  pattern = md.get_attribute("pattern_add");
   std::vector<bool> gts = pattern.value_pattern.gates();
 
   for (int i=0; i < gts.size(); ++i) {
@@ -175,19 +178,19 @@ SinkPtr make_symmetrized(SinkPtr source)
   }
 
   if (chans.size() != 2) {
-    WARN << "<::MakeSymmetrize> " << md.name << " does not have 2 channels in add pattern";
+    WARN << "<::MakeSymmetrize> " << md.get_attribute("name").value_text << " does not have 2 channels in add pattern";
     return nullptr;
   }
 
-  pattern = md.attributes.branches.get(Setting("pattern_coinc"));
+  pattern = md.get_attribute("pattern_coinc");
   pattern.value_pattern.set_gates(gts);
   pattern.value_pattern.set_theshold(2);
-  md.attributes.branches.replace(pattern);
+  md.set_attribute(pattern);
 
   SinkPtr ret = SinkFactory::getInstance().create_from_prototype(md); //assume 2D?
 
   if (!ret) {
-    WARN << "<::MakeSymmetrize> symmetrization of " << md.name << " could not be created";
+    WARN << "<::MakeSymmetrize> symmetrization of " << md.get_attribute("name").value_text << " could not be created";
     return nullptr;
   }
 
@@ -198,11 +201,11 @@ SinkPtr make_symmetrized(SinkPtr source)
     detector1 = md.detectors[0];
     detector2 = md.detectors[1];
   } else {
-    WARN << "<::MakeSymmetrize> " << md.name << " does not have 2 detector definitions";
+    WARN << "<::MakeSymmetrize> " << md.get_attribute("name").value_text << " does not have 2 detector definitions";
     return false;
   }
 
-  uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+  uint16_t bits = md.get_attribute("resolution").value_int;
   Calibration gain_match_cali = detector2.get_gain_match(bits, detector1.name_);
 
   if (gain_match_cali.to_ == detector1.name_)
@@ -260,11 +263,11 @@ SinkPtr make_symmetrized(SinkPtr source)
 
   ret->set_detectors(md.detectors);
 
-  Qpx::Setting app = md.attributes.branches.get(Qpx::Setting("symmetrized"));
+  Qpx::Setting app = md.get_attribute("symmetrized");
   app.value_int = true;
-  ret->set_option(app);
+  ret->set_attribute(app);
 
-  if (ret->metadata().attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id).value_precise > 0)
+  if (ret->metadata().get_attribute("total_events").value_precise > 0)
     return ret;
   else
     return nullptr;

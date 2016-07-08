@@ -200,7 +200,10 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
         for (auto &q: temp_set.get_sinks(2)) {
           Qpx::Metadata md = q.second->metadata();
 //          DBG << "<Simulator2D> Spectrum available: " << md.name << " t:" << md.type() << " r:" << md.bits;
-          spectra_names_[q.first] = md.name;
+          spectra_names_[q.first] = md.get_attribute("name").value_text
+              + " ("
+              + md.get_attribute("resolution").val_to_pretty_string()
+              + ")";
         }
 
         if (!spectra_names_.empty())
@@ -246,20 +249,20 @@ bool Simulator2D::boot() {
   }
 
   Metadata md = spectrum->metadata();
-  Setting sres = md.attributes.branches.get(Setting("resolution"));
-  LINFO << "<Simulator2D> Will use " << md.name << " type:" << md.type() << " bits:" << sres.value_int;
+  Setting sres = md.get_attribute("resolution");
+  LINFO << "<Simulator2D> Will use " << md.get_attribute("name").value_text << " type:" << md.type() << " bits:" << sres.value_int;
 
 
   int source_res = sres.value_int;
-  lab_time = md.attributes.branches.get(Qpx::Setting("real_time")).value_duration.total_milliseconds() * 0.001;
-  live_time = md.attributes.branches.get(Qpx::Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  lab_time = md.get_attribute("real_time").value_duration.total_milliseconds() * 0.001;
+  live_time = md.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
 
   if (lab_time == 0.0) {
     WARN << "<Simulator2D> Lab time = 0. Cannot create simulation.";
     return false;
   }
 
-  double totevts = md.attributes.get_setting(Setting("total_events"), Match::id).value_precise.convert_to<double>();
+  double totevts = md.get_attribute("total_events").value_precise.convert_to<double>();
   OCR = totevts / lab_time;
 
   int adjust_bits = source_res - bits_;
@@ -267,7 +270,7 @@ bool Simulator2D::boot() {
   shift_by_ = 16 - bits_;
   resolution_ = pow(2, bits_);
 
-  LINFO << "<Simulator2D> Building matrix for simulation from [" << md.name << "]"
+  LINFO << "<Simulator2D> Building matrix for simulation from [" << md.get_attribute("name").value_text << "]"
        << " resolution=" << resolution_ << " shift="  << shift_by_
        << " rate=" << OCR << "cps";
   std::vector<double> distribution(resolution_*resolution_, 0.0);   //optimize somehow

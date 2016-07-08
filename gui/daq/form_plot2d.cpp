@@ -134,9 +134,9 @@ void FormPlot2D::choose_spectrum(SelectorItem item)
   std::map<int64_t, SinkPtr> spectra = mySpectra->get_sinks(2);
 
   for (auto &q : spectra) {
-    Setting vis = q.second->metadata().attributes.branches.get(Setting("visible"));
+    Setting vis = q.second->metadata().get_attribute("visible");
     vis.value_int = (q.first == current_spectrum_);
-    q.second->set_option(vis);
+    q.second->set_attribute(vis);
   }
 
   //name_2d = arg1;
@@ -154,10 +154,10 @@ void FormPlot2D::updateUI()
       md = q.second->metadata();
 
     SelectorItem new_spectrum;
-    new_spectrum.visible = md.attributes.branches.get(Setting("visible")).value_int;
-    new_spectrum.text = QString::fromStdString(md.name);
+    new_spectrum.visible = md.get_attribute("visible").value_int;
+    new_spectrum.text = QString::fromStdString(md.get_attribute("name").value_text);
     new_spectrum.data = QVariant::fromValue(q.first);
-    new_spectrum.color = QColor(QString::fromStdString(md.attributes.branches.get(Setting("appearance")).value_text));
+    new_spectrum.color = QColor(QString::fromStdString(md.get_attribute("appearance").value_text));
     items.push_back(new_spectrum);
   }
 
@@ -298,13 +298,13 @@ void FormPlot2D::update_plot(bool force) {
     if (some_spectrum)
       md = some_spectrum->metadata();
 
-    uint16_t newbits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+    uint16_t newbits = md.get_attribute("resolution").value_int;
 
     if ((md.dimensions() == 2) && (adjrange = pow(2,newbits) * zoom_2d))
     {
 //      DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
-      Setting sym = md.attributes.branches.get(Setting("symmetrized"));
+      Setting sym = md.get_attribute("symmetrized");
 
       //DBG << "Sym :" << sym.id_ << "=" << sym.value_int;
 
@@ -405,7 +405,7 @@ void FormPlot2D::spectrumDetailsDelete()
 //  std::list<SinkPtr> spectra = mySpectra->spectra(2, -1);
 
 //  for (auto &q : spectra) {
-//    Setting vis = q->metadata().attributes.branches.get(Setting("visible"));
+//    Setting vis = q->metadata().get_attribute("visible"));
 //    if (q->name() == name.toStdString())
 //      vis.value_int = true;
 //    else

@@ -35,11 +35,10 @@ static SinkRegistrar<Delayometer> registrar("Delayometer");
 Delayometer::Delayometer()
   : maxchan_(0)
 {
-  Setting base_options = metadata_.attributes;
+  Setting base_options = metadata_.attributes();
   metadata_ = Metadata("Delayometer", "Helps find optimal delay for multi-detector setups",
                        1, {}, {});
-  metadata_.attributes = base_options;
-
+  metadata_.overwrite_all_attributes(base_options);
 }
 
 void Delayometer::_set_detectors(const std::vector<Qpx::Detector>& dets) {
@@ -154,7 +153,8 @@ void Delayometer::_push_hit(const Hit& newhit)
           total_events_++;
           this->addEvent(copy);
         } else
-          DBG << "<" << metadata_.name << "> not validated " << q.to_string();
+          DBG << "<" << metadata_.get_attribute("name").value_text
+              << "> not validated " << q.to_string();
       }
 //      else
 //        DBG << "<" << metadata_.name << "> pileup hit " << newhit.to_string() << " with " << q.to_string() << " already has " << q.hits[newhit.source_channel()].to_string();
@@ -162,7 +162,8 @@ void Delayometer::_push_hit(const Hit& newhit)
 //    else if (q.past_due(newhit))
 //      break;
     else if (q.antecedent(newhit))
-      DBG << "<" << metadata_.name << "> antecedent hit " << newhit.to_string() << ". Something wrong with presorter or daq_device?";
+      DBG << "<" << metadata_.get_attribute("name").value_text
+          << "> antecedent hit " << newhit.to_string() << ". Something wrong with presorter or daq_device?";
   }
 
   backlog.push_back(Event(newhit, coinc_window_, max_delay_));

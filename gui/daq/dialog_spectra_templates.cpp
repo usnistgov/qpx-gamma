@@ -46,7 +46,6 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Metadata newTemplate,
   ui->treeAttribs->setModel(&attr_model_);
   ui->treeAttribs->setItemDelegate(&attr_delegate_);
   ui->treeAttribs->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-  ui->lineName->setText(QString::fromStdString(myTemplate.name));
 
 //  attr_delegate_.eat_detectors(current_dets_);
 
@@ -55,19 +54,17 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Metadata newTemplate,
   myTemplate = newTemplate;
   if (myTemplate == Metadata()) {
     myTemplate = SinkFactory::getInstance().create_prototype(ui->comboType->currentText().toStdString());
-    Setting app = myTemplate.attributes.branches.get(Setting("appearance"));
+    Setting app = myTemplate.get_attribute("appearance");
     app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-    myTemplate.attributes.branches.replace(app);
+    myTemplate.set_attribute(app);
     size_t sz = current_dets_.size();
     ui->spinDets->setValue(sz);
   } else {
     Metadata newtemp = SinkFactory::getInstance().create_prototype(newTemplate.type());
     if (newtemp != Metadata()) {
-      newtemp.name = myTemplate.name;
-//      newtemp.bits = myTemplate.bits;
-      newtemp.attributes = myTemplate.attributes;
+      newtemp.set_attributes(myTemplate.attributes());
       myTemplate = newtemp;
-      Setting pat = myTemplate.attributes.branches.get(Setting("pattern_add"));
+      Setting pat = myTemplate.get_attribute("pattern_add");
       ui->spinDets->setValue(pat.value_pattern.gates().size());
     } else {
       WARN << "Problem with spectrum type. Factory cannot make template for " << newTemplate.type();
@@ -76,17 +73,13 @@ DialogSpectrumTemplate::DialogSpectrumTemplate(Metadata newTemplate,
   }
 
   attr_model_.set_show_address_(false);
-  attr_model_.update(myTemplate.attributes);
+  attr_model_.update(myTemplate.attributes());
 
   updateData();
 }
 
 void DialogSpectrumTemplate::updateData() {
-
-  ui->lineName->setText(QString::fromStdString(myTemplate.name));
   ui->comboType->setCurrentText(QString::fromStdString(myTemplate.type()));
-//  ui->spinBits->setValue(myTemplate.bits);
-//  ui->lineChannels->setText(QString::number(pow(2,myTemplate.bits)));
 
   QString descr = "[dim:" + QString::number(myTemplate.dimensions()) + "] " + QString::fromStdString(myTemplate.type_description()) + "\n";
 
@@ -100,7 +93,7 @@ void DialogSpectrumTemplate::updateData() {
   }
 
   ui->labelDescription->setText(descr);
-  attr_model_.update(myTemplate.attributes);
+  attr_model_.update(myTemplate.attributes());
 }
 
 DialogSpectrumTemplate::~DialogSpectrumTemplate()
@@ -110,21 +103,14 @@ DialogSpectrumTemplate::~DialogSpectrumTemplate()
 
 void DialogSpectrumTemplate::on_buttonBox_accepted()
 {
-  if (ui->lineName->text().isEmpty()) {
+  myTemplate.overwrite_all_attributes(attr_model_.get_tree());
+  SinkPtr newSpectrum = SinkFactory::getInstance().create_from_prototype(myTemplate);
+  if (newSpectrum == nullptr) {
     QMessageBox msgBox;
-    msgBox.setText("Please give it a proper name");
+    msgBox.setText("Template does not produce valid sink. Check requirements.");
     msgBox.exec();
   } else {
-    myTemplate.name = ui->lineName->text().toStdString();
-    myTemplate.attributes = attr_model_.get_tree();
-    SinkPtr newSpectrum = SinkFactory::getInstance().create_from_prototype(myTemplate);
-    if (newSpectrum == nullptr) {
-      QMessageBox msgBox;
-      msgBox.setText("Template does not produce valid sink. Check requirements.");
-      msgBox.exec();
-    } else {
-      accept();
-    }
+    accept();
   }
 }
 
@@ -134,24 +120,15 @@ void DialogSpectrumTemplate::on_buttonBox_rejected()
 }
 
 
-//void DialogSpectrumTemplate::on_spinBits_valueChanged(int arg1)
-//{
-//  myTemplate.bits = arg1;
-//  ui->lineChannels->setText(QString::number(pow(2,arg1)));
-//}
-
 void DialogSpectrumTemplate::on_comboType_activated(const QString &arg1)
 {
   Metadata newtemp = SinkFactory::getInstance().create_prototype(arg1.toStdString());
   if (newtemp != Metadata()) {
     myTemplate = newtemp;
 
-    //keep these from previous
-//    myTemplate.bits = ui->spinBits->value();
-
-    for (auto &a : myTemplate.attributes.branches.my_data_)
-      if (a.metadata.setting_type == SettingType::color)
-        a.value_text = generateColor().name(QColor::HexArgb).toStdString();
+    Qpx::Setting col = myTemplate.get_attribute("appearance");
+    col.value_text = generateColor().name(QColor::HexArgb).toStdString();
+    myTemplate.set_attribute(col);
 
     on_spinDets_valueChanged(ui->spinDets->value());
     updateData();
@@ -196,21 +173,21 @@ QVariant TableSpectraTemplates::data(const QModelIndex &index, int role) const
   {
     switch (col) {
     case 0:
-      return QString::fromStdString(templates_.get(row).name);
-    case 1:
       return QString::fromStdString(templates_.get(row).type());
+    case 1:
+      return QVariant::fromValue(templates_.get(row).get_attribute("name"));
     case 2:
-      return QVariant::fromValue(templates_.get(row).attributes.branches.get(Setting("resolution")));
+      return QVariant::fromValue(templates_.get(row).get_attribute("resolution"));
     case 3:
-      return QVariant::fromValue(templates_.get(row).attributes.branches.get(Setting("pattern_coinc")));
+      return QVariant::fromValue(templates_.get(row).get_attribute("pattern_coinc"));
     case 4:
-      return QVariant::fromValue(templates_.get(row).attributes.branches.get(Setting("pattern_anti")));
+      return QVariant::fromValue(templates_.get(row).get_attribute("pattern_anti"));
     case 5:
-      return QVariant::fromValue(templates_.get(row).attributes.branches.get(Setting("pattern_add")));
+      return QVariant::fromValue(templates_.get(row).get_attribute("pattern_add"));
     case 6:
-      return QVariant::fromValue(templates_.get(row).attributes.branches.get(Setting("appearance")));
+      return QVariant::fromValue(templates_.get(row).get_attribute("appearance"));
     case 7:
-      return QVariant::fromValue(templates_.get(row).attributes.branches.get(Setting("visible")));
+      return QVariant::fromValue(templates_.get(row).get_attribute("visible"));
     }
 
   }
@@ -225,9 +202,9 @@ QVariant TableSpectraTemplates::headerData(int section, Qt::Orientation orientat
       switch (section)
       {
       case 0:
-        return QString("name");
-      case 1:
         return QString("type");
+      case 1:
+        return QString("name");
       case 2:
         return QString("bits");
       case 3:

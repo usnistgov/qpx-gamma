@@ -157,11 +157,11 @@ void FormMultiGates::update_current_gate(Gate gate) {
   if ((index != -1) && (gates_[index].approved))
     gate.approved = true;
 
-  double livetime = gate.fit_data_.metadata_.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  double livetime = gate.fit_data_.metadata_.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
   if (livetime <= 0)
     livetime = 100;
 
-  Qpx::Setting totevts = gate.fit_data_.metadata_.attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id);
+  Qpx::Setting totevts = gate.fit_data_.metadata_.get_attribute("total_events");
   gate.cps = totevts.value_precise.convert_to<double>(); // / livetime;
 
   if (gate.constraints.y_c.bin(0) <= -1) {
@@ -202,7 +202,7 @@ Gate FormMultiGates::current_gate() {
   if ((idx > -1) && (idx < gates_.size()))
     return gates_[idx];
 
-  uint16_t bits = md_.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+  uint16_t bits = md_.get_attribute("resolution").value_int;
 
   Gate gate;
   gate.approved = false;
@@ -316,14 +316,14 @@ void FormMultiGates::on_pushApprove_clicked()
 
   for (auto &q : fit_data_.peaks()) {
     Gate gate;
-    double livetime = fit_data_.metadata_.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+    double livetime = fit_data_.metadata_.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
     if (livetime <= 0)
       livetime = 100;
     gate.cps           = q.second.sum4().gross_area().value();
     gate.approved = false;
     gate.constraints.labelfloat = true;
 
-    uint16_t bits = md_.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+    uint16_t bits = md_.get_attribute("resolution").value_int;
 
     double w = q.second.fwhm().value() * ui->doubleGateOn->value();
     double L_nrg = q.second.energy().value() - w / 2;
@@ -434,11 +434,13 @@ void FormMultiGates::make_gate() {
         + "," +
         to_str_precision(md.detectors[0].best_calib(fit_data_.settings().bits_).transform(xmax, fit_data_.settings().bits_), 0) + "]";
 
-    if (gate_x && (gate_x->name() == name)) {
+    if (gate_x && (gate_x->metadata().get_attribute("resolution").value_text == name)) {
 //      DBG << "same gate";
     } else {
       gate_x = slice_rectangular(source_spectrum, {{xmin, xmax}, {ymin, ymax}}, true);
-      gate_x->set_name(name);
+      Qpx::Setting nm = gate_x->metadata().get_attribute("resolution");
+      nm.value_text =  name;
+      gate_x->set_attribute(nm);
 //      DBG << "made new gate";
     }
 
@@ -469,7 +471,7 @@ void FormMultiGates::setSpectrum(Project *newset, int64_t idx) {
 
   if (spectrum) {
     md_ = spectrum->metadata();
-    uint16_t bits = md_.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+    uint16_t bits = md_.get_attribute("resolution").value_int;
     res_ = pow(2,bits);
     make_gate();
     if (!gates_.empty()) {
@@ -515,10 +517,10 @@ void FormMultiGates::update_peaks(bool content_changed) {
   }
 
   cgate.fit_data_    = fit_data_;
-  double livetime = fit_data_.metadata_.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  double livetime = fit_data_.metadata_.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
   if (livetime <= 0)
     livetime = 100;
-  Qpx::Setting totevts = fit_data_.metadata_.attributes.get_setting(Qpx::Setting("total_events"), Qpx::Match::id);
+  Qpx::Setting totevts = fit_data_.metadata_.get_attribute("total_events");
   cgate.cps = totevts.value_precise.convert_to<double>();// / livetime;
 
   update_current_gate(cgate);
@@ -540,9 +542,9 @@ void FormMultiGates::on_pushAddGatedSpectrum_clicked()
   bool success = false;
 
   if (gate_x /*&& (gate_x->metadata().total_count > 0)*/) {
-    Setting app = gate_x->metadata().attributes.branches.get(Setting("appearance"));
+    Setting app = gate_x->metadata().get_attribute("appearance");
     app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-    gate_x->set_option(app);
+    gate_x->set_attribute(app);
 
     spectra_->add_sink(gate_x);
     success = true;

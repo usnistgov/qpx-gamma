@@ -198,7 +198,7 @@ void FormGatesPlot2D::update_plot() {
   if (some_spectrum)
     md = some_spectrum->metadata();
 
-  uint16_t newbits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+  uint16_t newbits = md.get_attribute("resolution").value_int;
 
   if ((md.dimensions() == 2) && (adjrange = pow(2,newbits)) )
   {

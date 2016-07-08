@@ -765,7 +765,7 @@ void Setting::condense() {
 
 void Setting::enable_if_flag(bool enable, const std::string &flag)
 {
-  if (metadata.flags.count(flag))
+  if (metadata.flags.count(flag) > 0)
     metadata.writable = enable;
   if ((metadata.setting_type == SettingType::stem) && !branches.empty())
     for (auto &q : branches.my_data_)

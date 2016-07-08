@@ -32,7 +32,7 @@ void MarkerBox2D::integrate(Qpx::SinkPtr spectrum)
     return;
 
   //bits match?
-  uint16_t bits = md.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+  uint16_t bits = md.get_attribute("resolution").value_int;
 
   uint32_t xmin = std::ceil(x1.bin(bits));
   uint32_t xmax = std::floor(x2.bin(bits));

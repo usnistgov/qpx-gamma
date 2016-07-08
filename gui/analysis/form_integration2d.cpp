@@ -79,8 +79,8 @@ void FormIntegration2D::setPeaks(std::list<MarkerBox2D> pks) {
   SinkPtr source_spectrum = spectra_->get_sink(current_spectrum_);
   if (source_spectrum) {
     md_ = source_spectrum->metadata();
-    uint16_t bits = md_.attributes.branches.get(Qpx::Setting("resolution")).value_int;
-    if (md_.attributes.branches.get(Setting("symmetrized")).value_int) {
+    uint16_t bits = md_.get_attribute("resolution").value_int;
+    if (md_.get_attribute("symmetrized").value_int) {
       uint32_t res = pow(2, bits);
       std::list<MarkerBox2D> northwest;
       std::list<MarkerBox2D> southeast;
@@ -188,7 +188,7 @@ void FormIntegration2D::make_range(Coord x, Coord y) {
   range_.y_c = y;
   Calibration f1, f2, e1, e2;
 
-  uint16_t bits = md_.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+  uint16_t bits = md_.get_attribute("resolution").value_int;
 
   if (md_.detectors.size() > 1) {
     //DBG << "dets2";
@@ -233,7 +233,7 @@ void FormIntegration2D::update_current_peak(MarkerBox2D peak) {
   //  if ((index != -1) && (peaks_[index].approved))
   //    gate.approved = true;
 
-  double livetime = md_.attributes.branches.get(Setting("live_time")).value_duration.total_milliseconds() * 0.001;
+  double livetime = md_.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
   DBG << "update current peak " << peak.x_c.energy()  << " x " << peak.y_c.energy();
   if (livetime == 0)
     livetime = 10000;
@@ -457,7 +457,7 @@ void FormIntegration2D::make_gates() {
       return;
 
     md_ = source_spectrum->metadata();
-    uint16_t bits = md_.attributes.branches.get(Qpx::Setting("resolution")).value_int;
+    uint16_t bits = md_.get_attribute("resolution").value_int;
     double margin = 3;
 
     uint32_t adjrange = pow(2,bits) - 1;
@@ -493,21 +493,20 @@ void FormIntegration2D::make_gates() {
 
       Metadata temp;
       temp = SinkFactory::getInstance().create_prototype("1D");
-      //  temp.visible = true;
-      temp.name = "temp";
-      uint16_t bits = md_.attributes.branches.get(Qpx::Setting("resolution")).value_int;
-      temp.attributes.branches.replace(md_.attributes.branches.get(Qpx::Setting("resolution")));
+//      temp.name = "temp";
+      uint16_t bits = md_.get_attribute("resolution").value_int;
+      temp.set_attribute(md_.get_attribute("resolution"));
 
       Setting pattern;
 
-      pattern = temp.attributes.branches.get(Setting("pattern_coinc"));
+      pattern = temp.get_attribute("pattern_coinc");
       pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
       pattern.value_pattern.set_theshold(1);
-      temp.attributes.branches.replace(pattern);
-      pattern = temp.attributes.branches.get(Setting("pattern_add"));
+      temp.set_attribute(pattern);
+      pattern = temp.get_attribute("pattern_add");
       pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
       pattern.value_pattern.set_theshold(1);
-      temp.attributes.branches.replace(pattern);
+      temp.set_attribute(pattern);
       gate = SinkFactory::getInstance().create_from_prototype(temp);
       slice_diagonal_x(source_spectrum, gate, peak.x_c.bin(bits), peak.y_c.bin(bits), (xwidth + ywidth) / 2, xmin, xmax);
       fit_x_.setData(gate);

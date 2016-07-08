@@ -173,15 +173,15 @@ void FormExperiment2D::display_data()
     Qpx::DataPoint &data = filtered_data_points_.at(i);
     eval_dependent(data);
 
-    Qpx::Setting rt = data.spectrum_info.attributes.get_setting(Qpx::Setting("real_time"), Qpx::Match::id);
-    Qpx::Setting lt = data.spectrum_info.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id);
+    Qpx::Setting rt = data.spectrum_info.get_attribute("real_time");
+    Qpx::Setting lt = data.spectrum_info.get_attribute("live_time");
     double real_ms = rt.value_duration.total_milliseconds();
     double live_ms = lt.value_duration.total_milliseconds();
 
     add_to_table(ui->tableResults, i, 0, data.independent_variable.to_string());
     add_to_table(ui->tableResults, i, 1, data.independent_variable2.to_string());
 
-    double total_count = data.spectrum_info.attributes.get_setting(Qpx::Setting("total_hits"), Qpx::Match::id).value_precise.convert_to<double>();
+    double total_count = data.spectrum_info.get_attribute("total_hits").value_precise.convert_to<double>();
     if (live_ms > 0)
       total_count = total_count / live_ms * 1000.0;
     add_to_table(ui->tableResults, i, 2, std::to_string(total_count));
@@ -315,16 +315,16 @@ void FormExperiment2D::eval_dependent(Qpx::DataPoint &data)
   data.dependent_variable = UncertainDouble();
   if (codomain == "Count rate (spectrum)")
   {
-    double live_ms = data.spectrum_info.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id).value_duration.total_milliseconds();
-    double total = data.spectrum_info.attributes.get_setting(Qpx::Setting("total_hits"), Qpx::Match::id).value_precise.convert_to<double>();
+    double live_ms = data.spectrum_info.get_attribute("live_time").value_duration.total_milliseconds();
+    double total = data.spectrum_info.get_attribute("total_hits").value_precise.convert_to<double>();
     if (live_ms > 0)
       total = total / live_ms * 1000.0;
     data.dependent_variable = UncertainDouble::from_double(total, sqrt(total));
   }
   else if (codomain == "% dead time")
   {
-    Qpx::Setting real = data.spectrum_info.attributes.get_setting(Qpx::Setting("real_time"), Qpx::Match::id);
-    Qpx::Setting live = data.spectrum_info.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id);
+    Qpx::Setting real = data.spectrum_info.get_attribute("real_time");
+    Qpx::Setting live = data.spectrum_info.get_attribute("live_time");
 
     double dead = real.value_duration.total_milliseconds() - live.value_duration.total_milliseconds();
     if (real.value_duration.total_milliseconds() > 0)
@@ -346,7 +346,7 @@ void FormExperiment2D::eval_dependent(Qpx::DataPoint &data)
   }
   else if (codomain == "Count rate (selected peak)")
   {
-    double live_ms = data.spectrum_info.attributes.get_setting(Qpx::Setting("live_time"), Qpx::Match::id).value_duration.total_milliseconds();
+    double live_ms = data.spectrum_info.get_attribute("live_time").value_duration.total_milliseconds();
 
     if (data.selected_peak != Qpx::Peak()) {
       //      DBG << "selpeak area " << data.selected_peak.area_best.to_string() <<

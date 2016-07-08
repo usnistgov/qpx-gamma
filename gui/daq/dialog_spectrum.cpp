@@ -46,7 +46,6 @@ DialogSpectrum::DialogSpectrum(Qpx::Sink &spec,
   ui->pushAnalyse->setVisible(allow_edit_);
   ui->pushDelete->setVisible(allow_edit_);
   ui->pushLock->setVisible(allow_edit_);
-  ui->lineName->setEnabled(allow_edit_);
   ui->treeAttribs->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
   connect(&det_selection_model_, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
@@ -72,7 +71,7 @@ DialogSpectrum::DialogSpectrum(Qpx::Sink &spec,
 
   attr_model_.set_show_address_(false);
 
-  Qpx::Setting pat = md_.attributes.branches.get(Qpx::Setting("pattern_add"));
+  Qpx::Setting pat = md_.get_attribute("pattern_add");
   ui->spinDets->setValue(pat.value_pattern.gates().size());
 
   updateData();
@@ -88,14 +87,7 @@ void DialogSpectrum::det_selection_changed(QItemSelection, QItemSelection) {
 }
 
 void DialogSpectrum::updateData() {
-//  md_ = my_spectrum_.metadata();
-
-  ui->lineName->setText(QString::fromStdString(md_.name));
   ui->lineType->setText(QString::fromStdString(md_.type()));
-//  ui->lineBits->setText(QString::number(static_cast<int>(md_.bits)) + " bits");
-//  ui->lineChannels->setText(QString::number(pow(2,md_.bits)));
-
-//  ui->lineTotalCount->setText(QString::number(md_.total_count.convert_to<double>()));
 
   spectrum_detectors_.clear();
   for (auto &q: md_.detectors)
@@ -115,7 +107,7 @@ void DialogSpectrum::updateData() {
 
   ui->labelDescription->setText(descr);
 
-  attr_model_.update(md_.attributes);
+  attr_model_.update(md_.attributes());
   open_close_locks();
 }
 
@@ -138,8 +130,9 @@ void DialogSpectrum::open_close_locks() {
   toggle_push();
 }
 
-void DialogSpectrum::push_settings() {
-  md_.attributes = attr_model_.get_tree();
+void DialogSpectrum::push_settings()
+{
+  md_.overwrite_all_attributes(attr_model_.get_tree());
   changed_ = true;
 }
 
@@ -174,13 +167,9 @@ void DialogSpectrum::on_pushLock_clicked()
 
 void DialogSpectrum::on_buttonBox_rejected()
 {
-  if (md_.name != ui->lineName->text().toStdString())
-    changed_ = true;
-
   if (changed_) {
-    my_spectrum_.set_options(md_.attributes);
+    my_spectrum_.set_attributes(md_.attributes());
     my_spectrum_.set_detectors(md_.detectors);
-    my_spectrum_.set_name(ui->lineName->text().toStdString());
   }
 
   emit finished(changed_);
@@ -336,13 +325,13 @@ void DialogSpectrum::on_spinDets_valueChanged(int arg1)
   if (!ui->spinDets->isEnabled())
     return;
 
-  Qpx::Setting pat = md_.attributes.branches.get(Qpx::Setting("pattern_add"));
+  Qpx::Setting pat = md_.get_attribute("pattern_add");
 
   md_.set_det_limit(arg1);
   if (arg1 != pat.value_pattern.gates().size())
     changed_ = true;
 
-  attr_model_.update(md_.attributes);
+  attr_model_.update(md_.attributes());
   open_close_locks();
 }
 

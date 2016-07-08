@@ -189,15 +189,8 @@ void ExperimentProject::set_sink_vars_recursive(XMLableDB<Metadata>& prototypes,
   set_sink_vars_recursive(prototypes, parent);
 
   if (parent->domain.type == DomainType::sink)
-  {
     for (auto &p : prototypes.my_data_)
-    {
-      if (p.attributes.has(node->domain_value, Match::id | Match::indices))
-      {
-        p.attributes.set_setting_r(node->domain_value, Match::id | Match::indices);
-      }
-    }
-  }
+      p.set_attribute(node->domain_value);
 }
 
 void ExperimentProject::gather_vars_recursive(DataPoint& dp, TrajectoryPtr node)
@@ -210,7 +203,7 @@ void ExperimentProject::gather_vars_recursive(DataPoint& dp, TrajectoryPtr node)
   gather_vars_recursive(dp, parent);
 
   if (parent->domain.type == DomainType::sink) {
-    if (dp.spectrum_info.attributes.has(node->domain_value, Match::id | Match::indices))
+    if (dp.spectrum_info.attributes().has(node->domain_value, Match::id | Match::indices))
     {
       dp.domains[parent->domain.verbose] = node->domain_value;
     }
@@ -337,7 +330,7 @@ double ExperimentProject::tally_real_time(TrajectoryPtr node)
       if (s.second)
       {
         Metadata md = s.second->metadata();
-        return md.attributes.branches.get(Setting("real_time")).value_duration.total_milliseconds() * 0.001;
+        return md.get_attribute("real_time").value_duration.total_milliseconds() * 0.001;
       }
     return 0;
   }

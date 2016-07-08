@@ -51,10 +51,15 @@ public:
   Metadata(std::string tp, std::string descr, uint16_t dim,
            std::list<std::string> itypes, std::list<std::string> otypes);
 
-  //user sets these in prototype
-  std::string name;
-  Qpx::Setting attributes;
-  std::vector<Qpx::Detector> detectors;
+  // read & write
+  Setting get_attribute(std::string setting) const;
+  Setting get_attribute(std::string setting, int32_t idx) const;
+  Setting get_attribute(Setting setting) const;
+  void set_attribute(const Setting &setting);
+
+  Setting attributes() const;
+  void set_attributes(const Setting &settings);
+  void overwrite_all_attributes(const Setting &settings);
 
   //read only
   std::string type() const {return type_;}
@@ -64,6 +69,7 @@ public:
   std::list<std::string> output_types() const {return output_types_;}
 
 
+  void disable_presets();
   void set_det_limit(uint16_t limit);
   bool chan_relevant(uint16_t chan) const;
 
@@ -77,12 +83,17 @@ public:
   bool operator== (const Metadata& other) const;
 
 private:
-
   //this stuff from factory, immutable upon initialization
   std::string type_, type_description_;
   uint16_t dimensions_;
   std::list<std::string> input_types_;
   std::list<std::string> output_types_;
+
+  //can change these
+  Setting attributes_;
+
+public:
+  std::vector<Qpx::Detector> detectors;
 
 };
 
@@ -135,14 +146,12 @@ public:
   bool changed() const;
 
   //Convenience functions for most common metadata
-  std::string name() const;
   std::string type() const;
   uint16_t dimensions() const;
 
   //Change metadata
-  void set_name(std::string newname);
-  void set_option(Setting setting, Match match = Match::id | Match::indices);
-  void set_options(Setting settings);
+  void set_attribute(const Setting &setting);
+  void set_attributes(const Setting &settings);
   void set_detectors(const std::vector<Qpx::Detector>& dets);
 
 protected:

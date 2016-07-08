@@ -32,10 +32,9 @@ static SinkRegistrar<SpectrumTime> registrar("Time");
 SpectrumTime::SpectrumTime()
   : codomain(0)
 {
-  Setting base_options = metadata_.attributes;
+  Setting base_options = metadata_.attributes();
   metadata_ = Metadata("Time", "Time-domain log of activity", 1,
                     {}, {});
-  metadata_.attributes = base_options;
 
   Qpx::Setting format_setting;
   format_setting.id_ = "co-domain";
@@ -46,12 +45,14 @@ SpectrumTime::SpectrumTime()
   format_setting.value_int = 0;
   format_setting.metadata.int_menu_items[0] = "event rate";
   format_setting.metadata.int_menu_items[1] = "% dead-time";
-  metadata_.attributes.branches.add(format_setting);
+  base_options.branches.add(format_setting);
+
+  metadata_.overwrite_all_attributes(base_options);
 }
 
 bool SpectrumTime::_initialize() {
   Spectrum::_initialize();
-  codomain = metadata_.attributes.get_setting(Setting("co-domain"), Match::id).value_int;
+  codomain = metadata_.get_attribute("co-domain").value_int;
   return true;
 }
 
