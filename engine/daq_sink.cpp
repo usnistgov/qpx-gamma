@@ -124,7 +124,7 @@ void Metadata::to_xml(pugi::xml_node &root) const {
 
   if (!detectors.empty())
   {
-    pugi::xml_node detnode = root.append_child("Detectors");
+    pugi::xml_node detnode = node.append_child("Detectors");
     for (auto &d : detectors)
       d.to_xml(detnode);
   }
