@@ -366,8 +366,6 @@ void Project::read_xml(std::string file_name, bool with_sinks, bool with_full_si
   pugi::xml_node root;
   if (doc.child(this->xml_element_name().c_str()))
     root = doc.child(this->xml_element_name().c_str());
-  else if (doc.child("QpxAcquisition"))  //backwards compat
-    root = doc.child("QpxAcquisition");
   if (!root)
     return;
 
@@ -396,34 +394,26 @@ void Project::from_xml(const pugi::xml_node &root, bool with_sinks, bool with_fu
   if (!with_sinks)
     return;
 
-  pugi::xml_node sinksnode;
+  if (root.child("Sinks"))
+  {
+    for (pugi::xml_node &child : root.child("Sinks").children())
+    {
+      if (child.child("Data") && !with_full_sinks)
+        child.remove_child("Data");
 
-  if (root.child("Spectra"))
-    sinksnode = root.child("Spectra"); //backcompat
-  else if (root.child("Sinks"))
-    sinksnode = root.child("Sinks");   //current, ok
-
-  for (pugi::xml_node &child : sinksnode.children()) {
-    if (child.child("Data") && !with_full_sinks)
-      child.remove_child("Data");
-
-    if (child.attribute("idx"))
-      current_index_ = child.attribute("idx").as_llong();
-    else
-      current_index_++; //backwards compat
-
-    SinkPtr sink
-        = Qpx::SinkFactory::getInstance().create_from_xml(child);
-    if (!sink)
-      LINFO << "Could not parse spectrum";
-    else {
-      for (auto &s : spills_) {
-        Spill sp = s;
-        if (!sink->metadata().detectors.empty()) //backwards compat
-          sp.detectors.clear();
-        sink->push_spill(sp);
+      if (child.attribute("idx"))
+        current_index_ = child.attribute("idx").as_llong();
+      else
+      {
+        WARN << "<Project> Sink has no index";
+        continue;
       }
-      sinks_[current_index_] = sink;
+
+      SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_xml(child);
+      if (!sink)
+        WARN << "<Project> Could not parse sink";
+      else
+        sinks_[current_index_] = sink;
     }
   }
 

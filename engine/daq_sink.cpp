@@ -431,66 +431,9 @@ bool Sink::from_xml(const pugi::xml_node &node) {
   if (node.child(metadata_.xml_element_name().c_str()))
     metadata_.from_xml(node.child(metadata_.xml_element_name().c_str()));
 
-  if (node.child("attributes"))
-  {
-    Setting attrs = metadata_.attributes();
-    attrs.from_xml(node.child("attributes"));
-    metadata_.set_attributes(attrs);
-  }
-  else if (node.child(metadata_.attributes().xml_element_name().c_str()))
-  {
-    Setting attrs = metadata_.attributes();
-    attrs.from_xml(node.child(attrs.xml_element_name().c_str()));
-    metadata_.set_attributes(attrs);
-  }
-
-
-  if (node.child("Name"))
-  {
-    Setting res = metadata_.get_attribute("name");
-    res.value_text = std::string(node.child_value("Name"));
-    metadata_.set_attribute(res);
-    DBG << "Name " << res.value_text;
-  }
-
-  if (node.child("TotalEvents")) {
-    Setting res = metadata_.get_attribute("total_events");
-    if (res.metadata.setting_type == SettingType::floating_precise)
-    {
-      res.value_precise = PreciseFloat(node.child_value("TotalEvents"));
-      metadata_.set_attribute(res);
-    }
-    Setting res2 = metadata_.get_attribute("total_hits");
-    if (res2.metadata.setting_type == SettingType::floating_precise)
-    {
-      res2.value_precise = res.value_precise * metadata_.dimensions();
-      metadata_.set_attribute(res2);
-    }
-  }
-
-  if (node.child("Resolution")) {
-    Setting res = metadata_.get_attribute("resolution");
-    res.value_int = boost::lexical_cast<short>(std::string(node.child_value("Resolution")));
-    metadata_.set_attribute(res);
-    DBG << "Resolution " << res.value_int;
-  }
-
-
-  if (node.child("Detectors")) {
-    metadata_.detectors.clear();
-    for (auto &q : node.child("Detectors").children()) {
-      Qpx::Detector det;
-      det.from_xml(q);
-      metadata_.detectors.push_back(det);
-    }
-  }
-
-
   std::string this_data;
-  if (node.child("Data"))   //current
+  if (node.child("Data"))
     this_data = std::string(node.child_value("Data"));
-  else if (node.child("ChannelData"))   //back compat
-    this_data = std::string(node.child_value("ChannelData"));
   boost::algorithm::trim(this_data);
   this->_data_from_xml(this_data);
 
@@ -501,9 +444,6 @@ bool Sink::from_xml(const pugi::xml_node &node) {
 
   if (ret)
     this->_recalc_axes();
-
-  //  for (auto &det : this->metadata_.detectors)
-  //    DBG << "det2 " << this->metadata_.name << " " << det.name_;
 
   return ret;
 }
