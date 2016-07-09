@@ -475,6 +475,14 @@ void Project::from_xml(const pugi::xml_node &root, bool with_sinks, bool with_fu
       sp.state = ri.state;
       if (sp.detectors.empty())
         sp.detectors.resize(4, Detector("unknown"));
+      StatsUpdate su;
+      su.lab_time = sp.time;
+      su.stats_type = StatsType::start;
+      for (int i=0; i < 4; i++)
+      {
+        su.source_channel = i;
+        sp.stats[i] = su;
+      }
       spills_.insert(sp);
     }
   }
