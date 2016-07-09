@@ -236,9 +236,8 @@ void SettingMeta::to_xml(pugi::xml_node &node) const {
   if ((setting_type == SettingType::binary) || (setting_type == SettingType::pattern))
     child.append_attribute("word_size").set_value(maximum);
 
-  if ((setting_type == SettingType::integer)
-      || (setting_type == SettingType::floating)
-      || (setting_type == SettingType::floating_precise)) {
+  if (is_numeric())
+  {
     child.append_attribute("step").set_value(step);
     child.append_attribute("minimum").set_value(minimum);
     child.append_attribute("maximum").set_value(maximum);
@@ -270,6 +269,51 @@ void SettingMeta::to_xml(pugi::xml_node &node) const {
       child.append_attribute("flags").set_value(flgs.c_str());
   }
 }
+
+std::string SettingMeta::debug(bool more, bool more2)
+{
+  std::string ret = to_string(setting_type);
+  if (!name.empty())
+    ret += "(" + name + ")";
+  ret += " " + std::to_string(address);
+  if (writable)
+    ret += " writable";
+  if ((setting_type == SettingType::command) && !visible)
+    ret += " invisible";
+  if ((setting_type == SettingType::stem) && saveworthy)
+    ret += " saveworthy";
+  if ((setting_type == SettingType::binary) || (setting_type == SettingType::pattern))
+    ret += " wrodsize=" + std::to_string(maximum);
+  if (is_numeric())
+  {
+    std::stringstream ss;
+    ss << " [" << minimum << "\uFF1A" << step << "\uFF1A" << maximum << "]";
+    ret += ss.str();
+  }
+  if (!unit.empty())
+    ret += " unit=" + unit;
+  if (!description.empty())
+    ret += " \"" + description + "\"";
+
+  if (!flags.empty()) {
+    std::string flgs;
+    for (auto &q : flags)
+      flgs += q + " ";
+    boost::algorithm::trim_if(flgs, boost::algorithm::is_any_of("\r\n\t "));
+    if (!flgs.empty())
+      ret += " flags=\"" + flgs + "\"";
+  }
+
+  if (int_menu_items.size())
+  {
+    ret += "\n ";
+    for (auto &i : int_menu_items)
+      ret += std::to_string(i.first) + "(" + i.second + ")";
+  }
+
+  return ret;
+}
+
 
 std::string SettingMeta::value_range() const
 {
@@ -590,6 +634,20 @@ void Setting::to_xml(pugi::xml_node &node, bool with_metadata) const {
   if (metadata.setting_type == SettingType::stem)
     for (auto &q : branches.my_data_)
       q.to_xml(child);
+}
+
+std::string Setting::debug(std::string prepend)
+{
+  prepend += id_;
+  if (!indices.empty())
+    prepend += indices_to_string(true);
+  prepend += "=" + val_to_pretty_string();
+  prepend += " " + metadata.debug(true, true);
+  prepend += "\n";
+  if (!branches.empty())
+    for (auto &s : branches.my_data_)
+    prepend += s.debug("  ");
+  return prepend;
 }
 
 void Setting::set_value(const Setting &other)

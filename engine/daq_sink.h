@@ -59,7 +59,7 @@ public:
 
   Setting attributes() const;
   void set_attributes(const Setting &settings);
-  void overwrite_all_attributes(const Setting &settings);
+  void overwrite_all_attributes(Setting settings);
 
   //read only
   std::string type() const {return type_;}

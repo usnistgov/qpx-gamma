@@ -29,35 +29,6 @@
 
 namespace Qpx {
 
-//DEPRECATE!!!
-struct RunInfo {
-  Qpx::Setting state;
-  std::vector<Qpx::Detector> detectors;
-  boost::posix_time::ptime time;
-
-  inline RunInfo()
-  {}
-
-  void from_xml(const pugi::xml_node &node) {
-    if (node.attribute("time"))
-      time = from_iso_extended(node.attribute("time").value());
-    else if (node.attribute("time_start"))
-      time = from_iso_extended(node.attribute("time_start").value());
-
-    if (node.child(state.xml_element_name().c_str()))
-      state.from_xml(node.child(state.xml_element_name().c_str()));
-
-    if (node.child("Detectors")) {
-      detectors.clear();
-      for (auto &q : node.child("Detectors").children()) {
-        Qpx::Detector det;
-        det.from_xml(q);
-        detectors.push_back(det);
-      }
-    }
-  }
-};
-
 Project::Project(const Qpx::Project& other)
   : Project()
 {
@@ -412,30 +383,6 @@ void Project::from_xml(const pugi::xml_node &root, bool with_sinks, bool with_fu
   clear_helper();
 
 
-  //hackity hack hack HACK HACK !!!!!!!
-  //hackity hack hack HACK HACK !!!!!!!
-  std::map<std::string, Qpx::SettingMeta> setting_definitions_;
-  pugi::xml_document doc;
-  if (doc.load_file("/home/bdv/qpx/settings/devices/pixie4.set"))
-  {
-    pugi::xml_node froot = doc.first_child();
-    if (froot)
-    {
-      //      DBG << "will load metadata";
-      for (pugi::xml_node fnode : froot.children()) {
-        if (fnode.name() && (std::string(fnode.name()) == SettingMeta().xml_element_name())) {
-          SettingMeta newset(fnode);
-          //          DBG << "loading " << newset.id_;
-          if (newset != SettingMeta())
-            setting_definitions_[newset.id_] = newset;
-        }
-      }
-    }
-  }
-  //hackity hack hack HACK HACK !!!!!!!
-  //hackity hack hack HACK HACK !!!!!!!
-
-
   if (root.child("Spills")) {
     for (auto &s : root.child("Spills").children()) {
       Spill sp;
@@ -445,65 +392,6 @@ void Project::from_xml(const pugi::xml_node &root, bool with_sinks, bool with_fu
     }
   }
 
-  //backwards compat
-  RunInfo ri;
-  if (root.child("RunInfo")) {
-    ri.from_xml(root.child("RunInfo"));
-    Spill sp;
-    if (!ri.time.is_not_a_date_time()) {
-      sp.time = ri.time;
-      sp.detectors = ri.detectors;
-      sp.state = ri.state;
-      if (sp.detectors.empty())
-        sp.detectors.resize(4, Detector("unknown"));
-      StatsUpdate su;
-      su.lab_time = sp.time;
-      su.stats_type = StatsType::start;
-      for (int i=0; i < 4; i++)
-      {
-        su.source_channel = i;
-        sp.stats[i] = su;
-      }
-      spills_.insert(sp);
-    }
-  } else if (root.child("Run")) {
-    ri.from_xml(root.child("Run"));
-    Spill sp;
-    if (!ri.time.is_not_a_date_time()) {
-      sp.time = ri.time;
-      sp.detectors = ri.detectors;
-      sp.state = ri.state;
-      if (sp.detectors.empty())
-        sp.detectors.resize(4, Detector("unknown"));
-      StatsUpdate su;
-      su.lab_time = sp.time;
-      su.stats_type = StatsType::start;
-      for (int i=0; i < 4; i++)
-      {
-        su.source_channel = i;
-        sp.stats[i] = su;
-      }
-      spills_.insert(sp);
-    }
-  }
-
-  if (spills_.empty()) { //backwrds compat
-    Spill sp;
-    sp.detectors.resize(4, Detector("unknown"));
-    spills_.insert(sp);
-  }
-
-  std::set<Spill> spills;
-  for (auto sp : spills_)
-  {
-    for (auto &s : sp.state.branches.my_data_)
-    {
-      DBG << "Attempting to enrich " << s.id_;
-      s.enrich(setting_definitions_);
-    }
-    spills.insert(sp);
-  }
-  spills_ = spills;
 
   if (!with_sinks)
     return;
@@ -516,8 +404,8 @@ void Project::from_xml(const pugi::xml_node &root, bool with_sinks, bool with_fu
     sinksnode = root.child("Sinks");   //current, ok
 
   for (pugi::xml_node &child : sinksnode.children()) {
-    if (child.child("ChannelData") && !with_full_sinks)
-      child.remove_child("ChannelData");
+    if (child.child("Data") && !with_full_sinks)
+      child.remove_child("Data");
 
     if (child.attribute("idx"))
       current_index_ = child.attribute("idx").as_llong();
@@ -533,10 +421,6 @@ void Project::from_xml(const pugi::xml_node &root, bool with_sinks, bool with_fu
         Spill sp = s;
         if (!sink->metadata().detectors.empty()) //backwards compat
           sp.detectors.clear();
-        //          else {
-        //            for (auto &d : sp.detectors)
-        //              d.energy_calibrations_.add(Qpx::Calibration("Energy", sink->metadata().bits));
-        //          }
         sink->push_spill(sp);
       }
       sinks_[current_index_] = sink;

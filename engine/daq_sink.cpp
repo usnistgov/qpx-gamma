@@ -103,7 +103,7 @@ void Metadata::set_attributes(const Setting &settings)
     set_attribute(settings);
 }
 
-void Metadata::overwrite_all_attributes(const Setting &settings)
+void Metadata::overwrite_all_attributes(Setting settings)
 {
   attributes_ = settings;
 }
@@ -431,29 +431,26 @@ bool Sink::from_xml(const pugi::xml_node &node) {
   if (node.child(metadata_.xml_element_name().c_str()))
     metadata_.from_xml(node.child(metadata_.xml_element_name().c_str()));
 
-  if (node.child(metadata_.attributes().xml_element_name().c_str()))
-  {
-    Setting attrs = metadata_.attributes();
-    attrs.from_xml(node.child(attrs.xml_element_name().c_str()));
-    metadata_.overwrite_all_attributes(attrs);
-  }
-  else if (node.child("attributes"))
+  if (node.child("attributes"))
   {
     Setting attrs = metadata_.attributes();
     attrs.from_xml(node.child("attributes"));
-    metadata_.overwrite_all_attributes(attrs);
+    metadata_.set_attributes(attrs);
+  }
+  else if (node.child(metadata_.attributes().xml_element_name().c_str()))
+  {
+    Setting attrs = metadata_.attributes();
+    attrs.from_xml(node.child(attrs.xml_element_name().c_str()));
+    metadata_.set_attributes(attrs);
   }
 
-  std::string numero;
 
   if (node.child("Name"))
   {
     Setting res = metadata_.get_attribute("name");
-    if (res.metadata.setting_type == SettingType::text)
-    {
-      res.value_text = std::string(node.child_value("Name"));
-      metadata_.set_attribute(res);
-    }
+    res.value_text = std::string(node.child_value("Name"));
+    metadata_.set_attribute(res);
+    DBG << "Name " << res.value_text;
   }
 
   if (node.child("TotalEvents")) {
@@ -473,110 +470,11 @@ bool Sink::from_xml(const pugi::xml_node &node) {
 
   if (node.child("Resolution")) {
     Setting res = metadata_.get_attribute("resolution");
-    if (res.metadata.setting_type == SettingType::int_menu)
-    {
-      res.value_int = boost::lexical_cast<short>(std::string(node.child_value("Resolution")));
-      metadata_.set_attribute(res);
-    }
+    res.value_int = boost::lexical_cast<short>(std::string(node.child_value("Resolution")));
+    metadata_.set_attribute(res);
+    DBG << "Resolution " << res.value_int;
   }
 
-  if (node.child("MatchPattern")) {
-    std::vector<int16_t> match_pattern;
-    std::stringstream pattern_match(node.child_value("MatchPattern"));
-    while (pattern_match.rdbuf()->in_avail()) {
-      pattern_match >> numero;
-      match_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
-    }
-
-    Pattern pattern_coinc_;
-    Pattern pattern_anti_;
-
-    pattern_coinc_.resize(match_pattern.size());
-    pattern_anti_.resize(match_pattern.size());
-
-    std::vector<bool> gts_co(match_pattern.size(), false);
-    std::vector<bool> gts_a(match_pattern.size(), false);
-    size_t thresh_co(0), thresh_a(0);
-
-    for (int i = 0; i < match_pattern.size(); ++i) {
-      if (match_pattern[i] > 0) {
-        gts_co[i] = true;
-        thresh_co++;
-      }
-      if (match_pattern[i] < 0) {
-        gts_a[i] = true;
-        thresh_a++;
-      }
-    }
-
-    pattern_coinc_.set_gates(gts_co);
-    pattern_coinc_.set_theshold(thresh_co);
-    pattern_anti_.set_gates(gts_a);
-    pattern_anti_.set_theshold(thresh_a);
-
-    Setting pattern;
-    pattern = metadata_.get_attribute("pattern_coinc");
-    pattern.value_pattern = pattern_coinc_;
-    metadata_.set_attribute(pattern);
-
-    pattern = metadata_.get_attribute("pattern_anti");
-    pattern.value_pattern = pattern_anti_;
-    metadata_.set_attribute(pattern);
-  }
-
-  if (node.child("AddPattern")) {
-    std::vector<int16_t> add_pattern;
-    std::stringstream pattern_add(node.child_value("AddPattern"));
-    while (pattern_add.rdbuf()->in_avail()) {
-      pattern_add >> numero;
-      add_pattern.push_back(boost::lexical_cast<short>(boost::algorithm::trim_copy(numero)));
-    }
-
-    Pattern pattern_add_;
-
-    pattern_add_.resize(add_pattern.size());
-    std::vector<bool> gts(add_pattern.size(), false);
-    size_t thresh(0);
-
-    for (int i = 0; i < add_pattern.size(); ++i) {
-      if (add_pattern[i] != 0) {
-        gts[i] = true;
-        thresh++;
-      }
-    }
-
-    pattern_add_.set_gates(gts);
-    pattern_add_.set_theshold(thresh);
-
-    Setting pattern;
-    pattern = metadata_.get_attribute("pattern_add");
-    pattern.value_pattern = pattern_add_;
-    metadata_.set_attribute(pattern);
-  }
-
-  if (node.child("StartTime")) {
-    Setting start_time = metadata_.get_attribute("start_time");
-    start_time.value_time = from_iso_extended(node.child_value("StartTime"));
-    metadata_.set_attribute(start_time);
-  }
-
-  if (node.child("RealTime")) {
-    Setting real_time = metadata_.get_attribute("real_time");
-    real_time.value_duration = boost::posix_time::duration_from_string(node.child_value("RealTime"));
-    metadata_.set_attribute(real_time);
-  }
-
-  if (node.child("LiveTime")) {
-    Setting live_time = metadata_.get_attribute("live_time");
-    live_time.value_duration = boost::posix_time::duration_from_string(node.child_value("LiveTime"));
-    metadata_.set_attribute(live_time);
-  }
-
-  if (node.child("RescaleFactor")) {
-    Setting rescale = metadata_.get_attribute("rescale");
-    rescale.value_precise = PreciseFloat(node.child_value("RescaleFactor"));
-    metadata_.set_attribute(rescale);
-  }
 
   if (node.child("Detectors")) {
     metadata_.detectors.clear();
@@ -587,26 +485,17 @@ bool Sink::from_xml(const pugi::xml_node &node) {
     }
   }
 
-  if (node.child("Appearance")) {
-    uint32_t col = boost::lexical_cast<unsigned int>(std::string(node.child_value("Appearance")));
-    Setting app = metadata_.get_attribute("appearance");
-    app.value_text = "#" + itohex32(col);
-    metadata_.set_attribute(app);
-  }
-
-  if (node.child("Visible")) {
-    Setting vis = metadata_.get_attribute("visible");
-    vis.value_int = boost::lexical_cast<bool>(std::string(node.child_value("Visible")));
-    metadata_.set_attribute(vis);
-  }
 
   std::string this_data;
-  if (node.child("ChannelData"))  //back compat
-    this_data = std::string(node.child_value("ChannelData"));
-  else if (node.child("Data"))   //current
+  if (node.child("Data"))   //current
     this_data = std::string(node.child_value("Data"));
+  else if (node.child("ChannelData"))   //back compat
+    this_data = std::string(node.child_value("ChannelData"));
   boost::algorithm::trim(this_data);
   this->_data_from_xml(this_data);
+
+
+//  DBG << "Settings just prior to init \n" + metadata_.attributes().debug();
 
   bool ret = this->_initialize();
 

@@ -254,8 +254,7 @@ std::string Spectrum1D::_data_to_xml() const {
 }
 
 uint16_t Spectrum1D::_data_from_xml(const std::string& thisData){
-  std::stringstream channeldata;
-  channeldata.str(thisData);
+  std::stringstream channeldata(thisData);
 
   bits_ = metadata_.get_attribute("resolution").value_int;
 
