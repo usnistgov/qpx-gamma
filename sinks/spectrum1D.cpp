@@ -53,17 +53,20 @@ Spectrum1D::Spectrum1D()
   base_options.branches.add(cutoff_bin);
 
   metadata_.overwrite_all_attributes(base_options);
+//  DBG << "<1D:" << metadata_.get_attribute("name").value_text << ">  made with dims=" << metadata_.dimensions();
 }
 
 void Spectrum1D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
+//  DBG << "<1D:" << metadata_.get_attribute("name").value_text << "> dims=" << metadata_.dimensions();
   metadata_.detectors.resize(metadata_.dimensions(), Qpx::Detector());
 
   if (dets.size() == metadata_.dimensions())
     metadata_.detectors = dets;
   if (dets.size() >= metadata_.dimensions()) {
 
-    for (int i=0; i < dets.size(); ++i) {
-      if (pattern_add_.relevant(i)) {
+    for (int i=0; i < dets.size(); ++i)
+    {
+      if (metadata_.chan_relevant(i)) {
         metadata_.detectors[0] = dets[i];
         break;
       }

@@ -14,7 +14,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Spectra definitions</string>
+   <string>Data sink definitions</string>
   </property>
   <property name="windowIcon">
    <iconset>

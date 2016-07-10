@@ -74,6 +74,7 @@ protected:
   int     bits_;
   int     spill_interval_;
   double  scale_rate_;
+  double  lambda_;
   int     chan0_;
   int     chan1_;
   int     coinc_thresh_;

@@ -48,10 +48,23 @@ SpectrumTime::SpectrumTime()
   base_options.branches.add(format_setting);
 
   metadata_.overwrite_all_attributes(base_options);
+//  DBG << "<SpectrumTime:" << metadata_.get_attribute("name").value_text << ">  made with dims=" << metadata_.dimensions();
 }
 
 bool SpectrumTime::_initialize() {
   Spectrum::_initialize();
+
+  int adds = 0;
+  std::vector<bool> gts = pattern_add_.gates();
+  for (int i=0; i < gts.size(); ++i)
+    if (gts[i])
+      adds++;
+
+  if (adds != 1) {
+    WARN << "<SpectrumTime> Cannot initialize. Add pattern must have 1 selected channel.";
+    return false;
+  }
+
   codomain = metadata_.get_attribute("co-domain").value_int;
   return true;
 }
@@ -128,9 +141,8 @@ void SpectrumTime::_append(const Entry& e) {
 
 void SpectrumTime::_push_stats(const StatsUpdate& newStats)
 {
-
-  if (pattern_add_.relevant(newStats.source_channel)) {
-
+  if (pattern_add_.relevant(newStats.source_channel))
+  {
     PreciseFloat real = 0;
     PreciseFloat live = 0;
     PreciseFloat percent_dead = 0;

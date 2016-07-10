@@ -99,6 +99,7 @@ void QpxSpecialDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
       std::string raw_txt = itemData.val_to_pretty_string();
       if (raw_txt.size() > 32)
         raw_txt = raw_txt.substr(0,32) + "...";
+      raw_txt = " " + raw_txt + " ";
       QString text = QString::fromStdString(raw_txt);
 
       painter->save();
@@ -188,6 +189,7 @@ QSize QpxSpecialDelegate::sizeHint(const QStyleOptionViewItem &option,
       std::string raw_txt = itemData.val_to_pretty_string();
       if (raw_txt.size() > 32)
         raw_txt = raw_txt.substr(0,32) + "...";
+      raw_txt = " " + raw_txt + " ";
       QString text = QString::fromStdString(raw_txt);
 
       QRect r = option.rect;
@@ -253,10 +255,16 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
         editor->addItem(name, name);
       }
       return editor;
-    } else if (set.metadata.setting_type == Qpx::SettingType::boolean) {
-      QCheckBox *editor = new QCheckBox(parent);
+    }
+    else if (set.metadata.setting_type == Qpx::SettingType::boolean)
+    {
+      QComboBox *editor = new QComboBox(parent);
+      editor->addItem("True", QVariant::fromValue(true));
+      editor->addItem("False", QVariant::fromValue(false));
       return editor;
-    } else if (set.metadata.setting_type == Qpx::SettingType::file_path) {
+    }
+    else if (set.metadata.setting_type == Qpx::SettingType::file_path)
+    {
       QFileDialog *editor = new QFileDialog(parent, QString("Chose File"),
                                             QFileInfo(QString::fromStdString(set.value_text)).dir().absolutePath(),
                                             QString::fromStdString(set.metadata.unit));
@@ -293,11 +301,20 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
   if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
       Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
-      if (set.metadata.setting_type == Qpx::SettingType::detector) {
+      if (set.metadata.setting_type == Qpx::SettingType::detector)
+      {
         int cbIndex = cb->findText(QString::fromStdString(set.value_text));
         if(cbIndex >= 0)
           cb->setCurrentIndex(cbIndex);
-      } else if (set.metadata.int_menu_items.count(set.value_int)) {
+      }
+      else if (set.metadata.setting_type == Qpx::SettingType::boolean)
+      {
+        int cbIndex = cb->findData(QVariant::fromValue(set.value_int != 0));
+        if(cbIndex >= 0)
+          cb->setCurrentIndex(cbIndex);
+      }
+      else if (set.metadata.int_menu_items.count(set.value_int))
+      {
         int cbIndex = cb->findText(QString::fromStdString(set.metadata.int_menu_items[set.value_int]));
         if(cbIndex >= 0)
           cb->setCurrentIndex(cbIndex);
@@ -355,15 +372,11 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
       le->setText(text.trimmed());
     } else
       le->setText(index.data(Qt::EditRole).toString());
-  } else if (QCheckBox *cb = qobject_cast<QCheckBox *>(editor)) {
-    if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
-      Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
-      cb->setChecked(set.value_int);
-    } else
-      cb->setChecked(index.data(Qt::EditRole).toBool());
-  } else {
-    QStyledItemDelegate::setEditorData(editor, index);
   }
+  else if (QCheckBox *cb = qobject_cast<QCheckBox *>(editor))
+    cb->setChecked(index.data(Qt::EditRole).toBool());
+  else
+    QStyledItemDelegate::setEditorData(editor, index);
 }
 
 void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *model, const QModelIndex &index ) const
@@ -373,7 +386,9 @@ void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *mod
   } else if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
       Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
-      if (cb->currentData().type() == QMetaType::Int)
+      if (cb->currentData().type() == QMetaType::Bool)
+        model->setData(index, QVariant::fromValue(cb->currentData().toBool()), Qt::EditRole);
+      else if (cb->currentData().type() == QMetaType::Int)
         model->setData(index, QVariant::fromValue(cb->currentData().toInt()), Qt::EditRole);
       else if (cb->currentData().type() == QMetaType::Double)
         model->setData(index, QVariant::fromValue(cb->currentData().toDouble()), Qt::EditRole);

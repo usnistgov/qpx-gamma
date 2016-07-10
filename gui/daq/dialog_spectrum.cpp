@@ -86,6 +86,23 @@ DialogSpectrum::DialogSpectrum(Metadata sink_metadata,
     col.value_text = generateColor().name(QColor::HexArgb).toStdString();
     sink_metadata_.set_attribute(col);
   }
+  else
+  {
+    Metadata md = SinkFactory::getInstance().create_prototype(sink_metadata.type());
+    if (md != Metadata()) {
+      md.set_attributes(sink_metadata_.attributes());
+      md.detectors = sink_metadata.detectors;
+
+      sink_metadata_ = md;
+    }
+    else
+    {
+      QMessageBox msgBox;
+      msgBox.setText("Bad data sink type");
+      msgBox.exec();
+      reject();
+    }
+  }
 
   updateData();
 }
@@ -110,16 +127,17 @@ void DialogSpectrum::updateData() {
   Qpx::Setting pat = sink_metadata_.get_attribute("pattern_add");
   ui->spinDets->setValue(pat.value_pattern.gates().size());
 
-  QString descr = "[dim:" + QString::number(sink_metadata_.dimensions()) + "] " + QString::fromStdString(sink_metadata_.type_description()) + "\n";
+  QString descr = QString::fromStdString(sink_metadata_.type_description()) + "\n"
+      + "dimensions = " + QString::number(sink_metadata_.dimensions()) + "\n";
 
-//  if (sink_metadata_.output_types().size()) {
-//    descr += "\t\tOutput file types: ";
-//    for (auto &q : sink_metadata_.output_types()) {
-//      descr += "*." + QString::fromStdString(q);
-//      if (q != sink_metadata_.output_types().back())
-//        descr += ", ";
-//    }
-//  }
+  if (sink_metadata_.output_types().size()) {
+    descr += "\t\tOutput file types: ";
+    for (auto &q : sink_metadata_.output_types()) {
+      descr += "*." + QString::fromStdString(q);
+      if (q != sink_metadata_.output_types().back())
+        descr += ", ";
+    }
+  }
 
   ui->labelDescription->setText(descr);
 

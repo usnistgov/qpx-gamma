@@ -44,7 +44,7 @@ int TableSpectraTemplates::rowCount(const QModelIndex & /*parent*/) const
 
 int TableSpectraTemplates::columnCount(const QModelIndex & /*parent*/) const
 {
-  return 8;
+  return 6;
 }
 
 QVariant TableSpectraTemplates::data(const QModelIndex &index, int role) const
@@ -52,13 +52,32 @@ QVariant TableSpectraTemplates::data(const QModelIndex &index, int role) const
   int row = index.row();
   int col = index.column();
 
-  if (role == Qt::DisplayRole)
+  if (role == Qt::BackgroundColorRole)
+  {
+    if (col == 0)
+    {
+      if (templates_.get(row).get_attribute("visible").value_int)
+        return QColor(QString::fromStdString(templates_.get(row).get_attribute("appearance").value_text));
+      else
+        return QColor(Qt::black);
+    }
+    else
+      return QVariant();
+  }
+  else if (role == Qt::ForegroundRole)
+  {
+    if (col == 0)
+      return QColor(Qt::white);
+    else
+      return QVariant();
+  }
+  else if (role == Qt::DisplayRole)
   {
     switch (col) {
     case 0:
-      return QString::fromStdString(templates_.get(row).type());
+      return QString::fromStdString(" " + templates_.get(row).get_attribute("name").value_text + " ");
     case 1:
-      return QVariant::fromValue(templates_.get(row).get_attribute("name"));
+      return QString::fromStdString(templates_.get(row).type());
     case 2:
       return QVariant::fromValue(templates_.get(row).get_attribute("resolution"));
     case 3:
@@ -67,12 +86,7 @@ QVariant TableSpectraTemplates::data(const QModelIndex &index, int role) const
       return QVariant::fromValue(templates_.get(row).get_attribute("pattern_anti"));
     case 5:
       return QVariant::fromValue(templates_.get(row).get_attribute("pattern_add"));
-    case 6:
-      return QVariant::fromValue(templates_.get(row).get_attribute("appearance"));
-    case 7:
-      return QVariant::fromValue(templates_.get(row).get_attribute("visible"));
     }
-
   }
   return QVariant();
 }
@@ -85,21 +99,17 @@ QVariant TableSpectraTemplates::headerData(int section, Qt::Orientation orientat
       switch (section)
       {
       case 0:
-        return QString("type");
-      case 1:
         return QString("name");
+      case 1:
+        return QString("type");
       case 2:
-        return QString("bits");
+        return QString("resolution");
       case 3:
         return QString("coinc");
       case 4:
         return QString("anti");
       case 5:
         return QString("add");
-      case 6:
-        return QString("appearance");
-      case 7:
-        return QString("default plot");
       }
     } else if (orientation == Qt::Vertical) {
       return QString::number(section);

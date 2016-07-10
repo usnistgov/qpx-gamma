@@ -264,7 +264,10 @@ void Project::set_prototypes(const XMLableDB<Metadata>& prototypes) {
   for (int i=0; i < prototypes.size(); i++) {
     SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_prototype(prototypes.get(i));
     if (sink)
+    {
+      DBG << "Adding sink";
       sinks_[++current_index_] = sink;
+    }
   }
 
   changed_ = true;

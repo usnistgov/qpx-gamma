@@ -342,7 +342,7 @@ void FormPlot2D::update_plot(bool force) {
     replot_markers();
   }
 
-  DBG << "<Plot2D> plotting took " << guiside.ms() << " ms";
+//  DBG << "<Plot2D> plotting took " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
 }
 

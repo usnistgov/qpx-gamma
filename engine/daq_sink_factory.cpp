@@ -44,6 +44,7 @@ SinkPtr SinkFactory::create_copy(SinkPtr other)
 
 SinkPtr SinkFactory::create_from_prototype(const Metadata& tem)
 {
+//  DBG << "<SinkFactory> creating " << tem.type();
   SinkPtr instance = create_type(tem.type());
   if (instance && instance->from_prototype(tem))
     return instance;

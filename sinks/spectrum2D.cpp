@@ -73,7 +73,7 @@ bool Spectrum2D::_initialize() {
       adds++;
 
   if (adds != 2) {
-    WARN << "Invalid 2D spectrum created (bad add pattern)";
+    WARN << "<Spectrum2D> Cannot initialize. Add pattern must have 2 selected channels.";
     return false;
   }
   

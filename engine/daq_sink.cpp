@@ -280,13 +280,13 @@ bool Sink::from_prototype(const Metadata& newtemplate) {
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
 
-  if ((metadata_.type() != newtemplate.type()) ||
-      (this->my_type() != newtemplate.type()))
+  if (metadata_.type() != newtemplate.type())
     return false;
 
-  metadata_ = newtemplate;
+  metadata_.set_attributes(newtemplate.attributes());
   metadata_.detectors.clear(); // really?
   return (this->_initialize());
+//  DBG << "<Sink::from_prototype>" << metadata_.get_attribute("name").value_text << " made with dims=" << metadata_.dimensions();
 }
 
 void Sink::push_spill(const Spill& one_spill) {

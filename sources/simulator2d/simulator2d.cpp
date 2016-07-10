@@ -48,16 +48,12 @@ Simulator2D::Simulator2D() {
   coinc_thresh_ = 3;
   gain0_ = 100;
   gain1_ = 100;
+  lambda_ = 0;
 }
 
-bool Simulator2D::die() {
-
-  status_ = SourceStatus::loaded; // | SourceStatus::can_boot;
-  //  for (auto &q : set.branches.my_data_) {
-  //    if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "Simulator2D/Source file"))
-  //      q.metadata.writable = true;
-  //  }
-
+bool Simulator2D::die()
+{
+  status_ = SourceStatus::loaded;
   return true;
 }
 
@@ -114,32 +110,44 @@ bool Simulator2D::daq_running() {
 bool Simulator2D::read_settings_bulk(Qpx::Setting &set) const {
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
-      if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "Simulator2D/SpillInterval"))
+      if (q.id_ == "Simulator2D/SpillInterval")
         q.value_int = spill_interval_;
-      else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "Simulator2D/Resolution"))
+      else if (q.id_ == "Simulator2D/Resolution")
+      {
         q.value_int = bits_;
-      else if ((q.metadata.setting_type == Qpx::SettingType::floating) && (q.id_ == "Simulator2D/ScaleRate"))
+        q.metadata.writable = !(status_ & SourceStatus::booted);
+      }
+      else if (q.id_ == "Simulator2D/ScaleRate")
         q.value_dbl = scale_rate_;
-      else if ((q.metadata.setting_type == Qpx::SettingType::floating) && (q.id_ == "Simulator2D/Gain0")) {
+      else if (q.id_ == "Simulator2D/Gain0")
+      {
         q.value_dbl = gain0_;
         q.indices.clear();
         q.indices.insert(chan0_);
       }
-      else if ((q.metadata.setting_type == Qpx::SettingType::floating) && (q.id_ == "Simulator2D/Gain1")) {
+      else if (q.id_ == "Simulator2D/Gain1")
+      {
         q.value_dbl = gain1_;
         q.indices.clear();
         q.indices.insert(chan1_);
       }
-      else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "Simulator2D/CoincThresh"))
+      else if (q.id_ == "Simulator2D/CoincThresh")
         q.value_int = coinc_thresh_;
-      else if ((q.metadata.setting_type == Qpx::SettingType::floating) && (q.id_ == "Simulator2D/TimebaseMult"))
+      else if (q.id_ == "Simulator2D/TimebaseMult")
         q.value_dbl = model_hit.timebase.timebase_multiplier();
-      else if ((q.metadata.setting_type == Qpx::SettingType::floating) && (q.id_ == "Simulator2D/TimebaseDiv"))
+      else if (q.id_ == "Simulator2D/TimebaseDiv")
         q.value_dbl = model_hit.timebase.timebase_divider();
-      else if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "Simulator2D/Source file"))
+      else if (q.id_ == "Simulator2D/Lambda")
+        q.value_dbl = lambda_;
+      else if (q.id_ == "Simulator2D/Source file")
+      {
         q.value_text = source_file_;
-      else if ((q.metadata.setting_type == Qpx::SettingType::int_menu) && (q.id_ == "Simulator2D/Source spectrum")) {
+        q.metadata.writable = !(status_ & SourceStatus::booted);
+      }
+      else if (q.id_ == "Simulator2D/Source spectrum")
+      {
         q.metadata.int_menu_items = spectra_names_;
+        q.metadata.writable = !(status_ & SourceStatus::booted);
         if (spectra_names_.count(source_spectrum_))
           q.value_int = source_spectrum_;
         else
@@ -170,8 +178,6 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
     }
     else if (q.id_ == "Simulator2D/Gain0") {
       gain0_ = q.value_dbl;
-      //      if (gain0_ > 100)
-      //        gain0_ = 100;
       chan0_ = -1;
       for (auto &i : q.indices)
         chan0_ = i;
@@ -190,6 +196,8 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
       timebase_divider = q.value_dbl;
     else if (q.id_ == "Simulator2D/ScaleRate")
       scale_rate_ = q.value_dbl;
+    else if (q.id_ == "Simulator2D/Lambda")
+      lambda_ = q.value_dbl;
     else if (q.id_ == "Simulator2D/Source file") {
       if (q.value_text != source_file_) {
         Qpx::Project temp_set;
@@ -197,15 +205,13 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
 
         spectra_names_.clear();
 
-        for (auto &q: temp_set.get_sinks(2)) {
+        for (auto &q: temp_set.get_sinks(2))
+        {
           Qpx::Metadata md = q.second->metadata();
-//          DBG << "<Simulator2D> Spectrum available: " << md.name << " t:" << md.type() << " r:" << md.bits;
           spectra_names_[q.first] = md.get_attribute("name").value_text
-              + " ("
-              + md.get_attribute("resolution").val_to_pretty_string()
-              + ")";
+              + "  "
+              + md.get_attribute("resolution").val_to_pretty_string();
         }
-
         if (!spectra_names_.empty())
           status_ = status_ | SourceStatus::can_boot;
       }
@@ -319,7 +325,8 @@ void Simulator2D::get_all_settings() {
 void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* spill_queue) {
   bool timeout = false;
 
-  uint64_t   rate = callback->OCR * callback->scale_rate_;
+  double   rate0 = callback->OCR * callback->scale_rate_ * 0.01;
+  double   lambda = callback->lambda_;
   StatsUpdate moving_stats,
       one_run = callback->getBlock(callback->spill_interval_ * 0.999);
 
@@ -328,7 +335,8 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
   DBG << "<Simulator2D> Start run   "
       << "  gains " << callback->gain0_ << " " << callback->gain1_
       << "  timebase " << callback->model_hit.timebase.to_string() << "ns"
-      << "  rate " << rate << " cps";
+      << "  init_rate=" << rate0 << " cps"
+      << "  lambda=" << lambda;
 
   one_spill = Spill();
   moving_stats.model_hit = callback->model_hit;
@@ -342,8 +350,14 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
 
   spill_queue->enqueue(new Spill(one_spill));
 
-  while (!timeout) {
+  CustomTimer timer(true);
+  while (!timeout)
+  {
+    uint64_t rate = rate0 * exp(0.0 - lambda * timer.s());
     boost::this_thread::sleep(boost::posix_time::seconds(callback->spill_interval_));
+
+    DBG << "<Simulator2D> s=" << timer.s() << " exp=" << exp(0.0 - lambda * timer.s())
+        << "  current rate = " << rate;
 
     one_spill = Spill();
 
@@ -356,9 +370,12 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
         en1 = en1 << callback->shift_by_;
         en2 = en2 << callback->shift_by_;
 
-        if (callback->shift_by_) {
-          en1 += callback->refined_dist_(callback->gen);
-          en2 += callback->refined_dist_(callback->gen);
+        if (callback->shift_by_)
+        {
+          if (en1)
+            en1 += callback->refined_dist_(callback->gen);
+          if (en2)
+            en2 += callback->refined_dist_(callback->gen);
         }
 
         callback->push_hit(one_spill, en1, en2);
@@ -395,7 +412,8 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
 
 void Simulator2D::push_hit(Spill& one_spill, uint16_t en1, uint16_t en2)
 {
-  if (en1 > 0) {
+  if (en1 > 0)
+  {
     Hit h(chan0_, model_hit);
     h.set_timestamp_native(clock_);
     h.set_value(0, round(en1 * gain0_ * 0.01));
@@ -404,7 +422,8 @@ void Simulator2D::push_hit(Spill& one_spill, uint16_t en1, uint16_t en2)
     one_spill.hits.push_back(h);
   }
 
-  if (en2 > 0) {
+  if (en2 > 0)
+  {
     Hit h(chan1_, model_hit);
     h.set_timestamp_native(clock_);
     h.set_value(0, round(en2 * gain1_ * 0.01));
@@ -432,15 +451,14 @@ void Simulator2D::make_trace(Hit& h, uint16_t baseline)
   h.set_trace(trc);
 }
 
-
-
 Spill Simulator2D::get_spill() {
   Spill one_spill;
 
   return one_spill;
 }
 
-StatsUpdate Simulator2D::getBlock(double duration) {
+StatsUpdate Simulator2D::getBlock(double duration)
+{
   StatsUpdate newBlock;
 
   double fraction;

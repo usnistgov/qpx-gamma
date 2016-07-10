@@ -488,9 +488,9 @@ std::string Setting::val_to_string() const
   std::stringstream ss;
   if (metadata.setting_type == SettingType::boolean) {
     if (value_int != 0)
-      ss << "true";
+      ss << "True";
     else
-      ss << "false";
+      ss << "False";
   }
   else if ((metadata.setting_type == SettingType::integer) ||
            (metadata.setting_type == SettingType::int_menu) ||
