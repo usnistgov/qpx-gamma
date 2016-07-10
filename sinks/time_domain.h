@@ -27,14 +27,14 @@
 
 namespace Qpx {
 
-class TimeSpectrum : public Spectrum
+class TimeDomain : public Spectrum
 {
 public:
-  TimeSpectrum();
-  TimeSpectrum* clone() const override { return new TimeSpectrum(*this); }
+  TimeDomain();
+  TimeDomain* clone() const override { return new TimeDomain(*this); }
   
 protected:
-  std::string my_type() const override {return "TimeSpectrum";}
+  std::string my_type() const override {return "Time";}
 
   bool _initialize() override;
 
@@ -44,16 +44,15 @@ protected:
   void _set_detectors(const std::vector<Qpx::Detector>& dets) override;
 
   //event processing
-  void addEvent(const Event&) override;
-  virtual void addHit(const Hit&);
+  void addEvent(const Event&) override { /*total_hits_++;*/ }
   void _push_stats(const StatsUpdate&) override;
 
   std::string _data_to_xml() const override;
   uint16_t _data_from_xml(const std::string&) override;
 
-//  std::vector<PreciseFloat> current_spectrum_;
+  int codomain;
 
-  std::vector<std::vector<PreciseFloat>> spectra_;
+  std::vector<PreciseFloat> spectrum_;
   std::vector<PreciseFloat> counts_;
   std::vector<PreciseFloat> seconds_;
   std::vector<StatsUpdate>  updates_;
@@ -61,4 +60,4 @@ protected:
 
 }
 
-#endif // TimeSpectrum_H
+#endif // TimeDomain_H

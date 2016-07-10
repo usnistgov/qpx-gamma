@@ -252,9 +252,12 @@ void Spectrum2D::addEvent(const Event& newEvent) {
     chan2_en = newEvent.hits.at(pattern_[1]).value(energy_idx_.at(pattern_[1])).val(bits_);
   spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] += 1;
   if (buffered_)
-    temp_spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)] =
-        spectrum_[std::pair<uint16_t, uint16_t>(chan1_en,chan2_en)];
-  //metadata_.total_count++;
+    temp_spectrum_[std::pair<uint16_t, uint16_t>(chan1_en, chan2_en)] =
+        spectrum_[std::pair<uint16_t, uint16_t>(chan1_en, chan2_en)];
+  if (chan1_en)
+    total_hits_++;
+  if (chan2_en)
+    total_hits_++;
 }
 
 bool Spectrum2D::_write_file(std::string dir, std::string format) const {

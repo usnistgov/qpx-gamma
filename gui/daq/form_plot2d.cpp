@@ -300,6 +300,8 @@ void FormPlot2D::update_plot(bool force) {
 
     uint16_t newbits = md.get_attribute("resolution").value_int;
 
+//    DBG << "Bits = " << newbits;
+
     if ((md.dimensions() == 2) && (adjrange = pow(2,newbits) * zoom_2d))
     {
 //      DBG << "really really updating 2d total count = " << some_spectrum->total_count();
@@ -313,6 +315,9 @@ void FormPlot2D::update_plot(bool force) {
       std::shared_ptr<EntryList> spectrum_data =
           std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
       ui->coincPlot->update_plot(adjrange, adjrange, spectrum_data);
+
+//      DBG << "adjrange = " << adjrange;
+//      DBG << "spectrum data size = " << spectrum_data->size();
 
       if (rescale2d || force /*|| (name_2d != newname)*/) {
 //        DBG << "rescaling 2d";
@@ -418,6 +423,8 @@ void FormPlot2D::set_zoom(double zm) {
   if (zm > 1.0)
     zm = 1.0;
   new_zoom = zm;
+  ui->toolCrop->setText(QString::number(zm * 100) + "% ");
+  crop_slider_->setValue(zm * 100);
   if (this->isVisible() && (mySpectra != nullptr))
     mySpectra->activate();
 }

@@ -27,31 +27,19 @@
 
 namespace Qpx {
 
-static SinkRegistrar<SpectrumTime> registrar("Time");
+static SinkRegistrar<TimeSpectrum> registrar("TimeSpectrum");
 
-SpectrumTime::SpectrumTime()
-  : codomain(0)
+TimeSpectrum::TimeSpectrum()
 {
   Setting base_options = metadata_.attributes();
-  metadata_ = Metadata("Time", "Time-domain log of activity", 1,
+  metadata_ = Metadata("TimeSpectrum", "Set of spectra in time series", 2,
                     {}, {});
 
-  Qpx::Setting format_setting;
-  format_setting.id_ = "co-domain";
-  format_setting.metadata.setting_type = Qpx::SettingType::int_menu;
-  format_setting.metadata.writable = true;
-  format_setting.metadata.flags.insert("preset");
-  format_setting.metadata.description = "Choice of dependent variable";
-  format_setting.value_int = 0;
-  format_setting.metadata.int_menu_items[0] = "event rate";
-  format_setting.metadata.int_menu_items[1] = "% dead-time";
-  base_options.branches.add(format_setting);
-
   metadata_.overwrite_all_attributes(base_options);
-//  DBG << "<SpectrumTime:" << metadata_.get_attribute("name").value_text << ">  made with dims=" << metadata_.dimensions();
+//  DBG << "<TimeSpectrum:" << metadata_.get_attribute("name").value_text << ">  made with dims=" << metadata_.dimensions();
 }
 
-bool SpectrumTime::_initialize() {
+bool TimeSpectrum::_initialize() {
   Spectrum::_initialize();
 
   int adds = 0;
@@ -61,85 +49,117 @@ bool SpectrumTime::_initialize() {
       adds++;
 
   if (adds != 1) {
-    WARN << "<SpectrumTime> Cannot initialize. Add pattern must have 1 selected channel.";
+    WARN << "<TimeSpectrum> Cannot initialize. Add pattern must have 1 selected channel.";
     return false;
   }
 
-  codomain = metadata_.get_attribute("co-domain").value_int;
   return true;
 }
 
 
-void SpectrumTime::_set_detectors(const std::vector<Qpx::Detector>& dets) {
+void TimeSpectrum::_set_detectors(const std::vector<Qpx::Detector>& dets)
+{
   metadata_.detectors.resize(metadata_.dimensions(), Qpx::Detector());
 
   if (dets.size() == metadata_.dimensions())
     metadata_.detectors = dets;
-  if (dets.size() >= metadata_.dimensions()) {
-
+  else if (dets.size() > metadata_.dimensions()) {
+    int j=0;
     for (int i=0; i < dets.size(); ++i) {
       if (pattern_add_.relevant(i)) {
-        metadata_.detectors[0] = dets[i];
-        break;
+        metadata_.detectors[j] = dets[i];
+        j++;
+        if (j >= metadata_.dimensions())
+          break;
       }
     }
   }
 
-  axes_.resize(1);
-  axes_[0].clear();
-  for (auto &q : seconds_)
-    axes_[0].push_back(q.convert_to<double>());
-
-//  DBG << "<SpectrumTime> _set_detectors";
+  this->_recalc_axes();
 }
 
-PreciseFloat SpectrumTime::_data(std::initializer_list<uint16_t> list) const {
-  if (list.size() != 1)
+PreciseFloat TimeSpectrum::_data(std::initializer_list<uint16_t> list) const {
+  if (list.size() != 2)
     return 0;
-  
-  uint32_t chan = *list.begin();
-  if (chan >= spectrum_.size())
+
+  std::vector<uint16_t> coords(list.begin(), list.end());
+
+  if (coords[0] >= spectra_.size())
     return 0;
-  else
-    return spectrum_[chan];
+
+  if (coords[1] >= spectra_.at(coords[0]).size())
+    return 0;
+
+  return spectra_.at(coords[0]).at(coords[1]);
 }
 
-std::unique_ptr<std::list<Entry>> SpectrumTime::_data_range(std::initializer_list<Pair> list) {
-  int min, max;
-  if (list.size() != 1) {
-    min = 0;
-    max = spectrum_.size();
+std::unique_ptr<std::list<Entry>> TimeSpectrum::_data_range(std::initializer_list<Pair> list)
+{
+  int min0, min1, max0, max1;
+  if (list.size() != 2)
+  {
+    min0 = min1 = 0;
+    max0 = spectra_.size();
+    max1 = pow(2, bits_);
   } else {
-    Pair range = *list.begin();
-    min = range.first;
-    max = range.second;
+    Pair range0 = *list.begin(), range1 = *(list.begin()+1);
+    min0 = range0.first; max0 = range0.second;
+    min1 = range1.first; max1 = range1.second;
   }
 
-  if (max >= spectrum_.size())
-    max = spectrum_.size() - 1;
+  if (max0 >= spectra_.size())
+    max0 = spectra_.size();
+  if (max1 >= pow(2, bits_))
+    max1 = pow(2, bits_);
 
-  //in range?
-  
   std::unique_ptr<std::list<Entry>> result(new std::list<Entry>);
-  for (int i=min; i <= max; i++) {
-    Entry newentry;
-    newentry.first.resize(1, 0);
-    newentry.first[0] = i;
-    newentry.second = spectrum_[i];
-    result->push_back(newentry);
+//  CustomTimer makelist(true);
+
+  for (size_t i = min0; i < max0; ++i)
+  {
+    for (size_t j = min1; j < max1; ++j)
+    {
+      PreciseFloat val = spectra_.at(i).at(j);
+      if (val.convert_to<double>() == 0)
+        continue;
+      Entry newentry;
+      newentry.first.resize(2, 0);
+      newentry.first[0] = i;
+      newentry.first[1] = j;
+      newentry.second = val;
+      result->push_back(newentry);
+    }
   }
+
   return result;
 }
 
-void SpectrumTime::_append(const Entry& e) {
-  for (int i = 0; i < e.first.size(); ++i)
-    if (pattern_add_.relevant(i) && (e.first[i] < spectrum_.size())) {
-//      spectrum_[e.first[i]] += e.second;
-//      metadata_.total_count += e.second;
-    }
+void TimeSpectrum::_append(const Entry& e)
+{
+  //do this
 }
 
-void SpectrumTime::_push_stats(const StatsUpdate& newStats)
+void TimeSpectrum::addHit(const Hit& newHit)
+{
+  uint16_t en = newHit.value(energy_idx_.at(newHit.source_channel())).val(bits_);
+//  if (en < cutoff_bin_)
+//    return;
+
+  spectra_[spectra_.size()-1][en]++;
+  total_hits_++;
+
+//  if (en > maxchan_)
+//    maxchan_ = en;
+}
+
+void TimeSpectrum::addEvent(const Event& newEvent)
+{
+  for (auto &h : newEvent.hits)
+    if (pattern_add_.relevant(h.first))
+      this->addHit(h.second);
+}
+
+void TimeSpectrum::_push_stats(const StatsUpdate& newStats)
 {
   if (pattern_add_.relevant(newStats.source_channel))
   {
@@ -148,11 +168,13 @@ void SpectrumTime::_push_stats(const StatsUpdate& newStats)
     PreciseFloat percent_dead = 0;
     PreciseFloat tot_time = 0;
 
+    spectra_.push_back(std::vector<PreciseFloat>(pow(2, bits_)));
+
     if (!updates_.empty()) {
-      if ((newStats.stats_type == StatsType::stop) && (updates_.back().stats_type == StatsType::running)) {
+      if ((newStats.stats_type == StatsType::stop) && (updates_.back().stats_type == StatsType::running))
+      {
         updates_.pop_back();
         seconds_.pop_back();
-        spectrum_.pop_back();
         counts_.push_back(recent_count_ + counts_.back());
       } else
         counts_.push_back(recent_count_);
@@ -165,7 +187,8 @@ void SpectrumTime::_push_stats(const StatsUpdate& newStats)
       if (diff.items.count("native_time") && (diff.items.at("native_time") > 0))
         scale_factor = rt.total_microseconds() / diff.items["native_time"];
 
-      if (diff.items.count("live_time")) {
+      if (diff.items.count("live_time"))
+      {
         PreciseFloat scaled_live = diff.items.at("live_time") * scale_factor;
         lt = boost::posix_time::microseconds(scaled_live.convert_to<long>());
       }
@@ -183,28 +206,14 @@ void SpectrumTime::_push_stats(const StatsUpdate& newStats)
 
     if (seconds_.empty() || (tot_time != 0)) {
 
-      PreciseFloat count = 0;
-
-      if (codomain == 0) {
-        count = counts_.back();
-        if (live > 0)
-          count /= live;
-      } else if (codomain == 1) {
-        count = percent_dead;
-      }
-
       seconds_.push_back(tot_time.convert_to<double>());
       updates_.push_back(newStats);
 
-      spectrum_.push_back(count);
+//      spectrum_.push_back(count);
 
       axes_[0].clear();
       for (auto &q : seconds_)
         axes_[0].push_back(q.convert_to<double>());
-
-//      DBG << "<SpectrumTime> \"" << metadata_.name << "\" chan " << int(newStats.channel) << " nrgs.size="
-//             << energies_[0].size() << " nrgs.last=" << energies_[0][energies_[0].size()-1]
-//             << " spectrum.size=" << spectrum_.size() << " spectrum.last=" << spectrum_[spectrum_.size()-1].convert_to<double>();
     }
   }
 
@@ -212,57 +221,14 @@ void SpectrumTime::_push_stats(const StatsUpdate& newStats)
 }
 
 
-std::string SpectrumTime::_data_to_xml() const {
-  std::stringstream channeldata;
-
-  for (uint32_t i = 0; i < spectrum_.size(); i++)
-    channeldata << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << spectrum_[i] << " ";
-
-  channeldata << " | ";
-
-  for (uint32_t i = 0; i < seconds_.size(); i++)
-    channeldata << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << seconds_[i] << " ";
-
-  return channeldata.str();
+std::string TimeSpectrum::_data_to_xml() const
+{
+  // do this
 }
 
-uint16_t SpectrumTime::_data_from_xml(const std::string& thisData){
-  std::stringstream channeldata;
-  channeldata.str(thisData);
-
-  spectrum_.clear();
-  seconds_.clear();
-
-  std::list<PreciseFloat> sp, secs;
-
-  uint16_t i = 0;
-  std::string numero;
-  while (channeldata.rdbuf()->in_avail()) {
-    channeldata >> numero;
-    if (numero == "|")
-      break;
-
-    PreciseFloat nr(numero);
-    sp.push_back(nr);
-    i++;
-  }
-
-  i = 0;
-  while (channeldata.rdbuf()->in_avail()) {
-    channeldata >> numero;
-
-    PreciseFloat nr(numero);
-    secs.push_back(nr);
-    i++;
-  }
-
-  if (sp.size() && (sp.size() == secs.size())) {
-    spectrum_ = std::vector<PreciseFloat>(sp.begin(), sp.end());
-    seconds_  = std::vector<PreciseFloat>(secs.begin(), secs.end());
-  } else
-    i = 0;
-
-  return i;
+uint16_t TimeSpectrum::_data_from_xml(const std::string& thisData)
+{
+  // do this
 }
 
 

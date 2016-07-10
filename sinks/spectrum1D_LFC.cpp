@@ -86,6 +86,7 @@ void Spectrum1D_LFC::addHit(const Hit& newHit)
   uint16_t en = newHit.value(energy_idx_.at(newHit.source_channel())).val(bits_);
   channels_run_[ en ] ++;
   count_current_++;
+  total_hits_++;
 }
 
 void Spectrum1D_LFC::_push_stats(const StatsUpdate& newStats)

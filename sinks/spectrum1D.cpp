@@ -136,18 +136,21 @@ void Spectrum1D::_append(const Entry& e) {
     }
 }
 
-void Spectrum1D::addHit(const Hit& newHit) {
+void Spectrum1D::addHit(const Hit& newHit)
+{
   uint16_t en = newHit.value(energy_idx_.at(newHit.source_channel())).val(bits_);
   if (en < cutoff_bin_)
     return;
 
   ++spectrum_[en];
+  total_hits_++;
 
   if (en > maxchan_)
     maxchan_ = en;
 }
 
-void Spectrum1D::addEvent(const Event& newEvent) {
+void Spectrum1D::addEvent(const Event& newEvent)
+{
   for (auto &h : newEvent.hits)
     if (pattern_add_.relevant(h.first))
       this->addHit(h.second);

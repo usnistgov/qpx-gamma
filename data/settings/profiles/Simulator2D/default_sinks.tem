@@ -1,14 +1,15 @@
 <?xml version="1.0"?>
 <SpectrumTemplates>
 	<SinkMetadata Type="1D">
-		<Name>d1</Name>
-		<Resolution>13</Resolution>
 		<Setting id="Options" type="stem">
 			<SettingMeta id="Options" type="stem" address="-1" max_indices="0" writable="false" saveworthy="true" />
-			<Setting id="visible" type="boolean" value="true">
+			<Setting id="name" type="text" value="det1">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" />
+			</Setting>
+			<Setting id="visible" type="boolean" value="True">
 				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="true" description="Plot visible" />
 			</Setting>
-			<Setting id="appearance" type="color" value="#8043e531">
+			<Setting id="appearance" type="color" value="#80e62a69">
 				<SettingMeta id="" type="color" address="-1" max_indices="0" writable="true" description="Plot appearance" />
 			</Setting>
 			<Setting id="rescale" type="floating_precise" value="1">
@@ -19,6 +20,29 @@
 			</Setting>
 			<Setting id="start_time" type="time" value="INVALID">
 				<SettingMeta id="" type="time" address="-1" max_indices="0" writable="false" description="Start time" />
+			</Setting>
+			<Setting id="total_hits" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total hit count" />
+			</Setting>
+			<Setting id="total_events" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total time-correlated event count" />
+			</Setting>
+			<Setting id="resolution" type="int_menu" value="14">
+				<SettingMeta id="" type="int_menu" address="-1" max_indices="0" writable="true" flags="preset">
+					<menu_item item_value="4" item_text="4 bit (16)" />
+					<menu_item item_value="5" item_text="5 bit (32)" />
+					<menu_item item_value="6" item_text="6 bit (64)" />
+					<menu_item item_value="7" item_text="7 bit (128)" />
+					<menu_item item_value="8" item_text="8 bit (256)" />
+					<menu_item item_value="9" item_text="9 bit (512)" />
+					<menu_item item_value="10" item_text="10 bit (1024)" />
+					<menu_item item_value="11" item_text="11 bit (2048)" />
+					<menu_item item_value="12" item_text="12 bit (4096)" />
+					<menu_item item_value="13" item_text="13 bit (8192)" />
+					<menu_item item_value="14" item_text="14 bit (16384)" />
+					<menu_item item_value="15" item_text="15 bit (32768)" />
+					<menu_item item_value="16" item_text="16 bit (65536)" />
+				</SettingMeta>
 			</Setting>
 			<Setting id="per_detector" type="stem">
 				<Setting id="detector" type="stem" indices="0">
@@ -73,7 +97,7 @@
 				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Real time" />
 			</Setting>
 			<Setting id="instant_rate" type="floating" value="0">
-				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="false" step="0" minimum="0" maximum="0" unit="cps" description="Instant count rate" />
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" unit="cps" description="Instant count rate" />
 			</Setting>
 			<Setting id="cutoff_bin" type="integer" value="0">
 				<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" flags="preset" />
@@ -81,14 +105,15 @@
 		</Setting>
 	</SinkMetadata>
 	<SinkMetadata Type="1D">
-		<Name>d2</Name>
-		<Resolution>13</Resolution>
 		<Setting id="Options" type="stem">
 			<SettingMeta id="Options" type="stem" address="-1" max_indices="0" writable="false" saveworthy="true" />
-			<Setting id="visible" type="boolean" value="true">
+			<Setting id="name" type="text" value="det1co">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" />
+			</Setting>
+			<Setting id="visible" type="boolean" value="True">
 				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="true" description="Plot visible" />
 			</Setting>
-			<Setting id="appearance" type="color" value="#80da2e90">
+			<Setting id="appearance" type="color" value="#ffe73f25">
 				<SettingMeta id="" type="color" address="-1" max_indices="0" writable="true" description="Plot appearance" />
 			</Setting>
 			<Setting id="rescale" type="floating_precise" value="1">
@@ -99,6 +124,240 @@
 			</Setting>
 			<Setting id="start_time" type="time" value="INVALID">
 				<SettingMeta id="" type="time" address="-1" max_indices="0" writable="false" description="Start time" />
+			</Setting>
+			<Setting id="total_hits" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total hit count" />
+			</Setting>
+			<Setting id="total_events" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total time-correlated event count" />
+			</Setting>
+			<Setting id="resolution" type="int_menu" value="14">
+				<SettingMeta id="" type="int_menu" address="-1" max_indices="0" writable="true" flags="preset">
+					<menu_item item_value="4" item_text="4 bit (16)" />
+					<menu_item item_value="5" item_text="5 bit (32)" />
+					<menu_item item_value="6" item_text="6 bit (64)" />
+					<menu_item item_value="7" item_text="7 bit (128)" />
+					<menu_item item_value="8" item_text="8 bit (256)" />
+					<menu_item item_value="9" item_text="9 bit (512)" />
+					<menu_item item_value="10" item_text="10 bit (1024)" />
+					<menu_item item_value="11" item_text="11 bit (2048)" />
+					<menu_item item_value="12" item_text="12 bit (4096)" />
+					<menu_item item_value="13" item_text="13 bit (8192)" />
+					<menu_item item_value="14" item_text="14 bit (16384)" />
+					<menu_item item_value="15" item_text="15 bit (32768)" />
+					<menu_item item_value="16" item_text="16 bit (65536)" />
+				</SettingMeta>
+			</Setting>
+			<Setting id="per_detector" type="stem">
+				<Setting id="detector" type="stem" indices="0">
+					<Setting id="cutoff_logic" type="integer" indices="0" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="0" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="1">
+					<Setting id="cutoff_logic" type="integer" indices="1" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="1" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="2">
+					<Setting id="cutoff_logic" type="integer" indices="2" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="2" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="3">
+					<Setting id="cutoff_logic" type="integer" indices="3" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="3" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="50">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ns" description="Coincidence window" flags="preset" />
+			</Setting>
+			<Setting id="pattern_coinc" type="pattern" value="2++oo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Coincidence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_anti" type="pattern" value="0oooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Anti-coindicence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_add" type="pattern" value="1+ooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Add pattern" flags="preset" />
+			</Setting>
+			<Setting id="live_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Live time" />
+			</Setting>
+			<Setting id="real_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Real time" />
+			</Setting>
+			<Setting id="instant_rate" type="floating" value="0">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" unit="cps" description="Instant count rate" />
+			</Setting>
+			<Setting id="cutoff_bin" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" flags="preset" />
+			</Setting>
+		</Setting>
+	</SinkMetadata>
+	<SinkMetadata Type="Time">
+		<Setting id="Options" type="stem">
+			<SettingMeta id="Options" type="stem" address="-1" max_indices="0" writable="false" saveworthy="true" />
+			<Setting id="name" type="text" value="activity1">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" />
+			</Setting>
+			<Setting id="visible" type="boolean" value="False">
+				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="true" description="Plot visible" />
+			</Setting>
+			<Setting id="appearance" type="color" value="#ffff00f0">
+				<SettingMeta id="" type="color" address="-1" max_indices="0" writable="true" description="Plot appearance" />
+			</Setting>
+			<Setting id="rescale" type="floating_precise" value="1">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="10000000000" description="Rescale factor" />
+			</Setting>
+			<Setting id="description" type="text" value="">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" description="Description" />
+			</Setting>
+			<Setting id="start_time" type="time" value="INVALID">
+				<SettingMeta id="" type="time" address="-1" max_indices="0" writable="false" description="Start time" />
+			</Setting>
+			<Setting id="total_hits" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total hit count" />
+			</Setting>
+			<Setting id="total_events" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total time-correlated event count" />
+			</Setting>
+			<Setting id="resolution" type="int_menu" value="14">
+				<SettingMeta id="" type="int_menu" address="-1" max_indices="0" writable="true" flags="preset">
+					<menu_item item_value="4" item_text="4 bit (16)" />
+					<menu_item item_value="5" item_text="5 bit (32)" />
+					<menu_item item_value="6" item_text="6 bit (64)" />
+					<menu_item item_value="7" item_text="7 bit (128)" />
+					<menu_item item_value="8" item_text="8 bit (256)" />
+					<menu_item item_value="9" item_text="9 bit (512)" />
+					<menu_item item_value="10" item_text="10 bit (1024)" />
+					<menu_item item_value="11" item_text="11 bit (2048)" />
+					<menu_item item_value="12" item_text="12 bit (4096)" />
+					<menu_item item_value="13" item_text="13 bit (8192)" />
+					<menu_item item_value="14" item_text="14 bit (16384)" />
+					<menu_item item_value="15" item_text="15 bit (32768)" />
+					<menu_item item_value="16" item_text="16 bit (65536)" />
+				</SettingMeta>
+			</Setting>
+			<Setting id="per_detector" type="stem">
+				<Setting id="detector" type="stem" indices="0">
+					<Setting id="cutoff_logic" type="integer" indices="0" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="0" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="1">
+					<Setting id="cutoff_logic" type="integer" indices="1" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="1" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="2">
+					<Setting id="cutoff_logic" type="integer" indices="2" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="2" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="3">
+					<Setting id="cutoff_logic" type="integer" indices="3" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="3" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="50">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ns" description="Coincidence window" flags="preset" />
+			</Setting>
+			<Setting id="pattern_coinc" type="pattern" value="1+ooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Coincidence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_anti" type="pattern" value="0oooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Anti-coindicence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_add" type="pattern" value="1+ooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Add pattern" flags="preset" />
+			</Setting>
+			<Setting id="live_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Live time" />
+			</Setting>
+			<Setting id="real_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Real time" />
+			</Setting>
+			<Setting id="instant_rate" type="floating" value="0">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" unit="cps" description="Instant count rate" />
+			</Setting>
+			<Setting id="co-domain" type="int_menu" value="0">
+				<SettingMeta id="" type="int_menu" address="-1" max_indices="0" writable="true" description="Choice of dependent variable" flags="preset">
+					<menu_item item_value="0" item_text="event rate" />
+					<menu_item item_value="1" item_text="% dead-time" />
+				</SettingMeta>
+			</Setting>
+		</Setting>
+	</SinkMetadata>
+	<SinkMetadata Type="1D">
+		<Setting id="Options" type="stem">
+			<SettingMeta id="Options" type="stem" address="-1" max_indices="0" writable="false" saveworthy="true" />
+			<Setting id="name" type="text" value="det2">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" />
+			</Setting>
+			<Setting id="visible" type="boolean" value="False">
+				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="true" description="Plot visible" />
+			</Setting>
+			<Setting id="appearance" type="color" value="#802fb4dc">
+				<SettingMeta id="" type="color" address="-1" max_indices="0" writable="true" description="Plot appearance" />
+			</Setting>
+			<Setting id="rescale" type="floating_precise" value="1">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="10000000000" description="Rescale factor" />
+			</Setting>
+			<Setting id="description" type="text" value="">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" description="Description" />
+			</Setting>
+			<Setting id="start_time" type="time" value="INVALID">
+				<SettingMeta id="" type="time" address="-1" max_indices="0" writable="false" description="Start time" />
+			</Setting>
+			<Setting id="total_hits" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total hit count" />
+			</Setting>
+			<Setting id="total_events" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total time-correlated event count" />
+			</Setting>
+			<Setting id="resolution" type="int_menu" value="14">
+				<SettingMeta id="" type="int_menu" address="-1" max_indices="0" writable="true" flags="preset">
+					<menu_item item_value="4" item_text="4 bit (16)" />
+					<menu_item item_value="5" item_text="5 bit (32)" />
+					<menu_item item_value="6" item_text="6 bit (64)" />
+					<menu_item item_value="7" item_text="7 bit (128)" />
+					<menu_item item_value="8" item_text="8 bit (256)" />
+					<menu_item item_value="9" item_text="9 bit (512)" />
+					<menu_item item_value="10" item_text="10 bit (1024)" />
+					<menu_item item_value="11" item_text="11 bit (2048)" />
+					<menu_item item_value="12" item_text="12 bit (4096)" />
+					<menu_item item_value="13" item_text="13 bit (8192)" />
+					<menu_item item_value="14" item_text="14 bit (16384)" />
+					<menu_item item_value="15" item_text="15 bit (32768)" />
+					<menu_item item_value="16" item_text="16 bit (65536)" />
+				</SettingMeta>
 			</Setting>
 			<Setting id="per_detector" type="stem">
 				<Setting id="detector" type="stem" indices="0">
@@ -153,22 +412,23 @@
 				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Real time" />
 			</Setting>
 			<Setting id="instant_rate" type="floating" value="0">
-				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="false" step="0" minimum="0" maximum="0" unit="cps" description="Instant count rate" />
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" unit="cps" description="Instant count rate" />
 			</Setting>
 			<Setting id="cutoff_bin" type="integer" value="0">
 				<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" flags="preset" />
 			</Setting>
 		</Setting>
 	</SinkMetadata>
-	<SinkMetadata Type="2D">
-		<Name>matrix</Name>
-		<Resolution>13</Resolution>
+	<SinkMetadata Type="1D">
 		<Setting id="Options" type="stem">
 			<SettingMeta id="Options" type="stem" address="-1" max_indices="0" writable="false" saveworthy="true" />
-			<Setting id="visible" type="boolean" value="true">
+			<Setting id="name" type="text" value="det2co">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" />
+			</Setting>
+			<Setting id="visible" type="boolean" value="False">
 				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="true" description="Plot visible" />
 			</Setting>
-			<Setting id="appearance" type="color" value="#800b0ec9">
+			<Setting id="appearance" type="color" value="#ff157dd2">
 				<SettingMeta id="" type="color" address="-1" max_indices="0" writable="true" description="Plot appearance" />
 			</Setting>
 			<Setting id="rescale" type="floating_precise" value="1">
@@ -179,6 +439,338 @@
 			</Setting>
 			<Setting id="start_time" type="time" value="INVALID">
 				<SettingMeta id="" type="time" address="-1" max_indices="0" writable="false" description="Start time" />
+			</Setting>
+			<Setting id="total_hits" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total hit count" />
+			</Setting>
+			<Setting id="total_events" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total time-correlated event count" />
+			</Setting>
+			<Setting id="resolution" type="int_menu" value="14">
+				<SettingMeta id="" type="int_menu" address="-1" max_indices="0" writable="true" flags="preset">
+					<menu_item item_value="4" item_text="4 bit (16)" />
+					<menu_item item_value="5" item_text="5 bit (32)" />
+					<menu_item item_value="6" item_text="6 bit (64)" />
+					<menu_item item_value="7" item_text="7 bit (128)" />
+					<menu_item item_value="8" item_text="8 bit (256)" />
+					<menu_item item_value="9" item_text="9 bit (512)" />
+					<menu_item item_value="10" item_text="10 bit (1024)" />
+					<menu_item item_value="11" item_text="11 bit (2048)" />
+					<menu_item item_value="12" item_text="12 bit (4096)" />
+					<menu_item item_value="13" item_text="13 bit (8192)" />
+					<menu_item item_value="14" item_text="14 bit (16384)" />
+					<menu_item item_value="15" item_text="15 bit (32768)" />
+					<menu_item item_value="16" item_text="16 bit (65536)" />
+				</SettingMeta>
+			</Setting>
+			<Setting id="per_detector" type="stem">
+				<Setting id="detector" type="stem" indices="0">
+					<Setting id="cutoff_logic" type="integer" indices="0" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="0" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="1">
+					<Setting id="cutoff_logic" type="integer" indices="1" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="1" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="2">
+					<Setting id="cutoff_logic" type="integer" indices="2" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="2" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="3">
+					<Setting id="cutoff_logic" type="integer" indices="3" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="3" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="50">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ns" description="Coincidence window" flags="preset" />
+			</Setting>
+			<Setting id="pattern_coinc" type="pattern" value="2++oo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Coincidence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_anti" type="pattern" value="0oooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Anti-coindicence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_add" type="pattern" value="1o+oo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Add pattern" flags="preset" />
+			</Setting>
+			<Setting id="live_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Live time" />
+			</Setting>
+			<Setting id="real_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Real time" />
+			</Setting>
+			<Setting id="instant_rate" type="floating" value="0">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" unit="cps" description="Instant count rate" />
+			</Setting>
+			<Setting id="cutoff_bin" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" flags="preset" />
+			</Setting>
+		</Setting>
+	</SinkMetadata>
+	<SinkMetadata Type="Addback 1D">
+		<Setting id="Options" type="stem">
+			<SettingMeta id="Options" type="stem" address="-1" max_indices="0" writable="false" saveworthy="true" />
+			<Setting id="name" type="text" value="Addback12">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" />
+			</Setting>
+			<Setting id="visible" type="boolean" value="True">
+				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="true" description="Plot visible" />
+			</Setting>
+			<Setting id="appearance" type="color" value="#80a3b502">
+				<SettingMeta id="" type="color" address="-1" max_indices="0" writable="true" description="Plot appearance" />
+			</Setting>
+			<Setting id="rescale" type="floating_precise" value="1">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="10000000000" description="Rescale factor" />
+			</Setting>
+			<Setting id="description" type="text" value="">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" description="Description" />
+			</Setting>
+			<Setting id="start_time" type="time" value="INVALID">
+				<SettingMeta id="" type="time" address="-1" max_indices="0" writable="false" description="Start time" />
+			</Setting>
+			<Setting id="total_hits" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total hit count" />
+			</Setting>
+			<Setting id="total_events" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total time-correlated event count" />
+			</Setting>
+			<Setting id="resolution" type="int_menu" value="14">
+				<SettingMeta id="" type="int_menu" address="-1" max_indices="0" writable="true" flags="preset">
+					<menu_item item_value="4" item_text="4 bit (16)" />
+					<menu_item item_value="5" item_text="5 bit (32)" />
+					<menu_item item_value="6" item_text="6 bit (64)" />
+					<menu_item item_value="7" item_text="7 bit (128)" />
+					<menu_item item_value="8" item_text="8 bit (256)" />
+					<menu_item item_value="9" item_text="9 bit (512)" />
+					<menu_item item_value="10" item_text="10 bit (1024)" />
+					<menu_item item_value="11" item_text="11 bit (2048)" />
+					<menu_item item_value="12" item_text="12 bit (4096)" />
+					<menu_item item_value="13" item_text="13 bit (8192)" />
+					<menu_item item_value="14" item_text="14 bit (16384)" />
+					<menu_item item_value="15" item_text="15 bit (32768)" />
+					<menu_item item_value="16" item_text="16 bit (65536)" />
+				</SettingMeta>
+			</Setting>
+			<Setting id="per_detector" type="stem">
+				<Setting id="detector" type="stem" indices="0">
+					<Setting id="cutoff_logic" type="integer" indices="0" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="0" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="1">
+					<Setting id="cutoff_logic" type="integer" indices="1" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="1" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="2">
+					<Setting id="cutoff_logic" type="integer" indices="2" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="2" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="3">
+					<Setting id="cutoff_logic" type="integer" indices="3" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="3" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="50">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ns" description="Coincidence window" flags="preset" />
+			</Setting>
+			<Setting id="pattern_coinc" type="pattern" value="2++oo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Coincidence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_anti" type="pattern" value="0oooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Anti-coindicence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_add" type="pattern" value="0++oo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Add pattern" flags="preset" />
+			</Setting>
+			<Setting id="live_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Live time" />
+			</Setting>
+			<Setting id="real_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Real time" />
+			</Setting>
+			<Setting id="instant_rate" type="floating" value="0">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" unit="cps" description="Instant count rate" />
+			</Setting>
+			<Setting id="cutoff_bin" type="integer" value="0">
+				<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects binning only)" flags="preset" />
+			</Setting>
+		</Setting>
+	</SinkMetadata>
+	<SinkMetadata Type="TimeSpectrum">
+		<Setting id="Options" type="stem">
+			<SettingMeta id="Options" type="stem" address="-1" max_indices="0" writable="false" saveworthy="true" />
+			<Setting id="name" type="text" value="time2d">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" />
+			</Setting>
+			<Setting id="visible" type="boolean" value="True">
+				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="true" description="Plot visible" />
+			</Setting>
+			<Setting id="appearance" type="color" value="#ff000000">
+				<SettingMeta id="" type="color" address="-1" max_indices="0" writable="true" description="Plot appearance" />
+			</Setting>
+			<Setting id="rescale" type="floating_precise" value="1">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="10000000000" description="Rescale factor" />
+			</Setting>
+			<Setting id="description" type="text" value="">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" description="Description" />
+			</Setting>
+			<Setting id="start_time" type="time" value="INVALID">
+				<SettingMeta id="" type="time" address="-1" max_indices="0" writable="false" description="Start time" />
+			</Setting>
+			<Setting id="total_hits" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total hit count" />
+			</Setting>
+			<Setting id="total_events" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total time-correlated event count" />
+			</Setting>
+			<Setting id="resolution" type="int_menu" value="12">
+				<SettingMeta id="" type="int_menu" address="-1" max_indices="0" writable="true" flags="preset">
+					<menu_item item_value="4" item_text="4 bit (16)" />
+					<menu_item item_value="5" item_text="5 bit (32)" />
+					<menu_item item_value="6" item_text="6 bit (64)" />
+					<menu_item item_value="7" item_text="7 bit (128)" />
+					<menu_item item_value="8" item_text="8 bit (256)" />
+					<menu_item item_value="9" item_text="9 bit (512)" />
+					<menu_item item_value="10" item_text="10 bit (1024)" />
+					<menu_item item_value="11" item_text="11 bit (2048)" />
+					<menu_item item_value="12" item_text="12 bit (4096)" />
+					<menu_item item_value="13" item_text="13 bit (8192)" />
+					<menu_item item_value="14" item_text="14 bit (16384)" />
+					<menu_item item_value="15" item_text="15 bit (32768)" />
+					<menu_item item_value="16" item_text="16 bit (65536)" />
+				</SettingMeta>
+			</Setting>
+			<Setting id="per_detector" type="stem">
+				<Setting id="detector" type="stem" indices="0">
+					<Setting id="cutoff_logic" type="integer" indices="0" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="0" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="1">
+					<Setting id="cutoff_logic" type="integer" indices="1" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="1" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="2">
+					<Setting id="cutoff_logic" type="integer" indices="2" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="2" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+				<Setting id="detector" type="stem" indices="3">
+					<Setting id="cutoff_logic" type="integer" indices="3" value="0">
+						<SettingMeta id="" type="integer" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" description="Hits rejected below minimum energy (affects coincidence logic and binning)" flags="preset" />
+					</Setting>
+					<Setting id="delay_ns" type="floating" indices="3" value="0">
+						<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000000" unit="ns" description="Digital delay (applied before coincidence logic)" flags="preset" />
+					</Setting>
+				</Setting>
+			</Setting>
+			<Setting id="coinc_window" type="floating" value="50">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="1000000" unit="ns" description="Coincidence window" flags="preset" />
+			</Setting>
+			<Setting id="pattern_coinc" type="pattern" value="1+ooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Coincidence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_anti" type="pattern" value="0oooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Anti-coindicence pattern" flags="preset" />
+			</Setting>
+			<Setting id="pattern_add" type="pattern" value="1+ooo">
+				<SettingMeta id="" type="pattern" address="-1" max_indices="0" writable="true" word_size="1" description="Add pattern" flags="preset" />
+			</Setting>
+			<Setting id="live_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Live time" />
+			</Setting>
+			<Setting id="real_time" type="time_duration" value="00:00:00">
+				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Real time" />
+			</Setting>
+			<Setting id="instant_rate" type="floating" value="0">
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" unit="cps" description="Instant count rate" />
+			</Setting>
+		</Setting>
+	</SinkMetadata>
+	<SinkMetadata Type="2D">
+		<Setting id="Options" type="stem">
+			<SettingMeta id="Options" type="stem" address="-1" max_indices="0" writable="false" saveworthy="true" />
+			<Setting id="name" type="text" value="coinc">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" />
+			</Setting>
+			<Setting id="visible" type="boolean" value="False">
+				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="true" description="Plot visible" />
+			</Setting>
+			<Setting id="appearance" type="color" value="#ff000000">
+				<SettingMeta id="" type="color" address="-1" max_indices="0" writable="true" description="Plot appearance" />
+			</Setting>
+			<Setting id="rescale" type="floating_precise" value="1">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="true" step="1" minimum="0" maximum="10000000000" description="Rescale factor" />
+			</Setting>
+			<Setting id="description" type="text" value="">
+				<SettingMeta id="" type="text" address="-1" max_indices="0" writable="true" description="Description" />
+			</Setting>
+			<Setting id="start_time" type="time" value="INVALID">
+				<SettingMeta id="" type="time" address="-1" max_indices="0" writable="false" description="Start time" />
+			</Setting>
+			<Setting id="total_hits" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total hit count" />
+			</Setting>
+			<Setting id="total_events" type="floating_precise" value="0">
+				<SettingMeta id="" type="floating_precise" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" description="Total time-correlated event count" />
+			</Setting>
+			<Setting id="resolution" type="int_menu" value="12">
+				<SettingMeta id="" type="int_menu" address="-1" max_indices="0" writable="true" flags="preset">
+					<menu_item item_value="4" item_text="4 bit (16)" />
+					<menu_item item_value="5" item_text="5 bit (32)" />
+					<menu_item item_value="6" item_text="6 bit (64)" />
+					<menu_item item_value="7" item_text="7 bit (128)" />
+					<menu_item item_value="8" item_text="8 bit (256)" />
+					<menu_item item_value="9" item_text="9 bit (512)" />
+					<menu_item item_value="10" item_text="10 bit (1024)" />
+					<menu_item item_value="11" item_text="11 bit (2048)" />
+					<menu_item item_value="12" item_text="12 bit (4096)" />
+					<menu_item item_value="13" item_text="13 bit (8192)" />
+					<menu_item item_value="14" item_text="14 bit (16384)" />
+					<menu_item item_value="15" item_text="15 bit (32768)" />
+					<menu_item item_value="16" item_text="16 bit (65536)" />
+				</SettingMeta>
 			</Setting>
 			<Setting id="per_detector" type="stem">
 				<Setting id="detector" type="stem" indices="0">
@@ -233,12 +825,12 @@
 				<SettingMeta id="" type="time_duration" address="-1" max_indices="0" writable="false" description="Real time" />
 			</Setting>
 			<Setting id="instant_rate" type="floating" value="0">
-				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="false" step="0" minimum="0" maximum="0" unit="cps" description="Instant count rate" />
+				<SettingMeta id="" type="floating" address="-1" max_indices="0" writable="false" step="1" minimum="2.2250738585072014e-308" maximum="1.7976931348623157e+308" unit="cps" description="Instant count rate" />
 			</Setting>
-			<Setting id="buffered" type="boolean" value="true">
+			<Setting id="buffered" type="boolean" value="True">
 				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="true" unit="T/F" description="Buffered output for efficient plotting (more memory)" flags="preset" />
 			</Setting>
-			<Setting id="symmetrized" type="boolean" value="false">
+			<Setting id="symmetrized" type="boolean" value="False">
 				<SettingMeta id="" type="boolean" address="-1" max_indices="0" writable="false" unit="T/F" description="Matrix is symmetrized" />
 			</Setting>
 		</Setting>

@@ -272,7 +272,6 @@ void Spectrum::_push_hit(const Hit& newhit)
     backlog.pop_front();
     if (validateEvent(evt)) {
       recent_count_++;
-      total_hits_++; //should be elsewhere!!! HACK!!
       total_events_++;
       this->addEvent(evt);
     }
@@ -396,9 +395,11 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
 
   Setting res = metadata_.get_attribute("total_hits");
   res.value_precise = total_hits_;
+  metadata_.set_attribute(res);
 
   Setting res2 = metadata_.get_attribute("total_events");
   res2.value_precise = total_events_;
+  metadata_.set_attribute(res2);
 }
 
 
@@ -406,9 +407,11 @@ void Spectrum::_flush()
 {
   Setting res = metadata_.get_attribute("total_hits");
   res.value_precise = total_hits_;
+  metadata_.set_attribute(res);
 
   Setting res2 = metadata_.get_attribute("total_events");
   res2.value_precise = total_events_;
+  metadata_.set_attribute(res2);
 }
 
 void Spectrum::_set_detectors(const std::vector<Qpx::Detector>& dets) {
