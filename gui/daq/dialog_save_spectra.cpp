@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <QPaintEvent>
 #include <QPainter>
+#include <QFileInfo>
 #include "dialog_save_spectra.h"
 #include "ui_dialog_save_spectra.h"
 #include <boost/filesystem/path.hpp>
@@ -127,8 +128,10 @@ DialogSaveSpectra::DialogSaveSpectra(Project& newset, QString outdir, QWidget *p
   root_dir_ = outdir;
   std::string timenow = boost::posix_time::to_iso_string(boost::posix_time::second_clock::universal_time());
 
+  QFileInfo fi(QString::fromStdString(my_set_->identity()));
+
   if (my_set_->identity() != "New project")
-    ui->lineName->setText(QString("Qpx_") + QString::fromStdString(my_set_->identity()));
+    ui->lineName->setText(QString("Qpx_") + fi.baseName());
   else
     ui->lineName->setText(QString("Qpx_") + QString::fromStdString(timenow));
 }
@@ -163,9 +166,8 @@ void DialogSaveSpectra::on_lineName_textChanged(const QString &arg1)
 void DialogSaveSpectra::on_buttonBox_accepted()
 {
   boost::filesystem::path dir(total_dir_);
-  if (boost::filesystem::create_directory(dir))
-    LINFO << "Created directory " << total_dir_;
-  else {
+  if (!boost::filesystem::create_directory(dir))
+  {
     ERR << "Error creating directory";
     emit accepted();
     return;

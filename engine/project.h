@@ -55,8 +55,6 @@ public:
   {}
   Project(const Qpx::Project&);
 
-//  Project deep_copy() const;
-
   ////control//////
   void clear();
   void activate();    //force release of cond var

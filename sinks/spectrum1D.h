@@ -62,6 +62,7 @@ protected:
   void write_tka(std::string) const;
   void write_n42(std::string) const;
   void write_spe(std::string) const;
+  void write_h5(std::string) const;
 
   bool read_xylib(std::string, std::string);
   bool read_tka(std::string);

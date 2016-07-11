@@ -26,45 +26,11 @@
 #include "coef_function.h"
 #include "xmlable.h"
 
-//class Polynomial {
-//public:
-//  Polynomial() : rsq_(0), xoffset_(0) {}
-//  Polynomial(std::vector<double> coeffs, double xoffset = 0, double rsq = 0);
-//  Polynomial(std::vector<double> &x, std::vector<double> &y, uint16_t degree, double xoffset = 0);
-//  Polynomial(std::vector<double> &x, std::vector<double> &y, std::vector<uint16_t> &degrees, double xoffset = 0);
-
-//  void fit(std::vector<double> &x, std::vector<double> &y, std::vector<uint16_t> &degrees, double xoffset = 0);
-
-//  Polynomial derivative();
-
-//  std::string to_string(bool with_rsq = false);
-//  std::string to_UTF8(int precision = -1, bool with_rsq = false);
-//  std::string to_markup(int precision = -1, bool with_rsq = false);
-//  std::string coef_to_string() const;
-//  void coef_from_string(std::string);
-
-//  double eval(double x);
-//  std::vector<double> eval(std::vector<double> x);
-
-//  double eval_inverse(double y, double e = 0.2);
-  
-//  std::vector<double> coeffs_;
-//  double xoffset_;
-//  double rsq_;
-
-
-//  static std::string fityk_definition(const std::vector<uint16_t> &degrees, double xoffset = 0);
-//  bool extract_params(fityk::Func*, const std::vector<uint16_t> &degrees);
-//};
-
 class PolyBounded : public CoefFunction, public XMLable {
 public:
   PolyBounded() {}
   PolyBounded(std::vector<double> coeffs, double uncert, double rsq) :
     CoefFunction(coeffs, uncert, rsq) {}
-
-//  PolyBounded(Polynomial p);
-//  Polynomial to_simple() const;
 
   std::string type() const override {return "PolyBounded";}
   std::string to_string() const override;
@@ -86,7 +52,8 @@ public:
   void add_residual_blocks(ceres::Problem &problem,
                            const std::vector<double> &x,
                            const std::vector<double> &y,
-                           std::map<int, double> &cc) override;
+                           std::vector<double> &c
+                           ) override;
 #endif
 
 };

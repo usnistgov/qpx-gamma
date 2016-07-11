@@ -74,7 +74,7 @@ public:
   virtual void add_residual_blocks(ceres::Problem &problem,
                                    const std::vector<double> &x,
                                    const std::vector<double> &y,
-                                   std::map<int, double> &cc) {}
+                                   std::vector<double> &c) {}
 #endif
 
 };

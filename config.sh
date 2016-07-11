@@ -13,6 +13,7 @@ hv8="off"
 vme="off"
 parser_evt="off"
 fitter_ceres="off"
+nexus="off"
 
 if [ ! -f config.pri ]; then
   parser_raw="on"
@@ -39,6 +40,9 @@ else
   if grep -q fitter_ceres config.pri; then 
     fitter_ceres="on" 
   fi
+  if grep -q nexus config.pri; then 
+    nexus="on" 
+  fi
 fi
 
 cmd=(dialog --separate-output --checklist "Compile QPX with support for the following data sources:" 22 76 16)
@@ -50,6 +54,7 @@ options=(
          5 "VME (Wiener, Mesytec, Iseg)" "$vme"
          6 "Parser for NSCL *.evt" "$parser_evt"
          7 "Ceres solver (fitter, experimental)" "$fitter_ceres"
+         8 "NeXus (experimental)" "$nexus"
         )
 choices=$("${cmd[@]}" "${options[@]}" 2>&1 >/dev/tty)
 
@@ -90,6 +95,12 @@ do
             ;;
         7)
             text="${text} fitter_ceres"
+            sudo apt-get install cmake libgoogle-glog-dev libatlas-base-dev libeigen3-dev libsuitesparse-dev
+
+            ;;
+        8)
+            text="${text} nexus"
+
             ;;
     esac
 done

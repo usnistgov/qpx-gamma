@@ -56,16 +56,6 @@ std::set<Spill> Project::spills() const
   boost::unique_lock<boost::mutex> lock(mutex_); return spills_;
 }
 
-//Project Project::deep_copy() const
-//{
-//  Project ret;
-//  ret.current_index_ = current_index_;
-//  ret.spills_ = spills_;
-//  ret.fitters_1d_ = fitters_1d_;
-//  for (auto sink : sinks_)
-//    ret.sinks_[sink.first] = SinkFactory::getInstance().create_copy(sink.second);
-//}
-
 void Project::clear() {
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
@@ -142,15 +132,6 @@ std::vector<std::string> Project::types() const {
   std::vector<std::string> output(my_types.begin(), my_types.end());
   return output;
 }
-
-//std::set<uint32_t> Project::resolutions(uint16_t dim) const {
-//  boost::unique_lock<boost::mutex> lock(mutex_);
-//  std::set<uint32_t> haveres;
-//  for (auto &q: sinks_)
-//    if (q.second->dimensions() == dim)
-//      haveres.insert(q.second->bits());
-//  return haveres;
-//}
 
 bool Project::has_fitter(int64_t idx) const
 {

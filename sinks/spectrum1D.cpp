@@ -28,6 +28,11 @@
 #include "xylib.h"
 #include "qpx_util.h"
 
+#ifdef NEXUS_ENABLED
+#include <hdf5/serial/hdf5.h>
+#include <nexus/napi.h>
+#endif
+
 namespace Qpx {
 
 static SinkRegistrar<Spectrum1D> registrar("1D");
@@ -39,7 +44,7 @@ Spectrum1D::Spectrum1D()
   Setting base_options = metadata_.attributes();
   metadata_ = Metadata("1D", "Traditional MCA spectrum", 1,
   {"cnf", "tka", "n42", "ava", "spe", "Spe", "CNF", "N42", "mca", "dat"},
-  {"n42", "tka", "spe"});
+  {"n42", "tka", "spe", "h5"});
 
   Qpx::Setting cutoff_bin;
   cutoff_bin.id_ = "cutoff_bin";
@@ -167,6 +172,9 @@ bool Spectrum1D::_write_file(std::string dir, std::string format) const {
     return true;
   } else if (format == "spe") {
     write_spe(dir + "/" + name + ".spe");
+    return true;
+  } else if (format == "h5") {
+    write_h5(dir + "/" + name + ".h5");
     return true;
   } else
     return false;
@@ -1063,6 +1071,47 @@ void Spectrum1D::write_spe(std::string filename) const {
 
   myfile.write ((char*)&val, sizeof(uint32_t));
   myfile.close();
+}
+
+void Spectrum1D::write_h5(std::string filename) const
+{
+  #ifdef NEXUS_ENABLED
+
+  //nexus hdf5
+  DBG << "will write hdf5 to " << filename;
+
+  int count = spectrum_.size();
+  std::vector<double> counts;
+  std::vector<double> axis;
+  for (int i=0; i < count; ++i)
+  {
+    counts.push_back(spectrum_.at(i).convert_to<double>());
+    axis.push_back(i);
+  }
+
+  NXhandle fileID;
+  NXopen (filename.c_str(), NXACC_CREATE5, &fileID);
+     NXmakegroup (fileID, "Scan", "NXentry");
+     NXopengroup (fileID, "Scan", "NXentry");
+        NXmakegroup (fileID, "data", "NXdata");
+        NXopengroup (fileID, "data", "NXdata");
+           NXputattr (fileID, "signal", "counts", 6, NX_CHAR);
+           NXputattr (fileID, "axes", "energy", 6, NX_CHAR);
+           NXmakedata (fileID, "energy", NX_FLOAT64, 1, &count);
+           NXopendata (fileID, "energy");
+              NXputdata (fileID, axis.data());
+              NXputattr (fileID, "units", "keV", 3, NX_CHAR);
+           NXclosedata (fileID);  /* two_theta */
+           NXmakedata (fileID, "counts", NX_FLOAT64, 1, &count);
+           NXopendata (fileID, "counts");
+              NXputdata (fileID, counts.data());
+           NXclosedata (fileID);  /* counts */
+        NXclosegroup (fileID);  /* data */
+     NXclosegroup (fileID);  /* Scan */
+  NXclose (&fileID);
+  return;
+
+  #endif
 }
 
 }

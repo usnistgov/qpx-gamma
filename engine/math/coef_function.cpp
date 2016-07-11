@@ -207,7 +207,11 @@ void CoefFunction::fit_ceres(const std::vector<double> &x,
   if ((x.size() != y.size()) || (y.size() != y_sigma.size()))
     return;
 
-  std::map<int, double> coefs_ceres;
+  size_t max = 0;
+  for (auto &c : coeffs_)
+    if (c.first > max)
+      max = c.first;
+  std::vector<double> coefs_ceres(max + 1, 0.0);
   for (auto &c : coeffs_)
     coefs_ceres[c.first] = c.second.value.value();
 
@@ -225,10 +229,11 @@ void CoefFunction::fit_ceres(const std::vector<double> &x,
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
   DBG << summary.BriefReport() << "\n";
-  for (auto &c : coefs_ceres)
+  coeffs_.clear();
+  for (size_t i=0; i < coefs_ceres.size(); ++i)
   {
-    DBG << c.second << "*x^" << c.first;
-    coeffs_.at(c.first).value.setValue(c.second);
+    DBG << i << " " << coefs_ceres[i];
+    coeffs_.at(i).value.setValue(coefs_ceres[i]);
   }
 
   DBG << "Solved (Ceres) as " << this->to_string();
