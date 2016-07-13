@@ -92,8 +92,7 @@ contains( DAQ_SOURCES, fitter_ceres ) {
   DEFINES += "FITTER_CERES_ENABLED"
 }
 
-contains( DAQ_SOURCES, nexus ) 
-{
+contains( DAQ_SOURCES, nexus ) {
   LIBS += -lNeXus 
   DEFINES += "NEXUS_ENABLED"
 }

@@ -33,6 +33,7 @@
 #include <nexus/napi.h>
 #endif
 
+
 namespace Qpx {
 
 static SinkRegistrar<Spectrum1D> registrar("1D");
