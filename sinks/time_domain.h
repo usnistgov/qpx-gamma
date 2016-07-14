@@ -33,6 +33,11 @@ public:
   TimeDomain();
   TimeDomain* clone() const override { return new TimeDomain(*this); }
   
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version);
+
 protected:
   std::string my_type() const override {return "Time";}
 

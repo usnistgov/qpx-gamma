@@ -49,6 +49,8 @@ class Source {
 public:
 
   Source() : status_(SourceStatus(0)) {}
+  virtual ~Source() {}
+
   static std::string plugin_name() {return std::string();}
 
   virtual std::string device_name() const {return std::string();}

@@ -38,6 +38,8 @@
 #include "detector.h"
 #include "custom_logger.h"
 
+#include <boost/serialization/base_object.hpp>
+
 namespace Qpx {
 
 typedef std::pair<std::vector<uint16_t>, PreciseFloat> Entry;
@@ -114,12 +116,13 @@ public:
     : metadata_(other.metadata_)
     , axes_ (other.axes_) {}
   virtual Sink* clone() const = 0;
+  virtual ~Sink() {}
 
   //named constructors, used by factory
   bool from_prototype(const Metadata&);
-  bool from_xml(const pugi::xml_node &);
+  bool from_xml(const pugi::xml_node &, std::string);
 
-  void to_xml(pugi::xml_node &) const;
+  void to_xml(pugi::xml_node &, std::string) const;
 
   //data acquisition
   void push_spill(const Spill&);
@@ -163,6 +166,7 @@ protected:
   
   virtual std::string my_type() const = 0;
   virtual bool _initialize();
+  virtual void _recalc_axes() = 0;
 
   virtual void _set_detectors(const std::vector<Qpx::Detector>& dets) = 0;
   virtual void _push_spill(const Spill&);
@@ -175,12 +179,16 @@ protected:
     { return std::unique_ptr<std::list<Entry>>(new std::list<Entry>); }
   virtual void _append(const Entry&) {}
 
-  virtual std::string _data_to_xml() const = 0;
-  virtual uint16_t _data_from_xml(const std::string&) = 0;
   virtual bool _write_file(std::string, std::string) const {return false;}
   virtual bool _read_file(std::string, std::string) {return false;}
 
-  virtual void _recalc_axes() = 0;
+  virtual std::string _data_to_xml() const = 0;
+  virtual uint16_t _data_from_xml(const std::string&) = 0;
+
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {}
 };
 
 typedef std::shared_ptr<Sink> SinkPtr;

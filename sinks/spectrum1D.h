@@ -33,6 +33,10 @@ public:
   Spectrum1D();
   Spectrum1D* clone() const override { return new Spectrum1D(*this); }
 
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version);
 
 protected:
   std::string my_type() const override {return "1D";}

@@ -265,5 +265,13 @@ uint16_t TimeDomain::_data_from_xml(const std::string& thisData){
   return i;
 }
 
+template<class Archive>
+void TimeDomain::serialize(Archive & ar, const unsigned int version)
+{
+  ar & boost::serialization::base_object<Spectrum>(*this);
+  ar & spectrum_;
+  ar & seconds_;
+}
+
 
 }

@@ -448,4 +448,11 @@ void Spectrum::_recalc_axes() {
   }
 }
 
+template<class Archive>
+void Spectrum::serialize(Archive & ar, const unsigned int version)
+{
+  ar & boost::serialization::base_object<Sink>(*this);
+  //live and real times?
+}
+
 }

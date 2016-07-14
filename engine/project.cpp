@@ -27,6 +27,11 @@
 #include "custom_logger.h"
 #include "qpx_util.h"
 
+
+#include <fstream>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+
 namespace Qpx {
 
 Project::Project(const Qpx::Project& other)
@@ -301,6 +306,22 @@ void Project::write_xml(std::string file_name) {
 
   doc.save_file(file_name.c_str());
 
+
+//  boost::filesystem::path dir(file_name);
+//  dir.make_preferred();
+//  boost::filesystem::path path = dir.remove_filename();
+
+//  DBG << "path = " << path.string();
+
+//  for (auto &q : sinks_)
+//  {
+//    boost::filesystem::path path2 = path / (std::to_string(q.first) + ".bin");
+//    std::ofstream ofs(path2.string());
+//    boost::archive::binary_oarchive oa(ofs);
+
+//    oa << *q.second;
+//  }
+
   for (auto &q : sinks_)
     q.second->reset_changed();
 
@@ -320,7 +341,7 @@ void Project::to_xml(pugi::xml_node &root) const {
   if (!sinks_.empty()) {
     pugi::xml_node sinks_node = root.append_child("Sinks");
     for (auto &q : sinks_) {
-      q.second->to_xml(sinks_node);
+      q.second->to_xml(sinks_node, "");
       sinks_node.last_child().append_attribute("idx").set_value(std::to_string(q.first).c_str());
     }
   }

@@ -40,8 +40,12 @@ class Spectrum : public Sink
 public:
   Spectrum();
 
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version);
+
 protected:
-  
   bool _initialize() override;
   void _push_hit(const Hit&) override;
   void _push_stats(const StatsUpdate&) override;
@@ -53,9 +57,7 @@ protected:
   virtual bool validateEvent(const Event&) const;
   virtual void addEvent(const Event&) = 0;
 
-
 protected:
-
   std::vector<int32_t> cutoff_logic_;
   std::vector<double>  delay_ns_;
 

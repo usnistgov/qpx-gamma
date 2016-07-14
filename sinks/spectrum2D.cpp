@@ -463,4 +463,11 @@ uint16_t Spectrum2D::_data_from_xml(const std::string& thisData){
   return std::max(max_j, max_i);
 }
 
+template<class Archive>
+void Spectrum2D::serialize(Archive & ar, const unsigned int version)
+{
+  ar & boost::serialization::base_object<Spectrum>(*this);
+  ar & spectrum_;
+}
+
 }

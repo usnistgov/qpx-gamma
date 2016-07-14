@@ -61,7 +61,7 @@ SinkPtr SinkFactory::create_from_xml(const pugi::xml_node &root)
 //  DBG << "<SinkFactory> making " << root.attribute("type").value();
 
   SinkPtr instance = create_type(std::string(root.attribute("type").value()));
-  if (instance && instance->from_xml(root))
+  if (instance && instance->from_xml(root, ""))
     return instance;
 
   return SinkPtr();

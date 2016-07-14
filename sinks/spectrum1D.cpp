@@ -1115,4 +1115,12 @@ void Spectrum1D::write_h5(std::string filename) const
   #endif
 }
 
+template<class Archive>
+void Spectrum1D::serialize(Archive & ar, const unsigned int version)
+{
+  ar & boost::serialization::base_object<Spectrum>(*this);
+  ar & spectrum_;
+}
+
+
 }

@@ -35,6 +35,11 @@ class Spectrum2D : public Spectrum
 public:
   Spectrum2D();
   Spectrum2D* clone() const override { return new Spectrum2D(*this); }
+
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version);
   
 protected:
   typedef std::map<std::pair<uint16_t,uint16_t>, PreciseFloat> SpectrumMap2D;
