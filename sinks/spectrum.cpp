@@ -195,7 +195,7 @@ bool Spectrum::_initialize() {
     int idx = -1;
     if (d.indices.size())
       idx = *d.indices.begin();
-    if (idx >= cutoff_logic_.size()) {
+    if (idx >= static_cast<int16_t>(cutoff_logic_.size())) {
       cutoff_logic_.resize(idx + 1);
       delay_ns_.resize(idx + 1);
     }
@@ -216,10 +216,10 @@ bool Spectrum::_initialize() {
 void Spectrum::_push_hit(const Hit& newhit)
 {
   if ((newhit.source_channel() < 0)
-      || (newhit.source_channel() >= energy_idx_.size()))
+      || (newhit.source_channel() >= static_cast<int16_t>(energy_idx_.size())))
     return;
 
-  if ((newhit.source_channel() < cutoff_logic_.size())
+  if ((newhit.source_channel() < static_cast<int16_t>(cutoff_logic_.size()))
       && (newhit.value(energy_idx_.at(newhit.source_channel())).val(bits_) < cutoff_logic_[newhit.source_channel()]))
     return;
 
@@ -234,7 +234,7 @@ void Spectrum::_push_hit(const Hit& newhit)
   //  DBG << "Processing " << newhit.to_string();
 
   Hit hit = newhit;
-  if (hit.source_channel() < delay_ns_.size())
+  if (hit.source_channel() < static_cast<int16_t>(delay_ns_.size()))
     hit.delay_ns(delay_ns_[hit.source_channel()]);
 
   bool appended = false;
@@ -302,7 +302,7 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
   bool chan_new = (stats_list_.count(newBlock.source_channel) == 0);
   bool new_start = (newBlock.stats_type == StatsType::start);
 
-  if (newBlock.source_channel >= energy_idx_.size())
+  if (newBlock.source_channel >= static_cast<int16_t>(energy_idx_.size()))
     energy_idx_.resize(newBlock.source_channel + 1, -1);
   if (newBlock.model_hit.name_to_idx.count("energy"))
     energy_idx_[newBlock.source_channel] = newBlock.model_hit.name_to_idx.at("energy");
@@ -433,7 +433,7 @@ void Spectrum::_recalc_axes() {
   if (axes_.size() != metadata_.detectors.size())
     return;
 
-  for (int i=0; i < metadata_.detectors.size(); ++i) {
+  for (size_t i=0; i < metadata_.detectors.size(); ++i) {
     uint32_t res = pow(2,bits_);
 
     Qpx::Calibration this_calib;

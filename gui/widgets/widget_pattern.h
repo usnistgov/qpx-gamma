@@ -42,10 +42,10 @@ class QpxPatternEditor : public QWidget
 public:
   QpxPatternEditor(QWidget *parent = 0);
 
-  QpxPatternEditor(Qpx::Pattern pattern = Qpx::Pattern(), double size = 25, int wrap = 0)
+  QpxPatternEditor(Qpx::Pattern pattern = Qpx::Pattern(), double size = 25, size_t wrap = 0)
   {set_pattern(pattern, size, wrap);}
 
-  void set_pattern(Qpx::Pattern pattern = Qpx::Pattern(), double size = 25, int wrap = 0);
+  void set_pattern(Qpx::Pattern pattern = Qpx::Pattern(), double size = 25, size_t wrap = 0);
 
   QSize sizeHint() const Q_DECL_OVERRIDE;
   Qpx::Pattern pattern() const;

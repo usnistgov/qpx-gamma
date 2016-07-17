@@ -374,7 +374,7 @@ void FormSystemSettings::apply_detector_presets()
   emit toggleIO(false);
 
   std::map<int, Qpx::Detector> update;
-  for (int i=0; i < channels_.size(); ++i)
+  for (size_t i=0; i < channels_.size(); ++i)
     if (detectors_.has_a(channels_[i]))
       update[i] = detectors_.get(channels_[i]);
     

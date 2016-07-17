@@ -639,7 +639,7 @@ std::string VmUsbStack::to_string()
   std::stringstream str;
   str << "---- Stack Dump: " << m_list.size() << " 32 bit elements ----\n";
   str << hex;
-  for (int i=0; i < m_list.size(); i++) {
+  for (size_t i=0; i < m_list.size(); i++) {
     str << m_list[i] << endl;
   }
   str << dec;

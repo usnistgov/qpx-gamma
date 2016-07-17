@@ -66,7 +66,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
         QBrush brush(Qt::black);
         return brush;
       }
-    } else if ((col <= (channels_.size()+2)) && (!channels_.empty()) && (!consolidated_list_.branches.empty())) {
+    } else if ((col <= static_cast<int>(channels_.size()+2)) && (!channels_.empty()) && (!consolidated_list_.branches.empty())) {
       Qpx::Setting item = consolidated_list_.branches.get(row-1);
       if (item.metadata.writable) {
         QBrush brush(Qt::black);
@@ -86,7 +86,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
     font.setPointSize(10);
     if ((col == 0) && (row != 0))
       font.setBold(true);
-    else if (col > channels_.size())
+    else if (col > static_cast<int>(channels_.size()))
       font.setItalic(true);
     return font;
   }
@@ -97,7 +97,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
     if (row == 0) {
       if (col == 0) {
         return "<===detector===>";
-      } else if (col <= channels_.size()) {
+      } else if (col <= static_cast<int>(channels_.size())) {
         Qpx::Setting det;
         det.metadata.setting_type = Qpx::SettingType::detector;
         det.value_text = channels_[col-1].name_;
@@ -109,11 +109,11 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       Qpx::Setting item = consolidated_list_.branches.get(row-1);
       if (col == 0)
         return QString::fromStdString(item.id_);
-      else if ((col == (channels_.size()+1)) && preferred_units_.count(item.id_))
+      else if ((col == static_cast<int>(channels_.size()+1)) && preferred_units_.count(item.id_))
         return QString::fromStdString(preferred_units_.at(item.id_));
-      else if (col == (channels_.size()+2))
+      else if (col == static_cast<int>(channels_.size()+2))
         return QString::fromStdString(item.metadata.description);
-      else if (col <= channels_.size()) {
+      else if (col <= static_cast<int>(channels_.size())) {
         item = channels_[col-1].settings_.get_setting(item, Qpx::Match::id);
         if (item != Qpx::Setting()) {
           if (item.metadata.setting_type == Qpx::SettingType::floating) {
@@ -132,14 +132,14 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
   }
 
   else if (role == Qt::EditRole) {
-    if ((row == 0) && (col > 0) && (col <= channels_.size())) {
+    if ((row == 0) && (col > 0) && (col <= static_cast<int>(channels_.size()))) {
       Qpx::Setting det;
       det.metadata.setting_type = Qpx::SettingType::detector;
       det.value_text = channels_[col-1].name_;
       return QVariant::fromValue(det);
     } else if (row != 0) {
       Qpx::Setting item = consolidated_list_.branches.get(row-1);
-      if ((col == (channels_.size()+1)) && preferred_units_.count(item.id_)) {
+      if ((col == static_cast<int>(channels_.size()+1)) && preferred_units_.count(item.id_)) {
         UnitConverter uc;
         Qpx::Setting st("unit");
         st.metadata.setting_type = Qpx::SettingType::int_menu;
@@ -151,7 +151,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
           if (q.second == preferred_units_.at(item.id_))
             st.value_int = q.first;
         return QVariant::fromValue(st);
-      } else if (col <= channels_.size()) {
+      } else if (col <= static_cast<int>(channels_.size())) {
         item = channels_[col-1].settings_.get_setting(item, Qpx::Match::id);
         if (item == Qpx::Setting())
           return QVariant();
@@ -181,11 +181,11 @@ QVariant TableChanSettings::headerData(int section, Qt::Orientation orientation,
     if (orientation == Qt::Horizontal) {
       if (section == 0)
         return QString("Setting name");
-      else if (section <= channels_.size())
+      else if (section <= static_cast<int>(channels_.size()))
         return (QString("chan ") + QString::number(section-1));
-      else if (section == (channels_.size()+1))
+      else if (section == static_cast<int>(channels_.size()+1))
         return "Units";
-      else if (section == (channels_.size()+2))
+      else if (section == static_cast<int>(channels_.size()+2))
         return "Description";
     } else if (orientation == Qt::Vertical) {
       if (section)
@@ -206,7 +206,7 @@ QVariant TableChanSettings::headerData(int section, Qt::Orientation orientation,
 void TableChanSettings::update(const std::vector<Qpx::Detector> &settings) {
   channels_ = settings;
   if (!show_read_only_) {
-    for (int i=0; i < settings.size(); ++i) {
+    for (size_t i=0; i < settings.size(); ++i) {
       channels_[i].settings_.branches.clear();
       for (auto &q : settings[i].settings_.branches.my_data_) {
         if (q.metadata.writable)
@@ -237,18 +237,18 @@ Qt::ItemFlags TableChanSettings::flags(const QModelIndex &index) const
   int row = index.row();
   int col = index.column();
 
-  if ((col > 0) && (col <= (channels_.size() + 2)) && (!consolidated_list_.branches.empty())) {
-    if ((row == 0) && (col <= channels_.size()))
+  if ((col > 0) && (col <= static_cast<int>(channels_.size() + 2)) && (!consolidated_list_.branches.empty())) {
+    if ((row == 0) && (col <= static_cast<int>(channels_.size())))
       return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
 
     Qpx::Setting item = consolidated_list_.branches.get(row-1);
 
-    if (col == (channels_.size() + 1)) {
+    if (col == static_cast<int>(channels_.size() + 1)) {
       if (preferred_units_.count(item.id_) && scalable_units_.count(UnitConverter().strip_unit(item.metadata.unit)))
         return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
       else
         return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
-    } else if (col == (channels_.size() + 2))
+    } else if (col == static_cast<int>(channels_.size() + 2))
       return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
 
     item = channels_[col-1].settings_.get_setting(item, Qpx::Match::id);
@@ -270,15 +270,15 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
   int col = index.column();
 
   if (role == Qt::EditRole)
-    if ((row > 0) && (col <= (channels_.size()+2))) {
+    if ((row > 0) && (col <= static_cast<int>(channels_.size()+2))) {
       Qpx::Setting item = consolidated_list_.branches.get(row-1);
 
-      if (col == (channels_.size()+1)) {
+      if (col == static_cast<int>(channels_.size()+1)) {
         if (preferred_units_.count(item.id_)) {
           int idx = value.toInt();
           std::string prefix;
           UnitConverter uc;
-          if (idx < uc.prefix_values_indexed.size())
+          if (idx < static_cast<int>(uc.prefix_values_indexed.size()))
             prefix = uc.prefix_values_indexed[idx];
           preferred_units_[item.id_] = prefix + uc.strip_unit(preferred_units_[item.id_]);
           QModelIndex start_ix = createIndex( row, 0 );

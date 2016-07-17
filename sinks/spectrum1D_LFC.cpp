@@ -60,7 +60,7 @@ bool Spectrum1D_LFC::_initialize() {
   //add pattern must have exactly one channel
   int adds = 0;
   std::vector<bool> gts = pattern_add_.gates();
-  for (int i=0; i < gts.size(); ++i) {
+  for (size_t i=0; i < gts.size(); ++i) {
     if (gts[i]) {
       adds++;
       my_channel_ = i;

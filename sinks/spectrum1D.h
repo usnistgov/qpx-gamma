@@ -38,7 +38,7 @@ protected:
 
   bool _initialize() override;
 
-  PreciseFloat _data(std::initializer_list<uint16_t> list) const;
+  PreciseFloat _data(std::initializer_list<size_t> list) const override;
   std::unique_ptr<std::list<Entry>> _data_range(std::initializer_list<Pair> list);
   void _append(const Entry&) override;
   void _set_detectors(const std::vector<Qpx::Detector>& dets) override;
@@ -75,7 +75,7 @@ protected:
   bool read_spe_gammavision(std::string);
 
   std::vector<PreciseFloat> spectrum_;
-  int32_t cutoff_bin_;
+  uint32_t cutoff_bin_;
   uint16_t maxchan_;
 };
 

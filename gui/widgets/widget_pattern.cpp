@@ -29,7 +29,7 @@
 #include "custom_logger.h"
 
 
-void QpxPatternEditor::set_pattern(Qpx::Pattern pattern, double size, int wrap)
+void QpxPatternEditor::set_pattern(Qpx::Pattern pattern, double size, size_t wrap)
 {
   threshold_ = pattern.threshold();
   pattern_.clear();
@@ -67,14 +67,14 @@ int QpxPatternEditor::flagAtPosition(int x, int y)
   int flag_y = y / (sizeHint().height() / rows_);
   int flag = flag_y * wrap_ + flag_x;
 
-  if (flag < 0 || flag > pattern_.size() || (x < 40) || (flag_x >= wrap_) || (flag_y >= rows_))
+  if (flag < 0 || flag > static_cast<int>(pattern_.size()) || (x < 40) || (flag_x >= wrap_) || (flag_y >= rows_))
     return -1;
 
   return flag;
 }
 
 void QpxPatternEditor::setFlag(int count) {
-  if ((count > -1) && (count < pattern_.size())) {
+  if ((count > -1) && (count < static_cast<int>(pattern_.size()))) {
     pattern_[count] = !pattern_[count];
   }
 }
@@ -126,7 +126,7 @@ void QpxPatternEditor::paint(QPainter *painter, const QRect &rect,
     for (int j = 0; j < wrap_; ++j) {
       int flag = i * wrap_ + j;
 
-      if (flag < pattern_.size()) {
+      if (flag < static_cast<int>(pattern_.size())) {
 
         painter->setPen(Qt::NoPen);
         painter->setBrush(border);

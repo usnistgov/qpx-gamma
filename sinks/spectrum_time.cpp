@@ -44,7 +44,7 @@ bool TimeSpectrum::_initialize() {
 
   int adds = 0;
   std::vector<bool> gts = pattern_add_.gates();
-  for (int i=0; i < gts.size(); ++i)
+  for (size_t i=0; i < gts.size(); ++i)
     if (gts[i])
       adds++;
 
@@ -65,7 +65,7 @@ void TimeSpectrum::_set_detectors(const std::vector<Qpx::Detector>& dets)
     metadata_.detectors = dets;
   else if (dets.size() > metadata_.dimensions()) {
     int j=0;
-    for (int i=0; i < dets.size(); ++i) {
+    for (size_t i=0; i < dets.size(); ++i) {
       if (pattern_add_.relevant(i)) {
         metadata_.detectors[j] = dets[i];
         j++;
@@ -78,7 +78,7 @@ void TimeSpectrum::_set_detectors(const std::vector<Qpx::Detector>& dets)
   this->_recalc_axes();
 }
 
-PreciseFloat TimeSpectrum::_data(std::initializer_list<uint16_t> list) const {
+PreciseFloat TimeSpectrum::_data(std::initializer_list<size_t> list) const {
   if (list.size() != 2)
     return 0;
 
@@ -95,7 +95,7 @@ PreciseFloat TimeSpectrum::_data(std::initializer_list<uint16_t> list) const {
 
 std::unique_ptr<std::list<Entry>> TimeSpectrum::_data_range(std::initializer_list<Pair> list)
 {
-  int min0, min1, max0, max1;
+  size_t min0, min1, max0, max1;
   if (list.size() != 2)
   {
     min0 = min1 = 0;

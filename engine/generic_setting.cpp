@@ -762,7 +762,7 @@ void Setting::enrich(const std::map<std::string, SettingMeta> &setting_definitio
         if (setting_definitions.count(q.second) > 0) {
           SettingMeta newmeta = setting_definitions.at(q.second);
           bool added = false;
-          for (int i=0; i < br.size(); ++i) {
+          for (size_t i=0; i < br.size(); ++i) {
             Setting newset = br.get(i);
             if (newset.id_ == newmeta.id_) {
               newset.enrich(setting_definitions, impose_limits);
@@ -778,7 +778,7 @@ void Setting::enrich(const std::map<std::string, SettingMeta> &setting_definitio
           }
         }
       }
-      for (int i=0; i < br.size(); ++i) {
+      for (size_t i=0; i < br.size(); ++i) {
         if (setting_definitions.count(br.get(i).id_) == 0) {
           Setting newset = br.get(i);
           newset.metadata.visible = false;
@@ -812,7 +812,7 @@ void Setting::enrich(const std::map<std::string, SettingMeta> &setting_definitio
 void Setting::condense() {
   XMLableDB<Setting> oldbranches = branches;
   branches.clear();
-  for (int i=0; i < oldbranches.size(); ++i) {
+  for (size_t i=0; i < oldbranches.size(); ++i) {
     Setting setting = oldbranches.get(i);
     if (setting.metadata.setting_type == SettingType::stem) {
       setting.condense();
@@ -837,7 +837,7 @@ void Setting::enable_if_flag(bool enable, const std::string &flag)
 void Setting::cull_invisible() {
   XMLableDB<Setting> oldbranches = branches;
   branches.clear();
-  for (int i=0; i < oldbranches.size(); ++i) {
+  for (size_t i=0; i < oldbranches.size(); ++i) {
     Setting setting = oldbranches.get(i);
     if (setting.metadata.visible)
       if (setting.metadata.setting_type == SettingType::stem) {
@@ -852,7 +852,7 @@ void Setting::cull_invisible() {
 void Setting::cull_readonly() {
   XMLableDB<Setting> oldbranches = branches;
   branches.clear();
-  for (int i=0; i < oldbranches.size(); ++i) {
+  for (size_t i=0; i < oldbranches.size(); ++i) {
     Setting setting = oldbranches.get(i);
     if (setting.metadata.setting_type == SettingType::stem) {
       setting.cull_readonly();

@@ -76,7 +76,7 @@ SinkPtr slice_rectangular(SinkPtr source, std::initializer_list<Pair> bounds, bo
     return nullptr;
 }
 
-bool slice_diagonal_x(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t minx, uint32_t maxx) {
+bool slice_diagonal_x(SinkPtr source, SinkPtr destination, size_t xc, size_t yc, size_t width, size_t minx, size_t maxx) {
   if (source == nullptr)
     return false;
   if (destination == nullptr)
@@ -92,8 +92,8 @@ bool slice_diagonal_x(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t
     if ((diag_width % 2) == 0)
       diag_width++;
 
-    int tot = xc + yc;
-    for (int i=0; i < tot; ++i) {
+    size_t tot = xc + yc;
+    for (size_t i=0; i < tot; ++i) {
       if ((i >= minx) && (i < maxx)) {
         Entry entry({i}, sum_diag(source, i, tot-i, diag_width));
         destination->append(entry);
@@ -105,7 +105,7 @@ bool slice_diagonal_x(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t
   return (destination->metadata().get_attribute("total_events").value_precise > 0);
 }
 
-bool slice_diagonal_y(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t yc, uint32_t width, uint32_t miny, uint32_t maxy) {
+bool slice_diagonal_y(SinkPtr source, SinkPtr destination, size_t xc, size_t yc, size_t width, size_t miny, size_t maxy) {
   if (source == nullptr)
     return false;
   if (destination == nullptr)
@@ -121,8 +121,8 @@ bool slice_diagonal_y(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t
     if ((diag_width % 2) == 0)
       diag_width++;
 
-    int tot = xc + yc;
-    for (int i=0; i < tot; ++i) {
+    size_t tot = xc + yc;
+    for (size_t i=0; i < tot; ++i) {
       if ((i >= miny) && (i < maxy)) {
         Entry entry({i}, sum_diag(source, tot-i, i, diag_width));
         destination->append(entry);
@@ -134,7 +134,7 @@ bool slice_diagonal_y(SinkPtr source, SinkPtr destination, uint32_t xc, uint32_t
   return (destination->metadata().get_attribute("total_events").value_precise > 0);
 }
 
-PreciseFloat sum_diag(SinkPtr source, uint16_t x, uint16_t y, uint16_t width)
+PreciseFloat sum_diag(SinkPtr source, size_t x, size_t y, size_t width)
 {
   PreciseFloat ans = sum_with_neighbors(source, x, y);
   int w = (width-1)/2;
@@ -144,7 +144,7 @@ PreciseFloat sum_diag(SinkPtr source, uint16_t x, uint16_t y, uint16_t width)
 }
 
 
-PreciseFloat sum_with_neighbors(SinkPtr source, uint16_t x, uint16_t y)
+PreciseFloat sum_with_neighbors(SinkPtr source, size_t x, size_t y)
 {
   PreciseFloat ans = 0;
   ans += source->data({x,y}) + 0.25 * (source->data({x+1,y}) + source->data({x,y+1}));
@@ -167,12 +167,12 @@ SinkPtr make_symmetrized(SinkPtr source)
     return nullptr;
   }
 
-  std::vector<uint16_t> chans;
+  std::vector<size_t> chans;
   Setting pattern;
   pattern = md.get_attribute("pattern_add");
   std::vector<bool> gts = pattern.value_pattern.gates();
 
-  for (int i=0; i < gts.size(); ++i) {
+  for (size_t i=0; i < gts.size(); ++i) {
     if (gts[i])
       chans.push_back(i);
   }
@@ -205,7 +205,7 @@ SinkPtr make_symmetrized(SinkPtr source)
     return false;
   }
 
-  uint16_t bits = md.get_attribute("resolution").value_int;
+  size_t bits = md.get_attribute("resolution").value_int;
   Calibration gain_match_cali = detector2.get_gain_match(bits, detector1.name_);
 
   if (gain_match_cali.to_ == detector1.name_)
@@ -215,12 +215,12 @@ SinkPtr make_symmetrized(SinkPtr source)
     return false;
   }
 
-  uint32_t adjrange = pow(2, bits);
+  size_t adjrange = pow(2, bits);
 
   boost::random::mt19937 gen;
   boost::random::uniform_real_distribution<> dist(-0.5, 0.5);
 
-  uint16_t e2 = 0;
+  size_t e2 = 0;
   std::unique_ptr<std::list<Entry>> spectrum_data = std::move(source->data_range({{0, adjrange}, {0, adjrange}}));
   for (auto it : *spectrum_data) {
     PreciseFloat count = it.second;
@@ -235,7 +235,7 @@ SinkPtr make_symmetrized(SinkPtr source)
       double xfp = xformed + plus;
 
       if (xfp > 0)
-        e2 = static_cast<uint16_t>(std::round(xfp));
+        e2 = static_cast<size_t>(std::round(xfp));
       else
         e2 = 0;
 

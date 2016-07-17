@@ -310,7 +310,7 @@ std::vector<uint32_t> VmUsb2::vmeBlockRead(int base, AddressModifier amod,  int 
   std::vector<uint32_t> result;
 
   a_vmeBlockRead((uint32_t)base, amod, (void*)data, (size_t)xfercount, &xferred);
-  for (int i =0; i < xferred; i++) {
+  for (size_t i =0; i < xferred; i++) {
     result.push_back(data[i]);
   }
   return result;
@@ -322,7 +322,7 @@ std::vector<uint32_t> VmUsb2::vmeFifoRead(int base, AddressModifier amod, int xf
   std::vector<uint32_t> result;
 
   a_vmeFifoRead((uint32_t)base, amod, data, (size_t)xfercount, &xferred);
-  for (int i = 0; i < xferred; i++) {
+  for (size_t i = 0; i < xferred; i++) {
     result.push_back(data[i]);
   }
   return result;
@@ -491,7 +491,7 @@ std::vector<uint8_t> VmUsb2::executeList(VmUsbStack& list, int maxBytes)
   int status = this->a_executeList(list, data, maxBytes, &nRead);
 
   if (status == 0) {
-    for (int i = 0; i < nRead; i++) {
+    for (size_t i = 0; i < nRead; i++) {
       result.push_back(data[i]);
     }
   }

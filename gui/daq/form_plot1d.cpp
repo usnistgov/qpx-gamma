@@ -466,7 +466,11 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
   if (!md.detectors.empty())
     cal = md.detectors[0].best_calib(bits);
 
-  PreciseFloat max = someSpectrum->data({std::round(cal.inverse_transform(moving.pos.energy()))});
+  int maxidx = std::round(cal.inverse_transform(moving.pos.energy()));
+  if (maxidx < 0)
+    maxidx = 0;
+
+  PreciseFloat max = someSpectrum->data({static_cast<size_t>(maxidx)});
 
   if (ui->pushPerLive->isChecked() && (livetime != 0))
     max = max / livetime;
@@ -484,7 +488,11 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
       if (!mdt.detectors.empty())
         cal = mdt.detectors[0].best_calib(bits);
 
-      PreciseFloat mc = q.second->data({std::round(cal.inverse_transform(moving.pos.energy()))});
+      int mcidx = std::round(cal.inverse_transform(moving.pos.energy()));
+      if (mcidx < 0)
+        mcidx = 0;
+
+      PreciseFloat mc = q.second->data({static_cast<size_t>(mcidx)});
 
       if (ui->pushPerLive->isChecked() && (lt != 0))
         mc = mc / lt;

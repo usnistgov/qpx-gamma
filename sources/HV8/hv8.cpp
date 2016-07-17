@@ -58,7 +58,7 @@ bool QpxHV8Plugin::read_settings_bulk(Qpx::Setting &set) const {
     for (auto &q : set.branches.my_data_) {
       if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "HV8/Channels")) {
         for (auto &k : q.branches.my_data_) {
-          if ((k.metadata.setting_type == Qpx::SettingType::floating) && (k.metadata.address > -1) && (k.metadata.address < voltages.size()))
+          if ((k.metadata.setting_type == Qpx::SettingType::floating) && (k.metadata.address > -1) && (k.metadata.address < static_cast<int16_t>(voltages.size())))
             k.value_dbl = voltages[k.metadata.address];
         }
       } else if ((q.id_ != "HV8/ResponseTimeout") && (q.id_ != "HV8/ResponseAttempts")) {
@@ -390,7 +390,7 @@ void QpxHV8Plugin::get_all_settings() {
         int chan = boost::lexical_cast<int>(tokens2[0]);
         double voltage = boost::lexical_cast<double>(tokens2[1]);
 //                DBG << "Voltage for chan " << chan << " reported as " << voltage;
-        if ((chan >= 1) && (chan <= voltages.size()))
+        if ((chan >= 1) && (chan <= static_cast<int16_t>(voltages.size())))
           voltages[chan-1] = voltage;
       }
     }

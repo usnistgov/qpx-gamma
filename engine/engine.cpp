@@ -155,7 +155,7 @@ bool Engine::read_settings_bulk(){
       set.branches.clear();
       set.branches.add_a(totaldets);
 
-      for (int i=0; i < detectors_.size(); ++i) {
+      for (size_t i=0; i < detectors_.size(); ++i) {
         det.metadata.name = "Detector " + std::to_string(i);
         det.value_text = detectors_[i].name_;
         det.indices.clear();
@@ -243,7 +243,7 @@ std::vector<Hit> Engine::oscilloscope() {
       //DBG << "oscil > " << q.second->device_name();
       std::list<Hit> trc = q.second->oscilloscope();
       for (auto &p : trc)
-        if ((p.source_channel() >= 0) && (p.source_channel() < traces.size()))
+        if ((p.source_channel() >= 0) && (p.source_channel() < static_cast<int16_t>(traces.size())))
           traces[p.source_channel()] = p;
     }
   return traces;
@@ -279,8 +279,8 @@ bool Engine::daq_running() {
   return running;
 }
 
-void Engine::set_detector(int ch, Qpx::Detector det) {
-  if (ch < 0 || ch >= detectors_.size())
+void Engine::set_detector(size_t ch, Qpx::Detector det) {
+  if (ch >= detectors_.size())
     return;
   detectors_[ch] = det;
   //DBG << "set det #" << ch << " to  " << det.name_;
@@ -328,8 +328,8 @@ void Engine::load_optimization() {
     load_optimization(i);
 }
 
-void Engine::load_optimization(int i) {
-  if ((i < 0) || (i >= detectors_.size()))
+void Engine::load_optimization(size_t i) {
+  if (i >= detectors_.size())
     return;
   if (detectors_[i].settings_.metadata.setting_type == Qpx::SettingType::stem) {
     detectors_[i].settings_.indices.clear();

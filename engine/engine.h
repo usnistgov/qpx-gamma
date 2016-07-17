@@ -59,7 +59,7 @@ public:
 
   //detectors
   std::vector<Qpx::Detector> get_detectors() const {return detectors_;}
-  void set_detector(int, Qpx::Detector);
+  void set_detector(size_t, Qpx::Detector);
 
   void load_optimization();
 
@@ -106,7 +106,7 @@ private:
   ~Engine();
 
   void save_optimization();
-  void load_optimization(int);
+  void load_optimization(size_t);
 
 };
 

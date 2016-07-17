@@ -61,7 +61,7 @@ void FormDaqSettings::closeEvent(QCloseEvent *event) {
 
 void FormDaqSettings::selectionChanged(int row)
 {
-  if ((row >= 0) && (row < spills_.size()))
+  if ((row >= 0) && (row < static_cast<int>(spills_.size())))
     tree_settings_model_.update(spills_.at(row).state);
   else
     tree_settings_model_.update(Qpx::Setting());

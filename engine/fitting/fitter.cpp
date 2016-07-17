@@ -104,7 +104,7 @@ void Fitter::find_regions() {
 
   size_t L = finder_.lefts[0];
   size_t R = finder_.rights[0];
-  for (int i=1; i < finder_.filtered.size(); ++i) {
+  for (size_t i=1; i < finder_.filtered.size(); ++i) {
     double margin = 0;
     if (!finder_.fw_theoretical_bin.empty())
       margin = finder_.settings_.ROI_extend_background * finder_.fw_theoretical_bin[R];
@@ -117,7 +117,7 @@ void Fitter::find_regions() {
 //      DBG << "postcat ROI " << L << " " << R;
     } else {
 //      DBG << "<Fitter> Creating ROI " << L << "-" << R;
-      L -= margin; if (L < 0) L = 0;
+      L -= margin; //if (L < 0) L = 0;
       R += margin; if (R >= finder_.x_.size()) R = finder_.x_.size() - 1;
       if (settings().cali_nrg_.transform(R, settings().bits_) > settings().finder_cutoff_kev) {
 //        DBG << "<Fitter> region " << L << "-" << R;
@@ -138,7 +138,7 @@ void Fitter::find_regions() {
 
   //extend limits of ROI to edges of neighbor ROIs (grab more background)
   if (Ls.size() > 2) {
-    for (int i=0; (i+1) < Ls.size(); ++i) {
+    for (size_t i=0; (i+1) < Ls.size(); ++i) {
       if (Rs[i] < Ls[i+1]) {
         int mid = (Ls[i+1] + Rs[i]) / 2;
         Rs[i] = mid - 1;
@@ -151,7 +151,7 @@ void Fitter::find_regions() {
     }
   }
 
-  for (int i=0; i < Ls.size(); ++i) {
+  for (size_t i=0; i < Ls.size(); ++i) {
     ROI newROI(finder_, finder_.x_[Ls[i]], finder_.x_[Rs[i]]);
     if (newROI.width())
       regions_[newROI.ID()] = newROI;

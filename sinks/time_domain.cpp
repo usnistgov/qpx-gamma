@@ -58,7 +58,7 @@ bool TimeDomain::_initialize() {
 
   int adds = 0;
   std::vector<bool> gts = pattern_add_.gates();
-  for (int i=0; i < gts.size(); ++i)
+  for (size_t i=0; i < gts.size(); ++i)
     if (gts[i])
       adds++;
 
@@ -79,7 +79,7 @@ void TimeDomain::_set_detectors(const std::vector<Qpx::Detector>& dets) {
     metadata_.detectors = dets;
   if (dets.size() >= metadata_.dimensions()) {
 
-    for (int i=0; i < dets.size(); ++i) {
+    for (size_t i=0; i < dets.size(); ++i) {
       if (pattern_add_.relevant(i)) {
         metadata_.detectors[0] = dets[i];
         break;
@@ -95,7 +95,7 @@ void TimeDomain::_set_detectors(const std::vector<Qpx::Detector>& dets) {
 //  DBG << "<TimeDomain> _set_detectors";
 }
 
-PreciseFloat TimeDomain::_data(std::initializer_list<uint16_t> list) const {
+PreciseFloat TimeDomain::_data(std::initializer_list<size_t> list) const {
   if (list.size() != 1)
     return 0;
   
@@ -107,7 +107,7 @@ PreciseFloat TimeDomain::_data(std::initializer_list<uint16_t> list) const {
 }
 
 std::unique_ptr<std::list<Entry>> TimeDomain::_data_range(std::initializer_list<Pair> list) {
-  int min, max;
+  size_t min, max;
   if (list.size() != 1) {
     min = 0;
     max = spectrum_.size();
@@ -123,7 +123,7 @@ std::unique_ptr<std::list<Entry>> TimeDomain::_data_range(std::initializer_list<
   //in range?
   
   std::unique_ptr<std::list<Entry>> result(new std::list<Entry>);
-  for (int i=min; i <= max; i++) {
+  for (size_t i=min; i <= max; i++) {
     Entry newentry;
     newentry.first.resize(1, 0);
     newentry.first[0] = i;
@@ -134,7 +134,7 @@ std::unique_ptr<std::list<Entry>> TimeDomain::_data_range(std::initializer_list<
 }
 
 void TimeDomain::_append(const Entry& e) {
-  for (int i = 0; i < e.first.size(); ++i)
+  for (size_t i = 0; i < e.first.size(); ++i)
     if (pattern_add_.relevant(i) && (e.first[i] < spectrum_.size())) {
 //      spectrum_[e.first[i]] += e.second;
 //      metadata_.total_count += e.second;

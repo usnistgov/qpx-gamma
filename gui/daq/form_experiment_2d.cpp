@@ -146,7 +146,7 @@ void FormExperiment2D::display_data()
 {
   ui->tableResults->blockSignals(true);
 
-  if (ui->tableResults->rowCount() != filtered_data_points_.size())
+  if (ui->tableResults->rowCount() != static_cast<int>(filtered_data_points_.size()))
     ui->tableResults->setRowCount(filtered_data_points_.size());
 
   QString name = ui->comboDomain->currentData().toString();
@@ -168,7 +168,7 @@ void FormExperiment2D::display_data()
   std::set<double> xs;
   std::set<double> ys;
 
-  for (int i = 0; i < filtered_data_points_.size(); ++i)
+  for (size_t i = 0; i < filtered_data_points_.size(); ++i)
   {
     Qpx::DataPoint &data = filtered_data_points_.at(i);
     eval_dependent(data);
@@ -243,7 +243,7 @@ void FormExperiment2D::display_data()
   bool flip90 = ytoi.size() > xtoi.size();
 
   std::shared_ptr<Qpx::EntryList> data = std::shared_ptr<Qpx::EntryList>(new Qpx::EntryList());
-  for (int i = 0; i < filtered_data_points_.size(); ++i)
+  for (size_t i = 0; i < filtered_data_points_.size(); ++i)
   {
     Qpx::DataPoint &dp = filtered_data_points_.at(i);
     uint16_t d1 = xtoi.at(dp.independent_variable.value());
@@ -256,7 +256,7 @@ void FormExperiment2D::display_data()
     }
 
     Qpx::Entry e;
-    e.first = std::vector<uint16_t>({d1,d2});
+    e.first = std::vector<size_t>({d1,d2});
     e.second = dp.dependent_variable.value();
     data->push_back(e);
   }

@@ -48,7 +48,7 @@ void Delayometer::_set_detectors(const std::vector<Qpx::Detector>& dets) {
     metadata_.detectors = dets;
   if (dets.size() >= metadata_.dimensions()) {
 
-    for (int i=0; i < dets.size(); ++i) {
+    for (size_t i=0; i < dets.size(); ++i) {
       if (pattern_add_.relevant(i)) {
         metadata_.detectors[0] = dets[i];
         break;
@@ -124,13 +124,13 @@ void Delayometer::_append(const Entry& e) {
 void Delayometer::_push_hit(const Hit& newhit)
 {
   if ((newhit.source_channel() < 0)
-      || (newhit.source_channel() >= energy_idx_.size())
+      || (newhit.source_channel() >= static_cast<int16_t>(energy_idx_.size()))
       || (energy_idx_.at(newhit.source_channel()) < 0))
     return;
 
   DigitizedVal energy = newhit.value(energy_idx_.at(newhit.source_channel()));
 
-  if ((newhit.source_channel() < cutoff_logic_.size())
+  if ((newhit.source_channel() < static_cast<int16_t>(cutoff_logic_.size()))
       && (energy.val(energy.bits()) < cutoff_logic_[newhit.source_channel()]))
     return;
 

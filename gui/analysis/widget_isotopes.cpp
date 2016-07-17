@@ -87,7 +87,7 @@ void WidgetIsotopes::setDir(QString filedir) {
   if (validateFile(this, filedir, false)) {
     isotopes_.read_xml(filedir.toStdString());
     ui->listIsotopes->clear();
-    for (int i=0; i < isotopes_.size(); i++) {
+    for (size_t i=0; i < isotopes_.size(); i++) {
       ui->listIsotopes->addItem(QString::fromStdString(isotopes_.get(i).name));
     }
   }
@@ -228,7 +228,7 @@ void WidgetIsotopes::on_pushRemoveIsotope_clicked()
   table_gammas_.clear();
   isotopes_.remove_a(RadTypes::Isotope(current_isotope().toStdString()));
   ui->listIsotopes->clear();
-  for (int i=0; i < isotopes_.size(); i++) {
+  for (size_t i=0; i < isotopes_.size(); i++) {
     ui->listIsotopes->addItem(QString::fromStdString(isotopes_.get(i).name));
   }
   modified_ = true;
@@ -247,7 +247,7 @@ void WidgetIsotopes::on_pushAddIsotope_clicked()
     else {
       isotopes_.add(RadTypes::Isotope(text.toStdString()));
       ui->listIsotopes->clear();
-      for (int i=0; i < isotopes_.size(); i++) {
+      for (size_t i=0; i < isotopes_.size(); i++) {
         ui->listIsotopes->addItem(QString::fromStdString(isotopes_.get(i).name));
       }
       modified_ = true;
@@ -361,7 +361,7 @@ QVariant TableGammas::headerData(int section, Qt::Orientation orientation, int r
 
 void TableGammas::set_gammas(const XMLableDB<RadTypes::Gamma> &newgammas) {
   gammas_.clear();
-  for (int i=0; i <newgammas.size(); ++i)
+  for (size_t i=0; i <newgammas.size(); ++i)
     gammas_.push_back(newgammas.get(i));
 
   QModelIndex start_ix = createIndex( 0, 0 );

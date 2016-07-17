@@ -37,7 +37,7 @@ TreeItem::TreeItem(const Qpx::Setting &data, TreeItem *parent)
 
   if (itemData.metadata.setting_type == Qpx::SettingType::stem) {
     childItems.resize(itemData.branches.size());
-    for (int i=0; i < itemData.branches.size(); ++i)
+    for (size_t i=0; i < itemData.branches.size(); ++i)
       childItems[i] = new TreeItem(itemData.branches.get(i), this);
   }
 }
@@ -46,9 +46,9 @@ bool TreeItem::eat_data(const Qpx::Setting &data) {
   itemData = data;
 
   if (itemData.metadata.setting_type == Qpx::SettingType::stem) {
-    if (itemData.branches.size() != childItems.size())
+    if (static_cast<int>(itemData.branches.size()) != childItems.size())
       return false;
-    for (int i=0; i < itemData.branches.size(); ++i) {
+    for (size_t i=0; i < itemData.branches.size(); ++i) {
       Qpx::Setting s = itemData.branches.get(i);
       if (childItems[i]->itemData.id_ != s.id_)
         return false;
@@ -247,7 +247,7 @@ bool TreeItem::setData(int column, const QVariant &value)
     foreach (QString idx, ilist) {
       bool ok;
       int i = idx.toInt(&ok);
-      if (ok && (i >= 0) && (new_indices.size() < itemData.metadata.max_indices))
+      if (ok && (i >= 0) && (static_cast<int>(new_indices.size()) < itemData.metadata.max_indices))
         new_indices.insert(i);
     }
 

@@ -43,7 +43,7 @@ CoefFunction::CoefFunction() :
 CoefFunction::CoefFunction(std::vector<double> coeffs, double uncert, double rsq)  :
   CoefFunction()
 {
-  for (int i=0; i < coeffs.size(); ++i)
+  for (size_t i=0; i < coeffs.size(); ++i)
     add_coeff(i, coeffs[i] - uncert, coeffs[i] + uncert, coeffs[i]);
   rsq_ = rsq;
 }

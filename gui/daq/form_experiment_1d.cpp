@@ -103,7 +103,8 @@ void FormExperiment1D::pass_selected_in_table()
   int selected_pass_ = -1;
   foreach (QModelIndex i, ui->tableResults->selectionModel()->selectedRows())
     selected_pass_ = i.row();
-  if ((selected_pass_ >= 0) && (selected_pass_ < filtered_data_points_.size())) {
+  if ((selected_pass_ >= 0) && (selected_pass_ < static_cast<int>(filtered_data_points_.size())))
+  {
     std::set<double> sel;
     sel.insert(filtered_data_points_.at(selected_pass_).independent_variable.value());
     ui->PlotCalib->set_selected_pts(sel);
@@ -125,7 +126,7 @@ void FormExperiment1D::pass_selected_in_plot()
 
   double sel = *selection.begin();
 
-  for (int i=0; i < filtered_data_points_.size(); ++i)
+  for (size_t i=0; i < filtered_data_points_.size(); ++i)
   {
     if (filtered_data_points_.at(i).independent_variable.value() == sel) {
       ui->tableResults->selectRow(i);
@@ -139,7 +140,7 @@ void FormExperiment1D::display_data()
 {
   ui->tableResults->blockSignals(true);
 
-  if (ui->tableResults->rowCount() != filtered_data_points_.size())
+  if (ui->tableResults->rowCount() != static_cast<int>(filtered_data_points_.size()))
     ui->tableResults->setRowCount(filtered_data_points_.size());
 
   QString name = ui->comboDomain->currentData().toString();
@@ -161,7 +162,7 @@ void FormExperiment1D::display_data()
   QVector<double> xx_sigma(filtered_data_points_.size(), 0);
   QVector<double> yy_sigma(filtered_data_points_.size(), 0);
 
-  for (int i = 0; i < filtered_data_points_.size(); ++i)
+  for (size_t i = 0; i < filtered_data_points_.size(); ++i)
   {
     Qpx::DataPoint &data = filtered_data_points_.at(i);
     eval_dependent(data);

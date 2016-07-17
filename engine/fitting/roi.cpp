@@ -124,7 +124,7 @@ bool ROI::auto_fit(boost::atomic<bool>& interruptor) {
   if (!finder_.settings_.sum4_only) {
     std::vector<double> y_nobkg = remove_background();
 
-    for (int i=0; i < finder_.filtered.size(); ++i) {
+    for (size_t i=0; i < finder_.filtered.size(); ++i) {
       std::vector<double> x_pk = std::vector<double>(finder_.x_.begin() + finder_.lefts[i], finder_.x_.begin() + finder_.rights[i] + 1);
       std::vector<double> y_pk = std::vector<double>(y_nobkg.begin() + finder_.lefts[i], y_nobkg.begin() + finder_.rights[i] + 1);
 
@@ -196,7 +196,7 @@ bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint
   int target_peak = -1;
   if (centroid_hint == -1) {
     double biggest = 0;
-    for (int j=0; j < finder_.filtered.size(); ++j) {
+    for (size_t j=0; j < finder_.filtered.size(); ++j) {
       std::vector<double> x_pk = std::vector<double>(finder_.x_.begin() + finder_.lefts[j],
                                                      finder_.x_.begin() + finder_.rights[j] + 1);
       std::vector<double> y_pk = std::vector<double>(finder_.y_resid_.begin() + finder_.lefts[j],
@@ -232,7 +232,7 @@ bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint
 
     //THIS NEVER HAPPENS
     double diff = abs(finder_.x_[finder_.filtered[target_peak]] - centroid_hint);
-    for (int j=0; j < finder_.filtered.size(); ++j)
+    for (size_t j=0; j < finder_.filtered.size(); ++j)
       if (abs(finder_.x_[finder_.filtered[j]] - centroid_hint) < diff) {
         target_peak = j;
         diff = abs(finder_.x_[finder_.filtered[j]] - centroid_hint);
@@ -574,7 +574,7 @@ bool ROI::rebuild_as_hypermet(boost::atomic<bool>& interruptor)
                                                    old_hype, background_,
                                                    finder_.settings_);
 
-  for (int i=0; i < hype.size(); ++i) {
+  for (size_t i=0; i < hype.size(); ++i) {
     double edge =  hype[i].width().value.value() * sqrt(log(2)) * 3; //use const from settings
     uint32_t edgeL = finder_.find_index(hype[i].center().value.value() - edge);
     uint32_t edgeR = finder_.find_index(hype[i].center().value.value() + edge);
@@ -813,7 +813,7 @@ PolyBounded  ROI::sum4_background() {
   return sum4back;
 }
 
-int ROI::current_fit() const
+size_t ROI::current_fit() const
 {
   return current_fit_;
 }
@@ -834,7 +834,7 @@ std::vector<FitDescription> ROI::history() const
 
 bool ROI::rollback(const Finder &parent_finder, size_t i)
 {
-  if ((i < 0) || (i >= fits_.size()))
+  if (i >= fits_.size())
     return false;
 
   finder_.settings_ = fits_[i].settings_;
@@ -856,13 +856,13 @@ void ROI::to_xml(pugi::xml_node &root, const Finder &parent_finder) const
     return;
 
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
-  node.append_attribute("current_fit").set_value(current_fit_);
+  node.append_attribute("current_fit").set_value(static_cast<unsigned int>(current_fit_));
 
-  int chosenfit = current_fit_;
+  size_t chosenfit = current_fit_;
 
   ROI temp(*this);
 
-  for (int i=0; i < temp.fits_.size(); ++i)
+  for (size_t i=0; i < temp.fits_.size(); ++i)
   {
     pugi::xml_node fitnode = node.append_child("Fit");
     fitnode.append_attribute("description").set_value(temp.fits_[i].description.description.c_str());

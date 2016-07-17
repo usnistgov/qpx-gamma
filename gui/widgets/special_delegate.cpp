@@ -250,7 +250,7 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
     } else if (set.metadata.setting_type == Qpx::SettingType::detector) {
       QComboBox *editor = new QComboBox(parent);
       editor->addItem(QString("none"), QString("none"));
-      for (int i=0; i < detectors_.size(); i++) {
+      for (size_t i=0; i < detectors_.size(); i++) {
         QString name = QString::fromStdString(detectors_.get(i).name_);
         editor->addItem(name, name);
       }

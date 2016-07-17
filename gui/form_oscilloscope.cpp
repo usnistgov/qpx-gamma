@@ -59,7 +59,8 @@ void FormOscilloscope::updateMenu(std::vector<Qpx::Detector> dets) {
 
   bool changed = false;
 
-  if (dets.size() < my_channels.size()) {
+  if (static_cast<int>(dets.size()) < my_channels.size())
+  {
     my_channels.resize(dets.size());
     changed = true;
   }
@@ -69,8 +70,8 @@ void FormOscilloscope::updateMenu(std::vector<Qpx::Detector> dets) {
 
   QVector<QColor> palette {Qt::darkCyan, Qt::darkBlue, Qt::darkGreen, Qt::darkRed, Qt::darkYellow, Qt::darkMagenta, Qt::red, Qt::blue};
 
-  for (int i=0; i < dets.size(); ++i) {
-    if (i >= my_channels.size()) {
+  for (size_t i=0; i < dets.size(); ++i) {
+    if (static_cast<int>(i) >= my_channels.size()) {
       my_channels.push_back(SelectorItem());
       my_channels[i].visible = true;
       changed = true;
@@ -97,7 +98,7 @@ void FormOscilloscope::channelToggled(SelectorItem) {
 void FormOscilloscope::channelDetails(SelectorItem item) {
   int i = item.data.toInt();
   QString text;
-  if ((i > -1) && (i < traces_.size())) {
+  if ((i > -1) && (i < static_cast<int32_t>(traces_.size()))) {
     Qpx::Detector det = channels_.at(i);
     text += QString::fromStdString(det.name_);
     text += " (" + QString::fromStdString(det.type_) + ")";
@@ -138,7 +139,7 @@ void FormOscilloscope::replot() {
 
     std::map<double, double> minima, maxima;
 
-    for (int i=0; i < traces_.size(); i++) {
+    for (size_t i=0; i < traces_.size(); i++) {
       Qpx::Hit trace = traces_.at(i);
 
       if (!trace.trace().size())
@@ -146,13 +147,13 @@ void FormOscilloscope::replot() {
 
       QVector<double> xx;
       QVector<double> yy;
-      for (int j=0; j < trace.trace().size(); ++j)
+      for (size_t j=0; j < trace.trace().size(); ++j)
       {
         xx.push_back(trace.timestamp().to_nanosec(j) * 0.001);
         yy.push_back(trace.trace().at(j));
       }
 
-      if ((i < my_channels.size()) && (my_channels[i].visible)) {
+      if ((static_cast<int>(i) < my_channels.size()) && (my_channels[i].visible)) {
 //        DBG << "will plot trace " << i;
         AppearanceProfile profile;
         profile.default_pen = QPen(my_channels[i].color, 1);

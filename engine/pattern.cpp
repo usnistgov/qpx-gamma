@@ -45,9 +45,9 @@ void Pattern::set_theshold(size_t sz) {
     threshold_ = gates_.size();
 }
 
-bool Pattern::relevant(int16_t chan) const
+bool Pattern::relevant(size_t chan) const
 {
-  if ((chan < 0) || (chan >= gates_.size()))
+  if (chan >= gates_.size())
     return false;
   return gates_[chan];
 }
@@ -58,7 +58,7 @@ bool Pattern::validate(const Event &e) const
     return true;
   size_t matches = 0;
   for (auto &h : e.hits) {
-    if ((h.first < 0) || (h.first >= gates_.size()))
+    if ((h.first < 0) || (h.first >= static_cast<int16_t>(gates_.size())))
       continue;
     else if (gates_[h.first])
       matches++;
@@ -74,7 +74,7 @@ bool Pattern::antivalidate(const Event &e) const
     return true;
   size_t matches = threshold_;
   for (auto &h : e.hits) {
-    if ((h.first < 0) || (h.first >= gates_.size()))
+    if ((h.first < 0) || (h.first >= static_cast<int16_t>(gates_.size())))
       continue;
     else if (gates_[h.first])
       matches--;

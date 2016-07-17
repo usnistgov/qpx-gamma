@@ -250,7 +250,7 @@ bool Sink::_initialize() {
 }
 
 
-PreciseFloat Sink::data(std::initializer_list<uint16_t> list ) const {
+PreciseFloat Sink::data(std::initializer_list<size_t> list ) const {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   if (list.size() != this->metadata_.dimensions())
     return 0;

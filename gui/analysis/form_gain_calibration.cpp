@@ -123,7 +123,7 @@ void FormGainCalibration::plot_calib() {
 
   ui->doubleCullDelta->setEnabled(false);
 
-  int total = fit_data1_.peaks().size();
+  size_t total = fit_data1_.peaks().size();
   if (total != fit_data2_.peaks().size())
   {
     if (nrg_calibration1_.units_ == nrg_calibration2_.units_) {
@@ -193,7 +193,7 @@ void FormGainCalibration::on_pushSaveCalib_clicked()
 
 void FormGainCalibration::on_pushCalibGain_clicked()
 {
-  int total = fit_data1_.peaks().size();
+  size_t total = fit_data1_.peaks().size();
   if (total != fit_data2_.peaks().size())
   {
     //make invisible?

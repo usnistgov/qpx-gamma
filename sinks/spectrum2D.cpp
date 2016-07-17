@@ -70,7 +70,7 @@ bool Spectrum2D::_initialize() {
   
   int adds = 0;
   std::vector<bool> gts = pattern_add_.gates();
-  for (int i=0; i < gts.size(); ++i)
+  for (size_t i=0; i < gts.size(); ++i)
     if (gts[i])
       adds++;
 
@@ -84,7 +84,7 @@ bool Spectrum2D::_initialize() {
   buffered_ = (metadata_.get_attribute("buffered").value_int != 0);
 
   adds = 0;
-  for (int i=0; i < gts.size(); ++i) {
+  for (size_t i=0; i < gts.size(); ++i) {
     if (gts[i]) {
       pattern_[adds] = i;
       adds++;
@@ -160,7 +160,7 @@ void Spectrum2D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
     metadata_.detectors = dets;
   else if (dets.size() > metadata_.dimensions()) {
     int j=0;
-    for (int i=0; i < dets.size(); ++i) {
+    for (size_t i=0; i < dets.size(); ++i) {
       if (pattern_add_.relevant(i)) {
         metadata_.detectors[j] = dets[i];
         j++;
@@ -181,7 +181,7 @@ void Spectrum2D::_append(const Entry& e) {
   }
 }
 
-PreciseFloat Spectrum2D::_data(std::initializer_list<uint16_t> list) const {
+PreciseFloat Spectrum2D::_data(std::initializer_list<size_t> list) const {
   if (list.size() != 2)
     return 0;
 

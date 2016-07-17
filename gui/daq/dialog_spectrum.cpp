@@ -184,7 +184,7 @@ void DialogSpectrum::toggle_push()
     return;
   int i = ixl.front().row();
 
-  if (i < sink_metadata_.detectors.size()) {
+  if (i < static_cast<int>(sink_metadata_.detectors.size())) {
     ui->pushDetEdit->setEnabled(unlocked);
     ui->pushDetRename->setEnabled(unlocked);
     ui->pushDetToDB->setEnabled(unlocked);
@@ -241,7 +241,8 @@ void DialogSpectrum::changeDet(Qpx::Detector newDetector) {
     return;
   int i = ixl.front().row();
 
-  if (i < sink_metadata_.detectors.size()) {
+  if (i < static_cast<int>(sink_metadata_.detectors.size()))
+  {
     sink_metadata_.detectors[i] = newDetector;
     changed_ = true;
 
@@ -266,7 +267,8 @@ void DialogSpectrum::on_pushDetRename_clicked()
                                        QString::fromStdString(spectrum_detectors_.get(i).name_),
                                        &ok);
   if (ok && !text.isEmpty()) {
-    if (i < sink_metadata_.detectors.size()) {
+    if (i < static_cast<int>(sink_metadata_.detectors.size()))
+    {
       sink_metadata_.detectors[i].name_ = text.toStdString();
       changed_ = true;
 
@@ -301,7 +303,8 @@ void DialogSpectrum::on_pushDetFromDB_clicked()
     return;
   int i = ixl.front().row();
 
-  if (i < sink_metadata_.detectors.size()) {
+  if (i < static_cast<int>(sink_metadata_.detectors.size()))
+  {
     Qpx::Detector newdet = detectors_.get(sink_metadata_.detectors[i]);
     sink_metadata_.detectors[i] = newdet;
     changed_ = true;
@@ -321,7 +324,8 @@ void DialogSpectrum::on_pushDetToDB_clicked()
     return;
   int i = ixl.front().row();
 
-  if (i < sink_metadata_.detectors.size()) {
+  if (i < static_cast<int>(sink_metadata_.detectors.size()))
+  {
     Qpx::Detector newdet = sink_metadata_.detectors[i];
 
     if (!detectors_.has_a(newdet)) {
@@ -372,7 +376,7 @@ void DialogSpectrum::on_spinDets_valueChanged(int arg1)
   Qpx::Setting pat = sink_metadata_.get_attribute("pattern_add");
 
   sink_metadata_.set_det_limit(arg1);
-  if (arg1 != pat.value_pattern.gates().size())
+  if (arg1 != static_cast<int>(pat.value_pattern.gates().size()))
     changed_ = true;
 
   attr_model_.update(sink_metadata_.attributes());

@@ -72,7 +72,7 @@ void Spectrum1D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
     metadata_.detectors = dets;
   if (dets.size() >= metadata_.dimensions()) {
 
-    for (int i=0; i < dets.size(); ++i)
+    for (size_t i=0; i < dets.size(); ++i)
     {
       if (metadata_.chan_relevant(i)) {
         metadata_.detectors[0] = dets[i];
@@ -95,7 +95,7 @@ bool Spectrum1D::_initialize()
   return true;
 }
 
-PreciseFloat Spectrum1D::_data(std::initializer_list<uint16_t> list) const {
+PreciseFloat Spectrum1D::_data(std::initializer_list<size_t> list) const {
   if (list.size() != 1)
     return 0;
   
@@ -107,7 +107,7 @@ PreciseFloat Spectrum1D::_data(std::initializer_list<uint16_t> list) const {
 }
 
 std::unique_ptr<std::list<Entry>> Spectrum1D::_data_range(std::initializer_list<Pair> list) {
-  int min, max;
+  size_t min, max;
   if (list.size() != 1) {
     min = 0;
     max = pow(2, bits_);
@@ -123,7 +123,7 @@ std::unique_ptr<std::list<Entry>> Spectrum1D::_data_range(std::initializer_list<
   //in range?
   
   std::unique_ptr<std::list<Entry>> result(new std::list<Entry>);
-  for (int i=min; i <= max; i++) {
+  for (size_t i=min; i <= max; i++) {
     Entry newentry;
     newentry.first.resize(1, 0);
     newentry.first[0] = i;
@@ -134,7 +134,7 @@ std::unique_ptr<std::list<Entry>> Spectrum1D::_data_range(std::initializer_list<
 }
 
 void Spectrum1D::_append(const Entry& e) {
-  for (int i = 0; i < e.first.size(); ++i)
+  for (size_t i = 0; i < e.first.size(); ++i)
     if (pattern_add_.relevant(i) && (e.first[i] < spectrum_.size())) {
       spectrum_[e.first[i]] += e.second;
 //      metadata_.total_count += e.second;
@@ -498,7 +498,7 @@ bool Spectrum1D::read_spe_radware(std::string name) {
     return false;
 
   myfile.seekg (0, myfile.end);
-  int length = myfile.tellg();
+  auto length = myfile.tellg();
 
   if (length < 36)
     return false;
@@ -544,7 +544,7 @@ bool Spectrum1D::read_spe_radware(std::string name) {
 
   std::list<Entry> entry_list;
   float one;
-  int i=0;
+  size_t i=0;
   while ((myfile.tellg() != length) && (i < resolution)) {
     myfile.read ((char*)&one, sizeof(float));
     Entry new_entry;
@@ -1073,7 +1073,7 @@ void Spectrum1D::write_spe(std::string filename) const {
 
 
   float one = 0.0;
-  for (int i=0; i < dim1; ++i) {
+  for (size_t i=0; i < dim1; ++i) {
     one = 0.0;
     if (i < spectrum_.size())
       one = static_cast<double>(spectrum_[i]);

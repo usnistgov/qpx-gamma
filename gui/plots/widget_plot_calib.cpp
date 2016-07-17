@@ -368,7 +368,7 @@ void WidgetPlotCalib::exportRequested(QAction* action) {
 
     ui->plot->prepPlotExport(2, fontUpscale, 20);
 //    plot_rezoom(true);
-    for (size_t i = 0; i < ui->plot->itemCount(); ++i) {
+    for (int i = 0; i < ui->plot->itemCount(); ++i) {
       QCPAbstractItem* item = ui->plot->item(i);
       if (QCPOverlayButton *btn = qobject_cast<QCPOverlayButton*>(item))
         btn->setVisible(false);
@@ -388,7 +388,7 @@ void WidgetPlotCalib::exportRequested(QAction* action) {
 
     ui->plot->postPlotExport(2, fontUpscale, 20);
 //    plot_rezoom();
-    for (size_t i = 0; i < ui->plot->itemCount(); ++i) {
+    for (int i = 0; i < ui->plot->itemCount(); ++i) {
       QCPAbstractItem* item = ui->plot->item(i);
       if (QCPOverlayButton *btn = qobject_cast<QCPOverlayButton*>(item))
         btn->setVisible(true);

@@ -260,7 +260,7 @@ void FormEnergyCalibration::selection_changed_in_table() {
 }
 
 void FormEnergyCalibration::toggle_push() {
-  int sel = selected_peaks_.size();
+  size_t sel = selected_peaks_.size();
 
   ui->pushEnergiesToPeaks->setEnabled((sel > 0) && (sel == ui->isotopes->current_gammas().size()));
   ui->pushPeaksToNuclide->setEnabled((sel > 0) && (ui->isotopes->current_gammas().empty()));
@@ -387,7 +387,7 @@ void FormEnergyCalibration::on_pushEnergiesToPeaks_clicked()
   if (gammas.size() != peakIDs.size())
     return;
 
-  for (int i=0; i<gammas.size(); ++i)
+  for (size_t i=0; i<gammas.size(); ++i)
     fit_data_.override_energy(peakIDs.at(i), gammas.at(i));
 
   selected_peaks_.clear();

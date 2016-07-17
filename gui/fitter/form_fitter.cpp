@@ -1270,7 +1270,7 @@ void FormFitter::exportRequested(QAction* choice) {
 
     int fontUpscale = 5;
 
-    for (size_t i = 0; i < ui->plot->itemCount(); ++i) {
+    for (int i = 0; i < ui->plot->itemCount(); ++i) {
       QCPAbstractItem* item = ui->plot->item(i);
 
       if (QCPItemLine *line = qobject_cast<QCPItemLine*>(item))
@@ -1303,7 +1303,7 @@ void FormFitter::exportRequested(QAction* choice) {
 
     plot_rezoom(true);
 
-    for (size_t i = 0; i < ui->plot->itemCount(); ++i) {
+    for (int i = 0; i < ui->plot->itemCount(); ++i) {
       QCPAbstractItem* item = ui->plot->item(i);
       if (QCPOverlayButton *btn = qobject_cast<QCPOverlayButton*>(item))
         btn->setVisible(false);

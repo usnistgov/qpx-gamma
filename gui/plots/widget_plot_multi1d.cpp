@@ -822,7 +822,7 @@ void WidgetPlotMulti1D::exportRequested(QAction* choice) {
 
     int fontUpscale = 5;
 
-    for (size_t i = 0; i < ui->mcaPlot->itemCount(); ++i) {
+    for (int i = 0; i < ui->mcaPlot->itemCount(); ++i) {
       QCPAbstractItem* item = ui->mcaPlot->item(i);
       if (QCPItemLine *line = qobject_cast<QCPItemLine*>(item))
       {
@@ -851,7 +851,7 @@ void WidgetPlotMulti1D::exportRequested(QAction* choice) {
     ui->mcaPlot->replot();
 
     plot_rezoom();
-    for (size_t i = 0; i < ui->mcaPlot->itemCount(); ++i) {
+    for (int i = 0; i < ui->mcaPlot->itemCount(); ++i) {
       QCPAbstractItem* item = ui->mcaPlot->item(i);
       if (QCPOverlayButton *btn = qobject_cast<QCPOverlayButton*>(item))
         btn->setVisible(false);
@@ -870,7 +870,7 @@ void WidgetPlotMulti1D::exportRequested(QAction* choice) {
       ui->mcaPlot->savePdf(fileName, true);
 
 
-    for (size_t i = 0; i < ui->mcaPlot->itemCount(); ++i) {
+    for (int i = 0; i < ui->mcaPlot->itemCount(); ++i) {
       QCPAbstractItem* item = ui->mcaPlot->item(i);
       if (QCPItemLine *line = qobject_cast<QCPItemLine*>(item))
       {
@@ -898,7 +898,7 @@ void WidgetPlotMulti1D::exportRequested(QAction* choice) {
     ui->mcaPlot->postPlotExport(2, fontUpscale, 20);
     ui->mcaPlot->replot();
     plot_rezoom();
-    for (size_t i = 0; i < ui->mcaPlot->itemCount(); ++i) {
+    for (int i = 0; i < ui->mcaPlot->itemCount(); ++i) {
       QCPAbstractItem* item = ui->mcaPlot->item(i);
       if (QCPOverlayButton *btn = qobject_cast<QCPOverlayButton*>(item))
         btn->setVisible(true);

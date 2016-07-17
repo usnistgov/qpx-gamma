@@ -203,8 +203,11 @@ int TrajectoryNode::childPos(const const_item_t& item) const
 
 std::shared_ptr<TrajectoryNode> TrajectoryNode::getChild(int row) const
 {
-  if ((row >= 0) && (row < branches.size()))
-    return branches.at(row);
+  if (row < 0)
+    return nullptr;
+  size_t i = static_cast<size_t>(row);
+  if (i < branches.size())
+    return branches.at(i);
   else
     return nullptr;
 }
@@ -312,9 +315,12 @@ bool TrajectoryNode::valid() const
 
 void TrajectoryNode::remove_child(int row)
 {
-  if ((row >= 0) && (row < branches.size()))
+  if (row < 0)
+    return;
+  size_t i = static_cast<size_t>(row);
+  if (i < branches.size())
   {
-    auto it = std::next(branches.begin(), row);
+    auto it = std::next(branches.begin(), i);
     branches.erase(it);
   }
 }
@@ -322,10 +328,11 @@ void TrajectoryNode::remove_child(int row)
 
 void TrajectoryNode::replace_child(int row, const TrajectoryNode &t)
 {
-  if ((row >= 0) && (row < branches.size())) {
-    branches[row] = item_t(new TrajectoryNode(self::shared_from_this(), t));
-
-  }
+  if (row < 0)
+    return;
+  size_t i = static_cast<size_t>(row);
+  if (i < branches.size())
+    branches[i] = item_t(new TrajectoryNode(self::shared_from_this(), t));
 }
 
 

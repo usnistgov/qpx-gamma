@@ -43,7 +43,7 @@ Calibration Detector::best_calib(int bits) const {
 
 Calibration Detector::highest_res_calib() const {
   Calibration result;
-  for (int i=0; i<energy_calibrations_.size(); ++i)
+  for (size_t i=0; i<energy_calibrations_.size(); ++i)
     if (energy_calibrations_.get(i).bits_ >= result.bits_)
       result = energy_calibrations_.get(i);
   return result;
@@ -52,7 +52,7 @@ Calibration Detector::highest_res_calib() const {
 Calibration Detector::get_gain_match(uint16_t bits, std::string todet) const
 {
   Calibration result = Calibration("Gain", bits);
-  for (int i=0; i< gain_match_calibrations_.size(); ++i) {
+  for (size_t i=0; i< gain_match_calibrations_.size(); ++i) {
     Calibration k = gain_match_calibrations_.get(i);
     if ((k.bits_ == result.bits_) &&
         (k.to_   == todet))

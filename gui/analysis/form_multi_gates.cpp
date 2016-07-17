@@ -132,13 +132,13 @@ int32_t FormMultiGates::index_of(double centroid, bool fuzzy) {
 
   if (fuzzy) {
     double threshold = ui->doubleOverlaps->value();
-    for (int i=0; i < gates_.size(); ++i) {
+    for (size_t i=0; i < gates_.size(); ++i) {
       Coord center = gates_[i].constraints.y_c;
       if (abs(center.bin(center.bits()) - centroid) < threshold)
         return i;
     }
   } else {
-    for (int i=0; i < gates_.size(); ++i) {
+    for (size_t i=0; i < gates_.size(); ++i) {
       Coord center = gates_[i].constraints.y_c;
       if (center.bin(center.bits()) == centroid)
         return i;
@@ -199,7 +199,7 @@ int32_t FormMultiGates::current_idx() {
 Gate FormMultiGates::current_gate() {
   int32_t  idx = current_idx();
 
-  if ((idx > -1) && (idx < gates_.size()))
+  if ((idx > -1) && (idx < static_cast<int>(gates_.size())))
     return gates_[idx];
 
   uint16_t bits = md_.get_attribute("resolution").value_int;
@@ -293,7 +293,7 @@ void FormMultiGates::on_pushRemove_clicked()
 {
   int32_t idx = current_idx();
 
-  if ((idx < 0) || (idx >= gates_.size()))
+  if ((idx < 0) || (idx >= static_cast<int>(gates_.size())))
     return;
 
   gates_.erase(gates_.begin() + idx);
@@ -306,7 +306,7 @@ void FormMultiGates::on_pushApprove_clicked()
 {
   int32_t  idx = current_idx();
 
-  if ((idx < 0) || (idx >= gates_.size()))
+  if ((idx < 0) || (idx >= static_cast<int>(gates_.size())))
     return;
 
   gates_[idx].approved = true;

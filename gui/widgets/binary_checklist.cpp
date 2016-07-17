@@ -217,13 +217,13 @@ BinaryChecklist::BinaryChecklist(Qpx::Setting setting, QWidget *parent) :
 
 void BinaryChecklist::change_setting() {
   std::bitset<64> bs;
-  for (int i=0; i < boxes_.size(); ++i) {
+  for (size_t i=0; i < boxes_.size(); ++i) {
     if (boxes_[i]->isVisible())
       bs[i] = boxes_[i]->isChecked();
   }
   setting_.value_int = bs.to_ullong();
 
-  for (int i=0; i < spins_.size(); ++i) {
+  for (size_t i=0; i < spins_.size(); ++i) {
     if (spins_[i]->isVisible() && spins_[i]->isEnabled()) {
       double dbl = (spins_[i]->value() - spins_[i]->minimum()) / spins_[i]->singleStep();
       //      DBG << "converted dbl " << spins_[i]->value() << " to " << dbl;
@@ -233,7 +233,7 @@ void BinaryChecklist::change_setting() {
     }
   }
 
-  for (int i=0; i < menus_.size(); ++i) {
+  for (size_t i=0; i < menus_.size(); ++i) {
     if (menus_[i]->isVisible() && menus_[i]->isEnabled()) {
       int64_t num = menus_[i]->currentData().toInt();
       num = num << i;

@@ -329,7 +329,7 @@ Spill ParserRaw::get_spill() {
   if (hit_counts_.at(current_spill_) > 0)
   {
     file_bin_.seekg(bin_offsets_.at(current_spill_), std::ios::beg);
-    for (int i = 0; i < hit_counts_.at(current_spill_); ++i)
+    for (size_t i = 0; i < hit_counts_.at(current_spill_); ++i)
     {
       Qpx::Hit one_hit;
       one_hit.read_bin(file_bin_, hitmodels_);

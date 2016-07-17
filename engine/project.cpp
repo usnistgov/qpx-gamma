@@ -248,7 +248,7 @@ void Project::set_prototypes(const XMLableDB<Metadata>& prototypes) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
 
-  for (int i=0; i < prototypes.size(); i++) {
+  for (size_t i=0; i < prototypes.size(); i++) {
     SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_prototype(prototypes.get(i));
     if (sink)
     {
@@ -526,7 +526,7 @@ void Project::import_spn(std::string file_name) {
     temp.set_attribute(name);
     SinkPtr spectrum = Qpx::SinkFactory::getInstance().create_from_prototype(temp);
     spectrum->set_detectors(dets);
-    for (int i=0; i < data.size(); ++i) {
+    for (size_t i=0; i < data.size(); ++i) {
       Entry entry;
       entry.first.resize(1, 0);
       entry.first[0] = i;

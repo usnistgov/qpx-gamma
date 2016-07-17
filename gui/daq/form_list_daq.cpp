@@ -157,7 +157,7 @@ void FormListDaq::displayHit(int idx)
 {
   ui->tracePlot->clearGraphs();
 
-  if ( (idx < 0) || (idx >= hits_.size()))
+  if ( (idx < 0) || (idx >= static_cast<int>(hits_.size())))
   {
     ui->tableHitValues->clear();
     ui->tracePlot->replot();
@@ -176,7 +176,7 @@ void FormListDaq::displayHit(int idx)
   ui->tableHitValues->setHorizontalHeaderItem(1, new QTableWidgetItem("Value", QTableWidgetItem::Type));
   ui->tableHitValues->setHorizontalHeaderItem(2, new QTableWidgetItem("Calibrated", QTableWidgetItem::Type));
 
-  for (int i = 0; i < hit.value_count(); ++i)
+  for (size_t i = 0; i < hit.value_count(); ++i)
   {
     if (i < model.idx_to_name.size())
       add_to_table(ui->tableHitValues, i, 0, model.idx_to_name.at(i));
@@ -185,7 +185,7 @@ void FormListDaq::displayHit(int idx)
     add_to_table(ui->tableHitValues, i, 1, hit.value(i).to_string());
 
 
-    if ((chan > -1) && (chan < dets_.size()))
+    if ((chan > -1) && (chan < static_cast<int>(dets_.size())))
     {
       Qpx::Detector det = dets_.at(chan);
 
@@ -234,7 +234,7 @@ void FormListDaq::displayHit(int idx)
 
 void FormListDaq::displayStats(int idx)
 {
-  if ( (idx < 0) || (idx >= stats_.size()))
+  if ( (idx < 0) || (idx >= static_cast<int>(stats_.size())))
   {
     ui->labelStatsInfo->clear();
     return;
@@ -339,16 +339,16 @@ void FormListDaq::spillSelectionChanged(int row)
 //  ui->labelEventVals->setVisible(false);
 //  ui->tableHitValues->setVisible(false);
 
-  if ((row >= 0) && (row < list_data_.size()))
+  if ((row >= 0) && (row < static_cast<int>(list_data_.size())))
   {
 
-    for (size_t i = 0; i < row; i++)
+    for (int i = 0; i < row; i++)
     {
       Qpx::SpillPtr sp = list_data_.at(i);
       if (!sp)
         continue;
       if (sp->detectors.size())
-        for (int di = 0; di < sp->detectors.size(); di++)
+        for (size_t di = 0; di < sp->detectors.size(); di++)
         {
           if ((di+1) > dets_.size())
             dets_.resize(di+1);
@@ -395,13 +395,13 @@ void FormListDaq::spillSelectionChanged(int row)
   ui->tableHits->setHorizontalHeaderItem(0, new QTableWidgetItem("Det", QTableWidgetItem::Type));
   ui->tableHits->setHorizontalHeaderItem(1, new QTableWidgetItem("Time (native)", QTableWidgetItem::Type));
   ui->tableHits->setHorizontalHeaderItem(2, new QTableWidgetItem("Time (ns)", QTableWidgetItem::Type));
-  for (int i=0; i < hits_.size(); i++)
+  for (size_t i=0; i < hits_.size(); i++)
   {
     Qpx::Hit hit = hits_.at(i);
     int chan = hit.source_channel();
 
     std::string det = std::to_string(chan);
-    if ((chan > -1) && (chan < dets_.size()))
+    if ((chan > -1) && (chan < static_cast<int>(dets_.size())))
       det += " (" + dets_[chan].name_ + ")";
 
     add_to_table(ui->tableHits, i, 0, det);

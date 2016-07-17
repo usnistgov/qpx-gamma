@@ -196,7 +196,7 @@ void DialogSpectraTemplates::toggle_push() {
       ui->pushUp->setEnabled(true);
     else
       ui->pushUp->setEnabled(false);
-    if ((ixl.front().row() + 1) < templates_.size())
+    if ((ixl.front().row() + 1) < static_cast<int>(templates_.size()))
       ui->pushDown->setEnabled(true);
     else
       ui->pushDown->setEnabled(false);

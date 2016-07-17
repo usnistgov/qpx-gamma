@@ -104,7 +104,7 @@ void FormGainMatch::update_settings() {
   //should come from other thread?
   current_dets_ = Qpx::Engine::getInstance().get_detectors();
 
-  for (int i=0; i < current_dets_.size(); ++i) {
+  for (size_t i=0; i < current_dets_.size(); ++i) {
     QString text = "[" + QString::number(i) + "] "
         + QString::fromStdString(current_dets_[i].name_);
     ui->comboReference->addItem(text, QVariant::fromValue(i));
@@ -470,7 +470,7 @@ void FormGainMatch::update_fit_ref()
 void FormGainMatch::update_fit_opt()
 {
   ui->plotOpt->set_selected_peaks(ui->widgetAutoselect->reselect(fitter_opt_.peaks(), ui->plotOpt->get_selected_peaks()));
-  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size()))
+  if ((selected_pass_ >= 0) && (selected_pass_ < static_cast<int>(experiment_.size())))
     experiment_[selected_pass_].spectrum = fitter_opt_;
   update_peak_selection(std::set<double>());
 }
@@ -484,7 +484,7 @@ void FormGainMatch::update_peak_selection(std::set<double> dummy) {
 
   Qpx::Metadata md = fitter_opt_.metadata_;
   Qpx::Setting pass = md.get_attribute("Pass");
-  if (!pass || (pass.value_int < 0) || (pass.value_int >= experiment_.size()))
+  if (!pass || (pass.value_int < 0) || (pass.value_int >= static_cast<int>(experiment_.size())))
     return;
 
   selected_peaks = ui->plotOpt->get_selected_peaks();
@@ -520,7 +520,7 @@ void FormGainMatch::new_daq_data() {
     else
     {
       Qpx::Setting pass = md.get_attribute("Pass");
-      if (pass && (pass.value_int < experiment_.size())) {
+      if (pass && (pass.value_int < static_cast<int>(experiment_.size()))) {
         experiment_[pass.value_int].spectrum.setData(q.second);
         double variable = md.get_attribute(current_setting_).value_dbl;
         experiment_[pass.value_int].independent_variable = variable;
@@ -647,7 +647,7 @@ void FormGainMatch::display_data()
 
   ui->tableResults->blockSignals(true);
 
-  if (ui->tableResults->rowCount() != experiment_.size())
+  if (ui->tableResults->rowCount() != static_cast<int>(experiment_.size()))
     ui->tableResults->setRowCount(experiment_.size());
 
   ui->tableResults->setColumnCount(5);
@@ -659,7 +659,7 @@ void FormGainMatch::display_data()
 
   QVector<double> xx, yy, yy_sigma;
 
-  for (int i = 0; i < experiment_.size(); ++i)
+  for (size_t i = 0; i < experiment_.size(); ++i)
   {
     const DataPoint &data = experiment_.at(i);
 
@@ -724,10 +724,10 @@ void FormGainMatch::display_data()
   }
   //  ui->PlotCalib->redraw();
 
-  if (experiment_.size() && (experiment_.size() == (old_row_count + 1))) {
+  if (experiment_.size() && (static_cast<int>(experiment_.size()) == (old_row_count + 1))) {
     ui->tableResults->selectRow(old_row_count);
     pass_selected_in_table();
-  } else if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+  } else if ((selected_pass_ >= 0) && (selected_pass_ < static_cast<int>(experiment_.size()))) {
     std::set<double> sel;
     sel.insert(experiment_.at(selected_pass_).independent_variable);
     ui->PlotCalib->set_selected_pts(sel);
@@ -747,7 +747,7 @@ void FormGainMatch::pass_selected_in_table()
   foreach (QModelIndex i, ui->tableResults->selectionModel()->selectedRows())
     selected_pass_ = i.row();
   FitSettings fitset = fitter_opt_.settings();
-  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+  if ((selected_pass_ >= 0) && (selected_pass_ < static_cast<int>(experiment_.size()))) {
     fitter_opt_ = experiment_.at(selected_pass_).spectrum;
     std::set<double> sel;
     sel.insert(experiment_.at(selected_pass_).independent_variable);
@@ -763,7 +763,7 @@ void FormGainMatch::pass_selected_in_table()
   fitter_opt_.apply_settings(fitset);
 
 
-  if (!ui->plotOpt->busy() && (selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+  if (!ui->plotOpt->busy() && (selected_pass_ >= 0) && (selected_pass_ < static_cast<int>(experiment_.size()))) {
     //    DBG << "fitter not busy";
     ui->plotOpt->updateData();
     if (experiment_.at(selected_pass_).selected_peak != Qpx::Peak()) {
@@ -790,7 +790,7 @@ void FormGainMatch::pass_selected_in_plot()
 
   double sel = *selection.begin();
 
-  for (int i=0; i < experiment_.size(); ++i)
+  for (size_t i=0; i < experiment_.size(); ++i)
   {
     if (experiment_.at(i).independent_variable == sel) {
       ui->tableResults->selectRow(i);
@@ -808,7 +808,7 @@ void FormGainMatch::remake_source_domains()
 
   int chan = ui->comboTarget->currentData().toInt();
 
-  if ((chan < 0) || (chan >= current_dets_.size()))
+  if ((chan < 0) || (chan >= static_cast<int>(current_dets_.size())))
     return;
 
 
@@ -864,7 +864,7 @@ void FormGainMatch::fitting_done_ref()
 
 void FormGainMatch::fitting_done_opt()
 {
-  if ((selected_pass_ >= 0) && (selected_pass_ < experiment_.size())) {
+  if ((selected_pass_ >= 0) && (selected_pass_ < static_cast<int>(experiment_.size()))) {
     experiment_[selected_pass_].spectrum = fitter_opt_;
     if (!fitter_opt_.peaks().empty() && (experiment_.at(selected_pass_).selected_peak == Qpx::Peak())) {
       //      DBG << "<FormOptimization> Autoselecting";

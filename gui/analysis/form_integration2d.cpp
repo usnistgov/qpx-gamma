@@ -162,7 +162,7 @@ int32_t FormIntegration2D::index_of(MarkerBox2D pk) {
 
   //DBG << "indexof checking " << pk.x_c.energy()  << " " << pk.y_c.energy();
 
-  for (int i=0; i < peaks_.size(); ++i) {
+  for (size_t i=0; i < peaks_.size(); ++i) {
     //DBG << "   against " << peaks_[i].x_c.energy() << " " << peaks_[i].y_c.energy();
 
     if ((peaks_[i].area[1][1].x_c == pk.x_c) && (peaks_[i].area[1][1].y_c == pk.y_c))
@@ -175,7 +175,7 @@ int32_t FormIntegration2D::index_of(double px, double py) {
   if (peaks_.empty())
     return -1;
 
-  for (int i=0; i < peaks_.size(); ++i)
+  for (size_t i=0; i < peaks_.size(); ++i)
     if ((peaks_[i].area[1][1].x_c.energy() == px) && (peaks_[i].area[1][1].y_c.energy() == py))
       return i;
   return -1;
@@ -291,7 +291,7 @@ void FormIntegration2D::selection_changed(QItemSelection selected, QItemSelectio
     q.area[1][1].selected = false;
 
   int32_t current = current_idx();
-  if ((current >= 0) && (current < peaks_.size())) {
+  if ((current >= 0) && (current < static_cast<int>(peaks_.size()))) {
     peaks_[current].area[1][1].selected = true;
     make_gates();
   }
@@ -363,13 +363,13 @@ void FormIntegration2D::clear() {
 
 void FormIntegration2D::on_pushRemove_clicked()
 {
-  uint32_t  current_gate_ = current_idx();
+  int32_t  current_gate_ = current_idx();
 
   //DBG << "trying to remove " << current_gate_ << " in total of " << peaks_.size();
 
   if (current_gate_ < 0)
     return;
-  if (current_gate_ >= peaks_.size())
+  if (current_gate_ >= static_cast<int>(peaks_.size()))
     return;
 
   peaks_.erase(peaks_.begin() + current_gate_);
@@ -447,7 +447,7 @@ void FormIntegration2D::make_gates() {
   MarkerBox2D peak = range_;
 
   int32_t current = current_idx();
-  if ((current >= 0) && (current < peaks_.size()))
+  if ((current >= 0) && (current < static_cast<int>(peaks_.size())))
     peak = peaks_[current].area[1][1];
 
   if (peak.visible) {
@@ -583,7 +583,7 @@ void FormIntegration2D::adjust_x()
 
   int32_t current = current_idx();
 
-  if ((current < 0) || (current >= peaks_.size()))
+  if ((current < 0) || (current >= static_cast<int>(peaks_.size())))
       return;
 
   if (!ui->pushShowDiagonal->isChecked())
@@ -609,7 +609,7 @@ void FormIntegration2D::adjust_y()
 
   int32_t current = current_idx();
 
-  if ((current < 0) || (current >= peaks_.size()))
+  if ((current < 0) || (current >= static_cast<int>(peaks_.size())))
       return;
 
 
@@ -632,7 +632,7 @@ void FormIntegration2D::on_pushAdjust_clicked()
 
   SinkPtr spectrum = spectra_->get_sink(current_spectrum_);
 
-  if ((current < 0) || (current >= peaks_.size()) || !spectrum)
+  if ((current < 0) || (current >= static_cast<int>(peaks_.size())) || !spectrum)
       return;
 
   peaks_[current].integrate(spectrum);
@@ -677,7 +677,7 @@ void FormIntegration2D::on_pushAddPeak2d_clicked()
 
   int32_t current = current_idx();
   SinkPtr spectrum = spectra_->get_sink(current_spectrum_);
-  if ((current >= 0) && (current < peaks_.size()) && spectrum.operator bool() ) {
+  if ((current >= 0) && (current < static_cast<int>(peaks_.size())) && spectrum.operator bool() ) {
     peaks_[current].integrate(spectrum);
     peaks_[current].approved = true;
   }

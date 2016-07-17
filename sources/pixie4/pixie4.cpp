@@ -106,7 +106,8 @@ bool Pixie4::daq_start(SynchronizedQueue<Spill*>* out_queue) {
   run_status_.store(1);
 
 
-  for (int i=0; i < channel_indices_.size(); ++i) {
+  for (size_t i=0; i < channel_indices_.size(); ++i)
+  {
     //DBG << "start daq run mod " << i;
     for (auto &q : channel_indices_[i])
       //DBG << " chan=" << q;
@@ -217,7 +218,7 @@ bool Pixie4::read_settings_bulk(Qpx::Setting &set) const {
         k.metadata.writable = (!(status_ & SourceStatus::booted) && setting_definitions_.count(k.id_) && setting_definitions_.at(k.id_).writable);
         if (k.metadata.setting_type == Qpx::SettingType::stem) {
           int16_t modnum = k.metadata.address;
-          if ((modnum < 0) || (modnum >= channel_indices_.size())) {
+          if ((modnum < 0) || (modnum >= static_cast<int16_t>(channel_indices_.size()))) {
             WARN << "<Pixie4> module address out of bounds, ignoring branch " << modnum;
             continue;
           }
@@ -294,8 +295,8 @@ void Pixie4::rebuild_structure(Qpx::Setting &set) {
   }
 
 
-  int newmax = maxmod.value_int;
-  int oldtot = totmod.value_int;
+  int16_t newmax = maxmod.value_int;
+  int16_t oldtot = totmod.value_int;
 
   if (newmax > N_SYSTEM_PAR - 7)
     newmax = N_SYSTEM_PAR - 7;
@@ -315,23 +316,24 @@ void Pixie4::rebuild_structure(Qpx::Setting &set) {
       if (q.value_int > 0)
         newtot++;
     }
-    if (old_slots.size() == newmax)
+    if (static_cast<int16_t>(old_slots.size()) == newmax)
       break;
   }
 
-  while (old_slots.size() > newmax)
+  while (static_cast<int16_t>(old_slots.size()) > newmax)
     old_slots.pop_back();
 
-  while (old_slots.size() < newmax)
+  while (static_cast<int16_t>(old_slots.size()) < newmax)
     old_slots.push_back(slot);
 
-  if (newtot == 0) {
+  if (newtot <= 0)
+  {
     newtot = 1;
     old_slots[0].value_int = 2;
   }
 
   bool hardware_changed = false;
-  for (int i=0;i < old_slots.size(); ++i) {
+  for (size_t i=0;i < old_slots.size(); ++i) {
     old_slots[i].metadata.address = 7+i;
     if (system_parameter_values_[7+i] != old_slots[i].value_int)
       hardware_changed = true;
@@ -360,14 +362,14 @@ void Pixie4::rebuild_structure(Qpx::Setting &set) {
         old_modules.push_back(q);
         actualmods++;
       }
-      if (old_modules.size() == newtot)
+      if (static_cast<int16_t>(old_modules.size()) == newtot)
         break;
     }
 
-    while (old_modules.size() > newtot)
+    while (static_cast<int16_t>(old_modules.size()) > newtot)
       old_modules.pop_back();
 
-    while (old_modules.size() < newtot)
+    while (static_cast<int16_t>(old_modules.size()) < newtot)
       old_modules.push_back(mod);
 
 //    if (actualmods != newtot) {
@@ -470,7 +472,7 @@ bool Pixie4::write_settings_bulk(Qpx::Setting &set) {
 
         if (k.metadata.setting_type == Qpx::SettingType::stem) {
           int16_t modnum = k.metadata.address;
-          if ((modnum < 0) || (modnum >= channel_indices_.size())) {
+          if ((modnum < 0) || (modnum >= static_cast<int16_t>(channel_indices_.size()))) {
             WARN << "<Pixie4> module address out of bounds, ignoring branch " << modnum;
             continue;
           }
@@ -601,9 +603,9 @@ std::list<Hit> Pixie4::oscilloscope() {
 
   uint32_t* oscil_data;
 
-  for (int m=0; m < channel_indices_.size(); ++m) {
+  for (size_t m=0; m < channel_indices_.size(); ++m) {
     if ((oscil_data = control_collect_ADC(m)) != nullptr) {
-      for (int i = 0; i < NUMBER_OF_CHANNELS; i++) {
+      for (size_t i = 0; i < NUMBER_OF_CHANNELS; i++) {
         std::vector<uint16_t> trace = std::vector<uint16_t>(oscil_data + (i*max_buf_len),
                                                             oscil_data + ((i+1)*max_buf_len));
         if ((i < channel_indices_[m].size()) && (channel_indices_[m][i] >= 0))
@@ -635,7 +637,7 @@ void Pixie4::get_all_settings() {
 
 
 void Pixie4::reset_counters_next_run() {
-  for (int i=0; i < channel_indices_.size(); ++i) {
+  for (size_t i=0; i < channel_indices_.size(); ++i) {
     set_mod("SYNCH_WAIT", 1, Module(i));
     set_mod("IN_SYNCH", 0, Module(i));
   }
@@ -651,14 +653,14 @@ void Pixie4::reset_counters_next_run() {
 bool Pixie4::start_run(Module mod) {
   bool success = false;
   if (mod == Module::all) {
-    for (int i=0; i< channel_indices_.size(); ++i) {
+    for (size_t i=0; i< channel_indices_.size(); ++i) {
       //LINFO << "Start run for module " << i;
       if (start_run(i))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
-    if ((module > -1) && (module < channel_indices_.size())) {
+    if ((module > -1) && (module < static_cast<int16_t>(channel_indices_.size()))) {
       //LINFO << "Start run for module " << module;
       success = start_run(module);
     }
@@ -669,14 +671,14 @@ bool Pixie4::start_run(Module mod) {
 bool Pixie4::resume_run(Module mod) {
   bool success = false;
   if (mod == Module::all) {
-    for (int i=0; i< channel_indices_.size(); ++i) {
+    for (size_t i=0; i< channel_indices_.size(); ++i) {
       //LINFO << "Resume run for module " << i;
       if (resume_run(i))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
-    if ((module > -1) && (module < channel_indices_.size())) {
+    if ((module > -1) && (module < static_cast<int16_t>(channel_indices_.size()))) {
       //LINFO << "Resume run for module " << module;
       success = resume_run(module);
     }
@@ -687,14 +689,14 @@ bool Pixie4::resume_run(Module mod) {
 bool Pixie4::stop_run(Module mod) {
   bool success = false;
   if (mod == Module::all) {
-    for (int i=0; i< channel_indices_.size(); ++i) {
+    for (size_t i=0; i< channel_indices_.size(); ++i) {
       //LINFO << "Stop run for module " << i;
       if (stop_run(i))
         success = true;
     }
   } else {
     int module = static_cast<int>(mod);
-    if ((module > -1) && (module < channel_indices_.size())) {
+    if ((module > -1) && (module < static_cast<int16_t>(channel_indices_.size()))) {
       //LINFO << "Stop run for module " << module;
       success = stop_run(module);
     }
@@ -921,13 +923,13 @@ double Pixie4::get_mod(const std::string& setting,
 
 void Pixie4::get_mod_all(Module mod) {
   if (mod == Module::all) {
-    for (int i=0; i< channel_indices_.size(); ++i) {
+    for (size_t i=0; i< channel_indices_.size(); ++i) {
       TRC << "Getting all parameters for module " << i;
       read_mod("ALL_MODULE_PARAMETERS", i);
     }
   } else {
     int module = static_cast<int>(mod);
-    if ((module > -1) && (module < channel_indices_.size())) {
+    if ((module > -1) && (module < static_cast<int16_t>(channel_indices_.size()))) {
       TRC << "Getting all parameters for module " << module;
       read_mod("ALL_MODULE_PARAMETERS", module);
     }
@@ -936,13 +938,13 @@ void Pixie4::get_mod_all(Module mod) {
 
 void Pixie4::get_mod_stats(Module mod) {
   if (mod == Module::all) {
-    for (int i=0; i< channel_indices_.size(); ++i) {
+    for (size_t i=0; i< channel_indices_.size(); ++i) {
       TRC << "Getting run statistics for module " << i;
       read_mod("MODULE_RUN_STATISTICS", i);
     }
   } else {
     int module = static_cast<int>(mod);
-    if ((module > -1) && (module < channel_indices_.size())) {
+    if ((module > -1) && (module < static_cast<int16_t>(channel_indices_.size()))) {
       TRC << "Getting run statistics for module " << module;
       read_mod("MODULE_RUN_STATISTICS", module);
     }
@@ -976,7 +978,7 @@ void Pixie4::get_chan_all(Channel channel, Module module) {
     mod_end = channel_indices_.size();
   } else {
     int mod = static_cast<int>(module);
-    if ((mod > -1) && (mod < channel_indices_.size())) {
+    if ((mod > -1) && (mod < static_cast<int16_t>(channel_indices_.size()))) {
       mod_start = mod;
       mod_end = mod + 1;
     }
@@ -990,7 +992,7 @@ void Pixie4::get_chan_all(Channel channel, Module module) {
       chan_end = channel_indices_[i].size();
     } else {
       int chan = static_cast<int>(channel);
-      if ((chan > -1) && (chan < channel_indices_[i].size())) {
+      if ((chan > -1) && (chan < static_cast<int16_t>(channel_indices_[i].size()))) {
         chan_start = chan;
         chan_end = chan + 1;
       }
@@ -1011,7 +1013,7 @@ void Pixie4::get_chan_stats(Channel channel, Module module) {
     mod_end = channel_indices_.size();
   } else {
     int mod = static_cast<int>(module);
-    if ((mod > -1) && (mod < channel_indices_.size()))
+    if ((mod > -1) && (mod < static_cast<int16_t>(channel_indices_.size())))
       mod_start = mod_end = mod;
   }
 
@@ -1023,7 +1025,7 @@ void Pixie4::get_chan_stats(Channel channel, Module module) {
       chan_end = channel_indices_[i].size();
     } else {
       int chan = static_cast<int>(channel);
-      if ((chan > -1) && (chan < channel_indices_[i].size()))
+      if ((chan > -1) && (chan < static_cast<int16_t>(channel_indices_[i].size())))
         chan_start = chan_end = chan;
     }
     for (int j=chan_start; j < chan_end; ++j) {
@@ -1146,14 +1148,14 @@ bool Pixie4::control_measure_baselines(Module mod) {
   bool success = false;
   if (status_ & SourceStatus::booted) {
     if (mod == Module::all) {
-      for (int i=0; i< channel_indices_.size(); ++i) {
+      for (size_t i=0; i< channel_indices_.size(); ++i) {
         DBG << "<Pixie4> measure baselines for module " << i;
         if (control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, i)))
           success = true;
       }
     } else {
       int module = static_cast<int>(mod);
-      if ((module > -1) && (module < channel_indices_.size())) {
+      if ((module > -1) && (module < static_cast<int16_t>(channel_indices_.size()))) {
         DBG << "<Pixie4> measure baselines for module " << module;
         success = control_err(Pixie_Acquire_Data(0x0006, NULL, NULL, module));
       }
@@ -1181,14 +1183,14 @@ bool Pixie4::control_find_tau(Module mod) {
   bool success = false;
   if (status_ & SourceStatus::booted) {
     if (mod == Module::all) {
-      for (int i=0; i< channel_indices_.size(); ++i) {
+      for (size_t i=0; i< channel_indices_.size(); ++i) {
         DBG << "<Pixie4> find tau for module " << i;
         if (control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, i)))
           success = true;
       }
     } else {
       int module = static_cast<int>(mod);
-      if ((module > -1) && (module < channel_indices_.size())) {
+      if ((module > -1) && (module < static_cast<int16_t>(channel_indices_.size()))) {
         DBG << "<Pixie4> find tau for module " << module;
         success = control_err(Pixie_Acquire_Data(0x0081, NULL, NULL, module));
       }
@@ -1201,14 +1203,14 @@ bool Pixie4::control_adjust_offsets(Module mod) {
   bool success = false;
   if (status_ & SourceStatus::booted) {
     if (mod == Module::all) {
-      for (int i=0; i< channel_indices_.size(); ++i) {
+      for (size_t i=0; i< channel_indices_.size(); ++i) {
         TRC << "<Pixie4> djust offsets for module " << i;
         if (control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, i)))
           success = true;
       }
     } else {
       int module = static_cast<int>(mod);
-      if ((module > -1) && (module < channel_indices_.size())) {
+      if ((module > -1) && (module < static_cast<int16_t>(channel_indices_.size()))) {
         TRC << "<Pixie4> adjust offsets for module " << module;
         success = control_err(Pixie_Acquire_Data(0x0083, NULL, NULL, module));
       }
@@ -1313,7 +1315,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
   bool timeout = false;
   Spill fetched_spill;
 
-  for (int i=0; i < callback->channel_indices_.size(); i++) {
+  for (size_t i=0; i < callback->channel_indices_.size(); i++) {
     if (!callback->clear_EM(i))
       return;
     callback->set_mod("DBLBUFCSR",   static_cast<double>(1), Module(i));
@@ -1327,7 +1329,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
 
   callback->get_mod_stats(Module::all);
   callback->get_chan_stats(Channel::all, Module::all);
-  for (int i=0; i < callback->channel_indices_.size(); i++)
+  for (size_t i=0; i < callback->channel_indices_.size(); i++)
     callback->fill_stats(fetched_spill.stats, i);
   for (auto &q : fetched_spill.stats) {
     q.second.lab_time = fetched_spill.time;
@@ -1341,7 +1343,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
     mods.clear();
     while (!timeout && mods.empty()) {
 //      DBG << "<Pixie4::runner> waiting";
-      for (int i=0; i < callback->channel_indices_.size(); ++i) {
+      for (size_t i=0; i < callback->channel_indices_.size(); ++i) {
         std::bitset<32> csr = std::bitset<32>(poll_run_dbl(i));
         if (csr[14])
           mods.insert(i);
@@ -1357,7 +1359,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
 //      DBG << "<Pixie4::runner> timeout true";
       callback->stop_run(Module::all);
       wait_ms(callback->run_poll_interval_ms_);
-      for (int i=0; i < callback->channel_indices_.size(); ++i) {
+      for (size_t i=0; i < callback->channel_indices_.size(); ++i) {
         std::bitset<32> csr = std::bitset<32>(poll_run_dbl(i));
         if (csr[14])
           mods.insert(i);
@@ -1405,7 +1407,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
 
   callback->get_mod_stats(Module::all);
   callback->get_chan_stats(Channel::all, Module::all);
-  for (int i=0; i < callback->channel_indices_.size(); i++)
+  for (size_t i=0; i < callback->channel_indices_.size(); i++)
     callback->fill_stats(fetched_spill.stats, i);
   for (auto &q : fetched_spill.stats) {
     q.second.lab_time = fetched_spill.time;
@@ -1465,7 +1467,7 @@ void Pixie4::worker_parse (Pixie4* callback, SynchronizedQueue<Spill*>* in_queue
 
           std::multiset<Hit> ordered;
 
-          for (int i=0; i < NUMBER_OF_CHANNELS; i++) {
+          for (size_t i=0; i < NUMBER_OF_CHANNELS; i++) {
             if (!pattern[i])
               continue;
 

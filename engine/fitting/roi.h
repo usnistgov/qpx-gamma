@@ -59,7 +59,7 @@ struct Fit {
 
 
 struct ROI {
-  ROI() {}
+  ROI() : current_fit_(0) {}
   ROI(const Finder &parentfinder, double min, double max);
 
   //bounds
@@ -88,7 +88,7 @@ struct ROI {
   PolyBounded sum4_background();
 
   //access history
-  int current_fit() const;
+  size_t current_fit() const;
   size_t history_size() const;
   std::vector<FitDescription> history() const;
 
@@ -132,7 +132,7 @@ private:
 
   //history
   std::vector<Fit> fits_;
-  int current_fit_;
+  size_t current_fit_;
 
 
   void set_data(const Finder &parentfinder, double min, double max);

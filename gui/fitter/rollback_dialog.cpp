@@ -58,7 +58,7 @@ RollbackDialog::RollbackDialog(Qpx::ROI roi, QWidget *parent) :
   vl_s4a->addWidget(label);
 
   std::vector<Qpx::FitDescription> history = roi_.history();
-  for (int i=0; i < history.size(); ++i) {
+  for (size_t i=0; i < history.size(); ++i) {
 
     QRadioButton *radio = new QRadioButton();
     radio->setLayoutDirection(Qt::LeftToRight);
@@ -115,7 +115,7 @@ RollbackDialog::RollbackDialog(Qpx::ROI roi, QWidget *parent) :
 
 int RollbackDialog::get_choice() {
   int ret = 0;
-  for (int i=0; i < radios_.size(); ++i)
+  for (size_t i=0; i < radios_.size(); ++i)
     if (radios_[i]->isChecked())
       ret = i;
   return ret;

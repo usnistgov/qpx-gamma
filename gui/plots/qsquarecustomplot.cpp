@@ -195,7 +195,7 @@ void QSquareCustomPlot::prepPlotExport(int plotThicken, int fontUpscale, int mar
 //    }
 //  }
 
-  for (size_t i = 0; i < graphCount(); ++i)
+  for (int i = 0; i < graphCount(); ++i)
   {
     QCPGraph *graph = this->graph(i);
     QPen pen = graph->pen();
@@ -252,7 +252,7 @@ void QSquareCustomPlot::postPlotExport(int plotThicken, int fontUpscale, int mar
 //    }
 //  }
 
-  for (size_t i = 0; i < graphCount(); ++i)
+  for (int i = 0; i < graphCount(); ++i)
   {
     QCPGraph *graph = this->graph(i);
     QPen pen = graph->pen();

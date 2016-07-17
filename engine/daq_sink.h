@@ -43,9 +43,9 @@
 
 namespace Qpx {
 
-typedef std::pair<std::vector<uint16_t>, PreciseFloat> Entry;
+typedef std::pair<std::vector<size_t>, PreciseFloat> Entry;
 typedef std::list<Entry> EntryList;
-typedef std::pair<uint32_t, uint32_t> Pair;
+typedef std::pair<size_t, size_t> Pair;
 
 
 class Metadata : public XMLable {
@@ -129,7 +129,7 @@ public:
   void flush();
 
   //get count at coordinates in n-dimensional list
-  PreciseFloat data(std::initializer_list<uint16_t> list = {}) const;
+  PreciseFloat data(std::initializer_list<size_t> list = {}) const;
 
   //optimized retrieval of bulk data as list of Entries
   //parameters take dimensions_number of ranges (inclusive)
@@ -174,7 +174,7 @@ protected:
   virtual void _push_stats(const StatsUpdate&) = 0;
   virtual void _flush() {}
 
-  virtual PreciseFloat _data(std::initializer_list<uint16_t>) const {return 0;}
+  virtual PreciseFloat _data(std::initializer_list<size_t>) const {return 0;}
   virtual std::unique_ptr<std::list<Entry>> _data_range(std::initializer_list<Pair>)
     { return std::unique_ptr<std::list<Entry>>(new std::list<Entry>); }
   virtual void _append(const Entry&) {}

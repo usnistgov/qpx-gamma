@@ -83,21 +83,17 @@ bool Finder::cloneRange(const Finder &other, double l, double r)
       || other.x_.size() != other.y_.size())
     return false;
 
-  int32_t min = other.find_index(l);
-  int32_t max = other.find_index(r);
+  size_t min = other.find_index(l);
+  size_t max = other.find_index(r);
 
   if (min >= other.x_.size())
       min = other.x_.size() - 1;
   if (max >= other.x_.size())
       max = other.x_.size() - 1;
 
-  if (min < 0)
-      min = 0;
-  if (max < 0)
-      max = 0;
-
   std::vector<double> x_local, y_local;
-  for (int32_t i = min; i < max; ++i) {
+  for (size_t i = min; i < max; ++i)
+  {
     x_local.push_back(other.x_[i]);
     y_local.push_back(other.y_[i]);
   }
@@ -151,7 +147,7 @@ void Finder::calc_kon() {
   fw_theoretical_nrg.clear();
   fw_theoretical_bin.clear();
   if (settings_.cali_fwhm_.valid() && settings_.cali_nrg_.valid()) {
-    for (int i=0; i < x_.size(); ++i) {
+    for (size_t i=0; i < x_.size(); ++i) {
       double nrg = settings_.cali_nrg_.transform(x_[i], settings_.bits_);
       fw_theoretical_nrg.push_back(nrg);
       double fw = settings_.cali_fwhm_.transform(nrg);
@@ -181,7 +177,7 @@ void Finder::calc_kon() {
   int shift = width / 2;
 
   if (!fw_theoretical_bin.empty()) {
-    for (int i=0; i < fw_theoretical_bin.size(); ++i)
+    for (size_t i=0; i < fw_theoretical_bin.size(); ++i)
       if (ceil(fw_theoretical_bin[i]) < i) {
         start = i;
         break;
@@ -234,7 +230,7 @@ void Finder::find_peaks() {
   //find edges of contiguous peak areas
   lefts.push_back(prelim[0]);
   size_t prev = prelim[0];
-  for (int i=0; i < prelim.size(); ++i) {
+  for (size_t i=0; i < prelim.size(); ++i) {
     size_t current = prelim[i];
     if ((current - prev) > 1) {
       rights.push_back(prev);
@@ -298,7 +294,7 @@ double Finder::find_right(double chan) const
   if ((chan < x_[0]) || (chan >= x_[x_.size()-1]))
     return x_.back();
 
-  int i = 0;
+  size_t i = 0;
   while ((i < x_.size()) && (x_[i] < chan))
     i++;
 
@@ -334,9 +330,6 @@ size_t Finder::left_edge(size_t idx) const
     idx--;
   while ((idx > 0) && (x_conv[idx] < edge_threshold))
     idx--;
-
-  if (idx < 0)
-    idx = 0;
 
   return idx;
 }
@@ -386,7 +379,7 @@ int32_t Finder::find_index(double chan_val) const
   if (chan_val >= x_[x_.size()-1])
     return x_.size()-1;
 
-  int32_t i = 0;
+  size_t i = 0;
   while ((i < x_.size()) && (x_[i] < chan_val))
     i++;
 
