@@ -138,7 +138,12 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
   if (node.child("Items")) {
     for (auto &i : node.child("Items").attributes()) {
       std::string item_name(i.name());
-      PreciseFloat value(i.value());
+      PreciseFloat value = std::numeric_limits<long double>::quiet_NaN();
+
+      std::string str(i.value());
+      try { value = std::stold(str); }
+      catch(...) {}
+
       items[item_name] = value;
     }
   }

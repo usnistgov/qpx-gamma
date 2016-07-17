@@ -33,11 +33,6 @@ public:
   Spectrum1D();
   Spectrum1D* clone() const override { return new Spectrum1D(*this); }
 
-private:
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int version);
-
 protected:
   std::string my_type() const override {return "1D";}
 
@@ -58,6 +53,9 @@ protected:
 
   std::string _data_to_xml() const override;
   uint16_t _data_from_xml(const std::string&) override;
+
+  void _save_data(boost::archive::binary_oarchive&) const override;
+  void _load_data(boost::archive::binary_iarchive&) override;
 
   bool channels_from_string(std::istream &data_stream, bool compression);
   void init_from_file(std::string filename);

@@ -28,11 +28,6 @@
 //#include "custom_timer.h"
 #include "qpx_util.h"
 
-
-//#include <fstream>
-//#include <boost/archive/binary_oarchive.hpp>
-//#include <boost/archive/binary_iarchive.hpp>
-
 namespace Qpx {
 
 Metadata::Metadata()
@@ -415,19 +410,21 @@ void Sink::set_attributes(const Setting &settings) {
 //Save and load//////
 /////////////////////
 
-void Sink::to_xml(pugi::xml_node &root, std::string filename) const {
+void Sink::save(pugi::xml_node &root, std::shared_ptr<boost::archive::binary_oarchive> archive) const {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
 
   pugi::xml_node node = root.append_child("Sink");
   node.append_attribute("type").set_value(this->my_type().c_str());
 
   metadata_.to_xml(node);
+//  if (archive.operator bool())
+//    _save_data(*archive);
 
   node.append_child("Data").append_child(pugi::node_pcdata).set_value(this->_data_to_xml().c_str());
 }
 
 
-bool Sink::from_xml(const pugi::xml_node &node, std::string filename) {
+bool Sink::load(const pugi::xml_node &node, std::shared_ptr<boost::archive::binary_iarchive> archive) {
 
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())

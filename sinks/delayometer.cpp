@@ -59,7 +59,7 @@ void Delayometer::_set_detectors(const std::vector<Qpx::Detector>& dets) {
   axes_.resize(1);
   axes_[0].clear();
   for (auto &q : ns_)
-    axes_[0].push_back(q.second.convert_to<double>());
+    axes_[0].push_back(static_cast<double>(q.second));
 }
 
 bool Delayometer::_initialize()
@@ -211,7 +211,7 @@ void Delayometer::addEvent(const Event& newEvent) {
     axes_.resize(1);
     axes_[0].clear();
     for (auto &q : ns_)
-      axes_[0].push_back(q.second.convert_to<double>());
+      axes_[0].push_back(static_cast<double>(q.second));
   }
 
   int64_t diff =  timebase.to_native(std::round((b.timestamp() - a.timestamp())));
@@ -224,7 +224,7 @@ void Delayometer::addEvent(const Event& newEvent) {
     axes_.resize(1);
     axes_[0].clear();
     for (auto &q : ns_)
-      axes_[0].push_back(q.second.convert_to<double>());
+      axes_[0].push_back(static_cast<double>(q.second));
 
   }
 

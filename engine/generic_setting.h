@@ -28,15 +28,11 @@
 #include <map>
 #include <set>
 #include <boost/date_time.hpp>
-#include <boost/multiprecision/cpp_dec_float.hpp>
 #include "pattern.h"
+#include "precise_float.h"
 
 #include "pugixml.hpp"
 #include "xmlable.h"
-
-#define QPX_FLOAT_PRECISION 16
-
-typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<QPX_FLOAT_PRECISION> > PreciseFloat;
 
 
 namespace Qpx {

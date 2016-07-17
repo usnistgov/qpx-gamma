@@ -268,13 +268,13 @@ void FormManip1D::spectrumDetails(std::string id)
 
   if (real > 0) {
     dead = (real - live) * 100.0 / real;
-    rate = tothits.value_precise.convert_to<double>() / real;
+    rate = to_double( tothits.value_precise ) / real;
   }
 
   QString infoText =
       "<nobr>" + QString::fromStdString(id) + "(" + QString::fromStdString(type) + ", " + QString::number(bits) + "bits)</nobr><br/>"
       "<nobr>" + detstr + "</nobr><br/>"
-      "<nobr>Count: " + QString::number(tothits.value_precise.convert_to<double>()) + "</nobr><br/>"
+      "<nobr>Count: " + QString::number( to_double( tothits.value_precise )) + "</nobr><br/>"
       "<nobr>Rate: " + QString::number(rate) + "cps</nobr><br/>"
       "<nobr>Live:  " + QString::number(live) + "s</nobr><br/>"
       "<nobr>Real:  " + QString::number(real) + "s</nobr><br/>"
@@ -299,7 +299,7 @@ void FormManip1D::update_plot() {
       md = q.second->metadata();
 
 //    double livetime = md.get_attribute("live_time")).value_duration.total_milliseconds() * 0.001;
-    double rescale  = md.get_attribute("rescale").value_precise.convert_to<double>();
+    double rescale  = md.get_attribute("rescale").number();
     uint16_t bits = md.get_attribute("resolution").value_int;
 
     if (md.get_attribute("visible").value_int
@@ -322,7 +322,7 @@ void FormManip1D::update_plot() {
       int i = 0;
       for (auto it : *spectrum_data) {
         double xx = temp_calib.transform(i, bits);
-        double yy = it.second.convert_to<double>() * rescale;
+        double yy = to_double( it.second ) * rescale;
 //        if (ui->pushPerLive->isChecked() && (livetime > 0))
 //          yy = yy / livetime;
         x[it.first[0]] = xx;

@@ -26,9 +26,7 @@
 #include <vector>
 #include <map>
 #include <string>
-#include <boost/multiprecision/cpp_dec_float.hpp>
-
-typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<16> > PreciseFloat;
+#include "precise_float.h"
 
 class UnitConverter {
 public:

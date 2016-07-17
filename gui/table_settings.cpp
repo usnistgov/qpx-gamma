@@ -120,7 +120,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
             double val = item.value_dbl;
             if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
               UnitConverter uc;
-              val = uc.convert_units(val, item.metadata.unit, preferred_units_.at(item.id_)).convert_to<double>();
+              val = to_double( uc.convert_units(val, item.metadata.unit, preferred_units_.at(item.id_)) );
             }
             return QVariant::fromValue(val);
           } else
@@ -160,10 +160,10 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
             && (item.metadata.unit != preferred_units_.at(item.id_))) {
           std::string to_units = preferred_units_.at(item.id_);
           UnitConverter uc;
-          item.value_dbl = uc.convert_units(item.value_dbl, item.metadata.unit, to_units).convert_to<double>();
-          item.metadata.minimum = uc.convert_units(item.metadata.minimum, item.metadata.unit, to_units).convert_to<double>();
-          item.metadata.step = uc.convert_units(item.metadata.step, item.metadata.unit, to_units).convert_to<double>();
-          item.metadata.maximum = uc.convert_units(item.metadata.maximum, item.metadata.unit, to_units).convert_to<double>();
+          item.value_dbl = to_double( uc.convert_units(item.value_dbl, item.metadata.unit, to_units) );
+          item.metadata.minimum = to_double( uc.convert_units(item.metadata.minimum, item.metadata.unit, to_units) );
+          item.metadata.step = to_double( uc.convert_units(item.metadata.step, item.metadata.unit, to_units) );
+          item.metadata.maximum = to_double( uc.convert_units(item.metadata.maximum, item.metadata.unit, to_units) );
         }
         return QVariant::fromValue(item);
       } else
@@ -308,7 +308,7 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
         if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
           std::string to_units = preferred_units_.at(item.id_);
           UnitConverter uc;
-          val = uc.convert_units(val, preferred_units_.at(item.id_), item.metadata.unit).convert_to<double>();
+          val = to_double( uc.convert_units(val, preferred_units_.at(item.id_), item.metadata.unit) );
         }
         item.value_dbl = val;
       }
@@ -318,7 +318,7 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
         if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
           std::string to_units = preferred_units_.at(item.id_);
           UnitConverter uc;
-          val = uc.convert_units(val, preferred_units_.at(item.id_), item.metadata.unit).convert_to<long double>();
+          val = to_double( uc.convert_units(val, preferred_units_.at(item.id_), item.metadata.unit) );
         }
         item.value_precise = val;
       }

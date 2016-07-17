@@ -36,11 +36,6 @@ public:
   Spectrum2D();
   Spectrum2D* clone() const override { return new Spectrum2D(*this); }
 
-private:
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int version);
-  
 protected:
   typedef std::map<std::pair<uint16_t,uint16_t>, PreciseFloat> SpectrumMap2D;
   
@@ -62,7 +57,10 @@ protected:
   
   std::string _data_to_xml() const override;
   uint16_t _data_from_xml(const std::string&) override;
-  
+
+  void _save_data(boost::archive::binary_oarchive&) const override;
+  void _load_data(boost::archive::binary_iarchive&) override;
+
   //export to matlab script
   void write_m(std::string) const;
   void write_m4b(std::string) const;

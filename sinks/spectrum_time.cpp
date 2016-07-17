@@ -120,7 +120,7 @@ std::unique_ptr<std::list<Entry>> TimeSpectrum::_data_range(std::initializer_lis
     for (size_t j = min1; j < max1; ++j)
     {
       PreciseFloat val = spectra_.at(i).at(j);
-      if (val.convert_to<double>() == 0)
+      if (to_double(val) == 0)
         continue;
       Entry newentry;
       newentry.first.resize(2, 0);
@@ -190,7 +190,7 @@ void TimeSpectrum::_push_stats(const StatsUpdate& newStats)
       if (diff.items.count("live_time"))
       {
         PreciseFloat scaled_live = diff.items.at("live_time") * scale_factor;
-        lt = boost::posix_time::microseconds(scaled_live.convert_to<long>());
+        lt = boost::posix_time::microseconds(static_cast<long>(to_double(scaled_live)));
       }
 
       real     = rt.total_milliseconds()  * 0.001;
@@ -206,14 +206,14 @@ void TimeSpectrum::_push_stats(const StatsUpdate& newStats)
 
     if (seconds_.empty() || (tot_time != 0)) {
 
-      seconds_.push_back(tot_time.convert_to<double>());
+      seconds_.push_back(to_double(tot_time));
       updates_.push_back(newStats);
 
 //      spectrum_.push_back(count);
 
       axes_[0].clear();
       for (auto &q : seconds_)
-        axes_[0].push_back(q.convert_to<double>());
+        axes_[0].push_back(to_double(q));
     }
   }
 

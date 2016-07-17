@@ -25,6 +25,8 @@
 #include "time_domain.h"
 #include "daq_sink_factory.h"
 
+#include <boost/serialization/vector.hpp>
+
 namespace Qpx {
 
 static SinkRegistrar<TimeDomain> registrar("Time");
@@ -88,7 +90,7 @@ void TimeDomain::_set_detectors(const std::vector<Qpx::Detector>& dets) {
   axes_.resize(1);
   axes_[0].clear();
   for (auto &q : seconds_)
-    axes_[0].push_back(q.convert_to<double>());
+    axes_[0].push_back(to_double(q));
 
 //  DBG << "<TimeDomain> _set_detectors";
 }
@@ -167,7 +169,7 @@ void TimeDomain::_push_stats(const StatsUpdate& newStats)
 
       if (diff.items.count("live_time")) {
         PreciseFloat scaled_live = diff.items.at("live_time") * scale_factor;
-        lt = boost::posix_time::microseconds(scaled_live.convert_to<long>());
+        lt = boost::posix_time::microseconds(static_cast<long>(to_double(scaled_live)));
       }
 
       real     = rt.total_milliseconds()  * 0.001;
@@ -193,14 +195,14 @@ void TimeDomain::_push_stats(const StatsUpdate& newStats)
         count = percent_dead;
       }
 
-      seconds_.push_back(tot_time.convert_to<double>());
+      seconds_.push_back(to_double(tot_time));
       updates_.push_back(newStats);
 
       spectrum_.push_back(count);
 
       axes_[0].clear();
       for (auto &q : seconds_)
-        axes_[0].push_back(q.convert_to<double>());
+        axes_[0].push_back(to_double(q));
 
 //      DBG << "<TimeDomain> \"" << metadata_.name << "\" chan " << int(newStats.channel) << " nrgs.size="
 //             << energies_[0].size() << " nrgs.last=" << energies_[0][energies_[0].size()-1]
@@ -242,7 +244,7 @@ uint16_t TimeDomain::_data_from_xml(const std::string& thisData){
     if (numero == "|")
       break;
 
-    PreciseFloat nr(numero);
+    PreciseFloat nr { from_string(numero) };
     sp.push_back(nr);
     i++;
   }
@@ -251,7 +253,7 @@ uint16_t TimeDomain::_data_from_xml(const std::string& thisData){
   while (channeldata.rdbuf()->in_avail()) {
     channeldata >> numero;
 
-    PreciseFloat nr(numero);
+    PreciseFloat nr { from_string(numero) };
     secs.push_back(nr);
     i++;
   }
@@ -265,13 +267,16 @@ uint16_t TimeDomain::_data_from_xml(const std::string& thisData){
   return i;
 }
 
-template<class Archive>
-void TimeDomain::serialize(Archive & ar, const unsigned int version)
+void TimeDomain::_save_data(boost::archive::binary_oarchive& oa) const
 {
-  ar & boost::serialization::base_object<Spectrum>(*this);
-  ar & spectrum_;
-  ar & seconds_;
+  oa & spectrum_;
+  oa & seconds_;
 }
 
+void TimeDomain::_load_data(boost::archive::binary_iarchive& ia)
+{
+  ia & spectrum_;
+  ia & seconds_;
+}
 
 }

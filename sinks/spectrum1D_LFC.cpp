@@ -153,7 +153,7 @@ void Spectrum1D_LFC::_push_stats(const StatsUpdate& newStats)
     uint32_t res = pow(2, bits_);
     for (uint32_t i = 0; i < res; i++) {
       if ((channels_run_[i] > 0.0) || (channels_all_[i] > 0.0))
-        spectrum_[i] = channels_run_[i] + channels_all_[i].convert_to<uint64_t>();
+        spectrum_[i] = channels_run_[i] + channels_all_[i];
     }
     total_hits_ += count_current_;
     time2_ = newStats;

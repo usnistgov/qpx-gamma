@@ -49,7 +49,8 @@ class SinkFactory {
   
   SinkPtr create_type(std::string type);
   SinkPtr create_from_prototype(const Metadata& tem);
-  SinkPtr create_from_xml(const pugi::xml_node &root);
+//  SinkPtr create_from_xml(const pugi::xml_node &root);
+  SinkPtr create_from_xml(const pugi::xml_node &root, std::shared_ptr<boost::archive::binary_iarchive> archive);
   SinkPtr create_from_file(std::string filename);
   SinkPtr create_copy(SinkPtr other);
 

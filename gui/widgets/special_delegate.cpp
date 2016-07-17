@@ -326,10 +326,7 @@ void QpxSpecialDelegate::setEditorData ( QWidget *editor, const QModelIndex &ind
       sb->setRange(set.metadata.minimum, set.metadata.maximum);
       sb->setSingleStep(set.metadata.step);
       sb->setDecimals(6); //generalize
-      if (set.metadata.setting_type == Qpx::SettingType::floating_precise)
-        sb->setValue(set.value_precise.convert_to<long double>());
-      else
-        sb->setValue(set.value_dbl);
+      sb->setValue(set.number());
     } else
       sb->setValue(index.data(Qt::EditRole).toDouble());
   } else if (QSpinBox *sb = qobject_cast<QSpinBox *>(editor)) {

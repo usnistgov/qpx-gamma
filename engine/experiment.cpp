@@ -46,7 +46,7 @@ void ExperimentProject::to_xml(pugi::xml_node &root) const
     {
       pugi::xml_node projnode  = datanode.append_child(a.second->xml_element_name().c_str());
       projnode.append_attribute("idx").set_value((long long)a.first);
-      a.second->to_xml(projnode);
+//      a.second->to_xml(projnode);
     }
   }
 
@@ -78,7 +78,7 @@ void ExperimentProject::from_xml(const pugi::xml_node &node)
       if (idx >= 0)
       {
         ProjectPtr proj = ProjectPtr(new Project());
-        proj->from_xml(n, true, true);
+//        proj->from_xml(n, true, true);
         data[idx] = proj;
         next_idx = idx + 1;
       }

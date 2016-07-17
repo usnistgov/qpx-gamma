@@ -181,7 +181,7 @@ void FormExperiment2D::display_data()
     add_to_table(ui->tableResults, i, 0, data.independent_variable.to_string());
     add_to_table(ui->tableResults, i, 1, data.independent_variable2.to_string());
 
-    double total_count = data.spectrum_info.get_attribute("total_hits").value_precise.convert_to<double>();
+    double total_count = to_double( data.spectrum_info.get_attribute("total_hits").value_precise );
     if (live_ms > 0)
       total_count = total_count / live_ms * 1000.0;
     add_to_table(ui->tableResults, i, 2, std::to_string(total_count));
@@ -316,7 +316,7 @@ void FormExperiment2D::eval_dependent(Qpx::DataPoint &data)
   if (codomain == "Count rate (spectrum)")
   {
     double live_ms = data.spectrum_info.get_attribute("live_time").value_duration.total_milliseconds();
-    double total = data.spectrum_info.get_attribute("total_hits").value_precise.convert_to<double>();
+    double total = to_double( data.spectrum_info.get_attribute("total_hits").value_precise );
     if (live_ms > 0)
       total = total / live_ms * 1000.0;
     data.dependent_variable = UncertainDouble::from_double(total, sqrt(total));

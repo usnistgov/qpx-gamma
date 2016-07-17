@@ -243,7 +243,7 @@ void FormRawView::displayStats(int idx)
   i = 0;
   for (auto &q : stats.items)
   {
-    info += "\n" + q.first + " = " + std::to_string(q.second.convert_to<double>());
+    info += "\n" + q.first + " = " + to_string( q.second );
     i++;
   }
 

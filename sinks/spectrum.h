@@ -40,11 +40,6 @@ class Spectrum : public Sink
 public:
   Spectrum();
 
-private:
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int version);
-
 protected:
   bool _initialize() override;
   void _push_hit(const Hit&) override;

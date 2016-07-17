@@ -38,7 +38,8 @@
 #include "detector.h"
 #include "custom_logger.h"
 
-#include <boost/serialization/base_object.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 namespace Qpx {
 
@@ -120,9 +121,8 @@ public:
 
   //named constructors, used by factory
   bool from_prototype(const Metadata&);
-  bool from_xml(const pugi::xml_node &, std::string);
-
-  void to_xml(pugi::xml_node &, std::string) const;
+  bool load(const pugi::xml_node &, std::shared_ptr<boost::archive::binary_iarchive>);
+  void save(pugi::xml_node &, std::shared_ptr<boost::archive::binary_oarchive>) const;
 
   //data acquisition
   void push_spill(const Spill&);
@@ -185,10 +185,9 @@ protected:
   virtual std::string _data_to_xml() const = 0;
   virtual uint16_t _data_from_xml(const std::string&) = 0;
 
-private:
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {}
+  virtual void _save_data(boost::archive::binary_oarchive&) const {}
+  virtual void _load_data(boost::archive::binary_iarchive&) {}
+
 };
 
 typedef std::shared_ptr<Sink> SinkPtr;

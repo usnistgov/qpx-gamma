@@ -103,8 +103,9 @@ public:
 
 
   std::string xml_element_name() const {return "QpxProject";}
-  void to_xml(pugi::xml_node &node) const;
-  void from_xml(const pugi::xml_node &node, bool with_sinks = true, bool with_full_sinks = true);
+  void to_xml(pugi::xml_node &node, std::shared_ptr<boost::archive::binary_oarchive> archive) const;
+  void from_xml(const pugi::xml_node &node, std::shared_ptr<boost::archive::binary_iarchive> archive,
+                bool with_sinks = true, bool with_full_sinks = true);
 
 private:
   //helpers

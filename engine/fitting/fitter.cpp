@@ -66,7 +66,7 @@ void Fitter::setData(SinkPtr spectrum)
         go = true;
       if (go) {
         x.push_back(static_cast<double>(i));
-        y.push_back(it.second.convert_to<double>());
+        y.push_back(static_cast<double>(it.second));
         if (it.second > 0)
           x_bound = j+1;
         j++;

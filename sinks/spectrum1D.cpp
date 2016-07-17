@@ -33,6 +33,8 @@
 #include <nexus/napi.h>
 #endif
 
+#include <boost/serialization/vector.hpp>
+
 
 namespace Qpx {
 
@@ -284,7 +286,9 @@ uint16_t Spectrum1D::_data_from_xml(const std::string& thisData){
       channeldata >> numero_z;
       i += boost::lexical_cast<uint16_t>(numero_z);
     } else {
-      PreciseFloat nr(numero);
+      PreciseFloat nr {0};
+      try { nr = std::stold(numero); }
+      catch(...) {}
       spectrum_[i] = nr;
       i++;
     }
@@ -310,7 +314,9 @@ bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compressio
         Entry new_entry;
         new_entry.first.resize(1);
         new_entry.first[0] = i;
-        PreciseFloat nr(numero);
+        PreciseFloat nr {0};
+        try { nr = std::stold(numero); }
+        catch(...) {}
         new_entry.second = nr;
         entry_list.push_back(new_entry);
         i++;
@@ -322,7 +328,9 @@ bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compressio
       Entry new_entry;
       new_entry.first.resize(1);
       new_entry.first[0] = i;
-      PreciseFloat nr(numero);
+      PreciseFloat nr {0};
+      try { nr = std::stold(numero); }
+      catch(...) {}
       new_entry.second = nr;
       entry_list.push_back(new_entry);
       i++;
@@ -689,7 +697,9 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
         Entry new_entry;
         new_entry.first.resize(1);
         new_entry.first[0] = i;
-        PreciseFloat nr(token);
+        PreciseFloat nr {0};
+        try { nr = std::stold(token); }
+        catch(...) {}
         new_entry.second = nr;
         entry_list.push_back(new_entry);
         if (nr > 0)
@@ -1066,7 +1076,7 @@ void Spectrum1D::write_spe(std::string filename) const {
   for (int i=0; i < dim1; ++i) {
     one = 0.0;
     if (i < spectrum_.size())
-      one = spectrum_[i].convert_to<double>();
+      one = static_cast<double>(spectrum_[i]);
     myfile.write ((char*)&one, sizeof(float));
   }
 
@@ -1086,7 +1096,7 @@ void Spectrum1D::write_h5(std::string filename) const
   std::vector<double> axis;
   for (int i=0; i < count; ++i)
   {
-    counts.push_back(spectrum_.at(i).convert_to<double>());
+    counts.push_back( static_cast<double>(spectrum_.at(i)) );
     axis.push_back(i);
   }
 
@@ -1115,11 +1125,14 @@ void Spectrum1D::write_h5(std::string filename) const
   #endif
 }
 
-template<class Archive>
-void Spectrum1D::serialize(Archive & ar, const unsigned int version)
+void Spectrum1D::_save_data(boost::archive::binary_oarchive& oa) const
 {
-  ar & boost::serialization::base_object<Spectrum>(*this);
-  ar & spectrum_;
+  oa & spectrum_;
+}
+
+void Spectrum1D::_load_data(boost::archive::binary_iarchive& ia)
+{
+  ia & spectrum_;
 }
 
 

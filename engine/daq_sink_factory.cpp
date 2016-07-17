@@ -51,7 +51,7 @@ SinkPtr SinkFactory::create_from_prototype(const Metadata& tem)
   return SinkPtr();
 }
 
-SinkPtr SinkFactory::create_from_xml(const pugi::xml_node &root)
+SinkPtr SinkFactory::create_from_xml(const pugi::xml_node &root, std::shared_ptr<boost::archive::binary_iarchive> archive)
 {
 //  if (std::string(root.name()) != "Spectrum")               //GENERALIZE
 //    return SinkPtr();
@@ -61,7 +61,7 @@ SinkPtr SinkFactory::create_from_xml(const pugi::xml_node &root)
 //  DBG << "<SinkFactory> making " << root.attribute("type").value();
 
   SinkPtr instance = create_type(std::string(root.attribute("type").value()));
-  if (instance && instance->from_xml(root, ""))
+  if (instance && instance->load(root, archive))
     return instance;
 
   return SinkPtr();

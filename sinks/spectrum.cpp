@@ -358,7 +358,7 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
           scale_factor = rt.total_microseconds() / diff.items["native_time"];
         if (diff.items.count("live_time")) {
           PreciseFloat scaled_live = diff.items.at("live_time") * scale_factor;
-          lt = boost::posix_time::microseconds(scaled_live.convert_to<long>());
+          lt = boost::posix_time::microseconds(static_cast<double>(scaled_live));
         }
       }
     }
@@ -448,11 +448,5 @@ void Spectrum::_recalc_axes() {
   }
 }
 
-template<class Archive>
-void Spectrum::serialize(Archive & ar, const unsigned int version)
-{
-  ar & boost::serialization::base_object<Sink>(*this);
-  //live and real times?
-}
 
 }

@@ -268,7 +268,7 @@ bool Simulator2D::boot() {
     return false;
   }
 
-  double totevts = md.get_attribute("total_events").value_precise.convert_to<double>();
+  double totevts = md.get_attribute("total_events").number();
   OCR = totevts / lab_time;
 
   int adjust_bits = source_res - bits_;

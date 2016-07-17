@@ -43,7 +43,7 @@ void MarkerBox2D::integrate(Qpx::SinkPtr spectrum)
 
   std::shared_ptr<Qpx::EntryList> spectrum_data = std::move(spectrum->data_range({{xmin, xmax}, {ymin, ymax}}));
   for (auto &entry : *spectrum_data)
-    integral += entry.second.convert_to<double>();
+    integral += to_double( entry.second );
 
   variance = integral / pow(chan_area, 2);
 }

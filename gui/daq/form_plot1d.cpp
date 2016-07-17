@@ -131,7 +131,7 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   Qpx::Setting tothits = md.get_attribute("total_hits");
   double rate_total = 0;
   if (live > 0)
-    rate_total = tothits.value_precise.convert_to<double>() / live; // total count rate corrected for dead time
+    rate_total = tothits.number() / live; // total count rate corrected for dead time
 
   double dead = 100;
   if (real > 0)
@@ -159,7 +159,7 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   QString infoText =
       "<nobr>" + itm.text + "(" + QString::fromStdString(type) + ", " + QString::number(bits) + "bits)</nobr><br/>"
       "<nobr>" + detstr + "</nobr><br/>"
-      "<nobr>Count: " + QString::number(tothits.value_precise.convert_to<double>()) + "</nobr><br/>"
+      "<nobr>Count: " + QString::number(tothits.number()) + "</nobr><br/>"
       "<nobr>Rate (inst/total): " + QString::number(rate_inst) + "cps / " + QString::number(rate_total) + "cps</nobr><br/>"
       "<nobr>Live / real:  " + QString::number(live) + "s / " + QString::number(real) + "s</nobr><br/>"
       "<nobr>Dead:  " + QString::number(dead) + "%</nobr><br/>";
@@ -196,7 +196,7 @@ void FormPlot1D::update_plot() {
       md = q.second->metadata();
 
     double livetime = md.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
-    double rescale  = md.get_attribute("rescale").value_precise.convert_to<double>();
+    double rescale  = md.get_attribute("rescale").number();
     uint16_t bits = md.get_attribute("resolution").value_int;
 
     if (md.get_attribute("visible").value_int) {
@@ -219,7 +219,7 @@ void FormPlot1D::update_plot() {
 
       for (auto it : *spectrum_data) {
         double xx = x[it.first[0]];
-        double yy = it.second.convert_to<double>() * rescale;
+        double yy = to_double( it.second ) * rescale;
         if (ui->pushPerLive->isChecked() && (livetime > 0))
           yy = yy / livetime;
         y[it.first[0]] = yy;

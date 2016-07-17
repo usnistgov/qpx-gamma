@@ -560,7 +560,11 @@ void Setting::val_from_node(const pugi::xml_node &node)
   else if (metadata.setting_type == SettingType::floating)
     value_dbl = node.attribute("value").as_double();
   else if (metadata.setting_type == SettingType::floating_precise)
-    value_precise = PreciseFloat(node.attribute("value").value());
+  {
+    std::string str(node.attribute("value").value());
+    try { value_precise = std::stold(str); }
+    catch(...) {}
+  }
   else if ((metadata.setting_type == SettingType::text) ||
            (metadata.setting_type == SettingType::detector) ||
            (metadata.setting_type == SettingType::color) ||
@@ -892,11 +896,12 @@ bool Setting::is_numeric() const
 double Setting::number()
 {
   if (metadata.setting_type == SettingType::integer)
-    return value_int;
+    return static_cast<double>(value_int);
   else if (metadata.setting_type == SettingType::floating)
     return value_dbl;
   else if (metadata.setting_type == SettingType::floating_precise)
-    return value_precise.convert_to<double>();
+//    return value_precise.convert_to<double>();
+    return static_cast<double>(value_precise);
   else
     return std::numeric_limits<double>::quiet_NaN();
 }

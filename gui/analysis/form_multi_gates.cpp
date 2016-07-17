@@ -162,7 +162,7 @@ void FormMultiGates::update_current_gate(Gate gate) {
     livetime = 100;
 
   Qpx::Setting totevts = gate.fit_data_.metadata_.get_attribute("total_events");
-  gate.cps = totevts.value_precise.convert_to<double>(); // / livetime;
+  gate.cps = totevts.number(); // / livetime;
 
   if (gate.constraints.y_c.bin(0) <= -1) {
 
@@ -521,7 +521,7 @@ void FormMultiGates::update_peaks(bool content_changed) {
   if (livetime <= 0)
     livetime = 100;
   Qpx::Setting totevts = fit_data_.metadata_.get_attribute("total_events");
-  cgate.cps = totevts.value_precise.convert_to<double>();// / livetime;
+  cgate.cps = totevts.number();// / livetime;
 
   update_current_gate(cgate);
 }
