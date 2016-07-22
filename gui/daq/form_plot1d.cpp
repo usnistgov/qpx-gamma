@@ -193,7 +193,10 @@ void FormPlot1D::update_plot() {
   for (auto &q: mySpectra->get_sinks(1)) {
     Metadata md;
     if (q.second)
+    {
       md = q.second->metadata();
+//      DBG << "\n" << q.second->debug();
+    }
 
     double livetime = md.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
     double rescale  = md.get_attribute("rescale").number();
@@ -207,8 +210,6 @@ void FormPlot1D::update_plot() {
       std::shared_ptr<EntryList> spectrum_data =
           std::move(q.second->data_range({{0, x.size()}}));
 
-//      DBG << "Will plot " << md.name << "  size " << x.size() << "  sz " << spectrum_data->size();
-
       Detector detector = Detector();
       if (!md.detectors.empty())
         detector = md.detectors[0];
@@ -218,7 +219,13 @@ void FormPlot1D::update_plot() {
         calib_ = temp_calib;
 
       for (auto it : *spectrum_data) {
+
         double xx = x[it.first[0]];
+
+//        double xx = it.first[0];
+//        if (xx < x.size())
+//          xx = x[xx];
+
         double yy = to_double( it.second ) * rescale;
         if (ui->pushPerLive->isChecked() && (livetime > 0))
           yy = yy / livetime;

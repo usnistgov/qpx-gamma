@@ -249,11 +249,13 @@ void Project::set_prototypes(const XMLableDB<Metadata>& prototypes) {
   clear_helper();
 
   for (size_t i=0; i < prototypes.size(); i++) {
+//    DBG << "Creating sink " << prototypes.get(i).debug();
+
     SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_prototype(prototypes.get(i));
     if (sink)
     {
-      DBG << "Adding sink";
       sinks_[++current_index_] = sink;
+//      DBG << "Added sink " << sink->debug();
     }
   }
 

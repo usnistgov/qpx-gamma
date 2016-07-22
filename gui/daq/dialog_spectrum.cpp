@@ -205,7 +205,9 @@ void DialogSpectrum::on_buttonBox_accepted()
     reject();
   else
   {
+
     SinkPtr newsink = SinkFactory::getInstance().create_from_prototype(sink_metadata_);
+
     if (!newsink)
     {
       QMessageBox msgBox;

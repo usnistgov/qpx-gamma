@@ -630,6 +630,9 @@ void FormMcaDaq::on_pushForceRefresh_clicked()
 
 void FormMcaDaq::on_pushDetails_clicked()
 {
+//  for (auto &q : project_->get_sinks())
+//    DBG << "\n" << q.first << "=" << q.second->debug();
+
   FormDaqSettings *DaqInfo = new FormDaqSettings(project_, this);
   DaqInfo->setWindowTitle("System settings at the time of acquisition");
   DaqInfo->exec();

@@ -158,7 +158,7 @@ void Calibration::coef_from_string(std::string coefs) {
   }
 }
 
-std::string Calibration::to_string()
+std::string Calibration::to_string() const
 {
   std::string result;
   result += "[Calibration:" + type_ + "]";

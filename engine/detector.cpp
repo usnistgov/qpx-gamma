@@ -116,4 +116,39 @@ void Detector::from_xml(const pugi::xml_node &node) {
   }
 }
 
+std::string Detector::debug(std::string prepend) const
+{
+  std::stringstream ss;
+  ss << name_ << "(" << type_ << ")\n";
+  if (!energy_calibrations_.empty())
+  {
+    ss << prepend << k_branch_mid << "Energy calibrations\n";
+    for (size_t i=0; i < energy_calibrations_.size(); ++i)
+    {
+      if ((i+1) == energy_calibrations_.size())
+        ss << prepend << k_branch_pre << k_branch_end << energy_calibrations_.get(i).to_string() << "\n";
+      else
+        ss << prepend << k_branch_pre << k_branch_mid << energy_calibrations_.get(i).to_string() << "\n";
+    }
+  }
+
+  if (!gain_match_calibrations_.empty())
+  {
+    ss << prepend << k_branch_mid << "Gain match calibrations\n";
+    for (size_t i=0; i < gain_match_calibrations_.size(); ++i)
+    {
+      if ((i+1) == energy_calibrations_.size())
+        ss << prepend << k_branch_pre << k_branch_end << gain_match_calibrations_.get(i).to_string() << "\n";
+      else
+        ss << prepend << k_branch_pre << k_branch_mid << gain_match_calibrations_.get(i).to_string() << "\n";
+    }
+  }
+
+  ss << prepend << k_branch_mid << fwhm_calibration_.to_string() << "\n";
+  ss << prepend << k_branch_mid << efficiency_calibration_.to_string() << "\n";
+  ss << prepend << k_branch_end << settings_.debug(prepend + k_branch_pre);
+
+  return ss.str();
+}
+
 }

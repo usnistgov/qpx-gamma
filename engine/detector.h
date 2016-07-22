@@ -61,6 +61,8 @@ class Detector : public XMLable {
     return true;
   }
 
+  std::string debug(std::string prepend) const;
+
   void from_xml(const pugi::xml_node &) override;
   void to_xml(pugi::xml_node &) const override;
   void to_xml_options(pugi::xml_node &root, bool options) const;

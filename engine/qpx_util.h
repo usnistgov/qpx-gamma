@@ -27,6 +27,19 @@
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/algorithm/string.hpp>
 
+const std::string k_branch_mid = "\u251C\u2500";
+const std::string k_branch_end = "\u2514\u2500";
+const std::string k_branch_pre = "\u2502 ";
+
+const std::string k_branch_mid_A = "\u2560\u2550";
+const std::string k_branch_end_A = "\u255A\u2550";
+const std::string k_branch_pre_A = "\u2551 ";
+
+const std::string k_branch_mid_B = "\u2523\u2501";
+const std::string k_branch_end_B = "\u2517\u2501";
+const std::string k_branch_pre_B = "\u2503 ";
+
+
 const std::vector<std::string> k_UTF_superscripts = {
   "\u2070", "\u00B9", "\u00B2",
   "\u00B3", "\u2074", "\u2075",

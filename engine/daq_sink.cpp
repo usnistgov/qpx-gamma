@@ -67,6 +67,24 @@ bool Metadata::operator== (const Metadata& other) const
   return true;
 }
 
+
+std::string Metadata::debug(std::string prepend) const
+{
+  std::stringstream ss;
+  ss << type_ << " (dim=" << dimensions_ << ")\n";
+  //ss << " " << type_description_;
+  ss << prepend << k_branch_mid_B << "Detectors:\n";
+  for (size_t i=0; i < detectors.size(); ++i)
+  {
+    if ((i+1) == detectors.size())
+      ss << prepend << k_branch_pre_B << k_branch_end_B << i << ": " << detectors.at(i).debug(prepend + k_branch_pre_B + "  ");
+    else
+      ss << prepend << k_branch_pre_B << k_branch_mid_B << i << ": " << detectors.at(i).debug(prepend + k_branch_pre_B + k_branch_pre_B);
+  }
+  ss << prepend << k_branch_end_B << attributes_.debug(prepend + "  ");
+  return ss.str();
+}
+
 Setting Metadata::get_attribute(Setting setting) const
 {
   return attributes_.get_setting(setting, Match::id | Match::indices);
@@ -283,10 +301,12 @@ bool Sink::from_prototype(const Metadata& newtemplate) {
   if (metadata_.type() != newtemplate.type())
     return false;
 
-  metadata_.set_attributes(newtemplate.attributes());
+  metadata_.overwrite_all_attributes(newtemplate.attributes());
   metadata_.detectors.clear(); // really?
+
   return (this->_initialize());
 //  DBG << "<Sink::from_prototype>" << metadata_.get_attribute("name").value_text << " made with dims=" << metadata_.dimensions();
+//  DBG << "from prototype " << metadata_.debug();
 }
 
 void Sink::push_spill(const Spill& one_spill) {
@@ -381,6 +401,33 @@ std::string Sink::type() const {
 uint16_t Sink::dimensions() const {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   return metadata_.dimensions();
+}
+
+std::string Sink::debug() const
+{
+  std::string prepend;
+
+  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
+  std::stringstream ss;
+  ss << my_type();
+  if (changed_)
+    ss << " changed";
+  ss << "\n";
+  if (axes_.empty())
+    ss << prepend << k_branch_mid_B << "Axes empty";
+  else
+  {
+    ss << prepend << k_branch_mid_B << "Axes:\n";
+    for (size_t i=0; i < axes_.size();++i)
+    {
+      if ((i+1) == axes_.size())
+        ss << prepend << k_branch_pre_B  << k_branch_end_B << i << ".size=" << axes_.at(i).size() << "\n";
+      else
+        ss << prepend << k_branch_pre_B  << k_branch_mid_B << i << ".size=" << axes_.at(i).size() << "\n";
+    }
+  }
+  ss << prepend << k_branch_end_B << metadata_.debug(prepend + "  ");
+  return ss.str();
 }
 
 

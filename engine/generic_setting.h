@@ -104,7 +104,7 @@ struct SettingMeta : public XMLable {
   bool is_numeric() const;
   std::string value_range() const;
 
-  std::string debug(bool more, bool more2);
+  std::string debug(std::string prepend = std::string()) const;
 
   void from_xml(const pugi::xml_node &node);
   void to_xml(pugi::xml_node &node) const;
@@ -164,7 +164,7 @@ struct Setting : public XMLable {
   void strip_metadata();
   void enrich(const std::map<std::string, SettingMeta> &, bool impose_limits = false);
 
-  std::string debug(std::string prepend = std::string());
+  std::string debug(std::string prepend = std::string()) const;
   std::string val_to_pretty_string() const;
   std::string indices_to_string(bool showblanks = false) const;
   void from_xml(const pugi::xml_node &node) override;

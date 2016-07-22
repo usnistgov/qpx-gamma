@@ -270,7 +270,7 @@ void SettingMeta::to_xml(pugi::xml_node &node) const {
   }
 }
 
-std::string SettingMeta::debug(bool more, bool more2)
+std::string SettingMeta::debug(std::string prepend) const
 {
   std::string ret = to_string(setting_type);
   if (!name.empty())
@@ -283,7 +283,7 @@ std::string SettingMeta::debug(bool more, bool more2)
   if ((setting_type == SettingType::stem) && saveworthy)
     ret += " saveworthy";
   if ((setting_type == SettingType::binary) || (setting_type == SettingType::pattern))
-    ret += " wrodsize=" + std::to_string(maximum);
+    ret += " wordsize=" + std::to_string(maximum);
   if (is_numeric())
   {
     std::stringstream ss;
@@ -306,9 +306,9 @@ std::string SettingMeta::debug(bool more, bool more2)
 
   if (int_menu_items.size())
   {
-    ret += "\n ";
+    ret += "\n" + prepend + " ";
     for (auto &i : int_menu_items)
-      ret += std::to_string(i.first) + "(" + i.second + ")";
+      ret += std::to_string(i.first) + "=\"" + i.second + "\"  ";
   }
 
   return ret;
@@ -640,18 +640,25 @@ void Setting::to_xml(pugi::xml_node &node, bool with_metadata) const {
       q.to_xml(child);
 }
 
-std::string Setting::debug(std::string prepend)
+std::string Setting::debug(std::string prepend) const
 {
-  prepend += id_;
+  std::string ret = id_;
   if (!indices.empty())
-    prepend += indices_to_string(true);
-  prepend += "=" + val_to_pretty_string();
-  prepend += " " + metadata.debug(true, true);
-  prepend += "\n";
+    ret += indices_to_string(true);
+  ret += "=" + val_to_pretty_string();
+  ret += " " + metadata.debug(prepend);
   if (!branches.empty())
-    for (auto &s : branches.my_data_)
-    prepend += s.debug("  ");
-  return prepend;
+    ret += " branches=" + std::to_string(branches.size());
+  ret += "\n";
+  if (!branches.empty())
+    for (size_t i = 0; i < branches.size(); ++i)
+    {
+      if ((i+1) == branches.size())
+        ret += prepend + k_branch_end + branches.get(i).debug(prepend + "  ");
+      else
+        ret += prepend + k_branch_mid + branches.get(i).debug(prepend + k_branch_pre);
+    }
+  return ret;
 }
 
 void Setting::set_value(const Setting &other)

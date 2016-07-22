@@ -76,6 +76,7 @@ public:
   void set_det_limit(uint16_t limit);
   bool chan_relevant(uint16_t chan) const;
 
+  std::string debug(std::string prepend) const;
 
   std::string xml_element_name() const override {return "SinkMetadata";}
   void to_xml(pugi::xml_node &node) const override;
@@ -151,6 +152,7 @@ public:
   //Convenience functions for most common metadata
   std::string type() const;
   uint16_t dimensions() const;
+  std::string debug() const;
 
   //Change metadata
   void set_attribute(const Setting &setting);

@@ -66,7 +66,7 @@ class Calibration : public XMLable {
   std::string coef_to_string() const;
   void coef_from_string(std::string);
   std::string axis_name() const;
-  std::string to_string();
+  std::string to_string() const;
   std::string fancy_equation(int precision = -1, bool with_rsq=false);
 
   boost::posix_time::ptime calib_date_;
