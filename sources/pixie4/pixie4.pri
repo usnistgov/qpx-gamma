@@ -23,44 +23,45 @@
 QMAKE_CLEAN += PIXIEmsg*.txt
 
 #not interested in warnings on PLX and XIA code
-QMAKE_CFLAGS_DEBUG += -O0 -w
+QMAKE_CFLAGS_DEBUG   += -O0 -w
+QMAKE_CFLAGS_RELEASE += -w
 
 unix {
-   ARCH = $$system(uname -m)
-   DEFINES += "XIA_LINUX"
-   DEFINES += "PLX_LINUX"
+  ARCH = $$system(uname -m)
+  DEFINES += "XIA_LINUX"
+  DEFINES += "PLX_LINUX"
 
-   !android {
-      QMAKE_CC = g++
-   }
+  !android {
+    QMAKE_CC = g++
+  }
       
-   contains ( ARCH, x86_64): {
-      LIBS += $$PWD/PLX/Library/64bit/PlxApi.a
-   }
+  contains ( ARCH, x86_64): {
+    LIBS += $$PWD/PLX/Library/64bit/PlxApi.a
+  }
 
-   contains ( ARCH, i686): {
-      LIBS += $$PWD/PLX/Library/32bit/PlxApi.a
-   }
+  contains ( ARCH, i686): {
+    LIBS += $$PWD/PLX/Library/32bit/PlxApi.a
+  }
    
-   QMAKE_CFLAGS   += -fpermissive
-
-   LIBS += -ldl
-
-   QMAKE_CFLAGS += -DBOOST_LOG_DYN_LINK
+  LIBS += -ldl
+  QMAKE_CFLAGS += -fpermissive -DBOOST_LOG_DYN_LINK
 }
 
 win32 {
-    LIBS += $$PWD/PLX/Library/PlxApi.lib
+  LIBS += $$PWD/PLX/Library/PlxApi.lib
 }	
 
 
-INCLUDEPATH += $$PWD \
-               $$PWD/XIA \
-               $$PWD/PLX/Include
+INCLUDEPATH += \
+  $$PWD \
+  $$PWD/XIA \
+  $$PWD/PLX/Include
 
-SOURCES += $$files($$PWD/*.cpp) \
-           $$files($$PWD/XIA/*.c)
+SOURCES += \
+  $$files($$PWD/*.cpp) \
+  $$files($$PWD/XIA/*.c)
 
-HEADERS  += $$files($$PWD/*.h) \
-            $$files($$PWD/XIA/*.h) \
-            $$files($$PWD/PLX/Include/*.h)
+HEADERS += \
+  $$files($$PWD/*.h) \
+  $$files($$PWD/XIA/*.h) \
+  $$files($$PWD/PLX/Include/*.h)

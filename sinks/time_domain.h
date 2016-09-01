@@ -50,9 +50,6 @@ protected:
   std::string _data_to_xml() const override;
   uint16_t _data_from_xml(const std::string&) override;
 
-  void _save_data(boost::archive::binary_oarchive&) const override;
-  void _load_data(boost::archive::binary_iarchive&) override;
-
   int codomain;
 
   std::vector<PreciseFloat> spectrum_;

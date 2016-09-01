@@ -457,7 +457,7 @@ void Sink::set_attributes(const Setting &settings) {
 //Save and load//////
 /////////////////////
 
-void Sink::save(pugi::xml_node &root, std::shared_ptr<boost::archive::binary_oarchive> archive) const {
+void Sink::save(pugi::xml_node &root) const {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
 
   pugi::xml_node node = root.append_child("Sink");
@@ -471,7 +471,7 @@ void Sink::save(pugi::xml_node &root, std::shared_ptr<boost::archive::binary_oar
 }
 
 
-bool Sink::load(const pugi::xml_node &node, std::shared_ptr<boost::archive::binary_iarchive> archive) {
+bool Sink::load(const pugi::xml_node &node) {
 
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())

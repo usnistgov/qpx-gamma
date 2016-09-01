@@ -29,8 +29,6 @@
 
 
 #include <fstream>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
 #include <boost/filesystem/convenience.hpp>
 
 namespace Qpx {
@@ -305,26 +303,7 @@ void Project::write_xml(std::string file_name) {
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child();
 
-
-  std::shared_ptr<boost::archive::binary_oarchive> oa;
-
-//  std::string path2 = boost::filesystem::change_extension(file_name, "").string() + ".bin";
-//  DBG << "Binfile " << path2;
-//  std::ofstream ofs(path2);
-//  if (!ofs.is_open())
-//    return;
-
-//  try
-//  {
-//    oa = std::shared_ptr<boost::archive::binary_oarchive>( new boost::archive::binary_oarchive(ofs) );
-//  }
-//  catch (...)
-//  {
-//    DBG << "bad archive";
-//    return;
-//  }
-
-  to_xml(root, oa);
+  to_xml(root);
 
   doc.save_file(file_name.c_str());
 
@@ -335,7 +314,7 @@ void Project::write_xml(std::string file_name) {
   cond_.notify_all();
 }
 
-void Project::to_xml(pugi::xml_node &root, std::shared_ptr<boost::archive::binary_oarchive> archive) const {
+void Project::to_xml(pugi::xml_node &root) const {
   root.set_name(this->xml_element_name().c_str());
 
   if (!spills_.empty())
@@ -349,7 +328,7 @@ void Project::to_xml(pugi::xml_node &root, std::shared_ptr<boost::archive::binar
 
     pugi::xml_node sinks_node = root.append_child("Sinks");
     for (auto &q : sinks_) {
-      q.second->save(sinks_node, archive);
+      q.second->save(sinks_node);
       sinks_node.last_child().append_attribute("idx").set_value(std::to_string(q.first).c_str());
     }
   }
@@ -382,33 +361,14 @@ void Project::read_xml(std::string file_name, bool with_sinks, bool with_full_si
   if (!root)
     return;
 
-  std::string path2 = boost::filesystem::change_extension(file_name, "").string() + ".bin";
-  DBG << "Binfile " << path2;
-  std::ifstream ifs(path2);
-
-
-  std::shared_ptr<boost::archive::binary_iarchive> ia;
-  if (ifs.is_open())
-  {
-    try
-    {
-      ia = std::shared_ptr<boost::archive::binary_iarchive>( new boost::archive::binary_iarchive(ifs) );
-    }
-    catch (...)
-    {
-      DBG << "bad archive";
-//      return;
-    }
-  }
-
-  from_xml(root, ia);
+  from_xml(root);
   identity_ = file_name;
   cond_.notify_all();
 
 }
 
 
-void Project::from_xml(const pugi::xml_node &root, std::shared_ptr<boost::archive::binary_iarchive> archive,
+void Project::from_xml(const pugi::xml_node &root,
                        bool with_sinks, bool with_full_sinks) {
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
@@ -442,7 +402,7 @@ void Project::from_xml(const pugi::xml_node &root, std::shared_ptr<boost::archiv
         continue;
       }
 
-      SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_xml(child, archive);
+      SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_xml(child);
       if (!sink)
         WARN << "<Project> Could not parse sink";
       else

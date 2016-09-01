@@ -465,14 +465,4 @@ uint16_t Spectrum2D::_data_from_xml(const std::string& thisData){
   return std::max(max_j, max_i);
 }
 
-void Spectrum2D::_save_data(boost::archive::binary_oarchive& oa) const
-{
-  oa & spectrum_;
-}
-
-void Spectrum2D::_load_data(boost::archive::binary_iarchive& ia)
-{
-  ia & spectrum_;
-}
-
 }
