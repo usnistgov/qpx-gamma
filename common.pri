@@ -54,6 +54,7 @@ unix {
     QMAKE_LFLAGS += -lc++
     INCLUDEPATH += /usr/local/include
     QMAKE_CXXFLAGS += -stdlib=libc++ -Wno-c++11-narrowing
+    QMAKE_CLEAN += $$files(*.app)
   }
 }
 

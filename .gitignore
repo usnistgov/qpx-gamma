@@ -16,6 +16,7 @@ qpx
 qpxd
 cpx
 cpxd
+*.app
 *.desktop
 *.user
 *.log
