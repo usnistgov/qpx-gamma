@@ -77,31 +77,6 @@ inline std::string to_string(const PreciseFloat pf)
   return ss.str();
 }
 
-namespace boost { namespace serialization { // insert this code to the appropriate namespaces
-
-/**
- Save a mpfr_float type to a boost archive.
- */
-template <typename Archive>
-void save(Archive& ar, PreciseFloat const& r, unsigned /*version*/)
-{
-  std::string tmp = r.str(0, std::ios::fixed);// 0 indicates use full precision
-  ar & tmp;
-}
-
-/**
- Load a mpfr_float type from a boost archive.
- */
-template <typename Archive>
-void load(Archive& ar, PreciseFloat& r, unsigned /*version*/)
-{
-  std::string tmp;
-  ar & tmp;
-  r = tmp.c_str();
-}
-
-} } // re: namespaces
-
 #endif
 
 
@@ -135,30 +110,5 @@ inline std::string to_string(const PreciseFloat pf)
 }
 
 #endif
-
-
-//namespace boost { namespace serialization { // insert this code to the appropriate namespaces
-///**
-// Save a mpfr_float type to a boost archive.
-// */
-//template <typename Archive>
-//void save(Archive& ar, ::boost::multiprecision::backends::float128_backend const& r, unsigned /*version*/)
-//{
-//    std::string tmp = r.str(0, std::ios::fixed);// 0 indicates use full precision
-//    ar & tmp;
-//}
-
-///**
-// Load a mpfr_float type from a boost archive.
-// */
-//template <typename Archive>
-//void load(Archive& ar, ::boost::multiprecision::backends::float128_backend& r, unsigned /*version*/)
-//{
-//    std::string tmp;
-//    ar & tmp;
-//    r = tmp.c_str();
-//}
-
-//} } // re: namespaces
 
 #endif

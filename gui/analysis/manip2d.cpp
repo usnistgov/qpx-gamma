@@ -202,7 +202,7 @@ SinkPtr make_symmetrized(SinkPtr source)
     detector2 = md.detectors[1];
   } else {
     WARN << "<::MakeSymmetrize> " << md.get_attribute("name").value_text << " does not have 2 detector definitions";
-    return false;
+    return nullptr;
   }
 
   size_t bits = md.get_attribute("resolution").value_int;
@@ -212,7 +212,7 @@ SinkPtr make_symmetrized(SinkPtr source)
     LINFO << "<::MakeSymmetrize> using gain match calibration from " << detector2.name_ << " to " << detector1.name_ << " " << gain_match_cali.to_string();
   else {
     WARN << "<::MakeSymmetrize> no appropriate gain match calibration";
-    return false;
+    return nullptr;
   }
 
   size_t adjrange = pow(2, bits);

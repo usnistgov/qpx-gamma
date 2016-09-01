@@ -66,8 +66,8 @@ android {
 mac {
      CONFIG += c++11
      QMAKE_LFLAGS += -lc++
-     LIBPATH += /usr/local/boost_1_59_0/stage/lib /opt/local/lib
-     INCLUDEPATH += /usr/local/boost_1_59_0
+     LIBPATH += /opt/local/lib
+     INCLUDEPATH += /usr/local/include
      QMAKE_CXXFLAGS += -stdlib=libc++ -Wno-c++11-narrowing
 }
 
