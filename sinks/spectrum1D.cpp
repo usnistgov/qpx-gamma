@@ -1125,15 +1125,5 @@ void Spectrum1D::write_h5(std::string filename) const
   #endif
 }
 
-void Spectrum1D::_save_data(boost::archive::binary_oarchive& oa) const
-{
-  oa & spectrum_;
-}
-
-void Spectrum1D::_load_data(boost::archive::binary_iarchive& ia)
-{
-  ia & spectrum_;
-}
-
 
 }

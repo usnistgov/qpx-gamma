@@ -34,16 +34,10 @@ QMAKE_CLEAN += -r $$BADDIRS \
 CONFIG -= warn_off warn_on
 CONFIG += static
 
-QMAKE_CFLAGS_RELEASE += -w
+QMAKE_CXXFLAGS += -DBOOST_LOG_DYN_LINK
 QMAKE_CXXFLAGS_DEBUG += -O0 -Wextra
 
-QMAKE_CXXFLAGS += -DBOOST_LOG_DYN_LINK
-
 unix {
-  !android {
-     QMAKE_CC = g++
-  }
-      
   target.path = /usr/local/bin/
   icon.path = /usr/share/icons/
   desktop.path = /usr/share/applications/
@@ -54,38 +48,37 @@ unix {
     CONFIG -= c++11
     QMAKE_CXXFLAGS += -std=c++11
   }
+
+  mac {
+    CONFIG += c++11
+    QMAKE_LFLAGS += -lc++
+    INCLUDEPATH += /usr/local/include
+    QMAKE_CXXFLAGS += -stdlib=libc++ -Wno-c++11-narrowing
+  }
 }
 
 android {
-         INCLUDEPATH += ../crystax-ndk-10.2.1/sources/boost/1.58.0/include
-         equals(ANDROID_TARGET_ARCH, armeabi-v7a) {
-             LIBPATH += ../crystax-ndk-10.2.1/sources/boost/1.58.0/libs/armeabi-v7a
-            }
-        }
-
-mac {
-     CONFIG += c++11
-     QMAKE_LFLAGS += -lc++
-     LIBPATH += /usr/local/boost_1_59_0/stage/lib /opt/local/lib
-     INCLUDEPATH += /usr/local/boost_1_59_0
-     QMAKE_CXXFLAGS += -stdlib=libc++ -Wno-c++11-narrowing
+  INCLUDEPATH += ../crystax-ndk-10.2.1/sources/boost/1.58.0/include
+  equals(ANDROID_TARGET_ARCH, armeabi-v7a) {
+    LIBPATH += ../crystax-ndk-10.2.1/sources/boost/1.58.0/libs/armeabi-v7a
+  }
 }
 
 win32 {
-       LIBPATH += D:\dev\boost_1_57_0\stage\lib
-       INCLUDEPATH += D:/dev/boost_1_57_0
-      }	
-
-! include( $$PWD/engine/engine.pri ) {
-    error( "Couldn't find the engine.pri file!" )
+  LIBPATH += D:\dev\boost_1_57_0\stage\lib
+  INCLUDEPATH += D:/dev/boost_1_57_0
 }
 
-! include( $$PWD/sources/sources.pri ) {
-    error( "Couldn't find the sources.pri file!" )
+!include( $$PWD/engine/engine.pri ) {
+  error( "Couldn't find the engine.pri file!" )
 }
 
-! include( $$PWD/sinks/sinks.pri ) {
-    error( "Couldn't find the sinks.pri file!" )
+!include( $$PWD/sources/sources.pri ) {
+  error( "Couldn't find the sources.pri file!" )
+}
+
+!include( $$PWD/sinks/sinks.pri ) {
+  error( "Couldn't find the sinks.pri file!" )
 }
 
 contains( DAQ_SOURCES, fitter_ceres ) {

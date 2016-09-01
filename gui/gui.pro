@@ -22,16 +22,16 @@
 
 CONFIG += debug_and_release
 
-! include( $$PWD/../common.pri ) {
-    error( "Couldn't find the common.pri file!" )
+!include( $$PWD/../common.pri ) {
+  error( "Couldn't find the common.pri file!" )
 }
 
 TARGET   = $$PWD/../qpx
 TEMPLATE = app
 
 CONFIG(debug, debug|release) {
-   TARGET = $$join(TARGET,,,d)
-   DEFINES += "QPX_DBG_"
+  TARGET = $$join(TARGET,,,d)
+  DEFINES += "QPX_DBG_"
 }
 
 INSTALLS += target icon desktop
@@ -40,43 +40,54 @@ QT += core gui multimedia
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
 unix {
-   LIBS += -lm -ldl -lz
+  LIBS += -lm -ldl -lz
 }
 
-INCLUDEPATH += $$PWD \
-               $$PWD/daq \
-               $$PWD/analysis \
-               $$PWD/fitter \
-               $$PWD/plots \
-               $$PWD/plots/qcustomplot \
-               $$PWD/widgets \
-               $$PWD/widgets/qtcolorpicker
+INCLUDEPATH += \
+  $$PWD \
+  $$PWD/daq \
+  $$PWD/analysis \
+  $$PWD/fitter \
+  $$PWD/plots \
+  $$PWD/plots/qcustomplot \
+  $$PWD/widgets \
+  $$PWD/widgets/qtcolorpicker
 
-SOURCES += $$files($$PWD/*.cpp) \
-           $$files($$PWD/daq/*.cpp) \
-           $$files($$PWD/analysis/*.cpp) \
-           $$files($$PWD/fitter/*.cpp) \
-           $$files($$PWD/plots/*.cpp) \
-           $$files($$PWD/plots/qcustomplot/*.cpp) \
-           $$files($$PWD/widgets/*.cpp) \
-           $$files($$PWD/widgets/qtcolorpicker/*.cpp)
+SOURCES += \
+  $$files($$PWD/*.cpp) \
+  $$files($$PWD/daq/*.cpp) \
+  $$files($$PWD/analysis/*.cpp) \
+  $$files($$PWD/fitter/*.cpp) \
+  $$files($$PWD/plots/*.cpp) \
+  $$files($$PWD/plots/qcustomplot/*.cpp) \
+  $$files($$PWD/widgets/*.cpp) \
+  $$files($$PWD/widgets/qtcolorpicker/*.cpp)
 
-HEADERS  += $$files($$PWD/*.h) \
-            $$files($$PWD/daq/*.h) \
-            $$files($$PWD/analysis/*.h) \
-            $$files($$PWD/fitter/*.h) \
-            $$files($$PWD/plots/*.h) \
-            $$files($$PWD/plots/qcustomplot/*.h) \
-            $$files($$PWD/widgets/*.h) \
-            $$files($$PWD/widgets/qtcolorpicker/*.h)
+HEADERS += \
+  $$files($$PWD/*.h) \
+  $$files($$PWD/daq/*.h) \
+  $$files($$PWD/analysis/*.h) \
+  $$files($$PWD/fitter/*.h) \
+  $$files($$PWD/plots/*.h) \
+  $$files($$PWD/plots/qcustomplot/*.h) \
+  $$files($$PWD/widgets/*.h) \
+  $$files($$PWD/widgets/qtcolorpicker/*.h)
 
-FORMS   += $$files($$PWD/*.ui) \
-           $$files($$PWD/plots/*.ui) \
-           $$files($$PWD/analysis/*.ui) \
-           $$files($$PWD/fitter/*.ui) \
-           $$files($$PWD/widgets/*.ui) \
-           $$files($$PWD/daq/*.ui)
+FORMS += \
+  $$files($$PWD/*.ui) \
+  $$files($$PWD/plots/*.ui) \
+  $$files($$PWD/analysis/*.ui) \
+  $$files($$PWD/fitter/*.ui) \
+  $$files($$PWD/widgets/*.ui) \
+  $$files($$PWD/daq/*.ui)
 
 RESOURCES += $$files($$PWD/resources/*.qrc)
 
-DISTFILES +=
+DISTFILES += \
+  plots/qcustomplot/changelog.txt \
+  plots/qcustomplot/GPL.txt \
+  widgets/qtcolorpicker/LGPL_EXCEPTION.txt \
+  widgets/qtcolorpicker/LICENSE.GPL3 \
+  widgets/qtcolorpicker/LICENSE.LGPL \
+  widgets/qtcolorpicker/README.TXT \
+  resources/README

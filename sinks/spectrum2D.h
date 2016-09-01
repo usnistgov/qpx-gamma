@@ -58,9 +58,6 @@ protected:
   std::string _data_to_xml() const override;
   uint16_t _data_from_xml(const std::string&) override;
 
-  void _save_data(boost::archive::binary_oarchive&) const override;
-  void _load_data(boost::archive::binary_iarchive&) override;
-
   //export to matlab script
   void write_m(std::string) const;
   void write_m4b(std::string) const;

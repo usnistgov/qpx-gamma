@@ -267,16 +267,4 @@ uint16_t TimeDomain::_data_from_xml(const std::string& thisData){
   return i;
 }
 
-void TimeDomain::_save_data(boost::archive::binary_oarchive& oa) const
-{
-  oa & spectrum_;
-  oa & seconds_;
-}
-
-void TimeDomain::_load_data(boost::archive::binary_iarchive& ia)
-{
-  ia & spectrum_;
-  ia & seconds_;
-}
-
 }

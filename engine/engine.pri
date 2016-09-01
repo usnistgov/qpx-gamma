@@ -21,17 +21,15 @@
 #-------------------------------------------------------------------------------
 
 unix {
-   LIBS += -lm -ldl -lz \
-           -lboost_system -lboost_date_time -lboost_thread -lboost_log \
-           -lboost_filesystem -lboost_log_setup -lboost_timer -lboost_regex \
-           -lboost_serialization
+  LIBS += -lm -ldl -lz \
+          -lboost_system -lboost_date_time -lboost_thread -lboost_log \
+          -lboost_filesystem -lboost_log_setup -lboost_timer -lboost_regex
 
   contains( DAQ_SOURCES, fitter_ceres ) {
-    LIBS += -lgflags -lpthread -lglog -lspqr -lcholmod -lccolamd -lcamd -lcolamd -lamd -llapack -lf77blas -latlas \
-           -lceres -lgomp -lglog -lcholmod -lrt -llapack -lf77blas -latlas
-
+    LIBS += -lgflags -lpthread -lglog -lspqr -lcholmod -lccolamd -lcamd \
+            -lcolamd -lamd -llapack -lf77blas -latlas -lceres -lgomp \
+            -lglog -lcholmod -lrt -llapack -lf77blas -latlas
   }
-
 }
 
 	 

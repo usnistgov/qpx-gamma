@@ -38,9 +38,6 @@
 #include "detector.h"
 #include "custom_logger.h"
 
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-
 namespace Qpx {
 
 typedef std::pair<std::vector<size_t>, PreciseFloat> Entry;
@@ -122,8 +119,8 @@ public:
 
   //named constructors, used by factory
   bool from_prototype(const Metadata&);
-  bool load(const pugi::xml_node &, std::shared_ptr<boost::archive::binary_iarchive>);
-  void save(pugi::xml_node &, std::shared_ptr<boost::archive::binary_oarchive>) const;
+  bool load(const pugi::xml_node &);
+  void save(pugi::xml_node &) const;
 
   //data acquisition
   void push_spill(const Spill&);
@@ -186,9 +183,6 @@ protected:
 
   virtual std::string _data_to_xml() const = 0;
   virtual uint16_t _data_from_xml(const std::string&) = 0;
-
-  virtual void _save_data(boost::archive::binary_oarchive&) const {}
-  virtual void _load_data(boost::archive::binary_iarchive&) {}
 
 };
 
