@@ -316,6 +316,7 @@ void Project::write_xml(std::string file_name) {
 
 void Project::to_xml(pugi::xml_node &root) const {
   root.set_name(this->xml_element_name().c_str());
+  root.append_attribute("git_version").set_value(std::string(GIT_VERSION).c_str());
 
   if (!spills_.empty())
   {

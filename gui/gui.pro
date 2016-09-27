@@ -31,7 +31,6 @@ TEMPLATE = app
 
 CONFIG(debug, debug|release) {
   TARGET = $$join(TARGET,,,d)
-  DEFINES += "QPX_DBG_"
 }
 
 INSTALLS += target icon desktop

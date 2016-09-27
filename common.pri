@@ -37,6 +37,12 @@ CONFIG += static
 QMAKE_CXXFLAGS += -DBOOST_LOG_DYN_LINK
 QMAKE_CXXFLAGS_DEBUG += -O0 -Wextra
 
+DEFINES += GIT_VERSION='"\\\"$$system(git rev-parse HEAD)\\\""'
+
+CONFIG(debug, debug|release) {
+  DEFINES += "QPX_DBG_"
+}
+
 unix {
   target.path = /usr/local/bin/
   icon.path = /usr/share/icons/

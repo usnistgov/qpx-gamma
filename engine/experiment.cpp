@@ -30,6 +30,7 @@ namespace Qpx {
 void ExperimentProject::to_xml(pugi::xml_node &root) const
 {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+  root.append_attribute("git_version").set_value(std::string(GIT_VERSION).c_str());
 
   //  if (base_prototypes.empty())
   //    return;
