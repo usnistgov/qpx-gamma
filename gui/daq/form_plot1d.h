@@ -24,9 +24,9 @@
 
 #include <QWidget>
 #include <project.h>
-#include "qsquarecustomplot.h"
 #include "widget_selector.h"
-#include "widget_plot_multi1d.h"
+#include "qp_multi1d.h"
+#include "coord.h"
 
 namespace Ui {
 class FormPlot1D;
@@ -70,8 +70,10 @@ private slots:
   void spectrumDetails(SelectorItem);
   void spectrumDoubleclicked(SelectorItem);
 
-  void addMovingMarker(double);
-  void removeMovingMarker(double);
+
+  void clicked(double x, double y, QMouseEvent *event);
+  void addMovingMarker(double x, double y);
+  void removeMarkers();
 
   void on_pushFullInfo_clicked();
 
@@ -103,10 +105,12 @@ private:
   Qpx::Project *mySpectra;
   SelectorWidget *spectraSelector;
 
-  Marker1D moving, markx, marky;
+  QPlot::Marker1D moving, markx, marky;
   QMenu menuColors;
   QMenu menuDelete;
   QMenu menuEffCal;
+
+  bool nonempty_{false};
 
 };
 

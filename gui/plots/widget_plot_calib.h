@@ -25,83 +25,55 @@
 #define WIDGET_PLOT_CALIB_H
 
 #include <QWidget>
-#include "qsquarecustomplot.h"
-#include "appearance.h"
+#include "qp_1d.h"
+#include "qp_appearance.h"
 #include <set>
 
-namespace Ui {
-class WidgetPlotCalib;
-}
-
-class WidgetPlotCalib : public QWidget
+class WidgetPlotCalib : public QPlot::Plot1D
 {
   Q_OBJECT
 private:
   struct PointSet
   {
-    AppearanceProfile appearance;
+    QPlot::Appearance appearance;
     QVector<double> x, y, x_sigma, y_sigma;
   };
 
 public:
   explicit WidgetPlotCalib(QWidget *parent = 0);
-  ~WidgetPlotCalib();
-  void clear_data();
-  void clearGraphs();
-  void clearPoints();
 
-  void redraw();
-
-  void setLabels(QString x, QString y);
-  void setFloatingText(QString);
+  void clearPrimary() override;
+  void replotExtras() override;
+  void replotPrimary() override;
 
   std::set<double> get_selected_pts();
   void set_selected_pts(std::set<double>);
 
-  void addPoints(AppearanceProfile style,
+  void addPoints(QPlot::Appearance style,
                  const QVector<double>& x, const QVector<double>& y,
                  const QVector<double>& x_sigma, const QVector<double>& y_sigma);
-  void addFit(const QVector<double>& x, const QVector<double>& y, AppearanceProfile style);
+  void setFit(const QVector<double>& x, const QVector<double>& y, QPlot::Appearance style);
 
   void set_log_x(bool);
-  void set_log_y(bool);
   bool log_x() const;
-  bool log_y() const;
-
-signals:
-  void clickedLeft(double);
-  void clickedRight(double);
-  void selection_changed();
 
 private slots:
-  void update_selection();
-
-  void clicked_item(QCPAbstractItem*);
-  void exportRequested(QAction*);
   void apply_scale_type_x();
-  void apply_scale_type_y();
 
-private:
-  void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
+protected:
+  void executeButton(QPlot::Button *) override;
 
-  Ui::WidgetPlotCalib *ui;
-
-  AppearanceProfile style_fit;
-  QVector<double> x_fit, y_fit;
+  PointSet fit_;
   QVector<PointSet> points_;
 
-  std::set<double> selection_;
+//  std::set<double> selection_;
 
-  QString floating_text_;
 //  QString scale_type_x_;
-//  QString scale_type_y_;
   bool scale_log_x_;
-  bool scale_log_y_;
 
-  QMenu       menuOptions;
-
-  void plot_buttons();
-
+  void plotExtraButtons();
+  void plotFit();
+  void plotPoints();
 };
 
 #endif

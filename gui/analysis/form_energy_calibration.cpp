@@ -46,7 +46,7 @@ FormEnergyCalibration::FormEnergyCalibration(XMLableDB<Qpx::Detector>& dets, Qpx
   style_pts.themes["selected"] = QPen(selected_color, 9);
   style_fit.default_pen = QPen(Qt::darkCyan, 2);
 
-  ui->PlotCalib->setLabels("channel", "energy");
+  ui->PlotCalib->setAxisLabels("channel", "energy");
 
 
   ui->tablePeaks->verticalHeader()->hide();
@@ -111,13 +111,14 @@ void FormEnergyCalibration::saveSettings() {
   settings_.endGroup();
 }
 
-void FormEnergyCalibration::clear() {
+void FormEnergyCalibration::clear()
+{
   new_calibration_ = Qpx::Calibration();
   ui->tablePeaks->clearContents();
   ui->tablePeaks->setRowCount(0);
   toggle_push();
-  ui->PlotCalib->clear_data();
-  ui->PlotCalib->redraw();
+  ui->PlotCalib->clearAll();
+  ui->PlotCalib->replot();
   ui->pushApplyCalib->setEnabled(false);
   ui->pushFromDB->setEnabled(false);
 }
@@ -171,7 +172,7 @@ void FormEnergyCalibration::select_in_table() {
 }
 
 void FormEnergyCalibration::replot_calib() {
-  ui->PlotCalib->clear_data();
+  ui->PlotCalib->clearAll();
 
   QVector<double> xx, yy;
 
@@ -209,10 +210,12 @@ void FormEnergyCalibration::replot_calib() {
         xx.push_back(i);
         yy.push_back(new_calibration_.transform(i));
       }
-      ui->PlotCalib->addFit(xx, yy, style_fit);
-      ui->PlotCalib->setFloatingText("E = " + QString::fromStdString(new_calibration_.fancy_equation(6, true)));
+      ui->PlotCalib->setFit(xx, yy, style_fit);
+      ui->PlotCalib->setTitle("E = " + QString::fromStdString(new_calibration_.fancy_equation(6, true)));
     }
   }
+
+  ui->PlotCalib->replotAll();
 }
 
 void FormEnergyCalibration::rebuild_table() {
@@ -240,7 +243,8 @@ void FormEnergyCalibration::rebuild_table() {
   this->blockSignals(false);
 }
 
-void FormEnergyCalibration::selection_changed_in_plot() {
+void FormEnergyCalibration::selection_changed_in_plot()
+{
   selected_peaks_ = ui->PlotCalib->get_selected_pts();
   select_in_table();
   if (isVisible())
@@ -414,7 +418,8 @@ void FormEnergyCalibration::add_peak_to_table(const Qpx::Peak &p, int row, bool 
 
 }
 
-void FormEnergyCalibration::select_in_plot() {
+void FormEnergyCalibration::select_in_plot()
+{
   ui->PlotCalib->set_selected_pts(selected_peaks_);
-  ui->PlotCalib->redraw();
+  ui->PlotCalib->replotAll();
 }

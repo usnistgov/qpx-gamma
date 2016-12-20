@@ -29,6 +29,8 @@
 #include "thread_runner.h"
 #include "widget_plot_multi1d.h"
 #include "fitter.h"
+#include "qp_appearance.h"
+
 
 namespace Ui {
 class FormGainMatch;
@@ -99,7 +101,7 @@ private:
 
   XMLableDB<Qpx::Detector> &detectors_;
   Ui::FormGainMatch *ui;
-  AppearanceProfile style_fit, style_pts;
+  QPlot::Appearance style_fit, style_pts;
 
 
   ThreadRunner         &gm_runner_thread_;

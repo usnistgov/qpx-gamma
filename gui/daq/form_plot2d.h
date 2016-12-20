@@ -29,7 +29,7 @@
 #include "widget_selector.h"
 #include "coord.h"
 #include "appearance.h"
-#include <unordered_map>
+//#include <unordered_map>
 
 namespace Ui {
 class FormPlot2D;
@@ -84,7 +84,7 @@ private slots:
 
   void on_pushDetails_clicked();
 
-  void markers_moved(Coord x, Coord y);
+  void markers_moved(double x, double y, Qt::MouseButton);
   void analyse();
 
   void choose_spectrum(SelectorItem item);
@@ -118,6 +118,7 @@ private:
   QLabel *crop_label_;
   QSlider *crop_slider_;
 
+  void addCrosshairs(Coord x, Coord y);
 };
 
 #endif // WIDGET_PLOT2D_H

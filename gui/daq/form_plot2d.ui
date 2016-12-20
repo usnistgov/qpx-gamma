@@ -45,7 +45,7 @@
       <enum>QLayout::SetMaximumSize</enum>
      </property>
      <item>
-      <widget class="WidgetPlot2D" name="coincPlot" native="true">
+      <widget class="QPlot::Plot2D" name="coincPlot" native="true">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Maximum" vsizetype="MinimumExpanding">
          <horstretch>1</horstretch>
@@ -255,9 +255,9 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>WidgetPlot2D</class>
+   <class>QPlot::Plot2D</class>
    <extends>QWidget</extends>
-   <header>widget_plot2d.h</header>
+   <header>qp_2d.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

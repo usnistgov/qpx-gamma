@@ -86,7 +86,7 @@ private:
   std::set<double> selected_peaks_;
   
   Qpx::Calibration new_calibration_;
-  AppearanceProfile style_pts, style_relevant, style_fit;
+  QPlot::Appearance style_pts, style_relevant, style_fit;
 
   void loadSettings();
   void saveSettings();

@@ -716,10 +716,10 @@ void FormGainMatch::display_data()
     //if selected insert;
 
     //    if (response_function_ != PolyBounded())
-    ui->PlotCalib->addFit(xx, yy, style_fit);
+    ui->PlotCalib->setFit(xx, yy, style_fit);
 
     ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
-    ui->PlotCalib->setLabels(QString::fromStdString(current_setting_.metadata.name),
+    ui->PlotCalib->setAxisLabels(QString::fromStdString(current_setting_.metadata.name),
                              "centroid");
   }
   //  ui->PlotCalib->redraw();
@@ -731,12 +731,12 @@ void FormGainMatch::display_data()
     std::set<double> sel;
     sel.insert(experiment_.at(selected_pass_).independent_variable);
     ui->PlotCalib->set_selected_pts(sel);
-    ui->PlotCalib->redraw();
+    ui->PlotCalib->replotAll();
   }
   else
   {
     ui->PlotCalib->set_selected_pts(std::set<double>());
-    ui->PlotCalib->redraw();
+    ui->PlotCalib->replotAll();
   }
 
 }
@@ -752,13 +752,13 @@ void FormGainMatch::pass_selected_in_table()
     std::set<double> sel;
     sel.insert(experiment_.at(selected_pass_).independent_variable);
     ui->PlotCalib->set_selected_pts(sel);
-    ui->PlotCalib->redraw();
+    ui->PlotCalib->replotAll();
   }
   else
   {
     ui->PlotCalib->set_selected_pts(std::set<double>());
     fitter_opt_ = Qpx::Fitter();
-    ui->PlotCalib->redraw();
+    ui->PlotCalib->replotAll();
   }
   fitter_opt_.apply_settings(fitset);
 

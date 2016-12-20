@@ -42,15 +42,12 @@ FormPlot1D::FormPlot1D(QWidget *parent) :
   //ui->scrollArea->viewport()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
   //ui->scrollArea->viewport()->setMinimumWidth(283);
 
-  moving.appearance.themes["light"] = QPen(Qt::darkGray, 2);
-  moving.appearance.themes["dark"] = QPen(Qt::white, 2);
-
-  markx.appearance.themes["light"] = QPen(Qt::darkRed, 1);
-  markx.appearance.themes["dark"] = QPen(Qt::yellow, 1);
+  moving.appearance.default_pen = QPen(Qt::black, 2);
+  markx.appearance.default_pen = QPen(Qt::darkRed, 1);
+  markx.alignment = Qt::AlignBottom;
   marky = markx;
 
-  connect(ui->mcaPlot, SIGNAL(clickedLeft(double)), this, SLOT(addMovingMarker(double)));
-  connect(ui->mcaPlot, SIGNAL(clickedRight(double)), this, SLOT(removeMovingMarker(double)));
+  connect(ui->mcaPlot, SIGNAL(clicked(double,double,QMouseEvent*)), this, SLOT(clicked(double,double,QMouseEvent*)));
 
   connect(spectraSelector, SIGNAL(itemSelected(SelectorItem)), this, SLOT(spectrumDetails(SelectorItem)));
   connect(spectraSelector, SIGNAL(itemToggled(SelectorItem)), this, SLOT(spectrumLooksChanged(SelectorItem)));
@@ -168,84 +165,75 @@ void FormPlot1D::spectrumDetails(SelectorItem item)
   ui->pushFullInfo->setEnabled(true);
 }
 
-void FormPlot1D::reset_content() {
+void FormPlot1D::reset_content()
+{
+  nonempty_ = false;
   moving.visible = false;
   markx.visible = false;
   marky.visible = false;
-  ui->mcaPlot->reset_scales();
-  ui->mcaPlot->clearGraphs();
-  ui->mcaPlot->clearExtras();
-  ui->mcaPlot->replot_markers();
-  ui->mcaPlot->rescale();
-  ui->mcaPlot->redraw();
+  ui->mcaPlot->clearAll();
+  ui->mcaPlot->replotExtras();
+  ui->mcaPlot->tightenX();
+  ui->mcaPlot->replot();
 }
 
 void FormPlot1D::update_plot() {
 
   this->setCursor(Qt::WaitCursor);
-//  CustomTimer guiside(true);
-
-  std::map<double, double> minima, maxima;
+  //  CustomTimer guiside(true);
 
   calib_ = Calibration();
 
-  ui->mcaPlot->clearGraphs();
+  int numvisible {0};
+
+  ui->mcaPlot->clearPrimary();
   for (auto &q: mySpectra->get_sinks(1)) {
     Metadata md;
     if (q.second)
-    {
       md = q.second->metadata();
-//      DBG << "\n" << q.second->debug();
-    }
+
+    if (!md.get_attribute("visible").value_int)
+      continue;
 
     double livetime = md.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
     double rescale  = md.get_attribute("rescale").number();
     uint16_t bits = md.get_attribute("resolution").value_int;
 
-    if (md.get_attribute("visible").value_int) {
+    QVector<double> x = QVector<double>::fromStdVector(q.second->axis_values(0));
 
-      QVector<double> x = QVector<double>::fromStdVector(q.second->axis_values(0));
-      QVector<double> y(x.size());
+    std::shared_ptr<EntryList> spectrum_data =
+        std::move(q.second->data_range({{0, x.size()}}));
 
-      std::shared_ptr<EntryList> spectrum_data =
-          std::move(q.second->data_range({{0, x.size()}}));
-
-      Detector detector = Detector();
-      if (!md.detectors.empty())
-        detector = md.detectors[0];
-      Calibration temp_calib = detector.best_calib(bits);
-
-      if (temp_calib.bits_ > calib_.bits_)
-        calib_ = temp_calib;
-
-      for (auto it : *spectrum_data) {
-
-        double xx = x[it.first[0]];
-
-//        double xx = it.first[0];
-//        if (xx < x.size())
-//          xx = x[xx];
-
-        double yy = to_double( it.second ) * rescale;
-        if (ui->pushPerLive->isChecked() && (livetime > 0))
-          yy = yy / livetime;
-        y[it.first[0]] = yy;
-        if (!minima.count(xx) || (minima[xx] > yy))
-          minima[xx] = yy;
-        if (!maxima.count(xx) || (maxima[xx] < yy))
-          maxima[xx] = yy;
-      }
-
-      AppearanceProfile profile;
-      profile.default_pen = QPen(QColor(QString::fromStdString(md.get_attribute("appearance").value_text)), 1);
-      ui->mcaPlot->addGraph(x, y, profile, bits);
-
+    QPlot::HistoData hist;
+    for (auto it : *spectrum_data)
+    {
+      double xx = x[it.first[0]];
+      double yy = to_double( it.second ) * rescale;
+      if (ui->pushPerLive->isChecked() && (livetime > 0))
+        yy = yy / livetime;
+      hist[xx] = yy;
     }
+
+    if (hist.empty())
+      continue;
+
+    numvisible++;
+
+    Detector detector = Detector();
+    if (!md.detectors.empty())
+      detector = md.detectors[0];
+    Calibration temp_calib = detector.best_calib(bits);
+
+    if (temp_calib.bits_ > calib_.bits_)
+      calib_ = temp_calib;
+
+    QPlot::Appearance profile;
+    profile.default_pen = QPen(QColor(QString::fromStdString(md.get_attribute("appearance").value_text)), 1);
+    ui->mcaPlot->addGraph(hist, profile);
   }
 
-  ui->mcaPlot->use_calibrated(calib_.valid());
-  ui->mcaPlot->setLabels(QString::fromStdString(calib_.units_), "count");
-  ui->mcaPlot->setYBounds(minima, maxima);
+  ui->mcaPlot->setAxisLabels(QString::fromStdString(calib_.units_),
+                             ui->pushPerLive->isChecked() ? "cps" : "count");
 
   replot_markers();
 
@@ -254,7 +242,13 @@ void FormPlot1D::update_plot() {
 
   spectrumDetails(SelectorItem());
 
-//  DBG << "<Plot1D> plotting took " << guiside.ms() << " ms";
+  if (!nonempty_ && (numvisible > 0))
+  {
+    ui->mcaPlot->tightenX();
+    nonempty_ = (numvisible > 0);
+  }
+
+  //  DBG << "<Plot1D> plotting took " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
 }
 
@@ -342,20 +336,38 @@ void FormPlot1D::analyse()
   emit requestAnalysis(spectraSelector->selected().data.toLongLong());
 }
 
-void FormPlot1D::addMovingMarker(double x) {
+void FormPlot1D::clicked(double x, double y, QMouseEvent *event)
+{
+  if (!event)
+    return;
+  if (event->button() == Qt::RightButton)
+    removeMarkers();
+  else if (event->button() == Qt::LeftButton)
+    addMovingMarker(x, y);
+}
+
+void FormPlot1D::addMovingMarker(double x, double y)
+{
   LINFO << "<Plot1D> marker at " << x;
 
-  if (calib_.valid())
-    moving.pos.set_energy(x, calib_);
-  else
-    moving.pos.set_bin(x, calib_.bits_, calib_);
-
+  moving.pos = x;
+  moving.closest_val = y;
+  moving.alignment = Qt::AlignAbsolute;
   moving.visible = true;
-  emit marker_set(moving.pos);
+
+  Coord pos;
+
+  //  if (calib_.valid())
+  pos.set_energy(x, calib_);
+  //  else
+  //    pos.set_bin(x, calib_.bits_, calib_);
+
+  emit marker_set(pos);
   replot_markers();
 }
 
-void FormPlot1D::removeMovingMarker(double x) {
+void FormPlot1D::removeMarkers()
+{
   moving.visible = false;
   markx.visible = false;
   marky.visible = false;
@@ -363,29 +375,30 @@ void FormPlot1D::removeMovingMarker(double x) {
   replot_markers();
 }
 
-void FormPlot1D::set_markers2d(Coord x, Coord y) {
+void FormPlot1D::set_markers2d(Coord x, Coord y)
+{
+  markx.pos = x.energy();
+  marky.pos = y.energy();
 
-  markx.pos = x;
   markx.visible = !x.null();
-  marky.pos = y;
   marky.visible = !y.null();
-
   if (!markx.visible && !marky.visible)
     moving.visible = false;
 
   replot_markers();
 }
 
-void FormPlot1D::replot_markers() {
-  std::list<Marker1D> markers;
+void FormPlot1D::replot_markers()
+{
+  std::list<QPlot::Marker1D> markers;
 
   markers.push_back(moving);
   markers.push_back(markx);
   markers.push_back(marky);
 
-  ui->mcaPlot->set_markers(markers);
-  ui->mcaPlot->replot_markers();
-  ui->mcaPlot->redraw();
+  ui->mcaPlot->setMarkers(markers);
+  ui->mcaPlot->replotExtras();
+  ui->mcaPlot->replot();
 }
 
 
@@ -434,20 +447,24 @@ void FormPlot1D::randAll()
   updateUI();
 }
 
-void FormPlot1D::set_scale_type(QString sct) {
-  ui->mcaPlot->set_scale_type(sct);
+void FormPlot1D::set_scale_type(QString sct)
+{
+  ui->mcaPlot->setScaleType(sct);
 }
 
-void FormPlot1D::set_plot_style(QString stl) {
-  ui->mcaPlot->set_plot_style(stl);
+void FormPlot1D::set_plot_style(QString stl)
+{
+  ui->mcaPlot->setPlotStyle(stl);
 }
 
-QString FormPlot1D::scale_type() {
-  return ui->mcaPlot->scale_type();
+QString FormPlot1D::scale_type()
+{
+  return ui->mcaPlot->scaleType();
 }
 
-QString FormPlot1D::plot_style() {
-  return ui->mcaPlot->plot_style();
+QString FormPlot1D::plot_style()
+{
+  return ui->mcaPlot->plotStyle();
 }
 
 void FormPlot1D::on_pushPerLive_clicked()
@@ -473,7 +490,9 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
   if (!md.detectors.empty())
     cal = md.detectors[0].best_calib(bits);
 
-  int maxidx = std::round(cal.inverse_transform(moving.pos.energy()));
+  int maxidx = std::round(moving.pos);
+  if (calib_.valid())
+    maxidx = std::round(cal.inverse_transform(moving.pos));
   if (maxidx < 0)
     maxidx = 0;
 
@@ -495,7 +514,9 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
       if (!mdt.detectors.empty())
         cal = mdt.detectors[0].best_calib(bits);
 
-      int mcidx = std::round(cal.inverse_transform(moving.pos.energy()));
+      int mcidx = std::round(moving.pos);
+      if (calib_.valid())
+        mcidx = std::round(cal.inverse_transform(moving.pos));
       if (mcidx < 0)
         mcidx = 0;
 

@@ -52,7 +52,7 @@ FormFwhmCalibration::FormFwhmCalibration(XMLableDB<Qpx::Detector>& dets, Qpx::Fi
 
   style_fit.default_pen = QPen(Qt::darkCyan, 2);
 
-  ui->PlotCalib->setLabels("energy", "FWHM");
+  ui->PlotCalib->setAxisLabels("energy", "FWHM");
 
   ui->tablePeaks->verticalHeader()->hide();
   ui->tablePeaks->setColumnCount(6);
@@ -112,8 +112,8 @@ void FormFwhmCalibration::clear() {
   ui->tablePeaks->clearContents();
   ui->tablePeaks->setRowCount(0);
   toggle_push();
-  ui->PlotCalib->clear_data();
-  ui->PlotCalib->redraw();
+  ui->PlotCalib->clearAll();
+  ui->PlotCalib->replot();
   ui->pushApplyCalib->setEnabled(false);
   ui->pushFromDB->setEnabled(false);
 }
@@ -184,13 +184,14 @@ void FormFwhmCalibration::select_in_table() {
   this->blockSignals(false);
 }
 
-void FormFwhmCalibration::select_in_plot() {
+void FormFwhmCalibration::select_in_plot()
+{
   std::set<double> selected_energies;
   for (auto &p : fit_data_.peaks())
     if (selected_peaks_.count(p.first))
       selected_energies.insert(p.second.energy().value());
   ui->PlotCalib->set_selected_pts(selected_energies);
-  ui->PlotCalib->redraw();
+  ui->PlotCalib->replotAll();
 }
 
 void FormFwhmCalibration::add_peak_to_table(const Qpx::Peak &p, int row, bool gray) {
@@ -209,7 +210,7 @@ void FormFwhmCalibration::add_peak_to_table(const Qpx::Peak &p, int row, bool gr
 }
 
 void FormFwhmCalibration::replot_calib() {
-  ui->PlotCalib->clear_data();
+  ui->PlotCalib->clearAll();
   QVector<double> xx_relevant, yy_relevant,
       xx_relevant_sigma, yy_relevant_sigma;
   QVector<double> xx, yy;
@@ -258,8 +259,8 @@ void FormFwhmCalibration::replot_calib() {
         yy.push_back(y);
       }
 
-      ui->PlotCalib->setFloatingText("FWHM = " + QString::fromStdString(new_calibration_.fancy_equation(5, true)));
-      ui->PlotCalib->addFit(xx, yy, style_fit);
+      ui->PlotCalib->setTitle("FWHM = " + QString::fromStdString(new_calibration_.fancy_equation(5, true)));
+      ui->PlotCalib->setFit(xx, yy, style_fit);
     }
   }
 }

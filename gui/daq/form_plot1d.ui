@@ -446,7 +446,7 @@
     </layout>
    </item>
    <item row="0" column="1">
-    <widget class="WidgetPlotMulti1D" name="mcaPlot" native="true">
+    <widget class="QPlot::Multi1D" name="mcaPlot" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
        <horstretch>0</horstretch>
@@ -459,9 +459,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>WidgetPlotMulti1D</class>
+   <class>QPlot::Multi1D</class>
    <extends>QWidget</extends>
-   <header>widget_plot_multi1d.h</header>
+   <header>qp_multi1d.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

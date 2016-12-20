@@ -67,8 +67,7 @@ WidgetPlot2D::WidgetPlot2D(QWidget *parent) :
   //colormap setup
   ui->coincPlot->setAlwaysSquare(true);
   colorMap = new QCPColorMap(ui->coincPlot->xAxis, ui->coincPlot->yAxis);
-  colorMap->clearData();
-  ui->coincPlot->addPlottable(colorMap);
+  colorMap->data()->clear();
   colorMap->setInterpolate(antialiased_);
   colorMap->setTightBoundary(false);
   ui->coincPlot->axisRect()->setupFullAxesBox();
@@ -222,7 +221,7 @@ void WidgetPlot2D::set_labels(std::list<MarkerLabel2D> labels) {
 
 void WidgetPlot2D::reset_content() {
   //DBG << "reset content";
-  colorMap->clearData();
+  colorMap->data()->clear();
   boxes_.clear();
   labels_.clear();
 //  replot_markers();
@@ -316,7 +315,6 @@ void WidgetPlot2D::replot_markers() {
     box->setProperty("nrg_y", q.y_c.energy());
     box->topLeft->setCoords(x1, y1);
     box->bottomRight->setCoords(x2, y2);
-    ui->coincPlot->addItem(box);
 
     if (q.selected) {
 //      total_markers++;
@@ -353,8 +351,6 @@ void WidgetPlot2D::replot_markers() {
       linev->start->setCoords(xc, y1);
       linev->end->setCoords(xc, y2);
 //      DBG << "mark center xc yc " << xc << " " << yc;
-      ui->coincPlot->addItem(lineh);
-      ui->coincPlot->addItem(linev);
     }
 
   }
@@ -418,7 +414,6 @@ void WidgetPlot2D::replot_markers() {
 
       labelItem->setPadding(QMargins(1, 1, 1, 1));
 
-      ui->coincPlot->addItem(labelItem);
     }
   }
 
@@ -453,7 +448,6 @@ void WidgetPlot2D::replot_markers() {
     box->topLeft->setCoords(x1, y1);
     box->bottomRight->setType(QCPItemPosition::ptPlotCoords);
     box->bottomRight->setCoords(x2, y2);
-    ui->coincPlot->addItem(box);
 
     if (range_.vertical) {
       if (x2 > maxx)
@@ -482,7 +476,6 @@ void WidgetPlot2D::replot_markers() {
   overlayButton->setSelectable(false);
   overlayButton->setProperty("button_name", QString("reset_scales"));
   overlayButton->setProperty("tooltip", QString("Reset plot scales"));
-  ui->coincPlot->addItem(overlayButton);
 
   if (!menuOptions.isEmpty()) {
     QCPItemPixmap *newButton = new QCPItemPixmap(ui->coincPlot);
@@ -497,7 +490,6 @@ void WidgetPlot2D::replot_markers() {
     newButton->setSelectable(false);
     newButton->setProperty("button_name", QString("options"));
     newButton->setProperty("tooltip", QString("Style options"));
-    ui->coincPlot->addItem(newButton);
     overlayButton = newButton;
   }
 
@@ -513,7 +505,6 @@ void WidgetPlot2D::replot_markers() {
   newButton->setSelectable(false);
   newButton->setProperty("button_name", QString("export"));
   newButton->setProperty("tooltip", QString("Export plot"));
-  ui->coincPlot->addItem(newButton);
   overlayButton = newButton;
 
   /*int margin = 50;
@@ -596,7 +587,7 @@ void WidgetPlot2D::update_plot(uint64_t sizex, uint64_t sizey, std::shared_ptr<Q
     ui->coincPlot->updateGeometry();
   } else {
     ui->coincPlot->clearGraphs();
-    colorMap->clearData();
+    colorMap->data()->clear();
     colorMap->keyAxis()->setLabel("");
     colorMap->valueAxis()->setLabel("");
   }
@@ -677,7 +668,6 @@ void WidgetPlot2D::toggle_gradient_scale()
     colorMap->setDataScaleType(scale_types_[current_scale_type_]);
     colorMap->rescaleDataRange(true);
 
-    colorScale->axis()->setScaleLogBase(10);
     colorScale->axis()->setNumberFormat("gbc");
     colorScale->axis()->setNumberPrecision(0);
     colorScale->axis()->setRangeLower(1);

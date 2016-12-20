@@ -26,7 +26,7 @@
 #define DIALOGSAVESPECTRA_H_
 
 #include <vector>
-#include <unordered_map>
+//#include <unordered_map>
 #include <QDialog>
 #include "project.h"
 

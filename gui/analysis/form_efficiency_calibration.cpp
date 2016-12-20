@@ -51,7 +51,7 @@ FormEfficiencyCalibration::FormEfficiencyCalibration(XMLableDB<Detector>& newDet
   style_fit.default_pen = QPen(Qt::blue, 0);
   style_pts.themes["selected"] = QPen(Qt::black, 7);
 
-  ui->PlotCalib->setLabels("channel", "energy");
+  ui->PlotCalib->setAxisLabels("channel", "energy");
 
   ui->tablePeaks->verticalHeader()->hide();
   ui->tablePeaks->setColumnCount(3);
@@ -66,7 +66,7 @@ FormEfficiencyCalibration::FormEfficiencyCalibration(XMLableDB<Detector>& newDet
 
   connect(ui->PlotCalib, SIGNAL(selection_changed()), this, SLOT(selection_changed_in_calib_plot()));
   ui->PlotCalib->set_log_x(true);
-  ui->PlotCalib->set_log_y(true);
+  ui->PlotCalib->setScaleType("Logarithmic");
 
   ui->isotopes->show();
   connect(ui->isotopes, SIGNAL(isotopeSelected()), this, SLOT(isotope_chosen()));
@@ -333,7 +333,7 @@ void FormEfficiencyCalibration::add_peak_to_table(const Peak &p, int row, QColor
 
 void FormEfficiencyCalibration::replot_calib() {
 //  ui->PlotCalib->setFloatingText("");
-  ui->PlotCalib->clearPoints();
+  ui->PlotCalib->clearAll();
 
   QVector<double> xx, yy;
 
@@ -398,8 +398,8 @@ void FormEfficiencyCalibration::replot_calib() {
         xx.push_back(i);
         yy.push_back(y);
       }
-      ui->PlotCalib->addFit(xx, yy, style_fit);
-      ui->PlotCalib->setFloatingText("ε = " + QString::fromStdString(new_calibration_.fancy_equation(3, true)));
+      ui->PlotCalib->setFit(xx, yy, style_fit);
+      ui->PlotCalib->setTitle("ε = " + QString::fromStdString(new_calibration_.fancy_equation(3, true)));
     }
   }
 

@@ -85,7 +85,7 @@ private:
 
   Qpx::Calibration gain_match_cali_;
 
-  AppearanceProfile style_pts, style_fit;
+  QPlot::Appearance style_pts, style_fit;
 
   FormGainCalibration* my_gain_calibration_;
 

@@ -107,7 +107,6 @@ protected slots:
   void plot_mouse_clicked(double x, double y, QMouseEvent *event, bool channels);
   void plot_mouse_press(QMouseEvent*);
   void plot_mouse_release(QMouseEvent*);
-  void clicked_plottable(QCPAbstractPlottable *);
   void clicked_item(QCPAbstractItem *);
 
   void selection_changed();

@@ -67,7 +67,7 @@ void FormGainCalibration::newSpectrum() {
 
   bool symmetrized = ((detector1_ != Qpx::Detector()) && (detector2_ != Qpx::Detector()) && (detector1_ == detector2_));
 
-  ui->plotCalib->setLabels("channel (" + QString::fromStdString(detector2_.name_) + ")", "channel (" + QString::fromStdString(detector1_.name_) + ")");
+  ui->plotCalib->setAxisLabels("channel (" + QString::fromStdString(detector2_.name_) + ")", "channel (" + QString::fromStdString(detector1_.name_) + ")");
 
   gain_match_cali_ = detector2_.get_gain_match(bits, detector1_.name_);
 
@@ -107,8 +107,8 @@ void FormGainCalibration::saveSettings() {
 
 void FormGainCalibration::clear() {
   ui->plotCalib->clearGraphs();
-  ui->plotCalib->setLabels("", "");
-  ui->plotCalib->setFloatingText("");
+  ui->plotCalib->setAxisLabels("", "");
+  ui->plotCalib->setTitle("");
 
   gain_match_cali_ = Qpx::Calibration("Gain", 0);
 }
@@ -173,10 +173,10 @@ void FormGainCalibration::plot_calib() {
         xx.push_back(i);
         yy.push_back(gain_match_cali_.transform(i));
       }
-      ui->plotCalib->addFit(xx, yy, style_fit);
+      ui->plotCalib->setFit(xx, yy, style_fit);
     }
   }
-  ui->plotCalib->redraw();
+  ui->plotCalib->replotAll();
 }
 
 void FormGainCalibration::selection_changed_in_plot() {
@@ -222,7 +222,7 @@ void FormGainCalibration::on_pushCalibGain_clicked()
     gain_match_cali_.bits_ = fit_data2_.settings().bits_;
     gain_match_cali_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     gain_match_cali_.model_ = Qpx::CalibrationModel::polynomial;
-    ui->plotCalib->setFloatingText(QString::fromStdString(p.to_UTF8(3, true)));
+    ui->plotCalib->setTitle(QString::fromStdString(p.to_UTF8(3, true)));
     fit_data2_.detector_.gain_match_calibrations_.replace(gain_match_cali_);
   }
   else

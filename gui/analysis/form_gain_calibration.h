@@ -76,7 +76,7 @@ private:
 
 
   Qpx::Calibration gain_match_cali_;
-  AppearanceProfile style_pts, style_fit;
+  QPlot::Appearance style_pts, style_fit;
 
   void loadSettings();
   void saveSettings();

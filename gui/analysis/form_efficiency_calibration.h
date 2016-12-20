@@ -117,7 +117,7 @@ private:
   void saveSettings();
 
   Qpx::Calibration new_calibration_;
-  AppearanceProfile style_fit, style_pts;
+  QPlot::Appearance style_fit, style_pts;
   void add_peak_to_table(const Qpx::Peak &, int, QColor);
   void select_in_table();
 };

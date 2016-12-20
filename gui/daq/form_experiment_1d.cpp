@@ -111,7 +111,7 @@ void FormExperiment1D::pass_selected_in_table()
   }
   else
     ui->PlotCalib->set_selected_pts(std::set<double>());
-  ui->PlotCalib->redraw();
+  ui->PlotCalib->replotAll();
 }
 
 void FormExperiment1D::pass_selected_in_plot()
@@ -208,9 +208,9 @@ void FormExperiment1D::display_data()
     std::set<double> chosen_peaks_chan;
     ui->PlotCalib->set_selected_pts(chosen_peaks_chan);
   }
-  ui->PlotCalib->setLabels(name, ui->comboCodomain->currentText());
+  ui->PlotCalib->setAxisLabels(name, ui->comboCodomain->currentText());
   ui->PlotCalib->set_selected_pts(std::set<double>());
-  ui->PlotCalib->redraw();
+  ui->PlotCalib->replotAll();
 
   ui->pushSaveCsv->setEnabled(filtered_data_points_.size());
 }

@@ -33,7 +33,7 @@ FormPlot2D::FormPlot2D(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  connect(ui->coincPlot, SIGNAL(markers_set(Coord,Coord)), this, SLOT(markers_moved(Coord,Coord)));
+  connect(ui->coincPlot, SIGNAL(clickedPlot(double,double,Qt::MouseButton)), this, SLOT(markers_moved(double,double,Qt::MouseButton)));
 
   ui->spectrumSelector->set_only_one(true);
   connect(ui->spectrumSelector, SIGNAL(itemSelected(SelectorItem)), this, SLOT(choose_spectrum(SelectorItem)));
@@ -111,10 +111,11 @@ void FormPlot2D::setSpectra(Project& new_set) {
 }
 
 
-void FormPlot2D::reset_content() {
+void FormPlot2D::reset_content()
+{
   //DBG << "reset content";
-  ui->coincPlot->reset_content();
-  ui->coincPlot->refresh();
+  ui->coincPlot->clearAll();
+  ui->coincPlot->replot();
   x_marker = Coord();
   y_marker = Coord();
   ext_marker = Coord();
@@ -133,14 +134,15 @@ void FormPlot2D::choose_spectrum(SelectorItem item)
 
   std::map<int64_t, SinkPtr> spectra = mySpectra->get_sinks(2);
 
-  for (auto &q : spectra) {
+  for (auto &q : spectra)
+  {
     Setting vis = q.second->metadata().get_attribute("visible");
     vis.value_int = (q.first == current_spectrum_);
     q.second->set_attribute(vis);
   }
 
   //name_2d = arg1;
-  ui->coincPlot->reset_content();
+  ui->coincPlot->clearAll();
   update_plot(true);
 }
 
@@ -166,114 +168,66 @@ void FormPlot2D::updateUI()
 
 void FormPlot2D::refresh()
 {
-  ui->coincPlot->refresh();
+  ui->coincPlot->replot();
 }
 
-void FormPlot2D::replot_markers() {
-  //DBG << "replot markers";
+void FormPlot2D::replot_markers()
+{
+  ui->coincPlot->clearExtras();
+  addCrosshairs(x_marker, y_marker);
+  addCrosshairs(ext_marker, ext_marker);
+  ui->coincPlot->replotExtras();
+  ui->coincPlot->replot();
+}
 
-  std::list<MarkerBox2D> boxes;
-  std::list<MarkerLabel2D> labels;
-  MarkerLabel2D label;
+void FormPlot2D::addCrosshairs(Coord x, Coord y)
+{
+  std::list<QPlot::MarkerBox2D> boxes;
+  QPlot::MarkerBox2D gate, gatex, gatey;
+  gate.xc = x.energy();
+  gate.yc = y.energy();
 
-  for (auto &q : boxes) {
-    label.selectable = q.selectable;
-    label.selected = q.selected;
-
-
-    if ((q.horizontal) && (q.vertical)) {
-      label.x = q.x2;
-      label.y = q.y2;
-      label.vertical = false;
-      label.text = QString::number(q.y_c.energy());
-      labels.push_back(label);
-
-      label.x = q.x2;
-      label.y = q.y2;
-      label.vertical = true;
-      label.text = QString::number(q.x_c.energy());
-      labels.push_back(label);
-    } else if (q.horizontal) {
-      label.x = q.x_c;
-      label.y = q.y2;
-      label.vertical = false;
-      label.text = QString::number(q.y_c.energy());
-      labels.push_back(label);
-    } else if (q.vertical) {
-      label.x = q.x2;
-      label.y = q.y_c;
-      label.vertical = true;
-      label.text = QString::number(q.x_c.energy());
-      labels.push_back(label);
-    }
-  }
-
-  MarkerBox2D gate, gatex, gatey;
-  gate.selectable = false;
-  gate.selected = false;
-
-
-  //DBG << "FormPlot2d marker width = " << width;
-
-  gate.x_c = x_marker;
-  gate.y_c = y_marker;
-
-  gate.visible = !y_marker.null();
-  gate.x1.set_bin(0, bits, calib_x_);
-  gate.x2.set_bin(adjrange, bits, calib_x_);
-  gate.y1.set_bin(y_marker.bin(bits), bits, calib_y_);
-  gate.y2.set_bin(y_marker.bin(bits), bits, calib_y_);
+  gate.visible = !y.null();
+  gate.x1 = calib_x_.transform(0,bits);
+  gate.x2 = calib_x_.transform(adjrange,bits);
+  gate.y1 = y.energy();
+  gate.y2 = y.energy();
   gatey = gate;
   boxes.push_back(gate);
 
-  gate.visible = !x_marker.null();
-  gate.x1.set_bin(x_marker.bin(bits), bits, calib_x_);
-  gate.x2.set_bin(x_marker.bin(bits), bits, calib_x_);
-  gate.y1.set_bin(0, bits, calib_y_);
-  gate.y2.set_bin(adjrange, bits, calib_y_);
+  gate.visible = !x.null();
+  gate.x1 = x.energy();
+  gate.x2 = x.energy();
+  gate.y1 = calib_y_.transform(0,bits);
+  gate.y2 = calib_y_.transform(adjrange,bits);
   gatex = gate;
   boxes.push_back(gate);
 
-
-  label.selectable = false;
-  label.selected = false;
-  label.vertical = false;
-
-//  if (y_marker.visible && x_marker.visible) {
-//    label.x = gatex.x2;
-//    label.y = gatey.y_c;
-//    label.text = QString::number(y_marker.pos.energy());
-//    labels.push_back(label);
-
-//    label.x = gatex.x_c;
-//    label.y = gatey.y2;
-//    label.vertical = true;
-//    label.text = QString::number(x_marker.pos.energy());
-//    labels.push_back(label);
-//  }
-  if (!y_marker.null()) {
+  std::list<QPlot::Label2D> labels;
+  QPlot::Label2D label;
+  if (!y.null())
+  {
     label.x = gatex.x2;
-    label.y = gatey.y_c;
-    label.vertical = false;
-    label.text = QString::number(y_marker.energy());
+    label.y = gatey.yc;
+    label.text = QString::number(y.energy());
     labels.push_back(label);
   }
-  if (!x_marker.null()) {
-    label.x = gatex.x_c;
+  if (!x.null())
+  {
+    label.x = gatex.xc;
     label.y = gatey.y2;
     label.vertical = true;
-    label.text = QString::number(x_marker.energy());
+    label.text = QString::number(x.energy());
     labels.push_back(label);
   }
 
-
-
-  ui->coincPlot->set_boxes(boxes);
-  ui->coincPlot->set_labels(labels);
-  ui->coincPlot->replot_markers();
+  ui->coincPlot->addBoxes(boxes);
+  ui->coincPlot->addLabels(labels);
 }
 
-void FormPlot2D::update_plot(bool force) {
+
+void FormPlot2D::update_plot(bool force)
+{
 //  DBG << "updating 2d";
 
   this->setCursor(Qt::WaitCursor);
@@ -314,12 +268,13 @@ void FormPlot2D::update_plot(bool force) {
 
       std::shared_ptr<EntryList> spectrum_data =
           std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
-      ui->coincPlot->update_plot(adjrange, adjrange, spectrum_data);
+      ui->coincPlot->updatePlot(adjrange + 1, adjrange + 1, *spectrum_data);
 
 //      DBG << "adjrange = " << adjrange;
 //      DBG << "spectrum data size = " << spectrum_data->size();
 
-      if (rescale2d || force /*|| (name_2d != newname)*/) {
+      if (rescale2d || force /*|| (name_2d != newname)*/)
+      {
 //        DBG << "rescaling 2d";
 //        name_2d = newname;
 
@@ -336,12 +291,19 @@ void FormPlot2D::update_plot(bool force) {
         calib_x_ = detector_x_.best_calib(bits);
         calib_y_ = detector_y_.best_calib(bits);
 
-        ui->coincPlot->set_axes(calib_x_, calib_y_, bits, "Event count");
+        ui->coincPlot->setAxes(
+              QString::fromStdString(calib_x_.units_),
+              calib_x_.transform(0, bits), calib_x_.transform(adjrange, bits),
+              QString::fromStdString(calib_y_.units_),
+              calib_y_.transform(0, bits), calib_y_.transform(adjrange, bits),
+              "Event count");
       }
 
-    } else {
-      ui->coincPlot->reset_content();
-      ui->coincPlot->refresh();
+    }
+    else
+    {
+      ui->coincPlot->clearAll();
+      ui->coincPlot->replot();
     }
 
     replot_markers();
@@ -351,27 +313,26 @@ void FormPlot2D::update_plot(bool force) {
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormPlot2D::markers_moved(Coord x, Coord y) {
-  x_marker = x;
-  y_marker = y;
-  if (x.null() || y.null())
-    ext_marker = Coord();
-  //DBG << "markers changed";
+void FormPlot2D::markers_moved(double x, double y, Qt::MouseButton b)
+{
+  x_marker.set_bin(x, bits, calib_x_);
+  y_marker.set_bin(y, bits, calib_y_);
+  if (b == Qt::RightButton)
+    x_marker = y_marker = ext_marker = Coord();
   replot_markers();
-
-  emit markers_set(x, y);
+  emit markers_set(x_marker, y_marker);
 }
 
-void FormPlot2D::set_marker(Coord n) {
+void FormPlot2D::set_marker(Coord n)
+{
   ext_marker = n;
-  if (n.null()) {
-    x_marker = Coord();
-    y_marker = Coord();
-  }
+  if (n.null())
+    x_marker = y_marker = Coord();
   replot_markers();
 }
 
-void FormPlot2D::set_markers(Coord x, Coord y) {
+void FormPlot2D::set_markers(Coord x, Coord y)
+{
   x_marker = x;
   y_marker = y;
 
@@ -438,20 +399,24 @@ void FormPlot2D::analyse()
   emit requestAnalysis(ui->spectrumSelector->selected().data.toLongLong());
 }
 
-void FormPlot2D::set_scale_type(QString st) {
-  ui->coincPlot->set_scale_type(st);
+void FormPlot2D::set_scale_type(QString st)
+{
+  ui->coincPlot->setScaleType(st);
 }
 
-void FormPlot2D::set_gradient(QString gr) {
-  ui->coincPlot->set_gradient(gr);
+void FormPlot2D::set_gradient(QString gr)
+{
+  ui->coincPlot->setGradient(gr);
 }
 
-void FormPlot2D::set_show_legend(bool sl) {
-  ui->coincPlot->set_show_legend(sl);
+void FormPlot2D::set_show_legend(bool sl)
+{
+  ui->coincPlot->setShowGradientLegend(sl);
 }
 
-QString FormPlot2D::scale_type() {
-  return ui->coincPlot->scale_type();
+QString FormPlot2D::scale_type()
+{
+  return ui->coincPlot->scaleType();
 }
 
 QString FormPlot2D::gradient() {
@@ -459,7 +424,7 @@ QString FormPlot2D::gradient() {
 }
 
 bool FormPlot2D::show_legend() {
-  return ui->coincPlot->show_legend();
+  return ui->coincPlot->showGradientLegend();
 }
 
 void FormPlot2D::on_pushSymmetrize_clicked()

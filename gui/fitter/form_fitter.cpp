@@ -548,7 +548,6 @@ void FormFitter::plotTitle() {
 
   if (!title_text_.isEmpty()) {
     QCPItemText *floatingText = new QCPItemText(ui->plot);
-    ui->plot->addItem(floatingText);
     floatingText->setPositionAlignment(Qt::AlignTop|Qt::AlignRight);
     floatingText->position->setType(QCPItemPosition::ptAxisRectRatio);
     floatingText->position->setCoords(1, 0); // place position at center/top of axis rect
@@ -722,8 +721,8 @@ void FormFitter::plotRange() {
 
       for (auto &q : range_.latch_to) {
         for (int i=0; i < ui->plot->graphCount(); i++) {
-          if ((ui->plot->graph(i)->data()->firstKey() > pos_l)
-              || (pos_r > ui->plot->graph(i)->data()->lastKey()))
+          if ((ui->plot->graph(i)->data()->begin()->key > pos_l)
+              || (pos_r > ui->plot->graph(i)->data()->end()->key))
             continue;
 
           if (ui->plot->graph(i)->name() == q ) {
@@ -742,7 +741,6 @@ void FormFitter::plotRange() {
         edge_trc1->setGraphKey(pos_l);
         edge_trc1->setInterpolating(true);
         edge_trc1->setProperty("tracer", QVariant::fromValue(0));
-        ui->plot->addItem(edge_trc1);
         edge_trc1->updatePosition();
 
         edge_trc2 = new QCPItemTracer(ui->plot);
@@ -751,7 +749,6 @@ void FormFitter::plotRange() {
         edge_trc2->setGraphKey(pos_r);
         edge_trc2->setInterpolating(true);
         edge_trc2->setProperty("tracer", QVariant::fromValue(0));
-        ui->plot->addItem(edge_trc2);
         edge_trc2->updatePosition();
 
       } else
@@ -767,7 +764,6 @@ void FormFitter::plotRange() {
     ar1->setProperty("tracer", QVariant::fromValue(1));
     ar1->setSelectable(true);
     ar1->set_limits(minx, maxx);
-    ui->plot->addItem(ar1);
 
     DraggableTracer *ar2 = new DraggableTracer(ui->plot, edge_trc2, 12);
     ar2->setPen(QPen(range_.appearance.default_pen.color(), 1));
@@ -775,7 +771,6 @@ void FormFitter::plotRange() {
     ar2->setProperty("tracer", QVariant::fromValue(1));
     ar2->setSelectable(true);
     ar2->set_limits(minx, maxx);
-    ui->plot->addItem(ar2);
 
     QCPItemLine *line = new QCPItemLine(ui->plot);
     line->setSelectable(false);
@@ -786,7 +781,6 @@ void FormFitter::plotRange() {
     line->end->setCoords(0, 0);
     line->setPen(QPen(range_.appearance.default_pen.color(), 2, Qt::DashLine));
     line->setSelectedPen(QPen(range_.appearance.default_pen.color(), 2, Qt::DashLine));
-    ui->plot->addItem(line);
 
     QCPItemTracer* higher = edge_trc1;
     if (edge_trc2->position->value() > edge_trc1->position->value())
@@ -823,7 +817,6 @@ void FormFitter::plotRange() {
     if (newButton) {
       newButton->bottomRight->setParentAnchor(higher->position);
       newButton->bottomRight->setCoords(11, -20);
-      ui->plot->addItem(newButton);
     }
   }
 }
@@ -845,7 +838,6 @@ void FormFitter::plotEnergyLabel(double peak_id, double peak_energy, QCPItemTrac
   line->setProperty("label", QVariant::fromValue(1));
   line->setProperty("region", crs->property("region"));
   line->setProperty("peak", crs->property("peak"));
-  ui->plot->addItem(line);
 
   QCPItemText *markerText = new QCPItemText(ui->plot);
   markerText->position->setParentAnchor(crs->position);
@@ -864,7 +856,6 @@ void FormFitter::plotEnergyLabel(double peak_id, double peak_energy, QCPItemTrac
   markerText->setSelected(selected_peaks_.count(peak_id));
   markerText->setProperty("region", crs->property("region"));
   markerText->setProperty("peak", crs->property("peak"));
-  ui->plot->addItem(markerText);
 
   //make this optional?
   QCPOverlayButton *newButton = new QCPOverlayButton(ui->plot,
@@ -877,7 +868,6 @@ void FormFitter::plotEnergyLabel(double peak_id, double peak_energy, QCPItemTrac
   newButton->topLeft->setCoords(5, 0);
   newButton->setProperty("region", crs->property("region"));
   newButton->setProperty("peak", crs->property("peak"));
-  ui->plot->addItem(newButton);
 }
 
 void FormFitter::follow_selection() {
@@ -938,7 +928,6 @@ void FormFitter::plotButtons() {
   newButton->setClipToAxisRect(false);
   newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
   newButton->topLeft->setCoords(5, 5);
-  ui->plot->addItem(newButton);
   overlayButton = newButton;
 
   newButton = new QCPOverlayButton(ui->plot,
@@ -950,7 +939,6 @@ void FormFitter::plotButtons() {
   newButton->setClipToAxisRect(false);
   newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
   newButton->topLeft->setCoords(0, 5);
-  ui->plot->addItem(newButton);
   overlayButton = newButton;
 
   newButton = new QCPOverlayButton(ui->plot,
@@ -960,7 +948,6 @@ void FormFitter::plotButtons() {
   newButton->setClipToAxisRect(false);
   newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
   newButton->topLeft->setCoords(0, 5);
-  ui->plot->addItem(newButton);
   overlayButton = newButton;
 
   newButton = new QCPOverlayButton(ui->plot,
@@ -970,7 +957,6 @@ void FormFitter::plotButtons() {
   newButton->setClipToAxisRect(false);
   newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
   newButton->topLeft->setCoords(0, 32);
-  ui->plot->addItem(newButton);
   overlayButton = newButton;
 
 }
@@ -1448,7 +1434,6 @@ void FormFitter::plotRegion(double region_id, const Qpx::ROI &region, QCPGraph *
     newButton->topLeft->setType(QCPItemPosition::ptPlotCoords);
     newButton->topLeft->setCoords(region.hr_x_nrg.front(), region.hr_fullfit.front());
     newButton->setProperty("region", QVariant::fromValue(region_id));
-    ui->plot->addItem(newButton);
   }
 
   for (auto & p : region.peaks()) {
@@ -1471,7 +1456,6 @@ void FormFitter::plotRegion(double region_id, const Qpx::ROI &region, QCPGraph *
     crs->setInterpolating(true);
     double energy = fit_data_->finder().settings_.cali_nrg_.transform(p.first, fit_data_->finder().settings_.bits_);
     crs->setGraphKey(energy);
-    ui->plot->addItem(crs);
     crs->updatePosition();
 
     plotEnergyLabel(p.first, p.second.energy().value(), crs);
@@ -1507,7 +1491,6 @@ void FormFitter::plotPeak(double region_id, double peak_id, const Qpx::Peak &pea
     line->setTail(QCPLineEnding(QCPLineEnding::esBar, 10, 20));
     line->setPen(pen_sum4_peak);
     line->setSelectedPen(pen_sum4_selected);
-    ui->plot->addItem(line);
 
 
     QCPOverlayButton *newButton = new QCPOverlayButton(ui->plot,
@@ -1519,7 +1502,6 @@ void FormFitter::plotPeak(double region_id, double peak_id, const Qpx::Peak &pea
     newButton->bottomRight->setCoords(x1, y1);
     newButton->setProperty("peak", QVariant::fromValue(peak_id));
     newButton->setProperty("region", QVariant::fromValue(region_id));
-    ui->plot->addItem(newButton);
   }
 }
 
@@ -1549,7 +1531,6 @@ void FormFitter::plotBackgroundEdge(Qpx::SUM4Edge edge,
   line->setTail(QCPLineEnding(QCPLineEnding::esBar, 10, 20));
   line->setPen(pen_background_edge);
   line->setSelectedPen(pen_background_edge);
-  ui->plot->addItem(line);
 
   QCPOverlayButton *newButton = new QCPOverlayButton(ui->plot,
                                                      QPixmap(":/icons/oxy/22/system_switch_user.png"),
@@ -1560,7 +1541,6 @@ void FormFitter::plotBackgroundEdge(Qpx::SUM4Edge edge,
   newButton->bottomRight->setCoords(x1, y);
   newButton->setProperty("region", QVariant::fromValue(region_id));
   newButton->setProperty("peak", QVariant::fromValue(-1));
-  ui->plot->addItem(newButton);
 }
 
 

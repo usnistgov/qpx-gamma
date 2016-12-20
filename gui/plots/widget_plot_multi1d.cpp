@@ -45,7 +45,6 @@ WidgetPlotMulti1D::WidgetPlotMulti1D(QWidget *parent) :
   ui->mcaPlot->setNoAntialiasingOnDrag(true);
 
   connect(ui->mcaPlot, SIGNAL(mouse_clicked(double,double,QMouseEvent*,bool)), this, SLOT(plot_mouse_clicked(double,double,QMouseEvent*,bool)));
-  connect(ui->mcaPlot, SIGNAL(plottableClick(QCPAbstractPlottable*,QMouseEvent*)), this, SLOT(clicked_plottable(QCPAbstractPlottable*)));
   connect(ui->mcaPlot, SIGNAL(clickedAbstractItem(QCPAbstractItem*)), this, SLOT(clicked_item(QCPAbstractItem*)));
   connect(ui->mcaPlot, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
   connect(ui->mcaPlot, SIGNAL(beforeReplot()), this, SLOT(plot_rezoom()));
@@ -408,8 +407,8 @@ void WidgetPlotMulti1D::replot_markers() {
 
         //DBG << "Adding crs at " << pos << " on plot " << i;
 
-        if ((ui->mcaPlot->graph(i)->data()->firstKey() >= pos)
-            || (pos >= ui->mcaPlot->graph(i)->data()->lastKey()))
+        if ((ui->mcaPlot->graph(i)->data()->begin()->key >= pos)
+            || (pos >= ui->mcaPlot->graph(i)->data()->end()->key))
           continue;
 
         QCPItemTracer *crs = new QCPItemTracer(ui->mcaPlot);
@@ -423,7 +422,6 @@ void WidgetPlotMulti1D::replot_markers() {
         crs->setGraphKey(pos);
         crs->setPen(q.appearance.get_pen(color_theme_));
         crs->setSelectable(false);
-        ui->mcaPlot->addItem(crs);
 
         crs->updatePosition();
         double val = crs->positions().first()->value();
@@ -448,7 +446,6 @@ void WidgetPlotMulti1D::replot_markers() {
       line->setProperty("chan_value", top_crs->property("chan_value"));
       line->setProperty("nrg_value", top_crs->property("nrg_value"));
       line->setSelectable(false);
-      ui->mcaPlot->addItem(line);
 
       if (marker_labels_) {
         QCPItemText *markerText = new QCPItemText(ui->mcaPlot);
@@ -468,7 +465,6 @@ void WidgetPlotMulti1D::replot_markers() {
         markerText->setSelectedPen(pen);
         markerText->setPadding(QMargins(1, 1, 1, 1));
         markerText->setSelectable(false);
-        ui->mcaPlot->addItem(markerText);
       }
     }
 
@@ -507,12 +503,10 @@ void WidgetPlotMulti1D::replot_markers() {
     cprect->setPen(rect[0].appearance.get_pen(color_theme_));
     cprect->setBrush(QBrush(rect[1].appearance.get_pen(color_theme_).color()));
     cprect->setSelectable(false);
-    ui->mcaPlot->addItem(cprect);
   }
 
   if (!title_text_.isEmpty()) {
     QCPItemText *floatingText = new QCPItemText(ui->mcaPlot);
-    ui->mcaPlot->addItem(floatingText);
     floatingText->setPositionAlignment(Qt::AlignTop|Qt::AlignHCenter);
     floatingText->position->setType(QCPItemPosition::ptAxisRectRatio);
     floatingText->position->setCoords(0.5, 0); // place position at center/top of axis rect
@@ -562,7 +556,6 @@ void WidgetPlotMulti1D::plotButtons() {
   newButton->setClipToAxisRect(false);
   newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
   newButton->topLeft->setCoords(5, 5);
-  ui->mcaPlot->addItem(newButton);
   overlayButton = newButton;
 
   if (!menuOptions.isEmpty()) {
@@ -573,7 +566,6 @@ void WidgetPlotMulti1D::plotButtons() {
     newButton->setClipToAxisRect(false);
     newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
     newButton->topLeft->setCoords(0, 5);
-    ui->mcaPlot->addItem(newButton);
     overlayButton = newButton;
   }
 
@@ -585,7 +577,6 @@ void WidgetPlotMulti1D::plotButtons() {
     newButton->setClipToAxisRect(false);
     newButton->topLeft->setParentAnchor(overlayButton->bottomLeft);
     newButton->topLeft->setCoords(0, 5);
-    ui->mcaPlot->addItem(newButton);
     overlayButton = newButton;
   }
 }
@@ -602,10 +593,6 @@ void WidgetPlotMulti1D::plot_mouse_clicked(double x, double y, QMouseEvent* even
 
 void WidgetPlotMulti1D::selection_changed() {
   emit markers_selected();
-}
-
-void WidgetPlotMulti1D::clicked_plottable(QCPAbstractPlottable *plt) {
-  //  LINFO << "<WidgetPlotMulti1D> clickedplottable";
 }
 
 void WidgetPlotMulti1D::clicked_item(QCPAbstractItem* itm) {
@@ -635,7 +622,6 @@ void WidgetPlotMulti1D::zoom_out() {
 void WidgetPlotMulti1D::plot_mouse_press(QMouseEvent*) {
   disconnect(ui->mcaPlot, 0, this, 0);
   connect(ui->mcaPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(plot_mouse_release(QMouseEvent*)));
-  connect(ui->mcaPlot, SIGNAL(plottableClick(QCPAbstractPlottable*,QMouseEvent*)), this, SLOT(clicked_plottable(QCPAbstractPlottable*)));
   connect(ui->mcaPlot, SIGNAL(clickedAbstractItem(QCPAbstractItem*)), this, SLOT(clicked_item(QCPAbstractItem*)));
   connect(ui->mcaPlot, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
 
