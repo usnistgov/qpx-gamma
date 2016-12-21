@@ -266,9 +266,20 @@ void FormPlot2D::update_plot(bool force)
 
       ui->pushSymmetrize->setEnabled(sym.value_int == 0);
 
-      std::shared_ptr<EntryList> spectrum_data =
-          std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
-      ui->coincPlot->updatePlot(adjrange + 1, adjrange + 1, *spectrum_data);
+            std::shared_ptr<EntryList> spectrum_data =
+                std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
+
+      HistList2D hist;
+      if (spectrum_data)
+      {
+        for (auto p : *spectrum_data)
+          hist.push_back(p2d(p.first.at(0), p.first.at(1), p.second.convert_to<double>()));
+      }
+      ui->coincPlot->updatePlot(adjrange + 1, adjrange + 1, hist);
+
+//      std::shared_ptr<EntryList> spectrum_data =
+//          std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
+//      ui->coincPlot->updatePlot(adjrange + 1, adjrange + 1, *spectrum_data);
 
 //      DBG << "adjrange = " << adjrange;
 //      DBG << "spectrum data size = " << spectrum_data->size();

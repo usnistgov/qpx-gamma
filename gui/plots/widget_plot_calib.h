@@ -25,11 +25,11 @@
 #define WIDGET_PLOT_CALIB_H
 
 #include <QWidget>
-#include "qp_1d.h"
+#include "qp_multi1d.h"
 #include "qp_appearance.h"
 #include <set>
 
-class WidgetPlotCalib : public QPlot::Plot1D
+class WidgetPlotCalib : public QPlot::Multi1D
 {
   Q_OBJECT
 private:

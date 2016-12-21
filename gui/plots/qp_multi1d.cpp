@@ -3,6 +3,7 @@
 namespace QPlot
 {
 
+
 double Marker1D::worstVal() const
 {
   if (alignment == Qt::AlignTop)
@@ -31,22 +32,57 @@ bool Marker1D::isValBetterThan(double newval, double oldval) const
 
 
 Multi1D::Multi1D(QWidget *parent)
-  : Plot1D(parent)
-{}
+  : GenericPlot(parent)
+{
+  setInteraction(QCP::iSelectItems, true);
+  setInteraction(QCP::iRangeDrag, true);
+  yAxis->axisRect()->setRangeDrag(Qt::Horizontal);
+  setInteraction(QCP::iRangeZoom, true);
+  setInteraction(QCP::iMultiSelect, true);
+  yAxis->setPadding(28);
+  setNoAntialiasingOnDrag(true);
+
+  connect(this, SIGNAL(beforeReplot()), this, SLOT(adjustY()));
+  connect(this, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(mouseReleased(QMouseEvent*)));
+  connect(this, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(mousePressed(QMouseEvent*)));
+
+  QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
+  connect(shortcut, SIGNAL(activated()), this, SLOT(zoomOut()));
+
+  setScaleType("Logarithmic");
+  setPlotStyle("Step center");
+  setGridStyle("Grid + subgrid");
+
+  setVisibleOptions(ShowOptions::zoom | ShowOptions::save |
+                    ShowOptions::scale | ShowOptions::style |
+                    ShowOptions::thickness | ShowOptions::title);
+
+  replotExtras();
+}
+
+void Multi1D::clearPrimary()
+{
+  GenericPlot::clearGraphs();
+  aggregate_.clear();
+}
 
 void Multi1D::clearExtras()
 {
-  Plot1D::clearExtras();
   markers_.clear();
   highlight_.clear();
+  title_text_.clear();
 }
 
-void Multi1D::replotExtras()
+void Multi1D::setAxisLabels(QString x, QString y)
 {
-  clearItems();
-  Plot1D::replotExtras();
-  plotMarkers();
-  plotHighlight();
+  xAxis->setLabel(x);
+  yAxis->setLabel(y);
+}
+
+
+void Multi1D::setTitle(QString title)
+{
+  title_text_ = title;
 }
 
 void Multi1D::setMarkers(const std::list<Marker1D>& markers)
@@ -64,19 +100,125 @@ void Multi1D::setHighlight(Marker1D a, Marker1D b)
 std::set<double> Multi1D::selectedMarkers()
 {
   std::set<double> selection;
-  for (auto &item : selectedItems())
-    if (QCPItemText *txt = qobject_cast<QCPItemText*>(item))
+  for (auto &q : selectedItems())
+    if (QCPItemText *txt = qobject_cast<QCPItemText*>(q))
     {
       if (txt->property("position").isValid())
         selection.insert(txt->property("position").toDouble());
     }
-    else if (QCPItemLine *line = qobject_cast<QCPItemLine*>(item))
+    else if (QCPItemLine *line = qobject_cast<QCPItemLine*>(q))
     {
       if (line->property("position").isValid())
         selection.insert(line->property("position").toDouble());
     }
 
   return selection;
+}
+
+
+void Multi1D::addGraph(const HistMap1D &hist, Appearance appearance, QString name)
+{
+  if (hist.empty())
+    return;
+
+  GenericPlot::addGraph();
+  int g = graphCount() - 1;
+  graph(g)->setName(name);
+  auto data = graph(g)->data();
+  for (auto p :hist)
+  {
+    QCPGraphData point(p.first, p.second);
+    data->add(point);
+    aggregate_.add(point);
+  }
+
+  graph(g)->setPen(appearance.default_pen);
+  setGraphStyle(graph(g));
+  setGraphThickness(graph(g));
+}
+
+void Multi1D::addGraph(const HistList1D &hist, Appearance appearance, QString name)
+{
+  if (hist.empty())
+    return;
+
+  GenericPlot::addGraph();
+  int g = graphCount() - 1;
+  graph(g)->setName(name);
+  auto data = graph(g)->data();
+  for (auto p :hist)
+  {
+    QCPGraphData point(p.first, p.second);
+    data->add(point);
+    aggregate_.add(point);
+  }
+
+  graph(g)->setPen(appearance.default_pen);
+  setGraphStyle(graph(g));
+  setGraphThickness(graph(g));
+}
+
+QCPRange Multi1D::getDomain()
+{
+  QCP::SignDomain sd = QCP::sdBoth;
+  if (scaleType() == "Logarithmic")
+    sd = QCP::sdPositive;
+  bool ok{false};
+  return aggregate_.keyRange(ok, sd);
+}
+
+QCPRange Multi1D::getRange(QCPRange domain)
+{
+  bool log = (scaleType() == "Logarithmic");
+  QCP::SignDomain sd = QCP::sdBoth;
+  if (log)
+    sd = QCP::sdPositive;
+  bool ok{false};
+  QCPRange range = aggregate_.valueRange(ok, sd, domain);
+  if (ok)
+  {
+    range.upper = yAxis->pixelToCoord(yAxis->coordToPixel(range.upper) -
+                                      ((!showTitle() || title_text_.isEmpty()) ? 5 : 25));
+    double lower = yAxis->pixelToCoord(yAxis->coordToPixel(range.lower) + 5);
+    if (log && (lower < 0))
+      range.lower = 0;
+    else
+      range.lower = lower;
+  }
+
+  bool markers_in_range {false};
+  bool markers_with_val {false};
+  for (auto &marker : markers_)
+    if ((domain.lower <= marker.pos) && (marker.pos <= domain.upper))
+    {
+      markers_in_range = true;
+      if (marker.alignment = Qt::AlignAbsolute)
+        markers_with_val = true;
+    }
+
+
+  int upper = 0
+      + (markers_in_range ? 30 : 0)
+      + ((markers_in_range && showMarkerLabels()) ? 20 : 0)
+      + ((markers_with_val && showMarkerLabels()) ? 20 : 0);
+
+  range.upper = yAxis->pixelToCoord(yAxis->coordToPixel(range.upper) - upper);
+
+  return range;
+}
+
+void Multi1D::tightenX()
+{
+  xAxis->setRange(getDomain());
+}
+
+void Multi1D::replotExtras()
+{
+  clearItems();
+  plotMarkers();
+  plotHighlight();
+  plotTitle();
+  plotButtons();
 }
 
 void Multi1D::plotMarkers()
@@ -96,6 +238,80 @@ void Multi1D::plotMarkers()
                                          "v=" + QString::number(top_crs->positions().first()->value()));
       }
     }
+  }
+}
+
+void Multi1D::plotHighlight()
+{
+  if ((highlight_.size() == 2) && (highlight_[0].visible) && !aggregate_.isEmpty())
+  {
+    QCPRange range = getRange(getDomain());
+
+    QCPItemRect *cprect = new QCPItemRect(this);
+
+    cprect->topLeft->setCoords(highlight_[0].pos, range.upper);
+    cprect->bottomRight->setCoords( highlight_[1].pos, range.lower);
+    cprect->setPen(highlight_[0].appearance.default_pen);
+    cprect->setBrush(QBrush(highlight_[1].appearance.default_pen.color()));
+    cprect->setSelectable(false);
+  }
+}
+
+void Multi1D::plotTitle()
+{
+  if (showTitle() && !title_text_.isEmpty())
+  {
+    QCPItemText *floatingText = new QCPItemText(this);
+    floatingText->setPositionAlignment(static_cast<Qt::AlignmentFlag>(Qt::AlignTop|Qt::AlignHCenter));
+    floatingText->position->setType(QCPItemPosition::ptAxisRectRatio);
+    floatingText->position->setCoords(0.5, 0); // place position at center/top of axis rect
+    floatingText->setText(title_text_);
+    floatingText->setFont(QFont("Helvetica", 10));
+    floatingText->setSelectable(false);
+    floatingText->setColor(Qt::black);
+  }
+}
+
+void Multi1D::mouseClicked(double x, double y, QMouseEvent* event)
+{
+  emit clickedPlot(x, y, event->button());
+}
+
+void Multi1D::zoomOut()
+{
+  xAxis->setRange(getDomain());
+  adjustY();
+  replot();
+}
+
+void Multi1D::mousePressed(QMouseEvent*)
+{
+  disconnect(this, SIGNAL(beforeReplot()), this, SLOT(adjustY()));
+}
+
+void Multi1D::mouseReleased(QMouseEvent*)
+{
+  connect(this, SIGNAL(beforeReplot()), this, SLOT(adjustY()));
+  adjustY();
+  replot();
+}
+
+void Multi1D::adjustY()
+{
+  if (aggregate_.isEmpty())
+    rescaleAxes();
+  else
+    yAxis->setRange(getRange(xAxis->range()));
+}
+
+void Multi1D::setScaleType(QString type)
+{
+  bool diff = (type != scaleType());
+  GenericPlot::setScaleType(type);
+  if (diff)
+  {
+    replotExtras();
+    replot();
   }
 }
 
@@ -201,43 +417,6 @@ QCPItemText* Multi1D::addLabel(QCPItemTracer* crs, const Marker1D& marker)
   return markerText;
 }
 
-QCPRange Multi1D::getRange(QCPRange domain)
-{
-  QCPRange range = Plot1D::getRange(domain);
-
-  bool markers_in_range {false};
-  bool markers_with_val {false};
-  for (auto &marker : markers_)
-    if ((domain.lower <= marker.pos) && (marker.pos <= domain.upper))
-    {
-      markers_in_range = true;
-      if (marker.alignment = Qt::AlignAbsolute)
-        markers_with_val = true;
-    }
-
-
-  int upper = 0
-      + (markers_in_range ? 30 : 0)
-      + ((markers_in_range && showMarkerLabels()) ? 20 : 0)
-      + ((markers_with_val && showMarkerLabels()) ? 20 : 0);
-
-  range.upper = yAxis->pixelToCoord(yAxis->coordToPixel(range.upper) - upper);
-  return range;
-}
-
-void Multi1D::plotHighlight()
-{
-  if ((highlight_.size() == 2) && (highlight_[0].visible) && !bounds_.empty())
-  {
-    QCPRange range = getRange(getDomain());
-    QCPItemRect *cprect = new QCPItemRect(this);
-    cprect->topLeft->setCoords(highlight_[0].pos, range.upper);
-    cprect->bottomRight->setCoords( highlight_[1].pos, range.lower);
-    cprect->setPen(highlight_[0].appearance.default_pen);
-    cprect->setBrush(QBrush(highlight_[1].appearance.default_pen.color()));
-    cprect->setSelectable(false);
-  }
-}
 
 
 }

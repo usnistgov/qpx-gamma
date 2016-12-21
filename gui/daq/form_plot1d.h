@@ -71,7 +71,7 @@ private slots:
   void spectrumDoubleclicked(SelectorItem);
 
 
-  void clicked(double x, double y, QMouseEvent *event);
+  void clicked(double x, double y, Qt::MouseButton button);
   void addMovingMarker(double x, double y);
   void removeMarkers();
 
@@ -90,7 +90,6 @@ private slots:
   void on_pushPerLive_clicked();
   void on_pushRescaleToThisMax_clicked();
   void on_pushRescaleReset_clicked();
-  void on_pushManip1D_clicked();
 
   void effCalRequested(QAction*);
 

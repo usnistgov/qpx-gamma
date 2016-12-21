@@ -127,7 +127,7 @@ void Plot2D::plotBoxes()
     QCPItemRect *box = new QCPItemRect(this);
     box->setSelectable(q.selectable);
     box->setPen(q.border);
-    //    box->setSelectedPen(pen);
+//    box->setSelectedPen(pen);
     box->setBrush(QBrush(q.fill));
     box->setSelected(q.selected);
     QColor sel = box->selectedPen().color();
@@ -170,7 +170,7 @@ void Plot2D::plotBoxes()
       labelItem->setProperty("xc", q.x1);
       labelItem->setProperty("yc", q.y1);
       labelItem->position->setType(QCPItemPosition::ptPlotCoords);
-      labelItem->position->setCoords(q.x1, q.y2);
+      labelItem->position->setCoords(q.xc, q.yc);
 
       labelItem->setPositionAlignment(static_cast<Qt::AlignmentFlag>(Qt::AlignTop|Qt::AlignLeft));
       labelItem->setFont(QFont("Helvetica", 14));
@@ -262,7 +262,8 @@ void Plot2D::plotLabels()
   }
 }
 
-void Plot2D::updatePlot(uint64_t sizex, uint64_t sizey, const EntryList &spectrum_data)
+
+void Plot2D::updatePlot(uint64_t sizex, uint64_t sizey, const HistMap2D &spectrum_data)
 {
   colorMap->data()->clear();
   setAlwaysSquare(sizex == sizey);
@@ -275,8 +276,29 @@ void Plot2D::updatePlot(uint64_t sizex, uint64_t sizey, const EntryList &spectru
   {
     colorMap->data()->setSize(sizex, sizey);
     for (auto it : spectrum_data)
-      if (it.first.size() > 1)
-        colorMap->data()->setCell(it.first[0], it.first[1], to_double(it.second));
+      colorMap->data()->setCell(it.first.x, it.first.y, it.second);
+    setScaleType(scaleType());
+    setGradient(gradient());
+    rescaleAxes();
+    updateGeometry();
+  }
+  replotExtras();
+}
+
+void Plot2D::updatePlot(uint64_t sizex, uint64_t sizey, const HistList2D &spectrum_data)
+{
+  colorMap->data()->clear();
+  setAlwaysSquare(sizex == sizey);
+  if (sizex == sizey)
+    setSizePolicy(QSizePolicy::Maximum, QSizePolicy::MinimumExpanding);
+  else
+    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+
+  if ((sizex > 0) && (sizey > 0) && (spectrum_data.size()))
+  {
+    colorMap->data()->setSize(sizex, sizey);
+    for (auto it : spectrum_data)
+      colorMap->data()->setCell(it.x, it.y, it.v);
     setScaleType(scaleType());
     setGradient(gradient());
     rescaleAxes();

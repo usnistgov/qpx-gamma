@@ -23,8 +23,8 @@
 #include "ui_form_plot1d.h"
 #include "dialog_spectrum.h"
 #include "custom_timer.h"
-#include "form_manip1d.h"
 #include "boost/algorithm/string.hpp"
+#include "histogram.h"
 
 using namespace Qpx;
 
@@ -47,7 +47,7 @@ FormPlot1D::FormPlot1D(QWidget *parent) :
   markx.alignment = Qt::AlignBottom;
   marky = markx;
 
-  connect(ui->mcaPlot, SIGNAL(clicked(double,double,QMouseEvent*)), this, SLOT(clicked(double,double,QMouseEvent*)));
+  connect(ui->mcaPlot, SIGNAL(clickedPlot(double,double,Qt::MouseButton)), this, SLOT(clicked(double,double,Qt::MouseButton)));
 
   connect(spectraSelector, SIGNAL(itemSelected(SelectorItem)), this, SLOT(spectrumDetails(SelectorItem)));
   connect(spectraSelector, SIGNAL(itemToggled(SelectorItem)), this, SLOT(spectrumLooksChanged(SelectorItem)));
@@ -204,7 +204,7 @@ void FormPlot1D::update_plot() {
     std::shared_ptr<EntryList> spectrum_data =
         std::move(q.second->data_range({{0, x.size()}}));
 
-    QPlot::HistoData hist;
+    HistMap1D hist;
     for (auto it : *spectrum_data)
     {
       double xx = x[it.first[0]];
@@ -336,13 +336,11 @@ void FormPlot1D::analyse()
   emit requestAnalysis(spectraSelector->selected().data.toLongLong());
 }
 
-void FormPlot1D::clicked(double x, double y, QMouseEvent *event)
+void FormPlot1D::clicked(double x, double y, Qt::MouseButton button)
 {
-  if (!event)
-    return;
-  if (event->button() == Qt::RightButton)
+  if (button == Qt::RightButton)
     removeMarkers();
-  else if (event->button() == Qt::LeftButton)
+  else if (button == Qt::LeftButton)
     addMovingMarker(x, y);
 }
 
@@ -544,12 +542,6 @@ void FormPlot1D::on_pushRescaleReset_clicked()
       q.second->set_attribute(rescale);
     }
   updateUI();
-}
-
-void FormPlot1D::on_pushManip1D_clicked()
-{
-  FormManip1D* newDialog = new FormManip1D(*mySpectra, this);
-  newDialog->exec();
 }
 
 void FormPlot1D::deleteSelected() {

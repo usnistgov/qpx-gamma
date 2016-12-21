@@ -31,12 +31,14 @@ FormOscilloscope::FormOscilloscope(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  ui->widgetPlot->set_scale_type("Linear");
-  ui->widgetPlot->set_plot_style("Step center");
-  ui->widgetPlot->set_marker_labels(false);
-  ui->widgetPlot->set_visible_options(ShowOptions::zoom | ShowOptions::title | ShowOptions::save);
+  ui->widgetPlot->setScaleType("Linear");
+  ui->widgetPlot->setPlotStyle("Step center");
+  ui->widgetPlot->setShowMarkerLabels(false);
+  ui->widgetPlot->setVisibleOptions(QPlot::zoom |
+                                    QPlot::title |
+                                    QPlot::save);
   ui->widgetPlot->setTitle("");
-  ui->widgetPlot->setLabels("time (ticks)", "energy/channel");
+  ui->widgetPlot->setAxisLabels("time (ticks)", "energy/channel");
 
   connect(ui->selectorChannels, SIGNAL(itemSelected(SelectorItem)), this, SLOT(channelDetails(SelectorItem)));
   connect(ui->selectorChannels, SIGNAL(itemToggled(SelectorItem)), this, SLOT(channelToggled(SelectorItem)));
@@ -128,8 +130,7 @@ void FormOscilloscope::oscil_complete(std::vector<Qpx::Hit> traces) {
 }
 
 void FormOscilloscope::replot() {
-  ui->widgetPlot->clearGraphs();
-  ui->widgetPlot->reset_scales();
+  ui->widgetPlot->clearAll();
 
   QString unit = "n/a";
 
@@ -137,46 +138,30 @@ void FormOscilloscope::replot() {
 
     QVector<SelectorItem> my_channels = ui->selectorChannels->items();
 
-    std::map<double, double> minima, maxima;
-
     for (size_t i=0; i < traces_.size(); i++) {
       Qpx::Hit trace = traces_.at(i);
 
       if (!trace.trace().size())
         continue;
 
-      QVector<double> xx;
-      QVector<double> yy;
+      HistMap1D hist;
       for (size_t j=0; j < trace.trace().size(); ++j)
+        hist[trace.timestamp().to_nanosec(j) * 0.001] = trace.trace().at(j);
+
+      if ((static_cast<int>(i) < my_channels.size()) && (my_channels[i].visible))
       {
-        xx.push_back(trace.timestamp().to_nanosec(j) * 0.001);
-        yy.push_back(trace.trace().at(j));
-      }
-
-      if ((static_cast<int>(i) < my_channels.size()) && (my_channels[i].visible)) {
-//        DBG << "will plot trace " << i;
-        AppearanceProfile profile;
+        QPlot::Appearance profile;
         profile.default_pen = QPen(my_channels[i].color, 1);
-        ui->widgetPlot->addGraph(xx, yy, profile);
+        ui->widgetPlot->addGraph(hist, profile);
 
-        for (int i=0; i < xx.size(); i++) {
-          if (!minima.count(xx[i]) || (minima[xx[i]] > yy[i]))
-            minima[xx[i]] = yy[i];
-          if (!maxima.count(xx[i]) || (maxima[xx[i]] < yy[i]))
-            maxima[xx[i]] = yy[i];
-        }
       }
 
     }
-
-    ui->widgetPlot->setYBounds(minima, maxima);
   }
 
-  ui->widgetPlot->setLabels("time (\u03BCs)", "energy (" + unit + ")");
-
-  ui->widgetPlot->rescale();
-  ui->widgetPlot->redraw();
-
+  ui->widgetPlot->setAxisLabels("time (\u03BCs)", "energy (" + unit + ")");
+  ui->widgetPlot->replotAll();
+  ui->widgetPlot->tightenX();
 }
 
 void FormOscilloscope::on_pushShowAll_clicked()

@@ -80,7 +80,7 @@ signals:
 
 protected:
   virtual void executeButton(Button *);
-  virtual void mouseClicked(double x, double y, QMouseEvent* e) {}
+  virtual void mouseClicked(double x, double y, QMouseEvent* e);
 
   void mousePressEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
   void mouseMoveEvent(QMouseEvent *event) Q_DECL_OVERRIDE;

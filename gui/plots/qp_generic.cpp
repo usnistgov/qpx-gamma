@@ -255,7 +255,7 @@ void GenericPlot::setScaleType(QString scale_type)
 
   current_scale_type_ = scale_type;
   checkoffOptionsMenu();
-  replot();
+  //replot();
   this->setCursor(Qt::ArrowCursor);
 }
 
@@ -326,14 +326,24 @@ QSize GenericPlot::sizeHint() const
     previous_height_ = s.height();
 
     int extra_width = 0, extra_height = 0;
-    for (int i=0; i < layerCount(); i++)
-      for (auto &q : layer(i)->children())
-        if (QCPAxisRect *le = qobject_cast<QCPAxisRect*>(q))
-        {
+    for (int i=0; i < layerCount(); i++) {
+      QCPLayer *this_layer = layer(i);
+      for (auto &q : this_layer->children()) {
+        if (QCPColorScale *le = qobject_cast<QCPColorScale*>(q)) {
+          QRect ler = le->outerRect();
+          //extra_width += ler.width();
+          /*} else if (QCPAxis *le = qobject_cast<QCPAxis*>(q)) {
+          if (le->axisType() == QCPAxis::atBottom)
+            extra_height += le->axisRect()->height();
+          else if (le->axisType() == QCPAxis::atLeft)
+            extra_width += le->axisRect()->width();*/
+        } else if (QCPAxisRect *le = qobject_cast<QCPAxisRect*>(q)) {
           QMargins mar = le->margins();
           extra_width += (mar.left() + mar.right());
           extra_height += (mar.top() + mar.bottom());
         }
+      }
+    }
 
     s.setWidth(s.height() - extra_height + extra_width);
     s.setHeight(QCustomPlot::sizeHint().height());
@@ -439,6 +449,13 @@ void GenericPlot::executeButton(Button *button)
   } else if (button->name() == "reset_scales") {
     this->zoomOut();
   }
+}
+
+void GenericPlot::mouseClicked(double x, double y, QMouseEvent* e)
+{
+  Q_UNUSED(x)
+  Q_UNUSED(y)
+  Q_UNUSED(e)
 }
 
 void GenericPlot::keyPressEvent(QKeyEvent *event)

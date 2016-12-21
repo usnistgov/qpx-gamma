@@ -26,7 +26,7 @@
 #include <QFlag>
 
 WidgetPlotCalib::WidgetPlotCalib(QWidget *parent) :
-  QPlot::Plot1D(parent)
+  QPlot::Multi1D(parent)
 {
   setInteraction(QCP::iSelectItems, false);
   setInteraction(QCP::iMultiSelect, true);  
@@ -60,7 +60,7 @@ void WidgetPlotCalib::executeButton(QPlot::Button *button)
 
 void WidgetPlotCalib::clearPrimary()
 {
-  Plot1D::clearPrimary();
+  Multi1D::clearPrimary();
   fit_ = PointSet();
   points_.clear();
 //  selection_.clear();
@@ -172,9 +172,6 @@ void WidgetPlotCalib::setFit(const QVector<double>& x, const QVector<double>& y,
   {
     fit_.x = x;
     fit_.y = y;
-
-    for (int i=0; i < x.size(); i++)
-      bounds_.add(x[i], y[i]);
   }
 }
 
@@ -192,19 +189,12 @@ void WidgetPlotCalib::addPoints(QPlot::Appearance style,
     ps.y_sigma = y_sigma;
     points_.push_back(ps);
 
-    for (int i=0; i < x.size(); i++)
-    {
-      if (y.size() == y_sigma.size())
-        bounds_.add(x[i], y[i], y_sigma[i]);
-      else
-        bounds_.add(x[i], y[i]);
-    }
   }
 }
 
 void WidgetPlotCalib::replotExtras()
 {
-  QPlot::Plot1D::replotExtras();
+  QPlot::Multi1D::replotExtras();
   plotExtraButtons();
 }
 

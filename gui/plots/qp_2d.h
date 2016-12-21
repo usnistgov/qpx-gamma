@@ -3,7 +3,7 @@
 
 #include "qp_generic.h"
 #include "qp_appearance.h"
-#include "qp_entry2d.h"
+#include "histogram.h"
 
 namespace QPlot
 {
@@ -57,7 +57,9 @@ public:
   void clearExtras() override;
   void replotExtras() override;
 
-  void updatePlot(uint64_t sizex, uint64_t sizey, const EntryList &spectrum_data);
+  void updatePlot(uint64_t sizex, uint64_t sizey, const HistMap2D &spectrum_data);
+  void updatePlot(uint64_t sizex, uint64_t sizey, const HistList2D &spectrum_data);
+
   void setAxes(QString xlabel, double x1, double x2,
                 QString ylabel, double y1, double y2,
                 QString zlabel);
@@ -81,7 +83,6 @@ protected:
   void mouseClicked(double x, double y, QMouseEvent* event) override;
 
   QCPColorMap *colorMap {new QCPColorMap(xAxis, yAxis)};
-
   std::list<MarkerBox2D> boxes_;
   std::list<Label2D> labels_;
 

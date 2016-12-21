@@ -27,7 +27,7 @@
 #include "project.h"
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
-#include "widget_plot_multi1d.h"
+#include "qp_multi1d.h"
 #include "fitter.h"
 #include "qp_appearance.h"
 

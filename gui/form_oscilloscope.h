@@ -25,7 +25,7 @@
 
 #include <QWidget>
 #include "thread_runner.h"
-#include "widget_plot_multi1d.h"
+//#include "qp_multi1d.h"
 #include "widget_selector.h"
 
 namespace Ui {

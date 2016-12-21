@@ -180,7 +180,7 @@
     </layout>
    </item>
    <item row="2" column="0">
-    <widget class="WidgetPlotMulti1D" name="widgetPlot" native="true">
+    <widget class="QPlot::Multi1D" name="widgetPlot" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
        <horstretch>0</horstretch>
@@ -221,9 +221,9 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>WidgetPlotMulti1D</class>
+   <class>QPlot::Multi1D</class>
    <extends>QWidget</extends>
-   <header>widget_plot_multi1d.h</header>
+   <header>qp_multi1d.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
