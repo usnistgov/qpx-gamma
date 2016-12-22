@@ -77,6 +77,7 @@ public slots:
 signals:
   void mouseHover(double x, double y);
   void shiftStateChanged(bool);
+  void clickedAbstractItem(QCPAbstractItem *); //hack?
 
 protected:
   virtual void executeButton(Button *);

@@ -26,7 +26,7 @@
 
 #include <QWidget>
 #include "experiment.h"
-#include "appearance.h"
+#include "qp_appearance.h"
 #include "experiment_filter.h"
 
 namespace Ui {
@@ -65,7 +65,7 @@ private:
   QString                &data_directory_;
   int64_t                &selected_sink_;
 
-  AppearanceProfile style_pts;
+  QPlot::Appearance style_pts;
 
   WidgetExperimentFilter *domain_filter_;
 

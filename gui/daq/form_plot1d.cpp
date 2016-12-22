@@ -227,9 +227,8 @@ void FormPlot1D::update_plot() {
     if (temp_calib.bits_ > calib_.bits_)
       calib_ = temp_calib;
 
-    QPlot::Appearance profile;
-    profile.default_pen = QPen(QColor(QString::fromStdString(md.get_attribute("appearance").value_text)), 1);
-    ui->mcaPlot->addGraph(hist, profile);
+    auto pen = QPen(QColor(QString::fromStdString(md.get_attribute("appearance").value_text)), 1);
+    ui->mcaPlot->addGraph(hist, pen);
   }
 
   ui->mcaPlot->setAxisLabels(QString::fromStdString(calib_.units_),

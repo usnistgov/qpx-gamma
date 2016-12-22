@@ -535,12 +535,15 @@ void FormIntegration2D::make_gates() {
 //  }
 
 
-  if (!ui->pushShowDiagonal->isChecked()) {
-    ui->plotGateX->update_spectrum("Gate X rectangular slice");
-    ui->plotGateY->update_spectrum("Gate Y rectangular slice");
-  } else {
-    ui->plotGateX->update_spectrum("Gate X diagonal slice");
-    ui->plotGateY->update_spectrum("Gate Y diagonal slice");
+  if (!ui->pushShowDiagonal->isChecked())
+  {
+    ui->plotGateX->update_spectrum(/*"Gate X rectangular slice"*/);
+    ui->plotGateY->update_spectrum(/*"Gate Y rectangular slice"*/);
+  }
+  else
+  {
+    ui->plotGateX->update_spectrum(/*"Gate X diagonal slice"*/);
+    ui->plotGateY->update_spectrum(/*"Gate Y diagonal slice"*/);
   }
 
   gated_fits_updated(std::set<double>());

@@ -36,8 +36,6 @@ FormGatesPlot2D::FormGatesPlot2D(QWidget *parent) :
   connect(ui->coincPlot, SIGNAL(markers_set(Coord,Coord)), this, SLOT(markers_moved(Coord,Coord)));
   connect(ui->coincPlot, SIGNAL(stuff_selected()), this, SLOT(selection_changed()));
 
-  ui->coincPlot->set_antialiased(false);
-
   adjrange = 0;
 
   my_marker_.selectable = false;
@@ -57,14 +55,14 @@ void FormGatesPlot2D::selection_changed() {
 
 void FormGatesPlot2D::set_range_x(MarkerBox2D range) {
   range_ = range;
-  ui->coincPlot->set_range_x(range);
+//  ui->coincPlot->set_range_x(range);
 }
 
 void FormGatesPlot2D::setSpectra(Project& new_set, int64_t idx) {
   mySpectra = &new_set;
   current_spectrum_ = idx;
 
-  //  update_plot();
+  // //  update_plot();
 }
 
 void FormGatesPlot2D::set_gates_movable(bool mov) {
@@ -73,11 +71,11 @@ void FormGatesPlot2D::set_gates_movable(bool mov) {
 
 void FormGatesPlot2D::set_show_boxes(bool show) {
   show_boxes_ = show;
-  ui->coincPlot->replot_markers();
+//  ui->coincPlot->replot_markers();
 }
 
 std::list<MarkerBox2D> FormGatesPlot2D::get_selected_boxes() {
-  return ui->coincPlot->get_selected_boxes();
+//  return ui->coincPlot->get_selected_boxes();
 }
 
 
@@ -89,8 +87,8 @@ void FormGatesPlot2D::set_boxes(std::list<MarkerBox2D> boxes) {
 
 void FormGatesPlot2D::reset_content() {
   //DBG << "reset content";
-  ui->coincPlot->reset_content();
-  ui->coincPlot->refresh();
+//  ui->coincPlot->reset_content();
+//  ui->coincPlot->refresh();
   current_spectrum_ = 0;
   my_marker_.visible = false;
   replot_markers();
@@ -98,7 +96,7 @@ void FormGatesPlot2D::reset_content() {
 
 void FormGatesPlot2D::refresh()
 {
-  ui->coincPlot->refresh();
+//  ui->coincPlot->refresh();
 }
 
 void FormGatesPlot2D::replot_markers() {
@@ -182,9 +180,9 @@ void FormGatesPlot2D::replot_markers() {
     labels.push_back(label);
   }
 
-  ui->coincPlot->set_boxes(boxes);
-  ui->coincPlot->set_labels(labels);
-  ui->coincPlot->replot_markers();
+//  ui->coincPlot->set_boxes(boxes);
+//  ui->coincPlot->set_labels(labels);
+//  ui->coincPlot->replot_markers();
 }
 
 void FormGatesPlot2D::update_plot() {
@@ -206,7 +204,7 @@ void FormGatesPlot2D::update_plot() {
 
     std::shared_ptr<EntryList> spectrum_data =
         std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
-    ui->coincPlot->update_plot(adjrange, adjrange, spectrum_data);
+//    ui->coincPlot->update_plot(adjrange, adjrange, spectrum_data);
 
     if (bits != newbits)
       bits = newbits;
@@ -221,11 +219,11 @@ void FormGatesPlot2D::update_plot() {
     calib_x_ = detector_x_.best_calib(bits);
     calib_y_ = detector_y_.best_calib(bits);
 
-    ui->coincPlot->set_axes(calib_x_, calib_y_, bits, "Event count");
+//    ui->coincPlot->set_axes(calib_x_, calib_y_, bits, "Event count");
 
   } else {
-    ui->coincPlot->reset_content();
-    ui->coincPlot->refresh();
+//    ui->coincPlot->reset_content();
+//    ui->coincPlot->refresh();
   }
 
   replot_markers();
@@ -266,25 +264,25 @@ void FormGatesPlot2D::set_gates_visible(bool vertical, bool horizontal, bool dia
 }
 
 void FormGatesPlot2D::set_scale_type(QString st) {
-  ui->coincPlot->set_scale_type(st);
+//  ui->coincPlot->set_scale_type(st);
 }
 
 void FormGatesPlot2D::set_gradient(QString gr) {
-  ui->coincPlot->set_gradient(gr);
+//  ui->coincPlot->set_gradient(gr);
 }
 
 void FormGatesPlot2D::set_show_legend(bool sl) {
-  ui->coincPlot->set_show_legend(sl);
+//  ui->coincPlot->set_show_legend(sl);
 }
 
 QString FormGatesPlot2D::scale_type() {
-  return ui->coincPlot->scale_type();
+//  return ui->coincPlot->scale_type();
 }
 
 QString FormGatesPlot2D::gradient() {
-  return ui->coincPlot->gradient();
+//  return ui->coincPlot->gradient();
 }
 
 bool FormGatesPlot2D::show_legend() {
-  return ui->coincPlot->show_legend();
+//  return ui->coincPlot->show_legend();
 }

@@ -246,7 +246,7 @@
     </widget>
    </item>
    <item row="6" column="0">
-    <widget class="WidgetPlot2D" name="PlotCalib" native="true">
+    <widget class="QPlot::Plot2D" name="PlotCalib" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
        <horstretch>0</horstretch>
@@ -299,9 +299,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>WidgetPlot2D</class>
+   <class>QPlot::Plot2D</class>
    <extends>QWidget</extends>
-   <header>widget_plot2d.h</header>
+   <header>qp_2d.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

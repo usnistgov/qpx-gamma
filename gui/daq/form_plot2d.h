@@ -24,11 +24,10 @@
 
 #include <QWidget>
 #include <project.h>
-#include "qsquarecustomplot.h"
+#include "qp_2d.h"
 #include "qtcolorpicker.h"
 #include "widget_selector.h"
 #include "coord.h"
-#include "appearance.h"
 //#include <unordered_map>
 
 namespace Ui {
@@ -107,7 +106,7 @@ private:
   uint32_t adjrange;
 
   //markers
-  AppearanceProfile my_marker;
+  QPlot::Appearance my_marker;
   Coord  ext_marker, x_marker, y_marker; //actual data
 
   //scaling

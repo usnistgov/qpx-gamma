@@ -40,8 +40,13 @@ public:
   void clearExtras() override;
   void replotExtras() override;
 
-  void addGraph(const HistMap1D&, Appearance, QString name = "");
-  void addGraph(const HistList1D&, Appearance, QString name = "");
+  template<typename T>
+  QCPGraph* addGraph(const T& hist, const QPen&, QString name = "");
+
+  template<typename T>
+  QCPGraph* addGraph(const T& x, const T& y, const QPen&, QString name = "");
+
+//  QCPGraph *addGraph(const HistList1D&, const QPen&, QString name = "");
   void setAxisLabels(QString x, QString y);
   void setTitle(QString title);
 
@@ -52,8 +57,12 @@ public:
   void tightenX();
   void setScaleType(QString) override;
 
+  QCPRange getDomain();
+  QCPRange getRange(QCPRange domain = QCPRange());
+
 public slots:
   void zoomOut() Q_DECL_OVERRIDE;
+  void adjustY();
 
 signals:
   void clickedPlot(double x, double y, Qt::MouseButton button);
@@ -61,8 +70,6 @@ signals:
 protected slots:
   void mousePressed(QMouseEvent*);
   void mouseReleased(QMouseEvent*);
-
-  void adjustY();
 
 protected:
   void mouseClicked(double x, double y, QMouseEvent *event) override;
@@ -72,8 +79,6 @@ protected:
   std::vector<Marker1D> highlight_;
 
   QCPGraphDataContainer aggregate_;
-  QCPRange getDomain();
-  QCPRange getRange(QCPRange domain = QCPRange());
 
   void plotMarkers();
   void plotHighlight();
@@ -83,6 +88,56 @@ protected:
   QCPItemLine* addArrow(QCPItemTracer*, const Marker1D &);
   QCPItemText* addLabel(QCPItemTracer*, const Marker1D &);
 };
+
+template<typename T>
+QCPGraph* Multi1D::addGraph(const T& hist, const QPen& pen, QString name)
+{
+  if (hist.empty())
+    return nullptr; // is this wise?
+
+  GenericPlot::addGraph();
+  auto ret = graph(graphCount() - 1);
+  ret->setName(name);
+  auto data = ret->data();
+  for (auto p :hist)
+  {
+    QCPGraphData point(p.first, p.second);
+    data->add(point);
+    aggregate_.add(point);
+  }
+
+  ret->setPen(pen);
+  setGraphStyle(ret);
+  setGraphThickness(ret);
+  return ret;
+}
+
+template<typename T>
+QCPGraph* Multi1D::addGraph(const T& x, const T& y, const QPen& pen, QString name)
+{
+  if (x.empty() || y.empty() || (x.size() != y.size()))
+    return nullptr; // is this wise?
+
+  GenericPlot::addGraph();
+  auto ret = graph(graphCount() - 1);
+  ret->setName(name);
+  auto data = ret->data();
+  auto ix = x.begin();
+  auto iy = y.begin();
+  while (ix != x.end())
+  {
+    QCPGraphData point(*ix, *iy);
+    data->add(point);
+    aggregate_.add(point);
+    ++ix;
+    ++iy;
+  }
+
+  ret->setPen(pen);
+  setGraphStyle(ret);
+  setGraphThickness(ret);
+  return ret;
+}
 
 }
 

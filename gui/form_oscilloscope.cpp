@@ -149,12 +149,7 @@ void FormOscilloscope::replot() {
         hist[trace.timestamp().to_nanosec(j) * 0.001] = trace.trace().at(j);
 
       if ((static_cast<int>(i) < my_channels.size()) && (my_channels[i].visible))
-      {
-        QPlot::Appearance profile;
-        profile.default_pen = QPen(my_channels[i].color, 1);
-        ui->widgetPlot->addGraph(hist, profile);
-
-      }
+        ui->widgetPlot->addGraph(hist, QPen(my_channels[i].color, 1));
 
     }
   }

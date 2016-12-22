@@ -25,7 +25,7 @@
 #define FORM_FITTER_H
 
 #include <QWidget>
-#include "qsquarecustomplot.h"
+#include "qp_multi1d.h"
 #include "special_delegate.h"
 #include <QItemSelection>
 #include <QMediaPlayer>
@@ -33,7 +33,6 @@
 #include "project.h"
 #include "thread_fitter.h"
 #include "coord.h"
-#include "appearance.h"
 
 namespace Ui {
 class FormFitter;
@@ -43,7 +42,7 @@ struct Range {
   bool visible;
   QVariantMap properties;
   QStringList latch_to;
-  AppearanceProfile appearance;
+  QPlot::Appearance appearance;
   Coord l, r, c;
 
   void setProperty(const char *name, const QVariant &value) {
@@ -66,9 +65,8 @@ public:
   void clear();
 
   void setFit(Qpx::Fitter *fit);
-  void update_spectrum(QString title = QString());
+  void update_spectrum();
 
-  void reset_scales();
   bool busy() { return busy_; }
 
 
@@ -96,20 +94,12 @@ signals:
   void fitter_busy(bool);
 
 private slots:
-  void plot_mouse_clicked(double x, double y, QMouseEvent *event, bool channels);
-  void plot_mouse_press(QMouseEvent*);
-  void plot_mouse_release(QMouseEvent*);
-  void clicked_plottable(QCPAbstractPlottable *);
+  void plot_mouse_clicked(double,double,Qt::MouseButton);
   void clicked_item(QCPAbstractItem *);
   void switch_scale_type();
 
   void selection_changed();
-  void plot_rezoom(bool force = false);
-  void exportRequested(QAction*);
   void changeROI(QAction*);
-  void zoom_out();
-
-
 
   void fit_updated(Qpx::Fitter);
   void fitting_complete();
@@ -146,35 +136,20 @@ private:
 
   ThreadFitter thread_fitter_;
 
-
-
-  void setColorScheme(QColor fore, QColor back, QColor grid1, QColor grid2);
-  void calc_y_bounds(double lower, double upper);
-
   QCPItemTracer* edge_trc1;
   QCPItemTracer* edge_trc2;
-
-  double minx, maxx;
-  double miny, maxy;
 
   bool mouse_pressed_;
   bool hold_selection_;
 
   double minx_zoom, maxx_zoom;
 
-  std::map<double, double> minima_, maxima_;
-
-  QMenu menuExportFormat;
   QMenu menuROI;
-
-  bool scale_log_;
-  QString title_text_;
 
   QMediaPlayer *player;
 
   void trim_log_lower(QVector<double> &array);
   void calc_visible();
-  void add_bounds(const QVector<double>& x, const QVector<double>& y);
   QCPGraph *addGraph(const QVector<double>& x, const QVector<double>& y, QPen appearance,
                      bool smooth, QString name = QString(),
                      double region = -1, double peak = -1);
@@ -188,7 +163,6 @@ private:
   void plotButtons();
   void plotEnergyLabel(double peak_id, double peak_energy, QCPItemTracer *crs);
   void plotRange();
-  void plotTitle();
 
   void plotRegion(double region_id, const Qpx::ROI &region, QCPGraph *data_graph);
   void plotPeak(double region_id, double peak_id, const Qpx::Peak &peak);

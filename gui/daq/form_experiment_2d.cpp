@@ -64,9 +64,8 @@ FormExperiment2D::FormExperiment2D(Qpx::ExperimentProject &project,
   ui->comboDomain->setSizeAdjustPolicy(QComboBox::AdjustToContents);
   ui->comboDomain2->setSizeAdjustPolicy(QComboBox::AdjustToContents);
 
-  ui->PlotCalib->set_antialiased(false);
-  ui->PlotCalib->set_scale_type("Linear");
-  ui->PlotCalib->set_show_legend(true);
+  ui->PlotCalib->setScaleType("Linear");
+  ui->PlotCalib->setShowGradientLegend(true);
 
   loadSettings();
 }
@@ -242,7 +241,7 @@ void FormExperiment2D::display_data()
 
   bool flip90 = ytoi.size() > xtoi.size();
 
-  std::shared_ptr<Qpx::EntryList> data = std::shared_ptr<Qpx::EntryList>(new Qpx::EntryList());
+  HistList2D hist;
   for (size_t i = 0; i < filtered_data_points_.size(); ++i)
   {
     Qpx::DataPoint &dp = filtered_data_points_.at(i);
@@ -255,21 +254,18 @@ void FormExperiment2D::display_data()
       d2 = d;
     }
 
-    Qpx::Entry e;
-    e.first = std::vector<size_t>({d1,d2});
-    e.second = dp.dependent_variable.value();
-    data->push_back(e);
+    hist.push_back(p2d(d1,d2,dp.dependent_variable.value()));
   }
 
   if (!flip90)
   {
-    ui->PlotCalib->update_plot(xtoi.size(), ytoi.size(), data);
-    ui->PlotCalib->set_axes(xcal, ycal, 1, ui->comboCodomain->currentText());
+    ui->PlotCalib->updatePlot(xtoi.size(), ytoi.size(), hist);
+//    ui->PlotCalib->setAxes(0, xcal, _axes(xcal, ycal, 1, ui->comboCodomain->currentText());
   }
   else
   {
-    ui->PlotCalib->update_plot(ytoi.size(), xtoi.size(), data);
-    ui->PlotCalib->set_axes(ycal, xcal, 1, ui->comboCodomain->currentText());
+    ui->PlotCalib->updatePlot(ytoi.size(), xtoi.size(), hist);
+//    ui->PlotCalib->set_axes(ycal, xcal, 1, ui->comboCodomain->currentText());
   }
 
   ui->pushSaveCsv->setEnabled(filtered_data_points_.size());

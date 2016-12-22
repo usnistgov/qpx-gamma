@@ -116,47 +116,48 @@ std::set<double> Multi1D::selectedMarkers()
 }
 
 
-void Multi1D::addGraph(const HistMap1D &hist, Appearance appearance, QString name)
-{
-  if (hist.empty())
-    return;
+//QCPGraph *Multi1D::addGraph(const HistMap1D &hist, const QPen& pen, QString name)
+//{
+//  if (hist.empty())
+//    return;
 
-  GenericPlot::addGraph();
-  int g = graphCount() - 1;
-  graph(g)->setName(name);
-  auto data = graph(g)->data();
-  for (auto p :hist)
-  {
-    QCPGraphData point(p.first, p.second);
-    data->add(point);
-    aggregate_.add(point);
-  }
+//  GenericPlot::addGraph();
+//  auto ret = graph(graphCount() - 1);
+//  ret->setName(name);
+//  auto data = ret->data();
+//  for (auto p :hist)
+//  {
+//    QCPGraphData point(p.first, p.second);
+//    data->add(point);
+//    aggregate_.add(point);
+//  }
 
-  graph(g)->setPen(appearance.default_pen);
-  setGraphStyle(graph(g));
-  setGraphThickness(graph(g));
-}
+//  ret->setPen(pen);
+//  setGraphStyle(ret);
+//  setGraphThickness(ret);
+//  return ret;
+//}
 
-void Multi1D::addGraph(const HistList1D &hist, Appearance appearance, QString name)
-{
-  if (hist.empty())
-    return;
+//QCPGraph *Multi1D::addGraph(const HistList1D &hist, const QPen& pen, QString name)
+//{
+//  if (hist.empty())
+//    return;
 
-  GenericPlot::addGraph();
-  int g = graphCount() - 1;
-  graph(g)->setName(name);
-  auto data = graph(g)->data();
-  for (auto p :hist)
-  {
-    QCPGraphData point(p.first, p.second);
-    data->add(point);
-    aggregate_.add(point);
-  }
+//  GenericPlot::addGraph();
+//  auto ret = graph(graphCount() - 1);
+//  ret->setName(name);
+//  auto data = ret->data();
+//  for (auto p :hist)
+//  {
+//    QCPGraphData point(p.first, p.second);
+//    data->add(point);
+//    aggregate_.add(point);
+//  }
 
-  graph(g)->setPen(appearance.default_pen);
-  setGraphStyle(graph(g));
-  setGraphThickness(graph(g));
-}
+//  ret->setPen(pen);
+//  setGraphStyle(ret);
+//  setGraphThickness(ret);
+//}
 
 QCPRange Multi1D::getDomain()
 {

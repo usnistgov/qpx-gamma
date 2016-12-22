@@ -423,7 +423,9 @@ void GenericPlot::mouseReleaseEvent(QMouseEvent *event)
       if (button->visible())
         this->executeButton(button);
 
-    if (!ai)
+    if (ai) //HACK
+      emit clickedAbstractItem(ai);
+    else
     {
       QVariant details;
       QCPLayerable *clickedLayerable = layerableAt(event->pos(), false, &details);

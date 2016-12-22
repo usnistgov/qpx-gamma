@@ -24,11 +24,13 @@
 
 #include <QWidget>
 #include <project.h>
-#include "qsquarecustomplot.h"
+#include "qp_2d.h"
 #include "qtcolorpicker.h"
 #include "widget_selector.h"
 #include "peak2d.h"
 #include <unordered_map>
+
+//Make it derived from plot2d!!! no ui metacode
 
 namespace Ui {
 class FormGatesPlot2D;
