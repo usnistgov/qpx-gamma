@@ -36,7 +36,7 @@
       <number>3</number>
      </property>
      <item>
-      <widget class="QPlot::Multi1D" name="plot" native="true">
+      <widget class="QpFitter" name="plot" native="true">
        <property name="sizePolicy">
         <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
          <horstretch>0</horstretch>
@@ -234,9 +234,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>QPlot::Multi1D</class>
+   <class>QpFitter</class>
    <extends>QWidget</extends>
-   <header>qp_multi1d.h</header>
+   <header>qp_fitter.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

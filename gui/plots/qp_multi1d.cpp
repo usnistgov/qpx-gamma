@@ -115,50 +115,6 @@ std::set<double> Multi1D::selectedMarkers()
   return selection;
 }
 
-
-//QCPGraph *Multi1D::addGraph(const HistMap1D &hist, const QPen& pen, QString name)
-//{
-//  if (hist.empty())
-//    return;
-
-//  GenericPlot::addGraph();
-//  auto ret = graph(graphCount() - 1);
-//  ret->setName(name);
-//  auto data = ret->data();
-//  for (auto p :hist)
-//  {
-//    QCPGraphData point(p.first, p.second);
-//    data->add(point);
-//    aggregate_.add(point);
-//  }
-
-//  ret->setPen(pen);
-//  setGraphStyle(ret);
-//  setGraphThickness(ret);
-//  return ret;
-//}
-
-//QCPGraph *Multi1D::addGraph(const HistList1D &hist, const QPen& pen, QString name)
-//{
-//  if (hist.empty())
-//    return;
-
-//  GenericPlot::addGraph();
-//  auto ret = graph(graphCount() - 1);
-//  ret->setName(name);
-//  auto data = ret->data();
-//  for (auto p :hist)
-//  {
-//    QCPGraphData point(p.first, p.second);
-//    data->add(point);
-//    aggregate_.add(point);
-//  }
-
-//  ret->setPen(pen);
-//  setGraphStyle(ret);
-//  setGraphThickness(ret);
-//}
-
 QCPRange Multi1D::getDomain()
 {
   QCP::SignDomain sd = QCP::sdBoth;
@@ -281,7 +237,7 @@ void Multi1D::mouseClicked(double x, double y, QMouseEvent* event)
 void Multi1D::zoomOut()
 {
   xAxis->setRange(getDomain());
-  adjustY();
+  this->adjustY();
   replot();
 }
 
@@ -293,7 +249,7 @@ void Multi1D::mousePressed(QMouseEvent*)
 void Multi1D::mouseReleased(QMouseEvent*)
 {
   connect(this, SIGNAL(beforeReplot()), this, SLOT(adjustY()));
-  adjustY();
+  this->adjustY();
   replot();
 }
 

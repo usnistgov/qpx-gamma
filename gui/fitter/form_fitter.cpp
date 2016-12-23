@@ -36,42 +36,21 @@ FormFitter::FormFitter(QWidget *parent) :
   ui(new Ui::FormFitter)
 {
   ui->setupUi(this);
-
   player = new QMediaPlayer(this);
 
-  ui->plot->setInteraction(QCP::iSelectItems, true);
-  ui->plot->setInteraction(QCP::iRangeDrag, true);
-  ui->plot->yAxis->axisRect()->setRangeDrag(Qt::Horizontal);
-  ui->plot->setInteraction(QCP::iRangeZoom, true);
-  ui->plot->setInteraction(QCP::iMultiSelect, true);
-
-  ui->plot->yAxis->setPadding(28);
-  ui->plot->setNoAntialiasingOnDrag(true);
-  ui->plot->xAxis->grid()->setVisible(true);
-  ui->plot->yAxis->grid()->setVisible(true);
-  ui->plot->xAxis->grid()->setSubGridVisible(true);
-  ui->plot->yAxis->grid()->setSubGridVisible(true);
-
-  connect(ui->plot, SIGNAL(clickedPlot(double,double,Qt::MouseButton)), this, SLOT(plot_mouse_clicked(double,double,Qt::MouseButton)));
-  connect(ui->plot, SIGNAL(clickedAbstractItem(QCPAbstractItem*)), this, SLOT(clicked_item(QCPAbstractItem*)));
   connect(ui->plot, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
 
-  minx_zoom = 0; maxx_zoom = 0;
+  connect(ui->plot, SIGNAL(add_peak()), this, SLOT(add_peak()));
+  connect(ui->plot, SIGNAL(delete_selected_peaks()), this, SLOT(delete_selected_peaks()));
+  connect(ui->plot, SIGNAL(adjust_sum4()), this, SLOT(adjust_sum4()));
+  connect(ui->plot, SIGNAL(adjust_background()), this, SLOT(adjust_background()));
+  connect(ui->plot, SIGNAL(peak_info(double)), this, SLOT(peak_info(double)));
 
-  mouse_pressed_ = false;
-  hold_selection_ = false;
+  connect(ui->plot, SIGNAL(rollback_ROI(double)), this, SLOT(rollback_ROI(double)));
+  connect(ui->plot, SIGNAL(roi_settings(double)), this, SLOT(roi_settings(double)));
+  connect(ui->plot, SIGNAL(refit_ROI(double)), this, SLOT(refit_ROI(double)));
+  connect(ui->plot, SIGNAL(delete_ROI(double)), this, SLOT(delete_ROI(double)));
 
-  selected_roi_ = -1;
-
-  edge_trc1 = nullptr;
-  edge_trc2 = nullptr;
-
-  menuROI.addAction("History...");
-  menuROI.addAction("Adjust edges");
-  menuROI.addAction("Region settings...");
-  menuROI.addAction("Refit");
-  menuROI.addAction("Delete");
-  connect(&menuROI, SIGNAL(triggered(QAction*)), this, SLOT(changeROI(QAction*)));
 
   QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Backspace), ui->plot);
   connect(shortcut, SIGNAL(activated()), ui->plot, SLOT(zoomOut()));
@@ -82,14 +61,11 @@ FormFitter::FormFitter(QWidget *parent) :
   QShortcut* shortcut3 = new QShortcut(QKeySequence(QKeySequence::Delete), ui->plot);
   connect(shortcut3, SIGNAL(activated()), this, SLOT(delete_selected_peaks()));
 
-  QShortcut* shortcut4 = new QShortcut(QKeySequence(QKeySequence(Qt::Key_L)), ui->plot);
-  connect(shortcut4, SIGNAL(activated()), this, SLOT(switch_scale_type()));
-
+//  QShortcut* shortcut4 = new QShortcut(QKeySequence(QKeySequence(Qt::Key_L)), ui->plot);
+//  connect(shortcut4, SIGNAL(activated()), this, SLOT(switch_scale_type()));
 
   connect(&thread_fitter_, SIGNAL(fit_updated(Qpx::Fitter)), this, SLOT(fit_updated(Qpx::Fitter)));
   connect(&thread_fitter_, SIGNAL(fitting_done()), this, SLOT(fitting_complete()));
-
-  plotButtons();
 
   QMovie *movie = new QMovie(":/loader.gif");
   ui->labelMovie->setMovie(movie);
@@ -97,8 +73,6 @@ FormFitter::FormFitter(QWidget *parent) :
   movie->start();
   ui->labelMovie->setVisible(false);
 
-
-  busy_ = false;
   thread_fitter_.start();
 }
 
@@ -112,6 +86,7 @@ FormFitter::~FormFitter()
 
 void FormFitter::setFit(Qpx::Fitter* fit) {
   fit_data_ = fit;
+  ui->plot->setFit(fit);
   update_spectrum();
   updateData();
 }
@@ -128,7 +103,8 @@ void FormFitter::saveSettings(QSettings &settings_) {
   settings_.endGroup();
 }
 
-void FormFitter::clear() {
+void FormFitter::clear()
+{
   if (!fit_data_ || busy_)
     return;
 
@@ -138,145 +114,73 @@ void FormFitter::clear() {
 
   clearSelection();
   ui->plot->replot();
-  toggle_push();
+  toggle_push(busy_);
 }
 
 void FormFitter::update_spectrum()
 {
+  ui->plot->update_spectrum();
+  toggle_push(busy_);
+}
+
+void FormFitter::refit_ROI(double ROI_bin)
+{
   if (!fit_data_ || busy_)
     return;
 
-  if (fit_data_->settings().bits_ <= 0) {
-    clear();
-    updateData();
-    return;
-  }
-
-  //  if (title.isEmpty())
-  //    title = "Spectrum=" + QString::fromStdString(fit_data_->metadata_.name) + "  Detector=" + QString::fromStdString(fit_data_->detector_.name_);
-
-  if (fit_data_->peaks().empty())
-    selected_peaks_.clear();
-
-
-
-  updateData();
-  toggle_push();
-  minx_zoom = 0; maxx_zoom = 0;
-}
-
-
-void FormFitter::refit_ROI(double ROI_bin) {
-  if (busy_ || (fit_data_ == nullptr))
-    return;
-
-  busy_= true;
-  toggle_push();
+  toggle_push(true);
 
   thread_fitter_.set_data(*fit_data_);
   thread_fitter_.refit(ROI_bin);
 }
 
-
-void FormFitter::rollback_ROI(double ROI_bin) {
-  if (busy_ || (fit_data_ == nullptr))
+void FormFitter::rollback_ROI(double ROI_bin)
+{
+  if (!fit_data_ || busy_)
     return;
 
-  if (fit_data_->contains_region(ROI_bin)) {
+  if (fit_data_->contains_region(ROI_bin))
+  {
     RollbackDialog *editor = new RollbackDialog(fit_data_->region(ROI_bin), qobject_cast<QWidget *> (parent()));
     int ret = editor->exec();
     if (ret == QDialog::Accepted) {
       fit_data_->rollback_ROI(ROI_bin, editor->get_choice());
-      toggle_push();
+      toggle_push(false);
       updateData();
 
       emit data_changed();
       emit fitting_done();
     }
   }
-
 }
 
-void FormFitter::delete_ROI(double ROI_bin) {
-  if (busy_ || (fit_data_ == nullptr))
+void FormFitter::delete_ROI(double ROI_bin)
+{
+  if (!fit_data_ || busy_)
     return;
 
   fit_data_->delete_ROI(ROI_bin);
-  toggle_push();
+  toggle_push(false);
   updateData();
 
   emit data_changed();
   emit fitting_done();
 }
 
-void FormFitter::make_range(Coord marker) {
-  if (!marker.null())
-    createRange(marker);
-  else {
-    range_.visible = false;
-    selected_peaks_.clear();
-    selected_roi_ = -1;
-    plotRange();
-    calc_visible();
-    ui->plot->replot();
-    toggle_push();
-
-    emit range_changed(range_);
-    emit peak_selection_changed(selected_peaks_);
-  }
+void FormFitter::make_range(Coord marker)
+{
+  ui->plot->make_range_selection(marker);
 }
 
-void FormFitter::createRange(Coord c) {
-  if (busy_ || (fit_data_ == nullptr))
-    return;
-  
-  range_.visible = true;
-  range_.appearance.default_pen = QPen(Qt::darkGreen);
-
-  double x = c.bin(fit_data_->settings().bits_);
-
-  uint16_t ch = static_cast<uint16_t>(x);
-  uint16_t ch_l = fit_data_->finder().find_left(ch);
-  uint16_t ch_r = fit_data_->finder().find_right(ch);
-
-  range_.setProperty("purpose", QString("add peak"));
-  range_.setProperty("region", -1);
-  range_.setProperty("peak", -1);
-  range_.c.set_bin(ch, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
-  range_.l.set_bin(ch_l, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
-  range_.r.set_bin(ch_r, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
-  range_.latch_to.clear();
-  range_.latch_to.push_back("Residuals");
-  range_.latch_to.push_back("Data");
-
-  selected_peaks_.clear();
-  selected_roi_ = -1;
-  plotRange();
-  calc_visible();
-  ui->plot->replot();
-  toggle_push();
-
-  emit peak_selection_changed(selected_peaks_);
-  emit range_changed(range_);
+void FormFitter::set_selected_peaks(std::set<double> selected_peaks)
+{
+  ui->plot->set_selected_peaks(selected_peaks);
+  toggle_push(busy_);
 }
 
-void FormFitter::set_selected_peaks(std::set<double> selected_peaks) {
-
-  bool changed = (selected_peaks_ != selected_peaks);
-  selected_peaks_ = selected_peaks;
-
-  if (!selected_peaks_.empty()) {
-    range_.visible = false;
-    plotRange();
-    follow_selection();
-  }
-  calc_visible();
-  ui->plot->replot();
-  toggle_push();
-}
-
-std::set<double> FormFitter::get_selected_peaks() {
-  return selected_peaks_;
+std::set<double> FormFitter::get_selected_peaks()
+{
+  return ui->plot->get_selected_peaks();
 }
 
 void FormFitter::on_pushFindPeaks_clicked()
@@ -284,17 +188,15 @@ void FormFitter::on_pushFindPeaks_clicked()
   perform_fit();
 }
 
-
-void FormFitter::perform_fit() {
-  if (busy_ || (fit_data_ == nullptr))
+void FormFitter::perform_fit()
+{
+  if (!fit_data_ || busy_)
     return;
 
   fit_data_->find_regions();
   //  DBG << "number of peaks found " << fit_data_->peaks_.size();
 
-  busy_= true;
-  toggle_push();
-  updateData();
+  toggle_push(true);
 
   thread_fitter_.set_data(*fit_data_);
   thread_fitter_.fit_peaks();
@@ -303,48 +205,52 @@ void FormFitter::perform_fit() {
 
 void FormFitter::add_peak()
 {
-  if (!range_.visible)
+  auto range = ui->plot->getRangeSelection();
+  ui->plot->set_range_selection(RangeSelector());
+
+  if (!range.visible)
     return;
 
-  if (range_.l.energy() >= range_.r.energy())
+  if (range.l.energy() >= range.r.energy())
     return;
 
-  range_.visible = false;
-  plotRange();
-  ui->plot->replot();
-  busy_= true;
-  toggle_push();
+  toggle_push(true);
 
   thread_fitter_.set_data(*fit_data_);
-  thread_fitter_.add_peak(range_.l.bin(fit_data_->settings().bits_),
-                          range_.r.bin(fit_data_->settings().bits_));
+  thread_fitter_.add_peak(range.l.bin(fit_data_->settings().bits_),
+                          range.r.bin(fit_data_->settings().bits_));
 }
 
-void FormFitter::adjust_sum4() {
-  if (!range_.visible)
+void FormFitter::adjust_sum4()
+{
+  if (!fit_data_ || busy_)
     return;
 
-  double peak_id = range_.property("peak").toDouble();
+  auto range = ui->plot->getRangeSelection();
+  ui->plot->set_range_selection(RangeSelector());
 
-  double left  = range_.l.bin(fit_data_->settings().bits_);
-  double right = range_.r.bin(fit_data_->settings().bits_);
+  if (!range.visible)
+    return;
 
-  if (left > right) {
+  double peak_id = range.property("peak").toDouble();
+
+  double left  = range.l.bin(fit_data_->settings().bits_);
+  double right = range.r.bin(fit_data_->settings().bits_);
+
+  if (left > right)
+  {
     double t = left;
     left = right;
     right = t;
   }
 
-  range_.visible = false;
-  plotRange();
-  ui->plot->replot();
-  toggle_push();
+  toggle_push(false);
   if (fit_data_->adjust_sum4(peak_id, left, right))
   {
     updateData();
     std::set<double> selected_peaks;
     selected_peaks.insert(peak_id);
-    set_selected_peaks(selected_peaks_);
+    ui->plot->set_selected_peaks(selected_peaks);
 
     emit data_changed();
     emit fitting_done();
@@ -352,16 +258,19 @@ void FormFitter::adjust_sum4() {
 }
 
 void FormFitter::adjust_background() {
-  if (!range_.visible)
+  auto range = ui->plot->getRangeSelection();
+  ui->plot->set_range_selection(RangeSelector());
+
+  if (!range.visible)
     return;
 
-  double ROI_id = range_.property("region").toDouble();
+  double ROI_id = range.property("region").toDouble();
 
   if (!fit_data_->contains_region(ROI_id))
     return;
 
-  double left = range_.l.bin(fit_data_->settings().bits_);
-  double right = range_.r.bin(fit_data_->settings().bits_);
+  double left = range.l.bin(fit_data_->settings().bits_);
+  double right = range.r.bin(fit_data_->settings().bits_);
 
   if (left > right) {
     double t = left;
@@ -370,16 +279,11 @@ void FormFitter::adjust_background() {
   }
 
   std::set<double> rois;
-  QString purpose = range_.property("purpose").toString();
+  QString purpose = range.property("purpose").toString();
   if (purpose == "background L")
     rois = fit_data_->relevant_regions(left, fit_data_->region(ROI_id).right_bin());
   else if (purpose == "background R")
     rois = fit_data_->relevant_regions(fit_data_->region(ROI_id).left_bin(), right);
-
-
-  range_.visible = false;
-  plotRange();
-  ui->plot->replot();
 
   if (!rois.count(ROI_id))
   {
@@ -391,8 +295,8 @@ void FormFitter::adjust_background() {
                 (QMessageBox::question(this, "Merge?", "Regions overlap. Merge them?") == QMessageBox::Yes));
 
   thread_fitter_.set_data(*fit_data_);
-  busy_= true;
-  toggle_push();
+
+  toggle_push(true);
 
   if (merge)
   {
@@ -414,7 +318,7 @@ void FormFitter::adjust_background() {
 
 void FormFitter::delete_selected_peaks()
 {
-  if (busy_ || (fit_data_ == nullptr))
+  if (!fit_data_ || busy_)
     return;
 
   std::set<double> chosen_peaks = this->get_selected_peaks();
@@ -423,15 +327,15 @@ void FormFitter::delete_selected_peaks()
 
   clearSelection();
 
-  busy_= true;
-  toggle_push();
+  toggle_push(true);
 
   thread_fitter_.set_data(*fit_data_);
   thread_fitter_.remove_peaks(chosen_peaks);
 }
 
 
-void FormFitter::fit_updated(Qpx::Fitter fitter) {
+void FormFitter::fit_updated(Qpx::Fitter fitter)
+{
   //  while (player->state() == QMediaPlayer::PlayingState)
   //    player->stop();
 
@@ -444,7 +348,7 @@ void FormFitter::fit_updated(Qpx::Fitter fitter) {
   //  }
 
   *fit_data_ = fitter;
-  toggle_push();
+  toggle_push(busy_);
   updateData();;
   emit data_changed();
 }
@@ -461,22 +365,26 @@ void FormFitter::fitting_complete() {
   ////    while (player->state() == QMediaPlayer::PlayingState) {}
   //  }
 
-  busy_= false;
-  calc_visible();
-  ui->plot->replot();
-  toggle_push();
+//  busy_= false;
+//  calc_visible();
+//  ui->plot->replot();
+  toggle_push(false);
   emit data_changed();
   emit fitting_done();
 }
 
-void FormFitter::toggle_push() {
-  if (fit_data_ == nullptr)
-    return;
+void FormFitter::toggle_push(bool busy)
+{
+  busy_ = busy;
+//  if (fit_data_ == nullptr)
+//    return;
 
   ui->pushStopFitter->setEnabled(busy_);
   ui->pushFindPeaks->setEnabled(!busy_);
   ui->pushSettings->setEnabled(!busy_);
   ui->labelMovie->setVisible(busy_);
+  ui->plot->set_busy(busy);
+
   emit fitter_busy(busy_);
 }
 
@@ -488,932 +396,25 @@ void FormFitter::on_pushStopFitter_clicked()
 
 void FormFitter::clearSelection()
 {
-  range_.visible = false;
-  selected_peaks_.clear();
-
-  selected_roi_ = -1;
-  plotRange();
-  calc_visible();
-  ui->plot->replot();
+  ui->plot->clearSelection();
 }
 
 
-void FormFitter::set_range(Range rng) {
-  //  DBG << "<FormFitter> set range";
-  range_ = rng;
-  plotRange();
-  if (range_.visible) {
-    selected_peaks_.clear();
-    follow_selection();
-  }
-  calc_visible();
-  ui->plot->replot();
-}
-
-QCPGraph *FormFitter::addGraph(const QVector<double>& x, const QVector<double>& y,
-                               QPen appearance, bool smooth, QString name,
-                               double region, double peak)
+void FormFitter::set_range(RangeSelector rng)
 {
-  auto target = ui->plot->addGraph(x, y, appearance, name);
-  if (!target)
-    return target;
-
-//  if (x.empty() || y.empty() || (x.size() != y.size()))
-//    return nullptr;
-
-//  ui->plot->addGraph();
-//  QCPGraph *target = ui->plot->graph(ui->plot->graphCount() - 1);
-
-//  target->addData(x, y);
-//  target->setPen(appearance);
-//  target->setName(name);
-  target->setProperty("region", QVariant::fromValue(region));
-  target->setProperty("peak", QVariant::fromValue(peak));
-
-  if (!smooth) {
-    target->setBrush(QBrush());
-    target->setLineStyle(QCPGraph::lsStepCenter);
-    target->setScatterStyle(QCPScatterStyle::ssNone);
-  } else {
-    target->setBrush(QBrush());
-    target->setLineStyle(QCPGraph::lsLine);
-    target->setScatterStyle(QCPScatterStyle::ssNone);
-  }
-
-  return target;
+  ui->plot->set_range_selection(rng);
 }
 
-void FormFitter::plotRange() {
-  std::list<QCPAbstractItem*> to_remove;
-  for (int i=0; i < ui->plot->itemCount(); ++i) {
-    if (ui->plot->item(i)->property("tracer").isValid())
-      to_remove.push_back(ui->plot->item(i));
-    else if (ui->plot->item(i)->property("button_name").isValid() &&
-             ui->plot->item(i)->property("button_name").toString().contains("commit"))
-      to_remove.push_back(ui->plot->item(i));
-  }
-  for (auto &q : to_remove)
-    ui->plot->removeItem(q);
-
-  edge_trc1 = nullptr;
-  edge_trc2 = nullptr;
-
-  if (range_.visible) {
-
-    double pos_l = 0, pos_r = 0;
-    pos_l = range_.l.energy();
-    pos_r = range_.r.energy();
-
-    if (pos_l < pos_r) {
-
-      int idx = -1;
-
-      for (auto &q : range_.latch_to) {
-        for (int i=0; i < ui->plot->graphCount(); i++) {
-          if ((ui->plot->graph(i)->data()->begin()->key > pos_l)
-              || (pos_r > ui->plot->graph(i)->data()->end()->key))
-            continue;
-
-          if (ui->plot->graph(i)->name() == q ) {
-            idx = i;
-            break;
-          }
-        }
-        if (idx != -1)
-          break;
-      }
-
-      if (idx >= 0) {
-        edge_trc1 = new QCPItemTracer(ui->plot);
-        edge_trc1->setStyle(QCPItemTracer::tsNone);
-        edge_trc1->setGraph(ui->plot->graph(idx));
-        edge_trc1->setGraphKey(pos_l);
-        edge_trc1->setInterpolating(true);
-        edge_trc1->setProperty("tracer", QVariant::fromValue(0));
-        edge_trc1->updatePosition();
-
-        edge_trc2 = new QCPItemTracer(ui->plot);
-        edge_trc2->setStyle(QCPItemTracer::tsNone);
-        edge_trc2->setGraph(ui->plot->graph(idx));
-        edge_trc2->setGraphKey(pos_r);
-        edge_trc2->setInterpolating(true);
-        edge_trc2->setProperty("tracer", QVariant::fromValue(0));
-        edge_trc2->updatePosition();
-
-      } else
-        range_.visible = false;
-    } else
-      range_.visible = false;
-  }
-
-  if (range_.visible) {
-    auto domain = ui->plot->getDomain();
-
-    QPlot::Draggable *ar1 = new QPlot::Draggable(ui->plot, edge_trc1, 12);
-    ar1->setPen(QPen(range_.appearance.default_pen.color(), 1));
-    ar1->setSelectedPen(QPen(range_.appearance.default_pen.color(), 1));
-    ar1->setProperty("tracer", QVariant::fromValue(1));
-    ar1->setSelectable(true);
-    ar1->set_limits(domain.lower, domain.upper);
-
-    QPlot::Draggable *ar2 = new QPlot::Draggable(ui->plot, edge_trc2, 12);
-    ar2->setPen(QPen(range_.appearance.default_pen.color(), 1));
-    ar2->setSelectedPen(QPen(range_.appearance.default_pen.color(), 1));
-    ar2->setProperty("tracer", QVariant::fromValue(1));
-    ar2->setSelectable(true);
-    ar2->set_limits(domain.lower, domain.upper);
-
-    QCPItemLine *line = new QCPItemLine(ui->plot);
-    line->setSelectable(false);
-    line->setProperty("tracer", QVariant::fromValue(2));
-    line->start->setParentAnchor(edge_trc1->position);
-    line->start->setCoords(0, 0);
-    line->end->setParentAnchor(edge_trc2->position);
-    line->end->setCoords(0, 0);
-    line->setPen(QPen(range_.appearance.default_pen.color(), 2, Qt::DashLine));
-    line->setSelectedPen(QPen(range_.appearance.default_pen.color(), 2, Qt::DashLine));
-
-    QCPItemTracer* higher = edge_trc1;
-    if (edge_trc2->position->value() > edge_trc1->position->value())
-      higher = edge_trc2;
-
-    QPlot::Button *newButton = nullptr;
-
-    QString purpose("");
-    if (range_.property("purpose").isValid())
-      purpose = range_.property("purpose").toString();
-
-    if (purpose == "add peak") {
-      newButton = new QPlot::Button(ui->plot,
-                                       QPixmap(":/icons/oxy/22/edit_add.png"),
-                                       "add peak commit", "Add peak",
-                                       Qt::AlignTop | Qt::AlignLeft);
-    } else if (purpose == "SUM4") {
-      newButton = new QPlot::Button(ui->plot,
-                                       QPixmap(":/icons/oxy/22/flag_blue.png"),
-                                       "SUM4 commit", "Apply",
-                                       Qt::AlignTop | Qt::AlignLeft);
-    } else if (purpose == "background L") {
-      newButton = new QPlot::Button(ui->plot,
-                                       QPixmap(":/icons/oxy/22/flag_blue.png"),
-                                       "background L commit", "Apply",
-                                       Qt::AlignTop | Qt::AlignLeft);
-    } else if (purpose == "background R") {
-      newButton = new QPlot::Button(ui->plot,
-                                       QPixmap(":/icons/oxy/22/flag_blue.png"),
-                                       "background R commit", "Apply",
-                                       Qt::AlignTop | Qt::AlignLeft);
-    }
-
-    if (newButton) {
-      newButton->bottomRight->setParentAnchor(higher->position);
-      newButton->bottomRight->setCoords(11, -20);
-    }
-  }
-}
-
-void FormFitter::plotEnergyLabel(double peak_id, double peak_energy, QCPItemTracer *crs) {
-  QPen pen = QPen(Qt::darkGray, 1);
-  QPen selected_pen = QPen(Qt::black, 2);
-
-  QCPItemLine *line = new QCPItemLine(ui->plot);
-  line->start->setParentAnchor(crs->position);
-  line->start->setCoords(0, -35);
-  line->end->setParentAnchor(crs->position);
-  line->end->setCoords(0, -5);
-  line->setHead(QCPLineEnding(QCPLineEnding::esSpikeArrow, 7, 18));
-  line->setPen(pen);
-  line->setSelectedPen(selected_pen);
-  line->setSelectable(true);
-  line->setSelected(selected_peaks_.count(peak_id));
-  line->setProperty("label", QVariant::fromValue(1));
-  line->setProperty("region", crs->property("region"));
-  line->setProperty("peak", crs->property("peak"));
-
-  QCPItemText *markerText = new QCPItemText(ui->plot);
-  markerText->position->setParentAnchor(crs->position);
-  markerText->setPositionAlignment(Qt::AlignHCenter|Qt::AlignBottom);
-  markerText->position->setCoords(0, -35);
-  markerText->setText(QString::number(peak_energy));
-  markerText->setTextAlignment(Qt::AlignLeft);
-  markerText->setFont(QFont("Monospace", 12));
-  markerText->setPen(pen);
-  markerText->setColor(pen.color());
-  markerText->setSelectedFont(QFont("Monospace", 12));
-  markerText->setSelectedColor(selected_pen.color());
-  markerText->setSelectedPen(selected_pen);
-  markerText->setPadding(QMargins(1, 1, 1, 1));
-  markerText->setSelectable(true);
-  markerText->setSelected(selected_peaks_.count(peak_id));
-  markerText->setProperty("region", crs->property("region"));
-  markerText->setProperty("peak", crs->property("peak"));
-
-  //make this optional?
-  QPlot::Button *newButton = new QPlot::Button(ui->plot,
-                                                     QPixmap(":/icons/oxy/22/help_about.png"),
-                                                     "peak_info", "Peak details",
-                                                     Qt::AlignTop | Qt::AlignLeft
-                                                     );
-  newButton->topLeft->setType(QCPItemPosition::ptAbsolute);
-  newButton->topLeft->setParentAnchor(markerText->topRight);
-  newButton->topLeft->setCoords(5, 0);
-  newButton->setProperty("region", crs->property("region"));
-  newButton->setProperty("peak", crs->property("peak"));
-}
-
-void FormFitter::follow_selection() {
-  double min_marker = std::numeric_limits<double>::max();
-  double max_marker = - std::numeric_limits<double>::max();
-
-  for (auto &q : selected_peaks_) {
-    double nrg = fit_data_->settings().cali_nrg_.transform(q);
-    if (nrg > max_marker)
-      max_marker = nrg;
-    if (nrg < min_marker)
-      min_marker = nrg;
-  }
-
-  if (range_.visible) {
-    if (range_.l.energy() < min_marker)
-      min_marker = range_.l.energy();
-    if (range_.r.energy() < max_marker)
-      max_marker = range_.r.energy();
-  }
-
-  bool xaxis_changed = false;
-  double dif_lower = min_marker - ui->plot->xAxis->range().lower;
-  double dif_upper = max_marker - ui->plot->xAxis->range().upper;
-  if (dif_upper > 0) {
-    ui->plot->xAxis->setRangeUpper(max_marker + 20);
-    if (dif_lower > (dif_upper + 20))
-      ui->plot->xAxis->setRangeLower(ui->plot->xAxis->range().lower + dif_upper + 20);
-    xaxis_changed = true;
-  }
-
-  if (dif_lower < 0) {
-    ui->plot->xAxis->setRangeLower(min_marker - 20);
-    if (dif_upper < (dif_lower - 20))
-      ui->plot->xAxis->setRangeUpper(ui->plot->xAxis->range().upper + dif_lower - 20);
-    xaxis_changed = true;
-  }
-
-  if (xaxis_changed)
-  {
-    ui->plot->replot();
-    ui->plot->adjustY();
-    ui->plot->replot();
-  }
-
-  //  miny = ui->plot->yAxis->pixelToCoord(ui->plot->yAxis->coordToPixel(miny) + 20);
-  //  maxy = ui->plot->yAxis->pixelToCoord(ui->plot->yAxis->coordToPixel(maxy) - 100);
-
-
-}
-
-void FormFitter::plotButtons() {
-  QPlot::Button *overlayButton;
-  QPlot::Button *newButton;
-
-  bool scale_log = ui->plot->scaleType() == "Logarithmic";
-
-  newButton = new QPlot::Button(ui->plot,
-                                   scale_log ? QPixmap(":/icons/oxy/22/games_difficult.png")
-                                             : QPixmap(":/icons/oxy/22/view_statistics.png"),
-                                   "scale_type", "Linear/Log",
-                                   Qt::AlignBottom | Qt::AlignLeft);
-
-  newButton->setClipToAxisRect(false);
-  newButton->bottomRight->setType(QCPItemPosition::ptViewportRatio);
-  newButton->bottomRight->setCoords(1, 1);
-  overlayButton = newButton;
-
-  newButton = new QPlot::Button(ui->plot,
-                                   QPixmap(":/icons/oxy/22/editdelete.png"),
-                                   "delete peaks", "Delete peak(s)",
-                                   Qt::AlignBottom | Qt::AlignLeft);
-  newButton->setClipToAxisRect(false);
-//  newButton->bottomRight->setType(QCPItemPosition::ptViewportRatio);
-//  newButton->bottomRight->setCoords(1, 1);
-  newButton->bottomRight->setParentAnchor(overlayButton->bottomLeft);
-  newButton->bottomRight->setCoords(0, -32);
-  overlayButton = newButton;
-
-}
-
-
-void FormFitter::plot_mouse_clicked(double x, double y, Qt::MouseButton button)
+void FormFitter::selection_changed()
 {
-  bool on_item = false;
-
-  if (button == Qt::RightButton)
-  {
-    range_.visible = false;
-    selected_peaks_.clear();
-
-    selected_roi_ = -1;
-
-    plotRange();
-    calc_visible();
-    ui->plot->replot();
-    toggle_push();
-
-    emit range_changed(range_);
-    emit peak_selection_changed(selected_peaks_);
-  } else if (!on_item) {
-    if (fit_data_ == nullptr)
-      return;
-    Coord c;
-    if (fit_data_->settings().cali_nrg_.valid())
-      c.set_energy(x, fit_data_->settings().cali_nrg_);
-    else
-      c.set_bin(x, fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
-    createRange(c);
-  }
+  toggle_push(busy_);
+  emit peak_selection_changed(ui->plot->get_selected_peaks());
 }
 
-void FormFitter::selection_changed() {
-  if (!hold_selection_) {
-    selected_peaks_.clear();
-    selected_roi_ = -1;
-
-    for (auto &q : ui->plot->selectedItems())
-      if (QCPItemText *txt = qobject_cast<QCPItemText*>(q)) {
-        if (txt->property("peak").isValid())
-          selected_peaks_.insert(txt->property("peak").toDouble());
-      } else if (QCPItemLine *line = qobject_cast<QCPItemLine*>(q)) {
-        if (line->property("label").isValid() && line->property("peak").isValid())
-          selected_peaks_.insert(line->property("peak").toDouble());
-      }
-  }
-
-  hold_selection_ = false;
-  calc_visible();
-
-  if (!selected_peaks_.empty()) {
-    range_.visible = false;
-    plotRange();
-    emit range_changed(range_);
-  }
-  ui->plot->replot();
-  toggle_push();
-
-  emit peak_selection_changed(selected_peaks_);
-
-
-  //  void FormFitter:: user_selected_peaks(std::set<double> selected_peaks) {
-  //    bool changed = (selected_peaks_ != selected_peaks);
-  //    selected_peaks_ = selected_peaks;
-
-  //    if (changed && isVisible())
-  //      emit peak_selection_changed(selected_peaks_);
-  //    toggle_push();
-  //  }
-}
-
-void FormFitter::clicked_item(QCPAbstractItem* itm) {
-  if (!itm->visible())
-    return;
-
-  if (QPlot::Button *button = qobject_cast<QPlot::Button*>(itm)) {
-    if (button->name() == "scale_type")
-      switch_scale_type();
-    else if (button->name() == "SUM4 begin")
-      make_SUM4_range(button->property("region").toDouble(), button->property("peak").toDouble());
-    else if (button->name() == "background L begin")
-      make_background_range(button->property("region").toDouble(), true);
-    else if (button->name() == "background R begin")
-      make_background_range(button->property("region").toDouble(), false);
-    else if (button->name() == "region options")
-    {
-      if (!busy_) {
-        menuROI.setProperty("region", button->property("region"));
-        menuROI.exec(QCursor::pos());
-      }
-    }
-    else if (button->name() == "add peak commit")
-      add_peak();
-    else if (button->name() == "delete peaks")
-      delete_selected_peaks();
-    else if (button->name() == "SUM4 commit")
-      adjust_sum4();
-    else if (button->name() == "background L commit")
-      adjust_background();
-    else if (button->name() == "background R commit")
-      adjust_background();
-    else if (button->name() == "peak_info")
-      peak_info(button->property("peak").toDouble());
-  }
-}
-
-void FormFitter::make_SUM4_range(double region, double peak)
+void FormFitter::updateData()
 {
-  if (fit_data_ == nullptr)
-    return;
-
-  if (!fit_data_->contains_region(region))
-    return;
-
-  Qpx::ROI parent_region = fit_data_->region(region);
-
-  if (!parent_region.contains(peak))
-    return;
-
-  Qpx::Peak pk = parent_region.peak(peak);
-  range_.setProperty("purpose", QString("SUM4"));
-  range_.latch_to.clear();
-  range_.latch_to.push_back("Background sum4");
-  range_.appearance.default_pen = QPen(Qt::darkCyan);
-  range_.setProperty("region", QVariant::fromValue(region));
-  range_.setProperty("peak", QVariant::fromValue(peak));
-
-  range_.l.set_bin(pk.sum4().left(), fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
-  range_.r.set_bin(pk.sum4().right(), fit_data_->settings().bits_, fit_data_->settings().cali_nrg_);
-  range_.visible = true;
-
-  //  selected_peaks_.clear();
-  plotRange();
-  calc_visible();
-  ui->plot->replot();
-  toggle_push();
-
-  emit peak_selection_changed(selected_peaks_);
-
+  ui->plot->updateData();
 }
-
-
-void FormFitter::make_background_range(double roi, bool left)
-{
-  if (fit_data_ == nullptr)
-    return;
-
-  if (!fit_data_->contains_region(roi))
-    return;
-
-  Qpx::ROI parent_region = fit_data_->region(roi);
-
-  int32_t L = 0;
-  int32_t R = 0;
-
-  if (left) {
-    range_.setProperty("purpose", "background L");
-    L = parent_region.LB().left();
-    R = parent_region.LB().right();
-  } else {
-    range_.setProperty("purpose", "background R");
-    L = parent_region.RB().left();
-    R = parent_region.RB().right();
-  }
-
-  double l = fit_data_->settings().cali_nrg_.transform(L, fit_data_->settings().bits_);
-  double r = fit_data_->settings().cali_nrg_.transform(R, fit_data_->settings().bits_);
-
-  range_.setProperty("region",  QVariant::fromValue(roi));
-  range_.l.set_energy(l, fit_data_->settings().cali_nrg_);
-  range_.r.set_energy(r, fit_data_->settings().cali_nrg_);
-  range_.latch_to.clear();
-  range_.latch_to.push_back("Data");
-  range_.appearance.default_pen = QPen(Qt::darkMagenta);
-  range_.visible = true;
-
-  //  selected_peaks_.clear();
-  plotRange();
-  calc_visible();
-  ui->plot->replot();
-  toggle_push();
-
-  emit peak_selection_changed(selected_peaks_);
-}
-
-void FormFitter::changeROI(QAction* action) {
-  QString choice = action->text();
-  double region = menuROI.property("region").toDouble();
-  if (choice == "History...") {
-    rollback_ROI(region);
-  } else if (choice == "Region settings...") {
-    roi_settings(region);
-  } else if (choice == "Adjust edges") {
-    selected_roi_ = region;
-    calc_visible();
-    ui->plot->replot();
-  } else if (choice == "Refit") {
-    refit_ROI(region);
-  } else if (choice == "Delete") {
-    delete_ROI(region);
-  }
-}
-
-void FormFitter::switch_scale_type() {
-  bool scale_log = ui->plot->scaleType() != "Logarithmic";
-  if (scale_log)
-    ui->plot->setScaleType("Logarithmic");
-  else
-    ui->plot->setScaleType("Linear");
-
-  for (int i=0; i < ui->plot->itemCount(); ++i) {
-    QCPAbstractItem *q =  ui->plot->item(i);
-    if (QPlot::Button *button = qobject_cast<QPlot::Button*>(q))
-    {
-      if (button->name() == "scale_type")
-      {
-        if (!scale_log)
-          button->setPixmap(QPixmap(":/icons/oxy/22/view_statistics.png"));
-        else
-          button->setPixmap(QPixmap(":/icons/oxy/22/games_difficult.png"));
-        break;
-      }
-    }
-  }
-  //  plot_rezoom(true);
-  ui->plot->replot();
-}
-
-void FormFitter::updateData() {
-  if (fit_data_ == nullptr)
-    return;
-
-  QColor color_data;
-  color_data.setHsv(QColor(QString::fromStdString(fit_data_->metadata_.get_attribute("appearance").value_text)).hsvHue(), 48, 160);
-  QPen pen_data = QPen(color_data, 1);
-
-  QPen pen_resid = QPen( Qt::darkGreen, 1);
-  pen_resid.setStyle(Qt::DashLine);
-
-  ui->plot->clearAll();
-
-  ui->plot->xAxis->setLabel(QString::fromStdString(fit_data_->settings().cali_nrg_.units_));
-  ui->plot->yAxis->setLabel("count");
-
-  QVector<double> xx, yy;
-
-  xx = QVector<double>::fromStdVector(fit_data_->settings().cali_nrg_.transform(fit_data_->finder().x_, fit_data_->settings().bits_));
-  yy = QVector<double>::fromStdVector(fit_data_->finder().y_);
-
-  QCPGraph *data_graph = addGraph(xx, yy, pen_data, false, "Data");
-
-  yy = QVector<double>::fromStdVector(fit_data_->finder().y_resid_on_background_);
-  addGraph(xx, yy, pen_resid, false, "Residuals");
-  //  add_bounds(xx, yy);
-
-  for (auto &r : fit_data_->regions())
-    plotRegion(r.first, r.second, data_graph);
-
-  plotRange();
-  plotButtons();
-
-  calc_visible();
-  ui->plot->adjustY();
-  ui->plot->replot();
-}
-
-void FormFitter::plotRegion(double region_id, const Qpx::ROI &region, QCPGraph *data_graph)
-{
-  QPen pen_back_sum4 = QPen(Qt::darkMagenta, 1);
-  QPen pen_back_poly = QPen(Qt::darkGray, 1);
-  QPen pen_back_with_steps = QPen(Qt::darkBlue, 1);
-  QPen pen_full_fit = QPen(Qt::red, 1);
-
-  QPen pen_peak  = QPen(Qt::darkCyan, 1);
-  pen_peak.setStyle(Qt::DotLine);
-
-  //  QColor flagged_color;
-  //  flagged_color.setHsv(QColor(Qt::green).hsvHue(), QColor(Qt::green).hsvSaturation(), 192);
-  //  QPen flagged =  QPen(flagged_color, 1);
-  //  flagged.setStyle(Qt::DotLine);
-
-  QVector<double> xx;
-  QVector<double> yy;
-
-  if (!region.fit_settings().sum4_only) {
-    xx = QVector<double>::fromStdVector(region.hr_x_nrg);
-    yy = QVector<double>::fromStdVector(region.hr_fullfit);
-    //    trim_log_lower(yy);
-    addGraph(xx, yy, pen_full_fit, true, "Region fit", region_id);
-//    add_bounds(xx, yy);
-  } else {
-    xx = QVector<double>::fromStdVector(fit_data_->settings().cali_nrg_.transform(region.finder().x_, fit_data_->settings().bits_));
-    yy = QVector<double>::fromStdVector(region.finder().y_);
-    addGraph(xx, yy, pen_full_fit, false, "Region fit", region_id);
-  }
-
-
-  if (region.width()) {
-    plotBackgroundEdge(region.LB(), region.finder().x_, region_id, "background L begin");
-    plotBackgroundEdge(region.RB(), region.finder().x_, region_id, "background R begin");
-
-    QVector<double> yb =
-        QVector<double>::fromStdVector(region.hr_sum4_background_);
-
-    addGraph(xx, yb, pen_back_sum4, true, "Background sum4", region_id);
-//    add_bounds(xx, yb);
-  }
-
-  if (region.peak_count() && !region.fit_settings().sum4_only) {
-
-    yy = QVector<double>::fromStdVector(region.hr_background);
-    //    trim_log_lower(yy);
-    addGraph(xx, yy, pen_back_poly, true, "Background poly", region_id);
-//    add_bounds(xx, yy);
-
-    yy = QVector<double>::fromStdVector(region.hr_back_steps);
-    //    trim_log_lower(yy);
-    addGraph(xx, yy, pen_back_with_steps, true, "Background steps", region_id);
-
-  }
-
-  if (!region.hr_x_nrg.empty()) {
-    QPlot::Button *newButton = new QPlot::Button(ui->plot,
-                                                       QPixmap(":/icons/oxy/22/applications_systemg.png"),
-                                                       "region options", "Region options",
-                                                       Qt::AlignTop | Qt::AlignLeft
-                                                       );
-    newButton->topLeft->setType(QCPItemPosition::ptPlotCoords);
-    newButton->topLeft->setCoords(region.hr_x_nrg.front(), region.hr_fullfit.front());
-    newButton->setProperty("region", QVariant::fromValue(region_id));
-  }
-
-  for (auto & p : region.peaks()) {
-    QCPGraph *peak_graph = nullptr;
-    if (!region.fit_settings().sum4_only) {
-      yy = QVector<double>::fromStdVector(p.second.hr_fullfit_);
-      //      trim_log_lower(yy);
-      //      QPen pen = p.second.flagged ? flagged : peak;
-      peak_graph = addGraph(xx, yy, pen_peak, true, "Individual peak", region_id, p.first);
-    }
-
-    QCPItemTracer *crs = new QCPItemTracer(ui->plot);
-    crs->setStyle(QCPItemTracer::tsNone);
-    crs->setProperty("region", region_id);
-    crs->setProperty("peak", p.first);
-    if (peak_graph)
-      crs->setGraph(peak_graph);
-    else
-      crs->setGraph(data_graph);
-    crs->setInterpolating(true);
-    double energy = fit_data_->finder().settings_.cali_nrg_.transform(p.first, fit_data_->finder().settings_.bits_);
-    crs->setGraphKey(energy);
-    crs->updatePosition();
-
-    plotEnergyLabel(p.first, p.second.energy().value(), crs);
-    plotPeak(region_id, p.first, p.second);
-  }
-
-}
-
-void FormFitter::plotPeak(double region_id, double peak_id, const Qpx::Peak &peak)
-{
-  QPen pen_sum4_peak     = QPen(Qt::darkYellow, 3);
-  QPen pen_sum4_selected = QPen(Qt::darkCyan, 3);
-
-  if (peak.sum4().peak_width() && fit_data_->contains_region(region_id)) {
-
-    double x1 = fit_data_->settings().cali_nrg_.transform(peak.sum4().left() - 0.5,
-                                                          fit_data_->settings().bits_);
-    double x2 = fit_data_->settings().cali_nrg_.transform(peak.sum4().right() + 0.5,
-                                                          fit_data_->settings().bits_);
-    double y1 = fit_data_->region(region_id).sum4_background().eval(peak.sum4().left());
-    double y2 = fit_data_->region(region_id).sum4_background().eval(peak.sum4().right());
-
-    QCPItemLine *line = new QCPItemLine(ui->plot);
-    line->setSelectable(false);
-    line->setProperty("SUM4 peak", QVariant::fromValue(1));
-    line->setProperty("peak", QVariant::fromValue(peak_id));
-    line->setProperty("region", QVariant::fromValue(region_id));
-    line->start->setType(QCPItemPosition::ptPlotCoords);
-    line->start->setCoords(x1,y1);
-    line->end->setType(QCPItemPosition::ptPlotCoords);
-    line->end->setCoords(x2,y2);
-    line->setHead(QCPLineEnding(QCPLineEnding::esBar, 10, 20));
-    line->setTail(QCPLineEnding(QCPLineEnding::esBar, 10, 20));
-    line->setPen(pen_sum4_peak);
-    line->setSelectedPen(pen_sum4_selected);
-
-
-    QPlot::Button *newButton = new QPlot::Button(ui->plot,
-                                                       QPixmap(":/icons/oxy/22/system_switch_user.png"),
-                                                       "SUM4 begin", "Adjust SUM4 bounds",
-                                                       Qt::AlignTop | Qt::AlignLeft
-                                                       );
-    newButton->bottomRight->setType(QCPItemPosition::ptPlotCoords);
-    newButton->bottomRight->setCoords(x1, y1);
-    newButton->setProperty("peak", QVariant::fromValue(peak_id));
-    newButton->setProperty("region", QVariant::fromValue(region_id));
-  }
-}
-
-void FormFitter::plotBackgroundEdge(Qpx::SUM4Edge edge,
-                                    const std::vector<double> &x,
-                                    double region_id,
-                                    QString button_name) {
-
-  QPen pen_background_edge = QPen(Qt::darkMagenta, 3);
-
-
-  double x1 = fit_data_->settings().cali_nrg_.transform(edge.left() - 0.5,
-                                                        fit_data_->settings().bits_);
-  double x2 = fit_data_->settings().cali_nrg_.transform(edge.right() + 0.5,
-                                                        fit_data_->settings().bits_);
-  double y = edge.average();
-
-  QCPItemLine *line = new QCPItemLine(ui->plot);
-  line->setSelectable(false);
-  line->setProperty("background edge", QVariant::fromValue(1));
-  line->setProperty("region", QVariant::fromValue(region_id));
-  line->start->setType(QCPItemPosition::ptPlotCoords);
-  line->start->setCoords(x1,y);
-  line->end->setType(QCPItemPosition::ptPlotCoords);
-  line->end->setCoords(x2,y);
-  line->setHead(QCPLineEnding(QCPLineEnding::esBar, 10, 20));
-  line->setTail(QCPLineEnding(QCPLineEnding::esBar, 10, 20));
-  line->setPen(pen_background_edge);
-  line->setSelectedPen(pen_background_edge);
-
-  QPlot::Button *newButton = new QPlot::Button(ui->plot,
-                                                     QPixmap(":/icons/oxy/22/system_switch_user.png"),
-                                                     button_name, "Adjust background",
-                                                     Qt::AlignTop | Qt::AlignLeft
-                                                     );
-  newButton->bottomRight->setType(QCPItemPosition::ptPlotCoords);
-  newButton->bottomRight->setCoords(x1, y);
-  newButton->setProperty("region", QVariant::fromValue(region_id));
-  newButton->setProperty("peak", QVariant::fromValue(-1));
-}
-
-
-void FormFitter::trim_log_lower(QVector<double> &array) {
-  for (auto &r : array)
-    if (r < 1)
-      r = std::floor(r * 10 + 0.5)/10;
-}
-
-void FormFitter::calc_visible() {
-  std::set<double> good_roi;
-  std::set<double> good_peak;
-  std::set<double> prime_roi;
-
-  if (fit_data_ == nullptr)
-    return;
-
-  for (auto &q : fit_data_->regions()) {
-    if (q.second.hr_x_nrg.empty())
-      continue;
-    bool left_visible = (q.second.hr_x_nrg.front() >= minx_zoom) && (q.second.hr_x_nrg.front() <= maxx_zoom);
-    bool right_visible = (q.second.hr_x_nrg.back() >= minx_zoom) && (q.second.hr_x_nrg.back() <= maxx_zoom);
-    bool deep_zoom = (q.second.hr_x_nrg.front() < minx_zoom) && (q.second.hr_x_nrg.back() > maxx_zoom);
-
-    if (!left_visible && !right_visible && !deep_zoom)
-      continue;
-
-    good_roi.insert(q.first);
-
-    if (((q.second.hr_x_nrg.back() - q.second.hr_x_nrg.front()) / (maxx_zoom - minx_zoom)) > 0.3)
-      prime_roi.insert(q.first);
-
-    for (auto &p : q.second.peaks()) {
-      if ((p.second.energy().value() >= minx_zoom) && (p.second.energy().value() <= maxx_zoom))
-        good_peak.insert(p.first);
-    }
-  }
-
-  std::set<double> labeled_peaks;
-  if (good_peak.size() < 20)
-    labeled_peaks = good_peak;
-  else {
-
-  }
-
-  bool plot_back_poly = good_roi.size() && (good_roi.size() < 5);
-  bool plot_resid_on_back = plot_back_poly;
-  bool plot_peak      = ((good_roi.size() < 5) || (good_peak.size() < 10));
-  bool plot_back_steps = ((good_roi.size() < 10) || plot_peak);
-  bool plot_fullfit    = (good_roi.size() < 15);
-
-  bool adjusting_background = range_.visible && range_.property("purpose").isValid() &&
-      ((range_.property("purpose").toString() == "background R") ||
-       (range_.property("purpose").toString() == "background L"))
-      && !busy_;
-
-  bool adjusting_sum4 = range_.visible && range_.property("purpose").isValid() &&
-      (range_.property("purpose").toString() == "SUM4")
-      && !busy_;
-  bool selected_one = ((selected_peaks_.size() == 1)  && !busy_);
-
-  bool button_background     = (selected_one || (selected_roi_ >=0)) && !busy_;
-  bool line_background       = (button_background || adjusting_sum4) && !adjusting_background;
-  bool line_sum4_selpeak     = button_background || adjusting_background;
-
-  this->blockSignals(true);
-  for (int i=0; i < ui->plot->itemCount(); ++i) {
-    QCPAbstractItem *q =  ui->plot->item(i);
-    double peak = -1;
-    double region = -1;
-    if (q->property("region").isValid())
-      region = q->property("region").toDouble();
-    if (q->property("peak").isValid())
-      peak = q->property("peak").toDouble();
-    if ((peak < 0) && (region >= 0) && selected_one
-        && fit_data_->region(region).contains(*selected_peaks_.begin())) {
-      peak = *selected_peaks_.begin();
-      q->setProperty("peak", QVariant::fromValue(peak));
-    }
-
-    bool this_peak_selected = (selected_peaks_.count(peak) > 0);
-    bool this_region_selected = !selected_peaks_.empty()
-        && fit_data_->contains_region(region)
-        && fit_data_->region(region).contains(peak)
-        && fit_data_->region(region).contains(*selected_peaks_.begin());
-    if ((selected_roi_ == region) && (region >= 0))
-      this_region_selected = true;
-    bool range_this_peak = ((range_.property("peak").toDouble() == peak) && range_.visible);
-    bool range_this_region = ((range_.property("region").toDouble() == region) && range_.visible);
-
-    if (QCPItemText *txt = qobject_cast<QCPItemText*>(q)) {
-      if (peak >= 0) {
-        txt->setSelected(selected_peaks_.count(peak));
-        txt->setVisible(labeled_peaks.count(peak));
-      }
-    } else if (QCPItemLine *line = qobject_cast<QCPItemLine*>(q)) {
-      if (line->property("SUM4 peak").isValid()) {
-        line->setVisible((this_peak_selected && line_sum4_selpeak)
-                         || (this_region_selected && !range_this_peak)
-                         || (range_this_region && !range_this_peak)
-                         || (range_this_region && adjusting_background));
-        line->setSelected(selected_peaks_.count(peak));
-      } else if (line->property("background edge").isValid()) {
-        line->setVisible((this_peak_selected || this_region_selected || range_this_region)
-                         && line_background);
-      } else if ((line->property("tracer").isNull()) && (peak >= 0)) {
-        line->setSelected(selected_peaks_.count(peak));
-        line->setVisible(good_peak.count(peak));
-      }
-    } else if (QPlot::Button *button = qobject_cast<QPlot::Button*>(q)) {
-      if ((button->name() == "background L begin") || (button->name() == "background R begin")) {
-        button->setVisible((this_region_selected || this_peak_selected)
-                           && button_background && !range_.visible);
-      } else if (button->name() == "region options") {
-        button->setVisible(prime_roi.count(button->property("region").toDouble())
-                           && selected_peaks_.empty()
-                           && !range_.visible
-                           && !busy_
-                           && (selected_roi_ < 0));
-      } else if (button->property("peak").isValid()) {
-        button->setVisible(selected_one && this_peak_selected);
-      } else if (button->name() == "delete peaks") {
-        button->setVisible(!selected_peaks_.empty() && !busy_);
-      } else
-        button->setVisible(true);
-
-    }
-  }
-  this->blockSignals(false);
-
-  int total = ui->plot->graphCount();
-  for (int i=0; i < total; i++) {
-    QCPGraph *graph = ui->plot->graph(i);
-
-    double peak = -1;
-    double region = -1;
-    if (graph->property("region").isValid())
-      region = graph->property("region").toDouble();
-    if (graph->property("peak").isValid())
-      peak = graph->property("peak").toDouble();
-    if ((peak < 0) && (region >= 0) && selected_one
-        && fit_data_->region(region).contains(*selected_peaks_.begin())) {
-      peak = *selected_peaks_.begin();
-      graph->setProperty("peak", QVariant::fromValue(peak));
-    }
-
-    bool this_peak_selected = (selected_peaks_.count(peak) > 0);
-    bool this_region_selected = !selected_peaks_.empty()
-        && fit_data_->contains_region(region)
-        && fit_data_->region(region).contains(peak)
-        && fit_data_->region(region).contains(*selected_peaks_.begin());
-    if (selected_roi_ == region)
-      this_region_selected = true;
-    bool range_this_peak = (range_.property("peak").toDouble() == peak);
-    bool range_this_region = (range_.property("region").toDouble() == region);
-    bool region_sum4_only = (fit_data_->contains_region(region)
-                             && fit_data_->region(region).fit_settings().sum4_only);
-
-
-    bool good = ((good_roi.count(region) || good_peak.count(peak))
-                 && !adjusting_background && !adjusting_sum4);
-    if (graph->name() == "Region fit")
-      graph->setVisible((plot_fullfit && good) || (range_this_region && adjusting_background));
-    else if (graph->name() == "Background steps")
-      graph->setVisible(plot_back_steps && good);
-    else if (graph->name() == "Background poly")
-      graph->setVisible((plot_back_poly && good) || (range_this_region && adjusting_background));
-    else if (graph->name() == "Individual peak")
-      graph->setVisible((plot_peak && good) || (range_this_region && adjusting_sum4));
-    else if (graph->name() == "Residuals")
-      graph->setVisible(plot_resid_on_back);
-    else if (graph->name() == "Background sum4") {
-      graph->setVisible((range_this_region && adjusting_sum4) ||
-                        (this_region_selected && region_sum4_only));
-    }
-  }
-}
-
 
 void FormFitter::on_pushSettings_clicked()
 {
@@ -1442,16 +443,15 @@ void FormFitter::roi_settings(double roi)
   FitterSettings->setWindowTitle("Region settings");
   int ret = FitterSettings->exec();
 
-  if (ret == QDialog::Accepted) {
-    range_.visible = false;
-    plotRange();
-    ui->plot->replot();
-    busy_= true;
-    toggle_push();
+  if (ret == QDialog::Accepted)
+  {
+    ui->plot->set_range_selection(RangeSelector());
 
+//    busy_= true;
+    toggle_push(true);
     thread_fitter_.set_data(*fit_data_);
     thread_fitter_.override_ROI_settings(roi, fs);
-    emit peak_selection_changed(selected_peaks_);
+    emit peak_selection_changed(ui->plot->get_selected_peaks());
   }
 
 }
@@ -1475,7 +475,7 @@ void FormFitter::peak_info(double bin)
     updateData();
     std::set<double> selected_peaks;
     selected_peaks.insert(bin);
-    set_selected_peaks(selected_peaks_);
+    ui->plot->set_selected_peaks(selected_peaks);
 
     emit data_changed();
     emit fitting_done();

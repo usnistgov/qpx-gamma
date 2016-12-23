@@ -121,7 +121,7 @@ void FormCoincPeaks::make_range(Coord marker) {
   ui->plotPeaks->make_range(marker);
 }
 
-void FormCoincPeaks::change_range(Range range) {
+void FormCoincPeaks::change_range(RangeSelector range) {
   emit range_changed(range);
 }
 

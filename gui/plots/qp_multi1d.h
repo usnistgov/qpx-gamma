@@ -40,13 +40,9 @@ public:
   void clearExtras() override;
   void replotExtras() override;
 
-  template<typename T>
-  QCPGraph* addGraph(const T& hist, const QPen&, QString name = "");
+  template<typename T> QCPGraph* addGraph(const T& hist, const QPen&, QString name = "");
+  template<typename T> QCPGraph* addGraph(const T& x, const T& y, const QPen&, QString name = "");
 
-  template<typename T>
-  QCPGraph* addGraph(const T& x, const T& y, const QPen&, QString name = "");
-
-//  QCPGraph *addGraph(const HistList1D&, const QPen&, QString name = "");
   void setAxisLabels(QString x, QString y);
   void setTitle(QString title);
 
@@ -62,7 +58,6 @@ public:
 
 public slots:
   void zoomOut() Q_DECL_OVERRIDE;
-  void adjustY();
 
 signals:
   void clickedPlot(double x, double y, Qt::MouseButton button);
@@ -70,6 +65,7 @@ signals:
 protected slots:
   void mousePressed(QMouseEvent*);
   void mouseReleased(QMouseEvent*);
+  virtual void adjustY();
 
 protected:
   void mouseClicked(double x, double y, QMouseEvent *event) override;

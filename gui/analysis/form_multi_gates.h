@@ -109,7 +109,7 @@ private slots:
 //  void update_range(Range);
   void update_peaks(bool);
 
-  void range_changed_in_plot(Range);
+  void range_changed_in_plot(RangeSelector);
 
   void peaks_changed_in_plot();
   void peak_selection_changed(std::set<double> sel);

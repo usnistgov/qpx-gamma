@@ -78,7 +78,7 @@ FormMultiGates::FormMultiGates(QWidget *parent) :
 
 }
 
-void FormMultiGates::range_changed_in_plot(Range range) {
+void FormMultiGates::range_changed_in_plot(RangeSelector range) {
   Gate gate = current_gate();
   MarkerBox2D range2d = gate.constraints;
 
@@ -95,7 +95,7 @@ void FormMultiGates::range_changed_in_plot(Range range) {
 void FormMultiGates::peaks_changed_in_plot() {
   update_peaks(true);
   emit gate_selected();
-  range_changed_in_plot(Range());
+  range_changed_in_plot(RangeSelector());
 }
 
 void FormMultiGates::peak_selection_changed(std::set<double> sel)

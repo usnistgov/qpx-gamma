@@ -77,7 +77,6 @@ public slots:
 signals:
   void mouseHover(double x, double y);
   void shiftStateChanged(bool);
-  void clickedAbstractItem(QCPAbstractItem *); //hack?
 
 protected:
   virtual void executeButton(Button *);
@@ -94,6 +93,7 @@ protected:
   void setGraphThickness(QCPGraph* graph);
   void setGraphStyle(QCPGraph* graph, QString style = "");
   void setButtonPosition(QCPItemPosition*, Button* previous);
+  void addStackButton(Button* button);
 
 protected slots:
   void exportPlot(QAction*);
@@ -105,6 +105,7 @@ private:
   ShowOptions visible_options_;
   QMenu options_menu_;
   QMenu export_menu_;
+  Button *lastStackButton {nullptr};
 
   bool always_square_ {false};
   bool antialiased_ {false};

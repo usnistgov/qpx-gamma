@@ -423,9 +423,7 @@ void GenericPlot::mouseReleaseEvent(QMouseEvent *event)
       if (button->visible())
         this->executeButton(button);
 
-    if (ai) //HACK
-      emit clickedAbstractItem(ai);
-    else
+    if (!ai)
     {
       QVariant details;
       QCPLayerable *clickedLayerable = layerableAt(event->pos(), false, &details);
@@ -478,39 +476,34 @@ void GenericPlot::keyReleaseEvent(QKeyEvent *event)
 
 void GenericPlot::plotButtons()
 {
-  Button *previousButton {nullptr};
-  Button *newButton {nullptr};
+  lastStackButton = nullptr;
 
   if (visible_options_ & ShowOptions::zoom)
-  {
-    newButton = new Button(this,
-                           QPixmap(":/icons/oxy/22/view_fullscreen.png"),
-                           "reset_scales", "Zoom out",
-                           Qt::AlignBottom | Qt::AlignRight);
-    newButton->setClipToAxisRect(false);
-    setButtonPosition(newButton->topLeft, nullptr);
-    previousButton = newButton;
-  }
+    addStackButton(new Button(this,
+                              QPixmap(":/icons/oxy/22/view_fullscreen.png"),
+                              "reset_scales", "Zoom out",
+                              Qt::AlignBottom | Qt::AlignRight));
 
   if (!options_menu_.isEmpty())
-  {
-    newButton = new Button(this, QPixmap(":/icons/oxy/22/view_statistics.png"),
-                           "options", "Style options",
-                           Qt::AlignBottom | Qt::AlignRight);
-    newButton->setClipToAxisRect(false);
-    setButtonPosition(newButton->topLeft, previousButton);
-    previousButton = newButton;
-  }
+    addStackButton(new Button(this, QPixmap(":/icons/oxy/22/view_statistics.png"),
+                              "options", "Style options",
+                              Qt::AlignBottom | Qt::AlignRight));
 
   if (visible_options_ & ShowOptions::save)
-  {
-    newButton = new Button(this,
-                           QPixmap(":/icons/oxy/22/document_save.png"),
-                           "export", "Export plot",
-                           Qt::AlignBottom | Qt::AlignRight);
-    newButton->setClipToAxisRect(false);
-    setButtonPosition(newButton->topLeft, previousButton);
-  }
+    addStackButton(new Button(this,
+                              QPixmap(":/icons/oxy/22/document_save.png"),
+                              "export", "Export plot",
+                              Qt::AlignBottom | Qt::AlignRight));
+}
+
+void GenericPlot::addStackButton(Button* button)
+{
+  button->setClipToAxisRect(false);
+  if (!lastStackButton)
+    setButtonPosition(button->topLeft, nullptr);
+  else
+    setButtonPosition(button->topLeft, lastStackButton);
+  lastStackButton = button;
 }
 
 void GenericPlot::setButtonPosition(QCPItemPosition* pos, Button* previous)
