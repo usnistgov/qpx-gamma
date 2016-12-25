@@ -202,7 +202,7 @@ void Multi1D::plotHighlight()
 {
   if ((highlight_.size() == 2) && (highlight_[0].visible) && !aggregate_.isEmpty())
   {
-    QCPRange range = getRange(getDomain());
+    QCPRange range = this->getRange(this->getDomain());
 
     QCPItemRect *cprect = new QCPItemRect(this);
 
@@ -258,7 +258,7 @@ void Multi1D::adjustY()
   if (aggregate_.isEmpty())
     rescaleAxes();
   else
-    yAxis->setRange(getRange(xAxis->range()));
+    yAxis->setRange(this->getRange(xAxis->range()));
 }
 
 void Multi1D::setScaleType(QString type)

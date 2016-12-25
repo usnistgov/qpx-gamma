@@ -53,20 +53,13 @@ class QpFitter : public QPlot::Multi1D
 
 public:
   explicit QpFitter(QWidget *parent = 0);
-  ~QpFitter();
 
   void clear();
 
   void setFit(Qpx::Fitter *fit);
   void update_spectrum();
 
-  void set_busy(bool b)
-  {
-    bool changed = (busy_ != b);
-    busy_ = b;
-    if (changed)
-      adjustY();
-  }
+  void set_busy(bool);
 
   void clearSelection();
   std::set<double> get_selected_peaks();
@@ -74,6 +67,8 @@ public:
   void make_range_selection(Coord);
   void set_range_selection(RangeSelector);
   RangeSelector getRangeSelection() const;
+
+  QCPRange getRange(QCPRange domain = QCPRange()) Q_DECL_OVERRIDE;
 
 public slots:
   void set_selected_peaks(std::set<double> selected_peaks);

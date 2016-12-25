@@ -32,8 +32,7 @@ QpFitter::QpFitter(QWidget *parent) :
   fit_data_(nullptr)
 {
   setVisibleOptions(QPlot::ShowOptions::zoom | QPlot::ShowOptions::save |
-                    QPlot::ShowOptions::labels | QPlot::ShowOptions::scale |
-                    QPlot::ShowOptions::title);
+                    QPlot::ShowOptions::scale | QPlot::ShowOptions::title);
 
   connect(this, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
 
@@ -48,8 +47,12 @@ QpFitter::QpFitter(QWidget *parent) :
   plotExtraButtons();
 }
 
-QpFitter::~QpFitter()
+void QpFitter::set_busy(bool b)
 {
+  bool changed = (busy_ != b);
+  busy_ = b;
+  if (changed)
+    adjustY();
 }
 
 void QpFitter::setFit(Qpx::Fitter* fit)
@@ -226,25 +229,28 @@ void QpFitter::plotRange()
   QCPItemTracer* edge_trc1 {nullptr};
   QCPItemTracer* edge_trc2 {nullptr};
 
-  if (range_.visible) {
-
+  if (range_.visible)
+  {
     double pos_l = 0, pos_r = 0;
     pos_l = range_.l.energy();
     pos_r = range_.r.energy();
 
-    if (pos_l < pos_r) {
-
+    if (pos_l < pos_r)
+    {
       int idx = -1;
 
       for (auto &q : range_.latch_to)
       {
         for (int i=0; i < graphCount(); i++)
         {
-          if ((graph(i)->data()->begin()->key > pos_l)
-              || (pos_r > graph(i)->data()->end()->key))
+          auto g = graph(i);
+          if (g->name() != q )
             continue;
 
-          if (graph(i)->name() == q )
+          bool good2 = (g->property("minimum").toDouble() < pos_l)
+              && (pos_r < g->property("maximum").toDouble());
+
+          if (good2)
           {
             idx = i;
             break;
@@ -254,7 +260,8 @@ void QpFitter::plotRange()
           break;
       }
 
-      if (idx >= 0) {
+      if (idx >= 0)
+      {
         edge_trc1 = new QCPItemTracer(this);
         edge_trc1->setStyle(QCPItemTracer::tsNone);
         edge_trc1->setGraph(graph(idx));
@@ -270,14 +277,20 @@ void QpFitter::plotRange()
         edge_trc2->setInterpolating(true);
         edge_trc2->setProperty("tracer", QVariant::fromValue(2));
         edge_trc2->updatePosition();
-
-      } else
+      }
+      else
+      {
         range_.visible = false;
-    } else
+      }
+    }
+    else
+    {
       range_.visible = false;
+    }
   }
 
-  if (range_.visible) {
+  if (range_.visible)
+  {
     auto domain = getDomain();
 
     QPlot::Draggable *ar1 = new QPlot::Draggable(this, edge_trc1, 12);
@@ -336,7 +349,8 @@ void QpFitter::plotRange()
                                        Qt::AlignTop | Qt::AlignLeft);
     }
 
-    if (newButton) {
+    if (newButton)
+    {
       newButton->bottomRight->setParentAnchor(higher->position);
       newButton->bottomRight->setCoords(11, -20);
     }
@@ -1025,6 +1039,25 @@ void QpFitter::calc_visible()
                         (this_region_selected && region_sum4_only));
     }
   }
+}
+
+QCPRange QpFitter::getRange(QCPRange domain)
+{
+  QCPRange range = Multi1D::getRange(domain);
+
+  bool markers_in_range {false};
+  for (auto &peak : fit_data_->peaks())
+    if ((domain.lower <= peak.second.energy().value()) &&
+        (peak.second.energy().value() <= domain.upper))
+      markers_in_range = true;
+
+  int upper = 0
+      + (markers_in_range ? 30 : 0)
+      + ((markers_in_range && showMarkerLabels()) ? 20 : 0);
+
+  range.upper = yAxis->pixelToCoord(yAxis->coordToPixel(range.upper) - upper);
+
+  return range;
 }
 
 QCPGraph* QpFitter::addGraph(const std::vector<double>& x, const std::vector<double>& y, QPen appearance,

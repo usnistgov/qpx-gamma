@@ -53,8 +53,8 @@ public:
   void tightenX();
   void setScaleType(QString) override;
 
-  QCPRange getDomain();
-  QCPRange getRange(QCPRange domain = QCPRange());
+  virtual QCPRange getDomain();
+  virtual QCPRange getRange(QCPRange domain = QCPRange());
 
 public slots:
   void zoomOut() Q_DECL_OVERRIDE;
@@ -91,16 +91,24 @@ QCPGraph* Multi1D::addGraph(const T& hist, const QPen& pen, QString name)
   if (hist.empty())
     return nullptr; // is this wise?
 
+  double minimum {std::numeric_limits<double>::max()};
+  double maximum {std::numeric_limits<double>::min()};
+
   GenericPlot::addGraph();
   auto ret = graph(graphCount() - 1);
   ret->setName(name);
   auto data = ret->data();
-  for (auto p :hist)
+  for (auto p : hist)
   {
     QCPGraphData point(p.first, p.second);
     data->add(point);
     aggregate_.add(point);
+    minimum = std::min(p.first, minimum);
+    maximum = std::max(p.first, maximum);
   }
+
+  ret->setProperty("minimum", QVariant::fromValue(minimum));
+  ret->setProperty("maximum", QVariant::fromValue(maximum));
 
   ret->setPen(pen);
   setGraphStyle(ret);
@@ -113,6 +121,9 @@ QCPGraph* Multi1D::addGraph(const T& x, const T& y, const QPen& pen, QString nam
 {
   if (x.empty() || y.empty() || (x.size() != y.size()))
     return nullptr; // is this wise?
+
+  double minimum {std::numeric_limits<double>::max()};
+  double maximum {std::numeric_limits<double>::min()};
 
   GenericPlot::addGraph();
   auto ret = graph(graphCount() - 1);
@@ -127,7 +138,12 @@ QCPGraph* Multi1D::addGraph(const T& x, const T& y, const QPen& pen, QString nam
     aggregate_.add(point);
     ++ix;
     ++iy;
+    minimum = std::min(*ix, minimum);
+    maximum = std::max(*ix, maximum);
   }
+
+  ret->setProperty("minimum", QVariant::fromValue(minimum));
+  ret->setProperty("maximum", QVariant::fromValue(maximum));
 
   ret->setPen(pen);
   setGraphStyle(ret);
