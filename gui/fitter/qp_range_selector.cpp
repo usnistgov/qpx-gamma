@@ -31,16 +31,6 @@ void RangeSelector::set_bounds(const double &left, const double &right)
     std::swap(left_, right_);
 }
 
-//void RangeSelector::setProperty(const char *name, const QVariant &value)
-//{
-//  properties[QString(name)] = value;
-//}
-
-//QVariant RangeSelector::property(const char *name) const
-//{
-//  return properties.value(QString(name));
-//}
-
 void RangeSelector::plot_self(QPlot::Button* button)
 {
   QCPGraph* target_graph = find_target_graph();
