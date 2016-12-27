@@ -27,25 +27,7 @@
 #include "qp_multi1d.h"
 #include "coord.h"
 #include "fitter.h"
-
-struct RangeSelector
-{
-  bool visible {false};
-  QVariantMap properties;
-  QStringList latch_to;
-  QPlot::Appearance appearance;
-  Coord l, r, c;
-
-  void setProperty(const char *name, const QVariant &value)
-  {
-    properties[QString(name)] = value;
-  }
-
-  QVariant property(const char *name) const
-  {
-    return properties.value(QString(name));
-  }
-};
+#include "qp_range_selector.h"
 
 class QpFitter : public QPlot::Multi1D
 {
@@ -64,9 +46,8 @@ public:
   void clearSelection();
   std::set<double> get_selected_peaks();
 
-  void make_range_selection(Coord);
-  void set_range_selection(RangeSelector);
-  RangeSelector getRangeSelection() const;
+  void make_range_selection(int32_t);
+  void clear_range_selection();
 
   QCPRange getRange(QCPRange domain = QCPRange()) Q_DECL_OVERRIDE;
 
@@ -76,26 +57,27 @@ public slots:
 
 signals:
 
-  void add_peak();
   void delete_selected_peaks();
-  void adjust_sum4();
-  void adjust_background();
-  void peak_info(double);
+  void peak_info(double peak_id);
 
-  void rollback_ROI(double);
-  void roi_settings(double);
-  void refit_ROI(double);
-  void delete_ROI(double);
+  void rollback_ROI(double roi_id);
+  void roi_settings(double roi_id);
+  void refit_ROI(double roi_id);
+  void delete_ROI(double roi_id);
+
+  void add_peak(double l, double r);
+  void adjust_sum4(double peak_id, double l, double r);
+  void adjust_background_L(double roi_id, double l, double r);
+  void adjust_background_R(double roi_id, double l, double r);
 
   void peak_selection_changed(std::set<double> selected_peaks);
-  void range_selection_changed(RangeSelector);
+  void range_selection_changed(double l, double r);
 
 protected slots:
 
   void selection_changed();
   void changeROI(QAction*);
 
-  void createRangeSelection(Coord);
   void adjustY()  Q_DECL_OVERRIDE;
 
 
@@ -112,7 +94,7 @@ protected:
   double selected_roi_ {-1};
   bool hold_selection_ {false};
 
-  RangeSelector range_;
+  RangeSelector* range_;
 
   void trim_log_lower(std::vector<double> &array);
   void calc_visible();
@@ -134,6 +116,7 @@ protected:
   void plotRegion(double region_id, const Qpx::ROI &region, QCPGraph *data_graph);
   void plotPeak(double region_id, double peak_id, const Qpx::Peak &peak);
 
+  void make_range_selection();
   void make_SUM4_range(double region, double peak);
   void make_background_range(double region, bool left);
 

@@ -68,7 +68,7 @@ FormMultiGates::FormMultiGates(QWidget *parent) :
   connect(ui->gatedSpectrum , SIGNAL(peak_selection_changed(std::set<double>)),
           this, SLOT(peak_selection_changed(std::set<double>)));
 
-  connect(ui->gatedSpectrum, SIGNAL(range_changed(Range)), this, SLOT(range_changed_in_plot(Range)));
+//  connect(ui->gatedSpectrum, SIGNAL(range_changed(Range)), this, SLOT(range_changed_in_plot(Range)));
   connect(ui->gatedSpectrum, SIGNAL(fitting_done()), this, SLOT(fitting_finished()));
 
   res_ = 0;
@@ -78,24 +78,26 @@ FormMultiGates::FormMultiGates(QWidget *parent) :
 
 }
 
-void FormMultiGates::range_changed_in_plot(RangeSelector range) {
-  Gate gate = current_gate();
-  MarkerBox2D range2d = gate.constraints;
+//void FormMultiGates::range_changed_in_plot(RangeSelector range)
+//{
+//  Gate gate = current_gate();
+//  MarkerBox2D range2d = gate.constraints;
 
-  range2d.visible = range.visible;
-  range2d.vertical = true;
-  range2d.x_c = range.c;
-  range2d.x1 = range.l;
-  range2d.x2 = range.r;
-//  range2d.labelfloat = (gate.width_chan == res);
+//  range2d.visible = range.visible;
+//  range2d.vertical = true;
+////  range2d.x_c
+//  range2d.x1.set_bin(range.left(),  fit_data_.settings().bits_, fit_data_.settings().cali_nrg_);
+//  range2d.x2.set_bin(range.right(), fit_data_.settings().bits_, fit_data_.settings().cali_nrg_);
+////  range2d.labelfloat = (gate.width_chan == res);
 
-  emit range_changed(range2d);
-}
+//  emit range_changed(range2d);
+//}
 
-void FormMultiGates::peaks_changed_in_plot() {
+void FormMultiGates::peaks_changed_in_plot()
+{
   update_peaks(true);
   emit gate_selected();
-  range_changed_in_plot(RangeSelector());
+//  range_changed_in_plot(RangeSelector());
 }
 
 void FormMultiGates::peak_selection_changed(std::set<double> sel)

@@ -44,7 +44,7 @@ FormCoincPeaks::FormCoincPeaks(QWidget *parent) :
   ui->tablePeaks->show();
   connect(ui->tablePeaks, SIGNAL(itemSelectionChanged()), this, SLOT(selection_changed_in_table()));
 
-  connect(ui->plotPeaks, SIGNAL(range_changed(Range)), this, SLOT(change_range(Range)));
+//  connect(ui->plotPeaks, SIGNAL(range_changed(Range)), this, SLOT(change_range(Range)));
   connect(ui->plotPeaks, SIGNAL(peak_selection_changed(std::set<double>)), this, SLOT(update_selection(std::set<double>)));
   connect(ui->plotPeaks, SIGNAL(data_changed()), this, SLOT(update_peaks()));
   connect(ui->plotPeaks, SIGNAL(fitting_done()), this, SLOT(fitting_finished()));
@@ -121,9 +121,9 @@ void FormCoincPeaks::make_range(Coord marker) {
   ui->plotPeaks->make_range(marker);
 }
 
-void FormCoincPeaks::change_range(RangeSelector range) {
-  emit range_changed(range);
-}
+//void FormCoincPeaks::change_range(RangeSelector range) {
+//  emit range_changed(range);
+//}
 
 void FormCoincPeaks::update_spectrum() {
   ui->plotPeaks->update_spectrum();

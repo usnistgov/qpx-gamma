@@ -55,7 +55,7 @@ public:
   std::set<double> get_selected_peaks();
 
   void make_range(Coord);
-  void set_range(RangeSelector);
+//  void set_range(RangeSelector);
 
   void perform_fit();
 
@@ -69,7 +69,7 @@ public slots:
 signals:
 
   void peak_selection_changed(std::set<double> selected_peaks);
-  void range_changed(RangeSelector range);
+//  void range_changed(RangeSelector range);
   void data_changed();
   void fitting_done();
   void fitter_busy(bool);
@@ -81,10 +81,11 @@ private slots:
   void fit_updated(Qpx::Fitter);
   void fitting_complete();
 
-  void add_peak();
+  void add_peak(double l, double r);
   void delete_selected_peaks();
-  void adjust_sum4();
-  void adjust_background();
+  void adjust_sum4(double peak_id, double l, double r);
+  void adjust_background_L(double roi_id, double l, double r);
+  void adjust_background_R(double roi_id, double l, double r);
   void peak_info(double peak);
 
   void rollback_ROI(double);

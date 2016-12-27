@@ -40,10 +40,14 @@ FormFitter::FormFitter(QWidget *parent) :
 
   connect(ui->plot, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
 
-  connect(ui->plot, SIGNAL(add_peak()), this, SLOT(add_peak()));
+  connect(ui->plot, SIGNAL(add_peak(double, double)), this, SLOT(add_peak(double, double)));
   connect(ui->plot, SIGNAL(delete_selected_peaks()), this, SLOT(delete_selected_peaks()));
-  connect(ui->plot, SIGNAL(adjust_sum4()), this, SLOT(adjust_sum4()));
-  connect(ui->plot, SIGNAL(adjust_background()), this, SLOT(adjust_background()));
+  connect(ui->plot, SIGNAL(adjust_sum4(double, double, double)),
+          this, SLOT(adjust_sum4(double, double, double)));
+  connect(ui->plot, SIGNAL(adjust_background_L(double,double,double)),
+          this, SLOT(adjust_background_L(double,double,double)));
+  connect(ui->plot, SIGNAL(adjust_background_R(double,double,double)),
+          this, SLOT(adjust_background_R(double,double,double)));
   connect(ui->plot, SIGNAL(peak_info(double)), this, SLOT(peak_info(double)));
 
   connect(ui->plot, SIGNAL(rollback_ROI(double)), this, SLOT(rollback_ROI(double)));
@@ -61,8 +65,8 @@ FormFitter::FormFitter(QWidget *parent) :
   QShortcut* shortcut3 = new QShortcut(QKeySequence(QKeySequence::Delete), ui->plot);
   connect(shortcut3, SIGNAL(activated()), this, SLOT(delete_selected_peaks()));
 
-//  QShortcut* shortcut4 = new QShortcut(QKeySequence(QKeySequence(Qt::Key_L)), ui->plot);
-//  connect(shortcut4, SIGNAL(activated()), this, SLOT(switch_scale_type()));
+  //  QShortcut* shortcut4 = new QShortcut(QKeySequence(QKeySequence(Qt::Key_L)), ui->plot);
+  //  connect(shortcut4, SIGNAL(activated()), this, SLOT(switch_scale_type()));
 
   connect(&thread_fitter_, SIGNAL(fit_updated(Qpx::Fitter)), this, SLOT(fit_updated(Qpx::Fitter)));
   connect(&thread_fitter_, SIGNAL(fitting_done()), this, SLOT(fitting_complete()));
@@ -93,13 +97,13 @@ void FormFitter::setFit(Qpx::Fitter* fit) {
 
 void FormFitter::loadSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
-//  scale_log_ = settings_.value("scale_log", true).toBool();
+  //  scale_log_ = settings_.value("scale_log", true).toBool();
   settings_.endGroup();
 }
 
 void FormFitter::saveSettings(QSettings &settings_) {
   settings_.beginGroup("Peaks");
-//  settings_.setValue("scale_log", scale_log_);
+  //  settings_.setValue("scale_log", scale_log_);
   settings_.endGroup();
 }
 
@@ -169,7 +173,10 @@ void FormFitter::delete_ROI(double ROI_bin)
 
 void FormFitter::make_range(Coord marker)
 {
-  ui->plot->make_range_selection(marker);
+  if (!fit_data_ || busy_)
+    return;
+
+  ui->plot->make_range_selection(marker.bin(fit_data_->settings().bits_));
 }
 
 void FormFitter::set_selected_peaks(std::set<double> selected_peaks)
@@ -203,49 +210,31 @@ void FormFitter::perform_fit()
 
 }
 
-void FormFitter::add_peak()
-{
-  auto range = ui->plot->getRangeSelection();
-  ui->plot->set_range_selection(RangeSelector());
-
-  if (!range.visible)
-    return;
-
-  if (range.l.energy() >= range.r.energy())
-    return;
-
-  toggle_push(true);
-
-  thread_fitter_.set_data(*fit_data_);
-  thread_fitter_.add_peak(range.l.bin(fit_data_->settings().bits_),
-                          range.r.bin(fit_data_->settings().bits_));
-}
-
-void FormFitter::adjust_sum4()
+void FormFitter::add_peak(double l, double r)
 {
   if (!fit_data_ || busy_)
     return;
 
-  auto range = ui->plot->getRangeSelection();
-  ui->plot->set_range_selection(RangeSelector());
+  ui->plot->clear_range_selection();
 
-  if (!range.visible)
+  toggle_push(true);
+
+  thread_fitter_.set_data(*fit_data_);
+  thread_fitter_.add_peak(fit_data_->settings().cali_nrg_.inverse_transform(l),
+                          fit_data_->settings().cali_nrg_.inverse_transform(r));
+}
+
+void FormFitter::adjust_sum4(double peak_id, double l, double r)
+{
+  if (!fit_data_ || busy_)
     return;
 
-  double peak_id = range.property("peak").toDouble();
-
-  double left  = range.l.bin(fit_data_->settings().bits_);
-  double right = range.r.bin(fit_data_->settings().bits_);
-
-  if (left > right)
-  {
-    double t = left;
-    left = right;
-    right = t;
-  }
+  ui->plot->clear_range_selection();
 
   toggle_push(false);
-  if (fit_data_->adjust_sum4(peak_id, left, right))
+  if (fit_data_->adjust_sum4(peak_id,
+                             fit_data_->settings().cali_nrg_.inverse_transform(l),
+                             fit_data_->settings().cali_nrg_.inverse_transform(r)))
   {
     updateData();
     std::set<double> selected_peaks;
@@ -257,33 +246,19 @@ void FormFitter::adjust_sum4()
   }
 }
 
-void FormFitter::adjust_background() {
-  auto range = ui->plot->getRangeSelection();
-  ui->plot->set_range_selection(RangeSelector());
-
-  if (!range.visible)
+void FormFitter::adjust_background_L(double ROI_id, double l, double r)
+{
+  if (!fit_data_ || busy_)
     return;
 
-  double ROI_id = range.property("region").toDouble();
+  ui->plot->clear_range_selection();
 
   if (!fit_data_->contains_region(ROI_id))
     return;
 
-  double left = range.l.bin(fit_data_->settings().bits_);
-  double right = range.r.bin(fit_data_->settings().bits_);
-
-  if (left > right) {
-    double t = left;
-    left = right;
-    right = t;
-  }
-
-  std::set<double> rois;
-  QString purpose = range.property("purpose").toString();
-  if (purpose == "background L")
-    rois = fit_data_->relevant_regions(left, fit_data_->region(ROI_id).right_bin());
-  else if (purpose == "background R")
-    rois = fit_data_->relevant_regions(fit_data_->region(ROI_id).left_bin(), right);
+  std::set<double> rois = fit_data_->relevant_regions(
+        fit_data_->settings().cali_nrg_.inverse_transform(l),
+        fit_data_->region(ROI_id).right_bin());
 
   if (!rois.count(ROI_id))
   {
@@ -299,20 +274,51 @@ void FormFitter::adjust_background() {
   toggle_push(true);
 
   if (merge)
-  {
-    if (purpose == "background L")
-      thread_fitter_.merge_regions(left, fit_data_->region(ROI_id).right_bin());
-    else if (purpose == "background R")
-      thread_fitter_.merge_regions(fit_data_->region(ROI_id).left_bin(), right);
-  }
+    thread_fitter_.merge_regions(
+          fit_data_->settings().cali_nrg_.inverse_transform(l),
+          fit_data_->region(ROI_id).right_bin());
   else
+    thread_fitter_.adjust_LB(ROI_id,
+                             fit_data_->settings().cali_nrg_.inverse_transform(l),
+                             fit_data_->settings().cali_nrg_.inverse_transform(r));
+
+}
+
+
+void FormFitter::adjust_background_R(double ROI_id, double l, double r)
+{
+  if (!fit_data_ || busy_)
+    return;
+
+  ui->plot->clear_range_selection();
+
+  if (!fit_data_->contains_region(ROI_id))
+    return;
+
+  std::set<double> rois = fit_data_->relevant_regions(
+        fit_data_->region(ROI_id).left_bin(),
+        fit_data_->settings().cali_nrg_.inverse_transform(r));
+
+  if (!rois.count(ROI_id))
   {
-    if (purpose == "background L")
-      thread_fitter_.adjust_LB(ROI_id, left, right);
-    else if (purpose == "background R")
-      thread_fitter_.adjust_RB(ROI_id, left, right);
+    QMessageBox::information(this, "Out of bounds", "Background sample bad. Very bad...");
+    return;
   }
 
+  bool merge = ((rois.size() > 1) &&
+                (QMessageBox::question(this, "Merge?", "Regions overlap. Merge them?") == QMessageBox::Yes));
+
+  thread_fitter_.set_data(*fit_data_);
+
+  toggle_push(true);
+
+  if (merge)
+    thread_fitter_.merge_regions(fit_data_->region(ROI_id).left_bin(),
+                                 fit_data_->settings().cali_nrg_.inverse_transform(r));
+  else
+    thread_fitter_.adjust_RB(ROI_id,
+                             fit_data_->settings().cali_nrg_.inverse_transform(l),
+                             fit_data_->settings().cali_nrg_.inverse_transform(r));
 }
 
 
@@ -365,9 +371,9 @@ void FormFitter::fitting_complete() {
   ////    while (player->state() == QMediaPlayer::PlayingState) {}
   //  }
 
-//  busy_= false;
-//  calc_visible();
-//  ui->plot->replot();
+  //  busy_= false;
+  //  calc_visible();
+  //  ui->plot->replot();
   toggle_push(false);
   emit data_changed();
   emit fitting_done();
@@ -376,8 +382,8 @@ void FormFitter::fitting_complete() {
 void FormFitter::toggle_push(bool busy)
 {
   busy_ = busy;
-//  if (fit_data_ == nullptr)
-//    return;
+  //  if (fit_data_ == nullptr)
+  //    return;
 
   ui->pushStopFitter->setEnabled(busy_);
   ui->pushFindPeaks->setEnabled(!busy_);
@@ -400,10 +406,10 @@ void FormFitter::clearSelection()
 }
 
 
-void FormFitter::set_range(RangeSelector rng)
-{
-  ui->plot->set_range_selection(rng);
-}
+//void FormFitter::set_range(RangeSelector rng)
+//{
+//  ui->plot->set_range_selection(rng);
+//}
 
 void FormFitter::selection_changed()
 {
@@ -445,9 +451,9 @@ void FormFitter::roi_settings(double roi)
 
   if (ret == QDialog::Accepted)
   {
-    ui->plot->set_range_selection(RangeSelector());
+    ui->plot->clear_range_selection();
 
-//    busy_= true;
+    //    busy_= true;
     toggle_push(true);
     thread_fitter_.set_data(*fit_data_);
     thread_fitter_.override_ROI_settings(roi, fs);
