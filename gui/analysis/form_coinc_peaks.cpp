@@ -177,7 +177,8 @@ void FormCoincPeaks::update_table(bool contents_changed) {
 }
 
 
-void FormCoincPeaks::add_peak_to_table(const Qpx::Peak &p, int row, QColor bckg) {
+void FormCoincPeaks::add_peak_to_table(const Qpx::Peak &p, int row, QColor bckg)
+{
   QBrush background(bckg);
 
   add_to_table(ui->tablePeaks, row, 0, p.energy().to_string(),
@@ -189,7 +190,10 @@ void FormCoincPeaks::add_peak_to_table(const Qpx::Peak &p, int row, QColor bckg)
 void FormCoincPeaks::selection_changed_in_table() {
   selected_peaks_.clear();
   foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows())
-    selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::EditRole).toDouble());
+  {
+    DBG << "pk center " << ui->tablePeaks->item(i.row(), 0)->data(Qt::UserRole).toDouble();
+    selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::UserRole).toDouble());
+  }
   ui->plotPeaks->set_selected_peaks(selected_peaks_);
   emit peak_selection_changed(selected_peaks_);
 }

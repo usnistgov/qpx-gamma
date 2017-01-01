@@ -44,7 +44,6 @@ QpFitter::QpFitter(QWidget *parent)
   connect(&menuROI, SIGNAL(triggered(QAction*)), this, SLOT(changeROI(QAction*)));
 
   replotAll();
-//  plotExtraButtons();
 }
 
 void QpFitter::set_busy(bool b)
@@ -77,7 +76,8 @@ void QpFitter::update_spectrum()
   if (!fit_data_)
     return;
 
-  if (fit_data_->settings().bits_ <= 0) {
+  if (fit_data_->settings().bits_ <= 0)
+  {
     clear();
     updateData();
     return;
@@ -87,6 +87,7 @@ void QpFitter::update_spectrum()
     selected_peaks_.clear();
 
   updateData();
+  zoomOut();
 }
 
 void QpFitter::mouseClicked(double x, double y, QMouseEvent* event)
@@ -675,9 +676,10 @@ void QpFitter::what_is_in_range(std::set<double>& good_peak,
 void QpFitter::toggle_items(const std::set<double>& good_peak,
                             const std::set<double>& prime_roi)
 {
-  std::set<double> labeled_peaks;
-  if (good_peak.size() < 20)
-    labeled_peaks = good_peak;
+  bool only_one_region = only_one_region_selected();
+  bool adjusting_sum4 = (range_->purpose_ == "SUM4 commit");
+  bool adjusting_background = range_->purpose_.contains("background") &&
+                              range_->purpose_.contains("commit");
 
   this->blockSignals(true);
   for (int i=0; i < itemCount(); ++i)
@@ -685,13 +687,13 @@ void QpFitter::toggle_items(const std::set<double>& good_peak,
     QCPAbstractItem *q =  item(i);
 
     if (q->property("label").isValid())
-      toggle_label(q, labeled_peaks);
+      toggle_label(q, good_peak);
     else if (QCPItemLine *line = qobject_cast<QCPItemLine*>(q))
     {
       if (line->property("SUM4 peak").isValid())
-        toggle_sum4_line(line);
+        toggle_sum4_line(line, only_one_region);
       else if (line->property("background edge").isValid())
-        toggle_background_line(line);
+        toggle_background_line(line, only_one_region, adjusting_background, adjusting_sum4);
       else if (!line->property("tracer").isNull())
         line->setVisible(range_->visible() && !busy_);
     }
@@ -700,26 +702,31 @@ void QpFitter::toggle_items(const std::set<double>& good_peak,
       if (button->name() == "region options")
         toggle_region_button(button, prime_roi);
       else if (button->name() == "SUM4 begin")
-        toggle_sum4_button(button);
+        toggle_sum4_button(button, only_one_region);
       else if (button->name() == "peak_info")
         toggle_peak_button(button);
       else if (button->name().contains("background") && button->name().contains("begin"))
-        toggle_background_button(button);
+        toggle_background_button(button, only_one_region);
+      else if (button->name() == "delete peaks")
+        button->setVisible(!busy_ && !selected_peaks_.empty());
       else
-        toggle_button(button);
+        button->setVisible(true);
     }
   }
   this->blockSignals(false);
 }
 
-void QpFitter::toggle_label(QCPAbstractItem *item, const std::set<double>& labeled_peaks)
+void QpFitter::toggle_label(QCPAbstractItem *item, const std::set<double>& good_peaks)
 {
   double peak = item->property("peak").toDouble();
   item->setSelected(selected_peaks_.count(peak));
-  item->setVisible(labeled_peaks.count(peak));
+  if (QCPItemLine *line = qobject_cast<QCPItemLine*>(item))
+    line->setVisible(good_peaks.count(peak));
+  else if (QCPItemText *text = qobject_cast<QCPItemText*>(item))
+    text->setVisible((good_peaks.size() < 20) && good_peaks.count(peak));
 }
 
-void QpFitter::toggle_sum4_line(QCPItemLine* line)
+void QpFitter::toggle_sum4_line(QCPItemLine* line, bool only_one_region)
 {
   double peak   = line->property("peak").toDouble();
   double region = line->property("region").toDouble();
@@ -731,54 +738,40 @@ void QpFitter::toggle_sum4_line(QCPItemLine* line)
                         ||
                         (range_->property("region").toDouble() == region)
                         ||
-                        (peaks_in_region_selected(region) && only_one_region_selected())
+                        (peaks_in_region_selected(region) && only_one_region)
                      )
                    );
 
   line->setSelected(selected_peaks_.count(peak));
 }
 
-void QpFitter::toggle_background_line(QCPItemLine* line)
+void QpFitter::toggle_background_line(QCPItemLine* line,
+                                      bool only_one_region,
+                                      bool adjusting_background,
+                                      bool adjusting_sum4)
 {
-  double region = line->property("region").toDouble();
-  bool adjusting_background = range_->purpose_.contains("background") &&
-                              range_->purpose_.contains("commit");
-  bool adjusting_sum4 = (range_->purpose_ == "SUM4 commit")
-                        && (range_->property("region").toDouble() == region);
-  line->setVisible(!busy_ &&
-                   !adjusting_background &&
-                   (region_is_selected(region)
-                    ||
-                    adjusting_sum4
-                    ||
-                    peaks_in_region_selected(region) && only_one_region_selected()
-                    )
-                   );
-}
-
-void QpFitter::toggle_button(QPlot::Button* button)
-{
-  if (busy_)
-  {
-    button->setVisible(false);
-    return;
-  }
-
-  if (button->name() == "delete peaks")
-    button->setVisible(!selected_peaks_.empty());
+  if (busy_ || adjusting_background)
+    line->setVisible(false);
   else
-    button->setVisible(true);
+  {
+    double region = line->property("region").toDouble();
+
+    line->setVisible(region_is_selected(region)
+                      ||
+                      (adjusting_sum4 && (range_->property("region").toDouble() == region))
+                      ||
+                      peaks_in_region_selected(region) && only_one_region
+                    );
+  }
 }
 
-void QpFitter::toggle_background_button(QPlot::Button* button)
+void QpFitter::toggle_background_button(QPlot::Button* button, bool only_one_region)
 {
   double region = button->property("region").toDouble();
-  bool region_selected_explicitly = region_is_selected(region);
-  bool region_selected_implicitly = peaks_in_region_selected(region) && only_one_region_selected();
-
   button->setVisible(!busy_ &&
                      !range_->visible() &&
-                      (region_selected_explicitly || region_selected_implicitly)
+                      (region_is_selected(region) ||
+                       (peaks_in_region_selected(region) && only_one_region))
                     );
 }
 
@@ -798,15 +791,17 @@ void QpFitter::toggle_peak_button(QPlot::Button* button)
                      selected_peaks_.count(button->property("peak").toDouble()));
 }
 
-void QpFitter::toggle_sum4_button(QPlot::Button* button)
+void QpFitter::toggle_sum4_button(QPlot::Button* button, bool only_one_region)
 {
-  button->setVisible(!busy_ &&
-                     only_one_region_selected() &&
+  button->setVisible(!busy_ && only_one_region &&
                      selected_peaks_.count(button->property("peak").toDouble()));
 }
 
 bool QpFitter::only_one_region_selected()
 {
+  if (!fit_data_)
+    return false;
+
   double selected_region = -1;
   for (auto r : fit_data_->regions())
     for (auto p : r.second.peaks())

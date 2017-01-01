@@ -74,23 +74,27 @@ FormPlot1D::~FormPlot1D()
   delete ui;
 }
 
-void FormPlot1D::setDetDB(XMLableDB<Detector>& detDB) {
+void FormPlot1D::setDetDB(XMLableDB<Detector>& detDB)
+{
   detectors_ = &detDB;
 }
 
-
-void FormPlot1D::setSpectra(Project& new_set) {
+void FormPlot1D::setSpectra(Project& new_set)
+{
+  reset_content();
   mySpectra = &new_set;
   updateUI();
 }
 
-void FormPlot1D::spectrumLooksChanged(SelectorItem item) {
+void FormPlot1D::spectrumLooksChanged(SelectorItem item)
+{
   SinkPtr someSpectrum = mySpectra->get_sink(item.data.toLongLong());
   if (someSpectrum) {
     Setting vis = someSpectrum->metadata().get_attribute("visible");
     vis.value_int = item.visible;
     someSpectrum->set_attribute(vis);
   }
+  reset_content();
   mySpectra->activate();
 }
 
@@ -177,8 +181,8 @@ void FormPlot1D::reset_content()
   ui->mcaPlot->replot();
 }
 
-void FormPlot1D::update_plot() {
-
+void FormPlot1D::update_plot()
+{
   this->setCursor(Qt::WaitCursor);
   //  CustomTimer guiside(true);
 
@@ -187,17 +191,18 @@ void FormPlot1D::update_plot() {
   int numvisible {0};
 
   ui->mcaPlot->clearPrimary();
-  for (auto &q: mySpectra->get_sinks(1)) {
-    Metadata md;
-    if (q.second)
-      md = q.second->metadata();
+  for (auto &q: mySpectra->get_sinks(1))
+  {
+    if (!q.second)
+      continue;
+
+    Metadata md = q.second->metadata();
 
     if (!md.get_attribute("visible").value_int)
       continue;
 
     double livetime = md.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
     double rescale  = md.get_attribute("rescale").number();
-    uint16_t bits = md.get_attribute("resolution").value_int;
 
     QVector<double> x = QVector<double>::fromStdVector(q.second->axis_values(0));
 
@@ -222,8 +227,9 @@ void FormPlot1D::update_plot() {
     Detector detector = Detector();
     if (!md.detectors.empty())
       detector = md.detectors[0];
-    Calibration temp_calib = detector.best_calib(bits);
+    Calibration temp_calib = detector.best_calib(md.get_attribute("resolution").value_int);
 
+    //what if units are different?
     if (temp_calib.bits_ > calib_.bits_)
       calib_ = temp_calib;
 
@@ -243,7 +249,7 @@ void FormPlot1D::update_plot() {
 
   if (!nonempty_ && (numvisible > 0))
   {
-    ui->mcaPlot->tightenX();
+    ui->mcaPlot->zoomOut();
     nonempty_ = (numvisible > 0);
   }
 
@@ -323,12 +329,10 @@ void FormPlot1D::updateUI()
   mySpectra->activate();
 }
 
-void FormPlot1D::effCalRequested(QAction* choice) {
-  QString det = choice->text();
-
+void FormPlot1D::effCalRequested(QAction* choice)
+{
   emit requestEffCal(choice->text());
 }
-
 
 void FormPlot1D::analyse()
 {

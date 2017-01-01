@@ -33,7 +33,9 @@ FormGatesPlot2D::FormGatesPlot2D(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  connect(ui->coincPlot, SIGNAL(markers_set(Coord,Coord)), this, SLOT(markers_moved(Coord,Coord)));
+  connect(ui->coincPlot, SIGNAL(clickedPlot(double,double,Qt::MouseButton)),
+          this, SLOT(markers_moved(double,double,Qt::MouseButton)));
+
   connect(ui->coincPlot, SIGNAL(stuff_selected()), this, SLOT(selection_changed()));
 
   adjrange = 0;
@@ -49,43 +51,49 @@ FormGatesPlot2D::~FormGatesPlot2D()
   delete ui;
 }
 
-void FormGatesPlot2D::selection_changed() {
+void FormGatesPlot2D::selection_changed()
+{
   emit stuff_selected();
 }
 
-void FormGatesPlot2D::set_range_x(MarkerBox2D range) {
+void FormGatesPlot2D::set_range_x(MarkerBox2D range)
+{
   range_ = range;
 //  ui->coincPlot->set_range_x(range);
 }
 
-void FormGatesPlot2D::setSpectra(Project& new_set, int64_t idx) {
+void FormGatesPlot2D::setSpectra(Project& new_set, int64_t idx)
+{
   mySpectra = &new_set;
   current_spectrum_ = idx;
 
-  // //  update_plot();
+  update_plot();
 }
 
-void FormGatesPlot2D::set_gates_movable(bool mov) {
+void FormGatesPlot2D::set_gates_movable(bool mov)
+{
   gates_movable_ = mov;
 }
 
-void FormGatesPlot2D::set_show_boxes(bool show) {
+void FormGatesPlot2D::set_show_boxes(bool show)
+{
   show_boxes_ = show;
 //  ui->coincPlot->replot_markers();
 }
 
-std::list<MarkerBox2D> FormGatesPlot2D::get_selected_boxes() {
+std::list<MarkerBox2D> FormGatesPlot2D::get_selected_boxes()
+{
 //  return ui->coincPlot->get_selected_boxes();
 }
 
-
-void FormGatesPlot2D::set_boxes(std::list<MarkerBox2D> boxes) {
+void FormGatesPlot2D::set_boxes(std::list<MarkerBox2D> boxes)
+{
   boxes_ = boxes;
   replot_markers();
 }
 
-
-void FormGatesPlot2D::reset_content() {
+void FormGatesPlot2D::reset_content()
+{
   //DBG << "reset content";
 //  ui->coincPlot->reset_content();
 //  ui->coincPlot->refresh();
@@ -99,7 +107,9 @@ void FormGatesPlot2D::refresh()
 //  ui->coincPlot->refresh();
 }
 
-void FormGatesPlot2D::replot_markers() {
+void FormGatesPlot2D::replot_markers()
+{
+  ui->coincPlot->clearExtras();
   //DBG << "replot markers";
 
   std::list<MarkerBox2D> boxes;
@@ -183,10 +193,12 @@ void FormGatesPlot2D::replot_markers() {
 //  ui->coincPlot->set_boxes(boxes);
 //  ui->coincPlot->set_labels(labels);
 //  ui->coincPlot->replot_markers();
+  ui->coincPlot->replotExtras();
+  ui->coincPlot->replot();
 }
 
-void FormGatesPlot2D::update_plot() {
-
+void FormGatesPlot2D::update_plot()
+{
   this->setCursor(Qt::WaitCursor);
   CustomTimer guiside(true);
 
@@ -202,12 +214,7 @@ void FormGatesPlot2D::update_plot() {
   {
     //      DBG << "really really updating 2d total count = " << some_spectrum->total_count();
 
-    std::shared_ptr<EntryList> spectrum_data =
-        std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
-//    ui->coincPlot->update_plot(adjrange, adjrange, spectrum_data);
-
-    if (bits != newbits)
-      bits = newbits;
+    bits = newbits;
 
     Detector detector_x_;
     Detector detector_y_;
@@ -219,6 +226,25 @@ void FormGatesPlot2D::update_plot() {
     calib_x_ = detector_x_.best_calib(bits);
     calib_y_ = detector_y_.best_calib(bits);
 
+    std::shared_ptr<EntryList> spectrum_data =
+        std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
+
+    HistList2D hist;
+    if (spectrum_data)
+    {
+      for (auto p : *spectrum_data)
+        hist.push_back(p2d(p.first.at(0), p.first.at(1), p.second.convert_to<double>()));
+    }
+    DBG << md.get_attribute("name").value_text << " hist size " << hist.size();
+    ui->coincPlot->updatePlot(adjrange + 1, adjrange + 1, hist);
+
+
+    ui->coincPlot->setAxes(
+          QString::fromStdString(calib_x_.units_),
+          calib_x_.transform(0, bits), calib_x_.transform(adjrange, bits),
+          QString::fromStdString(calib_y_.units_),
+          calib_y_.transform(0, bits), calib_y_.transform(adjrange, bits),
+          "Event count");
 //    ui->coincPlot->set_axes(calib_x_, calib_y_, bits, "Event count");
 
   } else {
@@ -233,7 +259,8 @@ void FormGatesPlot2D::update_plot() {
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormGatesPlot2D::markers_moved(Coord x, Coord y) {
+void FormGatesPlot2D::markers_moved(Coord x, Coord y)
+{
   MarkerBox2D m = my_marker_;
   m.visible = !(x.null() || y.null());
   m.x_c = x;
@@ -247,7 +274,8 @@ void FormGatesPlot2D::markers_moved(Coord x, Coord y) {
   emit marker_set(m);
 }
 
-void FormGatesPlot2D::set_marker(MarkerBox2D m) {
+void FormGatesPlot2D::set_marker(MarkerBox2D m)
+{
   my_marker_ = m;
   my_marker_.selectable = false;
   my_marker_.selected = false;

@@ -33,12 +33,14 @@ FormPlot2D::FormPlot2D(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  connect(ui->coincPlot, SIGNAL(clickedPlot(double,double,Qt::MouseButton)), this, SLOT(markers_moved(double,double,Qt::MouseButton)));
+  connect(ui->coincPlot, SIGNAL(clickedPlot(double,double,Qt::MouseButton)),
+          this, SLOT(markers_moved(double,double,Qt::MouseButton)));
 
   ui->spectrumSelector->set_only_one(true);
-  connect(ui->spectrumSelector, SIGNAL(itemSelected(SelectorItem)), this, SLOT(choose_spectrum(SelectorItem)));
-  connect(ui->spectrumSelector, SIGNAL(itemDoubleclicked(SelectorItem)), this, SLOT(spectrumDoubleclicked(SelectorItem)));
-
+  connect(ui->spectrumSelector, SIGNAL(itemSelected(SelectorItem)),
+          this, SLOT(choose_spectrum(SelectorItem)));
+  connect(ui->spectrumSelector, SIGNAL(itemDoubleclicked(SelectorItem)),
+          this, SLOT(spectrumDoubleclicked(SelectorItem)));
 
   QWidget *popup = new QWidget(this);
 
@@ -103,9 +105,11 @@ void FormPlot2D::crop_changed() {
     mySpectra->activate();
 }
 
-void FormPlot2D::setSpectra(Project& new_set) {
+void FormPlot2D::setSpectra(Project& new_set)
+{
 //  DBG << "setSpectra with " << spectrum.toStdString();
   mySpectra = &new_set;
+//  ui->coincPlot->reset_content();
   updateUI();
   current_spectrum_ = ui->spectrumSelector->selected().data.toLongLong();
 }
@@ -236,7 +240,8 @@ void FormPlot2D::update_plot(bool force)
   bool new_data = mySpectra->new_data();
   bool rescale2d = (zoom_2d != new_zoom);
 
-  if (rescale2d || new_data || force) {
+  if (rescale2d || new_data || force)
+  {
 //    DBG << "really updating 2d " << name_2d.toStdString();
 
     ui->pushSymmetrize->setEnabled(false);
@@ -254,20 +259,14 @@ void FormPlot2D::update_plot(bool force)
 
     uint16_t newbits = md.get_attribute("resolution").value_int;
 
-//    DBG << "Bits = " << newbits;
-
     if ((md.dimensions() == 2) && (adjrange = pow(2,newbits) * zoom_2d))
     {
-//      DBG << "really really updating 2d total count = " << some_spectrum->total_count();
-
       Setting sym = md.get_attribute("symmetrized");
-
-      //DBG << "Sym :" << sym.id_ << "=" << sym.value_int;
 
       ui->pushSymmetrize->setEnabled(sym.value_int == 0);
 
-            std::shared_ptr<EntryList> spectrum_data =
-                std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
+      std::shared_ptr<EntryList> spectrum_data =
+          std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
 
       HistList2D hist;
       if (spectrum_data)
@@ -277,18 +276,8 @@ void FormPlot2D::update_plot(bool force)
       }
       ui->coincPlot->updatePlot(adjrange + 1, adjrange + 1, hist);
 
-//      std::shared_ptr<EntryList> spectrum_data =
-//          std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
-//      ui->coincPlot->updatePlot(adjrange + 1, adjrange + 1, *spectrum_data);
-
-//      DBG << "adjrange = " << adjrange;
-//      DBG << "spectrum data size = " << spectrum_data->size();
-
-      if (rescale2d || force /*|| (name_2d != newname)*/)
+      if (rescale2d || force)
       {
-//        DBG << "rescaling 2d";
-//        name_2d = newname;
-
         if (bits != newbits)
           bits = newbits;
 

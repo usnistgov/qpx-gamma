@@ -252,13 +252,15 @@ void FormMcaDaq::clearGraphs() //rename this
   project_->activate();
 }
 
-void FormMcaDaq::update_plots() {
+void FormMcaDaq::update_plots()
+{
   //ui->statusBar->showMessage("Updating plots");
 
   CustomTimer guiside(true);
 
   QString name = QString::fromStdString(project_->identity());
-  if (name != "New project") {
+  if (name != "New project")
+  {
     QStringList slist = name.split("/");
     if (!slist.empty())
       name = slist.back();
@@ -269,19 +271,22 @@ void FormMcaDaq::update_plots() {
   else if (project_->changed())
     name += QString::fromUtf8(" \u2731");
 
-  if (name != this->windowTitle()) {
+  if (name != this->windowTitle())
+  {
     this->setWindowTitle(name);
     emit toggleIO(true);
   }
 
   ui->pushEditSpectra->setVisible(project_->empty());
 
-  if (ui->Plot2d->isVisible()) {
+  if (ui->Plot2d->isVisible())
+  {
     this->setCursor(Qt::WaitCursor);
     ui->Plot2d->update_plot();
   }
 
-  if (ui->Plot1d->isVisible()) {
+  if (ui->Plot1d->isVisible())
+  {
     this->setCursor(Qt::WaitCursor);
     ui->Plot1d->update_plot();
   }
@@ -359,7 +364,8 @@ void FormMcaDaq::on_pushMcaStart_clicked()
   }
 }
 
-void FormMcaDaq::start_DAQ() {
+void FormMcaDaq::start_DAQ()
+{
   if (project_->empty() && spectra_templates_.empty())
     return;
 
@@ -457,7 +463,8 @@ void FormMcaDaq::projectImport()
       }
     } else {
       SinkPtr newSpectrum = SinkFactory::getInstance().create_from_file(fileNames.at(i).toStdString());
-      if (newSpectrum) {
+      if (newSpectrum)
+      {
         Setting app = newSpectrum->metadata().get_attribute("appearance");
         app.value_text = generateColor().name(QColor::HexArgb).toStdString();
         newSpectrum->set_attribute(app);
@@ -481,12 +488,14 @@ void FormMcaDaq::projectImport()
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormMcaDaq::updateSpectraUI() {
+void FormMcaDaq::updateSpectraUI()
+{
   ui->Plot2d->updateUI();
   ui->Plot1d->setSpectra(*project_);
 }
 
-void FormMcaDaq::newProject() {
+void FormMcaDaq::newProject()
+{
   ui->Plot2d->setSpectra(*project_);
   ui->Plot2d->update_plot(true);
   ui->Plot1d->setSpectra(*project_);
@@ -499,7 +508,8 @@ void FormMcaDaq::on_pushMcaStop_clicked()
   interruptor_.store(true);
 }
 
-void FormMcaDaq::run_completed() {
+void FormMcaDaq::run_completed()
+{
   if (my_run_) {
     //LINFO << "FormMcaDaq received signal for run completed";
     ui->pushMcaStop->setEnabled(false);

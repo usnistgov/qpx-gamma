@@ -124,16 +124,16 @@ protected:
                         std::set<double>& best_rois);
 
   void toggle_items(const std::set<double> &good_peak, const std::set<double> &prime_roi);
-  void toggle_label(QCPAbstractItem *item, const std::set<double> &labeled_peaks);
+  void toggle_label(QCPAbstractItem *item, const std::set<double> &good_peaks);
 
-  void toggle_sum4_line(QCPItemLine* line);
-  void toggle_background_line(QCPItemLine* line);
+  void toggle_sum4_line(QCPItemLine* line, bool only_one_region);
+  void toggle_background_line(QCPItemLine* line, bool only_one_region,
+                              bool adjusting_background, bool adjusting_sum4);
 
-  void toggle_button(QPlot::Button* button);
   void toggle_region_button(QPlot::Button* button, const std::set<double> &prime_roi);
   void toggle_peak_button(QPlot::Button* button);
-  void toggle_sum4_button(QPlot::Button* button);
-  void toggle_background_button(QPlot::Button* button);
+  void toggle_sum4_button(QPlot::Button* button, bool only_one_region);
+  void toggle_background_button(QPlot::Button* button, bool only_one_region);
 
 
   void toggle_graphs(const std::set<double>& good_peak, const std::set<double>& good_roi);
