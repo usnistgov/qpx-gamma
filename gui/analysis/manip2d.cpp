@@ -36,7 +36,6 @@ SinkPtr slice_rectangular(SinkPtr source, std::initializer_list<Pair> bounds, bo
   if ((md.get_attribute("total_events").value_precise <= 0) || (md.dimensions() != 2))
     return nullptr;
 
-
   Metadata temp = SinkFactory::getInstance().create_prototype("1D");
 
   Setting name = md.get_attribute("name");
@@ -69,6 +68,7 @@ SinkPtr slice_rectangular(SinkPtr source, std::initializer_list<Pair> bounds, bo
   std::shared_ptr<EntryList> spectrum_data = std::move(source->data_range(bounds));
   for (auto it : *spectrum_data)
     ret->append(it);
+  ret->flush();
 
   if (ret->metadata().get_attribute("total_events").value_precise > 0)
     return ret;
@@ -102,6 +102,7 @@ bool slice_diagonal_x(SinkPtr source, SinkPtr destination, size_t xc, size_t yc,
 
   }
 
+  destination->flush();
   return (destination->metadata().get_attribute("total_events").value_precise > 0);
 }
 
@@ -131,6 +132,7 @@ bool slice_diagonal_y(SinkPtr source, SinkPtr destination, size_t xc, size_t yc,
 
   }
 
+  destination->flush();
   return (destination->metadata().get_attribute("total_events").value_precise > 0);
 }
 
@@ -266,6 +268,8 @@ SinkPtr make_symmetrized(SinkPtr source)
   Qpx::Setting app = md.get_attribute("symmetrized");
   app.value_int = true;
   ret->set_attribute(app);
+
+  ret->flush();
 
   if (ret->metadata().get_attribute("total_events").value_precise > 0)
     return ret;

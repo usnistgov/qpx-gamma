@@ -133,15 +133,20 @@ std::unique_ptr<std::list<Entry>> Spectrum1D::_data_range(std::initializer_list<
   return result;
 }
 
-void Spectrum1D::_append(const Entry& e) {
+void Spectrum1D::_append(const Entry& e)
+{
+  bool added = false;
   for (size_t i = 0; i < e.first.size(); ++i)
-    if (pattern_add_.relevant(i) && (e.first[i] < spectrum_.size())) {
+    if (pattern_add_.relevant(i) && (e.first[i] < spectrum_.size()))
+    {
+      added = true;
       spectrum_[e.first[i]] += e.second;
 //      metadata_.total_count += e.second;
       total_hits_ += e.second;
-
       //total events??? HACK!!
     }
+  if (added)
+    total_events_ += e.second;
 }
 
 void Spectrum1D::addHit(const Hit& newHit)

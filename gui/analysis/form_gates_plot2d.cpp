@@ -263,26 +263,32 @@ void FormGatesPlot2D::set_gates_visible(bool vertical, bool horizontal, bool dia
   replot_markers();
 }
 
-void FormGatesPlot2D::set_scale_type(QString st) {
-//  ui->coincPlot->set_scale_type(st);
+void FormGatesPlot2D::set_scale_type(QString st)
+{
+  ui->coincPlot->setScaleType(st);
 }
 
-void FormGatesPlot2D::set_gradient(QString gr) {
-//  ui->coincPlot->set_gradient(gr);
+void FormGatesPlot2D::set_gradient(QString gr)
+{
+  ui->coincPlot->setGradient(gr);
 }
 
-void FormGatesPlot2D::set_show_legend(bool sl) {
-//  ui->coincPlot->set_show_legend(sl);
+void FormGatesPlot2D::set_show_legend(bool sl)
+{
+  ui->coincPlot->setShowGradientLegend(sl);
 }
 
-QString FormGatesPlot2D::scale_type() {
-//  return ui->coincPlot->scale_type();
+QString FormGatesPlot2D::scale_type()
+{
+  return ui->coincPlot->scaleType();
 }
 
-QString FormGatesPlot2D::gradient() {
-//  return ui->coincPlot->gradient();
+QString FormGatesPlot2D::gradient()
+{
+  return ui->coincPlot->gradient();
 }
 
-bool FormGatesPlot2D::show_legend() {
-//  return ui->coincPlot->show_legend();
+bool FormGatesPlot2D::show_legend()
+{
+  return ui->coincPlot->showGradientLegend();
 }

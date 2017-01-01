@@ -288,8 +288,8 @@ void qpx::symmetrize_2d(FormSymmetrize2D* formSym) {
   } else
     ui->qpxTabs->setTabText(idx, formSym->windowTitle());
   ui->qpxTabs->setCurrentWidget(formSym);
+  formSym->update_spectrum();
   reorder_tabs();
-
 }
 
 void qpx::eff_cal(FormEfficiencyCalibration *formEf) {

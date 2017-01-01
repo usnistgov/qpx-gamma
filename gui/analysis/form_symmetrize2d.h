@@ -41,6 +41,7 @@ public:
   ~FormSymmetrize2D();
 
   void setSpectrum(Qpx::Project *newset, int64_t idx);
+  void update_spectrum();
   void clear();
   void reset();
 

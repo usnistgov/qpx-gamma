@@ -189,7 +189,8 @@ void FormAnalysis2D::update_gates(MarkerBox2D box) {
     form_integration_->make_range(xx, yy);
 }
 
-void FormAnalysis2D::closeEvent(QCloseEvent *event) {
+void FormAnalysis2D::closeEvent(QCloseEvent *event)
+{
   saveSettings();
   event->accept();
 }
@@ -213,7 +214,8 @@ void FormAnalysis2D::loadSettings() {
     form_integration_->loadSettings();
 }
 
-void FormAnalysis2D::saveSettings() {
+void FormAnalysis2D::saveSettings()
+{
   QSettings settings_;
 
   if (my_gates_)

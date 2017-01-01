@@ -86,7 +86,10 @@ void FormSymmetrize2D::configure_UI() {
   make_gated_spectra();
 }
 
-
+void FormSymmetrize2D::update_spectrum()
+{
+  configure_UI();
+}
 
 void FormSymmetrize2D::setSpectrum(Project *newset, int64_t idx) {
   clear();
@@ -113,16 +116,21 @@ void FormSymmetrize2D::make_gated_spectra() {
 
   if (/*(md.total_count > 0) &&*/ (md.dimensions() == 2))
   {
+    DBG << "All good";
     uint16_t bits = md.get_attribute("resolution").value_int;
     uint32_t adjrange = pow(2,bits) - 1;
 
     gate_x = slice_rectangular(source_spectrum, {{0, adjrange}, {0, adjrange}}, true);
+
+    DBG << "gx " << gate_x->dimensions();
 
     fit_data_.clear();
     fit_data_.setData(gate_x);
     ui->plotSpectrum->update_spectrum();
 
     gate_y = slice_rectangular(source_spectrum, {{0, adjrange}, {0, adjrange}}, false);
+
+    DBG << "gy " << gate_y->dimensions();
 
     fit_data_2_.clear();
     fit_data_2_.setData(gate_y);
