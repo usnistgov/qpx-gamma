@@ -34,6 +34,8 @@ public:
   explicit GenericPlot(QWidget *parent = 0);
   QSize sizeHint() const Q_DECL_OVERRIDE;
 
+  bool containsItem(QCPAbstractItem *item) const;
+
   void clearAll();
   virtual void clearPrimary() {}
   virtual void clearExtras() {}

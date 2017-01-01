@@ -32,6 +32,11 @@ ShowOptions GenericPlot::visibleOptions() const
   return visible_options_;
 }
 
+bool GenericPlot::containsItem(QCPAbstractItem *item) const
+{
+  return (mItems.contains(item));
+}
+
 void GenericPlot::clearAll()
 {  
   clearGraphs();

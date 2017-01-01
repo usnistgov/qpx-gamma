@@ -31,6 +31,7 @@
 
 #include "thread_fitter.h"
 #include "qp_fitter.h"
+#include "coord.h"
 
 namespace Ui {
 class FormFitter;
@@ -74,9 +75,12 @@ signals:
   void fitting_done();
   void fitter_busy(bool);
 
+  void range_selection_changed(double l, double r);
+
 private slots:
 
   void selection_changed();
+  void update_range_selection(double l, double r);
 
   void fit_updated(Qpx::Fitter);
   void fitting_complete();

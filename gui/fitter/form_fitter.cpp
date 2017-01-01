@@ -39,6 +39,8 @@ FormFitter::FormFitter(QWidget *parent) :
   player = new QMediaPlayer(this);
 
   connect(ui->plot, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
+  connect(ui->plot, SIGNAL(range_selection_changed(double,double)),
+          this, SLOT(update_range_selection(double,double)));
 
   connect(ui->plot, SIGNAL(add_peak(double, double)), this, SLOT(add_peak(double, double)));
   connect(ui->plot, SIGNAL(delete_selected_peaks()), this, SLOT(delete_selected_peaks()));
@@ -59,8 +61,8 @@ FormFitter::FormFitter(QWidget *parent) :
   QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Backspace), ui->plot);
   connect(shortcut, SIGNAL(activated()), ui->plot, SLOT(zoomOut()));
 
-  QShortcut *shortcut2 = new QShortcut(QKeySequence(Qt::Key_Insert), ui->plot);
-  connect(shortcut2, SIGNAL(activated()), this, SLOT(add_peak()));
+//  QShortcut *shortcut2 = new QShortcut(QKeySequence(Qt::Key_Insert), ui->plot);
+//  connect(shortcut2, SIGNAL(activated()), this, SLOT(add_peak()));
 
   QShortcut* shortcut3 = new QShortcut(QKeySequence(QKeySequence::Delete), ui->plot);
   connect(shortcut3, SIGNAL(activated()), this, SLOT(delete_selected_peaks()));
@@ -229,9 +231,6 @@ void FormFitter::adjust_sum4(double peak_id, double l, double r)
   if (!fit_data_ || busy_)
     return;
 
-  ui->plot->clear_range_selection();
-
-  toggle_push(false);
   if (fit_data_->adjust_sum4(peak_id,
                              fit_data_->settings().cali_nrg_.inverse_transform(l),
                              fit_data_->settings().cali_nrg_.inverse_transform(r)))
@@ -244,6 +243,8 @@ void FormFitter::adjust_sum4(double peak_id, double l, double r)
     emit data_changed();
     emit fitting_done();
   }
+  else
+    ui->plot->clear_range_selection();
 }
 
 void FormFitter::adjust_background_L(double ROI_id, double l, double r)
@@ -415,6 +416,11 @@ void FormFitter::selection_changed()
 {
   toggle_push(busy_);
   emit peak_selection_changed(ui->plot->get_selected_peaks());
+}
+
+void FormFitter::update_range_selection(double l, double r)
+{
+  emit range_selection_changed(l, r);
 }
 
 void FormFitter::updateData()

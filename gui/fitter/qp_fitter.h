@@ -25,7 +25,6 @@
 #define PLOT_FITTER_H
 
 #include "qp_multi1d.h"
-#include "coord.h"
 #include "fitter.h"
 #include "qp_range_selector.h"
 
@@ -75,15 +74,17 @@ signals:
 
 protected slots:
 
+  void update_range_selection();
+
   void selection_changed();
   void changeROI(QAction*);
 
-  void adjustY()  Q_DECL_OVERRIDE;
+  void adjustY() Q_DECL_OVERRIDE;
 
 
 protected:
-  void executeButton(QPlot::Button *button) override;
-  void mouseClicked(double x, double y, QMouseEvent *event) override;
+  void executeButton(QPlot::Button *button) Q_DECL_OVERRIDE;
+  void mouseClicked(double x, double y, QMouseEvent *event) Q_DECL_OVERRIDE;
 
   Qpx::Fitter *fit_data_;
   bool busy_ {false};
@@ -111,15 +112,35 @@ protected:
   void follow_selection();
   void plotExtraButtons();
   void plotEnergyLabel(double peak_id, double peak_energy, QCPItemTracer *crs);
-  void plotRange();
 
   void plotRegion(double region_id, const Qpx::ROI &region, QCPGraph *data_graph);
   void plotPeak(double region_id, double peak_id, const Qpx::Peak &peak);
 
-  void make_range_selection();
   void make_SUM4_range(double region, double peak);
   void make_background_range(double region, bool left);
 
+  void what_is_in_range(std::set<double>& peaks,
+                        std::set<double>& rois,
+                        std::set<double>& best_rois);
+
+  void toggle_items(const std::set<double> &good_peak, const std::set<double> &prime_roi);
+  void toggle_label(QCPAbstractItem *item, const std::set<double> &labeled_peaks);
+
+  void toggle_sum4_line(QCPItemLine* line);
+  void toggle_background_line(QCPItemLine* line);
+
+  void toggle_button(QPlot::Button* button);
+  void toggle_region_button(QPlot::Button* button, const std::set<double> &prime_roi);
+  void toggle_peak_button(QPlot::Button* button);
+  void toggle_sum4_button(QPlot::Button* button);
+  void toggle_background_button(QPlot::Button* button);
+
+
+  void toggle_graphs(const std::set<double>& good_peak, const std::set<double>& good_roi);
+
+  bool region_is_selected(double region);
+  bool peaks_in_region_selected(double region);
+  bool only_one_region_selected();
 };
 
 

@@ -31,14 +31,19 @@ void RangeSelector::set_bounds(const double &left, const double &right)
     std::swap(left_, right_);
 }
 
-void RangeSelector::plot_self(QPlot::Button* button)
+void RangeSelector::replot()
 {
+  unplot_self();
+
+  if (!visible_ || (left_ == right_))
+    return;
+
   QCPGraph* target_graph = find_target_graph();
 
   if (!target_graph)
     return;
 
-  plot_self(target_graph, button);
+  plot_self(target_graph);
 }
 
 QCPGraph* RangeSelector::find_target_graph()
@@ -56,12 +61,14 @@ QCPGraph* RangeSelector::find_target_graph()
 }
 
 
-void RangeSelector::plot_self(QCPGraph* target, QPlot::Button *button)
+void RangeSelector::plot_self(QCPGraph* target)
 {
   QPlot::Draggable *draggable_L = make_draggable(target, left_);
   connect(draggable_L, SIGNAL(moved(QPointF)), this, SLOT(moved_L(QPointF)));
+  connect(draggable_L, SIGNAL(stoppedMoving()), this, SLOT(stopped_moving()));
   QPlot::Draggable *draggable_R = make_draggable(target, right_);
   connect(draggable_R, SIGNAL(moved(QPointF)), this, SLOT(moved_R(QPointF)));
+  connect(draggable_R, SIGNAL(stoppedMoving()), this, SLOT(stopped_moving()));
 
   QCPItemLine *line = new QCPItemLine(target->parentPlot());
   line->setSelectable(false);
@@ -70,19 +77,27 @@ void RangeSelector::plot_self(QCPGraph* target, QPlot::Button *button)
   line->start->setCoords(0, 0);
   line->end->setParentAnchor(draggable_R->tracer()->position);
   line->end->setCoords(0, 0);
-  line->setPen(QPen(appearance.default_pen.color(), 2, Qt::DashLine));
-  line->setSelectedPen(QPen(appearance.default_pen.color(), 2, Qt::DashLine));
+  line->setPen(pen);
+  line->setSelectedPen(pen);
   children_.insert(line);
 
-  if (button)
-  {
-    QCPItemTracer* higher = draggable_L->tracer();
-    if (draggable_R->tracer()->position->value() > draggable_L->tracer()->position->value())
-      higher = draggable_R->tracer();
-    button->bottomRight->setParentAnchor(higher->position);
-    button->bottomRight->setCoords(11, -20);
-    children_.insert(button);
-  }
+  QPlot::Button *button =  new QPlot::Button(parent_plot_,
+                                             button_icon_,
+                                             purpose_, tooltip_,
+                                             Qt::AlignTop | Qt::AlignLeft);
+
+  QCPItemTracer* higher = draggable_L->tracer();
+  //make this optional?
+  //  if (draggable_R->tracer()->position->value() > draggable_L->tracer()->position->value())
+  //    higher = draggable_R->tracer();
+  button->bottomRight->setParentAnchor(higher->position);
+  button->bottomRight->setCoords(11, -20);
+  children_.insert(button);
+}
+
+void RangeSelector::stopped_moving()
+{
+  emit stoppedMoving();
 }
 
 
@@ -98,8 +113,8 @@ QPlot::Draggable* RangeSelector::make_draggable(QCPGraph* target, double positio
   children_.insert(tracer);
 
   QPlot::Draggable *draggable = new QPlot::Draggable(target->parentPlot(), tracer, 12);
-  draggable->setPen(QPen(appearance.default_pen.color(), 1));
-  draggable->setSelectedPen(QPen(appearance.default_pen.color(), 1));
+  draggable->setPen(QPen(pen.color(), 1));
+  draggable->setSelectedPen(QPen(pen.color(), 1));
   draggable->setProperty("tracer", QVariant::fromValue(0));
   draggable->setSelectable(true);
   children_.insert(draggable);
@@ -110,7 +125,8 @@ QPlot::Draggable* RangeSelector::make_draggable(QCPGraph* target, double positio
 void RangeSelector::unplot_self()
 {
   for (QCPAbstractItem* c : children_)
-    c->parentPlot()->removeItem(c);
+    if (parent_plot_->containsItem(c))
+      parent_plot_->removeItem(c);
   children_.clear();
 }
 
@@ -127,6 +143,28 @@ void RangeSelector::moved_R(QPointF p)
   if (left_ > right_)
     std::swap(left_, right_);
 }
+
+void RangeSelector::set_visible(bool vis)
+{
+  visible_ = vis;
+  replot();
+}
+
+void RangeSelector::clear()
+{
+  left_ = 0;
+  right_ = 0;
+  purpose_.clear();
+  clearProperties();
+  set_visible(false);
+}
+
+void RangeSelector::clearProperties()
+{
+  for (auto p : dynamicPropertyNames())
+    setProperty(p, QVariant());
+}
+
 
 
 
