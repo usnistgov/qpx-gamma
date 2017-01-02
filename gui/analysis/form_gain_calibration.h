@@ -58,6 +58,8 @@ private slots:
 
   void on_pushSymmetrize_clicked();
 
+  void on_doubleCullDelta_editingFinished();
+
 private:
   Ui::FormGainCalibration *ui;
 

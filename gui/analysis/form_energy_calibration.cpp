@@ -197,16 +197,18 @@ void FormEnergyCalibration::replot_calib() {
   xmin -= x_margin;
 
   if (xx.size()) {
+    QVector<double> xx_sigma(yy.size(), 0);
     QVector<double> yy_sigma(yy.size(), 0);
 
-    ui->PlotCalib->addPoints(style_pts, xx, yy, QVector<double>(), yy_sigma);
+    ui->PlotCalib->addPoints(style_pts, xx, yy, xx_sigma, yy_sigma);
     ui->PlotCalib->set_selected_pts(selected_peaks_);
-    if (new_calibration_.valid()) {
-
+    if (new_calibration_.valid())
+    {
       double step = (xmax-xmin) / 50.0;
       xx.clear(); yy.clear();
 
-      for (double i=xmin; i < xmax; i+=step) {
+      for (double i=xmin; i < xmax; i+=step)
+      {
         xx.push_back(i);
         yy.push_back(new_calibration_.transform(i));
       }
@@ -291,30 +293,25 @@ void FormEnergyCalibration::on_pushFit_clicked()
   x.resize(fit_data_.peaks().size());
   y.resize(fit_data_.peaks().size());
   int i = 0;
-  for (auto &q : fit_data_.peaks()) {
+  for (auto &q : fit_data_.peaks())
+  {
     x[i] = q.first;
     y[i] = q.second.energy().value();
     i++;
   }
 
-
   std::vector<double> sigmas(y.size(), 1);
 
   PolyBounded p;
   p.add_coeff(0, -50, 50, 1);
-  for (int i=1; i <= ui->spinTerms->value(); ++i) {
-    if (i==1)
-      p.add_coeff(i, -5, 5, 1);
-    else
+  p.add_coeff(1,   0, 50, 1);
+  for (int i=2; i <= ui->spinTerms->value(); ++i)
       p.add_coeff(i, -5, 5, 0);
-  }
-
-
-  PolyBounded p2 = p;
 
   p.fit_fityk(x,y,sigmas);
 
   #ifdef FITTER_CERES_ENABLED
+  PolyBounded p2 = p;
   p2.fit_ceres(x,y,sigmas);
   p2 = p;
   p2.fit_ceres(x,y,sigmas);

@@ -47,7 +47,7 @@ FormGainCalibration::FormGainCalibration(XMLableDB<Qpx::Detector>& dets, Qpx::Fi
   style_pts.themes["selected"] = QPen(selected_color, 9);
   style_fit.default_pen = QPen(Qt::darkCyan, 2);
 
-//  connect(ui->plotCalib, SIGNAL(selection_changed()), this, SLOT(selection_changed_in_plot()));
+  //  connect(ui->plotCalib, SIGNAL(selection_changed()), this, SLOT(selection_changed_in_plot()));
 
   //QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tableFWHM);
   //connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushRemovePeak_clicked()));
@@ -118,65 +118,64 @@ void FormGainCalibration::update_peaks() {
   plot_calib();
 }
 
-void FormGainCalibration::plot_calib() {
+void FormGainCalibration::plot_calib()
+{
   ui->plotCalib->clearGraphs();
 
-  ui->doubleCullDelta->setEnabled(false);
-
-  size_t total = fit_data1_.peaks().size();
-  if (total != fit_data2_.peaks().size())
+  QVector<double> xx, yy;
+  QVector<double> xx_sigma, yy_sigma;
+  double xmin = std::numeric_limits<double>::max();
+  double xmax = - std::numeric_limits<double>::max();
+  for (auto &q: fit_data1_.peaks())
   {
-    if (nrg_calibration1_.units_ == nrg_calibration2_.units_) {
-      ui->doubleCullDelta->setEnabled(true);
-    }
-    //make invisible?
-    return;
+    double nrg = q.second.energy().value();
+    int multiple = 0;
+    for (auto &p : fit_data1_.peaks())
+      if (std::abs(p.second.energy().value() - nrg) < ui->doubleCullDelta->value())
+      {
+        xx.push_back(q.second.center().value());
+        yy.push_back(p.second.center().value());
+        xx_sigma.push_back(q.second.center().uncertainty());
+        yy_sigma.push_back(p.second.center().uncertainty());
+        xmin = std::min(xmin, q.second.center().value());
+        xmax = std::max(xmax, q.second.center().value());
+        multiple++;
+      }
+    if (multiple > 1)
+      DBG << "Multiple peaks match c1=" << nrg;
   }
 
   ui->pushSaveCalib->setEnabled(gain_match_cali_.valid());
   ui->pushSymmetrize->setEnabled(gain_match_cali_.valid());
 
-  QVector<double> xx, yy;
-
-  double xmin = std::numeric_limits<double>::max();
-  double xmax = - std::numeric_limits<double>::max();
-
-  for (auto &q : fit_data2_.peaks()) {
-    xx.push_back(q.first);
-    if (q.first < xmin)
-      xmin = q.first;
-    if (q.first > xmax)
-      xmax = q.first;
-  }
-
-  for (auto &q : fit_data1_.peaks())
-    yy.push_back(q.first);
+  bool good = (xx.size() && (xx.size() == yy.size()));
 
   double x_margin = (xmax - xmin) / 10;
   xmax += x_margin;
   xmin -= x_margin;
 
-  ui->pushCalibGain->setEnabled(false);
-  ui->spinPolyOrder->setEnabled(false);
-  if (xx.size()) {
-    ui->pushCalibGain->setEnabled(true);
-    ui->spinPolyOrder->setEnabled(true);
-
-
-    ui->plotCalib->addPoints(style_pts, xx, yy, QVector<double>(), QVector<double>());
-    if ((gain_match_cali_.to_ == detector1_.name_) && gain_match_cali_.valid()) {
-
+  ui->pushCalibGain->setEnabled(good);
+  ui->spinPolyOrder->setEnabled(good);
+  if (good)
+  {
+    ui->plotCalib->addPoints(style_pts, xx, yy, xx_sigma, yy_sigma);
+    if ((gain_match_cali_.to_ == detector1_.name_) && gain_match_cali_.valid())
+    {
       double step = (xmax-xmin) / 50.0;
       xx.clear(); yy.clear();
 
-      for (double i=xmin; i < xmax; i+=step) {
+      for (double i=xmin; i < xmax; i+=step)
+      {
         xx.push_back(i);
         yy.push_back(gain_match_cali_.transform(i));
       }
       ui->plotCalib->setFit(xx, yy, style_fit);
+      ui->plotCalib->setTitle("E = " + QString::fromStdString(gain_match_cali_.fancy_equation(6, true)));
     }
   }
   ui->plotCalib->replotAll();
+
+
 }
 
 void FormGainCalibration::selection_changed_in_plot() {
@@ -193,30 +192,47 @@ void FormGainCalibration::on_pushSaveCalib_clicked()
 
 void FormGainCalibration::on_pushCalibGain_clicked()
 {
-  size_t total = fit_data1_.peaks().size();
-  if (total != fit_data2_.peaks().size())
+  std::vector<double> xx, yy;
+  std::vector<double> xx_sigma, yy_sigma;
+  for (auto &q: fit_data1_.peaks())
   {
-    //make invisible?
+    double nrg = q.second.energy().value();
+    int multiples = 0;
+    for (auto &p : fit_data1_.peaks())
+      if (std::abs(p.second.energy().value() - nrg) < ui->doubleCullDelta->value())
+      {
+        xx.push_back(q.second.center().value());
+        yy.push_back(p.second.center().value());
+//        xx_sigma.push_back(q.second.center().uncertainty());
+//        yy_sigma.push_back(p.second.center().uncertainty());
+        multiples++;
+      }
+    if (multiples > 1)
+      WARN << "Multiple peaks match c1=" << nrg;
+  }
+
+  bool good = (xx.size() && (xx.size() == yy.size()));
+
+  if (!good)
+  {
+    DBG << "size mismatch";
     return;
   }
 
-  std::vector<double> x, y;
-  for (auto &q : fit_data2_.peaks())
-    x.push_back(q.first);
-  for (auto &q : fit_data1_.peaks())
-    y.push_back(q.first);
-
-
-  std::vector<double> sigmas(y.size(), 1);
-
   PolyBounded p;
-  p.add_coeff(0, -50, 50, 1);
-  for (int i=1; i <= ui->spinPolyOrder->value(); ++i)
-    p.add_coeff(i, -5, 5, 1);
+  p.add_coeff(0, -50, 50, 0);
+  p.add_coeff(1,   0, 50, 1);
+  for (int i=2; i <= ui->spinPolyOrder->value(); ++i)
+    p.add_coeff(i, -5, 5, 0);
 
-  p.fit_fityk(x,y,sigmas);
+  DBG << "points " << xx.size() << " coefs " << p.coeffs().size();
 
-  if (p.coeffs_.size()) {
+  yy_sigma.resize(yy.size(), 1);
+  p.fit_fityk(xx, yy, yy_sigma);
+
+  if (p.coeffs_.size())
+  {
+    //    gain_match_cali_.type_ = ;
     gain_match_cali_.coefficients_ = p.coeffs();
     gain_match_cali_.to_ = detector1_.name_;
     gain_match_cali_.bits_ = fit_data2_.settings().bits_;
@@ -231,41 +247,12 @@ void FormGainCalibration::on_pushCalibGain_clicked()
   plot_calib();
 }
 
-//void FormGainCalibration::on_pushCull_clicked()
-//{
-//  //while (cull_mismatch()) {}
-
-//  std::set<double> to_remove;
-
-//  for (auto &q: fit_data1_.peaks()) {
-//    double nrg = q.second.energy;
-//    bool has = false;
-//    for (auto &p : fit_data2_.peaks())
-//      if (std::abs(p.second.energy - nrg) < ui->doubleCullDelta->value())
-//        has = true;
-//    if (!has)
-//      to_remove.insert(q.first);
-//  }
-//  for (auto &q : to_remove)
-//    fit_data1_.remove_peaks(to_remove);
-
-//  for (auto &q: fit_data2_.peaks()) {
-//    double nrg = q.second.energy;
-//    bool has = false;
-//    for (auto &p : fit_data1_.peaks())
-//      if (std::abs(p.second.energy - nrg) < ui->doubleCullDelta->value())
-//        has = true;
-//    if (!has)
-//      to_remove.insert(q.first);
-//  }
-//  for (auto &q : to_remove)
-//    fit_data2_.remove_peaks(to_remove);
-
-//  plot_calib();
-//  emit peaks_changed(true);
-//}
-
 void FormGainCalibration::on_pushSymmetrize_clicked()
 {
   emit symmetrize_requested();
+}
+
+void FormGainCalibration::on_doubleCullDelta_editingFinished()
+{
+  plot_calib();
 }
