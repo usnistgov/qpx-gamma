@@ -10,6 +10,7 @@ namespace QPlot
 
 struct Label2D
 {
+  int64_t id {-1};
   double x {0}, y {0};
   QString text;
   bool selected {false};
@@ -40,6 +41,7 @@ struct MarkerBox2D
   bool mark_center {false};
 
   double x1, x2, y1, y2, xc, yc;
+  int64_t id {-1};
   QString label;
   QColor border;
   QColor fill;

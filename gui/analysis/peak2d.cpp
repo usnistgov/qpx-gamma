@@ -31,10 +31,34 @@ bool Bounds::operator!= (const Bounds& other) const
   return !operator==(other);
 }
 
-void Bounds::set_bounds(double l, double r)
+Bounds Bounds::calibrate(const Qpx::Calibration& c, uint16_t bits) const
 {
-  lower_ = std::floor(std::min(l, r));
-  upper_ = std::ceil(std::max(l, r));
+  Bounds ret;
+  ret.set_centroid(c.transform(centroid_, bits));
+  ret.set_bounds(c.transform(lower_, bits),
+                 c.transform(upper_, bits));
+  return ret;
+}
+
+std::string Bounds::bounds_to_string() const
+{
+  std::stringstream ss;
+  ss << "[" << lower_ << "," << upper_ << "]";
+  return ss.str();
+}
+
+void Bounds::set_bounds(double l, double r, bool discretize)
+{
+  if (discretize)
+  {
+    lower_ = std::floor(std::min(l, r));
+    upper_ = std::ceil(std::max(l, r));
+  }
+  else
+  {
+    lower_ = std::min(l, r);
+    upper_ = std::max(l, r);
+  }
 }
 
 double Bounds::width() const
@@ -47,12 +71,12 @@ void Bounds::set_centroid(double c)
   centroid_ = c;
 }
 
-int32_t Bounds::lower() const
+double Bounds::lower() const
 {
   return lower_;
 }
 
-int32_t Bounds::upper() const
+double Bounds::upper() const
 {
   return upper_;
 }
@@ -135,26 +159,12 @@ void Sum2D::adjust_x(const Qpx::ROI &roi, double center)
   else
     return;
 
-  x = roi;
+  area[1][1].x.set_centroid(pk.center().value());
+  area[0][1] = area[2][1] = area[1][1];
 
-  Bounds2D newpeak = area[1][1];
-  newpeak.selected = true;
-
-  newpeak.x.set_centroid(pk.center().value());
-  newpeak.x.set_bounds(pk.sum4().left(), pk.sum4().right());
-
-  area[1][1] = newpeak;
-
-  Bounds2D bckg;
-  bckg.y = newpeak.y;
-
-  bckg.x.set_centroid(newpeak.x.centroid());
-
-  bckg.x.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
-  area[0][1] = bckg;
-
-  bckg.x.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
-  area[2][1] = bckg;
+  area[1][1].x.set_bounds(pk.sum4().left(), pk.sum4().right());
+  area[0][1].x.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
+  area[2][1].x.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
 
   energy_x = pk.energy();
 }
@@ -168,26 +178,12 @@ void Sum2D::adjust_y(const Qpx::ROI &roi, double center)
   else
     return;
 
-  y = roi;
+  area[1][1].y.set_centroid(pk.center().value());
+  area[1][0] = area[1][2] = area[1][1];
 
-  Bounds2D newpeak = area[1][1];
-  newpeak.selected = true;
-
-  newpeak.y.set_centroid(pk.center().value());
-  newpeak.y.set_bounds(pk.sum4().left(), pk.sum4().right());
-
-  area[1][1] = newpeak;
-
-  Bounds2D bckg;
-  bckg.x = newpeak.x;
-
-  bckg.y.set_centroid(newpeak.y.centroid());
-
-  bckg.y.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
-  area[1][0] = bckg;
-
-  bckg.y.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
-  area[1][2] = bckg;
+  area[1][1].y.set_bounds(pk.sum4().left(), pk.sum4().right());
+  area[1][0].y.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
+  area[1][2].y.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
 
   energy_y = pk.energy();
 }
@@ -200,8 +196,6 @@ void Sum2D::adjust_diag_x(const Qpx::ROI &roi, double center)
     pk = roi.peaks().at(center);
   else
     return;
-
-  dx = roi;
 
   Bounds2D bckg;
   bckg.x.set_centroid(area[1][1].x.centroid());
@@ -232,8 +226,6 @@ void Sum2D::adjust_diag_y(const Qpx::ROI &roi, double center)
     pk = roi.peaks().at(center);
   else
     return;
-
-  dy = roi;
 
   Bounds2D bckg;
   bckg.x.set_centroid(area[1][1].x.centroid());
@@ -272,9 +264,6 @@ Sum2D::Sum2D(const Qpx::ROI &x_roi, const Qpx::ROI &y_roi, double x_center, doub
     yy = y_roi.peaks().at(y_center);
   else
     return;
-
-  x = x_roi;
-  y = y_roi;
 
   Bounds2D newpeak;
   newpeak.selected = true;

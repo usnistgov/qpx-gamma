@@ -19,6 +19,8 @@ Plot2D::Plot2D(QWidget *parent)
   setAlwaysSquare(true);
   setAntialiased(false);
 
+  setInteraction(QCP::iMultiSelect, true);
+
   setVisibleOptions(ShowOptions::zoom | ShowOptions::save | ShowOptions::grid |
                     ShowOptions::scale | ShowOptions::gradients);
 }
@@ -76,8 +78,7 @@ std::list<MarkerBox2D> Plot2D::selectedBoxes()
     if (QCPItemRect *b = qobject_cast<QCPItemRect*>(q))
     {
       MarkerBox2D box;
-      box.xc = b->property("xc").toDouble();
-      box.yc = b->property("yc").toDouble();
+      box.id = b->property("id").toDouble();
       selection.push_back(box);
     }
   return selection;
@@ -90,8 +91,7 @@ std::list<Label2D> Plot2D::selectedLabels()
     if (QCPItemText *b = qobject_cast<QCPItemText*>(q))
     {
       Label2D label;
-      label.x = b->property("x").toDouble();
-      label.y = b->property("y").toDouble();
+      label.id = b->property("id").toDouble();
       selection.push_back(label);
     }
   return selection;
@@ -134,8 +134,7 @@ void Plot2D::plotBoxes()
     sel = QColor::fromHsv(sel.hsvHue(), sel.saturation(), sel.value(), sel.alpha() * 0.15);
     box->setSelectedBrush(QBrush(sel));
 
-    box->setProperty("xc", q.xc);
-    box->setProperty("yc", q.yc);
+    box->setProperty("id", QVariant::fromValue(q.id));
     box->topLeft->setCoords(q.x1, q.y1);
     box->bottomRight->setCoords(q.x2, q.y2);
 
@@ -162,33 +161,6 @@ void Plot2D::plotBoxes()
       linev->end->setCoords(q.xc, q.y2);
       //      DBG << "mark center xc yc " << xc << " " << yc;
     }
-
-//    if (showMarkerLabels() && !q.label.isEmpty())
-//    {
-//      QCPItemText *labelItem = new QCPItemText(this);
-//      labelItem->setText(q.label);
-//      labelItem->setProperty("xc", q.x1);
-//      labelItem->setProperty("yc", q.y1);
-//      labelItem->position->setType(QCPItemPosition::ptPlotCoords);
-//      labelItem->position->setCoords(q.xc, q.yc);
-
-//      labelItem->setPositionAlignment(static_cast<Qt::AlignmentFlag>(Qt::AlignTop|Qt::AlignLeft));
-//      labelItem->setFont(QFont("Helvetica", 14));
-//      labelItem->setSelectable(q.selectable);
-//      labelItem->setSelected(q.selected);
-
-//      labelItem->setColor(q.border);
-//      labelItem->setPen(QPen(q.border));
-//      labelItem->setBrush(QBrush(Qt::white));
-
-//      QColor sel = labelItem->selectedColor();
-//      QPen selpen(QColor::fromHsv(sel.hsvHue(), sel.saturation(), sel.value(), 255));
-//      selpen.setWidth(3);
-//      labelItem->setSelectedPen(selpen);
-//      labelItem->setSelectedBrush(QBrush(Qt::white));
-
-//      labelItem->setPadding(QMargins(1, 1, 1, 1));
-//    }
   }
 
   if (selectables)
@@ -215,9 +187,7 @@ void Plot2D::plotLabels()
     QCPItemText *labelItem = new QCPItemText(this);
     //    labelItem->setClipToAxisRect(false);
     labelItem->setText(q.text);
-
-    labelItem->setProperty("x", q.x);
-    labelItem->setProperty("y", q.y);
+    labelItem->setProperty("id", QVariant::fromValue(q.id));
 
     labelItem->position->setType(QCPItemPosition::ptPlotCoords);
 

@@ -34,23 +34,16 @@ using namespace Qpx;
 FormAnalysis2D::FormAnalysis2D(QWidget *parent)
   : QWidget(parent)
   , ui(new Ui::FormAnalysis2D)
-  , my_gates_(nullptr)
-  , form_integration_(nullptr)
 {
   ui->setupUi(this);
-
-  initialized = false;
 
   my_gates_ = new FormMultiGates();
   connect(my_gates_, SIGNAL(gate_selected()), this, SLOT(update_peaks()));
   connect(my_gates_, SIGNAL(boxes_made()), this, SLOT(take_boxes()));
-//  connect(my_gates_, SIGNAL(range_changed(Bounds2D)),
-//          this, SLOT(update_range(Bounds2D)));
+  connect(my_gates_, SIGNAL(projectChanged()), this, SLOT(changedProject()));
 
   form_integration_ = new FormIntegration2D();
   connect(form_integration_, SIGNAL(peak_selected()), this, SLOT(update_peaks()));
-//  connect(form_integration_, SIGNAL(range_changed(Bounds2D)),
-//          this, SLOT(update_range(Bounds2D)));
 
   connect(ui->plotMatrix, SIGNAL(clickedPlot(double,double)),
           this, SLOT(clickedPlot2d(double,double)));
@@ -62,7 +55,6 @@ FormAnalysis2D::FormAnalysis2D(QWidget *parent)
   ui->tabs->setCurrentWidget(my_gates_);
 
   loadSettings();
-  //connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
 }
 
 void FormAnalysis2D::take_boxes()
@@ -70,17 +62,11 @@ void FormAnalysis2D::take_boxes()
   form_integration_->setPeaks(my_gates_->get_all_peaks());
 }
 
-//void FormAnalysis2D::update_range(Bounds2D range)
-//{
-//  ui->plotMatrix->set_range_x(range);
-//  ui->plotMatrix->replot_markers();
-//}
-
 void FormAnalysis2D::matrix_selection()
 {
-  //DBG << "User selected peaks in matrix";
+  DBG << "User selected stuff in matrix";
 
-  std::list<Bounds2D> chosen_peaks = ui->plotMatrix->get_selected_boxes();
+  auto chosen_peaks = ui->plotMatrix->get_selected_boxes();
 
   if (my_gates_->isVisible())
     my_gates_->choose_peaks(chosen_peaks);
@@ -90,6 +76,10 @@ void FormAnalysis2D::matrix_selection()
   update_peaks();
 }
 
+void FormAnalysis2D::changedProject()
+{
+  emit projectChanged();
+}
 
 void FormAnalysis2D::setSpectrum(ProjectPtr newset, int64_t idx)
 {

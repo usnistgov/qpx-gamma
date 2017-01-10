@@ -84,7 +84,7 @@ public:
 
   void make_range(double x, double y);
 
-  void choose_peaks(std::list<Bounds2D>);
+  void choose_peaks(std::set<int64_t>);
 
   double width_factor();
 

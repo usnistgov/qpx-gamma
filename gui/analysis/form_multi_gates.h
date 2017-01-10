@@ -41,7 +41,7 @@ struct Gate
 {
   Bounds2D constraints;
 
-  double cps {0};
+  double count {0};
   bool approved {false};
   Qpx::Fitter fit_data_;
 };
@@ -53,8 +53,16 @@ class TableGates : public QAbstractTableModel
 private:
   std::vector<Gate> gates_;
 
+  Qpx::Calibration calib_;
+  uint16_t bits_;
+
 public:
   void set_data(std::vector<Gate> gates);
+  void set_calib(const Qpx::Calibration& c, uint16_t bits)
+  {
+    calib_ = c;
+    bits_ = bits;
+  }
 
   explicit TableGates(QObject *parent = 0);
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
@@ -82,7 +90,7 @@ public:
   std::list<Bounds2D> get_all_peaks() const;
   std::list<Bounds2D> current_peaks() const;
 
-  void choose_peaks(std::list<Bounds2D>);
+  void choose_peaks(std::set<int64_t>);
 
   void clear();
   void clearSelection();
@@ -93,6 +101,7 @@ public:
 signals:
   void gate_selected();
   void boxes_made();
+  void projectChanged();
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -123,6 +132,8 @@ private:
   Qpx::ProjectPtr project_;
   int64_t current_spectrum_ {0};
   Qpx::Metadata md_;
+  Qpx::Calibration nrg_x_;
+  Qpx::Calibration nrg_y_;
   int res_ {0};
 
   bool auto_ {false};
@@ -137,7 +148,7 @@ private:
   int32_t index_of(double, bool fuzzy) const;
 
   Gate current_gate() const;
-  Qpx::SinkPtr make_gated_spectrum(Bounds2D &bounds);
+  Qpx::SinkPtr make_gated_spectrum(const Bounds2D &bounds);
   int32_t energy_to_bin(double energy) const;
 
   void rebuild_table(bool contents_changed);

@@ -29,40 +29,42 @@ public:
   bool operator== (const Bounds& other) const;
   bool operator!= (const Bounds& other) const;
 
-  void set_bounds(double l, double r);
+  Bounds calibrate(const Qpx::Calibration& c, uint16_t bits) const;
+  std::string bounds_to_string() const;
+
+  void set_bounds(double l, double r, bool discretize = true);
 
   double width() const;
 
   void set_centroid(double c);
 
-  int32_t lower() const;
-  int32_t upper() const;
+  double lower() const;
+  double upper() const;
   double centroid() const;
 
 protected:
-  int32_t lower_ {0}, upper_ {0};
+  double lower_ {0}, upper_ {0};
   double centroid_{0};
 };
 
 struct Bounds2D
 {
-  Bounds2D reflect() const;
-
   bool operator== (const Bounds2D& other) const;
   bool operator!= (const Bounds2D& other) const;
 
   bool intersects(const Bounds2D& other) const;
   bool northwest() const;
   bool southeast() const;
+  Bounds2D reflect() const;
 
   void integrate(Qpx::SinkPtr spectrum);
 
   double chan_area() const;
 
+  int64_t id {-1};
   bool selectable {false};
   bool selected {false};
   Bounds x, y;
-//  QString label;
   bool horizontal {true};
   bool vertical {true};
   bool labelfloat {false};
@@ -85,7 +87,6 @@ struct Sum2D
   void integrate(Qpx::SinkPtr source);
 
   Bounds2D area[3][3];
-  Qpx::ROI x, y, dx, dy;
 
   UncertainDouble energy_x, energy_y;
 

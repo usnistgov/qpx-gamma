@@ -47,7 +47,7 @@ public:
   void reset();
 
 signals:
-  void spectraChanged();
+  void projectChanged();
   void detectorsChanged();
 
 public slots:
@@ -59,7 +59,8 @@ private slots:
   void detectorsUpdated() {emit detectorsChanged();}
   void initialize();
   void matrix_selection();
-//  void update_range(Bounds2D);
+
+  void changedProject();
 
   void on_tabs_currentChanged(int index);
 
@@ -73,16 +74,16 @@ protected:
 private:
   Ui::FormAnalysis2D *ui;
 
-  FormMultiGates*      my_gates_;
-  FormIntegration2D*   form_integration_;
+  FormMultiGates*    my_gates_ {nullptr};
+  FormIntegration2D* form_integration_ {nullptr};
 
   Qpx::ProjectPtr project_;
   int64_t current_spectrum_;
 
-  bool initialized;
+  bool initialized {false};
 
   void loadSettings();
   void saveSettings();
 };
 
-#endif // FORM_ANALYSIS2D_H
+#endif

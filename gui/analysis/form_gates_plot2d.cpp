@@ -35,7 +35,7 @@ FormGatesPlot2D::FormGatesPlot2D(QWidget *parent) :
   connect(ui->coincPlot, SIGNAL(clickedPlot(double,double,Qt::MouseButton)),
           this, SLOT(plotClicked(double,double,Qt::MouseButton)));
 
-  connect(ui->coincPlot, SIGNAL(stuff_selected()), this, SLOT(selection_changed()));
+  connect(ui->coincPlot, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
 }
 
 FormGatesPlot2D::~FormGatesPlot2D()
@@ -74,15 +74,13 @@ void FormGatesPlot2D::setSpectra(ProjectPtr new_set, int64_t idx)
   update_plot();
 }
 
-std::list<Bounds2D> FormGatesPlot2D::get_selected_boxes()
+std::set<int64_t> FormGatesPlot2D::get_selected_boxes()
 {
-  std::list<Bounds2D> ret;
+  std::set<int64_t> ret;
   for (auto b : ui->coincPlot->selectedBoxes())
-  {
-    Bounds2D box;
-    box.x.set_centroid(calib_x_.inverse_transform(b.xc, bits));
-    box.y.set_centroid(calib_y_.inverse_transform(b.yc, bits));
-  }
+    ret.insert(b.id);
+  for (auto b : ui->coincPlot->selectedLabels())
+    ret.insert(b.id);
   return ret;
 }
 
@@ -117,6 +115,9 @@ void FormGatesPlot2D::replot_markers()
 
   for (Bounds2D &q : boxes_)
   {
+    box.id = q.id;
+    label.id = q.id;
+
     box.xc = calib_x_.transform(q.x.centroid(), bits);
     box.x1 = calib_x_.transform(q.x.lower() - 0.5, bits);
     box.x2 = calib_x_.transform(q.x.upper() + 0.5, bits);

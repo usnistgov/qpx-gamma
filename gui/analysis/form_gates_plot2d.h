@@ -56,7 +56,7 @@ public:
   void set_boxes(std::list<Bounds2D> boxes);
   void set_show_boxes(bool);
 
-  std::list<Bounds2D> get_selected_boxes();
+  std::set<int64_t> get_selected_boxes();
 
   void loadSettings(QSettings& settings);
   void saveSettings(QSettings& settings);

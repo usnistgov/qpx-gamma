@@ -388,7 +388,7 @@ void FormIntegration2D::on_pushRemove_clicked()
 
   rebuild_table(true);
 
-  choose_peaks(std::list<Bounds2D>());
+  choose_peaks(std::set<int64_t>());
   emit peak_selected();
 }
 
@@ -417,29 +417,31 @@ void FormIntegration2D::setSpectrum(ProjectPtr newset, int64_t idx)
   }
 }
 
-void FormIntegration2D::choose_peaks(std::list<Bounds2D> chpeaks)
+void FormIntegration2D::choose_peaks(std::set<int64_t> chpeaks)
 {
   for (auto &q : peaks_)
     q.area[1][1].selected = false;
 
   //DBG << "checking selected peaks " << chpeaks.size();
 
-  int32_t idx = -1;
-  for (auto &q : chpeaks) {
-    idx = index_of(q);
-    if (idx >= 0) {
-      peaks_[idx].area[1][1].selected = true;
-      //      DBG << "*";
-    }
+  std::vector<Bounds2D> selpeaks;
+
+  for (auto p : peaks_)
+  {
+    p.area[1][1].selected = chpeaks.count(p.area[1][1].id);
+    if (p.area[1][1].selected)
+      selpeaks.push_back(p.area[1][1]);
   }
 
   bool found = false;
-  for (int i=0; i < sortModel.rowCount(); ++i) {
+  for (int i=0; i < sortModel.rowCount(); ++i)
+  {
     QModelIndex ix = sortModel.index(i, 0);
     QModelIndex iy = sortModel.index(i, 1);
     double x = sortModel.data(ix, Qt::EditRole).toDouble();
     double y = sortModel.data(iy, Qt::EditRole).toDouble();
-    for (auto &q : chpeaks) {
+    for (auto &q : selpeaks)
+    {
       if ((x == q.x.centroid()) && (y == q.y.centroid()))
       {
         found = true;
@@ -693,8 +695,8 @@ void FormIntegration2D::on_pushAddPeak2d_clicked()
 
   rebuild_table(true);
 
-  std::list<Bounds2D> ch;
-  ch.push_back(pk.area[1][1]);
+  std::set<int64_t> ch;
+  ch.insert(pk.area[1][1].id);
   choose_peaks(ch);
 
   int32_t current = current_idx();
