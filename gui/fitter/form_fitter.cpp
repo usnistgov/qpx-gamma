@@ -173,12 +173,13 @@ void FormFitter::delete_ROI(double ROI_bin)
   emit fitting_done();
 }
 
-void FormFitter::make_range(Coord marker)
+void FormFitter::make_range(double energy)
 {
   if (!fit_data_ || busy_)
     return;
 
-  ui->plot->make_range_selection(marker.bin(fit_data_->settings().bits_));
+  ui->plot->make_range_selection(energy);
+  ui->plot->follow_selection();
 }
 
 void FormFitter::set_selected_peaks(std::set<double> selected_peaks)
@@ -407,11 +408,6 @@ void FormFitter::clearSelection()
 }
 
 
-//void FormFitter::set_range(RangeSelector rng)
-//{
-//  ui->plot->set_range_selection(rng);
-//}
-
 void FormFitter::selection_changed()
 {
   toggle_push(busy_);
@@ -459,7 +455,6 @@ void FormFitter::roi_settings(double roi)
   {
     ui->plot->clear_range_selection();
 
-    //    busy_= true;
     toggle_push(true);
     thread_fitter_.set_data(*fit_data_);
     thread_fitter_.override_ROI_settings(roi, fs);

@@ -210,3 +210,8 @@ void FitSettings::clone(FitSettings other)
   (*this) = other;
 }
 
+double FitSettings::energy_to_bin(double energy) const
+{
+  return cali_nrg_.inverse_transform(energy, bits_);
+}
+

@@ -93,18 +93,24 @@ void QpFitter::update_spectrum()
 void QpFitter::mouseClicked(double x, double y, QMouseEvent* event)
 {
   if ((event->button() == Qt::LeftButton) && fit_data_)
-    make_range_selection(fit_data_->settings().cali_nrg_.inverse_transform(x));
-  else
-//  if (event->button() == Qt::RightButton)
+    make_range(x);
+  else if (event->button() == Qt::RightButton)
     clearSelection();
+
+  calc_visible();
+  emit range_selection_changed(range_->left(), range_->right());
+  emit peak_selection_changed(selected_peaks_);
 
   QPlot::Multi1D::mouseClicked(x, y, event);
 }
 
-
-void QpFitter::make_range_selection(int32_t bin)
+void QpFitter::make_range(double energy)
 {
-  if (fit_data_ && (bin >= 0))
+  int32_t bin = -1;
+  if (fit_data_)
+    bin = fit_data_->settings().cali_nrg_.inverse_transform(energy, fit_data_->settings().bits_);
+
+  if (bin >= 0)
   {
     range_->clearProperties();
     range_->set_bounds(
@@ -122,6 +128,12 @@ void QpFitter::make_range_selection(int32_t bin)
   }
   else
     range_->clear();
+}
+
+
+void QpFitter::make_range_selection(double energy)
+{
+  make_range(energy);
 
   calc_visible();
   emit range_selection_changed(range_->left(), range_->right());

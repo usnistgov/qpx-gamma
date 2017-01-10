@@ -28,22 +28,14 @@ using namespace Qpx;
 
 FormGatesPlot2D::FormGatesPlot2D(QWidget *parent) :
   QWidget(parent),
-  ui(new Ui::FormGatesPlot2D),
-  current_spectrum_(0)
+  ui(new Ui::FormGatesPlot2D)
 {
   ui->setupUi(this);
 
   connect(ui->coincPlot, SIGNAL(clickedPlot(double,double,Qt::MouseButton)),
-          this, SLOT(markers_moved(double,double,Qt::MouseButton)));
+          this, SLOT(plotClicked(double,double,Qt::MouseButton)));
 
   connect(ui->coincPlot, SIGNAL(stuff_selected()), this, SLOT(selection_changed()));
-
-  adjrange = 0;
-
-  my_marker_.selectable = false;
-  my_marker_.selected = false;
-
-  bits = 0;
 }
 
 FormGatesPlot2D::~FormGatesPlot2D()
@@ -51,42 +43,50 @@ FormGatesPlot2D::~FormGatesPlot2D()
   delete ui;
 }
 
+void FormGatesPlot2D::loadSettings(QSettings& settings)
+{
+  settings.beginGroup("AnalysisMatrix");
+  ui->coincPlot->setGradient(settings.value("gradient", "Hot").toString());
+  ui->coincPlot->setScaleType(settings.value("scale_type", "Logarithmic").toString());
+  ui->coincPlot->setShowGradientLegend(settings.value("show_legend", false).toBool());
+  settings.endGroup();
+}
+
+void FormGatesPlot2D::saveSettings(QSettings& settings)
+{
+  settings.beginGroup("AnalysisMatrix");
+  settings.setValue("gradient", ui->coincPlot->gradient());
+  settings.setValue("scale_type", ui->coincPlot->scaleType());
+  settings.setValue("show_legend", ui->coincPlot->showGradientLegend());
+  settings.endGroup();
+}
+
 void FormGatesPlot2D::selection_changed()
 {
   emit stuff_selected();
 }
 
-void FormGatesPlot2D::set_range_x(MarkerBox2D range)
+void FormGatesPlot2D::setSpectra(ProjectPtr new_set, int64_t idx)
 {
-  range_ = range;
-//  ui->coincPlot->set_range_x(range);
-}
-
-void FormGatesPlot2D::setSpectra(Project& new_set, int64_t idx)
-{
-  mySpectra = &new_set;
+  project_ = new_set;
   current_spectrum_ = idx;
 
   update_plot();
 }
 
-void FormGatesPlot2D::set_gates_movable(bool mov)
+std::list<Bounds2D> FormGatesPlot2D::get_selected_boxes()
 {
-  gates_movable_ = mov;
+  std::list<Bounds2D> ret;
+  for (auto b : ui->coincPlot->selectedBoxes())
+  {
+    Bounds2D box;
+    box.x.set_centroid(calib_x_.inverse_transform(b.xc, bits));
+    box.y.set_centroid(calib_y_.inverse_transform(b.yc, bits));
+  }
+  return ret;
 }
 
-void FormGatesPlot2D::set_show_boxes(bool show)
-{
-  show_boxes_ = show;
-//  ui->coincPlot->replot_markers();
-}
-
-std::list<MarkerBox2D> FormGatesPlot2D::get_selected_boxes()
-{
-//  return ui->coincPlot->get_selected_boxes();
-}
-
-void FormGatesPlot2D::set_boxes(std::list<MarkerBox2D> boxes)
+void FormGatesPlot2D::set_boxes(std::list<Bounds2D> boxes)
 {
   boxes_ = boxes;
   replot_markers();
@@ -94,11 +94,8 @@ void FormGatesPlot2D::set_boxes(std::list<MarkerBox2D> boxes)
 
 void FormGatesPlot2D::reset_content()
 {
-  //DBG << "reset content";
-//  ui->coincPlot->reset_content();
-//  ui->coincPlot->refresh();
   current_spectrum_ = 0;
-  my_marker_.visible = false;
+  boxes_.clear();
   replot_markers();
 }
 
@@ -112,87 +109,75 @@ void FormGatesPlot2D::replot_markers()
   ui->coincPlot->clearExtras();
   //DBG << "replot markers";
 
-  std::list<MarkerBox2D> boxes;
-  std::list<MarkerLabel2D> labels;
-  MarkerLabel2D label;
+  std::list<QPlot::MarkerBox2D> boxes;
+  std::list<QPlot::Label2D> labels;
 
-  if (show_boxes_)
-    boxes = boxes_;
+  QPlot::Label2D label;
+  QPlot::MarkerBox2D box;
 
-  for (auto &q : boxes) {
-    label.selectable = q.selectable;
-    label.selected = q.selected;
+  for (Bounds2D &q : boxes_)
+  {
+    box.xc = calib_x_.transform(q.x.centroid(), bits);
+    box.x1 = calib_x_.transform(q.x.lower() - 0.5, bits);
+    box.x2 = calib_x_.transform(q.x.upper() + 0.5, bits);
 
-    if (q.horizontal && q.vertical) {
-      label.x = q.x2;
-      label.y = q.y2;
+    box.yc = calib_y_.transform(q.y.centroid(), bits);
+    box.y1 = calib_y_.transform(q.y.lower() - 0.5, bits);
+    box.y2 = calib_y_.transform(q.y.upper() + 0.5, bits);
+
+    box.border = q.color;
+    box.fill = box.border;
+    box.fill.setAlpha(100);
+
+    box.selectable = q.selectable;
+    box.selected = q.selectable && q.selected;
+
+    label.selectable = box.selectable;
+    label.selected = box.selected;
+
+    box.mark_center = (q.horizontal && q.vertical);
+
+    if (q.horizontal && q.vertical)
+    {
+      label.x = box.x2;
+      label.y = box.y2;
       label.vertical = false;
-      label.text = QString::number(q.y_c.energy());
+      label.text = QString::number(box.yc);
       labels.push_back(label);
 
-      label.x = q.x2;
-      label.y = q.y2;
+      label.x = box.x2;
+      label.y = box.y2;
       label.vertical = true;
-      label.text = QString::number(q.x_c.energy());
-      labels.push_back(label);
-    } else if (q.horizontal) {
-      label.x = q.x_c;
-      label.y = q.y2;
-      label.vertical = false;
-      label.hfloat = q.labelfloat;
-      label.text = QString::number(q.y_c.energy());
-      labels.push_back(label);
-    } else if (q.vertical) {
-      label.x = q.x2;
-      label.y = q.y_c;
-      label.vertical = true;
-      label.vfloat = q.labelfloat;
-      label.text = QString::number(q.x_c.energy());
+      label.text = QString::number(box.xc);
       labels.push_back(label);
     }
+    else if (q.horizontal)
+    {
+      label.x = box.xc;
+      label.y = box.y2;
+      label.vertical = false;
+      label.vfloat = false;
+      label.hfloat = q.labelfloat;
+      label.text = QString::number(box.yc);
+      labels.push_back(label);
+    }
+    else if (q.vertical)
+    {
+      label.x = box.x2;
+      label.y = box.yc;
+      label.vertical = true;
+      label.vfloat = q.labelfloat;
+      label.hfloat = false;
+      label.text = QString::number(box.xc);
+      labels.push_back(label);
+    }
+
+    boxes.push_back(box);
   }
 
-  boxes.push_back(my_marker_);
 
-  label.selectable = false;
-  label.selected = false;
-  label.vertical = false;
-
-  if (my_marker_.visible && my_marker_.horizontal && my_marker_.vertical) {
-    label.vfloat = false;
-    label.hfloat = false;
-    label.x = my_marker_.x2;
-    label.y = my_marker_.y_c;
-    label.vertical = false;
-    label.text = QString::number(my_marker_.y_c.energy());
-    labels.push_back(label);
-
-    label.x = my_marker_.x_c;
-    label.y = my_marker_.y2;
-    label.vertical = true;
-    label.text = QString::number(my_marker_.x_c.energy());
-    labels.push_back(label);
-  } else if (my_marker_.visible && my_marker_.horizontal) {
-    label.vfloat = false;
-    label.hfloat = true;
-    label.x = my_marker_.x2;
-    label.y = my_marker_.y_c;
-    label.vertical = false;
-    label.text = QString::number(my_marker_.y_c.energy());
-    labels.push_back(label);
-  } else if (my_marker_.visible && my_marker_.vertical) {
-    label.vfloat = true;
-    label.hfloat = false;
-    label.x = my_marker_.x_c;
-    label.y = my_marker_.y2;
-    label.vertical = true;
-    label.text = QString::number(my_marker_.x_c.energy());
-    labels.push_back(label);
-  }
-
-//  ui->coincPlot->set_boxes(boxes);
-//  ui->coincPlot->set_labels(labels);
-//  ui->coincPlot->replot_markers();
+  ui->coincPlot->setBoxes(boxes);
+  ui->coincPlot->setLabels(labels);
   ui->coincPlot->replotExtras();
   ui->coincPlot->replot();
 }
@@ -200,9 +185,9 @@ void FormGatesPlot2D::replot_markers()
 void FormGatesPlot2D::update_plot()
 {
   this->setCursor(Qt::WaitCursor);
-  CustomTimer guiside(true);
+//  CustomTimer guiside(true);
 
-  SinkPtr some_spectrum = mySpectra->get_sink(current_spectrum_);
+  SinkPtr some_spectrum = project_->get_sink(current_spectrum_);
 
   Metadata md;
   if (some_spectrum)
@@ -210,15 +195,15 @@ void FormGatesPlot2D::update_plot()
 
   uint16_t newbits = md.get_attribute("resolution").value_int;
 
+  uint32_t adjrange{0};
   if ((md.dimensions() == 2) && (adjrange = pow(2,newbits)) )
   {
-    //      DBG << "really really updating 2d total count = " << some_spectrum->total_count();
-
     bits = newbits;
 
     Detector detector_x_;
     Detector detector_y_;
-    if (md.detectors.size() > 1) {
+    if (md.detectors.size() > 1)
+    {
       detector_x_ = md.detectors[0];
       detector_y_ = md.detectors[1];
     }
@@ -245,78 +230,21 @@ void FormGatesPlot2D::update_plot()
           QString::fromStdString(calib_y_.units_),
           calib_y_.transform(0, bits), calib_y_.transform(adjrange, bits),
           "Event count");
-//    ui->coincPlot->set_axes(calib_x_, calib_y_, bits, "Event count");
 
-  } else {
-//    ui->coincPlot->reset_content();
-//    ui->coincPlot->refresh();
   }
+  else
+    ui->coincPlot->clearAll();
 
   replot_markers();
-
 
 //  DBG << "<Plot2D> plotting took " << guiside.ms() << " ms";
   this->setCursor(Qt::ArrowCursor);
 }
 
-void FormGatesPlot2D::markers_moved(Coord x, Coord y)
+void FormGatesPlot2D::plotClicked(double x, double y, Qt::MouseButton button)
 {
-  MarkerBox2D m = my_marker_;
-  m.visible = !(x.null() || y.null());
-  m.x_c = x;
-  m.y_c = y;
-
-  if (gates_movable_) {
-    my_marker_ = m;
-    replot_markers();
-  }
-
-  emit marker_set(m);
-}
-
-void FormGatesPlot2D::set_marker(MarkerBox2D m)
-{
-  my_marker_ = m;
-  my_marker_.selectable = false;
-  my_marker_.selected = false;
-  replot_markers();
-}
-
-void FormGatesPlot2D::set_gates_visible(bool vertical, bool horizontal, bool diagonal)
-{
-  gate_vertical_ = vertical;
-  gate_horizontal_ = horizontal;
-  gate_diagonal_ = diagonal;
-
-  replot_markers();
-}
-
-void FormGatesPlot2D::set_scale_type(QString st)
-{
-  ui->coincPlot->setScaleType(st);
-}
-
-void FormGatesPlot2D::set_gradient(QString gr)
-{
-  ui->coincPlot->setGradient(gr);
-}
-
-void FormGatesPlot2D::set_show_legend(bool sl)
-{
-  ui->coincPlot->setShowGradientLegend(sl);
-}
-
-QString FormGatesPlot2D::scale_type()
-{
-  return ui->coincPlot->scaleType();
-}
-
-QString FormGatesPlot2D::gradient()
-{
-  return ui->coincPlot->gradient();
-}
-
-bool FormGatesPlot2D::show_legend()
-{
-  return ui->coincPlot->showGradientLegend();
+  if (button == Qt::LeftButton)
+    emit clickedPlot(x, y);
+  else
+    emit clearSelection();
 }

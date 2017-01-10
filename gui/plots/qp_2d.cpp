@@ -163,32 +163,32 @@ void Plot2D::plotBoxes()
       //      DBG << "mark center xc yc " << xc << " " << yc;
     }
 
-    if (showMarkerLabels() && !q.label.isEmpty())
-    {
-      QCPItemText *labelItem = new QCPItemText(this);
-      labelItem->setText(q.label);
-      labelItem->setProperty("xc", q.x1);
-      labelItem->setProperty("yc", q.y1);
-      labelItem->position->setType(QCPItemPosition::ptPlotCoords);
-      labelItem->position->setCoords(q.xc, q.yc);
+//    if (showMarkerLabels() && !q.label.isEmpty())
+//    {
+//      QCPItemText *labelItem = new QCPItemText(this);
+//      labelItem->setText(q.label);
+//      labelItem->setProperty("xc", q.x1);
+//      labelItem->setProperty("yc", q.y1);
+//      labelItem->position->setType(QCPItemPosition::ptPlotCoords);
+//      labelItem->position->setCoords(q.xc, q.yc);
 
-      labelItem->setPositionAlignment(static_cast<Qt::AlignmentFlag>(Qt::AlignTop|Qt::AlignLeft));
-      labelItem->setFont(QFont("Helvetica", 14));
-      labelItem->setSelectable(q.selectable);
-      labelItem->setSelected(q.selected);
+//      labelItem->setPositionAlignment(static_cast<Qt::AlignmentFlag>(Qt::AlignTop|Qt::AlignLeft));
+//      labelItem->setFont(QFont("Helvetica", 14));
+//      labelItem->setSelectable(q.selectable);
+//      labelItem->setSelected(q.selected);
 
-      labelItem->setColor(q.border);
-      labelItem->setPen(QPen(q.border));
-      labelItem->setBrush(QBrush(Qt::white));
+//      labelItem->setColor(q.border);
+//      labelItem->setPen(QPen(q.border));
+//      labelItem->setBrush(QBrush(Qt::white));
 
-      QColor sel = labelItem->selectedColor();
-      QPen selpen(QColor::fromHsv(sel.hsvHue(), sel.saturation(), sel.value(), 255));
-      selpen.setWidth(3);
-      labelItem->setSelectedPen(selpen);
-      labelItem->setSelectedBrush(QBrush(Qt::white));
+//      QColor sel = labelItem->selectedColor();
+//      QPen selpen(QColor::fromHsv(sel.hsvHue(), sel.saturation(), sel.value(), 255));
+//      selpen.setWidth(3);
+//      labelItem->setSelectedPen(selpen);
+//      labelItem->setSelectedBrush(QBrush(Qt::white));
 
-      labelItem->setPadding(QMargins(1, 1, 1, 1));
-    }
+//      labelItem->setPadding(QMargins(1, 1, 1, 1));
+//    }
   }
 
   if (selectables)

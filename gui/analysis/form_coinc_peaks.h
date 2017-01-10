@@ -48,7 +48,9 @@ public:
 
   std::set<double> get_selected_peaks();
 
-  void make_range(Coord);
+  void make_range(double energy);
+
+  void clearSelection();
 
   void loadSettings(QSettings &settings_);
   void saveSettings(QSettings &settings_);
@@ -59,11 +61,13 @@ public slots:
 signals:
   void peaks_changed();
   void peak_selection_changed(std::set<double> selected_peaks);
-//  void range_changed(RangeSelector range);
   void fitting_done();
 
+  void range_selection_changed(double l, double r);
+
 private slots:
-//  void change_range(RangeSelector range);
+
+  void update_range_selection(double l, double r);
   void selection_changed_in_table();
   void update_peaks();
   void fitting_finished();

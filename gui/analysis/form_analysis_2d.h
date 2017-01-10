@@ -25,6 +25,7 @@
 #define FORM_ANALYSIS_2D_H
 
 #include <QWidget>
+#include "qp_2d.h"
 #include "project.h"
 #include "form_multi_gates.h"
 #include "form_integration2d.h"
@@ -38,10 +39,10 @@ class FormAnalysis2D : public QWidget
   Q_OBJECT
 
 public:
-  explicit FormAnalysis2D(XMLableDB<Qpx::Detector>& newDetDB, QWidget *parent = 0);
+  explicit FormAnalysis2D(QWidget *parent = 0);
   ~FormAnalysis2D();
 
-  void setSpectrum(Qpx::Project *newset, int64_t idx);
+  void setSpectrum(Qpx::ProjectPtr newset, int64_t idx);
   void clear();
   void reset();
 
@@ -54,14 +55,16 @@ public slots:
 
 private slots:
   void take_boxes();
-  void update_gates(MarkerBox2D);
   void update_peaks();
   void detectorsUpdated() {emit detectorsChanged();}
   void initialize();
   void matrix_selection();
-  void update_range(MarkerBox2D);
+//  void update_range(Bounds2D);
 
   void on_tabs_currentChanged(int index);
+
+  void clearSelection();
+  void clickedPlot2d(double x, double y);
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -70,23 +73,14 @@ protected:
 private:
   Ui::FormAnalysis2D *ui;
 
-
-  int res;
-
   FormMultiGates*      my_gates_;
   FormIntegration2D*   form_integration_;
 
-  //from parent
-  QString data_directory_;
-
-  Qpx::Project *spectra_;
+  Qpx::ProjectPtr project_;
   int64_t current_spectrum_;
-
-  XMLableDB<Qpx::Detector> &detectors_;
 
   bool initialized;
 
-  void configure_UI();
   void loadSettings();
   void saveSettings();
 };

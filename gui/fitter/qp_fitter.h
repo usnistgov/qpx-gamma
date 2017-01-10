@@ -45,8 +45,10 @@ public:
   void clearSelection();
   std::set<double> get_selected_peaks();
 
-  void make_range_selection(int32_t);
+  void make_range_selection(double energy);
   void clear_range_selection();
+
+  void follow_selection();
 
   QCPRange getRange(QCPRange domain = QCPRange()) Q_DECL_OVERRIDE;
 
@@ -109,7 +111,6 @@ protected:
                           double region,
                           QString button_name);
 
-  void follow_selection();
   void plotExtraButtons();
   void plotEnergyLabel(double peak_id, double peak_energy, QCPItemTracer *crs);
 
@@ -141,6 +142,8 @@ protected:
   bool region_is_selected(double region);
   bool peaks_in_region_selected(double region);
   bool only_one_region_selected();
+
+  void make_range(double energy);
 };
 
 

@@ -327,7 +327,7 @@ void FormEnergyCalibration::on_pushFit_clicked()
     new_calibration_.model_ = Qpx::CalibrationModel::polynomial;
   }
   else
-    LINFO << "<Energy calibration> Qpx::Calibration failed";
+    WARN << "<Energy calibration> Qpx::Calibration failed";
 
   replot_calib();
   select_in_plot();
@@ -375,7 +375,6 @@ void FormEnergyCalibration::on_pushEnergiesToPeaks_clicked()
 {
   std::vector<double> gammas = ui->isotopes->current_gammas();
   std::sort(gammas.begin(), gammas.end());
-
 
   std::vector<double> peakIDs;
   double last_sel = -1;

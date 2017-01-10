@@ -23,6 +23,7 @@
 #define FORM_GATES_PLOT2D_H
 
 #include <QWidget>
+#include <QSettings>
 #include <project.h>
 #include "qp_2d.h"
 #include "qtcolorpicker.h"
@@ -32,8 +33,9 @@
 
 //Make it derived from plot2d!!! no ui metacode
 
-namespace Ui {
-class FormGatesPlot2D;
+namespace Ui
+{
+  class FormGatesPlot2D;
 }
 
 class FormGatesPlot2D : public QWidget
@@ -44,63 +46,44 @@ public:
   explicit FormGatesPlot2D(QWidget *parent = 0);
   ~FormGatesPlot2D();
 
-  void setSpectra(Qpx::Project& new_set, int64_t idx);
+  void setSpectra(Qpx::ProjectPtr new_set, int64_t idx);
 
   void update_plot();
   void refresh();
   void replot_markers();
   void reset_content();
 
-  void set_boxes(std::list<MarkerBox2D> boxes);
+  void set_boxes(std::list<Bounds2D> boxes);
   void set_show_boxes(bool);
 
-  void set_scale_type(QString);
-  void set_gradient(QString);
-  void set_show_legend(bool);
-  QString scale_type();
-  QString gradient();
-  bool show_legend();
+  std::list<Bounds2D> get_selected_boxes();
 
-  void set_range_x(MarkerBox2D);
-
-  std::list<MarkerBox2D> get_selected_boxes();
-
-  void set_gates_visible(bool vertical, bool horizontal, bool diagonal);
-  void set_gates_movable(bool);
-
-public slots:
-  void set_marker(MarkerBox2D m);
+  void loadSettings(QSettings& settings);
+  void saveSettings(QSettings& settings);
 
 signals:
-  void marker_set(MarkerBox2D m);
   void stuff_selected();
+  void clickedPlot(double x, double y);
+  void clearSelection();
 
 private slots:
   //void clicked_plottable(QCPAbstractPlottable*);
   void selection_changed();
-  void markers_moved(Coord x, Coord y);
+  void plotClicked(double x, double y, Qt::MouseButton button);
 
 private:
 
-  //gui stuff
   Ui::FormGatesPlot2D *ui;
-  Qpx::Project *mySpectra;
 
-  //plot identity
-  int64_t current_spectrum_;
-
-  uint32_t adjrange;
+  Qpx::ProjectPtr project_;
+  int64_t current_spectrum_ {0};
 
   //markers
-  MarkerBox2D my_marker_;
-  bool gate_vertical_, gate_horizontal_, gate_diagonal_, gates_movable_, show_boxes_;
-
-  std::list<MarkerBox2D> boxes_;
-  MarkerBox2D range_;
+  std::list<Bounds2D> boxes_;
 
   //scaling
-  int bits;
+  int bits {0};
   Qpx::Calibration calib_x_, calib_y_;
 };
 
-#endif // WIDGET_PLOT2D_H
+#endif

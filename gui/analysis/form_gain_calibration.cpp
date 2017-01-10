@@ -242,7 +242,7 @@ void FormGainCalibration::on_pushCalibGain_clicked()
     fit_data2_.detector_.gain_match_calibrations_.replace(gain_match_cali_);
   }
   else
-    LINFO << "<Gain match calibration> Calibration failed";
+    WARN << "<Gain match calibration> Calibration failed";
 
   plot_calib();
 }

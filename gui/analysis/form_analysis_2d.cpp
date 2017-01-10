@@ -31,12 +31,11 @@
 
 using namespace Qpx;
 
-FormAnalysis2D::FormAnalysis2D(XMLableDB<Detector>& newDetDB, QWidget *parent) :
-  QWidget(parent),
-  ui(new Ui::FormAnalysis2D),
-  detectors_(newDetDB),
-  my_gates_(nullptr),
-  form_integration_(nullptr)
+FormAnalysis2D::FormAnalysis2D(QWidget *parent)
+  : QWidget(parent)
+  , ui(new Ui::FormAnalysis2D)
+  , my_gates_(nullptr)
+  , form_integration_(nullptr)
 {
   ui->setupUi(this);
 
@@ -45,43 +44,43 @@ FormAnalysis2D::FormAnalysis2D(XMLableDB<Detector>& newDetDB, QWidget *parent) :
   my_gates_ = new FormMultiGates();
   connect(my_gates_, SIGNAL(gate_selected()), this, SLOT(update_peaks()));
   connect(my_gates_, SIGNAL(boxes_made()), this, SLOT(take_boxes()));
-  connect(my_gates_, SIGNAL(range_changed(MarkerBox2D)), this, SLOT(update_range(MarkerBox2D)));
+//  connect(my_gates_, SIGNAL(range_changed(Bounds2D)),
+//          this, SLOT(update_range(Bounds2D)));
 
   form_integration_ = new FormIntegration2D();
   connect(form_integration_, SIGNAL(peak_selected()), this, SLOT(update_peaks()));
-  connect(form_integration_, SIGNAL(range_changed(MarkerBox2D)), this, SLOT(update_range(MarkerBox2D)));
+//  connect(form_integration_, SIGNAL(range_changed(Bounds2D)),
+//          this, SLOT(update_range(Bounds2D)));
 
-  connect(ui->plotMatrix, SIGNAL(marker_set(MarkerBox2D)), this, SLOT(update_gates(MarkerBox2D)));
+  connect(ui->plotMatrix, SIGNAL(clickedPlot(double,double)),
+          this, SLOT(clickedPlot2d(double,double)));
   connect(ui->plotMatrix, SIGNAL(stuff_selected()), this, SLOT(matrix_selection()));
+  connect(ui->plotMatrix, SIGNAL(clearSelection()), this, SLOT(clearSelection()));
 
   ui->tabs->addTab(my_gates_, "Gates");
   ui->tabs->addTab(form_integration_, "Integration");
   ui->tabs->setCurrentWidget(my_gates_);
 
   loadSettings();
-
-
-  res = 0;
-
   //connect(ui->widgetDetectors, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
-
 }
 
-void FormAnalysis2D::take_boxes() {
-  form_integration_->setPeaks(my_gates_->boxes());
+void FormAnalysis2D::take_boxes()
+{
+  form_integration_->setPeaks(my_gates_->get_all_peaks());
 }
 
+//void FormAnalysis2D::update_range(Bounds2D range)
+//{
+//  ui->plotMatrix->set_range_x(range);
+//  ui->plotMatrix->replot_markers();
+//}
 
-void FormAnalysis2D::update_range(MarkerBox2D range) {
-  ui->plotMatrix->set_range_x(range);
-  ui->plotMatrix->replot_markers();
-}
-
-
-void FormAnalysis2D::matrix_selection() {
+void FormAnalysis2D::matrix_selection()
+{
   //DBG << "User selected peaks in matrix";
 
-  std::list<MarkerBox2D> chosen_peaks = ui->plotMatrix->get_selected_boxes();
+  std::list<Bounds2D> chosen_peaks = ui->plotMatrix->get_selected_boxes();
 
   if (my_gates_->isVisible())
     my_gates_->choose_peaks(chosen_peaks);
@@ -92,51 +91,37 @@ void FormAnalysis2D::matrix_selection() {
 }
 
 
-void FormAnalysis2D::configure_UI() {
-  //while (ui->tabs->count())
-//    ui->tabs->removeTab(0);
-
-//  ui->plotSpectrum->setVisible(visible1);
-//  ui->plotSpectrum->blockSignals(!visible1);
-
-  ui->plotMatrix->set_gates_movable(false);
-
-  ui->plotMatrix->set_gates_visible(false, true, false);
-
-  ui->plotMatrix->set_show_boxes(true);
-
-
-}
-
-void FormAnalysis2D::setSpectrum(Project *newset, int64_t idx) {
+void FormAnalysis2D::setSpectrum(ProjectPtr newset, int64_t idx)
+{
   clear();
-  spectra_ = newset;
+  project_ = newset;
   current_spectrum_ = idx;
   my_gates_->setSpectrum(newset, idx);
   form_integration_->setSpectrum(newset, idx);
 }
 
-void FormAnalysis2D::reset() {
+void FormAnalysis2D::reset()
+{
   initialized = false;
 //  while (ui->tabs->count())
 //    ui->tabs->removeTab(0);
 }
 
-void FormAnalysis2D::initialize() {
+void FormAnalysis2D::initialize()
+{
   if (initialized)
     return;
 
-  if (spectra_) {
-
-    SinkPtr spectrum = spectra_->get_sink(current_spectrum_);
+  if (project_)
+  {
+    SinkPtr spectrum = project_->get_sink(current_spectrum_);
 
     if (spectrum) {
       Metadata md = spectrum->metadata();
       uint16_t bits = md.get_attribute("resolution").value_int;
-      res = pow(2,bits);
 
       ui->plotMatrix->reset_content();
-      ui->plotMatrix->setSpectra(*spectra_, current_spectrum_);
+      ui->plotMatrix->setSpectra(project_, current_spectrum_);
       ui->plotMatrix->update_plot();
 
       bool symmetrized = (md.get_attribute("symmetrized").value_int != 0);
@@ -144,49 +129,54 @@ void FormAnalysis2D::initialize() {
   }
 
   initialized = true;
-  configure_UI();
 }
 
-void FormAnalysis2D::update_spectrum() {
+void FormAnalysis2D::update_spectrum()
+{
   if (this->isVisible()) {
     ui->plotMatrix->update_plot();
   }
 }
 
-void FormAnalysis2D::showEvent( QShowEvent* event ) {
+void FormAnalysis2D::showEvent( QShowEvent* event )
+{
   QWidget::showEvent(event);
 
   QTimer::singleShot(50, this, SLOT(initialize()));
 }
 
-void FormAnalysis2D::update_peaks() {
-  if (my_gates_->isVisible()) {
-    MarkerBox2D box = my_gates_->current_gate().constraints;
-    ui->plotMatrix->set_marker(box);
+void FormAnalysis2D::update_peaks()
+{
+  if (my_gates_->isVisible())
+  {
+//    Bounds2D box = my_gates_->current_gate().constraints;
+//    ui->plotMatrix->set_marker(box);
     ui->plotMatrix->set_boxes(my_gates_->current_peaks());
-  } else if (form_integration_->isVisible()) {
-
+  }
+  else if (form_integration_->isVisible())
+  {
     ui->plotMatrix->set_boxes(form_integration_->peaks());
   }
 
   ui->plotMatrix->replot_markers();
 }
 
-void FormAnalysis2D::update_gates(MarkerBox2D box) {
-  Coord xx;
-  if (box.visible)
-    xx = box.x_c;
-
-  Coord yy;
-  if (box.visible)
-    yy = box.y_c;
-
-//  DBG << "marker from matrix " << xx.pos.energy() << " " << yy.pos.energy();
-
+void FormAnalysis2D::clickedPlot2d(double x, double y)
+{
   if (my_gates_->isVisible())
-    my_gates_->make_range(xx);
+    my_gates_->make_range(x);
   else if (form_integration_->isVisible())
-    form_integration_->make_range(xx, yy);
+    form_integration_->make_range(x, y);
+}
+
+void FormAnalysis2D::clearSelection()
+{
+//  ui->plotMatrix->set_range_x(Bounds2D());
+  ui->plotMatrix->replot_markers();
+  if (my_gates_->isVisible())
+    my_gates_->clearSelection();
+//  else if (form_integration_->isVisible())
+//    form_integration_->clearSelection();
 }
 
 void FormAnalysis2D::closeEvent(QCloseEvent *event)
@@ -195,18 +185,11 @@ void FormAnalysis2D::closeEvent(QCloseEvent *event)
   event->accept();
 }
 
-void FormAnalysis2D::loadSettings() {
-  QSettings settings_;
+void FormAnalysis2D::loadSettings()
+{
+  QSettings settings;
 
-  settings_.beginGroup("Program");
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
-  settings_.endGroup();
-
-  settings_.beginGroup("AnalysisMatrix");
-  ui->plotMatrix->set_gradient(settings_.value("gradient", "Hot").toString());
-  ui->plotMatrix->set_scale_type(settings_.value("scale_type", "Logarithmic").toString());
-  ui->plotMatrix->set_show_legend(settings_.value("show_legend", false).toBool());
-  settings_.endGroup();
+  ui->plotMatrix->loadSettings(settings);
 
   if (my_gates_)
     my_gates_->loadSettings();
@@ -216,23 +199,18 @@ void FormAnalysis2D::loadSettings() {
 
 void FormAnalysis2D::saveSettings()
 {
-  QSettings settings_;
+  QSettings settings;
 
   if (my_gates_)
     my_gates_->saveSettings();
   if (form_integration_)
     form_integration_->saveSettings();
 
-  settings_.beginGroup("AnalysisMatrix");
-  settings_.setValue("gradient", ui->plotMatrix->gradient());
-  settings_.setValue("scale_type", ui->plotMatrix->scale_type());
-  settings_.setValue("show_legend", ui->plotMatrix->show_legend());
-  settings_.endGroup();
+  ui->plotMatrix->saveSettings(settings);
 }
 
-void FormAnalysis2D::clear() {
-  res = 0;
-
+void FormAnalysis2D::clear()
+{
   ui->plotMatrix->reset_content();
 
   current_spectrum_ = 0;
@@ -250,6 +228,6 @@ FormAnalysis2D::~FormAnalysis2D()
 
 void FormAnalysis2D::on_tabs_currentChanged(int index)
 {
-  ui->plotMatrix->set_marker(MarkerBox2D());
+//  ui->plotMatrix->set_marker(Bounds2D());
   update_peaks();
 }

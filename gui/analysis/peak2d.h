@@ -12,82 +12,70 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Marker - for marking a channel or energt in a plot
  *
  ******************************************************************************/
 
 #ifndef Q_PEAK2D_H
 #define Q_PEAK2D_H
 
-#include "coord.h"
 #include "roi.h"
 #include <QString>
 #include "daq_sink.h"
+#include "qp_2d.h"
 
-struct MarkerLabel2D {
-  MarkerLabel2D() : selected(false), selectable(false), vertical(false), vfloat(false), hfloat(false) {}
+class Bounds
+{
+public:
+  bool operator== (const Bounds& other) const;
+  bool operator!= (const Bounds& other) const;
 
-  Coord x, y;
-  QString text;
-  bool selected, selectable, vertical;
-  bool vfloat, hfloat;
+  void set_bounds(double l, double r);
+
+  double width() const;
+
+  void set_centroid(double c);
+
+  int32_t lower() const;
+  int32_t upper() const;
+  double centroid() const;
+
+protected:
+  int32_t lower_ {0}, upper_ {0};
+  double centroid_{0};
 };
 
-struct MarkerBox2D {
-  MarkerBox2D()
-    : visible(false)
-    , selected(false)
-    , selectable (true)
-    , horizontal(false)
-    , vertical(false)
-    , mark_center(false)
-    , labelfloat(false)
-    , integral(0)
-  {}
+struct Bounds2D
+{
+  Bounds2D reflect() const;
 
-  bool operator== (const MarkerBox2D& other) const {
-    if (x1 != other.x1) return false;
-    if (x2 != other.x2) return false;
-    if (y1 != other.y1) return false;
-    if (y2 != other.y2) return false;
-    if (x_c != other.x_c) return false;
-    if (y_c != other.y_c) return false;
-    return true;
-  }
+  bool operator== (const Bounds2D& other) const;
+  bool operator!= (const Bounds2D& other) const;
 
-  bool operator!= (const MarkerBox2D& other) const
-    { return !operator==(other); }
-
-  bool intersects(const MarkerBox2D& other) const {
-    return ((x1.energy() < other.x2.energy())
-            && (x2.energy() > other.x1.energy())
-            && (y1.energy() < other.y2.energy())
-            && (y2.energy() > other.y1.energy()));
-  }
-
-  bool northwest() const { return ((x1.energy() < y1.energy()) && (x2.energy() < y2.energy())); }
-  bool southeast() const { return ((x1.energy() > y1.energy()) && (x2.energy() > y2.energy())); }
+  bool intersects(const Bounds2D& other) const;
+  bool northwest() const;
+  bool southeast() const;
 
   void integrate(Qpx::SinkPtr spectrum);
 
-  bool visible;
-  bool selected;
-  bool selectable;
-  bool horizontal, vertical, labelfloat;
-  bool mark_center;
-  Coord x1, x2, y1, y2, x_c, y_c;
-  double integral;
-  double chan_area;
-  double variance;
-  QString label;
+  double chan_area() const;
+
+  bool selectable {false};
+  bool selected {false};
+  Bounds x, y;
+//  QString label;
+  bool horizontal {true};
+  bool vertical {true};
+  bool labelfloat {false};
+  QColor color;
+
+  double integral  {0};
+  double variance  {0};
 };
 
-struct Peak2D {
-  Peak2D() :
-    currie_quality_indicator(-1),
-    approved(false)
-  {}
-  Peak2D(const Qpx::ROI &x_roi, const Qpx::ROI &y_roi, double x_center, double y_center);
+struct Sum2D
+{
+  Sum2D() {}
+  Sum2D(const Qpx::ROI &x_roi, const Qpx::ROI &y_roi, double x_center, double y_center);
 
   void adjust_x(const Qpx::ROI &roi, double center);
   void adjust_y(const Qpx::ROI &roi, double center);
@@ -96,15 +84,15 @@ struct Peak2D {
 
   void integrate(Qpx::SinkPtr source);
 
-  MarkerBox2D area[3][3];
+  Bounds2D area[3][3];
   Qpx::ROI x, y, dx, dy;
 
   UncertainDouble energy_x, energy_y;
 
   UncertainDouble gross, xback, yback, dback, net;
-  int currie_quality_indicator;
 
-  bool approved;
+  int currie_quality_indicator {-1};
+  bool approved {false};
 };
 
 #endif

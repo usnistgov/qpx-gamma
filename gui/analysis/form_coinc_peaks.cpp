@@ -49,6 +49,9 @@ FormCoincPeaks::FormCoincPeaks(QWidget *parent) :
   connect(ui->plotPeaks, SIGNAL(data_changed()), this, SLOT(update_peaks()));
   connect(ui->plotPeaks, SIGNAL(fitting_done()), this, SLOT(fitting_finished()));
 
+  connect(ui->plotPeaks, SIGNAL(range_selection_changed(double,double)),
+          this, SLOT(update_range_selection(double,double)));
+
 //  QShortcut* shortcut = new QShortcut(QKeySequence(QKeySequence::Delete), ui->tablePeaks);
 //  connect(shortcut, SIGNAL(activated()), this, SLOT(remove_peak()));
 
@@ -64,6 +67,11 @@ FormCoincPeaks::~FormCoincPeaks()
 void FormCoincPeaks::perform_fit()
 {
   ui->plotPeaks->perform_fit();
+}
+
+void FormCoincPeaks::update_range_selection(double l, double r)
+{
+  emit range_selection_changed(l, r);
 }
 
 //void FormCoincPeaks::remove_peak() {
@@ -90,7 +98,13 @@ void FormCoincPeaks::perform_fit()
 //  emit peaks_changed(true);
 //}
 
-void FormCoincPeaks::setFit(Qpx::Fitter* fit) {
+void FormCoincPeaks::clearSelection()
+{
+  ui->plotPeaks->clearSelection();
+}
+
+void FormCoincPeaks::setFit(Qpx::Fitter* fit)
+{
   fit_data_ = fit;
   ui->plotPeaks->setFit(fit);
   ui->plotPeaks->update_spectrum();
@@ -117,27 +131,26 @@ void FormCoincPeaks::saveSettings(QSettings &settings_) {
   settings_.endGroup();
 }
 
-void FormCoincPeaks::make_range(Coord marker) {
-  ui->plotPeaks->make_range(marker);
+void FormCoincPeaks::make_range(double energy)
+{
+  ui->plotPeaks->make_range(energy);
 }
 
-//void FormCoincPeaks::change_range(RangeSelector range) {
-//  emit range_changed(range);
-//}
-
-void FormCoincPeaks::update_spectrum() {
+void FormCoincPeaks::update_spectrum()
+{
   ui->plotPeaks->update_spectrum();
-
   if (!fit_data_->peaks().empty())
     update_table(true);
 }
 
-void FormCoincPeaks::update_peaks() {
+void FormCoincPeaks::update_peaks()
+{
   update_table(true);
   emit peaks_changed();
 }
 
-void FormCoincPeaks::update_selection(std::set<double> selected_peaks) {
+void FormCoincPeaks::update_selection(std::set<double> selected_peaks)
+{
   bool changed = (selected_peaks_ != selected_peaks);
   selected_peaks_ = selected_peaks;
 
@@ -148,7 +161,8 @@ void FormCoincPeaks::update_selection(std::set<double> selected_peaks) {
   }
 }
 
-void FormCoincPeaks::update_table(bool contents_changed) {
+void FormCoincPeaks::update_table(bool contents_changed)
+{
   ui->tablePeaks->blockSignals(true);
   this->blockSignals(true);
 
@@ -187,7 +201,8 @@ void FormCoincPeaks::add_peak_to_table(const Qpx::Peak &p, int row, QColor bckg)
   add_to_table(ui->tablePeaks, row, 2, p.cps_best().to_string(), QVariant(), background);
 }
 
-void FormCoincPeaks::selection_changed_in_table() {
+void FormCoincPeaks::selection_changed_in_table()
+{
   selected_peaks_.clear();
   foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows())
   {

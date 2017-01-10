@@ -28,24 +28,33 @@
 #include <QSortFilterProxyModel>
 #include <QItemSelection>
 #include <QWidget>
-#include "gates.h"
 #include "project.h"
 #include "form_coinc_peaks.h"
+#include "qp_2d.h"
+#include "peak2d.h"
 
 namespace Ui {
 class FormMultiGates;
 }
 
+struct Gate
+{
+  Bounds2D constraints;
+
+  double cps {0};
+  bool approved {false};
+  Qpx::Fitter fit_data_;
+};
 
 class TableGates : public QAbstractTableModel
 {
   Q_OBJECT
 
 private:
-  std::vector<Qpx::Gate> gates_;
+  std::vector<Gate> gates_;
 
 public:
-  void set_data(std::vector<Qpx::Gate> gates);
+  void set_data(std::vector<Gate> gates);
 
   explicit TableGates(QObject *parent = 0);
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
@@ -53,15 +62,8 @@ public:
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
   QVariant headerData(int section, Qt::Orientation orientation, int role) const;
   Qt::ItemFlags flags(const QModelIndex & index) const;
-  //bool setData(const QModelIndex & index, const QVariant & value, int role);
 
   void update();
-
-//signals:
-//   void energiesChanged();
-
-public slots:
-
 };
 
 
@@ -73,29 +75,24 @@ public:
   explicit FormMultiGates(QWidget *parent = 0);
   ~FormMultiGates();
 
-  void setSpectrum(Qpx::Project *newset, int64_t idx);
+  void setSpectrum(Qpx::ProjectPtr newset, int64_t idx);
 
-  void make_range(Coord);
+  void make_range(double energy);
 
-  void update_current_gate(Qpx::Gate);
-  Qpx::Gate current_gate();
-  std::list<MarkerBox2D> boxes() {return all_boxes_;}
-  std::list<MarkerBox2D> current_peaks() {return current_peaks_;}
+  std::list<Bounds2D> get_all_peaks() const;
+  std::list<Bounds2D> current_peaks() const;
 
-  void choose_peaks(std::list<MarkerBox2D>);
-
-  double width_factor();
+  void choose_peaks(std::list<Bounds2D>);
 
   void clear();
+  void clearSelection();
 
   void loadSettings();
   void saveSettings();
 
-
 signals:
   void gate_selected();
   void boxes_made();
-  void range_changed(MarkerBox2D);
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -106,10 +103,8 @@ private slots:
   void on_pushRemove_clicked();
   void on_pushDistill_clicked();
   void on_doubleGateOn_editingFinished();
-//  void update_range(Range);
-  void update_peaks(bool);
 
-//  void range_changed_in_plot(RangeSelector);
+  void update_range_selection(double l, double r);
 
   void peaks_changed_in_plot();
   void peak_selection_changed(std::set<double> sel);
@@ -123,35 +118,32 @@ private slots:
 private:
   Ui::FormMultiGates *ui;
 
+  Bounds2D range2d;
 
-  Qpx::Project *spectra_;
-  int64_t current_spectrum_;
+  Qpx::ProjectPtr project_;
+  int64_t current_spectrum_ {0};
   Qpx::Metadata md_;
-  int res_;
+  int res_ {0};
 
-  Qpx::SinkPtr gate_x;
-  Qpx::Fitter fit_data_;
+  bool auto_ {false};
 
+  std::vector<Gate> gates_;
   TableGates table_model_;
   QSortFilterProxyModel sortModel;
 
-  std::vector<Qpx::Gate> gates_;
+  Qpx::Fitter fit_data_;
 
-  //from parent
-  QString data_directory_;
+  int32_t current_idx() const;
+  int32_t index_of(double, bool fuzzy) const;
 
-
-  std::list<MarkerBox2D> all_boxes_;
-  std::list<MarkerBox2D> current_peaks_;
-
-  int32_t index_of(double, bool fuzzy);
-  int32_t current_idx();
+  Gate current_gate() const;
+  Qpx::SinkPtr make_gated_spectrum(Bounds2D &bounds);
+  int32_t energy_to_bin(double energy) const;
 
   void rebuild_table(bool contents_changed);
+
   void make_gate();
-
-  bool auto_;
-
+  void update_current_gate();
 };
 
-#endif // FORM_MULTI_GATES_H
+#endif

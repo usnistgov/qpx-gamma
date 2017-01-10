@@ -207,7 +207,8 @@ const std::map<double, ROI> &Fitter::regions() const
   return regions_;
 }
 
-std::map<double, Peak> Fitter::peaks() {
+std::map<double, Peak> Fitter::peaks() const
+{
   std::map<double, Peak> peaks;
   for (auto &q : regions_)
     if (q.second.peak_count()) {

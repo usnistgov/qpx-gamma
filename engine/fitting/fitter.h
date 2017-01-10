@@ -38,7 +38,7 @@ public:
   Fitter(SinkPtr spectrum) : Fitter()
   { setData(spectrum); }
 
-  const FitSettings &settings() { return finder_.settings_; }
+  FitSettings settings() const { return finder_.settings_; }
   void apply_settings(FitSettings settings);
   const Finder &finder() const { return finder_; }
 //  void apply_energy_calibration(Calibration cal);
@@ -53,7 +53,7 @@ public:
   size_t peak_count() const;
   bool contains_peak(double bin) const;
   Peak peak(double peakID) const;
-  std::map<double, Peak> peaks();
+  std::map<double, Peak> peaks() const;
 
   //access regions
   size_t region_count() const;

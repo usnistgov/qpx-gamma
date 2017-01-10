@@ -43,10 +43,10 @@ class TablePeaks2D : public QAbstractTableModel
   Q_OBJECT
 
 private:
-  std::vector<Peak2D> peaks_;
+  std::vector<Sum2D> peaks_;
 
 public:
-  void set_data(std::vector<Peak2D> peaks);
+  void set_data(std::vector<Sum2D> peaks);
 
   explicit TablePeaks2D(QObject *parent = 0);
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
@@ -74,17 +74,17 @@ public:
   explicit FormIntegration2D(QWidget *parent = 0);
   ~FormIntegration2D();
 
-  void setSpectrum(Qpx::Project *newset, int64_t idx);
-  void setPeaks(std::list<MarkerBox2D> pks);
+  void setSpectrum(Qpx::ProjectPtr newset, int64_t idx);
+  void setPeaks(std::list<Bounds2D> pks);
 
-  std::list<MarkerBox2D> peaks();
+  std::list<Bounds2D> peaks();
 
-  void update_current_peak(MarkerBox2D);
-//  MarkerBox2D current_peak();
+  void update_current_peak(Bounds2D);
+//  Bounds2D current_peak();
 
-  void make_range(Coord x, Coord y);
+  void make_range(double x, double y);
 
-  void choose_peaks(std::list<MarkerBox2D>);
+  void choose_peaks(std::list<Bounds2D>);
 
   double width_factor();
 
@@ -97,7 +97,7 @@ public:
 signals:
   void peak_selected();
   void boxes_made();
-  void range_changed(MarkerBox2D);
+  void range_changed(Bounds2D);
   void transitions(std::map<double, Qpx::Transition>);
 
 protected:
@@ -120,7 +120,7 @@ private slots:
 private:
   Ui::FormIntegration2D *ui;
 
-  Qpx::Project *spectra_;
+  Qpx::ProjectPtr project_;
   int64_t current_spectrum_;
   Qpx::Metadata md_;
 
@@ -129,13 +129,13 @@ private:
   TablePeaks2D table_model_;
   QSortFilterProxyModel sortModel;
 
-  std::vector<Peak2D> peaks_;
-  MarkerBox2D range_;
+  std::vector<Sum2D> peaks_;
+  Bounds2D range_;
 
   //from parent
   QString data_directory_;
 
-  int32_t index_of(MarkerBox2D);
+  int32_t index_of(Bounds2D);
   int32_t index_of(double, double);
   int32_t current_idx();
 
@@ -148,6 +148,9 @@ private:
 
   void adjust_x();
   void adjust_y();
+
+  double make_lower(Qpx::Calibration fw, double center);
+  double make_upper(Qpx::Calibration fw, double center);
 };
 
 #endif // FORM_MULTI_GATES_H

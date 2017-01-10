@@ -17,12 +17,99 @@
  ******************************************************************************/
 
 #include "peak2d.h"
-#include "custom_logger.h"
+//#include "custom_logger.h"
 
-void MarkerBox2D::integrate(Qpx::SinkPtr spectrum)
+bool Bounds::operator== (const Bounds& other) const
+{
+  return (lower_ == other.lower_)
+      && (upper_ == other.upper_)
+      && (centroid_ == other.centroid_);
+}
+
+bool Bounds::operator!= (const Bounds& other) const
+{
+  return !operator==(other);
+}
+
+void Bounds::set_bounds(double l, double r)
+{
+  lower_ = std::floor(std::min(l, r));
+  upper_ = std::ceil(std::max(l, r));
+}
+
+double Bounds::width() const
+{
+  return upper_ - lower_ + 1;
+}
+
+void Bounds::set_centroid(double c)
+{
+  centroid_ = c;
+}
+
+int32_t Bounds::lower() const
+{
+  return lower_;
+}
+
+int32_t Bounds::upper() const
+{
+  return upper_;
+}
+
+double Bounds::centroid() const
+{
+  return centroid_;
+}
+
+
+
+
+bool Bounds2D::operator== (const Bounds2D& other) const
+{
+  return (x == other.x) && (y == other.y);
+}
+
+bool Bounds2D::operator!= (const Bounds2D& other) const
+{
+  return !operator==(other);
+}
+
+bool Bounds2D::intersects(const Bounds2D& other) const
+{
+  return ((x.lower() < other.x.upper())
+          && (x.upper() > other.x.lower())
+          && (y.lower() < other.y.upper())
+          && (y.upper() > other.y.lower()));
+}
+
+Bounds2D Bounds2D::reflect() const
+{
+  auto ret = *this;
+  std::swap(ret.x, ret.y);
+  return ret;
+}
+
+bool Bounds2D::northwest() const
+{
+  return ((x.lower() < y.lower()) && (x.upper() < y.upper()));
+}
+
+bool Bounds2D::southeast() const
+{
+  return ((x.lower() > y.lower()) && (x.upper() > y.upper()));
+}
+
+double Bounds2D::chan_area() const
+{
+  return x.width() * y.width();
+}
+
+
+void Bounds2D::integrate(Qpx::SinkPtr spectrum)
 {
   integral = 0;
-  chan_area = 0;
+  variance = 0;
   if (!spectrum)
     return;
 
@@ -31,24 +118,15 @@ void MarkerBox2D::integrate(Qpx::SinkPtr spectrum)
   if (md.dimensions() != 2)
     return;
 
-  //bits match?
-  uint16_t bits = md.get_attribute("resolution").value_int;
-
-  uint32_t xmin = std::ceil(x1.bin(bits));
-  uint32_t xmax = std::floor(x2.bin(bits));
-  uint32_t ymin = std::ceil(y1.bin(bits));
-  uint32_t ymax = std::floor(y2.bin(bits));
-
-  chan_area = (xmax - xmin + 1) * (ymax - ymin + 1);
-
-  std::shared_ptr<Qpx::EntryList> spectrum_data = std::move(spectrum->data_range({{xmin, xmax}, {ymin, ymax}}));
+  std::shared_ptr<Qpx::EntryList> spectrum_data
+      = std::move(spectrum->data_range({{x.lower(), x.upper()}, {y.lower(), y.upper()}}));
   for (auto &entry : *spectrum_data)
     integral += to_double( entry.second );
 
-  variance = integral / pow(chan_area, 2);
+  variance = integral / pow(chan_area(), 2);
 }
 
-void Peak2D::adjust_x(const Qpx::ROI &roi, double center)
+void Sum2D::adjust_x(const Qpx::ROI &roi, double center)
 {
   Qpx::Peak pk;
 
@@ -59,46 +137,29 @@ void Peak2D::adjust_x(const Qpx::ROI &roi, double center)
 
   x = roi;
 
-  MarkerBox2D newpeak = area[1][1];
-  newpeak.visible = true;
-  newpeak.mark_center = true;
-  newpeak.vertical = true;
-  newpeak.horizontal = true;
-  newpeak.labelfloat = false;
-  newpeak.selectable = true;
+  Bounds2D newpeak = area[1][1];
   newpeak.selected = true;
 
-  newpeak.x_c.set_bin(pk.center().value(),
-                      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  newpeak.x1.set_bin(pk.sum4().left() - 0.5,
-                     roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  newpeak.x2.set_bin(pk.sum4().right() + 0.5,
-                     roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
+  newpeak.x.set_centroid(pk.center().value());
+  newpeak.x.set_bounds(pk.sum4().left(), pk.sum4().right());
 
   area[1][1] = newpeak;
 
-  MarkerBox2D bckg;
-  bckg.x_c = newpeak.x_c;
-  bckg.y_c = newpeak.y_c;
-  bckg.y1 = newpeak.y1;
-  bckg.y2 = newpeak.y2;
+  Bounds2D bckg;
+  bckg.y = newpeak.y;
 
-  bckg.x1.set_bin(pk.sum4().LB().left() - 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  bckg.x2.set_bin(pk.sum4().LB().right() + 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
+  bckg.x.set_centroid(newpeak.x.centroid());
+
+  bckg.x.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
   area[0][1] = bckg;
 
-  bckg.x1.set_bin(pk.sum4().RB().left() - 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  bckg.x2.set_bin(pk.sum4().RB().right() + 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
+  bckg.x.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
   area[2][1] = bckg;
 
   energy_x = pk.energy();
 }
 
-void Peak2D::adjust_y(const Qpx::ROI &roi, double center)
+void Sum2D::adjust_y(const Qpx::ROI &roi, double center)
 {
   Qpx::Peak pk;
 
@@ -109,45 +170,29 @@ void Peak2D::adjust_y(const Qpx::ROI &roi, double center)
 
   y = roi;
 
-  MarkerBox2D newpeak = area[1][1];
-  newpeak.visible = true;
-  newpeak.mark_center = true;
-  newpeak.vertical = true;
-  newpeak.horizontal = true;
-  newpeak.labelfloat = false;
-  newpeak.selectable = true;
+  Bounds2D newpeak = area[1][1];
   newpeak.selected = true;
 
-  newpeak.y_c.set_bin(pk.center().value(), roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  newpeak.y1.set_bin(pk.sum4().left() - 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  newpeak.y2.set_bin(pk.sum4().right() + 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
+  newpeak.y.set_centroid(pk.center().value());
+  newpeak.y.set_bounds(pk.sum4().left(), pk.sum4().right());
 
   area[1][1] = newpeak;
 
-  MarkerBox2D bckg;
-  bckg.x_c = newpeak.x_c;
-  bckg.y_c = newpeak.y_c;
-  bckg.x1 = newpeak.x1;
-  bckg.x2 = newpeak.x2;
+  Bounds2D bckg;
+  bckg.x = newpeak.x;
 
-  bckg.y1.set_bin(pk.sum4().LB().left() - 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  bckg.y2.set_bin(pk.sum4().LB().right() + 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
+  bckg.y.set_centroid(newpeak.y.centroid());
+
+  bckg.y.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
   area[1][0] = bckg;
 
-  bckg.y1.set_bin(pk.sum4().RB().left() - 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  bckg.y2.set_bin(pk.sum4().RB().right() + 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
+  bckg.y.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
   area[1][2] = bckg;
 
   energy_y = pk.energy();
 }
 
-void Peak2D::adjust_diag_x(const Qpx::ROI &roi, double center)
+void Sum2D::adjust_diag_x(const Qpx::ROI &roi, double center)
 {
   Qpx::Peak pk;
 
@@ -158,44 +203,28 @@ void Peak2D::adjust_diag_x(const Qpx::ROI &roi, double center)
 
   dx = roi;
 
-  MarkerBox2D bckg;
-  bckg.x_c = area[1][1].x_c;
-  bckg.y_c = area[1][1].y_c;
+  Bounds2D bckg;
+  bckg.x.set_centroid(area[1][1].x.centroid());
+  bckg.y.set_centroid(area[1][1].y.centroid());
 
-  bckg.y1 = area[0][0].y1;
-  bckg.y2 = area[0][0].y2;
-  bckg.x1.set_bin(pk.sum4().LB().left() - 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  bckg.x2.set_bin(pk.sum4().LB().right() + 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
+  bckg.y.set_bounds(area[0][0].y.lower(), area[0][0].y.upper());
+  bckg.x.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
   area[0][0] = bckg;
 
-  bckg.y1 = area[0][2].y1;
-  bckg.y2 = area[0][2].y2;
-  bckg.x1.set_bin(pk.sum4().LB().left() - 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  bckg.x2.set_bin(pk.sum4().LB().right() + 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
+  bckg.y.set_bounds(area[0][2].y.lower(), area[0][2].y.upper());
+  bckg.x.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
   area[0][2] = bckg;
 
-  bckg.y1 = area[2][0].y1;
-  bckg.y2 = area[2][0].y2;
-  bckg.x1.set_bin(pk.sum4().RB().left() - 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  bckg.x2.set_bin(pk.sum4().RB().right() + 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
+  bckg.y.set_bounds(area[2][0].y.lower(), area[2][0].y.upper());
+  bckg.x.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
   area[2][0] = bckg;
 
-  bckg.y1 = area[2][2].y1;
-  bckg.y2 = area[2][2].y2;
-  bckg.x1.set_bin(pk.sum4().RB().left() - 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  bckg.x2.set_bin(pk.sum4().RB().right() + 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
+  bckg.y.set_bounds(area[2][2].y.lower(), area[2][2].y.upper());
+  bckg.x.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
   area[2][2] = bckg;
 }
 
-void Peak2D::adjust_diag_y(const Qpx::ROI &roi, double center)
+void Sum2D::adjust_diag_y(const Qpx::ROI &roi, double center)
 {
   Qpx::Peak pk;
 
@@ -206,44 +235,28 @@ void Peak2D::adjust_diag_y(const Qpx::ROI &roi, double center)
 
   dy = roi;
 
-  MarkerBox2D bckg;
-  bckg.x_c = area[1][1].x_c;
-  bckg.y_c = area[1][1].y_c;
+  Bounds2D bckg;
+  bckg.x.set_centroid(area[1][1].x.centroid());
+  bckg.y.set_centroid(area[1][1].y.centroid());
 
-  bckg.x1 = area[0][0].x1;
-  bckg.x2 = area[0][0].x2;
-  bckg.y1.set_bin(pk.sum4().LB().left() - 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  bckg.y2.set_bin(pk.sum4().LB().right() + 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
+  bckg.x.set_bounds(area[0][0].x.lower(), area[0][0].x.upper());
+  bckg.y.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
   area[0][0] = bckg;
 
-  bckg.x1 = area[0][2].x1;
-  bckg.x2 = area[0][2].x2;
-  bckg.y1.set_bin(pk.sum4().RB().left() - 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  bckg.y2.set_bin(pk.sum4().RB().right() + 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
+  bckg.x.set_bounds(area[0][2].x.lower(), area[0][2].x.upper());
+  bckg.y.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
   area[0][2] = bckg;
 
-  bckg.x1 = area[2][0].x1;
-  bckg.x2 = area[2][0].x2;
-  bckg.y1.set_bin(pk.sum4().LB().left() - 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  bckg.y2.set_bin(pk.sum4().LB().right() + 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
+  bckg.x.set_bounds(area[2][0].x.lower(), area[2][0].x.upper());
+  bckg.y.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
   area[2][0] = bckg;
 
-  bckg.x1 = area[2][2].x1;
-  bckg.x2 = area[2][2].x2;
-  bckg.y1.set_bin(pk.sum4().RB().left() - 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
-  bckg.y2.set_bin(pk.sum4().RB().right() + 0.5,
-      roi.fit_settings().bits_, roi.fit_settings().cali_nrg_);
+  bckg.x.set_bounds(area[2][2].x.lower(), area[2][2].x.upper());
+  bckg.y.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
   area[2][2] = bckg;
 }
 
-Peak2D::Peak2D(const Qpx::ROI &x_roi, const Qpx::ROI &y_roi, double x_center, double y_center):
+Sum2D::Sum2D(const Qpx::ROI &x_roi, const Qpx::ROI &y_roi, double x_center, double y_center):
   currie_quality_indicator(-1),
   approved(false)
 {
@@ -263,26 +276,14 @@ Peak2D::Peak2D(const Qpx::ROI &x_roi, const Qpx::ROI &y_roi, double x_center, do
   x = x_roi;
   y = y_roi;
 
-  MarkerBox2D newpeak;
-  newpeak.visible = true;
-  newpeak.mark_center = true;
-  newpeak.vertical = true;
-  newpeak.horizontal = true;
-  newpeak.labelfloat = false;
-  newpeak.selectable = true;
+  Bounds2D newpeak;
   newpeak.selected = true;
 
-  newpeak.x_c.set_bin(xx.center().value(), x_roi.fit_settings().bits_, x_roi.fit_settings().cali_nrg_);
-  newpeak.x1.set_bin(xx.sum4().left() - 0.5,
-      x_roi.fit_settings().bits_, x_roi.fit_settings().cali_nrg_);
-  newpeak.x2.set_bin(xx.sum4().right() + 0.5,
-      x_roi.fit_settings().bits_, x_roi.fit_settings().cali_nrg_);
+  newpeak.x.set_centroid(xx.center().value());
+  newpeak.x.set_bounds(xx.sum4().left(), xx.sum4().right());
 
-  newpeak.y_c.set_bin(yy.center().value(), y_roi.fit_settings().bits_, y_roi.fit_settings().cali_nrg_);
-  newpeak.y1.set_bin(yy.sum4().left() - 0.5,
-      y_roi.fit_settings().bits_, y_roi.fit_settings().cali_nrg_);
-  newpeak.y2.set_bin(yy.sum4().right() + 0.5,
-      y_roi.fit_settings().bits_, y_roi.fit_settings().cali_nrg_);
+  newpeak.y.set_centroid(yy.center().value());
+  newpeak.y.set_bounds(yy.sum4().left(), yy.sum4().right());
 
   area[1][1] = newpeak;
 
@@ -290,47 +291,47 @@ Peak2D::Peak2D(const Qpx::ROI &x_roi, const Qpx::ROI &y_roi, double x_center, do
   adjust_y(y_roi, y_center);
 }
 
-void Peak2D::integrate(Qpx::SinkPtr source)
+void Sum2D::integrate(Qpx::SinkPtr source)
 {
-  if (!area[1][1].visible)
+  if (area[1][1] == Bounds2D())
     return;
   area[1][1].integrate(source);
 
   xback = UncertainDouble();
-  if ((area[0][1] != MarkerBox2D()) && (area[2][1] != MarkerBox2D())) {
+  if ((area[0][1] != Bounds2D()) && (area[2][1] != Bounds2D())) {
     area[0][1].integrate(source);
     area[2][1].integrate(source);
 
-    double val = area[1][1].chan_area *
-        (area[0][1].integral / area[0][1].chan_area + area[2][1].integral / area[2][1].chan_area)
+    double val = area[1][1].chan_area() *
+        (area[0][1].integral / area[0][1].chan_area() + area[2][1].integral / area[2][1].chan_area())
         / 2.0;
-    double backvariance = pow(area[1][1].chan_area / 2.0, 2)
+    double backvariance = pow(area[1][1].chan_area() / 2.0, 2)
         * (area[0][1].variance + area[2][1].variance);
     xback = UncertainDouble::from_double(val, sqrt(backvariance));
   }
 
   yback = UncertainDouble();
-  if ((area[1][0] != MarkerBox2D()) && (area[1][2] != MarkerBox2D())) {
+  if ((area[1][0] != Bounds2D()) && (area[1][2] != Bounds2D())) {
     area[1][0].integrate(source);
     area[1][2].integrate(source);
 
-    double val = area[1][1].chan_area *
-        (area[1][0].integral / area[1][0].chan_area + area[1][2].integral / area[1][2].chan_area)
+    double val = area[1][1].chan_area() *
+        (area[1][0].integral / area[1][0].chan_area() + area[1][2].integral / area[1][2].chan_area())
         / 2.0;
-    double backvariance = pow(area[1][1].chan_area / 2.0, 2)
+    double backvariance = pow(area[1][1].chan_area() / 2.0, 2)
         * (area[1][0].variance + area[1][2].variance);
     yback = UncertainDouble::from_double(val, sqrt(backvariance));
   }
 
   dback = UncertainDouble();
-  if ((area[0][2] != MarkerBox2D()) && (area[2][0] != MarkerBox2D())) {
+  if ((area[0][2] != Bounds2D()) && (area[2][0] != Bounds2D())) {
     area[0][2].integrate(source);
     area[2][0].integrate(source);
 
-    double val = area[1][1].chan_area *
-        (area[2][0].integral / area[2][0].chan_area + area[0][2].integral / area[0][2].chan_area)
+    double val = area[1][1].chan_area() *
+        (area[2][0].integral / area[2][0].chan_area() + area[0][2].integral / area[0][2].chan_area())
         / 2.0;
-    double backvariance = pow(area[1][1].chan_area / 2.0, 2)
+    double backvariance = pow(area[1][1].chan_area() / 2.0, 2)
         * (area[2][0].variance + area[0][2].variance);
     dback = UncertainDouble::from_double(val, sqrt(backvariance));
   }

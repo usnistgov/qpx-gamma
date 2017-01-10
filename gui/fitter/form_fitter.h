@@ -31,7 +31,6 @@
 
 #include "thread_fitter.h"
 #include "qp_fitter.h"
-#include "coord.h"
 
 namespace Ui {
 class FormFitter;
@@ -55,8 +54,7 @@ public:
   void clearSelection();
   std::set<double> get_selected_peaks();
 
-  void make_range(Coord);
-//  void set_range(RangeSelector);
+  void make_range(double energy);
 
   void perform_fit();
 
@@ -70,7 +68,6 @@ public slots:
 signals:
 
   void peak_selection_changed(std::set<double> selected_peaks);
-//  void range_changed(RangeSelector range);
   void data_changed();
   void fitting_done();
   void fitter_busy(bool);

@@ -554,15 +554,16 @@ void FormMcaDaq::reqAnal2D(int64_t idx) {
 
   this->setCursor(Qt::WaitCursor);
 
-  if (my_analysis_2d_ == nullptr) {
-    my_analysis_2d_ = new FormAnalysis2D(detectors_);
+  if (my_analysis_2d_ == nullptr)
+  {
+    my_analysis_2d_ = new FormAnalysis2D();
     //connect(&plot_thread_, SIGNAL(plot_ready()), my_analysis_2d_, SLOT(update_spectrum()));
     connect(my_analysis_2d_, SIGNAL(destroyed()), this, SLOT(analysis2d_destroyed()));
     connect(my_analysis_2d_, SIGNAL(spectraChanged()), this, SLOT(updateSpectraUI()));
   }
 
   my_analysis_2d_->setWindowTitle("2D: " + QString::fromStdString(selected->metadata().get_attribute("name").value_text));
-  my_analysis_2d_->setSpectrum(&(*project_), idx);
+  my_analysis_2d_->setSpectrum(project_, idx);
   my_analysis_2d_->reset();
   emit requestAnalysis2D(my_analysis_2d_);
 

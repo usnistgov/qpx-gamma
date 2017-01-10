@@ -31,22 +31,15 @@
 #include "qpx_util.h"
 #include <QSettings>
 
-
 using namespace Qpx;
 
 FormMultiGates::FormMultiGates(QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormMultiGates),
   table_model_(this),
-  sortModel(this),
-  gate_x(nullptr),
-  spectra_(nullptr),
-  auto_(false),
-  current_spectrum_(0)
+  sortModel(this)
 {
   ui->setupUi(this);
-
-  loadSettings();
 
   table_model_.set_data(gates_);
   sortModel.setSourceModel( &table_model_ );
@@ -68,161 +61,220 @@ FormMultiGates::FormMultiGates(QWidget *parent) :
   connect(ui->gatedSpectrum , SIGNAL(peak_selection_changed(std::set<double>)),
           this, SLOT(peak_selection_changed(std::set<double>)));
 
-//  connect(ui->gatedSpectrum, SIGNAL(range_changed(Range)), this, SLOT(range_changed_in_plot(Range)));
+  connect(ui->gatedSpectrum, SIGNAL(range_selection_changed(double,double)),
+          this, SLOT(update_range_selection(double,double)));
   connect(ui->gatedSpectrum, SIGNAL(fitting_done()), this, SLOT(fitting_finished()));
-
-  res_ = 0;
 
   connect(ui->tableGateList->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(selection_changed(QItemSelection,QItemSelection)));
 
+  loadSettings();
 }
-
-//void FormMultiGates::range_changed_in_plot(RangeSelector range)
-//{
-//  Gate gate = current_gate();
-//  MarkerBox2D range2d = gate.constraints;
-
-//  range2d.visible = range.visible;
-//  range2d.vertical = true;
-////  range2d.x_c
-//  range2d.x1.set_bin(range.left(),  fit_data_.settings().bits_, fit_data_.settings().cali_nrg_);
-//  range2d.x2.set_bin(range.right(), fit_data_.settings().bits_, fit_data_.settings().cali_nrg_);
-////  range2d.labelfloat = (gate.width_chan == res);
-
-//  emit range_changed(range2d);
-//}
-
-void FormMultiGates::peaks_changed_in_plot()
-{
-  update_peaks(true);
-  emit gate_selected();
-//  range_changed_in_plot(RangeSelector());
-}
-
-void FormMultiGates::peak_selection_changed(std::set<double> sel)
-{
-  update_peaks(false);
-  emit gate_selected();
-}
-
-
-//void FormMultiGates::update_range(Range range) {
-//  range2d.visible = range.visible;
-//  range2d.x1 = range.l;
-//  range2d.x2 = range.r;
-//  update_peaks(false);
-//}
 
 FormMultiGates::~FormMultiGates()
 {
   delete ui;
 }
 
-double FormMultiGates::width_factor() {
-  return ui->doubleGateOn->value();
-}
-
-void FormMultiGates::closeEvent(QCloseEvent *event) {
+void FormMultiGates::closeEvent(QCloseEvent *event)
+{
   saveSettings();
   event->accept();
 }
 
-int32_t FormMultiGates::index_of(double centroid, bool fuzzy) {
-  if (gates_.empty())
-    return -1;
+void FormMultiGates::loadSettings()
+{
+  QSettings settings;
 
-  if (fuzzy) {
-    double threshold = ui->doubleOverlaps->value();
-    for (size_t i=0; i < gates_.size(); ++i) {
-      Coord center = gates_[i].constraints.y_c;
-      if (abs(center.bin(center.bits()) - centroid) < threshold)
-        return i;
-    }
-  } else {
-    for (size_t i=0; i < gates_.size(); ++i) {
-      Coord center = gates_[i].constraints.y_c;
-      if (center.bin(center.bits()) == centroid)
-        return i;
-    }
-  }
-  return -1;
+  settings.beginGroup("Multi_gates");
+  ui->doubleGateOn->setValue(settings.value("gate_on", 3).toDouble());
+  ui->doubleOverlaps->setValue(settings.value("overlaps", 2).toDouble());
+  ui->gatedSpectrum->loadSettings(settings);
+  settings.endGroup();
 }
 
+void FormMultiGates::saveSettings()
+{
+  QSettings settings;
 
-void FormMultiGates::update_current_gate(Gate gate) {
-  Coord center = gate.constraints.y_c;
-  int32_t index = index_of(center.bin(center.bits()), false);
-  //DBG << "update current gate " << index;
+  settings.beginGroup("Multi_gates");
+  settings.setValue("gate_on", ui->doubleGateOn->value());
+  settings.setValue("overlaps", ui->doubleOverlaps->value());
+  ui->gatedSpectrum->saveSettings(settings);
+  settings.endGroup();
+}
 
+void FormMultiGates::clear()
+{
+  gates_.clear();
+  rebuild_table(true);
 
-  if ((index != -1) && (gates_[index].approved))
-    gate.approved = true;
+  make_gate();
+  //  emit gate_selected();
+}
 
-  double livetime = gate.fit_data_.metadata_.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
-  if (livetime <= 0)
-    livetime = 100;
+void FormMultiGates::clearSelection()
+{
+  range2d.selected = false;
+  ui->gatedSpectrum->clearSelection();
+  emit gate_selected();
+}
 
-  Qpx::Setting totevts = gate.fit_data_.metadata_.get_attribute("total_events");
-  gate.cps = totevts.number(); // / livetime;
+void FormMultiGates::update_range_selection(double l, double r)
+{
+  range2d = current_gate().constraints;
+  range2d.x.set_bounds(fit_data_.settings().energy_to_bin(l),
+                       fit_data_.settings().energy_to_bin(r));
+  range2d.selected = (l != r);
+  range2d.color = Qt::magenta;
+  range2d.horizontal = false;
+  range2d.vertical = false;
+  emit gate_selected();
+}
 
-  if (gate.constraints.y_c.bin(0) <= -1) {
+void FormMultiGates::peaks_changed_in_plot()
+{
+  update_current_gate();
+  emit gate_selected();
+}
 
-    if (index < 0) {
-      gates_.clear();
-      gates_.push_back(gate);
-      index = 0;
+void FormMultiGates::peak_selection_changed(std::set<double> sel)
+{
+  emit gate_selected();
+}
+
+void FormMultiGates::setSpectrum(ProjectPtr newset, int64_t idx)
+{
+  clear();
+  project_ = newset;
+  current_spectrum_ = idx;
+  SinkPtr spectrum = project_->get_sink(idx);
+
+  if (spectrum)
+  {
+    md_ = spectrum->metadata();
+    res_ = pow(2, md_.get_attribute("resolution").value_int);
+    make_gate();
+//    update_current_gate();
+    if (!gates_.empty())
+    {
+      ui->tableGateList->selectRow(0);
+      ui->gatedSpectrum->update_spectrum();
     }
-    gates_[index] = gate;
-  } else if (index < 0) {
-    //DBG << "non-existing gate. ignoring";
-  } else {
-    gates_[index] = gate;
+    emit gate_selected();
   }
+}
+
+void FormMultiGates::make_gate()
+{
+  this->setCursor(Qt::WaitCursor);
+
+  Gate gate = current_gate();
+
+  if (gate.fit_data_.peaks().empty())
+  {
+    auto slice = make_gated_spectrum(gate.constraints);
+    if (slice)
+    {
+      gate.fit_data_.apply_settings(fit_data_.settings());
+      gate.fit_data_.setData(slice);
+      fit_data_ = gate.fit_data_;
+      update_current_gate();
+    }
+  }
+
+  fit_data_ = gate.fit_data_;
+  ui->gatedSpectrum->update_spectrum();
+
+  this->setCursor(Qt::ArrowCursor);
+
+  if (auto_)
+    if (!gate.approved)
+      ui->gatedSpectrum->perform_fit();
+    else
+      fitting_finished();
+}
+
+void FormMultiGates::update_current_gate()
+{
+  Gate gate = current_gate();
+  gate.fit_data_ = fit_data_;
+  gate.cps  = gate.fit_data_.metadata_.get_attribute("total_events").number();
+
+  int32_t index = index_of(gate.constraints.y.centroid(), false);
+
+  if ((gate.constraints.y.centroid() == -1) && (index == -1))
+  {
+    gates_.clear();
+    gates_.push_back(gate);
+    index = 0;
+  }
+
+  if (index >= 0)
+    gates_[index] = gate;
 
   rebuild_table(true);
 }
 
-int32_t FormMultiGates::current_idx() {
+int32_t FormMultiGates::current_idx() const
+{
   QModelIndexList indexes = ui->tableGateList->selectionModel()->selectedRows();
-  QModelIndex index, i;
+  QModelIndex index;
 
   int32_t  idx = -1;
-  foreach (index, indexes) {
-    int row = index.row();
-    i = sortModel.index(row, 1, QModelIndex());
-    double centroid = sortModel.data(i, Qt::EditRole).toDouble();
-    int32_t gate_idx = index_of(centroid, false);
-    idx = gate_idx;
+  foreach (index, indexes)
+  {
+    double centroid = sortModel.data(sortModel.index(index.row(), 1, QModelIndex()),
+                                     Qt::EditRole).toDouble();
+    idx = index_of(centroid, false);
   }
   return idx;
 }
 
-Gate FormMultiGates::current_gate() {
+int32_t FormMultiGates::index_of(double centroid, bool fuzzy) const
+{
+  if (gates_.empty())
+    return -1;
+
+  if (fuzzy)
+  {
+    for (size_t i=0; i < gates_.size(); ++i)
+      if (abs(gates_[i].constraints.y.centroid() - centroid) < ui->doubleOverlaps->value())
+        return i;
+  }
+  else
+  {
+    for (size_t i=0; i < gates_.size(); ++i)
+      if (gates_[i].constraints.y.centroid() == centroid)
+        return i;
+  }
+
+  return -1;
+}
+
+
+Gate FormMultiGates::current_gate() const
+{
   int32_t  idx = current_idx();
 
   if ((idx > -1) && (idx < static_cast<int>(gates_.size())))
-    return gates_[idx];
-
-  uint16_t bits = md_.get_attribute("resolution").value_int;
+    return gates_.at(idx);
 
   Gate gate;
   gate.approved = false;
-  gate.constraints.x_c.set_bin(-1, bits, fit_data_.settings().cali_nrg_);
-  gate.constraints.x1.set_bin(-0.5, bits, fit_data_.settings().cali_nrg_);
-  gate.constraints.x2.set_bin(res_ - 0.5, bits, fit_data_.settings().cali_nrg_);
-  gate.constraints.y_c.set_bin(-1, bits, fit_data_.settings().cali_nrg_);
-  gate.constraints.y1.set_bin(-0.5, bits, fit_data_.settings().cali_nrg_);
-  gate.constraints.y2.set_bin(res_ - 0.5, bits, fit_data_.settings().cali_nrg_);
+  gate.constraints.x.set_centroid(-1);
+  gate.constraints.x.set_bounds(0, res_);
+  gate.constraints.y.set_centroid(-1);
+  gate.constraints.y.set_bounds(0, res_);
   gate.constraints.labelfloat = true;
-  gate.constraints.visible = false;
   gate.constraints.horizontal = true;
+  gate.constraints.color = Qt::yellow;
 
-  //cps?
   return gate;
 }
 
-void FormMultiGates::selection_changed(QItemSelection selected, QItemSelection deselected) {
+void FormMultiGates::selection_changed(QItemSelection selected, QItemSelection deselected)
+{
   QModelIndexList indexes = selected.indexes();
 
   ui->pushRemove->setEnabled(!indexes.empty());
@@ -233,19 +285,18 @@ void FormMultiGates::selection_changed(QItemSelection selected, QItemSelection d
   emit gate_selected();
 }
 
-void FormMultiGates::rebuild_table(bool contents_changed) {
-  //DBG << "rebuild table";
-
-  if (contents_changed) {
+void FormMultiGates::rebuild_table(bool contents_changed)
+{
+  if (contents_changed)
     table_model_.set_data(gates_);
-  }
 
   int approved = 0;
   int peaks = 0;
-  for (auto &q : gates_) {
+  for (auto &q : gates_)
+  {
     if (q.approved)
       approved++;
-    if (q.constraints.y_c.bin(0) >= 0)
+    if (q.constraints.y.centroid() >= 0)
       peaks += q.fit_data_.peaks().size();
   }
 
@@ -253,44 +304,8 @@ void FormMultiGates::rebuild_table(bool contents_changed) {
   ui->labelPeaks->setText(QString::number(peaks));
 
   ui->pushDistill->setEnabled(peaks > 0);
-
 }
 
-
-void FormMultiGates::loadSettings() {
-  QSettings settings_;
-
-  settings_.beginGroup("Program");
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
-  settings_.endGroup();
-
-
-  settings_.beginGroup("Multi_gates");
-  ui->doubleGateOn->setValue(settings_.value("gate_on", 2).toDouble());
-  ui->doubleOverlaps->setValue(settings_.value("overlaps", 2).toDouble());
-  ui->gatedSpectrum->loadSettings(settings_);
-  settings_.endGroup();
-
-}
-
-
-void FormMultiGates::saveSettings() {
-  QSettings settings_;
-
-  settings_.beginGroup("Multi_gates");
-  settings_.setValue("gate_on", ui->doubleGateOn->value());
-  settings_.setValue("overlaps", ui->doubleOverlaps->value());
-  ui->gatedSpectrum->saveSettings(settings_);
-  settings_.endGroup();
-}
-
-void FormMultiGates::clear() {
-  gates_.clear();
-  rebuild_table(true);
-
-  make_gate();
-//  emit gate_selected();
-}
 void FormMultiGates::on_pushRemove_clicked()
 {
   int32_t idx = current_idx();
@@ -303,6 +318,143 @@ void FormMultiGates::on_pushRemove_clicked()
   rebuild_table(true);
 }
 
+void FormMultiGates::on_pushDistill_clicked()
+{
+  emit boxes_made();
+}
+
+int32_t FormMultiGates::energy_to_bin(double energy) const
+{
+  return std::round(fit_data_.settings().energy_to_bin(energy));
+}
+
+void FormMultiGates::on_doubleGateOn_editingFinished()
+{
+  emit gate_selected();
+}
+
+void FormMultiGates::make_range(double energy)
+{
+  ui->gatedSpectrum->make_range(energy);
+}
+
+
+Qpx::SinkPtr FormMultiGates::make_gated_spectrum(Bounds2D& bounds)
+{
+  SinkPtr source_spectrum;
+  if (project_)
+    source_spectrum = project_->get_sink(current_spectrum_);
+
+  if (!source_spectrum)
+    return nullptr;
+
+  Metadata md = source_spectrum->metadata();
+
+  if (md.dimensions() != 2)
+    return nullptr;
+
+  uint32_t xmin = bounds.x.lower();
+  uint32_t xmax = bounds.x.upper();
+  uint32_t ymin = bounds.y.lower();
+  uint32_t ymax = bounds.y.upper();
+
+  DBG << "Coincidence gate x[" << xmin << "-" << xmax << "]   y[" << ymin << "-" << ymax << "]";
+
+  std::string name =
+      md.detectors[0].name_ + "[" +
+      to_str_precision(md.detectors[0].best_calib(fit_data_.settings().bits_).transform(xmin, fit_data_.settings().bits_), 0)
+      + "," +
+      to_str_precision(md.detectors[0].best_calib(fit_data_.settings().bits_).transform(xmax, fit_data_.settings().bits_), 0)
+      + "]" + " x " + md.detectors[1].name_ + "[" +
+      to_str_precision(md.detectors[1].best_calib(fit_data_.settings().bits_).transform(ymin, fit_data_.settings().bits_), 0)
+      + "," +
+      to_str_precision(md.detectors[1].best_calib(fit_data_.settings().bits_).transform(ymax, fit_data_.settings().bits_), 0)
+      + "]";
+
+  //  if (fit_data_.metadata_.get_attribute("name").value_text == name)
+  //  {
+  //    //      DBG << "same gate";
+  //  }
+  //  else
+  //  {
+  SinkPtr gate_x = slice_rectangular(source_spectrum, {{xmin, xmax}, {ymin, ymax}}, true);
+  Qpx::Setting nm = gate_x->metadata().get_attribute("name");
+  nm.value_text =  name;
+  gate_x->set_attribute(nm);
+  return gate_x;
+  //  }
+}
+
+void FormMultiGates::choose_peaks(std::list<Bounds2D> chpeaks)
+{
+  std::set<double> xs;//, ys;
+  for (auto &q : chpeaks)
+  {
+    xs.insert(q.x.centroid());
+    //    ys.insert(q.y.centroid().bin(fit_data_.metadata_.bits));
+  }
+  ui->gatedSpectrum->update_selection(xs);
+}
+
+void FormMultiGates::on_pushAddGatedSpectrum_clicked()
+{
+  //  this->setCursor(Qt::WaitCursor);
+
+  //  if (auto gate_x = make_gated_spectrum())
+  //  {
+  //    Setting app = gate_x->metadata().get_attribute("appearance");
+  //    app.value_text = generateColor().name(QColor::HexArgb).toStdString();
+  //    gate_x->set_attribute(app);
+
+  //    project_->add_sink(gate_x);
+  //    emit spectraChanged();
+  //  }
+
+  //  this->setCursor(Qt::ArrowCursor);
+}
+
+void FormMultiGates::on_pushAuto_clicked()
+{
+  auto_ = true;
+  ui->gatedSpectrum->perform_fit();
+}
+
+void FormMultiGates::fitting_finished()
+{
+  if (auto_)
+  {
+    on_pushApprove_clicked();
+
+    std::map<double, Gate> gates;
+    for (auto g : gates_)
+    {
+      Gate gate = g;
+      if (!gate.approved)
+        gates[1.0 / gate.cps] = gate;
+    }
+
+    double c = -1;
+    if (!gates.empty())
+      c = gates.begin()->second.constraints.y.centroid();
+    else
+      auto_ = false;
+
+    if (c != -1)
+    {
+      for (int row=0; row < table_model_.rowCount(); ++row)
+      {
+        QModelIndex i = sortModel.index(row, 1, QModelIndex());
+        double centroid = sortModel.data(i, Qt::EditRole).toDouble();
+        if (centroid == c)
+        {
+          ui->tableGateList->selectRow(row);
+          return;
+        }
+      }
+    }
+
+  }
+}
 
 void FormMultiGates::on_pushApprove_clicked()
 {
@@ -316,275 +468,98 @@ void FormMultiGates::on_pushApprove_clicked()
   if (!fit_data_.peaks().size())
     return;
 
-  for (auto &q : fit_data_.peaks()) {
-    Gate gate;
-    double livetime = fit_data_.metadata_.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
-    if (livetime <= 0)
-      livetime = 100;
-    gate.cps           = q.second.sum4().gross_area().value();
-    gate.approved = false;
-    gate.constraints.labelfloat = true;
+  Gate gate;
+  gate.approved = false;
+  gate.constraints.vertical = false;
+  gate.constraints.horizontal = true;
+  gate.constraints.labelfloat = true;
+  gate.constraints.color = Qt::yellow;
+  gate.constraints.x.set_centroid(res_/2.0);
+  gate.constraints.x.set_bounds(0, res_);
 
-    uint16_t bits = md_.get_attribute("resolution").value_int;
+  for (auto &q : fit_data_.peaks())
+  {
+    const Peak& peak = q.second;
 
-    double w = q.second.fwhm().value() * ui->doubleGateOn->value();
-    double L_nrg = q.second.energy().value() - w / 2;
-    double R_nrg = q.second.energy().value() + w / 2;
-    double L_chan = fit_data_.settings().cali_nrg_.inverse_transform(L_nrg, fit_data_.settings().bits_);
-    double R_chan = fit_data_.settings().cali_nrg_.inverse_transform(R_nrg, fit_data_.settings().bits_);
+    gate.cps = peak.sum4().gross_area().value();
 
-    gate.constraints.x_c.set_bin(res_/2, bits, fit_data_.settings().cali_nrg_);
-    gate.constraints.x1.set_bin(-0.5, bits, fit_data_.settings().cali_nrg_);
-    gate.constraints.x2.set_bin(res_ - 0.5, bits, fit_data_.settings().cali_nrg_);
-    gate.constraints.y_c.set_bin(q.second.center().value(), bits, fit_data_.settings().cali_nrg_);
-    gate.constraints.y1.set_bin(std::round(L_chan) - 0.5, bits, fit_data_.settings().cali_nrg_);
-    gate.constraints.y2.set_bin(std::round(R_chan) + 0.5, bits, fit_data_.settings().cali_nrg_);
-    gate.constraints.visible = true;
+    double w = peak.fwhm().value() * ui->doubleGateOn->value() * 0.5;
 
-    if (index_of(gate.constraints.y_c.bin(0), true) < 0)
+    gate.constraints.y.set_centroid(q.second.center().value());
+    gate.constraints.y.set_bounds(energy_to_bin(peak.energy().value() - w),
+                                  energy_to_bin(peak.energy().value() + w));
+
+    if (index_of(gate.constraints.y.centroid(), true) == -1)
       gates_.push_back(gate);
-    //else
-    //DBG << "duplicate. ignoring";
   }
 
   rebuild_table(true);
-  //  emit gate_selected();
 }
 
-void FormMultiGates::on_pushDistill_clicked()
+std::list<Bounds2D> FormMultiGates::current_peaks() const
 {
-  all_boxes_.clear();
+  std::list<Bounds2D> boxes;
 
-  for (auto &gate : gates_) {
-    MarkerBox2D box = gate.constraints;
-    if (box.y_c.bin(0) < 0)
+  Bounds2D box = current_gate().constraints;
+
+  if (box.y.centroid() != -1)
+    boxes.push_back(box);
+
+  box.labelfloat = (box.y.centroid() == -1);
+  box.horizontal = false;
+  box.vertical = true;
+  box.color = Qt::cyan;
+  box.selectable = true;
+
+  for (auto &q : fit_data_.peaks())
+  {
+    const Peak &peak = q.second;
+
+    box.selected = ui->gatedSpectrum->get_selected_peaks().count(peak.center().value());
+
+    double w = peak.fwhm().value() * ui->doubleGateOn->value() * 0.5;
+
+    box.x.set_centroid(peak.center().value());
+    box.x.set_bounds(energy_to_bin(peak.energy().value() - w),
+                     energy_to_bin(peak.energy().value() + w));
+
+    boxes.push_back(box);
+  }
+
+  if (range2d.selected)
+    boxes.push_back(range2d);
+
+  return boxes;
+}
+
+std::list<Bounds2D> FormMultiGates::get_all_peaks() const
+{
+  std::list<Bounds2D> ret;
+  for (auto &gate : gates_)
+  {
+    Bounds2D box = gate.constraints;
+    if (box.y.centroid() < 0)
       continue;
 
-    box.visible = true;
     box.selectable = true;
     box.selected = false;
     box.vertical = true;
     box.horizontal = true;
-    box.mark_center = true;
+    box.color = Qt::cyan;
 
-    for (auto &p : gate.fit_data_.peaks()) {
-      Peak &peak = p.second;
-      double w = peak.fwhm().value() * ui->doubleGateOn->value();
-      double L_nrg = peak.energy().value() - w / 2;
-      double R_nrg = peak.energy().value() + w / 2;
-      double L_chan = gate.fit_data_.settings().cali_nrg_.inverse_transform(L_nrg, gate.fit_data_.settings().bits_);
-      double R_chan = gate.fit_data_.settings().cali_nrg_.inverse_transform(R_nrg, gate.fit_data_.settings().bits_);
+    for (const auto &p : gate.fit_data_.peaks())
+    {
+      const Peak& peak = p.second;
+      double w = peak.fwhm().value() * ui->doubleGateOn->value() * 0.5;
 
-      box.x_c.set_bin(peak.center().value(), fit_data_.settings().bits_, gate.fit_data_.settings().cali_nrg_);
-      box.x1.set_bin(std::round(L_chan) - 0.5, fit_data_.settings().bits_, gate.fit_data_.settings().cali_nrg_);
-      box.x2.set_bin(std::round(R_chan) + 0.5, fit_data_.settings().bits_, gate.fit_data_.settings().cali_nrg_);
-      all_boxes_.push_back(box);
+      box.x.set_centroid(peak.center().value());
+      box.x.set_bounds(energy_to_bin(peak.energy().value() - w),
+                       energy_to_bin(peak.energy().value() + w));
+      ret.push_back(box);
     }
   }
-
-  emit boxes_made();
+  return ret;
 }
-
-void FormMultiGates::on_doubleGateOn_editingFinished()
-{
-  update_peaks(false);
-  emit gate_selected();
-}
-
-void FormMultiGates::make_range(Coord mrk) {
-  ui->gatedSpectrum->make_range(mrk);
-}
-
-
-void FormMultiGates::make_gate() {
-  Gate gate = current_gate();
-  fit_data_ = gate.fit_data_;
-
-  SinkPtr source_spectrum;
-  if (spectra_)
-    source_spectrum = spectra_->get_sink(current_spectrum_);
-
-  if (!source_spectrum)
-    return;
-
-  this->setCursor(Qt::WaitCursor);
-
-//  gate.centroid_nrg = fit_data_.settings().cali_nrg_.transform(gate.centroid_chan, fit_data_.metadata_.bits);
-//  gate.width_nrg = fit_data_.settings().cali_nrg_.transform(gate.centroid_chan + gate.width_chan*0.5, fit_data_.metadata_.bits)
-//      - fit_data_.settings().cali_nrg_.transform(gate.centroid_chan - gate.width_chan*0.5, fit_data_.metadata_.bits);
-  Metadata md = source_spectrum->metadata();
-
-  uint32_t xmin = std::ceil(gate.constraints.x1.bin(fit_data_.settings().bits_));
-  uint32_t xmax = std::floor(gate.constraints.x2.bin(fit_data_.settings().bits_));
-  uint32_t ymin = std::ceil(gate.constraints.y1.bin(fit_data_.settings().bits_));
-  uint32_t ymax = std::floor(gate.constraints.y2.bin(fit_data_.settings().bits_));
-
-  DBG << "Coincidence gate x[" << xmin << "-" << xmax << "]   y[" << ymin << "-" << ymax << "]";
-
-  if (md.dimensions() == 2)
-  {
-    std::string name =
-        md.detectors[0].name_ +
-        "[" + to_str_precision(md.detectors[1].best_calib(fit_data_.settings().bits_).transform(ymin, fit_data_.settings().bits_), 0)
-        + "," +
-        to_str_precision(md.detectors[1].best_calib(fit_data_.settings().bits_).transform(ymax, fit_data_.settings().bits_), 0) + "]"
-
-        + " x " +
-
-        md.detectors[1].name_ +
-        "[" + to_str_precision(md.detectors[0].best_calib(fit_data_.settings().bits_).transform(xmin, fit_data_.settings().bits_), 0)
-        + "," +
-        to_str_precision(md.detectors[0].best_calib(fit_data_.settings().bits_).transform(xmax, fit_data_.settings().bits_), 0) + "]";
-
-    if (gate_x && (gate_x->metadata().get_attribute("resolution").value_text == name)) {
-//      DBG << "same gate";
-    } else {
-      gate_x = slice_rectangular(source_spectrum, {{xmin, xmax}, {ymin, ymax}}, true);
-      Qpx::Setting nm = gate_x->metadata().get_attribute("resolution");
-      nm.value_text =  name;
-      gate_x->set_attribute(nm);
-//      DBG << "made new gate";
-    }
-
-//    fit_data_.clear();
-    fit_data_.setData(gate_x);
-    ui->gatedSpectrum->setFit(&fit_data_);
-    ui->gatedSpectrum->update_spectrum();
-    gate.fit_data_ = fit_data_;
-    update_current_gate(gate);
-    //    ui->plotMatrix->refresh();
-  }
-  this->setCursor(Qt::ArrowCursor);
-
-  update_peaks(true);
-  if (auto_) {
-    if (!gate.approved)
-      ui->gatedSpectrum->perform_fit();
-    else
-      fitting_finished();
-  }
-}
-
-void FormMultiGates::setSpectrum(Project *newset, int64_t idx) {
-  clear();
-  spectra_ = newset;
-  current_spectrum_ = idx;
-  SinkPtr spectrum = spectra_->get_sink(idx);
-
-  if (spectrum) {
-    md_ = spectrum->metadata();
-    uint16_t bits = md_.get_attribute("resolution").value_int;
-    res_ = pow(2,bits);
-    make_gate();
-    if (!gates_.empty()) {
-      //DBG << "not empty";
-      ui->tableGateList->selectRow(0);
-      ui->gatedSpectrum->update_spectrum();
-    }
-    emit gate_selected();
-  }
-}
-
-void FormMultiGates::update_peaks(bool content_changed) {
-  //update sums
-
-  if (content_changed)
-    ui->gatedSpectrum->update_spectrum();
-
-  current_peaks_.clear();
-  Gate cgate = current_gate();
-
-  MarkerBox2D box = cgate.constraints;
-  box.labelfloat = (box.y_c.bin(0) < 0);
-
-  for (auto &q : fit_data_.peaks()) {
-    Peak &peak = q.second;
-
-    box.visible = true;
-    box.selected = ui->gatedSpectrum->get_selected_peaks().count(peak.center().value());
-
-    double w = peak.fwhm().value() * ui->doubleGateOn->value();
-    double L_nrg = peak.energy().value() - w / 2;
-    double R_nrg = peak.energy().value() + w / 2;
-    double L_chan = fit_data_.settings().cali_nrg_.inverse_transform(L_nrg, fit_data_.settings().bits_);
-    double R_chan = fit_data_.settings().cali_nrg_.inverse_transform(R_nrg, fit_data_.settings().bits_);
-
-    box.x_c.set_bin(peak.center().value(), fit_data_.settings().bits_, fit_data_.settings().cali_nrg_);
-    box.x1.set_bin(std::round(L_chan) - 0.5, fit_data_.settings().bits_, fit_data_.settings().cali_nrg_);
-    box.x2.set_bin(std::round(R_chan) + 0.5, fit_data_.settings().bits_, fit_data_.settings().cali_nrg_);
-
-    box.horizontal = false;
-    box.vertical = true;
-    current_peaks_.push_back(box);
-  }
-
-  cgate.fit_data_    = fit_data_;
-  double livetime = fit_data_.metadata_.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
-  if (livetime <= 0)
-    livetime = 100;
-  Qpx::Setting totevts = fit_data_.metadata_.get_attribute("total_events");
-  cgate.cps = totevts.number();// / livetime;
-
-  update_current_gate(cgate);
-}
-
-void FormMultiGates::choose_peaks(std::list<MarkerBox2D> chpeaks) {
-  std::set<double> xs;//, ys;
-  for (auto &q : chpeaks) {
-    xs.insert(q.x_c.bin(fit_data_.settings().bits_));
-//    ys.insert(q.y_c.bin(fit_data_.metadata_.bits));
-  }
-  ui->gatedSpectrum->update_selection(xs);
-  update_peaks(false);
-}
-
-void FormMultiGates::on_pushAddGatedSpectrum_clicked()
-{
-  this->setCursor(Qt::WaitCursor);
-  bool success = false;
-
-  if (gate_x /*&& (gate_x->metadata().total_count > 0)*/) {
-    Setting app = gate_x->metadata().get_attribute("appearance");
-    app.value_text = generateColor().name(QColor::HexArgb).toStdString();
-    gate_x->set_attribute(app);
-
-    spectra_->add_sink(gate_x);
-    success = true;
-  }
-
-  if (success) {
-//    emit spectraChanged();
-  }
-
-  this->setCursor(Qt::ArrowCursor);
-}
-
-void FormMultiGates::on_pushAuto_clicked()
-{
-  auto_ = true;
-  ui->gatedSpectrum->perform_fit();
-}
-
-void FormMultiGates::fitting_finished()
-{
-  if (auto_) {
-    on_pushApprove_clicked();
-
-    QModelIndexList indexes = ui->tableGateList->selectionModel()->selectedRows();
-
-    int idx = -1;
-    QModelIndex index;
-    foreach (index, indexes)
-      idx = index.row();
-
-    if (idx > -1) {
-      ui->tableGateList->selectRow(idx+1);
-    }
-
-  }
-}
-
-
 
 
 
@@ -599,18 +574,13 @@ TableGates::TableGates(QObject *parent) :
 
 void TableGates::set_data(std::vector<Gate> gates)
 {
-  //std::reverse(gates_.begin(),gates_.end());
   emit layoutAboutToBeChanged();
   gates_ = gates;
-  /*QModelIndex start_ix = createIndex( 0, 0 );
-  QModelIndex end_ix = createIndex( rowCount() - 1, columnCount() - 1);
-  emit dataChanged( start_ix, end_ix );*/
   emit layoutChanged();
 }
 
 int TableGates::rowCount(const QModelIndex & /*parent*/) const
 {
-  //DBG << "table has " << gates_.size();
   return gates_.size();
 }
 
@@ -632,13 +602,13 @@ QVariant TableGates::data(const QModelIndex &index, int role) const
     case 0:
       return QVariant::fromValue(gate.cps);
     case 1:
-      return QVariant::fromValue(gate.constraints.y_c.bin(0));
+      return QVariant::fromValue(gate.constraints.y.centroid());
     case 2:
-      return QVariant::fromValue(gate.constraints.y_c.energy());
+      return QVariant::fromValue(gate.constraints.y.centroid());
     case 3:
-      return QVariant::fromValue(gate.constraints.y2.bin(0) - gate.constraints.y1.bin(0));
+      return QVariant::fromValue(gate.constraints.y.upper() - gate.constraints.y.lower());
     case 4:
-      return QVariant::fromValue(gate.constraints.y2.energy() - gate.constraints.y1.energy());
+      return QVariant::fromValue(gate.constraints.y.upper() - gate.constraints.y.lower());
     case 5:
       return QVariant::fromValue(gate.fit_data_.peaks().size());
     case 6:
@@ -688,33 +658,13 @@ Qt::ItemFlags TableGates::flags(const QModelIndex &index) const
 }
 
 
-void TableGates::update() {
+void TableGates::update()
+{
   QModelIndex start_ix = createIndex( 0, 0 );
   QModelIndex end_ix = createIndex( rowCount() - 1, columnCount() - 1);
   emit dataChanged( start_ix, end_ix );
   emit layoutChanged();
 }
-
-/*bool TableGates::setData(const QModelIndex & index, const QVariant & value, int role)
-{
-  int row = index.row();
-  int col = index.column();
-  QModelIndex ix = createIndex(row, col);
-
-  if (role == Qt::EditRole) {
-    if (col == 0)
-      gammas_[row].energy = value.toDouble();
-    else if (col == 1)
-      gammas_[row].abundance = value.toDouble();
-  }
-
-  QModelIndex start_ix = createIndex( row, col );
-  QModelIndex end_ix = createIndex( row, col );
-  emit dataChanged( start_ix, end_ix );
-  //emit layoutChanged();
-  emit energiesChanged();
-  return true;
-}*/
 
 
 
