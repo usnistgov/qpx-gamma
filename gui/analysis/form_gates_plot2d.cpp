@@ -88,12 +88,12 @@ void FormGatesPlot2D::set_boxes(std::list<Bounds2D> boxes)
 {
   boxes_ = boxes;
   replot_markers();
-  refocus();
+  if (!ui->coincPlot->inRange(xmin_, xmax_, ymin_, ymax_))
+    refocus();
 }
 
 void FormGatesPlot2D::refocus()
 {
-//  DBG << "Refocus to " << min_ << " " << max_;
   double range = std::max(xmax_ - xmin_, ymax_ - ymin_) * 6;
   double xcenter = (xmax_ + xmin_) / 2.0;
   double ycenter = (ymax_ + ymin_) / 2.0;

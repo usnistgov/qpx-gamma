@@ -18,7 +18,7 @@
 #ifndef Q_PEAK2D_H
 #define Q_PEAK2D_H
 
-#include "roi.h"
+#include "fitter.h"
 #include <QString>
 #include "daq_sink.h"
 #include "qp_2d.h"
@@ -76,13 +76,10 @@ struct Bounds2D
 
 struct Sum2D
 {
-  Sum2D() {}
-  Sum2D(const Qpx::ROI &x_roi, const Qpx::ROI &y_roi, double x_center, double y_center);
+  Sum2D();
 
-  void adjust_x(const Qpx::ROI &roi, double center);
-  void adjust_y(const Qpx::ROI &roi, double center);
-  void adjust_diag_x(const Qpx::ROI &roi, double center);
-  void adjust_diag_y(const Qpx::ROI &roi, double center);
+  void adjust(const Qpx::Fitter &fitter_x, const Qpx::Fitter &fitter_y);
+  void adjust_diag(const Qpx::Fitter &fitter_x, const Qpx::Fitter &fitter_y);
 
   void integrate(Qpx::SinkPtr source);
 
@@ -92,8 +89,12 @@ struct Sum2D
 
   UncertainDouble gross, xback, yback, dback, net;
 
+  Qpx::Fitter x, y, dx, dy;
+
   int currie_quality_indicator {-1};
   bool approved {false};
+
+  Qpx::Peak get_one_peak(const Qpx::Fitter &fitter);
 };
 
 #endif

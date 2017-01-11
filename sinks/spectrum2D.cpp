@@ -173,8 +173,10 @@ void Spectrum2D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
   this->_recalc_axes();
 }
 
-void Spectrum2D::_append(const Entry& e) {
-  if (e.first.size() == 2) {
+void Spectrum2D::_append(const Entry& e)
+{
+  if (e.first.size() == 2)
+  {
     spectrum_[std::pair<uint16_t,uint16_t>(e.first[0], e.first[1])] += e.second;
     total_events_ += e.second;
     total_hits_ += (2 * e.second);

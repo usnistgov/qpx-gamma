@@ -43,10 +43,10 @@ FormIntegration2D::FormIntegration2D(QWidget *parent) :
   ui->plotGateX->setFit(&fit_x_);
   ui->plotGateY->setFit(&fit_y_);
 
-  connect(ui->plotGateX, SIGNAL(peak_selection_changed(std::set<double>)), this, SLOT(gated_fits_updated(std::set<double>)));
-  connect(ui->plotGateY, SIGNAL(peak_selection_changed(std::set<double>)), this, SLOT(gated_fits_updated(std::set<double>)));
-
-  //loadSettings();
+  connect(ui->plotGateX, SIGNAL(peak_selection_changed(std::set<double>)),
+          this, SLOT(gated_fits_updated(std::set<double>)));
+  connect(ui->plotGateY, SIGNAL(peak_selection_changed(std::set<double>)),
+          this, SLOT(gated_fits_updated(std::set<double>)));
 
   table_model_.set_data(peaks_);
   sortModel.setSourceModel( &table_model_ );
@@ -64,6 +64,11 @@ FormIntegration2D::FormIntegration2D(QWidget *parent) :
 
   connect(ui->tableGateList->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
           this, SLOT(selection_changed(QItemSelection,QItemSelection)));
+
+  range_.selectable = false;
+  range_.color = Qt::magenta;
+
+  loadSettings();
 }
 
 FormIntegration2D::~FormIntegration2D()
@@ -79,26 +84,26 @@ void FormIntegration2D::closeEvent(QCloseEvent *event)
 
 void FormIntegration2D::loadSettings()
 {
-  QSettings settings_;
+  QSettings settings;
 
-  settings_.beginGroup("Integration2d");
-  gate_width_ = settings_.value("gate_width", 2).toDouble();
+  settings.beginGroup("Integration2d");
+  gate_width_ = settings.value("gate_width", 2).toDouble();
   ui->doubleGateOn->setValue(gate_width_);
-  ui->plotGateX->loadSettings(settings_); //name these!!!!
-  ui->plotGateY->loadSettings(settings_);
-  settings_.endGroup();
+//  ui->plotGateX->loadSettings(settings); //name these!!!!
+//  ui->plotGateY->loadSettings(settings);
+  settings.endGroup();
 
   on_pushShowDiagonal_clicked();
 }
 
 void FormIntegration2D::saveSettings()
 {
-  QSettings settings_;
-  settings_.beginGroup("Integration2d");
-  settings_.setValue("gate_width", gate_width_);
-  ui->plotGateX->saveSettings(settings_); //name these!!!
-  ui->plotGateY->saveSettings(settings_);
-  settings_.endGroup();
+  QSettings settings;
+  settings.beginGroup("Integration2d");
+  settings.setValue("gate_width", gate_width_);
+//  ui->plotGateX->saveSettings(settings); //name these!!!
+//  ui->plotGateY->saveSettings(settings);
+  settings.endGroup();
 }
 
 void FormIntegration2D::setSpectrum(ProjectPtr newset, int64_t idx)
@@ -127,20 +132,18 @@ void FormIntegration2D::setPeaks(std::list<Bounds2D> pks)
     {
       std::list<Bounds2D> northwest;
       std::list<Bounds2D> southeast;
-      std::list<Bounds2D> diagonal;
       for (auto &q : pks)
       {
         if (q.northwest())
           northwest.push_back(q);
-        else if (q.southeast())
-          southeast.push_back(q);
         else
-          diagonal.push_back(q);
+          southeast.push_back(q);
       }
       DBG << "Sorted into NW=" << northwest.size() << " SE=" << southeast.size()
-             << " DIAG=" << diagonal.size() << " should take up to "
+             << " should take up to "
              << (northwest.size() * southeast.size()) << " tests";
 
+      std::list<Bounds2D> merged;
       for (auto &q : northwest)
       {
         Bounds2D nw = q.reflect();
@@ -154,15 +157,15 @@ void FormIntegration2D::setPeaks(std::list<Bounds2D> pks)
           }
 
         if (ok)
-          diagonal.push_back(nw);
+          merged.push_back(nw);
       }
 
       for (auto &q : southeast)
-        diagonal.push_back(q);
+        merged.push_back(q);
 
-      DBG << "downsized to " << diagonal.size();
-      if (diagonal.size())
-        pks = diagonal;
+      DBG << "downsized to " << merged.size();
+      if (merged.size())
+        pks = merged;
     }
   }
 
@@ -175,23 +178,6 @@ void FormIntegration2D::setPeaks(std::list<Bounds2D> pks)
     peaks_.push_back(newpeak);
   }
   rebuild_table(true);
-}
-
-int32_t FormIntegration2D::index_of(Bounds2D pk)
-{
-  if (peaks_.empty())
-    return -1;
-
-  //DBG << "indexof checking " << pk.x_c.energy()  << " " << pk.y_c.energy();
-
-  for (size_t i=0; i < peaks_.size(); ++i) {
-    //DBG << "   against " << peaks_[i].x_c.energy() << " " << peaks_[i].y_c.energy();
-
-    if ((peaks_[i].area[1][1].x.centroid() == pk.x.centroid())
-        && (peaks_[i].area[1][1].y.centroid() == pk.y.centroid()))
-      return i;
-  }
-  return -1;
 }
 
 int32_t FormIntegration2D::index_of(double px, double py)
@@ -210,33 +196,32 @@ void FormIntegration2D::make_range(double x, double y)
 {
   ui->tableGateList->clearSelection();
 
-  range_.x.set_centroid(x);
-  range_.y.set_centroid(y);
   Calibration f1, f2, e1, e2;
 
   uint16_t bits = md_.get_attribute("resolution").value_int;
 
-  if (md_.detectors.size() > 1) {
-    //DBG << "dets2";
+  if (md_.detectors.size() > 1)
+  {
     f1 = md_.detectors[0].fwhm_calibration_;
     f2 = md_.detectors[1].fwhm_calibration_;
     e1 = md_.detectors[0].best_calib(bits);
     e2 = md_.detectors[1].best_calib(bits);
   }
-  //  DBG << "making 2d marker, calibs valid " << f1.valid() << " " << f2.valid();
 
-  range_.x.set_bounds(e1.inverse_transform(make_lower(f1, x)),
-                      e1.inverse_transform(make_upper(f1, x)));
+  range_.x.set_centroid(x);
+  range_.y.set_centroid(y);
 
-  range_.y.set_bounds(e2.inverse_transform(make_lower(f2, y)),
-                      e2.inverse_transform(make_upper(f2, y)));
+  range_.x.set_bounds(e1.inverse_transform(make_lower(f1, e1.transform(x,bits)), bits),
+                      e1.inverse_transform(make_upper(f1, e1.transform(x,bits)), bits));
 
-  //  DBG << "range visible " << range_.visible << " x" << range_.x1.energy() << "-" << range_.x2.energy()
-  //         << " y" << range_.y1.energy() << "-" << range_.y2.energy();
+  range_.y.set_bounds(e2.inverse_transform(make_lower(f2, e2.transform(y,bits)), bits),
+                      e2.inverse_transform(make_upper(f2, e2.transform(y,bits)), bits));
+
+  range_.selected = true;
 
   make_gates();
   gated_fits_updated(std::set<double>());
-  emit range_changed(range_);
+  emit peak_selected();
 }
 
 double FormIntegration2D::make_lower(Qpx::Calibration fw, double center)
@@ -255,38 +240,12 @@ double FormIntegration2D::make_upper(Qpx::Calibration fw, double center)
     return center + gate_width_ * 2;
 }
 
-
-void FormIntegration2D::update_current_peak(Bounds2D peak)
-{
-  int32_t index = index_of(peak);
-  //DBG << "update current gate " << index;
-
-  //  if ((index != -1) && (peaks_[index].approved))
-  //    gate.approved = true;
-
-  double livetime = md_.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
-  DBG << "update current peak " << peak.x.centroid()  << " x " << peak.y.centroid();
-  if (livetime == 0)
-    livetime = 10000;
-  //  gate.cps = gate.fit_data_.metadata_.total_count.convert_to<double>() / livetime;
-
-  if (index < 0) {
-    DBG << "non-existing peak. ignoring";
-  } else {
-    peaks_[index].area[1][1] = peak;
-    //current_gate_ = index;
-    //DBG << "new current gate = " << current_gate_;
-  }
-
-  rebuild_table(true);
-}
-
 int32_t FormIntegration2D::current_idx()
 {
   QModelIndexList indexes = ui->tableGateList->selectionModel()->selectedRows();
   QModelIndex index, i;
 
-  int32_t  current_gate_ = -1;
+  int32_t  selected_peak = -1;
   //  DBG << "will look at " << indexes.size() << " selected indexes";
   foreach (index, indexes) {
     int row = index.row();
@@ -296,41 +255,34 @@ int32_t FormIntegration2D::current_idx()
     double cy = sortModel.data(i, Qt::EditRole).toDouble();
     int32_t gate_idx = index_of(cx, cy);
     //    DBG << "selected " << gate_idx << " -> "  << centroid;
-    current_gate_ = gate_idx;
+    selected_peak = gate_idx;
   }
-  //  DBG << "now current gate is " << current_gate_;
-  return current_gate_;
+  //  DBG << "now current gate is " << selected_peak;
+  return selected_peak;
 }
 
-//Bounds2D FormIntegration2D::current_peak() {
-//  uint32_t current_peak = current_idx();
+void FormIntegration2D::clearSelection()
+{
+  for (auto &q : peaks_)
+    q.area[1][1].selected = false;
+  range_.selected = false;
 
-//  if (current_peak < 0)
-//    return Bounds2D();
-//  if (current_peak >= peaks_.size()) {
-//    current_peak = -1;
-//    return Bounds2D();
-//  } else
-//    return peaks_[current_peak].area[1][1];
-//}
+  emit peak_selected();
+}
 
 void FormIntegration2D::selection_changed(QItemSelection selected, QItemSelection deselected)
 {
-  //current_gate_ = -1;
-
-  QModelIndexList indexes = ui->tableGateList->selectionModel()->selectedIndexes();
-
+  range_.selected = false;
   for (auto &q : peaks_)
     q.area[1][1].selected = false;
 
+  QModelIndexList indexes = ui->tableGateList->selectionModel()->selectedIndexes();
+
   int32_t current = current_idx();
   if ((current >= 0) && (current < static_cast<int>(peaks_.size())))
-  {
     peaks_[current].area[1][1].selected = true;
-    make_gates();
-  }
-  //DBG << "gates " << peaks_.size() << " selections " << indexes.size();
 
+  make_gates();
   ui->pushRemove->setEnabled(!indexes.empty());
 
   //  remake_gate(false);
@@ -349,41 +301,46 @@ void FormIntegration2D::rebuild_table(bool contents_changed)
   int approved = 0;
 
   for (auto &q : peaks_)
-  {
     if (q.approved)
       approved++;
-    //    if (q.x_c.energy() != -1)
-    //      peaks += q.fit_data_.peaks().size();
-  }
 
   ui->labelGates->setText(QString::number(approved) + "/"
                           + QString::number(peaks_.size() - approved));
 }
 
-void FormIntegration2D::clear() {
+void FormIntegration2D::clear()
+{
   peaks_.clear();
   md_ = Metadata();
   rebuild_table(true);
-
-  emit peak_selected();
+  clearSelection();
 }
 
 void FormIntegration2D::on_pushRemove_clicked()
 {
-  int32_t  current_gate_ = current_idx();
+  int32_t  selected_peak = current_idx();
 
-  //DBG << "trying to remove " << current_gate_ << " in total of " << peaks_.size();
+  //DBG << "trying to remove " << selected_peak << " in total of " << peaks_.size();
 
-  if (current_gate_ < 0)
+  if (selected_peak < 0)
     return;
-  if (current_gate_ >= static_cast<int>(peaks_.size()))
+  if (selected_peak >= static_cast<int>(peaks_.size()))
     return;
 
-  peaks_.erase(peaks_.begin() + current_gate_);
+  peaks_.erase(peaks_.begin() + selected_peak);
+  reindex_peaks();
 
   rebuild_table(true);
 
-  choose_peaks(std::set<int64_t>());
+  std::set<int64_t> selpeaks;
+  for (Sum2D& g : peaks_)
+    if (!g.approved)
+    {
+      selpeaks.insert(g.area[1][1].id);
+      break;
+    }
+
+  choose_peaks(selpeaks);
   emit peak_selected();
 }
 
@@ -435,7 +392,7 @@ void FormIntegration2D::choose_peaks(std::set<int64_t> chpeaks)
   range_.selected = false;
   selection_changed(QItemSelection(), QItemSelection());
   gated_fits_updated(std::set<double>());
-  emit range_changed(range_);
+  emit peak_selected();
 }
 
 void FormIntegration2D::make_gates()
@@ -447,9 +404,21 @@ void FormIntegration2D::make_gates()
 
   int32_t current = current_idx();
   if ((current >= 0) && (current < static_cast<int>(peaks_.size())))
+  {
     peak = peaks_[current].area[1][1];
+    if (!ui->pushShowDiagonal->isChecked())
+    {
+      fit_x_ = peaks_[current].x;
+      fit_y_ = peaks_[current].y;
+    }
+    else
+    {
+      fit_x_ = peaks_[current].dx;
+      fit_y_ = peaks_[current].dy;
+    }
+  }
 
-  if (peak.selected)
+  if (peak.selected && (fit_x_.empty() || fit_y_.empty()))
   {
     SinkPtr source_spectrum = project_->get_sink(current_spectrum_);
     if (!source_spectrum)
@@ -490,62 +459,19 @@ void FormIntegration2D::make_gates()
     }
     else
     {
-      Metadata temp;
-      temp = SinkFactory::getInstance().create_prototype("1D");
-//      temp.name = "temp";
-      uint16_t bits = md_.get_attribute("resolution").value_int;
-      temp.set_attribute(md_.get_attribute("resolution"));
-
-      Setting pattern;
-
-      pattern = temp.get_attribute("pattern_coinc");
-      pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
-      pattern.value_pattern.set_theshold(1);
-      temp.set_attribute(pattern);
-      pattern = temp.get_attribute("pattern_add");
-      pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
-      pattern.value_pattern.set_theshold(1);
-      temp.set_attribute(pattern);
-      gate = SinkFactory::getInstance().create_from_prototype(temp);
-      slice_diagonal_x(source_spectrum, gate, peak.x.centroid(), peak.y.centroid(),
-                       (xwidth + ywidth) / 2, xmin, xmax);
+      gate = slice_diagonal_x(source_spectrum, peak.x.centroid(), peak.y.centroid(),
+                              (xwidth + ywidth) / 2, xmin, xmax);
       fit_x_.setData(gate);
 
-      gate = SinkFactory::getInstance().create_from_prototype(temp);
-      slice_diagonal_y(source_spectrum, gate, peak.x.centroid(), peak.y.centroid(),
-                       (xwidth + ywidth) / 2, ymin, ymax);
+      gate = slice_diagonal_y(source_spectrum, peak.x.centroid(), peak.y.centroid(),
+                              (xwidth + ywidth) / 2, ymin, ymax);
       fit_y_.setData(gate);
-
     }
 
   }
 
-//  if ((current >= 0) && (current < peaks_.size())) {
-//    Sum2D pk = peaks_[current];
-//    if (!ui->pushShowDiagonal->isChecked()) {
-//       if (pk.x.peak_count())
-//         fit_x_.regions_[pk.x.L()] = pk.x;
-//       if (pk.y.peak_count())
-//         fit_y_.regions_[pk.y.L()] = pk.y;
-//    } else {
-//      if (pk.dx.peak_count())
-//        fit_x_.regions_[pk.dx.L()] = pk.dx;
-//      if (pk.dy.peak_count())
-//        fit_y_.regions_[pk.dy.L()] = pk.dy;
-//    }
-//  }
-
-
-  if (!ui->pushShowDiagonal->isChecked())
-  {
-    ui->plotGateX->update_spectrum(/*"Gate X rectangular slice"*/);
-    ui->plotGateY->update_spectrum(/*"Gate Y rectangular slice"*/);
-  }
-  else
-  {
-    ui->plotGateX->update_spectrum(/*"Gate X diagonal slice"*/);
-    ui->plotGateY->update_spectrum(/*"Gate Y diagonal slice"*/);
-  }
+  ui->plotGateX->update_spectrum();
+  ui->plotGateY->update_spectrum();
 
   gated_fits_updated(std::set<double>());
 }
@@ -567,130 +493,74 @@ void FormIntegration2D::gated_fits_updated(std::set<double> dummy)
   bool ygood = ((ui->plotGateY->get_selected_peaks().size() == 1) ||
                 (fit_y_.peaks().size() == 1));
 
-  if (current_idx() >= 0) {
-    ui->pushAdjust->setEnabled(xgood || ygood);
-  } else
-    ui->pushAddPeak2d->setEnabled(xgood && ygood && !ui->pushShowDiagonal->isChecked());
+  bool good = current_idx() && xgood && ygood;
+
+  if (current_idx() >= 0)
+    ui->pushAdjust->setEnabled(good);
+  else
+    ui->pushAddPeak2d->setEnabled(good && !ui->pushShowDiagonal->isChecked());
 }
 
-void FormIntegration2D::adjust_x()
+void FormIntegration2D::adjust(Sum2D& peak)
 {
-  double center;
-
-  std::set<double> selected_x = ui->plotGateX->get_selected_peaks();
-  if (selected_x.size() == 1)
-    center = *selected_x.begin();
-  else if (fit_x_.peaks().size() == 1)
-    center = fit_x_.peaks().begin()->first;
-  else
-    return;
-
-  int32_t current = current_idx();
-
-  if ((current < 0) || (current >= static_cast<int>(peaks_.size())))
-      return;
+  fit_x_.set_selected_peaks(ui->plotGateX->get_selected_peaks());
+  fit_y_.set_selected_peaks(ui->plotGateY->get_selected_peaks());
 
   if (!ui->pushShowDiagonal->isChecked())
-    peaks_[current].adjust_x(fit_x_.parent_region(center), center);
+    peak.adjust(fit_x_, fit_y_);
   else
-    peaks_[current].adjust_diag_x(fit_x_.parent_region(center), center);
+    peak.adjust_diag(fit_x_, fit_y_);
 
-  rebuild_table(true);
-  emit peak_selected();
+  SinkPtr spectrum = project_->get_sink(current_spectrum_);
+  if (spectrum)
+  {
+    peak.integrate(spectrum);
+    peak.approved = true;
+  }
 }
 
-void FormIntegration2D::adjust_y()
-{
-  double center;
-
-  std::set<double> selected_y = ui->plotGateY->get_selected_peaks();
-  if (selected_y.size() == 1)
-    center = *selected_y.begin();
-  else if (fit_y_.peaks().size() == 1)
-    center = fit_y_.peaks().begin()->first;
-  else
-    return;
-
-  int32_t current = current_idx();
-
-  if ((current < 0) || (current >= static_cast<int>(peaks_.size())))
-      return;
-
-
-  if (!ui->pushShowDiagonal->isChecked())
-    peaks_[current].adjust_y(fit_y_.parent_region(center), center);
-  else
-    peaks_[current].adjust_diag_y(fit_y_.parent_region(center), center);
-
-  rebuild_table(true);
-  emit peak_selected();
-}
 
 void FormIntegration2D::on_pushAdjust_clicked()
 {
-  adjust_x();
-  adjust_y();
-  adjust_x();
-
   int32_t current = current_idx();
-
-  SinkPtr spectrum = project_->get_sink(current_spectrum_);
-
-  if ((current < 0) || (current >= static_cast<int>(peaks_.size())) || !spectrum)
+  if ((current < 0) || (current >= static_cast<int>(peaks_.size())))
       return;
 
-  peaks_[current].integrate(spectrum);
-  peaks_[current].approved = true;
+  adjust(peaks_[current]);
 
   rebuild_table(true);
   emit peak_selected();
-
-  //redundant refreshes and signals from above calls
 }
 
 void FormIntegration2D::on_pushAddPeak2d_clicked()
 {
-  double c_x;
-  double c_y;
+  Sum2D pk;
+  pk.area[1][1].id = peaks_.size();
+  adjust(pk);
 
-  std::set<double> selected_x = ui->plotGateX->get_selected_peaks();
-  if (selected_x.size() == 1)
-    c_x = *selected_x.begin();
-  else if (fit_x_.peaks().size() == 1)
-    c_x = fit_x_.peaks().begin()->first;
-  else
-    return;
-
-  std::set<double> selected_y = ui->plotGateY->get_selected_peaks();
-  if (selected_y.size() == 1)
-    c_y = *selected_y.begin();
-  else if (fit_y_.peaks().size() == 1)
-    c_y = fit_y_.peaks().begin()->first;
-  else
-    return;
-
-  Sum2D pk(fit_x_.parent_region(c_x), fit_y_.parent_region(c_y), c_x, c_y);
-
+//  pk.area[1][1].selected = true;
   peaks_.push_back(pk);
 
   rebuild_table(true);
 
   std::set<int64_t> ch;
-  ch.insert(pk.area[1][1].id);
+  ch.insert(peaks_.size() - 1);
   choose_peaks(ch);
 
-  int32_t current = current_idx();
-  SinkPtr spectrum = project_->get_sink(current_spectrum_);
-  if ((current >= 0) && (current < static_cast<int>(peaks_.size())) && spectrum.operator bool() ) {
-    peaks_[current].integrate(spectrum);
-    peaks_[current].approved = true;
-  }
-
-  rebuild_table(true);
-
   //  make_gates(range_);
-  emit peak_selected();
+//  emit peak_selected();
 }
+
+void FormIntegration2D::reindex_peaks()
+{
+  int64_t id = 0;
+  for (auto p : peaks_)
+  {
+    p.area[1][1].id = id;
+    id++;
+  }
+}
+
 
 std::list<Bounds2D> FormIntegration2D::peaks()
 {
@@ -700,6 +570,7 @@ std::list<Bounds2D> FormIntegration2D::peaks()
     if (q.area[1][1] != Bounds2D())
     {
       Bounds2D cbox = q.area[1][1];
+      cbox.color = Qt::cyan;
       if (cbox.selected)
       {
         cbox.vertical = true;
@@ -716,12 +587,16 @@ std::list<Bounds2D> FormIntegration2D::peaks()
           Bounds2D box = q.area[i][j];
           if (box != Bounds2D())
           {
+            box.id = cbox.id;
+            box.color = Qt::cyan;
             box.selected = cbox.selected;
             ret.push_back(box);
           }
         }
     }
   }
+  if (range_.selected)
+    ret.push_back(range_);
   return ret;
 }
 
@@ -963,25 +838,4 @@ void TablePeaks2D::update() {
   emit dataChanged( start_ix, end_ix );
   emit layoutChanged();
 }
-
-/*bool TablePeaks2D::setData(const QModelIndex & index, const QVariant & value, int role)
-{
-  int row = index.row();
-  int col = index.column();
-  QModelIndex ix = createIndex(row, col);
-
-  if (role == Qt::EditRole) {
-    if (col == 0)
-      gammas_[row].energy = value.toDouble();
-    else if (col == 1)
-      gammas_[row].abundance = value.toDouble();
-  }
-
-  QModelIndex start_ix = createIndex( row, col );
-  QModelIndex end_ix = createIndex( row, col );
-  emit dataChanged( start_ix, end_ix );
-  //emit layoutChanged();
-  emit energiesChanged();
-  return true;
-}*/
 

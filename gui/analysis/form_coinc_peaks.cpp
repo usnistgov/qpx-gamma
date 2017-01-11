@@ -74,30 +74,6 @@ void FormCoincPeaks::update_range_selection(double l, double r)
   emit range_selection_changed(l, r);
 }
 
-//void FormCoincPeaks::remove_peak() {
-//  if (!fit_data_)
-//    return;
-
-//  std::set<double> chosen_peaks;
-//  double last_sel = -1;
-//  for (auto &q : fit_data_->peaks())
-//    if (q.second.selected) {
-//      chosen_peaks.insert(q.second.center);
-//      last_sel = q.first;
-//    }
-
-//  fit_data_->remove_peaks(chosen_peaks);
-
-//  for (auto &q : fit_data_->peaks())
-//    if (q.first > last_sel) {
-//      q.second.selected = true;
-//      break;
-//    }
-
-//  update_fit(true);
-//  emit peaks_changed(true);
-//}
-
 void FormCoincPeaks::clearSelection()
 {
   ui->plotPeaks->clearSelection();
@@ -206,7 +182,7 @@ void FormCoincPeaks::selection_changed_in_table()
   selected_peaks_.clear();
   foreach (QModelIndex i, ui->tablePeaks->selectionModel()->selectedRows())
   {
-    DBG << "pk center " << ui->tablePeaks->item(i.row(), 0)->data(Qt::UserRole).toDouble();
+//    DBG << "pk center " << ui->tablePeaks->item(i.row(), 0)->data(Qt::UserRole).toDouble();
     selected_peaks_.insert(ui->tablePeaks->item(i.row(), 0)->data(Qt::UserRole).toDouble());
   }
   ui->plotPeaks->set_selected_peaks(selected_peaks_);

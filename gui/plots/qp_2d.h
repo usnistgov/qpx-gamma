@@ -65,6 +65,9 @@ public:
   void setAxes(QString xlabel, double x1, double x2,
                 QString ylabel, double y1, double y2,
                 QString zlabel);
+
+  bool inRange(double x1, double x2,
+               double y1, double y2) const;
   void zoomOut(double x1, double x2,
                double y1, double y2);
   void setOrientation(Qt::Orientation);

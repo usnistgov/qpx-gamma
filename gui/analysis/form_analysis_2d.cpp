@@ -57,6 +57,77 @@ FormAnalysis2D::FormAnalysis2D(QWidget *parent)
   loadSettings();
 }
 
+FormAnalysis2D::~FormAnalysis2D()
+{
+  delete ui;
+}
+
+void FormAnalysis2D::closeEvent(QCloseEvent *event)
+{
+  saveSettings();
+  event->accept();
+}
+
+void FormAnalysis2D::loadSettings()
+{
+  QSettings settings;
+  ui->plotMatrix->loadSettings(settings);
+
+  my_gates_->loadSettings();
+  form_integration_->loadSettings();
+}
+
+void FormAnalysis2D::saveSettings()
+{
+  QSettings settings;
+  ui->plotMatrix->saveSettings(settings);
+
+  my_gates_->saveSettings();
+  form_integration_->saveSettings();
+}
+
+void FormAnalysis2D::reset()
+{
+  initialized = false;
+}
+
+
+void FormAnalysis2D::clear()
+{
+  ui->plotMatrix->reset_content();
+
+  current_spectrum_ = 0;
+
+  my_gates_->clear();
+  form_integration_->clear();
+  update_peaks();
+}
+
+void FormAnalysis2D::setSpectrum(ProjectPtr newset, int64_t idx)
+{
+  clear();
+  project_ = newset;
+  current_spectrum_ = idx;
+  my_gates_->setSpectrum(newset, idx);
+  form_integration_->setSpectrum(newset, idx);
+}
+
+void FormAnalysis2D::initialize()
+{
+  if (initialized || !project_)
+    return;
+
+  SinkPtr spectrum = project_->get_sink(current_spectrum_);
+
+  if (spectrum)
+  {
+    ui->plotMatrix->reset_content();
+    ui->plotMatrix->setSpectra(project_, current_spectrum_);
+    ui->plotMatrix->update_plot();
+  }
+  initialized = true;
+}
+
 void FormAnalysis2D::take_boxes()
 {
   form_integration_->setPeaks(my_gates_->get_all_peaks());
@@ -64,8 +135,6 @@ void FormAnalysis2D::take_boxes()
 
 void FormAnalysis2D::matrix_selection()
 {
-  DBG << "User selected stuff in matrix";
-
   auto chosen_peaks = ui->plotMatrix->get_selected_boxes();
 
   if (my_gates_->isVisible())
@@ -79,46 +148,6 @@ void FormAnalysis2D::matrix_selection()
 void FormAnalysis2D::changedProject()
 {
   emit projectChanged();
-}
-
-void FormAnalysis2D::setSpectrum(ProjectPtr newset, int64_t idx)
-{
-  clear();
-  project_ = newset;
-  current_spectrum_ = idx;
-  my_gates_->setSpectrum(newset, idx);
-  form_integration_->setSpectrum(newset, idx);
-}
-
-void FormAnalysis2D::reset()
-{
-  initialized = false;
-//  while (ui->tabs->count())
-//    ui->tabs->removeTab(0);
-}
-
-void FormAnalysis2D::initialize()
-{
-  if (initialized)
-    return;
-
-  if (project_)
-  {
-    SinkPtr spectrum = project_->get_sink(current_spectrum_);
-
-    if (spectrum) {
-      Metadata md = spectrum->metadata();
-      uint16_t bits = md.get_attribute("resolution").value_int;
-
-      ui->plotMatrix->reset_content();
-      ui->plotMatrix->setSpectra(project_, current_spectrum_);
-      ui->plotMatrix->update_plot();
-
-      bool symmetrized = (md.get_attribute("symmetrized").value_int != 0);
-    }
-  }
-
-  initialized = true;
 }
 
 void FormAnalysis2D::update_spectrum()
@@ -138,15 +167,9 @@ void FormAnalysis2D::showEvent( QShowEvent* event )
 void FormAnalysis2D::update_peaks()
 {
   if (my_gates_->isVisible())
-  {
-//    Bounds2D box = my_gates_->current_gate().constraints;
-//    ui->plotMatrix->set_marker(box);
     ui->plotMatrix->set_boxes(my_gates_->current_peaks());
-  }
   else if (form_integration_->isVisible())
-  {
     ui->plotMatrix->set_boxes(form_integration_->peaks());
-  }
 
   ui->plotMatrix->replot_markers();
 }
@@ -162,62 +185,14 @@ void FormAnalysis2D::clickedPlot2d(double x, double y)
 void FormAnalysis2D::clearSelection()
 {
 //  ui->plotMatrix->set_range_x(Bounds2D());
-  ui->plotMatrix->replot_markers();
+//  ui->plotMatrix->replot_markers();
   if (my_gates_->isVisible())
     my_gates_->clearSelection();
-//  else if (form_integration_->isVisible())
-//    form_integration_->clearSelection();
-}
-
-void FormAnalysis2D::closeEvent(QCloseEvent *event)
-{
-  saveSettings();
-  event->accept();
-}
-
-void FormAnalysis2D::loadSettings()
-{
-  QSettings settings;
-
-  ui->plotMatrix->loadSettings(settings);
-
-  if (my_gates_)
-    my_gates_->loadSettings();
-  if (form_integration_)
-    form_integration_->loadSettings();
-}
-
-void FormAnalysis2D::saveSettings()
-{
-  QSettings settings;
-
-  if (my_gates_)
-    my_gates_->saveSettings();
-  if (form_integration_)
-    form_integration_->saveSettings();
-
-  ui->plotMatrix->saveSettings(settings);
-}
-
-void FormAnalysis2D::clear()
-{
-  ui->plotMatrix->reset_content();
-
-  current_spectrum_ = 0;
-
-  if (my_gates_)
-    my_gates_->clear();
-  if (form_integration_)
-    form_integration_->clear();
-}
-
-FormAnalysis2D::~FormAnalysis2D()
-{
-  delete ui;
+  else if (form_integration_->isVisible())
+    form_integration_->clearSelection();
 }
 
 void FormAnalysis2D::on_tabs_currentChanged(int index)
 {
-//  ui->plotMatrix->set_marker(Bounds2D());
   update_peaks();
 }

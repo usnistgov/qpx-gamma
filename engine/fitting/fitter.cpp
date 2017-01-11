@@ -88,7 +88,13 @@ void Fitter::setData(SinkPtr spectrum)
   }
 }
 
-void Fitter::clear() {
+bool Fitter::empty() const
+{
+  return regions_.empty();
+}
+
+void Fitter::clear()
+{
   detector_ = Detector();
   metadata_ = Metadata();
   finder_.clear();

@@ -44,6 +44,7 @@ public:
 //  void apply_energy_calibration(Calibration cal);
 //  void apply_fwhm_calibration(Calibration cal);
 
+  bool empty() const;
 
   void clear();
   void setData(SinkPtr spectrum);

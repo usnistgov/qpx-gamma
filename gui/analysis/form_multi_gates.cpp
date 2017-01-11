@@ -56,7 +56,11 @@ FormMultiGates::FormMultiGates(QWidget *parent) :
   ui->tableGateList->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->tableGateList->show();
 
-  ui->gatedSpectrum->setFit(&fit_data_);
+  auto fitsettings = fitter_.settings();
+  fitsettings.gaussian_only = true;
+  fitter_.apply_settings(fitsettings);
+
+  ui->gatedSpectrum->setFit(&fitter_);
   connect(ui->gatedSpectrum , SIGNAL(peaks_changed()), this, SLOT(peaks_changed_in_plot()));
   connect(ui->gatedSpectrum , SIGNAL(peak_selection_changed(std::set<double>)),
           this, SLOT(peak_selection_changed(std::set<double>)));
@@ -128,8 +132,8 @@ void FormMultiGates::clearSelection()
 void FormMultiGates::update_range_selection(double l, double r)
 {
   range2d = current_gate().constraints;
-  range2d.x.set_bounds(fit_data_.settings().nrg_to_bin(l),
-                       fit_data_.settings().nrg_to_bin(r));
+  range2d.x.set_bounds(fitter_.settings().nrg_to_bin(l),
+                       fitter_.settings().nrg_to_bin(r));
   range2d.selected = (l != r);
   range2d.color = Qt::magenta;
   range2d.horizontal = false;
@@ -139,12 +143,14 @@ void FormMultiGates::update_range_selection(double l, double r)
 
 void FormMultiGates::peaks_changed_in_plot()
 {
+  range2d.selected = false;
   update_current_gate();
   emit gate_selected();
 }
 
 void FormMultiGates::peak_selection_changed(std::set<double> sel)
 {
+  range2d.selected = false;
   emit gate_selected();
 }
 
@@ -184,19 +190,19 @@ void FormMultiGates::make_gate()
 
   Gate gate = current_gate();
 
-  if (gate.fit_data_.peaks().empty())
+  if (gate.fitter_.peaks().empty())
   {
     auto slice = make_gated_spectrum(gate.constraints);
     if (slice)
     {
-      gate.fit_data_.apply_settings(fit_data_.settings());
-      gate.fit_data_.setData(slice);
-      fit_data_ = gate.fit_data_;
+      gate.fitter_.apply_settings(fitter_.settings());
+      gate.fitter_.setData(slice);
+      fitter_ = gate.fitter_;
       update_current_gate();
     }
   }
 
-  fit_data_ = gate.fit_data_;
+  fitter_ = gate.fitter_;
   ui->gatedSpectrum->update_spectrum();
 
   this->setCursor(Qt::ArrowCursor);
@@ -211,8 +217,8 @@ void FormMultiGates::make_gate()
 void FormMultiGates::update_current_gate()
 {
   Gate gate = current_gate();
-  gate.fit_data_ = fit_data_;
-  gate.count  = gate.fit_data_.metadata_.get_attribute("total_events").number();
+  gate.fitter_ = fitter_;
+  gate.count  = gate.fitter_.metadata_.get_attribute("total_events").number();
 
   int32_t index = index_of(gate.constraints.y.centroid(), false);
 
@@ -310,7 +316,7 @@ void FormMultiGates::rebuild_table(bool contents_changed)
     if (q.approved)
       approved++;
     if (q.constraints.y.centroid() >= 0)
-      peaks += q.fit_data_.peaks().size();
+      peaks += q.fitter_.peaks().size();
   }
 
   ui->labelGates->setText(QString::number(approved) + "/"  + QString::number(gates_.size() - approved));
@@ -338,7 +344,7 @@ void FormMultiGates::on_pushDistill_clicked()
 
 int32_t FormMultiGates::energy_to_bin(double energy) const
 {
-  return std::round(fit_data_.settings().nrg_to_bin(energy));
+  return std::round(fitter_.settings().nrg_to_bin(energy));
 }
 
 void FormMultiGates::on_doubleGateOn_editingFinished()
@@ -346,9 +352,9 @@ void FormMultiGates::on_doubleGateOn_editingFinished()
   emit gate_selected();
 }
 
-void FormMultiGates::make_range(double energy)
+void FormMultiGates::make_range(double bin)
 {
-  ui->gatedSpectrum->make_range(energy);
+  ui->gatedSpectrum->make_range(fitter_.settings().bin_to_nrg(bin));
 }
 
 
@@ -366,14 +372,14 @@ Qpx::SinkPtr FormMultiGates::make_gated_spectrum(const Bounds2D &bounds)
   if (md.dimensions() != 2)
     return nullptr;
 
-  auto x_bounds =  bounds.x.calibrate(nrg_x_, fit_data_.settings().bits_);
-  auto y_bounds =  bounds.y.calibrate(nrg_y_, fit_data_.settings().bits_);
+  auto x_bounds =  bounds.x.calibrate(nrg_x_, fitter_.settings().bits_);
+  auto y_bounds =  bounds.y.calibrate(nrg_y_, fitter_.settings().bits_);
 
   std::string name = md.detectors[0].name_ + x_bounds.bounds_to_string()
       + "  "
       + md.detectors[1].name_ + y_bounds.bounds_to_string();
 
-  //  if (fit_data_.metadata_.get_attribute("name").value_text == name)
+  //  if (fitter_.metadata_.get_attribute("name").value_text == name)
   //  {
   //    //      DBG << "same gate";
   //  }
@@ -480,7 +486,7 @@ void FormMultiGates::on_pushApprove_clicked()
 
   gates_[idx].approved = true;
 
-  if (!fit_data_.peaks().size())
+  if (!fitter_.peaks().size())
     return;
 
   Gate gate;
@@ -492,7 +498,7 @@ void FormMultiGates::on_pushApprove_clicked()
   gate.constraints.x.set_centroid(res_/2.0);
   gate.constraints.x.set_bounds(0, res_);
 
-  for (auto &q : fit_data_.peaks())
+  for (auto &q : fitter_.peaks())
   {
     const Peak& peak = q.second;
 
@@ -527,7 +533,7 @@ std::list<Bounds2D> FormMultiGates::current_peaks() const
   box.selectable = true;
 
   int64_t id = 0;
-  for (auto &q : fit_data_.peaks())
+  for (auto &q : fitter_.peaks())
   {
     const Peak &peak = q.second;
 
@@ -560,14 +566,13 @@ std::list<Bounds2D> FormMultiGates::get_all_peaks() const
     if (box.y.centroid() < 0)
       continue;
 
-    box.id = id;
     box.selectable = true;
     box.selected = false;
     box.vertical = false;
     box.horizontal = false;
     box.color = Qt::cyan;
 
-    for (const auto &p : gate.fit_data_.peaks())
+    for (const auto &p : gate.fitter_.peaks())
     {
       const Peak& peak = p.second;
       double w = peak.fwhm().value() * ui->doubleGateOn->value() * 0.5;
@@ -575,9 +580,10 @@ std::list<Bounds2D> FormMultiGates::get_all_peaks() const
       box.x.set_centroid(peak.center().value());
       box.x.set_bounds(energy_to_bin(peak.energy().value() - w),
                        energy_to_bin(peak.energy().value() + w));
+      box.id = id;
       ret.push_back(box);
+      id++;
     }
-    id++;
   }
   return ret;
 }
@@ -633,7 +639,7 @@ QVariant TableGates::data(const QModelIndex &index, int role) const
             calib_.transform(gate.constraints.y.upper(), bits_) -
             calib_.transform(gate.constraints.y.lower(), bits_));
     case 5:
-      return QVariant::fromValue(gate.fit_data_.peaks().size());
+      return QVariant::fromValue(gate.fitter_.peaks().size());
     case 6:
       if (gate.approved)
         return "Processed";

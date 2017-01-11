@@ -299,6 +299,16 @@ void Plot2D::setAxes(QString xlabel, double x1, double x2,
   rescaleAxes();
 }
 
+bool Plot2D::inRange(double x1, double x2,
+                     double y1, double y2) const
+{
+  return(
+      (x1 > xAxis->range().lower) &&
+      (x2 < xAxis->range().upper) &&
+      (y1 > yAxis->range().lower) &&
+      (y2 < yAxis->range().upper));
+}
+
 void Plot2D::zoomOut(double x1, double x2,
                      double y1, double y2)
 {

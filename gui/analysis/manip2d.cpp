@@ -26,114 +26,126 @@
 #include <boost/random/uniform_real.hpp>
 #include "daq_sink_factory.h"
 
-namespace Qpx {
+namespace Qpx
+{
 
-SinkPtr slice_rectangular(SinkPtr source, std::initializer_list<Pair> bounds, bool det1) {
+SinkPtr derive_empty_1d(SinkPtr source, bool det1)
+{
   if (!source)
     return nullptr;
 
   Metadata md = source->metadata();
-  if ((md.get_attribute("total_events").value_precise <= 0) || (md.dimensions() != 2))
+  if (md.dimensions() != 2)
     return nullptr;
 
-  Metadata temp = SinkFactory::getInstance().create_prototype("1D");
+  Setting pattern = md.get_attribute("pattern_add");
+  auto gates = pattern.value_pattern.gates();
+  int chan1{-1};
+  int chan2{-1};
+  for (size_t i=0; i < gates.size(); ++i)
+  {
+    if (gates[i] && (chan1 == -1))
+      chan1 = i;
+    else if (gates[i] && (chan2 == -1))
+      chan2 = i;
+    else if (gates[i])
+      return nullptr;
+  }
 
-  Setting name = md.get_attribute("name");
-  name.value_text += " projection";
-  temp.set_attribute(name);
+  if ((chan1 == -1) && (chan2 == -1))
+    return nullptr;
 
-  temp.set_attribute(md.get_attribute("resolution"));
-  //GENERALIZE!!!
-
-  Setting pattern;
-  pattern = temp.get_attribute("pattern_coinc");
-  pattern.value_pattern.set_gates(std::vector<bool>({1,1}));
-  pattern.value_pattern.set_theshold(2);
-  temp.set_attribute(pattern);
-
-  pattern = temp.get_attribute("pattern_add");
   if (det1)
-    pattern.value_pattern.set_gates(std::vector<bool>({1,0}));
+    gates[chan2] = false;
   else
-    pattern.value_pattern.set_gates(std::vector<bool>({0,1}));
-  pattern.value_pattern.set_theshold(1);
-  temp.set_attribute(pattern);
+    gates[chan1] = false;
 
-  SinkPtr ret = SinkFactory::getInstance().create_from_prototype(temp);
+  pattern.value_pattern.set_gates(gates);
+  pattern.value_pattern.set_theshold(1);
+  md.set_attribute(pattern);
+
+  Metadata temp = SinkFactory::getInstance().create_prototype("1D");
+  temp.set_attributes(md.get_all_attributes());
+
+  auto ret = SinkFactory::getInstance().create_from_prototype(temp);
+  if (ret)
+    ret->set_detectors(md.detectors);
+  return ret;
+}
+
+
+SinkPtr slice_rectangular(SinkPtr source, std::initializer_list<Pair> bounds, bool det1)
+{
+  if (bounds.size() != 2)
+    return nullptr;
+
+  SinkPtr ret = derive_empty_1d(source, det1);
   if (!ret)
     return nullptr;
 
-  ret->set_detectors(md.detectors);
-
   std::shared_ptr<EntryList> spectrum_data = std::move(source->data_range(bounds));
-  for (auto it : *spectrum_data)
-    ret->append(it);
+  if (det1)
+    for (auto it : *spectrum_data)
+    {
+      Entry entry({it.first[0]}, it.second);
+      ret->append(entry);
+    }
+  else
+    for (auto it : *spectrum_data)
+    {
+      Entry entry({it.first[1]}, it.second);
+      ret->append(entry);
+    }
+
   ret->flush();
 
-  if (ret->metadata().get_attribute("total_events").value_precise > 0)
-    return ret;
-  else
+  return ret;
+}
+
+SinkPtr slice_diagonal_x(SinkPtr source, size_t xc, size_t yc, size_t width,
+                         size_t minx, size_t maxx)
+{
+  SinkPtr destination = derive_empty_1d(source, true);
+  if (!destination)
     return nullptr;
-}
 
-bool slice_diagonal_x(SinkPtr source, SinkPtr destination, size_t xc, size_t yc, size_t width, size_t minx, size_t maxx) {
-  if (source == nullptr)
-    return false;
-  if (destination == nullptr)
-    return false;
+  int diag_width = std::round(std::sqrt((width*width)/2.0));
+  if ((diag_width % 2) == 0)
+    diag_width++;
 
-  Metadata md = source->metadata();
-
-  if ((md.get_attribute("total_events").value_precise > 0) && (md.dimensions() == 2))
-  {
-    destination->set_detectors(md.detectors);
-
-    int diag_width = std::round(std::sqrt((width*width)/2.0));
-    if ((diag_width % 2) == 0)
-      diag_width++;
-
-    size_t tot = xc + yc;
-    for (size_t i=0; i < tot; ++i) {
-      if ((i >= minx) && (i < maxx)) {
-        Entry entry({i}, sum_diag(source, i, tot-i, diag_width));
-        destination->append(entry);
-      }
+  size_t tot = xc + yc;
+  for (size_t i=0; i < tot; ++i) {
+    if ((i >= minx) && (i < maxx)) {
+      Entry entry({i}, sum_diag(source, i, tot-i, diag_width));
+      destination->append(entry);
     }
-
   }
 
   destination->flush();
-  return (destination->metadata().get_attribute("total_events").value_precise > 0);
+  return destination;
 }
 
-bool slice_diagonal_y(SinkPtr source, SinkPtr destination, size_t xc, size_t yc, size_t width, size_t miny, size_t maxy) {
-  if (source == nullptr)
-    return false;
-  if (destination == nullptr)
-    return false;
+SinkPtr slice_diagonal_y(SinkPtr source, size_t xc, size_t yc, size_t width,
+                         size_t miny, size_t maxy)
+{
+  SinkPtr destination = derive_empty_1d(source, false);
+  if (!destination)
+    return nullptr;
 
-  Metadata md = source->metadata();
+  int diag_width = std::round(std::sqrt((width*width)/2.0));
+  if ((diag_width % 2) == 0)
+    diag_width++;
 
-  if ((md.get_attribute("total_events").value_precise > 0) && (md.dimensions() == 2))
-  {
-    destination->set_detectors(md.detectors);
-
-    int diag_width = std::round(std::sqrt((width*width)/2.0));
-    if ((diag_width % 2) == 0)
-      diag_width++;
-
-    size_t tot = xc + yc;
-    for (size_t i=0; i < tot; ++i) {
-      if ((i >= miny) && (i < maxy)) {
-        Entry entry({i}, sum_diag(source, tot-i, i, diag_width));
-        destination->append(entry);
-      }
+  size_t tot = xc + yc;
+  for (size_t i=0; i < tot; ++i) {
+    if ((i >= miny) && (i < maxy)) {
+      Entry entry({i}, sum_diag(source, tot-i, i, diag_width));
+      destination->append(entry);
     }
-
   }
 
   destination->flush();
-  return (destination->metadata().get_attribute("total_events").value_precise > 0);
+  return destination;
 }
 
 PreciseFloat sum_diag(SinkPtr source, size_t x, size_t y, size_t width)
@@ -164,46 +176,24 @@ SinkPtr make_symmetrized(SinkPtr source)
 
   Metadata md = source->metadata();
 
-  if ((md.get_attribute("total_events").value_precise <= 0) || (md.dimensions() != 2)) {
-    WARN << "<::MakeSymmetrize> " << md.get_attribute("name").value_text << " has no events or is not 2d";
+  if (md.dimensions() != 2)
     return nullptr;
-  }
-
-  std::vector<size_t> chans;
-  Setting pattern;
-  pattern = md.get_attribute("pattern_add");
-  std::vector<bool> gts = pattern.value_pattern.gates();
-
-  for (size_t i=0; i < gts.size(); ++i) {
-    if (gts[i])
-      chans.push_back(i);
-  }
-
-  if (chans.size() != 2) {
-    WARN << "<::MakeSymmetrize> " << md.get_attribute("name").value_text << " does not have 2 channels in add pattern";
-    return nullptr;
-  }
-
-  pattern = md.get_attribute("pattern_coinc");
-  pattern.value_pattern.set_gates(gts);
-  pattern.value_pattern.set_theshold(2);
-  md.set_attribute(pattern);
 
   SinkPtr ret = SinkFactory::getInstance().create_from_prototype(md); //assume 2D?
 
-  if (!ret) {
-    WARN << "<::MakeSymmetrize> symmetrization of " << md.get_attribute("name").value_text << " could not be created";
+  if (!ret)
     return nullptr;
-  }
 
   Detector detector1;
   Detector detector2;
 
-  if (md.detectors.size() > 1) {
+  if (md.detectors.size() > 1)
+  {
     detector1 = md.detectors[0];
     detector2 = md.detectors[1];
   } else {
-    WARN << "<::MakeSymmetrize> " << md.get_attribute("name").value_text << " does not have 2 detector definitions";
+    WARN << "<::MakeSymmetrize> " << md.get_attribute("name").value_text
+         << " does not have 2 detector definitions";
     return nullptr;
   }
 
@@ -211,9 +201,12 @@ SinkPtr make_symmetrized(SinkPtr source)
   Calibration gain_match_cali = detector2.get_gain_match(bits, detector1.name_);
 
   if (gain_match_cali.to_ == detector1.name_)
-    LINFO << "<::MakeSymmetrize> using gain match calibration from " << detector2.name_ << " to " << detector1.name_ << " " << gain_match_cali.to_string();
+    LINFO << "<::MakeSymmetrize> using gain match calibration from "
+          << detector2.name_ << " to " << detector1.name_
+          << " " << gain_match_cali.to_string();
   else {
-    WARN << "<::MakeSymmetrize> no appropriate gain match calibration";
+    WARN << "<::MakeSymmetrize> no appropriate gain match calibration from "
+         << detector2.name_ << " to " << detector1.name_;
     return nullptr;
   }
 
@@ -222,42 +215,26 @@ SinkPtr make_symmetrized(SinkPtr source)
   boost::random::mt19937 gen;
   boost::random::uniform_real_distribution<> dist(-0.5, 0.5);
 
-  size_t e2 = 0;
   std::unique_ptr<std::list<Entry>> spectrum_data = std::move(source->data_range({{0, adjrange}, {0, adjrange}}));
-  for (auto it : *spectrum_data) {
-    PreciseFloat count = it.second;
+  for (auto it : *spectrum_data)
+  {
+    size_t e1 = it.first[0];
 
-    //DBG << "adding " << it.first[0] << "+" << it.first[1] << "  x" << it.second;
     double xformed = gain_match_cali.transform(it.first[1]);
-    double e1 = it.first[0];
 
-    it.second = 1;
-    for (int i=0; i < count; ++i) {
-      double plus = dist(gen);
-      double xfp = xformed + plus;
-
-      if (xfp > 0)
-        e2 = static_cast<size_t>(std::round(xfp));
-      else
-        e2 = 0;
-
-      //DBG << xformed << " plus " << plus << " = " << xfp << " round to " << e2;
-
-      it.first[0] = e1;
-      it.first[1] = e2;
-
-      ret->append(it);
-
-      it.first[0] = e2;
-      it.first[1] = e1;
-
-      ret->append(it);
-
+    for (int i=0; i < it.second; ++i)
+    {
+      size_t e2 = std::max(static_cast<size_t>(0),
+                           static_cast<size_t>(std::round(xformed + dist(gen))));
+      ret->append(Entry({e1, e2}, 1));
+      ret->append(Entry({e2, e1}, 1));
     }
   }
 
-  for (auto &p : md.detectors) {
-    if (p.shallow_equals(detector1) || p.shallow_equals(detector2)) {
+  for (auto &p : md.detectors)
+  {
+    if (p.shallow_equals(detector1) || p.shallow_equals(detector2))
+    {
       p = Detector(detector1.name_ + std::string("*") + detector2.name_);
       p.energy_calibrations_.add(detector1.energy_calibrations_.get(Calibration("Energy", bits)));
     }

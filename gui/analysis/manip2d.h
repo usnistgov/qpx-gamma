@@ -26,12 +26,15 @@
 #include "daq_sink.h"
 #include "custom_logger.h"
 
-namespace Qpx {
+namespace Qpx
+{
+
+SinkPtr derive_empty_1d(SinkPtr source, bool det1);
 
 SinkPtr slice_rectangular(SinkPtr source, std::initializer_list<Pair> bounds, bool det1);
 
-bool slice_diagonal_x(SinkPtr source, SinkPtr destination, size_t xc, size_t yc, size_t width, size_t minx, size_t maxx);
-bool slice_diagonal_y(SinkPtr source, SinkPtr destination, size_t xc, size_t yc, size_t width, size_t minx, size_t maxx);
+SinkPtr slice_diagonal_x(SinkPtr source, size_t xc, size_t yc, size_t width, size_t minx, size_t maxx);
+SinkPtr slice_diagonal_y(SinkPtr source, size_t xc, size_t yc, size_t width, size_t minx, size_t maxx);
 
 
 SinkPtr make_symmetrized(SinkPtr source);

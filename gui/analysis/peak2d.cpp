@@ -150,134 +150,74 @@ void Bounds2D::integrate(Qpx::SinkPtr spectrum)
   variance = integral / pow(chan_area(), 2);
 }
 
-void Sum2D::adjust_x(const Qpx::ROI &roi, double center)
+Qpx::Peak Sum2D::get_one_peak(const Qpx::Fitter &fitter)
 {
-  Qpx::Peak pk;
-
-  if (roi.contains(center))
-    pk = roi.peaks().at(center);
+  std::set<double> selected = fitter.get_selected_peaks();
+  if (selected.size() == 1)
+    return fitter.peak(*selected.begin());
+  else if (fitter.peaks().size() == 1)
+    return fitter.peaks().begin()->second;
   else
-    return;
-
-  area[1][1].x.set_centroid(pk.center().value());
-  area[0][1] = area[2][1] = area[1][1];
-
-  area[1][1].x.set_bounds(pk.sum4().left(), pk.sum4().right());
-  area[0][1].x.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
-  area[2][1].x.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
-
-  energy_x = pk.energy();
+    return Qpx::Peak();
 }
 
-void Sum2D::adjust_y(const Qpx::ROI &roi, double center)
+Sum2D::Sum2D()
 {
-  Qpx::Peak pk;
-
-  if (roi.contains(center))
-    pk = roi.peaks().at(center);
-  else
-    return;
-
-  area[1][1].y.set_centroid(pk.center().value());
-  area[1][0] = area[1][2] = area[1][1];
-
-  area[1][1].y.set_bounds(pk.sum4().left(), pk.sum4().right());
-  area[1][0].y.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
-  area[1][2].y.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
-
-  energy_y = pk.energy();
-}
-
-void Sum2D::adjust_diag_x(const Qpx::ROI &roi, double center)
-{
-  Qpx::Peak pk;
-
-  if (roi.contains(center))
-    pk = roi.peaks().at(center);
-  else
-    return;
-
-  Bounds2D bckg;
-  bckg.x.set_centroid(area[1][1].x.centroid());
-  bckg.y.set_centroid(area[1][1].y.centroid());
-
-  bckg.y.set_bounds(area[0][0].y.lower(), area[0][0].y.upper());
-  bckg.x.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
-  area[0][0] = bckg;
-
-  bckg.y.set_bounds(area[0][2].y.lower(), area[0][2].y.upper());
-  bckg.x.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
-  area[0][2] = bckg;
-
-  bckg.y.set_bounds(area[2][0].y.lower(), area[2][0].y.upper());
-  bckg.x.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
-  area[2][0] = bckg;
-
-  bckg.y.set_bounds(area[2][2].y.lower(), area[2][2].y.upper());
-  bckg.x.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
-  area[2][2] = bckg;
-}
-
-void Sum2D::adjust_diag_y(const Qpx::ROI &roi, double center)
-{
-  Qpx::Peak pk;
-
-  if (roi.contains(center))
-    pk = roi.peaks().at(center);
-  else
-    return;
-
-  Bounds2D bckg;
-  bckg.x.set_centroid(area[1][1].x.centroid());
-  bckg.y.set_centroid(area[1][1].y.centroid());
-
-  bckg.x.set_bounds(area[0][0].x.lower(), area[0][0].x.upper());
-  bckg.y.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
-  area[0][0] = bckg;
-
-  bckg.x.set_bounds(area[0][2].x.lower(), area[0][2].x.upper());
-  bckg.y.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
-  area[0][2] = bckg;
-
-  bckg.x.set_bounds(area[2][0].x.lower(), area[2][0].x.upper());
-  bckg.y.set_bounds(pk.sum4().LB().left(), pk.sum4().LB().right());
-  area[2][0] = bckg;
-
-  bckg.x.set_bounds(area[2][2].x.lower(), area[2][2].x.upper());
-  bckg.y.set_bounds(pk.sum4().RB().left(), pk.sum4().RB().right());
-  area[2][2] = bckg;
-}
-
-Sum2D::Sum2D(const Qpx::ROI &x_roi, const Qpx::ROI &y_roi, double x_center, double y_center):
-  currie_quality_indicator(-1),
-  approved(false)
-{
-//  approved = false;
-  Qpx::Peak xx, yy;
-
-  if (x_roi.contains(x_center))
-    xx = x_roi.peaks().at(x_center);
-  else
-    return;
-
-  if (y_roi.contains(y_center))
-    yy = y_roi.peaks().at(y_center);
-  else
-    return;
-
   Bounds2D newpeak;
-  newpeak.selected = true;
-
-  newpeak.x.set_centroid(xx.center().value());
-  newpeak.x.set_bounds(xx.sum4().left(), xx.sum4().right());
-
-  newpeak.y.set_centroid(yy.center().value());
-  newpeak.y.set_bounds(yy.sum4().left(), yy.sum4().right());
-
+  newpeak.color = Qt::cyan;
+  newpeak.horizontal = false;
+  newpeak.vertical = false;
+  newpeak.selectable = true;
+  newpeak.selected = false;
   area[1][1] = newpeak;
+}
 
-  adjust_x(x_roi, x_center);
-  adjust_y(y_roi, y_center);
+void Sum2D::adjust(const Qpx::Fitter &fitter_x, const Qpx::Fitter &fitter_y)
+{
+  Qpx::Peak pk_x = get_one_peak(fitter_x);
+  Qpx::Peak pk_y = get_one_peak(fitter_y);
+//  if (!pk_x.valid() || !pk_y.valid())
+//    return;
+
+  energy_x = pk_x.energy();
+  energy_y = pk_y.energy();
+
+  x = fitter_x;
+  y = fitter_y;
+  area[1][1].x.set_centroid(pk_x.center().value());
+  area[1][1].y.set_centroid(pk_y.center().value());
+  area[1][1].x.set_bounds(pk_x.sum4().left(), pk_x.sum4().right());
+  area[1][1].y.set_bounds(pk_y.sum4().left(), pk_y.sum4().right());
+
+  area[0][1] = area[2][1] = area[1][0] = area[1][2] = area[1][1];
+
+  area[0][1].x.set_bounds(pk_x.sum4().LB().left(), pk_x.sum4().LB().right());
+  area[2][1].x.set_bounds(pk_x.sum4().RB().left(), pk_x.sum4().RB().right());
+  area[1][0].y.set_bounds(pk_y.sum4().LB().left(), pk_y.sum4().LB().right());
+  area[1][2].y.set_bounds(pk_y.sum4().RB().left(), pk_y.sum4().RB().right());
+}
+
+void Sum2D::adjust_diag(const Qpx::Fitter &fitter_x, const Qpx::Fitter &fitter_y)
+{
+  Qpx::Peak pk_x = get_one_peak(fitter_x);
+  Qpx::Peak pk_y = get_one_peak(fitter_y);
+//  if (!pk_x.valid() || !pk_y.valid())
+//    return;
+
+  dx = fitter_x;
+  dy = fitter_y;
+
+  area[0][0].x.set_bounds(pk_x.sum4().LB().left(), pk_x.sum4().LB().right());
+  area[0][0].y.set_bounds(pk_y.sum4().LB().left(), pk_y.sum4().LB().right());
+
+  area[0][2].x.set_bounds(pk_x.sum4().LB().left(), pk_x.sum4().LB().right());
+  area[0][2].y.set_bounds(pk_y.sum4().RB().left(), pk_y.sum4().RB().right());
+
+  area[2][0].x.set_bounds(pk_x.sum4().RB().left(), pk_x.sum4().RB().right());
+  area[2][0].y.set_bounds(pk_y.sum4().LB().left(), pk_y.sum4().LB().right());
+
+  area[2][2].x.set_bounds(pk_x.sum4().RB().left(), pk_x.sum4().RB().right());
+  area[2][2].y.set_bounds(pk_y.sum4().RB().left(), pk_y.sum4().RB().right());
 }
 
 void Sum2D::integrate(Qpx::SinkPtr source)

@@ -54,15 +54,8 @@ public:
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
   QVariant headerData(int section, Qt::Orientation orientation, int role) const;
   Qt::ItemFlags flags(const QModelIndex & index) const;
-  //bool setData(const QModelIndex & index, const QVariant & value, int role);
 
   void update();
-
-//signals:
-//   void energiesChanged();
-
-public slots:
-
 };
 
 
@@ -79,24 +72,18 @@ public:
 
   std::list<Bounds2D> peaks();
 
-  void update_current_peak(Bounds2D);
-//  Bounds2D current_peak();
-
   void make_range(double x, double y);
-
   void choose_peaks(std::set<int64_t>);
 
+  void clearSelection();
   void clear();
 
   void loadSettings();
   void saveSettings();
 
-
 signals:
   void peak_selected();
-  void boxes_made();
-  void range_changed(Bounds2D);
-  void transitions(std::map<double, Qpx::Transition>);
+//  void transitions(std::map<double, Qpx::Transition>);
 
 protected:
   void closeEvent(QCloseEvent*);
@@ -110,7 +97,6 @@ private slots:
   void on_doubleGateOn_editingFinished();
   void on_pushAddPeak2d_clicked();
   void on_pushShowDiagonal_clicked();
-
   void on_pushTransitions_clicked();
 
 private:
@@ -132,19 +118,18 @@ private:
 
   Qpx::Fitter fit_x_, fit_y_;
 
-
-  int32_t index_of(Bounds2D);
   int32_t index_of(double, double);
   int32_t current_idx();
 
   void rebuild_table(bool contents_changed);
   void make_gates();
 
-  void adjust_x();
-  void adjust_y();
-
   double make_lower(Qpx::Calibration fw, double center);
   double make_upper(Qpx::Calibration fw, double center);
+
+  void adjust(Sum2D& peak);
+
+  void reindex_peaks();
 };
 
-#endif // FORM_MULTI_GATES_H
+#endif

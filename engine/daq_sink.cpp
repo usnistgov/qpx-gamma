@@ -107,6 +107,11 @@ void Metadata::set_attribute(const Setting &setting)
   attributes_.set_setting_r(setting, Match::id | Match::indices);
 }
 
+Setting Metadata::get_all_attributes() const
+{
+  return attributes_;
+}
+
 Setting Metadata::attributes() const
 {
   return attributes_;

@@ -43,7 +43,7 @@ struct Gate
 
   double count {0};
   bool approved {false};
-  Qpx::Fitter fit_data_;
+  Qpx::Fitter fitter_;
 };
 
 class TableGates : public QAbstractTableModel
@@ -85,7 +85,7 @@ public:
 
   void setSpectrum(Qpx::ProjectPtr newset, int64_t idx);
 
-  void make_range(double energy);
+  void make_range(double bin);
 
   std::list<Bounds2D> get_all_peaks() const;
   std::list<Bounds2D> current_peaks() const;
@@ -142,7 +142,7 @@ private:
   TableGates table_model_;
   QSortFilterProxyModel sortModel;
 
-  Qpx::Fitter fit_data_;
+  Qpx::Fitter fitter_;
 
   int32_t current_idx() const;
   int32_t index_of(double, bool fuzzy) const;
