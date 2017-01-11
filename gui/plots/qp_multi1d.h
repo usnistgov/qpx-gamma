@@ -4,7 +4,7 @@
 #include <QWidget>
 #include "qp_generic.h"
 #include "qp_appearance.h"
-#include "histogram.h"
+//#include "histogram.h"
 
 namespace QPlot
 {

@@ -22,6 +22,7 @@
 
 #include "form_oscilloscope.h"
 #include "ui_form_oscilloscope.h"
+#include "histogram.h"
 #include <QSettings>
 
 
