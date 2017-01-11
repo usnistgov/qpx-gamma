@@ -31,7 +31,8 @@ namespace Qpx {
 void Fitter::setData(SinkPtr spectrum)
 {
 //  clear();
-  if (spectrum) {
+  if (spectrum)
+  {
     Metadata md = spectrum->metadata();
     Setting res = md.get_attribute("resolution");
     if ((md.dimensions() != 1) || (res.value_int <= 0))
@@ -44,9 +45,14 @@ void Fitter::setData(SinkPtr spectrum)
     if (!md.detectors.empty())
       detector_ = md.detectors[0];
 
-    if (detector_.energy_calibrations_.has_a(Calibration("Energy", finder_.settings_.bits_)))
-      finder_.settings_.cali_nrg_ = detector_.energy_calibrations_.get(Calibration("Energy", finder_.settings_.bits_));
+//    if (detector_.energy_calibrations_.has_a(Calibration("Energy", finder_.settings_.bits_)))
+//      finder_.settings_.cali_nrg_ = detector_.energy_calibrations_.get(Calibration("Energy", finder_.settings_.bits_));
+//    else
     //best?
+    finder_.settings_.cali_nrg_ = detector_.best_calib(finder_.settings_.bits_);
+
+//    DBG << "Picked calibration " << finder_.settings_.cali_nrg_.to_string()
+//        << "  from  " << detector_.name_;
 
     if (detector_.fwhm_calibration_.valid())
       finder_.settings_.cali_fwhm_ = detector_.fwhm_calibration_;

@@ -26,7 +26,6 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 #include "calibration.h"
-//#include "custom_logger.h"
 #include "xylib.h"
 
 #include "polynomial.h"
@@ -36,22 +35,47 @@
 #include "sqrt_poly.h"
 #include "qpx_util.h"
 
+#include "custom_logger.h"
+
 namespace Qpx {
 
-Calibration::Calibration() {
+Calibration::Calibration()
+{
   calib_date_ = boost::posix_time::microsec_clock::universal_time();
-  type_ = "Energy";
-  units_ = "channels";
-  model_ = CalibrationModel::polynomial;
-  bits_ = 0;
-  r_squared_ = 0;
 }
 
-bool Calibration::valid() const {
+Calibration::Calibration(std::string type, uint16_t bits, std::string units)
+  : Calibration()
+{
+  type_ = type;
+  bits_ = bits;
+  units_ = units;
+}
+
+bool Calibration::operator== (const Calibration& other) const
+{
+  //if (calib_date_ != other.calib_date_) return false;
+  if (type_ != other.type_) return false;
+  if (units_ != other.units_) return false;
+  if (model_ != other.model_) return false;
+  if (coefficients_ != other.coefficients_) return false;
+  if (bits_ != other.bits_) return false;
+  if (to_ != other.to_) return false;
+  return true;
+}
+
+bool Calibration::operator!= (const Calibration& other) const
+{
+  return !operator==(other);
+}
+
+bool Calibration::valid() const
+{
   return (coefficients_.size() > 0);
 }
 
-double Calibration::transform(double chan) const {
+double Calibration::transform(double chan) const
+{
   if (coefficients_.empty())
     return chan;
   
@@ -69,7 +93,8 @@ double Calibration::transform(double chan) const {
     return chan;
 }
 
-double Calibration::inverse_transform(double energy) const {
+double Calibration::inverse_transform(double energy) const
+{
   if (coefficients_.empty())
     return energy;
 
@@ -82,7 +107,8 @@ double Calibration::inverse_transform(double energy) const {
 }
 
 
-double Calibration::transform(double chan, uint16_t bits) const {
+double Calibration::transform(double chan, uint16_t bits) const
+{
   if (coefficients_.empty() || !bits_ || !bits)
     return chan;
   
@@ -96,21 +122,23 @@ double Calibration::transform(double chan, uint16_t bits) const {
   return re;
 }
 
-double Calibration::inverse_transform(double energy, uint16_t bits) const {
+double Calibration::inverse_transform(double energy, uint16_t bits) const
+{
   if (coefficients_.empty() || !bits_ || !bits)
     return energy; //NaN?
 
   double bin = inverse_transform(energy);
 
   if (bits > bits_)
-    bin = bin / pow(2, bits - bits_);
+    bin = bin * pow(2, bits - bits_);
   if (bits < bits_)
-    bin = bin * pow(2, bits_ - bits);
+    bin = bin / pow(2, bits_ - bits);
 
   return bin;
 }
 
-std::string Calibration::fancy_equation(int precision, bool with_rsq) {
+std::string Calibration::fancy_equation(int precision, bool with_rsq)
+{
   if (bits_ && (model_ == CalibrationModel::polynomial))
     return PolyBounded(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
   else if (bits_ && (model_ == CalibrationModel::sqrt_poly))
@@ -125,14 +153,16 @@ std::string Calibration::fancy_equation(int precision, bool with_rsq) {
     return "N/A"; 
 }
 
-std::vector<double> Calibration::transform(std::vector<double> chans, uint16_t bits) const {
+std::vector<double> Calibration::transform(std::vector<double> chans, uint16_t bits) const
+{
   std::vector<double> results;
   for (auto &q : chans)
     results.push_back(transform(q, bits));
   return results;
 }
 
-std::string Calibration::coef_to_string() const{
+std::string Calibration::coef_to_string() const
+{
   std::stringstream dss;
   dss.str(std::string());
   for (auto &q : coefficients_) {
@@ -141,7 +171,8 @@ std::string Calibration::coef_to_string() const{
   return boost::algorithm::trim_copy(dss.str());
 }
 
-void Calibration::coef_from_string(std::string coefs) {
+void Calibration::coef_from_string(std::string coefs)
+{
   std::stringstream dss(boost::algorithm::trim_copy(coefs));
 
   std::string tempstr; std::list<double> templist; double coef;
@@ -179,7 +210,8 @@ std::string Calibration::axis_name() const
 
 
 
-void Calibration::to_xml(pugi::xml_node &root) const {
+void Calibration::to_xml(pugi::xml_node &root) const
+{
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
   node.append_attribute("Type").set_value(type_.c_str());
@@ -211,7 +243,8 @@ void Calibration::to_xml(pugi::xml_node &root) const {
  }
 
 
-void Calibration::from_xml(const pugi::xml_node &node) {
+void Calibration::from_xml(const pugi::xml_node &node)
+{
   type_ = std::string(node.attribute("Type").value());
 
   if (type_ == "Energy")

@@ -312,6 +312,11 @@ void Sum2D::integrate(Qpx::SinkPtr source)
     yback = UncertainDouble::from_double(val, sqrt(backvariance));
   }
 
+  gross = UncertainDouble::from_double(area[1][1].integral, sqrt(area[1][1].variance));
+  double netval = gross.value() - xback.value() - yback.value();
+  double background_variance = pow(xback.uncertainty(), 2)
+                             + pow(yback.uncertainty(), 2);
+
   dback = UncertainDouble();
   if ((area[0][2] != Bounds2D()) && (area[2][0] != Bounds2D())) {
     area[0][2].integrate(source);
@@ -323,14 +328,11 @@ void Sum2D::integrate(Qpx::SinkPtr source)
     double backvariance = pow(area[1][1].chan_area() / 2.0, 2)
         * (area[2][0].variance + area[0][2].variance);
     dback = UncertainDouble::from_double(val, sqrt(backvariance));
+
+    netval -= dback.value();
+    background_variance += pow(dback.uncertainty(), 2);
   }
 
-  gross = UncertainDouble::from_double(area[1][1].integral, sqrt(area[1][1].variance));
-
-  double netval = gross.value() - xback.value() - yback.value() - dback.value();
-  double background_variance = pow(xback.uncertainty(), 2)
-                             + pow(yback.uncertainty(), 2)
-                             + pow(dback.uncertainty(), 2);
   double netvariance = gross.value() + background_variance;
 
   net = UncertainDouble::from_double(netval, sqrt(netvariance));

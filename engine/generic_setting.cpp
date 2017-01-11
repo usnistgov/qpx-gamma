@@ -275,15 +275,16 @@ std::string SettingMeta::debug(std::string prepend) const
   std::string ret = to_string(setting_type);
   if (!name.empty())
     ret += "(" + name + ")";
-  ret += " " + std::to_string(address);
+  if (address != -1)
+    ret += " " + std::to_string(address);
   if (writable)
-    ret += " writable";
+    ret += " wr";
   if ((setting_type == SettingType::command) && !visible)
-    ret += " invisible";
+    ret += " invis";
   if ((setting_type == SettingType::stem) && saveworthy)
-    ret += " saveworthy";
+    ret += " savew";
   if ((setting_type == SettingType::binary) || (setting_type == SettingType::pattern))
-    ret += " wordsize=" + std::to_string(maximum);
+    ret += " wsize=" + std::to_string(maximum);
   if (is_numeric())
   {
     std::stringstream ss;

@@ -299,6 +299,23 @@ void Plot2D::setAxes(QString xlabel, double x1, double x2,
   rescaleAxes();
 }
 
+void Plot2D::zoomOut(double x1, double x2,
+                     double y1, double y2)
+{
+  if (x1 < colorMap->data()->keyRange().lower)
+    x1 = colorMap->data()->keyRange().lower;
+  if (x2 > colorMap->data()->keyRange().upper)
+    x2 = colorMap->data()->keyRange().upper;
+  if (y1 < colorMap->data()->valueRange().lower)
+    y1 = colorMap->data()->valueRange().lower;
+  if (y2 > colorMap->data()->valueRange().upper)
+    y2 = colorMap->data()->valueRange().upper;
+
+  xAxis->setRange(x1, x2);
+  yAxis->setRange(y1, y2);
+}
+
+
 void Plot2D::mouseClicked(double x, double y, QMouseEvent *event)
 {
   emit clickedPlot(x, y, event->button());

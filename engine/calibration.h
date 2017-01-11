@@ -31,30 +31,31 @@
 
 namespace Qpx {
 
-enum class CalibrationModel : int {none = 0, polynomial = 1, polylog = 2, loginverse = 3, effit = 4, sqrt_poly = 5};
+enum class CalibrationModel : int
+{
+  none = 0,
+  polynomial = 1,
+  polylog = 2,
+  loginverse = 3,
+  effit = 4,
+  sqrt_poly = 5
+};
 
-class Calibration : public XMLable {
+class Calibration : public XMLable
+{
  public:
   Calibration();
-  Calibration(std::string type, uint16_t bits, std::string units = "channels"): Calibration() {type_=type; bits_ = bits; units_ = units;}
+  Calibration(std::string type, uint16_t bits, std::string units = "channels");
 
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;
 
   std::string xml_element_name() const override {return "Calibration";}
 
-  bool shallow_equals(const Calibration& other) const {return ((bits_ == other.bits_) && (to_ == other.to_));}
-  bool operator!= (const Calibration& other) const {return !operator==(other);}
-  bool operator== (const Calibration& other) const {
-    //if (calib_date_ != other.calib_date_) return false;
-    if (type_ != other.type_) return false;
-    if (units_ != other.units_) return false;
-    if (model_ != other.model_) return false;
-    if (coefficients_ != other.coefficients_) return false;
-    if (bits_ != other.bits_) return false;
-    if (to_ != other.to_) return false;
-    return true;
-  }
+  bool shallow_equals(const Calibration& other) const
+  {return ((bits_ == other.bits_) && (to_ == other.to_));}
+  bool operator!= (const Calibration& other) const;
+  bool operator== (const Calibration& other) const;
 
   bool valid() const;
   double transform(double) const;
@@ -70,12 +71,13 @@ class Calibration : public XMLable {
   std::string fancy_equation(int precision = -1, bool with_rsq=false);
 
   boost::posix_time::ptime calib_date_;
-  std::string type_, units_;
+  std::string type_ {"Energy"};
+  std::string units_ {"channels"};
   std::string to_;
-  uint16_t bits_;
-  CalibrationModel model_;
+  uint16_t bits_ {0};
+  CalibrationModel model_ {CalibrationModel::polynomial};
   std::vector<double> coefficients_;
-  double r_squared_;
+  double r_squared_ {0};
 };
 
 }

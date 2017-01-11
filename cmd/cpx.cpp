@@ -77,10 +77,10 @@ bool parse_file(std::ifstream &file, std::list<CpxLine> &program, std::vector<st
     //populate parameters, replacing $x with command line arguments
     CpxLine line;
     line.command = tokens[0];
-    for (int j=1; j<tokens.size(); ++j) {
+    for (size_t j=1; j<tokens.size(); ++j) {
       if (tokens[j][0] == '$') {
         int parnr = boost::lexical_cast<int>(tokens[j].substr(1,std::string::npos)) - 1;
-        if ((parnr > -1) && (parnr < cmd_params.size()))
+        if ((parnr > -1) && (parnr < int(cmd_params.size())))
           line.params.push_back(cmd_params[parnr]);
         else {
           ERR << "<cpx> command line option not provided for token " << tokens[j]
@@ -104,7 +104,7 @@ bool Cpx::interpret(std::list<CpxLine> commands, std::vector<double> variables) 
     CpxLine line = commands.front();
     commands.pop_front();
 
-    for (int i=0; i<line.params.size(); ++i) {
+    for (size_t i=0; i<line.params.size(); ++i) {
       if (line.params[i][0] == '%') {
         int varnr = boost::lexical_cast<int>(line.params[i].substr(1,std::string::npos));
         int j = varnr;
@@ -119,7 +119,8 @@ bool Cpx::interpret(std::list<CpxLine> commands, std::vector<double> variables) 
         }
           
         
-        if (j < variables.size()) {
+        if (j < int(variables.size()))
+        {
           std::string val = std::to_string(variables[j]);
           if (varnr > 0)
             line.params[i] = val;
@@ -277,7 +278,7 @@ bool Cpx::boot(std::vector<std::string> &tokens) {
   }
 
   std::map<int, Detector> update;
-  for (int i=0; i < dets.size(); ++i)
+  for (size_t i=0; i < dets.size(); ++i)
     if (detectors_.has_a(dets[i]))
       update[i] = detectors_.get(dets[i]);
 

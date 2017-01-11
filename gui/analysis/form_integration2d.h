@@ -86,8 +86,6 @@ public:
 
   void choose_peaks(std::set<int64_t>);
 
-  double width_factor();
-
   void clear();
 
   void loadSettings();
@@ -113,15 +111,13 @@ private slots:
   void on_pushAddPeak2d_clicked();
   void on_pushShowDiagonal_clicked();
 
-  void on_pushRefelct_clicked();
-
   void on_pushTransitions_clicked();
 
 private:
   Ui::FormIntegration2D *ui;
 
   Qpx::ProjectPtr project_;
-  int64_t current_spectrum_;
+  int64_t current_spectrum_ {0};
   Qpx::Metadata md_;
 
   //double current_gate_;
@@ -132,16 +128,14 @@ private:
   std::vector<Sum2D> peaks_;
   Bounds2D range_;
 
-  //from parent
-  QString data_directory_;
+  double gate_width_ {0};
+
+  Qpx::Fitter fit_x_, fit_y_;
+
 
   int32_t index_of(Bounds2D);
   int32_t index_of(double, double);
   int32_t current_idx();
-
-  double gate_width_;
-
-  Qpx::Fitter fit_x_, fit_y_;
 
   void rebuild_table(bool contents_changed);
   void make_gates();

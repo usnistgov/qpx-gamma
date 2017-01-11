@@ -128,8 +128,8 @@ void FormMultiGates::clearSelection()
 void FormMultiGates::update_range_selection(double l, double r)
 {
   range2d = current_gate().constraints;
-  range2d.x.set_bounds(fit_data_.settings().energy_to_bin(l),
-                       fit_data_.settings().energy_to_bin(r));
+  range2d.x.set_bounds(fit_data_.settings().nrg_to_bin(l),
+                       fit_data_.settings().nrg_to_bin(r));
   range2d.selected = (l != r);
   range2d.color = Qt::magenta;
   range2d.horizontal = false;
@@ -338,7 +338,7 @@ void FormMultiGates::on_pushDistill_clicked()
 
 int32_t FormMultiGates::energy_to_bin(double energy) const
 {
-  return std::round(fit_data_.settings().energy_to_bin(energy));
+  return std::round(fit_data_.settings().nrg_to_bin(energy));
 }
 
 void FormMultiGates::on_doubleGateOn_editingFinished()
@@ -381,23 +381,29 @@ Qpx::SinkPtr FormMultiGates::make_gated_spectrum(const Bounds2D &bounds)
   //  {
   SinkPtr gate_x = slice_rectangular(source_spectrum,
           {{bounds.x.lower(), bounds.x.upper()}, {bounds.y.lower(), bounds.y.upper()}}, true);
+  if (!gate_x)
+  {
+    ERR << "Failed rectangular slice  " << name << "  from   "
+        << md.debug("  ");
+    return nullptr;
+  }
+
   Qpx::Setting nm = gate_x->metadata().get_attribute("name");
   nm.value_text =  name;
   gate_x->set_attribute(nm);
+
   return gate_x;
   //  }
 }
 
 void FormMultiGates::choose_peaks(std::set<int64_t> chpeaks)
 {
-  DBG << "Chpeaks = " << chpeaks.size();
   auto cpeaks = current_peaks();
   std::set<double> xs;
   for (Bounds2D &p : cpeaks)
   {
     if (chpeaks.count(p.id))
     {
-      DBG << "Selected peak " << p.x.centroid() << "x" << p.y.centroid();
       xs.insert(p.x.centroid());
     }
   }
@@ -657,7 +663,7 @@ QVariant TableGates::headerData(int section, Qt::Orientation orientation, int ro
       case 4:
         return QString("Width (keV)");
       case 5:
-        return QString("Coincidences");
+        return QString("Peaks");
       case 6:
         return QString("Status");
       }

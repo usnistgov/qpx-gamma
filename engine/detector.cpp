@@ -30,18 +30,48 @@
 
 namespace Qpx {
 
-////////////////////
-// Detector ////////
-////////////////////
+Detector::Detector()
+//      : energy_calibrations_("Calibrations")
+//      , gain_match_calibrations_("GainMatchCalibrations")
+//      , settings_("Optimization")
+//      , fwhm_calibration_("FWHM", 0)
+//      , efficiency_calibration_("Efficiency", 0)
+{
+  settings_.metadata.setting_type = SettingType::stem;
+}
 
-Calibration Detector::best_calib(int bits) const {
+Detector::Detector(std::string name)
+  : Detector()
+{
+  name_ = name;
+}
+
+bool Detector::operator== (const Detector& other) const
+{
+  return ((name_ == other.name_) &&
+          (type_ == other.type_) &&
+          (settings_ == other.settings_) &&
+          (energy_calibrations_ == other.energy_calibrations_) &&
+          (gain_match_calibrations_ == other.gain_match_calibrations_) &&
+          (fwhm_calibration_ == other.fwhm_calibration_) &&
+          (efficiency_calibration_ == other.efficiency_calibration_));
+}
+
+bool Detector::operator!= (const Detector& other) const
+{
+  return !operator==(other);
+}
+
+Calibration Detector::best_calib(int bits) const
+{
   if (energy_calibrations_.has_a(Calibration("Energy", bits)))
      return energy_calibrations_.get(Calibration("Energy", bits));
   else
     return highest_res_calib();
 }
 
-Calibration Detector::highest_res_calib() const {
+Calibration Detector::highest_res_calib() const
+{
   Calibration result;
   for (size_t i=0; i<energy_calibrations_.size(); ++i)
     if (energy_calibrations_.get(i).bits_ >= result.bits_)
@@ -61,12 +91,13 @@ Calibration Detector::get_gain_match(uint16_t bits, std::string todet) const
   return result;
 }
 
-void Detector::to_xml(pugi::xml_node &node) const {
+void Detector::to_xml(pugi::xml_node &node) const
+{
   to_xml_options(node, true);
 }
 
-
-void Detector::to_xml_options(pugi::xml_node &root, bool options) const {
+void Detector::to_xml_options(pugi::xml_node &root, bool options) const
+{
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
   node.append_child("Name").append_child(pugi::node_pcdata).set_value(name_.c_str());
@@ -88,7 +119,8 @@ void Detector::to_xml_options(pugi::xml_node &root, bool options) const {
     settings_.to_xml(node);
 }
 
-void Detector::from_xml(const pugi::xml_node &node) {
+void Detector::from_xml(const pugi::xml_node &node)
+{
   if (std::string(node.name()) != xml_element_name())
     return;
 
@@ -144,9 +176,11 @@ std::string Detector::debug(std::string prepend) const
     }
   }
 
-  ss << prepend << k_branch_mid << fwhm_calibration_.to_string() << "\n";
-  ss << prepend << k_branch_mid << efficiency_calibration_.to_string() << "\n";
-  ss << prepend << k_branch_end << settings_.debug(prepend + k_branch_pre);
+  if (fwhm_calibration_.valid())
+    ss << prepend << k_branch_mid << fwhm_calibration_.to_string() << "\n";
+  if (efficiency_calibration_.valid())
+    ss << prepend << k_branch_mid << efficiency_calibration_.to_string() << "\n";
+  ss << prepend << k_branch_end << settings_.debug(prepend + "  ");
 
   return ss.str();
 }

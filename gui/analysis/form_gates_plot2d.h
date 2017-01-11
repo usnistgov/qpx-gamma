@@ -49,12 +49,10 @@ public:
   void setSpectra(Qpx::ProjectPtr new_set, int64_t idx);
 
   void update_plot();
-  void refresh();
   void replot_markers();
   void reset_content();
 
   void set_boxes(std::list<Bounds2D> boxes);
-  void set_show_boxes(bool);
 
   std::set<int64_t> get_selected_boxes();
 
@@ -71,6 +69,8 @@ private slots:
   void selection_changed();
   void plotClicked(double x, double y, Qt::MouseButton button);
 
+  void refocus();
+
 private:
 
   Ui::FormGatesPlot2D *ui;
@@ -84,6 +84,9 @@ private:
   //scaling
   int bits {0};
   Qpx::Calibration calib_x_, calib_y_;
+  double xmin_{0}, xmax_{0};
+  double ymin_{0}, ymax_{0};
+
 };
 
 #endif

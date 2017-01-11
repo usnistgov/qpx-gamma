@@ -108,15 +108,13 @@ void QpFitter::make_range(double energy)
 {
   int32_t bin = -1;
   if (fit_data_)
-    bin = fit_data_->settings().cali_nrg_.inverse_transform(energy, fit_data_->settings().bits_);
+    bin = fit_data_->settings().nrg_to_bin(energy);
 
   if (bin >= 0)
   {
     range_->clearProperties();
-    range_->set_bounds(
-          fit_data_->settings().cali_nrg_.transform(fit_data_->finder().find_left(bin)),
-          fit_data_->settings().cali_nrg_.transform(fit_data_->finder().find_right(bin))
-          );
+    range_->set_bounds(fit_data_->settings().bin_to_nrg(fit_data_->finder().find_left(bin)),
+                       fit_data_->settings().bin_to_nrg(fit_data_->finder().find_right(bin)));
     range_->pen = QPen(Qt::darkGreen, 2, Qt::DashLine);
     range_->latch_to.clear();
     range_->latch_to.push_back("Residuals");
@@ -235,7 +233,7 @@ void QpFitter::follow_selection()
 
   for (auto &q : selected_peaks_)
   {
-    double nrg = fit_data_->settings().cali_nrg_.transform(q);
+    double nrg = fit_data_->settings().bin_to_nrg(q);
     min_marker = std::min(nrg, min_marker);
     max_marker = std::max(nrg, max_marker);
   }
@@ -382,8 +380,8 @@ void QpFitter::make_SUM4_range(double region, double peak)
   range_->purpose_ = "SUM4 commit";
   range_->tooltip_ = "Apply";
 
-  range_->set_bounds(fit_data_->settings().cali_nrg_.transform(pk.sum4().left()),
-                    fit_data_->settings().cali_nrg_.transform(pk.sum4().right()));
+  range_->set_bounds(fit_data_->settings().bin_to_nrg(pk.sum4().left()),
+                    fit_data_->settings().bin_to_nrg(pk.sum4().right()));
   range_->set_visible(true);
 
   calc_visible();
@@ -402,14 +400,14 @@ void QpFitter::make_background_range(double roi, bool left)
 
   if (left)
   {
-    range_->set_bounds(fit_data_->settings().cali_nrg_.transform(parent_region.LB().left()),
-                      fit_data_->settings().cali_nrg_.transform(parent_region.LB().right()));
+    range_->set_bounds(fit_data_->settings().bin_to_nrg(parent_region.LB().left()),
+                      fit_data_->settings().bin_to_nrg(parent_region.LB().right()));
     range_->purpose_ = "background L commit";
   }
   else
   {
-    range_->set_bounds(fit_data_->settings().cali_nrg_.transform(parent_region.RB().left()),
-                      fit_data_->settings().cali_nrg_.transform(parent_region.RB().right()));
+    range_->set_bounds(fit_data_->settings().bin_to_nrg(parent_region.RB().left()),
+                      fit_data_->settings().bin_to_nrg(parent_region.RB().right()));
     range_->purpose_ = "background R commit";
   }
 
@@ -463,7 +461,8 @@ void QpFitter::updateData()
   yAxis->setLabel("count");
 
 
-  auto xx  = fit_data_->settings().cali_nrg_.transform(fit_data_->finder().x_, fit_data_->settings().bits_);
+  auto xx  = fit_data_->settings().cali_nrg_.transform(fit_data_->finder().x_,
+                                                       fit_data_->settings().bits_);
 
   QCPGraph *data_graph = addGraph(xx, fit_data_->finder().y_, pen_data, false, "Data");
 
@@ -496,7 +495,8 @@ void QpFitter::plotRegion(double region_id, const Qpx::ROI &region, QCPGraph *da
     //    trim_log_lower(yy);
     addGraph(xs, region.hr_fullfit, pen_full_fit, true, "Region fit", region_id);
   } else {
-    xs = fit_data_->settings().cali_nrg_.transform(region.finder().x_, fit_data_->settings().bits_);
+    xs = fit_data_->settings().cali_nrg_.transform(region.finder().x_,
+                                                   fit_data_->settings().bits_);
     addGraph(xs, region.finder().y_, pen_full_fit, false, "Region fit", region_id);
   }
 
@@ -545,7 +545,7 @@ void QpFitter::plotRegion(double region_id, const Qpx::ROI &region, QCPGraph *da
     else
       crs->setGraph(data_graph);
     crs->setInterpolating(true);
-    double energy = fit_data_->finder().settings_.cali_nrg_.transform(p.first, fit_data_->finder().settings_.bits_);
+    double energy = fit_data_->finder().settings_.bin_to_nrg(p.first);
     crs->setGraphKey(energy);
     crs->updatePosition();
 
@@ -562,10 +562,8 @@ void QpFitter::plotPeak(double region_id, double peak_id, const Qpx::Peak &peak)
 
   if (peak.sum4().peak_width() && fit_data_->contains_region(region_id))
   {
-    double x1 = fit_data_->settings().cali_nrg_.transform(peak.sum4().left() - 0.5,
-                                                          fit_data_->settings().bits_);
-    double x2 = fit_data_->settings().cali_nrg_.transform(peak.sum4().right() + 0.5,
-                                                          fit_data_->settings().bits_);
+    double x1 = fit_data_->settings().bin_to_nrg(peak.sum4().left() - 0.5);
+    double x2 = fit_data_->settings().bin_to_nrg(peak.sum4().right() + 0.5);
     double y1 = fit_data_->region(region_id).sum4_background().eval(peak.sum4().left());
     double y2 = fit_data_->region(region_id).sum4_background().eval(peak.sum4().right());
 
@@ -603,10 +601,8 @@ void QpFitter::plotBackgroundEdge(Qpx::SUM4Edge edge,
 {
   QPen pen_background_edge = QPen(Qt::darkMagenta, 3);
 
-  double x1 = fit_data_->settings().cali_nrg_.transform(edge.left() - 0.5,
-                                                        fit_data_->settings().bits_);
-  double x2 = fit_data_->settings().cali_nrg_.transform(edge.right() + 0.5,
-                                                        fit_data_->settings().bits_);
+  double x1 = fit_data_->settings().bin_to_nrg(edge.left() - 0.5);
+  double x2 = fit_data_->settings().bin_to_nrg(edge.right() + 0.5);
   double y = edge.average();
 
   QCPItemLine *line = new QCPItemLine(this);

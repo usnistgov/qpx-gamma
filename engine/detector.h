@@ -33,33 +33,17 @@
 
 namespace Qpx {
 
-class Detector : public XMLable {
+class Detector : public XMLable
+{
  public:
-  Detector()
-      : energy_calibrations_("Calibrations")
-      , gain_match_calibrations_("GainMatchCalibrations")
-      , settings_("Optimization")
-      , fwhm_calibration_("FWHM", 0)
-      , name_("none")
-      , type_("none")
-  {settings_.metadata.setting_type = SettingType::stem;}
-  
+  Detector();
+  Detector(std::string name);
 
-  Detector(std::string name) : Detector() {name_ = name;}
   std::string xml_element_name() const override {return "Detector";}
   
   bool shallow_equals(const Detector& other) const {return (name_ == other.name_);}
-  bool operator!= (const Detector& other) const {return !operator==(other);}
-  bool operator== (const Detector& other) const {
-    if (name_ != other.name_) return false;
-    if (type_ != other.type_) return false;
-    if (settings_ != other.settings_) return false;
-    if (energy_calibrations_ != other.energy_calibrations_) return false;
-    if (gain_match_calibrations_ != other.gain_match_calibrations_) return false;
-    if (fwhm_calibration_ != other.fwhm_calibration_) return false;
-    if (efficiency_calibration_ != other.efficiency_calibration_) return false;
-    return true;
-  }
+  bool operator== (const Detector& other) const;
+  bool operator!= (const Detector& other) const;
 
   std::string debug(std::string prepend) const;
 
@@ -71,14 +55,14 @@ class Detector : public XMLable {
   Calibration best_calib(int bits) const;
   Calibration get_gain_match(uint16_t bits, std::string todet) const;
   
-  std::string name_, type_;
-  XMLableDB<Calibration> energy_calibrations_;
-  XMLableDB<Calibration> gain_match_calibrations_;
+  std::string name_ {"none"};
+  std::string type_ {"none"};
+  XMLableDB<Calibration> energy_calibrations_ {"Calibrations"};
+  XMLableDB<Calibration> gain_match_calibrations_ {"GainMatchCalibrations"};
 
-  Calibration fwhm_calibration_;
-  Calibration efficiency_calibration_;
-  Setting settings_;
-  
+  Calibration fwhm_calibration_ {"FWHM", 0};
+  Calibration efficiency_calibration_ {"Efficiency", 0};
+  Setting settings_ {"Optinmization"};
 };
 
 }

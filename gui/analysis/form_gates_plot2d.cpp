@@ -88,18 +88,30 @@ void FormGatesPlot2D::set_boxes(std::list<Bounds2D> boxes)
 {
   boxes_ = boxes;
   replot_markers();
+  refocus();
 }
+
+void FormGatesPlot2D::refocus()
+{
+//  DBG << "Refocus to " << min_ << " " << max_;
+  double range = std::max(xmax_ - xmin_, ymax_ - ymin_) * 6;
+  double xcenter = (xmax_ + xmin_) / 2.0;
+  double ycenter = (ymax_ + ymin_) / 2.0;
+  double xmin = xcenter - range / 2.0;
+  double xmax = xcenter + range / 2.0;
+  double ymin = ycenter - range / 2.0;
+  double ymax = ycenter + range / 2.0;
+
+  ui->coincPlot->zoomOut(xmin, xmax, ymin, ymax);
+  ui->coincPlot->replot();
+}
+
 
 void FormGatesPlot2D::reset_content()
 {
   current_spectrum_ = 0;
   boxes_.clear();
   replot_markers();
-}
-
-void FormGatesPlot2D::refresh()
-{
-//  ui->coincPlot->refresh();
 }
 
 void FormGatesPlot2D::replot_markers()
@@ -113,6 +125,11 @@ void FormGatesPlot2D::replot_markers()
   QPlot::Label2D label;
   QPlot::MarkerBox2D box;
 
+  xmin_ = std::numeric_limits<double>::max();
+  xmax_ = std::numeric_limits<double>::min();
+  ymin_ = std::numeric_limits<double>::max();
+  ymax_ = std::numeric_limits<double>::min();
+
   for (Bounds2D &q : boxes_)
   {
     box.id = q.id;
@@ -125,6 +142,14 @@ void FormGatesPlot2D::replot_markers()
     box.yc = calib_y_.transform(q.y.centroid(), bits);
     box.y1 = calib_y_.transform(q.y.lower() - 0.5, bits);
     box.y2 = calib_y_.transform(q.y.upper() + 0.5, bits);
+
+    if (q.selected)
+    {
+      xmin_ = std::min(xmin_, box.x1);
+      xmax_ = std::max(xmax_, box.x2);
+      ymin_ = std::min(ymin_, box.y1);
+      ymax_ = std::max(ymax_, box.y2);
+    }
 
     box.border = q.color;
     box.fill = box.border;
@@ -176,7 +201,6 @@ void FormGatesPlot2D::replot_markers()
     boxes.push_back(box);
   }
 
-
   ui->coincPlot->setBoxes(boxes);
   ui->coincPlot->setLabels(labels);
   ui->coincPlot->replotExtras();
@@ -221,7 +245,7 @@ void FormGatesPlot2D::update_plot()
       for (auto p : *spectrum_data)
         hist.push_back(p2d(p.first.at(0), p.first.at(1), p.second.convert_to<double>()));
     }
-    DBG << md.get_attribute("name").value_text << " hist size " << hist.size();
+//    DBG << md.get_attribute("name").value_text << " hist size " << hist.size();
     ui->coincPlot->updatePlot(adjrange + 1, adjrange + 1, hist);
 
 

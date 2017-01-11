@@ -36,12 +36,9 @@ FormIntegration2D::FormIntegration2D(QWidget *parent) :
   QWidget(parent),
   ui(new Ui::FormIntegration2D),
   table_model_(this),
-  sortModel(this),
-  current_spectrum_(0)
+  sortModel(this)
 {
   ui->setupUi(this);
-
-  gate_width_ = 0;
 
   ui->plotGateX->setFit(&fit_x_);
   ui->plotGateY->setFit(&fit_y_);
@@ -74,6 +71,52 @@ FormIntegration2D::~FormIntegration2D()
   delete ui;
 }
 
+void FormIntegration2D::closeEvent(QCloseEvent *event)
+{
+  saveSettings();
+  event->accept();
+}
+
+void FormIntegration2D::loadSettings()
+{
+  QSettings settings_;
+
+  settings_.beginGroup("Integration2d");
+  gate_width_ = settings_.value("gate_width", 2).toDouble();
+  ui->doubleGateOn->setValue(gate_width_);
+  ui->plotGateX->loadSettings(settings_); //name these!!!!
+  ui->plotGateY->loadSettings(settings_);
+  settings_.endGroup();
+
+  on_pushShowDiagonal_clicked();
+}
+
+void FormIntegration2D::saveSettings()
+{
+  QSettings settings_;
+  settings_.beginGroup("Integration2d");
+  settings_.setValue("gate_width", gate_width_);
+  ui->plotGateX->saveSettings(settings_); //name these!!!
+  ui->plotGateY->saveSettings(settings_);
+  settings_.endGroup();
+}
+
+void FormIntegration2D::setSpectrum(ProjectPtr newset, int64_t idx)
+{
+  clear();
+  project_ = newset;
+  current_spectrum_ = idx;
+  SinkPtr spectrum = project_->get_sink(idx);
+
+  if (spectrum) {
+    md_ = spectrum->metadata();
+    if (!peaks_.empty()) {
+      ui->tableGateList->selectRow(0);
+    }
+    emit peak_selected();
+  }
+}
+
 void FormIntegration2D::setPeaks(std::list<Bounds2D> pks)
 {
   SinkPtr source_spectrum = project_->get_sink(current_spectrum_);
@@ -100,21 +143,16 @@ void FormIntegration2D::setPeaks(std::list<Bounds2D> pks)
 
       for (auto &q : northwest)
       {
-        //reflect
         Bounds2D nw = q.reflect();
-//        nw.x1 = q.y.lower();
-//        nw.y1 = q.x.lower();
-//        nw.x2 = q.y.upper();
-//        nw.y2 = q.x.upper();
-//        nw.x_c = q.y.centroid();
-//        nw.y_c = q.x.centroid();
 
         bool ok = true;
         for (auto &se : southeast)
-          if (nw.intersects(se)) {
+          if (nw.intersects(se))
+          {
             ok = false;
             break;
           }
+
         if (ok)
           diagonal.push_back(nw);
       }
@@ -137,24 +175,6 @@ void FormIntegration2D::setPeaks(std::list<Bounds2D> pks)
     peaks_.push_back(newpeak);
   }
   rebuild_table(true);
-}
-
-void FormIntegration2D::on_pushRefelct_clicked()
-{
-
-
-
-
-}
-
-
-double FormIntegration2D::width_factor() {
-  return gate_width_;
-}
-
-void FormIntegration2D::closeEvent(QCloseEvent *event) {
-  saveSettings();
-  event->accept();
 }
 
 int32_t FormIntegration2D::index_of(Bounds2D pk)
@@ -236,10 +256,10 @@ double FormIntegration2D::make_upper(Qpx::Calibration fw, double center)
 }
 
 
-void FormIntegration2D::update_current_peak(Bounds2D peak) {
+void FormIntegration2D::update_current_peak(Bounds2D peak)
+{
   int32_t index = index_of(peak);
   //DBG << "update current gate " << index;
-
 
   //  if ((index != -1) && (peaks_[index].approved))
   //    gate.approved = true;
@@ -261,7 +281,8 @@ void FormIntegration2D::update_current_peak(Bounds2D peak) {
   rebuild_table(true);
 }
 
-int32_t FormIntegration2D::current_idx() {
+int32_t FormIntegration2D::current_idx()
+{
   QModelIndexList indexes = ui->tableGateList->selectionModel()->selectedRows();
   QModelIndex index, i;
 
@@ -293,10 +314,11 @@ int32_t FormIntegration2D::current_idx() {
 //    return peaks_[current_peak].area[1][1];
 //}
 
-void FormIntegration2D::selection_changed(QItemSelection selected, QItemSelection deselected) {
+void FormIntegration2D::selection_changed(QItemSelection selected, QItemSelection deselected)
+{
   //current_gate_ = -1;
 
-  QModelIndexList indexes = selected.indexes();
+  QModelIndexList indexes = ui->tableGateList->selectionModel()->selectedIndexes();
 
   for (auto &q : peaks_)
     q.area[1][1].selected = false;
@@ -316,53 +338,26 @@ void FormIntegration2D::selection_changed(QItemSelection selected, QItemSelectio
   emit peak_selected();
 }
 
-void FormIntegration2D::rebuild_table(bool contents_changed) {
-  //DBG << "rebuild table";
-
-  if (contents_changed) {
+void FormIntegration2D::rebuild_table(bool contents_changed)
+{
+  if (contents_changed)
+  {
     table_model_.set_data(peaks_);
     ui->tableGateList->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   }
 
   int approved = 0;
 
-  for (auto &q : peaks_) {
-    //    if (q.approved)
-    //      approved++;
+  for (auto &q : peaks_)
+  {
+    if (q.approved)
+      approved++;
     //    if (q.x_c.energy() != -1)
     //      peaks += q.fit_data_.peaks().size();
   }
 
-  ui->labelGates->setText(QString::number(approved) + "/"  + QString::number(peaks_.size() - approved));
-}
-
-
-void FormIntegration2D::loadSettings() {
-  QSettings settings_;
-
-  settings_.beginGroup("Program");
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
-  settings_.endGroup();
-
-
-  settings_.beginGroup("Integration2d");
-  gate_width_ = settings_.value("gate_width", 2).toDouble();
-  ui->doubleGateOn->setValue(gate_width_);
-  ui->plotGateX->loadSettings(settings_); //name these!!!!
-  ui->plotGateY->loadSettings(settings_);
-  settings_.endGroup();
-
-  on_pushShowDiagonal_clicked();
-}
-
-
-void FormIntegration2D::saveSettings() {
-  QSettings settings_;
-  settings_.beginGroup("Integration2d");
-  settings_.setValue("gate_width", gate_width_);
-  ui->plotGateX->saveSettings(settings_); //name these!!!
-  ui->plotGateY->saveSettings(settings_);
-  settings_.endGroup();
+  ui->labelGates->setText(QString::number(approved) + "/"
+                          + QString::number(peaks_.size() - approved));
 }
 
 void FormIntegration2D::clear() {
@@ -398,22 +393,6 @@ void FormIntegration2D::on_doubleGateOn_editingFinished()
   {
     gate_width_ =  ui->doubleGateOn->value();
     make_range(range_.x.centroid(), range_.y.centroid());
-  }
-}
-
-void FormIntegration2D::setSpectrum(ProjectPtr newset, int64_t idx)
-{
-  clear();
-  project_ = newset;
-  current_spectrum_ = idx;
-  SinkPtr spectrum = project_->get_sink(idx);
-
-  if (spectrum) {
-    md_ = spectrum->metadata();
-    if (!peaks_.empty()) {
-      ui->tableGateList->selectRow(0);
-    }
-    emit peak_selected();
   }
 }
 
@@ -454,6 +433,7 @@ void FormIntegration2D::choose_peaks(std::set<int64_t> chpeaks)
   }
 
   range_.selected = false;
+  selection_changed(QItemSelection(), QItemSelection());
   gated_fits_updated(std::set<double>());
   emit range_changed(range_);
 }
@@ -477,7 +457,7 @@ void FormIntegration2D::make_gates()
 
     md_ = source_spectrum->metadata();
     uint16_t bits = md_.get_attribute("resolution").value_int;
-    double margin = 3;
+    double margin = 5; //hack
 
     uint32_t adjrange = pow(2,bits) - 1;
 
@@ -500,16 +480,16 @@ void FormIntegration2D::make_gates()
 
     SinkPtr gate;
 
-    if (!ui->pushShowDiagonal->isChecked()) {
-
+    if (!ui->pushShowDiagonal->isChecked())
+    {
       gate = slice_rectangular(source_spectrum, {{xmin, xmax}, {ymin, ymax}}, true);
       fit_x_.setData(gate);
 
       gate = slice_rectangular(source_spectrum, {{xmin, xmax}, {ymin, ymax}}, false);
       fit_y_.setData(gate);
-
-    } else  {
-
+    }
+    else
+    {
       Metadata temp;
       temp = SinkFactory::getInstance().create_prototype("1D");
 //      temp.name = "temp";
@@ -576,8 +556,8 @@ void FormIntegration2D::on_pushShowDiagonal_clicked()
   make_gates();
 }
 
-void FormIntegration2D::gated_fits_updated(std::set<double> dummy) {
-
+void FormIntegration2D::gated_fits_updated(std::set<double> dummy)
+{
   ui->pushAdjust->setEnabled(false);
   ui->pushAddPeak2d->setEnabled(false);
 
@@ -719,13 +699,24 @@ std::list<Bounds2D> FormIntegration2D::peaks()
   {
     if (q.area[1][1] != Bounds2D())
     {
+      Bounds2D cbox = q.area[1][1];
+      if (cbox.selected)
+      {
+        cbox.vertical = true;
+        cbox.horizontal = true;
+      }
+      ret.push_back(cbox);
+      if (!cbox.selected)
+        continue;
       for (int i=0; i < 3; ++i)
         for (int j=0; j < 3; ++j)
         {
+          if ((i == 1) && (j == 1))
+            continue;
           Bounds2D box = q.area[i][j];
           if (box != Bounds2D())
           {
-            box.selected = q.area[1][1].selected;
+            box.selected = cbox.selected;
             ret.push_back(box);
           }
         }
@@ -840,8 +831,6 @@ void FormIntegration2D::on_pushTransitions_clicked()
       DBG << "    -->" << to.energy.to_string()
              << "  (Intensity: " << to.intensity.to_string() << ")";
   }
-
-
 }
 
 

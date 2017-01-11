@@ -223,8 +223,8 @@ void FormFitter::add_peak(double l, double r)
   toggle_push(true);
 
   thread_fitter_.set_data(*fit_data_);
-  thread_fitter_.add_peak(fit_data_->settings().cali_nrg_.inverse_transform(l),
-                          fit_data_->settings().cali_nrg_.inverse_transform(r));
+  thread_fitter_.add_peak(fit_data_->settings().nrg_to_bin(l),
+                          fit_data_->settings().nrg_to_bin(r));
 }
 
 void FormFitter::adjust_sum4(double peak_id, double l, double r)
@@ -233,8 +233,8 @@ void FormFitter::adjust_sum4(double peak_id, double l, double r)
     return;
 
   if (fit_data_->adjust_sum4(peak_id,
-                             fit_data_->settings().cali_nrg_.inverse_transform(l),
-                             fit_data_->settings().cali_nrg_.inverse_transform(r)))
+                             fit_data_->settings().nrg_to_bin(l),
+                             fit_data_->settings().nrg_to_bin(r)))
   {
     updateData();
     std::set<double> selected_peaks;
@@ -259,7 +259,7 @@ void FormFitter::adjust_background_L(double ROI_id, double l, double r)
     return;
 
   std::set<double> rois = fit_data_->relevant_regions(
-        fit_data_->settings().cali_nrg_.inverse_transform(l),
+        fit_data_->settings().nrg_to_bin(l),
         fit_data_->region(ROI_id).right_bin());
 
   if (!rois.count(ROI_id))
@@ -277,12 +277,12 @@ void FormFitter::adjust_background_L(double ROI_id, double l, double r)
 
   if (merge)
     thread_fitter_.merge_regions(
-          fit_data_->settings().cali_nrg_.inverse_transform(l),
+          fit_data_->settings().nrg_to_bin(l),
           fit_data_->region(ROI_id).right_bin());
   else
     thread_fitter_.adjust_LB(ROI_id,
-                             fit_data_->settings().cali_nrg_.inverse_transform(l),
-                             fit_data_->settings().cali_nrg_.inverse_transform(r));
+                             fit_data_->settings().nrg_to_bin(l),
+                             fit_data_->settings().nrg_to_bin(r));
 
 }
 
@@ -299,7 +299,7 @@ void FormFitter::adjust_background_R(double ROI_id, double l, double r)
 
   std::set<double> rois = fit_data_->relevant_regions(
         fit_data_->region(ROI_id).left_bin(),
-        fit_data_->settings().cali_nrg_.inverse_transform(r));
+        fit_data_->settings().nrg_to_bin(r));
 
   if (!rois.count(ROI_id))
   {
@@ -316,11 +316,11 @@ void FormFitter::adjust_background_R(double ROI_id, double l, double r)
 
   if (merge)
     thread_fitter_.merge_regions(fit_data_->region(ROI_id).left_bin(),
-                                 fit_data_->settings().cali_nrg_.inverse_transform(r));
+                                 fit_data_->settings().nrg_to_bin(r));
   else
     thread_fitter_.adjust_RB(ROI_id,
-                             fit_data_->settings().cali_nrg_.inverse_transform(l),
-                             fit_data_->settings().cali_nrg_.inverse_transform(r));
+                             fit_data_->settings().nrg_to_bin(l),
+                             fit_data_->settings().nrg_to_bin(r));
 }
 
 

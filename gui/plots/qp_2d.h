@@ -65,6 +65,8 @@ public:
   void setAxes(QString xlabel, double x1, double x2,
                 QString ylabel, double y1, double y2,
                 QString zlabel);
+  void zoomOut(double x1, double x2,
+               double y1, double y2);
   void setOrientation(Qt::Orientation);
 
   void setBoxes(std::list<MarkerBox2D> boxes);

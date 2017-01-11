@@ -79,7 +79,8 @@ public:
   void clone(FitSettings other);
   void clear();
 
-  double energy_to_bin(double energy) const;
+  double nrg_to_bin(double energy) const;
+  double bin_to_nrg(double bin) const;
 
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;
