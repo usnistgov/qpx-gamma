@@ -44,7 +44,7 @@ struct FitDescription
 
 struct Fit {
   Fit(const SUM4Edge &lb, const SUM4Edge &rb,
-      const PolyBounded &backg,
+      const Polynomial &backg,
       const std::map<double, Peak> &peaks,
       const Finder &finder,
       std::string descr);
@@ -53,7 +53,7 @@ struct Fit {
 
   std::map<double, Peak> peaks_;
   SUM4Edge  LB_, RB_;
-  PolyBounded background_;
+  Polynomial background_;
   FitSettings settings_;
 };
 
@@ -85,7 +85,7 @@ struct ROI {
   SUM4Edge RB() const {return RB_;}
   FitSettings fit_settings() const { return finder_.settings_; }
   const Finder &finder() const { return finder_; }
-  PolyBounded sum4_background();
+  Polynomial sum4_background();
 
   //access history
   size_t current_fit() const;
@@ -125,7 +125,7 @@ struct ROI {
 private:
   //intrinsic, these are saved
   SUM4Edge LB_, RB_;
-  PolyBounded background_;
+  Polynomial background_;
   std::map<double, Peak> peaks_;
 
   Finder finder_;           // gets x & y data from fitter

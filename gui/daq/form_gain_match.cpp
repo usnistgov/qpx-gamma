@@ -428,7 +428,7 @@ void FormGainMatch::do_post_processing() {
 
   double predicted = std::numeric_limits<double>::quiet_NaN();
 
-  response_function_ = PolyBounded();
+  response_function_ = Polynomial();
   response_function_.add_coeff(0, -50, 50, 1);
   response_function_.add_coeff(1, -50, 50, 1);
   if (gains.size() > 2)
@@ -544,7 +544,7 @@ void FormGainMatch::new_daq_data() {
 
 void FormGainMatch::on_pushStart_clicked()
 {
-  response_function_ = PolyBounded();
+  response_function_ = Polynomial();
   project_->clear();
 
   peak_ref_ = Peak();
@@ -715,7 +715,7 @@ void FormGainMatch::display_data()
     std::set<double> chosen_peaks_chan;
     //if selected insert;
 
-    //    if (response_function_ != PolyBounded())
+    //    if (response_function_ != Polynomial())
     ui->PlotCalib->setFit(xx, yy, style_fit);
 
     ui->PlotCalib->set_selected_pts(chosen_peaks_chan);

@@ -302,12 +302,12 @@ void FormEnergyCalibration::on_pushFit_clicked()
 
 //  std::vector<double> sigmas(y.size(), 1);
 
-  PolyBounded p;
+  Polynomial p;
   p.add_coeff(0, -50, 50, 0);
   p.add_coeff(1,   0, 50, 1);
   for (int i=2; i <= ui->spinTerms->value(); ++i)
       p.add_coeff(i, -5, 5, 0);
-//  PolyBounded p2 = p;
+//  Polynomial p2 = p;
 
   p.fit(x,y, std::vector<double>(), std::vector<double>());
 

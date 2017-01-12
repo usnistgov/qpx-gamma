@@ -92,7 +92,7 @@ SUM4::SUM4()
 
 SUM4::SUM4(const std::vector<double> &x, const std::vector<double> &y,
            uint32_t Lindex, uint32_t Rindex,
-           PolyBounded background,
+           Polynomial background,
            SUM4Edge LB, SUM4Edge RB)
   : SUM4()
 {

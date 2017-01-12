@@ -32,7 +32,6 @@
 #include "qpx_util.h"
 
 #ifdef FITTER_ROOT_ENABLED
-#include "TF1.h"
 #include "TGraph.h"
 #include "TGraphErrors.h"
 //#include "TMath.h"
@@ -160,7 +159,7 @@ void CoefFunction::fit(const std::vector<double> &x,
 {
   #ifdef FITTER_ROOT_ENABLED
     fit_root(x, y, x_sigma, y_sigma);
-  #elif
+  #else
     fit_fityk(x, y, y_sigma);
   #endif
 }
@@ -221,6 +220,25 @@ void CoefFunction::fit_fityk(const std::vector<double> &x,
 }
 
 #ifdef FITTER_ROOT_ENABLED
+
+void CoefFunction::set_params(TF1* f, uint16_t start) const
+{
+  for (const auto &p : coeffs_)
+  {
+    p.second.set(f, start);
+    start++;
+  }
+}
+
+void CoefFunction::get_params(TF1* f, uint16_t start)
+{
+  for (auto &p : coeffs_)
+  {
+    p.second.get(f, start);
+    start++;
+  }
+}
+
 void CoefFunction::fit_root(const std::vector<double> &x,
                             const std::vector<double> &y,
                             const std::vector<double> &x_sigma,
@@ -237,23 +255,12 @@ void CoefFunction::fit_root(const std::vector<double> &x,
 
   TF1* f1 = new TF1("f1", this->root_definition().c_str());
 
-  int i=0;
-  for (const auto &p : coeffs_)
-  {
-    f1->SetParameter(i, p.second.value.value());
-    f1->SetParLimits(i, p.second.lbound, p.second.ubound);
-    i++;
-  }
+  set_params(f1, 0);
 
 //  g1->Fit("f1", "QEMN");
   g1->Fit("f1", "EMN");
 
-  i=0;
-  for (auto &p : coeffs_)
-  {
-    p.second.value = UncertainDouble::from_double(f1->GetParameter(i), f1->GetParError(i));
-    i++;
-  }
+  get_params(f1, 0);
   rsq_ = f1->GetChisquare();
 
   f1->Delete();

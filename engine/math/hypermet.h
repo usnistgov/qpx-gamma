@@ -49,7 +49,7 @@ public:
   static std::vector<Hypermet> fit_multi(const std::vector<double> &x,
                                          const std::vector<double> &y,
                                          std::vector<Hypermet> old,
-                                         PolyBounded &background,
+                                         Polynomial &background,
                                          FitSettings settings
                                          );
 

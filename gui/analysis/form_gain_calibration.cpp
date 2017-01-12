@@ -219,7 +219,7 @@ void FormGainCalibration::on_pushCalibGain_clicked()
     return;
   }
 
-  PolyBounded p;
+  Polynomial p;
   p.add_coeff(0, -50, 50, 0);
   p.add_coeff(1,   0, 50, 1);
   for (int i=2; i <= ui->spinPolyOrder->value(); ++i)

@@ -80,7 +80,7 @@ double Calibration::transform(double chan) const
     return chan;
   
   if (bits_ && (model_ == CalibrationModel::polynomial))
-    return PolyBounded(coefficients_, 0, r_squared_).eval(chan);
+    return Polynomial(coefficients_, 0, r_squared_).eval(chan);
   else if (bits_ && (model_ == CalibrationModel::sqrt_poly))
     return SqrtPoly(coefficients_, 0, r_squared_).eval(chan);
   else if (bits_ && (model_ == CalibrationModel::polylog))
@@ -99,7 +99,7 @@ double Calibration::inverse_transform(double energy) const
     return energy;
 
   if (bits_ && (model_ == CalibrationModel::polynomial))
-    return PolyBounded(coefficients_, 0, r_squared_).eval_inverse(energy);
+    return Polynomial(coefficients_, 0, r_squared_).eval_inverse(energy);
 //  else if (bits_ && (model_ == CalibrationModel::polylog))
 //    return PolyLog(coefficients_).inverse_evaluate(energy);
   else
@@ -140,7 +140,7 @@ double Calibration::inverse_transform(double energy, uint16_t bits) const
 std::string Calibration::fancy_equation(int precision, bool with_rsq)
 {
   if (bits_ && (model_ == CalibrationModel::polynomial))
-    return PolyBounded(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
+    return Polynomial(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
   else if (bits_ && (model_ == CalibrationModel::sqrt_poly))
     return SqrtPoly(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
   else if (bits_ && (model_ == CalibrationModel::polylog))

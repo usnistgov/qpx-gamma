@@ -305,7 +305,7 @@ Hypermet::Hypermet(const std::vector<double> &x, const std::vector<double> &y,
 std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
                                           const std::vector<double> &y,
                                           std::vector<Hypermet> old,
-                                          PolyBounded &background,
+                                          Polynomial &background,
                                           FitSettings settings)
 {
   if (old.empty())
@@ -475,7 +475,7 @@ std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
         old[i].extract_params(f, q);
         old[i].rsq_ = f->get_rsquared(0);
         i++;
-      } else if (q->get_template_name() == "PolyBounded") {
+      } else if (q->get_template_name() == "Polynomial") {
         background.extract_params(f, q);
       }
     }

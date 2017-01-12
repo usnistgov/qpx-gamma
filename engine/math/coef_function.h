@@ -28,6 +28,7 @@
 #include "fit_param.h"
 
 #ifdef FITTER_ROOT_ENABLED
+#include "TF1.h"
 #endif
 
 class CoefFunction {
@@ -77,6 +78,8 @@ public:
                 const std::vector<double> &y_sigma);
 
   virtual std::string root_definition() = 0;
+  void set_params(TF1* f, uint16_t start) const;
+  void get_params(TF1* f, uint16_t start);
 
 #endif
 

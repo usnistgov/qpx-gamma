@@ -29,7 +29,12 @@
 #include "xmlable.h"
 #include "UncertainDouble.h"
 
-class FitParam : public XMLable {
+#ifdef FITTER_ROOT_ENABLED
+#include "TF1.h"
+#endif
+
+class FitParam : public XMLable
+{
 
 public:
   FitParam() :
@@ -87,6 +92,11 @@ public:
   std::string def_bounds() const;
   std::string def_var(int function_num = -1) const;
   bool extract(fityk::Fityk* f, fityk::Func* func);
+
+#ifdef FITTER_ROOT_ENABLED
+  void set(TF1* f, uint16_t num) const;
+  void get(TF1* f, uint16_t num);
+#endif
 
 private:
   double get_err(fityk::Fityk* f,

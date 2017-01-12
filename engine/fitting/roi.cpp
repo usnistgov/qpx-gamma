@@ -121,14 +121,17 @@ bool ROI::auto_fit(boost::atomic<bool>& interruptor) {
     init_background();
   }
 
-  if (!finder_.settings_.sum4_only) {
+  if (!finder_.settings_.sum4_only)
+  {
     std::vector<double> y_nobkg = remove_background();
 
-    for (size_t i=0; i < finder_.filtered.size(); ++i) {
+    for (size_t i=0; i < finder_.filtered.size(); ++i)
+    {
       std::vector<double> x_pk = std::vector<double>(finder_.x_.begin() + finder_.lefts[i], finder_.x_.begin() + finder_.rights[i] + 1);
       std::vector<double> y_pk = std::vector<double>(y_nobkg.begin() + finder_.lefts[i], y_nobkg.begin() + finder_.rights[i] + 1);
 
-      Gaussian gaussian(x_pk, y_pk);
+      Gaussian gaussian;
+      gaussian.fit(x_pk, y_pk);
 
       if (
           gaussian.height_.value.finite() && (gaussian.height_.value.value() > 0) &&
@@ -145,6 +148,8 @@ bool ROI::auto_fit(boost::atomic<bool>& interruptor) {
       finder_.settings_.sum4_only = true;
   }
 
+  DBG << "1  peaks " << peaks_.size();
+
   if (!rebuild(interruptor))
     return false;
 
@@ -156,14 +161,17 @@ bool ROI::auto_fit(boost::atomic<bool>& interruptor) {
   return true;
 }
 
-void ROI::iterative_fit(boost::atomic<bool>& interruptor) {
+void ROI::iterative_fit(boost::atomic<bool>& interruptor)
+{
+  DBG << "Iterative fit with " << peaks_.size() << " peaks";;
   if (!finder_.settings_.cali_fwhm_.valid() || peaks_.empty())
     return;
 
   double prev_rsq = peaks_.begin()->second.hypermet().rsq();
   DBG << "  initial rsq = " << prev_rsq;
 
-  for (int i=0; i < finder_.settings_.resid_max_iterations; ++i) {
+  for (int i=0; i < finder_.settings_.resid_max_iterations; ++i)
+  {
     ROI new_fit = *this;
 
     if (!new_fit.add_from_resid(interruptor, -1)) {
@@ -181,31 +189,32 @@ void ROI::iterative_fit(boost::atomic<bool>& interruptor) {
     prev_rsq = new_rsq;
     *this = new_fit;
 
-    if (interruptor.load()) {
-      DBG << "    fit ROI interrupter by client";
+    if (interruptor.load())
       break;
-    }
   }
 }
 
-bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint) {
-
+bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint)
+{
   if (finder_.filtered.empty())
     return false;
 
   int target_peak = -1;
   if (centroid_hint == -1) {
     double biggest = 0;
-    for (size_t j=0; j < finder_.filtered.size(); ++j) {
+    for (size_t j=0; j < finder_.filtered.size(); ++j)
+    {
       std::vector<double> x_pk = std::vector<double>(finder_.x_.begin() + finder_.lefts[j],
                                                      finder_.x_.begin() + finder_.rights[j] + 1);
       std::vector<double> y_pk = std::vector<double>(finder_.y_resid_.begin() + finder_.lefts[j],
                                                      finder_.y_resid_.begin() + finder_.rights[j] + 1);
-      Gaussian gaussian(x_pk, y_pk);
+      Gaussian gaussian;
+      gaussian.fit(x_pk, y_pk);
       bool too_close = false;
 
       double lateral_slack = finder_.settings_.resid_too_close * gaussian.hwhm_.value.value() * 2;
-      for (auto &p : peaks_) {
+      for (auto &p : peaks_)
+      {
         if ((p.second.center().value() > (gaussian.center_.value.value() - lateral_slack))
             && (p.second.center().value() < (gaussian.center_.value.value() + lateral_slack)))
           too_close = true;
@@ -246,7 +255,8 @@ bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint
                                                  finder_.x_.begin() + finder_.rights[target_peak] + 1);
   std::vector<double> y_pk = std::vector<double>(finder_.y_resid_.begin() + finder_.lefts[target_peak],
                                                  finder_.y_resid_.begin() + finder_.rights[target_peak] + 1);
-  Gaussian gaussian(x_pk, y_pk);
+  Gaussian gaussian;
+  gaussian.fit(x_pk, y_pk);
 
   if (
       gaussian.height_.value.finite() && (gaussian.height_.value.value() > 0) &&
@@ -255,12 +265,10 @@ bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint
       (gaussian.center_.value.value() < finder_.x_[finder_.rights[target_peak]])
       )
   {
-    //    DBG << "<ROI> new peak accepted";
-    Hypermet hyp(gaussian, finder_.settings_);
-
     Peak fitted(Hypermet(gaussian, finder_.settings_), SUM4(), finder_.settings_);
-    //    fitted.center = hyp.center_.value;
     peaks_[fitted.center().value()] = fitted;
+
+    DBG << "Accepted extra peak. Gonna rebuild";
 
     rebuild(interruptor);
     return true;
@@ -482,7 +490,7 @@ bool ROI::override_settings(const FitSettings &fs, boost::atomic<bool>& interrup
 
 
 Fit::Fit(const SUM4Edge &lb, const SUM4Edge &rb,
-         const PolyBounded &backg,
+         const Polynomial &backg,
          const std::map<double, Peak> &peaks,
          const Finder &finder,
          std::string descr)
@@ -518,7 +526,8 @@ void ROI::save_current_fit(std::string description) {
   current_fit_ = fits_.size() - 1;
 }
 
-bool ROI::rebuild(boost::atomic<bool>& interruptor) {
+bool ROI::rebuild(boost::atomic<bool>& interruptor)
+{
   hr_x.clear();
   hr_x_nrg.clear();
   hr_background.clear();
@@ -527,7 +536,8 @@ bool ROI::rebuild(boost::atomic<bool>& interruptor) {
 
   bool hypermet_fit = false;
   for (auto &q : peaks_)
-    if (!q.second.hypermet().gaussian_only()) {
+    if (!q.second.hypermet().gaussian_only())
+    {
       hypermet_fit = true;
       break;
     }
@@ -550,13 +560,14 @@ bool ROI::rebuild_as_hypermet(boost::atomic<bool>& interruptor)
   CustomTimer timer(true);
 
   std::map<double, Peak> new_peaks;
-  PolyBounded sum4back = sum4_background();
+  Polynomial sum4back = sum4_background();
 
   std::vector<Hypermet> old_hype;
   for (auto &q : peaks_) {
     if (q.second.hypermet().height().value.value())
       old_hype.push_back(q.second.hypermet());
-    else if (q.second.sum4().peak_width()) {
+    else if (q.second.sum4().peak_width())
+    {
       Peak s4only(Hypermet(),
                   SUM4(finder_.x_, finder_.y_,
                        finder_.find_index(q.second.sum4().left()),
@@ -593,13 +604,15 @@ bool ROI::rebuild_as_gaussian(boost::atomic<bool>& interruptor)
   CustomTimer timer(true);
 
   std::map<double, Peak> new_peaks = peaks_;
-  PolyBounded sum4back = sum4_background();
+  Polynomial sum4back = sum4_background();
 
   std::vector<Gaussian> old_gauss;
-  for (auto &q : peaks_) {
+  for (auto &q : peaks_)
+  {
     if (q.second.hypermet().height().value.value())
       old_gauss.push_back(q.second.hypermet().gaussian());
-    else if (q.second.sum4().peak_width()) {
+    else if (q.second.sum4().peak_width())
+    {
       Peak s4only(Hypermet(), SUM4(finder_.x_, finder_.y_,
                                    finder_.find_index(q.second.sum4().left()),
                                    finder_.find_index(q.second.sum4().right()),
@@ -617,7 +630,11 @@ bool ROI::rebuild_as_gaussian(boost::atomic<bool>& interruptor)
                                                     old_gauss, background_,
                                                     finder_.settings_);
 
-  for (size_t i=0; i < gauss.size(); ++i) {
+  DBG << "Old " << old_gauss.size() << " new  " << new_peaks.size()
+      << "  refit gaus " << gauss.size();
+
+  for (size_t i=0; i < gauss.size(); ++i)
+  {
     double edge =  gauss[i].hwhm_.value.value() * 3; //use const from settings
     uint32_t edgeL = finder_.find_index(gauss[i].center_.value.value() - edge);
     uint32_t edgeR = finder_.find_index(gauss[i].center_.value.value() + edge);
@@ -637,7 +654,7 @@ void ROI::render() {
   hr_background.clear();
   hr_back_steps.clear();
   hr_fullfit.clear();
-  PolyBounded sum4back = sum4_background();
+  Polynomial sum4back = sum4_background();
 
   for (double i = 0; i < finder_.x_.size(); i += 0.25)
   {
@@ -772,7 +789,7 @@ void ROI::init_background() {
   if (finder_.x_.empty())
     return;
 
-  background_ = PolyBounded();
+  background_ = Polynomial();
 
   //by default, linear
   double run = RB_.left() - LB_.right();
@@ -800,8 +817,8 @@ void ROI::init_background() {
   background_.add_coeff(1, minslope, maxslope, slope);
 }
 
-PolyBounded  ROI::sum4_background() {
-  PolyBounded sum4back;
+Polynomial  ROI::sum4_background() {
+  Polynomial sum4back;
   if (finder_.x_.empty())
     return sum4back;
   double run = RB_.left() - LB_.right();
@@ -938,7 +955,7 @@ void ROI::from_xml(const pugi::xml_node &root, const Finder &finder)
     if (node.child("BackgroundPoly"))
       background_.from_xml(node.child("BackgroundPoly"));
 
-    PolyBounded sum4back = sum4_background();
+    Polynomial sum4back = sum4_background();
 
     if (node.child("Peaks")) {
       for (auto &pk : node.child("Peaks").children())

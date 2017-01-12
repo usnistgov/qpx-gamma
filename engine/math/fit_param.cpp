@@ -170,4 +170,18 @@ bool FitParam::extract(fityk::Fityk* f, fityk::Func* func)
   return true;
 }
 
+#ifdef FITTER_ROOT_ENABLED
+  void FitParam::set(TF1* f, uint16_t num) const
+  {
+    f->SetParameter(num, value.value());
+    f->SetParLimits(num, lbound, ubound);
+  }
+
+  void FitParam::get(TF1* f, uint16_t num)
+  {
+    value = UncertainDouble::from_double(f->GetParameter(num), f->GetParError(num));
+  }
+
+#endif
+
 

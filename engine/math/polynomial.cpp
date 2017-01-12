@@ -31,7 +31,7 @@
 //#include "custom_logger.h"
 #include "qpx_util.h"
 
-std::string PolyBounded::to_string() const {
+std::string Polynomial::to_string() const {
   std::string ret = type() + " = ";
   std::string vars;
   int i = 0;
@@ -53,7 +53,7 @@ std::string PolyBounded::to_string() const {
   return ret;
 }
 
-std::string PolyBounded::to_UTF8(int precision, bool with_rsq) {
+std::string Polynomial::to_UTF8(int precision, bool with_rsq) {
 
   std::string calib_eqn;
   int i = 0;
@@ -81,7 +81,7 @@ std::string PolyBounded::to_UTF8(int precision, bool with_rsq) {
   return calib_eqn;
 }
 
-std::string PolyBounded::to_markup(int precision, bool with_rsq) {
+std::string Polynomial::to_markup(int precision, bool with_rsq) {
   std::string calib_eqn;
 
   int i = 0;
@@ -109,7 +109,7 @@ std::string PolyBounded::to_markup(int precision, bool with_rsq) {
 }
 
 
-double PolyBounded::eval(double x) {
+double Polynomial::eval(double x) {
   double x_adjusted = x - xoffset_.value.value();
   double result = 0.0;
   for (auto &c : coeffs_)
@@ -118,8 +118,8 @@ double PolyBounded::eval(double x) {
 }
 
 
-double PolyBounded::derivative(double x) {
-  PolyBounded new_poly;  // derivative not true if offset != 0
+double Polynomial::derivative(double x) {
+  Polynomial new_poly;  // derivative not true if offset != 0
   new_poly.xoffset_ = xoffset_;
 
   for (auto &c : coeffs_) {
@@ -131,7 +131,7 @@ double PolyBounded::derivative(double x) {
   return new_poly.eval(x);
 }
 
-void PolyBounded::to_xml(pugi::xml_node &root) const {
+void Polynomial::to_xml(pugi::xml_node &root) const {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
   node.append_attribute("rsq").set_value(to_max_precision(rsq_).c_str());
@@ -149,7 +149,7 @@ void PolyBounded::to_xml(pugi::xml_node &root) const {
 }
 
 
-void PolyBounded::from_xml(const pugi::xml_node &node) {
+void Polynomial::from_xml(const pugi::xml_node &node) {
   coeffs_.clear();
 
   rsq_ = node.attribute("rsq").as_double(0);
@@ -171,7 +171,7 @@ void PolyBounded::from_xml(const pugi::xml_node &node) {
 
 
 //Fityk
-std::string PolyBounded::fityk_definition()
+std::string Polynomial::fityk_definition()
 {
   std::string declaration = "define " + type() + "(";
   std::string definition  = " = ";
@@ -198,7 +198,7 @@ std::string PolyBounded::fityk_definition()
 }
 
 #ifdef FITTER_ROOT_ENABLED
-std::string PolyBounded::root_definition()
+std::string Polynomial::root_definition()
 {
   std::string definition;
   int i = 0;

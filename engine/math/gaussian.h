@@ -33,12 +33,13 @@
 class Gaussian {
 public:
   Gaussian();
-  Gaussian(const std::vector<double> &x, const std::vector<double> &y);
+
+  void fit(const std::vector<double> &x, const std::vector<double> &y);
 
   static std::vector<Gaussian> fit_multi(const std::vector<double> &x,
                                          const std::vector<double> &y,
                                          std::vector<Gaussian> old,
-                                         PolyBounded &background,
+                                         Polynomial &background,
                                          FitSettings settings
                                          );
 
@@ -53,6 +54,37 @@ public:
 
   static std::string fityk_definition();
   bool extract_params(fityk::Fityk*, fityk::Func*);
+  void fit_fityk(const std::vector<double> &x, const std::vector<double> &y);
+
+  static std::vector<Gaussian> fit_multi_fityk(const std::vector<double> &x,
+                                               const std::vector<double> &y,
+                                               std::vector<Gaussian> old,
+                                               Polynomial &background,
+                                               FitSettings settings
+                                              );
+
+#ifdef FITTER_ROOT_ENABLED
+  static std::string root_definition(uint16_t start = 0);
+  static std::string root_definition(uint16_t a, uint16_t c, uint16_t w);
+
+  void set_params(TF1* f, uint16_t start = 0) const;
+  void set_params(TF1* f, uint16_t a, uint16_t c, uint16_t w) const;
+  void get_params(TF1* f, uint16_t start = 0);
+  void get_params(TF1* f, uint16_t a, uint16_t c, uint16_t w);
+  void fit_root(const std::vector<double> &x, const std::vector<double> &y);
+  static std::vector<Gaussian> fit_multi_root(const std::vector<double> &x,
+                                              const std::vector<double> &y,
+                                              std::vector<Gaussian> old,
+                                              Polynomial &background,
+                                              FitSettings settings);
+  static std::vector<Gaussian> fit_multi_root_commonw(const std::vector<double> &x,
+                                                      const std::vector<double> &y,
+                                                      std::vector<Gaussian> old,
+                                                      Polynomial &background,
+                                                      FitSettings settings);
+#endif
+
+
 };
 
 

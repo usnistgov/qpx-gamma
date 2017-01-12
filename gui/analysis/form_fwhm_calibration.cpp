@@ -339,7 +339,7 @@ void FormFwhmCalibration::fit_calibration()
   }
 
 //  SqrtPoly p;
-  PolyBounded p;
+  Polynomial p;
   for (int i=0; i <= ui->spinTerms->value(); ++i)
     p.add_coeff(i, -50, 50, 0);
 
