@@ -202,9 +202,9 @@ void FormGainCalibration::on_pushCalibGain_clicked()
       if (std::abs(p.second.energy().value() - nrg) < ui->doubleCullDelta->value())
       {
         xx.push_back(q.second.center().value());
+        xx_sigma.push_back(q.second.center().uncertainty());
         yy.push_back(p.second.center().value());
-//        xx_sigma.push_back(q.second.center().uncertainty());
-//        yy_sigma.push_back(p.second.center().uncertainty());
+        yy_sigma.push_back(p.second.center().uncertainty());
         multiples++;
       }
     if (multiples > 1)
@@ -227,8 +227,8 @@ void FormGainCalibration::on_pushCalibGain_clicked()
 
   DBG << "points " << xx.size() << " coefs " << p.coeffs().size();
 
-  yy_sigma.resize(yy.size(), 1);
-  p.fit_fityk(xx, yy, yy_sigma);
+//  yy_sigma.resize(yy.size(), 1);
+  p.fit(xx, yy, xx_sigma, yy_sigma);
 
   if (p.coeffs_.size())
   {

@@ -12,7 +12,7 @@ pixie4="off"
 hv8="off"
 vme="off"
 parser_evt="off"
-fitter_ceres="off"
+fitter_root="off"
 nexus="off"
 
 if [ ! -f config.pri ]; then
@@ -37,8 +37,8 @@ else
   if grep -q parser_evt config.pri; then 
     parser_evt="on" 
   fi
-  if grep -q fitter_ceres config.pri; then 
-    fitter_ceres="on" 
+  if grep -q fitter_root config.pri; then
+    fitter_root="on"
   fi
   if grep -q nexus config.pri; then 
     nexus="on" 
@@ -53,7 +53,7 @@ options=(
          4 "Radiation Technologies HV-8" "$hv8"
          5 "VME (Wiener, Mesytec, Iseg)" "$vme"
          6 "Parser for NSCL *.evt" "$parser_evt"
-         7 "Ceres solver (fitter, experimental)" "$fitter_ceres"
+         7 "root solver (fitter, experimental)" "$fitter_root"
          8 "NeXus (experimental)" "$nexus"
         )
 choices=$("${cmd[@]}" "${options[@]}" 2>&1 >/dev/tty)
@@ -94,9 +94,8 @@ do
             text="${text} parser_evt"
             ;;
         7)
-            text="${text} fitter_ceres"
-            sudo apt-get install cmake libgoogle-glog-dev libatlas-base-dev libeigen3-dev libsuitesparse-dev
-
+            text="${text} fitter_root"
+            sudo apt-get install cmake
             ;;
         8)
             text="${text} nexus"

@@ -27,8 +27,7 @@
 #include <map>
 #include "fit_param.h"
 
-#ifdef FITTER_CERES_ENABLED
-#include "ceres/ceres.h"
+#ifdef FITTER_ROOT_ENABLED
 #endif
 
 class CoefFunction {
@@ -55,7 +54,12 @@ public:
 
   std::map<int, FitParam> coeffs_;
   FitParam xoffset_;
-  double rsq_;
+  double rsq_; //chisquared, actually
+
+  void fit(const std::vector<double> &x,
+           const std::vector<double> &y,
+           const std::vector<double> &x_sigma,
+           const std::vector<double> &y_sigma);
 
 // Fityk emplementation
   virtual std::string fityk_definition() = 0;
@@ -65,16 +69,15 @@ public:
                  const std::vector<double> &y,
                  const std::vector<double> &y_sigma);
 
-#ifdef FITTER_CERES_ENABLED
-// Ceres implementation
-  void fit_ceres(const std::vector<double> &x,
-                 const std::vector<double> &y,
-                 const std::vector<double> &y_sigma);
+#ifdef FITTER_ROOT_ENABLED
+// Root implementation
+  void fit_root(const std::vector<double> &x,
+                const std::vector<double> &y,
+                const std::vector<double> &x_sigma,
+                const std::vector<double> &y_sigma);
 
-  virtual void add_residual_blocks(ceres::Problem &problem,
-                                   const std::vector<double> &x,
-                                   const std::vector<double> &y,
-                                   std::vector<double> &c) {}
+  virtual std::string root_definition() = 0;
+
 #endif
 
 };

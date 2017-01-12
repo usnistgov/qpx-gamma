@@ -88,8 +88,10 @@ win32 {
   error( "Couldn't find the sinks.pri file!" )
 }
 
-contains( DAQ_SOURCES, fitter_ceres ) {
-  DEFINES += "FITTER_CERES_ENABLED"
+contains( DAQ_SOURCES, fitter_root ) {
+  DEFINES += "FITTER_ROOT_ENABLED"
+  LIBS += $$system(root-config --glibs)
+  INCLUDEPATH += $$system(root-config --incdir)
 }
 
 contains( DAQ_SOURCES, nexus ) {

@@ -31,30 +31,8 @@
 #include "custom_logger.h"
 #include "qpx_util.h"
 
-std::string SqrtPoly::fityk_definition() {
-  std::string declaration = "define " + type() + "(";
-  std::string definition  = " = sqrt(";
-  int i = 0;
-  for (auto &c : coeffs_) {
-    if (i > 0) {
-      declaration += ", ";
-      definition += " + ";
-    }
-    declaration += c.second.name();
-    definition  += c.second.name();
-    if (c.first > 0)
-      definition += "*xx";
-    if (c.first > 1)
-      definition += "^" + std::to_string(c.first);
-    i++;
-  }
-  declaration += ")";
-  definition  += ") where xx = (x - " + std::to_string(xoffset_.value.value()) + ")";
-
-  return declaration + definition;
-}
-
-std::string SqrtPoly::to_string() const {
+std::string SqrtPoly::to_string() const
+{
   std::string ret = type() + " = sqrt(";
   std::string vars;
   int i = 0;
@@ -76,8 +54,8 @@ std::string SqrtPoly::to_string() const {
   return ret;
 }
 
-std::string SqrtPoly::to_UTF8(int precision, bool with_rsq) {
-
+std::string SqrtPoly::to_UTF8(int precision, bool with_rsq)
+{
   std::string calib_eqn = "\u221A(";
   int i = 0;
   for (auto &c : coeffs_) {
@@ -105,7 +83,8 @@ std::string SqrtPoly::to_UTF8(int precision, bool with_rsq) {
   return calib_eqn;
 }
 
-std::string SqrtPoly::to_markup(int precision, bool with_rsq) {
+std::string SqrtPoly::to_markup(int precision, bool with_rsq)
+{
   std::string calib_eqn = "&radic;<span style=\"text-decoration:overline;\">";
 
   int i = 0;
@@ -133,7 +112,8 @@ std::string SqrtPoly::to_markup(int precision, bool with_rsq) {
   return calib_eqn;
 }
 
-double SqrtPoly::eval(double x) {
+double SqrtPoly::eval(double x)
+{
   double x_adjusted = x - xoffset_.value.value();
   double result = 0.0;
   for (auto &c : coeffs_)
@@ -141,6 +121,59 @@ double SqrtPoly::eval(double x) {
   return sqrt(result);
 }
 
-double SqrtPoly::derivative(double x) {
+double SqrtPoly::derivative(double x)
+{
   return x;
 }
+
+std::string SqrtPoly::fityk_definition()
+{
+  std::string declaration = "define " + type() + "(";
+  std::string definition  = " = sqrt(";
+  int i = 0;
+  for (auto &c : coeffs_) {
+    if (i > 0) {
+      declaration += ", ";
+      definition += " + ";
+    }
+    declaration += c.second.name();
+    definition  += c.second.name();
+    if (c.first > 0)
+      definition += "*xx";
+    if (c.first > 1)
+      definition += "^" + std::to_string(c.first);
+    i++;
+  }
+  declaration += ")";
+  definition  += ") where xx = (x - " + std::to_string(xoffset_.value.value()) + ")";
+
+  return declaration + definition;
+}
+
+
+#ifdef FITTER_ROOT_ENABLED
+std::string SqrtPoly::root_definition()
+{
+  std::string definition = "TMath::Sqrt(";
+  int i = 0;
+  for (auto &c : coeffs_)
+  {
+    if (i > 0)
+      definition += "+";
+    definition += "[" + std::to_string(i) + "]";
+    if (c.first > 0)
+    {
+      definition += "*";
+      if (xoffset_.value.value())
+        definition += "(x-" + std::to_string(xoffset_.value.value()) + ")";
+      else
+        definition += "x";
+    }
+    if (c.first > 1)
+      definition += "^" + std::to_string(c.first);
+    i++;
+  }
+  definition  += ")";
+  return definition;
+}
+#endif

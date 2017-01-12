@@ -171,12 +171,15 @@ void PolyBounded::from_xml(const pugi::xml_node &node) {
 
 
 //Fityk
-std::string PolyBounded::fityk_definition() {
+std::string PolyBounded::fityk_definition()
+{
   std::string declaration = "define " + type() + "(";
   std::string definition  = " = ";
   int i = 0;
-  for (auto &c : coeffs_) {
-    if (i > 0) {
+  for (auto &c : coeffs_)
+  {
+    if (i > 0)
+    {
       declaration += ", ";
       definition += " + ";
     }
@@ -194,59 +197,29 @@ std::string PolyBounded::fityk_definition() {
   return declaration + definition;
 }
 
-#ifdef FITTER_CERES_ENABLED
-
-//Ceres
-
-
-struct PolyResidual {
-  PolyResidual(double x, double y, std::vector<double> p)
-      : x_(x), y_(y), p_(p) {}
-
-  template <typename T> bool operator()(const T* const c,
-                                        T* residual) const {
-    T val(0);
-    for (int i=0; i < p_.size(); ++i)
-    {
-      val += T(y_) - P_ * pow(T(x_), T(c));
-    }
-    residual[0] = val;
-
-    return true;
-  }
-
- private:
-  const double x_;
-  const double y_;
-  const std::vector<double> p_;
-};
-
-
-void PolyBounded::add_residual_blocks(ceres::Problem &problem,
-                                      const std::vector<double> &x,
-                                      const std::vector<double> &y,
-                                      std::vector<double> &c
-                                      )
+#ifdef FITTER_ROOT_ENABLED
+std::string PolyBounded::root_definition()
 {
-  if (x.size() != y.size())
-    return;
-
-  for (int i=0; i < x.size(); ++i) {
-    double xx = x.at(i) - xoffset_.value.value();
-
-    problem.AddResidualBlock(
-        new ceres::AutoDiffCostFunction<PolyResidual, 1, 1>(
-            new PolyResidual(xx, y.at(i), c)),
-        NULL,
-        c.data());
-//    for (auto &c : cc) {
-//      problem.AddResidualBlock(
-//          new ceres::AutoDiffCostFunction<PolyResidual, 1, 1>(
-//              new PolyResidual(xx, y.at(i), c.first)),
-//          NULL,
-//          &c.second);
-//    }
+  std::string definition;
+  int i = 0;
+  for (auto &c : coeffs_)
+  {
+    if (i > 0)
+      definition += "+";
+    definition += "[" + std::to_string(i) + "]";
+    if (c.first > 0)
+    {
+      definition += "*";
+      if (xoffset_.value.value())
+        definition += "(x-" + std::to_string(xoffset_.value.value()) + ")";
+      else
+        definition += "x";
+    }
+    if (c.first > 1)
+      definition += "^" + std::to_string(c.first);
+    i++;
   }
+  return definition;
 }
 #endif
 

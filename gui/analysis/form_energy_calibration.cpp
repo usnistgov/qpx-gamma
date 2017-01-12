@@ -300,24 +300,26 @@ void FormEnergyCalibration::on_pushFit_clicked()
     i++;
   }
 
-  std::vector<double> sigmas(y.size(), 1);
+//  std::vector<double> sigmas(y.size(), 1);
 
   PolyBounded p;
-  p.add_coeff(0, -50, 50, 1);
+  p.add_coeff(0, -50, 50, 0);
   p.add_coeff(1,   0, 50, 1);
   for (int i=2; i <= ui->spinTerms->value(); ++i)
       p.add_coeff(i, -5, 5, 0);
+//  PolyBounded p2 = p;
 
-  p.fit_fityk(x,y,sigmas);
+  p.fit(x,y, std::vector<double>(), std::vector<double>());
 
-  #ifdef FITTER_CERES_ENABLED
-  PolyBounded p2 = p;
-  p2.fit_ceres(x,y,sigmas);
-  p2 = p;
-  p2.fit_ceres(x,y,sigmas);
+  #ifdef FITTER_ROOT_ENABLED
+//  p2.fit_root(x,y,std::vector<double>(), std::vector<double>());
+//  p = p2;
+//  p2 = p;
+//  p2.fit_root(x,y,sigmas);
   #endif
 
-  if (p.coeffs_.size()) {
+  if (p.coeffs_.size())
+  {
     new_calibration_.type_ = "Energy";
     new_calibration_.bits_ = fit_data_.settings().bits_;
     new_calibration_.coefficients_ = p.coeffs();

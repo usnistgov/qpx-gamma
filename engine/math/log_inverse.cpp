@@ -32,29 +32,6 @@
 #include "qpx_util.h"
 
 
-std::string LogInverse::fityk_definition() {
-  std::string declaration = "define " + type() + "(";
-  std::string definition  = " = exp(";
-  int i = 0;
-  for (auto &c : coeffs_) {
-    if (i > 0) {
-      declaration += ", ";
-      definition += " + ";
-    }
-    declaration += c.second.name();
-    definition  += c.second.name();
-    if (c.first > 0)
-      definition += "*xx";
-    if (c.first > 1)
-      definition += "^" + std::to_string(c.first);
-    i++;
-  }
-  declaration += ")";
-  definition  += ") where xx = 1.0/(x - " + std::to_string(xoffset_.value.value()) + ")";
-
-  return declaration + definition;
-}
-
 std::string LogInverse::to_string() const {
   std::string ret = type() + " = exp(";
   std::string vars;
@@ -151,3 +128,55 @@ double LogInverse::eval(double x) {
 double LogInverse::derivative(double x) {
   return x;
 }
+
+std::string LogInverse::fityk_definition()
+{
+  std::string declaration = "define " + type() + "(";
+  std::string definition  = " = exp(";
+  int i = 0;
+  for (auto &c : coeffs_) {
+    if (i > 0) {
+      declaration += ", ";
+      definition += " + ";
+    }
+    declaration += c.second.name();
+    definition  += c.second.name();
+    if (c.first > 0)
+      definition += "*xx";
+    if (c.first > 1)
+      definition += "^" + std::to_string(c.first);
+    i++;
+  }
+  declaration += ")";
+  definition  += ") where xx = 1.0/(x - " + std::to_string(xoffset_.value.value()) + ")";
+
+  return declaration + definition;
+}
+
+#ifdef FITTER_ROOT_ENABLED
+std::string LogInverse::root_definition()
+{
+  std::string definition = "TMath::Exp(";
+  int i = 0;
+  for (auto &c : coeffs_)
+  {
+    if (i > 0)
+      definition += "+";
+    definition += "[" + std::to_string(i) + "]";
+    if (c.first > 0)
+    {
+      definition += "*";
+      if (xoffset_.value.value())
+        definition += "1/(x-" + std::to_string(xoffset_.value.value()) + ")";
+      else
+        definition += "(1/x)";
+    }
+    if (c.first > 1)
+      definition += "^" + std::to_string(c.first);
+    i++;
+  }
+  definition  += ")";
+  return definition;
+}
+#endif
+

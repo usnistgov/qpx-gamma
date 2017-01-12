@@ -31,8 +31,11 @@
 #include "custom_logger.h"
 #include "qpx_util.h"
 
-#ifdef FITTER_CERES_ENABLED
-#include "glog/logging.h"
+#ifdef FITTER_ROOT_ENABLED
+#include "TF1.h"
+#include "TGraph.h"
+#include "TGraphErrors.h"
+//#include "TMath.h"
 #endif
 
 CoefFunction::CoefFunction() :
@@ -40,8 +43,8 @@ CoefFunction::CoefFunction() :
   rsq_(0)
 {}
 
-CoefFunction::CoefFunction(std::vector<double> coeffs, double uncert, double rsq)  :
-  CoefFunction()
+CoefFunction::CoefFunction(std::vector<double> coeffs, double uncert, double rsq)
+  : CoefFunction()
 {
   for (size_t i=0; i < coeffs.size(); ++i)
     add_coeff(i, coeffs[i] - uncert, coeffs[i] + uncert, coeffs[i]);
@@ -62,14 +65,16 @@ void CoefFunction::add_coeff(int degree, double lbound, double ubound, double in
                              initial, lbound, ubound);
 }
 
-std::vector<double> CoefFunction::eval_array(const std::vector<double> &x) {
+std::vector<double> CoefFunction::eval_array(const std::vector<double> &x)
+{
   std::vector<double> y;
   for (auto &q : x)
     y.push_back(this->eval(q));
   return y;
 }
 
-double CoefFunction::eval_inverse(double y, double e) {
+double CoefFunction::eval_inverse(double y, double e)
+{
   int i=0;
   double x0 = xoffset_.value.value();
   double x1 = x0 + (y - this->eval(x0)) / (this->derivative(x0));
@@ -92,7 +97,8 @@ double CoefFunction::eval_inverse(double y, double e) {
   }
 }
 
-std::vector<double> CoefFunction::coeffs() {
+std::vector<double> CoefFunction::coeffs()
+{
   std::vector<double> ret;
   int top = 0;
   for (auto &c : coeffs_)
@@ -107,7 +113,8 @@ std::vector<double> CoefFunction::coeffs() {
 
 // Fityk implementation
 
-bool CoefFunction::extract_params(fityk::Fityk* f, fityk::Func* func) {
+bool CoefFunction::extract_params(fityk::Fityk* f, fityk::Func* func)
+{
   try {
     if (func->get_template_name() != this->type())
       return false;
@@ -124,7 +131,8 @@ bool CoefFunction::extract_params(fityk::Fityk* f, fityk::Func* func) {
   return true;
 }
 
-bool CoefFunction::add_self(fityk::Fityk *f, int function_num) const {
+bool CoefFunction::add_self(fityk::Fityk *f, int function_num) const
+{
   try {
     std::string add = " F += " + this->type() + "(";
     int i = 0;
@@ -144,6 +152,19 @@ bool CoefFunction::add_self(fityk::Fityk *f, int function_num) const {
   }
   return true;
 }
+
+void CoefFunction::fit(const std::vector<double> &x,
+                       const std::vector<double> &y,
+                       const std::vector<double> &x_sigma,
+                       const std::vector<double> &y_sigma)
+{
+  #ifdef FITTER_ROOT_ENABLED
+    fit_root(x, y, x_sigma, y_sigma);
+  #elif
+    fit_fityk(x, y, y_sigma);
+  #endif
+}
+
 
 void CoefFunction::fit_fityk(const std::vector<double> &x,
                              const std::vector<double> &y,
@@ -199,43 +220,44 @@ void CoefFunction::fit_fityk(const std::vector<double> &x,
   DBG << "Solved (Fityk) as " << this->to_string();
 }
 
-#ifdef FITTER_CERES_ENABLED
-void CoefFunction::fit_ceres(const std::vector<double> &x,
-                             const std::vector<double> &y,
-                             const std::vector<double> &y_sigma)
+#ifdef FITTER_ROOT_ENABLED
+void CoefFunction::fit_root(const std::vector<double> &x,
+                            const std::vector<double> &y,
+                            const std::vector<double> &x_sigma,
+                            const std::vector<double> &y_sigma)
 {
-  if ((x.size() != y.size()) || (y.size() != y_sigma.size()))
+  if (x.size() != y.size())
     return;
 
-  size_t max = 0;
-  for (auto &c : coeffs_)
-    if (c.first > max)
-      max = c.first;
-  std::vector<double> coefs_ceres(max + 1, 0.0);
-  for (auto &c : coeffs_)
-    coefs_ceres[c.first] = c.second.value.value();
+  TGraphErrors* g1;
+  if ((x.size() == x_sigma.size()) && (x_sigma.size() == y_sigma.size()))
+    g1 = new TGraphErrors(y.size(), x.data(), y.data(), x_sigma.data(), y_sigma.data());
+  else
+    g1 = new TGraphErrors(y.size(), x.data(), y.data(), nullptr, nullptr);
 
-//  google::InitGoogleLogging("qpx_coef_function");
+  TF1* f1 = new TF1("f1", this->root_definition().c_str());
 
-  ceres::Problem problem;
-  this->add_residual_blocks(problem, x, y, coefs_ceres);
-
-  ceres::Solver::Options options;
-  options.max_num_iterations = 100;
-  options.linear_solver_type = ceres::DENSE_QR;
-  options.minimizer_progress_to_stdout = true;
-
-
-  ceres::Solver::Summary summary;
-  ceres::Solve(options, &problem, &summary);
-  DBG << summary.BriefReport() << "\n";
-  coeffs_.clear();
-  for (size_t i=0; i < coefs_ceres.size(); ++i)
+  int i=0;
+  for (const auto &p : coeffs_)
   {
-    DBG << i << " " << coefs_ceres[i];
-    coeffs_.at(i).value.setValue(coefs_ceres[i]);
+    f1->SetParameter(i, p.second.value.value());
+    f1->SetParLimits(i, p.second.lbound, p.second.ubound);
+    i++;
   }
 
-  DBG << "Solved (Ceres) as " << this->to_string();
+//  g1->Fit("f1", "QEMN");
+  g1->Fit("f1", "EMN");
+
+  i=0;
+  for (auto &p : coeffs_)
+  {
+    p.second.value = UncertainDouble::from_double(f1->GetParameter(i), f1->GetParError(i));
+    i++;
+  }
+  rsq_ = f1->GetChisquare();
+
+  f1->Delete();
+  g1->Delete();
 }
+
 #endif

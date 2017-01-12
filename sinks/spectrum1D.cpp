@@ -29,8 +29,6 @@
 #include "qpx_util.h"
 
 #ifdef NEXUS_ENABLED
-#include <hdf5/serial/hdf5.h>
-#include <nexus/napi.h>
 #endif
 
 #include <boost/serialization/vector.hpp>
@@ -64,7 +62,8 @@ Spectrum1D::Spectrum1D()
 //  DBG << "<1D:" << metadata_.get_attribute("name").value_text << ">  made with dims=" << metadata_.dimensions();
 }
 
-void Spectrum1D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
+void Spectrum1D::_set_detectors(const std::vector<Qpx::Detector>& dets)
+{
 //  DBG << "<1D:" << metadata_.get_attribute("name").value_text << "> dims=" << metadata_.dimensions();
   metadata_.detectors.resize(metadata_.dimensions(), Qpx::Detector());
 
@@ -95,7 +94,8 @@ bool Spectrum1D::_initialize()
   return true;
 }
 
-PreciseFloat Spectrum1D::_data(std::initializer_list<size_t> list) const {
+PreciseFloat Spectrum1D::_data(std::initializer_list<size_t> list) const
+{
   if (list.size() != 1)
     return 0;
   
@@ -106,7 +106,8 @@ PreciseFloat Spectrum1D::_data(std::initializer_list<size_t> list) const {
     return spectrum_[chan];
 }
 
-std::unique_ptr<std::list<Entry>> Spectrum1D::_data_range(std::initializer_list<Pair> list) {
+std::unique_ptr<std::list<Entry>> Spectrum1D::_data_range(std::initializer_list<Pair> list)
+{
   size_t min, max;
   if (list.size() != 1) {
     min = 0;
@@ -163,7 +164,8 @@ void Spectrum1D::addEvent(const Event& newEvent)
       this->addHit(h.second);
 }
 
-bool Spectrum1D::_write_file(std::string dir, std::string format) const {
+bool Spectrum1D::_write_file(std::string dir, std::string format) const
+{
   std::string name = metadata_.get_attribute("name").value_text;
   //change illegal characters
   if (format == "tka") {
@@ -182,7 +184,8 @@ bool Spectrum1D::_write_file(std::string dir, std::string format) const {
     return false;
 }
 
-bool Spectrum1D::_read_file(std::string name, std::string format) {
+bool Spectrum1D::_read_file(std::string name, std::string format)
+{
 //  DBG << "Will try to make " << format;
 
   if (format == "tka")
@@ -207,8 +210,8 @@ bool Spectrum1D::_read_file(std::string name, std::string format) {
     return false;
 }
 
-void Spectrum1D::init_from_file(std::string filename) {
-
+void Spectrum1D::init_from_file(std::string filename)
+{
   pattern_coinc_.resize(1);
   pattern_coinc_.set_gates(std::vector<bool>({true}));
 
@@ -269,7 +272,8 @@ std::string Spectrum1D::_data_to_xml() const {
   return channeldata.str();
 }
 
-uint16_t Spectrum1D::_data_from_xml(const std::string& thisData){
+uint16_t Spectrum1D::_data_from_xml(const std::string& thisData)
+{
   std::stringstream channeldata(thisData);
 
   bits_ = metadata_.get_attribute("resolution").value_int;
@@ -297,7 +301,8 @@ uint16_t Spectrum1D::_data_from_xml(const std::string& thisData){
 }
 
 
-bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compression) {
+bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compression)
+{
   std::list<Entry> entry_list;
 
   int i = 0;
@@ -360,7 +365,8 @@ bool Spectrum1D::channels_from_string(std::istream &data_stream, bool compressio
 }
 
 
-bool Spectrum1D::read_xylib(std::string name, std::string ext) {
+bool Spectrum1D::read_xylib(std::string name, std::string ext)
+{
   xylib::DataSet* newdata;
 
   if (ext == "mca") {
@@ -460,7 +466,8 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext) {
   return true;
 }
 
-bool Spectrum1D::read_tka(std::string name) {
+bool Spectrum1D::read_tka(std::string name)
+{
   using namespace boost::algorithm;
   std::ifstream myfile(name, std::ios::in);
   std::string data;
@@ -490,7 +497,8 @@ bool Spectrum1D::read_tka(std::string name) {
   return true;
 }
 
-bool Spectrum1D::read_spe_radware(std::string name) {
+bool Spectrum1D::read_spe_radware(std::string name)
+{
   //radware spe format
   std::ifstream myfile(name, std::ios::in | std::ios::binary);
   if (!myfile)
@@ -590,7 +598,8 @@ bool Spectrum1D::read_spe_radware(std::string name) {
 }
 
 
-bool Spectrum1D::read_spe_gammavision(std::string name) {
+bool Spectrum1D::read_spe_gammavision(std::string name)
+{
   //gammavision plain text
   std::ifstream myfile(name, std::ios::in);
   if (!myfile)
@@ -754,7 +763,8 @@ bool Spectrum1D::read_spe_gammavision(std::string name) {
   return true;
 }
 
-bool Spectrum1D::read_dat(std::string name) {
+bool Spectrum1D::read_dat(std::string name)
+{
   std::ifstream myfile(name, std::ios::in);
   if (!myfile)
     return false;
@@ -810,7 +820,8 @@ bool Spectrum1D::read_dat(std::string name) {
   return true;
 }
 
-bool Spectrum1D::read_n42(std::string filename) {
+bool Spectrum1D::read_n42(std::string filename)
+{
   pugi::xml_document doc;
 
   if (!doc.load_file(filename.c_str()))
@@ -892,7 +903,6 @@ bool Spectrum1D::read_n42(std::string filename) {
   init_from_file(filename);
 
   return true;
-
 }
 
 bool Spectrum1D::read_ava(std::string filename) {
@@ -981,7 +991,8 @@ bool Spectrum1D::read_ava(std::string filename) {
   return true;
 }
 
-void Spectrum1D::write_tka(std::string name) const {
+void Spectrum1D::write_tka(std::string name) const
+{
   uint32_t range = (pow(2, bits_) - 2);
   std::ofstream myfile(name, std::ios::out | std::ios::app);
   //  myfile.precision(2);
@@ -994,7 +1005,8 @@ void Spectrum1D::write_tka(std::string name) const {
   myfile.close();
 }
 
-void Spectrum1D::write_n42(std::string filename) const {
+void Spectrum1D::write_n42(std::string filename) const
+{
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child();
 
@@ -1042,9 +1054,9 @@ void Spectrum1D::write_n42(std::string filename) const {
     ERR << "<Spectrum1D> Failed to save " << filename;
 }
 
-void Spectrum1D::write_spe(std::string filename) const {
+void Spectrum1D::write_spe(std::string filename) const
+{
   //radware format
-
   std::ofstream myfile(filename, std::ios::out | std::ios::trunc | std::ios::binary);
 
   if (!myfile.is_open())
@@ -1086,40 +1098,6 @@ void Spectrum1D::write_spe(std::string filename) const {
 void Spectrum1D::write_h5(std::string filename) const
 {
   #ifdef NEXUS_ENABLED
-
-  //nexus hdf5
-  DBG << "will write hdf5 to " << filename;
-
-  int count = spectrum_.size();
-  std::vector<double> counts;
-  std::vector<double> axis;
-  for (int i=0; i < count; ++i)
-  {
-    counts.push_back( static_cast<double>(spectrum_.at(i)) );
-    axis.push_back(i);
-  }
-
-  NXhandle fileID;
-  NXopen (filename.c_str(), NXACC_CREATE5, &fileID);
-     NXmakegroup (fileID, "Scan", "NXentry");
-     NXopengroup (fileID, "Scan", "NXentry");
-        NXmakegroup (fileID, "data", "NXdata");
-        NXopengroup (fileID, "data", "NXdata");
-           NXputattr (fileID, "signal", "counts", 6, NX_CHAR);
-           NXputattr (fileID, "axes", "energy", 6, NX_CHAR);
-           NXmakedata (fileID, "energy", NX_FLOAT64, 1, &count);
-           NXopendata (fileID, "energy");
-              NXputdata (fileID, axis.data());
-              NXputattr (fileID, "units", "keV", 3, NX_CHAR);
-           NXclosedata (fileID);  /* two_theta */
-           NXmakedata (fileID, "counts", NX_FLOAT64, 1, &count);
-           NXopendata (fileID, "counts");
-              NXputdata (fileID, counts.data());
-           NXclosedata (fileID);  /* counts */
-        NXclosegroup (fileID);  /* data */
-     NXclosegroup (fileID);  /* Scan */
-  NXclose (&fileID);
-  return;
 
   #endif
 }

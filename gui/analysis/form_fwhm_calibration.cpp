@@ -317,23 +317,36 @@ void FormFwhmCalibration::on_pushFit_clicked()
 
 void FormFwhmCalibration::fit_calibration()
 {
-  std::vector<double> xx, yy, yy_sigma;
-  for (auto &q : fit_data_.peaks()) {
+  std::vector<double> xx, yy, xx_sigma, yy_sigma;
+  for (auto &q : fit_data_.peaks())
+  {
     if (( (1 - q.second.hypermet().rsq()) * 100 < ui->doubleMaxFitErr->value())
-        && (q.second.fwhm().error() < ui->doubleMaxWidthErr->value())) {
+        && (q.second.fwhm().error() < ui->doubleMaxWidthErr->value()))
+    {
+//      DBG << "Adding point e=" << q.second.energy().to_string()
+//          << " w=" << q.second.fwhm().to_string();
       xx.push_back(q.second.energy().value());
-      yy.push_back(q.second.fwhm().value());
-      yy_sigma.push_back(q.second.fwhm().uncertainty());
+//      if (std::isfinite(q.second.energy().uncertainty()))
+//        xx_sigma.push_back(q.second.energy().uncertainty());
+//      else
+        xx_sigma.push_back(0);
+      yy.push_back(pow(q.second.fwhm().value(), 2));
+//      if (std::isfinite(q.second.fwhm().uncertainty()))
+//        yy_sigma.push_back(2*q.second.fwhm().uncertainty()*q.second.fwhm().value());
+//      else
+        yy_sigma.push_back(0);
     }
   }
 
-  SqrtPoly p;
+//  SqrtPoly p;
+  PolyBounded p;
   for (int i=0; i <= ui->spinTerms->value(); ++i)
-    p.add_coeff(i, -30, 30, 1);
+    p.add_coeff(i, -50, 50, 0);
 
-  p.fit_fityk(xx, yy, yy_sigma);
+  p.fit(xx, yy, xx_sigma, yy_sigma);
 
-  if (p.coeffs_.size()) {
+  if (p.coeffs_.size())
+  {
     new_calibration_.type_ = "FWHM";
     new_calibration_.bits_ = fit_data_.settings().bits_; //irrelevant?
     new_calibration_.coefficients_ = p.coeffs();
@@ -341,6 +354,7 @@ void FormFwhmCalibration::fit_calibration()
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "keV";
     new_calibration_.model_ = Qpx::CalibrationModel::sqrt_poly;
+//    new_calibration_.model_ = Qpx::CalibrationModel::polynomial;
   }
   else
     LINFO << "<WFHM calibration> Qpx::Calibration failed";

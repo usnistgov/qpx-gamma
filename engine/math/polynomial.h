@@ -43,17 +43,9 @@ public:
   void from_xml(const pugi::xml_node &node) override;
   std::string xml_element_name() const override {return "PolyBounded";}
 
-  //Fityk
   std::string fityk_definition() override;
-
-#ifdef FITTER_CERES_ENABLED
-
-  //Ceres
-  void add_residual_blocks(ceres::Problem &problem,
-                           const std::vector<double> &x,
-                           const std::vector<double> &y,
-                           std::vector<double> &c
-                           ) override;
+#ifdef FITTER_ROOT_ENABLED
+  std::string root_definition() override;
 #endif
 
 };

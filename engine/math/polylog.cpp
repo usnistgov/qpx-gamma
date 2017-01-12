@@ -31,29 +31,6 @@
 #include "custom_logger.h"
 #include "qpx_util.h"
 
-std::string PolyLog::fityk_definition() {
-  std::string declaration = "define " + type() + "(";
-  std::string definition  = " = exp(";
-  int i = 0;
-  for (auto &c : coeffs_) {
-    if (i > 0) {
-      declaration += ", ";
-      definition += " + ";
-    }
-    declaration += c.second.name();
-    definition  += c.second.name();
-    if (c.first > 0)
-      definition += "*xx";
-    if (c.first > 1)
-      definition += "^" + std::to_string(c.first);
-    i++;
-  }
-  declaration += ")";
-  definition  += ") where xx = log(x - " + std::to_string(xoffset_.value.value()) + ")";
-
-  return declaration + definition;
-}
-
 std::string PolyLog::to_string() const {
   std::string ret = type() + " = exp(";
   std::string vars;
@@ -146,3 +123,54 @@ double PolyLog::eval(double x) {
 double PolyLog::derivative(double x) {
   return x;
 }
+
+std::string PolyLog::fityk_definition()
+{
+  std::string declaration = "define " + type() + "(";
+  std::string definition  = " = exp(";
+  int i = 0;
+  for (auto &c : coeffs_) {
+    if (i > 0) {
+      declaration += ", ";
+      definition += " + ";
+    }
+    declaration += c.second.name();
+    definition  += c.second.name();
+    if (c.first > 0)
+      definition += "*xx";
+    if (c.first > 1)
+      definition += "^" + std::to_string(c.first);
+    i++;
+  }
+  declaration += ")";
+  definition  += ") where xx = log(x - " + std::to_string(xoffset_.value.value()) + ")";
+
+  return declaration + definition;
+}
+
+#ifdef FITTER_ROOT_ENABLED
+std::string PolyLog::root_definition()
+{
+  std::string definition = "TMath::Exp(";
+  int i = 0;
+  for (auto &c : coeffs_)
+  {
+    if (i > 0)
+      definition += "+";
+    definition += "[" + std::to_string(i) + "]";
+    if (c.first > 0)
+    {
+      definition += "*";
+      if (xoffset_.value.value())
+        definition += "TMath::Log(x-" + std::to_string(xoffset_.value.value()) + ")";
+      else
+        definition += "TMath::Log(x)";
+    }
+    if (c.first > 1)
+      definition += "^" + std::to_string(c.first);
+    i++;
+  }
+  definition  += ")";
+  return definition;
+}
+#endif

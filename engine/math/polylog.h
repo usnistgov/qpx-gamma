@@ -32,12 +32,17 @@ public:
     CoefFunction(coeffs, uncert, rsq) {}
 
   std::string type() const override {return "PolyLog";}
-  std::string fityk_definition() override;
   std::string to_string() const override;
   std::string to_UTF8(int precision = -1, bool with_rsq = false) override;
   std::string to_markup(int precision = -1, bool with_rsq = false) override;
   double eval(double x)  override;
   double derivative(double x) override;
+
+  std::string fityk_definition() override;
+#ifdef FITTER_ROOT_ENABLED
+  std::string root_definition() override;
+#endif
+
 
 };
 
