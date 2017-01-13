@@ -33,6 +33,10 @@
 #include "gaussian.h"
 #include "xmlable.h"
 
+#ifdef FITTER_ROOT_ENABLED
+#include "TF1.h"
+#endif
+
 class Hypermet : public XMLable {
 public:
   Hypermet() :
@@ -42,7 +46,8 @@ public:
 
   Hypermet(Gaussian gauss, FitSettings settings);
 
-  Hypermet(const std::vector<double> &x, const std::vector<double> &y,
+  void fit(const std::vector<double> &x,
+           const std::vector<double> &y,
            Gaussian gauss,
            FitSettings settings);
 
@@ -98,13 +103,54 @@ public:
 
 private:
   FitParam center_, height_, width_,
-           Lskew_amplitude_, Lskew_slope_,
-           Rskew_amplitude_, Rskew_slope_,
-           tail_amplitude_, tail_slope_,
-           step_amplitude_;
+  Lskew_amplitude_, Lskew_slope_,
+  Rskew_amplitude_, Rskew_slope_,
+  tail_amplitude_, tail_slope_,
+  step_amplitude_;
 
   double rsq_;
   bool user_modified_;
+
+
+  void fit_fityk(const std::vector<double> &x,
+                 const std::vector<double> &y);
+
+  static std::vector<Hypermet> fit_multi_fityk(const std::vector<double> &x,
+                                               const std::vector<double> &y,
+                                               std::vector<Hypermet> old,
+                                               Polynomial &background,
+                                               FitSettings settings
+                                               );
+
+#ifdef FITTER_ROOT_ENABLED
+  void fit_root(const std::vector<double> &x,
+                const std::vector<double> &y);
+
+  static std::string root_definition(uint16_t start = 0);
+  static std::string root_definition(uint16_t width, uint16_t others_start);
+
+  void set_params(TF1* f, uint16_t start = 0) const;
+  void set_params(TF1* f, uint16_t width, uint16_t others_start) const;
+  void get_params(TF1* f, uint16_t start = 0);
+  void get_params(TF1* f, uint16_t width, uint16_t others_start);
+
+  static std::vector<Hypermet> fit_multi_root(const std::vector<double> &x,
+                                              const std::vector<double> &y,
+                                              std::vector<Hypermet> old,
+                                              Polynomial &background,
+                                              FitSettings settings
+                                              );
+
+  static std::vector<Hypermet> fit_multi_root_commonw(const std::vector<double> &x,
+                                                      const std::vector<double> &y,
+                                                      std::vector<Hypermet> old,
+                                                      Polynomial &background,
+                                                      FitSettings settings
+                                                      );
+#endif
+
+
+
 };
 
 #endif

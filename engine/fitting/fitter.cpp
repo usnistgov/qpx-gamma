@@ -101,7 +101,6 @@ void Fitter::clear()
   regions_.clear();
 }
 
-
 void Fitter::find_regions() {
   regions_.clear();
 //  DBG << "Fitter: looking for " << filtered.size()  << " peaks";

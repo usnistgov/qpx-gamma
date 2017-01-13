@@ -33,7 +33,6 @@ Finder::Finder(const std::vector<double> &x, const std::vector<double> &y, const
   setNewData(x, y);
 }
 
-
 void Finder::setNewData(const std::vector<double> &x, const std::vector<double> &y)
 {
   clear();

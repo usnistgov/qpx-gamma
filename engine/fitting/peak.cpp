@@ -34,9 +34,8 @@ Peak::Peak(const Hypermet &hyp, const SUM4 &s4, const FitSettings &fs)
   reconstruct(fs);
 }
 
-
-void Peak::reconstruct(FitSettings fs) {
-
+void Peak::reconstruct(FitSettings fs)
+{
   if (hypermet_.height().value.finite() && (hypermet_.height().value.value() > 0)) {
     center_ = hypermet_.center().value;
   }
