@@ -62,7 +62,7 @@ private slots:
 
   void changedProject();
 
-  void on_tabs_currentChanged(int index);
+  void on_tabs_currentChanged(int);
 
   void clearSelection();
   void clickedPlot2d(double x, double y);

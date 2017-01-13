@@ -145,7 +145,7 @@ void DialogDetector::on_lineName_editingFinished()
   my_detector_.name_ = ui->lineName->text().toStdString();
 }
 
-void DialogDetector::on_comboType_currentIndexChanged(const QString &arg1)
+void DialogDetector::on_comboType_currentIndexChanged(const QString &)
 {
   my_detector_.type_ = ui->comboType->currentText().toStdString();
 }
@@ -497,7 +497,8 @@ void WidgetDetectors::on_pushEdit_clicked()
   newDet->exec();
 }
 
-void WidgetDetectors::selection_double_clicked(QModelIndex idx) {
+void WidgetDetectors::selection_double_clicked(QModelIndex)
+{
   on_pushEdit_clicked();
 }
 

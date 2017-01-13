@@ -82,9 +82,9 @@ private slots:
   void on_pushStart_clicked();
   void on_pushStop_clicked();
 
-  void on_comboReference_currentIndexChanged(int index);
-  void on_comboTarget_currentIndexChanged(int index);
-  void on_comboSetting_activated(int index);
+  void on_comboReference_currentIndexChanged(int);
+  void on_comboTarget_currentIndexChanged(int);
+  void on_comboSetting_activated(int);
 
   void on_pushEditPrototypeRef_clicked();
   void on_pushEditPrototypeOpt_clicked();

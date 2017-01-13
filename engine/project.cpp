@@ -60,13 +60,15 @@ std::set<Spill> Project::spills() const
   boost::unique_lock<boost::mutex> lock(mutex_); return spills_;
 }
 
-void Project::clear() {
+void Project::clear()
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
   cond_.notify_all();
 }
 
-void Project::clear_helper() {
+void Project::clear_helper()
+{
   //private, no lock needed
   if (!sinks_.empty() || !spills_.empty())
     changed_ = true;
@@ -77,7 +79,8 @@ void Project::clear_helper() {
   current_index_ = 0;
 }
 
-void Project::flush() {
+void Project::flush()
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   if (!sinks_.empty())
     for (auto &q: sinks_) {
@@ -86,13 +89,15 @@ void Project::flush() {
     }
 }
 
-void Project::activate() {
+void Project::activate()
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   ready_ = true;
   cond_.notify_all();
 }
 
-bool Project::wait_ready() {
+bool Project::wait_ready()
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   while (!ready_)
     cond_.wait(lock);
@@ -101,14 +106,16 @@ bool Project::wait_ready() {
 }
 
 
-bool Project::new_data() {
+bool Project::new_data()
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   bool ret = newdata_;
   newdata_ = false;
   return ret;
 }
 
-bool Project::changed() const {
+bool Project::changed() const
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
 
   for (auto &q : sinks_)
@@ -118,17 +125,20 @@ bool Project::changed() const {
   return changed_;
 }
 
-void Project::mark_changed() {
+void Project::mark_changed()
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   changed_ = true;
 }
 
-bool Project::empty() const {
+bool Project::empty() const
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   return sinks_.empty();
 }
 
-std::vector<std::string> Project::types() const {
+std::vector<std::string> Project::types() const
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   std::set<std::string> my_types;
   for (auto &q: sinks_)
@@ -162,7 +172,8 @@ void Project::update_fitter(int64_t idx, const Fitter &fit)
 }
 
 
-SinkPtr Project::get_sink(int64_t idx) {
+SinkPtr Project::get_sink(int64_t idx)
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   //threadsafe so long as sink implemented as thread-safe
 
@@ -172,7 +183,8 @@ SinkPtr Project::get_sink(int64_t idx) {
     return nullptr;
 }
 
-std::map<int64_t, SinkPtr> Project::get_sinks(int32_t dimensions) {
+std::map<int64_t, SinkPtr> Project::get_sinks(int32_t dimensions)
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   //threadsafe so long as sink implemented as thread-safe
   
@@ -186,7 +198,8 @@ std::map<int64_t, SinkPtr> Project::get_sinks(int32_t dimensions) {
   return ret;
 }
 
-std::map<int64_t, SinkPtr> Project::get_sinks(std::string type) {
+std::map<int64_t, SinkPtr> Project::get_sinks(std::string type)
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   //threadsafe so long as sink implemented as thread-safe
   
@@ -201,7 +214,8 @@ std::map<int64_t, SinkPtr> Project::get_sinks(std::string type) {
 
 //client should activate replot after loading all files, as loading multiple
 // sink might create a long queue of plot update signals
-int64_t Project::add_sink(SinkPtr sink) {
+int64_t Project::add_sink(SinkPtr sink)
+{
   if (!sink)
     return 0;
   boost::unique_lock<boost::mutex> lock(mutex_);
@@ -213,7 +227,8 @@ int64_t Project::add_sink(SinkPtr sink) {
   return current_index_;
 }
 
-int64_t Project::add_sink(Metadata prototype) {
+int64_t Project::add_sink(Metadata prototype)
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_prototype(prototype);
   if (!sink)
@@ -226,7 +241,8 @@ int64_t Project::add_sink(Metadata prototype) {
   return current_index_;
 }
 
-void Project::delete_sink(int64_t idx) {
+void Project::delete_sink(int64_t idx)
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
 
   if (!sinks_.count(idx))
@@ -242,7 +258,8 @@ void Project::delete_sink(int64_t idx) {
     current_index_ = 0;
 }
 
-void Project::set_prototypes(const XMLableDB<Metadata>& prototypes) {
+void Project::set_prototypes(const XMLableDB<Metadata>& prototypes)
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
 
@@ -263,7 +280,8 @@ void Project::set_prototypes(const XMLableDB<Metadata>& prototypes) {
   cond_.notify_all();
 }
 
-void Project::add_spill(Spill* one_spill) {
+void Project::add_spill(Spill* one_spill)
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
 
   for (auto &q: sinks_)
@@ -287,19 +305,22 @@ void Project::add_spill(Spill* one_spill) {
 }
 
 
-void Project::save() {
+void Project::save()
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   if (/*changed_ && */(identity_ != "New project"))
     write_xml(identity_);
 }
 
 
-void Project::save_as(std::string file_name) {
+void Project::save_as(std::string file_name)
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   write_xml(file_name);
 }
 
-void Project::write_xml(std::string file_name) {
+void Project::write_xml(std::string file_name)
+{
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child();
 
@@ -314,7 +335,8 @@ void Project::write_xml(std::string file_name) {
   cond_.notify_all();
 }
 
-void Project::to_xml(pugi::xml_node &root) const {
+void Project::to_xml(pugi::xml_node &root) const
+{
   root.set_name(this->xml_element_name().c_str());
   root.append_attribute("git_version").set_value(std::string(GIT_VERSION).c_str());
 
@@ -350,7 +372,8 @@ void Project::to_xml(pugi::xml_node &root) const {
   newdata_ = true;
 }
 
-void Project::read_xml(std::string file_name, bool with_sinks, bool with_full_sinks) {
+void Project::read_xml(std::string file_name, bool with_sinks, bool with_full_sinks)
+{
   pugi::xml_document doc;
 
   if (!doc.load_file(file_name.c_str()))
@@ -362,15 +385,14 @@ void Project::read_xml(std::string file_name, bool with_sinks, bool with_full_si
   if (!root)
     return;
 
-  from_xml(root);
+  from_xml(root, with_sinks, with_full_sinks);
   identity_ = file_name;
   cond_.notify_all();
-
 }
 
-
 void Project::from_xml(const pugi::xml_node &root,
-                       bool with_sinks, bool with_full_sinks) {
+                       bool with_sinks, bool with_full_sinks)
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
 
@@ -429,7 +451,8 @@ void Project::from_xml(const pugi::xml_node &root,
   newdata_ = true;
 }
 
-void Project::import_spn(std::string file_name) {
+void Project::import_spn(std::string file_name)
+{
   boost::unique_lock<boost::mutex> lock(mutex_);
   //clear_helper();
 

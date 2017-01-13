@@ -114,10 +114,9 @@ void FormRawView::saveSettings() {
   //  settings_.endGroup();
 }
 
-void FormRawView::toggle_push(bool enable, Qpx::SourceStatus status) {
+void FormRawView::toggle_push(bool enable, Qpx::SourceStatus status)
+{
   bool online = (status & Qpx::SourceStatus::can_run);
-
-
 }
 
 FormRawView::~FormRawView()

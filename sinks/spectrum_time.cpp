@@ -229,6 +229,7 @@ std::string TimeSpectrum::_data_to_xml() const
 uint16_t TimeSpectrum::_data_from_xml(const std::string& thisData)
 {
   // do this
+  return false;
 }
 
 

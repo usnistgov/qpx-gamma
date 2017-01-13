@@ -475,7 +475,8 @@ void FormGainMatch::update_fit_opt()
   update_peak_selection(std::set<double>());
 }
 
-void FormGainMatch::update_peak_selection(std::set<double> dummy) {
+void FormGainMatch::update_peak_selection(std::set<double> /*dummy*/)
+{
   std::set<double> selected_peaks = ui->plotRef->get_selected_peaks();
   if ((selected_peaks.size() != 1) || !fitter_ref_.peaks().count(*selected_peaks.begin()))
     peak_ref_ = Qpx::Peak();
@@ -578,7 +579,7 @@ void FormGainMatch::on_pushStop_clicked()
   interruptor_.store(true);
 }
 
-void FormGainMatch::on_comboReference_currentIndexChanged(int index)
+void FormGainMatch::on_comboReference_currentIndexChanged(int)
 {
   uint16_t channel = ui->comboReference->currentData().toInt();
   sink_prototype_ref_.set_det_limit(current_dets_.size());
@@ -597,7 +598,7 @@ void FormGainMatch::on_comboReference_currentIndexChanged(int index)
   sink_prototype_ref_.set_attribute(pattern);
 }
 
-void FormGainMatch::on_comboTarget_currentIndexChanged(int index)
+void FormGainMatch::on_comboTarget_currentIndexChanged(int)
 {
   uint16_t channel = ui->comboTarget->currentData().toInt();
   sink_prototype_opt_.set_det_limit(current_dets_.size());
@@ -620,7 +621,7 @@ void FormGainMatch::on_comboTarget_currentIndexChanged(int index)
   on_comboSetting_activated(0);
 }
 
-void FormGainMatch::on_comboSetting_activated(int index)
+void FormGainMatch::on_comboSetting_activated(int)
 {
   current_setting_ = Qpx::Setting();
   if (all_settings_.count(ui->comboSetting->currentText().toStdString()))
@@ -933,7 +934,7 @@ void FormGainMatch::on_pushAddCustom_clicked()
                                 0,
                                 std::numeric_limits<double>::min(),
                                 std::numeric_limits<double>::max(),
-                                0.001,
+                                1,
                                 &ok);
     if (ok)
       newset.metadata.minimum = d;
@@ -945,7 +946,7 @@ void FormGainMatch::on_pushAddCustom_clicked()
                                 std::max(100.0, newset.metadata.minimum),
                                 newset.metadata.minimum,
                                 std::numeric_limits<double>::max(),
-                                0.001,
+                                1,
                                 &ok);
     if (ok)
       newset.metadata.maximum = d;
@@ -957,7 +958,7 @@ void FormGainMatch::on_pushAddCustom_clicked()
                                 1,
                                 0,
                                 newset.metadata.maximum - newset.metadata.minimum,
-                                0.001,
+                                1,
                                 &ok);
     if (ok)
       newset.metadata.step = d;
@@ -985,7 +986,7 @@ void FormGainMatch::on_pushEditCustom_clicked()
                               newset.metadata.minimum,
                               std::numeric_limits<double>::min(),
                               std::numeric_limits<double>::max(),
-                              0.001,
+                              1,
                               &ok);
   if (ok)
     newset.metadata.minimum = d;
@@ -997,7 +998,7 @@ void FormGainMatch::on_pushEditCustom_clicked()
                               std::max(newset.metadata.maximum, newset.metadata.minimum),
                               newset.metadata.minimum,
                               std::numeric_limits<double>::max(),
-                              0.001,
+                              1,
                               &ok);
   if (ok)
     newset.metadata.maximum = d;
@@ -1009,7 +1010,7 @@ void FormGainMatch::on_pushEditCustom_clicked()
                               newset.metadata.step,
                               0,
                               newset.metadata.maximum - newset.metadata.minimum,
-                              0.001,
+                              1,
                               &ok);
   if (ok)
     newset.metadata.step = d;

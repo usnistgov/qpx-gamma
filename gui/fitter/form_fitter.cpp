@@ -36,7 +36,7 @@ FormFitter::FormFitter(QWidget *parent) :
   ui(new Ui::FormFitter)
 {
   ui->setupUi(this);
-  player = new QMediaPlayer(this);
+//  player = new QMediaPlayer(this);
 
   connect(ui->plot, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
   connect(ui->plot, SIGNAL(range_selection_changed(double,double)),

@@ -270,7 +270,8 @@ void FormIntegration2D::clearSelection()
   emit peak_selected();
 }
 
-void FormIntegration2D::selection_changed(QItemSelection selected, QItemSelection deselected)
+void FormIntegration2D::selection_changed(QItemSelection /*selected*/,
+                                          QItemSelection /*deselected*/)
 {
   range_.selected = false;
   for (auto &q : peaks_)
@@ -482,7 +483,7 @@ void FormIntegration2D::on_pushShowDiagonal_clicked()
   make_gates();
 }
 
-void FormIntegration2D::gated_fits_updated(std::set<double> dummy)
+void FormIntegration2D::gated_fits_updated(std::set<double> /*dummy*/)
 {
   ui->pushAdjust->setEnabled(false);
   ui->pushAddPeak2d->setEnabled(false);

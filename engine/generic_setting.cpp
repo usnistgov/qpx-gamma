@@ -155,7 +155,7 @@ bool SettingMeta::operator== (const SettingMeta& other) const
 SettingMeta SettingMeta::stripped() const
 {
   SettingMeta s;
-  s.id_ == id_;
+  s.id_ = id_;
   s.setting_type = setting_type;
   return s;
 }
@@ -610,7 +610,8 @@ void Setting::from_xml(const pugi::xml_node &node) {
     metadata.from_xml(node.child(metadata.xml_element_name().c_str()));
 }
 
-void Setting::to_xml(pugi::xml_node &node, bool with_metadata) const {
+void Setting::to_xml(pugi::xml_node &node) const
+{
   if (metadata.setting_type == SettingType::none)
     return; //must have non0 type
 
@@ -848,12 +849,16 @@ void Setting::cull_invisible() {
   for (size_t i=0; i < oldbranches.size(); ++i) {
     Setting setting = oldbranches.get(i);
     if (setting.metadata.visible)
-      if (setting.metadata.setting_type == SettingType::stem) {
+    {
+      if (setting.metadata.setting_type == SettingType::stem)
+      {
         setting.cull_invisible();
         if (!setting.branches.empty())
           branches.add_a(setting);
-      } else
+      }
+      else
         branches.add_a(setting);
+    }
   }
 }
 

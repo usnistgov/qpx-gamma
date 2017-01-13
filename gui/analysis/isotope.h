@@ -50,7 +50,7 @@ class AbstractRadiation : public XMLable {
   
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;
-  std::string xml_element_name() const {return "radiation_type";}
+  std::string xml_element_name() const override {return "radiation_type";}
 
   bool shallow_equals(const AbstractRadiation& other) const {return (energy == other.energy);}
   bool operator!= (const AbstractRadiation& other) const {return !(this->operator==(other));}
@@ -84,9 +84,9 @@ class Isotope : public XMLable {
   Isotope () : gammas("gammas"), half_life(0.0) {}
   Isotope (std::string nm) : Isotope() {name = nm;}
 
-  std::string xml_element_name() const {return "isotope";}
+  std::string xml_element_name() const override {return "isotope";}
   
-  void to_xml(pugi::xml_node &node) const;
+  void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;
 
   bool shallow_equals(const Isotope& other) const {return (name == other.name);}

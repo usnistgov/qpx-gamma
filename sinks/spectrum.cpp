@@ -414,7 +414,8 @@ void Spectrum::_flush()
   metadata_.set_attribute(res2);
 }
 
-void Spectrum::_set_detectors(const std::vector<Qpx::Detector>& dets) {
+void Spectrum::_set_detectors(const std::vector<Qpx::Detector>& dets)
+{
   //private; no lock required
   //  DBG << "<Spectrum> _set_detectors";
 

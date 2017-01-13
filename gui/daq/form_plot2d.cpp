@@ -92,7 +92,7 @@ void FormPlot2D::setDetDB(XMLableDB<Detector>& detDB) {
   detectors_ = &detDB;
 }
 
-void FormPlot2D::spectrumDoubleclicked(SelectorItem item)
+void FormPlot2D::spectrumDoubleclicked(SelectorItem /*item*/)
 {
   on_pushDetails_clicked();
 }
@@ -127,7 +127,7 @@ void FormPlot2D::reset_content()
   replot_markers();
 }
 
-void FormPlot2D::choose_spectrum(SelectorItem item)
+void FormPlot2D::choose_spectrum(SelectorItem /*item*/)
 {
   SelectorItem itm = ui->spectrumSelector->selected();
 

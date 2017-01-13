@@ -359,7 +359,7 @@ bool FormExperiment::apply_setting(Qpx::TrajectoryPtr node)
       return false;
     }
     Qpx::Engine::getInstance().set_setting(node->domain_value, Qpx::Match::id | Qpx::Match::indices);
-    QThread::sleep(0.5);
+    QThread::sleep(1);
     Qpx::Engine::getInstance().get_all_settings();
 
     double newval = Qpx::Engine::getInstance().pull_settings().get_setting(node->domain_value, Qpx::Match::id | Qpx::Match::indices).number();
@@ -404,7 +404,8 @@ void FormExperiment::fitting_done()
   save_propagate_fit();
 }
 
-void FormExperiment::update_peak_selection(std::set<double> dummy) {
+void FormExperiment::update_peak_selection(std::set<double>)
+{
   save_propagate_fit();
 }
 
@@ -571,12 +572,10 @@ void FormExperiment::on_pushStop_clicked()
 
 void FormExperiment::choose_spectrum(SelectorItem item)
 {
-  SelectorItem itm = ui->spectrumSelector->selected();
-
-  if (itm.data.toLongLong() == selected_sink_)
+  if (item.data.toLongLong() == selected_sink_)
     return;
 
-  selected_sink_ = itm.data.toLongLong();
+  selected_sink_ = item.data.toLongLong();
   form_experiment_1d_->update_exp_project();
   form_experiment_2d_->update_exp_project();
   new_daq_data();

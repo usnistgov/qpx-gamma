@@ -1097,9 +1097,6 @@ void Spectrum1D::write_spe(std::string filename) const
 
 void Spectrum1D::write_h5(std::string filename) const
 {
-  #ifdef NEXUS_ENABLED
-
-  #endif
 }
 
 

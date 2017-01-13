@@ -384,13 +384,13 @@ void FormFwhmCalibration::on_pushDetDB_clicked()
   det_widget->exec();
 }
 
-void FormFwhmCalibration::on_doubleMaxFitErr_valueChanged(double arg1)
+void FormFwhmCalibration::on_doubleMaxFitErr_valueChanged(double)
 {
   replot_calib();
   select_in_plot();
 }
 
-void FormFwhmCalibration::on_doubleMaxWidthErr_valueChanged(double arg1)
+void FormFwhmCalibration::on_doubleMaxWidthErr_valueChanged(double)
 {
   replot_calib();
   select_in_plot();

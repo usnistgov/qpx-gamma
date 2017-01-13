@@ -72,7 +72,7 @@ private slots:
   void post_boot();
 
   void push_settings();
-  void push_from_table(int chan, Qpx::Setting setting);
+  void push_from_table(Qpx::Setting setting);
   void chose_detector(int chan, std::string name);
 
   void ask_binary_tree(Qpx::Setting, QModelIndex index);

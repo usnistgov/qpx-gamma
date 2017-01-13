@@ -22,14 +22,21 @@
 
 unix {
 
-   LIBS += -lm -ldl -DBOOST_LOG_DYN_LINK \
-           -lboost_system -lboost_date_time -lboost_thread -lboost_log \
-           -lboost_program_options -lboost_filesystem \
-           -lboost_log_setup -lboost_timer -lz
+   LIBS += -lm -ldl -DBOOST_LOG_DYN_LINK -lz
 
    QMAKE_CFLAGS   += -fpermissive
 
    LIBPATH += /usr/local/lib
+
+  !mac {
+    LIBS += -lboost_system -lboost_date_time -lboost_thread -lboost_log \
+            -lboost_filesystem -lboost_log_setup -lboost_timer
+  }
+
+  mac {
+    LIBS += -lboost_system-mt -lboost_date_time-mt -lboost_thread-mt -lboost_log-mt \
+            -lboost_filesystem-mt -lboost_log_setup-mt -lboost_timer-mt
+  }
 }
 
 

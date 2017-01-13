@@ -27,7 +27,9 @@
 #include <QDateTime>
 #include "qt_util.h"
 
-TableChanSettings::TableChanSettings(QObject *parent) {
+TableChanSettings::TableChanSettings(QObject *parent)
+  : QAbstractTableModel(parent)
+{
   show_read_only_ = true;
   scalable_units_.insert("V");
   scalable_units_.insert("A");
@@ -262,6 +264,7 @@ Qt::ItemFlags TableChanSettings::flags(const QModelIndex &index) const
     else
       return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
   }
+  return QAbstractTableModel::flags(index);
 }
 
 bool TableChanSettings::setData(const QModelIndex & index, const QVariant & value, int role)
@@ -270,11 +273,15 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
   int col = index.column();
 
   if (role == Qt::EditRole)
-    if ((row > 0) && (col <= static_cast<int>(channels_.size()+2))) {
+  {
+    if ((row > 0) && (col <= static_cast<int>(channels_.size()+2)))
+    {
       Qpx::Setting item = consolidated_list_.branches.get(row-1);
 
-      if (col == static_cast<int>(channels_.size()+1)) {
-        if (preferred_units_.count(item.id_)) {
+      if (col == static_cast<int>(channels_.size()+1))
+      {
+        if (preferred_units_.count(item.id_))
+        {
           int idx = value.toInt();
           std::string prefix;
           UnitConverter uc;
@@ -303,7 +310,8 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
                && (value.type() == QVariant::Bool))
         item.value_int = value.toBool();
       else if ((item.metadata.setting_type == Qpx::SettingType::floating)
-               && (value.type() == QVariant::Double)) {
+               && (value.type() == QVariant::Double))
+      {
         double val = value.toDouble();
         if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
           std::string to_units = preferred_units_.at(item.id_);
@@ -313,9 +321,11 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
         item.value_dbl = val;
       }
       else if ((item.metadata.setting_type == Qpx::SettingType::floating_precise)
-               && (value.type() == QVariant::Double)) {
+               && (value.type() == QVariant::Double))
+      {
         long double val = value.toDouble();
-        if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
+        if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_)))
+        {
           std::string to_units = preferred_units_.at(item.id_);
           UnitConverter uc;
           val = to_double( uc.convert_units(val, preferred_units_.at(item.id_), item.metadata.unit) );
@@ -335,11 +345,14 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
                && (value.canConvert(QMetaType::LongLong)))
         item.value_duration = boost::posix_time::seconds(value.toLongLong());
 
-      emit setting_changed(col-1, item);
+      emit setting_changed(item);
       return true;
-    } else {
+    }
+    else
+    {
       emit detector_chosen(col-1, value.toString().toStdString());
       return true;
     }
+  }
   return true;
 }

@@ -65,7 +65,7 @@ public:
 
 private slots:
   void on_lineName_editingFinished();
-  void on_comboType_currentIndexChanged(const QString &arg1);
+  void on_comboType_currentIndexChanged(const QString &);
   void on_buttonBox_accepted();
   void on_pushReadOpti_clicked();
   void on_pushRead1D_clicked();

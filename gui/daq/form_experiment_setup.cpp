@@ -108,7 +108,7 @@ void FormExperimentSetup::toggle_push() {
 
 void FormExperimentSetup::update_settings(const Qpx::Setting& tree,
                                           const std::vector<Qpx::Detector> &dets,
-                                          Qpx::SourceStatus status)
+                                          Qpx::SourceStatus /*status*/)
  {
   current_dets_ = dets;
   current_tree_ = tree;

@@ -345,7 +345,8 @@ void Spectrum2D::write_mat(std::string name) const {
 }
 
 
-bool Spectrum2D:: read_m4b(std::string name) {
+bool Spectrum2D:: read_m4b(std::string name)
+{
   //radware escl8r file
   std::ifstream myfile(name, std::ios::in | std::ios::binary);
 
@@ -379,9 +380,11 @@ bool Spectrum2D:: read_m4b(std::string name) {
   }
 
   init_from_file(name);
+  return true;
 }
 
-bool Spectrum2D:: read_mat(std::string name) {
+bool Spectrum2D:: read_mat(std::string name)
+{
   //radware
   std::ifstream myfile(name, std::ios::in | std::ios::binary);
 
@@ -415,6 +418,7 @@ bool Spectrum2D:: read_mat(std::string name) {
   }
 
   init_from_file(name);
+  return true;
 }
 
 std::string Spectrum2D::_data_to_xml() const {

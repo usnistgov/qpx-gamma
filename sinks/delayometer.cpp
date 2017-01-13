@@ -87,7 +87,8 @@ PreciseFloat Delayometer::_data(std::initializer_list<uint16_t> list) const {
     return 0;
 }
 
-std::unique_ptr<std::list<Entry>> Delayometer::_data_range(std::initializer_list<Pair> list) {
+std::unique_ptr<std::list<Entry>> Delayometer::_data_range(std::initializer_list<Pair> /*list*/)
+{
 //  int min, max;
 //  if (list.size() != 1) {
 //    min = 0;
@@ -113,7 +114,8 @@ std::unique_ptr<std::list<Entry>> Delayometer::_data_range(std::initializer_list
   return result;
 }
 
-void Delayometer::_append(const Entry& e) {
+void Delayometer::_append(const Entry& /*e*/)
+{
 //  for (int i = 0; i < e.first.size(); ++i)
 //    if (pattern_add_.relevant(i) && (e.first[i] < spectrum_.size())) {
 //      spectrum_[e.first[i]] += e.second;

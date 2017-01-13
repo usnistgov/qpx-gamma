@@ -45,7 +45,7 @@ protected:
   std::string my_type() const override {return "2D";}
 
   PreciseFloat _data(std::initializer_list<size_t> list ) const override;
-  std::unique_ptr<EntryList> _data_range(std::initializer_list<Pair> list);
+  std::unique_ptr<EntryList> _data_range(std::initializer_list<Pair> list) override;
   void _set_detectors(const std::vector<Qpx::Detector>& dets) override;
 
   void addEvent(const Event&) override;

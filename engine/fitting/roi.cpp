@@ -237,11 +237,11 @@ bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint
   } else {
 
     //THIS NEVER HAPPENS
-    double diff = abs(finder_.x_[finder_.filtered[target_peak]] - centroid_hint);
+    double diff = std::abs(finder_.x_[finder_.filtered[target_peak]] - centroid_hint);
     for (size_t j=0; j < finder_.filtered.size(); ++j)
-      if (abs(finder_.x_[finder_.filtered[j]] - centroid_hint) < diff) {
+      if (std::abs(finder_.x_[finder_.filtered[j]] - centroid_hint) < diff) {
         target_peak = j;
-        diff = abs(finder_.x_[finder_.filtered[j]] - centroid_hint);
+        diff = std::abs(finder_.x_[finder_.filtered[j]] - centroid_hint);
       }
   }
 

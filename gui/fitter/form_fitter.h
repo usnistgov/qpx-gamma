@@ -27,7 +27,7 @@
 #include <QWidget>
 #include "special_delegate.h"
 #include <QItemSelection>
-#include <QMediaPlayer>
+//#include <QMediaPlayer>
 
 #include "thread_fitter.h"
 #include "qp_fitter.h"
@@ -108,7 +108,7 @@ private:
   bool busy_ {false};
 
   ThreadFitter thread_fitter_;
-  QMediaPlayer *player;
+//  QMediaPlayer *player;
 
 };
 

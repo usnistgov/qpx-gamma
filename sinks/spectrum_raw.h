@@ -69,7 +69,7 @@ protected:
 
   PreciseFloat _data(std::initializer_list<size_t> list) const override
     { return Sink::_data(list);}
-  std::unique_ptr<std::list<Entry>> _data_range(std::initializer_list<Pair> range)
+  std::unique_ptr<std::list<Entry>> _data_range(std::initializer_list<Pair> range) override
     { return Sink::_data_range(range); }
 
   //event processing

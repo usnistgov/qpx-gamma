@@ -312,7 +312,8 @@ void FormEfficiencyCalibration::update_spectra() {
   setSpectrum(ui->spectrumSelector->selected().data.toLongLong());
 }
 
-void FormEfficiencyCalibration::spectrumLooksChanged(SelectorItem item) {
+void FormEfficiencyCalibration::spectrumLooksChanged(SelectorItem /*item*/)
+{
   replot_calib();
 }
 
@@ -613,7 +614,7 @@ void FormEfficiencyCalibration::on_doubleScaleFactor_editingFinished()
   replot_calib();
 }
 
-void FormEfficiencyCalibration::on_doubleScaleFactor_valueChanged(double arg1)
+void FormEfficiencyCalibration::on_doubleScaleFactor_valueChanged(double)
 {
   fit_data_.activity_scale_factor_ = ui->doubleScaleFactor->value();
   if (!fit_data_.finder().empty()) //should be ==Setting()

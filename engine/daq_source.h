@@ -63,14 +63,14 @@ public:
   virtual bool boot() {return false;}
   virtual bool die() {status_ = SourceStatus(0); return true;}
 
-  virtual bool write_settings_bulk(Qpx::Setting &set) {return false;}
-  virtual bool read_settings_bulk(Qpx::Setting &set) const {return false;}
+  virtual bool write_settings_bulk(Qpx::Setting &/*set*/) {return false;}
+  virtual bool read_settings_bulk(Qpx::Setting &/*set*/) const {return false;}
   virtual void get_all_settings() {}
 
   virtual std::list<Hit> oscilloscope() {return std::list<Hit>();}
 
   virtual bool daq_init() {return true;}
-  virtual bool daq_start(SynchronizedQueue<Spill*>* out_queue) {return false;}
+  virtual bool daq_start(SynchronizedQueue<Spill*>* /*out_queue*/) {return false;}
   virtual bool daq_stop() {return true;}
   virtual bool daq_running() {return false;}
 

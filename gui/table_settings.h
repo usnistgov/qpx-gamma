@@ -55,7 +55,7 @@ public:
     void set_show_read_only(bool show_ro);
 
 signals:
-    void setting_changed(int chan, Qpx::Setting setting);
+    void setting_changed(Qpx::Setting setting);
     void detector_chosen(int chan, std::string name);
 
 };

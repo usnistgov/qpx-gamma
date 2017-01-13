@@ -231,7 +231,7 @@ void FormEnergyCalibration::rebuild_table() {
   for (auto &p : fit_data_.peaks()) {
     bool close = false;
     for (auto &e : ui->isotopes->current_isotope_gammas())
-      if (abs(p.second.energy().value() - e.energy) < 2.0) {//hardcoded
+      if (std::abs(p.second.energy().value() - e.energy) < 2.0) {//hardcoded
         flagged.insert(e.energy);
         close = true;
       }

@@ -98,12 +98,12 @@ void FormPlot1D::spectrumLooksChanged(SelectorItem item)
   mySpectra->activate();
 }
 
-void FormPlot1D::spectrumDoubleclicked(SelectorItem item)
+void FormPlot1D::spectrumDoubleclicked(SelectorItem /*item*/)
 {
   on_pushFullInfo_clicked();
 }
 
-void FormPlot1D::spectrumDetails(SelectorItem item)
+void FormPlot1D::spectrumDetails(SelectorItem /*item*/)
 {
   SelectorItem itm = spectraSelector->selected();
 

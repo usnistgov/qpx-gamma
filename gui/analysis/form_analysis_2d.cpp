@@ -192,7 +192,7 @@ void FormAnalysis2D::clearSelection()
     form_integration_->clearSelection();
 }
 
-void FormAnalysis2D::on_tabs_currentChanged(int index)
+void FormAnalysis2D::on_tabs_currentChanged(int)
 {
   update_peaks();
 }

@@ -21,7 +21,15 @@
 #-------------------------------------------------------------------------------
 
 unix {
-   LIBS += -lm -ldl -lboost_system -lz -lnlopt
+   LIBS += -lm -ldl -lz -lnlopt
+
+  !mac {
+    LIBS += -lboost_system
+  }
+
+  mac {
+    LIBS += -lboost_system-mt
+  }
 }
 
 INCLUDEPATH += $$PWD/fityk $$PWD

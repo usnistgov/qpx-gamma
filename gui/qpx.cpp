@@ -221,13 +221,17 @@ void qpx::updateStatusText(QString text) {
   ui->statusBar->showMessage(text);
 }
 
-void qpx::update_settings(Qpx::Setting sets, std::vector<Qpx::Detector> channels, Qpx::SourceStatus status) {
+void qpx::update_settings(Qpx::Setting /*sets*/,
+                          std::vector<Qpx::Detector> channels,
+                          Qpx::SourceStatus status)
+{
   px_status_ = status;
   current_dets_ = channels;
   toggleIO(true);
 }
 
-void qpx::toggleIO(bool enable) {
+void qpx::toggleIO(bool enable)
+{
   gui_enabled_ = enable;
 
   if (enable && (px_status_ & Qpx::SourceStatus::booted))
@@ -244,7 +248,7 @@ void qpx::toggleIO(bool enable) {
   emit toggle_push(enable, px_status_);
 }
 
-void qpx::on_splitter_splitterMoved(int pos, int index)
+void qpx::on_splitter_splitterMoved(int /*pos*/, int /*index*/)
 {
   ui->qpxLogBox->verticalScrollBar()->setValue(ui->qpxLogBox->verticalScrollBar()->maximum());
 }
@@ -253,7 +257,8 @@ void qpx::detectors_updated() {
   emit update_dets();
 }
 
-void qpx::update_settings() {
+void qpx::update_settings()
+{
   emit settings_changed();
 }
 

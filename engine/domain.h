@@ -102,7 +102,7 @@ public:
   void populate();
   std::shared_ptr<TrajectoryNode> next_setting();
 
-  std::string xml_element_name() const {return "TrajectoryNode";}
+  std::string xml_element_name() const override {return "TrajectoryNode";}
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;
 

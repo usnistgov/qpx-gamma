@@ -86,7 +86,7 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread,
   connect(&tree_settings_model_, SIGNAL(tree_changed()), this, SLOT(push_settings()));
   connect(&tree_settings_model_, SIGNAL(detector_chosen(int, std::string)), this, SLOT(chose_detector(int,std::string)));
 
-  connect(&table_settings_model_, SIGNAL(setting_changed(int, Qpx::Setting)), this, SLOT(push_from_table(int, Qpx::Setting)));
+  connect(&table_settings_model_, SIGNAL(setting_changed(Qpx::Setting)), this, SLOT(push_from_table(Qpx::Setting)));
   connect(&table_settings_model_, SIGNAL(detector_chosen(int, std::string)), this, SLOT(chose_detector(int,std::string)));
 
   detectorOptions.addAction("Apply saved settings", this, SLOT(apply_detector_presets()));
@@ -226,7 +226,8 @@ void FormSystemSettings::ask_execute_tree(Qpx::Setting command, QModelIndex inde
   editing_ = false;
 }
 
-void FormSystemSettings::push_from_table(int chan, Qpx::Setting setting) {
+void FormSystemSettings::push_from_table(Qpx::Setting setting)
+{
   editing_ = false;
 
   //setting.indices.insert(chan);

@@ -21,14 +21,16 @@
 #-------------------------------------------------------------------------------
 
 unix {
-  LIBS += -lm -ldl -lz \
-          -lboost_system -lboost_date_time -lboost_thread -lboost_log \
-          -lboost_filesystem -lboost_log_setup -lboost_timer -lboost_regex
+  LIBS += -lm -ldl -lz
 
-  contains( DAQ_SOURCES, fitter_ceres ) {
-    LIBS += -lgflags -lpthread -lglog -lspqr -lcholmod -lccolamd -lcamd \
-            -lcolamd -lamd -llapack -lf77blas -latlas -lceres -lgomp \
-            -lglog -lcholmod -lrt -llapack -lf77blas -latlas
+  !mac {
+    LIBS += -lboost_system -lboost_date_time -lboost_thread -lboost_log \
+            -lboost_filesystem -lboost_log_setup -lboost_timer -lboost_regex
+  }
+
+  mac {
+    LIBS += -lboost_system-mt -lboost_date_time-mt -lboost_thread-mt -lboost_log-mt \
+            -lboost_filesystem-mt -lboost_log_setup-mt -lboost_timer-mt -lboost_regex-mt
   }
 }
 

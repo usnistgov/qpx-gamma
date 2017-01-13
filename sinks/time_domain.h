@@ -39,7 +39,7 @@ protected:
   bool _initialize() override;
 
   PreciseFloat _data(std::initializer_list<size_t> list) const override;
-  std::unique_ptr<std::list<Entry>> _data_range(std::initializer_list<Pair> list);
+  std::unique_ptr<std::list<Entry>> _data_range(std::initializer_list<Pair> list) override;
   void _append(const Entry&) override;
   void _set_detectors(const std::vector<Qpx::Detector>& dets) override;
 

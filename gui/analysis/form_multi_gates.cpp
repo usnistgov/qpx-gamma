@@ -148,7 +148,7 @@ void FormMultiGates::peaks_changed_in_plot()
   emit gate_selected();
 }
 
-void FormMultiGates::peak_selection_changed(std::set<double> sel)
+void FormMultiGates::peak_selection_changed(std::set<double> /*sel*/)
 {
   range2d.selected = false;
   emit gate_selected();
@@ -208,10 +208,12 @@ void FormMultiGates::make_gate()
   this->setCursor(Qt::ArrowCursor);
 
   if (auto_)
+  {
     if (!gate.approved)
       ui->gatedSpectrum->perform_fit();
     else
       fitting_finished();
+  }
 }
 
 void FormMultiGates::update_current_gate()
@@ -258,7 +260,7 @@ int32_t FormMultiGates::index_of(double centroid, bool fuzzy) const
   if (fuzzy)
   {
     for (size_t i=0; i < gates_.size(); ++i)
-      if (abs(gates_[i].constraints.y.centroid() - centroid) < ui->doubleOverlaps->value())
+      if (std::abs(gates_[i].constraints.y.centroid() - centroid) < ui->doubleOverlaps->value())
         return i;
   }
   else
@@ -292,7 +294,8 @@ Gate FormMultiGates::current_gate() const
   return gate;
 }
 
-void FormMultiGates::selection_changed(QItemSelection selected, QItemSelection deselected)
+void FormMultiGates::selection_changed(QItemSelection selected,
+                                       QItemSelection /*deselected*/)
 {
   QModelIndexList indexes = selected.indexes();
 

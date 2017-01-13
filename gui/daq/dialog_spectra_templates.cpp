@@ -265,7 +265,8 @@ void DialogSpectraTemplates::on_pushEdit_clicked()
   }
 }
 
-void DialogSpectraTemplates::selection_double_clicked(QModelIndex idx) {
+void DialogSpectraTemplates::selection_double_clicked(QModelIndex)
+{
   on_pushEdit_clicked();
 }
 
