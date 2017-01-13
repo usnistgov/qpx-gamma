@@ -368,6 +368,7 @@ void Gaussian::fit_root(const std::vector<double> &x, const std::vector<double> 
   for (const auto &h : y)
   {
     h1->SetBinContent(i, h);
+    h1->SetBinError(i, sqrt(h));
     i++;
   }
 
@@ -385,23 +386,13 @@ void Gaussian::fit_root(const std::vector<double> &x, const std::vector<double> 
   height_.lbound = 0;
   height_.ubound = (h1->GetMaximum() - h1->GetMinimum());
 
-  DBG << "Before fit " << x.front() << "-" << x.back() << "\n"
-      << center_.to_string() << "\n"
-      << height_.to_string() << "\n"
-      << hwhm_.to_string();
-
   set_params(f1);
 
-  h1->Fit("f1", "QEMN");
+  h1->Fit("f1", "QN");
   //  h1->Fit("f1", "EMN");
 
   get_params(f1);
   rsq_ = f1->GetChisquare();
-
-  DBG << "After fit " << x.front() << "-" << x.back() << "\n"
-      << center_.to_string() << "\n"
-      << height_.to_string() << "\n"
-      << hwhm_.to_string();
 
   f1->Delete();
   h1->Delete();
@@ -424,12 +415,12 @@ std::vector<Gaussian> Gaussian::fit_multi_root(const std::vector<double> &x,
   for (const auto &h : y)
   {
     h1->SetBinContent(i, h);
+    h1->SetBinError(i, sqrt(h));
     i++;
   }
 
   std::string definition = background.root_definition();
   uint16_t backgroundparams = background.coeffs().size();
-  DBG << "Bkg coefs " << backgroundparams << " for " << background.to_string();
   for (size_t i=0; i < old.size(); ++i)
   {
     uint16_t num = backgroundparams + i * 3;
@@ -474,7 +465,7 @@ std::vector<Gaussian> Gaussian::fit_multi_root(const std::vector<double> &x,
     old[i].set_params(f1, num);
   }
 
-  h1->Fit("f1", "QEMN");
+  h1->Fit("f1", "QN");
   //  h1->Fit("f1", "EMN");
 
   background.get_params(f1, 0);
@@ -509,6 +500,7 @@ std::vector<Gaussian> Gaussian::fit_multi_root_commonw(const std::vector<double>
   for (const auto &h : y)
   {
     h1->SetBinContent(i, h);
+    h1->SetBinError(i, sqrt(h));
     i++;
   }
 
@@ -531,8 +523,6 @@ std::vector<Gaussian> Gaussian::fit_multi_root_commonw(const std::vector<double>
 
   std::string definition = background.root_definition();
   uint16_t backgroundparams = background.coeffs().size();
-  DBG << "Bkg coefs " << backgroundparams << " for " << background.to_string();
-
   for (size_t i=0; i < old.size(); ++i)
   {
     uint16_t num = 1 + backgroundparams + i * 2;
@@ -561,7 +551,7 @@ std::vector<Gaussian> Gaussian::fit_multi_root_commonw(const std::vector<double>
     old[i].set_params(f1, num, num+1, backgroundparams);
   }
 
-  h1->Fit("f1", "QEMN");
+  h1->Fit("f1", "QN");
   //  h1->Fit("f1", "EMN");
 
   background.get_params(f1, 0);

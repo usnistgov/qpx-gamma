@@ -148,8 +148,6 @@ bool ROI::auto_fit(boost::atomic<bool>& interruptor) {
       finder_.settings_.sum4_only = true;
   }
 
-  DBG << "1  peaks " << peaks_.size();
-
   if (!rebuild(interruptor))
     return false;
 
@@ -163,7 +161,6 @@ bool ROI::auto_fit(boost::atomic<bool>& interruptor) {
 
 void ROI::iterative_fit(boost::atomic<bool>& interruptor)
 {
-  DBG << "Iterative fit with " << peaks_.size() << " peaks";;
   if (!finder_.settings_.cali_fwhm_.valid() || peaks_.empty())
     return;
 
@@ -267,8 +264,6 @@ bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint
   {
     Peak fitted(Hypermet(gaussian, finder_.settings_), SUM4(), finder_.settings_);
     peaks_[fitted.center().value()] = fitted;
-
-    DBG << "Accepted extra peak. Gonna rebuild";
 
     rebuild(interruptor);
     return true;
@@ -603,7 +598,7 @@ bool ROI::rebuild_as_gaussian(boost::atomic<bool>& interruptor)
 {
   CustomTimer timer(true);
 
-  std::map<double, Peak> new_peaks = peaks_;
+  std::map<double, Peak> new_peaks;
   Polynomial sum4back = sum4_background();
 
   std::vector<Gaussian> old_gauss;
@@ -629,9 +624,6 @@ bool ROI::rebuild_as_gaussian(boost::atomic<bool>& interruptor)
   std::vector<Gaussian> gauss = Gaussian::fit_multi(finder_.x_, finder_.y_,
                                                     old_gauss, background_,
                                                     finder_.settings_);
-
-  DBG << "Old " << old_gauss.size() << " new  " << new_peaks.size()
-      << "  refit gaus " << gauss.size();
 
   for (size_t i=0; i < gauss.size(); ++i)
   {
