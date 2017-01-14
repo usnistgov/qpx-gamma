@@ -175,6 +175,8 @@ bool FitParam::extract(fityk::Fityk* f, fityk::Func* func)
   {
     f->SetParameter(num, value.value());
     f->SetParLimits(num, lbound, ubound);
+//    DBG << "Set [" << num << "] " << this->to_string() << "  --> "
+//        << UncertainDouble::from_double(f->GetParameter(num), f->GetParError(num)).to_string();
   }
 
   void FitParam::get(TF1* f, uint16_t num)

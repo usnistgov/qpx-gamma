@@ -79,6 +79,7 @@ public:
   bool rollback_ROI(double regionID, size_t point);
   bool delete_ROI(double regionID);
   bool override_energy(double peakID, double energy);
+  void clear_all_ROIs();
 
   std::set<double> get_selected_peaks() const;
   void set_selected_peaks(std::set<double> selected_peaks);

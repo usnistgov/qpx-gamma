@@ -153,7 +153,7 @@ void VamasDataSet::load_data(std::istream &f)
         all[i] = true;
         inclusion_list[i] = (n <= 0);
     }
-    for (int i = 0; i < abs(n); ++i) {
+    for (int i = 0; i < (n >= 0 ? n : -n); ++i) {
         int idx = read_line_int(f) - 1; // "-1" because the input is 1-based
         inclusion_list[idx] = !inclusion_list[idx];
     }
@@ -276,8 +276,8 @@ Block* VamasDataSet::read_block(istream &f, bool includes[],
     }
 
     if (includes[13])
-        block->meta["analysis source characteristic energy"]
-                                                           = read_line_trim(f);
+        // a.k.a "analysis source characteristic energy"
+        block->meta["source energy"] = read_line_trim(f);
     if (includes[14])
         block->meta["analysis source strength"] = read_line_trim(f);
 
@@ -358,6 +358,8 @@ Block* VamasDataSet::read_block(istream &f, bool includes[],
     int cor_var; // number of corresponding variables
     if (includes[31]) {
         cor_var = read_line_int(f);
+        if (cor_var < 1)
+            throw FormatError("wrong number of corresponding variables");
         // columns initialization
         for (int i = 0; i != cor_var; ++i) {
             string corresponding_variable_label = read_line_trim(f);

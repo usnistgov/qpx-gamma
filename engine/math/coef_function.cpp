@@ -91,7 +91,7 @@ double CoefFunction::eval_inverse(double y, double e)
 
   else
   {
-    WARN <<"<" << this->type() << "> Maximum iteration reached in CoefFunction inverse evaluation";
+//    WARN <<"<" << this->type() << "> Maximum iteration reached in CoefFunction inverse evaluation";
     return nan("");
   }
 }

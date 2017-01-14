@@ -100,6 +100,8 @@ private slots:
   void on_pushStopFitter_clicked();
   void on_pushSettings_clicked();
 
+  void on_pushClearAll_clicked();
+
 private:
   Ui::FormFitter *ui;
 

@@ -45,20 +45,12 @@ void Fitter::setData(SinkPtr spectrum)
     if (!md.detectors.empty())
       detector_ = md.detectors[0];
 
-//    if (detector_.energy_calibrations_.has_a(Calibration("Energy", finder_.settings_.bits_)))
-//      finder_.settings_.cali_nrg_ = detector_.energy_calibrations_.get(Calibration("Energy", finder_.settings_.bits_));
-//    else
-    //best?
     finder_.settings_.cali_nrg_ = detector_.best_calib(finder_.settings_.bits_);
-
-//    DBG << "Picked calibration " << finder_.settings_.cali_nrg_.to_string()
-//        << "  from  " << detector_.name_;
 
     if (detector_.fwhm_calibration_.valid())
       finder_.settings_.cali_fwhm_ = detector_.fwhm_calibration_;
 
     finder_.settings_.live_time = md.get_attribute("live_time").value_duration;
-    finder_.settings_.real_time = md.get_attribute("real_time").value_duration;
 
     std::shared_ptr<EntryList> spectrum_dump = std::move(spectrum->data_range({{0, pow(2,finder_.settings_.bits_)}}));
     std::vector<double> x;
@@ -257,6 +249,12 @@ bool Fitter::delete_ROI(double regionID) {
   regions_.erase(it);
   render_all();
   return true;
+}
+
+void Fitter::clear_all_ROIs()
+{
+  regions_.clear();
+  render_all();
 }
 
 ROI Fitter::parent_region(double peakID) const
@@ -520,11 +518,11 @@ void Fitter::save_report(std::string filename) {
 
   file << "Acquisition start time:  " << boost::posix_time::to_iso_extended_string(metadata_.get_attribute("start_time").value_time) << std::endl;
   double lt = finder_.settings_.live_time.total_milliseconds() * 0.001;
-  double rt = finder_.settings_.real_time.total_milliseconds() * 0.001;
+//  double rt = finder_.settings_.real_time.total_milliseconds() * 0.001;
   file << "Live time(s):   " << lt << std::endl;
-  file << "Real time(s):   " << rt << std::endl;
-  if ((lt < rt) && (rt > 0))
-    file << "Dead time(%):   " << (rt-lt)/rt*100 << std::endl;
+//  file << "Real time(s):   " << rt << std::endl;
+//  if ((lt < rt) && (rt > 0))
+//    file << "Dead time(%):   " << (rt-lt)/rt*100 << std::endl;
 //  double tc = metadata_.total_count.convert_to<double>();
 //  file << "Total count:    " << tc << std::endl;
 //  if ((tc > 0) && (lt > 0))

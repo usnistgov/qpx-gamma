@@ -493,7 +493,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
 
   int maxidx = std::round(moving.pos);
   if (calib_.valid())
-    maxidx = std::round(cal.inverse_transform(moving.pos));
+    maxidx = std::round(cal.inverse_transform(moving.pos, bits));
   if (maxidx < 0)
     maxidx = 0;
 

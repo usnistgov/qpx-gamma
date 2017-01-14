@@ -210,7 +210,7 @@ void FormEnergyCalibration::replot_calib() {
       for (double i=xmin; i < xmax; i+=step)
       {
         xx.push_back(i);
-        yy.push_back(new_calibration_.transform(i));
+        yy.push_back(new_calibration_.transform(i, fit_data_.settings().bits_));
       }
       ui->PlotCalib->setFit(xx, yy, style_fit);
       ui->PlotCalib->setTitle("E = " + QString::fromStdString(new_calibration_.fancy_equation(6, true)));

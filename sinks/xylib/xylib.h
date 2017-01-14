@@ -57,14 +57,13 @@
  *  XYLIB_VERSION / 100 % 100 is the minor version
  *  XYLIB_VERSION / 10000 is the major version
  */
-#define XYLIB_VERSION 10400 /* 1.4.0 */
+#define XYLIB_VERSION 10500 /* 1.5.0 */
 
 #ifdef __cplusplus
 
 #include <string>
 #include <stdexcept>
 #include <fstream>
-#include <algorithm>
 
 extern "C" {
 #endif /* __cplusplus */
@@ -77,6 +76,7 @@ struct XYLIB_API xylibFormat
     const char* exts; /** possible extensions, separated by spaces */
     int binary; /** 0 - ascii, 1 - binary */
     int multiblock; /** 1 if filetype supports multiple blocks, 0 otherwise */
+    const char* valid_options; /** NULL or options separated by spaces */
 };
 
 /* Three functions below are a part of C API which is useful also in C++.  */
@@ -144,7 +144,8 @@ struct XYLIB_API FormatInfo : public xylibFormat
 
     FormatInfo(const char* name_, const char* desc_, const char* exts_,
                bool binary_, bool multiblock_,
-               t_ctor ctor_, t_checker checker_);
+               t_ctor ctor_, t_checker checker_,
+               const char* valid_options_=NULL);
 };
 
 /// unexpected format, unexpected EOF, etc
@@ -296,7 +297,7 @@ public:
     void set_options(std::string const& options);
 
     /// true if this option is handled for this format
-    virtual bool is_valid_option(std::string const&) const { return false; }
+    bool is_valid_option(std::string const& opt) const;
 
 protected:
     explicit DataSet(FormatInfo const* fi_);
@@ -316,8 +317,15 @@ XYLIB_API DataSet* load_file(std::string const& path,
                              std::string const& format_name="",
                              std::string const& options="");
 
-/// return value: pointer to Dataset that contains all data read from file
+/// Read content of a file from stream.
+/// Returns Dataset that stores all the data.
 XYLIB_API DataSet* load_stream(std::istream &is,
+                               std::string const& format_name,
+                               std::string const& options="");
+
+/// Read content of a file from string/bytes.
+/// Returns Dataset that stores all the data.
+XYLIB_API DataSet* load_string(std::string const& buffer,
                                std::string const& format_name,
                                std::string const& options="");
 

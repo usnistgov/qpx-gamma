@@ -380,19 +380,20 @@ std::vector<Hypermet> Hypermet::fit_multi_fityk(const std::vector<double> &x,
 
   bool use_w_common = (settings.width_common && settings.cali_fwhm_.valid() && settings.cali_nrg_.valid());
 
-  if (use_w_common) {
-    FitParam w_common = settings.width_common_bounds;
-    UncertainDouble centers_avg;
+  if (use_w_common)
+  {
+    double centers_avg {0};
     for (auto &p : old)
-      centers_avg += p.center_.value;
+      centers_avg += p.center_.value.value();
     centers_avg /= old.size();
 
-    double nrg = settings.cali_nrg_.transform(centers_avg.value());
+    double nrg = settings.bin_to_nrg(centers_avg);
     double fwhm_expected = settings.cali_fwhm_.transform(nrg);
-    double L = settings.cali_nrg_.inverse_transform(nrg - fwhm_expected/2);
-    double R = settings.cali_nrg_.inverse_transform(nrg + fwhm_expected/2);
-    w_common.value.setValue((R - L) / (2* sqrt(log(2))));
+    double L = settings.nrg_to_bin(nrg - fwhm_expected/2);
+    double R = settings.nrg_to_bin(nrg + fwhm_expected/2);
 
+    FitParam w_common = settings.width_common_bounds;
+    w_common.value.setValue((R - L) / (2* sqrt(log(2))));
     w_common.lbound = w_common.value.value() * w_common.lbound;
     w_common.ubound = w_common.value.value() * w_common.ubound;
 
@@ -421,9 +422,9 @@ std::vector<Hypermet> Hypermet::fit_multi_fityk(const std::vector<double> &x,
       double width_expected = o.width_.value.value();
 
       if (settings.cali_fwhm_.valid() && settings.cali_nrg_.valid()) {
-        double fwhm_expected = settings.cali_fwhm_.transform(settings.cali_nrg_.transform(o.center_.value.value()));
-        double L = settings.cali_nrg_.inverse_transform(settings.cali_nrg_.transform(o.center_.value.value()) - fwhm_expected/2);
-        double R = settings.cali_nrg_.inverse_transform(settings.cali_nrg_.transform(o.center_.value.value()) + fwhm_expected/2);
+        double fwhm_expected = settings.cali_fwhm_.transform(settings.bin_to_nrg(o.center_.value.value()));
+        double L = settings.nrg_to_bin(settings.bin_to_nrg(o.center_.value.value()) - fwhm_expected/2);
+        double R = settings.nrg_to_bin(settings.bin_to_nrg(o.center_.value.value()) + fwhm_expected/2);
         width_expected = (R - L) / (2* sqrt(log(2)));
       }
 
@@ -758,7 +759,9 @@ void Hypermet::fit_root(const std::vector<double> &x, const std::vector<double> 
 
   set_params(f1);
 
-    h1->Fit("f1", "N");
+  h1->Fit("f1", "QN");
+  h1->Fit("f1", "QEMN");
+
 //  h1->Fit("f1", "QN");
   //  h1->Fit("f1", "EMN");
 
@@ -775,6 +778,8 @@ std::vector<Hypermet> Hypermet::fit_multi_root(const std::vector<double> &x,
                                                Polynomial &background,
                                                FitSettings settings)
 {
+  DBG << "Multifit with variable width";
+
   if (old.empty())
     return old;
 
@@ -794,8 +799,8 @@ std::vector<Hypermet> Hypermet::fit_multi_root(const std::vector<double> &x,
   uint16_t backgroundparams = background.coeffs().size();
   for (size_t i=0; i < old.size(); ++i)
   {
-    uint16_t num = backgroundparams + i * 3;
-    definition += "+" + Gaussian().root_definition(num);
+    uint16_t num = backgroundparams + i * 10;
+    definition += "+" + Hypermet().root_definition(num);
   }
 
 //  DBG << "Definition = " << definition;
@@ -806,10 +811,11 @@ std::vector<Hypermet> Hypermet::fit_multi_root(const std::vector<double> &x,
   {
     double width_expected = o.width_.value.value();
 
-    if (settings.cali_fwhm_.valid() && settings.cali_nrg_.valid()) {
-      double fwhm_expected = settings.cali_fwhm_.transform(settings.cali_nrg_.transform(o.center_.value.value()));
-      double L = settings.cali_nrg_.inverse_transform(settings.cali_nrg_.transform(o.center_.value.value()) - fwhm_expected/2);
-      double R = settings.cali_nrg_.inverse_transform(settings.cali_nrg_.transform(o.center_.value.value()) + fwhm_expected/2);
+    if (settings.cali_fwhm_.valid() && settings.cali_nrg_.valid())
+    {
+      double fwhm_expected = settings.cali_fwhm_.transform(settings.bin_to_nrg(o.center_.value.value()));
+      double L = settings.nrg_to_bin(settings.bin_to_nrg(o.center_.value.value()) - fwhm_expected/2);
+      double R = settings.nrg_to_bin(settings.bin_to_nrg(o.center_.value.value()) + fwhm_expected/2);
       width_expected = (R - L) / (2* sqrt(log(2)));
     }
 
@@ -836,7 +842,9 @@ std::vector<Hypermet> Hypermet::fit_multi_root(const std::vector<double> &x,
     old[i].set_params(f1, num);
   }
 
-    h1->Fit("f1", "N");
+//  h1->Fit("f1", "QN");
+  h1->Fit("f1", "QEMN");
+
 //  h1->Fit("f1", "QN");
   //  h1->Fit("f1", "EMN");
 
@@ -876,39 +884,42 @@ std::vector<Hypermet> Hypermet::fit_multi_root_commonw(const std::vector<double>
     i++;
   }
 
-  FitParam w_common = settings.width_common_bounds;
-  UncertainDouble centers_avg;
+  double centers_avg {0};
   for (auto &p : old)
-    centers_avg += p.center_.value;
+  {
+//    DBG << "Peak old width " << p.width_.value.to_string();
+    centers_avg += p.center_.value.value();
+  }
   centers_avg /= old.size();
 
-  double nrg = settings.cali_nrg_.transform(centers_avg.value());
+  double nrg = settings.bin_to_nrg(centers_avg);
   double fwhm_expected = settings.cali_fwhm_.transform(nrg);
-  double L = settings.cali_nrg_.inverse_transform(nrg - fwhm_expected/2);
-  double R = settings.cali_nrg_.inverse_transform(nrg + fwhm_expected/2);
-  w_common.value.setValue((R - L) / (2* sqrt(log(2))));
+  double L = settings.nrg_to_bin(nrg - fwhm_expected/2);
+  double R = settings.nrg_to_bin(nrg + fwhm_expected/2);
+
+  FitParam w_common = settings.width_common_bounds;
+  w_common.value.setValue((R - L) / (2 * sqrt(log(2))));
   w_common.lbound = w_common.value.value() * w_common.lbound;
   w_common.ubound = w_common.value.value() * w_common.ubound;
 
-  for (auto g : old)
-    g.width_ = w_common;
+//  DBG << "Calculated common width param " << w_common.to_string();
 
   std::string definition = background.root_definition();
   uint16_t backgroundparams = background.coeffs().size();
   for (size_t i=0; i < old.size(); ++i)
   {
-    uint16_t num = 1 + backgroundparams + i * 2;
-    definition += "+" + Gaussian().root_definition(num, num+1, backgroundparams);
+    uint16_t num = 1 + backgroundparams + i * 9;
+    definition += "+" + Hypermet().root_definition(backgroundparams, num);
   }
-
-//  DBG << "Definition = " << definition;
 
   TF1* f1 = new TF1("f1", definition.c_str());
 
   for (auto &o : old)
   {
-    o.height_.lbound = o.height_.value.value() * 1e-5;
-    o.height_.ubound = o.height_.value.value() * 1e5;
+    o.width_ = w_common;
+
+    o.height_.lbound = o.height_.value.value() * 10.0;
+    o.height_.ubound = o.height_.value.value() * 0.10;
 
     double lateral_slack = settings.lateral_slack * o.width_.value.value() * 2 * sqrt(log(2));
     o.center_.lbound = o.center_.value.value() - lateral_slack;
@@ -923,8 +934,9 @@ std::vector<Hypermet> Hypermet::fit_multi_root_commonw(const std::vector<double>
     old[i].set_params(f1, backgroundparams, num);
   }
 
-    h1->Fit("f1", "N");
 //  h1->Fit("f1", "QN");
+  h1->Fit("f1", "QEMN");
+
   //  h1->Fit("f1", "EMN");
 
   background.get_params(f1, 0);
@@ -934,6 +946,7 @@ std::vector<Hypermet> Hypermet::fit_multi_root_commonw(const std::vector<double>
     old[i].get_params(f1, backgroundparams, num);
     old[i].rsq_ = f1->GetChisquare();
   }
+
   background.rsq_ = f1->GetChisquare();
 
   f1->Delete();

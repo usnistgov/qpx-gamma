@@ -165,24 +165,27 @@ void ROI::iterative_fit(boost::atomic<bool>& interruptor)
     return;
 
   double prev_rsq = peaks_.begin()->second.hypermet().rsq();
-  DBG << "  initial rsq = " << prev_rsq;
 
   for (int i=0; i < finder_.settings_.resid_max_iterations; ++i)
   {
     ROI new_fit = *this;
+
+    DBG << "Attempting add from resid with " << peaks_.size() << " peaks";
 
     if (!new_fit.add_from_resid(interruptor, -1)) {
       //      DBG << "    failed add from resid";
       break;
     }
     double new_rsq = new_fit.peaks_.begin()->second.hypermet().rsq();
-    if ((new_rsq <= prev_rsq) || std::isnan(new_rsq)) {
-      DBG << "    not improved. reject refit";
-      break;
-    } else
-      DBG << "    new rsq = " << new_rsq;
+    double improvement = (prev_rsq - new_rsq) / prev_rsq * 100;
+    DBG << "X2 new=" << new_rsq << " previous=" << prev_rsq << " improved by " << improvement;
 
-    new_fit.save_current_fit("Iterative +" + std::to_string(i+1));
+    if ((new_rsq > prev_rsq) || std::isnan(new_rsq)) {
+      DBG << " not improved. reject new refit";
+      break;
+    }
+
+    new_fit.save_current_fit("Iterative " + std::to_string(new_fit.peaks().size()));
     prev_rsq = new_rsq;
     *this = new_fit;
 
@@ -641,14 +644,15 @@ bool ROI::rebuild_as_gaussian(boost::atomic<bool>& interruptor)
 }
 
 
-void ROI::render() {
+void ROI::render()
+{
   hr_x.clear();
   hr_background.clear();
   hr_back_steps.clear();
   hr_fullfit.clear();
   Polynomial sum4back = sum4_background();
 
-  for (double i = 0; i < finder_.x_.size(); i += 0.25)
+  for (double i = 0; i < finder_.x_.size(); i += 0.1)
   {
     hr_x.push_back(finder_.x_[0] + i);
     hr_fullfit.push_back(finder_.y_[std::floor(i)]);

@@ -383,13 +383,13 @@ void QpxSpecialDelegate::setModelData ( QWidget *editor, QAbstractItemModel *mod
   } else if (QComboBox *cb = qobject_cast<QComboBox *>(editor)) {
     if (index.data(Qt::EditRole).canConvert<Qpx::Setting>()) {
       Qpx::Setting set = qvariant_cast<Qpx::Setting>(index.data(Qt::EditRole));
-      if (cb->currentData().type() == QMetaType::Bool)
+      if (cb->currentData().type() == static_cast<QVariant::Type>(QMetaType::Bool))
         model->setData(index, QVariant::fromValue(cb->currentData().toBool()), Qt::EditRole);
-      else if (cb->currentData().type() == QMetaType::Int)
+      else if (cb->currentData().type() == static_cast<QVariant::Type>(QMetaType::Int))
         model->setData(index, QVariant::fromValue(cb->currentData().toInt()), Qt::EditRole);
-      else if (cb->currentData().type() == QMetaType::Double)
+      else if (cb->currentData().type() == static_cast<QVariant::Type>(QMetaType::Double))
         model->setData(index, QVariant::fromValue(cb->currentData().toDouble()), Qt::EditRole);
-      else if (cb->currentData().type() == QMetaType::QString)
+      else if (cb->currentData().type() == static_cast<QVariant::Type>(QMetaType::QString))
         model->setData(index, cb->currentData().toString(), Qt::EditRole);
     }
   } else if (QDoubleSpinBox *sb = qobject_cast<QDoubleSpinBox *>(editor))

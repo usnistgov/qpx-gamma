@@ -112,19 +112,20 @@ std::vector<Gaussian> Gaussian::fit_multi_fityk(const std::vector<double> &x,
 
   bool use_w_common = (settings.width_common && settings.cali_fwhm_.valid() && settings.cali_nrg_.valid());
 
-  if (use_w_common) {
-    FitParam w_common = settings.width_common_bounds;
-    UncertainDouble centers_avg;
+  if (use_w_common)
+  {
+    double centers_avg {0};
     for (auto &p : old)
-      centers_avg += p.center_.value;
+      centers_avg += p.center_.value.value();
     centers_avg /= old.size();
 
-    double nrg = settings.cali_nrg_.transform(centers_avg.value());
+    double nrg = settings.bin_to_nrg(centers_avg);
     double fwhm_expected = settings.cali_fwhm_.transform(nrg);
-    double L = settings.cali_nrg_.inverse_transform(nrg - fwhm_expected/2);
-    double R = settings.cali_nrg_.inverse_transform(nrg + fwhm_expected/2);
-    w_common.value.setValue((R - L) / (2* sqrt(log(2))));
+    double L = settings.nrg_to_bin(nrg - fwhm_expected/2);
+    double R = settings.nrg_to_bin(nrg + fwhm_expected/2);
 
+    FitParam w_common = settings.width_common_bounds;
+    w_common.value.setValue((R - L) / (2* sqrt(log(2))));
     w_common.lbound = w_common.value.value() * w_common.lbound;
     w_common.ubound = w_common.value.value() * w_common.ubound;
 
@@ -152,9 +153,9 @@ std::vector<Gaussian> Gaussian::fit_multi_fityk(const std::vector<double> &x,
       double width_expected = o.hwhm_.value.value();
 
       if (settings.cali_fwhm_.valid() && settings.cali_nrg_.valid()) {
-        double fwhm_expected = settings.cali_fwhm_.transform(settings.cali_nrg_.transform(o.center_.value.value()));
-        double L = settings.cali_nrg_.inverse_transform(settings.cali_nrg_.transform(o.center_.value.value()) - fwhm_expected/2);
-        double R = settings.cali_nrg_.inverse_transform(settings.cali_nrg_.transform(o.center_.value.value()) + fwhm_expected/2);
+        double fwhm_expected = settings.cali_fwhm_.transform(settings.bin_to_nrg(o.center_.value.value()));
+        double L = settings.nrg_to_bin(settings.bin_to_nrg(o.center_.value.value()) - fwhm_expected/2);
+        double R = settings.nrg_to_bin(settings.bin_to_nrg(o.center_.value.value()) + fwhm_expected/2);
         width_expected = (R - L) / (2* sqrt(log(2)));
       }
 
@@ -388,7 +389,7 @@ void Gaussian::fit_root(const std::vector<double> &x, const std::vector<double> 
 
   set_params(f1);
 
-  h1->Fit("f1", "QN");
+  h1->Fit("f1", "QEMN");
   //  h1->Fit("f1", "EMN");
 
   get_params(f1);
@@ -436,9 +437,9 @@ std::vector<Gaussian> Gaussian::fit_multi_root(const std::vector<double> &x,
     double width_expected = o.hwhm_.value.value();
     if (settings.cali_fwhm_.valid() && settings.cali_nrg_.valid())
     {
-      double fwhm_expected = settings.cali_fwhm_.transform(settings.cali_nrg_.transform(o.center_.value.value()));
-      double L = settings.cali_nrg_.inverse_transform(settings.cali_nrg_.transform(o.center_.value.value()) - fwhm_expected/2);
-      double R = settings.cali_nrg_.inverse_transform(settings.cali_nrg_.transform(o.center_.value.value()) + fwhm_expected/2);
+      double fwhm_expected = settings.cali_fwhm_.transform(settings.bin_to_nrg(o.center_.value.value()));
+      double L = settings.nrg_to_bin(settings.bin_to_nrg(o.center_.value.value()) - fwhm_expected/2);
+      double R = settings.nrg_to_bin(settings.bin_to_nrg(o.center_.value.value()) + fwhm_expected/2);
       width_expected = (R - L) / (2* sqrt(log(2)));
     }
 
@@ -465,7 +466,7 @@ std::vector<Gaussian> Gaussian::fit_multi_root(const std::vector<double> &x,
     old[i].set_params(f1, num);
   }
 
-  h1->Fit("f1", "QN");
+  h1->Fit("f1", "QEMN");
   //  h1->Fit("f1", "EMN");
 
   background.get_params(f1, 0);
@@ -504,22 +505,20 @@ std::vector<Gaussian> Gaussian::fit_multi_root_commonw(const std::vector<double>
     i++;
   }
 
-  FitParam w_common = settings.width_common_bounds;
-  UncertainDouble centers_avg;
+  double centers_avg {0};
   for (auto &p : old)
-    centers_avg += p.center_.value;
+    centers_avg += p.center_.value.value();
   centers_avg /= old.size();
 
-  double nrg = settings.cali_nrg_.transform(centers_avg.value());
+  double nrg = settings.bin_to_nrg(centers_avg);
   double fwhm_expected = settings.cali_fwhm_.transform(nrg);
-  double L = settings.cali_nrg_.inverse_transform(nrg - fwhm_expected/2);
-  double R = settings.cali_nrg_.inverse_transform(nrg + fwhm_expected/2);
+  double L = settings.nrg_to_bin(nrg - fwhm_expected/2);
+  double R = settings.nrg_to_bin(nrg + fwhm_expected/2);
+
+  FitParam w_common = settings.width_common_bounds;
   w_common.value.setValue((R - L) / (2* sqrt(log(2))));
   w_common.lbound = w_common.value.value() * w_common.lbound;
   w_common.ubound = w_common.value.value() * w_common.ubound;
-
-  for (auto g : old)
-    g.hwhm_ = w_common;
 
   std::string definition = background.root_definition();
   uint16_t backgroundparams = background.coeffs().size();
@@ -535,6 +534,8 @@ std::vector<Gaussian> Gaussian::fit_multi_root_commonw(const std::vector<double>
 
   for (auto &o : old)
   {
+    o.hwhm_ = w_common;
+
     o.height_.lbound = o.height_.value.value() * 1e-5;
     o.height_.ubound = o.height_.value.value() * 1e5;
 
@@ -551,7 +552,7 @@ std::vector<Gaussian> Gaussian::fit_multi_root_commonw(const std::vector<double>
     old[i].set_params(f1, num, num+1, backgroundparams);
   }
 
-  h1->Fit("f1", "QN");
+  h1->Fit("f1", "QEMN");
   //  h1->Fit("f1", "EMN");
 
   background.get_params(f1, 0);

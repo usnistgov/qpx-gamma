@@ -3,6 +3,8 @@
 
 #define BUILDING_XYLIB
 #include "riet7.h"
+
+#include <cstdlib>
 #include "util.h"
 
 using namespace std;
@@ -13,7 +15,7 @@ namespace xylib {
 
 const FormatInfo Riet7DataSet::fmt_info(
     "riet7",
-    "RIET7/ILL_D1A5/PSI_DMC DAT",
+    "RIET7/LHPM/PSI_DMC",
     "dat",
     false,                      // whether binary
     false,                      // whether has multi-blocks

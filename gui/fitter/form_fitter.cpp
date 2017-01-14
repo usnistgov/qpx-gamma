@@ -173,6 +173,19 @@ void FormFitter::delete_ROI(double ROI_bin)
   emit fitting_done();
 }
 
+void FormFitter::on_pushClearAll_clicked()
+{
+  if (!fit_data_ || busy_)
+    return;
+
+  fit_data_->clear_all_ROIs();
+  toggle_push(false);
+  updateData();
+
+  emit data_changed();
+  emit fitting_done();
+}
+
 void FormFitter::make_range(double energy)
 {
   if (!fit_data_ || busy_)
@@ -384,12 +397,12 @@ void FormFitter::fitting_complete() {
 void FormFitter::toggle_push(bool busy)
 {
   busy_ = busy;
-  //  if (fit_data_ == nullptr)
-  //    return;
+  bool hasdata = (fit_data_ && fit_data_->region_count());
 
   ui->pushStopFitter->setEnabled(busy_);
   ui->pushFindPeaks->setEnabled(!busy_);
   ui->pushSettings->setEnabled(!busy_);
+  ui->pushClearAll->setEnabled(!busy_ && hasdata);
   ui->labelMovie->setVisible(busy_);
   ui->plot->set_busy(busy);
 
@@ -488,3 +501,5 @@ void FormFitter::peak_info(double bin)
     emit fitting_done();
   }
 }
+
+

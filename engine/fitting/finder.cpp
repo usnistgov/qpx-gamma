@@ -142,20 +142,33 @@ void Finder::setFit(const std::vector<double> &x_fit,
 //  }
 }
 
-void Finder::calc_kon() {
+void Finder::calc_kon()
+{
   fw_theoretical_nrg.clear();
   fw_theoretical_bin.clear();
-  if (settings_.cali_fwhm_.valid() && settings_.cali_nrg_.valid()) {
-    for (size_t i=0; i < x_.size(); ++i) {
-      double nrg = settings_.cali_nrg_.transform(x_[i], settings_.bits_);
-      fw_theoretical_nrg.push_back(nrg);
+
+//  DBG << "Kon calc " << x_.front() << "-"  << x_.back();
+
+  /*if (settings_.cali_fwhm_.valid() && settings_.cali_nrg_.valid())
+  {
+    for (size_t i=0; i < x_.size(); ++i)
+    {
+      double nrg = settings_.bin_to_nrg(x_[i]);
       double fw = settings_.cali_fwhm_.transform(nrg);
-      double L = settings_.cali_nrg_.inverse_transform(nrg - fw/2, settings_.bits_);
-      double R = settings_.cali_nrg_.inverse_transform(nrg + fw/2, settings_.bits_);
+      double L = settings_.nrg_to_bin(nrg - fw/2);
+      double R = settings_.nrg_to_bin(nrg + fw/2);
       double wchan = R-L;
+
+      if (!std::isfinite(fw))
+      {
+        DBG << "Kon " << x_[i] << "->" << nrg << "  fw=" << fw
+            << " L=" << L << " R=" << R << " wchan=" << wchan;
+      }
+
+      fw_theoretical_nrg.push_back(nrg);
       fw_theoretical_bin.push_back(wchan);
     }
-  }
+  }*/
 
   uint16_t width = settings_.KON_width;
 
@@ -163,7 +176,8 @@ void Finder::calc_kon() {
     width = 2;
 
   double sigma = settings_.KON_sigma_spectrum;
-  if (y_resid_ != y_) {
+  if (y_resid_ != y_)
+  {
 //    DBG << "<Finder> Using sigma resid";
     sigma = settings_.KON_sigma_resid;
   }
@@ -175,14 +189,17 @@ void Finder::calc_kon() {
   int end = x_.size() - 1 - 2 * width;
   int shift = width / 2;
 
-  if (!fw_theoretical_bin.empty()) {
+  if (!fw_theoretical_bin.empty())
+  {
     for (size_t i=0; i < fw_theoretical_bin.size(); ++i)
-      if (ceil(fw_theoretical_bin[i]) < i) {
+      if (ceil(fw_theoretical_bin[i]) < i)
+      {
         start = i;
         break;
       }
     for (int i=fw_theoretical_bin.size() -1 ; i >= 0; --i)
-      if (2 * ceil(fw_theoretical_bin[i]) + i + 1 < fw_theoretical_bin.size()) {
+      if (2 * ceil(fw_theoretical_bin[i]) + i + 1 < fw_theoretical_bin.size())
+      {
         end = i;
         break;
       }
@@ -193,9 +210,10 @@ void Finder::calc_kon() {
   x_conv.resize(y_resid_.size(), 0);
   prelim.clear();
 
-  for (int j = start; j < end; ++j) {
-
-    if (!fw_theoretical_bin.empty()) {
+  for (int j = start; j < end; ++j)
+  {
+    if (!fw_theoretical_bin.empty())
+    {
       width = floor(fw_theoretical_bin[j]);
       shift = width / 2;
     }
@@ -213,11 +231,11 @@ void Finder::calc_kon() {
     if (x_conv[j + shift] > sigma)
       prelim.push_back(j + shift);
   }
-
 }
 
 
-void Finder::find_peaks() {
+void Finder::find_peaks()
+{
   calc_kon();
   filtered.clear();
   lefts.clear();

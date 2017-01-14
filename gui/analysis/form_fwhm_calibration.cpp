@@ -341,7 +341,7 @@ void FormFwhmCalibration::fit_calibration()
 //  SqrtPoly p;
   Polynomial p;
   for (int i=0; i <= ui->spinTerms->value(); ++i)
-    p.add_coeff(i, -50, 50, 0);
+    p.add_coeff(i, 0, 50, 0);
 
   p.fit(xx, yy, xx_sigma, yy_sigma);
 

@@ -4,12 +4,12 @@
 #ifndef XYLIB_UTIL_H_
 #define XYLIB_UTIL_H_
 
-#include <string>
-#include <vector>
-#include <stdexcept>
-#include <fstream>
 #include <cassert>
 #include <cmath>
+#include <cstring>  // memcpy
+#include <string>
+#include <vector>
+#include <fstream>
 
 #include "xylib.h"
 
@@ -33,7 +33,8 @@ std::string read_string(std::istream &f, unsigned len);
 template<typename T>
 T from_le(const char* p)
 {
-    T val = *reinterpret_cast<const T*>(p);
+    T val;
+    std::memcpy(&val, p, sizeof(val));
     le_to_host(&val, sizeof(val));
     return val;
 }

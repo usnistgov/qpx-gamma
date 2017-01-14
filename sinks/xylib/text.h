@@ -26,7 +26,9 @@ namespace xylib {
     class TextDataSet : public DataSet
     {
         OBLIGATORY_DATASET_MEMBERS(TextDataSet)
-        virtual bool is_valid_option(std::string const& t) const;
+    private:
+        void load_data_with_delim(std::istream &f, char line_delim,
+                                  std::string& buf);
     };
 
 } // namespace
