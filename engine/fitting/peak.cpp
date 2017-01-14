@@ -36,8 +36,8 @@ Peak::Peak(const Hypermet &hyp, const SUM4 &s4, const FitSettings &fs)
 
 void Peak::reconstruct(FitSettings fs)
 {
-  if (hypermet_.height().value.finite() && (hypermet_.height().value.value() > 0)) {
-    center_ = hypermet_.center().value;
+  if (hypermet_.height().value().finite() && (hypermet_.height().value().value() > 0)) {
+    center_ = hypermet_.center().value();
   }
   else
     center_ = sum4_.centroid();
@@ -54,16 +54,16 @@ void Peak::reconstruct(FitSettings fs)
   energy_ = UncertainDouble::from_double(energyval, 0.5 * (emax - emin));
   energy_.setSigFigs(center_.sigfigs());
 
-  if (hypermet_.width().value.finite())
+  if (hypermet_.width().value().finite())
   {
-    double L = hypermet_.center().value.value() - hypermet_.width().value.value() * sqrt(log(2));
-    double R = hypermet_.center().value.value() + hypermet_.width().value.value() * sqrt(log(2));
-    double dmax = (hypermet_.width().value.value() + hypermet_.width().value.uncertainty()) * sqrt(log(2));
-    double dmin = (hypermet_.width().value.value() - hypermet_.width().value.uncertainty()) * sqrt(log(2));
-    double Lmax = hypermet_.center().value.value() - dmax;
-    double Rmax = hypermet_.center().value.value() + dmax;
-    double Lmin = hypermet_.center().value.value() - dmin;
-    double Rmin = hypermet_.center().value.value() + dmin;
+    double L = hypermet_.center().value().value() - hypermet_.width().value().value() * sqrt(log(2));
+    double R = hypermet_.center().value().value() + hypermet_.width().value().value() * sqrt(log(2));
+    double dmax = (hypermet_.width().value().value() + hypermet_.width().value().uncertainty()) * sqrt(log(2));
+    double dmin = (hypermet_.width().value().value() - hypermet_.width().value().uncertainty()) * sqrt(log(2));
+    double Lmax = hypermet_.center().value().value() - dmax;
+    double Rmax = hypermet_.center().value().value() + dmax;
+    double Lmin = hypermet_.center().value().value() - dmin;
+    double Rmin = hypermet_.center().value().value() + dmin;
     double val = fs.cali_nrg_.transform(R, fs.bits_) - fs.cali_nrg_.transform(L, fs.bits_);
     double max = fs.cali_nrg_.transform(Rmax, fs.bits_) - fs.cali_nrg_.transform(Lmax, fs.bits_);
     double min = fs.cali_nrg_.transform(Rmin, fs.bits_) - fs.cali_nrg_.transform(Lmin, fs.bits_);
@@ -91,7 +91,7 @@ void Peak::reconstruct(FitSettings fs)
   if (live_seconds > 0) {
     cps_hyp_  = area_hyp_ / live_seconds;
     cps_sum4_ = area_sum4_ / live_seconds;
-//    if (hypermet_.height_.value.finite() && (hypermet_.height_.value.value() > 0))
+//    if (hypermet_.height_.value.finite() && (hypermet_.height_.value().value() > 0))
 //      cps_best = cps_hyp;
 //    else
       cps_best_ = cps_sum4_;
@@ -158,7 +158,7 @@ void Peak::to_xml(pugi::xml_node &root) const {
     s4.append_attribute("left").set_value(sum4_.left());
     s4.append_attribute("right").set_value(sum4_.right());
   }
-  if (hypermet_.height().value.value() > 0)
+  if (hypermet_.height().value().value() > 0)
     hypermet_.to_xml(node);
 }
 

@@ -67,10 +67,10 @@ FitSettings::FitSettings()
 
   , fitter_max_iter (3000)
 {
-  step_amplitude.enabled = true;
-  tail_amplitude.enabled = true;
-  Lskew_amplitude.enabled = true;
-  Rskew_amplitude.enabled = true;
+  step_amplitude.set_enabled(true);
+  tail_amplitude.set_enabled(true);
+  Lskew_amplitude.set_enabled(true);
+  Rskew_amplitude.set_enabled(true);
 }
 
 //bool FitSettings::gaussian_only()
@@ -167,7 +167,8 @@ void FitSettings::from_xml(const pugi::xml_node &node) {
     lateral_slack = node.child("Hypermet").attribute("lateral_slack").as_double();
     fitter_max_iter = node.child("Hypermet").attribute("fitter_max_iterations").as_uint();
     for (auto &q : node.child("Hypermet").children()) {
-      if (std::string(q.name()) == width_variable_bounds.xml_element_name()) {
+      if (std::string(q.name()) == width_variable_bounds.xml_element_name())
+      {
         FitParam param;
         param.from_xml(q);
         if (param.name() == width_variable_bounds.name())
@@ -217,4 +218,20 @@ double FitSettings::bin_to_nrg(double bin) const
 {
   return cali_nrg_.transform(bin, bits_);
 }
+
+double FitSettings::bin_to_width(double bin) const
+{
+  double nrg = bin_to_nrg(bin);
+  double fwhm = nrg_to_fwhm(nrg);
+  return (nrg_to_bin(nrg + fwhm/2.0) - nrg_to_bin(nrg - fwhm/2.0));
+}
+
+double FitSettings::nrg_to_fwhm(double energy) const
+{
+  if (cali_fwhm_.valid())
+    return cali_fwhm_.transform(energy);
+  else
+    return 1;
+}
+
 

@@ -36,21 +36,15 @@ unix {
 
 	 
 INCLUDEPATH += $$PWD \
-               $$PWD/spectrum \
-               $$PWD/spectrum/xylib \
                $$PWD/pugixml \
                $$PWD/math \
                /usr/include/eigen3
 
 SOURCES += $$files($$PWD/*.cpp) \
-           $$files($$PWD/spectrum/*.cpp) \
-           $$files($$PWD/spectrum/xylib/*.cpp) \
            $$files($$PWD/pugixml/*.cpp) \
            $$files($$PWD/math/*.cpp)
 
 HEADERS  += $$files($$PWD/*.h) \
-            $$files($$PWD/spectrum/*.h) \
-            $$files($$PWD/spectrum/xylib/*.h) \
             $$files($$PWD/pugixml/*.hpp) \
             $$files($$PWD/math/*.h)
 

@@ -25,7 +25,8 @@
 
 #include "coef_function.h"
 
-class LogInverse : public CoefFunction {
+class LogInverse : public CoefFunction
+{
 public:
   LogInverse() {}
   LogInverse(std::vector<double> coeffs, double uncert, double rsq) :
@@ -38,11 +39,7 @@ public:
   double eval(double x)  override;
   double derivative(double x) override;
 
-  std::string fityk_definition() override;
-#ifdef FITTER_ROOT_ENABLED
   std::string root_definition() override;
-#endif
-
 };
 
 #endif

@@ -27,9 +27,7 @@
 #include <map>
 #include "fit_param.h"
 
-#ifdef FITTER_ROOT_ENABLED
 #include "TF1.h"
-#endif
 
 class CoefFunction {
 public:
@@ -62,16 +60,7 @@ public:
            const std::vector<double> &x_sigma,
            const std::vector<double> &y_sigma);
 
-// Fityk emplementation
-  virtual std::string fityk_definition() = 0;
-  bool add_self(fityk::Fityk *f, int function_num = -1) const;
-  bool extract_params(fityk::Fityk* f, fityk::Func*);
-  void fit_fityk(const std::vector<double> &x,
-                 const std::vector<double> &y,
-                 const std::vector<double> &y_sigma);
 
-#ifdef FITTER_ROOT_ENABLED
-// Root implementation
   void fit_root(const std::vector<double> &x,
                 const std::vector<double> &y,
                 const std::vector<double> &x_sigma,
@@ -80,9 +69,6 @@ public:
   virtual std::string root_definition() = 0;
   void set_params(TF1* f, uint16_t start) const;
   void get_params(TF1* f, uint16_t start);
-
-#endif
-
 };
 
 #endif

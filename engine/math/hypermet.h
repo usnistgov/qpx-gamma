@@ -26,16 +26,13 @@
 #include <vector>
 #include <iostream>
 #include <numeric>
-#include "fityk.h"
 #include "polynomial.h"
 #include "calibration.h"
 #include "fit_settings.h"
 #include "gaussian.h"
 #include "xmlable.h"
 
-#ifdef FITTER_ROOT_ENABLED
 #include "TF1.h"
-#endif
 
 class Hypermet : public XMLable {
 public:
@@ -92,9 +89,6 @@ public:
   bool gaussian_only() const;
   Gaussian gaussian() const;
 
-  //Fityk dependency
-  static std::string fityk_definition();
-  bool extract_params(fityk::Fityk*, fityk::Func*);
 
   //XMLable dependency
   void to_xml(pugi::xml_node &node) const override;
@@ -108,21 +102,11 @@ private:
   tail_amplitude_, tail_slope_,
   step_amplitude_;
 
-  double rsq_;
-  bool user_modified_;
+  double rsq_ {0};
+  bool user_modified_ {false};
 
 
-  void fit_fityk(const std::vector<double> &x,
-                 const std::vector<double> &y);
 
-  static std::vector<Hypermet> fit_multi_fityk(const std::vector<double> &x,
-                                               const std::vector<double> &y,
-                                               std::vector<Hypermet> old,
-                                               Polynomial &background,
-                                               FitSettings settings
-                                               );
-
-#ifdef FITTER_ROOT_ENABLED
   void fit_root(const std::vector<double> &x,
                 const std::vector<double> &y);
 
@@ -147,9 +131,6 @@ private:
                                                       Polynomial &background,
                                                       FitSettings settings
                                                       );
-#endif
-
-
 
 };
 

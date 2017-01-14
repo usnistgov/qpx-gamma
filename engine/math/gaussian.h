@@ -27,7 +27,6 @@
 #include <iostream>
 #include <numeric>
 #include "polynomial.h"
-#include "fityk.h"
 #include "fit_settings.h"
 
 class Gaussian {
@@ -50,20 +49,9 @@ public:
   UncertainDouble area() const;
   
   FitParam height_, hwhm_, center_;
-  double rsq_;
+  double rsq_ {0};
 
-  static std::string fityk_definition();
-  bool extract_params(fityk::Fityk*, fityk::Func*);
-  void fit_fityk(const std::vector<double> &x, const std::vector<double> &y);
 
-  static std::vector<Gaussian> fit_multi_fityk(const std::vector<double> &x,
-                                               const std::vector<double> &y,
-                                               std::vector<Gaussian> old,
-                                               Polynomial &background,
-                                               FitSettings settings
-                                              );
-
-#ifdef FITTER_ROOT_ENABLED
   static std::string root_definition(uint16_t start = 0);
   static std::string root_definition(uint16_t a, uint16_t c, uint16_t w);
 
@@ -82,8 +70,6 @@ public:
                                                       std::vector<Gaussian> old,
                                                       Polynomial &background,
                                                       FitSettings settings);
-#endif
-
 
 };
 

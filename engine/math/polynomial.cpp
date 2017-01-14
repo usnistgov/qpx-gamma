@@ -27,11 +27,11 @@
 #include <numeric>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-#include "fityk.h"
 //#include "custom_logger.h"
 #include "qpx_util.h"
 
-std::string Polynomial::to_string() const {
+std::string Polynomial::to_string() const
+{
   std::string ret = type() + " = ";
   std::string vars;
   int i = 0;
@@ -53,17 +53,17 @@ std::string Polynomial::to_string() const {
   return ret;
 }
 
-std::string Polynomial::to_UTF8(int precision, bool with_rsq) {
-
+std::string Polynomial::to_UTF8(int precision, bool with_rsq)
+{
   std::string calib_eqn;
   int i = 0;
   for (auto &c : coeffs_) {
     if (i > 0)
       calib_eqn += " + ";
-    calib_eqn += to_str_precision(c.second.value.value(), precision);
+    calib_eqn += to_str_precision(c.second.value().value(), precision);
     if (c.first > 0) {
-      if (xoffset_.value.value())
-        calib_eqn += "(x-" + to_str_precision(xoffset_.value.value(), precision) + ")";
+      if (xoffset_.value().value())
+        calib_eqn += "(x-" + to_str_precision(xoffset_.value().value(), precision) + ")";
       else
         calib_eqn += "x";
     }
@@ -81,17 +81,18 @@ std::string Polynomial::to_UTF8(int precision, bool with_rsq) {
   return calib_eqn;
 }
 
-std::string Polynomial::to_markup(int precision, bool with_rsq) {
+std::string Polynomial::to_markup(int precision, bool with_rsq)
+{
   std::string calib_eqn;
 
   int i = 0;
   for (auto &c : coeffs_) {
     if (i > 0)
       calib_eqn += " + ";
-    calib_eqn += to_str_precision(c.second.value.value(), precision);
+    calib_eqn += to_str_precision(c.second.value().value(), precision);
     if (c.first > 0) {
-      if (xoffset_.value.value())
-        calib_eqn += "(x-" + to_str_precision(xoffset_.value.value(), precision) + ")";
+      if (xoffset_.value().value())
+        calib_eqn += "(x-" + to_str_precision(xoffset_.value().value(), precision) + ")";
       else
         calib_eqn += "x";
     }
@@ -109,29 +110,34 @@ std::string Polynomial::to_markup(int precision, bool with_rsq) {
 }
 
 
-double Polynomial::eval(double x) {
-  double x_adjusted = x - xoffset_.value.value();
+double Polynomial::eval(double x)
+{
+  double x_adjusted = x - xoffset_.value().value();
   double result = 0.0;
   for (auto &c : coeffs_)
-    result += c.second.value.value() * pow(x_adjusted, c.first);
+    result += c.second.value().value() * pow(x_adjusted, c.first);
   return result;
 }
 
 
-double Polynomial::derivative(double x) {
+double Polynomial::derivative(double x)
+{
   Polynomial new_poly;  // derivative not true if offset != 0
   new_poly.xoffset_ = xoffset_;
 
   for (auto &c : coeffs_) {
     if (c.first != 0) {
-      new_poly.add_coeff(c.first - 1, c.second.lbound * c.first, c.second.ubound * c.first, c.second.value.value() * c.first);
+      new_poly.add_coeff(c.first - 1,
+                         c.second.lower() * c.first,
+                         c.second.upper() * c.first,
+                         c.second.value().value() * c.first);
     }
   }
-
   return new_poly.eval(x);
 }
 
-void Polynomial::to_xml(pugi::xml_node &root) const {
+void Polynomial::to_xml(pugi::xml_node &root) const
+{
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
   node.append_attribute("rsq").set_value(to_max_precision(rsq_).c_str());
@@ -149,7 +155,8 @@ void Polynomial::to_xml(pugi::xml_node &root) const {
 }
 
 
-void Polynomial::from_xml(const pugi::xml_node &node) {
+void Polynomial::from_xml(const pugi::xml_node &node)
+{
   coeffs_.clear();
 
   rsq_ = node.attribute("rsq").as_double(0);
@@ -169,35 +176,6 @@ void Polynomial::from_xml(const pugi::xml_node &node) {
   }
 }
 
-
-//Fityk
-std::string Polynomial::fityk_definition()
-{
-  std::string declaration = "define " + type() + "(";
-  std::string definition  = " = ";
-  int i = 0;
-  for (auto &c : coeffs_)
-  {
-    if (i > 0)
-    {
-      declaration += ", ";
-      definition += " + ";
-    }
-    declaration += c.second.name();
-    definition  += c.second.name();
-    if (c.first > 0)
-      definition += "*xx";
-    if (c.first > 1)
-      definition += "^" + std::to_string(c.first);
-    i++;
-  }
-  declaration += ")";
-  definition  += " where xx = (x - " + std::to_string(xoffset_.value.value()) + ")";
-
-  return declaration + definition;
-}
-
-#ifdef FITTER_ROOT_ENABLED
 std::string Polynomial::root_definition()
 {
   std::string definition;
@@ -210,8 +188,8 @@ std::string Polynomial::root_definition()
     if (c.first > 0)
     {
       definition += "*";
-      if (xoffset_.value.value())
-        definition += "(x-" + std::to_string(xoffset_.value.value()) + ")";
+      if (xoffset_.value().value())
+        definition += "(x-" + std::to_string(xoffset_.value().value()) + ")";
       else
         definition += "x";
     }
@@ -221,5 +199,3 @@ std::string Polynomial::root_definition()
   }
   return definition;
 }
-#endif
-

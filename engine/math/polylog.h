@@ -25,7 +25,8 @@
 
 #include "coef_function.h"
 
-class PolyLog : public CoefFunction {
+class PolyLog : public CoefFunction
+{
 public:
   PolyLog() {}
   PolyLog(std::vector<double> coeffs, double uncert, double rsq) :
@@ -38,12 +39,7 @@ public:
   double eval(double x)  override;
   double derivative(double x) override;
 
-  std::string fityk_definition() override;
-#ifdef FITTER_ROOT_ENABLED
   std::string root_definition() override;
-#endif
-
-
 };
 
 #endif

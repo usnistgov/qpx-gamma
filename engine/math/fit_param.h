@@ -23,89 +23,62 @@
 #ifndef FIT_PARAM_H
 #define FIT_PARAM_H
 
-#include "fityk.h"
 #include <string>
 #include <limits>
 #include "xmlable.h"
 #include "UncertainDouble.h"
 
-#ifdef FITTER_ROOT_ENABLED
 #include "TF1.h"
-#endif
 
 class FitParam : public XMLable
 {
-
 public:
-  FitParam() :
-    FitParam("", std::numeric_limits<double>::quiet_NaN())
-  {}
+  FitParam();
+  FitParam(std::string name, double v);
+  FitParam(std::string name, double v, double lower, double upper);
 
-  FitParam(std::string name, double v) :
-    FitParam(name, v,
-             std::numeric_limits<double>::min(),
-             std::numeric_limits<double>::max())
-  {}
-
-  FitParam(std::string name, double v, double lower, double upper) :
-    name_(name),
-    value(UncertainDouble::from_double(v, std::numeric_limits<double>::quiet_NaN())),
-    lbound(lower),
-    ubound(upper),
-    enabled(true),
-    fixed(false)
-  {}
+  void set_name(std::string n);
+  void set_value(UncertainDouble v);
+  void set(const FitParam& other);
+  void set(double min, double max, double val);
+  void preset_bounds(double min, double max);
 
   FitParam enforce_policy();
 
   bool same_bounds_and_policy(const FitParam &other) const;
 
-  FitParam operator ^ (const FitParam &other) const;
-  bool operator % (const FitParam &other) const;
-  bool operator == (const FitParam &other) const {return value == other.value;}
-  bool operator < (const FitParam &other) const {return value < other.value;}
+  FitParam merge(const FitParam &other) const; //deprecate
+  bool operator == (const FitParam &other) const {return value_ == other.value_;}
+  bool operator < (const FitParam &other) const {return value_ < other.value_;}
+  bool almost(const FitParam &other) const;
 
-  std::string name() const {return name_;}
+  std::string name() const;
+  UncertainDouble value() const;
+  double lower() const;
+  double upper() const;
+  bool enabled() const;
+  bool fixed() const;
+
+  void set_enabled(bool e);
 
   std::string to_string() const;
-//  std::string val_uncert(uint16_t precision) const;
-//  std::string err(uint16_t precision) const;
-//  double err() const;
-
 
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;
   std::string xml_element_name() const override {return "FitParam";}
 
-
-  UncertainDouble value;
-  double lbound, ubound;
-  bool enabled, fixed;
+//ROOT fitter
+  void set(TF1* f, uint16_t num) const;
+  void get(TF1* f, uint16_t num);
 
 private:
   std::string name_;
 
-//Fityk implementation
-
-public:
-  std::string fityk_name(int function_num) const;
-  std::string def_bounds() const;
-  std::string def_var(int function_num = -1) const;
-  bool extract(fityk::Fityk* f, fityk::Func* func);
-
-#ifdef FITTER_ROOT_ENABLED
-  void set(TF1* f, uint16_t num) const;
-  void get(TF1* f, uint16_t num);
-#endif
-
-private:
-  double get_err(fityk::Fityk* f,
-                 std::string funcname);
-
-
-// Ceres implementation
-
-
+  UncertainDouble value_;
+  double lower_ {std::numeric_limits<double>::min()};
+  double upper_ {std::numeric_limits<double>::max()};
+  bool enabled_ {true};
+  bool fixed_ {false};
 };
 
 #endif

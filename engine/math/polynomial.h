@@ -26,7 +26,8 @@
 #include "coef_function.h"
 #include "xmlable.h"
 
-class Polynomial : public CoefFunction, public XMLable {
+class Polynomial : public CoefFunction, public XMLable
+{
 public:
   Polynomial() {}
   Polynomial(std::vector<double> coeffs, double uncert, double rsq) :
@@ -43,11 +44,7 @@ public:
   void from_xml(const pugi::xml_node &node) override;
   std::string xml_element_name() const override {return "Polynomial";}
 
-  std::string fityk_definition() override;
-#ifdef FITTER_ROOT_ENABLED
   std::string root_definition() override;
-#endif
-
 };
 
 #endif

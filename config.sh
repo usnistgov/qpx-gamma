@@ -12,8 +12,7 @@ pixie4="off"
 hv8="off"
 vme="off"
 parser_evt="off"
-fitter_root="off"
-nexus="off"
+hdf5="off"
 
 if [ ! -f config.pri ]; then
   parser_raw="on"
@@ -37,11 +36,8 @@ else
   if grep -q parser_evt config.pri; then 
     parser_evt="on" 
   fi
-  if grep -q fitter_root config.pri; then
-    fitter_root="on"
-  fi
-  if grep -q nexus config.pri; then 
-    nexus="on" 
+  if grep -q hdf5 config.pri; then 
+    hdf5="on" 
   fi
 fi
 
@@ -53,8 +49,7 @@ options=(
          4 "Radiation Technologies HV-8" "$hv8"
          5 "VME (Wiener, Mesytec, Iseg)" "$vme"
          6 "Parser for NSCL *.evt" "$parser_evt"
-         7 "root solver (fitter, experimental)" "$fitter_root"
-         8 "NeXus (experimental)" "$nexus"
+         7 "HDF5 (experimental)" "$hdf5"
         )
 choices=$("${cmd[@]}" "${options[@]}" 2>&1 >/dev/tty)
 
@@ -94,23 +89,12 @@ do
             text="${text} parser_evt"
             ;;
         7)
-            text="${text} fitter_root"
-            sudo apt-get install cmake
-            ;;
-        8)
-            text="${text} nexus"
-
+            text="${text} hdf5"
             ;;
     esac
 done
 
 echo $text > config.pri
-
-PKG_OK=$(dpkg-query -W --showformat='${Status}\n' libnlopt-dev|grep "install ok installed")
-if [ "" == "$PKG_OK" ]; then
-  echo "Installing libnlopt"
-  sudo apt-get --yes install libnlopt-dev
-fi
 
 echo "Preparing makefiles..."
 ./prep.sh

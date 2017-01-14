@@ -62,6 +62,10 @@ unix {
     QMAKE_CXXFLAGS += -stdlib=libc++ -Wno-c++11-narrowing
     QMAKE_CLEAN += $$files(*.app)
   }
+
+  DEFINES += "FITTER_ROOT_ENABLED"
+  LIBS += $$system(root-config --glibs)
+  INCLUDEPATH += $$system(root-config --incdir)
 }
 
 android {
@@ -86,12 +90,6 @@ win32 {
 
 !include( $$PWD/sinks/sinks.pri ) {
   error( "Couldn't find the sinks.pri file!" )
-}
-
-contains( DAQ_SOURCES, fitter_root ) {
-  DEFINES += "FITTER_ROOT_ENABLED"
-  LIBS += $$system(root-config --glibs)
-  INCLUDEPATH += $$system(root-config --incdir)
 }
 
 contains( DAQ_SOURCES, nexus ) {

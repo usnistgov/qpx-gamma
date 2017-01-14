@@ -134,10 +134,10 @@ bool ROI::auto_fit(boost::atomic<bool>& interruptor) {
       gaussian.fit(x_pk, y_pk);
 
       if (
-          gaussian.height_.value.finite() && (gaussian.height_.value.value() > 0) &&
-          gaussian.hwhm_.value.finite() && (gaussian.hwhm_.value.value() > 0) &&
-          (finder_.x_[finder_.lefts[i]] < gaussian.center_.value.value()) &&
-          (gaussian.center_.value.value() < finder_.x_[finder_.rights[i]])
+          gaussian.height_.value().finite() && (gaussian.height_.value().value() > 0) &&
+          gaussian.hwhm_.value().finite() && (gaussian.hwhm_.value().value() > 0) &&
+          (finder_.x_[finder_.lefts[i]] < gaussian.center_.value().value()) &&
+          (gaussian.center_.value().value() < finder_.x_[finder_.rights[i]])
           )
       {
         Peak fitted(Hypermet(gaussian, finder_.settings_), SUM4(), finder_.settings_);
@@ -212,11 +212,11 @@ bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint
       gaussian.fit(x_pk, y_pk);
       bool too_close = false;
 
-      double lateral_slack = finder_.settings_.resid_too_close * gaussian.hwhm_.value.value() * 2;
+      double lateral_slack = finder_.settings_.resid_too_close * gaussian.hwhm_.value().value() * 2;
       for (auto &p : peaks_)
       {
-        if ((p.second.center().value() > (gaussian.center_.value.value() - lateral_slack))
-            && (p.second.center().value() < (gaussian.center_.value.value() + lateral_slack)))
+        if ((p.second.center().value() > (gaussian.center_.value().value() - lateral_slack))
+            && (p.second.center().value() < (gaussian.center_.value().value() + lateral_slack)))
           too_close = true;
       }
 
@@ -224,11 +224,11 @@ bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint
       //        DBG << "Too close at " << settings_.cali_nrg_.transform(gaussian.center_, settings_.bits_);
 
       if ( !too_close &&
-           gaussian.height_.value.finite() && (gaussian.height_.value.value() > 0) &&
-           gaussian.hwhm_.value.finite() && (gaussian.hwhm_.value.value() > 0) &&
-           (finder_.x_[finder_.lefts[j]] < gaussian.center_.value.value()) &&
-           (gaussian.center_.value.value() < finder_.x_[finder_.rights[j]]) &&
-           (gaussian.height_.value.value() > finder_.settings_.resid_min_amplitude) &&
+           gaussian.height_.value().finite() && (gaussian.height_.value().value() > 0) &&
+           gaussian.hwhm_.value().finite() && (gaussian.hwhm_.value().value() > 0) &&
+           (finder_.x_[finder_.lefts[j]] < gaussian.center_.value().value()) &&
+           (gaussian.center_.value().value() < finder_.x_[finder_.rights[j]]) &&
+           (gaussian.height_.value().value() > finder_.settings_.resid_min_amplitude) &&
            (gaussian.area().value() > biggest)
            )
       {
@@ -259,10 +259,10 @@ bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint
   gaussian.fit(x_pk, y_pk);
 
   if (
-      gaussian.height_.value.finite() && (gaussian.height_.value.value() > 0) &&
-      gaussian.hwhm_.value.finite() && (gaussian.hwhm_.value.value() > 0) &&
-      (finder_.x_[finder_.lefts[target_peak]] < gaussian.center_.value.value()) &&
-      (gaussian.center_.value.value() < finder_.x_[finder_.rights[target_peak]])
+      gaussian.height_.value().finite() && (gaussian.height_.value().value() > 0) &&
+      gaussian.hwhm_.value().finite() && (gaussian.hwhm_.value().value() > 0) &&
+      (finder_.x_[finder_.lefts[target_peak]] < gaussian.center_.value().value()) &&
+      (gaussian.center_.value().value() < finder_.x_[finder_.rights[target_peak]])
       )
   {
     Peak fitted(Hypermet(gaussian, finder_.settings_), SUM4(), finder_.settings_);
@@ -562,7 +562,7 @@ bool ROI::rebuild_as_hypermet(boost::atomic<bool>& interruptor)
 
   std::vector<Hypermet> old_hype;
   for (auto &q : peaks_) {
-    if (q.second.hypermet().height().value.value())
+    if (q.second.hypermet().height().value().value())
       old_hype.push_back(q.second.hypermet());
     else if (q.second.sum4().peak_width())
     {
@@ -584,9 +584,9 @@ bool ROI::rebuild_as_hypermet(boost::atomic<bool>& interruptor)
                                                    finder_.settings_);
 
   for (size_t i=0; i < hype.size(); ++i) {
-    double edge =  hype[i].width().value.value() * sqrt(log(2)) * 3; //use const from settings
-    uint32_t edgeL = finder_.find_index(hype[i].center().value.value() - edge);
-    uint32_t edgeR = finder_.find_index(hype[i].center().value.value() + edge);
+    double edge =  hype[i].width().value().value() * sqrt(log(2)) * 3; //use const from settings
+    uint32_t edgeL = finder_.find_index(hype[i].center().value().value() - edge);
+    uint32_t edgeR = finder_.find_index(hype[i].center().value().value() + edge);
     Peak one(hype[i],
              SUM4(finder_.x_, finder_.y_, edgeL, edgeR, sum4back, LB_, RB_),
              finder_.settings_);
@@ -607,7 +607,7 @@ bool ROI::rebuild_as_gaussian(boost::atomic<bool>& interruptor)
   std::vector<Gaussian> old_gauss;
   for (auto &q : peaks_)
   {
-    if (q.second.hypermet().height().value.value())
+    if (q.second.hypermet().height().value().value())
       old_gauss.push_back(q.second.hypermet().gaussian());
     else if (q.second.sum4().peak_width())
     {
@@ -630,9 +630,9 @@ bool ROI::rebuild_as_gaussian(boost::atomic<bool>& interruptor)
 
   for (size_t i=0; i < gauss.size(); ++i)
   {
-    double edge =  gauss[i].hwhm_.value.value() * 3; //use const from settings
-    uint32_t edgeL = finder_.find_index(gauss[i].center_.value.value() - edge);
-    uint32_t edgeR = finder_.find_index(gauss[i].center_.value.value() + edge);
+    double edge =  gauss[i].hwhm_.value().value() * 3; //use const from settings
+    uint32_t edgeL = finder_.find_index(gauss[i].center_.value().value() - edge);
+    uint32_t edgeR = finder_.find_index(gauss[i].center_.value().value() + edge);
     Peak one(Hypermet(gauss[i], finder_.settings_),
              SUM4(finder_.x_, finder_.y_, edgeL, edgeR, sum4back, LB_, RB_),
              finder_.settings_);
@@ -790,13 +790,13 @@ void ROI::init_background() {
   //by default, linear
   double run = RB_.left() - LB_.right();
 
-  background_.xoffset_.value.setValue(LB_.left());
+  background_.xoffset_.preset_bounds(LB_.left(), LB_.left());
   background_.add_coeff(0, LB_.min(), LB_.max(), LB_.average());
 
   double minslope = 0, maxslope = 0;
   if (LB_.average() < RB_.average()) {
     run = RB_.right() - LB_.right();
-    background_.xoffset_.value.setValue(LB_.right());
+    background_.xoffset_.preset_bounds(LB_.right(), LB_.right());
     minslope = (RB_.min() - LB_.max()) / (RB_.right() - LB_.left());
     maxslope = (RB_.max() - LB_.min()) / (RB_.left() - LB_.right());
   }
@@ -804,7 +804,7 @@ void ROI::init_background() {
 
   if (RB_.average() < LB_.average()) {
     run = RB_.left() - LB_.left();
-    background_.xoffset_.value.setValue(LB_.left());
+    background_.xoffset_.preset_bounds(LB_.left(), LB_.left());
     minslope = (RB_.min() - LB_.max()) / (RB_.left() - LB_.right());
     maxslope = (RB_.max() - LB_.min()) / (RB_.right() - LB_.left());
   }
@@ -818,7 +818,7 @@ Polynomial  ROI::sum4_background() {
   if (finder_.x_.empty())
     return sum4back;
   double run = RB_.left() - LB_.right();
-  sum4back.xoffset_.value.setValue(LB_.right());
+  sum4back.xoffset_.preset_bounds(LB_.right(), LB_.right());
   double s4base = LB_.average();
   double s4slope = (RB_.average() - LB_.average()) / run;
   sum4back.add_coeff(0, s4base, s4base, s4base);
@@ -904,7 +904,7 @@ void ROI::to_xml(pugi::xml_node &root, const Finder &parent_finder) const
           s4.append_attribute("left").set_value(p.second.sum4().left());
           s4.append_attribute("right").set_value(p.second.sum4().right());
         }
-        if (p.second.hypermet().height().value.value() > 0)
+        if (p.second.hypermet().height().value().value() > 0)
           p.second.hypermet().to_xml(pk);
       }
     }

@@ -28,7 +28,8 @@
 #include <numeric>
 
 
-class Effit {
+class Effit
+{
 public:
   Effit() : xoffset_(0.0), rsq(-1), A(0), B(1), C(0), D(0), E(0), F(0), G(20) {}
   Effit(std::vector<double> coeffs, double center = 0);

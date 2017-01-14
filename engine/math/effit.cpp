@@ -26,7 +26,6 @@
 #include <iomanip>
 #include <numeric>
 #include <boost/algorithm/string.hpp>
-#include "fityk.h"
 #include "custom_logger.h"
 #include "qpx_util.h"
 
@@ -34,7 +33,8 @@ Effit::Effit(std::vector<double> coeffs, double center)
   :Effit()
 {
   xoffset_ = center;
-  if (coeffs.size() > 6) {
+  if (coeffs.size() > 6)
+  {
     A = coeffs[0];
     B = coeffs[1];
     C = coeffs[2];
@@ -53,28 +53,11 @@ Effit::Effit(std::vector<double> &x, std::vector<double> &y, double center)
   fit(x, y, center);
 }
 
-void Effit::fit(std::vector<double> &x, std::vector<double> &y, double center) {
-
+void Effit::fit(std::vector<double> &x, std::vector<double> &y, double center)
+{
   xoffset_ = center;
   if (x.size() != y.size())
     return;
-
-  std::vector<double> x_c, yy, sigma;
-  sigma.resize(x.size(), 1);
-  
-  for (auto &q : x)
-    x_c.push_back(q - center);
-
-  for (auto &q : y)
-    yy.push_back(log(q));
-
-
-  fityk::Fityk *f = new fityk::Fityk;
-  f->redir_messages(NULL);
-
-  f->load_data(0, x_c, yy, sigma);
-
-  bool success = true;
 
 //  std::string definition = "define Effit(a=~0,b=~1,c=~0,d=~0,e=~0,f=~0,g=~20) = ((a + b*xa + c*(xa^2))^(-g) + (d + e*xb + f*(xb^2))^(-g))^(1-(1/g)) where xa=ln(x/100), xb=ln(x/1000)";
 //  std::string definition = "define Effit(a=~0,d=~0,e=~0,f=~0) = ((a + xa)^(-20) + (d + e*xb + f*(xb^2))^(-20))^(-0.05) where xa=ln(x/100), xb=ln(x/1000)";
@@ -82,50 +65,13 @@ void Effit::fit(std::vector<double> &x, std::vector<double> &y, double center) {
 
   DBG << "Definition: " << definition;
 
-  try {
-    f->execute(definition);
-  } catch ( ... ) {
-    success = false;
-    DBG << "failed to define Effit";
-  }
-
-  try {
-    f->execute("guess Effit");
-  }
-  catch ( ... ) {
-    success = false;
-    DBG << "cannot guess Effit";
-  }
-
-  try {
-    f->execute("fit");
-  }
-  catch ( ... ) {
-    success = false;
-    DBG << "cannot fit Effit";
-  }
-
-  if (success) {
-    fityk::Func* lastfn = f->all_functions().back();
-//    A = lastfn->get_param_value("a");
-  //  B = lastfn->get_param_value("b");
-//    C = lastfn->get_param_value("c");
-    D = lastfn->get_param_value("d");
-    E = lastfn->get_param_value("e");
-    F = lastfn->get_param_value("f");
-//    G = lastfn->get_param_value("g");
-    rsq = f->get_rsquared(0);
-
-    if (G==0)
+  if (G==0)
       G = 20;
-
-  }
-
-  delete f;
 }
 
 
-double Effit::evaluate(double x) {
+double Effit::evaluate(double x)
+{
   double xa = log((x - xoffset_)/100);
   double xb = log((x - xoffset_)/1000);
 //   x= ((A + B*ln(x/100.0) + C*(ln(x/100.0)^2))^(-G) + (D + E*ln(x/1000.0) + F*(ln(x/1000.0)^2))^(1-G))^(1-(1/G))
@@ -172,14 +118,16 @@ double Effit::inverse_evaluate(double y, double e) {
 */
 
 
-std::vector<double> Effit::evaluate_array(std::vector<double> x) {
+std::vector<double> Effit::evaluate_array(std::vector<double> x)
+{
   std::vector<double> y;
   for (auto &q : x)
     y.push_back(evaluate(q));
   return y;
 }
 
-std::string Effit::to_string() {
+std::string Effit::to_string()
+{
   std::stringstream ss;
   //ss << "exp( ((A + B*x + C*x^2)^-G + (D + E*y + F*y^2)^-G)^(-1/G) )";
   ss << "A=" << A;
@@ -192,7 +140,8 @@ std::string Effit::to_string() {
   return ss.str();
 }
 
-std::string Effit::to_UTF8(int precision, bool with_rsq) {
+std::string Effit::to_UTF8(int precision, bool with_rsq)
+{
   std::stringstream ss;
   //ss << "exp( ((A + B*x + C*x^2)^-G + (D + E*y + F*y^2)^-G)^(-1/G) )";
   ss << "A=" << A;
@@ -205,7 +154,8 @@ std::string Effit::to_UTF8(int precision, bool with_rsq) {
   return ss.str();
 }
 
-std::string Effit::to_markup() {
+std::string Effit::to_markup()
+{
   std::stringstream ss;
   //ss << "exp( ((A + B*x + C*x^2)^-G + (D + E*y + F*y^2)^-G)^(-1/G) )";
   ss << "A=" << A;
@@ -218,7 +168,8 @@ std::string Effit::to_markup() {
   return ss.str();
 }
 
-std::string Effit::coef_to_string() const{
+std::string Effit::coef_to_string() const
+{
   std::stringstream ss;
   //ss << "exp( ((A + B*x + C*x^2)^-G + (D + E*y + F*y^2)^-G)^(-1/G) )";
   ss << A;
@@ -232,7 +183,8 @@ std::string Effit::coef_to_string() const{
   return boost::algorithm::trim_copy(ss.str());
 }
 
-std::vector<double> Effit::coeffs() {
+std::vector<double> Effit::coeffs()
+{
   std::vector<double> coeffs(7);
   coeffs[0] = A;
   coeffs[1] = B;
@@ -244,11 +196,13 @@ std::vector<double> Effit::coeffs() {
   return coeffs;
 }
 
-void Effit::coef_from_string(std::string coefs) {
+void Effit::coef_from_string(std::string coefs)
+{
   std::stringstream dss(boost::algorithm::trim_copy(coefs));
 
   std::list<double> templist; double coef;
-  while (dss.rdbuf()->in_avail()) {
+  while (dss.rdbuf()->in_avail())
+  {
     dss >> coef;
     templist.push_back(coef);
   }
@@ -256,12 +210,14 @@ void Effit::coef_from_string(std::string coefs) {
   std::vector<double> coeffs(templist.size());
 
   int i=0;
-  for (auto &q: templist) {
+  for (auto &q: templist)
+  {
     coeffs[i] = q;
     i++;
   }
 
-  if (coeffs.size() > 6) {
+  if (coeffs.size() > 6)
+  {
     A = coeffs[0];
     B = coeffs[1];
     C = coeffs[2];
@@ -272,5 +228,4 @@ void Effit::coef_from_string(std::string coefs) {
   }
   if (G==0)
     G = 20;
-
 }

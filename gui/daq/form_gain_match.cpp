@@ -23,7 +23,6 @@
 #include "form_gain_match.h"
 #include "ui_form_gain_match.h"
 #include "custom_logger.h"
-#include "fityk.h"
 #include "daq_sink_factory.h"
 #include <QSettings>
 
@@ -397,7 +396,7 @@ void FormGainMatch::do_post_processing() {
 
   std::vector<double> gains;
   std::vector<double> positions;
-  std::vector<double> position_sigmas;
+//  std::vector<double> position_sigmas;
 
   double latest_position = std::numeric_limits<double>::quiet_NaN();
 
@@ -406,7 +405,7 @@ void FormGainMatch::do_post_processing() {
     if (!std::isnan(q.dependent_variable)) {
       gains.push_back(q.independent_variable);
       positions.push_back(q.dependent_variable);
-      position_sigmas.push_back(q.dep_uncert);
+//      position_sigmas.push_back(q.dep_uncert);
 
       latest_position = q.dependent_variable;
     }
@@ -433,7 +432,8 @@ void FormGainMatch::do_post_processing() {
   response_function_.add_coeff(1, -50, 50, 1);
   if (gains.size() > 2)
     response_function_.add_coeff(2, -50, 50, 1);
-  response_function_.fit_fityk(gains, positions, position_sigmas);
+  response_function_.fit(gains, positions,
+                         std::vector<double>(), std::vector<double>());
   predicted = response_function_.eval_inverse(peak_ref_.center().value() /*, ui->doubleThreshold->value() / 4.0*/);
 
   DBG << "<FormGainMatch> Prediction " << predicted;

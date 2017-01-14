@@ -27,12 +27,12 @@
 #include <numeric>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-#include "fityk.h"
 #include "custom_logger.h"
 #include "qpx_util.h"
 
 
-std::string LogInverse::to_string() const {
+std::string LogInverse::to_string() const
+{
   std::string ret = type() + " = exp(";
   std::string vars;
   int i = 0;
@@ -54,17 +54,17 @@ std::string LogInverse::to_string() const {
   return ret;
 }
 
-std::string LogInverse::to_UTF8(int precision, bool with_rsq) {
-
+std::string LogInverse::to_UTF8(int precision, bool with_rsq)
+{
   std::string calib_eqn = "exp(";
   int i = 0;
   for (auto &c : coeffs_) {
     if (i > 0)
       calib_eqn += " + ";
-    calib_eqn += to_str_precision(c.second.value.value(), precision);
+    calib_eqn += to_str_precision(c.second.value().value(), precision);
     if (c.first > 0) {
-      if (xoffset_.value.value())
-        calib_eqn += "/(x-" + to_str_precision(xoffset_.value.value(), precision) + ")";
+      if (xoffset_.value().value())
+        calib_eqn += "/(x-" + to_str_precision(xoffset_.value().value(), precision) + ")";
       else
         calib_eqn += "/x";
     }
@@ -83,17 +83,18 @@ std::string LogInverse::to_UTF8(int precision, bool with_rsq) {
   return calib_eqn;
 }
 
-std::string LogInverse::to_markup(int precision, bool with_rsq) {
+std::string LogInverse::to_markup(int precision, bool with_rsq)
+{
   std::string calib_eqn = "exp(";
 
   int i = 0;
   for (auto &c : coeffs_) {
     if (i > 0)
       calib_eqn += " + ";
-    calib_eqn += to_str_precision(c.second.value.value(), precision);
+    calib_eqn += to_str_precision(c.second.value().value(), precision);
     if (c.first > 0) {
-      if (xoffset_.value.value())
-        calib_eqn += "1/(x-" + to_str_precision(xoffset_.value.value(), precision) + ")";
+      if (xoffset_.value().value())
+        calib_eqn += "1/(x-" + to_str_precision(xoffset_.value().value(), precision) + ")";
       else
         calib_eqn += "1/x";
     }
@@ -111,8 +112,9 @@ std::string LogInverse::to_markup(int precision, bool with_rsq) {
   return calib_eqn;
 }
 
-double LogInverse::eval(double x) {
-  double x_adjusted = (x - xoffset_.value.value());
+double LogInverse::eval(double x)
+{
+  double x_adjusted = (x - xoffset_.value().value());
   if (x_adjusted != 0)
     x_adjusted = 1.0/x_adjusted;
   else
@@ -120,40 +122,16 @@ double LogInverse::eval(double x) {
   double result = 0.0;
 
   for (auto &c : coeffs_)
-    result += c.second.value.value() * pow(x_adjusted, c.first);
+    result += c.second.value().value() * pow(x_adjusted, c.first);
 
   return exp(result);
 }
 
-double LogInverse::derivative(double x) {
+double LogInverse::derivative(double x)
+{
   return x;
 }
 
-std::string LogInverse::fityk_definition()
-{
-  std::string declaration = "define " + type() + "(";
-  std::string definition  = " = exp(";
-  int i = 0;
-  for (auto &c : coeffs_) {
-    if (i > 0) {
-      declaration += ", ";
-      definition += " + ";
-    }
-    declaration += c.second.name();
-    definition  += c.second.name();
-    if (c.first > 0)
-      definition += "*xx";
-    if (c.first > 1)
-      definition += "^" + std::to_string(c.first);
-    i++;
-  }
-  declaration += ")";
-  definition  += ") where xx = 1.0/(x - " + std::to_string(xoffset_.value.value()) + ")";
-
-  return declaration + definition;
-}
-
-#ifdef FITTER_ROOT_ENABLED
 std::string LogInverse::root_definition()
 {
   std::string definition = "TMath::Exp(";
@@ -166,8 +144,8 @@ std::string LogInverse::root_definition()
     if (c.first > 0)
     {
       definition += "*";
-      if (xoffset_.value.value())
-        definition += "1/(x-" + std::to_string(xoffset_.value.value()) + ")";
+      if (xoffset_.value().value())
+        definition += "1/(x-" + std::to_string(xoffset_.value().value()) + ")";
       else
         definition += "(1/x)";
     }
@@ -178,5 +156,3 @@ std::string LogInverse::root_definition()
   definition  += ")";
   return definition;
 }
-#endif
-

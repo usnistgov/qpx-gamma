@@ -72,8 +72,9 @@ std::set<double> WidgetFitterAutoselect::autoselect(const std::map<double, Qpx::
   {
     double maxheight = peaks.begin()->first;
     for (auto &p : peaks) {
-      if (p.second.hypermet().height().value.value() > maxheight) {
-        maxheight = p.second.hypermet().height().value.value();
+      if (p.second.hypermet().height().value().value() > maxheight)
+      {
+        maxheight = p.second.hypermet().height().value().value();
         selection = p.first;
       }
     }

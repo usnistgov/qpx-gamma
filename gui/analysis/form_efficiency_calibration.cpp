@@ -547,7 +547,7 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
 
 //  PolyLog p = PolyLog(xx, yy, ui->spinTerms->value());
 
-  std::vector<double> sigmas(yy.size(), 1);
+//  std::vector<double> sigmas(yy.size(), 1);
 
   PolyLog p;
   p.add_coeff(0, -50, 50, 1);
@@ -558,7 +558,7 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
       p.add_coeff(i, -50, 50, 0);
   }
 
-  p.fit_fityk(xx,yy,sigmas);
+  p.fit(xx, yy, std::vector<double>(), std::vector<double>());
 
   if (p.coeffs_.size()) {
     new_calibration_.type_ = "Efficiency";
@@ -627,15 +627,18 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
   QVector<SelectorItem> items = ui->spectrumSelector->items();
   std::vector<double> xx, yy;
 
-  for (auto &fit : peak_sets_) {
+  for (auto &fit : peak_sets_)
+  {
     bool visible = false;
 
     for (auto &i : items)
       if (i.visible && (fit.second.metadata_.get_attribute("name").value_text == i.text.toStdString()))
         visible = true;
 
-    if (visible) {
-      for (auto &q : fit.second.peaks()) {
+    if (visible)
+    {
+      for (auto &q : fit.second.peaks())
+      {
         //BROKEN
 
 //        if (!q.second.flagged)
@@ -647,26 +650,27 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
         xx.push_back(x);
         yy.push_back(y);
       }
-
     }
   }
 
 //  LogInverse p = LogInverse(xx, yy, ui->spinTerms->value());
 
-  std::vector<double> sigmas(yy.size(), 1);
+//  std::vector<double> sigmas(yy.size(), 1);
 
   LogInverse p;
   p.add_coeff(0, -50, 50, 1);
-  for (int i=1; i <= ui->spinTerms->value(); ++i) {
+  for (int i=1; i <= ui->spinTerms->value(); ++i)
+  {
     if (i==1)
       p.add_coeff(i, -50, 50, 1);
     else
       p.add_coeff(i, -50, 50, 0);
   }
 
-  p.fit_fityk(xx,yy,sigmas);
+  p.fit(xx, yy, std::vector<double>(), std::vector<double>());
 
-  if (p.coeffs_.size()) {
+  if (p.coeffs_.size())
+  {
     new_calibration_.type_ = "Efficiency";
     new_calibration_.bits_ = fit_data_.settings().bits_;
     new_calibration_.coefficients_ = p.coeffs();

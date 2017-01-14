@@ -21,7 +21,7 @@
 #-------------------------------------------------------------------------------
 
 unix {
-   LIBS += -lm -ldl -lz -lnlopt
+   LIBS += -lm -ldl -lz
 
   !mac {
     LIBS += -lboost_system
@@ -32,17 +32,12 @@ unix {
   }
 }
 
-INCLUDEPATH += $$PWD/fityk $$PWD
-
-DEFINES += "DISABLE_LUA" "HAVE_LIBNLOPT" "DISABLE_XYLIB"
-
 !CONFIG(debug, debug|release) {
    DEFINES += "NDEBUG"
 }
 
-SOURCES += $$files($$PWD/*.cpp) \
-           $$files($$PWD/fityk/*.cpp) \
-           $$files($$PWD/fityk/cmpfit/*.c)
+INCLUDEPATH += $$PWD
 
-HEADERS  += $$files($$PWD/*.h) \
-            $$files($$PWD/fityk/*.h)
+SOURCES += $$files($$PWD/*.cpp)
+
+HEADERS  += $$files($$PWD/*.h)

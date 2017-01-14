@@ -27,7 +27,8 @@
 #include "calibration.h"
 #include "xmlable.h"
 
-class FitSettings : public XMLable {
+class FitSettings : public XMLable
+{
 public:
   bool overriden;
 
@@ -81,6 +82,8 @@ public:
 
   double nrg_to_bin(double energy) const;
   double bin_to_nrg(double bin) const;
+  double bin_to_width(double bin) const;
+  double nrg_to_fwhm(double energy) const;
 
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;

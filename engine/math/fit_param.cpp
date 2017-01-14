@@ -27,163 +27,190 @@
 #include <numeric>
 #include "qpx_util.h"
 
-std::string FitParam::to_string() const {
-  std::string ret = name_ + " = " + value.to_string() +
-      " [" + boost::lexical_cast<std::string>(lbound) +
-       ":" + boost::lexical_cast<std::string>(ubound) + "]";
+FitParam::FitParam()
+  : FitParam("", std::numeric_limits<double>::quiet_NaN())
+{
+}
+
+FitParam::FitParam(std::string name, double v)
+  : FitParam(name, v,
+             std::numeric_limits<double>::min(),
+             std::numeric_limits<double>::max())
+{
+}
+
+FitParam::FitParam(std::string name, double v, double lower, double upper)
+  : name_(name)
+  , value_(UncertainDouble::from_double(v, std::numeric_limits<double>::quiet_NaN()))
+  , lower_(lower)
+  , upper_(upper)
+{
+}
+
+void FitParam::set_name(std::string n)
+{
+  name_ = n;
+}
+
+void FitParam::set_value(UncertainDouble v)
+{
+  value_ = v;
+}
+
+void FitParam::set(const FitParam& other)
+{
+  value_ = other.value_;
+  lower_ = other.lower_;
+  upper_ = other.upper_;
+  enabled_ = other.enabled_;
+  fixed_ = other.fixed_;
+}
+
+void FitParam::set(double min, double max, double val)
+{
+  lower_ = min;
+  upper_ = max;
+  if ((min <= val) && (val <= max))
+    value_.setValue(val);
+  else
+    value_.setValue((min + max)/2.0);
+}
+
+void FitParam::preset_bounds(double min, double max)
+{
+  lower_ = min;
+  upper_ = max;
+  value_.setValue((min + max)/2.0);
+}
+
+std::string FitParam::name() const
+{
+  return name_;
+}
+
+UncertainDouble FitParam::value() const
+{
+  return value_;
+}
+
+double FitParam::lower() const
+{
+  return lower_;
+}
+
+double FitParam::upper() const
+{
+  return upper_;
+}
+
+bool FitParam::enabled() const
+{
+  return enabled_;
+}
+
+bool FitParam::fixed() const
+{
+  return fixed_;
+}
+
+void FitParam::set_enabled(bool e)
+{
+  enabled_ = e;
+}
+
+FitParam FitParam::enforce_policy()
+{
+  FitParam ret = *this;
+  if (!ret.enabled_) {
+    ret.upper_ = ret.lower_;
+    ret.lower_ = 0;
+    ret.value_.setValue(ret.lower_);
+  } else if (ret.fixed_) {
+    ret.upper_ = ret.value_.value() + ret.lower_  * 0.01;
+    ret.lower_ = ret.value_.value() - ret.lower_  * 0.01;
+  }
   return ret;
 }
 
-//std::string FitParam::val_uncert(uint16_t precision) const
-//{
-//  std::stringstream ss;
-//  ss << std::setprecision( precision ) << val << " \u00B1 " << uncert;
-//  return ss.str();
-//}
-
-//double FitParam::err() const
-//{
-//  double ret = std::numeric_limits<double>::infinity();
-//  if (val != 0)
-//    ret = uncert / val * 100.0;
-//  return ret;
-//}
-
-//std::string FitParam::err(uint16_t precision) const
-//{
-//  std::stringstream ss;
-//  ss << std::setprecision( precision ) << err() << "%";
-//  return ss.str();
-//}
+std::string FitParam::to_string() const
+{
+  std::string ret = name_ + " = " + value_.to_string() +
+      " [" + boost::lexical_cast<std::string>(lower_) +
+      ":" + boost::lexical_cast<std::string>(upper_) + "]";
+  return ret;
+}
 
 bool FitParam::same_bounds_and_policy(const FitParam &other) const
 {
-  if (lbound != other.lbound)
+  if (lower_ != other.lower_)
     return false;
-  if (ubound != other.ubound)
+  if (upper_ != other.upper_)
     return false;
-  if (enabled != other.enabled)
+  if (enabled_ != other.enabled_)
     return false;
-  if (fixed != other.fixed)
+  if (fixed_ != other.fixed_)
     return false;
   return true;
 }
 
-FitParam FitParam::enforce_policy() {
-  FitParam ret = *this;
-  if (!ret.enabled) {
-    ret.ubound = ret.lbound;
-    ret.lbound = 0;
-    ret.value.setValue(ret.lbound);
-  } else if (ret.fixed) {
-    ret.ubound = ret.value.value() + ret.lbound  * 0.01;
-    ret.lbound = ret.value.value() - ret.lbound  * 0.01;
-  }
-  return ret;
-}
-
-FitParam FitParam::operator^(const FitParam &other) const
+FitParam FitParam::merge(const FitParam &other) const
 {
-  double avg = (value.value() + other.value.value()) * 0.5;
+  double avg = (value_.value() + other.value_.value()) * 0.5;
   double min = avg;
   double max = avg;
-  if (std::isfinite(value.uncertainty())) {
-    min = std::min(avg, value.value() - 0.5 * value.uncertainty());
-    max = std::max(avg, value.value() + 0.5 * value.uncertainty());
+  if (std::isfinite(value_.uncertainty()))
+  {
+    min = std::min(avg, value_.value() - 0.5 * value_.uncertainty());
+    max = std::max(avg, value_.value() + 0.5 * value_.uncertainty());
   }
-  if (std::isfinite(other.value.uncertainty())) {
-    min = std::min(avg, other.value.uncertainty() - 0.5 * other.value.uncertainty());
-    max = std::max(avg, other.value.uncertainty() + 0.5 * other.value.uncertainty());
+  if (std::isfinite(other.value_.uncertainty()))
+  {
+    min = std::min(avg, other.value_.uncertainty() - 0.5 * other.value_.uncertainty());
+    max = std::max(avg, other.value_.uncertainty() + 0.5 * other.value_.uncertainty());
   }
   FitParam ret;
-  ret.value = UncertainDouble::from_double(avg, max - min);
+  ret.value_ = UncertainDouble::from_double(avg, max - min);
   return ret;
 }
 
-bool FitParam::operator%(const FitParam &other) const
+bool FitParam::almost(const FitParam &other) const
 {
-  return value.almost(other.value);
+  return value_.almost(other.value_);
 }
 
-
-void FitParam::to_xml(pugi::xml_node &root) const {
+void FitParam::to_xml(pugi::xml_node &root) const
+{
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
   node.append_attribute("name").set_value(name_.c_str());
-  node.append_attribute("enabled").set_value(enabled);
-  node.append_attribute("fixed").set_value(fixed);
-  node.append_attribute("lbound").set_value(to_max_precision(lbound).c_str());
-  node.append_attribute("ubound").set_value(to_max_precision(ubound).c_str());
-  value.to_xml(node);
+  node.append_attribute("enabled_").set_value(enabled_);
+  node.append_attribute("fixed_").set_value(fixed_);
+  node.append_attribute("lower_").set_value(to_max_precision(lower_).c_str());
+  node.append_attribute("upper_").set_value(to_max_precision(upper_).c_str());
+  value_.to_xml(node);
 }
 
-void FitParam::from_xml(const pugi::xml_node &node) {
+void FitParam::from_xml(const pugi::xml_node &node)
+{
   name_ = std::string(node.attribute("name").value());
-  enabled = node.attribute("enabled").as_bool(true);
-  fixed = node.attribute("fixed").as_bool(false);
-  lbound = node.attribute("lbound").as_double(std::numeric_limits<double>::min());
-  ubound = node.attribute("ubound").as_double(std::numeric_limits<double>::max());
-  if (node.child(value.xml_element_name().c_str()))
-    value.from_xml(node.child(value.xml_element_name().c_str()));
+  enabled_ = node.attribute("enabled_").as_bool(true);
+  fixed_ = node.attribute("fixed_").as_bool(false);
+  lower_ = node.attribute("lower_").as_double(std::numeric_limits<double>::min());
+  upper_ = node.attribute("upper_").as_double(std::numeric_limits<double>::max());
+  if (node.child(value_.xml_element_name().c_str()))
+    value_.from_xml(node.child(value_.xml_element_name().c_str()));
 }
 
-//Fityk implementation
-
-std::string FitParam::fityk_name(int function_num) const {
-  std::string ret  = "$" + name_ + "_";
-  if (function_num > -1)
-    ret += boost::lexical_cast<std::string>(function_num);
-  return ret;
-}
-
-std::string FitParam::def_bounds() const {
-  std::string ret = "~";
-  ret += boost::lexical_cast<std::string>(value.value()) +
-         " [" + boost::lexical_cast<std::string>(lbound) +
-          ":" + boost::lexical_cast<std::string>(ubound) + "]";
-  return ret;
-}
-
-std::string FitParam::def_var(int function_num) const {
-  std::string ret  = fityk_name(function_num) + " = " + def_bounds();
-  return ret;
-}
-
-
-double FitParam::get_err(fityk::Fityk* f,
-                          std::string funcname)
+void FitParam::set(TF1* f, uint16_t num) const
 {
-  std::string command = "%" + funcname + "." + name_ + ".error";
-//  DBG << "<FitParam> " << command;
-  return f->calculate_expr(command);
+  f->SetParameter(num, value_.value());
+  f->SetParLimits(num, lower_, upper_);
 }
 
-bool FitParam::extract(fityk::Fityk* f, fityk::Func* func)
+void FitParam::get(TF1* f, uint16_t num)
 {
-  try {
-    value = UncertainDouble::from_double(func->get_param_value(name_),
-                                         get_err(f, func->name));
-//    DBG << "<FitParam> " << name_ << " = " << val << " +/- " << uncert;
-  } catch (...) {
-    return false;
-  }
-  return true;
+  value_ = UncertainDouble::from_double(f->GetParameter(num), f->GetParError(num));
 }
 
-#ifdef FITTER_ROOT_ENABLED
-  void FitParam::set(TF1* f, uint16_t num) const
-  {
-    f->SetParameter(num, value.value());
-    f->SetParLimits(num, lbound, ubound);
-//    DBG << "Set [" << num << "] " << this->to_string() << "  --> "
-//        << UncertainDouble::from_double(f->GetParameter(num), f->GetParError(num)).to_string();
-  }
-
-  void FitParam::get(TF1* f, uint16_t num)
-  {
-    value = UncertainDouble::from_double(f->GetParameter(num), f->GetParError(num));
-  }
-
-#endif
 
 

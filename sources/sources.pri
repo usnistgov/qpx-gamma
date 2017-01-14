@@ -21,7 +21,6 @@
 #-------------------------------------------------------------------------------
 
 unix {
-
    LIBS += -lm -ldl -DBOOST_LOG_DYN_LINK -lz
 
    QMAKE_CFLAGS   += -fpermissive
@@ -41,16 +40,13 @@ unix {
 
 
 INCLUDEPATH += $$PWD/../engine \
-               $$PWD/../engine/pugixml \
-               $$PWD/../engine/math
+               $$PWD/../engine/pugixml
 
 HEADERS  += $$files($$PWD/../engine/*.h) \
-            $$files($$PWD/../engine/pugixml/*.h) \
-            $$files($$PWD/../engine/math/*.h)
+            $$files($$PWD/../engine/pugixml/*.h)
 
 
 !mac {
-  
   contains( DAQ_SOURCES, pixie4 ) {
     ! include( $$PWD/pixie4/pixie4.pri ) {
       error( "Couldn't find the pixie4.pri file!" )
