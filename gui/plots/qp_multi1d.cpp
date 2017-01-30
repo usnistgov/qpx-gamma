@@ -23,7 +23,7 @@ bool Marker1D::isValBetterThan(double newval, double oldval) const
   else if ((alignment == Qt::AlignBottom) && (newval < oldval))
     return true;
   else if ((alignment == Qt::AlignAbsolute) &&
-      (abs(newval - closest_val) <= abs(oldval - closest_val)) )
+      (std::abs(newval - closest_val) <= std::abs(oldval - closest_val)) )
     return true;
   else
     return false;
