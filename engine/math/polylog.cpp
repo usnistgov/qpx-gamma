@@ -48,12 +48,12 @@ std::string PolyLog::to_string() const
   }
   vars += "     " + xoffset_.to_string();
 
-  ret += ")   rsq=" + boost::lexical_cast<std::string>(rsq_) + "    where:\n" +  vars;
+  ret += ")   rsq=" + boost::lexical_cast<std::string>(chi2_) + "    where:\n" +  vars;
 
   return ret;
 }
 
-std::string PolyLog::to_UTF8(int precision, bool with_rsq)
+std::string PolyLog::to_UTF8(int precision, bool with_rsq) const
 {
   std::string calib_eqn = "exp(";
   int i = 0;
@@ -77,12 +77,12 @@ std::string PolyLog::to_UTF8(int precision, bool with_rsq)
     calib_eqn += std::string("   r")
         + UTF_superscript(2)
         + std::string("=")
-        + to_str_precision(rsq_, precision);
+        + to_str_precision(chi2_, precision);
 
   return calib_eqn;
 }
 
-std::string PolyLog::to_markup(int precision, bool with_rsq)
+std::string PolyLog::to_markup(int precision, bool with_rsq) const
 {
   std::string calib_eqn = "exp(";
 
@@ -106,12 +106,12 @@ std::string PolyLog::to_markup(int precision, bool with_rsq)
   if (with_rsq)
   calib_eqn += "   r<sup>2</sup>"
         + std::string("=")
-        + to_str_precision(rsq_, precision);
+        + to_str_precision(chi2_, precision);
 
   return calib_eqn;
 }
 
-double PolyLog::eval(double x)
+double PolyLog::eval(double x) const
 {
   double x_adjusted = log(x - xoffset_.value().value());
   double result = 0.0;
@@ -122,7 +122,7 @@ double PolyLog::eval(double x)
   return exp(result);
 }
 
-double PolyLog::derivative(double x)
+double PolyLog::derivative(double x) const
 {
   return x;
 }

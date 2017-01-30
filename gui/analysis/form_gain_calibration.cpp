@@ -225,15 +225,16 @@ void FormGainCalibration::on_pushCalibGain_clicked()
   for (int i=2; i <= ui->spinPolyOrder->value(); ++i)
     p.add_coeff(i, -5, 5, 0);
 
-  DBG << "points " << xx.size() << " coefs " << p.coeffs().size();
+  DBG << "points " << xx.size() << " coefs " << p.coeff_count();
 
 //  yy_sigma.resize(yy.size(), 1);
   p.fit(xx, yy, xx_sigma, yy_sigma);
 
-  if (p.coeffs_.size())
+  if (p.coeff_count())
   {
     //    gain_match_cali_.type_ = ;
-    gain_match_cali_.coefficients_ = p.coeffs();
+    gain_match_cali_.coefficients_ = p.coeffs_consecutive();
+    gain_match_cali_.r_squared_ = p.chi2();
     gain_match_cali_.to_ = detector1_.name_;
     gain_match_cali_.bits_ = fit_data2_.settings().bits_;
     gain_match_cali_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?

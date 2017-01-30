@@ -48,12 +48,12 @@ std::string Polynomial::to_string() const
   }
   vars += "     " + xoffset_.to_string();
 
-  ret += "   rsq=" + boost::lexical_cast<std::string>(rsq_) + "    where:\n" +  vars;
+  ret += "   rsq=" + boost::lexical_cast<std::string>(chi2_) + "    where:\n" +  vars;
 
   return ret;
 }
 
-std::string Polynomial::to_UTF8(int precision, bool with_rsq)
+std::string Polynomial::to_UTF8(int precision, bool with_rsq) const
 {
   std::string calib_eqn;
   int i = 0;
@@ -76,12 +76,12 @@ std::string Polynomial::to_UTF8(int precision, bool with_rsq)
     calib_eqn += std::string("   r")
         + UTF_superscript(2)
         + std::string("=")
-        + to_str_precision(rsq_, precision);
+        + to_str_precision(chi2_, precision);
 
   return calib_eqn;
 }
 
-std::string Polynomial::to_markup(int precision, bool with_rsq)
+std::string Polynomial::to_markup(int precision, bool with_rsq) const
 {
   std::string calib_eqn;
 
@@ -104,13 +104,13 @@ std::string Polynomial::to_markup(int precision, bool with_rsq)
     if (with_rsq)
     calib_eqn += "   r<sup>2</sup>"
         + std::string("=")
-        + to_str_precision(rsq_, precision);
+        + to_str_precision(chi2_, precision);
 
   return calib_eqn;
 }
 
 
-double Polynomial::eval(double x)
+double Polynomial::eval(double x) const
 {
   double x_adjusted = x - xoffset_.value().value();
   double result = 0.0;
@@ -120,7 +120,7 @@ double Polynomial::eval(double x)
 }
 
 
-double Polynomial::derivative(double x)
+double Polynomial::derivative(double x) const
 {
   Polynomial new_poly;  // derivative not true if offset != 0
   new_poly.xoffset_ = xoffset_;
@@ -134,46 +134,6 @@ double Polynomial::derivative(double x)
     }
   }
   return new_poly.eval(x);
-}
-
-void Polynomial::to_xml(pugi::xml_node &root) const
-{
-  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
-
-  node.append_attribute("rsq").set_value(to_max_precision(rsq_).c_str());
-  xoffset_.to_xml(node);
-
-  if (coeffs_.size()) {
-    pugi::xml_node terms = node.append_child("Terms");
-    for (auto t : coeffs_)
-    {
-      pugi::xml_node term = terms.append_child("Term");
-      term.append_attribute("order").set_value(t.first);
-      t.second.to_xml(term);
-    }
-  }
-}
-
-
-void Polynomial::from_xml(const pugi::xml_node &node)
-{
-  coeffs_.clear();
-
-  rsq_ = node.attribute("rsq").as_double(0);
-  if (node.child(xoffset_.xml_element_name().c_str()))
-    xoffset_.from_xml(node.child(xoffset_.xml_element_name().c_str()));
-
-  if (node.child("Terms")) {
-    for (auto &t : node.child("Terms").children()) {
-      if (std::string(t.name()) == "Term")
-      {
-        int order = t.attribute("order").as_int();
-        FitParam coef;
-        coef.from_xml(t.child(xoffset_.xml_element_name().c_str()));
-        coeffs_[order] = coef;
-      }
-    }
-  }
 }
 
 std::string Polynomial::root_definition()

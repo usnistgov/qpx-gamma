@@ -80,9 +80,7 @@ private slots:
 private:
   Ui::FormEnergyCalibration *ui;
 
-  //from parent
   QString data_directory_;
-  QString settings_directory_;
 
   XMLableDB<Qpx::Detector> &detectors_;
   Qpx::Fitter &fit_data_;

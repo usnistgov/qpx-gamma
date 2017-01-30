@@ -34,10 +34,10 @@ public:
 
   std::string type() const override {return "LogInverse";}
   std::string to_string() const override;
-  std::string to_UTF8(int precision = -1, bool with_rsq = false) override;
-  std::string to_markup(int precision = -1, bool with_rsq = false) override;
-  double eval(double x)  override;
-  double derivative(double x) override;
+  std::string to_UTF8(int precision = -1, bool with_rsq = false) const override;
+  std::string to_markup(int precision = -1, bool with_rsq = false) const override;
+  double eval(double x) const override;
+  double derivative(double x) const override;
 
   std::string root_definition() override;
 };

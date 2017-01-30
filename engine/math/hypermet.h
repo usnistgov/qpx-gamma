@@ -77,7 +77,7 @@ public:
   void set_tail_slope(const FitParam &ntail_slope);
   void set_step_amplitude(const FitParam &nstep_amplitude);
 
-  double rsq() const {return rsq_;}
+  double chi2() const {return chi2_;}
   bool user_modified() {return user_modified_;}
 
   std::string to_string() const;
@@ -102,7 +102,7 @@ private:
   tail_amplitude_, tail_slope_,
   step_amplitude_;
 
-  double rsq_ {0};
+  double chi2_ {0};
   bool user_modified_ {false};
 
 

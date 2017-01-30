@@ -62,7 +62,7 @@ class Detector : public XMLable
 
   Calibration fwhm_calibration_ {"FWHM", 0};
   Calibration efficiency_calibration_ {"Efficiency", 0};
-  Setting settings_ {"Optinmization"};
+  Setting settings_ {"Optimization"};
 };
 
 }

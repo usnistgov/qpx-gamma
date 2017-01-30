@@ -31,11 +31,6 @@
 namespace Qpx {
 
 Detector::Detector()
-//      : energy_calibrations_("Calibrations")
-//      , gain_match_calibrations_("GainMatchCalibrations")
-//      , settings_("Optimization")
-//      , fwhm_calibration_("FWHM", 0)
-//      , efficiency_calibration_("Efficiency", 0)
 {
   settings_.metadata.setting_type = SettingType::stem;
 }

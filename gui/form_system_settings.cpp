@@ -392,11 +392,8 @@ void FormSystemSettings::on_pushSettingsRefresh_clicked()
 
 void FormSystemSettings::open_detector_DB()
 {
-  QSettings settings;
-  settings.beginGroup("Program");
-  QString settings_directory = settings.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
   WidgetDetectors *det_widget = new WidgetDetectors(this);
-  det_widget->setData(detectors_, settings_directory);
+  det_widget->setData(detectors_);
   connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(updateDetDB()));
   det_widget->exec();
 }

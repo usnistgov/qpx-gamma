@@ -88,7 +88,7 @@ double Calibration::transform(double chan) const
   else if (bits_ && (model_ == CalibrationModel::loginverse))
     return LogInverse(coefficients_, 0, r_squared_).eval(chan);
   else if (bits_ && (model_ == CalibrationModel::effit))
-    return Effit(coefficients_).evaluate(chan);
+    return Effit(coefficients_, 0, r_squared_).eval(chan);
   else
     return chan;
 }
@@ -148,7 +148,7 @@ std::string Calibration::fancy_equation(int precision, bool with_rsq)
   else if (bits_ && (model_ == CalibrationModel::loginverse))
     return LogInverse(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
   else if (bits_ && (model_ == CalibrationModel::effit))
-    return Effit(coefficients_).to_UTF8(precision, with_rsq);
+    return Effit(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
   else
     return "N/A"; 
 }

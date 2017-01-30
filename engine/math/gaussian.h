@@ -47,11 +47,21 @@ public:
   double evaluate(double x);
   std::vector<double> evaluate_array(std::vector<double> x);
   UncertainDouble area() const;
+
+  const FitParam& center() const {return center_;}
+  const FitParam& height() const {return height_;}
+  const FitParam& hwhm() const {return hwhm_;}
+
+  void set_center(const FitParam &ncenter);
+  void set_height(const FitParam &nheight);
+  void set_hwhm(const FitParam &nwidth);
+
+  void constrain_center(double min, double max);
+  void constrain_height(double min, double max);
+  void constrain_hwhm(double min, double max);
+
+  void set_chi2(double);
   
-  FitParam height_, hwhm_, center_;
-  double rsq_ {0};
-
-
   static std::string root_definition(uint16_t start = 0);
   static std::string root_definition(uint16_t a, uint16_t c, uint16_t w);
 
@@ -71,6 +81,11 @@ public:
                                                       Polynomial &background,
                                                       FitSettings settings);
 
+protected:
+  FitParam height_ {"height", 0};
+  FitParam center_ {"center", 0};
+  FitParam hwhm_ {"hwhm", 0};
+  double chi2_ {0};
 };
 
 

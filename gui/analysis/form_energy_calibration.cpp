@@ -84,31 +84,28 @@ bool FormEnergyCalibration::save_close() {
     return false;
 }
 
-void FormEnergyCalibration::loadSettings() {
-  QSettings settings_;
+void FormEnergyCalibration::loadSettings()
+{
+  QSettings settings;
 
-  settings_.beginGroup("Program");
-  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
-  settings_.endGroup();
+  settings.beginGroup("Program");
+  ui->isotopes->setDir(settings.value("settingsdirectory", QDir::homePath() + "/qpx/settings").toString());
+  data_directory_ = settings.value("save_directory", QDir::homePath() + "/qpx/data").toString();
+  settings.endGroup();
 
-  ui->isotopes->setDir(settings_directory_);
-
-  settings_.beginGroup("Energy_calibration");
-  ui->spinTerms->setValue(settings_.value("fit_function_terms", 2).toInt());
-  ui->isotopes->set_current_isotope(settings_.value("current_isotope", "Co-60").toString());
-
-  settings_.endGroup();
-
+  settings.beginGroup("Energy_calibration");
+  ui->spinTerms->setValue(settings.value("fit_function_terms", 2).toInt());
+  ui->isotopes->set_current_isotope(settings.value("current_isotope", "Co-60").toString());
+  settings.endGroup();
 }
 
-void FormEnergyCalibration::saveSettings() {
-  QSettings settings_;
-
-  settings_.beginGroup("Energy_calibration");
-  settings_.setValue("fit_function_terms", ui->spinTerms->value());
-  settings_.setValue("current_isotope", ui->isotopes->current_isotope());
-  settings_.endGroup();
+void FormEnergyCalibration::saveSettings()
+{
+  QSettings settings;
+  settings.beginGroup("Energy_calibration");
+  settings.setValue("fit_function_terms", ui->spinTerms->value());
+  settings.setValue("current_isotope", ui->isotopes->current_isotope());
+  settings.endGroup();
 }
 
 void FormEnergyCalibration::clear()
@@ -123,12 +120,14 @@ void FormEnergyCalibration::clear()
   ui->pushFromDB->setEnabled(false);
 }
 
-void FormEnergyCalibration::newSpectrum() {
+void FormEnergyCalibration::newSpectrum()
+{
   new_calibration_ = fit_data_.settings().cali_nrg_;
   update_data();
 }
 
-void FormEnergyCalibration::update_data() {
+void FormEnergyCalibration::update_data()
+{
   rebuild_table();
   replot_calib();
 
@@ -140,17 +139,20 @@ void FormEnergyCalibration::update_data() {
   toggle_push();
 }
 
-void FormEnergyCalibration::update_selection(std::set<double> selected_peaks) {
+void FormEnergyCalibration::update_selection(std::set<double> selected_peaks)
+{
   bool changed = (selected_peaks_ != selected_peaks);
   selected_peaks_ = selected_peaks;
 
-  if (changed) {
+  if (changed)
+  {
     select_in_table();
     select_in_plot();
   }
 }
 
-void FormEnergyCalibration::select_in_table() {
+void FormEnergyCalibration::select_in_table()
+{
   ui->tablePeaks->blockSignals(true);
   this->blockSignals(true);
   ui->tablePeaks->clearSelection();
@@ -318,12 +320,12 @@ void FormEnergyCalibration::on_pushFit_clicked()
 //  p2.fit_root(x,y,sigmas);
   #endif
 
-  if (p.coeffs_.size())
+  if (p.coeff_count())
   {
     new_calibration_.type_ = "Energy";
     new_calibration_.bits_ = fit_data_.settings().bits_;
-    new_calibration_.coefficients_ = p.coeffs();
-    new_calibration_.r_squared_ = p.rsq_;
+    new_calibration_.coefficients_ = p.coeffs_consecutive();
+    new_calibration_.r_squared_ = p.chi2();
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "keV";
     new_calibration_.model_ = Qpx::CalibrationModel::polynomial;
@@ -359,7 +361,7 @@ void FormEnergyCalibration::on_pushFromDB_clicked()
 void FormEnergyCalibration::on_pushDetDB_clicked()
 {
   WidgetDetectors *det_widget = new WidgetDetectors(this);
-  det_widget->setData(detectors_, settings_directory_);
+  det_widget->setData(detectors_);
   connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
   det_widget->exec();
 }

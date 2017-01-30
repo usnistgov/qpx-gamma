@@ -24,9 +24,8 @@
 #define POLYNOMIAL_H
 
 #include "coef_function.h"
-#include "xmlable.h"
 
-class Polynomial : public CoefFunction, public XMLable
+class Polynomial : public CoefFunction
 {
 public:
   Polynomial() {}
@@ -35,14 +34,10 @@ public:
 
   std::string type() const override {return "Polynomial";}
   std::string to_string() const override;
-  std::string to_UTF8(int precision = -1, bool with_rsq = false) override;
-  std::string to_markup(int precision = -1, bool with_rsq = false) override;
-  double eval(double x)  override;
-  double derivative(double x) override;
-
-  void to_xml(pugi::xml_node &node) const override;
-  void from_xml(const pugi::xml_node &node) override;
-  std::string xml_element_name() const override {return "Polynomial";}
+  std::string to_UTF8(int precision = -1, bool with_rsq = false) const override;
+  std::string to_markup(int precision = -1, bool with_rsq = false) const override;
+  double eval(double x) const override;
+  double derivative(double x) const override;
 
   std::string root_definition() override;
 };

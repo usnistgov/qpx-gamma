@@ -83,6 +83,16 @@ void FitParam::preset_bounds(double min, double max)
   value_.setValue((min + max)/2.0);
 }
 
+void FitParam::constrain(double min, double max)
+{
+  double l = std::min(min, max);
+  double u = std::max(min, max);
+  lower_ = std::max(l, lower_);
+  upper_ = std::min(u, upper_);
+  value_.setValue(std::min(std::max(value_.value(), lower()), upper()));
+}
+
+
 std::string FitParam::name() const
 {
   return name_;
@@ -110,7 +120,14 @@ bool FitParam::enabled() const
 
 bool FitParam::fixed() const
 {
-  return fixed_;
+  return fixed_ || implicitly_fixed();
+}
+
+bool FitParam::implicitly_fixed() const
+{
+  return (value_.finite() &&
+          (value_.value() == lower_) &&
+          (lower_ == upper_));
 }
 
 void FitParam::set_enabled(bool e)
@@ -153,35 +170,9 @@ bool FitParam::same_bounds_and_policy(const FitParam &other) const
   return true;
 }
 
-FitParam FitParam::merge(const FitParam &other) const
-{
-  double avg = (value_.value() + other.value_.value()) * 0.5;
-  double min = avg;
-  double max = avg;
-  if (std::isfinite(value_.uncertainty()))
-  {
-    min = std::min(avg, value_.value() - 0.5 * value_.uncertainty());
-    max = std::max(avg, value_.value() + 0.5 * value_.uncertainty());
-  }
-  if (std::isfinite(other.value_.uncertainty()))
-  {
-    min = std::min(avg, other.value_.uncertainty() - 0.5 * other.value_.uncertainty());
-    max = std::max(avg, other.value_.uncertainty() + 0.5 * other.value_.uncertainty());
-  }
-  FitParam ret;
-  ret.value_ = UncertainDouble::from_double(avg, max - min);
-  return ret;
-}
-
-bool FitParam::almost(const FitParam &other) const
-{
-  return value_.almost(other.value_);
-}
-
 void FitParam::to_xml(pugi::xml_node &root) const
 {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
-
   node.append_attribute("name").set_value(name_.c_str());
   node.append_attribute("enabled_").set_value(enabled_);
   node.append_attribute("fixed_").set_value(fixed_);

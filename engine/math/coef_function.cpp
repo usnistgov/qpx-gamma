@@ -33,9 +33,7 @@
 #include "TGraph.h"
 #include "TGraphErrors.h"
 
-CoefFunction::CoefFunction() :
-  xoffset_("xoffset", 0),
-  rsq_(0)
+CoefFunction::CoefFunction()
 {}
 
 CoefFunction::CoefFunction(std::vector<double> coeffs, double uncert, double rsq)
@@ -43,7 +41,58 @@ CoefFunction::CoefFunction(std::vector<double> coeffs, double uncert, double rsq
 {
   for (size_t i=0; i < coeffs.size(); ++i)
     add_coeff(i, coeffs[i] - uncert, coeffs[i] + uncert, coeffs[i]);
-  rsq_ = rsq;
+  chi2_ = rsq;
+}
+
+FitParam CoefFunction::xoffset() const
+{
+  return xoffset_;
+}
+
+double CoefFunction::chi2() const
+{
+  return chi2_;
+}
+
+size_t CoefFunction::coeff_count() const
+{
+  return coeffs_.size();
+}
+
+std::vector<int> CoefFunction::powers() const
+{
+  std::vector<int> ret;
+  for (auto c : coeffs_)
+    ret.push_back(c.first);
+  return ret;
+}
+
+FitParam CoefFunction::get_coeff(int degree) const
+{
+  if (coeffs_.count(degree))
+    return coeffs_.at(degree);
+  else
+    return FitParam();
+}
+
+std::map<int, FitParam> CoefFunction::get_coeffs() const
+{
+  return coeffs_;
+}
+
+void CoefFunction::set_xoffset(const FitParam& o)
+{
+  xoffset_ = o;
+}
+
+void CoefFunction::set_chi2(double c2)
+{
+  chi2_ = c2;
+}
+
+void CoefFunction::set_coeff(int degree, const FitParam& p)
+{
+  coeffs_[degree] = p;
 }
 
 void CoefFunction::add_coeff(int degree, double lbound, double ubound)
@@ -60,7 +109,7 @@ void CoefFunction::add_coeff(int degree, double lbound, double ubound, double in
                              initial, lbound, ubound);
 }
 
-std::vector<double> CoefFunction::eval_array(const std::vector<double> &x)
+std::vector<double> CoefFunction::eval_array(const std::vector<double> &x) const
 {
   std::vector<double> y;
   for (auto &q : x)
@@ -68,7 +117,7 @@ std::vector<double> CoefFunction::eval_array(const std::vector<double> &x)
   return y;
 }
 
-double CoefFunction::eval_inverse(double y, double e)
+double CoefFunction::eval_inverse(double y, double e) const
 {
   int i=0;
   double x0 = xoffset_.value().value();
@@ -92,7 +141,47 @@ double CoefFunction::eval_inverse(double y, double e)
   }
 }
 
-std::vector<double> CoefFunction::coeffs()
+void CoefFunction::to_xml(pugi::xml_node &root) const
+{
+  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
+
+  node.append_attribute("rsq").set_value(to_max_precision(chi2_).c_str());
+  xoffset_.to_xml(node);
+
+  if (coeffs_.size()) {
+    pugi::xml_node terms = node.append_child("Terms");
+    for (auto t : coeffs_)
+    {
+      pugi::xml_node term = terms.append_child("Term");
+      term.append_attribute("order").set_value(t.first);
+      t.second.to_xml(term);
+    }
+  }
+}
+
+
+void CoefFunction::from_xml(const pugi::xml_node &node)
+{
+  coeffs_.clear();
+
+  chi2_ = node.attribute("rsq").as_double(0);
+  if (node.child(xoffset_.xml_element_name().c_str()))
+    xoffset_.from_xml(node.child(xoffset_.xml_element_name().c_str()));
+
+  if (node.child("Terms")) {
+    for (auto &t : node.child("Terms").children()) {
+      if (std::string(t.name()) == "Term")
+      {
+        int order = t.attribute("order").as_int();
+        FitParam coef;
+        coef.from_xml(t.child(xoffset_.xml_element_name().c_str()));
+        coeffs_[order] = coef;
+      }
+    }
+  }
+}
+
+std::vector<double> CoefFunction::coeffs_consecutive() const
 {
   std::vector<double> ret;
   int top = 0;
@@ -104,7 +193,6 @@ std::vector<double> CoefFunction::coeffs()
     ret[c.first] = c.second.value().value();
   return ret;
 }
-
 
 void CoefFunction::fit(const std::vector<double> &x,
                        const std::vector<double> &y,
@@ -155,7 +243,7 @@ void CoefFunction::fit_root(const std::vector<double> &x,
   g1->Fit("f1", "EMN");
 
   get_params(f1, 0);
-  rsq_ = f1->GetChisquare();
+  chi2_ = f1->GetChisquare();
 
   f1->Delete();
   g1->Delete();

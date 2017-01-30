@@ -36,9 +36,9 @@
 #include "TH1.h"
 
 Hypermet::Hypermet(Gaussian gauss, FitSettings settings)
-  : height_("h", gauss.height_.value().value())
-  , center_("c", gauss.center_.value().value())
-  , width_("w", gauss.hwhm_.value().value() / sqrt(log(2)))
+  : height_("h", gauss.height().value().value())
+  , center_("c", gauss.center().value().value())
+  , width_("w", gauss.hwhm().value().value() / sqrt(log(2)))
   , Lskew_amplitude_(settings.Lskew_amplitude), Lskew_slope_(settings.Lskew_slope)
   , Rskew_amplitude_(settings.Rskew_amplitude), Rskew_slope_(settings.Rskew_slope)
   , tail_amplitude_(settings.tail_amplitude), tail_slope_(settings.tail_slope)
@@ -57,70 +57,70 @@ void Hypermet::set_center(const FitParam &ncenter)
 {
   center_.set(ncenter);
   user_modified_ = true;
-  rsq_ = 0;
+  chi2_ = 0;
 }
 
 void Hypermet::set_height(const FitParam &nheight)
 {
   height_.set(nheight);
   user_modified_ = true;
-  rsq_ = 0;
+  chi2_ = 0;
 }
 
 void Hypermet::set_width(const FitParam &nwidth)
 {
   width_.set(nwidth);
   user_modified_ = true;
-  rsq_ = 0;
+  chi2_ = 0;
 }
 
 void Hypermet::set_Lskew_amplitude(const FitParam &nLskew_amplitude)
 {
   Lskew_amplitude_.set(nLskew_amplitude);
   user_modified_ = true;
-  rsq_ = 0;
+  chi2_ = 0;
 }
 
 void Hypermet::set_Lskew_slope(const FitParam &nLskew_slope)
 {
   Lskew_slope_.set(nLskew_slope);
   user_modified_ = true;
-  rsq_ = 0;
+  chi2_ = 0;
 }
 
 void Hypermet::set_Rskew_amplitude(const FitParam &nRskew_amplitude)
 {
   Rskew_amplitude_.set(nRskew_amplitude);
   user_modified_ = true;
-  rsq_ = 0;
+  chi2_ = 0;
 }
 
 void Hypermet::set_Rskew_slope(const FitParam &nRskew_slope)
 {
   Rskew_slope_.set(nRskew_slope);
   user_modified_ = true;
-  rsq_ = 0;
+  chi2_ = 0;
 }
 
 void Hypermet::set_tail_amplitude(const FitParam &ntail_amplitude)
 {
   tail_amplitude_.set(ntail_amplitude);
   user_modified_ = true;
-  rsq_ = 0;
+  chi2_ = 0;
 }
 
 void Hypermet::set_tail_slope(const FitParam &ntail_slope)
 {
   tail_slope_.set(ntail_slope);
   user_modified_ = true;
-  rsq_ = 0;
+  chi2_ = 0;
 }
 
 void Hypermet::set_step_amplitude(const FitParam &nstep_amplitude)
 {
   step_amplitude_.set(nstep_amplitude);
   user_modified_ = true;
-  rsq_ = 0;
+  chi2_ = 0;
 }
 
 
@@ -128,7 +128,7 @@ std::string Hypermet::to_string() const
 {
   std::string ret = "Hypermet ";
   ret += "   area=" + area().to_string()
-      + "   rsq=" + boost::lexical_cast<std::string>(rsq_) + "    where:\n";
+      + "   rsq=" + boost::lexical_cast<std::string>(chi2_) + "    where:\n";
 
   ret += "     " + center_.to_string() + "\n";
   ret += "     " + height_.to_string() + "\n";
@@ -147,12 +147,14 @@ std::string Hypermet::to_string() const
 Gaussian Hypermet::gaussian() const
 {
   Gaussian ret;
-  ret.height_.set(height_);
-  ret.center_.set(center_);
-  ret.hwhm_.set(width_.lower() * sqrt(log(2)),
-                width_.upper() * sqrt(log(2)),
-                width_.value().value() * sqrt(log(2)));
-  ret.rsq_ = rsq_;
+  ret.set_height(height_);
+  ret.set_center(center_);
+  auto w = ret.hwhm();
+  w.set(width_.lower() * sqrt(log(2)),
+        width_.upper() * sqrt(log(2)),
+        width_.value().value() * sqrt(log(2)));
+  ret.set_hwhm(w);
+  ret.set_chi2(chi2_);
   return ret;
 }
 
@@ -273,7 +275,7 @@ void Hypermet::to_xml(pugi::xml_node &root) const
 {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
-  node.append_attribute("rsq").set_value(to_max_precision(rsq_).c_str());
+  node.append_attribute("rsq").set_value(to_max_precision(chi2_).c_str());
   center_.to_xml(node);
   height_.to_xml(node);
   width_.to_xml(node);
@@ -289,7 +291,7 @@ void Hypermet::to_xml(pugi::xml_node &root) const
 
 void Hypermet::from_xml(const pugi::xml_node &node)
 {
-  rsq_ = node.attribute("rsq").as_double(0);
+  chi2_ = node.attribute("rsq").as_double(0);
   for (auto &q : node.children()) {
     FitParam param;
     if (std::string(q.name()) == param.xml_element_name()) {
@@ -423,7 +425,7 @@ void Hypermet::fit_root(const std::vector<double> &x, const std::vector<double> 
   //  h1->Fit("f1", "EMN");
 
   get_params(f1);
-  rsq_ = f1->GetChisquare();
+  chi2_ = f1->GetChisquare();
 
   f1->Delete();
   h1->Delete();
@@ -453,7 +455,7 @@ std::vector<Hypermet> Hypermet::fit_multi_root(const std::vector<double> &x,
   }
 
   std::string definition = background.root_definition();
-  uint16_t backgroundparams = background.coeffs().size();
+  uint16_t backgroundparams = background.coeff_count();
   for (size_t i=0; i < old.size(); ++i)
   {
     uint16_t num = backgroundparams + i * 10;
@@ -504,9 +506,9 @@ std::vector<Hypermet> Hypermet::fit_multi_root(const std::vector<double> &x,
   {
     uint16_t num = backgroundparams + i * 10;
     old[i].get_params(f1, num);
-    old[i].rsq_ = f1->GetChisquare();
+    old[i].chi2_ = f1->GetChisquare();
   }
-  background.rsq_ = f1->GetChisquare();
+  background.set_chi2(f1->GetChisquare());
 
   f1->Delete();
   h1->Delete();
@@ -549,7 +551,7 @@ std::vector<Hypermet> Hypermet::fit_multi_root_commonw(const std::vector<double>
 //  DBG << "Calculated common width param " << w_common.to_string();
 
   std::string definition = background.root_definition();
-  uint16_t backgroundparams = background.coeffs().size();
+  uint16_t backgroundparams = background.coeff_count();
   for (size_t i=0; i < old.size(); ++i)
   {
     uint16_t num = 1 + backgroundparams + i * 9;
@@ -595,10 +597,9 @@ std::vector<Hypermet> Hypermet::fit_multi_root_commonw(const std::vector<double>
   {
     uint16_t num = 1 + backgroundparams + i * 9;
     old[i].get_params(f1, backgroundparams, num);
-    old[i].rsq_ = f1->GetChisquare();
+    old[i].chi2_ = f1->GetChisquare();
   }
-
-  background.rsq_ = f1->GetChisquare();
+  background.set_chi2(f1->GetChisquare());
 
   f1->Delete();
   h1->Delete();

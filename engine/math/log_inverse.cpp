@@ -49,12 +49,12 @@ std::string LogInverse::to_string() const
   }
   vars += "     " + xoffset_.to_string();
 
-  ret += ")   rsq=" + boost::lexical_cast<std::string>(rsq_) + "    where:\n" +  vars;
+  ret += ")   rsq=" + boost::lexical_cast<std::string>(chi2_) + "    where:\n" +  vars;
 
   return ret;
 }
 
-std::string LogInverse::to_UTF8(int precision, bool with_rsq)
+std::string LogInverse::to_UTF8(int precision, bool with_rsq) const
 {
   std::string calib_eqn = "exp(";
   int i = 0;
@@ -78,12 +78,12 @@ std::string LogInverse::to_UTF8(int precision, bool with_rsq)
     calib_eqn += std::string("   r")
         + UTF_superscript(2)
         + std::string("=")
-        + to_str_precision(rsq_, precision);
+        + to_str_precision(chi2_, precision);
 
   return calib_eqn;
 }
 
-std::string LogInverse::to_markup(int precision, bool with_rsq)
+std::string LogInverse::to_markup(int precision, bool with_rsq) const
 {
   std::string calib_eqn = "exp(";
 
@@ -107,12 +107,12 @@ std::string LogInverse::to_markup(int precision, bool with_rsq)
   if (with_rsq)
   calib_eqn += "   r<sup>2</sup>"
         + std::string("=")
-        + to_str_precision(rsq_, precision);
+        + to_str_precision(chi2_, precision);
 
   return calib_eqn;
 }
 
-double LogInverse::eval(double x)
+double LogInverse::eval(double x) const
 {
   double x_adjusted = (x - xoffset_.value().value());
   if (x_adjusted != 0)
@@ -127,7 +127,7 @@ double LogInverse::eval(double x)
   return exp(result);
 }
 
-double LogInverse::derivative(double x)
+double LogInverse::derivative(double x) const
 {
   return x;
 }

@@ -102,9 +102,7 @@ private:
 
   QString mca_load_formats_;  //valid mca file formats that can be opened
 
-  //from parent
   QString data_directory_;
-  QString settings_directory_;
 
   Qpx::Project          *spectra_;
   int64_t     current_spectrum_;

@@ -37,32 +37,32 @@ public:
   FitParam(std::string name, double v);
   FitParam(std::string name, double v, double lower, double upper);
 
-  void set_name(std::string n);
-  void set_value(UncertainDouble v);
-  void set(const FitParam& other);
-  void set(double min, double max, double val);
-  void preset_bounds(double min, double max);
-
-  FitParam enforce_policy();
-
-  bool same_bounds_and_policy(const FitParam &other) const;
-
-  FitParam merge(const FitParam &other) const; //deprecate
-  bool operator == (const FitParam &other) const {return value_ == other.value_;}
-  bool operator < (const FitParam &other) const {return value_ < other.value_;}
-  bool almost(const FitParam &other) const;
-
   std::string name() const;
   UncertainDouble value() const;
   double lower() const;
   double upper() const;
   bool enabled() const;
   bool fixed() const;
+  bool implicitly_fixed() const;
 
   void set_enabled(bool e);
+  void set_name(std::string n);
+  void set_value(UncertainDouble v);
+  void set(const FitParam& other);
+  void set(double min, double max, double val);
+  void preset_bounds(double min, double max);
+  void constrain(double min, double max);
+
+  FitParam enforce_policy();
+
+  bool same_bounds_and_policy(const FitParam &other) const;
+
+  bool operator == (const FitParam &other) const {return value_ == other.value_;}
+  bool operator < (const FitParam &other) const {return value_ < other.value_;}
 
   std::string to_string() const;
 
+//XMLable
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;
   std::string xml_element_name() const override {return "FitParam";}
@@ -73,7 +73,6 @@ public:
 
 private:
   std::string name_;
-
   UncertainDouble value_;
   double lower_ {std::numeric_limits<double>::min()};
   double upper_ {std::numeric_limits<double>::max()};

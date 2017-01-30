@@ -232,7 +232,7 @@ void DialogSpectrum::on_pushDetEdit_clicked()
     return;
   int i = ixl.front().row();
 
-  DialogDetector* newDet = new DialogDetector(spectrum_detectors_.get(i), QDir("~/"), false, this);
+  DialogDetector* newDet = new DialogDetector(spectrum_detectors_.get(i), false, this);
   connect(newDet, SIGNAL(newDetReady(Qpx::Detector)), this, SLOT(changeDet(Qpx::Detector)));
   newDet->exec();
 }

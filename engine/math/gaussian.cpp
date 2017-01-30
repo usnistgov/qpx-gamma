@@ -37,10 +37,48 @@
 #include "TH1.h"
 
 Gaussian::Gaussian()
-  : height_("height", 0)
-  , center_("center", 0)
-  , hwhm_("hwhm", 0)
 {}
+
+
+void Gaussian::set_center(const FitParam &ncenter)
+{
+  center_.set(ncenter);
+//  chi2_ = 0;
+}
+
+void Gaussian::set_height(const FitParam &nheight)
+{
+  height_.set(nheight);
+//  chi2_ = 0;
+}
+
+void Gaussian::set_hwhm(const FitParam &nwidth)
+{
+  hwhm_.set(nwidth);
+//  chi2_ = 0;
+}
+
+void Gaussian::constrain_center(double min, double max)
+{
+  center_.constrain(min, max);
+}
+
+void Gaussian::constrain_height(double min, double max)
+{
+  height_.constrain(min, max);
+}
+
+void Gaussian::constrain_hwhm(double min, double max)
+{
+  hwhm_.constrain(min, max);
+}
+
+
+void Gaussian::set_chi2(double c2)
+{
+  chi2_ = c2;
+}
+
 
 void Gaussian::fit(const std::vector<double> &x, const std::vector<double> &y)
 {
@@ -150,7 +188,7 @@ void Gaussian::fit_root(const std::vector<double> &x, const std::vector<double> 
   //  h1->Fit("f1", "EMN");
 
   get_params(f1);
-  rsq_ = f1->GetChisquare();
+  chi2_ = f1->GetChisquare();
 
   f1->Delete();
   h1->Delete();
@@ -178,7 +216,7 @@ std::vector<Gaussian> Gaussian::fit_multi_root(const std::vector<double> &x,
   }
 
   std::string definition = background.root_definition();
-  uint16_t backgroundparams = background.coeffs().size();
+  uint16_t backgroundparams = background.coeff_count();
   for (size_t i=0; i < old.size(); ++i)
   {
     uint16_t num = backgroundparams + i * 3;
@@ -225,9 +263,9 @@ std::vector<Gaussian> Gaussian::fit_multi_root(const std::vector<double> &x,
   {
     uint16_t num = backgroundparams + i * 3;
     old[i].get_params(f1, num);
-    old[i].rsq_ = f1->GetChisquare();
+    old[i].chi2_ = f1->GetChisquare();
   }
-  background.rsq_ = f1->GetChisquare();
+  background.set_chi2(f1->GetChisquare());
 
   f1->Delete();
   h1->Delete();
@@ -267,7 +305,7 @@ std::vector<Gaussian> Gaussian::fit_multi_root_commonw(const std::vector<double>
                          width_expected * settings.width_common_bounds.upper());
 
   std::string definition = background.root_definition();
-  uint16_t backgroundparams = background.coeffs().size();
+  uint16_t backgroundparams = background.coeff_count();
   for (size_t i=0; i < old.size(); ++i)
   {
     uint16_t num = 1 + backgroundparams + i * 2;
@@ -308,9 +346,9 @@ std::vector<Gaussian> Gaussian::fit_multi_root_commonw(const std::vector<double>
   {
     uint16_t num = 1 + backgroundparams + i * 2;
     old[i].get_params(f1, num, num+1, backgroundparams);
-    old[i].rsq_ = f1->GetChisquare();
+    old[i].chi2_ = f1->GetChisquare();
   }
-  background.rsq_ = f1->GetChisquare();
+  background.set_chi2(f1->GetChisquare());
 
   f1->Delete();
   h1->Delete();

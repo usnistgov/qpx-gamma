@@ -60,23 +60,20 @@ class DialogDetector : public QDialog
 {
   Q_OBJECT
 public:
-  explicit DialogDetector(Qpx::Detector, QDir, bool, QWidget *parent = 0);
+  explicit DialogDetector(Qpx::Detector, bool, QWidget *parent = 0);
   ~DialogDetector();
 
 private slots:
+  void selection_changed(QItemSelection,QItemSelection);
+
   void on_lineName_editingFinished();
   void on_comboType_currentIndexChanged(const QString &);
   void on_buttonBox_accepted();
   void on_pushReadOpti_clicked();
   void on_pushRead1D_clicked();
-
   void on_pushRemove_clicked();
-  void selection_changed(QItemSelection,QItemSelection);
-
   void on_pushRemoveGain_clicked();
-
   void on_pushClearFWHM_clicked();
-
   void on_pushClearEfficiency_clicked();
 
 signals:
@@ -87,7 +84,7 @@ private:
 
   Ui::DialogDetector *ui;
   Qpx::Detector my_detector_;
-  QDir root_dir_;
+  QDir settings_directory_;
   QString mca_formats_;
 
   TableCalibrations table_nrgs_;
@@ -127,7 +124,7 @@ public:
   explicit WidgetDetectors(QWidget *parent = 0);
   ~WidgetDetectors();
 
-  void setData(XMLableDB<Qpx::Detector> &newdb, QString outdir);
+  void setData(XMLableDB<Qpx::Detector> &newdb);
 
 signals:
   void detectorsUpdated();
@@ -139,7 +136,7 @@ private:
   TableDetectors table_model_;
   QItemSelectionModel selection_model_;
 
-  QString root_dir_;
+  QString settings_directory_;
 
 private slots:
   void on_pushNew_clicked();

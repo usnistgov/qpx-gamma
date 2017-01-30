@@ -26,49 +26,68 @@
 #include <vector>
 #include <map>
 #include "fit_param.h"
+#include "xmlable.h"
 
 #include "TF1.h"
 
-class CoefFunction {
+class CoefFunction : public XMLable
+{
 public:
   CoefFunction();
   CoefFunction(std::vector<double> coeffs, double uncert, double rsq);
 
-  //TO IMPLEMENT IN CHILDREN
+  FitParam xoffset() const;
+  double chi2() const;
+  size_t coeff_count() const;
+  std::vector<int> powers() const;
+  FitParam get_coeff(int degree) const;
+  std::map<int, FitParam> get_coeffs() const;
+  std::vector<double> coeffs_consecutive() const;
 
-  virtual std::string type() const = 0;
-  virtual std::string to_string() const = 0;
-  virtual std::string to_UTF8(int precision = -1, bool with_rsq = false) = 0;
-  virtual std::string to_markup(int precision = -1, bool with_rsq = false) = 0;
-  virtual double eval(double x)  = 0;
-  virtual double derivative(double x) = 0;
-
+  void set_xoffset(const FitParam& o);
+  void set_chi2(double);
+  void set_coeff(int degree, const FitParam& p);
   void add_coeff(int degree, double lbound, double ubound);
   void add_coeff(int degree, double lbound, double ubound, double initial);
 
-  std::vector<double> coeffs();
-
-  std::vector<double> eval_array(const std::vector<double> &x);
-  double eval_inverse(double y, double e = 0.2);
-
-  std::map<int, FitParam> coeffs_;
-  FitParam xoffset_;
-  double rsq_; //chisquared, actually
+  double eval_inverse(double y, double e = 0.2) const;
+  std::vector<double> eval_array(const std::vector<double> &x) const;
 
   void fit(const std::vector<double> &x,
            const std::vector<double> &y,
            const std::vector<double> &x_sigma,
            const std::vector<double> &y_sigma);
 
+  //XMLable
+    void to_xml(pugi::xml_node &node) const override;
+    void from_xml(const pugi::xml_node &node) override;
+    std::string xml_element_name() const override {return this->type();}
+
+  //TO IMPLEMENT IN CHILDREN
+  virtual std::string type() const = 0;
+  virtual std::string to_string() const = 0;
+  virtual std::string to_UTF8(int precision = -1, bool with_rsq = false) const = 0;
+  virtual std::string to_markup(int precision = -1, bool with_rsq = false) const = 0;
+
+  virtual double eval(double x) const = 0;
+  virtual double derivative(double x) const = 0;
+
+  //ROOT
+  virtual std::string root_definition() = 0;
 
   void fit_root(const std::vector<double> &x,
                 const std::vector<double> &y,
                 const std::vector<double> &x_sigma,
                 const std::vector<double> &y_sigma);
 
-  virtual std::string root_definition() = 0;
   void set_params(TF1* f, uint16_t start) const;
   void get_params(TF1* f, uint16_t start);
+
+protected:
+  std::map<int, FitParam> coeffs_;
+  FitParam xoffset_ {"xoffset", 0};
+  double chi2_ {0};
+
 };
 
 #endif

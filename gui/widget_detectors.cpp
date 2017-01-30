@@ -27,15 +27,15 @@
 #include "ui_dialog_detector.h"
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QSettings>
 #include "project.h"
 #include "daq_sink_factory.h"
 #include <boost/algorithm/string.hpp>
 
 using namespace Qpx;
 
-DialogDetector::DialogDetector(Detector mydet, QDir rd, bool editName, QWidget *parent) :
+DialogDetector::DialogDetector(Detector mydet, bool editName, QWidget *parent) :
   QDialog(parent),
-  root_dir_(rd),
   my_detector_(mydet),
   table_nrgs_(my_detector_.energy_calibrations_, false),
   selection_nrgs_(&table_nrgs_),
@@ -45,6 +45,10 @@ DialogDetector::DialogDetector(Detector mydet, QDir rd, bool editName, QWidget *
   ui(new Ui::DialogDetector)
 {
   ui->setupUi(this);
+
+  QSettings settings;
+  settings.beginGroup("Program");
+  settings_directory_ = settings.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
 
   //file formats, should be in detector db widget
   std::vector<std::string> spectypes = SinkFactory::getInstance().types();
@@ -111,7 +115,8 @@ DialogDetector::~DialogDetector()
   delete ui;
 }
 
-void DialogDetector::updateDisplay() {
+void DialogDetector::updateDisplay()
+{
   if (my_detector_.name_ != Detector().name_)
     ui->lineName->setText(QString::fromStdString(my_detector_.name_));
   else
@@ -163,7 +168,7 @@ void DialogDetector::on_buttonBox_accepted()
 
 void DialogDetector::on_pushReadOpti_clicked()
 {
-  QString fileName = QFileDialog::getOpenFileName(this, "Open File", root_dir_.absolutePath(),
+  QString fileName = QFileDialog::getOpenFileName(this, "Open File", settings_directory_.absolutePath(),
                                                   "Qpx project file (*.qpx)");
   if (!validateFile(this, fileName, false))
     return;
@@ -182,7 +187,7 @@ void DialogDetector::on_pushReadOpti_clicked()
 
 void DialogDetector::on_pushRead1D_clicked()
 {
-  QString fileName = QFileDialog::getOpenFileName(this, "Load spectrum", root_dir_.absolutePath(), mca_formats_);
+  QString fileName = QFileDialog::getOpenFileName(this, "Load spectrum", settings_directory_.absolutePath(), mca_formats_);
 
   if (!validateFile(this, fileName, false))
     return;
@@ -209,7 +214,8 @@ void DialogDetector::on_pushRead1D_clicked()
   this->setCursor(Qt::ArrowCursor);
 }
 
-void DialogDetector::selection_changed(QItemSelection, QItemSelection) {
+void DialogDetector::selection_changed(QItemSelection, QItemSelection)
+{
   if (selection_nrgs_.selectedIndexes().empty())
     ui->pushRemove->setEnabled(false);
   else
@@ -338,8 +344,8 @@ QVariant TableDetectors::headerData(int section, Qt::Orientation orientation, in
   return QVariant();
 }
 
-
-void TableDetectors::update() {
+void TableDetectors::update()
+{
   QModelIndex start_ix = createIndex( 0, 0 );
   QModelIndex end_ix = createIndex( rowCount() - 1, columnCount() - 1 );
   emit dataChanged( start_ix, end_ix );
@@ -355,10 +361,14 @@ Qt::ItemFlags TableDetectors::flags(const QModelIndex &index) const
 
 
 int TableCalibrations::rowCount(const QModelIndex & /*parent*/) const
-{    return myDB.size(); }
+{
+  return myDB.size();
+}
 
 int TableCalibrations::columnCount(const QModelIndex & /*parent*/) const
-{    return 4; }
+{
+  return 4;
+}
 
 QVariant TableCalibrations::data(const QModelIndex &index, int role) const
 {
@@ -412,7 +422,8 @@ QVariant TableCalibrations::headerData(int section, Qt::Orientation orientation,
 }
 
 
-void TableCalibrations::update() {
+void TableCalibrations::update()
+{
   QModelIndex start_ix = createIndex( 0, 0 );
   QModelIndex end_ix = createIndex( rowCount() - 1, 3 );
   emit dataChanged( start_ix, end_ix );
@@ -427,10 +438,10 @@ Qt::ItemFlags TableCalibrations::flags(const QModelIndex &index) const
 
 
 
-WidgetDetectors::WidgetDetectors(QWidget *parent) :
-  QDialog(parent),
-  selection_model_(&table_model_),
-  ui(new Ui::WidgetDetectors)
+WidgetDetectors::WidgetDetectors(QWidget *parent)
+  : QDialog(parent)
+  , ui(new Ui::WidgetDetectors)
+  , selection_model_(&table_model_)
 {
   ui->setupUi(this);
 
@@ -442,10 +453,14 @@ WidgetDetectors::WidgetDetectors(QWidget *parent) :
 
 }
 
-void WidgetDetectors::setData(XMLableDB<Detector> &newdb, QString outdir) {
+void WidgetDetectors::setData(XMLableDB<Detector> &newdb)
+{
   table_model_.setDB(newdb);
   detectors_ = &newdb;
-  root_dir_  = outdir;
+
+  QSettings settings;
+  settings.beginGroup("Program");
+  settings_directory_ = settings.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
 
   ui->tableDetectorDB->setModel(&table_model_);
   ui->tableDetectorDB->setSelectionModel(&selection_model_);
@@ -455,7 +470,6 @@ void WidgetDetectors::setData(XMLableDB<Detector> &newdb, QString outdir) {
   ui->tableDetectorDB->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->tableDetectorDB->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->tableDetectorDB->show();
-
 }
 
 WidgetDetectors::~WidgetDetectors()
@@ -463,12 +477,15 @@ WidgetDetectors::~WidgetDetectors()
   delete ui;
 }
 
-void WidgetDetectors::selection_changed(QItemSelection, QItemSelection) {
+void WidgetDetectors::selection_changed(QItemSelection, QItemSelection)
+{
   toggle_push();
 }
 
-void WidgetDetectors::toggle_push() {
-  if (selection_model_.selectedIndexes().empty()) {
+void WidgetDetectors::toggle_push()
+{
+  if (selection_model_.selectedIndexes().empty())
+  {
     ui->pushEdit->setEnabled(false);
     ui->pushDelete->setEnabled(false);
   } else {
@@ -480,7 +497,7 @@ void WidgetDetectors::toggle_push() {
 
 void WidgetDetectors::on_pushNew_clicked()
 {
-  DialogDetector* newDet = new DialogDetector(Detector(), QDir(root_dir_), true, this);
+  DialogDetector* newDet = new DialogDetector(Detector(), true, this);
   connect(newDet, SIGNAL(newDetReady(Qpx::Detector)), this, SLOT(addNewDet(Qpx::Detector)));
   newDet->exec();
 }
@@ -492,7 +509,7 @@ void WidgetDetectors::on_pushEdit_clicked()
     return;
   int i = ixl.front().row();
 
-  DialogDetector* newDet = new DialogDetector(detectors_->get(i), QDir(root_dir_), false, this);
+  DialogDetector* newDet = new DialogDetector(detectors_->get(i), false, this);
   connect(newDet, SIGNAL(newDetReady(Qpx::Detector)), this, SLOT(addNewDet(Qpx::Detector)));
   newDet->exec();
 }
@@ -518,8 +535,9 @@ void WidgetDetectors::on_pushImport_clicked()
 {
   // ask delete old or append
   QString fileName = QFileDialog::getOpenFileName(this, "Load detector settings",
-                                                  root_dir_, "Detector settings (*.det)");
-  if (validateFile(this, fileName, false)) {
+                                                  settings_directory_, "Detector settings (*.det)");
+  if (validateFile(this, fileName, false))
+  {
     LINFO << "Reading detector settings from xml file " << fileName.toStdString();
     detectors_->read_xml(fileName.toStdString());
     selection_model_.reset();
@@ -531,8 +549,9 @@ void WidgetDetectors::on_pushImport_clicked()
 void WidgetDetectors::on_pushExport_clicked()
 {
   QString fileName = CustomSaveFileDialog(this, "Save detector settings",
-                                          root_dir_, "Detector settings (*.det)");
-  if (validateFile(this, fileName, true)) {
+                                          settings_directory_, "Detector settings (*.det)");
+  if (validateFile(this, fileName, true))
+  {
     QFileInfo file(fileName);
     LINFO << "Writing detector settings to xml file " << fileName.toStdString();
     detectors_->write_xml(fileName.toStdString());
@@ -550,14 +569,14 @@ void WidgetDetectors::addNewDet(Detector newDetector) {
 void WidgetDetectors::on_pushSetDefault_clicked()
 {
   //ask sure?
-  detectors_->write_xml(root_dir_.toStdString() + "/default_detectors.det");
+  detectors_->write_xml(settings_directory_.toStdString() + "/default_detectors.det");
 }
 
 void WidgetDetectors::on_pushGetDefault_clicked()
 {
   //ask sure?
   detectors_->clear();
-  detectors_->read_xml(root_dir_.toStdString() + "/default_detectors.det");
+  detectors_->read_xml(settings_directory_.toStdString() + "/default_detectors.det");
   selection_model_.reset();
   table_model_.update();
   toggle_push();

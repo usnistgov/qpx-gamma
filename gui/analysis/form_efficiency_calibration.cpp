@@ -105,45 +105,42 @@ FormEfficiencyCalibration::~FormEfficiencyCalibration()
   delete ui;
 }
 
-void FormEfficiencyCalibration::closeEvent(QCloseEvent *event) {
+void FormEfficiencyCalibration::closeEvent(QCloseEvent *event)
+{
   //if (!ui->isotopes->save_close()) {
   //  event->ignore();
   //  return;
   //}
-  QSettings settings_;
-  ui->plotSpectrum->saveSettings(settings_);
   saveSettings();
   event->accept();
 }
 
-void FormEfficiencyCalibration::loadSettings() {
-  QSettings settings_;
+void FormEfficiencyCalibration::loadSettings()
+{
+  QSettings settings;
+  ui->plotSpectrum->loadSettings(settings);
 
-  settings_.beginGroup("Program");
-  settings_directory_ = settings_.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
-  data_directory_ = settings_.value("save_directory", QDir::homePath() + "/qpx/data").toString();
-  settings_.endGroup();
+  settings.beginGroup("Program");
+  ui->isotopes->setDir(settings.value("settingsdirectory", QDir::homePath() + "/qpx/settings").toString());
+  data_directory_ = settings.value("save_directory", QDir::homePath() + "/qpx/data").toString();
+  settings.endGroup();
 
-  ui->plotSpectrum->loadSettings(settings_);
-  ui->isotopes->setDir(settings_directory_);
-
-  settings_.beginGroup("Efficiency_calibration");
-  ui->spinTerms->setValue(settings_.value("fit_function_terms", 2).toInt());
-  ui->isotopes->set_current_isotope(settings_.value("current_isotope", "Co-60").toString());
-  ui->doubleEpsilonE->setValue(settings_.value("epsilon_e", 2.0).toDouble());
-  settings_.endGroup();
+  settings.beginGroup("Efficiency_calibration");
+  ui->spinTerms->setValue(settings.value("fit_function_terms", 2).toInt());
+  ui->isotopes->set_current_isotope(settings.value("current_isotope", "Co-60").toString());
+  ui->doubleEpsilonE->setValue(settings.value("epsilon_e", 2.0).toDouble());
+  settings.endGroup();
 }
 
-void FormEfficiencyCalibration::saveSettings() {
-  QSettings settings_;
-
-  ui->plotSpectrum->saveSettings(settings_);
-
-  settings_.beginGroup("Efficiency_calibration");
-  settings_.setValue("fit_function_terms", ui->spinTerms->value());
-  settings_.setValue("current_isotope", ui->isotopes->current_isotope());
-  settings_.setValue("epsilon_e", ui->doubleEpsilonE->value());
-  settings_.endGroup();
+void FormEfficiencyCalibration::saveSettings()
+{
+  QSettings settings;
+  ui->plotSpectrum->saveSettings(settings);
+  settings.beginGroup("Efficiency_calibration");
+  settings.setValue("fit_function_terms", ui->spinTerms->value());
+  settings.setValue("current_isotope", ui->isotopes->current_isotope());
+  settings.setValue("epsilon_e", ui->doubleEpsilonE->value());
+  settings.endGroup();
 }
 
 
@@ -560,10 +557,12 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
 
   p.fit(xx, yy, std::vector<double>(), std::vector<double>());
 
-  if (p.coeffs_.size()) {
+  if (p.coeff_count())
+  {
     new_calibration_.type_ = "Efficiency";
     new_calibration_.bits_ = fit_data_.settings().bits_;
-    new_calibration_.coefficients_ = p.coeffs();
+    new_calibration_.coefficients_ = p.coeffs_consecutive();
+    new_calibration_.r_squared_ = p.chi2();
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
     new_calibration_.model_ = CalibrationModel::polylog;
@@ -588,7 +587,7 @@ void FormEfficiencyCalibration::on_pushApplyCalib_clicked()
 void FormEfficiencyCalibration::on_pushDetDB_clicked()
 {
   WidgetDetectors *det_widget = new WidgetDetectors(this);
-  det_widget->setData(detectors_, settings_directory_);
+  det_widget->setData(detectors_);
   connect(det_widget, SIGNAL(detectorsUpdated()), this, SLOT(detectorsUpdated()));
   det_widget->exec();
 }
@@ -669,11 +668,12 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
 
   p.fit(xx, yy, std::vector<double>(), std::vector<double>());
 
-  if (p.coeffs_.size())
+  if (p.coeff_count())
   {
     new_calibration_.type_ = "Efficiency";
     new_calibration_.bits_ = fit_data_.settings().bits_;
-    new_calibration_.coefficients_ = p.coeffs();
+    new_calibration_.coefficients_ = p.coeffs_consecutive();
+    new_calibration_.r_squared_ = p.chi2();
     new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
     new_calibration_.units_ = "ratio";
     new_calibration_.model_ = CalibrationModel::loginverse;
@@ -701,9 +701,9 @@ void FormEfficiencyCalibration::on_pushFitEffit_clicked()
     if (visible) {
       for (auto &q : fit.second.peaks()) {
 
-// BROKEN
-//        if (!q.second.flagged)
-//          continue;
+        // BROKEN
+        //        if (!q.second.flagged)
+        //          continue;
 
         double x = q.second.energy().value();
         double y = q.second.efficiency_relative_ * fit.second.activity_scale_factor_;
@@ -715,15 +715,17 @@ void FormEfficiencyCalibration::on_pushFitEffit_clicked()
     }
   }
 
-  Effit p = Effit(xx, yy);
+  Effit p;
+  p.fit(xx, yy, std::vector<double>(), std::vector<double>());
 
-    new_calibration_.type_ = "Efficiency";
-    new_calibration_.bits_ = fit_data_.settings().bits_;
-    new_calibration_.coefficients_ = p.coeffs();
-    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
-    new_calibration_.units_ = "ratio";
-    new_calibration_.model_ = CalibrationModel::effit;
-    DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
+  new_calibration_.type_ = "Efficiency";
+  new_calibration_.bits_ = fit_data_.settings().bits_;
+  new_calibration_.coefficients_ = p.coeffs_consecutive();
+  new_calibration_.r_squared_ = p.chi2();
+  new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
+  new_calibration_.units_ = "ratio";
+  new_calibration_.model_ = CalibrationModel::effit;
+  DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
 
   replot_calib();
   toggle_push();

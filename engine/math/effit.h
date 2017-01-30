@@ -23,39 +23,23 @@
 #ifndef EFFIT_H
 #define EFFIT_H
 
-#include <vector>
-#include <iostream>
-#include <numeric>
+#include "coef_function.h"
 
-
-class Effit
+class Effit : public CoefFunction
 {
 public:
-  Effit() : xoffset_(0.0), rsq(-1), A(0), B(1), C(0), D(0), E(0), F(0), G(20) {}
-  Effit(std::vector<double> coeffs, double center = 0);
+  Effit() {}
+  Effit(std::vector<double> coeffs, double uncert, double rsq)
+    : CoefFunction(coeffs, uncert, rsq) {}
 
-  Effit(std::vector<double> &x, std::vector<double> &y, double center=0);
+  std::string type() const override {return "Effit";}
+  std::string to_string() const override;
+  std::string to_UTF8(int precision = -1, bool with_rsq = false) const override;
+  std::string to_markup(int precision = -1, bool with_rsq = false) const override;
+  double eval(double x)  const override;
+  double derivative(double x) const override;
 
-  void fit(std::vector<double> &x, std::vector<double> &y, double center=0);
-
-  //Effit derivative();
-
-  std::vector<double> coeffs();
-
-  std::string to_string();
-  std::string to_UTF8(int precision = -1, bool with_rsq = false);
-  std::string to_markup();
-  std::string coef_to_string() const;
-  void coef_from_string(std::string);
-
-  double evaluate(double x);
-//  double inverse_evaluate(double y, double e = 0.2);
-  std::vector<double> evaluate_array(std::vector<double> x);
-  
-  double xoffset_;
-  double rsq;
-
-  double A, B, C, D, E, F, G;
+  std::string root_definition() override;
 };
 
 #endif
