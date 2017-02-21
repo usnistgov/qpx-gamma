@@ -27,6 +27,7 @@
 #include "qt_util.h"
 #include <QSettings>
 
+#include "optimizer.h"
 
 FormGainCalibration::FormGainCalibration(XMLableDB<Qpx::Detector>& dets, Qpx::Fitter& fit1, Qpx::Fitter& fit2, QWidget *parent) :
   QWidget(parent),
@@ -228,7 +229,9 @@ void FormGainCalibration::on_pushCalibGain_clicked()
   DBG << "points " << xx.size() << " coefs " << p.coeff_count();
 
 //  yy_sigma.resize(yy.size(), 1);
-  p.fit(xx, yy, xx_sigma, yy_sigma);
+//  p.fit(xx, yy, xx_sigma, yy_sigma);
+
+  Qpx::Optimizer::fit(p, xx, yy, xx_sigma, yy_sigma);
 
   if (p.coeff_count())
   {

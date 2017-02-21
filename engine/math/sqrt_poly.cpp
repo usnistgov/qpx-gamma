@@ -124,28 +124,3 @@ double SqrtPoly::derivative(double x) const
 {
   return x;
 }
-
-std::string SqrtPoly::root_definition()
-{
-  std::string definition = "TMath::Sqrt(";
-  int i = 0;
-  for (auto &c : coeffs_)
-  {
-    if (i > 0)
-      definition += "+";
-    definition += "[" + std::to_string(i) + "]";
-    if (c.first > 0)
-    {
-      definition += "*";
-      if (xoffset_.value().value())
-        definition += "(x-" + std::to_string(xoffset_.value().value()) + ")";
-      else
-        definition += "x";
-    }
-    if (c.first > 1)
-      definition += "^" + std::to_string(c.first);
-    i++;
-  }
-  definition  += ")";
-  return definition;
-}

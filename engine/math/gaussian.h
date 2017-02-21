@@ -33,15 +33,6 @@ class Gaussian {
 public:
   Gaussian();
 
-  void fit(const std::vector<double> &x, const std::vector<double> &y);
-
-  static std::vector<Gaussian> fit_multi(const std::vector<double> &x,
-                                         const std::vector<double> &y,
-                                         std::vector<Gaussian> old,
-                                         Polynomial &background,
-                                         FitSettings settings
-                                         );
-
   std::string to_string() const;
 
   double evaluate(double x);
@@ -52,6 +43,10 @@ public:
   const FitParam& height() const {return height_;}
   const FitParam& hwhm() const {return hwhm_;}
 
+  void set_center(const UncertainDouble &ncenter);
+  void set_height(const UncertainDouble &nheight);
+  void set_hwhm(const UncertainDouble &nwidth);
+
   void set_center(const FitParam &ncenter);
   void set_height(const FitParam &nheight);
   void set_hwhm(const FitParam &nwidth);
@@ -60,27 +55,12 @@ public:
   void constrain_height(double min, double max);
   void constrain_hwhm(double min, double max);
 
+  void bound_center(double min, double max);
+  void bound_height(double min, double max);
+  void bound_hwhm(double min, double max);
+
   void set_chi2(double);
   
-  static std::string root_definition(uint16_t start = 0);
-  static std::string root_definition(uint16_t a, uint16_t c, uint16_t w);
-
-  void set_params(TF1* f, uint16_t start = 0) const;
-  void set_params(TF1* f, uint16_t a, uint16_t c, uint16_t w) const;
-  void get_params(TF1* f, uint16_t start = 0);
-  void get_params(TF1* f, uint16_t a, uint16_t c, uint16_t w);
-  void fit_root(const std::vector<double> &x, const std::vector<double> &y);
-  static std::vector<Gaussian> fit_multi_root(const std::vector<double> &x,
-                                              const std::vector<double> &y,
-                                              std::vector<Gaussian> old,
-                                              Polynomial &background,
-                                              FitSettings settings);
-  static std::vector<Gaussian> fit_multi_root_commonw(const std::vector<double> &x,
-                                                      const std::vector<double> &y,
-                                                      std::vector<Gaussian> old,
-                                                      Polynomial &background,
-                                                      FitSettings settings);
-
 protected:
   FitParam height_ {"height", 0};
   FitParam center_ {"center", 0};

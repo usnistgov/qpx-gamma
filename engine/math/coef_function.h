@@ -28,8 +28,6 @@
 #include "fit_param.h"
 #include "xmlable.h"
 
-#include "TF1.h"
-
 class CoefFunction : public XMLable
 {
 public:
@@ -47,21 +45,17 @@ public:
   void set_xoffset(const FitParam& o);
   void set_chi2(double);
   void set_coeff(int degree, const FitParam& p);
+  void set_coeff(int degree, const UncertainDouble& p);
   void add_coeff(int degree, double lbound, double ubound);
   void add_coeff(int degree, double lbound, double ubound, double initial);
 
   double eval_inverse(double y, double e = 0.2) const;
   std::vector<double> eval_array(const std::vector<double> &x) const;
 
-  void fit(const std::vector<double> &x,
-           const std::vector<double> &y,
-           const std::vector<double> &x_sigma,
-           const std::vector<double> &y_sigma);
-
   //XMLable
-    void to_xml(pugi::xml_node &node) const override;
-    void from_xml(const pugi::xml_node &node) override;
-    std::string xml_element_name() const override {return this->type();}
+  void to_xml(pugi::xml_node &node) const override;
+  void from_xml(const pugi::xml_node &node) override;
+  std::string xml_element_name() const override {return this->type();}
 
   //TO IMPLEMENT IN CHILDREN
   virtual std::string type() const = 0;
@@ -71,17 +65,6 @@ public:
 
   virtual double eval(double x) const = 0;
   virtual double derivative(double x) const = 0;
-
-  //ROOT
-  virtual std::string root_definition() = 0;
-
-  void fit_root(const std::vector<double> &x,
-                const std::vector<double> &y,
-                const std::vector<double> &x_sigma,
-                const std::vector<double> &y_sigma);
-
-  void set_params(TF1* f, uint16_t start) const;
-  void get_params(TF1* f, uint16_t start);
 
 protected:
   std::map<int, FitParam> coeffs_;

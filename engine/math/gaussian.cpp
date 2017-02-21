@@ -31,11 +31,6 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "TF1.h"
-#include "TGraph.h"
-#include "TGraphErrors.h"
-#include "TH1.h"
-
 Gaussian::Gaussian()
 {}
 
@@ -58,6 +53,24 @@ void Gaussian::set_hwhm(const FitParam &nwidth)
 //  chi2_ = 0;
 }
 
+void Gaussian::set_center(const UncertainDouble &ncenter)
+{
+  center_.set_value(ncenter);
+//  chi2_ = 0;
+}
+
+void Gaussian::set_height(const UncertainDouble &nheight)
+{
+  height_.set_value(nheight);
+//  chi2_ = 0;
+}
+
+void Gaussian::set_hwhm(const UncertainDouble &nwidth)
+{
+  hwhm_.set_value(nwidth);
+//  chi2_ = 0;
+}
+
 void Gaussian::constrain_center(double min, double max)
 {
   center_.constrain(min, max);
@@ -73,32 +86,38 @@ void Gaussian::constrain_hwhm(double min, double max)
   hwhm_.constrain(min, max);
 }
 
+void Gaussian::bound_center(double min, double max)
+{
+  center_.preset_bounds(min, max);
+}
+
+void Gaussian::bound_height(double min, double max)
+{
+  height_.preset_bounds(min, max);
+}
+
+void Gaussian::bound_hwhm(double min, double max)
+{
+  hwhm_.preset_bounds(min, max);
+}
+
 
 void Gaussian::set_chi2(double c2)
 {
   chi2_ = c2;
 }
 
-
-void Gaussian::fit(const std::vector<double> &x, const std::vector<double> &y)
+std::string Gaussian::to_string() const
 {
-  fit_root(x, y);
-}
+  std::string ret = "gaussian ";
+  ret += "   area=" + area().to_string()
+      + "   chi2=" + boost::lexical_cast<std::string>(chi2_) + "    where:\n";
 
-std::vector<Gaussian> Gaussian::fit_multi(const std::vector<double> &x,
-                                          const std::vector<double> &y,
-                                          std::vector<Gaussian> old,
-                                          Polynomial &background,
-                                          FitSettings settings)
-{
-  bool use_w_common = (settings.width_common &&
-                       settings.cali_fwhm_.valid() &&
-                       settings.cali_nrg_.valid());
+  ret += "     " + center_.to_string() + "\n";
+  ret += "     " + height_.to_string() + "\n";
+  ret += "     " + hwhm_.to_string() + "\n";
 
-  if (use_w_common)
-    return fit_multi_root_commonw(x,y, old, background, settings);
-  else
-    return fit_multi_root(x,y, old, background, settings);
+  return ret;
 }
 
 double Gaussian::evaluate(double x) {
@@ -125,234 +144,3 @@ std::vector<double> Gaussian::evaluate_array(std::vector<double> x) {
   }
   return y;
 }
-
-
-std::string Gaussian::root_definition(uint16_t start)
-{
-  return root_definition(start, start+1, start+2);
-}
-
-std::string Gaussian::root_definition(uint16_t a, uint16_t c, uint16_t w)
-{
-  return "[" + std::to_string(a) + "]"
-                                   "*TMath::Exp(-((x-[" + std::to_string(c) + "])/[" + std::to_string(w) + "])^2)";
-}
-
-void Gaussian::set_params(TF1* f, uint16_t start) const
-{
-  set_params(f, start, start+1, start+2);
-}
-
-void Gaussian::set_params(TF1* f, uint16_t a, uint16_t c, uint16_t w) const
-{
-  height_.set(f, a);
-  center_.set(f, c);
-  hwhm_.set(f, w);
-}
-
-void Gaussian::get_params(TF1* f, uint16_t start)
-{
-  get_params(f, start, start+1, start+2);
-}
-
-void Gaussian::get_params(TF1* f, uint16_t a, uint16_t c, uint16_t w)
-{
-  height_.get(f, a);
-  center_.get(f, c);
-  hwhm_.get(f, w);
-}
-
-void Gaussian::fit_root(const std::vector<double> &x, const std::vector<double> &y)
-{
-  if ((x.size() < 1) || (x.size() != y.size()))
-    return;
-
-  TH1D* h1 = new TH1D("h1", "h1", x.size(), x.front(), x.back());
-  int i=1;
-  for (const auto &h : y)
-  {
-    h1->SetBinContent(i, h);
-    h1->SetBinError(i, sqrt(h));
-    i++;
-  }
-
-  TF1* f1 = new TF1("f1", this->root_definition().c_str());
-
-  center_.preset_bounds(x.front(), x.back());
-  hwhm_.preset_bounds(0, x.back() - x.front());
-  height_.preset_bounds(0, h1->GetMaximum() - h1->GetMinimum());
-
-  set_params(f1);
-
-  h1->Fit("f1", "QEMN");
-  //  h1->Fit("f1", "EMN");
-
-  get_params(f1);
-  chi2_ = f1->GetChisquare();
-
-  f1->Delete();
-  h1->Delete();
-}
-
-std::vector<Gaussian> Gaussian::fit_multi_root(const std::vector<double> &x,
-                                               const std::vector<double> &y,
-                                               std::vector<Gaussian> old,
-                                               Polynomial &background,
-                                               FitSettings settings)
-{
-  if (old.empty())
-    return old;
-
-  if ((x.size() < 1) || (x.size() != y.size()))
-    return old;
-
-  TH1D* h1 = new TH1D("h1", "h1", x.size(), x.front(), x.back());
-  int i=1;
-  for (const auto &h : y)
-  {
-    h1->SetBinContent(i, h);
-    h1->SetBinError(i, sqrt(h));
-    i++;
-  }
-
-  std::string definition = background.root_definition();
-  uint16_t backgroundparams = background.coeff_count();
-  for (size_t i=0; i < old.size(); ++i)
-  {
-    uint16_t num = backgroundparams + i * 3;
-    definition += "+" + Gaussian().root_definition(num);
-  }
-
-//  DBG << "Definition = " << definition;
-
-  TF1* f1 = new TF1("f1", definition.c_str());
-
-  for (auto &o : old)
-  {
-    double width_expected = o.hwhm_.value().value();
-    if (settings.cali_fwhm_.valid() && settings.cali_nrg_.valid())
-      width_expected = settings.bin_to_width(o.center_.value().value()) / (2* sqrt(log(2)));
-
-    o.hwhm_.set(width_expected * settings.width_common_bounds.lower(),
-                width_expected * settings.width_common_bounds.upper(),
-                o.hwhm_.value().value());
-
-    o.height_.set(o.height_.value().value() * 1e-5,
-                  o.height_.value().value() * 1e5,
-                  o.height_.value().value());
-
-    double lateral_slack = settings.lateral_slack * o.hwhm_.value().value() * 2 * sqrt(log(2));
-    o.center_.set(o.center_.value().value() - lateral_slack,
-                  o.center_.value().value() + lateral_slack,
-                  o.center_.value().value());
-  }
-
-
-  background.set_params(f1, 0);
-  for (size_t i=0; i < old.size(); ++i)
-  {
-    uint16_t num = backgroundparams + i * 3;
-    old[i].set_params(f1, num);
-  }
-
-  h1->Fit("f1", "QEMN");
-  //  h1->Fit("f1", "EMN");
-
-  background.get_params(f1, 0);
-  for (size_t i=0; i < old.size(); ++i)
-  {
-    uint16_t num = backgroundparams + i * 3;
-    old[i].get_params(f1, num);
-    old[i].chi2_ = f1->GetChisquare();
-  }
-  background.set_chi2(f1->GetChisquare());
-
-  f1->Delete();
-  h1->Delete();
-
-  return old;
-}
-
-std::vector<Gaussian> Gaussian::fit_multi_root_commonw(const std::vector<double> &x,
-                                                       const std::vector<double> &y,
-                                                       std::vector<Gaussian> old,
-                                                       Polynomial &background,
-                                                       FitSettings settings)
-{
-  if (old.empty())
-    return old;
-
-  if ((x.size() < 1) || (x.size() != y.size()))
-    return old;
-
-  TH1D* h1 = new TH1D("h1", "h1", x.size(), x.front(), x.back());
-  int i=1;
-  for (const auto &h : y)
-  {
-    h1->SetBinContent(i, h);
-    h1->SetBinError(i, sqrt(h));
-    i++;
-  }
-
-  double centers_avg {0};
-  for (auto &p : old)
-    centers_avg += p.center_.value().value();
-  centers_avg /= old.size();
-
-  double width_expected = settings.bin_to_width(centers_avg) / (2 * sqrt(log(2)));
-  FitParam w_common("hwhm", 0);
-  w_common.preset_bounds(width_expected * settings.width_common_bounds.lower(),
-                         width_expected * settings.width_common_bounds.upper());
-
-  std::string definition = background.root_definition();
-  uint16_t backgroundparams = background.coeff_count();
-  for (size_t i=0; i < old.size(); ++i)
-  {
-    uint16_t num = 1 + backgroundparams + i * 2;
-    definition += "+" + Gaussian().root_definition(num, num+1, backgroundparams);
-  }
-
-//  DBG << "Definition = " << definition;
-
-  TF1* f1 = new TF1("f1", definition.c_str());
-
-  for (auto &o : old)
-  {
-    o.hwhm_ = w_common;
-
-    o.height_.set(o.height_.value().value() * 1e-5,
-                  o.height_.value().value() * 1e5,
-                  o.height_.value().value());
-
-    double lateral_slack = settings.lateral_slack * o.hwhm_.value().value() * 2 * sqrt(log(2));
-    o.center_.set(o.center_.value().value() - lateral_slack,
-                  o.center_.value().value() + lateral_slack,
-                  o.center_.value().value());
-  }
-
-  background.set_params(f1, 0);
-  w_common.set(f1, backgroundparams);
-  for (size_t i=0; i < old.size(); ++i)
-  {
-    uint16_t num = 1 + backgroundparams + i * 2;
-    old[i].set_params(f1, num, num+1, backgroundparams);
-  }
-
-  h1->Fit("f1", "QEMN");
-  //  h1->Fit("f1", "EMN");
-
-  background.get_params(f1, 0);
-  for (size_t i=0; i < old.size(); ++i)
-  {
-    uint16_t num = 1 + backgroundparams + i * 2;
-    old[i].get_params(f1, num, num+1, backgroundparams);
-    old[i].chi2_ = f1->GetChisquare();
-  }
-  background.set_chi2(f1->GetChisquare());
-
-  f1->Delete();
-  h1->Delete();
-
-  return old;
-}
-

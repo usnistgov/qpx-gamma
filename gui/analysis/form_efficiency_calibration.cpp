@@ -35,6 +35,8 @@
 #include "log_inverse.h"
 #include "effit.h"
 
+#include "optimizer.h"
+
 using namespace Qpx;
 
 FormEfficiencyCalibration::FormEfficiencyCalibration(XMLableDB<Detector>& newDetDB, QWidget *parent) :
@@ -555,7 +557,7 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
       p.add_coeff(i, -50, 50, 0);
   }
 
-  p.fit(xx, yy, std::vector<double>(), std::vector<double>());
+  Optimizer::fit(p, xx, yy, std::vector<double>(), std::vector<double>());
 
   if (p.coeff_count())
   {
@@ -666,7 +668,7 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
       p.add_coeff(i, -50, 50, 0);
   }
 
-  p.fit(xx, yy, std::vector<double>(), std::vector<double>());
+  Optimizer::fit(p, xx, yy, std::vector<double>(), std::vector<double>());
 
   if (p.coeff_count())
   {
@@ -716,7 +718,7 @@ void FormEfficiencyCalibration::on_pushFitEffit_clicked()
   }
 
   Effit p;
-  p.fit(xx, yy, std::vector<double>(), std::vector<double>());
+  Optimizer::fit(p, xx, yy, std::vector<double>(), std::vector<double>());
 
   new_calibration_.type_ = "Efficiency";
   new_calibration_.bits_ = fit_data_.settings().bits_;

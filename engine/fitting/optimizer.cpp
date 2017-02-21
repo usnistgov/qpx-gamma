@@ -21,8 +21,8 @@
  ******************************************************************************/
 
 #include "optimizer.h"
-#include "TGraphErrors.h"
 #include "TH1.h"
+
 
 namespace Qpx {
 
@@ -42,9 +42,9 @@ void Optimizer::set(TF1* f, uint16_t num, const FitParam& param)
   f->SetParLimits(num, param.lower(), param.upper());
 }
 
-void Optimizer::get(TF1* f, uint16_t num, FitParam& param)
+UncertainDouble Optimizer::get(TF1* f, uint16_t num)
 {
-  param.set_value(UncertainDouble::from_double(f->GetParameter(num), f->GetParError(num)));
+  return UncertainDouble::from_double(f->GetParameter(num), f->GetParError(num));
 }
 
 uint16_t Optimizer::set_params(const CoefFunction &func, TF1* f, uint16_t start)
@@ -63,15 +63,14 @@ uint16_t Optimizer::get_params(CoefFunction &func, TF1* f, uint16_t start)
   for (auto p : func.get_coeffs())
     if (!p.second.fixed())
     {
-      get(f, start, p.second);
-      func.set_coeff(p.first, p.second);
+      func.set_coeff(p.first, get(f, start));
       start++;
     }
   return start;
 }
 
 std::string Optimizer::CoefFunctionVisitor::define_chain(const CoefFunction& func,
-                                                         const std::string &element)
+                                                         const std::string &element) const
 {
   std::string definition;
   int i = 0;
@@ -79,91 +78,19 @@ std::string Optimizer::CoefFunctionVisitor::define_chain(const CoefFunction& fun
   {
     if (i > 0)
       definition += "+";
-    definition += def(i, c.second);
+    if (!c.second.fixed())
+    {
+      definition += def(i, c.second);
+      i++;
+    }
+    else
+      definition += std::to_string(c.second.value().value());
     if (c.first > 0)
       definition += "*" + element;
     if (c.first > 1)
       definition += "^" + std::to_string(c.first);
-    i++;
   }
   return definition;
-}
-
-std::string Optimizer::CoefFunctionVisitor::definition(const Polynomial& p)
-{
-  std::string xc = "x";
-  if (p.xoffset().value().finite() && p.xoffset().value().value())
-    xc = "(x-" + std::to_string(p.xoffset().value().value()) + ")";
-
-  return define_chain(p, xc);
-}
-
-std::string Optimizer::CoefFunctionVisitor::definition(const PolyLog& p)
-{
-  std::string xc = "TMath::Log(x)";
-  if (p.xoffset().value().finite() && p.xoffset().value().value())
-    xc = "TMath::Log(x-" + std::to_string(p.xoffset().value().value()) + ")";
-
-  return "TMath::Exp(" + define_chain(p, xc) + ")";
-}
-
-std::string Optimizer::CoefFunctionVisitor::definition(const SqrtPoly& p)
-{
-  std::string xc = "x";
-  if (p.xoffset().value().finite() && p.xoffset().value().value())
-    xc = "(x-" + std::to_string(p.xoffset().value().value()) + ")";
-
-  return "TMath::Sqrt(" + define_chain(p, xc) + ")";
-}
-
-std::string Optimizer::CoefFunctionVisitor::definition(const LogInverse& p)
-{
-  std::string xc = "(1.0/x)";
-  if (p.xoffset().value().finite() && p.xoffset().value().value())
-    xc = "1.0/(x-" + std::to_string(p.xoffset().value().value()) + ")";
-
-  return "TMath::Exp(" + define_chain(p, xc) + ")";
-}
-
-std::string Optimizer::CoefFunctionVisitor::definition(const Effit& p)
-{
-  std::string definition = "((d + e*xb + f*(xb^2))^(-20))^(-0.05) where xb=ln(x/1000)";
-  //   x= ((A + B*ln(x/100.0) + C*(ln(x/100.0)^2))^(-G) + (D + E*ln(x/1000.0) + F*(ln(x/1000.0)^2))^(1-G))^(1-(1/G))
-  //pow(pow(A + B*xa + C*xa*xa,-G) + pow(D + E*xb + F*xb*xb,-G), -1.0/G);
-//  if (G==0)
-//      G = 20;
-  return definition;
-}
-
-void Optimizer::fit(CoefFunction& func,
-                    const std::vector<double> &x,
-                    const std::vector<double> &y,
-                    const std::vector<double> &x_sigma,
-                    const std::vector<double> &y_sigma)
-{
-  if (x.size() != y.size())
-    return;
-
-  TGraphErrors* g1;
-  if ((x.size() == x_sigma.size()) && (x_sigma.size() == y_sigma.size()))
-    g1 = new TGraphErrors(y.size(),
-                          x.data(), y.data(),
-                          x_sigma.data(), y_sigma.data());
-  else
-    g1 = new TGraphErrors(y.size(),
-                          x.data(), y.data(),
-                          nullptr, nullptr);
-
-  TF1* f1 = new TF1("f1", CoefFunctionVisitor().definition(func).c_str());
-  set_params(func, f1, 0);
-
-  g1->Fit("f1", "QEMN");
-
-  get_params(func, f1, 0);
-  func.set_chi2(f1->GetChisquare());
-
-  f1->Delete();
-  g1->Delete();
 }
 
 std::string Optimizer::def(const Gaussian& gaussian, uint16_t start)
@@ -196,25 +123,26 @@ void Optimizer::get_params(Gaussian& gaussian, TF1* f, uint16_t start)
 
 void Optimizer::get_params(Gaussian& gaussian, TF1* f, uint16_t a, uint16_t c, uint16_t w)
 {
-  auto height = gaussian.height();
-  get(f, a, height);
-  gaussian.set_height(height);
+  gaussian.set_height(get(f, a));
+  gaussian.set_center(get(f, c));
+  gaussian.set_hwhm(get(f, w));
+}
 
-  auto center = gaussian.height();
-  get(f, c, center);
-  gaussian.set_center(center);
-
-  auto hwhm = gaussian.hwhm();
-  get(f, w, hwhm);
-  gaussian.set_hwhm(hwhm);
+void Optimizer::initial_sanity(Gaussian& gaussian,
+                               double xmin, double xmax,
+                               double ymin, double ymax)
+{
+  gaussian.bound_center(xmin, xmax);
+  gaussian.bound_height(0, ymax-ymin);
+  gaussian.bound_hwhm(0, xmax-xmin);
 }
 
 void Optimizer::sanity_check(Gaussian& gaussian,
                              double xmin, double xmax,
                              double ymin, double ymax)
 {
-  gaussian.constrain_height(0, ymax-ymin);
   gaussian.constrain_center(xmin, xmax);
+  gaussian.constrain_height(0, ymax-ymin);
   gaussian.constrain_hwhm(0, xmax-xmin);
 }
 
@@ -244,8 +172,8 @@ void Optimizer::fit(Gaussian& gaussian,
   if (!h1)
     return;
 
-  sanity_check(gaussian, x.front(), x.back(),
-               h1->GetMinimum(), h1->GetMaximum());
+  initial_sanity(gaussian, x.front(), x.back(),
+                 h1->GetMinimum(), h1->GetMaximum());
 
   TF1* f1 = new TF1("f1", def(gaussian).c_str());
 
@@ -275,6 +203,23 @@ std::vector<Gaussian> Optimizer::fit_multiplet(const std::vector<double> &x,
   else
     return fit_multi_variw(x,y, old, background, settings);
 }
+
+std::vector<Hypermet> Optimizer::fit_multiplet(const std::vector<double> &x,
+                                               const std::vector<double> &y,
+                                               std::vector<Hypermet> old,
+                                               Polynomial &background,
+                                               FitSettings settings)
+{
+  bool use_w_common = (settings.width_common &&
+                       settings.cali_fwhm_.valid() &&
+                       settings.cali_nrg_.valid());
+
+  if (use_w_common)
+    return fit_multi_commonw(x,y, old, background, settings);
+  else
+    return fit_multi_variw(x,y, old, background, settings);
+}
+
 
 void Optimizer::constrain_center(Gaussian &gaussian, double slack)
 {
@@ -309,15 +254,13 @@ std::vector<Gaussian> Optimizer::fit_multi_variw(const std::vector<double> &x,
                             width_expected * settings.width_common_bounds.upper());
   }
 
-  std::string definition = CoefFunctionVisitor().definition(background);
+  std::string definition = def_of(background);
   uint16_t backgroundparams = background.coeff_count(); //valid coef count?
   for (size_t i=0; i < old.size(); ++i)
   {
     uint16_t num = backgroundparams + i * 3;
     definition += "+" + def(old.at(i), num);
   }
-
-  //  DBG << "Definition = " << definition;
 
   TF1* f1 = new TF1("f1", definition.c_str());
 
@@ -370,15 +313,13 @@ std::vector<Gaussian> Optimizer::fit_multi_commonw(const std::vector<double> &x,
     constrain_center(gaussian, settings.lateral_slack);
   }
 
-  std::string definition = CoefFunctionVisitor().definition(background);
+  std::string definition = def_of(background);
   uint16_t w_index = background.coeff_count(); //valid coef count?
   for (size_t i=0; i < old.size(); ++i)
   {
     uint16_t num = 1 + w_index + i * 2;
     definition += "+" + def(old.at(i), num, num+1, w_index);
   }
-
-  //  DBG << "Definition = " << definition;
 
   TF1* f1 = new TF1("f1", definition.c_str());
 
@@ -453,5 +394,178 @@ std::string Optimizer::def(const Hypermet& hyp, uint16_t width, uint16_t i)
   return h + "*( TMath::Exp(-(" + xcw + ")^2) + 0.5 * (" + lskew +  " + " + rskew + " + " + tail  + " + " + step  + " ) )";
 }
 
+void Optimizer::set_params(const Hypermet& hyp, TF1* f, uint16_t start)
+{
+  set_params(hyp, f, start, start+1);
+}
+
+void Optimizer::set_params(const Hypermet& hyp, TF1* f, uint16_t width, uint16_t others_start)
+{
+  set(f, width, hyp.width());
+  set(f, others_start, hyp.height());
+  set(f, others_start+1, hyp.center());
+  set(f, others_start+2, hyp.Lskew_amplitude());
+  set(f, others_start+3, hyp.Lskew_slope());
+  set(f, others_start+4, hyp.Rskew_amplitude());
+  set(f, others_start+5, hyp.Rskew_slope());
+  set(f, others_start+6, hyp.tail_amplitude());
+  set(f, others_start+7, hyp.tail_slope());
+  set(f, others_start+8, hyp.step_amplitude());
+}
+
+void Optimizer::get_params(Hypermet& hyp, TF1* f, uint16_t start)
+{
+  get_params(hyp, f, start, start+1);
+}
+
+void Optimizer::get_params(Hypermet& hyp, TF1* f, uint16_t w, uint16_t others_start)
+{
+  hyp.set_width(get(f, w));
+  hyp.set_height(get(f, others_start));
+  hyp.set_center(get(f, others_start+1));
+  hyp.set_Lskew_amplitude(get(f, others_start+2));
+  hyp.set_Lskew_slope(get(f, others_start+3));
+  hyp.set_Rskew_amplitude(get(f, others_start+4));
+  hyp.set_Rskew_slope(get(f, others_start+5));
+  hyp.set_tail_amplitude(get(f, others_start+6));
+  hyp.set_tail_slope(get(f, others_start+7));
+  hyp.set_step_amplitude(get(f, others_start+8));
+}
+
+void Optimizer::sanity_check(Hypermet& hyp,
+                             double xmin, double xmax,
+                             double ymin, double ymax)
+{
+  hyp.constrain_height(0, ymax-ymin);
+  hyp.constrain_center(xmin, xmax);
+  hyp.constrain_width(0, xmax-xmin);
+}
+
+void Optimizer::constrain_center(Hypermet &hyp, double slack)
+{
+  double lateral_slack = slack * hyp.width().value().value() * 2 * sqrt(log(2));
+  hyp.constrain_center(hyp.center().value().value() - lateral_slack,
+                       hyp.center().value().value() + lateral_slack);
+}
+
+std::vector<Hypermet> Optimizer::fit_multi_variw(const std::vector<double> &x,
+                                                 const std::vector<double> &y,
+                                                 std::vector<Hypermet> old,
+                                                 Polynomial &background,
+                                                 FitSettings settings)
+{
+  if (old.empty())
+    return old;
+
+  TH1D* h1 = fill_hist(x, y);
+  if (!h1)
+    return old;
+
+  for (auto &hyp : old)
+  {
+    sanity_check(hyp, x.front(), x.back(), h1->GetMinimum(), h1->GetMaximum());
+    constrain_center(hyp, settings.lateral_slack);
+
+    double width_expected = hyp.width().value().value();
+    if (settings.cali_fwhm_.valid() && settings.cali_nrg_.valid())
+      width_expected = settings.bin_to_width(hyp.center().value().value()) / (2* sqrt(log(2)));
+
+    hyp.constrain_width(width_expected * settings.width_common_bounds.lower(),
+                        width_expected * settings.width_common_bounds.upper());
+  }
+
+  std::string definition = def_of(background);
+  uint16_t backgroundparams = background.coeff_count(); //valid coef count?
+  for (size_t i=0; i < old.size(); ++i)
+  {
+    uint16_t num = backgroundparams + i * 10;
+    definition += "+" + def(old.at(i), num);
+  }
+
+  TF1* f1 = new TF1("f1", definition.c_str());
+
+  set_params(background, f1, 0);
+  for (size_t i=0; i < old.size(); ++i)
+  {
+    uint16_t num = backgroundparams + i * 10;
+    set_params(old[i], f1, num);
+  }
+
+  h1->Fit("f1", "QEMN");
+
+  get_params(background, f1, 0);
+  for (size_t i=0; i < old.size(); ++i)
+  {
+    uint16_t num = backgroundparams + i * 10;
+    get_params(old[i], f1, num);
+    old[i].set_chi2(f1->GetChisquare());
+  }
+  background.set_chi2(f1->GetChisquare());
+
+  f1->Delete();
+  h1->Delete();
+
+  return old;
+}
+
+std::vector<Hypermet> Optimizer::fit_multi_commonw(const std::vector<double> &x,
+                                                   const std::vector<double> &y,
+                                                   std::vector<Hypermet> old,
+                                                   Polynomial &background,
+                                                   FitSettings settings)
+{
+  if (old.empty())
+    return old;
+
+  TH1D* h1 = fill_hist(x, y);
+  if (!h1)
+    return old;
+
+  FitParam w_common("w", 0);
+  double width_expected = settings.bin_to_width((x.front() + x.back())/2) / (2 * sqrt(log(2)));
+  w_common.preset_bounds(width_expected * settings.width_common_bounds.lower(),
+                         width_expected * settings.width_common_bounds.upper());
+
+  for (auto &hyp : old)
+  {
+    hyp.set_width(w_common);
+    sanity_check(hyp, x.front(), x.back(), h1->GetMinimum(), h1->GetMaximum());
+    constrain_center(hyp, settings.lateral_slack);
+  }
+
+  std::string definition = def_of(background);
+  uint16_t w_index = background.coeff_count(); //valid coef count?
+  for (size_t i=0; i < old.size(); ++i)
+  {
+    uint16_t num = 1 + w_index + i * 9;
+    definition += "+" + def(old.at(i), w_index, num);
+  }
+
+  TF1* f1 = new TF1("f1", definition.c_str());
+
+  set_params(background, f1, 0);
+  set(f1, w_index, w_common);
+  for (size_t i=0; i < old.size(); ++i)
+  {
+    uint16_t num = 1 + w_index + i * 9;
+    set_params(old[i], f1, w_index, num);
+  }
+
+  h1->Fit("f1", "QEMN");
+
+  get_params(background, f1, 0);
+  for (size_t i=0; i < old.size(); ++i)
+  {
+    uint16_t num = 1 + w_index + i * 9;
+    get_params(old[i], f1, w_index, num);
+    old[i].set_chi2(f1->GetChisquare());
+  }
+  background.set_chi2(f1->GetChisquare());
+
+  f1->Delete();
+  h1->Delete();
+
+  return old;
+}
 
 }

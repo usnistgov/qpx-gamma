@@ -20,6 +20,8 @@
  *
  ******************************************************************************/
 
+#include "optimizer.h"
+
 #include "roi.h"
 #include "gaussian.h"
 #include "custom_logger.h"
@@ -133,7 +135,8 @@ bool ROI::auto_fit(boost::atomic<bool>& interruptor)
       std::vector<double> y_pk = std::vector<double>(y_nobkg.begin() + finder_.lefts[i], y_nobkg.begin() + finder_.rights[i] + 1);
 
       Gaussian gaussian;
-      gaussian.fit(x_pk, y_pk);
+//      gaussian.fit(x_pk, y_pk);
+      Optimizer::fit(gaussian, x_pk, y_pk);
 
       if (
           gaussian.height().value().finite() && (gaussian.height().value().value() > 0) &&
@@ -211,7 +214,8 @@ bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint
       std::vector<double> y_pk = std::vector<double>(finder_.y_resid_.begin() + finder_.lefts[j],
                                                      finder_.y_resid_.begin() + finder_.rights[j] + 1);
       Gaussian gaussian;
-      gaussian.fit(x_pk, y_pk);
+      Optimizer::fit(gaussian, x_pk, y_pk);
+
       bool too_close = false;
 
       double lateral_slack = finder_.settings_.resid_too_close * gaussian.hwhm().value().value() * 2;
@@ -258,7 +262,7 @@ bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint
   std::vector<double> y_pk = std::vector<double>(finder_.y_resid_.begin() + finder_.lefts[target_peak],
                                                  finder_.y_resid_.begin() + finder_.rights[target_peak] + 1);
   Gaussian gaussian;
-  gaussian.fit(x_pk, y_pk);
+  Optimizer::fit(gaussian, x_pk, y_pk);
 
   if (
       gaussian.height().value().finite() && (gaussian.height().value().value() > 0) &&
@@ -587,9 +591,13 @@ bool ROI::rebuild_as_hypermet(boost::atomic<bool>& interruptor)
   if (old_hype.empty())
     return false;
 
-  std::vector<Hypermet> hype = Hypermet::fit_multi(finder_.x_, finder_.y_,
-                                                   old_hype, background_,
-                                                   finder_.settings_);
+//  std::vector<Hypermet> hype = Hypermet::fit_multi(finder_.x_, finder_.y_,
+//                                                   old_hype, background_,
+//                                                   finder_.settings_);
+
+  std::vector<Hypermet> hype = Optimizer::fit_multiplet(finder_.x_, finder_.y_,
+                                                        old_hype, background_,
+                                                        finder_.settings_);
 
   for (size_t i=0; i < hype.size(); ++i) {
     double edge =  hype[i].width().value().value() * sqrt(log(2)) * 3; //use const from settings
@@ -632,9 +640,13 @@ bool ROI::rebuild_as_gaussian(boost::atomic<bool>& interruptor)
   if (old_gauss.empty())
     return false;
 
-  std::vector<Gaussian> gauss = Gaussian::fit_multi(finder_.x_, finder_.y_,
-                                                    old_gauss, background_,
-                                                    finder_.settings_);
+//  std::vector<Gaussian> gauss = Gaussian::fit_multi(finder_.x_, finder_.y_,
+//                                                    old_gauss, background_,
+//                                                    finder_.settings_);
+
+  std::vector<Gaussian> gauss = Optimizer::fit_multiplet(finder_.x_, finder_.y_,
+                                                         old_gauss, background_,
+                                                         finder_.settings_);
 
   for (size_t i=0; i < gauss.size(); ++i)
   {

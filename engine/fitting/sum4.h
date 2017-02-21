@@ -27,6 +27,7 @@
 #include <cstdint>
 #include "polynomial.h"
 #include "UncertainDouble.h"
+#include <cmath>
 
 namespace Qpx {
 

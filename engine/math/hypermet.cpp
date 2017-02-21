@@ -30,11 +30,6 @@
 #include "custom_logger.h"
 #include "qpx_util.h"
 
-#include "TF1.h"
-#include "TGraph.h"
-#include "TGraphErrors.h"
-#include "TH1.h"
-
 Hypermet::Hypermet(Gaussian gauss, FitSettings settings)
   : height_("h", gauss.height().value().value())
   , center_("c", gauss.center().value().value())
@@ -51,6 +46,11 @@ Hypermet::Hypermet(Gaussian gauss, FitSettings settings)
     tail_amplitude_.set_enabled(false);
     step_amplitude_.set_enabled(false);
   }
+}
+
+void Hypermet::set_chi2(double c2)
+{
+  chi2_ = c2;
 }
 
 void Hypermet::set_center(const FitParam &ncenter)
@@ -123,6 +123,95 @@ void Hypermet::set_step_amplitude(const FitParam &nstep_amplitude)
   chi2_ = 0;
 }
 
+void Hypermet::set_center(const UncertainDouble &ncenter)
+{
+  center_.set_value(ncenter);
+  user_modified_ = true;
+  chi2_ = 0;
+}
+
+void Hypermet::set_height(const UncertainDouble &nheight)
+{
+  height_.set_value(nheight);
+  user_modified_ = true;
+  chi2_ = 0;
+}
+
+void Hypermet::set_width(const UncertainDouble &nwidth)
+{
+  width_.set_value(nwidth);
+  user_modified_ = true;
+  chi2_ = 0;
+}
+
+void Hypermet::set_Lskew_amplitude(const UncertainDouble &nLskew_amplitude)
+{
+  Lskew_amplitude_.set_value(nLskew_amplitude);
+  user_modified_ = true;
+  chi2_ = 0;
+}
+
+void Hypermet::set_Lskew_slope(const UncertainDouble &nLskew_slope)
+{
+  Lskew_slope_.set_value(nLskew_slope);
+  user_modified_ = true;
+  chi2_ = 0;
+}
+
+void Hypermet::set_Rskew_amplitude(const UncertainDouble &nRskew_amplitude)
+{
+  Rskew_amplitude_.set_value(nRskew_amplitude);
+  user_modified_ = true;
+  chi2_ = 0;
+}
+
+void Hypermet::set_Rskew_slope(const UncertainDouble &nRskew_slope)
+{
+  Rskew_slope_.set_value(nRskew_slope);
+  user_modified_ = true;
+  chi2_ = 0;
+}
+
+void Hypermet::set_tail_amplitude(const UncertainDouble &ntail_amplitude)
+{
+  tail_amplitude_.set_value(ntail_amplitude);
+  user_modified_ = true;
+  chi2_ = 0;
+}
+
+void Hypermet::set_tail_slope(const UncertainDouble &ntail_slope)
+{
+  tail_slope_.set_value(ntail_slope);
+  user_modified_ = true;
+  chi2_ = 0;
+}
+
+void Hypermet::set_step_amplitude(const UncertainDouble &nstep_amplitude)
+{
+  step_amplitude_.set_value(nstep_amplitude);
+  user_modified_ = true;
+  chi2_ = 0;
+}
+
+void Hypermet::constrain_center(double min, double max)
+{
+  center_.constrain(min, max);
+  user_modified_ = true;
+}
+
+void Hypermet::constrain_height(double min, double max)
+{
+  height_.constrain(min, max);
+  user_modified_ = true;
+}
+
+void Hypermet::constrain_width(double min, double max)
+{
+  width_.constrain(min, max);
+  user_modified_ = true;
+}
+
+
 
 std::string Hypermet::to_string() const
 {
@@ -156,30 +245,6 @@ Gaussian Hypermet::gaussian() const
   ret.set_hwhm(w);
   ret.set_chi2(chi2_);
   return ret;
-}
-
-void Hypermet::fit(const std::vector<double> &x, const std::vector<double> &y,
-              Gaussian gauss, FitSettings settings)
-{
-  *this = Hypermet(gauss, settings);
-  fit_root(x, y);
-}
-
-
-std::vector<Hypermet> Hypermet::fit_multi(const std::vector<double> &x,
-                                          const std::vector<double> &y,
-                                          std::vector<Hypermet> old,
-                                          Polynomial &background,
-                                          FitSettings settings)
-{
-  bool use_w_common = (settings.width_common &&
-                       settings.cali_fwhm_.valid() &&
-                       settings.cali_nrg_.valid());
-
-  if (use_w_common)
-    return fit_multi_root_commonw(x,y, old, background, settings);
-  else
-    return fit_multi_root(x,y, old, background, settings);
 }
 
 double Hypermet::eval_peak(double x) const
@@ -320,289 +385,3 @@ void Hypermet::from_xml(const pugi::xml_node &node)
   }
 }
 
-std::string Hypermet::root_definition(uint16_t start)
-{
-  return root_definition(start, start+1);
-}
-
-std::string Hypermet::root_definition(uint16_t width, uint16_t i)
-{
-  std::string h = "[" + std::to_string(i) + "]";
-  std::string w = "[" + std::to_string(width) + "]";
-  std::string xc = "(x-[" + std::to_string(i+1) + "])";
-  std::string xcw = xc + "/" + w;
-  std::string lskewh = "[" + std::to_string(i+2) + "]";
-  std::string lskews = "/[" + std::to_string(i+3) + "]";
-  std::string rskewh = "[" + std::to_string(i+4) + "]";
-  std::string rskews = "/[" + std::to_string(i+5) + "]";
-  std::string tailh = "[" + std::to_string(i+6) + "]";
-  std::string tails = "/[" + std::to_string(i+7) + "]";
-  std::string steph = "[" + std::to_string(i+8) + "]";
-
-  return h + "*("
-         "   TMath::Exp(-(" + xcw + ")^2)"
-         " + 0.5 * ("
-         "   " + lskewh + "*TMath::Exp((0.5*"+ w+lskews +")^2 + ("+ xc+lskews +"))*TMath::Erfc((0.5*"+ w+lskews +") + "+ xcw +")"
-         " + " + rskewh + "*TMath::Exp((0.5*"+ w+rskews +")^2 - ("+ xc+rskews +"))*TMath::Erfc((0.5*"+ w+rskews +") - "+ xcw +")"
-         " + " + tailh  + "*TMath::Exp((0.5*"+ w+tails  +")^2 + ("+ xc+tails  +"))*TMath::Erfc((0.5*"+ w+tails  +") + "+ xcw +")"
-         " + " + steph  + "*TMath::Erfc(" + xc +"/" + w + ")"
-         " ) )";
-}
-
-void Hypermet::set_params(TF1* f, uint16_t start) const
-{
-  set_params(f, start, start+1);
-}
-
-void Hypermet::set_params(TF1* f, uint16_t width, uint16_t others_start) const
-{
-  width_.set(f, width);
-  height_.set(f, others_start);
-  center_.set(f, others_start+1);
-  Lskew_amplitude_.set(f, others_start+2);
-  Lskew_slope_.set(f, others_start+3);
-  Rskew_amplitude_.set(f, others_start+4);
-  Rskew_slope_.set(f, others_start+5);
-  tail_amplitude_.set(f, others_start+6);
-  tail_slope_.set(f, others_start+7);
-  step_amplitude_.set(f, others_start+8);
-}
-
-void Hypermet::get_params(TF1* f, uint16_t start)
-{
-  get_params(f, start, start+1);
-}
-
-void Hypermet::get_params(TF1* f, uint16_t width, uint16_t others_start)
-{
-  width_.get(f, width);
-  height_.get(f, others_start);
-  center_.get(f, others_start+1);
-  Lskew_amplitude_.get(f, others_start+2);
-  Lskew_slope_.get(f, others_start+3);
-  Rskew_amplitude_.get(f, others_start+4);
-  Rskew_slope_.get(f, others_start+5);
-  tail_amplitude_.get(f, others_start+6);
-  tail_slope_.get(f, others_start+7);
-  step_amplitude_.get(f, others_start+8);
-}
-
-void Hypermet::fit_root(const std::vector<double> &x, const std::vector<double> &y)
-{
-  if ((x.size() < 1) || (x.size() != y.size()))
-    return;
-
-  TH1D* h1 = new TH1D("h1", "h1", x.size(), x.front(), x.back());
-  int i=1;
-  for (const auto &h : y)
-  {
-    h1->SetBinContent(i, h);
-    h1->SetBinError(i, sqrt(h));
-    i++;
-  }
-
-  width_.set(width_.value().value() * 0.7,
-             std::min(width_.value().value() * 1.3, x.back() - x.front()),
-             width_.value().value());
-
-  height_.set(height_.value().value() * 0.003,
-              std::min(height_.value().value() * 3000.0, h1->GetMaximum() - h1->GetMinimum()),
-              height_.value().value());
-
-  double lateral_slack = (x.back() - x.front()) / 5.0;
-  center_.set(std::max(center_.value().value() - lateral_slack, x.front()),
-              std::min(center_.value().value() + lateral_slack, x.back()),
-              center_.value().value());
-
-  TF1* f1 = new TF1("f1", this->root_definition().c_str());
-
-  set_params(f1);
-
-  h1->Fit("f1", "QN");
-  h1->Fit("f1", "QEMN");
-
-//  h1->Fit("f1", "QN");
-  //  h1->Fit("f1", "EMN");
-
-  get_params(f1);
-  chi2_ = f1->GetChisquare();
-
-  f1->Delete();
-  h1->Delete();
-}
-
-std::vector<Hypermet> Hypermet::fit_multi_root(const std::vector<double> &x,
-                                               const std::vector<double> &y,
-                                               std::vector<Hypermet> old,
-                                               Polynomial &background,
-                                               FitSettings settings)
-{
-  DBG << "Multifit with variable width";
-
-  if (old.empty())
-    return old;
-
-  if ((x.size() < 1) || (x.size() != y.size()))
-    return old;
-
-  TH1D* h1 = new TH1D("h1", "h1", x.size(), x.front(), x.back());
-  int i=1;
-  for (const auto &h : y)
-  {
-    h1->SetBinContent(i, h);
-    h1->SetBinError(i, sqrt(h));
-    i++;
-  }
-
-  std::string definition = background.root_definition();
-  uint16_t backgroundparams = background.coeff_count();
-  for (size_t i=0; i < old.size(); ++i)
-  {
-    uint16_t num = backgroundparams + i * 10;
-    definition += "+" + Hypermet().root_definition(num);
-  }
-
-//  DBG << "Definition = " << definition;
-
-  TF1* f1 = new TF1("f1", definition.c_str());
-
-  for (auto &o : old)
-  {
-    double width_expected = o.width_.value().value();
-    if (settings.cali_fwhm_.valid() && settings.cali_nrg_.valid())
-      width_expected = settings.bin_to_width(o.center_.value().value()) / (2*sqrt(log(2)));
-
-    o.width_.set(width_expected * settings.width_common_bounds.lower(),
-                 std::min(width_expected * settings.width_common_bounds.upper(),
-                          x.back() - x.front()),
-                 o.width_.value().value());
-
-    o.height_.set(o.height_.value().value() * 1e-5,
-                  std::min(o.height_.value().value() * 1e5,
-                           h1->GetMaximum() - h1->GetMinimum()),
-                  o.height_.value().value());
-
-    double lateral_slack = settings.lateral_slack * o.width_.value().value() * 2 * sqrt(log(2));
-    o.center_.set(std::max(o.center_.value().value() - lateral_slack, x.front()),
-                  std::min(o.center_.value().value() + lateral_slack, x.back()),
-                  o.center_.value().value());
-  }
-
-  background.set_params(f1, 0);
-  for (size_t i=0; i < old.size(); ++i)
-  {
-    uint16_t num = backgroundparams + i * 10;
-    old[i].set_params(f1, num);
-  }
-
-//  h1->Fit("f1", "QN");
-  h1->Fit("f1", "QEMN");
-
-//  h1->Fit("f1", "QN");
-  //  h1->Fit("f1", "EMN");
-
-  background.get_params(f1, 0);
-  for (size_t i=0; i < old.size(); ++i)
-  {
-    uint16_t num = backgroundparams + i * 10;
-    old[i].get_params(f1, num);
-    old[i].chi2_ = f1->GetChisquare();
-  }
-  background.set_chi2(f1->GetChisquare());
-
-  f1->Delete();
-  h1->Delete();
-
-  return old;
-}
-
-std::vector<Hypermet> Hypermet::fit_multi_root_commonw(const std::vector<double> &x,
-                                                       const std::vector<double> &y,
-                                                       std::vector<Hypermet> old,
-                                                       Polynomial &background,
-                                                       FitSettings settings)
-{
-  if (old.empty())
-    return old;
-
-  if ((x.size() < 1) || (x.size() != y.size()))
-    return old;
-
-  TH1D* h1 = new TH1D("h1", "h1", x.size(), x.front(), x.back());
-  int i=1;
-  for (const auto &h : y)
-  {
-    h1->SetBinContent(i, h);
-    h1->SetBinError(i, sqrt(h));
-    i++;
-  }
-
-  double centers_avg {0};
-  for (auto &p : old)
-    centers_avg += p.center_.value().value();
-  centers_avg /= old.size();
-
-  double width_expected = settings.bin_to_width(centers_avg) / (2 * sqrt(log(2)));
-  FitParam w_common("w", 0);
-  w_common.preset_bounds(width_expected * settings.width_common_bounds.lower(),
-                         std::min(width_expected * settings.width_common_bounds.upper(),
-                                  x.back() - x.front()));
-
-//  DBG << "Calculated common width param " << w_common.to_string();
-
-  std::string definition = background.root_definition();
-  uint16_t backgroundparams = background.coeff_count();
-  for (size_t i=0; i < old.size(); ++i)
-  {
-    uint16_t num = 1 + backgroundparams + i * 9;
-    definition += "+" + Hypermet().root_definition(backgroundparams, num);
-  }
-
-  TF1* f1 = new TF1("f1", definition.c_str());
-
-  for (auto &o : old)
-  {
-    o.width_ = w_common;
-
-    o.height_.set(o.height_.value().value() * 0.1,
-                  o.height_.value().value() * 10.0,
-                  o.height_.value().value());
-
-    o.height_.set(o.height_.value().value() * 1e-3,
-                  std::min(o.height_.value().value() * 1e3,
-                           h1->GetMaximum() - h1->GetMinimum()),
-                  o.height_.value().value());
-
-    double lateral_slack = settings.lateral_slack * o.width_.value().value() * 2 * sqrt(log(2));
-    o.center_.set(std::max(o.center_.value().value() - lateral_slack, x.front()),
-                  std::min(o.center_.value().value() + lateral_slack, x.back()),
-                  o.center_.value().value());
-  }
-
-  background.set_params(f1, 0);
-  w_common.set(f1, backgroundparams);
-  for (size_t i=0; i < old.size(); ++i)
-  {
-    uint16_t num = 1 + backgroundparams + i * 9;
-    old[i].set_params(f1, backgroundparams, num);
-  }
-
-//  h1->Fit("f1", "QN");
-  h1->Fit("f1", "QEMN");
-
-  //  h1->Fit("f1", "EMN");
-
-  background.get_params(f1, 0);
-  for (size_t i=0; i < old.size(); ++i)
-  {
-    uint16_t num = 1 + backgroundparams + i * 9;
-    old[i].get_params(f1, backgroundparams, num);
-    old[i].chi2_ = f1->GetChisquare();
-  }
-  background.set_chi2(f1->GetChisquare());
-
-  f1->Delete();
-  h1->Delete();
-
-  return old;
-}

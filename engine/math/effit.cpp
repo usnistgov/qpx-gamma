@@ -73,15 +73,3 @@ std::string Effit::to_markup(int precision, bool with_rsq) const
   //ss << "exp( ((A + B*x + C*x^2)^-G + (D + E*y + F*y^2)^-G)^(-1/G) )";
   return ss.str();
 }
-
-std::string Effit::root_definition()
-{
-  std::string definition = "((d + e*xb + f*(xb^2))^(-20))^(-0.05) where xb=ln(x/1000)";
-
-//  DBG << "Definition: " << definition;
-
-//  if (G==0)
-//      G = 20;
-
-  return definition;
-}

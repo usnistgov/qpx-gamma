@@ -28,8 +28,6 @@
 #include "xmlable.h"
 #include "UncertainDouble.h"
 
-#include "TF1.h"
-
 class FitParam : public XMLable
 {
 public:
@@ -66,10 +64,6 @@ public:
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;
   std::string xml_element_name() const override {return "FitParam";}
-
-//ROOT fitter
-  void set(TF1* f, uint16_t num) const;
-  void get(TF1* f, uint16_t num);
 
 private:
   std::string name_;

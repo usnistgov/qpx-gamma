@@ -30,6 +30,7 @@
 #include "qt_util.h"
 #include "dialog_spectrum.h"
 
+#include "optimizer.h"
 
 using namespace Qpx;
 
@@ -432,7 +433,7 @@ void FormGainMatch::do_post_processing() {
   response_function_.add_coeff(1, -50, 50, 1);
   if (gains.size() > 2)
     response_function_.add_coeff(2, -50, 50, 1);
-  response_function_.fit(gains, positions,
+  Optimizer::fit(response_function_, gains, positions,
                          std::vector<double>(), std::vector<double>());
   predicted = response_function_.eval_inverse(peak_ref_.center().value() /*, ui->doubleThreshold->value() / 4.0*/);
 

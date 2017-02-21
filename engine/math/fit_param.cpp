@@ -55,6 +55,8 @@ void FitParam::set_name(std::string n)
 void FitParam::set_value(UncertainDouble v)
 {
   value_ = v;
+
+  //if out of bounds?
 }
 
 void FitParam::set(const FitParam& other)
@@ -191,17 +193,3 @@ void FitParam::from_xml(const pugi::xml_node &node)
   if (node.child(value_.xml_element_name().c_str()))
     value_.from_xml(node.child(value_.xml_element_name().c_str()));
 }
-
-void FitParam::set(TF1* f, uint16_t num) const
-{
-  f->SetParameter(num, value_.value());
-  f->SetParLimits(num, lower_, upper_);
-}
-
-void FitParam::get(TF1* f, uint16_t num)
-{
-  value_ = UncertainDouble::from_double(f->GetParameter(num), f->GetParError(num));
-}
-
-
-

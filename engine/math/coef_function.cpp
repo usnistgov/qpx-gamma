@@ -30,9 +30,6 @@
 #include "custom_logger.h"
 #include "qpx_util.h"
 
-#include "TGraph.h"
-#include "TGraphErrors.h"
-
 CoefFunction::CoefFunction()
 {}
 
@@ -93,6 +90,12 @@ void CoefFunction::set_chi2(double c2)
 void CoefFunction::set_coeff(int degree, const FitParam& p)
 {
   coeffs_[degree] = p;
+}
+
+void CoefFunction::set_coeff(int degree, const UncertainDouble& p)
+{
+  coeffs_[degree].set_value(p);
+  //bounds?
 }
 
 void CoefFunction::add_coeff(int degree, double lbound, double ubound)
@@ -193,59 +196,3 @@ std::vector<double> CoefFunction::coeffs_consecutive() const
     ret[c.first] = c.second.value().value();
   return ret;
 }
-
-void CoefFunction::fit(const std::vector<double> &x,
-                       const std::vector<double> &y,
-                       const std::vector<double> &x_sigma,
-                       const std::vector<double> &y_sigma)
-{
-  fit_root(x, y, x_sigma, y_sigma);
-}
-
-
-void CoefFunction::set_params(TF1* f, uint16_t start) const
-{
-  for (const auto &p : coeffs_)
-  {
-    p.second.set(f, start);
-    start++;
-  }
-}
-
-void CoefFunction::get_params(TF1* f, uint16_t start)
-{
-  for (auto &p : coeffs_)
-  {
-    p.second.get(f, start);
-    start++;
-  }
-}
-
-void CoefFunction::fit_root(const std::vector<double> &x,
-                            const std::vector<double> &y,
-                            const std::vector<double> &x_sigma,
-                            const std::vector<double> &y_sigma)
-{
-  if (x.size() != y.size())
-    return;
-
-  TGraphErrors* g1;
-  if ((x.size() == x_sigma.size()) && (x_sigma.size() == y_sigma.size()))
-    g1 = new TGraphErrors(y.size(), x.data(), y.data(), x_sigma.data(), y_sigma.data());
-  else
-    g1 = new TGraphErrors(y.size(), x.data(), y.data(), nullptr, nullptr);
-
-  TF1* f1 = new TF1("f1", this->root_definition().c_str());
-
-  set_params(f1, 0);
-
-//  g1->Fit("f1", "QEMN");
-  g1->Fit("f1", "EMN");
-
-  get_params(f1, 0);
-  chi2_ = f1->GetChisquare();
-
-  f1->Delete();
-  g1->Delete();
-}
-

@@ -27,12 +27,9 @@
 #include <iostream>
 #include <numeric>
 #include "polynomial.h"
-#include "calibration.h"
 #include "fit_settings.h"
 #include "gaussian.h"
 #include "xmlable.h"
-
-#include "TF1.h"
 
 class Hypermet : public XMLable {
 public:
@@ -40,20 +37,7 @@ public:
     Hypermet(Gaussian(), FitSettings())
   {}
 
-
   Hypermet(Gaussian gauss, FitSettings settings);
-
-  void fit(const std::vector<double> &x,
-           const std::vector<double> &y,
-           Gaussian gauss,
-           FitSettings settings);
-
-  static std::vector<Hypermet> fit_multi(const std::vector<double> &x,
-                                         const std::vector<double> &y,
-                                         std::vector<Hypermet> old,
-                                         Polynomial &background,
-                                         FitSettings settings
-                                         );
 
   const FitParam& center() const {return center_;}
   const FitParam& height() const {return height_;}
@@ -65,6 +49,9 @@ public:
   const FitParam& tail_amplitude() const {return tail_amplitude_;}
   const FitParam& tail_slope() const {return tail_slope_;}
   const FitParam& step_amplitude() const {return step_amplitude_;}
+  double chi2() const {return chi2_;}
+
+  bool user_modified() {return user_modified_;}
 
   void set_center(const FitParam &ncenter);
   void set_height(const FitParam &nheight);
@@ -77,8 +64,22 @@ public:
   void set_tail_slope(const FitParam &ntail_slope);
   void set_step_amplitude(const FitParam &nstep_amplitude);
 
-  double chi2() const {return chi2_;}
-  bool user_modified() {return user_modified_;}
+  void set_center(const UncertainDouble &ncenter);
+  void set_height(const UncertainDouble &nheight);
+  void set_width(const UncertainDouble &nwidth);
+  void set_Lskew_amplitude(const UncertainDouble &nLskew_amplitude);
+  void set_Lskew_slope(const UncertainDouble &nLskew_slope);
+  void set_Rskew_amplitude(const UncertainDouble &nRskew_amplitude);
+  void set_Rskew_slope(const UncertainDouble &nRskew_slope);
+  void set_tail_amplitude(const UncertainDouble &ntail_amplitude);
+  void set_tail_slope(const UncertainDouble &ntail_slope);
+  void set_step_amplitude(const UncertainDouble &nstep_amplitude);
+
+  void set_chi2(double);
+
+  void constrain_center(double min, double max);
+  void constrain_height(double min, double max);
+  void constrain_width(double min, double max);
 
   std::string to_string() const;
   double eval_peak(double) const;
@@ -104,33 +105,6 @@ private:
 
   double chi2_ {0};
   bool user_modified_ {false};
-
-
-
-  void fit_root(const std::vector<double> &x,
-                const std::vector<double> &y);
-
-  static std::string root_definition(uint16_t start = 0);
-  static std::string root_definition(uint16_t width, uint16_t others_start);
-
-  void set_params(TF1* f, uint16_t start = 0) const;
-  void set_params(TF1* f, uint16_t width, uint16_t others_start) const;
-  void get_params(TF1* f, uint16_t start = 0);
-  void get_params(TF1* f, uint16_t width, uint16_t others_start);
-
-  static std::vector<Hypermet> fit_multi_root(const std::vector<double> &x,
-                                              const std::vector<double> &y,
-                                              std::vector<Hypermet> old,
-                                              Polynomial &background,
-                                              FitSettings settings
-                                              );
-
-  static std::vector<Hypermet> fit_multi_root_commonw(const std::vector<double> &x,
-                                                      const std::vector<double> &y,
-                                                      std::vector<Hypermet> old,
-                                                      Polynomial &background,
-                                                      FitSettings settings
-                                                      );
 
 };
 
