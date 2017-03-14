@@ -1,5 +1,4 @@
-#ifndef QP_PLOT2D_H
-#define QP_PLOT2D_H
+#pragma once
 
 #include "qp_generic.h"
 #include "qp_appearance.h"
@@ -100,5 +99,3 @@ protected:
 };
 
 }
-
-#endif

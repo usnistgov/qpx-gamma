@@ -21,9 +21,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef SPECTRUM2D_H
-#define SPECTRUM2D_H
+#pragma once
 
 #include "spectrum.h"
 #include <unordered_map>
@@ -78,5 +76,3 @@ protected:
 };
 
 }
-
-#endif

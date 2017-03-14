@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_LIST_DAQ_H
-#define FORM_LIST_DAQ_H
+#pragma once
 
 #include <QWidget>
 #include "spill.h"
@@ -90,5 +89,3 @@ private:
   void loadSettings();
   void saveSettings();
 };
-
-#endif // FORM_LIST_DAQ_H

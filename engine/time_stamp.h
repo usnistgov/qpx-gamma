@@ -21,8 +21,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_TIME_STAMP
-#define QPX_TIME_STAMP
+#pragma once
 
 #include "xmlable.h"
 #include <string>
@@ -30,7 +29,12 @@
 #include <fstream>
 #include "qpx_util.h"
 
+#include "json.hpp"
+using namespace nlohmann;
+
 namespace Qpx {
+
+using namespace nlohmann;
 
 class TimeStamp
 {
@@ -179,6 +183,7 @@ private:
   uint32_t timebase_divider_;
 };
 
-}
+void to_json(json& j, const TimeStamp& t);
+void from_json(const json& j, TimeStamp& t);
 
-#endif
+}

@@ -1,5 +1,4 @@
-#ifndef MSCF16_H
-#define MSCF16_H
+#pragma once
 
 #include "mesytec_external_module.h"
 
@@ -29,5 +28,3 @@ protected:
 };
 
 }
-
-#endif // MSCF16_H

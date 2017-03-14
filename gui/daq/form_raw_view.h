@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_RAW_VIEW_H
-#define FORM_RAW_VIEW_H
+#pragma once
 
 #include <QWidget>
 #include "spill.h"
@@ -89,5 +88,3 @@ private:
   void loadSettings();
   void saveSettings();
 };
-
-#endif // FORM_LIST_DAQ_H

@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_ANALYSIS_1D_H
-#define FORM_ANALYSIS_1D_H
+#pragma once
 
 #include <QWidget>
 #include "project.h"
@@ -87,5 +85,3 @@ private:
   void loadSettings();
   void saveSettings();
 };
-
-#endif // FORM_CALIBRATION_H

@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_VME_PLUGIN
-#define QPX_VME_PLUGIN
+#pragma once
 
 #include "daq_source.h"
 #include <boost/thread.hpp>
@@ -78,7 +77,4 @@ protected:
 
 };
 
-
 }
-
-#endif

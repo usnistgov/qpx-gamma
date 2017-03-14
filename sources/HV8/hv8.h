@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_HV8_PLUGIN
-#define QPX_HV8_PLUGIN
+#pragma once
 
 #include "daq_source.h"
 #include "detector.h"
@@ -75,7 +74,4 @@ protected:
   std::vector<double> voltages;
 };
 
-
 }
-
-#endif

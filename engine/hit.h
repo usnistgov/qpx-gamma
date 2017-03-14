@@ -21,8 +21,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_HIT
-#define QPX_HIT
+#pragma once
 
 #include <vector>
 #include <map>
@@ -32,6 +31,8 @@
 #include "time_stamp.h"
 #include "xmlable.h"
 
+#include "json.hpp"
+using namespace nlohmann;
 
 namespace Qpx {
 
@@ -58,6 +59,9 @@ public:
   std::string xml_element_name() const {return "HitModel";}
   std::string to_string() const;
 };
+
+void to_json(json& j, const HitModel& t);
+void from_json(const json& j, HitModel& t);
 
 
 class Hit {
@@ -166,5 +170,3 @@ private:
 };
 
 }
-
-#endif

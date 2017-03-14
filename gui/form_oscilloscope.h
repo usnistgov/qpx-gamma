@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_OSCILlOSCOPE_H
-#define FORM_OSCILlOSCOPE_H
+#pragma once
 
 #include <QWidget>
 #include "thread_runner.h"
@@ -68,5 +67,3 @@ private:
 
   void replot();
 };
-
-#endif // FORM_OSCILlOSCOPE_H

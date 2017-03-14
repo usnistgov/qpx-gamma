@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef SPECTRUM_MANIP2D_H
-#define SPECTRUM_MANIP2D_H
+#pragma once
 
 #include "daq_sink.h"
 #include "custom_logger.h"
@@ -43,4 +42,4 @@ PreciseFloat sum_with_neighbors(SinkPtr source, size_t x, size_t y);
 PreciseFloat sum_diag(SinkPtr source, size_t x, size_t y, size_t width);
 
 }
-#endif
+

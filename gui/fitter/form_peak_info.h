@@ -20,13 +20,11 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_PEAK_INFO_H
-#define FORM_PEAK_INFO_H
+#pragma once
 
 #include <QDialog>
 #include <QCloseEvent>
 #include "hypermet.h"
-
 
 namespace Ui {
 class FormPeakInfo;
@@ -71,5 +69,3 @@ private:
 
   void enforce_bounds();
 };
-
-#endif // FORM_FITTER_SETTINGS_H

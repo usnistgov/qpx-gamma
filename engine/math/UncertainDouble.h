@@ -1,7 +1,6 @@
 //Rework this according to http://arxiv.org/abs/physics/0306138v1 !!!
 
-#ifndef UNCERTAINDOUBLE_H
-#define UNCERTAINDOUBLE_H
+#pragma once
 
 #include <string>
 #include <list>
@@ -81,5 +80,3 @@ private:
   UncertainDouble& multipli_uncert(const UncertainDouble &other);
   int exponent() const;
 };
-
-#endif // UNCERTAINDOUBLE_H

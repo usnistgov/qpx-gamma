@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_FIT_RESULTS_H
-#define FORM_FIT_RESULTS_H
+#pragma once
 
 #include <QWidget>
 #include "special_delegate.h"
@@ -76,4 +74,3 @@ private:
 
 };
 
-#endif // FORM_PEAK_FITTER_H

@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef SPECTRUM_RAW_H
-#define SPECTRUM_RAW_H
+#pragma once
 
 #include "spectrum.h"
 
@@ -88,5 +87,3 @@ protected:
 };
 
 }
-
-#endif // SPECTRUM1D_H

@@ -22,8 +22,7 @@
  *
  ******************************************************************************/
 
-#ifndef DIALOG_SPECTRA_TEMPLATES_H_
-#define DIALOG_SPECTRA_TEMPLATES_H_
+#pragma once
 
 #include <QDialog>
 #include <QAbstractTableModel>
@@ -99,5 +98,3 @@ private slots:
   void on_pushUp_clicked();
   void on_pushDown_clicked();
 };
-
-#endif // DIALOGSPECTRATEMPLATES_H

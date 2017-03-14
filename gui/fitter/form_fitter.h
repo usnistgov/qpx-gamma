@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_FITTER_H
-#define FORM_FITTER_H
+#pragma once
 
 #include <QWidget>
 #include "special_delegate.h"
@@ -113,7 +111,3 @@ private:
 //  QMediaPlayer *player;
 
 };
-
-
-
-#endif

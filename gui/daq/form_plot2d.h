@@ -19,8 +19,7 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_PLOT2D_H
-#define FORM_PLOT2D_H
+#pragma once
 
 #include <QWidget>
 #include <project.h>
@@ -119,5 +118,3 @@ private:
 
   void addCrosshairs(Coord x, Coord y);
 };
-
-#endif // WIDGET_PLOT2D_H

@@ -1,5 +1,4 @@
-#ifndef QP_GENERIC_PLOT_H
-#define QP_GENERIC_PLOT_H
+#pragma once
 
 #include "qcustomplot.h"
 #include "qp_draggable.h"
@@ -137,7 +136,4 @@ private:
   void addGradientLegend(QCPColorMap* colorMap);
 };
 
-
 }
-
-#endif

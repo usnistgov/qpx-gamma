@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_FITTER_H
-#define QPX_FITTER_H
+#pragma once
 
 #include "peak.h"
 #include "roi.h"
@@ -119,5 +118,3 @@ private:
 typedef std::shared_ptr<Fitter> FitterPtr;
 
 }
-
-#endif

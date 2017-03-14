@@ -22,8 +22,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_PROJECT_H
-#define QPX_PROJECT_H
+#pragma once
 
 #include "daq_sink.h"
 #include "fitter.h"
@@ -116,4 +115,3 @@ private:
 typedef std::shared_ptr<Project> ProjectPtr;
 
 }
-#endif

@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_GAIN_CALIBRATION_H
-#define FORM_GAIN_CALIBRATION_H
+#pragma once
 
 #include <QWidget>
 #include "fitter.h"
@@ -84,5 +82,3 @@ private:
   void saveSettings();
 
 };
-
-#endif // FORM_GAIN_CALIBRATION_H

@@ -16,8 +16,7 @@
  *
  ******************************************************************************/
 
-#ifndef SYNCHRONIZED_QUEUE_H_
-#define SYNCHRONIZED_QUEUE_H_
+#pragma once
 
 #include <queue>	
 #include <boost/thread.hpp>
@@ -71,5 +70,3 @@ private:
   boost::mutex mutex_;
   boost::condition_variable cond_;
 };
-
-#endif

@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_ISEGVHS_PLUGIN
-#define QPX_ISEGVHS_PLUGIN
+#pragma once
 
 #include "vmemodule.h"
 
@@ -71,7 +70,4 @@ protected:
 
 };
 
-
 }
-
-#endif

@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_ROI_H
-#define QPX_ROI_H
+#pragma once
 
 #include "peak.h"
 #include "polynomial.h"
@@ -156,7 +155,4 @@ private:
   void save_current_fit(std::string description);
 };
 
-
 }
-
-#endif

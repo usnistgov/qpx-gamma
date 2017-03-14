@@ -28,8 +28,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_SINK_H
-#define QPX_SINK_H
+#pragma once
 
 #include <initializer_list>
 #include <boost/thread.hpp>
@@ -37,6 +36,9 @@
 #include "spill.h"
 #include "detector.h"
 #include "custom_logger.h"
+
+#include "json.hpp"
+using namespace nlohmann;
 
 namespace Qpx {
 
@@ -97,7 +99,10 @@ private:
 public:
   std::vector<Qpx::Detector> detectors;
 
+  friend void to_json(json& j, const Metadata &s);
+  friend void from_json(const json& j, Metadata &s);
 };
+
 
 
 class Sink
@@ -190,5 +195,3 @@ protected:
 typedef std::shared_ptr<Sink> SinkPtr;
 
 }
-
-#endif

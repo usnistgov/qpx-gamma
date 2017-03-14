@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef PLOT_FITTER_H
-#define PLOT_FITTER_H
+#pragma once
 
 #include "qp_multi1d.h"
 #include "fitter.h"
@@ -145,6 +143,3 @@ protected:
 
   void make_range(double energy);
 };
-
-
-#endif

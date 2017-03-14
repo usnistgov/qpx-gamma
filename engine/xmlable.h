@@ -21,8 +21,7 @@
  *
  ******************************************************************************/
 
-#ifndef XMLABLE_H
-#define XMLABLE_H
+#pragma once
 
 #include <string>
 #include <list>
@@ -230,6 +229,3 @@ public:
 // protected:
   std::string xml_name_;
 };
-
-
-#endif

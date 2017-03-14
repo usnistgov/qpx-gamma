@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_ANALYSIS_2D_H
-#define FORM_ANALYSIS_2D_H
+#pragma once
 
 #include <QWidget>
 #include "qp_2d.h"
@@ -85,5 +83,3 @@ private:
   void loadSettings();
   void saveSettings();
 };
-
-#endif

@@ -15,8 +15,7 @@
  *
  ******************************************************************************/
 
-#ifndef Q_PEAK2D_H
-#define Q_PEAK2D_H
+#pragma once
 
 #include "fitter.h"
 #include <QString>
@@ -96,5 +95,3 @@ struct Sum2D
 
   Qpx::Peak get_one_peak(const Qpx::Fitter &fitter);
 };
-
-#endif

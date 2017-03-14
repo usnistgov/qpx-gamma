@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef SPECTRUM_TIME_H
-#define SPECTRUM_TIME_H
+#pragma once
 
 #include "spectrum.h"
 
@@ -60,5 +59,3 @@ protected:
 };
 
 }
-
-#endif // TimeSpectrum_H

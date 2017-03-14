@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef THREAD_FITTER_H_
-#define THREAD_FITTER_H_
+#pragma once
 
 #include <QThread>
 #include <QMutex>
@@ -74,5 +73,3 @@ private:
   boost::atomic<bool> interruptor_;
 
 };
-
-#endif

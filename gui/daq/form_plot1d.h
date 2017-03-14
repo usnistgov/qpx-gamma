@@ -19,8 +19,7 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_PLOT1D_H
-#define FORM_PLOT1D_H
+#pragma once
 
 #include <QWidget>
 #include <project.h>
@@ -112,5 +111,3 @@ private:
   bool nonempty_{false};
 
 };
-
-#endif // WIDGET_PLOT1D_H

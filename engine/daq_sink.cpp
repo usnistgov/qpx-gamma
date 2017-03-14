@@ -172,6 +172,33 @@ void Metadata::from_xml(const pugi::xml_node &node) {
   }
 }
 
+void to_json(json& j, const Metadata &s)
+{
+  j["type"] = s.type();
+
+  if (s.attributes().branches.size())
+    j["attributes"] = s.attributes();
+
+  if (!s.detectors.empty())
+    for (auto &d : s.detectors)
+      j["detectors"].push_back(d);
+}
+
+void from_json(const json& j, Metadata &s)
+{
+  s.type_ = j["type"];
+
+  if (j.count("attributes"))
+    s.set_attributes(j["attributes"]);
+
+  if (j.count("detectors"))
+  {
+    auto o = j["detectors"];
+    for (json::iterator it = o.begin(); it != o.end(); ++it)
+      s.detectors.push_back(it.value());
+  }
+}
+
 void Metadata::set_det_limit(uint16_t limit)
 {
   if (limit < 1)

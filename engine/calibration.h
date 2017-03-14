@@ -20,14 +20,15 @@
  *
  ******************************************************************************/
 
-
-#ifndef QPX_CALIBRATION
-#define QPX_CALIBRATION
+#pragma once
 
 #include <vector>
 #include <string>
 #include <boost/date_time.hpp>
 #include "xmlable.h"
+
+#include "json.hpp"
+using namespace nlohmann;
 
 namespace Qpx {
 
@@ -40,6 +41,9 @@ enum class CalibrationModel : int
   effit = 4,
   sqrt_poly = 5
 };
+
+std::string model_to_str(const CalibrationModel& c);
+CalibrationModel model_from_str(const std::string& c);
 
 class Calibration : public XMLable
 {
@@ -80,6 +84,7 @@ class Calibration : public XMLable
   double r_squared_ {0};
 };
 
-}
+void to_json(json& j, const Calibration &s);
+void from_json(const json& j, Calibration &s);
 
-#endif
+}

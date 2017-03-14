@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_EXPERIMENT_SETUP_H
-#define FORM_EXPERIMENT_SETUP_H
+#pragma once
 
 #include <QWidget>
 #include <QItemSelection>
@@ -84,5 +82,3 @@ private:
 
   void remake_domains();
 };
-
-#endif // FORM_CALIBRATION_H

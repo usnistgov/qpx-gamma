@@ -16,8 +16,7 @@
  *
  ******************************************************************************/
 
-#ifndef CUSTOM_LOGGER_H_
-#define CUSTOM_LOGGER_H_
+#pragma once
 
 #include <iostream>
 #include <string>
@@ -73,4 +72,3 @@ BOOST_LOG_INLINE_GLOBAL_LOGGER_DEFAULT(g_custom_logger,
 #define ERR BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kError)
 #define CRIT BOOST_LOG_SEV(g_custom_logger::get(), CustomLogger::kCritical)
 
-#endif // CUSTOM_LOGGER_H

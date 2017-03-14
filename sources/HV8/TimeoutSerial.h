@@ -6,8 +6,7 @@
  * Created on September 12, 2009, 3:47 PM
  */
 
-#ifndef TIMEOUTSERIAL_H
-#define	TIMEOUTSERIAL_H
+#pragma once
 
 #include <stdexcept>
 #include <boost/utility.hpp>
@@ -231,4 +230,3 @@ private:
     ReadSetupParameters setupParameters; ///< Global because used in the OSX fix
 };
 
-#endif  //TIMEOUTSERIAL_H

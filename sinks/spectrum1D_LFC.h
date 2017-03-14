@@ -21,9 +21,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef SPECTRUM1D_LFC_H
-#define SPECTRUM1D_LFC_H
+#pragma once
 
 #include "spectrum1D.h"
 
@@ -53,6 +51,4 @@ protected:
   int my_channel_;
 };
 
-
 }
-#endif // SPECTRUM_LFC_H

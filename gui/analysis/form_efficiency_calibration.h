@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_EFFICIENCY_CALIBRATION_H
-#define FORM_EFFICIENCY_CALIBRATION_H
+#pragma once
 
 #include <QWidget>
 #include "project.h"
@@ -119,5 +117,3 @@ private:
   void add_peak_to_table(const Qpx::Peak &, int, QColor);
   void select_in_table();
 };
-
-#endif // FORM_EFFICIENCY_CALIBRATION_H

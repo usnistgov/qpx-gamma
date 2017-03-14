@@ -19,8 +19,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_UTIL_H_
-#define QPX_UTIL_H_
+#pragma once
 
 #include <string>
 #include <sstream>
@@ -322,5 +321,3 @@ inline uint32_t lcm(uint32_t a, uint32_t b)
 
   return m;
 }
-
-#endif

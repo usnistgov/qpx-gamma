@@ -107,19 +107,6 @@ std::string to_string(SettingType type) {
 }
 
 
-SettingMeta::SettingMeta()
-  : setting_type(SettingType::none)
-  , writable(false)
-  , visible(true)
-  , saveworthy(true)
-  , address(-1)
-  , minimum(std::numeric_limits<double>::min())
-  , maximum(std::numeric_limits<double>::max())
-  , step(1)
-  , max_indices(0)
-{}
-
-
 SettingMeta::SettingMeta(const pugi::xml_node &node)
   : SettingMeta()
 {
@@ -270,6 +257,108 @@ void SettingMeta::to_xml(pugi::xml_node &node) const {
   }
 }
 
+void to_json(json& j, const SettingMeta &s)
+{
+  if (s.setting_type == SettingType::none)
+    return;
+
+  j["id"] = s.id_;
+  j["type"] = to_string(s.setting_type);
+  j["address"] = s.address;
+  j["max_indices"] = s.max_indices;
+  j["writable"] = s.writable;
+
+  if (!s.name.empty())
+    j["name"] = s.name;
+  if (!s.unit.empty())
+    j["unit"] = s.unit;
+  if (!s.description.empty())
+    j["description"] = s.description;
+
+  if (s.setting_type == SettingType::command)
+    j["visible"] = s.visible;
+
+  if (s.setting_type == SettingType::stem)
+    j["saveworthy"] = s.saveworthy;
+
+  if ((s.setting_type == SettingType::binary) ||
+      (s.setting_type == SettingType::pattern))
+    j["word_size"] = s.maximum;
+
+  if (s.is_numeric())
+  {
+    j["step"] = s.step;
+    j["minimum"] = s.minimum;
+    j["maximum"] = s.maximum;
+  }
+
+  if ((s.setting_type == SettingType::binary) ||
+      (s.setting_type == SettingType::indicator) ||
+      (s.setting_type == SettingType::int_menu) ||
+      (s.setting_type == SettingType::stem))
+    for (auto &q : s.int_menu_items)
+     j["items"].push_back({{"val", q.first}, {"meaning", q.second}});
+
+  if (!s.flags.empty())
+    for (auto &q : s.flags)
+      j["flags"].push_back(q);
+}
+
+void from_json(const json& j, SettingMeta &s)
+{
+  if (!j.count("type") || !j.count("id"))
+    return;
+
+  s.id_ = j["id"];
+  s.setting_type = to_type(j["type"]);
+  if (s.setting_type == SettingType::none)
+    return; //must have non0 type
+
+  if (j.count("address"))
+    s.address = j["address"];
+  if (j.count("max_indices"))
+    s.max_indices = j["max_indices"];
+  if (j.count("name"))
+    s.name = j["name"];
+  if (j.count("unit"))
+    s.unit = j["unit"];
+  if (j.count("description"))
+    s.description = j["description"];
+  if (j.count("writable"))
+    s.writable = j["writable"];
+  if (j.count("visible"))
+    s.visible = j["visible"];
+  if (j.count("saveworthy"))
+    s.saveworthy = j["saveworthy"];
+  if (j.count("word_size"))
+    s.maximum = j["sord_size"];
+
+  if (s.is_numeric())
+  {
+    if (j.count("step"))
+      s.step = j["step"];
+    if (j.count("minimum"))
+      s.minimum = j["minimum"];
+    if (j.count("maximum"))
+      s.maximum = j["maximum"];
+  }
+
+  if ((s.setting_type == SettingType::binary) ||
+      (s.setting_type == SettingType::indicator) ||
+      (s.setting_type == SettingType::int_menu) ||
+      (s.setting_type == SettingType::stem))
+    for (const auto &q : j["items"])
+      s.int_menu_items[q["val"]] = q["meaning"];
+
+  if (j.count("flags"))
+  {
+    auto o = j["flags"];
+    for (json::iterator it = o.begin(); it != o.end(); ++it)
+      s.flags.insert(it.key());
+  }
+}
+
+
 std::string SettingMeta::debug(std::string prepend) const
 {
   std::string ret = to_string(setting_type);
@@ -365,29 +454,19 @@ bool SettingMeta::is_numeric() const
 
 
 
-Setting::Setting()
-  : branches("branches")
-  , value_dbl(0.0)
-  , value_int(0)
-  , value_precise(0)
-{}
-
 Setting::Setting(const pugi::xml_node &node)
-  : Setting()
 {
   if (node.name() == xml_element_name())
     this->from_xml(node);
 }
 
 Setting::Setting(std::string id)
-  : Setting()
 {
   id_ = id;
   metadata.id_ = id;
 }
 
 Setting::Setting(SettingMeta meta)
-  : Setting()
 {
   id_ = meta.id_;
   metadata = meta;
@@ -523,6 +602,23 @@ std::string Setting::val_to_string() const
   return ss.str();
 }
 
+json Setting::val_to_json() const
+{
+  if (metadata.setting_type == SettingType::boolean)
+    return json(bool(value_int));
+  else if ((metadata.setting_type == SettingType::integer) ||
+           (metadata.setting_type == SettingType::int_menu) ||
+           (metadata.setting_type == SettingType::indicator) )
+    return json(value_int);
+  else if (metadata.setting_type == SettingType::binary)
+    //    ss << itohex64(value_int);
+    return json(value_int);
+  else if (metadata.setting_type == SettingType::floating)
+    return json(value_dbl);
+  else
+    return json(val_to_string());
+}
+
 std::string Setting::val_to_pretty_string() const {
   std::string ret = val_to_string();
   if ((metadata.setting_type == SettingType::time_duration) && !value_duration.is_not_a_date_time())
@@ -577,6 +673,39 @@ void Setting::val_from_node(const pugi::xml_node &node)
   else if (metadata.setting_type == SettingType::time_duration)
     value_duration = boost::posix_time::duration_from_string(node.attribute("value").value());
 }
+
+void Setting::val_from_json(const json &j)
+{
+  if (metadata.setting_type == SettingType::boolean)
+    value_int = j.get<bool>();
+  else if ((metadata.setting_type == SettingType::integer) ||
+           (metadata.setting_type == SettingType::int_menu) ||
+           (metadata.setting_type == SettingType::indicator) )
+    value_int = j.get<int64_t>();
+  else if (metadata.setting_type == SettingType::pattern)
+    value_pattern = Pattern(j.get<std::string>());
+  else if (metadata.setting_type == SettingType::binary)
+    value_int = j.get<int64_t>();
+  //    ss << itohex64(value_int);
+  else if (metadata.setting_type == SettingType::floating)
+    value_dbl = j.get<double>();
+  else if (metadata.setting_type == SettingType::floating_precise)
+  {
+    try { value_precise = std::stold(j.get<std::string>()); }
+    catch(...) {}
+  }
+  else if ((metadata.setting_type == SettingType::text) ||
+           (metadata.setting_type == SettingType::detector) ||
+           (metadata.setting_type == SettingType::color) ||
+           (metadata.setting_type == SettingType::file_path) ||
+           (metadata.setting_type == SettingType::dir_path))
+    value_text = j.get<std::string>();
+  else if (metadata.setting_type == SettingType::time)
+    value_time = from_iso_extended(j.get<std::string>());
+  else if (metadata.setting_type == SettingType::time_duration)
+    value_duration = boost::posix_time::duration_from_string(j.get<std::string>());
+}
+
 
 void Setting::from_xml(const pugi::xml_node &node) {
   metadata.setting_type = to_type(std::string(node.attribute("type").value()));
@@ -640,6 +769,62 @@ void Setting::to_xml(pugi::xml_node &node) const
   if (metadata.setting_type == SettingType::stem)
     for (auto &q : branches.my_data_)
       q.to_xml(child);
+}
+
+void to_json(json& j, const Setting &s)
+{
+  if (s.metadata.setting_type == SettingType::none)
+    return; //must have non0 type
+
+  j["id"] = s.id_;
+  j["type"] = to_string(s.metadata.setting_type);
+
+  if (!s.indices.empty())
+    for (auto &q : s.indices)
+      j["indices"].push_back(q);
+
+  if (s.metadata.setting_type != SettingType::stem)
+    j["value"] = s.val_to_json();
+  else if (!s.value_text.empty())
+    j["reference"] = s.value_text;
+
+  if (s.metadata.meaningful())
+    j["metadata"] = s.metadata;
+
+  if (s.metadata.setting_type == SettingType::stem)
+    for (auto &q : s.branches.my_data_)
+      j["branches"].push_back(q);
+}
+
+void from_json(const json& j, Setting &s)
+{
+  if (!j.count("type") || !j.count("id"))
+    return;
+
+  s.id_ = j["id"];
+  s.metadata.setting_type = to_type(j["type"]);
+  if (s.metadata.setting_type == SettingType::none)
+    return;
+
+  if (j.count("indices"))
+  {
+    auto o = j["indices"];
+    for (json::iterator it = o.begin(); it != o.end(); ++it)
+      s.indices.insert(it.value().get<int32_t>());
+  }
+
+  if (s.metadata.setting_type == SettingType::stem)
+  {
+    if (j.count("reference"))
+      s.value_text = j["reference"];
+    auto o = j["branches"];
+    for (json::iterator it = o.begin(); it != o.end(); ++it)
+      s.branches.add_a(it.value());
+  } else
+    s.val_from_json(j["value"]);
+
+  if (j.count("metadata"))
+    s.metadata = j["metadata"];
 }
 
 std::string Setting::debug(std::string prepend) const

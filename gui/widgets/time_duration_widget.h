@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef TIME_DURATION_WIDGET_H_
-#define TIME_DURATION_WIDGET_H_
+#pragma once
 
 #include <QDialog>
 #include <boost/date_time.hpp>
@@ -69,6 +68,3 @@ private:
   bool us_enabled_;
 
 };
-
-
-#endif // TIME_DURATION_WIDGET_H_

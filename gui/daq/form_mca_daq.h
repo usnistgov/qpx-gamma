@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_MCA_DAQ_H
-#define FORM_MCA_DAQ_H
+#pragma once
 
 #include <QWidget>
 #include "project.h"
@@ -133,5 +132,3 @@ private:
   void loadSettings();
   void saveSettings();
 };
-
-#endif // FORM_MCA_DAQ_H

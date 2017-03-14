@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_EXPERIMENT_1D_H
-#define FORM_EXPERIMENT_1D_H
+#pragma once
 
 #include <QWidget>
 #include "experiment.h"
@@ -77,5 +75,3 @@ private:
   void display_data();
   void eval_dependent(Qpx::DataPoint &data);
 };
-
-#endif // FORM_CALIBRATION_H

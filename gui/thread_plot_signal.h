@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef THREAD_PLOT_SIGNAL_H_
-#define THREAD_PLOT_SIGNAL_H_
+#pragma once
 
 #include <QThread>
 #include <QMutex>
@@ -101,5 +100,3 @@ private:
   }
 
 };
-
-#endif

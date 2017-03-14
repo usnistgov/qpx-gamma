@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef UNIT_CONVERTER_H
-#define UNIT_CONVERTER_H
+#pragma once
 
 #include <vector>
 #include <map>
@@ -46,5 +45,3 @@ public:
   std::vector<std::string> prefix_values_indexed;
 
 };
-
-#endif

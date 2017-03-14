@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef PRECISE_FLOAT
-#define PRECISE_FLOAT
+#pragma once
 
 #include <limits>
 #include <string>
@@ -108,7 +107,5 @@ inline std::string to_string(const PreciseFloat pf)
   ss << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << pf;
   return ss.str();
 }
-
-#endif
 
 #endif

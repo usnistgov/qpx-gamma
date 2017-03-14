@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef SORTER_PLUGIN
-#define SORTER_PLUGIN
+#pragma once
 
 #include "daq_source.h"
 #include "detector.h"
@@ -88,5 +87,3 @@ protected:
 };
 
 }
-
-#endif

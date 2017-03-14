@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef THREAD_RUNNER_H_
-#define THREAD_RUNNER_H_
+#pragma once
 
 #include <QThread>
 #include <QMutex>
@@ -102,5 +101,3 @@ private:
 
     Qpx::SourceStatus recent_status_;
 };
-
-#endif

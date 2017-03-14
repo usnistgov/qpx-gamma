@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_DAQ_SETTINGS_H
-#define FORM_DAQ_SETTINGS_H
+#pragma once
 
 #include <QDialog>
 #include <QCloseEvent>
@@ -60,5 +59,3 @@ private:
   QpxSpecialDelegate  tree_delegate_;
 
 };
-
-#endif // FORM_DAQ_SETTINGS_H

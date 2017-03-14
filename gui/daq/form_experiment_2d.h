@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_EXPERIMENT_2D_H
-#define FORM_EXPERIMENT_2D_H
+#pragma once
 
 #include <QWidget>
 #include "experiment.h"
@@ -81,5 +79,3 @@ private:
 
   void domains_changed();
 };
-
-#endif // FORM_CALIBRATION_H

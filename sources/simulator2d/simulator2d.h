@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef SIMULATOR2D_PLUGIN
-#define SIMULATOR2D_PLUGIN
+#pragma once
 
 #include "daq_source.h"
 #include "daq_sink.h"
@@ -111,5 +110,3 @@ protected:
 };
 
 }
-
-#endif

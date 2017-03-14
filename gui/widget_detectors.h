@@ -22,8 +22,7 @@
  *
  ******************************************************************************/
 
-#ifndef WIDGET_DETECTORS_H_
-#define WIDGET_DETECTORS_H_
+#pragma once
 
 #include <QDir>
 #include <QDialog>
@@ -153,5 +152,3 @@ private slots:
 
   void toggle_push();
 };
-
-#endif // WidgetDetectors_H

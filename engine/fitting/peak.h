@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_PEAK_H
-#define QPX_PEAK_H
+#pragma once
 
 #include <vector>
 #include <set>
@@ -89,5 +88,3 @@ private:
 };
 
 }
-
-#endif

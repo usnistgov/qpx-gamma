@@ -20,13 +20,11 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_FITTER_SETTINGS_H
-#define FORM_FITTER_SETTINGS_H
+#pragma once
 
 #include <QDialog>
 #include <QCloseEvent>
 #include "fit_settings.h"
-
 
 namespace Ui {
 class FormFitterSettings;
@@ -75,5 +73,3 @@ private:
 
   void enforce_bounds();
 };
-
-#endif // FORM_FITTER_SETTINGS_H

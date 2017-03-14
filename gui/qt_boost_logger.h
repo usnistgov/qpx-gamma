@@ -17,9 +17,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef QT_BOOST_LOGGER_H
-#define QT_BOOST_LOGGER_H
+#pragma once
 
 #include <iostream>
 #include <streambuf>
@@ -86,5 +84,3 @@ private:
     std::string buffer_string_;
     LogEmitter &log_emitter_;
 };
-
-#endif // LogStreamBuffer_H

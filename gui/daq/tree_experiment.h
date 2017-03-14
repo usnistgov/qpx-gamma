@@ -21,9 +21,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef TREE_EXPERIMENT_H_
-#define TREE_EXPERIMENT_H_
+#pragma once
 
 #include <QAbstractTableModel>
 #include <QAbstractItemModel>
@@ -79,6 +77,3 @@ signals:
   void tree_changed();
 
 };
-
-
-#endif

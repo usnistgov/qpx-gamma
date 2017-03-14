@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef ROLLBACK_DIALOG_H
-#define ROLLBACK_DIALOG_H
+#pragma once
 
 #include <QDialog>
 #include <QRadioButton>
@@ -39,5 +37,3 @@ private:
   Qpx::ROI      roi_;
   std::vector<QRadioButton*> radios_;
 };
-
-#endif

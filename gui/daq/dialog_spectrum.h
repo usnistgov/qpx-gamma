@@ -19,15 +19,13 @@
  *
  ******************************************************************************/
 
-#ifndef DialogSpectrum_H
-#define DialogSpectrum_H
+#pragma once
 
 #include <QDialog>
 #include "special_delegate.h"
 #include "tree_settings.h"
 #include "widget_detectors.h"
 #include "daq_sink.h"
-
 
 namespace Ui {
 class DialogSpectrum;
@@ -92,5 +90,3 @@ private:
     void open_close_locks();
     void toggle_push();
 };
-
-#endif // DialogSpectrum_H

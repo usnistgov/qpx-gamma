@@ -19,8 +19,7 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_GATES_PLOT2D_H
-#define FORM_GATES_PLOT2D_H
+#pragma once
 
 #include <QWidget>
 #include <QSettings>
@@ -88,5 +87,3 @@ private:
   double ymin_{0}, ymax_{0};
 
 };
-
-#endif

@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_DAQ_SOURCE
-#define QPX_DAQ_SOURCE
+#pragma once
 
 #include "generic_setting.h"
 #include "synchronized_queue.h"
@@ -90,5 +89,3 @@ protected:
 typedef std::shared_ptr<Source> SourcePtr;
 
 }
-
-#endif

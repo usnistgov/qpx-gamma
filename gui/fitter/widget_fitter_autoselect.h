@@ -20,13 +20,11 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_FITTER_AUTOSELECT_H
-#define FORM_FITTER_AUTOSELECT_H
+#pragma once
 
 #include <QWidget>
 #include <QSettings>
 #include "peak.h"
-
 
 namespace Ui {
 class WidgetFitterAutoselect;
@@ -53,5 +51,3 @@ public:
 private:
   Ui::WidgetFitterAutoselect *ui;
 };
-
-#endif // FORM_FITTER_AUTOSELECT_H

@@ -24,13 +24,15 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_STATS_UPDATE
-#define QPX_STATS_UPDATE
+#pragma once
 
 #include <boost/date_time.hpp>
 #include "hit.h"
 #include "xmlable.h"
 #include "generic_setting.h" //only for PreciseFloat
+
+#include "json.hpp"
+using namespace nlohmann;
 
 namespace Qpx {
 
@@ -71,6 +73,7 @@ struct StatsUpdate : public XMLable {
   std::string xml_element_name() const override {return "StatsUpdate";}
 };
 
-}
+void to_json(json& j, const StatsUpdate& s);
+void from_json(const json& j, StatsUpdate& s);
 
-#endif
+}

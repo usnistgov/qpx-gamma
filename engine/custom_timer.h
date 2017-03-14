@@ -17,9 +17,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef CUSTOM_TIMER_H_
-#define CUSTOM_TIMER_H_
+#pragma once
 
 #include <string>
 #include <cstdint>
@@ -84,5 +82,3 @@ public:
     return answer;
   }
 };
-
-#endif

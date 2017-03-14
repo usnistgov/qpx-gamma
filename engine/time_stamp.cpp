@@ -50,4 +50,16 @@ void TimeStamp::to_xml(pugi::xml_node &root) const
   node.append_attribute("timebase_div").set_value(std::to_string(timebase_divider_).c_str());
 }
 
+void to_json(json& j, const TimeStamp& t)
+{
+  j["multiplier"] = t.timebase_multiplier();
+  j["divider"] = t.timebase_divider();
+}
+
+void from_json(const json& j, TimeStamp& t)
+{
+  t = TimeStamp(j["multiplier"], j["divider"]);
+}
+
+
 }

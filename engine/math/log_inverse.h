@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef LOG_INVERSE_H
-#define LOG_INVERSE_H
+#pragma once
 
 #include "coef_function.h"
 
@@ -39,5 +38,3 @@ public:
   double eval(double x) const override;
   double derivative(double x) const override;
 };
-
-#endif

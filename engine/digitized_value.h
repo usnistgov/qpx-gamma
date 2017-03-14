@@ -21,8 +21,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_DIGITIZED_VALUE
-#define QPX_DIGITIZED_VALUE
+#pragma once
 
 #include <string>
 #include <fstream>
@@ -92,5 +91,3 @@ private:
 };
 
 }
-
-#endif

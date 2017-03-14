@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef WIDGET_ISOTOPES_H
-#define WIDGET_ISOTOPES_H
+#pragma once
 
 #include <QWidget>
 #include <QAbstractTableModel>
@@ -119,5 +118,3 @@ private:
   std::vector<double> current_gammas_;
 
 };
-
-#endif // WIDGET_ISOTOPES_H

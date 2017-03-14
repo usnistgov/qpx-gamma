@@ -21,8 +21,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_EXPERIMENT
-#define QPX_EXPERIMENT
+#pragma once
 
 #include "project.h"
 #include "domain.h"
@@ -100,8 +99,4 @@ private:
   double tally_real_time(TrajectoryPtr node);
 };
 
-
-
 }
-
-#endif

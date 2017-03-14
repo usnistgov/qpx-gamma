@@ -1,5 +1,4 @@
-#ifndef VME_H
-#define VME_H
+#pragma once
 
 enum class AddressModifier : uint8_t {
   A16_Lock         = 0x2C,
@@ -33,5 +32,3 @@ enum class AddressModifier : uint8_t {
   A64_Block        = 0x03,
   A64_Block64      = 0x00,
 };
-
-#endif

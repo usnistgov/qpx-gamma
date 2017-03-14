@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef MESYTEC_BASE_MODULE
-#define MESYTEC_BASE_MODULE
+#pragma once
 
 #include "vmemodule.h"
 
@@ -96,7 +95,4 @@ protected:
             rc_return_status_no_response_mask;
 };
 
-
 }
-
-#endif

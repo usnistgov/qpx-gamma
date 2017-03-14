@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef DELAYOMETER_H
-#define DELAYOMETER_H
+#pragma once
 
 #include "spectrum.h"
 
@@ -59,5 +58,3 @@ protected:
 };
 
 }
-
-#endif // Delayometer_H

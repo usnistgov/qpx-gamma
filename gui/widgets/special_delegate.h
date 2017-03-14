@@ -21,9 +21,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef QPX_SPECIAL_DELEGATE_H_
-#define QPX_SPECIAL_DELEGATE_H_
+#pragma once
 
 #include <QStyledItemDelegate>
 #include <QDialog>
@@ -68,5 +66,3 @@ signals:
 private:
     XMLableDB<Qpx::Detector> detectors_;
 };
-
-#endif

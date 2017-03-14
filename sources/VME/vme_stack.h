@@ -17,8 +17,7 @@
 		Martin Shetty, NIST
 */
 
-#ifndef VME_STACK_H
-#define VME_STACK_H
+#pragma once
 
 #include "vme.h"
 
@@ -101,5 +100,3 @@ public:
 
 };
 
-
-#endif

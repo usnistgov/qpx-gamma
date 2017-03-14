@@ -21,8 +21,7 @@
  *
  ******************************************************************************/
 
-#ifndef PATTERN_H
-#define PATTERN_H
+#pragma once
 
 #include <vector>
 #include <string>
@@ -68,5 +67,3 @@ public:
 };
 
 }
-
-#endif

@@ -21,15 +21,16 @@
  *
  ******************************************************************************/
 
-
-#ifndef QPX_DETECTOR
-#define QPX_DETECTOR
+#pragma once
 
 #include <vector>
 #include <string>
 #include <boost/date_time.hpp>
 #include "calibration.h"
 #include "generic_setting.h"
+
+#include "json.hpp"
+using namespace nlohmann;
 
 namespace Qpx {
 
@@ -65,6 +66,8 @@ class Detector : public XMLable
   Setting settings_ {"Optimization"};
 };
 
-}
+void to_json(json& j, const Detector &s);
+void to_json_options(json& j, const Detector &s, bool options);
+void from_json(const json& j, Detector &s);
 
-#endif
+}

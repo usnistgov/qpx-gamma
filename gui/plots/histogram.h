@@ -1,5 +1,4 @@
-#ifndef HISTOGRAM_H
-#define HISTOGRAM_H
+#pragma once
 
 #include <list>
 #include <map>
@@ -70,6 +69,3 @@ inline HistMap1D to_map(const HistList1D &list)
     ret[m.first] = m.second;
   return ret;
 }
-
-
-#endif

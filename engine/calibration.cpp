@@ -39,6 +39,38 @@
 
 namespace Qpx {
 
+std::string model_to_str(const CalibrationModel& c)
+{
+  if (c == CalibrationModel::polynomial)
+    return "Polynomial";
+  else if (c == CalibrationModel::sqrt_poly)
+    return "SqrtPoly";
+  else if (c == CalibrationModel::polylog)
+    return "PolyLog";
+  else if (c == CalibrationModel::loginverse)
+    return "LogInverse";
+  else if (c == CalibrationModel::effit)
+    return "Effit";
+  else
+    return "undefined";
+}
+
+CalibrationModel model_from_str(const std::string& c)
+{
+  if (c == "Polynomial")
+    return  CalibrationModel::polynomial;
+  else if (c == "SqrtPoly")
+    return  CalibrationModel::sqrt_poly;
+  else if (c == "PolyLog")
+    return  CalibrationModel::polylog;
+  else if (c == "LogInverse")
+    return  CalibrationModel::loginverse;
+  else if (c == "Effit")
+    return  CalibrationModel::effit;
+  else
+    return CalibrationModel::none;
+}
+
 Calibration::Calibration()
 {
   calib_date_ = boost::posix_time::microsec_clock::universal_time();
@@ -225,17 +257,7 @@ void Calibration::to_xml(pugi::xml_node &root) const
   node.append_child("CalibrationCreationDate");
   node.last_child().append_child(pugi::node_pcdata).set_value(to_iso_extended_string(calib_date_).c_str());
 
-  std::string  model_str = "undefined";
-  if (model_ == CalibrationModel::polynomial)
-    model_str = "Polynomial";
-  else if (model_ == CalibrationModel::sqrt_poly)
-    model_str = "SqrtPoly";
-  else if (model_ == CalibrationModel::polylog)
-    model_str = "PolyLog";
-  else if (model_ == CalibrationModel::loginverse)
-    model_str = "LogInverse";
-  else if (model_ == CalibrationModel::effit)
-    model_str = "Effit";
+  std::string model_str = model_to_str(model_);
   node.append_child("Equation").append_attribute("Model").set_value(model_str.c_str());
 
   if ((model_ != CalibrationModel::none) && (coefficients_.size()))
@@ -258,18 +280,56 @@ void Calibration::from_xml(const pugi::xml_node &node)
     calib_date_ = from_iso_extended(node.child_value("CalibrationCreationDate"));
 
   std::string model_str = std::string(node.child("Equation").attribute("Model").value());
-  if (model_str == "Polynomial")
-    model_ = CalibrationModel::polynomial;
-  else if (model_str == "SqrtPoly")
-    model_ = CalibrationModel::sqrt_poly;
-  else if (model_str == "PolyLog")
-    model_ = CalibrationModel::polylog;
-  else if (model_str == "LogInverse")
-    model_ = CalibrationModel::loginverse;
-  else if (model_str == "Effit")
-    model_ = CalibrationModel::effit;
+  model_ = model_from_str(model_str);
   coef_from_string(std::string(node.child("Equation").child_value("Coefficients")));
+}
 
+void to_json(json& j, const Calibration &s)
+{
+  j["type"] = s.type_;
+
+  if (!s.units_.empty() && (s.type_ == "Energy"))
+    j["units"] = s.units_;
+
+  if (s.type_ == "Gain")
+    j["to"] = s.to_;
+
+  if (s.bits_ > 0)
+    j["bits"] = s.bits_;
+
+  j["calibration_creation_date"] = to_iso_extended_string(s.calib_date_);
+  j["model"] = model_to_str(s.model_);
+
+  if ((s.model_ != CalibrationModel::none) && (s.coefficients_.size()))
+    j["coefficients"] = s.coefficients_;
+}
+
+void from_json(const json& j, Calibration &s)
+{
+  if (!j.count("type"))
+    return;
+
+  s.type_ = j["type"];
+
+  if (j.count("units"))
+    s.units_ = j["units"];
+
+  if ((s.type_ == "Gain") && j.count("to"))
+    s.to_ = j["to"];
+
+  if (j.count("bits"))
+    s.bits_ = j["bits"];
+
+  if (j.count("calibration_creation_date"))
+    s.calib_date_ = from_iso_extended(j["calibration_creation_date"]);
+
+  s.model_ = model_from_str(j["model"]);
+  if (j.count("coefficients"))
+  {
+    auto o = j["coefficients"];
+    for (json::iterator it = o.begin(); it != o.end(); ++it)
+      s.coefficients_.push_back(it.value().get<double>());
+  }
 }
 
 

@@ -21,9 +21,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef QPX_BINARY_CHECKLIST_H_
-#define QPX_BINARY_CHECKLIST_H_
+#pragma once
 
 #include <QDialog>
 #include <QCheckBox>
@@ -50,5 +48,3 @@ private:
   std::vector<QComboBox*> menus_;
 
 };
-
-#endif

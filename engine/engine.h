@@ -22,9 +22,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_ENGINE
-#define QPX_ENGINE
-
+#pragma once
 
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
@@ -111,5 +109,3 @@ private:
 };
 
 }
-
-#endif

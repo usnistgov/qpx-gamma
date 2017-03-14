@@ -25,8 +25,7 @@
  *
  ******************************************************************************/
 
-#ifndef SINK_FACTORY_H
-#define SINK_FACTORY_H
+#pragma once
 
 #include <memory>
 #include <boost/filesystem.hpp>
@@ -77,7 +76,4 @@ public:
   }
 };
 
-
 }
-
-#endif

@@ -21,9 +21,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef SpectrumAddback1D_H
-#define SpectrumAddback1D_H
+#pragma once
 
 #include "spectrum1D.h"
 
@@ -40,6 +38,4 @@ protected:
   void addEvent(const Event&) override;
 };
 
-
 }
-#endif // SPECTRUM_LFC_H

@@ -21,9 +21,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef DialogDomain_H_
-#define DialogDomain_H_
+#pragma once
 
 #include <vector>
 #include <unordered_map>
@@ -77,5 +75,3 @@ private:
   void remake_domains();
   double displayETA();
 };
-
-#endif // DialogDomain_H

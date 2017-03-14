@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_FINDER_H
-#define QPX_FINDER_H
+#pragma once
 
 #include <vector>
 #include <cinttypes>
@@ -72,5 +71,3 @@ private:
 };
 
 }
-
-#endif

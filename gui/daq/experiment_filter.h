@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef DOMAIN_FILTER_H
-#define DOMAIN_FILTER_H
+#pragma once
 
 #include <QLabel>
 #include <QWidget>
@@ -67,6 +65,3 @@ private slots:
 private:
   std::vector<WidgetDomainFilter*> filters_;
 };
-
-
-#endif

@@ -125,6 +125,69 @@ void Spill::from_xml(const pugi::xml_node &node) {
   }
 }
 
+void to_json(json& j, const Spill& s)
+{
+  to_json(j, s, true);
+}
+
+void to_json(json& j, const Spill &s, bool with_settings)
+{
+  j["time"] = boost::posix_time::to_iso_extended_string(s.time);
+//  node.append_attribute("bytes_raw_data").set_value(std::to_string(data.size() * sizeof(uint32_t)).c_str());
+//  node.append_attribute("number_of_hits").set_value(std::to_string(hits.size()).c_str());
+
+  for (auto &st : s.stats)
+    j["stats"].push_back(st.second);
+
+  if (with_settings)
+  {
+    if (!s.state.branches.empty())
+      j["state"] = s.state;
+    if (!s.detectors.empty())
+    {
+      auto dets = s.detectors;
+      for (auto q : dets)
+      {
+        q.settings_.strip_metadata();
+        j["detectors"].push_back(q);
+      }
+    }
+  }
+}
+
+void from_json(const json& j, Spill& s)
+{
+  s.data.clear();
+  s.hits.clear();
+
+  if (j.count("time"))
+    s.time = from_iso_extended(j["time"].get<std::string>());
+
+//  if (node.attribute("number_of_hits"))
+//    hits.resize(node.attribute("number_of_hits").as_uint());
+
+  if (j.count("state"))
+    s.state = j["state"];
+
+  if (j.count("stats"))
+  {
+    s.stats.clear();
+    for (auto it : j["stats"])
+    {
+      StatsUpdate st = it;
+      s.stats[st.source_channel] = st;
+    }
+  }
+
+  if (j.count("detectors"))
+  {
+    auto o = j["detectors"];
+    for (json::iterator it = o.begin(); it != o.end(); ++it)
+      s.detectors.push_back(it.value());
+  }
+}
+
+
 std::string Spill::to_string() const
 {
   std::string info = boost::posix_time::to_iso_extended_string(time);

@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef RANGE_SELECTOR_H
-#define RANGE_SELECTOR_H
+#pragma once
 
 #include "qp_multi1d.h"
 
@@ -81,6 +79,3 @@ private:
   void unplot_self();
   void plot_self(QCPGraph* target);
 };
-
-
-#endif

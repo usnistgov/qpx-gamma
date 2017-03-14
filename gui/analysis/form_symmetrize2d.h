@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_SYMMETRIZE_2D_H
-#define FORM_SYMMETRIZE_2D_H
+#pragma once
 
 #include <QWidget>
 #include "project.h"
@@ -106,5 +104,3 @@ private:
   void saveSettings();
   void make_gated_spectra();
 };
-
-#endif // FORM_ANALYSIS2D_H

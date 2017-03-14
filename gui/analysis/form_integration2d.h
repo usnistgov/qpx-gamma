@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_INTEGRATION2D_H
-#define FORM_INTEGRATION2D_H
+#pragma once
 
 #include <QAbstractTableModel>
 #include <QSortFilterProxyModel>
@@ -132,4 +130,3 @@ private:
   void reindex_peaks();
 };
 
-#endif

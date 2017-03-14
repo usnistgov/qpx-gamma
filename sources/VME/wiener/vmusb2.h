@@ -17,8 +17,7 @@
     Martin Shetty, NIST
 */
 
-#ifndef VMUSB2_H
-#define VMUSB2_H
+#pragma once
 
 #include <string>
 
@@ -116,5 +115,3 @@ private:
   std::string serialNo(struct usb_device* dev);
   bool initVmUsb();
 };
-
-#endif // VMUSB_H

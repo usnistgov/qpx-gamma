@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef FIT_SETTINGS_H
-#define FIT_SETTINGS_H
+#pragma once
 
 #include "fit_param.h"
 #include "calibration.h"
@@ -89,5 +88,3 @@ public:
   void from_xml(const pugi::xml_node &node) override;
   std::string xml_element_name() const override {return "FitSettings";}
 };
-
-#endif

@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef COEF_FUNCTION_H
-#define COEF_FUNCTION_H
+#pragma once
 
 #include <vector>
 #include <map>
@@ -72,5 +71,3 @@ protected:
   double chi2_ {0};
 
 };
-
-#endif

@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef GENERIC_SETTING
-#define GENERIC_SETTING
+#pragma once
 
 #include <vector>
 #include <string>
@@ -34,6 +33,8 @@
 #include "pugixml.hpp"
 #include "xmlable.h"
 
+#include "json.hpp"
+using namespace nlohmann;
 
 namespace Qpx {
 
@@ -77,21 +78,23 @@ struct SettingMeta : public XMLable {
   std::string xml_element_name() const {return "SettingMeta";}
 
   std::string        id_;
-  SettingType        setting_type;
+  SettingType        setting_type {SettingType::none};
 
-  bool               writable;
-  bool               visible;
-  bool               saveworthy;
-  int64_t            address;
+  bool               writable   {false};
+  bool               visible    {true};
+  bool               saveworthy {true};
+  double             minimum {std::numeric_limits<double>::min()};
+  double             maximum {std::numeric_limits<double>::max()};
+  double             step    {1};
+  int16_t            max_indices {0};
+  int64_t            address    {-1};
   std::string        name, description;
-  double             minimum, maximum, step;
   std::string        unit;                       //or extension if file
   std::map<int32_t, std::string> int_menu_items; //or intrinsic branches
   std::set<std::string> flags;
-  int16_t            max_indices;
 
 
-  SettingMeta();
+  SettingMeta() {}
   SettingMeta(const pugi::xml_node &node);
 
   bool shallow_equals(const SettingMeta& other) const;
@@ -117,6 +120,8 @@ private:
                     const std::string &key_name, const std::string &value_name) const;
 };
 
+void to_json(json& j, const SettingMeta &s);
+void from_json(const json& j, SettingMeta &s);
 
 struct Setting;
 
@@ -128,18 +133,18 @@ struct Setting : public XMLable
   SettingMeta       metadata;
   std::set<int32_t> indices;
 
-  int64_t                          value_int;
+  int64_t                          value_int {0};
+  double                           value_dbl {0.0};
+  PreciseFloat                     value_precise {0};
   std::string                      value_text;
-  double                           value_dbl;
   boost::posix_time::ptime         value_time;
   boost::posix_time::time_duration value_duration;
-  PreciseFloat                     value_precise;
   Pattern                          value_pattern;
 
-  XMLableDB<Setting> branches;
+  XMLableDB<Setting> branches {"branches"};
 
   
-  Setting();
+  Setting() {}
   Setting(const pugi::xml_node &node);
   Setting(std::string id);
   Setting(SettingMeta meta);
@@ -169,7 +174,6 @@ struct Setting : public XMLable
   std::string val_to_pretty_string() const;
   std::string indices_to_string(bool showblanks = false) const;
   void from_xml(const pugi::xml_node &node) override;
-//  void to_xml(pugi::xml_node &node, bool with_metadata) const;
   void to_xml(pugi::xml_node &node) const override;
 
   //Numerics only (float, integer, floatprecise)
@@ -185,17 +189,22 @@ struct Setting : public XMLable
   Setting operator++(int);
   Setting operator--(int);
 
+  //hwy public?
+  json val_to_json() const;
+  void val_from_json(const json &j);
+
 private:
   std::string val_to_string() const;
+
   void val_from_node(const pugi::xml_node &node);
 
   bool retrieve_one_setting(Setting&, const Setting&, Match flags) const;
   void delete_one_setting(const Setting&, Setting&, Match flags);
-
 };
+
+void to_json(json& j, const Setting &s);
+void from_json(const json& j, Setting &s);
 
 std::ostream& operator << (std::ostream &os, const Setting &s);
 
 }
-
-#endif

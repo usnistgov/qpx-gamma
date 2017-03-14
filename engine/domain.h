@@ -21,8 +21,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_DOMAIN
-#define QPX_DOMAIN
+#pragma once
 
 #include "xmlable.h"
 #include "generic_setting.h"
@@ -127,7 +126,4 @@ private:
 
 typedef std::shared_ptr<TrajectoryNode> TrajectoryPtr;
 
-
 }
-
-#endif

@@ -21,9 +21,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef DIALOGSAVESPECTRA_H_
-#define DIALOGSAVESPECTRA_H_
+#pragma once
 
 #include <vector>
 //#include <unordered_map>
@@ -79,5 +77,3 @@ private:
     std::string total_dir_;
     Qpx::Project *my_set_;
 };
-
-#endif // DIALOGSAVESPECTRA_H

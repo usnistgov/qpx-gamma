@@ -83,6 +83,46 @@ void HitModel::to_xml(pugi::xml_node &root) const
   timebase.to_xml(node);
 }
 
+void to_json(json& j, const HitModel& t)
+{
+  if (t.tracelength)
+    j["tracelength"] = t.tracelength;
+  for (auto &v : t.name_to_idx)
+  {
+    j["values"][v.first]["index"] = v.second;
+    j["values"][v.first]["bits"] = t.values.at(v.second).bits();
+  }
+  j["timebase"] = t.timebase;
+}
+
+void from_json(const json& j, HitModel& t)
+{
+  if (j.count("tracelength"))
+    t.tracelength = j["tracelength"];
+  else
+    t.tracelength = 0;
+
+  if (j.count("values"))
+  {
+    auto o = j["values"];
+    for (json::iterator it = o.begin(); it != o.end(); ++it)
+    {
+      std::string name = it.key();
+      size_t idx = it.value()["index"];
+      uint8_t bits = it.value()["bits"];
+
+      if (idx >= t.values.size())
+        t.values.resize(idx + 1);
+      if (idx >= t.idx_to_name.size())
+        t.idx_to_name.resize(idx + 1);
+
+      t.values[idx] = DigitizedVal(0, bits);
+      t.idx_to_name[idx] = name;
+      t.name_to_idx[name] = idx;
+    }
+  }
+}
+
 std::string HitModel::to_string() const
 {
   std::stringstream ss;

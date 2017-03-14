@@ -1,5 +1,4 @@
-#ifndef VMUSB_H
-#define VMUSB_H
+#pragma once
 
 #include <string>
 #include "../boostdll/dll/import.hpp"
@@ -113,5 +112,3 @@ private:
   boost::function<short(usb_dev_handle *, short, int, long, long[])> vmeReadBLT32;
 
 };
-
-#endif // VMUSB_H

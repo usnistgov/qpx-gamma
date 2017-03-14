@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_SYSTEM_SETTINGS_H
-#define FORM_SYSTEM_SETTINGS_H
+#pragma once
 
 #include <QWidget>
 #include <QCloseEvent>
@@ -125,5 +124,3 @@ private:
 
   bool exiting;
 };
-
-#endif // FORM_SYSTEM_SETTINGS_H

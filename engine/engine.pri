@@ -45,6 +45,7 @@ SOURCES += $$files($$PWD/*.cpp) \
            $$files($$PWD/math/*.cpp)
 
 HEADERS  += $$files($$PWD/*.h) \
+            $$files($$PWD/*.hpp) \
             $$files($$PWD/pugixml/*.hpp) \
             $$files($$PWD/math/*.h)
 

@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef GAUSSIAN_H
-#define GAUSSIAN_H
+#pragma once
 
 #include <vector>
 #include <iostream>
@@ -67,7 +66,3 @@ protected:
   FitParam hwhm_ {"hwhm", 0};
   double chi2_ {0};
 };
-
-
-#endif
-

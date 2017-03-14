@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_SUM4_H
-#define QPX_SUM4_H
+#pragma once
 
 #include <vector>
 #include <cstdint>
@@ -94,5 +93,3 @@ private:
 };
 
 }
-
-#endif

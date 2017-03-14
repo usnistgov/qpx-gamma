@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef ISOTOPE_H_
-#define ISOTOPE_H_
+#pragma once
 
 #include <list>
 #include <string>
@@ -108,5 +106,3 @@ class Isotope : public XMLable {
 };
 
 }
-
-#endif

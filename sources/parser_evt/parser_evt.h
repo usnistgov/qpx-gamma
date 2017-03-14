@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef SORTER_EVT
-#define SORTER_EVT
+#pragma once
 
 #include "daq_source.h"
 #include "detector.h"
@@ -92,5 +91,3 @@ protected:
 };
 
 }
-
-#endif

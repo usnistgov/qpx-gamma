@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_COINC_PEAKS_H
-#define FORM_COINC_PEAKS_H
+#pragma once
 
 #include <QWidget>
 #include <QSettings>
@@ -85,4 +83,3 @@ private:
   void add_peak_to_table(const Qpx::Peak &, int, QColor);
 };
 
-#endif

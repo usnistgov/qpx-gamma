@@ -21,9 +21,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef TABLE_CHAN_SETTINGS_H_
-#define TABLE_CHAN_SETTINGS_H_
+#pragma once
 
 #include <QAbstractTableModel>
 #include <QFont>
@@ -59,5 +57,3 @@ signals:
     void detector_chosen(int chan, std::string name);
 
 };
-
-#endif

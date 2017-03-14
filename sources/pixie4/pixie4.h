@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef PIXIE_PLUGIN
-#define PIXIE_PLUGIN
+#pragma once
 
 #include "daq_source.h"
 #include "detector.h"
@@ -168,5 +167,3 @@ protected:
 };
 
 }
-
-#endif

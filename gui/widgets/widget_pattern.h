@@ -21,8 +21,8 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_PATTERN_H
-#define QPX_PATTERN_H
+#pragma once
+
 #include <QObject>
 #include <QMetaType>
 #include <QWidget>
@@ -70,5 +70,3 @@ private:
   double size_;
   int wrap_, rows_;
 };
-
-#endif

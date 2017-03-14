@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_MULTI_GATES_H
-#define FORM_MULTI_GATES_H
+#pragma once
 
 #include <QAbstractTableModel>
 #include <QSortFilterProxyModel>
@@ -156,5 +154,3 @@ private:
   void make_gate();
   void update_current_gate();
 };
-
-#endif

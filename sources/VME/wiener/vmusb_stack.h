@@ -17,9 +17,7 @@
 		Martin Shetty, NIST
 */
 
-#ifndef VMUSB_STACK_H
-#define VMUSB_STACK_H
-
+#pragma once
 
 #include <vector>
 #include <stdint.h>
@@ -155,6 +153,3 @@ private:
   void     lastTransferIsNumberData(uint32_t mask);
 
 };
-
-
-#endif

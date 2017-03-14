@@ -22,8 +22,7 @@
  *
  ******************************************************************************/
 
-#ifndef WIDGET_PROFILES_H_
-#define WIDGET_PROFILES_H_
+#pragma once
 
 #include <QDialog>
 #include <QAbstractTableModel>
@@ -80,5 +79,3 @@ private slots:
   void on_pushApplyBoot_clicked();
   void on_OutputDirFind_clicked();
 };
-
-#endif // WidgetProfiles_H

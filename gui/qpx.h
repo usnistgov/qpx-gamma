@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef qpx_H
-#define qpx_H
+#pragma once
 
 #include <QMainWindow>
 
@@ -131,5 +130,3 @@ private slots:
   void tab_changed(int);
 
 };
-
-#endif // qpx_H

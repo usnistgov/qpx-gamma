@@ -1,5 +1,4 @@
-#ifndef VMECONTROLLER_H
-#define VMECONTROLLER_H
+#pragma once
 
 #include <string>
 #include <list>
@@ -54,5 +53,3 @@ public:
   virtual uint8_t      readIrqMask() {return 0xFF;}
 
 };
-
-#endif // VMECONTROLLER_H

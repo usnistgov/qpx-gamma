@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef FORM_GAIN_MATCH_H
-#define FORM_GAIN_MATCH_H
+#pragma once
 
 #include <QWidget>
 #include "project.h"
@@ -152,5 +151,3 @@ private:
 
   void update_name();
 };
-
-#endif // FORM_OPTIMIZATION_H

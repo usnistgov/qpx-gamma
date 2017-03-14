@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef HYPERMET_H
-#define HYPERMET_H
+#pragma once
 
 #include <vector>
 #include <iostream>
@@ -107,5 +106,3 @@ private:
   bool user_modified_ {false};
 
 };
-
-#endif

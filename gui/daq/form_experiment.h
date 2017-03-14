@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_EXPERIMENT_H
-#define FORM_EXPERIMENT_H
+#pragma once
 
 #include <QWidget>
 #include "thread_runner.h"
@@ -116,5 +114,3 @@ private:
   void save_propagate_fit();
   void display_time();
 };
-
-#endif // FORM_CALIBRATION_H

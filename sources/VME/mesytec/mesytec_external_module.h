@@ -1,5 +1,4 @@
-#ifndef MesytecExternal_H
-#define MesytecExternal_H
+#pragma once
 
 #include <sstream>
 #include <iomanip>
@@ -39,5 +38,3 @@ protected:
 };
 
 }
-
-#endif // MesytecExternal_H

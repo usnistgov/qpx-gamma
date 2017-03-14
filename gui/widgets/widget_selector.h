@@ -20,8 +20,8 @@
  *
  ******************************************************************************/
 
-#ifndef SELECTOR_WIDGET_H
-#define SELECTOR_WIDGET_H
+#pragma once
+
 #include <QObject>
 #include <QMetaType>
 #include <QWidget>
@@ -82,5 +82,3 @@ private:
 
   void recalcDim(int, int);
 };
-
-#endif

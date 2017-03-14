@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_DAQ_SOURCE_FACTORY
-#define QPX_DAQ_SOURCE_FACTORY
+#pragma once
 
 #include <memory>
 #include "daq_source.h"
@@ -60,5 +59,3 @@ public:
 };
 
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef QP_APPEARANCE_H
-#define QP_APPEARANCE_H
+#pragma once
 
 #include <QPen>
 #include <QMap>
@@ -15,7 +14,4 @@ struct Appearance
   QPen get_pen(QString theme) const;
 };
 
-
 }
-
-#endif

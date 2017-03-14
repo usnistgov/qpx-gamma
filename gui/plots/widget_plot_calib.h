@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef WIDGET_PLOT_CALIB_H
-#define WIDGET_PLOT_CALIB_H
+#pragma once
 
 #include <QWidget>
 #include "qp_multi1d.h"
@@ -75,5 +73,3 @@ protected:
   void plotFit();
   void plotPoints();
 };
-
-#endif

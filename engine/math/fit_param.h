@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef FIT_PARAM_H
-#define FIT_PARAM_H
+#pragma once
 
 #include <string>
 #include <limits>
@@ -73,5 +72,3 @@ private:
   bool enabled_ {true};
   bool fixed_ {false};
 };
-
-#endif

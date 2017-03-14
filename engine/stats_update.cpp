@@ -149,5 +149,41 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
   }
 }
 
+void to_json(json& j, const StatsUpdate& s)
+{
+  j["type"] = s.type_to_str(s.stats_type);
+  j["channel"] = s.source_channel;
+  j["lab_time"] = boost::posix_time::to_iso_extended_string(s.lab_time);
+  j["hit_model"] = s.model_hit;
+  for (auto &i : s.items)
+  {
+    std::stringstream ss;
+    ss << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << i.second;
+    j["items"][i.first] = ss.str();
+  }
+}
+
+void from_json(const json& j, StatsUpdate& s)
+{
+  s.stats_type = s.type_from_str(j["type"]);
+  s.source_channel = j["channel"];
+  s.lab_time = from_iso_extended(j["lab_time"]);
+  s.model_hit = j["hit_model"];
+
+  if (j.count("items"))
+  {
+    auto o = j["items"];
+    for (json::iterator it = o.begin(); it != o.end(); ++it)
+    {
+      std::string name = it.key();
+      PreciseFloat value = std::numeric_limits<long double>::quiet_NaN();
+      try { value = std::stold(it.value().get<std::string>()); }
+      catch(...) {}
+      s.items[name] = value;
+    }
+  }
+}
+
+
 
 }

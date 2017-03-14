@@ -21,8 +21,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_EVENT
-#define QPX_EVENT
+#pragma once
 
 #include "hit.h"
 #include <map>
@@ -57,5 +56,3 @@ struct Event {
 };
 
 }
-
-#endif

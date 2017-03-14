@@ -1,5 +1,4 @@
-#ifndef VMEMODULE_H
-#define VMEMODULE_H
+#pragma once
 
 #include <sstream>
 #include <iomanip>
@@ -71,5 +70,3 @@ protected:
   uint32_t       m_baseAddress;
   VmeController *m_controller;
 };
-
-#endif // VmeModule_H

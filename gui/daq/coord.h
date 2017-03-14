@@ -16,8 +16,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_COORD_H
-#define QPX_COORD_H
+#pragma once
 
 #include "calibration.h"
 
@@ -47,5 +46,3 @@ private:
   uint16_t bits_;
 };
 
-
-#endif

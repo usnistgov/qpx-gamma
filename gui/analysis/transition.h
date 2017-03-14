@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_TRANSITION_H
-#define QPX_TRANSITION_H
+#pragma once
 
 #include <vector>
 #include <string>
@@ -51,5 +50,3 @@ public:
 };
 
 }
-
-#endif

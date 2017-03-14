@@ -28,8 +28,7 @@
  *
  ******************************************************************************/
 
-#ifndef SPECTRUM_H
-#define SPECTRUM_H
+#pragma once
 
 #include "daq_sink.h"
 
@@ -77,5 +76,3 @@ protected:
 };
 
 }
-
-#endif // SPECTRUM_H

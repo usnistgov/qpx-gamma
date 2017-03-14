@@ -20,9 +20,7 @@
  *
  ******************************************************************************/
 
-
-#ifndef FORM_FWHM_CALIBRATION_H
-#define FORM_FWHM_CALIBRATION_H
+#pragma once
 
 #include <QWidget>
 #include "special_delegate.h"
@@ -99,4 +97,3 @@ private:
   void add_peak_to_table(const Qpx::Peak &, int, bool);
 };
 
-#endif // FORM_FWHM_CALIBRATION_H

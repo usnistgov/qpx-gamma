@@ -18,13 +18,12 @@
  *
  ******************************************************************************/
 
-#ifndef QT_UTIL_H_
-#define QT_UTIL_H_
+#pragma once
+
 #include <QWidget>
 #include <QFileDialog>
 #include <QTableWidget>
 #include <boost/date_time.hpp>
-
 
 //  Modified FileDialog by Dave Mateer
 //  http://stackoverflow.com/users/183339/dave-mateer
@@ -47,5 +46,3 @@ QString path_of_file(QString filename);
 
 
 void clearLayout(QLayout* layout, bool deleteWidgets = true);
-
-#endif

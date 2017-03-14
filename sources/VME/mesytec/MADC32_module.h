@@ -20,8 +20,7 @@
  *
  ******************************************************************************/
 
-#ifndef QPX_MADC32_PLUGIN
-#define QPX_MADC32_PLUGIN
+#pragma once
 
 #include "Mesytec_base_module.h"
 
@@ -53,7 +52,4 @@ protected:
 
 };
 
-
 }
-
-#endif
