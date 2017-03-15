@@ -174,7 +174,7 @@ void DialogDetector::on_pushReadOpti_clicked()
     return;
 
   Project optiSource;
-  optiSource.read_xml(fileName.toStdString(), false);
+  optiSource.open(fileName.toStdString(), false);
   std::set<Spill> spills = optiSource.spills();
   if (spills.size()) {
     Spill sp = *spills.rbegin();

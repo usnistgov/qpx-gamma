@@ -40,6 +40,10 @@
 #include "json.hpp"
 using namespace nlohmann;
 
+#ifdef H5_ENABLED
+#include "H5CC_Group.h"
+#endif
+
 namespace Qpx {
 
 typedef std::pair<std::vector<size_t>, PreciseFloat> Entry;
@@ -82,6 +86,9 @@ public:
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;
 
+  json to_json() const;
+  void from_json(const json& j);
+
   bool shallow_equals(const Metadata& other) const;
   bool operator!= (const Metadata& other) const;
   bool operator== (const Metadata& other) const;
@@ -99,8 +106,6 @@ private:
 public:
   std::vector<Qpx::Detector> detectors;
 
-  friend void to_json(json& j, const Metadata &s);
-  friend void from_json(const json& j, Metadata &s);
 };
 
 
@@ -127,6 +132,11 @@ public:
   bool from_prototype(const Metadata&);
   bool load(const pugi::xml_node &);
   void save(pugi::xml_node &) const;
+
+  #ifdef H5_ENABLED
+  virtual bool load(H5CC::Group &);
+  virtual bool save(H5CC::Group&) const;
+  #endif
 
   //data acquisition
   void push_spill(const Spill&);
@@ -189,6 +199,11 @@ protected:
 
   virtual std::string _data_to_xml() const = 0;
   virtual uint16_t _data_from_xml(const std::string&) = 0;
+
+  #ifdef H5_ENABLED
+  virtual void _load_data(H5CC::Group&) {}
+  virtual void _save_data(H5CC::Group&) const {}
+  #endif
 
 };
 

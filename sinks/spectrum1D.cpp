@@ -89,7 +89,9 @@ bool Spectrum1D::_initialize()
 
   cutoff_bin_ = metadata_.get_attribute("cutoff_bin").value_int;
 
-  spectrum_.resize(pow(2, bits_), 0);
+  size_t size = pow(2, bits_);
+  if (spectrum_.size() < size)
+    spectrum_.resize(size, PreciseFloat(0));
 
   return true;
 }
@@ -271,6 +273,37 @@ std::string Spectrum1D::_data_to_xml() const {
 
   return channeldata.str();
 }
+
+#ifdef H5_ENABLED
+void Spectrum1D::_load_data(H5CC::Group& g)
+{
+  if (!g.has_dataset("data"))
+    return;
+  H5CC::DataSet dset = g.open_dataset("data");
+  H5CC::Shape shape = dset.shape();
+  if (shape.rank() != 1)
+    return;
+
+  std::vector<double> rdata(shape.dim(0));
+  dset.read(rdata, {rdata.size()}, {0});
+
+  spectrum_.clear();
+  spectrum_.resize(pow(2, bits_), PreciseFloat(0));
+  for (size_t i = 0; i < rdata.size(); i++)
+    spectrum_[i] = rdata[i];
+
+  maxchan_ = rdata.size();
+}
+
+void Spectrum1D::_save_data(H5CC::Group& g) const
+{
+  std::vector<double> d(maxchan_);
+  for (uint32_t i = 0; i < maxchan_; i++)
+    d[i] = static_cast<double>(spectrum_[i]);
+  auto dset = g.require_dataset<double>("data", {maxchan_});
+  dset.write(d);
+}
+#endif
 
 uint16_t Spectrum1D::_data_from_xml(const std::string& thisData)
 {

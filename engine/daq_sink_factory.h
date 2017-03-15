@@ -33,6 +33,10 @@
 
 #include "daq_sink.h"
 
+#ifdef H5_ENABLED
+#include "H5CC_Group.h"
+#endif
+
 namespace Qpx {
 
 class SinkFactory {
@@ -48,7 +52,9 @@ class SinkFactory {
   
   SinkPtr create_type(std::string type);
   SinkPtr create_from_prototype(const Metadata& tem);
-//  SinkPtr create_from_xml(const pugi::xml_node &root);
+  #ifdef H5_ENABLED
+  SinkPtr create_from_h5(H5CC::Group &group);
+  #endif
   SinkPtr create_from_xml(const pugi::xml_node &root);
   SinkPtr create_from_file(std::string filename);
   SinkPtr create_copy(SinkPtr other);

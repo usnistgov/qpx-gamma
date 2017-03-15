@@ -178,7 +178,7 @@ void Shape::select_slab(const Shape& slabspace, std::vector<hsize_t> index)
 
 void Shape::select_element(std::vector<hsize_t> index)
 {
-  if (!contains(index))
+  if (!contains(Shape(index)))
     throw std::out_of_range("element selection out of data shape range");
   try
   {
@@ -213,7 +213,7 @@ bool Shape::extendable(const std::vector<hsize_t> dims)
 
 bool Shape::is_extendable() const
 {
-  return extendable(max_dims_) && can_contain(dims_);
+  return extendable(max_dims_) && can_contain(Shape(dims_));
 }
 
 std::string Shape::dims_to_string(const std::vector<hsize_t>& d)

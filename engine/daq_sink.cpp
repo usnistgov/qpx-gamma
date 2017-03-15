@@ -28,6 +28,10 @@
 //#include "custom_timer.h"
 #include "qpx_util.h"
 
+#ifdef H5_ENABLED
+#include "JsonH5.h"
+#endif
+
 namespace Qpx {
 
 Metadata::Metadata()
@@ -172,30 +176,28 @@ void Metadata::from_xml(const pugi::xml_node &node) {
   }
 }
 
-void to_json(json& j, const Metadata &s)
+json Metadata::to_json() const
 {
-  j["type"] = s.type();
+  json j;
+  if (attributes_.branches.size())
+    j["attributes"] = attributes_;
 
-  if (s.attributes().branches.size())
-    j["attributes"] = s.attributes();
-
-  if (!s.detectors.empty())
-    for (auto &d : s.detectors)
+  if (!detectors.empty())
+    for (auto &d : detectors)
       j["detectors"].push_back(d);
+  return j;
 }
 
-void from_json(const json& j, Metadata &s)
+void Metadata::from_json(const json& j)
 {
-  s.type_ = j["type"];
-
   if (j.count("attributes"))
-    s.set_attributes(j["attributes"]);
+    attributes_ = j["attributes"];
 
   if (j.count("detectors"))
   {
     auto o = j["detectors"];
     for (json::iterator it = o.begin(); it != o.end(); ++it)
-      s.detectors.push_back(it.value());
+      detectors.push_back(it.value());
   }
 }
 
@@ -528,6 +530,44 @@ bool Sink::load(const pugi::xml_node &node) {
 
   return ret;
 }
+
+#ifdef H5_ENABLED
+bool Sink::load(H5CC::Group& g)
+{
+  boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
+  while (!uniqueLock.try_lock())
+    boost::this_thread::sleep_for(boost::chrono::seconds{1});
+
+  if (!g.has_group("metadata"))
+    return false;
+
+  metadata_.from_json(g.open_group("metadata"));
+
+  bool ret = this->_initialize();
+
+  this->_load_data(g);
+
+  if (ret)
+    this->_recalc_axes();
+
+  return ret;
+}
+
+bool Sink::save(H5CC::Group& g) const
+{
+  boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
+
+  g.write_attribute("type", this->my_type());
+
+//  json j = metadata_.to_json();
+  auto mdg = g.require_group("metadata");
+
+  H5CC::from_json(metadata_.to_json(), mdg);
+
+  this->_save_data(g);
+}
+
+#endif
 
 
 }

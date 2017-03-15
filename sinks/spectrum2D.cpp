@@ -444,6 +444,58 @@ std::string Spectrum2D::_data_to_xml() const {
   return channeldata.str();
 }
 
+#ifdef H5_ENABLED
+void Spectrum2D::_save_data(H5CC::Group& g) const
+{
+  auto dgroup = g.require_group("data");
+  auto didx = dgroup.require_dataset<uint16_t>("indices", {spectrum_.size(), 2}, {128,2});
+  auto dcts = dgroup.require_dataset<double>("counts", {spectrum_.size()}, {128});
+  std::vector<uint16_t> dx(spectrum_.size());
+  std::vector<uint16_t> dy(spectrum_.size());
+  std::vector<double> dc(spectrum_.size());
+  size_t i = 0;
+  for (auto it = spectrum_.begin(); it != spectrum_.end(); ++it)
+  {
+    dx[i] = it->first.first;
+    dy[i] = it->first.second;
+    dc[i] = static_cast<double>(it->second);
+    i++;
+  }
+  didx.write(dx, {spectrum_.size(), 1}, {0,0});
+  didx.write(dy, {spectrum_.size(), 1}, {0,1});
+  dcts.write(dc);
+}
+
+void Spectrum2D::_load_data(H5CC::Group &g)
+{
+  if (!g.has_group("data"))
+    return;
+  auto dgroup = g.open_group("data");
+
+  if (!dgroup.has_dataset("indices") || !dgroup.has_dataset("counts"))
+    return;
+
+  auto didx = dgroup.open_dataset("indices");
+  auto dcts = dgroup.open_dataset("counts");
+
+  if ((didx.shape().rank() != 2) ||
+      (dcts.shape().rank() != 1) ||
+      (didx.shape().dim(0) != dcts.shape().dim(0)))
+    return;
+
+  std::vector<uint16_t> dx(didx.shape().dim(0));
+  std::vector<uint16_t> dy(didx.shape().dim(0));
+  std::vector<double> dc(didx.shape().dim(0));
+
+  didx.read(dx, {dx.size(), 1}, {0,0});
+  didx.read(dy, {dy.size(), 1}, {0,1});
+  dcts.read(dc, {dx.size()}, {0});
+
+  for (size_t i=0; i < dx.size(); ++i)
+    spectrum_[std::pair<uint16_t, uint16_t>(dx[i],dy[i])] = dc[i];
+}
+#endif
+
 uint16_t Spectrum2D::_data_from_xml(const std::string& thisData){
   std::stringstream channeldata;
   channeldata.str(thisData);
@@ -470,5 +522,6 @@ uint16_t Spectrum2D::_data_from_xml(const std::string& thisData){
   }
   return std::max(max_j, max_i);
 }
+
 
 }

@@ -65,6 +65,22 @@ SinkPtr SinkFactory::create_from_xml(const pugi::xml_node &root)
   return SinkPtr();
 }
 
+#ifdef H5_ENABLED
+SinkPtr SinkFactory::create_from_h5(H5CC::Group &group)
+{
+  if (!group.has_attribute("type"))
+    return SinkPtr();
+
+//  DBG << "<SinkFactory> making " << root.attribute("type").value();
+
+  SinkPtr instance = create_type(group.read_attribute<std::string>("type"));
+  if (instance && instance->load(group))
+    return instance;
+
+  return SinkPtr();
+}
+#endif
+
 SinkPtr SinkFactory::create_from_file(std::string filename)
 {
   std::string ext(boost::filesystem::extension(filename));

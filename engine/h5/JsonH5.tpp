@@ -84,11 +84,27 @@ template<typename T> void dataset_from_json(const json& j, const std::string& na
 
 template<typename T> void from_json(const json& j, H5CC::Groupoid<T>& g)
 {
+  bool is_array = j.is_array();
+  uint32_t i = 0;
+  size_t len = 0;
+  if (is_array && j.size())
+    len = std::to_string(j.size() - 1).size();
+
   for (json::const_iterator it = j.begin(); it != j.end(); ++it)
   {
+    std::string name;
+    if (is_array)
+    {
+      name = std::to_string(i++);
+      if (name.size() < len)
+        name = std::string(len - name.size(), '0').append(name);
+    }
+    else
+      name = it.key();
+
     if (it.value().count("___shape") && it.value()["___shape"].is_array())
     {
-      dataset_from_json(it.value(), it.key(), g);
+      dataset_from_json(it.value(), name, g);
     }
     else if (it.value().is_number() ||
              it.value().is_boolean() ||
@@ -96,11 +112,11 @@ template<typename T> void from_json(const json& j, H5CC::Groupoid<T>& g)
              it.value().count("___options") ||
              it.value().count("___choice"))
     {
-      attribute_from_json(it.value(), it.key(), g);
+      attribute_from_json(it.value(), name, g);
     }
     else
     {
-      auto gg = g.create_group(it.key());
+      auto gg = g.create_group(name);
       from_json(it.value(), gg);
     }
   }

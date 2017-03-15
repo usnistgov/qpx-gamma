@@ -34,6 +34,35 @@ unix {
   }
 }
 
+contains( DAQ_SOURCES, hdf5 ) {
+  DEFINES += "H5_ENABLED"
+unix {
+#  LIBPATH += /usr/local/lib
+  LIBS += -lhdf5_cpp
+
+  !mac {
+    H5SERIAL = $$system(ldconfig -p | grep hdf5_serial)
+  }
+
+  contains (H5SERIAL, libhdf5_serial.so) {
+    LIBS += -lhdf5_serial -lhdf5_serial_hl
+    INCLUDEPATH += /usr/include/hdf5/serial
+  }
+
+  !contains (H5SERIAL, libhdf5_serial.so) {
+    LIBS += -lhdf5 -lhdf5_hl_cpp
+}
+}
+INCLUDEPATH += $$PWD/h5 \
+               $$PWD/h5/h5cc
+
+SOURCES += $$files($$PWD/h5/*.cpp) \
+           $$files($$PWD/h5/h5cc/*.cpp)
+
+HEADERS  += $$files($$PWD/h5*.h) \
+            $$files($$PWD/h5/h5cc/*.h)
+}
+
 	 
 INCLUDEPATH += $$PWD \
                $$PWD/pugixml \

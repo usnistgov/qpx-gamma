@@ -53,6 +53,11 @@ protected:
   std::string _data_to_xml() const override;
   uint16_t _data_from_xml(const std::string&) override;
 
+  #ifdef H5_ENABLED
+  void _load_data(H5CC::Group&) override;
+  void _save_data(H5CC::Group&) const override;
+  #endif
+
   bool channels_from_string(std::istream &data_stream, bool compression);
   void init_from_file(std::string filename);
 

@@ -150,8 +150,11 @@ void TimeDomain::_push_stats(const StatsUpdate& newStats)
     PreciseFloat percent_dead = 0;
     PreciseFloat tot_time = 0;
 
-    if (!updates_.empty()) {
-      if ((newStats.stats_type == StatsType::stop) && (updates_.back().stats_type == StatsType::running)) {
+    if (!updates_.empty())
+    {
+      if ((newStats.stats_type == StatsType::stop) &&
+          (updates_.back().stats_type == StatsType::running))
+      {
         updates_.pop_back();
         seconds_.pop_back();
         spectrum_.pop_back();
@@ -183,8 +186,8 @@ void TimeDomain::_push_stats(const StatsUpdate& newStats)
       counts_.push_back(recent_count_);
 
 
-    if (seconds_.empty() || (tot_time != 0)) {
-
+    if (seconds_.empty() || (tot_time != 0))
+    {
       PreciseFloat count = 0;
 
       if (codomain == 0) {
@@ -213,6 +216,29 @@ void TimeDomain::_push_stats(const StatsUpdate& newStats)
   Spectrum::_push_stats(newStats);
 }
 
+#ifdef H5_ENABLED
+void TimeDomain::_save_data(H5CC::Group& g) const
+{
+  auto dsdata = g.require_dataset<long double>("data", {spectrum_.size(), 2}, {128,2});
+  std::vector<long double> seconds(spectrum_.size());
+  std::vector<long double> counts(spectrum_.size());
+  size_t i = 0;
+  for (auto a : seconds_)
+    seconds[i++] = static_cast<long double>(a);
+  i = 0;
+  for (auto a : spectrum_)
+    counts[i++] = static_cast<long double>(a);
+
+  dsdata.write(seconds, {seconds.size(), 1}, {0,0});
+  dsdata.write(counts, {counts.size(), 1}, {0,1});
+}
+
+void TimeDomain::_load_data(H5CC::Group &)
+{
+
+}
+
+#endif
 
 std::string TimeDomain::_data_to_xml() const {
   std::stringstream channeldata;

@@ -272,7 +272,7 @@ void FormPlot2D::update_plot(bool force)
       if (spectrum_data)
       {
         for (auto p : *spectrum_data)
-          hist.push_back(p2d(p.first.at(0), p.first.at(1), p.second.convert_to<double>()));
+          hist.push_back(p2d(p.first.at(0), p.first.at(1), to_double(p.second)));
       }
       ui->coincPlot->updatePlot(adjrange + 1, adjrange + 1, hist);
 

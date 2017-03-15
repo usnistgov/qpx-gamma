@@ -243,7 +243,7 @@ void FormGatesPlot2D::update_plot()
     if (spectrum_data)
     {
       for (auto p : *spectrum_data)
-        hist.push_back(p2d(p.first.at(0), p.first.at(1), p.second.convert_to<double>()));
+        hist.push_back(p2d(p.first.at(0), p.first.at(1), to_double(p.second)));
     }
 //    DBG << md.get_attribute("name").value_text << " hist size " << hist.size();
     ui->coincPlot->updatePlot(adjrange + 1, adjrange + 1, hist);

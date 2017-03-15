@@ -27,21 +27,52 @@
 #include <sstream>
 #include <iomanip>
 
+#define PF_DOUBLE 1
 //#define PF_LONG_DOUBLE 1
-#define PF_DEC_FLOAT 1
+//#define PF_DEC_FLOAT 1
 //#define PF_MP128 1
 
+#ifdef PF_DOUBLE
+typedef double PreciseFloat;
+
+inline double to_double(PreciseFloat pf)
+{
+  return pf;
+}
+
+inline PreciseFloat from_double(double d)
+{
+  return d;
+}
+
+inline PreciseFloat from_string(const std::string str)
+{
+  PreciseFloat ret { std::numeric_limits<double>::quiet_NaN() };
+  try { ret = std::stod(str); }
+  catch(...) {}
+  return ret;
+}
+
+inline std::string to_string(const PreciseFloat pf)
+{
+  std::stringstream ss;
+  ss << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << pf;
+  return ss.str();
+}
+#endif
+
+
 #ifdef PF_DEC_FLOAT
-  #define QPX_FLOAT_PRECISION 16
-  #define PF_MP 1
-  #include <boost/multiprecision/cpp_dec_float.hpp>
-  typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<QPX_FLOAT_PRECISION> > PreciseFloat;
+#define QPX_FLOAT_PRECISION 16
+#define PF_MP 1
+#include <boost/multiprecision/cpp_dec_float.hpp>
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<QPX_FLOAT_PRECISION> > PreciseFloat;
 #endif
 
 #ifdef PF_MP128
-  #define PF_MP 1
-  #include <boost/multiprecision/float128.hpp>
-  typedef boost::multiprecision::float128 PreciseFloat;
+#define PF_MP 1
+#include <boost/multiprecision/float128.hpp>
+typedef boost::multiprecision::float128 PreciseFloat;
 #endif
 
 //#include <boost/multiprecision/mpfr.hpp>

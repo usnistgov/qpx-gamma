@@ -47,8 +47,8 @@ public:
   std::string debug() const;
 
 private:
-  TT void write(const std::vector<T>& data, Shape slab, const std::vector<hsize_t>& index);
-  TT void read(std::vector<T>& data, Shape slab, const std::vector<hsize_t>& index) const;
+  TT void write_p(const std::vector<T>& data, Shape slab, const std::vector<hsize_t>& index);
+  TT void read_p(std::vector<T>& data, Shape slab, const std::vector<hsize_t>& index) const;
 
   Shape slab_shape(const std::vector<hsize_t>& list) const;
 };

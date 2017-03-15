@@ -291,7 +291,8 @@ void FormPlot1D::updateUI()
   QVector<SelectorItem> items;
   QSet<QString> dets;
 
-  for (auto &q : mySpectra->get_sinks(1)) {
+  for (auto &q : mySpectra->get_sinks(1))
+  {
     Metadata md;
     if (q.second != nullptr)
       md = q.second->metadata();
@@ -304,6 +305,7 @@ void FormPlot1D::updateUI()
     new_spectrum.data = QVariant::fromValue(q.first);
     new_spectrum.color = QColor(QString::fromStdString(md.get_attribute("appearance").value_text));
     new_spectrum.visible = md.get_attribute("visible").value_int;
+
     items.push_back(new_spectrum);
   }
 

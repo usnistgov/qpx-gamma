@@ -247,6 +247,37 @@ uint16_t Delayometer::_data_from_xml(const std::string& thisData){
   return maxchan_;
 }
 
+#ifdef H5_ENABLED
+void Delayometer::_save_data(H5CC::Group& g) const
+{
+  auto dgroup = g.require_group("data");
+  auto dsidx = dgroup.require_dataset<int64_t>("indices", {spectrum_.size()}, {128});
+  auto dsdata = dgroup.require_dataset<long double>("data", {spectrum_.size(), 2}, {128,2});
+  std::vector<long double> indices(spectrum_.size());
+  std::vector<long double> ns(spectrum_.size());
+  std::vector<long double> counts(spectrum_.size());
+  size_t i = 0;
+  for (auto a : ns_)
+    ns[i++] = static_cast<long double>(a.second);
+  i = 0;
+  for (auto a : spectrum_)
+  {
+    indices[i] = a.first;
+    counts[i++] = static_cast<long double>(a.second);
+  }
+
+  dsidx.write(indices);
+  dsdata.write(ns, {ns.size(), 1}, {0,0});
+  dsdata.write(counts, {counts.size(), 1}, {0,1});
+}
+
+void Delayometer::_load_data(H5CC::Group &)
+{
+
+}
+
+#endif
+
 
 
 }

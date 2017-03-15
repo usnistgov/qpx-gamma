@@ -224,6 +224,7 @@ void TimeSpectrum::_push_stats(const StatsUpdate& newStats)
 std::string TimeSpectrum::_data_to_xml() const
 {
   // do this
+  return "";
 }
 
 uint16_t TimeSpectrum::_data_from_xml(const std::string& thisData)
@@ -231,6 +232,19 @@ uint16_t TimeSpectrum::_data_from_xml(const std::string& thisData)
   // do this
   return false;
 }
+
+#ifdef H5_ENABLED
+void TimeSpectrum::_save_data(H5CC::Group& g) const
+{
+  // do this
+}
+
+void TimeSpectrum::_load_data(H5CC::Group &)
+{
+  // do this
+}
+
+#endif
 
 
 }

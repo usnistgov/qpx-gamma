@@ -28,6 +28,8 @@
 #include "spill.h"
 #include "qpx_util.h"
 
+#include "custom_logger.h"
+
 namespace Qpx {
 
 bool Spill::operator==(const Spill other) const {

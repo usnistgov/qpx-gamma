@@ -27,14 +27,17 @@
 #include "custom_logger.h"
 #include "qpx_util.h"
 
-
 #include <fstream>
 #include <boost/filesystem/convenience.hpp>
+
+#ifdef H5_ENABLED
+#include "H5CC_File.h"
+#include "JsonH5.h"
+#endif
 
 namespace Qpx {
 
 Project::Project(const Qpx::Project& other)
-  : Project()
 {
   ready_ = true;
   newdata_ = true;
@@ -309,15 +312,191 @@ void Project::save()
 {
   boost::unique_lock<boost::mutex> lock(mutex_);
   if (/*changed_ && */(identity_ != "New project"))
-    write_xml(identity_);
+    save_as(identity_);
 }
-
 
 void Project::save_as(std::string file_name)
 {
-  boost::unique_lock<boost::mutex> lock(mutex_);
-  write_xml(file_name);
+  std::string ext = boost::filesystem::path(file_name).extension().string();
+  DBG << "Extension=" << ext;
+  #ifdef H5_ENABLED
+  if (ext == ".h5")
+    write_h5(file_name);
+  else
+  #endif
+    write_xml(file_name);
 }
+
+void Project::open(std::string file_name, bool with_sinks, bool with_full_sinks)
+{
+  std::string ext = boost::filesystem::path(file_name).extension().string();
+  #ifdef H5_ENABLED
+  if (ext == ".h5")
+    read_h5(file_name, with_sinks, with_full_sinks);
+  else
+  #endif
+    read_xml(file_name, with_sinks, with_full_sinks);
+}
+
+#ifdef H5_ENABLED
+void Project::to_h5(H5CC::Group &group) const
+{
+  group.write_attribute("git_version", std::string(GIT_VERSION));
+
+  if (!spills_.empty())
+  {
+    auto sg = group.require_group("spills");
+    int i=0;
+    size_t len = std::to_string(spills_.size() - 1).size();
+    for (auto &s :spills_)
+    {
+      std::string name = std::to_string(i++);
+      if (name.size() < len)
+        name = std::string(len - name.size(), '0').append(name);
+
+      auto ssg = sg.require_group(name);
+      from_json(json(s), ssg);
+    }
+  }
+
+  if (!sinks_.empty())
+  {
+    auto sg = group.require_group("sinks");
+    int i=0;
+    size_t len = std::to_string(sinks_.size() - 1).size();
+    for (auto &q : sinks_)
+    {
+      std::string name = std::to_string(i++);
+      if (name.size() < len)
+        name = std::string(len - name.size(), '0').append(name);
+
+      auto ssg = sg.require_group(name);
+      ssg.write_attribute("index", q.first);
+      q.second->save(ssg);
+    }
+  }
+
+//  if (fitters_1d_.size())
+//  {
+//    //    DBG << "Will save fitters";
+//    pugi::xml_node fits_node = root.append_child("Fits1D");
+//    for (auto &q : fitters_1d_) {
+//      //      DBG << "saving fit " << q.first;
+//      q.second.to_xml(fits_node);
+//      fits_node.last_child().append_attribute("idx").set_value(std::to_string(q.first).c_str());
+//    }
+//  }
+
+  changed_ = false;
+  ready_ = true;
+  newdata_ = true;
+
+}
+
+void Project::from_h5(H5CC::Group &group, bool with_sinks, bool with_full_sinks)
+{
+  boost::unique_lock<boost::mutex> lock(mutex_);
+  clear_helper();
+
+  if (group.has_group("spills"))
+  {
+    auto sgroup = group.open_group("spills");
+    for (auto g : sgroup.groups())
+    {
+      json j;
+      to_json(j, sgroup.open_group(g));
+//      DBG << "Read spill\n" << j.dump(2);
+      Spill sp = j;
+      spills_.insert(sp);
+    }
+  }
+
+  if (!with_sinks)
+    return;
+
+  if (group.has_group("sinks"))
+    for (auto g : group.open_group("sinks").groups())
+    {
+      auto sg = group.open_group("sinks").open_group(g);
+
+//      if (child.child("Data") && !with_full_sinks)
+//        child.remove_child("Data");
+
+      if (sg.has_attribute("index"))
+        current_index_ = sg.read_attribute<int64_t>("index");
+      else
+      {
+        WARN << "<Project> Sink has no index";
+        continue;
+      }
+
+      SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_h5(sg);
+      if (!sink)
+        WARN << "<Project> Could not parse sink";
+      else
+        sinks_[current_index_] = sink;
+    }
+
+  current_index_++;
+
+//  if (root.child("Fits1D")) {
+//    for (pugi::xml_node &child : root.child("Fits1D").children()) {
+//      int64_t idx = child.attribute("idx").as_llong();
+//      if (!sinks_.count(idx))
+//        continue;
+
+//      fitters_1d_[idx] = Fitter();
+//      fitters_1d_[idx].from_xml(child, sinks_.at(idx));
+//    }
+//  }
+
+  DBG << "<Project> Loaded h5 with " << sinks_.size() << " sinks";
+
+  changed_ = false;
+  ready_ = true;
+  newdata_ = true;
+}
+
+void Project::write_h5(std::string file_name)
+{
+  try
+  {
+    H5CC::File f(file_name, H5CC::Access::rw_require);
+    auto group = f.require_group("project");
+    to_h5(group);
+
+    for (auto &q : sinks_)
+      q.second->reset_changed();
+
+    boost::unique_lock<boost::mutex> lock(mutex_);
+    identity_ = file_name;
+    cond_.notify_all();
+  }
+  catch (...)
+  {
+    ERR << "<Project> Failed to write h5 " << file_name;
+  }
+}
+
+void Project::read_h5(std::string file_name, bool with_sinks, bool with_full_sinks)
+{
+  try
+  {
+    H5CC::File f(file_name, H5CC::Access::r_existing);
+    auto group = f.require_group("project");
+    from_h5(group, with_sinks, with_full_sinks);
+
+    boost::unique_lock<boost::mutex> lock(mutex_);
+    identity_ = file_name;
+    cond_.notify_all();
+  }
+  catch (...)
+  {
+    ERR << "<Project> Failed to read h5 " << file_name;
+  }
+}
+
+#endif
 
 void Project::write_xml(std::string file_name)
 {
@@ -331,6 +510,7 @@ void Project::write_xml(std::string file_name)
   for (auto &q : sinks_)
     q.second->reset_changed();
 
+  boost::unique_lock<boost::mutex> lock(mutex_);
   identity_ = file_name;
   cond_.notify_all();
 }
@@ -386,6 +566,7 @@ void Project::read_xml(std::string file_name, bool with_sinks, bool with_full_si
     return;
 
   from_xml(root, with_sinks, with_full_sinks);
+  boost::unique_lock<boost::mutex> lock(mutex_);
   identity_ = file_name;
   cond_.notify_all();
 }
@@ -396,7 +577,6 @@ void Project::from_xml(const pugi::xml_node &root,
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
 
-
   if (root.child("Spills")) {
     for (auto &s : root.child("Spills").children()) {
       Spill sp;
@@ -405,7 +585,6 @@ void Project::from_xml(const pugi::xml_node &root,
         spills_.insert(sp);
     }
   }
-
 
   if (!with_sinks)
     return;

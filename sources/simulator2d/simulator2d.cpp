@@ -201,7 +201,7 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
     else if (q.id_ == "Simulator2D/Source file") {
       if (q.value_text != source_file_) {
         Qpx::Project temp_set;
-        temp_set.read_xml(q.value_text, true, false);
+        temp_set.open(q.value_text, true, false);
 
         spectra_names_.clear();
 
@@ -245,7 +245,7 @@ bool Simulator2D::boot() {
 
   Qpx::Project temp_set;
   LINFO << "<Simulator2D> Reading data from " << source_file_;
-  temp_set.read_xml(source_file_, true);
+  temp_set.open(source_file_);
 
   SinkPtr spectrum = temp_set.get_sink(source_spectrum_);
 

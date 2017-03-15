@@ -331,7 +331,7 @@ void from_json(const json& j, SettingMeta &s)
   if (j.count("saveworthy"))
     s.saveworthy = j["saveworthy"];
   if (j.count("word_size"))
-    s.maximum = j["sord_size"];
+    s.maximum = j["word_size"];
 
   if (s.is_numeric())
   {
@@ -343,18 +343,23 @@ void from_json(const json& j, SettingMeta &s)
       s.maximum = j["maximum"];
   }
 
-  if ((s.setting_type == SettingType::binary) ||
-      (s.setting_type == SettingType::indicator) ||
-      (s.setting_type == SettingType::int_menu) ||
-      (s.setting_type == SettingType::stem))
-    for (const auto &q : j["items"])
-      s.int_menu_items[q["val"]] = q["meaning"];
+  if (j.count("items") &&
+      ((s.setting_type == SettingType::binary) ||
+       (s.setting_type == SettingType::indicator) ||
+       (s.setting_type == SettingType::int_menu) ||
+       (s.setting_type == SettingType::stem))
+      )
+  {
+    auto o = j["items"];
+    for (json::iterator it = o.begin(); it != o.end(); ++it)
+      s.int_menu_items[it.value()["val"]] = it.value()["meaning"];
+  }
 
   if (j.count("flags"))
   {
     auto o = j["flags"];
     for (json::iterator it = o.begin(); it != o.end(); ++it)
-      s.flags.insert(it.key());
+      s.flags.insert(it.value().get<std::string>());
   }
 }
 

@@ -10,8 +10,8 @@ class Shape
 public:
   Shape() {}
   Shape(const H5::DataSpace& sp);
-  Shape(std::vector<hsize_t> dimensions,
-        std::vector<hsize_t> max_dimensions = {});
+  explicit Shape(std::vector<hsize_t> dimensions,
+                 std::vector<hsize_t> max_dimensions = {});
 
   Shape slab_shape(std::vector<hsize_t> list) const;
   std::vector<hsize_t> max_extent(const Shape& slab, std::vector<hsize_t> index) const;

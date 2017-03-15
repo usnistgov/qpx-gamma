@@ -56,6 +56,11 @@ protected:
   std::string _data_to_xml() const override;
   uint16_t _data_from_xml(const std::string&) override;
 
+  #ifdef H5_ENABLED
+  void _load_data(H5CC::Group&) override;
+  void _save_data(H5CC::Group&) const override;
+  #endif
+
   //export to matlab script
   void write_m(std::string) const;
   void write_m4b(std::string) const;
