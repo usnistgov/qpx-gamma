@@ -45,7 +45,7 @@ Spectrum1D::Spectrum1D()
   Setting base_options = metadata_.attributes();
   metadata_ = Metadata("1D", "Traditional MCA spectrum", 1,
   {"cnf", "tka", "n42", "ava", "spe", "Spe", "CNF", "N42", "mca", "dat"},
-  {"n42", "tka", "spe", "h5"});
+  {"n42", "tka", "spe"});
 
   Qpx::Setting cutoff_bin;
   cutoff_bin.id_ = "cutoff_bin";
@@ -179,9 +179,6 @@ bool Spectrum1D::_write_file(std::string dir, std::string format) const
   } else if (format == "spe") {
     write_spe(dir + "/" + name + ".spe");
     return true;
-  } else if (format == "h5") {
-    write_h5(dir + "/" + name + ".h5");
-    return true;
   } else
     return false;
 }
@@ -273,37 +270,6 @@ std::string Spectrum1D::_data_to_xml() const {
 
   return channeldata.str();
 }
-
-#ifdef H5_ENABLED
-void Spectrum1D::_load_data(H5CC::Group& g)
-{
-  if (!g.has_dataset("data"))
-    return;
-  H5CC::DataSet dset = g.open_dataset("data");
-  H5CC::Shape shape = dset.shape();
-  if (shape.rank() != 1)
-    return;
-
-  std::vector<double> rdata(shape.dim(0));
-  dset.read(rdata, {rdata.size()}, {0});
-
-  spectrum_.clear();
-  spectrum_.resize(pow(2, bits_), PreciseFloat(0));
-  for (size_t i = 0; i < rdata.size(); i++)
-    spectrum_[i] = rdata[i];
-
-  maxchan_ = rdata.size();
-}
-
-void Spectrum1D::_save_data(H5CC::Group& g) const
-{
-  std::vector<double> d(maxchan_);
-  for (uint32_t i = 0; i < maxchan_; i++)
-    d[i] = static_cast<double>(spectrum_[i]);
-  auto dset = g.require_dataset<double>("data", {maxchan_});
-  dset.write(d);
-}
-#endif
 
 uint16_t Spectrum1D::_data_from_xml(const std::string& thisData)
 {
@@ -1128,9 +1094,36 @@ void Spectrum1D::write_spe(std::string filename) const
   myfile.close();
 }
 
-void Spectrum1D::write_h5(std::string filename) const
+#ifdef H5_ENABLED
+void Spectrum1D::_load_data(H5CC::Group& g)
 {
+  if (!g.has_dataset("data"))
+    return;
+  H5CC::DataSet dset = g.open_dataset("data");
+  H5CC::Shape shape = dset.shape();
+  if (shape.rank() != 1)
+    return;
+
+  std::vector<long double> rdata(shape.dim(0));
+  dset.read(rdata, {rdata.size()}, {0});
+
+  spectrum_.clear();
+  spectrum_.resize(pow(2, bits_), PreciseFloat(0));
+  for (size_t i = 0; i < rdata.size(); i++)
+    spectrum_[i] = rdata[i];
+
+  maxchan_ = rdata.size();
 }
+
+void Spectrum1D::_save_data(H5CC::Group& g) const
+{
+  std::vector<long double> d(maxchan_);
+  for (uint32_t i = 0; i < maxchan_; i++)
+    d[i] = static_cast<long double>(spectrum_[i]);
+  auto dset = g.require_dataset<long double>("data", {maxchan_});
+  dset.write(d);
+}
+#endif
 
 
 }

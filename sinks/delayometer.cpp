@@ -58,8 +58,8 @@ void Delayometer::_set_detectors(const std::vector<Qpx::Detector>& dets) {
 
   axes_.resize(1);
   axes_[0].clear();
-  for (auto &q : ns_)
-    axes_[0].push_back(static_cast<double>(q.second));
+  for (auto &q : spectrum_)
+    axes_[0].push_back(to_double(q.second.ns));
 }
 
 bool Delayometer::_initialize()
@@ -79,10 +79,10 @@ PreciseFloat Delayometer::_data(std::initializer_list<uint16_t> list) const {
     return 0;
   
   uint32_t chan = *list.begin();
-  if (chan >= ns_.size())
+  if (chan >= spectrum_.size())
     return 0;
   else if (spectrum_.count(chan))
-    return spectrum_.at(chan);
+    return spectrum_.at(chan).counts;
   else
     return 0;
 }
@@ -103,11 +103,12 @@ std::unique_ptr<std::list<Entry>> Delayometer::_data_range(std::initializer_list
   
   std::unique_ptr<std::list<Entry>> result(new std::list<Entry>);
   int i = 0;
-  for (auto &q : spectrum_) {
+  for (auto &q : spectrum_)
+  {
     Entry newentry;
     newentry.first.resize(1, 0);
     newentry.first[0] = i;
-    newentry.second = q.second;
+    newentry.second = q.second.counts;
     result->push_back(newentry);
     i++;
   }
@@ -204,29 +205,27 @@ void Delayometer::addEvent(const Event& newEvent) {
     double max_ns = std::ceil(max_delay_);
     int64_t max_native = timebase.to_native(max_ns);
 
-    for (int64_t i= -max_native; i <= max_native; ++i) {
-      ns_[i] = timebase.to_nanosec(i);
-      if (!spectrum_.count(i))
-        spectrum_[i] = 0;
-    }
+    for (int64_t i= -max_native; i <= max_native; ++i)
+      spectrum_[i].ns = timebase.to_nanosec(i);
 
     axes_.resize(1);
     axes_[0].clear();
-    for (auto &q : ns_)
-      axes_[0].push_back(static_cast<double>(q.second));
+    for (auto &q : spectrum_)
+      axes_[0].push_back(to_double(q.second.ns));
   }
 
   int64_t diff =  timebase.to_native(std::round((b.timestamp() - a.timestamp())));
 
-  spectrum_[diff]++;
+  spectrum_[diff].counts++;
 
-  if (!ns_.count(diff)) {
-    ns_[diff] = timebase.to_nanosec(diff);
+  if (!spectrum_.count(diff))
+  {
+    spectrum_[diff].ns = timebase.to_nanosec(diff);
 
     axes_.resize(1);
     axes_[0].clear();
-    for (auto &q : ns_)
-      axes_[0].push_back(static_cast<double>(q.second));
+    for (auto &q : spectrum_)
+      axes_[0].push_back(to_double(q.second.ns));
 
   }
 
@@ -257,23 +256,49 @@ void Delayometer::_save_data(H5CC::Group& g) const
   std::vector<long double> ns(spectrum_.size());
   std::vector<long double> counts(spectrum_.size());
   size_t i = 0;
-  for (auto a : ns_)
-    ns[i++] = static_cast<long double>(a.second);
-  i = 0;
   for (auto a : spectrum_)
   {
     indices[i] = a.first;
-    counts[i++] = static_cast<long double>(a.second);
+    ns[i++] = static_cast<long double>(a.second.ns);
+    counts[i++] = static_cast<long double>(a.second.counts);
   }
 
   dsidx.write(indices);
   dsdata.write(ns, {ns.size(), 1}, {0,0});
   dsdata.write(counts, {counts.size(), 1}, {0,1});
+
+  //maxchan & timebase?
 }
 
-void Delayometer::_load_data(H5CC::Group &)
+void Delayometer::_load_data(H5CC::Group &g)
 {
+  if (!g.has_group("data"))
+    return;
+  auto dgroup = g.open_group("data");
 
+  if (!dgroup.has_dataset("indices") || !dgroup.has_dataset("data"))
+    return;
+
+  auto didx = dgroup.open_dataset("indices");
+  auto dcts = dgroup.open_dataset("data");
+
+  if ((didx.shape().rank() != 1) ||
+      (dcts.shape().rank() != 2) ||
+      (didx.shape().dim(0) != dcts.shape().dim(0)))
+    return;
+
+  std::vector<int64_t> idx(didx.shape().dim(0));
+  std::vector<long double> dns(didx.shape().dim(0));
+  std::vector<long double> dct(didx.shape().dim(0));
+
+  didx.read(idx, {idx.size()}, {0});
+  dcts.read(dns, {dns.size(), 1}, {0,0});
+  dcts.read(dct, {dct.size(), 1}, {0,1});
+
+  for (size_t i=0; i < idx.size(); ++i)
+    spectrum_[idx[i]] = SpectrumItem(dns[i], dct[i]);
+
+  //maxchan & timebase?
 }
 
 #endif

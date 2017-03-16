@@ -317,21 +317,17 @@ void Project::save()
 
 void Project::save_as(std::string file_name)
 {
-  std::string ext = boost::filesystem::path(file_name).extension().string();
-  DBG << "Extension=" << ext;
   #ifdef H5_ENABLED
-  if (ext == ".h5")
-    write_h5(file_name);
-  else
+  write_h5(file_name);
+  #elif
+  write_xml(file_name);
   #endif
-    write_xml(file_name);
 }
 
 void Project::open(std::string file_name, bool with_sinks, bool with_full_sinks)
 {
-  std::string ext = boost::filesystem::path(file_name).extension().string();
   #ifdef H5_ENABLED
-  if (ext == ".h5")
+  if (H5::H5File::isHdf5(file_name))
     read_h5(file_name, with_sinks, with_full_sinks);
   else
   #endif
@@ -430,7 +426,7 @@ void Project::from_h5(H5CC::Group &group, bool with_sinks, bool with_full_sinks)
         continue;
       }
 
-      SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_h5(sg);
+      SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_h5(sg, with_full_sinks);
       if (!sink)
         WARN << "<Project> Could not parse sink";
       else

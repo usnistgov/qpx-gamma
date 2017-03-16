@@ -315,9 +315,6 @@ void FormMcaDaq::projectSave()
 void FormMcaDaq::projectSaveAs()
 {
   QString formats = "qpx project file (*.qpx)";
-  #ifdef H5_ENABLED
-  formats = "hdf5 (*.h5)";
-  #endif
 
   QString fileName = CustomSaveFileDialog(this, "Save project",
                                           data_directory_, formats);
@@ -398,9 +395,6 @@ void FormMcaDaq::start_DAQ()
 void FormMcaDaq::projectOpen()
 {
   QString formats = "qpx project file (*.qpx)";
-  #ifdef H5_ENABLED
-  formats += ";;hdf5 (*.h5)";
-  #endif
 
   QString fileName = QFileDialog::getOpenFileName(this, "Load project",
                                                   data_directory_, formats);

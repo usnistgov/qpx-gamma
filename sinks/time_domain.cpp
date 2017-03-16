@@ -190,7 +190,8 @@ void TimeDomain::_push_stats(const StatsUpdate& newStats)
     {
       PreciseFloat count = 0;
 
-      if (codomain == 0) {
+      if (codomain == 0)
+      {
         count = counts_.back();
         if (live > 0)
           count /= live;
@@ -215,30 +216,6 @@ void TimeDomain::_push_stats(const StatsUpdate& newStats)
 
   Spectrum::_push_stats(newStats);
 }
-
-#ifdef H5_ENABLED
-void TimeDomain::_save_data(H5CC::Group& g) const
-{
-  auto dsdata = g.require_dataset<long double>("data", {spectrum_.size(), 2}, {128,2});
-  std::vector<long double> seconds(spectrum_.size());
-  std::vector<long double> counts(spectrum_.size());
-  size_t i = 0;
-  for (auto a : seconds_)
-    seconds[i++] = static_cast<long double>(a);
-  i = 0;
-  for (auto a : spectrum_)
-    counts[i++] = static_cast<long double>(a);
-
-  dsdata.write(seconds, {seconds.size(), 1}, {0,0});
-  dsdata.write(counts, {counts.size(), 1}, {0,1});
-}
-
-void TimeDomain::_load_data(H5CC::Group &)
-{
-
-}
-
-#endif
 
 std::string TimeDomain::_data_to_xml() const {
   std::stringstream channeldata;
@@ -292,5 +269,53 @@ uint16_t TimeDomain::_data_from_xml(const std::string& thisData){
 
   return i;
 }
+
+#ifdef H5_ENABLED
+void TimeDomain::_save_data(H5CC::Group& g) const
+{
+  auto dsdata = g.require_dataset<long double>("data", {spectrum_.size(), 2}, {128,2});
+  std::vector<long double> seconds(spectrum_.size());
+  std::vector<long double> counts(spectrum_.size());
+  size_t i = 0;
+  for (auto a : seconds_)
+    seconds[i++] = static_cast<long double>(a);
+  i = 0;
+  for (auto a : spectrum_)
+    counts[i++] = static_cast<long double>(a);
+
+  dsdata.write(seconds, {seconds.size(), 1}, {0,0});
+  dsdata.write(counts, {counts.size(), 1}, {0,1});
+
+  //updates?
+}
+
+void TimeDomain::_load_data(H5CC::Group &g)
+{
+  if (!g.has_dataset("data"))
+    return;
+
+  auto dset = g.open_dataset("data");
+
+  if (dset.shape().rank() != 2)
+    return;
+
+  std::vector<long double> dsecs(dset.shape().dim(0));
+  std::vector<long double> dcounts(dset.shape().dim(0));
+
+  dset.read(dsecs, {dsecs.size(), 1}, {0,0});
+  dset.read(dcounts, {dcounts.size(), 1}, {0,1});
+
+  seconds_.resize(dsecs.size());
+  spectrum_.resize(dsecs.size());
+  for (size_t i=0; i < dsecs.size(); ++i)
+  {
+    seconds_[i] = dsecs[i];
+    spectrum_[i] = dcounts[i];
+  }
+
+  //updates?
+}
+
+#endif
 
 }

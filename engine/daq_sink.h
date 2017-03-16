@@ -134,7 +134,7 @@ public:
   void save(pugi::xml_node &) const;
 
   #ifdef H5_ENABLED
-  virtual bool load(H5CC::Group &);
+  virtual bool load(H5CC::Group&, bool withdata);
   virtual bool save(H5CC::Group&) const;
   #endif
 

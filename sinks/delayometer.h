@@ -28,6 +28,16 @@ namespace Qpx {
 
 class Delayometer : public Spectrum
 {
+  struct SpectrumItem
+  {
+    SpectrumItem() {}
+    SpectrumItem(const PreciseFloat& t, const PreciseFloat& c)
+      : ns(t), counts(c) {}
+
+    PreciseFloat counts {0};
+    PreciseFloat ns {0};
+  };
+
 public:
   Delayometer();
   Delayometer* clone() const override { return new Delayometer(*this); }
@@ -55,8 +65,7 @@ protected:
   void _save_data(H5CC::Group&) const override;
   #endif
 
-  std::map<int64_t, PreciseFloat> spectrum_;
-  std::map<int64_t, PreciseFloat> ns_;
+  std::map<int64_t, SpectrumItem> spectrum_;
 
   double maxchan_;
   TimeStamp timebase;

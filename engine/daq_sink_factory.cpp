@@ -66,7 +66,7 @@ SinkPtr SinkFactory::create_from_xml(const pugi::xml_node &root)
 }
 
 #ifdef H5_ENABLED
-SinkPtr SinkFactory::create_from_h5(H5CC::Group &group)
+SinkPtr SinkFactory::create_from_h5(H5CC::Group &group, bool withdata)
 {
   if (!group.has_attribute("type"))
     return SinkPtr();
@@ -74,7 +74,7 @@ SinkPtr SinkFactory::create_from_h5(H5CC::Group &group)
 //  DBG << "<SinkFactory> making " << root.attribute("type").value();
 
   SinkPtr instance = create_type(group.read_attribute<std::string>("type"));
-  if (instance && instance->load(group))
+  if (instance && instance->load(group, withdata))
     return instance;
 
   return SinkPtr();

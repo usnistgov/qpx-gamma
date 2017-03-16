@@ -27,8 +27,8 @@
 #include <sstream>
 #include <iomanip>
 
-#define PF_DOUBLE 1
-//#define PF_LONG_DOUBLE 1
+//#define PF_DOUBLE 1
+#define PF_LONG_DOUBLE 1
 //#define PF_DEC_FLOAT 1
 //#define PF_MP128 1
 

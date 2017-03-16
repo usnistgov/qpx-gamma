@@ -532,7 +532,7 @@ bool Sink::load(const pugi::xml_node &node) {
 }
 
 #ifdef H5_ENABLED
-bool Sink::load(H5CC::Group& g)
+bool Sink::load(H5CC::Group& g, bool withdata)
 {
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
@@ -545,7 +545,8 @@ bool Sink::load(H5CC::Group& g)
 
   bool ret = this->_initialize();
 
-  this->_load_data(g);
+  if (ret && withdata)
+    this->_load_data(g);
 
   if (ret)
     this->_recalc_axes();

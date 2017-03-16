@@ -170,14 +170,14 @@ void TimeSpectrum::_push_stats(const StatsUpdate& newStats)
 
     spectra_.push_back(std::vector<PreciseFloat>(pow(2, bits_)));
 
-    if (!updates_.empty()) {
-      if ((newStats.stats_type == StatsType::stop) && (updates_.back().stats_type == StatsType::running))
+    if (!updates_.empty())
+    {
+      if ((newStats.stats_type == StatsType::stop) &&
+          (updates_.back().stats_type == StatsType::running))
       {
         updates_.pop_back();
         seconds_.pop_back();
-        counts_.push_back(recent_count_ + counts_.back());
-      } else
-        counts_.push_back(recent_count_);
+      }
 
       boost::posix_time::time_duration rt ,lt;
       lt = rt = newStats.lab_time - updates_.back().lab_time;
@@ -200,8 +200,7 @@ void TimeSpectrum::_push_stats(const StatsUpdate& newStats)
 
       percent_dead = (real - live) / real * 100;
 
-    } else
-      counts_.push_back(recent_count_);
+    }
 
 
     if (seconds_.empty() || (tot_time != 0)) {
@@ -236,12 +235,66 @@ uint16_t TimeSpectrum::_data_from_xml(const std::string& thisData)
 #ifdef H5_ENABLED
 void TimeSpectrum::_save_data(H5CC::Group& g) const
 {
-  // do this
+  auto dgroup = g.require_group("data");
+
+  auto dtime  = dgroup.require_dataset<long double>("seconds", {seconds_.size()});
+  std::vector<long double> seconds(seconds_.size());
+  for (size_t i = 0; i < seconds_.size(); ++i)
+    seconds[i] = static_cast<long double>(seconds_[i]);
+  dtime.write(seconds);
+
+  hsize_t spsize = H5CC::kMax;
+  if (spectra_.size())
+    spsize = spectra_[0].size();
+
+  auto dsdata = dgroup.require_dataset<long double>("spectra",
+                                                    {spsize, spectra_.size()},
+                                                    {128,1});
+  for (size_t i = 0; i < spectra_.size(); ++i)
+  {
+    std::vector<long double> spectrum(spectra_[i].size());
+    for (size_t j = 0; j < spectrum.size(); ++j)
+      spectrum[j] = static_cast<long double>(spectra_[i][j]);
+    dsdata.write(spectrum, {spectrum.size(), 1}, {0,i});
+  }
+
+  //updates?
 }
 
-void TimeSpectrum::_load_data(H5CC::Group &)
+void TimeSpectrum::_load_data(H5CC::Group &g)
 {
-  // do this
+  if (!g.has_group("data"))
+    return;
+  auto dgroup = g.open_group("data");
+
+  if (!dgroup.has_dataset("seconds") || !dgroup.has_dataset("spectra"))
+    return;
+
+  auto dsecs = dgroup.open_dataset("seconds");
+  auto dspec = dgroup.open_dataset("spectra");
+
+  if ((dsecs.shape().rank() != 1) ||
+      (dspec.shape().rank() != 2))
+    return;
+
+  std::vector<long double> secs(dsecs.shape().dim(0));
+  dsecs.read(secs, {secs.size()}, {0});
+  seconds_.resize(secs.size());
+  for (size_t i = 0; i < secs.size(); ++i)
+    seconds_[i] = secs[i];
+
+  spectra_.resize(dspec.shape().dim(1));
+  size_t size = dspec.shape().dim(0);
+  for (size_t i = 0; i < spectra_.size(); ++i)
+  {
+    std::vector<long double> spectrum(size);
+    dspec.read(spectrum, {size, 1}, {0,i});
+    spectra_[i].resize(spectrum.size());
+    for (size_t j = 0; j < spectrum.size(); ++j)
+      spectra_[i][j] = spectrum[j];
+  }
+
+  //updates?
 }
 
 #endif

@@ -56,7 +56,7 @@ protected:
   #endif
 
   std::vector<std::vector<PreciseFloat>> spectra_;
-  std::vector<PreciseFloat> counts_;
+//  std::vector<PreciseFloat> counts_;
   std::vector<PreciseFloat> seconds_;
   std::vector<StatsUpdate>  updates_;
 };

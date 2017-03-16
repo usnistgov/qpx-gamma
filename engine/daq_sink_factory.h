@@ -53,7 +53,7 @@ class SinkFactory {
   SinkPtr create_type(std::string type);
   SinkPtr create_from_prototype(const Metadata& tem);
   #ifdef H5_ENABLED
-  SinkPtr create_from_h5(H5CC::Group &group);
+  SinkPtr create_from_h5(H5CC::Group &group, bool withdata = true);
   #endif
   SinkPtr create_from_xml(const pugi::xml_node &root);
   SinkPtr create_from_file(std::string filename);
