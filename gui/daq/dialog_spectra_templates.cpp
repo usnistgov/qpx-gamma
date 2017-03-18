@@ -22,7 +22,6 @@
  *
  ******************************************************************************/
 
-#include "daq_sink_factory.h"
 #include "dialog_spectra_templates.h"
 #include "ui_dialog_spectra_templates.h"
 #include "dialog_spectrum.h"
@@ -31,7 +30,7 @@
 
 using namespace Qpx;
 
-TableSpectraTemplates::TableSpectraTemplates(XMLableDB<Metadata>& templates, QObject *parent)
+TableSpectraTemplates::TableSpectraTemplates(XMLableDB<ConsumerMetadata>& templates, QObject *parent)
   : QAbstractTableModel(parent),
     templates_(templates)
 {
@@ -136,7 +135,7 @@ Qt::ItemFlags TableSpectraTemplates::flags(const QModelIndex &index) const
 
 
 
-DialogSpectraTemplates::DialogSpectraTemplates(XMLableDB<Metadata> &newdb,
+DialogSpectraTemplates::DialogSpectraTemplates(XMLableDB<ConsumerMetadata> &newdb,
                                                std::vector<Detector> current_dets,
                                                QString savedir, QWidget *parent) :
   QDialog(parent),
@@ -239,7 +238,7 @@ void DialogSpectraTemplates::on_pushExport_clicked()
 void DialogSpectraTemplates::on_pushNew_clicked()
 {
   XMLableDB<Qpx::Detector> fakeDetDB("Detectors");
-  DialogSpectrum* newDialog = new DialogSpectrum(Metadata(), current_dets_, fakeDetDB, false, true, this);
+  DialogSpectrum* newDialog = new DialogSpectrum(ConsumerMetadata(), current_dets_, fakeDetDB, false, true, this);
   if (newDialog->exec()) {
     templates_.add_a(newDialog->product());
     selection_model_.reset();
@@ -276,7 +275,7 @@ void DialogSpectraTemplates::on_pushDelete_clicked()
   if (ixl.empty())
     return;
 
-  std::list<Metadata> torem;
+  std::list<ConsumerMetadata> torem;
 
   for (auto &ix : ixl) {
     int i = ix.row();

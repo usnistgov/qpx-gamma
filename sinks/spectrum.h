@@ -16,25 +16,25 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Sink generic spectrum type.
+ *      Qpx::Consumer generic spectrum type.
  *                       All public methods are thread-safe.
  *                       When deriving override protected methods.
  *
- *      Qpx::SinkFactory creates spectra of appropriate type
+ *      Qpx::ConsumerFactory creates spectra of appropriate type
  *                               by type name, from template, or
  *                               from file.
  *
- *      Qpx::SinkRegistrar for registering new spectrum types.
+ *      Qpx::ConsumerRegistrar for registering new spectrum types.
  *
  ******************************************************************************/
 
 #pragma once
 
-#include "daq_sink.h"
+#include "consumer.h"
 
 namespace Qpx {
 
-class Spectrum : public Sink
+class Spectrum : public Consumer
 {
 public:
   Spectrum();

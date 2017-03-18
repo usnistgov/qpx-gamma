@@ -24,7 +24,7 @@
 
 #include "peak.h"
 #include "roi.h"
-#include "daq_sink.h"
+#include "consumer.h"
 #include "finder.h"
 
 #include "json.hpp"
@@ -102,7 +102,7 @@ public:
   double activity_scale_factor_ {1.0}; //should be in spectrum?
 
   //data from spectrum
-  Metadata metadata_;
+  ConsumerMetadata metadata_;
   Detector detector_; //need this? metadata?
 
 

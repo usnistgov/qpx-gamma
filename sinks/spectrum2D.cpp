@@ -21,23 +21,21 @@
  *
  ******************************************************************************/
 
+#include "spectrum2D.h"
+#include "consumer_factory.h"
 
 #include <fstream>
-#include "spectrum2D.h"
-#include "daq_sink_factory.h"
 #include "custom_logger.h"
-//#include "custom_timer.h"
-
-#include <boost/serialization/map.hpp>
+#include <boost/filesystem.hpp>
 
 namespace Qpx {
 
-static SinkRegistrar<Spectrum2D> registrar("2D");
+static ConsumerRegistrar<Spectrum2D> registrar("2D");
 
 Spectrum2D::Spectrum2D()
 {
   Setting base_options = metadata_.attributes();
-  metadata_ = Metadata("2D", "2-dimensional coincidence matrix", 2,
+  metadata_ = ConsumerMetadata("2D", "2-dimensional coincidence matrix", 2,
                     {"m", "m4b", "mat"},
                     {"m4b", "mat"});
 

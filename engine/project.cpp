@@ -23,7 +23,7 @@
  ******************************************************************************/
 
 #include "project.h"
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 #include "custom_logger.h"
 #include "qpx_util.h"
 
@@ -49,7 +49,7 @@ Project::Project(const Qpx::Project& other)
   fitters_1d_ = other.fitters_1d_;
   spills_ = other.spills_;
   for (auto sink : other.sinks_)
-    sinks_[sink.first] = SinkFactory::getInstance().create_copy(sink.second);
+    sinks_[sink.first] = ConsumerFactory::getInstance().create_copy(sink.second);
   DBG << "<Qpx::Project> deep copy performed";
 }
 
@@ -231,10 +231,10 @@ int64_t Project::add_sink(SinkPtr sink)
   return current_index_;
 }
 
-int64_t Project::add_sink(Metadata prototype)
+int64_t Project::add_sink(ConsumerMetadata prototype)
 {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_prototype(prototype);
+  SinkPtr sink = Qpx::ConsumerFactory::getInstance().create_from_prototype(prototype);
   if (!sink)
     return 0;
   sinks_[++current_index_] = sink;
@@ -262,7 +262,7 @@ void Project::delete_sink(int64_t idx)
     current_index_ = 0;
 }
 
-void Project::set_prototypes(const XMLableDB<Metadata>& prototypes)
+void Project::set_prototypes(const XMLableDB<ConsumerMetadata>& prototypes)
 {
   boost::unique_lock<boost::mutex> lock(mutex_);
   clear_helper();
@@ -270,7 +270,7 @@ void Project::set_prototypes(const XMLableDB<Metadata>& prototypes)
   for (size_t i=0; i < prototypes.size(); i++) {
 //    DBG << "Creating sink " << prototypes.get(i).debug();
 
-    SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_prototype(prototypes.get(i));
+    SinkPtr sink = Qpx::ConsumerFactory::getInstance().create_from_prototype(prototypes.get(i));
     if (sink)
     {
       sinks_[++current_index_] = sink;
@@ -425,11 +425,11 @@ void Project::from_h5(H5CC::Group &group, bool with_sinks, bool with_full_sinks)
         current_index_ = sg.read_attribute<int64_t>("index");
       else
       {
-        WARN << "<Project> Sink has no index";
+        WARN << "<Project> Consumer has no index";
         continue;
       }
 
-      SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_h5(sg, with_full_sinks);
+      SinkPtr sink = Qpx::ConsumerFactory::getInstance().create_from_h5(sg, with_full_sinks);
       if (!sink)
         WARN << "<Project> Could not parse sink";
       else
@@ -609,11 +609,11 @@ void Project::from_xml(const pugi::xml_node &root,
         current_index_ = child.attribute("idx").as_llong();
       else
       {
-        WARN << "<Project> Sink has no index";
+        WARN << "<Project> Consumer has no index";
         continue;
       }
 
-      SinkPtr sink = Qpx::SinkFactory::getInstance().create_from_xml(child);
+      SinkPtr sink = Qpx::ConsumerFactory::getInstance().create_from_xml(child);
       if (!sink)
         WARN << "<Project> Could not parse sink";
       else
@@ -664,7 +664,7 @@ void Project::import_spn(std::string file_name)
   std::vector<Detector> dets;
   dets.push_back(det);
 
-  Qpx::Metadata temp = Qpx::SinkFactory::getInstance().create_prototype("1D");
+  Qpx::ConsumerMetadata temp = Qpx::ConsumerFactory::getInstance().create_prototype("1D");
   Setting res = temp.get_attribute("resolution");
   res.value_int = 12;
   temp.set_attribute(res);
@@ -698,7 +698,7 @@ void Project::import_spn(std::string file_name)
     name = temp.get_attribute("name");
     name = boost::filesystem::path(file_name).filename().string() + "[" + std::to_string(spectra_count++) + "]";
     temp.set_attribute(name);
-    SinkPtr spectrum = Qpx::SinkFactory::getInstance().create_from_prototype(temp);
+    SinkPtr spectrum = Qpx::ConsumerFactory::getInstance().create_from_prototype(temp);
     spectrum->set_detectors(dets);
     for (size_t i=0; i < data.size(); ++i) {
       Entry entry;

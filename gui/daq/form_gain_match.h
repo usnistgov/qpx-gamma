@@ -63,7 +63,7 @@ protected:
   void closeEvent(QCloseEvent*);
 
 private slots:
-  void toggle_push(bool, Qpx::SourceStatus);
+  void toggle_push(bool, Qpx::ProducerStatus);
   void new_daq_data();
   void run_completed();
 
@@ -111,8 +111,8 @@ private:
 
 
   std::vector<Qpx::Detector> current_dets_;
-  Qpx::Metadata sink_prototype_ref_;
-  Qpx::Metadata sink_prototype_opt_;
+  Qpx::ConsumerMetadata sink_prototype_ref_;
+  Qpx::ConsumerMetadata sink_prototype_opt_;
 
   std::map<std::string, Qpx::Setting> manual_settings_;
   std::map<std::string, Qpx::Setting> source_settings_;
@@ -136,7 +136,7 @@ private:
 
   void init_prototypes();
 
-  Qpx::Metadata make_prototype(uint16_t bits, uint16_t channel,
+  Qpx::ConsumerMetadata make_prototype(uint16_t bits, uint16_t channel,
                                std::string name);
 
   void display_data();

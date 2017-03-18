@@ -155,7 +155,7 @@ void FormPlot2D::updateUI()
   QVector<SelectorItem> items;
 
   for (auto &q : mySpectra->get_sinks(2)) {
-    Metadata md;
+    ConsumerMetadata md;
     if (q.second)
       md = q.second->metadata();
 
@@ -253,7 +253,7 @@ void FormPlot2D::update_plot(bool force)
     ui->pushDetails->setEnabled(some_spectrum && true);
     zoom_2d = new_zoom;
 
-    Metadata md;
+    ConsumerMetadata md;
     if (some_spectrum)
       md = some_spectrum->metadata();
 
@@ -353,7 +353,7 @@ void FormPlot2D::on_pushDetails_clicked()
   connect(newSpecDia, SIGNAL(analyse()), this, SLOT(analyse()));
   if (newSpecDia->exec() == QDialog::Accepted)
   {
-    Qpx::Metadata md = newSpecDia->product();
+    Qpx::ConsumerMetadata md = newSpecDia->product();
     someSpectrum->set_detectors(md.detectors);
     someSpectrum->set_attributes(md.attributes());
     updateUI();

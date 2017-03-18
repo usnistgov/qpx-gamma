@@ -23,7 +23,7 @@
 #include "MADC32_module.h"
 #include "custom_logger.h"
 #include "vmecontroller.h"
-#include "daq_source_factory.h"
+#include "producer_factory.h"
 
 #define MADC32_Firmware                   0x0203
 
@@ -34,12 +34,12 @@ static const int ReadoutReset = 0x6034;
 
 namespace Qpx {
 
-static SourceRegistrar<MADC32> registrar("VME/MADC32");
+static ProducerRegistrar<MADC32> registrar("VME/MADC32");
 
 MADC32::MADC32() {
   m_controller = nullptr;
   m_baseAddress = 0;
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
   module_firmware_code_ = MADC32_Firmware;
 }
 

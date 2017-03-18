@@ -16,16 +16,14 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Sink   generic spectrum type.
+ *      Qpx::Consumer   generic spectrum type.
  *                  All public methods are thread-safe.
  *                  When deriving override protected methods.
  *
  ******************************************************************************/
 
-#include <boost/algorithm/string.hpp>
-#include "daq_sink.h"
-#include "custom_logger.h"
-//#include "custom_timer.h"
+//#include <boost/algorithm/string.hpp>
+#include "consumer.h"
 #include "qpx_util.h"
 
 #ifdef H5_ENABLED
@@ -34,219 +32,7 @@
 
 namespace Qpx {
 
-Metadata::Metadata()
-  : type_("invalid")
-  , dimensions_(0)
-  , attributes_("Options")
-{
-  attributes_.metadata.setting_type = SettingType::stem;
-}
-
-Metadata::Metadata(std::string tp, std::string descr, uint16_t dim,
-                   std::list<std::string> itypes, std::list<std::string> otypes)
-  : type_(tp)
-  , type_description_(descr)
-  , dimensions_(dim)
-  , input_types_(itypes)
-  , output_types_(otypes)
-  , attributes_("Options")
-{
-  attributes_.metadata.setting_type = SettingType::stem;
-}
-
-bool Metadata::shallow_equals(const Metadata& other) const
-{
-  return operator ==(other);
-}
-
-bool Metadata::operator!= (const Metadata& other) const
-{
-  return !operator==(other);
-}
-
-bool Metadata::operator== (const Metadata& other) const
-{
-  if (type_ != other.type_) return false; //assume other type info same
-  if (attributes_ != other.attributes_) return false;
-  return true;
-}
-
-
-std::string Metadata::debug(std::string prepend) const
-{
-  std::stringstream ss;
-  ss << type_ << " (dim=" << dimensions_ << ")\n";
-  //ss << " " << type_description_;
-  ss << prepend << k_branch_mid_B << "Detectors:\n";
-  for (size_t i=0; i < detectors.size(); ++i)
-  {
-    if ((i+1) == detectors.size())
-      ss << prepend << k_branch_pre_B << k_branch_end_B << i << ": " << detectors.at(i).debug(prepend + k_branch_pre_B + "  ");
-    else
-      ss << prepend << k_branch_pre_B << k_branch_mid_B << i << ": " << detectors.at(i).debug(prepend + k_branch_pre_B + k_branch_pre_B);
-  }
-  ss << prepend << k_branch_end_B << attributes_.debug(prepend + "  ");
-  return ss.str();
-}
-
-Setting Metadata::get_attribute(Setting setting) const
-{
-  return attributes_.get_setting(setting, Match::id | Match::indices);
-}
-
-Setting Metadata::get_attribute(std::string setting) const
-{
-  return attributes_.get_setting(Setting(setting), Match::id | Match::indices);
-}
-
-Setting Metadata::get_attribute(std::string setting, int32_t idx) const
-{
-  Setting find(setting);
-  find.indices.insert(idx);
-  return attributes_.get_setting(find, Match::id | Match::indices);
-}
-
-void Metadata::set_attribute(const Setting &setting)
-{
-  attributes_.set_setting_r(setting, Match::id | Match::indices);
-}
-
-Setting Metadata::get_all_attributes() const
-{
-  return attributes_;
-}
-
-Setting Metadata::attributes() const
-{
-  return attributes_;
-}
-
-void Metadata::set_attributes(const Setting &settings)
-{
-  if (settings.branches.size())
-    for (auto &s : settings.branches.my_data_)
-      set_attributes(s);
-  else if (attributes_.has(settings, Match::id | Match::indices))
-    set_attribute(settings);
-}
-
-void Metadata::overwrite_all_attributes(Setting settings)
-{
-  attributes_ = settings;
-}
-
-void Metadata::disable_presets()
-{
-  attributes_.enable_if_flag(false, "preset");
-}
-
-
-void Metadata::to_xml(pugi::xml_node &root) const {
-  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
-
-  node.append_attribute("Type").set_value(type_.c_str());
-
-  if (attributes_.branches.size())
-    attributes_.to_xml(node);
-
-  if (!detectors.empty())
-  {
-    pugi::xml_node detnode = node.append_child("Detectors");
-    for (auto &d : detectors)
-      d.to_xml(detnode);
-  }
-}
-
-void Metadata::from_xml(const pugi::xml_node &node) {
-  if (std::string(node.name()) != xml_element_name())
-    return;
-
-  type_ = std::string(node.attribute("Type").value());
-
-  if (node.child(attributes_.xml_element_name().c_str()))
-    attributes_.from_xml(node.child(attributes_.xml_element_name().c_str()));
-
-  if (node.child("Detectors")) {
-    detectors.clear();
-    for (auto &q : node.child("Detectors").children()) {
-      Qpx::Detector det;
-      det.from_xml(q);
-      detectors.push_back(det);
-    }
-  }
-}
-
-void to_json(json& j, const Metadata &s)
-{
-  j["type"] = s.type_;
-
-  if (s.attributes_.branches.size())
-    j["attributes"] = s.attributes_;
-
-  if (!s.detectors.empty())
-    for (auto &d : s.detectors)
-      j["detectors"].push_back(d);
-}
-
-void from_json(const json& j, Metadata &s)
-{
-  s.type_ = j["type"];
-
-  if (j.count("attributes"))
-    s.attributes_ = j["attributes"];
-
-  if (j.count("detectors"))
-  {
-    auto o = j["detectors"];
-    for (json::iterator it = o.begin(); it != o.end(); ++it)
-      s.detectors.push_back(it.value());
-  }
-}
-
-void Metadata::set_det_limit(uint16_t limit)
-{
-  if (limit < 1)
-    limit = 1;
-
-  for (auto &a : attributes_.branches.my_data_)
-    if (a.metadata.setting_type == Qpx::SettingType::pattern)
-      a.value_pattern.resize(limit);
-    else if (a.metadata.setting_type == Qpx::SettingType::stem) {
-      Setting prototype;
-      for (auto &p : a.branches.my_data_)
-        if (p.indices.count(-1))
-          prototype = p;
-      if (prototype.metadata.setting_type == Qpx::SettingType::stem) {
-        a.indices.clear();
-        a.branches.clear();
-        prototype.metadata.visible = false;
-        a.branches.add_a(prototype);
-        prototype.metadata.visible = true;
-        for (int i=0; i < limit; ++i) {
-          prototype.indices.clear();
-          prototype.indices.insert(i);
-          for (auto &p : prototype.branches.my_data_)
-            p.indices = prototype.indices;
-          a.branches.add_a(prototype);
-          //          a.indices.insert(i);
-        }
-      }
-    }
-}
-
-bool Metadata::chan_relevant(uint16_t chan) const
-{
-  for (const Setting &s : attributes_.branches.my_data_)
-    if ((s.metadata.setting_type == SettingType::pattern) &&
-        (s.value_pattern.relevant(chan)))
-      return true;
-  return false;
-}
-
-
-
-
-Sink::Sink()
+Consumer::Consumer()
 {
   Setting attributes = metadata_.attributes();
 
@@ -298,20 +84,20 @@ Sink::Sink()
   metadata_.overwrite_all_attributes(attributes);
 }
 
-bool Sink::_initialize() {
+bool Consumer::_initialize() {
   metadata_.disable_presets();
   return false; //abstract sink indicates failure to init
 }
 
 
-PreciseFloat Sink::data(std::initializer_list<size_t> list ) const {
+PreciseFloat Consumer::data(std::initializer_list<size_t> list ) const {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   if (list.size() != this->metadata_.dimensions())
     return 0;
   return this->_data(list);
 }
 
-std::unique_ptr<std::list<Entry>> Sink::data_range(std::initializer_list<Pair> list) {
+std::unique_ptr<std::list<Entry>> Consumer::data_range(std::initializer_list<Pair> list) {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   if (list.size() != this->metadata_.dimensions())
     return 0; //wtf???
@@ -321,7 +107,7 @@ std::unique_ptr<std::list<Entry>> Sink::data_range(std::initializer_list<Pair> l
   }
 }
 
-void Sink::append(const Entry& e) {
+void Consumer::append(const Entry& e) {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   if (metadata_.dimensions() < 1)
     return;
@@ -329,7 +115,7 @@ void Sink::append(const Entry& e) {
     this->_append(e);
 }
 
-bool Sink::from_prototype(const Metadata& newtemplate) {
+bool Consumer::from_prototype(const ConsumerMetadata& newtemplate) {
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
@@ -341,18 +127,18 @@ bool Sink::from_prototype(const Metadata& newtemplate) {
   metadata_.detectors.clear(); // really?
 
   return (this->_initialize());
-//  DBG << "<Sink::from_prototype>" << metadata_.get_attribute("name").value_text << " made with dims=" << metadata_.dimensions();
+//  DBG << "<Consumer::from_prototype>" << metadata_.get_attribute("name").value_text << " made with dims=" << metadata_.dimensions();
 //  DBG << "from prototype " << metadata_.debug();
 }
 
-void Sink::push_spill(const Spill& one_spill) {
+void Consumer::push_spill(const Spill& one_spill) {
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   this->_push_spill(one_spill);
 }
 
-void Sink::_push_spill(const Spill& one_spill) {
+void Consumer::_push_spill(const Spill& one_spill) {
   //  CustomTimer addspill_timer(true);
 
   if (!one_spill.detectors.empty())
@@ -371,7 +157,7 @@ void Sink::_push_spill(const Spill& one_spill) {
   //  DBG << "<" << metadata_.name << "> left in backlog " << backlog.size();
 }
 
-void Sink::flush() {
+void Consumer::flush() {
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
@@ -379,7 +165,7 @@ void Sink::flush() {
 }
 
 
-std::vector<double> Sink::axis_values(uint16_t dimension) const
+std::vector<double> Consumer::axis_values(uint16_t dimension) const
 {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   
@@ -389,13 +175,13 @@ std::vector<double> Sink::axis_values(uint16_t dimension) const
     return std::vector<double>();
 }
 
-bool Sink::changed() const
+bool Consumer::changed() const
 {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   return changed_;
 }
 
-void Sink::set_detectors(const std::vector<Qpx::Detector>& dets) {
+void Consumer::set_detectors(const std::vector<Qpx::Detector>& dets) {
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
@@ -404,19 +190,19 @@ void Sink::set_detectors(const std::vector<Qpx::Detector>& dets) {
   changed_ = true;
 }
 
-void Sink::reset_changed() {
+void Consumer::reset_changed() {
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
   changed_ = false;
 }
 
-bool Sink::write_file(std::string dir, std::string format) const {
+bool Consumer::write_file(std::string dir, std::string format) const {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   return _write_file(dir, format);
 }
 
-bool Sink::read_file(std::string name, std::string format) {
+bool Consumer::read_file(std::string name, std::string format) {
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
@@ -424,22 +210,22 @@ bool Sink::read_file(std::string name, std::string format) {
 }
 
 //accessors for various properties
-Metadata Sink::metadata() const {
+ConsumerMetadata Consumer::metadata() const {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   return metadata_;
 }
 
-std::string Sink::type() const {
+std::string Consumer::type() const {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   return my_type();
 }
 
-uint16_t Sink::dimensions() const {
+uint16_t Consumer::dimensions() const {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
   return metadata_.dimensions();
 }
 
-std::string Sink::debug() const
+std::string Consumer::debug() const
 {
   std::string prepend;
 
@@ -470,7 +256,7 @@ std::string Sink::debug() const
 
 //change stuff
 
-void Sink::set_attribute(const Setting &setting) {
+void Consumer::set_attribute(const Setting &setting) {
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
@@ -478,7 +264,7 @@ void Sink::set_attribute(const Setting &setting) {
   changed_ = true;
 }
 
-void Sink::set_attributes(const Setting &settings) {
+void Consumer::set_attributes(const Setting &settings) {
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
     boost::this_thread::sleep_for(boost::chrono::seconds{1});
@@ -493,10 +279,10 @@ void Sink::set_attributes(const Setting &settings) {
 //Save and load//////
 /////////////////////
 
-void Sink::save(pugi::xml_node &root) const {
+void Consumer::save(pugi::xml_node &root) const {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
 
-  pugi::xml_node node = root.append_child("Sink");
+  pugi::xml_node node = root.append_child("Consumer");
   node.append_attribute("type").set_value(this->my_type().c_str());
 
   metadata_.to_xml(node);
@@ -507,7 +293,7 @@ void Sink::save(pugi::xml_node &root) const {
 }
 
 
-bool Sink::load(const pugi::xml_node &node) {
+bool Consumer::load(const pugi::xml_node &node) {
 
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
@@ -534,7 +320,7 @@ bool Sink::load(const pugi::xml_node &node) {
 }
 
 #ifdef H5_ENABLED
-bool Sink::load(H5CC::Group& g, bool withdata)
+bool Consumer::load(H5CC::Group& g, bool withdata)
 {
   boost::unique_lock<boost::mutex> uniqueLock(unique_mutex_, boost::defer_lock);
   while (!uniqueLock.try_lock())
@@ -557,7 +343,7 @@ bool Sink::load(H5CC::Group& g, bool withdata)
   return ret;
 }
 
-bool Sink::save(H5CC::Group& g) const
+bool Consumer::save(H5CC::Group& g) const
 {
   boost::shared_lock<boost::shared_mutex> lock(shared_mutex_);
 

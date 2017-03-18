@@ -29,15 +29,15 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/algorithm/string.hpp>
 #include "custom_logger.h"
-#include "daq_source_factory.h"
+#include "producer_factory.h"
 #include <iomanip>
 
 
 namespace Qpx {
 
 Engine::Engine() {
-  aggregate_status_ = SourceStatus(0);
-  intrinsic_status_ = SourceStatus(0);
+  aggregate_status_ = ProducerStatus(0);
+  intrinsic_status_ = ProducerStatus(0);
 
   total_det_num_.id_ = "Total detectors";
   total_det_num_.name = "Total detectors";
@@ -94,7 +94,7 @@ void Engine::initialize(std::string profile_path, std::string settings_path) {
   for (auto &q : tree.branches.my_data_) {
     if (q.id_ != "Detectors") {
       boost::filesystem::path dev_settings = path / q.value_text;
-      SourcePtr device = SourceFactory::getInstance().create_type(q.id_, dev_settings.string());
+      SourcePtr device = ProducerFactory::getInstance().create_type(q.id_, dev_settings.string());
       if (device) {
         DBG << "<Engine> Success loading " << device->device_name();
         devices_[q.id_] = device;
@@ -203,7 +203,7 @@ bool Engine::boot() {
 
   bool success = false;
   for (auto &q : devices_)
-    if ((q.second != nullptr) && (q.second->status() & SourceStatus::can_boot)) {
+    if ((q.second != nullptr) && (q.second->status() & ProducerStatus::can_boot)) {
       success |= q.second->boot();
       //DBG << "daq_start > " << q.second->device_name();
     }
@@ -221,7 +221,7 @@ bool Engine::boot() {
 bool Engine::die() {
   bool success = false;
   for (auto &q : devices_)
-    if ((q.second != nullptr) && (q.second->status() & SourceStatus::booted)) {
+    if ((q.second != nullptr) && (q.second->status() & ProducerStatus::booted)) {
       success |= q.second->die();
       //DBG << "die > " << q.second->device_name();
     }
@@ -239,7 +239,7 @@ std::vector<Hit> Engine::oscilloscope() {
   traces.resize(detectors_.size());
 
   for (auto &q : devices_)
-    if ((q.second != nullptr) && (q.second->status() & SourceStatus::can_oscil)) {
+    if ((q.second != nullptr) && (q.second->status() & ProducerStatus::can_oscil)) {
       //DBG << "oscil > " << q.second->device_name();
       std::list<Hit> trc = q.second->oscilloscope();
       for (auto &p : trc)
@@ -252,7 +252,7 @@ std::vector<Hit> Engine::oscilloscope() {
 bool Engine::daq_start(SynchronizedQueue<Spill*>* out_queue) {
   bool success = false;
   for (auto &q : devices_)
-    if ((q.second != nullptr) && (q.second->status() & SourceStatus::can_run)) {
+    if ((q.second != nullptr) && (q.second->status() & ProducerStatus::can_run)) {
       success |= q.second->daq_start(out_queue);
       //DBG << "daq_start > " << q.second->device_name();
     }
@@ -262,7 +262,7 @@ bool Engine::daq_start(SynchronizedQueue<Spill*>* out_queue) {
 bool Engine::daq_stop() {
   bool success = false;
   for (auto &q : devices_)
-    if ((q.second != nullptr) && (q.second->status() & SourceStatus::can_run)) {
+    if ((q.second != nullptr) && (q.second->status() & ProducerStatus::can_run)) {
       success |= q.second->daq_stop();
       //DBG << "daq_stop > " << q.second->device_name();
     }
@@ -272,7 +272,7 @@ bool Engine::daq_stop() {
 bool Engine::daq_running() {
   bool running = false;
   for (auto &q : devices_)
-    if ((q.second != nullptr) && (q.second->status() & SourceStatus::can_run)) {
+    if ((q.second != nullptr) && (q.second->status() & ProducerStatus::can_run)) {
       running |= q.second->daq_running();
       //DBG << "daq_check > " << q.second->device_name();
     }
@@ -352,7 +352,7 @@ void Engine::set_setting(Qpx::Setting address, Qpx::Match flags) {
 }
 
 void Engine::get_all_settings() {
-  aggregate_status_ = SourceStatus(0);
+  aggregate_status_ = ProducerStatus(0);
   for (auto &q : devices_) {
     q.second->get_all_settings();
     aggregate_status_ = aggregate_status_ | q.second->status();
@@ -369,7 +369,7 @@ void Engine::getMca(uint64_t timeout, ProjectPtr spectra, boost::atomic<bool>& i
     return;
   }
 
-  if (!(aggregate_status_ & SourceStatus::can_run)) {
+  if (!(aggregate_status_ & ProducerStatus::can_run)) {
     WARN << "<Engine> No devices exist that can perform acquisition";
     return;
   }
@@ -439,7 +439,7 @@ ListData Engine::getList(uint64_t timeout, boost::atomic<bool>& interruptor) {
 
   boost::unique_lock<boost::mutex> lock(mutex_);
 
-  if (!(aggregate_status_ & SourceStatus::can_run)) {
+  if (!(aggregate_status_ & ProducerStatus::can_run)) {
     WARN << "<Engine> No devices exist that can perform acquisition";
     return ListData();
   }

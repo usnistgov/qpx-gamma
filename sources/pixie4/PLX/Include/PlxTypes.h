@@ -442,7 +442,7 @@ typedef enum _PLX_DMA_RING_DELAY_TIME
 } PLX_DMA_RING_DELAY_TIME;
 
 
-// DMA Maximum Source Transfer Size
+// DMA Maximum Producer Transfer Size
 typedef enum _PLX_DMA_MAX_SRC_TSIZE
 {
     PLX_DMA_MAX_SRC_TSIZE_64B  = 0,
@@ -463,7 +463,7 @@ typedef enum _PLX_PERF_CMD
 } PLX_PERF_CMD;
 
 
-// DMA Maximum Source Transfer Size
+// DMA Maximum Producer Transfer Size
 typedef enum _PLX_SWITCH_MODE
 {
     PLX_SWITCH_MODE_STANDARD   = 0,
@@ -748,7 +748,7 @@ typedef struct _PLX_DMA_PROP
 typedef struct _PLX_DMA_PARAMS
 {
     U64 UserVa;                     // User buffer virtual address
-    U64 AddrSource;                 // Source address      (8000 DMA)
+    U64 AddrSource;                 // Producer address      (8000 DMA)
     U64 AddrDest;                   // Destination address (8000 DMA)
     U64 PciAddr;                    // PCI address         (9000 DMA)
     U32 LocalAddr;                  // Local bus address   (9000 DMA)

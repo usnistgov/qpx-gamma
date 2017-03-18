@@ -129,7 +129,7 @@ private:
 
   Qpx::ProjectPtr project_;
   int64_t current_spectrum_ {0};
-  Qpx::Metadata md_;
+  Qpx::ConsumerMetadata md_;
   Qpx::Calibration nrg_x_;
   Qpx::Calibration nrg_y_;
   int res_ {0};

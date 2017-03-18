@@ -22,14 +22,14 @@
 
 #pragma once
 
-#include "daq_source.h"
+#include "producer.h"
 #include "detector.h"
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
 
 namespace Qpx {
 
-class ParserRaw : public Source {
+class ParserRaw : public Producer {
   
 public:
 

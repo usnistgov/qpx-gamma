@@ -102,7 +102,7 @@ private:
 
   Qpx::ProjectPtr project_;
   int64_t current_spectrum_ {0};
-  Qpx::Metadata md_;
+  Qpx::ConsumerMetadata md_;
 
   //double current_gate_;
 

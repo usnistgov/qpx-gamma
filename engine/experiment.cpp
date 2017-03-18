@@ -237,7 +237,7 @@ bool ExperimentProject::push_next_setting(TrajectoryPtr node)
   else if (node && !node->childCount() && (node->domain.type == none))
   {
 
-    XMLableDB<Metadata> prototypes = base_prototypes;
+    XMLableDB<ConsumerMetadata> prototypes = base_prototypes;
     set_sink_vars_recursive(prototypes, node);
 
     data[next_idx] = ProjectPtr(new Project());
@@ -264,7 +264,7 @@ bool ExperimentProject::push_next_setting(TrajectoryPtr node)
 }
 
 
-void ExperimentProject::set_sink_vars_recursive(XMLableDB<Metadata>& prototypes,
+void ExperimentProject::set_sink_vars_recursive(XMLableDB<ConsumerMetadata>& prototypes,
                                                 TrajectoryPtr node)
 {
   if (!node)
@@ -415,7 +415,7 @@ double ExperimentProject::tally_real_time(TrajectoryPtr node)
     for (auto &s : proj->get_sinks())
       if (s.second)
       {
-        Metadata md = s.second->metadata();
+        ConsumerMetadata md = s.second->metadata();
         return md.get_attribute("real_time").value_duration.total_milliseconds() * 0.001;
       }
     return 0;

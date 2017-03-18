@@ -28,14 +28,14 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include "qpx_util.h"
-#include "daq_source_factory.h"
+#include "producer_factory.h"
 
 namespace Qpx {
 
 MesytecVME::MesytecVME() {
   m_controller = nullptr;
   m_baseAddress = 0;
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
   module_firmware_code_ = -1;
   rc_bus = false;
 }
@@ -118,7 +118,7 @@ bool MesytecVME::boot() {
             q.second->boot(); //disregard return value
             DBG << "<" << this->device_name() << "> Adding module " << q.first
                    << "[" << q.second->modnum()
-                   << "] booted=" << (0 != (q.second->status() & SourceStatus::booted));
+                   << "] booted=" << (0 != (q.second->status() & ProducerStatus::booted));
             success = true;
             break;
           }
@@ -200,7 +200,7 @@ bool MesytecVME::write_settings_bulk(Qpx::Setting &set) {
   boost::filesystem::path path = dir.remove_filename();
 
   std::set<std::string> device_types;
-  for (auto &q : Qpx::SourceFactory::getInstance().types())
+  for (auto &q : Qpx::ProducerFactory::getInstance().types())
     device_types.insert(q);
 
   for (auto &k : set.branches.my_data_) {
@@ -213,7 +213,7 @@ bool MesytecVME::write_settings_bulk(Qpx::Setting &set) {
       ext_modules_[k.id_]->write_settings_bulk(k);
     } else if (device_types.count(k.id_) && (k.id_.size() > 14) && (k.id_.substr(0,14) == "VME/MesytecRC/")) {
       boost::filesystem::path dev_settings = path / k.value_text;
-      ext_modules_[k.id_] = std::dynamic_pointer_cast<MesytecExternal>(SourceFactory::getInstance().create_type(k.id_, dev_settings.string()));
+      ext_modules_[k.id_] = std::dynamic_pointer_cast<MesytecExternal>(ProducerFactory::getInstance().create_type(k.id_, dev_settings.string()));
       DBG << "<" << this->device_name() << ">added module " << k.id_ << " with settings at " << dev_settings.string();
       ext_modules_[k.id_]->write_settings_bulk(k);
     } else {
@@ -232,9 +232,9 @@ bool MesytecVME::write_settings_bulk(Qpx::Setting &set) {
 
 bool MesytecVME::read_setting(Qpx::Setting& set) const {
   if (set.metadata.setting_type == Qpx::SettingType::command)
-    set.metadata.writable =  ((status_ & SourceStatus::booted) != 0);
+    set.metadata.writable =  ((status_ & ProducerStatus::booted) != 0);
 
-  if (!(status_ & Qpx::SourceStatus::booted))
+  if (!(status_ & Qpx::ProducerStatus::booted))
     return false;
 
   if (set.metadata.address < 0)
@@ -254,7 +254,7 @@ bool MesytecVME::read_setting(Qpx::Setting& set) const {
 }
 
 bool MesytecVME::write_setting(Qpx::Setting& set) {
-  if (!(status_ & Qpx::SourceStatus::booted))
+  if (!(status_ & Qpx::ProducerStatus::booted))
     return false;
 
   if (set.metadata.address < 0)

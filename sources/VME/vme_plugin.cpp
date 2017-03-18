@@ -28,7 +28,7 @@
 #include "custom_timer.h"
 #include "vmecontroller.h"
 #include "vmemodule.h"
-#include "daq_source_factory.h"
+#include "producer_factory.h"
 
 
 #include "vmusb.h"
@@ -36,11 +36,11 @@
 
 namespace Qpx {
 
-static SourceRegistrar<QpxVmePlugin> registrar("VME");
+static ProducerRegistrar<QpxVmePlugin> registrar("VME");
 
 QpxVmePlugin::QpxVmePlugin() {
 
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
 
   controller_ = nullptr;
 
@@ -129,7 +129,7 @@ bool QpxVmePlugin::read_settings_bulk(Qpx::Setting &set) const {
   for (auto &q : set.branches.my_data_) {
     if (q.metadata.setting_type == Qpx::SettingType::stem) {
       if ((q.metadata.setting_type == Qpx::SettingType::text) && (q.id_ == "VME/ControllerID")) {
-        q.metadata.writable = (!(status_ & SourceStatus::booted));
+        q.metadata.writable = (!(status_ & ProducerStatus::booted));
       } else if (modules_.count(q.id_) && modules_.at(q.id_)) {
         modules_.at(q.id_)->read_settings_bulk(q);
       } else if (q.id_ == "VME/Registers") {
@@ -163,12 +163,12 @@ bool QpxVmePlugin::write_settings_bulk(Qpx::Setting &set) {
   boost::filesystem::path path = dir.remove_filename();
 
   std::set<std::string> device_types;
-  for (auto &q : Qpx::SourceFactory::getInstance().types())
+  for (auto &q : Qpx::ProducerFactory::getInstance().types())
     device_types.insert(q);
 
   for (auto &q : set.branches.my_data_) {
     if ((q.metadata.setting_type == Qpx::SettingType::text) && (q.id_ == "VME/ControllerID")) {
-      if (!(status_ & SourceStatus::booted))
+      if (!(status_ & ProducerStatus::booted))
         controller_name_ = q.value_text;
     } else if (q.metadata.setting_type == Qpx::SettingType::stem) {
 //      DBG << "<VmePlugin> looking at " << q.id_;
@@ -176,7 +176,7 @@ bool QpxVmePlugin::write_settings_bulk(Qpx::Setting &set) {
         modules_[q.id_]->write_settings_bulk(q);
       } else if (device_types.count(q.id_) && (q.id_.size() > 4) && (q.id_.substr(0,4) == "VME/")) {
         boost::filesystem::path dev_settings = path / q.value_text;
-        modules_[q.id_] = std::dynamic_pointer_cast<VmeModule>(SourceFactory::getInstance().create_type(q.id_, dev_settings.string()));
+        modules_[q.id_] = std::dynamic_pointer_cast<VmeModule>(ProducerFactory::getInstance().create_type(q.id_, dev_settings.string()));
         DBG << "<VmePlugin> added module " << q.id_ << " with settings at " << dev_settings.string();
         modules_[q.id_]->write_settings_bulk(q);
       } else if (q.id_ == "VME/Registers") {
@@ -202,12 +202,12 @@ bool QpxVmePlugin::write_settings_bulk(Qpx::Setting &set) {
 bool QpxVmePlugin::boot() {
   DBG << "<VmePlugin> Attempting to boot";
 
-  if (!(status_ & SourceStatus::can_boot)) {
+  if (!(status_ & ProducerStatus::can_boot)) {
     WARN << "<VmePlugin> Cannot boot. Failed flag check (can_boot == 0)";
     return false;
   }
 
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
 
   if (controller_ != nullptr)
     delete controller_;
@@ -244,7 +244,7 @@ bool QpxVmePlugin::boot() {
           DBG << "<VmePlugin> Connected to module " << q.first
                  << "[" << q.second->address()
                  << "] firmware=" << q.second->firmwareName()
-                 << " booted=" << (0 != (q.second->status() & SourceStatus::booted));
+                 << " booted=" << (0 != (q.second->status() & ProducerStatus::booted));
           success = true;
           break;
         }
@@ -253,7 +253,7 @@ bool QpxVmePlugin::boot() {
   }
 
   if (success) {
-    status_ = SourceStatus::loaded | SourceStatus::booted;
+    status_ = ProducerStatus::loaded | ProducerStatus::booted;
     return true;
   } else
     return false;
@@ -283,7 +283,7 @@ bool QpxVmePlugin::die() {
     controller_ = nullptr;
   }
 
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
   return true;
 }
 
@@ -292,7 +292,7 @@ void QpxVmePlugin::get_all_settings() {
 
 
 bool QpxVmePlugin::read_register(Qpx::Setting& set) const {
-  if (!(status_ & Qpx::SourceStatus::booted))
+  if (!(status_ & Qpx::ProducerStatus::booted))
     return false;
   if (set.metadata.address < 0)
     return false;
@@ -320,7 +320,7 @@ bool QpxVmePlugin::read_register(Qpx::Setting& set) const {
 }
 
 bool QpxVmePlugin::write_register(Qpx::Setting& set) {
-  if (!(status_ & Qpx::SourceStatus::booted))
+  if (!(status_ & Qpx::ProducerStatus::booted))
     return false;
 
   if (set.metadata.address < 0)

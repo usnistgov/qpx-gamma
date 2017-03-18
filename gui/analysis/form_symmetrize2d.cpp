@@ -22,7 +22,7 @@
 
 #include "form_symmetrize2d.h"
 #include "ui_form_symmetrize2d.h"
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 #include "fitter.h"
 #include "qt_util.h"
 #include "manip2d.h"
@@ -110,7 +110,7 @@ void FormSymmetrize2D::make_gated_spectra() {
 
   this->setCursor(Qt::WaitCursor);
 
-  Metadata md = source_spectrum->metadata();
+  ConsumerMetadata md = source_spectrum->metadata();
 
   //  DBG << "Coincidence gate x[" << xmin_ << "-" << xmax_ << "]   y[" << ymin_ << "-" << ymax_ << "]";
 
@@ -150,7 +150,7 @@ void FormSymmetrize2D::initialize() {
     SinkPtr spectrum = spectra_->get_sink(current_spectrum_);
 
     if (spectrum) {
-      Metadata md = spectrum->metadata();
+      ConsumerMetadata md = spectrum->metadata();
       uint16_t bits = md.get_attribute("resolution").value_int;
       res = pow(2,bits);
 
@@ -328,7 +328,7 @@ void FormSymmetrize2D::apply_gain_calibration()
     for (auto &q : spectra_->get_sinks()) {
       if (!q.second)
         continue;
-      Metadata md = q.second->metadata();
+      ConsumerMetadata md = q.second->metadata();
       for (auto &p : md.detectors) {
         if (p.shallow_equals(detector2_)) {
           LINFO << "   applying new calibrations for " << detector2_.name_ << " on " << q.second->metadata().get_attribute("name").value_text;

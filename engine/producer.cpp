@@ -16,15 +16,15 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Source abstract class
+ *      Qpx::Producer abstract class
  *
  ******************************************************************************/
 
-#include "daq_source.h"
+#include "producer.h"
 
 namespace Qpx {
 
-  bool Source::load_setting_definitions(std::string file) {
+  bool Producer::load_setting_definitions(std::string file) {
     pugi::xml_document doc;
 
     if (!doc.load_file(file.c_str()))
@@ -43,18 +43,18 @@ namespace Qpx {
     }
 
     if (!setting_definitions_.empty()) {
-      DBG << "<Source> " << this->device_name() << " retrieved " << setting_definitions_.size() << " setting definitions";
+      DBG << "<Producer> " << this->device_name() << " retrieved " << setting_definitions_.size() << " setting definitions";
       profile_path_ = file;
       return true;
     } else {
-      DBG << "<Source> " << this->device_name() << " failed to load setting definitions";
+      DBG << "<Producer> " << this->device_name() << " failed to load setting definitions";
       profile_path_.clear();
       return false;
     }
   }
 
 
-  bool Source::save_setting_definitions(std::string file) {
+  bool Producer::save_setting_definitions(std::string file) {
     pugi::xml_document doc;
 
     pugi::xml_node root = doc.append_child();

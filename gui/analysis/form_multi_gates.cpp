@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 #include "form_multi_gates.h"
 #include "widget_detectors.h"
 #include "ui_form_multi_gates.h"
@@ -110,7 +110,7 @@ void FormMultiGates::saveSettings()
 
 void FormMultiGates::clear()
 {
-  md_ = Qpx::Metadata();
+  md_ = Qpx::ConsumerMetadata();
   res_ = 0;
   nrg_x_ = Qpx::Calibration();
   nrg_y_ = Qpx::Calibration();
@@ -370,7 +370,7 @@ Qpx::SinkPtr FormMultiGates::make_gated_spectrum(const Bounds2D &bounds)
   if (!source_spectrum)
     return nullptr;
 
-  Metadata md = source_spectrum->metadata();
+  ConsumerMetadata md = source_spectrum->metadata();
 
   if (md.dimensions() != 2)
     return nullptr;

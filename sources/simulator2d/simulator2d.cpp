@@ -28,15 +28,15 @@
 #include "custom_timer.h"
 
 #include "project.h"
-#include "daq_source_factory.h"
+#include "producer_factory.h"
 
 
 namespace Qpx {
 
-static SourceRegistrar<Simulator2D> registrar("Simulator2D");
+static ProducerRegistrar<Simulator2D> registrar("Simulator2D");
 
 Simulator2D::Simulator2D() {
-  status_ = SourceStatus::loaded;// | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded;// | ProducerStatus::can_boot;
   runner_ = nullptr;
   run_status_.store(0);
 
@@ -53,7 +53,7 @@ Simulator2D::Simulator2D() {
 
 bool Simulator2D::die()
 {
-  status_ = SourceStatus::loaded;
+  status_ = ProducerStatus::loaded;
   return true;
 }
 
@@ -115,7 +115,7 @@ bool Simulator2D::read_settings_bulk(Qpx::Setting &set) const {
       else if (q.id_ == "Simulator2D/Resolution")
       {
         q.value_int = bits_;
-        q.metadata.writable = !(status_ & SourceStatus::booted);
+        q.metadata.writable = !(status_ & ProducerStatus::booted);
       }
       else if (q.id_ == "Simulator2D/ScaleRate")
         q.value_dbl = scale_rate_;
@@ -139,15 +139,15 @@ bool Simulator2D::read_settings_bulk(Qpx::Setting &set) const {
         q.value_dbl = model_hit.timebase.timebase_divider();
       else if (q.id_ == "Simulator2D/Lambda")
         q.value_dbl = lambda_;
-      else if (q.id_ == "Simulator2D/Source file")
+      else if (q.id_ == "Simulator2D/Producer file")
       {
         q.value_text = source_file_;
-        q.metadata.writable = !(status_ & SourceStatus::booted);
+        q.metadata.writable = !(status_ & ProducerStatus::booted);
       }
-      else if (q.id_ == "Simulator2D/Source spectrum")
+      else if (q.id_ == "Simulator2D/Producer spectrum")
       {
         q.metadata.int_menu_items = spectra_names_;
-        q.metadata.writable = !(status_ & SourceStatus::booted);
+        q.metadata.writable = !(status_ & ProducerStatus::booted);
         if (spectra_names_.count(source_spectrum_))
           q.value_int = source_spectrum_;
         else
@@ -198,7 +198,7 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
       scale_rate_ = q.value_dbl;
     else if (q.id_ == "Simulator2D/Lambda")
       lambda_ = q.value_dbl;
-    else if (q.id_ == "Simulator2D/Source file") {
+    else if (q.id_ == "Simulator2D/Producer file") {
       if (q.value_text != source_file_) {
         Qpx::Project temp_set;
         temp_set.open(q.value_text, true, false);
@@ -207,17 +207,17 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
 
         for (auto &q: temp_set.get_sinks(2))
         {
-          Qpx::Metadata md = q.second->metadata();
+          Qpx::ConsumerMetadata md = q.second->metadata();
           spectra_names_[q.first] = md.get_attribute("name").value_text
               + "  "
               + md.get_attribute("resolution").val_to_pretty_string();
         }
         if (!spectra_names_.empty())
-          status_ = status_ | SourceStatus::can_boot;
+          status_ = status_ | ProducerStatus::can_boot;
       }
       source_file_ = q.value_text;
     }
-    else if (q.id_ == "Simulator2D/Source spectrum") {
+    else if (q.id_ == "Simulator2D/Producer spectrum") {
       if (!spectra_names_.count(q.value_int))
         q.value_int = 0;
       source_spectrum_ = q.value_int;
@@ -236,12 +236,12 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
 }
 
 bool Simulator2D::boot() {
-  if (!(status_ & SourceStatus::can_boot)) {
+  if (!(status_ & ProducerStatus::can_boot)) {
     WARN << "<Simulator2D> Cannot boot Simulator2D. Failed flag check (can_boot == 0)";
     return false;
   }
 
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
 
   Qpx::Project temp_set;
   LINFO << "<Simulator2D> Reading data from " << source_file_;
@@ -254,7 +254,7 @@ bool Simulator2D::boot() {
     return false;
   }
 
-  Metadata md = spectrum->metadata();
+  ConsumerMetadata md = spectrum->metadata();
   Setting sres = md.get_attribute("resolution");
   LINFO << "<Simulator2D> Will use " << md.get_attribute("name").value_text << " type:" << md.type() << " bits:" << sres.value_int;
 
@@ -311,13 +311,13 @@ bool Simulator2D::boot() {
   clock_ = 0;
   valid_ = true;
 
-  status_ = SourceStatus::loaded | SourceStatus::booted | SourceStatus::can_run;
+  status_ = ProducerStatus::loaded | ProducerStatus::booted | ProducerStatus::can_run;
   return true;
 }
 
 
 void Simulator2D::get_all_settings() {
-  if (status_ & SourceStatus::booted) {
+  if (status_ & ProducerStatus::booted) {
   }
 }
 

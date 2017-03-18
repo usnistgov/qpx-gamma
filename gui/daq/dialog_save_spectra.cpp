@@ -22,7 +22,7 @@
  ******************************************************************************/
 
 
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 #include <algorithm>
 #include <QPaintEvent>
 #include <QPainter>
@@ -55,7 +55,7 @@ void WidgetSaveTypes::initialize(std::vector<std::string> types) {
   file_formats.resize(spectrum_types.size());
   selections.resize(spectrum_types.size());
   for (std::size_t i = 0; i < spectrum_types.size(); i++) {
-    Metadata type_template = SinkFactory::getInstance().create_prototype(spectrum_types[i]);
+    ConsumerMetadata type_template = ConsumerFactory::getInstance().create_prototype(spectrum_types[i]);
     std::list<std::string> otypes = type_template.output_types();
     file_formats[i] = std::vector<std::string>(otypes.begin(), otypes.end());
     selections[i].resize(file_formats[i].size(), false);

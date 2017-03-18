@@ -26,7 +26,7 @@
 #include <boost/algorithm/string.hpp>
 #include "custom_logger.h"
 #include "custom_timer.h"
-#include "daq_source_factory.h"
+#include "producer_factory.h"
 
 //XIA stuff:
 #include <string.h>
@@ -41,7 +41,7 @@
 
 namespace Qpx {
 
-static SourceRegistrar<Pixie4> registrar("Pixie4");
+static ProducerRegistrar<Pixie4> registrar("Pixie4");
 
 Pixie4::Pixie4() {
   boot_files_.resize(7);
@@ -52,7 +52,7 @@ Pixie4::Pixie4() {
   run_poll_interval_ms_ = 100;
   run_type_ = 0x103;
 
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
 
   runner_ = nullptr;
   parser_ = nullptr;
@@ -196,7 +196,7 @@ bool Pixie4::read_settings_bulk(Qpx::Setting &set) const {
 
   for (auto &q : set.branches.my_data_) {
     if (set.metadata.setting_type == Qpx::SettingType::command)
-      set.metadata.writable =  ((status_ & SourceStatus::booted) != 0);
+      set.metadata.writable =  ((status_ & ProducerStatus::booted) != 0);
 
     if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "Pixie4/Run settings")) {
       for (auto &k : q.branches.my_data_) {
@@ -207,7 +207,7 @@ bool Pixie4::read_settings_bulk(Qpx::Setting &set) const {
       }
     } else if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "Pixie4/Files")) {
       for (auto &k : q.branches.my_data_) {
-        k.metadata.writable = !(status_ & SourceStatus::booted);
+        k.metadata.writable = !(status_ & ProducerStatus::booted);
         if ((k.metadata.setting_type == Qpx::SettingType::dir_path) && (k.id_ == "Pixie4/Files/XIA_path"))
           k.value_text = XIA_file_directory_;
         else if ((k.metadata.setting_type == Qpx::SettingType::file_path) && (k.metadata.address > 0) && (k.metadata.address < 8))
@@ -215,7 +215,7 @@ bool Pixie4::read_settings_bulk(Qpx::Setting &set) const {
       }
     } else if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "Pixie4/System")) {
       for (auto &k : q.branches.my_data_) {
-        k.metadata.writable = (!(status_ & SourceStatus::booted) && setting_definitions_.count(k.id_) && setting_definitions_.at(k.id_).writable);
+        k.metadata.writable = (!(status_ & ProducerStatus::booted) && setting_definitions_.count(k.id_) && setting_definitions_.at(k.id_).writable);
         if (k.metadata.setting_type == Qpx::SettingType::stem) {
           int16_t modnum = k.metadata.address;
           if ((modnum < 0) || (modnum >= static_cast<int16_t>(channel_indices_.size()))) {
@@ -436,7 +436,7 @@ bool Pixie4::write_settings_bulk(Qpx::Setting &set) {
         ret = control_find_tau(Module::all);
       else if (q.id_ == "Pixie4/Compute BLCUT")
         ret = control_compute_BLcut();
-    } else if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "Pixie4/Files") && !(status_ & SourceStatus::booted)) {
+    } else if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "Pixie4/Files") && !(status_ & ProducerStatus::booted)) {
       for (auto &k : q.branches.my_data_) {
         if ((k.metadata.setting_type == Qpx::SettingType::dir_path) && (k.id_ == "Pixie4/Files/XIA_path")) {
           if (XIA_file_directory_ != k.value_text) {
@@ -463,7 +463,7 @@ bool Pixie4::write_settings_bulk(Qpx::Setting &set) {
           run_poll_interval_ms_ = k.value_int;
       }
     } else if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "Pixie4/System")) {
-      if (!(status_ & SourceStatus::booted))
+      if (!(status_ & ProducerStatus::booted))
         rebuild_structure(q);
 
       reindex_modules(q);
@@ -535,12 +535,12 @@ bool Pixie4::write_settings_bulk(Qpx::Setting &set) {
 }
 
 bool Pixie4::boot() {
-  if (!(status_ & SourceStatus::can_boot)) {
+  if (!(status_ & ProducerStatus::can_boot)) {
     WARN << "<Pixie4> Cannot boot Pixie-4. Failed flag check (can_boot == 0)";
     return false;
   }
 
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
 
   S32 retval;
   set_sys("OFFLINE_ANALYSIS", 0);  //attempt live boot first
@@ -577,8 +577,8 @@ bool Pixie4::boot() {
   //bad files do not result in boot error!!
 
   if (retval >= 0) {
-    status_ = SourceStatus::loaded | SourceStatus::booted
-        | SourceStatus::can_run | SourceStatus::can_oscil;
+    status_ = ProducerStatus::loaded | ProducerStatus::booted
+        | ProducerStatus::can_run | ProducerStatus::can_oscil;
 
     //sleep 1 s and do offsets
 
@@ -589,7 +589,7 @@ bool Pixie4::boot() {
 //  set_sys("OFFLINE_ANALYSIS", 1);  //else attempt offline boot
 //  retval = Pixie_Boot_System(0x1F);
 //  if (retval >= 0) {
-//    status_ = SourceStatus::loaded | SourceStatus::booted;
+//    status_ = ProducerStatus::loaded | ProducerStatus::booted;
 
 //    return true;
   } else {
@@ -628,7 +628,7 @@ std::list<Hit> Pixie4::oscilloscope() {
 
 
 void Pixie4::get_all_settings() {
-  if (status_ & SourceStatus::booted) {
+  if (status_ & ProducerStatus::booted) {
     get_sys_all();
     get_mod_all(Module::all);
     get_chan_all(Channel::all, Module::all);
@@ -1070,7 +1070,7 @@ bool Pixie4::read_sys(const char* setting) {
 bool Pixie4::write_mod(const char* setting, uint8_t mod) {
   S32 ret = -42;
   S8 modstr[8] = "MODULE\0";
-  if (status_ & SourceStatus::booted)
+  if (status_ & ProducerStatus::booted)
     ret = Pixie_User_Par_IO(module_parameter_values_.data(),
                             (S8*) setting, modstr, MOD_WRITE, mod, 0);
   set_err(ret);
@@ -1080,7 +1080,7 @@ bool Pixie4::write_mod(const char* setting, uint8_t mod) {
 bool Pixie4::read_mod(const char* setting, uint8_t mod) {
   S32 ret = -42;
   S8 modstr[8] = "MODULE\0";
-  if (status_ & SourceStatus::booted)
+  if (status_ & ProducerStatus::booted)
     ret = Pixie_User_Par_IO(module_parameter_values_.data(),
                             (S8*) setting, modstr, MOD_READ, mod, 0);
   set_err(ret);
@@ -1090,7 +1090,7 @@ bool Pixie4::read_mod(const char* setting, uint8_t mod) {
 bool Pixie4::write_chan(const char* setting, uint8_t mod, uint8_t chan) {
   S32 ret = -42;
   S8 chnstr[9] = "CHANNEL\0";
-  if (status_ & SourceStatus::booted)
+  if (status_ & ProducerStatus::booted)
     ret = Pixie_User_Par_IO(channel_parameter_values_.data(),
                             (S8*) setting, chnstr, MOD_WRITE, mod, chan);
   set_err(ret);
@@ -1100,7 +1100,7 @@ bool Pixie4::write_chan(const char* setting, uint8_t mod, uint8_t chan) {
 bool Pixie4::read_chan(const char* setting, uint8_t mod, uint8_t chan) {
   S32 ret = -42;
   S8 chnstr[9] = "CHANNEL\0";
-  if (status_ & SourceStatus::booted)
+  if (status_ & ProducerStatus::booted)
     ret = Pixie_User_Par_IO(channel_parameter_values_.data(),
                             (S8*) setting, chnstr, MOD_READ, mod, chan);
   set_err(ret);
@@ -1110,7 +1110,7 @@ bool Pixie4::read_chan(const char* setting, uint8_t mod, uint8_t chan) {
 uint32_t* Pixie4::control_collect_ADC(uint8_t module) {
   TRC << "<Pixie4> get ADC (oscilloscope) traces";
   ///why is NUMBER_OF_CHANNELS used? Same for multi-module?
-  if (status_ & SourceStatus::can_oscil) {
+  if (status_ & ProducerStatus::can_oscil) {
     uint32_t* adc_data = new uint32_t[NUMBER_OF_CHANNELS * max_buf_len];
     int32_t retval = Pixie_Acquire_Data(0x0084, (U32*)adc_data, NULL, module);
     if (retval < 0) {
@@ -1146,7 +1146,7 @@ bool Pixie4::control_program_Fippi(uint8_t module) {
 
 bool Pixie4::control_measure_baselines(Module mod) {
   bool success = false;
-  if (status_ & SourceStatus::booted) {
+  if (status_ & ProducerStatus::booted) {
     if (mod == Module::all) {
       for (size_t i=0; i< channel_indices_.size(); ++i) {
         DBG << "<Pixie4> measure baselines for module " << i;
@@ -1181,7 +1181,7 @@ bool Pixie4::control_compute_BLcut() {
 
 bool Pixie4::control_find_tau(Module mod) {
   bool success = false;
-  if (status_ & SourceStatus::booted) {
+  if (status_ & ProducerStatus::booted) {
     if (mod == Module::all) {
       for (size_t i=0; i< channel_indices_.size(); ++i) {
         DBG << "<Pixie4> find tau for module " << i;
@@ -1201,7 +1201,7 @@ bool Pixie4::control_find_tau(Module mod) {
 
 bool Pixie4::control_adjust_offsets(Module mod) {
   bool success = false;
-  if (status_ & SourceStatus::booted) {
+  if (status_ & ProducerStatus::booted) {
     if (mod == Module::all) {
       for (size_t i=0; i< channel_indices_.size(); ++i) {
         TRC << "<Pixie4> djust offsets for module " << i;

@@ -24,11 +24,12 @@
 #include <fstream>
 #include <algorithm>
 #include "spectrum_raw.h"
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
+#include "custom_logger.h"
 
 namespace Qpx {
 
-static SinkRegistrar<SpectrumRaw> registrar("Raw");
+static ConsumerRegistrar<SpectrumRaw> registrar("Raw");
 
 SpectrumRaw::SpectrumRaw()
   : open_bin_(false)
@@ -38,7 +39,7 @@ SpectrumRaw::SpectrumRaw()
   , ignore_patterns_(true)
 {
   Setting base_options = metadata_.attributes();
-  metadata_ = Metadata("Raw", "Custom gated list mode to file. Please provide path and name for valid and accessible file", 0,
+  metadata_ = ConsumerMetadata("Raw", "Custom gated list mode to file. Please provide path and name for valid and accessible file", 0,
                     {}, {});
 
   Qpx::Setting file_setting;

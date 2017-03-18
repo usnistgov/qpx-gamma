@@ -23,18 +23,18 @@
 
 
 #include "spectrum1D_LFC.h"
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 #include "custom_logger.h"
 
 namespace Qpx {
 
-static SinkRegistrar<Spectrum1D_LFC> registrar("LFC1D");
+static ConsumerRegistrar<Spectrum1D_LFC> registrar("LFC1D");
 
 Spectrum1D_LFC::Spectrum1D_LFC()
   : Spectrum1D()
 {
   Setting base_options = metadata_.attributes();
-  metadata_ = Metadata("LFC1D", "One detector loss-free spectrum", 1,
+  metadata_ = ConsumerMetadata("LFC1D", "One detector loss-free spectrum", 1,
   {}, metadata_.output_types());
 
   Qpx::Setting t_sample;

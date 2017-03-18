@@ -26,15 +26,15 @@
 #include <boost/algorithm/string.hpp>
 #include "custom_logger.h"
 #include "custom_timer.h"
-#include "daq_source_factory.h"
+#include "producer_factory.h"
 
 
 namespace Qpx {
 
-static SourceRegistrar<ParserRaw> registrar("ParserRaw");
+static ProducerRegistrar<ParserRaw> registrar("ParserRaw");
 
 ParserRaw::ParserRaw() {
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
 
   runner_ = nullptr;
 
@@ -45,7 +45,7 @@ ParserRaw::ParserRaw() {
 }
 
 bool ParserRaw::die() {
-  if ((status_ & SourceStatus::booted) != 0)
+  if ((status_ & ProducerStatus::booted) != 0)
     file_bin_.close();
 
   source_file_bin_.clear();
@@ -54,9 +54,9 @@ bool ParserRaw::die() {
   bin_begin_ = 0;
   bin_end_ = 0;
 
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
 //  for (auto &q : set.branches.my_data_) {
-//    if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserRaw/Source file"))
+//    if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserRaw/Producer file"))
 //      q.metadata.writable = true;
 //  }
 
@@ -124,9 +124,9 @@ bool ParserRaw::read_settings_bulk(Qpx::Setting &set) const {
         q.value_int = override_pause_;
       else if ((q.metadata.setting_type == Qpx::SettingType::integer) && (q.id_ == "ParserRaw/Pause"))
         q.value_int = pause_ms_;
-      else if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserRaw/Source file")) {
+      else if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserRaw/Producer file")) {
         q.value_text = source_file_;
-        q.metadata.writable = !(status_ & SourceStatus::booted);
+        q.metadata.writable = !(status_ & ProducerStatus::booted);
       }
       else if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserRaw/Binary file"))
         q.value_text = source_file_bin_;
@@ -163,19 +163,19 @@ bool ParserRaw::write_settings_bulk(Qpx::Setting &set) {
       override_pause_ = q.value_int;
     else if (q.id_ == "ParserRaw/Pause")
       pause_ms_ = q.value_int;
-    else if (q.id_ == "ParserRaw/Source file")
+    else if (q.id_ == "ParserRaw/Producer file")
       source_file_ = q.value_text;
   }
   return true;
 }
 
 bool ParserRaw::boot() {
-  if (!(status_ & SourceStatus::can_boot)) {
+  if (!(status_ & ProducerStatus::can_boot)) {
     WARN << "<ParserRaw> Cannot boot Sorter. Failed flag check (can_boot == 0)";
     return false;
   }
 
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
 
   pugi::xml_document doc;
 
@@ -246,13 +246,13 @@ bool ParserRaw::boot() {
 
   current_spill_ = 0;
   source_file_bin_ = bin_path.string();
-  status_ = SourceStatus::loaded | SourceStatus::booted | SourceStatus::can_run;
+  status_ = ProducerStatus::loaded | ProducerStatus::booted | ProducerStatus::can_run;
   return true;
 }
 
 
 void ParserRaw::get_all_settings() {
-  if (status_ & SourceStatus::booted) {
+  if (status_ & ProducerStatus::booted) {
   }
 }
 

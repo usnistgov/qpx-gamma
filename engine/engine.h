@@ -29,7 +29,7 @@
 
 #include "detector.h"
 #include "generic_setting.h"
-#include "daq_source.h"
+#include "producer.h"
 #include "synchronized_queue.h"
 #include "project.h"
 
@@ -50,7 +50,7 @@ public:
   void initialize(std::string profile_path, std::string settings_path);
   bool boot();
   bool die();
-  SourceStatus status() {return aggregate_status_;}
+  ProducerStatus status() {return aggregate_status_;}
 
   ListData getList(uint64_t timeout, boost::atomic<bool>& inturruptor);
   void getMca(uint64_t timeout, ProjectPtr spectra, boost::atomic<bool> &interruptor);
@@ -78,7 +78,7 @@ public:
 
 protected:
   std::string profile_path_;
-  SourceStatus aggregate_status_, intrinsic_status_;
+  ProducerStatus aggregate_status_, intrinsic_status_;
   mutable boost::mutex mutex_;
 
   std::map<std::string, SourcePtr> devices_;

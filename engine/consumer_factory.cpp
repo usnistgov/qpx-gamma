@@ -16,18 +16,20 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Sink::Sink generic Sink type.
+ *      Qpx::Consumer::Consumer generic Consumer type.
  *                       All public methods are thread-safe.
  *                       When deriving override protected methods.
  *
  ******************************************************************************/
 
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 #include "custom_logger.h"
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 namespace Qpx {
 
-SinkPtr SinkFactory::create_type(std::string type)
+SinkPtr ConsumerFactory::create_type(std::string type)
 {
   auto it = constructors.find(type);
   if(it != constructors.end())
@@ -36,27 +38,27 @@ SinkPtr SinkFactory::create_type(std::string type)
     return SinkPtr();
 }
 
-SinkPtr SinkFactory::create_copy(SinkPtr other)
+SinkPtr ConsumerFactory::create_copy(SinkPtr other)
 {
   return SinkPtr(other->clone());
 }
 
 
-SinkPtr SinkFactory::create_from_prototype(const Metadata& tem)
+SinkPtr ConsumerFactory::create_from_prototype(const ConsumerMetadata& tem)
 {
-//  DBG << "<SinkFactory> creating " << tem.type();
+//  DBG << "<ConsumerFactory> creating " << tem.type();
   SinkPtr instance = create_type(tem.type());
   if (instance && instance->from_prototype(tem))
     return instance;
   return SinkPtr();
 }
 
-SinkPtr SinkFactory::create_from_xml(const pugi::xml_node &root)
+SinkPtr ConsumerFactory::create_from_xml(const pugi::xml_node &root)
 {
   if (!root.attribute("type"))
     return SinkPtr();
 
-//  DBG << "<SinkFactory> making " << root.attribute("type").value();
+//  DBG << "<ConsumerFactory> making " << root.attribute("type").value();
 
   SinkPtr instance = create_type(std::string(root.attribute("type").value()));
   if (instance && instance->load(root))
@@ -66,12 +68,12 @@ SinkPtr SinkFactory::create_from_xml(const pugi::xml_node &root)
 }
 
 #ifdef H5_ENABLED
-SinkPtr SinkFactory::create_from_h5(H5CC::Group &group, bool withdata)
+SinkPtr ConsumerFactory::create_from_h5(H5CC::Group &group, bool withdata)
 {
   if (!group.has_attribute("type"))
     return SinkPtr();
 
-//  DBG << "<SinkFactory> making " << root.attribute("type").value();
+//  DBG << "<ConsumerFactory> making " << root.attribute("type").value();
 
   SinkPtr instance = create_type(group.read_attribute<std::string>("type"));
   if (instance && instance->load(group, withdata))
@@ -81,7 +83,7 @@ SinkPtr SinkFactory::create_from_h5(H5CC::Group &group, bool withdata)
 }
 #endif
 
-SinkPtr SinkFactory::create_from_file(std::string filename)
+SinkPtr ConsumerFactory::create_from_file(std::string filename)
 {
   std::string ext(boost::filesystem::extension(filename));
   if (ext.size())
@@ -96,25 +98,25 @@ SinkPtr SinkFactory::create_from_file(std::string filename)
   return SinkPtr();
 }
 
-Metadata SinkFactory::create_prototype(std::string type)
+ConsumerMetadata ConsumerFactory::create_prototype(std::string type)
 {
   auto it = prototypes.find(type);
   if(it != prototypes.end())
     return it->second;
   else
-    return Metadata();
+    return ConsumerMetadata();
 }
 
-void SinkFactory::register_type(Metadata tt, std::function<Sink*(void)> typeConstructor)
+void ConsumerFactory::register_type(ConsumerMetadata tt, std::function<Consumer*(void)> typeConstructor)
 {
-  LINFO << "<SinkFactory> registering sink type '" << tt.type() << "'";
+  LINFO << "<ConsumerFactory> registering sink type '" << tt.type() << "'";
   constructors[tt.type()] = typeConstructor;
   prototypes[tt.type()] = tt;
   for (auto &q : tt.input_types())
     ext_to_type[q] = tt.type();
 }
 
-const std::vector<std::string> SinkFactory::types() {
+const std::vector<std::string> ConsumerFactory::types() {
   std::vector<std::string> all_types;
   for (auto &q : constructors)
     all_types.push_back(q.first);

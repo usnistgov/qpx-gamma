@@ -23,16 +23,17 @@
 
 #include <fstream>
 #include "spectrum_time.h"
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
+#include "custom_logger.h"
 
 namespace Qpx {
 
-static SinkRegistrar<TimeSpectrum> registrar("TimeSpectrum");
+static ConsumerRegistrar<TimeSpectrum> registrar("TimeSpectrum");
 
 TimeSpectrum::TimeSpectrum()
 {
   Setting base_options = metadata_.attributes();
-  metadata_ = Metadata("TimeSpectrum", "Set of spectra in time series", 2,
+  metadata_ = ConsumerMetadata("TimeSpectrum", "Set of spectra in time series", 2,
                     {}, {});
 
   metadata_.overwrite_all_attributes(base_options);

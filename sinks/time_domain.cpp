@@ -23,19 +23,18 @@
 
 #include <fstream>
 #include "time_domain.h"
-#include "daq_sink_factory.h"
-
-#include <boost/serialization/vector.hpp>
+#include "consumer_factory.h"
+#include "custom_logger.h"
 
 namespace Qpx {
 
-static SinkRegistrar<TimeDomain> registrar("Time");
+static ConsumerRegistrar<TimeDomain> registrar("Time");
 
 TimeDomain::TimeDomain()
   : codomain(0)
 {
   Setting base_options = metadata_.attributes();
-  metadata_ = Metadata("Time", "Time-domain log of activity", 1,
+  metadata_ = ConsumerMetadata("Time", "Time-domain log of activity", 1,
                     {}, {});
 
   Qpx::Setting format_setting;

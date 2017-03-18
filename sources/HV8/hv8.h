@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "daq_source.h"
+#include "producer.h"
 #include "detector.h"
 #include "TimeoutSerial.h"
 #include <boost/thread.hpp>
@@ -30,7 +30,7 @@
 
 namespace Qpx {
 
-class QpxHV8Plugin : public Source {
+class QpxHV8Plugin : public Producer {
   
 public:
   QpxHV8Plugin();

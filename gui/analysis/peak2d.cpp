@@ -137,7 +137,7 @@ void Bounds2D::integrate(Qpx::SinkPtr spectrum)
   if (!spectrum)
     return;
 
-  Qpx::Metadata md = spectrum->metadata();
+  Qpx::ConsumerMetadata md = spectrum->metadata();
 
   if (md.dimensions() != 2)
     return;

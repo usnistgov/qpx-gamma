@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "daq_source.h"
+#include "producer.h"
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
 
@@ -31,7 +31,7 @@ class VmeModule;
 
 namespace Qpx {
 
-class QpxVmePlugin : public Source {
+class QpxVmePlugin : public Producer {
   
 public:
   QpxVmePlugin();

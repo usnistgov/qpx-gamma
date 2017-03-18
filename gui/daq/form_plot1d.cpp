@@ -109,7 +109,7 @@ void FormPlot1D::spectrumDetails(SelectorItem /*item*/)
 
   SinkPtr someSpectrum = mySpectra->get_sink(itm.data.toLongLong());
 
-  Metadata md;
+  ConsumerMetadata md;
 
   if (someSpectrum)
     ui->pushRescaleToThisMax->setEnabled(true);
@@ -196,7 +196,7 @@ void FormPlot1D::update_plot()
     if (!q.second)
       continue;
 
-    Metadata md = q.second->metadata();
+    ConsumerMetadata md = q.second->metadata();
 
     if (!md.get_attribute("visible").value_int)
       continue;
@@ -271,7 +271,7 @@ void FormPlot1D::on_pushFullInfo_clicked()
   connect(newSpecDia, SIGNAL(analyse()), this, SLOT(analyse()));
   if (newSpecDia->exec() == QDialog::Accepted)
   {
-    Qpx::Metadata md = newSpecDia->product();
+    Qpx::ConsumerMetadata md = newSpecDia->product();
     someSpectrum->set_detectors(md.detectors);
     someSpectrum->set_attributes(md.attributes());
     updateUI();
@@ -293,7 +293,7 @@ void FormPlot1D::updateUI()
 
   for (auto &q : mySpectra->get_sinks(1))
   {
-    Metadata md;
+    ConsumerMetadata md;
     if (q.second != nullptr)
       md = q.second->metadata();
 
@@ -483,7 +483,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
   if (!someSpectrum || !moving.visible)
     return;
 
-  Metadata md = someSpectrum->metadata();
+  ConsumerMetadata md = someSpectrum->metadata();
 
 
   double livetime = md.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
@@ -509,7 +509,7 @@ void FormPlot1D::on_pushRescaleToThisMax_clicked()
 
   for (auto &q: mySpectra->get_sinks(1))
     if (q.second) {
-      Metadata mdt = q.second->metadata();
+      ConsumerMetadata mdt = q.second->metadata();
       double lt = mdt.get_attribute("live_time").value_duration.total_milliseconds() * 0.001;
       uint16_t bits = mdt.get_attribute("resolution").value_int;
 

@@ -16,15 +16,15 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Source abstract class
+ *      Qpx::Producer abstract class
  *
  ******************************************************************************/
 
-#include "daq_source_factory.h"
+#include "producer_factory.h"
 
 namespace Qpx {
 
-SourcePtr SourceFactory::create_type(std::string type, std::string file)
+SourcePtr ProducerFactory::create_type(std::string type, std::string file)
 {
   SourcePtr instance;
   auto it = constructors.find(type);
@@ -35,13 +35,13 @@ SourcePtr SourceFactory::create_type(std::string type, std::string file)
   return SourcePtr();
 }
 
-void SourceFactory::register_type(std::string name, std::function<Source*(void)> typeConstructor)
+void ProducerFactory::register_type(std::string name, std::function<Producer*(void)> typeConstructor)
 {
-  LINFO << "<SourceFactory> registering source '" << name << "'";
+  LINFO << "<ProducerFactory> registering source '" << name << "'";
   constructors[name] = typeConstructor;
 }
 
-const std::vector<std::string> SourceFactory::types() {
+const std::vector<std::string> ProducerFactory::types() {
   std::vector<std::string> all_types;
   for (auto &q : constructors)
     all_types.push_back(q.first);

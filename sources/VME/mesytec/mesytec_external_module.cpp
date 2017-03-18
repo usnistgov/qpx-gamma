@@ -28,7 +28,7 @@ namespace Qpx {
 MesytecExternal::MesytecExternal() {
   controller_ = nullptr;
   modnum_ = 0;
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
   module_ID_code_ = -1;
 }
 
@@ -39,15 +39,15 @@ MesytecExternal::~MesytecExternal() {
 
 bool MesytecExternal::die() {
   disconnect();
-  status_ = Qpx::SourceStatus::loaded | Qpx::SourceStatus::can_boot;
+  status_ = Qpx::ProducerStatus::loaded | Qpx::ProducerStatus::can_boot;
   return true;
 }
 
 bool MesytecExternal::boot() {
-  if (!(status_ & Qpx::SourceStatus::can_boot))
+  if (!(status_ & Qpx::ProducerStatus::can_boot))
     return false;
 
-  status_ = Qpx::SourceStatus::loaded | Qpx::SourceStatus::can_boot;
+  status_ = Qpx::ProducerStatus::loaded | Qpx::ProducerStatus::can_boot;
 
   if (!connected())
     return false;
@@ -55,7 +55,7 @@ bool MesytecExternal::boot() {
   if (!controller_->RC_on(modnum_))
     return false;
 
-  status_ = Qpx::SourceStatus::loaded | Qpx::SourceStatus::booted;
+  status_ = Qpx::ProducerStatus::loaded | Qpx::ProducerStatus::booted;
   return true;
 }
 
@@ -136,9 +136,9 @@ bool MesytecExternal::write_settings_bulk(Qpx::Setting &set) {
 
 bool MesytecExternal::read_setting(Qpx::Setting& set) const {
   if (set.metadata.setting_type == Qpx::SettingType::command)
-    set.metadata.writable =  ((status_ & SourceStatus::booted) != 0);
+    set.metadata.writable =  ((status_ & ProducerStatus::booted) != 0);
 
-  if (!(status_ & Qpx::SourceStatus::booted))
+  if (!(status_ & Qpx::ProducerStatus::booted))
     return false;
 
   if ((set.metadata.setting_type == Qpx::SettingType::binary)
@@ -157,7 +157,7 @@ bool MesytecExternal::read_setting(Qpx::Setting& set) const {
 }
 
 bool MesytecExternal::write_setting(Qpx::Setting& set) {
-  if (!(status_ & Qpx::SourceStatus::booted))
+  if (!(status_ & Qpx::ProducerStatus::booted))
     return false;
 
   if ((set.metadata.setting_type == Qpx::SettingType::binary)

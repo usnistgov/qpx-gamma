@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "daq_sink.h"
+#include "consumer.h"
 #include "fitter.h"
 
 #ifdef H5_ENABLED
@@ -60,9 +60,9 @@ public:
   void activate();    //force release of cond var
 
   //populate one of these ways
-  void set_prototypes(const XMLableDB<Metadata>&);
+  void set_prototypes(const XMLableDB<ConsumerMetadata>&);
   int64_t add_sink(SinkPtr sink);
-  int64_t add_sink(Metadata prototype);
+  int64_t add_sink(ConsumerMetadata prototype);
 
   void import_spn(std::string file_name);
 

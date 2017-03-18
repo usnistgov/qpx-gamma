@@ -2,13 +2,13 @@
 
 #include <sstream>
 #include <iomanip>
-#include "daq_source.h"
+#include "producer.h"
 
 namespace Qpx {
 
 class MesytecVME;
 
-class MesytecExternal : public Source
+class MesytecExternal : public Producer
 {
 
 public:

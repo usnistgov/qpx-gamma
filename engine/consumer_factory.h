@@ -17,21 +17,17 @@
  *
  * Description:
  *
- *      Qpx::Sink::Factory creates spectra of appropriate type
+ *      Qpx::Consumer::Factory creates spectra of appropriate type
  *                               by type name, from template, or
  *                               from file.
  *
- *      Qpx::Sink::Registrar for registering new Sink types.
+ *      Qpx::Consumer::Registrar for registering new Consumer types.
  *
  ******************************************************************************/
 
 #pragma once
 
-#include <memory>
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
-
-#include "daq_sink.h"
+#include "consumer.h"
 
 #ifdef H5_ENABLED
 #include "H5CC_Group.h"
@@ -39,19 +35,19 @@
 
 namespace Qpx {
 
-class SinkFactory {
+class ConsumerFactory {
  public:
-  static SinkFactory& getInstance()
+  static ConsumerFactory& getInstance()
   {
-    static SinkFactory singleton_instance;
+    static ConsumerFactory singleton_instance;
     return singleton_instance;
   }
 
-  void register_type(Metadata tt, std::function<Sink*(void)> typeConstructor);
+  void register_type(ConsumerMetadata tt, std::function<Consumer*(void)> typeConstructor);
   const std::vector<std::string> types();
   
   SinkPtr create_type(std::string type);
-  SinkPtr create_from_prototype(const Metadata& tem);
+  SinkPtr create_from_prototype(const ConsumerMetadata& tem);
   #ifdef H5_ENABLED
   SinkPtr create_from_h5(H5CC::Group &group, bool withdata = true);
   #endif
@@ -59,26 +55,26 @@ class SinkFactory {
   SinkPtr create_from_file(std::string filename);
   SinkPtr create_copy(SinkPtr other);
 
-  Metadata create_prototype(std::string type);
+  ConsumerMetadata create_prototype(std::string type);
 
  private:
-  std::map<std::string, std::function<Sink*(void)>> constructors;
+  std::map<std::string, std::function<Consumer*(void)>> constructors;
   std::map<std::string, std::string> ext_to_type;
-  std::map<std::string, Metadata> prototypes;
+  std::map<std::string, ConsumerMetadata> prototypes;
 
   //singleton assurance
-  SinkFactory() {}
-  SinkFactory(SinkFactory const&);
-  void operator=(SinkFactory const&);
+  ConsumerFactory() {}
+  ConsumerFactory(ConsumerFactory const&);
+  void operator=(ConsumerFactory const&);
 };
 
 template<class T>
-class SinkRegistrar {
+class ConsumerRegistrar {
 public:
-  SinkRegistrar(std::string)
+  ConsumerRegistrar(std::string)
   {
-    SinkFactory::getInstance().register_type(T().metadata(),
-                                         [](void) -> Sink * { return new T();});
+    ConsumerFactory::getInstance().register_type(T().metadata(),
+                                         [](void) -> Consumer * { return new T();});
   }
 };
 

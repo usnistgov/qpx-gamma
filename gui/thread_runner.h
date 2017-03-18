@@ -70,7 +70,7 @@ signals:
     void bootComplete();
     void runComplete();
     void listComplete(Qpx::ListData);
-    void settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus);
+    void settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::ProducerStatus);
     void oscilReadOut(std::vector<Qpx::Hit>);
 
 protected:
@@ -99,5 +99,5 @@ private:
 
     bool flag_;
 
-    Qpx::SourceStatus recent_status_;
+    Qpx::ProducerStatus recent_status_;
 };

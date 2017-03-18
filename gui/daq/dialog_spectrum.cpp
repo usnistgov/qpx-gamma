@@ -19,17 +19,17 @@
  *
  ******************************************************************************/
 
-#include "daq_sink_factory.h"
 #include "dialog_spectrum.h"
 #include "ui_dialog_spectrum.h"
 #include "qt_util.h"
 #include "custom_logger.h"
 #include <QInputDialog>
 #include <QMessageBox>
+#include "consumer_factory.h"
 
 using namespace Qpx;
 
-DialogSpectrum::DialogSpectrum(Metadata sink_metadata,
+DialogSpectrum::DialogSpectrum(ConsumerMetadata sink_metadata,
                                std::vector<Qpx::Detector> current_detectors,
                                XMLableDB<Qpx::Detector>& detDB,
                                bool has_sink_parent,
@@ -48,7 +48,7 @@ DialogSpectrum::DialogSpectrum(Metadata sink_metadata,
 {
   ui->setupUi(this);
   ui->labelWarning->setVisible(false);
-  for (auto &q : SinkFactory::getInstance().types())
+  for (auto &q : ConsumerFactory::getInstance().types())
     ui->comboType->addItem(QString::fromStdString(q));
 
   ui->treeAttribs->setEditTriggers(QAbstractItemView::AllEditTriggers);
@@ -78,7 +78,7 @@ DialogSpectrum::DialogSpectrum(Metadata sink_metadata,
 
   attr_model_.set_show_address_(false);
 
-  if (sink_metadata_ == Metadata())
+  if (sink_metadata_ == ConsumerMetadata())
   {
     ui->spinDets->setValue(current_detectors_.size());
     on_comboType_activated(ui->comboType->currentText());
@@ -88,8 +88,8 @@ DialogSpectrum::DialogSpectrum(Metadata sink_metadata,
   }
   else
   {
-    Metadata md = SinkFactory::getInstance().create_prototype(sink_metadata.type());
-    if (md != Metadata()) {
+    ConsumerMetadata md = ConsumerFactory::getInstance().create_prototype(sink_metadata.type());
+    if (md != ConsumerMetadata()) {
       md.set_attributes(sink_metadata_.attributes());
       md.detectors = sink_metadata.detectors;
 
@@ -206,7 +206,7 @@ void DialogSpectrum::on_buttonBox_accepted()
   else
   {
 
-    SinkPtr newsink = SinkFactory::getInstance().create_from_prototype(sink_metadata_);
+    SinkPtr newsink = ConsumerFactory::getInstance().create_from_prototype(sink_metadata_);
 
     if (!newsink)
     {
@@ -388,8 +388,8 @@ void DialogSpectrum::on_spinDets_valueChanged(int arg1)
 
 void DialogSpectrum::on_comboType_activated(const QString &arg1)
 {
-  Metadata md = SinkFactory::getInstance().create_prototype(arg1.toStdString());
-  if (md != Metadata()) {
+  ConsumerMetadata md = ConsumerFactory::getInstance().create_prototype(arg1.toStdString());
+  if (md != ConsumerMetadata()) {
     md.set_attributes(sink_metadata_.attributes());
 
     sink_metadata_ = md;

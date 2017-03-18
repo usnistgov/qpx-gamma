@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 #include "form_integration2d.h"
 #include "widget_detectors.h"
 #include "ui_form_integration2d.h"
@@ -312,7 +312,7 @@ void FormIntegration2D::rebuild_table(bool contents_changed)
 void FormIntegration2D::clear()
 {
   peaks_.clear();
-  md_ = Metadata();
+  md_ = ConsumerMetadata();
   rebuild_table(true);
   clearSelection();
 }

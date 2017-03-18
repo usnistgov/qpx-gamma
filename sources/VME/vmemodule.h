@@ -2,13 +2,13 @@
 
 #include <sstream>
 #include <iomanip>
-#include "daq_source.h"
+#include "producer.h"
 #include "qpx_util.h"
 #include "vme_stack.h"
 
 class VmeController;
 
-class VmeModule : public Qpx::Source
+class VmeModule : public Qpx::Producer
 {
 
 public:
@@ -16,21 +16,21 @@ public:
   virtual ~VmeModule(){}
 
   bool boot() override {
-    if (!(status_ & Qpx::SourceStatus::can_boot))
+    if (!(status_ & Qpx::ProducerStatus::can_boot))
       return false;
 
-    status_ = Qpx::SourceStatus::loaded | Qpx::SourceStatus::can_boot;
+    status_ = Qpx::ProducerStatus::loaded | Qpx::ProducerStatus::can_boot;
 
     if (!connected())
       return false;
 
-    status_ = Qpx::SourceStatus::loaded | Qpx::SourceStatus::booted;
+    status_ = Qpx::ProducerStatus::loaded | Qpx::ProducerStatus::booted;
     return true;
   }
 
   bool die() override {
     disconnect();
-    status_ = Qpx::SourceStatus::loaded | Qpx::SourceStatus::can_boot;
+    status_ = Qpx::ProducerStatus::loaded | Qpx::ProducerStatus::can_boot;
     return true;
   }
 

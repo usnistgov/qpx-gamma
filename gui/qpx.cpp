@@ -58,7 +58,7 @@ qpx::qpx(QWidget *parent) :
   qRegisterMetaType<Qpx::Setting>("Qpx::Setting");
   qRegisterMetaType<Qpx::TrajectoryNode>("Qpx::TrajectoryNode");
   qRegisterMetaType<Qpx::Calibration>("Qpx::Calibration");
-  qRegisterMetaType<Qpx::SourceStatus>("Qpx::SourceStatus");
+  qRegisterMetaType<Qpx::ProducerStatus>("Qpx::ProducerStatus");
   qRegisterMetaType<Qpx::Fitter>("Qpx::Fitter");
   qRegisterMetaType<Qpx::ProjectPtr>("Qpx::ProjectPtr");
   qRegisterMetaType<boost::posix_time::time_duration>("boost::posix_time::time_duration");
@@ -67,8 +67,8 @@ qpx::qpx(QWidget *parent) :
   ui->setupUi(this);
   connect(&my_emitter_, SIGNAL(writeLine(QString)), this, SLOT(add_log_text(QString)));
 
-  connect(&runner_thread_, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)),
-          this, SLOT(update_settings(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)));
+  connect(&runner_thread_, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::ProducerStatus)),
+          this, SLOT(update_settings(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::ProducerStatus)));
 
   loadSettings();
 
@@ -76,7 +76,7 @@ qpx::qpx(QWidget *parent) :
   ui->statusBar->showMessage("Offline");
 
   gui_enabled_ = true;
-  px_status_ = Qpx::SourceStatus(0);
+  px_status_ = Qpx::ProducerStatus(0);
 
   QToolButton *tb = new QToolButton();
   tb->setIcon(QIcon(":/icons/oxy/16/filenew.png"));
@@ -110,7 +110,7 @@ qpx::qpx(QWidget *parent) :
 //  ui->qpxTabs->addTab(main_tab_, main_tab_->windowTitle());
   ui->qpxTabs->setTabIcon(ui->qpxTabs->count() - 1, QIcon(":/icons/oxy/16/applications_systemg.png"));
   connect(main_tab_, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::SourceStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::ProducerStatus)), main_tab_, SLOT(toggle_push(bool,Qpx::ProducerStatus)));
   connect(this, SIGNAL(settings_changed()), main_tab_, SLOT(refresh()));
   connect(this, SIGNAL(update_dets()), main_tab_, SLOT(updateDetDB()));
 
@@ -223,7 +223,7 @@ void qpx::updateStatusText(QString text) {
 
 void qpx::update_settings(Qpx::Setting /*sets*/,
                           std::vector<Qpx::Detector> channels,
-                          Qpx::SourceStatus status)
+                          Qpx::ProducerStatus status)
 {
   px_status_ = status;
   current_dets_ = channels;
@@ -234,7 +234,7 @@ void qpx::toggleIO(bool enable)
 {
   gui_enabled_ = enable;
 
-  if (enable && (px_status_ & Qpx::SourceStatus::booted))
+  if (enable && (px_status_ & Qpx::ProducerStatus::booted))
     ui->statusBar->showMessage("Online");
   else if (enable)
     ui->statusBar->showMessage("Offline");
@@ -318,7 +318,7 @@ void qpx::extract_project(Qpx::ProjectPtr proj)
   connect(newSpectraForm, SIGNAL(requestClose(QWidget*)), this, SLOT(closeTab(QWidget*)));
 
   connect(newSpectraForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::SourceStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::ProducerStatus)), newSpectraForm, SLOT(toggle_push(bool,Qpx::ProducerStatus)));
 
   addClosableTab(newSpectraForm, "Close");
   ui->qpxTabs->setCurrentWidget(newSpectraForm);
@@ -366,7 +366,7 @@ void qpx::open_list()
 
   connect(newListForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(newListForm, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), newListForm, SLOT(toggle_push(bool,Qpx::SourceStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::ProducerStatus)), newListForm, SLOT(toggle_push(bool,Qpx::ProducerStatus)));
 
   ui->qpxTabs->setCurrentWidget(newListForm);
 
@@ -382,7 +382,7 @@ void qpx::open_raw()
 
   connect(newListForm, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
   connect(newListForm, SIGNAL(statusText(QString)), this, SLOT(updateStatusText(QString)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), newListForm, SLOT(toggle_push(bool,Qpx::SourceStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::ProducerStatus)), newListForm, SLOT(toggle_push(bool,Qpx::ProducerStatus)));
 
   ui->qpxTabs->setCurrentWidget(newListForm);
 
@@ -399,7 +399,7 @@ void qpx::open_experiment()
   connect(experiment, SIGNAL(settings_changed()), this, SLOT(update_settings()));
 
   connect(experiment, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), experiment, SLOT(toggle_push(bool,Qpx::SourceStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::ProducerStatus)), experiment, SLOT(toggle_push(bool,Qpx::ProducerStatus)));
   connect(experiment, SIGNAL(extract_project(Qpx::ProjectPtr)), this, SLOT(extract_project(Qpx::ProjectPtr)));
 
   ui->qpxTabs->setCurrentWidget(experiment);
@@ -420,7 +420,7 @@ void qpx::open_gain_matching()
   connect(newGain, SIGNAL(optimization_complete()), this, SLOT(detectors_updated()));
 
   connect(newGain, SIGNAL(toggleIO(bool)), this, SLOT(toggleIO(bool)));
-  connect(this, SIGNAL(toggle_push(bool,Qpx::SourceStatus)), newGain, SLOT(toggle_push(bool,Qpx::SourceStatus)));
+  connect(this, SIGNAL(toggle_push(bool,Qpx::ProducerStatus)), newGain, SLOT(toggle_push(bool,Qpx::ProducerStatus)));
 
   ui->qpxTabs->setCurrentWidget(newGain);
   reorder_tabs();

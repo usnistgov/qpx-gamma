@@ -30,7 +30,7 @@ namespace Qpx {
 
 struct DataPoint
 {
-  Metadata spectrum_info;
+  ConsumerMetadata spectrum_info;
   Peak     selected_peak;
   std::map<std::string, Setting> domains;
   int64_t idx_proj;
@@ -79,8 +79,8 @@ public:
   ProjectPtr get_data(int64_t i) const;
   void delete_data(int64_t);
 
-  void set_prototypes(XMLableDB<Qpx::Metadata> ptp) { base_prototypes = ptp; changed_ = true; }
-  XMLableDB<Qpx::Metadata> get_prototypes() const { return base_prototypes; }
+  void set_prototypes(XMLableDB<Qpx::ConsumerMetadata> ptp) { base_prototypes = ptp; changed_ = true; }
+  XMLableDB<Qpx::ConsumerMetadata> get_prototypes() const { return base_prototypes; }
 
   TrajectoryPtr next_setting();
 
@@ -92,7 +92,7 @@ public:
   void from_xml(const pugi::xml_node &node);
 
 private:
-  XMLableDB<Qpx::Metadata> base_prototypes {"SinkPrototypes"};
+  XMLableDB<Qpx::ConsumerMetadata> base_prototypes {"SinkPrototypes"};
   std::shared_ptr<TrajectoryNode> root_trajectory;
   std::map<int64_t, ProjectPtr> data;
 
@@ -102,7 +102,7 @@ private:
   std::string   identity_;
   mutable bool  changed_ {false};
 
-  void set_sink_vars_recursive(XMLableDB<Qpx::Metadata>& prototypes, TrajectoryPtr node);
+  void set_sink_vars_recursive(XMLableDB<Qpx::ConsumerMetadata>& prototypes, TrajectoryPtr node);
   void gather_vars_recursive(DataPoint& dp, TrajectoryPtr node);
   void find_leafs(std::list<TrajectoryPtr> &list, TrajectoryPtr node);
   double tally_real_time(TrajectoryPtr node);

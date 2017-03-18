@@ -20,30 +20,26 @@
  *
  ******************************************************************************/
 
+#include "spectrum1D.h"
+#include "consumer_factory.h"
 
 #include <fstream>
 #include <boost/algorithm/string.hpp>
-#include "spectrum1D.h"
-#include "daq_sink_factory.h"
+#include <boost/filesystem.hpp>
 #include "xylib.h"
 #include "qpx_util.h"
-
-#ifdef NEXUS_ENABLED
-#endif
-
-#include <boost/serialization/vector.hpp>
-
+#include "custom_logger.h"
 
 namespace Qpx {
 
-static SinkRegistrar<Spectrum1D> registrar("1D");
+static ConsumerRegistrar<Spectrum1D> registrar("1D");
 
 Spectrum1D::Spectrum1D()
   : cutoff_bin_(0)
   , maxchan_(0)
 {
   Setting base_options = metadata_.attributes();
-  metadata_ = Metadata("1D", "Traditional MCA spectrum", 1,
+  metadata_ = ConsumerMetadata("1D", "Traditional MCA spectrum", 1,
   {"cnf", "tka", "n42", "ava", "spe", "Spe", "CNF", "N42", "mca", "dat"},
   {"n42", "tka", "spe"});
 

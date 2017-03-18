@@ -237,7 +237,7 @@ void ThreadRunner::run()
 
     if (action_ == kMCA) {
       engine_.get_all_settings();
-      Qpx::SourceStatus ds = engine_.status() ^ Qpx::SourceStatus::can_run; //turn off can_run
+      Qpx::ProducerStatus ds = engine_.status() ^ Qpx::ProducerStatus::can_run; //turn off can_run
       emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), ds);
       interruptor_->store(false);
       engine_.getMca(timeout_, spectra_, *interruptor_);
@@ -245,7 +245,7 @@ void ThreadRunner::run()
       emit runComplete();
     } else if (action_ == kList) {
       interruptor_->store(false);
-      Qpx::SourceStatus ds = engine_.status() ^ Qpx::SourceStatus::can_run; //turn off can_run
+      Qpx::ProducerStatus ds = engine_.status() ^ Qpx::ProducerStatus::can_run; //turn off can_run
       Qpx::ListData newListRun = engine_.getList(timeout_, *interruptor_);
       action_ = kSettingsRefresh;
       emit listComplete(newListRun);
@@ -317,7 +317,7 @@ void ThreadRunner::run()
           emit oscilReadOut(traces);
         emit settingsUpdated(engine_.pull_settings(), engine_.get_detectors(), engine_.status());
     } else {
-      bool booted = ((engine_.status() & Qpx::SourceStatus::booted) != 0);
+      bool booted = ((engine_.status() & Qpx::ProducerStatus::booted) != 0);
       if (booted && idle_refresh_.load()) {
         action_ = kSettingsRefresh;
         QThread::sleep(idle_refresh_frequency_.load());

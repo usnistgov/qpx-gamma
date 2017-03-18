@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Sink generic spectrum type.
+ *      Qpx::Consumer generic spectrum type.
  *                       All public methods are thread-safe.
  *                       When deriving override protected methods.
  *
@@ -28,7 +28,7 @@
 namespace Qpx {
 
 Spectrum::Spectrum()
-  : Sink()
+  : Consumer()
   , recent_count_(0)
   , coinc_window_(0)
   , max_delay_(0)
@@ -177,7 +177,7 @@ Spectrum::Spectrum()
 }
 
 bool Spectrum::_initialize() {
-  Sink::_initialize();
+  Consumer::_initialize();
 
   pattern_coinc_ = metadata_.get_attribute("pattern_coinc").value_pattern;
   pattern_anti_ = metadata_.get_attribute("pattern_anti").value_pattern;

@@ -33,7 +33,7 @@ void Fitter::setData(SinkPtr spectrum)
 //  clear();
   if (spectrum)
   {
-    Metadata md = spectrum->metadata();
+    ConsumerMetadata md = spectrum->metadata();
     Setting res = md.get_attribute("resolution");
     if ((md.dimensions() != 1) || (res.value_int <= 0))
       return;
@@ -88,7 +88,7 @@ bool Fitter::empty() const
 void Fitter::clear()
 {
   detector_ = Detector();
-  metadata_ = Metadata();
+  metadata_ = ConsumerMetadata();
   finder_.clear();
   regions_.clear();
 }

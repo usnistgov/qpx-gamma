@@ -47,7 +47,7 @@ protected:
 
 public slots:
   void oscil_complete(std::vector<Qpx::Hit>);
-  void toggle_push(bool, Qpx::SourceStatus);
+  void toggle_push(bool, Qpx::ProducerStatus);
 
 private slots:
   void on_pushOscilRefresh_clicked();

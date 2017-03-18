@@ -22,18 +22,18 @@
 
 #include "MTDC32_module.h"
 #include "custom_logger.h"
-#include "daq_source_factory.h"
+#include "producer_factory.h"
 
 #define MTDC32_Firmware                   0x0105
 
 namespace Qpx {
 
-static SourceRegistrar<MTDC32> registrar("VME/MTDC32");
+static ProducerRegistrar<MTDC32> registrar("VME/MTDC32");
 
 MTDC32::MTDC32() {
   m_controller = nullptr;
   m_baseAddress = 0;
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
   module_firmware_code_ = MTDC32_Firmware;
 }
 

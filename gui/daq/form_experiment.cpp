@@ -61,8 +61,8 @@ FormExperiment::FormExperiment(ThreadRunner& runner, QWidget *parent) :
   connect(form_experiment_setup_, SIGNAL(prototypesChanged()), this, SLOT(populate_selector()));
   connect(form_experiment_setup_, SIGNAL(toggleIO()), this, SLOT(toggle_from_setup()));
 
-  connect(&runner_thread_, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)),
-          form_experiment_setup_, SLOT(update_settings(Qpx::Setting,std::vector<Qpx::Detector>,Qpx::SourceStatus)));
+  connect(&runner_thread_, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::ProducerStatus)),
+          form_experiment_setup_, SLOT(update_settings(Qpx::Setting,std::vector<Qpx::Detector>,Qpx::ProducerStatus)));
 
 
   form_experiment_1d_ = new FormExperiment1D(exp_project_, data_directory_, selected_sink_);
@@ -220,7 +220,7 @@ void FormExperiment::new_daq_data() {
     return;
   }
 
-  Qpx::Metadata md = sink->metadata();
+  Qpx::ConsumerMetadata md = sink->metadata();
 
   bool refit = false;
   if (p->has_fitter(selected_sink_))
@@ -359,7 +359,7 @@ bool FormExperiment::apply_setting(Qpx::TrajectoryPtr node)
     Qpx::Engine::getInstance().get_all_settings();
     if (!Qpx::Engine::getInstance().pull_settings().has(node->domain_value, Qpx::Match::id | Qpx::Match::indices))
     {
-      LINFO << "<FormExperiment> Source does not have this setting. Aborting";
+      LINFO << "<FormExperiment> Producer does not have this setting. Aborting";
       update_name();
       return false;
     }
@@ -377,8 +377,8 @@ bool FormExperiment::apply_setting(Qpx::TrajectoryPtr node)
 
 
 
-void FormExperiment::toggle_push(bool enable, Qpx::SourceStatus status) {
-  bool online = (status & Qpx::SourceStatus::can_run);
+void FormExperiment::toggle_push(bool enable, Qpx::ProducerStatus status) {
+  bool online = (status & Qpx::ProducerStatus::can_run);
   bool empty = exp_project_.empty();
   bool done = exp_project_.done();
   bool hasprototypes = exp_project_.get_prototypes().size();
@@ -587,7 +587,7 @@ void FormExperiment::spectrumDoubleclicked(SelectorItem item)
 
 void FormExperiment::populate_selector()
 {
-  XMLableDB<Qpx::Metadata> ptp = exp_project_.get_prototypes();
+  XMLableDB<Qpx::ConsumerMetadata> ptp = exp_project_.get_prototypes();
 
   QString sel;
   QVector<SelectorItem> items;
@@ -669,7 +669,7 @@ void FormExperiment::on_pushSinkInfo_clicked()
     DialogSpectrum* newSpecDia = new DialogSpectrum(sink->metadata(), std::vector<Qpx::Detector>(), dets, false, false, this);
     if (newSpecDia->exec() == QDialog::Accepted)
     {
-      Qpx::Metadata md = newSpecDia->product();
+      Qpx::ConsumerMetadata md = newSpecDia->product();
       sink->set_detectors(md.detectors);
       sink->set_attributes(md.attributes());
 //      updateUI();

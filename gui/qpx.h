@@ -76,7 +76,7 @@ private:
 
   FormSystemSettings* main_tab_;
   bool gui_enabled_;
-  Qpx::SourceStatus px_status_;
+  Qpx::ProducerStatus px_status_;
 
   QMenu  menuOpen;
 
@@ -87,7 +87,7 @@ private:
   void reorder_tabs();
 
 signals:
-  void toggle_push(bool, Qpx::SourceStatus);
+  void toggle_push(bool, Qpx::ProducerStatus);
   void settings_changed();
   void update_dets();
 
@@ -95,7 +95,7 @@ protected:
   void closeEvent(QCloseEvent*);
 
 private slots:
-  void update_settings(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus);
+  void update_settings(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::ProducerStatus);
   void toggleIO(bool);
   void updateStatusText(QString);
 

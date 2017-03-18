@@ -31,7 +31,7 @@
 #include "qt_util.h"
 #include "tree_settings.h"
 #include "special_delegate.h"
-#include "daq_sink.h"
+#include "consumer_metadata.h"
 
 namespace Ui {
 class DialogSpectraTemplates;
@@ -43,10 +43,10 @@ class TableSpectraTemplates : public QAbstractTableModel
 {
   Q_OBJECT
 private:
-  XMLableDB<Qpx::Metadata> &templates_;
+  XMLableDB<Qpx::ConsumerMetadata> &templates_;
 
 public:
-  TableSpectraTemplates(XMLableDB<Qpx::Metadata>& templates, QObject *parent = 0);
+  TableSpectraTemplates(XMLableDB<Qpx::ConsumerMetadata>& templates, QObject *parent = 0);
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
   int columnCount(const QModelIndex &parent = QModelIndex()) const;
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -62,7 +62,7 @@ class DialogSpectraTemplates : public QDialog
   Q_OBJECT
 
 public:
-  explicit DialogSpectraTemplates(XMLableDB<Qpx::Metadata> &newdb,
+  explicit DialogSpectraTemplates(XMLableDB<Qpx::ConsumerMetadata> &newdb,
                                   std::vector<Qpx::Detector> current_dets,
                                   QString savedir, QWidget *parent = 0);
   ~DialogSpectraTemplates();
@@ -70,7 +70,7 @@ public:
 private:
   Ui::DialogSpectraTemplates *ui;
 
-  XMLableDB<Qpx::Metadata> &templates_;
+  XMLableDB<Qpx::ConsumerMetadata> &templates_;
 
   QpxSpecialDelegate      special_delegate_;
   TableSpectraTemplates         table_model_;

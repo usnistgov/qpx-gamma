@@ -26,7 +26,7 @@
 #include <boost/algorithm/string.hpp>
 #include "custom_logger.h"
 #include "custom_timer.h"
-#include "daq_source_factory.h"
+#include "producer_factory.h"
 
 
 #include "URL.h"
@@ -45,10 +45,10 @@
 
 namespace Qpx {
 
-static SourceRegistrar<ParserEVT> registrar("ParserEVT");
+static ProducerRegistrar<ParserEVT> registrar("ParserEVT");
 
 ParserEVT::ParserEVT() {
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
 
   runner_ = nullptr;
 
@@ -66,9 +66,9 @@ ParserEVT::ParserEVT() {
 bool ParserEVT::die() {
   files_.clear();
   expected_rbuf_items_ = 0;
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
   //  for (auto &q : set.branches.my_data_) {
-  //    if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserEVT/Source file"))
+  //    if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserEVT/Producer file"))
   //      q.metadata.writable = true;
   //  }
 
@@ -144,9 +144,9 @@ bool ParserEVT::read_settings_bulk(Qpx::Setting &set) const {
         q.value_int = terminate_premature_;
       else if ((q.metadata.setting_type == Qpx::SettingType::boolean) && (q.id_ == "ParserEVT/Cutoff number"))
         q.value_int = max_rbuf_evts_;
-      else if ((q.metadata.setting_type == Qpx::SettingType::dir_path) && (q.id_ == "ParserEVT/Source dir")) {
+      else if ((q.metadata.setting_type == Qpx::SettingType::dir_path) && (q.id_ == "ParserEVT/Producer dir")) {
         q.value_text = source_dir_;
-        q.metadata.writable = !(status_ & SourceStatus::booted);
+        q.metadata.writable = !(status_ & ProducerStatus::booted);
       }
     }
   }
@@ -177,19 +177,19 @@ bool ParserEVT::write_settings_bulk(Qpx::Setting &set) {
       terminate_premature_ = q.value_int;
     else if (q.id_ == "ParserEVT/Cutoff number")
       max_rbuf_evts_ = q.value_int;
-    else if (q.id_ == "ParserEVT/Source dir")
+    else if (q.id_ == "ParserEVT/Producer dir")
       source_dir_ = q.value_text;
   }
   return true;
 }
 
 bool ParserEVT::boot() {
-  if (!(status_ & SourceStatus::can_boot)) {
+  if (!(status_ & ProducerStatus::can_boot)) {
     WARN << "<ParserEVT> Cannot boot Sorter. Failed flag check (can_boot == 0)";
     return false;
   }
 
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
 
   files_.clear();
   expected_rbuf_items_ = 0;
@@ -270,9 +270,9 @@ bool ParserEVT::boot() {
   LINFO << "<ParserEVT> successfully queued up EVT files for sorting with "
           << expected_rbuf_items_ << " total ring buffer items";
 
-  status_ = SourceStatus::loaded | SourceStatus::booted | SourceStatus::can_run;
+  status_ = ProducerStatus::loaded | ProducerStatus::booted | ProducerStatus::can_run;
   //  for (auto &q : set.branches.my_data_) {
-  //    if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserEVT/Source file"))
+  //    if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "ParserEVT/Producer file"))
   //      q.metadata.writable = false;
   //  }
 
@@ -312,7 +312,7 @@ CFileDataSource* ParserEVT::open_EVT_file(std::string file) {
 
 
 void ParserEVT::get_all_settings() {
-  if (status_ & SourceStatus::booted) {
+  if (status_ & ProducerStatus::booted) {
   }
 }
 

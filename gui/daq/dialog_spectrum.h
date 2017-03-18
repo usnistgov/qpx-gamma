@@ -25,7 +25,7 @@
 #include "special_delegate.h"
 #include "tree_settings.h"
 #include "widget_detectors.h"
-#include "daq_sink.h"
+#include "consumer_metadata.h"
 
 namespace Ui {
 class DialogSpectrum;
@@ -36,7 +36,7 @@ class DialogSpectrum : public QDialog
     Q_OBJECT
 
 public:
-    explicit DialogSpectrum(Qpx::Metadata sink_metadata,
+    explicit DialogSpectrum(Qpx::ConsumerMetadata sink_metadata,
                             std::vector<Qpx::Detector> current_detectors,
                             XMLableDB<Qpx::Detector>& detDB,
                             bool has_sink_parent,
@@ -44,7 +44,7 @@ public:
                             QWidget *parent = 0);
     ~DialogSpectrum();
 
-    Qpx::Metadata product() { return sink_metadata_; }
+    Qpx::ConsumerMetadata product() { return sink_metadata_; }
 
 private slots:
     void on_pushLock_clicked();
@@ -71,7 +71,7 @@ signals:
 
 private:
     Ui::DialogSpectrum *ui;
-    Qpx::Metadata sink_metadata_;
+    Qpx::ConsumerMetadata sink_metadata_;
 
     TreeSettings               attr_model_;
     QpxSpecialDelegate         attr_delegate_;

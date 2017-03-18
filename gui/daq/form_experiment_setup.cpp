@@ -28,7 +28,7 @@
 #include <QSettings>
 
 #include "engine.h"
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 #include "dialog_spectra_templates.h"
 
 Q_DECLARE_METATYPE(Qpx::TrajectoryNode)
@@ -108,7 +108,7 @@ void FormExperimentSetup::toggle_push() {
 
 void FormExperimentSetup::update_settings(const Qpx::Setting& tree,
                                           const std::vector<Qpx::Detector> &dets,
-                                          Qpx::SourceStatus /*status*/)
+                                          Qpx::ProducerStatus /*status*/)
  {
   current_dets_ = dets;
   current_tree_ = tree;
@@ -202,7 +202,7 @@ void FormExperimentSetup::on_pushDeleteDomain_clicked()
 
 void FormExperimentSetup::remake_domains()
 {
-  XMLableDB<Qpx::Metadata> tpt = exp_project_.get_prototypes();
+  XMLableDB<Qpx::ConsumerMetadata> tpt = exp_project_.get_prototypes();
 
   std::map<std::string, Qpx::Setting> source_settings;
 
@@ -314,7 +314,7 @@ void FormExperimentSetup::on_pushEditPrototypes_clicked()
   settings_.beginGroup("Program");
   QString profile_directory_ = settings_.value("profile_directory", QDir::homePath() + "/qpx/settings").toString();
 
-  XMLableDB<Qpx::Metadata> ptp = exp_project_.get_prototypes();
+  XMLableDB<Qpx::ConsumerMetadata> ptp = exp_project_.get_prototypes();
   DialogSpectraTemplates* newDialog = new DialogSpectraTemplates(ptp, current_dets_,
                                                                  profile_directory_, this);
   newDialog->exec();

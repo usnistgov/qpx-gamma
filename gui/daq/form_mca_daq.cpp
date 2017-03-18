@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 #include "form_mca_daq.h"
 #include "ui_form_mca_daq.h"
 #include "dialog_spectra_templates.h"
@@ -30,7 +30,7 @@
 #include "form_daq_settings.h"
 #include "qt_util.h"
 #include <QSettings>
-
+#include <boost/filesystem.hpp>
 
 using namespace Qpx;
 
@@ -62,10 +62,10 @@ FormMcaDaq::FormMcaDaq(ThreadRunner &thread, XMLableDB<Detector>& detectors,
   connect(&runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
 
   //file formats for opening mca spectra
-  std::vector<std::string> spectypes = SinkFactory::getInstance().types();
+  std::vector<std::string> spectypes = ConsumerFactory::getInstance().types();
   QStringList filetypes;
   for (auto &q : spectypes) {
-    Metadata type_template = SinkFactory::getInstance().create_prototype(q);
+    ConsumerMetadata type_template = ConsumerFactory::getInstance().create_prototype(q);
     if (!type_template.input_types().empty())
       filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template.input_types()) + ")");
   }
@@ -222,8 +222,8 @@ void FormMcaDaq::saveSettings() {
   settings_.endGroup();
 }
 
-void FormMcaDaq::toggle_push(bool enable, SourceStatus status) {
-  bool online = (status & SourceStatus::can_run);
+void FormMcaDaq::toggle_push(bool enable, ProducerStatus status) {
+  bool online = (status & ProducerStatus::can_run);
   bool nonempty = !project_->empty();
 
   ui->pushMcaStart->setEnabled(enable && online && !my_run_);
@@ -467,7 +467,7 @@ void FormMcaDaq::projectImport()
         q.second->set_attribute(app);
       }
     } else {
-      SinkPtr newSpectrum = SinkFactory::getInstance().create_from_file(fileNames.at(i).toStdString());
+      SinkPtr newSpectrum = ConsumerFactory::getInstance().create_from_file(fileNames.at(i).toStdString());
       if (newSpectrum)
       {
         Setting app = newSpectrum->metadata().get_attribute("appearance");

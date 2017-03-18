@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "daq_sink.h"
+#include "consumer.h"
 #include "custom_logger.h"
 
 namespace Qpx

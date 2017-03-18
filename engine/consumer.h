@@ -16,26 +16,24 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Sink generic spectrum type.
+ *      Qpx::Consumer generic spectrum type.
  *                       All public methods are thread-safe.
  *                       When deriving override protected methods.
  *
- *      Qpx::SinkFactory creates spectra of appropriate type
+ *      Qpx::ConsumerFactory creates spectra of appropriate type
  *                               by type name, from template, or
  *                               from file.
  *
- *      Qpx::SinkRegistrar for registering new spectrum types.
+ *      Qpx::ConsumerRegistrar for registering new spectrum types.
  *
  ******************************************************************************/
 
 #pragma once
 
+#include "consumer_metadata.h"
+#include "spill.h"
 #include <initializer_list>
 #include <boost/thread.hpp>
-
-#include "spill.h"
-#include "detector.h"
-#include "custom_logger.h"
 
 #include "json.hpp"
 using namespace nlohmann;
@@ -51,72 +49,10 @@ typedef std::list<Entry> EntryList;
 typedef std::pair<size_t, size_t> Pair;
 
 
-class Metadata : public XMLable {
-public:
-  Metadata();
-  Metadata(std::string tp, std::string descr, uint16_t dim,
-           std::list<std::string> itypes, std::list<std::string> otypes);
-
-  // read & write
-  Setting get_attribute(std::string setting) const;
-  Setting get_attribute(std::string setting, int32_t idx) const;
-  Setting get_attribute(Setting setting) const;
-  Setting get_all_attributes() const;
-  void set_attribute(const Setting &setting);
-
-  Setting attributes() const;
-  void set_attributes(const Setting &settings);
-  void overwrite_all_attributes(Setting settings);
-
-  //read only
-  std::string type() const {return type_;}
-  std::string type_description() const {return type_description_;}
-  uint16_t dimensions() const {return dimensions_;}
-  std::list<std::string> input_types() const {return input_types_;}
-  std::list<std::string> output_types() const {return output_types_;}
-
-
-  void disable_presets();
-  void set_det_limit(uint16_t limit);
-  bool chan_relevant(uint16_t chan) const;
-
-  std::string debug(std::string prepend) const;
-
-  std::string xml_element_name() const override {return "SinkMetadata";}
-  void to_xml(pugi::xml_node &node) const override;
-  void from_xml(const pugi::xml_node &node) override;
-
-//  json to_json() const;
-//  void from_json(const json& j);
-
-  friend void to_json(json& j, const Metadata &s);
-  friend void from_json(const json& j, Metadata &s);
-
-  bool shallow_equals(const Metadata& other) const;
-  bool operator!= (const Metadata& other) const;
-  bool operator== (const Metadata& other) const;
-
-private:
-  //this stuff from factory, immutable upon initialization
-  std::string type_, type_description_;
-  uint16_t dimensions_;
-  std::list<std::string> input_types_;
-  std::list<std::string> output_types_;
-
-  //can change these
-  Setting attributes_;
-
-public:
-  std::vector<Qpx::Detector> detectors;
-
-};
-
-
-
-class Sink
+class Consumer
 {
 protected:
-  Metadata metadata_;
+  ConsumerMetadata metadata_;
   std::vector<std::vector<double> > axes_;
 
   mutable boost::shared_mutex shared_mutex_;
@@ -124,15 +60,15 @@ protected:
   bool changed_;
 
 public:
-  Sink();
-  Sink(const Sink& other)
+  Consumer();
+  Consumer(const Consumer& other)
     : metadata_(other.metadata_)
     , axes_ (other.axes_) {}
-  virtual Sink* clone() const = 0;
-  virtual ~Sink() {}
+  virtual Consumer* clone() const = 0;
+  virtual ~Consumer() {}
 
   //named constructors, used by factory
-  bool from_prototype(const Metadata&);
+  bool from_prototype(const ConsumerMetadata&);
   bool load(const pugi::xml_node &);
   void save(pugi::xml_node &) const;
 
@@ -160,8 +96,8 @@ public:
   bool write_file(std::string dir, std::string format) const;
   bool read_file(std::string name, std::string format);
 
-  //Metadata
-  Metadata metadata() const;
+  //ConsumerMetadata
+  ConsumerMetadata metadata() const;
   void reset_changed();
   bool changed() const;
 
@@ -210,6 +146,6 @@ protected:
 
 };
 
-typedef std::shared_ptr<Sink> SinkPtr;
+typedef std::shared_ptr<Consumer> SinkPtr;
 
 }

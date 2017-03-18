@@ -23,18 +23,18 @@
 
 
 #include "spectrum1D_addback.h"
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 #include "custom_logger.h"
 
 namespace Qpx {
 
-static SinkRegistrar<SpectrumAddback1D> registrar("Addback 1D");
+static ConsumerRegistrar<SpectrumAddback1D> registrar("Addback 1D");
 
 SpectrumAddback1D::SpectrumAddback1D()
   : Spectrum1D()
 {
   Setting base_options = metadata_.attributes();
-  metadata_ = Metadata("Addback 1D", "Addback spectrum. Sums energies of all channels selected in add pattern.", 1,
+  metadata_ = ConsumerMetadata("Addback 1D", "Addback spectrum. Sums energies of all channels selected in add pattern.", 1,
   {}, metadata_.output_types());
   metadata_.overwrite_all_attributes(base_options);
 }

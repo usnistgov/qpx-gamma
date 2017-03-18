@@ -22,8 +22,7 @@
 
 #pragma once
 
-#include "daq_source.h"
-#include "daq_sink.h"
+#include "producer.h"
 #include "detector.h"
 #include <boost/atomic.hpp>
 #include <unordered_map>
@@ -33,7 +32,7 @@
 
 namespace Qpx {
 
-class Simulator2D : public Source {
+class Simulator2D : public Producer {
   
 public:
 

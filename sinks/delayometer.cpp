@@ -24,19 +24,20 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include "delayometer.h"
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 #include "xylib.h"
 #include "qpx_util.h"
+#include "custom_logger.h"
 
 namespace Qpx {
 
-static SinkRegistrar<Delayometer> registrar("Delayometer");
+static ConsumerRegistrar<Delayometer> registrar("Delayometer");
 
 Delayometer::Delayometer()
   : maxchan_(0)
 {
   Setting base_options = metadata_.attributes();
-  metadata_ = Metadata("Delayometer", "Helps find optimal delay for multi-detector setups",
+  metadata_ = ConsumerMetadata("Delayometer", "Helps find optimal delay for multi-detector setups",
                        1, {}, {});
   metadata_.overwrite_all_attributes(base_options);
 }

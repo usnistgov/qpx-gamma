@@ -91,7 +91,7 @@ CRingStateChangeItem::CRingStateChangeItem(uint16_t reason,
  * constructor - for timetamped item.
  *
  * @param eventTimestamp  - Event timestamp
- * @param sourceId   - Source id of the event.
+ * @param sourceId   - Producer id of the event.
  * @param barrierType - Type of barrier if barrier.
    \param reason     - Why the state change buffer is being emitted (the item type).
    \param runNumber  - Number of the run that is undegoing transitino.

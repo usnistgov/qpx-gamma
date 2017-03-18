@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Sink metadata</string>
+   <string>Consumer metadata</string>
   </property>
   <property name="windowIcon">
    <iconset>

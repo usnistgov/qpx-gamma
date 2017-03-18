@@ -19,7 +19,7 @@
 
 #include "fitter.h"
 #include <QString>
-#include "daq_sink.h"
+#include "consumer.h"
 #include "qp_2d.h"
 
 class Bounds

@@ -53,7 +53,7 @@ private slots:
   void spillSelectionChanged(int);
   void hit_selection_changed(QItemSelection,QItemSelection);
   void stats_selection_changed(QItemSelection,QItemSelection);
-  void toggle_push(bool online, Qpx::SourceStatus);
+  void toggle_push(bool online, Qpx::ProducerStatus);
 
   void on_pushLoadExperiment_clicked();
 

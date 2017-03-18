@@ -22,6 +22,7 @@
 
 #include "thread_fitter.h"
 #include "custom_timer.h"
+#include "custom_logger.h"
 
 ThreadFitter::ThreadFitter(QObject *parent) :
   QThread(parent),

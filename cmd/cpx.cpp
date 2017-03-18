@@ -203,7 +203,7 @@ bool Cpx::templates(std::vector<std::string> &tokens) {
   }
   std::string file(tokens[0]);
 
-  XMLableDB<Metadata>  spectra_templates_("SpectrumTemplates");
+  XMLableDB<ConsumerMetadata>  spectra_templates_("SpectrumTemplates");
   spectra_templates_.read_xml(file);
   if (spectra_templates_.empty()) {
     ERR << "<cpx> bad template file " << file;

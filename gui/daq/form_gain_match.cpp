@@ -23,7 +23,7 @@
 #include "form_gain_match.h"
 #include "ui_form_gain_match.h"
 #include "custom_logger.h"
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 #include <QSettings>
 
 #include "UncertainDouble.h"
@@ -230,8 +230,8 @@ void FormGainMatch::closeEvent(QCloseEvent *event) {
   event->accept();
 }
 
-void FormGainMatch::toggle_push(bool enable, SourceStatus status) {
-  bool online = (status & SourceStatus::can_run);
+void FormGainMatch::toggle_push(bool enable, ProducerStatus status) {
+  bool online = (status & ProducerStatus::can_run);
   ui->pushStart->setEnabled(enable && online && !my_run_);
 
   ui->comboReference->setEnabled(enable && !my_run_);
@@ -264,10 +264,10 @@ void FormGainMatch::init_prototypes()
   on_comboSetting_activated(0);
 }
 
-Qpx::Metadata FormGainMatch::make_prototype(uint16_t bits, uint16_t channel, std::string name)
+Qpx::ConsumerMetadata FormGainMatch::make_prototype(uint16_t bits, uint16_t channel, std::string name)
 {
-  Qpx::Metadata    spectrum_prototype;
-  spectrum_prototype = Qpx::SinkFactory::getInstance().create_prototype("1D");
+  Qpx::ConsumerMetadata    spectrum_prototype;
+  spectrum_prototype = Qpx::ConsumerFactory::getInstance().create_prototype("1D");
   Setting nm = spectrum_prototype.get_attribute("name");
   nm.value_text = name;
   spectrum_prototype.set_attribute(nm);
@@ -484,7 +484,7 @@ void FormGainMatch::update_peak_selection(std::set<double> /*dummy*/)
   else
     peak_ref_ = fitter_ref_.peaks().at(*selected_peaks.begin());
 
-  Qpx::Metadata md = fitter_opt_.metadata_;
+  Qpx::ConsumerMetadata md = fitter_opt_.metadata_;
   Qpx::Setting pass = md.get_attribute("Pass");
   if (!pass || (pass.value_int < 0) || (pass.value_int >= static_cast<int>(experiment_.size())))
     return;
@@ -510,7 +510,7 @@ void FormGainMatch::update_peak_selection(std::set<double> /*dummy*/)
 
 void FormGainMatch::new_daq_data() {
   for (auto &q: project_->get_sinks()) {
-    Metadata md;
+    ConsumerMetadata md;
     if (q.second)
       md = q.second->metadata();
 

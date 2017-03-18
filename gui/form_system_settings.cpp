@@ -46,8 +46,8 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread,
 
   this->setWindowTitle("DAQ Settings");
 
-  connect(&runner_thread_, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)),
-          this, SLOT(update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::SourceStatus)));
+  connect(&runner_thread_, SIGNAL(settingsUpdated(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::ProducerStatus)),
+          this, SLOT(update(Qpx::Setting, std::vector<Qpx::Detector>, Qpx::ProducerStatus)));
   connect(&runner_thread_, SIGNAL(bootComplete()), this, SLOT(post_boot()));
 
   connect(&runner_thread_, SIGNAL(oscilReadOut(std::vector<Qpx::Hit>)),
@@ -55,7 +55,7 @@ FormSystemSettings::FormSystemSettings(ThreadRunner& thread,
 
   connect(ui->formOscilloscope, SIGNAL(refresh_oscil()), this, SLOT(refresh_oscil()));
 
-  current_status_ = Qpx::SourceStatus::dead;
+  current_status_ = Qpx::ProducerStatus::dead;
   tree_settings_model_.update(dev_settings_);
 
   viewTreeSettings = new QTreeView(this);
@@ -109,15 +109,15 @@ void FormSystemSettings::exit() {
   exiting = true;
 }
 
-void FormSystemSettings::update(const Qpx::Setting &tree, const std::vector<Qpx::Detector> &channels, Qpx::SourceStatus status) {
-  bool oscil = (status & Qpx::SourceStatus::can_oscil);
+void FormSystemSettings::update(const Qpx::Setting &tree, const std::vector<Qpx::Detector> &channels, Qpx::ProducerStatus status) {
+  bool oscil = (status & Qpx::ProducerStatus::can_oscil);
   if (oscil) {
     ui->formOscilloscope->setVisible(true);
     ui->formOscilloscope->updateMenu(channels);
   } else
     ui->formOscilloscope->setVisible(false);
 
-  bool can_run = ((status & Qpx::SourceStatus::can_run) != 0);
+  bool can_run = ((status & Qpx::ProducerStatus::can_run) != 0);
   bool can_gain_match = false;
   bool can_optimize = false;
   for (auto &q : channels_)
@@ -268,13 +268,13 @@ void FormSystemSettings::closeEvent(QCloseEvent *event) {
   return;
 }
 
-void FormSystemSettings::toggle_push(bool enable, Qpx::SourceStatus status) {
+void FormSystemSettings::toggle_push(bool enable, Qpx::ProducerStatus status) {
   ui->formOscilloscope->toggle_push(enable, status);
 
-//  bool online = (status & Qpx::SourceStatus::can_run);
+//  bool online = (status & Qpx::ProducerStatus::can_run);
 
   //busy status?!?!
-  bool online = (status & Qpx::SourceStatus::booted);
+  bool online = (status & Qpx::ProducerStatus::booted);
 
   ui->pushSettingsRefresh->setEnabled(enable && online);
   ui->pushChangeProfile->setEnabled(enable);
@@ -298,8 +298,8 @@ void FormSystemSettings::toggle_push(bool enable, Qpx::SourceStatus status) {
     ui->bootButton->setIcon(QIcon(":/icons/boot16.png"));
   }
 
-  if ((current_status_ & Qpx::SourceStatus::booted) &&
-      !(status & Qpx::SourceStatus::booted))
+  if ((current_status_ & Qpx::ProducerStatus::booted) &&
+      !(status & Qpx::ProducerStatus::booted))
     chan_settings_to_det_DB();
 
   current_status_ = status;
@@ -319,12 +319,12 @@ void FormSystemSettings::loadSettings() {
 
 void FormSystemSettings::saveSettings() {
   QSettings settings;
-  if (current_status_ & Qpx::SourceStatus::booted)
+  if (current_status_ & Qpx::ProducerStatus::booted)
     chan_settings_to_det_DB();
   settings.beginGroup("Program");
   settings.setValue("settings_table_show_readonly", ui->checkShowRO->isChecked());
   settings.setValue("settings_tab_tree", (ui->tabsSettings->currentWidget() == viewTreeSettings));
-  settings.setValue("boot_on_startup", bool(current_status_ & Qpx::SourceStatus::booted));
+  settings.setValue("boot_on_startup", bool(current_status_ & Qpx::ProducerStatus::booted));
 }
 
 void FormSystemSettings::chan_settings_to_det_DB() {

@@ -26,12 +26,12 @@
 #include <boost/algorithm/string.hpp>
 #include "custom_logger.h"
 #include "custom_timer.h"
-#include "daq_source_factory.h"
+#include "producer_factory.h"
 
 
 namespace Qpx {
 
-static SourceRegistrar<QpxHV8Plugin> registrar("HV8");
+static ProducerRegistrar<QpxHV8Plugin> registrar("HV8");
 
 QpxHV8Plugin::QpxHV8Plugin()
   : portname("/dev/tty")
@@ -43,7 +43,7 @@ QpxHV8Plugin::QpxHV8Plugin()
   , attempts_(3)
   , timeout_(1)
 {
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
   voltages.resize(8);
 }
 
@@ -62,7 +62,7 @@ bool QpxHV8Plugin::read_settings_bulk(Qpx::Setting &set) const {
             k.value_dbl = voltages[k.metadata.address];
         }
       } else if ((q.id_ != "HV8/ResponseTimeout") && (q.id_ != "HV8/ResponseAttempts")) {
-        q.metadata.writable = !(status_ & SourceStatus::booted);
+        q.metadata.writable = !(status_ & ProducerStatus::booted);
       }
     }
   }
@@ -287,12 +287,12 @@ bool QpxHV8Plugin::get_prompt(uint16_t attempts) {
 bool QpxHV8Plugin::boot() noexcept(false) {
   DBG << "<HV8Plugin> Attempting to boot";
 
-  if (!(status_ & SourceStatus::can_boot)) {
+  if (!(status_ & ProducerStatus::can_boot)) {
     WARN << "<HV8Plugin> Cannot boot. Failed flag check (can_boot == 0)";
     return false;
   }
 
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
 
   try {
     port.open(portname, baudrate, parity, boost::asio::serial_port_base::character_size(charactersize), flowcontrol, stopbits);
@@ -310,7 +310,7 @@ bool QpxHV8Plugin::boot() noexcept(false) {
 
   if (get_prompt(attempts_)) {
       DBG << "<HV8Plugin> Logged in. Startup successful";
-      status_ = SourceStatus::loaded | SourceStatus::booted;
+      status_ = ProducerStatus::loaded | ProducerStatus::booted;
       return true;
   } else
     return false;
@@ -322,12 +322,12 @@ bool QpxHV8Plugin::die() {
 
   port.close();
 
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
   return true;
 }
 
 void QpxHV8Plugin::get_all_settings() {
-  if ((status_ & SourceStatus::booted) == 0)
+  if ((status_ & ProducerStatus::booted) == 0)
     return;
 
   if (!port.isOpen()) {

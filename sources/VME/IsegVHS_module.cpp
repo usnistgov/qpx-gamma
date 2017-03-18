@@ -23,7 +23,7 @@
 #include "IsegVHS_module.h"
 #include "vmecontroller.h"
 #include "custom_logger.h"
-#include "daq_source_factory.h"
+#include "producer_factory.h"
 
 
 #define ISEG_VENDOR_ID        0x69736567
@@ -44,12 +44,12 @@ typedef union {
 
 namespace Qpx {
 
-static SourceRegistrar<QpxIsegVHSPlugin> registrar("VME/IsegVHS");
+static ProducerRegistrar<QpxIsegVHSPlugin> registrar("VME/IsegVHS");
 
 QpxIsegVHSPlugin::QpxIsegVHSPlugin() {
   m_controller = nullptr;
   m_baseAddress = 0;
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
 }
 
 
@@ -219,9 +219,9 @@ void QpxIsegVHSPlugin::get_all_settings() {
 
 bool QpxIsegVHSPlugin::read_setting(Qpx::Setting& set) const {
   if (set.metadata.setting_type == Qpx::SettingType::command)
-    set.metadata.writable =  ((status_ & SourceStatus::booted) != 0);
+    set.metadata.writable =  ((status_ & ProducerStatus::booted) != 0);
 
-  if (!(status_ & Qpx::SourceStatus::booted))
+  if (!(status_ & Qpx::ProducerStatus::booted))
     return false;
 
   if (set.metadata.address < 0)
@@ -249,7 +249,7 @@ bool QpxIsegVHSPlugin::read_setting(Qpx::Setting& set) const {
 }
 
 bool QpxIsegVHSPlugin::write_setting(Qpx::Setting& set) {
-  if (!(status_ & Qpx::SourceStatus::booted))
+  if (!(status_ & Qpx::ProducerStatus::booted))
     return false;
 
   if (set.metadata.address < 0)

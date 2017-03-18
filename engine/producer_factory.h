@@ -16,45 +16,45 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Source abstract class
+ *      Qpx::Producer abstract class
  *
  ******************************************************************************/
 
 #pragma once
 
 #include <memory>
-#include "daq_source.h"
+#include "producer.h"
 
 namespace Qpx {
 
-class SourceFactory {
+class ProducerFactory {
 public:
-  static SourceFactory& getInstance()
+  static ProducerFactory& getInstance()
   {
-    static SourceFactory singleton_instance;
+    static ProducerFactory singleton_instance;
     return singleton_instance;
   }
 
   SourcePtr create_type(std::string type, std::string file);
-  void register_type(std::string name, std::function<Source*(void)> typeConstructor);
+  void register_type(std::string name, std::function<Producer*(void)> typeConstructor);
   const std::vector<std::string> types();
 
 private:
-  std::map<std::string, std::function<Source*(void)>> constructors;
+  std::map<std::string, std::function<Producer*(void)>> constructors;
 
   //singleton assurance
-  SourceFactory() {}
-  SourceFactory(SourceFactory const&);
-  void operator=(SourceFactory const&);
+  ProducerFactory() {}
+  ProducerFactory(ProducerFactory const&);
+  void operator=(ProducerFactory const&);
 };
 
 template<class T>
-class SourceRegistrar {
+class ProducerRegistrar {
 public:
-  SourceRegistrar(std::string)
+  ProducerRegistrar(std::string)
   {
-    SourceFactory::getInstance().register_type(T::plugin_name(),
-                                               [](void) -> Source * { return new T();});
+    ProducerFactory::getInstance().register_type(T::plugin_name(),
+                                               [](void) -> Producer * { return new T();});
   }
 };
 

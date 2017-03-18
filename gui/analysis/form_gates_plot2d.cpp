@@ -214,7 +214,7 @@ void FormGatesPlot2D::update_plot()
 
   SinkPtr some_spectrum = project_->get_sink(current_spectrum_);
 
-  Metadata md;
+  ConsumerMetadata md;
   if (some_spectrum)
     md = some_spectrum->metadata();
 

@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 
 #include "form_efficiency_calibration.h"
 #include "widget_detectors.h"
@@ -83,10 +83,10 @@ FormEfficiencyCalibration::FormEfficiencyCalibration(XMLableDB<Detector>& newDet
 
 
   //file formats for opening mca spectra
-  std::vector<std::string> spectypes = SinkFactory::getInstance().types();
+  std::vector<std::string> spectypes = ConsumerFactory::getInstance().types();
   QStringList filetypes;
   for (auto &q : spectypes) {
-    Metadata type_template = SinkFactory::getInstance().create_prototype("1D");
+    ConsumerMetadata type_template = ConsumerFactory::getInstance().create_prototype("1D");
     if (!type_template.input_types().empty())
       filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template.input_types()) + ")");
   }
@@ -171,7 +171,7 @@ void FormEfficiencyCalibration::setSpectrum(int64_t idx) {
       fit_data_ = peak_sets_.at(idx);
       ui->isotopes->set_current_isotope(QString::fromStdString(fit_data_.sample_name_));
     }  else {
-      Metadata md = spectrum->metadata();
+      ConsumerMetadata md = spectrum->metadata();
       Setting descr = md.get_attribute("description");
       if (!descr.value_text.empty()) {
         //find among data
@@ -293,7 +293,7 @@ void FormEfficiencyCalibration::update_spectra() {
   QVector<SelectorItem> items;
 
   for (auto &q : spectra_->get_sinks(1)) {
-    Metadata md;
+    ConsumerMetadata md;
     if (q.second)
       md = q.second->metadata();
 

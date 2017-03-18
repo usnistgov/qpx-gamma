@@ -67,9 +67,9 @@ protected:
   bool _initialize() override;
 
   PreciseFloat _data(std::initializer_list<size_t> list) const override
-    { return Sink::_data(list);}
+    { return Consumer::_data(list);}
   std::unique_ptr<std::list<Entry>> _data_range(std::initializer_list<Pair> range) override
-    { return Sink::_data_range(range); }
+    { return Consumer::_data_range(range); }
 
   //event processing
   void _push_spill(const Spill&) override;

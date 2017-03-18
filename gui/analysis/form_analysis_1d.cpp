@@ -268,7 +268,7 @@ void FormAnalysis1D::update_detector_calibs()
     for (auto &q : spectra_->get_sinks()) {
       if (!q.second)
         continue;
-      Metadata md = q.second->metadata();
+      ConsumerMetadata md = q.second->metadata();
       for (auto &p : md.detectors) {
         if (p.shallow_equals(fit_data_.detector_)) {
           LINFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " on " << q.second->metadata().get_attribute("name").value_text;

@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "daq_source.h"
+#include "producer.h"
 #include "detector.h"
 #include <boost/thread.hpp>
 #include <boost/atomic.hpp>
@@ -36,7 +36,7 @@ const uint32_t list_mem_len32 = 16 * max_buf_len;
 const uint32_t list_mem_len16 = 2 * list_mem_len32;
 
 
-class Pixie4 : public Source {
+class Pixie4 : public Producer {
   
 public:
 
@@ -51,7 +51,7 @@ public:
   bool read_settings_bulk(Qpx::Setting &set) const override;
   void get_all_settings() override;
   bool boot() override;
-  bool die() override {status_ = SourceStatus::loaded | SourceStatus::can_boot; return true;}
+  bool die() override {status_ = ProducerStatus::loaded | ProducerStatus::can_boot; return true;}
 
   std::list<Hit> oscilloscope() override;
 

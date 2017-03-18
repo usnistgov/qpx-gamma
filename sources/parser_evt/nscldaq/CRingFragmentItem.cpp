@@ -31,7 +31,7 @@
  *  Create a new ring fragmen from the data supplied:
  *
  * @param timestamp   - The event builder timestamp.
- * @param source      - Source id of fragment creator.
+ * @param source      - Producer id of fragment creator.
  * @param payloadSize - Size of the fragment payload.
  * @param pBody       - Pointer to payload.
  * @param barrier     - Barrier type (defaults to 0 which is not a barrier).
@@ -232,7 +232,7 @@ CRingFragmentItem::toString() const
   
   out << typeName() << ':' << std::endl;
   out << "Fragment timestamp:    " << timestamp()   << std::endl;
-  out << "Source ID         :    " << source()      << std::endl;
+  out << "Producer ID         :    " << source()      << std::endl;
   out << "Payload size      :    " << This->payloadSize() << std::endl;
   out << "Barrier type      :    " << barrierType() << std::endl;
 

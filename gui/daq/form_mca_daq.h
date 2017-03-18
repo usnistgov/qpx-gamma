@@ -62,7 +62,7 @@ protected:
   void closeEvent(QCloseEvent*);
 
 public slots:
-  void toggle_push(bool, Qpx::SourceStatus);
+  void toggle_push(bool, Qpx::ProducerStatus);
 
 private slots:
   void on_pushMcaStart_clicked();
@@ -112,7 +112,7 @@ private:
 
   QString mca_load_formats_;  //valid mca file formats that can be opened
 
-  XMLableDB<Qpx::Metadata>  spectra_templates_;
+  XMLableDB<Qpx::ConsumerMetadata>  spectra_templates_;
   Qpx::ProjectPtr                     project_;
 
   ThreadPlotSignal                plot_thread_;

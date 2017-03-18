@@ -49,7 +49,7 @@ signals:
   void extract_project(Qpx::ProjectPtr);
 
 public slots:
-  void toggle_push(bool, Qpx::SourceStatus);
+  void toggle_push(bool, Qpx::ProducerStatus);
 
 private slots:
   void selectProject(int64_t idx);

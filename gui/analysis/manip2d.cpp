@@ -24,7 +24,7 @@
 #include "custom_logger.h"
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_real.hpp>
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 
 namespace Qpx
 {
@@ -34,7 +34,7 @@ SinkPtr derive_empty_1d(SinkPtr source, bool det1)
   if (!source)
     return nullptr;
 
-  Metadata md = source->metadata();
+  ConsumerMetadata md = source->metadata();
   if (md.dimensions() != 2)
     return nullptr;
 
@@ -64,10 +64,10 @@ SinkPtr derive_empty_1d(SinkPtr source, bool det1)
   pattern.value_pattern.set_theshold(1);
   md.set_attribute(pattern);
 
-  Metadata temp = SinkFactory::getInstance().create_prototype("1D");
+  ConsumerMetadata temp = ConsumerFactory::getInstance().create_prototype("1D");
   temp.set_attributes(md.get_all_attributes());
 
-  auto ret = SinkFactory::getInstance().create_from_prototype(temp);
+  auto ret = ConsumerFactory::getInstance().create_from_prototype(temp);
   if (ret)
     ret->set_detectors(md.detectors);
   return ret;
@@ -174,12 +174,12 @@ SinkPtr make_symmetrized(SinkPtr source)
   if (!source)
     return nullptr;
 
-  Metadata md = source->metadata();
+  ConsumerMetadata md = source->metadata();
 
   if (md.dimensions() != 2)
     return nullptr;
 
-  SinkPtr ret = SinkFactory::getInstance().create_from_prototype(md); //assume 2D?
+  SinkPtr ret = ConsumerFactory::getInstance().create_from_prototype(md); //assume 2D?
 
   if (!ret)
     return nullptr;

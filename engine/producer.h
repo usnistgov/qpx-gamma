@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Source abstract class
+ *      Qpx::Producer abstract class
  *
  ******************************************************************************/
 
@@ -29,7 +29,7 @@
 
 namespace Qpx {
 
-enum SourceStatus {
+enum ProducerStatus {
   dead      = 0,
   loaded    = 1 << 0,
   booted    = 1 << 1,
@@ -38,17 +38,17 @@ enum SourceStatus {
   can_oscil = 1 << 4
 };
 
-inline SourceStatus operator|(SourceStatus a, SourceStatus b) {return static_cast<SourceStatus>(static_cast<int>(a) | static_cast<int>(b));}
-inline SourceStatus operator&(SourceStatus a, SourceStatus b) {return static_cast<SourceStatus>(static_cast<int>(a) & static_cast<int>(b));}
-inline SourceStatus operator^(SourceStatus a, SourceStatus b) {return static_cast<SourceStatus>(static_cast<int>(a) ^ static_cast<int>(b));}
+inline ProducerStatus operator|(ProducerStatus a, ProducerStatus b) {return static_cast<ProducerStatus>(static_cast<int>(a) | static_cast<int>(b));}
+inline ProducerStatus operator&(ProducerStatus a, ProducerStatus b) {return static_cast<ProducerStatus>(static_cast<int>(a) & static_cast<int>(b));}
+inline ProducerStatus operator^(ProducerStatus a, ProducerStatus b) {return static_cast<ProducerStatus>(static_cast<int>(a) ^ static_cast<int>(b));}
 
 
-class Source {
+class Producer {
 
 public:
 
-  Source() : status_(SourceStatus(0)) {}
-  virtual ~Source() {}
+  Producer() : status_(ProducerStatus(0)) {}
+  virtual ~Producer() {}
 
   static std::string plugin_name() {return std::string();}
 
@@ -58,9 +58,9 @@ public:
   bool save_setting_definitions(std::string file);
 
 
-  SourceStatus status() const {return status_;}
+  ProducerStatus status() const {return status_;}
   virtual bool boot() {return false;}
-  virtual bool die() {status_ = SourceStatus(0); return true;}
+  virtual bool die() {status_ = ProducerStatus(0); return true;}
 
   virtual bool write_settings_bulk(Qpx::Setting &/*set*/) {return false;}
   virtual bool read_settings_bulk(Qpx::Setting &/*set*/) const {return false;}
@@ -75,17 +75,17 @@ public:
 
 private:
   //no copying
-  void operator=(Source const&);
-  Source(const Source&);
+  void operator=(Producer const&);
+  Producer(const Producer&);
 
 
 protected:
-  SourceStatus                            status_;
+  ProducerStatus                            status_;
   std::map<std::string, Qpx::SettingMeta> setting_definitions_;
   std::string                             profile_path_;
 
 };
 
-typedef std::shared_ptr<Source> SourcePtr;
+typedef std::shared_ptr<Producer> SourcePtr;
 
 }

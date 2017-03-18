@@ -21,17 +21,17 @@
  ******************************************************************************/
 
 #include "MSCF16.h"
-#include "daq_source_factory.h"
+#include "producer_factory.h"
 
 
 namespace Qpx {
 
-static SourceRegistrar<MSCF16> registrar("VME/MesytecRC/MSCF16");
+static ProducerRegistrar<MSCF16> registrar("VME/MesytecRC/MSCF16");
 
 MSCF16::MSCF16() {
   controller_ = nullptr;
   modnum_ = 0;
-  status_ = SourceStatus::loaded | SourceStatus::can_boot;
+  status_ = ProducerStatus::loaded | ProducerStatus::can_boot;
   module_ID_code_ = -1;
 }
 

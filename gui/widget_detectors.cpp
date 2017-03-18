@@ -29,7 +29,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include "project.h"
-#include "daq_sink_factory.h"
+#include "consumer_factory.h"
 #include <boost/algorithm/string.hpp>
 
 using namespace Qpx;
@@ -51,10 +51,10 @@ DialogDetector::DialogDetector(Detector mydet, bool editName, QWidget *parent) :
   settings_directory_ = settings.value("settings_directory", QDir::homePath() + "/qpx/settings").toString();
 
   //file formats, should be in detector db widget
-  std::vector<std::string> spectypes = SinkFactory::getInstance().types();
+  std::vector<std::string> spectypes = ConsumerFactory::getInstance().types();
   QStringList filetypes;
   for (auto &q : spectypes) {
-    Metadata type_template = SinkFactory::getInstance().create_prototype(q);
+    ConsumerMetadata type_template = ConsumerFactory::getInstance().create_prototype(q);
     if (!type_template.input_types().empty())
       filetypes.push_back("Spectrum " + QString::fromStdString(q) + "(" + catExtensions(type_template.input_types()) + ")");
   }
@@ -194,7 +194,7 @@ void DialogDetector::on_pushRead1D_clicked()
 
   this->setCursor(Qt::WaitCursor);
 
-  SinkPtr newSpectrum = SinkFactory::getInstance().create_from_file(fileName.toStdString());
+  SinkPtr newSpectrum = ConsumerFactory::getInstance().create_from_file(fileName.toStdString());
   if (newSpectrum != nullptr) {
     std::vector<Detector> dets = newSpectrum->metadata().detectors;
     for (auto &q : dets)

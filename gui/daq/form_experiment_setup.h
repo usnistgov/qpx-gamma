@@ -51,7 +51,7 @@ signals:
   void toggleIO();
 
 public slots:
-  void update_settings(const Qpx::Setting&, const std::vector<Qpx::Detector>&, Qpx::SourceStatus);
+  void update_settings(const Qpx::Setting&, const std::vector<Qpx::Detector>&, Qpx::ProducerStatus);
 
 private slots:
 
