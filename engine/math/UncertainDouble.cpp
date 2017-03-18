@@ -10,13 +10,6 @@
 #include "qpx_util.h"
 #include "custom_logger.h"
 
-UncertainDouble::UncertainDouble()
-  : value_(std::numeric_limits<double>::quiet_NaN())
-  , sigma_(std::numeric_limits<double>::quiet_NaN())
-  , sigfigs_(0)
-{
-}
-
 UncertainDouble::UncertainDouble(double val, double sigma, uint16_t sigf)
   : value_(val)
   , sigma_(std::abs(sigma))
@@ -392,4 +385,25 @@ void UncertainDouble::from_xml(const pugi::xml_node &node) {
   value_ = node.attribute("value").as_double(std::numeric_limits<double>::quiet_NaN());
   sigma_ = node.attribute("sigma").as_double(std::numeric_limits<double>::quiet_NaN());
   sigfigs_ = node.attribute("sigfigs").as_int(1);
+}
+
+void to_json(json& j, const UncertainDouble &s)
+{
+  if (!std::isnan(s.value()))
+    j["value"] = s.value();
+  if (!std::isnan(s.uncertainty()))
+    j["sigma"] = s.uncertainty();
+  j["sigfigs"] = s.sigfigs();
+}
+
+void from_json(const json& j, UncertainDouble &s)
+{
+  double val = std::numeric_limits<double>::quiet_NaN();
+  if (j.count("value") && j["value"].is_number_float())
+    val = j["value"];
+  double sigma = std::numeric_limits<double>::quiet_NaN();
+  if (j.count("sigma") && j["sigma"].is_number_float())
+    sigma = j["sigma"];
+  double sigfigs = j["sigfigs"];
+  s = UncertainDouble(val, sigma, sigfigs);
 }

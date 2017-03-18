@@ -28,17 +28,15 @@
 
 namespace Qpx {
 
-SUM4Edge::SUM4Edge()
-  : Lchan_(0)
-  , Rchan_(0)
-  , min_(0)
-  , max_(0)
+SUM4Edge::SUM4Edge(const json& j, const Finder& f)
+  : SUM4Edge(f.x_, f.y_,
+             f.find_index(j["left"]),
+             f.find_index(j["right"]))
 {}
 
 SUM4Edge::SUM4Edge(const std::vector<double> &x,
                    const std::vector<double> &y,
                    uint32_t Lindex, uint32_t Rindex)
-  : SUM4Edge()
 {
   dsum_ = UncertainDouble::from_int(0,0);
 
@@ -81,21 +79,42 @@ double SUM4Edge::midpoint() const
     return Lchan_ + (w * 0.5);
 }
 
+void to_json(json& j, const SUM4Edge& s)
+{
+  j["left"] = s.Lchan_;
+  j["right"] = s.Rchan_;
+}
 
 
 
-SUM4::SUM4()
-    :Lchan_(0)
-    ,Rchan_(0)
+SUM4::SUM4(const json& j, const Finder& f, const SUM4Edge& LB, const SUM4Edge& RB)
+  : SUM4(j["left"], j["right"], f, LB, RB)
 {}
 
-
-SUM4::SUM4(const std::vector<double> &x, const std::vector<double> &y,
-           uint32_t Lindex, uint32_t Rindex,
-           Polynomial background,
-           SUM4Edge LB, SUM4Edge RB)
-  : SUM4()
+Polynomial SUM4::sum4_background(const SUM4Edge& L, const SUM4Edge& R, const Finder& f)
 {
+  Polynomial sum4back;
+  if (f.x_.empty())
+    return sum4back;
+  double run = R.left() - L.right();
+  auto xoffset = sum4back.xoffset();
+  xoffset.preset_bounds(L.right(), L.right());
+  double s4base = L.average();
+  double s4slope = (R.average() - L.average()) / run;
+  sum4back.set_xoffset(xoffset);
+  sum4back.add_coeff(0, s4base, s4base, s4base);
+  sum4back.add_coeff(1, s4slope, s4slope, s4slope);
+  return sum4back;
+}
+
+SUM4::SUM4(double left, double right, const Finder& f,
+           const SUM4Edge& LB, const SUM4Edge& RB)
+{
+  auto x = f.x_;
+  auto y = f.y_;
+  uint32_t Lindex = f.find_index(left);
+  uint32_t Rindex = f.find_index(right);
+  Polynomial background = sum4_background(LB, RB, f);
 
   if (y.empty()
       || (y.size() != x.size())
@@ -117,8 +136,8 @@ SUM4::SUM4(const std::vector<double> &x, const std::vector<double> &y,
 
   double background_variance = pow((peak_width() / 2.0), 2) * (LB_.variance() + RB_.variance());
   background_area_ = UncertainDouble::from_double(
-                    peak_width() * (background.eval(x[Rindex]) + background.eval(x[Lindex])) / 2.0,
-                    sqrt(background_variance), 0);
+        peak_width() * (background.eval(x[Rindex]) + background.eval(x[Lindex])) / 2.0,
+        sqrt(background_variance), 0);
 
   peak_area_ = gross_area_ - background_area_;
   peak_area_.autoSigs(1);
@@ -132,8 +151,8 @@ SUM4::SUM4(const std::vector<double> &x, const std::vector<double> &y,
   }
 
   double centroidval = CsumYnet / sumYnet;
-//  if ((centroidval >= 0) && (centroidval < x.size()))
-//    centroidval = x.at(static_cast<size_t>(centroidval));
+  //  if ((centroidval >= 0) && (centroidval < x.size()))
+  //    centroidval = x.at(static_cast<size_t>(centroidval));
 
   double centroid_variance = (C2sumYnet / sumYnet) - pow(centroidval, 2);
   centroid_ = UncertainDouble::from_double(centroidval, centroid_variance);
@@ -176,6 +195,10 @@ int SUM4::get_currie_quality_indicator(double peak_net_area, double background_v
     return 5;
 }
 
-
+void to_json(json& j, const SUM4 &s)
+{
+  j["left"] = s.Lchan_;
+  j["right"] = s.Rchan_;
+}
 
 }

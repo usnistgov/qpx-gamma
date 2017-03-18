@@ -28,7 +28,11 @@
 #include "polynomial.h"
 #include "fit_settings.h"
 #include "gaussian.h"
+
 #include "xmlable.h"
+
+#include "json.hpp"
+using namespace nlohmann;
 
 class Hypermet : public XMLable {
 public:
@@ -50,7 +54,7 @@ public:
   const FitParam& step_amplitude() const {return step_amplitude_;}
   double chi2() const {return chi2_;}
 
-  bool user_modified() {return user_modified_;}
+  bool user_modified() const {return user_modified_;}
 
   void set_center(const FitParam &ncenter);
   void set_height(const FitParam &nheight);
@@ -95,6 +99,9 @@ public:
   void from_xml(const pugi::xml_node &node) override;
   std::string xml_element_name() const override {return "Hypermet";}
 
+  friend void to_json(json& j, const Hypermet& s);
+  friend void from_json(const json& j, Hypermet& s);
+
 private:
   FitParam center_, height_, width_,
   Lskew_amplitude_, Lskew_slope_,
@@ -104,5 +111,4 @@ private:
 
   double chi2_ {0};
   bool user_modified_ {false};
-
 };

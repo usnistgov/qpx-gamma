@@ -46,7 +46,7 @@ struct DataPoint
 class ExperimentProject
 {
 public:
-  ExperimentProject() : base_prototypes("SinkPrototypes"), changed_(false)
+  ExperimentProject()
   {
     root_trajectory = std::shared_ptr<Qpx::TrajectoryNode>(new Qpx::TrajectoryNode());
     Qpx::TrajectoryNode tn(root_trajectory);
@@ -54,6 +54,15 @@ public:
     root_trajectory->push_back(tn);
     next_idx = 1;
   }
+
+  ExperimentProject(const std::string& filename);
+
+  void save_as(const std::string& filename);
+
+  #ifdef H5_ENABLED
+  void save_h5(const std::string& filename);
+  void load_h5(const std::string& filename);
+  #endif
 
   bool empty() const;
   bool has_results() const;
@@ -83,7 +92,7 @@ public:
   void from_xml(const pugi::xml_node &node);
 
 private:
-  XMLableDB<Qpx::Metadata> base_prototypes;
+  XMLableDB<Qpx::Metadata> base_prototypes {"SinkPrototypes"};
   std::shared_ptr<TrajectoryNode> root_trajectory;
   std::map<int64_t, ProjectPtr> data;
 
@@ -91,7 +100,7 @@ private:
 
   int64_t       next_idx;
   std::string   identity_;
-  mutable bool  changed_;
+  mutable bool  changed_ {false};
 
   void set_sink_vars_recursive(XMLableDB<Qpx::Metadata>& prototypes, TrajectoryPtr node);
   void gather_vars_recursive(DataPoint& dp, TrajectoryPtr node);

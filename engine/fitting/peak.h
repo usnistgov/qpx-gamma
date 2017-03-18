@@ -29,16 +29,20 @@
 #include "detector.h"
 #include "sum4.h"
 #include "UncertainDouble.h"
+
 #include "xmlable.h"
+
+#include "json.hpp"
+using namespace nlohmann;
 
 namespace Qpx {
 
 class Peak {
 public:
-  Peak()
-      : intensity_theoretical_(0.0)
-      , efficiency_relative_(0.0)
-  {}
+  Peak(){}
+
+  Peak(const json& j, const Finder &fs,
+       const SUM4Edge& LB, const SUM4Edge& RB);
 
   Peak(const Hypermet &hyp, const SUM4 &s4, const FitSettings &fs);
 
@@ -46,7 +50,8 @@ public:
 
   //get rid of these
   std::vector<double> hr_peak_, hr_fullfit_;
-  double intensity_theoretical_, efficiency_relative_;
+  double intensity_theoretical_ {0.0};
+  double efficiency_relative_ {0.0};
 
   const SUM4     &sum4() const { return sum4_;}
   const Hypermet &hypermet() const { return hypermet_;}
@@ -75,6 +80,8 @@ public:
   void to_xml(pugi::xml_node &node) const;
   void from_xml(const pugi::xml_node &node);
   std::string xml_element_name() const {return "Peak";}
+
+  friend void to_json(json& j, const Peak &s);
 
 private:
   SUM4 sum4_;

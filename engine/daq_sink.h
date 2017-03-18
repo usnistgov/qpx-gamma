@@ -86,8 +86,11 @@ public:
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;
 
-  json to_json() const;
-  void from_json(const json& j);
+//  json to_json() const;
+//  void from_json(const json& j);
+
+  friend void to_json(json& j, const Metadata &s);
+  friend void from_json(const json& j, Metadata &s);
 
   bool shallow_equals(const Metadata& other) const;
   bool operator!= (const Metadata& other) const;

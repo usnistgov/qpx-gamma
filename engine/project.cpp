@@ -33,6 +33,7 @@
 #ifdef H5_ENABLED
 #include "H5CC_File.h"
 #include "JsonH5.h"
+#include "ExceptionUtil.h"
 #endif
 
 namespace Qpx {
@@ -372,16 +373,22 @@ void Project::to_h5(H5CC::Group &group) const
     }
   }
 
-//  if (fitters_1d_.size())
-//  {
-//    //    DBG << "Will save fitters";
-//    pugi::xml_node fits_node = root.append_child("Fits1D");
-//    for (auto &q : fitters_1d_) {
-//      //      DBG << "saving fit " << q.first;
-//      q.second.to_xml(fits_node);
-//      fits_node.last_child().append_attribute("idx").set_value(std::to_string(q.first).c_str());
-//    }
-//  }
+  if (fitters_1d_.size())
+  {
+    auto sg = group.require_group("fits_1d");
+    int i=0;
+    size_t len = std::to_string(fitters_1d_.size() - 1).size();
+    for (auto &q : fitters_1d_)
+    {
+      std::string name = std::to_string(i++);
+      if (name.size() < len)
+        name = std::string(len - name.size(), '0').append(name);
+
+      auto ssg = sg.require_group(name);
+      ssg.write_attribute("index", q.first);
+      H5CC::from_json(json(q.second), ssg);
+    }
+  }
 
   changed_ = false;
   ready_ = true;
@@ -401,7 +408,6 @@ void Project::from_h5(H5CC::Group &group, bool with_sinks, bool with_full_sinks)
     {
       json j;
       to_json(j, sgroup.open_group(g));
-//      DBG << "Read spill\n" << j.dump(2);
       Spill sp = j;
       spills_.insert(sp);
     }
@@ -414,9 +420,6 @@ void Project::from_h5(H5CC::Group &group, bool with_sinks, bool with_full_sinks)
     for (auto g : group.open_group("sinks").groups())
     {
       auto sg = group.open_group("sinks").open_group(g);
-
-//      if (child.child("Data") && !with_full_sinks)
-//        child.remove_child("Data");
 
       if (sg.has_attribute("index"))
         current_index_ = sg.read_attribute<int64_t>("index");
@@ -435,18 +438,26 @@ void Project::from_h5(H5CC::Group &group, bool with_sinks, bool with_full_sinks)
 
   current_index_++;
 
-//  if (root.child("Fits1D")) {
-//    for (pugi::xml_node &child : root.child("Fits1D").children()) {
-//      int64_t idx = child.attribute("idx").as_llong();
-//      if (!sinks_.count(idx))
-//        continue;
+  if (group.has_group("fits_1d"))
+    for (auto g : group.open_group("fits_1d").groups())
+    {
+      json j;
+      to_json(j, group.open_group("fits_1d").open_group(g));
 
-//      fitters_1d_[idx] = Fitter();
-//      fitters_1d_[idx].from_xml(child, sinks_.at(idx));
-//    }
-//  }
+      int64_t index{0};
+      if (j.count("index"))
+        index = j["index"];
+      else
+      {
+        WARN << "<Project> Fit1D has no index";
+        continue;
+      }
 
-  DBG << "<Project> Loaded h5 with " << sinks_.size() << " sinks";
+      fitters_1d_[index] = Fitter(j, sinks_.at(index));
+    }
+
+  DBG << "<Project> Loaded h5 with " << sinks_.size() << " sinks "
+      << "and " << fitters_1d_.size() << " 1d fits";
 
   changed_ = false;
   ready_ = true;
@@ -457,7 +468,7 @@ void Project::write_h5(std::string file_name)
 {
   try
   {
-    H5CC::File f(file_name, H5CC::Access::rw_require);
+    H5CC::File f(file_name, H5CC::Access::rw_truncate);
     auto group = f.require_group("project");
     to_h5(group);
 
@@ -471,6 +482,7 @@ void Project::write_h5(std::string file_name)
   catch (...)
   {
     ERR << "<Project> Failed to write h5 " << file_name;
+    printException();
   }
 }
 
@@ -489,6 +501,7 @@ void Project::read_h5(std::string file_name, bool with_sinks, bool with_full_sin
   catch (...)
   {
     ERR << "<Project> Failed to read h5 " << file_name;
+    printException();
   }
 }
 

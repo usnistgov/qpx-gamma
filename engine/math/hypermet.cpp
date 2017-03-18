@@ -353,7 +353,6 @@ void Hypermet::to_xml(pugi::xml_node &root) const
   step_amplitude_.to_xml(node);
 }
 
-
 void Hypermet::from_xml(const pugi::xml_node &node)
 {
   chi2_ = node.attribute("rsq").as_double(0);
@@ -383,5 +382,38 @@ void Hypermet::from_xml(const pugi::xml_node &node)
         Rskew_slope_ = param;
     }
   }
+}
+
+void to_json(json& j, const Hypermet& s)
+{
+  j["chi2"] = s.chi2();
+  j["center"] = s.center();
+  j["height"] = s.height();
+  j["width"] = s.width();
+  j["Lskew_amplitude"] = s.Lskew_amplitude();
+  j["Lskew_slope"] = s.Lskew_slope();
+  j["Rskew_amplitude"] = s.Rskew_amplitude();
+  j["Rskew_slope"] = s.Rskew_slope();
+  j["tail_amplitude"] = s.tail_amplitude();
+  j["tail_slope"] = s.tail_slope();
+  j["step_amplitude"] = s.step_amplitude();
+  j["user_modified"] = s.user_modified();
+}
+
+void from_json(const json& j, Hypermet& s)
+{
+  s.center_ = j["center"];
+  s.height_ = j["height"];
+  s.width_ = j["width"];
+  s.Lskew_amplitude_ = j["Lskew_amplitude"];
+  s.Lskew_slope_ = j["Lskew_slope"];
+  s.Rskew_amplitude_ = j["Rskew_amplitude"];
+  s.Rskew_slope_ = j["Rskew_slope"];
+  s.tail_amplitude_ = j["tail_amplitude"];
+  s.tail_slope_ = j["tail_slope"];
+  s.step_amplitude_ = j["step_amplitude"];
+  s.user_modified_ = j["user_modified"];
+  if (j.count("chi2") && j["chi2"].is_number_float())
+    s.chi2_ = j["chi2"];
 }
 

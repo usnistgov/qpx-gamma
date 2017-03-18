@@ -123,7 +123,8 @@ void FormExperiment::closeEvent(QCloseEvent *event) {
   event->accept();
 }
 
-void FormExperiment::loadSettings() {
+void FormExperiment::loadSettings()
+{
   QSettings settings;
 
   settings.beginGroup("Program");
@@ -131,13 +132,16 @@ void FormExperiment::loadSettings() {
   data_directory_ = settings.value("save_directory", QDir::homePath() + "/qpx/data").toString();
   settings.endGroup();
 
-  if (!profile_directory.isEmpty()) {
+  if (!profile_directory.isEmpty())
+  {
     std::string path = profile_directory.toStdString() + "/optimize.set";
     pugi::xml_document doc;
-    if (doc.load_file(path.c_str())) {
+    if (doc.load_file(path.c_str()))
+    {
       pugi::xml_node root = doc.child("Optimizer");
       FitSettings fs;
-      if (root.child(fs.xml_element_name().c_str())) {
+      if (root.child(fs.xml_element_name().c_str()))
+      {
         fs.from_xml(root.child(fs.xml_element_name().c_str()));
         selected_fitter_.apply_settings(fs);
       }
@@ -151,7 +155,8 @@ void FormExperiment::loadSettings() {
   settings.endGroup();
 }
 
-void FormExperiment::saveSettings() {
+void FormExperiment::saveSettings()
+{
   QSettings settings;
 
   settings.beginGroup("Program");
@@ -490,25 +495,21 @@ void FormExperiment::on_pushLoadExperiment_clicked()
       return;
   }
 
-  pugi::xml_document doc;
-  if (doc.load_file(fileName.toStdString().c_str())) {
-    this->setCursor(Qt::WaitCursor);
-    if (doc.child(exp_project_.xml_element_name().c_str()))
-      exp_project_.from_xml(doc.child(exp_project_.xml_element_name().c_str()));
+  this->setCursor(Qt::WaitCursor);
+  exp_project_ = ExperimentProject(fileName.toStdString());
 
-    selected_sink_ = -1;
-    new_daq_data();
-    exp_plot_thread_.terminate_wait();
+  selected_sink_ = -1;
+  new_daq_data();
+  exp_plot_thread_.terminate_wait();
 
-    form_experiment_setup_->update_exp_project();
+  form_experiment_setup_->update_exp_project();
 
-    exp_project_.gather_results();
-    form_experiment_1d_->update_exp_project();
-    form_experiment_2d_->update_exp_project();
-    populate_selector();
-    emit toggleIO(true);
-    this->setCursor(Qt::ArrowCursor);
-  }
+  exp_project_.gather_results();
+  form_experiment_1d_->update_exp_project();
+  form_experiment_2d_->update_exp_project();
+  populate_selector();
+  emit toggleIO(true);
+  this->setCursor(Qt::ArrowCursor);
 }
 
 void FormExperiment::on_pushSaveExperiment_clicked()
@@ -520,12 +521,10 @@ void FormExperiment::on_pushSaveExperiment_clicked()
 
   data_directory_ = path_of_file(fileName);
 
-  if (!fileName.isEmpty()) {
+  if (!fileName.isEmpty())
+  {
     this->setCursor(Qt::WaitCursor);
-    pugi::xml_document doc;
-    pugi::xml_node root = doc.root();
-    exp_project_.to_xml(root);
-    doc.save_file(fileName.toStdString().c_str());
+    exp_project_.save_as(fileName.toStdString());
     this->setCursor(Qt::ArrowCursor);
   }
 }

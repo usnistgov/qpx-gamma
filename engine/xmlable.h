@@ -26,7 +26,11 @@
 #include <string>
 #include <list>
 #include <vector>
+
 #include "pugixml.hpp"
+
+#include "json.hpp"
+using namespace nlohmann;
 
 class XMLable {
  public:
@@ -45,6 +49,7 @@ class XMLable {
 template<typename T>
 class XMLableDB : public XMLable {
 public:
+  XMLableDB() {}
   XMLableDB(std::string xml_name) {xml_name_ = xml_name;}
   //  std::string name() const {return name_;}
   std::string xml_element_name() const {return xml_name_;}
@@ -193,6 +198,19 @@ public:
     }
   }
 
+  std::vector<T> to_vector() const {
+    if (!my_data_.empty())
+      return std::vector<T>(my_data_.begin(), my_data_.end());
+    else
+      return std::vector<T>();
+  }
+
+  void from_vector(std::vector<T> vec) {
+    my_data_.clear();
+    if (!vec.empty())
+      my_data_ = std::list<T>(vec.begin(), vec.end());
+  }
+
   void to_xml(pugi::xml_node &node) const  {
     pugi::xml_node child = node.append_child(xml_name_.c_str());
     for (auto &q : my_data_)
@@ -210,19 +228,17 @@ public:
     }
   }
 
-  std::vector<T> to_vector() const {
-    if (!my_data_.empty())
-      return std::vector<T>(my_data_.begin(), my_data_.end());
-    else
-      return std::vector<T>();
+  friend void to_json(json& j, const XMLableDB& t)
+  {
+    for (auto k : t.my_data_)
+      j.push_back(json(k));
   }
 
-  void from_vector(std::vector<T> vec) {
-    my_data_.clear();
-    if (!vec.empty())
-      my_data_ = std::list<T>(vec.begin(), vec.end());
+  friend void from_json(const json& j, XMLableDB& t)
+  {
+    for (json::const_iterator it = j.begin(); it != j.end(); ++it)
+      t.my_data_.push_back(it.value());
   }
-
 
   std::list<T> my_data_;
 

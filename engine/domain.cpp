@@ -212,6 +212,60 @@ std::shared_ptr<TrajectoryNode> TrajectoryNode::getChild(int row) const
     return nullptr;
 }
 
+void to_json(json& j, const TrajectoryNode& t)
+{
+  j["domain"]["description"] = t.domain.verbose;
+
+  if (t.domain.type != none)
+  {
+    j["domain"]["type"] = TrajectoryNode::domain_type_to_string(t.domain.type);
+    j["domain"]["criterion_type"] = TrajectoryNode::criterion_type_to_string(t.domain.criterion_type);
+    j["domain"]["criterion"] = t.domain.criterion;
+    j["domain"]["value_range"] = t.domain.value_range;
+  }
+
+  if ((t.domain_value != Setting()) || (t.data_idx > -1))
+  {
+    j["data"]["data_index"] = t.data_idx;
+    j["data"]["value"] = t.domain_value;
+  }
+
+  for (auto &b : t.branches)
+    if (b)
+      j["branches"] = (*b);
+}
+
+void from_json(const json& j, TrajectoryNode& t)
+{
+  t.domain.verbose = j["domain"]["description"];
+  if (j["domain"].count("type"))
+  {
+    t.domain.type = TrajectoryNode::domain_type_from_string(j["domain"]["type"]);
+    t.domain.criterion_type = TrajectoryNode::criterion_type_from_string(j["domain"]["criterion_type"]);
+    t.domain.criterion = j["domain"]["criterion"];
+    t.domain.value_range = j["domain"]["value_range"];
+  }
+
+  if (j.count("data"))
+  {
+    t.data_idx = j["data"]["data_index"];
+    t.domain_value = j["data"]["value"];
+  }
+
+  t.branches.clear();
+  if (j.count("branches"))
+  {
+    auto o = j["branches"];
+    for (json::iterator it = o.begin(); it != o.end(); ++it)
+    {
+      TrajectoryNode::item_t i = TrajectoryNode::item_t(new TrajectoryNode(t.shared_from_this()));
+      from_json(it.value(), *i);
+      t.branches.push_back(i);
+    }
+  }
+}
+
+
 void TrajectoryNode::to_xml(pugi::xml_node &root) const
 {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());

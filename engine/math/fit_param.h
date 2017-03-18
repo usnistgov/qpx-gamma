@@ -24,8 +24,12 @@
 
 #include <string>
 #include <limits>
-#include "xmlable.h"
 #include "UncertainDouble.h"
+
+#include "xmlable.h"
+
+#include "json.hpp"
+using namespace nlohmann;
 
 class FitParam : public XMLable
 {
@@ -59,10 +63,13 @@ public:
 
   std::string to_string() const;
 
-//XMLable
+  //XMLable
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;
   std::string xml_element_name() const override {return "FitParam";}
+
+  friend void to_json(json& j, const FitParam &s);
+  friend void from_json(const json& j, FitParam &s);
 
 private:
   std::string name_;
@@ -72,3 +79,4 @@ private:
   bool enabled_ {true};
   bool fixed_ {false};
 };
+

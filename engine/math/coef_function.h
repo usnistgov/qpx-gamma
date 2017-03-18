@@ -25,7 +25,11 @@
 #include <vector>
 #include <map>
 #include "fit_param.h"
+
 #include "xmlable.h"
+
+#include "json.hpp"
+using namespace nlohmann;
 
 class CoefFunction : public XMLable
 {
@@ -69,5 +73,7 @@ protected:
   std::map<int, FitParam> coeffs_;
   FitParam xoffset_ {"xoffset", 0};
   double chi2_ {0};
-
 };
+
+void to_json(json& j, const CoefFunction &s);
+void from_json(const json& j, CoefFunction &s);

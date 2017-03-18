@@ -193,3 +193,24 @@ void FitParam::from_xml(const pugi::xml_node &node)
   if (node.child(value_.xml_element_name().c_str()))
     value_.from_xml(node.child(value_.xml_element_name().c_str()));
 }
+
+void to_json(json& j, const FitParam& s)
+{
+  j["name"] = s.name_;
+  j["enabled"] = s.enabled_;
+  j["fixed"] = s.fixed_;
+  j["lower"] = s.lower_;
+  j["upper"] = s.upper_;
+  j["value"] = s.value_;
+}
+
+void from_json(const json& j, FitParam& s)
+{
+  s.name_ = j["name"];
+  s.enabled_ = j["enabled"];
+  s.fixed_ = j["fixed"];
+  s.lower_ = j["lower"];
+  s.upper_ = j["upper"];
+  s.value_ = j["value"];
+}
+

@@ -24,7 +24,11 @@
 
 #include "fit_param.h"
 #include "calibration.h"
+
 #include "xmlable.h"
+
+#include "json.hpp"
+using namespace nlohmann;
 
 class FitSettings : public XMLable
 {
@@ -88,3 +92,7 @@ public:
   void from_xml(const pugi::xml_node &node) override;
   std::string xml_element_name() const override {return "FitSettings";}
 };
+
+void to_json(json& j, const FitSettings& s);
+void from_json(const json& j, FitSettings& s);
+

@@ -564,8 +564,11 @@ void QpFitter::plotPeak(double region_id, double peak_id, const Qpx::Peak &peak)
   {
     double x1 = fit_data_->settings().bin_to_nrg(peak.sum4().left() - 0.5);
     double x2 = fit_data_->settings().bin_to_nrg(peak.sum4().right() + 0.5);
-    double y1 = fit_data_->region(region_id).sum4_background().eval(peak.sum4().left());
-    double y2 = fit_data_->region(region_id).sum4_background().eval(peak.sum4().right());
+
+    auto region = fit_data_->region(region_id);
+    auto s4b = Qpx::SUM4::sum4_background(region.LB(), region.RB(), region.finder());
+    double y1 = s4b.eval(peak.sum4().left());
+    double y2 = s4b.eval(peak.sum4().right());
 
     QCPItemLine *line = new QCPItemLine(this);
     line->setSelectable(false);

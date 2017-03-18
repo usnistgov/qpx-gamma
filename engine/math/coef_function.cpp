@@ -144,6 +144,19 @@ double CoefFunction::eval_inverse(double y, double e) const
   }
 }
 
+std::vector<double> CoefFunction::coeffs_consecutive() const
+{
+  std::vector<double> ret;
+  int top = 0;
+  for (auto &c : coeffs_)
+    if (c.first > top)
+      top = c.first;
+  ret.resize(top+1, 0);
+  for (auto &c : coeffs_)
+    ret[c.first] = c.second.value().value();
+  return ret;
+}
+
 void CoefFunction::to_xml(pugi::xml_node &root) const
 {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
@@ -184,15 +197,32 @@ void CoefFunction::from_xml(const pugi::xml_node &node)
   }
 }
 
-std::vector<double> CoefFunction::coeffs_consecutive() const
+void to_json(json& j, const CoefFunction& s)
 {
-  std::vector<double> ret;
-  int top = 0;
-  for (auto &c : coeffs_)
-    if (c.first > top)
-      top = c.first;
-  ret.resize(top+1, 0);
-  for (auto &c : coeffs_)
-    ret[c.first] = c.second.value().value();
-  return ret;
+  for (auto c : s.get_coeffs())
+  {
+    json cc;
+    cc["degree"] = c.first;
+    cc["coefficient"] = c.second;
+    j["coefficients"].push_back(cc);
+  }
+  j["xoffset"] = s.xoffset();
+  j["chi2"] = s.chi2();
 }
+
+void from_json(const json& j, CoefFunction& s)
+{
+  if (j.count("coefficients"))
+  {
+    auto o = j["coefficients"];
+    for (json::iterator it = o.begin(); it != o.end(); ++it)
+    {
+      int d = it.value()["degree"];
+      FitParam p = it.value()["coefficient"];
+      s.set_coeff(d, p);
+    }
+  }
+  s.set_xoffset(j["xoffset"]);
+  s.set_chi2(j["chi2"]);
+}
+

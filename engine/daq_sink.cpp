@@ -176,28 +176,30 @@ void Metadata::from_xml(const pugi::xml_node &node) {
   }
 }
 
-json Metadata::to_json() const
+void to_json(json& j, const Metadata &s)
 {
-  json j;
-  if (attributes_.branches.size())
-    j["attributes"] = attributes_;
+  j["type"] = s.type_;
 
-  if (!detectors.empty())
-    for (auto &d : detectors)
+  if (s.attributes_.branches.size())
+    j["attributes"] = s.attributes_;
+
+  if (!s.detectors.empty())
+    for (auto &d : s.detectors)
       j["detectors"].push_back(d);
-  return j;
 }
 
-void Metadata::from_json(const json& j)
+void from_json(const json& j, Metadata &s)
 {
+  s.type_ = j["type"];
+
   if (j.count("attributes"))
-    attributes_ = j["attributes"];
+    s.attributes_ = j["attributes"];
 
   if (j.count("detectors"))
   {
     auto o = j["detectors"];
     for (json::iterator it = o.begin(); it != o.end(); ++it)
-      detectors.push_back(it.value());
+      s.detectors.push_back(it.value());
   }
 }
 
@@ -541,7 +543,8 @@ bool Sink::load(H5CC::Group& g, bool withdata)
   if (!g.has_group("metadata"))
     return false;
 
-  metadata_.from_json(g.open_group("metadata"));
+  from_json(json(g.open_group("metadata")), metadata_);
+//  metadata_.from_json(g.open_group("metadata"));
 
   bool ret = this->_initialize();
 
@@ -563,7 +566,7 @@ bool Sink::save(H5CC::Group& g) const
 //  json j = metadata_.to_json();
   auto mdg = g.require_group("metadata");
 
-  H5CC::from_json(metadata_.to_json(), mdg);
+  H5CC::from_json(json(metadata_), mdg);
 
   this->_save_data(g);
 }

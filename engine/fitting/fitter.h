@@ -27,15 +27,19 @@
 #include "daq_sink.h"
 #include "finder.h"
 
+#include "json.hpp"
+using namespace nlohmann;
+
 namespace Qpx {
 
 class Fitter {
   
 public:
-  Fitter() : activity_scale_factor_(1.0) {}
-
-  Fitter(SinkPtr spectrum) : Fitter()
+  Fitter() {}
+  Fitter(SinkPtr spectrum)
   { setData(spectrum); }
+
+  Fitter(const json& j, SinkPtr spectrum);
 
   FitSettings settings() const { return finder_.settings_; }
   void apply_settings(FitSettings settings);
@@ -91,12 +95,11 @@ public:
   void from_xml(const pugi::xml_node &node, SinkPtr spectrum);
   std::string xml_element_name() const {return "Fitter";}
 
-
-
+  friend void to_json(json& j, const Fitter &s);
 
   //for efficiency stuff
   std::string sample_name_;
-  double activity_scale_factor_; //should be in spectrum?
+  double activity_scale_factor_ {1.0}; //should be in spectrum?
 
   //data from spectrum
   Metadata metadata_;

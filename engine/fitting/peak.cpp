@@ -25,10 +25,17 @@
 
 namespace Qpx {
 
+Peak::Peak(const json& j, const Finder &f, const SUM4Edge &LB, const SUM4Edge &RB)
+{
+  if (j.count("hypermet"))
+    hypermet_ = j["hypermet"];
+  if (j.count("SUM4"))
+    sum4_ = SUM4(j["SUM4"], f, LB, RB);
+  reconstruct(f.settings_);
+}
+
 Peak::Peak(const Hypermet &hyp, const SUM4 &s4, const FitSettings &fs)
-  : intensity_theoretical_(0.0)
-  , efficiency_relative_(0.0)
-  , hypermet_(hyp)
+  : hypermet_(hyp)
   , sum4_(s4)
 {
   reconstruct(fs);
@@ -171,6 +178,14 @@ void Peak::from_xml(const pugi::xml_node &node) {
     double L = node.child("SUM4").attribute("left").as_double();
     double R = node.child("SUM4").attribute("right").as_double();
   }
+}
+
+void to_json(json& j, const Peak &s)
+{
+  if (s.sum4_.peak_width())
+    j["SUM4"] = s.sum4_;
+  if (s.hypermet_.height().value().value() > 0)
+    j["hypermet"] = s.hypermet_;
 }
 
 }

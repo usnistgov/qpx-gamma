@@ -154,12 +154,10 @@ void to_json_options(json& j, const Detector &s, bool options)
   j["type"] = s.type_;
 
   if (s.energy_calibrations_.size())
-    for (auto c : s.energy_calibrations_.my_data_)
-      j["energy_calibrations"].push_back(c);
+    j["energy_calibrations"] = s.efficiency_calibration_;
 
   if (s.gain_match_calibrations_.size())
-    for (auto c : s.gain_match_calibrations_.my_data_)
-      j["gain_match_calibrations"].push_back(c);
+    j["gain_match_calibrations"] = s.gain_match_calibrations_;
 
   if (s.fwhm_calibration_.valid())
     j["fwhm_calibration"] = s.fwhm_calibration_;
@@ -181,17 +179,9 @@ void from_json(const json& j, Detector &s)
   if (j.count("efficiency_calibration"))
     s.efficiency_calibration_ = j["efficiency_calibration"];
   if (j.count("energy_calibrations"))
-  {
-    auto o = j["energy_calibrations"];
-    for (json::iterator it = o.begin(); it != o.end(); ++it)
-      s.energy_calibrations_.add_a(it.value());
-  }
+    s.energy_calibrations_ = j["energy_calibrations"];
   if (j.count("gain_match_calibrations"))
-  {
-    auto o = j["gain_match_calibrations"];
-    for (json::iterator it = o.begin(); it != o.end(); ++it)
-      s.gain_match_calibrations_.add_a(it.value());
-  }
+    s.gain_match_calibrations_ = j["gain_match_calibrations"];
   if (j.count("optimizations"))
     s.settings_ = j["optimizations"];
 }

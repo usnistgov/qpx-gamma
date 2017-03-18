@@ -23,10 +23,14 @@
 
 #pragma once
 
-#include "xmlable.h"
 #include "generic_setting.h"
 #include <set>
 #include <string>
+
+#include "xmlable.h"
+
+#include "json.hpp"
+using namespace nlohmann;
 
 namespace Qpx {
 
@@ -104,6 +108,9 @@ public:
   std::string xml_element_name() const override {return "TrajectoryNode";}
   void to_xml(pugi::xml_node &node) const override;
   void from_xml(const pugi::xml_node &node) override;
+
+  friend void to_json(json& j, const TrajectoryNode& t);
+  friend void from_json(const json& j, TrajectoryNode& t);
 
   bool operator== (const TrajectoryNode&) const;
   bool shallow_equals(const TrajectoryNode&) const;

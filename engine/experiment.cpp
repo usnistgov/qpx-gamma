@@ -25,7 +25,93 @@
 #include "custom_logger.h"
 #include "UncertainDouble.h"
 
+#ifdef H5_ENABLED
+#include "H5CC_File.h"
+#include "JsonH5.h"
+#include "ExceptionUtil.h"
+#endif
+
 namespace Qpx {
+
+ExperimentProject::ExperimentProject(const std::string& filename)
+  :ExperimentProject()
+{
+  pugi::xml_document doc;
+  if (doc.load_file(filename.c_str()) &&
+      doc.child(xml_element_name().c_str()))
+    from_xml(doc.child(xml_element_name().c_str()));
+}
+
+void ExperimentProject::save_as(const std::string& filename)
+{
+#ifdef H5_ENABLED
+  save_h5(filename);
+  return;
+#endif
+  pugi::xml_document doc;
+  pugi::xml_node root = doc.root();
+  to_xml(root);
+  doc.save_file(filename.c_str());
+}
+
+#ifdef H5_ENABLED
+void ExperimentProject::save_h5(const std::string& filename)
+{
+  try
+  {
+    H5CC::File f(filename, H5CC::Access::rw_truncate);
+    auto group = f.require_group("experiment");
+
+    group.write_attribute("git_version", std::string(GIT_VERSION));
+
+    //  if (base_prototypes.empty())
+    //    return;
+
+    if (base_prototypes.size())
+    {
+      auto bpg = group.require_group("base_prototypes");
+      H5CC::from_json(json(base_prototypes), bpg);
+    }
+
+    if (root_trajectory)
+    {
+      auto g = group.require_group("trajectory");
+      from_json(json(*root_trajectory), g);
+    }
+
+    if (!data.empty())
+    {
+      auto dg = group.require_group("data");
+      int i=0;
+      size_t len = std::to_string(data.size() - 1).size();
+
+      for (const auto &a : data)
+      {
+        std::string name = std::to_string(i++);
+        if (name.size() < len)
+          name = std::string(len - name.size(), '0').append(name);
+
+        auto ssg = dg.require_group(name);
+        a.second->to_h5(ssg);
+        ssg.write_attribute("index", a.first);
+      }
+    }
+
+    identity_ = filename;
+    changed_ = false;
+  }
+  catch (...)
+  {
+    ERR << "<ExperimentProject> Failed to write h5 " << filename;
+    printException();
+  }
+}
+
+void ExperimentProject::load_h5(const std::string& filename)
+{
+
+}
+#endif
 
 void ExperimentProject::to_xml(pugi::xml_node &root) const
 {
@@ -53,7 +139,6 @@ void ExperimentProject::to_xml(pugi::xml_node &root) const
 
   changed_ = false;
 }
-
 
 void ExperimentProject::from_xml(const pugi::xml_node &node)
 {

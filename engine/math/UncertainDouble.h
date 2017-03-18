@@ -4,13 +4,17 @@
 
 #include <string>
 #include <list>
+
 #include "xmlable.h"
+
+#include "json.hpp"
+using namespace nlohmann;
 
 class UncertainDouble : public XMLable
 {
 public:
 
-  UncertainDouble();
+  UncertainDouble() {}
   UncertainDouble(double val, double sigma, uint16_t sigf);
 
   static UncertainDouble from_int(int64_t val, double sigma);
@@ -72,11 +76,14 @@ public:
   std::string xml_element_name() const override {return "UncertainDouble";}
 
 private:
-  double value_;
-  double sigma_;
-  uint16_t sigfigs_;
+  double value_ {std::numeric_limits<double>::quiet_NaN()};
+  double sigma_ {std::numeric_limits<double>::quiet_NaN()};
+  uint16_t sigfigs_ {0};
 
   UncertainDouble& additive_uncert(const UncertainDouble &other);
   UncertainDouble& multipli_uncert(const UncertainDouble &other);
   int exponent() const;
 };
+
+void to_json(json& j, const UncertainDouble &s);
+void from_json(const json& j, UncertainDouble &s);

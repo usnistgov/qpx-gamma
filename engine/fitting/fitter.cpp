@@ -597,6 +597,46 @@ void Fitter::to_xml(pugi::xml_node &root) const
     r.second.to_xml(node, finder_);
 }
 
+void to_json(json& j, const Fitter &s)
+{
+  j["settings"] = s.finder_.settings_;
+  if (!s.selected_peaks_.empty())
+    j["selected_peaks"] = s.selected_peaks_;
+  for (auto &r : s.regions_)
+    j["regions"].push_back(r.second.to_json(s.finder_));
+}
+
+Fitter::Fitter(const json& j, SinkPtr spectrum)
+{
+  if (!spectrum)
+    return;
+
+  if (j.count("selected_peaks"))
+  {
+    auto o = j["selected_peaks"];
+    for (json::iterator it = o.begin(); it != o.end(); ++it)
+      selected_peaks_.insert(it.value().get<double>());
+  }
+
+  finder_.settings_ = j["settings"];
+
+  setData(spectrum);
+
+  if (j.count("regions"))
+  {
+    auto o = j["regions"];
+    for (json::iterator it = o.begin(); it != o.end(); ++it)
+    {
+      ROI region(it.value(), finder_);
+      if (region.width())
+        regions_[region.ID()] = region;
+    }
+  }
+
+  render_all();
+}
+
+
 void Fitter::from_xml(const pugi::xml_node &node, SinkPtr spectrum)
 {
   if (node.attribute("SelectedPeaks"))

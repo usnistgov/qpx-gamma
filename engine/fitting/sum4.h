@@ -26,17 +26,24 @@
 #include <cstdint>
 #include "polynomial.h"
 #include "UncertainDouble.h"
+#include "finder.h"
 #include <cmath>
+
+#include "json.hpp"
+using namespace nlohmann;
 
 namespace Qpx {
 
 class SUM4Edge {
-  double Lchan_, Rchan_;
-  double min_, max_;
+  double Lchan_ {0};
+  double Rchan_ {0};
+  double min_ {0};
+  double max_ {0};
   UncertainDouble dsum_, davg_;
 
 public:
-  SUM4Edge();
+  SUM4Edge() {}
+  SUM4Edge(const json& j, const Finder& f);
   SUM4Edge(const std::vector<double> &x,
            const std::vector<double> &y,
            uint32_t left, uint32_t right);
@@ -51,17 +58,18 @@ public:
   double min()      const {return min_;}
   double max()      const {return max_;}
   double midpoint() const;
+
+  friend void to_json(json& j, const SUM4Edge& s);
 };
 
 class SUM4 {
 
 public:
-  SUM4();
-  SUM4(const std::vector<double> &x,
-       const std::vector<double> &y,
-       uint32_t Lindex, uint32_t Rindex,
-       Polynomial background,
-       SUM4Edge LB, SUM4Edge RB);
+  SUM4() {}
+  SUM4(const json& j, const Finder& f,
+       const SUM4Edge& LB, const SUM4Edge& RB);
+  SUM4(double left, double right, const Finder& f,
+       const SUM4Edge& LB, const SUM4Edge& RB);
 
   SUM4Edge LB() const {return LB_;}
   SUM4Edge RB() const {return RB_;}
@@ -80,9 +88,16 @@ public:
 
   static int get_currie_quality_indicator(double peak_net_area, double background_variance);
 
+  static Polynomial sum4_background(const SUM4Edge& L,
+                                    const SUM4Edge& R,
+                                    const Finder& f);
+
+  friend void to_json(json& j, const SUM4 &s);
+
 private:
   SUM4Edge LB_, RB_;
-  double Lchan_, Rchan_;
+  double Lchan_ {0};
+  double Rchan_ {0};
 
   UncertainDouble gross_area_;
   UncertainDouble background_area_;

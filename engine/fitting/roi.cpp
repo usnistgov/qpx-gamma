@@ -337,14 +337,8 @@ bool ROI::adjust_sum4(double &peakID, double left, double right)
   if (!contains(peakID))
     return false;
 
-  uint32_t L = finder_.find_index(left);
-  uint32_t R = finder_.find_index(right);
-
-  if (L >= R)
-    return false;
-
   Qpx::Peak pk = peaks_.at(peakID);
-  Qpx::SUM4 new_sum4(finder_.x_, finder_.y_, L, R, sum4_background(), LB_, RB_);
+  Qpx::SUM4 new_sum4(left, right, finder_, LB_, RB_);
   pk = Qpx::Peak(pk.hypermet(), new_sum4, finder_.settings_);
   remove_peak(peakID);
   peakID = pk.center().value();
@@ -403,11 +397,7 @@ bool ROI::add_peak(const Finder &parentfinder,
     }
     else
     {
-      Peak fitted(Hypermet(),
-                  SUM4(finder_.x_, finder_.y_,
-                       finder_.find_index(left), finder_.find_index(right),
-                       sum4_background(), LB_, RB_),
-                  finder_.settings_);
+      Peak fitted(Hypermet(), SUM4(left, right, finder_, LB_, RB_), finder_.settings_);
       peaks_[fitted.center().value()] = fitted;
       render();
       save_current_fit("Manually added " + fitted.energy().to_string());
@@ -433,11 +423,7 @@ bool ROI::add_peak(const Finder &parentfinder,
     ROI new_fit = *this;
     if (finder_.settings_.sum4_only)
     {
-      Peak fitted(Hypermet(),
-                  SUM4(finder_.x_, finder_.y_,
-                       finder_.find_index(left), finder_.find_index(right),
-                       sum4_background(), LB_, RB_),
-                  finder_.settings_);
+      Peak fitted(Hypermet(), SUM4(left, right, finder_, LB_, RB_), finder_.settings_);
       peaks_[fitted.center().value()] = fitted;
       render();
       save_current_fit("Manually added " + fitted.energy().to_string());
@@ -570,7 +556,6 @@ bool ROI::rebuild_as_hypermet(boost::atomic<bool>& interruptor)
   CustomTimer timer(true);
 
   std::map<double, Peak> new_peaks;
-  Polynomial sum4back = sum4_background();
 
   std::vector<Hypermet> old_hype;
   for (auto &q : peaks_) {
@@ -579,10 +564,8 @@ bool ROI::rebuild_as_hypermet(boost::atomic<bool>& interruptor)
     else if (q.second.sum4().peak_width())
     {
       Peak s4only(Hypermet(),
-                  SUM4(finder_.x_, finder_.y_,
-                       finder_.find_index(q.second.sum4().left()),
-                       finder_.find_index(q.second.sum4().right()),
-                       sum4back, LB_, RB_),
+                  SUM4(q.second.sum4().left(), q.second.sum4().right(),
+                       finder_, LB_, RB_),
                   finder_.settings_);
       new_peaks[s4only.center().value()] = s4only;
     }
@@ -601,11 +584,9 @@ bool ROI::rebuild_as_hypermet(boost::atomic<bool>& interruptor)
 
   for (size_t i=0; i < hype.size(); ++i) {
     double edge =  hype[i].width().value().value() * sqrt(log(2)) * 3; //use const from settings
-    uint32_t edgeL = finder_.find_index(hype[i].center().value().value() - edge);
-    uint32_t edgeR = finder_.find_index(hype[i].center().value().value() + edge);
-    Peak one(hype[i],
-             SUM4(finder_.x_, finder_.y_, edgeL, edgeR, sum4back, LB_, RB_),
-             finder_.settings_);
+    double left = hype[i].center().value().value() - edge;
+    double right = hype[i].center().value().value() + edge;
+    Peak one(hype[i], SUM4(left, right, finder_, LB_, RB_), finder_.settings_);
     new_peaks[one.center().value()] = one;
   }
 
@@ -618,7 +599,6 @@ bool ROI::rebuild_as_gaussian(boost::atomic<bool>& interruptor)
   CustomTimer timer(true);
 
   std::map<double, Peak> new_peaks;
-  Polynomial sum4back = sum4_background();
 
   std::vector<Gaussian> old_gauss;
   for (auto &q : peaks_)
@@ -627,10 +607,9 @@ bool ROI::rebuild_as_gaussian(boost::atomic<bool>& interruptor)
       old_gauss.push_back(q.second.hypermet().gaussian());
     else if (q.second.sum4().peak_width())
     {
-      Peak s4only(Hypermet(), SUM4(finder_.x_, finder_.y_,
-                                   finder_.find_index(q.second.sum4().left()),
-                                   finder_.find_index(q.second.sum4().right()),
-                                   sum4back, LB_, RB_),
+      Peak s4only(Hypermet(), SUM4(q.second.sum4().left(),
+                                   q.second.sum4().right(),
+                                   finder_, LB_, RB_),
                   finder_.settings_);
       //      q.second.construct(settings_);
       new_peaks[s4only.center().value()] = s4only;
@@ -651,10 +630,10 @@ bool ROI::rebuild_as_gaussian(boost::atomic<bool>& interruptor)
   for (size_t i=0; i < gauss.size(); ++i)
   {
     double edge =  gauss[i].hwhm().value().value() * 3; //use const from settings
-    uint32_t edgeL = finder_.find_index(gauss[i].center().value().value() - edge);
-    uint32_t edgeR = finder_.find_index(gauss[i].center().value().value() + edge);
+    double left = gauss[i].center().value().value() - edge;
+    double right = gauss[i].center().value().value() + edge;
     Peak one(Hypermet(gauss[i], finder_.settings_),
-             SUM4(finder_.x_, finder_.y_, edgeL, edgeR, sum4back, LB_, RB_),
+             SUM4(left, right, finder_, LB_, RB_),
              finder_.settings_);
     new_peaks[one.center().value()] = one;
   }
@@ -670,7 +649,7 @@ void ROI::render()
   hr_background.clear();
   hr_back_steps.clear();
   hr_fullfit.clear();
-  Polynomial sum4back = sum4_background();
+  Polynomial sum4back = SUM4::sum4_background(LB_, RB_, finder_);
 
   for (double i = 0; i < finder_.x_.size(); i += 0.1)
   {
@@ -839,22 +818,6 @@ void ROI::init_background()
   background_.add_coeff(1, minslope, maxslope, slope);
 }
 
-Polynomial  ROI::sum4_background()
-{
-  Polynomial sum4back;
-  if (finder_.x_.empty())
-    return sum4back;
-  double run = RB_.left() - LB_.right();
-  auto xoffset = sum4back.xoffset();
-  xoffset.preset_bounds(LB_.right(), LB_.right());
-  double s4base = LB_.average();
-  double s4slope = (RB_.average() - LB_.average()) / run;
-  sum4back.set_xoffset(xoffset);
-  sum4back.add_coeff(0, s4base, s4base, s4base);
-  sum4back.add_coeff(1, s4slope, s4slope, s4slope);
-  return sum4back;
-}
-
 size_t ROI::current_fit() const
 {
   return current_fit_;
@@ -891,6 +854,18 @@ bool ROI::rollback(const Finder &parent_finder, size_t i)
 
   return true;
 }
+
+void ROI::cull_peaks()
+{
+  std::map<double, Peak> peaks;
+  for (auto &p : peaks_) {
+    if ((p.first > LB_.right()) &&
+        (p.first < RB_.left()))
+      peaks[p.first] = p.second;
+  }
+  peaks_ = peaks;
+}
+
 
 void ROI::to_xml(pugi::xml_node &root, const Finder &parent_finder) const
 {
@@ -980,8 +955,6 @@ void ROI::from_xml(const pugi::xml_node &root, const Finder &finder)
     if (node.child("BackgroundPoly"))
       background_.from_xml(node.child("BackgroundPoly"));
 
-    Polynomial sum4back = sum4_background();
-
     if (node.child("Peaks")) {
       for (auto &pk : node.child("Peaks").children())
       {
@@ -989,13 +962,11 @@ void ROI::from_xml(const pugi::xml_node &root, const Finder &finder)
         if (pk.child("Hypermet"))
           hyp.from_xml(pk.child("Hypermet"));
         SUM4 s4;
-        if (pk.child("SUM4")) {
+        if (pk.child("SUM4"))
+        {
           double L = pk.child("SUM4").attribute("left").as_double();
           double R = pk.child("SUM4").attribute("right").as_double();
-          s4 = SUM4(finder_.x_, finder_.y_,
-                    finder_.find_index(L),
-                    finder_.find_index(R),
-                    sum4back, LB_, RB_);
+          s4 = SUM4(L, R, finder_, LB_, RB_);
         }
         Peak newpeak(hyp, s4, finder_.settings_);
         peaks_[newpeak.center().value()] = newpeak;
@@ -1009,15 +980,85 @@ void ROI::from_xml(const pugi::xml_node &root, const Finder &finder)
   rollback(finder, chosenfit);
 }
 
-void ROI::cull_peaks()
+json ROI::to_json(const Finder &parent_finder) const
 {
-  std::map<double, Peak> peaks;
-  for (auto &p : peaks_) {
-    if ((p.first > LB_.right()) &&
-        (p.first < RB_.left()))
-      peaks[p.first] = p.second;
+  json j;
+
+  if (fits_.empty())
+    return j;
+
+  j["current_fit"] = current_fit_;
+
+  ROI temp(*this);
+
+  for (size_t i=0; i < temp.fits_.size(); ++i)
+  {
+    json jj;
+
+    jj["description"] = temp.fits_[i].description.description;
+    temp.rollback(parent_finder, i);
+
+    if (finder_.settings_.overriden)
+      jj["settings"] = finder_.settings_;
+
+    jj["background_left"] = temp.LB();
+    jj["background_right"] = temp.RB();
+    jj["background_poly"] = temp.background_;
+
+    for (auto &p : temp.peaks_)
+      jj["peaks"].push_back(p.second);
+
+    j["fits"].push_back(jj);
   }
-  peaks_ = peaks;
+
+  return j;
+}
+
+ROI::ROI(const json& j, const Finder &finder)
+{
+  if (finder.x_.empty() || (finder.x_.size() != finder.y_.size()))
+    return;
+
+  if (j.count("fits"))
+  {
+    json o = j["fits"];
+    for (json::iterator it = o.begin(); it != o.end(); ++it)
+    {
+      SUM4Edge LB(it.value()["background_left"], finder);
+      SUM4Edge RB(it.value()["background_right"], finder);
+
+      if (!LB.width() || !RB.width())
+        return;
+
+      if (it.value().count("settings"))
+        finder_.settings_ = it.value()["settings"];
+      else
+        finder_.settings_ = finder.settings_;
+
+      //validate background and edges?
+      set_data(finder, LB.left(), RB.left());
+
+      LB_ = LB;
+      RB_ = RB;
+
+      if (it.value().count("peaks"))
+      {
+        json p = it.value()["peaks"];
+        for (json::iterator it2 = p.begin(); it2 != p.end(); ++it2)
+        {
+          Peak newpeak(it2.value(), finder_, LB_, RB_);
+          peaks_[newpeak.center().value()] = newpeak;
+        }
+      }
+
+      background_ = it.value()["background_poly"];
+      render();
+      save_current_fit(it.value()["description"]);
+      peaks_.clear();
+    }
+  }
+
+  rollback(finder, j["current_fit"]);
 }
 
 }

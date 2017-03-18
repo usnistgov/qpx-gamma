@@ -26,7 +26,11 @@
 #include "polynomial.h"
 #include "finder.h"
 #include <boost/atomic.hpp>
+
 #include "xmlable.h"
+
+#include "json.hpp"
+using namespace nlohmann;
 
 namespace Qpx {
 
@@ -58,7 +62,8 @@ struct Fit {
 
 
 struct ROI {
-  ROI() : current_fit_(0) {}
+  ROI() {}
+  ROI(const json& j, const Finder &finder);
   ROI(const Finder &parentfinder, double min, double max);
 
   //bounds
@@ -84,7 +89,6 @@ struct ROI {
   SUM4Edge RB() const {return RB_;}
   FitSettings fit_settings() const { return finder_.settings_; }
   const Finder &finder() const { return finder_; }
-  Polynomial sum4_background();
 
   //access history
   size_t current_fit() const;
@@ -112,6 +116,8 @@ struct ROI {
   void from_xml(const pugi::xml_node &node, const Finder &finder);
   std::string xml_element_name() const {return "Region";}
 
+  json to_json(const Finder &parent_finder) const;
+
   //as rendered for graphing
   std::vector<double>
       hr_x,
@@ -131,7 +137,7 @@ private:
 
   //history
   std::vector<Fit> fits_;
-  size_t current_fit_;
+  size_t current_fit_ {0};
 
 
   void set_data(const Finder &parentfinder, double min, double max);
