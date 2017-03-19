@@ -332,12 +332,6 @@ UncertainDouble UncertainDouble::operator /(const double &other) const
   return result;
 }
 
-
-//UncertainDouble::operator double() const
-//{
-//  return value_;
-//}
-
 bool UncertainDouble::almost(const UncertainDouble &other) const
 {
   if (value_ == other.value_)

@@ -22,10 +22,6 @@ public:
   static UncertainDouble from_double(double val, double sigma,
                                      uint16_t sigs_below = 1);
 
-  static UncertainDouble from_nsdf(std::string val, std::string uncert);
-
-//  UncertainDouble & operator=(const UncertainDouble & other);
-
   double value() const;
   double uncertainty() const;
   double error() const;
@@ -61,8 +57,6 @@ public:
   UncertainDouble operator+(const UncertainDouble &other) const;
   UncertainDouble & operator-=(const UncertainDouble &other);
   UncertainDouble operator-(const UncertainDouble &other) const;
-
-//  operator double() const;
 
   bool almost (const UncertainDouble &other) const;
   bool operator == (const UncertainDouble &other) const {return value() == other.value();}
