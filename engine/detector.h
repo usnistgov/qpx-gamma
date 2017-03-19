@@ -27,7 +27,7 @@
 #include <string>
 #include <boost/date_time.hpp>
 #include "calibration.h"
-#include "generic_setting.h"
+#include "setting.h"
 
 #include "json.hpp"
 using namespace nlohmann;

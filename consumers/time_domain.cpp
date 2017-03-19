@@ -151,8 +151,8 @@ void TimeDomain::_push_stats(const StatsUpdate& newStats)
 
     if (!updates_.empty())
     {
-      if ((newStats.stats_type == StatsType::stop) &&
-          (updates_.back().stats_type == StatsType::running))
+      if ((newStats.stats_type == StatsUpdate::Type::stop) &&
+          (updates_.back().stats_type == StatsUpdate::Type::running))
       {
         updates_.pop_back();
         seconds_.pop_back();

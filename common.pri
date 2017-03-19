@@ -84,10 +84,10 @@ win32 {
   error( "Couldn't find the engine.pri file!" )
 }
 
-!include( $$PWD/sources/sources.pri ) {
+!include( $$PWD/producers/producers.pri ) {
   error( "Couldn't find the sources.pri file!" )
 }
 
-!include( $$PWD/sinks/sinks.pri ) {
+!include( $$PWD/consumers/consumers.pri ) {
   error( "Couldn't find the sinks.pri file!" )
 }

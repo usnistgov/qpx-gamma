@@ -15,14 +15,6 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Types for organizing data aquired from Device
- *        Qpx::Hit        single energy event with coincidence flags
- *        Qpx::StatsUdate metadata for one spill (memory chunk)
- *        Qpx::RunInfo    metadata for the whole run
- *        Qpx::Spill      bundles all data and metadata for a list run
- *        Qpx::ListData   bundles hits in vector and run metadata
- *
  ******************************************************************************/
 
 #include "stats_update.h"
@@ -30,21 +22,21 @@
 
 namespace Qpx {
 
-StatsType StatsUpdate::type_from_str(std::string type)
+StatsUpdate::Type StatsUpdate::type_from_str(std::string type)
 {
   if (type == "start")
-    return StatsType::start;
+    return Type::start;
   else if (type == "stop")
-    return StatsType::stop;
+    return Type::stop;
   else
-    return StatsType::running;
+    return Type::running;
 }
 
-std::string StatsUpdate::type_to_str(StatsType type)
+std::string StatsUpdate::type_to_str(StatsUpdate::Type type)
 {
-  if (type == StatsType::start)
+  if (type == Type::start)
     return "start";
-  else if (type == StatsType::stop)
+  else if (type == Type::stop)
     return "stop";
   else
     return "running";
@@ -53,7 +45,8 @@ std::string StatsUpdate::type_to_str(StatsType type)
 // difference across all variables
 // except rate wouldn't make sense
 // and timestamp would require duration output type
-StatsUpdate StatsUpdate::operator-(const StatsUpdate other) const {
+StatsUpdate StatsUpdate::operator-(const StatsUpdate other) const
+{
   StatsUpdate answer;
   if (source_channel != other.source_channel)
     return answer;
@@ -65,7 +58,8 @@ StatsUpdate StatsUpdate::operator-(const StatsUpdate other) const {
   return answer;
 }
 
-bool StatsUpdate::operator==(const StatsUpdate other) const {
+bool StatsUpdate::operator==(const StatsUpdate other) const
+{
   if (stats_type != other.stats_type)
     return false;
   if (source_channel != other.source_channel)
@@ -77,7 +71,8 @@ bool StatsUpdate::operator==(const StatsUpdate other) const {
 
 // stacks two, adding up all variables
 // except timestamp wouldn't make sense
-StatsUpdate StatsUpdate::operator+(const StatsUpdate other) const {
+StatsUpdate StatsUpdate::operator+(const StatsUpdate other) const
+{
   StatsUpdate answer;
   if (source_channel != other.source_channel)
     return answer;
@@ -99,7 +94,8 @@ std::string StatsUpdate::to_string() const
   return ss.str();
 }
 
-void StatsUpdate::to_xml(pugi::xml_node &root) const {
+void StatsUpdate::to_xml(pugi::xml_node &root) const
+{
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
   node.append_attribute("type").set_value(type_to_str(stats_type).c_str());
@@ -119,7 +115,8 @@ void StatsUpdate::to_xml(pugi::xml_node &root) const {
 }
 
 
-void StatsUpdate::from_xml(const pugi::xml_node &node) {
+void StatsUpdate::from_xml(const pugi::xml_node &node)
+{
   *this = StatsUpdate();
 
   if (std::string(node.name()) != xml_element_name())
@@ -151,21 +148,17 @@ void StatsUpdate::from_xml(const pugi::xml_node &node) {
 
 void to_json(json& j, const StatsUpdate& s)
 {
-  j["type"] = s.type_to_str(s.stats_type);
+  j["type"] = StatsUpdate::type_to_str(s.stats_type);
   j["channel"] = s.source_channel;
   j["lab_time"] = boost::posix_time::to_iso_extended_string(s.lab_time);
   j["hit_model"] = s.model_hit;
   for (auto &i : s.items)
-  {
-    std::stringstream ss;
-    ss << std::setprecision(std::numeric_limits<PreciseFloat>::max_digits10) << i.second;
-    j["items"][i.first] = ss.str();
-  }
+    j["items"][i.first] = i.second;
 }
 
 void from_json(const json& j, StatsUpdate& s)
 {
-  s.stats_type = s.type_from_str(j["type"]);
+  s.stats_type = StatsUpdate::type_from_str(j["type"]);
   s.source_channel = j["channel"];
   s.lab_time = from_iso_extended(j["lab_time"]);
   s.model_hit = j["hit_model"];
@@ -174,13 +167,7 @@ void from_json(const json& j, StatsUpdate& s)
   {
     auto o = j["items"];
     for (json::iterator it = o.begin(); it != o.end(); ++it)
-    {
-      std::string name = it.key();
-      PreciseFloat value = std::numeric_limits<long double>::quiet_NaN();
-      try { value = std::stold(it.value().get<std::string>()); }
-      catch(...) {}
-      s.items[name] = value;
-    }
+      s.items[it.key()] = it.value();
   }
 }
 

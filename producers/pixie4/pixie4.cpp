@@ -1333,7 +1333,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
     callback->fill_stats(fetched_spill.stats, i);
   for (auto &q : fetched_spill.stats) {
     q.second.lab_time = fetched_spill.time;
-    q.second.stats_type = StatsType::start;
+    q.second.stats_type = StatsUpdate::Type::start;
   }
   spill_queue->enqueue(new Spill(fetched_spill));
 
@@ -1392,7 +1392,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
       for (auto &p : fetched_spill.stats) {
         p.second.lab_time = fetched_spill.time;
         if (timeout)
-          p.second.stats_type = StatsType::stop;
+          p.second.stats_type = StatsUpdate::Type::stop;
       }
       spill_queue->enqueue(new Spill(fetched_spill));
     }
@@ -1411,7 +1411,7 @@ void Pixie4::worker_run_dbl(Pixie4* callback, SynchronizedQueue<Spill*>* spill_q
     callback->fill_stats(fetched_spill.stats, i);
   for (auto &q : fetched_spill.stats) {
     q.second.lab_time = fetched_spill.time;
-    q.second.stats_type = StatsType::stop;
+    q.second.stats_type = StatsUpdate::Type::stop;
   }
   spill_queue->enqueue(new Spill(fetched_spill));
 

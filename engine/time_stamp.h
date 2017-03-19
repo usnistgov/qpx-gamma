@@ -15,36 +15,31 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Types for organizing data aquired from device
- *        Qpx::Hit        single energy event with coincidence flags
- *
  ******************************************************************************/
 
 #pragma once
 
-#include "xmlable.h"
 #include <string>
 #include <cmath>
 #include <fstream>
 #include "qpx_util.h"
+
+#include "xmlable.h"
 
 #include "json.hpp"
 using namespace nlohmann;
 
 namespace Qpx {
 
-using namespace nlohmann;
-
 class TimeStamp
 {
+private:
+  uint64_t time_native_ {0};
+  uint32_t timebase_multiplier_ {1};
+  uint32_t timebase_divider_ {1};
 
 public:
-  inline TimeStamp()
-    : time_native_(0)
-    , timebase_multiplier_(1)
-    , timebase_divider_(1)
-  {}
+  inline TimeStamp() {}
 
   inline TimeStamp(uint32_t multiplier, uint32_t divider)
     : time_native_(0)
@@ -65,10 +60,14 @@ public:
   }
 
   inline double timebase_multiplier() const
-  { return timebase_multiplier_; }
+  {
+    return timebase_multiplier_;
+  }
 
   inline double timebase_divider() const
-  { return timebase_divider_; }
+  {
+    return timebase_divider_;
+  }
 
   static inline TimeStamp common_timebase(const TimeStamp& a, const TimeStamp& b)
   {
@@ -83,12 +82,12 @@ public:
       return TimeStamp(1, lcm(a.timebase_divider_, b.timebase_divider_));
   }
 
-  inline double operator-(const TimeStamp other) const
+  inline double operator-(const TimeStamp& other) const
   {
     return (to_nanosec() - other.to_nanosec());
   }
 
-  inline bool same_base(const TimeStamp other) const
+  inline bool same_base(const TimeStamp& other) const
   {
     return ((timebase_divider_ == other.timebase_divider_) && (timebase_multiplier_ == other.timebase_multiplier_));
   }
@@ -114,7 +113,7 @@ public:
       time_native_ += std::ceil(ns * double(timebase_divider_) / double(timebase_multiplier_));
   }
 
-  inline bool operator<(const TimeStamp other) const
+  inline bool operator<(const TimeStamp& other) const
   {
     if (same_base((other)))
       return (time_native_ < other.time_native_);
@@ -122,7 +121,7 @@ public:
       return (to_nanosec() < other.to_nanosec());
   }
 
-  inline bool operator>(const TimeStamp other) const
+  inline bool operator>(const TimeStamp& other) const
   {
     if (same_base((other)))
       return (time_native_ > other.time_native_);
@@ -130,7 +129,7 @@ public:
       return (to_nanosec() > other.to_nanosec());
   }
 
-  inline bool operator<=(const TimeStamp other) const
+  inline bool operator<=(const TimeStamp& other) const
   {
     if (same_base((other)))
       return (time_native_ <= other.time_native_);
@@ -138,7 +137,7 @@ public:
       return (to_nanosec() <= other.to_nanosec());
   }
 
-  inline bool operator>=(const TimeStamp other) const
+  inline bool operator>=(const TimeStamp& other) const
   {
     if (same_base((other)))
       return (time_native_ >= other.time_native_);
@@ -146,7 +145,7 @@ public:
       return (to_nanosec() >= other.to_nanosec());
   }
 
-  inline bool operator==(const TimeStamp other) const
+  inline bool operator==(const TimeStamp& other) const
   {
     if (same_base((other)))
       return (time_native_ == other.time_native_);
@@ -154,7 +153,7 @@ public:
       return (to_nanosec() == other.to_nanosec());
   }
 
-  inline bool operator!=(const TimeStamp other) const
+  inline bool operator!=(const TimeStamp& other) const
   {
     if (same_base((other)))
       return (time_native_ != other.time_native_);
@@ -172,15 +171,12 @@ public:
     infile.read(reinterpret_cast<char*>(&time_native_), sizeof(time_native_));
   }
 
+  std::string to_string() const;
+
+  //XMLable
   void from_xml(const pugi::xml_node &);
   void to_xml(pugi::xml_node &) const;
   std::string xml_element_name() const {return "TimeStamp";}
-  std::string to_string() const;
-
-private:
-  uint64_t time_native_;
-  uint32_t timebase_multiplier_;
-  uint32_t timebase_divider_;
 };
 
 void to_json(json& j, const TimeStamp& t);

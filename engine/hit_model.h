@@ -15,36 +15,41 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      QpxSpecialDelegate - displays colors, patterns, allows chosing of
- *      detectors.
- *
  ******************************************************************************/
 
 #pragma once
 
-#include <QDialog>
-#include <QCheckBox>
-#include <QDoubleSpinBox>
-#include <QComboBox>
-#include "setting.h"
+#include <vector>
+#include <map>
+#include "digitized_value.h"
+#include "time_stamp.h"
 
-class BinaryChecklist : public QDialog {
-  Q_OBJECT
+#include "xmlable.h"
 
+#include "json.hpp"
+using namespace nlohmann;
+
+namespace Qpx {
+
+struct HitModel
+{
 public:
-  explicit BinaryChecklist(Qpx::Setting setting, QWidget *parent = 0);
-  Qpx::Setting get_setting() {return setting_;}
+  TimeStamp                       timebase;
+  std::vector<DigitizedVal>       values;
+  std::vector<std::string>        idx_to_name;
+  std::map<std::string, size_t>   name_to_idx;
+  size_t                          tracelength {0};
 
-private slots:
-  void change_setting();
+  void add_value(const std::string& name, uint16_t bits);
+  std::string to_string() const;
 
-private:
-//  Ui::FormDaqSettings *ui;
-
-  Qpx::Setting      setting_;
-  std::vector<QCheckBox*> boxes_;
-  std::vector<QDoubleSpinBox*>  spins_;
-  std::vector<QComboBox*> menus_;
-
+  void from_xml(const pugi::xml_node &);
+  void to_xml(pugi::xml_node &) const;
+  std::string xml_element_name() const {return "HitModel";}
 };
+
+void to_json(json& j, const HitModel& t);
+void from_json(const json& j, HitModel& t);
+
+
+}

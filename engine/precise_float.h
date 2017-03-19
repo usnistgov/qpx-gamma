@@ -15,9 +15,6 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Setting exactly what it says
- *
  ******************************************************************************/
 
 #pragma once
@@ -26,6 +23,9 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+
+#include "json.hpp"
+using namespace nlohmann;
 
 //#define PF_DOUBLE 1
 #define PF_LONG_DOUBLE 1
@@ -140,3 +140,13 @@ inline std::string to_string(const PreciseFloat pf)
 }
 
 #endif
+
+inline void to_json(json& j, const PreciseFloat& s)
+{
+  j = to_string(s);
+}
+
+inline void from_json(const json& j, PreciseFloat& s)
+{
+  s = from_string(j.get<std::string>());
+}

@@ -28,7 +28,7 @@
 #include <boost/atomic.hpp>
 
 #include "detector.h"
-#include "generic_setting.h"
+#include "setting.h"
 #include "producer.h"
 #include "synchronized_queue.h"
 #include "project.h"

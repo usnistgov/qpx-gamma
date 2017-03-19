@@ -397,7 +397,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
               for (auto &q : starts_signalled) {
                 StatsUpdate udt;
-                udt.stats_type = StatsType::stop;
+                udt.stats_type = StatsUpdate::Type::stop;
                 udt.model_hit = MADC32::model_hit();
                 udt.source_channel = q;
                 udt.lab_time = ts;
@@ -474,7 +474,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
                   udt.source_channel = h.source_channel();
                   udt.lab_time = time_start;
-                  udt.stats_type = StatsType::start;
+                  udt.stats_type = StatsUpdate::Type::start;
 
 //                  extra_spill.time = time_start;
                   extra_spill.stats[h.source_channel()] = udt;
@@ -559,7 +559,7 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
       //    for (auto &q : one_spill.stats) {
       //      if (!starts_signalled.count(q.channel)) {
-      //        q.stats_type = StatsType::start;
+      //        q.stats_type = StatsUpdate::Type::start;
       //        starts_signalled.insert(q.channel);
       //      }
       //    }
@@ -584,11 +584,11 @@ void ParserEVT::worker_run(ParserEVT* callback, SynchronizedQueue<Spill*>* spill
 
   DBG << "<ParserEVT> before stop  hits = " << one_spill.hits.size();
 
-  if (one_spill.stats.empty() || (one_spill.stats.begin()->second.stats_type != StatsType::stop)) {
+  if (one_spill.stats.empty() || (one_spill.stats.begin()->second.stats_type != StatsUpdate::Type::stop)) {
 //    one_spill.time = ts;
     for (auto &q : starts_signalled) {
       StatsUpdate udt;
-      udt.stats_type = StatsType::stop;
+      udt.stats_type = StatsUpdate::Type::stop;
       udt.model_hit = MADC32::model_hit();
       udt.source_channel = q;
       udt.lab_time = ts;

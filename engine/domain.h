@@ -23,7 +23,7 @@
 
 #pragma once
 
-#include "generic_setting.h"
+#include "setting.h"
 #include <set>
 #include <string>
 

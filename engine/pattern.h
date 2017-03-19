@@ -15,33 +15,30 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Types for organizing data aquired from device
- *        Qpx::Pattern        
- *
  ******************************************************************************/
 
 #pragma once
 
 #include <vector>
 #include <string>
-#include <cstdint>
-#include <stddef.h>
 #include "event.h"
+
+#include "json.hpp"
+using namespace nlohmann;
 
 namespace Qpx {
 
-class Pattern {
+class Pattern
+{
 private:
   std::vector<bool> gates_;
-  size_t threshold_;
+  size_t threshold_ {0};
 
 public:
-  inline Pattern()
-      : threshold_(0)
-  {}
+  inline Pattern() {}
 
-  inline Pattern(const std::string &s) {
+  inline Pattern(const std::string &s)
+  {
     from_string(s);
   }
 
@@ -51,19 +48,58 @@ public:
   void set_gates(std::vector<bool>);
   void set_theshold(size_t);
 
-  bool relevant(size_t) const;
-  bool validate(const Event &e) const;
-  bool antivalidate(const Event &e) const;
+  inline bool relevant(size_t chan) const
+  {
+    if (chan >= gates_.size())
+      return false;
+    return gates_[chan];
+  }
+
+  inline bool validate(const Event &e) const
+  {
+    if (threshold_ == 0)
+      return true;
+    size_t matches = 0;
+    for (auto &h : e.hits)
+    {
+      if ((h.first < 0) || (h.first >= static_cast<int16_t>(gates_.size())))
+        continue;
+      else if (gates_[h.first])
+        matches++;
+      if (matches == threshold_)
+        break;
+    }
+    return (matches == threshold_);
+  }
+
+  inline bool antivalidate(const Event &e) const
+  {
+    if (threshold_ == 0)
+      return true;
+    size_t matches = threshold_;
+    for (auto &h : e.hits)
+    {
+      if ((h.first < 0) || (h.first >= static_cast<int16_t>(gates_.size())))
+        continue;
+      else if (gates_[h.first])
+        matches--;
+      if (matches < threshold_)
+        break;
+    }
+    return (matches == threshold_);
+  }
 
   std::string to_string() const;
   void from_string(std::string s);
 
   std::string gates_to_string() const;
-  std::vector<bool> gates_from_string(std::string s);
+  void gates_from_string(std::string s);
 
   bool operator==(const Pattern other) const;
   bool operator!=(const Pattern other) const {return !operator ==(other);}
-
 };
+
+void to_json(json& j, const Pattern &s);
+void from_json(const json& j, Pattern &s);
 
 }

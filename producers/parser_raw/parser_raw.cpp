@@ -290,7 +290,7 @@ void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill
 
 //    for (auto &q : one_spill.stats) {
 //      if (!starts_signalled.count(q.source_channel)) {
-//        q.stats_type = StatsType::start;
+//        q.stats_type = StatsUpdate::Type::start;
 //        starts_signalled.insert(q.source_channel);
 //      }
 //    }
@@ -300,7 +300,7 @@ void ParserRaw::worker_run(ParserRaw* callback, SynchronizedQueue<Spill*>* spill
   }
 
   for (auto &q : one_spill.stats)
-    q.second.stats_type = StatsType::stop;
+    q.second.stats_type = StatsUpdate::Type::stop;
   one_spill.hits.clear();
 
   spill_queue->enqueue(new Spill(one_spill));

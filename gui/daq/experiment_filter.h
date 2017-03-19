@@ -26,7 +26,7 @@
 #include <QWidget>
 #include <QComboBox>
 #include <set>
-#include "generic_setting.h"
+#include "setting.h"
 
 class WidgetDomainFilter : public QWidget {
   Q_OBJECT

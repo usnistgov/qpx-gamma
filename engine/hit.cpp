@@ -15,125 +15,12 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Types for organizing data aquired from Device
- *        Qpx::Hit        single energy event with coincidence flags
- *
  ******************************************************************************/
 
 #include "hit.h"
 #include <sstream>
 
 namespace Qpx {
-
-void HitModel::from_xml(const pugi::xml_node &node)
-{
-  *this = HitModel();
-  if (std::string(node.name()) != xml_element_name())
-    return;
-  if (node.attribute("trace_length"))
-    tracelength = node.attribute("trace_length").as_uint(0);
-  if (node.child(timebase.xml_element_name().c_str()))
-    timebase.from_xml(node.child(timebase.xml_element_name().c_str()));
-  if (node.child("Values"))
-  {
-    pugi::xml_node valsnode = node.child("Values");
-    for (auto &v : valsnode.children())
-    {
-      std::string name;
-      if (v.attribute("name"))
-        name = std::string(v.attribute("name").value());
-      if (name.empty())
-        continue;
-      size_t idx = 0;
-      if (v.attribute("index"))
-        idx = v.attribute("index").as_uint(0);
-      uint8_t bits = 0;
-      if (v.attribute("bits"))
-        bits = v.attribute("bits").as_uint(0);
-
-      if (idx >= values.size())
-        values.resize(idx + 1);
-      if (idx >= idx_to_name.size())
-        idx_to_name.resize(idx + 1);
-
-      values[idx] = DigitizedVal(0, bits);
-      idx_to_name[idx] = name;
-      name_to_idx[name] = idx;
-    }
-  }
-}
-
-void HitModel::to_xml(pugi::xml_node &root) const
-{
-  pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
-  if (tracelength)
-    node.append_attribute("trace_length").set_value(std::to_string(tracelength).c_str());
-  if (values.size())
-  {
-    pugi::xml_node valsnode = node.append_child("Values");
-    for (auto &v : name_to_idx)
-    {
-      pugi::xml_node valnode = valsnode.append_child("Value");
-      valnode.append_attribute("name").set_value(v.first.c_str());
-      valnode.append_attribute("index").set_value(std::to_string(v.second).c_str());
-      valnode.append_attribute("bits").set_value(std::to_string(int(values.at(v.second).bits())).c_str());
-    }
-  }
-  timebase.to_xml(node);
-}
-
-void to_json(json& j, const HitModel& t)
-{
-  if (t.tracelength)
-    j["tracelength"] = t.tracelength;
-  for (auto &v : t.name_to_idx)
-  {
-    j["values"][v.first]["index"] = v.second;
-    j["values"][v.first]["bits"] = t.values.at(v.second).bits();
-  }
-  j["timebase"] = t.timebase;
-}
-
-void from_json(const json& j, HitModel& t)
-{
-  if (j.count("tracelength"))
-    t.tracelength = j["tracelength"];
-  else
-    t.tracelength = 0;
-
-  if (j.count("values"))
-  {
-    auto o = j["values"];
-    for (json::iterator it = o.begin(); it != o.end(); ++it)
-    {
-      std::string name = it.key();
-      size_t idx = it.value()["index"];
-      uint8_t bits = it.value()["bits"];
-
-      if (idx >= t.values.size())
-        t.values.resize(idx + 1);
-      if (idx >= t.idx_to_name.size())
-        t.idx_to_name.resize(idx + 1);
-
-      t.values[idx] = DigitizedVal(0, bits);
-      t.idx_to_name[idx] = name;
-      t.name_to_idx[name] = idx;
-    }
-  }
-}
-
-std::string HitModel::to_string() const
-{
-  std::stringstream ss;
-  ss << "[timebase=" << timebase.to_string() << " ";
-  for (auto &n : name_to_idx)
-    ss << n.first << "(" << int(values.at(n.second).bits()) << "b) ";
-  if (tracelength)
-    ss << "trace_length=" << tracelength;
-  ss << "]";
-  return ss.str();
-}
 
 std::string Hit::to_string() const
 {

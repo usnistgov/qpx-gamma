@@ -15,18 +15,16 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Types for organizing data aquired from Device
- *        Qpx::Hit        single energy event with coincidence flags
- *
  ******************************************************************************/
 
 #include "time_stamp.h"
+//#include "qpx_util.h"
 #include <sstream>
 
 namespace Qpx {
 
-std::string TimeStamp::to_string() const {
+std::string TimeStamp::to_string() const
+{
   std::stringstream ss;
   ss << time_native_ << "x(" << timebase_multiplier_ << "/" << timebase_divider_ << ")";
   return ss.str();

@@ -300,7 +300,7 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
 
   //DBG << "Spectrum " << metadata_.name << " received update for chan " << newBlock.channel;
   bool chan_new = (stats_list_.count(newBlock.source_channel) == 0);
-  bool new_start = (newBlock.stats_type == StatsType::start);
+  bool new_start = (newBlock.stats_type == StatsUpdate::Type::start);
 
   if (newBlock.source_channel >= static_cast<int16_t>(energy_idx_.size()))
     energy_idx_.resize(newBlock.source_channel + 1, -1);
@@ -315,8 +315,8 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
 
   if (!chan_new
       && new_start
-      && (stats_list_[newBlock.source_channel].back().stats_type == StatsType::running))
-    stats_list_[newBlock.source_channel].back().stats_type = StatsType::stop;
+      && (stats_list_[newBlock.source_channel].back().stats_type == StatsUpdate::Type::running))
+    stats_list_[newBlock.source_channel].back().stats_type = StatsUpdate::Type::stop;
 
   if (recent_end_.lab_time.is_not_a_date_time())
     recent_start_ = newBlock;
@@ -334,7 +334,7 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
 
   recent_count_ = 0;
 
-  if (!chan_new && (stats_list_[newBlock.source_channel].back().stats_type == StatsType::running))
+  if (!chan_new && (stats_list_[newBlock.source_channel].back().stats_type == StatsUpdate::Type::running))
     stats_list_[newBlock.source_channel].pop_back();
 
   stats_list_[newBlock.source_channel].push_back(newBlock);
@@ -346,7 +346,7 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
     boost::posix_time::time_duration real ,live;
 
     for (auto &q : stats_list_[newBlock.source_channel]) {
-      if (q.stats_type == StatsType::start) {
+      if (q.stats_type == StatsUpdate::Type::start) {
         real += rt;
         live += lt;
         start = q;
@@ -363,7 +363,7 @@ void Spectrum::_push_stats(const StatsUpdate& newBlock) {
       }
     }
 
-    if (stats_list_[newBlock.source_channel].back().stats_type != StatsType::start) {
+    if (stats_list_[newBlock.source_channel].back().stats_type != StatsUpdate::Type::start) {
       real += rt;
       live += lt;
       //        DBG << "<Spectrum> \"" << metadata_.name << "\" RT + "

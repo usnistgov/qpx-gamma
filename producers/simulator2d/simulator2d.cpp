@@ -340,7 +340,7 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
 
   one_spill = Spill();
   moving_stats.model_hit = callback->model_hit;
-  moving_stats.stats_type = StatsType::start;
+  moving_stats.stats_type = StatsUpdate::Type::start;
   moving_stats.lab_time = boost::posix_time::microsec_clock::universal_time();
 
   moving_stats.source_channel = callback->chan0_;
@@ -384,7 +384,7 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
 
     moving_stats = moving_stats + one_run;
     moving_stats.model_hit = callback->model_hit;
-    moving_stats.stats_type = StatsType::running;
+    moving_stats.stats_type = StatsUpdate::Type::running;
     moving_stats.lab_time = boost::posix_time::microsec_clock::universal_time();
 
 //    DBG << "pushing with model " << moving_stats.model_hit.to_string();
@@ -401,7 +401,7 @@ void Simulator2D::worker_run(Simulator2D* callback, SynchronizedQueue<Spill*>* s
 
   one_spill.hits.clear();
   for (auto &q : one_spill.stats)
-    q.second.stats_type = StatsType::stop;
+    q.second.stats_type = StatsUpdate::Type::stop;
 
   spill_queue->enqueue(new Spill(one_spill));
 

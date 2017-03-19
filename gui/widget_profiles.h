@@ -27,7 +27,7 @@
 #include <QDialog>
 #include <QAbstractTableModel>
 #include <QItemSelectionModel>
-#include "generic_setting.h"
+#include "setting.h"
 
 namespace Ui {
 class WidgetProfiles;

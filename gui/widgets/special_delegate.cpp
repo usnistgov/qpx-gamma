@@ -22,7 +22,7 @@
  ******************************************************************************/
 
 #include "special_delegate.h"
-#include "generic_setting.h"
+#include "setting.h"
 #include "qt_util.h"
 #include <QComboBox>
 #include <QPainter>

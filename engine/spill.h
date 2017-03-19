@@ -28,7 +28,7 @@
 
 #include "stats_update.h"
 #include <boost/date_time.hpp>
-#include "generic_setting.h"
+#include "setting.h"
 #include "detector.h"
 #include "xmlable.h"
 

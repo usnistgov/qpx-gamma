@@ -15,10 +15,6 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      XMLable   abstract interface for xmlable objects
- *      XMLableDB container of xmlable objects
- *
  ******************************************************************************/
 
 #pragma once

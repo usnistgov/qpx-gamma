@@ -15,20 +15,14 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Types for organizing data aquired from device
- *        Qpx::Hit        single energy event with coincidence flags
- *
  ******************************************************************************/
 
 #pragma once
 
+#include "hit_model.h"
 #include <vector>
-#include <map>
 #include <fstream>
 
-#include "digitized_value.h"
-#include "time_stamp.h"
 #include "xmlable.h"
 
 #include "json.hpp"
@@ -36,50 +30,43 @@ using namespace nlohmann;
 
 namespace Qpx {
 
-struct HitModel
+class Hit
 {
+private:
+  int16_t       source_channel_;
+  TimeStamp     timestamp_;
+  std::vector<DigitizedVal> values_;
+  std::vector<uint16_t>     trace_;
+
 public:
-  TimeStamp                       timebase;
-  std::vector<DigitizedVal>       values;
-  std::vector<std::string>        idx_to_name;
-  std::map<std::string, size_t>   name_to_idx;
-  size_t                          tracelength;
-
-  HitModel() : tracelength(0) {}
-
-  void add_value(std::string name, uint16_t bits)
-  {
-    values.push_back(DigitizedVal(0,bits));
-    idx_to_name.push_back(name);
-    name_to_idx[name] = values.size() - 1;
-  }
-
-  void from_xml(const pugi::xml_node &);
-  void to_xml(pugi::xml_node &) const;
-  std::string xml_element_name() const {return "HitModel";}
-  std::string to_string() const;
-};
-
-void to_json(json& j, const HitModel& t);
-void from_json(const json& j, HitModel& t);
-
-
-class Hit {
-public:
-  inline Hit() : Hit(-1, HitModel()) {}
+  inline Hit()
+    : Hit(-1, HitModel())
+  {}
 
   inline Hit(int16_t sourcechan, const HitModel &model)
     : source_channel_(sourcechan)
     , timestamp_(model.timebase)
+    , values_ (model.values)
   {
-    values_ = model.values;
     trace_.resize(model.tracelength);
   }
 
   //Accessors
-  inline const int16_t& source_channel() const { return source_channel_; }
-  inline const TimeStamp& timestamp() const { return timestamp_; }
-  inline size_t value_count() const { return values_.size(); }
+  inline const int16_t& source_channel() const
+  {
+    return source_channel_;
+  }
+
+  inline const TimeStamp& timestamp() const
+  {
+    return timestamp_;
+  }
+
+  inline size_t value_count() const
+  {
+    return values_.size();
+  }
+
   inline DigitizedVal value(size_t idx) const
   {
     if (idx < values_.size())
@@ -87,15 +74,24 @@ public:
     else
       return DigitizedVal();
   }
-  inline const std::vector<uint16_t>& trace() const { return trace_; }
+
+  inline const std::vector<uint16_t>& trace() const
+  {
+    return trace_;
+  }
 
   //Setters
-  inline void set_timestamp_native(uint64_t native) { timestamp_ = timestamp_.make(native); }
+  inline void set_timestamp_native(uint64_t native)
+  {
+    timestamp_ = timestamp_.make(native);
+  }
+
   inline void set_value(size_t idx, uint16_t val)
   {
     if (idx < values_.size())
       values_[idx].set_val(val);
   }
+
   inline void set_trace(const std::vector<uint16_t> &trc)
   {
     size_t len = std::min(trc.size(), trace_.size());
@@ -161,12 +157,6 @@ public:
   }
 
   std::string to_string() const;
-
-private:
-  int16_t       source_channel_;
-  TimeStamp     timestamp_;
-  std::vector<DigitizedVal> values_;
-  std::vector<uint16_t>     trace_;
 };
 
 }

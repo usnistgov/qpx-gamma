@@ -15,10 +15,6 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Types for organizing data aquired from Device
- *        Qpx::Pattern        
- *
  ******************************************************************************/
 
 #include "pattern.h"
@@ -27,64 +23,29 @@
 
 namespace Qpx {
 
-void Pattern::resize(size_t sz) {
+void Pattern::resize(size_t sz)
+{
   gates_.resize(sz);
   if (threshold_ > sz)
     threshold_ = sz;
 }
 
-void Pattern::set_gates(std::vector<bool> gts) {
+void Pattern::set_gates(std::vector<bool> gts)
+{
   gates_ = gts;
   if (threshold_ > gates_.size())
     threshold_ = gates_.size();
 }
 
-void Pattern::set_theshold(size_t sz) {
+void Pattern::set_theshold(size_t sz)
+{
   threshold_ = sz;
   if (threshold_ > gates_.size())
     threshold_ = gates_.size();
 }
 
-bool Pattern::relevant(size_t chan) const
+bool Pattern::operator==(const Pattern other) const
 {
-  if (chan >= gates_.size())
-    return false;
-  return gates_[chan];
-}
-
-bool Pattern::validate(const Event &e) const
-{
-  if (threshold_ == 0)
-    return true;
-  size_t matches = 0;
-  for (auto &h : e.hits) {
-    if ((h.first < 0) || (h.first >= static_cast<int16_t>(gates_.size())))
-      continue;
-    else if (gates_[h.first])
-      matches++;
-    if (matches == threshold_)
-      break;
-  }
-  return (matches == threshold_);
-}
-
-bool Pattern::antivalidate(const Event &e) const
-{
-  if (threshold_ == 0)
-    return true;
-  size_t matches = threshold_;
-  for (auto &h : e.hits) {
-    if ((h.first < 0) || (h.first >= static_cast<int16_t>(gates_.size())))
-      continue;
-    else if (gates_[h.first])
-      matches--;
-    if (matches < threshold_)
-      break;
-  }
-  return (matches == threshold_);
-}
-
-bool Pattern::operator==(const Pattern other) const {
   if (gates_ != other.gates_)
     return false;
   if (threshold_ != other.threshold_)
@@ -103,12 +64,14 @@ std::string Pattern::gates_to_string() const
   return gts;
 }
 
-std::vector<bool> Pattern::gates_from_string(std::string s)
+void Pattern::gates_from_string(std::string s)
 {
   std::vector<bool> gts;
-  if (s.size()) {
+  if (s.size())
+  {
     boost::algorithm::trim(s);
-    if (s.size()) {
+    if (s.size())
+    {
       for (char &c : s)
         if (c == '+')
           gts.push_back(true);
@@ -116,9 +79,8 @@ std::vector<bool> Pattern::gates_from_string(std::string s)
           gts.push_back(false);
     }
   }
-  return gts;
+  gates_ = gts;
 }
-
 
 std::string Pattern::to_string() const
 {
@@ -134,7 +96,19 @@ void Pattern::from_string(std::string s)
   ss >> threshold_;
   std::string gts;
   ss >> gts;
-  gates_ = gates_from_string(gts);
+  gates_from_string(gts);
+}
+
+void to_json(json& j, const Pattern &s)
+{
+  j["shreshold"] = s.threshold();
+  j["gates"] = s.gates_to_string();
+}
+
+void from_json(const json& j, Pattern &s)
+{
+  s.set_theshold(j["threshold"]);
+  s.gates_from_string(j["gates"]);
 }
 
 

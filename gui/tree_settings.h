@@ -27,7 +27,7 @@
 #include <QAbstractItemModel>
 #include <QFont>
 #include <QBrush>
-#include "generic_setting.h"
+#include "setting.h"
 
 class TreeItem
 {
