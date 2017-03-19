@@ -282,7 +282,8 @@ void FormEnergyCalibration::toggle_push() {
     ui->spinTerms->setEnabled(false);
   }
 
-  if (detectors_.has_a(fit_data_.detector_) && detectors_.get(fit_data_.detector_).energy_calibrations_.has_a(new_calibration_))
+  if (detectors_.has_a(fit_data_.detector_) &&
+      detectors_.get(fit_data_.detector_).has_energy_calib(new_calibration_.bits()))
     ui->pushFromDB->setEnabled(true);
   else
     ui->pushFromDB->setEnabled(false);
@@ -305,23 +306,19 @@ void FormEnergyCalibration::on_pushFit_clicked()
 
 //  std::vector<double> sigmas(y.size(), 1);
 
-  Polynomial p;
-  p.add_coeff(0, -50, 50, 0);
-  p.add_coeff(1,   0, 50, 1);
+  auto p = std::make_shared<Polynomial>();
+  p->add_coeff(0, -50, 50, 0);
+  p->add_coeff(1,   0, 50, 1);
   for (int i=2; i <= ui->spinTerms->value(); ++i)
-      p.add_coeff(i, -5, 5, 0);
+    p->add_coeff(i, -5, 5, 0);
 
-  Qpx::Optimizer::fit(p, x, y, std::vector<double>(), std::vector<double>());
+  Qpx::Optimizer::fit(*p, x, y, std::vector<double>(), std::vector<double>());
 
-  if (p.coeff_count())
+  if (p->coeff_count())
   {
-    new_calibration_.type_ = "Energy";
-    new_calibration_.bits_ = fit_data_.settings().bits_;
-    new_calibration_.coefficients_ = p.coeffs_consecutive();
-    new_calibration_.r_squared_ = p.chi2();
-    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
-    new_calibration_.units_ = "keV";
-    new_calibration_.model_ = Qpx::CalibrationModel::polynomial;
+    new_calibration_ = Qpx::Calibration(fit_data_.settings().bits_);
+    new_calibration_.set_units("keV");
+    new_calibration_.set_function(p);
   }
   else
     WARN << "<Energy calibration> Qpx::Calibration failed";
@@ -344,7 +341,7 @@ void FormEnergyCalibration::on_pushApplyCalib_clicked()
 void FormEnergyCalibration::on_pushFromDB_clicked()
 {
   Qpx::Detector newdet = detectors_.get(fit_data_.detector_);
-  new_calibration_ = newdet.energy_calibrations_.get(new_calibration_);
+  new_calibration_ = newdet.best_calib(new_calibration_.bits());
   replot_calib();
   select_in_plot();
   toggle_push();

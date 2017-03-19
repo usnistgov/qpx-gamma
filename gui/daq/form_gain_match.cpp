@@ -106,7 +106,7 @@ void FormGainMatch::update_settings() {
 
   for (size_t i=0; i < current_dets_.size(); ++i) {
     QString text = "[" + QString::number(i) + "] "
-        + QString::fromStdString(current_dets_[i].name_);
+        + QString::fromStdString(current_dets_[i].name());
     ui->comboReference->addItem(text, QVariant::fromValue(i));
     ui->comboTarget->addItem(text, QVariant::fromValue(i));
   }
@@ -814,10 +814,10 @@ void FormGainMatch::remake_source_domains()
     return;
 
 
-  for (auto &q : current_dets_[chan].settings_.branches.my_data_)
+  for (auto &q : current_dets_[chan].optimizations())
     if (q.metadata.flags.count("gain") > 0)
       source_settings_["[DAQ] " + q.id_
-          + " (" + std::to_string(chan) + ":" + current_dets_[chan].name_ + ")"] = q;
+          + " (" + std::to_string(chan) + ":" + current_dets_[chan].name() + ")"] = q;
 
 }
 

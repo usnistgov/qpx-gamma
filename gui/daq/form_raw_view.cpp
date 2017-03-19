@@ -184,7 +184,7 @@ void FormRawView::displayHit(int idx)
         double energy = cal.transform(hit.value(i).val(hit.value(i).bits()), hit.value(i).bits());
         std::string nrg = to_str_decimals(energy, 0);
         if (cal.valid())
-          nrg += " " + cal.units_;
+          nrg += " " + cal.units();
 
         add_to_table(ui->tableHitValues, i, 2, nrg);
       }
@@ -347,7 +347,7 @@ void FormRawView::spillSelectionChanged(int row)
 
     std::string det = std::to_string(chan);
     if ((chan > -1) && (chan < static_cast<int>(dets_.size())))
-      det += " (" + dets_[chan].name_ + ")";
+      det += " (" + dets_[chan].name() + ")";
 
     add_to_table(ui->tableHits, i, 0, det);
     add_to_table(ui->tableHits, i, 1, hit.timestamp().to_string() );

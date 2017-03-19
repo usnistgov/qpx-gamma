@@ -305,7 +305,8 @@ void FormFwhmCalibration::selection_changed_in_table()
 
 void FormFwhmCalibration::toggle_push()
 {
-  if (detectors_.has_a(fit_data_.detector_) && (detectors_.get(fit_data_.detector_).fwhm_calibration_.valid()))
+  if (detectors_.has_a(fit_data_.detector_) &&
+      (detectors_.get(fit_data_.detector_).resolution().valid()))
     ui->pushFromDB->setEnabled(true);
   else
     ui->pushFromDB->setEnabled(false);
@@ -354,22 +355,17 @@ void FormFwhmCalibration::fit_calibration()
   }
 
 //  SqrtPoly p;
-  Polynomial p;
+  auto p = std::make_shared<Polynomial>();
   for (int i=0; i <= ui->spinTerms->value(); ++i)
-    p.add_coeff(i, 0, 50, 0);
+    p->add_coeff(i, 0, 50, 0);
 
-  Qpx::Optimizer::fit(p, xx, yy, xx_sigma, yy_sigma);
+  Qpx::Optimizer::fit(*p, xx, yy, xx_sigma, yy_sigma);
 
-  if (p.coeff_count())
+  if (p->coeff_count())
   {
-    new_calibration_.type_ = "FWHM";
-    new_calibration_.bits_ = fit_data_.settings().bits_; //irrelevant?
-    new_calibration_.coefficients_ = p.coeffs_consecutive();
-    new_calibration_.r_squared_ = p.chi2();
-    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
-    new_calibration_.units_ = "keV";
-    new_calibration_.model_ = Qpx::CalibrationModel::sqrt_poly;
-//    new_calibration_.model_ = Qpx::CalibrationModel::polynomial;
+    new_calibration_ = Qpx::Calibration(fit_data_.settings().bits_);
+    new_calibration_.set_units("keV");
+    new_calibration_.set_function(p);
   }
   else
     LINFO << "<WFHM calibration> Qpx::Calibration failed";
@@ -383,7 +379,7 @@ void FormFwhmCalibration::on_pushApplyCalib_clicked()
 void FormFwhmCalibration::on_pushFromDB_clicked()
 {
   Qpx::Detector newdet = detectors_.get(fit_data_.detector_);
-  new_calibration_ = newdet.fwhm_calibration_;
+  new_calibration_ = newdet.resolution();
   replot_calib();
   select_in_plot();
   toggle_push();

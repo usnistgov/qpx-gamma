@@ -31,8 +31,8 @@ FormFitterSettings::FormFitterSettings(FitSettings &fs, QWidget *parent) :
   ui->setupUi(this);
   this->setFixedSize(this->size());
 
-  ui->labelCaliEnergy->setText(QString::fromStdString(fit_settings_.cali_nrg_.to_string()));
-  ui->labelCaliFWHM->setText(QString::fromStdString(fit_settings_.cali_fwhm_.to_string()));
+  ui->labelCaliEnergy->setText(QString::fromStdString(fit_settings_.cali_nrg_.debug()));
+  ui->labelCaliFWHM->setText(QString::fromStdString(fit_settings_.cali_fwhm_.debug()));
 
   ui->spinFinderCutoffKeV->setValue(fit_settings_.finder_cutoff_kev);
 

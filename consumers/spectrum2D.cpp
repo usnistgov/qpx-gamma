@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Sink2D spectrum type for true coincidence with
+ *      Sink2D spectrum type for true coincidence with
  *      two dimensions of energy.
  *
  ******************************************************************************/
@@ -39,18 +39,18 @@ Spectrum2D::Spectrum2D()
                     {"m", "m4b", "mat"},
                     {"m4b", "mat"});
 
-  Qpx::Setting buf;
+  Setting buf;
   buf.id_ = "buffered";
-  buf.metadata.setting_type = Qpx::SettingType::boolean;
+  buf.metadata.setting_type = SettingType::boolean;
   buf.metadata.unit = "T/F";
   buf.metadata.description = "Buffered output for efficient plotting (more memory)";
   buf.metadata.writable = true;
   buf.metadata.flags.insert("preset");
   base_options.branches.add(buf);
 
-  Qpx::Setting sym;
+  Setting sym;
   sym.id_ = "symmetrized";
-  sym.metadata.setting_type = Qpx::SettingType::boolean;
+  sym.metadata.setting_type = SettingType::boolean;
   sym.metadata.unit = "T/F";
   sym.metadata.description = "Matrix is symmetrized";
   sym.metadata.writable = false;
@@ -102,7 +102,7 @@ void Spectrum2D::init_from_file(std::string filename) {
   pattern_add_.resize(2);
   pattern_add_.set_gates(std::vector<bool>({true, true}));
 
-  Qpx::Setting pattern;
+  Setting pattern;
   pattern = metadata_.get_attribute("pattern_coinc");
   pattern.value_pattern = pattern_coinc_;
   metadata_.set_attribute(pattern);
@@ -124,7 +124,7 @@ void Spectrum2D::init_from_file(std::string filename) {
   _recalc_axes();
   _flush();
 
-  Qpx::Setting cts;
+  Setting cts;
   cts = metadata_.get_attribute("total_hits");
   cts.value_precise = total_hits_;
   metadata_.set_attribute(cts);
@@ -144,15 +144,15 @@ bool Spectrum2D::check_symmetrization() {
       break;
     }
   }
-  Qpx::Setting symset = metadata_.get_attribute("symmetrized");
+  Setting symset = metadata_.get_attribute("symmetrized");
   symset.value_int = symmetrical;
   metadata_.set_attribute(symset);
   return symmetrical;
 }
 
 
-void Spectrum2D::_set_detectors(const std::vector<Qpx::Detector>& dets) {
-  metadata_.detectors.resize(metadata_.dimensions(), Qpx::Detector());
+void Spectrum2D::_set_detectors(const std::vector<Detector>& dets) {
+  metadata_.detectors.resize(metadata_.dimensions(), Detector());
 
   if (dets.size() == metadata_.dimensions())
     metadata_.detectors = dets;
@@ -368,14 +368,11 @@ bool Spectrum2D:: read_m4b(std::string name)
   metadata_.set_attribute(res);
 
   metadata_.detectors.resize(2);
-  metadata_.detectors[0].name_ = "unknown1";
-  metadata_.detectors[0].energy_calibrations_.add(Qpx::Calibration("Energy", bits_));
+  metadata_.detectors[0].set_name("unknown1");
   if (check_symmetrization())
     metadata_.detectors[1] = metadata_.detectors[0];
-  else {
-    metadata_.detectors[1].name_ = "unknown2";
-    metadata_.detectors[1].energy_calibrations_.add(Qpx::Calibration("Energy", bits_));
-  }
+  else
+    metadata_.detectors[1].set_name("unknown2");
 
   init_from_file(name);
   return true;
@@ -406,14 +403,11 @@ bool Spectrum2D:: read_mat(std::string name)
   metadata_.set_attribute(res);
 
   metadata_.detectors.resize(2);
-  metadata_.detectors[0].name_ = "unknown1";
-  metadata_.detectors[0].energy_calibrations_.add(Qpx::Calibration("Energy", bits_));
+  metadata_.detectors[0].set_name("unknown1");
   if (check_symmetrization())
     metadata_.detectors[1] = metadata_.detectors[0];
-  else {
-    metadata_.detectors[1].name_ = "unknown2";
-    metadata_.detectors[1].energy_calibrations_.add(Qpx::Calibration("Energy", bits_));
-  }
+  else
+    metadata_.detectors[1].set_name("unknown2");
 
   init_from_file(name);
   return true;

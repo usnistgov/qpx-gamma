@@ -25,6 +25,7 @@
 #include "custom_timer.h"
 #include "boost/algorithm/string.hpp"
 #include "histogram.h"
+#include "qt_util.h"
 
 using namespace Qpx;
 
@@ -147,14 +148,14 @@ void FormPlot1D::spectrumDetails(SelectorItem /*item*/)
   uint16_t bits = md.get_attribute("resolution").value_int;
 
   QString detstr("Detector: ");
-  detstr += QString::fromStdString(det.name_);
-  if (det.energy_calibrations_.has_a(Calibration("Energy", bits)))
+  detstr += QString::fromStdString(det.name());
+  if (det.has_energy_calib(bits))
     detstr += " [ENRG]";
   else if (det.highest_res_calib().valid())
     detstr += " (enrg)";
-  if (det.fwhm_calibration_.valid())
+  if (det.resolution().valid())
     detstr += " [FWHM]";
-  if (det.efficiency_calibration_.valid())
+  if (det.efficiency().valid())
     detstr += " [EFF]";
 
   QString infoText =
@@ -230,14 +231,14 @@ void FormPlot1D::update_plot()
     Calibration temp_calib = detector.best_calib(md.get_attribute("resolution").value_int);
 
     //what if units are different?
-    if (temp_calib.bits_ > calib_.bits_)
+    if (temp_calib.bits() > calib_.bits())
       calib_ = temp_calib;
 
     auto pen = QPen(QColor(QString::fromStdString(md.get_attribute("appearance").value_text)), 1);
     ui->mcaPlot->addGraph(hist, pen);
   }
 
-  ui->mcaPlot->setAxisLabels(QString::fromStdString(calib_.units_),
+  ui->mcaPlot->setAxisLabels(QString::fromStdString(calib_.units()),
                              ui->pushPerLive->isChecked() ? "cps" : "count");
 
   replot_markers();
@@ -298,7 +299,7 @@ void FormPlot1D::updateUI()
       md = q.second->metadata();
 
     if (!md.detectors.empty())
-      dets.insert(QString::fromStdString(md.detectors.front().name_));
+      dets.insert(QString::fromStdString(md.detectors.front().name()));
 
     SelectorItem new_spectrum;
     new_spectrum.text = QString::fromStdString(md.get_attribute("name").value_text);

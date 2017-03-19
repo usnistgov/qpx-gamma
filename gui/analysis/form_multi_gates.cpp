@@ -378,9 +378,9 @@ Qpx::SinkPtr FormMultiGates::make_gated_spectrum(const Bounds2D &bounds)
   auto x_bounds =  bounds.x.calibrate(nrg_x_, fitter_.settings().bits_);
   auto y_bounds =  bounds.y.calibrate(nrg_y_, fitter_.settings().bits_);
 
-  std::string name = md.detectors[0].name_ + x_bounds.bounds_to_string()
+  std::string name = md.detectors[0].name() + x_bounds.bounds_to_string()
       + "  "
-      + md.detectors[1].name_ + y_bounds.bounds_to_string();
+      + md.detectors[1].name() + y_bounds.bounds_to_string();
 
   //  if (fitter_.metadata_.get_attribute("name").value_text == name)
   //  {

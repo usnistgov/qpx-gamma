@@ -15,9 +15,6 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Qpx::Sink1D one-dimensional spectrum
- *
  ******************************************************************************/
 
 #include "spectrum1D.h"
@@ -43,9 +40,9 @@ Spectrum1D::Spectrum1D()
   {"cnf", "tka", "n42", "ava", "spe", "Spe", "CNF", "N42", "mca", "dat"},
   {"n42", "tka", "spe"});
 
-  Qpx::Setting cutoff_bin;
+  Setting cutoff_bin;
   cutoff_bin.id_ = "cutoff_bin";
-  cutoff_bin.metadata.setting_type = Qpx::SettingType::integer;
+  cutoff_bin.metadata.setting_type = SettingType::integer;
   cutoff_bin.metadata.description = "Hits rejected below minimum energy (affects binning only)";
   cutoff_bin.metadata.writable = true;
   cutoff_bin.metadata.minimum = 0;
@@ -58,10 +55,10 @@ Spectrum1D::Spectrum1D()
 //  DBG << "<1D:" << metadata_.get_attribute("name").value_text << ">  made with dims=" << metadata_.dimensions();
 }
 
-void Spectrum1D::_set_detectors(const std::vector<Qpx::Detector>& dets)
+void Spectrum1D::_set_detectors(const std::vector<Detector>& dets)
 {
 //  DBG << "<1D:" << metadata_.get_attribute("name").value_text << "> dims=" << metadata_.dimensions();
-  metadata_.detectors.resize(metadata_.dimensions(), Qpx::Detector());
+  metadata_.detectors.resize(metadata_.dimensions(), Detector());
 
   if (dets.size() == metadata_.dimensions())
     metadata_.detectors = dets;
@@ -216,7 +213,7 @@ void Spectrum1D::init_from_file(std::string filename)
   pattern_add_.resize(1);
   pattern_add_.set_gates(std::vector<bool>({true}));
 
-  Qpx::Setting pattern;
+  Setting pattern;
   pattern = metadata_.get_attribute("pattern_coinc");
   pattern.value_pattern = pattern_coinc_;
   metadata_.set_attribute(pattern);
@@ -238,7 +235,7 @@ void Spectrum1D::init_from_file(std::string filename)
   _recalc_axes();
   _flush();
 
-  Qpx::Setting cts;
+  Setting cts;
   cts = metadata_.get_attribute("total_hits");
   cts.value_precise = total_hits_;
   metadata_.set_attribute(cts);
@@ -447,13 +444,11 @@ bool Spectrum1D::read_xylib(std::string name, std::string ext)
   res.value_int = bits_;
   metadata_.set_attribute(res);
 
+  Calibration new_calib(bits_);
+  new_calib.set_units("keV");
+  new_calib.set_function("Polynomial", calibration);
   metadata_.detectors.resize(1);
-  metadata_.detectors[0] = Qpx::Detector();
-  metadata_.detectors[0].name_ = "unknown";
-  Qpx::Calibration new_calib("Energy", bits_);
-  new_calib.coefficients_ = calibration;
-  new_calib.units_ = "keV";
-  metadata_.detectors[0].energy_calibrations_.add(new_calib);
+  metadata_.detectors[0].set_energy_calibration(new_calib);
 
   init_from_file(name);
   delete newdata;
@@ -484,11 +479,7 @@ bool Spectrum1D::read_tka(std::string name)
     return false;
 
   metadata_.detectors.resize(1);
-  metadata_.detectors[0] = Qpx::Detector();
-  metadata_.detectors[0].name_ = "unknown";
-  
   init_from_file(name);
-
   return true;
 }
 
@@ -584,11 +575,7 @@ bool Spectrum1D::read_spe_radware(std::string name)
   total_events_ = total_hits_;
 
   metadata_.detectors.resize(1);
-  metadata_.detectors[0] = Qpx::Detector();
-  metadata_.detectors[0].name_ = "unknown";
-
   init_from_file(name);
-
   return true;
 }
 
@@ -727,34 +714,26 @@ bool Spectrum1D::read_spe_gammavision(std::string name)
   spectrum_.clear();
   spectrum_.resize(pow(2, bits_), 0);
 
-  for (auto &q : entry_list) {
+  for (auto &q : entry_list)
+  {
     spectrum_[q.first[0]] = q.second;
     total_hits_ += q.second;
   }
   total_events_ = total_hits_;
 
-  Qpx::Calibration enc("Energy", bits_, "keV");
-  enc.coef_from_string(mcacal);
+  Calibration enc(bits_);
+  enc.set_units("keV");
+  enc.set_function("Polynomial", Calibration::coefs_from_string(mcacal));
 
-  Qpx::Calibration fwc("FWHM", bits_, "keV");
-  fwc.coef_from_string(shapecal);
-
-
-  Qpx::Detector det(detname);
-  det.energy_calibrations_.add(enc);
-  det.fwhm_calibration_ = fwc;
+  Calibration fwc(bits_);
+  fwc.set_units("keV");
+  fwc.set_function("Polynomial", Calibration::coefs_from_string(shapecal));
 
   metadata_.detectors.resize(1);
-  metadata_.detectors[0] = det;
+  metadata_.detectors[0].set_energy_calibration(enc);
+  metadata_.detectors[0].set_resolution_calibration(fwc);
 
   init_from_file(name);
-
-//  metadata_.match_pattern.resize(detnum+1);
-//  metadata_.match_pattern[detnum] = 1;
-
-//  metadata_.add_pattern.resize(detnum+1);
-//  metadata_.add_pattern[detnum] = 1;
-
   return true;
 }
 
@@ -877,30 +856,29 @@ bool Spectrum1D::read_n42(std::string filename)
   if (!this->channels_from_string(channeldata, true)) //assume compressed
     return false;
 
-  Qpx::Detector newdet;
-  newdet.name_ = "unknown";
+  Detector newdet;
   if (node.attribute("Detector"))
-    newdet.name_ = std::string(node.attribute("Detector").value());
-  
-  newdet.type_ = std::string(node.child_value("DetectorType"));
+    newdet.set_name(node.attribute("Detector").value());
+  if (node.child_value("DetectorType"))
+    newdet.set_type(node.child_value("DetectorType"));
 
-  //have more claibrations? fwhm,etc..
-  if (node.child("Calibration")) {
-    Qpx::Calibration newcalib;
+  //have more claibrations? fwhm,etc..?
+  if (node.child("Calibration"))
+  {
+    Calibration newcalib(bits_);
     newcalib.from_xml(node.child("Calibration"));
-    newcalib.bits_ = bits_;
-    newdet.energy_calibrations_.add(newcalib);
+    newdet.set_energy_calibration(newcalib);
   }
 
   metadata_.detectors.resize(1);
   metadata_.detectors[0] = newdet;
 
   init_from_file(filename);
-
   return true;
 }
 
-bool Spectrum1D::read_ava(std::string filename) {
+bool Spectrum1D::read_ava(std::string filename)
+{
   pugi::xml_document doc;
 
   if (!doc.load_file(filename.c_str()))
@@ -956,27 +934,27 @@ bool Spectrum1D::read_ava(std::string filename) {
   if(!this->channels_from_string(channeldata, false))
     return false;
 
-  Qpx::Detector newdet;
-  for (auto &q : root.children("calibration_details")) {
+  Detector newdet;
+  for (auto &q : root.children("calibration_details"))
+  {
     if ((std::string(q.attribute("type").value()) != "energy") ||
         !q.child("model"))
       continue;
 
-    Qpx::Calibration newcalib("Energy", bits_);
+    Calibration newcalib(bits_);
 
+    std::string ctype;
     if (std::string(q.child("model").attribute("type").value()) == "polynomial")
-      newcalib.model_ = Qpx::CalibrationModel::polynomial;
-
+      ctype = "Polynomial";
     std::vector<double> encalib;
-    for (auto &p : q.child("model").children("coefficient")) {
+    for (auto &p : q.child("model").children("coefficient"))
+    {
       std::string coefvalstr = boost::algorithm::trim_copy(std::string(p.attribute("value").value()));
       encalib.push_back(boost::lexical_cast<double>(coefvalstr));
     }
-    newcalib.coefficients_ = encalib;
-    newcalib.units_ = "keV";
-    newcalib.type_ = "Energy";
-    newdet.energy_calibrations_.add(newcalib);
-    newdet.name_ = "unknown";
+    newcalib.set_units("keV");
+    newcalib.set_function(ctype, encalib);
+    newdet.set_energy_calibration(newcalib);
   }
 
   metadata_.detectors.resize(1);
@@ -1006,12 +984,9 @@ void Spectrum1D::write_n42(std::string filename) const
   pugi::xml_node root = doc.append_child();
 
   std::stringstream durationdata;
-  Qpx::Calibration myCalibration;
-  if (metadata_.detectors[0].energy_calibrations_.has_a(Qpx::Calibration("Energy", bits_)))
-    myCalibration = metadata_.detectors[0].energy_calibrations_.get(Qpx::Calibration("Energy", bits_));
-  else if ((metadata_.detectors[0].energy_calibrations_.size() == 1) &&
-           (metadata_.detectors[0].energy_calibrations_.get(0).valid()))
-    myCalibration = metadata_.detectors[0].energy_calibrations_.get(0);
+  Calibration myCalibration;
+  if (metadata_.detectors[0].has_energy_calib(bits_))
+    myCalibration = metadata_.detectors[0].get_energy_calib(bits_);
 
   root.set_name("N42InstrumentData");
   root.append_attribute("xmlns").set_value("http://physics.nist.gov/Divisions/Div846/Gp4/ANSIN4242/2005/ANSIN4242");
@@ -1021,9 +996,10 @@ void Spectrum1D::write_n42(std::string filename) const
   pugi::xml_node node = root.append_child("Measurement").append_child("Spectrum");
   node.append_attribute("Type").set_value("PHA");
 
-  if (myCalibration.valid()) {
-    node.append_attribute("Detector").set_value(metadata_.detectors[0].name_.c_str());
-    node.append_child("DetectorType").append_child(pugi::node_pcdata).set_value(metadata_.detectors[0].type_.c_str());
+  if (myCalibration.valid())
+  {
+    node.append_attribute("Detector").set_value(metadata_.detectors[0].name().c_str());
+    node.append_child("DetectorType").append_child(pugi::node_pcdata).set_value(metadata_.detectors[0].type().c_str());
   }
 
   durationdata << to_iso_extended_string(metadata_.get_attribute("start_time").value_time) << "-5:00"; //fix this hack

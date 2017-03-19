@@ -457,7 +457,7 @@ void QpFitter::updateData()
   clearAll();
   replotExtras();
 
-  xAxis->setLabel(QString::fromStdString(fit_data_->settings().cali_nrg_.units_));
+  xAxis->setLabel(QString::fromStdString(fit_data_->settings().cali_nrg_.units()));
   yAxis->setLabel("count");
 
 

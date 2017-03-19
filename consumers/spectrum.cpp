@@ -427,22 +427,18 @@ void Spectrum::_set_detectors(const std::vector<Qpx::Detector>& dets)
   this->_recalc_axes();
 }
 
-void Spectrum::_recalc_axes() {
+void Spectrum::_recalc_axes()
+{
   //private; no lock required
 
   axes_.resize(metadata_.dimensions());
   if (axes_.size() != metadata_.detectors.size())
     return;
 
-  for (size_t i=0; i < metadata_.detectors.size(); ++i) {
+  for (size_t i=0; i < metadata_.detectors.size(); ++i)
+  {
+    Qpx::Calibration this_calib = metadata_.detectors[i].best_calib(bits_);
     uint32_t res = pow(2,bits_);
-
-    Qpx::Calibration this_calib;
-    if (metadata_.detectors[i].energy_calibrations_.has_a(Qpx::Calibration("Energy", bits_)))
-      this_calib = metadata_.detectors[i].energy_calibrations_.get(Qpx::Calibration("Energy", bits_));
-    else
-      this_calib = metadata_.detectors[i].highest_res_calib();
-
     axes_[i].resize(res, 0.0);
     for (uint32_t j=0; j<res; j++)
       axes_[i][j] = this_calib.transform(j, bits_);

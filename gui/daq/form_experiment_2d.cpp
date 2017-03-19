@@ -205,15 +205,12 @@ void FormExperiment2D::display_data()
   std::map<double, uint16_t> xtoi;
   std::map<double, uint16_t> ytoi;
 
-  Qpx::Calibration xcal, ycal;
-  xcal.type_ = name.toStdString();
-  xcal.units_.clear();
-  xcal.model_ = Qpx::CalibrationModel::polynomial;
-  xcal.bits_ = 1;
-  xcal.coefficients_.clear();
+  Qpx::Calibration xcal(1), ycal(1);
+  xcal.set_units(name.toStdString());
+  xcal.set_function("Polynomial", {});
 
   ycal = xcal;
-  ycal.type_ = name2.toStdString();
+  ycal.set_units(name2.toStdString());
 
   int i=0;
   for (auto &x : xs)
@@ -221,10 +218,10 @@ void FormExperiment2D::display_data()
     xtoi[x] = i;
     i++;
   }
-  if (xtoi.size())
-    xcal.coefficients_.push_back(xtoi.begin()->first);
-  if (xtoi.size() > 1)
-    xcal.coefficients_.push_back((xtoi.rbegin()->first - xtoi.begin()->first) / (xtoi.size()-1));
+//  if (xtoi.size())
+//    xcal.coefficients_.push_back(xtoi.begin()->first);
+//  if (xtoi.size() > 1)
+//    xcal.coefficients_.push_back((xtoi.rbegin()->first - xtoi.begin()->first) / (xtoi.size()-1));
 
 
   i=0;
@@ -233,10 +230,10 @@ void FormExperiment2D::display_data()
     ytoi[y] = i;
     i++;
   }
-  if (ytoi.size())
-    ycal.coefficients_.push_back(ytoi.begin()->first);
-  if (xtoi.size() > 1)
-    ycal.coefficients_.push_back((ytoi.rbegin()->first - ytoi.begin()->first) / (ytoi.size()-1));
+//  if (ytoi.size())
+//    ycal.coefficients_.push_back(ytoi.begin()->first);
+//  if (xtoi.size() > 1)
+//    ycal.coefficients_.push_back((ytoi.rbegin()->first - ytoi.begin()->first) / (ytoi.size()-1));
 
 
   bool flip90 = ytoi.size() > xtoi.size();

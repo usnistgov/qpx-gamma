@@ -15,76 +15,68 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Qpx::Calibration defines calibration with units and math model
- *
  ******************************************************************************/
 
 #pragma once
 
-#include <vector>
-#include <string>
 #include <boost/date_time.hpp>
 #include "xmlable.h"
+#include "coef_function.h"
 
 #include "json.hpp"
 using namespace nlohmann;
 
 namespace Qpx {
 
-enum class CalibrationModel : int
-{
-  none = 0,
-  polynomial = 1,
-  polylog = 2,
-  loginverse = 3,
-  effit = 4,
-  sqrt_poly = 5
-};
-
-std::string model_to_str(const CalibrationModel& c);
-CalibrationModel model_from_str(const std::string& c);
-
 class Calibration : public XMLable
 {
- public:
-  Calibration();
-  Calibration(std::string type, uint16_t bits, std::string units = "channels");
+private:
+  boost::posix_time::ptime calib_date_
+    {boost::posix_time::microsec_clock::universal_time()};
+  std::string units_;
+  std::string to_;
+  uint16_t bits_ {0};
+  std::shared_ptr<CoefFunction> function_;
 
-  void to_xml(pugi::xml_node &node) const override;
-  void from_xml(const pugi::xml_node &node) override;
+public:
+  Calibration() {}
+  Calibration(uint16_t bbits);
 
-  std::string xml_element_name() const override {return "Calibration";}
+  bool valid() const;
+  double transform(double) const;
+  double transform(double, uint16_t) const;
+  std::vector<double> transform(const std::vector<double>&, uint16_t) const;
+  double inverse_transform(double) const;
+  double inverse_transform(double, uint16_t) const;
+
+  uint16_t bits() const;
+  std::string units() const;
+  std::string to() const;
+  std::string model() const;
+  boost::posix_time::ptime calib_date() const;
+  std::string debug() const;
+  std::string fancy_equation(int precision = -1, bool with_rsq=false) const;
+
+  void set_units(const std::string& u);
+  void set_to(const std::string& t);
+  void set_function(std::shared_ptr<CoefFunction> f);
+  void set_function(const std::string& type, const std::vector<double>& coefs);
 
   bool shallow_equals(const Calibration& other) const
   {return ((bits_ == other.bits_) && (to_ == other.to_));}
   bool operator!= (const Calibration& other) const;
   bool operator== (const Calibration& other) const;
 
-  bool valid() const;
-  double transform(double) const;
-  double transform(double, uint16_t) const;
-  double inverse_transform(double) const;
-  double inverse_transform(double, uint16_t) const;
+  //XMLable
+  void to_xml(pugi::xml_node &node) const override;
+  void from_xml(const pugi::xml_node &node) override;
+  std::string xml_element_name() const override {return "Calibration";}
 
-  std::vector<double> transform(std::vector<double>, uint16_t) const;
-  std::string coef_to_string() const;
-  void coef_from_string(std::string);
-  std::string axis_name() const;
-  std::string to_string() const;
-  std::string fancy_equation(int precision = -1, bool with_rsq=false);
+  friend void to_json(json& j, const Calibration &s);
+  friend void from_json(const json& j, Calibration &s);
 
-  boost::posix_time::ptime calib_date_;
-  std::string type_ {"Energy"};
-  std::string units_ {"channels"};
-  std::string to_;
-  uint16_t bits_ {0};
-  CalibrationModel model_ {CalibrationModel::polynomial};
-  std::vector<double> coefficients_;
-  double r_squared_ {0};
+  std::string coefs_to_string() const;
+  static std::vector<double> coefs_from_string(const std::string&);
 };
-
-void to_json(json& j, const Calibration &s);
-void from_json(const json& j, Calibration &s);
 
 }

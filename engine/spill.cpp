@@ -15,24 +15,15 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Types for organizing data aquired from Device
- *        Qpx::Hit        single energy event with coincidence flags
- *        Qpx::StatsUdate metadata for one spill (memory chunk)
- *        Qpx::RunInfo    metadata for the whole run
- *        Qpx::Spill      bundles all data and metadata for a list run
- *        Qpx::ListData   bundles hits in vector and run metadata
- *
  ******************************************************************************/
 
 #include "spill.h"
 #include "qpx_util.h"
 
-#include "custom_logger.h"
-
 namespace Qpx {
 
-bool Spill::operator==(const Spill other) const {
+bool Spill::operator==(const Spill other) const
+{
   if (time != other.time)
     return false;
   if (stats != other.stats)
@@ -63,7 +54,22 @@ bool Spill::empty()
   return true;
 }
 
-void Spill::to_xml(pugi::xml_node &root, bool with_settings) const {
+std::string Spill::to_string() const
+{
+  std::string info = boost::posix_time::to_iso_extended_string(time);
+  if (detectors.size())
+    info += " D" + std::to_string(detectors.size());
+  if (stats.size())
+    info += " S" + std::to_string(stats.size());
+  if (hits.size())
+    info += " [" + std::to_string(hits.size()) + "]";
+  if (data.size())
+    info += " RAW=" + std::to_string(data.size() * sizeof(uint32_t));
+  return info;
+}
+
+void Spill::to_xml(pugi::xml_node &root, bool with_settings) const
+{
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
   node.append_attribute("time").set_value(boost::posix_time::to_iso_extended_string(time).c_str());
 //  node.append_attribute("bytes_raw_data").set_value(std::to_string(data.size() * sizeof(uint32_t)).c_str());
@@ -75,22 +81,22 @@ void Spill::to_xml(pugi::xml_node &root, bool with_settings) const {
       s.second.to_xml(statsnode);
   }
 
-  if (with_settings) {
+  if (with_settings)
+  {
     if (!state.branches.empty())
       state.to_xml(node);
-    if (!detectors.empty()) {
+    if (!detectors.empty())
+    {
       pugi::xml_node child = node.append_child("Detectors");
       std::vector<Qpx::Detector> dets = detectors;
-      for (auto q : dets) {
-        q.settings_.strip_metadata();
-//        q.settings_ = Setting();
+      for (auto q : dets)
         q.to_xml(child);
-      }
     }
   }
 }
 
-void Spill::from_xml(const pugi::xml_node &node) {
+void Spill::from_xml(const pugi::xml_node &node)
+{
   *this = Spill();
 
   if (std::string(node.name()) != xml_element_name())
@@ -135,73 +141,39 @@ void to_json(json& j, const Spill& s)
 void to_json(json& j, const Spill &s, bool with_settings)
 {
   j["time"] = boost::posix_time::to_iso_extended_string(s.time);
-//  node.append_attribute("bytes_raw_data").set_value(std::to_string(data.size() * sizeof(uint32_t)).c_str());
-//  node.append_attribute("number_of_hits").set_value(std::to_string(hits.size()).c_str());
+//  j["bytes_raw_data"] = data.size() * sizeof(uint32_t);
+//  j["number_of_hits"] = hits.size();
 
   for (auto &st : s.stats)
     j["stats"].push_back(st.second);
 
-  if (with_settings)
-  {
-    if (!s.state.branches.empty())
-      j["state"] = s.state;
-    if (!s.detectors.empty())
-    {
-      auto dets = s.detectors;
-      for (auto q : dets)
-      {
-        q.settings_.strip_metadata();
-        j["detectors"].push_back(q);
-      }
-    }
-  }
+  if (!with_settings)
+    return;
+
+  if (!s.state.branches.empty())
+    j["state"] = s.state;
+
+  if (!s.detectors.empty())
+    j["detectors"] = s.detectors;
 }
 
 void from_json(const json& j, Spill& s)
 {
-  s.data.clear();
-  s.hits.clear();
-
-  if (j.count("time"))
-    s.time = from_iso_extended(j["time"].get<std::string>());
-
-//  if (node.attribute("number_of_hits"))
-//    hits.resize(node.attribute("number_of_hits").as_uint());
-
-  if (j.count("state"))
-    s.state = j["state"];
+  s.time = from_iso_extended(j["time"].get<std::string>());
 
   if (j.count("stats"))
-  {
-    s.stats.clear();
     for (auto it : j["stats"])
     {
       StatsUpdate st = it;
       s.stats[st.source_channel] = st;
     }
-  }
+
+  if (j.count("state"))
+    s.state = j["state"];
 
   if (j.count("detectors"))
-  {
-    auto o = j["detectors"];
-    for (json::iterator it = o.begin(); it != o.end(); ++it)
-      s.detectors.push_back(it.value());
-  }
-}
-
-
-std::string Spill::to_string() const
-{
-  std::string info = boost::posix_time::to_iso_extended_string(time);
-  if (detectors.size())
-    info += " D" + std::to_string(detectors.size());
-  if (stats.size())
-    info += " S" + std::to_string(stats.size());
-  if (hits.size())
-    info += " [" + std::to_string(hits.size()) + "]";
-  if (data.size())
-    info += " RAW=" + std::to_string(data.size() * sizeof(uint32_t));
-  return info;
+    for (auto it : j["detectors"])
+      s.detectors.push_back(it);
 }
 
 

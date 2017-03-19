@@ -15,17 +15,10 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Qpx::Calibration defines calibration with units and math model
- *      Qpx::Detector defines detector with name, calibration, DSP parameters
- *
  ******************************************************************************/
 
 #pragma once
 
-#include <vector>
-#include <string>
-#include <boost/date_time.hpp>
 #include "calibration.h"
 #include "setting.h"
 
@@ -36,38 +29,66 @@ namespace Qpx {
 
 class Detector : public XMLable
 {
- public:
+private:
+  std::string name_ {"unknown"};
+  std::string type_ {"unknown"};
+
+  XMLableDB<Calibration> energy_calibrations_ {"Calibrations"};
+  XMLableDB<Calibration> gain_match_calibrations_ {"GainMatchCalibrations"};
+  Calibration fwhm_calibration_;
+  Calibration efficiency_calibration_;
+
+  Setting settings_ {"Optimization"};
+
+public:
   Detector();
   Detector(std::string name);
 
-  std::string xml_element_name() const override {return "Detector";}
-  
-  bool shallow_equals(const Detector& other) const {return (name_ == other.name_);}
-  bool operator== (const Detector& other) const;
-  bool operator!= (const Detector& other) const;
+  std::string name() const;
+  std::string type() const;
+
+  Calibration resolution() const;
+  Calibration efficiency() const;
+
+  Calibration get_gain_match(uint16_t bits, std::string todet) const;
+  XMLableDB<Calibration> gain_calibrations() const;
+  void remove_gain_calibration(size_t pos);
+
+  bool has_energy_calib(int bits) const;
+  Calibration get_energy_calib(int bits) const;
+  Calibration best_calib(int bits) const;
+  Calibration highest_res_calib() const;
+  XMLableDB<Calibration> energy_calibrations() const;
+  void remove_energy_calibration(size_t pos);
+
+  std::list<Setting> optimizations() const;
+  Setting get_setting(std::string id) const;
+
+  void set_name(const std::string&);
+  void set_type(const std::string&);
+  void set_energy_calibration(const Calibration&);
+  void set_gain_calibration(const Calibration&);
+  void set_resolution_calibration(const Calibration&);
+  void set_efficiency_calibration(const Calibration&);
+  void add_optimizations(const std::list<Setting>&, bool writable_only = false);
+  void clear_optimizations();
 
   std::string debug(std::string prepend) const;
 
+
+  bool shallow_equals(const Detector& other) const {return (name_ == other.name_);}
+  bool operator== (const Detector& other) const;
+  bool operator!= (const Detector& other) const;
+  
+  //XMLable
+  std::string xml_element_name() const override {return "Detector";}
   void from_xml(const pugi::xml_node &) override;
   void to_xml(pugi::xml_node &) const override;
   void to_xml_options(pugi::xml_node &root, bool options) const;
 
-  Calibration highest_res_calib() const;
-  Calibration best_calib(int bits) const;
-  Calibration get_gain_match(uint16_t bits, std::string todet) const;
-  
-  std::string name_ {"none"};
-  std::string type_ {"none"};
-  XMLableDB<Calibration> energy_calibrations_ {"Calibrations"};
-  XMLableDB<Calibration> gain_match_calibrations_ {"GainMatchCalibrations"};
-
-  Calibration fwhm_calibration_ {"FWHM", 0};
-  Calibration efficiency_calibration_ {"Efficiency", 0};
-  Setting settings_ {"Optimization"};
+  friend void to_json(json& j, const Detector &s);
+  friend void from_json(const json& j, Detector &s);
+  json to_json(bool options) const;
 };
-
-void to_json(json& j, const Detector &s);
-void to_json_options(json& j, const Detector &s, bool options);
-void from_json(const json& j, Detector &s);
 
 }

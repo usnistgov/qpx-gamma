@@ -251,7 +251,7 @@ QWidget *QpxSpecialDelegate::createEditor(QWidget *parent,
       QComboBox *editor = new QComboBox(parent);
       editor->addItem(QString("none"), QString("none"));
       for (size_t i=0; i < detectors_.size(); i++) {
-        QString name = QString::fromStdString(detectors_.get(i).name_);
+        QString name = QString::fromStdString(detectors_.get(i).name());
         editor->addItem(name, name);
       }
       return editor;

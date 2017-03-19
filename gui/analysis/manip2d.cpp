@@ -198,15 +198,15 @@ SinkPtr make_symmetrized(SinkPtr source)
   }
 
   size_t bits = md.get_attribute("resolution").value_int;
-  Calibration gain_match_cali = detector2.get_gain_match(bits, detector1.name_);
+  Calibration gain_match_cali = detector2.get_gain_match(bits, detector1.name());
 
-  if (gain_match_cali.to_ == detector1.name_)
+  if (gain_match_cali.to() == detector1.name())
     LINFO << "<::MakeSymmetrize> using gain match calibration from "
-          << detector2.name_ << " to " << detector1.name_
-          << " " << gain_match_cali.to_string();
+          << detector2.name() << " to " << detector1.name()
+          << " " << gain_match_cali.debug();
   else {
     WARN << "<::MakeSymmetrize> no appropriate gain match calibration from "
-         << detector2.name_ << " to " << detector1.name_;
+         << detector2.name() << " to " << detector1.name();
     return nullptr;
   }
 
@@ -235,8 +235,8 @@ SinkPtr make_symmetrized(SinkPtr source)
   {
     if (p.shallow_equals(detector1) || p.shallow_equals(detector2))
     {
-      p = Detector(detector1.name_ + std::string("*") + detector2.name_);
-      p.energy_calibrations_.add(detector1.energy_calibrations_.get(Calibration("Energy", bits)));
+      p = Detector(detector1.name() + std::string("*") + detector2.name());
+      p.set_energy_calibration(detector1.get_energy_calib(bits));
     }
   }
 

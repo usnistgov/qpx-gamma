@@ -15,18 +15,9 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Qpx::Detector defines detector with name, calibration, DSP parameters
- *
  ******************************************************************************/
 
-#include <list>
-#include <iostream>
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string.hpp>
 #include "detector.h"
-#include "custom_logger.h"
 
 namespace Qpx {
 
@@ -39,6 +30,103 @@ Detector::Detector(std::string name)
   : Detector()
 {
   name_ = name;
+}
+
+std::string Detector::name() const
+{
+  return name_;
+}
+
+std::string Detector::type() const
+{
+  return type_;
+}
+
+std::list<Setting> Detector::optimizations() const
+{
+  return settings_.branches.my_data_;
+}
+
+void Detector::set_name(const std::string& n)
+{
+  name_ = n;
+}
+
+void Detector::set_type(const std::string& t)
+{
+  type_ = t;
+}
+
+void Detector::add_optimizations(const std::list<Setting>& l, bool writable_only)
+{
+  for (auto s : l)
+  {
+    if (writable_only && !s.metadata.writable)
+      continue;
+    s.indices.clear();
+    settings_.branches.replace(s);
+  }
+}
+
+Setting Detector::get_setting(std::string id) const
+{
+  return settings_.get_setting(Setting(id), Qpx::Match::id);
+}
+
+void Detector::clear_optimizations()
+{
+  settings_ = Setting("Optimizations");
+  settings_.metadata.setting_type = SettingType::stem;
+}
+
+void Detector::set_energy_calibration(const Calibration& c)
+{
+  energy_calibrations_.replace(c);
+}
+
+void Detector::set_gain_calibration(const Calibration& c)
+{
+  gain_match_calibrations_.replace(c);
+}
+
+void Detector::set_resolution_calibration(const Calibration& c)
+{
+  fwhm_calibration_ = c;
+}
+
+void Detector::set_efficiency_calibration(const Calibration& c)
+{
+  efficiency_calibration_ = c;
+}
+
+XMLableDB<Calibration> Detector::energy_calibrations() const
+{
+  return energy_calibrations_;
+}
+
+XMLableDB<Calibration> Detector::gain_calibrations() const
+{
+  return gain_match_calibrations_;
+}
+
+void Detector::remove_gain_calibration(size_t pos)
+{
+  gain_match_calibrations_.remove(pos);
+}
+
+void Detector::remove_energy_calibration(size_t pos)
+{
+  energy_calibrations_.remove(pos);
+}
+
+Calibration Detector::resolution() const
+{
+  return fwhm_calibration_;
+}
+
+Calibration Detector::efficiency() const
+{
+  return efficiency_calibration_;
 }
 
 bool Detector::operator== (const Detector& other) const
@@ -57,10 +145,23 @@ bool Detector::operator!= (const Detector& other) const
   return !operator==(other);
 }
 
+bool Detector::has_energy_calib(int bits) const
+{
+  return (energy_calibrations_.has_a(Calibration(bits)));
+}
+
+Calibration Detector::get_energy_calib(int bits) const
+{
+  if (has_energy_calib(bits))
+     return energy_calibrations_.get(Calibration(bits));
+  else
+    return Calibration();
+}
+
 Calibration Detector::best_calib(int bits) const
 {
-  if (energy_calibrations_.has_a(Calibration("Energy", bits)))
-     return energy_calibrations_.get(Calibration("Energy", bits));
+  if (has_energy_calib(bits))
+     return energy_calibrations_.get(Calibration(bits));
   else
     return highest_res_calib();
 }
@@ -69,22 +170,61 @@ Calibration Detector::highest_res_calib() const
 {
   Calibration result;
   for (size_t i=0; i<energy_calibrations_.size(); ++i)
-    if (energy_calibrations_.get(i).bits_ >= result.bits_)
+    if (energy_calibrations_.get(i).bits() >= result.bits())
       result = energy_calibrations_.get(i);
   return result;
 }
 
 Calibration Detector::get_gain_match(uint16_t bits, std::string todet) const
 {
-  Calibration result = Calibration("Gain", bits);
-  for (size_t i=0; i< gain_match_calibrations_.size(); ++i) {
+  Calibration result = Calibration(bits);
+  for (size_t i=0; i< gain_match_calibrations_.size(); ++i)
+  {
     Calibration k = gain_match_calibrations_.get(i);
-    if ((k.bits_ == result.bits_) &&
-        (k.to_   == todet))
+    if ((k.bits() == result.bits()) &&
+        (k.to()   == todet))
       return k;
   }
   return result;
 }
+
+std::string Detector::debug(std::string prepend) const
+{
+  std::stringstream ss;
+  ss << name_ << "(" << type_ << ")\n";
+  if (!energy_calibrations_.empty())
+  {
+    ss << prepend << k_branch_mid << "Energy calibrations\n";
+    for (size_t i=0; i < energy_calibrations_.size(); ++i)
+    {
+      if ((i+1) == energy_calibrations_.size())
+        ss << prepend << k_branch_pre << k_branch_end << energy_calibrations_.get(i).debug() << "\n";
+      else
+        ss << prepend << k_branch_pre << k_branch_mid << energy_calibrations_.get(i).debug() << "\n";
+    }
+  }
+
+  if (!gain_match_calibrations_.empty())
+  {
+    ss << prepend << k_branch_mid << "Gain match calibrations\n";
+    for (size_t i=0; i < gain_match_calibrations_.size(); ++i)
+    {
+      if ((i+1) == energy_calibrations_.size())
+        ss << prepend << k_branch_pre << k_branch_end << gain_match_calibrations_.get(i).debug() << "\n";
+      else
+        ss << prepend << k_branch_pre << k_branch_mid << gain_match_calibrations_.get(i).debug() << "\n";
+    }
+  }
+
+  if (fwhm_calibration_.valid())
+    ss << prepend << k_branch_mid << fwhm_calibration_.debug() << "\n";
+  if (efficiency_calibration_.valid())
+    ss << prepend << k_branch_mid << efficiency_calibration_.debug() << "\n";
+  ss << prepend << k_branch_end << settings_.debug(prepend + "  ");
+
+  return ss.str();
+}
+
 
 void Detector::to_xml(pugi::xml_node &node) const
 {
@@ -125,13 +265,15 @@ void Detector::from_xml(const pugi::xml_node &node)
   Calibration newCali;
   for (auto &q : node.children()) {
     std::string nodename(q.name());
-    if (nodename == newCali.xml_element_name()) {
+    if (nodename == newCali.xml_element_name())
+    {
+      std::string type = std::string(q.attribute("Type").value());
       newCali.from_xml(q);
-      if (newCali.type_ == "FWHM")
+      if (type == "FWHM")
         fwhm_calibration_ = newCali;
-      else if (newCali.type_ == "Efficiency")
+      else if (type == "Efficiency")
         efficiency_calibration_ = newCali;
-      else if (newCali.type_ == "Energy")
+      else if (type == "Energy")
         energy_calibrations_.add(newCali);  //backwards compatibility with n42 calib entries
     }
     else if  (nodename == energy_calibrations_.xml_element_name())
@@ -145,28 +287,32 @@ void Detector::from_xml(const pugi::xml_node &node)
 
 void to_json(json& j, const Detector &s)
 {
-  to_json_options(j, s, true);
+  j = s.to_json(true);
 }
 
-void to_json_options(json& j, const Detector &s, bool options)
+json Detector::to_json(bool options) const
 {
-  j["name"] = s.name_;
-  j["type"] = s.type_;
+  json j;
 
-  if (s.energy_calibrations_.size())
-    j["energy_calibrations"] = s.efficiency_calibration_;
+  j["name"] = name_;
+  j["type"] = type_;
 
-  if (s.gain_match_calibrations_.size())
-    j["gain_match_calibrations"] = s.gain_match_calibrations_;
+  if (energy_calibrations_.size())
+    j["energy_calibrations"] = energy_calibrations_;
 
-  if (s.fwhm_calibration_.valid())
-    j["fwhm_calibration"] = s.fwhm_calibration_;
+  if (gain_match_calibrations_.size())
+    j["gain_match_calibrations"] = gain_match_calibrations_;
 
-  if (s.efficiency_calibration_.valid())
-    j["efficiency_calibration"] = s.efficiency_calibration_;
+  if (fwhm_calibration_.valid())
+    j["fwhm_calibration"] = fwhm_calibration_;
 
-  if (options && !s.settings_.branches.empty())
-    j["optimizations"] = s.settings_;
+  if (efficiency_calibration_.valid())
+    j["efficiency_calibration"] = efficiency_calibration_;
+
+  if (options && !settings_.branches.empty())
+    j["optimizations"] = settings_;
+
+  return j;
 }
 
 void from_json(const json& j, Detector &s)
@@ -184,43 +330,6 @@ void from_json(const json& j, Detector &s)
     s.gain_match_calibrations_ = j["gain_match_calibrations"];
   if (j.count("optimizations"))
     s.settings_ = j["optimizations"];
-}
-
-std::string Detector::debug(std::string prepend) const
-{
-  std::stringstream ss;
-  ss << name_ << "(" << type_ << ")\n";
-  if (!energy_calibrations_.empty())
-  {
-    ss << prepend << k_branch_mid << "Energy calibrations\n";
-    for (size_t i=0; i < energy_calibrations_.size(); ++i)
-    {
-      if ((i+1) == energy_calibrations_.size())
-        ss << prepend << k_branch_pre << k_branch_end << energy_calibrations_.get(i).to_string() << "\n";
-      else
-        ss << prepend << k_branch_pre << k_branch_mid << energy_calibrations_.get(i).to_string() << "\n";
-    }
-  }
-
-  if (!gain_match_calibrations_.empty())
-  {
-    ss << prepend << k_branch_mid << "Gain match calibrations\n";
-    for (size_t i=0; i < gain_match_calibrations_.size(); ++i)
-    {
-      if ((i+1) == energy_calibrations_.size())
-        ss << prepend << k_branch_pre << k_branch_end << gain_match_calibrations_.get(i).to_string() << "\n";
-      else
-        ss << prepend << k_branch_pre << k_branch_mid << gain_match_calibrations_.get(i).to_string() << "\n";
-    }
-  }
-
-  if (fwhm_calibration_.valid())
-    ss << prepend << k_branch_mid << fwhm_calibration_.to_string() << "\n";
-  if (efficiency_calibration_.valid())
-    ss << prepend << k_branch_mid << efficiency_calibration_.to_string() << "\n";
-  ss << prepend << k_branch_end << settings_.debug(prepend + "  ");
-
-  return ss.str();
 }
 
 }

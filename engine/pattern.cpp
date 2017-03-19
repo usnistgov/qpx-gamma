@@ -101,7 +101,7 @@ void Pattern::from_string(std::string s)
 
 void to_json(json& j, const Pattern &s)
 {
-  j["shreshold"] = s.threshold();
+  j["threshold"] = s.threshold();
   j["gates"] = s.gates_to_string();
 }
 

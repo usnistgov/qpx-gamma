@@ -26,6 +26,7 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include "consumer_factory.h"
+#include "dialog_detector.h"
 
 using namespace Qpx;
 
@@ -266,12 +267,12 @@ void DialogSpectrum::on_pushDetRename_clicked()
   bool ok;
   QString text = QInputDialog::getText(this, "Rename Detector",
                                        "Detector name:", QLineEdit::Normal,
-                                       QString::fromStdString(spectrum_detectors_.get(i).name_),
+                                       QString::fromStdString(spectrum_detectors_.get(i).name()),
                                        &ok);
   if (ok && !text.isEmpty()) {
     if (i < static_cast<int>(sink_metadata_.detectors.size()))
     {
-      sink_metadata_.detectors[i].name_ = text.toStdString();
+      sink_metadata_.detectors[i].set_name(text.toStdString());
       changed_ = true;
 
       spectrum_detectors_.clear();
@@ -334,15 +335,15 @@ void DialogSpectrum::on_pushDetToDB_clicked()
       bool ok;
       QString text = QInputDialog::getText(this, "New Detector",
                                            "Detector name:", QLineEdit::Normal,
-                                           QString::fromStdString(newdet.name_),
+                                           QString::fromStdString(newdet.name()),
                                            &ok);
 
       if (!ok)
         return;
 
       if (!text.isEmpty()) {
-        if (text.toStdString() != newdet.name_)
-          newdet.name_ = text.toStdString();
+        if (text.toStdString() != newdet.name())
+          newdet.set_name(text.toStdString());
 
         if (detectors_.has_a(newdet)) {
           QMessageBox::StandardButton reply = QMessageBox::question(this, "Replace existing?",
@@ -352,7 +353,8 @@ void DialogSpectrum::on_pushDetToDB_clicked()
             return;
           else {
             detectors_.replace(newdet);
-            if (sink_metadata_.detectors[i].name_ != newdet.name_) {
+            if (sink_metadata_.detectors[i].name() != newdet.name())
+            {
               sink_metadata_.detectors[i] = newdet;
               changed_ = true;
 //              updateData();
@@ -363,7 +365,7 @@ void DialogSpectrum::on_pushDetToDB_clicked()
       }
     } else {
       QMessageBox::StandardButton reply = QMessageBox::question(this, "Replace existing?",
-                                    "Detector " + QString::fromStdString(newdet.name_) + " already exists. Replace?",
+                                    "Detector " + QString::fromStdString(newdet.name()) + " already exists. Replace?",
                                      QMessageBox::Yes|QMessageBox::No);
       if (reply == QMessageBox::No)
         return;

@@ -102,7 +102,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
       } else if (col <= static_cast<int>(channels_.size())) {
         Qpx::Setting det;
         det.metadata.setting_type = Qpx::SettingType::detector;
-        det.value_text = channels_[col-1].name_;
+        det.value_text = channels_[col-1].name();
         det.indices.insert(col-1);
         return QVariant::fromValue(det);
       } else
@@ -115,10 +115,13 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
         return QString::fromStdString(preferred_units_.at(item.id_));
       else if (col == static_cast<int>(channels_.size()+2))
         return QString::fromStdString(item.metadata.description);
-      else if (col <= static_cast<int>(channels_.size())) {
-        item = channels_[col-1].settings_.get_setting(item, Qpx::Match::id);
-        if (item != Qpx::Setting()) {
-          if (item.metadata.setting_type == Qpx::SettingType::floating) {
+      else if (col <= static_cast<int>(channels_.size()))
+      {
+        item = channels_[col-1].get_setting(item.id_);
+        if (item != Qpx::Setting())
+        {
+          if (item.metadata.setting_type == Qpx::SettingType::floating)
+          {
             double val = item.value_dbl;
             if (preferred_units_.count(item.id_) && (item.metadata.unit != preferred_units_.at(item.id_))) {
               UnitConverter uc;
@@ -137,7 +140,7 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
     if ((row == 0) && (col > 0) && (col <= static_cast<int>(channels_.size()))) {
       Qpx::Setting det;
       det.metadata.setting_type = Qpx::SettingType::detector;
-      det.value_text = channels_[col-1].name_;
+      det.value_text = channels_[col-1].name();
       return QVariant::fromValue(det);
     } else if (row != 0) {
       Qpx::Setting item = consolidated_list_.branches.get(row-1);
@@ -153,8 +156,9 @@ QVariant TableChanSettings::data(const QModelIndex &index, int role) const
           if (q.second == preferred_units_.at(item.id_))
             st.value_int = q.first;
         return QVariant::fromValue(st);
-      } else if (col <= static_cast<int>(channels_.size())) {
-        item = channels_[col-1].settings_.get_setting(item, Qpx::Match::id);
+      } else if (col <= static_cast<int>(channels_.size()))
+      {
+        item = channels_[col-1].get_setting(item.id_);
         if (item == Qpx::Setting())
           return QVariant();
         if ((item.metadata.setting_type == Qpx::SettingType::floating)
@@ -205,23 +209,26 @@ QVariant TableChanSettings::headerData(int section, Qt::Orientation orientation,
   return QVariant();
 }
 
-void TableChanSettings::update(const std::vector<Qpx::Detector> &settings) {
+void TableChanSettings::update(const std::vector<Qpx::Detector> &settings)
+{
   channels_ = settings;
-  if (!show_read_only_) {
-    for (size_t i=0; i < settings.size(); ++i) {
-      channels_[i].settings_.branches.clear();
-      for (auto &q : settings[i].settings_.branches.my_data_) {
-        if (q.metadata.writable)
-          channels_[i].settings_.branches.add(q);
-      }
+  if (!show_read_only_)
+  {
+    for (size_t i=0; i < settings.size(); ++i)
+    {
+      channels_[i].clear_optimizations();
+      channels_[i].add_optimizations(settings[i].optimizations(), true);
     }
   }
 
   consolidated_list_ = Qpx::Setting();
-  for (auto &q : channels_) {
-    for (auto &p : q.settings_.branches.my_data_) {
+  for (auto &q : channels_)
+  {
+    for (auto &p : q.optimizations())
+    {
       consolidated_list_.branches.add(p);
-      if (!preferred_units_.count(p.id_) && (!p.metadata.unit.empty())) {
+      if (!preferred_units_.count(p.id_) && (!p.metadata.unit.empty()))
+      {
         //        DBG << "adding preferred unit for " << p.id_ << " as " << p.metadata.unit;
         preferred_units_[p.id_] = p.metadata.unit;
       }
@@ -253,7 +260,7 @@ Qt::ItemFlags TableChanSettings::flags(const QModelIndex &index) const
     } else if (col == static_cast<int>(channels_.size() + 2))
       return Qt::ItemIsEnabled | QAbstractTableModel::flags(index);
 
-    item = channels_[col-1].settings_.get_setting(item, Qpx::Match::id);
+    item = channels_[col-1].get_setting(item.id_);
 
     if (item == Qpx::Setting())
       return QAbstractTableModel::flags(index);
@@ -296,7 +303,7 @@ bool TableChanSettings::setData(const QModelIndex & index, const QVariant & valu
           return false;
       }
 
-      item = channels_[col-1].settings_.get_setting(item, Qpx::Match::id);
+      item = channels_[col-1].get_setting(item.id_);
       if (item == Qpx::Setting())
         return false;
 

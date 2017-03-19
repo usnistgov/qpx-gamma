@@ -155,9 +155,10 @@ bool Engine::read_settings_bulk(){
       set.branches.clear();
       set.branches.add_a(totaldets);
 
-      for (size_t i=0; i < detectors_.size(); ++i) {
+      for (size_t i=0; i < detectors_.size(); ++i)
+      {
         det.metadata.name = "Detector " + std::to_string(i);
-        det.value_text = detectors_[i].name_;
+        det.value_text = detectors_[i].name();
         det.indices.clear();
         det.indices.insert(i);
         det.metadata.writable = true;
@@ -279,19 +280,20 @@ bool Engine::daq_running() {
   return running;
 }
 
-void Engine::set_detector(size_t ch, Qpx::Detector det) {
+void Engine::set_detector(size_t ch, Qpx::Detector det)
+{
   if (ch >= detectors_.size())
     return;
   detectors_[ch] = det;
   //DBG << "set det #" << ch << " to  " << det.name_;
 
-  for (auto &set : settings_tree_.branches.my_data_) {
+  for (auto &set : settings_tree_.branches.my_data_)
+  {
     if (set.id_ == "Detectors") {
       for (auto &q : set.branches.my_data_) {
-        if (q.indices.count(ch) > 0) {
-          //    DBG << "set det in tree #" << ch << " to  " << detectors_[ch].name_;
-
-          q.value_text = detectors_[ch].name_;
+        if (q.indices.count(ch) > 0)
+        {
+          q.value_text = detectors_[ch].name();
           load_optimization(ch);
         }
       }
@@ -299,46 +301,34 @@ void Engine::set_detector(size_t ch, Qpx::Detector det) {
   }
 }
 
-void Engine::save_optimization() {
-  for (size_t i = 0; i < detectors_.size(); i++) {
+void Engine::save_optimization()
+{
+  for (size_t i = 0; i < detectors_.size(); i++)
+  {
 //    DBG << "Saving optimization channel " << i << " settings for " << detectors_[i].name_;
 //    detectors_[i].settings_ = Qpx::Setting();
-    detectors_[i].settings_.indices.insert(i);
-    detectors_[i].settings_.branches.my_data_ =
-      settings_tree_.find_all(detectors_[i].settings_, Qpx::Match::indices);
-    if (detectors_[i].settings_.branches.size() > 0) {
-      detectors_[i].settings_.metadata.setting_type = Qpx::SettingType::stem;
-      detectors_[i].settings_.id_ = "Optimization";
-      for (auto &q : detectors_[i].settings_.branches.my_data_)
-      {
-        q.indices.clear();
-        q.indices.insert(i);
-      }
-    } else {
-      detectors_[i].settings_.metadata.setting_type = Qpx::SettingType::none;
-      detectors_[i].settings_.id_.clear();
-    }
-
-
+    Setting t;
+    t.indices.insert(i);
+    detectors_[i].add_optimizations(settings_tree_.find_all(t, Qpx::Match::indices));
   }
 }
 
-void Engine::load_optimization() {
+void Engine::load_optimization()
+{
   for (size_t i = 0; i < detectors_.size(); i++)
     load_optimization(i);
 }
 
-void Engine::load_optimization(size_t i) {
+void Engine::load_optimization(size_t i)
+{
   if (i >= detectors_.size())
     return;
-  if (detectors_[i].settings_.metadata.setting_type == Qpx::SettingType::stem) {
-    detectors_[i].settings_.indices.clear();
-    detectors_[i].settings_.indices.insert(i);
-    for (auto &q : detectors_[i].settings_.branches.my_data_) {
-      q.indices.clear();
-      q.indices.insert(i);
-    }
-    settings_tree_.set_all(detectors_[i].settings_.branches.my_data_, Qpx::Match::id | Qpx::Match::indices);
+  for (auto s : detectors_[i].optimizations())
+  {
+    if (!s.metadata.writable)
+      continue;
+    s.indices.insert(i);
+    settings_tree_.set_setting_r(s, Qpx::Match::id | Qpx::Match::indices);
   }
 }
 

@@ -202,8 +202,8 @@ void FormIntegration2D::make_range(double x, double y)
 
   if (md_.detectors.size() > 1)
   {
-    f1 = md_.detectors[0].fwhm_calibration_;
-    f2 = md_.detectors[1].fwhm_calibration_;
+    f1 = md_.detectors[0].resolution();
+    f2 = md_.detectors[1].resolution();
     e1 = md_.detectors[0].best_calib(bits);
     e2 = md_.detectors[1].best_calib(bits);
   }

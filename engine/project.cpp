@@ -16,7 +16,7 @@
  *      Martin Shetty (NIST)
  *
  * Description:
- *      Qpx::Project container class for managing simultaneous
+ *      Project container class for managing simultaneous
  *      acquisition and output of spectra. Thread-safe, contingent
  *      upon stored spectra types being thread-safe.
  *
@@ -38,7 +38,7 @@
 
 namespace Qpx {
 
-Project::Project(const Qpx::Project& other)
+Project::Project(const Project& other)
 {
   ready_ = true;
   newdata_ = true;
@@ -50,7 +50,7 @@ Project::Project(const Qpx::Project& other)
   spills_ = other.spills_;
   for (auto sink : other.sinks_)
     sinks_[sink.first] = ConsumerFactory::getInstance().create_copy(sink.second);
-  DBG << "<Qpx::Project> deep copy performed";
+  DBG << "<Project> deep copy performed";
 }
 
 
@@ -234,7 +234,7 @@ int64_t Project::add_sink(SinkPtr sink)
 int64_t Project::add_sink(ConsumerMetadata prototype)
 {
   boost::unique_lock<boost::mutex> lock(mutex_);
-  SinkPtr sink = Qpx::ConsumerFactory::getInstance().create_from_prototype(prototype);
+  SinkPtr sink = ConsumerFactory::getInstance().create_from_prototype(prototype);
   if (!sink)
     return 0;
   sinks_[++current_index_] = sink;
@@ -270,7 +270,7 @@ void Project::set_prototypes(const XMLableDB<ConsumerMetadata>& prototypes)
   for (size_t i=0; i < prototypes.size(); i++) {
 //    DBG << "Creating sink " << prototypes.get(i).debug();
 
-    SinkPtr sink = Qpx::ConsumerFactory::getInstance().create_from_prototype(prototypes.get(i));
+    SinkPtr sink = ConsumerFactory::getInstance().create_from_prototype(prototypes.get(i));
     if (sink)
     {
       sinks_[++current_index_] = sink;
@@ -429,7 +429,7 @@ void Project::from_h5(H5CC::Group &group, bool with_sinks, bool with_full_sinks)
         continue;
       }
 
-      SinkPtr sink = Qpx::ConsumerFactory::getInstance().create_from_h5(sg, with_full_sinks);
+      SinkPtr sink = ConsumerFactory::getInstance().create_from_h5(sg, with_full_sinks);
       if (!sink)
         WARN << "<Project> Could not parse sink";
       else
@@ -488,8 +488,8 @@ void Project::write_h5(std::string file_name)
 
 void Project::read_h5(std::string file_name, bool with_sinks, bool with_full_sinks)
 {
-  try
-  {
+//  try
+//  {
     H5CC::File f(file_name, H5CC::Access::r_existing);
     auto group = f.require_group("project");
     from_h5(group, with_sinks, with_full_sinks);
@@ -497,12 +497,12 @@ void Project::read_h5(std::string file_name, bool with_sinks, bool with_full_sin
     boost::unique_lock<boost::mutex> lock(mutex_);
     identity_ = file_name;
     cond_.notify_all();
-  }
-  catch (...)
-  {
-    ERR << "<Project> Failed to read h5 " << file_name;
-    printException();
-  }
+//  }
+//  catch (...)
+//  {
+//    ERR << "<Project> Failed to read h5 " << file_name;
+//    printException();
+//  }
 }
 
 #endif
@@ -613,7 +613,7 @@ void Project::from_xml(const pugi::xml_node &root,
         continue;
       }
 
-      SinkPtr sink = Qpx::ConsumerFactory::getInstance().create_from_xml(child);
+      SinkPtr sink = ConsumerFactory::getInstance().create_from_xml(child);
       if (!sink)
         WARN << "<Project> Could not parse sink";
       else
@@ -657,18 +657,13 @@ void Project::import_spn(std::string file_name)
 
   myfile.seekg (0, myfile.beg);
 
+  std::vector<Detector> dets(1);
 
-  Qpx::Detector det("unknown");
-  det.energy_calibrations_.add(Qpx::Calibration("Energy", 12));
-
-  std::vector<Detector> dets;
-  dets.push_back(det);
-
-  Qpx::ConsumerMetadata temp = Qpx::ConsumerFactory::getInstance().create_prototype("1D");
+  ConsumerMetadata temp = ConsumerFactory::getInstance().create_prototype("1D");
   Setting res = temp.get_attribute("resolution");
   res.value_int = 12;
   temp.set_attribute(res);
-  Qpx::Setting pattern;
+  Setting pattern;
   pattern = temp.get_attribute("pattern_coinc");
   pattern.value_pattern.set_gates(std::vector<bool>({1}));
   pattern.value_pattern.set_theshold(1);
@@ -694,11 +689,11 @@ void Project::import_spn(std::string file_name)
     }
     if ((totalcount == 0) || data.empty())
       continue;
-    Qpx::Setting name;
+    Setting name;
     name = temp.get_attribute("name");
     name = boost::filesystem::path(file_name).filename().string() + "[" + std::to_string(spectra_count++) + "]";
     temp.set_attribute(name);
-    SinkPtr spectrum = Qpx::ConsumerFactory::getInstance().create_from_prototype(temp);
+    SinkPtr spectrum = ConsumerFactory::getInstance().create_from_prototype(temp);
     spectrum->set_detectors(dets);
     for (size_t i=0; i < data.size(); ++i) {
       Entry entry;

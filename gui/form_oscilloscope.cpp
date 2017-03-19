@@ -26,9 +26,9 @@
 #include <QSettings>
 
 
-FormOscilloscope::FormOscilloscope(QWidget *parent) :
-  QWidget(parent),
-  ui(new Ui::FormOscilloscope)
+FormOscilloscope::FormOscilloscope(QWidget *parent)
+  : QWidget(parent)
+  , ui(new Ui::FormOscilloscope)
 {
   ui->setupUi(this);
 
@@ -50,12 +50,13 @@ FormOscilloscope::~FormOscilloscope()
   delete ui;
 }
 
-void FormOscilloscope::closeEvent(QCloseEvent *event) {
+void FormOscilloscope::closeEvent(QCloseEvent *event)
+{
   event->accept();
 }
 
-
-void FormOscilloscope::updateMenu(std::vector<Qpx::Detector> dets) {
+void FormOscilloscope::updateMenu(std::vector<Qpx::Detector> dets)
+{
   channels_ = dets;
 
   QVector<SelectorItem> my_channels = ui->selectorChannels->items();
@@ -80,9 +81,10 @@ void FormOscilloscope::updateMenu(std::vector<Qpx::Detector> dets) {
       changed = true;
     }
 
-    if (my_channels[i].text != QString::fromStdString(dets[i].name_)) {
+    if (my_channels[i].text != QString::fromStdString(dets[i].name()))
+    {
       my_channels[i].data = QVariant::fromValue(i);
-      my_channels[i].text = QString::fromStdString(dets[i].name_);
+      my_channels[i].text = QString::fromStdString(dets[i].name());
       my_channels[i].color = palette[i % palette.size()];
       changed = true;
     }
@@ -94,22 +96,26 @@ void FormOscilloscope::updateMenu(std::vector<Qpx::Detector> dets) {
   }
 }
 
-void FormOscilloscope::channelToggled(SelectorItem) {
+void FormOscilloscope::channelToggled(SelectorItem)
+{
   replot();
 }
 
-void FormOscilloscope::channelDetails(SelectorItem item) {
+void FormOscilloscope::channelDetails(SelectorItem item)
+{
   int i = item.data.toInt();
   QString text;
-  if ((i > -1) && (i < static_cast<int32_t>(traces_.size()))) {
+  if ((i > -1) && (i < static_cast<int32_t>(traces_.size())))
+  {
     Qpx::Detector det = channels_.at(i);
-    text += QString::fromStdString(det.name_);
-    text += " (" + QString::fromStdString(det.type_) + ")";
+    text += QString::fromStdString(det.name());
+    text += " (" + QString::fromStdString(det.type()) + ")";
   }
   ui->widgetPlot->setTitle(text);
 }
 
-void FormOscilloscope::toggle_push(bool enable, Qpx::ProducerStatus status) {
+void FormOscilloscope::toggle_push(bool enable, Qpx::ProducerStatus status)
+{
   bool online = (status & Qpx::ProducerStatus::can_oscil);
   ui->pushOscilRefresh->setEnabled(enable && online);
 }
@@ -119,7 +125,8 @@ void FormOscilloscope::on_pushOscilRefresh_clicked()
   emit refresh_oscil();
 }
 
-void FormOscilloscope::oscil_complete(std::vector<Qpx::Hit> traces) {
+void FormOscilloscope::oscil_complete(std::vector<Qpx::Hit> traces)
+{
   if (!this->isVisible())
     return;
 
@@ -130,18 +137,19 @@ void FormOscilloscope::oscil_complete(std::vector<Qpx::Hit> traces) {
   replot();
 }
 
-void FormOscilloscope::replot() {
+void FormOscilloscope::replot()
+{
   ui->widgetPlot->clearAll();
 
   QString unit = "n/a";
 
-  if (!traces_.empty()) {
-
+  if (!traces_.empty())
+  {
     QVector<SelectorItem> my_channels = ui->selectorChannels->items();
 
-    for (size_t i=0; i < traces_.size(); i++) {
+    for (size_t i=0; i < traces_.size(); i++)
+    {
       Qpx::Hit trace = traces_.at(i);
-
       if (!trace.trace().size())
         continue;
 
@@ -151,7 +159,6 @@ void FormOscilloscope::replot() {
 
       if ((static_cast<int>(i) < my_channels.size()) && (my_channels[i].visible))
         ui->widgetPlot->addGraph(hist, QPen(my_channels[i].color, 1));
-
     }
   }
 

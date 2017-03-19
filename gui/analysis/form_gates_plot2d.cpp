@@ -250,9 +250,9 @@ void FormGatesPlot2D::update_plot()
 
 
     ui->coincPlot->setAxes(
-          QString::fromStdString(calib_x_.units_),
+          QString::fromStdString(calib_x_.units()),
           calib_x_.transform(0, bits), calib_x_.transform(adjrange, bits),
-          QString::fromStdString(calib_y_.units_),
+          QString::fromStdString(calib_y_.units()),
           calib_y_.transform(0, bits), calib_y_.transform(adjrange, bits),
           "Event count");
 

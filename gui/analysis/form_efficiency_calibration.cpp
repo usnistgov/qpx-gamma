@@ -243,7 +243,7 @@ void FormEfficiencyCalibration::update_data() {
 void FormEfficiencyCalibration::update_detector_calibs()
 {
   std::string msg_text("Propagating calibration ");
-  msg_text +=  "<nobr>" + new_calibration_.to_string() + "</nobr><br/>";
+  msg_text +=  "<nobr>" + new_calibration_.debug() + "</nobr><br/>";
 
   std::string question_text("Do you want to save this calibration to ");
   question_text += current_detector_ + " in detector database?";
@@ -281,8 +281,9 @@ void FormEfficiencyCalibration::update_detector_calibs()
 
     if (modified != Detector())
     {
-      LINFO << "   applying new calibrations for " << modified.name_ << " in detector database";
-      modified.efficiency_calibration_ = new_calibration_;
+      LINFO << "   applying new calibrations for " << modified.name()
+            << " in detector database";
+      modified.set_efficiency_calibration(new_calibration_);
       detectors_.replace(modified);
       emit detectorsChanged();
     }
@@ -297,7 +298,8 @@ void FormEfficiencyCalibration::update_spectra() {
     if (q.second)
       md = q.second->metadata();
 
-    if (!md.detectors.empty() && (md.detectors.front().name_ == current_detector_)) {
+    if (!md.detectors.empty() && (md.detectors.front().name() == current_detector_))
+    {
       SelectorItem new_spectrum;
       new_spectrum.text = QString::fromStdString(md.get_attribute("name").value_text);
       new_spectrum.color = QColor(QString::fromStdString(md.get_attribute("appearance").value_text));
@@ -548,27 +550,24 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
 
 //  std::vector<double> sigmas(yy.size(), 1);
 
-  PolyLog p;
-  p.add_coeff(0, -50, 50, 1);
+  auto p = std::make_shared<PolyLog>();
+  p->add_coeff(0, -50, 50, 1);
   for (int i=1; i <= ui->spinTerms->value(); ++i) {
     if (i==1)
-      p.add_coeff(i, -50, 50, 1);
+      p->add_coeff(i, -50, 50, 1);
     else
-      p.add_coeff(i, -50, 50, 0);
+      p->add_coeff(i, -50, 50, 0);
   }
 
-  Optimizer::fit(p, xx, yy, std::vector<double>(), std::vector<double>());
+  Optimizer::fit(*p, xx, yy, std::vector<double>(), std::vector<double>());
 
-  if (p.coeff_count())
+  if (p->coeff_count())
   {
-    new_calibration_.type_ = "Efficiency";
-    new_calibration_.bits_ = fit_data_.settings().bits_;
-    new_calibration_.coefficients_ = p.coeffs_consecutive();
-    new_calibration_.r_squared_ = p.chi2();
-    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
-    new_calibration_.units_ = "ratio";
-    new_calibration_.model_ = CalibrationModel::polylog;
-    DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
+//    new_calibration_.type_ = "Efficiency";
+    new_calibration_ = Qpx::Calibration(fit_data_.settings().bits_);
+    new_calibration_.set_units("ratio");
+    new_calibration_.set_function(p);
+    DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.debug();
   }
   else
     LINFO << "<Efficiency calibration> Calibration failed";
@@ -658,28 +657,24 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
 
 //  std::vector<double> sigmas(yy.size(), 1);
 
-  LogInverse p;
-  p.add_coeff(0, -50, 50, 1);
+  auto p = std::make_shared<LogInverse>();
+  p->add_coeff(0, -50, 50, 1);
   for (int i=1; i <= ui->spinTerms->value(); ++i)
   {
     if (i==1)
-      p.add_coeff(i, -50, 50, 1);
+      p->add_coeff(i, -50, 50, 1);
     else
-      p.add_coeff(i, -50, 50, 0);
+      p->add_coeff(i, -50, 50, 0);
   }
 
-  Optimizer::fit(p, xx, yy, std::vector<double>(), std::vector<double>());
+  Optimizer::fit(*p, xx, yy, std::vector<double>(), std::vector<double>());
 
-  if (p.coeff_count())
+  if (p->coeff_count())
   {
-    new_calibration_.type_ = "Efficiency";
-    new_calibration_.bits_ = fit_data_.settings().bits_;
-    new_calibration_.coefficients_ = p.coeffs_consecutive();
-    new_calibration_.r_squared_ = p.chi2();
-    new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
-    new_calibration_.units_ = "ratio";
-    new_calibration_.model_ = CalibrationModel::loginverse;
-    DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
+    new_calibration_ = Calibration(fit_data_.settings().bits_);
+    new_calibration_.set_units("ratio");
+    new_calibration_.set_function(p);
+    DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.debug();
   }
   else
     LINFO << "<Efficiency calibration> Calibration failed";
@@ -717,17 +712,14 @@ void FormEfficiencyCalibration::on_pushFitEffit_clicked()
     }
   }
 
-  Effit p;
-  Optimizer::fit(p, xx, yy, std::vector<double>(), std::vector<double>());
+  auto p = std::make_shared<Effit>();
+  Optimizer::fit(*p, xx, yy, std::vector<double>(), std::vector<double>());
 
-  new_calibration_.type_ = "Efficiency";
-  new_calibration_.bits_ = fit_data_.settings().bits_;
-  new_calibration_.coefficients_ = p.coeffs_consecutive();
-  new_calibration_.r_squared_ = p.chi2();
-  new_calibration_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
-  new_calibration_.units_ = "ratio";
-  new_calibration_.model_ = CalibrationModel::effit;
-  DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.to_string();
+//  new_calibration_.type_ = "Efficiency";
+  new_calibration_ = Calibration(fit_data_.settings().bits_);
+  new_calibration_.set_units("ratio");
+  new_calibration_.set_function(p);
+  DBG << "<Efficiency calibration> new calibration fit " << new_calibration_.debug();
 
   replot_calib();
   toggle_push();

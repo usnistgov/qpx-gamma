@@ -15,85 +15,90 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Qpx::Calibration defines calibration with units and math model
- *
  ******************************************************************************/
 
-#include <list>
-#include <iostream>
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string.hpp>
 #include "calibration.h"
-#include "xylib.h"
+#include "qpx_util.h"
 
 #include "polynomial.h"
 #include "polylog.h"
 #include "log_inverse.h"
 #include "effit.h"
 #include "sqrt_poly.h"
-#include "qpx_util.h"
-
-#include "custom_logger.h"
 
 namespace Qpx {
 
-std::string model_to_str(const CalibrationModel& c)
+Calibration::Calibration(uint16_t bbits)
 {
-  if (c == CalibrationModel::polynomial)
-    return "Polynomial";
-  else if (c == CalibrationModel::sqrt_poly)
-    return "SqrtPoly";
-  else if (c == CalibrationModel::polylog)
-    return "PolyLog";
-  else if (c == CalibrationModel::loginverse)
-    return "LogInverse";
-  else if (c == CalibrationModel::effit)
-    return "Effit";
-  else
-    return "undefined";
+  bits_ = bbits;
 }
 
-CalibrationModel model_from_str(const std::string& c)
+std::string Calibration::model() const
 {
-  if (c == "Polynomial")
-    return  CalibrationModel::polynomial;
-  else if (c == "SqrtPoly")
-    return  CalibrationModel::sqrt_poly;
-  else if (c == "PolyLog")
-    return  CalibrationModel::polylog;
-  else if (c == "LogInverse")
-    return  CalibrationModel::loginverse;
-  else if (c == "Effit")
-    return  CalibrationModel::effit;
-  else
-    return CalibrationModel::none;
-}
-
-Calibration::Calibration()
-{
-  calib_date_ = boost::posix_time::microsec_clock::universal_time();
-}
-
-Calibration::Calibration(std::string type, uint16_t bits, std::string units)
-  : Calibration()
-{
-  type_ = type;
-  bits_ = bits;
-  units_ = units;
+  if (function_)
+    return function_->type();
+  return "undefined";
 }
 
 bool Calibration::operator== (const Calibration& other) const
 {
-  //if (calib_date_ != other.calib_date_) return false;
-  if (type_ != other.type_) return false;
   if (units_ != other.units_) return false;
-  if (model_ != other.model_) return false;
-  if (coefficients_ != other.coefficients_) return false;
+  if (model() != other.model()) return false;
   if (bits_ != other.bits_) return false;
   if (to_ != other.to_) return false;
   return true;
+}
+
+uint16_t Calibration::bits() const
+{
+  return bits_;
+}
+
+std::string Calibration::units() const
+{
+  return units_;
+}
+
+std::string Calibration::to() const
+{
+  return to_;
+}
+
+boost::posix_time::ptime Calibration::calib_date() const
+{
+  return calib_date_;
+}
+
+void Calibration::set_units(const std::string& u)
+{
+  units_ = u;
+}
+
+void Calibration::set_to(const std::string& t)
+{
+  to_ = t;
+}
+
+void Calibration::set_function(const std::string& type,
+                  const std::vector<double>& coefs)
+{
+  if (type == Polynomial().type())
+    function_ = std::make_shared<Polynomial>(coefs, 0, 0);
+  else if (type == PolyLog().type())
+    function_ = std::make_shared<PolyLog>(coefs, 0, 0);
+  else if (type == Effit().type())
+    function_ = std::make_shared<Effit>(coefs, 0, 0);
+  else if (type == LogInverse().type())
+    function_ = std::make_shared<LogInverse>(coefs, 0, 0);
+  else if (type == SqrtPoly().type())
+    function_ = std::make_shared<SqrtPoly>(coefs, 0, 0);
+  else if (function_)
+    function_.reset();
+}
+
+void Calibration::set_function(std::shared_ptr<CoefFunction> f)
+{
+  function_ = f;
 }
 
 bool Calibration::operator!= (const Calibration& other) const
@@ -103,89 +108,54 @@ bool Calibration::operator!= (const Calibration& other) const
 
 bool Calibration::valid() const
 {
-  return (coefficients_.size() > 0);
+  return (function_.operator bool() && function_->coeff_count());
 }
 
 double Calibration::transform(double chan) const
 {
-  if (coefficients_.empty())
-    return chan;
-  
-  if (bits_ && (model_ == CalibrationModel::polynomial))
-    return Polynomial(coefficients_, 0, r_squared_).eval(chan);
-  else if (bits_ && (model_ == CalibrationModel::sqrt_poly))
-    return SqrtPoly(coefficients_, 0, r_squared_).eval(chan);
-  else if (bits_ && (model_ == CalibrationModel::polylog))
-    return PolyLog(coefficients_, 0, r_squared_).eval(chan);
-  else if (bits_ && (model_ == CalibrationModel::loginverse))
-    return LogInverse(coefficients_, 0, r_squared_).eval(chan);
-  else if (bits_ && (model_ == CalibrationModel::effit))
-    return Effit(coefficients_, 0, r_squared_).eval(chan);
-  else
-    return chan;
+  if (valid())
+    return function_->eval(chan);
+  return chan;
 }
 
 double Calibration::inverse_transform(double energy) const
 {
-  if (coefficients_.empty())
-    return energy;
-
-  if (bits_ && (model_ == CalibrationModel::polynomial))
-    return Polynomial(coefficients_, 0, r_squared_).eval_inverse(energy);
-//  else if (bits_ && (model_ == CalibrationModel::polylog))
-//    return PolyLog(coefficients_).inverse_evaluate(energy);
-  else
-    return energy;
+  if (valid())
+    return function_->eval_inverse(energy);
+  return energy;
 }
-
 
 double Calibration::transform(double chan, uint16_t bits) const
 {
-  if (coefficients_.empty() || !bits_ || !bits)
+  if (!bits_ || !bits || !valid())
     return chan;
-  
   if (bits > bits_)
     chan = chan / pow(2, bits - bits_);
   if (bits < bits_)
     chan = chan * pow(2, bits_ - bits);
-
-  double re = transform(chan);
-
-  return re;
+  return transform(chan);
 }
 
 double Calibration::inverse_transform(double energy, uint16_t bits) const
 {
-  if (coefficients_.empty() || !bits_ || !bits)
+  if (!bits_ || !bits || !valid())
     return energy; //NaN?
-
   double bin = inverse_transform(energy);
-
   if (bits > bits_)
     bin = bin * pow(2, bits - bits_);
   if (bits < bits_)
     bin = bin / pow(2, bits_ - bits);
-
   return bin;
 }
 
-std::string Calibration::fancy_equation(int precision, bool with_rsq)
+std::string Calibration::fancy_equation(int precision, bool with_rsq) const
 {
-  if (bits_ && (model_ == CalibrationModel::polynomial))
-    return Polynomial(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
-  else if (bits_ && (model_ == CalibrationModel::sqrt_poly))
-    return SqrtPoly(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
-  else if (bits_ && (model_ == CalibrationModel::polylog))
-    return PolyLog(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
-  else if (bits_ && (model_ == CalibrationModel::loginverse))
-    return LogInverse(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
-  else if (bits_ && (model_ == CalibrationModel::effit))
-    return Effit(coefficients_, 0, r_squared_).to_UTF8(precision, with_rsq);
-  else
-    return "N/A"; 
+  if (valid())
+    return function_->to_UTF8(precision, with_rsq);
+  return "N/A";
 }
 
-std::vector<double> Calibration::transform(std::vector<double> chans, uint16_t bits) const
+std::vector<double> Calibration::transform(const std::vector<double> &chans, uint16_t bits) const
 {
   std::vector<double> results;
   for (auto &q : chans)
@@ -193,142 +163,121 @@ std::vector<double> Calibration::transform(std::vector<double> chans, uint16_t b
   return results;
 }
 
-std::string Calibration::coef_to_string() const
+std::string Calibration::coefs_to_string() const
 {
+  if (!valid())
+    return "";
   std::stringstream dss;
-  dss.str(std::string());
-  for (auto &q : coefficients_) {
+  for (auto &q : function_->coeffs_consecutive())
     dss << q << " ";
-  }
   return boost::algorithm::trim_copy(dss.str());
 }
 
-void Calibration::coef_from_string(std::string coefs)
+std::vector<double> Calibration::coefs_from_string(const std::string &coefs)
 {
-  std::stringstream dss(boost::algorithm::trim_copy(coefs));
-
-  std::string tempstr; std::list<double> templist; double coef;
-  while (dss.rdbuf()->in_avail()) {
-    dss >> coef;
+  std::stringstream ss(boost::algorithm::trim_copy(coefs));
+  std::vector<double> templist;
+  while (ss.rdbuf()->in_avail())
+  {
+    double coef;
+    ss >> coef;
     templist.push_back(coef);
   }
-
-  coefficients_.resize(templist.size());
-  int i=0;
-  for (auto &q: templist) {
-    coefficients_[i] = q;
-    i++;
-  }
+  return templist;
 }
 
-std::string Calibration::to_string() const
+std::string Calibration::debug() const
 {
   std::string result;
-  result += "[Calibration:" + type_ + "]";
+  result += " eqn=" + fancy_equation(4, true);
   result += " bits=" + std::to_string(bits_);
   result += " units=" + units_;
   result += " date=" + to_iso_string(calib_date_);
-  result += " coeffs=" + coef_to_string();
   return result;
 }
-
-std::string Calibration::axis_name() const
-{
-  std::string ret = type_;
-  if (!units_.empty())
-    ret += " (" + units_ + ")";
-  return ret;
-}
-
 
 
 void Calibration::to_xml(pugi::xml_node &root) const
 {
   pugi::xml_node node = root.append_child(this->xml_element_name().c_str());
 
-  node.append_attribute("Type").set_value(type_.c_str());
-  if (type_ == "Energy")
+  if (units_.size())
     node.append_attribute("EnergyUnits").set_value(units_.c_str());
-  else if (type_ == "Gain")
+
+  if (to_.size())
     node.append_attribute("To").set_value(to_.c_str());
+
   if (bits_ > 0)
     node.append_attribute("ResolutionBits").set_value(std::to_string(bits_).c_str());
 
   node.append_child("CalibrationCreationDate");
   node.last_child().append_child(pugi::node_pcdata).set_value(to_iso_extended_string(calib_date_).c_str());
 
-  std::string model_str = model_to_str(model_);
-  node.append_child("Equation").append_attribute("Model").set_value(model_str.c_str());
-
-  if ((model_ != CalibrationModel::none) && (coefficients_.size()))
-    node.last_child().append_child("Coefficients").append_child(pugi::node_pcdata).set_value(coef_to_string().c_str());
+  node.append_child("Equation").append_attribute("Model").set_value(model().c_str());
+  if (function_ && function_->coeff_count())
+    node.last_child().append_child("Coefficients").append_child(pugi::node_pcdata)
+        .set_value(coefs_to_string().c_str());
  }
 
 
 void Calibration::from_xml(const pugi::xml_node &node)
 {
-  type_ = std::string(node.attribute("Type").value());
-
-  if (type_ == "Energy")
-    units_ = std::string(node.attribute("EnergyUnits").value());
-  else if (type_ == "Gain")
-    to_ = std::string(node.attribute("To").value());
-
-  bits_ = node.attribute("ResolutionBits").as_int();
-
+  if (node.attribute("ResolutionBits"))
+    bits_ = node.attribute("ResolutionBits").as_int();
   if (node.child_value("CalibrationCreationDate"))
     calib_date_ = from_iso_extended(node.child_value("CalibrationCreationDate"));
+  if (node.attribute("EnergyUnits"))
+    units_ = std::string(node.attribute("EnergyUnits").value());
+  if (node.attribute("To"))
+    to_ = std::string(node.attribute("To").value());
 
   std::string model_str = std::string(node.child("Equation").attribute("Model").value());
-  model_ = model_from_str(model_str);
-  coef_from_string(std::string(node.child("Equation").child_value("Coefficients")));
+  auto coefs = coefs_from_string(std::string(node.child("Equation").child_value("Coefficients")));
+  set_function(model_str, coefs);
 }
 
 void to_json(json& j, const Calibration &s)
 {
-  j["type"] = s.type_;
+  j["calibration_creation_date"] = to_iso_extended_string(s.calib_date_);
+  j["bits"] = s.bits_;
 
-  if (!s.units_.empty() && (s.type_ == "Energy"))
+  if (s.units_.size())
     j["units"] = s.units_;
 
-  if (s.type_ == "Gain")
+  if (s.to_.size())
     j["to"] = s.to_;
 
-  if (s.bits_ > 0)
-    j["bits"] = s.bits_;
-
-  j["calibration_creation_date"] = to_iso_extended_string(s.calib_date_);
-  j["model"] = model_to_str(s.model_);
-
-  if ((s.model_ != CalibrationModel::none) && (s.coefficients_.size()))
-    j["coefficients"] = s.coefficients_;
+  if (s.function_)
+  {
+    j["function"] = (*s.function_);
+    j["function"]["type"] = s.function_->type();
+  }
 }
 
 void from_json(const json& j, Calibration &s)
 {
-  if (!j.count("type"))
-    return;
-
-  s.type_ = j["type"];
+  s.calib_date_ = from_iso_extended(j["calibration_creation_date"]);
+  s.bits_ = j["bits"];
 
   if (j.count("units"))
     s.units_ = j["units"];
-
-  if ((s.type_ == "Gain") && j.count("to"))
+  if (j.count("to"))
     s.to_ = j["to"];
 
-  if (j.count("bits"))
-    s.bits_ = j["bits"];
-
-  if (j.count("calibration_creation_date"))
-    s.calib_date_ = from_iso_extended(j["calibration_creation_date"]);
-
-  s.model_ = model_from_str(j["model"]);
-  if (j.count("coefficients"))
+  if (j.count("function"))
   {
-    auto o = j["coefficients"];
-    for (json::iterator it = o.begin(); it != o.end(); ++it)
-      s.coefficients_.push_back(it.value().get<double>());
+    std::string type = j["function"]["type"];
+    if (type == Polynomial().type())
+      s.function_ = std::make_shared<Polynomial>();
+    else if (type == PolyLog().type())
+      s.function_ = std::make_shared<PolyLog>();
+    else if (type == Effit().type())
+      s.function_ = std::make_shared<Effit>();
+    else if (type == LogInverse().type())
+      s.function_ = std::make_shared<LogInverse>();
+    else if (type == SqrtPoly().type())
+      s.function_ = std::make_shared<SqrtPoly>();
+    from_json(j["function"], *s.function_);
   }
 }
 

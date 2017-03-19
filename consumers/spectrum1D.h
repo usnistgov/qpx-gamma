@@ -15,9 +15,6 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Qpx::Sink1D one-dimensional spectrum
- *
  ******************************************************************************/
 
 #pragma once

@@ -19,17 +19,20 @@
 #include "coord.h"
 //#include "custom_logger.h"
 
-void Coord::set_energy(double nrg, Qpx::Calibration cali) {
+void Coord::set_energy(double nrg, Qpx::Calibration cali)
+{
   bin_ = nan("");
   bits_ = 0;
   energy_ = nrg;
-  if (!std::isnan(nrg)) {
-    bits_ = cali.bits_;
+  if (!std::isnan(nrg))
+  {
+    bits_ = cali.bits();
     bin_ = cali.inverse_transform(nrg);
   }
 }
 
-void Coord::set_bin(double bin, uint16_t bits, Qpx::Calibration cali) {
+void Coord::set_bin(double bin, uint16_t bits, Qpx::Calibration cali)
+{
   bin_ = bin;
   bits_ = bits;
   energy_ = nan("");
@@ -38,11 +41,13 @@ void Coord::set_bin(double bin, uint16_t bits, Qpx::Calibration cali) {
 //  DBG << "made pos bin" << bin_ << " bits" << bits_ << " nrg" << energy_;
 }
 
-double Coord::energy() const {
+double Coord::energy() const
+{
   return energy_;
 }
 
-double Coord::bin(const uint16_t to_bits) const {
+double Coord::bin(const uint16_t to_bits) const
+{
   if (!to_bits || !bits_)
     return bin_;
 

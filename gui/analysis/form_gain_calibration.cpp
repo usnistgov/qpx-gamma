@@ -54,23 +54,24 @@ FormGainCalibration::FormGainCalibration(XMLableDB<Qpx::Detector>& dets, Qpx::Fi
   //connect(shortcut, SIGNAL(activated()), this, SLOT(on_pushRemovePeak_clicked()));
 }
 
-void FormGainCalibration::newSpectrum() {
+void FormGainCalibration::newSpectrum()
+{
   int bits = fit_data1_.settings().bits_;
 
   detector1_ = fit_data1_.detector_;
   detector2_ = fit_data2_.detector_;
 
-  if (detector1_.energy_calibrations_.has_a(Qpx::Calibration("Energy", bits)))
-    nrg_calibration1_ = detector1_.energy_calibrations_.get(Qpx::Calibration("Energy", bits));
-
-  if (detector2_.energy_calibrations_.has_a(Qpx::Calibration("Energy", bits)))
-    nrg_calibration2_ = detector2_.energy_calibrations_.get(Qpx::Calibration("Energy", bits));
+  nrg_calibration1_ = detector1_.best_calib(bits);
+  nrg_calibration2_ = detector2_.best_calib(bits);
 
   bool symmetrized = ((detector1_ != Qpx::Detector()) && (detector2_ != Qpx::Detector()) && (detector1_ == detector2_));
 
-  ui->plotCalib->setAxisLabels("channel (" + QString::fromStdString(detector2_.name_) + ")", "channel (" + QString::fromStdString(detector1_.name_) + ")");
+  ui->plotCalib->setAxisLabels("channel (" +
+                               QString::fromStdString(detector2_.name())
+                               + ")", "channel (" +
+                               QString::fromStdString(detector1_.name()) + ")");
 
-  gain_match_cali_ = detector2_.get_gain_match(bits, detector1_.name_);
+  gain_match_cali_ = detector2_.get_gain_match(bits, detector1_.name());
 
   plot_calib();
 }
@@ -106,16 +107,17 @@ void FormGainCalibration::saveSettings() {
   settings_.endGroup();
 }
 
-void FormGainCalibration::clear() {
+void FormGainCalibration::clear()
+{
   ui->plotCalib->clearGraphs();
   ui->plotCalib->setAxisLabels("", "");
   ui->plotCalib->setTitle("");
 
-  gain_match_cali_ = Qpx::Calibration("Gain", 0);
+  gain_match_cali_ = Qpx::Calibration();
 }
 
-
-void FormGainCalibration::update_peaks() {
+void FormGainCalibration::update_peaks()
+{
   plot_calib();
 }
 
@@ -160,7 +162,7 @@ void FormGainCalibration::plot_calib()
   if (good)
   {
     ui->plotCalib->addPoints(style_pts, xx, yy, xx_sigma, yy_sigma);
-    if ((gain_match_cali_.to_ == detector1_.name_) && gain_match_cali_.valid())
+    if ((gain_match_cali_.to() == detector1_.name()) && gain_match_cali_.valid())
     {
       double step = (xmax-xmin) / 50.0;
       xx.clear(); yy.clear();
@@ -220,30 +222,26 @@ void FormGainCalibration::on_pushCalibGain_clicked()
     return;
   }
 
-  Polynomial p;
-  p.add_coeff(0, -50, 50, 0);
-  p.add_coeff(1,   0, 50, 1);
+  auto p = std::make_shared<Polynomial>();
+  p->add_coeff(0, -50, 50, 0);
+  p->add_coeff(1,   0, 50, 1);
   for (int i=2; i <= ui->spinPolyOrder->value(); ++i)
-    p.add_coeff(i, -5, 5, 0);
+    p->add_coeff(i, -5, 5, 0);
 
-  DBG << "points " << xx.size() << " coefs " << p.coeff_count();
+  DBG << "points " << xx.size() << " coefs " << p->coeff_count();
 
 //  yy_sigma.resize(yy.size(), 1);
 //  p.fit(xx, yy, xx_sigma, yy_sigma);
 
-  Qpx::Optimizer::fit(p, xx, yy, xx_sigma, yy_sigma);
+  Qpx::Optimizer::fit(*p, xx, yy, xx_sigma, yy_sigma);
 
-  if (p.coeff_count())
+  if (p->coeff_count())
   {
-    //    gain_match_cali_.type_ = ;
-    gain_match_cali_.coefficients_ = p.coeffs_consecutive();
-    gain_match_cali_.r_squared_ = p.chi2();
-    gain_match_cali_.to_ = detector1_.name_;
-    gain_match_cali_.bits_ = fit_data2_.settings().bits_;
-    gain_match_cali_.calib_date_ = boost::posix_time::microsec_clock::universal_time();  //spectrum timestamp instead?
-    gain_match_cali_.model_ = Qpx::CalibrationModel::polynomial;
-    ui->plotCalib->setTitle(QString::fromStdString(p.to_UTF8(3, true)));
-    fit_data2_.detector_.gain_match_calibrations_.replace(gain_match_cali_);
+    gain_match_cali_ = Qpx::Calibration(fit_data2_.settings().bits_);
+    gain_match_cali_.set_to(detector1_.name());
+    gain_match_cali_.set_function(p);
+    fit_data2_.detector_.set_gain_calibration(gain_match_cali_);
+    ui->plotCalib->setTitle(QString::fromStdString(gain_match_cali_.fancy_equation(3, true)));
   }
   else
     WARN << "<Gain match calibration> Calibration failed";

@@ -145,8 +145,8 @@ void FormSymmetrize2D::initialize() {
   if (initialized)
     return;
 
-  if (spectra_) {
-
+  if (spectra_)
+  {
     SinkPtr spectrum = spectra_->get_sink(current_spectrum_);
 
     if (spectrum) {
@@ -165,14 +165,11 @@ void FormSymmetrize2D::initialize() {
         //HACK!!!
       }
 
-      DBG << "det1 " << detector1_.name_;
-      DBG << "det2 " << detector2_.name_;
+      DBG << "det1 " << detector1_.name();
+      DBG << "det2 " << detector2_.name();
 
-      if (detector1_.energy_calibrations_.has_a(Calibration("Energy", bits)))
-        nrg_calibration1_ = detector1_.energy_calibrations_.get(Calibration("Energy", bits));
-
-      if (detector2_.energy_calibrations_.has_a(Calibration("Energy", bits)))
-        nrg_calibration2_ = detector2_.energy_calibrations_.get(Calibration("Energy", bits));
+      nrg_calibration1_ = detector1_.best_calib(bits);
+      nrg_calibration2_ = detector2_.best_calib(bits);
 
       bool symmetrized = (md.get_attribute("symmetrized").value_int != 0);
     }
@@ -275,14 +272,16 @@ void FormSymmetrize2D::symmetrize()
 
 void FormSymmetrize2D::apply_gain_calibration()
 {
-  gain_match_cali_ = fit_data_2_.detector_.get_gain_match(fit_data_2_.settings().bits_, detector1_.name_);
+  gain_match_cali_ = fit_data_2_.detector_.get_gain_match(fit_data_2_.settings().bits_, detector1_.name());
 
   std::string msg_text("Propagating gain match calibration ");
-  msg_text += detector2_.name_ + "->" + gain_match_cali_.to_ + " (" + std::to_string(gain_match_cali_.bits_) + " bits) to all spectra in current project: "
+  msg_text += detector2_.name() + "->" +
+      gain_match_cali_.to() + " (" + std::to_string(gain_match_cali_.bits()) +
+      " bits) to all spectra in current project: "
       + spectra_->identity();
 
   std::string question_text("Do you also want to save this calibration to ");
-  question_text += detector2_.name_ + " in detector database?";
+  question_text += detector2_.name() + " in detector database?";
 
   QMessageBox msgBox;
   msgBox.setText(QString::fromStdString(msg_text));
@@ -299,14 +298,14 @@ void FormSymmetrize2D::apply_gain_calibration()
       bool ok;
       QString text = QInputDialog::getText(this, "New Detector",
                                            "Detector name:", QLineEdit::Normal,
-                                           QString::fromStdString(detector2_.name_),
+                                           QString::fromStdString(detector2_.name()),
                                            &ok);
       if (!ok)
         return;
 
       if (!text.isEmpty()) {
         modified = detector2_;
-        modified.name_ = text.toStdString();
+        modified.set_name(text.toStdString());
         if (detectors_.has_a(modified)) {
           QMessageBox::warning(this, "Already exists", "Detector " + text + " already exists. Will not save to database.", QMessageBox::Ok);
           modified = Detector();
@@ -317,8 +316,8 @@ void FormSymmetrize2D::apply_gain_calibration()
 
     if (modified != Detector())
     {
-      LINFO << "   applying new gain_match calibrations for " << modified.name_ << " in detector database";
-      modified.gain_match_calibrations_.replace(gain_match_cali_);
+      LINFO << "   applying new gain_match calibrations for " << modified.name() << " in detector database";
+      modified.set_gain_calibration(gain_match_cali_);
       detectors_.replace(modified);
       emit detectorsChanged();
     }
@@ -331,9 +330,10 @@ void FormSymmetrize2D::apply_gain_calibration()
       ConsumerMetadata md = q.second->metadata();
       for (auto &p : md.detectors) {
         if (p.shallow_equals(detector2_)) {
-          LINFO << "   applying new calibrations for " << detector2_.name_ << " on " << q.second->metadata().get_attribute("name").value_text;
+          LINFO << "   applying new calibrations for " << detector2_.name()
+                << " on " << q.second->metadata().get_attribute("name").value_text;
 
-          p.gain_match_calibrations_.replace(gain_match_cali_);
+          p.set_gain_calibration(gain_match_cali_);
         }
       }
       q.second->set_detectors(md.detectors);

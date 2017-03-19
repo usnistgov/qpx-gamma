@@ -214,13 +214,13 @@ void FormAnalysis1D::update_fit() {
 void FormAnalysis1D::update_detector_calibs()
 {
   std::string msg_text("Propagating calibrations ");
-  msg_text +=  "<nobr>" + new_energy_calibration_.to_string() + "</nobr><br/>"
-               "<nobr>" + new_fwhm_calibration_.to_string() + "</nobr><br/>"
+  msg_text +=  "<nobr>Energy:" + new_energy_calibration_.debug() + "</nobr><br/>"
+               "<nobr>FWHM:" + new_fwhm_calibration_.debug() + "</nobr><br/>"
                "<nobr>  to all spectra in current project: </nobr><br/>"
                "<nobr>" + spectra_->identity() + "</nobr>";
 
   std::string question_text("Do you also want to save this calibration to ");
-  question_text += fit_data_.detector_.name_ + " in detector database?";
+  question_text += fit_data_.detector_.name() + " in detector database?";
 
   QMessageBox msgBox;
   msgBox.setText(QString::fromStdString(msg_text));
@@ -237,7 +237,7 @@ void FormAnalysis1D::update_detector_calibs()
       bool ok;
       QString text = QInputDialog::getText(this, "New Detector",
                                            "Detector name:", QLineEdit::Normal,
-                                           QString::fromStdString(fit_data_.detector_.name_),
+                                           QString::fromStdString(fit_data_.detector_.name()),
                                            &ok);
 
       if (!ok)
@@ -245,7 +245,7 @@ void FormAnalysis1D::update_detector_calibs()
 
       if (!text.isEmpty()) {
         modified = fit_data_.detector_;
-        modified.name_ = text.toStdString();
+        modified.set_name(text.toStdString());
         if (detectors_.has_a(modified)) {
           QMessageBox::warning(this, "Already exists", "Detector " + text + " already exists. Will not save to database.", QMessageBox::Ok);
           modified = Detector();
@@ -256,9 +256,9 @@ void FormAnalysis1D::update_detector_calibs()
 
     if (modified != Detector())
     {
-      LINFO << "   applying new calibrations for " << modified.name_ << " in detector database";
-      modified.energy_calibrations_.replace(new_energy_calibration_);
-      modified.fwhm_calibration_ = new_fwhm_calibration_;
+      LINFO << "   applying new calibrations for " << modified.name() << " in detector database";
+      modified.set_energy_calibration(new_energy_calibration_);
+      modified.set_resolution_calibration(new_fwhm_calibration_);
       detectors_.replace(modified);
       emit detectorsChanged();
     }
@@ -271,9 +271,10 @@ void FormAnalysis1D::update_detector_calibs()
       ConsumerMetadata md = q.second->metadata();
       for (auto &p : md.detectors) {
         if (p.shallow_equals(fit_data_.detector_)) {
-          LINFO << "   applying new calibrations for " << fit_data_.detector_.name_ << " on " << q.second->metadata().get_attribute("name").value_text;
-          p.energy_calibrations_.replace(new_energy_calibration_);
-          p.fwhm_calibration_ = new_fwhm_calibration_;
+          LINFO << "   applying new calibrations for " << fit_data_.detector_.name()
+                << " on " << q.second->metadata().get_attribute("name").value_text;
+          p.set_energy_calibration(new_energy_calibration_);
+          p.set_resolution_calibration(new_fwhm_calibration_);
         }
       }
       q.second->set_detectors(md.detectors);

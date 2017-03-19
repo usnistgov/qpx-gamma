@@ -46,10 +46,7 @@ void Fitter::setData(SinkPtr spectrum)
       detector_ = md.detectors[0];
 
     finder_.settings_.cali_nrg_ = detector_.best_calib(finder_.settings_.bits_);
-
-    if (detector_.fwhm_calibration_.valid())
-      finder_.settings_.cali_fwhm_ = detector_.fwhm_calibration_;
-
+    finder_.settings_.cali_fwhm_ = detector_.resolution();
     finder_.settings_.live_time = md.get_attribute("live_time").value_duration;
 
     std::shared_ptr<EntryList> spectrum_dump = std::move(spectrum->data_range({{0, pow(2,finder_.settings_.bits_)}}));
@@ -507,10 +504,11 @@ void Fitter::save_report(std::string filename) {
 //    file << metadata_.attributes;
 //  }
 
-  if (!metadata_.detectors.empty()) {
+  if (!metadata_.detectors.empty())
+  {
     file << "Detectors" << std::endl;
     for (auto &q : metadata_.detectors)
-      file << "   " << q.name_ << " (" << q.type_ << ")" << std::endl;
+      file << "   " << q.name() << " (" << q.type() << ")" << std::endl;
   }
   
   file << "========================================================" << std::endl;

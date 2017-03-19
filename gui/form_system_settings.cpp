@@ -121,7 +121,8 @@ void FormSystemSettings::update(const Qpx::Setting &tree, const std::vector<Qpx:
   bool can_gain_match = false;
   bool can_optimize = false;
   for (auto &q : channels_)
-    for (auto & p: q.settings_.branches.my_data_) {
+    for (auto & p: q.optimizations())
+    {
       if (p.metadata.flags.count("gain") > 0)
         can_gain_match = true;
       if (p.metadata.flags.count("optimize") > 0)
@@ -237,14 +238,11 @@ void FormSystemSettings::push_from_table(Qpx::Setting setting)
   runner_thread_.do_set_setting(setting, Qpx::Match::id | Qpx::Match::indices);
 }
 
-void FormSystemSettings::chose_detector(int chan, std::string name) {
+void FormSystemSettings::chose_detector(int chan, std::string name)
+{
   editing_ = false;
   Qpx::Detector det = detectors_.get(Qpx::Detector(name));
-  DBG << "det " <<  det.name_ << " with cali " << det.energy_calibrations_.size() << " has sets " << det.settings_.branches.size();
-  for (auto &q : det.settings_.branches.my_data_) {
-    q.indices.clear();
-    q.indices.insert(chan);
-  }
+  DBG << "det " <<  det.name() << " with sets " << det.optimizations().size();
 
   emit statusText("Applying detector settings...");
   emit toggleIO(false);
@@ -328,19 +326,14 @@ void FormSystemSettings::saveSettings() {
 }
 
 void FormSystemSettings::chan_settings_to_det_DB() {
-  for (auto &q : channels_) {
-    if (q.name_ == "none")
+  for (auto &q : channels_)
+  {
+    if (q.name() == "none")
       continue;
     Qpx::Detector det = detectors_.get(q);
-    if (det != Qpx::Detector()) {
-      for (auto &p : q.settings_.branches.my_data_) {
-        if (p.metadata.writable) {
-          det.settings_.branches.replace(p);
-        }
-      }
-      if (!det.settings_.branches.empty())
-        det.settings_.metadata.setting_type = Qpx::SettingType::stem;
-      det.settings_.strip_metadata();
+    if (det != Qpx::Detector())
+    {
+      det.add_optimizations(q.optimizations());
       detectors_.replace(det);
     }
   }
