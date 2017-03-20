@@ -21,6 +21,7 @@ add_library(
 
 target_link_libraries(
   ${PROJECT_NAME}
+  ${CMAKE_DL_LIBS}
   usb
 )
 

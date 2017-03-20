@@ -55,5 +55,5 @@ add_library(
 target_link_libraries(
   ${PROJECT_NAME}
   ${PLX_LIB_DIRECTORY}/PlxApi.a
+  ${CMAKE_DL_LIBS}
 )
-
