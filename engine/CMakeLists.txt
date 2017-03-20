@@ -55,16 +55,14 @@ target_link_libraries(
   ${ROOT_LIBRARIES}
 )
 
-# Required on Unix OS family to be able to be linked into shared libraries.
-set_target_properties(${PROJECT_NAME}
-                      PROPERTIES POSITION_INDEPENDENT_CODE ON
-                      )
-
-# Expose public includes (including Boost transitively) to other
-# subprojects through cache variable.
+# Expose public includes
 set(${PROJECT_NAME}_INCLUDE_DIRS
 	  ${engine_INCLUDE_DIRS}
     ${HDF5_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     ${ROOT_INCLUDE_DIR}
     CACHE INTERNAL "${PROJECT_NAME}: Include Directories" FORCE)
+
+set(${PROJECT_NAME}_LIBRARIES
+    -Wl,--whole-archive ${PROJECT_NAME} -Wl,--no-whole-archive
+    PARENT_SCOPE)

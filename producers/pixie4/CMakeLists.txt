@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(producer_pixie4 CXX)
+project(producer_pixie4 C CXX)
 
 if(UNIX)
   add_definitions(-DXIA_LINUX)
@@ -27,13 +27,20 @@ SET (PLX_LIB_DIRECTORY ${PROJECT_SOURCE_DIR}/PLX/Library/32bit)
 ENDIF( EX_PLATFORM EQUAL 64 )
 
 
-file(GLOB_RECURSE pixie4_SOURCES *.cpp XIA/*.cpp)
+file(GLOB_RECURSE pixie4_SOURCES *.cpp XIA/*.c)
 file(GLOB_RECURSE pixie4_HEADERS *.h)
 foreach (_headerFile ${pixie4_HEADERS})
     get_filename_component(_dir ${_headerFile} PATH)
     list (APPEND pixie4_INCLUDE_DIRS ${_dir})
 endforeach()
 list(REMOVE_DUPLICATES pixie4_INCLUDE_DIRS)
+
+set_source_files_properties(XIA/utilities.c PROPERTIES LANGUAGE CXX )
+set_source_files_properties(XIA/Boot.c PROPERTIES LANGUAGE CXX )
+set_source_files_properties(XIA/eeprom.c PROPERTIES LANGUAGE CXX )
+set_source_files_properties(XIA/globals.c PROPERTIES LANGUAGE CXX )
+set_source_files_properties(XIA/pixie_c.c PROPERTIES LANGUAGE CXX )
+set_source_files_properties(XIA/ua_par_io.c PROPERTIES LANGUAGE CXX )
 
 include_directories(
   ${engine_INCLUDE_DIRS}
@@ -50,13 +57,3 @@ target_link_libraries(
   ${PLX_LIB_DIRECTORY}/PlxApi.a
 )
 
-# Required on Unix OS family to be able to be linked into shared libraries.
-set_target_properties(${PROJECT_NAME}
-                      PROPERTIES POSITION_INDEPENDENT_CODE ON
-                      )
-
-# Expose public includes (including Boost transitively) to other
-# subprojects through cache variable.
-set(${PROJECT_NAME}_INCLUDE_DIRS
-    ${pixie4_INCLUDE_DIRS}
-CACHE INTERNAL "${PROJECT_NAME}: Include Directories" FORCE)
