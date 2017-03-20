@@ -1,0 +1,35 @@
+cmake_minimum_required(VERSION 3.1)
+project(producer_simulator2d CXX)
+
+file(GLOB_RECURSE simulator2d_SOURCES *.cpp)
+file(GLOB_RECURSE simulator2d_HEADERS *.h)
+foreach (_headerFile ${simulator2d_HEADERS})
+    get_filename_component(_dir ${_headerFile} PATH)
+    list (APPEND simulator2d_INCLUDE_DIRS ${_dir})
+endforeach()
+list(REMOVE_DUPLICATES simulator2d_INCLUDE_DIRS)
+
+include_directories(
+  ${engine_INCLUDE_DIRS}
+  ${simulator2d_INCLUDE_DIRS}
+)
+
+add_library(
+  ${PROJECT_NAME}
+  ${simulator2d_SOURCES}
+)
+
+target_link_libraries(
+  ${PROJECT_NAME}
+)
+
+# Required on Unix OS family to be able to be linked into shared libraries.
+set_target_properties(${PROJECT_NAME}
+                      PROPERTIES POSITION_INDEPENDENT_CODE ON
+                      )
+
+# Expose public includes (including Boost transitively) to other
+# subprojects through cache variable.
+set(${PROJECT_NAME}_INCLUDE_DIRS
+    ${simulator2d_INCLUDE_DIRS}
+CACHE INTERNAL "${PROJECT_NAME}: Include Directories" FORCE)

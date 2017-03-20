@@ -320,7 +320,7 @@ void Project::save_as(std::string file_name)
 {
   #ifdef H5_ENABLED
   write_h5(file_name);
-  #elif
+  #else
   write_xml(file_name);
   #endif
 }
