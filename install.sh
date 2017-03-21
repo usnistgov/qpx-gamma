@@ -23,6 +23,13 @@ if [ "" == "$PKG_OK" ]; then
   sudo apt-get --yes install build-essential
 fi
 
+PKG_OK=$(dpkg-query -W --showformat='${Status}\n'
+         cmake|grep "install ok installed")
+if [ "" == "$PKG_OK" ]; then
+  echo "Installing cmake"
+  sudo apt-get --yes install cmake
+fi
+
 read -r -p "Install boost? [Y/n]" getboost
 getboost=${getboost,,} # tolower
 
@@ -35,10 +42,10 @@ fi
 ./bash/config.sh
 
 #make distclean
-SOURCEDIR=./data/*
-DESTDIR=$HOME/qpx
-mkdir $DESTDIR
-cp -ur $SOURCEDIR $DESTDIR
+#SOURCEDIR=./data/*
+#DESTDIR=$HOME/qpx
+#mkdir $DESTDIR
+#cp -ur $SOURCEDIR $DESTDIR
 
 read -r -p "Make release & install (else debug)? [Y/n]" mkrelease
 mkrelease=${mkrelease,,} # tolower
@@ -46,7 +53,7 @@ mkrelease=${mkrelease,,} # tolower
 if [[ $mkrelease =~ ^(yes|y| ) ]]; then
   mkdir build
   cd build
-  cmake ../source
+  cmake ../src
   make -j4
   if [ $? -eq 0 ]
   then

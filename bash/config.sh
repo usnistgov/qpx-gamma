@@ -17,7 +17,7 @@ hdf5="off"
 cmd="off"
 gui="off"
 
-FILE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../source/config/CMakeLists.txt"
+FILE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../src/config/CMakeLists.txt"
 
 if [ ! -f ${FILE} ]; then
   parser_raw="on"
