@@ -15,11 +15,6 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Qpx::Engine online and offline setting describing the state of
- *      a device.
- *      Not thread safe, mostly for speed concerns (getting stats during run)
- *
  ******************************************************************************/
 
 #pragma once
@@ -75,6 +70,9 @@ public:
   bool daq_start(SynchronizedQueue<Spill*>* out_queue);
   bool daq_stop();
   bool daq_running();
+
+  static int print_version();
+  static std::string version();
 
 protected:
   std::string profile_path_;

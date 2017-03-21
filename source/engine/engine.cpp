@@ -15,11 +15,6 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Qpx::Engine online and offline setting describing the state of
- *      a device.
- *      Not thread safe, mostly for speed concerns (getting stats during run)
- *
  ******************************************************************************/
 
 #include "engine.h"
@@ -31,9 +26,24 @@
 #include "custom_logger.h"
 #include "producer_factory.h"
 #include <iomanip>
-
+#include "compiletime.h"
 
 namespace Qpx {
+
+int Engine::print_version()
+{
+  LINFO << "<Qpx> " << Engine::version();
+}
+
+std::string Engine::version()
+{
+  return "git.SHA1=" + std::string(GIT_VERSION)
+      + " compiled at " + std::string(_TIMEZ_)
+      + " on " + std::string(CMAKE_SYSTEM)
+      + " with " + std::string(CMAKE_SYSTEM_PROCESSOR);
+}
+
+const static int initializer = Engine::print_version();
 
 Engine::Engine() {
   aggregate_status_ = ProducerStatus(0);

@@ -52,3 +52,8 @@ target_link_libraries(
 )
 
 qt5_use_modules(qpx Widgets PrintSupport)
+
+if(UNIX)
+  install(TARGETS qpx DESTINATION bin)
+endif()
+

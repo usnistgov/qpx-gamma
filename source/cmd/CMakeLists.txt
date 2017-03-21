@@ -25,3 +25,7 @@ target_link_libraries(
   ${consumers_LIBRARIES}
   ${producers_LIBRARIES}
 )
+
+if(UNIX)
+  install(TARGETS cpx DESTINATION bin)
+endif()

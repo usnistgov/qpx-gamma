@@ -1,9 +1,29 @@
 cmake_minimum_required(VERSION 3.1)
 project(engine CXX)
 
-#root
-list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
+# build time in UTC ISO 8601
+FILE (WRITE ${CMAKE_BINARY_DIR}/compiletime.cmake "STRING(TIMESTAMP TIMEZ UTC)\n")
+FILE (APPEND ${CMAKE_BINARY_DIR}/compiletime.cmake "FILE(WRITE compiletime.h \"#ifndef TIMESTAMP_H\\n\")\n")
+FILE (APPEND ${CMAKE_BINARY_DIR}/compiletime.cmake "FILE(APPEND compiletime.h \"#define TIMESTAMP_H\\n\\n\")\n")
+FILE (APPEND ${CMAKE_BINARY_DIR}/compiletime.cmake "FILE(APPEND compiletime.h \"#define _TIMEZ_ \\\"\${TIMEZ}\\\"\\n\\n\")\n")
+FILE (APPEND ${CMAKE_BINARY_DIR}/compiletime.cmake "FILE(APPEND compiletime.h \"#endif // TIMESTAMP_H\\n\")\n")
+ADD_CUSTOM_TARGET (
+    compiletime
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/compiletime.cmake
+    ADD_DEPENDENCIES ${CMAKE_BINARY_DIR}/compiletime.cmake)
 
+#Git commit SHA1
+execute_process(COMMAND
+    git rev-parse HEAD
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    OUTPUT_VARIABLE GIT_SHA1
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+add_definitions(-DGIT_VERSION="${GIT_SHA1}")
+add_definitions(-DCMAKE_SYSTEM="${CMAKE_SYSTEM}")
+add_definitions(-DCMAKE_SYSTEM_PROCESSOR="${CMAKE_SYSTEM_PROCESSOR}")
+
+#HDF5 if enabled
 if (QPX_USE_HDF5)
   set(HDF5_USE_SHARED_LIBRARIES ON)
   find_package(HDF5 COMPONENTS CXX REQUIRED)
@@ -19,23 +39,16 @@ if (QPX_USE_HDF5)
   list(REMOVE_DUPLICATES h5_INCLUDE_DIRS)
 endif()
 
+#Boost
 find_package(Boost COMPONENTS system filesystem thread timer date_time 
              program_options log log_setup regex REQUIRED)
-
-find_package(ROOT REQUIRED COMPONENTS RIO Net)
-
-#ROOT needs this
-include(${ROOT_USE_FILE})
-
 link_directories( ${BOOST_LIBRARY_DIRS} )
 
-execute_process(COMMAND
-  git rev-parse HEAD
-  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-  OUTPUT_VARIABLE GIT_SHA1
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
+#ROOT
+list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
+find_package(ROOT REQUIRED COMPONENTS RIO Net)
+include(${ROOT_USE_FILE})
 
-add_definitions(-DGIT_VERSION="${GIT_SHA1}")
 
 file(GLOB_RECURSE engine_SOURCES *.cpp)
 file(GLOB_RECURSE engine_HEADERS *.h *.hpp)
@@ -46,6 +59,7 @@ endforeach()
 list(REMOVE_DUPLICATES engine_INCLUDE_DIRS)
 
 include_directories(
+  ${PROJECT_BINARY_DIR}
   ${engine_INCLUDE_DIRS}
   ${h5_INCLUDE_DIRS}
   ${HDF5_INCLUDE_DIRS}
@@ -66,6 +80,8 @@ target_link_libraries(
   ${Boost_LIBRARIES}
   ${ROOT_LIBRARIES}
 )
+
+ADD_DEPENDENCIES(${PROJECT_NAME} compiletime)
 
 # Expose public includes
 set(${PROJECT_NAME}_INCLUDE_DIRS
