@@ -22,4 +22,4 @@ make -j$(nproc)
 
 LINE="source $( pwd )/bin/thisroot.sh"
 eval $LINE
-printf '%s\n' "$LINE" > ~/.profile
+printf '%s\n' "$LINE" >> ~/.profile
