@@ -16,45 +16,45 @@ echo "than boost and Qt, only standard ubuntu packages are used."
 echo " "
 read -n1 -rsp $'Press any key to continue or Ctrl+C to exit...\n'
 
-PKG_OK=$(dpkg-query -W --showformat='${Status}\n'
-         build-essential|grep "install ok installed")
+PKG_OK=$(dpkg-query -W --showformat='${Status}\n' build-essential|grep "install ok installed")
 if [ "" == "$PKG_OK" ]; then
   echo "Installing build-essential"
   sudo apt-get --yes install build-essential
 fi
 
-PKG_OK=$(dpkg-query -W --showformat='${Status}\n'
-         cmake|grep "install ok installed")
+PKG_OK=$(dpkg-query -W --showformat='${Status}\n' cmake|grep "install ok installed")
 if [ "" == "$PKG_OK" ]; then
   echo "Installing cmake"
   sudo apt-get --yes install cmake
 fi
 
-read -r -p "Install boost? [Y/n]" getboost
+read -r -p "Install boost (>=1.58)? [Y/n]" getboost
 getboost=${getboost,,} # tolower
-
 if [[ $getboost =~ ^(yes|y| ) ]]; then
- ./bash/get-boost.sh
+ ./bash/get-boost.sh 58
 fi
 
-./bash/get-qt.sh
+read -r -p "Install Qt (>=5.5)? [Y/n]" getqt
+getqt=${getqt,,} # tolower
+if [[ $getqt =~ ^(yes|y| ) ]]; then
+  ./bash/get-qt.sh 5
+fi
 
 ./bash/config.sh
 
-#make distclean
-#SOURCEDIR=./data/*
-#DESTDIR=$HOME/qpx
-#mkdir $DESTDIR
-#cp -ur $SOURCEDIR $DESTDIR
+SOURCEDIR=./data/*
+DESTDIR=$HOME/qpx
+mkdir $DESTDIR
+cp -ur $SOURCEDIR $DESTDIR
 
-read -r -p "Make release & install (else debug)? [Y/n]" mkrelease
+read -r -p "Make release & install qpx? [Y/n]" mkrelease
 mkrelease=${mkrelease,,} # tolower
 
 if [[ $mkrelease =~ ^(yes|y| ) ]]; then
   mkdir build
   cd build
   cmake ../src
-  make -j4
+  make -j$(nproc)
   if [ $? -eq 0 ]
   then
     sudo make install

@@ -17,7 +17,10 @@ hdf5="off"
 cmd="off"
 gui="off"
 
-FILE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../src/config/CMakeLists.txt"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../src" && pwd )/config"
+FILE=$DIR"/CMakeLists.txt"
+
+mkdir -p $DIR
 
 if [ ! -f ${FILE} ]; then
   parser_raw="on"
@@ -79,7 +82,12 @@ then
   exit
 fi
 
-clear 
+clear
+
+if [[ $choices == *"9"* ]] && [[ $choices != *"8"* ]]; then
+  echo auto-enabling VMM module as prereq fro *.evt parser
+  choices+=$' 8'
+fi
 
 text=''
 for choice in $choices
@@ -93,6 +101,11 @@ do
             ;;
         3)
             text+=$'set(QPX_USE_HDF5 TRUE PARENT_SCOPE)\n'
+            PKG_OK=$(dpkg-query -W --showformat='${Status}\n' libhdf5-dev|grep "install ok installed")
+            if [ "" == "$PKG_OK" ]; then
+              echo "Installing libhdf5"
+              sudo apt-get --yes install libhdf5-dev
+            fi
             ;;
         4)
             text+=$'set(QPX_PARSER_RAW TRUE PARENT_SCOPE) \n'
@@ -120,5 +133,6 @@ do
     esac
 done
 
+touch $FILE
 printf '%s\n' "$text" > ${FILE}
 

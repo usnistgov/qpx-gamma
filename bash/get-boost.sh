@@ -1,36 +1,46 @@
 #!/bin/bash
 
-read -r -p "What version of boost would you like to install? (default:1.58)   1." vnum
+minimum_boost_version=$1
 
-if [ -z "$vnum" ]; then
-  vnum="58"
-fi
-
-cl1="1."
-cl2=".0"
-cl=$cl1$vnum$cl2
-
-fp="apt-cache search libboost1.${vnum}-all-dev"
-res=$(eval $fp)
-
-if [ "" != "$res" ]; then
-  fe="sudo apt-get --yes install libboost1.${vnum}-all-dev"
-  eval $fe
+if [ -z "$minimum_boost_version" ]; then
   exit
 fi
 
-if ldconfig -p | grep boost | grep -q $cl; then
-  echo System appears to already have  boost $cl.
+exp="apt-cache show libboost-all-dev | grep -Po '(?<=Version: \d.)\d.'"
+default_boost_version=$(eval $exp)
+
+echo default boost version on system = $default_boost_version
+
+if [ "$default_boost_version" -ge "$minimum_boost_version" ]; then
+  exp="sudo apt-get --yes install libboost-all-dev"
+  eval $exp
   exit
-fi
+fi;
+
+exp="apt-cache search libboost1 | grep -Po '(?<=libboost\d.)\d.(?=-all-dev)'"
+other_boost_versions=($(eval $exp))
+
+max_boost_version=${other_boost_versions[0]}
+for n in "${other_boost_versions[@]}" ; do
+    ((n > max_boost_version)) && max_boost_version=$n
+done
+
+echo highest available boost version = $max_boost_version
+
+if [ "$max_boost_version" -ge "$minimum_boost_version" ]; then
+  exp="sudo apt-get --yes install libboost\d.${max_boost_version}-all-dev"
+  eval $exp
+  exit
+fi;
+
 
 zl1="boost_1_"
 zl2="_0"
 ext=".tar.bz2"
-zl=$zl1$vnum$zl2
+zl=$zl1$minimum_boost_version$zl2
 zlext=$zl$ext
 
-echo Will download for $zlext
+echo Will download $zlext
 
 if [ -f ./$zlext ]; then
   echo deleting old zip
@@ -59,6 +69,6 @@ cd $zl
 sudo ./b2 install
 cd ..
 rm $zlext
-rm -R $zl
+rm -rf $zl
 
 sudo ldconfig
