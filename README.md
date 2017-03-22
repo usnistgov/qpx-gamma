@@ -33,7 +33,9 @@ Reads:
 * NSCLdaq evt
 
 Installing / running:
-* './install.sh' will also download and install [boost](http://www.boost.org/) and [Qt](http://www.qt.io/) dependencies, and copy default configuration and sample data files to ~/qpx/
+* './install.sh' will also download and install [boost](http://www.boost.org/),
+ [Qt](http://www.qt.io/), and [ROOT](https://root.cern.ch/) dependencies, and 
+copy default configuration and sample data files to ~/qpx/
 * When prompted, the safe choices are boost 1.58 and Qt 5.5. Experimental with more recent libraries.
 * If using Pixie-4, make sure PLX driver is working (driver and installation script included, see /sources/pixie4/PLX/README)
 * to run: './qpx' or debug mode 'gdb ./qpxd'
@@ -41,5 +43,5 @@ Installing / running:
 [Upcoming/ToDo](https://trello.com/b/YKb96auO/qpx-todo-list)
 
 For questions, contact:
-<br>   Martin Shetty (martin.shetty@nist.gov)
+<br>   Martin Shetty (martin.shetty@esss.se)
 <br>   Dagistan Sahin (dagistan.sahin@nist.gov)

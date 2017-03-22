@@ -40,6 +40,13 @@ if [[ $getqt =~ ^(yes|y| ) ]]; then
   ./bash/get-qt.sh 5
 fi
 
+read -r -p "Install ROOT (6.08.06)? [Y/n]" getroot
+getroot=${getroot,,} # tolower
+if [[ $getroot =~ ^(yes|y| ) ]]; then
+  ./bash/get-ROOT.sh 6-08-06
+fi
+
+
 ./bash/config.sh
 
 SOURCEDIR=./data/*
