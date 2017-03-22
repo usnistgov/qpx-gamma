@@ -13,7 +13,7 @@ find_package(OpenGL REQUIRED)
 
 #ROOT
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
-find_package(ROOT REQUIRED COMPONENTS RIO Net)
+find_package(ROOT REQUIRED COMPONENTS Hist)
 include(${ROOT_USE_FILE})
 
 

@@ -18,7 +18,6 @@
  ******************************************************************************/
 
 #include "optimizer_ROOT.h"
-#include "TH1.h"
 #include "custom_logger.h"
 
 namespace Qpx {
